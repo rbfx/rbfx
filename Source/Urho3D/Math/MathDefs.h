@@ -148,7 +148,7 @@ template <> inline float Asin<float>(float x) { return M_RADTODEG * asinf(Clamp(
 /// Return arc cosine in degrees. Uses acosf() for floats, acos() for
 /// everything else
 template <class T>
-inline T Acos(T x) { return M_RADTODEG * acos(Clamp(x, -1.0, 1.0)); }
+inline T Acos(T x) { return M_RADTODEG * acos(Clamp(x, static_cast<T>(-1), static_cast<T>(1))); }
 template <> inline float Acos<float>(float x) { return M_RADTODEG * acosf(Clamp(x, -1.0f, 1.0f)); }
 
 /// Return arc tangent in degrees. Uses atanf() for floats, atan() for
@@ -258,6 +258,67 @@ inline float HalfToFloat(unsigned short value)
 
 /// Calculate both sine and cosine, with angle in degrees.
 URHO3D_API void SinCos(float angle, float& sin, float& cos);
+
+inline float Sqrt(float value)
+{
+    return sqrtf(value);
+}
+
+inline double Sqrt(double value)
+{
+    return sqrt(value);
+}
+
+inline int Sqrt(int value)
+{
+    return static_cast<int>(sqrtf(static_cast<float>(value)));
+}
+
+inline long long Sqrt(long long value)
+{
+    return static_cast<long long>(sqrt(static_cast<double>(value)));
+}
+
+inline double Reciprocal(double value)
+{
+    return 1.0 / value;
+}
+
+inline float Reciprocal(float value)
+{
+    return 1.0f / value;
+}
+
+inline float Reciprocal(int value)
+{
+    return 1.0f / static_cast<float>(value);
+}
+
+inline double Reciprocal(long long value)
+{
+    return 1.0 / static_cast<double>(value);
+}
+
+inline double ReciprocalSqrt(double value)
+{
+    return 1.0 / Sqrt(value);
+}
+
+inline float ReciprocalSqrt(float value)
+{
+    return 1.0f / Sqrt(value);
+}
+
+inline float ReciprocalSqrt(int value)
+{
+    return 1.0f / static_cast<float>(Sqrt(value));
+}
+
+inline double ReciprocalSqrt(long long value)
+{
+    return 1.0 / static_cast<double>(Sqrt(value));
+}
+
 
 }
 

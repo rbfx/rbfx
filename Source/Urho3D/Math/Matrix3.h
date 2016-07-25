@@ -123,9 +123,10 @@ public:
     bool operator !=(const Matrix3& rhs) const { return !(*this == rhs); }
 
     /// Multiply a Vector3.
-    Vector3 operator *(const Vector3& rhs) const
+    template<typename T>
+    Vector3_<T> operator *(const Vector3_<T>& rhs) const
     {
-        return Vector3(
+        return Vector3_<T>(
             m00_ * rhs.x_ + m01_ * rhs.y_ + m02_ * rhs.z_,
             m10_ * rhs.x_ + m11_ * rhs.y_ + m12_ * rhs.z_,
             m20_ * rhs.x_ + m21_ * rhs.y_ + m22_ * rhs.z_

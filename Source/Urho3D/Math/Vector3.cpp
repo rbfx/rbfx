@@ -31,19 +31,44 @@
 namespace Urho3D
 {
 
-const Vector3 Vector3::ZERO;
-const Vector3 Vector3::LEFT(-1.0f, 0.0f, 0.0f);
-const Vector3 Vector3::RIGHT(1.0f, 0.0f, 0.0f);
-const Vector3 Vector3::UP(0.0f, 1.0f, 0.0f);
-const Vector3 Vector3::DOWN(0.0f, -1.0f, 0.0f);
-const Vector3 Vector3::FORWARD(0.0f, 0.0f, 1.0f);
-const Vector3 Vector3::BACK(0.0f, 0.0f, -1.0f);
-const Vector3 Vector3::ONE(1.0f, 1.0f, 1.0f);
+template<typename T> const Vector3_<T> Vector3_<T>::ZERO;
+template<typename T> const Vector3_<T> Vector3_<T>::LEFT(-1, 0, 0);
+template<typename T> const Vector3_<T> Vector3_<T>::RIGHT(1, 0, 0);
+template<typename T> const Vector3_<T> Vector3_<T>::UP(0, 1, 0);
+template<typename T> const Vector3_<T> Vector3_<T>::DOWN(0, -1, 0);
+template<typename T> const Vector3_<T> Vector3_<T>::FORWARD(0, 0, 1);
+template<typename T> const Vector3_<T> Vector3_<T>::BACK(0, 0, -1);
+template<typename T> const Vector3_<T> Vector3_<T>::ONE(1, 1, 1);
 
+template<>
 String Vector3::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
     sprintf(tempBuffer, "%g %g %g", x_, y_, z_);
+    return String(tempBuffer);
+}
+
+template<>
+String DoubleVector3::ToString() const
+{
+    char tempBuffer[CONVERSION_BUFFER_LENGTH];
+    sprintf(tempBuffer, "%g %g %g", x_, y_, z_);
+    return String(tempBuffer);
+}
+
+template<>
+String IntVector3::ToString() const
+{
+    char tempBuffer[CONVERSION_BUFFER_LENGTH];
+    sprintf(tempBuffer, "%d %d %d", x_, y_, z_);
+    return String(tempBuffer);
+}
+
+template<>
+String LongLongVector3::ToString() const
+{
+    char tempBuffer[CONVERSION_BUFFER_LENGTH];
+    sprintf(tempBuffer, "%lld %lld %lld", x_, y_, z_);
     return String(tempBuffer);
 }
 

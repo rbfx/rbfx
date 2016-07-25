@@ -26,6 +26,8 @@
 #include "../Core/Variant.h"
 #include "../Math/BoundingBox.h"
 #include "../Math/StringHash.h"
+#include "../Math/Vector3.h"
+
 
 namespace Urho3D
 {
@@ -36,7 +38,6 @@ class IntVector2;
 class Quaternion;
 class Rect;
 class Vector2;
-class Vector3;
 class Vector4;
 
 /// Abstract stream for writing.
