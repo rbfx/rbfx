@@ -43,6 +43,7 @@ const char* interpMethodNames[] =
     "None",
     "Linear",
     "Spline",
+    "Custom",
     0
 };
 
@@ -55,7 +56,8 @@ ValueAnimation::ValueAnimation(Context* context) :
     interpolatable_(false),
     beginTime_(M_INFINITY),
     endTime_(-M_INFINITY),
-    splineTangentsDirty_(false)
+    splineTangentsDirty_(false),
+    customInterpolator_(0)
 {
 }
 
@@ -333,7 +335,7 @@ void ValueAnimation::SetEventFrame(float time, const StringHash& eventType, cons
 bool ValueAnimation::IsValid() const
 {
     return (interpolationMethod_ == IM_NONE) ||
-           (interpolationMethod_ == IM_LINEAR && keyFrames_.Size() > 1) ||
+           ((interpolationMethod_ == IM_LINEAR || interpolationMethod_ == IM_CUSTOM) && keyFrames_.Size() > 1) ||
            (interpolationMethod_ == IM_SPLINE && keyFrames_.Size() > 2);
 }
 
@@ -350,10 +352,19 @@ Variant ValueAnimation::GetAnimationValue(float scaledTime)
         return keyFrames_[index - 1].value_;
     else
     {
+        const VAnimKeyFrame& keyFrame1 = keyFrames_[index - 1];
+        const VAnimKeyFrame& keyFrame2 = keyFrames_[index];
+
+        float t = (scaledTime - keyFrame1.time_) / (keyFrame2.time_ - keyFrame1.time_);
+        const Variant& value1 = keyFrame1.value_;
+        const Variant& value2 = keyFrame2.value_;
+
         if (interpolationMethod_ == IM_LINEAR)
-            return LinearInterpolation(index - 1, index, scaledTime);
+            return LinearInterpolation(index, value1, value2, t);
+        else if (interpolationMethod_ == IM_SPLINE)
+            return SplineInterpolation(index, value1, value2, t);
         else
-            return SplineInterpolation(index - 1, index, scaledTime);
+            return CustomInterpolation(index, value1, value2, t);
     }
 }
 
@@ -370,15 +381,8 @@ void ValueAnimation::GetEventFrames(float beginTime, float endTime, PODVector<co
     }
 }
 
-Variant ValueAnimation::LinearInterpolation(unsigned index1, unsigned index2, float scaledTime) const
+Variant ValueAnimation::LinearInterpolation(unsigned index, const Variant& value1, const Variant& value2, float t) const
 {
-    const VAnimKeyFrame& keyFrame1 = keyFrames_[index1];
-    const VAnimKeyFrame& keyFrame2 = keyFrames_[index2];
-
-    float t = (scaledTime - keyFrame1.time_) / (keyFrame2.time_ - keyFrame1.time_);
-    const Variant& value1 = keyFrame1.value_;
-    const Variant& value2 = keyFrame2.value_;
-
     switch (valueType_)
     {
     case VAR_FLOAT:
@@ -425,15 +429,10 @@ Variant ValueAnimation::LinearInterpolation(unsigned index1, unsigned index2, fl
     }
 }
 
-Variant ValueAnimation::SplineInterpolation(unsigned index1, unsigned index2, float scaledTime)
+Variant ValueAnimation::SplineInterpolation(unsigned index, const Variant& v1, const Variant& v2, float t)
 {
     if (splineTangentsDirty_)
         UpdateSplineTangents();
-
-    const VAnimKeyFrame& keyFrame1 = keyFrames_[index1];
-    const VAnimKeyFrame& keyFrame2 = keyFrames_[index2];
-
-    float t = (scaledTime - keyFrame1.time_) / (keyFrame2.time_ - keyFrame1.time_);
 
     float tt = t * t;
     float ttt = t * tt;
@@ -443,10 +442,8 @@ Variant ValueAnimation::SplineInterpolation(unsigned index1, unsigned index2, fl
     float h3 = ttt - 2.0f * tt + t;
     float h4 = ttt - tt;
 
-    const Variant& v1 = keyFrame1.value_;
-    const Variant& v2 = keyFrame2.value_;
-    const Variant& t1 = splineTangents_[index1];
-    const Variant& t2 = splineTangents_[index2];
+    const Variant& t1 = splineTangents_[index - 1];
+    const Variant& t2 = splineTangents_[index];
 
     switch (valueType_)
     {
@@ -473,6 +470,17 @@ Variant ValueAnimation::SplineInterpolation(unsigned index1, unsigned index2, fl
 
     default:
         URHO3D_LOGERROR("Invalid value type for spline interpolation");
+        return Variant::EMPTY;
+    }
+}
+
+Variant ValueAnimation::CustomInterpolation(unsigned index, const Variant& v1, const Variant& v2, float t) const
+{
+    if (customInterpolator_)
+        return customInterpolator_(this, index, v1, v2, t);
+    else
+    {
+        URHO3D_LOGERROR("Custom interpolator is not set while using IM_CUSTOM interpolation method");
         return Variant::EMPTY;
     }
 }

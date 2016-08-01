@@ -40,6 +40,8 @@ enum InterpMethod
     IM_LINEAR,
     /// Cardinal spline interpolation, default tension value is 0.5f. For more information please refer to http://cubic.org/docs/hermite.htm.
     IM_SPLINE,
+    /// Custom interpolation handled by callback set with SetInterpolator()
+    IM_CUSTOM
 };
 
 /// Value animation key frame.
@@ -61,6 +63,15 @@ struct VAnimEventFrame
     /// Event data.
     VariantMap eventData_;
 };
+
+class ValueAnimation;
+
+#if URHO3D_CXX11
+typedef std::function<Variant(const ValueAnimation*, unsigned, const Variant&, const Variant&, float)> ValueAnimationInterpolator;
+#else
+/// Custom interpolator callback used with IM_CUSTOM interpolation method.
+typedef Variant(*ValueAnimationInterpolator)(ValueAnimation*, unsigned, const Variant&, const Variant&, float);
+#endif
 
 /// Value animation class.
 class URHO3D_API ValueAnimation : public Resource
@@ -132,11 +143,16 @@ public:
     /// Return all event frames between time.
     void GetEventFrames(float beginTime, float endTime, PODVector<const VAnimEventFrame*>& eventFrames) const;
 
+    /// Set custom interpolator. It is used with IM_CUSTOM interpolation method.
+    void SetCustomInterpolator(ValueAnimationInterpolator interpolator) { customInterpolator_ = interpolator; }
+
 protected:
     /// Linear interpolation.
-    Variant LinearInterpolation(unsigned index1, unsigned index2, float scaledTime) const;
+    Variant LinearInterpolation(unsigned index, const Variant& value1, const Variant& value2, float t) const;
     /// Spline interpolation.
-    Variant SplineInterpolation(unsigned index1, unsigned index2, float scaledTime);
+    Variant SplineInterpolation(unsigned index, const Variant& value1, const Variant& value2, float t);
+    /// Custom interpolation.
+    Variant CustomInterpolation(unsigned index, const Variant& value1, const Variant& value2, float t) const;
     /// Update spline tangents.
     void UpdateSplineTangents();
     /// Return (value1 - value2) * t.
@@ -164,6 +180,8 @@ protected:
     bool splineTangentsDirty_;
     /// Event frames.
     Vector<VAnimEventFrame> eventFrames_;
+    /// Custom interpolator used with IM_CUSTOM interpolation method
+    ValueAnimationInterpolator customInterpolator_;
 };
 
 }
