@@ -22,6 +22,29 @@
 
 include(UrhoMonolithicLib)
 
+# Source environment
+execute_process(COMMAND env OUTPUT_VARIABLE ENVIRONMENT)
+string(REGEX REPLACE "=[^\n]*\n?" ";" ENVIRONMENT "${ENVIRONMENT}")
+set(IMPORT_URHO3D_VARIABLES_FROM_ENV LINUX APPLE IOS ANDROID WEB)
+foreach(key ${ENVIRONMENT})
+    list (FIND IMPORT_URHO3D_VARIABLES_FROM_ENV ${key} _index)
+    if ("${key}" MATCHES "^(URHO3D_|CMAKE_).+" OR ${_index} GREATER -1)
+        if (NOT DEFINED ${key})
+            set (${key} $ENV{${key}} CACHE STRING "" FORCE)
+        endif ()
+    endif ()
+endforeach()
+
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DURHO3D_DEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DURHO3D_DEBUG")
+if (NOT DEFINED URHO3D_64BIT)
+    if (CMAKE_SIZEOF_VOID_P MATCHES 8)
+        set(URHO3D_64BIT ON)
+    else ()
+        set(URHO3D_64BIT OFF)
+    endif ()
+endif ()
+
 # Macro for setting symbolic link on platform that supports it
 macro (create_symlink SOURCE DESTINATION)
     # Make absolute paths so they work more reliably on cmake-gui
