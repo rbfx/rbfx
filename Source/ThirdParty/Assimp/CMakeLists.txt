@@ -734,26 +734,27 @@ SET( SOURCE_FILES
   ${COMPILER_HEADERS}
 
 )
-add_definitions( -DOPENDDLPARSER_BUILD )
 
-INCLUDE_DIRECTORIES(
-  contrib/openddlparser/include
-)
-
-# Urho3D: set the corresponding "no importer" define
 IF (ASSIMP_BUILD_NONFREE_C4D_IMPORTER)
   SET( SOURCE_FILES ${SOURCE_FILES} ${C4D_SRCS})
-  INCLUDE_DIRECTORIES(${C4D_INCLUDES})
-ELSE (ASSIMP_BUILD_NONFREE_C4D_IMPORTER)
-  add_definitions(-DASSIMP_BUILD_NO_C4D_IMPORTER)
-ENDIF (ASSIMP_BUILD_NONFREE_C4D_IMPORTER)
+endif ()
 
-set (TARGET_NAME Assimp)
-list (APPEND TARGET_PROPERTIES XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH YES)   # Since we only build AssetImporter as a single-arch native tool, there is no point to build Assimp as universal binary library
-setup_library ()
+
+#list (APPEND TARGET_PROPERTIES XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH YES)   # Since we only build AssetImporter as a single-arch native tool, there is no point to build Assimp as universal binary library
+add_library (Assimp STATIC ${SOURCE_FILES})
+target_compile_definitions(Assimp PRIVATE -DOPENDDLPARSER_BUILD )
+target_include_directories(Assimp PUBLIC contrib/openddlparser/include)
+
+# Urho3D: set the corresponding "no importer" define
+if (ASSIMP_BUILD_NONFREE_C4D_IMPORTER)
+  target_include_directories(Assimp PUBLIC ${C4D_INCLUDES})
+else (ASSIMP_BUILD_NONFREE_C4D_IMPORTER)
+  target_compile_options(Assimp PUBLIC -DASSIMP_BUILD_NO_C4D_IMPORTER)
+endif ()
 
 # When performing Xcode CI build suppress all the warnings for 3rd party libraries because there are just too many of them
 if (XCODE AND DEFINED ENV{CI})
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
+    target_compile_options (Assimp -w)
 endif ()
+
+install_header_files(DIRECTORY include/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/Assimp FILES_MATCHING PATTERN *.h)

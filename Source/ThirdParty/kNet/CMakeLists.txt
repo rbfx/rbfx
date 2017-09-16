@@ -14,8 +14,6 @@
 
 # Modified by Lasse Oorni and Yao Wei Tjong for Urho3D
 
-set (TARGET_NAME kNet)
-
 file (GLOB kNetSourceFiles src/*.cpp)
 file (GLOB kNetHeaderFiles include/*.h include/kNet/*.h include/kNet/*.inl)
 
@@ -47,22 +45,20 @@ elseif (UNIX)
    # Urho3D: KNET_UNIX definition removed
 endif ()
 
-# Urho3D: set DEBUG_CPP_NAME only on Windows, Xcode project file can not be opened if this is included
-if (WIN32)
-    foreach (srcFile ${kNetSourceFiles})
-        get_filename_component (baseName ${srcFile} NAME)
-        set_source_files_properties (${srcFile} PROPERTIES COMPILE_FLAGS "-DDEBUG_CPP_NAME=\"\\\"${baseName}\"\\\"")
-    endforeach ()
+add_library (kNet STATIC ${kNetSourceFiles} ${kNetHeaderFiles})
+target_include_directories(kNet PUBLIC include)
+if (UNIX)
+   target_compile_definitions(kNet PUBLIC -DKNET_UNIX)
 endif ()
 
-# Define source files
-set (SOURCE_FILES ${kNetSourceFiles} ${kNetHeaderFiles})
-
-# Define dependency libs
-set (INCLUDE_DIRS include)
-
-# Setup target
-setup_library ()
+# Urho3D: set DEBUG_CPP_NAME only on Windows, Xcode project file can not be opened if this is included
+if (WIN32)
+   foreach (srcFile ${kNetSourceFiles})
+      get_filename_component (baseName ${srcFile} NAME)
+      set_source_files_properties (${srcFile} PROPERTIES COMPILE_FLAGS "-DDEBUG_CPP_NAME=\"\\\"${baseName}\"\\\"")
+   endforeach ()
+   target_link_libraries (kNet ws2_32.lib)
+endif ()
 
 # Install headers for building and using the Urho3D library (install dependency for Urho3D/Network/Connection.h and Urho3D/Network/Network.h)
 install_header_files (DIRECTORY include/kNet/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/kNet FILES_MATCHING PATTERN *.h *.inl USE_FILE_SYMLINK)     # Note: the trailing slash is significant

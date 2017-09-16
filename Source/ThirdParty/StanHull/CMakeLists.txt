@@ -20,14 +20,8 @@
 # THE SOFTWARE.
 #
 
-# Define target name
-set (TARGET_NAME StanHull)
-
-# Define source files
-define_source_files ()
-
-# Setup target
-setup_library ()
+add_library (StanHull hull.cpp hull.h)
+target_include_directories(StanHull PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Install headers for building the Urho3D library
-install_header_files (DIRECTORY ./ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/StanHull FILES_MATCHING PATTERN *.h BUILD_TREE_ONLY)  # Note: the trailing slash is significant
+install_header_files (DIRECTORY ./ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/StanHull FILES_MATCHING PATTERN *.h)  # Note: the trailing slash is significant

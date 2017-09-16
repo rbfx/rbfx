@@ -24,14 +24,4 @@ if (NOT URHO3D_URHO2D)
     return ()
 endif ()
 
-# Define target name
-set (TARGET_NAME 28_Urho2DPhysicsRope)
-
-# Define source files
-define_source_files (EXTRA_H_FILES ${COMMON_SAMPLE_H_FILES})
-
-# Setup target with resource copying
-setup_main_executable ()
-
-# Setup test cases
-setup_test ()
+add_sample (28_Urho2DPhysicsRope)

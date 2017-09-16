@@ -1424,15 +1424,13 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${EXTRA_CFLAGS}")
 
 # Urho3D - anything below this line is Urho3D specific
 
-# Define target name
-set (TARGET_NAME SDL)
-
 # Define source files
 file (GLOB H_FILES include/*.h)     # Adding the headers into source files list is just for easier file browsing in the IDE
 list (APPEND SOURCE_FILES ${H_FILES})
 
 # Setup target as STATIC library (as the result we never use EXTRA_LDFLAGS linker flags)
-setup_library ()
+add_library (SDL STATIC ${SOURCE_FILES})
+target_include_directories (SDL PUBLIC ${INCLUDE_DIRS})
 
 # Install headers for building and using the Urho3D library (install dependency for InputEvents.h)
 install_header_files (DIRECTORY include/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/SDL FILES_MATCHING PATTERN *.h USE_FILE_SYMLINK)    # Note: the trailing slash is significant

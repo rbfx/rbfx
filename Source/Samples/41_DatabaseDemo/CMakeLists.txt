@@ -24,14 +24,4 @@ if (NOT URHO3D_DATABASE_ODBC AND NOT URHO3D_DATABASE_SQLITE)
     return ()
 endif ()
 
-# Define target name
-set (TARGET_NAME 41_DatabaseDemo)
-
-# Define source files
-define_source_files (EXTRA_H_FILES ${COMMON_SAMPLE_H_FILES})
-
-# Setup target with resource copying
-setup_main_executable ()
-
-# Setup test cases
-setup_test ()
+add_sample (41_DatabaseDemo)

@@ -20,17 +20,10 @@
 # THE SOFTWARE.
 #
 
-# Define target name
-set (TARGET_NAME DetourTileCache)
-
-# Define source files
-define_source_files (GLOB_CPP_PATTERNS source/*.cpp GLOB_H_PATTERNS include/*.h)
-
-# Define dependency libs
-set (INCLUDE_DIRS include ../Detour/include)
-
-# Setup target
-setup_library ()
+file (GLOB SOURCE_FILES source/*.cpp include/*.h)
+add_library (DetourTileCache STATIC ${SOURCE_FILES})
+target_link_libraries(DetourTileCache Detour)
+target_include_directories(DetourTileCache PUBLIC include)
 
 # Install headers for building the Urho3D library
-install_header_files (DIRECTORY include/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/DetourTileCache FILES_MATCHING PATTERN *.h BUILD_TREE_ONLY)  # Note: the trailing slash is significant
+install_header_files (DIRECTORY include/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/DetourTileCache FILES_MATCHING PATTERN *.h)  # Note: the trailing slash is significant

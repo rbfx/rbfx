@@ -20,9 +20,6 @@
 # THE SOFTWARE.
 #
 
-# Define target name
-set (TARGET_NAME Box2D)
-
 set(BOX2D_Collision_SRCS
     Box2D/Collision/b2BroadPhase.cpp
     Box2D/Collision/b2CollideCircle.cpp
@@ -179,11 +176,7 @@ source_group(Dynamics\\Joints FILES ${BOX2D_Joints_SRCS} ${BOX2D_Joints_HDRS})
 source_group(Include FILES ${BOX2D_General_HDRS})
 source_group(Rope FILES ${BOX2D_Rope_SRCS} ${BOX2D_Rope_HDRS})
 
-# Define dependency libs
-set (INCLUDE_DIRS .)
-
-# Setup target
-setup_library ()
-
+add_library (Box2D STATIC ${SOURCE_FILES})
+target_include_directories(Box2D PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 # Install headers for building and using the Urho3D library (install dependency for Urho3D/Urho2D/PhysicsWorld2D.h and Urho3D/Urho2D/RigidBody2D.h)
-install_header_files (DIRECTORY Box2D DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty FILES_MATCHING PATTERN *.h)
+install_header_files (DIRECTORY Box2D DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty FILES_MATCHING PATTERN *.h USE_FILE_SYMLINK)

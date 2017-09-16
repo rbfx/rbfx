@@ -20,9 +20,6 @@
 # THE SOFTWARE.
 #
 
-# Define target name
-set (TARGET_NAME Bullet)
-
 # Workaround for MinGW 6.1.0 and above where it throws ICE (internal compilation error) when -O3 is used
 if (MINGW AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6.1.0 OR CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 6.1.0))  # 6.1.0 is the last known bad version
     string (REPLACE -O3 -O2 CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
@@ -45,11 +42,7 @@ file (GLOB H_FILES *.h src/BulletCollision/BroadphaseCollision/*.h
     src/LinearMath/*.h)
 set (SOURCE_FILES ${CPP_FILES} ${H_FILES})
 
-# Define dependency libs
-set (INCLUDE_DIRS src)
-
-# Setup target
-setup_library ()
-
+add_library (Bullet STATIC ${SOURCE_FILES})
+target_include_directories(Bullet PUBLIC src)
 # Install headers for building and using the Urho3D library (install dependency for Urho3D/Physics/PhysicsWorld.h, Urho3D/Physics/RigidBody.h, and Urho3D/Physics/PhysicsUtils.h)
 install_header_files (DIRECTORY src/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/Bullet FILES_MATCHING PATTERN *.h)  # Note: the trailing slash is significant

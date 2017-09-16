@@ -20,16 +20,6 @@
 # THE SOFTWARE.
 #
 
-# Define target name
-set (TARGET_NAME FreeType)
-
-add_definitions (-DFT2_BUILD_LIBRARY)
-
-# Rename z_verbose and z_error symbols to prevent Clang duplicate symbol linker error (clash with Assimp) on debug build
-if (XCODE OR CMAKE_BUILD_TYPE STREQUAL Debug)
-    add_definitions (-Dz_verbose=ft2_z_verbose -Dz_error=ft2_z_error)
-endif ()
-
 # Define source files
 set (SOURCE_FILES
     src/autofit/autofit.c
@@ -74,12 +64,14 @@ set (SOURCE_FILES
     src/type42/type42.c
     src/winfonts/winfnt.c)
 
-# Define dependency libs
-set (INCLUDE_DIRS include)
-
 # Setup target
-setup_library ()
+add_library(FreeType STATIC ${SOURCE_FILES})
+target_include_directories(FreeType PUBLIC include)
 
-# Install headers for building the Urho3D library
-install_header_files (DIRECTORY include/freetype DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty FILES_MATCHING PATTERN *.h BUILD_TREE_ONLY)
-install_header_files (FILES include/ft2build.h DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty FILES_MATCHING PATTERN *.h BUILD_TREE_ONLY)
+target_compile_definitions(FreeType PRIVATE -DFT2_BUILD_LIBRARY)
+# Rename z_verbose and z_error symbols to prevent Clang duplicate symbol linker error (clash with Assimp) on debug build
+if (XCODE OR CMAKE_BUILD_TYPE STREQUAL Debug)
+    target_compile_definitions (FreeType PRIVATE -Dz_verbose=ft2_z_verbose -Dz_error=ft2_z_error)
+endif ()
+install_header_files (DIRECTORY include/freetype DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty FILES_MATCHING PATTERN *.h)
+install_header_files (FILES include/ft2build.h DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty FILES_MATCHING PATTERN *.h)

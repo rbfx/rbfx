@@ -20,15 +20,6 @@
 # THE SOFTWARE.
 #
 
-# Define target name
-set (TARGET_NAME LibCpuId)
-
-# Define preprocessor macros
-add_definitions (-DVERSION="0.4.0")
-if (HAVE_STDINT_H)
-    add_definitions (-DHAVE_STDINT_H)
-endif ()
-
 # Define generated source files
 if (MSVC AND URHO3D_64BIT)
     enable_language (ASM_MASM)
@@ -40,14 +31,15 @@ if (MSVC AND URHO3D_64BIT)
 endif ()
 
 # Define source files
-define_source_files (GLOB_CPP_PATTERNS src/*.c GLOB_H_PATTERNS src/*.h)
+file (GLOB SOURCE_FILES src/*.c src/*.h)
 list (APPEND SOURCE_FILES ${ASM_FILES})
 
-# Define dependency libs
-set (INCLUDE_DIRS src)
-
-# Setup target
-setup_library ()
+add_library (LibCpuId STATIC ${SOURCE_FILES})
+target_include_directories(LibCpuId PUBLIC src)
+target_compile_definitions (LibCpuId PRIVATE -DVERSION="0.4.0")
+if (HAVE_STDINT_H)
+    target_compile_definitions (LibCpuId PRIVATE -DHAVE_STDINT_H)
+endif ()
 
 # Install headers for building the Urho3D library
-install_header_files (DIRECTORY src/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/LibCpuId FILES_MATCHING PATTERN *.h BUILD_TREE_ONLY)  # Note: the trailing slash is significant
+install_header_files (DIRECTORY src/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/LibCpuId FILES_MATCHING PATTERN *.h)  # Note: the trailing slash is significant

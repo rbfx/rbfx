@@ -20,12 +20,13 @@
 # THE SOFTWARE.
 #
 
-# Define target name
-set (TARGET_NAME Civetweb)
+file (GLOB SOURCE_FILES src/*.c include/*.h)
+add_library (Civetweb STATIC ${SOURCE_FILES})
+target_include_directories(Civetweb PUBLIC include)
 
 # Define preprocessor macros
 # Always disable Common Gateway Interface
-add_definitions (-DNO_CGI)
+target_compile_definitions(Civetweb PRIVATE -DNO_CGI)
 if (WIN32)
     include (CheckStructHasMember)
     check_struct_has_member (struct\ timespec tv_sec time.h HAVE_STRUCT_TIMESPEC_TV_SEC)
@@ -33,25 +34,17 @@ if (WIN32)
         include (CheckSymbolExists)
         check_symbol_exists (_TIMESPEC_DEFINED time.h HAVE__TIMESPEC_DEFINED)
         if (NOT HAVE__TIMESPEC_DEFINED)
-            add_definitions (-D_TIMESPEC_DEFINED)
+            target_compile_definitions(Civetweb PRIVATE -D_TIMESPEC_DEFINED)
         endif ()
     endif ()
+    target_link_libraries(Civetweb ws2_32.lib)
 elseif (APPLE AND (NOT IOS OR IPHONEOS_DEPLOYMENT_TARGET STREQUAL "" OR NOT IPHONEOS_DEPLOYMENT_TARGET VERSION_LESS 10.0))    # We cheat a little bit here with a hard-coded check because iOS 10.3 SDK when targeting 9.3 has strong symbol for iPhoneOS archs but weak symbol for iPhoneSimulator archs
     include (CheckLibraryExists)
     check_library_exists (c clock_gettime "" FOUND_CLOCK_GETTIME_IN_C)
     if (FOUND_CLOCK_GETTIME_IN_C)
-        add_definitions (-DHAVE_CLOCK_GETTIME)
+        target_compile_definitions(Civetweb PRIVATE -DHAVE_CLOCK_GETTIME)
     endif ()
 endif ()
 
-# Define source files
-define_source_files (GLOB_CPP_PATTERNS src/*.c GLOB_H_PATTERNS include/*.h)
-
-# Define include directory
-set (INCLUDE_DIRS include)
-
-# Setup target
-setup_library ()
-
 # Install headers for building the Urho3D library
-install_header_files (DIRECTORY include/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/Civetweb FILES_MATCHING PATTERN *.h BUILD_TREE_ONLY)  # Note: the trailing slash is significant
+install_header_files (DIRECTORY include/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/Civetweb FILES_MATCHING PATTERN *.h)  # Note: the trailing slash is significant
