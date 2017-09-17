@@ -20,9 +20,6 @@
 # THE SOFTWARE.
 #
 
-add_library(Mustache INTERFACE)
-target_include_directories(Mustache SYSTEM BEFORE INTERFACE .)
-
-
-# Install headers for building the Urho3D library
-install_header_files (DIRECTORY ./ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/Mustache FILES_MATCHING PATTERN *.hpp USE_FILE_SYMLINK)
+add_library(Mustache STATIC INTERFACE.cpp)
+install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/Mustache FILES_MATCHING PATTERN *.hpp)
+install_to_build_tree(Mustache)

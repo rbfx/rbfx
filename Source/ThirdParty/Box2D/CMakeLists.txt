@@ -177,6 +177,5 @@ source_group(Include FILES ${BOX2D_General_HDRS})
 source_group(Rope FILES ${BOX2D_Rope_SRCS} ${BOX2D_Rope_HDRS})
 
 add_library (Box2D STATIC ${SOURCE_FILES})
-target_include_directories(Box2D PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-# Install headers for building and using the Urho3D library (install dependency for Urho3D/Urho2D/PhysicsWorld2D.h and Urho3D/Urho2D/RigidBody2D.h)
-install_header_files (DIRECTORY Box2D DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty FILES_MATCHING PATTERN *.h USE_FILE_SYMLINK)
+install(DIRECTORY Box2D DESTINATION ${DEST_THIRDPARTY_HEADERS} FILES_MATCHING PATTERN *.h)
+install_to_build_tree(Box2D)

@@ -21,7 +21,6 @@
 #
 
 add_library (JO STATIC jo_jpeg.cpp jo_jpeg.h)
-target_include_directories(JO PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-# Install headers for building the Urho3D library
-install_header_files (DIRECTORY ./ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/JO FILES_MATCHING PATTERN *.h)  # Note: the trailing slash is significant
+install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/JO FILES_MATCHING PATTERN *.h)
+install_to_build_tree(JO)

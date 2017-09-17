@@ -21,10 +21,9 @@
 #
 
 add_library (nanodbc STATIC src/nanodbc.cpp src/nanodbc.h)
-target_include_directories(nanodbc PUBLIC src)
 if (ODBC_DEFINES)
     target_compile_definitions (nanodbc PUBLIC ${ODBC_DEFINES})
 endif ()
 
-# Install headers for building and using the Urho3D library
-install_header_files (DIRECTORY src/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/nanodbc FILES_MATCHING PATTERN *.h)  # Note: the trailing slash is significant
+install (DIRECTORY src/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/nanodbc FILES_MATCHING PATTERN *.h)
+install_to_build_tree(nanodbc)

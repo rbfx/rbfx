@@ -35,11 +35,10 @@ file (GLOB SOURCE_FILES src/*.c src/*.h)
 list (APPEND SOURCE_FILES ${ASM_FILES})
 
 add_library (LibCpuId STATIC ${SOURCE_FILES})
-target_include_directories(LibCpuId PUBLIC src)
 target_compile_definitions (LibCpuId PRIVATE -DVERSION="0.4.0")
 if (HAVE_STDINT_H)
     target_compile_definitions (LibCpuId PRIVATE -DHAVE_STDINT_H)
 endif ()
 
-# Install headers for building the Urho3D library
-install_header_files (DIRECTORY src/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/LibCpuId FILES_MATCHING PATTERN *.h)  # Note: the trailing slash is significant
+install (DIRECTORY src/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/LibCpuId FILES_MATCHING PATTERN *.h)
+install_to_build_tree(LibCpuId)

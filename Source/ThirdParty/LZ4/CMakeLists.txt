@@ -22,7 +22,5 @@
 
 file (GLOB SOURCE_FILES *.c *.h)
 add_library (LZ4 ${SOURCE_FILES})
-target_include_directories(LZ4 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
-# Install headers for building the Urho3D library
-install_header_files (DIRECTORY ./ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/LZ4 FILES_MATCHING PATTERN *.h)  # Note: the trailing slash is significant
+install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/LZ4 FILES_MATCHING PATTERN *.h)
+install_to_build_tree(LZ4)

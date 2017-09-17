@@ -25,5 +25,5 @@ add_library (DetourTileCache STATIC ${SOURCE_FILES})
 target_link_libraries(DetourTileCache Detour)
 target_include_directories(DetourTileCache PUBLIC include)
 
-# Install headers for building the Urho3D library
-install_header_files (DIRECTORY include/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/DetourTileCache FILES_MATCHING PATTERN *.h)  # Note: the trailing slash is significant
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/DetourTileCache FILES_MATCHING PATTERN *.h)
+install_to_build_tree(DetourTileCache)

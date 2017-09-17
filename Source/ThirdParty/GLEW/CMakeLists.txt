@@ -24,6 +24,5 @@ file (GLOB SOURCE_FILES *.c)
 add_library (GLEW STATIC ${SOURCE_FILES})
 target_compile_definitions(GLEW PRIVATE -DGLEW_STATIC -DGLEW_NO_GLU)
 
-
-# Install headers for building the Urho3D library
-install_header_files (DIRECTORY ./ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/GLEW FILES_MATCHING PATTERN *.h)  # Note: the trailing slash is significant
+install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/GLEW FILES_MATCHING PATTERN *.h)
+install_to_build_tree(GLEW)

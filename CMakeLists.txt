@@ -66,8 +66,7 @@ install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/ DESTINATION ${DEST_SHARE_DIR}/CMak
 file (GLOB CMAKE_SCRIPTS ${CMAKE_SOURCE_DIR}/*${SCRIPT_EXT})
 install (PROGRAMS ${CMAKE_SCRIPTS} DESTINATION ${DEST_SHARE_DIR}/Scripts)
 # Install data files
-file (MAKE_DIRECTORY ${Urho3D_BINARY_DIR}/${DEST_SHARE_DIR}/Resources)
-install_header_files (DIRECTORY bin/Autoload bin/Data bin/CoreData DESTINATION ${DEST_SHARE_DIR}/Resources/)
+install (DIRECTORY bin/Autoload bin/Data bin/CoreData DESTINATION ${DEST_SHARE_DIR}/Resources/)
 
 
 #option(LINUX "Build for Linux" OFF)
@@ -87,6 +86,16 @@ option(URHO3D_WEBP "WEBP support enabled" OFF)
 option(URHO3D_PROFILING "Profiler support enabled" OFF)
 option(URHO3D_TOOLS "Tools enabled" OFF)
 option(URHO3D_SAMPLES "Build samples" OFF)
+
+set(URHO3D_DATABASE_SQLITE ON)
+set(URHO3D_IK ON)
+set(URHO3D_NAVIGATION ON)
+set(URHO3D_NETWORK ON)
+set(URHO3D_PHYSICS ON)
+set(URHO3D_URHO2D ON)
+set(URHO3D_WEBP ON)
+set(URHO3D_PROFILING ON)
+set(URHO3D_TOOLS ON)
 
 if (WIN32)
     option(URHO3D_D3D11 "Build with D3D11 renderer" ON)

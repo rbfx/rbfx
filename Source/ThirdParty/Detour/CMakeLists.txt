@@ -24,5 +24,5 @@ file (GLOB SOURCE_FILES source/*.cpp include/*.h)
 add_library (Detour STATIC ${SOURCE_FILES})
 target_include_directories(Detour PUBLIC include)
 
-# Install headers for building the Urho3D library
-install_header_files (DIRECTORY include/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/Detour FILES_MATCHING PATTERN *.h)  # Note: the trailing slash is significant
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/Detour FILES_MATCHING PATTERN *.h)
+install_to_build_tree(Detour)

@@ -22,7 +22,7 @@
 
 file (GLOB SOURCE_FILES src/*.c include/*.h)
 add_library (Civetweb STATIC ${SOURCE_FILES})
-target_include_directories(Civetweb PUBLIC include)
+target_include_directories(Civetweb PRIVATE include)
 
 # Define preprocessor macros
 # Always disable Common Gateway Interface
@@ -46,5 +46,5 @@ elseif (APPLE AND (NOT IOS OR IPHONEOS_DEPLOYMENT_TARGET STREQUAL "" OR NOT IPHO
     endif ()
 endif ()
 
-# Install headers for building the Urho3D library
-install_header_files (DIRECTORY include/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/Civetweb FILES_MATCHING PATTERN *.h)  # Note: the trailing slash is significant
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/Civetweb FILES_MATCHING PATTERN *.h)
+install_to_build_tree(Civetweb)

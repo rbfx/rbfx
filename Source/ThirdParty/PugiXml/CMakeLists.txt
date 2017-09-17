@@ -22,6 +22,5 @@
 
 file (GLOB SOURCE_FILES src/*.cpp src/*.hpp)
 add_library (PugiXml STATIC ${SOURCE_FILES})
-
-# Install headers for building the Urho3D library
-install_header_files (DIRECTORY src/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/PugiXml FILES_MATCHING PATTERN *.hpp)  # Note: the trailing slash is significant
+install (DIRECTORY src/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/PugiXml FILES_MATCHING PATTERN *.hpp)
+install_to_build_tree(PugiXml)

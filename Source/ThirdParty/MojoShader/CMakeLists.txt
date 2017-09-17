@@ -22,10 +22,9 @@
 
 file (GLOB SOURCE_FILES *.c)
 add_library (MojoShader STATIC ${SOURCE_FILES})
-target_include_directories(MojoShader PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 if (MSVC)
     target_compile_definitions (MojoShader -D_CRT_SECURE_NO_WARNINGS=1 -TP)
 endif ()
 
-# Install headers for building the Urho3D library
-install_header_files (DIRECTORY ./ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/MojoShader FILES_MATCHING PATTERN *.h)  # Note: the trailing slash is significant
+install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/MojoShader FILES_MATCHING PATTERN *.h)
+install_to_build_tree(MojoShader)

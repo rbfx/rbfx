@@ -1433,11 +1433,12 @@ add_library (SDL STATIC ${SOURCE_FILES})
 target_include_directories (SDL PUBLIC ${INCLUDE_DIRS})
 
 # Install headers for building and using the Urho3D library (install dependency for InputEvents.h)
-install_header_files (DIRECTORY include/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/SDL FILES_MATCHING PATTERN *.h USE_FILE_SYMLINK)    # Note: the trailing slash is significant
-install_header_files (FILES ${SDL2_BINARY_DIR}/include/generated/SDL_config.h DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/SDL)
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/SDL FILES_MATCHING PATTERN *.h)    # Note: the trailing slash is significant
+install (FILES ${SDL2_BINARY_DIR}/include/generated/SDL_config.h DESTINATION ${DEST_THIRDPARTY_HEADERS}/SDL)
 # Install dependency for SDL_android_main.c
 if (ANDROID)
-  install_header_files (DIRECTORY src/main/android DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/SDL)
-  install_header_files (FILES src/SDL_internal.h DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/SDL)
-  install_header_files (DIRECTORY src/dynapi DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/SDL FILES_MATCHING PATTERN *.h)
+  install (DIRECTORY src/main/android DESTINATION ${DEST_THIRDPARTY_HEADERS}/SDL)
+  install (FILES src/SDL_internal.h DESTINATION ${DEST_THIRDPARTY_HEADERS}/SDL)
+  install (DIRECTORY src/dynapi DESTINATION ${DEST_THIRDPARTY_HEADERS}/SDL FILES_MATCHING PATTERN *.h)
 endif ()
+install_to_build_tree(SDL)

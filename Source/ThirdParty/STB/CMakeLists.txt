@@ -24,5 +24,5 @@ add_library(STB STATIC stb_impl.cpp)
 target_compile_definitions(STB PUBLIC -DSTB_VORBIS_HEADER_ONLY=1)
 target_include_directories(STB PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} PRIVATE ../..)
 
-# Install headers for building the Urho3D library
-install_header_files (DIRECTORY ./ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/STB FILES_MATCHING PATTERN *.h USE_FILE_SYMLINK)  # Note: the trailing slash is significant
+install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/STB FILES_MATCHING PATTERN *.h)
+install_to_build_tree(STB)

@@ -48,7 +48,7 @@ add_subdirectory(easy_profiler_core)
 if (Qt5Widgets_FOUND)
     add_subdirectory(profiler_gui)
 endif()
-install_header_files (DIRECTORY easy_profiler_core/include/easy DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/ FILES_MATCHING PATTERN *.h)
+install (DIRECTORY easy_profiler_core/include/easy DESTINATION ${DEST_THIRDPARTY_HEADERS}/ FILES_MATCHING PATTERN *.h)
 #ATOMIC END
 
 if (NOT EASY_PROFILER_NO_SAMPLES)

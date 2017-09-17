@@ -22,7 +22,5 @@
 
 file (GLOB_RECURSE SOURCE_FILES src/*.c src/*.h)
 add_library (WebP STATIC ${SOURCE_FILES})
-target_include_directories(WebP PUBLIC src)
-
-# Install headers for building the Urho3D library
-install_header_files (DIRECTORY src/webp/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/webp FILES_MATCHING PATTERN *.h)  # Note: the trailing slash is significant
+install (DIRECTORY src/webp/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/webp FILES_MATCHING PATTERN *.h)
+install_to_build_tree(WebP)

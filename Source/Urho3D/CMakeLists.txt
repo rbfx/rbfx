@@ -37,26 +37,26 @@ file (GLOB_RECURSE SOURCE_FILES_EXT
     UI/*.cpp UI/*.h
 )
 
-install_header_files (
+install (
     DIRECTORY Audio Container Core Engine Input IO Math Resource Scene UI
     DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
 )
 
 if (URHO3D_D3D11)
     file (GLOB SOURCE_FILES_GRAPHICS Graphics/Direct3D11/*.h Graphics/Direct3D11/*.cpp)
-    install_header_files (
+    install (
         DIRECTORY Graphics/Direct3D11
         DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
     )
 elseif (URHO3D_D3D9)
     file (GLOB SOURCE_FILES_GRAPHICS Graphics/Direct3D9/*.h Graphics/Direct3D9/*.cpp)
-    install_header_files (
+    install (
         DIRECTORY Graphics/Direct3D9
         DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
     )
 elseif (URHO3D_OPENGL)
     file (GLOB SOURCE_FILES_GRAPHICS Graphics/OpenGL/*.h Graphics/OpenGL/*.cpp)
-    install_header_files (
+    install (
         DIRECTORY Graphics/OpenGL
         DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
     )
@@ -64,7 +64,7 @@ endif ()
 
 if (URHO3D_DATABASE_ODBC OR URHO3D_DATABASE_SQLITE)
     file (GLOB SOURCE_FILES_DATABASE Database/*.h Database/*.cpp)
-    install_header_files (
+    install (
         DIRECTORY Database
         DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
     )
@@ -72,7 +72,7 @@ endif ()
 
 if (URHO3D_DATABASE_ODBC)
     file (GLOB SOURCE_FILES_DATABASE_IMPL Database/ODBC/*.h Database/ODBC/*.cpp)
-    install_header_files (
+    install (
         DIRECTORY Database/ODBC
         DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
     )
@@ -80,7 +80,7 @@ endif ()
 
 if (URHO3D_DATABASE_SQLITE)
     file (GLOB SOURCE_FILES_DATABASE_IMPL Database/SQLite/*.h Database/SQLite/*.cpp)
-    install_header_files (
+    install (
         DIRECTORY Database/SQLite
         DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
     )
@@ -88,7 +88,7 @@ endif ()
 
 if (URHO3D_IK)
     file (GLOB_RECURSE SOURCE_FILES_IK IK/*.h IK/*.cpp)
-    install_header_files (
+    install (
         DIRECTORY IK
         DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
     )
@@ -96,7 +96,7 @@ endif ()
 
 if (URHO3D_NAVIGATION)
     file (GLOB_RECURSE SOURCE_FILES_NAVIGATION Navigation/*.h Navigation/*.cpp)
-    install_header_files (
+    install (
         DIRECTORY Navigation
         DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
     )
@@ -104,7 +104,7 @@ endif ()
 
 if (URHO3D_NETWORK)
     file (GLOB_RECURSE SOURCE_FILES_NETWORK Network/*.h Network/*.cpp)
-    install_header_files (
+    install (
         DIRECTORY Network
         DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
     )
@@ -112,7 +112,7 @@ endif ()
 
 if (URHO3D_PHYSICS)
     file (GLOB_RECURSE SOURCE_FILES_PHYSICS Physics/*.h Physics/*.cpp)
-    install_header_files (
+    install (
         DIRECTORY Physics
         DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
     )
@@ -120,7 +120,7 @@ endif ()
 
 if (URHO3D_URHO2D)
     file (GLOB_RECURSE SOURCE_FILES_URHO2D Urho2D/*.h Urho2D/*.cpp)
-    install_header_files (
+    install (
         DIRECTORY Urho2D
         DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
     )

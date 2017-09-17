@@ -22,7 +22,6 @@
 
 file (GLOB SOURCE_FILES source/*.cpp include/*.h)
 add_library (Recast STATIC ${SOURCE_FILES})
-target_include_directories(Recast PUBLIC include)
-
-# Install headers for building the Urho3D library
-install_header_files (DIRECTORY include/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/Recast FILES_MATCHING PATTERN *.h)  # Note: the trailing slash is significant
+target_include_directories(Recast PRIVATE include)
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/Recast FILES_MATCHING PATTERN *.h)  # Note: the trailing slash is significant
+install_to_build_tree(Recast)

@@ -74,4 +74,5 @@ if (CMAKE_C_FLAGS)
     string (REPLACE -ffast-math "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")    # Stringify for string replacement
 endif()
 
-install_header_files(DIRECTORY src/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/SQLite FILES_MATCHING PATTERN *.h)
+install(DIRECTORY src/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/SQLite FILES_MATCHING PATTERN *.h)
+install_to_build_tree(sqlite)

@@ -20,8 +20,6 @@
 # THE SOFTWARE.
 #
 
-add_library(rapidjson INTERFACE)
-target_include_directories(rapidjson SYSTEM BEFORE INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-# Install headers for building the Urho3D library
-install_header_files (DIRECTORY include/rapidjson/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/rapidjson FILES_MATCHING PATTERN *.h USE_FILE_SYMLINK)  # Note: the trailing slash is significant
+add_library(rapidjson STATIC INTERFACE.cpp)
+install (DIRECTORY include/rapidjson/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/rapidjson FILES_MATCHING PATTERN *.h)
+install_to_build_tree(rapidjson)

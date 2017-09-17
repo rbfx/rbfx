@@ -757,4 +757,5 @@ if (XCODE AND DEFINED ENV{CI})
     target_compile_options (Assimp -w)
 endif ()
 
-install_header_files(DIRECTORY include/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/Assimp FILES_MATCHING PATTERN *.h)
+install(DIRECTORY include/assimp DESTINATION ${DEST_THIRDPARTY_HEADERS} FILES_MATCHING PATTERN *.h)
+install_to_build_tree(Assimp)

@@ -44,5 +44,5 @@ set (SOURCE_FILES ${CPP_FILES} ${H_FILES})
 
 add_library (Bullet STATIC ${SOURCE_FILES})
 target_include_directories(Bullet PUBLIC src)
-# Install headers for building and using the Urho3D library (install dependency for Urho3D/Physics/PhysicsWorld.h, Urho3D/Physics/RigidBody.h, and Urho3D/Physics/PhysicsUtils.h)
-install_header_files (DIRECTORY src/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/Bullet FILES_MATCHING PATTERN *.h)  # Note: the trailing slash is significant
+install (DIRECTORY src/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/Bullet FILES_MATCHING PATTERN *.h)
+install_to_build_tree(Bullet)
