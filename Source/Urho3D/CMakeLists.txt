@@ -62,30 +62,6 @@ elseif (URHO3D_OPENGL)
     )
 endif ()
 
-if (URHO3D_DATABASE_ODBC OR URHO3D_DATABASE_SQLITE)
-    file (GLOB SOURCE_FILES_DATABASE Database/*.h Database/*.cpp)
-    install (
-        DIRECTORY Database
-        DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
-    )
-endif ()
-
-if (URHO3D_DATABASE_ODBC)
-    file (GLOB SOURCE_FILES_DATABASE_IMPL Database/ODBC/*.h Database/ODBC/*.cpp)
-    install (
-        DIRECTORY Database/ODBC
-        DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
-    )
-endif ()
-
-if (URHO3D_DATABASE_SQLITE)
-    file (GLOB SOURCE_FILES_DATABASE_IMPL Database/SQLite/*.h Database/SQLite/*.cpp)
-    install (
-        DIRECTORY Database/SQLite
-        DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
-    )
-endif ()
-
 if (URHO3D_IK)
     file (GLOB_RECURSE SOURCE_FILES_IK IK/*.h IK/*.cpp)
     install (
@@ -163,14 +139,6 @@ target_link_libraries(Urho3D FreeType JO LZ4 PugiXml rapidjson SDL StanHull STB 
 
 if (URHO3D_NETWORK)
     target_link_libraries(Urho3D Civetweb kNet)
-endif ()
-
-if (URHO3D_DATABASE_ODBC)
-    target_link_libraries(Urho3D nanodbc)
-endif ()
-
-if (URHO3D_DATABASE_SQLITE)
-    target_link_libraries(Urho3D sqlite)
 endif ()
 
 if (URHO3D_IK)
