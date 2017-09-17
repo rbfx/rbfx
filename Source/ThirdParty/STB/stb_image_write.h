@@ -115,9 +115,7 @@ LICENSE
 #ifndef INCLUDE_STB_IMAGE_WRITE_H
 #define INCLUDE_STB_IMAGE_WRITE_H
 
-// ATOMIC BEGIN
 #include <Urho3D/Container/Str.h>
-// ATOMIC END
 
 #ifdef __cplusplus
 extern "C" {
@@ -231,7 +229,7 @@ static int stbi__start_write_file(stbi__write_context *s, const char *filename)
 #ifndef _WIN32
    FILE *f = fopen(filename, "wb");
 #else
-    Atomic::WString wstr(filename);
+    Urho3D::WString wstr(filename);
     FILE *f = _wfopen(wstr.CString(), L"wb");
 #endif
    stbi__start_write_callbacks(s, stbi__stdio_write, (void *) f);

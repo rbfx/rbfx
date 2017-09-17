@@ -139,7 +139,7 @@ add_library(Urho3D
     ${SOURCE_FILES_PHYSICS}
     ${SOURCE_FILES_URHO2D}
 )
-target_include_directories(Urho3D PUBLIC ..)
+target_include_directories(Urho3D PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 # Add any variables starting with URHO3D_ as project defines
 get_cmake_property(__cmake_variables VARIABLES)

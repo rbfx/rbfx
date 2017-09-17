@@ -68,7 +68,6 @@ install (PROGRAMS ${CMAKE_SCRIPTS} DESTINATION ${DEST_SHARE_DIR}/Scripts)
 # Install data files
 install (DIRECTORY bin/Autoload bin/Data bin/CoreData DESTINATION ${DEST_SHARE_DIR}/Resources/)
 
-
 #option(LINUX "Build for Linux" OFF)
 #option(IOS "Build for iOS" OFF)
 #option(WEB "Build for the web" OFF)
@@ -105,6 +104,7 @@ else ()
     set(URHO3D_OPENGL ON)
 endif ()
 
+set (CMAKE_CXX_STANDARD 11)
 set (CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_subdirectory(Source)

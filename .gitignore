@@ -15,11 +15,7 @@ generated/
 
 # Output files
 /Source/**/*.a
-/Source/ThirdParty/LuaJIT/src/host/buildvm
-/Source/ThirdParty/LuaJIT/src/host/buildvm_arch.h
-/Source/ThirdParty/LuaJIT/src/host/minilua
 /Source/Urho3D/Precompiled.cpp
-/Source/Urho3D/Urho3D.h
 /Source/Urho3D/Urho3D.pc
 /Source/Urho3D/Urho3D.pc.msvc
 /Source/Urho3D/Urho3DAll.h

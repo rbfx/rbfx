@@ -21,7 +21,6 @@ matrix:
   fast_finish: true
   include:
     - &Linux-64bit
-      env: LINUX=1
       addons:
         apt:
           packages: &linux_packages_64bit
@@ -31,6 +30,7 @@ matrix:
             - libglu1-mesa-dev
     - <<: *Linux-64bit
       compiler: clang
+  exclude:
     - &MingW-64bit
       env: CMAKE_TOOLCHAIN_FILE=Build/CMake/Toolchains/MinGW.cmake CMAKE_SYSTEM_PROCESSOR=x86_64 URHO3D_D3D9=1
       addons:
