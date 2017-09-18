@@ -13,6 +13,7 @@ git:
 env:
   global:
     - MAKEFLAGS=-j4
+    - URHO3D_ENABLE_ALL=ON
 notifications:
   email:
     on_success: never
