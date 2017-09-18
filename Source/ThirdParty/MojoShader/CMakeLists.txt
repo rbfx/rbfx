@@ -23,7 +23,7 @@
 file (GLOB SOURCE_FILES *.c)
 add_library (MojoShader STATIC ${SOURCE_FILES})
 if (MSVC)
-    target_compile_definitions (MojoShader -D_CRT_SECURE_NO_WARNINGS=1 -TP)
+    target_compile_definitions (MojoShader PRIVATE -D_CRT_SECURE_NO_WARNINGS=1 -TP)
 endif ()
 
 install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/MojoShader FILES_MATCHING PATTERN *.h)

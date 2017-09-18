@@ -1,0 +1,19 @@
+version: '{build}'
+platform:
+  - x86
+  - x64
+environment:
+  URHO3D_D3D11: 1
+  matrix:
+    - BUILD_SHARED_LIBS: OFF
+    - BUILD_SHARED_LIBS: ON
+clone_folder: c:\projects\Urho3D
+before_build:
+  - cd c:\projects\Urho3D
+  - mkdir build
+  - cd build
+  - cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%P% ..
+build_script:
+  - cd c:\projects\Urho3D\build
+  - cmake --build .
+test: off
