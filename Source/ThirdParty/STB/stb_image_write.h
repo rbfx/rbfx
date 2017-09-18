@@ -226,7 +226,8 @@ static void stbi__stdio_write(void *context, void *data, int size)
 static int stbi__start_write_file(stbi__write_context *s, const char *filename)
 {
    // Urho3D: proper UTF8 handling for Windows, requires Urho3D WString class
-#ifndef _WIN32
+   // TODO: on mingw attempt to use WString results in unresolved external error.
+#if !defined(_WIN32) || defined(__MINGW32__)
    FILE *f = fopen(filename, "wb");
 #else
     Urho3D::WString wstr(filename);

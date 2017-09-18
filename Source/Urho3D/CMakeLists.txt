@@ -42,7 +42,13 @@ install (
     DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
 )
 
-if (URHO3D_D3D11)
+if (URHO3D_OPENGL)
+    file (GLOB SOURCE_FILES_GRAPHICS Graphics/OpenGL/*.h Graphics/OpenGL/*.cpp)
+    install (
+        DIRECTORY Graphics/OpenGL
+        DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
+    )
+elseif (URHO3D_D3D11)
     file (GLOB SOURCE_FILES_GRAPHICS Graphics/Direct3D11/*.h Graphics/Direct3D11/*.cpp)
     install (
         DIRECTORY Graphics/Direct3D11
@@ -52,12 +58,6 @@ elseif (URHO3D_D3D9)
     file (GLOB SOURCE_FILES_GRAPHICS Graphics/Direct3D9/*.h Graphics/Direct3D9/*.cpp)
     install (
         DIRECTORY Graphics/Direct3D9
-        DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
-    )
-elseif (URHO3D_OPENGL)
-    file (GLOB SOURCE_FILES_GRAPHICS Graphics/OpenGL/*.h Graphics/OpenGL/*.cpp)
-    install (
-        DIRECTORY Graphics/OpenGL
         DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
     )
 endif ()

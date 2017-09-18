@@ -3,10 +3,12 @@
 #ifndef URHO3D_API_H
 #define URHO3D_API_H
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 
+#ifdef _MSC_VER
 #pragma warning(disable: 4251)
 #pragma warning(disable: 4275)
+#endif
 
 #ifdef URHO3D_STATIC_DEFINE
 #  define URHO3D_API
