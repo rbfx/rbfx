@@ -20,6 +20,13 @@
 # THE SOFTWARE.
 #
 
+if (MSVC)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    # Enable parallel builds
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+endif ()
+
 add_subdirectory(ThirdParty)
 
 add_subdirectory (Urho3D)

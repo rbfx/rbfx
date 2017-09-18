@@ -191,9 +191,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 endif ()
 
 # Graphics
-if (URHO3D_D3D9)
-    target_link_libraries(Urho3D MojoShader)
-elseif (URHO3D_OPENGL)
+if (URHO3D_OPENGL)
     target_link_libraries(Urho3D GLEW)
     if (APPLE)
         # Do nothing
@@ -204,7 +202,13 @@ elseif (URHO3D_OPENGL)
     else ()
         target_link_libraries (Urho3D GL)
     endif ()
-elseif (DIRECT3D_LIBRARIES)
+else ()
+    if (URHO3D_D3D9)
+        target_link_libraries(Urho3D MojoShader)
+        find_package(DirectX REQUIRED D3D9)
+    else ()
+        find_package(DirectX REQUIRED D3D11)
+    endif ()
     target_link_libraries (Urho3D ${DIRECT3D_LIBRARIES})
 endif ()
 
@@ -212,8 +216,12 @@ target_include_directories(Urho3D PUBLIC ${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_H
 
 if (BUILD_SHARED_LIBS)
     set (INSTALL_TARGET Urho3D)
+    target_compile_options(Urho3D PRIVATE -DURHO3D_EXPORTS)
+    if (WIN32)
+        set_target_properties(Urho3D PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
+    endif ()
 else ()
-
+    target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC_DEFINE)
     get_property(URHO3D_INTERFACE_LINK_LIBRARIES TARGET Urho3D PROPERTY INTERFACE_LINK_LIBRARIES)
     foreach (lib ${URHO3D_INTERFACE_LINK_LIBRARIES})
         if (TARGET ${lib})
@@ -226,8 +234,17 @@ else ()
     set (INSTALL_TARGET Urho3D_M)
 endif ()
 
+if (WIN32)
+    set (SHARED_LIB_INSTALL_DIR bin)
+    if (URHO3D_MINIDUMPS)
+        target_link_libraries(Urho3D dbghelp)
+    endif ()
+else ()
+    set (SHARED_LIB_INSTALL_DIR lib${LIB_SUFFIX})
+endif ()
+
 install(TARGETS ${INSTALL_TARGET}
     RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib${LIB_SUFFIX}
+    LIBRARY DESTINATION ${SHARED_LIB_INSTALL_DIR}
     ARCHIVE DESTINATION lib${LIB_SUFFIX}
 )

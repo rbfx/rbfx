@@ -21,6 +21,7 @@
 #
 
 include(UrhoMonolithicLib)
+include(ucm)
 
 # Source environment
 execute_process(COMMAND env OUTPUT_VARIABLE ENVIRONMENT)
@@ -64,6 +65,7 @@ macro (create_symlink SOURCE DESTINATION)
         else ()
             unset (SLASH_D)
         endif ()
+        set (HAS_MKLINK ON)
         if (HAS_MKLINK)
             if (NOT EXISTS ${ABS_DESTINATION})
                 # Have to use string-REPLACE as file-TO_NATIVE_PATH does not work as expected with MinGW on "backward slash" host system
@@ -71,7 +73,7 @@ macro (create_symlink SOURCE DESTINATION)
                 string (REPLACE / \\ BACKWARD_ABS_SOURCE ${ABS_SOURCE})
                 execute_process (COMMAND cmd /C mklink ${SLASH_D} ${BACKWARD_ABS_DESTINATION} ${BACKWARD_ABS_SOURCE} OUTPUT_QUIET ERROR_QUIET)
             endif ()
-        elseif (${ARGN} STREQUAL FALLBACK_TO_COPY)
+        elseif ("${ARGN}" STREQUAL FALLBACK_TO_COPY)
             if (SLASH_D)
                 set (COMMAND COMMAND ${CMAKE_COMMAND} -E copy_directory ${ABS_SOURCE} ${ABS_DESTINATION})
             else ()
@@ -94,10 +96,17 @@ endmacro ()
 
 macro (add_sample TARGET)
     file (GLOB SOURCE_FILES *.cpp *.h)
-    add_executable (${TARGET} ${SOURCE_FILES})
+    add_executable (${TARGET} WIN32 ${SOURCE_FILES})
     target_link_libraries (${TARGET} Urho3D)
     target_include_directories(${TARGET} PRIVATE ..)
-    install(TARGETS ${TARGET} RUNTIME DESTINATION ${DEST_SHARE_DIR}/Samples)
+    if (WIN32)
+        install(TARGETS ${TARGET} RUNTIME DESTINATION ${DEST_BIN_DIR})
+        set_target_properties(${TARGET} PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}"
+        )
+    else ()
+        install(TARGETS ${TARGET} RUNTIME DESTINATION ${DEST_SHARE_DIR}/Samples)
+    endif ()
 endmacro ()
 
 macro (install_to_build_tree TARGET)

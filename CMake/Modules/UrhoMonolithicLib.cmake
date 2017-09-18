@@ -52,6 +52,9 @@
 # - DISABLE_SHARED: If set, it is assumed that shared libraries are not produced
 # during the build. ADD_CONVENIENCE_LIBRARY does not add anything to compile flags
 
+# https://cmake.org/cmake/help/v3.0/policy/CMP0026.html
+# This is required for building monolithic static libs with MSVC.
+cmake_policy(SET CMP0026 OLD)
 
 GET_FILENAME_COMPONENT(MYSQL_CMAKE_SCRIPT_DIR ${CMAKE_CURRENT_LIST_FILE} PATH)
 IF(WIN32 OR CYGWIN OR APPLE OR WITH_PIC OR DISABLE_SHARED OR NOT CMAKE_SHARED_LIBRARY_C_FLAGS)
@@ -142,7 +145,8 @@ MACRO(MERGE_STATIC_LIBS TARGET OUTPUT_NAME LIBS_TO_MERGE)
         ELSE()
             # This is a target in current project
             # (can be a static or shared lib)
-            SET (LIB_LOCATION $<TARGET_FILE:${LIB}>)
+            # SET (LIB_LOCATION $<TARGET_FILE:${LIB}>)
+            get_property(LIB_LOCATION TARGET ${LIB} PROPERTY LOCATION)
             GET_TARGET_PROPERTY(LIB_TYPE ${LIB} TYPE)
             IF(LIB_TYPE STREQUAL "STATIC_LIBRARY")
                 SET(STATIC_LIBS ${STATIC_LIBS} ${LIB_LOCATION})
@@ -175,10 +179,10 @@ MACRO(MERGE_STATIC_LIBS TARGET OUTPUT_NAME LIBS_TO_MERGE)
         FOREACH(LIB ${STATIC_LIBS})
             SET(LINKER_EXTRA_FLAGS "${LINKER_EXTRA_FLAGS} ${LIB}")
         ENDFOREACH()
-        SET_TARGET_PROPERTIES(${TARGET} PROPERTIES STATIC_LIBRARY_FLAGS
-            "${LINKER_EXTRA_FLAGS}")
+        SET_TARGET_PROPERTIES(${TARGET} PROPERTIES STATIC_LIBRARY_FLAGS ${LINKER_EXTRA_FLAGS})
     ELSE()
-        SET(TARGET_LOCATION $<TARGET_FILE:${TARGET}>)
+        # SET(TARGET_LOCATION $<TARGET_FILE:${TARGET}>)
+        get_property(TARGET_LOCATION TARGET ${TARGET} PROPERTY LOCATION)
         IF(APPLE)
             # Use OSX's libtool to merge archives (ihandles universal
             # binaries properly)
@@ -193,19 +197,19 @@ MACRO(MERGE_STATIC_LIBS TARGET OUTPUT_NAME LIBS_TO_MERGE)
             # and repacks them with "ar r"
             SET(TARGET ${TARGET})
             CONFIGURE_FILE(
-                ${MYSQL_CMAKE_SCRIPT_DIR}/MergeArchivesUnix.cmake.in
+                MergeArchivesUnix.cmake.in
                 ${CMAKE_CURRENT_BINARY_DIR}/MergeArchives${TARGET}.cmake
                 @ONLY
             )
-            file(GENERATE
-                OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/MergeArchives${TARGET}.cmake
-                INPUT ${CMAKE_CURRENT_BINARY_DIR}/MergeArchives${TARGET}.cmake
-            )
+#            file(GENERATE
+#                OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/MergeArchives${TARGET}.cmake
+#                INPUT ${CMAKE_CURRENT_BINARY_DIR}/MergeArchives${TARGET}.cmake
+#            )
             ADD_CUSTOM_COMMAND(TARGET ${TARGET} POST_BUILD
                 COMMAND rm ${TARGET_LOCATION}
                 COMMAND ${CMAKE_COMMAND} -P
                 ${CMAKE_CURRENT_BINARY_DIR}/MergeArchives${TARGET}.cmake
-                )
+            )
         ENDIF()
     ENDIF()
 ENDMACRO()
@@ -273,7 +277,8 @@ FUNCTION(GET_DEPENDEND_OS_LIBS target result)
             # Filter out keywords for used for debug vs optimized builds
             IF(NOT lib MATCHES "general" AND NOT lib MATCHES "debug" AND NOT lib MATCHES "optimized")
                 IF (TARGET ${lib})
-                    set(lib_location $<TARGET_FILE:${lib}>)
+                    # set(lib_location $<TARGET_FILE:${lib}>)
+                    get_property(lib_location TARGET ${lib} PROPERTY LOCATION)
                     IF(NOT lib_location)
                         SET(ret ${ret} ${lib})
                     ENDIF()
