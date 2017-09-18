@@ -197,7 +197,7 @@ MACRO(MERGE_STATIC_LIBS TARGET OUTPUT_NAME LIBS_TO_MERGE)
             # and repacks them with "ar r"
             SET(TARGET ${TARGET})
             CONFIGURE_FILE(
-                MergeArchivesUnix.cmake.in
+                ${Urho3D_SOURCE_DIR}/CMake/Modules/MergeArchivesUnix.cmake.in
                 ${CMAKE_CURRENT_BINARY_DIR}/MergeArchives${TARGET}.cmake
                 @ONLY
             )
