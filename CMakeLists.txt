@@ -54,6 +54,7 @@ endif ()
 set (DEST_INCLUDE_DIR include/Urho3D)    # The include directory path contains the 'Urho3D' suffix regardless of PATH_SUFFIX variable
 set (DEST_BIN_DIR bin)
 set (DEST_SHARE_DIR share/${PATH_SUFFIX})
+set (DEST_RESOURCE_DIR ${DEST_SHARE_DIR}/Resources)
 set (DEST_BUNDLE_DIR ${DEST_SHARE_DIR}/Applications)
 # Note to package maintainer: ${PATH_SUFFIX} for library could be removed if the extra path is not desired, but if so then the RPATH setting in Source's CMakeLists.txt needs to be adjusted accordingly
 set (DEST_LIBRARY_DIR lib${LIB_SUFFIX}/${PATH_SUFFIX})
@@ -66,7 +67,13 @@ install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/ DESTINATION ${DEST_SHARE_DIR}/CMak
 file (GLOB CMAKE_SCRIPTS ${CMAKE_SOURCE_DIR}/*${SCRIPT_EXT})
 install (PROGRAMS ${CMAKE_SCRIPTS} DESTINATION ${DEST_SHARE_DIR}/Scripts)
 # Install data files
-install (DIRECTORY bin/Autoload bin/Data bin/CoreData DESTINATION ${DEST_SHARE_DIR}/Resources/)
+file (MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+foreach (RES_DIR Autoload Data CoreData)
+    install (DIRECTORY bin/${RES_DIR} DESTINATION ${DEST_RESOURCE_DIR})
+    if (NOT EXISTS ${CMAKE_BINARY_DIR}/bin/${RES_DIR})
+        create_symlink(bin/${RES_DIR} ${CMAKE_BINARY_DIR}/bin/${RES_DIR})
+    endif ()
+endforeach ()
 
 option(URHO3D_ENABLE_ALL "Enables all optional subsystems (except database) by default" OFF)
 option(URHO3D_IK "Inverse kinematics subsystem enabled" ${URHO3D_ENABLE_ALL})
@@ -89,5 +96,6 @@ endif ()
 
 set (CMAKE_CXX_STANDARD 11)
 set (CMAKE_INCLUDE_CURRENT_DIR ON)
+set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(Source)

@@ -25,8 +25,10 @@ include(UrhoMonolithicLib)
 # Source environment
 execute_process(COMMAND env OUTPUT_VARIABLE ENVIRONMENT)
 string(REGEX REPLACE "=[^\n]*\n?" ";" ENVIRONMENT "${ENVIRONMENT}")
+set(IMPORT_URHO3D_VARIABLES_FROM_ENV BUILD_SHARED_LIBS)
 foreach(key ${ENVIRONMENT})
-    if ("${key}" MATCHES "^(URHO3D_|CMAKE_).+")
+    list (FIND IMPORT_URHO3D_VARIABLES_FROM_ENV ${key} _index)
+    if ("${key}" MATCHES "^(URHO3D_|CMAKE_).+" OR ${_index} GREATER -1)
         if (NOT DEFINED ${key})
             set (${key} $ENV{${key}} CACHE STRING "" FORCE)
         endif ()
@@ -95,9 +97,7 @@ macro (add_sample TARGET)
     add_executable (${TARGET} ${SOURCE_FILES})
     target_link_libraries (${TARGET} Urho3D)
     target_include_directories(${TARGET} PRIVATE ..)
-    install(TARGETS ${TARGET}
-        RUNTIME DESTINATION bin/Samples
-    )
+    install(TARGETS ${TARGET} RUNTIME DESTINATION ${DEST_SHARE_DIR}/Samples)
 endmacro ()
 
 macro (install_to_build_tree TARGET)

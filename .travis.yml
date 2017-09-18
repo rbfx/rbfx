@@ -30,6 +30,11 @@ matrix:
             - libglu1-mesa-dev
     - <<: *Linux-64bit
       compiler: clang
+    - <<: *Linux-64bit
+      env: BUILD_SHARED_LIBS=ON
+    - <<: *Linux-64bit
+      compiler: clang
+      env: BUILD_SHARED_LIBS=ON
   exclude:
     - &MingW-64bit
       env: CMAKE_TOOLCHAIN_FILE=Build/CMake/Toolchains/MinGW.cmake CMAKE_SYSTEM_PROCESSOR=x86_64 URHO3D_D3D9=1

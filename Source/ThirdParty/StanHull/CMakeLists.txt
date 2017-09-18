@@ -20,6 +20,6 @@
 # THE SOFTWARE.
 #
 
-add_library (StanHull hull.cpp hull.h)
+add_library (StanHull STATIC hull.cpp hull.h)
 install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/StanHull FILES_MATCHING PATTERN *.h)
 install_to_build_tree(StanHull)

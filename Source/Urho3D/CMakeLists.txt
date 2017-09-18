@@ -187,7 +187,7 @@ endif ()
 
 # Disable very annoying warning
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    target_compile_options(Urho3D PRIVATE -Wno-invalid-offsetof)
+    target_compile_options(Urho3D PUBLIC -Wno-invalid-offsetof)
 endif ()
 
 # Graphics
