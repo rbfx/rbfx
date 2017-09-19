@@ -23,7 +23,7 @@
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Core/Timer.h>
-#include <Urho3D/Engine/Console.h>
+#include <Urho3D/SystemUI/Console.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Engine/EngineEvents.h>
 #include <Urho3D/Input/Input.h>
@@ -78,17 +78,8 @@ void ConsoleInput::Start()
     // Show the console by default, make it large. Console will show the text edit field when there is at least one
     // subscriber for the console command event
     Console* console = GetSubsystem<Console>();
-    console->SetNumRows(GetSubsystem<Graphics>()->GetHeight() / 16);
-    console->SetNumBufferedRows(2 * console->GetNumRows());
     console->SetCommandInterpreter(GetTypeName());
     console->SetVisible(true);
-    console->GetCloseButton()->SetVisible(false);
-    console->AddAutoComplete("help");
-    console->AddAutoComplete("eat");
-    console->AddAutoComplete("hide");
-    console->AddAutoComplete("wait");
-    console->AddAutoComplete("score");
-    console->AddAutoComplete("quit");
 
     // Show OS mouse cursor
     GetSubsystem<Input>()->SetMouseVisible(true);

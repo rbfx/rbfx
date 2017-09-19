@@ -35,6 +35,7 @@ file (GLOB_RECURSE SOURCE_FILES_EXT
     Resource/*.cpp Resource/*.h
     Scene/*.cpp Scene/*.h
     UI/*.cpp UI/*.h
+    SystemUI/*.cpp SystemUI/*.h
 )
 
 install (

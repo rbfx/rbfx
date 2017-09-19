@@ -22,9 +22,9 @@
 
 #include <Urho3D/Engine/Application.h>
 #include <Urho3D/Graphics/Camera.h>
-#include <Urho3D/Engine/Console.h>
+#include <Urho3D/SystemUI/Console.h>
 #include <Urho3D/UI/Cursor.h>
-#include <Urho3D/Engine/DebugHud.h>
+#include <Urho3D/SystemUI/DebugHud.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/IO/FileSystem.h>
@@ -203,18 +203,11 @@ void Sample::SetWindowTitleAndIcon()
 
 void Sample::CreateConsoleAndDebugHud()
 {
-    // Get default style
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
-    XMLFile* xmlFile = cache->GetResource<XMLFile>("UI/DefaultStyle.xml");
-
     // Create console
     Console* console = engine_->CreateConsole();
-    console->SetDefaultStyle(xmlFile);
-    console->GetBackground()->SetOpacity(0.8f);
 
     // Create debug HUD.
     DebugHud* debugHud = engine_->CreateDebugHud();
-    debugHud->SetDefaultStyle(xmlFile);
 }
 
 
@@ -256,7 +249,10 @@ void Sample::HandleKeyDown(StringHash /*eventType*/, VariantMap& eventData)
 
     // Toggle debug HUD with F2
     else if (key == KEY_F2)
-        GetSubsystem<DebugHud>()->ToggleAll();
+        engine_->CreateDebugHud()->ToggleAll();
+
+    else if (key == KEY_BACKQUOTE)
+        engine_->CreateConsole()->Toggle();
 
     // Common rendering quality controls, only when UI has no focused element
     else if (!GetSubsystem<UI>()->GetFocusElement())

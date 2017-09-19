@@ -26,5 +26,5 @@
 add_library (imgui STATIC imgui.cpp imgui_draw.cpp)
 target_link_libraries (imgui STB)
 target_compile_definitions(imgui PUBLIC -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1)
-install(FILES imgui.h imgui_internal.h DESTINATION ${DEST_THIRDPARTY_HEADERS}/ImGui)
+install(FILES imgui.h imgui_internal.h imconfig.h DESTINATION ${DEST_THIRDPARTY_HEADERS}/ImGui)
 install_to_build_tree(imgui)

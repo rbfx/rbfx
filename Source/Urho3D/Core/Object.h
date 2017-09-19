@@ -45,6 +45,7 @@ class Database;
 class Input;
 class Audio;
 class UI;
+class SystemUI;
 class Graphics;
 class Renderer;
 
@@ -208,6 +209,8 @@ public:
     Audio* GetAudio() const;
     /// Return UI subsystem.
     UI* GetUI() const;
+    /// Return system ui subsystem.
+    SystemUI* GetSystemUI() const;
     /// Return graphics subsystem.
     Graphics* GetGraphics() const;
     /// Return renderer subsystem.
@@ -439,6 +442,7 @@ template <> Database* Object::GetSubsystem<Database>() const;
 template <> Input* Object::GetSubsystem<Input>() const;
 template <> Audio* Object::GetSubsystem<Audio>() const;
 template <> UI* Object::GetSubsystem<UI>() const;
+template <> SystemUI* Object::GetSubsystem<SystemUI>() const;
 template <> Graphics* Object::GetSubsystem<Graphics>() const;
 template <> Renderer* Object::GetSubsystem<Renderer>() const;
 }

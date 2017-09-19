@@ -221,6 +221,8 @@ public:
     inline Audio* GetAudio() const { return audio_; }
     /// Return UI subsystem.
     inline UI* GetUI() const { return ui_; }
+    /// Return system ui subsystem.
+    inline SystemUI* GetSystemUI() const { return systemUi_; }
     /// Return graphics subsystem.
     inline Graphics* GetGraphics() const { return graphics_; }
     /// Return renderer subsystem.
@@ -292,6 +294,8 @@ private:
     WeakPtr<Audio> audio_;
     /// Cached pointer of UI susbsystem.
     WeakPtr<UI> ui_;
+    /// Cached pointer of system UI susbsystem.
+    WeakPtr<SystemUI> systemUi_;
     /// Cached pointer of graphics susbsystem.
     WeakPtr<Graphics> graphics_;
     /// Cached pointer of renderer susbsystem.

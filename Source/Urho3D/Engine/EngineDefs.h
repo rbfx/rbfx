@@ -73,5 +73,6 @@ static const String EP_WINDOW_RESIZABLE = "WindowResizable";
 static const String EP_WINDOW_TITLE = "WindowTitle";
 static const String EP_WINDOW_WIDTH = "WindowWidth";
 static const String EP_WORKER_THREADS = "WorkerThreads";
-
+static const String EP_PROFILER_LISTEN = "ProfilerListen";
+static const String EP_PROFILER_PORT = "ProfilerPort";
 }

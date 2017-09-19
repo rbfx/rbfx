@@ -641,6 +641,11 @@ template <> UI* Object::GetSubsystem<UI>() const
     return context_->ui_;
 }
 
+template <> SystemUI* Object::GetSubsystem<SystemUI>() const
+{
+    return context_->systemUi_;
+}
+
 template <> Graphics* Object::GetSubsystem<Graphics>() const
 {
     return context_->graphics_;
@@ -708,6 +713,11 @@ Audio* Object::GetAudio() const
 UI* Object::GetUI() const
 {
     return context_->ui_;
+}
+
+SystemUI* Object::GetSystemUI() const
+{
+    return context_->systemUi_;
 }
 
 Graphics* Object::GetGraphics() const
