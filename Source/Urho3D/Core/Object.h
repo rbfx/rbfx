@@ -216,8 +216,6 @@ public:
     /// Return renderer subsystem.
     Renderer* GetRenderer() const;
 
-    friend class Context;
-    
 protected:
     /// Execution context.
     Context* context_;

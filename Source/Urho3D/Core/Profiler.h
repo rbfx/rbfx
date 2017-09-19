@@ -94,7 +94,7 @@ public:
     /// End block started with BeginBlock().
     void EndBlock();
     /// Dummy api for compatibility. May be implemented later.
-    String PrintData(bool, bool) const { }
+    String PrintData(bool, bool) const { return ""; }
 
 private:
 

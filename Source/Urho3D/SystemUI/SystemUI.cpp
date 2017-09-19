@@ -30,7 +30,7 @@
 #include "Urho3D/Resource/ResourceCache.h"
 #include "SystemUI.h"
 #include "Console.h"
-#include <SDL2/SDL.h>
+#include <SDL/SDL.h>
 
 
 using namespace std::placeholders;
