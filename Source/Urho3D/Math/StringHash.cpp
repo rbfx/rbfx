@@ -24,6 +24,7 @@
 
 #include "../Math/MathDefs.h"
 #include "../Math/StringHash.h"
+#include "../Core/Context.h"
 
 #include <cstdio>
 
@@ -44,10 +45,8 @@ StringHash::StringHash(const String& str) :
 {
 }
 
-unsigned StringHash::Calculate(const char* str)
+unsigned StringHash::Calculate(const char* str, unsigned hash)
 {
-    unsigned hash = 0;
-
     if (!str)
         return hash;
 
