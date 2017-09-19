@@ -200,6 +200,9 @@ public:
     /// Return as string.
     String ToString() const;
 
+    /// Return color packed to a 32-bit integer, with B component in the lowest 8 bits. Components are clamped to [0, 1] range.
+    unsigned ToUIntArgb() const;
+    
     /// Red value.
     float r_;
     /// Green value.
