@@ -56,6 +56,8 @@ public:
     /// Return root value.
     const JSONValue& GetRoot() const { return root_; }
 
+    /// Return true if parsing json string into JSONValue succeeds.
+    static bool ParseJSON(const String& json, JSONValue& value, bool reportError = true);
 private:
     /// JSON root value.
     JSONValue root_;

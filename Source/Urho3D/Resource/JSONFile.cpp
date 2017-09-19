@@ -240,4 +240,18 @@ bool JSONFile::FromString(const String & source)
     return Load(buffer);
 }
 
+bool JSONFile::ParseJSON(const String& json, JSONValue& value, bool reportError)
+{
+    rapidjson::Document document;
+    if (document.Parse<0>(json.CString()).HasParseError())
+    {
+        if (reportError)
+            URHO3D_LOGERRORF("Could not parse JSON data from string with error: %s", document.GetParseError());
+
+        return false;
+    }
+    ToJSONValue(value, document);
+    return true;
+}
+
 }
