@@ -1139,4 +1139,47 @@ void RegisterResourceLibrary(Context* context)
     XMLFile::RegisterObject(context);
 }
 
+void ResourceCache::Scan(Vector<String>& result, const String& pathName, const String& filter, unsigned flags, bool recursive) const
+{
+    Vector<String> interimResult;
+
+    for (unsigned i = 0; i < packages_.Size(); ++i)
+    {
+        packages_[i]->Scan(interimResult, pathName, filter, recursive);
+        result.Insert(result.End(), interimResult);
+    }
+
+    FileSystem* fileSystem = GetSubsystem<FileSystem>();
+    for (unsigned i = 0; i < resourceDirs_.Size(); ++i)
+    {
+        fileSystem->ScanDir(interimResult, resourceDirs_[i] + pathName, filter, flags, recursive);
+        result.Insert(result.End(), interimResult);
+    }
+}
+
+String ResourceCache::PrintResources(const String& typeName) const
+{
+
+    StringHash typeNameHash(typeName);
+
+    String output = "Resource Type         Refs   WeakRefs  Name\n\n";
+
+    for (HashMap<StringHash, ResourceGroup>::ConstIterator cit = resourceGroups_.Begin(); cit != resourceGroups_.End(); ++cit)
+    {
+        for (HashMap<StringHash, SharedPtr<Resource> >::ConstIterator resIt = cit->second_.resources_.Begin(); resIt != cit->second_.resources_.End(); ++resIt)
+        {
+            Resource* resource = resIt->second_;
+
+            // filter
+            if (typeName.Length() && resource->GetType() != typeNameHash)
+                continue;
+
+            output.AppendWithFormat("%s     %i     %i     %s\n",resource->GetTypeName().CString(), resource->Refs(), resource->WeakRefs(), resource->GetName().CString());
+        }
+
+    }
+
+    return output;
+}
+
 }

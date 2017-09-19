@@ -209,6 +209,15 @@ public:
 
     /// Returns a formatted string containing the memory actively used.
     String PrintMemoryUsage() const;
+    /// Get the number of resource directories
+    unsigned GetNumResourceDirs() const { return resourceDirs_.Size(); }
+    /// Get resource directory at a given index
+    const String& GetResourceDir(unsigned index) const { return index < resourceDirs_.Size() ? resourceDirs_[index] : String::EMPTY; }
+    
+    /// Scan for specified files.
+    void Scan(Vector<String>& result, const String& pathName, const String& filter, unsigned flags, bool recursive) const;
+    /// Returns a formatted string containing the currently loaded resources with optional type name filter.
+    String PrintResources(const String& typeName = String::EMPTY) const;
 
 private:
     /// Find a resource.
