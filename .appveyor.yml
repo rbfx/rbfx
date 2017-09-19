@@ -4,21 +4,19 @@ platform:
   - x64
 environment:
   URHO3D_D3D11: 1
-  SDK_PATH: %APPVEYOR_BUILD_FOLDER%\Urho3D-SDK
-  BUILD_PATH: %APPVEYOR_BUILD_FOLDER%\Build
   matrix:
     - BUILD_SHARED_LIBS: OFF
     - BUILD_SHARED_LIBS: ON
 before_build:
-  - mkdir %BUILD_PATH%
-  - cd %BUILD_PATH%
-  - cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%SDK_PATH% ..
+  - mkdir "%APPVEYOR_BUILD_FOLDER%\Build"
+  - cd "%APPVEYOR_BUILD_FOLDER%\Build"
+  - cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="%APPVEYOR_BUILD_FOLDER%\Urho3D-SDK" ..
 build_script:
-  - cd %BUILD_PATH%
+  - cd "%APPVEYOR_BUILD_FOLDER%\Build"
   - cmake --build . --target install
 after_build:
-  - cd %BUILD_PATH%
-  - 7z a Urho3D-SDK.7z %SDK_PATH%
+  - cd "%APPVEYOR_BUILD_FOLDER%"
+  - 7z a Urho3D-SDK.7z "%APPVEYOR_BUILD_FOLDER%\Urho3D-SDK"
 test: off
 artifacts:
-  - path: %BUILD_PATH%\*.7z
+  path: Urho3D-SDK.7z
