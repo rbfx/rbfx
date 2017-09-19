@@ -124,7 +124,7 @@ public:
 
 private:
     /// Parent texture.
-    Texture* parentTexture_;
+    WeakPtr<Texture> parentTexture_;
 
     union
     {
