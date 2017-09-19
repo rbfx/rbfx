@@ -36,7 +36,12 @@ namespace Urho3D
 
 RenderSurface::~RenderSurface()
 {
-    Release();
+    // only release if parent texture hasn't expired, in that case 
+    // parent texture was deleted and will have called release on render surface
+    if (!parentTexture_.Expired())
+    {
+        Release();
+    }
 }
 
 void RenderSurface::SetNumViewports(unsigned num)
