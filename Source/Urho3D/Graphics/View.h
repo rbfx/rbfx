@@ -127,11 +127,6 @@ public:
     /// Render batches.
     void Render();
 
-    /// Return graphics subsystem.
-    Graphics* GetGraphics() const;
-    /// Return renderer subsystem.
-    Renderer* GetRenderer() const;
-
     /// Return scene.
     Scene* GetScene() const { return scene_; }
 

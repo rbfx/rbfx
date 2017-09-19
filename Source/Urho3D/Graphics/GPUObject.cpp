@@ -72,7 +72,7 @@ void GPUObject::ClearDataLost()
     dataLost_ = false;
 }
 
-Graphics* GPUObject::GetGraphics() const
+Graphics* GPUObject::GetObjectGraphics() const
 {
     return graphics_;
 }

@@ -45,7 +45,7 @@ RenderSurface::RenderSurface(Texture* parentTexture) :
 
 void RenderSurface::Release()
 {
-    Graphics* graphics = parentTexture_->GetGraphics();
+    Graphics* graphics = parentTexture_->GetObjectGraphics();
     if (graphics)
     {
         for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)

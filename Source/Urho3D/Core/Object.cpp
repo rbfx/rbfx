@@ -24,6 +24,7 @@
 
 #include "../Core/Context.h"
 #include "../Core/Thread.h"
+#include "../Core/Profiler.h"
 #include "../IO/Log.h"
 
 #include "../DebugNew.h"
@@ -72,7 +73,8 @@ bool TypeInfo::IsTypeOf(const TypeInfo* typeInfo) const
 }
 
 Object::Object(Context* context) :
-    context_(context)
+    context_(context),
+    blockEvents_(false)
 {
     assert(context_);
 }
@@ -85,6 +87,8 @@ Object::~Object()
 
 void Object::OnEvent(Object* sender, StringHash eventType, VariantMap& eventData)
 {
+    if (blockEvents_)
+        return;
     // Make a copy of the context pointer in case the object is destroyed during event handler invocation
     Context* context = context_;
     EventHandler* specific = nullptr;
@@ -293,12 +297,39 @@ void Object::SendEvent(StringHash eventType)
 
 void Object::SendEvent(StringHash eventType, VariantMap& eventData)
 {
+#if URHO3D_PROFILING
+    bool eventProfilingEnabled = false;
+    if (Profiler* profiler = GetSubsystem<Profiler>())
+        eventProfilingEnabled = profiler->GetEventProfilingEnabled();
+
+    if (eventProfilingEnabled)
+        SendEventProfiled(eventType, eventData);
+    else
+#endif
+        SendEventNonProfiled(eventType, eventData);
+}
+
+void Object::SendEventProfiled(StringHash eventType, VariantMap& eventData)
+{
+#if URHO3D_PROFILING
+    String eventName;
+//    if (!StringHash::GetSignificantString(eventType, eventName))
+        eventName = eventType.ToString();
+    URHO3D_PROFILE_SCOPED(eventName.CString(), PROFILER_COLOR_EVENTS);
+#endif
+    SendEventNonProfiled(eventType, eventData);
+}
+
+void Object::SendEventNonProfiled(StringHash eventType, VariantMap& eventData)
+{
     if (!Thread::IsMainThread())
     {
         URHO3D_LOGERROR("Sending events is only supported from the main thread");
         return;
     }
 
+    if (blockEvents_)
+        return;
     // Make a weak pointer to self to check for destruction during event handling
     WeakPtr<Object> self(this);
     Context* context = context_;
@@ -542,6 +573,151 @@ HashMap<StringHash, String>& EventNameRegistrar::GetEventNameMap()
 {
     static HashMap<StringHash, String> eventNames_;
     return eventNames_;
+}
+
+void Object::SendEvent(StringHash eventType, const VariantMap& eventData)
+{
+    VariantMap eventDataCopy = eventData;
+    SendEvent(eventType, eventDataCopy);
+}
+
+template <> Engine* Object::GetSubsystem<Engine>() const
+{
+    return context_->engine_;
+}
+
+template <> Time* Object::GetSubsystem<Time>() const
+{
+    return context_->time_;
+}
+
+template <> WorkQueue* Object::GetSubsystem<WorkQueue>() const
+{
+    return context_->workQueue_;
+}
+
+template <> Profiler* Object::GetSubsystem<Profiler>() const
+{
+    return context_->profiler_;
+}
+
+template <> FileSystem* Object::GetSubsystem<FileSystem>() const
+{
+    return context_->fileSystem_;
+}
+
+template <> Log* Object::GetSubsystem<Log>() const
+{
+    return context_->log_;
+}
+
+template <> ResourceCache* Object::GetSubsystem<ResourceCache>() const
+{
+    return context_->cache_;
+}
+
+template <> Localization* Object::GetSubsystem<Localization>() const
+{
+    return context_->l18n_;
+}
+
+template <> Network* Object::GetSubsystem<Network>() const
+{
+    return context_->network_;
+}
+
+template <> Input* Object::GetSubsystem<Input>() const
+{
+    return context_->input_;
+}
+
+template <> Audio* Object::GetSubsystem<Audio>() const
+{
+    return context_->audio_;
+}
+
+template <> UI* Object::GetSubsystem<UI>() const
+{
+    return context_->ui_;
+}
+
+template <> Graphics* Object::GetSubsystem<Graphics>() const
+{
+    return context_->graphics_;
+}
+
+template <> Renderer* Object::GetSubsystem<Renderer>() const
+{
+    return context_->renderer_;
+}
+
+Engine* Object::GetEngine() const
+{
+    return context_->engine_;
+}
+
+Time* Object::GetTime() const
+{
+    return context_->time_; }
+
+WorkQueue* Object::GetWorkQueue() const
+{
+    return context_->workQueue_;
+}
+
+Profiler* Object::GetProfiler() const
+{
+    return context_->profiler_;
+}
+
+FileSystem* Object::GetFileSystem() const
+{
+    return context_->fileSystem_;
+}
+
+Log* Object::GetLog() const
+{
+    return context_->log_;
+}
+
+ResourceCache* Object::GetCache() const
+{
+    return context_->cache_;
+}
+
+Localization* Object::GetLocalization() const
+{
+    return context_->l18n_;
+}
+
+Network* Object::GetNetwork() const
+{
+    return context_->network_;
+}
+
+Input* Object::GetInput() const
+{
+    return context_->input_;
+}
+
+Audio* Object::GetAudio() const
+{
+    return context_->audio_;
+}
+
+UI* Object::GetUI() const
+{
+    return context_->ui_;
+}
+
+Graphics* Object::GetGraphics() const
+{
+    return context_->graphics_;
+}
+
+Renderer* Object::GetRenderer() const
+{
+    return context_->renderer_;
 }
 
 }

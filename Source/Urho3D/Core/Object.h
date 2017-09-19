@@ -31,6 +31,22 @@ namespace Urho3D
 
 class Context;
 class EventHandler;
+class Engine;
+class Time;
+class WorkQueue;
+class Profiler;
+class FileSystem;
+class Log;
+class ResourceCache;
+class Localization;
+class Network;
+class Web;
+class Database;
+class Input;
+class Audio;
+class UI;
+class Graphics;
+class Renderer;
 
 /// Type info.
 class URHO3D_API TypeInfo
@@ -161,9 +177,52 @@ public:
     /// Return object category. Categories are (optionally) registered along with the object factory. Return an empty string if the object category is not registered.
     const String& GetCategory() const;
 
+    /// Send event with parameters to all subscribers.
+    void SendEvent(StringHash eventType, const VariantMap& eventData);
+    /// Block object from sending and receiving events.
+    void SetBlockEvents(bool block) { blockEvents_ = block; }
+    /// Return sending and receiving events blocking status.
+    bool GetBlockEvents() const { return blockEvents_; }
+
+    /// Return engine subsystem.
+    Engine* GetEngine() const;
+    /// Return time subsystem.
+    Time* GetTime() const;
+    /// Return work queue subsystem.
+    WorkQueue* GetWorkQueue() const;
+    /// Return profiler subsystem.
+    Profiler* GetProfiler() const;
+    /// Return file system subsystem.
+    FileSystem* GetFileSystem() const;
+    /// Return logging subsystem.
+    Log* GetLog() const;
+    /// Return resource cache subsystem.
+    ResourceCache* GetCache() const;
+    /// Return localization subsystem.
+    Localization* GetLocalization() const;
+    /// Return network subsystem.
+    Network* GetNetwork() const;
+    /// Return input subsystem.
+    Input* GetInput() const;
+    /// Return audio subsystem.
+    Audio* GetAudio() const;
+    /// Return UI subsystem.
+    UI* GetUI() const;
+    /// Return graphics subsystem.
+    Graphics* GetGraphics() const;
+    /// Return renderer subsystem.
+    Renderer* GetRenderer() const;
+
+    friend class Context;
+    
 protected:
     /// Execution context.
     Context* context_;
+    
+    /// Send profiled event if profiler is enabled.
+    void SendEventProfiled(StringHash eventType, VariantMap& eventData);
+    /// Send non-profiled event even if profiler is enabled.
+    void SendEventNonProfiled(StringHash eventType, VariantMap& eventData);
 
 private:
     /// Find the first event handler with no specific sender.
@@ -177,6 +236,9 @@ private:
 
     /// Event handlers. Sender is null for non-specific handlers.
     LinkedList<EventHandler> eventHandlers_;
+
+    /// Block object from sending and receiving any events.
+    bool blockEvents_;
 };
 
 template <class T> T* Object::GetSubsystem() const { return static_cast<T*>(GetSubsystem(T::GetTypeStatic())); }
@@ -361,4 +423,22 @@ struct URHO3D_API EventNameRegistrar
 /// Convenience macro to construct an EventHandler that points to a receiver object and its member function, and also defines a userdata pointer.
 #define URHO3D_HANDLER_USERDATA(className, function, userData) (new Urho3D::EventHandlerImpl<className>(this, &className::function, userData))
 
+// Explicit template specializations for most commonly used engine subsystems. They sidestep HashMap lookup and return
+// subsystem pointer cached in Context object.
+template <> Engine* Object::GetSubsystem<Engine>() const;
+template <> Time* Object::GetSubsystem<Time>() const;
+template <> WorkQueue* Object::GetSubsystem<WorkQueue>() const;
+template <> Profiler* Object::GetSubsystem<Profiler>() const;
+template <> FileSystem* Object::GetSubsystem<FileSystem>() const;
+template <> Log* Object::GetSubsystem<Log>() const;
+template <> ResourceCache* Object::GetSubsystem<ResourceCache>() const;
+template <> Localization* Object::GetSubsystem<Localization>() const;
+template <> Network* Object::GetSubsystem<Network>() const;
+template <> Web* Object::GetSubsystem<Web>() const;
+template <> Database* Object::GetSubsystem<Database>() const;
+template <> Input* Object::GetSubsystem<Input>() const;
+template <> Audio* Object::GetSubsystem<Audio>() const;
+template <> UI* Object::GetSubsystem<UI>() const;
+template <> Graphics* Object::GetSubsystem<Graphics>() const;
+template <> Renderer* Object::GetSubsystem<Renderer>() const;
 }

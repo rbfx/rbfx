@@ -25,11 +25,12 @@
 #include "../Audio/Audio.h"
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
-#include "../Core/EventProfiler.h"
+#include "../Core/Profiler.h"
 #include "../Core/ProcessUtils.h"
 #include "../Core/WorkQueue.h"
-#include "../Engine/Console.h"
-#include "../Engine/DebugHud.h"
+#include "../SystemUI/SystemUI.h"
+#include "../SystemUI/Console.h"
+#include "../SystemUI/DebugHud.h"
 #include "../Engine/Engine.h"
 #include "../Engine/EngineDefs.h"
 #include "../Graphics/Graphics.h"
@@ -46,9 +47,6 @@
 #endif
 #ifdef URHO3D_NETWORK
 #include "../Network/Network.h"
-#endif
-#ifdef URHO3D_DATABASE
-#include "../Database/Database.h"
 #endif
 #ifdef URHO3D_PHYSICS
 #include "../Physics/PhysicsWorld.h"
@@ -133,9 +131,6 @@ Engine::Engine(Context* context) :
 #ifdef URHO3D_NETWORK
     context_->RegisterSubsystem(new Network(context_));
 #endif
-#ifdef URHO3D_DATABASE
-    context_->RegisterSubsystem(new Database(context_));
-#endif
     context_->RegisterSubsystem(new Input(context_));
     context_->RegisterSubsystem(new Audio(context_));
     context_->RegisterSubsystem(new UI(context_));
@@ -156,6 +151,24 @@ Engine::Engine(Context* context) :
 #endif
 
     SubscribeToEvent(E_EXITREQUESTED, URHO3D_HANDLER(Engine, HandleExitRequested));
+    context_->engine_ = context_->GetSubsystem<Engine>();
+    context_->time_ = context_->GetSubsystem<Time>();
+    context_->workQueue_ = context_->GetSubsystem<WorkQueue>();
+#ifdef URHO3D_PROFILING
+    context_->profiler_ = context_->GetSubsystem<Profiler>();
+#endif
+    context_->fileSystem_ = context_->GetSubsystem<FileSystem>();
+#ifdef URHO3D_LOGGING
+    context_->log_ = context_->GetSubsystem<Log>();
+#endif
+    context_->cache_ = context_->GetSubsystem<ResourceCache>();
+    context_->l18n_ = context_->GetSubsystem<Localization>();
+#ifdef URHO3D_NETWORK
+    context_->network_ = context_->GetSubsystem<Network>();
+#endif
+    context_->input_ = context_->GetSubsystem<Input>();
+    context_->audio_ = context_->GetSubsystem<Audio>();
+    context_->ui_ = context_->GetSubsystem<UI>();
 }
 
 Engine::~Engine()
@@ -177,6 +190,8 @@ bool Engine::Initialize(const VariantMap& parameters)
     {
         context_->RegisterSubsystem(new Graphics(context_));
         context_->RegisterSubsystem(new Renderer(context_));
+        context_->graphics_ = context_->GetSubsystem<Graphics>();
+        context_->renderer_ = context_->GetSubsystem<Renderer>();
     }
     else
     {
@@ -307,12 +322,18 @@ bool Engine::Initialize(const VariantMap& parameters)
 #endif
 
 #ifdef URHO3D_PROFILING
-    if (GetParameter(parameters, EP_EVENT_PROFILER, true).GetBool())
+    if (Profiler* profiler = GetSubsystem<Profiler>())
     {
-        context_->RegisterSubsystem(new EventProfiler(context_));
-        EventProfiler::SetActive(true);
+        if (GetParameter(parameters, EP_PROFILER_LISTEN, false).GetBool())
+            profiler->StartListen((unsigned short)GetParameter(parameters, EP_PROFILER_PORT, PROFILER_DEFAULT_PORT).GetInt());
+        profiler->SetEventProfilingEnabled(GetParameter(parameters, EP_EVENT_PROFILER, true).GetBool());
     }
 #endif
+    if (!headless_)
+    {
+        context_->RegisterSubsystem(new SystemUI(context_));
+        context_->systemUi_ = context_->GetSubsystem<SystemUI>();
+    }
     frameTimer_.Reset();
 
     URHO3D_LOGINFO("Initialized engine");
@@ -370,7 +391,7 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
                         return false;
                 }
             }
-            if (j == resourcePrefixPaths.Size())
+            if (j == resourcePrefixPaths.Size() && !headless_)
             {
                 URHO3D_LOGERRORF(
                     "Failed to add resource path '%s', check the documentation on how to set the 'resource prefix path'",
@@ -402,7 +423,7 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
                     return false;
             }
         }
-        if (j == resourcePrefixPaths.Size())
+        if (j == resourcePrefixPaths.Size() && !headless_)
         {
             URHO3D_LOGERRORF(
                 "Failed to add resource package '%s', check the documentation on how to set the 'resource prefix path'",
@@ -472,6 +493,7 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
 
 void Engine::RunFrame()
 {
+    URHO3D_PROFILE(RunFrame);
     assert(initialized_);
 
     // If not headless, and the graphics subsystem no longer has a window open, assume we should exit
@@ -487,15 +509,7 @@ void Engine::RunFrame()
     Input* input = GetSubsystem<Input>();
     Audio* audio = GetSubsystem<Audio>();
 
-#ifdef URHO3D_PROFILING
-    if (EventProfiler::IsActive())
-    {
-        EventProfiler* eventProfiler = GetSubsystem<EventProfiler>();
-        if (eventProfiler)
-            eventProfiler->BeginFrame();
-    }
-#endif
-
+    URHO3D_PROFILE(DoFrame);
     time->BeginFrame(timeStep_);
 
     // If pause when minimized -mode is in use, stop updates and audio as necessary
@@ -520,6 +534,7 @@ void Engine::RunFrame()
     }
 
     Render();
+    URHO3D_PROFILE_END();
     ApplyFrameLimit();
 
     time->EndFrame();
@@ -856,6 +871,8 @@ VariantMap Engine::ParseParameters(const Vector<String>& arguments)
                 ret[EP_HIGH_DPI] = false;
             else if (argument == "s")
                 ret[EP_WINDOW_RESIZABLE] = true;
+            else if (argument == "hd")
+                ret[EP_HIGH_DPI] = true;
             else if (argument == "q")
                 ret[EP_LOG_QUIET] = true;
             else if (argument == "log" && !value.Empty())

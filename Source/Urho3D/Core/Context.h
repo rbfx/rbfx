@@ -197,6 +197,35 @@ public:
         return i != eventReceivers_.End() ? i->second_ : nullptr;
     }
 
+    /// Return engine subsystem.
+    inline Engine* GetEngine() const { return engine_; }
+    /// Return time subsystem.
+    inline Time* GetTime() const { return time_; }
+    /// Return work queue subsystem.
+    inline WorkQueue* GetWorkQueue() const { return workQueue_; }
+    /// Return profiler subsystem.
+    inline Profiler* GetProfiler() const { return profiler_; }
+    /// Return file system subsystem.
+    inline FileSystem* GetFileSystem() const { return fileSystem_; }
+    /// Return logging subsystem.
+    inline Log* GetLog() const { return log_; }
+    /// Return resource cache subsystem.
+    inline ResourceCache* GetCache() const { return cache_; }
+    /// Return localization subsystem.
+    inline Localization* GetLocalization() const { return l18n_; }
+    /// Return network subsystem.
+    inline Network* GetNetwork() const { return network_; }
+    /// Return input subsystem.
+    inline Input* GetInput() const { return input_; }
+    /// Return audio subsystem.
+    inline Audio* GetAudio() const { return audio_; }
+    /// Return UI subsystem.
+    inline UI* GetUI() const { return ui_; }
+    /// Return graphics subsystem.
+    inline Graphics* GetGraphics() const { return graphics_; }
+    /// Return renderer subsystem.
+    inline Renderer* GetRenderer() const { return renderer_; }
+
 private:
     /// Add event receiver.
     void AddEventReceiver(Object* receiver, StringHash eventType);
@@ -238,6 +267,37 @@ private:
     HashMap<String, Vector<StringHash> > objectCategories_;
     /// Variant map for global variables that can persist throughout application execution.
     VariantMap globalVars_;
+
+    /// Cached pointer of engine susbsystem.
+    WeakPtr<Engine> engine_;
+    /// Cached pointer of time susbsystem.
+    WeakPtr<Time> time_;
+    /// Cached pointer of work queue susbsystem.
+    WeakPtr<WorkQueue> workQueue_;
+    /// Cached pointer of profiler susbsystem.
+    WeakPtr<Profiler> profiler_;
+    /// Cached pointer of file system susbsystem.
+    WeakPtr<FileSystem> fileSystem_;
+    /// Cached pointer of logging susbsystem.
+    WeakPtr<Log> log_;
+    /// Cached pointer of resource cache susbsystem.
+    WeakPtr<ResourceCache> cache_;
+    /// Cached pointer of internationalization susbsystem.
+    WeakPtr<Localization> l18n_;
+    /// Cached pointer of network susbsystem.
+    WeakPtr<Network> network_;
+    /// Cached pointer of input susbsystem.
+    WeakPtr<Input> input_;
+    /// Cached pointer of audio susbsystem.
+    WeakPtr<Audio> audio_;
+    /// Cached pointer of UI susbsystem.
+    WeakPtr<UI> ui_;
+    /// Cached pointer of graphics susbsystem.
+    WeakPtr<Graphics> graphics_;
+    /// Cached pointer of renderer susbsystem.
+    WeakPtr<Renderer> renderer_;
+
+    friend class Engine;
 };
 
 template <class T> void Context::RegisterFactory() { RegisterFactory(new ObjectFactoryImpl<T>(this)); }

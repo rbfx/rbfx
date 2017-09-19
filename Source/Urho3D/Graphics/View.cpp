@@ -688,16 +688,6 @@ void View::Render()
     SendViewEvent(E_ENDVIEWRENDER);
 }
 
-Graphics* View::GetGraphics() const
-{
-    return graphics_;
-}
-
-Renderer* View::GetRenderer() const
-{
-    return renderer_;
-}
-
 View* View::GetSourceView() const
 {
     return sourceView_;
