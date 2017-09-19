@@ -116,7 +116,7 @@ static void CallbackFunction(ConstFSEventStreamRef streamRef, void* clientCallBa
 static void CallbackFunction(ConstFSEventStreamRef streamRef, void* clientCallBackInfo, size_t numEvents, void* eventPaths, const FSEventStreamEventFlags eventFlags[], const FSEventStreamEventId eventIds[])
 {
     MacFileWatcher* watcher = (MacFileWatcher*)clientCallBackInfo;
-    NSArray* paths = eventPaths;
+    NSArray* paths = (NSArray*)eventPaths;
     int index = -1;
     for (NSString* fileName in paths)
     {

@@ -20,6 +20,10 @@
 // THE SOFTWARE.
 //
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /// Return true when the running OS has the specified version number or later.
 bool CheckMinimalVersion(int major, int minor);
 
@@ -34,3 +38,7 @@ void CloseFileWatcher(void* watcher);
 
 /// Read changes queued by the file watcher.
 const char* ReadFileWatcher(void* watcher);
+
+#ifdef __cplusplus
+}
+#endif
