@@ -107,6 +107,8 @@ public:
     static void Write(int level, const String& message);
     /// Write raw output to the log.
     static void WriteRaw(const String& message, bool error = false);
+    /// Return instance of opened log file.
+    const File* GetLogFile() const { return logFile_; }
 
 private:
     /// Handle end of frame. Process the threaded log messages.
