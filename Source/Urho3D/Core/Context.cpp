@@ -23,7 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
-#include "../Core/EventProfiler.h"
+#include "../Core/Profiler.h"
 #include "../IO/Log.h"
 
 #ifndef MINI_URHO
@@ -447,30 +447,12 @@ void Context::RemoveEventReceiver(Object* receiver, Object* sender, StringHash e
 
 void Context::BeginSendEvent(Object* sender, StringHash eventType)
 {
-#ifdef URHO3D_PROFILING
-    if (EventProfiler::IsActive())
-    {
-        EventProfiler* eventProfiler = GetSubsystem<EventProfiler>();
-        if (eventProfiler)
-            eventProfiler->BeginBlock(eventType);
-    }
-#endif
-
     eventSenders_.Push(sender);
 }
 
 void Context::EndSendEvent()
 {
     eventSenders_.Pop();
-
-#ifdef URHO3D_PROFILING
-    if (EventProfiler::IsActive())
-    {
-        EventProfiler* eventProfiler = GetSubsystem<EventProfiler>();
-        if (eventProfiler)
-            eventProfiler->EndBlock();
-    }
-#endif
 }
 
 }

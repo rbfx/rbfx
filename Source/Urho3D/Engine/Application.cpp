@@ -25,6 +25,7 @@
 #include "../Engine/Application.h"
 #include "../IO/IOEvents.h"
 #include "../IO/Log.h"
+#include "../Core/Profiler.h"
 
 #if defined(IOS) || defined(TVOS)
 #include "../Graphics/Graphics.h"
@@ -62,6 +63,8 @@ Application::Application(Context* context) :
 
 int Application::Run()
 {
+    // Profiler requires main thread to be named "Main" as fps calculations depend on it.
+    URHO3D_PROFILE_THREAD("Main");
 #if !defined(__GNUC__) || __EXCEPTIONS
     try
     {

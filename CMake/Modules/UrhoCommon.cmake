@@ -115,3 +115,29 @@ macro (install_to_build_tree TARGET)
     add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND "${CMAKE_COMMAND}"
         -D CMAKE_INSTALL_PREFIX:string=${CMAKE_BINARY_DIR} -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake")
 endmacro ()
+
+# Macro deploys Qt dlls to folder where target executable is located.
+# Macro arguments:
+#  target - name of target which links to Qt.
+macro(deploy_qt_dlls target)
+    if (WIN32)
+        if (TARGET ${target})
+            # Find Qt dir
+            foreach (dir ${CMAKE_PREFIX_PATH})
+                if (EXISTS ${dir}/bin/windeployqt.exe)
+                    set(windeployqt "${dir}/bin/windeployqt.exe")
+                    break()
+                endif ()
+            endforeach ()
+            if (windeployqt)
+                add_custom_command(
+                    TARGET ${target}
+                    POST_BUILD
+                    COMMAND "${windeployqt}" --no-quick-import --no-translations --no-system-d3d-compiler --no-compiler-runtime --no-webkit2 --no-angle --no-opengl-sw $<TARGET_FILE_DIR:${target}>
+                    VERBATIM
+                )
+            endif ()
+        endif ()
+    endif ()
+endmacro()
+

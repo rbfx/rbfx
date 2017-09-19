@@ -41,6 +41,7 @@
 #include <Urho3D/UI/UI.h>
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/IO/Log.h>
+#include <Urho3D/Core/Profiler.h>
 
 Sample::Sample(Context* context) :
     Application(context),
@@ -80,6 +81,10 @@ void Sample::Start()
     else if (GetSubsystem<Input>()->GetNumJoysticks() == 0)
         // On desktop platform, do not detect touch when we already got a joystick
         SubscribeToEvent(E_TOUCHBEGIN, URHO3D_HANDLER(Sample, HandleTouchBegin));
+
+#if URHO3D_PROFILING
+    GetProfiler()->StartListen();
+#endif
 
     // Create logo
     CreateLogo();

@@ -44,10 +44,7 @@ bool Resource::Load(Deserializer& source)
     // create a type name -based profile block here
 #ifdef URHO3D_PROFILING
     String profileBlockName("Load" + GetTypeName());
-
-    Profiler* profiler = GetSubsystem<Profiler>();
-    if (profiler)
-        profiler->BeginBlock(profileBlockName.CString());
+    URHO3D_PROFILE_SCOPED(profileBlockName.CString(), PROFILER_COLOR_RESOURCES);
 #endif
 
     // If we are loading synchronously in a non-main thread, behave as if async loading (for example use
@@ -57,11 +54,6 @@ bool Resource::Load(Deserializer& source)
     if (success)
         success &= EndLoad();
     SetAsyncLoadState(ASYNC_DONE);
-
-#ifdef URHO3D_PROFILING
-    if (profiler)
-        profiler->EndBlock();
-#endif
 
     return success;
 }

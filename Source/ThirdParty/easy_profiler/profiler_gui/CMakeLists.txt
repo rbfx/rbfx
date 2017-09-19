@@ -46,7 +46,7 @@ if (Qt5Widgets_FOUND)
     # ATOMIC BEGIN
     target_link_libraries(profiler_gui Qt5::Widgets)
     set_target_properties(profiler_gui PROPERTIES OUTPUT_NAME Profiler)
-    set_property(TARGET profiler_gui PROPERTY RUNTIME_OUTPUT_DIRECTORY ${ATOMIC_SOURCE_DIR}/Artifacts/Build/Profiler)
+    install(TARGETS profiler_gui RUNTIME DESTINATION bin)
     if (TARGET easy_profiler_md)
         target_link_libraries(profiler_gui easy_profiler_md)
     else ()

@@ -110,10 +110,6 @@ void Time::BeginFrame(float timeStep)
 
     timeStep_ = timeStep;
 
-    Profiler* profiler = GetSubsystem<Profiler>();
-    if (profiler)
-        profiler->BeginFrame();
-
     {
         URHO3D_PROFILE(BeginFrame);
 
@@ -135,10 +131,6 @@ void Time::EndFrame()
         // Frame end event
         SendEvent(E_ENDFRAME);
     }
-
-    Profiler* profiler = GetSubsystem<Profiler>();
-    if (profiler)
-        profiler->EndFrame();
 }
 
 void Time::SetTimerPeriod(unsigned mSec)
