@@ -98,7 +98,7 @@ option(URHO3D_STATIC_RUNTIME "Enable link to static runtime" OFF)
 option(URHO3D_LOGGING "Enable logging subsystem" ON)
 
 if (WIN32)
-    option(URHO3D_RENDERER "Select renderer: D3D9 | D3D11 | OpenGL" D3D11)
+    set(URHO3D_RENDERER D3D11 CACHE STRING "Select renderer: D3D9 | D3D11 | OpenGL")
     if (MSVC)
         option(URHO3D_MINIDUMPS "Enable writing minidumps on crash" ${URHO3D_ENABLE_ALL})
     endif ()

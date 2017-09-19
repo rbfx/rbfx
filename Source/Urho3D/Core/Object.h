@@ -426,21 +426,22 @@ struct URHO3D_API EventNameRegistrar
 
 // Explicit template specializations for most commonly used engine subsystems. They sidestep HashMap lookup and return
 // subsystem pointer cached in Context object.
-template <> Engine* Object::GetSubsystem<Engine>() const;
-template <> Time* Object::GetSubsystem<Time>() const;
-template <> WorkQueue* Object::GetSubsystem<WorkQueue>() const;
-template <> Profiler* Object::GetSubsystem<Profiler>() const;
-template <> FileSystem* Object::GetSubsystem<FileSystem>() const;
-template <> Log* Object::GetSubsystem<Log>() const;
-template <> ResourceCache* Object::GetSubsystem<ResourceCache>() const;
-template <> Localization* Object::GetSubsystem<Localization>() const;
-template <> Network* Object::GetSubsystem<Network>() const;
-template <> Web* Object::GetSubsystem<Web>() const;
-template <> Database* Object::GetSubsystem<Database>() const;
-template <> Input* Object::GetSubsystem<Input>() const;
-template <> Audio* Object::GetSubsystem<Audio>() const;
-template <> UI* Object::GetSubsystem<UI>() const;
-template <> SystemUI* Object::GetSubsystem<SystemUI>() const;
-template <> Graphics* Object::GetSubsystem<Graphics>() const;
-template <> Renderer* Object::GetSubsystem<Renderer>() const;
+template <> URHO3D_API Engine* Object::GetSubsystem<Engine>() const;
+template <> URHO3D_API Time* Object::GetSubsystem<Time>() const;
+template <> URHO3D_API WorkQueue* Object::GetSubsystem<WorkQueue>() const;
+template <> URHO3D_API Profiler* Object::GetSubsystem<Profiler>() const;
+template <> URHO3D_API FileSystem* Object::GetSubsystem<FileSystem>() const;
+template <> URHO3D_API Log* Object::GetSubsystem<Log>() const;
+template <> URHO3D_API ResourceCache* Object::GetSubsystem<ResourceCache>() const;
+template <> URHO3D_API Localization* Object::GetSubsystem<Localization>() const;
+template <> URHO3D_API Network* Object::GetSubsystem<Network>() const;
+template <> URHO3D_API Web* Object::GetSubsystem<Web>() const;
+template <> URHO3D_API Database* Object::GetSubsystem<Database>() const;
+template <> URHO3D_API Input* Object::GetSubsystem<Input>() const;
+template <> URHO3D_API Audio* Object::GetSubsystem<Audio>() const;
+template <> URHO3D_API UI* Object::GetSubsystem<UI>() const;
+template <> URHO3D_API SystemUI* Object::GetSubsystem<SystemUI>() const;
+template <> URHO3D_API Graphics* Object::GetSubsystem<Graphics>() const;
+template <> URHO3D_API Renderer* Object::GetSubsystem<Renderer>() const;
+
 }
