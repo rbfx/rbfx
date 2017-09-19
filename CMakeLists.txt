@@ -95,6 +95,7 @@ option(URHO3D_PROFILING "Profiler support enabled" ${URHO3D_ENABLE_ALL})
 option(URHO3D_TOOLS "Tools enabled" ${URHO3D_ENABLE_ALL})
 option(URHO3D_SAMPLES "Build samples" ${URHO3D_ENABLE_ALL})
 option(URHO3D_STATIC_RUNTIME "Enable link to static runtime" OFF)
+option(URHO3D_LOGGING "Enable logging subsystem" ON)
 
 if (WIN32)
     option(URHO3D_RENDERER "Select renderer: D3D9 | D3D11 | OpenGL" D3D11)
