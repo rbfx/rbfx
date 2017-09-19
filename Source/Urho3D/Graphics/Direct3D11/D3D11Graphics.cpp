@@ -2680,4 +2680,20 @@ void Graphics::SetTextureUnitMappings()
     textureUnits_["ZoneVolumeMap"] = TU_ZONE;
 }
 
+void Graphics::SetTextureForUpdate(Texture* texture)
+{
+}
+
+void Graphics::MarkFBODirty()
+{
+}
+
+void Graphics::SetVBO(unsigned object)
+{
+}
+
+void Graphics::SetUBO(unsigned object)
+{
+}
+
 }

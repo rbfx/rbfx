@@ -203,4 +203,14 @@ void Texture::RegenerateLevels()
     levelsDirty_ = false;
 }
 
+unsigned Texture::GetExternalFormat(unsigned format)
+{
+    return 0;
+}
+
+unsigned Texture::GetDataType(unsigned format)
+{
+    return 0;
+}
+
 }

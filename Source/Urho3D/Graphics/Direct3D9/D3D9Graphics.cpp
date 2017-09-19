@@ -2685,4 +2685,43 @@ void Graphics::SetTextureUnitMappings()
     textureUnits_["ZoneVolumeMap"] = TU_ZONE;
 }
 
+
+void Graphics::SetTextureForUpdate(Texture* texture)
+{
+}
+
+void Graphics::SetTextureParametersDirty()
+{
+}
+
+ShaderProgram* Graphics::GetShaderProgram() const
+{
+    return 0;
+}
+
+void Graphics::Restore()
+{
+}
+
+void Graphics::CleanupRenderSurface(RenderSurface* surface)
+{
+}
+
+ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType type, unsigned index, unsigned size)
+{
+    return 0;
+}
+
+void Graphics::MarkFBODirty()
+{
+}
+
+void Graphics::SetVBO(unsigned object)
+{
+}
+
+void Graphics::SetUBO(unsigned object)
+{
+}
+
 }

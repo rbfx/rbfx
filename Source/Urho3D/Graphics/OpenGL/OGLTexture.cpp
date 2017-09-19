@@ -344,4 +344,14 @@ void Texture::RegenerateLevels()
     levelsDirty_ = false;
 }
 
+unsigned Texture::GetSRVFormat(unsigned format)
+{
+    return 0;
+}
+
+unsigned Texture::GetDSVFormat(unsigned format)
+{
+    return 0;
+}
+
 }
