@@ -606,6 +606,19 @@ public:
     /// Return last pair.
     const KeyValue& Back() const { return *(--End()); }
 
+    /// Insert a pair only if a corresponding key does not already exist.
+    Iterator InsertNew(const T& key, const U& value)
+    {
+        unsigned hashKey = Hash(key);
+        if (ptrs_)
+        {
+            Node* node = FindNode(key, hashKey);
+            if (node)
+                return Iterator(node);
+        }
+
+        return InsertNode(key, value, false);
+    }
 private:
     /// Return the head node.
     Node* Head() const { return static_cast<Node*>(head_); }
