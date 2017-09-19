@@ -107,6 +107,16 @@ public:
     /// Return whether the file originates from a package.
     bool IsPackaged() const { return offset_ != 0; }
 
+    /// Reads a text file, ensuring data from file is 0 terminated
+    virtual void ReadText(String& text);
+
+    /// Reads a text file, ensuring data from file is 0 terminated
+    virtual String ReadText() { String retValue; ReadText(retValue); return retValue; }
+
+    /// Copy a file from a source file, must be opened and FILE_WRITE
+    /// Unlike FileSystem.Copy this copy works when the source file is in a package file
+    bool Copy(File* srcFile);
+
 private:
     /// Open file internally using either C standard IO functions or SDL RWops for Android asset files. Return true if successful.
     bool OpenInternal(const String& fileName, FileMode mode, bool fromPackage = false);
