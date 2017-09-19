@@ -25,6 +25,7 @@
 #include "../IO/File.h"
 #include "../IO/Log.h"
 #include "../IO/PackageFile.h"
+#include "../IO/FileSystem.h"
 
 namespace Urho3D
 {
@@ -153,6 +154,39 @@ const PackageEntry* PackageFile::GetEntry(const String& fileName) const
 #endif
 
     return nullptr;
+}
+
+void PackageFile::Scan(Vector<String>& result, const String& pathName, const String& filter, bool recursive) const
+{
+    result.Clear();
+
+    String sanitizedPath = GetSanitizedPath(pathName);
+    String filterExtension = filter.Substring(filter.FindLast('.'));
+    if (filterExtension.Contains('*'))
+        filterExtension.Clear();
+
+    bool caseSensitive = true;
+#ifdef _WIN32
+    // On Windows ignore case in string comparisons
+    caseSensitive = false;
+#endif
+
+    const StringVector& entryNames = GetEntryNames();
+    for (StringVector::ConstIterator i = entryNames.Begin(); i != entryNames.End(); ++i)
+    {
+        String entryName = GetSanitizedPath(*i);
+        if ((filterExtension.Empty() || entryName.EndsWith(filterExtension, caseSensitive)) &&
+            entryName.StartsWith(sanitizedPath, caseSensitive))
+        {
+            String fileName = entryName.Substring(sanitizedPath.Length());
+            if (fileName.StartsWith("\\") || fileName.StartsWith("/"))
+                fileName = fileName.Substring(1, fileName.Length() - 1);
+            if (!recursive && (fileName.Contains("\\") || fileName.Contains("/")))
+                continue;
+
+            result.Push(fileName);
+        }
+    }
 }
 
 }
