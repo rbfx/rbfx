@@ -1,0 +1,133 @@
+## Credits
+Urho3D development, contributions and bugfixes by:
+- Lasse Öörni
+- Wei Tjong Yao
+- Aster Jian
+- Ricardo Abreu
+- Vivienne Anthony
+- Colin Barrett
+- Erik Beran
+- Gauthier Billot
+- Loic Blot
+- Danny Boisvert
+- Sergey Bosko
+- Lisandro Bruzzo
+- Thomas Böhm
+- Carlo Carollo
+- Pete Chown
+- Christian Clavet
+- Sebastian Delatorre (primitivewaste)
+- Stanislav Demyanovich
+- Rainer Deyke
+- Josh Engebretson
+- Simon Flores
+- Manuel Freiberger
+- Chris Friesen
+- Alex Fuller
+- Konstantin Guschin
+- Henrik Heino
+- Mika Heinonen
+- Victor Holt
+- Johnathan Jenkins
+- Jukka Jylänki
+- Graham King
+- Jason Kinzer
+- Cameron Kline
+- Jan Korous
+- Eugene Kozlov
+- Gunnar Kriik
+- Aliaksandr Kryvashein
+- Artem Kulyk
+- Rokas Kupstys
+- Ali Kämäräinen
+- Sergey Lapin
+- Pete Leigh
+- Pengfei Li
+- Arnis Lielturks
+- Frode 'Modanung' Lindeijer
+- Thorbjørn Lindeijer
+- Nathanial Lydick
+- Xavier Maupeu
+- Iain Merrick
+- Justin Miller
+- Jonne Nauha
+- Huy Nguyen
+- Paul Noome
+- David Palacios
+- Alex Parlett
+- Jordan Patterson
+- Georgii Pelageikin
+- Anton Petrov
+- Vladimir Pobedinsky
+- Franck Poulain
+- Pranjal Raihan
+- Svyatoslav Razmyslov
+- Mariusz Richtscheid
+- Nick Royer
+- Jonathan Sandusky
+- Miika Santala
+- Anatoly Sennov
+- Matan Shukry
+- Bengt Soderstrom
+- Hualin Song
+- James Thomas
+- Joshua Tippetts
+- Konstantin Tomashevich
+- Yusuf Umar
+- Mateus Vendramini
+- Daniel Wiberg
+- Steven Zhang
+- AGreatFish
+- BlueMagnificent
+- CG-SS
+- Enhex
+- Fastran
+- Firegorilla
+- Gordon-F
+- Lumak
+- Magic.Lixin
+- Mike3D
+- MonkeyFirst
+- Ner'zhul
+- Newb I the Newbd
+- OvermindDL1
+- PredatorMF
+- Scellow
+- Skrylar
+- TheComet93
+- Y-way
+- 1vanK
+- andmar1x
+- amadeus_osa
+- atship
+- att
+- celeron55
+- cosmy1
+- damu
+- dragonCASTjosh
+- feltech
+- fredakilla
+- gleblebedev
+- hdunderscore
+- lhinuz
+- lvshiling
+- marynate
+- meshonline
+- mightyCelu
+- neat3d
+- nemerle
+- ninjastone
+- orefkov
+- proller
+- raould
+- rasteron
+- reattiva
+- rifai
+- rikorin
+- skaiware
+- ssinai1
+- svifylabs
+- szamq
+- thebluefish
+- tommy3
+- yushli
