@@ -101,6 +101,16 @@ public:
     String GetUserDocumentsDir() const;
     /// Return the application preferences directory.
     String GetAppPreferencesDir(const String& org, const String& app) const;
+    /// Check if a file or directory exists at the specified path
+    bool Exists(const String& pathName) const { return FileExists(pathName) || DirExists(pathName); }
+    /// Copy files from one directory to another.
+    bool CopyDir(const String& directoryIn, const String& directoryOut);
+    /// Create subdirectories. New subdirectories will be made only in a subpath specified by `subdirectory`.
+    bool CreateDirs(const String& root, const String& subdirectory);
+    /// Create specified subdirectory and any parent directory if it does not exist.
+    bool CreateDirsRecursive(const String& directoryIn);
+    /// Remove files in a directory, or remove entire directory recursively.
+    bool RemoveDir(const String& directoryIn, bool recursive);
 
 private:
     /// Scan directory, called internally.
@@ -148,5 +158,12 @@ URHO3D_API String GetNativePath(const String& pathName);
 URHO3D_API WString GetWideNativePath(const String& pathName);
 /// Return whether a path is absolute.
 URHO3D_API bool IsAbsolutePath(const String& pathName);
+///
+URHO3D_API bool IsAbsoluteParentPath(const String& absParentPath, const String& fullPath);
+///
+URHO3D_API String GetSanitizedPath(const String& path);
+/// Given two absolute directory paths, get the relative path from one to the other
+/// Returns false if either path isn't absolute, or if they are unrelated
+URHO3D_API bool GetRelativePath(const String& fromPath, const String& toPath, String& output);
 
 }
