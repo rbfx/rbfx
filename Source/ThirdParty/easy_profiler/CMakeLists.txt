@@ -7,7 +7,7 @@ set(EASY_PROGRAM_VERSION_PATCH 0)
 set(EASY_PRODUCT_VERSION_STRING "${EASY_PROGRAM_VERSION_MAJOR}.${EASY_PROGRAM_VERSION_MINOR}.${EASY_PROGRAM_VERSION_PATCH}")
 
 # ATOMIC BEGIN
-find_package(Qt5Widgets)
+find_package(Qt5Widgets QUIET)
 
 set(EASY_OPTION_LIB_STATIC ON CACHE BOOL "" FORCE)
 set(EASY_OPTION_PREDEFINED_COLORS ON CACHE BOOL "" FORCE)
@@ -42,7 +42,7 @@ add_subdirectory(easy_profiler_core)
 
 # ATOMIC BEGIN
 # Only include the Qt client if on we're building desktop platform and Qt5 was found on system
-if (Qt5Widgets_FOUND)
+if (Qt5Widgets_FOUND AND URHO3D_TOOLS)
     add_subdirectory(profiler_gui)
 endif()
 install (DIRECTORY easy_profiler_core/include/easy DESTINATION ${DEST_THIRDPARTY_HEADERS}/ FILES_MATCHING PATTERN *.h)

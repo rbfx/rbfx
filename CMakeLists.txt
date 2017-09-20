@@ -125,6 +125,7 @@ endif ()
 set (CMAKE_CXX_STANDARD 11)
 set (CMAKE_INCLUDE_CURRENT_DIR ON)
 set (CMAKE_POSITION_INDEPENDENT_CODE ON)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 if (CMAKE_CROSSCOMPILING AND MINGW)
     # Symlink windows libraries and headers to appease some libraries that do not use all-lowercase names and break on

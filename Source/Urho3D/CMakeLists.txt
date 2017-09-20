@@ -103,6 +103,25 @@ if (URHO3D_URHO2D)
     )
 endif ()
 
+# Group source code in VS solution
+group_sources("Audio")
+group_sources("Container")
+group_sources("Core")
+group_sources("Engine")
+group_sources("Graphics")
+group_sources("IK")
+group_sources("Input")
+group_sources("IO")
+group_sources("Math")
+group_sources("Navigation")
+group_sources("Network")
+group_sources("Physics")
+group_sources("Resource")
+group_sources("Scene")
+group_sources("SystemUI")
+group_sources("UI")
+group_sources("Urho2D")
+
 add_library(Urho3D
     ${SOURCE_FILES}
     ${SOURCE_FILES_EXT}
@@ -237,9 +256,6 @@ endif ()
 
 if (WIN32)
     set (SHARED_LIB_INSTALL_DIR bin)
-    if (URHO3D_MINIDUMPS)
-        target_link_libraries(Urho3D dbghelp)
-    endif ()
 else ()
     set (SHARED_LIB_INSTALL_DIR lib${LIB_SUFFIX})
 endif ()
