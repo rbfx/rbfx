@@ -3,7 +3,9 @@ platform:
   - x86
   - x64
 environment:
-  URHO3D_D3D11: 1
+  global:
+    URHO3D_D3D11: 1
+    URHO3D_ENABLE_ALL: ON
   matrix:
     - BUILD_SHARED_LIBS: OFF
     - BUILD_SHARED_LIBS: ON
@@ -20,3 +22,6 @@ after_build:
 test: off
 artifacts:
   path: Urho3D-SDK.7z
+branches:
+  except:
+    - /^travis-.*$/

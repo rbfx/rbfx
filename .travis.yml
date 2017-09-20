@@ -18,6 +18,9 @@ notifications:
   email:
     on_success: never
     on_failure: never
+branches:
+  except:
+    - /^appveyor-.*$/
 matrix:
   fast_finish: true
   include:
