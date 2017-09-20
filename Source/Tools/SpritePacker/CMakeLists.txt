@@ -20,11 +20,8 @@
 # THE SOFTWARE.
 #
 
-# Define target name
-set (TARGET_NAME SpritePacker)
-
-# Define source files
-define_source_files ()
-
-# Setup target
-setup_executable (TOOL)
+file (GLOB SOURCE_FILES *.cpp *.h)
+add_executable (SpritePacker ${SOURCE_FILES})
+target_link_libraries (SpritePacker Urho3D)
+set_target_properties(SpritePacker PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
+install(TARGETS SpritePacker RUNTIME DESTINATION bin)

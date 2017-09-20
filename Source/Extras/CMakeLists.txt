@@ -20,12 +20,7 @@
 # THE SOFTWARE.
 #
 
-# Set project name
-project (Urho3D-Extras)
-
-# Find Urho3D library
-find_package (Urho3D REQUIRED)
-include_directories (${URHO3D_INCLUDE_DIRS})
-
 # Urho3D extras
 add_subdirectory (OgreBatchConverter)
+
+install(DIRECTORY OgreMaxscriptExport DESTINATION ${DEST_SHARE_DIR})

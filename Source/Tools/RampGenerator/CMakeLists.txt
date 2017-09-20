@@ -20,18 +20,8 @@
 # THE SOFTWARE.
 #
 
-# Define target name
-set (TARGET_NAME RampGenerator)
-
-# Define preprocessor macros
-if (MINGW AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6.1.0 OR CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 6.1.0) AND URHO3D_LIB_TYPE STREQUAL STATIC)
-    # Workaround the "multiple definition of" linking issue in STATIC build
-else ()
-    add_definitions (-DSTB_IMAGE_WRITE_IMPLEMENTATION)
-endif ()
-
-# Define source files
-define_source_files ()
-
-# Setup target
-setup_executable (TOOL)
+file (GLOB SOURCE_FILES *.cpp *.h)
+add_executable (RampGenerator ${SOURCE_FILES})
+target_link_libraries (RampGenerator Urho3D)
+set_target_properties(RampGenerator PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
+install(TARGETS RampGenerator RUNTIME DESTINATION bin)

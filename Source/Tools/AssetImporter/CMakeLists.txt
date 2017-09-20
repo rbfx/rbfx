@@ -20,16 +20,8 @@
 # THE SOFTWARE.
 #
 
-# Define target name
-set (TARGET_NAME AssetImporter)
-
-# Define source files
-define_source_files ()
-
-# Define dependency libs
-add_subdirectory (../../ThirdParty/Assimp ../../ThirdParty/Assimp)
-set (LIBS Assimp)
-set (INCLUDE_DIRS ../../ThirdParty/Assimp/include)
-
-# Setup target
-setup_executable (TOOL)
+file (GLOB SOURCE_FILES *.cpp *.h)
+add_executable (AssetImporter ${SOURCE_FILES})
+target_link_libraries(AssetImporter Urho3D Assimp)
+set_target_properties(AssetImporter PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
+install(TARGETS AssetImporter RUNTIME DESTINATION bin)

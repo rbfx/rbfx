@@ -32,13 +32,13 @@ add_subdirectory(ThirdParty)
 add_subdirectory (Urho3D)
 
 if (URHO3D_TOOLS)
-#    add_subdirectory (Tools)
+    add_subdirectory (Tools)
 endif ()
 
 if (URHO3D_SAMPLES)
     add_subdirectory (Samples)
 endif ()
 
-#if (URHO3D_EXTRAS)
-#    add_subdirectory (Extras)
-#endif ()
+if (URHO3D_EXTRAS)
+    add_subdirectory (Extras)
+endif ()
