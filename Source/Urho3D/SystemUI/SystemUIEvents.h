@@ -39,4 +39,10 @@ URHO3D_EVENT(E_SYSTEMUIFRAME, SystemUiFrame)
 
 }
 
+URHO3D_EVENT(E_ATTRIBUTEINSPECTORMENU, AttributeInspectorMenu)
+{
+    URHO3D_PARAM(P_SERIALIZABLE, Serializable);                  // Serializable that is being inspected.
+    URHO3D_PARAM(P_ATTRIBUTEINFO, AttributeInfo);                // Attribute info of current attribute.
+}
+
 }

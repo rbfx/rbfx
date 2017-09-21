@@ -240,6 +240,10 @@ else ()
     target_link_libraries (Urho3D ${DIRECT3D_LIBRARIES})
 endif ()
 
+if (URHO3D_TOOLS)
+    target_link_libraries (Urho3D tinyfiledialogs)
+endif ()
+
 target_include_directories(Urho3D PUBLIC ${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS})
 
 if (BUILD_SHARED_LIBS)
