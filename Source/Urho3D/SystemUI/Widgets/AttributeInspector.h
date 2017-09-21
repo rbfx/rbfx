@@ -23,6 +23,8 @@
 #pragma once
 
 
+#include <array>
+
 #include "../../Core/Object.h"
 #include "../../Core/Context.h"
 
@@ -30,7 +32,7 @@
 namespace Urho3D
 {
 
-class AttributeInspector : public Object
+class URHO3D_API AttributeInspector : public Object
 {
     URHO3D_OBJECT(AttributeInspector, Object);
 public:
@@ -60,7 +62,7 @@ protected:
     WeakPtr<Serializable> lastSerializable_;
 };
 
-class AttributeInspectorWindow : public AttributeInspector
+class URHO3D_API AttributeInspectorWindow : public AttributeInspector
 {
     URHO3D_OBJECT(AttributeInspectorWindow, Object);
 public:
