@@ -181,6 +181,11 @@ void Time::Sleep(unsigned mSec)
 #endif
 }
 
+float Time::GetFramesPerSecond() const
+{
+    return 1.0f / timeStep_;
+}
+
 Timer::Timer()
 {
     Reset();
