@@ -64,12 +64,14 @@ Urho3D uses the following third-party libraries:
 - imgui 1.51 (https://github.com/ocornut/imgui)
 - easy_profiler 1.3.0 (https://github.com/yse/easy_profiler)
 - tinyfiledialogs v2.9.1 (http://tinyfiledialogs.sourceforge.net/)
+- IconFontCppHeaders (https://github.com/juliettef/IconFontCppHeaders)
 
 DXT / ETC1 / PVRTC decompression code based on the Squish library and the Oolong Engine.
 Jack and mushroom models from the realXtend project. (https://www.realxtend.org)
 Ninja model and terrain, water, smoke, flare and status bar textures from OGRE.
 BlueHighway font from Larabie Fonts.
 Anonymous Pro font by Mark Simonson.
+Font Awesome font from http://fontawesome.io/.
 NinjaSnowWar sounds by Veli-Pekka Tätilä.
 PBR textures from Substance Share. (https://share.allegorithmic.com)
 IBL textures from HDRLab's sIBL Archive.
