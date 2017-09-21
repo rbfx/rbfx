@@ -63,6 +63,7 @@ Urho3D uses the following third-party libraries:
 - WebP (https://chromium.googlesource.com/webm/libwebp)
 - imgui 1.51 (https://github.com/ocornut/imgui)
 - easy_profiler 1.3.0 (https://github.com/yse/easy_profiler)
+- tinyfiledialogs v2.9.1 (http://tinyfiledialogs.sourceforge.net/)
 
 DXT / ETC1 / PVRTC decompression code based on the Squish library and the Oolong Engine.
 Jack and mushroom models from the realXtend project. (https://www.realxtend.org)

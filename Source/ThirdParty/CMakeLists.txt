@@ -77,6 +77,7 @@ endif ()
 
 if (URHO3D_TOOLS)
     add_subdirectory(Assimp)
+    add_subdirectory(tinyfiledialogs)
 endif ()
 
 # Group third party dependencies into ThirdParty subfolder in VS solution.
