@@ -171,6 +171,9 @@ void Console::RenderUi(StringHash eventType, VariantMap& eventData)
     bool wasOpen = isOpen_;
     ImVec2 size(graphics->GetWidth(), windowSize_.y_);
     ui::SetNextWindowSize(size);
+
+    auto old_rounding = ui::GetStyle().WindowRounding;
+    ui::GetStyle().WindowRounding = 0;
     if (ui::Begin("Debug Console", &isOpen_, ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoMove|
                      ImGuiWindowFlags_NoSavedSettings))
     {
@@ -235,6 +238,8 @@ void Console::RenderUi(StringHash eventType, VariantMap& eventData)
     windowSize_.y_ = ui::GetWindowHeight();
 
     ui::End();
+
+    ui::GetStyle().WindowRounding = old_rounding;
 }
 
 void Console::Clear()
