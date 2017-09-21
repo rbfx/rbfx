@@ -28,9 +28,11 @@
 #include "../Core/Profiler.h"
 #include "../Core/ProcessUtils.h"
 #include "../Core/WorkQueue.h"
+#ifdef URHO3D_SYSTEMUI
 #include "../SystemUI/SystemUI.h"
 #include "../SystemUI/Console.h"
 #include "../SystemUI/DebugHud.h"
+#endif
 #include "../Engine/Engine.h"
 #include "../Engine/EngineDefs.h"
 #include "../Graphics/Graphics.h"
@@ -331,8 +333,10 @@ bool Engine::Initialize(const VariantMap& parameters)
 #endif
     if (!headless_)
     {
+#ifdef URHO3D_SYSTEMUI
         context_->RegisterSubsystem(new SystemUI(context_));
         context_->systemUi_ = context_->GetSubsystem<SystemUI>();
+#endif
     }
     frameTimer_.Reset();
 
@@ -545,6 +549,7 @@ Console* Engine::CreateConsole()
     if (headless_ || !initialized_)
         return nullptr;
 
+#ifdef URHO3D_SYSTEMUI
     // Return existing console if possible
     Console* console = GetSubsystem<Console>();
     if (!console)
@@ -554,6 +559,9 @@ Console* Engine::CreateConsole()
     }
 
     return console;
+#else
+    return nullptr;
+#endif
 }
 
 DebugHud* Engine::CreateDebugHud()
@@ -561,6 +569,7 @@ DebugHud* Engine::CreateDebugHud()
     if (headless_ || !initialized_)
         return nullptr;
 
+#ifdef URHO3D_SYSTEMUI
     // Return existing debug HUD if possible
     DebugHud* debugHud = GetSubsystem<DebugHud>();
     if (!debugHud)
@@ -570,6 +579,9 @@ DebugHud* Engine::CreateDebugHud()
     }
 
     return debugHud;
+#else
+    return nullptr;
+#endif
 }
 
 void Engine::SetTimeStepSmoothing(int frames)

@@ -35,7 +35,6 @@ file (GLOB_RECURSE SOURCE_FILES_EXT
     Resource/*.cpp Resource/*.h
     Scene/*.cpp Scene/*.h
     UI/*.cpp UI/*.h
-    SystemUI/*.cpp SystemUI/*.h
 )
 
 install (
@@ -103,6 +102,14 @@ if (URHO3D_URHO2D)
     )
 endif ()
 
+if (URHO3D_SYSTEMUI)
+    file (GLOB_RECURSE SOURCE_FILES_SYSTEMUI SystemUI/*.cpp SystemUI/*.h)
+    install (
+        DIRECTORY SystemUI
+        DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
+    )
+endif ()
+
 # Group source code in VS solution
 group_sources("Audio")
 group_sources("Container")
@@ -134,6 +141,7 @@ add_library(Urho3D
     ${SOURCE_FILES_PHYSICS}
     ${SOURCE_FILES_PHYSICS}
     ${SOURCE_FILES_URHO2D}
+    ${SOURCE_FILES_SYSTEMUI}
 )
 target_include_directories(Urho3D PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 

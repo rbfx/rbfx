@@ -142,8 +142,10 @@ void Sample::InitMouseMode(MouseMode mode)
         if (useMouseMode_ != MM_ABSOLUTE)
         {
             input->SetMouseMode(useMouseMode_);
+#ifdef URHO3D_SYSTEMUI
             if (console && console->IsVisible())
                 input->SetMouseMode(MM_ABSOLUTE, true);
+#endif
         }
     }
     else
@@ -225,10 +227,12 @@ void Sample::HandleKeyUp(StringHash /*eventType*/, VariantMap& eventData)
     // Close console (if open) or exit when ESC is pressed
     if (key == KEY_ESCAPE)
     {
+#ifdef URHO3D_SYSTEMUI
         Console* console = GetSubsystem<Console>();
         if (console->IsVisible())
             console->SetVisible(false);
         else
+#endif
         {
             if (GetPlatform() == "Web")
             {
@@ -248,19 +252,23 @@ void Sample::HandleKeyDown(StringHash /*eventType*/, VariantMap& eventData)
 
     int key = eventData[P_KEY].GetInt();
 
-    // Toggle console with F1
-    if (key == KEY_F1)
+    // Toggle console with F1 or backquote
+#ifdef URHO3D_SYSTEMUI
+    if (key == KEY_F1 || key == KEY_BACKQUOTE)
+    {
         GetSubsystem<Console>()->Toggle();
-
+        return;
+    }
     // Toggle debug HUD with F2
     else if (key == KEY_F2)
+    {
         engine_->CreateDebugHud()->ToggleAll();
-
-    else if (key == KEY_BACKQUOTE)
-        engine_->CreateConsole()->Toggle();
+        return;
+    }
+#endif
 
     // Common rendering quality controls, only when UI has no focused element
-    else if (!GetSubsystem<UI>()->GetFocusElement())
+    if (!GetSubsystem<UI>()->GetFocusElement())
     {
         Renderer* renderer = GetSubsystem<Renderer>();
 
@@ -399,9 +407,11 @@ void Sample::HandleTouchBegin(StringHash /*eventType*/, VariantMap& eventData)
 // If the user clicks the canvas, attempt to switch to relative mouse mode on web platform
 void Sample::HandleMouseModeRequest(StringHash /*eventType*/, VariantMap& eventData)
 {
+#ifdef URHO3D_SYSTEMUI
     Console* console = GetSubsystem<Console>();
     if (console && console->IsVisible())
         return;
+#endif
     Input* input = GetSubsystem<Input>();
     if (useMouseMode_ == MM_ABSOLUTE)
         input->SetMouseVisible(false);
