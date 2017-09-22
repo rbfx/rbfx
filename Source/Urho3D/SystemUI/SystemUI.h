@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 the Urho3D project.
+// Copyright (c) 2008-2017 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -38,11 +38,13 @@ namespace ui = ImGui;
 namespace Urho3D
 {
 
-class SystemUI : public Object
+class URHO3D_API SystemUI : public Object
 {
 URHO3D_OBJECT(SystemUI, Object);
 public:
+    /// Construct.
     explicit SystemUI(Context* context);
+    /// Destruct.
     ~SystemUI() override;
 
     /// Get ui scale.
@@ -66,7 +68,6 @@ public:
     /// \return ImFont instance that may be used for setting current font when drawing GUI.
     ImFont* AddFont(const String& fontPath, float size = 0, const std::initializer_list<unsigned short>& ranges = {},
         bool merge = false);
-
     /// Apply built-in system ui style.
     /// \param darkStyle enables dark style, otherwise it is a light style.
     /// \param alpha value between 0.0f - 1.0f
@@ -85,5 +86,12 @@ protected:
     void OnRenderDrawLists(ImDrawData* data);
     void OnRawEvent(VariantMap& args);
 };
+
+/// Convert Color to ImVec4.
+inline ImVec4 ToImGui(const Color& color) { return {color.r_, color.g_, color.b_, color.a_}; }
+/// Convert IntVector2 to ImVec2.
+inline ImVec2 ToImGui(IntVector2 vec) { return {(float)vec.x_, (float)vec.y_}; };
+/// Convert Vector2 to ImVec2.
+inline ImVec2 ToImGui(Vector2 vec) { return {vec.x_, vec.y_}; };
 
 }
