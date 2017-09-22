@@ -5067,6 +5067,7 @@ char const * tinyfd_openFileDialog (
 	int lWasGraphicDialog = 0 ;
 	int lWasXterm = 0 ;
 	lBuff[0]='\0';
+	lDialogString[0]='\0';
 
     int deskop_utility = tinyfd_getDesktopDialog();
 	if ( deskop_utility == tinyfd_osascript )
