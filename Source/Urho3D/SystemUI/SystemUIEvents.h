@@ -41,8 +41,27 @@ URHO3D_EVENT(E_SYSTEMUIFRAME, SystemUiFrame)
 
 URHO3D_EVENT(E_ATTRIBUTEINSPECTORMENU, AttributeInspectorMenu)
 {
-    URHO3D_PARAM(P_SERIALIZABLE, Serializable);                  // Serializable that is being inspected.
-    URHO3D_PARAM(P_ATTRIBUTEINFO, AttributeInfo);                // Attribute info of current attribute.
+    URHO3D_PARAM(P_SERIALIZABLE, Serializable);                  // Serializable pointer
+    URHO3D_PARAM(P_ATTRIBUTEINFO, AttributeInfo);                // AttributeInfo pointer
 }
+
+URHO3D_EVENT(E_ATTRIBUTEINSPECTVALUEMODIFIED, AttributeInspectorValueModified)
+{
+    URHO3D_PARAM(P_SERIALIZABLE, Serializable);                  // Serializable pointer
+    URHO3D_PARAM(P_ATTRIBUTEINFO, AttributeInfo);                // AttributeInfo pointer
+    URHO3D_PARAM(P_OLDVALUE, OldValue);                          // AttributeInfo pointer
+    URHO3D_PARAM(P_NEWVALUE, NewValue);                          // AttributeInfo pointer
+}
+
+URHO3D_EVENT(E_ATTRIBUTEINSPECTOATTRIBUTE, AttributeInspectorAttribute)
+{
+    URHO3D_PARAM(P_SERIALIZABLE, Serializable);                  // Serializable pointer
+    URHO3D_PARAM(P_ATTRIBUTEINFO, AttributeInfo);                // AttributeInfo pointer
+    URHO3D_PARAM(P_COLOR, Color);                                // Color
+    URHO3D_PARAM(P_HIDDEN, Hidden);                              // Boolean
+    URHO3D_PARAM(P_TOOLTIP, Tooltip);                            // String
+}
+
+
 
 }

@@ -37,7 +37,7 @@ namespace Urho3D
 AttributeInspector::AttributeInspector(Urho3D::Context* context)
     : Object(context)
 {
-
+    filter_.front() = 0;
 }
 
 void AttributeInspector::RenderAttributes(Serializable* item)
@@ -62,19 +62,45 @@ void AttributeInspector::RenderAttributes(Serializable* item)
     ui::NextColumn();
 
     ui::PushID(item);
+    const char* modifiedThisFrame = nullptr;
     const auto& attributes = *item->GetAttributes();
     for (const AttributeInfo& info: attributes)
     {
+        bool hidden = false;
+        Color color = Color::WHITE;
+        String tooltip;
+
         if (info.mode_ & AM_NOEDIT)
+            hidden = true;
+        else if (filter_.front() && !info.name_.Contains(&filter_.front(), false))
+            hidden = true;
+
+        // Customize attribute rendering
+        {
+            using namespace AttributeInspectorAttribute;
+            VariantMap args;
+            args[P_SERIALIZABLE] = item;
+            args[P_ATTRIBUTEINFO] = (void*)&info;
+            args[P_COLOR] = color;
+            args[P_HIDDEN] = hidden;
+            args[P_TOOLTIP] = tooltip;
+            SendEvent(E_ATTRIBUTEINSPECTOATTRIBUTE, args);
+            hidden = args[P_HIDDEN].GetBool();
+            color = args[P_COLOR].GetColor();
+            tooltip = args[P_TOOLTIP].GetString();
+        }
+
+        if (hidden)
             continue;
 
-        if (filter_.front() && !info.name_.Contains(&filter_.front(), false))
-            continue;
+        ui::TextColored(ToImGui(color), "%s", info.name_.CString());
+        if (!tooltip.Empty() && ui::IsItemHovered())
+            ui::SetTooltip("%s", tooltip.CString());
 
-        ui::TextUnformatted(info.name_.CString());
         ui::NextColumn();
 
-        Variant value = item->GetAttribute(info.name_);
+        Variant value, oldValue;
+        value = oldValue = item->GetAttribute(info.name_);
 
         ui::PushID(info.name_.CString());
 
@@ -91,26 +117,47 @@ void AttributeInspector::RenderAttributes(Serializable* item)
 
             // Allow customization of attribute menu.
             using namespace AttributeInspectorMenu;
-            SendEvent(E_ATTRIBUTEINSPECTORMENU, P_SERIALIZABLE, item, P_ATTRIBUTEINFO, &info);
+            SendEvent(E_ATTRIBUTEINSPECTORMENU, P_SERIALIZABLE, item, P_ATTRIBUTEINFO, (void*)&info);
 
             ImGui::EndPopup();
         }
         ui::SameLine();
 
+        bool modifiedLastFrame = modifiedLastFrame_ == info.name_.CString();
         if (RenderSingleAttribute(info, value))
         {
+            assert(modifiedThisFrame == nullptr);
+            modifiedLastFrame_ = info.name_.CString();
+
+            // Just started changing value of the attribute. Save old value required for event on modification end.
+            if (!modifiedLastFrame)
+                originalValue_ = oldValue;
+
+            // Update attribute value and do nothing else for now.
             item->SetAttribute(info.name_, value);
             item->ApplyAttributes();
+        }
+        else if (modifiedLastFrame && !ui::IsAnyItemActive())
+        {
+            // This attribute was modified on last frame, but not on this frame. Continous attribute value modification
+            // has ended and we can fire attribute modification event.
+            using namespace AttributeInspectorValueModified;
+            SendEvent(E_ATTRIBUTEINSPECTVALUEMODIFIED, P_SERIALIZABLE, item, P_ATTRIBUTEINFO, (void*)&info, P_OLDVALUE, originalValue_, P_NEWVALUE, value);
         }
 
         ui::PopID();
         ui::NextColumn();
     }
+
     ui::PopID();
     ui::Columns(1);
+
+    // Just finished modifying attribute.
+    if (modifiedLastFrame_ && !ui::IsAnyItemActive())
+        modifiedLastFrame_ = nullptr;
 }
 
-std::array<char, 0x1000>& AttributeInspector::GetBuffer(const String& name, const String& default_value)
+std::array<char, 0x1000>& AttributeInspector::GetBuffer(const String& name, const String& defaultValue)
 {
     auto it = buffers_.Find(name);
     if (it == buffers_.End())

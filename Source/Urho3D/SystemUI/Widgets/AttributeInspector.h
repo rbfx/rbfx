@@ -60,6 +60,10 @@ protected:
     HashMap<String, std::array<char, 0x1000>> buffers_;
     /// Last serializable whose attribute list was rendered.
     WeakPtr<Serializable> lastSerializable_;
+    /// Name of attribute that was modified on last frame.
+    const char* modifiedLastFrame_ = nullptr;
+    /// Value of attribute before modifying it started.
+    Variant originalValue_;
 };
 
 class URHO3D_API AttributeInspectorWindow : public AttributeInspector
