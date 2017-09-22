@@ -45,8 +45,8 @@ public:
 protected:
     /// Return a value buffer that will be unique for specified attribute.
     /// \param name a name of attribute.
-    /// \param default_value a value that will be fileld in if buffer does not exist.
-    std::array<char, 0x1000>& GetBuffer(const String& name, const String& default_value);
+    /// \param defaultValue a value that will be fileld in if buffer does not exist.
+    std::array<char, 0x1000>& GetBuffer(const String& name, const String& defaultValue);
     /// Discard a value buffer of attribute.
     /// \param name a name of attribute whose value buffer is to be discarded.
     void RemoveBuffer(const String& name);

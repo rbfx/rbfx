@@ -118,7 +118,7 @@ std::array<char, 0x1000>& AttributeInspector::GetBuffer(const String& name, cons
     if (it == buffers_.End())
     {
         auto& buffer = buffers_[name];
-        strncpy(&buffer[0], default_value.CString(), buffer.size() - 1);
+        strncpy(&buffer[0], defaultValue.CString(), buffer.size() - 1);
         return buffer;
     }
     else
@@ -132,26 +132,24 @@ void AttributeInspector::RemoveBuffer(const String& name)
 
 bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Variant& value)
 {
-    const int int_min = M_MIN_INT;
-    const int int_max = M_MAX_INT;
-    const int int_step = 1;
-    const float float_min = -14000.f;
-    const float float_max = 14000.f;
-    const float float_step = 0.01f;
+    const float floatMin = -14000.f;
+    const float floatMax = 14000.f;
+    const float floatStep = 0.01f;
+    const float power = 3.0f;
 
     bool modified = false;
-    const char** combo_values = nullptr;
-    auto combo_values_num = 0;
+    const char** comboValues = nullptr;
+    auto comboValuesNum = 0;
     if (info.enumNames_)
     {
-        combo_values = info.enumNames_;
-        for (; combo_values[++combo_values_num];);
+        comboValues = info.enumNames_;
+        for (; comboValues[++comboValuesNum];);
     }
 
-    if (combo_values)
+    if (comboValues)
     {
         int current = value.GetInt();
-        modified |= ui::Combo("", &current, combo_values, combo_values_num);
+        modified |= ui::Combo("", &current, comboValues, comboValuesNum);
         if (modified)
             value = current;
     }
@@ -166,7 +164,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         {
             // TODO: replace this with custom control that properly handles int types.
             auto v = value.GetInt();
-            modified |= ui::DragInt("", &v, int_step, int_min, int_max);
+            modified |= ui::DragInt("", &v, 1, M_MIN_INT, M_MAX_INT);
             if (modified)
                 value = v;
             break;
@@ -182,7 +180,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         case VAR_FLOAT:
         {
             auto v = value.GetFloat();
-            modified |= ui::DragFloat("", &v, float_step, float_min, float_max, "%.3f", 3.0f);
+            modified |= ui::DragFloat("", &v, floatStep, floatMin, floatMax, "%.3f", power);
             if (modified)
                 value = v;
             break;
@@ -190,25 +188,25 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         case VAR_VECTOR2:
         {
             auto& v = value.GetVector2();
-            modified |= ui::DragFloat2("xy", const_cast<float*>(&v.x_), float_step, float_min, float_max, "%.3f", 3.0f);
+            modified |= ui::DragFloat2("xy", const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
             break;
         }
         case VAR_VECTOR3:
         {
             auto& v = value.GetVector3();
-            modified |= ui::DragFloat3("xyz", const_cast<float*>(&v.x_), float_step, float_min, float_max, "%.3f", 3.0f);
+            modified |= ui::DragFloat3("xyz", const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
             break;
         }
         case VAR_VECTOR4:
         {
             auto& v = value.GetVector4();
-            modified |= ui::DragFloat4("xyzw", const_cast<float*>(&v.x_), float_step, float_min, float_max, "%.3f", 3.0f);
+            modified |= ui::DragFloat4("xyzw", const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
             break;
         }
         case VAR_QUATERNION:
         {
             auto v = value.GetQuaternion().EulerAngles();
-            modified |= ui::DragFloat3("xyz", const_cast<float*>(&v.x_), float_step, float_min, float_max, "%.3f", 3.0f);
+            modified |= ui::DragFloat3("xyz", const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
             if (modified)
                 value = Quaternion(v.x_, v.y_, v.z_);
             break;
@@ -240,11 +238,11 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
             if (ui::Button(ICON_FA_FOLDER_OPEN))
             {
                 auto cache = GetSubsystem<ResourceCache>();
-                auto file_name = cache->GetResourceFileName(ref.name_);
-                String selected_path = tinyfd_openFileDialog(
+                auto fileName = cache->GetResourceFileName(ref.name_);
+                String selectedPath = tinyfd_openFileDialog(
                     ToString("Open %s File", context_->GetTypeName(ref.type_).CString()).CString(),
-                    file_name.Length() ? file_name.CString() : GetFileSystem()->GetCurrentDir().CString(), 0, 0, 0, 0);
-                SharedPtr<Resource> resource(cache->GetResource(ref.type_, selected_path));
+                    fileName.Length() ? fileName.CString() : GetFileSystem()->GetCurrentDir().CString(), 0, 0, 0, 0);
+                SharedPtr<Resource> resource(cache->GetResource(ref.type_, selectedPath));
                 if (resource.NotNull())
                 {
                     ref.name_ = resource->GetName();
@@ -260,13 +258,13 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         case VAR_INTRECT:
         {
             auto& v = value.GetIntRect();
-            modified |= ui::DragInt4("ltbr", const_cast<int*>(&v.left_), int_step, int_min, int_max);
+            modified |= ui::DragInt4("ltbr", const_cast<int*>(&v.left_), 1, M_MIN_INT, M_MAX_INT);
             break;
         }
         case VAR_INTVECTOR2:
         {
             auto& v = value.GetIntVector2();
-            modified |= ui::DragInt2("xy", const_cast<int*>(&v.x_), int_step, int_min, int_max);
+            modified |= ui::DragInt2("xy", const_cast<int*>(&v.x_), 1, M_MIN_INT, M_MAX_INT);
             break;
         }
         case VAR_PTR:
@@ -275,33 +273,33 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         case VAR_MATRIX3:
         {
             auto& v = value.GetMatrix3();
-            modified |= ui::DragFloat3("m0", const_cast<float*>(&v.m00_), float_step, float_min, float_max, "%.3f", 3.0f);
-            modified |= ui::DragFloat3("m1", const_cast<float*>(&v.m10_), float_step, float_min, float_max, "%.3f", 3.0f);
-            modified |= ui::DragFloat3("m2", const_cast<float*>(&v.m20_), float_step, float_min, float_max, "%.3f", 3.0f);
+            modified |= ui::DragFloat3("m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat3("m1", const_cast<float*>(&v.m10_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat3("m2", const_cast<float*>(&v.m20_), floatStep, floatMin, floatMax, "%.3f", power);
             break;
         }
         case VAR_MATRIX3X4:
         {
             auto& v = value.GetMatrix3x4();
-            modified |= ui::DragFloat4("m0", const_cast<float*>(&v.m00_), float_step, float_min, float_max, "%.3f", 3.0f);
-            modified |= ui::DragFloat4("m1", const_cast<float*>(&v.m10_), float_step, float_min, float_max, "%.3f", 3.0f);
-            modified |= ui::DragFloat4("m2", const_cast<float*>(&v.m20_), float_step, float_min, float_max, "%.3f", 3.0f);
+            modified |= ui::DragFloat4("m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat4("m1", const_cast<float*>(&v.m10_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat4("m2", const_cast<float*>(&v.m20_), floatStep, floatMin, floatMax, "%.3f", power);
             break;
         }
         case VAR_MATRIX4:
         {
             auto& v = value.GetMatrix4();
-            modified |= ui::DragFloat4("m0", const_cast<float*>(&v.m00_), float_step, float_min, float_max, "%.3f", 3.0f);
-            modified |= ui::DragFloat4("m1", const_cast<float*>(&v.m10_), float_step, float_min, float_max, "%.3f", 3.0f);
-            modified |= ui::DragFloat4("m2", const_cast<float*>(&v.m20_), float_step, float_min, float_max, "%.3f", 3.0f);
-            modified |= ui::DragFloat4("m3", const_cast<float*>(&v.m30_), float_step, float_min, float_max, "%.3f", 3.0f);
+            modified |= ui::DragFloat4("m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat4("m1", const_cast<float*>(&v.m10_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat4("m2", const_cast<float*>(&v.m20_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat4("m3", const_cast<float*>(&v.m30_), floatStep, floatMin, floatMax, "%.3f", power);
             break;
         }
         case VAR_DOUBLE:
         {
             // TODO: replace this with custom control that properly handles double types.
             float v = value.GetDouble();
-            modified |= ui::DragFloat("", &v, float_step, float_min, float_max, "%.3f", 3.0f);
+            modified |= ui::DragFloat("", &v, floatStep, floatMin, floatMax, "%.3f", power);
             if (modified)
                 value = (double)v;
             break;
@@ -327,12 +325,12 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
             // List of current items.
             for (String& sv: v)
             {
-                auto buffer_name = ToString("%s-%d", info.name_.CString(), index);
-                auto& buffer = GetBuffer(buffer_name, sv);
+                auto bufferName = ToString("%s-%d", info.name_.CString(), index);
+                auto& buffer = GetBuffer(bufferName, sv);
                 ui::PushID(index++);
                 if (ui::Button(ICON_FA_TRASH))
                 {
-                    RemoveBuffer(buffer_name);
+                    RemoveBuffer(bufferName);
                     v.Remove(sv);
                     modified = true;
                     ui::PopID();
@@ -355,24 +353,24 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         case VAR_RECT:
         {
             auto& v = value.GetRect();
-            modified |= ui::DragFloat2("min xy", const_cast<float*>(&v.min_.x_), float_step, float_min,
-                                       float_max, "%.3f", 3.0f);
+            modified |= ui::DragFloat2("min xy", const_cast<float*>(&v.min_.x_), floatStep, floatMin,
+                                       floatMax, "%.3f", power);
             ui::SameLine();
-            modified |= ui::DragFloat2("max xy", const_cast<float*>(&v.max_.x_), float_step, float_min,
-                                       float_max, "%.3f", 3.0f);
+            modified |= ui::DragFloat2("max xy", const_cast<float*>(&v.max_.x_), floatStep, floatMin,
+                                       floatMax, "%.3f", power);
             break;
         }
         case VAR_INTVECTOR3:
         {
             auto& v = value.GetIntVector3();
-            modified |= ui::DragInt3("xyz", const_cast<int*>(&v.x_), int_step, int_min, int_max);
+            modified |= ui::DragInt3("xyz", const_cast<int*>(&v.x_), 1, M_MIN_INT, M_MAX_INT);
             break;
         }
         case VAR_INT64:
         {
             // TODO: replace this with custom control that properly handles int types.
             int v = value.GetInt64();
-            modified |= ui::DragInt("", &v, int_step, int_min, int_max, "%d");
+            modified |= ui::DragInt("", &v, 1, M_MIN_INT, M_MAX_INT, "%d");
             if (modified)
                 value = (long long)v;
             break;
