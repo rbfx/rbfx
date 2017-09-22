@@ -20,11 +20,8 @@
 # THE SOFTWARE.
 #
 
-# Urho3D tools
-set (CMAKE_INSTALL_RPATH "../lib${LIB_SUFFIX}")
-add_subdirectory (AssetImporter)
-add_subdirectory (OgreImporter)
-add_subdirectory (PackageTool)
-add_subdirectory (RampGenerator)
-add_subdirectory (SpritePacker)
-add_subdirectory (UIEditor)
+file (GLOB SOURCE_FILES *.cpp *.h *.hpp)
+add_executable (UIEditor WIN32 ${SOURCE_FILES})
+target_link_libraries (UIEditor Urho3D)
+set_target_properties(UIEditor PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
+install(TARGETS UIEditor RUNTIME DESTINATION bin)
