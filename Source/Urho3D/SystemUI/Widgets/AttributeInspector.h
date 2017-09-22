@@ -39,7 +39,7 @@ public:
     /// Construct.
     explicit AttributeInspector(Context* context);
 
-    /// Render attribute inspector widgets.
+    /// Render attribute inspector widgets. Attributes are rendered in columns. Be sure to call `ui::Columns()` before calling this method.
     void RenderAttributes(Serializable* item);
 
 protected:

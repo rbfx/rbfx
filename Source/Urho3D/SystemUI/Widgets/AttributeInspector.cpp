@@ -49,8 +49,6 @@ void AttributeInspector::RenderAttributes(Serializable* item)
         lastSerializable_ = item;
     }
 
-    ui::Columns(2);
-
     ui::TextUnformatted("Filter");
     ui::NextColumn();
     if (ui::Button(ICON_FA_UNDO))
@@ -406,7 +404,10 @@ void AttributeInspectorWindow::RenderUi()
     if (ui::Begin("Attribute Inspector"))
     {
         if (currentSerializable_.NotNull())
+        {
+            ui::Columns(2);
             RenderAttributes(currentSerializable_);
+        }
     }
     ui::End();
 }
