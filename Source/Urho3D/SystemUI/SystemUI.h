@@ -68,6 +68,11 @@ public:
     ImFont* AddFont(const String& font_path, float size = 0,
                     const std::initializer_list<unsigned short>& ranges = {}, bool merge = false);
 
+    /// Apply built-in system ui style.
+    /// \param darkStyle enables dark style, otherwise it is a light style.
+    /// \param alpha value between 0.0f - 1.0f
+    void ApplyStyleDefault(bool darkStyle, float alpha);
+
 protected:
     float uiScale_ = 1.f;
     Matrix4 projection_;
