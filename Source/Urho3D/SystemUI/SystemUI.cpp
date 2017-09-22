@@ -62,8 +62,8 @@ SystemUI::SystemUI(Urho3D::Context* context)
     io.KeyMap[ImGuiKey_Z] = SCANCODE_Z;
 
     io.RenderDrawListsFn = [](ImDrawData* data) { ((SystemUI*)ImGui::GetIO().UserData)->OnRenderDrawLists(data); };
-    io.SetClipboardTextFn = [](void* user_data, const char* text) { SDL_SetClipboardText(text); };
-    io.GetClipboardTextFn = [](void* user_data) -> const char* { return SDL_GetClipboardText(); };
+    io.SetClipboardTextFn = [](void* userData, const char* text) { SDL_SetClipboardText(text); };
+    io.GetClipboardTextFn = [](void* userData) -> const char* { return SDL_GetClipboardText(); };
 
     io.UserData = this;
 
@@ -192,62 +192,62 @@ void SystemUI::OnPostUpdate(VariantMap& args)
 
 void SystemUI::OnRenderDrawLists(ImDrawData* data)
 {
-    auto _graphics = GetSubsystem<Graphics>();
+    auto graphics = GetGraphics();
     // Engine does not render when window is closed or device is lost
-    assert(_graphics && _graphics->IsInitialized() && !_graphics->IsDeviceLost());
+    assert(graphics && graphics->IsInitialized() && !graphics->IsDeviceLost());
 
     ImGuiIO& io = ImGui::GetIO();
-    int fb_width = (int)(io.DisplaySize.x * io.DisplayFramebufferScale.x);
-    int fb_height = (int)(io.DisplaySize.y * io.DisplayFramebufferScale.y);
-    if (fb_width == 0 || fb_height == 0)
+    int fbWidth = (int)(io.DisplaySize.x * io.DisplayFramebufferScale.x);
+    int fbHeight = (int)(io.DisplaySize.y * io.DisplayFramebufferScale.y);
+    if (fbWidth == 0 || fbHeight == 0)
         return;
     data->ScaleClipRects(io.DisplayFramebufferScale);
 
     for (int n = 0; n < data->CmdListsCount; n++)
     {
-        const ImDrawList* cmd_list = data->CmdLists[n];
-        unsigned int idx_buffer_offset = 0;
+        const ImDrawList* cmdList = data->CmdLists[n];
+        unsigned int idxBufferOffset = 0;
 
         // Resize vertex and index buffers on the fly. Once buffer becomes too small for data that is to be rendered
         // we reallocate buffer to be twice as big as we need now. This is done in order to minimize memory reallocation
         // in rendering loop.
-        if (cmd_list->VtxBuffer.Size > vertexBuffer_.GetVertexCount())
+        if (cmdList->VtxBuffer.Size > vertexBuffer_.GetVertexCount())
         {
             PODVector<VertexElement> elems = {VertexElement(TYPE_VECTOR2, SEM_POSITION),
                                               VertexElement(TYPE_VECTOR2, SEM_TEXCOORD),
                                               VertexElement(TYPE_UBYTE4_NORM, SEM_COLOR)
             };
-            vertexBuffer_.SetSize((unsigned int)(cmd_list->VtxBuffer.Size * 2), elems, true);
+            vertexBuffer_.SetSize((unsigned int)(cmdList->VtxBuffer.Size * 2), elems, true);
         }
-        if (cmd_list->IdxBuffer.Size > indexBuffer_.GetIndexCount())
-            indexBuffer_.SetSize((unsigned int)(cmd_list->IdxBuffer.Size * 2), false, true);
+        if (cmdList->IdxBuffer.Size > indexBuffer_.GetIndexCount())
+            indexBuffer_.SetSize((unsigned int)(cmdList->IdxBuffer.Size * 2), false, true);
 
 #if (defined(_WIN32) && !defined(URHO3D_D3D11) && !defined(URHO3D_OPENGL)) || defined(URHO3D_D3D9)
-        for (int i = 0; i < cmd_list->VtxBuffer.Size; i++)
+        for (int i = 0; i < cmdList->VtxBuffer.Size; i++)
         {
-            ImDrawVert& v = cmd_list->VtxBuffer.Data[i];
+            ImDrawVert& v = cmdList->VtxBuffer.Data[i];
             v.pos.x += 0.5f;
             v.pos.y += 0.5f;
         }
 #endif
 
-        vertexBuffer_.SetDataRange(cmd_list->VtxBuffer.Data, 0, (unsigned int)cmd_list->VtxBuffer.Size, true);
-        indexBuffer_.SetDataRange(cmd_list->IdxBuffer.Data, 0, (unsigned int)cmd_list->IdxBuffer.Size, true);
+        vertexBuffer_.SetDataRange(cmdList->VtxBuffer.Data, 0, (unsigned int)cmdList->VtxBuffer.Size, true);
+        indexBuffer_.SetDataRange(cmdList->IdxBuffer.Data, 0, (unsigned int)cmdList->IdxBuffer.Size, true);
 
-        _graphics->ClearParameterSources();
-        _graphics->SetColorWrite(true);
-        _graphics->SetCullMode(CULL_NONE);
-        _graphics->SetDepthTest(CMP_ALWAYS);
-        _graphics->SetDepthWrite(false);
-        _graphics->SetFillMode(FILL_SOLID);
-        _graphics->SetStencilTest(false);
-        _graphics->SetVertexBuffer(&vertexBuffer_);
-        _graphics->SetIndexBuffer(&indexBuffer_);
+        graphics->ClearParameterSources();
+        graphics->SetColorWrite(true);
+        graphics->SetCullMode(CULL_NONE);
+        graphics->SetDepthTest(CMP_ALWAYS);
+        graphics->SetDepthWrite(false);
+        graphics->SetFillMode(FILL_SOLID);
+        graphics->SetStencilTest(false);
+        graphics->SetVertexBuffer(&vertexBuffer_);
+        graphics->SetIndexBuffer(&indexBuffer_);
 
-        for (const ImDrawCmd* cmd = cmd_list->CmdBuffer.begin(); cmd != cmd_list->CmdBuffer.end(); cmd++)
+        for (const ImDrawCmd* cmd = cmdList->CmdBuffer.begin(); cmd != cmdList->CmdBuffer.end(); cmd++)
         {
             if (cmd->UserCallback)
-                cmd->UserCallback(cmd_list, cmd);
+                cmd->UserCallback(cmdList, cmd);
             else
             {
                 ShaderVariation* ps;
@@ -256,47 +256,47 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
                 Texture2D* texture = static_cast<Texture2D*>(cmd->TextureId);
                 if (!texture)
                 {
-                    ps = _graphics->GetShader(PS, "Basic", "VERTEXCOLOR");
-                    vs = _graphics->GetShader(VS, "Basic", "VERTEXCOLOR");
+                    ps = graphics->GetShader(PS, "Basic", "VERTEXCOLOR");
+                    vs = graphics->GetShader(VS, "Basic", "VERTEXCOLOR");
                 }
                 else
                 {
                     // If texture contains only an alpha channel, use alpha shader (for fonts)
-                    vs = _graphics->GetShader(VS, "Basic", "DIFFMAP VERTEXCOLOR");
+                    vs = graphics->GetShader(VS, "Basic", "DIFFMAP VERTEXCOLOR");
                     if (texture->GetFormat() == Graphics::GetAlphaFormat())
-                        ps = _graphics->GetShader(PS, "Basic", "ALPHAMAP VERTEXCOLOR");
+                        ps = graphics->GetShader(PS, "Basic", "ALPHAMAP VERTEXCOLOR");
                     else
-                        ps = _graphics->GetShader(PS, "Basic", "DIFFMAP VERTEXCOLOR");
+                        ps = graphics->GetShader(PS, "Basic", "DIFFMAP VERTEXCOLOR");
                 }
 
-                _graphics->SetShaders(vs, ps);
-                if (_graphics->NeedParameterUpdate(SP_OBJECT, this))
-                    _graphics->SetShaderParameter(VSP_MODEL, Matrix3x4::IDENTITY);
-                if (_graphics->NeedParameterUpdate(SP_CAMERA, this))
-                    _graphics->SetShaderParameter(VSP_VIEWPROJ, projection_);
-                if (_graphics->NeedParameterUpdate(SP_MATERIAL, this))
-                    _graphics->SetShaderParameter(PSP_MATDIFFCOLOR, Color(1.0f, 1.0f, 1.0f, 1.0f));
+                graphics->SetShaders(vs, ps);
+                if (graphics->NeedParameterUpdate(SP_OBJECT, this))
+                    graphics->SetShaderParameter(VSP_MODEL, Matrix3x4::IDENTITY);
+                if (graphics->NeedParameterUpdate(SP_CAMERA, this))
+                    graphics->SetShaderParameter(VSP_VIEWPROJ, projection_);
+                if (graphics->NeedParameterUpdate(SP_MATERIAL, this))
+                    graphics->SetShaderParameter(PSP_MATDIFFCOLOR, Color(1.0f, 1.0f, 1.0f, 1.0f));
 
                 float elapsedTime = GetSubsystem<Time>()->GetElapsedTime();
-                _graphics->SetShaderParameter(VSP_ELAPSEDTIME, elapsedTime);
-                _graphics->SetShaderParameter(PSP_ELAPSEDTIME, elapsedTime);
+                graphics->SetShaderParameter(VSP_ELAPSEDTIME, elapsedTime);
+                graphics->SetShaderParameter(PSP_ELAPSEDTIME, elapsedTime);
 
                 IntRect scissor = IntRect(int(cmd->ClipRect.x * uiScale_), int(cmd->ClipRect.y * uiScale_),
                                           int(cmd->ClipRect.z * uiScale_), int(cmd->ClipRect.w * uiScale_));
 
-                _graphics->SetBlendMode(BLEND_ALPHA);
-                _graphics->SetScissorTest(true, scissor);
-                _graphics->SetTexture(0, texture);
-                _graphics->Draw(TRIANGLE_LIST, idx_buffer_offset, cmd->ElemCount, 0, 0,
+                graphics->SetBlendMode(BLEND_ALPHA);
+                graphics->SetScissorTest(true, scissor);
+                graphics->SetTexture(0, texture);
+                graphics->Draw(TRIANGLE_LIST, idxBufferOffset, cmd->ElemCount, 0, 0,
                                 vertexBuffer_.GetVertexCount());
-                idx_buffer_offset += cmd->ElemCount;
+                idxBufferOffset += cmd->ElemCount;
             }
         }
     }
-    _graphics->SetScissorTest(false);
+    graphics->SetScissorTest(false);
 }
 
-ImFont* SystemUI::AddFont(const String& font_path, float size, const unsigned short* ranges, bool merge)
+ImFont* SystemUI::AddFont(const String& fontPath, float size, const unsigned short* ranges, bool merge)
 {
     auto io = ImGui::GetIO();
 
@@ -307,27 +307,27 @@ ImFont* SystemUI::AddFont(const String& font_path, float size, const unsigned sh
         size = io.Fonts->Fonts.back()->FontSize;
     }
 
-    if (auto font_file = GetSubsystem<ResourceCache>()->GetFile(font_path))
+    if (auto fontFile = GetSubsystem<ResourceCache>()->GetFile(fontPath))
     {
         PODVector<uint8_t> data;
-        data.Resize(font_file->GetSize());
-        auto bytes_len = font_file->Read(&data.Front(), data.Size());
+        data.Resize(fontFile->GetSize());
+        auto bytesLen = fontFile->Read(&data.Front(), data.Size());
         ImFontConfig cfg;
         cfg.MergeMode = merge;
         cfg.FontDataOwnedByAtlas = false;
-        if (auto new_font = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(&data.Front(), bytes_len, size, &cfg, ranges))
+        if (auto newFont = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(&data.Front(), bytesLen, size, &cfg, ranges))
         {
             ReallocateFontTexture();
-            return new_font;
+            return newFont;
         }
     }
     return nullptr;
 }
 
-ImFont* SystemUI::AddFont(const Urho3D::String& font_path, float size,
-                          const std::initializer_list<unsigned short>& ranges, bool merge)
+ImFont* SystemUI::AddFont(const Urho3D::String& fontPath, float size,
+    const std::initializer_list<unsigned short>& ranges, bool merge)
 {
-    return AddFont(font_path, size, ranges.size() ? &*ranges.begin() : nullptr, merge);
+    return AddFont(fontPath, size, ranges.size() ? &*ranges.begin() : nullptr, merge);
 }
 
 void SystemUI::ReallocateFontTexture()

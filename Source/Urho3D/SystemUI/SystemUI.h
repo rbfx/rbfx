@@ -52,21 +52,20 @@ public:
     /// \param scale of ui.
     void SetScale(float scale);
     /// Add font to imgui subsystem.
-    /// \param font_path a string pointing to TTF font resource.
+    /// \param fontPath a string pointing to TTF font resource.
     /// \param size a font size. If 0 then size of last font is used.
     /// \param ranges optional ranges of font that should be used. Parameter is array of {start1, stop1, ..., startN, stopN, 0}.
     /// \param merge set to true if new font should be merged to last active font.
     /// \return ImFont instance that may be used for setting current font when drawing GUI.
-    ImFont* AddFont(const String& font_path, float size = 0, const unsigned short* ranges = nullptr,
-                    bool merge = false);
+    ImFont* AddFont(const String& fontPath, float size = 0, const unsigned short* ranges = nullptr, bool merge = false);
     /// Add font to imgui subsystem.
-    /// \param font_path a string pointing to TTF font resource.
+    /// \param fontPath a string pointing to TTF font resource.
     /// \param size a font size. If 0 then size of last font is used.
     /// \param ranges optional ranges of font that should be used. Parameter is std::initializer_list of {start1, stop1, ..., startN, stopN, 0}.
     /// \param merge set to true if new font should be merged to last active font.
     /// \return ImFont instance that may be used for setting current font when drawing GUI.
-    ImFont* AddFont(const String& font_path, float size = 0,
-                    const std::initializer_list<unsigned short>& ranges = {}, bool merge = false);
+    ImFont* AddFont(const String& fontPath, float size = 0, const std::initializer_list<unsigned short>& ranges = {},
+        bool merge = false);
 
     /// Apply built-in system ui style.
     /// \param darkStyle enables dark style, otherwise it is a light style.
