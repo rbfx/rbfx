@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<element type="Window" style="DialogWindow">
+<element type="Window" style="DialogWindow" styleFile="UI/DefaultStyle.xml">
 	<attribute name="Name" value="MessageBox" />
 	<attribute name="Position" value="500 500" />
 	<attribute name="Size" value="400 83" />

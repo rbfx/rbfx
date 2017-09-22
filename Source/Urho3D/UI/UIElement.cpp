@@ -220,6 +220,24 @@ bool UIElement::LoadXML(const XMLElement& source, bool setInstanceDefault)
 
 bool UIElement::LoadXML(const XMLElement& source, XMLFile* styleFile, bool setInstanceDefault)
 {
+    // Get style file from which style is loaded
+    SharedPtr<XMLFile> savedStyleFile(new XMLFile(context_));
+    if (styleFile == nullptr)
+    {
+        String styleFileName = source.GetAttribute("styleFile");
+        if (!styleFileName.Empty())
+        {
+            auto cacheFile = GetSubsystem<ResourceCache>()->GetFile(styleFileName);
+            if (cacheFile.NotNull() && savedStyleFile->Load(*cacheFile))
+            {
+                styleFile = savedStyleFile.Get();
+                URHO3D_LOGDEBUGF("Style file %s loaded automatically.", styleFileName.CString());
+            }
+            else
+                URHO3D_LOGWARNINGF("Style file %s could not be loaded, using default style instead.", styleFileName.CString());
+        }
+    }
+
     // Get style override if defined
     String styleName = source.GetAttribute("style");
 

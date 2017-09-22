@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<element>
+<element styleFile="UI/DefaultStyle.xml">
     <attribute name="Name" value="ScreenJoystickSettings" />
     <attribute name="Size" value="800 600" />
     <element type="Button">
