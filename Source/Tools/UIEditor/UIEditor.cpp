@@ -259,10 +259,9 @@ public:
     String currentFilePath_;
     String currentStyleFilePath_;
     bool showInternal_ = false;
-    ResizeType resizing_ = RESIZE_NONE;
-    SharedPtr<XMLFile> styleFile_;
-    Vector<String> styleNames_;
     bool hideResizeHandles_ = false;
+    ResizeType resizing_ = RESIZE_NONE;
+    Vector<String> styleNames_;
     String textureSelectorAttribute_;
     SharedPtr<TransformSelector> uiElementTransform_;
     SharedPtr<TransformSelector> textureRectTransform_;
@@ -469,7 +468,8 @@ public:
                         SaveFileUI(path);
                 }
 
-                if (ui::MenuItem(ICON_FA_FLOPPY_O " Save Style As") && styleFile_.NotNull())
+
+                if (ui::MenuItem(ICON_FA_FLOPPY_O " Save Style As") && rootElement_->GetNumChildren() > 0 && rootElement_->GetChild(0)->GetDefaultStyle())
                 {
                     if (auto path = tinyfd_saveFileDialog("Save Style file", ".", 1, filters, "XML files"))
                         SaveFileStyle(path);
@@ -482,7 +482,7 @@ public:
             {
                 if (!currentFilePath_.Empty())
                     SaveFileUI(currentFilePath_);
-                if (!styleFile_.Null())
+                if (GetCurrentStyleFile() != nullptr)
                     SaveFileStyle(currentStyleFilePath_);
             }
 
@@ -830,14 +830,14 @@ public:
                 {
                     // This is a style.
                     rootElement_->SetDefaultStyle(xml);
-                    styleFile_ = xml;
                     currentStyleFilePath_ = filePath;
 
-                    auto styles = styleFile_->GetRoot().SelectPrepared(XPathQuery("/elements/element"));
+                    auto styles = xml->GetRoot().SelectPrepared(XPathQuery("/elements/element"));
                     for (auto i = 0; i < styles.Size(); i++)
                     {
                         auto type = styles[i].GetAttribute("type");
-                        if (type.Length() && !styleNames_.Contains(type))
+                        if (type.Length() && !styleNames_.Contains(type) &&
+                            styles[i].GetAttribute("auto").ToLower() == "false")
                             styleNames_.Push(type);
                     }
                     Sort(styleNames_.Begin(), styleNames_.End());
@@ -924,10 +924,10 @@ public:
 
     bool SaveFileStyle(const String& file_path)
     {
-        if (file_path.EndsWith(".xml", false) && styleFile_.NotNull())
+        if (file_path.EndsWith(".xml", false) && GetCurrentStyleFile() != nullptr)
         {
             File saveFile(context_, file_path, FILE_WRITE);
-            styleFile_->Save(saveFile);
+            GetCurrentStyleFile()->Save(saveFile);
 
             currentStyleFilePath_ = file_path;
             UpdateWindowTitle();
@@ -1061,6 +1061,14 @@ public:
                 }
             }
         }
+    }
+
+    XMLFile* GetCurrentStyleFile()
+    {
+        if (rootElement_->GetNumChildren() > 0)
+            return rootElement_->GetChild(0)->GetDefaultStyle();
+
+        return nullptr;
     }
 };
 
