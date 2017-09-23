@@ -40,6 +40,7 @@
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/SystemUI/Widgets/AttributeInspector.h>
 #include <Urho3D/UI/UI.h>
+#include <Urho3D/UI/Window.h>
 
 #include <tinyfiledialogs/tinyfiledialogs.h>
 #include <ImGui/imgui_internal.h>
@@ -66,7 +67,7 @@ enum ResizeType
     RESIZE_RIGHT = 2,
     RESIZE_TOP = 4,
     RESIZE_BOTTOM = 8,
-    RESIZE_MOVE = 16,
+    RESIZE_MOVE = 15,
 };
 
 ENUM_FLAGS(ResizeType);
@@ -112,13 +113,13 @@ public:
         cursorArrow = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
     }
 
-    bool RenderHandle(Vector2 screenPos, int wh, TransformSelectorFlags flags)
+    bool RenderHandle(IntVector2 screenPos, int wh, TransformSelectorFlags flags)
     {
         IntRect rect(
-            static_cast<int>(screenPos.x_ - wh / 2),
-            static_cast<int>(screenPos.y_ - wh / 2),
-            static_cast<int>(screenPos.x_ + wh / 2),
-            static_cast<int>(screenPos.y_ + wh / 2)
+            screenPos.x_ - wh / 2,
+            screenPos.y_ - wh / 2,
+            screenPos.x_ + wh / 2,
+            screenPos.y_ + wh / 2
         );
 
         if (!(flags & TSF_HIDEHANDLES))
@@ -128,11 +129,10 @@ public:
                                                    ui::GetColorU32(ToImGui(Color::RED)));
         }
 
-        auto input = context_->GetInput();
-        return rect.IsInside(input->GetMousePosition()) == INSIDE;
+        return rect.IsInside(context_->GetInput()->GetMousePosition()) == INSIDE;
     }
 
-    bool OnUpdate(Rect screenRect, Rect& delta, TransformSelectorFlags flags = TSF_NONE)
+    bool OnUpdate(IntRect screenRect, IntRect& delta, TransformSelectorFlags flags = TSF_NONE)
     {
         auto input = context_->GetInput();
         bool wasNotMoving = resizing_ == RESIZE_NONE;
@@ -141,46 +141,56 @@ public:
 
         // Draw rect around selected element
         ui::GetWindowDrawList()->AddRect(
-            ToImGui(screenRect.min_),
-            ToImGui(screenRect.max_),
+            ToImGui(screenRect.Min()),
+            ToImGui(screenRect.Max()),
             ui::GetColorU32(ToImGui(Color::GREEN))
         );
 
-        auto size = screenRect.max_ - screenRect.min_;
-        auto handle_size = static_cast<int>(Max(Min(Min(size.x_ / 4, size.y_ / 4), 8), 2));
+        auto size = screenRect.Size();
+        auto handle_size = Max(Min(Min(size.x_ / 4, size.y_ / 4), 8), 2);
         ResizeType resizing = RESIZE_NONE;
-        if (RenderHandle(screenRect.min_ + size / 2, handle_size, flags))
+        if (RenderHandle(screenRect.Min() + size / 2, handle_size, flags))
             resizing = RESIZE_MOVE;
 
         if (can_resize_horizontal && can_resize_vertical)
         {
-            if (RenderHandle(screenRect.min_, handle_size, flags))
+            if (RenderHandle(screenRect.Min(), handle_size, flags))
                 resizing = RESIZE_LEFT | RESIZE_TOP;
-            if (RenderHandle(screenRect.min_ + Vector2(0, size.y_), handle_size, flags))
+            if (RenderHandle(screenRect.Min() + IntVector2(0, size.y_), handle_size, flags))
                 resizing = RESIZE_LEFT | RESIZE_BOTTOM;
-            if (RenderHandle(screenRect.min_ + Vector2(size.x_, 0), handle_size, flags))
+            if (RenderHandle(screenRect.Min() + IntVector2(size.x_, 0), handle_size, flags))
                 resizing = RESIZE_TOP | RESIZE_RIGHT;
-            if (RenderHandle(screenRect.max_, handle_size, flags))
+            if (RenderHandle(screenRect.Max(), handle_size, flags))
                 resizing = RESIZE_BOTTOM | RESIZE_RIGHT;
         }
 
         if (can_resize_horizontal)
         {
-            if (RenderHandle(screenRect.min_ + Vector2(0, size.y_ / 2), handle_size, flags))
+            if (RenderHandle(screenRect.Min() + IntVector2(0, size.y_ / 2), handle_size, flags))
                 resizing = RESIZE_LEFT;
-            if (RenderHandle(screenRect.min_ + Vector2(size.x_, size.y_ / 2), handle_size, flags))
+            if (RenderHandle(screenRect.Min() + IntVector2(size.x_, size.y_ / 2), handle_size, flags))
                 resizing = RESIZE_RIGHT;
         }
 
         if (can_resize_vertical)
         {
-            if (RenderHandle(screenRect.min_ + Vector2(size.x_ / 2, 0), handle_size, flags))
+            if (RenderHandle(screenRect.Min() + IntVector2(size.x_ / 2, 0), handle_size, flags))
                 resizing = RESIZE_TOP;
-            if (RenderHandle(screenRect.min_ + Vector2(size.x_ / 2, size.y_), handle_size, flags))
+            if (RenderHandle(screenRect.Min() + IntVector2(size.x_ / 2, size.y_), handle_size, flags))
                 resizing = RESIZE_BOTTOM;
         }
 
-        if (resizing == RESIZE_NONE)
+        // Set mouse cursor if handle is hovered or if we are resizing
+        if (resizing != RESIZE_NONE || ui::IsMouseDown(0))
+        {
+            if (!ownsCursor_)
+            {
+                SDL_SetCursor(cursors[resizing]);
+                ownsCursor_ = true;
+            }
+        }
+        // Reset mouse cursor if we are not hovering any handle and are not resizing
+        else if (resizing == RESIZE_NONE && resizing_ == RESIZE_NONE)
         {
             if (ownsCursor_)
             {
@@ -188,58 +198,54 @@ public:
                 ownsCursor_ = false;
             }
         }
-        else
-        {
-            SDL_SetCursor(cursors[resizing]);
-            ownsCursor_ = true;
-        }
 
-        if (input->GetMouseButtonDown(MOUSEB_LEFT))
+        // Begin resizing
+        if (ui::IsMouseDown(0))
         {
-            // Start resizing only when resize is not in progress.
             if (wasNotMoving)
+            {
                 resizing_ = resizing;
+                SendEvent("ResizeStart");
+            }
         }
 
-        Vector2 d = Vector2(input->GetMouseMove().x_, input->GetMouseMove().y_);
+        IntVector2 d = ToIntVector2(ui::GetIO().MouseDelta);
         if (resizing_ != RESIZE_NONE)
         {
-            bool mouseButtonReleased = !input->GetMouseButtonDown(MOUSEB_LEFT);
-            if (wasNotMoving)
-                SendEvent("ResizeStart");
-
-            if (mouseButtonReleased)
+            if (!ui::IsMouseDown(0))
             {
                 resizing_ = RESIZE_NONE;
                 SendEvent("ResizeEnd");
             }
-            else
+            else if (d != IntVector2::ZERO)
             {
-                if (resizing_ & RESIZE_MOVE)
+                if (resizing_ == RESIZE_MOVE)
                 {
-                    delta.min_ += d;
-                    delta.max_ += d;
+                    delta.left_ += d.x_;
+                    delta.right_ += d.x_;
+                    delta.top_ += d.y_;
+                    delta.bottom_ += d.y_;
                 }
                 else
                 {
                     if (resizing_ & RESIZE_LEFT)
-                        delta.min_ += Vector2(d.x_, 0);
+                        delta.left_ += d.x_;
                     else if (resizing_ & RESIZE_RIGHT)
-                        delta.max_ += Vector2(d.x_, 0);
+                        delta.right_ += d.x_;
 
                     if (resizing_ & RESIZE_TOP)
-                        delta.min_ += Vector2(0, d.y_);
+                        delta.top_ += d.y_;
                     else if (resizing_ & RESIZE_BOTTOM)
-                        delta.max_ += Vector2(0, d.y_);
+                        delta.bottom_ += d.y_;
                 }
-                return true;
+
+                return delta != IntRect::ZERO;
             }
         }
         return false;
     }
 
-    bool is_active() const
-    { return resizing_ != RESIZE_NONE; }
+    bool IsActive() const { return resizing_ != RESIZE_NONE; }
 };
 
 class UIEditor : public Application
@@ -260,10 +266,11 @@ public:
     String textureSelectorAttribute_;
     SharedPtr<TransformSelector> uiElementTransform_;
     SharedPtr<TransformSelector> textureRectTransform_;
-    ImVec2 textureWindowPos_;
-    float textureWindowScale_ = 1.f;
+    int textureWindowScale_ = 1;
     WeakPtr<UIElement> rootElement_;
     AttributeInspector inspector_;
+    ImGuiWindowFlags_ rectWindowFlags_ = (ImGuiWindowFlags_)0;
+    IntRect rectWindowDeltaAccumulator_;
 
     explicit UIEditor(Context* context) : Application(context), undo_(context), inspector_(context)
     {
@@ -565,11 +572,11 @@ public:
             if (auto selected = GetSelected())
             {
                 // Render element selection rect, resize handles, and handle element transformations.
-                Rect screenRect(
-                    Vector2(selected->GetScreenPosition()),
-                    Vector2(selected->GetScreenPosition() + selected->GetSize())
+                IntRect screenRect(
+                   selected->GetScreenPosition(),
+                    selected->GetScreenPosition() + selected->GetSize()
                 );
-                Rect delta = Rect::ZERO;
+                IntRect delta = IntRect::ZERO;
 
                 auto flags = TSF_NONE;
                 if (hideResizeHandles_)
@@ -580,11 +587,8 @@ public:
                     flags |= TSF_NOVERTICAL;
                 if (uiElementTransform_->OnUpdate(screenRect, delta, flags))
                 {
-                    auto size = delta.max_ - delta.min_;
-                    selected->SetPosition(selected->GetPosition() + IntVector2(static_cast<int>(delta.min_.x_),
-                                                                               static_cast<int>(delta.min_.y_)));
-                    selected->SetSize(selected->GetSize() + IntVector2(static_cast<int>(size.x_),
-                                                                       static_cast<int>(size.y_)));
+                    selected->SetPosition(selected->GetPosition() + delta.Min());
+                    selected->SetSize(selected->GetSize() + delta.Size());
                 }
             }
         }
@@ -592,7 +596,7 @@ public:
         // Background window end
 
         auto input = context_->GetInput();
-        if (!uiElementTransform_->is_active() && input->GetMouseButtonPress(MOUSEB_LEFT) ||
+        if (!uiElementTransform_->IsActive() && input->GetMouseButtonPress(MOUSEB_LEFT) ||
             input->GetMouseButtonPress(MOUSEB_RIGHT))
         {
             auto pos = input->GetMousePosition();
@@ -680,38 +684,65 @@ public:
                 {
                     auto tex = selected->GetTexture();
                     auto padding = ImGui::GetStyle().WindowPadding;
-                    if (ui::Begin("Select Rect", &open,
-                                  ImVec2(tex->GetWidth() + padding.x * 2, tex->GetHeight() + padding.y * 2)))
+                    if (ui::Begin("Select Rect", &open, ImVec2(tex->GetWidth() + padding.x * 2,
+                        tex->GetHeight() + padding.y * 2), -1, rectWindowFlags_))
                     {
-                        if (ui::IsWindowHovered())
-                        {
-                            float d = input->GetMouseMoveWheel();
-                            if (d != 0.f)
-                                textureWindowScale_ += 1.f / d;
-                        }
-
+                        ui::SliderInt("Zoom", &textureWindowScale_, 1, 5);
+                        auto windowPos = ui::GetWindowPos();
+                        auto imagePos = ui::GetCursorPos();
                         ui::Image(tex, ImVec2(tex->GetWidth() * textureWindowScale_,
                                               tex->GetHeight() * textureWindowScale_));
-                        textureWindowPos_ = ui::GetWindowPos();
+
+                        // Disable dragging of window if mouse is hovering texture.
+                        if (ui::IsItemHovered())
+                            rectWindowFlags_ = ImGuiWindowFlags_NoMove;
+                        else
+                            rectWindowFlags_ = (ImGuiWindowFlags_)0;
 
                         if (!textureSelectorAttribute_.Empty())
                         {
                             IntRect rect = selectedElement_->GetAttribute(textureSelectorAttribute_).GetIntRect();
+                            IntRect originalRect = rect;
+                            // Upscale selection rect if texture is upscaled.
+                            rect *= textureWindowScale_;
+
                             TransformSelectorFlags flags = TSF_NONE;
                             if (hideResizeHandles_)
                                 flags |= TSF_HIDEHANDLES;
 
-                            auto padding2 = ui::GetStyle().WindowPadding;
-                            Rect screenRect, delta;
-                            screenRect.min_ = Vector2(rect.left_, rect.top_) + Vector2(&padding2.x) +
-                                              Vector2(0, ui::GetCurrentWindow()->TitleBarHeight()) +
-                                              Vector2(textureWindowPos_.x, textureWindowPos_.y);
-                            screenRect.max_ =
-                                screenRect.min_ + Vector2(rect.right_ - rect.left_, rect.bottom_ - rect.top_);
+                            IntRect delta;
+                            IntRect screenRect(
+                                rect.Min() + ToIntVector2(imagePos) + ToIntVector2(windowPos),
+                                IntVector2(rect.right_ - rect.left_, rect.bottom_ - rect.top_)
+                            );
+                            // Essentially screenRect().Max() += screenRect().Min()
+                            screenRect.bottom_ += screenRect.top_;
+                            screenRect.right_ += screenRect.left_;
 
                             if (textureRectTransform_->OnUpdate(screenRect, delta, flags))
                             {
+                                // Accumulate delta value. This is required because resizing upscaled rect does not work
+                                // with small increments when rect values are integers.
+                                rectWindowDeltaAccumulator_ += delta;
+                            }
 
+                            if (textureRectTransform_->IsActive())
+                            {
+                                // Downscale and add accumulated delta to the original rect value
+                                rect = originalRect + rectWindowDeltaAccumulator_ / textureWindowScale_;
+
+                                // If downscaled rect size changed compared to original value - set attribute and
+                                // reset delta accumulator.
+                                if (rect != originalRect)
+                                {
+                                    selectedElement_->SetAttribute(textureSelectorAttribute_, rect);
+                                    // Keep remainder in accumulator, otherwise resizing will cause cursor to drift from
+                                    // the handle over time.
+                                    rectWindowDeltaAccumulator_.left_ %= textureWindowScale_;
+                                    rectWindowDeltaAccumulator_.top_ %= textureWindowScale_;
+                                    rectWindowDeltaAccumulator_.right_ %= textureWindowScale_;
+                                    rectWindowDeltaAccumulator_.bottom_ %= textureWindowScale_;
+                                }
                             }
                         }
                     }
@@ -833,6 +864,14 @@ public:
                     if (child->LoadXML(xml->GetRoot()))
                     {
                         child->SetStyleAuto();
+
+                        // Must be disabled because it interferes with ui element resizing
+                        if (auto window = dynamic_cast<Window*>(child))
+                        {
+                            window->SetMovable(false);
+                            window->SetResizable(false);
+                        }
+
                         currentFilePath_ = filePath;
                         UpdateWindowTitle();
 
