@@ -163,7 +163,7 @@ endif ()
 target_include_directories(Urho3D PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # Link dependencies
-target_link_libraries(Urho3D FreeType JO LZ4 PugiXml rapidjson SDL StanHull STB Mustache imgui IconFontCppHeaders)
+target_link_libraries(Urho3D FreeType JO LZ4 PugiXml rapidjson SDL StanHull STB Mustache IconFontCppHeaders)
 
 if (URHO3D_NETWORK)
     target_link_libraries(Urho3D Civetweb kNet)
@@ -193,6 +193,9 @@ if (URHO3D_PROFILING)
     target_link_libraries(Urho3D easy_profiler)
 endif ()
 
+if (URHO3D_SYSTEMUI)
+    target_link_libraries(Urho3D imgui)
+endif ()
 
 if (WIN32)
     target_link_libraries(Urho3D LibCpuId)

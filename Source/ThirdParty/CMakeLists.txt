@@ -29,8 +29,11 @@ add_subdirectory(SDL)
 add_subdirectory(StanHull)
 add_subdirectory(STB)
 add_subdirectory(Mustache)
-add_subdirectory(imgui)
 add_subdirectory(IconFontCppHeaders)
+
+if (URHO3D_SYSTEMUI)
+    add_subdirectory(imgui)
+endif ()
 
 if (URHO3D_NETWORK)
     add_subdirectory (Civetweb)
