@@ -194,7 +194,7 @@ if (URHO3D_PROFILING)
 endif ()
 
 if (URHO3D_SYSTEMUI)
-    target_link_libraries(Urho3D imgui)
+    target_link_libraries(Urho3D imgui ImGuizmo)
 endif ()
 
 if (WIN32)

@@ -683,6 +683,8 @@ public:
                 if (open)
                 {
                     auto tex = selected->GetTexture();
+                    // Texture is better visible this way when zoomed in.
+                    tex->SetFilterMode(FILTER_NEAREST);
                     auto padding = ImGui::GetStyle().WindowPadding;
                     if (ui::Begin("Select Rect", &open, ImVec2(tex->GetWidth() + padding.x * 2,
                         tex->GetHeight() + padding.y * 2), -1, rectWindowFlags_))

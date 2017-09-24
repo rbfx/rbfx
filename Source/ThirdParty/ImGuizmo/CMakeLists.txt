@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2017 the Atomic project.
+# Copyright (c) 2008-2017 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,13 +20,8 @@
 # THE SOFTWARE.
 #
 
-# When syncing repository with upstream be sure to delete stb_rectpack.h. This will make imgui use main instance of
-# stb_rectpack already included in the engine.
-
-add_library (imgui STATIC imgui.cpp imgui_draw.cpp)
-target_link_libraries (imgui STB)
-target_compile_definitions(imgui PUBLIC -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1
-    PRIVATE -DIMGUI_DISABLE_STB_RECT_PACK_IMPLEMENTATION -DIMGUI_DISABLE_STB_TRUETYPE_IMPLEMENTATION=1)
-target_include_directories(imgui PUBLIC .)
-install(FILES imgui.h imgui_internal.h imconfig.h DESTINATION ${DEST_THIRDPARTY_HEADERS}/ImGui)
-install_to_build_tree(imgui)
+file (GLOB SOURCE_FILES *.cpp *.h)
+add_library (ImGuizmo STATIC ${SOURCE_FILES})
+target_link_libraries(ImGuizmo imgui)
+install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/ImGuizmo FILES_MATCHING PATTERN *.h)
+install_to_build_tree(ImGuizmo)

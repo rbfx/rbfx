@@ -33,6 +33,7 @@ add_subdirectory(IconFontCppHeaders)
 
 if (URHO3D_SYSTEMUI)
     add_subdirectory(imgui)
+    add_subdirectory(ImGuizmo)
 endif ()
 
 if (URHO3D_NETWORK)
