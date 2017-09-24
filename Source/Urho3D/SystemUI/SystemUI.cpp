@@ -31,6 +31,7 @@
 #include "SystemUI.h"
 #include "Console.h"
 #include <SDL/SDL.h>
+#include <ImGuizmo/ImGuizmo.h>
 
 
 using namespace std::placeholders;
@@ -186,6 +187,7 @@ void SystemUI::OnPostUpdate(VariantMap& args)
     float timeStep = args[PostUpdate::P_TIMESTEP].GetFloat();
     io.DeltaTime = timeStep > 0.0f ? timeStep : 1.0f / 60.0f;
     ImGui::NewFrame();
+    ImGuizmo::BeginFrame();
     URHO3D_PROFILE(SystemUiFrame);
     SendEvent(E_SYSTEMUIFRAME);
 }
