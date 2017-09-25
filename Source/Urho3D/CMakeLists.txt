@@ -163,7 +163,7 @@ endif ()
 target_include_directories(Urho3D PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # Link dependencies
-target_link_libraries(Urho3D FreeType JO LZ4 PugiXml rapidjson SDL StanHull STB Mustache IconFontCppHeaders)
+target_link_libraries(Urho3D FreeType JO LZ4 PugiXml rapidjson SDL StanHull STB Mustache IconFontCppHeaders csgjs)
 
 if (URHO3D_NETWORK)
     target_link_libraries(Urho3D Civetweb kNet)

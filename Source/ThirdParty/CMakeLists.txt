@@ -30,6 +30,7 @@ add_subdirectory(StanHull)
 add_subdirectory(STB)
 add_subdirectory(Mustache)
 add_subdirectory(IconFontCppHeaders)
+add_subdirectory(csgjs)
 
 if (URHO3D_SYSTEMUI)
     add_subdirectory(imgui)
