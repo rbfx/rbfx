@@ -25,6 +25,7 @@
 #include "../../Scene/Serializable.h"
 #include "../../Resource/ResourceCache.h"
 #include "../../IO/FileSystem.h"
+#include "../../IO/Log.h"
 #include "AttributeInspector.h"
 
 #include <IconFontCppHeaders/IconsFontAwesome.h>
@@ -42,6 +43,9 @@ AttributeInspector::AttributeInspector(Urho3D::Context* context)
 
 void AttributeInspector::RenderAttributes(Serializable* item)
 {
+    if (item == nullptr)
+        return;
+
     /// If serializable changes clear value buffers so values from previous item do not appear when inspecting new item.
     if (lastSerializable_.Get() != item)
     {
