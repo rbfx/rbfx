@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "../../Scene/Scene.h"
+#include "../../IO/Log.h"
 #include <ImGui/imgui.h>
 #include <ImGuizmo/ImGuizmo.h>
 #include "Gizmo.h"
@@ -44,71 +46,111 @@ Gizmo::Gizmo(Context* context) : Object(context)
 
 }
 
-void ToImGuizmo(float* dest, const Matrix4& src)
-{
-    for (auto row = 0; row < 4; row++)
-    {
-        for (auto col = 0; col < 4; col++)
-            dest[row * 4 + col] = src.Data()[col * 4 + row];
-    }
-}
-
-void FromImGuizmo(Matrix4& dest, float* src)
-{
-    for (auto row = 0; row < 4; row++)
-    {
-        for (auto col = 0; col < 4; col++)
-            (&dest.m00_)[col * 4 + row] = src[row * 4 + col];
-    }
-}
-
 bool Gizmo::Manipulate(const Camera* camera, Node* node)
 {
+    PODVector<Node*> nodes;
+    nodes.Push(node);
+    return Manipulate(camera, nodes);
+}
+
+bool Gizmo::IsActive() const
+{
+    return ImGuizmo::IsUsing();
+}
+
+bool Gizmo::Manipulate(const Camera* camera, const PODVector<Node*>& nodes)
+{
+    if (nodes.Empty())
+        return false;
+
     float view[16];
     float proj[16];
     float tran[16];
+    float delta[16];
+
+    // Enums are compatible.
+    ImGuizmo::OPERATION operation = static_cast<ImGuizmo::OPERATION>(operation_);
+    ImGuizmo::MODE mode = ImGuizmo::WORLD;
+    // Scaling only works in local space. Multiselections only work in world space.
+    if (transformSpace_ == TS_LOCAL)
+        mode = ImGuizmo::LOCAL;
+    else if (transformSpace_ == TS_WORLD)
+        mode = ImGuizmo::WORLD;
+
+    // Scaling is always done in local space even for multiselections.
+    if (operation_ == GIZMOOP_SCALE)
+        mode = ImGuizmo::LOCAL;
+    // Any other operations on multiselections are done in world space.
+    else if (nodes.Size() > 1)
+        mode = ImGuizmo::WORLD;
+
+    if (!IsActive())
+    {
+        // Find center point of all nodes
+        if (nodes.Size() == 1)
+            currentOrigin_ = nodes.Front()->GetTransform().ToMatrix4();     // Makes gizmo work in local space too.
+        else
+        {
+            // It is not clear what should be rotation and scale of center point for multiselection, therefore we limit
+            // multiselection operations to world space (see above).
+            Vector3 center = Vector3::ZERO;
+            for (const auto& node: nodes)
+                center += node->GetWorldPosition();
+            center /= nodes.Size();
+            currentOrigin_.SetTranslation(center);
+        }
+    }
 
     memcpy(view, camera->GetView().ToMatrix4().Data(), sizeof(view));
     memcpy(proj, camera->GetProjection().Data(), sizeof(proj));
-    memcpy(tran, node->GetTransform().ToMatrix4().Data(), sizeof(tran));
+    memcpy(tran, currentOrigin_.Data(), sizeof(tran));
 
     FlipMatrix(view);
     FlipMatrix(proj);
     FlipMatrix(tran);
 
-//    ToImGuizmo(view, camera->GetView().ToMatrix4());
-//    ToImGuizmo(proj, camera->GetProjection());
-//    ToImGuizmo(tran, node->GetTransform().ToMatrix4());
-
-    // Enums are compatible.
-    ImGuizmo::OPERATION operation = static_cast<ImGuizmo::OPERATION>(operation_);
-    ImGuizmo::MODE mode;
-    // Scaling only works in local space.
-    if (transformSpace_ == TS_LOCAL || operation_ == GIZMOOP_SCALE)
-        mode = ImGuizmo::LOCAL;
-    else
-        mode = ImGuizmo::WORLD;
-
     ImGuiIO& io = ImGui::GetIO();
     ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-    ImGuizmo::Manipulate(view, proj, operation, mode, tran, nullptr, nullptr);
+    ImGuizmo::Manipulate(view, proj, operation, mode, tran, delta, nullptr);
 
     if (IsActive())
     {
         FlipMatrix(tran);
-        node->SetTransform(Matrix4(tran));
-//        Matrix4 matrix;
-//        FromImGuizmo(matrix, tran);
-//        node->SetTransform(matrix);
+        FlipMatrix(delta);
+        Matrix4 dm(delta);
+
+        currentOrigin_ = Matrix4(tran);
+
+        for (const auto& node: nodes)
+        {
+            if (node == nullptr)
+            {
+                URHO3D_LOGERROR("Gizmo received null pointer of node.");
+                continue;
+            }
+
+            if (operation_ == GIZMOOP_SCALE)
+            {
+                // A workaround for ImGuizmo bug where delta matrix returns absolute scale value.
+                if (!nodeScaleStart_.Contains(node))
+                    nodeScaleStart_[node] = node->GetScale();
+                node->SetScale(nodeScaleStart_[node] * dm.Scale());
+            }
+            else
+            {
+                // Delta matrix is always in world-space.
+                if (operation_ == GIZMOOP_ROTATE)
+                    node->RotateAround(currentOrigin_.Translation(), -dm.Rotation(), TS_WORLD);
+                else
+                    node->Translate(dm.Translation(), TS_WORLD);
+            }
+        }
+
         return true;
     }
-
+    else if (operation_ == GIZMOOP_SCALE && !nodeScaleStart_.Empty())
+        nodeScaleStart_.Clear();
     return false;
-}
-
-bool Gizmo::IsActive() const
-{
-    return ImGuizmo::IsUsing() && ImGui::IsMouseDown(0);
 }
 
 }

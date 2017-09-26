@@ -50,6 +50,11 @@ public:
     /// \param node to be manipulated.
     /// \returns true if node was manipulated on current frame.
     bool Manipulate(const Camera* camera, Node* node);
+    /// Manipulate multiple nodes. Should be called from within E_SYSTEMUIFRAME event.
+    /// \param camera which observes the node.
+    /// \param nodes to be manipulated. Specifying more than one node manipulates them in world space.
+    /// \returns true if node was manipulated on current frame.
+    bool Manipulate(const Camera* camera, const PODVector<Node*>& nodes);
     /// Set operation mode. Possible modes: rotation, translation and scaling.
     void SetOperation(GizmoOperation operation) { operation_ = operation; }
     /// Get current manipulation mode.
@@ -63,8 +68,14 @@ public:
     bool IsActive() const;
 
 protected:
+    /// Current gizmo operation. Translation, rotation or scaling.
     GizmoOperation operation_ = GIZMOOP_TRANSLATE;
+    /// Current coordinate space to operate in. World or local.
     TransformSpace transformSpace_ = TS_WORLD;
+    /// Saved node scale on operation start.
+    HashMap<Node*, Vector3> nodeScaleStart_;
+    /// Current operation origin. This is center point between all nodes that are being manipulated.
+    Matrix4 currentOrigin_;
 };
 
 }
