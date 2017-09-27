@@ -72,6 +72,10 @@ public:
     /// \param darkStyle enables dark style, otherwise it is a light style.
     /// \param alpha value between 0.0f - 1.0f
     void ApplyStyleDefault(bool darkStyle, float alpha);
+    /// Return whether user is interacting with any ui element.
+    bool IsAnyItemActive() const;
+    /// Return whether mouse is hovering any system ui component.
+    bool IsAnyItemHovered() const;
 
 protected:
     float uiScale_ = 1.f;
