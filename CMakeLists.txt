@@ -150,6 +150,12 @@ if (CMAKE_CROSSCOMPILING AND MINGW)
     link_libraries(-L${CMAKE_BINARY_DIR}/workaround)
 endif ()
 
+if (URHO3D_SSE AND NOT MSVC)
+    # Build engine and it's dependencies with SSE/SSE2 enabled.
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -msse2")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2")
+endif ()
+
 add_subdirectory(Source)
 
 # Print current build configuration
@@ -179,10 +185,4 @@ message(STATUS "  WebP            ${URHO3D_WEBP}")
 message(STATUS "  Tools           ${URHO3D_TOOLS}")
 if (TARGET profiler_gui)
     message(STATUS "     Profiler GUI ${URHO3D_PROFILING}")
-endif ()
-
-if (URHO3D_SSE AND NOT MSVC)
-    # Build engine and it's dependencies with SSE/SSE2 enabled.
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -msse2")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2")
 endif ()
