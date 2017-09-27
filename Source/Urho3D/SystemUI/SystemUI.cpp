@@ -159,26 +159,6 @@ void SystemUI::OnRawEvent(VariantMap& args)
     default:
         break;
     }
-
-    switch (evt->type)
-    {
-    case SDL_KEYUP:
-    case SDL_KEYDOWN:
-    case SDL_TEXTINPUT:
-        args[SDLRawInput::P_CONSUMED] = ImGui::IsAnyItemActive();
-        break;
-    case SDL_MOUSEWHEEL:
-    case SDL_MOUSEBUTTONUP:
-    case SDL_MOUSEBUTTONDOWN:
-    case SDL_MOUSEMOTION:
-    case SDL_FINGERUP:
-    case SDL_FINGERDOWN:
-    case SDL_FINGERMOTION:
-        args[SDLRawInput::P_CONSUMED] = ImGui::IsAnyWindowHovered();
-        break;
-    default:
-        break;
-    }
 }
 
 void SystemUI::OnPostUpdate(VariantMap& args)
@@ -456,7 +436,7 @@ bool SystemUI::IsAnyItemActive() const
 
 bool SystemUI::IsAnyItemHovered() const
 {
-    return ui::IsAnyItemHovered();
+    return ui::IsAnyItemHovered() || ui::IsAnyWindowHovered();
 }
 
 }

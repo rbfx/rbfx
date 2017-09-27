@@ -61,6 +61,9 @@
 #include "../UI/Window.h"
 #include "../UI/View3D.h"
 #include "../UI/UIComponent.h"
+#ifdef URHO3D_SYSTEMUI
+#include "../SystemUI/SystemUI.h"
+#endif
 
 #include <assert.h>
 #include <SDL/SDL.h>
@@ -363,23 +366,31 @@ void UI::Update(float timeStep)
         }
     }
 
-    // Mouse hover
-    if (!mouseGrabbed && !input->GetTouchEmulation())
+#ifdef URHO3D_SYSTEMUI
+    // System ui is always takes precedence
+    if (!GetSubsystem<SystemUI>()->IsAnyItemHovered())
     {
-        if (!usingTouchInput_ && cursorVisible)
-            ProcessHover(cursorPos, mouseButtons_, qualifiers_, cursor_);
-    }
+#endif
+        // Mouse hover
+        if (!mouseGrabbed && !input->GetTouchEmulation())
+        {
+            if (!usingTouchInput_ && cursorVisible)
+                ProcessHover(cursorPos, mouseButtons_, qualifiers_, cursor_);
+        }
 
-    // Touch hover
-    unsigned numTouches = input->GetNumTouches();
-    for (unsigned i = 0; i < numTouches; ++i)
-    {
-        TouchState* touch = input->GetTouch(i);
-        IntVector2 touchPos = touch->position_;
-        touchPos.x_ = (int)(touchPos.x_ / uiScale_);
-        touchPos.y_ = (int)(touchPos.y_ / uiScale_);
-        ProcessHover(touchPos, TOUCHID_MASK(touch->touchID_), 0, nullptr);
+        // Touch hover
+        unsigned numTouches = input->GetNumTouches();
+        for (unsigned i = 0; i < numTouches; ++i)
+        {
+            TouchState* touch = input->GetTouch(i);
+            IntVector2 touchPos = touch->position_;
+            touchPos.x_ = (int)(touchPos.x_ / uiScale_);
+            touchPos.y_ = (int)(touchPos.y_ / uiScale_);
+            ProcessHover(touchPos, TOUCHID_MASK(touch->touchID_), 0, nullptr);
+        }
+#ifdef URHO3D_SYSTEMUI
     }
+#endif
 
     // End hovers that expired without refreshing
     for (HashMap<WeakPtr<UIElement>, bool>::Iterator i = hoveredElements_.Begin(); i != hoveredElements_.End();)
@@ -937,6 +948,12 @@ void UI::Update(float timeStep, UIElement* element)
 {
     // Keep a weak pointer to the element in case it destroys itself on update
     WeakPtr<UIElement> elementWeak(element);
+
+#ifdef URHO3D_SYSTEMUI
+    // Unfocus active element if system ui has focus
+    if (GetFocusElement() == element && GetSubsystem<SystemUI>()->IsAnyItemActive())
+        SetFocusElement(nullptr);
+#endif
 
     element->Update(timeStep);
     if (elementWeak.Expired())
@@ -1664,6 +1681,12 @@ void UI::HandleMouseButtonDown(StringHash eventType, VariantMap& eventData)
     // Handle drag cancelling
     ProcessDragCancel();
 
+#ifdef URHO3D_SYSTEMUI
+    // SystemUI is rendered on top of game UI
+    if (GetSubsystem<SystemUI>()->IsAnyItemHovered())
+        return;
+#endif
+
     Input* input = GetSubsystem<Input>();
 
     if (!input->IsMouseGrabbed())
@@ -1722,6 +1745,12 @@ void UI::HandleMouseMove(StringHash eventType, VariantMap& eventData)
         }
     }
 
+#ifdef URHO3D_SYSTEMUI
+    // SystemUI is rendered on top of game UI
+    if (GetSubsystem<SystemUI>()->IsAnyItemHovered())
+        return;
+#endif
+
     IntVector2 cursorPos;
     bool cursorVisible;
     GetCursorPositionAndVisible(cursorPos, cursorVisible);
@@ -1734,6 +1763,12 @@ void UI::HandleMouseWheel(StringHash eventType, VariantMap& eventData)
     Input* input = GetSubsystem<Input>();
     if (input->IsMouseGrabbed())
         return;
+
+#ifdef URHO3D_SYSTEMUI
+    // SystemUI is rendered on top of game UI
+    if (GetSubsystem<SystemUI>()->IsAnyItemHovered())
+        return;
+#endif
 
     using namespace MouseWheel;
 
@@ -1782,6 +1817,12 @@ void UI::HandleTouchBegin(StringHash eventType, VariantMap& eventData)
     Input* input = GetSubsystem<Input>();
     if (input->IsMouseGrabbed())
         return;
+
+#ifdef URHO3D_SYSTEMUI
+    // SystemUI is rendered on top of game UI
+    if (GetSubsystem<SystemUI>()->IsAnyItemHovered())
+        return;
+#endif
 
     using namespace TouchBegin;
 
@@ -1834,6 +1875,12 @@ void UI::HandleTouchEnd(StringHash eventType, VariantMap& eventData)
 
 void UI::HandleTouchMove(StringHash eventType, VariantMap& eventData)
 {
+#ifdef URHO3D_SYSTEMUI
+    // SystemUI is rendered on top of game UI
+    if (GetSubsystem<SystemUI>()->IsAnyItemHovered())
+        return;
+#endif
+
     using namespace TouchMove;
 
     IntVector2 pos(eventData[P_X].GetInt(), eventData[P_Y].GetInt());
@@ -1851,6 +1898,12 @@ void UI::HandleTouchMove(StringHash eventType, VariantMap& eventData)
 
 void UI::HandleKeyDown(StringHash eventType, VariantMap& eventData)
 {
+#ifdef URHO3D_SYSTEMUI
+    // SystemUI takes precendence before game UI
+    if (GetSubsystem<SystemUI>()->IsAnyItemActive())
+        return;
+#endif
+
     using namespace KeyDown;
 
     mouseButtons_ = eventData[P_BUTTONS].GetInt();
@@ -1926,6 +1979,12 @@ void UI::HandleKeyDown(StringHash eventType, VariantMap& eventData)
 
 void UI::HandleTextInput(StringHash eventType, VariantMap& eventData)
 {
+#ifdef URHO3D_SYSTEMUI
+    // SystemUI takes precendence before game UI
+    if (GetSubsystem<SystemUI>()->IsAnyItemActive())
+        return;
+#endif
+
     using namespace TextInput;
 
     UIElement* element = focusElement_;
