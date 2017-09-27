@@ -449,5 +449,15 @@ void SystemUI::ApplyStyleDefault(bool darkStyle, float alpha)
     }
 }
 
+bool SystemUI::IsAnyItemActive() const
+{
+    return ui::IsAnyItemActive();
+}
+
+bool SystemUI::IsAnyItemHovered() const
+{
+    return ui::IsAnyItemHovered();
+}
+
 }
 
