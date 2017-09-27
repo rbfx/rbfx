@@ -15,6 +15,7 @@
 //
 
 #include <list>
+#include <utility>
 #include <vector>
 #include <algorithm>
 #include <math.h>
@@ -72,7 +73,7 @@ struct csgjs_plane
 	csgjs_plane(const csgjs_vector & a, const csgjs_vector & b, const csgjs_vector & c);
 	bool ok() const;
 	void flip();
-	void splitPolygon(const csgjs_polygon & polygon, std::vector<csgjs_polygon> & coplanarFront, std::vector<csgjs_polygon> & coplanarBack, std::vector<csgjs_polygon> & front, std::vector<csgjs_polygon> & back) const;
+	void splitPolygon(csgjs_polygon& polygon, std::vector<csgjs_polygon> & coplanarFront, std::vector<csgjs_polygon> & coplanarBack, std::vector<csgjs_polygon> & front, std::vector<csgjs_polygon> & back) const;
 };
 
 // Represents a convex polygon. The vertices used to initialize a polygon must
@@ -89,8 +90,8 @@ struct csgjs_polygon
 	csgjs_plane plane;
 	void flip();
 
-	csgjs_polygon();
-	csgjs_polygon(const std::vector<csgjs_vertex> & list);
+	csgjs_polygon() = default;
+    explicit csgjs_polygon(std::vector<csgjs_vertex>&& list);
 };
 
 // Holds a node in a BSP tree. A BSP tree is built from a collection of polygons
@@ -101,19 +102,19 @@ struct csgjs_polygon
 struct csgjs_csgnode
 {
 	std::vector<csgjs_polygon> polygons;
-	csgjs_csgnode * front;
-	csgjs_csgnode * back;
+	csgjs_csgnode* front = nullptr;
+	csgjs_csgnode* back = nullptr;
 	csgjs_plane plane;
 
-	csgjs_csgnode();
-	csgjs_csgnode(const std::vector<csgjs_polygon> & list);
+	csgjs_csgnode() = default;
+    explicit csgjs_csgnode(const std::vector<csgjs_polygon> & list);
 	~csgjs_csgnode();
 
 	csgjs_csgnode * clone() const;
 	void clipTo(const csgjs_csgnode * other);
 	void invert();
-	void build(const std::vector<csgjs_polygon> & polygon);
-	std::vector<csgjs_polygon> clipPolygons(const std::vector<csgjs_polygon> & list) const;
+	void build(const std::vector<csgjs_polygon> & polygons);
+	std::vector<csgjs_polygon> clipPolygons(const std::vector<csgjs_polygon> & polygons) const;
 	std::vector<csgjs_polygon> allPolygons() const;
 };
 
@@ -160,19 +161,19 @@ csgjs_plane::csgjs_plane() : normal(), w(0.0f)
 
 bool csgjs_plane::ok() const 
 {
-	return length(this->normal) > 0.0f; 
+	return length(normal) > 0.0f;
 }
 
 void csgjs_plane::flip()
 {
-	this->normal = negate(this->normal); 
-	this->w *= -1.0f;
+	normal = negate(normal);
+	w *= -1.0f;
 }
 
 csgjs_plane::csgjs_plane(const csgjs_vector & a, const csgjs_vector & b, const csgjs_vector & c)
 {
-	this->normal = unit(cross(b - a, c - a));
-	this->w = dot(this->normal, a);
+	normal = unit(cross(b - a, c - a));
+	w = dot(normal, a);
 }
 
 // Split `polygon` by this plane if needed, then put the polygon or polygon
@@ -180,7 +181,7 @@ csgjs_plane::csgjs_plane(const csgjs_vector & a, const csgjs_vector & b, const c
 // `coplanarFront` or `coplanarBack` depending on their orientation with
 // respect to this plane. Polygons in front or in back of this plane go into
 // either `front` or `back`.
-void csgjs_plane::splitPolygon(const csgjs_polygon & polygon, std::vector<csgjs_polygon> & coplanarFront, std::vector<csgjs_polygon> & coplanarBack, std::vector<csgjs_polygon> & front, std::vector<csgjs_polygon> & back) const
+void csgjs_plane::splitPolygon(csgjs_polygon& polygon, std::vector<csgjs_polygon>& coplanarFront, std::vector<csgjs_polygon>& coplanarBack, std::vector<csgjs_polygon>& front, std::vector<csgjs_polygon>& back) const
 {
 	enum
 	{
@@ -194,10 +195,11 @@ void csgjs_plane::splitPolygon(const csgjs_polygon & polygon, std::vector<csgjs_
 	// four classes.
 	int polygonType = 0;
 	std::vector<int> types;
+	types.reserve(polygon.vertices.size());
 
-	for (size_t i = 0; i < polygon.vertices.size(); i++) 
-	{
-		float t = dot(this->normal, polygon.vertices[i].pos) - this->w;
+	for (auto& vertex : polygon.vertices)
+    {
+		float t = dot(normal, vertex.pos) - w;
 		int type = (t < -csgjs_EPSILON) ? BACK : ((t > csgjs_EPSILON) ? FRONT : COPLANAR);
 		polygonType |= type;
 		types.push_back(type);
@@ -208,25 +210,28 @@ void csgjs_plane::splitPolygon(const csgjs_polygon & polygon, std::vector<csgjs_
 	{
 	case COPLANAR:
 		{
-			if (dot(this->normal, polygon.plane.normal) > 0)
-				coplanarFront.push_back(polygon);
+			if (dot(normal, polygon.plane.normal) > 0)
+				coplanarFront.push_back(std::move(polygon));
 			else 
-				coplanarBack.push_back(polygon);
+				coplanarBack.push_back(std::move(polygon));
 			break;
 		}
 	case FRONT:
 		{
-			front.push_back(polygon);
+			front.push_back(std::move(polygon));
 			break;
 		}
 	case BACK:
 		{
-			back.push_back(polygon);
+			back.push_back(std::move(polygon));
 			break;
 		}
 	case SPANNING:
 		{
 			std::vector<csgjs_vertex> f, b;
+			f.reserve(polygon.vertices.size());
+			b.reserve(polygon.vertices.size());
+
 			for (size_t i = 0; i < polygon.vertices.size(); i++) 
 			{
 				int j = (i + 1) % polygon.vertices.size();
@@ -236,14 +241,14 @@ void csgjs_plane::splitPolygon(const csgjs_polygon & polygon, std::vector<csgjs_
 				if (ti != FRONT) b.push_back(vi);
 				if ((ti | tj) == SPANNING) 
 				{
-					float t = (this->w - dot(this->normal, vi.pos)) / dot(this->normal, vj.pos - vi.pos);
+					float t = (w - dot(normal, vi.pos)) / dot(normal, vj.pos - vi.pos);
 					csgjs_vertex v = interpolate(vi, vj, t);
 					f.push_back(v);
 					b.push_back(v);
 				}
 			}
-			if (f.size() >= 3) front.push_back(csgjs_polygon(f));
-			if (b.size() >= 3) back.push_back(csgjs_polygon(b));
+			if (f.size() >= 3) front.push_back(csgjs_polygon(std::move(f)));
+			if (b.size() >= 3) back.push_back(csgjs_polygon(std::move(b)));
 			break;
 		}
 	}
@@ -259,11 +264,7 @@ void csgjs_polygon::flip()
 	plane.flip();
 }
 
-csgjs_polygon::csgjs_polygon()
-{
-}
-
-csgjs_polygon::csgjs_polygon(const std::vector<csgjs_vertex> & list) : vertices(list), plane(vertices[0].pos, vertices[1].pos, vertices[2].pos)
+csgjs_polygon::csgjs_polygon(std::vector<csgjs_vertex>&& list) : vertices(std::move(list)), plane(vertices[0].pos, vertices[1].pos, vertices[2].pos)
 {
 }
 
@@ -282,8 +283,8 @@ inline static csgjs_csgnode * csg_union(const csgjs_csgnode * a1, const csgjs_cs
 	b->invert();
 	a->build(b->allPolygons());
 	csgjs_csgnode * ret = new csgjs_csgnode(a->allPolygons());
-	delete a; a = 0;
-	delete b; b = 0;
+	delete a; a = nullptr;
+	delete b; b = nullptr;
 	return ret;
 }
 
@@ -302,8 +303,8 @@ inline static csgjs_csgnode * csg_subtract(const csgjs_csgnode * a1, const csgjs
 	a->build(b->allPolygons());
 	a->invert();
 	csgjs_csgnode * ret = new csgjs_csgnode(a->allPolygons());
-	delete a; a = 0;
-	delete b; b = 0;
+	delete a; a = nullptr;
+	delete b; b = nullptr;
 	return ret;
 }
 
@@ -321,8 +322,8 @@ inline static csgjs_csgnode * csg_intersect(const csgjs_csgnode * a1, const csgj
 	a->build(b->allPolygons());
 	a->invert();
 	csgjs_csgnode * ret = new csgjs_csgnode(a->allPolygons());
-	delete a; a = 0;
-	delete b; b = 0;
+	delete a; a = nullptr;
+	delete b; b = nullptr;
 	return ret;
 }
 
@@ -331,13 +332,13 @@ void csgjs_csgnode::invert()
 {
 	std::list<csgjs_csgnode *> nodes;
 	nodes.push_back(this);
-	while (nodes.size())
+	while (!nodes.empty())
 	{
 		csgjs_csgnode *me = nodes.front();
 		nodes.pop_front();
 
-		for (size_t i = 0; i < me->polygons.size(); i++)
-			me->polygons[i].flip();
+		for (auto& polygon : me->polygons)
+            polygon.flip();
 		me->plane.flip();
 		std::swap(me->front, me->back);
 		if (me->front)
@@ -349,35 +350,37 @@ void csgjs_csgnode::invert()
 
 // Recursively remove all polygons in `polygons` that are inside this BSP
 // tree.
-std::vector<csgjs_polygon> csgjs_csgnode::clipPolygons(const std::vector<csgjs_polygon> & list) const
+std::vector<csgjs_polygon> csgjs_csgnode::clipPolygons(const std::vector<csgjs_polygon> & polygons) const
 {
 	std::vector<csgjs_polygon> result;
 
 	std::list<std::pair<const csgjs_csgnode * const,std::vector<csgjs_polygon> > > clips;
-	clips.push_back(std::make_pair(this, list));
-	while (clips.size())
+	clips.emplace_back(this, polygons);
+	while (!clips.empty())
 	{
-		const csgjs_csgnode        *me  = clips.front().first;
-		std::vector<csgjs_polygon> list = clips.front().second;
-		clips.pop_front();
+		const csgjs_csgnode*        me  = clips.front().first;
+		std::vector<csgjs_polygon>& list = clips.front().second;
 
 		if (!me->plane.ok())
 		{
 			result.insert(result.end(), list.begin(), list.end());
+			clips.pop_front();
 			continue;
 		}
 
 		std::vector<csgjs_polygon> list_front, list_back;
-		for (size_t i = 0; i < list.size(); i++)
-			me->plane.splitPolygon(list[i], list_front, list_back, list_front, list_back);
+		for (auto& poly : list)
+            me->plane.splitPolygon(poly, list_front, list_back, list_front, list_back);
 
 		if (me->front)
-			clips.push_back(std::make_pair(me->front, list_front));
+			clips.emplace_back(me->front, list_front);
 		else
 			result.insert(result.end(), list_front.begin(), list_front.end());
 
 		if (me->back)
-			clips.push_back(std::make_pair(me->back, list_back));
+			clips.emplace_back(me->back, list_back);
+
+		clips.pop_front();
 	}
 
 	return result;
@@ -389,7 +392,7 @@ void csgjs_csgnode::clipTo(const csgjs_csgnode * other)
 {
 	std::list<csgjs_csgnode *> nodes;
 	nodes.push_back(this);
-	while (nodes.size())
+	while (!nodes.empty())
 	{
 		csgjs_csgnode *me = nodes.front();
 		nodes.pop_front();
@@ -409,7 +412,7 @@ std::vector<csgjs_polygon> csgjs_csgnode::allPolygons() const
 
 	std::list<const csgjs_csgnode *> nodes;
 	nodes.push_back(this);
-	while (nodes.size())
+	while (!nodes.empty())
 	{
 		const csgjs_csgnode        *me  = nodes.front();
 		nodes.pop_front();
@@ -429,8 +432,8 @@ csgjs_csgnode * csgjs_csgnode::clone() const
 	csgjs_csgnode * ret = new csgjs_csgnode();
 
 	std::list<std::pair<const csgjs_csgnode *,csgjs_csgnode *> > nodes;
-	nodes.push_back(std::make_pair(this, ret));
-	while (nodes.size())
+	nodes.emplace_back(this, ret);
+	while (!nodes.empty())
 	{
 		const csgjs_csgnode *original = nodes.front().first;
 		csgjs_csgnode       *clone    = nodes.front().second;
@@ -441,12 +444,12 @@ csgjs_csgnode * csgjs_csgnode::clone() const
 		if (original->front)
 		{
 			clone->front = new csgjs_csgnode();
-			nodes.push_back(std::make_pair(original->front, clone->front));
+			nodes.emplace_back(original->front, clone->front);
 		}
 		if (original->back)
 		{
 			clone->back = new csgjs_csgnode();
-			nodes.push_back(std::make_pair(original->back, clone->back));
+			nodes.emplace_back(original->back, clone->back);
 		}
 	}
 
@@ -457,44 +460,43 @@ csgjs_csgnode * csgjs_csgnode::clone() const
 // new polygons are filtered down to the bottom of the tree and become new
 // nodes there. Each set of polygons is partitioned using the first polygon
 // (no heuristic is used to pick a good split).
-void csgjs_csgnode::build(const std::vector<csgjs_polygon> & list)
+void csgjs_csgnode::build(const std::vector<csgjs_polygon>& polygons)
 {
-	if (!list.size())
+	if (polygons.empty())
 		return;
 
 	std::list<std::pair<csgjs_csgnode *,std::vector<csgjs_polygon> > > builds;
-	builds.push_back(std::make_pair(this, list));
-	while (builds.size())
+	builds.emplace_back(this, polygons);
+	while (!builds.empty())
 	{
-		csgjs_csgnode              *me  = builds.front().first;
-		std::vector<csgjs_polygon> list = builds.front().second;
-		builds.pop_front();
+		csgjs_csgnode*              me  = builds.front().first;
+		std::vector<csgjs_polygon>& list = builds.front().second;
 
 		if (!me->plane.ok())
 			me->plane = list[0].plane;
 		std::vector<csgjs_polygon> list_front, list_back;
-		for (size_t i = 0; i < list.size(); i++)
-			me->plane.splitPolygon(list[i], me->polygons, me->polygons, list_front, list_back);
-		if (list_front.size())
+
+        for (auto& poly : list)
+            me->plane.splitPolygon(poly, me->polygons, me->polygons, list_front, list_back);
+
+        if (!list_front.empty())
 		{
 			if (!me->front)
 				me->front = new csgjs_csgnode;
-			builds.push_back(std::make_pair(me->front, list_front));
+			builds.emplace_back(me->front, std::move(list_front));
 		}
-		if (list_back.size())
+
+        if (!list_back.empty())
 		{
 			if (!me->back)
 				me->back = new csgjs_csgnode;
-			builds.push_back(std::make_pair(me->back, list_back));
+			builds.emplace_back(me->back, std::move(list_back));
 		}
+        builds.pop_front();
 	}
 }
 
-csgjs_csgnode::csgjs_csgnode() : front(0), back(0)
-{
-}
-
-csgjs_csgnode::csgjs_csgnode(const std::vector<csgjs_polygon> & list) : front(0), back(0)
+csgjs_csgnode::csgjs_csgnode(const std::vector<csgjs_polygon>& list)
 {
 	build(list);
 }
@@ -505,7 +507,7 @@ csgjs_csgnode::~csgjs_csgnode()
 
 	std::list<csgjs_csgnode *> nodes_to_disassemble;
 	nodes_to_disassemble.push_back(this);
-	while (nodes_to_disassemble.size())
+	while (!nodes_to_disassemble.empty())
 	{
 		csgjs_csgnode *me = nodes_to_disassemble.front();
 		nodes_to_disassemble.pop_front();
@@ -514,18 +516,18 @@ csgjs_csgnode::~csgjs_csgnode()
 		{
 			nodes_to_disassemble.push_back(me->front);
 			nodes_to_delete.push_back(me->front);
-			me->front = NULL;
+			me->front = nullptr;
 		}
 		if (me->back)
 		{
 			nodes_to_disassemble.push_back(me->back);
 			nodes_to_delete.push_back(me->back);
-			me->back = NULL;
+			me->back = nullptr;
 		}
 	}
 
-	for (std::list<csgjs_csgnode *>::iterator it = nodes_to_delete.begin(); it != nodes_to_delete.end(); ++it)
-		delete *it;
+	for (auto& it : nodes_to_delete)
+        delete it;
 }
 
 // Public interface implementation
@@ -541,24 +543,22 @@ inline static std::vector<csgjs_polygon> csgjs_modelToPolygons(const csgjs_model
 		for (int j = 0; j < 3; j++)
 			triangle.emplace_back(model.vertices[model.indices[i + j]]);
 
-		list.push_back(csgjs_polygon(triangle));
+		list.emplace_back(std::move(triangle));
 	}
 	return list;
 }
 
 inline static csgjs_model csgjs_modelFromPolygons(const std::vector<csgjs_polygon> & polygons)
 {
-	csgjs_model model;
+	csgjs_model model{};
 	int p = 0;
 	model.vertices.reserve(polygons.size() * 3);
 	model.indices.reserve(polygons.size() * 3);
 
-	for (size_t i = 0; i < polygons.size(); i++)
-	{
-		const csgjs_polygon & poly = polygons[i];
-
-		for (size_t j = 0; j < poly.vertices.size(); j++)
-			model.vertices.push_back(poly.vertices[j]);
+	for (const auto& poly : polygons)
+    {
+        for (const auto& vertex : poly.vertices)
+            model.vertices.push_back(vertex);
 
 		for (size_t j = 2; j < poly.vertices.size(); j++)
 		{
@@ -579,9 +579,9 @@ inline static csgjs_model csgjs_operation(const csgjs_model & a, const csgjs_mod
 	csgjs_csgnode * B = new csgjs_csgnode(csgjs_modelToPolygons(b));
 	csgjs_csgnode * AB = fun(A, B);
 	std::vector<csgjs_polygon> polygons = AB->allPolygons();
-	delete A; A = 0;
-	delete B; B = 0;
-	delete AB; AB = 0;
+	delete A; A = nullptr;
+	delete B; B = nullptr;
+	delete AB; AB = nullptr;
 	return csgjs_modelFromPolygons(polygons);
 }
 
