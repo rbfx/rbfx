@@ -22,7 +22,7 @@
 
 #pragma once
 
-@URHO_HEADERS@
+@HEADER_FILES@
 #include <Urho3D/DebugNew.h>
 
 using namespace Urho3D;

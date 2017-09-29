@@ -20,94 +20,58 @@
 # THE SOFTWARE.
 #
 
-file (GLOB SOURCE_FILES
-    *.cpp *.h
-    Graphics/*.cpp Graphics/*.h
-)
-file (GLOB_RECURSE SOURCE_FILES_EXT
-    Audio/*.cpp Audio/*.h
-    Container/*.cpp Container/*.h
-    Core/*.cpp Core/*.h
-    Engine/*.cpp Engine/*.h
-    Input/*.cpp Input/*.h
-    IO/*.cpp IO/*.h
-    Math/*.cpp Math/*.h
-    Resource/*.cpp Resource/*.h
-    Scene/*.cpp Scene/*.h
-    UI/*.cpp UI/*.h
-)
+macro (define_engine_source_files)
+    cmake_parse_arguments(DEFINE_SRC_FILES "NORECURSE" "" "" ${ARGN} )
+    if (DEFINE_SRC_FILES_NORECURSE)
+        set (_action GLOB)
+    else ()
+        set (_action GLOB_RECURSE)
+    endif ()
+    foreach (path ${DEFINE_SRC_FILES_UNPARSED_ARGUMENTS})
+        # Get header files
+        file (${_action} _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${path}/*.h)
+        list (APPEND HEADER_FILES ${_files})
+        # Install them
+        install (FILES ${_files} DESTINATION ${DEST_INCLUDE_DIR})
+        # Get source files
+        file (${_action} _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${path}/*.cpp)
+        list (APPEND SOURCE_FILES ${_files})
+    endforeach ()
+endmacro()
 
-install (
-    DIRECTORY Audio Container Core Engine Input IO Math Resource Scene UI
-    DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
-)
+define_engine_source_files (NORECURSE . Graphics)
+define_engine_source_files (Audio Container Core Engine Input IO Math Resource Scene UI)
 
 if (URHO3D_OPENGL)
-    file (GLOB SOURCE_FILES_GRAPHICS Graphics/OpenGL/*.h Graphics/OpenGL/*.cpp)
-    install (
-        DIRECTORY Graphics/OpenGL
-        DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
-    )
+    define_engine_source_files (Graphics/OpenGL)
 elseif (URHO3D_D3D11)
-    file (GLOB SOURCE_FILES_GRAPHICS Graphics/Direct3D11/*.h Graphics/Direct3D11/*.cpp)
-    install (
-        DIRECTORY Graphics/Direct3D11
-        DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
-    )
+    define_engine_source_files (Graphics/Direct3D11)
 elseif (URHO3D_D3D9)
-    file (GLOB SOURCE_FILES_GRAPHICS Graphics/Direct3D9/*.h Graphics/Direct3D9/*.cpp)
-    install (
-        DIRECTORY Graphics/Direct3D9
-        DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
-    )
+    define_engine_source_files (Graphics/Direct3D9)
 endif ()
 
 if (URHO3D_IK)
-    file (GLOB_RECURSE SOURCE_FILES_IK IK/*.h IK/*.cpp)
-    install (
-        DIRECTORY IK
-        DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
-    )
+    define_engine_source_files (IK)
 endif ()
 
 if (URHO3D_NAVIGATION)
-    file (GLOB_RECURSE SOURCE_FILES_NAVIGATION Navigation/*.h Navigation/*.cpp)
-    install (
-        DIRECTORY Navigation
-        DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
-    )
+    define_engine_source_files (Navigation)
 endif ()
 
 if (URHO3D_NETWORK)
-    file (GLOB_RECURSE SOURCE_FILES_NETWORK Network/*.h Network/*.cpp)
-    install (
-        DIRECTORY Network
-        DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
-    )
+    define_engine_source_files (Network)
 endif ()
 
 if (URHO3D_PHYSICS)
-    file (GLOB_RECURSE SOURCE_FILES_PHYSICS Physics/*.h Physics/*.cpp)
-    install (
-        DIRECTORY Physics
-        DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
-    )
+    define_engine_source_files (Physics)
 endif ()
 
 if (URHO3D_URHO2D)
-    file (GLOB_RECURSE SOURCE_FILES_URHO2D Urho2D/*.h Urho2D/*.cpp)
-    install (
-        DIRECTORY Urho2D
-        DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
-    )
+    define_engine_source_files (Urho2D)
 endif ()
 
 if (URHO3D_SYSTEMUI)
-    file (GLOB_RECURSE SOURCE_FILES_SYSTEMUI SystemUI/*.cpp SystemUI/*.h)
-    install (
-        DIRECTORY SystemUI
-        DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h
-    )
+    define_engine_source_files (SystemUI)
 endif ()
 
 # Group source code in VS solution
@@ -129,21 +93,11 @@ group_sources("SystemUI")
 group_sources("UI")
 group_sources("Urho2D")
 
-add_library(Urho3D
-    ${SOURCE_FILES}
-    ${SOURCE_FILES_EXT}
-    ${SOURCE_FILES_GRAPHICS}
-    ${SOURCE_FILES_DATABASE}
-    ${SOURCE_FILES_DATABASE_IMPL}
-    ${SOURCE_FILES_IK}
-    ${SOURCE_FILES_NAVIGATION}
-    ${SOURCE_FILES_NETWORK}
-    ${SOURCE_FILES_PHYSICS}
-    ${SOURCE_FILES_PHYSICS}
-    ${SOURCE_FILES_URHO2D}
-    ${SOURCE_FILES_SYSTEMUI}
+add_library(Urho3D ${SOURCE_FILES} ${HEADER_FILES})
+target_include_directories(Urho3D PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/..      # For parent projects to find engine headers
+    ${CMAKE_CURRENT_BINARY_DIR}/..      # For parent projects to find auto-generated engine headers
 )
-target_include_directories(Urho3D PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 # Add any variables starting with URHO3D_ as project defines
 get_cmake_property(__cmake_variables VARIABLES)
@@ -227,7 +181,9 @@ endif ()
 
 # Graphics
 if (URHO3D_OPENGL)
-    target_link_libraries(Urho3D GLEW)
+    if (NOT ANDROID AND NOT ARM AND NOT WEB)
+        target_link_libraries(Urho3D GLEW)
+    endif ()
     if (APPLE)
         # Do nothing
     elseif (WIN32)
@@ -330,3 +286,10 @@ if (ANDROID)
     set (RENAME RENAME Urho3D-${ANDROID_NDK_ABI_NAME}.pc)
 endif ()
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3D.pc DESTINATION ${DEST_PKGCONFIG_DIR} ${RENAME})
+
+# Generate include header with all engine headers
+list (REMOVE_ITEM HEADER_FILES Urho3D.h DebugNew.h Precompiled.h)
+string (REPLACE ";" ">\n#include <Urho3D/" HEADER_FILES "${HEADER_FILES}")
+set (HEADER_FILES "#include <Urho3D/${HEADER_FILES}>")
+configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Urho3DAll.h.in ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h @ONLY)
+install (FILES Urho3DAll.h DESTINATION ${DEST_INCLUDE_DIR})
