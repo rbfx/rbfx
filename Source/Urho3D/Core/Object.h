@@ -41,7 +41,6 @@ class ResourceCache;
 class Localization;
 class Network;
 class Web;
-class Database;
 class Input;
 class Audio;
 class UI;
@@ -436,7 +435,6 @@ template <> URHO3D_API ResourceCache* Object::GetSubsystem<ResourceCache>() cons
 template <> URHO3D_API Localization* Object::GetSubsystem<Localization>() const;
 template <> URHO3D_API Network* Object::GetSubsystem<Network>() const;
 template <> URHO3D_API Web* Object::GetSubsystem<Web>() const;
-template <> URHO3D_API Database* Object::GetSubsystem<Database>() const;
 template <> URHO3D_API Input* Object::GetSubsystem<Input>() const;
 template <> URHO3D_API Audio* Object::GetSubsystem<Audio>() const;
 template <> URHO3D_API UI* Object::GetSubsystem<UI>() const;
