@@ -221,8 +221,8 @@ elseif (NOT ANDROID AND NOT ARM AND NOT WEB)
 endif ()
 
 # Disable very annoying warning
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    target_compile_options(Urho3D PUBLIC -Wno-invalid-offsetof)
+if (GNU OR Clang)
+    target_compile_options(Urho3D PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
 endif ()
 
 # Graphics

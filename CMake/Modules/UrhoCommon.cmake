@@ -23,6 +23,9 @@
 include(UrhoMonolithicLib)
 include(ucm)
 
+# Set compiler variable
+set ("${CMAKE_CXX_COMPILER_ID}" ON)
+
 # Source environment
 if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
     execute_process(COMMAND cmd /c set OUTPUT_VARIABLE ENVIRONMENT)
