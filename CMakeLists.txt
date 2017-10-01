@@ -80,7 +80,7 @@ file (MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 foreach (RES_DIR Autoload Data CoreData)
     install (DIRECTORY bin/${RES_DIR} DESTINATION ${DEST_RESOURCE_DIR})
     if (NOT EXISTS ${CMAKE_BINARY_DIR}/bin/${RES_DIR})
-        create_symlink(bin/${RES_DIR} ${CMAKE_BINARY_DIR}/bin/${RES_DIR})
+        create_symlink(${CMAKE_CURRENT_SOURCE_DIR}/bin/${RES_DIR} ${CMAKE_BINARY_DIR}/bin/${RES_DIR})
     endif ()
 endforeach ()
 
