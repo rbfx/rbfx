@@ -171,7 +171,7 @@ elseif (APPLE)
 elseif (ANDROID)
     target_link_libraries (Urho3D dl log android)
 elseif (NOT ANDROID AND NOT ARM AND NOT WEB)
-    target_link_libraries (Urho3D dl m rt)
+    target_link_libraries (Urho3D dl m rt pthread)
 endif ()
 
 # Disable very annoying warning
