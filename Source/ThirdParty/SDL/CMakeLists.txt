@@ -316,7 +316,7 @@ endif ()
 # Urho3D - commented out RENDER_D3D as an option to avoid potential conflict with our URHO3D_OPENGL and URHO3D_D3D11 build options on Windows platform
 #          Instead just initialize the variable according to our build options; Urho3D also by default disables the SDL renderer subsystem
 if (WINDOWS)
-  if (URHO3D_OPENGL)
+  if (URHO3D_OPENGL OR URHO3D_NOOP)
     set (RENDER_D3D FALSE)
   else ()
     set (RENDER_D3D TRUE)
