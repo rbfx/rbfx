@@ -187,7 +187,8 @@ endif ()
 if (URHO3D_NOOP)
     # Nothing to do
 elseif (URHO3D_BGFX)
-    target_link_libraries(Urho3D bgfx)
+    # TODO: link correct libs?
+    target_link_libraries(Urho3D bgfx GL)
 elseif (URHO3D_OPENGL)
     if (NOT ANDROID AND NOT ARM AND NOT WEB)
         target_link_libraries(Urho3D GLEW)

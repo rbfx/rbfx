@@ -22,7 +22,17 @@
 
 #include "BgfxGraphicsImpl.h"
 
+namespace Urho3D
+{
+
 GraphicsImpl::GraphicsImpl()
 {
+
+}
+
+GraphicsImpl::~GraphicsImpl()
+{
+
+}
 
 }

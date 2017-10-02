@@ -24,6 +24,8 @@
 
 #include "../../Core/Timer.h"
 
+namespace Urho3D
+{
 
 /// %Graphics subsystem implementation. Holds API-specific objects.
 class URHO3D_API GraphicsImpl
@@ -33,5 +35,9 @@ class URHO3D_API GraphicsImpl
 public:
     /// Construct.
     GraphicsImpl();
+    /// Destruct.
+    virtual ~GraphicsImpl();
 
 };
+
+}
