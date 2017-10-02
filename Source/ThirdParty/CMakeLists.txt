@@ -31,6 +31,12 @@ add_subdirectory(STB)
 add_subdirectory(Mustache)
 add_subdirectory(IconFontCppHeaders)
 
+if (URHO3D_BGFX)
+    add_subdirectory(bx)
+    add_subdirectory(bimg)
+    add_subdirectory(bgfx)
+endif ()
+
 if (URHO3D_SYSTEMUI)
     add_subdirectory(imgui)
     add_subdirectory(ImGuizmo)

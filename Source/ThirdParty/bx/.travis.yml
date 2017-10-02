@@ -1,0 +1,30 @@
+language: cpp
+matrix:
+  include:
+    - compiler: gcc
+      os: linux
+    - compiler: clang
+      os: osx
+
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - gcc-4.8
+    - g++-4.8
+    - clang
+
+script:
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then make test CXX="g++-4.8" CC="gcc-4.8"; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then make test; fi
+
+branches:
+  only:
+    - master
+
+notifications:
+  email: false
+
+osx_image:
+  xcode61

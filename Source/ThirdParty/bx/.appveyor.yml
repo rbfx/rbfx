@@ -1,0 +1,19 @@
+shallow_clone: true
+
+os:
+  - Visual Studio 2017
+
+environment:
+  matrix:
+  - TOOLSET: vs2015
+  - TOOLSET: vs2017
+
+configuration:
+  - Debug
+  - Release
+
+install:
+  tools\bin\windows\genie %TOOLSET%
+
+build:
+  project: .build/projects/$(TOOLSET)/bx.sln
