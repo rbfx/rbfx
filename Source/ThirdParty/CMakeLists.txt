@@ -81,6 +81,7 @@ if (NOT ANDROID AND NOT ARM AND NOT WEB)
 endif ()
 
 if (URHO3D_TOOLS)
+    add_subdirectory(poco)
     add_subdirectory(Assimp)
     add_subdirectory(tinyfiledialogs)
 endif ()
