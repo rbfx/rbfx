@@ -203,7 +203,7 @@ else ()
     target_link_libraries (Urho3D ${DIRECT3D_LIBRARIES})
 endif ()
 
-if (URHO3D_TOOLS)
+if (TARGET tinyfiledialogs)
     target_link_libraries (Urho3D tinyfiledialogs)
 endif ()
 

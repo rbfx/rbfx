@@ -83,6 +83,8 @@ endif ()
 if (URHO3D_TOOLS)
     add_subdirectory(poco)
     add_subdirectory(Assimp)
+endif ()
+if (URHO3D_SYSTEMUI)
     add_subdirectory(tinyfiledialogs)
 endif ()
 
