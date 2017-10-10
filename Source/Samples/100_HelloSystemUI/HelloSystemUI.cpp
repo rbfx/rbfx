@@ -65,7 +65,7 @@ void HelloSystemUi::Start()
 void HelloSystemUi::SubscribeToEvents()
 {
     SubscribeToEvent(E_KEYDOWN, URHO3D_HANDLER(HelloSystemUi, HandleKeyDown));
-    SubscribeToEvent(E_SYSTEMUIFRAME, URHO3D_HANDLER(HelloSystemUi, RenderUi));
+    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(HelloSystemUi, RenderUi));
 }
 
 void HelloSystemUi::RenderUi(StringHash eventType, VariantMap& eventData)

@@ -32,6 +32,7 @@
 #include "Console.h"
 #include <SDL/SDL.h>
 #include <ImGuizmo/ImGuizmo.h>
+#include <ImGui/imgui_internal.h>
 
 
 using namespace std::placeholders;
@@ -71,15 +72,21 @@ SystemUI::SystemUI(Urho3D::Context* context)
     io.Fonts->AddFontDefault();
     ReallocateFontTexture();
     UpdateProjectionMatrix();
+    // Initializes ImGui. ImGui::Render() can not be called unless imgui is initialized. This call avoids initialization
+    // check on every frame in E_ENDRENDERING.
+    ImGui::NewFrame();
 
     // Subscribe to events
     SubscribeToEvent(E_SDLRAWINPUT, std::bind(&SystemUI::OnRawEvent, this, _2));
     SubscribeToEvent(E_SCREENMODE, std::bind(&SystemUI::UpdateProjectionMatrix, this));
-    SubscribeToEvent(E_POSTUPDATE, std::bind(&SystemUI::OnPostUpdate, this, _2));
     SubscribeToEvent(E_ENDRENDERING, [&](StringHash, VariantMap&)
     {
         URHO3D_PROFILE(SystemUiRender);
         ImGui::Render();
+        float timeStep = GetTime()->GetTimeStep();
+        ImGui::GetIO().DeltaTime = timeStep > 0.0f ? timeStep : 1.0f / 60.0f;
+        ImGui::NewFrame();
+        ImGuizmo::BeginFrame();
     });
 }
 
@@ -159,17 +166,6 @@ void SystemUI::OnRawEvent(VariantMap& args)
     default:
         break;
     }
-}
-
-void SystemUI::OnPostUpdate(VariantMap& args)
-{
-    auto& io = ImGui::GetIO();
-    float timeStep = args[PostUpdate::P_TIMESTEP].GetFloat();
-    io.DeltaTime = timeStep > 0.0f ? timeStep : 1.0f / 60.0f;
-    ImGui::NewFrame();
-    ImGuizmo::BeginFrame();
-    URHO3D_PROFILE(SystemUiFrame);
-    SendEvent(E_SYSTEMUIFRAME);
 }
 
 void SystemUI::OnRenderDrawLists(ImDrawData* data)

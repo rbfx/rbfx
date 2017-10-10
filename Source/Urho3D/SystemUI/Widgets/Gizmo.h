@@ -45,12 +45,12 @@ class URHO3D_API Gizmo : public Object
 public:
     /// Construct.
     Gizmo(Context* context);
-    /// Manipulate node. Should be called from within E_SYSTEMUIFRAME event.
+    /// Manipulate node. Should be called from within E_UPDATE event.
     /// \param camera which observes the node.
     /// \param node to be manipulated.
     /// \returns true if node was manipulated on current frame.
     bool Manipulate(const Camera* camera, Node* node);
-    /// Manipulate multiple nodes. Should be called from within E_SYSTEMUIFRAME event.
+    /// Manipulate multiple nodes. Should be called from within E_UPDATE event.
     /// \param camera which observes the node.
     /// \param nodes to be manipulated. Specifying more than one node manipulates them in world space.
     /// \returns true if node was manipulated on current frame.

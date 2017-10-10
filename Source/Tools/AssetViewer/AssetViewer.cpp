@@ -84,7 +84,7 @@ public:
 
         SubscribeToEvent(E_UPDATE, std::bind(&AssetViewer::OnUpdate, this, _2));
         SubscribeToEvent(E_DROPFILE, std::bind(&AssetViewer::OnFileDrop, this, _2));
-        SubscribeToEvent(E_SYSTEMUIFRAME, std::bind(&AssetViewer::OnRenderUI, this, _2));
+        SubscribeToEvent(E_UPDATE, std::bind(&AssetViewer::OnRenderUI, this, _2));
 
         for (const auto& arg: GetArguments())
             LoadFile(arg);

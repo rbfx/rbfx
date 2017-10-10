@@ -310,7 +310,7 @@ public:
         textureRectTransform_ = new TransformSelector(context_);
 
         // Events
-        SubscribeToEvent(E_SYSTEMUIFRAME, std::bind(&UIEditor::RenderSystemUI, this));
+        SubscribeToEvent(E_UPDATE, std::bind(&UIEditor::RenderSystemUI, this));
         SubscribeToEvent(E_DROPFILE, std::bind(&UIEditor::OnFileDrop, this, _2));
         SubscribeToEvent(uiElementTransform_, "ResizeStart", std::bind(&UIEditor::UIElementResizeTrack, this));
         SubscribeToEvent(uiElementTransform_, "ResizeEnd", std::bind(&UIEditor::UIElementResizeTrack, this));

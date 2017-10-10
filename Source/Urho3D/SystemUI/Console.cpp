@@ -71,11 +71,11 @@ void Console::SetVisible(bool enable)
     if (isOpen_)
     {
         focusInput_ = true;
-        SubscribeToEvent(E_SYSTEMUIFRAME, URHO3D_HANDLER(Console, RenderUi));
+        SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Console, RenderUi));
     }
     else
     {
-        UnsubscribeFromEvent(E_SYSTEMUIFRAME);
+        UnsubscribeFromEvent(E_UPDATE);
         ui::SetWindowFocus(0);
     }
 }

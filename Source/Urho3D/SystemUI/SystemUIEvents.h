@@ -34,11 +34,6 @@ URHO3D_EVENT(E_CONSOLECLOSED, ConsoleClosed)
 
 }
 
-URHO3D_EVENT(E_SYSTEMUIFRAME, SystemUiFrame)
-{
-
-}
-
 URHO3D_EVENT(E_ATTRIBUTEINSPECTORMENU, AttributeInspectorMenu)
 {
     URHO3D_PARAM(P_SERIALIZABLE, Serializable);                  // Serializable pointer
