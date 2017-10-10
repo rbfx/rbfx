@@ -32,6 +32,8 @@
 #include "../Graphics/Light.h"
 #include "../Graphics/ShaderVariation.h"
 #include "../Graphics/VertexBuffer.h"
+#include "../Graphics/IndexBuffer.h"
+#include "../Graphics/Geometry.h"
 #include "../Math/Polyhedron.h"
 #include "../Resource/ResourceCache.h"
 
@@ -428,6 +430,24 @@ void DebugRenderer::AddTriangleMesh(const void* vertexData, unsigned vertexSize,
             AddLine(v2, v0, uintColor, depthTest);
 
             indices += 3;
+        }
+    }
+}
+
+void DebugRenderer::AddTriangleMesh(Node* node, const Color& color, bool depthTest)
+{
+    if (auto staticModel = node->GetComponent<StaticModel>())
+    {
+        for (auto index = 0; index < staticModel->GetBatches().Size(); index++)
+        {
+            const auto& geometry = staticModel->GetLodGeometry(index, -1);
+            const auto& ib = geometry->GetIndexBuffer();
+            for (const auto& vb : geometry->GetVertexBuffers())
+            {
+                AddTriangleMesh(vb->GetShadowData(), vb->GetVertexSize(), ib->GetShadowData(), ib->GetIndexSize(),
+                                geometry->GetIndexStart(), geometry->GetIndexCount(), node->GetWorldTransform(),
+                                color, depthTest);
+            }
         }
     }
 }

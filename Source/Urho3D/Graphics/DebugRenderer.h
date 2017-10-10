@@ -143,6 +143,8 @@ public:
     void AddTriangleMesh
         (const void* vertexData, unsigned vertexSize, const void* indexData, unsigned indexSize, unsigned indexStart,
             unsigned indexCount, const Matrix3x4& transform, const Color& color, bool depthTest = true);
+    /// Add a triangle mesh from a node.
+    void AddTriangleMesh(Node* node, const Color& color, bool depthTest);
     /// Add a circle.
     void AddCircle(const Vector3& center, const Vector3& normal, float radius, const Color& color, int steps = 64, bool depthTest = true);
     /// Add a cross.
