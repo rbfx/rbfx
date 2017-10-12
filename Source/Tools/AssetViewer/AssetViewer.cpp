@@ -146,25 +146,7 @@ public:
         ui::SetWindowSize({0, 0}, ImGuiCond_Always);
         if (ui::Begin("Settings", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove))
         {
-            ui::TextUnformatted("Op:");
-            ui::SameLine(60);
-
-            if (ui::RadioButton("Tr", gizmo_.GetOperation() == GIZMOOP_TRANSLATE))
-                gizmo_.SetOperation(GIZMOOP_TRANSLATE);
-            ui::SameLine();
-            if (ui::RadioButton("Rot", gizmo_.GetOperation() == GIZMOOP_ROTATE))
-                gizmo_.SetOperation(GIZMOOP_ROTATE);
-            ui::SameLine();
-            if (ui::RadioButton("Scl", gizmo_.GetOperation() == GIZMOOP_SCALE))
-                gizmo_.SetOperation(GIZMOOP_SCALE);
-
-            ui::TextUnformatted("Space:");
-            ui::SameLine(60);
-            if (ui::RadioButton("World", gizmo_.GetTransformSpace() == TS_WORLD))
-                gizmo_.SetTransformSpace(TS_WORLD);
-            ui::SameLine();
-            if (ui::RadioButton("Local", gizmo_.GetTransformSpace() == TS_LOCAL))
-                gizmo_.SetTransformSpace(TS_LOCAL);
+            gizmo_.RenderUI();
 
             if (ui::Button("Reset"))
                ResetNode();

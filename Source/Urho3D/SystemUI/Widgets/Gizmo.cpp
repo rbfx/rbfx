@@ -153,4 +153,27 @@ bool Gizmo::Manipulate(const Camera* camera, const PODVector<Node*>& nodes)
     return false;
 }
 
+void Gizmo::RenderUI()
+{
+    ui::TextUnformatted("Op:");
+    ui::SameLine(60);
+
+    if (ui::RadioButton("Tr", GetOperation() == GIZMOOP_TRANSLATE))
+        SetOperation(GIZMOOP_TRANSLATE);
+    ui::SameLine();
+    if (ui::RadioButton("Rot", GetOperation() == GIZMOOP_ROTATE))
+        SetOperation(GIZMOOP_ROTATE);
+    ui::SameLine();
+    if (ui::RadioButton("Scl", GetOperation() == GIZMOOP_SCALE))
+        SetOperation(GIZMOOP_SCALE);
+
+    ui::TextUnformatted("Space:");
+    ui::SameLine(60);
+    if (ui::RadioButton("World", GetTransformSpace() == TS_WORLD))
+        SetTransformSpace(TS_WORLD);
+    ui::SameLine();
+    if (ui::RadioButton("Local", GetTransformSpace() == TS_LOCAL))
+        SetTransformSpace(TS_LOCAL);
+}
+
 }

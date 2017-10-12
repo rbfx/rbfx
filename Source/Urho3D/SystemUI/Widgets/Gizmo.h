@@ -66,6 +66,8 @@ public:
     /// Returns state of gizmo.
     /// \returns true if gizmo is active, i.e. mouse is held down.
     bool IsActive() const;
+    /// Render gizmo ui. This needs to be called between ui::Begin() / ui::End().
+    void RenderUI();
 
 protected:
     /// Current gizmo operation. Translation, rotation or scaling.
