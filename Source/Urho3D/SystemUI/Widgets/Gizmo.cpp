@@ -29,18 +29,6 @@
 namespace Urho3D
 {
 
-/// Flips matrix between row-wise and column-wise.
-static void FlipMatrix(float* matrix)
-{
-    for (auto i = 1; i < 4; i++)
-        Swap(matrix[4 * 0 + i], matrix[4 * i + 0]);
-
-    for (auto i = 2; i < 4; i++)
-        Swap(matrix[4 * 1 + i], matrix[4 * i + 1]);
-
-    Swap(matrix[4 * 2 + 3], matrix[4 * 3 + 2]);
-}
-
 Gizmo::Gizmo(Context* context) : Object(context)
 {
 
@@ -62,11 +50,6 @@ bool Gizmo::Manipulate(const Camera* camera, const PODVector<Node*>& nodes)
 {
     if (nodes.Empty())
         return false;
-
-    float view[16];
-    float proj[16];
-    float tran[16];
-    float delta[16];
 
     // Enums are compatible.
     ImGuizmo::OPERATION operation = static_cast<ImGuizmo::OPERATION>(operation_);
@@ -101,23 +84,19 @@ bool Gizmo::Manipulate(const Camera* camera, const PODVector<Node*>& nodes)
         }
     }
 
-    memcpy(view, camera->GetView().ToMatrix4().Data(), sizeof(view));
-    memcpy(proj, camera->GetProjection().Data(), sizeof(proj));
-    memcpy(tran, currentOrigin_.Data(), sizeof(tran));
-
-    FlipMatrix(view);
-    FlipMatrix(proj);
-    FlipMatrix(tran);
+    Matrix4 view = camera->GetView().ToMatrix4().Transpose();
+    Matrix4 proj = camera->GetProjection().Transpose();
+    Matrix4 tran = currentOrigin_.Transpose();
+    Matrix4 delta;
 
     ImGuiIO& io = ImGui::GetIO();
     ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-    ImGuizmo::Manipulate(view, proj, operation, mode, tran, delta, nullptr);
+    ImGuizmo::Manipulate(&view.m00_, &proj.m00_, operation, mode, &tran.m00_, &delta.m00_, nullptr);
 
     if (IsActive())
     {
-        FlipMatrix(tran);
-        FlipMatrix(delta);
-        Matrix4 dm(delta);
+        tran = tran.Transpose();
+        delta = delta.Transpose();
 
         currentOrigin_ = Matrix4(tran);
 
@@ -134,15 +113,15 @@ bool Gizmo::Manipulate(const Camera* camera, const PODVector<Node*>& nodes)
                 // A workaround for ImGuizmo bug where delta matrix returns absolute scale value.
                 if (!nodeScaleStart_.Contains(node))
                     nodeScaleStart_[node] = node->GetScale();
-                node->SetScale(nodeScaleStart_[node] * dm.Scale());
+                node->SetScale(nodeScaleStart_[node] * delta.Scale());
             }
             else
             {
                 // Delta matrix is always in world-space.
                 if (operation_ == GIZMOOP_ROTATE)
-                    node->RotateAround(currentOrigin_.Translation(), -dm.Rotation(), TS_WORLD);
+                    node->RotateAround(currentOrigin_.Translation(), -delta.Rotation(), TS_WORLD);
                 else
-                    node->Translate(dm.Translation(), TS_WORLD);
+                    node->Translate(delta.Translation(), TS_WORLD);
             }
         }
 
