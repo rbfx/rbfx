@@ -392,7 +392,7 @@ void SystemUI::ApplyStyleDefault(bool darkStyle, float alpha)
 
     if( darkStyle )
     {
-        for (int i = 0; i <= ImGuiCol_COUNT; i++)
+        for (int i = 0; i < ImGuiCol_COUNT; i++)
         {
             ImVec4& col = style.Colors[i];
             float H, S, V;
@@ -411,7 +411,7 @@ void SystemUI::ApplyStyleDefault(bool darkStyle, float alpha)
     }
     else
     {
-        for (int i = 0; i <= ImGuiCol_COUNT; i++)
+        for (int i = 0; i < ImGuiCol_COUNT; i++)
         {
             ImVec4& col = style.Colors[i];
             if( col.w < 1.00f )
