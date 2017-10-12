@@ -45,6 +45,8 @@ class URHO3D_API Gizmo : public Object
 public:
     /// Construct.
     Gizmo(Context* context);
+    /// Destruct.
+    virtual ~Gizmo();
     /// Manipulate node. Should be called from within E_UPDATE event.
     /// \param camera which observes the node.
     /// \param node to be manipulated.
@@ -55,6 +57,10 @@ public:
     /// \param nodes to be manipulated. Specifying more than one node manipulates them in world space.
     /// \returns true if node was manipulated on current frame.
     bool Manipulate(const Camera* camera, const PODVector<Node*>& nodes);
+    /// Manipulate current node selection. Should be called from within E_UPDATE event.
+    /// \param camera which observes the node.
+    /// \returns true if node(s) were manipulated on current frame.
+    bool ManipulateSelection(const Camera* camera);
     /// Set operation mode. Possible modes: rotation, translation and scaling.
     void SetOperation(GizmoOperation operation) { operation_ = operation; }
     /// Get current manipulation mode.
@@ -68,8 +74,15 @@ public:
     bool IsActive() const;
     /// Render gizmo ui. This needs to be called between ui::Begin() / ui::End().
     void RenderUI();
+    /// Add a node to selection.
+    void Select(Node* node);
+    /// Remove a node from selection.
+    void Unselect(Node* node);
 
 protected:
+    /// Renders debug info of selected nodes if scene has debug renderer component.
+    void RenderDebugInfo();
+
     /// Current gizmo operation. Translation, rotation or scaling.
     GizmoOperation operation_ = GIZMOOP_TRANSLATE;
     /// Current coordinate space to operate in. World or local.
@@ -78,6 +91,8 @@ protected:
     HashMap<Node*, Vector3> nodeScaleStart_;
     /// Current operation origin. This is center point between all nodes that are being manipulated.
     Matrix4 currentOrigin_;
+    /// Current node selection. Nodes removed from the scene are automatically unselected.
+    Vector<WeakPtr<Node> > nodeSelection_;
 };
 
 }

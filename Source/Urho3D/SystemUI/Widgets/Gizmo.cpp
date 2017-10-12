@@ -21,8 +21,11 @@
 //
 
 #include "../../Scene/Scene.h"
+#include "../../Graphics/GraphicsEvents.h"
+#include "../../Graphics/AnimatedModel.h"
+#include "../../Graphics/DebugRenderer.h"
 #include "../../IO/Log.h"
-#include <ImGui/imgui.h>
+#include "../SystemUI.h"
 #include <ImGuizmo/ImGuizmo.h>
 #include "Gizmo.h"
 
@@ -31,7 +34,12 @@ namespace Urho3D
 
 Gizmo::Gizmo(Context* context) : Object(context)
 {
+    SubscribeToEvent(E_ENDRENDERING, [&](StringHash, VariantMap&) { RenderDebugInfo(); });
+}
 
+Gizmo::~Gizmo()
+{
+    UnsubscribeFromAllEvents();
 }
 
 bool Gizmo::Manipulate(const Camera* camera, Node* node)
@@ -63,7 +71,7 @@ bool Gizmo::Manipulate(const Camera* camera, const PODVector<Node*>& nodes)
     // Scaling is always done in local space even for multiselections.
     if (operation_ == GIZMOOP_SCALE)
         mode = ImGuizmo::LOCAL;
-    // Any other operations on multiselections are done in world space.
+        // Any other operations on multiselections are done in world space.
     else if (nodes.Size() > 1)
         mode = ImGuizmo::WORLD;
 
@@ -132,6 +140,24 @@ bool Gizmo::Manipulate(const Camera* camera, const PODVector<Node*>& nodes)
     return false;
 }
 
+bool Gizmo::ManipulateSelection(const Camera* camera)
+{
+    PODVector<Node*> nodes;
+    nodes.Reserve(nodeSelection_.Size());
+    for (auto it = nodeSelection_.Begin(); it != nodeSelection_.End();)
+    {
+        WeakPtr<Node> node = *it;
+        if (node.Expired())
+            it = nodeSelection_.Erase(it);
+        else
+        {
+            nodes.Push(node.Get());
+            ++it;
+        }
+    }
+    return Manipulate(camera, nodes);
+}
+
 void Gizmo::RenderUI()
 {
     ui::TextUnformatted("Op:");
@@ -153,6 +179,43 @@ void Gizmo::RenderUI()
     ui::SameLine();
     if (ui::RadioButton("Local", GetTransformSpace() == TS_LOCAL))
         SetTransformSpace(TS_LOCAL);
+}
+
+void Gizmo::Select(Node* node)
+{
+    nodeSelection_.Push(WeakPtr<Node>(node));
+}
+
+void Gizmo::Unselect(Node* node)
+{
+    nodeSelection_.Remove(WeakPtr<Node>(node));
+}
+
+void Gizmo::RenderDebugInfo()
+{
+    DebugRenderer* debug = nullptr;
+    for (auto it = nodeSelection_.Begin(); it != nodeSelection_.End();)
+    {
+        WeakPtr<Node> node = *it;
+        if (node.Expired())
+            it = nodeSelection_.Erase(it);
+        else
+        {
+            if (debug == nullptr)
+            {
+                if (auto scene = node->GetScene())
+                    debug = scene->GetComponent<DebugRenderer>();
+            }
+            if (debug != nullptr)
+            {
+                if (auto staticModel = node->GetComponent<StaticModel>())
+                    debug->AddBoundingBox(staticModel->GetWorldBoundingBox(), Color::WHITE);
+                else if (auto animatedModel = node->GetComponent<AnimatedModel>())
+                    debug->AddBoundingBox(animatedModel->GetWorldBoundingBox(), Color::WHITE);
+            }
+            ++it;
+        }
+    }
 }
 
 }
