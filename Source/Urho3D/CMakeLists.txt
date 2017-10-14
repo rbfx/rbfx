@@ -32,7 +32,7 @@ macro (define_engine_source_files)
         file (${_action} _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${path}/*.h)
         list (APPEND HEADER_FILES ${_files})
         # Install them
-        install (FILES ${_files} DESTINATION ${DEST_INCLUDE_DIR})
+        install (FILES ${_files} DESTINATION ${DEST_INCLUDE_DIR}/${path})
         # Get source files
         file (${_action} _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${path}/*.cpp)
         list (APPEND SOURCE_FILES ${_files})
