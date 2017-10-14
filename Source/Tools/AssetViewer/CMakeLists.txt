@@ -26,7 +26,7 @@ endif ()
 
 file (GLOB SOURCE_FILES *.cpp *.h)
 add_executable (AssetViewer WIN32 ${SOURCE_FILES})
-target_link_libraries(AssetViewer Urho3D Poco)
+target_link_libraries(AssetViewer Urho3D poco)
 set_target_properties(AssetViewer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
 add_dependencies(AssetViewer AssetImporter)
 install(TARGETS AssetViewer RUNTIME DESTINATION bin)

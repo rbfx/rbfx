@@ -196,10 +196,10 @@ file (GLOB_RECURSE SOURCE_FILES
     Foundation/src/zutil.c
 )
 
-add_library(Poco STATIC ${SOURCE_FILES})
+add_library(poco STATIC ${SOURCE_FILES})
 
-target_compile_definitions(Poco PUBLIC -DPOCO_NO_AUTOMATIC_LIBS=1 -DPOCO_STATIC=1)
-target_include_directories(Poco PUBLIC Foundation/include)
+target_compile_definitions(poco PUBLIC -DPOCO_NO_AUTOMATIC_LIBS=1 -DPOCO_STATIC=1)
+target_include_directories(poco PUBLIC Foundation/include)
 if (WIN32)
-    target_link_libraries(Poco iphlpapi)
+    target_link_libraries(poco iphlpapi)
 endif ()
