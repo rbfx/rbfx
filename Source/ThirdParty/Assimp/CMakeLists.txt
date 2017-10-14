@@ -892,7 +892,15 @@ endif ()
 #list (APPEND TARGET_PROPERTIES XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH YES)   # Since we only build AssetImporter as a single-arch native tool, there is no point to build Assimp as universal binary library
 add_library (Assimp STATIC ${SOURCE_FILES})
 target_compile_definitions(Assimp PRIVATE -DOPENDDLPARSER_BUILD )
-target_include_directories(Assimp PRIVATE ${IRRXML_INCLUDE_DIR} contrib/openddlparser/include)
+target_include_directories(Assimp PRIVATE
+    code
+    include
+    contrib
+    contrib/unzip
+    contrib/irrXML
+    contrib/rapidjson/include
+    contrib/openddlparser/include
+)
 
 # Urho3D: set the corresponding "no importer" define
 if (ASSIMP_BUILD_NONFREE_C4D_IMPORTER)
