@@ -444,16 +444,16 @@ public:
     IntVector2 Max() const { return {right_, bottom_}; }
 
     /// Return left coordinate.
-    float Left() const { return left_; }
+    int Left() const { return left_; }
 
     /// Return top coordinate.
-    float Top() const { return top_; }
+    int Top() const { return top_; }
 
     /// Return right coordinate.
-    float Right() const { return right_; }
+    int Right() const { return right_; }
 
     /// Return bottom coordinate.
-    float Bottom() const { return bottom_; }
+    int Bottom() const { return bottom_; }
 
     /// Left coordinate.
     int left_;
