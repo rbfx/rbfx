@@ -352,20 +352,20 @@ public:
     /// Divide by scalar inplace.
     IntRect& operator /=(float value)
     {
-        left_ /= value;
-        top_ /= value;
-        right_ /= value;
-        bottom_ /= value;
+        left_ = static_cast<int>(left_ / value);
+        top_ = static_cast<int>(top_ / value);
+        right_ = static_cast<int>(right_ / value);
+        bottom_ = static_cast<int>(bottom_ / value);
         return *this;
     }
 
     /// Multiply by scalar inplace.
     IntRect& operator *=(float value)
     {
-        left_ *= value;
-        top_ *= value;
-        right_ *= value;
-        bottom_ *= value;
+		left_ = static_cast<int>(left_ * value);
+		top_ = static_cast<int>(top_ * value);
+		right_ = static_cast<int>(right_ * value);
+		bottom_ = static_cast<int>(bottom_ * value);
         return *this;
     }
 
