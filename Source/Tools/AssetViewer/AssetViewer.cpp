@@ -57,6 +57,7 @@ public:
         engineParameters_[EP_HEADLESS]       = false;
         engineParameters_[EP_SOUND]          = false;
         engineParameters_[EP_RESOURCE_PATHS] = "CoreData";
+        engineParameters_[EP_WINDOW_RESIZABLE] = true;
     }
 
     void Start() override
@@ -84,7 +85,6 @@ public:
 
         SubscribeToEvent(E_UPDATE, std::bind(&AssetViewer::OnUpdate, this, _2));
         SubscribeToEvent(E_DROPFILE, std::bind(&AssetViewer::OnFileDrop, this, _2));
-        SubscribeToEvent(E_UPDATE, std::bind(&AssetViewer::OnRenderUI, this, _2));
 
         for (const auto& arg: GetArguments())
             LoadFile(arg);
@@ -95,61 +95,57 @@ public:
         if (node_.Null())
             return;
 
-        if (GetSystemUI()->IsAnyItemActive() || GetSystemUI()->IsAnyItemHovered())
-            return;
-
-        auto input = GetSubsystem<Input>();
-
-        if (!input->GetKeyDown(KEY_SHIFT))
+        if (!GetSystemUI()->IsAnyItemActive() && !GetSystemUI()->IsAnyItemHovered())
         {
-            if (input->GetMouseButtonDown(MOUSEB_RIGHT))
-            {
-                if (input->IsMouseVisible())
-                    input->SetMouseVisible(false);
+            auto input = GetSubsystem<Input>();
 
-                if (input->GetMouseMove() != IntVector2::ZERO)
+            if (!input->GetKeyDown(KEY_SHIFT))
+            {
+                if (input->GetMouseButtonDown(MOUSEB_RIGHT))
                 {
-                    camera_->GetNode()->RotateAround(Vector3::ZERO,
-                        Quaternion(input->GetMouseMoveX() * 0.1f * lookSensitivity_, camera_->GetNode()->GetUp()) *
-                        Quaternion(input->GetMouseMoveY() * 0.1f * lookSensitivity_, camera_->GetNode()->GetRight()),
-                        TS_WORLD
-                    );
-                }
-            }
-            else if (input->GetMouseButtonDown(MOUSEB_MIDDLE))
-            {
-                if (input->IsMouseVisible())
-                    input->SetMouseVisible(false);
+                    if (input->IsMouseVisible())
+                        input->SetMouseVisible(false);
 
-                node_->Translate2D(Vector2(input->GetMouseMoveX(), -input->GetMouseMoveY()) / 300.f, TS_WORLD);
+                    if (input->GetMouseMove() != IntVector2::ZERO)
+                    {
+                        camera_->GetNode()->RotateAround(Vector3::ZERO,
+                            Quaternion(input->GetMouseMoveX() * 0.1f * lookSensitivity_, camera_->GetNode()->GetUp()) *
+                                Quaternion(input->GetMouseMoveY() * 0.1f * lookSensitivity_,
+                                    camera_->GetNode()->GetRight()),
+                            TS_WORLD
+                        );
+                    }
+                }
+                else if (input->GetMouseButtonDown(MOUSEB_MIDDLE))
+                {
+                    if (input->IsMouseVisible())
+                        input->SetMouseVisible(false);
+
+                    node_->Translate2D(Vector2(input->GetMouseMoveX(), -input->GetMouseMoveY()) / 300.f, TS_WORLD);
+                }
+                else if (!input->IsMouseVisible())
+                    input->SetMouseVisible(true);
+
+                camera_->GetNode()->Translate(Vector3::FORWARD * input->GetMouseMoveWheel() * 0.2f);
             }
             else if (!input->IsMouseVisible())
                 input->SetMouseVisible(true);
-
-            camera_->GetNode()->Translate(Vector3::FORWARD * input->GetMouseMoveWheel() * 0.2f);
         }
-        else if (!input->IsMouseVisible())
-            input->SetMouseVisible(true);
 
-        if (input->GetKeyPress(KEY_F1))
+        if (GetInput()->GetKeyPress(KEY_F1))
             showHelp_ = true;
-    }
 
-    void OnFileDrop(VariantMap& args)
-    {
-        LoadFile(args[DropFile::P_FILENAME].GetString());
-    }
 
-    void OnRenderUI(VariantMap& args)
-    {
-        ui::SetWindowPos({0, 0}, ImGuiCond_Always);
-        ui::SetWindowSize({0, 0}, ImGuiCond_Always);
-        if (ui::Begin("Settings", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove))
+        ui::SetNextWindowPos({0, 0}, ImGuiCond_Always);
+        if (ui::Begin("Settings", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings))
         {
             gizmo_.RenderUI();
 
             if (ui::Button("Reset"))
-               ResetNode();
+                ResetNode();
+
+            // Window has to contain controls already in order for it's size to be set to match contents.
+            ui::SetWindowSize({0, 0}, ImGuiCond_Always);
         }
         ui::End();
 
@@ -165,6 +161,11 @@ public:
 
         if (node_ && GetInput()->GetKeyDown(KEY_SHIFT))
             gizmo_.Manipulate(camera_, parentNode_);
+    }
+
+    void OnFileDrop(VariantMap& args)
+    {
+        LoadFile(args[DropFile::P_FILENAME].GetString());
     }
 
     void LoadFile(const String& file_path)
