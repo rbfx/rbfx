@@ -223,6 +223,9 @@ install(
 )
 endif ()
 
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/ FILES_MATCHING PATTERN *.h)
+install_to_build_tree(easy_profiler)
+
 # If we're on MSVC, we need a /MD version of the easy profiler library to link with Qt
 if (MSVC AND Qt5Widgets_FOUND)
     add_library(easy_profiler_md ${EASY_OPTION_LIB_TYPE} ${SOURCES} resources.rc)
