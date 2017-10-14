@@ -57,7 +57,11 @@ public:
         engineParameters_[EP_HEADLESS]       = false;
         engineParameters_[EP_SOUND]          = false;
         engineParameters_[EP_RESOURCE_PATHS] = "CoreData";
+        engineParameters_[EP_RESOURCE_PREFIX_PATHS] =
+            ";" + context_->GetFileSystem()->GetProgramDir() + ";" + "../share/Urho3D/Resources";
         engineParameters_[EP_WINDOW_RESIZABLE] = true;
+
+        ui::GetIO().IniFilename = nullptr;    // Disable saving of settings.
     }
 
     void Start() override
@@ -151,7 +155,7 @@ public:
 
         if (showHelp_)
         {
-            if (ui::Begin("Help", &showHelp_))
+            if (ui::Begin("Help", &showHelp_, ImGuiWindowFlags_NoSavedSettings))
             {
                 ui::TextUnformatted("RMB: hold it rotates model around its center.");
                 ui::TextUnformatted("Shift: holding it provides manipulation gizmo at model origin.");
