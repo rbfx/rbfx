@@ -280,7 +280,7 @@ public:
         engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
         engineParameters_[EP_HEADLESS] = false;
         engineParameters_[EP_RESOURCE_PREFIX_PATHS] =
-            ";" + context_->GetFileSystem()->GetProgramDir() + ";" + "../share/Urho3D/Resources";
+            context_->GetFileSystem()->GetProgramDir() + ";;..;../share/Urho3D/Resources";
         engineParameters_[EP_FULL_SCREEN] = false;
         engineParameters_[EP_WINDOW_HEIGHT] = 1080;
         engineParameters_[EP_WINDOW_WIDTH] = 1920;
