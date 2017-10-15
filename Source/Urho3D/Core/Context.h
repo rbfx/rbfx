@@ -227,6 +227,8 @@ public:
     inline Graphics* GetGraphics() const { return graphics_; }
     /// Return renderer subsystem.
     inline Renderer* GetRenderer() const { return renderer_; }
+    /// Return tasks subsystem.
+    inline Tasks* GetTasks() const { return tasks_; }
 
 private:
     /// Add event receiver.
@@ -300,6 +302,8 @@ private:
     WeakPtr<Graphics> graphics_;
     /// Cached pointer of renderer susbsystem.
     WeakPtr<Renderer> renderer_;
+    /// Cached pointer to tasks subsystem.
+    WeakPtr<Tasks> tasks_;
 
     friend class Engine;
 };

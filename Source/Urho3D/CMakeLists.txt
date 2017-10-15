@@ -129,6 +129,11 @@ if (URHO3D_SSE AND NOT MSVC)
     target_compile_options (Urho3D PUBLIC -msse -msse2)
 endif ()
 
+if (UNIX)
+    # glibc prevents tasks from switching stacks as a security precaution. Disable that.
+    target_compile_definitions(Urho3D PUBLIC -D_FORTIFY_SOURCE=0)
+endif ()
+
 if (WIN32)
     target_link_libraries(Urho3D winmm user32 gdi32 winmm imm32 ole32 oleaut32 version uuid)
     if (URHO3D_MINIDUMPS)

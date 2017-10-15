@@ -62,6 +62,7 @@
 #ifdef URHO3D_URHO2D
 #include "../Urho2D/Urho2D.h"
 #endif
+#include "../Core/Tasks.h"
 
 #if defined(__EMSCRIPTEN__) && defined(URHO3D_TESTING)
 #include <emscripten/emscripten.h>
@@ -136,6 +137,7 @@ Engine::Engine(Context* context) :
     context_->RegisterSubsystem(new Input(context_));
     context_->RegisterSubsystem(new Audio(context_));
     context_->RegisterSubsystem(new UI(context_));
+    context_->RegisterSubsystem(new Tasks(context_));
 
     // Register object factories for libraries which are not automatically registered along with subsystem creation
     RegisterSceneLibrary(context_);
@@ -171,6 +173,7 @@ Engine::Engine(Context* context) :
     context_->input_ = context_->GetSubsystem<Input>();
     context_->audio_ = context_->GetSubsystem<Audio>();
     context_->ui_ = context_->GetSubsystem<UI>();
+    context_->tasks_ = context_->GetSubsystem<Tasks>();
 }
 
 Engine::~Engine()

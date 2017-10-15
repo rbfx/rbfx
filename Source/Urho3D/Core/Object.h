@@ -47,6 +47,7 @@ class UI;
 class SystemUI;
 class Graphics;
 class Renderer;
+class Tasks;
 
 /// Type info.
 class URHO3D_API TypeInfo
@@ -214,6 +215,8 @@ public:
     Graphics* GetGraphics() const;
     /// Return renderer subsystem.
     Renderer* GetRenderer() const;
+    /// Return tasks subsystem.
+    Tasks* GetTasks() const;
 
 protected:
     /// Execution context.
@@ -441,5 +444,6 @@ template <> URHO3D_API UI* Object::GetSubsystem<UI>() const;
 template <> URHO3D_API SystemUI* Object::GetSubsystem<SystemUI>() const;
 template <> URHO3D_API Graphics* Object::GetSubsystem<Graphics>() const;
 template <> URHO3D_API Renderer* Object::GetSubsystem<Renderer>() const;
+template <> URHO3D_API Tasks* Object::GetSubsystem<Tasks>() const;
 
 }
