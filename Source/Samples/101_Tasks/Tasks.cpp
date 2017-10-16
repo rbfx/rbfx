@@ -22,6 +22,7 @@
 
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/Tasks.h>
+#include <Urho3D/Core/WorkQueue.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Graphics.h>
@@ -44,6 +45,48 @@
 #include <Urho3D/DebugNew.h>
 
 URHO3D_DEFINE_APPLICATION_MAIN(TasksSample);
+
+#if URHO3D_THREADING
+void MultithreadedTasksWork(const WorkItem* item, unsigned threadIndex)
+{
+    Context* context = static_cast<Context*>(item->aux_);
+    TaskScheduler taskScheduler(context);
+
+    // Create first task.
+    WeakPtr<Task> task1(taskScheduler.Create([&]() {
+        for (auto i = 0; i < 5; i++)
+        {
+            // Perform work.
+            context->GetLog()->Write(LOG_INFO, ToString("Task 1: tick %d", i));
+            // Must not forget to call SuspendTask(). It allows another task to execute.
+            SuspendTask(1.f);
+        }
+    }));
+
+    // Create second task.
+    taskScheduler.Create([&]() {
+        for (auto i = 0; i < 5; i++)
+        {
+            // Perform work.
+            context->GetLog()->Write(LOG_INFO, ToString("Task 2: tick %d", i));
+
+            // Check if other task is still executing.
+            if (!task1.Expired())
+                SuspendTask(2.f);
+            else
+                SuspendTask(0.5f);
+        }
+    });
+
+    // Schedule tasks. Executing this worker on non-multithreaded build would block execution until all tasks are done!
+    while (taskScheduler.GetActiveTaskCount() > 0)
+    {
+        taskScheduler.ExecuteTasks();
+    }
+
+    context->GetLog()->Write(LOG_INFO, ToString("All tasks on thread %u finished.", Thread::GetCurrentThreadID()));
+}
+#endif
 
 TasksSample::TasksSample(Context* context) :
     Sample(context)
@@ -119,7 +162,16 @@ void TasksSample::CreateScene()
     cameraNode_->SetPosition(Vector3(0.0f, 3.0f, -8.f));
     cameraNode_->LookAt(mushroomNode->GetPosition());
 
-    SetRandomSeed(static_cast<unsigned int>(time(0)));
+    // Seed random number generator so that jokes are properly randomized on each run.
+    SetRandomSeed(Time::GetSystemTime());
+
+    // Create a worker that executes tasks in a separate thread.
+#if URHO3D_THREADING
+    SharedPtr<WorkItem> workItem(GetWorkQueue()->GetFreeItem());
+    workItem->aux_ = context_;
+    workItem->workFunction_ = &MultithreadedTasksWork;
+    GetWorkQueue()->AddWorkItem(workItem);
+#endif
 }
 
 void TasksSample::MushroomAI()
