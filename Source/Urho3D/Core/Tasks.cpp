@@ -37,6 +37,8 @@
 #define FIBER_FLAG_FLOAT_SWITCH 0
 #define WINAPI
 
+typedef void(*LPFIBER_START_ROUTINE)(void*);
+
 /// Internal fiber context data.
 struct FiberContext
 {
@@ -172,6 +174,31 @@ bool Task::IsReady()
     return true;
 }
 
+void Task::ExecuteTask()
+{
+    state_ = TSTATE_EXECUTING;
+    taskProc_();
+    state_ = TSTATE_FINISHED;
+    // Suspend one last time. This call will not return and task will be destroyed. Returning would cause a crash.
+    Suspend();
+    assert(false);
+}
+
+void Task::Suspend(float time)
+{
+    taskData_.currentTask_->sleepMSec_ = static_cast<unsigned>(1000.f * time);
+    SwitchToFiber(taskData_.threadFiber_);
+}
+
+bool Task::SwitchTo()
+{
+    if (threadID_ != Thread::GetCurrentThreadID())
+        return false;
+
+    SwitchToFiber(fiber_);
+    return true;
+}
+
 TaskScheduler::TaskScheduler(Context* context) : Object(context)
 {
     if (taskData_.threadFiber_ == nullptr)
@@ -182,22 +209,14 @@ TaskScheduler::~TaskScheduler()
 {
 }
 
-void WINAPI StartTaskExecution(void* userdata)
-{
-    Task& task = *static_cast<Task*>(userdata);
-    task.state_ = TSTATE_EXECUTING;
-    task.taskProc_();
-    task.state_ = TSTATE_FINISHED;
-    // Suspend one last time. This call will not return and task will be destroyed. Returning would cause a crash.
-    SuspendTask();
-    assert(false);
-}
-
 Task* TaskScheduler::Create(const std::function<void()>& taskFunction, unsigned stackSize)
 {
     SharedPtr<Task> task(new Task());
     task->taskProc_ = taskFunction;
-    task->fiber_ = CreateFiberEx(stackSize, stackSize, FIBER_FLAG_FLOAT_SWITCH, StartTaskExecution, task);
+    // On x86 Windows ExecuteTaskWrapper should be stdcall, but is cdecl instead. Invalid calling convention is not a
+    // problem because ExecuteTaskWrapper never returns. This saves us exposing platform quirks in the header.
+    task->fiber_ = CreateFiberEx(stackSize, stackSize, FIBER_FLAG_FLOAT_SWITCH,
+        (LPFIBER_START_ROUTINE)&ExecuteTaskWrapper, task);
     tasks_.Push(task);
     return task;
 }
@@ -230,18 +249,14 @@ unsigned TaskScheduler::GetActiveTaskCount() const
     return tasks_.Size();
 }
 
-void SuspendTask(float time)
+void TaskScheduler::ExecuteTaskWrapper(void* parameter)
 {
-    taskData_.currentTask_->sleepMSec_ = static_cast<unsigned>(1000.f * time);
-    SwitchToFiber(taskData_.threadFiber_);
+    static_cast<Task*>(parameter)->ExecuteTask();
 }
 
-void SwitchToTask(Task* task)
+void SuspendTask(float time)
 {
-    if (task->threadID_ != Thread::GetCurrentThreadID())
-        return;
-
-    SwitchToFiber(task->fiber_);
+    taskData_.currentTask_->Suspend(time);
 }
 
 Tasks::Tasks(Context* context) : Object(context)

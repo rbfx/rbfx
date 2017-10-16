@@ -32,6 +32,9 @@
 namespace Urho3D
 {
 
+class TaskScheduler;
+class Tasks;
+
 enum TaskState
 {
     /// Task was created, but not executed yet.
@@ -42,7 +45,8 @@ enum TaskState
     TSTATE_FINISHED,
 };
 
-class Task : public RefCounted
+/// Object representing a single cooperative t
+class URHO3D_API Task : public RefCounted
 {
 public:
     /// Destruct.
@@ -51,6 +55,14 @@ public:
     bool IsAlive() const { return state_ != TSTATE_FINISHED; };
     /// Return true if task is ready, false if task is still sleeping.
     bool IsReady();
+    /// Suspend execution of current task. Must be called from within function invoked by callback passed to TaskScheduler::Create() or Tasks::Create().
+    void Suspend(float time = 0.f);
+    /// Explicitly switch execution to specified task. Task must be created on the same thread where this function is called. Task can be switched to at any time.
+    bool SwitchTo();
+
+protected:
+    /// Handles task execution. Should not be called by user.
+    void ExecuteTask();
 
     /// Next task in a linked list.
     Task* next_ = nullptr;
@@ -66,6 +78,9 @@ public:
     TaskState state_ = TSTATE_CREATED;
     /// Thread id on which task was created.
     ThreadID threadID_ = Thread::GetCurrentThreadID();
+
+    friend class TaskScheduler;
+    friend class Tasks;
 };
 
 /// Default task size.
@@ -89,15 +104,15 @@ public:
     void ExecuteTasks();
 
 private:
+    /// Starts execution of a task using fiber API.
+    static void ExecuteTaskWrapper(void* parameter);
+
     /// List of tasks for every event tasks are executed on.
     List<SharedPtr<Task> > tasks_;
 };
 
 /// Suspend execution of current task. Must be called from within function invoked by callback passed to TaskScheduler::Create() or Tasks::Create().
 URHO3D_API void SuspendTask(float time = 0.f);
-/// Explicitly switch execution to specified task. Task must be created on the same thread where this function is called. Task can be switched to at any time.
-URHO3D_API void SwitchToTask(Task* task);
-
 
 /// Tasks subsystem. Handles execution of tasks on the main thread.
 class URHO3D_API Tasks : public Object
