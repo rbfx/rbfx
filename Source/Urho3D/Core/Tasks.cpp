@@ -238,7 +238,7 @@ TaskContext* TaskScheduler::Create(const std::function<void()>& taskFunction, un
 
 void TaskScheduler::ExecuteTasks()
 {
-    for (auto task = tasks_.First(); task != nullptr; task = tasks_.Next(task))
+    for (auto task = tasks_.First(); task != nullptr;)
     {
         if (!task->IsReady())
         {
