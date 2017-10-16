@@ -860,6 +860,7 @@ public:
                     auto styleFile = xml->GetRoot().GetAttribute("styleFile");
                     if (!styleFile.Empty())
                     {
+                        styleFile = cache->GetResourceFileName(styleFile);
                         if (!currentStyleFilePath_.Empty())
                         {
                             auto styleResourceDir = GetResourcePath(currentStyleFilePath_);
@@ -873,7 +874,9 @@ public:
                     auto child = rootElement_->CreateChild(xml->GetRoot().GetAttribute("type"));
                     if (child->LoadXML(xml->GetRoot()))
                     {
-                        child->SetStyleAuto();
+                        // If style file is not in xml then apply style according to ui types.
+                        if (styleFile.Empty())
+                            child->SetStyleAuto();
 
                         // Must be disabled because it interferes with ui element resizing
                         if (auto window = dynamic_cast<Window*>(child))
@@ -942,6 +945,7 @@ public:
 
             File saveFile(context_, file_path, FILE_WRITE);
             styleFile->Save(saveFile);
+            saveFile.Close();
 
             // Remove all attributes with empty value. Empty value is used to "fake" removal, because current xml class
             // does not allow removing and reinserting xml elements, they must be recreated. Removal has to be done on
