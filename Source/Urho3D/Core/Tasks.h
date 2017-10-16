@@ -25,12 +25,48 @@
 
 #include "../Core/Object.h"
 #include "../Core/Timer.h"
+#include "../Core/Thread.h"
+#include "../Container/List.h"
 
 
 namespace Urho3D
 {
 
-struct TaskContext;
+enum TaskState
+{
+    /// Task was created, but not executed yet.
+    TSTATE_CREATED,
+    /// Task was switched to at least once.
+    TSTATE_EXECUTING,
+    /// Task finished execution and should not be rescheduled.
+    TSTATE_FINISHED,
+};
+
+class Task : public RefCounted
+{
+public:
+    /// Destruct.
+    ~Task();
+    /// Return true if task is still executing.
+    bool IsAlive() const { return state_ != TSTATE_FINISHED; };
+    /// Return true if task is ready, false if task is still sleeping.
+    bool IsReady();
+
+    /// Next task in a linked list.
+    Task* next_ = nullptr;
+    /// Fiber context.
+    void* fiber_ = nullptr;
+    /// Timer which keeps track of how long task should sleep.
+    Timer sleepTimer_{};
+    /// Number of milliseconds task should sleep for.
+    unsigned sleepMSec_ = 0;
+    /// Procedure that executes the task.
+    std::function<void()> taskProc_;
+    /// Current state of the task.
+    TaskState state_ = TSTATE_CREATED;
+    /// Thread id on which task was created.
+    ThreadID threadID_ = Thread::GetCurrentThreadID();
+};
 
 /// Default task size.
 static const unsigned DEFAULT_TASK_SIZE = 1024 * 5;
@@ -46,19 +82,21 @@ public:
     ~TaskScheduler() override;
 
     /// Create a task and schedule it for execution.
-    TaskContext* Create(const std::function<void()>& taskFunction, unsigned stackSize = DEFAULT_TASK_SIZE);
+    Task* Create(const std::function<void()>& taskFunction, unsigned stackSize = DEFAULT_TASK_SIZE);
+    /// Return number of active tasks.
+    unsigned GetActiveTaskCount() const;
     /// Schedule tasks created by Create() method. This has to be called periodically, otherwise tasks will not run.
     void ExecuteTasks();
 
 private:
     /// List of tasks for every event tasks are executed on.
-    LinkedList<TaskContext> tasks_;
+    List<SharedPtr<Task> > tasks_;
 };
 
 /// Suspend execution of current task. Must be called from within function invoked by callback passed to TaskScheduler::Create() or Tasks::Create().
 URHO3D_API void SuspendTask(float time = 0.f);
 /// Explicitly switch execution to specified task. Task must be created on the same thread where this function is called. Task can be switched to at any time.
-URHO3D_API void SwitchToTask(TaskContext* task);
+URHO3D_API void SwitchToTask(Task* task);
 
 
 /// Tasks subsystem. Handles execution of tasks on the main thread.
@@ -69,7 +107,9 @@ public:
     /// Construct.
     explicit Tasks(Context* context);
     /// Create a task and schedule it for execution.
-    TaskContext* Create(StringHash eventType, const std::function<void()>& taskFunction, unsigned stackSize = DEFAULT_TASK_SIZE);
+    Task* Create(StringHash eventType, const std::function<void()>& taskFunction, unsigned stackSize = DEFAULT_TASK_SIZE);
+    /// Return number of active tasks.
+    unsigned GetActiveTaskCount() const;
 
 private:
     /// Schedule tasks created by Create() method.

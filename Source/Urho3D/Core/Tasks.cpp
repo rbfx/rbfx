@@ -22,7 +22,6 @@
 
 #include "../IO/Log.h"
 #include "../Core/CoreEvents.h"
-#include "../Core/Thread.h"
 #include "../Core/Tasks.h"
 
 
@@ -143,39 +142,6 @@ void DeleteFiber(void* fiber)
 namespace Urho3D
 {
 
-enum TaskState
-{
-    /// Task was created, but not executed yet.
-    TSTATE_CREATED,
-    /// Task was switched to at least once.
-    TSTATE_EXECUTING,
-    /// Task finished execution and should not be resheduled.
-    TSTATE_FINISHED,
-};
-
-struct TaskContext
-{
-    /// Destruct.
-    ~TaskContext();
-    /// Return true if task is ready, false if task is still sleeping.
-    bool IsReady();
-
-    /// Next task in a linked list.
-    TaskContext* next_ = nullptr;
-    /// Fiber context.
-    void* fiber_ = nullptr;
-    /// Timer which keeps track of how long task should sleep.
-    Timer sleepTimer_{};
-    /// Number of milliseconds task should sleep for.
-    unsigned sleepMSec_ = 0;
-    /// Procedure that executes the task.
-    std::function<void()> taskProc_;
-    /// Current state of the task.
-    TaskState state_ = TSTATE_CREATED;
-    /// Thread id on which task was created.
-    ThreadID threadID_ = Thread::GetCurrentThreadID();
-};
-
 thread_local struct TaskData
 {
     /// Destruct.
@@ -188,15 +154,15 @@ thread_local struct TaskData
     /// Thread fiber, used to store context of thread so fibers can resume execution to it.
     void* threadFiber_ = nullptr;
     /// Task that is executing at the moment.
-    TaskContext* currentTask_ = nullptr;
+    Task* currentTask_ = nullptr;
 } taskData_;
 
-TaskContext::~TaskContext()
+Task::~Task()
 {
     DeleteFiber(fiber_);
 }
 
-bool TaskContext::IsReady()
+bool Task::IsReady()
 {
     if (sleepTimer_.GetMSec(false) < sleepMSec_)
         return false;
@@ -218,7 +184,7 @@ TaskScheduler::~TaskScheduler()
 
 void WINAPI StartTaskExecution(void* userdata)
 {
-    TaskContext& task = *static_cast<TaskContext*>(userdata);
+    Task& task = *static_cast<Task*>(userdata);
     task.state_ = TSTATE_EXECUTING;
     task.taskProc_();
     task.state_ = TSTATE_FINISHED;
@@ -227,22 +193,24 @@ void WINAPI StartTaskExecution(void* userdata)
     assert(false);
 }
 
-TaskContext* TaskScheduler::Create(const std::function<void()>& taskFunction, unsigned stackSize)
+Task* TaskScheduler::Create(const std::function<void()>& taskFunction, unsigned stackSize)
 {
-    auto task = new TaskContext();
+    SharedPtr<Task> task(new Task());
     task->taskProc_ = taskFunction;
     task->fiber_ = CreateFiberEx(stackSize, stackSize, FIBER_FLAG_FLOAT_SWITCH, StartTaskExecution, task);
-    tasks_.Insert(task);
+    tasks_.Push(task);
     return task;
 }
 
 void TaskScheduler::ExecuteTasks()
 {
-    for (auto task = tasks_.First(); task != nullptr;)
+    for (auto it = tasks_.Begin(); it != tasks_.End();)
     {
+        Task* task = *it;
+
         if (!task->IsReady())
         {
-            task = tasks_.Next(task);
+            ++it;
             continue;
         }
 
@@ -251,14 +219,15 @@ void TaskScheduler::ExecuteTasks()
         taskData_.currentTask_ = nullptr;
 
         if (task->state_ == TSTATE_FINISHED)
-        {
-            auto nextTask = tasks_.Next(task);
-            tasks_.Erase(task);
-            task = nextTask;
-        }
+            it = tasks_.Erase(it);
         else
-            task = tasks_.Next(task);
+            ++it;
     }
+}
+
+unsigned TaskScheduler::GetActiveTaskCount() const
+{
+    return tasks_.Size();
 }
 
 void SuspendTask(float time)
@@ -267,7 +236,7 @@ void SuspendTask(float time)
     SwitchToFiber(taskData_.threadFiber_);
 }
 
-void SwitchToTask(TaskContext* task)
+void SwitchToTask(Task* task)
 {
     if (task->threadID_ != Thread::GetCurrentThreadID())
         return;
@@ -279,7 +248,7 @@ Tasks::Tasks(Context* context) : Object(context)
 {
 }
 
-TaskContext* Tasks::Create(StringHash eventType, const std::function<void()>& taskFunction, unsigned stackSize)
+Task* Tasks::Create(StringHash eventType, const std::function<void()>& taskFunction, unsigned stackSize)
 {
     auto it = taskSchedulers_.Find(eventType);
     TaskScheduler* scheduler = nullptr;
@@ -303,6 +272,14 @@ void Tasks::ExecuteTasks(StringHash eventType)
         return;
     }
     it->second_->ExecuteTasks();
+}
+
+unsigned Tasks::GetActiveTaskCount() const
+{
+    unsigned activeTasks = 0;
+    for (const auto& scheduler: taskSchedulers_)
+        activeTasks += scheduler.second_->GetActiveTaskCount();
+    return activeTasks;
 }
 
 }
