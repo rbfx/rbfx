@@ -43,29 +43,45 @@ enum TaskState
     TSTATE_EXECUTING,
     /// Task finished execution and should not be rescheduled.
     TSTATE_FINISHED,
+    /// Task termination was requested.
+    TSTATE_TERMINATE,
 };
+
+/// Default task size.
+static const unsigned DEFAULT_TASK_SIZE = 1024 * 5;
 
 /// Object representing a single cooperative t
 class URHO3D_API Task : public RefCounted
 {
 public:
+    /// Construct empty task. It can not be scheduled.
+    Task() = default;
+    /// Construct a task. It has to be manually scheduled by calling Task::SwitchTo(). Caller is responsible for freeing returned object after task finishes execution.
+    Task(const std::function<void()>& taskFunction, unsigned stackSize = DEFAULT_TASK_SIZE);
     /// Destruct.
     ~Task();
     /// Return true if task is still executing.
     bool IsAlive() const { return state_ != TSTATE_FINISHED; };
+    /// Return true if task is supposed to terminate shortly.
+    bool IsTerminating() const { return state_ == TSTATE_TERMINATE; };
     /// Return true if task is ready, false if task is still sleeping.
     bool IsReady();
     /// Suspend execution of current task. Must be called from within function invoked by callback passed to TaskScheduler::Create() or Tasks::Create().
     void Suspend(float time = 0.f);
     /// Explicitly switch execution to specified task. Task must be created on the same thread where this function is called. Task can be switched to at any time.
     bool SwitchTo();
+    /// Request task termination. If exception support is disabled then user must return from the task manually when IsTerminating() returns true.
+    /// If exception support is enabled then task will be terminated next time Suspend() method is called. Suspend() will throw an exception that will be caught out-most layer of the task.
+    void Terminate() { state_ = TSTATE_TERMINATE; }
+    /// Get current thread task. Other tasks should switch into returned task periodically. This function must be called at least once before creating tasks. Do not store return value in a shared pointer.
+    static Task* GetThreadTask();
 
 protected:
     /// Handles task execution. Should not be called by user.
     void ExecuteTask();
+    /// Starts execution of a task using fiber API.
+    static void ExecuteTaskWrapper(void* parameter);
 
-    /// Next task in a linked list.
-    Task* next_ = nullptr;
     /// Fiber context.
     void* fiber_ = nullptr;
     /// Timer which keeps track of how long task should sleep.
@@ -83,9 +99,6 @@ protected:
     friend class Tasks;
 };
 
-/// Default task size.
-static const unsigned DEFAULT_TASK_SIZE = 1024 * 5;
-
 /// Task scheduler used for scheduling concurrent tasks.
 class URHO3D_API TaskScheduler : public Object
 {
@@ -102,11 +115,10 @@ public:
     unsigned GetActiveTaskCount() const;
     /// Schedule tasks created by Create() method. This has to be called periodically, otherwise tasks will not run.
     void ExecuteTasks();
+    /// Schedule tasks continuously until all of them exit.
+    void ExecuteAllTasks();
 
 private:
-    /// Starts execution of a task using fiber API.
-    static void ExecuteTaskWrapper(void* parameter);
-
     /// List of tasks for every event tasks are executed on.
     List<SharedPtr<Task> > tasks_;
 };

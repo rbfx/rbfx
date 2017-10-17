@@ -25,6 +25,10 @@
 #include "../Core/Tasks.h"
 
 
+#if defined(_CPPUNWIND) || defined(__cpp_exceptions)
+#   define URHO3D_TASKS_USE_EXCEPTIONS
+#endif
+
 #ifdef _WIN32
 #   include <windows.h>
 #else
@@ -96,6 +100,8 @@ void _FiberSetup(void* p)
 
 void* ConvertThreadToFiberEx(void* parameter, unsigned flags)
 {
+    (void)(parameter);
+    (void)(flags);
     if (threadFiberContext_.mainThreadFiber_ == nullptr)
         threadFiberContext_.mainThreadFiber_ = threadFiberContext_.currentFiber_ = new FiberContext();
     return threadFiberContext_.mainThreadFiber_;
@@ -103,6 +109,8 @@ void* ConvertThreadToFiberEx(void* parameter, unsigned flags)
 
 void* CreateFiberEx(unsigned stackSize, unsigned _, unsigned flags, void(*startAddress)(void*), void* parameter)
 {
+    (void)(_);
+    (void)(flags);
     FiberStartContext startContext{};
     startContext.fiber_ = new FiberContext();
     startContext.fiber_->stack_ = new uint8_t[stackSize];
@@ -144,24 +152,21 @@ void DeleteFiber(void* fiber)
 namespace Urho3D
 {
 
-thread_local struct TaskData
+thread_local struct
 {
-    /// Destruct.
-    ~TaskData()
-    {
-        if (threadFiber_ != nullptr)
-            DeleteFiber(threadFiber_);
-    }
-
     /// Thread fiber, used to store context of thread so fibers can resume execution to it.
-    void* threadFiber_ = nullptr;
+    Task threadTask_{};
     /// Task that is executing at the moment.
     Task* currentTask_ = nullptr;
 } taskData_;
 
+/// Exception which causes task termination. Intentionally does not inherit std::exception to prevent user catching termination request.
+class TerminateTaskException { };
+
 Task::~Task()
 {
-    DeleteFiber(fiber_);
+    if (fiber_ != nullptr)
+        DeleteFiber(fiber_);
 }
 
 bool Task::IsReady()
@@ -174,10 +179,28 @@ bool Task::IsReady()
     return true;
 }
 
+void Task::ExecuteTaskWrapper(void* parameter)
+{
+    static_cast<Task*>(parameter)->ExecuteTask();
+}
+
 void Task::ExecuteTask()
 {
+    // This method must not contain objects as local variables, because it's stack will not be unwound and their
+    // destructors will not be called.
     state_ = TSTATE_EXECUTING;
-    taskProc_();
+#ifdef URHO3D_TASKS_USE_EXCEPTIONS
+    try
+    {
+#endif
+        taskProc_();
+#ifdef URHO3D_TASKS_USE_EXCEPTIONS
+    }
+    catch (TerminateTaskException&)
+    {
+        // Task was terminated by user request.
+    }
+#endif
     state_ = TSTATE_FINISHED;
     // Suspend one last time. This call will not return and task will be destroyed. Returning would cause a crash.
     Suspend();
@@ -186,37 +209,67 @@ void Task::ExecuteTask()
 
 void Task::Suspend(float time)
 {
+#ifdef URHO3D_TASKS_USE_EXCEPTIONS
+    if (state_ == TSTATE_TERMINATE)
+        throw TerminateTaskException();
+#endif
+
+    // Save sleep time of current task
     taskData_.currentTask_->sleepMSec_ = static_cast<unsigned>(1000.f * time);
-    SwitchToFiber(taskData_.threadFiber_);
+    // Switch to main thread task
+    taskData_.currentTask_ = &taskData_.threadTask_;
+    taskData_.currentTask_->SwitchTo();
 }
 
 bool Task::SwitchTo()
 {
     if (threadID_ != Thread::GetCurrentThreadID())
+    {
+        URHO3D_LOGERROR("Task must be scheduled on the same thread where it was created.");
         return false;
+    }
 
+    if (state_ == TSTATE_FINISHED)
+    {
+        URHO3D_LOGERROR("Finished task may not be scheduled again.");
+        return false;
+    }
+
+    taskData_.currentTask_ = this;
     SwitchToFiber(fiber_);
     return true;
 }
 
-TaskScheduler::TaskScheduler(Context* context) : Object(context)
+Task* Task::GetThreadTask()
 {
-    if (taskData_.threadFiber_ == nullptr)
-        taskData_.threadFiber_ = ConvertThreadToFiberEx(nullptr, FIBER_FLAG_FLOAT_SWITCH);
+    Task& threadTask = taskData_.threadTask_;
+    if (threadTask.fiber_ == nullptr)
+    {
+        threadTask.fiber_ = ConvertThreadToFiberEx(nullptr, FIBER_FLAG_FLOAT_SWITCH);
+        threadTask.state_ = TSTATE_EXECUTING;
+    }
+    return &threadTask;
 }
 
-TaskScheduler::~TaskScheduler()
+Task::Task(const std::function<void()>& taskFunction, unsigned int stackSize)
 {
+    taskProc_ = taskFunction;
+    // On x86 Windows ExecuteTaskWrapper should be stdcall, but is cdecl instead. Invalid calling convention is not a
+    // problem because ExecuteTaskWrapper never returns. This saves us exposing platform quirks in the header.
+    fiber_ = CreateFiberEx(stackSize, stackSize, FIBER_FLAG_FLOAT_SWITCH, (LPFIBER_START_ROUTINE)&ExecuteTaskWrapper, this);
 }
+
+TaskScheduler::TaskScheduler(Context* context) : Object(context)
+{
+    // Initialize task for current thread.
+    Task::GetThreadTask();
+}
+
+TaskScheduler::~TaskScheduler() = default;
 
 Task* TaskScheduler::Create(const std::function<void()>& taskFunction, unsigned stackSize)
 {
-    SharedPtr<Task> task(new Task());
-    task->taskProc_ = taskFunction;
-    // On x86 Windows ExecuteTaskWrapper should be stdcall, but is cdecl instead. Invalid calling convention is not a
-    // problem because ExecuteTaskWrapper never returns. This saves us exposing platform quirks in the header.
-    task->fiber_ = CreateFiberEx(stackSize, stackSize, FIBER_FLAG_FLOAT_SWITCH,
-        (LPFIBER_START_ROUTINE)&ExecuteTaskWrapper, task);
+    SharedPtr<Task> task(new Task(taskFunction, stackSize));
     tasks_.Push(task);
     return task;
 }
@@ -233,9 +286,7 @@ void TaskScheduler::ExecuteTasks()
             continue;
         }
 
-        taskData_.currentTask_ = task;
-        SwitchToFiber(task->fiber_);
-        taskData_.currentTask_ = nullptr;
+        task->SwitchTo();
 
         if (task->state_ == TSTATE_FINISHED)
             it = tasks_.Erase(it);
@@ -249,9 +300,14 @@ unsigned TaskScheduler::GetActiveTaskCount() const
     return tasks_.Size();
 }
 
-void TaskScheduler::ExecuteTaskWrapper(void* parameter)
+void TaskScheduler::ExecuteAllTasks()
 {
-    static_cast<Task*>(parameter)->ExecuteTask();
+    while (GetActiveTaskCount() > 0)
+    {
+        ExecuteTasks();
+        // Do not starve other threads
+        Time::Sleep(0);
+    }
 }
 
 void SuspendTask(float time)
