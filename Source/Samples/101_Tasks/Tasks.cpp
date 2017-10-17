@@ -34,7 +34,6 @@
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
-#include <Urho3D/Scene/Node.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/Text3D.h>
@@ -49,42 +48,150 @@ URHO3D_DEFINE_APPLICATION_MAIN(TasksSample);
 #if URHO3D_THREADING
 void MultithreadedTasksWork(const WorkItem* item, unsigned threadIndex)
 {
+    (void)(threadIndex);
     Context* context = static_cast<Context*>(item->aux_);
+
+    // Schedule tasks in a worker thread.
     TaskScheduler taskScheduler(context);
 
-    // Create first task.
-    WeakPtr<Task> task1(taskScheduler.Create([&]() {
-        for (auto i = 0; i < 5; i++)
-        {
-            // Perform work.
-            context->GetLog()->Write(LOG_INFO, ToString("Task 1: tick %d", i));
-            // Must not forget to call SuspendTask(). It allows another task to execute.
-            SuspendTask(1.f);
-        }
-    }));
-
-    // Create second task.
-    taskScheduler.Create([&]() {
-        for (auto i = 0; i < 5; i++)
-        {
-            // Perform work.
-            context->GetLog()->Write(LOG_INFO, ToString("Task 2: tick %d", i));
-
-            // Check if other task is still executing.
-            if (!task1.Expired())
-                SuspendTask(2.f);
-            else
-                SuspendTask(0.5f);
-        }
-    });
-
-    // Schedule tasks. Executing this worker on non-multithreaded build would block execution until all tasks are done!
-    while (taskScheduler.GetActiveTaskCount() > 0)
+    // Execute multiple tasks
     {
-        taskScheduler.ExecuteTasks();
+        URHO3D_LOGINFO("==== Execute multiple tasks ====");
+        taskScheduler.Create([&]() {
+            for (auto i = 0; i < 2; i++)
+            {
+                // Perform work.
+                URHO3D_LOGINFOF("Task 1: tick %d", i);
+                // Must not forget to call SuspendTask(). It allows another task to execute.
+                SuspendTask(1.f);
+            }
+        });
+
+        taskScheduler.Create([&]() {
+            for (auto i = 0; i < 2; i++)
+            {
+                // Perform work.
+                URHO3D_LOGINFOF("Task 2: tick %d", i);
+                // Must not forget to call SuspendTask(). It allows another task to execute.
+                SuspendTask(1.f);
+            }
+        });
+        taskScheduler.ExecuteAllTasks();
     }
 
-    context->GetLog()->Write(LOG_INFO, ToString("All tasks on thread %u finished.", Thread::GetCurrentThreadID()));
+    // Check if task is alive
+    {
+        URHO3D_LOGINFO("==== Check if task is alive ====");
+        SharedPtr<Task> task(taskScheduler.Create([&]() {
+            // Do nothing
+            SuspendTask(2.f);
+            URHO3D_LOGINFO("Task1 finished.");
+        }));
+
+        taskScheduler.Create([&]() {
+            // Wait until first task finishes.
+            while (task->IsAlive())
+                SuspendTask(1.f);
+
+            URHO3D_LOGINFO("Task2 is exiting since Task1 is no longer executing.");
+        });
+        taskScheduler.ExecuteAllTasks();
+    }
+
+    // Terminate task (performant way)
+    {
+        URHO3D_LOGINFO("==== Terminate task (performant way) ====");
+        SharedPtr<Task> task;
+        task = SharedPtr<Task>(taskScheduler.Create([&]() {
+            for (;;)
+            {
+                // Keep executing until task termination is requested and then return from the function manually
+                if (task->IsTerminating())
+                {
+                    URHO3D_LOGINFO("Task1 terminated manually.");
+                    return;
+                }
+                SuspendTask(1.f);
+            }
+        }));
+
+        taskScheduler.Create([&]() {
+            // Terminate first task after some time
+            SuspendTask(1.f);
+            URHO3D_LOGINFO("Task2 requesting termination of Task1.");
+            task->Terminate();
+        });
+        taskScheduler.ExecuteAllTasks();
+    }
+
+#if defined(_CPPUNWIND) || defined(__cpp_exceptions)
+    // Terminate task (convenient way)
+    {
+        URHO3D_LOGINFO("==== Terminate task (convenient way) ====");
+        SharedPtr<Task> task(taskScheduler.Create([&]() {
+            struct DummyStruct
+            {
+                ~DummyStruct()
+                {
+                    URHO3D_LOGINFO("Task1 terminated by exception.");
+                }
+            } dummy;
+            for (;;)
+            {
+                // When IsTerminating() returns true next cal to SuspendTask() or task->Suspend() will raise an
+                // exception which will be caught by code that invoked a task. This method must not be relied upon when
+                // exceptions are disabled. Instead see "Terminate task (performant way)" above.
+                SuspendTask(1.f);
+            }
+        }));
+
+        taskScheduler.Create([&]() {
+            // Terminate first task after 3 seconds
+            SuspendTask(1.f);
+            URHO3D_LOGINFO("Task2 requesting termination of Task1.");
+            task->Terminate();
+        });
+        taskScheduler.ExecuteAllTasks();
+    }
+#endif
+
+    // Manual task scheduling
+    {
+        URHO3D_LOGINFO("==== Manual task scheduling ====");
+        SharedPtr<Task> task1, task2;
+
+        // Always obtain thread task before creating other tasks.
+        Task* threadTask = Task::GetThreadTask();
+
+        task1 = SharedPtr<Task>(new Task([&]() {
+            URHO3D_LOGINFO("Task1 executing");
+            // Manually schedule execution of task 2. It stars executing immediately. Bear in mind that manually
+            // scheduled tasks should not use SuspendTask(). SuspendTask() yields execution to the main thread and
+            // requires task scheduler in order to handle suspending for prolonged period of time.
+            task2->SwitchTo();
+            URHO3D_LOGINFO("Task1 terminating");
+        }));
+
+        task2 = SharedPtr<Task>(new Task([&]() {
+            URHO3D_LOGINFO("Task2 executing");
+            // Manually resume execution of main thread.
+            threadTask->SwitchTo();
+            URHO3D_LOGINFO("Task2 terminating");
+        }));
+
+        // Start execution of Task1
+        task1->SwitchTo();
+        URHO3D_LOGINFO("Main thread resumes execution after Task2");
+        // At this point execution of both tasks is paused at SwitchTo() call. In order to avoid possible memory leaks
+        // tasks have to be allowed to return properly. Switching to a task is enough. Upon task termination execution
+        // automatically switches to main thread.
+        task1->SwitchTo();
+        URHO3D_LOGINFO("Main thread knows that Task1 just terminated");
+        task2->SwitchTo();
+        URHO3D_LOGINFO("Main thread knows that Task1 just terminated");
+    }
+
+    URHO3D_LOGINFOF("All tasks on thread %u finished.", Thread::GetCurrentThreadID());
 }
 #endif
 
@@ -108,7 +215,8 @@ void TasksSample::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_RELATIVE);
+    GetInput()->SetMouseVisible(true);
+    Sample::InitMouseMode(MM_FREE);
 }
 
 void TasksSample::CreateScene()
