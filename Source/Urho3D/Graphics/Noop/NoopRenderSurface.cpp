@@ -34,28 +34,28 @@
 namespace Urho3D
 {
 
-	RenderSurface::RenderSurface(Texture* parentTexture) :
-		parentTexture_(parentTexture),
-		surface_(0),
-		updateMode_(SURFACE_UPDATEVISIBLE),
-		updateQueued_(false),
-		resolveDirty_(false)
-	{
-	}
+    RenderSurface::RenderSurface(Texture* parentTexture) :
+        parentTexture_(parentTexture),
+        surface_(0),
+        updateMode_(SURFACE_UPDATEVISIBLE),
+        updateQueued_(false),
+        resolveDirty_(false)
+    {
+    }
 
-	void RenderSurface::Release()
-	{
-	}
+    void RenderSurface::Release()
+    {
+    }
 
-	bool RenderSurface::CreateRenderBuffer(unsigned width, unsigned height, unsigned format, int multiSample)
-	{
-		// Not used on Direct3D
-		return false;
-	}
+    bool RenderSurface::CreateRenderBuffer(unsigned width, unsigned height, unsigned format, int multiSample)
+    {
+        // Not used on Direct3D
+        return false;
+    }
 
-	void RenderSurface::OnDeviceLost()
-	{
-		// No-op on Direct3D
-	}
+    void RenderSurface::OnDeviceLost()
+    {
+        // No-op on Direct3D
+    }
 
 }

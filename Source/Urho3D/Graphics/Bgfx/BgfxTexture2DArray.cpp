@@ -43,41 +43,41 @@
 namespace Urho3D
 {
 
-	void Texture2DArray::OnDeviceLost()
-	{
-	}
+    void Texture2DArray::OnDeviceLost()
+    {
+    }
 
-	void Texture2DArray::OnDeviceReset()
-	{
-	}
+    void Texture2DArray::OnDeviceReset()
+    {
+    }
 
-	void Texture2DArray::Release()
-	{
-	}
+    void Texture2DArray::Release()
+    {
+    }
 
-	bool Texture2DArray::SetData(unsigned layer, unsigned level, int x, int y, int width, int height, const void* data)
-	{
-		return false;
-	}
+    bool Texture2DArray::SetData(unsigned layer, unsigned level, int x, int y, int width, int height, const void* data)
+    {
+        return false;
+    }
 
-	bool Texture2DArray::SetData(unsigned layer, Deserializer& source)
-	{
-		return false;
-	}
+    bool Texture2DArray::SetData(unsigned layer, Deserializer& source)
+    {
+        return false;
+    }
 
-	bool Texture2DArray::SetData(unsigned layer, Image* image, bool useAlpha)
-	{
-		return false;
-	}
+    bool Texture2DArray::SetData(unsigned layer, Image* image, bool useAlpha)
+    {
+        return false;
+    }
 
-	bool Texture2DArray::GetData(unsigned layer, unsigned level, void* dest) const
-	{
-		return false;
-	}
+    bool Texture2DArray::GetData(unsigned layer, unsigned level, void* dest) const
+    {
+        return false;
+    }
 
-	bool Texture2DArray::Create()
-	{
-		return false;
-	}
+    bool Texture2DArray::Create()
+    {
+        return false;
+    }
 
 }

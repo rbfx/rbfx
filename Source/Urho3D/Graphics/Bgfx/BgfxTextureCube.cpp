@@ -43,41 +43,41 @@
 namespace Urho3D
 {
 
-	void TextureCube::OnDeviceLost()
-	{
-	}
+    void TextureCube::OnDeviceLost()
+    {
+    }
 
-	void TextureCube::OnDeviceReset()
-	{
-	}
+    void TextureCube::OnDeviceReset()
+    {
+    }
 
-	void TextureCube::Release()
-	{
-	}
+    void TextureCube::Release()
+    {
+    }
 
-	bool TextureCube::SetData(CubeMapFace face, unsigned level, int x, int y, int width, int height, const void* data)
-	{
-		return true;
-	}
+    bool TextureCube::SetData(CubeMapFace face, unsigned level, int x, int y, int width, int height, const void* data)
+    {
+        return true;
+    }
 
-	bool TextureCube::SetData(CubeMapFace face, Deserializer& source)
-	{
-		return true;
-	}
+    bool TextureCube::SetData(CubeMapFace face, Deserializer& source)
+    {
+        return true;
+    }
 
-	bool TextureCube::SetData(CubeMapFace face, Image* image, bool useAlpha)
-	{
-		return true;
-	}
+    bool TextureCube::SetData(CubeMapFace face, Image* image, bool useAlpha)
+    {
+        return true;
+    }
 
-	bool TextureCube::GetData(CubeMapFace face, unsigned level, void* dest) const
-	{
-		return true;
-	}
+    bool TextureCube::GetData(CubeMapFace face, unsigned level, void* dest) const
+    {
+        return true;
+    }
 
-	bool TextureCube::Create()
-	{
-		return true;
-	}
+    bool TextureCube::Create()
+    {
+        return true;
+    }
 
 }

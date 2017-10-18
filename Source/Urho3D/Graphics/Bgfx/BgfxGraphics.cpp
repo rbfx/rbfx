@@ -86,52 +86,52 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
     bool tripleBuffer, int multiSample, int monitor, int refreshRate)
 
 {
-	fullscreen_ = fullscreen;
-	borderless_ = borderless;
-	resizable_ = resizable;
-	highDPI_ = highDPI;
-	vsync_ = vsync;
-	tripleBuffer_ = tripleBuffer;
-	multiSample_ = multiSample;
-	monitor_ = monitor;
-	refreshRate_ = refreshRate;
+    fullscreen_ = fullscreen;
+    borderless_ = borderless;
+    resizable_ = resizable;
+    highDPI_ = highDPI;
+    vsync_ = vsync;
+    tripleBuffer_ = tripleBuffer;
+    multiSample_ = multiSample;
+    monitor_ = monitor;
+    refreshRate_ = refreshRate;
 
-	if (!IsInitialized())
-	{
-		int x = 0;
-		int y = 0;
+    if (!IsInitialized())
+    {
+        int x = 0;
+        int y = 0;
 
-		unsigned flags =  SDL_WINDOW_SHOWN;
+        unsigned flags =  SDL_WINDOW_SHOWN;
 
-		window_ = SDL_CreateWindow(windowTitle_.CString(), x, y, width, height, flags);
-		SDL_ShowWindow(window_);
+        window_ = SDL_CreateWindow(windowTitle_.CString(), x, y, width, height, flags);
+        SDL_ShowWindow(window_);
 
-		SDL_SysWMinfo wmi;
-		SDL_VERSION(&wmi.version);
-		SDL_GetWindowWMInfo(window_, &wmi);
+        SDL_SysWMinfo wmi;
+        SDL_VERSION(&wmi.version);
+        SDL_GetWindowWMInfo(window_, &wmi);
 
-		bgfx::PlatformData pd;
-		pd.ndt          = NULL;
+        bgfx::PlatformData pd;
+        pd.ndt          = NULL;
 #if defined(WIN32)
-		pd.ndt          = NULL;
-		pd.nwh          = wmi.info.win.window;
+        pd.ndt          = NULL;
+        pd.nwh          = wmi.info.win.window;
 #elif defined(__APPLE__)
-		pd.nwh          = wmi.info.cocoa.window;
+        pd.nwh          = wmi.info.cocoa.window;
 #else
         // Other unixes
         pd.nwh          = reinterpret_cast<void*>(wmi.info.x11.window);
         pd.ndt          = reinterpret_cast<void*>(wmi.info.x11.display);
 #endif
         pd.context      = NULL;
-		pd.backBuffer   = NULL;
-		pd.backBufferDS = NULL;
-		bgfx::setPlatformData(pd);
+        pd.backBuffer   = NULL;
+        pd.backBufferDS = NULL;
+        bgfx::setPlatformData(pd);
 
-	}
+    }
 
     bgfx::init(bgfx::RendererType::OpenGL);
     SetMode(width, height);
-	return true;
+    return true;
 }
 
 bool Graphics::SetMode(int width, int height)
@@ -260,10 +260,10 @@ void Graphics::SetDefaultTextureAnisotropy(unsigned level) {}
 
 void Graphics::ResetRenderTargets()
 {
-	for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
-		SetRenderTarget(i, (RenderSurface*)nullptr);
-	SetDepthStencil((RenderSurface*)nullptr);
-	SetViewport(IntRect(0, 0, width_, height_));
+    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
+        SetRenderTarget(i, (RenderSurface*)nullptr);
+    SetDepthStencil((RenderSurface*)nullptr);
+    SetViewport(IntRect(0, 0, width_, height_));
 }
 
 void Graphics::ResetRenderTarget(unsigned index)

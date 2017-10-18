@@ -39,36 +39,36 @@
 namespace Urho3D
 {
 
-	void Texture2D::OnDeviceLost()
-	{
-	}
+    void Texture2D::OnDeviceLost()
+    {
+    }
 
-	void Texture2D::OnDeviceReset()
-	{
-	}
+    void Texture2D::OnDeviceReset()
+    {
+    }
 
-	void Texture2D::Release()
-	{
-	}
+    void Texture2D::Release()
+    {
+    }
 
-	bool Texture2D::SetData(unsigned level, int x, int y, int width, int height, const void* data)
-	{
-		return true;
-	}
+    bool Texture2D::SetData(unsigned level, int x, int y, int width, int height, const void* data)
+    {
+        return true;
+    }
 
-	bool Texture2D::SetData(Image* image, bool useAlpha)
-	{
-		return true;
-	}
+    bool Texture2D::SetData(Image* image, bool useAlpha)
+    {
+        return true;
+    }
 
-	bool Texture2D::GetData(unsigned level, void* dest) const
-	{
-		return true;
-	}
+    bool Texture2D::GetData(unsigned level, void* dest) const
+    {
+        return true;
+    }
 
-	bool Texture2D::Create()
-	{
-		return true;
-	}
+    bool Texture2D::Create()
+    {
+        return true;
+    }
 
 }

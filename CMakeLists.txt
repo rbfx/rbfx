@@ -108,7 +108,7 @@ if (WIN32)
 else ()
     set(URHO3D_RENDERER OpenGL CACHE STRING "Select renderer: OpenGL | Noop")
 endif ()
-message(WARNING "${URHO3D_RENDERER}")
+
 string(TOUPPER "${URHO3D_RENDERER}" URHO3D_RENDERER)
 if (URHO3D_RENDERER STREQUAL OPENGL)
     set (URHO3D_OPENGL ON)
