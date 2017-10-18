@@ -20,6 +20,10 @@
 # THE SOFTWARE.
 #
 
+if (NOT URHO3D_SYSTEMUI)
+    return ()
+endif ()
+
 file (GLOB SOURCE_FILES *.cpp *.h *.hpp)
 add_executable (UIEditor WIN32 ${SOURCE_FILES})
 target_link_libraries (UIEditor Urho3D)

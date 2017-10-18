@@ -44,7 +44,7 @@ public:
     /// Return true if state of this object matches state of specified object.
     virtual bool Equals(UndoableState* other) = 0;
     /// Return string representation of current state.
-    virtual String ToString()
+    virtual String ToString() const
     {
         return "UndoableState";
     }
@@ -114,6 +114,12 @@ public:
 
         return true;
     }
+
+    /// Return string representation of current state.
+    virtual String ToString() const
+    {
+        return "UndoableAttributesState";
+    }
 };
 
 /// Tracks item parent state. Used for tracking adding and removing UIElements.
@@ -166,6 +172,107 @@ public:
             return false;
 
         return item_ == other_->item_ && parent_ == other_->parent_ && index_ == other_->index_;
+    }
+
+    /// Return string representation of current state.
+    virtual String ToString() const
+    {
+        return "UndoableItemParentState";
+    }
+};
+
+/// Tracks xml parent state. Used for tracking adding and removing xml elements to and from data files.
+class UndoableXMLVariantState : public UndoableState
+{
+public:
+    XMLElement item_;
+    Variant value_;
+
+    /// Construct item from the state and parent
+    UndoableXMLVariantState(const XMLElement& item, const Variant& value) : item_(item), value_(value)
+    {
+    }
+
+    /// Set parent of the item if it is different and return true if operation was carried out.
+    bool Apply() override
+    {
+        if (IsCurrent())
+            return false;
+
+        item_.SetVariant(value_);
+        return true;
+    }
+
+    /// Return true if item parent matches and item is at recorded index.
+    bool IsCurrent() override
+    {
+        return item_.GetVariant() == value_;
+    }
+
+    /// Return true if state of this object matches state of specified object.
+    bool Equals(UndoableState* other) override
+    {
+        auto other_ = dynamic_cast<UndoableXMLVariantState*>(other);
+
+        if (other_ == nullptr)
+            return false;
+
+        return item_ == other_->item_ && value_ == other_->value_;
+    }
+
+    String ToString() const override
+    {
+        return value_.ToString();
+    }
+};
+
+/// Tracks item parent state. Used for tracking adding and removing UIElements.
+class UndoableXMLParentState : public UndoableState
+{
+public:
+    XMLElement item_;
+    XMLElement parent_;
+
+    /// Construct item from the state and parent
+    UndoableXMLParentState(const XMLElement& item, const XMLElement& parent=XMLElement()) : item_(item), parent_(parent)
+    {
+    }
+
+    /// Set parent of the item if it is different and return true if operation was carried out.
+    bool Apply() override
+    {
+        if (IsCurrent())
+            return false;
+
+        if (parent_.NotNull())
+            parent_.AppendChild(item_);
+        else
+            item_.GetParent().RemoveChild(item_);
+
+        return true;
+    }
+
+    /// Return true if item parent matches and item is at recorded index.
+    bool IsCurrent() override
+    {
+        return item_.GetParent().GetNode() == parent_.GetNode();
+    }
+
+    /// Return true if state of this object matches state of specified object.
+    bool Equals(UndoableState* other) override
+    {
+        auto other_ = dynamic_cast<UndoableXMLParentState*>(other);
+
+        if (other_ == nullptr)
+            return false;
+
+        return item_.GetNode() == other_->item_.GetNode() && parent_.GetNode() == other_->parent_.GetNode() /*&& index_ == other_->index_*/;
+    }
+
+    /// Return string representation of current state.
+    virtual String ToString() const
+    {
+        return "UndoableXMLParentState";
     }
 };
 
@@ -220,6 +327,27 @@ public:
         Track(new UndoableItemParentState(item, item->GetParent()));
         // Then it is removed from element tree
         Track(new UndoableItemParentState(item, nullptr));
+    }
+
+    void TrackCreation(const XMLElement& element)
+    {
+        // "Removed" element has empty variant value.
+        Track(new UndoableXMLParentState(element));
+        // When value is set element exists.
+        Track(new UndoableXMLParentState(element, element.GetParent()));
+    }
+
+    void TrackRemoval(const XMLElement& element)
+    {
+        // When value is set element exists.
+        Track(new UndoableXMLParentState(element, element.GetParent()));
+        // "Removed" element has empty variant value.
+        Track(new UndoableXMLParentState(element));
+    }
+
+    void TrackState(const XMLElement& element, const Variant& value)
+    {
+        Track(new UndoableXMLVariantState(element, value));
     }
 
 protected:

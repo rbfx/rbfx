@@ -1226,6 +1226,11 @@ bool FileSystem::CopyDir(const String& directoryIn, const String& directoryOut)
 
 }
 
+String FileSystem::GetTemporaryPath() const
+{
+    return SDL_GetPrefPath("urho3d", "temp");
+}
+
 bool IsAbsoluteParentPath(const String& absParentPath, const String& fullPath)
 {
     if (!IsAbsolutePath(absParentPath) || !IsAbsolutePath(fullPath))

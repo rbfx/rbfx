@@ -32,7 +32,7 @@ macro (define_engine_source_files)
         file (${_action} _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${path}/*.h)
         list (APPEND HEADER_FILES ${_files})
         # Install them
-        install (FILES ${_files} DESTINATION ${DEST_INCLUDE_DIR})
+        install (FILES ${_files} DESTINATION ${DEST_INCLUDE_DIR}/${path})
         # Get source files
         file (${_action} _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${path}/*.cpp)
         list (APPEND SOURCE_FILES ${_files})
@@ -121,46 +121,24 @@ endif ()
 target_include_directories(Urho3D PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # Link dependencies
-target_link_libraries(Urho3D FreeType JO LZ4 PugiXml rapidjson SDL StanHull STB Mustache IconFontCppHeaders)
 
-if (URHO3D_NETWORK)
-    target_link_libraries(Urho3D Civetweb kNet)
-endif ()
+foreach (dep FreeType JO LZ4 PugiXml rapidjson SDL StanHull STB Mustache IconFontCppHeaders Civetweb kNet ik Detour DetourCrowd DetourTileCache Recast Box2D WebP Bullet easy_profiler imgui ImGuizmo LibCpuId GLEW MojoShader tinyfiledialogs)
+    if (TARGET "${dep}")
+        target_link_libraries(Urho3D "${dep}")
+    endif ()
+endforeach()
 
-if (URHO3D_IK)
-    target_link_libraries(Urho3D ik)
-endif ()
-
-if (URHO3D_NAVIGATION)
-    target_link_libraries(Urho3D Detour DetourCrowd DetourTileCache Recast)
-endif ()
-
-if (URHO3D_URHO2D)
-    target_link_libraries(Urho3D Box2D)
-endif ()
-
-if (URHO3D_WEBP)
-    target_link_libraries(Urho3D WebP)
-endif ()
-
-if (URHO3D_PHYSICS)
-    target_link_libraries(Urho3D Bullet)
-endif ()
-
-if (URHO3D_PROFILING)
-    target_link_libraries(Urho3D easy_profiler)
-endif ()
-
-if (URHO3D_SYSTEMUI)
-    target_link_libraries(Urho3D imgui ImGuizmo)
-endif ()
 
 if (URHO3D_SSE AND NOT MSVC)
     target_compile_options (Urho3D PUBLIC -msse -msse2)
 endif ()
 
+if (UNIX)
+    # glibc prevents tasks from switching stacks as a security precaution. Disable that.
+    target_compile_definitions(Urho3D PUBLIC -D_FORTIFY_SOURCE=0)
+endif ()
+
 if (WIN32)
-    target_link_libraries(Urho3D LibCpuId)
     target_link_libraries(Urho3D winmm user32 gdi32 winmm imm32 ole32 oleaut32 version uuid)
     if (URHO3D_MINIDUMPS)
         target_link_libraries (Urho3D dbghelp)
@@ -190,9 +168,6 @@ elseif (URHO3D_BGFX)
     # TODO: link correct libs?
     target_link_libraries(Urho3D bgfx GL)
 elseif (URHO3D_OPENGL)
-    if (NOT ANDROID AND NOT ARM AND NOT WEB)
-        target_link_libraries(Urho3D GLEW)
-    endif ()
     if (APPLE)
         # Do nothing
     elseif (WIN32)
@@ -203,16 +178,11 @@ elseif (URHO3D_OPENGL)
         target_link_libraries (Urho3D GL)
     endif ()
 elseif (URHO3D_D3D9)
-    target_link_libraries(Urho3D MojoShader)
     find_package(DirectX REQUIRED D3D9)
     target_link_libraries (Urho3D ${DIRECT3D_LIBRARIES})
 elseif(URHO3D_D3D11)
     find_package(DirectX REQUIRED D3D11)
     target_link_libraries (Urho3D ${DIRECT3D_LIBRARIES})
-endif ()
-
-if (URHO3D_TOOLS)
-    target_link_libraries (Urho3D tinyfiledialogs)
 endif ()
 
 target_include_directories(Urho3D PUBLIC ${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS})

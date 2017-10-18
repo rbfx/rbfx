@@ -21,29 +21,25 @@
 //
 
 #include "../../Scene/Scene.h"
+#include "../../Graphics/GraphicsEvents.h"
+#include "../../Graphics/AnimatedModel.h"
+#include "../../Graphics/DebugRenderer.h"
 #include "../../IO/Log.h"
-#include <ImGui/imgui.h>
+#include "../SystemUI.h"
 #include <ImGuizmo/ImGuizmo.h>
 #include "Gizmo.h"
 
 namespace Urho3D
 {
 
-/// Flips matrix between row-wise and column-wise.
-static void FlipMatrix(float* matrix)
-{
-    for (auto i = 1; i < 4; i++)
-        Swap(matrix[4 * 0 + i], matrix[4 * i + 0]);
-
-    for (auto i = 2; i < 4; i++)
-        Swap(matrix[4 * 1 + i], matrix[4 * i + 1]);
-
-    Swap(matrix[4 * 2 + 3], matrix[4 * 3 + 2]);
-}
-
 Gizmo::Gizmo(Context* context) : Object(context)
 {
+    SubscribeToEvent(E_ENDRENDERING, [&](StringHash, VariantMap&) { RenderDebugInfo(); });
+}
 
+Gizmo::~Gizmo()
+{
+    UnsubscribeFromAllEvents();
 }
 
 bool Gizmo::Manipulate(const Camera* camera, Node* node)
@@ -63,11 +59,6 @@ bool Gizmo::Manipulate(const Camera* camera, const PODVector<Node*>& nodes)
     if (nodes.Empty())
         return false;
 
-    float view[16];
-    float proj[16];
-    float tran[16];
-    float delta[16];
-
     // Enums are compatible.
     ImGuizmo::OPERATION operation = static_cast<ImGuizmo::OPERATION>(operation_);
     ImGuizmo::MODE mode = ImGuizmo::WORLD;
@@ -80,7 +71,7 @@ bool Gizmo::Manipulate(const Camera* camera, const PODVector<Node*>& nodes)
     // Scaling is always done in local space even for multiselections.
     if (operation_ == GIZMOOP_SCALE)
         mode = ImGuizmo::LOCAL;
-    // Any other operations on multiselections are done in world space.
+        // Any other operations on multiselections are done in world space.
     else if (nodes.Size() > 1)
         mode = ImGuizmo::WORLD;
 
@@ -101,23 +92,19 @@ bool Gizmo::Manipulate(const Camera* camera, const PODVector<Node*>& nodes)
         }
     }
 
-    memcpy(view, camera->GetView().ToMatrix4().Data(), sizeof(view));
-    memcpy(proj, camera->GetProjection().Data(), sizeof(proj));
-    memcpy(tran, currentOrigin_.Data(), sizeof(tran));
-
-    FlipMatrix(view);
-    FlipMatrix(proj);
-    FlipMatrix(tran);
+    Matrix4 view = camera->GetView().ToMatrix4().Transpose();
+    Matrix4 proj = camera->GetProjection().Transpose();
+    Matrix4 tran = currentOrigin_.Transpose();
+    Matrix4 delta;
 
     ImGuiIO& io = ImGui::GetIO();
     ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-    ImGuizmo::Manipulate(view, proj, operation, mode, tran, delta, nullptr);
+    ImGuizmo::Manipulate(&view.m00_, &proj.m00_, operation, mode, &tran.m00_, &delta.m00_, nullptr);
 
     if (IsActive())
     {
-        FlipMatrix(tran);
-        FlipMatrix(delta);
-        Matrix4 dm(delta);
+        tran = tran.Transpose();
+        delta = delta.Transpose();
 
         currentOrigin_ = Matrix4(tran);
 
@@ -134,15 +121,15 @@ bool Gizmo::Manipulate(const Camera* camera, const PODVector<Node*>& nodes)
                 // A workaround for ImGuizmo bug where delta matrix returns absolute scale value.
                 if (!nodeScaleStart_.Contains(node))
                     nodeScaleStart_[node] = node->GetScale();
-                node->SetScale(nodeScaleStart_[node] * dm.Scale());
+                node->SetScale(nodeScaleStart_[node] * delta.Scale());
             }
             else
             {
                 // Delta matrix is always in world-space.
                 if (operation_ == GIZMOOP_ROTATE)
-                    node->RotateAround(currentOrigin_.Translation(), -dm.Rotation(), TS_WORLD);
+                    node->RotateAround(currentOrigin_.Translation(), -delta.Rotation(), TS_WORLD);
                 else
-                    node->Translate(dm.Translation(), TS_WORLD);
+                    node->Translate(delta.Translation(), TS_WORLD);
             }
         }
 
@@ -151,6 +138,84 @@ bool Gizmo::Manipulate(const Camera* camera, const PODVector<Node*>& nodes)
     else if (operation_ == GIZMOOP_SCALE && !nodeScaleStart_.Empty())
         nodeScaleStart_.Clear();
     return false;
+}
+
+bool Gizmo::ManipulateSelection(const Camera* camera)
+{
+    PODVector<Node*> nodes;
+    nodes.Reserve(nodeSelection_.Size());
+    for (auto it = nodeSelection_.Begin(); it != nodeSelection_.End();)
+    {
+        WeakPtr<Node> node = *it;
+        if (node.Expired())
+            it = nodeSelection_.Erase(it);
+        else
+        {
+            nodes.Push(node.Get());
+            ++it;
+        }
+    }
+    return Manipulate(camera, nodes);
+}
+
+void Gizmo::RenderUI()
+{
+    ui::TextUnformatted("Op:");
+    ui::SameLine(60);
+
+    if (ui::RadioButton("Tr", GetOperation() == GIZMOOP_TRANSLATE))
+        SetOperation(GIZMOOP_TRANSLATE);
+    ui::SameLine();
+    if (ui::RadioButton("Rot", GetOperation() == GIZMOOP_ROTATE))
+        SetOperation(GIZMOOP_ROTATE);
+    ui::SameLine();
+    if (ui::RadioButton("Scl", GetOperation() == GIZMOOP_SCALE))
+        SetOperation(GIZMOOP_SCALE);
+
+    ui::TextUnformatted("Space:");
+    ui::SameLine(60);
+    if (ui::RadioButton("World", GetTransformSpace() == TS_WORLD))
+        SetTransformSpace(TS_WORLD);
+    ui::SameLine();
+    if (ui::RadioButton("Local", GetTransformSpace() == TS_LOCAL))
+        SetTransformSpace(TS_LOCAL);
+}
+
+void Gizmo::Select(Node* node)
+{
+    nodeSelection_.Push(WeakPtr<Node>(node));
+}
+
+void Gizmo::Unselect(Node* node)
+{
+    nodeSelection_.Remove(WeakPtr<Node>(node));
+}
+
+void Gizmo::RenderDebugInfo()
+{
+    DebugRenderer* debug = nullptr;
+    for (auto it = nodeSelection_.Begin(); it != nodeSelection_.End();)
+    {
+        WeakPtr<Node> node = *it;
+        if (node.Expired())
+            it = nodeSelection_.Erase(it);
+        else
+        {
+            if (debug == nullptr)
+            {
+                if (auto scene = node->GetScene())
+                    debug = scene->GetComponent<DebugRenderer>();
+            }
+            if (debug != nullptr)
+            {
+                if (auto staticModel = node->GetComponent<StaticModel>())
+                    debug->AddBoundingBox(staticModel->GetWorldBoundingBox(), Color::WHITE);
+                else if (auto animatedModel = node->GetComponent<AnimatedModel>())
+                    debug->AddBoundingBox(animatedModel->GetWorldBoundingBox(), Color::WHITE);
+            }
+            ++it;
+        }
+    }
 }
 
 }

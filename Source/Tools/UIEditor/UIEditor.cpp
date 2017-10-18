@@ -99,6 +99,8 @@ public:
     SDL_Cursor* cursorArrow;
     /// Flag indicating that this selector set cursor handle
     bool ownsCursor_ = false;
+    /// Flag required for sending single "ResizeStart" event, but only when item is being resized (mouse delta is not zero).
+    bool resizeStartSent_ = false;
 
     explicit TransformSelector(Context* context)
         : Object(context)
@@ -203,10 +205,7 @@ public:
         if (ui::IsMouseDown(0))
         {
             if (wasNotMoving)
-            {
                 resizing_ = resizing;
-                SendEvent("ResizeStart");
-            }
         }
 
         IntVector2 d = ToIntVector2(ui::GetIO().MouseDelta);
@@ -215,10 +214,17 @@ public:
             if (!ui::IsMouseDown(0))
             {
                 resizing_ = RESIZE_NONE;
+                resizeStartSent_ = false;
                 SendEvent("ResizeEnd");
             }
             else if (d != IntVector2::ZERO)
             {
+                if (!resizeStartSent_)
+                {
+                    resizeStartSent_ = true;
+                    SendEvent("ResizeStart");
+                }
+
                 if (resizing_ == RESIZE_MOVE)
                 {
                     delta.left_ += d.x_;
@@ -280,7 +286,7 @@ public:
         engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
         engineParameters_[EP_HEADLESS] = false;
         engineParameters_[EP_RESOURCE_PREFIX_PATHS] =
-            ";" + context_->GetFileSystem()->GetProgramDir() + ";" + "../share/Urho3D/Resources";
+            context_->GetFileSystem()->GetProgramDir() + ";;..;../share/Urho3D/Resources";
         engineParameters_[EP_FULL_SCREEN] = false;
         engineParameters_[EP_WINDOW_HEIGHT] = 1080;
         engineParameters_[EP_WINDOW_WIDTH] = 1920;
@@ -310,7 +316,7 @@ public:
         textureRectTransform_ = new TransformSelector(context_);
 
         // Events
-        SubscribeToEvent(E_SYSTEMUIFRAME, std::bind(&UIEditor::RenderSystemUI, this));
+        SubscribeToEvent(E_UPDATE, std::bind(&UIEditor::RenderSystemUI, this));
         SubscribeToEvent(E_DROPFILE, std::bind(&UIEditor::OnFileDrop, this, _2));
         SubscribeToEvent(uiElementTransform_, "ResizeStart", std::bind(&UIEditor::UIElementResizeTrack, this));
         SubscribeToEvent(uiElementTransform_, "ResizeEnd", std::bind(&UIEditor::UIElementResizeTrack, this));
@@ -386,16 +392,26 @@ public:
                         {
                             styleAttribute = styleXml.CreateChild("attribute");
                             styleAttribute.SetAttribute("name", info->name_);
+                            styleAttribute.SetVariantValue(value);
+                            undo_.TrackCreation(styleAttribute);
                         }
-                        styleAttribute.SetVariant(value);
+                        else
+                        {
+                            undo_.TrackState(styleAttribute, styleAttribute.GetVariantValue(info->type_));
+                            styleAttribute.SetVariantValue(value);
+                            undo_.TrackState(styleAttribute, value);
+                        }
                     }
                 }
             }
 
-            if (styleAttribute.NotNull())
+            if (styleAttribute.NotNull() && !styleVariant.IsEmpty())
             {
                 if (ui::MenuItem("Remove from style"))
-                    styleAttribute.GetParent().RemoveChild(styleAttribute);
+                {
+                    undo_.TrackRemoval(styleAttribute);
+                    styleAttribute.Remove();
+                }
             }
 
             if (info->type_ == VAR_INTRECT && dynamic_cast<BorderImage*>(selected) != nullptr)
@@ -420,14 +436,6 @@ public:
             XMLElement styleXml;
             Variant styleVariant;
             GetStyleData(*info, styleXml, styleAttribute, styleVariant);
-
-            if (info->name_ == "Color")
-            {
-                if (styleVariant.IsEmpty())
-                {
-                    int a = 2;
-                }
-            }
 
             if (!styleVariant.IsEmpty())
             {
@@ -852,6 +860,7 @@ public:
                     auto styleFile = xml->GetRoot().GetAttribute("styleFile");
                     if (!styleFile.Empty())
                     {
+                        styleFile = cache->GetResourceFileName(styleFile);
                         if (!currentStyleFilePath_.Empty())
                         {
                             auto styleResourceDir = GetResourcePath(currentStyleFilePath_);
@@ -865,7 +874,9 @@ public:
                     auto child = rootElement_->CreateChild(xml->GetRoot().GetAttribute("type"));
                     if (child->LoadXML(xml->GetRoot()))
                     {
-                        child->SetStyleAuto();
+                        // If style file is not in xml then apply style according to ui types.
+                        if (styleFile.Empty())
+                            child->SetStyleAuto();
 
                         // Must be disabled because it interferes with ui element resizing
                         if (auto window = dynamic_cast<Window*>(child))
@@ -926,10 +937,25 @@ public:
 
     bool SaveFileStyle(const String& file_path)
     {
-        if (file_path.EndsWith(".xml", false) && GetCurrentStyleFile() != nullptr)
+        if (file_path.EndsWith(".xml", false))
         {
+            auto styleFile = GetCurrentStyleFile();
+            if (styleFile == nullptr)
+                return false;
+
             File saveFile(context_, file_path, FILE_WRITE);
-            GetCurrentStyleFile()->Save(saveFile);
+            styleFile->Save(saveFile);
+            saveFile.Close();
+
+            // Remove all attributes with empty value. Empty value is used to "fake" removal, because current xml class
+            // does not allow removing and reinserting xml elements, they must be recreated. Removal has to be done on
+            // reopened and re-read xml file so that it does not break undo functionality of currently edited file.
+            SharedPtr<XMLFile> xml(new XMLFile(context_));
+            xml->LoadFile(file_path);
+            auto result = xml->GetRoot().SelectPrepared(XPathQuery("//attribute[@type=\"None\"]"));
+            for (auto attribute = result.FirstResult(); attribute.NotNull(); attribute.NextResult())
+                attribute.GetParent().RemoveChild(attribute);
+            xml->SaveFile(file_path);
 
             currentStyleFilePath_ = file_path;
             UpdateWindowTitle();
@@ -1048,21 +1074,25 @@ public:
         } while (attribute.IsNull() && !styleName.Empty() && !style.IsNull());
 
 
-        if (!attribute.IsNull())
+        if (!attribute.IsNull() && attribute.GetAttribute("type") != "None")
+            value = GetVariantFromXML(attribute, info);
+    }
+
+    Variant GetVariantFromXML(const XMLElement& attribute, const AttributeInfo& info) const
+    {
+        Variant value = attribute.GetVariantValue(info.enumNames_ ? VAR_STRING : info.type_);
+        if (info.enumNames_)
         {
-            value = attribute.GetVariantValue(info.enumNames_ ? VAR_STRING : info.type_);
-            if (info.enumNames_)
+            for (auto i = 0; info.enumNames_[i]; i++)
             {
-                for (auto i = 0; info.enumNames_[i]; i++)
+                if (value.GetString() == info.enumNames_[i])
                 {
-                    if (value.GetString() == info.enumNames_[i])
-                    {
-                        value = i;
-                        break;
-                    }
+                    value = i;
+                    break;
                 }
             }
         }
+        return value;
     }
 
     XMLFile* GetCurrentStyleFile()

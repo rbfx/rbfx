@@ -352,20 +352,20 @@ public:
     /// Divide by scalar inplace.
     IntRect& operator /=(float value)
     {
-        left_ /= value;
-        top_ /= value;
-        right_ /= value;
-        bottom_ /= value;
+        left_ = static_cast<int>(left_ / value);
+        top_ = static_cast<int>(top_ / value);
+        right_ = static_cast<int>(right_ / value);
+        bottom_ = static_cast<int>(bottom_ / value);
         return *this;
     }
 
     /// Multiply by scalar inplace.
     IntRect& operator *=(float value)
     {
-        left_ *= value;
-        top_ *= value;
-        right_ *= value;
-        bottom_ *= value;
+		left_ = static_cast<int>(left_ * value);
+		top_ = static_cast<int>(top_ * value);
+		right_ = static_cast<int>(right_ * value);
+		bottom_ = static_cast<int>(bottom_ * value);
         return *this;
     }
 
@@ -444,16 +444,16 @@ public:
     IntVector2 Max() const { return {right_, bottom_}; }
 
     /// Return left coordinate.
-    float Left() const { return left_; }
+    int Left() const { return left_; }
 
     /// Return top coordinate.
-    float Top() const { return top_; }
+    int Top() const { return top_; }
 
     /// Return right coordinate.
-    float Right() const { return right_; }
+    int Right() const { return right_; }
 
     /// Return bottom coordinate.
-    float Bottom() const { return bottom_; }
+    int Bottom() const { return bottom_; }
 
     /// Left coordinate.
     int left_;

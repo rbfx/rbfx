@@ -22,19 +22,14 @@
 
 #pragma once
 
-#include "Urho3D/Core/Object.h"
-#include "Urho3D/UI/UIEvents.h"
+#include "../Core/Object.h"
+#include "../UI/UIEvents.h"
 
 
 namespace Urho3D
 {
 
 URHO3D_EVENT(E_CONSOLECLOSED, ConsoleClosed)
-{
-
-}
-
-URHO3D_EVENT(E_SYSTEMUIFRAME, SystemUiFrame)
 {
 
 }

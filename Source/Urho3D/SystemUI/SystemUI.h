@@ -86,7 +86,6 @@ protected:
 
     void ReallocateFontTexture();
     void UpdateProjectionMatrix();
-    void OnPostUpdate(VariantMap& args);
     void OnRenderDrawLists(ImDrawData* data);
     void OnRawEvent(VariantMap& args);
 };

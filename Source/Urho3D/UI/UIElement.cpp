@@ -220,21 +220,24 @@ bool UIElement::LoadXML(const XMLElement& source, bool setInstanceDefault)
 
 bool UIElement::LoadXML(const XMLElement& source, XMLFile* styleFile, bool setInstanceDefault)
 {
-    // Get style file from which style is loaded
+    // If this is a root element get style file from which style is loaded.
+    String defaultStyleFileName = source.GetAttribute("styleFile");
+    if (!defaultStyleFileName.Empty())
+        defaultStyleFileName_ = defaultStyleFileName;
+
     SharedPtr<XMLFile> savedStyleFile(new XMLFile(context_));
     if (styleFile == nullptr)
     {
-        String styleFileName = source.GetAttribute("styleFile");
-        if (!styleFileName.Empty())
+        if (!defaultStyleFileName.Empty())
         {
-            auto cacheFile = GetSubsystem<ResourceCache>()->GetFile(styleFileName);
+            auto cacheFile = GetSubsystem<ResourceCache>()->GetFile(defaultStyleFileName);
             if (cacheFile.NotNull() && savedStyleFile->Load(*cacheFile))
             {
                 styleFile = savedStyleFile.Get();
-                URHO3D_LOGDEBUGF("Style file %s loaded automatically.", styleFileName.CString());
+                URHO3D_LOGDEBUGF("Style file %s loaded automatically.", defaultStyleFileName.CString());
             }
             else
-                URHO3D_LOGWARNINGF("Style file %s could not be loaded, using default style instead.", styleFileName.CString());
+                URHO3D_LOGWARNINGF("Style file %s could not be loaded, using default style instead.", defaultStyleFileName.CString());
         }
     }
 
@@ -378,6 +381,10 @@ bool UIElement::SaveXML(XMLElement& dest) const
         if (!dest.SetAttribute("style", "none"))
             return false;
     }
+
+    // Write style resource name
+    if (!defaultStyleFileName_.Empty())
+        dest.SetString("styleFile", defaultStyleFileName_);
 
     // Write attributes
     if (!Animatable::SaveXML(dest))
