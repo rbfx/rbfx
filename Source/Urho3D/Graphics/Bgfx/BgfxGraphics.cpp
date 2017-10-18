@@ -112,7 +112,10 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
 
 		bgfx::PlatformData pd;
 		pd.ndt          = NULL;
-#if defined(__APPLE__)
+#if defined(WIN32)
+		pd.ndt          = NULL;
+		pd.nwh          = wmi.info.win.window;
+#elif defined(__APPLE__)
 		pd.nwh          = wmi.info.cocoa.window;
 #else
         // Other unixes
@@ -128,6 +131,7 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
 
     bgfx::init(bgfx::RendererType::OpenGL);
     SetMode(width, height);
+	return true;
 }
 
 bool Graphics::SetMode(int width, int height)
