@@ -165,8 +165,11 @@ endif ()
 if (URHO3D_NOOP)
     # Nothing to do
 elseif (URHO3D_BGFX)
-    # TODO: link correct libs?
-    target_link_libraries(Urho3D bgfx GL)
+    if (WIN32)
+        target_link_libraries (Urho3D bgfx opengl32)
+    else ()
+        target_link_libraries (Urho3D bgfx GL)
+    endif ()
 elseif (URHO3D_OPENGL)
     if (APPLE)
         # Do nothing

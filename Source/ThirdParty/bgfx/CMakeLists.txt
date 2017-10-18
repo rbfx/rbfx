@@ -51,6 +51,10 @@ if (TARGET glsl_optimizer)
     target_link_libraries(bgfx glsl_optimizer)
 endif ()
 
+if (WIN32)
+    target_link_libraries(bgfx dbghelp psapi)
+endif ()
+
 target_include_directories(bgfx PUBLIC include
     PRIVATE
     3rdparty
