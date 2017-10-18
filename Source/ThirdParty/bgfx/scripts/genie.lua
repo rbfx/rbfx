@@ -123,8 +123,7 @@ end
 if _OPTIONS["with-profiler"] then
 	defines {
 		"ENTRY_CONFIG_PROFILER=1",
-		"BGFX_CONFIG_PROFILER_REMOTERY=1",
-        "_WINSOCKAPI_"
+		"BGFX_CONFIG_PROFILER=1",
 	}
 end
 
@@ -481,6 +480,7 @@ or _OPTIONS["with-combined-examples"] then
 		, "33-pom"
 		, "34-mvs"
 		, "35-dynamic"
+		, "36-sky"
 		)
 
 	-- C99 source doesn't compile under WinRT settings
