@@ -31,20 +31,20 @@
 namespace Urho3D
 {
 
-	void ConstantBuffer::OnDeviceReset()
-	{
-	}
+    void ConstantBuffer::OnDeviceReset()
+    {
+    }
 
-	void ConstantBuffer::Release()
-	{
-	}
+    void ConstantBuffer::Release()
+    {
+    }
 
-	bool ConstantBuffer::SetSize(unsigned size)
-	{
-		return true;
-	}
+    bool ConstantBuffer::SetSize(unsigned size)
+    {
+        return true;
+    }
 
-	void ConstantBuffer::Apply()
-	{
-	}
+    void ConstantBuffer::Apply()
+    {
+    }
 }

@@ -35,32 +35,32 @@
 namespace Urho3D
 {
 
-	void Texture::SetSRGB(bool enable)
-	{
-	}
+    void Texture::SetSRGB(bool enable)
+    {
+    }
 
-	void Texture::UpdateParameters()
-	{
-		// No-op on Direct3D9, handled by Graphics instead by modifying the sampler settings as necessary
-	}
+    void Texture::UpdateParameters()
+    {
+        // No-op on Direct3D9, handled by Graphics instead by modifying the sampler settings as necessary
+    }
 
-	bool Texture::GetParametersDirty() const
-	{
-		return false;
-	}
+    bool Texture::GetParametersDirty() const
+    {
+        return false;
+    }
 
-	bool Texture::IsCompressed() const
-	{
-		return false;
-	}
+    bool Texture::IsCompressed() const
+    {
+        return false;
+    }
 
-	unsigned Texture::GetRowDataSize(int width) const
-	{
-		return 0;
-	}
+    unsigned Texture::GetRowDataSize(int width) const
+    {
+        return 0;
+    }
 
-	void Texture::RegenerateLevels()
-	{
-	}
+    void Texture::RegenerateLevels()
+    {
+    }
 
 }

@@ -429,7 +429,8 @@ void ImGui::ShowTestWindow(bool* p_open)
                     else
                     {
                         // Leaf: The only reason we have a TreeNode at all is to allow selection of the leaf. Otherwise we can use BulletText() or TreeAdvanceToLabelPos()+Text().
-                        ImGui::TreeNodeEx((void*)(intptr_t)i, node_flags | ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen, "Selectable Leaf %d", i);
+                        node_flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen; // ImGuiTreeNodeFlags_Bullet
+                        ImGui::TreeNodeEx((void*)(intptr_t)i, node_flags, "Selectable Leaf %d", i);
                         if (ImGui::IsItemClicked()) 
                             node_clicked = i;
                     }
@@ -1053,7 +1054,7 @@ void ImGui::ShowTestWindow(bool* p_open)
             ImGui::TextColored(ImVec4(1,1,0,1), "Sailor");
 
             // Button
-            ImGui::AlignFirstTextHeightToWidgets();
+            ImGui::AlignTextToFramePadding();
             ImGui::Text("Normal buttons"); ImGui::SameLine();
             ImGui::Button("Banana"); ImGui::SameLine();
             ImGui::Button("Apple"); ImGui::SameLine();
@@ -1179,7 +1180,7 @@ void ImGui::ShowTestWindow(bool* p_open)
             ImGui::Text("TEST"); ImGui::SameLine();
             ImGui::SmallButton("TEST##2");
 
-            ImGui::AlignFirstTextHeightToWidgets(); // If your line starts with text, call this to align it to upcoming widgets.
+            ImGui::AlignTextToFramePadding(); // If your line starts with text, call this to align it to upcoming widgets.
             ImGui::Text("Text aligned to Widget"); ImGui::SameLine();
             ImGui::Button("Widget##1"); ImGui::SameLine();
             ImGui::Text("Widget"); ImGui::SameLine();
@@ -1192,7 +1193,7 @@ void ImGui::ShowTestWindow(bool* p_open)
             ImGui::SameLine(0.0f, spacing);
             if (ImGui::TreeNode("Node##1")) { for (int i = 0; i < 6; i++) ImGui::BulletText("Item %d..", i); ImGui::TreePop(); }    // Dummy tree data
 
-            ImGui::AlignFirstTextHeightToWidgets();         // Vertically align text node a bit lower so it'll be vertically centered with upcoming widget. Otherwise you can use SmallButton (smaller fit).
+            ImGui::AlignTextToFramePadding();         // Vertically align text node a bit lower so it'll be vertically centered with upcoming widget. Otherwise you can use SmallButton (smaller fit).
             bool node_open = ImGui::TreeNode("Node##2");  // Common mistake to avoid: if we want to SameLine after TreeNode we need to do it before we add child content.
             ImGui::SameLine(0.0f, spacing); ImGui::Button("Button##2");
             if (node_open) { for (int i = 0; i < 6; i++) ImGui::BulletText("Item %d..", i); ImGui::TreePop(); }   // Dummy tree data
@@ -1202,7 +1203,7 @@ void ImGui::ShowTestWindow(bool* p_open)
             ImGui::SameLine(0.0f, spacing);
             ImGui::BulletText("Bullet text");
 
-            ImGui::AlignFirstTextHeightToWidgets();
+            ImGui::AlignTextToFramePadding();
             ImGui::BulletText("Node");
             ImGui::SameLine(0.0f, spacing); ImGui::Button("Button##4");
 
@@ -1401,6 +1402,11 @@ void ImGui::ShowTestWindow(bool* p_open)
 
         if (ImGui::TreeNode("Context menus"))
         {
+            // BeginPopupContextItem() is a helper to provide common/simple popup behavior of essentially doing:
+            //    if (IsItemHovered() && IsMouseClicked(0))
+            //       OpenPopup(id);
+            //    return BeginPopup(id);
+            // For more advanced uses you may want to replicate and cuztomize this code. This the comments inside BeginPopupContextItem() implementation.
             static float value = 0.5f;
             ImGui::Text("Value = %.3f (<-- right-click here)", value);
             if (ImGui::BeginPopupContextItem("item context menu"))
@@ -1412,9 +1418,9 @@ void ImGui::ShowTestWindow(bool* p_open)
             }
 
             static char name[32] = "Label1";
-            char buf[64]; sprintf(buf, "Button: %s###Button", name); // ### operator override ID ignoring the preceeding label
+            char buf[64]; sprintf(buf, "Button: %s###Button", name); // ### operator override ID ignoring the preceding label
             ImGui::Button(buf);
-            if (ImGui::BeginPopupContextItem("rename context menu"))
+            if (ImGui::BeginPopupContextItem()) // When used after an item that has an ID (here the Button), we can skip providing an ID to BeginPopupContextItem().
             {
                 ImGui::Text("Edit name:");
                 ImGui::InputText("##edit", name, IM_ARRAYSIZE(name));
@@ -2124,7 +2130,7 @@ static void ShowExampleAppFixedOverlay(bool* p_open)
     ImVec2 window_pos = ImVec2((corner & 1) ? ImGui::GetIO().DisplaySize.x - DISTANCE : DISTANCE, (corner & 2) ? ImGui::GetIO().DisplaySize.y - DISTANCE : DISTANCE);
     ImVec2 window_pos_pivot = ImVec2((corner & 1) ? 1.0f : 0.0f, (corner & 2) ? 1.0f : 0.0f);
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.3f));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.3f)); // Transparent background
     if (ImGui::Begin("Example: Fixed Overlay", p_open, ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_AlwaysAutoResize|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoSavedSettings))
     {
         ImGui::Text("Simple overlay\nin the corner of the screen.\n(right-click to change position)");
@@ -2711,10 +2717,10 @@ static void ShowExampleAppPropertyEditor(bool* p_open)
         static void ShowDummyObject(const char* prefix, int uid)
         {
             ImGui::PushID(uid);                      // Use object uid as identifier. Most commonly you could also use the object pointer as a base ID.
-            ImGui::AlignFirstTextHeightToWidgets();  // Text and Tree nodes are less high than regular widgets, here we add vertical spacing to make the tree lines equal high.
+            ImGui::AlignTextToFramePadding();  // Text and Tree nodes are less high than regular widgets, here we add vertical spacing to make the tree lines equal high.
             bool node_open = ImGui::TreeNode("Object", "%s_%u", prefix, uid);
             ImGui::NextColumn();
-            ImGui::AlignFirstTextHeightToWidgets();
+            ImGui::AlignTextToFramePadding();
             ImGui::Text("my sailor is rich");
             ImGui::NextColumn();
             if (node_open)
@@ -2729,7 +2735,7 @@ static void ShowExampleAppPropertyEditor(bool* p_open)
                     }
                     else
                     {
-                        ImGui::AlignFirstTextHeightToWidgets();
+                        ImGui::AlignTextToFramePadding();
                         // Here we use a Selectable (instead of Text) to highlight on hover
                         //ImGui::Text("Field_%d", i);
                         char label[32];

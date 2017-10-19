@@ -656,6 +656,11 @@ template <> Renderer* Object::GetSubsystem<Renderer>() const
     return context_->renderer_;
 }
 
+template <> Tasks* Object::GetSubsystem<Tasks>() const
+{
+    return context_->tasks_;
+}
+
 Engine* Object::GetEngine() const
 {
     return context_->engine_;
@@ -728,6 +733,11 @@ Graphics* Object::GetGraphics() const
 Renderer* Object::GetRenderer() const
 {
     return context_->renderer_;
+}
+
+Tasks* Object::GetTasks() const
+{
+    return context_->tasks_;
 }
 
 }

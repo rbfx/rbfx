@@ -32,74 +32,74 @@
 namespace Urho3D
 {
 
-	void VertexBuffer::OnDeviceLost()
-	{
+    void VertexBuffer::OnDeviceLost()
+    {
 
-	}
+    }
 
-	void VertexBuffer::OnDeviceReset()
-	{
+    void VertexBuffer::OnDeviceReset()
+    {
 
-	}
+    }
 
-	void VertexBuffer::Release()
-	{
-		if (object_.ptr_ != nullptr)
-		{
-			delete[] object_.ptr_;
-			object_.ptr_ = nullptr;
-		}
-	}
+    void VertexBuffer::Release()
+    {
+        if (object_.ptr_ != nullptr)
+        {
+            delete[] object_.ptr_;
+            object_.ptr_ = nullptr;
+        }
+    }
 
-	bool VertexBuffer::SetData(const void* data)
-	{
-		//memcpy(object_.ptr_, data, count);
-		return false;
-	}
+    bool VertexBuffer::SetData(const void* data)
+    {
+        //memcpy(object_.ptr_, data, count);
+        return false;
+    }
 
-	bool VertexBuffer::SetDataRange(const void* data, unsigned start, unsigned count, bool discard)
-	{
-		memcpy(&((char*)object_.ptr_)[start], data, count);
-		return true;
-	}
+    bool VertexBuffer::SetDataRange(const void* data, unsigned start, unsigned count, bool discard)
+    {
+        memcpy(&((char*)object_.ptr_)[start], data, count);
+        return true;
+    }
 
-	void* VertexBuffer::Lock(unsigned start, unsigned count, bool discard)
-	{
-		return &((char*)object_.ptr_)[start];
-	}
+    void* VertexBuffer::Lock(unsigned start, unsigned count, bool discard)
+    {
+        return &((char*)object_.ptr_)[start];
+    }
 
-	void VertexBuffer::Unlock()
-	{
-		
-	}
+    void VertexBuffer::Unlock()
+    {
 
-	bool VertexBuffer::Create()
-	{
-		Release();
+    }
 
-		if (!vertexCount_ || elements_.Empty())
-			return true;
+    bool VertexBuffer::Create()
+    {
+        Release();
 
-		if (graphics_)
-		{
-			size_t memSize = vertexCount_ * vertexSize_;
-			object_.ptr_ = new char[memSize];
-		}
-		return true;
-	}
+        if (!vertexCount_ || elements_.Empty())
+            return true;
 
-	bool VertexBuffer::UpdateToGPU()
-	{
-		return true;
-	}
+        if (graphics_)
+        {
+            size_t memSize = vertexCount_ * vertexSize_;
+            object_.ptr_ = new char[memSize];
+        }
+        return true;
+    }
 
-	void* VertexBuffer::MapBuffer(unsigned start, unsigned count, bool discard)
-	{
-		return &((char*)object_.ptr_)[start];
-	}
+    bool VertexBuffer::UpdateToGPU()
+    {
+        return true;
+    }
 
-	void VertexBuffer::UnmapBuffer()
-	{
-	}
+    void* VertexBuffer::MapBuffer(unsigned start, unsigned count, bool discard)
+    {
+        return &((char*)object_.ptr_)[start];
+    }
+
+    void VertexBuffer::UnmapBuffer()
+    {
+    }
 
 }

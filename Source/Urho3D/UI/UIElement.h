@@ -791,6 +791,8 @@ private:
     SharedPtr<XMLFile> defaultStyle_;
     /// Last applied style file.
     WeakPtr<XMLFile> appliedStyleFile_;
+    /// Style resource name which is loaded by default.
+    String defaultStyleFileName_;
     /// Traversal mode for rendering.
     TraversalMode traversalMode_;
     /// Flag whether node should send child added / removed events by itself.

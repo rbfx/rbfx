@@ -22,7 +22,6 @@ void showExampleDialog(entry::AppI* _app, const char* _errorText)
 	ImGui::Begin(temp
 		, NULL
 		, ImVec2(256.0f, 200.0f)
-		, ImGuiWindowFlags_AlwaysAutoResize
 		);
 
 	ImGui::TextWrapped("%s", _app->getDescription() );

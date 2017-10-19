@@ -3758,7 +3758,7 @@ VK_DESTROY
 // 			uint8_t restartState = 0;
 			viewState.m_rect = _render->m_rect[0];
 
-			int32_t numItems = _render->m_num;
+			int32_t numItems = _render->m_numRenderItems;
 			for (int32_t item = 0, restartItem = numItems; item < numItems || restartItem < numItems;)
 			{
 				const uint64_t encodedKey = _render->m_sortKeys[item];
@@ -3958,10 +3958,10 @@ BX_UNUSED(currentSamplerStateIdx);
 //					}
 
 					bool constantsChanged = false;
-					if (compute.m_constBegin < compute.m_constEnd
+					if (compute.m_uniformBegin < compute.m_uniformEnd
 					||  currentProgramIdx != key.m_program)
 					{
-						rendererUpdateUniforms(this, _render->m_uniformBuffer, compute.m_constBegin, compute.m_constEnd);
+						rendererUpdateUniforms(this, _render->m_uniformBuffer, compute.m_uniformBegin, compute.m_uniformEnd);
 
 						currentProgramIdx = key.m_program;
 						ProgramVK& program = m_program[currentProgramIdx];
@@ -4073,7 +4073,7 @@ BX_UNUSED(currentSamplerStateIdx);
 					primIndex = uint8_t(pt>>BGFX_STATE_PT_SHIFT);
 				}
 
-				rendererUpdateUniforms(this, _render->m_uniformBuffer, draw.m_constBegin, draw.m_constEnd);
+				rendererUpdateUniforms(this, _render->m_uniformBuffer, draw.m_uniformBegin, draw.m_uniformEnd);
 
 				if (isValid(draw.m_stream[0].m_handle) )
 				{
@@ -4222,7 +4222,7 @@ BX_UNUSED(currentSamplerStateIdx);
 						{
 							restoreScissor = true;
 							Rect scissorRect;
-							scissorRect.setIntersect(viewScissorRect,_render->m_rectCache.m_cache[scissor]);
+							scissorRect.setIntersect(viewScissorRect, _render->m_frameCache.m_rectCache.m_cache[scissor]);
 							if (scissorRect.isZeroArea() )
 							{
 								continue;
@@ -4244,7 +4244,7 @@ BX_UNUSED(currentSamplerStateIdx);
 					}
 
 					bool constantsChanged = false;
-					if (draw.m_constBegin < draw.m_constEnd
+					if (draw.m_uniformBegin < draw.m_uniformEnd
 					||  currentProgramIdx != key.m_program
 					||  BGFX_STATE_ALPHA_REF_MASK & changedFlags)
 					{
@@ -4495,7 +4495,7 @@ BX_UNUSED(presentMin, presentMax);
 
 				double elapsedCpuMs = double(frameTime)*toMs;
 				tvm.printf(10, pos++, 0x8e, "   Submitted: %5d (draw %5d, compute %4d) / CPU %7.4f [ms] "
-					, _render->m_num
+					, _render->m_numRenderItems
 					, statsKeyType[0]
 					, statsKeyType[1]
 					, elapsedCpuMs

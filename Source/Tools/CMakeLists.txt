@@ -23,8 +23,16 @@
 # Urho3D tools
 set (CMAKE_INSTALL_RPATH "../lib${LIB_SUFFIX}")
 add_subdirectory (AssetImporter)
+add_subdirectory (AssetViewer)
 add_subdirectory (OgreImporter)
 add_subdirectory (PackageTool)
 add_subdirectory (RampGenerator)
 add_subdirectory (SpritePacker)
 add_subdirectory (UIEditor)
+
+file(GLOB tool_dirs RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
+foreach (tool ${tool_dirs})
+    if (TARGET ${tool})
+        set_target_properties(${tool} PROPERTIES FOLDER Tools)
+    endif ()
+endforeach ()

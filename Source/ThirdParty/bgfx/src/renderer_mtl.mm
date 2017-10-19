@@ -3271,7 +3271,7 @@ namespace bgfx { namespace mtl
 			uint8_t restartState = 0;
 			viewState.m_rect = _render->m_rect[0];
 
-			int32_t numItems = _render->m_num;
+			int32_t numItems = _render->m_numRenderItems;
 			for (int32_t item = 0, restartItem = numItems; item < numItems || restartItem < numItems;)
 			{
 				const uint64_t encodedKey = _render->m_sortKeys[item];
@@ -3576,7 +3576,7 @@ namespace bgfx { namespace mtl
 					else
 					{
 						Rect scissorRect;
-						scissorRect.setIntersect(viewScissorRect, _render->m_rectCache.m_cache[scissor]);
+						scissorRect.setIntersect(viewScissorRect, _render->m_frameCache.m_rectCache.m_cache[scissor]);
 
 						if (scissorRect.isZeroArea() )
 						{
@@ -3639,8 +3639,8 @@ namespace bgfx { namespace mtl
 				}
 
 				bool programChanged = false;
-				bool constantsChanged = draw.m_constBegin < draw.m_constEnd;
-				rendererUpdateUniforms(this, _render->m_uniformBuffer, draw.m_constBegin, draw.m_constEnd);
+				bool constantsChanged = draw.m_uniformBegin < draw.m_uniformEnd;
+				rendererUpdateUniforms(this, _render->m_uniformBuffer, draw.m_uniformBegin, draw.m_uniformEnd);
 
 				if (key.m_program != programIdx
 				|| (BGFX_STATE_BLEND_MASK|BGFX_STATE_BLEND_EQUATION_MASK|BGFX_STATE_ALPHA_WRITE|BGFX_STATE_RGB_WRITE|BGFX_STATE_BLEND_INDEPENDENT|BGFX_STATE_MSAA|BGFX_STATE_BLEND_ALPHA_TO_COVERAGE) & changedFlags
@@ -3879,7 +3879,7 @@ namespace bgfx { namespace mtl
 
 			submitBlit(bs, BGFX_CONFIG_MAX_VIEWS);
 
-			if (0 < _render->m_num)
+			if (0 < _render->m_numRenderItems)
 			{
 				captureElapsed = -bx::getHPCounter();
 				capture();
@@ -3890,7 +3890,7 @@ namespace bgfx { namespace mtl
 
 		if (BX_ENABLED(BGFX_CONFIG_DEBUG_MTL) )
 		{
-			if (0 < _render->m_num)
+			if (0 < _render->m_numRenderItems)
 			{
 				rce.popDebugGroup();
 			}
@@ -3973,7 +3973,7 @@ namespace bgfx { namespace mtl
 
 				double elapsedCpuMs = double(frameTime)*toMs;
 				tvm.printf(10, pos++, 0x8e, "    Submitted: %4d (draw %4d, compute %4d) / CPU %3.4f [ms] %c GPU %3.4f [ms] (latency %d)"
-						, _render->m_num
+						, _render->m_numRenderItems
 						, statsKeyType[0]
 						, statsKeyType[1]
 						, elapsedCpuMs

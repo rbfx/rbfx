@@ -63,7 +63,7 @@ DebugHud::DebugHud(Context* context) :
     fps_(0)
 {
     SetExtents();
-    SubscribeToEvent(E_SYSTEMUIFRAME, std::bind(&DebugHud::RenderUi, this, std::placeholders::_2));
+    SubscribeToEvent(E_UPDATE, std::bind(&DebugHud::RenderUi, this, std::placeholders::_2));
 }
 
 DebugHud::~DebugHud()

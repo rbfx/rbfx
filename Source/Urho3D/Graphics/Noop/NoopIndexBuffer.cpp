@@ -33,67 +33,67 @@
 namespace Urho3D
 {
 
-	void IndexBuffer::OnDeviceLost()
-	{
-	}
+    void IndexBuffer::OnDeviceLost()
+    {
+    }
 
-	void IndexBuffer::OnDeviceReset()
-	{
-	}
+    void IndexBuffer::OnDeviceReset()
+    {
+    }
 
-	void IndexBuffer::Release()
-	{
-	}
+    void IndexBuffer::Release()
+    {
+    }
 
-	bool IndexBuffer::SetData(const void* data)
-	{
-		return true;
-	}
+    bool IndexBuffer::SetData(const void* data)
+    {
+        return true;
+    }
 
-	bool IndexBuffer::SetDataRange(const void* data, unsigned start, unsigned count, bool discard)
-	{
-		memcpy(&((char*)object_.ptr_)[start], data, count);
-		return true;
-	}
+    bool IndexBuffer::SetDataRange(const void* data, unsigned start, unsigned count, bool discard)
+    {
+        memcpy(&((char*)object_.ptr_)[start], data, count);
+        return true;
+    }
 
-	void* IndexBuffer::Lock(unsigned start, unsigned count, bool discard)
-	{
-		return &((char*)object_.ptr_)[start];
-	}
+    void* IndexBuffer::Lock(unsigned start, unsigned count, bool discard)
+    {
+        return &((char*)object_.ptr_)[start];
+    }
 
-	void IndexBuffer::Unlock()
-	{
-		
-	}
+    void IndexBuffer::Unlock()
+    {
 
-	bool IndexBuffer::Create()
-	{
-		Release();
+    }
 
-		if (!indexCount_)
-			return true;
+    bool IndexBuffer::Create()
+    {
+        Release();
 
-		if (graphics_)
-		{
-			size_t memSize = indexCount_ * indexSize_;
-			object_.ptr_ = new char[memSize];
-		}
-		return true;
-	}
+        if (!indexCount_)
+            return true;
 
-	bool IndexBuffer::UpdateToGPU()
-	{
-		return true;
-	}
+        if (graphics_)
+        {
+            size_t memSize = indexCount_ * indexSize_;
+            object_.ptr_ = new char[memSize];
+        }
+        return true;
+    }
 
-	void* IndexBuffer::MapBuffer(unsigned start, unsigned count, bool discard)
-	{
-		return &((char*)object_.ptr_)[start];
-	}
+    bool IndexBuffer::UpdateToGPU()
+    {
+        return true;
+    }
 
-	void IndexBuffer::UnmapBuffer()
-	{
+    void* IndexBuffer::MapBuffer(unsigned start, unsigned count, bool discard)
+    {
+        return &((char*)object_.ptr_)[start];
+    }
 
-	}
+    void IndexBuffer::UnmapBuffer()
+    {
+
+    }
 
 }

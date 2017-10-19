@@ -39,36 +39,36 @@
 namespace Urho3D
 {
 
-	void Texture3D::OnDeviceLost()
-	{
-	}
+    void Texture3D::OnDeviceLost()
+    {
+    }
 
-	void Texture3D::OnDeviceReset()
-	{
-	}
+    void Texture3D::OnDeviceReset()
+    {
+    }
 
-	void Texture3D::Release()
-	{
-	}
+    void Texture3D::Release()
+    {
+    }
 
-	bool Texture3D::SetData(unsigned level, int x, int y, int z, int width, int height, int depth, const void* data)
-	{
-		return true;
-	}
+    bool Texture3D::SetData(unsigned level, int x, int y, int z, int width, int height, int depth, const void* data)
+    {
+        return true;
+    }
 
-	bool Texture3D::SetData(Image* image, bool useAlpha)
-	{
-		return true;
-	}
+    bool Texture3D::SetData(Image* image, bool useAlpha)
+    {
+        return true;
+    }
 
-	bool Texture3D::GetData(unsigned level, void* dest) const
-	{
-		return true;
-	}
+    bool Texture3D::GetData(unsigned level, void* dest) const
+    {
+        return true;
+    }
 
-	bool Texture3D::Create()
-	{
-		return true;
-	}
+    bool Texture3D::Create()
+    {
+        return true;
+    }
 
 }

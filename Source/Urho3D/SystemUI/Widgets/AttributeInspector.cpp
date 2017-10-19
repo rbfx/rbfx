@@ -22,6 +22,7 @@
 
 #include "../../SystemUI/SystemUI.h"
 #include "../../Core/StringUtils.h"
+#include "../../Core/CoreEvents.h"
 #include "../../Scene/Serializable.h"
 #include "../../Resource/ResourceCache.h"
 #include "../../IO/FileSystem.h"
@@ -440,9 +441,9 @@ AttributeInspectorWindow::AttributeInspectorWindow(Context* context) : Attribute
 void AttributeInspectorWindow::SetEnabled(bool enabled)
 {
     if (enabled && !IsEnabled())
-        SubscribeToEvent(E_SYSTEMUIFRAME, std::bind(&AttributeInspectorWindow::RenderUi, this));
+        SubscribeToEvent(E_UPDATE, std::bind(&AttributeInspectorWindow::RenderUi, this));
     else if (!enabled && IsEnabled())
-        UnsubscribeFromEvent(E_SYSTEMUIFRAME);
+        UnsubscribeFromEvent(E_UPDATE);
 }
 
 void AttributeInspectorWindow::SetSerializable(Serializable* item)
@@ -465,7 +466,7 @@ void AttributeInspectorWindow::RenderUi()
 
 bool AttributeInspectorWindow::IsEnabled() const
 {
-    return HasSubscribedToEvent(E_SYSTEMUIFRAME);
+    return HasSubscribedToEvent(E_UPDATE);
 }
 
 }

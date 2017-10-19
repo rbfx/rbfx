@@ -38,6 +38,8 @@ static const char* s_directionName[] =
 static const char* s_easeFuncName[] =
 {
 	"Linear",
+	"Step",
+	"SmoothStep",
 	"InQuad",
 	"OutQuad",
 	"InOutQuad",
@@ -279,6 +281,7 @@ public:
 		{
 			m_emitter[ii].create();
 			m_emitter[ii].m_uniforms.m_handle = sprite;
+			m_emitter[ii].update();
 		}
 
 		imguiCreate();

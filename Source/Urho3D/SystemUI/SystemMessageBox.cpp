@@ -21,9 +21,10 @@
 // THE SOFTWARE.
 //
 
-#include "Urho3D/Core/Context.h"
-#include "Urho3D/Graphics/Graphics.h"
-#include "Urho3D/IO/Log.h"
+#include "../Core/Context.h"
+#include "../Core/CoreEvents.h"
+#include "../Graphics/Graphics.h"
+#include "../IO/Log.h"
 #include "SystemUIEvents.h"
 #include "SystemUI.h"
 #include "SystemMessageBox.h"
@@ -41,7 +42,7 @@ SystemMessageBox::SystemMessageBox(Context* context, const String& messageString
     Graphics* graphics = GetSubsystem<Graphics>();
     windowSize_ = ImVec2(300, 150);
     windowPosition_ = ImVec2(graphics->GetWidth() / 2 - windowSize_.x / 2, graphics->GetHeight() / 2 - windowSize_.y / 2);
-    SubscribeToEvent(E_SYSTEMUIFRAME, URHO3D_HANDLER(SystemMessageBox, RenderFrame));
+    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(SystemMessageBox, RenderFrame));
 }
 
 SystemMessageBox::~SystemMessageBox()

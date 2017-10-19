@@ -22,8 +22,11 @@
 
 set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOLEAN "" FORCE)
 set(SKIP_GLSLANG_INSTALL ON CACHE BOOLEAN "" FORCE)
-add_subdirectory(3rdparty/glslang)
-add_subdirectory(3rdparty/glsl-optimizer)
+
+if (NOT WIN32)
+    add_subdirectory(3rdparty/glslang)
+    add_subdirectory(3rdparty/glsl-optimizer)
+endif ()
 
 file (GLOB_RECURSE SOURCE_FILES
     src/*.cpp
@@ -38,7 +41,20 @@ file (GLOB_RECURSE SOURCE_FILES
 )
 list (REMOVE_ITEM SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/amalgamated.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/amalgamated.mm)
 add_library(bgfx STATIC ${SOURCE_FILES})
-target_link_libraries(bgfx bimg glslang glsl_optimizer)
+target_link_libraries(bgfx bimg)
+
+if (TARGET glslang)
+    target_link_libraries(bgfx glslang)
+endif ()
+
+if (TARGET glsl_optimizer)
+    target_link_libraries(bgfx glsl_optimizer)
+endif ()
+
+if (WIN32)
+    target_link_libraries(bgfx dbghelp psapi)
+endif ()
+
 target_include_directories(bgfx PUBLIC include
     PRIVATE
     3rdparty

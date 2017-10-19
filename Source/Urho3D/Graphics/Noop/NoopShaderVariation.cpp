@@ -36,49 +36,49 @@
 namespace Urho3D
 {
 
-	void CopyStrippedCode(PODVector<unsigned char>& byteCode, unsigned char* bufData, unsigned bufSize)
-	{
-		
-	}
+    void CopyStrippedCode(PODVector<unsigned char>& byteCode, unsigned char* bufData, unsigned bufSize)
+    {
 
-	void ShaderVariation::OnDeviceLost()
-	{
-		// No-op on Direct3D9, shaders are preserved through a device loss & reset
-	}
+    }
 
-	bool ShaderVariation::Create()
-	{
-		return true;
-	}
+    void ShaderVariation::OnDeviceLost()
+    {
+        // No-op on Direct3D9, shaders are preserved through a device loss & reset
+    }
 
-	void ShaderVariation::Release()
-	{
-		
-	}
+    bool ShaderVariation::Create()
+    {
+        return true;
+    }
 
-	void ShaderVariation::SetDefines(const String& defines)
-	{
-		defines_ = defines;
-	}
+    void ShaderVariation::Release()
+    {
 
-	bool ShaderVariation::LoadByteCode(const String& binaryShaderName)
-	{
-		return true;
-	}
+    }
 
-	bool ShaderVariation::Compile()
-	{
-		return true;
-	}
+    void ShaderVariation::SetDefines(const String& defines)
+    {
+        defines_ = defines;
+    }
 
-	void ShaderVariation::ParseParameters(unsigned char* bufData, unsigned bufSize)
-	{
-		
-	}
+    bool ShaderVariation::LoadByteCode(const String& binaryShaderName)
+    {
+        return true;
+    }
 
-	void ShaderVariation::SaveByteCode(const String& binaryShaderName)
-	{
-		
-	}
+    bool ShaderVariation::Compile()
+    {
+        return true;
+    }
+
+    void ShaderVariation::ParseParameters(unsigned char* bufData, unsigned bufSize)
+    {
+
+    }
+
+    void ShaderVariation::SaveByteCode(const String& binaryShaderName)
+    {
+
+    }
 
 }

@@ -1059,7 +1059,7 @@ namespace bgfx { namespace gl
 			while (pos < end)
 			{
 				uint32_t len;
-				const char* space = bx::strFind(pos, INT32_MAX, ' ');
+				const char* space = bx::strFind(pos, ' ');
 				if (NULL != space)
 				{
 					len = bx::uint32_min(sizeof(name), (uint32_t)(space - pos) );
@@ -1862,7 +1862,7 @@ namespace bgfx { namespace gl
 
 			if (BX_ENABLED(BGFX_CONFIG_RENDERER_OPENGLES >= 31)
 			&&  0    == bx::strCmp(m_vendor, "Imagination Technologies")
-			&&  NULL != bx::strFind(m_version, INT32_MAX, "(SDK 3.5@3510720)") )
+			&&  NULL != bx::strFind(m_version, "(SDK 3.5@3510720)") )
 			{
 				// Skip initializing extensions that are broken in emulator.
 				s_extension[Extension::ARB_program_interface_query     ].m_initialize =
@@ -1871,7 +1871,7 @@ namespace bgfx { namespace gl
 
 			if (BX_ENABLED(BGFX_CONFIG_RENDERER_OPENGLES)
 			&&  0    == bx::strCmp(m_vendor, "Imagination Technologies")
-			&&  NULL != bx::strFind(m_version, INT32_MAX, "1.8@905891") )
+			&&  NULL != bx::strFind(m_version, "1.8@905891") )
 			{
 				m_workaround.m_detachShader = false;
 			}
@@ -1889,7 +1889,7 @@ namespace bgfx { namespace gl
 					while (pos < end)
 					{
 						uint32_t len;
-						const char* space = bx::strFind(pos, INT32_MAX, ' ');
+						const char* space = bx::strFind(pos, ' ');
 						if (NULL != space)
 						{
 							len = bx::uint32_min(sizeof(name), (uint32_t)(space - pos) );
@@ -4587,13 +4587,13 @@ namespace bgfx { namespace gl
 			num = bx::uint32_max(num, 1);
 
 			int offset = 0;
-			char* array = const_cast<char*>(bx::strFind(name, INT32_MAX, '[') );
+			char* array = const_cast<char*>(bx::strFind(name, '[') );
 			if (NULL != array)
 			{
 				BX_TRACE("--- %s", name);
 				*array = '\0';
 				array++;
-				char* end = const_cast<char*>(bx::strFind(array, INT32_MAX, ']') );
+				char* end = const_cast<char*>(bx::strFind(array, ']') );
 				if (NULL != end)
 				{ // Some devices (Amazon Fire) might not return terminating brace.
 					*end = '\0';
@@ -5754,10 +5754,10 @@ namespace bgfx { namespace gl
 
 					if (insertFragDepth)
 					{
-						const char* entry = bx::strFind(temp, INT32_MAX, "void main ()");
+						const char* entry = bx::strFind(temp, "void main ()");
 						if (NULL != entry)
 						{
-							char* brace = const_cast<char*>(bx::strFind(entry, INT32_MAX, "{") );
+							char* brace = const_cast<char*>(bx::strFind(entry, "{") );
 							if (NULL != brace)
 							{
 								const char* end = bx::strmb(brace, '{', '}');
@@ -5885,7 +5885,7 @@ namespace bgfx { namespace gl
 							{
 								char tmpFragData[16];
 								bx::snprintf(tmpFragData, BX_COUNTOF(tmpFragData), "gl_FragData[%d]", ii);
-								fragData = bx::uint32_max(fragData, NULL == bx::strFind(code, INT32_MAX, tmpFragData) ? 0 : ii+1);
+								fragData = bx::uint32_max(fragData, NULL == bx::strFind(code, tmpFragData) ? 0 : ii+1);
 							}
 
 							BGFX_FATAL(0 != fragData, Fatal::InvalidShader, "Unable to find and patch gl_FragData!");
@@ -5978,7 +5978,7 @@ namespace bgfx { namespace gl
 							{
 								char tmpFragData[16];
 								bx::snprintf(tmpFragData, BX_COUNTOF(tmpFragData), "gl_FragData[%d]", ii);
-								fragData = bx::uint32_max(fragData, NULL == bx::strFind(code, INT32_MAX, tmpFragData) ? 0 : ii+1);
+								fragData = bx::uint32_max(fragData, NULL == bx::strFind(code, tmpFragData) ? 0 : ii+1);
 							}
 
 							BGFX_FATAL(0 != fragData, Fatal::InvalidShader, "Unable to find and patch gl_FragData!");
@@ -6629,7 +6629,7 @@ namespace bgfx { namespace gl
 			uint8_t restartState = 0;
 			viewState.m_rect = _render->m_rect[0];
 
-			int32_t numItems = _render->m_num;
+			int32_t numItems = _render->m_numRenderItems;
 			for (int32_t item = 0, restartItem = numItems; item < numItems || restartItem < numItems;)
 			{
 				const uint64_t encodedKey = _render->m_sortKeys[item];
@@ -6826,8 +6826,8 @@ namespace bgfx { namespace gl
 
 						if (0 != barrier)
 						{
-							bool constantsChanged = compute.m_constBegin < compute.m_constEnd;
-							rendererUpdateUniforms(this, _render->m_uniformBuffer, compute.m_constBegin, compute.m_constEnd);
+							bool constantsChanged = compute.m_uniformBegin < compute.m_uniformEnd;
+							rendererUpdateUniforms(this, _render->m_uniformBuffer, compute.m_uniformBegin, compute.m_uniformEnd);
 
 							if (constantsChanged
 							&&  NULL != program.m_constantBuffer)
@@ -6944,7 +6944,7 @@ namespace bgfx { namespace gl
 					else
 					{
 						Rect scissorRect;
-						scissorRect.setIntersect(viewScissorRect, _render->m_rectCache.m_cache[scissor]);
+						scissorRect.setIntersect(viewScissorRect, _render->m_frameCache.m_rectCache.m_cache[scissor]);
 						if (scissorRect.isZeroArea() )
 						{
 							continue;
@@ -7240,9 +7240,9 @@ namespace bgfx { namespace gl
 				}
 
 				bool programChanged = false;
-				bool constantsChanged = draw.m_constBegin < draw.m_constEnd;
+				bool constantsChanged = draw.m_uniformBegin < draw.m_uniformEnd;
 				bool bindAttribs = false;
-				rendererUpdateUniforms(this, _render->m_uniformBuffer, draw.m_constBegin, draw.m_constEnd);
+				rendererUpdateUniforms(this, _render->m_uniformBuffer, draw.m_uniformBegin, draw.m_uniformEnd);
 
 				if (key.m_program != programIdx)
 				{
@@ -7578,7 +7578,7 @@ namespace bgfx { namespace gl
 				GL_CHECK(glBindVertexArray(m_vao) );
 			}
 
-			if (0 < _render->m_num)
+			if (0 < _render->m_numRenderItems)
 			{
 				if (0 != (m_resolution.m_flags & BGFX_RESET_FLUSH_AFTER_RENDER) )
 				{
@@ -7683,7 +7683,7 @@ namespace bgfx { namespace gl
 
 				double elapsedCpuMs = double(frameTime)*toMs;
 				tvm.printf(10, pos++, 0x8e, "    Submitted: %5d (draw %5d, compute %4d) / CPU %7.4f [ms] %c GPU %7.4f [ms] (latency %d) "
-					, _render->m_num
+					, _render->m_numRenderItems
 					, statsKeyType[0]
 					, statsKeyType[1]
 					, elapsedCpuMs
