@@ -29,6 +29,7 @@
 #elif defined(URHO3D_D3D9)
 #include "Direct3D9/D3D9VertexDeclaration.h"
 #elif defined(URHO3D_NOOP)
+#elif defined(URHO3D_BGFX)
 #else
 #error No renderer selected
 #endif

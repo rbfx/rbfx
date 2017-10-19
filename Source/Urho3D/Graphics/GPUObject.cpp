@@ -37,6 +37,8 @@ GPUObject::GPUObject(Graphics* graphics) :
 {
 #ifdef URHO3D_OPENGL
     object_.name_ = 0;
+#elif URHO3D_BGFX
+    object_.idx_ = UINT16_MAX; // bgfx::kInvalidHandle
 #else
     object_.ptr_ = nullptr;
 #endif

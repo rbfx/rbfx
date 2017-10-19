@@ -24,6 +24,8 @@
 
 #include "../../Core/Timer.h"
 
+#include <bgfx/bgfx.h>
+
 namespace Urho3D
 {
 

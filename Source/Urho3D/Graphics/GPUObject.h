@@ -36,6 +36,8 @@ union GPUObjectHandle
     void* ptr_;
     /// Object name (OpenGL.)
     unsigned name_;
+    /// Object idx (BGFX.)
+    uint16_t idx_;
 };
 
 /// Base class for GPU resources.
@@ -63,6 +65,8 @@ public:
     void* GetGPUObject() const { return object_.ptr_; }
     /// Return the object name. Applicable only on OpenGL.
     unsigned GetGPUObjectName() const { return object_.name_; }
+    /// Return the object index. Applicable only on BGFX.
+    uint16_t GetGPUObjectIdx() const { return object_.idx_; }
     /// Return whether data is lost due to context loss.
     bool IsDataLost() const { return dataLost_; }
     /// Return whether has pending data assigned while graphics context was lost.
