@@ -135,4 +135,9 @@ unsigned Texture::GetDataType(unsigned format)
     return 0;
 }
 
+unsigned Texture::GetBGFXFlags()
+{
+    return 0;
+}
+
 }

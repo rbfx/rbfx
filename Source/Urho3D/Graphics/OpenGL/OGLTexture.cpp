@@ -354,4 +354,9 @@ unsigned Texture::GetDSVFormat(unsigned format)
     return 0;
 }
 
+unsigned Texture::GetBGFXFlags()
+{
+    return 0;
+}
+
 }

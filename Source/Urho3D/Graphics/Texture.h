@@ -186,6 +186,8 @@ public:
     static unsigned GetExternalFormat(unsigned format);
     /// Return the data type corresponding to an OpenGL internal format.
     static unsigned GetDataType(unsigned format);
+    /// Return the BGFX flags for texture creation.
+    unsigned GetBGFXFlags();
 
 protected:
     /// Check whether texture memory budget has been exceeded. Free unused materials in that case to release the texture references.
