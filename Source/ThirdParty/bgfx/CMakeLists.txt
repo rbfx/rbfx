@@ -34,7 +34,7 @@ file (GLOB_RECURSE SOURCE_FILES
     include/*.h
     3rdparty/fcpp/cpp*.c
     3rdparty/fcpp/*.h
-    3rdparty/forsyth-too/*.c
+    3rdparty/forsyth-too/*.cpp
     3rdparty/forsyth-too/*.h
     3rdparty/ib-compress/*.cpp
     3rdparty/ib-compress/*.h
@@ -65,3 +65,13 @@ target_include_directories(bgfx PUBLIC include
 
 install (DIRECTORY include/bgfx/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/bgfx FILES_MATCHING PATTERN *.h)
 install_to_build_tree(bgfx)
+
+# Tools
+
+# geometryc
+add_executable(geometryc tools/geometryc/geometryc.cpp examples/common/bounds.cpp)
+target_link_libraries(geometryc bgfx ${CMAKE_DL_LIBS})
+target_include_directories(geometryc PRIVATE 3rdparty examples/common)
+set_target_properties(geometryc PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
+install(TARGETS geometryc RUNTIME DESTINATION bin)
+
