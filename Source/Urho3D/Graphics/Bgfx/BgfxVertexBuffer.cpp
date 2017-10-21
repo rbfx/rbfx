@@ -97,26 +97,23 @@ void VertexBuffer::Release()
         if (!graphics_)
             return;
 
-        if (!graphics_->IsDeviceLost())
+        for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
         {
-            for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
-            {
-                if (graphics_->GetVertexBuffer(i) == this)
-                    graphics_->SetVertexBuffer(nullptr);
-            }
+            if (graphics_->GetVertexBuffer(i) == this)
+                graphics_->SetVertexBuffer(nullptr);
+        }
 
-            if (dynamic_)
-            {
-                bgfx::DynamicVertexBufferHandle handle;
-                handle.idx = object_.idx_;
-                bgfx::destroy(handle);
-            }
-            else
-            {
-                bgfx::VertexBufferHandle handle;
-                handle.idx = object_.idx_;
-                bgfx::destroy(handle);
-            }
+        if (dynamic_)
+        {
+            bgfx::DynamicVertexBufferHandle handle;
+            handle.idx = object_.idx_;
+            bgfx::destroy(handle);
+        }
+        else
+        {
+            bgfx::VertexBufferHandle handle;
+            handle.idx = object_.idx_;
+            bgfx::destroy(handle);
         }
 
         object_.idx_ = bgfx::kInvalidHandle;
@@ -148,12 +145,9 @@ bool VertexBuffer::SetData(const void* data)
 
     if (object_.idx_ != bgfx::kInvalidHandle && dynamic_)
     {
-        if (!graphics_->IsDeviceLost())
-        {
-            bgfx::DynamicVertexBufferHandle handle;
-            handle.idx = object_.idx_;
-            bgfx::updateDynamicVertexBuffer(handle, 0, bgfx::makeRef(data, vertexCount_ * vertexSize_));
-        }
+        bgfx::DynamicVertexBufferHandle handle;
+        handle.idx = object_.idx_;
+        bgfx::updateDynamicVertexBuffer(handle, 0, bgfx::makeRef(data, vertexCount_ * vertexSize_));
     }
 
     if (object_.idx_ == bgfx::kInvalidHandle && !dynamic_)
@@ -224,17 +218,9 @@ bool VertexBuffer::SetDataRange(const void* data, unsigned start, unsigned count
 
     if (object_.idx_ != bgfx::kInvalidHandle && dynamic_)
     {
-        if (!graphics_->IsDeviceLost())
-        {
-            bgfx::DynamicVertexBufferHandle handle;
-            handle.idx = object_.idx_;
-            bgfx::updateDynamicVertexBuffer(handle, start * vertexSize_, bgfx::makeRef(data, vertexCount_ * vertexSize_));
-        }
-        else
-        {
-            URHO3D_LOGWARNING("Vertex buffer data assignment while device is lost");
-            dataPending_ = true;
-        }
+        bgfx::DynamicVertexBufferHandle handle;
+        handle.idx = object_.idx_;
+        bgfx::updateDynamicVertexBuffer(handle, start * vertexSize_, bgfx::makeRef(data, vertexCount_ * vertexSize_));
     }
 
     return true;
@@ -314,12 +300,6 @@ bool VertexBuffer::Create()
 
     if (graphics_)
     {
-        if (graphics_->IsDeviceLost())
-        {
-            URHO3D_LOGWARNING("Vertex buffer creation while device is lost");
-            return true;
-        }
-
         if (object_.idx_ == bgfx::kInvalidHandle && dynamic_)
         {
             bgfx::VertexDecl decl;

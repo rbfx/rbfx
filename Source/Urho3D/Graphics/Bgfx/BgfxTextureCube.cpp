@@ -98,13 +98,6 @@ bool TextureCube::SetData(CubeMapFace face, unsigned level, int x, int y, int wi
         return false;
     }
 
-    if (graphics_->IsDeviceLost())
-    {
-        URHO3D_LOGWARNING("Texture data assignment while device is lost");
-        dataPending_ = true;
-        return true;
-    }
-
     if (IsCompressed())
     {
         x &= ~3;
@@ -325,12 +318,6 @@ bool TextureCube::Create()
 
     if (!graphics_ || !width_ || !height_)
         return false;
-
-    if (graphics_->IsDeviceLost())
-    {
-        URHO3D_LOGWARNING("Texture creation while device is lost");
-        return true;
-    }
 
     levels_ = CheckMaxLevels(width_, height_, requestedLevels_);
 

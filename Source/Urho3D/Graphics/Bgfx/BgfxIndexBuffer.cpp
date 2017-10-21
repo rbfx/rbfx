@@ -50,23 +50,20 @@ void IndexBuffer::Release()
         if (!graphics_)
             return;
 
-        if (!graphics_->IsDeviceLost())
-        {
-            if (graphics_->GetIndexBuffer() == this)
-                graphics_->SetIndexBuffer(nullptr);
+        if (graphics_->GetIndexBuffer() == this)
+            graphics_->SetIndexBuffer(nullptr);
 
-            if (dynamic_)
-            {
-                bgfx::DynamicIndexBufferHandle handle;
-                handle.idx = object_.idx_;
-                bgfx::destroy(handle);
-            }
-            else
-            {
-                bgfx::IndexBufferHandle handle;
-                handle.idx = object_.idx_;
-                bgfx::destroy(handle);
-            }
+        if (dynamic_)
+        {
+            bgfx::DynamicIndexBufferHandle handle;
+            handle.idx = object_.idx_;
+            bgfx::destroy(handle);
+        }
+        else
+        {
+            bgfx::IndexBufferHandle handle;
+            handle.idx = object_.idx_;
+            bgfx::destroy(handle);
         }
 
         object_.idx_ = bgfx::kInvalidHandle;
@@ -98,12 +95,9 @@ bool IndexBuffer::SetData(const void* data)
 
     if (object_.idx_ != bgfx::kInvalidHandle && dynamic_)
     {
-        if (!graphics_->IsDeviceLost())
-        {
-            bgfx::DynamicIndexBufferHandle handle;
-            handle.idx = object_.idx_;
-            bgfx::updateDynamicIndexBuffer(handle, 0, bgfx::makeRef(data, indexCount_ * indexSize_));
-        }
+        bgfx::DynamicIndexBufferHandle handle;
+        handle.idx = object_.idx_;
+        bgfx::updateDynamicIndexBuffer(handle, 0, bgfx::makeRef(data, indexCount_ * indexSize_));
     }
 
     if (object_.idx_ == bgfx::kInvalidHandle && !dynamic_)
@@ -157,17 +151,9 @@ bool IndexBuffer::SetDataRange(const void* data, unsigned start, unsigned count,
 
     if (object_.idx_ != bgfx::kInvalidHandle && dynamic_)
     {
-        if (!graphics_->IsDeviceLost())
-        {
-            bgfx::DynamicVertexBufferHandle handle;
-            handle.idx = object_.idx_;
-            bgfx::updateDynamicVertexBuffer(handle, start * indexSize_, bgfx::makeRef(data, indexCount_ * indexSize_));
-        }
-        else
-        {
-            URHO3D_LOGWARNING("Index buffer data assignment while device is lost");
-            dataPending_ = true;
-        }
+        bgfx::DynamicVertexBufferHandle handle;
+        handle.idx = object_.idx_;
+        bgfx::updateDynamicVertexBuffer(handle, start * indexSize_, bgfx::makeRef(data, indexCount_ * indexSize_));
     }
 
     return true;
@@ -247,12 +233,6 @@ bool IndexBuffer::Create()
 
     if (graphics_)
     {
-        if (graphics_->IsDeviceLost())
-        {
-            URHO3D_LOGWARNING("Index buffer creation while device is lost");
-            return true;
-        }
-
         if (object_.idx_ == bgfx::kInvalidHandle && dynamic_)
         {
             bgfx::DynamicIndexBufferHandle handle;

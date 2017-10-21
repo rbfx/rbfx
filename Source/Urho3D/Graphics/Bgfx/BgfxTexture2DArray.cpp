@@ -101,13 +101,6 @@ bool Texture2DArray::SetData(unsigned layer, unsigned level, int x, int y, int w
         return false;
     }
 
-    if (graphics_->IsDeviceLost())
-    {
-        URHO3D_LOGWARNING("Texture data assignment while device is lost");
-        dataPending_ = true;
-        return true;
-    }
-
     if (IsCompressed())
     {
         x &= ~3;
@@ -321,12 +314,6 @@ bool Texture2DArray::Create()
 
     if (!graphics_ || !width_ || !height_ || !layers_)
         return false;
-
-    if (graphics_->IsDeviceLost())
-    {
-        URHO3D_LOGWARNING("Texture array creation while device is lost");
-        return true;
-    }
 
     levels_ = CheckMaxLevels(width_, height_, requestedLevels_);
 
