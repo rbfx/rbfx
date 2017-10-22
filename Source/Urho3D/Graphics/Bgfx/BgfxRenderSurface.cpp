@@ -34,28 +34,48 @@
 namespace Urho3D
 {
 
-    RenderSurface::RenderSurface(Texture* parentTexture) :
-        parentTexture_(parentTexture),
-        surface_(0),
-        updateMode_(SURFACE_UPDATEVISIBLE),
-        updateQueued_(false),
-        resolveDirty_(false)
+RenderSurface::RenderSurface(Texture* parentTexture) :
+    parentTexture_(parentTexture),
+    renderTargetView_(nullptr),
+    readOnlyView_(nullptr),
+    updateMode_(SURFACE_UPDATEVISIBLE),
+    updateQueued_(false)
+{
+    idx_ = bgfx::kInvalidHandle;
+}
+
+void RenderSurface::Release()
+{
+    Graphics* graphics = parentTexture_->GetObjectGraphics();
+    if (graphics && idx_ != bgfx::kInvalidHandle)
     {
+        for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
+        {
+            if (graphics->GetRenderTarget(i) == this)
+                graphics->ResetRenderTarget(i);
+        }
+
+        if (graphics->GetDepthStencil() == this)
+            graphics->ResetDepthStencil();
     }
 
-    void RenderSurface::Release()
-    {
-    }
+    /* TODO: clean-up framebuffer in graphics as it might be shared...? */
+    bgfx::FrameBufferHandle handle;
+    handle.idx = idx_;
+    bgfx::destroy(handle);
 
-    bool RenderSurface::CreateRenderBuffer(unsigned width, unsigned height, unsigned format, int multiSample)
-    {
-        // Not used on Direct3D
-        return false;
-    }
+    idx_ = bgfx::kInvalidHandle;
+}
 
-    void RenderSurface::OnDeviceLost()
-    {
-        // No-op on Direct3D
-    }
+bool RenderSurface::CreateRenderBuffer(unsigned width, unsigned height, unsigned format, int multiSample)
+{
+    // Not used on BGFX
+    return false;
+}
+
+void RenderSurface::OnDeviceLost()
+{
+    // No-op on BGFX
+}
 
 }

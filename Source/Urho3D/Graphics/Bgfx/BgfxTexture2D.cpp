@@ -263,10 +263,17 @@ bool Texture2D::Create()
     handle = bgfx::createTexture2D((uint16_t)width_, (uint16_t)height_, levels_ > 1 ? true : false, 1, (bgfx::TextureFormat::Enum)format_, GetBGFXFlags() /*, mem*/);
     object_.idx_ = handle.idx;
 
-    if (usage_ == TEXTURE_RENDERTARGET)
+    if (usage_ == TEXTURE_RENDERTARGET || usage_ == TEXTURE_DEPTHSTENCIL)
     {
+        bgfx::Attachment attachment;
+        attachment.handle = handle;
+        attachment.mip = 0;
+        attachment.layer = 1;
+        bgfx::FrameBufferHandle fbHandle;
+        fbHandle = bgfx::createFrameBuffer(1, &attachment, false);
+        renderSurface_->idx_ = fbHandle.idx;
     }
-    else if (usage_ == TEXTURE_DEPTHSTENCIL)
+    if (usage_ == TEXTURE_DEPTHSTENCIL)
         requestedLevels_ = 1;
 
     if (object_.idx_ != bgfx::kInvalidHandle)
