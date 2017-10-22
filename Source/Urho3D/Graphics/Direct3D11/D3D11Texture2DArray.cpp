@@ -64,8 +64,12 @@ void Texture2DArray::Release()
         }
     }
 
-    if (renderSurface_)
-        renderSurface_->Release();
+    for (unsigned i = 0; i < renderSurfaces_.Size(); ++i)
+    {
+        if (renderSurfaces_[i])
+            renderSurfaces_[i]->Release();
+    }
+    renderSurfaces_.Clear();
 
     URHO3D_SAFE_RELEASE(object_.ptr_);
     URHO3D_SAFE_RELEASE(shaderResourceView_);
@@ -528,6 +532,11 @@ bool Texture2DArray::Create()
     }
 
     return true;
+}
+
+RenderSurface* Texture2DArray::GetRenderSurfaceLayer(unsigned layer)
+{
+    return renderSurfaces_[0];
 }
 
 }

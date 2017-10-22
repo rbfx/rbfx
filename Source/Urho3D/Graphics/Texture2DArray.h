@@ -71,8 +71,10 @@ public:
     unsigned GetLayers() const { return layers_; }
     /// Get data from a mip level. The destination buffer must be big enough. Return true if successful.
     bool GetData(unsigned layer, unsigned level, void* dest) const;
-    /// Return render surface.
-    RenderSurface* GetRenderSurface() const { return renderSurface_; }
+    /// Return render surface. Only the first layer for BGFX.
+    RenderSurface* GetRenderSurface() const { return renderSurfaces_[0]; }
+    /// Return render surface. Only valid for BGFX.
+    RenderSurface* GetRenderSurfaceLayer(unsigned layer);
 
 protected:
     /// Create the GPU texture.
@@ -84,8 +86,8 @@ private:
 
     /// Texture array layers number.
     unsigned layers_;
-    /// Render surface.
-    SharedPtr<RenderSurface> renderSurface_;
+    /// Render surfaces. Only on BGFX it is represented as multiple.
+    Vector<SharedPtr<RenderSurface> > renderSurfaces_;
     /// Memory use per layer.
     PODVector<unsigned> layerMemoryUse_;
     /// Layer image files acquired during BeginLoad.

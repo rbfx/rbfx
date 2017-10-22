@@ -166,14 +166,27 @@ bool Texture2DArray::SetSize(unsigned layers, int width, int height, unsigned fo
         return false;
     }
 
-    // Delete the old rendersurface if any
-    renderSurface_.Reset();
+    // Delete the old rendersurfaces if any
+    for (unsigned i = 0; i < renderSurfaces_.Size(); ++i)
+    {
+        renderSurfaces_[i].Reset();
+        //faceMemoryUse_[i] = 0;
+    }
+    renderSurfaces_.Clear();
 
     usage_ = usage;
 
     if (usage == TEXTURE_RENDERTARGET)
     {
-        renderSurface_ = new RenderSurface(this);
+#ifdef URHO3D_BGFX
+        renderSurfaces_.Resize(layers_);
+#else
+        renderSurfaces_.Resize(1);
+#endif
+        for (unsigned i = 0; i < renderSurfaces_.Size(); ++i)
+        {
+            renderSurfaces_[i] = new RenderSurface(this);
+        }
 
         // Nearest filtering by default
         filterMode_ = FILTER_NEAREST;
@@ -200,12 +213,16 @@ bool Texture2DArray::SetSize(unsigned layers, int width, int height, unsigned fo
 
 void Texture2DArray::HandleRenderSurfaceUpdate(StringHash eventType, VariantMap& eventData)
 {
-    if (renderSurface_ && (renderSurface_->GetUpdateMode() == SURFACE_UPDATEALWAYS || renderSurface_->IsUpdateQueued()))
+    Renderer* renderer = GetSubsystem<Renderer>();
+
+    for (unsigned i = 0; i < renderSurfaces_.Size(); ++i)
     {
-        Renderer* renderer = GetSubsystem<Renderer>();
-        if (renderer)
-            renderer->QueueRenderSurface(renderSurface_);
-        renderSurface_->ResetUpdateQueued();
+        if (renderSurfaces_[i] && (renderSurfaces_[i]->GetUpdateMode() == SURFACE_UPDATEALWAYS || renderSurfaces_[i]->IsUpdateQueued()))
+        {
+            if (renderer)
+                renderer->QueueRenderSurface(renderSurfaces_[i]);
+            renderSurfaces_[i]->ResetUpdateQueued();
+        }
     }
 }
 

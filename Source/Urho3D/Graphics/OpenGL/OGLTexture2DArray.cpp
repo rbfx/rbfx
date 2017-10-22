@@ -88,8 +88,12 @@ void Texture2DArray::Release()
             glDeleteTextures(1, &object_.name_);
         }
 
-        if (renderSurface_)
-            renderSurface_->Release();
+        for (unsigned i = 0; i < renderSurfaces_.Size(); ++i)
+        {
+            if (renderSurfaces_[i])
+                renderSurfaces_[i]->Release();
+        }
+        renderSurfaces_.Clear();
 
         object_.name_ = 0;
     }
@@ -481,6 +485,11 @@ bool Texture2DArray::Create()
 
     return success;
 #endif
+}
+
+RenderSurface* Texture2DArray::GetRenderSurfaceLayer(unsigned layer)
+{
+    return renderSurfaces_[0];
 }
 
 }

@@ -79,8 +79,12 @@ void Texture2DArray::Release()
         }
     }
 
-    if (renderSurface_)
-        renderSurface_->Release();
+    for (unsigned i = 0; i < renderSurfaces_.Size(); ++i)
+    {
+        if (renderSurfaces_[i])
+            renderSurfaces_[i]->Release();
+    }
+    renderSurfaces_.Clear();
 
     URHO3D_SAFE_RELEASE(object_.ptr_);
 }
@@ -279,6 +283,11 @@ bool Texture2DArray::Create()
 
     URHO3D_LOGERROR("Texture2DArray not supported on Direct3D9, can not create");
     return false;
+}
+
+RenderSurface* Texture2DArray::GetRenderSurfaceLayer(unsigned layer)
+{
+    return nullptr;
 }
 
 }

@@ -62,8 +62,11 @@ void Texture2DArray::Release()
         }
     }
 
-    if (renderSurface_)
-        renderSurface_->Release();
+    for (unsigned i = 0; i < renderSurfaces_.Size(); ++i)
+    {
+        if (renderSurfaces_[i])
+            renderSurfaces_[i]->Release();
+    }
 
     bgfx::TextureHandle handle;
     handle.idx = object_.idx_;
@@ -323,14 +326,43 @@ bool Texture2DArray::Create()
 
     if (usage_ == TEXTURE_RENDERTARGET)
     {
+        if (layers_ == 1)
+        {
+            bgfx::Attachment attachment;
+            attachment.handle = handle;
+            attachment.mip = 0;
+            attachment.layer = layers_;
+            bgfx::FrameBufferHandle fbHandle;
+            fbHandle = bgfx::createFrameBuffer(1, &attachment, false);
+            renderSurfaces_[0]->idx_ = fbHandle.idx;
+        }
+        else
+        {
+            for (unsigned i = 0; i < layers_; ++i)
+            {
+                bgfx::Attachment attachment;
+                attachment.handle = handle;
+                attachment.mip = 0;
+                attachment.layer = i;
+                bgfx::FrameBufferHandle fbHandle;
+                fbHandle = bgfx::createFrameBuffer(1, &attachment, false);
+                renderSurfaces_[i]->idx_ = fbHandle.idx;
+            }
+        }
     }
-    else if (usage_ == TEXTURE_DEPTHSTENCIL)
-        requestedLevels_ = 1;
 
     if (object_.idx_ != bgfx::kInvalidHandle)
         return true;
     else
         return false;
+}
+
+RenderSurface* Texture2DArray::GetRenderSurfaceLayer(unsigned layer)
+{
+    if (layer > renderSurfaces_.Size())
+        return nullptr;
+    else
+        return renderSurfaces_[layer];
 }
 
 }
