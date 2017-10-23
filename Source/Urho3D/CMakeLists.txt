@@ -93,7 +93,7 @@ group_sources("SystemUI")
 group_sources("UI")
 group_sources("Urho2D")
 
-add_library(Urho3D ${SOURCE_FILES} ${HEADER_FILES})
+add_library(Urho3D ${URHO3D_LIBRARY_TYPE} ${SOURCE_FILES} ${HEADER_FILES})
 target_include_directories(Urho3D PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/..      # For parent projects to find engine headers
     ${CMAKE_CURRENT_BINARY_DIR}/..      # For parent projects to find auto-generated engine headers
@@ -123,7 +123,6 @@ foreach (dep FreeType JO LZ4 PugiXml rapidjson SDL StanHull STB Mustache IconFon
         target_link_libraries(Urho3D "${dep}")
     endif ()
 endforeach()
-
 
 if (URHO3D_SSE AND NOT MSVC)
     target_compile_options (Urho3D PUBLIC -msse -msse2)
@@ -179,7 +178,7 @@ endif ()
 
 target_include_directories(Urho3D PUBLIC ${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS})
 
-if (BUILD_SHARED_LIBS)
+if (BUILD_SHARED_LIBS OR EMSCRIPTEN)
     set (INSTALL_TARGET Urho3D)
     target_compile_options(Urho3D PRIVATE -DURHO3D_EXPORTS)
     if (WIN32)

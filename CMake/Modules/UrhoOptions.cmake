@@ -1,0 +1,81 @@
+
+# Source environment
+if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
+    execute_process(COMMAND cmd /c set OUTPUT_VARIABLE ENVIRONMENT)
+else ()
+    execute_process(COMMAND env OUTPUT_VARIABLE ENVIRONMENT)
+endif ()
+string(REGEX REPLACE "=[^\n]*\n?" ";" ENVIRONMENT "${ENVIRONMENT}")
+set(IMPORT_URHO3D_VARIABLES_FROM_ENV BUILD_SHARED_LIBS)
+foreach(key ${ENVIRONMENT})
+    list (FIND IMPORT_URHO3D_VARIABLES_FROM_ENV ${key} _index)
+    if ("${key}" MATCHES "^(URHO3D_|CMAKE_|ANDROID_).+" OR ${_index} GREATER -1)
+        if (NOT DEFINED ${key})
+            set (${key} $ENV{${key}} CACHE STRING "" FORCE)
+        endif ()
+    endif ()
+endforeach()
+
+string(TOUPPER "${BUILD_SHARED_LIBS}" BUILD_SHARED_LIBS)
+
+if ("${BUILD_SHARED_LIBS}" STREQUAL "MODULE")
+    set (BUILD_SHARED_LIBS OFF)
+    set (URHO3D_LIBRARY_TYPE MODULE)
+elseif (BUILD_SHARED_LIBS)
+    set (URHO3D_LIBRARY_TYPE SHARED)
+else ()
+    set (URHO3D_LIBRARY_TYPE STATIC)
+endif ()
+
+# Threads are still experimental on emscripten.
+if (NOT EMSCRIPTEN OR URHO3D_ENABLE_ALL)
+    set (URHO3D_THREADS_DEFAULT ON)
+else ()
+    set (URHO3D_THREADS_DEFAULT OFF)
+endif ()
+
+option(URHO3D_ENABLE_ALL "Enables all optional subsystems (except database) by default" OFF)
+option(URHO3D_IK "Inverse kinematics subsystem enabled" ${URHO3D_ENABLE_ALL})
+option(URHO3D_NAVIGATION "Navigation subsystem enabled" ${URHO3D_ENABLE_ALL})
+option(URHO3D_PHYSICS "Physics subsystem enabled" ${URHO3D_ENABLE_ALL})
+option(URHO3D_URHO2D "2D subsystem enabled" ${URHO3D_ENABLE_ALL})
+option(URHO3D_WEBP "WEBP support enabled" ${URHO3D_ENABLE_ALL})
+option(URHO3D_NETWORK "Networking subsystem enabled" ${URHO3D_ENABLE_ALL})
+option(URHO3D_PROFILING "Profiler support enabled" ${URHO3D_ENABLE_ALL})
+option(URHO3D_THREADING "Enable multithreading" ${URHO3D_THREADS_DEFAULT})
+option(URHO3D_TOOLS "Tools enabled" ${URHO3D_ENABLE_ALL})
+option(URHO3D_STATIC_RUNTIME "Enable link to static runtime" OFF)
+option(URHO3D_EXTRAS "Build extra tools" ${URHO3D_ENABLE_ALL})
+option(URHO3D_SSE "Enable SSE instructions" ON)
+option(URHO3D_SAMPLES "Build samples" ${URHO3D_ENABLE_ALL})
+option(URHO3D_LOGGING "Enable logging subsystem" ON)
+option(URHO3D_SYSTEMUI "Build SystemUI subsystem" ${URHO3D_ENABLE_ALL})
+option(URHO3D_PACKAGING "Package resources" OFF)
+
+if (WIN32)
+    set(URHO3D_RENDERER D3D11 CACHE STRING "Select renderer: D3D9 | D3D11 | OpenGL")
+    if (MSVC)
+        option(URHO3D_MINIDUMPS "Enable writing minidumps on crash" ${URHO3D_ENABLE_ALL})
+    endif ()
+else ()
+    set(URHO3D_RENDERER OpenGL)
+endif ()
+
+string(TOUPPER "${URHO3D_RENDERER}" URHO3D_RENDERER)
+if (URHO3D_RENDERER STREQUAL OPENGL)
+    set (URHO3D_OPENGL ON)
+elseif (URHO3D_RENDERER STREQUAL D3D9)
+    set (URHO3D_D3D9 ON)
+elseif (URHO3D_RENDERER STREQUAL D3D11)
+    set (URHO3D_D3D11 ON)
+endif ()
+
+if (EMSCRIPTEN)
+    set(URHO3D_NETWORK OFF)         # Not supported by kNet
+    set(URHO3D_PROFILING OFF)       # No way to make use of profiler data because of lack of networking
+    set(URHO3D_TOOLS OFF)           # Useless
+    set(URHO3D_EXTRAS OFF)          # Useless
+    set(URHO3D_SSE OFF)             # Unsupported
+    set(EMSCRIPTEN_MEMORY_LIMIT 128 CACHE NUMBER "Memory limit in megabytes. Set to 0 for dynamic growth.")
+    option(EMSCRIPTEN_MEMORY_GROWTH "Allow memory growth. Disables some optimizations." OFF)
+endif ()

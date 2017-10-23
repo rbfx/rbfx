@@ -20,4 +20,9 @@
 # THE SOFTWARE.
 #
 
+# Emscripten does not support ucontext/setjmp/longjmp
+if (EMSCRIPTEN)
+    return ()
+endif ()
+
 add_sample (101_Tasks)
