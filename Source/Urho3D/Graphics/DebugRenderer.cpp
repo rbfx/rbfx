@@ -29,6 +29,7 @@
 #include "../Graphics/Camera.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../Graphics/Graphics.h"
+#include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/Light.h"
 #include "../Graphics/ShaderVariation.h"
 #include "../Graphics/VertexBuffer.h"
@@ -511,6 +512,17 @@ void DebugRenderer::Render()
     assert(graphics && graphics->IsInitialized() && !graphics->IsDeviceLost());
 
     URHO3D_PROFILE(RenderDebugGeometry);
+
+#ifdef URHO3D_BGFX
+    // Increment the current view and name it for debug
+    uint8_t view = graphics->GetImpl()->GetCurrentView() + 1;
+#ifdef URHO3D_DEBUG
+    bgfx::setViewName(view, "DEBUG RENDER");
+#endif
+    bgfx::setViewMode(view, bgfx::ViewMode::Sequential);
+    bgfx::setViewFrameBuffer(view, BGFX_INVALID_HANDLE); // default back buffer
+    graphics->GetImpl()->SetCurrentView(view);
+#endif
 
     ShaderVariation* vs = graphics->GetShader(VS, "Basic", "VERTEXCOLOR");
     ShaderVariation* ps = graphics->GetShader(PS, "Basic", "VERTEXCOLOR");

@@ -344,7 +344,10 @@ bool View::Define(RenderSurface* renderTarget, Viewport* viewport)
     rtSize_ = IntVector2(rtWidth, rtHeight);
 
     // On OpenGL flip the viewport if rendering to a texture for consistent UV addressing with Direct3D9
-#ifdef URHO3D_OPENGL
+#if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
+#ifdef URHO3D_BGFX
+    if (bgfx::getRendererType() == bgfx::RendererType::OpenGL || bgfx::RendererType::OpenGLES)
+#endif
     if (renderTarget_)
     {
         viewRect_.bottom_ = rtHeight - viewRect_.top_;
@@ -625,7 +628,10 @@ void View::Render()
     {
         // On OpenGL, flip the projection if rendering to a texture so that the texture can be addressed in the same way
         // as a render texture produced on Direct3D9
-#ifdef URHO3D_OPENGL
+#if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
+#ifdef URHO3D_BGFX
+        if (bgfx::getRendererType() == bgfx::RendererType::OpenGL || bgfx::RendererType::OpenGLES)
+#endif
         if (camera_)
             camera_->SetFlipVertical(true);
 #endif
@@ -675,7 +681,10 @@ void View::Render()
         }
     }
 
-#ifdef URHO3D_OPENGL
+#if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
+#ifdef URHO3D_BGFX
+    if (bgfx::getRendererType() == bgfx::RendererType::OpenGL || bgfx::RendererType::OpenGLES)
+#endif
     if (camera_)
         camera_->SetFlipVertical(false);
 #endif
@@ -731,9 +740,14 @@ void View::SetCameraShaderParameters(Camera* camera)
     if (camera->IsOrthographic())
     {
         depthMode.x_ = 1.0f;
-#ifdef URHO3D_OPENGL
-        depthMode.z_ = 0.5f;
-        depthMode.w_ = 0.5f;
+#if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
+#ifdef URHO3D_BGFX
+    if (bgfx::getRendererType() == bgfx::RendererType::OpenGL || bgfx::RendererType::OpenGLES)
+#endif
+        {
+            depthMode.z_ = 0.5f;
+            depthMode.w_ = 0.5f;
+        }
 #else
         depthMode.z_ = 1.0f;
 #endif
@@ -753,11 +767,16 @@ void View::SetCameraShaderParameters(Camera* camera)
     graphics_->SetShaderParameter(VSP_FRUSTUMSIZE, farVector);
 
     Matrix4 projection = camera->GetGPUProjection();
-#ifdef URHO3D_OPENGL
-    // Add constant depth bias manually to the projection matrix due to glPolygonOffset() inconsistency
-    float constantBias = 2.0f * graphics_->GetDepthConstantBias();
-    projection.m22_ += projection.m32_ * constantBias;
-    projection.m23_ += projection.m33_ * constantBias;
+#if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
+#ifdef URHO3D_BGFX
+    if (bgfx::getRendererType() == bgfx::RendererType::OpenGL || bgfx::RendererType::OpenGLES)
+#endif
+        {
+            // Add constant depth bias manually to the projection matrix due to glPolygonOffset() inconsistency
+            float constantBias = 2.0f * graphics_->GetDepthConstantBias();
+            projection.m22_ += projection.m32_ * constantBias;
+            projection.m23_ += projection.m33_ * constantBias;
+        }
 #endif
 
     graphics_->SetShaderParameter(VSP_VIEWPROJ, projection * camera->GetView());
@@ -781,15 +800,27 @@ void View::SetGBufferShaderParameters(const IntVector2& texSize, const IntRect& 
     float widthRange = 0.5f * viewRect.Width() / texWidth;
     float heightRange = 0.5f * viewRect.Height() / texHeight;
 
-#ifdef URHO3D_OPENGL
-    Vector4 bufferUVOffset(((float)viewRect.left_) / texWidth + widthRange,
-        1.0f - (((float)viewRect.top_) / texHeight + heightRange), widthRange, heightRange);
-#else
+#if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
+#ifdef URHO3D_BGFX
+    if (bgfx::getRendererType() == bgfx::RendererType::OpenGL || bgfx::RendererType::OpenGLES)
+    {
+#endif
+        Vector4 bufferUVOffset(((float)viewRect.left_) / texWidth + widthRange,
+            1.0f - (((float)viewRect.top_) / texHeight + heightRange), widthRange, heightRange);
+        graphics_->SetShaderParameter(VSP_GBUFFEROFFSETS, bufferUVOffset);
+#ifdef URHO3D_BGFX
+    } else {
+#endif
+#endif
+#if !defined(URHO3D_OPENGL)
     const Vector2& pixelUVOffset = Graphics::GetPixelUVOffset();
     Vector4 bufferUVOffset((pixelUVOffset.x_ + (float)viewRect.left_) / texWidth + widthRange,
         (pixelUVOffset.y_ + (float)viewRect.top_) / texHeight + heightRange, widthRange, heightRange);
-#endif
     graphics_->SetShaderParameter(VSP_GBUFFEROFFSETS, bufferUVOffset);
+#ifdef URHO3D_BGFX
+    }
+#endif
+#endif
 
     float invSizeX = 1.0f / texWidth;
     float invSizeY = 1.0f / texHeight;
@@ -1633,6 +1664,12 @@ void View::ExecuteRenderPathCommands()
                         // If reusing shadowmaps, render each of them before the lit batches
                         if (renderer_->GetReuseShadowMaps() && NeedRenderShadowMap(*i))
                         {
+#ifdef URHO3D_BGFX
+                            // The SetRenderTargets above incremented the view already, so we go back one.
+                            // RenderShadowMap will increment the view once more, as well as SetRenderTargets.
+                            uint8_t view = graphics_->GetImpl()->GetCurrentView() - 1;
+                            graphics_->GetImpl()->SetCurrentView(view);
+#endif
                             RenderShadowMap(*i);
                             SetRenderTargets(command);
                         }
@@ -1679,6 +1716,12 @@ void View::ExecuteRenderPathCommands()
                         // If reusing shadowmaps, render each of them before the lit batches
                         if (renderer_->GetReuseShadowMaps() && NeedRenderShadowMap(*i))
                         {
+#ifdef URHO3D_BGFX
+                            // The SetRenderTargets above incremented the view already, so we go back one.
+                            // RenderShadowMap will increment the view once more, as well as SetRenderTargets.
+                            uint8_t view = graphics_->GetImpl()->GetCurrentView() - 1;
+                            graphics_->GetImpl()->SetCurrentView(view);
+#endif
                             RenderShadowMap(*i);
                             SetRenderTargets(command);
                         }
@@ -1735,10 +1778,65 @@ void View::ExecuteRenderPathCommands()
 
 void View::SetRenderTargets(RenderPathCommand& command)
 {
+#ifdef URHO3D_BGFX
+    // Increment the current view
+    uint8_t view = graphics_->GetImpl()->GetCurrentView() + 1;
+    if (command.type_ == CMD_SCENEPASS)
+    {
+        switch (command.sortMode_)
+        {
+        case SORT_FRONTTOBACK:
+            bgfx::setViewMode(view, bgfx::ViewMode::DepthAscending);
+            break;
+        case SORT_BACKTOFRONT:
+            bgfx::setViewMode(view, bgfx::ViewMode::DepthDescending);
+            break;
+        default:
+            bgfx::setViewMode(view, bgfx::ViewMode::Default);
+            break;
+        }
+    }
+    else if (command.type_ == CMD_RENDERUI)
+        bgfx::setViewMode(view, bgfx::ViewMode::Sequential);
+
+#ifdef URHO3D_DEBUG
+    String debugName = command.tag_;
+    switch (command.type_)
+    {
+    case CMD_NONE:
+        break;
+    case CMD_CLEAR:
+        debugName + " clear";
+        break;
+    case CMD_SCENEPASS:
+        debugName + " scenepass";
+        break;
+    case CMD_QUAD:
+        debugName + " quad";
+        break;
+    case CMD_FORWARDLIGHTS:
+        debugName + " forwardlights";
+        break;
+    case CMD_LIGHTVOLUMES:
+        debugName + " lightvolumes";
+        break;
+    case CMD_RENDERUI:
+        debugName + " renderui";
+        break;
+    case CMD_SENDEVENT:
+        break;
+    };
+    debugName + " " + command.pass_ + command.metadata_;
+    bgfx::setViewName(view, debugName.CString());
+#endif
+    graphics_->GetImpl()->SetCurrentView(view);
+#endif
+
     unsigned index = 0;
     bool useColorWrite = true;
     bool useCustomDepth = false;
     bool useViewportOutput = false;
+
 
     while (index < command.outputs_.Size())
     {
@@ -2157,10 +2255,16 @@ void View::DrawFullscreenQuad(bool setIdentityProjection)
     {
         Matrix3x4 model = Matrix3x4::IDENTITY;
         Matrix4 projection = Matrix4::IDENTITY;
-#ifdef URHO3D_OPENGL
+#if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
+#ifdef URHO3D_BGFX
+    if (bgfx::getRendererType() == bgfx::RendererType::OpenGL || bgfx::RendererType::OpenGLES) {
+#endif
         if (camera_ && camera_->GetFlipVertical())
             projection.m11_ = -1.0f;
         model.m23_ = 0.0f;
+#ifdef URHO3D_BGFX
+    }
+#endif
 #else
         model.m23_ = 0.5f;
 #endif
@@ -2716,7 +2820,10 @@ void View::FinalizeShadowCamera(Camera* shadowCamera, Light* light, const IntRec
             shadowCamera->SetZoom(shadowCamera->GetZoom() * ((shadowMapWidth - 2.0f) / shadowMapWidth));
         else
         {
-#ifdef URHO3D_OPENGL
+#if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
+#ifdef URHO3D_BGFX
+    if (bgfx::getRendererType() == bgfx::RendererType::OpenGL || bgfx::RendererType::OpenGLES)
+#endif
             shadowCamera->SetZoom(shadowCamera->GetZoom() * ((shadowMapWidth - 3.0f) / shadowMapWidth));
 #else
             shadowCamera->SetZoom(shadowCamera->GetZoom() * ((shadowMapWidth - 4.0f) / shadowMapWidth));
@@ -3060,6 +3167,19 @@ void View::RenderShadowMap(const LightBatchQueue& queue)
     URHO3D_PROFILE(RenderShadowMap);
 
     Texture2D* shadowMap = queue.shadowMap_;
+#ifdef URHO3D_BGFX
+    // Increment the current view
+    uint8_t view = graphics_->GetImpl()->GetCurrentView() + 1;
+    bgfx::setViewMode(view, bgfx::ViewMode::DepthDescending);
+    //uint16_t idx = shadowMap->GetRenderSurface()->GetBgfxFramebufferIdx();
+    //bgfx::FrameBufferHandle handle;
+    //handle.idx = idx;
+    //bgfx::setViewFrameBuffer(view, handle);
+#ifdef URHO3D_DEBUG
+    bgfx::setViewName(view, "SHADOWMAP");
+#endif
+    graphics_->GetImpl()->SetCurrentView(view);
+#endif
     graphics_->SetTexture(TU_SHADOWMAP, nullptr);
 
     graphics_->SetFillMode(FILL_SOLID);
