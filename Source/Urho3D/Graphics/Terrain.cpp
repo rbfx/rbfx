@@ -1483,4 +1483,9 @@ void Terrain::UpdateEdgePatchNeighbors()
     SetPatchNeighbors(GetPatch(numPatches_.x_ - 1, numPatches_.y_ - 1));
 }
 
+void Terrain::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
+{
+    for (const auto& patch: patches_)
+        patch->DrawDebugGeometry(debug, depthTest);
+}
 }

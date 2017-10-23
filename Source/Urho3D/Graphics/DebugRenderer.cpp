@@ -389,11 +389,12 @@ void DebugRenderer::AddSkeleton(const Skeleton& skeleton, const Color& color, bo
     }
 }
 
-void DebugRenderer::AddTriangleMesh(const void* vertexData, unsigned vertexSize, const void* indexData, unsigned indexSize,
-    unsigned indexStart, unsigned indexCount, const Matrix3x4& transform, const Color& color, bool depthTest)
+void DebugRenderer::AddTriangleMesh(const void* vertexData, unsigned vertexSize, unsigned vertexStart, const void* indexData,
+                               unsigned indexSize, unsigned indexStart, unsigned indexCount,
+                               const Matrix3x4& transform, const Color& color, bool depthTest)
 {
     unsigned uintColor = color.ToUInt();
-    const unsigned char* srcData = (const unsigned char*)vertexData;
+    const unsigned char* srcData = ((const unsigned char*)vertexData) + vertexStart;
 
     // 16-bit indices
     if (indexSize == sizeof(unsigned short))
@@ -444,9 +445,9 @@ void DebugRenderer::AddTriangleMesh(Node* node, const Color& color, bool depthTe
             const auto& ib = geometry->GetIndexBuffer();
             for (const auto& vb : geometry->GetVertexBuffers())
             {
-                AddTriangleMesh(vb->GetShadowData(), vb->GetVertexSize(), ib->GetShadowData(), ib->GetIndexSize(),
-                                geometry->GetIndexStart(), geometry->GetIndexCount(), node->GetWorldTransform(),
-                                color, depthTest);
+                AddTriangleMesh(vb->GetShadowData(), vb->GetVertexSize(), geometry->GetVertexStart(),
+                                ib->GetShadowData(), ib->GetIndexSize(), geometry->GetIndexStart(),
+                                geometry->GetIndexCount(), node->GetWorldTransform(), color, depthTest);
             }
         }
     }
