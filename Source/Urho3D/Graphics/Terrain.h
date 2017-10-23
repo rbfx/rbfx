@@ -102,6 +102,8 @@ public:
     void SetOccluder(bool enable);
     /// Set occludee flag for patches.
     void SetOccludee(bool enable);
+    /// Enable drawing debug information. Set this before applying heightmap. Increases memory usage.
+    void SetEnableDebug(bool enable);
     /// Apply changes from the heightmap image.
     void ApplyHeightMap();
 
@@ -325,6 +327,8 @@ private:
     bool recreateTerrain_;
     /// Terrain neighbor attributes dirty flag.
     bool neighborsDirty_;
+    /// Enables vertex buffer shadowing.
+    bool debugGeometry_;
 };
 
 }

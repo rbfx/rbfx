@@ -211,7 +211,12 @@ bool TerrainPatch::DrawOcclusion(OcclusionBuffer* buffer)
 
 void TerrainPatch::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
-    // Intentionally no operation
+    if (!vertexBuffer_->IsShadowed())
+    {
+        URHO3D_LOGERROR("TerrainPatch requires shadowed vertex buffer for drawing debug geometry.");
+        return;
+    }
+
     if (auto node = GetNode())
     {
         auto geometry = GetLodGeometry(0, lodLevel_);
