@@ -35,4 +35,9 @@ GraphicsImpl::~GraphicsImpl()
 
 }
 
+void GraphicsImpl::SetCurrentView(const uint8_t view)
+{
+    view_ = view;
+}
+
 }

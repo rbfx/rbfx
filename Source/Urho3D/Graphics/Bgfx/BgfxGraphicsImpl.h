@@ -22,12 +22,33 @@
 
 #pragma once
 
+#include "../../Container/HashMap.h"
 #include "../../Core/Timer.h"
+#include "../../Graphics/Texture2D.h"
 
 #include <bgfx/bgfx.h>
+#include <bgfx/defines.h>
 
 namespace Urho3D
 {
+
+/// Cached state of a frame buffer handle
+struct FrameBufferHandle
+{
+    FrameBufferHandle()
+    {
+        handle_.idx = bgfx::kInvalidHandle;
+        for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
+            colorAttachments_[i] = nullptr;
+    }
+
+    /// Frame buffer handle.
+    bgfx::FrameBufferHandle handle_;
+    /// Bound color attachment textures.
+    RenderSurface* colorAttachments_[MAX_RENDERTARGETS];
+    /// Bound depth/stencil attachment.
+    RenderSurface* depthAttachment_;
+};
 
 /// %Graphics subsystem implementation. Holds API-specific objects.
 class URHO3D_API GraphicsImpl
@@ -39,6 +60,36 @@ public:
     GraphicsImpl();
     /// Destruct.
     virtual ~GraphicsImpl();
+    /// Get current view.
+    uint8_t GetCurrentView() const { return view_; }
+    /// Set current view.
+    void SetCurrentView(const uint8_t view);
+
+private:
+    /// Map for Framebuffers per resolution and format.
+    HashMap<unsigned long long, FrameBufferHandle> frameBuffers_;
+    /// Current view.
+    uint8_t view_;
+    /// Current shader program.
+    bgfx::ProgramHandle programHandle_;
+    /// Current depth of primitive.
+    uint32_t drawDistance_;
+    /// Rendertargets dirty flag.
+    bool renderTargetsDirty_;
+    /// Textures dirty flag.
+    bool texturesDirty_;
+    /// Vertex declaration dirty flag.
+    bool vertexDeclarationDirty_;
+    /// Blend state dirty flag.
+    bool blendStateDirty_;
+    /// Depth state dirty flag.
+    bool depthStateDirty_;
+    /// Rasterizer state dirty flag.
+    bool rasterizerStateDirty_;
+    /// Scissor rect dirty flag.
+    bool scissorRectDirty_;
+    /// Stencil ref dirty flag.
+    bool stencilRefDirty_;
 
 };
 
