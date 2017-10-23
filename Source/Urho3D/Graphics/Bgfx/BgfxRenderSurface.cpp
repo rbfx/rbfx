@@ -41,13 +41,12 @@ RenderSurface::RenderSurface(Texture* parentTexture) :
     updateMode_(SURFACE_UPDATEVISIBLE),
     updateQueued_(false)
 {
-    idx_ = bgfx::kInvalidHandle;
 }
 
 void RenderSurface::Release()
 {
     Graphics* graphics = parentTexture_->GetObjectGraphics();
-    if (graphics && idx_ != bgfx::kInvalidHandle)
+    if (graphics)
     {
         for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
         {
@@ -59,12 +58,8 @@ void RenderSurface::Release()
             graphics->ResetDepthStencil();
     }
 
-    /* TODO: clean-up framebuffer in graphics as it might be shared...? */
-    bgfx::FrameBufferHandle handle;
-    handle.idx = idx_;
-    bgfx::destroy(handle);
-
-    idx_ = bgfx::kInvalidHandle;
+    // Clean up also from non-active FB handles.
+    graphics->CleanupRenderSurface(this);
 }
 
 bool RenderSurface::CreateRenderBuffer(unsigned width, unsigned height, unsigned format, int multiSample)

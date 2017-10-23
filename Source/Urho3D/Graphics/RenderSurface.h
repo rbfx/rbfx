@@ -137,8 +137,6 @@ private:
         void* renderTargetView_;
         /// OpenGL renderbuffer name.
         unsigned renderBuffer_;
-        /// BGFX framebuffer idx.
-        uint16_t idx_;
     };
 
     union
