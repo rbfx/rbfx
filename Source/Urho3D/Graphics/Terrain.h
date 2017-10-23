@@ -53,6 +53,8 @@ public:
     virtual void ApplyAttributes() override;
     /// Handle enabled/disabled state change.
     virtual void OnSetEnabled() override;
+    /// Visualize the component as debug geometry.
+    virtual void DrawDebugGeometry(DebugRenderer* debug, bool depthTest);
 
     /// Set patch quads per side. Must be a power of two.
     void SetPatchSize(int size);

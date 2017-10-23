@@ -54,6 +54,7 @@ TerrainPatch::TerrainPatch(Context* context) :
     coordinates_(IntVector2::ZERO),
     lodLevel_(0)
 {
+    vertexBuffer_->SetShadowed(true);
     geometry_->SetVertexBuffer(0, vertexBuffer_);
     maxLodGeometry_->SetVertexBuffer(0, vertexBuffer_);
     occlusionGeometry_->SetVertexBuffer(0, vertexBuffer_);
@@ -211,6 +212,17 @@ bool TerrainPatch::DrawOcclusion(OcclusionBuffer* buffer)
 void TerrainPatch::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
     // Intentionally no operation
+    if (auto node = GetNode())
+    {
+        auto geometry = GetLodGeometry(0, lodLevel_);
+        auto vbo = geometry->GetVertexBuffer(0);
+        auto ibo = geometry->GetIndexBuffer();
+        auto vboData = vbo->GetShadowData();
+        auto iboData = ibo->GetShadowData();
+        debug->AddTriangleMesh(vboData, vbo->GetVertexSize(), geometry->GetVertexStart(), iboData, ibo->GetIndexSize(),
+                               geometry->GetIndexStart(), geometry->GetIndexCount(), node->GetWorldTransform(),
+                               Color::GREEN, depthTest);
+    }
 }
 
 void TerrainPatch::SetOwner(Terrain* terrain)
