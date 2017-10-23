@@ -135,9 +135,9 @@ unsigned Texture::GetBGFXFlags()
     unsigned flags = bgfxWrapU[addressMode_[0]] | bgfxWrapV[addressMode_[1]] | bgfxWrapW[addressMode_[2]] | bgfxFilterMode[filterMode_];
     if (sRGB_)
         flags |= BGFX_TEXTURE_SRGB;
-    if (usage_ == TEXTURE_RENDERTARGET)
+    if ((usage_ == TEXTURE_RENDERTARGET) || (usage_ == TEXTURE_DEPTHSTENCIL))
         flags |= BGFX_TEXTURE_RT;
-    if (multiSample_)
+    if (multiSample_ > 1)
     {
         flags |= BGFX_TEXTURE_MSAA_SAMPLE;
         switch (multiSample_)

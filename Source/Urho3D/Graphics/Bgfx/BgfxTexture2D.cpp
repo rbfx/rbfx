@@ -251,30 +251,32 @@ bool Texture2D::Create()
         return false;
 
     // Disable multisampling if not supported
-    //if (multiSample_ > 1 && !graphics_->GetImpl()->CheckMultiSampleSupport(textureDesc.Format, multiSample_))
-    //{
-    //    multiSample_ = 1;
-    //    autoResolve_ = false;
-    //}
+    const bgfx::Caps* caps = bgfx::getCaps();
+    if (multiSample_ > 1 && !(0 != (BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER_MSAA & caps->formats[(bgfx::TextureFormat::Enum)format_])))
+    {
+        multiSample_ = 1;
+        autoResolve_ = false;
+    }
+    // Disable auto-gen mips if not supported
+    if (requestedLevels_> 1 && !(0 != (BGFX_CAPS_FORMAT_TEXTURE_MIP_AUTOGEN & caps->formats[(bgfx::TextureFormat::Enum)format_])))
+        requestedLevels_ = 1;
+    if (usage_ == TEXTURE_DEPTHSTENCIL)
+        requestedLevels_ = 1;
 
     levels_ = CheckMaxLevels(width_, height_, requestedLevels_);
+
+    if (usage_ == TEXTURE_DEPTHSTENCIL)
+        levels_ = 1;
 
     bgfx::TextureHandle handle;
     handle = bgfx::createTexture2D((uint16_t)width_, (uint16_t)height_, levels_ > 1 ? true : false, 1, (bgfx::TextureFormat::Enum)format_, GetBGFXFlags() /*, mem*/);
     object_.idx_ = handle.idx;
 
-    if (usage_ == TEXTURE_RENDERTARGET || usage_ == TEXTURE_DEPTHSTENCIL)
+    if (usage_ == TEXTURE_RENDERTARGET)
     {
-        bgfx::Attachment attachment;
-        attachment.handle = handle;
-        attachment.mip = 0;
-        attachment.layer = 1;
-        bgfx::FrameBufferHandle fbHandle;
-        fbHandle = bgfx::createFrameBuffer(1, &attachment, false);
-        renderSurface_->idx_ = fbHandle.idx;
     }
-    if (usage_ == TEXTURE_DEPTHSTENCIL)
-        requestedLevels_ = 1;
+    //if (usage_ == TEXTURE_DEPTHSTENCIL)
+    //    requestedLevels_ = 1;
 
     if (object_.idx_ != bgfx::kInvalidHandle)
         return true;
