@@ -234,7 +234,8 @@ Graphics::Graphics(Context* context) :
     shaderPath_("Shaders/HLSL/"),
     shaderExtension_(".hlsl"),
     orientations_("LandscapeLeft LandscapeRight"),
-    apiName_("D3D11")
+    apiName_("D3D11"),
+    apiType_(GraphicsApiType::DIRECT3D11)
 {
     SetTextureUnitMappings();
     ResetCachedState();

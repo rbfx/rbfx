@@ -58,7 +58,8 @@ namespace Urho3D
         defaultTextureFilterMode_(FILTER_TRILINEAR),
         defaultTextureAnisotropy_(4),
         orientations_("LandscapeLeft LandscapeRight"),
-        apiName_("Noop")
+        apiName_("Noop"),
+        apiType_(GraphicsApiType::NOOP)
     {
         RegisterGraphicsLibrary(context_);
     }

@@ -369,6 +369,25 @@ enum ShadowQuality
     SHADOWQUALITY_BLUR_VSM
 };
 
+/// Renderer type.
+enum GraphicsApiType
+{
+    NOOP = 0,
+    DIRECT3D9,
+    DIRECT3D11,
+    OPENGLES,
+    OPENGL,
+    BGFX_NOOP,
+    BGFX_DIRECT3D9,
+    BGFX_DIRECT3D11,
+    BGFX_DIRECT3D12,
+    BGFX_GNM,
+    BGFX_METAL,
+    BGFX_OPENGLES,
+    BGFX_OPENGL,
+    BGFX_VULKAN
+};
+
 // Inbuilt shader parameters.
 extern URHO3D_API const StringHash VSP_AMBIENTSTARTCOLOR;
 extern URHO3D_API const StringHash VSP_AMBIENTENDCOLOR;

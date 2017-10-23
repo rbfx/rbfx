@@ -270,6 +270,9 @@ public:
     /// Return graphics API name.
     const String& GetApiName() const { return apiName_; }
 
+    /// Return graphics API type.
+    const GraphicsApiType GetApiType() const { return apiType_; }
+
     /// Return window position.
     IntVector2 GetWindowPosition() const;
 
@@ -797,6 +800,8 @@ private:
     String orientations_;
     /// Graphics API name.
     String apiName_;
+    /// Graphics API type.
+    GraphicsApiType apiType_;
 
     /// Pixel perfect UV offset.
     static const Vector2 pixelUVOffset;
