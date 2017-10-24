@@ -284,7 +284,7 @@ void PS(
 
         float3 BRDF = GetBRDF(iWorldPos.xyz, lightDir, lightVec, toCamera, normal, roughness, diffColor.rgb, specColor);
         finalColor.rgb = BRDF * lightColor * (atten * shadow) / M_PI;
-
+     
         #ifdef AMBIENT
             finalColor += cAmbientColor.rgb * diffColor.rgb;
             finalColor += cMatEmissiveColor;

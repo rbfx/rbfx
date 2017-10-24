@@ -127,6 +127,9 @@ void PBRMaterials::CreateScene()
 
 void PBRMaterials::CreateUI()
 {
+#ifdef _DEBUG
+	GetSubsystem<Console>()->Toggle();
+#endif
     ResourceCache* cache = GetSubsystem<ResourceCache>();
     UI* ui = GetSubsystem<UI>();
 
@@ -219,9 +222,9 @@ void PBRMaterials::SetupViewport()
     // Add post-processing effects appropriate with the example scene
     SharedPtr<RenderPath> effectRenderPath = viewport->GetRenderPath()->Clone();
     effectRenderPath->Append(cache->GetResource<XMLFile>("PostProcess/FXAA2.xml"));
-    effectRenderPath->Append(cache->GetResource<XMLFile>("PostProcess/GammaCorrection.xml"));
-    effectRenderPath->Append(cache->GetResource<XMLFile>("PostProcess/Tonemap.xml"));
-    effectRenderPath->Append(cache->GetResource<XMLFile>("PostProcess/AutoExposure.xml"));
+	effectRenderPath->Append(cache->GetResource<XMLFile>("PostProcess/Tonemap.xml"));
+    //effectRenderPath->Append(cache->GetResource<XMLFile>("PostProcess/GammaCorrection.xml"));
+    //effectRenderPath->Append(cache->GetResource<XMLFile>("PostProcess/AutoExposure.xml"));
 
     viewport->SetRenderPath(effectRenderPath);
 }
@@ -270,6 +273,11 @@ void PBRMaterials::MoveCamera(float timeStep)
         cameraNode_->Translate(Vector3::LEFT * MOVE_SPEED * timeStep);
     if (input->GetKeyDown(KEY_D))
         cameraNode_->Translate(Vector3::RIGHT * MOVE_SPEED * timeStep);
+	if (input->GetKeyDown(KEY_R))
+	{
+		ResourceCache* cache = GetSubsystem<ResourceCache>();
+		cache->ReleaseResources(StringHash("Shader"), true);
+	}
 }
 
 void PBRMaterials::HandleUpdate(StringHash eventType, VariantMap& eventData)

@@ -683,7 +683,7 @@
 		<component type="Zone" id="11">
 			<attribute name="Bounding Box Min" value="-1000 -1000 -1000" />
 			<attribute name="Bounding Box Max" value="1000 1000 1000" />
-			<attribute name="Ambient Color" value="0 0 0 0.2" />
+			<attribute name="Ambient Color" value="0 0 0 1.0" />
 			<attribute name="Zone Texture" value="TextureCube;Textures/Skybox2.xml" />
 		</component>
 	</node>
@@ -1134,7 +1134,7 @@
 				<attribute name="Variables" />
 				<component type="Light" id="4">
 					<attribute name="Light Type" value="Directional" />
-					<attribute name="Brightness Multiplier" value="5000" />
+					<attribute name="Brightness Multiplier" value="2100" />
 					<attribute name="Use Physical Values" value="true" />
 					<attribute name="Cast Shadows" value="true" />
 					<attribute name="CSM Splits" value="10 20 30 40" />
