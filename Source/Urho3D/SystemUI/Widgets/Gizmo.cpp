@@ -20,7 +20,12 @@
 // THE SOFTWARE.
 //
 
+#include "../../Core/CoreEvents.h"
+#include "../../Input/Input.h"
+#include "../../UI/UI.h"
 #include "../../Scene/Scene.h"
+#include "../../Graphics/Octree.h"
+#include "../../Graphics/Graphics.h"
 #include "../../Graphics/GraphicsEvents.h"
 #include "../../Graphics/AnimatedModel.h"
 #include "../../Graphics/DebugRenderer.h"
@@ -34,7 +39,6 @@ namespace Urho3D
 
 Gizmo::Gizmo(Context* context) : Object(context)
 {
-    SubscribeToEvent(E_ENDRENDERING, [&](StringHash, VariantMap&) { RenderDebugInfo(); });
 }
 
 Gizmo::~Gizmo()
@@ -215,6 +219,92 @@ void Gizmo::RenderDebugInfo()
             }
             ++it;
         }
+    }
+}
+
+void Gizmo::HandleAutoSelection()
+{
+    if (autoModeCamera_.Null())
+        return;
+
+    ManipulateSelection(autoModeCamera_);
+
+    // Discard clicks when interacting with UI
+    if (GetUI()->GetFocusElement() != nullptr)
+        return;
+
+    // Discard clicks when interacting with SystemUI
+    if (GetSystemUI()->IsAnyItemActive() || GetSystemUI()->IsAnyItemHovered())
+        return;
+
+    // Discard clicks when gizmo is being manipulated
+    if (IsActive())
+        return;
+
+    if (GetInput()->GetMouseButtonPress(MOUSEB_LEFT))
+    {
+        UI* ui = GetSubsystem<UI>();
+        IntVector2 pos = ui->GetCursorPosition();
+        // Check the cursor is visible and there is no UI element in front of the cursor
+        if (!ui->GetCursor() || !ui->GetCursor()->IsVisible() || ui->GetElementAt(pos, true))
+            return;
+
+        Graphics* graphics = GetSubsystem<Graphics>();
+        Scene* cameraScene = autoModeCamera_->GetScene();
+        Ray cameraRay = autoModeCamera_->GetScreenRay((float)pos.x_ / graphics->GetWidth(), (float)pos.y_ / graphics->GetHeight());
+        // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
+        PODVector<RayQueryResult> results;
+        RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY);
+        cameraScene->GetComponent<Octree>()->RaycastSingle(query);
+        if (results.Size())
+        {
+            WeakPtr<Node> clickNode(results[0].drawable_->GetNode());
+            if (!GetInput()->GetKeyDown(KEY_CTRL))
+                nodeSelection_.Clear();
+
+            if (nodeSelection_.Contains(clickNode))
+                nodeSelection_.Remove(clickNode);
+            else
+                nodeSelection_.Push(clickNode);
+        }
+    }
+
+    if (GetInput()->GetKeyDown(KEY_SHIFT) && GetInput()->GetKeyPress(KEY_TAB))
+        operation_ = static_cast<GizmoOperation>(((size_t)operation_ + 1) % GIZMOOP_MAX);
+
+    if (GetInput()->GetKeyDown(KEY_CTRL) && GetInput()->GetKeyPress(KEY_TAB))
+    {
+        if (transformSpace_ == TS_WORLD)
+            transformSpace_ = TS_LOCAL;
+        else if (transformSpace_ == TS_LOCAL)
+            transformSpace_ = TS_WORLD;
+    }
+}
+
+void Gizmo::EnableAutoMode(Camera* camera)
+{
+    if (autoModeCamera_ == camera)
+        return;
+
+    if (camera == nullptr)
+    {
+        UnsubscribeFromEvent(E_POSTRENDERUPDATE);
+        UnsubscribeFromEvent(E_UPDATE);
+    }
+    else
+    {
+        Scene* scene = camera->GetScene();
+        if (scene == nullptr)
+        {
+            URHO3D_LOGERROR("Camera which does not belong to scene can not be used for gizmo auto selection.");
+            return;
+        }
+
+        autoModeCamera_ = camera;
+
+        scene->GetOrCreateComponent<DebugRenderer>();
+        SubscribeToEvent(E_POSTRENDERUPDATE, [&](StringHash, VariantMap&) { RenderDebugInfo(); });
+        SubscribeToEvent(E_UPDATE, [&](StringHash, VariantMap&) { HandleAutoSelection(); });
     }
 }
 

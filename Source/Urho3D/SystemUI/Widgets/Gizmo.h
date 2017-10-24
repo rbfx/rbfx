@@ -78,10 +78,14 @@ public:
     void Select(Node* node);
     /// Remove a node from selection.
     void Unselect(Node* node);
+    /// Enable auto-selection and gizmo rendering on scene to which specified camera belongs.
+    void EnableAutoMode(Camera* camera);
 
 protected:
     /// Renders debug info of selected nodes if scene has debug renderer component.
     void RenderDebugInfo();
+    /// Process mouse clicks and auto-select nodes.
+    void HandleAutoSelection();
 
     /// Current gizmo operation. Translation, rotation or scaling.
     GizmoOperation operation_ = GIZMOOP_TRANSLATE;
@@ -93,6 +97,8 @@ protected:
     Matrix4 currentOrigin_;
     /// Current node selection. Nodes removed from the scene are automatically unselected.
     Vector<WeakPtr<Node> > nodeSelection_;
+    /// Camera which is used for automatic node selection in the scene camera belongs to.
+    WeakPtr<Camera> autoModeCamera_;
 };
 
 }
