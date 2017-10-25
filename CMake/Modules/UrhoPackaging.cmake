@@ -1,7 +1,8 @@
 
 # Resource packaging
-file (GLOB RESOURCE_DIRS ${CMAKE_SOURCE_DIR}/bin/*Data)
-list (APPEND RESOURCE_DIRS ${CMAKE_SOURCE_DIR}/bin/Autoload)
+file (GLOB RESOURCE_DIRS ${Urho3D_SOURCE_DIR}/bin/*Data)
+file (GLOB PROJECT_RESOURCE_DIRS ${CMAKE_SOURCE_DIR}/bin/*Data)
+list (APPEND RESOURCE_DIRS ${Urho3D_SOURCE_DIR}/bin/Autoload ${PROJECT_RESOURCE_DIRS})
 if (URHO3D_PACKAGING)
     if (CMAKE_CROSSCOMPILING)
         include (ExternalProject)
