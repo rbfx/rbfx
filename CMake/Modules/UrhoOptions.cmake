@@ -51,6 +51,7 @@ option(URHO3D_SAMPLES "Build samples" ${URHO3D_ENABLE_ALL})
 option(URHO3D_LOGGING "Enable logging subsystem" ON)
 option(URHO3D_SYSTEMUI "Build SystemUI subsystem" ${URHO3D_ENABLE_ALL})
 option(URHO3D_PACKAGING "Package resources" OFF)
+option(URHO3D_FILEWATCHER "Watch filesystem for resource changes" OFF)
 
 if (WIN32)
     set(URHO3D_RENDERER D3D11 CACHE STRING "Select renderer: D3D9 | D3D11 | OpenGL")
