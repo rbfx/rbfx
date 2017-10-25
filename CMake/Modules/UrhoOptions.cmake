@@ -20,8 +20,6 @@
 # THE SOFTWARE.
 #
 
-option(URHO3D_ENABLE_ALL "Enables all optional subsystems by default" OFF)
-
 # Source environment
 if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
     execute_process(COMMAND cmd /c set OUTPUT_VARIABLE ENVIRONMENT)
@@ -38,6 +36,8 @@ foreach(key ${ENVIRONMENT})
         endif ()
     endif ()
 endforeach()
+
+option(URHO3D_ENABLE_ALL "Enables all optional subsystems by default" OFF)
 
 # Determine library type
 string(TOUPPER "${BUILD_SHARED_LIBS}" BUILD_SHARED_LIBS)
