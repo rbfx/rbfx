@@ -246,7 +246,7 @@ void Gizmo::HandleAutoSelection()
         UI* ui = GetSubsystem<UI>();
         IntVector2 pos = ui->GetCursorPosition();
         // Check the cursor is visible and there is no UI element in front of the cursor
-        if (!ui->GetCursor() || !ui->GetCursor()->IsVisible() || ui->GetElementAt(pos, true))
+        if (!GetInput()->IsMouseVisible() || ui->GetElementAt(pos, true))
             return;
 
         Graphics* graphics = GetSubsystem<Graphics>();
