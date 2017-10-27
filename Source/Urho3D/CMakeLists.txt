@@ -198,12 +198,6 @@ else ()
     set (INSTALL_TARGET Urho3D_M)
 endif ()
 
-if (WIN32)
-    set (SHARED_LIB_INSTALL_DIR bin)
-else ()
-    set (SHARED_LIB_INSTALL_DIR lib${LIB_SUFFIX})
-endif ()
-
 install(TARGETS ${INSTALL_TARGET}
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION ${SHARED_LIB_INSTALL_DIR}
