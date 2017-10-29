@@ -41,6 +41,7 @@
 #include <Urho3D/SystemUI/Widgets/AttributeInspector.h>
 #include <Urho3D/UI/UI.h>
 #include <Urho3D/UI/Window.h>
+#include <Urho3D/Core/Utils.h>
 
 #include <tinyfiledialogs/tinyfiledialogs.h>
 #include <ImGui/imgui_internal.h>
@@ -52,10 +53,6 @@
 
 
 using namespace std::placeholders;
-
-#define ENUM_FLAGS(t) \
-inline t operator|(t a, t b) { return static_cast<t>(static_cast<size_t>(a) | static_cast<size_t>(b)); }\
-inline t operator|=(t& a, t b) { a = static_cast<t>(static_cast<size_t>(a) | static_cast<size_t>(b)); return a; }
 
 namespace Urho3D
 {
@@ -70,7 +67,7 @@ enum ResizeType
     RESIZE_MOVE = 15,
 };
 
-ENUM_FLAGS(ResizeType);
+URHO3D_TO_FLAGS_ENUM(ResizeType);
 
 enum TransformSelectorFlags
 {
@@ -80,7 +77,7 @@ enum TransformSelectorFlags
     TSF_HIDEHANDLES = 4,
 };
 
-ENUM_FLAGS(TransformSelectorFlags);
+URHO3D_TO_FLAGS_ENUM(TransformSelectorFlags);
 
 inline unsigned MakeHash(const ResizeType& value)
 {
