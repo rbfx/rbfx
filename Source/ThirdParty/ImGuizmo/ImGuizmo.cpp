@@ -21,7 +21,9 @@
 // SOFTWARE.
 
 #include "imgui.h"
+#ifndef IMGUI_DEFINE_MATH_OPERATORS
 #define IMGUI_DEFINE_MATH_OPERATORS
+#endif
 #include "imgui_internal.h"
 #include "ImGuizmo.h"
 
@@ -660,13 +662,18 @@ namespace ImGuizmo
 	   gContext.mYMax = gContext.mY + gContext.mXMax;
    }
 
+   void SetDrawlist()
+   {
+      gContext.mDrawList = ImGui::GetWindowDrawList();
+   }
+
    void BeginFrame()
    {
       ImGuiIO& io = ImGui::GetIO();
 
       ImGui::Begin("gizmo", NULL, io.DisplaySize, 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus);
 
-	  gContext.mDrawList = ImGui::GetWindowDrawList();
+      SetDrawlist();
 
       ImGui::End();
    }
