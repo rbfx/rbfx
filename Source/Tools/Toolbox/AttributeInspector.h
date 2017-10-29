@@ -88,12 +88,24 @@ public:
 
 protected:
     /// Render attribute inspector UI.
-    void RenderUi();
+    virtual void RenderUi();
 
     /// Enable or disable rendering of attribute inspector window.
     bool enabled_ = false;
     /// Current Serializable whose attributes are rendered.
     WeakPtr<Serializable> currentSerializable_;
+};
+
+class AttributeInspectorDockWindow : public AttributeInspectorWindow
+{
+    URHO3D_OBJECT(AttributeInspectorDockWindow, Object);
+public:
+    /// Construct.
+    explicit AttributeInspectorDockWindow(Context* context);
+
+protected:
+    /// Render attribute inspector UI.
+    void RenderUi() override;
 };
 
 }

@@ -28,6 +28,7 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include "AttributeInspector.h"
+#include "ImGuiDock.h"
 
 #include <IconFontCppHeaders/IconsFontAwesome.h>
 #include <tinyfiledialogs/tinyfiledialogs.h>
@@ -471,6 +472,24 @@ void AttributeInspectorWindow::RenderUi()
 bool AttributeInspectorWindow::IsEnabled() const
 {
     return HasSubscribedToEvent(E_UPDATE);
+}
+
+AttributeInspectorDockWindow::AttributeInspectorDockWindow(Context* context)
+    : AttributeInspectorWindow(context)
+{
+
+}
+
+void AttributeInspectorDockWindow::RenderUi()
+{
+    if (ui::BeginDock("Inspector"))
+    {
+        if (currentSerializable_.NotNull())
+        {
+            RenderAttributes(currentSerializable_);
+        }
+    }
+    ui::EndDock();
 }
 
 }
