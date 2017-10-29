@@ -38,7 +38,6 @@
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/SceneEvents.h>
 #include <Urho3D/SystemUI/SystemUI.h>
-#include <Urho3D/SystemUI/Widgets/AttributeInspector.h>
 #include <Urho3D/UI/UI.h>
 #include <Urho3D/UI/Window.h>
 #include <Urho3D/Core/Utils.h>
@@ -49,7 +48,8 @@
 
 #include <unordered_map>
 
-#include "UndoManager.h"
+#include <Toolbox/AttributeInspector.h>
+#include <Toolbox/UndoManager.h>
 
 
 using namespace std::placeholders;

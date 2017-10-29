@@ -26,6 +26,6 @@ endif ()
 
 file (GLOB SOURCE_FILES *.cpp *.h *.hpp)
 add_executable (UIEditor WIN32 ${SOURCE_FILES})
-target_link_libraries (UIEditor Urho3D)
+target_link_libraries (UIEditor Toolbox Urho3D)
 set_target_properties(UIEditor PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
 install(TARGETS UIEditor RUNTIME DESTINATION bin)

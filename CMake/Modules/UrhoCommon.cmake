@@ -182,7 +182,7 @@ endmacro ()
 
 macro (install_to_build_tree TARGET)
     add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND "${CMAKE_COMMAND}"
-        -D CMAKE_INSTALL_PREFIX:string=${CMAKE_BINARY_DIR} -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake")
+        -D CMAKE_INSTALL_PREFIX:string=${CMAKE_BINARY_DIR} -D BUILD_TYPE:string=$<CONFIGURATION> -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake")
 endmacro ()
 
 # Macro deploys Qt dlls to folder where target executable is located.

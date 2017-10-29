@@ -20,13 +20,13 @@
 // THE SOFTWARE.
 //
 
-#include "../../SystemUI/SystemUI.h"
-#include "../../Core/StringUtils.h"
-#include "../../Core/CoreEvents.h"
-#include "../../Scene/Serializable.h"
-#include "../../Resource/ResourceCache.h"
-#include "../../IO/FileSystem.h"
-#include "../../IO/Log.h"
+#include <Urho3D/SystemUI/SystemUI.h>
+#include <Urho3D/Core/StringUtils.h>
+#include <Urho3D/Core/CoreEvents.h>
+#include <Urho3D/Scene/Serializable.h>
+#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/IO/Log.h>
 #include "AttributeInspector.h"
 
 #include <IconFontCppHeaders/IconsFontAwesome.h>

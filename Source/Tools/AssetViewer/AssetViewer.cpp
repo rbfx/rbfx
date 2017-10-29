@@ -21,6 +21,7 @@
 //
 
 #include <Urho3D/Urho3DAll.h>
+#include <Toolbox/Gizmo.h>
 #include <Poco/Process.h>
 #include <time.h>
 

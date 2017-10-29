@@ -23,13 +23,15 @@
 #pragma once
 
 
-#include "../../Core/Object.h"
-#include "../../Graphics/Camera.h"
-#include "../../Scene/Node.h"
+#include <Urho3D/Scene/Node.h>
+#include <ImGui/imgui.h>
 
 
 namespace Urho3D
 {
+
+class Camera;
+class Node;
 
 enum GizmoOperation
 {
@@ -39,7 +41,7 @@ enum GizmoOperation
     GIZMOOP_MAX
 };
 
-class URHO3D_API Gizmo : public Object
+class Gizmo : public Object
 {
     URHO3D_OBJECT(Gizmo, Object);
 public:
@@ -78,8 +80,20 @@ public:
     void Select(Node* node);
     /// Remove a node from selection.
     void Unselect(Node* node);
+    /// Select if node was not selected or unselect if node was selected.
+    void ToggleSelection(Node* node);
+    /// Unselect all nodes.
+    void UnselectAll();
+    /// Return true if node is selected by gizmo.
+    bool IsSelected(Node* node) const;
     /// Enable auto-selection and gizmo rendering on scene to which specified camera belongs.
     void EnableAutoMode(Camera* camera);
+    /// Return list of selected nodes.
+    const Vector<WeakPtr<Node>>& GetSelection() const { return nodeSelection_; }
+    /// Set screen rect to which gizmo rendering will be limited. Use when putting gizmo in a window.
+    void SetScreenRect(const IntVector2& pos, const IntVector2& size);
+    /// Set screen rect to which gizmo rendering will be limited. Use when putting gizmo in a window.
+    void SetScreenRect(const IntRect& rect);
 
 protected:
     /// Renders debug info of selected nodes if scene has debug renderer component.
@@ -99,6 +113,8 @@ protected:
     Vector<WeakPtr<Node> > nodeSelection_;
     /// Camera which is used for automatic node selection in the scene camera belongs to.
     WeakPtr<Camera> autoModeCamera_;
+    ImVec2 displayPos_{};
+    ImVec2 displaySize_{};
 };
 
 }

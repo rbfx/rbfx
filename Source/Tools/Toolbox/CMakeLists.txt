@@ -20,27 +20,14 @@
 # THE SOFTWARE.
 #
 
-# Urho3D tools
-set (CMAKE_INSTALL_RPATH "../lib${LIB_SUFFIX}")
-
-if (URHO3D_PACKAGING OR         # When packing resources
-    URHO3D_PACKAGING_TOOL OR    # When crosscompiling and tool is required
-    URHO3D_TOOLS)
-    add_subdirectory (PackageTool)
-endif ()
-if (URHO3D_TOOLS)
-    add_subdirectory (Toolbox)
-    add_subdirectory (AssetImporter)
-    add_subdirectory (AssetViewer)
-    add_subdirectory (OgreImporter)
-    add_subdirectory (RampGenerator)
-    add_subdirectory (SpritePacker)
-    add_subdirectory (UIEditor)
+if (NOT URHO3D_SYSTEMUI)
+    return ()
 endif ()
 
-file(GLOB tool_dirs RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
-foreach (tool ${tool_dirs})
-    if (TARGET ${tool})
-        set_target_properties(${tool} PROPERTIES FOLDER Tools)
-    endif ()
-endforeach ()
+file (GLOB SOURCE_FILES *.cpp *.h *.hpp)
+add_library (Toolbox STATIC ${SOURCE_FILES})
+target_link_libraries (Toolbox Urho3D)
+target_include_directories(Toolbox PUBLIC ..)
+install(TARGETS Toolbox ARCHIVE DESTINATION lib)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DESTINATION ${DEST_INCLUDE_DIR}/Toolbox FILES_MATCHING PATTERN *.h)
+install_to_build_tree(Toolbox)

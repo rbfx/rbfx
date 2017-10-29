@@ -25,14 +25,14 @@
 
 #include <array>
 
-#include "../../Core/Object.h"
-#include "../../Core/Context.h"
+#include <Urho3D/Core/Object.h>
+#include <Urho3D/Core/Context.h>
 
 
 namespace Urho3D
 {
 
-class URHO3D_API AttributeInspector : public Object
+class AttributeInspector : public Object
 {
     URHO3D_OBJECT(AttributeInspector, Object);
 public:
@@ -66,7 +66,7 @@ protected:
     Variant originalValue_;
 };
 
-class URHO3D_API AttributeInspectorWindow : public AttributeInspector
+class AttributeInspectorWindow : public AttributeInspector
 {
     URHO3D_OBJECT(AttributeInspectorWindow, Object);
 public:
