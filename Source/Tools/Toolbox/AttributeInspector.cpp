@@ -50,13 +50,14 @@ void AttributeInspector::RenderAttributes(Serializable* item)
     /// If serializable changes clear value buffers so values from previous item do not appear when inspecting new item.
     if (lastSerializable_.Get() != item)
     {
+        maxWidth_ = 0;
         buffers_.Clear();
         lastSerializable_ = item;
     }
 
     ui::TextUnformatted("Filter");
-    ui::NextColumn();
-    if (ui::Button(ICON_FA_UNDO))
+    NextColumn();
+    if (ui::Button(ICON_FA_UNDO, {20, 20}))
         filter_.front() = 0;
     if (ui::IsItemHovered())
         ui::SetTooltip("Reset filter.");
@@ -64,7 +65,6 @@ void AttributeInspector::RenderAttributes(Serializable* item)
     ui::PushID("FilterEdit");
     ui::InputText("", &filter_.front(), filter_.size() - 1);
     ui::PopID();
-    ui::NextColumn();
 
     ui::PushID(item);
     const char* modifiedThisFrame = nullptr;
@@ -102,14 +102,14 @@ void AttributeInspector::RenderAttributes(Serializable* item)
         if (!tooltip.Empty() && ui::IsItemHovered())
             ui::SetTooltip("%s", tooltip.CString());
 
-        ui::NextColumn();
+        NextColumn();
 
         Variant value, oldValue;
         value = oldValue = item->GetAttribute(info.name_);
 
         ui::PushID(info.name_.CString());
 
-        if (ui::Button(ICON_FA_CARET_DOWN))
+        if (ui::Button(ICON_FA_CARET_DOWN, {20, 20}))
             ui::OpenPopup("Attribute Menu");
 
         if (ui::BeginPopup("Attribute Menu"))
@@ -151,11 +151,9 @@ void AttributeInspector::RenderAttributes(Serializable* item)
         }
 
         ui::PopID();
-        ui::NextColumn();
     }
 
     ui::PopID();
-    ui::Columns(1);
 
     // Just finished modifying attribute.
     if (modifiedLastFrame_ && !ui::IsAnyItemActive())
@@ -433,6 +431,13 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
     return modified;
 }
 
+void AttributeInspector::NextColumn()
+{
+    ui::SameLine();
+    maxWidth_ = Max(maxWidth_, ui::GetCursorPosX());
+    ui::SameLine(maxWidth_);
+}
+
 AttributeInspectorWindow::AttributeInspectorWindow(Context* context) : AttributeInspector(context)
 {
 
@@ -453,11 +458,10 @@ void AttributeInspectorWindow::SetSerializable(Serializable* item)
 
 void AttributeInspectorWindow::RenderUi()
 {
-    if (ui::Begin("Attribute Inspector"))
+    if (ui::Begin("Inspector"))
     {
         if (currentSerializable_.NotNull())
         {
-            ui::Columns(2);
             RenderAttributes(currentSerializable_);
         }
     }

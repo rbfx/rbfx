@@ -53,6 +53,8 @@ protected:
     /// Render value widget of single attribute.
     /// \returns true if value was modified.
     bool RenderSingleAttribute(const AttributeInfo& info, Variant& value);
+    /// Automatically creates two columns where first column is as wide as longest label.
+    void NextColumn();
 
     /// A filter value. Attributes whose titles do not contain substring sored in this variable will not be rendered.
     std::array<char, 0x100> filter_;
@@ -64,6 +66,8 @@ protected:
     const char* modifiedLastFrame_ = nullptr;
     /// Value of attribute before modifying it started.
     Variant originalValue_;
+    /// Max width of attribute label.
+    int maxWidth_ = 0;
 };
 
 class AttributeInspectorWindow : public AttributeInspector
