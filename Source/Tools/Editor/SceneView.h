@@ -46,7 +46,35 @@ public:
     void SetRendererNode(Node* node) { renderer_ = node; }
     /// Render scene window.
     bool RenderWindow();
+    /// Load scene from xml or json file.
+    void LoadScene(const String& filePath);
 
+    /// Add a node to selection.
+    void Select(Node* node);
+    /// Select any serializable object.
+    void Select(Serializable* serializable);
+    /// Remove a node from selection.
+    void Unselect(Node* node);
+    /// Select if node was not selected or unselect if node was selected.
+    void ToggleSelection(Node* node);
+    /// Unselect all nodes.
+    void UnselectAll();
+    /// Return true if node is selected by gizmo.
+    bool IsSelected(Node* node) const;
+    /// Return list of selected nodes.
+    const Vector<WeakPtr<Node>>& GetSelection() const;
+    /// Render buttons which customize gizmo behavior.
+    void RenderGizmoButtons();
+    /// Return selected serializable object. It usually is a component selected for inspection.
+    Serializable* GetSelectedSerializable() { return selectedSerializable_; }
+
+protected:
+    /// Called when node selection changes.
+    void OnNodeSelectionChanged();
+    /// Creates scene camera and other objects required by editor.
+    void CreateEditorObjects();
+
+public:
     /// Scene title. Should be unique.
     String title_ = "Scene";
     /// Scene which is being edited.
@@ -67,6 +95,8 @@ public:
     Gizmo gizmo_;
     /// Current window flags.
     ImGuiWindowFlags windowFlags_ = 0;
+    /// A selected serializable object. This usually is a component that is inspeced by inspector.
+    WeakPtr<Serializable> selectedSerializable_;
 };
 
 };

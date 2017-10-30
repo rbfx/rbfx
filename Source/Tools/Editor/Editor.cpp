@@ -152,7 +152,9 @@ void Editor::OnUpdate(VariantMap& args)
             it = sceneViews_.Erase(it);
     }
 
-    if (lastActiveView_.Expired() || lastActiveView_->gizmo_.GetSelection().Empty())
+    if (!lastActiveView_.Expired())
+        inspector_.SetSerializable(lastActiveView_->GetSelectedSerializable());
+    else
         inspector_.SetSerializable(nullptr);
 }
 
@@ -165,6 +167,8 @@ void Editor::RenderMenuBar()
             if (ui::MenuItem("New Scene"))
                 CreateNewScene();
 
+            ui::Separator();
+
             if (ui::MenuItem("Exit"))
                 engine_->Exit();
 
@@ -173,44 +177,7 @@ void Editor::RenderMenuBar()
 
         if (!lastActiveView_.Expired())
         {
-            const auto& style = ui::GetStyle();
-
-            auto drawGizmoOperationButton = [&](GizmoOperation operation, const char* icon, const char* tooltip)
-            {
-                if (lastActiveView_->gizmo_.GetOperation() == operation)
-                    ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_ButtonActive]);
-                else
-                    ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
-                if (ui::ButtonEx(icon, {0, 0}, ImGuiButtonFlags_PressedOnClick))
-                    lastActiveView_->gizmo_.SetOperation(operation);
-                ui::PopStyleColor();
-                ui::SameLine();
-                if (ui::IsItemHovered())
-                    ui::SetTooltip(tooltip);
-            };
-
-            auto drawGizmoTransformButton = [&](TransformSpace transformSpace, const char* icon, const char* tooltip)
-            {
-                if (lastActiveView_->gizmo_.GetTransformSpace() == transformSpace)
-                    ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_ButtonActive]);
-                else
-                    ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
-                if (ui::ButtonEx(icon, {0, 0}, ImGuiButtonFlags_PressedOnClick))
-                    lastActiveView_->gizmo_.SetTransformSpace(transformSpace);
-                ui::PopStyleColor();
-                ui::SameLine();
-                if (ui::IsItemHovered())
-                    ui::SetTooltip(tooltip);
-            };
-
-            drawGizmoOperationButton(GIZMOOP_TRANSLATE, ICON_FA_ARROWS, "Translate");
-            drawGizmoOperationButton(GIZMOOP_ROTATE, ICON_FA_REPEAT, "Rotate");
-            drawGizmoOperationButton(GIZMOOP_SCALE, ICON_FA_ARROWS_ALT, "Scale");
-            ui::TextUnformatted("|");
-            ui::SameLine();
-            drawGizmoTransformButton(TS_WORLD, ICON_FA_ARROWS, "World");
-            drawGizmoTransformButton(TS_LOCAL, ICON_FA_ARROWS_ALT, "Local");
-
+            lastActiveView_->RenderGizmoButtons();
             SendEvent(E_EDITORTOOLBARBUTTONS);
         }
 
@@ -224,7 +191,7 @@ void Editor::RenderSceneNodeTree(Node* node)
         return;
 
     String name = ToString("%s (%d)", (node->GetName().Empty() ? node->GetTypeName() : node->GetName()).CString(), node->GetID());
-    bool isSelected = lastActiveView_->gizmo_.IsSelected(node);
+    bool isSelected = lastActiveView_->IsSelected(node);
 
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
     if (isSelected)
@@ -237,9 +204,8 @@ void Editor::RenderSceneNodeTree(Node* node)
     if (ui::IsItemClicked(0))
     {
         if (!GetInput()->GetKeyDown(KEY_CTRL))
-            lastActiveView_->gizmo_.UnselectAll();
-        lastActiveView_->gizmo_.ToggleSelection(node);
-        inspector_.SetSerializable(node);
+            lastActiveView_->UnselectAll();
+        lastActiveView_->ToggleSelection(node);
     }
 
     if (opened)
@@ -249,9 +215,9 @@ void Editor::RenderSceneNodeTree(Node* node)
             bool selected = inspector_.GetSerializable() == component;
             if (ui::Selectable(component->GetTypeName().CString(), selected))
             {
-                lastActiveView_->gizmo_.UnselectAll();
-                lastActiveView_->gizmo_.ToggleSelection(node);
-                inspector_.SetSerializable(component);
+                lastActiveView_->UnselectAll();
+                lastActiveView_->ToggleSelection(node);
+                lastActiveView_->Select(component);
             }
         }
 
@@ -261,10 +227,19 @@ void Editor::RenderSceneNodeTree(Node* node)
     }
 }
 
-void Editor::CreateNewScene()
+void Editor::CreateNewScene(const String& path)
 {
     SharedPtr<SceneView> sceneView(new SceneView(context_));
-    sceneView->title_ = ToString("Scene#%d", sceneViews_.Size() + 1);
+
+    for (auto index = 1; ; index++)
+    {
+        auto newTitle = ToString("Scene#%d", index);
+        if (GetSceneView(newTitle) == nullptr)
+        {
+            sceneView->title_ = newTitle;
+            break;
+        }
+    }
 
     // In order to render scene to a texture we must add a dummy node to scene rendered to a screen, which has material
     // pointing to scene texture. This object must also be visible to main camera.
@@ -282,6 +257,8 @@ void Editor::CreateNewScene()
     sceneView->SetRendererNode(node);
     sceneViews_.Push(sceneView);
 
+    sceneView->LoadScene("Data/Scenes/SceneLoadExample.xml");
+
     // Fills up hierarchy window
     if (lastActiveView_.Null())
         lastActiveView_ = sceneView;
@@ -295,5 +272,14 @@ bool Editor::IsActive(Scene* scene)
     return activeView_->scene_ == scene && activeView_->isActive_;
 }
 
+SceneView* Editor::GetSceneView(const String& title)
+{
+    for (auto& view: sceneViews_)
+    {
+        if (view->title_ == title)
+            return view;
+    }
+    return nullptr;
+}
 
 }

@@ -22,10 +22,12 @@
 
 #include "SceneView.h"
 #include "EditorConstants.h"
+#include "EditorEvents.h"
 #include <Toolbox/DebugCameraController.h>
 #include <ImGui/imgui_internal.h>
 #include <ImGuizmo/ImGuizmo.h>
 #include <Toolbox/ImGuiDock.h>
+#include <IconFontCppHeaders/IconsFontAwesome.h>
 
 
 namespace Urho3D
@@ -37,13 +39,10 @@ SceneView::SceneView(Context* context)
 {
     scene_ = SharedPtr<Scene>(new Scene(context));
     scene_->CreateComponent<Octree>();
-    camera_ = scene_->CreateChild("DebugCamera");
-    camera_->AddTag(InternalEditorElementTag);
-    camera_->CreateComponent<Camera>();
-    camera_->CreateComponent<DebugCameraController>();
-    scene_->GetOrCreateComponent<DebugRenderer>()->SetView(GetCamera());
     view_ = SharedPtr<Texture2D>(new Texture2D(context));
     view_->SetFilterMode(FILTER_ANISOTROPIC);
+    CreateEditorObjects();
+    SubscribeToEvent(this, E_EDITORSELECTIONCHANGED, std::bind(&SceneView::OnNodeSelectionChanged, this));
 }
 
 SceneView::~SceneView()
@@ -70,7 +69,7 @@ bool SceneView::RenderWindow()
     style.WindowPadding = {0, 0};
     if (ui::BeginDock(title_.CString(), &open, windowFlags_))
     {
-        isActive_ = ui::IsWindowFocused() && ui::IsWindowHovered();
+        isActive_ = ui::IsWindowHovered();
         camera_->GetComponent<DebugCameraController>()->SetEnabled(isActive_);
 
         ImGuizmo::SetDrawlist();
@@ -105,18 +104,27 @@ bool SceneView::RenderWindow()
                 Ray cameraRay = camera_->GetComponent<Camera>()->GetScreenRay((float)pos.x_ / screenRect_.Width(), (float)pos.y_ / screenRect_.Height());
                 // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
                 PODVector<RayQueryResult> results;
+
                 RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY);
                 scene_->GetComponent<Octree>()->RaycastSingle(query);
+
+                if (!results.Size())
+                {
+                    // When object geometry was not hit by a ray - query for object bounding box.
+                    RayOctreeQuery query2(results, cameraRay, RAY_OBB, M_INFINITY, DRAWABLE_GEOMETRY);
+                    scene_->GetComponent<Octree>()->RaycastSingle(query2);
+                }
+
                 if (results.Size())
                 {
                     WeakPtr<Node> clickNode(results[0].drawable_->GetNode());
                     if (!GetInput()->GetKeyDown(KEY_CTRL))
-                        gizmo_.UnselectAll();
+                        UnselectAll();
 
-                    gizmo_.ToggleSelection(clickNode);
+                    ToggleSelection(clickNode);
                 }
                 else
-                    gizmo_.UnselectAll();
+                    UnselectAll();
             }
         }
         else
@@ -125,6 +133,136 @@ bool SceneView::RenderWindow()
     ui::EndDock();
     style.WindowPadding = padding;
     return open;
+}
+
+void SceneView::LoadScene(const String& filePath)
+{
+    if (filePath.EndsWith(".xml", false))
+    {
+        if (scene_->LoadXML(GetCache()->GetResource<XMLFile>(filePath)->GetRoot()))
+            CreateEditorObjects();
+        else
+            URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(filePath).CString());
+    }
+    else if (filePath.EndsWith(".json", false))
+    {
+        if (scene_->LoadJSON(GetCache()->GetResource<JSONFile>(filePath)->GetRoot()))
+            CreateEditorObjects();
+        else
+            URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(filePath).CString());
+    }
+    else
+        URHO3D_LOGERRORF("Unknown scene file format %s", GetExtension(filePath).CString());
+}
+
+void SceneView::CreateEditorObjects()
+{
+    camera_ = scene_->CreateChild("DebugCamera");
+    camera_->AddTag(InternalEditorElementTag);
+    camera_->CreateComponent<Camera>();
+    camera_->CreateComponent<DebugCameraController>();
+    scene_->GetOrCreateComponent<DebugRenderer>()->SetView(GetCamera());
+}
+
+void SceneView::Select(Node* node)
+{
+    if (gizmo_.Select(node))
+    {
+        using namespace EditorSelectionChanged;
+        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENEVIEW, this);
+    }
+}
+
+void SceneView::Unselect(Node* node)
+{
+    if (gizmo_.Unselect(node))
+    {
+        using namespace EditorSelectionChanged;
+        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENEVIEW, this);
+    }
+}
+
+void SceneView::ToggleSelection(Node* node)
+{
+    gizmo_.ToggleSelection(node);
+    using namespace EditorSelectionChanged;
+    SendEvent(E_EDITORSELECTIONCHANGED, P_SCENEVIEW, this);
+}
+
+void SceneView::UnselectAll()
+{
+    if (gizmo_.UnselectAll())
+    {
+        using namespace EditorSelectionChanged;
+        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENEVIEW, this);
+    }
+}
+
+const Vector<WeakPtr<Node>>& SceneView::GetSelection() const
+{
+    return gizmo_.GetSelection();
+}
+
+void SceneView::RenderGizmoButtons()
+{
+    const auto& style = ui::GetStyle();
+
+    auto drawGizmoOperationButton = [&](GizmoOperation operation, const char* icon, const char* tooltip)
+    {
+        if (gizmo_.GetOperation() == operation)
+            ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_ButtonActive]);
+        else
+            ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
+        if (ui::ButtonEx(icon, {0, 0}, ImGuiButtonFlags_PressedOnClick))
+            gizmo_.SetOperation(operation);
+        ui::PopStyleColor();
+        ui::SameLine();
+        if (ui::IsItemHovered())
+            ui::SetTooltip(tooltip);
+    };
+
+    auto drawGizmoTransformButton = [&](TransformSpace transformSpace, const char* icon, const char* tooltip)
+    {
+        if (gizmo_.GetTransformSpace() == transformSpace)
+            ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_ButtonActive]);
+        else
+            ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
+        if (ui::ButtonEx(icon, {0, 0}, ImGuiButtonFlags_PressedOnClick))
+            gizmo_.SetTransformSpace(transformSpace);
+        ui::PopStyleColor();
+        ui::SameLine();
+        if (ui::IsItemHovered())
+            ui::SetTooltip(tooltip);
+    };
+
+    drawGizmoOperationButton(GIZMOOP_TRANSLATE, ICON_FA_ARROWS, "Translate");
+    drawGizmoOperationButton(GIZMOOP_ROTATE, ICON_FA_REPEAT, "Rotate");
+    drawGizmoOperationButton(GIZMOOP_SCALE, ICON_FA_ARROWS_ALT, "Scale");
+    ui::TextUnformatted("|");
+    ui::SameLine();
+    drawGizmoTransformButton(TS_WORLD, ICON_FA_ARROWS, "World");
+    drawGizmoTransformButton(TS_LOCAL, ICON_FA_ARROWS_ALT, "Local");
+}
+
+bool SceneView::IsSelected(Node* node) const
+{
+    return gizmo_.IsSelected(node);
+}
+
+void SceneView::Select(Serializable* serializable)
+{
+    selectedSerializable_ = serializable;
+}
+
+void SceneView::OnNodeSelectionChanged()
+{
+    using namespace EditorSelectionChanged;
+    // TODO: inspector for multi-selection.
+    const auto& selection = GetSelection();
+    if (selection.Size() == 1)
+        Select(DynamicCast<Serializable>(selection.Front()));
+    else
+        Select((Serializable*)nullptr);
 }
 
 }

@@ -56,11 +56,14 @@ public:
     void RenderMenuBar();
     /// Render scene node tree. Should be called with Scene as parameter in order to render entire scene node tree.
     void RenderSceneNodeTree(Node* node);
-    /// Create sample scene.
-    void CreateNewScene();
+    /// Create sample scene. Specify xml or json file with serialized scene contents to load them.
+    void CreateNewScene(const String& path="");
     /// Return true if specified scene tab is focused and mouse hovers it.
     bool IsActive(Scene* scene);
+    /// Return scene view based on it's label, or null if no such scene view exists.
+    SceneView* GetSceneView(const String& title);
 
+protected:
     /// List of active scene views
     Vector<SharedPtr<SceneView>> sceneViews_;
     /// Dummy scene required for making scene rendering to textures work.
