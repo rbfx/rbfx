@@ -77,13 +77,13 @@ public:
     /// Render gizmo ui. This needs to be called between ui::Begin() / ui::End().
     void RenderUI();
     /// Add a node to selection.
-    void Select(Node* node);
+    bool Select(Node* node);
     /// Remove a node from selection.
-    void Unselect(Node* node);
+    bool Unselect(Node* node);
     /// Select if node was not selected or unselect if node was selected.
     void ToggleSelection(Node* node);
     /// Unselect all nodes.
-    void UnselectAll();
+    bool UnselectAll();
     /// Return true if node is selected by gizmo.
     bool IsSelected(Node* node) const;
     /// Enable auto-selection and gizmo rendering on scene to which specified camera belongs.

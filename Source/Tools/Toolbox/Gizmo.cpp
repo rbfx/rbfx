@@ -194,14 +194,22 @@ void Gizmo::RenderUI()
         SetTransformSpace(TS_LOCAL);
 }
 
-void Gizmo::Select(Node* node)
+bool Gizmo::Select(Node* node)
 {
-    nodeSelection_.Push(WeakPtr<Node>(node));
+    WeakPtr<Node> weakNode(node);
+    if (nodeSelection_.Contains(weakNode))
+        return false;
+    nodeSelection_.Push(weakNode);
+    return true;
 }
 
-void Gizmo::Unselect(Node* node)
+bool Gizmo::Unselect(Node* node)
 {
-    nodeSelection_.Remove(WeakPtr<Node>(node));
+    WeakPtr<Node> weakNode(node);
+    if (!nodeSelection_.Contains(weakNode))
+        return false;
+    nodeSelection_.Remove(weakNode);
+    return true;
 }
 
 void Gizmo::RenderDebugInfo()
@@ -318,9 +326,12 @@ void Gizmo::ToggleSelection(Node* node)
         Select(node);
 }
 
-void Gizmo::UnselectAll()
+bool Gizmo::UnselectAll()
 {
+    if (nodeSelection_.Empty())
+        return false;
     nodeSelection_.Clear();
+    return true;
 }
 
 bool Gizmo::IsSelected(Node* node) const
