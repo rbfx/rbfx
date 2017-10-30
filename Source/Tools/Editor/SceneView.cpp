@@ -213,7 +213,7 @@ void SceneView::RenderGizmoButtons()
             ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_ButtonActive]);
         else
             ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
-        if (ui::ButtonEx(icon, {0, 0}, ImGuiButtonFlags_PressedOnClick))
+        if (ui::ButtonEx(icon, {20, 20}, ImGuiButtonFlags_PressedOnClick))
             gizmo_.SetOperation(operation);
         ui::PopStyleColor();
         ui::SameLine();
@@ -227,7 +227,7 @@ void SceneView::RenderGizmoButtons()
             ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_ButtonActive]);
         else
             ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
-        if (ui::ButtonEx(icon, {0, 0}, ImGuiButtonFlags_PressedOnClick))
+        if (ui::ButtonEx(icon, {20, 20}, ImGuiButtonFlags_PressedOnClick))
             gizmo_.SetTransformSpace(transformSpace);
         ui::PopStyleColor();
         ui::SameLine();
@@ -242,6 +242,21 @@ void SceneView::RenderGizmoButtons()
     ui::SameLine();
     drawGizmoTransformButton(TS_WORLD, ICON_FA_ARROWS, "World");
     drawGizmoTransformButton(TS_LOCAL, ICON_FA_ARROWS_ALT, "Local");
+    ui::TextUnformatted("|");
+    ui::SameLine();
+
+
+    auto light = camera_->GetComponent<Light>();
+    if (light->IsEnabled())
+        ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_ButtonActive]);
+    else
+        ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
+    if (ui::Button(ICON_FA_LIGHTBULB_O, {20, 20}))
+        light->SetEnabled(!light->IsEnabled());
+    ui::PopStyleColor();
+    ui::SameLine();
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Camera Headlight");
 }
 
 bool SceneView::IsSelected(Node* node) const
