@@ -33,6 +33,7 @@
 #include <Urho3D/Graphics/DebugRenderer.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/SystemUI/SystemUI.h>
+#include <Urho3D/Graphics/Light.h>
 #include <ImGui/imgui_internal.h>
 #include <ImGuizmo/ImGuizmo.h>
 #include "Gizmo.h"
@@ -229,10 +230,15 @@ void Gizmo::RenderDebugInfo()
             }
             if (debug != nullptr)
             {
-                if (auto staticModel = node->GetComponent<StaticModel>())
-                    debug->AddBoundingBox(staticModel->GetWorldBoundingBox(), Color::WHITE);
-                else if (auto animatedModel = node->GetComponent<AnimatedModel>())
-                    debug->AddBoundingBox(animatedModel->GetWorldBoundingBox(), Color::WHITE);
+                for (auto& component: node->GetComponents())
+                {
+                    if (auto light = dynamic_cast<Light*>(component.Get()))
+                        light->DrawDebugGeometry(debug, true);
+                    else if (auto drawable = dynamic_cast<Drawable*>(component.Get()))
+                        debug->AddBoundingBox(drawable->GetWorldBoundingBox(), Color::WHITE);
+                    else
+                        component->DrawDebugGeometry(debug, true);
+                }
             }
             ++it;
         }
