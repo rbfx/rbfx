@@ -32,6 +32,8 @@
 
 #include "../../DebugNew.h"
 
+#include <bimg/bimg.h>
+
 namespace Urho3D
 {
 
@@ -96,14 +98,7 @@ bool Texture::GetParametersDirty() const
 
 bool Texture::IsCompressed() const
 {
-    return format_ == bgfx::TextureFormat::BC1    || format_ == bgfx::TextureFormat::BC2    ||
-           format_ == bgfx::TextureFormat::BC3    || format_ == bgfx::TextureFormat::BC4    ||
-           format_ == bgfx::TextureFormat::BC5    || format_ == bgfx::TextureFormat::BC6H   ||
-           format_ == bgfx::TextureFormat::BC7    || format_ == bgfx::TextureFormat::ETC1   ||
-           format_ == bgfx::TextureFormat::ETC2   || format_ == bgfx::TextureFormat::ETC2A  ||
-           format_ == bgfx::TextureFormat::ETC2A1 || format_ == bgfx::TextureFormat::PTC12  ||
-           format_ == bgfx::TextureFormat::PTC12A || format_ == bgfx::TextureFormat::PTC14A ||
-           format_ == bgfx::TextureFormat::PTC22  || format_ == bgfx::TextureFormat::PTC24;
+    return bimg::isCompressed((bimg::TextureFormat::Enum)format_);
 }
 
 unsigned Texture::GetRowDataSize(int width) const
@@ -132,14 +127,15 @@ unsigned Texture::GetDSVFormat(unsigned format)
 
 unsigned Texture::GetBGFXFlags()
 {
-    unsigned flags = bgfxWrapU[addressMode_[0]] | bgfxWrapV[addressMode_[1]] | bgfxWrapW[addressMode_[2]] | bgfxFilterMode[filterMode_];
+    unsigned flags = 0;
+    flags |= bgfxWrapU[addressMode_[0]] | bgfxWrapV[addressMode_[1]] | bgfxWrapW[addressMode_[2]] | bgfxFilterMode[filterMode_];
     if (sRGB_)
         flags |= BGFX_TEXTURE_SRGB;
     if ((usage_ == TEXTURE_RENDERTARGET) || (usage_ == TEXTURE_DEPTHSTENCIL))
         flags |= BGFX_TEXTURE_RT;
     if (multiSample_ > 1)
     {
-        flags |= BGFX_TEXTURE_MSAA_SAMPLE;
+        //flags |= BGFX_TEXTURE_MSAA_SAMPLE;
         switch (multiSample_)
         {
         case 2:

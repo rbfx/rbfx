@@ -260,10 +260,7 @@ bool Texture3D::Create()
     handle = bgfx::createTexture3D((uint16_t)width_, (uint16_t)height_, (uint16_t)depth_, levels_ > 1 ? true : false, (bgfx::TextureFormat::Enum)format_, GetBGFXFlags() /*, mem*/);
     object_.idx_ = handle.idx;
 
-    if (usage_ == TEXTURE_RENDERTARGET)
-    {
-    }
-    else if (usage_ == TEXTURE_DEPTHSTENCIL)
+    if (usage_ == TEXTURE_DEPTHSTENCIL)
         requestedLevels_ = 1;
 
     if (object_.idx_ != bgfx::kInvalidHandle)

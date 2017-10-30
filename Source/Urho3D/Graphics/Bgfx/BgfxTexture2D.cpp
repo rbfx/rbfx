@@ -275,8 +275,6 @@ bool Texture2D::Create()
     if (usage_ == TEXTURE_RENDERTARGET)
     {
     }
-    //if (usage_ == TEXTURE_DEPTHSTENCIL)
-    //    requestedLevels_ = 1;
 
     if (object_.idx_ != bgfx::kInvalidHandle)
         return true;

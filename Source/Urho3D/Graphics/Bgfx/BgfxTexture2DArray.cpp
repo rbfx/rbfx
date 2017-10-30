@@ -327,27 +327,11 @@ bool Texture2DArray::Create()
     if (usage_ == TEXTURE_RENDERTARGET)
     {
         if (layers_ == 1)
-        {
-            bgfx::Attachment attachment;
-            attachment.handle = handle;
-            attachment.mip = 0;
-            attachment.layer = layers_;
-            bgfx::FrameBufferHandle fbHandle;
-            fbHandle = bgfx::createFrameBuffer(1, &attachment, false);
-            renderSurfaces_[0]->idx_ = fbHandle.idx;
-        }
+            renderSurfaces_[0]->layer_ = 0;
         else
         {
             for (unsigned i = 0; i < layers_; ++i)
-            {
-                bgfx::Attachment attachment;
-                attachment.handle = handle;
-                attachment.mip = 0;
-                attachment.layer = i;
-                bgfx::FrameBufferHandle fbHandle;
-                fbHandle = bgfx::createFrameBuffer(1, &attachment, false);
-                renderSurfaces_[i]->idx_ = fbHandle.idx;
-            }
+                renderSurfaces_[i]->layer_ = i;
         }
     }
 

@@ -41,6 +41,7 @@ RenderSurface::RenderSurface(Texture* parentTexture) :
     updateMode_(SURFACE_UPDATEVISIBLE),
     updateQueued_(false)
 {
+    layer_ = 1;
 }
 
 void RenderSurface::Release()

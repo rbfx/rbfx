@@ -328,15 +328,7 @@ bool TextureCube::Create()
     if (usage_ == TEXTURE_RENDERTARGET)
     {
         for (unsigned i = 0; i < MAX_CUBEMAP_FACES; ++i)
-        {
-            bgfx::Attachment attachment;
-            attachment.handle = handle;
-            attachment.mip = 0;
-            attachment.layer = i;
-            bgfx::FrameBufferHandle fbHandle;
-            fbHandle = bgfx::createFrameBuffer(1, &attachment, false);
-            renderSurfaces_[i]->idx_ = fbHandle.idx;
-        }
+            renderSurfaces_[i]->layer_ = i;
     }
 
     if (object_.idx_ != bgfx::kInvalidHandle)
