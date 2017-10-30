@@ -66,8 +66,13 @@ public:
     void SetCurrentView(const uint8_t view);
 
 private:
-    /// Map for Framebuffers per resolution and format.
-    HashMap<unsigned long long, FrameBufferHandle> frameBuffers_;
+    /// Backbuffer framebuffer.
+    bgfx::FrameBufferHandle backbuffer_;
+    /// List of framebuffers.
+    //HashMap<unsigned long long, FrameBufferHandle> frameBuffers_;
+    Vector<bgfx::FrameBufferHandle> frameBuffers_;
+    /// Current framebuffer.
+    bgfx::FrameBufferHandle currentFramebuffer_;
     /// Current view.
     uint8_t view_;
     /// Current shader program.
@@ -80,17 +85,12 @@ private:
     bool texturesDirty_;
     /// Vertex declaration dirty flag.
     bool vertexDeclarationDirty_;
-    /// Blend state dirty flag.
-    bool blendStateDirty_;
-    /// Depth state dirty flag.
-    bool depthStateDirty_;
-    /// Rasterizer state dirty flag.
-    bool rasterizerStateDirty_;
     /// Scissor rect dirty flag.
     bool scissorRectDirty_;
     /// Stencil ref dirty flag.
     bool stencilRefDirty_;
-
+    /// BGFX state dirty flag.
+    bool stateDirty_;
 };
 
 }

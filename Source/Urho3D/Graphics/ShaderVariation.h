@@ -56,6 +56,8 @@ struct ShaderParameter
         int location_;
         /// Direct3D9 register index.
         unsigned register_;
+        /// BGFX uniform idx.
+        uint16_t idx;
     };
 
     union

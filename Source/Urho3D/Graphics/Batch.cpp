@@ -113,10 +113,16 @@ void CalculateShadowMatrix(Matrix4& dest, LightBatchQueue* queue, unsigned split
     offset.x_ += scale.x_ + pixelUVOffset.x_ / width;
     offset.y_ += scale.y_ + pixelUVOffset.y_ / height;
 
-#ifdef URHO3D_OPENGL
+#if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
+#ifdef URHO3D_BGFX
+    if (bgfx::getRendererType() == bgfx::RendererType::OpenGL || bgfx::RendererType::OpenGLES) {
+#endif
     offset.z_ = 0.5f;
     scale.z_ = 0.5f;
     offset.y_ = 1.0f - offset.y_;
+#ifdef URHO3D_BGFX
+    } else
+#endif
 #else
     scale.y_ = -scale.y_;
 #endif
@@ -148,9 +154,20 @@ void CalculateSpotMatrix(Matrix4& dest, Light* light)
     spotProj.m22_ = 1.0f / Max(light->GetRange(), M_EPSILON);
     spotProj.m32_ = 1.0f;
 
-#ifdef URHO3D_OPENGL
-    texAdjust.SetTranslation(Vector3(0.5f, 0.5f, 0.5f));
-    texAdjust.SetScale(Vector3(0.5f, -0.5f, 0.5f));
+#if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
+#ifdef URHO3D_BGFX
+    if (bgfx::getRendererType() == bgfx::RendererType::OpenGL || bgfx::RendererType::OpenGLES) {
+#endif
+        texAdjust.SetTranslation(Vector3(0.5f, 0.5f, 0.5f));
+        texAdjust.SetScale(Vector3(0.5f, -0.5f, 0.5f));
+#ifdef URHO3D_BGFX
+    }
+    else
+    {
+        texAdjust.SetTranslation(Vector3(0.5f, 0.5f, 0.0f));
+        texAdjust.SetScale(Vector3(0.5f, -0.5f, 1.0f));
+    }
+#endif
 #else
     texAdjust.SetTranslation(Vector3(0.5f, 0.5f, 0.0f));
     texAdjust.SetScale(Vector3(0.5f, -0.5f, 1.0f));

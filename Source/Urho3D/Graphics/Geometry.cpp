@@ -181,11 +181,17 @@ void Geometry::Draw(Graphics* graphics)
     {
         graphics->SetIndexBuffer(indexBuffer_);
         graphics->SetVertexBuffers(vertexBuffers_);
+#ifdef URHO3D_BGFX
+        graphics->GetImpl()->drawDistance_ = (uint32_t)distance_;
+#endif
         graphics->Draw(primitiveType_, indexStart_, indexCount_, vertexStart_, vertexCount_);
     }
     else if (vertexCount_ > 0)
     {
         graphics->SetVertexBuffers(vertexBuffers_);
+#ifdef URHO3D_BGFX
+        graphics->GetImpl()->drawDistance_ = (uint32_t)distance_;
+#endif
         graphics->Draw(primitiveType_, vertexStart_, vertexCount_);
     }
 }

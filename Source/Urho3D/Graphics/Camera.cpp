@@ -27,6 +27,9 @@
 #include "../Graphics/DebugRenderer.h"
 #include "../Graphics/Drawable.h"
 #include "../Scene/Node.h"
+#ifdef URHO3D_BGFX
+#include "../Graphics/Graphics.h"
+#endif
 
 #include "../DebugNew.h"
 
@@ -451,7 +454,13 @@ Matrix4 Camera::GetGPUProjection() const
 {
 #ifndef URHO3D_OPENGL
     return GetProjection(); // Already matches API-specific format
-#else
+#endif
+#if URHO3D_BGFX
+    context_->GetGraphics()->GetApiType();
+    if (context_->GetGraphics()->GetApiType() != BGFX_OPENGL || BGFX_OPENGLES)
+        return GetProjection();
+    else {
+#endif
     // See formulation for depth range conversion at http://www.ogre3d.org/forums/viewtopic.php?f=4&t=13357
     Matrix4 ret = GetProjection();
 
@@ -461,6 +470,8 @@ Matrix4 Camera::GetGPUProjection() const
     ret.m23_ = 2.0f * ret.m23_ - ret.m33_;
 
     return ret;
+#ifdef URHO3D_BGFX
+    }
 #endif
 }
 
