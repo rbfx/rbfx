@@ -47,9 +47,9 @@ public:
     void Stop() override;
 
     /// Save editor configuration.
-    void SaveConfig();
+    void SaveProject(const String& filePath);
     /// Load saved editor configuration.
-    void LoadConfig();
+    void LoadProject(const String& filePath);
     /// Renders UI elements.
     void OnUpdate(VariantMap& args);
     /// Renders menu bar at the top of the screen.
@@ -57,13 +57,15 @@ public:
     /// Render scene node tree. Should be called with Scene as parameter in order to render entire scene node tree.
     void RenderSceneNodeTree(Node* node);
     /// Create sample scene. Specify xml or json file with serialized scene contents to load them.
-    void CreateNewScene(const String& path="");
+    SceneView* CreateNewScene(const String& path = "");
     /// Return true if specified scene tab is focused and mouse hovers it.
     bool IsActive(Scene* scene);
     /// Return scene view based on it's label, or null if no such scene view exists.
     SceneView* GetSceneView(const String& title);
 
 protected:
+    /// Flag indicating that dock UI should be initialized to default locations.
+    bool initializeDocks_ = true;
     /// List of active scene views
     Vector<SharedPtr<SceneView>> sceneViews_;
     /// Dummy scene required for making scene rendering to textures work.
@@ -74,6 +76,8 @@ protected:
     WeakPtr<SceneView> lastActiveView_;
     /// Attribute inspector dock.
     AttributeInspectorDockWindow inspector_;
+    /// Path to a project file.
+    String projectFilePath_;
 };
 
 }

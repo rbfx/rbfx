@@ -28,6 +28,7 @@
 #include <IconFontCppHeaders/IconsFontAwesome.h>
 #include <Toolbox/Toolbox.h>
 #include <Toolbox/ImGuiDock.h>
+#include <tinyfiledialogs/tinyfiledialogs.h>
 
 
 URHO3D_DEFINE_APPLICATION_MAIN(Editor);
@@ -54,7 +55,7 @@ void Editor::Setup()
     engineParameters_[EP_LOG_LEVEL] = LOG_DEBUG;
     engineParameters_[EP_WINDOW_RESIZABLE] = true;
 
-    LoadConfig();
+//    LoadConfig();
 }
 
 void Editor::Start()
@@ -74,21 +75,20 @@ void Editor::Start()
     scene_->CreateComponent<Octree>();
     GetRenderer()->SetViewport(0, new Viewport(context_, scene_, scene_->CreateChild()->GetOrCreateComponent<Camera>()));
 
-    inspector_.SetEnabled(true);
-
     SubscribeToEvent(E_UPDATE, std::bind(&Editor::OnUpdate, this, _2));
-
-    CreateNewScene();
 }
 
 void Editor::Stop()
 {
-    SaveConfig();
+    SaveProject(projectFilePath_);
     ui::ShutdownDock();
 }
 
-void Editor::SaveConfig()
+void Editor::SaveProject(const String& filePath)
 {
+    if (filePath.Empty())
+        return;
+
     SharedPtr<XMLFile> xml(new XMLFile(context_));
     XMLElement root = xml->CreateRoot("editor");
     auto window = root.CreateChild("window");
@@ -97,39 +97,68 @@ void Editor::SaveConfig()
     window.SetAttribute("x", ToString("%d", GetGraphics()->GetWindowPosition().x_));
     window.SetAttribute("y", ToString("%d", GetGraphics()->GetWindowPosition().y_));
 
+    auto scenes = root.CreateChild("scenes");
+    for (auto& sceneView: sceneViews_)
+    {
+        auto scene = scenes.CreateChild("scene");
+        scene.SetAttribute("title", sceneView->title_.CString());
+        // TODO: Scene resource path
+        // TODO: Have scene view save and load it's data
+    }
+
     ui::SaveDock(root.CreateChild("docks"));
-    xml->SaveFile("EditorConfig.xml");
+
+    if (!xml->SaveFile(filePath))
+        URHO3D_LOGERRORF("Saving project to %s failed", filePath.CString());
 }
 
-void Editor::LoadConfig()
+void Editor::LoadProject(const String& filePath)
 {
+    if (filePath.Empty())
+        return;
+
     SharedPtr<XMLFile> xml(new XMLFile(context_));
-    if (xml->LoadFile("EditorConfig.xml"))
+    if (xml->LoadFile(filePath))
     {
+        initializeDocks_ = false;
         auto root = xml->GetRoot();
         if (root.NotNull())
         {
             auto window = root.GetChild("window");
             if (window.NotNull())
             {
-                engineParameters_[EP_WINDOW_WIDTH] = ToInt(window.GetAttribute("width"));
-                engineParameters_[EP_WINDOW_HEIGHT] = ToInt(window.GetAttribute("height"));
-                engineParameters_[EP_WINDOW_POSITION_X] = ToInt(window.GetAttribute("x"));
-                engineParameters_[EP_WINDOW_POSITION_Y] = ToInt(window.GetAttribute("y"));
+                GetGraphics()->SetMode(ToInt(window.GetAttribute("width")), ToInt(window.GetAttribute("height")));
+                GetGraphics()->SetWindowPosition(ToInt(window.GetAttribute("x")), ToInt(window.GetAttribute("y")));
+            }
+
+            auto scenes = root.GetChild("scenes");
+            sceneViews_.Clear();
+            if (scenes.NotNull())
+            {
+                auto scene = scenes.GetChild("scene");
+                while (scene.NotNull())
+                {
+                    auto sceneView = CreateNewScene();
+                    sceneView->title_ = scene.GetAttribute("title");
+                    scene = scene.GetNext("scene");
+                }
             }
 
             ui::LoadDock(root.GetChild("docks"));
         }
     }
     else
-        URHO3D_LOGWARNINGF("Loading EditorConfig.xml failed");
+        URHO3D_LOGWARNINGF("Loading project from %s failed", filePath.CString());
 }
 
 void Editor::OnUpdate(VariantMap& args)
 {
+    ui::RootDock({0, 20}, ui::GetIO().DisplaySize - ImVec2(0, 20));
+
     RenderMenuBar();
 
-    ui::RootDock({0, 20}, ui::GetIO().DisplaySize - ImVec2(0, 20));
+    if (initializeDocks_)
+        ui::SetNewDockLocation(nullptr, ui::Slot_Left);
 
     if (ui::BeginDock("Hierarchy"))
     {
@@ -137,6 +166,9 @@ void Editor::OnUpdate(VariantMap& args)
             RenderSceneNodeTree(lastActiveView_->scene_);
     }
     ui::EndDock();
+
+    if (initializeDocks_)
+        CreateNewScene();
 
     activeView_ = nullptr;
     for (auto it = sceneViews_.Begin(); it != sceneViews_.End();)
@@ -152,18 +184,40 @@ void Editor::OnUpdate(VariantMap& args)
             it = sceneViews_.Erase(it);
     }
 
+    if (initializeDocks_ && !sceneViews_.Empty())
+        ui::SetNewDockLocation(sceneViews_.Back()->title_.CString(), ui::Slot_Right);
+
+    inspector_.RenderUi();
+
     if (!lastActiveView_.Expired())
         inspector_.SetSerializable(lastActiveView_->GetSelectedSerializable());
     else
         inspector_.SetSerializable(nullptr);
+
+    initializeDocks_ = false;
 }
 
 void Editor::RenderMenuBar()
 {
+    bool save = false;
     if (ui::BeginMainMenuBar())
     {
         if (ui::BeginMenu("File"))
         {
+            save = ui::MenuItem("Save Project");
+            if (ui::MenuItem("Save Project As"))
+            {
+                save = true;
+                projectFilePath_.Clear();
+            }
+
+            if (ui::MenuItem("Open Project"))
+            {
+                const char* patterns[] = {"*.xml"};
+                projectFilePath_ = tinyfd_openFileDialog("Open Project", ".", 1, patterns, "XML Files", 0);
+                LoadProject(projectFilePath_);
+            }
+
             if (ui::MenuItem("New Scene"))
                 CreateNewScene();
 
@@ -177,11 +231,25 @@ void Editor::RenderMenuBar()
 
         if (!lastActiveView_.Expired())
         {
+            save |= ui::Button(ICON_FA_FLOPPY_O);
+            if (ui::IsItemHovered())
+                ui::SetTooltip("Save");
+
             lastActiveView_->RenderGizmoButtons();
             SendEvent(E_EDITORTOOLBARBUTTONS);
         }
 
         ui::EndMainMenuBar();
+    }
+
+    if (save)
+    {
+        if (projectFilePath_.Empty())
+        {
+            const char* patterns[] = {"*.xml"};
+            projectFilePath_ = tinyfd_saveFileDialog("Save Project As", ".", 1, patterns, "XML Files");
+        }
+        SaveProject(projectFilePath_);
     }
 }
 
@@ -227,8 +295,13 @@ void Editor::RenderSceneNodeTree(Node* node)
     }
 }
 
-void Editor::CreateNewScene(const String& path)
+SceneView* Editor::CreateNewScene(const String& path)
 {
+    if (sceneViews_.Empty())
+        ui::SetNewDockLocation("Hierarchy", ui::Slot_Right);
+    else
+        ui::SetNewDockLocation(sceneViews_.Back()->title_.CString(), ui::Slot_Tab);
+
     SharedPtr<SceneView> sceneView(new SceneView(context_));
 
     for (auto index = 1; ; index++)
@@ -257,11 +330,14 @@ void Editor::CreateNewScene(const String& path)
     sceneView->SetRendererNode(node);
     sceneViews_.Push(sceneView);
 
+    // Temporary, until asset browser is implemented
     sceneView->LoadScene("Data/Scenes/SceneLoadExample.xml");
 
     // Fills up hierarchy window
     if (lastActiveView_.Null())
         lastActiveView_ = sceneView;
+
+    return sceneView;
 }
 
 bool Editor::IsActive(Scene* scene)

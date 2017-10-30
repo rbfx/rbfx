@@ -103,7 +103,6 @@ public:
     /// Construct.
     explicit AttributeInspectorDockWindow(Context* context);
 
-protected:
     /// Render attribute inspector UI.
     void RenderUi() override;
 };
