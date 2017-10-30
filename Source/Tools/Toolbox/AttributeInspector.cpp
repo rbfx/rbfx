@@ -64,7 +64,9 @@ void AttributeInspector::RenderAttributes(Serializable* item)
         ui::SetTooltip("Reset filter.");
     ui::SameLine();
     ui::PushID("FilterEdit");
+    ui::PushItemWidth(-1);
     ui::InputText("", &filter_.front(), filter_.size() - 1);
+    ui::PopItemWidth();
     ui::PopID();
 
     ui::PushID(item);
@@ -133,6 +135,7 @@ void AttributeInspector::RenderAttributes(Serializable* item)
         ui::SameLine();
 
         bool modifiedLastFrame = modifiedLastFrame_ == info.name_.CString();
+        ui::PushItemWidth(-1);
         if (RenderSingleAttribute(info, value))
         {
             assert(modifiedThisFrame == nullptr);
@@ -153,6 +156,7 @@ void AttributeInspector::RenderAttributes(Serializable* item)
             using namespace AttributeInspectorValueModified;
             SendEvent(E_ATTRIBUTEINSPECTVALUEMODIFIED, P_SERIALIZABLE, item, P_ATTRIBUTEINFO, (void*)&info, P_OLDVALUE, originalValue_, P_NEWVALUE, value);
         }
+        ui::PopItemWidth();
 
         ui::PopID();
     }
