@@ -152,17 +152,7 @@ void Editor::OnUpdate(VariantMap& args)
             it = sceneViews_.Erase(it);
     }
 
-    if (!lastActiveView_.Expired())
-    {
-        const auto& selection = lastActiveView_->gizmo_.GetSelection();
-
-        // TODO: What about multi-selection?
-        if (selection.Size() == 1)
-            inspector_.SetSerializable(selection.Front());
-        else
-            inspector_.SetSerializable(nullptr);
-    }
-    else
+    if (lastActiveView_.Expired() || lastActiveView_->gizmo_.GetSelection().Empty())
         inspector_.SetSerializable(nullptr);
 }
 
@@ -234,34 +224,40 @@ void Editor::RenderSceneNodeTree(Node* node)
         return;
 
     String name = ToString("%s (%d)", (node->GetName().Empty() ? node->GetTypeName() : node->GetName()).CString(), node->GetID());
-    bool toggleSelection = false;
     bool isSelected = lastActiveView_->gizmo_.IsSelected(node);
 
-    if (node->GetNumChildren())
-    {
-        ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
-        if (isSelected)
-            flags |= ImGuiTreeNodeFlags_Selected;
-        if (node == lastActiveView_->scene_)
-            flags |= ImGuiTreeNodeFlags_DefaultOpen;
+    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
+    if (isSelected)
+        flags |= ImGuiTreeNodeFlags_Selected;
+    if (node == lastActiveView_->scene_)
+        flags |= ImGuiTreeNodeFlags_DefaultOpen;
 
-        auto opened = ui::TreeNodeEx(name.CString(), flags);
-        toggleSelection = ui::IsItemClicked(0);
-        if (opened)
-        {
-            for (auto& child: node->GetChildren())
-                RenderSceneNodeTree(child);
-            ui::TreePop();
-        }
-    }
-    else
-        toggleSelection = ui::Selectable(name.CString(), isSelected);
+    auto opened = ui::TreeNodeEx(name.CString(), flags);
 
-    if (toggleSelection)
+    if (ui::IsItemClicked(0))
     {
         if (!GetInput()->GetKeyDown(KEY_CTRL))
             lastActiveView_->gizmo_.UnselectAll();
         lastActiveView_->gizmo_.ToggleSelection(node);
+        inspector_.SetSerializable(node);
+    }
+
+    if (opened)
+    {
+        for (auto& component: node->GetComponents())
+        {
+            bool selected = inspector_.GetSerializable() == component;
+            if (ui::Selectable(component->GetTypeName().CString(), selected))
+            {
+                lastActiveView_->gizmo_.UnselectAll();
+                lastActiveView_->gizmo_.ToggleSelection(node);
+                inspector_.SetSerializable(component);
+            }
+        }
+
+        for (auto& child: node->GetChildren())
+            RenderSceneNodeTree(child);
+        ui::TreePop();
     }
 }
 
