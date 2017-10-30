@@ -77,6 +77,7 @@ bool SceneView::RenderWindow()
         gizmo_.ManipulateSelection(GetCamera());
 
         // Update scene view rect according to window position
+        if (!GetInput()->GetMouseButtonDown(MOUSEB_LEFT))
         {
             auto titlebarHeight = ui::GetCurrentContext()->CurrentWindow->TitleBarHeight();
             auto pos = ui::GetWindowPos();
