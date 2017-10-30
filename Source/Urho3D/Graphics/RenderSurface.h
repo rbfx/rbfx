@@ -116,8 +116,8 @@ public:
     /// Return OpenGL renderbuffer if created.
     unsigned GetRenderBuffer() const { return renderBuffer_; }
 
-    /// Return BGFX framebuffer idx.
-    uint16_t GetBgfxFramebufferIdx() const { return idx_; }
+    /// Return BGFX layer.
+    uint16_t GetBgfxLayer() const { return layer_; }
 
     /// Return whether multisampled rendertarget needs resolve.
     bool IsResolveDirty() const { return resolveDirty_; }
@@ -137,6 +137,8 @@ private:
         void* renderTargetView_;
         /// OpenGL renderbuffer name.
         unsigned renderBuffer_;
+        /// BGFX layer (cube face/layer).
+        uint16_t layer_;
     };
 
     union
