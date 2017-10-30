@@ -232,9 +232,11 @@ void Editor::RenderMenuBar()
         if (!lastActiveView_.Expired())
         {
             save |= ui::Button(ICON_FA_FLOPPY_O);
+            ui::SameLine();
             if (ui::IsItemHovered())
                 ui::SetTooltip("Save");
-
+            ui::TextUnformatted("|");
+            ui::SameLine();
             lastActiveView_->RenderGizmoButtons();
             SendEvent(E_EDITORTOOLBARBUTTONS);
         }
