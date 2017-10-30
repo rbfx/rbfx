@@ -29,6 +29,18 @@
 namespace ImGui
 {
 
+enum DockSlot_
+{
+    Slot_Left,
+    Slot_Right,
+    Slot_Top,
+    Slot_Bottom,
+    Slot_Tab,
+
+    Slot_Float,
+    Slot_None
+};
+
 void ShutdownDock();
 void RootDock(const ImVec2& pos, const ImVec2& size);
 bool BeginDock(const char* label, bool* opened = nullptr, ImGuiWindowFlags extra_flags = 0, const ImVec2& default_size = ImVec2(-1, -1));
@@ -36,5 +48,6 @@ void EndDock();
 void SetDockActive();
 void SaveDock(Urho3D::XMLElement element);
 void LoadDock(Urho3D::XMLElement element);
+void SetNewDockLocation(const char* targetDockLabel, DockSlot_ slot);
 
 }

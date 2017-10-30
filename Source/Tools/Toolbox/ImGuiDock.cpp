@@ -32,19 +32,6 @@ namespace ImGui
 
 struct DockContext
 {
-    enum Slot_
-    {
-        Slot_Left,
-        Slot_Right,
-        Slot_Top,
-        Slot_Bottom,
-        Slot_Tab,
-
-        Slot_Float,
-        Slot_None
-    };
-
-
     enum EndAction_
     {
         EndAction_None,
@@ -224,10 +211,20 @@ struct DockContext
     int m_last_frame = 0;
     EndAction_ m_end_action;
     bool m_is_begin_open = false;
+    ImU32 m_next_dock_after = 0;
+    DockSlot_ m_next_dock_slot;
 
 
     ~DockContext() {}
 
+    Dock* getExistingDock(ImU32 id)
+    {
+        for (int i = 0; i < m_docks.size(); ++i)
+        {
+            if (m_docks[i]->id == id) return m_docks[i];
+        }
+        return nullptr;
+    }
 
     Dock& getDock(const char* label, bool opened, const ImVec2& default_size)
     {
@@ -251,6 +248,20 @@ struct DockContext
         new_dock->opened = opened;
         new_dock->first = true;
         new_dock->location[0] = 0;
+
+        if (m_next_dock_after)
+        {
+            Dock* sibling = nullptr;
+            if (m_next_dock_after == -1)
+                sibling = getRootDock();
+            else
+                sibling = getExistingDock(m_next_dock_after);
+
+            if (!sibling || (sibling && sibling->status == Status_Docked))
+                doDock(*new_dock, sibling, m_next_dock_slot);
+            m_next_dock_after = 0;
+        }
+
         return *new_dock;
     }
 
@@ -380,7 +391,7 @@ struct DockContext
     }
 
 
-    static ImRect getDockedRect(const ImRect& rect, Slot_ dock_slot)
+    static ImRect getDockedRect(const ImRect& rect, DockSlot_ dock_slot)
     {
         ImVec2 half_size = rect.GetSize() * 0.5f;
         switch (dock_slot)
@@ -394,7 +405,7 @@ struct DockContext
     }
 
 
-    static ImRect getSlotRect(ImRect parent_rect, Slot_ dock_slot)
+    static ImRect getSlotRect(ImRect parent_rect, DockSlot_ dock_slot)
     {
         ImVec2 size = parent_rect.Max - parent_rect.Min;
         ImVec2 center = parent_rect.Min + size * 0.5f;
@@ -409,7 +420,7 @@ struct DockContext
     }
 
 
-    static ImRect getSlotRectOnBorder(ImRect parent_rect, Slot_ dock_slot)
+    static ImRect getSlotRectOnBorder(ImRect parent_rect, DockSlot_ dock_slot)
     {
         ImVec2 size = parent_rect.Max - parent_rect.Min;
         ImVec2 center = parent_rect.Min + size * 0.5f;
@@ -457,17 +468,17 @@ struct DockContext
         for (int i = 0; i < (on_border ? 4 : 5); ++i)
         {
             ImRect r =
-                on_border ? getSlotRectOnBorder(rect, (Slot_)i) : getSlotRect(rect, (Slot_)i);
+                on_border ? getSlotRectOnBorder(rect, (DockSlot_)i) : getSlotRect(rect, (DockSlot_)i);
             bool hovered = r.Contains(mouse_pos);
             canvas->AddRectFilled(r.Min, r.Max, hovered ? color_hovered : color);
             if (!hovered) continue;
 
             if (!IsMouseDown(0))
             {
-                doDock(dock, dest_dock ? dest_dock : getRootDock(), (Slot_)i);
+                doDock(dock, dest_dock ? dest_dock : getRootDock(), (DockSlot_)i);
                 return true;
             }
-            ImRect docked_rect = getDockedRect(rect, (Slot_)i);
+            ImRect docked_rect = getDockedRect(rect, (DockSlot_)i);
             canvas->AddRectFilled(docked_rect.Min, docked_rect.Max, GetColorU32(ImGuiCol_Button));
         }
         return false;
@@ -729,7 +740,7 @@ struct DockContext
     }
 
 
-    static void setDockPosSize(Dock& dest, Dock& dock, Slot_ dock_slot, Dock& container)
+    static void setDockPosSize(Dock& dest, Dock& dock, DockSlot_ dock_slot, Dock& container)
     {
         IM_ASSERT(!dock.prev_tab && !dock.next_tab && !dock.children[0] && !dock.children[1]);
 
@@ -774,7 +785,7 @@ struct DockContext
     }
 
 
-    void doDock(Dock& dock, Dock* dest, Slot_ dock_slot)
+    void doDock(Dock& dock, Dock* dest, DockSlot_ dock_slot)
     {
         IM_ASSERT(!dock.parent);
         if (!dest)
@@ -875,7 +886,7 @@ struct DockContext
     }
 
 
-    static Slot_ getSlotFromLocationCode(char code)
+    static DockSlot_ getSlotFromLocationCode(char code)
     {
         switch (code)
         {
@@ -1142,6 +1153,12 @@ struct DockContext
             record = record.GetNext("dock");
         }
     }
+
+    void placeNewDockAfter(const char* label, DockSlot_ slot)
+    {
+        m_next_dock_after = label ? ImHash(label, 0) : -1;
+        m_next_dock_slot = slot;
+    }
 };
 
 
@@ -1192,6 +1209,11 @@ void SaveDock(Urho3D::XMLElement element)
 void LoadDock(Urho3D::XMLElement element)
 {
     g_dock.load(element);
+}
+
+void SetNewDockLocation(const char* targetDockLabel, DockSlot_ slot)
+{
+    g_dock.placeNewDockAfter(targetDockLabel, slot);
 }
 
 } // namespace ImGui
