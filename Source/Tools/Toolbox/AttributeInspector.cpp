@@ -76,6 +76,12 @@ void AttributeInspector::RenderAttributes(Serializable* item)
         Color color = Color::WHITE;
         String tooltip;
 
+        Variant value, oldValue;
+        value = oldValue = item->GetAttribute(info.name_);
+
+        if (value == info.defaultValue_)
+            color = Color::GRAY;
+
         if (info.mode_ & AM_NOEDIT)
             hidden = true;
         else if (filter_.front() && !info.name_.Contains(&filter_.front(), false))
@@ -104,9 +110,6 @@ void AttributeInspector::RenderAttributes(Serializable* item)
             ui::SetTooltip("%s", tooltip.CString());
 
         NextColumn();
-
-        Variant value, oldValue;
-        value = oldValue = item->GetAttribute(info.name_);
 
         ui::PushID(info.name_.CString());
 
