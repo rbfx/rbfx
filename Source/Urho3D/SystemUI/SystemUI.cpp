@@ -79,14 +79,18 @@ SystemUI::SystemUI(Urho3D::Context* context)
     // Subscribe to events
     SubscribeToEvent(E_SDLRAWINPUT, std::bind(&SystemUI::OnRawEvent, this, _2));
     SubscribeToEvent(E_SCREENMODE, std::bind(&SystemUI::UpdateProjectionMatrix, this));
-    SubscribeToEvent(E_ENDRENDERING, [&](StringHash, VariantMap&)
+    SubscribeToEvent(E_INPUTEND, [&](StringHash, VariantMap&)
     {
-        URHO3D_PROFILE(SystemUiRender);
-        ImGui::Render();
         float timeStep = GetTime()->GetTimeStep();
         ImGui::GetIO().DeltaTime = timeStep > 0.0f ? timeStep : 1.0f / 60.0f;
         ImGui::NewFrame();
         ImGuizmo::BeginFrame();
+    });
+    SubscribeToEvent(E_ENDRENDERING, [&](StringHash, VariantMap&)
+    {
+        URHO3D_PROFILE(SystemUiRender);
+        OnUpdate();
+        ImGui::Render();
     });
 }
 
