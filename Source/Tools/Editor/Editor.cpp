@@ -27,9 +27,9 @@
 #include <ImGui/imgui_internal.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
 #include <Toolbox/Toolbox.h>
-#include <Toolbox/ImGuiDock.h>
+#include <Toolbox/SystemUI/ImGuiDock.h>
 #include <tinyfiledialogs/tinyfiledialogs.h>
-#include <Toolbox/ResourceBrowser.h>
+#include <Toolbox/SystemUI/ResourceBrowser.h>
 
 URHO3D_DEFINE_APPLICATION_MAIN(Editor);
 

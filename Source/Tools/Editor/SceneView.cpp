@@ -23,10 +23,10 @@
 #include "SceneView.h"
 #include "EditorConstants.h"
 #include "EditorEvents.h"
-#include <Toolbox/DebugCameraController.h>
+#include <Toolbox/Scene/DebugCameraController.h>
 #include <ImGui/imgui_internal.h>
 #include <ImGuizmo/ImGuizmo.h>
-#include <Toolbox/ImGuiDock.h>
+#include <Toolbox/SystemUI/ImGuiDock.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
 
 

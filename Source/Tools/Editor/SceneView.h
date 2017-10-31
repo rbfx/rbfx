@@ -24,8 +24,8 @@
 
 
 #include <Urho3D/Urho3DAll.h>
-#include <Toolbox/AttributeInspector.h>
-#include <Toolbox/Gizmo.h>
+#include <Toolbox/SystemUI/AttributeInspector.h>
+#include <Toolbox/SystemUI/Gizmo.h>
 
 namespace Urho3D
 {

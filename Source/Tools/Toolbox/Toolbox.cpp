@@ -21,10 +21,10 @@
 //
 
 #include "Toolbox.h"
-#include "Gizmo.h"
-#include "AttributeInspector.h"
-#include "DebugCameraController.h"
-#include "UndoManager.h"
+#include "SystemUI/Gizmo.h"
+#include "SystemUI/AttributeInspector.h"
+#include "Scene/DebugCameraController.h"
+#include "Common/UndoManager.h"
 
 
 namespace Urho3D

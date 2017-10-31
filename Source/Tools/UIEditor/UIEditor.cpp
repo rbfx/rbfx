@@ -48,8 +48,8 @@
 
 #include <unordered_map>
 
-#include <Toolbox/AttributeInspector.h>
-#include <Toolbox/UndoManager.h>
+#include <Toolbox/SystemUI/AttributeInspector.h>
+#include <Toolbox/Common/UndoManager.h>
 
 
 using namespace std::placeholders;

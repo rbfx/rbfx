@@ -24,7 +24,7 @@
 
 
 #include <Urho3D/Urho3DAll.h>
-#include <Toolbox/AttributeInspector.h>
+#include <Toolbox/SystemUI/AttributeInspector.h>
 
 using namespace std::placeholders;
 

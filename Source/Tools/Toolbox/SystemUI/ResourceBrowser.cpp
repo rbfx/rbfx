@@ -28,7 +28,7 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
 #include "Widgets.h"
-#include "ContentUtilities.h"
+#include "IO/ContentUtilities.h"
 
 
 namespace Urho3D

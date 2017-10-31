@@ -24,7 +24,7 @@ if (NOT URHO3D_SYSTEMUI)
     return ()
 endif ()
 
-file (GLOB SOURCE_FILES *.cpp *.h *.hpp)
+file (GLOB_RECURSE SOURCE_FILES *.cpp *.h *.hpp)
 add_library (Toolbox STATIC ${SOURCE_FILES})
 target_link_libraries (Toolbox Urho3D)
 target_include_directories(Toolbox PUBLIC ..)
