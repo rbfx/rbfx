@@ -54,8 +54,6 @@ void Editor::Setup()
     engineParameters_[EP_WINDOW_WIDTH] = 1920;
     engineParameters_[EP_LOG_LEVEL] = LOG_DEBUG;
     engineParameters_[EP_WINDOW_RESIZABLE] = true;
-
-//    LoadConfig();
 }
 
 void Editor::Start()
@@ -70,12 +68,16 @@ void Editor::Start()
     GetSystemUI()->AddFont("Fonts/fontawesome-webfont.ttf", 0, {ICON_MIN_FA, ICON_MAX_FA, 0}, true);
     ui::GetStyle().WindowRounding = 3;
 
+    GetCache()->SetAutoReloadResources(true);
+
     // Dummy scene required for textures to render
     scene_ = new Scene(context_);
     scene_->CreateComponent<Octree>();
     GetRenderer()->SetViewport(0, new Viewport(context_, scene_, scene_->CreateChild()->GetOrCreateComponent<Camera>()));
 
     SubscribeToEvent(E_UPDATE, std::bind(&Editor::OnUpdate, this, _2));
+
+    LoadProject("Etc/DefaultEditorProject.xml");
 }
 
 void Editor::Stop()
@@ -90,7 +92,9 @@ void Editor::SaveProject(const String& filePath)
         return;
 
     SharedPtr<XMLFile> xml(new XMLFile(context_));
-    XMLElement root = xml->CreateRoot("editor");
+    XMLElement root = xml->CreateRoot("project");
+    root.SetAttribute("version", "0");
+
     auto window = root.CreateChild("window");
     window.SetAttribute("width", ToString("%d", GetGraphics()->GetWidth()));
     window.SetAttribute("height", ToString("%d", GetGraphics()->GetHeight()));
@@ -117,38 +121,43 @@ void Editor::LoadProject(const String& filePath)
     if (filePath.Empty())
         return;
 
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
-    if (xml->LoadFile(filePath))
+    SharedPtr<XMLFile> xml;
+    if (!IsAbsolutePath(filePath))
+        xml = GetCache()->GetResource<XMLFile>(filePath);
+
+    if (xml.Null())
     {
-        initializeDocks_ = false;
-        auto root = xml->GetRoot();
-        if (root.NotNull())
-        {
-            auto window = root.GetChild("window");
-            if (window.NotNull())
-            {
-                GetGraphics()->SetMode(ToInt(window.GetAttribute("width")), ToInt(window.GetAttribute("height")));
-                GetGraphics()->SetWindowPosition(ToInt(window.GetAttribute("x")), ToInt(window.GetAttribute("y")));
-            }
-
-            auto scenes = root.GetChild("scenes");
-            sceneViews_.Clear();
-            if (scenes.NotNull())
-            {
-                auto scene = scenes.GetChild("scene");
-                while (scene.NotNull())
-                {
-                    auto sceneView = CreateNewScene();
-                    sceneView->title_ = scene.GetAttribute("title");
-                    scene = scene.GetNext("scene");
-                }
-            }
-
-            ui::LoadDock(root.GetChild("docks"));
-        }
+        xml = new XMLFile(context_);
+        if (!xml->LoadFile(filePath))
+            return;
     }
-    else
-        URHO3D_LOGWARNINGF("Loading project from %s failed", filePath.CString());
+
+    initializeDocks_ = false;
+    auto root = xml->GetRoot();
+    if (root.NotNull())
+    {
+        auto window = root.GetChild("window");
+        if (window.NotNull())
+        {
+            GetGraphics()->SetMode(ToInt(window.GetAttribute("width")), ToInt(window.GetAttribute("height")));
+            GetGraphics()->SetWindowPosition(ToInt(window.GetAttribute("x")), ToInt(window.GetAttribute("y")));
+        }
+
+        auto scenes = root.GetChild("scenes");
+        sceneViews_.Clear();
+        if (scenes.NotNull())
+        {
+            auto scene = scenes.GetChild("scene");
+            while (scene.NotNull())
+            {
+                auto sceneView = CreateNewScene();
+                sceneView->title_ = scene.GetAttribute("title");
+                scene = scene.GetNext("scene");
+            }
+        }
+
+        ui::LoadDock(root.GetChild("docks"));
+    }
 }
 
 void Editor::OnUpdate(VariantMap& args)
