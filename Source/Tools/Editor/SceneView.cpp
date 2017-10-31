@@ -65,14 +65,13 @@ bool SceneView::RenderWindow()
 {
     bool open = true;
     auto& style = ui::GetStyle();
-    auto padding = style.WindowPadding;
-    style.WindowPadding = {0, 0};
     if (ui::BeginDock(title_.CString(), &open, windowFlags_))
     {
         isActive_ = ui::IsWindowHovered();
         camera_->GetComponent<DebugCameraController>()->SetEnabled(isActive_);
 
         ImGuizmo::SetDrawlist();
+        ui::SetCursorPos(ui::GetCursorPos() - style.WindowPadding);
         ui::Image(view_, ToImGui(screenRect_.Size()));
         gizmo_.ManipulateSelection(GetCamera());
 
@@ -132,7 +131,6 @@ bool SceneView::RenderWindow()
             windowFlags_ = 0;
     }
     ui::EndDock();
-    style.WindowPadding = padding;
     return open;
 }
 
