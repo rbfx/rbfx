@@ -157,9 +157,7 @@ void Editor::OnUpdate(VariantMap& args)
 
     RenderMenuBar();
 
-    if (initializeDocks_)
-        ui::SetNewDockLocation(nullptr, ui::Slot_Left);
-
+    ui::SetNextDockPos(nullptr, ui::Slot_Left, ImGuiCond_FirstUseEver);
     if (ui::BeginDock("Hierarchy"))
     {
         if (!lastActiveView_.Expired())
@@ -184,8 +182,8 @@ void Editor::OnUpdate(VariantMap& args)
             it = sceneViews_.Erase(it);
     }
 
-    if (initializeDocks_ && !sceneViews_.Empty())
-        ui::SetNewDockLocation(sceneViews_.Back()->title_.CString(), ui::Slot_Right);
+    if (!sceneViews_.Empty())
+        ui::SetNextDockPos(sceneViews_.Back()->title_.CString(), ui::Slot_Right, ImGuiCond_FirstUseEver);
 
     inspector_.RenderUi();
 
@@ -300,9 +298,9 @@ void Editor::RenderSceneNodeTree(Node* node)
 SceneView* Editor::CreateNewScene(const String& path)
 {
     if (sceneViews_.Empty())
-        ui::SetNewDockLocation("Hierarchy", ui::Slot_Right);
+        ui::SetNextDockPos("Hierarchy", ui::Slot_Right, ImGuiCond_FirstUseEver);
     else
-        ui::SetNewDockLocation(sceneViews_.Back()->title_.CString(), ui::Slot_Tab);
+        ui::SetNextDockPos(sceneViews_.Back()->title_.CString(), ui::Slot_Tab, ImGuiCond_FirstUseEver);
 
     SharedPtr<SceneView> sceneView(new SceneView(context_));
 

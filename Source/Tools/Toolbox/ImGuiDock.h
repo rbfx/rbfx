@@ -48,6 +48,6 @@ void EndDock();
 void SetDockActive();
 void SaveDock(Urho3D::XMLElement element);
 void LoadDock(Urho3D::XMLElement element);
-void SetNewDockLocation(const char* targetDockLabel, DockSlot_ slot);
+void SetNextDockPos(const char* targetDockLabel, DockSlot_ pos, ImGuiCond_ condition);
 
 }

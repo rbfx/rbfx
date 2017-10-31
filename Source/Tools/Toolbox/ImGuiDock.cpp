@@ -24,11 +24,12 @@
 #define IMGUI_DEFINE_PLACEMENT_NEW
 #include <ImGui/imgui_internal.h>
 #include <Urho3D/Core/StringUtils.h>
-
+#include <Urho3D/Core/Utils.h>
 
 namespace ImGui
 {
 
+URHO3D_TO_FLAGS_ENUM(ImGuiCond_);
 
 struct DockContext
 {
@@ -202,6 +203,7 @@ struct DockContext
         bool opened;
         bool first;
         int last_frame;
+        ImGuiCond_ m_allow_condition = ImGuiCond_Always | ImGuiCond_Once | ImGuiCond_FirstUseEver | ImGuiCond_Appearing;
     };
 
 
@@ -213,6 +215,7 @@ struct DockContext
     bool m_is_begin_open = false;
     ImU32 m_next_dock_after = 0;
     DockSlot_ m_next_dock_slot;
+    ImGuiCond_ m_next_dock_condition;
 
 
     ~DockContext() {}
@@ -248,20 +251,6 @@ struct DockContext
         new_dock->opened = opened;
         new_dock->first = true;
         new_dock->location[0] = 0;
-
-        if (m_next_dock_after)
-        {
-            Dock* sibling = nullptr;
-            if (m_next_dock_after == -1)
-                sibling = getRootDock();
-            else
-                sibling = getExistingDock(m_next_dock_after);
-
-            if (!sibling || (sibling && sibling->status == Status_Docked))
-                doDock(*new_dock, sibling, m_next_dock_slot);
-            m_next_dock_after = 0;
-        }
-
         return *new_dock;
     }
 
@@ -960,6 +949,33 @@ struct DockContext
         IM_ASSERT(!m_is_begin_open);
         m_is_begin_open = true;
         Dock& dock = getDock(label, !opened || *opened, default_size);
+
+        if (m_next_dock_after)
+        {
+            if (dock.m_allow_condition & m_next_dock_condition)
+            {
+                do
+                {
+                    if ((m_next_dock_after & ImGuiCond_Appearing) && !(!dock.opened && (!opened || *opened)))
+                        break;
+
+                    if (m_next_dock_condition & (ImGuiCond_FirstUseEver | ImGuiCond_Once))
+                        dock.m_allow_condition &= ~m_next_dock_condition;
+
+                    if (m_next_dock_after == -1)                        // To root dock
+                        doDock(dock, nullptr, m_next_dock_slot);
+                    else
+                    {
+                        Dock* dest = getExistingDock(m_next_dock_after);
+                        if (!dest || dest->status == Status_Docked)
+                            doDock(dock, dest, m_next_dock_slot);
+                    }
+
+                } while (false);
+            }
+            m_next_dock_after = 0;
+        }
+
         if (dock.last_frame != 0 && m_last_frame != ImGui::GetFrameCount())
         {
             cleanDocks();
@@ -1150,14 +1166,21 @@ struct DockContext
             dock.children[0] = getDockByIndex(Urho3D::ToInt(record.GetAttribute("child0")));
             dock.children[1] = getDockByIndex(Urho3D::ToInt(record.GetAttribute("child1")));
             dock.parent = getDockByIndex(Urho3D::ToInt(record.GetAttribute("parent")));
+            dock.m_allow_condition &= ~ImGuiCond_FirstUseEver;
             record = record.GetNext("dock");
         }
     }
 
-    void placeNewDockAfter(const char* label, DockSlot_ slot)
+    void placeNewDockAfter(const char* label, DockSlot_ slot, ImGuiCond_ condition)
     {
-        m_next_dock_after = label ? ImHash(label, 0) : -1;
+        if (label)
+            m_next_dock_after = ImHash(label, 0);
+        else if (auto root = getRootDock())
+            m_next_dock_after = root->id;
+        else
+            m_next_dock_after = -1;
         m_next_dock_slot = slot;
+        m_next_dock_condition = condition;
     }
 };
 
@@ -1211,9 +1234,9 @@ void LoadDock(Urho3D::XMLElement element)
     g_dock.load(element);
 }
 
-void SetNewDockLocation(const char* targetDockLabel, DockSlot_ slot)
+void SetNextDockPos(const char* targetDockLabel, DockSlot_ pos, ImGuiCond_ condition)
 {
-    g_dock.placeNewDockAfter(targetDockLabel, slot);
+    g_dock.placeNewDockAfter(targetDockLabel, pos, condition);
 }
 
 } // namespace ImGui
