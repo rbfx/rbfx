@@ -439,5 +439,26 @@ bool SystemUI::IsAnyItemHovered() const
     return ui::IsAnyItemHovered() || ui::IsAnyWindowHovered();
 }
 
+void SystemUI::OnUpdate()
+{
+    // Draw dragged item
+    if (dragData_.GetType() != VAR_NONE)
+    {
+        if (ui::IsMouseDown(0))
+        {
+            ImGuiIO& io = ImGui::GetIO();
+            ui::SetNextWindowPos(ui::GetMousePos() - ImVec2(10, 10), ImGuiCond_Always);
+            ui::SetNextWindowFocus();
+            ui::Begin("SystemUI drag", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar |
+                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize |
+                ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_ShowBorders);
+            ui::TextUnformatted(dragData_.ToString().CString());
+            ui::End();
+        }
+        else
+            dragData_.Clear();
+    }
+}
+
 }
 
