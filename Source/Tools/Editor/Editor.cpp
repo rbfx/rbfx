@@ -29,7 +29,7 @@
 #include <Toolbox/Toolbox.h>
 #include <Toolbox/ImGuiDock.h>
 #include <tinyfiledialogs/tinyfiledialogs.h>
-
+#include <Toolbox/ResourceBrowser.h>
 
 URHO3D_DEFINE_APPLICATION_MAIN(Editor);
 
@@ -200,6 +200,13 @@ void Editor::OnUpdate(VariantMap& args)
         inspector_.SetSerializable(lastActiveView_->GetSelectedSerializable());
     else
         inspector_.SetSerializable(nullptr);
+
+    String selected;
+    if (ResourceBrowserWindow(context_, selected, &resourceBrowserWindowOpen_))
+    {
+        // select resource
+        int a = 2;
+    }
 
     initializeDocks_ = false;
 }

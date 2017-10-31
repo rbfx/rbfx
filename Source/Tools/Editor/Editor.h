@@ -78,6 +78,8 @@ protected:
     AttributeInspectorDockWindow inspector_;
     /// Path to a project file.
     String projectFilePath_;
+    /// Flag which opens resource browser window.
+    bool resourceBrowserWindowOpen_ = true;
 };
 
 }
