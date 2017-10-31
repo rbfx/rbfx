@@ -29,6 +29,7 @@
 #include <Urho3D/IO/Log.h>
 #include "AttributeInspector.h"
 #include "ImGuiDock.h"
+#include "Widgets.h"
 
 #include <IconFontCppHeaders/IconsFontAwesome.h>
 #include <tinyfiledialogs/tinyfiledialogs.h>
@@ -289,16 +290,19 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         case VAR_RESOURCEREF:
         {
             auto ref = value.GetResourceRef();
-            ui::Text("%s", ref.name_.CString());
-            ui::SameLine();
-            if (ui::Button(ICON_FA_FOLDER_OPEN))
+            String name = ref.name_;
+            ui::InputText("", (char*)name.CString(), name.Length(), ImGuiInputTextFlags_AutoSelectAll |
+                ImGuiInputTextFlags_ReadOnly);
+            if (ui::DroppedOnItem())
             {
-                auto cache = GetSubsystem<ResourceCache>();
-                auto fileName = cache->GetResourceFileName(ref.name_);
-                String selectedPath = tinyfd_openFileDialog(
-                    ToString("Open %s File", context_->GetTypeName(ref.type_).CString()).CString(),
-                    fileName.Length() ? fileName.CString() : GetFileSystem()->GetCurrentDir().CString(), 0, 0, 0, 0);
-                SharedPtr<Resource> resource(cache->GetResource(ref.type_, selectedPath));
+                Variant dragData = GetSystemUI()->GetDragData();
+                SharedPtr<Resource> resource;
+
+                if (dragData.GetType() == VAR_STRING)
+                    resource = GetCache()->GetResource(ref.type_, dragData.GetString());
+                else if (dragData.GetType() == VAR_RESOURCEREF)
+                    resource = GetCache()->GetResource(ref.type_, dragData.GetResourceRef().name_);
+
                 if (resource.NotNull())
                 {
                     ref.name_ = resource->GetName();
@@ -306,6 +310,8 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
                     modified = true;
                 }
             }
+            else if (ui::IsItemHovered())
+                ui::SetTooltip("Drag resource here.");
             break;
         }
 //            case VAR_RESOURCEREFLIST:
@@ -394,8 +400,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
                 }
                 ui::SameLine();
 
-                modified |= ui::InputText("", &buffer.front(), buffer.size() - 1,
-                                          ImGuiInputTextFlags_EnterReturnsTrue);
+                modified |= ui::InputText("", &buffer.front(), buffer.size() - 1, ImGuiInputTextFlags_EnterReturnsTrue);
                 if (modified)
                     sv = &buffer.front();
                 ui::PopID();
