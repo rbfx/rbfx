@@ -56,6 +56,10 @@ void DebugCameraController::Update(float timeStep)
     if (GetUI()->GetFocusElement())
         return;
 
+    // Do not move if interacting with UI controls
+    if (GetSystemUI()->IsAnyItemActive())
+        return;
+
     Input* input = GetInput();
 
     // Movement speed as world units per second
