@@ -84,12 +84,16 @@ bool SceneView::RenderWindow()
         ui::SetCursorPos(ui::GetCursorPos() - style.WindowPadding);
         ui::Image(view_, ToImGui(screenRect_.Size()));
 
-        if (!ui::IsWindowFocused() && ui::IsItemHovered() && GetInput()->GetMouseButtonDown(MOUSEB_RIGHT) &&
-            screenRect_.IsInside(lastMousePosition_) == INSIDE)
-            ui::SetWindowFocus();
+        if (screenRect_.IsInside(lastMousePosition_) == INSIDE)
+        {
+            if (!ui::IsWindowFocused() && ui::IsItemHovered() && GetInput()->GetMouseButtonDown(MOUSEB_RIGHT))
+                ui::SetWindowFocus();
 
-        if (ui::IsDockActive())
-            isActive_ = ui::IsWindowFocused();
+            if (ui::IsDockActive())
+                isActive_ = ui::IsWindowFocused();
+            else
+                isActive_ = false;
+        }
         else
             isActive_ = false;
 
