@@ -54,14 +54,16 @@ public:
     void OnUpdate(VariantMap& args);
     /// Renders menu bar at the top of the screen.
     void RenderMenuBar();
-    /// Render scene node tree. Should be called with Scene as parameter in order to render entire scene node tree.
-    void RenderSceneNodeTree(Node* node);
     /// Create sample scene. Specify xml or json file with serialized scene contents to load them.
     SceneView* CreateNewScene(const String& path = "");
     /// Return true if specified scene tab is focused and mouse hovers it.
     bool IsActive(Scene* scene);
     /// Return scene view based on it's label, or null if no such scene view exists.
     SceneView* GetSceneView(const String& title);
+    /// Return active scene view.
+    SceneView* GetActiveSceneView() { return activeView_; }
+    /// Return currently open scene views.
+    const Vector<SharedPtr<SceneView>>& GetSceneViews() const { return sceneViews_; }
 
 protected:
     /// Flag indicating that dock UI should be initialized to default locations.
@@ -70,12 +72,8 @@ protected:
     Vector<SharedPtr<SceneView>> sceneViews_;
     /// Dummy scene required for making scene rendering to textures work.
     SharedPtr<Scene> scene_;
-    /// Focused scene view tab.
-    WeakPtr<SceneView> activeView_;
     /// Last focused scene view tab.
-    WeakPtr<SceneView> lastActiveView_;
-    /// Attribute inspector dock.
-    AttributeInspectorDockWindow inspector_;
+    WeakPtr<SceneView> activeView_;
     /// Path to a project file.
     String projectFilePath_;
     /// Flag which opens resource browser window.

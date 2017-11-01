@@ -39,7 +39,6 @@ namespace Urho3D
 
 Editor::Editor(Context* context)
     : Application(context)
-    , inspector_(context)
 {
 }
 
@@ -152,6 +151,8 @@ void Editor::LoadProject(const String& filePath)
             {
                 auto sceneView = CreateNewScene();
                 sceneView->title_ = scene.GetAttribute("title");
+                if (activeView_.Expired())
+                    activeView_ = sceneView;
                 scene = scene.GetNext("scene");
             }
         }
@@ -169,37 +170,33 @@ void Editor::OnUpdate(VariantMap& args)
     ui::SetNextDockPos(nullptr, ui::Slot_Left, ImGuiCond_FirstUseEver);
     if (ui::BeginDock("Hierarchy"))
     {
-        if (!lastActiveView_.Expired())
-            RenderSceneNodeTree(lastActiveView_->scene_);
+        if (!activeView_.Expired())
+            activeView_->RenderSceneNodeTree();
     }
     ui::EndDock();
 
-    if (initializeDocks_)
-        CreateNewScene();
-
-    activeView_ = nullptr;
     for (auto it = sceneViews_.Begin(); it != sceneViews_.End();)
     {
         auto& view = *it;
         if (view->RenderWindow())
         {
-            ++it;
             if (view->isActive_)
-                lastActiveView_ = activeView_ = view;
+                activeView_ = view;
+            ++it;
         }
         else
             it = sceneViews_.Erase(it);
     }
 
-    if (!sceneViews_.Empty())
-        ui::SetNextDockPos(sceneViews_.Back()->title_.CString(), ui::Slot_Right, ImGuiCond_FirstUseEver);
 
-    inspector_.RenderUi();
-
-    if (!lastActiveView_.Expired())
-        inspector_.SetSerializable(lastActiveView_->GetSelectedSerializable());
-    else
-        inspector_.SetSerializable(nullptr);
+    if (!activeView_.Expired())
+        ui::SetNextDockPos(activeView_->title_.CString(), ui::Slot_Right, ImGuiCond_FirstUseEver);
+    if (ui::BeginDock("Inspector"))
+    {
+        if (!activeView_.Expired())
+            activeView_->RenderInspector();
+    }
+    ui::EndDock();
 
     String selected;
     if (ResourceBrowserWindow(context_, selected, &resourceBrowserWindowOpen_))
@@ -243,7 +240,7 @@ void Editor::RenderMenuBar()
             ui::EndMenu();
         }
 
-        if (!lastActiveView_.Expired())
+        if (!activeView_.Expired())
         {
             save |= ui::Button(ICON_FA_FLOPPY_O);
             ui::SameLine();
@@ -251,7 +248,7 @@ void Editor::RenderMenuBar()
                 ui::SetTooltip("Save");
             ui::TextUnformatted("|");
             ui::SameLine();
-            lastActiveView_->RenderGizmoButtons();
+            activeView_->RenderGizmoButtons();
             SendEvent(E_EDITORTOOLBARBUTTONS);
         }
 
@@ -269,56 +266,13 @@ void Editor::RenderMenuBar()
     }
 }
 
-void Editor::RenderSceneNodeTree(Node* node)
-{
-    if (node->HasTag(InternalEditorElementTag))
-        return;
-
-    String name = ToString("%s (%d)", (node->GetName().Empty() ? node->GetTypeName() : node->GetName()).CString(), node->GetID());
-    bool isSelected = lastActiveView_->IsSelected(node);
-
-    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
-    if (isSelected)
-        flags |= ImGuiTreeNodeFlags_Selected;
-    if (node == lastActiveView_->scene_)
-        flags |= ImGuiTreeNodeFlags_DefaultOpen;
-
-    auto opened = ui::TreeNodeEx(name.CString(), flags);
-
-    if (ui::IsItemClicked(0))
-    {
-        if (!GetInput()->GetKeyDown(KEY_CTRL))
-            lastActiveView_->UnselectAll();
-        lastActiveView_->ToggleSelection(node);
-    }
-
-    if (opened)
-    {
-        for (auto& component: node->GetComponents())
-        {
-            bool selected = inspector_.GetSerializable() == component;
-            if (ui::Selectable(component->GetTypeName().CString(), selected))
-            {
-                lastActiveView_->UnselectAll();
-                lastActiveView_->ToggleSelection(node);
-                lastActiveView_->Select(component);
-            }
-        }
-
-        for (auto& child: node->GetChildren())
-            RenderSceneNodeTree(child);
-        ui::TreePop();
-    }
-}
-
 SceneView* Editor::CreateNewScene(const String& path)
 {
+    SharedPtr<SceneView> sceneView;
     if (sceneViews_.Empty())
-        ui::SetNextDockPos("Hierarchy", ui::Slot_Right, ImGuiCond_FirstUseEver);
+        sceneView = new SceneView(context_, "Hierarchy", ui::Slot_Right);
     else
-        ui::SetNextDockPos(sceneViews_.Back()->title_.CString(), ui::Slot_Tab, ImGuiCond_FirstUseEver);
-
-    SharedPtr<SceneView> sceneView(new SceneView(context_));
+        sceneView = new SceneView(context_, sceneViews_.Back()->title_.CString(), ui::Slot_Tab);
 
     for (auto index = 1; ; index++)
     {
@@ -348,10 +302,6 @@ SceneView* Editor::CreateNewScene(const String& path)
 
     // Temporary, until asset browser is implemented
     sceneView->LoadScene("Data/Scenes/SceneLoadExample.xml");
-
-    // Fills up hierarchy window
-    if (lastActiveView_.Null())
-        lastActiveView_ = sceneView;
 
     return sceneView;
 }

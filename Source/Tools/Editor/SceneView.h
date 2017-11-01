@@ -26,6 +26,8 @@
 #include <Urho3D/Urho3DAll.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
 #include <Toolbox/SystemUI/Gizmo.h>
+#include <Toolbox/SystemUI/ImGuiDock.h>
+
 
 namespace Urho3D
 {
@@ -35,7 +37,7 @@ class SceneView : public Object
     URHO3D_OBJECT(SceneView, Object);
 public:
     /// Construct.
-    explicit SceneView(Context* context);
+    explicit SceneView(Context* context, const String& afterDockName, ui::DockSlot_ position);
     /// Destruct.
     ~SceneView() override;
     /// Set screen rectangle where scene is being rendered.
@@ -46,13 +48,15 @@ public:
     void SetRendererNode(Node* node) { renderer_ = node; }
     /// Render scene window.
     bool RenderWindow();
+    /// Render inspector window.
+    void RenderInspector();
+    /// Render scene hierarchy window.
+    void RenderSceneNodeTree(Node* node=nullptr);
     /// Load scene from xml or json file.
     void LoadScene(const String& filePath);
 
     /// Add a node to selection.
     void Select(Node* node);
-    /// Select any serializable object.
-    void Select(Serializable* serializable);
     /// Remove a node from selection.
     void Unselect(Node* node);
     /// Select if node was not selected or unselect if node was selected.
@@ -65,8 +69,6 @@ public:
     const Vector<WeakPtr<Node>>& GetSelection() const;
     /// Render buttons which customize gizmo behavior.
     void RenderGizmoButtons();
-    /// Return selected serializable object. It usually is a component selected for inspection.
-    Serializable* GetSelectedSerializable() { return selectedSerializable_; }
 
 protected:
     /// Called when node selection changes.
@@ -89,14 +91,24 @@ public:
     SharedPtr<Node> renderer_;
     /// Current screen rectangle at which scene texture is being rendered.
     IntRect screenRect_;
-    /// Scene is active when scene window is focused and mouse hovers that window.
+    /// Scene dock is active and window is focused.
     bool isActive_ = false;
     /// Gizmo used for manipulating scene elements.
     Gizmo gizmo_;
     /// Current window flags.
     ImGuiWindowFlags windowFlags_ = 0;
-    /// A selected serializable object. This usually is a component that is inspeced by inspector.
-    WeakPtr<Serializable> selectedSerializable_;
+    /// Attribute inspector.
+    AttributeInspector inspector_;
+    /// Current selected component displayed in inspector.
+    WeakPtr<Component> selectedComponent_;
+    /// Name of sibling dock for initial placement.
+    String placeAfter_;
+    /// Position where this scene view should be docked initially.
+    ui::DockSlot_ placePosition_;
+    /// Last known mouse position when it was visible.
+    IntVector2 lastMousePosition_;
+    /// Flag set to true when dock contents were visible. Used for tracking "appearing" effect.
+    bool wasRendered_ = false;
 };
 
 };

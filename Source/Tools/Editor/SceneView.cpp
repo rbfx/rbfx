@@ -26,16 +26,18 @@
 #include <Toolbox/Scene/DebugCameraController.h>
 #include <ImGui/imgui_internal.h>
 #include <ImGuizmo/ImGuizmo.h>
-#include <Toolbox/SystemUI/ImGuiDock.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
 
 
 namespace Urho3D
 {
 
-SceneView::SceneView(Context* context)
+SceneView::SceneView(Context* context, const String& afterDockName, ui::DockSlot_ position)
     : Object(context)
     , gizmo_(context)
+    , inspector_(context)
+    , placeAfter_(afterDockName)
+    , placePosition_(position)
 {
     scene_ = SharedPtr<Scene>(new Scene(context));
     scene_->CreateComponent<Octree>();
@@ -65,14 +67,35 @@ bool SceneView::RenderWindow()
 {
     bool open = true;
     auto& style = ui::GetStyle();
+
+    if (GetInput()->IsMouseVisible())
+        lastMousePosition_ = GetInput()->GetMousePosition();
+
+    ui::SetNextDockPos(placeAfter_.CString(), placePosition_, ImGuiCond_FirstUseEver);
     if (ui::BeginDock(title_.CString(), &open, windowFlags_))
     {
-        isActive_ = ui::IsWindowHovered();
-        camera_->GetComponent<DebugCameraController>()->SetEnabled(isActive_);
+        // Focus window when appearing
+        if (!wasRendered_)
+        {
+            ui::SetWindowFocus();
+            wasRendered_ = true;
+        }
 
         ImGuizmo::SetDrawlist();
         ui::SetCursorPos(ui::GetCursorPos() - style.WindowPadding);
         ui::Image(view_, ToImGui(screenRect_.Size()));
+
+        if (!ui::IsWindowFocused() && ui::IsItemHovered() && GetInput()->GetMouseButtonDown(MOUSEB_RIGHT) &&
+            screenRect_.IsInside(lastMousePosition_) == INSIDE)
+            ui::SetWindowFocus();
+
+        if (ui::IsDockActive())
+            isActive_ = ui::IsWindowFocused();
+        else
+            isActive_ = false;
+
+        camera_->GetComponent<DebugCameraController>()->SetEnabled(isActive_);
+
         gizmo_.ManipulateSelection(GetCamera());
 
         // Update scene view rect according to window position
@@ -101,7 +124,7 @@ bool SceneView::RenderWindow()
                 IntVector2 pos = GetInput()->GetMousePosition();
                 pos -= screenRect_.Min();
 
-                Ray cameraRay = camera_->GetComponent<Camera>()->GetScreenRay((float)pos.x_ / screenRect_.Width(), (float)pos.y_ / screenRect_.Height());
+                Ray cameraRay = GetCamera()->GetScreenRay((float)pos.x_ / screenRect_.Width(), (float)pos.y_ / screenRect_.Height());
                 // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
                 PODVector<RayQueryResult> results;
 
@@ -130,7 +153,13 @@ bool SceneView::RenderWindow()
         else
             windowFlags_ = 0;
     }
+    else
+    {
+        isActive_ = false;
+        wasRendered_ = false;
+    }
     ui::EndDock();
+
     return open;
 }
 
@@ -263,20 +292,81 @@ bool SceneView::IsSelected(Node* node) const
     return gizmo_.IsSelected(node);
 }
 
-void SceneView::Select(Serializable* serializable)
-{
-    selectedSerializable_ = serializable;
-}
-
 void SceneView::OnNodeSelectionChanged()
 {
     using namespace EditorSelectionChanged;
-    // TODO: inspector for multi-selection.
     const auto& selection = GetSelection();
     if (selection.Size() == 1)
-        Select(DynamicCast<Serializable>(selection.Front()));
+    {
+        const auto& node = selection.Front();
+        const auto& components = node->GetComponents();
+        if (!components.Empty())
+            selectedComponent_ = components.Front();
+        else
+            selectedComponent_ = nullptr;
+    }
     else
-        Select((Serializable*)nullptr);
+        selectedComponent_ = nullptr;
+}
+
+void SceneView::RenderInspector()
+{
+    // TODO: inspector for multi-selection.
+    if (GetSelection().Size() == 1)
+    {
+        auto node = GetSelection().Front();
+        PODVector<Serializable*> items;
+        items.Push(dynamic_cast<Serializable*>(node.Get()));
+        if (!selectedComponent_.Expired())
+            items.Push(dynamic_cast<Serializable*>(selectedComponent_.Get()));
+        inspector_.RenderAttributes(items);
+    }
+}
+
+void SceneView::RenderSceneNodeTree(Node* node)
+{
+    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
+    if (node == nullptr)
+    {
+        flags |= ImGuiTreeNodeFlags_DefaultOpen;
+        node = scene_;
+    }
+
+    if (node->HasTag(InternalEditorElementTag))
+        return;
+
+    String name = ToString("%s (%d)", (node->GetName().Empty() ? node->GetTypeName() : node->GetName()).CString(), node->GetID());
+    bool isSelected = IsSelected(node);
+
+    if (isSelected)
+        flags |= ImGuiTreeNodeFlags_Selected;
+
+    auto opened = ui::TreeNodeEx(name.CString(), flags);
+
+    if (ui::IsItemClicked(0))
+    {
+        if (!GetInput()->GetKeyDown(KEY_CTRL))
+            UnselectAll();
+        ToggleSelection(node);
+    }
+
+    if (opened)
+    {
+        for (auto& component: node->GetComponents())
+        {
+            bool selected = selectedComponent_ == component;
+            if (ui::Selectable(component->GetTypeName().CString(), selected))
+            {
+                UnselectAll();
+                ToggleSelection(node);
+                selectedComponent_ = component;
+            }
+        }
+
+        for (auto& child: node->GetChildren())
+            RenderSceneNodeTree(child);
+        ui::TreePop();
+    }
 }
 
 }
