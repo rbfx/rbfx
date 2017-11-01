@@ -39,7 +39,9 @@ public:
     /// Construct.
     explicit AttributeInspector(Context* context);
 
-    /// Render attribute inspector widgets. Attributes are rendered in columns. Be sure to call `ui::Columns()` before calling this method.
+    /// Render attribute inspector widgets of multiple items.
+    void RenderAttributes(const PODVector<Serializable*>& items);
+    /// Render attribute inspector widgets.
     void RenderAttributes(Serializable* item);
 
 protected:
@@ -61,7 +63,7 @@ protected:
     /// Buffers used by system ui for editing attribute values.
     HashMap<String, std::array<char, 0x1000>> buffers_;
     /// Last serializable whose attribute list was rendered.
-    WeakPtr<Serializable> lastSerializable_;
+    PODVector<Serializable*> lastSerializables_;
     /// Name of attribute that was modified on last frame.
     const char* modifiedLastFrame_ = nullptr;
     /// Value of attribute before modifying it started.

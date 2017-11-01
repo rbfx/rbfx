@@ -32,7 +32,7 @@
 #include "Widgets.h"
 
 #include <IconFontCppHeaders/IconsFontAwesome.h>
-#include <tinyfiledialogs/tinyfiledialogs.h>
+#include <ImGui/imgui_internal.h>
 
 
 namespace Urho3D
@@ -44,17 +44,14 @@ AttributeInspector::AttributeInspector(Urho3D::Context* context)
     filter_.front() = 0;
 }
 
-void AttributeInspector::RenderAttributes(Serializable* item)
+void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
 {
-    if (item == nullptr)
-        return;
-
     /// If serializable changes clear value buffers so values from previous item do not appear when inspecting new item.
-    if (lastSerializable_.Get() != item)
+    if (lastSerializables_ != items)
     {
         maxWidth_ = 0;
         buffers_.Clear();
-        lastSerializable_ = item;
+        lastSerializables_ = items;
     }
 
     ui::TextUnformatted("Filter");
@@ -70,103 +67,121 @@ void AttributeInspector::RenderAttributes(Serializable* item)
     ui::PopItemWidth();
     ui::PopID();
 
-    ui::PushID(item);
-    const char* modifiedThisFrame = nullptr;
-    const auto& attributes = *item->GetAttributes();
-    for (const AttributeInfo& info: attributes)
+    for (Serializable* item: items)
     {
-        bool hidden = false;
-        Color color = Color::WHITE;
-        String tooltip;
-
-        Variant value, oldValue;
-        value = oldValue = item->GetAttribute(info.name_);
-
-        if (value == info.defaultValue_)
-            color = Color::GRAY;
-
-        if (info.mode_ & AM_NOEDIT)
-            hidden = true;
-        else if (filter_.front() && !info.name_.Contains(&filter_.front(), false))
-            hidden = true;
-
-        // Customize attribute rendering
-        {
-            using namespace AttributeInspectorAttribute;
-            VariantMap args;
-            args[P_SERIALIZABLE] = item;
-            args[P_ATTRIBUTEINFO] = (void*)&info;
-            args[P_COLOR] = color;
-            args[P_HIDDEN] = hidden;
-            args[P_TOOLTIP] = tooltip;
-            SendEvent(E_ATTRIBUTEINSPECTOATTRIBUTE, args);
-            hidden = args[P_HIDDEN].GetBool();
-            color = args[P_COLOR].GetColor();
-            tooltip = args[P_TOOLTIP].GetString();
-        }
-
-        if (hidden)
+        if (item == nullptr)
             continue;
 
-        ui::TextColored(ToImGui(color), "%s", info.name_.CString());
-        if (!tooltip.Empty() && ui::IsItemHovered())
-            ui::SetTooltip("%s", tooltip.CString());
+        ui::PushID(item);
+        const char* modifiedThisFrame = nullptr;
+        const auto& attributes = *item->GetAttributes();
 
-        NextColumn();
+        ui::TextUnformatted(item->GetTypeName().CString());
+        ui::Separator();
 
-        ui::PushID(info.name_.CString());
-
-        if (ui::Button(ICON_FA_CARET_DOWN, {20, 20}))
-            ui::OpenPopup("Attribute Menu");
-
-        if (ui::BeginPopup("Attribute Menu"))
+        for (const AttributeInfo& info: attributes)
         {
-            if (ui::MenuItem("Reset to default"))
+            bool hidden = false;
+            Color color = Color::WHITE;
+            String tooltip;
+
+            Variant value, oldValue;
+            value = oldValue = item->GetAttribute(info.name_);
+
+            if (value == info.defaultValue_)
+                color = Color::GRAY;
+
+            if (info.mode_ & AM_NOEDIT)
+                hidden = true;
+            else if (filter_.front() && !info.name_.Contains(&filter_.front(), false))
+                hidden = true;
+
+            // Customize attribute rendering
             {
-                item->SetAttribute(info.name_, info.defaultValue_);
-                item->ApplyAttributes();
+                using namespace AttributeInspectorAttribute;
+                VariantMap args;
+                args[P_SERIALIZABLE] = item;
+                args[P_ATTRIBUTEINFO] = (void*)&info;
+                args[P_COLOR] = color;
+                args[P_HIDDEN] = hidden;
+                args[P_TOOLTIP] = tooltip;
+                SendEvent(E_ATTRIBUTEINSPECTOATTRIBUTE, args);
+                hidden = args[P_HIDDEN].GetBool();
+                color = args[P_COLOR].GetColor();
+                tooltip = args[P_TOOLTIP].GetString();
             }
 
-            // Allow customization of attribute menu.
-            using namespace AttributeInspectorMenu;
-            SendEvent(E_ATTRIBUTEINSPECTORMENU, P_SERIALIZABLE, item, P_ATTRIBUTEINFO, (void*)&info);
+            if (hidden)
+                continue;
 
-            ImGui::EndPopup();
+            ui::TextColored(ToImGui(color), "%s", info.name_.CString());
+            if (!tooltip.Empty() && ui::IsItemHovered())
+                ui::SetTooltip("%s", tooltip.CString());
+
+            NextColumn();
+
+            ui::PushID(info.name_.CString());
+
+            if (ui::Button(ICON_FA_CARET_DOWN, {20, 20}))
+                ui::OpenPopup("Attribute Menu");
+
+            if (ui::BeginPopup("Attribute Menu"))
+            {
+                if (ui::MenuItem("Reset to default"))
+                {
+                    item->SetAttribute(info.name_, info.defaultValue_);
+                    item->ApplyAttributes();
+                }
+
+                // Allow customization of attribute menu.
+                using namespace AttributeInspectorMenu;
+                SendEvent(E_ATTRIBUTEINSPECTORMENU, P_SERIALIZABLE, item, P_ATTRIBUTEINFO, (void*)&info);
+
+                ImGui::EndPopup();
+            }
+            ui::SameLine();
+
+            bool modifiedLastFrame = modifiedLastFrame_ == info.name_.CString();
+            ui::PushItemWidth(-1);
+            if (RenderSingleAttribute(info, value))
+            {
+                assert(modifiedThisFrame == nullptr);
+                modifiedLastFrame_ = info.name_.CString();
+
+                // Just started changing value of the attribute. Save old value required for event on modification end.
+                if (!modifiedLastFrame)
+                    originalValue_ = oldValue;
+
+                // Update attribute value and do nothing else for now.
+                item->SetAttribute(info.name_, value);
+                item->ApplyAttributes();
+            }
+            else if (modifiedLastFrame && !ui::IsAnyItemActive())
+            {
+                // This attribute was modified on last frame, but not on this frame. Continous attribute value modification
+                // has ended and we can fire attribute modification event.
+                using namespace AttributeInspectorValueModified;
+                SendEvent(E_ATTRIBUTEINSPECTVALUEMODIFIED, P_SERIALIZABLE, item, P_ATTRIBUTEINFO, (void*)&info,
+                    P_OLDVALUE, originalValue_, P_NEWVALUE, value);
+            }
+            ui::PopItemWidth();
+
+            ui::PopID();
         }
-        ui::SameLine();
-
-        bool modifiedLastFrame = modifiedLastFrame_ == info.name_.CString();
-        ui::PushItemWidth(-1);
-        if (RenderSingleAttribute(info, value))
-        {
-            assert(modifiedThisFrame == nullptr);
-            modifiedLastFrame_ = info.name_.CString();
-
-            // Just started changing value of the attribute. Save old value required for event on modification end.
-            if (!modifiedLastFrame)
-                originalValue_ = oldValue;
-
-            // Update attribute value and do nothing else for now.
-            item->SetAttribute(info.name_, value);
-            item->ApplyAttributes();
-        }
-        else if (modifiedLastFrame && !ui::IsAnyItemActive())
-        {
-            // This attribute was modified on last frame, but not on this frame. Continous attribute value modification
-            // has ended and we can fire attribute modification event.
-            using namespace AttributeInspectorValueModified;
-            SendEvent(E_ATTRIBUTEINSPECTVALUEMODIFIED, P_SERIALIZABLE, item, P_ATTRIBUTEINFO, (void*)&info, P_OLDVALUE, originalValue_, P_NEWVALUE, value);
-        }
-        ui::PopItemWidth();
 
         ui::PopID();
     }
 
-    ui::PopID();
-
     // Just finished modifying attribute.
     if (modifiedLastFrame_ && !ui::IsAnyItemActive())
         modifiedLastFrame_ = nullptr;
+}
+
+void AttributeInspector::RenderAttributes(Serializable* item)
+{
+    PODVector<Serializable*> items;
+    items.Push(item);
+    RenderAttributes(items);
 }
 
 std::array<char, 0x1000>& AttributeInspector::GetBuffer(const String& name, const String& defaultValue)
@@ -277,7 +292,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         case VAR_STRING:
         {
             auto& v = const_cast<String&>(value.GetString());
-            auto& buffer = GetBuffer(info.name_, value.GetString());
+            auto& buffer = GetBuffer(ToString("%s-%p", info.name_.CString(), info.ptr_), value.GetString());
             modified |= ui::InputText("", &buffer.front(), buffer.size() - 1);
             if (modified)
                 value = &buffer.front();
@@ -373,7 +388,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
 
             // Insert new item.
             {
-                auto& buffer = GetBuffer(info.name_, "");
+                auto& buffer = GetBuffer(ToString("%s-%p", info.name_.CString(), info.ptr_), "");
                 ui::PushID(index++);
                 if (ui::InputText("", &buffer.front(), buffer.size() - 1, ImGuiInputTextFlags_EnterReturnsTrue))
                 {
@@ -387,7 +402,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
             // List of current items.
             for (String& sv: v)
             {
-                auto bufferName = ToString("%s-%d", info.name_.CString(), index);
+                auto bufferName = ToString("%s-%d-%p", info.name_.CString(), info.ptr_, index);
                 auto& buffer = GetBuffer(bufferName, sv);
                 ui::PushID(index++);
                 if (ui::Button(ICON_FA_TRASH))
