@@ -22,7 +22,6 @@
 
 #include "Editor.h"
 #include "EditorEvents.h"
-#include "EditorConstants.h"
 #include "SceneView.h"
 #include <ImGui/imgui_internal.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
@@ -110,6 +109,7 @@ void Editor::SaveProject(const String& filePath)
         auto scene = scenes.CreateChild("scene");
         scene.SetAttribute("title", sceneView->title_);
         scene.SetAttribute("path", sceneView->path_);
+        sceneView->SaveProject(scene);
     }
 
     ui::SaveDock(root.CreateChild("docks"));
@@ -155,6 +155,7 @@ void Editor::LoadProject(const String& filePath)
                 auto sceneView = CreateNewScene(scene.GetAttribute("title"), scene.GetAttribute("path"));
                 if (activeView_.Expired())
                     activeView_ = sceneView;
+                sceneView->LoadProject(scene);
                 scene = scene.GetNext("scene");
             }
         }
@@ -232,6 +233,8 @@ void Editor::RenderMenuBar()
                 LoadProject(projectFilePath_);
             }
 
+            ui::Separator();
+
             if (ui::MenuItem("New Scene"))
                 CreateNewScene();
 
@@ -266,6 +269,8 @@ void Editor::RenderMenuBar()
             projectFilePath_ = tinyfd_saveFileDialog("Save Project As", ".", 1, patterns, "XML Files");
         }
         SaveProject(projectFilePath_);
+        for (auto& sceneView: sceneViews_)
+            sceneView->SaveScene();
     }
 }
 

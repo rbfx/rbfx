@@ -71,6 +71,10 @@ public:
     const Vector<WeakPtr<Node>>& GetSelection() const;
     /// Render buttons which customize gizmo behavior.
     void RenderGizmoButtons();
+    /// Save project data to xml.
+    void SaveProject(XMLElement scene) const;
+    /// Load project data from xml.
+    void LoadProject(XMLElement scene);
 
 protected:
     /// Called when node selection changes.

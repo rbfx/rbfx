@@ -21,7 +21,6 @@
 //
 
 #include "SceneView.h"
-#include "EditorConstants.h"
 #include "EditorEvents.h"
 #include <Toolbox/Scene/DebugCameraController.h>
 #include <ImGui/imgui_internal.h>
@@ -165,6 +164,9 @@ bool SceneView::RenderWindow()
 
 void SceneView::LoadScene(const String& filePath)
 {
+    if (filePath.Empty())
+        return;
+
     if (filePath.EndsWith(".xml", false))
     {
         if (scene_->LoadXML(GetCache()->GetResource<XMLFile>(filePath)->GetRoot()))
@@ -196,11 +198,16 @@ bool SceneView::SaveScene(const String& filePath)
     File file(context_, fullPath, FILE_WRITE);
     bool result = false;
 
+    // Do not save elapsed time attribute. This probably should be an option.
+    auto elapsed = scene_->GetElapsedTime();
+    scene_->SetElapsedTime(0);
+
     if (fullPath.EndsWith(".xml", false))
         result = scene_->SaveXML(file);
     else if (fullPath.EndsWith(".json", false))
         result = scene_->SaveJSON(file);
 
+    scene_->SetElapsedTime(elapsed);
 
     if (result)
     {
@@ -216,7 +223,7 @@ bool SceneView::SaveScene(const String& filePath)
 void SceneView::CreateEditorObjects()
 {
     camera_ = scene_->CreateChild("DebugCamera");
-    camera_->AddTag(InternalEditorElementTag);
+    camera_->SetTemporary(true);
     camera_->CreateComponent<Camera>();
     camera_->CreateComponent<DebugCameraController>();
     scene_->GetOrCreateComponent<DebugRenderer>()->SetView(GetCamera());
@@ -362,7 +369,7 @@ void SceneView::RenderSceneNodeTree(Node* node)
         node = scene_;
     }
 
-    if (node->HasTag(InternalEditorElementTag))
+    if (node->IsTemporary())
         return;
 
     String name = ToString("%s (%d)", (node->GetName().Empty() ? node->GetTypeName() : node->GetName()).CString(), node->GetID());
@@ -397,6 +404,28 @@ void SceneView::RenderSceneNodeTree(Node* node)
             RenderSceneNodeTree(child);
         ui::TreePop();
     }
+}
+
+void SceneView::LoadProject(XMLElement scene)
+{
+    auto camera = scene.GetChild("camera");
+    if (camera.NotNull())
+    {
+        if (auto position = camera.GetChild("position"))
+            camera_->SetPosition(position.GetVariant().GetVector3());
+        if (auto rotation = camera.GetChild("rotation"))
+            camera_->SetRotation(rotation.GetVariant().GetQuaternion());
+        if (auto light = camera.GetChild("light"))
+            camera_->GetComponent<Light>()->SetEnabled(light.GetVariant().GetBool());
+    }
+}
+
+void SceneView::SaveProject(XMLElement scene) const
+{
+    auto camera = scene.CreateChild("camera");
+    camera.CreateChild("position").SetVariant(camera_->GetPosition());
+    camera.CreateChild("rotation").SetVariant(camera_->GetRotation());
+    camera.CreateChild("light").SetVariant(camera_->GetComponent<Light>()->IsEnabled());
 }
 
 }
