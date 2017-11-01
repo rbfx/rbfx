@@ -956,7 +956,7 @@ struct DockContext
             {
                 do
                 {
-                    if ((m_next_dock_after & ImGuiCond_Appearing) && !(!dock.opened && (!opened || *opened)))
+                    if ((m_next_dock_condition & ImGuiCond_Appearing) && !dock.opened && (!opened || *opened))
                         break;
 
                     if (m_next_dock_condition & (ImGuiCond_FirstUseEver | ImGuiCond_Once))
@@ -1182,6 +1182,20 @@ struct DockContext
         m_next_dock_slot = slot;
         m_next_dock_condition = condition;
     }
+
+    bool isDockDocked()
+    {
+        if (!m_current || !m_is_begin_open)
+            return false;
+        return m_current->status == Status_Docked;
+    }
+
+    bool isDockActive()
+    {
+        if (m_current)
+            return m_current->active;
+        return false;
+    }
 };
 
 
@@ -1237,6 +1251,16 @@ void LoadDock(Urho3D::XMLElement element)
 void SetNextDockPos(const char* targetDockLabel, DockSlot_ pos, ImGuiCond_ condition)
 {
     g_dock.placeNewDockAfter(targetDockLabel, pos, condition);
+}
+
+bool IsDockDocked()
+{
+    return g_dock.isDockDocked();
+}
+
+bool IsDockActive()
+{
+    return g_dock.isDockActive();
 }
 
 } // namespace ImGui

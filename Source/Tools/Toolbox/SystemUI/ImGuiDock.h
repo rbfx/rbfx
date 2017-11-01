@@ -49,5 +49,7 @@ void SetDockActive();
 void SaveDock(Urho3D::XMLElement element);
 void LoadDock(Urho3D::XMLElement element);
 void SetNextDockPos(const char* targetDockLabel, DockSlot_ pos, ImGuiCond_ condition);
+bool IsDockDocked();
+bool IsDockActive();
 
 }
