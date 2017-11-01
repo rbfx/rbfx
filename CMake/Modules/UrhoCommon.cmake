@@ -64,8 +64,14 @@ set (DEST_BUNDLE_DIR ${DEST_SHARE_DIR}/Applications)
 set (DEST_LIBRARY_DIR lib${LIB_SUFFIX}/${PATH_SUFFIX})
 set (DEST_PKGCONFIG_DIR lib${LIB_SUFFIX}/pkgconfig)
 set (DEST_THIRDPARTY_HEADERS ${DEST_INCLUDE_DIR}/ThirdParty)
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
+if (WIN32)
+    set (SHARED_LIB_INSTALL_DIR bin)
+else ()
+    set (SHARED_LIB_INSTALL_DIR lib${LIB_SUFFIX})
+endif ()
+if (NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+    set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+endif ()
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DURHO3D_DEBUG")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DURHO3D_DEBUG")
 if (NOT DEFINED URHO3D_64BIT)
@@ -176,7 +182,7 @@ endmacro ()
 
 macro (install_to_build_tree TARGET)
     add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND "${CMAKE_COMMAND}"
-        -D CMAKE_INSTALL_PREFIX:string=${CMAKE_BINARY_DIR} -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake")
+        -D CMAKE_INSTALL_PREFIX:string=${CMAKE_BINARY_DIR} -D BUILD_TYPE:string=$<CONFIGURATION> -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake")
 endmacro ()
 
 # Macro deploys Qt dlls to folder where target executable is located.

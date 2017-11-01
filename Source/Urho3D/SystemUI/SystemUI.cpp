@@ -79,14 +79,18 @@ SystemUI::SystemUI(Urho3D::Context* context)
     // Subscribe to events
     SubscribeToEvent(E_SDLRAWINPUT, std::bind(&SystemUI::OnRawEvent, this, _2));
     SubscribeToEvent(E_SCREENMODE, std::bind(&SystemUI::UpdateProjectionMatrix, this));
-    SubscribeToEvent(E_ENDRENDERING, [&](StringHash, VariantMap&)
+    SubscribeToEvent(E_INPUTEND, [&](StringHash, VariantMap&)
     {
-        URHO3D_PROFILE(SystemUiRender);
-        ImGui::Render();
         float timeStep = GetTime()->GetTimeStep();
         ImGui::GetIO().DeltaTime = timeStep > 0.0f ? timeStep : 1.0f / 60.0f;
         ImGui::NewFrame();
         ImGuizmo::BeginFrame();
+    });
+    SubscribeToEvent(E_ENDRENDERING, [&](StringHash, VariantMap&)
+    {
+        URHO3D_PROFILE(SystemUiRender);
+        OnUpdate();
+        ImGui::Render();
     });
 }
 
@@ -433,6 +437,27 @@ bool SystemUI::IsAnyItemActive() const
 bool SystemUI::IsAnyItemHovered() const
 {
     return ui::IsAnyItemHovered() || ui::IsAnyWindowHovered();
+}
+
+void SystemUI::OnUpdate()
+{
+    // Draw dragged item
+    if (dragData_.GetType() != VAR_NONE)
+    {
+        if (ui::IsMouseDown(0))
+        {
+            ImGuiIO& io = ImGui::GetIO();
+            ui::SetNextWindowPos(ui::GetMousePos() - ImVec2(10, 10), ImGuiCond_Always);
+            ui::SetNextWindowFocus();
+            ui::Begin("SystemUI drag", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar |
+                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize |
+                ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_ShowBorders);
+            ui::TextUnformatted(dragData_.ToString().CString());
+            ui::End();
+        }
+        else
+            dragData_.Clear();
+    }
 }
 
 }

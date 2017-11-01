@@ -25,21 +25,23 @@
 
 #include <array>
 
-#include "../../Core/Object.h"
-#include "../../Core/Context.h"
+#include <Urho3D/Core/Object.h>
+#include <Urho3D/Core/Context.h>
 
 
 namespace Urho3D
 {
 
-class URHO3D_API AttributeInspector : public Object
+class AttributeInspector : public Object
 {
     URHO3D_OBJECT(AttributeInspector, Object);
 public:
     /// Construct.
     explicit AttributeInspector(Context* context);
 
-    /// Render attribute inspector widgets. Attributes are rendered in columns. Be sure to call `ui::Columns()` before calling this method.
+    /// Render attribute inspector widgets of multiple items.
+    void RenderAttributes(const PODVector<Serializable*>& items);
+    /// Render attribute inspector widgets.
     void RenderAttributes(Serializable* item);
 
 protected:
@@ -53,20 +55,24 @@ protected:
     /// Render value widget of single attribute.
     /// \returns true if value was modified.
     bool RenderSingleAttribute(const AttributeInfo& info, Variant& value);
+    /// Automatically creates two columns where first column is as wide as longest label.
+    void NextColumn();
 
     /// A filter value. Attributes whose titles do not contain substring sored in this variable will not be rendered.
     std::array<char, 0x100> filter_;
     /// Buffers used by system ui for editing attribute values.
     HashMap<String, std::array<char, 0x1000>> buffers_;
     /// Last serializable whose attribute list was rendered.
-    WeakPtr<Serializable> lastSerializable_;
+    PODVector<Serializable*> lastSerializables_;
     /// Name of attribute that was modified on last frame.
     const char* modifiedLastFrame_ = nullptr;
     /// Value of attribute before modifying it started.
     Variant originalValue_;
+    /// Max width of attribute label.
+    int maxWidth_ = 0;
 };
 
-class URHO3D_API AttributeInspectorWindow : public AttributeInspector
+class AttributeInspectorWindow : public AttributeInspector
 {
     URHO3D_OBJECT(AttributeInspectorWindow, Object);
 public:
@@ -84,12 +90,23 @@ public:
 
 protected:
     /// Render attribute inspector UI.
-    void RenderUi();
+    virtual void RenderUi();
 
     /// Enable or disable rendering of attribute inspector window.
     bool enabled_ = false;
     /// Current Serializable whose attributes are rendered.
     WeakPtr<Serializable> currentSerializable_;
+};
+
+class AttributeInspectorDockWindow : public AttributeInspectorWindow
+{
+    URHO3D_OBJECT(AttributeInspectorDockWindow, Object);
+public:
+    /// Construct.
+    explicit AttributeInspectorDockWindow(Context* context);
+
+    /// Render attribute inspector UI.
+    void RenderUi() override;
 };
 
 }

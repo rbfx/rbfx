@@ -76,6 +76,12 @@ public:
     bool IsAnyItemActive() const;
     /// Return whether mouse is hovering any system ui component.
     bool IsAnyItemHovered() const;
+    /// Set data which is currently being dragged.
+    void SetDragData(const Variant& dragData) { dragData_ = dragData; }
+    /// Return data which is currently dragged.
+    Variant GetDragData() const { return dragData_; }
+    /// Return true if item is being dragged.
+    bool HasDragData() const { return dragData_.GetType() != VAR_NONE; }
 
 protected:
     float uiScale_ = 1.f;
@@ -83,11 +89,13 @@ protected:
     VertexBuffer vertexBuffer_;
     IndexBuffer indexBuffer_;
     SharedPtr<Texture2D> fontTexture_;
+    Variant dragData_;
 
     void ReallocateFontTexture();
     void UpdateProjectionMatrix();
     void OnRenderDrawLists(ImDrawData* data);
     void OnRawEvent(VariantMap& args);
+    void OnUpdate();
 };
 
 /// Convert Color to ImVec4.

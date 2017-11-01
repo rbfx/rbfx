@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<project version="0">
+	<window width="1920" height="1080" x="283" y="136" />
+	<scenes>
+		<scene title="Scene#1" path="Scenes/SceneLoadExample.xml">
+			<camera>
+				<position type="Vector3" value="1.95161 3.92649 2.58355" />
+				<rotation type="Quaternion" value="0.27502 0.12766 -0.864346 0.401215" />
+				<light type="Bool" value="true" />
+			</camera>
+		</scene>
+	</scenes>
+	<docks>
+		<dock index="0" label="Hierarchy" x="0" y="20" location="" size_x="169" size_y="1060" status="0" active="1" opened="1" prev="-1" next="-1" child0="-1" child1="-1" parent="2" />
+		<dock index="1" label="Scene#1" x="169" y="20" location="" size_x="1382" size_y="763" status="0" active="1" opened="1" prev="-1" next="-1" child0="-1" child1="-1" parent="6" />
+		<dock index="2" label="" x="0" y="20" location="" size_x="1920" size_y="1060" status="0" active="1" opened="0" prev="-1" next="-1" child0="0" child1="4" parent="-1" />
+		<dock index="3" label="Inspector" x="1551" y="20" location="" size_x="369" size_y="1060" status="0" active="1" opened="1" prev="-1" next="-1" child0="-1" child1="-1" parent="4" />
+		<dock index="4" label="" x="169" y="20" location="" size_x="1751" size_y="1060" status="0" active="1" opened="0" prev="-1" next="-1" child0="6" child1="3" parent="2" />
+		<dock index="5" label="Resources" x="169" y="783" location="" size_x="1382" size_y="297" status="0" active="1" opened="1" prev="-1" next="-1" child0="-1" child1="-1" parent="6" />
+		<dock index="6" label="" x="169" y="20" location="" size_x="1382" size_y="1060" status="0" active="1" opened="0" prev="-1" next="-1" child0="1" child1="5" parent="4" />
+	</docks>
+</project>

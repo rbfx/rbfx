@@ -170,6 +170,14 @@ void WorkQueue::AddWorkItem(SharedPtr<WorkItem> item)
     }
 }
 
+void WorkQueue::AddWorkItem(std::function<void()> workFunction, unsigned priority)
+{
+    auto item = GetFreeItem();
+    item->workFunction_ = [=](const WorkItem*, unsigned) { workFunction(); };
+    item->priority_ = priority;
+    AddWorkItem(item);
+}
+
 bool WorkQueue::RemoveWorkItem(SharedPtr<WorkItem> item)
 {
     if (!item)

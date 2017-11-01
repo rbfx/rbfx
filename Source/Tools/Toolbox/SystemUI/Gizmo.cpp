@@ -20,12 +20,21 @@
 // THE SOFTWARE.
 //
 
-#include "../../Scene/Scene.h"
-#include "../../Graphics/GraphicsEvents.h"
-#include "../../Graphics/AnimatedModel.h"
-#include "../../Graphics/DebugRenderer.h"
-#include "../../IO/Log.h"
-#include "../SystemUI.h"
+#include <Urho3D/Graphics/Camera.h>
+#include <Urho3D/Scene/Node.h>
+#include <Urho3D/Core/CoreEvents.h>
+#include <Urho3D/Input/Input.h>
+#include <Urho3D/UI/UI.h>
+#include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Graphics/Octree.h>
+#include <Urho3D/Graphics/Graphics.h>
+#include <Urho3D/Graphics/GraphicsEvents.h>
+#include <Urho3D/Graphics/AnimatedModel.h>
+#include <Urho3D/Graphics/DebugRenderer.h>
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/SystemUI/SystemUI.h>
+#include <Urho3D/Graphics/Light.h>
+#include <ImGui/imgui_internal.h>
 #include <ImGuizmo/ImGuizmo.h>
 #include "Gizmo.h"
 
@@ -34,7 +43,7 @@ namespace Urho3D
 
 Gizmo::Gizmo(Context* context) : Object(context)
 {
-    SubscribeToEvent(E_ENDRENDERING, [&](StringHash, VariantMap&) { RenderDebugInfo(); });
+    SubscribeToEvent(E_POSTRENDERUPDATE, [&](StringHash, VariantMap&) { RenderDebugInfo(); });
 }
 
 Gizmo::~Gizmo()
@@ -98,7 +107,12 @@ bool Gizmo::Manipulate(const Camera* camera, const PODVector<Node*>& nodes)
     Matrix4 delta;
 
     ImGuiIO& io = ImGui::GetIO();
-    ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+
+    auto pos = displayPos_;
+    auto size = displaySize_;
+    if (size.x == 0 && size.y == 0)
+        size = io.DisplaySize;
+    ImGuizmo::SetRect(pos.x, pos.y, size.x, size.y);
     ImGuizmo::Manipulate(&view.m00_, &proj.m00_, operation, mode, &tran.m00_, &delta.m00_, nullptr);
 
     if (IsActive())
@@ -181,14 +195,22 @@ void Gizmo::RenderUI()
         SetTransformSpace(TS_LOCAL);
 }
 
-void Gizmo::Select(Node* node)
+bool Gizmo::Select(Node* node)
 {
-    nodeSelection_.Push(WeakPtr<Node>(node));
+    WeakPtr<Node> weakNode(node);
+    if (nodeSelection_.Contains(weakNode))
+        return false;
+    nodeSelection_.Push(weakNode);
+    return true;
 }
 
-void Gizmo::Unselect(Node* node)
+bool Gizmo::Unselect(Node* node)
 {
-    nodeSelection_.Remove(WeakPtr<Node>(node));
+    WeakPtr<Node> weakNode(node);
+    if (!nodeSelection_.Contains(weakNode))
+        return false;
+    nodeSelection_.Remove(weakNode);
+    return true;
 }
 
 void Gizmo::RenderDebugInfo()
@@ -208,14 +230,133 @@ void Gizmo::RenderDebugInfo()
             }
             if (debug != nullptr)
             {
-                if (auto staticModel = node->GetComponent<StaticModel>())
-                    debug->AddBoundingBox(staticModel->GetWorldBoundingBox(), Color::WHITE);
-                else if (auto animatedModel = node->GetComponent<AnimatedModel>())
-                    debug->AddBoundingBox(animatedModel->GetWorldBoundingBox(), Color::WHITE);
+                for (auto& component: node->GetComponents())
+                {
+                    if (auto light = dynamic_cast<Light*>(component.Get()))
+                        light->DrawDebugGeometry(debug, true);
+                    else if (auto drawable = dynamic_cast<Drawable*>(component.Get()))
+                        debug->AddBoundingBox(drawable->GetWorldBoundingBox(), Color::WHITE);
+                    else
+                        component->DrawDebugGeometry(debug, true);
+                }
             }
             ++it;
         }
     }
+}
+
+void Gizmo::HandleAutoSelection()
+{
+    if (autoModeCamera_.Null())
+        return;
+
+    ManipulateSelection(autoModeCamera_);
+
+    // Discard clicks when interacting with UI
+    if (GetUI()->GetFocusElement() != nullptr)
+        return;
+
+    // Discard clicks when interacting with SystemUI
+    if (GetSystemUI()->IsAnyItemActive() || GetSystemUI()->IsAnyItemHovered())
+        return;
+
+    // Discard clicks when gizmo is being manipulated
+    if (IsActive())
+        return;
+
+    if (GetInput()->GetMouseButtonPress(MOUSEB_LEFT))
+    {
+        UI* ui = GetSubsystem<UI>();
+        IntVector2 pos = ui->GetCursorPosition();
+        // Check the cursor is visible and there is no UI element in front of the cursor
+        if (!GetInput()->IsMouseVisible() || ui->GetElementAt(pos, true))
+            return;
+
+        Graphics* graphics = GetSubsystem<Graphics>();
+        Scene* cameraScene = autoModeCamera_->GetScene();
+        Ray cameraRay = autoModeCamera_->GetScreenRay((float)pos.x_ / graphics->GetWidth(), (float)pos.y_ / graphics->GetHeight());
+        // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
+        PODVector<RayQueryResult> results;
+        RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY);
+        cameraScene->GetComponent<Octree>()->RaycastSingle(query);
+        if (results.Size())
+        {
+            WeakPtr<Node> clickNode(results[0].drawable_->GetNode());
+            if (!GetInput()->GetKeyDown(KEY_CTRL))
+                nodeSelection_.Clear();
+
+            ToggleSelection(clickNode);
+        }
+    }
+
+    if (GetInput()->GetKeyDown(KEY_SHIFT) && GetInput()->GetKeyPress(KEY_TAB))
+        operation_ = static_cast<GizmoOperation>(((size_t)operation_ + 1) % GIZMOOP_MAX);
+
+    if (GetInput()->GetKeyDown(KEY_CTRL) && GetInput()->GetKeyPress(KEY_TAB))
+    {
+        if (transformSpace_ == TS_WORLD)
+            transformSpace_ = TS_LOCAL;
+        else if (transformSpace_ == TS_LOCAL)
+            transformSpace_ = TS_WORLD;
+    }
+}
+
+void Gizmo::EnableAutoMode(Camera* camera)
+{
+    if (autoModeCamera_ == camera)
+        return;
+
+    if (camera == nullptr)
+        UnsubscribeFromEvent(E_UPDATE);
+    else
+    {
+        Scene* scene = camera->GetScene();
+        if (scene == nullptr)
+        {
+            URHO3D_LOGERROR("Camera which does not belong to scene can not be used for gizmo auto selection.");
+            return;
+        }
+
+        autoModeCamera_ = camera;
+
+        scene->GetOrCreateComponent<DebugRenderer>();
+        SubscribeToEvent(E_UPDATE, [&](StringHash, VariantMap&) { HandleAutoSelection(); });
+    }
+}
+
+void Gizmo::ToggleSelection(Node* node)
+{
+    if (IsSelected(node))
+        Unselect(node);
+    else
+        Select(node);
+}
+
+bool Gizmo::UnselectAll()
+{
+    if (nodeSelection_.Empty())
+        return false;
+    nodeSelection_.Clear();
+    return true;
+}
+
+bool Gizmo::IsSelected(Node* node) const
+{
+    WeakPtr<Node> pNode(node);
+    return nodeSelection_.Contains(pNode);
+}
+
+void Gizmo::SetScreenRect(const IntVector2& pos, const IntVector2& size)
+{
+    displayPos_ = ToImGui(pos);
+    displaySize_ = ToImGui(size);
+}
+
+void Gizmo::SetScreenRect(const IntRect& rect)
+{
+    displayPos_ = ToImGui(rect.Min());
+    displaySize_.x = rect.Width();
+    displaySize_.y = rect.Height();
 }
 
 }

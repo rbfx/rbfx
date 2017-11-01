@@ -641,9 +641,7 @@ void Engine::DumpProfiler()
     if (!Thread::IsMainThread())
         return;
 
-    Profiler* profiler = GetSubsystem<Profiler>();
-    if (profiler)
-        URHO3D_LOGRAW(profiler->PrintData(true, true) + "\n");
+    // TODO: Put something here or remove API
 #endif
 }
 
