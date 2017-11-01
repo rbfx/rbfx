@@ -168,19 +168,49 @@ void SceneView::LoadScene(const String& filePath)
     if (filePath.EndsWith(".xml", false))
     {
         if (scene_->LoadXML(GetCache()->GetResource<XMLFile>(filePath)->GetRoot()))
+        {
+            path_ = filePath;
             CreateEditorObjects();
+        }
         else
             URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(filePath).CString());
     }
     else if (filePath.EndsWith(".json", false))
     {
         if (scene_->LoadJSON(GetCache()->GetResource<JSONFile>(filePath)->GetRoot()))
+        {
+            path_ = filePath;
             CreateEditorObjects();
+        }
         else
             URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(filePath).CString());
     }
     else
         URHO3D_LOGERRORF("Unknown scene file format %s", GetExtension(filePath).CString());
+}
+
+bool SceneView::SaveScene(const String& filePath)
+{
+    auto resourcePath = filePath.Empty() ? path_ : filePath;
+    auto fullPath = GetCache()->GetResourceFileName(resourcePath);
+    File file(context_, fullPath, FILE_WRITE);
+    bool result = false;
+
+    if (fullPath.EndsWith(".xml", false))
+        result = scene_->SaveXML(file);
+    else if (fullPath.EndsWith(".json", false))
+        result = scene_->SaveJSON(file);
+
+
+    if (result)
+    {
+        if (!filePath.Empty())
+            path_ = filePath;
+    }
+    else
+        URHO3D_LOGERRORF("Saving scene to %s failed.", resourcePath.CString());
+
+    return result;
 }
 
 void SceneView::CreateEditorObjects()

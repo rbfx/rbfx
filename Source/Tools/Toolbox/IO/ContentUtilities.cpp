@@ -37,7 +37,7 @@ const Vector<String> audioExtensions_{".waw", ".ogg", ".mp3"};
 
 FileType GetFileType(const String& fileName)
 {
-    auto extension = GetExtension(fileName);
+    auto extension = GetExtension(fileName).ToLower();
     if (archiveExtensions_.Contains(extension))
         return FTYPE_ARCHIVE;
     if (wordExtensions_.Contains(extension))
@@ -84,6 +84,43 @@ String GetFileIcon(const String& fileName)
     default:
         return ICON_FA_FILE;
     }
+}
+
+ContentType GetContentType(const String& resourcePath)
+{
+    auto extension = GetExtension(resourcePath).ToLower();
+    if (extension == ".xml")
+    {
+        SharedPtr<XMLFile> xml(Context::GetContext()->GetCache()->GetResource<XMLFile>(resourcePath));
+        auto rootElementName = xml->GetRoot().GetName();
+        if (rootElementName == "scene")
+            return CTYPE_SCENE;
+        if (rootElementName == "node")
+            return CTYPE_SCENEOBJECT;
+        if (rootElementName == "elements")
+            return CTYPE_UISTYLE;
+        if (rootElementName == "element")
+            return CTYPE_UILAYOUT;
+        if (rootElementName == "material")
+            return CTYPE_MATERIAL;
+        if (rootElementName == "particleeffect")
+            return CTYPE_PARTICLE;
+        if (rootElementName == "renderpath")
+            return CTYPE_RENDERPATH;
+        if (rootElementName == "texture")
+            return CTYPE_TEXTUREXML;
+    }
+
+    if (extension == ".mdl")
+        return CTYPE_MODEL;
+    if (extension == ".ani")
+        return CTYPE_ANIMATION;
+    if (audioExtensions_.Contains(extension))
+        return CTYPE_SOUND;
+    if (imagesExtensions_.Contains(extension))
+        return CTYPE_TEXTURE;
+
+    return CTYPE_UNKNOWN;
 }
 
 }

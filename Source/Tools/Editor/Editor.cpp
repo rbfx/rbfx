@@ -30,6 +30,8 @@
 #include <Toolbox/SystemUI/ImGuiDock.h>
 #include <tinyfiledialogs/tinyfiledialogs.h>
 #include <Toolbox/SystemUI/ResourceBrowser.h>
+#include <Toolbox/IO/ContentUtilities.h>
+
 
 URHO3D_DEFINE_APPLICATION_MAIN(Editor);
 
@@ -77,6 +79,8 @@ void Editor::Start()
     SubscribeToEvent(E_UPDATE, std::bind(&Editor::OnUpdate, this, _2));
 
     LoadProject("Etc/DefaultEditorProject.xml");
+    // Prevent overwriting example scene.
+    sceneViews_.Front()->path_.Clear();
 }
 
 void Editor::Stop()
@@ -104,9 +108,8 @@ void Editor::SaveProject(const String& filePath)
     for (auto& sceneView: sceneViews_)
     {
         auto scene = scenes.CreateChild("scene");
-        scene.SetAttribute("title", sceneView->title_.CString());
-        // TODO: Scene resource path
-        // TODO: Have scene view save and load it's data
+        scene.SetAttribute("title", sceneView->title_);
+        scene.SetAttribute("path", sceneView->path_);
     }
 
     ui::SaveDock(root.CreateChild("docks"));
@@ -149,8 +152,7 @@ void Editor::LoadProject(const String& filePath)
             auto scene = scenes.GetChild("scene");
             while (scene.NotNull())
             {
-                auto sceneView = CreateNewScene();
-                sceneView->title_ = scene.GetAttribute("title");
+                auto sceneView = CreateNewScene(scene.GetAttribute("title"), scene.GetAttribute("path"));
                 if (activeView_.Expired())
                     activeView_ = sceneView;
                 scene = scene.GetNext("scene");
@@ -201,8 +203,9 @@ void Editor::OnUpdate(VariantMap& args)
     String selected;
     if (ResourceBrowserWindow(context_, selected, &resourceBrowserWindowOpen_))
     {
-        // select resource
-        int a = 2;
+        auto type = GetContentType(selected);
+        if (type == CTYPE_SCENE)
+            CreateNewScene("", selected);
     }
 
     initializeDocks_ = false;
@@ -266,7 +269,7 @@ void Editor::RenderMenuBar()
     }
 }
 
-SceneView* Editor::CreateNewScene(const String& path)
+SceneView* Editor::CreateNewScene(const String& title, const String& path)
 {
     SharedPtr<SceneView> sceneView;
     if (sceneViews_.Empty())
@@ -274,15 +277,16 @@ SceneView* Editor::CreateNewScene(const String& path)
     else
         sceneView = new SceneView(context_, sceneViews_.Back()->title_.CString(), ui::Slot_Tab);
 
-    for (auto index = 1; ; index++)
-    {
-        auto newTitle = ToString("Scene#%d", index);
-        if (GetSceneView(newTitle) == nullptr)
-        {
-            sceneView->title_ = newTitle;
-            break;
-        }
-    }
+    String prefix = "Scene";
+    String newTitle = title;
+    if (newTitle.Empty())
+        newTitle = "Scene#1";
+    else
+        prefix = title;
+    auto index = 1;
+    while (GetSceneView(newTitle) != nullptr)
+        newTitle = ToString("%s#%d", prefix.CString(), index++);
+    sceneView->title_ = newTitle;
 
     // In order to render scene to a texture we must add a dummy node to scene rendered to a screen, which has material
     // pointing to scene texture. This object must also be visible to main camera.
@@ -300,8 +304,7 @@ SceneView* Editor::CreateNewScene(const String& path)
     sceneView->SetRendererNode(node);
     sceneViews_.Push(sceneView);
 
-    // Temporary, until asset browser is implemented
-    sceneView->LoadScene("Data/Scenes/SceneLoadExample.xml");
+    sceneView->LoadScene(path);
 
     return sceneView;
 }

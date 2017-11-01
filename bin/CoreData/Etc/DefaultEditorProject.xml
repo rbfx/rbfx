@@ -2,7 +2,7 @@
 <project version="0">
 	<window width="1920" height="1080" x="314" y="152" />
 	<scenes>
-		<scene title="Scene#1" />
+		<scene title="Scene#1" path="Scenes/SceneLoadExample.xml" />
 	</scenes>
 	<docks>
 		<dock index="0" label="Hierarchy" x="0" y="20" location="" size_x="169" size_y="1060" status="0" active="1" opened="1" prev="-1" next="-1" child0="-1" child1="-1" parent="2" />

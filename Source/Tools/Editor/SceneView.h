@@ -54,6 +54,8 @@ public:
     void RenderSceneNodeTree(Node* node=nullptr);
     /// Load scene from xml or json file.
     void LoadScene(const String& filePath);
+    /// Save scene to a resource file.
+    bool SaveScene(const String& filePath = "");
 
     /// Add a node to selection.
     void Select(Node* node);
@@ -79,6 +81,8 @@ protected:
 public:
     /// Scene title. Should be unique.
     String title_ = "Scene";
+    /// Last resource path scene was loaded from or saved to.
+    String path_;
     /// Scene which is being edited.
     SharedPtr<Scene> scene_;
     /// Debug camera node.

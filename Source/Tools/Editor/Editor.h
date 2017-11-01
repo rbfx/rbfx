@@ -55,7 +55,7 @@ public:
     /// Renders menu bar at the top of the screen.
     void RenderMenuBar();
     /// Create sample scene. Specify xml or json file with serialized scene contents to load them.
-    SceneView* CreateNewScene(const String& path = "");
+    SceneView* CreateNewScene(const String& title="", const String& path="");
     /// Return true if specified scene tab is focused and mouse hovers it.
     bool IsActive(Scene* scene);
     /// Return scene view based on it's label, or null if no such scene view exists.

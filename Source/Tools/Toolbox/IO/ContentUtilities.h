@@ -46,9 +46,29 @@ enum FileType
     FTYPE_EXCEL,
 };
 
+enum ContentType
+{
+    CTYPE_UNKNOWN,
+    CTYPE_SCENE,
+    CTYPE_SCENEOBJECT,
+    CTYPE_UILAYOUT,
+    CTYPE_UISTYLE,
+    CTYPE_MODEL,
+    CTYPE_ANIMATION,
+    CTYPE_MATERIAL,
+    CTYPE_PARTICLE,
+    CTYPE_RENDERPATH,
+    CTYPE_SOUND,
+    CTYPE_TEXTURE,
+    CTYPE_TEXTUREXML,
+};
+
 /// Return file type based on extension of file name.
 FileType GetFileType(const String& fileName);
 /// Return icon from icon font based on extension of file name.
 String GetFileIcon(const String& fileName);
+
+/// Return content type by inspecting file contents.
+ContentType GetContentType(const String& resourcePath);
 
 }
