@@ -46,10 +46,6 @@ public:
     void Update(float timeStep) override;
 
 protected:
-    /// Current camera yaw.
-    float yaw_ = 0;
-    /// Current camera pitch.
-    float pitch_ = 0;
     /// Current camera speed.
     float speed_ = 2.f;
     /// Current mouse sensitivity.

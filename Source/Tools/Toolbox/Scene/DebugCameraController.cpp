@@ -37,11 +37,6 @@ void DebugCameraController::Start()
     light_ = GetNode()->CreateComponent<Light>();
     light_->SetColor(Color::WHITE);
     light_->SetLightType(LIGHT_DIRECTIONAL);
-
-    // Initialize yaw and pitch values so that first rotation does not snap camera to unexpected angles.
-    auto rot = GetNode()->GetRotation();
-    yaw_ = rot.YawAngle();
-    pitch_ = rot.PitchAngle();
 }
 
 void DebugCameraController::Stop()
@@ -78,13 +73,12 @@ void DebugCameraController::Update(float timeStep)
     {
         if (input->IsMouseVisible())
             input->SetMouseVisible(false);
-        // Use this frame's mouse motion to adjust camera node yaw and pitch. Clamp the pitch between -90 and 90 degrees
-        IntVector2 mouseMove = input->GetMouseMove();
-        yaw_ += mouseSensitivity_ * mouseMove.x_;
-        pitch_ = Clamp(pitch_ + mouseSensitivity_ * mouseMove.y_, -90.0f, 90.0f);
 
-        // Construct new orientation for the camera scene node from yaw and pitch. Roll is fixed to zero
-        GetNode()->SetRotation(Quaternion(pitch_, yaw_, 0.0f));
+        IntVector2 delta = input->GetMouseMove();
+        auto yaw = GetNode()->GetRotation().EulerAngles().x_;
+        if (yaw > -90.f && yaw < 90.f || yaw <= -90.f && delta.y_ > 0 || yaw >= 90.f && delta.y_ < 0)
+            GetNode()->RotateAround(Vector3::ZERO, Quaternion(mouseSensitivity_ * delta.y_, Vector3::RIGHT), TS_LOCAL);
+        GetNode()->RotateAround(GetNode()->GetPosition(), Quaternion(mouseSensitivity_ * delta.x_, Vector3::UP), TS_WORLD);
     }
     else if (!input->IsMouseVisible())
         input->SetMouseVisible(true);
