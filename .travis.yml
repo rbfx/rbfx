@@ -40,7 +40,10 @@ matrix:
       compiler: clang
       env: BUILD_SHARED_LIBS=ON
     - &MingW-64bit
-      env: CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake CMAKE_SYSTEM_PROCESSOR=x86_64 URHO3D_RENDERER=D3D9
+      env:
+        CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake
+        CMAKE_SYSTEM_PROCESSOR=x86_64
+        URHO3D_RENDERER=D3D9
       addons:
         apt:
           packages:
@@ -48,7 +51,10 @@ matrix:
             - g++-mingw-w64-x86-64
             - binutils-mingw-w64-x86-64
     - &MingW-32bit
-      env: CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake CMAKE_SYSTEM_PROCESSOR=i686 URHO3D_RENDERER=D3D9
+      env:
+        CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake
+        CMAKE_SYSTEM_PROCESSOR=i686
+        URHO3D_RENDERER=D3D9
       addons:
         apt:
           packages:
@@ -56,22 +62,17 @@ matrix:
             - g++-mingw-w64-i686
             - binutils-mingw-w64-i686
     - <<: *MingW-64bit
-      env: BUILD_SHARED_LIBS=ON CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake CMAKE_SYSTEM_PROCESSOR=x86_64 URHO3D_RENDERER=D3D9
+      env:
+        BUILD_SHARED_LIBS=ON
+        CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake
+        CMAKE_SYSTEM_PROCESSOR=x86_64
+        URHO3D_RENDERER=D3D9
     - <<: *MingW-32bit
-      env: BUILD_SHARED_LIBS=ON CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake CMAKE_SYSTEM_PROCESSOR=i686 URHO3D_RENDERER=D3D9
-  exclude:
-    - &Linux-32bit
-      addons:
-        apt:
-          packages:
-            - g++-multilib
-            - libasound2-dev:i386
-            - libxrandr-dev:i386
-            - libgl1-mesa-dev:i386
-            - libglu1-mesa-dev:i386
-      env: LINUX=1 URHO3D_64BIT=0 CFLAGS=-m32 CXXFLAGS=-m32
-    - <<: *Linux-32bit
-      compiler: clang
+      env:
+        BUILD_SHARED_LIBS=ON
+        CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake
+        CMAKE_SYSTEM_PROCESSOR=i686
+        URHO3D_RENDERER=D3D9
 script: |
   # Update CMake to 3.3 (minimum required version)
   if [[ ! -f $HOME/cmake-3.3.2-Linux-x86_64/bin/cmake ]];
