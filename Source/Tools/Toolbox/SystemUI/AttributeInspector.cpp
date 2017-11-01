@@ -375,7 +375,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         case VAR_DOUBLE:
         {
             // TODO: replace this with custom control that properly handles double types.
-            float v = value.GetDouble();
+            float v = static_cast<float>(value.GetDouble());
             modified |= ui::DragFloat("", &v, floatStep, floatMin, floatMax, "%.3f", power);
             if (modified)
                 value = (double)v;
@@ -445,7 +445,9 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         case VAR_INT64:
         {
             // TODO: replace this with custom control that properly handles int types.
-            int v = value.GetInt64();
+            int v = static_cast<int>(value.GetInt64());
+            if (value.GetInt64() > M_MAX_INT || value.GetInt64() < M_MIN_INT)
+                URHO3D_LOGWARNINGF("AttributeInspector truncated 64bit integer value.");
             modified |= ui::DragInt("", &v, 1, M_MIN_INT, M_MAX_INT, "%d");
             if (modified)
                 value = (long long)v;
