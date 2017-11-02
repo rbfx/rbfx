@@ -33,7 +33,6 @@ namespace Urho3D
 Profiler::Profiler(Context* context)
     : Object(context)
 {
-    SetEnabled(true);
 }
 
 Profiler::~Profiler()

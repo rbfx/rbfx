@@ -330,8 +330,11 @@ bool Engine::Initialize(const VariantMap& parameters)
     if (Profiler* profiler = GetSubsystem<Profiler>())
     {
         if (GetParameter(parameters, EP_PROFILER_LISTEN, false).GetBool())
+        {
+            profiler->SetEnabled(true);
             profiler->StartListen((unsigned short)GetParameter(parameters, EP_PROFILER_PORT, PROFILER_DEFAULT_PORT).GetInt());
-        profiler->SetEventProfilingEnabled(GetParameter(parameters, EP_EVENT_PROFILER, true).GetBool());
+            profiler->SetEventProfilingEnabled(GetParameter(parameters, EP_EVENT_PROFILER, true).GetBool());
+        }
     }
 #endif
     if (!headless_)
