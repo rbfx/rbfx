@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+cd /tmp/Urho3D-crossbuild
+mkdir -p $CROSS_TRIPLE
+cd $CROSS_TRIPLE
+
+if [[ "$CROSS_TRIPLE" == "x86_64-apple-darwin14" ]];
+then
+    cmake /workdir -DCMAKE_BUILD_TYPE=Release -DURHO3D_ENABLE_ALL=ON -DURHO3D_PACKAGING=OFF -DCMAKE_TOOLCHAIN_FILE=/workdir/CMake/Toolchains/MacOS.cmake
+elif [[ "$CROSS_TRIPLE" == "x86_64-linux-gnu" ]];
+then
+    cmake /workdir -DCMAKE_BUILD_TYPE=Release -DURHO3D_ENABLE_ALL=ON
+fi
+
+cmake --build . -- -j$(nproc --all)
+ 
