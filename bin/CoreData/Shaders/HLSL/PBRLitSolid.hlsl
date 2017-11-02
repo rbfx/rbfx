@@ -21,7 +21,7 @@ void VS(float4 iPos : POSITION,
     #if defined(LIGHTMAP) || defined(AO)
         float2 iTexCoord2 : TEXCOORD1,
     #endif
-    #if (defined(NORMALMAP) || defined(TRAILFACECAM) || defined(TRAILBONE)) && !defined(BILLBOARD) && !defined(DIRBILLBOARD)
+    #if (defined(NORMALMAP) || defined(TRAILFACECAM) || defined(TRAILBONE)) && !defined(BILLBOARD) && !defined(DIRBILLBOARD) || defined(IBL)
         float4 iTangent : TANGENT,
     #endif
     #ifdef SKINNED
@@ -89,7 +89,7 @@ void VS(float4 iPos : POSITION,
         oColor = iColor;
     #endif
 
-    #if defined(NORMALMAP)
+    #if defined(NORMALMAP)  || defined(IBL)
         const float4 tangent = GetWorldTangent(modelMatrix);
         const float3 bitangent = cross(tangent.xyz, oNormal) * tangent.w;
         oTexCoord = float4(GetTexCoord(iTexCoord), bitangent.xy);
@@ -140,11 +140,11 @@ void VS(float4 iPos : POSITION,
 }
 
 void PS(
-    #ifndef NORMALMAP
-        float2 iTexCoord : TEXCOORD0,
-    #else
+    #if NORMALMAP  || defined(IBL)
         float4 iTexCoord : TEXCOORD0,
         float4 iTangent : TEXCOORD3,
+    #else
+        float2 iTexCoord : TEXCOORD0,
     #endif
     float3 iNormal : TEXCOORD1,
     float4 iWorldPos : TEXCOORD2,
@@ -226,7 +226,7 @@ void PS(
     diffColor.rgb = diffColor.rgb - diffColor.rgb * metalness; // Modulate down the diffuse
 
     // Get normal
-    #if defined(NORMALMAP)
+    #if defined(NORMALMAP) || defined(IBL)
         const float3 tangent = normalize(iTangent.xyz);
         const float3 bitangent = normalize(float3(iTexCoord.zw, iTangent.w));
         const float3x3 tbn = float3x3(tangent, bitangent, iNormal);
@@ -322,7 +322,7 @@ void PS(
         float3 cubeColor = iVertexLight.rgb;
 
         #ifdef IBL
-            const float3 iblColor = ImageBasedLighting(reflection, normal, toCamera, diffColor, specColor, roughness, cubeColor);
+            const float3 iblColor = ImageBasedLighting(reflection, tangent, bitangent, normal, toCamera, diffColor.rgb, specColor.rgb, roughness, cubeColor);
             const float gamma = 0;
             finalColor += iblColor;
         #endif

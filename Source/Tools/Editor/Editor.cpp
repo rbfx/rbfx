@@ -58,6 +58,9 @@ void Editor::Setup()
 
 void Editor::Start()
 {
+#ifdef _DEBUG
+	GetSubsystem<Console>()->Toggle();
+#endif
     GetInput()->SetMouseMode(MM_ABSOLUTE);
     GetInput()->SetMouseVisible(true);
     RegisterToolboxTypes(context_);
@@ -73,6 +76,8 @@ void Editor::Start()
     // Dummy scene required for textures to render
     scene_ = new Scene(context_);
     scene_->CreateComponent<Octree>();
+	GetRenderer()->SetHDRRendering(true);
+	GetRenderer()->SetDefaultRenderPath(GetCache()->GetResource<XMLFile>("RenderPaths/PBRDeferred.xml"));
     GetRenderer()->SetViewport(0, new Viewport(context_, scene_, scene_->CreateChild()->GetOrCreateComponent<Camera>()));
 
     SubscribeToEvent(E_UPDATE, std::bind(&Editor::OnUpdate, this, _2));

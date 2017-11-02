@@ -96,6 +96,8 @@ void PBRMaterials::CreateScene()
 {
     ResourceCache* cache = GetSubsystem<ResourceCache>();
 
+	cache->SetAutoReloadResources(true);
+
 #ifdef URHO3D_ANGELSCRIPT
     // The scene uses an AngelScript component for animation. Instantiate the subsystem if possible
     context_->RegisterSubsystem(new Script(context_));

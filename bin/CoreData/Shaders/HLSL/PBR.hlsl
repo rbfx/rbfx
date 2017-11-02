@@ -147,7 +147,7 @@
             }
             else
             {
-                const float3 fresnelTerm = Fresnel(specColor, vdh, ldh) ;
+                const float3 fresnelTerm = Fresnel(specColor, vdh, ldh);
                 const float distTerm = Distribution(ndh, roughness);
                 const float visTerm = Visibility(ndl, ndv, roughness);
                 specularFactor = distTerm * visTerm * fresnelTerm * ndl/ M_PI;

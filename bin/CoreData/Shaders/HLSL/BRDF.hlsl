@@ -156,7 +156,7 @@
     float3 Diffuse(float3 diffuseColor, float roughness, float NdotV, float NdotL, float VdotH)
     {
         //return LambertianDiffuse(diffuseColor);
-        return CustomLambertianDiffuse(diffuseColor, NdotV, roughness);
+        return CustomLambertianDiffuse(diffuseColor, NdotV, roughness) ;
         //return BurleyDiffuse(diffuseColor, roughness, NdotV, NdotL, VdotH);
     }
 
