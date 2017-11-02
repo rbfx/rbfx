@@ -37,9 +37,12 @@ include(UrhoCommon)
 
 # Enable common build options
 set (CMAKE_CXX_STANDARD 11)
-if (EMSCRIPTEN)
-    # Workaround until emscripten supports CMAKE_CXX_STANDARD
+# Workarounds
+if (EMSCRIPTEN OR APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+endif ()
+if (APPLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 endif ()
 
 set (CMAKE_INCLUDE_CURRENT_DIR ON)

@@ -93,6 +93,10 @@ group_sources("SystemUI")
 group_sources("UI")
 group_sources("Urho2D")
 
+if (APPLE)
+    list (APPEND SOURCE_FILES IO/MacFileWatcher.m)
+endif ()
+
 add_library(Urho3D ${URHO3D_LIBRARY_TYPE} ${SOURCE_FILES} ${HEADER_FILES})
 target_include_directories(Urho3D PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/..      # For parent projects to find engine headers
@@ -143,6 +147,8 @@ if (WIN32)
         target_link_libraries (Urho3D dbghelp)
     endif ()
 elseif (APPLE)
+    target_compile_definitions(Urho3D PUBLIC -D_XOPEN_SOURCE=1)
+    target_compile_options(Urho3D PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-stdlib=libc++>)
     target_link_libraries (Urho3D iconv "-framework AudioToolbox" "-framework CoreAudio" )
     if (ARM)
         target_link_libraries (Urho3D "-framework AVFoundation" "-framework CoreGraphics" "-framework CoreMotion" "-framework Foundation" "-framework GameController" "-framework OpenGLES" "-framework QuartzCore" "-framework UIKit")

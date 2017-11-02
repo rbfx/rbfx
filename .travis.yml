@@ -73,15 +73,27 @@ matrix:
         CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake
         CMAKE_SYSTEM_PROCESSOR=i686
         URHO3D_RENDERER=D3D9
+    - &MacOS-64bit
+      os: osx
+      osx_image: xcode8.3
+      compiler: clang
+    - <<: *MacOS-64bit
+      env:
+        BUILD_SHARED_LIBS=ON
+
 script: |
   # Update CMake to 3.3 (minimum required version)
-  if [[ ! -f $HOME/cmake-3.3.2-Linux-x86_64/bin/cmake ]];
+  cmake --version
+  if [[ $TRAVIS_OS_NAME == 'linux' ]];
   then
-      wget --no-check-certificate https://cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.tar.gz -O $HOME/cmake.tar.gz && \
-      tar xf $HOME/cmake.tar.gz -C $HOME && \
-      rm $HOME/cmake.tar.gz
+      if [[ ! -f $HOME/cmake-3.3.2-Linux-x86_64/bin/cmake ]];
+      then
+          wget --no-check-certificate https://cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.tar.gz -O $HOME/cmake.tar.gz && \
+          tar xf $HOME/cmake.tar.gz -C $HOME && \
+          rm $HOME/cmake.tar.gz
+      fi
+      export PATH=$HOME/cmake-3.3.2-Linux-x86_64/bin:$PATH
   fi
-  export PATH=$HOME/cmake-3.3.2-Linux-x86_64/bin:$PATH
   mkdir build
   cd build
   cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} ..
