@@ -24,4 +24,4 @@ artifacts:
   path: Urho3D-SDK.7z
 branches:
   except:
-    - /^travis-.*$/
+    - /^(.*[^\w])?travis-.+$/

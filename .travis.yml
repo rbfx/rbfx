@@ -20,7 +20,7 @@ notifications:
     on_failure: never
 branches:
   except:
-    - /^appveyor-.*$/
+    - /^(.*[^\w])?appveyor-.+$/
 matrix:
   fast_finish: true
   include:
