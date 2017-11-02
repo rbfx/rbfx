@@ -109,6 +109,10 @@ foreach (var ${__cmake_variables})
     endif ()
 endforeach()
 
+if (MINI_URHO)
+    target_compile_definitions(Urho3D PUBLIC -DMINI_URHO)
+endif ()
+
 # Define generated source files
 if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/librevision.h)
     execute_process (COMMAND ${CMAKE_COMMAND} -DFILENAME=${CMAKE_CURRENT_BINARY_DIR}/librevision.h -P ${Urho3D_SOURCE_DIR}/CMake/Modules/GetUrhoRevision.cmake
