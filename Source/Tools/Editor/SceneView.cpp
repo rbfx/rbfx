@@ -45,6 +45,7 @@ SceneView::SceneView(Context* context, StringHash id, const String& afterDockNam
     scene_->CreateComponent<Octree>();
     view_ = SharedPtr<Texture2D>(new Texture2D(context));
     view_->SetFilterMode(FILTER_ANISOTROPIC);
+    viewport_ = SharedPtr<Viewport>(new Viewport(context_, scene_, nullptr));
     CreateEditorObjects();
     SetScreenRect({0, 0, 1024, 768});
     SubscribeToEvent(this, E_EDITORSELECTIONCHANGED, std::bind(&SceneView::OnNodeSelectionChanged, this));
@@ -61,7 +62,7 @@ void SceneView::SetScreenRect(const IntRect& rect)
         return;
     screenRect_ = rect;
     view_->SetSize(rect.Width(), rect.Height(), Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
-    viewport_ = SharedPtr<Viewport>(new Viewport(context_, scene_, camera_->GetComponent<Camera>(), IntRect(IntVector2::ZERO, rect.Size())));
+    viewport_->SetRect(IntRect(IntVector2::ZERO, rect.Size()));
     view_->GetRenderSurface()->SetViewport(0, viewport_);
     gizmo_.SetScreenRect(rect);
 }
@@ -235,6 +236,7 @@ void SceneView::CreateEditorObjects()
     camera_->CreateComponent<Camera>();
     camera_->CreateComponent<DebugCameraController>();
     scene_->GetOrCreateComponent<DebugRenderer>()->SetView(GetCamera());
+    viewport_->SetCamera(GetCamera());
 }
 
 void SceneView::Select(Node* node)
