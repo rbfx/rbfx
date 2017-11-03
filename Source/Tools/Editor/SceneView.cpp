@@ -287,7 +287,7 @@ void SceneView::RenderGizmoButtons()
         ui::PopStyleColor();
         ui::SameLine();
         if (ui::IsItemHovered())
-            ui::SetTooltip(tooltip);
+            ui::SetTooltip("%s", tooltip);
     };
 
     auto drawGizmoTransformButton = [&](TransformSpace transformSpace, const char* icon, const char* tooltip)
