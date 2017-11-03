@@ -26,23 +26,27 @@
 #include <ImGui/imgui_internal.h>
 #include <ImGuizmo/ImGuizmo.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
+#include <Toolbox/SystemUI/Widgets.h>
 
 
 namespace Urho3D
 {
 
-SceneView::SceneView(Context* context, const String& afterDockName, ui::DockSlot_ position)
+SceneView::SceneView(Context* context, StringHash id, const String& afterDockName, ui::DockSlot_ position)
     : Object(context)
     , gizmo_(context)
     , inspector_(context)
     , placeAfter_(afterDockName)
     , placePosition_(position)
+    , id_(id)
 {
+    SetTitle(title_);
     scene_ = SharedPtr<Scene>(new Scene(context));
     scene_->CreateComponent<Octree>();
     view_ = SharedPtr<Texture2D>(new Texture2D(context));
     view_->SetFilterMode(FILTER_ANISOTROPIC);
     CreateEditorObjects();
+    SetScreenRect({0, 0, 1024, 768});
     SubscribeToEvent(this, E_EDITORSELECTIONCHANGED, std::bind(&SceneView::OnNodeSelectionChanged, this));
 }
 
@@ -71,7 +75,7 @@ bool SceneView::RenderWindow()
         lastMousePosition_ = GetInput()->GetMousePosition();
 
     ui::SetNextDockPos(placeAfter_.CString(), placePosition_, ImGuiCond_FirstUseEver);
-    if (ui::BeginDock(title_.CString(), &open, windowFlags_))
+    if (ui::BeginDock(uniqueTitle_.CString(), &open, windowFlags_))
     {
         // Focus window when appearing
         if (!wasRendered_)
@@ -412,6 +416,10 @@ void SceneView::RenderSceneNodeTree(Node* node)
 
 void SceneView::LoadProject(XMLElement scene)
 {
+    id_ = StringHash(ToUInt(scene.GetAttribute("id"), 16));
+    SetTitle(scene.GetAttribute("title"));
+    LoadScene(scene.GetAttribute("path"));
+
     auto camera = scene.GetChild("camera");
     if (camera.NotNull())
     {
@@ -426,10 +434,39 @@ void SceneView::LoadProject(XMLElement scene)
 
 void SceneView::SaveProject(XMLElement scene) const
 {
+    scene.SetAttribute("id", id_.ToString().CString());
+    scene.SetAttribute("title", title_);
+    scene.SetAttribute("path", path_);
+
     auto camera = scene.CreateChild("camera");
     camera.CreateChild("position").SetVariant(camera_->GetPosition());
     camera.CreateChild("rotation").SetVariant(camera_->GetRotation());
     camera.CreateChild("light").SetVariant(camera_->GetComponent<Light>()->IsEnabled());
+}
+
+void SceneView::SetTitle(const String& title)
+{
+    title_ = title;
+    uniqueTitle_ = ToString("%s##%s", title.CString(), id_.ToString().CString());
+}
+
+void SceneView::ClearCachedPaths()
+{
+    path_.Clear();
+}
+
+Node* SceneView::GetRendererNode()
+{
+    renderer_ = context_->CreateObject<Node>();
+    renderer_->SetPosition(Vector3::FORWARD);
+    StaticModel* model = renderer_->CreateComponent<StaticModel>();
+    model->SetModel(GetCache()->GetResource<Model>("Models/Plane.mdl"));
+    SharedPtr<Material> material(new Material(context_));
+    material->SetTechnique(0, GetCache()->GetResource<Technique>("Techniques/DiffUnlit.xml"));
+    material->SetTexture(TU_DIFFUSE, view_);
+    material->SetDepthBias(BiasParameters(-0.001f, 0.0f));
+    model->SetMaterial(material);
+    return renderer_;
 }
 
 }
