@@ -23,13 +23,46 @@
 #pragma once
 
 
-#include <Urho3D/Core/Object.h>
+#include <Urho3D/Math/MathDefs.h>
+#include <Urho3D/Core/StringUtils.h>
 
 
 namespace Urho3D
 {
 
-/// Create docked resource browser window.
-bool ResourceBrowserWindow(String& selected, bool* open);
+class IDPool
+{
+public:
+    /// Allocate new unique id.
+    StringHash NewID()
+    {
+        for (;;)
+        {
+            StringHash id((unsigned)(Random() * M_MAX_UNSIGNED));
+            if (TakeID(id))
+                return id;
+        }
+        assert(false);
+    }
+
+    /// Mark id as taken.
+    bool TakeID(StringHash id)
+    {
+        if (pool_.Contains(id))
+            return false;
+
+        pool_.Push(id);
+        return true;
+    }
+
+    /// Clear all taken ids.
+    void Clear()
+    {
+        pool_.Clear();
+    }
+
+protected:
+    PODVector<StringHash> pool_;
+};
 
 }

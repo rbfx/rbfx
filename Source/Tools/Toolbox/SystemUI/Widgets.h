@@ -23,11 +23,35 @@
 #pragma once
 
 
+#include <typeinfo>
 #include <ImGui/imgui.h>
 
 
 namespace ImGui
 {
+
+/// Set custom user pointer storing UI state at given position of id stack. Optionally pass deleter function which is
+/// responsible for freeing state object when it is no longer used.
+void SetUIStateP(void* state, void(* deleter)(void*) = nullptr);
+/// Get custom user pointer storing UI state at given position of id stack. If this function is not called for 30s or
+/// longer then state will expire and will be removed.
+void* GetUIStateP();
+/// Get custom user iu state at given position of id stack. If state does not exist then state object will be created.
+/// Using different type at the same id stack position will return new object of that type. Arguments passed to this
+/// function will be passed to constructor of type T.
+template<typename T, typename... Args>
+T* GetUIState(Args... args)
+{
+    ImGui::PushID(typeid(T).name());
+    T* state = (T*)GetUIStateP();
+    if (state == nullptr)
+    {
+        state = new T(args...);
+        SetUIStateP(state, [](void* s) { delete (T*)s; });
+    }
+    ImGui::PopID();
+    return state;
+}
 
 /// Same as Selectable(), except returns 1 when clicked once, 2 when double-clicked, 0 otherwise.
 int DoubleClickSelectable(const char* label, bool* p_selected, ImGuiSelectableFlags flags = 0, const ImVec2& size = ImVec2(0,0));

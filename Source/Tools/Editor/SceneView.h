@@ -27,6 +27,7 @@
 #include <Toolbox/SystemUI/AttributeInspector.h>
 #include <Toolbox/SystemUI/Gizmo.h>
 #include <Toolbox/SystemUI/ImGuiDock.h>
+#include "IDPool.h"
 
 
 namespace Urho3D
@@ -37,7 +38,7 @@ class SceneView : public Object
     URHO3D_OBJECT(SceneView, Object);
 public:
     /// Construct.
-    explicit SceneView(Context* context, const String& afterDockName, ui::DockSlot_ position);
+    explicit SceneView(Context* context, StringHash id, const String& afterDockName, ui::DockSlot_ position);
     /// Destruct.
     ~SceneView() override;
     /// Set screen rectangle where scene is being rendered.
@@ -45,13 +46,15 @@ public:
     /// Return scene debug camera component.
     Camera* GetCamera() { return camera_->GetComponent<Camera>(); }
     /// Set dummy node which helps to get scene rendered into texture.
-    void SetRendererNode(Node* node) { renderer_ = node; }
+    Node* GetRendererNode();
     /// Render scene window.
     bool RenderWindow();
     /// Render inspector window.
     void RenderInspector();
     /// Render scene hierarchy window.
     void RenderSceneNodeTree(Node* node=nullptr);
+    /// Render scene settings window.
+    void RenderSettingsWindow();
     /// Load scene from xml or json file.
     void LoadScene(const String& filePath);
     /// Save scene to a resource file.
@@ -75,16 +78,39 @@ public:
     void SaveProject(XMLElement scene) const;
     /// Load project data from xml.
     void LoadProject(XMLElement scene);
+    /// Set scene view tab title.
+    void SetTitle(const String& title);
+    /// Get scene view tab title.
+    String GetTitle() const { return title_; }
+    /// Returns title which uniquely identifies scene tab in imgui.
+    String GetUniqueTitle() const { return uniqueTitle_;}
+    /// Return true if scene tab is active and focused.
+    bool IsActive() const { return isActive_; }
+    /// Return scene rendered in this tab.
+    Scene* GetScene() const { return scene_; }
+    /// Return inuque object id.
+    StringHash GetID() const { return id_; }
+    /// Clearing cached paths forces choosing a file name next time scene is saved.
+    void ClearCachedPaths();
+    /// Set new render path.
+    void SetRenderPath(RenderPath* path);
 
 protected:
     /// Called when node selection changes.
     void OnNodeSelectionChanged();
     /// Creates scene camera and other objects required by editor.
     void CreateEditorObjects();
+    /// Reload all cached data used by settings.
+    void ReloadDataForSettings();
+    /// Read disk for new post-process effects and cache them.
+    void ReloadPostProcessEffects();
 
-public:
+    /// Unique scene id.
+    StringHash id_;
     /// Scene title. Should be unique.
     String title_ = "Scene";
+    /// Title with id appended to it. Used as unique window name.
+    String uniqueTitle_;
     /// Last resource path scene was loaded from or saved to.
     String path_;
     /// Scene which is being edited.
@@ -117,6 +143,12 @@ public:
     IntVector2 lastMousePosition_;
     /// Flag set to true when dock contents were visible. Used for tracking "appearing" effect.
     bool wasRendered_ = false;
+    /// When set to true "Elapsed Time" attribute will not be zeroed upon saving scene.
+    bool saveSceneElapsedTime_ = false;
+    /// Flag which controls visibility of scene settings window.
+    bool settingsOpen_ = false;
+    /// Variables of post-process effects. They can be tuned in settings. It stores filename->tag->list of parameters.
+    HashMap<String, HashMap<String, StringVector>> effectVariables_;
 };
 
 };

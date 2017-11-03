@@ -204,6 +204,7 @@ struct DockContext
         bool first;
         int last_frame;
         ImGuiCond_ m_allow_condition = ImGuiCond_Always | ImGuiCond_Once | ImGuiCond_FirstUseEver | ImGuiCond_Appearing;
+        bool m_tab_hovered = false;
     };
 
 
@@ -231,7 +232,11 @@ struct DockContext
 
     Dock& getDock(const char* label, bool opened, const ImVec2& default_size)
     {
-        ImU32 id = ImHash(label, 0);
+        ImU32 id;
+        if (auto sub = strstr(label, "##"))
+            id = ImHash(sub, 0);
+        else
+            id = ImHash(label, 0);
         for (int i = 0; i < m_docks.size(); ++i)
         {
             if (m_docks[i]->id == id) return *m_docks[i];
@@ -688,7 +693,7 @@ struct DockContext
 
                 if (dock_tab->active && close_button) size.x += 16 + GetStyle().ItemSpacing.x;
 
-                bool hovered = IsItemHovered();
+                bool hovered = dock_tab->m_tab_hovered = IsItemHovered();
                 ImVec2 pos = GetItemRectMin();
                 tab_base = pos.y;
                 draw_list->PathClear();
@@ -1152,7 +1157,10 @@ struct DockContext
             int idx = Urho3D::ToInt(record.GetAttribute("index"));
             Dock& dock = *m_docks[idx];
             dock.label = ImStrdup(record.GetAttribute("label").CString());
-            dock.id = ImHash(dock.label, 0);
+            if (auto sub = strstr(dock.label, "##"))
+                dock.id = ImHash(sub, 0);
+            else
+                dock.id = ImHash(dock.label, 0);
             dock.pos.x = Urho3D::ToFloat(record.GetAttribute("x"));
             dock.pos.y = Urho3D::ToFloat(record.GetAttribute("y"));
             dock.size.x = Urho3D::ToFloat(record.GetAttribute("size_x"));
@@ -1194,6 +1202,13 @@ struct DockContext
     {
         if (m_current)
             return m_current->active;
+        return false;
+    }
+
+    bool isTabHovered()
+    {
+        if (m_current)
+            return m_current->m_tab_hovered;
         return false;
     }
 };
@@ -1261,6 +1276,11 @@ bool IsDockDocked()
 bool IsDockActive()
 {
     return g_dock.isDockActive();
+}
+
+bool IsDockTabHovered()
+{
+    return g_dock.isTabHovered();
 }
 
 } // namespace ImGui

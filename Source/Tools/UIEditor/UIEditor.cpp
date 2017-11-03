@@ -984,7 +984,7 @@ public:
         if (ui::TreeNodeEx(element, flags, "%s", name.Length() ? name.CString() : type.CString()))
         {
             if (ui::IsItemHovered())
-                ui::SetTooltip(tooltip.CString());
+                ui::SetTooltip("%s", tooltip.CString());
 
             if (ui::IsItemHovered() && ui::IsMouseClicked(0))
                 SelectItem(element);

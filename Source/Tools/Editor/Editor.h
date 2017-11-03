@@ -25,6 +25,7 @@
 
 #include <Urho3D/Urho3DAll.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
+#include "IDPool.h"
 
 using namespace std::placeholders;
 
@@ -55,19 +56,19 @@ public:
     /// Renders menu bar at the top of the screen.
     void RenderMenuBar();
     /// Create sample scene. Specify xml or json file with serialized scene contents to load them.
-    SceneView* CreateNewScene(const String& title="", const String& path="");
+    /// \param project is xml element containing serialized scene information. This is same parameter that would be
+    /// passed to SceneView::LoadProject(scene).
+    SceneView* CreateNewScene(XMLElement project=XMLElement());
     /// Return true if specified scene tab is focused and mouse hovers it.
     bool IsActive(Scene* scene);
-    /// Return scene view based on it's label, or null if no such scene view exists.
-    SceneView* GetSceneView(const String& title);
     /// Return active scene view.
     SceneView* GetActiveSceneView() { return activeView_; }
     /// Return currently open scene views.
     const Vector<SharedPtr<SceneView>>& GetSceneViews() const { return sceneViews_; }
 
 protected:
-    /// Flag indicating that dock UI should be initialized to default locations.
-    bool initializeDocks_ = true;
+    /// Pool tracking availability of unique IDs used by editor.
+    IDPool idPool_;
     /// List of active scene views
     Vector<SharedPtr<SceneView>> sceneViews_;
     /// Dummy scene required for making scene rendering to textures work.

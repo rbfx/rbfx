@@ -34,25 +34,28 @@
 namespace Urho3D
 {
 
-bool ResourceBrowserWindow(Context* context, String& selected, bool* open)
+bool ResourceBrowserWindow(String& selected, bool* open)
 {
-    static struct
+    struct State
     {
         String path;
         String selected;
-    } state;
+    };
 
     bool result = false;
+    auto context = Context::GetContext();
     auto fs = context->GetFileSystem();
-    if (ui::BeginDock("Resources"))
+    if (ui::BeginDock("Resources", open))
     {
+        State* state = ui::GetUIState<State>();
+
         Vector<String> mergedDirs;
         Vector<String> mergedFiles;
 
         for (const auto& dir: context->GetCache()->GetResourceDirs())
         {
             Vector<String> items;
-            fs->ScanDir(items, dir + state.path, "", SCAN_FILES, false);
+            fs->ScanDir(items, dir + state->path, "", SCAN_FILES, false);
             for (const auto& item: items)
             {
                 if (item == "." || item == ".." || mergedFiles.Contains(item))
@@ -61,7 +64,7 @@ bool ResourceBrowserWindow(Context* context, String& selected, bool* open)
             }
 
             items.Clear();
-            fs->ScanDir(items, dir + state.path, "", SCAN_DIRS, false);
+            fs->ScanDir(items, dir + state->path, "", SCAN_DIRS, false);
             for (const auto& item: items)
             {
                 if (item == "." || item == ".." || mergedDirs.Contains(item))
@@ -70,13 +73,13 @@ bool ResourceBrowserWindow(Context* context, String& selected, bool* open)
             }
         }
 
-        switch (ui::DoubleClickSelectable("..", state.selected == ".."))
+        switch (ui::DoubleClickSelectable("..", state->selected == ".."))
         {
         case 1:
-            state.selected = "..";
+            state->selected = "..";
             break;
         case 2:
-            state.path = GetParentPath(state.path);
+            state->path = GetParentPath(state->path);
             break;
         default:
             break;
@@ -85,14 +88,14 @@ bool ResourceBrowserWindow(Context* context, String& selected, bool* open)
         Sort(mergedDirs.Begin(), mergedDirs.End());
         for (const auto& item: mergedDirs)
         {
-            switch (ui::DoubleClickSelectable((ICON_FA_FOLDER " " + item).CString(), state.selected == item))
+            switch (ui::DoubleClickSelectable((ICON_FA_FOLDER " " + item).CString(), state->selected == item))
             {
             case 1:
-                state.selected = item;
+                state->selected = item;
                 break;
             case 2:
-                state.path += AddTrailingSlash(item);
-                state.selected.Clear();
+                state->path += AddTrailingSlash(item);
+                state->selected.Clear();
                 break;
             default:
                 break;
@@ -103,13 +106,13 @@ bool ResourceBrowserWindow(Context* context, String& selected, bool* open)
         for (const auto& item: mergedFiles)
         {
             auto title = GetFileIcon(item) + " " + item;
-            switch (ui::DoubleClickSelectable(title.CString(), state.selected == item))
+            switch (ui::DoubleClickSelectable(title.CString(), state->selected == item))
             {
             case 1:
-                state.selected = item;
+                state->selected = item;
                 break;
             case 2:
-                selected = state.path + item;
+                selected = state->path + item;
                 result = true;
                 break;
             default:
@@ -117,7 +120,7 @@ bool ResourceBrowserWindow(Context* context, String& selected, bool* open)
             }
 
             if (ui::IsItemHovered() && ui::IsMouseDragging() && !context->GetSystemUI()->HasDragData())
-                context->GetSystemUI()->SetDragData(state.path + item);
+                context->GetSystemUI()->SetDragData(state->path + item);
         }
     }
     ui::EndDock();
