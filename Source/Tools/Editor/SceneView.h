@@ -53,6 +53,8 @@ public:
     void RenderInspector();
     /// Render scene hierarchy window.
     void RenderSceneNodeTree(Node* node=nullptr);
+    /// Render scene settings window.
+    void RenderSettingsWindow();
     /// Load scene from xml or json file.
     void LoadScene(const String& filePath);
     /// Save scene to a resource file.
@@ -90,12 +92,18 @@ public:
     StringHash GetID() const { return id_; }
     /// Clearing cached paths forces choosing a file name next time scene is saved.
     void ClearCachedPaths();
+    /// Set new render path.
+    void SetRenderPath(RenderPath* path);
 
 protected:
     /// Called when node selection changes.
     void OnNodeSelectionChanged();
     /// Creates scene camera and other objects required by editor.
     void CreateEditorObjects();
+    /// Reload all cached data used by settings.
+    void ReloadDataForSettings();
+    /// Read disk for new post-process effects and cache them.
+    void ReloadPostProcessEffects();
 
     /// Unique scene id.
     StringHash id_;
@@ -135,6 +143,12 @@ protected:
     IntVector2 lastMousePosition_;
     /// Flag set to true when dock contents were visible. Used for tracking "appearing" effect.
     bool wasRendered_ = false;
+    /// When set to true "Elapsed Time" attribute will not be zeroed upon saving scene.
+    bool saveSceneElapsedTime_ = false;
+    /// Flag which controls visibility of scene settings window.
+    bool settingsOpen_ = false;
+    /// Variables of post-process effects. They can be tuned in settings. It stores filename->tag->list of parameters.
+    HashMap<String, HashMap<String, StringVector>> effectVariables_;
 };
 
 };
