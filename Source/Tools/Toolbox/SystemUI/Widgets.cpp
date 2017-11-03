@@ -21,12 +21,89 @@
 //
 
 #include "Widgets.h"
+#include <ImGui/imgui_internal.h>
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 
 
 namespace ImGui
 {
+
+const unsigned UISTATE_EXPIRATION_MS = 30000;
+
+struct UIStateWrapper
+{
+    void Set(void* state, void(*deleter)(void*)=nullptr)
+    {
+        state_ = state;
+        deleter_ = deleter;
+    }
+
+    void Unset()
+    {
+        if (deleter_ && state_)
+            deleter_(state_);
+        state_ = nullptr;
+        deleter_ = nullptr;
+    }
+
+    void* Get(bool keepAlive=true)
+    {
+        if (keepAlive)
+            timer_.Reset();
+        return state_;
+    }
+
+    bool IsExpired()
+    {
+        return timer_.GetMSec(false) >= UISTATE_EXPIRATION_MS;
+    }
+
+protected:
+    /// User state pointer.
+    void* state_ = nullptr;
+    /// Function that handles deleting state object when it becomes unused.
+    void(*deleter_)(void* state) = nullptr;
+    /// Timer which determines when state expires.
+    Urho3D::Timer timer_;
+};
+
+Urho3D::HashMap<ImGuiID, UIStateWrapper> uiState_;
+
+void SetUIStateP(void* state, void(*deleter)(void*))
+{
+    auto id = ui::GetCurrentWindow()->IDStack.back();
+    uiState_[id].Set(state, deleter);
+}
+
+void* GetUIStateP()
+{
+    void* result = nullptr;
+    auto id = ui::GetCurrentWindow()->IDStack.back();
+    auto it = uiState_.Find(id);
+    if (it != uiState_.End())
+        result = it->second_.Get();
+
+    // Every 30s check all saved states and remove expired ones.
+    static Urho3D::Timer gcTimer;
+    if (gcTimer.GetMSec(false) > UISTATE_EXPIRATION_MS)
+    {
+        gcTimer.Reset();
+
+        for (auto jt = uiState_.Begin(); jt != uiState_.End();)
+        {
+            if (jt->second_.IsExpired())
+            {
+                jt->second_.Unset();
+                jt = uiState_.Erase(jt);
+            }
+            else
+                ++jt;
+        }
+    }
+
+    return result;
+}
 
 int DoubleClickSelectable(const char* label, bool* p_selected, ImGuiSelectableFlags flags, const ImVec2& size)
 {

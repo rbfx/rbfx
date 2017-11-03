@@ -202,7 +202,7 @@ void Editor::OnUpdate(VariantMap& args)
     ui::EndDock();
 
     String selected;
-    if (ResourceBrowserWindow(context_, selected, &resourceBrowserWindowOpen_))
+    if (ResourceBrowserWindow(selected, &resourceBrowserWindowOpen_))
     {
         auto type = GetContentType(selected);
         if (type == CTYPE_SCENE)
