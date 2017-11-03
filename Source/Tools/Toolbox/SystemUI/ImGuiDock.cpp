@@ -232,7 +232,11 @@ struct DockContext
 
     Dock& getDock(const char* label, bool opened, const ImVec2& default_size)
     {
-        ImU32 id = ImHash(label, 0);
+        ImU32 id;
+        if (auto sub = strstr(label, "##"))
+            id = ImHash(sub, 0);
+        else
+            id = ImHash(label, 0);
         for (int i = 0; i < m_docks.size(); ++i)
         {
             if (m_docks[i]->id == id) return *m_docks[i];
@@ -1153,7 +1157,10 @@ struct DockContext
             int idx = Urho3D::ToInt(record.GetAttribute("index"));
             Dock& dock = *m_docks[idx];
             dock.label = ImStrdup(record.GetAttribute("label").CString());
-            dock.id = ImHash(dock.label, 0);
+            if (auto sub = strstr(dock.label, "##"))
+                dock.id = ImHash(sub, 0);
+            else
+                dock.id = ImHash(dock.label, 0);
             dock.pos.x = Urho3D::ToFloat(record.GetAttribute("x"));
             dock.pos.y = Urho3D::ToFloat(record.GetAttribute("y"));
             dock.size.x = Urho3D::ToFloat(record.GetAttribute("size_x"));
