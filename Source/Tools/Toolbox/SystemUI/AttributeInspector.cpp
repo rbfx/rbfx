@@ -44,6 +44,16 @@ AttributeInspector::AttributeInspector(Urho3D::Context* context)
     filter_.front() = 0;
 }
 
+struct AttributeInspectorBuffer
+{
+    explicit AttributeInspectorBuffer(const String& defaultValue=String::EMPTY)
+    {
+        strncpy(buffer_, defaultValue.CString(), sizeof(buffer_));
+    }
+
+    char buffer_[0x1000]{};
+};
+
 void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
 {
     /// If serializable changes clear value buffers so values from previous item do not appear when inspecting new item.
@@ -56,14 +66,11 @@ void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
 
     ui::TextUnformatted("Filter");
     NextColumn();
-    if (ui::Button(ICON_FA_UNDO, {20, 20}))
-        filter_.front() = 0;
-    if (ui::IsItemHovered())
-        ui::SetTooltip("Reset filter.");
-    ui::SameLine();
     ui::PushID("FilterEdit");
     ui::PushItemWidth(-1);
     ui::InputText("", &filter_.front(), filter_.size() - 1);
+    if (ui::IsItemActive() && ui::IsKeyPressed(ImGuiKey_Escape))
+        filter_.front() = 0;
     ui::PopItemWidth();
     ui::PopID();
 
@@ -114,23 +121,33 @@ void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
             if (hidden)
                 continue;
 
+            ui::PushID(info.name_.CString());
+
             ui::TextColored(ToImGui(color), "%s", info.name_.CString());
             if (!tooltip.Empty() && ui::IsItemHovered())
                 ui::SetTooltip("%s", tooltip.CString());
 
-            NextColumn();
-
-            ui::PushID(info.name_.CString());
-
-            if (ui::Button(ICON_FA_CARET_DOWN, {20, 20}))
+            if (ui::IsItemHovered() && ui::IsMouseClicked(2))
                 ui::OpenPopup("Attribute Menu");
 
+            bool expireBuffers = false;
             if (ui::BeginPopup("Attribute Menu"))
             {
-                if (ui::MenuItem("Reset to default"))
+                if (value == info.defaultValue_)
                 {
-                    item->SetAttribute(info.name_, info.defaultValue_);
-                    item->ApplyAttributes();
+                    ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+                    ui::MenuItem("Reset to default");
+                    ui::PopStyleColor();
+                }
+                else
+                {
+                    if (ui::MenuItem("Reset to default"))
+                    {
+                        item->SetAttribute(info.name_, info.defaultValue_);
+                        item->ApplyAttributes();
+                        value = info.defaultValue_;     // For current frame to render correctly
+                        expireBuffers = true;
+                    }
                 }
 
                 // Allow customization of attribute menu.
@@ -139,7 +156,13 @@ void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
 
                 ImGui::EndPopup();
             }
-            ui::SameLine();
+
+            // Buffers have to be expired outside of popup, because popup has it's own id stack. Careful when pushing
+            // new IDs in code below, buffer expiring will break!
+            if (expireBuffers)
+                ui::ExpireUIState<AttributeInspectorBuffer>();
+
+            NextColumn();
 
             bool modifiedLastFrame = modifiedLastFrame_ == info.name_.CString();
             ui::PushItemWidth(-1);
@@ -182,24 +205,6 @@ void AttributeInspector::RenderAttributes(Serializable* item)
     PODVector<Serializable*> items;
     items.Push(item);
     RenderAttributes(items);
-}
-
-std::array<char, 0x1000>& AttributeInspector::GetBuffer(const String& name, const String& defaultValue)
-{
-    auto it = buffers_.Find(name);
-    if (it == buffers_.End())
-    {
-        auto& buffer = buffers_[name];
-        strncpy(&buffer[0], defaultValue.CString(), buffer.size() - 1);
-        return buffer;
-    }
-    else
-        return it->second_;
-}
-
-void AttributeInspector::RemoveBuffer(const String& name)
-{
-    buffers_.Erase(name);
 }
 
 bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Variant& value)
@@ -292,10 +297,19 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         case VAR_STRING:
         {
             auto& v = const_cast<String&>(value.GetString());
-            auto& buffer = GetBuffer(ToString("%s-%p", info.name_.CString(), info.ptr_), value.GetString());
-            modified |= ui::InputText("", &buffer.front(), buffer.size() - 1);
+            AttributeInspectorBuffer* state = ui::GetUIState<AttributeInspectorBuffer>(v);
+            bool dirty = v != state->buffer_;
+            if (dirty)
+                ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+            modified |= ui::InputText("", state->buffer_, IM_ARRAYSIZE(state->buffer_), ImGuiInputTextFlags_EnterReturnsTrue);
+            if (dirty)
+            {
+                ui::PopStyleColor();
+                if (ui::IsItemHovered())
+                    ui::SetTooltip("Press [Enter] to commit changes.");
+            }
             if (modified)
-                value = &buffer.front();
+                value = state->buffer_;
             break;
         }
 //            case VAR_BUFFER:
@@ -383,41 +397,66 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         }
         case VAR_STRINGVECTOR:
         {
-            auto index = 0;
             auto& v = const_cast<StringVector&>(value.GetStringVector());
 
             // Insert new item.
             {
-                auto& buffer = GetBuffer(ToString("%s-%p", info.name_.CString(), info.ptr_), "");
-                ui::PushID(index++);
-                if (ui::InputText("", &buffer.front(), buffer.size() - 1, ImGuiInputTextFlags_EnterReturnsTrue))
+                AttributeInspectorBuffer* state = ui::GetUIState<AttributeInspectorBuffer>();
+                if (ui::InputText("", state->buffer_, IM_ARRAYSIZE(state->buffer_), ImGuiInputTextFlags_EnterReturnsTrue))
                 {
-                    v.Push(&buffer.front());
-                    buffer.front() = 0;
+                    v.Push(state->buffer_);
+                    *state->buffer_ = 0;
                     modified = true;
+
+                    // Expire buffer of this new item just in case other item already used it.
+                    ui::PushID(v.Size());
+                    ui::ExpireUIState<AttributeInspectorBuffer>();
+                    ui::PopID();
                 }
-                ui::PopID();
+                if (ui::IsItemHovered())
+                    ui::SetTooltip("Press [Enter] to insert new item.");
             }
 
             // List of current items.
-            for (String& sv: v)
+            unsigned index = 0;
+            for (auto it = v.Begin(); it != v.End();)
             {
-                auto bufferName = ToString("%s-%d-%p", info.name_.CString(), info.ptr_, index);
-                auto& buffer = GetBuffer(bufferName, sv);
-                ui::PushID(index++);
+                String& sv = *it;
+
+                ui::PushID(++index);
+                AttributeInspectorBuffer* state = ui::GetUIState<AttributeInspectorBuffer>(sv);
                 if (ui::Button(ICON_FA_TRASH))
                 {
-                    RemoveBuffer(bufferName);
-                    v.Remove(sv);
+                    it = v.Erase(it);
                     modified = true;
-                    ui::PopID();
-                    break;
+                    ui::ExpireUIState<AttributeInspectorBuffer>();
                 }
-                ui::SameLine();
+                else if (modified)
+                {
+                    // After modification of the vector all buffers are expired and recreated because their indexes
+                    // changed. Index is used as id in this loop.
+                    ui::ExpireUIState<AttributeInspectorBuffer>();
+                    ++it;
+                }
+                else
+                {
+                    ui::SameLine();
 
-                modified |= ui::InputText("", &buffer.front(), buffer.size() - 1, ImGuiInputTextFlags_EnterReturnsTrue);
-                if (modified)
-                    sv = &buffer.front();
+                    bool dirty = sv != state->buffer_;
+                    if (dirty)
+                        ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+                    modified |= ui::InputText("", state->buffer_, IM_ARRAYSIZE(state->buffer_),
+                        ImGuiInputTextFlags_EnterReturnsTrue);
+                    if (dirty)
+                    {
+                        ui::PopStyleColor();
+                        if (ui::IsItemHovered())
+                            ui::SetTooltip("Press [Enter] to commit changes.");
+                    }
+                    if (modified)
+                        sv = state->buffer_;
+                    ++it;
+                }
                 ui::PopID();
             }
 

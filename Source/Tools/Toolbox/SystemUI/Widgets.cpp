@@ -105,6 +105,16 @@ void* GetUIStateP()
     return result;
 }
 
+void ExpireUIStateP()
+{
+    auto it = uiState_.Find(ui::GetCurrentWindow()->IDStack.back());
+    if (it != uiState_.End())
+    {
+        it->second_.Unset();
+        uiState_.Erase(it);
+    }
+}
+
 int DoubleClickSelectable(const char* label, bool* p_selected, ImGuiSelectableFlags flags, const ImVec2& size)
 {
     bool wasSelected = p_selected && *p_selected;
