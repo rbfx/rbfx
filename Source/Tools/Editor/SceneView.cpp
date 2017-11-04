@@ -620,7 +620,7 @@ void SceneView::SaveProject(XMLElement scene) const
 void SceneView::SetTitle(const String& title)
 {
     title_ = title;
-    uniqueTitle_ = ToString("%s##%s", title.CString(), id_.ToString().CString());
+    uniqueTitle_ = ToString("%s###%s", title.CString(), id_.ToString().CString());
 }
 
 void SceneView::ClearCachedPaths()
