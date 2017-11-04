@@ -36,6 +36,8 @@ void SetUIStateP(void* state, void(* deleter)(void*) = nullptr);
 /// Get custom user pointer storing UI state at given position of id stack. If this function is not called for 30s or
 /// longer then state will expire and will be removed.
 void* GetUIStateP();
+/// Expire custom ui state at given position if id stack, created with SetUIStateP(). It will be freed immediately.
+void ExpireUIStateP();
 /// Get custom user iu state at given position of id stack. If state does not exist then state object will be created.
 /// Using different type at the same id stack position will return new object of that type. Arguments passed to this
 /// function will be passed to constructor of type T.
@@ -52,7 +54,14 @@ T* GetUIState(Args... args)
     ImGui::PopID();
     return state;
 }
-
+/// Expire custom ui state at given position if id stack, created with GetUIState<T>. It will be freed immediately.
+template<typename T>
+void ExpireUIState()
+{
+    ImGui::PushID(typeid(T).name());
+    ExpireUIStateP();
+    ImGui::PopID();
+}
 /// Same as Selectable(), except returns 1 when clicked once, 2 when double-clicked, 0 otherwise.
 int DoubleClickSelectable(const char* label, bool* p_selected, ImGuiSelectableFlags flags = 0, const ImVec2& size = ImVec2(0,0));
 /// Same as Selectable(), except returns 1 when clicked once, 2 when double-clicked, 0 otherwise.
