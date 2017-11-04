@@ -33,6 +33,9 @@
 namespace Urho3D
 {
 
+class SceneSettings;
+class SceneEffects;
+
 class SceneView : public Object
 {
     URHO3D_OBJECT(SceneView, Object);
@@ -53,8 +56,6 @@ public:
     void RenderInspector();
     /// Render scene hierarchy window.
     void RenderSceneNodeTree(Node* node=nullptr);
-    /// Render scene settings window.
-    void RenderSettingsWindow();
     /// Load scene from xml or json file.
     void LoadScene(const String& filePath);
     /// Save scene to a resource file.
@@ -92,18 +93,14 @@ public:
     StringHash GetID() const { return id_; }
     /// Clearing cached paths forces choosing a file name next time scene is saved.
     void ClearCachedPaths();
-    /// Set new render path.
-    void SetRenderPath(RenderPath* path);
+    /// Return scene viewport instance.
+    Viewport* GetViewport() const { return viewport_; }
 
 protected:
     /// Called when node selection changes.
     void OnNodeSelectionChanged();
     /// Creates scene camera and other objects required by editor.
     void CreateEditorObjects();
-    /// Reload all cached data used by settings.
-    void ReloadDataForSettings();
-    /// Read disk for new post-process effects and cache them.
-    void ReloadPostProcessEffects();
 
     /// Unique scene id.
     StringHash id_;
@@ -143,12 +140,12 @@ protected:
     IntVector2 lastMousePosition_;
     /// Flag set to true when dock contents were visible. Used for tracking "appearing" effect.
     bool wasRendered_ = false;
-    /// When set to true "Elapsed Time" attribute will not be zeroed upon saving scene.
-    bool saveSceneElapsedTime_ = false;
     /// Flag which controls visibility of scene settings window.
     bool settingsOpen_ = false;
-    /// Variables of post-process effects. They can be tuned in settings. It stores filename->tag->list of parameters.
-    HashMap<String, HashMap<String, StringVector>> effectVariables_;
+    /// Serializable which handles scene settings.
+    SharedPtr<SceneSettings> settings_;
+    /// Serializable which handles scene postprocess effect settings.
+    SharedPtr<SceneEffects> effectSettings_;
 };
 
 };

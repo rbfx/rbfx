@@ -22,9 +22,8 @@
 
 #include "SceneView.h"
 #include "EditorEvents.h"
-#include <Urho3D/Core/StringUtils.h>
+#include "SceneSettings.h"
 #include <Toolbox/Scene/DebugCameraController.h>
-#include <Toolbox/SystemUI/Widgets.h>
 #include <ImGui/imgui_internal.h>
 #include <ImGuizmo/ImGuizmo.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
@@ -50,6 +49,9 @@ SceneView::SceneView(Context* context, StringHash id, const String& afterDockNam
     CreateEditorObjects();
     SetScreenRect({0, 0, 1024, 768});
     SubscribeToEvent(this, E_EDITORSELECTIONCHANGED, std::bind(&SceneView::OnNodeSelectionChanged, this));
+
+    settings_ = new SceneSettings(context);
+    effectSettings_ = new SceneEffects(this);
 }
 
 SceneView::~SceneView()
@@ -167,14 +169,13 @@ bool SceneView::RenderWindow()
             ui::OpenPopup(tabContextMenuTitle);
         if (ui::BeginPopup(tabContextMenuTitle))
         {
-            if (ui::MenuItem("Settings"))
-            {
-                settingsOpen_ = true;
-                ReloadPostProcessEffects();
-            }
-
             if (ui::MenuItem("Save"))
                 SaveScene();
+
+            ui::Separator();
+
+            if (ui::MenuItem("Close"))
+                open = false;
 
             ui::EndPopup();
         }
@@ -185,8 +186,6 @@ bool SceneView::RenderWindow()
         wasRendered_ = false;
     }
     ui::EndDock();
-
-    RenderSettingsWindow();
 
     return open;
 }
@@ -228,7 +227,7 @@ bool SceneView::SaveScene(const String& filePath)
     bool result = false;
 
     float elapsed = 0;
-    if (!saveSceneElapsedTime_)
+    if (!settings_->saveElapsedTime_)
     {
         elapsed = scene_->GetElapsedTime();
         scene_->SetElapsedTime(0);
@@ -239,7 +238,7 @@ bool SceneView::SaveScene(const String& filePath)
     else if (fullPath.EndsWith(".json", false))
         result = scene_->SaveJSON(file);
 
-    if (!saveSceneElapsedTime_)
+    if (!settings_->saveElapsedTime_)
         scene_->SetElapsedTime(elapsed);
 
     if (result)
@@ -331,7 +330,7 @@ void SceneView::RenderGizmoButtons()
         ui::PopStyleColor();
         ui::SameLine();
         if (ui::IsItemHovered())
-            ui::SetTooltip(tooltip);
+            ui::SetTooltip("%s", tooltip);
     };
 
     drawGizmoOperationButton(GIZMOOP_TRANSLATE, ICON_FA_ARROWS, "Translate");
@@ -388,6 +387,12 @@ void SceneView::RenderInspector()
         auto node = GetSelection().Front();
         PODVector<Serializable*> items;
         items.Push(dynamic_cast<Serializable*>(node.Get()));
+        if (node == scene_)
+        {
+            effectSettings_->Prepare();
+            items.Push(settings_.Get());
+            items.Push(effectSettings_.Get());
+        }
         if (!selectedComponent_.Expired())
             items.Push(dynamic_cast<Serializable*>(selectedComponent_.Get()));
         inspector_.RenderAttributes(items);
@@ -440,104 +445,8 @@ void SceneView::RenderSceneNodeTree(Node* node)
     }
 }
 
-void SceneView::RenderSettingsWindow()
-{
-    struct State
-    {
-        explicit State(SceneView* sceneView)
-        {
-            strncpy(titleBuffer_, sceneView->GetTitle().CString(), sizeof(titleBuffer_));
-        }
-
-        char titleBuffer_[64]{};
-    };
-
-    if (settingsOpen_)
-    {
-        ui::SetNextWindowSize({0, 0}, ImGuiCond_Always);
-        if (ui::Begin("Scene Settings", &settingsOpen_))
-        {
-            State* state = ui::GetUIState<State>(this);
-            if (ui::InputText("Title", state->titleBuffer_, IM_ARRAYSIZE(state->titleBuffer_)))
-                SetTitle(state->titleBuffer_);
-            ui::Checkbox("Save Elapsed Time", &saveSceneElapsedTime_);
-
-            RenderPath* path = viewport_->GetRenderPath();
-            for (auto it = effectVariables_.Begin(); it != effectVariables_.End(); it++)
-            {
-                auto fileName = it->first_;
-                for (auto jt = it->second_.Begin(); jt != it->second_.End(); jt++)
-                {
-                    auto tag = jt->first_;
-
-                    bool enabled = path->IsEnabled(tag);
-                    if (ui::Checkbox(tag.CString(), &enabled))
-                    {
-                        if (enabled)
-                        {
-                            if (!path->IsAdded(tag))
-                            {
-                                path->Append(GetCache()->GetResource<XMLFile>(fileName));
-                                // Some render paths have multiple tags and appending enables them all. Disable all tags
-                                // in added path, later on only selected tag will be enabled.
-                                for (auto kt = it->second_.Begin(); kt != it->second_.End(); kt++)
-                                    path->SetEnabled(kt->first_, false);
-                            }
-                        }
-                        path->SetEnabled(tag, enabled);
-                    }
-
-                    if (enabled)
-                    {
-                        for (const auto& variable: jt->second_)
-                        {
-                            const Variant& value = path->GetShaderParameter(variable);
-                            switch (value.GetType())
-                            {
-                            case VAR_FLOAT:
-                            {
-                                float v = value.GetFloat();
-                                if (ui::DragFloat(variable.CString(), &v))
-                                    path->SetShaderParameter(variable, v);
-                                break;
-                            }
-                            case VAR_VECTOR2:
-                            {
-                                Vector2 v = value.GetVector2();
-                                if (ui::DragFloat2(variable.CString(), &v.x_))
-                                    path->SetShaderParameter(variable, v);
-                                break;
-                            }
-                            case VAR_VECTOR3:
-                            {
-                                Vector3 v = value.GetVector3();
-                                if (ui::DragFloat3(variable.CString(), &v.x_))
-                                    path->SetShaderParameter(variable, v);
-                                break;
-                            }
-                            case VAR_VECTOR4:
-                            {
-                                Vector4 v = value.GetVector4();
-                                if (ui::DragFloat4(variable.CString(), &v.x_))
-                                    path->SetShaderParameter(variable, v);
-                                break;
-                            }
-                            default:
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        ui::End();
-    }
-}
-
 void SceneView::LoadProject(XMLElement scene)
 {
-    ReloadDataForSettings();
-
     id_ = StringHash(ToUInt(scene.GetAttribute("id"), 16));
     SetTitle(scene.GetAttribute("title"));
     LoadScene(scene.GetAttribute("path"));
@@ -553,33 +462,8 @@ void SceneView::LoadProject(XMLElement scene)
             camera_->GetComponent<Light>()->SetEnabled(light.GetVariant().GetBool());
     }
 
-    if (auto saveElapsedTime = scene.GetChild("saveElapsedTime"))
-        saveSceneElapsedTime_ = saveElapsedTime.GetVariant().GetBool();
-
-    RenderPath* path = viewport_->GetRenderPath();
-    for (auto postprocess = scene.GetChild("postprocess"); postprocess.NotNull();
-        postprocess = postprocess.GetNext("postprocess"))
-    {
-        auto effectPath = postprocess.GetAttribute("path");
-        auto tagName = postprocess.GetAttribute("tag");
-
-        if (!path->IsAdded(tagName))
-        {
-            path->Append(GetCache()->GetResource<XMLFile>(effectPath));
-            if (effectVariables_.Contains(tagName))
-            {
-                // Some render paths have multiple tags and appending enables them all. Disable all tags
-                // in added path, later on only selected tag will be enabled.
-                for (const auto& tag2: effectVariables_[tagName].Keys())
-                    path->SetEnabled(tag2, false);
-            }
-        }
-
-        path->SetEnabled(tagName, true);
-
-        for (auto child = postprocess.GetChild(); child.NotNull(); child = child.GetNext())
-            path->SetShaderParameter(child.GetName(), child.GetVariant());
-    }
+    settings_->LoadProject(scene);
+    effectSettings_->LoadProject(scene);
 }
 
 void SceneView::SaveProject(XMLElement scene) const
@@ -593,28 +477,8 @@ void SceneView::SaveProject(XMLElement scene) const
     camera.CreateChild("rotation").SetVariant(camera_->GetRotation());
     camera.CreateChild("light").SetVariant(camera_->GetComponent<Light>()->IsEnabled());
 
-    scene.CreateChild("saveElapsedTime").SetVariant(saveSceneElapsedTime_);
-
-    RenderPath* path = viewport_->GetRenderPath();
-    for (auto it = effectVariables_.Begin(); it != effectVariables_.End(); it++)
-    {
-        auto fileName = it->first_;
-        for (auto jt = it->second_.Begin(); jt != it->second_.End(); jt++)
-        {
-            auto tag = jt->first_;
-            if (!path->IsEnabled(tag))
-                continue;
-
-            auto postprocess = scene.CreateChild("postprocess");
-            postprocess.SetAttribute("path", fileName);
-            postprocess.SetAttribute("tag", tag);
-            for (const auto& variable: jt->second_)
-            {
-                auto var = postprocess.CreateChild(variable);
-                var.SetVariant(path->GetShaderParameter(variable));
-            }
-        }
-    }
+    settings_->SaveProject(scene);
+    effectSettings_->SaveProject(scene);
 }
 
 void SceneView::SetTitle(const String& title)
@@ -642,58 +506,5 @@ Node* SceneView::GetRendererNode()
     return renderer_;
 }
 
-void SceneView::ReloadDataForSettings()
-{
-    ReloadPostProcessEffects();
-}
-
-void SceneView::ReloadPostProcessEffects()
-{
-    for (const auto& dir: GetCache()->GetResourceDirs())
-    {
-        Vector<String> effects;
-        GetFileSystem()->ScanDir(effects, AddTrailingSlash(dir) + "PostProcess", "*.xml", SCAN_FILES, false);
-
-        for (const auto& effectFileName: effects)
-        {
-            auto fullFileName = "PostProcess/" + effectFileName;
-            XMLFile* effect = GetCache()->GetResource<XMLFile>(fullFileName);
-
-            auto root = effect->GetRoot();
-            String tag;
-            for (auto command = root.GetChild("command"); command.NotNull(); command = command.GetNext("command"))
-            {
-                tag = command.GetAttribute("tag");
-
-                if (tag.Empty())
-                {
-                    URHO3D_LOGWARNING("Invalid PostProcess effect with empty tag");
-                    continue;
-                }
-
-                for (auto parameter = command.GetChild("parameter"); parameter.NotNull();
-                    parameter = parameter.GetNext("parameter"))
-                {
-                    String name = parameter.GetAttribute("name");
-                    String valueString = parameter.GetAttribute("value");
-
-                    if (name.Empty() || valueString.Empty())
-                    {
-                        URHO3D_LOGWARNINGF("Invalid PostProcess effect tagged as %s", tag.CString());
-                        continue;
-                    }
-
-                    auto& variables = effectVariables_[fullFileName][tag];
-                    if (!variables.Contains(name))
-                        variables.Push(name);
-                }
-
-                // Just in case there were no parameters this will still create empty parameter list. Keys of this map are
-                // used for determining existence of effect.
-                effectVariables_[tag];
-            }
-        }
-    }
-}
 
 }
