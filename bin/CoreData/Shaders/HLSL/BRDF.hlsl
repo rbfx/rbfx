@@ -64,8 +64,8 @@
     // roughness    = the roughness of the pixel
     float Visibility(float NdotL, float NdotV, float roughness)
     {
-        return NeumannVisibility(NdotV, NdotL);
-        //return SmithGGXSchlickVisibility(NdotL, NdotV, roughness);
+        //return NeumannVisibility(NdotV, NdotL);
+        return SmithGGXSchlickVisibility(NdotL, NdotV, roughness);
     }
 
     // GGX Distribution

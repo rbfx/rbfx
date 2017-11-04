@@ -59,8 +59,8 @@ void PS(float2 iScreenPos : TEXCOORD0,
     #endif
 
     #ifdef ACES
-    float3 color = Sample2D(DiffMap, iScreenPos).rgb;
-    color = ACES(color);
+     float3 color = Sample2D(DiffMap, iScreenPos).rgb;
+    color = ACESFitted(color);
     color = ToInverseGamma(color);
     oColor = float4(color, 1.0);
     #endif

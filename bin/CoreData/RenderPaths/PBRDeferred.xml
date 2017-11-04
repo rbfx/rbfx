@@ -29,9 +29,4 @@
         <texture unit="depth" name="depth" />
     </command>
     <command type="scenepass" pass="postalpha" sort="backtofront" />
-    <command type="quad" enabled="true" tag="TonemapFilmic" vs="Tonemap" ps="Tonemap" psdefines="FILMIC" output="viewport">
-        <parameter name="TonemapExposureBias" value="1.0" />
-        <parameter name="TonemapMaxWhite" value="8.0" />
-        <texture unit="diffuse" name="viewport" />
-    </command>
 </renderpath>

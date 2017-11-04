@@ -4,9 +4,9 @@
 	<attribute name="Time Scale" value="1" />
 	<attribute name="Smoothing Constant" value="50" />
 	<attribute name="Snap Threshold" value="5" />
-	<attribute name="Elapsed Time" value="152.788" />
-	<attribute name="Next Replicated Node ID" value="465" />
-	<attribute name="Next Replicated Component ID" value="485" />
+	<attribute name="Elapsed Time" value="0" />
+	<attribute name="Next Replicated Node ID" value="466" />
+	<attribute name="Next Replicated Component ID" value="488" />
 	<attribute name="Next Local Node ID" value="16777280" />
 	<attribute name="Next Local Component ID" value="16777961" />
 	<attribute name="Variables" />
@@ -683,7 +683,7 @@
 		<component type="Zone" id="11">
 			<attribute name="Bounding Box Min" value="-1000 -1000 -1000" />
 			<attribute name="Bounding Box Max" value="1000 1000 1000" />
-			<attribute name="Ambient Color" value="0 0 0 1.0" />
+			<attribute name="Ambient Color" value="0 0 0 1" />
 			<attribute name="Zone Texture" value="TextureCube;Textures/Skybox2.xml" />
 		</component>
 	</node>
@@ -869,7 +869,7 @@
 				<attribute name="Font" value="Font;Fonts/BlueHighway.ttf" />
 				<attribute name="Font Size" value="15" />
 				<attribute name="Text" value="Low Roughness" />
-				<attribute name="Width" value="135" />
+				<attribute name="Width" value="133" />
 			</component>
 		</node>
 		<node id="138">
@@ -899,7 +899,7 @@
 				<attribute name="Font" value="Font;Fonts/BlueHighway.ttf" />
 				<attribute name="Font Size" value="15" />
 				<attribute name="Text" value="Example Materials" />
-				<attribute name="Width" value="155" />
+				<attribute name="Width" value="154" />
 			</component>
 		</node>
 		<node id="167">
@@ -914,7 +914,7 @@
 				<attribute name="Font" value="Font;Fonts/BlueHighway.ttf" />
 				<attribute name="Font Size" value="15" />
 				<attribute name="Text" value="High Roughness" />
-				<attribute name="Width" value="137" />
+				<attribute name="Width" value="136" />
 			</component>
 		</node>
 		<node id="195">
@@ -1527,7 +1527,7 @@
 			<attribute name="Font" value="Font;Fonts/BlueHighway.ttf" />
 			<attribute name="Font Size" value="15" />
 			<attribute name="Text" value="Roughness Value    &lt;-1.0  -&gt;0.0" />
-			<attribute name="Width" value="264" />
+			<attribute name="Width" value="262" />
 		</component>
 	</node>
 	<node id="215">
@@ -2681,7 +2681,7 @@
 			<attribute name="Font" value="Font;Fonts/BlueHighway.ttf" />
 			<attribute name="Font Size" value="15" />
 			<attribute name="Text" value="Metallic Value    &lt;-0.0  -&gt;1.0" />
-			<attribute name="Width" value="237" />
+			<attribute name="Width" value="236" />
 		</component>
 	</node>
 	<node id="307">

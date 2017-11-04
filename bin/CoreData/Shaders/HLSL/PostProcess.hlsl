@@ -85,6 +85,7 @@ static const float3x3 ACESInputMat =
     {0.02840, 0.13383, 0.83777}
 };
 
+// ODT_SAT => XYZ => D60_2_D65 => sRGB
 static const float3x3 ACESOutputMat =
 {
     { 1.60475, -0.53108, -0.07367},
@@ -99,12 +100,18 @@ float3 RRTAndODTFit(float3 v)
     return a / b;
 }
 
-float3 ACES(float3 color)
+float3 ACESFitted(float3 color)
 {
     color = mul(ACESInputMat, color);
+
+    // Apply RRT and ODT
     color = RRTAndODTFit(color);
+
     color = mul(ACESOutputMat, color);
+
+    // Clamp to [0, 1]
     color = saturate(color);
+
     return color;
 }
 
