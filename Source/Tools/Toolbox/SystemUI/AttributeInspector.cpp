@@ -184,24 +184,6 @@ void AttributeInspector::RenderAttributes(Serializable* item)
     RenderAttributes(items);
 }
 
-std::array<char, 0x1000>& AttributeInspector::GetBuffer(const String& name, const String& defaultValue)
-{
-    auto it = buffers_.Find(name);
-    if (it == buffers_.End())
-    {
-        auto& buffer = buffers_[name];
-        strncpy(&buffer[0], defaultValue.CString(), buffer.size() - 1);
-        return buffer;
-    }
-    else
-        return it->second_;
-}
-
-void AttributeInspector::RemoveBuffer(const String& name)
-{
-    buffers_.Erase(name);
-}
-
 bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Variant& value)
 {
     const float floatMin = -14000.f;
@@ -217,6 +199,16 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         comboValues = info.enumNames_;
         for (; comboValues[++comboValuesNum];);
     }
+
+    struct BufferState
+    {
+        explicit BufferState(const String& defaultValue=String::EMPTY)
+        {
+            strncpy(buffer_, defaultValue.CString(), sizeof(buffer_));
+        }
+
+        char buffer_[0x1000]{};
+    };
 
     if (comboValues)
     {
@@ -292,10 +284,10 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         case VAR_STRING:
         {
             auto& v = const_cast<String&>(value.GetString());
-            auto& buffer = GetBuffer(ToString("%s-%p", info.name_.CString(), info.ptr_), value.GetString());
-            modified |= ui::InputText("", &buffer.front(), buffer.size() - 1);
+            BufferState* state = ui::GetUIState<BufferState>(value.GetString());
+            modified |= ui::InputText("", state->buffer_, IM_ARRAYSIZE(state->buffer_));
             if (modified)
-                value = &buffer.front();
+                value = state->buffer_;
             break;
         }
 //            case VAR_BUFFER:
@@ -383,41 +375,66 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         }
         case VAR_STRINGVECTOR:
         {
-            auto index = 0;
             auto& v = const_cast<StringVector&>(value.GetStringVector());
 
             // Insert new item.
             {
-                auto& buffer = GetBuffer(ToString("%s-%p", info.name_.CString(), info.ptr_), "");
-                ui::PushID(index++);
-                if (ui::InputText("", &buffer.front(), buffer.size() - 1, ImGuiInputTextFlags_EnterReturnsTrue))
+                BufferState* state = ui::GetUIState<BufferState>();
+                if (ui::InputText("", state->buffer_, IM_ARRAYSIZE(state->buffer_), ImGuiInputTextFlags_EnterReturnsTrue))
                 {
-                    v.Push(&buffer.front());
-                    buffer.front() = 0;
+                    v.Push(state->buffer_);
+                    *state->buffer_ = 0;
                     modified = true;
+
+                    // Expire buffer of this new item just in case other item already used it.
+                    ui::PushID(v.Size());
+                    ui::ExpireUIState<BufferState>();
+                    ui::PopID();
                 }
-                ui::PopID();
+                if (ui::IsItemHovered())
+                    ui::SetTooltip("Press [Enter] to insert new item.");
             }
 
             // List of current items.
-            for (String& sv: v)
+            unsigned index = 0;
+            for (auto it = v.Begin(); it != v.End();)
             {
-                auto bufferName = ToString("%s-%d-%p", info.name_.CString(), info.ptr_, index);
-                auto& buffer = GetBuffer(bufferName, sv);
-                ui::PushID(index++);
+                String& sv = *it;
+
+                ui::PushID(++index);
+                BufferState* state = ui::GetUIState<BufferState>(sv);
                 if (ui::Button(ICON_FA_TRASH))
                 {
-                    RemoveBuffer(bufferName);
-                    v.Remove(sv);
+                    it = v.Erase(it);
                     modified = true;
-                    ui::PopID();
-                    break;
+                    ui::ExpireUIState<BufferState>();
                 }
-                ui::SameLine();
+                else if (modified)
+                {
+                    // After modification of the vector all buffers are expired and recreated because their indexes
+                    // changed. Index is used as id in this loop.
+                    ui::ExpireUIState<BufferState>();
+                    ++it;
+                }
+                else
+                {
+                    ui::SameLine();
 
-                modified |= ui::InputText("", &buffer.front(), buffer.size() - 1, ImGuiInputTextFlags_EnterReturnsTrue);
-                if (modified)
-                    sv = &buffer.front();
+                    bool dirty = sv != state->buffer_;
+                    if (dirty)
+                        ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+                    modified |= ui::InputText("", state->buffer_, IM_ARRAYSIZE(state->buffer_),
+                        ImGuiInputTextFlags_EnterReturnsTrue);
+                    if (dirty)
+                    {
+                        ui::PopStyleColor();
+                        if (ui::IsItemHovered())
+                            ui::SetTooltip("Press [Enter] to commit changes.");
+                    }
+                    if (modified)
+                        sv = state->buffer_;
+                    ++it;
+                }
                 ui::PopID();
             }
 
