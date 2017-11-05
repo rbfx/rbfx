@@ -67,6 +67,8 @@ void Editor::Start()
     GetSystemUI()->ApplyStyleDefault(true, 1.0f);
     GetSystemUI()->AddFont("Fonts/fontawesome-webfont.ttf", 0, {ICON_MIN_FA, ICON_MAX_FA, 0}, true);
     ui::GetStyle().WindowRounding = 3;
+    // Disable imgui saving ui settings on it's own. These should be serialized to project file.
+    ui::GetIO().IniFilename = 0;
 
     GetCache()->SetAutoReloadResources(true);
 
