@@ -68,6 +68,35 @@ bool Gizmo::Manipulate(const Camera* camera, const PODVector<Node*>& nodes)
     if (nodes.Empty())
         return false;
 
+    if (!IsActive())
+    {
+        // Find center point of all nodes
+        if (nodes.Size() == 1)
+        {
+            // Scene itself may not be manipulated as it does nothing
+            if (nodes.Front()->GetType() == Scene::GetTypeStatic())
+                return false;
+
+            currentOrigin_ = nodes.Front()->GetTransform().ToMatrix4();     // Makes gizmo work in local space too.
+        }
+        else
+        {
+            // It is not clear what should be rotation and scale of center point for multiselection, therefore we limit
+            // multiselection operations to world space (see above).
+            Vector3 center = Vector3::ZERO;
+            auto count = 0;
+            for (const auto& node: nodes)
+            {
+                if (node->GetType() == Scene::GetTypeStatic())
+                    continue;
+                center += node->GetWorldPosition();
+                count++;
+            }
+            center /= count;
+            currentOrigin_.SetTranslation(center);
+        }
+    }
+
     // Enums are compatible.
     ImGuizmo::OPERATION operation = static_cast<ImGuizmo::OPERATION>(operation_);
     ImGuizmo::MODE mode = ImGuizmo::WORLD;
@@ -83,23 +112,6 @@ bool Gizmo::Manipulate(const Camera* camera, const PODVector<Node*>& nodes)
         // Any other operations on multiselections are done in world space.
     else if (nodes.Size() > 1)
         mode = ImGuizmo::WORLD;
-
-    if (!IsActive())
-    {
-        // Find center point of all nodes
-        if (nodes.Size() == 1)
-            currentOrigin_ = nodes.Front()->GetTransform().ToMatrix4();     // Makes gizmo work in local space too.
-        else
-        {
-            // It is not clear what should be rotation and scale of center point for multiselection, therefore we limit
-            // multiselection operations to world space (see above).
-            Vector3 center = Vector3::ZERO;
-            for (const auto& node: nodes)
-                center += node->GetWorldPosition();
-            center /= nodes.Size();
-            currentOrigin_.SetTranslation(center);
-        }
-    }
 
     Matrix4 view = camera->GetView().ToMatrix4().Transpose();
     Matrix4 proj = camera->GetProjection().Transpose();
