@@ -258,7 +258,9 @@ void SceneView::CreateEditorObjects()
     camera_->SetTemporary(true);
     camera_->CreateComponent<Camera>();
     camera_->CreateComponent<DebugCameraController>();
-    scene_->GetOrCreateComponent<DebugRenderer>()->SetView(GetCamera());
+    auto debug = scene_->GetOrCreateComponent<DebugRenderer>();
+    debug->SetTemporary(true);
+    debug->SetView(GetCamera());
     viewport_->SetCamera(GetCamera());
 }
 
@@ -430,6 +432,9 @@ void SceneView::RenderSceneNodeTree(Node* node)
     {
         for (auto& component: node->GetComponents())
         {
+            if (component->IsTemporary())
+                continue;
+
             bool selected = selectedComponent_ == component;
             if (ui::Selectable(component->GetTypeName().CString(), selected))
             {
