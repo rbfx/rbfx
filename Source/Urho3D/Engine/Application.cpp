@@ -64,7 +64,7 @@ Application::Application(Context* context) :
 int Application::Run()
 {
     // Profiler requires main thread to be named "Main" as fps calculations depend on it.
-    URHO3D_PROFILE_THREAD("Main");
+    URHO3D_PROFILE_THREAD(Main);
 #if !defined(__GNUC__) || __EXCEPTIONS
     try
     {
