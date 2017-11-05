@@ -172,13 +172,24 @@ void Editor::OnUpdate(VariantMap& args)
     }
     ui::EndDock();
 
+    bool renderedWasActive = false;
     for (auto it = sceneViews_.Begin(); it != sceneViews_.End();)
     {
         auto& view = *it;
         if (view->RenderWindow())
         {
-            if (view->IsActive())
-                activeView_ = view;
+            if (view->IsRendered())
+            {
+                // Only active window may override another active window
+                if (renderedWasActive && view->IsActive())
+                    activeView_ = view;
+                else if (!renderedWasActive)
+                {
+                    renderedWasActive = view->IsActive();
+                    activeView_ = view;
+                }
+            }
+
             ++it;
         }
         else

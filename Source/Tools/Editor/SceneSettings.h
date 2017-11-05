@@ -56,7 +56,7 @@ public:
     /// Construct
     explicit SceneEffects(SceneView* view);
     /// This method should be called before rendering attributes. It handles rebuilding of attribute cache.
-    void Prepare();
+    void Prepare(bool force=false);
     /// Save settings into project file.
     void SaveProject(XMLElement scene);
     /// Load settings from a project file.
@@ -79,6 +79,12 @@ protected:
     };
     /// Cached effect data so we do not read disk on every frame.
     HashMap<String, PostProcess> effects_;
+    /// Cached list of renderpaths.
+    StringVector renderPaths_;
+    /// Fake enum name array of renderpaths.
+    PODVector<const char*> renderPathsEnumNames_;
+    /// Index of current renderpath
+    int currentRenderPath_ = -1;
 };
 
 }

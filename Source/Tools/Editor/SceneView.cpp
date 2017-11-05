@@ -82,10 +82,11 @@ bool SceneView::RenderWindow()
     if (ui::BeginDock(uniqueTitle_.CString(), &open, windowFlags_))
     {
         // Focus window when appearing
-        if (!wasRendered_)
+        if (!isRendered_)
         {
             ui::SetWindowFocus();
-            wasRendered_ = true;
+            isRendered_ = true;
+            effectSettings_->Prepare(true);
         }
 
         ImGuizmo::SetDrawlist();
@@ -183,7 +184,7 @@ bool SceneView::RenderWindow()
     else
     {
         isActive_ = false;
-        wasRendered_ = false;
+        isRendered_ = false;
     }
     ui::EndDock();
 

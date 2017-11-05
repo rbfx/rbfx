@@ -95,6 +95,8 @@ public:
     void ClearCachedPaths();
     /// Return scene viewport instance.
     Viewport* GetViewport() const { return viewport_; }
+    /// Return true if scene view was rendered on this frame.
+    bool IsRendered() const { return isRendered_; }
 
 protected:
     /// Called when node selection changes.
@@ -139,9 +141,7 @@ protected:
     /// Last known mouse position when it was visible.
     IntVector2 lastMousePosition_;
     /// Flag set to true when dock contents were visible. Used for tracking "appearing" effect.
-    bool wasRendered_ = false;
-    /// Flag which controls visibility of scene settings window.
-    bool settingsOpen_ = false;
+    bool isRendered_ = false;
     /// Serializable which handles scene settings.
     SharedPtr<SceneSettings> settings_;
     /// Serializable which handles scene postprocess effect settings.

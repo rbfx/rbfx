@@ -52,13 +52,78 @@ SceneEffects::SceneEffects(SceneView* view)
     Prepare();
 }
 
-void SceneEffects::Prepare()
+void SceneEffects::Prepare(bool force)
 {
-    if (!rebuild_)
+    if (!force && !rebuild_)
         return;
 
     auto context = context_;
     context->RemoveAllAttributes<SceneEffects>();
+
+    // Update RenderPaths
+    {
+        renderPaths_.Clear();
+        renderPathsEnumNames_.Clear();
+        auto defaultRenderPathIndex = -1;
+        for (const auto& dir: GetCache()->GetResourceDirs())
+        {
+            Vector<String> renderPaths;
+            String resourcePath = "RenderPaths/";
+            String scanDir = AddTrailingSlash(dir) + resourcePath;
+            GetFileSystem()->ScanDir(renderPaths, scanDir, "*.xml", SCAN_FILES, false);
+            renderPaths_.Push(renderPaths);
+        }
+
+        Sort(renderPaths_.Begin(), renderPaths_.End());
+        auto index = 0;
+        const String defaultRenderPath = "Forward.xml";
+        for (const auto& pathName: renderPaths_)
+        {
+            // Select default renderpath. Engine does not store renderpath name so we have to cache selected renderpath
+            // index here. In case index is not set - select default renderpath which is Forward.xml. Changing default
+            // renderpath in engine will require patching editor.
+            if (pathName == defaultRenderPath)
+            {
+                if (currentRenderPath_ < 0)
+                    currentRenderPath_ = index;
+                defaultRenderPathIndex = index;
+            }
+            renderPathsEnumNames_.Push(pathName.CString());
+            index++;
+        }
+        renderPathsEnumNames_.Push(nullptr);
+        if (defaultRenderPathIndex < 0)
+        {
+            URHO3D_LOGERRORF("Default RenderPath %s was not found.", defaultRenderPath.CString());
+            defaultRenderPathIndex = 0;
+        }
+
+        auto getter = [this](const SceneEffects*) -> int {
+            return currentRenderPath_;
+        };
+        auto setter = [this](SceneEffects*, int value) {
+            // Without this check cache rebuild would re-set renderpath, and that resets all filter settings.
+            if (value != currentRenderPath_)
+            {
+                currentRenderPath_ = value;
+
+                // Warning: this is a hack. If we set renderpath here directly then it would reset selected postprocess
+                // effects. Instead we change current renderpath index and serialize scene state. Since index is already
+                // changed new renderpath will be written to xml. Then we load the save, which sets new renderpath to a
+                // viewport and restores postprocess effects. If this class expands you may have to split SaveProject()
+                // and LoadProject() and use only relevant subset of those routines here.
+                XMLFile file(context_);
+                XMLElement root = file.CreateRoot("scene");
+                SaveProject(root);
+                LoadProject(root);
+
+                rebuild_ = true;
+            }
+        };
+        URHO3D_ENUM_ACCESSOR_ATTRIBUTE_FREE("RenderPath", getter, setter, int, &renderPathsEnumNames_.Front(),
+            defaultRenderPathIndex, AM_EDIT);
+        SetAttribute("RenderPath", currentRenderPath_);
+    }
 
     effects_.Clear();
     for (const auto& dir: GetCache()->GetResourceDirs())
@@ -269,6 +334,8 @@ void SceneEffects::Prepare()
 
 void SceneEffects::SaveProject(XMLElement scene)
 {
+    scene.CreateChild("renderpath").SetAttribute("path", "RenderPaths/" + renderPaths_[currentRenderPath_]);
+
     RenderPath* path = view_->GetViewport()->GetRenderPath();
     for (auto it = effects_.Begin(); it != effects_.End(); it++)
     {
@@ -294,6 +361,26 @@ void SceneEffects::SaveProject(XMLElement scene)
 
 void SceneEffects::LoadProject(XMLElement scene)
 {
+    if (auto renderpath = scene.GetChild("renderpath"))
+    {
+        String path = renderpath.GetAttribute("path");
+        String fileName = GetFileNameAndExtension(path);
+        currentRenderPath_ = 0;
+        for (const auto& name: renderPaths_)
+        {
+            if (name == fileName)
+                break;
+            currentRenderPath_++;
+        }
+        if (currentRenderPath_ >= renderPaths_.Size())
+        {
+            currentRenderPath_ = -1;
+            URHO3D_LOGERRORF("RenderPath %s was not found.", path.CString());
+        }
+        else
+            view_->GetViewport()->SetRenderPath(GetCache()->GetResource<XMLFile>(path));
+    }
+
     RenderPath* path = view_->GetViewport()->GetRenderPath();
     for (auto postprocess = scene.GetChild("postprocess"); postprocess.NotNull();
         postprocess = postprocess.GetNext("postprocess"))
