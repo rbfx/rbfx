@@ -1,3 +1,0 @@
-<technique vs="Skydome" ps="Skydome">
-    <pass name="postopaque" depthwrite="false" />
-</technique>

@@ -1,3 +1,0 @@
-<technique vs="Water" ps="Water">
-    <pass name="refract" />
-</technique>

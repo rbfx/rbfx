@@ -1,3 +1,0 @@
-<technique vs="Basic" ps="Basic" vsdefines="DIFFMAP VERTEXCOLOR" psdefines="DIFFMAP VERTEXCOLOR">
-    <pass name="alpha" depthwrite="false" blend="alpha" />
-</technique>
