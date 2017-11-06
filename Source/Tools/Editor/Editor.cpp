@@ -72,11 +72,6 @@ void Editor::Start()
 
     GetCache()->SetAutoReloadResources(true);
 
-    // Dummy scene required for textures to render
-    scene_ = new Scene(context_);
-    scene_->CreateComponent<Octree>();
-    GetRenderer()->SetViewport(0, new Viewport(context_, scene_, scene_->CreateChild()->GetOrCreateComponent<Camera>()));
-
     SubscribeToEvent(E_UPDATE, std::bind(&Editor::OnUpdate, this, _2));
 
     LoadProject("Etc/DefaultEditorProject.xml");
@@ -307,7 +302,6 @@ SceneView* Editor::CreateNewScene(XMLElement project)
 
     // In order to render scene to a texture we must add a dummy node to scene rendered to a screen, which has material
     // pointing to scene texture. This object must also be visible to main camera.
-    scene_->AddChild(sceneView->GetRendererNode());
     sceneViews_.Push(sceneView);
     return sceneView;
 }

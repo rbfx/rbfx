@@ -56,7 +56,6 @@ SceneView::SceneView(Context* context, StringHash id, const String& afterDockNam
 
 SceneView::~SceneView()
 {
-    renderer_->Remove();
 }
 
 void SceneView::SetScreenRect(const IntRect& rect)
@@ -67,6 +66,7 @@ void SceneView::SetScreenRect(const IntRect& rect)
     view_->SetSize(rect.Width(), rect.Height(), Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
     viewport_->SetRect(IntRect(IntVector2::ZERO, rect.Size()));
     view_->GetRenderSurface()->SetViewport(0, viewport_);
+    view_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
     gizmo_.SetScreenRect(rect);
 }
 
@@ -497,20 +497,5 @@ void SceneView::ClearCachedPaths()
 {
     path_.Clear();
 }
-
-Node* SceneView::GetRendererNode()
-{
-    renderer_ = context_->CreateObject<Node>();
-    renderer_->SetPosition(Vector3::FORWARD);
-    StaticModel* model = renderer_->CreateComponent<StaticModel>();
-    model->SetModel(GetCache()->GetResource<Model>("Models/Plane.mdl"));
-    SharedPtr<Material> material(new Material(context_));
-    material->SetTechnique(0, GetCache()->GetResource<Technique>("Techniques/DiffUnlit.xml"));
-    material->SetTexture(TU_DIFFUSE, view_);
-    material->SetDepthBias(BiasParameters(-0.001f, 0.0f));
-    model->SetMaterial(material);
-    return renderer_;
-}
-
 
 }

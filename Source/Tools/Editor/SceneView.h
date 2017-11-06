@@ -48,8 +48,6 @@ public:
     void SetScreenRect(const IntRect& rect);
     /// Return scene debug camera component.
     Camera* GetCamera() { return camera_->GetComponent<Camera>(); }
-    /// Set dummy node which helps to get scene rendered into texture.
-    Node* GetRendererNode();
     /// Render scene window.
     bool RenderWindow();
     /// Render inspector window.
@@ -120,8 +118,6 @@ protected:
     SharedPtr<Texture2D> view_;
     /// Viewport which renders into texture.
     SharedPtr<Viewport> viewport_;
-    /// Node in a main scene which has material with a texture this scene is being rendered to.
-    SharedPtr<Node> renderer_;
     /// Current screen rectangle at which scene texture is being rendered.
     IntRect screenRect_;
     /// Scene dock is active and window is focused.

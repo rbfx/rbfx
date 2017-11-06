@@ -71,8 +71,6 @@ protected:
     IDPool idPool_;
     /// List of active scene views
     Vector<SharedPtr<SceneView>> sceneViews_;
-    /// Dummy scene required for making scene rendering to textures work.
-    SharedPtr<Scene> scene_;
     /// Last focused scene view tab.
     WeakPtr<SceneView> activeView_;
     /// Path to a project file.
