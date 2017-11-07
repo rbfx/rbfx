@@ -32,7 +32,7 @@ using namespace std::placeholders;
 namespace Urho3D
 {
 
-class SceneView;
+class SceneTab;
 
 class Editor : public Application
 {
@@ -57,22 +57,22 @@ public:
     void RenderMenuBar();
     /// Create sample scene. Specify xml or json file with serialized scene contents to load them.
     /// \param project is xml element containing serialized scene information. This is same parameter that would be
-    /// passed to SceneView::LoadProject(scene).
-    SceneView* CreateNewScene(XMLElement project=XMLElement());
+    /// passed to SceneTab::LoadProject(scene).
+    SceneTab* CreateNewScene(XMLElement project=XMLElement());
     /// Return true if specified scene tab is focused and mouse hovers it.
     bool IsActive(Scene* scene);
-    /// Return active scene view.
-    SceneView* GetActiveSceneView() { return activeView_; }
-    /// Return currently open scene views.
-    const Vector<SharedPtr<SceneView>>& GetSceneViews() const { return sceneViews_; }
+    /// Return active scene tab.
+    SceneTab* GetActiveSceneTab() { return activeTab_; }
+    /// Return currently open scene tabs.
+    const Vector<SharedPtr<SceneTab>>& GetSceneViews() const { return sceneTabs_; }
 
 protected:
     /// Pool tracking availability of unique IDs used by editor.
     IDPool idPool_;
-    /// List of active scene views
-    Vector<SharedPtr<SceneView>> sceneViews_;
-    /// Last focused scene view tab.
-    WeakPtr<SceneView> activeView_;
+    /// List of active scene tabs.
+    Vector<SharedPtr<SceneTab>> sceneTabs_;
+    /// Last focused scene tab.
+    WeakPtr<SceneTab> activeTab_;
     /// Path to a project file.
     String projectFilePath_;
     /// Flag which opens resource browser window.

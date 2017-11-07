@@ -21,7 +21,7 @@
 //
 
 #include "SceneSettings.h"
-#include "SceneView.h"
+#include "SceneTab.h"
 
 
 namespace Urho3D
@@ -45,9 +45,9 @@ void SceneSettings::LoadProject(XMLElement scene)
         saveElapsedTime_ = saveElapsedTime.GetVariant().GetBool();
 }
 
-SceneEffects::SceneEffects(SceneView* view)
-    : Serializable(view->GetContext())
-    , view_(view)
+SceneEffects::SceneEffects(SceneTab* tab)
+    : Serializable(tab->GetContext())
+    , tab_(tab)
 {
     Prepare();
 }
@@ -187,24 +187,24 @@ void SceneEffects::Prepare(bool force)
         {
             String tag = it->second_.tags_.Front();
             auto getter = [this, tag](const SceneEffects*) -> bool {
-                auto path = view_->GetViewport()->GetRenderPath();
+                auto path = tab_->GetViewport()->GetRenderPath();
                 return path->IsEnabled(tag);
             };
             auto setter = [this, tag, fullPath](SceneEffects*, bool enabled) {
-                auto path = view_->GetViewport()->GetRenderPath();
+                auto path = tab_->GetViewport()->GetRenderPath();
                 if (!path->IsAdded(tag))
                     path->Append(GetCache()->GetResource<XMLFile>(fullPath));
                 path->SetEnabled(tag, enabled);
                 rebuild_ = true;
             };
-            effectEnabled = view_->GetViewport()->GetRenderPath()->IsEnabled(tag);
+            effectEnabled = tab_->GetViewport()->GetRenderPath()->IsEnabled(tag);
             URHO3D_MIXED_ACCESSOR_ATTRIBUTE_FREE(title.CString(), getter, setter, bool, false, AM_EDIT);
             SetAttribute(title, effectEnabled);
         }
         else if (it->second_.tags_.Size() > 1)
         {
             auto getter = [this, fullPath](const SceneEffects*) -> int {
-                auto path = view_->GetViewport()->GetRenderPath();
+                auto path = tab_->GetViewport()->GetRenderPath();
                 const StringVector& allTags = effects_[fullPath].tags_;
                 auto index = 0;
                 for (const auto& tag: allTags)
@@ -216,7 +216,7 @@ void SceneEffects::Prepare(bool force)
                 return 0;
             };
             auto setter = [this, fullPath](SceneEffects*, int value) {
-                auto path = view_->GetViewport()->GetRenderPath();
+                auto path = tab_->GetViewport()->GetRenderPath();
                 const StringVector& allTags = effects_[fullPath].tags_;
 
                 for (const auto& tag: allTags)
@@ -244,7 +244,7 @@ void SceneEffects::Prepare(bool force)
             for (const auto& tag: it->second_.tags_)
             {
                 index++;
-                if (view_->GetViewport()->GetRenderPath()->IsEnabled(tag))
+                if (tab_->GetViewport()->GetRenderPath()->IsEnabled(tag))
                 {
                     effectEnabled = true;
                     break;
@@ -270,57 +270,57 @@ void SceneEffects::Prepare(bool force)
             case 1:
             {
                 auto getter = [this, name](const SceneEffects*) -> float {
-                    auto path = view_->GetViewport()->GetRenderPath();
+                    auto path = tab_->GetViewport()->GetRenderPath();
                     return path->GetShaderParameter(name).GetFloat();
                 };
                 auto setter = [this, name](const SceneEffects*, float value) {
-                    auto path = view_->GetViewport()->GetRenderPath();
+                    auto path = tab_->GetViewport()->GetRenderPath();
                     path->SetShaderParameter(name, value);
                 };
                 URHO3D_MIXED_ACCESSOR_ATTRIBUTE_FREE(name.CString(), getter, setter, float, 0.f, AM_EDIT);
-                SetAttribute(name, view_->GetViewport()->GetRenderPath()->GetShaderParameter(name).GetFloat());
+                SetAttribute(name, tab_->GetViewport()->GetRenderPath()->GetShaderParameter(name).GetFloat());
                 break;
             }
             case 2:
             {
                 auto getter = [this, name](const SceneEffects*) -> Vector2 {
-                    auto path = view_->GetViewport()->GetRenderPath();
+                    auto path = tab_->GetViewport()->GetRenderPath();
                     return path->GetShaderParameter(name).GetVector2();
                 };
                 auto setter = [this, name](const SceneEffects*, Vector2 value) {
-                    auto path = view_->GetViewport()->GetRenderPath();
+                    auto path = tab_->GetViewport()->GetRenderPath();
                     path->SetShaderParameter(name, value);
                 };
                 URHO3D_MIXED_ACCESSOR_ATTRIBUTE_FREE(name.CString(), getter, setter, Vector2, Vector2::ZERO, AM_EDIT);
-                SetAttribute(name, view_->GetViewport()->GetRenderPath()->GetShaderParameter(name).GetVector2());
+                SetAttribute(name, tab_->GetViewport()->GetRenderPath()->GetShaderParameter(name).GetVector2());
                 break;
             }
             case 3:
             {
                 auto getter = [this, name](const SceneEffects*) -> Vector3 {
-                    auto path = view_->GetViewport()->GetRenderPath();
+                    auto path = tab_->GetViewport()->GetRenderPath();
                     return path->GetShaderParameter(name).GetVector3();
                 };
                 auto setter = [this, name](const SceneEffects*, Vector3 value) {
-                    auto path = view_->GetViewport()->GetRenderPath();
+                    auto path = tab_->GetViewport()->GetRenderPath();
                     path->SetShaderParameter(name, value);
                 };
                 URHO3D_MIXED_ACCESSOR_ATTRIBUTE_FREE(name.CString(), getter, setter, Vector3, Vector3::ZERO, AM_EDIT);
-                SetAttribute(name, view_->GetViewport()->GetRenderPath()->GetShaderParameter(name).GetVector3());
+                SetAttribute(name, tab_->GetViewport()->GetRenderPath()->GetShaderParameter(name).GetVector3());
                 break;
             }
             case 4:
             {
                 auto getter = [this, name](const SceneEffects*) -> Vector4 {
-                    auto path = view_->GetViewport()->GetRenderPath();
+                    auto path = tab_->GetViewport()->GetRenderPath();
                     return path->GetShaderParameter(name).GetVector4();
                 };
                 auto setter = [this, name](const SceneEffects*, Vector4 value) {
-                    auto path = view_->GetViewport()->GetRenderPath();
+                    auto path = tab_->GetViewport()->GetRenderPath();
                     path->SetShaderParameter(name, value);
                 };
                 URHO3D_MIXED_ACCESSOR_ATTRIBUTE_FREE(name.CString(), getter, setter, Vector4, Vector4::ZERO, AM_EDIT);
-                SetAttribute(name, view_->GetViewport()->GetRenderPath()->GetShaderParameter(name).GetVector4());
+                SetAttribute(name, tab_->GetViewport()->GetRenderPath()->GetShaderParameter(name).GetVector4());
                 break;
             }
             default:
@@ -336,7 +336,7 @@ void SceneEffects::SaveProject(XMLElement scene)
 {
     scene.CreateChild("renderpath").SetAttribute("path", "RenderPaths/" + renderPaths_[currentRenderPath_]);
 
-    RenderPath* path = view_->GetViewport()->GetRenderPath();
+    RenderPath* path = tab_->GetViewport()->GetRenderPath();
     for (auto it = effects_.Begin(); it != effects_.End(); it++)
     {
         auto fullPath = it->first_;
@@ -378,10 +378,10 @@ void SceneEffects::LoadProject(XMLElement scene)
             URHO3D_LOGERRORF("RenderPath %s was not found.", path.CString());
         }
         else
-            view_->GetViewport()->SetRenderPath(GetCache()->GetResource<XMLFile>(path));
+            tab_->GetViewport()->SetRenderPath(GetCache()->GetResource<XMLFile>(path));
     }
 
-    RenderPath* path = view_->GetViewport()->GetRenderPath();
+    RenderPath* path = tab_->GetViewport()->GetRenderPath();
     for (auto postprocess = scene.GetChild("postprocess"); postprocess.NotNull();
         postprocess = postprocess.GetNext("postprocess"))
     {

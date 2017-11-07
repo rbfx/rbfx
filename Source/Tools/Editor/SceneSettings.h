@@ -30,7 +30,7 @@
 namespace Urho3D
 {
 
-class SceneView;
+class SceneTab;
 
 /// Class handling common scene settings
 class SceneSettings : public Serializable
@@ -54,7 +54,7 @@ class SceneEffects : public Serializable
     URHO3D_OBJECT(SceneEffects, Serializable);
 public:
     /// Construct
-    explicit SceneEffects(SceneView* view);
+    explicit SceneEffects(SceneTab* tab);
     /// This method should be called before rendering attributes. It handles rebuilding of attribute cache.
     void Prepare(bool force=false);
     /// Save settings into project file.
@@ -65,8 +65,8 @@ public:
 protected:
     /// Flag which signals that attributes should be rebuilt.
     bool rebuild_ = true;
-    /// Pointer to view which owns this object.
-    WeakPtr<SceneView> view_;
+    /// Pointer to tab which owns this object.
+    WeakPtr<SceneTab> tab_;
 
     struct PostProcess
     {

@@ -23,125 +23,48 @@
 #pragma once
 
 
-#include <Urho3D/Urho3DAll.h>
-#include <Toolbox/SystemUI/AttributeInspector.h>
-#include <Toolbox/SystemUI/Gizmo.h>
-#include <Toolbox/SystemUI/ImGuiDock.h>
-#include "IDPool.h"
+#include <Urho3D/Core/Object.h>
 
 
 namespace Urho3D
 {
 
-class SceneSettings;
-class SceneEffects;
+class Context;
+class Scene;
+class Texture2D;
+class Viewport;
+class Node;
 
 class SceneView : public Object
 {
-    URHO3D_OBJECT(SceneView, Object);
 public:
     /// Construct.
-    explicit SceneView(Context* context, StringHash id, const String& afterDockName, ui::DockSlot_ position);
-    /// Destruct.
-    ~SceneView() override;
+    explicit SceneView(Context* context, const IntRect& rect);
     /// Set screen rectangle where scene is being rendered.
-    void SetScreenRect(const IntRect& rect);
+    virtual void SetSize(const IntRect& rect);
     /// Return scene debug camera component.
     Camera* GetCamera() { return camera_->GetComponent<Camera>(); }
-    /// Render scene window.
-    bool RenderWindow();
-    /// Render inspector window.
-    void RenderInspector();
-    /// Render scene hierarchy window.
-    void RenderSceneNodeTree(Node* node=nullptr);
-    /// Load scene from xml or json file.
-    void LoadScene(const String& filePath);
-    /// Save scene to a resource file.
-    bool SaveScene(const String& filePath = "");
-
-    /// Add a node to selection.
-    void Select(Node* node);
-    /// Remove a node from selection.
-    void Unselect(Node* node);
-    /// Select if node was not selected or unselect if node was selected.
-    void ToggleSelection(Node* node);
-    /// Unselect all nodes.
-    void UnselectAll();
-    /// Return true if node is selected by gizmo.
-    bool IsSelected(Node* node) const;
-    /// Return list of selected nodes.
-    const Vector<WeakPtr<Node>>& GetSelection() const;
-    /// Render buttons which customize gizmo behavior.
-    void RenderGizmoButtons();
-    /// Save project data to xml.
-    void SaveProject(XMLElement scene) const;
-    /// Load project data from xml.
-    void LoadProject(XMLElement scene);
-    /// Set scene view tab title.
-    void SetTitle(const String& title);
-    /// Get scene view tab title.
-    String GetTitle() const { return title_; }
-    /// Returns title which uniquely identifies scene tab in imgui.
-    String GetUniqueTitle() const { return uniqueTitle_;}
-    /// Return true if scene tab is active and focused.
-    bool IsActive() const { return isActive_; }
     /// Return scene rendered in this tab.
     Scene* GetScene() const { return scene_; }
-    /// Return inuque object id.
-    StringHash GetID() const { return id_; }
-    /// Clearing cached paths forces choosing a file name next time scene is saved.
-    void ClearCachedPaths();
     /// Return scene viewport instance.
     Viewport* GetViewport() const { return viewport_; }
-    /// Return true if scene view was rendered on this frame.
-    bool IsRendered() const { return isRendered_; }
+    /// Return texture to which view is rendered to.
+    Texture2D* GetTexture() const { return texture_; }
 
 protected:
-    /// Called when node selection changes.
-    void OnNodeSelectionChanged();
     /// Creates scene camera and other objects required by editor.
-    void CreateEditorObjects();
+    virtual void CreateObjects();
 
-    /// Unique scene id.
-    StringHash id_;
-    /// Scene title. Should be unique.
-    String title_ = "Scene";
-    /// Title with id appended to it. Used as unique window name.
-    String uniqueTitle_;
-    /// Last resource path scene was loaded from or saved to.
-    String path_;
-    /// Scene which is being edited.
+    /// Rectangle dimensions that are rendered by this view.
+    IntRect rect_;
+    /// Scene which is rendered by this view.
     SharedPtr<Scene> scene_;
-    /// Debug camera node.
-    SharedPtr<Node> camera_;
-    /// Texture into which scene is rendered.
-    SharedPtr<Texture2D> view_;
-    /// Viewport which renders into texture.
+    /// Texture to which scene is rendered.
+    SharedPtr<Texture2D> texture_;
+    /// Viewport which defines rendering area.
     SharedPtr<Viewport> viewport_;
-    /// Current screen rectangle at which scene texture is being rendered.
-    IntRect screenRect_;
-    /// Scene dock is active and window is focused.
-    bool isActive_ = false;
-    /// Gizmo used for manipulating scene elements.
-    Gizmo gizmo_;
-    /// Current window flags.
-    ImGuiWindowFlags windowFlags_ = 0;
-    /// Attribute inspector.
-    AttributeInspector inspector_;
-    /// Current selected component displayed in inspector.
-    WeakPtr<Component> selectedComponent_;
-    /// Name of sibling dock for initial placement.
-    String placeAfter_;
-    /// Position where this scene view should be docked initially.
-    ui::DockSlot_ placePosition_;
-    /// Last known mouse position when it was visible.
-    IntVector2 lastMousePosition_;
-    /// Flag set to true when dock contents were visible. Used for tracking "appearing" effect.
-    bool isRendered_ = false;
-    /// Serializable which handles scene settings.
-    SharedPtr<SceneSettings> settings_;
-    /// Serializable which handles scene postprocess effect settings.
-    SharedPtr<SceneEffects> effectSettings_;
+    /// Camera which renders to a texture.
+    WeakPtr<Node> camera_;
 };
 
-};
+}
