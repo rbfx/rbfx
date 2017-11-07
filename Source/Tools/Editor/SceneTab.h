@@ -27,8 +27,8 @@
 #include <Toolbox/SystemUI/AttributeInspector.h>
 #include <Toolbox/SystemUI/Gizmo.h>
 #include <Toolbox/SystemUI/ImGuiDock.h>
+#include <Toolbox/Graphics/SceneView.h>
 #include "IDPool.h"
-#include "SceneView.h"
 
 namespace Urho3D
 {
