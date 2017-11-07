@@ -68,5 +68,7 @@ int DoubleClickSelectable(const char* label, bool* p_selected, ImGuiSelectableFl
 int DoubleClickSelectable(const char* label, bool selected = false, ImGuiSelectableFlags flags = 0, const ImVec2& size = ImVec2(0,0));
 /// Return true of content was dragged and dropped on last item.
 bool DroppedOnItem();
+/// Same as ImGui::CollapsingHeader(), except does not draw a frame and background.
+bool CollapsingHeaderSimple(const char* label, ImGuiTreeNodeFlags flags=0);
 
 }

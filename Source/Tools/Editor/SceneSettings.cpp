@@ -22,6 +22,7 @@
 
 #include "SceneSettings.h"
 #include "SceneTab.h"
+#include "EditorEvents.h"
 
 
 namespace Urho3D
@@ -196,6 +197,8 @@ void SceneEffects::Prepare(bool force)
                     path->Append(GetCache()->GetResource<XMLFile>(fullPath));
                 path->SetEnabled(tag, enabled);
                 rebuild_ = true;
+                using namespace EditorSceneEffectsChanged;
+                SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_SCENETAB, tab_.Get());
             };
             effectEnabled = tab_->GetViewport()->GetRenderPath()->IsEnabled(tag);
             URHO3D_MIXED_ACCESSOR_ATTRIBUTE_FREE(title.CString(), getter, setter, bool, false, AM_EDIT);
@@ -230,6 +233,8 @@ void SceneEffects::Prepare(bool force)
                     path->SetEnabled(tag, true);
                 }
                 rebuild_ = true;
+                using namespace EditorSceneEffectsChanged;
+                SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_SCENETAB, tab_.Get());
             };
 
             // When one effect has multiple tags we assume that only one of those tags is supposed to be active during
@@ -276,6 +281,8 @@ void SceneEffects::Prepare(bool force)
                 auto setter = [this, name](const SceneEffects*, float value) {
                     auto path = tab_->GetViewport()->GetRenderPath();
                     path->SetShaderParameter(name, value);
+                    using namespace EditorSceneEffectsChanged;
+                    SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_SCENETAB, tab_.Get());
                 };
                 URHO3D_MIXED_ACCESSOR_ATTRIBUTE_FREE(name.CString(), getter, setter, float, 0.f, AM_EDIT);
                 SetAttribute(name, tab_->GetViewport()->GetRenderPath()->GetShaderParameter(name).GetFloat());
@@ -290,6 +297,8 @@ void SceneEffects::Prepare(bool force)
                 auto setter = [this, name](const SceneEffects*, Vector2 value) {
                     auto path = tab_->GetViewport()->GetRenderPath();
                     path->SetShaderParameter(name, value);
+                    using namespace EditorSceneEffectsChanged;
+                    SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_SCENETAB, tab_.Get());
                 };
                 URHO3D_MIXED_ACCESSOR_ATTRIBUTE_FREE(name.CString(), getter, setter, Vector2, Vector2::ZERO, AM_EDIT);
                 SetAttribute(name, tab_->GetViewport()->GetRenderPath()->GetShaderParameter(name).GetVector2());
@@ -304,6 +313,8 @@ void SceneEffects::Prepare(bool force)
                 auto setter = [this, name](const SceneEffects*, Vector3 value) {
                     auto path = tab_->GetViewport()->GetRenderPath();
                     path->SetShaderParameter(name, value);
+                    using namespace EditorSceneEffectsChanged;
+                    SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_SCENETAB, tab_.Get());
                 };
                 URHO3D_MIXED_ACCESSOR_ATTRIBUTE_FREE(name.CString(), getter, setter, Vector3, Vector3::ZERO, AM_EDIT);
                 SetAttribute(name, tab_->GetViewport()->GetRenderPath()->GetShaderParameter(name).GetVector3());
@@ -318,6 +329,8 @@ void SceneEffects::Prepare(bool force)
                 auto setter = [this, name](const SceneEffects*, Vector4 value) {
                     auto path = tab_->GetViewport()->GetRenderPath();
                     path->SetShaderParameter(name, value);
+                    using namespace EditorSceneEffectsChanged;
+                    SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_SCENETAB, tab_.Get());
                 };
                 URHO3D_MIXED_ACCESSOR_ATTRIBUTE_FREE(name.CString(), getter, setter, Vector4, Vector4::ZERO, AM_EDIT);
                 SetAttribute(name, tab_->GetViewport()->GetRenderPath()->GetShaderParameter(name).GetVector4());
@@ -405,6 +418,9 @@ void SceneEffects::LoadProject(XMLElement scene)
         for (auto child = postprocess.GetChild(); child.NotNull(); child = child.GetNext())
             path->SetShaderParameter(child.GetName(), child.GetVariant());
     }
+
+    using namespace EditorSceneEffectsChanged;
+    SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_SCENETAB, tab_.Get());
 
     rebuild_ = true;
 }

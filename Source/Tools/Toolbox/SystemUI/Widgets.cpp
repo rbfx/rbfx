@@ -139,4 +139,18 @@ bool DroppedOnItem()
     return ui::IsItemRectHovered() && context->GetSystemUI()->HasDragData() && !ui::IsMouseDown(0);
 }
 
+bool CollapsingHeaderSimple(const char* label, ImGuiTreeNodeFlags flags)
+{
+    ImGuiWindow* window = ui::GetCurrentWindow();
+    if (window->SkipItems)
+        return false;
+
+    ui::PushStyleColor(ImGuiCol_HeaderActive, 0);
+    ui::PushStyleColor(ImGuiCol_HeaderHovered, 0);
+    ui::PushStyleColor(ImGuiCol_Header, 0);
+    bool open = ui::TreeNodeBehavior(window->GetID(label), flags | ImGuiTreeNodeFlags_NoAutoOpenOnLog | ImGuiTreeNodeFlags_NoTreePushOnOpen, label);
+    ui::PopStyleColor(3);
+    return open;
+}
+
 }

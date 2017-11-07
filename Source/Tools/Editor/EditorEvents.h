@@ -37,4 +37,9 @@ URHO3D_EVENT(E_EDITORSELECTIONCHANGED, EditorSelectionChanged)
     URHO3D_PARAM(P_SCENETAB, SceneTab);               // SceneTab pointer.
 }
 
+URHO3D_EVENT(E_EDITORSCENEEFFECTSCHANGED, EditorSceneEffectsChanged)
+{
+    URHO3D_PARAM(P_SCENETAB, SceneTab);               // SceneTab pointer.
+}
+
 }

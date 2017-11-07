@@ -46,6 +46,8 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
     effectSettings_ = new SceneEffects(this);
 
     SubscribeToEvent(this, E_EDITORSELECTIONCHANGED, std::bind(&SceneTab::OnNodeSelectionChanged, this));
+    SubscribeToEvent(effectSettings_, E_EDITORSCENEEFFECTSCHANGED, std::bind(&AttributeInspector::CopyEffectsFrom,
+                                                                             &inspector_, viewport_));
 }
 
 SceneTab::~SceneTab() = default;
