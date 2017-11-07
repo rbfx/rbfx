@@ -24,6 +24,7 @@
 #include "Urho3D/Core/CoreEvents.h"
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Core/Utils.h"
 #include "Urho3D/Engine/EngineEvents.h"
 #include "Urho3D/Graphics/GraphicsEvents.h"
 #include "Urho3D/Graphics/Graphics.h"
@@ -147,17 +148,21 @@ void SystemUI::OnRawEvent(VariantMap& args)
     case SDL_MOUSEWHEEL:
         io.MouseWheel = evt->wheel.y;
         break;
+    URHO3D_FALLTHROUGH
     case SDL_MOUSEBUTTONUP:
+    URHO3D_FALLTHROUGH
     case SDL_MOUSEBUTTONDOWN:
         io.MouseDown[evt->button.button - 1] = evt->type == SDL_MOUSEBUTTONDOWN;
     case SDL_MOUSEMOTION:
         io.MousePos.x = evt->motion.x / uiScale_;
         io.MousePos.y = evt->motion.y / uiScale_;
         break;
+    URHO3D_FALLTHROUGH
     case SDL_FINGERUP:
         io.MouseDown[0] = false;
         io.MousePos.x = -1;
         io.MousePos.y = -1;
+    URHO3D_FALLTHROUGH
     case SDL_FINGERDOWN:
         io.MouseDown[0] = true;
     case SDL_FINGERMOTION:
