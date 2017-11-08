@@ -275,6 +275,7 @@ void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
 
                 ui::PushID(info.name_.CString());
 
+                bool modified = false;
                 bool expireBuffers = false;
                 if (ui::BeginPopup("Attribute Menu"))
                 {
@@ -292,6 +293,26 @@ void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
                             item->ApplyAttributes();
                             value = info.defaultValue_;     // For current frame to render correctly
                             expireBuffers = true;
+                            modified = true;
+                        }
+                    }
+
+                    if (value.GetType() == VAR_INT && info.name_.EndsWith(" Mask"))
+                    {
+                        if (ui::MenuItem("Enable All"))
+                        {
+                            value = M_MAX_UNSIGNED;
+                            modified = true;
+                        }
+                        if (ui::MenuItem("Disable All"))
+                        {
+                            value = 0;
+                            modified = true;
+                        }
+                        if (ui::MenuItem("Toggle"))
+                        {
+                            value = value.GetUInt() ^ M_MAX_UNSIGNED;
+                            modified = true;
                         }
                     }
 
@@ -332,7 +353,7 @@ void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
 
                 bool modifiedLastFrame = modifiedLastFrame_ == info.name_.CString();
                 ui::PushItemWidth(-1);
-                bool modified = RenderSingleAttribute(info, value, expanded);
+                modified |= RenderSingleAttribute(info, value, expanded);
                 ui::PopItemWidth();
                 ui::PopID();
 
@@ -407,11 +428,20 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
             break;
         case VAR_INT:
         {
-            // TODO: replace this with custom control that properly handles int types.
-            auto v = value.GetInt();
-            modified |= ui::DragInt("", &v, 1, M_MIN_INT, M_MAX_INT);
-            if (modified)
-                value = v;
+            if (info.name_.EndsWith(" Mask"))
+            {
+                auto v = value.GetUInt();
+                modified |= ui::MaskSelector(&v);
+                if (modified)
+                    value = v;
+            }
+            else
+            {
+                auto v = value.GetInt();
+                modified |= ui::DragInt("", &v, 1, M_MIN_INT, M_MAX_INT);
+                if (modified)
+                    value = v;
+            }
             break;
         }
         case VAR_BOOL:

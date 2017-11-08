@@ -82,4 +82,7 @@ bool ToolbarButton(const char* label);
 void SetHelpTooltip(const char* text);
 /// A square button whose width and height are equal to the height of previous item.
 bool IconButton(const char* label);
+/// Draw a mask selector widget.
+bool MaskSelector(unsigned int* mask);
+
 }

@@ -188,4 +188,48 @@ bool IconButton(const char* label)
     return ui::Button(label, {size, size});
 }
 
+bool MaskSelector(unsigned int* mask)
+{
+    bool modified = false;
+    auto style = ui::GetStyle();
+    auto pos = ui::GetCursorPos();
+
+    for (auto row = 0; row < 2; row++)
+    {
+        for (auto col = 0; col < 16; col++)
+        {
+            auto bitPosition = row * 16 + col;
+            int bitMask = 1 << bitPosition;
+            bool selected = (*mask & bitMask) != 0;
+            if (selected)
+            {
+                ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_ButtonActive]);
+                ui::PushStyleColor(ImGuiCol_ButtonHovered, style.Colors[ImGuiCol_ButtonActive]);
+            }
+            else
+            {
+                ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
+                ui::PushStyleColor(ImGuiCol_ButtonHovered, style.Colors[ImGuiCol_Button]);
+            }
+
+            ui::PushID(bitMask);
+            if (ui::Button("", ui::Scale({8, 9})))
+            {
+                modified = true;
+                *mask ^= bitMask;
+            }
+            if (ui::IsItemHovered())
+                ui::SetTooltip("%d", bitPosition);
+            ui::PopID();
+            ui::SameLine(0, 0);
+            ui::PopStyleColor(2);
+        }
+        ui::NewLine();
+        if (row < 1)
+            ui::SetCursorPos({pos.x, pos.y + ui::ScaleY(9)});
+    }
+
+    return modified;
+}
+
 }
