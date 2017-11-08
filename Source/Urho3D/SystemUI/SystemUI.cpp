@@ -34,6 +34,7 @@
 #include <SDL/SDL.h>
 #include <ImGuizmo/ImGuizmo.h>
 #include <ImGui/imgui_internal.h>
+#include <ImGui/imgui_freetype.h>
 
 
 using namespace std::placeholders;
@@ -302,6 +303,7 @@ ImFont* SystemUI::AddFont(const String& fontPath, float size, const unsigned sho
         ImFontConfig cfg;
         cfg.MergeMode = merge;
         cfg.FontDataOwnedByAtlas = false;
+        cfg.PixelSnapH = true;
         if (auto newFont = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(&data.Front(), bytesLen, size, &cfg, ranges))
         {
             ReallocateFontTexture();
@@ -323,7 +325,8 @@ void SystemUI::ReallocateFontTexture()
     // Create font texture.
     unsigned char* pixels;
     int width, height;
-    // Load as RGBA 32-bits for OpenGL3 demo because it is more likely to be compatible with user's existing shader.
+
+    ImGuiFreeType::BuildFontAtlas(io.Fonts, ImGuiFreeType::ForceAutoHint);
     io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
     if (!fontTexture_ || width != fontTexture_->GetWidth() || height != fontTexture_->GetHeight())
