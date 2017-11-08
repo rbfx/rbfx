@@ -53,6 +53,9 @@ public:
     /// Set ui scale.
     /// \param zoom of ui.
     void SetZoom(float zoom);
+    /// Update DPI scale.
+    /// \param scale is a vector of {hscale, vscale, dscale}. Passing no parameter detects scale as Graphics::GetDisplayDPI() / 96.f.
+    void SetScale(Vector3 scale = Vector3::ZERO);
     /// Add font to imgui subsystem.
     /// \param fontPath a string pointing to TTF font resource.
     /// \param size a font size. If 0 then size of last font is used.
@@ -82,14 +85,18 @@ public:
     Variant GetDragData() const { return dragData_; }
     /// Return true if item is being dragged.
     bool HasDragData() const { return dragData_.GetType() != VAR_NONE; }
+    /// Return font scale.
+    float GetFontScale() const { return fontScale_; }
 
 protected:
     float uiZoom_ = 1.f;
+    float fontScale_ = 1.f;
     Matrix4 projection_;
     VertexBuffer vertexBuffer_;
     IndexBuffer indexBuffer_;
     SharedPtr<Texture2D> fontTexture_;
     Variant dragData_;
+    PODVector<float> fontSizes_;
 
     void ReallocateFontTexture();
     void UpdateProjectionMatrix();

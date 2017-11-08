@@ -41,6 +41,8 @@ using namespace std::placeholders;
 namespace Urho3D
 {
 
+const float defaultFontSize = 14.f;
+
 SystemUI::SystemUI(Urho3D::Context* context)
     : Object(context)
     , vertexBuffer_(context)
@@ -71,7 +73,8 @@ SystemUI::SystemUI(Urho3D::Context* context)
 
     io.UserData = this;
 
-    AddFont("Fonts/DejaVuSansMono.ttf", 13.f, nullptr);
+    SetScale();
+    AddFont("Fonts/DejaVuSansMono.ttf", defaultFontSize, nullptr);
     ReallocateFontTexture();
     UpdateProjectionMatrix();
     // Initializes ImGui. ImGui::Render() can not be called unless imgui is initialized. This call avoids initialization
@@ -185,11 +188,6 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
     assert(graphics && graphics->IsInitialized() && !graphics->IsDeviceLost());
 
     ImGuiIO& io = ImGui::GetIO();
-    int fbWidth = (int)(io.DisplaySize.x * io.DisplayFramebufferScale.x);
-    int fbHeight = (int)(io.DisplaySize.y * io.DisplayFramebufferScale.y);
-    if (fbWidth == 0 || fbHeight == 0)
-        return;
-    data->ScaleClipRects(io.DisplayFramebufferScale);
 
     for (int n = 0; n < data->CmdListsCount; n++)
     {
@@ -288,12 +286,16 @@ ImFont* SystemUI::AddFont(const String& fontPath, float size, const unsigned sho
 {
     auto io = ImGui::GetIO();
 
+    fontSizes_.Push(size);
+
     if (size == 0)
     {
         if (io.Fonts->Fonts.empty())
             return nullptr;
         size = io.Fonts->Fonts.back()->FontSize;
     }
+    else
+        size *= fontScale_;
 
     if (auto fontFile = GetSubsystem<ResourceCache>()->GetFile(fontPath))
     {
@@ -329,18 +331,21 @@ void SystemUI::ReallocateFontTexture()
     ImGuiFreeType::BuildFontAtlas(io.Fonts, ImGuiFreeType::ForceAutoHint);
     io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
-    if (!fontTexture_ || width != fontTexture_->GetWidth() || height != fontTexture_->GetHeight())
+    if (fontTexture_.Null())
     {
         fontTexture_ = new Texture2D(context_);
         fontTexture_->SetNumLevels(1);
-        fontTexture_->SetSize(width, height, Graphics::GetRGBAFormat());
-        fontTexture_->SetData(0, 0, 0, width, height, pixels);
         fontTexture_->SetFilterMode(FILTER_BILINEAR);
-
-        // Store our identifier
-        io.Fonts->TexID = (void*)fontTexture_.Get();
-        io.Fonts->ClearTexData();
     }
+
+    if (fontTexture_->GetWidth() != width || fontTexture_->GetHeight() != height)
+        fontTexture_->SetSize(width, height, Graphics::GetRGBAFormat());
+
+    fontTexture_->SetData(0, 0, 0, width, height, pixels);
+
+    // Store our identifier
+    io.Fonts->TexID = (void*)fontTexture_.Get();
+    io.Fonts->ClearTexData();
 }
 
 void SystemUI::SetZoom(float zoom)
@@ -351,9 +356,34 @@ void SystemUI::SetZoom(float zoom)
     UpdateProjectionMatrix();
 }
 
+void SystemUI::SetScale(Vector3 scale)
+{
+    auto& io = ui::GetIO();
+    auto& style = ui::GetStyle();
+
+    if (scale == Vector3::ZERO)
+        scale = GetGraphics()->GetDisplayDPI() / 96.f;
+
+    io.DisplayFramebufferScale = {scale.x_, scale.y_};
+    fontScale_ = scale.z_;
+
+    float prevSize = defaultFontSize;
+    for (auto i = 0; i < io.Fonts->Fonts.size(); i++)
+    {
+        float sizePixels = fontSizes_[i];
+        if (sizePixels == 0)
+            sizePixels = prevSize;
+        io.Fonts->ConfigData[i].SizePixels = sizePixels * fontScale_;
+    }
+
+    if (io.Fonts->Fonts.size() > 0)
+        ReallocateFontTexture();
+}
+
 void SystemUI::ApplyStyleDefault(bool darkStyle, float alpha)
 {
     ImGuiStyle& style = ImGui::GetStyle();
+    style = ImGuiStyle();
 
     // light style from Pacôme Danhiez (user itamago) https://github.com/ocornut/imgui/pull/511#issuecomment-175719267
     style.Alpha = 1.0f;
@@ -435,6 +465,8 @@ void SystemUI::ApplyStyleDefault(bool darkStyle, float alpha)
             }
         }
     }
+
+    style.ScaleAllSizes(GetFontScale());
 }
 
 bool SystemUI::IsAnyItemActive() const
