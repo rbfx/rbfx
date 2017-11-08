@@ -548,16 +548,13 @@ public:
             rootSize.x_ = static_cast<int>(windowWidth - rootPos.x_ - ui::GetWindowWidth());
             if (auto selected = GetSelected())
             {
-                ui::Columns(2);
-
                 // Label
                 ui::TextUnformatted("Style");
-                ui::NextColumn();
+                inspector_.NextColumn();
 
                 // Style name
                 auto type_style = GetAppliedStyle();
                 ui::TextUnformatted(type_style.CString());
-                ui::NextColumn();
 
                 inspector_.RenderAttributes(selected);
             }
@@ -609,7 +606,7 @@ public:
         {
             auto pos = input->GetMousePosition();
             auto clicked = GetUI()->GetElementAt(pos, false);
-            if (!clicked && rootElement_->GetCombinedScreenRect().IsInside(pos) == INSIDE)
+            if (!clicked && rootElement_->GetCombinedScreenRect().IsInside(pos) == INSIDE && !ui::IsAnyWindowHovered())
                 clicked = rootElement_;
 
             if (clicked)

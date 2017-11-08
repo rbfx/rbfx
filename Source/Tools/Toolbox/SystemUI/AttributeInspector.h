@@ -47,13 +47,13 @@ public:
     void RenderAttributes(Serializable* item);
     /// Have resource views copy renderpath from source viewport.
     void CopyEffectsFrom(Viewport* source);
+    /// Automatically creates two columns where first column is as wide as longest label.
+    void NextColumn();
 
 protected:
     /// Render value widget of single attribute.
     /// \returns true if value was modified.
     bool RenderSingleAttribute(const AttributeInfo& info, Variant& value, bool expanded);
-    /// Automatically creates two columns where first column is as wide as longest label.
-    void NextColumn();
     /// Render ui for single resource ref attribute.
     bool RenderResourceRef(StringHash type, const String& name, String& result, bool expanded);
     /// Render single attribute label.
