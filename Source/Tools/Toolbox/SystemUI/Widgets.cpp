@@ -182,4 +182,10 @@ void SetHelpTooltip(const char* text)
         ui::SetTooltip(text);
 }
 
+bool IconButton(const char* label)
+{
+    float size = ui::GetItemRectSize().y;
+    return ui::Button(label, {size, size});
+}
+
 }

@@ -332,7 +332,11 @@ void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
 
                 bool modifiedLastFrame = modifiedLastFrame_ == info.name_.CString();
                 ui::PushItemWidth(-1);
-                if (RenderSingleAttribute(info, value, expanded))
+                bool modified = RenderSingleAttribute(info, value, expanded);
+                ui::PopItemWidth();
+                ui::PopID();
+
+                if (modified)
                 {
                     assert(modifiedThisFrame == nullptr);
                     modifiedLastFrame_ = info.name_.CString();
@@ -347,14 +351,12 @@ void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
                 }
                 else if (modifiedLastFrame && !ui::IsAnyItemActive())
                 {
-                    // This attribute was modified on last frame, but not on this frame. Continous attribute value modification
+                    // This attribute was modified on last frame, but not on this frame. Continuous attribute value modification
                     // has ended and we can fire attribute modification event.
                     using namespace AttributeInspectorValueModified;
                     SendEvent(E_ATTRIBUTEINSPECTVALUEMODIFIED, P_SERIALIZABLE, item, P_ATTRIBUTEINFO, (void*)&info,
                         P_OLDVALUE, originalValue_, P_NEWVALUE, value);
                 }
-                ui::PopItemWidth();
-                ui::PopID();
             }
 
             ui::PopID();
@@ -525,6 +527,8 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
                     ui::PopID();
                 }
             }
+            if (refList.names_.Empty())
+                ui::NewLine();
             break;
         }
 //            case VAR_VARIANTVECTOR:
@@ -725,7 +729,9 @@ bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, 
     };
 
     SharedPtr<Resource> resource;
+    ui::PushItemWidth(ui::ScaleX(-30));
     ui::InputText("", (char*)name.CString(), name.Length(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
+    ui::PopItemWidth();
     if (handleDragAndDrop(type, resource))
     {
         result = resource->GetName();
@@ -733,14 +739,24 @@ bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, 
         return true;
     }
 
-    if (!expanded)
+    ui::SameLine();
+    if (ui::IconButton(ICON_FA_TRASH))
+    {
+        result.Clear();
+        return true;
+    }
+
+    if (!expanded || name.Empty())
         return false;
 
-    ui::Indent(attributeIndentLevel);
     if (type == Material::GetTypeStatic())
     {
         Material* material = GetCache()->GetResource<Material>(name);
+        if (material == nullptr)
+            return false;
+
         MaterialView* state = ui::GetUIState<MaterialView>(context_, material, effectSource_);
+        ui::Indent(attributeIndentLevel);
 
         state->Render();
         if (handleDragAndDrop(type, resource))
@@ -847,7 +863,7 @@ bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, 
             NextColumn();
             String techName = tech.technique_->GetName();
             if (material->GetNumTechniques() > 1)
-                ui::PushItemWidth(-30);
+                ui::PushItemWidth(ui::ScaleX(-30));
             ui::InputText("###techniqueName_", (char*)techName.CString(), techName.Length(),
                 ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
             if (material->GetNumTechniques() > 1)
@@ -862,7 +878,7 @@ bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, 
             if (material->GetNumTechniques() > 1)
             {
                 ui::SameLine();
-                if (ui::Button(ICON_FA_TRASH, {20, 20}))
+                if (ui::IconButton(ICON_FA_TRASH))
                 {
                     for (auto j = i + 1; j < material->GetNumTechniques(); j++)
                         material->SetTechnique(j - 1, material->GetTechnique(j));
@@ -900,8 +916,8 @@ bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, 
             material->SetTechnique(material->GetNumTechniques() - 1, dynamic_cast<Technique*>(resource.Get()));
             material->SaveFile(GetCache()->GetResourceFileName(material->GetName()));
         }
+        ui::Unindent(attributeIndentLevel);
     }
-    ui::Unindent(attributeIndentLevel);
 
     return false;
 }

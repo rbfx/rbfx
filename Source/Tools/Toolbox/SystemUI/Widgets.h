@@ -80,5 +80,6 @@ ImVec2 Scale(ImVec2 value);
 bool ToolbarButton(const char* label);
 /// Display help tooltip when alt is pressed.
 void SetHelpTooltip(const char* text);
-
+/// A square button whose width and height are equal to the height of previous item.
+bool IconButton(const char* label);
 }
