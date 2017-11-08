@@ -30,6 +30,7 @@
 #include <tinyfiledialogs/tinyfiledialogs.h>
 #include <Toolbox/SystemUI/ResourceBrowser.h>
 #include <Toolbox/IO/ContentUtilities.h>
+#include <Toolbox/SystemUI/Widgets.h>
 
 
 URHO3D_DEFINE_APPLICATION_MAIN(Editor);
@@ -45,6 +46,17 @@ Editor::Editor(Context* context)
 
 void Editor::Setup()
 {
+#ifdef _WIN32
+    // Required until SDL supports hdpi on windows
+    if (HMODULE hLibrary = LoadLibraryA("Shcore.dll"))
+    {
+        typedef HRESULT(WINAPI*SetProcessDpiAwarenessType)(size_t value);
+        if (auto fn = GetProcAddress(hLibrary, "SetProcessDpiAwareness"))
+            ((SetProcessDpiAwarenessType)fn)(2);    // PROCESS_PER_MONITOR_DPI_AWARE
+        FreeLibrary(hLibrary);
+    }
+#endif
+
     engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
     engineParameters_[EP_HEADLESS] = false;
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] =
@@ -250,12 +262,12 @@ void Editor::RenderMenuBar()
 
         if (!activeTab_.Expired())
         {
-            save |= ui::Button(ICON_FA_FLOPPY_O);
-            ui::SameLine();
+            save |= ui::ToolbarButton(ICON_FA_FLOPPY_O);
+            ui::SameLine(0, 2.f);
             if (ui::IsItemHovered())
                 ui::SetTooltip("Save");
             ui::TextUnformatted("|");
-            ui::SameLine();
+            ui::SameLine(0, 3.f);
             activeTab_->RenderGizmoButtons();
             SendEvent(E_EDITORTOOLBARBUTTONS);
         }

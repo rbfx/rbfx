@@ -168,4 +168,11 @@ ImVec2 Scale(ImVec2 value)
     return value * ui::GetIO().DisplayFramebufferScale;
 }
 
+bool ToolbarButton(const char* label)
+{
+    auto& g = *ui::GetCurrentContext();
+    float dimension = g.FontBaseSize + g.Style.FramePadding.y * 2.0f;
+    return ui::ButtonEx(label, {dimension, dimension}, ImGuiButtonFlags_PressedOnClick);
+}
+
 }

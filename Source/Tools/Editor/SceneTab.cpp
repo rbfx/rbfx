@@ -27,6 +27,7 @@
 #include <ImGui/imgui_internal.h>
 #include <ImGuizmo/ImGuizmo.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
+#include <Toolbox/SystemUI/Widgets.h>
 
 
 namespace Urho3D
@@ -296,10 +297,10 @@ void SceneTab::RenderGizmoButtons()
             ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_ButtonActive]);
         else
             ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
-        if (ui::ButtonEx(icon, {20, 20}, ImGuiButtonFlags_PressedOnClick))
+        if (ui::ToolbarButton(icon))
             gizmo_.SetOperation(operation);
         ui::PopStyleColor();
-        ui::SameLine();
+        ui::SameLine(0, 3.f);
         if (ui::IsItemHovered())
             ui::SetTooltip("%s", tooltip);
     };
@@ -310,10 +311,10 @@ void SceneTab::RenderGizmoButtons()
             ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_ButtonActive]);
         else
             ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
-        if (ui::ButtonEx(icon, {20, 20}, ImGuiButtonFlags_PressedOnClick))
+        if (ui::ToolbarButton(icon))
             gizmo_.SetTransformSpace(transformSpace);
         ui::PopStyleColor();
-        ui::SameLine();
+        ui::SameLine(0, 3.f);
         if (ui::IsItemHovered())
             ui::SetTooltip("%s", tooltip);
     };
@@ -322,11 +323,11 @@ void SceneTab::RenderGizmoButtons()
     drawGizmoOperationButton(GIZMOOP_ROTATE, ICON_FA_REPEAT, "Rotate");
     drawGizmoOperationButton(GIZMOOP_SCALE, ICON_FA_ARROWS_ALT, "Scale");
     ui::TextUnformatted("|");
-    ui::SameLine();
+    ui::SameLine(0, 3.f);
     drawGizmoTransformButton(TS_WORLD, ICON_FA_ARROWS, "World");
     drawGizmoTransformButton(TS_LOCAL, ICON_FA_ARROWS_ALT, "Local");
     ui::TextUnformatted("|");
-    ui::SameLine();
+    ui::SameLine(0, 3.f);
 
 
     auto light = camera_->GetComponent<Light>();
@@ -334,10 +335,10 @@ void SceneTab::RenderGizmoButtons()
         ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_ButtonActive]);
     else
         ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
-    if (ui::Button(ICON_FA_LIGHTBULB_O, {20, 20}))
+    if (ui::ToolbarButton(ICON_FA_LIGHTBULB_O))
         light->SetEnabled(!light->IsEnabled());
     ui::PopStyleColor();
-    ui::SameLine();
+    ui::SameLine(0, 3.f);
     if (ui::IsItemHovered())
         ui::SetTooltip("Camera Headlight");
 }

@@ -76,5 +76,7 @@ float ScaleX(float x);
 float ScaleY(float y);
 /// Return value scaled according to DisplayFramebufferScale.
 ImVec2 Scale(ImVec2 value);
+/// A button that perfectly fits in menu bar.
+bool ToolbarButton(const char* label);
 
 }
