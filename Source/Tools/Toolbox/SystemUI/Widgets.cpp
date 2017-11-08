@@ -153,4 +153,19 @@ bool CollapsingHeaderSimple(const char* label, ImGuiTreeNodeFlags flags)
     return open;
 }
 
+float ScaleX(float x)
+{
+    return x * ui::GetIO().DisplayFramebufferScale.x;
+}
+
+float ScaleY(float y)
+{
+    return y * ui::GetIO().DisplayFramebufferScale.y;
+}
+
+ImVec2 Scale(ImVec2 value)
+{
+    return value * ui::GetIO().DisplayFramebufferScale;
+}
+
 }

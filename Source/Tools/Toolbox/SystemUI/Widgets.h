@@ -70,5 +70,11 @@ int DoubleClickSelectable(const char* label, bool selected = false, ImGuiSelecta
 bool DroppedOnItem();
 /// Same as ImGui::CollapsingHeader(), except does not draw a frame and background.
 bool CollapsingHeaderSimple(const char* label, ImGuiTreeNodeFlags flags=0);
+/// Return value scaled according to DisplayFramebufferScale.
+float ScaleX(float x);
+/// Return value scaled according to DisplayFramebufferScale.
+float ScaleY(float y);
+/// Return value scaled according to DisplayFramebufferScale.
+ImVec2 Scale(ImVec2 value);
 
 }
