@@ -114,9 +114,9 @@ void SystemUI::UpdateProjectionMatrix()
     Vector2 offset(-1.0f, 1.0f);
 
     projection_ = Matrix4(Matrix4::IDENTITY);
-    projection_.m00_ = scale.x_ * uiScale_;
+    projection_.m00_ = scale.x_ * uiZoom_;
     projection_.m03_ = offset.x_;
-    projection_.m11_ = scale.y_ * uiScale_;
+    projection_.m11_ = scale.y_ * uiZoom_;
     projection_.m13_ = offset.y_;
     projection_.m22_ = 1.0f;
     projection_.m23_ = 0.0f;
@@ -155,8 +155,8 @@ void SystemUI::OnRawEvent(VariantMap& args)
     case SDL_MOUSEBUTTONDOWN:
         io.MouseDown[evt->button.button - 1] = evt->type == SDL_MOUSEBUTTONDOWN;
     case SDL_MOUSEMOTION:
-        io.MousePos.x = evt->motion.x / uiScale_;
-        io.MousePos.y = evt->motion.y / uiScale_;
+        io.MousePos.x = evt->motion.x / uiZoom_;
+        io.MousePos.y = evt->motion.y / uiZoom_;
         break;
     URHO3D_FALLTHROUGH
     case SDL_FINGERUP:
@@ -167,8 +167,8 @@ void SystemUI::OnRawEvent(VariantMap& args)
     case SDL_FINGERDOWN:
         io.MouseDown[0] = true;
     case SDL_FINGERMOTION:
-        io.MousePos.x = evt->tfinger.x / uiScale_;
-        io.MousePos.y = evt->tfinger.y / uiScale_;
+        io.MousePos.x = evt->tfinger.x / uiZoom_;
+        io.MousePos.y = evt->tfinger.y / uiZoom_;
         break;
     case SDL_TEXTINPUT:
         ImGui::GetIO().AddInputCharactersUTF8(evt->text.text);
@@ -269,8 +269,8 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
                 graphics->SetShaderParameter(VSP_ELAPSEDTIME, elapsedTime);
                 graphics->SetShaderParameter(PSP_ELAPSEDTIME, elapsedTime);
 
-                IntRect scissor = IntRect(int(cmd->ClipRect.x * uiScale_), int(cmd->ClipRect.y * uiScale_),
-                                          int(cmd->ClipRect.z * uiScale_), int(cmd->ClipRect.w * uiScale_));
+                IntRect scissor = IntRect(int(cmd->ClipRect.x * uiZoom_), int(cmd->ClipRect.y * uiZoom_),
+                                          int(cmd->ClipRect.z * uiZoom_), int(cmd->ClipRect.w * uiZoom_));
 
                 graphics->SetBlendMode(BLEND_ALPHA);
                 graphics->SetScissorTest(true, scissor);
@@ -343,11 +343,11 @@ void SystemUI::ReallocateFontTexture()
     }
 }
 
-void SystemUI::SetScale(float scale)
+void SystemUI::SetZoom(float zoom)
 {
-    if (uiScale_ == scale)
+    if (uiZoom_ == zoom)
         return;
-    uiScale_ = scale;
+    uiZoom_ = zoom;
     UpdateProjectionMatrix();
 }
 

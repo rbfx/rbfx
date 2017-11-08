@@ -49,10 +49,10 @@ public:
 
     /// Get ui scale.
     /// \return scale of ui.
-    float GetScale() const { return uiScale_; };
+    float GetZoom() const { return uiZoom_; };
     /// Set ui scale.
-    /// \param scale of ui.
-    void SetScale(float scale);
+    /// \param zoom of ui.
+    void SetZoom(float zoom);
     /// Add font to imgui subsystem.
     /// \param fontPath a string pointing to TTF font resource.
     /// \param size a font size. If 0 then size of last font is used.
@@ -84,7 +84,7 @@ public:
     bool HasDragData() const { return dragData_.GetType() != VAR_NONE; }
 
 protected:
-    float uiScale_ = 1.f;
+    float uiZoom_ = 1.f;
     Matrix4 projection_;
     VertexBuffer vertexBuffer_;
     IndexBuffer indexBuffer_;
