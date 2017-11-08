@@ -24,6 +24,7 @@
 #include <ImGui/imgui_internal.h>
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/SystemUI/SystemUI.h>
+#include <ThirdParty/SDL/include/SDL_scancode.h>
 
 
 namespace ImGui
@@ -173,6 +174,12 @@ bool ToolbarButton(const char* label)
     auto& g = *ui::GetCurrentContext();
     float dimension = g.FontBaseSize + g.Style.FramePadding.y * 2.0f;
     return ui::ButtonEx(label, {dimension, dimension}, ImGuiButtonFlags_PressedOnClick);
+}
+
+void SetHelpTooltip(const char* text)
+{
+    if (ui::IsItemHovered() && ui::IsKeyDown(SDL_SCANCODE_LALT))
+        ui::SetTooltip(text);
 }
 
 }

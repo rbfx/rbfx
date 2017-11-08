@@ -78,5 +78,7 @@ float ScaleY(float y);
 ImVec2 Scale(ImVec2 value);
 /// A button that perfectly fits in menu bar.
 bool ToolbarButton(const char* label);
+/// Display help tooltip when alt is pressed.
+void SetHelpTooltip(const char* text);
 
 }

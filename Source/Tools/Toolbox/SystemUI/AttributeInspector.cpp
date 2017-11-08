@@ -431,25 +431,29 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         case VAR_VECTOR2:
         {
             auto& v = value.GetVector2();
-            modified |= ui::DragFloat2("xy", const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat2("", const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
+            ui::SetHelpTooltip("xy");
             break;
         }
         case VAR_VECTOR3:
         {
             auto& v = value.GetVector3();
-            modified |= ui::DragFloat3("xyz", const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat3("", const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
+            ui::SetHelpTooltip("xyz");
             break;
         }
         case VAR_VECTOR4:
         {
             auto& v = value.GetVector4();
-            modified |= ui::DragFloat4("xyzw", const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat4("", const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
+            ui::SetHelpTooltip("xyzw");
             break;
         }
         case VAR_QUATERNION:
         {
             auto v = value.GetQuaternion().EulerAngles();
-            modified |= ui::DragFloat3("xyz", const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat3("", const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
+            ui::SetHelpTooltip("xyz");
             if (modified)
                 value = Quaternion(v.x_, v.y_, v.z_);
             break;
@@ -457,7 +461,8 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         case VAR_COLOR:
         {
             auto& v = value.GetColor();
-            modified |= ui::ColorEdit4("rgba", const_cast<float*>(&v.r_));
+            modified |= ui::ColorEdit4("", const_cast<float*>(&v.r_));
+            ui::SetHelpTooltip("rgba");
             break;
         }
         case VAR_STRING:
@@ -527,13 +532,15 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         case VAR_INTRECT:
         {
             auto& v = value.GetIntRect();
-            modified |= ui::DragInt4("ltbr", const_cast<int*>(&v.left_), 1, M_MIN_INT, M_MAX_INT);
+            modified |= ui::DragInt4("", const_cast<int*>(&v.left_), 1, M_MIN_INT, M_MAX_INT);
+            ui::SetHelpTooltip("ltbr");
             break;
         }
         case VAR_INTVECTOR2:
         {
             auto& v = value.GetIntVector2();
-            modified |= ui::DragInt2("xy", const_cast<int*>(&v.x_), 1, M_MIN_INT, M_MAX_INT);
+            modified |= ui::DragInt2("", const_cast<int*>(&v.x_), 1, M_MIN_INT, M_MAX_INT);
+            ui::SetHelpTooltip("xy");
             break;
         }
         case VAR_PTR:
@@ -542,26 +549,36 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         case VAR_MATRIX3:
         {
             auto& v = value.GetMatrix3();
-            modified |= ui::DragFloat3("m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
-            modified |= ui::DragFloat3("m1", const_cast<float*>(&v.m10_), floatStep, floatMin, floatMax, "%.3f", power);
-            modified |= ui::DragFloat3("m2", const_cast<float*>(&v.m20_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat3("###m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
+            ui::SetHelpTooltip("m0");
+            modified |= ui::DragFloat3("###m1", const_cast<float*>(&v.m10_), floatStep, floatMin, floatMax, "%.3f", power);
+            ui::SetHelpTooltip("m1");
+            modified |= ui::DragFloat3("###m2", const_cast<float*>(&v.m20_), floatStep, floatMin, floatMax, "%.3f", power);
+            ui::SetHelpTooltip("m2");
             break;
         }
         case VAR_MATRIX3X4:
         {
             auto& v = value.GetMatrix3x4();
-            modified |= ui::DragFloat4("m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
-            modified |= ui::DragFloat4("m1", const_cast<float*>(&v.m10_), floatStep, floatMin, floatMax, "%.3f", power);
-            modified |= ui::DragFloat4("m2", const_cast<float*>(&v.m20_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat4("###m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
+            ui::SetHelpTooltip("m0");
+            modified |= ui::DragFloat4("###m1", const_cast<float*>(&v.m10_), floatStep, floatMin, floatMax, "%.3f", power);
+            ui::SetHelpTooltip("m1");
+            modified |= ui::DragFloat4("###m2", const_cast<float*>(&v.m20_), floatStep, floatMin, floatMax, "%.3f", power);
+            ui::SetHelpTooltip("m2");
             break;
         }
         case VAR_MATRIX4:
         {
             auto& v = value.GetMatrix4();
-            modified |= ui::DragFloat4("m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
-            modified |= ui::DragFloat4("m1", const_cast<float*>(&v.m10_), floatStep, floatMin, floatMax, "%.3f", power);
-            modified |= ui::DragFloat4("m2", const_cast<float*>(&v.m20_), floatStep, floatMin, floatMax, "%.3f", power);
-            modified |= ui::DragFloat4("m3", const_cast<float*>(&v.m30_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat4("###m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
+            ui::SetHelpTooltip("m0");
+            modified |= ui::DragFloat4("###m1", const_cast<float*>(&v.m10_), floatStep, floatMin, floatMax, "%.3f", power);
+            ui::SetHelpTooltip("m1");
+            modified |= ui::DragFloat4("###m2", const_cast<float*>(&v.m20_), floatStep, floatMin, floatMax, "%.3f", power);
+            ui::SetHelpTooltip("m2");
+            modified |= ui::DragFloat4("###m3", const_cast<float*>(&v.m30_), floatStep, floatMin, floatMax, "%.3f", power);
+            ui::SetHelpTooltip("m3");
             break;
         }
         case VAR_DOUBLE:
@@ -646,17 +663,20 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         case VAR_RECT:
         {
             auto& v = value.GetRect();
-            modified |= ui::DragFloat2("min xy", const_cast<float*>(&v.min_.x_), floatStep, floatMin,
+            modified |= ui::DragFloat2("###min xy", const_cast<float*>(&v.min_.x_), floatStep, floatMin,
                                        floatMax, "%.3f", power);
+            ui::SetHelpTooltip("min xy");
             ui::SameLine();
-            modified |= ui::DragFloat2("max xy", const_cast<float*>(&v.max_.x_), floatStep, floatMin,
+            modified |= ui::DragFloat2("###max xy", const_cast<float*>(&v.max_.x_), floatStep, floatMin,
                                        floatMax, "%.3f", power);
+            ui::SetHelpTooltip("max xy");
             break;
         }
         case VAR_INTVECTOR3:
         {
             auto& v = value.GetIntVector3();
             modified |= ui::DragInt3("xyz", const_cast<int*>(&v.x_), 1, M_MIN_INT, M_MAX_INT);
+            ui::SetHelpTooltip("xyz");
             break;
         }
         case VAR_INT64:
@@ -687,7 +707,7 @@ void AttributeInspector::NextColumn()
 
 bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, String& result, bool expanded)
 {
-    auto handleDragAndDrop = [&](StringHash resourceType, SharedPtr<Resource>& resource, bool withTooltip=true)
+    auto handleDragAndDrop = [&](StringHash resourceType, SharedPtr<Resource>& resource)
     {
         if (ui::DroppedOnItem())
         {
@@ -700,13 +720,13 @@ bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, 
 
             return resource.NotNull();
         }
-        else if (withTooltip && ui::IsItemHovered())
-            ui::SetTooltip("Drag resource here.");
+        else
+            ui::SetHelpTooltip("Drag resource here.");
     };
 
     SharedPtr<Resource> resource;
     ui::InputText("", (char*)name.CString(), name.Length(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
-    if (handleDragAndDrop(type, resource, false))
+    if (handleDragAndDrop(type, resource))
     {
         result = resource->GetName();
         ui::ExpireUIState<MaterialView>();
@@ -723,7 +743,7 @@ bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, 
         MaterialView* state = ui::GetUIState<MaterialView>(context_, material, effectSource_);
 
         state->Render();
-        if (handleDragAndDrop(type, resource, false))
+        if (handleDragAndDrop(type, resource))
         {
             result = resource->GetName();
             ui::ExpireUIState<MaterialView>();
@@ -832,7 +852,7 @@ bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, 
                 ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
             if (material->GetNumTechniques() > 1)
                 ui::PopItemWidth();
-            if (handleDragAndDrop(Technique::GetTypeStatic(), resource, true))
+            if (handleDragAndDrop(Technique::GetTypeStatic(), resource))
             {
                 material->SetTechnique(i, DynamicCast<Technique>(resource), tech.qualityLevel_, tech.lodDistance_);
                 material->SaveFile(GetCache()->GetResourceFileName(material->GetName()));
@@ -874,7 +894,7 @@ bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, 
 
         const char* newTechnique = "Add new technique";
         ui::InputText("###newTechnique_", (char*)newTechnique, strlen(newTechnique), ImGuiInputTextFlags_ReadOnly);
-        if (handleDragAndDrop(Technique::GetTypeStatic(), resource, true))
+        if (handleDragAndDrop(Technique::GetTypeStatic(), resource))
         {
             material->SetNumTechniques(material->GetNumTechniques() + 1);
             material->SetTechnique(material->GetNumTechniques() - 1, dynamic_cast<Technique*>(resource.Get()));
