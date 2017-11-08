@@ -506,6 +506,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
                     newRefList.names_[i] = result;
                     value = newRefList;
                     modified = true;
+                    ui::PopID();
                     break;
                 }
                 ui::PopID();
