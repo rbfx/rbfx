@@ -572,7 +572,9 @@ public:
         const auto backgroundTextWindowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar |
                                                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoInputs;
         ui::SetNextWindowSize(ToImGui(context_->GetGraphics()->GetSize()), ImGuiCond_Always);
-        if (ui::Begin("Background Window", nullptr, ImVec2(0, 0), 0, backgroundTextWindowFlags))
+        ui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+        ui::PushStyleColor(ImGuiCol_WindowBg, 0);
+        if (ui::Begin("Background Window", nullptr, backgroundTextWindowFlags))
         {
             if (auto selected = GetSelected())
             {
@@ -598,6 +600,7 @@ public:
             }
         }
         ui::End();
+        ui::PopStyleColor();
         // Background window end
 
         auto input = context_->GetInput();
@@ -691,8 +694,9 @@ public:
                     // Texture is better visible this way when zoomed in.
                     tex->SetFilterMode(FILTER_NEAREST);
                     auto padding = ImGui::GetStyle().WindowPadding;
-                    if (ui::Begin("Select Rect", &open, ImVec2(tex->GetWidth() + padding.x * 2,
-                        tex->GetHeight() + padding.y * 2), -1, rectWindowFlags_))
+                    ui::SetNextWindowPos(ImVec2(tex->GetWidth() + padding.x * 2, tex->GetHeight() + padding.y * 2),
+                                         ImGuiCond_FirstUseEver);
+                    if (ui::Begin("Select Rect", &open, rectWindowFlags_))
                     {
                         ui::SliderInt("Zoom", &textureWindowScale_, 1, 5);
                         auto windowPos = ui::GetWindowPos();
