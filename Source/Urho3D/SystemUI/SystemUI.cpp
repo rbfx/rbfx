@@ -71,7 +71,7 @@ SystemUI::SystemUI(Urho3D::Context* context)
 
     io.UserData = this;
 
-    io.Fonts->AddFontDefault();
+    AddFont("Fonts/DejaVuSansMono.ttf", 13.f, nullptr);
     ReallocateFontTexture();
     UpdateProjectionMatrix();
     // Initializes ImGui. ImGui::Render() can not be called unless imgui is initialized. This call avoids initialization
