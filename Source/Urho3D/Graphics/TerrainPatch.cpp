@@ -54,7 +54,6 @@ TerrainPatch::TerrainPatch(Context* context) :
     coordinates_(IntVector2::ZERO),
     lodLevel_(0)
 {
-    vertexBuffer_->SetShadowed(true);
     geometry_->SetVertexBuffer(0, vertexBuffer_);
     maxLodGeometry_->SetVertexBuffer(0, vertexBuffer_);
     occlusionGeometry_->SetVertexBuffer(0, vertexBuffer_);
