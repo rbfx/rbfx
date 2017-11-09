@@ -795,6 +795,7 @@ bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, 
             ui::ExpireUIState<MaterialView>();
             return true;
         }
+        ui::SetHelpTooltip("Drag resource here.\nClick to switch object.");
 
         ui::TextUnformatted("Cull");
         NextColumn();
