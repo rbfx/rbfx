@@ -29,6 +29,7 @@
 namespace Urho3D
 {
 
+class Camera;
 class Context;
 class Scene;
 class Texture2D;
@@ -43,7 +44,7 @@ public:
     /// Set screen rectangle where scene is being rendered.
     virtual void SetSize(const IntRect& rect);
     /// Return scene debug camera component.
-    Camera* GetCamera() { return camera_->GetComponent<Camera>(); }
+    Camera* GetCamera() const;
     /// Return scene rendered in this tab.
     Scene* GetScene() const { return scene_; }
     /// Return scene viewport instance.

@@ -77,4 +77,9 @@ void SceneView::CreateObjects()
     viewport_->SetCamera(GetCamera());
 }
 
+Camera* SceneView::GetCamera() const
+{
+    return camera_->GetComponent<Camera>();
+}
+
 }
