@@ -228,10 +228,10 @@ public:
 protected:
     /// Apply state going to specified direction in the state stack.
     void ApplyStateFromStack(bool forward);
-    ///
+    /// Track object state as old.
     template<typename T, typename... Args>
     void TrackBefore(Args...);
-    ///
+    /// Track object state as new.
     template<typename T, typename... Args>
     void TrackAfter(Args...);
 
@@ -241,8 +241,9 @@ protected:
     int32_t index_ = -1;
     /// Flag indicating that state tracking is suspended. For example when undo manager is restoring states.
     bool trackingSuspended_ = false;
-
+    /// List of old object states.
     Vector<SharedPtr<State>> previous_;
+    /// List of new object states.
     Vector<SharedPtr<State>> next_;
 };
 
