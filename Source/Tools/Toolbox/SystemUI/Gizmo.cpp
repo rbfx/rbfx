@@ -53,8 +53,8 @@ Gizmo::~Gizmo()
 
 bool Gizmo::Manipulate(const Camera* camera, Node* node)
 {
-    PODVector<Node*> nodes;
-    nodes.Push(node);
+    Vector<WeakPtr<Node>> nodes;
+    nodes.Push(WeakPtr<Node>(node));
     return Manipulate(camera, nodes);
 }
 
@@ -63,7 +63,7 @@ bool Gizmo::IsActive() const
     return ImGuizmo::IsUsing();
 }
 
-bool Gizmo::Manipulate(const Camera* camera, const PODVector<Node*>& nodes)
+bool Gizmo::Manipulate(const Camera* camera, const Vector<WeakPtr<Node>>& nodes)
 {
     if (nodes.Empty())
         return false;
@@ -129,6 +129,14 @@ bool Gizmo::Manipulate(const Camera* camera, const PODVector<Node*>& nodes)
 
     if (IsActive())
     {
+        if (!wasActive_)
+        {
+            // Just started modifying nodes.
+            for (const auto& node: nodes)
+                initialTransforms_[node] = node->GetTransform();
+        }
+
+        wasActive_ = true;
         tran = tran.Transpose();
         delta = delta.Transpose();
 
@@ -161,27 +169,43 @@ bool Gizmo::Manipulate(const Camera* camera, const PODVector<Node*>& nodes)
 
         return true;
     }
-    else if (operation_ == GIZMOOP_SCALE && !nodeScaleStart_.Empty())
-        nodeScaleStart_.Clear();
+    else
+    {
+        if (wasActive_)
+        {
+            // Just finished modifying nodes.
+            using namespace GizmoNodeModified;
+            for (const auto& node: nodes)
+            {
+                if (node.Expired())
+                {
+                    URHO3D_LOGWARNINGF("Node expired while manipulating it with gizmo.");
+                    continue;
+                }
+
+                auto it = initialTransforms_.Find(node.Get());
+                if (it == initialTransforms_.End())
+                {
+                    URHO3D_LOGWARNINGF("Gizmo has no record of initial node transform. List of transformed nodes "
+                        "changed mid-manipulation?");
+                    continue;
+                }
+
+                SendEvent(E_GIZMONODEMODIFIED, P_NODE, node.Get(), P_OLDTRANSFORM, it->second_,
+                    P_NEWTRANSFORM, node->GetTransform());
+            }
+        }
+        wasActive_ = false;
+        initialTransforms_.Clear();
+        if (operation_ == GIZMOOP_SCALE && !nodeScaleStart_.Empty())
+            nodeScaleStart_.Clear();
+    }
     return false;
 }
 
 bool Gizmo::ManipulateSelection(const Camera* camera)
 {
-    PODVector<Node*> nodes;
-    nodes.Reserve(nodeSelection_.Size());
-    for (auto it = nodeSelection_.Begin(); it != nodeSelection_.End();)
-    {
-        WeakPtr<Node> node = *it;
-        if (node.Expired())
-            it = nodeSelection_.Erase(it);
-        else
-        {
-            nodes.Push(node.Get());
-            ++it;
-        }
-    }
-    return Manipulate(camera, nodes);
+    return Manipulate(camera, nodeSelection_);
 }
 
 void Gizmo::RenderUI()

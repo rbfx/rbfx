@@ -58,7 +58,7 @@ public:
     /// \param camera which observes the node.
     /// \param nodes to be manipulated. Specifying more than one node manipulates them in world space.
     /// \returns true if node was manipulated on current frame.
-    bool Manipulate(const Camera* camera, const PODVector<Node*>& nodes);
+    bool Manipulate(const Camera* camera, const Vector<WeakPtr<Node>>& nodes);
     /// Manipulate current node selection. Should be called from within E_UPDATE event.
     /// \param camera which observes the node.
     /// \returns true if node(s) were manipulated on current frame.
@@ -113,8 +113,14 @@ protected:
     Vector<WeakPtr<Node> > nodeSelection_;
     /// Camera which is used for automatic node selection in the scene camera belongs to.
     WeakPtr<Camera> autoModeCamera_;
+    /// Position of display area gizmo is rendered in.
     ImVec2 displayPos_{};
+    /// Size of display area gizmo is rendered in.
     ImVec2 displaySize_{};
+    /// Flag indicating that gizmo was active on the last frame.
+    bool wasActive_ = false;
+    /// A map of initial transforms.
+    HashMap<Node*, Matrix3x4> initialTransforms_;
 };
 
 }

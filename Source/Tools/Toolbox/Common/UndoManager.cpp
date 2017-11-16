@@ -389,7 +389,20 @@ void Manager::Connect(UIElement* root)
 
 void Manager::Connect(Gizmo* gizmo)
 {
-    // TODO
+    SubscribeToEvent(gizmo, E_GIZMONODEMODIFIED, [&](StringHash, VariantMap& args) {
+        using namespace GizmoNodeModified;
+        auto node = dynamic_cast<Node*>(args[P_NODE].GetPtr());
+        auto oldTransform = args[P_OLDTRANSFORM].GetMatrix3x4();
+        auto newTransform = args[P_NEWTRANSFORM].GetMatrix3x4();
+
+        TrackBefore<AttributeState>(node, "Position", oldTransform.Translation());
+        TrackBefore<AttributeState>(node, "Rotation", oldTransform.Rotation());
+        TrackBefore<AttributeState>(node, "Scale", oldTransform.Scale());
+
+        TrackAfter<AttributeState>(node, "Position", newTransform.Translation());
+        TrackAfter<AttributeState>(node, "Rotation", newTransform.Rotation());
+        TrackAfter<AttributeState>(node, "Scale", newTransform.Scale());
+    });
 }
 
 }
