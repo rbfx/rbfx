@@ -452,6 +452,8 @@ void SceneTab::RenderSceneNodeTree(Node* node)
             if (component->IsTemporary())
                 continue;
 
+            ui::PushID(component);
+
             bool selected = selectedComponent_ == component;
             selected = ui::Selectable(component->GetTypeName().CString(), selected);
 
@@ -474,6 +476,8 @@ void SceneTab::RenderSceneNodeTree(Node* node)
                     component->Remove();
                 ui::EndPopup();
             }
+
+            ui::PopID();
         }
 
         for (auto& child: node->GetChildren())
