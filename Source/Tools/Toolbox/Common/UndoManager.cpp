@@ -21,6 +21,7 @@
 //
 
 #include <Urho3D/Core/CoreEvents.h>
+#include <Urho3D/Scene/Component.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
 #include "UndoManager.h"
 
@@ -118,6 +119,35 @@ String NodeParentState::ToString() const
     return Urho3D::ToString("NodeParentState parent = %p child = %p index = %d", parent_.Get(), item_.Get(), index_);
 }
 
+ComponentParentState::ComponentParentState(Component* item, Node* parent) : item_(item), parent_(parent)
+{
+    id_ = item->GetID();
+}
+
+void ComponentParentState::Apply()
+{
+    if (parent_.NotNull())
+        parent_->AddComponent(item_, id_, LOCAL);   // Replication mode is irrelevant, because it is used only for ID
+                                                    // creation.
+    else
+        item_->Remove();
+}
+
+bool ComponentParentState::Equals(State* other) const
+{
+    auto other_ = dynamic_cast<ComponentParentState*>(other);
+
+    if (other_ == nullptr)
+        return false;
+
+    return item_ == other_->item_ && parent_ == other_->parent_ && id_ == other_->id_;
+}
+
+String ComponentParentState::ToString() const
+{
+    return Urho3D::ToString("ComponentParentState parent = %p child = %p id = %d", parent_.Get(), item_.Get(), id_);
+}
+
 XMLVariantState::XMLVariantState(const XMLElement& item, const Variant& value) : item_(item), value_(value)
 {
 }
@@ -161,12 +191,12 @@ bool XMLParentState::Equals(State* other) const
     if (other_ == nullptr)
         return false;
 
-    return item_.GetNode() == other_->item_.GetNode() && parent_.GetNode() == other_->parent_.GetNode() /*&& index_ == other_->index_*/;
+    return item_.GetNode() == other_->item_.GetNode() && parent_.GetNode() == other_->parent_.GetNode();
 }
 
 String XMLParentState::ToString() const
 {
-    return Urho3D::ToString("NodeParentState parent = %s", parent_.IsNull() ? "null" : "set");
+    return Urho3D::ToString("XMLParentState parent = %s", parent_.IsNull() ? "null" : "set");
 }
 
 void StateCollection::Apply()
@@ -334,6 +364,30 @@ void Manager::Connect(Scene* scene)
 
         TrackBefore<NodeParentState>(node, parent);        // Present in the scene state
         TrackAfter<NodeParentState>(node, nullptr);        // Removed from the scene state
+    });
+
+    SubscribeToEvent(scene, E_COMPONENTADDED, [&](StringHash, VariantMap& args) {
+        if (trackingSuspended_)
+            return;
+
+        using namespace ComponentAdded;
+        auto component = dynamic_cast<Component*>(args[P_COMPONENT].GetPtr());
+        auto parent = dynamic_cast<Node*>(args[P_NODE].GetPtr());
+
+        TrackBefore<ComponentParentState>(component, nullptr);
+        TrackAfter<ComponentParentState>(component, parent);
+    });
+
+    SubscribeToEvent(scene, E_COMPONENTREMOVED, [&](StringHash, VariantMap& args) {
+        if (trackingSuspended_)
+            return;
+
+        using namespace ComponentAdded;
+        auto component = dynamic_cast<Component*>(args[P_COMPONENT].GetPtr());
+        auto parent = dynamic_cast<Node*>(args[P_NODE].GetPtr());
+
+        TrackBefore<ComponentParentState>(component, parent);
+        TrackAfter<ComponentParentState>(component, nullptr);
     });
 }
 

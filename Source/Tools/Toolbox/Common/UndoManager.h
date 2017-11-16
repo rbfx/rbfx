@@ -117,6 +117,27 @@ public:
     unsigned index_ = M_MAX_UNSIGNED;
 };
 
+/// Tracks Component parent state. Used for tracking adding and removing components.
+class ComponentParentState : public State
+{
+public:
+    /// Construct item from the state and parent
+    ComponentParentState(Component* item, Node* parent);
+    /// Set parent of the item if it is different and return true if operation was carried out.
+    void Apply() override;
+    /// Return true if state of this object matches state of specified object.
+    bool Equals(State* other) const override;
+    /// Return string representation of current state.
+    String ToString() const override;
+
+    /// UIElement whose state is saved.
+    SharedPtr<Component> item_;
+    /// Parent of item_ at the time when state was saved.
+    SharedPtr<Node> parent_;
+    /// ID of the component.
+    unsigned id_;
+};
+
 /// Tracks xml parent state. Used for tracking adding and removing xml elements to and from data files.
 class XMLVariantState : public State
 {
