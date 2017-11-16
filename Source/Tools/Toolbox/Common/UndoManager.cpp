@@ -287,12 +287,9 @@ void Manager::ApplyStateFromStack(bool forward)
 {
     trackingSuspended_ = true;
     int direction = forward ? 1 : -1;
-    for (;;)
+    index_ += direction;
+    if (index_ >= 0 && index_ < stack_.Size())
     {
-        index_ += direction;
-        if (index_ < 0 || index_ >= stack_.Size())
-            break;
-
         stack_[index_].Apply();
         URHO3D_LOGDEBUGF("Undo: apply %d", index_);
     }
