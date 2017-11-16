@@ -47,9 +47,7 @@ class State : public RefCounted
 {
 public:
     /// Apply state saved in this object.
-    virtual bool Apply() = 0;
-    /// Return true if current state matches state saved in this object.
-    virtual bool IsCurrent() const = 0;
+    virtual void Apply() = 0;
     /// Return true if state of this object matches state of specified object.
     virtual bool Equals(State* other) const = 0;
     /// Return string representation of current state.
@@ -63,9 +61,7 @@ public:
     /// Construct state consisting of single attribute.
     AttributeState(Serializable* item, const String& name, const Variant& value);
     /// Apply attributes if they are different and return true if operation was carried out.
-    bool Apply() override;
-    /// Return true if attributes saved in this state match attributes set to a serializable.
-    bool IsCurrent() const override;
+    void Apply() override;
     /// Return true if state of this object matches state of specified object.
     bool Equals(State* other) const override;
     /// Return string representation of current state.
@@ -86,9 +82,7 @@ public:
     /// Construct item from the state and parent
     ElementParentState(UIElement* item, UIElement* parent);
     /// Set parent of the item if it is different and return true if operation was carried out.
-    bool Apply() override;
-    /// Return true if item parent matches and item is at recorded index.
-    bool IsCurrent() const override;
+    void Apply() override;
     /// Return true if state of this object matches state of specified object.
     bool Equals(State* other) const override;
     /// Return string representation of current state.
@@ -109,9 +103,7 @@ public:
     /// Construct item from the state and parent
     NodeParentState(Node* item, Node* parent);
     /// Set parent of the item if it is different and return true if operation was carried out.
-    bool Apply() override;
-    /// Return true if item parent matches and item is at recorded index.
-    bool IsCurrent() const override;
+    void Apply() override;
     /// Return true if state of this object matches state of specified object.
     bool Equals(State* other) const override;
     /// Return string representation of current state.
@@ -132,9 +124,7 @@ public:
     /// Construct item from the state and parent
     XMLVariantState(const XMLElement& item, const Variant& value);
     /// Set parent of the item if it is different and return true if operation was carried out.
-    bool Apply() override;
-    /// Return true if item parent matches and item is at recorded index.
-    bool IsCurrent() const override;
+    void Apply() override;
     /// Return true if state of this object matches state of specified object.
     bool Equals(State* other) const override;
     /// Return string representation of current state.
@@ -153,9 +143,7 @@ public:
     /// Construct item from the state and parent.
     explicit XMLParentState(const XMLElement& item, const XMLElement& parent=XMLElement());
     /// Set parent of the item if it is different and return true if operation was carried out.
-    bool Apply() override;
-    /// Return true if item parent matches and item is at recorded index.
-    bool IsCurrent() const override;
+    void Apply() override;
     /// Return true if state of this object matches state of specified object.
     bool Equals(State* other) const override;
     /// Return string representation of current state.
@@ -172,7 +160,7 @@ class StateCollection
 {
 public:
     /// Set parent of the item if it is different and return true if operation was carried out.
-    bool Apply();
+    void Apply();
     /// Return true if state of this object matches state of specified object.
     bool Contains(State* other) const;
     /// Append state to the collection if such state does not already exist.

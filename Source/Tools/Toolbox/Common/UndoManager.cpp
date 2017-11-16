@@ -37,20 +37,10 @@ AttributeState::AttributeState(Serializable* item, const String& name, const Var
 {
 }
 
-bool AttributeState::Apply()
+void AttributeState::Apply()
 {
-    if (IsCurrent())
-        return false;
-
     item_->SetAttribute(name_, value_);
     item_->ApplyAttributes();
-
-    return true;
-}
-
-bool AttributeState::IsCurrent() const
-{
-    return item_->GetAttribute(name_) == value_;
 }
 
 bool AttributeState::Equals(State* other) const
@@ -76,28 +66,12 @@ ElementParentState::ElementParentState(UIElement* item, UIElement* parent) : ite
         index_ = parent->FindChild(item);
 }
 
-bool ElementParentState::Apply()
+void ElementParentState::Apply()
 {
-    if (IsCurrent())
-        return false;
-
     if (parent_.NotNull())
         item_->SetParent(parent_, index_);
     else
         item_->Remove();
-
-    return true;
-}
-
-bool ElementParentState::IsCurrent() const
-{
-    if (item_->GetParent() != parent_)
-        return false;
-
-    if (parent_.NotNull() && parent_->FindChild(item_) != index_)
-        return false;
-
-    return true;
 }
 
 bool ElementParentState::Equals(State* other) const
@@ -112,7 +86,7 @@ bool ElementParentState::Equals(State* other) const
 
 String ElementParentState::ToString() const
 {
-    return "UndoableElementParentState";
+    return Urho3D::ToString("ElementParentState parent = %p child = %p index = %d", parent_.Get(), item_.Get(), index_);
 }
 
 NodeParentState::NodeParentState(Node* item, Node* parent) : item_(item), parent_(parent)
@@ -121,28 +95,12 @@ NodeParentState::NodeParentState(Node* item, Node* parent) : item_(item), parent
         index_ = parent->GetChildren().IndexOf(SharedPtr<Node>(item));
 }
 
-bool NodeParentState::Apply()
+void NodeParentState::Apply()
 {
-    if (IsCurrent())
-        return false;
-
     if (parent_.NotNull())
         parent_->AddChild(item_, index_);
     else
         item_->Remove();
-
-    return true;
-}
-
-bool NodeParentState::IsCurrent() const
-{
-    if (item_->GetParent() != parent_)
-        return false;
-
-    if (parent_.NotNull() && parent_->GetChildren().IndexOf(item_) != index_)
-        return false;
-
-    return true;
 }
 
 bool NodeParentState::Equals(State* other) const
@@ -157,25 +115,16 @@ bool NodeParentState::Equals(State* other) const
 
 String NodeParentState::ToString() const
 {
-    return "UndoableNodeParentState";
+    return Urho3D::ToString("NodeParentState parent = %p child = %p index = %d", parent_.Get(), item_.Get(), index_);
 }
 
 XMLVariantState::XMLVariantState(const XMLElement& item, const Variant& value) : item_(item), value_(value)
 {
 }
 
-bool XMLVariantState::Apply()
+void XMLVariantState::Apply()
 {
-    if (IsCurrent())
-        return false;
-
     item_.SetVariant(value_);
-    return true;
-}
-
-bool XMLVariantState::IsCurrent() const
-{
-    return item_.GetVariant() == value_;
 }
 
 bool XMLVariantState::Equals(State* other) const
@@ -190,29 +139,19 @@ bool XMLVariantState::Equals(State* other) const
 
 String XMLVariantState::ToString() const
 {
-    return value_.ToString();
+    return Urho3D::ToString("XMLVariantState value = %s", value_.ToString().CString());
 }
 
 XMLParentState::XMLParentState(const XMLElement& item, const XMLElement& parent) : item_(item), parent_(parent)
 {
 }
 
-bool XMLParentState::Apply()
+void XMLParentState::Apply()
 {
-    if (IsCurrent())
-        return false;
-
     if (parent_.NotNull())
         parent_.AppendChild(item_);
     else
         item_.GetParent().RemoveChild(item_);
-
-    return true;
-}
-
-bool XMLParentState::IsCurrent() const
-{
-    return item_.GetParent().GetNode() == parent_.GetNode();
 }
 
 bool XMLParentState::Equals(State* other) const
@@ -227,15 +166,13 @@ bool XMLParentState::Equals(State* other) const
 
 String XMLParentState::ToString() const
 {
-    return "UndoableXMLParentState";
+    return Urho3D::ToString("NodeParentState parent = %s", parent_.IsNull() ? "null" : "set");
 }
 
-bool StateCollection::Apply()
+void StateCollection::Apply()
 {
-    bool applied = false;
     for (auto& state : states_)
-        applied |= state->Apply();
-    return applied;
+        state->Apply();
 }
 
 bool StateCollection::Contains(State* other) const
@@ -264,23 +201,37 @@ Manager::Manager(Context* ctx) : Object(ctx)
     {
         if (!trackingSuspended_)
         {
-            for (auto& container : {previous_, next_})
+            assert(previous_.Size() == next_.Size());
+
+            if (previous_.Size())
             {
-                if (container.Size())
+                // When stack is empty we insert two items - old state and new state. When stack already has states
+                // saved - we save old state to the state collection at the end of the stack and insert new
+                // collection for a new state.
+                if (stack_.Empty())
                 {
+                    stack_.Resize(1);
                     index_++;
-                    stack_.Resize(index_ + 1);
-                    stack_.Back().states_.Clear();
-                    for (auto& state : container)
-                    {
-                        if (stack_.Back().PushUnique(state))
-                            URHO3D_LOGDEBUGF("UNDO: Save %d: %s", index_, state->ToString().CString());
-                    }
                 }
+
+                for (auto& state : previous_)
+                {
+                    if (stack_.Back().PushUnique(state))
+                        URHO3D_LOGDEBUGF("UNDO: Save %d: %s", index_, state->ToString().CString());
+                }
+
+                index_++;
+                stack_.Resize(index_ + 1);
+
+                for (auto& state : next_)
+                {
+                    if (stack_.Back().PushUnique(state))
+                        URHO3D_LOGDEBUGF("UNDO: Save %d: %s", index_, state->ToString().CString());
+                }
+                previous_.Clear();
+                next_.Clear();
             }
         }
-        previous_.Clear();
-        next_.Clear();
     });
 }
 
@@ -306,17 +257,14 @@ void Manager::ApplyStateFromStack(bool forward)
 {
     trackingSuspended_ = true;
     int direction = forward ? 1 : -1;
-    while (index_ >= 0 && index_ < stack_.Size())
+    for (;;)
     {
-        auto stateCollection = stack_[index_];
         index_ += direction;
-        if (stateCollection.Apply())
-        {
-            URHO3D_LOGDEBUGF("Undo: apply %d", index_ - direction);
+        if (index_ < 0 || index_ >= stack_.Size())
             break;
-        }
-        else
-            URHO3D_LOGDEBUGF("Undo: apply skipped %d", index_ - direction);
+
+        stack_[index_].Apply();
+        URHO3D_LOGDEBUGF("Undo: apply %d", index_);
     }
     index_ = Clamp<int32_t>(index_, 0, stack_.Size() - 1);
     trackingSuspended_ = false;
@@ -364,9 +312,6 @@ void Manager::TrackAfter(Args... args)
 }
 void Manager::Connect(Scene* scene)
 {
-    UnsubscribeFromEvent(E_NODEADDED);
-    UnsubscribeFromEvent(E_NODEREMOVED);
-
     SubscribeToEvent(scene, E_NODEADDED, [&](StringHash, VariantMap& args) {
         if (trackingSuspended_)
             return;
@@ -394,8 +339,6 @@ void Manager::Connect(Scene* scene)
 
 void Manager::Connect(AttributeInspector* inspector)
 {
-    UnsubscribeFromEvent(E_ATTRIBUTEINSPECTVALUEMODIFIED);
-
     SubscribeToEvent(inspector, E_ATTRIBUTEINSPECTVALUEMODIFIED, [&](StringHash, VariantMap& args) {
         if (trackingSuspended_)
             return;
@@ -411,9 +354,6 @@ void Manager::Connect(AttributeInspector* inspector)
 
 void Manager::Connect(UIElement* root)
 {
-    UnsubscribeFromEvent(E_ELEMENTADDED);
-    UnsubscribeFromEvent(E_ELEMENTREMOVED);
-
     SubscribeToEvent(E_ELEMENTADDED, [&, root](StringHash, VariantMap& args) {
         if (trackingSuspended_)
             return;
