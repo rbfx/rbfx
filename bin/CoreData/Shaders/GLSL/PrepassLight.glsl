@@ -1,3 +1,23 @@
+#ifdef BGFX_SHADER
+#include "urho3d_compatibility.sh"
+#ifdef BGFX_SHADER_TYPE_VERTEX == 1
+    $input a_position
+    $output vTexCoord, vScreenPos, vFarRay _VNEARRAY
+#endif
+#ifdef BGFX_SHADER_TYPE_FRAGMENT == 1
+    $input vTexCoord, vScreenPos, vFarRay _VNEARRAY
+#endif
+
+#include "common.sh"
+
+#include "uniforms.sh"
+#include "samplers.sh"
+#include "transform.sh"
+#include "screen_pos.sh"
+#include "lighting.sh"
+
+#else
+
 #include "Uniforms.glsl"
 #include "Samplers.glsl"
 #include "Transform.glsl"
@@ -12,6 +32,8 @@
 varying vec3 vFarRay;
 #ifdef ORTHO
     varying vec3 vNearRay;
+#endif
+
 #endif
 
 void VS()
@@ -80,11 +102,11 @@ void PS()
     #endif
     
     #if defined(SPOTLIGHT)
-        vec4 spotPos = projWorldPos * cLightMatricesPS[0];
+        vec4 spotPos = mul(projWorldPos, cLightMatricesPS[0]);
         lightColor = spotPos.w > 0.0 ? texture2DProj(sLightSpotMap, spotPos).rgb * cLightColor.rgb : vec3(0.0);
     #elif defined(CUBEMASK)
         mat3 lightVecRot = mat3(cLightMatricesPS[0][0].xyz, cLightMatricesPS[0][1].xyz, cLightMatricesPS[0][2].xyz);
-        lightColor = textureCube(sLightCubeMap, (worldPos - cLightPosPS.xyz) * lightVecRot).rgb * cLightColor.rgb;
+        lightColor = textureCube(sLightCubeMap, mul((worldPos - cLightPosPS.xyz), lightVecRot)).rgb * cLightColor.rgb;
     #else
         lightColor = cLightColor.rgb;
     #endif

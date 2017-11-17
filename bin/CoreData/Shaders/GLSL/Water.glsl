@@ -1,3 +1,23 @@
+#ifdef BGFX_SHADER
+#include "urho3d_compatibility.sh"
+#ifdef BGFX_SHADER_TYPE_VERTEX == 1
+    $input a_position a_texcoord0 _INSTANCED
+    $output vScreenPos, vReflectUV, vWaterUV, vNormal, vEyeVec
+#endif
+#ifdef BGFX_SHADER_TYPE_FRAGMENT == 1
+    $input vScreenPos, vReflectUV, vWaterUV, vNormal, vEyeVec
+#endif
+
+#include "common.sh"
+
+#include "uniforms.sh"
+#include "samplers.sh"
+#include "transform.sh"
+#include "screen_pos.sh"
+#include "fog.sh"
+
+#else
+
 #include "Uniforms.glsl"
 #include "Samplers.glsl"
 #include "Transform.glsl"
@@ -16,6 +36,8 @@ varying highp vec2 vWaterUV;
 varying highp vec4 vEyeVec;
 #endif
 varying vec3 vNormal;
+
+#endif // BGFX_SHADER
 
 #ifdef COMPILEVS
 uniform vec2 cNoiseSpeed;

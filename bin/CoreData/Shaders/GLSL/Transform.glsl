@@ -1,3 +1,5 @@
+#define mul(_a, _b) ( (_a) * (_b) )
+
 #ifdef COMPILEVS
 
 // Silence GLSL 150 deprecation warnings

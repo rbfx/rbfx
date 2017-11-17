@@ -1,3 +1,23 @@
+#ifdef BGFX_SHADER
+#include "urho3d_compatibility.sh"
+#ifdef BGFX_SHADER_TYPE_VERTEX == 1
+    $input a_position _NORMAL _TEXCOORD0 _COLOR0 _TEXCOORD1 _ATANGENT _SKINNED _INSTANCED
+    $output vTexCoord, vWorldPos _VCOLOR
+#endif
+#ifdef BGFX_SHADER_TYPE_FRAGMENT == 1
+    $input vTexCoord, vWorldPos _VCOLOR
+#endif
+
+#include "common.sh"
+
+#include "uniforms.sh"
+#include "samplers.sh"
+#include "transform.sh"
+#include "screen_pos.sh"
+#include "fog.sh"
+
+#else
+
 #include "Uniforms.glsl"
 #include "Samplers.glsl"
 #include "Transform.glsl"
@@ -8,6 +28,8 @@ varying vec2 vTexCoord;
 varying vec4 vWorldPos;
 #ifdef VERTEXCOLOR
     varying vec4 vColor;
+#endif
+
 #endif
 
 void VS()

@@ -1,8 +1,28 @@
+#ifdef BGFX_SHADER
+#include "urho3d_compatibility.sh"
+#ifdef BGFX_SHADER_TYPE_VERTEX == 1
+    $input a_position _TEXCOORD0 _SKINNED _INSTANCED
+    $output vTexCoord
+#endif
+#ifdef BGFX_SHADER_TYPE_FRAGMENT == 1
+    $input vTexCoord
+#endif
+
+#include "common.sh"
+
+#include "uniforms.sh"
+#include "samplers.sh"
+#include "transform.sh"
+
+#else
+
 #include "Uniforms.glsl"
 #include "Samplers.glsl"
 #include "Transform.glsl"
 
 varying vec3 vTexCoord;
+
+#endif // BGFX_SHADER
 
 void VS()
 {

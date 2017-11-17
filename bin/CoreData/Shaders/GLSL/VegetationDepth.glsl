@@ -1,12 +1,33 @@
+#ifdef BGFX_SHADER
+#include "urho3d_compatibility.sh"
+#ifdef BGFX_SHADER_TYPE_VERTEX == 1
+    $input a_position a_texcoord0 _SKINNED _INSTANCED
+    $output vTexCoord
+#endif
+#ifdef BGFX_SHADER_TYPE_FRAGMENT == 1
+    $input vTexCoord
+#endif
+
+#include "common.sh"
+
+#include "uniforms.sh"
+#include "transform.sh"
+
+#else
+
 #include "Uniforms.glsl"
 #include "Transform.glsl"
+
+#endif
 
 uniform float cWindHeightFactor;
 uniform float cWindHeightPivot;
 uniform float cWindPeriod;
 uniform vec2 cWindWorldSpacing;
 
+#ifndef BGFX_SHADER
 varying vec3 vTexCoord;
+#endif
 
 void VS()
 {

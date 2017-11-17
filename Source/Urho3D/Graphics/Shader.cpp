@@ -100,7 +100,7 @@ bool Shader::BeginLoad(Deserializer& source)
     CommentOutFunction(psSourceCode_, "void VS(");
 
     // OpenGL: rename either VS() or PS() to main()
-#ifdef URHO3D_OPENGL
+#if defined(URHO3D_OPENGL || URHO3D_BGFX)
     vsSourceCode_.Replace("void VS(", "void main(");
     psSourceCode_.Replace("void PS(", "void main(");
 #endif
@@ -180,7 +180,9 @@ bool Shader::ProcessSource(String& code, Deserializer& source)
     {
         String line = source.ReadLine();
 
-        if (line.StartsWith("#include"))
+#if defined(URHO3D_BGFX)
+        // We append only this include to set important defines for compatibility with BGFX
+        if (line.StartsWith("#include \"urho3d_compatibility.sh\""))
         {
             String includeFileName = GetPath(source.GetName()) + line.Substring(9).Replaced("\"", "").Trimmed();
 
@@ -192,6 +194,32 @@ bool Shader::ProcessSource(String& code, Deserializer& source)
             if (!ProcessSource(code, *includeFile))
                 return false;
         }
+        // BGFX will do the includes itself
+        else if (line.StartsWith("#include"))
+        {
+            // Skip GLSL includes
+            if (line.EndsWith(".glsl\""))
+                continue;
+            code += line;
+        }
+#else
+        if (line.StartsWith("#include"))
+        {
+            // Skip BGFX includes
+            if (line.EndsWith(".sh\""))
+                continue;
+
+            String includeFileName = GetPath(source.GetName()) + line.Substring(9).Replaced("\"", "").Trimmed();
+
+            SharedPtr<File> includeFile = cache->GetFile(includeFileName);
+            if (!includeFile)
+                return false;
+
+            // Add the include file into the current code recursively
+            if (!ProcessSource(code, *includeFile))
+                return false;
+        }
+#endif
         else
         {
             code += line;

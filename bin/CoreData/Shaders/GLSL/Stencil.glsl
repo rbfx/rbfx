@@ -1,5 +1,24 @@
+#ifdef BGFX_SHADER
+#include "urho3d_compatibility.sh"
+#ifdef BGFX_SHADER_TYPE_VERTEX == 1
+    $input a_position
+    $output
+#endif
+#ifdef BGFX_SHADER_TYPE_FRAGMENT == 1
+    $input
+#endif
+
+#include "common.sh"
+
+#include "uniforms.sh"
+#include "transform.sh"
+
+#else
+
 #include "Uniforms.glsl"
 #include "Transform.glsl"
+
+#endif
 
 void VS()
 {

@@ -1,12 +1,43 @@
+#ifdef BGFX_SHADER
+#include "urho3d_compatibility.sh"
+#ifdef BGFX_SHADER_TYPE_VERTEX == 1
+    $input a_position _NORMAL _TEXCOORD0 _COLOR0 _TEXCOORD1 _ATANGENT _SKINNED _INSTANCED
+    #ifdef PERPIXEL
+        $output vTexCoord _VTANGENT, vNormal, vWorldPos _VSHADOWPOS _VSPOTPOS _VCUBEMASKVEC _VCOLOR
+    #else
+        $output vTexCoord _VTANGENT, vNormal, vWorldPos, vVertexLight, vScreenPos _VREFLECTIONVEC _VTEXCOORD2 _VCOLOR
+    #endif
+#endif
+#ifdef BGFX_SHADER_TYPE_FRAGMENT == 1
+    #ifdef PERPIXEL
+        $input vTexCoord _VTANGENT, vNormal, vWorldPos _VSHADOWPOS _VSPOTPOS _VCUBEMASKVEC _VCOLOR
+    #else
+        $input vTexCoord _VTANGENT, vNormal, vWorldPos, vVertexLight, vScreenPos _VREFLECTIONVEC _VTEXCOORD2 _VCOLOR
+    #endif
+#endif
+
+#include "common.sh"
+
+#include "uniforms.sh"
+#include "transform.sh"
+#include "screen_pos.sh"
+#include "lighting.sh"
+
+#else
+
 #include "Uniforms.glsl"
 #include "Transform.glsl"
 #include "ScreenPos.glsl"
 #include "Lighting.glsl"
 
+#endif
+
 uniform float cWindHeightFactor;
 uniform float cWindHeightPivot;
 uniform float cWindPeriod;
 uniform vec2 cWindWorldSpacing;
+
+#ifndef BGFX_SHADER
 
 #ifdef NORMALMAP
     varying vec4 vTexCoord;
@@ -42,6 +73,8 @@ varying vec4 vWorldPos;
     #if defined(LIGHTMAP) || defined(AO)
         varying vec2 vTexCoord2;
     #endif
+#endif
+
 #endif
 
 void VS()
@@ -83,11 +116,11 @@ void VS()
 
         #ifdef SPOTLIGHT
             // Spotlight projection: transform from world space to projector texture coordinates
-            vSpotPos = projWorldPos * cLightMatrices[0];
+            vSpotPos = mul(projWorldPos, cLightMatrices[0]);
         #endif
-
+    
         #ifdef POINTLIGHT
-            vCubeMaskVec = (worldPos - cLightPos.xyz) * mat3(cLightMatrices[0][0].xyz, cLightMatrices[0][1].xyz, cLightMatrices[0][2].xyz);
+            vCubeMaskVec = mul((worldPos - cLightPos.xyz), mat3(cLightMatrices[0][0].xyz, cLightMatrices[0][1].xyz, cLightMatrices[0][2].xyz));
         #endif
     #else
         // Ambient & per-vertex lighting

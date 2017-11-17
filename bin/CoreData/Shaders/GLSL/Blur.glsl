@@ -1,3 +1,23 @@
+#ifdef BGFX_SHADER
+#include "urho3d_compatibility.sh"
+#ifdef BGFX_SHADER_TYPE_VERTEX == 1
+    $input a_position
+    $output vTexCoord, vScreenPos
+#endif
+#ifdef BGFX_SHADER_TYPE_FRAGMENT == 1
+    $input vTexCoord, vScreenPos
+#endif
+
+#include "common.sh"
+
+#include "uniforms.sh"
+#include "samplers.sh"
+#include "transform.sh"
+#include "screen_pos.sh"
+#include "post_process.sh"
+
+#else
+
 #include "Uniforms.glsl"
 #include "Samplers.glsl"
 #include "Transform.glsl"
@@ -6,6 +26,8 @@
 
 varying vec2 vTexCoord;
 varying vec2 vScreenPos;
+
+#endif // BGFX_SHADER
 
 #ifdef COMPILEPS
 uniform vec2 cBlurDir;
