@@ -30,6 +30,8 @@
 #include <Toolbox/Graphics/SceneView.h>
 #include <Toolbox/Common/UndoManager.h>
 #include "IDPool.h"
+#include "Tab.h"
+
 
 namespace Urho3D
 {
@@ -37,9 +39,9 @@ namespace Urho3D
 class SceneSettings;
 class SceneEffects;
 
-class SceneTab : public SceneView
+class SceneTab : public Tab
 {
-    URHO3D_OBJECT(SceneTab, SceneView);
+    URHO3D_OBJECT(SceneTab, Tab);
 public:
     /// Construct.
     explicit SceneTab(Context* context, StringHash id, const String& afterDockName, ui::DockSlot_ position);
@@ -47,12 +49,19 @@ public:
     ~SceneTab() override;
     /// Set screen rectangle where scene is being rendered.
     void SetSize(const IntRect& rect) override;
-    /// Render scene window.
-    bool RenderWindow();
     /// Render inspector window.
-    void RenderInspector();
+    void RenderInspector() override;
     /// Render scene hierarchy window.
-    void RenderSceneNodeTree(Node* node=nullptr);
+    void RenderSceneNodeTree(Node* node) override ;
+    /// Render buttons which customize gizmo behavior.
+    void RenderToolbarButtons() override;
+    /// Called on every frame when tab is active.
+    void OnActiveUpdate() override;
+    /// Save project data to xml.
+    void SaveProject(XMLElement scene) override;
+    /// Load project data from xml.
+    void LoadProject(XMLElement scene) override;
+
     /// Load scene from xml or json file.
     void LoadScene(const String& filePath);
     /// Save scene to a resource file.
@@ -70,63 +79,29 @@ public:
     bool IsSelected(Node* node) const;
     /// Return list of selected nodes.
     const Vector<WeakPtr<Node>>& GetSelection() const;
-    /// Render buttons which customize gizmo behavior.
-    void RenderGizmoButtons();
-    /// Save project data to xml.
-    void SaveProject(XMLElement scene) const;
-    /// Load project data from xml.
-    void LoadProject(XMLElement scene);
-    /// Set scene view tab title.
-    void SetTitle(const String& title);
-    /// Get scene view tab title.
-    String GetTitle() const { return title_; }
-    /// Returns title which uniquely identifies scene tab in imgui.
-    String GetUniqueTitle() const { return uniqueTitle_;}
-    /// Return true if scene tab is active and focused.
-    bool IsActive() const { return isActive_; }
-    /// Return inuque object id.
-    StringHash GetID() const { return id_; }
     /// Clearing cached paths forces choosing a file name next time scene is saved.
     void ClearCachedPaths();
-    /// Return true if scene view was rendered on this frame.
-    bool IsRendered() const { return isRendered_; }
-    /// Called on every frame when tab is active.
-    void OnActiveUpdate();
     /// Remove selected items from the scene.
     void RemoveSelection();
+    /// Return scene view.
+    SceneView* GetSceneView() { return &view_; }
 
 protected:
     /// Called when node selection changes.
     void OnNodeSelectionChanged();
     /// Creates scene camera and other objects required by editor.
-    void CreateObjects() override;
+    void CreateObjects();
+    /// Render content of the tab window.
+    bool RenderWindowContent() override;
 
-    /// Unique scene id.
-    StringHash id_;
-    /// Scene title. Should be unique.
-    String title_ = "Scene";
-    /// Title with id appended to it. Used as unique window name.
-    String uniqueTitle_;
+    /// Scene renderer.
+    SceneView view_;
     /// Last resource path scene was loaded from or saved to.
     String path_;
-    /// Scene dock is active and window is focused.
-    bool isActive_ = false;
     /// Gizmo used for manipulating scene elements.
     Gizmo gizmo_;
-    /// Current window flags.
-    ImGuiWindowFlags windowFlags_ = 0;
-    /// Attribute inspector.
-    AttributeInspector inspector_;
     /// Current selected component displayed in inspector.
     WeakPtr<Component> selectedComponent_;
-    /// Name of sibling dock for initial placement.
-    String placeAfter_;
-    /// Position where this scene view should be docked initially.
-    ui::DockSlot_ placePosition_;
-    /// Last known mouse position when it was visible.
-    IntVector2 lastMousePosition_;
-    /// Flag set to true when dock contents were visible. Used for tracking "appearing" effect.
-    bool isRendered_ = false;
     /// Serializable which handles scene settings.
     SharedPtr<SceneSettings> settings_;
     /// Serializable which handles scene postprocess effect settings.

@@ -36,7 +36,7 @@ class Texture2D;
 class Viewport;
 class Node;
 
-class SceneView : public Object
+class SceneView
 {
 public:
     /// Construct.
@@ -51,11 +51,10 @@ public:
     Viewport* GetViewport() const { return viewport_; }
     /// Return texture to which view is rendered to.
     Texture2D* GetTexture() const { return texture_; }
-
-protected:
     /// Creates scene camera and other objects required by editor.
     virtual void CreateObjects();
 
+protected:
     /// Rectangle dimensions that are rendered by this view.
     IntRect rect_;
     /// Scene which is rendered by this view.

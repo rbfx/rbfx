@@ -36,8 +36,7 @@ namespace Urho3D
 {
 
 SceneView::SceneView(Context* context, const IntRect& rect)
-    : Object(context)
-    , rect_(rect)
+    : rect_(rect)
 {
     scene_ = SharedPtr<Scene>(new Scene(context));
     scene_->CreateComponent<Octree>();

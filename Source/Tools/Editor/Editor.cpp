@@ -23,15 +23,15 @@
 #include "Editor.h"
 #include "EditorEvents.h"
 #include "SceneTab.h"
+#include "SceneSettings.h"
+#include <Toolbox/IO/ContentUtilities.h>
+#include <Toolbox/SystemUI/ResourceBrowser.h>
+#include <Toolbox/SystemUI/Widgets.h>
+#include <Toolbox/Toolbox.h>
+
 #include <ImGui/imgui_internal.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
-#include <Toolbox/Toolbox.h>
-#include <Toolbox/SystemUI/ImGuiDock.h>
 #include <tinyfiledialogs/tinyfiledialogs.h>
-#include <Toolbox/SystemUI/ResourceBrowser.h>
-#include <Toolbox/IO/ContentUtilities.h>
-#include <Toolbox/SystemUI/Widgets.h>
-
 
 URHO3D_DEFINE_APPLICATION_MAIN(Editor);
 
@@ -89,7 +89,7 @@ void Editor::Start()
 
     LoadProject("Etc/DefaultEditorProject.xml");
     // Prevent overwriting example scene.
-    sceneTabs_.Front()->ClearCachedPaths();
+    DynamicCast<SceneTab>(tabs_.Front())->ClearCachedPaths();
 }
 
 void Editor::Stop()
@@ -114,8 +114,8 @@ void Editor::SaveProject(const String& filePath)
     window.SetAttribute("y", ToString("%d", GetGraphics()->GetWindowPosition().y_));
 
     auto scenes = root.CreateChild("scenes");
-    for (auto& sceneTab: sceneTabs_)
-        sceneTab->SaveProject(scenes.CreateChild("scene"));
+    for (auto& tab: tabs_)
+        tab->SaveProject(scenes.CreateChild("scene"));
 
     ui::SaveDock(root.CreateChild("docks"));
 
@@ -151,7 +151,7 @@ void Editor::LoadProject(const String& filePath)
         }
 
         auto scenes = root.GetChild("scenes");
-        sceneTabs_.Clear();
+        tabs_.Clear();
         if (scenes.NotNull())
         {
             auto scene = scenes.GetChild("scene");
@@ -176,12 +176,12 @@ void Editor::OnUpdate(VariantMap& args)
     if (ui::BeginDock("Hierarchy"))
     {
         if (!activeTab_.Expired())
-            activeTab_->RenderSceneNodeTree();
+            activeTab_->RenderSceneNodeTree(nullptr);
     }
     ui::EndDock();
 
     bool renderedWasActive = false;
-    for (auto it = sceneTabs_.Begin(); it != sceneTabs_.End();)
+    for (auto it = tabs_.Begin(); it != tabs_.End();)
     {
         auto& tab = *it;
         if (tab->RenderWindow())
@@ -201,7 +201,7 @@ void Editor::OnUpdate(VariantMap& args)
             ++it;
         }
         else
-            it = sceneTabs_.Erase(it);
+            it = tabs_.Erase(it);
     }
 
 
@@ -218,8 +218,8 @@ void Editor::OnUpdate(VariantMap& args)
     ui::EndDock();
 
     String selected;
-    if (sceneTabs_.Size())
-        ui::SetNextDockPos(sceneTabs_.Back()->GetUniqueTitle().CString(), ui::Slot_Bottom, ImGuiCond_FirstUseEver);
+    if (tabs_.Size())
+        ui::SetNextDockPos(tabs_.Back()->GetUniqueTitle().CString(), ui::Slot_Bottom, ImGuiCond_FirstUseEver);
     if (ResourceBrowserWindow(selected, &resourceBrowserWindowOpen_))
     {
         auto type = GetContentType(selected);
@@ -272,7 +272,7 @@ void Editor::RenderMenuBar()
                 ui::SetTooltip("Save");
             ui::TextUnformatted("|");
             ui::SameLine(0, 3.f);
-            activeTab_->RenderGizmoButtons();
+            activeTab_->RenderToolbarButtons();
             SendEvent(E_EDITORTOOLBARBUTTONS);
         }
 
@@ -287,8 +287,6 @@ void Editor::RenderMenuBar()
             projectFilePath_ = tinyfd_saveFileDialog("Save Project As", ".", 1, patterns, "XML Files");
         }
         SaveProject(projectFilePath_);
-        for (auto& sceneTab: sceneTabs_)
-            sceneTab->SaveScene();
     }
 }
 
@@ -300,10 +298,10 @@ SceneTab* Editor::CreateNewScene(XMLElement project)
     if (project.IsNull())
         id = idPool_.NewID();           // Make new ID only if scene is not being loaded from a project.
 
-    if (sceneTabs_.Empty())
+    if (tabs_.Empty())
         sceneTab = new SceneTab(context_, id, "Hierarchy", ui::Slot_Right);
     else
-        sceneTab = new SceneTab(context_, id, sceneTabs_.Back()->GetUniqueTitle(), ui::Slot_Tab);
+        sceneTab = new SceneTab(context_, id, tabs_.Back()->GetUniqueTitle(), ui::Slot_Tab);
 
     if (project.NotNull())
     {
@@ -318,16 +316,8 @@ SceneTab* Editor::CreateNewScene(XMLElement project)
 
     // In order to render scene to a texture we must add a dummy node to scene rendered to a screen, which has material
     // pointing to scene texture. This object must also be visible to main camera.
-    sceneTabs_.Push(sceneTab);
+    tabs_.Push(sceneTab);
     return sceneTab;
-}
-
-bool Editor::IsActive(Scene* scene)
-{
-    if (scene == nullptr || activeTab_.Null())
-        return false;
-
-    return activeTab_->GetScene() == scene && activeTab_->IsActive();
 }
 
 }

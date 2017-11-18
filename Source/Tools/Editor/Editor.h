@@ -32,6 +32,7 @@ using namespace std::placeholders;
 namespace Urho3D
 {
 
+class Tab;
 class SceneTab;
 
 class Editor : public Application
@@ -59,20 +60,18 @@ public:
     /// \param project is xml element containing serialized scene information. This is same parameter that would be
     /// passed to SceneTab::LoadProject(scene).
     SceneTab* CreateNewScene(XMLElement project=XMLElement());
-    /// Return true if specified scene tab is focused and mouse hovers it.
-    bool IsActive(Scene* scene);
     /// Return active scene tab.
-    SceneTab* GetActiveSceneTab() { return activeTab_; }
+    Tab* GetActiveTab() { return activeTab_; }
     /// Return currently open scene tabs.
-    const Vector<SharedPtr<SceneTab>>& GetSceneViews() const { return sceneTabs_; }
+    const Vector<SharedPtr<Tab>>& GetSceneViews() const { return tabs_; }
 
 protected:
     /// Pool tracking availability of unique IDs used by editor.
     IDPool idPool_;
     /// List of active scene tabs.
-    Vector<SharedPtr<SceneTab>> sceneTabs_;
+    Vector<SharedPtr<Tab>> tabs_;
     /// Last focused scene tab.
-    WeakPtr<SceneTab> activeTab_;
+    WeakPtr<Tab> activeTab_;
     /// Path to a project file.
     String projectFilePath_;
     /// Flag which opens resource browser window.

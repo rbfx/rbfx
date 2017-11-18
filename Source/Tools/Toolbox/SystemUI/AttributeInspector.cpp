@@ -72,7 +72,6 @@ const float attributeIndentLevel = 15.f;
 /// Renders material preview in attribute inspector.
 class MaterialView : public SceneView
 {
-    URHO3D_OBJECT(MaterialView, SceneView);
 public:
     explicit MaterialView(Context* context, Material* material, Viewport* effectSource)
         : SceneView(context, {0, 0, 200, 200})
@@ -139,7 +138,7 @@ public:
     {
         auto model = node_->GetOrCreateComponent<StaticModel>();
 
-        model->SetModel(GetCache()->GetResource<Model>(ToString("Models/%s.mdl", figures_[figureIndex_])));
+        model->SetModel(node_->GetCache()->GetResource<Model>(ToString("Models/%s.mdl", figures_[figureIndex_])));
         model->SetMaterial(material_);
         auto bb = model->GetBoundingBox();
         auto scale = 1.f / Max(bb.Size().x_, Max(bb.Size().y_, bb.Size().z_));
