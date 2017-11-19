@@ -20,10 +20,19 @@
 // THE SOFTWARE.
 //
 
+#include <Urho3D/Core/Context.h>
 #include <Urho3D/Core/CoreEvents.h>
+#include <Urho3D/IO/Log.h>
 #include <Urho3D/Scene/Component.h>
-#include <Toolbox/SystemUI/AttributeInspector.h>
-#include "UndoManager.h"
+#include <Urho3D/Scene/Node.h>
+#include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Scene/SceneEvents.h>
+#include <Urho3D/UI/UI.h>
+
+#include "Common/UndoManager.h"
+#include "SystemUI/AttributeInspector.h"
+#include "SystemUI/Gizmo.h"
+#include <Urho3D/SystemUI/SystemUIEvents.h>
 
 namespace Urho3D
 {

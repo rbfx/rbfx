@@ -23,21 +23,15 @@
 #pragma once
 
 
-#include <Urho3D/Container/Vector.h>
-#include <Urho3D/Core/Context.h>
 #include <Urho3D/Core/Object.h>
-#include <Urho3D/IO/Log.h>
-#include <Urho3D/Scene/Node.h>
-#include <Urho3D/Scene/Scene.h>
-#include <Urho3D/Scene/SceneEvents.h>
-#include <Urho3D/Scene/Serializable.h>
-#include <Urho3D/UI/UI.h>
-#include <Urho3D/UI/UIElement.h>
-#include <Toolbox/SystemUI/Gizmo.h>
-#include <Urho3D/SystemUI/SystemUIEvents.h>
+
 
 namespace Urho3D
 {
+
+class AttributeInspector;
+class Gizmo;
+class Scene;
 
 namespace Undo
 {
