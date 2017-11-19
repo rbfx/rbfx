@@ -274,6 +274,27 @@ void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
 
                 ui::PushID(info.name_.CString());
 
+                bool expanded = true;
+                bool expandable = false;
+                if (value.GetType() == VAR_RESOURCEREF)
+                {
+                    if (value.GetResourceRef().type_ == Material::GetTypeStatic())
+                        expandable = true;
+                }
+                else if (value.GetType() == VAR_RESOURCEREFLIST)
+                {
+                    if (value.GetResourceRefList().type_ == Material::GetTypeStatic())
+                        expandable = true;
+                }
+
+                expanded = RenderAttributeLabel(info, color, expandable);
+
+                if (!tooltip.Empty() && ui::IsItemHovered())
+                    ui::SetTooltip("%s", tooltip.CString());
+
+                if (ui::IsItemHovered() && ui::IsMouseClicked(2))
+                    ui::OpenPopup("Attribute Menu");
+
                 bool modified = false;
                 bool expireBuffers = false;
                 if (ui::BeginPopup("Attribute Menu"))
@@ -326,27 +347,6 @@ void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
                 // new IDs in code below, buffer expiring will break!
                 if (expireBuffers)
                     ui::ExpireUIState<AttributeInspectorBuffer>();
-
-                bool expanded = true;
-                bool expandable = false;
-                if (value.GetType() == VAR_RESOURCEREF)
-                {
-                    if (value.GetResourceRef().type_ == Material::GetTypeStatic())
-                        expandable = true;
-                }
-                else if (value.GetType() == VAR_RESOURCEREFLIST)
-                {
-                    if (value.GetResourceRefList().type_ == Material::GetTypeStatic())
-                        expandable = true;
-                }
-
-                expanded = RenderAttributeLabel(info, color, expandable);
-
-                if (!tooltip.Empty() && ui::IsItemHovered())
-                    ui::SetTooltip("%s", tooltip.CString());
-
-                if (ui::IsItemHovered() && ui::IsMouseClicked(2))
-                    ui::OpenPopup("Attribute Menu");
 
                 NextColumn();
 
