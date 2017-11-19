@@ -25,10 +25,23 @@
 
 #include <typeinfo>
 #include <ImGui/imgui.h>
+#include <Urho3D/Math/Rect.h>
+#include <Urho3D/Core/Utils.h>
+#include "Urho3D/SystemUI/SystemUI.h"
 
 
 namespace ImGui
 {
+
+enum TransformSelectorFlags
+{
+    TSF_NONE = 0,
+    TSF_NOHORIZONTAL = 1,
+    TSF_NOVERTICAL = 2,
+    TSF_HIDEHANDLES = 4,
+};
+
+URHO3D_TO_FLAGS_ENUM(TransformSelectorFlags);
 
 /// Set custom user pointer storing UI state at given position of id stack. Optionally pass deleter function which is
 /// responsible for freeing state object when it is no longer used.
@@ -84,5 +97,11 @@ void SetHelpTooltip(const char* text);
 bool IconButton(const char* label);
 /// Draw a mask selector widget.
 bool MaskSelector(unsigned int* mask);
+/// Draw a transform rect and allow it's modification by dragging handles with mouse.
+bool TransformRect(Urho3D::IntRect& inOut, TransformSelectorFlags flags = TSF_NONE);
+/// Draw a transform rect and allow it's modification by dragging handles with mouse.
+bool TransformRect(Urho3D::IntRect& inOut, Urho3D::IntRect& delta, TransformSelectorFlags flags = TSF_NONE);
+/// Return current SystemUI instance.
+Urho3D::SystemUI* GetSystemUI();
 
 }

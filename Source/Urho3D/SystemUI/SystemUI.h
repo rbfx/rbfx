@@ -32,6 +32,9 @@
 #include "SystemUIEvents.h"
 
 #include <ImGui/imgui.h>
+#include <ImGui/imgui_internal.h>
+
+
 namespace ui = ImGui;
 
 
@@ -111,6 +114,8 @@ inline ImVec4 ToImGui(const Color& color) { return {color.r_, color.g_, color.b_
 inline ImVec2 ToImGui(IntVector2 vec) { return {(float)vec.x_, (float)vec.y_}; };
 /// Convert Vector2 to ImVec2.
 inline ImVec2 ToImGui(Vector2 vec) { return {vec.x_, vec.y_}; };
+/// Convert IntRect to ImRect.
+inline ImRect ToImGui(const IntRect& rect) { return { ToImGui(rect.Min()), ToImGui(rect.Max()) }; }
 /// Convert ImVec2 to IntVector2.
 inline IntVector2 ToIntVector2(const ImVec2& vec) { return {(int)Round(vec.x), (int)Round(vec.y)}; }
 
