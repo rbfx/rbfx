@@ -38,9 +38,18 @@ public:
     {
         for (;;)
         {
-            StringHash id((unsigned)(Random() * M_MAX_UNSIGNED));
-            if (TakeID(id))
-                return id;
+            union
+            {
+                char bytes[4];
+                StringHash hash;
+            } value{};
+            static_assert(sizeof(value.hash) == sizeof(value.bytes));
+
+            for (char& byte : value.bytes)
+                byte = static_cast<char>(Random(0xFF));
+
+            if (TakeID(value.hash))
+                return value.hash;
         }
         assert(false);
     }

@@ -67,6 +67,8 @@ void Editor::Setup()
     engineParameters_[EP_LOG_LEVEL] = LOG_DEBUG;
     engineParameters_[EP_WINDOW_RESIZABLE] = true;
     engineParameters_[EP_RESOURCE_PATHS] = "CoreData;Data;Autoload;";
+
+    SetRandomSeed(Time::GetTimeSinceEpoch());
 }
 
 void Editor::Start()
