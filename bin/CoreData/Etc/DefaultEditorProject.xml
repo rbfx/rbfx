@@ -1,15 +1,15 @@
 <?xml version="1.0"?>
 <project version="0">
 	<window width="1920" height="1080" x="283" y="194" />
-	<scenes>
-		<scene id="52C5ADA6" title="SceneLoadExample.xml" path="Scenes/SceneLoadExample.xml">
+	<tabs>
+		<tab type="scene" id="52C5ADA6" path="Scenes/SceneLoadExample.xml">
 			<camera>
 				<position type="Vector3" value="1.95161 3.92649 2.58355" />
 				<rotation type="Quaternion" value="0.305015 0.143529 -0.851868 0.400857" />
 				<light type="Bool" value="true" />
 			</camera>
-		</scene>
-	</scenes>
+		</tab>
+	</tabs>
 	<docks>
 		<dock index="0" label="Hierarchy" x="0" y="20" location="" size_x="169" size_y="1060" status="0" active="1" opened="1" prev="-1" next="-1" child0="-1" child1="-1" parent="5" />
 		<dock index="1" label="" x="0" y="20" location="" size_x="1920" size_y="1060" status="0" active="1" opened="0" prev="-1" next="-1" child0="5" child1="2" parent="-1" />

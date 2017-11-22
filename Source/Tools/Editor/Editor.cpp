@@ -115,9 +115,12 @@ void Editor::SaveProject(const String& filePath)
     window.SetAttribute("x", ToString("%d", GetGraphics()->GetWindowPosition().x_));
     window.SetAttribute("y", ToString("%d", GetGraphics()->GetWindowPosition().y_));
 
-    auto scenes = root.CreateChild("scenes");
+    auto scenes = root.CreateChild("tabs");
     for (auto& tab: tabs_)
-        tab->SaveProject(scenes.CreateChild("scene"));
+    {
+        XMLElement tabXml = scenes.CreateChild("tab");
+        tab->SaveProject(tabXml);
+    }
 
     ui::SaveDock(root.CreateChild("docks"));
 
@@ -152,15 +155,18 @@ void Editor::LoadProject(const String& filePath)
             GetGraphics()->SetWindowPosition(ToInt(window.GetAttribute("x")), ToInt(window.GetAttribute("y")));
         }
 
-        auto scenes = root.GetChild("scenes");
+        auto tabs = root.GetChild("tabs");
         tabs_.Clear();
-        if (scenes.NotNull())
+        if (tabs.NotNull())
         {
-            auto scene = scenes.GetChild("scene");
-            while (scene.NotNull())
+            auto tab = tabs.GetChild("tab");
+            while (tab.NotNull())
             {
-                CreateNewScene(scene);
-                scene = scene.GetNext("scene");
+                if (tab.GetAttribute("type") == "scene")
+                    CreateNewTab<SceneTab>(tab);
+                else if (tab.GetAttribute("type") == "ui")
+                    CreateNewTab<UITab>(tab);
+                tab = tab.GetNext();
             }
         }
 
@@ -178,7 +184,7 @@ void Editor::OnUpdate(VariantMap& args)
     if (ui::BeginDock("Hierarchy"))
     {
         if (!activeTab_.Expired())
-            activeTab_->RenderSceneNodeTree(nullptr);
+            activeTab_->RenderNodeTree();
     }
     ui::EndDock();
 
@@ -226,9 +232,9 @@ void Editor::OnUpdate(VariantMap& args)
     {
         auto type = GetContentType(selected);
         if (type == CTYPE_SCENE)
-        {
-            CreateNewScene()->LoadScene(selected);
-        }
+            CreateNewTab<SceneTab>()->LoadResource(selected);
+        else if (type == CTYPE_UILAYOUT)
+            CreateNewTab<UITab>()->LoadResource(selected);
     }
 }
 
@@ -256,7 +262,10 @@ void Editor::RenderMenuBar()
             ui::Separator();
 
             if (ui::MenuItem("New Scene"))
-                CreateNewScene();
+                CreateNewTab<SceneTab>();
+
+            if (ui::MenuItem("New UI Layout"))
+                CreateNewTab<UITab>();
 
             ui::Separator();
 
@@ -292,34 +301,57 @@ void Editor::RenderMenuBar()
     }
 }
 
-SceneTab* Editor::CreateNewScene(XMLElement project)
+template<typename T>
+T* Editor::CreateNewTab(XMLElement project)
 {
-    SharedPtr<SceneTab> sceneTab;
+    SharedPtr<T> tab;
     StringHash id;
 
     if (project.IsNull())
         id = idPool_.NewID();           // Make new ID only if scene is not being loaded from a project.
 
     if (tabs_.Empty())
-        sceneTab = new SceneTab(context_, id, "Hierarchy", ui::Slot_Right);
+        tab = new T(context_, id, "Hierarchy", ui::Slot_Right);
     else
-        sceneTab = new SceneTab(context_, id, tabs_.Back()->GetUniqueTitle(), ui::Slot_Tab);
+        tab = new T(context_, id, tabs_.Back()->GetUniqueTitle(), ui::Slot_Tab);
 
     if (project.NotNull())
     {
-        sceneTab->LoadProject(project);
-        if (!idPool_.TakeID(sceneTab->GetID()))
+        tab->LoadProject(project);
+        if (!idPool_.TakeID(tab->GetID()))
         {
             URHO3D_LOGERRORF("Scene loading failed because unique id %s is already taken",
-                sceneTab->GetID().ToString().CString());
+                tab->GetID().ToString().CString());
             return nullptr;
         }
     }
 
     // In order to render scene to a texture we must add a dummy node to scene rendered to a screen, which has material
     // pointing to scene texture. This object must also be visible to main camera.
-    tabs_.Push(sceneTab);
-    return sceneTab;
+    tabs_.Push(tab);
+    return tab;
+}
+
+StringVector Editor::GetObjectCategories() const
+{
+    return context_->GetObjectCategories().Keys();
+}
+
+StringVector Editor::GetObjectsByCategory(const String& category)
+{
+    StringVector result;
+    const auto& factories = context_->GetObjectFactories();
+    auto it = context_->GetObjectCategories().Find(category);
+    if (it != context_->GetObjectCategories().End())
+    {
+        for (const StringHash& type : it->second_)
+        {
+            auto jt = factories.Find(type);
+            if (jt != factories.End())
+                result.Push(jt->second_->GetTypeName());
+        }
+    }
+    return result;
 }
 
 }

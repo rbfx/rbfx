@@ -51,22 +51,20 @@ public:
     void SetSize(const IntRect& rect) override;
     /// Render inspector window.
     void RenderInspector() override;
-    /// Render scene hierarchy window.
-    void RenderSceneNodeTree(Node* node) override ;
+    /// Render scene hierarchy window starting from the root node (scene).
+    void RenderNodeTree() override;
     /// Render buttons which customize gizmo behavior.
     void RenderToolbarButtons() override;
     /// Called on every frame when tab is active.
     void OnActiveUpdate() override;
     /// Save project data to xml.
-    void SaveProject(XMLElement scene) override;
+    void SaveProject(XMLElement& scene) override;
     /// Load project data from xml.
-    void LoadProject(XMLElement scene) override;
-
+    void LoadProject(XMLElement& scene) override;
     /// Load scene from xml or json file.
-    void LoadScene(const String& filePath);
+    void LoadResource(const String& resourcePath) override;
     /// Save scene to a resource file.
-    bool SaveScene(const String& filePath = "");
-
+    bool SaveResource(const String& resourcePath) override;
     /// Add a node to selection.
     void Select(Node* node);
     /// Remove a node from selection.
@@ -87,6 +85,8 @@ public:
     SceneView* GetSceneView() { return &view_; }
 
 protected:
+    /// Render scene hierarchy window starting from specified node.
+    void RenderNodeTree(Node* node);
     /// Called when node selection changes.
     void OnNodeSelectionChanged();
     /// Creates scene camera and other objects required by editor.

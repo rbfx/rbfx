@@ -20,14 +20,17 @@
 // THE SOFTWARE.
 //
 
+#include <IconFontCppHeaders/IconsFontAwesome.h>
+
+#include <Toolbox/Scene/DebugCameraController.h>
+#include <Toolbox/SystemUI/Widgets.h>
+#include <ImGuizmo/ImGuizmo.h>
+
 #include "SceneTab.h"
 #include "EditorEvents.h"
+#include "Editor/Editor.h"
 #include "SceneSettings.h"
-#include <Toolbox/Scene/DebugCameraController.h>
 #include <ImGui/imgui_internal.h>
-#include <ImGuizmo/ImGuizmo.h>
-#include <IconFontCppHeaders/IconsFontAwesome.h>
-#include <Toolbox/SystemUI/Widgets.h>
 
 
 namespace Urho3D
@@ -39,7 +42,8 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
     , gizmo_(context)
     , undo_(context)
 {
-    SetTitle(title_);
+    SetTitle("New Scene");
+    windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 
     settings_ = new SceneSettings(context);
     effectSettings_ = new SceneEffects(this);
@@ -91,7 +95,7 @@ bool SceneTab::RenderWindowContent()
     if (ui::IsItemHovered())
     {
         // Prevent dragging window when scene view is clicked.
-        windowFlags_ = ImGuiWindowFlags_NoMove;
+        windowFlags_ |= ImGuiWindowFlags_NoMove;
 
         // Handle object selection.
         if (!gizmo_.IsActive() && GetInput()->GetMouseButtonPress(MOUSEB_LEFT))
@@ -126,7 +130,7 @@ bool SceneTab::RenderWindowContent()
         }
     }
     else
-        windowFlags_ = 0;
+        windowFlags_ &= ~ImGuiWindowFlags_NoMove;
 
     const auto tabContextMenuTitle = "SceneTab context menu";
     if (ui::IsDockTabHovered() && GetInput()->GetMouseButtonPress(MOUSEB_RIGHT))
@@ -134,7 +138,7 @@ bool SceneTab::RenderWindowContent()
     if (ui::BeginPopup(tabContextMenuTitle))
     {
         if (ui::MenuItem("Save"))
-            SaveScene();
+            Tab::SaveResource();
 
         ui::Separator();
 
@@ -147,38 +151,40 @@ bool SceneTab::RenderWindowContent()
     return open;
 }
 
-void SceneTab::LoadScene(const String& filePath)
+void SceneTab::LoadResource(const String& resourcePath)
 {
-    if (filePath.Empty())
+    if (resourcePath.Empty())
         return;
 
-    if (filePath.EndsWith(".xml", false))
+    if (resourcePath.EndsWith(".xml", false))
     {
-        if (view_.GetScene()->LoadXML(GetCache()->GetResource<XMLFile>(filePath)->GetRoot()))
+        if (view_.GetScene()->LoadXML(GetCache()->GetResource<XMLFile>(resourcePath)->GetRoot()))
         {
-            path_ = filePath;
+            path_ = resourcePath;
             CreateObjects();
         }
         else
-            URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(filePath).CString());
+            URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).CString());
     }
-    else if (filePath.EndsWith(".json", false))
+    else if (resourcePath.EndsWith(".json", false))
     {
-        if (view_.GetScene()->LoadJSON(GetCache()->GetResource<JSONFile>(filePath)->GetRoot()))
+        if (view_.GetScene()->LoadJSON(GetCache()->GetResource<JSONFile>(resourcePath)->GetRoot()))
         {
-            path_ = filePath;
+            path_ = resourcePath;
             CreateObjects();
         }
         else
-            URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(filePath).CString());
+            URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).CString());
     }
     else
-        URHO3D_LOGERRORF("Unknown scene file format %s", GetExtension(filePath).CString());
+        URHO3D_LOGERRORF("Unknown scene file format %s", GetExtension(resourcePath).CString());
+
+    SetTitle(GetFileName(path_));
 }
 
-bool SceneTab::SaveScene(const String& filePath)
+bool SceneTab::SaveResource(const String& resourcePath)
 {
-    auto resourcePath = filePath.Empty() ? path_ : filePath;
+    auto resourcePath_ = resourcePath.Empty() ? path_ : resourcePath;
     auto fullPath = GetCache()->GetResourceFileName(resourcePath);
     File file(context_, fullPath, FILE_WRITE);
     bool result = false;
@@ -200,8 +206,11 @@ bool SceneTab::SaveScene(const String& filePath)
 
     if (result)
     {
-        if (!filePath.Empty())
-            path_ = filePath;
+        if (!resourcePath.Empty())
+        {
+            path_ = resourcePath;
+            SetTitle(GetFileName(path_));
+        }
     }
     else
         URHO3D_LOGERRORF("Saving scene to %s failed.", resourcePath.CString());
@@ -354,14 +363,19 @@ void SceneTab::RenderInspector()
     }
 }
 
-void SceneTab::RenderSceneNodeTree(Node* node)
+void SceneTab::RenderNodeTree()
+{
+    auto oldSpacing = ui::GetStyle().IndentSpacing;
+    ui::GetStyle().IndentSpacing = 10;
+    RenderNodeTree(view_.GetScene());
+    ui::GetStyle().IndentSpacing = oldSpacing;
+}
+
+void SceneTab::RenderNodeTree(Node* node)
 {
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
-    if (node == nullptr)
-    {
+    if (node->GetParent() == nullptr)
         flags |= ImGuiTreeNodeFlags_DefaultOpen;
-        node = view_.GetScene();
-    }
 
     if (node->IsTemporary())
         return;
@@ -408,39 +422,28 @@ void SceneTab::RenderSceneNodeTree(Node* node)
 
         if (ui::BeginMenu(alternative ? "Add Component (local)" : "Add Component"))
         {
-            auto categories = context_->GetObjectCategories();
+            Editor* editor = GetSubsystem<Editor>();
+            auto categories = editor->GetObjectCategories();
+            categories.Remove("UI");
 
-            for (auto it : categories)
+            for (const String& category : categories)
             {
-                if (it.first_ == "UI")
-                    continue;
-
-                if (ui::BeginMenu(it.first_.CString()))
+                if (ui::BeginMenu(category.CString()))
                 {
-                    auto& factories = context_->GetObjectFactories();
-                    Vector<Pair<StringHash, ObjectFactory*>> components;
-                    for (const StringHash& componentHash : it.second_)
+                    auto components = editor->GetObjectsByCategory(category);
+                    Sort(components.Begin(), components.End());
+
+                    for (const String& component : components)
                     {
-                        auto jt = factories.Find(componentHash);
-                        if (jt != factories.End())
-                            components.Push({componentHash, jt->second_.Get()});
-
+                        if (ui::MenuItem(component.CString()))
+                        {
+                            selectedComponent_ = node->CreateComponent(StringHash(component),
+                                alternative ? LOCAL : REPLICATED);
+                        }
                     }
-
-                    Sort(components.Begin(), components.End(), [](Pair<StringHash, ObjectFactory*>& a, Pair<StringHash, ObjectFactory*>& b) {
-                        return a.second_->GetTypeName().Compare(b.second_->GetTypeName()) < 0;
-                    });
-
-                    for (const auto& pair : components)
-                    {
-                        if (ui::MenuItem(pair.second_->GetTypeName().CString()))
-                            selectedComponent_ = node->CreateComponent(pair.first_, alternative ? LOCAL : REPLICATED);
-                    }
-
                     ui::EndMenu();
                 }
             }
-
             ui::EndMenu();
         }
 
@@ -490,18 +493,17 @@ void SceneTab::RenderSceneNodeTree(Node* node)
         }
 
         for (auto& child: node->GetChildren())
-            RenderSceneNodeTree(child);
+            RenderNodeTree(child);
         ui::TreePop();
     }
     else
         ui::PopID();
 }
 
-void SceneTab::LoadProject(XMLElement scene)
+void SceneTab::LoadProject(XMLElement& scene)
 {
     id_ = StringHash(ToUInt(scene.GetAttribute("id"), 16));
-    SetTitle(scene.GetAttribute("title"));
-    LoadScene(scene.GetAttribute("path"));
+    LoadResource(scene.GetAttribute("path"));
 
     auto camera = scene.GetChild("camera");
     if (camera.NotNull())
@@ -521,10 +523,10 @@ void SceneTab::LoadProject(XMLElement scene)
     undo_.Clear();
 }
 
-void SceneTab::SaveProject(XMLElement scene)
+void SceneTab::SaveProject(XMLElement& scene)
 {
+    scene.SetAttribute("type", "scene");
     scene.SetAttribute("id", id_.ToString().CString());
-    scene.SetAttribute("title", title_);
     scene.SetAttribute("path", path_);
 
     auto camera = scene.CreateChild("camera");
@@ -535,7 +537,7 @@ void SceneTab::SaveProject(XMLElement scene)
 
     settings_->SaveProject(scene);
     effectSettings_->SaveProject(scene);
-    SaveScene();
+    Tab::SaveResource();
 }
 
 void SceneTab::ClearCachedPaths()
@@ -545,7 +547,7 @@ void SceneTab::ClearCachedPaths()
 
 void SceneTab::OnActiveUpdate()
 {
-    if (GetSubsystem<SystemUI>()->IsAnyItemActive())
+    if (ui::IsAnyItemActive())
         return;
 
     Input* input = GetSubsystem<Input>();

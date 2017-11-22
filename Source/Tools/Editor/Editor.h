@@ -25,6 +25,7 @@
 
 #include <Urho3D/Urho3DAll.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
+#include "Editor/Tabs/UI/UITab.h"
 #include "IDPool.h"
 
 using namespace std::placeholders;
@@ -56,14 +57,18 @@ public:
     void OnUpdate(VariantMap& args);
     /// Renders menu bar at the top of the screen.
     void RenderMenuBar();
-    /// Create sample scene. Specify xml or json file with serialized scene contents to load them.
-    /// \param project is xml element containing serialized scene information. This is same parameter that would be
-    /// passed to SceneTab::LoadProject(scene).
-    SceneTab* CreateNewScene(XMLElement project=XMLElement());
+    /// Create a new tab of specified type.
+    /// \param project is xml element containing serialized project data produced by SceneTab::SaveProject()
+    template<typename T>
+    T* CreateNewTab(XMLElement project=XMLElement());
     /// Return active scene tab.
     Tab* GetActiveTab() { return activeTab_; }
     /// Return currently open scene tabs.
     const Vector<SharedPtr<Tab>>& GetSceneViews() const { return tabs_; }
+    /// Return a list of object categories registered with engine.
+    StringVector GetObjectCategories() const;
+    /// Return a map of names and type hashes from specified category.
+    StringVector GetObjectsByCategory(const String& category);
 
 protected:
     /// Pool tracking availability of unique IDs used by editor.

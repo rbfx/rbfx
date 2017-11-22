@@ -40,9 +40,10 @@ class Tab : public Object
 {
     URHO3D_OBJECT(Tab, Object);
 public:
+    /// Construct.
     explicit Tab(Context* context, StringHash id, const String& afterDockName, ui::DockSlot_ position);
     /// Render scene hierarchy window.
-    virtual void RenderSceneNodeTree(Node* node) = 0;
+    virtual void RenderNodeTree() = 0;
     /// Render inspector window.
     virtual void RenderInspector() = 0;
     /// Render content of tab window.
@@ -54,9 +55,15 @@ public:
     /// Render scene window.
     virtual bool RenderWindow();
     /// Save project data to xml.
-    virtual void SaveProject(XMLElement scene) { };
+    virtual void SaveProject(XMLElement& tab) { }
     /// Load project data from xml.
-    virtual void LoadProject(XMLElement scene) { };
+    virtual void LoadProject(XMLElement& tab) { }
+    /// Load a file from resource path.
+    virtual void LoadResource(const String& resourcePath) { }
+    /// Save tab contents to a resource file.
+    virtual bool SaveResource(const String& resourcePath) { }
+    /// Save tab contents to a previously loaded resource file.
+    bool SaveResource() { SaveResource(String::EMPTY); }
     /// Set scene view tab title.
     void SetTitle(const String& title);
     /// Set screen rectangle where scene is being rendered.
@@ -69,14 +76,16 @@ public:
     bool IsActive() const { return isActive_; }
     /// Return true if scene view was rendered on this frame.
     bool IsRendered() const { return isRendered_; }
-    /// Return inuque object id.
+    /// Return unuque object id.
     StringHash GetID() const { return id_; }
+    /// Return rect of tab content area.
+    IntRect GetContentRect() const { return tabRect_; }
 
 protected:
     /// Unique scene id.
     StringHash id_;
     /// Scene title. Should be unique.
-    String title_ = "Scene";
+    String title_;
     /// Title with id appended to it. Used as unique window name.
     String uniqueTitle_;
     /// Scene dock is active and window is focused.
