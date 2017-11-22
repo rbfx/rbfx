@@ -1,3 +1,26 @@
+#ifdef BGFX_SHADER
+#include "varying_deferred.def.sc"
+#include "urho3d_compatibility.sh"
+#ifdef BGFX_SHADER_TYPE_VERTEX == 1
+    $input a_position
+    $output vTexCoord, vScreenPos, vFarRay _VNEARRAY
+#endif
+#ifdef BGFX_SHADER_TYPE_FRAGMENT == 1
+    $input vTexCoord, vScreenPos, vFarRay _VNEARRAY
+#endif
+
+#include "common.sh"
+
+#include "uniforms.sh"
+#include "samplers.sh"
+#include "transform.sh"
+#include "screen_pos.sh"
+#include "lighting.sh"
+#include "constants.sh"
+#include "pbr.sh"
+
+#else
+
 #include "Uniforms.glsl"
 #include "Samplers.glsl"
 #include "Transform.glsl"
@@ -15,6 +38,8 @@
 varying vec3 vFarRay;
 #ifdef ORTHO
     varying vec3 vNearRay;
+#endif
+
 #endif
 
 void VS()

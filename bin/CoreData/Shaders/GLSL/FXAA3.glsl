@@ -45,6 +45,7 @@
 /*--------------------------------------------------------------------------*/
 
 #ifdef BGFX_SHADER
+#include "varying_quad.def.sc"
 #include "urho3d_compatibility.sh"
 #ifdef BGFX_SHADER_TYPE_VERTEX == 1
     $input a_position

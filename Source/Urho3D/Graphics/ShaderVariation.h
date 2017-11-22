@@ -57,7 +57,7 @@ struct ShaderParameter
         /// Direct3D9 register index.
         unsigned register_;
         /// BGFX uniform idx.
-        uint16_t idx;
+        uint16_t idx_;
     };
 
     union
@@ -68,6 +68,8 @@ struct ShaderParameter
         unsigned glType_;
         /// Number of registers on Direct3D9.
         unsigned regCount_;
+        /// Parameter BGFX type.
+        unsigned bgfxType_;
     };
 
     /// Constant buffer index. Only used on Direct3D11.

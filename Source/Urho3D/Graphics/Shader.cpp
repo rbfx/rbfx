@@ -100,7 +100,7 @@ bool Shader::BeginLoad(Deserializer& source)
     CommentOutFunction(psSourceCode_, "void VS(");
 
     // OpenGL: rename either VS() or PS() to main()
-#if defined(URHO3D_OPENGL || URHO3D_BGFX)
+#if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
     vsSourceCode_.Replace("void VS(", "void main(");
     psSourceCode_.Replace("void PS(", "void main(");
 #endif
@@ -208,6 +208,8 @@ bool Shader::ProcessSource(String& code, Deserializer& source)
             // Skip BGFX includes
             if (line.EndsWith(".sh\""))
                 continue;
+			if (line.EndsWith(".def.sc\""))
+				continue;
 
             String includeFileName = GetPath(source.GetName()) + line.Substring(9).Replaced("\"", "").Trimmed();
 

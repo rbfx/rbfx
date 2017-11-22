@@ -1,4 +1,5 @@
 #ifdef BGFX_SHADER
+#include "varying_scenepass.def.sc"
 #include "urho3d_compatibility.sh"
 #ifdef BGFX_SHADER_TYPE_VERTEX == 1
     $input a_position _NORMAL _TEXCOORD0 _COLOR0 _TEXCOORD1 _ATANGENT _SKINNED _INSTANCED

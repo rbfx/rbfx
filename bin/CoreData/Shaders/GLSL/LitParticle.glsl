@@ -1,3 +1,35 @@
+#ifdef BGFX_SHADER
+#include "varying_scenepass.def.sc"
+#include "urho3d_compatibility.sh"
+#ifdef BGFX_SHADER_TYPE_VERTEX == 1
+    $input a_position _NORMAL _TEXCOORD0 _COLOR0 _TEXCOORD1 _ATANGENT _SKINNED _INSTANCED
+    #ifdef PERPIXEL
+        $output vTexCoord _VTANGENT, vNormal, vWorldPos _VSHADOWPOS _VSPOTPOS _VCUBEMASKVEC _VCOLOR
+    #else
+        $output vTexCoord _VTANGENT, vNormal, vWorldPos, vVertexLight, vScreenPos _VREFLECTIONVEC _VTEXCOORD2 _VCOLOR
+    #endif
+#endif
+#ifdef BGFX_SHADER_TYPE_FRAGMENT == 1
+    #ifdef PERPIXEL
+        $input vTexCoord _VTANGENT, vNormal, vWorldPos _VSHADOWPOS _VSPOTPOS _VCUBEMASKVEC _VCOLOR
+    #else
+        $input vTexCoord _VTANGENT, vNormal, vWorldPos, vVertexLight, vScreenPos _VREFLECTIONVEC _VTEXCOORD2 _VCOLOR
+    #endif
+#endif
+
+#include "common.sh"
+
+#include "uniforms.sh"
+#include "samplers.sh"
+#include "transform.sh"
+#include "screen_pos.sh"
+#include "lighting.sh"
+#include "fog.sh"
+
+uniform float cSoftParticleFadeScale;
+
+#else
+
 #include "Uniforms.glsl"
 #include "Samplers.glsl"
 #include "Transform.glsl"
@@ -30,6 +62,8 @@ varying vec4 vWorldPos;
     #endif
 #else
     varying vec3 vVertexLight;
+#endif
+
 #endif
 
 void VS()
