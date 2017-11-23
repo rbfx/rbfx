@@ -79,7 +79,7 @@ public:
     const Vector<WeakPtr<Node>>& GetSelection() const;
     /// Clearing cached paths forces choosing a file name next time scene is saved.
     void ClearCachedPaths();
-    /// Remove selected items from the scene.
+    /// Removes component if it was selected in inspector, otherwise removes selected scene nodes.
     void RemoveSelection();
     /// Return scene view.
     SceneView* GetSceneView() { return &view_; }

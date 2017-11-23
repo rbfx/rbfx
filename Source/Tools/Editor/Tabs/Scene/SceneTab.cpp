@@ -329,18 +329,7 @@ bool SceneTab::IsSelected(Node* node) const
 void SceneTab::OnNodeSelectionChanged()
 {
     using namespace EditorSelectionChanged;
-    const auto& selection = GetSelection();
-    if (selection.Size() == 1)
-    {
-        const auto& node = selection.Front();
-        const auto& components = node->GetComponents();
-        if (!components.Empty())
-            selectedComponent_ = components.Front();
-        else
-            selectedComponent_ = nullptr;
-    }
-    else
-        selectedComponent_ = nullptr;
+    selectedComponent_ = nullptr;
 }
 
 void SceneTab::RenderInspector()
@@ -357,8 +346,8 @@ void SceneTab::RenderInspector()
             items.Push(settings_.Get());
             items.Push(effectSettings_.Get());
         }
-        if (!selectedComponent_.Expired())
-            items.Push(dynamic_cast<Serializable*>(selectedComponent_.Get()));
+        for (Component* component : node->GetComponents())
+            items.Push(dynamic_cast<Serializable*>(component));
         inspector_.RenderAttributes(items);
     }
 }
@@ -381,7 +370,7 @@ void SceneTab::RenderNodeTree(Node* node)
         return;
 
     String name = ToString("%s (%d)", (node->GetName().Empty() ? node->GetTypeName() : node->GetName()).CString(), node->GetID());
-    bool isSelected = IsSelected(node);
+    bool isSelected = IsSelected(node) && selectedComponent_.Expired();
 
     if (isSelected)
         flags |= ImGuiTreeNodeFlags_Selected;
@@ -409,6 +398,7 @@ void SceneTab::RenderNodeTree(Node* node)
         ui::OpenPopup("Node context menu");
     }
 
+    bool wasDeleted = false;
     if (ui::BeginPopup("Node context menu"))
     {
         Input* input = GetSubsystem<Input>();
@@ -436,10 +426,7 @@ void SceneTab::RenderNodeTree(Node* node)
                     for (const String& component : components)
                     {
                         if (ui::MenuItem(component.CString()))
-                        {
-                            selectedComponent_ = node->CreateComponent(StringHash(component),
-                                alternative ? LOCAL : REPLICATED);
-                        }
+                            node->CreateComponent(StringHash(component), alternative ? LOCAL : REPLICATED);
                     }
                     ui::EndMenu();
                 }
@@ -453,47 +440,54 @@ void SceneTab::RenderNodeTree(Node* node)
         {
             Unselect(node);
             node->Remove();
+            wasDeleted = true;
         }
         ui::EndPopup();
     }
 
     if (opened)
     {
-        for (auto& component: node->GetComponents())
+        if (!wasDeleted)
         {
-            if (component->IsTemporary())
-                continue;
-
-            ui::PushID(component);
-
-            bool selected = selectedComponent_ == component;
-            selected = ui::Selectable(component->GetTypeName().CString(), selected);
-
-            if (ui::IsItemClicked(2))
+            for (auto& component: node->GetComponents())
             {
-                selected = true;
-                ui::OpenPopup("Component context menu");
+                if (component->IsTemporary())
+                    continue;
+
+                ui::PushID(component);
+
+                bool selected = selectedComponent_ == component;
+                selected = ui::Selectable(component->GetTypeName().CString(), selected);
+
+                if (ui::IsItemClicked(2))
+                {
+                    selected = true;
+                    ui::OpenPopup("Component context menu");
+                }
+
+                if (selected)
+                {
+                    UnselectAll();
+                    ToggleSelection(node);
+                    selectedComponent_ = component;
+                }
+
+                if (ui::BeginPopup("Component context menu"))
+                {
+                    if (ui::MenuItem("Remove"))
+                        RemoveSelection();          // Removes component because it was just selected.
+                    ui::EndPopup();
+                }
+
+                ui::PopID();
             }
 
-            if (selected)
-            {
-                UnselectAll();
-                ToggleSelection(node);
-                selectedComponent_ = component;
-            }
-
-            if (ui::BeginPopup("Component context menu"))
-            {
-                if (ui::MenuItem("Remove"))
-                    component->Remove();
-                ui::EndPopup();
-            }
-
-            ui::PopID();
+            // Do not use element->GetChildren() because child may be deleted during this loop.
+            PODVector<Node*> children;
+            node->GetChildren(children);
+            for (Node* child: children)
+                RenderNodeTree(child);
         }
-
-        for (auto& child: node->GetChildren())
-            RenderNodeTree(child);
         ui::TreePop();
     }
     else
@@ -566,9 +560,17 @@ void SceneTab::OnActiveUpdate()
 
 void SceneTab::RemoveSelection()
 {
-    for (auto& selected : GetSelection())
-        selected->Remove();
-    UnselectAll();
+    if (!selectedComponent_.Expired())
+    {
+        selectedComponent_->Remove();
+        selectedComponent_ = nullptr;
+    }
+    else
+    {
+        for (auto& selected : GetSelection())
+            selected->Remove();
+        UnselectAll();
+    }
 }
 
 }
