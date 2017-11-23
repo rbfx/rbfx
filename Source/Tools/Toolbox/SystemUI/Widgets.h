@@ -103,5 +103,7 @@ bool TransformRect(Urho3D::IntRect& inOut, TransformSelectorFlags flags = TSF_NO
 bool TransformRect(Urho3D::IntRect& inOut, Urho3D::IntRect& delta, TransformSelectorFlags flags = TSF_NONE);
 /// Return current SystemUI instance.
 Urho3D::SystemUI* GetSystemUI();
+/// Return a vector for scaling images pixel-perfectly. Scaling is done in increments of power of 2.
+ImVec2 GetPixelPerfectDPIScale();
 
 }

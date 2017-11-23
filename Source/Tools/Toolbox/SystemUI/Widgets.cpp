@@ -439,4 +439,18 @@ SystemUI* GetSystemUI()
     return static_cast<SystemUI*>(ui::GetIO().UserData);
 }
 
+ImVec2 GetPixelPerfectDPIScale()
+{
+    auto nearestPowerOf2 = [](int num) -> int {
+        int n = 1;
+        while (n < num)
+            n <<= 1;
+        return n;
+    };
+    ImVec2 ppScale = ui::GetIO().DisplayFramebufferScale;   // DPI scale
+    ppScale.x = nearestPowerOf2(RoundToInt(ppScale.x));
+    ppScale.y = nearestPowerOf2(RoundToInt(ppScale.y));
+    return ppScale;
+}
+
 }
