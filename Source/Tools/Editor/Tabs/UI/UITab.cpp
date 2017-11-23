@@ -27,6 +27,7 @@
 #include <Toolbox/SystemUI/Widgets.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
 #include "Editor/Editor.h"
+#include "Editor/Widgets.h"
 #include "UITab.h"
 
 
@@ -47,7 +48,7 @@ UITab::UITab(Urho3D::Context* context, Urho3D::StringHash id, const Urho3D::Stri
     texture_->SetAddressMode(COORD_V, ADDRESS_CLAMP);
     texture_->SetNumLevels(1);                                        // No mipmaps
 
-    rootElement_ = new RootElement(context);
+    rootElement_ = new RootUIElement(context);
     rootElement_->SetRenderTexture(texture_);
     rootElement_->SetEnabled(true);
 
@@ -91,6 +92,9 @@ void UITab::RenderNodeTree(UIElement* element)
 
     if (element == selectedElement_)
         flags |= ImGuiTreeNodeFlags_Selected;
+
+    ui::Image(element->GetTypeName());
+    ui::SameLine();
 
     if (ui::TreeNodeEx(element, flags, "%s", name.CString()))
     {
@@ -418,7 +422,7 @@ void UITab::RenderElementContextMenu()
 {
     if (ui::BeginPopup("Element Context Menu"))
     {
-        if (ui::BeginMenu("Add Child"))
+        if (ui::BeginMenu("Create Child"))
         {
             auto components = GetSubsystem<Editor>()->GetObjectsByCategory("UI");
             Sort(components.Begin(), components.End());
@@ -428,6 +432,8 @@ void UITab::RenderElementContextMenu()
                 // TODO: element creation with custom styles more usable.
                 if (GetSubsystem<Input>()->GetKeyDown(KEY_SHIFT))
                 {
+                    ui::Image(component);
+                    ui::SameLine();
                     if (ui::BeginMenu(component.CString()))
                     {
                         for (auto j = 0; j < styleNames_.Size(); j++)
@@ -443,6 +449,8 @@ void UITab::RenderElementContextMenu()
                 }
                 else
                 {
+                    ui::Image(component);
+                    ui::SameLine();
                     if (ui::MenuItem(component.CString()))
                     {
                         SelectItem(selectedElement_->CreateChild(StringHash(component)));

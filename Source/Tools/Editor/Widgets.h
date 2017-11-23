@@ -20,29 +20,15 @@
 // THE SOFTWARE.
 //
 
-
-#include <Urho3D/IO/Log.h>
-#include "RootElement.h"
+#pragma once
 
 
-namespace Urho3D
+namespace ImGui
 {
 
-RootElement::RootElement(Context* context)
-    : UIElement(context)
-{
-
-}
-
-IntVector2 RootElement::ScreenToElement(const IntVector2& screenPosition)
-{
-    return screenPosition - offset_;
-}
-
-IntVector2 RootElement::ElementToScreen(const IntVector2& position)
-{
-    URHO3D_LOGERROR("RootElement::ElementToScreen is not implemented.");
-    return {-1, -1};
-}
+/// Displays editor icon by it's name.
+void Image(const Urho3D::String& name);
+/// Creates a button with editor icon obtained by it's name. Returns true if button was pressed.
+bool ImageButton(const Urho3D::String& name);
 
 }

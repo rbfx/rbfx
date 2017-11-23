@@ -20,33 +20,29 @@
 // THE SOFTWARE.
 //
 
-#pragma once
 
-
-#include <Urho3D/UI/UIElement.h>
-#include "Editor/Tabs/Tab.h"
+#include <Urho3D/IO/Log.h>
+#include "RootUIElement.h"
 
 
 namespace Urho3D
 {
 
-class RootElement : public UIElement
+RootUIElement::RootUIElement(Context* context)
+    : UIElement(context)
 {
-    URHO3D_OBJECT(RootElement, UIElement)
-public:
-    /// Construct.
-    explicit RootElement(Context* context);
 
-    /// Convert screen coordinates to element coordinates.
-    IntVector2 ScreenToElement(const IntVector2& screenPosition) override;
-    /// Convert element coordinates to screen coordinates.
-    IntVector2 ElementToScreen(const IntVector2& position) override;
-    /// Update offset which is used to calculate element screen position.
-    void SetOffset(const IntVector2& offset) { offset_ = offset; }
+}
 
-protected:
-    /// Offset from top-left corner to this element.
-    IntVector2 offset_;
-};
+IntVector2 RootUIElement::ScreenToElement(const IntVector2& screenPosition)
+{
+    return screenPosition - offset_;
+}
+
+IntVector2 RootUIElement::ElementToScreen(const IntVector2& position)
+{
+    URHO3D_LOGERROR("RootUIElement::ElementToScreen is not implemented.");
+    return {-1, -1};
+}
 
 }

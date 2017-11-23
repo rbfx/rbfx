@@ -26,7 +26,7 @@
 #include <Urho3D/Urho3DAll.h>
 #include <Toolbox/Common/UndoManager.h>
 #include "Editor/Tabs/Tab.h"
-#include "Tabs/UI/RootElement.h"
+#include "Tabs/UI/RootUIElement.h"
 
 
 namespace Urho3D
@@ -84,7 +84,7 @@ protected:
     void AttributeCustomize(VariantMap& args);
 
     /// Root element which contains edited UI.
-    SharedPtr<RootElement> rootElement_;
+    SharedPtr<RootUIElement> rootElement_;
     /// Texture that UIElement will be rendered into.
     SharedPtr<Texture2D> texture_;
     /// Flag enabling display of internal elements.

@@ -29,6 +29,7 @@
 #include "SceneTab.h"
 #include "EditorEvents.h"
 #include "Editor/Editor.h"
+#include "Editor/Widgets.h"
 #include "SceneSettings.h"
 #include <ImGui/imgui_internal.h>
 
@@ -375,6 +376,8 @@ void SceneTab::RenderNodeTree(Node* node)
     if (isSelected)
         flags |= ImGuiTreeNodeFlags_Selected;
 
+    ui::Image("Node");
+    ui::SameLine();
     auto opened = ui::TreeNodeEx(name.CString(), flags);
     if (!opened)
     {
@@ -410,7 +413,7 @@ void SceneTab::RenderNodeTree(Node* node)
             Select(node->CreateChild(String::EMPTY, alternative ? LOCAL : REPLICATED));
         }
 
-        if (ui::BeginMenu(alternative ? "Add Component (local)" : "Add Component"))
+        if (ui::BeginMenu(alternative ? "Create Component (local)" : "Create Component"))
         {
             Editor* editor = GetSubsystem<Editor>();
             auto categories = editor->GetObjectCategories();
@@ -425,6 +428,8 @@ void SceneTab::RenderNodeTree(Node* node)
 
                     for (const String& component : components)
                     {
+                        ui::Image(component);
+                        ui::SameLine();
                         if (ui::MenuItem(component.CString()))
                             node->CreateComponent(StringHash(component), alternative ? LOCAL : REPLICATED);
                     }
@@ -455,6 +460,9 @@ void SceneTab::RenderNodeTree(Node* node)
                     continue;
 
                 ui::PushID(component);
+
+                ui::Image(component->GetTypeName());
+                ui::SameLine();
 
                 bool selected = selectedComponent_ == component;
                 selected = ui::Selectable(component->GetTypeName().CString(), selected);

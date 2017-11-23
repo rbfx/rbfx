@@ -22,6 +22,7 @@
 
 #include "Editor.h"
 #include "EditorEvents.h"
+#include "EditorIconCache.h"
 #include "Tabs/Scene/SceneTab.h"
 #include "Tabs/Scene/SceneSettings.h"
 #include <Toolbox/IO/ContentUtilities.h>
@@ -73,6 +74,8 @@ void Editor::Setup()
 
 void Editor::Start()
 {
+    context_->RegisterFactory<EditorIconCache>();
+    context_->RegisterSubsystem(new EditorIconCache(context_));
     GetInput()->SetMouseMode(MM_ABSOLUTE);
     GetInput()->SetMouseVisible(true);
     RegisterToolboxTypes(context_);
