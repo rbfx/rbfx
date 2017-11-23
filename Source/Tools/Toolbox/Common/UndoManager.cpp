@@ -136,8 +136,13 @@ ComponentParentState::ComponentParentState(Component* item, Node* parent) : item
 void ComponentParentState::Apply()
 {
     if (parent_.NotNull())
-        parent_->AddComponent(item_, id_, LOCAL);   // Replication mode is irrelevant, because it is used only for ID
-                                                    // creation.
+    {
+        if (!parent_->HasComponent(item_->GetType()))
+        {
+            parent_->AddComponent(item_, id_, LOCAL);   // Replication mode is irrelevant, because it is used only for
+                                                        // ID creation.
+        }
+    }
     else
         item_->Remove();
 }
