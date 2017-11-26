@@ -181,6 +181,14 @@ void ShaderVariation::Release()
                 graphics_->SetShaders(nullptr, nullptr);
         }
 
+        // Cleanup uniforms
+        for (HashMap<StringHash, ShaderParameter>::ConstIterator i = parameters_.Begin(); i != parameters_.End(); ++i)
+        {
+            bgfx::UniformHandle uHandle;
+            uHandle.idx = i->second_.idx_;
+            bgfx::destroy(uHandle);
+        }
+
         bgfx::ShaderHandle handle;
         handle.idx = object_.idx_;
 		bgfx::destroy(handle);
