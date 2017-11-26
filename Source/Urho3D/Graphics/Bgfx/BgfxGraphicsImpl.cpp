@@ -42,7 +42,8 @@ void GraphicsImpl::SetCurrentView(const uint8_t view)
 
 void GraphicsImpl::SetDrawDistance(const uint32_t drawDistance)
 {
-    drawDistance_ = drawDistance;
+    unsigned mask = -signed(drawDistance >> 31) | 0x80000000;
+    drawDistance_ = drawDistance ^ mask;
 }
 
 }
