@@ -25,6 +25,7 @@
 #include "../../Container/HashMap.h"
 #include "../../Core/Timer.h"
 #include "../../Graphics/Texture2D.h"
+#include "../../Graphics/ShaderProgram.h"
 
 #include <bgfx/bgfx.h>
 #include <bgfx/defines.h>
@@ -33,24 +34,6 @@ namespace Urho3D
 {
 
 using ShaderProgramMap = HashMap<Pair<ShaderVariation*, ShaderVariation*>, SharedPtr<ShaderProgram> >;
-
-/// Cached state of a frame buffer handle
-struct FrameBufferHandle
-{
-    FrameBufferHandle()
-    {
-        handle_.idx = bgfx::kInvalidHandle;
-        for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
-            colorAttachments_[i] = nullptr;
-    }
-
-    /// Frame buffer handle.
-    bgfx::FrameBufferHandle handle_;
-    /// Bound color attachment textures.
-    RenderSurface* colorAttachments_[MAX_RENDERTARGETS];
-    /// Bound depth/stencil attachment.
-    RenderSurface* depthAttachment_;
-};
 
 /// %Graphics subsystem implementation. Holds API-specific objects.
 class URHO3D_API GraphicsImpl
@@ -66,19 +49,20 @@ public:
     uint8_t GetCurrentView() const { return view_; }
     /// Set current view.
     void SetCurrentView(const uint8_t view);
+    /// Set drae distance.
+    void SetDrawDistance(const uint32_t drawDistance);
 
 private:
     /// Backbuffer framebuffer.
     bgfx::FrameBufferHandle backbuffer_;
     /// List of framebuffers.
-    //HashMap<unsigned long long, FrameBufferHandle> frameBuffers_;
     Vector<bgfx::FrameBufferHandle> frameBuffers_;
     /// Current framebuffer.
     bgfx::FrameBufferHandle currentFramebuffer_;
     /// Current view.
     uint8_t view_;
-	/// Shader programs.
-	ShaderProgramMap shaderPrograms_;
+    /// Shader programs.
+    ShaderProgramMap shaderPrograms_;
     /// Current shader program.
     ShaderProgram* shaderProgram_;
     /// Current depth of primitive.
@@ -93,6 +77,16 @@ private:
     bool stencilRefDirty_;
     /// BGFX state dirty flag.
     bool stateDirty_;
+    /// Primitive type.
+    uint64_t primitiveType_;
+    /// Current index buffer.
+    bgfx::IndexBufferHandle indexBuffer_;
+    /// Current dynamic index buffer.
+    bgfx::DynamicIndexBufferHandle dynamicIndexBuffer_;
+    /// Current vertex buffer.
+    bgfx::VertexBufferHandle vertexBuffer_[MAX_VERTEX_STREAMS];
+    /// Current dynamic vertex buffer.
+    bgfx::DynamicVertexBufferHandle dynamicVertexBuffer_[MAX_VERTEX_STREAMS];
 };
 
 }

@@ -40,4 +40,9 @@ void GraphicsImpl::SetCurrentView(const uint8_t view)
     view_ = view;
 }
 
+void GraphicsImpl::SetDrawDistance(const uint32_t drawDistance)
+{
+    drawDistance_ = drawDistance;
+}
+
 }

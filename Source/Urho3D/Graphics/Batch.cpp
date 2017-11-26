@@ -115,7 +115,7 @@ void CalculateShadowMatrix(Matrix4& dest, LightBatchQueue* queue, unsigned split
 
 #if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
 #ifdef URHO3D_BGFX
-    if (bgfx::getRendererType() == bgfx::RendererType::OpenGL || bgfx::RendererType::OpenGLES) {
+    if (bgfx::getCaps()->originBottomLeft) {
 #endif
     offset.z_ = 0.5f;
     scale.z_ = 0.5f;
@@ -156,7 +156,7 @@ void CalculateSpotMatrix(Matrix4& dest, Light* light)
 
 #if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
 #ifdef URHO3D_BGFX
-    if (bgfx::getRendererType() == bgfx::RendererType::OpenGL || bgfx::RendererType::OpenGLES) {
+    if (bgfx::getCaps()->originBottomLeft) {
 #endif
         texAdjust.SetTranslation(Vector3(0.5f, 0.5f, 0.5f));
         texAdjust.SetScale(Vector3(0.5f, -0.5f, 0.5f));
@@ -369,7 +369,7 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
                         Matrix4 lightVecRot(lightNode->GetWorldRotation().RotationMatrix());
                         // HLSL compiler will pack the parameters as if the matrix is only 3x4, so must be careful to not overwrite
                         // the next parameter
-#ifdef URHO3D_OPENGL
+#if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
                         graphics->SetShaderParameter(VSP_LIGHTMATRICES, lightVecRot.Data(), 16);
 #else
                         graphics->SetShaderParameter(VSP_LIGHTMATRICES, lightVecRot.Data(), 12);

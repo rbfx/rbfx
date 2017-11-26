@@ -135,9 +135,7 @@ bool ShaderVariation::Create()
 						unit = NumberPostfix(name);
 
 					if (unit < MAX_TEXTURE_UNITS)
-					{
 						useTextureUnit_[unit] = true;
-					}
 				}
 
                 ShaderParameter parameter;
@@ -369,7 +367,7 @@ bool ShaderVariation::Compile()
 	String args;
 	args.Join(argsArray, " ");
 
-	FileSystem* fileSystem = owner_->GetSubsystem<FileSystem>;
+	FileSystem* fileSystem = owner_->GetSubsystem<FileSystem>();
 	String commandLine = fileSystem->GetProgramDir() + shaderc + " " + args;
 	URHO3D_LOGDEBUG("Compiling shader command: " + commandLine);
     return fileSystem->SystemCommand(commandLine, true);

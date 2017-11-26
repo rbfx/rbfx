@@ -41,8 +41,8 @@ ShaderProgram::ShaderProgram(Graphics* graphics, ShaderVariation* vertexShader, 
 	bgfx::ShaderHandle vsh;
 	bgfx::ShaderHandle fsh;
 
-	vsh.idx = vertexShader->GetGPUObjectIdx;
-	fsh.idx = vertexShader->GetGPUObjectIdx;
+	vsh.idx = vertexShader->GetGPUObjectIdx();
+	fsh.idx = vertexShader->GetGPUObjectIdx();
 
 	handle_ = bgfx::createProgram(vsh, fsh, false);
 

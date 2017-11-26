@@ -346,7 +346,7 @@ bool View::Define(RenderSurface* renderTarget, Viewport* viewport)
     // On OpenGL flip the viewport if rendering to a texture for consistent UV addressing with Direct3D9
 #if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
 #ifdef URHO3D_BGFX
-    if (bgfx::getRendererType() == bgfx::RendererType::OpenGL || bgfx::RendererType::OpenGLES)
+    if (bgfx::getCaps()->originBottomLeft)
 #endif
     if (renderTarget_)
     {
@@ -630,7 +630,7 @@ void View::Render()
         // as a render texture produced on Direct3D9
 #if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
 #ifdef URHO3D_BGFX
-        if (bgfx::getRendererType() == bgfx::RendererType::OpenGL || bgfx::RendererType::OpenGLES)
+        if (bgfx::getCaps()->originBottomLeft)
 #endif
         if (camera_)
             camera_->SetFlipVertical(true);
@@ -683,7 +683,7 @@ void View::Render()
 
 #if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
 #ifdef URHO3D_BGFX
-    if (bgfx::getRendererType() == bgfx::RendererType::OpenGL || bgfx::RendererType::OpenGLES)
+    if (bgfx::getCaps()->originBottomLeft)
 #endif
     if (camera_)
         camera_->SetFlipVertical(false);
@@ -725,8 +725,12 @@ void View::SetCameraShaderParameters(Camera* camera)
     Matrix3x4 cameraEffectiveTransform = camera->GetEffectiveWorldTransform();
 
     graphics_->SetShaderParameter(VSP_CAMERAPOS, cameraEffectiveTransform.Translation());
+#ifdef URHO3D_BGFX
+    bgfx::setViewTransform(graphics_->GetImpl()->GetCurrentView(), camera->GetView().Data(), camera->GetGPUProjection().Data());
+#else
     graphics_->SetShaderParameter(VSP_VIEWINV, cameraEffectiveTransform);
     graphics_->SetShaderParameter(VSP_VIEW, camera->GetView());
+#endif
     graphics_->SetShaderParameter(PSP_CAMERAPOS, cameraEffectiveTransform.Translation());
 
     float nearClip = camera->GetNearClip();
@@ -742,7 +746,7 @@ void View::SetCameraShaderParameters(Camera* camera)
         depthMode.x_ = 1.0f;
 #if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
 #ifdef URHO3D_BGFX
-    if (bgfx::getRendererType() == bgfx::RendererType::OpenGL || bgfx::RendererType::OpenGLES)
+    if (bgfx::getCaps()->homogeneousDepth)
 #endif
         {
             depthMode.z_ = 0.5f;
@@ -769,7 +773,7 @@ void View::SetCameraShaderParameters(Camera* camera)
     Matrix4 projection = camera->GetGPUProjection();
 #if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
 #ifdef URHO3D_BGFX
-    if (bgfx::getRendererType() == bgfx::RendererType::OpenGL || bgfx::RendererType::OpenGLES)
+    if (bgfx::getCaps()->homogeneousDepth)
 #endif
         {
             // Add constant depth bias manually to the projection matrix due to glPolygonOffset() inconsistency
@@ -778,8 +782,9 @@ void View::SetCameraShaderParameters(Camera* camera)
             projection.m23_ += projection.m33_ * constantBias;
         }
 #endif
-
+#ifndef URHO3D_BGFX // invProj was already set from setViewTransform
     graphics_->SetShaderParameter(VSP_VIEWPROJ, projection * camera->GetView());
+#endif
 
     // If in a scene pass and the command defines shader parameters, set them now
     if (passCommand_)
@@ -2268,9 +2273,13 @@ void View::DrawFullscreenQuad(bool setIdentityProjection)
 #else
         model.m23_ = 0.5f;
 #endif
-
+#ifdef URHO3D_BGFX
+        bgfx::setViewTransform(graphics_->GetImpl()->GetCurrentView(), projection.Data(), projection.Data()); // need to invert
+        bgfx::setTransform(model.Data());
+#else
         graphics_->SetShaderParameter(VSP_MODEL, model);
         graphics_->SetShaderParameter(VSP_VIEWPROJ, projection);
+#endif
     }
     else
         graphics_->SetShaderParameter(VSP_MODEL, Light::GetFullscreenQuadTransform(camera_));

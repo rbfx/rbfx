@@ -48,10 +48,17 @@ extern URHO3D_API const StringHash VSP_GBUFFEROFFSETS("GBufferOffsets");
 extern URHO3D_API const StringHash VSP_LIGHTDIR("LightDir");
 extern URHO3D_API const StringHash VSP_LIGHTPOS("LightPos");
 extern URHO3D_API const StringHash VSP_NORMALOFFSETSCALE("NormalOffsetScale");
+#ifdef URHO3D_BGFX
+extern URHO3D_API const StringHash VSP_MODEL("model");
+extern URHO3D_API const StringHash VSP_VIEW("view");
+extern URHO3D_API const StringHash VSP_VIEWINV("invView");
+extern URHO3D_API const StringHash VSP_VIEWPROJ("viewProj");
+#else
 extern URHO3D_API const StringHash VSP_MODEL("Model");
 extern URHO3D_API const StringHash VSP_VIEW("View");
 extern URHO3D_API const StringHash VSP_VIEWINV("ViewInv");
 extern URHO3D_API const StringHash VSP_VIEWPROJ("ViewProj");
+#endif
 extern URHO3D_API const StringHash VSP_UOFFSET("UOffset");
 extern URHO3D_API const StringHash VSP_VOFFSET("VOffset");
 extern URHO3D_API const StringHash VSP_ZONE("Zone");

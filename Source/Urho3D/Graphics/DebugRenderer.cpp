@@ -622,10 +622,15 @@ void DebugRenderer::Render()
     graphics->SetScissorTest(false);
     graphics->SetStencilTest(false);
     graphics->SetShaders(vs, ps);
+#ifdef URHO3D_BGFX
+    bgfx::setViewTransform(graphics->GetImpl()->GetCurrentView(), view_.Data(), (gpuProjection_ * view_).Data());
+    bgfx::setTransform(Matrix4::IDENTITY.Data());
+#else
     graphics->SetShaderParameter(VSP_MODEL, Matrix3x4::IDENTITY);
     graphics->SetShaderParameter(VSP_VIEW, view_);
     graphics->SetShaderParameter(VSP_VIEWINV, view_.Inverse());
     graphics->SetShaderParameter(VSP_VIEWPROJ, gpuProjection_ * view_);
+#endif
     graphics->SetShaderParameter(PSP_MATDIFFCOLOR, Color(1.0f, 1.0f, 1.0f, 1.0f));
     graphics->SetVertexBuffer(vertexBuffer_);
 

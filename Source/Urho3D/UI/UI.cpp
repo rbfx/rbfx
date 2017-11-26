@@ -66,6 +66,9 @@
 #endif
 
 #include <assert.h>
+#ifdef URHO3D_BGFX
+#include "../Graphics/GraphicsImpl.h"
+#endif
 #include <SDL/SDL.h>
 
 #include "../DebugNew.h"
@@ -996,11 +999,17 @@ void UI::Render(VertexBuffer* buffer, const PODVector<UIBatch>& batches, unsigne
 
     if (surface)
     {
-#ifdef URHO3D_OPENGL
+#if defined(URHO3D_OPENGL)
         // On OpenGL, flip the projection if rendering to a texture so that the texture can be addressed in the
         // same way as a render texture produced on Direct3D.
         offset.y_ = -offset.y_;
         scale.y_ = -scale.y_;
+#elif defined(URHO3D_BGFX)
+        if (bgfx::getCaps()->originBottomLeft)
+        {
+            offset.y_ = -offset.y_;
+            scale.y_ = -scale.y_;
+        }
 #endif
     }
 
@@ -1015,10 +1024,17 @@ void UI::Render(VertexBuffer* buffer, const PODVector<UIBatch>& batches, unsigne
 
     graphics_->ClearParameterSources();
     graphics_->SetColorWrite(true);
-#ifdef URHO3D_OPENGL
+#if defined(URHO3D_OPENGL)
     // Reverse winding if rendering to texture on OpenGL
     if (surface)
         graphics_->SetCullMode(CULL_CW);
+    else
+#elif defined(URHO3D_BGFX)
+    if (surface)
+        if (bgfx::getCaps()->originBottomLeft)
+            graphics_->SetCullMode(CULL_CW);
+        else
+            graphics_->SetCullMode(CULL_CCW);
     else
 #endif
         graphics_->SetCullMode(CULL_CCW);
@@ -1065,9 +1081,17 @@ void UI::Render(VertexBuffer* buffer, const PODVector<UIBatch>& batches, unsigne
 
         graphics_->SetShaders(vs, ps);
         if (graphics_->NeedParameterUpdate(SP_OBJECT, this))
+#ifdef URHO3D_BGFX
+            bgfx::setTransform(Matrix4::IDENTITY.Data());
+#else
             graphics_->SetShaderParameter(VSP_MODEL, Matrix3x4::IDENTITY);
+#endif
         if (graphics_->NeedParameterUpdate(SP_CAMERA, this))
+#ifdef URHO3D_BGFX
+            bgfx::setViewTransform(graphics_->GetImpl()->GetCurrentView(), projection.Data(), projection.Data()); // TODO: Invert
+#else
             graphics_->SetShaderParameter(VSP_VIEWPROJ, projection);
+#endif
         if (graphics_->NeedParameterUpdate(SP_MATERIAL, this))
             graphics_->SetShaderParameter(PSP_MATDIFFCOLOR, Color(1.0f, 1.0f, 1.0f, 1.0f));
 

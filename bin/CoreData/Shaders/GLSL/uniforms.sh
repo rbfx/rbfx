@@ -18,7 +18,7 @@ uniform vec4 u_GBufferOffsets;
 uniform vec4 u_LightPos;
 uniform vec4 u_LightDir; //vec3
 uniform vec4 u_NormalOffsetScale;
-uniform mat4 u_Model;
+//uniform mat4 cModel; u_Model
 //uniform mat4 cView; u_view
 //uniform mat4 cViewInv; u_invProj
 //uniform mat4 cViewProj; u_viewProj
@@ -55,7 +55,7 @@ uniform mat4 u_Zone;
 #define cLightPos u_LightPos
 #define cLightDir vec3(u_LightDir.xyz)
 #define cNormalOffsetScale u_NormalOffsetScale
-#define cModel u_Model
+#define cModel u_model[0]
 #define cView u_view
 #define cViewInv u_invProj
 #define cViewProj u_viewProj

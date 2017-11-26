@@ -357,7 +357,7 @@ bool Graphics::SetMode(int width, int height)
 
     bgfx::reset(width, height);
     bgfx::setDebug(BGFX_DEBUG_TEXT);
-    bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030ff, 1.0f, 0);
+    bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x000000ff, 1.0f, 0);
 
     ResetRenderTargets();
 
@@ -518,7 +518,27 @@ void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCou
     if (!vertexCount || !bgfx::isValid(impl_->shaderProgram_->handle_))
         return;
 
+    if (type != primitiveType_)
+    {
+        impl_->primitiveType_ = bgfxPrimitiveType[type];
+        primitiveType_ = type;
+        impl_->stateDirty_ = true;
+    }
+
     PrepareDraw();
+
+    if (bgfx::isValid(impl_->indexBuffer_))
+        bgfx::setIndexBuffer(impl_->indexBuffer_);
+    else
+        bgfx::setIndexBuffer(impl_->dynamicIndexBuffer_);
+
+    for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
+    {
+        if (bgfx::isValid(impl_->vertexBuffer_[i]))
+            bgfx::setVertexBuffer(i, impl_->vertexBuffer_[i], vertexStart, vertexCount);
+        else
+            bgfx::setVertexBuffer(i, impl_->dynamicVertexBuffer_[i], vertexStart, vertexCount);
+    }
 
     uint32_t primitiveCount;
     primitiveCount = bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
@@ -531,7 +551,27 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
     if (!vertexCount || !bgfx::isValid(impl_->shaderProgram_->handle_))
         return;
 
+    if (type != primitiveType_)
+    {
+        impl_->primitiveType_ = bgfxPrimitiveType[type];
+        primitiveType_ = type;
+        impl_->stateDirty_ = true;
+    }
+
     PrepareDraw();
+
+    if (bgfx::isValid(impl_->indexBuffer_))
+        bgfx::setIndexBuffer(impl_->indexBuffer_, indexStart, indexCount);
+    else
+        bgfx::setIndexBuffer(impl_->dynamicIndexBuffer_, indexStart, indexCount);
+
+    for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
+    {
+        if (bgfx::isValid(impl_->vertexBuffer_[i]))
+            bgfx::setVertexBuffer(i, impl_->vertexBuffer_[i], minVertex, vertexCount);
+        else
+            bgfx::setVertexBuffer(i, impl_->dynamicVertexBuffer_[i], minVertex, vertexCount);
+    }
 
     uint32_t primitiveCount;
     primitiveCount = bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
@@ -544,7 +584,27 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
     if (!vertexCount || !bgfx::isValid(impl_->shaderProgram_->handle_))
         return;
 
+    if (type != primitiveType_)
+    {
+        impl_->primitiveType_ = bgfxPrimitiveType[type];
+        primitiveType_ = type;
+        impl_->stateDirty_ = true;
+    }
+
     PrepareDraw();
+
+    if (bgfx::isValid(impl_->indexBuffer_))
+        bgfx::setIndexBuffer(impl_->indexBuffer_, indexStart, indexCount);
+    else
+        bgfx::setIndexBuffer(impl_->dynamicIndexBuffer_, indexStart, indexCount);
+
+    for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
+    {
+        if (bgfx::isValid(impl_->vertexBuffer_[i]))
+            bgfx::setVertexBuffer(i, impl_->vertexBuffer_[i], minVertex, vertexCount);
+        else
+            bgfx::setVertexBuffer(i, impl_->dynamicVertexBuffer_[i], minVertex, vertexCount);
+    }
 
     uint32_t primitiveCount;
     primitiveCount = bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
@@ -554,10 +614,32 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
 
 void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned minVertex, unsigned vertexCount, unsigned instanceCount)
 {
-    if (!vertexCount || !bgfx::isValid(impl_->shaderProgram_->handle_))
+    if (!indexCount || !instanceCount || !bgfx::isValid(impl_->shaderProgram_->handle_))
         return;
 
+    if (type != primitiveType_)
+    {
+        impl_->primitiveType_ = bgfxPrimitiveType[type];
+        primitiveType_ = type;
+        impl_->stateDirty_ = true;
+    }
+
     PrepareDraw();
+
+    if (bgfx::isValid(impl_->indexBuffer_))
+        bgfx::setIndexBuffer(impl_->indexBuffer_, indexStart, indexCount);
+    else
+        bgfx::setIndexBuffer(impl_->dynamicIndexBuffer_, indexStart, indexCount);
+
+    for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
+    {
+        if (bgfx::isValid(impl_->vertexBuffer_[i]))
+            bgfx::setVertexBuffer(i, impl_->vertexBuffer_[i], minVertex, vertexCount);
+        else
+            bgfx::setVertexBuffer(i, impl_->dynamicVertexBuffer_[i], minVertex, vertexCount);
+    }
+
+    //bgfx::setInstanceDataBuffer(_, 0, instanceCount);
 
     uint32_t primitiveCount;
     primitiveCount = bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
@@ -567,10 +649,32 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
 
 void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned baseVertexIndex, unsigned minVertex, unsigned vertexCount, unsigned instanceCount)
 {
-    if (!vertexCount || !bgfx::isValid(impl_->shaderProgram_->handle_))
+    if (!indexCount || !instanceCount || !bgfx::isValid(impl_->shaderProgram_->handle_))
         return;
 
+    if (type != primitiveType_)
+    {
+        impl_->primitiveType_ = bgfxPrimitiveType[type];
+        primitiveType_ = type;
+        impl_->stateDirty_ = true;
+    }
+
     PrepareDraw();
+
+    if (bgfx::isValid(impl_->indexBuffer_))
+        bgfx::setIndexBuffer(impl_->indexBuffer_, indexStart, indexCount);
+    else
+        bgfx::setIndexBuffer(impl_->dynamicIndexBuffer_, indexStart, indexCount);
+
+    for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
+    {
+        if (bgfx::isValid(impl_->vertexBuffer_[i]))
+            bgfx::setVertexBuffer(i, impl_->vertexBuffer_[i], minVertex, vertexCount);
+        else
+            bgfx::setVertexBuffer(i, impl_->dynamicVertexBuffer_[i], minVertex, vertexCount);
+    }
+
+    //bgfx::setInstanceDataBuffer(_, 0, instanceCount);
 
     uint32_t primitiveCount;
     primitiveCount = bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
@@ -594,11 +698,13 @@ bool Graphics::SetVertexBuffers(const PODVector<VertexBuffer*>& buffers, unsigne
         return false;
     }
 
+    /*
     if (instanceOffset != impl_->lastInstanceOffset_)
     {
         impl_->lastInstanceOffset_ = instanceOffset;
         impl_->vertexBuffersDirty_ = true;
     }
+    */
 
     for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
     {
@@ -608,7 +714,7 @@ bool Graphics::SetVertexBuffers(const PODVector<VertexBuffer*>& buffers, unsigne
         if (buffer != vertexBuffers_[i])
         {
             vertexBuffers_[i] = buffer;
-            impl_->vertexBuffersDirty_ = true;
+            //impl_->vertexBuffersDirty_ = true;
         }
     }
 
@@ -622,6 +728,7 @@ bool Graphics::SetVertexBuffers(const Vector<SharedPtr<VertexBuffer> >& buffers,
 
 void Graphics::SetIndexBuffer(IndexBuffer* buffer)
 {
+    // Have to defer this as the draw call sets index start/end.
     if (buffer != indexBuffer_)
     {
         if (buffer)
@@ -630,13 +737,21 @@ void Graphics::SetIndexBuffer(IndexBuffer* buffer)
             {
                 bgfx::DynamicIndexBufferHandle handle;
                 handle.idx = buffer->GetGPUObjectIdx();
-                bgfx::setIndexBuffer(handle);
+                //bgfx::setIndexBuffer(handle);
+                impl_->dynamicIndexBuffer_ = handle;
+                bgfx::IndexBufferHandle nullHandle;
+                nullHandle.idx = bgfx::kInvalidHandle;
+                impl_->indexBuffer_ = nullHandle;
             }
             else
             {
                 bgfx::IndexBufferHandle handle;
                 handle.idx = buffer->GetGPUObjectIdx();
-                bgfx::setIndexBuffer(handle);
+                //bgfx::setIndexBuffer(handle);
+                impl_->indexBuffer_ = handle;
+                bgfx::DynamicIndexBufferHandle nullHandle;
+                nullHandle.idx = bgfx::kInvalidHandle;
+                impl_->dynamicIndexBuffer_ = nullHandle;
             }
         }
         indexBuffer_ = buffer;
@@ -651,7 +766,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 	if (vs != vertexShader_)
 	{
 		// Create the shader now if not yet created. If already attempted, do not retry
-		if (vs && vs->GetGPUObjectIdx == bgfx::kInvalidHandle)
+		if (vs && vs->GetGPUObjectIdx() == bgfx::kInvalidHandle)
 		{
 			if (vs->GetCompilerOutput().Empty())
 			{
@@ -675,7 +790,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 
 	if (ps != pixelShader_)
 	{
-		if (ps && ps->GetGPUObjectIdx == bgfx::kInvalidHandle)
+		if (ps && ps->GetGPUObjectIdx() == bgfx::kInvalidHandle)
 		{
 			if (ps->GetCompilerOutput().Empty())
 			{
@@ -778,8 +893,8 @@ void Graphics::SetShaderParameter(StringHash param, const Color& color)
 
 void Graphics::SetShaderParameter(StringHash param, const Vector2& vector)
 {
-	Vector4 vector(vector.x_, vector.y_, 0.0, 0.0);
-	SetShaderParameter(param, vector);
+	Vector4 vec4(vector.x_, vector.y_, 0.0, 0.0);
+	SetShaderParameter(param, vec4);
 }
 
 void Graphics::SetShaderParameter(StringHash param, const Matrix3& matrix)
@@ -795,8 +910,8 @@ void Graphics::SetShaderParameter(StringHash param, const Matrix3& matrix)
 
 void Graphics::SetShaderParameter(StringHash param, const Vector3& vector)
 {
-	Vector4 vector(vector.x_, vector.y_, vector.z_, 0.0);
-	SetShaderParameter(param, vector);
+	Vector4 vec4(vector.x_, vector.y_, vector.z_, 0.0);
+	SetShaderParameter(param, vec4);
 }
 
 void Graphics::SetShaderParameter(StringHash param, const Matrix4& matrix)
@@ -848,11 +963,33 @@ void Graphics::SetShaderParameter(StringHash param, const Matrix3x4& matrix)
 }
 
 bool Graphics::NeedParameterUpdate(ShaderParameterGroup group, const void* source) { return false; }
-bool Graphics::HasShaderParameter(StringHash param) { return true; }
-bool Graphics::HasTextureUnit(TextureUnit unit) { return true; }
-void Graphics::ClearParameterSource(ShaderParameterGroup group) {}
-void Graphics::ClearParameterSources() {}
-void Graphics::ClearTransformSources() {}
+
+bool Graphics::HasShaderParameter(StringHash param)
+{
+    return impl_->shaderProgram_ && impl_->shaderProgram_->parameters_.Find(param) != impl_->shaderProgram_->parameters_.End();
+}
+
+bool Graphics::HasTextureUnit(TextureUnit unit)
+{
+    return pixelShader_ && pixelShader_->HasTextureUnit(unit);
+}
+
+void Graphics::ClearParameterSource(ShaderParameterGroup group)
+{
+    shaderParameterSources_[group] = (const void*)M_MAX_UNSIGNED;
+}
+
+void Graphics::ClearParameterSources()
+{
+    for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
+        shaderParameterSources_[i] = (const void*)M_MAX_UNSIGNED;
+}
+
+void Graphics::ClearTransformSources()
+{
+    shaderParameterSources_[SP_CAMERA] = (const void*)M_MAX_UNSIGNED;
+    shaderParameterSources_[SP_OBJECT] = (const void*)M_MAX_UNSIGNED;
+}
 
 void Graphics::SetTexture(unsigned index, Texture* texture)
 {
@@ -889,7 +1026,7 @@ void Graphics::SetTexture(unsigned index, Texture* texture)
 
 	if (texture != textures_[index])
 	{
-		if (bgfx::isValid(impl_->shaderProgram_->texSamplers_[index]));
+		if (bgfx::isValid(impl_->shaderProgram_->texSamplers_[index]))
 		{
 			bgfx::TextureHandle texHandle;
 			texHandle.idx = texture->GetGPUObjectIdx();
@@ -1254,21 +1391,6 @@ void Graphics::SetClipPlane(bool enable, const Plane& clipPlane, const Matrix3x4
     }
 }
 
-//void Graphics::BeginDumpShaders(const String& fileName)
-//{
-
-//}
-
-//void Graphics::EndDumpShaders()
-//{
-
-//}
-
-//void Graphics::SetShaderCacheDir(const String& path)
-//{
-
-//}
-
 bool Graphics::IsInitialized() const
 {
     return window_ != nullptr;
@@ -1461,40 +1583,48 @@ void Graphics::OnWindowMoved()
 }
 
 void Graphics::Restore() {}
-void Graphics::CleanupShaderPrograms(ShaderVariation* variation){}
+
+void Graphics::CleanupShaderPrograms(ShaderVariation* variation)
+{
+    for (ShaderProgramMap::Iterator i = impl_->shaderPrograms_.Begin(); i != impl_->shaderPrograms_.End();)
+    {
+        if (i->first_.first_ == variation || i->first_.second_ == variation)
+        {
+            i = impl_->shaderPrograms_.Erase(i);
+        }
+        else
+            ++i;
+    }
+
+    if (vertexShader_ == variation || pixelShader_ == variation)
+        impl_->shaderProgram_ = nullptr;
+}
 
 void Graphics::CleanupRenderSurface(RenderSurface* surface)
 {
     if (!surface)
         return;
 
-    for (HashMap<unsigned long long, FrameBufferHandle>::Iterator i = impl_->frameBuffers_.Begin();
-        i != impl_->frameBuffers_.End(); ++i)
+    uint16_t texIdx = surface->GetParentTexture()->GetGPUObjectIdx();
+    for (unsigned i = 0; i < impl_->frameBuffers_.Size(); ++i)
     {
         bool markForDeletion = false;
-        for (unsigned j = 0; j < MAX_RENDERTARGETS; ++j)
+        for (unsigned j = 0; j < MAX_RENDERTARGETS + 1; ++j)
         {
-            if (i->second_.colorAttachments_[j] == surface)
-            {
-                i->second_.colorAttachments_[j] = nullptr;
+            if (bgfx::getTexture(impl_->frameBuffers_[i], j).idx == texIdx)
                 markForDeletion = true;
-            }
-            if (markForDeletion)
-                bgfx::destroy(i->second_.handle_);
         }
-        /*
-        if (i->second_.depthAttachment_ == surface)
+        if (markForDeletion)
         {
-            if (currentFBO != i->second_.fbo_)
+            if (impl_->frameBuffers_[i].idx == impl_->currentFramebuffer_.idx)
             {
-                BindFramebuffer(i->second_.fbo_);
-                currentFBO = i->second_.fbo_;
+                bgfx::FrameBufferHandle handle;
+                handle.idx = bgfx::kInvalidHandle;
+                impl_->currentFramebuffer_ = handle;
             }
-            BindDepthAttachment(0, false);
-            BindStencilAttachment(0, false);
-            i->second_.depthAttachment_ = nullptr;
+            bgfx::destroy(impl_->frameBuffers_[i]);
+            impl_->frameBuffers_.Erase(i);
         }
-        */
     }
 }
 
@@ -1566,17 +1696,20 @@ unsigned Graphics::GetFormat(const String& formatName)
 
 unsigned Graphics::GetMaxBones()
 { 
-#ifdef RPI
+#if defined(RPI)
     // At the moment all RPI GPUs are low powered and only have limited number of uniforms
     return 32;
+#elseif defined(URHO3D_MOBILE)
+    return 64;
 #else
-    return gl3Support ? 128 : 64;
+    return 128;
 #endif
 }
 
 bool Graphics::GetGL3Support()
 {
-    gl3Support;
+    //gl3Support;
+    return true;
 }
 
 bool Graphics::OpenWindow(int width, int height, bool resizable, bool borderless)
@@ -1664,29 +1797,34 @@ void Graphics::CheckFeatureSupport()
 
 void Graphics::CleanupFramebuffers()
 {
-    for (HashMap<unsigned long long, FrameBufferHandle>::Iterator i = impl_->frameBuffers_.Begin();
-        i != impl_->frameBuffers_.End(); ++i)
-        bgfx::destroy(i->second_.handle_);
+    for (unsigned i = 0; i < impl_->frameBuffers_.Size(); ++i)
+        bgfx::destroy(impl_->frameBuffers_[i]);
 
     impl_->frameBuffers_.Clear();
 }
 
 void Graphics::ResetCachedState()
 {
+    bgfx::IndexBufferHandle ibh;
+    ibh.idx = bgfx::kInvalidHandle;
+    impl_->indexBuffer_ = ibh;
+    bgfx::DynamicIndexBufferHandle dibh;
+    dibh.idx = bgfx::kInvalidHandle;
+    impl_->dynamicIndexBuffer_ = dibh;
+
+    bgfx::VertexBufferHandle vbh;
+    vbh.idx = bgfx::kInvalidHandle;
+    bgfx::DynamicVertexBufferHandle dvbh;
+    dvbh.idx = bgfx::kInvalidHandle;
     for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
     {
         vertexBuffers_[i] = nullptr;
-    //    impl_->vertexBuffers_[i] = nullptr;
-    //    impl_->vertexSizes_[i] = 0;
-    //    impl_->vertexOffsets_[i] = 0;
+        impl_->vertexBuffer_[i] = vbh;
+        impl_->dynamicVertexBuffer_[i] = dvbh;
     }
 
     for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
-    {
         textures_[i] = nullptr;
-    //    impl_->shaderResourceViews_[i] = nullptr;
-    //    impl_->samplers_[i] = nullptr;
-    }
 
     for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
     {
@@ -1738,6 +1876,7 @@ void Graphics::ResetCachedState()
     impl_->stateDirty_ = true;
     impl_->scissorRectDirty_ = true;
     impl_->stencilRefDirty_ = true;
+    impl_->primitiveType_ = 0;
     //impl_->blendStateHash_ = M_MAX_UNSIGNED;
     //impl_->depthStateHash_ = M_MAX_UNSIGNED;
     //impl_->rasterizerStateHash_ = M_MAX_UNSIGNED;
@@ -1841,7 +1980,7 @@ void Graphics::PrepareDraw()
             bgfx::setStencil(stencilFlags, BGFX_STENCIL_NONE);
         }
         // Rasterizer state
-        stateFlags |= bgfxPrimitiveType[primitiveType_];
+        stateFlags |= primitiveType_;
         bgfx::setState(stateFlags);
         impl_->stateDirty_ = false;
     }

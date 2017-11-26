@@ -26,6 +26,9 @@
 #include "../Graphics/Graphics.h"
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/VertexBuffer.h"
+#ifdef URHO3D_BGFX
+#include "../Graphics/GraphicsImpl.h"
+#endif
 #include "../IO/Log.h"
 #include "../Math/Ray.h"
 
@@ -182,7 +185,7 @@ void Geometry::Draw(Graphics* graphics)
         graphics->SetIndexBuffer(indexBuffer_);
         graphics->SetVertexBuffers(vertexBuffers_);
 #ifdef URHO3D_BGFX
-        graphics->GetImpl()->drawDistance_ = (uint32_t)distance_;
+        //graphics->GetImpl()->SetDrawDistance((uint32_t)distance_);
 #endif
         graphics->Draw(primitiveType_, indexStart_, indexCount_, vertexStart_, vertexCount_);
     }
@@ -190,7 +193,7 @@ void Geometry::Draw(Graphics* graphics)
     {
         graphics->SetVertexBuffers(vertexBuffers_);
 #ifdef URHO3D_BGFX
-        graphics->GetImpl()->drawDistance_ = (uint32_t)distance_;
+        //graphics->GetImpl()->SetDrawDistance((uint32_t)distance_);
 #endif
         graphics->Draw(primitiveType_, vertexStart_, vertexCount_);
     }

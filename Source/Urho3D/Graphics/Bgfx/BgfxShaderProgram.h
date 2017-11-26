@@ -27,7 +27,7 @@
 #include "../../Graphics/Graphics.h"
 #include "../../Graphics/ShaderVariation.h"
 
-#include "BgfxGraphicsImpl.h"
+#include <bgfx/bgfx.h>
 
 namespace Urho3D
 {
