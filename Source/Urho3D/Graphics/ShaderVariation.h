@@ -72,8 +72,13 @@ struct ShaderParameter
         unsigned bgfxType_;
     };
 
-    /// Constant buffer index. Only used on Direct3D11.
-    unsigned buffer_;
+	union
+	{
+		/// Constant buffer index. Only used on Direct3D11.
+		unsigned buffer_;
+		/// Texture unit of sampler. Only used on BGFX.
+		unsigned texUnit_;
+	};
     /// Constant buffer pointer. Defined only in shader programs.
     ConstantBuffer* bufferPtr_;
 };

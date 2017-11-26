@@ -46,6 +46,8 @@ public:
 	bgfx::ProgramHandle handle_;
 	/// Shader parameters.
 	HashMap<StringHash, ShaderParameter> parameters_;
+	/// Texture samplers.
+	bgfx::UniformHandle texSamplers_[MAX_TEXTURE_UNITS];
 };
 
 }

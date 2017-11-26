@@ -32,6 +32,8 @@
 namespace Urho3D
 {
 
+using ShaderProgramMap = HashMap<Pair<ShaderVariation*, ShaderVariation*>, SharedPtr<ShaderProgram> >;
+
 /// Cached state of a frame buffer handle
 struct FrameBufferHandle
 {
@@ -75,14 +77,14 @@ private:
     bgfx::FrameBufferHandle currentFramebuffer_;
     /// Current view.
     uint8_t view_;
+	/// Shader programs.
+	ShaderProgramMap shaderPrograms_;
     /// Current shader program.
-    bgfx::ProgramHandle programHandle_;
+    ShaderProgram* shaderProgram_;
     /// Current depth of primitive.
     uint32_t drawDistance_;
     /// Rendertargets dirty flag.
     bool renderTargetsDirty_;
-    /// Textures dirty flag.
-    bool texturesDirty_;
     /// Vertex declaration dirty flag.
     bool vertexDeclarationDirty_;
     /// Scissor rect dirty flag.

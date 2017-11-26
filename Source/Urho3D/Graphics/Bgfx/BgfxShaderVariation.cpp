@@ -36,9 +36,15 @@
 namespace Urho3D
 {
 
-void CopyStrippedCode(PODVector<unsigned char>& byteCode, unsigned char* bufData, unsigned bufSize)
+static unsigned NumberPostfix(const String& str)
 {
+	for (unsigned i = 0; i < str.Length(); ++i)
+	{
+		if (IsDigit(str[i]))
+			return ToUInt(str.CString() + i);
+	}
 
+	return M_MAX_UNSIGNED;
 }
 
 void ShaderVariation::OnDeviceLost()
@@ -119,13 +125,27 @@ bool ShaderVariation::Create()
                 bgfx::getUniformInfo(uHandles[i], info);
 
 				// Uniforms have a u_ prefix, so we substring from 2
-                String name = String(info.name).Substring(2);
+				String name = String(info.name).Substring(2);
+				unsigned unit = MAX_TEXTURE_UNITS;
+				// See if it's a sampler
+				if (info.type == bgfx::UniformType::Int1)
+				{
+					unit = graphics_->GetTextureUnit(name);
+					if (unit >= MAX_TEXTURE_UNITS)
+						unit = NumberPostfix(name);
+
+					if (unit < MAX_TEXTURE_UNITS)
+					{
+						useTextureUnit_[unit] = true;
+					}
+				}
 
                 ShaderParameter parameter;
                 parameter.bgfxType_ = (unsigned)info.type;
                 parameter.name_ = name;
                 parameter.type_ = type_;
                 parameter.idx_ = uHandles[i].idx;
+				parameter.texUnit_ = unit;
                 parameters_[StringHash(name)] = parameter;
             }
         }

@@ -33,6 +33,11 @@ namespace Urho3D
 
 ShaderProgram::ShaderProgram(Graphics* graphics, ShaderVariation* vertexShader, ShaderVariation* pixelShader)
 {
+	for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
+	{
+		texSamplers_[i].idx = bgfx::kInvalidHandle;
+	}
+
 	bgfx::ShaderHandle vsh;
 	bgfx::ShaderHandle fsh;
 
@@ -49,12 +54,18 @@ ShaderProgram::ShaderProgram(Graphics* graphics, ShaderVariation* vertexShader, 
 	for (HashMap<StringHash, ShaderParameter>::ConstIterator i = vsParams.Begin(); i != vsParams.End(); ++i)
 	{
 		parameters_[i->first_] = i->second_;
+		// Map texture unit number to uniform handle
+		if ((i->second_.type_ == bgfx::UniformType::Int1) && (i->second_.texUnit_ != MAX_TEXTURE_UNITS))
+			texSamplers_[i->second_.texUnit_].idx = i->second_.idx_;
 	}
 
 	const HashMap<StringHash, ShaderParameter>& psParams = pixelShader->GetParameters();
 	for (HashMap<StringHash, ShaderParameter>::ConstIterator i = psParams.Begin(); i != psParams.End(); ++i)
 	{
 		parameters_[i->first_] = i->second_;
+		// Map texture unit number to uniform handle
+		if ((i->second_.type_ == bgfx::UniformType::Int1) && (i->second_.texUnit_ != MAX_TEXTURE_UNITS))
+			texSamplers_[i->second_.texUnit_].idx = i->second_.idx_;
 	}
 
 	// Optimize shader parameter lookup by rehashing to next power of two

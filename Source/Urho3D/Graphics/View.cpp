@@ -1855,7 +1855,7 @@ void View::SetRenderTargets(RenderPathCommand& command)
             {
                 useColorWrite = false;
                 useCustomDepth = true;
-#if !defined(URHO3D_OPENGL) && !defined(URHO3D_D3D11)
+#if !defined(URHO3D_OPENGL) && !defined(URHO3D_D3D11) && !defined(URHO3D_BGFX)
                 // On D3D9 actual depth-only rendering is illegal, we need a color rendertarget
                 if (!depthOnlyDummyTexture_)
                 {
