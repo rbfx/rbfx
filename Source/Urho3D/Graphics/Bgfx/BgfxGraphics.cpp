@@ -542,6 +542,7 @@ void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCou
 
     uint32_t primitiveCount;
     primitiveCount = bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
+    impl_->drawDistance_ = 0;
     numPrimitives_ += primitiveCount;
     ++numBatches_;
 }
@@ -575,6 +576,7 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
 
     uint32_t primitiveCount;
     primitiveCount = bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
+    impl_->drawDistance_ = 0;
     numPrimitives_ += primitiveCount;
     ++numBatches_;
 }
@@ -608,6 +610,7 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
 
     uint32_t primitiveCount;
     primitiveCount = bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
+    impl_->drawDistance_ = 0;
     numPrimitives_ += primitiveCount;
     ++numBatches_;
 }
@@ -643,6 +646,7 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
 
     uint32_t primitiveCount;
     primitiveCount = bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
+    impl_->drawDistance_ = 0;
     numPrimitives_ += primitiveCount;
     ++numBatches_;
 }
@@ -678,6 +682,7 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
 
     uint32_t primitiveCount;
     primitiveCount = bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
+    impl_->drawDistance_ = 0;
     numPrimitives_ += primitiveCount;
     ++numBatches_;
 }
@@ -714,7 +719,33 @@ bool Graphics::SetVertexBuffers(const PODVector<VertexBuffer*>& buffers, unsigne
         if (buffer != vertexBuffers_[i])
         {
             vertexBuffers_[i] = buffer;
-            //impl_->vertexBuffersDirty_ = true;
+            if (buffer->IsDynamic())
+            {
+                bgfx::DynamicVertexBufferHandle handle;
+                handle.idx = buffer->GetGPUObjectIdx();
+                impl_->dynamicVertexBuffer_[i] = handle;
+                bgfx::VertexBufferHandle nullHandle;
+                nullHandle.idx = bgfx::kInvalidHandle;
+                impl_->vertexBuffer_[i] = nullHandle;
+            }
+            else
+            {
+                bgfx::VertexBufferHandle handle;
+                handle.idx = buffer->GetGPUObjectIdx();
+                impl_->vertexBuffer_[i] = handle;
+                bgfx::DynamicVertexBufferHandle nullHandle;
+                nullHandle.idx = bgfx::kInvalidHandle;
+                impl_->dynamicVertexBuffer_[i] = nullHandle;
+            }
+        }
+        else
+        {
+            bgfx::DynamicVertexBufferHandle dhandle;
+            dhandle.idx = bgfx::kInvalidHandle;
+            impl_->dynamicVertexBuffer_[i] = dhandle;
+            bgfx::VertexBufferHandle handle;
+            handle.idx = bgfx::kInvalidHandle;
+            impl_->vertexBuffer_[i] = handle;
         }
     }
 
@@ -1868,7 +1899,7 @@ void Graphics::ResetCachedState()
     stencilCompareMask_ = M_MAX_UNSIGNED;
     stencilWriteMask_ = M_MAX_UNSIGNED;
     useClipPlane_ = false;
-    //impl_->shaderProgram_ = nullptr;
+    impl_->shaderProgram_ = nullptr;
     impl_->view_ = 0;
     impl_->renderTargetsDirty_ = true;
     //impl_->texturesDirty_ = true;

@@ -800,8 +800,10 @@ void BatchQueue::SortFrontToBack2Pass(PODVector<Batch*>& batches)
 {
     // Mobile devices likely use a tiled deferred approach, with which front-to-back sorting is irrelevant. The 2-pass
     // method is also time consuming, so just sort with state having priority
-#ifdef GL_ES_VERSION_2_0
+#if defined(GL_ES_VERSION_2_0)
     Sort(batches.Begin(), batches.End(), CompareBatchesState);
+#elif defined(URHO3D_BGFX)
+    // BGFX will sort internally.
 #else
     // For desktop, first sort by distance and remap shader/material/geometry IDs in the sort key
     Sort(batches.Begin(), batches.End(), CompareBatchesFrontToBack);
