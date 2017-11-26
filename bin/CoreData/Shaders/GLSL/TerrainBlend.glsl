@@ -82,10 +82,15 @@ uniform sampler2D sDetailMap3;
 
 #endif // BGFX_SHADER
 
+#ifdef BGFX_SHADER
+uniform vec4 u_DetailTiling;
+#define cDetailTiling vec2(u_DetailTiling.xy)
+#else
 #ifndef GL_ES
 uniform vec2 cDetailTiling;
 #else
 uniform mediump vec2 cDetailTiling;
+#endif
 #endif
 
 void VS()

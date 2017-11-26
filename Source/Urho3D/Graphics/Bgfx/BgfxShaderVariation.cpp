@@ -118,7 +118,8 @@ bool ShaderVariation::Create()
                 bgfx::UniformInfo info;
                 bgfx::getUniformInfo(uHandles[i], info);
 
-                String name = info.name;
+				// Uniforms have a u_ prefix, so we substring from 2
+                String name = String(info.name).Substring(2);
 
                 ShaderParameter parameter;
                 parameter.bgfxType_ = (unsigned)info.type;

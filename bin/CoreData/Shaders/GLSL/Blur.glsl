@@ -31,10 +31,22 @@ varying vec2 vScreenPos;
 #endif // BGFX_SHADER
 
 #ifdef COMPILEPS
+#ifdef BGFX_SHADER
+uniform vec4 u_BlurDir;
+uniform vec4 u_BlurRadius;
+uniform vec4 u_BlurSigma;
+uniform vec4 u_BlurHInvSize;
+
+#define cBlurDir vec2(u_BlurDir.xy)
+#define cBlurRadius u_BlurRadius.x
+#define cBlurSigma u_BlurSigma.x
+#define cBlurHInvSize vec2(u_BlurHInvSize.xy)
+#else
 uniform vec2 cBlurDir;
 uniform float cBlurRadius;
 uniform float cBlurSigma;
 uniform vec2 cBlurHInvSize;
+#endif
 #endif
 
 void VS()

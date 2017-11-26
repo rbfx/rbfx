@@ -27,12 +27,24 @@ varying vec4 vColor;
 #endif
 
 #ifdef TEXT_EFFECT_SHADOW
+#ifdef BGFX_SHADER
+uniform vec4 u_ShadowOffset;
+uniform vec4 u_ShadowColor;
+#define cShadowOffset vec2(u_ShadowOffset.xy)
+#define cShadowColor u_ShadowColor
+#else
 uniform vec2 cShadowOffset;
 uniform vec4 cShadowColor;
 #endif
+#endif
 
 #ifdef TEXT_EFFECT_STROKE
+#ifdef BGFX_SHADER
+uniform vec4 u_StrokeColor;
+#define cStrokeColor u_StrokeColor
+#else
 uniform vec4 cStrokeColor;
+#endif
 #endif
 
 void VS()

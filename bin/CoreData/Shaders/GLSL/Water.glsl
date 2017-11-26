@@ -41,13 +41,29 @@ varying vec3 vNormal;
 #endif // BGFX_SHADER
 
 #ifdef COMPILEVS
+#ifdef BGFX_SHADER
+uniform vec4 u_NoiseSpeed;
+uniform vec4 u_NoiseTiling;
+#define cNoiseSpeed vec2(u_NoiseSpeed.xy)
+#define cNoiseTiling u_NoiseTiling.x
+#else
 uniform vec2 cNoiseSpeed;
 uniform float cNoiseTiling;
 #endif
+#endif
 #ifdef COMPILEPS
+#ifdef BGFX_SHADER
+uniform vec4 u_NoiseStrength;
+uniform vec4 u_FresnelPower;
+uniform vec4 u_WaterTint;
+#define cNoiseStrength u_NoiseStrength.x
+#define cFresnelPower u_FresnelPower.x
+#define cWaterTint vec3(u_WaterTint.xyz)
+#else
 uniform float cNoiseStrength;
 uniform float cFresnelPower;
 uniform vec3 cWaterTint;
+#endif
 #endif
 
 void VS()

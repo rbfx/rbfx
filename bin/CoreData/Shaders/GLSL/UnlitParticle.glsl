@@ -17,6 +17,11 @@
 #include "screen_pos.sh"
 #include "fog.sh"
 
+#ifdef SOFTPARTICLES
+    uniform vec4 u_SoftParticleFadeScale;
+    #define cSoftParticleFadeScale u_SoftParticleFadeScale.x
+#endif
+
 #else
 
 #include "Uniforms.glsl"
@@ -35,7 +40,7 @@ varying vec4 vWorldPos;
     uniform float cSoftParticleFadeScale;
 #endif
 
-#endif
+#endif // BGFX_SHADER
 
 void VS()
 {

@@ -9,7 +9,7 @@ SAMPLER2D(sSpecMap, 2);
 SAMPLER2D(sEmissiveMap, 3);
 SAMPLER2D(sEnvMap, 4);
 SAMPLERCUBE(sEnvCubeMap, 4);
-#ifndef GL_ES
+#ifndef URHO3D_MOBILE
     SAMPLER2D(sAlbedoBuffer, 0);
     SAMPLER2D(sNormalBuffer, 1);
     SAMPLERCUBE(sLightCubeMap, 6);

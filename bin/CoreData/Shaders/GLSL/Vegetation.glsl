@@ -24,6 +24,15 @@
 #include "screen_pos.sh"
 #include "lighting.sh"
 
+uniform vec4 u_WindHeightFactor;
+uniform vec4 u_WindHeightPivot;
+uniform vec4 u_WindPeriod;
+uniform vec4 u_WindWorldSpacing;
+#define cWindHeightFactor u_WindHeightFactor.x
+#define cWindHeightPivot u_WindHeightPivot.x
+#define cWindPeriod u_WindPeriod.x
+#define cWindWorldSpacing vec2(u_WindWorldSpacing.xy)
+
 #else
 
 #include "Uniforms.glsl"
@@ -31,14 +40,10 @@
 #include "ScreenPos.glsl"
 #include "Lighting.glsl"
 
-#endif
-
 uniform float cWindHeightFactor;
 uniform float cWindHeightPivot;
 uniform float cWindPeriod;
 uniform vec2 cWindWorldSpacing;
-
-#ifndef BGFX_SHADER
 
 #ifdef NORMALMAP
     varying vec4 vTexCoord;
@@ -76,7 +81,7 @@ varying vec4 vWorldPos;
     #endif
 #endif
 
-#endif
+#endif // BGFX_SHADER
 
 void VS()
 {

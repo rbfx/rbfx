@@ -30,8 +30,15 @@ varying vec2 vScreenPos;
 #endif
 
 #ifdef COMPILEPS
+#ifdef BGFX_SHADER
+uniform vec4 u_TonemapExposureBias;
+uniform vec4 u_TonemapMaxWhite;
+#define cTonemapExposureBias u_TonemapExposureBias.x
+#define cTonemapMaxWhite u_TonemapMaxWhite.x
+#else
 uniform float cTonemapExposureBias;
 uniform float cTonemapMaxWhite;
+#endif
 #endif
 
 void VS()

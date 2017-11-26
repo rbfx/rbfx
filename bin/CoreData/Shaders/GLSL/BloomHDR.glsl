@@ -31,6 +31,27 @@ varying vec2 vScreenPos;
 #endif // BGFX_SHADER
 
 #ifdef COMPILEPS
+#ifdef BGFX_SHADER
+uniform vec4 u_BloomHDRThreshold;
+uniform vec4 u_BloomHDRBlurSigma;
+uniform vec4 u_BloomHDRBlurRadius;
+uniform vec4 u_BloomHDRBlurDir;
+uniform vec4 u_BloomHDRMix;
+uniform vec4 u_Bright2InvSize;
+uniform vec4 u_Bright4InvSize;
+uniform vec4 u_Bright8InvSize;
+uniform vec4 u_Bright16InvSize;
+
+#define cBloomHDRThreshold u_BloomHDRThreshold.x
+#define cBloomHDRBlurSigma u_BloomHDRBlurSigma.x
+#define cBloomHDRBlurRadius u_BloomHDRBlurRadius.x
+#define cBloomHDRBlurDir vec2(u_BloomHDRBlurDir.xy)
+#define cBloomHDRMix vec2(u_BloomHDRMix.xy)
+#define cBright2InvSize vec2(u_Bright2InvSize.xy)
+#define cBright4InvSize vec2(u_Bright4InvSize.xy)
+#define cBright8InvSize vec2(u_Bright8InvSize.xy)
+#define cBright16InvSize vec2(Bright16InvSize.xy)
+#else
 uniform float cBloomHDRThreshold;
 uniform float cBloomHDRBlurSigma;
 uniform float cBloomHDRBlurRadius;
@@ -40,6 +61,7 @@ uniform vec2 cBright2InvSize;
 uniform vec2 cBright4InvSize;
 uniform vec2 cBright8InvSize;
 uniform vec2 cBright16InvSize;
+#endif
 
 const int BlurKernelSize = 5;
 #endif

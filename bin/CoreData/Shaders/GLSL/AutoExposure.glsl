@@ -31,6 +31,23 @@ varying vec2 vScreenPos;
 #endif // BGFX_SHADER
 
 #ifdef COMPILEPS
+#ifdef BGFX_SHADER
+uniform vec4 u_AutoExposureAdaptRate;
+uniform vec4 u_AutoExposureLumRange;
+uniform vec4 u_AutoExposureMiddleGrey;
+uniform vec4 u_HDR128InvSize;
+uniform vec4 u_Lum64InvSize;
+uniform vec4 u_Lum16InvSize;
+uniform vec4 u_Lum4InvSize;
+
+#define cAutoExposureAdaptRate u_AutoExposureAdaptRate.x
+#define cAutoExposureLumRange vec2(u_AutoExposureLumRange.xy)
+#define cAutoExposureMiddleGrey u_AutoExposureMiddleGrey.x
+#define cHDR128InvSize vec2(u_HDR128InvSize.xy)
+#define cLum64InvSize vec2(u_Lum64InvSize.xy)
+#define cLum16InvSize vec2(u_Lum16InvSize.xy)
+#define cLum4InvSize vec2(u_Lum4InvSize.xy)
+#else
 uniform float cAutoExposureAdaptRate;
 uniform vec2 cAutoExposureLumRange;
 uniform float cAutoExposureMiddleGrey;
@@ -38,6 +55,7 @@ uniform vec2 cHDR128InvSize;
 uniform vec2 cLum64InvSize;
 uniform vec2 cLum16InvSize;
 uniform vec2 cLum4InvSize;
+#endif
 
 float GatherAvgLum(sampler2D texSampler, vec2 texCoord, vec2 texelSize)
 {

@@ -26,7 +26,8 @@
 #include "lighting.sh"
 #include "fog.sh"
 
-uniform float cSoftParticleFadeScale;
+uniform vec4 u_SoftParticleFadeScale;
+#define cSoftParticleFadeScale u_SoftParticleFadeScale.x
 
 #else
 

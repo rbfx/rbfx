@@ -29,9 +29,19 @@ varying vec2 vScreenPos;
 #endif // BGFX_SHADER
 
 #ifdef COMPILEPS
+#ifdef BGFX_SHADER
+uniform vec4 u_BloomThreshold;
+uniform vec4 u_BloomMix;
+uniform vec4 u_BlurHInvSize;
+
+#define cBloomThreshold u_BloomThreshold.x
+#define cBloomMix vec2(u_BloomMix.xy)
+#define cBlurHInvSize vec2(u_BlurHInvSize.xy)
+#else
 uniform float cBloomThreshold;
 uniform vec2 cBloomMix;
 uniform vec2 cBlurHInvSize;
+#endif
 #endif
 
 void VS()

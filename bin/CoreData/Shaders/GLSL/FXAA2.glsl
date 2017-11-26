@@ -37,7 +37,12 @@ varying vec2 vScreenPos;
 #endif
 
 #ifdef COMPILEPS
+#ifdef BGFX_SHADER
+uniform vec4 u_FXAAParams;
+#define cFXAAParams vec3(u_FXAAParams.xyz)
+#else
 uniform vec3 cFXAAParams;
+#endif
 #endif
 
 void VS()

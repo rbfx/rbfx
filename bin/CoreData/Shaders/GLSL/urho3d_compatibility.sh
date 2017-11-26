@@ -95,7 +95,4 @@
 #define iTexCoord5 i_data1
 #define iTexCoord6 i_data2
 #define iObjectIndex i_data3
-#define cView u_view
-#define cViewInv u_invProj
-#define cViewProj u_viewProj
 #endif

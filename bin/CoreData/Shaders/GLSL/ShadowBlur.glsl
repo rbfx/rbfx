@@ -24,7 +24,12 @@
 #include "ScreenPos.glsl"
 
 #ifdef COMPILEPS
+#ifdef BGFX_SHADER
+uniform vec4 u_BlurOffsets;
+#define cBlurOffsets vec2(u_BlurOffsets.xy)
+#else
 uniform vec2 cBlurOffsets;
+#endif
 #endif
 
 varying vec2 vScreenPos;

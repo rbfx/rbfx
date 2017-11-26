@@ -31,8 +31,7 @@
 namespace Urho3D
 {
 
-ShaderProgram::ShaderProgram(Graphics* graphics, ShaderVariation* vertexShader, ShaderVariation* pixelShader) :
-	GPUObject(graphics)
+ShaderProgram::ShaderProgram(Graphics* graphics, ShaderVariation* vertexShader, ShaderVariation* pixelShader)
 {
 	bgfx::ShaderHandle vsh;
 	bgfx::ShaderHandle fsh;
