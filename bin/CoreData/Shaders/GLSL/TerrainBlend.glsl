@@ -26,10 +26,10 @@
 #include "lighting.sh"
 #include "fog.sh"
 
-SAMPLER2D(sWeightMap0, 0);
-SAMPLER2D(sDetailMap1, 1);
-SAMPLER2D(sDetailMap2, 2);
-SAMPLER2D(sDetailMap3, 3);
+SAMPLER2D(u_WeightMap0, 0);
+SAMPLER2D(u_DetailMap1, 1);
+SAMPLER2D(u_DetailMap2, 2);
+SAMPLER2D(u_DetailMap3, 3);
 
 #else
 

@@ -2,35 +2,35 @@
 #define __SAMPLERS_SH__
 
 #ifdef BGFX_SHADER_TYPE_FRAGMENT == 1
-SAMPLER2D(sDiffMap, 0);
-SAMPLERCUBE(sDiffCubeMap, 0);
-SAMPLER2D(sNormalMap, 1);
-SAMPLER2D(sSpecMap, 2);
-SAMPLER2D(sEmissiveMap, 3);
-SAMPLER2D(sEnvMap, 4);
-SAMPLERCUBE(sEnvCubeMap, 4);
+SAMPLER2D(u_DiffMap, 0);
+SAMPLERCUBE(u_DiffCubeMap, 0);
+SAMPLER2D(u_NormalMap, 1);
+SAMPLER2D(u_SpecMap, 2);
+SAMPLER2D(u_EmissiveMap, 3);
+SAMPLER2D(u_EnvMap, 4);
+SAMPLERCUBE(u_EnvCubeMap, 4);
 #ifndef URHO3D_MOBILE
-    SAMPLER2D(sAlbedoBuffer, 0);
-    SAMPLER2D(sNormalBuffer, 1);
-    SAMPLERCUBE(sLightCubeMap, 6);
-    SAMPLER3D(sVolumeMap, 5);
-    SAMPLER2D(sLightRampMap, 8);
-    SAMPLER2D(sLightSpotMap, 9);
-    SAMPLER2D(sDepthBuffer, 13);
-    SAMPLER2D(sLightBuffer, 14);
+    SAMPLER2D(u_AlbedoBuffer, 0);
+    SAMPLER2D(u_NormalBuffer, 1);
+    SAMPLERCUBE(u_LightCubeMap, 6);
+    SAMPLER3D(u_VolumeMap, 5);
+    SAMPLER2D(u_LightRampMap, 8);
+    SAMPLER2D(u_LightSpotMap, 9);
+    SAMPLER2D(u_DepthBuffer, 13);
+    SAMPLER2D(u_LightBuffer, 14);
     #ifdef VSM_SHADOW
-        SAMPLER2D(sShadowMap, 10);
+        SAMPLER2D(u_ShadowMap, 10);
     #else
-        SAMPLER2DSHADOW(sShadowMap, 10);
+        SAMPLER2DSHADOW(u_ShadowMap, 10);
     #endif
-    SAMPLERCUBE(sFaceSelectCubeMap, 11);
-    SAMPLERCUBE(sIndirectionCubeMap, 12);
-    SAMPLERCUBE(sZoneCubeMap, 15);
-    SAMPLER3D(sZoneVolumeMap, 15);
+    SAMPLERCUBE(u_FaceSelectCubeMap, 11);
+    SAMPLERCUBE(u_IndirectionCubeMap, 12);
+    SAMPLERCUBE(u_ZoneCubeMap, 15);
+    SAMPLER3D(u_ZoneVolumeMap, 15);
 #else
-    SAMPLER2D(sLightRampMap, 5);
-    SAMPLER2D(sLightSpotMap, 6);
-    SAMPLER2DSHADOW(sShadowMap, 7);
+    SAMPLER2D(u_LightRampMap, 5);
+    SAMPLER2D(u_LightSpotMap, 6);
+    SAMPLER2DSHADOW(u_ShadowMap, 7);
 #endif
 
 vec3 DecodeNormal(vec4 normalInput)
