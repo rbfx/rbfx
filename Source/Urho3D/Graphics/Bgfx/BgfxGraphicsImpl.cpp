@@ -46,4 +46,9 @@ void GraphicsImpl::SetDrawDistance(const uint32_t drawDistance)
     drawDistance_ = drawDistance ^ mask;
 }
 
+void GraphicsImpl::SetInstanceBuffer(VertexBuffer* instanceBuffer)
+{
+    instanceBuffer_ = instanceBuffer;
+}
+
 }

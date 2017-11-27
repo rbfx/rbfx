@@ -115,13 +115,16 @@ void CalculateShadowMatrix(Matrix4& dest, LightBatchQueue* queue, unsigned split
 
 #if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
 #ifdef URHO3D_BGFX
-    if (bgfx::getCaps()->originBottomLeft) {
+    if (bgfx::getCaps()->originBottomLeft)
+    {
 #endif
     offset.z_ = 0.5f;
     scale.z_ = 0.5f;
     offset.y_ = 1.0f - offset.y_;
 #ifdef URHO3D_BGFX
-    } else
+    } 
+    else
+        scale.y_ = -scale.y_;
 #endif
 #else
     scale.y_ = -scale.y_;
@@ -702,7 +705,10 @@ void BatchGroup::Draw(View* view, Camera* camera, bool allowDepthWrite) const
             {
                 if (graphics->NeedParameterUpdate(SP_OBJECT, instances_[i].worldTransform_))
                     graphics->SetShaderParameter(VSP_MODEL, *instances_[i].worldTransform_);
-
+#ifdef URHO3D_BGFX
+                // BGFX will sort internally.
+                graphics->GetImpl()->SetDrawDistance((uint32_t)geometry_->GetLodDistance());
+#endif
                 graphics->Draw(geometry_->GetPrimitiveType(), geometry_->GetIndexStart(), geometry_->GetIndexCount(),
                     geometry_->GetVertexStart(), geometry_->GetVertexCount());
             }
@@ -710,20 +716,27 @@ void BatchGroup::Draw(View* view, Camera* camera, bool allowDepthWrite) const
         else
         {
             Batch::Prepare(view, camera, false, allowDepthWrite);
-
+#ifdef URHO3D_BGFX
+            graphics->SetIndexBuffer(geometry_->GetIndexBuffer());
+            graphics->SetVertexBuffers(geometry_->GetVertexBuffers(), startIndex_);
+            graphics->GetImpl()->SetInstanceBuffer(instanceBuffer);
+            graphics->GetImpl()->SetDrawDistance(0);
+#else
             // Get the geometry vertex buffers, then add the instancing stream buffer
             // Hack: use a const_cast to avoid dynamic allocation of new temp vectors
             Vector<SharedPtr<VertexBuffer> >& vertexBuffers = const_cast<Vector<SharedPtr<VertexBuffer> >&>(
                 geometry_->GetVertexBuffers());
             vertexBuffers.Push(SharedPtr<VertexBuffer>(instanceBuffer));
-
             graphics->SetIndexBuffer(geometry_->GetIndexBuffer());
             graphics->SetVertexBuffers(vertexBuffers, startIndex_);
+#endif
             graphics->DrawInstanced(geometry_->GetPrimitiveType(), geometry_->GetIndexStart(), geometry_->GetIndexCount(),
                 geometry_->GetVertexStart(), geometry_->GetVertexCount(), instances_.Size());
 
+#ifndef URHO3D_BGFX
             // Remove the instancing buffer & element mask now
             vertexBuffers.Pop();
+#endif
         }
     }
 }

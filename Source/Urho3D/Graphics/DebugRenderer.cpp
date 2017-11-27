@@ -516,12 +516,13 @@ void DebugRenderer::Render()
 #ifdef URHO3D_BGFX
     // Increment the current view and name it for debug
     uint8_t view = graphics->GetImpl()->GetCurrentView() + 1;
+    graphics->GetImpl()->SetCurrentView(view);
+    bgfx::touch(view);
 #ifdef URHO3D_DEBUG
     bgfx::setViewName(view, "DEBUG RENDER");
 #endif
     bgfx::setViewMode(view, bgfx::ViewMode::Sequential);
     bgfx::setViewFrameBuffer(view, BGFX_INVALID_HANDLE); // default back buffer
-    graphics->GetImpl()->SetCurrentView(view);
 #endif
 
     ShaderVariation* vs = graphics->GetShader(VS, "Basic", "VERTEXCOLOR");

@@ -358,6 +358,7 @@ bool Graphics::SetMode(int width, int height)
     bgfx::reset(width, height);
     bgfx::setDebug(BGFX_DEBUG_TEXT);
     bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x000000ff, 1.0f, 0);
+    bgfx::touch(0);
 
     ResetRenderTargets();
 
@@ -495,7 +496,7 @@ bool Graphics::ResolveToTexture(Texture2D* destination, const IntRect& viewport)
     bgfx::TextureHandle dstHandle;
     dstHandle.idx = destination->GetGPUObjectIdx();
     bool flip = false;
-    if ((apiType_ == BGFX_OPENGL) || (apiType_ == BGFX_OPENGLES))
+    if (bgfx::getCaps()->originBottomLeft)
         flip = true;
     bgfx::blit(impl_->view_, dstHandle, vpCopy.left_, flip ? height_ - vpCopy.bottom_ : vpCopy.bottom_,
         srcHandle, vpCopy.left_, flip ? height_ - vpCopy.bottom_ : vpCopy.bottom_, vpCopy.Width(), vpCopy.Height());
@@ -642,7 +643,22 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
             bgfx::setVertexBuffer(i, impl_->dynamicVertexBuffer_[i], minVertex, vertexCount);
     }
 
-    //bgfx::setInstanceDataBuffer(_, 0, instanceCount);
+    if (impl_->instanceBuffer_)
+    {
+        unsigned startIndex = impl_->instanceOffset_;
+        if (impl_->instanceBuffer_->IsDynamic())
+        {
+            bgfx::DynamicVertexBufferHandle handle;
+            handle.idx = impl_->instanceBuffer_->GetGPUObjectIdx();
+            bgfx::setInstanceDataBuffer(handle, startIndex, instanceCount);
+        }
+        else
+        {
+            bgfx::VertexBufferHandle handle;
+            handle.idx = impl_->instanceBuffer_->GetGPUObjectIdx();
+            bgfx::setInstanceDataBuffer(handle, startIndex, instanceCount);
+        }
+    }
 
     uint32_t primitiveCount;
     primitiveCount = bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
@@ -678,7 +694,22 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
             bgfx::setVertexBuffer(i, impl_->dynamicVertexBuffer_[i], minVertex, vertexCount);
     }
 
-    //bgfx::setInstanceDataBuffer(_, 0, instanceCount);
+    if (impl_->instanceBuffer_)
+    {
+        unsigned startIndex = impl_->instanceOffset_;
+        if (impl_->instanceBuffer_->IsDynamic())
+        {
+            bgfx::DynamicVertexBufferHandle handle;
+            handle.idx = impl_->instanceBuffer_->GetGPUObjectIdx();
+            bgfx::setInstanceDataBuffer(handle, startIndex, instanceCount);
+        }
+        else
+        {
+            bgfx::VertexBufferHandle handle;
+            handle.idx = impl_->instanceBuffer_->GetGPUObjectIdx();
+            bgfx::setInstanceDataBuffer(handle, startIndex, instanceCount);
+        }
+    }
 
     uint32_t primitiveCount;
     primitiveCount = bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
@@ -703,13 +734,13 @@ bool Graphics::SetVertexBuffers(const PODVector<VertexBuffer*>& buffers, unsigne
         return false;
     }
 
-    /*
-    if (instanceOffset != impl_->lastInstanceOffset_)
+
+    if (instanceOffset != impl_->instanceOffset_)
     {
-        impl_->lastInstanceOffset_ = instanceOffset;
-        impl_->vertexBuffersDirty_ = true;
+        impl_->instanceOffset_ = instanceOffset;
+        //impl_->vertexBuffersDirty_ = true;
     }
-    */
+
 
     for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
     {
@@ -1868,6 +1899,9 @@ void Graphics::ResetCachedState()
     //    impl_->constantBuffers_[VS][i] = nullptr;
     //    impl_->constantBuffers_[PS][i] = nullptr;
     //}
+
+    impl_->instanceBuffer_ = nullptr;
+    impl_->instanceOffset_ = 0;
 
     depthStencil_ = nullptr;
     //impl_->depthStencilView_ = nullptr;

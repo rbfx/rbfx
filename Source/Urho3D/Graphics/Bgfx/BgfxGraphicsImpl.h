@@ -49,8 +49,10 @@ public:
     uint8_t GetCurrentView() const { return view_; }
     /// Set current view.
     void SetCurrentView(const uint8_t view);
-    /// Set drae distance.
+    /// Set draw distance.
     void SetDrawDistance(const uint32_t drawDistance);
+    /// Set instance vertex buffer.
+    void SetInstanceBuffer(VertexBuffer* instanceBuffer);
 
 private:
     /// Backbuffer framebuffer.
@@ -87,6 +89,10 @@ private:
     bgfx::VertexBufferHandle vertexBuffer_[MAX_VERTEX_STREAMS];
     /// Current dynamic vertex buffer.
     bgfx::DynamicVertexBufferHandle dynamicVertexBuffer_[MAX_VERTEX_STREAMS];
+    /// Instance vertex buffer.
+    VertexBuffer* instanceBuffer_;
+    /// Instance offset.
+    unsigned instanceOffset_;
 };
 
 }

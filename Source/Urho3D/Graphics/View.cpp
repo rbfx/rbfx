@@ -1786,6 +1786,8 @@ void View::SetRenderTargets(RenderPathCommand& command)
 #ifdef URHO3D_BGFX
     // Increment the current view
     uint8_t view = graphics_->GetImpl()->GetCurrentView() + 1;
+    graphics_->GetImpl()->SetCurrentView(view);
+    bgfx::touch(view);
     if (command.type_ == CMD_SCENEPASS)
     {
         switch (command.sortMode_)
@@ -1834,7 +1836,6 @@ void View::SetRenderTargets(RenderPathCommand& command)
     debugName + " " + command.pass_ + command.metadata_;
     bgfx::setViewName(view, debugName.CString());
 #endif
-    graphics_->GetImpl()->SetCurrentView(view);
 #endif
 
     unsigned index = 0;
@@ -3179,6 +3180,7 @@ void View::RenderShadowMap(const LightBatchQueue& queue)
 #ifdef URHO3D_BGFX
     // Increment the current view
     uint8_t view = graphics_->GetImpl()->GetCurrentView() + 1;
+    bgfx::touch(view);
     bgfx::setViewMode(view, bgfx::ViewMode::DepthDescending);
     //uint16_t idx = shadowMap->GetRenderSurface()->GetBgfxFramebufferIdx();
     //bgfx::FrameBufferHandle handle;
