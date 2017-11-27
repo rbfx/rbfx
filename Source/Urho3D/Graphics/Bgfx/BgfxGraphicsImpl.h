@@ -26,12 +26,79 @@
 #include "../../Core/Timer.h"
 #include "../../Graphics/Texture2D.h"
 #include "../../Graphics/ShaderProgram.h"
+#include "../../IO/Log.h"
 
 #include <bgfx/bgfx.h>
 #include <bgfx/defines.h>
+#include <bx/bx.h>
 
 namespace Urho3D
 {
+
+struct BgfxCallback : public bgfx::CallbackI
+{
+virtual ~BgfxCallback()
+{
+}
+
+virtual void fatal(bgfx::Fatal::Enum _code, const char* _str) override
+{
+    // Something unexpected happened, inform user and bail out.
+    //URHO3D_LOGDEBUGF("Fatal error: 0x%08x: %s", _code, _str);
+    URHO3D_LOGDEBUG("BGFX: Fatal error");
+
+    // Must terminate, continuing will cause crash anyway.
+    abort();
+}
+
+virtual void traceVargs(const char* _filePath, uint16_t _line, const char* _format, va_list _argList) override
+{
+    URHO3D_LOGERROR("%s (%d): ", _filePath, _line);
+    URHO3D_LOGERROR(_format, _argList);
+}
+
+virtual void profilerBegin(const char* /*_name*/, uint32_t /*_abgr*/, const char* /*_filePath*/, uint16_t /*_line*/) override
+{
+}
+
+virtual void profilerBeginLiteral(const char* /*_name*/, uint32_t /*_abgr*/, const char* /*_filePath*/, uint16_t /*_line*/) override
+{
+}
+
+virtual void profilerEnd() override
+{
+}
+
+virtual uint32_t cacheReadSize(uint64_t _id) override
+{
+    return 0;
+}
+
+virtual bool cacheRead(uint64_t _id, void* _data, uint32_t _size) override
+{
+    return false;
+}
+
+virtual void cacheWrite(uint64_t _id, const void* _data, uint32_t _size) override
+{
+}
+
+virtual void screenShot(const char* _filePath, uint32_t _width, uint32_t _height, uint32_t _pitch, const void* _data, uint32_t /*_size*/, bool _yflip) override
+{
+}
+
+virtual void captureBegin(uint32_t _width, uint32_t _height, uint32_t /*_pitch*/, bgfx::TextureFormat::Enum /*_format*/, bool _yflip) override
+{
+}
+
+virtual void captureEnd() override
+{
+}
+
+virtual void captureFrame(const void* _data, uint32_t /*_size*/) override
+{
+}
+};
 
 using ShaderProgramMap = HashMap<Pair<ShaderVariation*, ShaderVariation*>, SharedPtr<ShaderProgram> >;
 
@@ -93,6 +160,8 @@ private:
     VertexBuffer* instanceBuffer_;
     /// Instance offset.
     unsigned instanceOffset_;
+    /// BGFX callback.
+    BgfxCallback callback_;
 };
 
 }

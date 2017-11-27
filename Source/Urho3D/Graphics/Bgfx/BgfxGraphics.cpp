@@ -222,9 +222,9 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
         fullscreen = false;
 
     // If nothing changes, do not reset the device
-    if (width == width_ && height == height_ && fullscreen == fullscreen_ && borderless == borderless_ && resizable == resizable_ &&
-        vsync == vsync_ && tripleBuffer == tripleBuffer_ && multiSample == multiSample_)
-        return true;
+    //if (width == width_ && height == height_ && fullscreen == fullscreen_ && borderless == borderless_ && resizable == resizable_ &&
+    //    vsync == vsync_ && tripleBuffer == tripleBuffer_ && multiSample == multiSample_)
+    //    return true;
 
     SDL_SetHint(SDL_HINT_ORIENTATIONS, orientations_.CString());
 
@@ -327,7 +327,8 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
 
     }
 
-    bgfx::init(urhoToBgfxRenderer[GraphicsApiType::BGFX_OPENGL]);
+    bgfx::init(urhoToBgfxRenderer[GraphicsApiType::BGFX_OPENGL], BGFX_PCI_ID_NONE, 0, &impl_->callback_);
+    //bgfx::setDebug();
     apiType_ = bgfxToUrhoRenderer[bgfx::getRendererType()];
 
 #ifdef URHO3D_LOGGING
@@ -530,14 +531,14 @@ void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCou
 
     if (bgfx::isValid(impl_->indexBuffer_))
         bgfx::setIndexBuffer(impl_->indexBuffer_);
-    else
+    else if (bgfx::isValid(impl_->dynamicIndexBuffer_))
         bgfx::setIndexBuffer(impl_->dynamicIndexBuffer_);
 
     for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
     {
         if (bgfx::isValid(impl_->vertexBuffer_[i]))
             bgfx::setVertexBuffer(i, impl_->vertexBuffer_[i], vertexStart, vertexCount);
-        else
+        else if (bgfx::isValid(impl_->dynamicVertexBuffer_[i]))
             bgfx::setVertexBuffer(i, impl_->dynamicVertexBuffer_[i], vertexStart, vertexCount);
     }
 
@@ -564,14 +565,14 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
 
     if (bgfx::isValid(impl_->indexBuffer_))
         bgfx::setIndexBuffer(impl_->indexBuffer_, indexStart, indexCount);
-    else
+    else if (bgfx::isValid(impl_->dynamicIndexBuffer_))
         bgfx::setIndexBuffer(impl_->dynamicIndexBuffer_, indexStart, indexCount);
 
     for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
     {
         if (bgfx::isValid(impl_->vertexBuffer_[i]))
             bgfx::setVertexBuffer(i, impl_->vertexBuffer_[i], minVertex, vertexCount);
-        else
+        else if (bgfx::isValid(impl_->dynamicVertexBuffer_[i]))
             bgfx::setVertexBuffer(i, impl_->dynamicVertexBuffer_[i], minVertex, vertexCount);
     }
 
@@ -598,14 +599,14 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
 
     if (bgfx::isValid(impl_->indexBuffer_))
         bgfx::setIndexBuffer(impl_->indexBuffer_, indexStart, indexCount);
-    else
+    else if (bgfx::isValid(impl_->dynamicIndexBuffer_))
         bgfx::setIndexBuffer(impl_->dynamicIndexBuffer_, indexStart, indexCount);
 
     for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
     {
         if (bgfx::isValid(impl_->vertexBuffer_[i]))
             bgfx::setVertexBuffer(i, impl_->vertexBuffer_[i], minVertex, vertexCount);
-        else
+        else if (bgfx::isValid(impl_->dynamicVertexBuffer_[i]))
             bgfx::setVertexBuffer(i, impl_->dynamicVertexBuffer_[i], minVertex, vertexCount);
     }
 
@@ -632,14 +633,14 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
 
     if (bgfx::isValid(impl_->indexBuffer_))
         bgfx::setIndexBuffer(impl_->indexBuffer_, indexStart, indexCount);
-    else
+    else if (bgfx::isValid(impl_->dynamicIndexBuffer_))
         bgfx::setIndexBuffer(impl_->dynamicIndexBuffer_, indexStart, indexCount);
 
     for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
     {
         if (bgfx::isValid(impl_->vertexBuffer_[i]))
             bgfx::setVertexBuffer(i, impl_->vertexBuffer_[i], minVertex, vertexCount);
-        else
+        else if (bgfx::isValid(impl_->dynamicVertexBuffer_[i]))
             bgfx::setVertexBuffer(i, impl_->dynamicVertexBuffer_[i], minVertex, vertexCount);
     }
 
@@ -683,14 +684,14 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
 
     if (bgfx::isValid(impl_->indexBuffer_))
         bgfx::setIndexBuffer(impl_->indexBuffer_, indexStart, indexCount);
-    else
+    else if (bgfx::isValid(impl_->dynamicIndexBuffer_))
         bgfx::setIndexBuffer(impl_->dynamicIndexBuffer_, indexStart, indexCount);
 
     for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
     {
         if (bgfx::isValid(impl_->vertexBuffer_[i]))
             bgfx::setVertexBuffer(i, impl_->vertexBuffer_[i], minVertex, vertexCount);
-        else
+        else if (bgfx::isValid(impl_->dynamicVertexBuffer_[i]))
             bgfx::setVertexBuffer(i, impl_->dynamicVertexBuffer_[i], minVertex, vertexCount);
     }
 
@@ -791,33 +792,30 @@ bool Graphics::SetVertexBuffers(const Vector<SharedPtr<VertexBuffer> >& buffers,
 void Graphics::SetIndexBuffer(IndexBuffer* buffer)
 {
     // Have to defer this as the draw call sets index start/end.
-    if (buffer != indexBuffer_)
+    if (buffer)
     {
-        if (buffer)
+        if (buffer->IsDynamic())
         {
-            if (buffer->IsDynamic())
-            {
-                bgfx::DynamicIndexBufferHandle handle;
-                handle.idx = buffer->GetGPUObjectIdx();
-                //bgfx::setIndexBuffer(handle);
-                impl_->dynamicIndexBuffer_ = handle;
-                bgfx::IndexBufferHandle nullHandle;
-                nullHandle.idx = bgfx::kInvalidHandle;
-                impl_->indexBuffer_ = nullHandle;
-            }
-            else
-            {
-                bgfx::IndexBufferHandle handle;
-                handle.idx = buffer->GetGPUObjectIdx();
-                //bgfx::setIndexBuffer(handle);
-                impl_->indexBuffer_ = handle;
-                bgfx::DynamicIndexBufferHandle nullHandle;
-                nullHandle.idx = bgfx::kInvalidHandle;
-                impl_->dynamicIndexBuffer_ = nullHandle;
-            }
+            bgfx::DynamicIndexBufferHandle handle;
+            handle.idx = buffer->GetGPUObjectIdx();
+            //bgfx::setIndexBuffer(handle);
+            impl_->dynamicIndexBuffer_ = handle;
+            bgfx::IndexBufferHandle nullHandle;
+            nullHandle.idx = bgfx::kInvalidHandle;
+            impl_->indexBuffer_ = nullHandle;
         }
-        indexBuffer_ = buffer;
+        else
+        {
+            bgfx::IndexBufferHandle handle;
+            handle.idx = buffer->GetGPUObjectIdx();
+            //bgfx::setIndexBuffer(handle);
+            impl_->indexBuffer_ = handle;
+            bgfx::DynamicIndexBufferHandle nullHandle;
+            nullHandle.idx = bgfx::kInvalidHandle;
+            impl_->dynamicIndexBuffer_ = nullHandle;
+        }
     }
+    indexBuffer_ = buffer;
 }
 
 void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)

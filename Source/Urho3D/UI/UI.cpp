@@ -1106,8 +1106,11 @@ void UI::Render(VertexBuffer* buffer, const PODVector<UIBatch>& batches, unsigne
         scissor.bottom_ = (int)(scissor.bottom_ * uiScale_);
 
         // Flip scissor vertically if using OpenGL texture rendering
-#ifdef URHO3D_OPENGL
+#if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
         if (surface)
+#ifdef URHO3D_BGFX
+            if (bgfx::getCaps()->originBottomLeft)
+#endif
         {
             int top = scissor.top_;
             int bottom = scissor.bottom_;
