@@ -29,7 +29,7 @@
 #elif defined(URHO3D_D3D11)
 #include "Direct3D11/D3D11ShaderProgram.h"
 #elif defined(URHO3D_BGFX)
-#include "BGFX/BgfxShaderProgram.h"
+#include "Bgfx/BgfxShaderProgram.h"
 #else
 #include "Direct3D9/D3D9ShaderProgram.h"
 #endif
