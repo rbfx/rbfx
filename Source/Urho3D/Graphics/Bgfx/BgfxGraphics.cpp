@@ -542,10 +542,9 @@ void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCou
             bgfx::setVertexBuffer(i, impl_->dynamicVertexBuffer_[i], vertexStart, vertexCount);
     }
 
-    uint32_t primitiveCount;
-    primitiveCount = bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
+    bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
     impl_->drawDistance_ = 0;
-    numPrimitives_ += primitiveCount;
+    //numPrimitives_ += primitiveCount;
     ++numBatches_;
 }
 
@@ -576,10 +575,9 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
             bgfx::setVertexBuffer(i, impl_->dynamicVertexBuffer_[i], minVertex, vertexCount);
     }
 
-    uint32_t primitiveCount;
-    primitiveCount = bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
+    bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
     impl_->drawDistance_ = 0;
-    numPrimitives_ += primitiveCount;
+    //numPrimitives_ += primitiveCount;
     ++numBatches_;
 }
 
@@ -610,10 +608,9 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
             bgfx::setVertexBuffer(i, impl_->dynamicVertexBuffer_[i], minVertex, vertexCount);
     }
 
-    uint32_t primitiveCount;
-    primitiveCount = bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
+    bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
     impl_->drawDistance_ = 0;
-    numPrimitives_ += primitiveCount;
+    //numPrimitives_ += primitiveCount;
     ++numBatches_;
 }
 
@@ -661,10 +658,9 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
         }
     }
 
-    uint32_t primitiveCount;
-    primitiveCount = bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
+    bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
     impl_->drawDistance_ = 0;
-    numPrimitives_ += primitiveCount;
+    //numPrimitives_ += primitiveCount;
     ++numBatches_;
 }
 
@@ -712,10 +708,9 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
         }
     }
 
-    uint32_t primitiveCount;
-    primitiveCount = bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
+    bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
     impl_->drawDistance_ = 0;
-    numPrimitives_ += primitiveCount;
+    //numPrimitives_ += primitiveCount;
     ++numBatches_;
 }
 
