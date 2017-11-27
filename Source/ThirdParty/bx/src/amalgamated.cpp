@@ -18,6 +18,7 @@
 #include "os.cpp"
 #include "process.cpp"
 #include "semaphore.cpp"
+#include "settings.cpp"
 #include "sort.cpp"
 #include "string.cpp"
 #include "thread.cpp"

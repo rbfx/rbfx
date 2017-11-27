@@ -148,7 +148,6 @@ bimg::ImageContainer* convert(bx::AllocatorI* _allocator, const void* _inputData
 			;
 
 		const bool passThru = true
-			&& inputFormat == outputFormat
 			&& !needResize
 			&& (1 < input->m_numMips) == _options.mips
 			&& !_options.sdf
@@ -183,7 +182,16 @@ bimg::ImageContainer* convert(bx::AllocatorI* _allocator, const void* _inputData
 
 		if (passThru)
 		{
-			output = bimg::imageConvert(_allocator, outputFormat, *input);
+			if (inputFormat != outputFormat
+			&&  bimg::isCompressed(outputFormat) )
+			{
+				output = bimg::imageEncode(_allocator, outputFormat, _options.quality, *input);
+			}
+			else
+			{
+				output = bimg::imageConvert(_allocator, outputFormat, *input);
+			}
+
 			bimg::imageFree(input);
 			return output;
 		}
@@ -315,8 +323,10 @@ bimg::ImageContainer* convert(bx::AllocatorI* _allocator, const void* _inputData
 
 					BX_FREE(_allocator, rgbaDst);
 				}
-				else if (!bimg::isCompressed(input->m_format)
-					 &&  8 != inputBlockInfo.rBits)
+				else if ( (!bimg::isCompressed(input->m_format) && 8 != inputBlockInfo.rBits)
+					 || outputFormat == bimg::TextureFormat::BC6H
+					 || outputFormat == bimg::TextureFormat::BC7
+						)
 				{
 					uint32_t size = bimg::imageGetSize(
 						  NULL

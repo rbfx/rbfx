@@ -78,11 +78,6 @@ using namespace spvtools;
 
 namespace {
 
-// For low-order part of the generator's magic number. Bump up
-// when there is a change in the style (e.g., if SSA form changes,
-// or a different instruction sequence to do something gets used).
-const int GeneratorVersion = 1;
-
 namespace {
 class SpecConstantOpModeGuard {
 public:
@@ -484,7 +479,6 @@ spv::BuiltIn TGlslangToSpvTraverser::TranslateBuiltInDecoration(glslang::TBuiltI
         return spv::BuiltInSamplePosition;
 
     case glslang::EbvSampleMask:
-        builder.addCapability(spv::CapabilitySampleRateShading);
         return spv::BuiltInSampleMask;
 
     case glslang::EbvLayer:
@@ -885,7 +879,7 @@ TGlslangToSpvTraverser::TGlslangToSpvTraverser(const glslang::TIntermediate* gls
       options(options),
       shaderEntry(nullptr), currentFunction(nullptr),
       sequenceDepth(0), logger(buildLogger),
-      builder((glslang::GetKhronosToolId() << 16) | GeneratorVersion, logger),
+      builder((glslang::GetKhronosToolId() << 16) | glslang::GetSpirvGeneratorVersion(), logger),
       inEntryPoint(false), entryPointTerminated(false), linkageOnly(false),
       glslangIntermediate(glslangIntermediate)
 {
@@ -3281,7 +3275,9 @@ spv::Id TGlslangToSpvTraverser::createImageTextureFunctionCall(glslang::TIntermO
                 operands.push_back(spv::ImageOperandsSampleMask);
                 operands.push_back(*(opIt++));
             }
-            return builder.createOp(spv::OpImageRead, resultType(), operands);
+            spv::Id result = builder.createOp(spv::OpImageRead, resultType(), operands);
+            builder.setPrecision(result, precision);
+            return result;
         }
 
         operands.push_back(*(opIt++));
@@ -3304,7 +3300,10 @@ spv::Id TGlslangToSpvTraverser::createImageTextureFunctionCall(glslang::TIntermO
             }
             if (builder.getImageTypeFormat(builder.getImageType(operands.front())) == spv::ImageFormatUnknown)
                 builder.addCapability(spv::CapabilityStorageImageReadWithoutFormat);
-            return builder.createOp(spv::OpImageRead, resultType(), operands);
+
+            spv::Id result = builder.createOp(spv::OpImageRead, resultType(), operands);
+            builder.setPrecision(result, precision);
+            return result;
 #ifdef AMD_EXTENSIONS
         } else if (node->getOp() == glslang::EOpImageStore || node->getOp() == glslang::EOpImageStoreLod) {
 #else
@@ -5954,6 +5953,14 @@ void GetSpirvVersion(std::string& version)
     version = buf;
 }
 
+// For low-order part of the generator's magic number. Bump up
+// when there is a change in the style (e.g., if SSA form changes,
+// or a different instruction sequence to do something gets used).
+int GetSpirvGeneratorVersion()
+{
+    return 2;
+}
+
 // Write SPIR-V out to a binary file
 void OutputSpvBin(const std::vector<unsigned int>& spirv, const char* baseName)
 {
@@ -6056,6 +6063,7 @@ void GlslangToSpv(const glslang::TIntermediate& intermediate, std::vector<unsign
         optimizer.RegisterPass(CreateInsertExtractElimPass());
         optimizer.RegisterPass(CreateAggressiveDCEPass());
         optimizer.RegisterPass(CreateDeadBranchElimPass());
+        optimizer.RegisterPass(CreateCFGCleanupPass());
         optimizer.RegisterPass(CreateBlockMergePass());
         optimizer.RegisterPass(CreateLocalMultiStoreElimPass());
         optimizer.RegisterPass(CreateInsertExtractElimPass());

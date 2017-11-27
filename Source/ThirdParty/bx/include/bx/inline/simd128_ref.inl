@@ -130,7 +130,7 @@ BX_SIMD128_IMPLEMENT_TEST(xyzw , 0xf);
 	}
 
 	template<>
-	BX_SIMD_FORCE_INLINE simd128_ref_t simd_shuf_yBxA(simd128_ref_t _a, simd128_ref_t _b)
+	BX_SIMD_FORCE_INLINE simd128_ref_t simd_shuf_AxBy(simd128_ref_t _a, simd128_ref_t _b)
 	{
 		simd128_ref_t result;
 		result.uxyzw[0] = _a.uxyzw[1];

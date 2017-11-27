@@ -15,6 +15,7 @@
 #include "platform.h"
 #include "config.h"
 #include "macros.h"
+#include "debug.h"
 
 ///
 #define BX_COUNTOF(_x) sizeof(bx::COUNTOF_REQUIRES_ARRAY_ARGUMENT(_x) )
@@ -43,6 +44,14 @@ namespace bx
 
 	///
 	void xchg(void* _a, void* _b, size_t _numBytes);
+
+	///
+	template<typename Ty>
+	Ty min(const Ty& _a, const Ty& _b);
+
+	///
+	template<typename Ty>
+	Ty max(const Ty& _a, const Ty& _b);
 
 	// http://cnicholson.net/2011/01/stupid-c-tricks-a-better-sizeof_array/
 	template<typename T, size_t N>

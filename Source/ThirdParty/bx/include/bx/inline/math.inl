@@ -45,6 +45,17 @@ namespace bx
 		return u.f;
 	}
 
+	inline uint32_t floatFlip(uint32_t _value)
+	{
+		// Reference:
+		// http://archive.fo/2012.12.08-212402/http://stereopsis.com/radix.html
+		const uint32_t tmp0   = uint32_sra(_value, 31);
+		const uint32_t tmp1   = uint32_neg(tmp0);
+		const uint32_t mask   = uint32_or(tmp1, 0x80000000);
+		const uint32_t result = uint32_xor(_value, mask);
+		return result;
+	}
+
 	inline bool isNan(float _f)
 	{
 		const uint32_t tmp = floatToBits(_f) & INT32_MAX;
@@ -208,8 +219,8 @@ namespace bx
 
 	inline float angleDiff(float _a, float _b)
 	{
-		const float dist = fwrap(_b - _a, kPi*2.0f);
-		return fwrap(dist*2.0f, kPi*2.0f) - dist;
+		const float dist = fwrap(_b - _a, kPi2);
+		return fwrap(dist*2.0f, kPi2) - dist;
 	}
 
 	inline float angleLerp(float _a, float _b, float _t)

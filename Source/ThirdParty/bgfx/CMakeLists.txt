@@ -57,7 +57,9 @@ add_executable(geometryc tools/geometryc/geometryc.cpp examples/common/bounds.cp
 target_link_libraries(geometryc bgfx ${CMAKE_DL_LIBS})
 target_include_directories(geometryc PRIVATE 3rdparty examples/common)
 set_target_properties(geometryc PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
-install(TARGETS geometryc RUNTIME DESTINATION bin)
+if (EXISTS $<TARGET_FILE:geometryc>)
+    install(TARGETS geometryc RUNTIME DESTINATION bin)
+endif ()
 
 # shaderc
 file(GLOB_RECURSE GLSL_LANG_SOURCE_FILES
@@ -180,5 +182,6 @@ target_include_directories(shaderc PRIVATE
     3rdparty/glsl-optimizer/src/glsl
 )
 set_target_properties(shaderc PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
-install(TARGETS shaderc RUNTIME DESTINATION bin)
-
+if (EXISTS $<TARGET_FILE:shaderc>)
+    install(TARGETS shaderc RUNTIME DESTINATION bin)
+endif ()

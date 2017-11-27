@@ -3,6 +3,7 @@
  * License: https://github.com/bkaradzic/bgfx#license-bsd-2-clause
  */
 
+#include "bx_p.h"
 #include <bx/hash.h>
 
 namespace bx

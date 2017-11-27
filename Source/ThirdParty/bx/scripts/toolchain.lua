@@ -547,7 +547,7 @@ function toolchain(_buildDir, _libDir)
 			"EnableSSE2",
 		}
 
-	configuration { "vs*", "not orbis" }
+	configuration { "vs*", "not orbis", "not NX32", "not NX64" }
 		includedirs { path.join(bxDir, "include/compat/msvc") }
 		defines {
 			"WIN32",

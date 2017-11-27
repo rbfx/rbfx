@@ -112,7 +112,7 @@ BX_SIMD128_IMPLEMENT_TEST(xyzw , 0xf);
 	}
 
 	template<>
-	BX_SIMD_FORCE_INLINE simd128_langext_t simd_shuf_yBxA(simd128_langext_t _a, simd128_langext_t _b)
+	BX_SIMD_FORCE_INLINE simd128_langext_t simd_shuf_AxBy(simd128_langext_t _a, simd128_langext_t _b)
 	{
 		simd128_langext_t result;
 		result.vf = __builtin_shufflevector(_a.vf, _b.vf, 1, 5, 0, 4);

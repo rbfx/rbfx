@@ -288,7 +288,7 @@ namespace bimg
 			height = bx::uint32_max(blockHeight * minBlockY, ( (height + blockHeight - 1) / blockHeight)*blockHeight);
 			depth  = bx::uint32_max(1, depth);
 
-			size += width*height*depth*bpp/8 * sides;
+			size += uint32_t(uint64_t(width*height*depth)*bpp/8 * sides);
 
 			width  >>= 1;
 			height >>= 1;
@@ -786,7 +786,7 @@ namespace bimg
 		{ bx::packRgba4,      bx::unpackRgba4      }, // RGBA4
 		{ bx::packRgb5a1,     bx::unpackRgb5a1     }, // RGB5A1
 		{ bx::packRgb10A2,    bx::unpackRgb10A2    }, // RGB10A2
-		{ bx::packRG11B10F, bx::unpackRG11B10F }, // RG11B10F
+		{ bx::packRG11B10F,   bx::unpackRG11B10F   }, // RG11B10F
 		{ NULL,               NULL                 }, // UnknownDepth
 		{ bx::packR16,        bx::unpackR16        }, // D16
 		{ bx::packR24,        bx::unpackR24        }, // D24
@@ -3089,17 +3089,17 @@ namespace bimg
 		}
 	}
 
-	void imageDecodeToRgba32f(bx::AllocatorI* _allocator, void* _dst, const void* _src, uint32_t _width, uint32_t _height, uint32_t _depth, uint32_t _dstPitch, TextureFormat::Enum _format)
+	void imageDecodeToRgba32f(bx::AllocatorI* _allocator, void* _dst, const void* _src, uint32_t _width, uint32_t _height, uint32_t _depth, uint32_t _dstPitch, TextureFormat::Enum _srcFormat)
 	{
 		const uint8_t* src = (const uint8_t*)_src;
 		uint8_t* dst = (uint8_t*)_dst;
 
-		const uint32_t srcBpp   = s_imageBlockInfo[_format].bitsPerPixel;
+		const uint32_t srcBpp   = s_imageBlockInfo[_srcFormat].bitsPerPixel;
 		const uint32_t srcPitch = _width*srcBpp/8;
 
 		for (uint32_t zz = 0; zz < _depth; ++zz, src += _height*srcPitch, dst += _height*_dstPitch)
 		{
-			switch (_format)
+			switch (_srcFormat)
 			{
 			case TextureFormat::BC5:
 				{
@@ -3142,17 +3142,17 @@ namespace bimg
 				break;
 
 			default:
-				if (isCompressed(_format) )
+				if (isCompressed(_srcFormat) )
 				{
 					uint32_t size = imageGetSize(NULL, uint16_t(_width), uint16_t(_height), 0, false, false, 1, TextureFormat::RGBA8);
 					void* temp = BX_ALLOC(_allocator, size);
-					imageDecodeToRgba8(temp, src, _width, _height, _width*4, _format);
+					imageDecodeToRgba8(temp, src, _width, _height, _width*4, _srcFormat);
 					imageRgba8ToRgba32f(dst, _width, _height, _width*4, temp);
 					BX_FREE(_allocator, temp);
 				}
 				else
 				{
-					imageConvert(dst, TextureFormat::RGBA32F, src, _format, _width, _height, 1, srcPitch);
+					imageConvert(dst, TextureFormat::RGBA32F, src, _srcFormat, _width, _height, 1, srcPitch);
 				}
 				break;
 			}
