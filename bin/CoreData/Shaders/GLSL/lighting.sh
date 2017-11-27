@@ -1,7 +1,7 @@
 #ifndef __LIGHTING_SH__
 #define __LIGHTING_SH__
 
-#if BGFX_SHADER_TYPE_VERTEX == 1
+#if COMPILEVS
 vec3 GetAmbient(float zonePos)
 {
     return cAmbientStartColor + zonePos * cAmbientEndColor;
@@ -106,7 +106,7 @@ vec4 GetShadowPos(int index, vec3 normal, vec4 projWorldPos)
 #endif
 #endif
 
-#if BGFX_SHADER_TYPE_FRAGMENT == 1
+#if COMPILEPS
 float GetDiffuse(vec3 normal, vec3 worldPos, out vec3 lightDir)
 {
     #ifdef DIRLIGHT

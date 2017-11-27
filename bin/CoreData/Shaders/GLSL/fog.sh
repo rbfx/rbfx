@@ -1,7 +1,7 @@
 #ifndef __FOG_SH__
 #define __FOG_SH__
 
-#if BGFX_SHADER_TYPE_FRAGMENT == 1
+#if COMPILEPS
 vec3 GetFog(vec3 color, float fogFactor)
 {
     return mix(cFogColor, color, fogFactor);

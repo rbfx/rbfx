@@ -1,7 +1,7 @@
 #ifndef __BRDF_SH__
 #define __BRDF_SH__
 
-#ifdef BGFX_SHADER_TYPE_FRAGMENT == 1
+#ifdef COMPILEPS
   #ifdef PBR
     // Following BRDF methods are based upon research Frostbite EA
     //[Lagrade et al. 2014, "Moving Frostbite to Physically Based Rendering"]

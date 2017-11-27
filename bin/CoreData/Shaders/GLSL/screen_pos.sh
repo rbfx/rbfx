@@ -1,7 +1,7 @@
 #ifndef __SCREENPOS_SH__
 #define __SCREENPOS_SH__
 
-#if BGFX_SHADER_TYPE_VERTEX == 1
+#if COMPILEVS
 mat3 GetCameraRot()
 {
     return mat3(cViewInv[0][0], cViewInv[0][1], cViewInv[0][2],

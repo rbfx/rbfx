@@ -2,7 +2,7 @@
 #define __IBL_SH__
 
 #line 10001
-#ifdef BGFX_SHADER_TYPE_FRAGMENT == 1
+#ifdef COMPILEPS
 
     float GetMipFromRoughness(float roughness)
     {

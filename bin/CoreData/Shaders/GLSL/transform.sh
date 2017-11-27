@@ -1,7 +1,7 @@
 #ifndef __TRANSFORM_SH__
 #define __TRANSFORM_SH__
 
-#if BGFX_SHADER_TYPE_VERTEX == 1
+#if COMPILEVS
 
 #ifdef SKINNED
 mat4 GetSkinMatrix(vec4 blendWeights, vec4 blendIndices)
@@ -162,14 +162,14 @@ vec3 GetWorldNormal(mat4 modelMatrix)
     #endif
 }
 
-vec4 GetWorldTangent(mat4 modelMatrix)
+vec4 GetWorldTangent(mat4 modelMatrix, vec4 tangent)
 {
     #if defined(BILLBOARD)
         return vec4(normalize(mul(vec3(1.0, 0.0, 0.0), cBillboardRot)), 1.0);
     #elif defined(DIRBILLBOARD)
         return vec4(normalize(mul(vec3(1.0, 0.0, 0.0), GetNormalMatrix(modelMatrix))), 1.0);
     #else
-        return vec4(normalize(mul(iTangent.xyz, GetNormalMatrix(modelMatrix))), iTangent.w);
+        return vec4(normalize(mul(tangent.xyz, GetNormalMatrix(modelMatrix))), tangent.w);
     #endif
 }
 

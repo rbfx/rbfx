@@ -1,7 +1,7 @@
 #ifndef __POSTPROCESS_SH__
 #define __POSTPROCESS_SH__
 
-#if BGFX_SHADER_TYPE_FRAGMENT == 1
+#if COMPILEPS
 const float PI = 3.14159265;
 
 vec2 Noise(vec2 coord)

@@ -201,6 +201,7 @@ bool Shader::ProcessSource(String& code, Deserializer& source)
             if (line.EndsWith(".glsl\""))
                 continue;
             code += line;
+            code += "\n";
         }
 #else
         if (line.StartsWith("#include"))

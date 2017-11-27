@@ -12,10 +12,10 @@
 #endif
 #ifdef VERTEXCOLOR
 #define _COLOR0 , a_color0
-#define VCOLOR , vColor
+#define _VCOLOR , vColor
 #else
-#define _COLOR0
-#define VCOLOR
+#define _ACOLOR0
+#define _VCOLOR
 #endif
 #if (defined(NORMALMAP) || defined(TRAILFACECAM) || defined(TRAILBONE)) && !defined(BILLBOARD) && !defined(DIRBILLBOARD)
 #define _TANGENT , a_tangent
@@ -48,19 +48,19 @@
 #define _TANGENT
 #endif
 #ifdef SHADOW
-#define VSHADOWPOS , vShadowPos[_NUMCASCADES]
+#define _VSHADOWPOS , vShadowPos[_NUMCASCADES]
 #else
-#define VSHADOWPOS
+#define _VSHADOWPOS
 #endif
 #ifdef SPOTLIGHT
-#define VSPOTPOS , vSpotPos
+#define _VSPOTPOS , vSpotPos
 #else
-#define VSPOTPOS
+#define _VSPOTPOS
 #endif
 #ifdef POINTLIGHT
-#define VCUBEMASKVEC , vCubeMaskVec
+#define _VCUBEMASKVEC , vCubeMaskVec
 #else
-#define VCUBEMASKVEC
+#define _VCUBEMASKVEC
 #endif
 #ifdef ENVCUBEMAP
 #define _VREFLECTIONVEC , vReflectionVec

@@ -1,11 +1,11 @@
 #ifdef BGFX_SHADER
 #include "varying_deferred.def.sc"
 #include "urho3d_compatibility.sh"
-#ifdef BGFX_SHADER_TYPE_VERTEX == 1
+#ifdef COMPILEVS
     $input a_position
     $output vTexCoord, vScreenPos, vFarRay _VNEARRAY
 #endif
-#ifdef BGFX_SHADER_TYPE_FRAGMENT == 1
+#ifdef COMPILEPS
     $input vTexCoord, vScreenPos, vFarRay _VNEARRAY
 #endif
 

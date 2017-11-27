@@ -1,7 +1,7 @@
 #ifndef __UNIFORMS_SH__
 #define __UNIFORMS_SH__
 
-#if BGFX_SHADER_TYPE_VERTEX == 1
+#if COMPILEVS
 
 // Vertex shader uniforms
 uniform vec4 u_AmbientStartColor; //vec3
@@ -69,7 +69,7 @@ uniform mat4 u_Zone;
 #define cClipPlane u_ClipPlane
 
 
-#if BGFX_SHADER_TYPE_FRAGMENT == 1
+#if COMPILEPS
 
 uniform vec4 u_AmbientColor;
 uniform vec4 u_CameraPosPS; //vec3

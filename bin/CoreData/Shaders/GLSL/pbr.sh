@@ -2,7 +2,7 @@
 #define __PBR_SH__
 
 #include "brdf.sh"
-#ifdef BGFX_SHADER_TYPE_FRAGMENT == 1
+#ifdef COMPILEPS
 #line 100
     vec3 GetSpecularDominantDir(vec3 normal, vec3 reflection, float roughness)
     {

@@ -1,11 +1,11 @@
 #ifdef BGFX_SHADER
 #include "varying_quad.def.sc"
 #include "urho3d_compatibility.sh"
-#ifdef BGFX_SHADER_TYPE_VERTEX == 1
+#ifdef COMPILEVS
     $input a_position _NORMAL _TEXCOORD0 _COLOR0 _TEXCOORD1 _ATANGENT _SKINNED _INSTANCED
     $output vScreenPos
 #endif
-#ifdef BGFX_SHADER_TYPE_FRAGMENT == 1
+#ifdef COMPILEPS
     $input vScreenPos
 #endif
 

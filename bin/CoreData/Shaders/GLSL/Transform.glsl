@@ -184,7 +184,7 @@ vec3 GetWorldNormal(mat4 modelMatrix)
     #endif
 }
 
-vec4 GetWorldTangent(mat4 modelMatrix)
+vec4 GetWorldTangent(mat4 modelMatrix, vec4 tangent)
 {
     #if defined(BILLBOARD)
         return vec4(normalize(vec3(1.0, 0.0, 0.0) * cBillboardRot), 1.0);

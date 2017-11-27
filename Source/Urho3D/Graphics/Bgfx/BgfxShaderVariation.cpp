@@ -248,66 +248,73 @@ bool ShaderVariation::Compile()
     String sourceCode = owner_->GetSourceCode(type_);
     Vector<String> defines = defines_.Split(' ');
 
-	String shaderPath;
-	switch (bgfx::getRendererType())
-	{
-	case bgfx::RendererType::Noop:
-	case bgfx::RendererType::Direct3D9:  shaderPath = "dx9/";   break;
-	case bgfx::RendererType::Direct3D11:
-	case bgfx::RendererType::Direct3D12: shaderPath = "dx11/"; defines.Push("D3D11");  break;
-	case bgfx::RendererType::Gnm:        shaderPath = "pssl/";  break;
-	case bgfx::RendererType::Metal:      shaderPath = "metal/"; break;
-	case bgfx::RendererType::OpenGL:     shaderPath = "glsl/";  break;
-	case bgfx::RendererType::OpenGLES:   shaderPath = "essl/"; defines.Push("URHO3D_MOBILE");  break;
-	case bgfx::RendererType::Vulkan:     shaderPath = "spirv/"; break;
+    String shaderPath;
+    switch (bgfx::getRendererType())
+    {
+    case bgfx::RendererType::Noop:
+    case bgfx::RendererType::Direct3D9:  shaderPath = "dx9/";   break;
+    case bgfx::RendererType::Direct3D11:
+    case bgfx::RendererType::Direct3D12: shaderPath = "dx11/"; defines.Push("D3D11");  break;
+    case bgfx::RendererType::Gnm:        shaderPath = "pssl/";  break;
+    case bgfx::RendererType::Metal:      shaderPath = "metal/"; break;
+    case bgfx::RendererType::OpenGL:     shaderPath = "glsl/";  break;
+    case bgfx::RendererType::OpenGLES:   shaderPath = "essl/"; defines.Push("URHO3D_MOBILE");  break;
+    case bgfx::RendererType::Vulkan:     shaderPath = "spirv/"; break;
 
-	default:
-		break;
-	}
+    default:
+        break;
+    }
 
-	String varying;
-	unsigned startPos = sourceCode.Find("#include \"varying_");
-	if (startPos != String::NPOS)
-	{
-		unsigned endPos = sourceCode.Find(".def.sc", startPos);
-		if (endPos != String::NPOS)
-		{
-			varying = sourceCode.Substring(startPos + 10, endPos);
-			sourceCode.Insert(startPos, "//");
-		}
-	}
+    String varying;
+    unsigned startPos = sourceCode.Find("#include \"varying_");
+    if (startPos != String::NPOS)
+    {
+        unsigned endPos = sourceCode.Find(".def.sc", startPos);
+        if (endPos != String::NPOS)
+        {
+            varying = sourceCode.Substring(startPos + 10, endPos - startPos - 10);
+            sourceCode.Insert(startPos, "//");
+            sourceCode.Insert(endPos + 10, "\n");
+        }
+    }
 
-	if (varying == String::EMPTY)
-	{
-		return false;
-	}
+    if (varying == String::EMPTY)
+    {
+        return false;
+    }
 
-	// Sneaky hack until I work out how to do this right
-	Vector<String> varyingTest = varying.Split('_');
-	if ((varyingTest[1] == "deferred") && (defines.Contains("DIRLIGHT")))
-	{
-		varyingTest.Push("dirlight");
-		varying.Join(varyingTest, "_");
-	}
-	else if ((varyingTest[1] == "shadow") && (defines.Contains("VSM_SHADOW")))
-	{
-		varyingTest.Push("vsm");
-		varying.Join(varyingTest, "_");
-	}
+    // Sneaky hack until I work out how to do this right
+    Vector<String> varyingTest = varying.Split('_');
+    if ((varyingTest[1] == "deferred") && (defines.Contains("DIRLIGHT")))
+    {
+        varyingTest.Push("dirlight");
+        varying.Join(varyingTest, "_");
+    }
+    else if ((varyingTest[1] == "shadow") && (defines.Contains("VSM_SHADOW")))
+    {
+        varyingTest.Push("vsm");
+        varying.Join(varyingTest, "_");
+    }
 
-	String varyingFile = graphics_->GetShaderCacheDir() + shaderPath + varying + ".def.sc";
+    ResourceCache* resourceCache = owner_->GetSubsystem<ResourceCache>();
+    String shaderPath2;
+    shaderPath2 = resourceCache->GetResourceFileName(owner_->GetName());
+    String include, name, extension;
+    SplitPath(shaderPath2, include, name, extension);
+
+    String varyingFile = include + varying + ".def.sc";
 
     // Check for up-to-date bytecode on disk
-    String path, name, extension;
+    String path;
     SplitPath(owner_->GetName(), path, name, extension);
     extension = type_ == VS ? ".vs" : ".fs";
 
-	String immediateShaderName = graphics_->GetShaderCacheDir() + shaderPath + name + "_" + StringHash(defines_).ToString() + "immediate" + extension;
-	URHO3D_LOGDEBUG("Immediate shader " + immediateShaderName);
+    String immediateShaderName = graphics_->GetShaderCacheDir() + shaderPath + name + "_" + StringHash(defines_).ToString() + "immediate" + extension;
+    URHO3D_LOGDEBUG("Immediate shader " + immediateShaderName);
     String binaryShaderName = graphics_->GetShaderCacheDir() + shaderPath + name + "_" + StringHash(defines_).ToString() + extension;
-	URHO3D_LOGDEBUG("Binary shader " + binaryShaderName);
+    URHO3D_LOGDEBUG("Binary shader " + binaryShaderName);
 
-	defines.Push("BGFX_SHADER");
+    defines.Push("BGFX_SHADER");
 
     if (type_ == VS)
         defines.Push("COMPILEVS");
@@ -325,27 +332,34 @@ bool ShaderVariation::Compile()
 #endif
     }
 
-	File dest(graphics_->GetContext(), immediateShaderName, FILE_WRITE);
-	dest.WriteString(sourceCode);
-	dest.Close();
+    File dest(graphics_->GetContext(), immediateShaderName, FILE_WRITE);
+    dest.WriteString(sourceCode);
+    dest.Close();
 
-	String shaderc;
-	Vector<String> argsArray;
+    String shaderc;
+    Vector<String> argsArray;
     argsArray.Push("-f");
-	argsArray.Push(immediateShaderName);
-	argsArray.Push("-o");
-	argsArray.Push(binaryShaderName);
-	argsArray.Push("--depends");
-	argsArray.Push("-i");
-	String include = graphics_->GetShaderCacheDir() + shaderPath;
-	argsArray.Push(include);
-	argsArray.Push("--varyingdef");
-	argsArray.Push(varying);
-	argsArray.Push("--platform");
+    argsArray.Push(immediateShaderName);
+    argsArray.Push("-o");
+    argsArray.Push(binaryShaderName);
+    argsArray.Push("--depends");
+    argsArray.Push("-i");
+    argsArray.Push(include);
+    argsArray.Push("--varyingdef");
+    argsArray.Push(varyingFile);
+    argsArray.Push("--platform");
 #if defined(WIN32)
-	argsArray.Push("windows");
-	argsArray.Push("--profile");
-	argsArray.Push(type_ == VS ? "vs_4_0" : "ps_4_0");
+    argsArray.Push("windows");
+    argsArray.Push("--profile");
+    if (bgfx::getRendererType() == bgfx::RendererType::Direct3D11)
+        argsArray.Push(type_ == VS ? "vs_4_0" : "ps_4_0");
+    else if (bgfx::getRendererType() == bgfx::RendererType::Direct3D9)
+        argsArray.Push(type_ == VS ? "vs_3_0" : "ps_3_0");
+    else if (bgfx::getRendererType() == bgfx::RendererType::OpenGL)
+    {
+        argsArray.Push("140");
+        defines.Push("GL3");
+    }
 	shaderc = "shaderc.exe";
 #elif defined(__APPLE__)
 	argsArray.Push("osx");
@@ -378,7 +392,8 @@ bool ShaderVariation::Compile()
 	FileSystem* fileSystem = owner_->GetSubsystem<FileSystem>();
 	String commandLine = fileSystem->GetProgramDir() + shaderc + " " + args;
 	URHO3D_LOGDEBUG("Compiling shader command: " + commandLine);
-    return fileSystem->SystemCommand(commandLine, true);
+
+    return !fileSystem->SystemCommand(commandLine, true);
 }
 
 void ShaderVariation::ParseParameters(unsigned char* bufData, unsigned bufSize)

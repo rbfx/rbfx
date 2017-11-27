@@ -1,11 +1,11 @@
 #ifdef BGFX_SHADER
 #include "varying_scenepass.def.sc"
 #include "urho3d_compatibility.sh"
-#ifdef BGFX_SHADER_TYPE_VERTEX == 1
+#ifdef COMPILEVS
     $input a_position, a_texcoord0, a_color0
     $output vTexCoord, vColor
 #endif
-#ifdef BGFX_SHADER_TYPE_FRAGMENT == 1
+#ifdef COMPILEPS
     $input vTexCoord, vColor
 #endif
 

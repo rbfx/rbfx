@@ -1,7 +1,7 @@
 #ifdef BGFX_SHADER
 #include "varying_scenepass.def.sc"
 #include "urho3d_compatibility.sh"
-#ifdef BGFX_SHADER_TYPE_VERTEX == 1
+#ifdef COMPILEVS
     $input a_position _NORMAL _TEXCOORD0 _COLOR0 _TEXCOORD1 _ATANGENT _SKINNED _INSTANCED
     #ifdef PERPIXEL
         $output vTexCoord _VTANGENT, vNormal, vWorldPos _VSHADOWPOS _VSPOTPOS _VCUBEMASKVEC _VCOLOR
@@ -9,7 +9,7 @@
         $output vTexCoord _VTANGENT, vNormal, vWorldPos, vVertexLight, vScreenPos _VREFLECTIONVEC _VTEXCOORD2 _VCOLOR
     #endif
 #endif
-#ifdef BGFX_SHADER_TYPE_FRAGMENT == 1
+#ifdef COMPILEPS
     #ifdef PERPIXEL
         $input vTexCoord _VTANGENT, vNormal, vWorldPos _VSHADOWPOS _VSPOTPOS _VCUBEMASKVEC _VCOLOR
     #else
@@ -102,7 +102,7 @@ void VS()
     #endif
 
     #ifdef NORMALMAP
-        vec4 tangent = GetWorldTangent(modelMatrix);
+        vec4 tangent = GetWorldTangent(modelMatrix, iTangent);
         vec3 bitangent = cross(tangent.xyz, vNormal) * tangent.w;
         vTexCoord = vec4(GetTexCoord(iTexCoord), bitangent.xy);
         vTangent = vec4(tangent.xyz, bitangent.z);
