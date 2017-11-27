@@ -134,7 +134,7 @@ target_include_directories(glsl-optimizer PRIVATE
     3rdparty/glsl-optimizer/src/glsl
 )
 if (MSVC)
-    target_include_directories(glsl-optimizer 3rdparty/glsl-optimizer/src/glsl/msvc)
+    target_include_directories(glsl-optimizer PRIVATE 3rdparty/glsl-optimizer/src/glsl/msvc)
     target_compile_definitions(glsl-optimizer PRIVATE
         -D__STDC__
         -D__STDC_VERSION__=199901L
