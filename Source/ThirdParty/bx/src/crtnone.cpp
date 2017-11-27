@@ -3,6 +3,7 @@
  * License: https://github.com/bkaradzic/bx#license-bsd-2-clause
  */
 
+#include "bx_p.h"
 #include <bx/debug.h>
 #include <bx/sort.h>
 #include <bx/readerwriter.h>
@@ -302,6 +303,10 @@ extern "C" int printf(const char* _format, ...)
 	BX_UNUSED(_format);
 	return -1;
 }
+
+struct FILE
+{
+};
 
 extern "C" int fprintf(FILE* _stream, const char* _format, ...)
 {

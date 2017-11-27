@@ -100,6 +100,7 @@ INSTANTIATE_TEST_CASE_P(
         {"hlsl.attribute.frag", "PixelShaderFunction"},
         {"hlsl.attribute.expression.comp", "main"},
         {"hlsl.attributeC11.frag", "main"},
+        {"hlsl.attributeGlobalBuffer.frag", "main"},
         {"hlsl.basic.comp", "main"},
         {"hlsl.basic.geom", "main"},
         {"hlsl.boolConv.vert", "main"},
@@ -171,6 +172,7 @@ INSTANTIATE_TEST_CASE_P(
         {"hlsl.getdimensions.dx10.vert", "main"},
         {"hlsl.getsampleposition.dx10.frag", "main"},
         {"hlsl.global-const-init.frag", "main"},
+        {"hlsl.gs-hs-mix.tesc", "HSMain"},
         {"hlsl.domain.1.tese", "main"},
         {"hlsl.domain.2.tese", "main"},
         {"hlsl.domain.3.tese", "main"},
@@ -247,6 +249,7 @@ INSTANTIATE_TEST_CASE_P(
         {"hlsl.params.default.frag", "main"},
         {"hlsl.params.default.negative.frag", "main"},
         {"hlsl.partialInit.frag", "PixelShaderFunction"},
+        {"hlsl.partialFlattenLocal.vert", "main"},
         {"hlsl.pp.vert", "main"},
         {"hlsl.pp.line.frag", "main"},
         {"hlsl.precise.frag", "main"},
@@ -295,6 +298,7 @@ INSTANTIATE_TEST_CASE_P(
         {"hlsl.semicolons.frag", "main"},
         {"hlsl.shapeConv.frag", "main"},
         {"hlsl.shapeConvRet.frag", "main"},
+        {"hlsl.snorm.uav.comp", "main"},
         {"hlsl.staticMemberFunction.frag", "main"},
         {"hlsl.stringtoken.frag", "main"},
         {"hlsl.string.frag", "main"},
@@ -324,6 +328,7 @@ INSTANTIATE_TEST_CASE_P(
         {"hlsl.structStructName.frag", "main"},
         {"hlsl.subpass.frag", "main"},
         {"hlsl.synthesizeInput.frag", "main"},
+        {"hlsl.texturebuffer.frag", "main"},
         {"hlsl.texture.struct.frag", "main"},
         {"hlsl.texture.subvec4.frag", "main"},
         {"hlsl.this.frag", "main"},
@@ -367,6 +372,7 @@ INSTANTIATE_TEST_CASE_P(
     ToSpirv, HlslCompileAndFlattenTest,
     ::testing::ValuesIn(std::vector<FileNameEntryPointPair>{
         {"hlsl.array.flatten.frag", "main"},
+        {"hlsl.partialFlattenMixed.vert", "main"},
     }),
     FileNameAsCustomTestSuffix
 );
@@ -381,7 +387,10 @@ INSTANTIATE_TEST_CASE_P(
         {"hlsl.flattenOpaque.frag", "main"},
         {"hlsl.flattenOpaqueInit.vert", "main"},
         {"hlsl.flattenOpaqueInitMix.vert", "main"},
-        {"hlsl.flattenSubset.frag", "main"}
+        {"hlsl.flattenSubset.frag", "main"},
+        {"hlsl.flattenSubset2.frag", "main"},
+        {"hlsl.partialFlattenLocal.vert", "main"},
+        {"hlsl.partialFlattenMixed.vert", "main"}
     }),
     FileNameAsCustomTestSuffix
 );

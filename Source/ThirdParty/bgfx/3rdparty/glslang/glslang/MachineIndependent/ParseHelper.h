@@ -84,7 +84,9 @@ public:
             contextPragma(true, false),
             parsingBuiltins(parsingBuiltins), scanContext(nullptr), ppContext(nullptr),
             limits(resources.limits),
-            globalUniformBlock(nullptr)
+            globalUniformBlock(nullptr),
+            globalUniformBinding(TQualifier::layoutBindingEnd),
+            globalUniformSet(TQualifier::layoutSetEnd)
     {
         if (entryPoint != nullptr)
             sourceEntryPointName = *entryPoint;
@@ -208,8 +210,10 @@ protected:
                                       TSwizzleSelectors<TVectorSelector>&);
 
     // Manage the global uniform block (default uniforms in GLSL, $Global in HLSL)
-    TVariable* globalUniformBlock;   // the actual block, inserted into the symbol table
-    int firstNewMember;              // the index of the first member not yet inserted into the symbol table
+    TVariable* globalUniformBlock;     // the actual block, inserted into the symbol table
+    unsigned int globalUniformBinding; // the block's binding number
+    unsigned int globalUniformSet;     // the block's set number
+    int firstNewMember;                // the index of the first member not yet inserted into the symbol table
     // override this to set the language-specific name
     virtual const char* getGlobalUniformBlockName() const { return ""; }
     virtual void setUniformBlockDefaults(TType&) const { }
@@ -334,7 +338,7 @@ public:
     bool arrayError(const TSourceLoc&, const TType&);
     void arraySizeRequiredCheck(const TSourceLoc&, const TArraySizes&);
     void structArrayCheck(const TSourceLoc&, const TType& structure);
-    void arraySizesCheck(const TSourceLoc&, const TQualifier&, const TArraySizes*, bool initializer, bool lastMember);
+    void arraySizesCheck(const TSourceLoc&, const TQualifier&, TArraySizes*, bool initializer, bool lastMember);
     void arrayOfArrayVersionCheck(const TSourceLoc&);
     void arrayDimCheck(const TSourceLoc&, const TArraySizes* sizes1, const TArraySizes* sizes2);
     void arrayDimCheck(const TSourceLoc&, const TType*, const TArraySizes*);

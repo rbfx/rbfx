@@ -955,14 +955,15 @@ namespace bgfx { namespace mtl
 			m_commandBuffer = m_cmd.alloc();
 		}
 
-		void updateViewName(uint8_t _id, const char* _name) override
+		void updateViewName(ViewId _id, const char* _name) override
 		{
 			if (BX_ENABLED(BGFX_CONFIG_DEBUG_PIX) )
 			{
-				bx::strCopy(&s_viewName[_id][BGFX_CONFIG_MAX_VIEW_NAME_RESERVED]
-						, BX_COUNTOF(s_viewName[0])-BGFX_CONFIG_MAX_VIEW_NAME_RESERVED
-						, _name
-						);
+				bx::strCopy(
+					  &s_viewName[_id][BGFX_CONFIG_MAX_VIEW_NAME_RESERVED]
+					, BX_COUNTOF(s_viewName[0])-BGFX_CONFIG_MAX_VIEW_NAME_RESERVED
+					, _name
+					);
 			}
 		}
 
@@ -2558,8 +2559,8 @@ namespace bgfx { namespace mtl
 					|| bimg::isDepth(bimg::TextureFormat::Enum(m_textureFormat) )
 					? 2 /*MTLStorageModePrivate*/
 					: (BX_ENABLED(BX_PLATFORM_IOS)
-						? 0 /* MTLStorageModeShared */
-						:  1 /*MTLStorageModeManaged*/
+						? 0 /* MTLStorageModeShared  */
+						: 1 /* MTLStorageModeManaged */
 					) );
 
 				desc.usage = MTLTextureUsageShaderRead;
@@ -3269,7 +3270,7 @@ namespace bgfx { namespace mtl
 			bool viewRestart = false;
 			uint8_t eye = 0;
 			uint8_t restartState = 0;
-			viewState.m_rect = _render->m_rect[0];
+			viewState.m_rect = _render->m_view[0].m_rect;
 
 			int32_t numItems = _render->m_numRenderItems;
 			for (int32_t item = 0, restartItem = numItems; item < numItems || restartItem < numItems;)
@@ -3302,7 +3303,7 @@ namespace bgfx { namespace mtl
 					view = key.m_view;
 					programIdx = kInvalidHandle;
 
-					viewRestart  = BGFX_VIEW_STEREO == (_render->m_viewFlags[view] & BGFX_VIEW_STEREO);
+					viewRestart  = BGFX_VIEW_STEREO == (_render->m_view[view].m_flags & BGFX_VIEW_STEREO);
 					viewRestart &= hmdEnabled;
 
 					if (viewRestart)
@@ -3321,7 +3322,7 @@ namespace bgfx { namespace mtl
 						eye = 0;
 					}
 
-					viewState.m_rect = _render->m_rect[view];
+					viewState.m_rect = _render->m_view[view].m_rect;
 
 					if (viewRestart)
 					{
@@ -3331,16 +3332,16 @@ namespace bgfx { namespace mtl
 
 					submitBlit(bs, view);
 
-					const Rect& scissorRect = _render->m_scissor[view];
+					const Rect& scissorRect = _render->m_view[view].m_scissor;
 					viewHasScissor = !scissorRect.isZero();
 					viewScissorRect = viewHasScissor ? scissorRect : viewState.m_rect;
-					Clear& clr = _render->m_clear[view];
+					Clear& clr = _render->m_view[view].m_clear;
 
 					Rect viewRect = viewState.m_rect;
 					bool clearWithRenderPass = false;
 
 					if (NULL == m_renderCommandEncoder
-					||  fbh.idx != _render->m_fb[view].idx)
+					||  fbh.idx != _render->m_view[view].m_fbh.idx)
 					{
 						if (0 != m_renderCommandEncoder)
 						{
@@ -3350,7 +3351,7 @@ namespace bgfx { namespace mtl
 						RenderPassDescriptor renderPassDescriptor = newRenderPassDescriptor();
 						renderPassDescriptor.visibilityResultBuffer = m_occlusionQuery.m_buffer;
 
-						fbh = _render->m_fb[view];
+						fbh = _render->m_view[view].m_fbh;
 
 						uint32_t width  = m_resolution.m_width;
 						uint32_t height = m_resolution.m_height;
@@ -3640,7 +3641,7 @@ namespace bgfx { namespace mtl
 
 				bool programChanged = false;
 				bool constantsChanged = draw.m_uniformBegin < draw.m_uniformEnd;
-				rendererUpdateUniforms(this, _render->m_uniformBuffer, draw.m_uniformBegin, draw.m_uniformEnd);
+				rendererUpdateUniforms(this, _render->m_uniformBuffer[draw.m_uniformIdx], draw.m_uniformBegin, draw.m_uniformEnd);
 
 				if (key.m_program != programIdx
 				|| (BGFX_STATE_BLEND_MASK|BGFX_STATE_BLEND_EQUATION_MASK|BGFX_STATE_ALPHA_WRITE|BGFX_STATE_RGB_WRITE|BGFX_STATE_BLEND_INDEPENDENT|BGFX_STATE_MSAA|BGFX_STATE_BLEND_ALPHA_TO_COVERAGE) & changedFlags
@@ -3995,7 +3996,7 @@ namespace bgfx { namespace mtl
 				}
 
 				tvm.printf(10, pos++, 0x8e, "      Indices: %7d ", statsNumIndices);
-				tvm.printf(10, pos++, 0x8e, " Uniform size: %7d, Max: %7d ", _render->m_uniformEnd, _render->m_uniformMax);
+//				tvm.printf(10, pos++, 0x8e, " Uniform size: %7d, Max: %7d ", _render->m_uniformEnd, _render->m_uniformMax);
 				tvm.printf(10, pos++, 0x8e, "     DVB size: %7d ", _render->m_vboffset);
 				tvm.printf(10, pos++, 0x8e, "     DIB size: %7d ", _render->m_iboffset);
 

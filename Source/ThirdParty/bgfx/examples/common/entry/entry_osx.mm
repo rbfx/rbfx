@@ -66,19 +66,22 @@ namespace entry
 		int m_argc;
 		const char* const* m_argv;
 
-		static int32_t threadFunc(void* _userData)
+		static int32_t threadFunc(bx::Thread* _thread, void* _userData)
 		{
+			BX_UNUSED(_thread);
+
 			CFBundleRef mainBundle = CFBundleGetMainBundle();
-			if ( mainBundle != nil )
+			if (mainBundle != nil)
 			{
 				CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
-				if ( resourcesURL != nil )
+				if (resourcesURL != nil)
 				{
 					char path[PATH_MAX];
-					if (CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8 *)path, PATH_MAX) )
+					if (CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8*)path, PATH_MAX) )
 					{
 						chdir(path);
 					}
+
 					CFRelease(resourcesURL);
 				}
 			}
@@ -100,7 +103,7 @@ namespace entry
 			, m_fullscreen(false)
 		{
 			s_translateKey[27]             = Key::Esc;
-			s_translateKey[uint8_t('\n')]  = Key::Return;
+			s_translateKey[uint8_t('\r')]  = Key::Return;
 			s_translateKey[uint8_t('\t')]  = Key::Tab;
 			s_translateKey[127]            = Key::Backspace;
 			s_translateKey[uint8_t(' ')]   = Key::Space;

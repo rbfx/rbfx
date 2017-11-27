@@ -102,7 +102,7 @@ BX_SIMD128_IMPLEMENT_TEST(yzw, yzww);
 	}
 
 	template<>
-	BX_SIMD_FORCE_INLINE simd128_neon_t simd_shuf_yBxA(simd128_neon_t _a, simd128_neon_t _b)
+	BX_SIMD_FORCE_INLINE simd128_neon_t simd_shuf_AxBy(simd128_neon_t _a, simd128_neon_t _b)
 	{
 		return __builtin_shuffle(_a, _b, (uint32x4_t){ 1, 5, 0, 4 });
 	}

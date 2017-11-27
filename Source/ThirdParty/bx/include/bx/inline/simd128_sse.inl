@@ -90,7 +90,7 @@ BX_SIMD128_IMPLEMENT_TEST(xyzw , 0xf);
 	}
 
 	template<>
-	BX_SIMD_FORCE_INLINE simd128_sse_t simd_shuf_yBxA(simd128_sse_t _a, simd128_sse_t _b)
+	BX_SIMD_FORCE_INLINE simd128_sse_t simd_shuf_AxBy(simd128_sse_t _a, simd128_sse_t _b)
 	{
 		return _mm_unpacklo_ps(_b, _a);
 	}
