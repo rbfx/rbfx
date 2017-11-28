@@ -327,7 +327,7 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
 
     }
 
-    bgfx::init(urhoToBgfxRenderer[GraphicsApiType::BGFX_OPENGL], BGFX_PCI_ID_NONE, 0, &impl_->callback_);
+    bgfx::init(urhoToBgfxRenderer[GraphicsApiType::BGFX_OPENGL]);//, BGFX_PCI_ID_NONE, 0, &impl_->callback_);
     //bgfx::setDebug();
     apiType_ = bgfxToUrhoRenderer[bgfx::getRendererType()];
 
@@ -424,7 +424,6 @@ bool Graphics::TakeScreenShot(Image& destImage) { return false; }
 
 bool Graphics::BeginFrame()
 {
-    static uint8_t col = 0;
     if (!IsInitialized())
         return false;
 
@@ -445,7 +444,8 @@ bool Graphics::BeginFrame()
             return false;
     }
 
-    bgfx::setViewClear(0, BGFX_CLEAR_COLOR|BGFX_CLEAR_DEPTH, col++ << 8, 1.0f, 0);
+    Color color(0.0, 0.0, 0.0, 1.0);
+    bgfx::setViewClear(0, BGFX_CLEAR_COLOR|BGFX_CLEAR_DEPTH, color.ToUInt(), 1.0f, 0);
     bgfx::touch(0);
 
     SendEvent(E_BEGINRENDERING);
@@ -1950,8 +1950,7 @@ void Graphics::PrepareDraw()
 
     // Early-out if it's the backbuffer & not to be confused with a depth texture
     if ((impl_->renderTargetsDirty_) && 
-        (!renderTargets_[0]) && 
-        depthStencil_ && depthStencil_->GetUsage() != TEXTURE_DEPTHSTENCIL)
+        (!renderTargets_[0]) && !depthStencil_)
     {
         bgfx::setViewFrameBuffer(impl_->view_, BGFX_INVALID_HANDLE);
         impl_->renderTargetsDirty_ = false;

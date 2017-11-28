@@ -85,3 +85,7 @@ int main(int argc, char** argv) \
     return function; \
 }
 #endif
+
+#if defined(URHO3D_WIN32_CONSOLE)
+#pragma comment(linker, "/SUBSYSTEM:console")
+#endif
