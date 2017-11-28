@@ -60,7 +60,8 @@ void Texture3D::Release()
 
     bgfx::TextureHandle handle;
     handle.idx = object_.idx_;
-    bgfx::destroy(handle);
+    if (bgfx::isValid(handle))
+        bgfx::destroy(handle);
     object_.idx_ = bgfx::kInvalidHandle;
 }
 

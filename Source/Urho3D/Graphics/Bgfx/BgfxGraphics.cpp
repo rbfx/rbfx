@@ -1935,6 +1935,7 @@ void Graphics::ResetCachedState()
     impl_->scissorRectDirty_ = true;
     impl_->stencilRefDirty_ = true;
     impl_->primitiveType_ = 0;
+    impl_->drawDistance_ = 0;
     //impl_->blendStateHash_ = M_MAX_UNSIGNED;
     //impl_->depthStateHash_ = M_MAX_UNSIGNED;
     //impl_->rasterizerStateHash_ = M_MAX_UNSIGNED;
@@ -2037,7 +2038,7 @@ void Graphics::PrepareDraw()
             bgfx::setStencil(stencilFlags, BGFX_STENCIL_NONE);
         }
         // Rasterizer state
-        stateFlags |= primitiveType_;
+        stateFlags |= impl_->primitiveType_;
         bgfx::setState(stateFlags);
         impl_->stateDirty_ = false;
     }

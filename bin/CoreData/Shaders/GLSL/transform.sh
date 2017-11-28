@@ -37,7 +37,7 @@ vec4 GetClipPos(vec3 worldPos)
 {
     vec4 ret = mul(vec4(worldPos, 1.0), cViewProj);
     // While getting the clip coordinate, also automatically set gl_ClipVertex for user clip planes
-    #if !defined(GL_ES) && !defined(GL3) && !defined(DX11)
+    #if !defined(GL_ES) && !defined(GL3) && !defined(D3D11)
         gl_ClipVertex = ret;
     #elif defined(GL3)
         gl_ClipDistance[0] = dot(cClipPlane, ret);

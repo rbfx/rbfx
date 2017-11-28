@@ -357,7 +357,6 @@ bool ShaderVariation::Compile()
     if (bgfx::getRendererType() == bgfx::RendererType::Direct3D11)
     {
         argsArray.Push(type_ == VS ? "vs_4_0" : "ps_4_0");
-        defines.Push("DX11");
     }
     else if (bgfx::getRendererType() == bgfx::RendererType::Direct3D9)
         argsArray.Push(type_ == VS ? "vs_3_0" : "ps_3_0");
@@ -399,7 +398,10 @@ bool ShaderVariation::Compile()
 	String commandLine = fileSystem->GetProgramDir() + shaderc + " " + args;
 	URHO3D_LOGDEBUG("Compiling shader command: " + commandLine);
 
-    return !fileSystem->SystemCommand(commandLine, true);
+    if (fileSystem->SystemCommand(commandLine, true) == 0)
+        return true;
+    else
+        return false;
 }
 
 void ShaderVariation::ParseParameters(unsigned char* bufData, unsigned bufSize)
