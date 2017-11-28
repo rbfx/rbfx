@@ -32,7 +32,7 @@ varying vec2 vScreenPos;
 void VS()
 {
     mat4 modelMatrix = iModelMatrix;
-    vec3 worldPos = GetWorldPos(modelMatrix);
+    vec3 worldPos = GetWorldPos(modelMatrix, iPos);
     gl_Position = GetClipPos(worldPos);
     vScreenPos = GetScreenPosPreDiv(gl_Position);
 }

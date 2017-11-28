@@ -35,9 +35,9 @@ vec2 GetTexCoord(vec2 texCoord)
 
 vec4 GetClipPos(vec3 worldPos)
 {
-    vec4 ret = vec4(worldPos, 1.0) * cViewProj;
+    vec4 ret = mul(vec4(worldPos, 1.0), cViewProj);
     // While getting the clip coordinate, also automatically set gl_ClipVertex for user clip planes
-    #if !defined(GL_ES) && !defined(GL3)
+    #if !defined(GL_ES) && !defined(GL3) && !defined(DX11)
         gl_ClipVertex = ret;
     #elif defined(GL3)
         gl_ClipDistance[0] = dot(cClipPlane, ret);
@@ -132,33 +132,33 @@ vec3 GetTrailNormal(vec4 iPos, vec3 iParentPos, vec3 iForward)
     #define iModelMatrix cModel
 #endif
 
-vec3 GetWorldPos(mat4 modelMatrix)
+vec3 GetWorldPos(mat4 modelMatrix, vec4 position)
 {
     #if defined(BILLBOARD)
-        return GetBillboardPos(iPos, iTexCoord1, modelMatrix);
+        return GetBillboardPos(position, iTexCoord1, modelMatrix);
     #elif defined(DIRBILLBOARD)
-        return GetBillboardPos(iPos, iNormal, modelMatrix);
+        return GetBillboardPos(position, iNormal, modelMatrix);
     #elif defined(TRAILFACECAM)
-        return GetTrailPos(iPos, iTangent.xyz, iTangent.w, modelMatrix);
+        return GetTrailPos(position, iTangent.xyz, iTangent.w, modelMatrix);
     #elif defined(TRAILBONE)
-        return GetTrailPos(iPos, iTangent.xyz, iTangent.w, modelMatrix);
+        return GetTrailPos(position, iTangent.xyz, iTangent.w, modelMatrix);
     #else
-        return mul(iPos, modelMatrix).xyz;
+        return mul(position, modelMatrix).xyz;
     #endif
 }
 
-vec3 GetWorldNormal(mat4 modelMatrix)
+vec3 GetWorldNormal(mat4 modelMatrix, vec3 normal)
 {
     #if defined(BILLBOARD)
         return GetBillboardNormal();
     #elif defined(DIRBILLBOARD)
-        return GetBillboardNormal(iPos, iNormal, modelMatrix);
+        return GetBillboardNormal(position, iNormal, modelMatrix);
     #elif defined(TRAILFACECAM)
-        return GetTrailNormal(iPos);
+        return GetTrailNormal(position);
     #elif defined(TRAILBONE)
-        return GetTrailNormal(iPos, iTangent.xyz, iNormal);
+        return GetTrailNormal(position, iTangent.xyz, iNormal);
     #else
-        return normalize(mul(iNormal, GetNormalMatrix(modelMatrix)));
+        return normalize(mul(normal, GetNormalMatrix(modelMatrix)));
     #endif
 }
 

@@ -76,7 +76,7 @@ varying vec4 vWorldPos;
 void VS()
 {
     mat4 modelMatrix = iModelMatrix;
-    vec3 worldPos = GetWorldPos(modelMatrix);
+    vec3 worldPos = GetWorldPos(modelMatrix, iPos);
     gl_Position = GetClipPos(worldPos);
     vNormal = GetWorldNormal(modelMatrix);
     vWorldPos = vec4(worldPos, GetDepth(gl_Position));

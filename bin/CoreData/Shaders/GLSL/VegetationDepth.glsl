@@ -40,7 +40,7 @@ varying vec3 vTexCoord;
 void VS()
 {
     mat4 modelMatrix = iModelMatrix;
-    vec3 worldPos = GetWorldPos(modelMatrix);
+    vec3 worldPos = GetWorldPos(modelMatrix, iPos);
     
     float windStrength = max(iPos.y - cWindHeightPivot, 0.0) * cWindHeightFactor;
     float windPeriod = cElapsedTime * cWindPeriod + dot(worldPos.xz, cWindWorldSpacing);

@@ -69,7 +69,7 @@ uniform vec3 cWaterTint;
 void VS()
 {
     mat4 modelMatrix = iModelMatrix;
-    vec3 worldPos = GetWorldPos(modelMatrix);
+    vec3 worldPos = GetWorldPos(modelMatrix, iPos);
     gl_Position = GetClipPos(worldPos);
     vScreenPos = GetScreenPos(gl_Position);
     // GetQuadTexCoord() returns a vec2 that is OK for quad rendering; multiply it with output W

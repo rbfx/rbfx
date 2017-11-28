@@ -77,7 +77,7 @@ vec3 DecodeNormal(vec4 normalInput)
 
 vec3 EncodeDepth(float depth)
 {
-    #ifndef GL3
+    #if !defined(GL3) || !defined(DX11)
         vec3 ret;
         depth *= 255.0;
         ret.x = floor(depth);
@@ -94,7 +94,7 @@ vec3 EncodeDepth(float depth)
 
 float DecodeDepth(vec3 depth)
 {
-    #ifndef GL3
+    #if !defined(GL3) || !defined(DX11)
         const vec3 dotValues = vec3(1.0, 1.0 / 255.0, 1.0 / (255.0 * 255.0));
         return dot(depth, dotValues);
     #else

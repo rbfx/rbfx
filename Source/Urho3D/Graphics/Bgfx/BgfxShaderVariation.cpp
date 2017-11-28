@@ -117,34 +117,37 @@ bool ShaderVariation::Create()
             // Now lets get the uniforms
             uint16_t numParameters;
             numParameters = bgfx::getShaderUniforms(shdHandle);
-            PODVector<bgfx::UniformHandle> uHandles((unsigned)numParameters);
-            bgfx::getShaderUniforms(shdHandle, &uHandles[0], numParameters);
-            for (uint16_t i = 0; i < numParameters; ++i)
+            if (numParameters)
             {
-                bgfx::UniformInfo info;
-                bgfx::getUniformInfo(uHandles[i], info);
+                PODVector<bgfx::UniformHandle> uHandles((unsigned)numParameters);
+                bgfx::getShaderUniforms(shdHandle, &uHandles[0], numParameters);
+                for (uint16_t i = 0; i < numParameters; ++i)
+                {
+                    bgfx::UniformInfo info;
+                    bgfx::getUniformInfo(uHandles[i], info);
 
-				// Uniforms have a u_ prefix, so we substring from 2
-				String name = String(info.name).Substring(2);
-				unsigned unit = MAX_TEXTURE_UNITS;
-				// See if it's a sampler
-				if (info.type == bgfx::UniformType::Int1)
-				{
-					unit = graphics_->GetTextureUnit(name);
-					if (unit >= MAX_TEXTURE_UNITS)
-						unit = NumberPostfix(name);
+                    // Uniforms have a u_ prefix, so we substring from 2
+                    String name = String(info.name).Substring(2);
+                    unsigned unit = MAX_TEXTURE_UNITS;
+                    // See if it's a sampler
+                    if (info.type == bgfx::UniformType::Int1)
+                    {
+                        unit = graphics_->GetTextureUnit(name);
+                        if (unit >= MAX_TEXTURE_UNITS)
+                            unit = NumberPostfix(name);
 
-					if (unit < MAX_TEXTURE_UNITS)
-						useTextureUnit_[unit] = true;
-				}
+                        if (unit < MAX_TEXTURE_UNITS)
+                            useTextureUnit_[unit] = true;
+                    }
 
-                ShaderParameter parameter;
-                parameter.bgfxType_ = (unsigned)info.type;
-                parameter.name_ = name;
-                parameter.type_ = type_;
-                parameter.idx_ = uHandles[i].idx;
-				parameter.texUnit_ = unit;
-                parameters_[StringHash(name)] = parameter;
+                    ShaderParameter parameter;
+                    parameter.bgfxType_ = (unsigned)info.type;
+                    parameter.name_ = name;
+                    parameter.type_ = type_;
+                    parameter.idx_ = uHandles[i].idx;
+                    parameter.texUnit_ = unit;
+                    parameters_[StringHash(name)] = parameter;
+                }
             }
         }
     }
@@ -352,13 +355,16 @@ bool ShaderVariation::Compile()
     argsArray.Push("windows");
     argsArray.Push("--profile");
     if (bgfx::getRendererType() == bgfx::RendererType::Direct3D11)
+    {
         argsArray.Push(type_ == VS ? "vs_4_0" : "ps_4_0");
+        defines.Push("DX11");
+    }
     else if (bgfx::getRendererType() == bgfx::RendererType::Direct3D9)
         argsArray.Push(type_ == VS ? "vs_3_0" : "ps_3_0");
     else if (bgfx::getRendererType() == bgfx::RendererType::OpenGL)
     {
-        argsArray.Push("140");
-        defines.Push("GL3");
+        argsArray.Push("130");
+        //defines.Push("GL3");
     }
 	shaderc = "shaderc.exe";
 #elif defined(__APPLE__)
