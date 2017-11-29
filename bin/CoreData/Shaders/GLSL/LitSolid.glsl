@@ -76,7 +76,7 @@ varying vec4 vWorldPos;
 void VS()
 {
     mat4 modelMatrix = iModelMatrix;
-    vec3 worldPos = GetWorldPos(modelMatrix, iPos);
+    vec3 worldPos = GetWorldPos(modelMatrix);
     gl_Position = GetClipPos(worldPos);
     vNormal = GetWorldNormal(modelMatrix);
     vWorldPos = vec4(worldPos, GetDepth(gl_Position));
@@ -164,7 +164,7 @@ void PS()
     // Get normal
     #ifdef NORMALMAP
         mat3 tbn = mat3(vTangent.xyz, vec3(vTexCoord.zw, vTangent.w), vNormal);
-        vec3 normal = normalize(tbn * DecodeNormal(texture2D(sNormalMap, vTexCoord.xy)));
+        vec3 normal = normalize(mul(tbn, DecodeNormal(texture2D(sNormalMap, vTexCoord.xy))));
     #else
         vec3 normal = normalize(vNormal);
     #endif

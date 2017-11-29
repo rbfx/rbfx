@@ -37,10 +37,14 @@ vec4 GetClipPos(vec3 worldPos)
 {
     vec4 ret = mul(vec4(worldPos, 1.0), cViewProj);
     // While getting the clip coordinate, also automatically set gl_ClipVertex for user clip planes
+    #ifdef CLIPPLANE
     #if !defined(GL_ES) && !defined(GL3) && !defined(D3D11)
         gl_ClipVertex = ret;
     #elif defined(GL3)
         gl_ClipDistance[0] = dot(cClipPlane, ret);
+    #elif defined(D3D11)
+        //vClip = dot(ret, cClipPlane);
+    #endif
     #endif
     return ret;
 }
@@ -132,46 +136,37 @@ vec3 GetTrailNormal(vec4 iPos, vec3 iParentPos, vec3 iForward)
     #define iModelMatrix cModel
 #endif
 
-vec3 GetWorldPos(mat4 modelMatrix, vec4 position)
-{
-    #if defined(BILLBOARD)
-        return GetBillboardPos(position, iTexCoord1, modelMatrix);
-    #elif defined(DIRBILLBOARD)
-        return GetBillboardPos(position, iNormal, modelMatrix);
-    #elif defined(TRAILFACECAM)
-        return GetTrailPos(position, iTangent.xyz, iTangent.w, modelMatrix);
-    #elif defined(TRAILBONE)
-        return GetTrailPos(position, iTangent.xyz, iTangent.w, modelMatrix);
-    #else
-        return mul(position, modelMatrix).xyz;
-    #endif
-}
+#if defined(BILLBOARD)
+    #define GetWorldPos(modelMatrix) GetBillboardPos(iPos, iSize, modelMatrix)
+#elif defined(DIRBILLBOARD)
+    #define GetWorldPos(modelMatrix) GetBillboardPos(iPos, iSize, iNormal, modelMatrix)
+#elif defined(TRAILFACECAM)
+    #define GetWorldPos(modelMatrix) GetTrailPos(iPos, iTangent.xyz, iTangent.w, modelMatrix)
+#elif defined(TRAILBONE)
+    #define GetWorldPos(modelMatrix) GetTrailPos(iPos, iTangent.xyz, iTangent.w, modelMatrix)
+#else
+    #define GetWorldPos(modelMatrix) mul(iPos, modelMatrix)
+#endif
 
-vec3 GetWorldNormal(mat4 modelMatrix, vec3 normal)
-{
-    #if defined(BILLBOARD)
-        return GetBillboardNormal();
-    #elif defined(DIRBILLBOARD)
-        return GetBillboardNormal(position, iNormal, modelMatrix);
-    #elif defined(TRAILFACECAM)
-        return GetTrailNormal(position);
-    #elif defined(TRAILBONE)
-        return GetTrailNormal(position, iTangent.xyz, iNormal);
-    #else
-        return normalize(mul(normal, GetNormalMatrix(modelMatrix)));
-    #endif
-}
+#if defined(BILLBOARD)
+    #define GetWorldNormal(modelMatrix) GetBillboardNormal()
+#elif defined(DIRBILLBOARD)
+    #define GetWorldNormal(modelMatrix) GetBillboardNormal(iPos, iNormal, modelMatrix)
+#elif defined(TRAILFACECAM)
+    #define GetWorldNormal(modelMatrix) GetTrailNormal(iPos)
+#elif defined(TRAILBONE)
+    #define GetWorldNormal(modelMatrix) GetTrailNormal(iPos, iTangent.xyz, iNormal)
+#else
+    #define GetWorldNormal(modelMatrix) normalize(mul(iNormal, (float3x3)modelMatrix))
+#endif
 
-vec4 GetWorldTangent(mat4 modelMatrix, vec4 tangent)
-{
-    #if defined(BILLBOARD)
-        return vec4(normalize(mul(vec3(1.0, 0.0, 0.0), cBillboardRot)), 1.0);
-    #elif defined(DIRBILLBOARD)
-        return vec4(normalize(mul(vec3(1.0, 0.0, 0.0), GetNormalMatrix(modelMatrix))), 1.0);
-    #else
-        return vec4(normalize(mul(tangent.xyz, GetNormalMatrix(modelMatrix))), tangent.w);
-    #endif
-}
+#if defined(BILLBOARD)
+    #define GetWorldTangent(modelMatrix) float4(normalize(mul(float3(1.0, 0.0, 0.0), cBillboardRot)), 1.0)
+#elif defined(DIRBILLBOARD)
+    #define GetWorldTangent(modelMatrix) float4(normalize(mul(float3(1.0, 0.0, 0.0), (float3x3)modelMatrix)), 1.0)
+#else
+    #define GetWorldTangent(modelMatrix) float4(normalize(mul(iTangent.xyz, (float3x3)modelMatrix)), iTangent.w)
+#endif
 
 #endif
 

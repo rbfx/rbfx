@@ -18,9 +18,9 @@
 #define _VCOLOR
 #endif
 #if (defined(NORMALMAP) || defined(TRAILFACECAM) || defined(TRAILBONE)) && !defined(BILLBOARD) && !defined(DIRBILLBOARD)
-#define _TANGENT , a_tangent
+#define _ATANGENT , a_tangent
 #else
-#define _TANGENT
+#define _ATANGENT
 #endif
 #if defined(LIGHTMAP) || defined(AO) || defined(BILLBOARD) || defined(DIRBILLBOARD)
 #define _TEXCOORD1 , a_texcoord1
@@ -43,9 +43,9 @@
 #define _NUMCASCADES 1
 #endif
 #ifdef NORMALMAP
-#define _TANGENT , vTangent
+#define _VTANGENT , vTangent
 #else
-#define _TANGENT
+#define _VTANGENT
 #endif
 #ifdef SHADOW
 #define _VSHADOWPOS , vShadowPos[_NUMCASCADES]

@@ -1,4 +1,4 @@
-vec2 vTexCoord      : TEXCOORD0 = vec2(0.0, 0.0);
+vec4 vTexCoord      : TEXCOORD0 = vec4(0.0, 0.0, 0.0, 0.0);
 vec4 vTangent       : TANGENT   = vec4(0.0, 0.0, 0.0, 0.0);
 vec3 vNormal        : NORMAL    = vec3(0.0, 0.0, 1.0);
 vec4 vColor         : COLOR0    = vec4(1.0, 1.0, 1.0, 1.0);
@@ -10,7 +10,6 @@ vec3 vVertexLight   : TEXCOORD4 = vec3(0.0, 0.0, 0.0);
 vec4 vScreenPos     : TEXCOORD5 = vec4(0.0, 0.0, 0.0, 0.0);
 vec3 vReflectionVec : TEXCOORD6 = vec3(0.0, 0.0, 0.0);
 vec2 vTexCoord2     : TEXCOORD7 = vec2(0.0, 0.0);
-//float vClip         : SV_CLIPDISTANCE0 = float(0.0);
 
 vec4 a_position  : POSITION;
 vec3 a_normal    : NORMAL;

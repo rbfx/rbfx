@@ -749,7 +749,7 @@ vec4 FxaaPixelShader(
 void VS()
 {
     mat4 modelMatrix = iModelMatrix;
-    vec3 worldPos = GetWorldPos(modelMatrix, iPos);
+    vec3 worldPos = GetWorldPos(modelMatrix);
     gl_Position = GetClipPos(worldPos);
     vScreenPos = GetScreenPosPreDiv(gl_Position);
 }

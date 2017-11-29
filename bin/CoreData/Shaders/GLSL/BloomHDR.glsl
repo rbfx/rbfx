@@ -69,7 +69,7 @@ const int BlurKernelSize = 5;
 void VS()
 {
     mat4 modelMatrix = iModelMatrix;
-    vec3 worldPos = GetWorldPos(modelMatrix, iPos);
+    vec3 worldPos = GetWorldPos(modelMatrix);
     gl_Position = GetClipPos(worldPos);
     vTexCoord = GetQuadTexCoord(gl_Position);
     vScreenPos = GetScreenPosPreDiv(gl_Position);

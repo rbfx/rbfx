@@ -32,7 +32,7 @@
 void VS()
 {
     mat4 modelMatrix = iModelMatrix;
-    vec3 worldPos = GetWorldPos(modelMatrix, iPos);
+    vec3 worldPos = GetWorldPos(modelMatrix);
     gl_Position = GetClipPos(worldPos);
     #ifdef VSM_SHADOW
         vTexCoord = vec4(GetTexCoord(iTexCoord), gl_Position.z, gl_Position.w);

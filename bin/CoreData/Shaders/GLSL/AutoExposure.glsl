@@ -71,7 +71,7 @@ float GatherAvgLum(sampler2D texSampler, vec2 texCoord, vec2 texelSize)
 void VS()
 {
     mat4 modelMatrix = iModelMatrix;
-    vec3 worldPos = GetWorldPos(modelMatrix, iPos);
+    vec3 worldPos = GetWorldPos(modelMatrix);
     gl_Position = GetClipPos(worldPos);
     vTexCoord = GetQuadTexCoord(gl_Position);
     vScreenPos = GetScreenPosPreDiv(gl_Position);
