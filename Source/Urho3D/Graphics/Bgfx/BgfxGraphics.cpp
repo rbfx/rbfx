@@ -852,7 +852,6 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 				vs = nullptr;
 		}
 
-		//impl_->deviceContext_->VSSetShader((ID3D11VertexShader*)(vs ? vs->GetGPUObject() : nullptr), nullptr, 0);
 		vertexShader_ = vs;
 		impl_->vertexDeclarationDirty_ = true;
 	}
@@ -876,7 +875,6 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 				ps = nullptr;
 		}
 
-		//impl_->deviceContext_->PSSetShader((ID3D11PixelShader*)(ps ? ps->GetGPUObject() : nullptr), nullptr, 0);
 		pixelShader_ = ps;
 	}
 

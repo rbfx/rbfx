@@ -401,7 +401,7 @@ bool ShaderVariation::Compile()
 
 	FileSystem* fileSystem = owner_->GetSubsystem<FileSystem>();
 	String commandLine = fileSystem->GetProgramDir() + shaderc + " " + args;
-    fileSystem->DirExists(graphics_->GetShaderCacheDir() + shaderPath);
+    if(!fileSystem->DirExists(graphics_->GetShaderCacheDir() + shaderPath))
     fileSystem->CreateDir(graphics_->GetShaderCacheDir() + shaderPath);
 	URHO3D_LOGDEBUG("Compiling shader command: " + commandLine);
 
