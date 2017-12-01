@@ -317,8 +317,8 @@ bool ShaderVariation::Compile()
     SplitPath(owner_->GetName(), path, name, extension);
     extension = type_ == VS ? ".vs" : ".fs";
 
-    String immediateShaderName = graphics_->GetShaderCacheDir() + shaderPath + name + "_" + StringHash(defines_).ToString() + "immediate" + extension;
-    URHO3D_LOGDEBUG("Immediate shader " + immediateShaderName);
+    String intermediateShaderName = graphics_->GetShaderCacheDir() + shaderPath + name + "_" + StringHash(defines_).ToString() + "intermediate" + extension;
+    URHO3D_LOGDEBUG("Intermediate shader " + intermediateShaderName);
     String binaryShaderName = graphics_->GetShaderCacheDir() + shaderPath + name + "_" + StringHash(defines_).ToString() + extension;
     URHO3D_LOGDEBUG("Binary shader " + binaryShaderName);
 
@@ -340,14 +340,14 @@ bool ShaderVariation::Compile()
 #endif
     }
 
-    File dest(graphics_->GetContext(), immediateShaderName, FILE_WRITE);
+    File dest(graphics_->GetContext(), intermediateShaderName, FILE_WRITE);
     dest.WriteString(sourceCode);
     dest.Close();
 
     String shaderc;
     Vector<String> argsArray;
     argsArray.Push("-f");
-    argsArray.Push(immediateShaderName);
+    argsArray.Push(intermediateShaderName);
     argsArray.Push("-o");
     argsArray.Push(binaryShaderName);
     argsArray.Push("--depends");
@@ -402,7 +402,7 @@ bool ShaderVariation::Compile()
 	FileSystem* fileSystem = owner_->GetSubsystem<FileSystem>();
 	String commandLine = fileSystem->GetProgramDir() + shaderc + " " + args;
     if(!fileSystem->DirExists(graphics_->GetShaderCacheDir() + shaderPath))
-    fileSystem->CreateDir(graphics_->GetShaderCacheDir() + shaderPath);
+        fileSystem->CreateDir(graphics_->GetShaderCacheDir() + shaderPath);
 	URHO3D_LOGDEBUG("Compiling shader command: " + commandLine);
 
     if (fileSystem->SystemCommand(commandLine, true) == 0)
