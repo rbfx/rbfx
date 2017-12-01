@@ -1088,7 +1088,7 @@ void UI::Render(VertexBuffer* buffer, const PODVector<UIBatch>& batches, unsigne
 #endif
         if (graphics_->NeedParameterUpdate(SP_CAMERA, this))
 #ifdef URHO3D_BGFX
-            bgfx::setViewTransform(graphics_->GetImpl()->GetCurrentView(), projection.Data(), projection.Data()); // TODO: Invert
+            bgfx::setViewTransform(graphics_->GetImpl()->GetCurrentView(), Matrix4::IDENTITY.Data(), projection.Data());
 #else
             graphics_->SetShaderParameter(VSP_VIEWPROJ, projection);
 #endif

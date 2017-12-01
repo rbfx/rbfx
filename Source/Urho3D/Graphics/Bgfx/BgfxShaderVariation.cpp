@@ -298,6 +298,11 @@ bool ShaderVariation::Compile()
         varyingTest.Push("vsm");
         varying.Join(varyingTest, "_");
     }
+    else if ((varyingTest[1] == "scenepass") && (defines.Contains("NORMALMAP")))
+    {
+        varyingTest.Push("normal");
+        varying.Join(varyingTest, "_");
+    }
 
     ResourceCache* resourceCache = owner_->GetSubsystem<ResourceCache>();
     String shaderPath2;
@@ -396,6 +401,8 @@ bool ShaderVariation::Compile()
 
 	FileSystem* fileSystem = owner_->GetSubsystem<FileSystem>();
 	String commandLine = fileSystem->GetProgramDir() + shaderc + " " + args;
+    fileSystem->DirExists(graphics_->GetShaderCacheDir() + shaderPath);
+    fileSystem->CreateDir(graphics_->GetShaderCacheDir() + shaderPath);
 	URHO3D_LOGDEBUG("Compiling shader command: " + commandLine);
 
     if (fileSystem->SystemCommand(commandLine, true) == 0)

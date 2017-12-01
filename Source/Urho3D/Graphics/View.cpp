@@ -2261,21 +2261,20 @@ void View::DrawFullscreenQuad(bool setIdentityProjection)
     {
         Matrix3x4 model = Matrix3x4::IDENTITY;
         Matrix4 projection = Matrix4::IDENTITY;
-#if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
-#ifdef URHO3D_BGFX
-    if (bgfx::getRendererType() == bgfx::RendererType::OpenGL || bgfx::RendererType::OpenGLES) {
-#endif
+#if defined(URHO3D_OPENGL)
         if (camera_ && camera_->GetFlipVertical())
             projection.m11_ = -1.0f;
         model.m23_ = 0.0f;
-#ifdef URHO3D_BGFX
-    }
-#endif
+#elif defined(URHO3D_BGFX)
+        if (camera_ && bgfx::getCaps()->originBottomLeft)
+            projection.m11_ = -1.0f;
+        model.m23_ = 0.0f;
 #else
         model.m23_ = 0.5f;
 #endif
+
 #ifdef URHO3D_BGFX
-        bgfx::setViewTransform(graphics_->GetImpl()->GetCurrentView(), projection.Data(), projection.Data()); // need to invert
+        bgfx::setViewTransform(graphics_->GetImpl()->GetCurrentView(), Matrix4::IDENTITY.Data(), projection.Data());
         bgfx::setTransform(model.Data());
 #else
         graphics_->SetShaderParameter(VSP_MODEL, model);
@@ -2283,7 +2282,11 @@ void View::DrawFullscreenQuad(bool setIdentityProjection)
 #endif
     }
     else
+#ifdef URHO3D_BGFX
+        bgfx::setTransform(Light::GetFullscreenQuadTransform(camera_).Data());
+#else
         graphics_->SetShaderParameter(VSP_MODEL, Light::GetFullscreenQuadTransform(camera_));
+#endif
 
     graphics_->SetCullMode(CULL_NONE);
     graphics_->ClearTransformSources();
@@ -3180,12 +3183,8 @@ void View::RenderShadowMap(const LightBatchQueue& queue)
 #ifdef URHO3D_BGFX
     // Increment the current view
     uint8_t view = graphics_->GetImpl()->GetCurrentView() + 1;
-    bgfx::touch(view);
     bgfx::setViewMode(view, bgfx::ViewMode::DepthDescending);
-    //uint16_t idx = shadowMap->GetRenderSurface()->GetBgfxFramebufferIdx();
-    //bgfx::FrameBufferHandle handle;
-    //handle.idx = idx;
-    //bgfx::setViewFrameBuffer(view, handle);
+    bgfx::touch(view);
 #ifdef URHO3D_DEBUG
     bgfx::setViewName(view, "SHADOWMAP");
 #endif

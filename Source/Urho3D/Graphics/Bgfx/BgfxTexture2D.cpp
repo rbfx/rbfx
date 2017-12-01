@@ -36,6 +36,8 @@
 
 #include "../../DebugNew.h"
 
+#include "bimg/bimg.h"
+
 namespace Urho3D
 {
 
@@ -107,7 +109,10 @@ bool Texture2D::SetData(unsigned level, int x, int y, int width, int height, con
     bgfx::TextureHandle handle;
     handle.idx = object_.idx_;
 
-    bgfx::updateTexture2D(handle, 1, (uint8_t)level, (uint16_t)x, (uint16_t)y, (uint16_t)width, (uint16_t)height, bgfx::makeRef(data, sizeof(data)));
+    // TODO: Remove the extra copy here somehow, and also support compressed formats later.
+    unsigned size = width * height * (bimg::getBitsPerPixel((bimg::TextureFormat::Enum)format_)/8);
+    const bgfx::Memory* mem = bgfx::copy(data, size);
+    bgfx::updateTexture2D(handle, 0, (uint8_t)level, (uint16_t)x, (uint16_t)y, (uint16_t)width, (uint16_t)height, mem);
 
     return true;
 }

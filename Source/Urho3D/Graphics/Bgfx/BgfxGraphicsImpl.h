@@ -146,8 +146,8 @@ private:
     bool stencilRefDirty_;
     /// BGFX state dirty flag.
     bool stateDirty_;
-    /// Primitive type.
-    uint64_t primitiveType_;
+    /// BGFX textures dirty flag.
+    bool texturesDirty_;
     /// Current index buffer.
     bgfx::IndexBufferHandle indexBuffer_;
     /// Current dynamic index buffer.

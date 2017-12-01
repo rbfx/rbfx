@@ -55,7 +55,7 @@ ShaderProgram::ShaderProgram(Graphics* graphics, ShaderVariation* vertexShader, 
 	{
 		parameters_[i->first_] = i->second_;
 		// Map texture unit number to uniform handle
-		if ((i->second_.type_ == bgfx::UniformType::Int1) && (i->second_.texUnit_ != MAX_TEXTURE_UNITS))
+		if ((i->second_.type_ == bgfx::UniformType::Int1) && (i->second_.texUnit_ < MAX_TEXTURE_UNITS))
 			texSamplers_[i->second_.texUnit_].idx = i->second_.idx_;
 	}
 
@@ -64,7 +64,7 @@ ShaderProgram::ShaderProgram(Graphics* graphics, ShaderVariation* vertexShader, 
 	{
 		parameters_[i->first_] = i->second_;
 		// Map texture unit number to uniform handle
-		if ((i->second_.bgfxType_ == bgfx::UniformType::Int1) && (i->second_.texUnit_ != MAX_TEXTURE_UNITS))
+		if ((i->second_.bgfxType_ == bgfx::UniformType::Int1) && (i->second_.texUnit_ < MAX_TEXTURE_UNITS))
 			texSamplers_[i->second_.texUnit_].idx = i->second_.idx_;
 	}
 
