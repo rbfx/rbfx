@@ -1,20 +1,13 @@
 #ifdef BGFX_SHADER
+#define BASIC
 #include "varying_scenepass.def.sc"
 #include "urho3d_compatibility.sh"
 #ifdef COMPILEVS
     $input a_position _NORMAL _TEXCOORD0 _COLOR0 _TEXCOORD1 _ATANGENT _SKINNED _INSTANCED
-    #ifdef PERPIXEL
-        $output vTexCoord _VTANGENT, vNormal, vWorldPos _VSHADOWPOS _VSPOTPOS _VCUBEMASKVEC _VCOLOR
-    #else
-        $output vTexCoord _VTANGENT, vNormal, vWorldPos, vVertexLight, vScreenPos _VREFLECTIONVEC _VTEXCOORD2 _VCOLOR
-    #endif
+    $output _VTEXCOORD _VCOLOR _VCLIP
 #endif
 #ifdef COMPILEPS
-    #ifdef PERPIXEL
-        $input vTexCoord _VTANGENT, vNormal, vWorldPos _VSHADOWPOS _VSPOTPOS _VCUBEMASKVEC _VCOLOR
-    #else
-        $input vTexCoord _VTANGENT, vNormal, vWorldPos, vVertexLight, vScreenPos _VREFLECTIONVEC _VTEXCOORD2 _VCOLOR
-    #endif
+    $input _VTEXCOORD _VCOLOR _VCLIP
 #endif
 
 #include "common.sh"
@@ -44,7 +37,7 @@ void VS()
     vec3 worldPos = GetWorldPos(modelMatrix);
     gl_Position = GetClipPos(worldPos);
     
-    #ifdef DIFFMAP
+    #if defined(DIFFMAP) || defined(ALPHAMAP)
         vTexCoord = iTexCoord;
     #endif
     #ifdef VERTEXCOLOR
@@ -72,7 +65,7 @@ void PS()
         gl_FragColor = diffColor * diffInput;
     #endif
     #ifdef ALPHAMAP
-        #ifdef GL3
+        #if defined(D3D11) || defined(GL3)
             float alphaInput = texture2D(sDiffMap, vTexCoord).r;
         #else
             float alphaInput = texture2D(sDiffMap, vTexCoord).a;
