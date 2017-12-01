@@ -461,8 +461,7 @@ void Graphics::EndFrame()
 
         SendEvent(E_ENDRENDERING);
         bgfx::frame();
-        impl_->view_ = 0;
-        impl_->shaderProgram_ = nullptr;
+        ResetCachedState();
     }
 
     // Clean up too large scratch buffers
@@ -548,6 +547,9 @@ void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCou
 
     bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
     impl_->drawDistance_ = 0;
+    impl_->indexBuffer_.idx = UINT16_MAX;
+    impl_->dynamicIndexBuffer_.idx = UINT16_MAX;
+
     //numPrimitives_ += primitiveCount;
     ++numBatches_;
 }
@@ -580,7 +582,8 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
 
     bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
     impl_->drawDistance_ = 0;
-    //numPrimitives_ += primitiveCount;
+    impl_->indexBuffer_.idx = UINT16_MAX;
+    impl_->dynamicIndexBuffer_.idx = UINT16_MAX;
     ++numBatches_;
 }
 
@@ -612,7 +615,8 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
 
     bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
     impl_->drawDistance_ = 0;
-    //numPrimitives_ += primitiveCount;
+    impl_->indexBuffer_.idx = UINT16_MAX;
+    impl_->dynamicIndexBuffer_.idx = UINT16_MAX;
     ++numBatches_;
 }
 
@@ -661,7 +665,8 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
 
     bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
     impl_->drawDistance_ = 0;
-    //numPrimitives_ += primitiveCount;
+    impl_->indexBuffer_.idx = UINT16_MAX;
+    impl_->dynamicIndexBuffer_.idx = UINT16_MAX;
     ++numBatches_;
 }
 
@@ -710,7 +715,8 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
 
     bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
     impl_->drawDistance_ = 0;
-    //numPrimitives_ += primitiveCount;
+    impl_->indexBuffer_.idx = UINT16_MAX;
+    impl_->dynamicIndexBuffer_.idx = UINT16_MAX;
     ++numBatches_;
 }
 
