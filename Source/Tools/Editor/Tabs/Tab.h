@@ -61,9 +61,9 @@ public:
     /// Load a file from resource path.
     virtual void LoadResource(const String& resourcePath) { }
     /// Save tab contents to a resource file.
-    virtual bool SaveResource(const String& resourcePath) { }
+    virtual bool SaveResource(const String& resourcePath) { return false; }
     /// Save tab contents to a previously loaded resource file.
-    bool SaveResource() { SaveResource(String::EMPTY); }
+    bool SaveResource() { return SaveResource(String::EMPTY); }
     /// Set scene view tab title.
     void SetTitle(const String& title);
     /// Set screen rectangle where scene is being rendered.

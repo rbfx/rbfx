@@ -38,18 +38,13 @@ public:
     {
         for (;;)
         {
-            union
-            {
-                char bytes[4];
-                StringHash hash;
-            } value{};
-            static_assert(sizeof(value.hash) == sizeof(value.bytes));
+            unsigned hashValue = 0;
+            hashValue |= Random(0x10000);
+            hashValue |= Random(0x10000) << 16;
 
-            for (char& byte : value.bytes)
-                byte = static_cast<char>(Random(0xFF));
-
-            if (TakeID(value.hash))
-                return value.hash;
+            StringHash hash(hashValue);
+            if (TakeID(hash))
+                return hash;
         }
         assert(false);
     }
