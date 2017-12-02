@@ -245,7 +245,7 @@ namespace Urho3D
 
 
 
-		VisualDebuggerObject* AddCircle(const Vector3& center, const Vector3& normal, float radius, const Color& color, int steps = 64, bool depthTest = true);
+		VisualDebuggerCircle* AddCircle(const Vector3& center, const Vector3& normal, float radius, const Color& color, int steps = 64, bool depthTest = true);
 
 		VisualDebuggerLine* AddLine(const Vector3& start, const Vector3& end, const Color& color, bool depthTest = true);
 

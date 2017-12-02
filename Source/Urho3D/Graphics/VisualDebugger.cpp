@@ -21,7 +21,7 @@ VisualDebugger::VisualDebugger(Context* context) : Object(context)
 	mTimer.Reset();
 }
 
-VisualDebugger::VisualDebuggerObject* VisualDebugger::AddCircle(const Vector3& center, const Vector3& normal, float radius, const Color& color, int steps /*= 64*/, bool depthTest /*= true*/)
+VisualDebugger::VisualDebuggerCircle* VisualDebugger::AddCircle(const Vector3& center, const Vector3& normal, float radius, const Color& color, int steps /*= 64*/, bool depthTest /*= true*/)
 {
 	VisualDebuggerCircle* newDbgObject = new VisualDebuggerCircle(this, context_);
 	newDbgObject->mCenter = center;
@@ -255,9 +255,16 @@ void VisualDebugger::VisualDebuggerUILabel::SetEnabled(bool enabled)
 
 void VisualDebugger::VisualDebuggerUILabel::UpdatePosition()
 {
-	Vector2 screenPoint = mVisDebugger->mCamera->WorldToScreenPoint(mCenter);
-	//screen point has range of 0-1.
-	screenPoint *= Vector2(context_->GetSubsystem<Graphics>()->GetSize());
+	//default to screen middle.
+	Vector2 screenPoint = Vector2(GetSubsystem<Graphics>()->GetSize())*0.5f;
+	
+	if (mVisDebugger->mCamera.NotNull()) {
+		screenPoint = mVisDebugger->mCamera->WorldToScreenPoint(mCenter);
+		//screen point has range of 0-1. - convert back to pixels
+		screenPoint *= Vector2(GetSubsystem<Graphics>()->GetSize());
+	}
+	
+
 	mUIText->SetPosition(IntVector2(screenPoint.x_, screenPoint.y_));
 }
 
