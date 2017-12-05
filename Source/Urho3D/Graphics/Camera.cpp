@@ -457,7 +457,7 @@ Matrix4 Camera::GetGPUProjection() const
 #endif
 #if URHO3D_BGFX
     context_->GetGraphics()->GetApiType();
-    if (context_->GetGraphics()->GetApiType() != BGFX_OPENGL || BGFX_OPENGLES)
+    if (context_->GetGraphics()->GetApiType() != GAPI_BGFX_OPENGL || GAPI_BGFX_OPENGLES)
         return GetProjection();
     else {
 #endif

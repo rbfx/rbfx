@@ -59,7 +59,7 @@ namespace Urho3D
         defaultTextureAnisotropy_(4),
         orientations_("LandscapeLeft LandscapeRight"),
         apiName_("Noop"),
-        apiType_(GraphicsApiType::NOOP)
+        apiType_(GAPI_NOOP)
     {
         RegisterGraphicsLibrary(context_);
     }

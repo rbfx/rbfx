@@ -262,10 +262,10 @@ Graphics::Graphics(Context* context_) :
     orientations_("LandscapeLeft LandscapeRight"),
 #ifndef GL_ES_VERSION_2_0
     apiName_("GL2"),
-    apiType_(GraphicsApiType::OPENGL)
+    apiType_(GAPI_OPENGL)
 #else
     apiName_("GLES2"),
-    apiType_(GraphicsApiType::OPENGLES)
+    apiType_(GAPI_OPENGLES)
 #endif
 {
     SetTextureUnitMappings();

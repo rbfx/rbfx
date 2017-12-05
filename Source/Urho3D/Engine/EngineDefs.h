@@ -75,4 +75,7 @@ static const String EP_WINDOW_WIDTH = "WindowWidth";
 static const String EP_WORKER_THREADS = "WorkerThreads";
 static const String EP_PROFILER_LISTEN = "ProfilerListen";
 static const String EP_PROFILER_PORT = "ProfilerPort";
+#ifdef URHO3D_BGFX
+static const String EP_GRAPHICS_API = "GraphicsAPI";
+#endif
 }

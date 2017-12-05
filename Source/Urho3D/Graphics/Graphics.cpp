@@ -95,6 +95,13 @@ void Graphics::SetWindowPosition(int x, int y)
     SetWindowPosition(IntVector2(x, y));
 }
 
+void Graphics::SetGraphicsAPI(GraphicsApiType apiType)
+{
+#ifdef URHO3D_BGFX
+    apiType_ = apiType;
+#endif
+}
+
 void Graphics::SetOrientations(const String& orientations)
 {
     orientations_ = orientations.Trimmed();

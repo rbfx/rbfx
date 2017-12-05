@@ -112,6 +112,8 @@ public:
     void SetFlushGPU(bool enable);
     /// Set forced use of OpenGL 2 even if OpenGL 3 is available. Must be called before setting the screen mode for the first time. Default false. No effect on Direct3D9 & 11.
     void SetForceGL2(bool enable);
+    /// Set graphics API type, for BGFX only.
+    void SetGraphicsAPI(GraphicsApiType apiType);
     /// Set allowed screen orientations as a space-separated list of "LandscapeLeft", "LandscapeRight", "Portrait" and "PortraitUpsideDown". Affects currently only iOS platform.
     void SetOrientations(const String& orientations);
     /// Toggle between full screen and windowed mode. Return true if successful.

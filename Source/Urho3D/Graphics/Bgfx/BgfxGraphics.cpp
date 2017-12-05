@@ -107,15 +107,15 @@ static const uint64_t bgfxStencilZFail[] =
 
 static const GraphicsApiType bgfxToUrhoRenderer[] =
 {
-    BGFX_NOOP,
-    BGFX_DIRECT3D9,
-    BGFX_DIRECT3D11,
-    BGFX_DIRECT3D12,
-    BGFX_GNM,
-    BGFX_METAL,
-    BGFX_OPENGLES,
-    BGFX_OPENGL,
-    BGFX_VULKAN
+    GAPI_BGFX_NOOP,
+    GAPI_BGFX_DIRECT3D9,
+    GAPI_BGFX_DIRECT3D11,
+    GAPI_BGFX_DIRECT3D12,
+    GAPI_BGFX_GNM,
+    GAPI_BGFX_METAL,
+    GAPI_BGFX_OPENGLES,
+    GAPI_BGFX_OPENGL,
+    GAPI_BGFX_VULKAN
 };
 
 static const bgfx::RendererType::Enum urhoToBgfxRenderer[] =
@@ -175,7 +175,7 @@ Graphics::Graphics(Context* context_) :
     shaderExtension_(".glsl"),
     orientations_("LandscapeLeft LandscapeRight"),
     apiName_("Bgfx"),
-    apiType_(GraphicsApiType::NOOP)
+    apiType_(GAPI_NOOP)
 {
     SetTextureUnitMappings(); // TODO: Need to delay this on mobile check, 8 texture units limit
     ResetCachedState();
@@ -327,9 +327,9 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
 
     }
 
-    bgfx::init(urhoToBgfxRenderer[GraphicsApiType::BGFX_OPENGL]);//, BGFX_PCI_ID_NONE, 0, &impl_->callback_);
+    bgfx::init(urhoToBgfxRenderer[apiType_]);//, BGFX_PCI_ID_NONE, 0, &impl_->callback_);
     //bgfx::setDebug();
-    apiType_ = bgfxToUrhoRenderer[bgfx::getRendererType()];
+    //apiType_ = bgfxToUrhoRenderer[bgfx::getRendererType()];
 
 #ifdef URHO3D_LOGGING
     String msg;

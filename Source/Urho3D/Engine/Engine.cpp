@@ -262,9 +262,39 @@ bool Engine::Initialize(const VariantMap& parameters)
             graphics->SetWindowPosition(GetParameter(parameters, EP_WINDOW_POSITION_X).GetInt(),
                 GetParameter(parameters, EP_WINDOW_POSITION_Y).GetInt());
 
-#ifdef URHO3D_OPENGL
+#if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
         if (HasParameter(parameters, EP_FORCE_GL2))
             graphics->SetForceGL2(GetParameter(parameters, EP_FORCE_GL2).GetBool());
+#endif
+#ifdef URHO3D_BGFX
+        if (HasParameter(parameters, EP_GRAPHICS_API))
+        {
+            String renderer = GetParameter(parameters, EP_GRAPHICS_API, String::EMPTY).GetString();
+            if (renderer == "gl")
+                graphics->SetGraphicsAPI(GAPI_BGFX_OPENGL);
+            else if (renderer == "gles")
+                graphics->SetGraphicsAPI(GAPI_BGFX_OPENGLES);
+            else if (renderer == "dx9")
+                graphics->SetGraphicsAPI(GAPI_BGFX_DIRECT3D9);
+            else if (renderer == "dx11")
+                graphics->SetGraphicsAPI(GAPI_BGFX_DIRECT3D11);
+            else if (renderer == "dx12")
+                graphics->SetGraphicsAPI(GAPI_BGFX_DIRECT3D12);
+            else if (renderer == "metal")
+                graphics->SetGraphicsAPI(GAPI_BGFX_METAL);
+            else if (renderer == "vulkan")
+                graphics->SetGraphicsAPI(GAPI_BGFX_METAL);
+            else
+                graphics->SetGraphicsAPI(GAPI_BGFX_VULKAN);
+        }
+        else
+#if defined(_WIN32)
+            graphics->SetGraphicsAPI(GAPI_BGFX_DIRECT3D11);
+#elif defined(__ANDROID__) || defined(IOS) || defined(TVOS) || defined(__EMSCRIPTEN__) || defined (__arm__) || defined(__aarch64__)
+            graphics->SetGraphicsAPI(GAPI_BGFX_OPENGLES);
+#else
+            graphics->SetGraphicsAPI(GAPI_BGFX_OPENGL);
+#endif
 #endif
 
         if (!graphics->SetMode(
@@ -984,6 +1014,13 @@ VariantMap Engine::ParseParameters(const Vector<String>& arguments)
             else if (argument == "timeout" && !value.Empty())
             {
                 ret[EP_TIME_OUT] = ToInt(value);
+                ++i;
+            }
+#endif
+#ifdef URHO3D_BGFX
+            else if (argument == "graphicsapi" && !value.Empty())
+            {
+                ret[EP_GRAPHICS_API] = value;
                 ++i;
             }
 #endif

@@ -288,7 +288,7 @@ Graphics::Graphics(Context* context) :
     shaderExtension_(".hlsl"),
     orientations_("LandscapeLeft LandscapeRight"),
     apiName_("D3D9"),
-    apiType_(GraphicsApiType::DIRECT3D9)
+    apiType_(GAPI_DIRECT3D9)
 {
     SetTextureUnitMappings();
 
