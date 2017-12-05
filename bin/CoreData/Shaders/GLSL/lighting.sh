@@ -388,3 +388,5 @@ float GetShadowDeferred(vec4 projWorldPos, vec3 normal, float depth)
 #endif
 #endif
 #endif
+
+#endif

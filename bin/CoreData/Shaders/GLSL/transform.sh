@@ -145,7 +145,7 @@ vec3 GetTrailNormal(vec4 iPos, vec3 iParentPos, vec3 iForward)
 #elif defined(TRAILBONE)
     #define GetWorldPos(modelMatrix) GetTrailPos(iPos, iTangent.xyz, iTangent.w, modelMatrix)
 #else
-    #define GetWorldPos(modelMatrix) mul(iPos, modelMatrix)
+    #define GetWorldPos(modelMatrix) mul(iPos, modelMatrix).xyz
 #endif
 
 #if defined(BILLBOARD)
@@ -157,15 +157,15 @@ vec3 GetTrailNormal(vec4 iPos, vec3 iParentPos, vec3 iForward)
 #elif defined(TRAILBONE)
     #define GetWorldNormal(modelMatrix) GetTrailNormal(iPos, iTangent.xyz, iNormal)
 #else
-    #define GetWorldNormal(modelMatrix) normalize(mul(iNormal, (float3x3)modelMatrix))
+    #define GetWorldNormal(modelMatrix) normalize(mul(iNormal, GetNormalMatrix(modelMatrix)))
 #endif
 
 #if defined(BILLBOARD)
-    #define GetWorldTangent(modelMatrix) float4(normalize(mul(float3(1.0, 0.0, 0.0), cBillboardRot)), 1.0)
+    #define GetWorldTangent(modelMatrix) vec4(normalize(mul(vec3(1.0, 0.0, 0.0), cBillboardRot)), 1.0)
 #elif defined(DIRBILLBOARD)
-    #define GetWorldTangent(modelMatrix) float4(normalize(mul(float3(1.0, 0.0, 0.0), (float3x3)modelMatrix)), 1.0)
+    #define GetWorldTangent(modelMatrix) vec4(normalize(mul(vec3(1.0, 0.0, 0.0), GetNormalMatrix(modelMatrix))), 1.0)
 #else
-    #define GetWorldTangent(modelMatrix) float4(normalize(mul(iTangent.xyz, (float3x3)modelMatrix)), iTangent.w)
+    #define GetWorldTangent(modelMatrix) vec4(normalize(mul(iTangent.xyz, GetNormalMatrix(modelMatrix))), iTangent.w)
 #endif
 
 #endif

@@ -86,7 +86,7 @@ void VS()
     #endif
 
     #ifdef NORMALMAP
-        vec4 tangent = GetWorldTangent(modelMatrix, iTangent);
+        vec4 tangent = GetWorldTangent(modelMatrix);
         vec3 bitangent = cross(tangent.xyz, vNormal) * tangent.w;
         vTexCoord = vec4(GetTexCoord(iTexCoord), bitangent.xy);
         vTangent = vec4(tangent.xyz, bitangent.z);
