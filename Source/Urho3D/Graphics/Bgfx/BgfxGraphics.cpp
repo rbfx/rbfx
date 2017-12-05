@@ -532,11 +532,6 @@ void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCou
 
     PrepareDraw();
 
-    if (bgfx::isValid(impl_->indexBuffer_))
-        bgfx::setIndexBuffer(impl_->indexBuffer_);
-    else if (bgfx::isValid(impl_->dynamicIndexBuffer_))
-        bgfx::setIndexBuffer(impl_->dynamicIndexBuffer_);
-
     for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
     {
         if (bgfx::isValid(impl_->vertexBuffer_[i]))
@@ -547,8 +542,6 @@ void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCou
 
     bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
     impl_->drawDistance_ = 0;
-    impl_->indexBuffer_.idx = UINT16_MAX;
-    impl_->dynamicIndexBuffer_.idx = UINT16_MAX;
 
     //numPrimitives_ += primitiveCount;
     ++numBatches_;
@@ -582,8 +575,6 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
 
     bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
     impl_->drawDistance_ = 0;
-    impl_->indexBuffer_.idx = UINT16_MAX;
-    impl_->dynamicIndexBuffer_.idx = UINT16_MAX;
     ++numBatches_;
 }
 
@@ -615,8 +606,6 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
 
     bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
     impl_->drawDistance_ = 0;
-    impl_->indexBuffer_.idx = UINT16_MAX;
-    impl_->dynamicIndexBuffer_.idx = UINT16_MAX;
     ++numBatches_;
 }
 
@@ -665,8 +654,6 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
 
     bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
     impl_->drawDistance_ = 0;
-    impl_->indexBuffer_.idx = UINT16_MAX;
-    impl_->dynamicIndexBuffer_.idx = UINT16_MAX;
     ++numBatches_;
 }
 
@@ -715,8 +702,6 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
 
     bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
     impl_->drawDistance_ = 0;
-    impl_->indexBuffer_.idx = UINT16_MAX;
-    impl_->dynamicIndexBuffer_.idx = UINT16_MAX;
     ++numBatches_;
 }
 
