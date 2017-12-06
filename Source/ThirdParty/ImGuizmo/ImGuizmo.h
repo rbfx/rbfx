@@ -112,7 +112,7 @@ void EditTransform(const Camera& camera, matrix_t& matrix)
 
 namespace ImGuizmo
 {
-	// Call inside your own window and before Manipulate() in order to draw gizmo to that window.
+	// call inside your own window and before Manipulate() in order to draw gizmo to that window.
 	IMGUI_API void SetDrawlist();
 
 	// call BeginFrame right after ImGui_XXXX_NewFrame();
