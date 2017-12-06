@@ -157,11 +157,15 @@ bool VertexBuffer::SetData(const void* data)
         for (PODVector<VertexElement>::ConstIterator i = elements_.Begin(); i != elements_.End(); ++i)
         {
             bgfx::Attrib::Enum attrib = bgfxAttrib[i->semantic_];
+            bgfx::AttribType::Enum type = bgfxAttribType[i->type_];
+            bool normalized = false;
             if (attrib == bgfx::Attrib::TexCoord0)
                 attrib = bgfxAttribTexcoords[i->index_];
             else if (attrib == bgfx::Attrib::Color0)
                 attrib = bgfxAttribColors[i->index_];
-            decl.add(attrib, bgfxAttribSize[i->type_], bgfxAttribType[i->type_]);
+            if (type == bgfx::AttribType::Uint8)
+                normalized = true;
+            decl.add(attrib, bgfxAttribSize[i->type_], type, normalized, false);
         }
         decl.end();
 
@@ -307,11 +311,15 @@ bool VertexBuffer::Create()
             for (PODVector<VertexElement>::ConstIterator i = elements_.Begin(); i != elements_.End(); ++i)
             {
                 bgfx::Attrib::Enum attrib = bgfxAttrib[i->semantic_];
+                bgfx::AttribType::Enum type = bgfxAttribType[i->type_];
+                bool normalized = false;
                 if (attrib == bgfx::Attrib::TexCoord0)
                     attrib = bgfxAttribTexcoords[i->index_];
                 else if (attrib == bgfx::Attrib::Color0)
                     attrib = bgfxAttribColors[i->index_];
-                decl.add(attrib, bgfxAttribSize[i->type_], bgfxAttribType[i->type_]);
+                if (type == bgfx::AttribType::Uint8)
+                    normalized = true;
+                decl.add(attrib, bgfxAttribSize[i->type_], type, normalized, false);
             }
             decl.end();
 
