@@ -51,7 +51,8 @@ bool Tab::RenderWindow()
     {
         if (open)
         {
-            if (tabRect_.IsInside(lastMousePosition_) == INSIDE)
+            IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->InnerRect);
+            if (tabRect.IsInside(lastMousePosition_) == INSIDE)
             {
                 if (!ui::IsWindowFocused() && ui::IsItemHovered() && input->GetMouseButtonDown(MOUSEB_RIGHT))
                     ui::SetWindowFocus();
@@ -67,21 +68,6 @@ bool Tab::RenderWindow()
             open = RenderWindowContent();
 
             isRendered_ = true;
-
-            // Update scene view rect according to window position
-            // if (!input->GetMouseButtonDown(MOUSEB_LEFT))
-            {
-                auto titlebarHeight = ui::GetCurrentContext()->CurrentWindow->TitleBarHeight();
-                auto pos = ui::GetWindowPos();
-                pos.y += titlebarHeight;
-                auto size = ui::GetWindowSize();
-                size.y -= titlebarHeight;
-                if (size.x > 0 && size.y > 0)
-                {
-                    IntRect newRect(ToIntVector2(pos), ToIntVector2(pos + size));
-                    SetSize(newRect);
-                }
-            }
         }
     }
     else

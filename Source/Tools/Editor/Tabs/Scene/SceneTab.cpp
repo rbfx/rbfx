@@ -64,13 +64,6 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
 
 SceneTab::~SceneTab() = default;
 
-void SceneTab::SetSize(const IntRect& rect)
-{
-    Tab::SetSize(rect);
-    view_.SetSize(rect);
-    gizmo_.SetScreenRect(rect);
-}
-
 bool SceneTab::RenderWindowContent()
 {
     auto& style = ui::GetStyle();
@@ -84,10 +77,14 @@ bool SceneTab::RenderWindowContent()
         ui::SetWindowFocus();
         effectSettings_->Prepare(true);
     }
-
     ImGuizmo::SetDrawlist();
+
+    IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->InnerRect);
+    view_.SetSize(tabRect);
+    gizmo_.SetScreenRect(tabRect);
+
     ui::SetCursorPos(ui::GetCursorPos() - style.WindowPadding);
-    ui::Image(view_.GetTexture(), ToImGui(tabRect_.Size()));
+    ui::Image(view_.GetTexture(), ToImGui(tabRect.Size()));
 
     view_.GetCamera()->GetNode()->GetComponent<DebugCameraController>()->SetEnabled(isActive_);
 
@@ -102,9 +99,9 @@ bool SceneTab::RenderWindowContent()
         if (!gizmo_.IsActive() && GetInput()->GetMouseButtonPress(MOUSEB_LEFT))
         {
             IntVector2 pos = GetInput()->GetMousePosition();
-            pos -= tabRect_.Min();
+            pos -= tabRect.Min();
 
-            Ray cameraRay = view_.GetCamera()->GetScreenRay((float)pos.x_ / tabRect_.Width(), (float)pos.y_ / tabRect_.Height());
+            Ray cameraRay = view_.GetCamera()->GetScreenRay((float)pos.x_ / tabRect.Width(), (float)pos.y_ / tabRect.Height());
             // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
             PODVector<RayQueryResult> results;
 

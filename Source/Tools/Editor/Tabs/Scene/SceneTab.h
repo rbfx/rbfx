@@ -47,8 +47,6 @@ public:
     explicit SceneTab(Context* context, StringHash id, const String& afterDockName, ui::DockSlot_ position);
     /// Destruct.
     ~SceneTab() override;
-    /// Set screen rectangle where scene is being rendered.
-    void SetSize(const IntRect& rect) override;
     /// Render inspector window.
     void RenderInspector() override;
     /// Render scene hierarchy window starting from the root node (scene).

@@ -118,5 +118,7 @@ inline ImVec2 ToImGui(Vector2 vec) { return {vec.x_, vec.y_}; };
 inline ImRect ToImGui(const IntRect& rect) { return { ToImGui(rect.Min()), ToImGui(rect.Max()) }; }
 /// Convert ImVec2 to IntVector2.
 inline IntVector2 ToIntVector2(const ImVec2& vec) { return {(int)Round(vec.x), (int)Round(vec.y)}; }
+/// Convert ImRect to IntRect
+inline IntRect ToIntRect(const ImRect& rect) { return {ToIntVector2(rect.Min), ToIntVector2(rect.Max)}; }
 
 }

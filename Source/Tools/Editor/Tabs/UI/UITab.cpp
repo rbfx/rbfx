@@ -53,7 +53,7 @@ UITab::UITab(Urho3D::Context* context, Urho3D::StringHash id, const Urho3D::Stri
     rootElement_->SetEnabled(true);
 
     // Prevents crashes due to uninitialized texture.
-    SetSize({0, 0, 512, 512});
+    UpdateViewRect({0, 0, 512, 512});
 
     undo_.Connect(rootElement_);
     undo_.Connect(&inspector_);
@@ -136,15 +136,20 @@ void UITab::RenderInspector()
 
 bool UITab::RenderWindowContent()
 {
+    IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->InnerRect);
+
+    if (tabRect.Width() != texture_->GetWidth() || tabRect.Height() != texture_->GetHeight())
+        UpdateViewRect(tabRect);
+
     auto& style = ui::GetStyle();
     ui::SetCursorPos(ui::GetCursorPos() - style.WindowPadding);
-    ui::Image(texture_, ToImGui(tabRect_.Size()));
+    ui::Image(texture_, ToImGui(tabRect.Size()));
 
     if (auto selected = GetSelected())
     {
         // Render element selection rect, resize handles, and handle element transformations.
         IntRect delta;
-        IntRect screenRect(selected->GetScreenPosition() + tabRect_.Min(), selected->GetScreenPosition() + selected->GetSize() + tabRect_.Min());
+        IntRect screenRect(selected->GetScreenPosition() + tabRect.Min(), selected->GetScreenPosition() + selected->GetSize() + tabRect.Min());
         auto flags = ui::TSF_NONE;
         if (hideResizeHandles_)
             flags |= ui::TSF_HIDEHANDLES;
@@ -257,17 +262,18 @@ void UITab::OnActiveUpdate()
     RenderElementContextMenu();
 }
 
-void UITab::SetSize(const IntRect& rect)
+void UITab::UpdateViewRect(const IntRect& rect)
 {
-    if (texture_->SetSize(rect.Width(), rect.Height(), GetSubsystem<Graphics>()->GetRGBAFormat(), TEXTURE_RENDERTARGET))
+    if (texture_->SetSize(rect.Width(), rect.Height(), GetSubsystem<Graphics>()->GetRGBAFormat(),
+        TEXTURE_RENDERTARGET))
     {
-        Tab::SetSize(rect);
         rootElement_->SetSize(rect.Width(), rect.Height());
         rootElement_->SetOffset(rect.Min());
         texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
     }
     else
         URHO3D_LOGERROR("UITab: resizing texture failed.");
+
 }
 
 void UITab::LoadResource(const String& resourcePath)

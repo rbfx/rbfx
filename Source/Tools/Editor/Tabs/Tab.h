@@ -66,8 +66,6 @@ public:
     bool SaveResource() { return SaveResource(String::EMPTY); }
     /// Set scene view tab title.
     void SetTitle(const String& title);
-    /// Set screen rectangle where scene is being rendered.
-    virtual void SetSize(const IntRect& rect) { tabRect_ = rect; }
     /// Get scene view tab title.
     String GetTitle() const { return title_; }
     /// Returns title which uniquely identifies scene tab in imgui.
@@ -78,8 +76,6 @@ public:
     bool IsRendered() const { return isRendered_; }
     /// Return unuque object id.
     StringHash GetID() const { return id_; }
-    /// Return rect of tab content area.
-    IntRect GetContentRect() const { return tabRect_; }
 
 protected:
     /// Unique scene id.
@@ -92,8 +88,6 @@ protected:
     bool isActive_ = false;
     /// Flag set to true when dock contents were visible. Used for tracking "appearing" effect.
     bool isRendered_ = false;
-    /// Rectangle dimensions that are rendered by this view.
-    IntRect tabRect_;
     /// Current window flags.
     ImGuiWindowFlags windowFlags_ = 0;
     /// Attribute inspector.

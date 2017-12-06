@@ -48,8 +48,6 @@ public:
     void RenderToolbarButtons() override;
     /// Update window when it is active.
     void OnActiveUpdate() override;
-    /// Set screen rectangle where scene is being rendered.
-    void SetSize(const IntRect& rect) override;
     /// Save project data to xml.
     void SaveProject(XMLElement& tab) override;
     /// Load project data from xml.
@@ -62,6 +60,8 @@ public:
     UIElement* GetSelected() const;
 
 protected:
+    /// Set screen rectangle where scene is being rendered.
+    void UpdateViewRect(const IntRect& rect);
     /// Render scene hierarchy window.
     void RenderNodeTree(UIElement* element);
     /// Select element. Pass null to unselect current element.
