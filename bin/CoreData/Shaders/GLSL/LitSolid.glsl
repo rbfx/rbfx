@@ -110,7 +110,7 @@ void VS()
         #endif
     
         #ifdef POINTLIGHT
-            vCubeMaskVec = mul((worldPos - cLightPos.xyz), mat3(cLightMatrices[0][0].xyz, cLightMatrices[0][1].xyz, cLightMatrices[0][2].xyz));
+            vCubeMaskVec = mul(vec4(worldPos - cLightPos.xyz, 0.0), cLightMatrices[0]).xyz;
         #endif
     #else
         // Ambient & per-vertex lighting

@@ -3,31 +3,6 @@
 
 #if COMPILEVS
 
-#ifdef SKINNED
-mat4 GetSkinMatrix(vec4 blendWeights, vec4 blendIndices)
-{
-    ivec4 idx = ivec4(blendIndices) * 3;
-    const vec4 lastColumn = vec4(0.0, 0.0, 0.0, 1.0);
-    return mat4(cSkinMatrices[idx.x], cSkinMatrices[idx.x + 1], cSkinMatrices[idx.x + 2], lastColumn) * blendWeights.x +
-        mat4(cSkinMatrices[idx.y], cSkinMatrices[idx.y + 1], cSkinMatrices[idx.y + 2], lastColumn) * blendWeights.y +
-        mat4(cSkinMatrices[idx.z], cSkinMatrices[idx.z + 1], cSkinMatrices[idx.z + 2], lastColumn) * blendWeights.z +
-        mat4(cSkinMatrices[idx.w], cSkinMatrices[idx.w + 1], cSkinMatrices[idx.w + 2], lastColumn) * blendWeights.w;
-}
-#endif
-
-#ifdef INSTANCED
-mat4 GetInstanceMatrix()
-{
-    const vec4 lastColumn = vec4(0.0, 0.0, 0.0, 1.0);
-    return mat4(i_data0, i_data1, i_data2, lastColumn);
-}
-#endif
-
-mat3 GetNormalMatrix(mat4 modelMatrix)
-{
-    return mat3(modelMatrix[0].xyz, modelMatrix[1].xyz, modelMatrix[2].xyz);
-}
-
 vec2 GetTexCoord(vec2 texCoord)
 {
     return vec2(dot(texCoord, cUOffset.xy) + cUOffset.w, dot(texCoord, cVOffset.xy) + cVOffset.w);
@@ -35,8 +10,7 @@ vec2 GetTexCoord(vec2 texCoord)
 
 vec4 GetClipPos(vec3 worldPos)
 {
-    //vec4 ret = mul(vec4(worldPos, 1.0), cViewProj);
-    vec4 ret = mul(cViewProj, vec4(worldPos, 1.0));
+    vec4 ret = mul(vec4(worldPos, 1.0), cViewProj);
     // While getting the clip coordinate, also automatically set gl_ClipVertex for user clip planes
     #ifdef CLIPPLANE
     #if !defined(GL_ES) && !defined(GL3) && !defined(D3D11)
@@ -130,9 +104,7 @@ vec3 GetTrailNormal(vec4 iPos, vec3 iParentPos, vec3 iForward)
 #endif
 
 #if defined(SKINNED)
-    #define iModelMatrix GetSkinMatrix(iBlendWeights, iBlendIndices)
-#elif defined(INSTANCED)
-    #define iModelMatrix GetInstanceMatrix()
+    #define iModelMatrix mul(cModel, mul(u_model[int(a_indices.x)], a_weight.x) + mul(u_model[int(a_indices.y)], a_weight.y) + mul(u_model[int(a_indices.z)], a_weight.z) + mul(u_model[int(a_indices.w)], a_weight.w))
 #else
     #define iModelMatrix cModel
 #endif
@@ -145,9 +117,10 @@ vec3 GetTrailNormal(vec4 iPos, vec3 iParentPos, vec3 iForward)
     #define GetWorldPos(modelMatrix) GetTrailPos(iPos, iTangent.xyz, iTangent.w, modelMatrix)
 #elif defined(TRAILBONE)
     #define GetWorldPos(modelMatrix) GetTrailPos(iPos, iTangent.xyz, iTangent.w, modelMatrix)
+#elif defined(INSTANCED)
+    #define GetWorldPos(modelMatrix) instMul(iPos, modelMatrix).xyz
 #else
-    //#define GetWorldPos(modelMatrix) mul(iPos, modelMatrix).xyz
-    #define GetWorldPos(modelMatrix) mul(modelMatrix, iPos).xyz
+    #define GetWorldPos(modelMatrix) mul(iPos, modelMatrix).xyz
 #endif
 
 #if defined(BILLBOARD)
@@ -159,7 +132,7 @@ vec3 GetTrailNormal(vec4 iPos, vec3 iParentPos, vec3 iForward)
 #elif defined(TRAILBONE)
     #define GetWorldNormal(modelMatrix) GetTrailNormal(iPos, iTangent.xyz, iNormal)
 #else
-    #define GetWorldNormal(modelMatrix) normalize(mul(iNormal, GetNormalMatrix(modelMatrix)))
+    #define GetWorldNormal(modelMatrix) normalize(mul(vec4(iNormal.xyz, 0.0), modelMatrix).xyz)
 #endif
 
 #if defined(BILLBOARD)
@@ -167,7 +140,7 @@ vec3 GetTrailNormal(vec4 iPos, vec3 iParentPos, vec3 iForward)
 #elif defined(DIRBILLBOARD)
     #define GetWorldTangent(modelMatrix) vec4(normalize(mul(vec3(1.0, 0.0, 0.0), GetNormalMatrix(modelMatrix))), 1.0)
 #else
-    #define GetWorldTangent(modelMatrix) vec4(normalize(mul(iTangent.xyz, GetNormalMatrix(modelMatrix))), iTangent.w)
+    #define GetWorldTangent(modelMatrix) vec4(normalize(mul(vec4(iTangent.xyz, 0.0), modelMatrix).xyz), iTangent.w)
 #endif
 
 #endif
