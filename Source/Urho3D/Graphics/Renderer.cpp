@@ -750,6 +750,10 @@ void Renderer::Render()
     }
     if (!hasBackbufferViews)
     {
+#ifdef URHO3D_BGFX
+        uint8_t view = graphics_->GetImpl()->GetCurrentView() + 1;
+        graphics_->GetImpl()->SetCurrentView(view);
+#endif
         graphics_->SetBlendMode(BLEND_REPLACE);
         graphics_->SetColorWrite(true);
         graphics_->SetDepthWrite(true);
@@ -1466,7 +1470,7 @@ void Renderer::OptimizeLightByStencil(Light* light, Camera* camera)
         graphics_->SetStencilTest(true, CMP_ALWAYS, OP_REF, OP_KEEP, OP_KEEP, lightStencilValue_);
         graphics_->SetShaders(graphics_->GetShader(VS, "Stencil"), graphics_->GetShader(PS, "Stencil"));
 #ifdef URHO3D_BGFX
-        bgfx::setViewTransform(graphics_->GetImpl()->GetCurrentView(), view.Data(), (projection * view).Data());
+        bgfx::setViewTransform(graphics_->GetImpl()->GetCurrentView(), view.ToMatrix4().Data(), (projection * view).Data());
         bgfx::setTransform(light->GetVolumeTransform(camera).Data());
 #else
         graphics_->SetShaderParameter(VSP_VIEW, view);

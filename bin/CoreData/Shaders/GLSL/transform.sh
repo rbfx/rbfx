@@ -35,7 +35,8 @@ vec2 GetTexCoord(vec2 texCoord)
 
 vec4 GetClipPos(vec3 worldPos)
 {
-    vec4 ret = mul(vec4(worldPos, 1.0), cViewProj);
+    //vec4 ret = mul(vec4(worldPos, 1.0), cViewProj);
+    vec4 ret = mul(cViewProj, vec4(worldPos, 1.0));
     // While getting the clip coordinate, also automatically set gl_ClipVertex for user clip planes
     #ifdef CLIPPLANE
     #if !defined(GL_ES) && !defined(GL3) && !defined(D3D11)
@@ -145,7 +146,8 @@ vec3 GetTrailNormal(vec4 iPos, vec3 iParentPos, vec3 iForward)
 #elif defined(TRAILBONE)
     #define GetWorldPos(modelMatrix) GetTrailPos(iPos, iTangent.xyz, iTangent.w, modelMatrix)
 #else
-    #define GetWorldPos(modelMatrix) mul(iPos, modelMatrix).xyz
+    //#define GetWorldPos(modelMatrix) mul(iPos, modelMatrix).xyz
+    #define GetWorldPos(modelMatrix) mul(modelMatrix, iPos).xyz
 #endif
 
 #if defined(BILLBOARD)

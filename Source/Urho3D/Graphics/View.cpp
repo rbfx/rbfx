@@ -640,6 +640,7 @@ void View::Render()
     // Render
     ExecuteRenderPathCommands();
 
+#ifndef URHO3D_BGFX
     // Reset state after commands
     graphics_->SetFillMode(FILL_SOLID);
     graphics_->SetLineAntiAlias(false);
@@ -648,6 +649,7 @@ void View::Render()
     graphics_->SetDepthBias(0.0f, 0.0f);
     graphics_->SetScissorTest(false);
     graphics_->SetStencilTest(false);
+#endif
 
     // Draw the associated debug geometry now if enabled
     if (drawDebug_ && octree_ && camera_)
@@ -725,9 +727,7 @@ void View::SetCameraShaderParameters(Camera* camera)
     Matrix3x4 cameraEffectiveTransform = camera->GetEffectiveWorldTransform();
 
     graphics_->SetShaderParameter(VSP_CAMERAPOS, cameraEffectiveTransform.Translation());
-#ifdef URHO3D_BGFX
-    bgfx::setViewTransform(graphics_->GetImpl()->GetCurrentView(), camera->GetView().Data(), camera->GetGPUProjection().Data());
-#else
+#ifndef URHO3D_BGFX
     graphics_->SetShaderParameter(VSP_VIEWINV, cameraEffectiveTransform);
     graphics_->SetShaderParameter(VSP_VIEW, camera->GetView());
 #endif
@@ -782,7 +782,9 @@ void View::SetCameraShaderParameters(Camera* camera)
             projection.m23_ += projection.m33_ * constantBias;
         }
 #endif
-#ifndef URHO3D_BGFX // invProj was already set from setViewTransform
+#ifdef URHO3D_BGFX
+    bgfx::setViewTransform(graphics_->GetImpl()->GetCurrentView(), camera->GetView().ToMatrix4().Data(), (projection * camera->GetView()).Data());
+#else
     graphics_->SetShaderParameter(VSP_VIEWPROJ, projection * camera->GetView());
 #endif
 
@@ -1788,7 +1790,7 @@ void View::SetRenderTargets(RenderPathCommand& command)
     uint8_t view = graphics_->GetImpl()->GetCurrentView() + 1;
     graphics_->GetImpl()->SetCurrentView(view);
     bgfx::touch(view);
-    if (command.type_ == CMD_SCENEPASS)
+    if ((command.type_ == CMD_SCENEPASS) || (command.type_ == CMD_FORWARDLIGHTS))
     {
         switch (command.sortMode_)
         {
@@ -1813,27 +1815,27 @@ void View::SetRenderTargets(RenderPathCommand& command)
     case CMD_NONE:
         break;
     case CMD_CLEAR:
-        debugName + " clear";
+        debugName += " clear";
         break;
     case CMD_SCENEPASS:
-        debugName + " scenepass";
+        debugName += " scenepass";
         break;
     case CMD_QUAD:
-        debugName + " quad";
+        debugName += " quad";
         break;
     case CMD_FORWARDLIGHTS:
-        debugName + " forwardlights";
+        debugName += " forwardlights";
         break;
     case CMD_LIGHTVOLUMES:
-        debugName + " lightvolumes";
+        debugName += " lightvolumes";
         break;
     case CMD_RENDERUI:
-        debugName + " renderui";
+        debugName += " renderui";
         break;
     case CMD_SENDEVENT:
         break;
     };
-    debugName + " " + command.pass_ + command.metadata_;
+    debugName += " " + command.pass_ + command.metadata_;
     bgfx::setViewName(view, debugName.CString());
 #endif
 #endif

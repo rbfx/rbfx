@@ -28,7 +28,7 @@
 #include "../Graphics/Drawable.h"
 #include "../Scene/Node.h"
 #ifdef URHO3D_BGFX
-#include "../Graphics/Graphics.h"
+#include "../Graphics/GraphicsImpl.h"
 #endif
 
 #include "../DebugNew.h"
@@ -452,12 +452,11 @@ Matrix4 Camera::GetProjection() const
 
 Matrix4 Camera::GetGPUProjection() const
 {
-#ifndef URHO3D_OPENGL
+#if !defined(URHO3D_OPENGL) && !defined(URHO3D_BGFX)
     return GetProjection(); // Already matches API-specific format
 #endif
 #if URHO3D_BGFX
-    context_->GetGraphics()->GetApiType();
-    if (context_->GetGraphics()->GetApiType() != GAPI_BGFX_OPENGL || GAPI_BGFX_OPENGLES)
+    if (!bgfx::getCaps()->homogeneousDepth)
         return GetProjection();
     else {
 #endif

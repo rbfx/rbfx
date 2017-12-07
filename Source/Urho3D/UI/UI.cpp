@@ -488,6 +488,17 @@ void UI::Render(bool renderUICommand)
 {
     URHO3D_PROFILE(RenderUI);
 
+#ifdef URHO3D_BGFX
+    // Increment the current view and name it for debug
+    uint8_t view = graphics_->GetImpl()->GetCurrentView() + 1;
+    graphics_->GetImpl()->SetCurrentView(view);
+    bgfx::touch(view);
+#ifdef URHO3D_DEBUG
+    bgfx::setViewName(view, "UI RENDER");
+#endif
+    bgfx::setViewMode(view, bgfx::ViewMode::Sequential);
+#endif
+
     // If the OS cursor is visible, apply its shape now if changed
     if (!renderUICommand)
     {

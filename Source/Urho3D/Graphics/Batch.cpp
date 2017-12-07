@@ -269,7 +269,7 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
         }
         else
 #ifdef URHO3D_BGFX
-            bgfx::setTransform((Matrix3x4*)worldTransform_->Data());
+            bgfx::setTransform(*worldTransform_->ToMatrix4().Data());
 #else
             graphics->SetShaderParameter(VSP_MODEL, *worldTransform_);
 #endif
@@ -709,12 +709,15 @@ void BatchGroup::Draw(View* view, Camera* camera, bool allowDepthWrite) const
             {
 #ifndef URHO3D_BGFX
                 if (graphics->NeedParameterUpdate(SP_OBJECT, instances_[i].worldTransform_))
-                    bgfx::setTransform(*instances_[i].worldTransform_.Data());
+                    graphics->SetShaderParameter(VSP_MODEL, *instances_[i].worldTransform_);
 #else
                 if (graphics->NeedParameterUpdate(SP_OBJECT, instances_[i].worldTransform_))
-                    graphics->SetShaderParameter(VSP_MODEL, *instances_[i].worldTransform_);
+                {
+                    const Matrix3x4 &transform = *instances_[i].worldTransform_;
+                    bgfx::setTransform(transform.ToMatrix4().Data());
+                }
                 // BGFX will sort internally.
-                graphics->GetImpl()->SetDrawDistance((uint32_t)geometry_->GetLodDistance());
+                graphics->GetImpl()->SetDrawDistance((uint32_t)instances_[i].distance_);
 #endif
                 graphics->Draw(geometry_->GetPrimitiveType(), geometry_->GetIndexStart(), geometry_->GetIndexCount(),
                     geometry_->GetVertexStart(), geometry_->GetVertexCount());

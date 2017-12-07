@@ -39,7 +39,6 @@ uniform mat4 u_Zone;
 #ifdef GL3
     uniform vec4 u_ClipPlane;
 #endif
-#endif
 
 #define cAmbientStartColor vec3(u_AmbientStartColor.xyz)
 #define cAmbientEndColor vec3(u_AmbientEndColor.xyz)
@@ -68,6 +67,7 @@ uniform mat4 u_Zone;
 
 #define cClipPlane u_ClipPlane
 
+#endif
 
 #if COMPILEPS
 
