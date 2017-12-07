@@ -574,6 +574,8 @@ public:
     IntVector2 GetMonitorResolution(int monitorId) const;
     /// Raises window if it was minimized.
     void RaiseWindow();
+    /// Return display dpi information: (hdpi, vdpi, ddpi). On failure returns zero vector.
+    Vector3 GetDisplayDPI() const;
 
 private:
     /// Create the application window.

@@ -33,7 +33,6 @@ namespace Urho3D
 Profiler::Profiler(Context* context)
     : Object(context)
 {
-    SetEnabled(true);
 }
 
 Profiler::~Profiler()
@@ -125,9 +124,11 @@ void Profiler::EndBlock()
     ::profiler::endBlock();
 }
 
-void Profiler::RegisterCurentThread(const char* name)
+void Profiler::RegisterCurrentThread(const char* name)
 {
-
+    static thread_local const char* profilerThreadName = 0;
+    if (profilerThreadName == nullptr)
+        profilerThreadName = ::profiler::registerThread(name);
 }
 
 ProfilerBlock::ProfilerBlock(const char* name, const char* file, int line, unsigned int argb,

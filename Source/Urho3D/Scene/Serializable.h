@@ -186,8 +186,8 @@ public:
 template <typename T, typename U> class EnumAttributeAccessorFreeImpl : public AttributeAccessor
 {
 public:
-    using GetFunctionPtr = U(*)(const T*);
-    using SetFunctionPtr = void(*)(T*, U);
+    using GetFunctionPtr = std::function<U(const T*)>;
+    using SetFunctionPtr = std::function<void(T*, U)>;
 
     /// Construct with function pointers.
     EnumAttributeAccessorFreeImpl(GetFunctionPtr getFunction, SetFunctionPtr setFunction) :
@@ -203,7 +203,7 @@ public:
     {
         assert(ptr);
         const T* classPtr = static_cast<const T*>(ptr);
-        dest = (*getFunction_)(classPtr);
+        dest = getFunction_(classPtr);
     }
 
     /// Invoke setter function.
@@ -211,7 +211,7 @@ public:
     {
         assert(ptr);
         T* classPtr = static_cast<T*>(ptr);
-        (*setFunction_)(classPtr, (U)value.GetInt());
+        setFunction_(classPtr, (U)value.GetInt());
     }
 
     /// Class-specific pointer to getter function.
@@ -306,8 +306,8 @@ public:
 template <typename T, typename U, typename Trait> class AttributeAccessorFreeImpl : public AttributeAccessor
 {
 public:
-    using GetFunctionPtr = typename Trait::ReturnType(*)(const T*);
-    using SetFunctionPtr = void(*)(T*, typename Trait::ParameterType);
+    using GetFunctionPtr = std::function<typename Trait::ReturnType(const T*)>;
+    using SetFunctionPtr = std::function<void(T*, typename Trait::ParameterType)>;
 
     /// Construct with function pointers.
     AttributeAccessorFreeImpl(GetFunctionPtr getFunction, SetFunctionPtr setFunction) :
@@ -323,7 +323,7 @@ public:
     {
         assert(ptr);
         const T* classPtr = static_cast<const T*>(ptr);
-        dest = (*getFunction_)(classPtr);
+        dest = getFunction_(classPtr);
     }
 
     /// Invoke setter function.
@@ -331,7 +331,7 @@ public:
     {
         assert(ptr);
         T* classPtr = static_cast<T*>(ptr);
-        (*setFunction_)(classPtr, value.Get<U>());
+        setFunction_(classPtr, value.Get<U>());
     }
 
     /// Class-specific pointer to getter function.

@@ -671,11 +671,14 @@ namespace ImGuizmo
    {
       ImGuiIO& io = ImGui::GetIO();
 
-      ImGui::Begin("gizmo", NULL, io.DisplaySize, 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus);
+      ImGui::SetNextWindowSize(io.DisplaySize, ImGuiCond_Always);
+      ImGui::PushStyleColor(ImGuiCol_WindowBg, 0);
+      ImGui::Begin("gizmo", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus);
 
       SetDrawlist();
 
       ImGui::End();
+      ImGui::PopStyleColor();
    }
 
    bool IsUsing()

@@ -204,6 +204,7 @@ struct DockContext
         bool first;
         int last_frame;
         ImGuiCond_ m_allow_condition = ImGuiCond_Always | ImGuiCond_Once | ImGuiCond_FirstUseEver | ImGuiCond_Appearing;
+        bool m_tab_hovered = false;
     };
 
 
@@ -688,7 +689,7 @@ struct DockContext
 
                 if (dock_tab->active && close_button) size.x += 16 + GetStyle().ItemSpacing.x;
 
-                bool hovered = IsItemHovered();
+                bool hovered = dock_tab->m_tab_hovered = IsItemHovered();
                 ImVec2 pos = GetItemRectMin();
                 tab_base = pos.y;
                 draw_list->PathClear();
@@ -1196,6 +1197,13 @@ struct DockContext
             return m_current->active;
         return false;
     }
+
+    bool isTabHovered()
+    {
+        if (m_current)
+            return m_current->m_tab_hovered;
+        return false;
+    }
 };
 
 
@@ -1261,6 +1269,11 @@ bool IsDockDocked()
 bool IsDockActive()
 {
     return g_dock.isDockActive();
+}
+
+bool IsDockTabHovered()
+{
+    return g_dock.isTabHovered();
 }
 
 } // namespace ImGui

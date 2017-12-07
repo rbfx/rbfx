@@ -434,4 +434,11 @@ void Graphics::RaiseWindow()
         SDL_RaiseWindow(window_);
 }
 
+Vector3 Graphics::GetDisplayDPI() const
+{
+    Vector3 result;
+    SDL_GetDisplayDPI(0, &result.z_, &result.x_, &result.y_);
+    return result;
+}
+
 }

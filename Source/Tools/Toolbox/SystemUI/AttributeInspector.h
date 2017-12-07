@@ -32,6 +32,8 @@
 namespace Urho3D
 {
 
+class Viewport;
+
 class AttributeInspector : public Object
 {
     URHO3D_OBJECT(AttributeInspector, Object);
@@ -43,25 +45,22 @@ public:
     void RenderAttributes(const PODVector<Serializable*>& items);
     /// Render attribute inspector widgets.
     void RenderAttributes(Serializable* item);
-
-protected:
-    /// Return a value buffer that will be unique for specified attribute.
-    /// \param name a name of attribute.
-    /// \param defaultValue a value that will be fileld in if buffer does not exist.
-    std::array<char, 0x1000>& GetBuffer(const String& name, const String& defaultValue);
-    /// Discard a value buffer of attribute.
-    /// \param name a name of attribute whose value buffer is to be discarded.
-    void RemoveBuffer(const String& name);
-    /// Render value widget of single attribute.
-    /// \returns true if value was modified.
-    bool RenderSingleAttribute(const AttributeInfo& info, Variant& value);
+    /// Have resource views copy renderpath from source viewport.
+    void CopyEffectsFrom(Viewport* source);
     /// Automatically creates two columns where first column is as wide as longest label.
     void NextColumn();
 
+protected:
+    /// Render value widget of single attribute.
+    /// \returns true if value was modified.
+    bool RenderSingleAttribute(const AttributeInfo& info, Variant& value, bool expanded);
+    /// Render ui for single resource ref attribute.
+    bool RenderResourceRef(StringHash type, const String& name, String& result, bool expanded);
+    /// Render single attribute label.
+    bool RenderAttributeLabel(const AttributeInfo& info, Color color, bool expandable);
+
     /// A filter value. Attributes whose titles do not contain substring sored in this variable will not be rendered.
     std::array<char, 0x100> filter_;
-    /// Buffers used by system ui for editing attribute values.
-    HashMap<String, std::array<char, 0x1000>> buffers_;
     /// Last serializable whose attribute list was rendered.
     PODVector<Serializable*> lastSerializables_;
     /// Name of attribute that was modified on last frame.
@@ -70,6 +69,8 @@ protected:
     Variant originalValue_;
     /// Max width of attribute label.
     int maxWidth_ = 0;
+    /// Viewport from which rendering path and postprocess effects should be copied.
+    WeakPtr<Viewport> effectSource_;
 };
 
 class AttributeInspectorWindow : public AttributeInspector

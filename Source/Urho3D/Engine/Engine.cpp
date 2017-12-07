@@ -185,6 +185,18 @@ bool Engine::Initialize(const VariantMap& parameters)
     if (initialized_)
         return true;
 
+#ifdef URHO3D_PROFILING
+    if (Profiler* profiler = GetSubsystem<Profiler>())
+    {
+        if (GetParameter(parameters, EP_PROFILER_LISTEN, false).GetBool())
+        {
+            profiler->SetEnabled(true);
+            profiler->StartListen((unsigned short)GetParameter(parameters, EP_PROFILER_PORT, PROFILER_DEFAULT_PORT).GetInt());
+            profiler->SetEventProfilingEnabled(GetParameter(parameters, EP_EVENT_PROFILER, true).GetBool());
+        }
+    }
+#endif
+
     URHO3D_PROFILE(InitEngine);
 
     // Set headless mode
@@ -324,15 +336,6 @@ bool Engine::Initialize(const VariantMap& parameters)
 #ifdef URHO3D_TESTING
     if (HasParameter(parameters, EP_TIME_OUT))
         timeOut_ = GetParameter(parameters, EP_TIME_OUT, 0).GetInt() * 1000000LL;
-#endif
-
-#ifdef URHO3D_PROFILING
-    if (Profiler* profiler = GetSubsystem<Profiler>())
-    {
-        if (GetParameter(parameters, EP_PROFILER_LISTEN, false).GetBool())
-            profiler->StartListen((unsigned short)GetParameter(parameters, EP_PROFILER_PORT, PROFILER_DEFAULT_PORT).GetInt());
-        profiler->SetEventProfilingEnabled(GetParameter(parameters, EP_EVENT_PROFILER, true).GetBool());
-    }
 #endif
     if (!headless_)
     {
@@ -984,6 +987,17 @@ VariantMap Engine::ParseParameters(const Vector<String>& arguments)
                 ret[EP_TIME_OUT] = ToInt(value);
                 ++i;
             }
+#endif
+#ifdef URHO3D_PROFILE
+            else if (argument == "pr")
+                ret[EP_PROFILER_LISTEN] = true;
+            else if (argument == "prp" && !value.Empty())
+            {
+                ret[EP_PROFILER_PORT] = ToInt(value);
+                ++i;
+            }
+            else if (argument == "prnoev")
+                ret[EP_EVENT_PROFILER] = false;
 #endif
         }
     }

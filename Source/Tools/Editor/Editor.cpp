@@ -22,7 +22,7 @@
 
 #include "Editor.h"
 #include "EditorEvents.h"
-#include "SceneView.h"
+#include "SceneTab.h"
 #include <ImGui/imgui_internal.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
 #include <Toolbox/Toolbox.h>
@@ -30,6 +30,7 @@
 #include <tinyfiledialogs/tinyfiledialogs.h>
 #include <Toolbox/SystemUI/ResourceBrowser.h>
 #include <Toolbox/IO/ContentUtilities.h>
+#include <Toolbox/SystemUI/Widgets.h>
 
 
 URHO3D_DEFINE_APPLICATION_MAIN(Editor);
@@ -45,6 +46,17 @@ Editor::Editor(Context* context)
 
 void Editor::Setup()
 {
+#ifdef _WIN32
+    // Required until SDL supports hdpi on windows
+    if (HMODULE hLibrary = LoadLibraryA("Shcore.dll"))
+    {
+        typedef HRESULT(WINAPI*SetProcessDpiAwarenessType)(size_t value);
+        if (auto fn = GetProcAddress(hLibrary, "SetProcessDpiAwareness"))
+            ((SetProcessDpiAwarenessType)fn)(2);    // PROCESS_PER_MONITOR_DPI_AWARE
+        FreeLibrary(hLibrary);
+    }
+#endif
+
     engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
     engineParameters_[EP_HEADLESS] = false;
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] =
@@ -70,9 +82,12 @@ void Editor::Start()
     GetSystemUI()->ApplyStyleDefault(true, 1.0f);
     GetSystemUI()->AddFont("Fonts/fontawesome-webfont.ttf", 0, {ICON_MIN_FA, ICON_MAX_FA, 0}, true);
     ui::GetStyle().WindowRounding = 3;
+    // Disable imgui saving ui settings on it's own. These should be serialized to project file.
+    ui::GetIO().IniFilename = 0;
 
     GetCache()->SetAutoReloadResources(true);
 
+<<<<<<< HEAD
     // Dummy scene required for textures to render
     scene_ = new Scene(context_);
     scene_->CreateComponent<Octree>();
@@ -80,11 +95,13 @@ void Editor::Start()
 	GetRenderer()->SetDefaultRenderPath(GetCache()->GetResource<XMLFile>("RenderPaths/PBRDeferred.xml"));
     GetRenderer()->SetViewport(0, new Viewport(context_, scene_, scene_->CreateChild()->GetOrCreateComponent<Camera>()));
 
+=======
+>>>>>>> master
     SubscribeToEvent(E_UPDATE, std::bind(&Editor::OnUpdate, this, _2));
 
     LoadProject("Etc/DefaultEditorProject.xml");
     // Prevent overwriting example scene.
-    sceneViews_.Front()->path_.Clear();
+    sceneTabs_.Front()->ClearCachedPaths();
 }
 
 void Editor::Stop()
@@ -109,13 +126,8 @@ void Editor::SaveProject(const String& filePath)
     window.SetAttribute("y", ToString("%d", GetGraphics()->GetWindowPosition().y_));
 
     auto scenes = root.CreateChild("scenes");
-    for (auto& sceneView: sceneViews_)
-    {
-        auto scene = scenes.CreateChild("scene");
-        scene.SetAttribute("title", sceneView->title_);
-        scene.SetAttribute("path", sceneView->path_);
-        sceneView->SaveProject(scene);
-    }
+    for (auto& sceneTab: sceneTabs_)
+        sceneTab->SaveProject(scenes.CreateChild("scene"));
 
     ui::SaveDock(root.CreateChild("docks"));
 
@@ -139,10 +151,10 @@ void Editor::LoadProject(const String& filePath)
             return;
     }
 
-    initializeDocks_ = false;
     auto root = xml->GetRoot();
     if (root.NotNull())
     {
+        idPool_.Clear();
         auto window = root.GetChild("window");
         if (window.NotNull())
         {
@@ -151,16 +163,13 @@ void Editor::LoadProject(const String& filePath)
         }
 
         auto scenes = root.GetChild("scenes");
-        sceneViews_.Clear();
+        sceneTabs_.Clear();
         if (scenes.NotNull())
         {
             auto scene = scenes.GetChild("scene");
             while (scene.NotNull())
             {
-                auto sceneView = CreateNewScene(scene.GetAttribute("title"), scene.GetAttribute("path"));
-                if (activeView_.Expired())
-                    activeView_ = sceneView;
-                sceneView->LoadProject(scene);
+                CreateNewScene(scene);
                 scene = scene.GetNext("scene");
             }
         }
@@ -178,43 +187,56 @@ void Editor::OnUpdate(VariantMap& args)
     ui::SetNextDockPos(nullptr, ui::Slot_Left, ImGuiCond_FirstUseEver);
     if (ui::BeginDock("Hierarchy"))
     {
-        if (!activeView_.Expired())
-            activeView_->RenderSceneNodeTree();
+        if (!activeTab_.Expired())
+            activeTab_->RenderSceneNodeTree();
     }
     ui::EndDock();
 
-    for (auto it = sceneViews_.Begin(); it != sceneViews_.End();)
+    bool renderedWasActive = false;
+    for (auto it = sceneTabs_.Begin(); it != sceneTabs_.End();)
     {
-        auto& view = *it;
-        if (view->RenderWindow())
+        auto& tab = *it;
+        if (tab->RenderWindow())
         {
-            if (view->isActive_)
-                activeView_ = view;
+            if (tab->IsRendered())
+            {
+                // Only active window may override another active window
+                if (renderedWasActive && tab->IsActive())
+                    activeTab_ = tab;
+                else if (!renderedWasActive)
+                {
+                    renderedWasActive = tab->IsActive();
+                    activeTab_ = tab;
+                }
+            }
+
             ++it;
         }
         else
-            it = sceneViews_.Erase(it);
+            it = sceneTabs_.Erase(it);
     }
 
 
-    if (!activeView_.Expired())
-        ui::SetNextDockPos(activeView_->title_.CString(), ui::Slot_Right, ImGuiCond_FirstUseEver);
+    if (!activeTab_.Expired())
+        ui::SetNextDockPos(activeTab_->GetUniqueTitle().CString(), ui::Slot_Right, ImGuiCond_FirstUseEver);
     if (ui::BeginDock("Inspector"))
     {
-        if (!activeView_.Expired())
-            activeView_->RenderInspector();
+        if (!activeTab_.Expired())
+            activeTab_->RenderInspector();
     }
     ui::EndDock();
 
     String selected;
-    if (ResourceBrowserWindow(context_, selected, &resourceBrowserWindowOpen_))
+    if (sceneTabs_.Size())
+        ui::SetNextDockPos(sceneTabs_.Back()->GetUniqueTitle().CString(), ui::Slot_Bottom, ImGuiCond_FirstUseEver);
+    if (ResourceBrowserWindow(selected, &resourceBrowserWindowOpen_))
     {
         auto type = GetContentType(selected);
         if (type == CTYPE_SCENE)
-            CreateNewScene("", selected);
+        {
+            CreateNewScene()->LoadScene(selected);
+        }
     }
-
-    initializeDocks_ = false;
 }
 
 void Editor::RenderMenuBar()
@@ -251,15 +273,15 @@ void Editor::RenderMenuBar()
             ui::EndMenu();
         }
 
-        if (!activeView_.Expired())
+        if (!activeTab_.Expired())
         {
-            save |= ui::Button(ICON_FA_FLOPPY_O);
-            ui::SameLine();
+            save |= ui::ToolbarButton(ICON_FA_FLOPPY_O);
+            ui::SameLine(0, 2.f);
             if (ui::IsItemHovered())
                 ui::SetTooltip("Save");
             ui::TextUnformatted("|");
-            ui::SameLine();
-            activeView_->RenderGizmoButtons();
+            ui::SameLine(0, 3.f);
+            activeTab_->RenderGizmoButtons();
             SendEvent(E_EDITORTOOLBARBUTTONS);
         }
 
@@ -274,67 +296,47 @@ void Editor::RenderMenuBar()
             projectFilePath_ = tinyfd_saveFileDialog("Save Project As", ".", 1, patterns, "XML Files");
         }
         SaveProject(projectFilePath_);
-        for (auto& sceneView: sceneViews_)
-            sceneView->SaveScene();
+        for (auto& sceneTab: sceneTabs_)
+            sceneTab->SaveScene();
     }
 }
 
-SceneView* Editor::CreateNewScene(const String& title, const String& path)
+SceneTab* Editor::CreateNewScene(XMLElement project)
 {
-    SharedPtr<SceneView> sceneView;
-    if (sceneViews_.Empty())
-        sceneView = new SceneView(context_, "Hierarchy", ui::Slot_Right);
-    else
-        sceneView = new SceneView(context_, sceneViews_.Back()->title_.CString(), ui::Slot_Tab);
+    SharedPtr<SceneTab> sceneTab;
+    StringHash id;
 
-    String prefix = "Scene";
-    String newTitle = title;
-    if (newTitle.Empty())
-        newTitle = "Scene#1";
+    if (project.IsNull())
+        id = idPool_.NewID();           // Make new ID only if scene is not being loaded from a project.
+
+    if (sceneTabs_.Empty())
+        sceneTab = new SceneTab(context_, id, "Hierarchy", ui::Slot_Right);
     else
-        prefix = title;
-    auto index = 1;
-    while (GetSceneView(newTitle) != nullptr)
-        newTitle = ToString("%s#%d", prefix.CString(), index++);
-    sceneView->title_ = newTitle;
+        sceneTab = new SceneTab(context_, id, sceneTabs_.Back()->GetUniqueTitle(), ui::Slot_Tab);
+
+    if (project.NotNull())
+    {
+        sceneTab->LoadProject(project);
+        if (!idPool_.TakeID(sceneTab->GetID()))
+        {
+            URHO3D_LOGERRORF("Scene loading failed because unique id %s is already taken",
+                sceneTab->GetID().ToString().CString());
+            return nullptr;
+        }
+    }
 
     // In order to render scene to a texture we must add a dummy node to scene rendered to a screen, which has material
     // pointing to scene texture. This object must also be visible to main camera.
-    auto node = scene_->CreateChild();
-    node->SetPosition(Vector3::FORWARD);
-    StaticModel* model = node->CreateComponent<StaticModel>();
-    model->SetModel(GetCache()->GetResource<Model>("Models/Plane.mdl"));
-    SharedPtr<Material> material(new Material(context_));
-    material->SetTechnique(0, GetCache()->GetResource<Technique>("Techniques/DiffUnlit.xml"));
-    material->SetTexture(TU_DIFFUSE, sceneView->view_);
-    material->SetDepthBias(BiasParameters(-0.001f, 0.0f));
-    model->SetMaterial(material);
-
-    sceneView->SetScreenRect({0, 0, 1024, 768});
-    sceneView->SetRendererNode(node);
-    sceneViews_.Push(sceneView);
-
-    sceneView->LoadScene(path);
-
-    return sceneView;
+    sceneTabs_.Push(sceneTab);
+    return sceneTab;
 }
 
 bool Editor::IsActive(Scene* scene)
 {
-    if (scene == nullptr || activeView_.Null())
+    if (scene == nullptr || activeTab_.Null())
         return false;
 
-    return activeView_->scene_ == scene && activeView_->isActive_;
-}
-
-SceneView* Editor::GetSceneView(const String& title)
-{
-    for (auto& view: sceneViews_)
-    {
-        if (view->title_ == title)
-            return view;
-    }
-    return nullptr;
+    return activeTab_->GetScene() == scene && activeTab_->IsActive();
 }
 
 }

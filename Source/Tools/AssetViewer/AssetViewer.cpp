@@ -209,7 +209,8 @@ public:
             parentNode_->SetPosition(Vector3::ZERO);
             parentNode_->SetRotation(Quaternion::IDENTITY);
             // Scale model to size of 1 unit
-            node_->SetScale(1.f / model_->GetBoundingBox().Size().y_);
+            auto size = model_->GetBoundingBox().Size();
+            node_->SetScale(1.f / Max(size.x_, Max(size.y_, size.z_)));
             // Snap center of the model to {0,0,0}
             node_->SetWorldPosition(node_->GetWorldPosition() - model_->GetWorldBoundingBox().Center());
             node_->SetRotation(Quaternion::IDENTITY);

@@ -34,7 +34,12 @@ URHO3D_EVENT(E_EDITORTOOLBARBUTTONS, EditorToolbarButtons)
 /// Event sent when node selection in scene view changes.
 URHO3D_EVENT(E_EDITORSELECTIONCHANGED, EditorSelectionChanged)
 {
-    URHO3D_PARAM(P_SCENEVIEW, SceneView);               // SceneView pointer.
+    URHO3D_PARAM(P_SCENETAB, SceneTab);               // SceneTab pointer.
+}
+
+URHO3D_EVENT(E_EDITORSCENEEFFECTSCHANGED, EditorSceneEffectsChanged)
+{
+    URHO3D_PARAM(P_SCENETAB, SceneTab);               // SceneTab pointer.
 }
 
 }

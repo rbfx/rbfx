@@ -24,6 +24,7 @@
 #include "Urho3D/Core/CoreEvents.h"
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Core/Utils.h"
 #include "Urho3D/Engine/EngineEvents.h"
 #include "Urho3D/Graphics/GraphicsEvents.h"
 #include "Urho3D/Graphics/Graphics.h"
@@ -33,11 +34,14 @@
 #include <SDL/SDL.h>
 #include <ImGuizmo/ImGuizmo.h>
 #include <ImGui/imgui_internal.h>
+#include <ImGui/imgui_freetype.h>
 
 
 using namespace std::placeholders;
 namespace Urho3D
 {
+
+const float defaultFontSize = 14.f;
 
 SystemUI::SystemUI(Urho3D::Context* context)
     : Object(context)
@@ -69,7 +73,8 @@ SystemUI::SystemUI(Urho3D::Context* context)
 
     io.UserData = this;
 
-    io.Fonts->AddFontDefault();
+    SetScale();
+    AddFont("Fonts/DejaVuSansMono.ttf", defaultFontSize, nullptr);
     ReallocateFontTexture();
     UpdateProjectionMatrix();
     // Initializes ImGui. ImGui::Render() can not be called unless imgui is initialized. This call avoids initialization
@@ -112,9 +117,9 @@ void SystemUI::UpdateProjectionMatrix()
     Vector2 offset(-1.0f, 1.0f);
 
     projection_ = Matrix4(Matrix4::IDENTITY);
-    projection_.m00_ = scale.x_ * uiScale_;
+    projection_.m00_ = scale.x_ * uiZoom_;
     projection_.m03_ = offset.x_;
-    projection_.m11_ = scale.y_ * uiScale_;
+    projection_.m11_ = scale.y_ * uiZoom_;
     projection_.m13_ = offset.y_;
     projection_.m22_ = 1.0f;
     projection_.m23_ = 0.0f;
@@ -147,22 +152,26 @@ void SystemUI::OnRawEvent(VariantMap& args)
     case SDL_MOUSEWHEEL:
         io.MouseWheel = evt->wheel.y;
         break;
+    URHO3D_FALLTHROUGH
     case SDL_MOUSEBUTTONUP:
+    URHO3D_FALLTHROUGH
     case SDL_MOUSEBUTTONDOWN:
         io.MouseDown[evt->button.button - 1] = evt->type == SDL_MOUSEBUTTONDOWN;
     case SDL_MOUSEMOTION:
-        io.MousePos.x = evt->motion.x / uiScale_;
-        io.MousePos.y = evt->motion.y / uiScale_;
+        io.MousePos.x = evt->motion.x / uiZoom_;
+        io.MousePos.y = evt->motion.y / uiZoom_;
         break;
+    URHO3D_FALLTHROUGH
     case SDL_FINGERUP:
         io.MouseDown[0] = false;
         io.MousePos.x = -1;
         io.MousePos.y = -1;
+    URHO3D_FALLTHROUGH
     case SDL_FINGERDOWN:
         io.MouseDown[0] = true;
     case SDL_FINGERMOTION:
-        io.MousePos.x = evt->tfinger.x / uiScale_;
-        io.MousePos.y = evt->tfinger.y / uiScale_;
+        io.MousePos.x = evt->tfinger.x / uiZoom_;
+        io.MousePos.y = evt->tfinger.y / uiZoom_;
         break;
     case SDL_TEXTINPUT:
         ImGui::GetIO().AddInputCharactersUTF8(evt->text.text);
@@ -179,11 +188,6 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
     assert(graphics && graphics->IsInitialized() && !graphics->IsDeviceLost());
 
     ImGuiIO& io = ImGui::GetIO();
-    int fbWidth = (int)(io.DisplaySize.x * io.DisplayFramebufferScale.x);
-    int fbHeight = (int)(io.DisplaySize.y * io.DisplayFramebufferScale.y);
-    if (fbWidth == 0 || fbHeight == 0)
-        return;
-    data->ScaleClipRects(io.DisplayFramebufferScale);
 
     for (int n = 0; n < data->CmdListsCount; n++)
     {
@@ -263,8 +267,8 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
                 graphics->SetShaderParameter(VSP_ELAPSEDTIME, elapsedTime);
                 graphics->SetShaderParameter(PSP_ELAPSEDTIME, elapsedTime);
 
-                IntRect scissor = IntRect(int(cmd->ClipRect.x * uiScale_), int(cmd->ClipRect.y * uiScale_),
-                                          int(cmd->ClipRect.z * uiScale_), int(cmd->ClipRect.w * uiScale_));
+                IntRect scissor = IntRect(int(cmd->ClipRect.x * uiZoom_), int(cmd->ClipRect.y * uiZoom_),
+                                          int(cmd->ClipRect.z * uiZoom_), int(cmd->ClipRect.w * uiZoom_));
 
                 graphics->SetBlendMode(BLEND_ALPHA);
                 graphics->SetScissorTest(true, scissor);
@@ -282,12 +286,16 @@ ImFont* SystemUI::AddFont(const String& fontPath, float size, const unsigned sho
 {
     auto io = ImGui::GetIO();
 
+    fontSizes_.Push(size);
+
     if (size == 0)
     {
         if (io.Fonts->Fonts.empty())
             return nullptr;
         size = io.Fonts->Fonts.back()->FontSize;
     }
+    else
+        size *= fontScale_;
 
     if (auto fontFile = GetSubsystem<ResourceCache>()->GetFile(fontPath))
     {
@@ -297,6 +305,7 @@ ImFont* SystemUI::AddFont(const String& fontPath, float size, const unsigned sho
         ImFontConfig cfg;
         cfg.MergeMode = merge;
         cfg.FontDataOwnedByAtlas = false;
+        cfg.PixelSnapH = true;
         if (auto newFont = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(&data.Front(), bytesLen, size, &cfg, ranges))
         {
             ReallocateFontTexture();
@@ -318,34 +327,63 @@ void SystemUI::ReallocateFontTexture()
     // Create font texture.
     unsigned char* pixels;
     int width, height;
-    // Load as RGBA 32-bits for OpenGL3 demo because it is more likely to be compatible with user's existing shader.
+
+    ImGuiFreeType::BuildFontAtlas(io.Fonts, ImGuiFreeType::ForceAutoHint);
     io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
-    if (!fontTexture_ || width != fontTexture_->GetWidth() || height != fontTexture_->GetHeight())
+    if (fontTexture_.Null())
     {
         fontTexture_ = new Texture2D(context_);
         fontTexture_->SetNumLevels(1);
-        fontTexture_->SetSize(width, height, Graphics::GetRGBAFormat());
-        fontTexture_->SetData(0, 0, 0, width, height, pixels);
         fontTexture_->SetFilterMode(FILTER_BILINEAR);
-
-        // Store our identifier
-        io.Fonts->TexID = (void*)fontTexture_.Get();
-        io.Fonts->ClearTexData();
     }
+
+    if (fontTexture_->GetWidth() != width || fontTexture_->GetHeight() != height)
+        fontTexture_->SetSize(width, height, Graphics::GetRGBAFormat());
+
+    fontTexture_->SetData(0, 0, 0, width, height, pixels);
+
+    // Store our identifier
+    io.Fonts->TexID = (void*)fontTexture_.Get();
+    io.Fonts->ClearTexData();
 }
 
-void SystemUI::SetScale(float scale)
+void SystemUI::SetZoom(float zoom)
 {
-    if (uiScale_ == scale)
+    if (uiZoom_ == zoom)
         return;
-    uiScale_ = scale;
+    uiZoom_ = zoom;
     UpdateProjectionMatrix();
+}
+
+void SystemUI::SetScale(Vector3 scale)
+{
+    auto& io = ui::GetIO();
+    auto& style = ui::GetStyle();
+
+    if (scale == Vector3::ZERO)
+        scale = GetGraphics()->GetDisplayDPI() / 96.f;
+
+    io.DisplayFramebufferScale = {scale.x_, scale.y_};
+    fontScale_ = scale.z_;
+
+    float prevSize = defaultFontSize;
+    for (auto i = 0; i < io.Fonts->Fonts.size(); i++)
+    {
+        float sizePixels = fontSizes_[i];
+        if (sizePixels == 0)
+            sizePixels = prevSize;
+        io.Fonts->ConfigData[i].SizePixels = sizePixels * fontScale_;
+    }
+
+    if (io.Fonts->Fonts.size() > 0)
+        ReallocateFontTexture();
 }
 
 void SystemUI::ApplyStyleDefault(bool darkStyle, float alpha)
 {
     ImGuiStyle& style = ImGui::GetStyle();
+    style = ImGuiStyle();
 
     // light style from Pacôme Danhiez (user itamago) https://github.com/ocornut/imgui/pull/511#issuecomment-175719267
     style.Alpha = 1.0f;
@@ -427,6 +465,8 @@ void SystemUI::ApplyStyleDefault(bool darkStyle, float alpha)
             }
         }
     }
+
+    style.ScaleAllSizes(GetFontScale());
 }
 
 bool SystemUI::IsAnyItemActive() const

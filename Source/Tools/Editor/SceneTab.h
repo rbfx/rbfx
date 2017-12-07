@@ -27,25 +27,25 @@
 #include <Toolbox/SystemUI/AttributeInspector.h>
 #include <Toolbox/SystemUI/Gizmo.h>
 #include <Toolbox/SystemUI/ImGuiDock.h>
-
+#include <Toolbox/Graphics/SceneView.h>
+#include "IDPool.h"
 
 namespace Urho3D
 {
 
-class SceneView : public Object
+class SceneSettings;
+class SceneEffects;
+
+class SceneTab : public SceneView
 {
-    URHO3D_OBJECT(SceneView, Object);
+    URHO3D_OBJECT(SceneTab, SceneView);
 public:
     /// Construct.
-    explicit SceneView(Context* context, const String& afterDockName, ui::DockSlot_ position);
+    explicit SceneTab(Context* context, StringHash id, const String& afterDockName, ui::DockSlot_ position);
     /// Destruct.
-    ~SceneView() override;
+    ~SceneTab() override;
     /// Set screen rectangle where scene is being rendered.
-    void SetScreenRect(const IntRect& rect);
-    /// Return scene debug camera component.
-    Camera* GetCamera() { return camera_->GetComponent<Camera>(); }
-    /// Set dummy node which helps to get scene rendered into texture.
-    void SetRendererNode(Node* node) { renderer_ = node; }
+    void SetSize(const IntRect& rect) override;
     /// Render scene window.
     bool RenderWindow();
     /// Render inspector window.
@@ -75,30 +75,35 @@ public:
     void SaveProject(XMLElement scene) const;
     /// Load project data from xml.
     void LoadProject(XMLElement scene);
+    /// Set scene view tab title.
+    void SetTitle(const String& title);
+    /// Get scene view tab title.
+    String GetTitle() const { return title_; }
+    /// Returns title which uniquely identifies scene tab in imgui.
+    String GetUniqueTitle() const { return uniqueTitle_;}
+    /// Return true if scene tab is active and focused.
+    bool IsActive() const { return isActive_; }
+    /// Return inuque object id.
+    StringHash GetID() const { return id_; }
+    /// Clearing cached paths forces choosing a file name next time scene is saved.
+    void ClearCachedPaths();
+    /// Return true if scene view was rendered on this frame.
+    bool IsRendered() const { return isRendered_; }
 
 protected:
     /// Called when node selection changes.
     void OnNodeSelectionChanged();
     /// Creates scene camera and other objects required by editor.
-    void CreateEditorObjects();
+    void CreateObjects() override;
 
-public:
+    /// Unique scene id.
+    StringHash id_;
     /// Scene title. Should be unique.
     String title_ = "Scene";
+    /// Title with id appended to it. Used as unique window name.
+    String uniqueTitle_;
     /// Last resource path scene was loaded from or saved to.
     String path_;
-    /// Scene which is being edited.
-    SharedPtr<Scene> scene_;
-    /// Debug camera node.
-    SharedPtr<Node> camera_;
-    /// Texture into which scene is rendered.
-    SharedPtr<Texture2D> view_;
-    /// Viewport which renders into texture.
-    SharedPtr<Viewport> viewport_;
-    /// Node in a main scene which has material with a texture this scene is being rendered to.
-    SharedPtr<Node> renderer_;
-    /// Current screen rectangle at which scene texture is being rendered.
-    IntRect screenRect_;
     /// Scene dock is active and window is focused.
     bool isActive_ = false;
     /// Gizmo used for manipulating scene elements.
@@ -116,7 +121,11 @@ public:
     /// Last known mouse position when it was visible.
     IntVector2 lastMousePosition_;
     /// Flag set to true when dock contents were visible. Used for tracking "appearing" effect.
-    bool wasRendered_ = false;
+    bool isRendered_ = false;
+    /// Serializable which handles scene settings.
+    SharedPtr<SceneSettings> settings_;
+    /// Serializable which handles scene postprocess effect settings.
+    SharedPtr<SceneEffects> effectSettings_;
 };
 
 };

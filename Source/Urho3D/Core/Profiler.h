@@ -90,7 +90,7 @@ public:
     /// End block started with BeginBlock().
     static void EndBlock();
     /// Register name of current thread. Threads will be labeled in profiler data.
-    static void RegisterCurentThread(const char* name);
+    static void RegisterCurrentThread(const char* name);
 
 private:
     /// Flag which enables event profiling.
@@ -114,7 +114,7 @@ public:
 #   define URHO3D_PROFILE_SCOPED(name, ...) ProfilerBlock URHO3D_TOKEN_CONCATENATE(__profiler_block_, __LINE__) (name, __FILE__, __LINE__, ##__VA_ARGS__)
 #   define URHO3D_PROFILE_NONSCOPED(name, ...) Profiler::BeginBlock(#name, __FILE__, __LINE__, ##__VA_ARGS__)
 #   define URHO3D_PROFILE_END() Profiler::EndBlock();
-#   define URHO3D_PROFILE_THREAD(name) Profiler::RegisterCurentThread(#name)
+#   define URHO3D_PROFILE_THREAD(name) Profiler::RegisterCurrentThread(#name)
 #else
 #   define URHO3D_PROFILE(name, ...)
 #   define URHO3D_PROFILE_NONSCOPED(name, ...)
