@@ -640,7 +640,6 @@ void View::Render()
     // Render
     ExecuteRenderPathCommands();
 
-#ifndef URHO3D_BGFX
     // Reset state after commands
     graphics_->SetFillMode(FILL_SOLID);
     graphics_->SetLineAntiAlias(false);
@@ -649,7 +648,6 @@ void View::Render()
     graphics_->SetDepthBias(0.0f, 0.0f);
     graphics_->SetScissorTest(false);
     graphics_->SetStencilTest(false);
-#endif
 
     // Draw the associated debug geometry now if enabled
     if (drawDebug_ && octree_ && camera_)
