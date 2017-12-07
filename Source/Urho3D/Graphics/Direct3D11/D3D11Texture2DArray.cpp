@@ -521,12 +521,12 @@ bool Texture2DArray::Create()
         }
 
         hr = graphics_->GetImpl()->GetDevice()->CreateRenderTargetView((ID3D11Resource*)object_.ptr_, &renderTargetViewDesc,
-            (ID3D11RenderTargetView**)&renderSurface_->renderTargetView_);
+            (ID3D11RenderTargetView**)&renderSurfaces_[0]->renderTargetView_);
 
         if (FAILED(hr))
         {
             URHO3D_LOGD3DERROR("Failed to create rendertarget view for texture array", hr);
-            URHO3D_SAFE_RELEASE(renderSurface_->renderTargetView_);
+            URHO3D_SAFE_RELEASE(renderSurfaces_[0]->renderTargetView_);
             return false;
         }
     }

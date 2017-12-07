@@ -47,8 +47,11 @@ void Texture2DArray::OnDeviceLost()
 {
     GPUObject::OnDeviceLost();
 
-    if (renderSurface_)
-        renderSurface_->OnDeviceLost();
+    for (unsigned i = 0; i < renderSurfaces_.Size(); ++i)
+    {
+        if (renderSurfaces_[i])
+            renderSurfaces_[i]->OnDeviceLost();
+    }
 }
 
 void Texture2DArray::OnDeviceReset()
