@@ -142,10 +142,6 @@ private:
     bool vertexDeclarationDirty_;
     /// Scissor rect dirty flag.
     bool scissorRectDirty_;
-    /// Stencil ref dirty flag.
-    bool stencilRefDirty_;
-    /// BGFX state dirty flag.
-    bool stateDirty_;
     /// BGFX textures dirty flag.
     bool texturesDirty_;
     /// Current index buffer.

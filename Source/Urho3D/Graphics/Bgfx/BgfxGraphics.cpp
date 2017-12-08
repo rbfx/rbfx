@@ -524,11 +524,7 @@ void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCou
     if (!vertexCount || !impl_->shaderProgram_ || !bgfx::isValid(impl_->shaderProgram_->handle_))
         return;
 
-    if (type != primitiveType_)
-    {
         primitiveType_ = type;
-        impl_->stateDirty_ = true;
-    }
 
     PrepareDraw();
 
@@ -552,11 +548,7 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
     if (!vertexCount || !impl_->shaderProgram_ || !bgfx::isValid(impl_->shaderProgram_->handle_))
         return;
 
-    if (type != primitiveType_)
-    {
         primitiveType_ = type;
-        impl_->stateDirty_ = true;
-    }
 
     PrepareDraw();
 
@@ -583,11 +575,7 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
     if (!vertexCount || !impl_->shaderProgram_ || !bgfx::isValid(impl_->shaderProgram_->handle_))
         return;
 
-    if (type != primitiveType_)
-    {
         primitiveType_ = type;
-        impl_->stateDirty_ = true;
-    }
 
     PrepareDraw();
 
@@ -614,11 +602,7 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
     if (!indexCount || !instanceCount || !impl_->shaderProgram_ || !bgfx::isValid(impl_->shaderProgram_->handle_))
         return;
 
-    if (type != primitiveType_)
-    {
         primitiveType_ = type;
-        impl_->stateDirty_ = true;
-    }
 
     PrepareDraw();
 
@@ -662,11 +646,7 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
     if (!indexCount || !instanceCount || !impl_->shaderProgram_ || !bgfx::isValid(impl_->shaderProgram_->handle_))
         return;
 
-    if (type != primitiveType_)
-    {
         primitiveType_ = type;
-        impl_->stateDirty_ = true;
-    }
 
     PrepareDraw();
 
@@ -1192,7 +1172,6 @@ void Graphics::SetDepthStencil(Texture2D* texture)
 
     SetDepthStencil(depthStencil);
     // Constant depth bias depends on the bitdepth
-    impl_->stateDirty_ = true;
 }
 
 void Graphics::SetViewport(const IntRect& rect)
@@ -1219,49 +1198,29 @@ void Graphics::SetViewport(const IntRect& rect)
 
 void Graphics::SetBlendMode(BlendMode mode, bool alphaToCoverage)
 {
-    if (mode != blendMode_ || alphaToCoverage != alphaToCoverage_)
-    {
         blendMode_ = mode;
         alphaToCoverage_ = alphaToCoverage;
-        impl_->stateDirty_ = true;
-    }
 }
 
 void Graphics::SetColorWrite(bool enable)
 {
-    if (enable != colorWrite_)
-    {
         colorWrite_ = enable;
-        impl_->stateDirty_ = true;
-    }
 }
 
 void Graphics::SetCullMode(CullMode mode)
 {
-    if (mode != cullMode_)
-    {
         cullMode_ = mode;
-        impl_->stateDirty_ = true;
-    }
 }
 
 void Graphics::SetDepthBias(float constantBias, float slopeScaledBias)
 {
-    if (constantBias != constantDepthBias_ || slopeScaledBias != slopeScaledDepthBias_)
-    {
         constantDepthBias_ = constantBias;
         slopeScaledDepthBias_ = slopeScaledBias;
-        impl_->stateDirty_ = true;
-    }
 }
 
 void Graphics::SetDepthTest(CompareMode mode)
 {
-    if (mode != depthTestMode_)
-    {
         depthTestMode_ = mode;
-        impl_->stateDirty_ = true;
-    }
 }
 
 void Graphics::SetDepthWrite(bool enable)
@@ -1269,7 +1228,6 @@ void Graphics::SetDepthWrite(bool enable)
     if (enable != depthWrite_)
     {
         depthWrite_ = enable;
-        impl_->stateDirty_ = true;
         // Also affects whether a read-only version of depth-stencil should be bound, to allow sampling
         impl_->renderTargetsDirty_ = true;
     }
@@ -1277,20 +1235,12 @@ void Graphics::SetDepthWrite(bool enable)
 
 void Graphics::SetFillMode(FillMode mode)
 {
-    if (mode != fillMode_)
-    {
         fillMode_ = mode;
-        impl_->stateDirty_ = true;
-    }
 }
 
 void Graphics::SetLineAntiAlias(bool enable)
 {
-    if (enable != lineAntiAlias_)
-    {
         lineAntiAlias_ = enable;
-        impl_->stateDirty_ = true;
-    }
 }
 
 void Graphics::SetScissorTest(bool enable, const Rect& rect, bool borderInclusive)
@@ -1327,12 +1277,7 @@ void Graphics::SetScissorTest(bool enable, const Rect& rect, bool borderInclusiv
             impl_->scissorRectDirty_ = true;
         }
     }
-
-    if (enable != scissorTest_)
-    {
         scissorTest_ = enable;
-        impl_->stateDirty_ = true;
-    }
 }
 
 void Graphics::SetScissorTest(bool enable, const IntRect& rect)
@@ -1362,61 +1307,24 @@ void Graphics::SetScissorTest(bool enable, const IntRect& rect)
             impl_->scissorRectDirty_ = true;
         }
     }
-
-    if (enable != scissorTest_)
-    {
         scissorTest_ = enable;
-        impl_->stateDirty_ = true;
-    }
 }
 
 void Graphics::SetStencilTest(bool enable, CompareMode mode, StencilOp pass, StencilOp fail, StencilOp zFail,
     unsigned stencilRef, unsigned compareMask, unsigned writeMask)
 {
     if (enable != stencilTest_)
-    {
         stencilTest_ = enable;
-        impl_->stateDirty_ = true;
-    }
 
     if (enable)
     {
-        if (mode != stencilTestMode_)
-        {
             stencilTestMode_ = mode;
-            impl_->stateDirty_ = true;
-        }
-        if (pass != stencilPass_)
-        {
             stencilPass_ = pass;
-            impl_->stateDirty_ = true;
-        }
-        if (fail != stencilFail_)
-        {
             stencilFail_ = fail;
-            impl_->stateDirty_ = true;
-        }
-        if (zFail != stencilZFail_)
-        {
             stencilZFail_ = zFail;
-            impl_->stateDirty_ = true;
-        }
-        if (compareMask != stencilCompareMask_)
-        {
             stencilCompareMask_ = compareMask;
-            impl_->stateDirty_ = true;
-        }
-        if (writeMask != stencilWriteMask_)
-        {
             stencilWriteMask_ = writeMask;
-            impl_->stateDirty_ = true;
-        }
-        if (stencilRef != stencilRef_)
-        {
             stencilRef_ = stencilRef;
-            impl_->stencilRefDirty_ = true;
-            impl_->stateDirty_ = true;
-        }
     }
 }
 
@@ -1868,22 +1776,12 @@ void Graphics::ResetCachedState()
         textures_[i] = nullptr;
 
     for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
-    {
         renderTargets_[i] = nullptr;
-    //    impl_->renderTargetViews_[i] = nullptr;
-    }
-
-    //for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
-    //{
-    //    impl_->constantBuffers_[VS][i] = nullptr;
-    //    impl_->constantBuffers_[PS][i] = nullptr;
-    //}
 
     impl_->instanceBuffer_ = nullptr;
     impl_->instanceOffset_ = 0;
 
     depthStencil_ = nullptr;
-    //impl_->depthStencilView_ = nullptr;
     viewport_ = IntRect(0, 0, width_, height_);
 
     indexBuffer_ = nullptr;
@@ -1917,16 +1815,8 @@ void Graphics::ResetCachedState()
     impl_->renderTargetsDirty_ = true;
     impl_->texturesDirty_ = true;
     impl_->vertexDeclarationDirty_ = true;
-    impl_->stateDirty_ = true;
     impl_->scissorRectDirty_ = true;
-    impl_->stencilRefDirty_ = true;
     impl_->drawDistance_ = 0;
-    //impl_->blendStateHash_ = M_MAX_UNSIGNED;
-    //impl_->depthStateHash_ = M_MAX_UNSIGNED;
-    //impl_->rasterizerStateHash_ = M_MAX_UNSIGNED;
-    //impl_->firstDirtyTexture_ = impl_->lastDirtyTexture_ = M_MAX_UNSIGNED;
-    //impl_->firstDirtyVB_ = impl_->lastDirtyVB_ = M_MAX_UNSIGNED;
-    //impl_->dirtyConstantBuffers_.Clear();
 }
 
 void Graphics::PrepareDraw()
@@ -1995,11 +1885,6 @@ void Graphics::PrepareDraw()
         impl_->renderTargetsDirty_ = false;
     }
 
-    if (impl_->vertexDeclarationDirty_ && vertexShader_ && vertexShader_->GetByteCode().Size())
-    {
-        impl_->vertexDeclarationDirty_ = false;
-    }
-
     if (impl_->texturesDirty_)
     {
         for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
@@ -2019,10 +1904,7 @@ void Graphics::PrepareDraw()
         }
     }
 
-    if (impl_->stateDirty_)
     {
-        //bgfx::setState(BGFX_STATE_DEFAULT);
-            
         // Writes
         if (colorWrite_)
             stateFlags |= BGFX_STATE_RGB_WRITE | BGFX_STATE_ALPHA_WRITE;
@@ -2047,7 +1929,6 @@ void Graphics::PrepareDraw()
         stateFlags |= bgfxPrimitiveType[primitiveType_];
         
         bgfx::setState(stateFlags);
-        impl_->stateDirty_ = false;
     }
 
     if (impl_->scissorRectDirty_)
