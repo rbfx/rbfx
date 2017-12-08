@@ -10,7 +10,7 @@ vec2 GetTexCoord(vec2 texCoord)
 
 vec4 GetClipPos(vec3 worldPos)
 {
-    vec4 ret = mul(vec4(worldPos, 1.0), cViewProj);
+    vec4 ret = mul(mul(vec4(worldPos, 1.0),u_view), u_proj); //mul(vec4(worldPos, 1.0), cViewProj);
     // While getting the clip coordinate, also automatically set gl_ClipVertex for user clip planes
     #ifdef CLIPPLANE
     #if !defined(GL_ES) && !defined(GL3) && !defined(D3D11)

@@ -781,7 +781,7 @@ void View::SetCameraShaderParameters(Camera* camera)
         }
 #endif
 #ifdef URHO3D_BGFX
-    bgfx::setViewTransform(graphics_->GetImpl()->GetCurrentView(), camera->GetView().ToMatrix4().Data(), (projection * camera->GetView()).Data());
+    bgfx::setViewTransform(graphics_->GetImpl()->GetCurrentView(), camera->GetView().ToMatrix4().Data(), projection.Data());
 #else
     graphics_->SetShaderParameter(VSP_VIEWPROJ, projection * camera->GetView());
 #endif
