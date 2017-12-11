@@ -18,7 +18,7 @@ uniform vec4 u_GBufferOffsets;
 uniform vec4 u_LightPos;
 uniform vec4 u_LightDir; //vec3
 uniform vec4 u_NormalOffsetScale;
-//uniform mat4 cModel; u_Model
+//uniform mat4 cModel; u_model
 //uniform mat4 cView; u_view
 //uniform mat4 cViewInv; u_invProj
 //uniform mat4 cViewProj; u_viewProj
@@ -30,9 +30,9 @@ uniform mat4 u_Zone;
 #else
     uniform highp mat4 u_LightMatrices[2];
 #endif
-#ifdef SKINNED
-    uniform vec4 u_SkinMatrices[MAXBONES*3];
-#endif
+//#ifdef SKINNED
+//    uniform vec4 u_SkinMatrices[MAXBONES*3]; // u_model[BGFX_CONFIG_MAX_BONES]
+//#endif
 #ifdef NUMVERTEXLIGHTS
     uniform vec4 u_VertexLights[4*3];
 #endif

@@ -65,7 +65,13 @@
 #endif
 
 #ifdef SHADOW
-#define _VSHADOWPOS , vShadowPos[_NUMCASCADES]
+#if defined(DIRLIGHT) && (!defined(GL_ES) || defined(WEBGL))
+#define _VSHADOWPOS , vShadowPos0, vShadowPos1, vShadowPos2, vShadowPos3
+#define vShadowPos vShadowPos0, vShadowPos1, vShadowPos2, vShadowPos3
+#else
+#define _VSHADOWPOS , vShadowPos0
+#define vShadowPos vShadowPos0
+#endif
 #else
 #define _VSHADOWPOS
 #endif

@@ -42,8 +42,15 @@ void GraphicsImpl::SetCurrentView(const uint8_t view)
 
 void GraphicsImpl::SetDrawDistance(const uint32_t drawDistance)
 {
+    // Reference:
+    // http://archive.fo/2012.12.08-212402/http://stereopsis.com/radix.html
     unsigned mask = -signed(drawDistance >> 31) | 0x80000000;
     drawDistance_ = drawDistance ^ mask;
+}
+
+void GraphicsImpl::SetPreserveState(const bool preserveState)
+{
+    preserveState_ = preserveState;
 }
 
 void GraphicsImpl::SetInstanceBuffer(VertexBuffer* instanceBuffer)

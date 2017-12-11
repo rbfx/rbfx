@@ -264,8 +264,15 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
     {
         if (geometryType_ == GEOM_SKINNED)
         {
+#ifdef URHO3D_BGFX
+            // We need to pad out the bones to Matrix4 for BGFX.
+            for (unsigned i = 0; i < numWorldTransforms_; ++i)
+                renderer->SetBoneMatrix(i, (worldTransform_ + i * 12)->ToMatrix4());
+            bgfx::setTransform(reinterpret_cast<const float*>(renderer->GetBoneMatrices()[0].Data()), numWorldTransforms_);
+#else
             graphics->SetShaderParameter(VSP_SKINMATRICES, reinterpret_cast<const float*>(worldTransform_),
                 12 * numWorldTransforms_);
+#endif
         }
         else
 #ifdef URHO3D_BGFX
@@ -700,8 +707,9 @@ void BatchGroup::Draw(View* view, Camera* camera, bool allowDepthWrite) const
         VertexBuffer* instanceBuffer = renderer->GetInstancingBuffer();
         if (!instanceBuffer || geometryType_ != GEOM_INSTANCED || startIndex_ == M_MAX_UNSIGNED)
         {
+#ifndef URHO3D_BGFX
             Batch::Prepare(view, camera, false, allowDepthWrite);
-
+#endif
             graphics->SetIndexBuffer(geometry_->GetIndexBuffer());
             graphics->SetVertexBuffers(geometry_->GetVertexBuffers());
 
@@ -711,6 +719,7 @@ void BatchGroup::Draw(View* view, Camera* camera, bool allowDepthWrite) const
                 if (graphics->NeedParameterUpdate(SP_OBJECT, instances_[i].worldTransform_))
                     graphics->SetShaderParameter(VSP_MODEL, *instances_[i].worldTransform_);
 #else
+                Batch::Prepare(view, camera, false, allowDepthWrite);
                 if (graphics->NeedParameterUpdate(SP_OBJECT, instances_[i].worldTransform_))
                 {
                     const Matrix3x4 &transform = *instances_[i].worldTransform_;

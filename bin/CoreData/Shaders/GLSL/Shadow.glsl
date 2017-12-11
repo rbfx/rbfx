@@ -53,6 +53,10 @@ void PS()
         float depth = vTexCoord.z / vTexCoord.w * 0.5 + 0.5;
         gl_FragColor = vec4(depth, depth * depth, 1.0, 1.0);
     #else
-        gl_FragColor = vec4(1.0);
+        #ifdef BGFX_SHADER
+            gl_FragColor = vec4_splat(1.0);
+         #else
+            gl_FragColor = vec4(1.0);
+        #endif
     #endif
 }

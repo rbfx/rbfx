@@ -100,8 +100,12 @@ void VS()
 
         #ifdef SHADOW
             // Shadow projection: transform from world space to shadow space
-            for (int i = 0; i < NUMCASCADES; i++)
-                vShadowPos[i] = GetShadowPos(i, vNormal, projWorldPos);
+            #ifdef BGFX_SHADER
+                GetShadowPos(projWorldPos, vNormal, vShadowPos);
+            #else
+                for (int i = 0; i < NUMCASCADES; i++)
+                    vShadowPos[i] = GetShadowPos(i, vNormal, projWorldPos);
+            #endif
         #endif
 
         #ifdef SPOTLIGHT

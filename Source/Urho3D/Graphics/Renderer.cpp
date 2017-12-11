@@ -983,6 +983,12 @@ Texture2D* Renderer::GetShadowMap(Light* light, Camera* camera, unsigned viewWid
     // Disable mipmaps from the shadow map
     newShadowMap->SetNumLevels(1);
 
+#ifdef URHO3D_BGFX
+    // Need to set flags up-front for BGFX.
+    newShadowMap->SetFilterMode(graphics_->GetHardwareShadowSupport() ? FILTER_BILINEAR : FILTER_NEAREST);
+    newShadowMap->SetShadowCompare(graphics_->GetHardwareShadowSupport());
+#endif
+
     while (retries)
     {
         if (!newShadowMap->SetSize(width, height, shadowMapFormat, shadowMapUsage, multiSample))
@@ -998,7 +1004,7 @@ Texture2D* Renderer::GetShadowMap(Light* light, Camera* camera, unsigned viewWid
             newShadowMap->SetFilterMode(FILTER_BILINEAR);
             newShadowMap->SetShadowCompare(shadowMapUsage == TEXTURE_DEPTHSTENCIL);
 #endif
-#ifndef URHO3D_OPENGL
+#if !defined(URHO3D_OPENGL)
             // Direct3D9: when shadow compare must be done manually, use nearest filtering so that the filtering of point lights
             // and other shadowed lights matches
             newShadowMap->SetFilterMode(graphics_->GetHardwareShadowSupport() ? FILTER_BILINEAR : FILTER_NEAREST);
@@ -1650,6 +1656,10 @@ void Renderer::Initialize()
     ResetShadowMaps();
     ResetBuffers();
 
+#ifdef URHO3D_BGFX
+    boneMatrices_.Resize(graphics_->GetMaxBones());
+#endif
+
     shadersDirty_ = true;
     initialized_ = true;
 
@@ -2042,4 +2052,10 @@ void Renderer::BlurShadowMap(View* view, Texture2D* shadowMap, float blurScale)
     graphics_->SetTexture(TU_DIFFUSE, tmpBuffer);
     view->DrawFullscreenQuad(true);
 }
+
+void Renderer::SetBoneMatrix(unsigned index, Matrix4& boneMatrix)
+{
+    boneMatrices_[index] = boneMatrix;
+}
+
 }

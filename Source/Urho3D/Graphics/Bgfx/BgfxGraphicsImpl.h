@@ -120,6 +120,8 @@ public:
     void SetDrawDistance(const uint32_t drawDistance);
     /// Set instance vertex buffer.
     void SetInstanceBuffer(VertexBuffer* instanceBuffer);
+    /// Set preserve internal draw state for next draw call submit.
+    void SetPreserveState(const bool preserveState);
 
 private:
     /// Backbuffer framebuffer.
@@ -136,6 +138,8 @@ private:
     ShaderProgram* shaderProgram_;
     /// Current depth of primitive.
     uint32_t drawDistance_;
+    /// Preserve state bool.
+    bool preserveState_;
     /// Rendertargets dirty flag.
     bool renderTargetsDirty_;
     /// Vertex declaration dirty flag.

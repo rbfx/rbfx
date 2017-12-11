@@ -428,6 +428,11 @@ public:
     /// Return a view or its source view if it uses one. Used internally for render statistics.
     static View* GetActualView(View* view);
 
+    /// Set bone matrix. BGFX only.
+    void SetBoneMatrix(unsigned index, Matrix4& boneMatrix);
+    /// Get bone matrices. BGFX only.
+    const Vector<Matrix4> GetBoneMatrices() const { return boneMatrices_; }
+
 private:
     /// Initialize when screen mode initially set.
     void Initialize();
@@ -498,6 +503,8 @@ private:
     Vector<SharedPtr<Node> > shadowCameraNodes_;
     /// Reusable occlusion buffers.
     Vector<SharedPtr<OcclusionBuffer> > occlusionBuffers_;
+    /// Bone matrices in matrix4 format. Only for BGFX.
+    Vector<Matrix4> boneMatrices_;
     /// Shadow maps by resolution.
     HashMap<int, Vector<SharedPtr<Texture2D> > > shadowMaps_;
     /// Shadow map dummy color buffers by resolution.

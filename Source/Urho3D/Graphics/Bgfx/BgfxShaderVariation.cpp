@@ -329,7 +329,8 @@ bool ShaderVariation::Compile()
     else
         defines.Push("COMPILEPS");
 
-    defines.Push("MAXBONES=" + String(Graphics::GetMaxBones()));
+    //defines.Push("MAXBONES=" + String(Graphics::GetMaxBones()));
+    defines.Push("BGFX_CONFIG_MAX_BONES=" + String(Graphics::GetMaxBones()));
 
     for (unsigned i = 0; i < defines.Size(); ++i)
     {

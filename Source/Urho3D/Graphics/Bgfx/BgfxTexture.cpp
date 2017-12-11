@@ -133,6 +133,8 @@ unsigned Texture::GetBGFXFlags()
         flags |= BGFX_TEXTURE_SRGB;
     if ((usage_ == TEXTURE_RENDERTARGET) || (usage_ == TEXTURE_DEPTHSTENCIL))
         flags |= BGFX_TEXTURE_RT;
+    if (shadowCompare_)
+        flags |= BGFX_TEXTURE_COMPARE_LEQUAL;
     if (multiSample_ > 1)
     {
         //flags |= BGFX_TEXTURE_MSAA_SAMPLE;

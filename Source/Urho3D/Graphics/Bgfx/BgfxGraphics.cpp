@@ -328,6 +328,7 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
     }
 
     bgfx::init(urhoToBgfxRenderer[apiType_]);//, BGFX_PCI_ID_NONE, 0, &impl_->callback_);
+    CheckFeatureSupport();
     //bgfx::setDebug();
     //apiType_ = bgfxToUrhoRenderer[bgfx::getRendererType()];
 
@@ -536,7 +537,7 @@ void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCou
             bgfx::setVertexBuffer(i, impl_->dynamicVertexBuffer_[i], vertexStart, vertexCount);
     }
 
-    bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
+    bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, impl_->preserveState_);
     impl_->drawDistance_ = 0;
 
     //numPrimitives_ += primitiveCount;
@@ -565,7 +566,7 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
             bgfx::setVertexBuffer(i, impl_->dynamicVertexBuffer_[i], minVertex, vertexCount);
     }
 
-    bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
+    bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, impl_->preserveState_);
     impl_->drawDistance_ = 0;
     ++numBatches_;
 }
@@ -592,7 +593,7 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
             bgfx::setVertexBuffer(i, impl_->dynamicVertexBuffer_[i], minVertex, vertexCount);
     }
 
-    bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
+    bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, impl_->preserveState_);
     impl_->drawDistance_ = 0;
     ++numBatches_;
 }
@@ -636,7 +637,7 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
         }
     }
 
-    bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
+    bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, impl_->preserveState_);
     impl_->drawDistance_ = 0;
     ++numBatches_;
 }
@@ -680,7 +681,7 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
         }
     }
 
-    bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, false);
+    bgfx::submit(impl_->view_, impl_->shaderProgram_->handle_, impl_->drawDistance_, impl_->preserveState_);
     impl_->drawDistance_ = 0;
     ++numBatches_;
 }
@@ -1729,19 +1730,22 @@ void Graphics::AdjustWindow(int& newWidth, int& newHeight, bool& newFullscreen, 
 void Graphics::CheckFeatureSupport()
 {
     const bgfx::Caps* caps = bgfx::getCaps();
-    anisotropySupport_ = true;
+    anisotropySupport_ = bgfx::isTextureValid(0, false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_MIN_ANISOTROPIC | BGFX_TEXTURE_MAG_ANISOTROPIC);
     dxtTextureSupport_ = 0 != (BGFX_CAPS_FORMAT_TEXTURE_2D & caps->formats[bgfx::TextureFormat::BC1]);
     etcTextureSupport_ = 0 != (BGFX_CAPS_FORMAT_TEXTURE_2D & caps->formats[bgfx::TextureFormat::ETC1]);
     pvrtcTextureSupport_ = 0 != (BGFX_CAPS_FORMAT_TEXTURE_2D & caps->formats[bgfx::TextureFormat::PTC12]);
+    if (caps->limits.maxFBAttachments >= 2)
     lightPrepassSupport_ = true;
+    if (caps->limits.maxFBAttachments >= 4)
     deferredSupport_ = true;
-    hardwareShadowSupport_ = true;
-    instancingSupport_ = (caps->supported & BGFX_CAPS_INSTANCING);
+    hardwareShadowSupport_ = 0 != (caps->supported & BGFX_CAPS_TEXTURE_COMPARE_LEQUAL);
+    instancingSupport_ = 0 != (caps->supported & BGFX_CAPS_INSTANCING);
     shadowMapFormat_ = bgfx::TextureFormat::D16;
-    hiresShadowMapFormat_ = bgfx::TextureFormat::D32;
-    dummyColorFormat_ = bgfx::TextureFormat::Unknown;
-    sRGBSupport_ = 0 != (BGFX_CAPS_FORMAT_TEXTURE_2D & caps->formats[bgfx::TextureFormat::RGBA8]);
-    sRGBWriteSupport_ = 0 != (BGFX_CAPS_FORMAT_TEXTURE_2D & caps->formats[bgfx::TextureFormat::RGBA8]); // Not correct
+    hiresShadowMapFormat_ = bgfx::isTextureValid(0, false, 1, bgfx::TextureFormat::D32, BGFX_TEXTURE_RT) ? 
+        bgfx::TextureFormat::D32 : bgfx::TextureFormat::D24;
+    dummyColorFormat_ = bgfx::TextureFormat::BGRA8;
+    sRGBSupport_ = 0 != (BGFX_CAPS_FORMAT_TEXTURE_2D_SRGB & caps->formats[bgfx::TextureFormat::RGBA8]);
+    sRGBWriteSupport_ = bgfx::isTextureValid(0, false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_RT_WRITE_ONLY | BGFX_TEXTURE_SRGB);
 }
 
 void Graphics::CleanupFramebuffers()
@@ -1817,6 +1821,7 @@ void Graphics::ResetCachedState()
     impl_->vertexDeclarationDirty_ = true;
     impl_->scissorRectDirty_ = true;
     impl_->drawDistance_ = 0;
+    impl_->preserveState_ = false;
 }
 
 void Graphics::PrepareDraw()
