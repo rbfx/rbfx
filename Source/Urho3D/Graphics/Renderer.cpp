@@ -1477,7 +1477,7 @@ void Renderer::OptimizeLightByStencil(Light* light, Camera* camera)
         graphics_->SetShaders(graphics_->GetShader(VS, "Stencil"), graphics_->GetShader(PS, "Stencil"));
 #ifdef URHO3D_BGFX
         bgfx::setViewTransform(graphics_->GetImpl()->GetCurrentView(), view.ToMatrix4().Data(), projection.Data());
-        bgfx::setTransform(light->GetVolumeTransform(camera).Data());
+        bgfx::setTransform(light->GetVolumeTransform(camera).ToMatrix4().Data());
 #else
         graphics_->SetShaderParameter(VSP_VIEW, view);
         graphics_->SetShaderParameter(VSP_VIEWINV, camera->GetEffectiveWorldTransform());

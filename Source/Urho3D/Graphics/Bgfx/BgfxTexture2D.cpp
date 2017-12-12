@@ -109,9 +109,8 @@ bool Texture2D::SetData(unsigned level, int x, int y, int width, int height, con
     bgfx::TextureHandle handle;
     handle.idx = object_.idx_;
 
-    // TODO: Remove the extra copy here somehow, and also support compressed formats later.
-    unsigned size = width * height * (bimg::getBitsPerPixel((bimg::TextureFormat::Enum)format_)/8);
-    const bgfx::Memory* mem = bgfx::copy(data, size);
+    //uint32_t size = bimg::imageGetSize(nullptr, width, height, 1, false, false, 1, (bimg::TextureFormat::Enum)format_);
+    const bgfx::Memory* mem = bgfx::copy(data, GetDataSize(width, height));
     bgfx::updateTexture2D(handle, 0, (uint8_t)level, (uint16_t)x, (uint16_t)y, (uint16_t)width, (uint16_t)height, mem);
 
     return true;
@@ -199,7 +198,7 @@ bool Texture2D::SetData(Image* image, bool useAlpha)
         unsigned format = graphics_->GetFormat(image->GetCompressedFormat());
         bool needDecompress = false;
 
-        if (!format)
+        if (format == bgfx::TextureFormat::Unknown)
         {
             format = Graphics::GetRGBAFormat();
             needDecompress = true;
@@ -258,13 +257,13 @@ bool Texture2D::Create()
 
     // Disable multisampling if not supported
     const bgfx::Caps* caps = bgfx::getCaps();
-    if (multiSample_ > 1 && !(0 != (BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER_MSAA & caps->formats[(bgfx::TextureFormat::Enum)format_])))
+    if (multiSample_ > 1 && (0 != (BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER_MSAA & caps->formats[(bgfx::TextureFormat::Enum)format_])))
     {
         multiSample_ = 1;
         autoResolve_ = false;
     }
     // Disable auto-gen mips if not supported
-    if (requestedLevels_> 1 && !(0 != (BGFX_CAPS_FORMAT_TEXTURE_MIP_AUTOGEN & caps->formats[(bgfx::TextureFormat::Enum)format_])))
+    if (requestedLevels_> 1 && !IsCompressed() && (0 != (BGFX_CAPS_FORMAT_TEXTURE_MIP_AUTOGEN & caps->formats[(bgfx::TextureFormat::Enum)format_])))
         requestedLevels_ = 1;
     if (usage_ == TEXTURE_DEPTHSTENCIL)
         requestedLevels_ = 1;
@@ -277,10 +276,6 @@ bool Texture2D::Create()
     bgfx::TextureHandle handle;
     handle = bgfx::createTexture2D((uint16_t)width_, (uint16_t)height_, levels_ > 1 ? true : false, 1, (bgfx::TextureFormat::Enum)format_, GetBGFXFlags() /*, mem*/);
     object_.idx_ = handle.idx;
-
-    if (usage_ == TEXTURE_RENDERTARGET)
-    {
-    }
 
     if (object_.idx_ != bgfx::kInvalidHandle)
         return true;

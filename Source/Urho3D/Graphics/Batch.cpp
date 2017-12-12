@@ -443,7 +443,7 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
                         Matrix4 lightVecRot(lightNode->GetWorldRotation().RotationMatrix());
                         // HLSL compiler will pack the parameters as if the matrix is only 3x4, so must be careful to not overwrite
                         // the next parameter
-#ifdef URHO3D_OPENGL
+#if defined(URHO3D_OPENGL) || defined(URHO3D_BGFX)
                         graphics->SetShaderParameter(PSP_LIGHTMATRICES, lightVecRot.Data(), 16);
 #else
                         graphics->SetShaderParameter(PSP_LIGHTMATRICES, lightVecRot.Data(), 12);

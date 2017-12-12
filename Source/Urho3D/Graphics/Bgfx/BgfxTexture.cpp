@@ -103,7 +103,7 @@ bool Texture::IsCompressed() const
 
 unsigned Texture::GetRowDataSize(int width) const
 {
-    return 0;
+    return bimg::imageGetSize(nullptr, width, 1, 1, false, false, 1, (bimg::TextureFormat::Enum)format_);
 }
 
 unsigned Texture::GetSRGBFormat(unsigned format)

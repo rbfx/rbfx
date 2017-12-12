@@ -1371,23 +1371,23 @@ unsigned Graphics::GetFormat(CompressedFormat format) const
     case CF_RGBA:
         return bgfx::TextureFormat::RGBA8;
     case CF_DXT1:
-        return dxtTextureSupport_ ? bgfx::TextureFormat::BC1 : 0;
+        return dxtTextureSupport_ ? bgfx::TextureFormat::BC1 : bgfx::TextureFormat::Unknown;
     case CF_DXT3:
-        return dxtTextureSupport_ ? bgfx::TextureFormat::BC2 : 0;
+        return dxtTextureSupport_ ? bgfx::TextureFormat::BC2 : bgfx::TextureFormat::Unknown;
     case CF_DXT5:
-        return dxtTextureSupport_ ? bgfx::TextureFormat::BC3 : 0;
+        return dxtTextureSupport_ ? bgfx::TextureFormat::BC3 : bgfx::TextureFormat::Unknown;
     case CF_ETC1:
-        return etcTextureSupport_ ? bgfx::TextureFormat::ETC1 : 0;
+        return etcTextureSupport_ ? bgfx::TextureFormat::ETC1 : bgfx::TextureFormat::Unknown;
     case CF_PVRTC_RGB_2BPP:
-        return pvrtcTextureSupport_ ? bgfx::TextureFormat::PTC12 : 0;
+        return pvrtcTextureSupport_ ? bgfx::TextureFormat::PTC12 : bgfx::TextureFormat::Unknown;
     case CF_PVRTC_RGB_4BPP:
-        return pvrtcTextureSupport_ ? bgfx::TextureFormat::PTC14 : 0;
+        return pvrtcTextureSupport_ ? bgfx::TextureFormat::PTC14 : bgfx::TextureFormat::Unknown;
     case CF_PVRTC_RGBA_2BPP:
-        return pvrtcTextureSupport_ ? bgfx::TextureFormat::PTC12A : 0;
+        return pvrtcTextureSupport_ ? bgfx::TextureFormat::PTC12A : bgfx::TextureFormat::Unknown;
     case CF_PVRTC_RGBA_4BPP:
-        return pvrtcTextureSupport_ ? bgfx::TextureFormat::PTC14A : 0;
+        return pvrtcTextureSupport_ ? bgfx::TextureFormat::PTC14A : bgfx::TextureFormat::Unknown;
     default:
-        return 0;
+        return bgfx::TextureFormat::Unknown;
     }
 }
 
@@ -1841,9 +1841,10 @@ void Graphics::PrepareDraw()
     {
         uint8_t texAttachments = 0;
         bgfx::Attachment attachments[MAX_RENDERTARGETS+1]; // all attachments + depth stencil
+        for (unsigned i = 0; i < MAX_RENDERTARGETS+1; ++i)
+            attachments[i].handle.idx = bgfx::kInvalidHandle;
         for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
         {
-            attachments[i].handle.idx = bgfx::kInvalidHandle;
             if (renderTargets_[i])
             {
                 attachments[i].handle.idx = renderTargets_[i]->GetParentTexture()->GetGPUObjectIdx();
