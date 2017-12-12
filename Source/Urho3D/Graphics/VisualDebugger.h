@@ -9,6 +9,7 @@
 #include "../Math/Sphere.h"
 #include "../Math/Polyhedron.h"
 #include "../Math/Frustum.h"
+#include "../Math/Ray.h"
 #include "../Scene/Node.h"
 
 namespace Urho3D
@@ -17,6 +18,7 @@ namespace Urho3D
 	class Camera;
 	class Text;
 	class Node;
+	
 
 
 	//Subsytem providing persistant visualization of debug geometry.
@@ -26,7 +28,7 @@ namespace Urho3D
 	public:
 		VisualDebugger(Context* context);
 
-		class VisualDebuggerObject : public Object {
+		class URHO3D_API VisualDebuggerObject : public Object {
 			URHO3D_OBJECT(VisualDebuggerObject, Object);
 
 		public:
@@ -48,12 +50,12 @@ namespace Urho3D
 			Color mColor;
 			unsigned int creationTimeMS = 0;
 			unsigned int mLifetimeMS = 2000;
-			bool depthTest = false;
+			bool mDepthTest = false;
 			bool mEnabled = false;
 			WeakPtr<VisualDebugger> mVisDebugger;
 		};
 
-		class VisualDebuggerCircle : public VisualDebuggerObject {
+		class URHO3D_API VisualDebuggerCircle : public VisualDebuggerObject {
 			URHO3D_OBJECT(VisualDebuggerObject, VisualDebuggerObject);
 
 		public:
@@ -67,7 +69,7 @@ namespace Urho3D
 			int mSteps = 64;
 		};
 
-		class VisualDebuggerLine : public VisualDebuggerObject {
+		class URHO3D_API VisualDebuggerLine : public VisualDebuggerObject {
 			URHO3D_OBJECT(VisualDebuggerObject, VisualDebuggerObject);
 
 		public:
@@ -79,7 +81,19 @@ namespace Urho3D
 			Vector3 mEnd;
 		};
 
-		class VisualDebuggerBoundingBox : public VisualDebuggerObject {
+		class URHO3D_API VisualDebuggerRay : public VisualDebuggerObject {
+			URHO3D_OBJECT(VisualDebuggerRay, VisualDebuggerObject);
+
+		public:
+			VisualDebuggerRay(VisualDebugger* visDebugger, Context* context_);
+
+			virtual void DrawDebugGeometry(DebugRenderer* debugRenderer);
+
+			Ray mRay;
+		};
+
+
+		class URHO3D_API VisualDebuggerBoundingBox : public VisualDebuggerObject {
 			URHO3D_OBJECT(VisualDebuggerObject, VisualDebuggerObject);
 
 		public:
@@ -91,7 +105,7 @@ namespace Urho3D
 			bool mSolid = false;
 		};
 
-		class VisualDebuggerTriangle : public VisualDebuggerObject {
+		class URHO3D_API VisualDebuggerTriangle : public VisualDebuggerObject {
 			URHO3D_OBJECT(VisualDebuggerObject, VisualDebuggerObject);
 
 		public:
@@ -102,7 +116,7 @@ namespace Urho3D
 			Vector3 v1, v2, v3;
 		};
 
-		class VisualDebuggerCross : public VisualDebuggerObject {
+		class URHO3D_API VisualDebuggerCross : public VisualDebuggerObject {
 			URHO3D_OBJECT(VisualDebuggerObject, VisualDebuggerObject);
 
 		public:
@@ -114,7 +128,7 @@ namespace Urho3D
 			float mSize;
 		};
 
-		class VisualDebuggerPolygon : public VisualDebuggerObject {
+		class URHO3D_API VisualDebuggerPolygon : public VisualDebuggerObject {
 			URHO3D_OBJECT(VisualDebuggerObject, VisualDebuggerObject);
 
 		public:
@@ -125,7 +139,7 @@ namespace Urho3D
 			Vector3 v1, v2, v3, v4;
 		};
 
-		class VisualDebuggerPolyhedron : public VisualDebuggerObject {
+		class URHO3D_API VisualDebuggerPolyhedron : public VisualDebuggerObject {
 			URHO3D_OBJECT(VisualDebuggerObject, VisualDebuggerObject);
 
 		public:
@@ -136,7 +150,7 @@ namespace Urho3D
 			Polyhedron mPolyhedron;
 		};
 
-		class VisualDebuggerCylinder : public VisualDebuggerObject {
+		class URHO3D_API VisualDebuggerCylinder : public VisualDebuggerObject {
 			URHO3D_OBJECT(VisualDebuggerObject, VisualDebuggerObject);
 
 		public:
@@ -149,7 +163,7 @@ namespace Urho3D
 			float mHeight;
 		};
 
-		class VisualDebuggerFrustum : public VisualDebuggerObject {
+		class URHO3D_API VisualDebuggerFrustum : public VisualDebuggerObject {
 			URHO3D_OBJECT(VisualDebuggerObject, VisualDebuggerObject);
 
 		public:
@@ -160,7 +174,7 @@ namespace Urho3D
 			Frustum mFrustum;
 		};
 
-		class VisualDebuggerQuad : public VisualDebuggerObject {
+		class URHO3D_API VisualDebuggerQuad : public VisualDebuggerObject {
 			URHO3D_OBJECT(VisualDebuggerObject, VisualDebuggerObject);
 
 		public:
@@ -173,7 +187,7 @@ namespace Urho3D
 			float height;
 		};
 
-		class VisualDebuggerSphere : public VisualDebuggerObject {
+		class URHO3D_API VisualDebuggerSphere : public VisualDebuggerObject {
 			URHO3D_OBJECT(VisualDebuggerObject, VisualDebuggerObject);
 
 		public:
@@ -184,7 +198,7 @@ namespace Urho3D
 			Sphere mSphere;
 		};
 
-		class VisualDebuggerSphereSector : public VisualDebuggerObject {
+		class URHO3D_API VisualDebuggerSphereSector : public VisualDebuggerObject {
 			URHO3D_OBJECT(VisualDebuggerObject, VisualDebuggerObject);
 
 		public:
@@ -198,7 +212,7 @@ namespace Urho3D
 			bool mDrawLines;
 		};
 
-		class VisualDebuggerOrb : public VisualDebuggerObject {
+		class URHO3D_API VisualDebuggerOrb : public VisualDebuggerObject {
 			URHO3D_OBJECT(VisualDebuggerObject, VisualDebuggerObject);
 
 		public:
@@ -212,7 +226,7 @@ namespace Urho3D
 			int mNumCircles = 10;
 		};
 
-		class VisualDebuggerNode : public VisualDebuggerObject {
+		class URHO3D_API VisualDebuggerNode : public VisualDebuggerObject {
 			URHO3D_OBJECT(VisualDebuggerObject, VisualDebuggerObject);
 
 		public:
@@ -223,7 +237,7 @@ namespace Urho3D
 			WeakPtr<Node> mNode;
 		};
 
-		class VisualDebuggerUILabel : public VisualDebuggerObject {
+		class URHO3D_API VisualDebuggerUILabel : public VisualDebuggerObject {
 			URHO3D_OBJECT(VisualDebuggerObject, VisualDebuggerObject);
 
 		public:
