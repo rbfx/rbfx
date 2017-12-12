@@ -47,7 +47,7 @@
 #endif
 
 #ifdef INSTANCED
-#define _INSTANCED , i_data0, i_data1, i_data2, i_data3
+#define _INSTANCED , i_data0, i_data1, i_data2
 #else
 #define _INSTANCED
 #endif

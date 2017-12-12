@@ -105,6 +105,8 @@ vec3 GetTrailNormal(vec4 iPos, vec3 iParentPos, vec3 iForward)
 
 #if defined(SKINNED)
     #define iModelMatrix mul(a_weight.x, u_model[int(a_indices.x)]) + mul(a_weight.y, u_model[int(a_indices.y)]) + mul(a_weight.z, u_model[int(a_indices.z)]) + mul(a_weight.w, u_model[int(a_indices.w)])
+#elif defined(INSTANCED)
+    #define iModelMatrix mat4(i_data0, i_data1, i_data2, vec4(0.0, 0.0, 0.0, 1.0))
 #else
     #define iModelMatrix cModel
 #endif
