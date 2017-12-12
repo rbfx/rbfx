@@ -111,7 +111,7 @@ bool Texture2D::SetData(unsigned level, int x, int y, int width, int height, con
 
     //uint32_t size = bimg::imageGetSize(nullptr, width, height, 1, false, false, 1, (bimg::TextureFormat::Enum)format_);
     const bgfx::Memory* mem = bgfx::copy(data, GetDataSize(width, height));
-    bgfx::updateTexture2D(handle, 0, (uint8_t)level, (uint16_t)x, (uint16_t)y, (uint16_t)width, (uint16_t)height, mem);
+    bgfx::updateTexture2D(handle, 0, (uint8_t)level, (uint16_t)x, (uint16_t)y, (uint16_t)width, (uint16_t)height, mem, GetRowDataSize(width));
 
     return true;
 }
