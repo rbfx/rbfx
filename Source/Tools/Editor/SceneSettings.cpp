@@ -31,7 +31,6 @@ namespace Urho3D
 SceneSettings::SceneSettings(Context* context)
     : Serializable(context)
 {
-    URHO3D_ATTRIBUTE("Save Elapsed Time", bool, saveElapsedTime_, false, AM_EDIT);
 }
 
 void SceneSettings::SaveProject(XMLElement scene)
@@ -46,6 +45,12 @@ void SceneSettings::LoadProject(XMLElement scene)
         saveElapsedTime_ = saveElapsedTime.GetVariant().GetBool();
 }
 
+void SceneSettings::RegisterObject(Context* context)
+{
+    context->RegisterFactory<SceneSettings>();
+    URHO3D_ATTRIBUTE("Save Elapsed Time", bool, saveElapsedTime_, false, AM_EDIT);
+}
+
 SceneEffects::SceneEffects(SceneTab* tab)
     : Serializable(tab->GetContext())
     , tab_(tab)
@@ -58,8 +63,10 @@ void SceneEffects::Prepare(bool force)
     if (!force && !rebuild_)
         return;
 
-    auto context = context_;
-    context->RemoveAllAttributes<SceneEffects>();
+    // A "fake" context value which allows us to use Urho3D attribute definition macros while storing attributes
+    // locally.
+    auto context = this;
+    attributes_.Clear();
 
     // Update RenderPaths
     {
@@ -423,6 +430,18 @@ void SceneEffects::LoadProject(XMLElement scene)
     SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_SCENETAB, tab_.Get());
 
     rebuild_ = true;
+}
+
+const Vector<AttributeInfo>* SceneEffects::GetAttributes() const
+{
+    return &attributes_;
+}
+
+template <class T>
+AttributeInfo& SceneEffects::RegisterAttribute(const AttributeInfo& attr)
+{
+    attributes_.Push(attr);
+    return attributes_.Back();
 }
 
 }

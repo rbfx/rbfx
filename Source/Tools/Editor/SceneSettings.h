@@ -43,6 +43,8 @@ public:
     void SaveProject(XMLElement scene);
     /// Load settings from a project file.
     void LoadProject(XMLElement scene);
+    /// Register object with engine.
+    static void RegisterObject(Context* context);
 
     /// Flag which determines if "Elapsed Time" attribute of a scene should be saved.
     bool saveElapsedTime_ = false;
@@ -61,8 +63,14 @@ public:
     void SaveProject(XMLElement scene);
     /// Load settings from a project file.
     void LoadProject(XMLElement scene);
+    /// Returns custom list of attributes that are different per instance.
+    const Vector<AttributeInfo>* GetAttributes() const override;
 
 protected:
+    /// Method mimicking Context attribute registration, required for using engine attribute macros for registering
+    /// custom per-object attributes.
+    template <class T> AttributeInfo& RegisterAttribute(const AttributeInfo& attr);
+
     /// Flag which signals that attributes should be rebuilt.
     bool rebuild_ = true;
     /// Pointer to tab which owns this object.
@@ -85,6 +93,8 @@ protected:
     PODVector<const char*> renderPathsEnumNames_;
     /// Index of current renderpath
     int currentRenderPath_ = -1;
+    /// List of attributes available at the moment.
+    Vector<AttributeInfo> attributes_;
 };
 
 }
