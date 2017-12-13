@@ -81,7 +81,6 @@ if (NOT ANDROID AND NOT ARM AND NOT WEB)
 endif ()
 
 if (URHO3D_TOOLS)
-    add_subdirectory(poco)
     add_subdirectory(Assimp)
 endif ()
 if (URHO3D_SYSTEMUI)
