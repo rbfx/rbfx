@@ -452,32 +452,36 @@ void UI::RenderUpdate()
     }
 
     // Get batches for UI elements rendered into textures. Each element rendered into texture is treated as root element.
-    for (Vector<WeakPtr<UIComponent> >::Iterator it = renderToTexture_.Begin(); it != renderToTexture_.End();)
+    for (auto it = renderToTexture_.Begin(); it != renderToTexture_.End();)
     {
-        WeakPtr<UIComponent> component = *it;
-        if (component.Null() || !component->IsEnabled())
-            it = renderToTexture_.Erase(it);
-        else if (component->IsEnabled())
+        RenderToTextureData& data = it->second_;
+        if (data.rootElement_.Expired())
         {
-            component->batches_.Clear();
-            component->vertexData_.Clear();
-            UIElement* element = component->GetRoot();
+            it = renderToTexture_.Erase(it);
+            continue;
+        }
+
+        if (data.rootElement_->IsEnabled())
+        {
+            data.batches_.Clear();
+            data.vertexData_.Clear();
+            UIElement* element = data.rootElement_;
             const IntVector2& size = element->GetSize();
             const IntVector2& pos = element->GetPosition();
             // Note: the scissors operate on unscaled coordinates. Scissor scaling is only performed during render
             IntRect scissor = IntRect(pos.x_, pos.y_, pos.x_ + size.x_, pos.y_ + size.y_);
-            GetBatches(component->batches_, component->vertexData_, element, scissor);
+            GetBatches(data.batches_, data.vertexData_, element, scissor);
 
             // UIElement does not have anything to show. Insert dummy batch that will clear the texture.
-            if (component->batches_.Empty())
+            if (data.batches_.Empty())
             {
-                UIBatch batch(element, BLEND_REPLACE, scissor, nullptr, &component->vertexData_);
+                UIBatch batch(element, BLEND_REPLACE, scissor, nullptr, &data.vertexData_);
                 batch.SetColor(Color::BLACK);
                 batch.AddQuad(scissor.left_, scissor.top_, scissor.right_, scissor.bottom_, 0, 0);
-                component->batches_.Push(batch);
+                data.batches_.Push(batch);
             }
-            ++it;
         }
+        ++it;
     }
 }
 
@@ -508,27 +512,27 @@ void UI::Render(bool renderUICommand)
         // Render modal batches
         Render(vertexBuffer_, batches_, nonModalBatchSize_, batches_.Size());
     }
-    
+
     // Render to UIComponent textures. This is skipped when called from the RENDERUI command
     if (!renderUICommand)
     {
-        for (Vector<WeakPtr<UIComponent> >::ConstIterator it = renderToTexture_.Begin(); it != renderToTexture_.End(); it++)
+        for (auto& item : renderToTexture_)
         {
-            WeakPtr<UIComponent> component = *it;
-            if (component->IsEnabled())
+            RenderToTextureData& data = item.second_;
+            if (data.rootElement_->IsEnabled())
             {
-                SetVertexData(component->vertexBuffer_, component->vertexData_);
-                SetVertexData(component->debugVertexBuffer_, component->debugVertexData_);
-                
-                RenderSurface* surface = component->GetTexture()->GetRenderSurface();
+                SetVertexData(data.vertexBuffer_, data.vertexData_);
+                SetVertexData(data.debugVertexBuffer_, data.debugVertexData_);
+
+                RenderSurface* surface = data.texture_->GetRenderSurface();
                 graphics_->SetRenderTarget(0, surface);
                 graphics_->SetViewport(IntRect(0, 0, surface->GetWidth(), surface->GetHeight()));
                 graphics_->Clear(Urho3D::CLEAR_COLOR);
 
-                Render(component->vertexBuffer_, component->batches_, 0, component->batches_.Size());
-                Render(component->debugVertexBuffer_, component->debugDrawBatches_, 0, component->debugDrawBatches_.Size());
-                component->debugDrawBatches_.Clear();
-                component->debugVertexData_.Clear();
+                Render(data.vertexBuffer_, data.batches_, 0, data.batches_.Size());
+                Render(data.debugVertexBuffer_, data.debugDrawBatches_, 0, data.debugDrawBatches_.Size());
+                data.debugDrawBatches_.Clear();
+                data.debugVertexData_.Clear();
             }
         }
 
@@ -557,12 +561,12 @@ void UI::DebugDraw(UIElement* element)
             element->GetDebugDrawBatches(debugDrawBatches_, debugVertexData_, scissor);
         else
         {
-            for (Vector<WeakPtr<UIComponent> >::Iterator it = renderToTexture_.Begin(); it != renderToTexture_.End(); it++)
+            for (auto& item : renderToTexture_)
             {
-                WeakPtr<UIComponent> component = *it;
-                if (component.NotNull() && component->GetRoot() == root && component->IsEnabled())
+                RenderToTextureData& data = item.second_;
+                if (!data.rootElement_.Expired() && data.rootElement_ == root && data.rootElement_->IsEnabled())
                 {
-                    element->GetDebugDrawBatches(component->debugDrawBatches_, component->debugVertexData_, scissor);
+                    element->GetDebugDrawBatches(data.debugDrawBatches_, data.debugVertexData_, scissor);
                     break;
                 }
             }
@@ -779,16 +783,16 @@ UIElement* UI::GetElementAt(const IntVector2& position, bool enabledOnly, IntVec
     // Mouse was not hovering UI element. Check elements rendered on 3D objects.
     if (!result && renderToTexture_.Size())
     {
-        for (Vector<WeakPtr<UIComponent> >::Iterator it = renderToTexture_.Begin(); it != renderToTexture_.End(); it++)
+        for (auto& item : renderToTexture_)
         {
-            WeakPtr<UIComponent> component = *it;
-            if (component.Null() || !component->IsEnabled())
+            RenderToTextureData& data = item.second_;
+            if (data.rootElement_.Expired() || !data.rootElement_->IsEnabled())
                 continue;
 
-            IntVector2 screenPosition;
-            if (component->ScreenToUIPosition(position, screenPosition))
+            IntVector2 screenPosition = data.rootElement_->ScreenToElement(position);
+            if (data.rootElement_->GetCombinedScreenRect().IsInside(screenPosition) == INSIDE)
             {
-                result = GetElementAt(component->GetRoot(), screenPosition, enabledOnly);
+                result = GetElementAt(data.rootElement_, screenPosition, enabledOnly);
                 if (result)
                 {
                     if (elementScreenPosition)
@@ -1781,23 +1785,19 @@ void UI::HandleMouseWheel(StringHash eventType, VariantMap& eventData)
     bool cursorVisible;
     GetCursorPositionAndVisible(cursorPos, cursorVisible);
 
-    UIElement* element;
-    if (!nonFocusedMouseWheel_ && (element = focusElement_))
-        element->OnWheel(delta, mouseButtons_, qualifiers_);
+    if (!nonFocusedMouseWheel_ && focusElement_)
+        focusElement_->OnWheel(delta, mouseButtons_, qualifiers_);
     else
     {
         // If no element has actual focus or in non-focused mode, get the element at cursor
         if (cursorVisible)
         {
-            element = GetElementAt(cursorPos);
+            UIElement* element = GetElementAt(cursorPos);
             if (nonFocusedMouseWheel_)
             {
                 // Going up the hierarchy chain to find element that could handle mouse wheel
-                while (element)
+                while (element && !element->IsWheelHandler())
                 {
-                    if (element->GetType() == ListView::GetTypeStatic() ||
-                        element->GetType() == ScrollView::GetTypeStatic())
-                        break;
                     element = element->GetParent();
                 }
             }
@@ -2139,16 +2139,31 @@ IntVector2 UI::GetEffectiveRootElementSize(bool applyScale) const
     return size;
 }
 
-void UI::SetRenderToTexture(UIComponent* component, bool enable)
+void UI::SetElementRenderTexture(UIElement* element, Texture2D* texture)
 {
-    WeakPtr<UIComponent> weak(component);
-    if (enable)
+    if (element == nullptr)
     {
-        if (!renderToTexture_.Contains(weak))
-            renderToTexture_.Push(weak);
+        URHO3D_LOGERROR("UI::SetElementRenderTexture called with null element.");
+        return;
     }
-    else
-        renderToTexture_.Remove(weak);
+
+    auto it = renderToTexture_.Find(element);
+    if (texture && it == renderToTexture_.End())
+    {
+        RenderToTextureData data;
+        data.texture_ = texture;
+        data.rootElement_ = element;
+        data.vertexBuffer_ = new VertexBuffer(context_);
+        data.debugVertexBuffer_ = new VertexBuffer(context_);
+        renderToTexture_[element] = data;
+    }
+    else if (it != renderToTexture_.End())
+    {
+        if (texture == nullptr)
+            renderToTexture_.Erase(it);
+        else
+            it->second_.texture_ = texture;
+    }
 }
 
 void RegisterUILibrary(Context* context)

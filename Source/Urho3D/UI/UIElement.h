@@ -109,6 +109,7 @@ static const unsigned DD_SOURCE_AND_TARGET = 0x3;
 
 class Cursor;
 class ResourceCache;
+class Texture2D;
 
 /// Base class for %UI elements.
 class URHO3D_API UIElement : public Animatable
@@ -196,6 +197,9 @@ public:
     virtual IntVector2 ScreenToElement(const IntVector2& screenPosition);
     /// Convert element coordinates to screen coordinates.
     virtual IntVector2 ElementToScreen(const IntVector2& position);
+
+    /// Return whether the element could handle wheel input.
+    virtual bool IsWheelHandler() const { return false; }
 
     /// Load from an XML file. Return true if successful.
     bool LoadXML(Deserializer& source);
@@ -493,6 +497,9 @@ public:
     /// Return whether has focus.
     bool HasFocus() const;
 
+    /// Return whether is a direct or indirect child of specified element.
+    bool IsChildOf(UIElement* element) const;
+
     /// Return whether reacts to input.
     bool IsEnabled() const { return enabled_; }
 
@@ -633,6 +640,9 @@ public:
 
     /// Return effective minimum size, also considering layout. Used internally.
     IntVector2 GetEffectiveMinSize() const;
+
+    /// Set texture to which element will be rendered.
+    void SetRenderTexture(Texture2D* texture);
 
 protected:
     /// Handle attribute animation added.

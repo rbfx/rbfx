@@ -111,8 +111,8 @@ public:
     bool CreateDirsRecursive(const String& directoryIn);
     /// Remove files in a directory, or remove entire directory recursively.
     bool RemoveDir(const String& directoryIn, bool recursive);
-    /// Return path of temporary directory. Result is a directory in application settings directory, not system temporary directory.
-    String GetTemporaryPath() const;
+    /// Return path of temporary directory. Path always ends with a forward slash.
+    String GetTemporaryDir() const;
 
 private:
     /// Scan directory, called internally.

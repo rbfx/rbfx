@@ -1226,15 +1226,6 @@ bool FileSystem::CopyDir(const String& directoryIn, const String& directoryOut)
 
 }
 
-String FileSystem::GetTemporaryPath() const
-{
-#ifdef MINI_URHO
-    return ".";
-#else
-    return SDL_GetPrefPath("urho3d", "temp");
-#endif
-}
-
 bool IsAbsoluteParentPath(const String& absParentPath, const String& fullPath)
 {
     if (!IsAbsolutePath(absParentPath) || !IsAbsolutePath(fullPath))
@@ -1332,6 +1323,24 @@ bool GetRelativePath(const String& fromPath, const String& toPath, String& outpu
 
     return true;
 
+}
+
+String FileSystem::GetTemporaryDir() const
+{
+#if defined(_WIN32)
+    wchar_t pathName[MAX_PATH];
+    pathName[0] = 0;
+    GetTempPathW(SDL_arraysize(pathName), pathName);
+    return AddTrailingSlash(pathName);
+#else
+    if (char* pathName = getenv("TMPDIR"))
+        return AddTrailingSlash(pathName);
+#ifdef P_tmpdir
+    return AddTrailingSlash(P_tmpdir);
+#else
+    return "/tmp/";
+#endif
+#endif
 }
 
 }

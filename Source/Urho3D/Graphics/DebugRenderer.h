@@ -140,9 +140,11 @@ public:
     /// Add a skeleton.
     void AddSkeleton(const Skeleton& skeleton, const Color& color, bool depthTest = true);
     /// Add a triangle mesh.
+    void AddTriangleMesh(const void* vertexData, unsigned vertexSize, const void* indexData,
+        unsigned indexSize, unsigned indexStart, unsigned indexCount, const Matrix3x4& transform, const Color& color, bool depthTest = true);
+    /// Add a triangle mesh.
     void AddTriangleMesh(const void* vertexData, unsigned vertexSize, unsigned vertexStart, const void* indexData,
-                         unsigned indexSize, unsigned indexStart, unsigned indexCount, const Matrix3x4& transform,
-                         const Color& color, bool depthTest = true);
+        unsigned indexSize, unsigned indexStart, unsigned indexCount, const Matrix3x4& transform, const Color& color, bool depthTest = true);
     /// Add a triangle mesh from a node.
     void AddTriangleMesh(Node* node, const Color& color, bool depthTest);
     /// Add a circle.

@@ -227,6 +227,29 @@ int Graphics::GetMonitorCount() const
     return SDL_GetNumVideoDisplays();
 }
 
+int Graphics::GetCurrentMonitor() const
+{
+    if (!window_)
+        return 0;
+
+    return SDL_GetWindowDisplayIndex(window_);
+}
+
+bool Graphics::GetMaximized() const
+{
+    if (!window_)
+        return false;
+
+    return SDL_GetWindowFlags(window_) & SDL_WINDOW_MAXIMIZED;
+}
+
+Vector3 Graphics::GetDisplayDPI(int monitor) const
+{
+    Vector3 result;
+    SDL_GetDisplayDPI(monitor, &result.z_, &result.x_, &result.y_);
+    return result;
+}
+
 void Graphics::Maximize()
 {
     if (!window_)
@@ -241,6 +264,14 @@ void Graphics::Minimize()
         return;
 
     SDL_MinimizeWindow(window_);
+}
+
+void Graphics::Raise() const
+{
+    if (!window_)
+        return;
+
+    SDL_RaiseWindow(window_);
 }
 
 void Graphics::BeginDumpShaders(const String& fileName)
@@ -403,42 +434,5 @@ void RegisterGraphicsLibrary(Context* context)
     Zone::RegisterObject(context);
 }
 
-int Graphics::GetCurrentMonitor()
-{
-    return SDL_GetWindowDisplayIndex((SDL_Window*) this->GetSDLWindow());
-}
-
-int Graphics::GetNumMonitors()
-{
-    return SDL_GetNumVideoDisplays();
-}
-
-bool Graphics::GetMaximized()
-{
-    if (!window_)
-        return false;
-
-    return SDL_GetWindowFlags(window_) & SDL_WINDOW_MAXIMIZED;
-}
-
-IntVector2 Graphics::GetMonitorResolution(int monitorId) const
-{
-    SDL_DisplayMode mode;
-    SDL_GetDesktopDisplayMode(monitorId, &mode);
-    return IntVector2(mode.w, mode.h);
-}
-
-void Graphics::RaiseWindow()
-{
-    if (window_)
-        SDL_RaiseWindow(window_);
-}
-
-Vector3 Graphics::GetDisplayDPI() const
-{
-    Vector3 result;
-    SDL_GetDisplayDPI(0, &result.z_, &result.x_, &result.y_);
-    return result;
-}
 
 }

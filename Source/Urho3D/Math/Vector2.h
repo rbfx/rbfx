@@ -53,7 +53,7 @@ public:
     {
     }
 
-    /// Construct from an int array.
+    /// Construct from an float array.
     explicit IntVector2(const float* data) :
         x_((int)data[0]),
         y_((int)data[1])

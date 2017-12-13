@@ -103,6 +103,7 @@ Urho3D development, contributions and bugfixes by:
 - amadeus_osa
 - atship
 - att
+- att-kin9
 - celeron55
 - cosmy1
 - damu
@@ -111,6 +112,7 @@ Urho3D development, contributions and bugfixes by:
 - fredakilla
 - gleblebedev
 - hdunderscore
+- hsnabn
 - lhinuz
 - lvshiling
 - marynate

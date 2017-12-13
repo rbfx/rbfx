@@ -2316,6 +2316,7 @@ bool Image::HasAlphaChannel() const
     return components_ > 3;
 }
 
+// Author: Josh Engebretson (AtomicGameEngine)
 bool Image::SetSubimage(const Image* image, const IntRect& rect)
 {
     if (!data_)
@@ -2323,7 +2324,13 @@ bool Image::SetSubimage(const Image* image, const IntRect& rect)
 
     if (depth_ > 1 || IsCompressed())
     {
-        URHO3D_LOGERROR("SetSubimage not supported for Compressed or 3D images");
+        URHO3D_LOGERROR("Image::SetSubimage is not supported for compressed or 3D images");
+        return false;
+    }
+
+    if (components_ != image->components_)
+    {
+        URHO3D_LOGERROR("Can not set subimage in image " + GetName() + " with different number of components");
         return false;
     }
 
@@ -2333,41 +2340,37 @@ bool Image::SetSubimage(const Image* image, const IntRect& rect)
         return false;
     }
 
-    int width = rect.Width();
-    int height = rect.Height();
-    if (width == image->GetWidth() && height == image->GetHeight())
+    const int destWidth = rect.Width();
+    const int destHeight = rect.Height();
+    if (destWidth == image->GetWidth() && destHeight == image->GetHeight())
     {
-        int components = Min((int)components_, (int)image->components_);
-
         unsigned char* src = image->GetData();
         unsigned char* dest = data_.Get() + (rect.top_ * width_ + rect.left_) * components_;
-        for (int i = 0; i < height; ++i)
+        for (int i = 0; i < destHeight; ++i)
         {
-            memcpy(dest, src, width * components);
+            memcpy(dest, src, destWidth * components_);
 
-            src += width * image->components_;
+            src += destWidth * image->components_;
             dest += width_ * components_;
         }
     }
     else
     {
-        unsigned uintColor;
         unsigned char* dest = data_.Get() + (rect.top_ * width_ + rect.left_) * components_;
-        unsigned char* src = (unsigned char*)&uintColor;
-        for (int y = 0; y < height; ++y)
+        for (int y = 0; y < destHeight; ++y)
         {
-            for (int x = 0; x < width; ++x)
+            for (int x = 0; x < destWidth; ++x)
             {
                 // Calculate float coordinates between 0 - 1 for resampling
-                float xF = (image->width_ > 1) ? (float)x / (float)(width - 1) : 0.0f;
-                float yF = (image->height_ > 1) ? (float)y / (float)(height - 1) : 0.0f;
-                uintColor = image->GetPixelBilinear(xF, yF).ToUInt();
+                const float xF = (image->width_ > 1) ? static_cast<float>(x) / (destWidth - 1) : 0.0f;
+                const float yF = (image->height_ > 1) ? static_cast<float>(y) / (destHeight - 1) : 0.0f;
+                const unsigned uintColor = image->GetPixelBilinear(xF, yF).ToUInt();
 
-                memcpy(dest, src, components_);
+                memcpy(dest, reinterpret_cast<const unsigned char*>(&uintColor), components_);
 
                 dest += components_;
             }
-            dest += (width_ - width) * components_;
+            dest += (width_ - destWidth) * components_;
         }
     }
 

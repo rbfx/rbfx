@@ -367,7 +367,6 @@ static const int KEY_LCTRL = SDLK_LCTRL;
 static const int KEY_RCTRL = SDLK_RCTRL;
 static const int KEY_LALT = SDLK_LALT;
 static const int KEY_RALT = SDLK_RALT;
-
 static const int KEY_AC_BACK = SDLK_AC_BACK;
 static const int KEY_AC_BOOKMARKS = SDLK_AC_BOOKMARKS;
 static const int KEY_AC_FORWARD = SDLK_AC_FORWARD;

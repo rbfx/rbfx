@@ -1611,6 +1611,18 @@ bool UIElement::HasFocus() const
     return ui ? ui->GetFocusElement() == this : false;
 }
 
+bool UIElement::IsChildOf(UIElement* element) const
+{
+    UIElement* parent = parent_;
+    while (parent)
+    {
+        if (parent == element)
+            return true;
+        parent = parent->parent_;
+    }
+    return false;
+}
+
 bool UIElement::IsVisibleEffective() const
 {
     bool visible = visible_;
@@ -2288,6 +2300,12 @@ void UIElement::HandlePostUpdate(StringHash eventType, VariantMap& eventData)
     using namespace PostUpdate;
 
     UpdateAttributeAnimations(eventData[P_TIMESTEP].GetFloat());
+}
+
+void UIElement::SetRenderTexture(Texture2D* texture)
+{
+    if (UI* ui = GetSubsystem<UI>())
+        ui->SetElementRenderTexture(this, texture);
 }
 
 }

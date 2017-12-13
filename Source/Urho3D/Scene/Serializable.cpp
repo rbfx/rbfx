@@ -45,10 +45,8 @@ static unsigned RemapAttributeIndex(const Vector<AttributeInfo>* attributes, con
     for (unsigned i = 0; i < attributes->Size(); ++i)
     {
         const AttributeInfo& attr = attributes->At(i);
-        // Compare either the accessor or offset to avoid name string compare
+        // Compare accessor to avoid name string compare
         if (attr.accessor_.Get() && attr.accessor_.Get() == netAttr.accessor_.Get())
-            return i;
-        else if (!attr.accessor_.Get() && attr.offset_ == netAttr.offset_)
             return i;
     }
 
@@ -69,102 +67,104 @@ void Serializable::OnSetAttribute(const AttributeInfo& attr, const Variant& src)
 {
     // Check for accessor function mode
     if (attr.accessor_)
-        attr.accessor_->Set(this, src);
-    else
     {
-        // Calculate the destination address
-        void* dest = attr.ptr_ ? attr.ptr_ : reinterpret_cast<unsigned char*>(this) + attr.offset_;
+        attr.accessor_->Set(this, src);
+        return;
+    }
 
-        switch (attr.type_)
-        {
-        case VAR_INT:
-            // If enum type, use the low 8 bits only
-            if (attr.enumNames_)
-                *(reinterpret_cast<unsigned char*>(dest)) = src.GetInt();
-            else
-                *(reinterpret_cast<int*>(dest)) = src.GetInt();
-            break;
+    // Get the destination address
+    assert(attr.ptr_);
+    void* dest = attr.ptr_;
 
-        case VAR_INT64:
-            *(reinterpret_cast<unsigned long long*>(dest)) = src.GetUInt64();
-            break;
+    switch (attr.type_)
+    {
+    case VAR_INT:
+        // If enum type, use the low 8 bits only
+        if (attr.enumNames_)
+            *(reinterpret_cast<unsigned char*>(dest)) = src.GetInt();
+        else
+            *(reinterpret_cast<int*>(dest)) = src.GetInt();
+        break;
 
-        case VAR_BOOL:
-            *(reinterpret_cast<bool*>(dest)) = src.GetBool();
-            break;
+    case VAR_INT64:
+        *(reinterpret_cast<long long*>(dest)) = src.GetInt64();
+        break;
 
-        case VAR_FLOAT:
-            *(reinterpret_cast<float*>(dest)) = src.GetFloat();
-            break;
+    case VAR_BOOL:
+        *(reinterpret_cast<bool*>(dest)) = src.GetBool();
+        break;
 
-        case VAR_VECTOR2:
-            *(reinterpret_cast<Vector2*>(dest)) = src.GetVector2();
-            break;
+    case VAR_FLOAT:
+        *(reinterpret_cast<float*>(dest)) = src.GetFloat();
+        break;
 
-        case VAR_VECTOR3:
-            *(reinterpret_cast<Vector3*>(dest)) = src.GetVector3();
-            break;
+    case VAR_VECTOR2:
+        *(reinterpret_cast<Vector2*>(dest)) = src.GetVector2();
+        break;
 
-        case VAR_VECTOR4:
-            *(reinterpret_cast<Vector4*>(dest)) = src.GetVector4();
-            break;
+    case VAR_VECTOR3:
+        *(reinterpret_cast<Vector3*>(dest)) = src.GetVector3();
+        break;
 
-        case VAR_QUATERNION:
-            *(reinterpret_cast<Quaternion*>(dest)) = src.GetQuaternion();
-            break;
+    case VAR_VECTOR4:
+        *(reinterpret_cast<Vector4*>(dest)) = src.GetVector4();
+        break;
 
-        case VAR_COLOR:
-            *(reinterpret_cast<Color*>(dest)) = src.GetColor();
-            break;
+    case VAR_QUATERNION:
+        *(reinterpret_cast<Quaternion*>(dest)) = src.GetQuaternion();
+        break;
 
-        case VAR_STRING:
-            *(reinterpret_cast<String*>(dest)) = src.GetString();
-            break;
+    case VAR_COLOR:
+        *(reinterpret_cast<Color*>(dest)) = src.GetColor();
+        break;
 
-        case VAR_BUFFER:
-            *(reinterpret_cast<PODVector<unsigned char>*>(dest)) = src.GetBuffer();
-            break;
+    case VAR_STRING:
+        *(reinterpret_cast<String*>(dest)) = src.GetString();
+        break;
 
-        case VAR_RESOURCEREF:
-            *(reinterpret_cast<ResourceRef*>(dest)) = src.GetResourceRef();
-            break;
+    case VAR_BUFFER:
+        *(reinterpret_cast<PODVector<unsigned char>*>(dest)) = src.GetBuffer();
+        break;
 
-        case VAR_RESOURCEREFLIST:
-            *(reinterpret_cast<ResourceRefList*>(dest)) = src.GetResourceRefList();
-            break;
+    case VAR_RESOURCEREF:
+        *(reinterpret_cast<ResourceRef*>(dest)) = src.GetResourceRef();
+        break;
 
-        case VAR_VARIANTVECTOR:
-            *(reinterpret_cast<VariantVector*>(dest)) = src.GetVariantVector();
-            break;
+    case VAR_RESOURCEREFLIST:
+        *(reinterpret_cast<ResourceRefList*>(dest)) = src.GetResourceRefList();
+        break;
 
-        case VAR_STRINGVECTOR:
-            *(reinterpret_cast<StringVector*>(dest)) = src.GetStringVector();
-            break;
+    case VAR_VARIANTVECTOR:
+        *(reinterpret_cast<VariantVector*>(dest)) = src.GetVariantVector();
+        break;
 
-        case VAR_VARIANTMAP:
-            *(reinterpret_cast<VariantMap*>(dest)) = src.GetVariantMap();
-            break;
+    case VAR_STRINGVECTOR:
+        *(reinterpret_cast<StringVector*>(dest)) = src.GetStringVector();
+        break;
 
-        case VAR_INTRECT:
-            *(reinterpret_cast<IntRect*>(dest)) = src.GetIntRect();
-            break;
+    case VAR_VARIANTMAP:
+        *(reinterpret_cast<VariantMap*>(dest)) = src.GetVariantMap();
+        break;
 
-        case VAR_INTVECTOR2:
-            *(reinterpret_cast<IntVector2*>(dest)) = src.GetIntVector2();
-            break;
+    case VAR_INTRECT:
+        *(reinterpret_cast<IntRect*>(dest)) = src.GetIntRect();
+        break;
 
-        case VAR_INTVECTOR3:
-            *(reinterpret_cast<IntVector3*>(dest)) = src.GetIntVector3();
-            break;
+    case VAR_INTVECTOR2:
+        *(reinterpret_cast<IntVector2*>(dest)) = src.GetIntVector2();
+        break;
 
-        case VAR_DOUBLE:
-            *(reinterpret_cast<double*>(dest)) = src.GetDouble();
-            break;
+    case VAR_INTVECTOR3:
+        *(reinterpret_cast<IntVector3*>(dest)) = src.GetIntVector3();
+        break;
 
-        default:
-            URHO3D_LOGERROR("Unsupported attribute type for OnSetAttribute()");
-            return;
-        }
+    case VAR_DOUBLE:
+        *(reinterpret_cast<double*>(dest)) = src.GetDouble();
+        break;
+
+    default:
+        URHO3D_LOGERROR("Unsupported attribute type for OnSetAttribute()");
+        return;
     }
 
     // If it is a network attribute then mark it for next network update
@@ -181,8 +181,9 @@ void Serializable::OnGetAttribute(const AttributeInfo& attr, Variant& dest) cons
         return;
     }
 
-    // Calculate the source address
-    const void* src = attr.ptr_ ? attr.ptr_ : reinterpret_cast<const unsigned char*>(this) + attr.offset_;
+    // Get the source address
+    assert(attr.ptr_);
+    const void* src = attr.ptr_;
 
     switch (attr.type_)
     {
@@ -195,7 +196,7 @@ void Serializable::OnGetAttribute(const AttributeInfo& attr, Variant& dest) cons
         break;
 
     case VAR_INT64:
-        dest = *(reinterpret_cast<const unsigned long long*>(src));
+        dest = *(reinterpret_cast<const long long*>(src));
         break;
 
     case VAR_BOOL:

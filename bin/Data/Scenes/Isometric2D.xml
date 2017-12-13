@@ -1,0 +1,730 @@
+<?xml version="1.0"?>
+<scene id="1">
+	<attribute name="Name" value="" />
+	<attribute name="Time Scale" value="1" />
+	<attribute name="Smoothing Constant" value="50" />
+	<attribute name="Snap Threshold" value="5" />
+	<attribute name="Elapsed Time" value="0" />
+	<attribute name="Next Replicated Node ID" value="1272" />
+	<attribute name="Next Replicated Component ID" value="1314" />
+	<attribute name="Next Local Node ID" value="16777222" />
+	<attribute name="Next Local Component ID" value="16777221" />
+	<attribute name="Variables" />
+	<attribute name="Variable Names" value="" />
+	<component type="Octree" id="1" />
+	<component type="DebugRenderer" id="2" />
+	<component type="PhysicsWorld2D" id="3">
+		<attribute name="Draw Shape" value="true" />
+		<attribute name="Allow Sleeping" value="true" />
+		<attribute name="Warm Starting" value="true" />
+		<attribute name="Gravity" value="0 0" />
+		<attribute name="Auto Clear Forces" value="true" />
+	</component>
+	<component type="Renderer2D" id="7" />
+	<node id="2">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Camera" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-5 11 -10" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="Camera" id="4">
+			<attribute name="Near Clip" value="0" />
+			<attribute name="Aspect Ratio" value="1.33333" />
+			<attribute name="Orthographic" value="true" />
+			<attribute name="Orthographic Size" value="7.68" />
+			<attribute name="Zoom" value="1.6" />
+		</component>
+	</node>
+	<node id="3">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="TileMap" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0 0 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="TileMap2D" id="5">
+			<attribute name="Tmx File" value="TmxFile2D;Urho2D/Tilesets/atrium.tmx" />
+		</component>
+		<component type="RigidBody2D" id="1209" />
+		<component type="CollisionChain2D" id="1210">
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+			<attribute name="Vertices" value="82 184 30 193 215 163 48 65 41 92 15 193 194 245 40 65 184 30 5 193 194 245 40 65 143 194 245 192 194 245 40 65 143 194 245 192 123 20 46 65 30 133 235 192 215 163 48 65 61 10 215 192 30 133 43 65 204 204 204 192 123 20 46 65 174 71 225 192 51 51 51 65 61 10 215 192 143 194 53 65 92 143 194 192 143 194 53 65 92 143 194 192 71 225 58 65 235 81 184 192 164 112 61 65 10 215 163 192 235 81 56 65 153 153 153 192 71 225 58 65 123 20 174 192 0 0 64 65 10 215 163 192 92 143 66 65 41 92 143 192 92 143 66 65 41 92 143 192 20 174 71 65 184 30 133 192 112 61 74 65 174 71 97 192 184 30 69 65 204 204 76 192 20 174 71 65 143 194 117 192 204 204 76 65 204 204 76 192 133 235 81 65 41 92 15 192 112 61 74 65 204 204 204 191 41 92 79 65 10 215 35 192 61 10 87 65 10 215 35 191 102 102 102 65 10 215 163 190 10 215 99 65 10 215 163 62 194 245 104 65 0 0 0 0 30 133 107 65 174 71 225 64 133 235 145 65 0 0 0 65 123 20 142 65 112 61 10 65 123 20 142 65 41 92 15 65 41 92 143 65" />
+		</component>
+		<component type="CollisionChain2D" id="1211">
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+			<attribute name="Vertices" value="153 153 25 65 205 204 140 65 133 235 17 65 71 225 138 65 225 122 20 65 194 245 136 65 10 215 35 65 184 30 133 65 0 0 0 65 235 81 120 65 0 0 0 65 51 51 115 65 153 153 25 65 102 102 102 65 204 204 76 65 0 0 128 65 51 51 51 65 102 102 134 65 153 153 25 65 205 204 140 65" />
+		</component>
+		<component type="CollisionChain2D" id="1212">
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+			<attribute name="Vertices" value="112 61 10 65 82 184 94 65 41 92 15 65 174 71 97 65 174 71 225 64 215 163 112 65 143 194 245 63 20 174 71 65 204 204 204 63 112 61 74 65 10 215 163 63 20 174 71 65 204 204 204 63 184 30 69 65 143 194 117 63 0 0 64 65 10 215 163 62 71 225 58 65 143 194 117 191 184 30 69 65 143 194 117 191 0 0 64 65 0 0 0 0 235 81 56 65 10 215 35 191 51 51 51 65 10 215 163 191 235 81 56 65 204 204 204 191 143 194 53 65 143 194 117 191 215 163 48 65 10 215 163 191 123 20 46 65 204 204 204 191 215 163 48 65 143 194 245 191 123 20 46 65 204 204 204 191 30 133 43 65 41 92 15 192 102 102 38 65 235 81 56 192 30 133 43 65 204 204 76 192 194 245 40 65 10 215 35 192 10 215 35 65 235 81 56 192 174 71 33 65 204 204 76 192 10 215 35 65 174 71 97 192 174 71 33 65 204 204 76 192 82 184 30 65 143 194 117 192 153 153 25 65 41 92 143 192 82 184 30 65 153 153 153 192 246 40 28 65 184 30 133 192 61 10 23 65 41 92 143 192 225 122 20 65 153 153 153 192 61 10 23 65 10 215 163 192 225 122 20 65 10 215 163 192 41 92 15 65 10 215 163 192 112 61 10 65 41 92 143 192 184 30 5 65" />
+		</component>
+		<component type="CollisionChain2D" id="1213">
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+			<attribute name="Vertices" value="9 215 35 193 185 30 5 65 225 122 20 193 205 204 12 65 225 122 20 193 133 235 17 65 10 215 35 193 153 153 25 65 152 153 25 193 82 184 30 65 153 153 25 193 10 215 35 65 194 245 40 193 30 133 43 65 203 204 76 193 154 153 25 65 9 215 35 193 185 30 5 65" />
+		</component>
+		<component type="CollisionChain2D" id="1214">
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+			<attribute name="Vertices" value="143 194 245 192 153 153 25 65 174 71 225 192 225 122 20 65 61 10 215 192 61 10 23 65 30 133 235 192 246 40 28 65 143 194 245 192 153 153 25 65" />
+		</component>
+		<component type="CollisionCircle2D" id="1215">
+			<attribute name="Radius" value="0.16" />
+			<attribute name="Center" value="3.2 15.52" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+		</component>
+		<component type="CollisionCircle2D" id="1216">
+			<attribute name="Radius" value="0.16" />
+			<attribute name="Center" value="4.16 16" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+		</component>
+		<component type="CollisionCircle2D" id="1217">
+			<attribute name="Radius" value="0.16" />
+			<attribute name="Center" value="5.12 16.48" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+		</component>
+		<component type="CollisionCircle2D" id="1218">
+			<attribute name="Radius" value="0.16" />
+			<attribute name="Center" value="6.08 16.96" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+		</component>
+		<component type="CollisionCircle2D" id="1219">
+			<attribute name="Radius" value="0.16" />
+			<attribute name="Center" value="7.04 17.44" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+		</component>
+		<component type="CollisionCircle2D" id="1220">
+			<attribute name="Radius" value="0.16" />
+			<attribute name="Center" value="8.64 16.64" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+		</component>
+		<component type="CollisionCircle2D" id="1221">
+			<attribute name="Radius" value="0.16" />
+			<attribute name="Center" value="7.68 16.16" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+		</component>
+		<component type="CollisionCircle2D" id="1222">
+			<attribute name="Radius" value="0.16" />
+			<attribute name="Center" value="6.72 15.68" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+		</component>
+		<component type="CollisionCircle2D" id="1223">
+			<attribute name="Radius" value="0.16" />
+			<attribute name="Center" value="5.76 15.2" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+		</component>
+		<component type="CollisionCircle2D" id="1224">
+			<attribute name="Radius" value="0.16" />
+			<attribute name="Center" value="4.8 14.72" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+		</component>
+		<component type="CollisionCircle2D" id="1225">
+			<attribute name="Radius" value="0.16" />
+			<attribute name="Center" value="-3.2 9.12" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+		</component>
+		<component type="CollisionCircle2D" id="1226">
+			<attribute name="Radius" value="0.16" />
+			<attribute name="Center" value="-1.6 9.92" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+		</component>
+		<component type="CollisionCircle2D" id="1227">
+			<attribute name="Radius" value="0.16" />
+			<attribute name="Center" value="0 10.72" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+		</component>
+		<component type="CollisionCircle2D" id="1228">
+			<attribute name="Radius" value="0.16" />
+			<attribute name="Center" value="1.6 11.52" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+		</component>
+		<component type="CollisionCircle2D" id="1229">
+			<attribute name="Radius" value="0.16" />
+			<attribute name="Center" value="3.2 12.32" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+		</component>
+		<component type="CollisionCircle2D" id="1230">
+			<attribute name="Radius" value="0.16" />
+			<attribute name="Center" value="4.8 13.12" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+		</component>
+		<component type="CollisionCircle2D" id="1231">
+			<attribute name="Radius" value="0.16" />
+			<attribute name="Center" value="6.4 13.92" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+		</component>
+		<component type="CollisionChain2D" id="1232">
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+			<attribute name="Vertices" value="41 92 143 192 184 30 5 65 184 30 133 192 20 174 7 65 41 92 143 192 41 92 15 65 174 71 225 64 30 133 107 65 184 30 5 65 174 71 97 65 204 204 204 192 61 10 215 64 41 92 15 193 0 0 0 65 184 30 5 193 184 30 5 65 174 71 225 192 143 194 245 64 89 143 194 192 93 143 2 65 120 20 174 192 73 225 250 64 10 215 163 192 0 0 0 65 92 143 194 192 20 174 7 65 174 71 225 192 0 0 0 65 184 30 5 193 112 61 10 65 152 153 25 193 0 0 0 65" />
+		</component>
+		<component type="CollisionChain2D" id="1233">
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+			<attribute name="Vertices" value="10 215 163 62 123 20 110 65 10 215 163 63 102 102 102 65 143 194 245 63 102 102 102 65 143 194 245 63 30 133 107 65 143 194 117 63 51 51 115 65" />
+		</component>
+		<component type="CollisionChain2D" id="1234">
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+			<attribute name="Vertices" value="174 71 97 64 225 122 84 65 10 215 35 64 245 40 92 65 10 215 35 64 174 71 97 65 235 81 56 64 10 215 99 65 184 30 133 64 153 153 89 65" />
+		</component>
+		<component type="CollisionPolygon2D" id="1235">
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+			<attribute name="Vertices" value="82 184 30 65 163 112 125 65 194 245 40 65 174 71 129 65 51 51 51 65 163 112 125 65 194 245 40 65 235 81 120 65" />
+		</component>
+		<component type="CollisionChain2D" id="1236">
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0.8" />
+			<attribute name="Vertices" value="41 92 15 65 41 92 143 65 174 71 225 64 61 10 151 65 112 61 10 193 215 163 48 65 225 122 20 193 143 194 53 65 82 184 30 193 215 163 48 65" />
+		</component>
+	</node>
+	<node id="1248">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Imp" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-5 11 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.15 0.15 0.15" />
+		<attribute name="Variables" />
+		<component type="AnimatedSprite2D" id="1205">
+			<attribute name="Layer" value="3" />
+			<attribute name="Entity" value="Imp" />
+			<attribute name="Animation Set" value="AnimationSet2D;Urho2D/imp/imp.scml" />
+			<attribute name="Animation" value="idle" />
+		</component>
+		<component type="RigidBody2D" id="1206">
+			<attribute name="Body Type" value="Dynamic" />
+			<attribute name="Mass" value="1" />
+			<attribute name="Allow Sleep" value="false" />
+		</component>
+		<component type="CollisionCircle2D" id="1207">
+			<attribute name="Radius" value="1.1" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+			<attribute name="Friction" value="0" />
+			<attribute name="Restitution" value="0.1" />
+		</component>
+		<component type="Character2D" id="1208">
+			<attribute name="Move Speed Scale" value="0.5" />
+			<attribute name="Camera Zoom" value="1.6" />
+			<attribute name="Coins In Level" value="11" />
+			<attribute name="Remaining Coins" value="11" />
+		</component>
+	</node>
+	<node id="1252">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Orc" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="11.84 15.84 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.15 0.15 0.15" />
+		<attribute name="Variables" />
+		<component type="AnimatedSprite2D" id="1246">
+			<attribute name="Layer" value="2" />
+			<attribute name="Flip X" value="true" />
+			<attribute name="Draw Rectangle" value="-0 -0.58 0.82 0" />
+			<attribute name="Entity" value="Orc" />
+			<attribute name="Animation Set" value="AnimationSet2D;Urho2D/Orc/Orc.scml" />
+			<attribute name="Animation" value="run" />
+		</component>
+		<component type="RigidBody2D" id="1247" />
+		<component type="CollisionCircle2D" id="1248">
+			<attribute name="Radius" value="1.3" />
+			<attribute name="Trigger" value="true" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+		</component>
+		<component type="Mover" id="1249">
+			<attribute name="Path" value="164 112 61 65 163 112 125 65 123 20 46 65 92 143 130 65 153 153 25 65 71 225 122 65 194 245 40 65 51 51 115 65 164 112 61 65 163 112 125 65" />
+			<attribute name="Flip Animation" value="-0.96" />
+		</component>
+	</node>
+	<node id="1253">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Orc" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-0.96 12.32 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.15 0.15 0.15" />
+		<attribute name="Variables" />
+		<component type="AnimatedSprite2D" id="1250">
+			<attribute name="Layer" value="2" />
+			<attribute name="Flip X" value="true" />
+			<attribute name="Draw Rectangle" value="-0 -0.58 0.82 0" />
+			<attribute name="Entity" value="Orc" />
+			<attribute name="Animation Set" value="AnimationSet2D;Urho2D/Orc/Orc.scml" />
+			<attribute name="Animation" value="run" />
+		</component>
+		<component type="RigidBody2D" id="1251" />
+		<component type="CollisionCircle2D" id="1252">
+			<attribute name="Radius" value="1.3" />
+			<attribute name="Trigger" value="true" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+		</component>
+		<component type="Mover" id="1253">
+			<attribute name="Path" value="143 194 117 191 184 30 69 65 41 92 15 192 0 0 64 65 10 215 35 192 20 174 71 65 10 215 163 191 204 204 76 65 143 194 117 191 184 30 69 65" />
+			<attribute name="Flip Animation" value="-1.28" />
+		</component>
+	</node>
+	<node id="1254">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Orc" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-8.32 9.6 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.15 0.15 0.15" />
+		<attribute name="Variables" />
+		<component type="AnimatedSprite2D" id="1254">
+			<attribute name="Layer" value="2" />
+			<attribute name="Flip X" value="true" />
+			<attribute name="Draw Rectangle" value="-0 -0.58 0.82 0" />
+			<attribute name="Entity" value="Orc" />
+			<attribute name="Animation Set" value="AnimationSet2D;Urho2D/Orc/Orc.scml" />
+			<attribute name="Animation" value="run" />
+		</component>
+		<component type="RigidBody2D" id="1255" />
+		<component type="CollisionCircle2D" id="1256">
+			<attribute name="Radius" value="1.3" />
+			<attribute name="Trigger" value="true" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+		</component>
+		<component type="Mover" id="1257">
+			<attribute name="Path" value="184 30 5 193 153 153 25 65 174 71 225 192 41 92 15 65 204 204 204 192 41 92 15 65 92 143 194 192 133 235 17 65 92 143 194 192 61 10 23 65 30 133 235 192 174 71 33 65 0 0 0 193 174 71 33 65 184 30 5 193 82 184 30 65 184 30 5 193 153 153 25 65" />
+			<attribute name="Flip Animation" value="1.28" />
+		</component>
+	</node>
+	<node id="1255">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Orc" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="9.6 16.64 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.15 0.15 0.15" />
+		<attribute name="Variables" />
+		<component type="AnimatedSprite2D" id="1258">
+			<attribute name="Layer" value="2" />
+			<attribute name="Flip X" value="true" />
+			<attribute name="Draw Rectangle" value="-0 -0.58 0.82 0" />
+			<attribute name="Entity" value="Orc" />
+			<attribute name="Animation Set" value="AnimationSet2D;Urho2D/Orc/Orc.scml" />
+			<attribute name="Animation" value="run" />
+		</component>
+		<component type="RigidBody2D" id="1259" />
+		<component type="CollisionCircle2D" id="1260">
+			<attribute name="Radius" value="1.3" />
+			<attribute name="Trigger" value="true" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+		</component>
+		<component type="Mover" id="1261">
+			<attribute name="Path" value="153 153 25 65 184 30 133 65 184 30 133 64 82 184 94 65 204 204 76 64 102 102 102 65 112 61 10 65 194 245 136 65 153 153 25 65 184 30 133 65" />
+			<attribute name="Flip Animation" value="-5.44" />
+		</component>
+	</node>
+	<node id="1256">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Orc" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="1.6 15.2 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.15 0.15 0.15" />
+		<attribute name="Variables" />
+		<component type="AnimatedSprite2D" id="1262">
+			<attribute name="Layer" value="2" />
+			<attribute name="Flip X" value="true" />
+			<attribute name="Draw Rectangle" value="-0 -0.58 0.82 0" />
+			<attribute name="Entity" value="Orc" />
+			<attribute name="Animation Set" value="AnimationSet2D;Urho2D/Orc/Orc.scml" />
+			<attribute name="Animation" value="run" />
+		</component>
+		<component type="RigidBody2D" id="1263" />
+		<component type="CollisionCircle2D" id="1264">
+			<attribute name="Radius" value="1.3" />
+			<attribute name="Trigger" value="true" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+		</component>
+		<component type="Mover" id="1265">
+			<attribute name="Path" value="204 204 204 63 51 51 115 65 235 81 56 64 163 112 125 65 175 71 97 64 163 112 125 65 144 194 117 64 71 225 122 65 153 153 153 64 235 81 120 65 10 215 163 64 71 225 122 65 153 153 153 64 174 71 129 65 41 92 143 64 92 143 130 65 41 92 143 64 184 30 133 65 153 153 153 64 102 102 134 65 123 20 174 64 102 102 134 65 235 81 184 64 184 30 133 65 61 10 215 64 10 215 131 65 174 71 225 64 184 30 133 65 61 10 215 64 194 245 136 65 204 204 204 64 112 61 138 65 204 204 204 64 205 204 140 65 61 10 215 64 123 20 142 65 30 133 235 64 123 20 142 65 143 194 245 64 205 204 140 65 0 0 0 65 194 245 136 65 143 194 245 64 20 174 135 65 61 10 215 64 194 245 136 65 204 204 204 64 112 61 138 65 235 81 184 64 112 61 138 65 123 20 174 64 194 245 136 65 123 20 174 64 102 102 134 65 235 81 184 64 184 30 133 65 92 143 194 64 174 71 129 65 235 81 184 64 0 0 128 65 153 153 153 64 174 71 129 65 41 92 143 64 92 143 130 65 143 194 117 64 92 143 130 65 174 71 97 64 174 71 129 65 175 71 97 64 163 112 125 65 144 194 117 64 71 225 122 65 143 194 117 64 143 194 117 65 174 71 97 64 51 51 115 65 10 215 35 64 30 133 107 65 204 204 204 63 51 51 115 65" />
+			<attribute name="Flip Animation" value="1.28" />
+		</component>
+	</node>
+	<node id="1257">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Orc" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-10.56 10.08 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.15 0.15 0.15" />
+		<attribute name="Variables" />
+		<component type="AnimatedSprite2D" id="1266">
+			<attribute name="Layer" value="2" />
+			<attribute name="Flip X" value="true" />
+			<attribute name="Draw Rectangle" value="-0 -0.58 0.82 0" />
+			<attribute name="Entity" value="Orc" />
+			<attribute name="Animation Set" value="AnimationSet2D;Urho2D/Orc/Orc.scml" />
+			<attribute name="Animation" value="run" />
+		</component>
+		<component type="RigidBody2D" id="1267" />
+		<component type="CollisionCircle2D" id="1268">
+			<attribute name="Radius" value="1.3" />
+			<attribute name="Trigger" value="true" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+		</component>
+		<component type="Mover" id="1269">
+			<attribute name="Path" value="196 245 40 193 173 71 33 65 235 81 56 193 153 153 25 65 235 81 56 193 225 122 20 65 123 20 46 193 41 92 15 65 10 215 35 193 41 92 15 65 51 51 51 193 61 10 23 65" />
+			<attribute name="Flip Animation" value="-0.959998" />
+		</component>
+	</node>
+	<node id="1258">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Orc" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="7.36 13.92 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.15 0.15 0.15" />
+		<attribute name="Variables" />
+		<component type="AnimatedSprite2D" id="1270">
+			<attribute name="Layer" value="2" />
+			<attribute name="Flip X" value="true" />
+			<attribute name="Draw Rectangle" value="-0 -0.58 0.82 0" />
+			<attribute name="Entity" value="Orc" />
+			<attribute name="Animation Set" value="AnimationSet2D;Urho2D/Orc/Orc.scml" />
+			<attribute name="Animation" value="run" />
+		</component>
+		<component type="RigidBody2D" id="1271" />
+		<component type="CollisionCircle2D" id="1272">
+			<attribute name="Radius" value="1.3" />
+			<attribute name="Trigger" value="true" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+		</component>
+		<component type="Mover" id="1273">
+			<attribute name="Path" value="30 133 235 64 82 184 94 65 61 10 215 64 10 215 99 65 174 71 225 64 102 102 102 65 30 133 235 64 10 215 99 65 30 133 235 64 82 184 94 65 125 20 174 192 213 163 240 64 94 143 194 192 70 225 250 64 174 71 225 192 30 133 235 64 184 30 5 193 0 0 0 65 112 61 10 193 71 225 250 64 204 204 204 192 174 71 225 64 125 20 174 192 213 163 240 64" />
+			<attribute name="Flip Animation" value="-0.64" />
+		</component>
+	</node>
+	<node id="1259">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Orc" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="2.56 13.12 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.15 0.15 0.15" />
+		<attribute name="Variables" />
+		<component type="AnimatedSprite2D" id="1274">
+			<attribute name="Layer" value="2" />
+			<attribute name="Flip X" value="true" />
+			<attribute name="Draw Rectangle" value="-0 -0.58 0.82 0" />
+			<attribute name="Entity" value="Orc" />
+			<attribute name="Animation Set" value="AnimationSet2D;Urho2D/Orc/Orc.scml" />
+			<attribute name="Animation" value="run" />
+		</component>
+		<component type="RigidBody2D" id="1275" />
+		<component type="CollisionCircle2D" id="1276">
+			<attribute name="Radius" value="1.3" />
+			<attribute name="Trigger" value="true" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+		</component>
+		<component type="Mover" id="1277">
+			<attribute name="Path" value="10 215 35 64 133 235 81 65 10 215 35 64 61 10 87 65 143 194 117 63 10 215 99 65 10 215 163 62 10 215 99 65 246 214 163 190 82 184 94 65 143 194 117 191 82 184 94 65 199 204 204 191 153 153 89 65 204 204 204 191 225 122 84 65 10 215 163 62 184 30 69 65 153 194 117 63 184 30 69 65 10 215 35 64 133 235 81 65" />
+		</component>
+	</node>
+	<node id="1261">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Coin" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-0.799999 13.6 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.5 0.5 0.5" />
+		<attribute name="Variables" />
+		<component type="AnimatedSprite2D" id="1281">
+			<attribute name="Layer" value="4" />
+			<attribute name="Entity" value="entity_000" />
+			<attribute name="Animation Set" value="AnimationSet2D;Urho2D/GoldIcon.scml" />
+			<attribute name="Animation" value="idle" />
+		</component>
+		<component type="RigidBody2D" id="1282" />
+		<component type="CollisionCircle2D" id="1283">
+			<attribute name="Radius" value="0.32" />
+			<attribute name="Trigger" value="true" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+		</component>
+	</node>
+	<node id="1262">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Coin" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="1.76 13.6 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.5 0.5 0.5" />
+		<attribute name="Variables" />
+		<component type="AnimatedSprite2D" id="1284">
+			<attribute name="Layer" value="4" />
+			<attribute name="Entity" value="entity_000" />
+			<attribute name="Animation Set" value="AnimationSet2D;Urho2D/GoldIcon.scml" />
+			<attribute name="Animation" value="idle" />
+		</component>
+		<component type="RigidBody2D" id="1285" />
+		<component type="CollisionCircle2D" id="1286">
+			<attribute name="Radius" value="0.32" />
+			<attribute name="Trigger" value="true" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+		</component>
+	</node>
+	<node id="1263">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Coin" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0.8 11.2 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.5 0.5 0.5" />
+		<attribute name="Variables" />
+		<component type="AnimatedSprite2D" id="1287">
+			<attribute name="Layer" value="4" />
+			<attribute name="Entity" value="entity_000" />
+			<attribute name="Animation Set" value="AnimationSet2D;Urho2D/GoldIcon.scml" />
+			<attribute name="Animation" value="idle" />
+		</component>
+		<component type="RigidBody2D" id="1288" />
+		<component type="CollisionCircle2D" id="1289">
+			<attribute name="Radius" value="0.32" />
+			<attribute name="Trigger" value="true" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+		</component>
+	</node>
+	<node id="1264">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Coin" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="2.08 11.84 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.5 0.5 0.5" />
+		<attribute name="Variables" />
+		<component type="AnimatedSprite2D" id="1290">
+			<attribute name="Layer" value="4" />
+			<attribute name="Entity" value="entity_000" />
+			<attribute name="Animation Set" value="AnimationSet2D;Urho2D/GoldIcon.scml" />
+			<attribute name="Animation" value="idle" />
+		</component>
+		<component type="RigidBody2D" id="1291" />
+		<component type="CollisionCircle2D" id="1292">
+			<attribute name="Radius" value="0.32" />
+			<attribute name="Trigger" value="true" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+		</component>
+	</node>
+	<node id="1265">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Coin" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="4.96 15.84 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.5 0.5 0.5" />
+		<attribute name="Variables" />
+		<component type="AnimatedSprite2D" id="1293">
+			<attribute name="Layer" value="4" />
+			<attribute name="Entity" value="entity_000" />
+			<attribute name="Animation Set" value="AnimationSet2D;Urho2D/GoldIcon.scml" />
+			<attribute name="Animation" value="idle" />
+		</component>
+		<component type="RigidBody2D" id="1294" />
+		<component type="CollisionCircle2D" id="1295">
+			<attribute name="Radius" value="0.32" />
+			<attribute name="Trigger" value="true" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+		</component>
+	</node>
+	<node id="1266">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Coin" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="7.52 15.52 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.5 0.5 0.5" />
+		<attribute name="Variables" />
+		<component type="AnimatedSprite2D" id="1296">
+			<attribute name="Layer" value="4" />
+			<attribute name="Entity" value="entity_000" />
+			<attribute name="Animation Set" value="AnimationSet2D;Urho2D/GoldIcon.scml" />
+			<attribute name="Animation" value="idle" />
+		</component>
+		<component type="RigidBody2D" id="1297" />
+		<component type="CollisionCircle2D" id="1298">
+			<attribute name="Radius" value="0.32" />
+			<attribute name="Trigger" value="true" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+		</component>
+	</node>
+	<node id="1267">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Coin" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="8.16 14.88 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.5 0.5 0.5" />
+		<attribute name="Variables" />
+		<component type="AnimatedSprite2D" id="1299">
+			<attribute name="Layer" value="4" />
+			<attribute name="Entity" value="entity_000" />
+			<attribute name="Animation Set" value="AnimationSet2D;Urho2D/GoldIcon.scml" />
+			<attribute name="Animation" value="idle" />
+		</component>
+		<component type="RigidBody2D" id="1300" />
+		<component type="CollisionCircle2D" id="1301">
+			<attribute name="Radius" value="0.32" />
+			<attribute name="Trigger" value="true" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+		</component>
+	</node>
+	<node id="1268">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Coin" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-6.88 8.32 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.5 0.5 0.5" />
+		<attribute name="Variables" />
+		<component type="AnimatedSprite2D" id="1302">
+			<attribute name="Layer" value="4" />
+			<attribute name="Entity" value="entity_000" />
+			<attribute name="Animation Set" value="AnimationSet2D;Urho2D/GoldIcon.scml" />
+			<attribute name="Animation" value="idle" />
+		</component>
+		<component type="RigidBody2D" id="1303" />
+		<component type="CollisionCircle2D" id="1304">
+			<attribute name="Radius" value="0.32" />
+			<attribute name="Trigger" value="true" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+		</component>
+	</node>
+	<node id="1269">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Coin" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-7.2 10.72 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.5 0.5 0.5" />
+		<attribute name="Variables" />
+		<component type="AnimatedSprite2D" id="1305">
+			<attribute name="Layer" value="4" />
+			<attribute name="Entity" value="entity_000" />
+			<attribute name="Animation Set" value="AnimationSet2D;Urho2D/GoldIcon.scml" />
+			<attribute name="Animation" value="idle" />
+		</component>
+		<component type="RigidBody2D" id="1306" />
+		<component type="CollisionCircle2D" id="1307">
+			<attribute name="Radius" value="0.32" />
+			<attribute name="Trigger" value="true" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+		</component>
+	</node>
+	<node id="1270">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Coin" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-8.48 8.8 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.5 0.5 0.5" />
+		<attribute name="Variables" />
+		<component type="AnimatedSprite2D" id="1308">
+			<attribute name="Layer" value="4" />
+			<attribute name="Entity" value="entity_000" />
+			<attribute name="Animation Set" value="AnimationSet2D;Urho2D/GoldIcon.scml" />
+			<attribute name="Animation" value="idle" />
+		</component>
+		<component type="RigidBody2D" id="1309" />
+		<component type="CollisionCircle2D" id="1310">
+			<attribute name="Radius" value="0.32" />
+			<attribute name="Trigger" value="true" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+		</component>
+	</node>
+	<node id="1271">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Coin" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-3.68 8.64 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.5 0.5 0.5" />
+		<attribute name="Variables" />
+		<component type="AnimatedSprite2D" id="1311">
+			<attribute name="Layer" value="4" />
+			<attribute name="Entity" value="entity_000" />
+			<attribute name="Animation Set" value="AnimationSet2D;Urho2D/GoldIcon.scml" />
+			<attribute name="Animation" value="idle" />
+		</component>
+		<component type="RigidBody2D" id="1312" />
+		<component type="CollisionCircle2D" id="1313">
+			<attribute name="Radius" value="0.32" />
+			<attribute name="Trigger" value="true" />
+			<attribute name="Category Bits" value="1" />
+			<attribute name="Mask Bits" value="65535" />
+		</component>
+	</node>
+</scene>

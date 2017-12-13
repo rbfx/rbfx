@@ -230,7 +230,7 @@ public:
     void LoadFbx(const String& file_path)
     {
         auto fs = GetSubsystem<FileSystem>();
-        String temp = fs->GetTemporaryPath();
+        String temp = fs->GetTemporaryDir();
         temp += "AssetViewer/";
         if (!fs->DirExists(temp))
         {
