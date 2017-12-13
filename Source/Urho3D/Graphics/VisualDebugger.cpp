@@ -24,10 +24,10 @@ VisualDebugger::VisualDebugger(Context* context) : Object(context)
 VisualDebugger::VisualDebuggerCircle* VisualDebugger::AddCircle(const Vector3& center, const Vector3& normal, float radius, const Color& color, int steps /*= 64*/, bool depthTest /*= true*/)
 {
 	VisualDebuggerCircle* newDbgObject = new VisualDebuggerCircle(this, context_);
-	newDbgObject->mCenter = center;
-	newDbgObject->mNormal = normal;
-	newDbgObject->mRadius = radius;
-	newDbgObject->mSteps = steps;
+	newDbgObject->SetCenter(center);
+	newDbgObject->SetNormal(normal);
+	newDbgObject->SetRadius(radius);
+	newDbgObject->SetSteps(steps);
 	SetupAndAddObjectToList(newDbgObject, depthTest, color);
 	return newDbgObject;
 }
@@ -35,8 +35,16 @@ VisualDebugger::VisualDebuggerCircle* VisualDebugger::AddCircle(const Vector3& c
 VisualDebugger::VisualDebuggerLine* VisualDebugger::AddLine(const Vector3& start, const Vector3& end, const Color& color, bool depthTest /*= true*/)
 {
 	VisualDebuggerLine* newDbgObject = new VisualDebuggerLine(this, context_);
-	newDbgObject->mStart = start;
-	newDbgObject->mEnd = end;
+	newDbgObject->SetStart(start);
+	newDbgObject->SetEnd(end);
+	SetupAndAddObjectToList(newDbgObject, depthTest, color);
+	return newDbgObject;
+}
+
+Urho3D::VisualDebugger::VisualDebuggerRay* VisualDebugger::AddRay(const Ray& ray, const Color& color, bool depthTest /*= true*/)
+{
+	VisualDebuggerRay* newDbgObject = new VisualDebuggerRay(this, context_);
+	newDbgObject->SetRay(ray);
 	SetupAndAddObjectToList(newDbgObject, depthTest, color);
 	return newDbgObject;
 }
@@ -44,10 +52,10 @@ VisualDebugger::VisualDebuggerLine* VisualDebugger::AddLine(const Vector3& start
 VisualDebugger::VisualDebuggerOrb* VisualDebugger::AddOrb(const Vector3& center, const float& radius, const Color& color, int circleSteps /*= 32*/, int numCircles /*= 10*/, bool depthTest /*= true*/)
 {
 	VisualDebuggerOrb* newDbgObject = new VisualDebuggerOrb(this, context_);
-	newDbgObject->mCenter = center;
-	newDbgObject->mRadius = radius;
-	newDbgObject->mSteps = circleSteps;
-	newDbgObject->mNumCircles = numCircles;
+	newDbgObject->SetCenter(center);
+	newDbgObject->SetRadius(radius);
+	newDbgObject->SetSteps(circleSteps);
+	newDbgObject->SetNumCircles(numCircles);
 	SetupAndAddObjectToList(newDbgObject, depthTest, color);
 	return newDbgObject;
 }
@@ -55,8 +63,8 @@ VisualDebugger::VisualDebuggerOrb* VisualDebugger::AddOrb(const Vector3& center,
 VisualDebugger::VisualDebuggerUILabel* VisualDebugger::AddLabel(const Vector3& center, String text, Color color /*= Color::WHITE*/)
 {
 	VisualDebuggerUILabel* newDbgObject = new VisualDebuggerUILabel(this, context_);
-	newDbgObject->mCenter = center;
-	newDbgObject->mText = text;
+	newDbgObject->SetCenter(center);
+	newDbgObject->SetText(text);
 	SetupAndAddObjectToList(newDbgObject, true, color);
 	return newDbgObject;
 }
@@ -64,8 +72,8 @@ VisualDebugger::VisualDebuggerUILabel* VisualDebugger::AddLabel(const Vector3& c
 VisualDebugger::VisualDebuggerNode* VisualDebugger::AddNode(Node* node, const float& scale, bool depthTest)
 {
 	VisualDebuggerNode* newDbgObject = new VisualDebuggerNode(this, context_);
-	newDbgObject->mNode = node;
-	newDbgObject->mScale = scale;
+	newDbgObject->SetNode(WeakPtr<Node>(node));
+	newDbgObject->SetScale(scale);
 	SetupAndAddObjectToList(newDbgObject, depthTest, Color::WHITE);
 	return newDbgObject;
 }
@@ -73,8 +81,8 @@ VisualDebugger::VisualDebuggerNode* VisualDebugger::AddNode(Node* node, const fl
 VisualDebugger::VisualDebuggerCross* VisualDebugger::AddCross(const Vector3& center, const float& size, Color color, bool depthTest)
 {
 	VisualDebuggerCross* newDbgObject = new VisualDebuggerCross(this, context_);
-	newDbgObject->mCenter = center;
-	newDbgObject->mSize = size;
+	newDbgObject->SetCenter(center);
+	newDbgObject->SetSize(size);
 	SetupAndAddObjectToList(newDbgObject, depthTest, color);
 	return newDbgObject;
 }
@@ -82,9 +90,9 @@ VisualDebugger::VisualDebuggerCross* VisualDebugger::AddCross(const Vector3& cen
 VisualDebugger::VisualDebuggerTriangle* VisualDebugger::AddTriangle(Vector3 v1, Vector3 v2, Vector3 v3, Color color, bool depthTest)
 {
 	VisualDebuggerTriangle* newDbgObject = new VisualDebuggerTriangle(this, context_);
-	newDbgObject->v1 = v1;
-	newDbgObject->v2 = v2;
-	newDbgObject->v3 = v3;
+	newDbgObject->v1_ = v1;
+	newDbgObject->v2_ = v2;
+	newDbgObject->v3_ = v3;
 	SetupAndAddObjectToList(newDbgObject, depthTest, color);
 	return newDbgObject;
 }
@@ -92,7 +100,7 @@ VisualDebugger::VisualDebuggerTriangle* VisualDebugger::AddTriangle(Vector3 v1, 
 VisualDebugger::VisualDebuggerBoundingBox* VisualDebugger::AddBoundingBox(BoundingBox boundingBox, Color color, bool depthTest)
 {
 	VisualDebuggerBoundingBox* newDbgObject = new VisualDebuggerBoundingBox(this, context_);
-	newDbgObject->mBox = boundingBox;
+	newDbgObject->SetBox(boundingBox);
 	SetupAndAddObjectToList(newDbgObject, depthTest, color);
 	return newDbgObject;
 }
@@ -100,10 +108,10 @@ VisualDebugger::VisualDebuggerBoundingBox* VisualDebugger::AddBoundingBox(Boundi
 VisualDebugger::VisualDebuggerPolygon* VisualDebugger::AddPolygon(Vector3 v1, Vector3 v2, Vector3 v3, Vector3 v4, Color color, bool depthTest)
 {
 	VisualDebuggerPolygon* newDbgObject = new VisualDebuggerPolygon(this, context_);
-	newDbgObject->v1 = v1;
-	newDbgObject->v2 = v2;
-	newDbgObject->v3 = v3;
-	newDbgObject->v4 = v4;
+	newDbgObject->v1_ = v1;
+	newDbgObject->v2_ = v2;
+	newDbgObject->v3_ = v3;
+	newDbgObject->v4_ = v4;
 	SetupAndAddObjectToList(newDbgObject, depthTest, color);
 	return newDbgObject;
 }
@@ -111,7 +119,7 @@ VisualDebugger::VisualDebuggerPolygon* VisualDebugger::AddPolygon(Vector3 v1, Ve
 VisualDebugger::VisualDebuggerPolyhedron* VisualDebugger::AddPolyhedron(Polyhedron polyhedron, Color color, bool depthTest)
 {
 	VisualDebuggerPolyhedron* newDbgObject = new VisualDebuggerPolyhedron(this, context_);
-	newDbgObject->mPolyhedron = polyhedron;
+	newDbgObject->SetPolyhedron(polyhedron);
 	SetupAndAddObjectToList(newDbgObject, depthTest, color);
 	return newDbgObject;
 }
@@ -119,9 +127,9 @@ VisualDebugger::VisualDebuggerPolyhedron* VisualDebugger::AddPolyhedron(Polyhedr
 VisualDebugger::VisualDebuggerCylinder* VisualDebugger::AddCylinder(Vector3 position, float radius, float height, Color color, bool depthTest)
 {
 	VisualDebuggerCylinder* newDbgObject = new VisualDebuggerCylinder(this, context_);
-	newDbgObject->mPosition = position;
-	newDbgObject->mRadius = radius;
-	newDbgObject->mHeight = height;
+	newDbgObject->SetPosition(position);
+	newDbgObject->SetRadius(radius);
+	newDbgObject->SetHeight(height);
 	SetupAndAddObjectToList(newDbgObject, depthTest, color);
 	return newDbgObject;
 }
@@ -129,7 +137,7 @@ VisualDebugger::VisualDebuggerCylinder* VisualDebugger::AddCylinder(Vector3 posi
 VisualDebugger::VisualDebuggerFrustum* VisualDebugger::AddFrustum(Frustum frustum, Color color, bool depthTest)
 {
 	VisualDebuggerFrustum* newDbgObject = new VisualDebuggerFrustum(this, context_);
-	newDbgObject->mFrustum = frustum;
+	newDbgObject->SetFrustum(frustum);
 	SetupAndAddObjectToList(newDbgObject, depthTest, color);
 	return newDbgObject;
 }
@@ -137,9 +145,9 @@ VisualDebugger::VisualDebuggerFrustum* VisualDebugger::AddFrustum(Frustum frustu
 VisualDebugger::VisualDebuggerQuad* VisualDebugger::AddQuad(Vector3 center, float width, float height, Color color, bool depthTest)
 {
 	VisualDebuggerQuad* newDbgObject = new VisualDebuggerQuad(this, context_);
-	newDbgObject->mCenter = center;
-	newDbgObject->width = width;
-	newDbgObject->height = height;
+	newDbgObject->SetCenter(center);
+	newDbgObject->SetWidth(width);
+	newDbgObject->SetHeight(height);
 	SetupAndAddObjectToList(newDbgObject, depthTest, color);
 	return newDbgObject;
 }
@@ -147,7 +155,7 @@ VisualDebugger::VisualDebuggerQuad* VisualDebugger::AddQuad(Vector3 center, floa
 VisualDebugger::VisualDebuggerSphere* VisualDebugger::AddSphere(Sphere sphere, Color color, bool depthTest)
 {
 	VisualDebuggerSphere* newDbgObject = new VisualDebuggerSphere(this, context_);
-	newDbgObject->mSphere = sphere;
+	newDbgObject->SetSphere(sphere);
 	SetupAndAddObjectToList(newDbgObject, depthTest, color);
 	return newDbgObject;
 }
@@ -155,10 +163,10 @@ VisualDebugger::VisualDebuggerSphere* VisualDebugger::AddSphere(Sphere sphere, C
 VisualDebugger::VisualDebuggerSphereSector* VisualDebugger::AddSphereSector(Sphere sphere, Quaternion rotation, float angle, bool drawLines, Color color, bool depthTest)
 {
 	VisualDebuggerSphereSector* newDbgObject = new VisualDebuggerSphereSector(this, context_);
-	newDbgObject->mSphere = sphere;
-	newDbgObject->mRotation = rotation;
-	newDbgObject->mAngle = angle;
-	newDbgObject->mDrawLines = drawLines;
+	newDbgObject->SetSphere(sphere);
+	newDbgObject->SetRotation(rotation);
+	newDbgObject->SetAngle(angle);
+	newDbgObject->SetDrawLines(drawLines);
 	SetupAndAddObjectToList(newDbgObject, depthTest, color);
 	return newDbgObject;
 }
@@ -171,7 +179,7 @@ void VisualDebugger::DrawDebugGeometry(DebugRenderer* debugRenderer)
 		i->Get()->DrawDebugGeometry(debugRenderer);
 
 		//check if the object has exceeded its lifetime and if so remove.
-		if ((i->Get()->creationTimeMS + i->Get()->mLifetimeMS) <= mTimer.GetMSec(false)) {
+		if ((i->Get()->creationTimeMS_ + i->Get()->lifetimeMS_) <= mTimer.GetMSec(false)) {
 			i->Get()->TearDown();
 			mDebuggerObjects.Erase(i);
 		}
@@ -203,10 +211,10 @@ void VisualDebugger::SetPrimaryCamera(Camera* camera)
 void VisualDebugger::SetupAndAddObjectToList(VisualDebuggerObject* object, bool depthTest, Color color)
 {
 	mDebuggerObjects.PushFront(SharedPtr<VisualDebuggerObject>(object));
-	object->creationTimeMS = mTimer.GetMSec(false);
-	object->mDepthTest = depthTest;
-	object->mColor = color;
-	object->mLifetimeMS = mDefaultLifetimeMs;
+	object->creationTimeMS_ = mTimer.GetMSec(false);
+	object->depthTest_ = depthTest;
+	object->color_ = color;
+	object->lifetimeMS_ = mDefaultLifetimeMs;
 	object->Setup();
 }
 
@@ -232,11 +240,11 @@ void VisualDebugger::VisualDebuggerUILabel::Setup()
 {
 	VisualDebuggerObject::Setup();
 	mUIText = context_->GetSubsystem<UI>()->GetRoot()->CreateChild<Text>();
-	mUIText->SetText(mText);
+	mUIText->SetText(GetText());
 	mUIText->SetFont("Fonts/Anonymous Pro.ttf");
-	mUIText->SetColor(mColor);
+	mUIText->SetColor(color_);
 	//mUIText->SetEnabled(mEnabled);
-	mUIText->SetVisible(mEnabled);
+	mUIText->SetVisible(enabled_);
 	UpdatePosition();
 }
 
@@ -250,7 +258,7 @@ void VisualDebugger::VisualDebuggerUILabel::SetEnabled(bool enabled)
 {
 	VisualDebuggerObject::SetEnabled(enabled);
 	//mUIText->SetEnabled(mEnabled);
-	mUIText->SetVisible(mEnabled);
+	mUIText->SetVisible(enabled_);
 }
 
 void VisualDebugger::VisualDebuggerUILabel::UpdatePosition()
@@ -258,8 +266,8 @@ void VisualDebugger::VisualDebuggerUILabel::UpdatePosition()
 	//default to screen middle.
 	Vector2 screenPoint = Vector2(GetSubsystem<Graphics>()->GetSize())*0.5f;
 	
-	if (mVisDebugger->mCamera.NotNull()) {
-		screenPoint = mVisDebugger->mCamera->WorldToScreenPoint(mCenter);
+	if (visDebugger_->mCamera.NotNull()) {
+		screenPoint = visDebugger_->mCamera->WorldToScreenPoint(GetCenter());
 		//screen point has range of 0-1. - convert back to pixels
 		screenPoint *= Vector2(GetSubsystem<Graphics>()->GetSize());
 	}
@@ -277,7 +285,7 @@ VisualDebugger::VisualDebuggerNode::VisualDebuggerNode(VisualDebugger* visDebugg
 void VisualDebugger::VisualDebuggerNode::DrawDebugGeometry(DebugRenderer* debugRenderer)
 {
 	VisualDebuggerObject::DrawDebugGeometry(debugRenderer);
-	debugRenderer->AddNode(mNode, mScale);
+	debugRenderer->AddNode(GetNode(), GetScale());
 }
 
 VisualDebugger::VisualDebuggerOrb::VisualDebuggerOrb(VisualDebugger* visDebugger, Context* context_) : VisualDebuggerObject(visDebugger, context_)
@@ -288,8 +296,8 @@ VisualDebugger::VisualDebuggerOrb::VisualDebuggerOrb(VisualDebugger* visDebugger
 void VisualDebugger::VisualDebuggerOrb::DrawDebugGeometry(DebugRenderer* debugRenderer)
 {
 	VisualDebuggerObject::DrawDebugGeometry(debugRenderer);
-	for (auto i = 0; i < mNumCircles; i++) {
-		debugRenderer->AddCircle(mCenter, Vector3(Random(-1, 1), Random(-1, 1), Random(-1, 1)).Normalized(), mRadius, mColor, mSteps, mDepthTest);
+	for (auto i = 0; i < GetNumCircles(); i++) {
+		debugRenderer->AddCircle(mCenter, Vector3(Random(-1, 1), Random(-1, 1), Random(-1, 1)).Normalized(), GetRadius(), color_, GetSteps(), depthTest_);
 	}
 }
 
@@ -302,7 +310,7 @@ VisualDebugger::VisualDebuggerSphereSector::VisualDebuggerSphereSector(VisualDeb
 void VisualDebugger::VisualDebuggerSphereSector::DrawDebugGeometry(DebugRenderer* debugRenderer)
 {
 	VisualDebuggerObject::DrawDebugGeometry(debugRenderer);
-	debugRenderer->AddSphereSector(mSphere, mRotation, mAngle, mDrawLines, mColor, mDepthTest);
+	debugRenderer->AddSphereSector(GetSphere(), GetRotation(), GetAngle(), GetDrawLines(), color_, depthTest_);
 }
 
 VisualDebugger::VisualDebuggerSphere::VisualDebuggerSphere(VisualDebugger* visDebugger, Context* context_) : VisualDebuggerObject(visDebugger, context_)
@@ -313,7 +321,7 @@ VisualDebugger::VisualDebuggerSphere::VisualDebuggerSphere(VisualDebugger* visDe
 void VisualDebugger::VisualDebuggerSphere::DrawDebugGeometry(DebugRenderer* debugRenderer)
 {
 	VisualDebuggerObject::DrawDebugGeometry(debugRenderer);
-	debugRenderer->AddSphere(mSphere, mColor, mDepthTest);
+	debugRenderer->AddSphere(GetSphere(), color_, depthTest_);
 }
 
 VisualDebugger::VisualDebuggerQuad::VisualDebuggerQuad(VisualDebugger* visDebugger, Context* context_) : VisualDebuggerObject(visDebugger, context_)
@@ -324,7 +332,7 @@ VisualDebugger::VisualDebuggerQuad::VisualDebuggerQuad(VisualDebugger* visDebugg
 void VisualDebugger::VisualDebuggerQuad::DrawDebugGeometry(DebugRenderer* debugRenderer)
 {
 	VisualDebuggerObject::DrawDebugGeometry(debugRenderer);
-	debugRenderer->AddQuad(mCenter, width, height, mColor, mDepthTest);
+	debugRenderer->AddQuad(GetCenter(), GetWidth(), GetHeight(), color_, depthTest_);
 }
 
 VisualDebugger::VisualDebuggerFrustum::VisualDebuggerFrustum(VisualDebugger* visDebugger, Context* context_) : VisualDebuggerObject(visDebugger, context_)
@@ -335,7 +343,7 @@ VisualDebugger::VisualDebuggerFrustum::VisualDebuggerFrustum(VisualDebugger* vis
 void VisualDebugger::VisualDebuggerFrustum::DrawDebugGeometry(DebugRenderer* debugRenderer)
 {
 	VisualDebuggerObject::DrawDebugGeometry(debugRenderer);
-	debugRenderer->AddFrustum(mFrustum, mColor, mDepthTest);
+	debugRenderer->AddFrustum(GetFrustum(), color_, depthTest_);
 }
 
 VisualDebugger::VisualDebuggerCylinder::VisualDebuggerCylinder(VisualDebugger* visDebugger, Context* context_) : VisualDebuggerObject(visDebugger, context_)
@@ -346,7 +354,7 @@ VisualDebugger::VisualDebuggerCylinder::VisualDebuggerCylinder(VisualDebugger* v
 void VisualDebugger::VisualDebuggerCylinder::DrawDebugGeometry(DebugRenderer* debugRenderer)
 {
 	VisualDebuggerObject::DrawDebugGeometry(debugRenderer);
-	debugRenderer->AddCylinder(mPosition, mRadius, mHeight, mColor, mDepthTest);
+	debugRenderer->AddCylinder(GetPosition(), GetRadius(), GetHeight(), color_, depthTest_);
 }
 
 
@@ -358,7 +366,7 @@ VisualDebugger::VisualDebuggerPolyhedron::VisualDebuggerPolyhedron(VisualDebugge
 void VisualDebugger::VisualDebuggerPolyhedron::DrawDebugGeometry(DebugRenderer* debugRenderer)
 {
 	VisualDebuggerObject::DrawDebugGeometry(debugRenderer);
-	debugRenderer->AddPolyhedron(mPolyhedron, mColor, mDepthTest);
+	debugRenderer->AddPolyhedron(GetPolyhedron(), color_, depthTest_);
 }
 
 
@@ -370,7 +378,7 @@ VisualDebugger::VisualDebuggerPolygon::VisualDebuggerPolygon(VisualDebugger* vis
 void VisualDebugger::VisualDebuggerPolygon::DrawDebugGeometry(DebugRenderer* debugRenderer)
 {
 	VisualDebuggerObject::DrawDebugGeometry(debugRenderer);
-	debugRenderer->AddPolygon(v1, v2, v3, v4, mColor, mDepthTest);
+	debugRenderer->AddPolygon(v1_, v2_, v3_, v4_, color_, depthTest_);
 }
 
 
@@ -382,7 +390,7 @@ VisualDebugger::VisualDebuggerCross::VisualDebuggerCross(VisualDebugger* visDebu
 void VisualDebugger::VisualDebuggerCross::DrawDebugGeometry(DebugRenderer* debugRenderer)
 {
 	VisualDebuggerObject::DrawDebugGeometry(debugRenderer);
-	debugRenderer->AddCross(mCenter, mSize, mColor, mDepthTest);
+	debugRenderer->AddCross(GetCenter(), GetSize(), color_, depthTest_);
 }
 
 
@@ -394,8 +402,9 @@ VisualDebugger::VisualDebuggerTriangle::VisualDebuggerTriangle(VisualDebugger* v
 void VisualDebugger::VisualDebuggerTriangle::DrawDebugGeometry(DebugRenderer* debugRenderer)
 {
 	VisualDebuggerObject::DrawDebugGeometry(debugRenderer);
-	debugRenderer->AddTriangle(v1, v2, v3, mColor, mDepthTest);
+	debugRenderer->AddTriangle(v1_, v2_, v3_, color_, depthTest_);
 }
+
 
 VisualDebugger::VisualDebuggerBoundingBox::VisualDebuggerBoundingBox(VisualDebugger* visDebugger, Context* context_) : VisualDebuggerObject(visDebugger, context_)
 {
@@ -405,7 +414,7 @@ VisualDebugger::VisualDebuggerBoundingBox::VisualDebuggerBoundingBox(VisualDebug
 void VisualDebugger::VisualDebuggerBoundingBox::DrawDebugGeometry(DebugRenderer* debugRenderer)
 {
 	VisualDebuggerObject::DrawDebugGeometry(debugRenderer);
-	debugRenderer->AddBoundingBox(mBox, mColor, mDepthTest, mSolid);
+	debugRenderer->AddBoundingBox(GetBox(), color_, depthTest_, GetSolid());
 }
 
 VisualDebugger::VisualDebuggerLine::VisualDebuggerLine(VisualDebugger* visDebugger, Context* context_) : VisualDebuggerObject(visDebugger, context_)
@@ -416,7 +425,7 @@ VisualDebugger::VisualDebuggerLine::VisualDebuggerLine(VisualDebugger* visDebugg
 void VisualDebugger::VisualDebuggerLine::DrawDebugGeometry(DebugRenderer* debugRenderer)
 {
 	VisualDebuggerObject::DrawDebugGeometry(debugRenderer);
-	debugRenderer->AddLine(mStart, mEnd, mColor, mDepthTest);
+	debugRenderer->AddLine(GetStart(), GetEnd(), color_, depthTest_);
 }
 
 
@@ -428,10 +437,10 @@ VisualDebugger::VisualDebuggerCircle::VisualDebuggerCircle(VisualDebugger* visDe
 void VisualDebugger::VisualDebuggerCircle::DrawDebugGeometry(DebugRenderer* debugRenderer)
 {
 	VisualDebuggerObject::DrawDebugGeometry(debugRenderer);
-	debugRenderer->AddCircle(mCenter, mNormal, mRadius, mColor, mSteps, mDepthTest);
+	debugRenderer->AddCircle(GetCenter(), GetNormal(), GetRadius(), color_, GetSteps(), depthTest_);
 }
 
-VisualDebugger::VisualDebuggerObject::VisualDebuggerObject(VisualDebugger* visDebugger, Context* context_) : Object(context_), mVisDebugger(visDebugger)
+VisualDebugger::VisualDebuggerObject::VisualDebuggerObject(VisualDebugger* visDebugger, Context* context_) : Object(context_), visDebugger_(visDebugger)
 {
 }
 
@@ -452,17 +461,17 @@ void VisualDebugger::VisualDebuggerObject::TearDown()
 
 void VisualDebugger::VisualDebuggerObject::SetEnabled(bool enabled)
 {
-	mEnabled = enabled;
+	enabled_ = enabled;
 }
 
 void VisualDebugger::VisualDebuggerObject::SetLifeTimeMs(unsigned int lifeTimeMs)
 {
-	mLifetimeMS = lifeTimeMs;
+	lifetimeMS_ = lifeTimeMs;
 }
 
 void VisualDebugger::VisualDebuggerObject::SetColor(Color color)
 {
-	mColor = color;
+	color_ = color;
 }
 
 VisualDebugger::VisualDebuggerRay::VisualDebuggerRay(VisualDebugger* visDebugger, Context* context_) : VisualDebuggerObject(visDebugger, context_)
@@ -473,7 +482,7 @@ VisualDebugger::VisualDebuggerRay::VisualDebuggerRay(VisualDebugger* visDebugger
 void VisualDebugger::VisualDebuggerRay::DrawDebugGeometry(DebugRenderer* debugRenderer)
 {
 	VisualDebuggerObject::DrawDebugGeometry(debugRenderer);
-	debugRenderer->AddLine(mRay.origin_, mRay.origin_ + mRay.direction_, mColor, mDepthTest);
+	debugRenderer->AddLine(GetRay().origin_, GetRay().origin_ + GetRay().direction_, color_, depthTest_);
 }
 
 }
