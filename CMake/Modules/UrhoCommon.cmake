@@ -26,6 +26,10 @@ include(ucm)
 # Set compiler variable
 set ("${CMAKE_CXX_COMPILER_ID}" ON)
 
+if (CMAKE_SYSTEM_NAME MATCHES Linux)
+    set (LINUX TRUE)
+endif ()
+
 # Source environment
 if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
     execute_process(COMMAND cmd /c set OUTPUT_VARIABLE ENVIRONMENT)
