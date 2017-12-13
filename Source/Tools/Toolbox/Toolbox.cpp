@@ -36,7 +36,7 @@ void RegisterToolboxTypes(Context* context)
     context->RegisterFactory<AttributeInspector>();
     context->RegisterFactory<AttributeInspectorWindow>();
     context->RegisterFactory<DebugCameraController>();
-    context->RegisterFactory<UndoManager>();
+    context->RegisterFactory<Undo::Manager>();
 }
 
 };

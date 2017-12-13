@@ -20,73 +20,63 @@
 // THE SOFTWARE.
 //
 
+#include <Urho3D/Core/CoreEvents.h>
+#include <Toolbox/SystemUI/AttributeInspector.h>
 #include "UndoManager.h"
 
 namespace Urho3D
 {
-UndoableAttributesState::UndoableAttributesState(Serializable* item, const String& name, const Variant& value) : item_(item)
+
+namespace Undo
 {
-    attributes_[name] = value;
+
+AttributeState::AttributeState(Serializable* item, const String& name, const Variant& value)
+    : item_(item)
+    , name_(name)
+    , value_(value)
+{
 }
 
-UndoableAttributesState::UndoableAttributesState(Serializable* item, const HashMap<String, Variant>& values) : item_(item),
-    attributes_(values)
-{
-}
-
-bool UndoableAttributesState::Apply()
+bool AttributeState::Apply()
 {
     if (IsCurrent())
         return false;
 
-    for (auto it = attributes_.Begin(); it != attributes_.End(); it++)
-        item_->SetAttribute(it->first_, it->second_);
-
+    item_->SetAttribute(name_, value_);
     item_->ApplyAttributes();
 
     return true;
 }
 
-bool UndoableAttributesState::IsCurrent()
+bool AttributeState::IsCurrent() const
 {
-    for (auto it = attributes_.Begin(); it != attributes_.End(); it++)
-    {
-        if (item_->GetAttribute(it->first_) != it->second_)
-            return false;
-    }
-    return true;
+    return item_->GetAttribute(name_) == value_;
 }
 
-bool UndoableAttributesState::Equals(UndoableState* other)
+bool AttributeState::Equals(State* other) const
 {
-    auto other_ = dynamic_cast<UndoableAttributesState*>(other);
+    auto other_ = dynamic_cast<AttributeState*>(other);
     if (!other_)
         return false;
 
     if (item_ != other_->item_)
         return false;
 
-    for (auto it = attributes_.Begin(); it != attributes_.End(); it++)
-    {
-        if (item_->GetAttribute(it->first_) != it->second_)
-            return false;
-    }
-
-    return true;
+    return value_ == other_->value_;
 }
 
-String UndoableAttributesState::ToString() const
+String AttributeState::ToString() const
 {
-    return "UndoableAttributesState";
+    return Urho3D::ToString("AttributeState %s = %s", name_.CString(), value_.ToString().CString());
 }
 
-UndoableItemParentState::UndoableItemParentState(UIElement* item, UIElement* parent) : item_(item), parent_(parent)
+ElementParentState::ElementParentState(UIElement* item, UIElement* parent) : item_(item), parent_(parent)
 {
     if (parent)
         index_ = parent->FindChild(item);
 }
 
-bool UndoableItemParentState::Apply()
+bool ElementParentState::Apply()
 {
     if (IsCurrent())
         return false;
@@ -99,7 +89,7 @@ bool UndoableItemParentState::Apply()
     return true;
 }
 
-bool UndoableItemParentState::IsCurrent()
+bool ElementParentState::IsCurrent() const
 {
     if (item_->GetParent() != parent_)
         return false;
@@ -110,9 +100,9 @@ bool UndoableItemParentState::IsCurrent()
     return true;
 }
 
-bool UndoableItemParentState::Equals(UndoableState* other)
+bool ElementParentState::Equals(State* other) const
 {
-    auto other_ = dynamic_cast<UndoableItemParentState*>(other);
+    auto other_ = dynamic_cast<ElementParentState*>(other);
 
     if (other_ == nullptr)
         return false;
@@ -120,16 +110,61 @@ bool UndoableItemParentState::Equals(UndoableState* other)
     return item_ == other_->item_ && parent_ == other_->parent_ && index_ == other_->index_;
 }
 
-String UndoableItemParentState::ToString() const
+String ElementParentState::ToString() const
 {
-    return "UndoableItemParentState";
+    return "UndoableElementParentState";
 }
 
-UndoableXMLVariantState::UndoableXMLVariantState(const XMLElement& item, const Variant& value) : item_(item), value_(value)
+NodeParentState::NodeParentState(Node* item, Node* parent) : item_(item), parent_(parent)
+{
+    if (parent)
+        index_ = parent->GetChildren().IndexOf(SharedPtr<Node>(item));
+}
+
+bool NodeParentState::Apply()
+{
+    if (IsCurrent())
+        return false;
+
+    if (parent_.NotNull())
+        parent_->AddChild(item_, index_);
+    else
+        item_->Remove();
+
+    return true;
+}
+
+bool NodeParentState::IsCurrent() const
+{
+    if (item_->GetParent() != parent_)
+        return false;
+
+    if (parent_.NotNull() && parent_->GetChildren().IndexOf(item_) != index_)
+        return false;
+
+    return true;
+}
+
+bool NodeParentState::Equals(State* other) const
+{
+    auto other_ = dynamic_cast<NodeParentState*>(other);
+
+    if (other_ == nullptr)
+        return false;
+
+    return item_ == other_->item_ && parent_ == other_->parent_ && index_ == other_->index_;
+}
+
+String NodeParentState::ToString() const
+{
+    return "UndoableNodeParentState";
+}
+
+XMLVariantState::XMLVariantState(const XMLElement& item, const Variant& value) : item_(item), value_(value)
 {
 }
 
-bool UndoableXMLVariantState::Apply()
+bool XMLVariantState::Apply()
 {
     if (IsCurrent())
         return false;
@@ -138,14 +173,14 @@ bool UndoableXMLVariantState::Apply()
     return true;
 }
 
-bool UndoableXMLVariantState::IsCurrent()
+bool XMLVariantState::IsCurrent() const
 {
     return item_.GetVariant() == value_;
 }
 
-bool UndoableXMLVariantState::Equals(UndoableState* other)
+bool XMLVariantState::Equals(State* other) const
 {
-    auto other_ = dynamic_cast<UndoableXMLVariantState*>(other);
+    auto other_ = dynamic_cast<XMLVariantState*>(other);
 
     if (other_ == nullptr)
         return false;
@@ -153,16 +188,16 @@ bool UndoableXMLVariantState::Equals(UndoableState* other)
     return item_ == other_->item_ && value_ == other_->value_;
 }
 
-String UndoableXMLVariantState::ToString() const
+String XMLVariantState::ToString() const
 {
     return value_.ToString();
 }
 
-UndoableXMLParentState::UndoableXMLParentState(const XMLElement& item, const XMLElement& parent) : item_(item), parent_(parent)
+XMLParentState::XMLParentState(const XMLElement& item, const XMLElement& parent) : item_(item), parent_(parent)
 {
 }
 
-bool UndoableXMLParentState::Apply()
+bool XMLParentState::Apply()
 {
     if (IsCurrent())
         return false;
@@ -175,14 +210,14 @@ bool UndoableXMLParentState::Apply()
     return true;
 }
 
-bool UndoableXMLParentState::IsCurrent()
+bool XMLParentState::IsCurrent() const
 {
     return item_.GetParent().GetNode() == parent_.GetNode();
 }
 
-bool UndoableXMLParentState::Equals(UndoableState* other)
+bool XMLParentState::Equals(State* other) const
 {
-    auto other_ = dynamic_cast<UndoableXMLParentState*>(other);
+    auto other_ = dynamic_cast<XMLParentState*>(other);
 
     if (other_ == nullptr)
         return false;
@@ -190,88 +225,233 @@ bool UndoableXMLParentState::Equals(UndoableState* other)
     return item_.GetNode() == other_->item_.GetNode() && parent_.GetNode() == other_->parent_.GetNode() /*&& index_ == other_->index_*/;
 }
 
-String UndoableXMLParentState::ToString() const
+String XMLParentState::ToString() const
 {
     return "UndoableXMLParentState";
 }
 
-UndoManager::UndoManager(Context* ctx) : Object(ctx)
+bool StateCollection::Apply()
 {
-
+    bool applied = false;
+    for (auto& state : states_)
+        applied |= state->Apply();
+    return applied;
 }
 
-void UndoManager::Undo()
+bool StateCollection::Contains(State* other) const
 {
-    while (index_ >= 0 && index_ < stack_.Size() && !stack_[index_--]->Apply());
-    index_ = Clamp<int32_t>(--index_, 0, stack_.Size() - 1);
+    for (const auto& state : states_)
+    {
+        if (state->Equals(other))
+            return true;
+    }
+    return false;
 }
 
-void UndoManager::Redo()
+bool StateCollection::PushUnique(const SharedPtr<State>& state)
 {
-    while (index_ >= 0 && index_ < stack_.Size() && !stack_[index_++]->Apply());
-    index_ = Clamp<int32_t>(++index_, 0, stack_.Size() - 1);
+    if (!Contains(state))
+    {
+        states_.Push(state);
+        return true;
+    }
+    return false;
 }
 
-void UndoManager::TrackState(Serializable* item, const String& name, const Variant& value)
+Manager::Manager(Context* ctx) : Object(ctx)
 {
-    Track(new UndoableAttributesState(item, name, value));
+    SubscribeToEvent(E_ENDFRAME, [&](StringHash, VariantMap&)
+    {
+        if (!trackingSuspended_)
+        {
+            for (auto& container : {previous_, next_})
+            {
+                if (container.Size())
+                {
+                    index_++;
+                    stack_.Resize(index_ + 1);
+                    stack_.Back().states_.Clear();
+                    for (auto& state : container)
+                    {
+                        if (stack_.Back().PushUnique(state))
+                            URHO3D_LOGDEBUGF("UNDO: Save %d: %s", index_, state->ToString().CString());
+                    }
+                }
+            }
+        }
+        previous_.Clear();
+        next_.Clear();
+    });
 }
 
-void UndoManager::TrackState(Serializable* item, const HashMap<String, Variant>& values)
+void Manager::Undo()
 {
-    Track(new UndoableAttributesState(item, values));
+    ApplyStateFromStack(false);
 }
 
-void UndoManager::TrackCreation(UIElement* item)
+void Manager::Redo()
 {
-    // When item is created it has no parent
-    Track(new UndoableItemParentState(item, nullptr));
-    // Then it is added to element tree
-    Track(new UndoableItemParentState(item, item->GetParent()));
+    ApplyStateFromStack(true);
 }
 
-void UndoManager::TrackRemoval(UIElement* item)
+void Manager::Clear()
 {
-    // When item is being removed it still has a parent
-    Track(new UndoableItemParentState(item, item->GetParent()));
-    // Then it is removed from element tree
-    Track(new UndoableItemParentState(item, nullptr));
+    previous_.Clear();
+    next_.Clear();
+    stack_.Clear();
+    index_ = -1;
 }
 
-void UndoManager::TrackCreation(const XMLElement& element)
+void Manager::ApplyStateFromStack(bool forward)
 {
-    // "Removed" element has empty variant value.
-    Track(new UndoableXMLParentState(element));
-    // When value is set element exists.
-    Track(new UndoableXMLParentState(element, element.GetParent()));
+    trackingSuspended_ = true;
+    int direction = forward ? 1 : -1;
+    while (index_ >= 0 && index_ < stack_.Size())
+    {
+        auto stateCollection = stack_[index_];
+        index_ += direction;
+        if (stateCollection.Apply())
+        {
+            URHO3D_LOGDEBUGF("Undo: apply %d", index_ - direction);
+            break;
+        }
+        else
+            URHO3D_LOGDEBUGF("Undo: apply skipped %d", index_ - direction);
+    }
+    index_ = Clamp<int32_t>(index_, 0, stack_.Size() - 1);
+    trackingSuspended_ = false;
 }
 
-void UndoManager::TrackRemoval(const XMLElement& element)
+void Manager::TrackState(Serializable* item, const String& name, const Variant& value, const Variant& oldValue)
 {
-    // When value is set element exists.
-    Track(new UndoableXMLParentState(element, element.GetParent()));
-    // "Removed" element has empty variant value.
-    Track(new UndoableXMLParentState(element));
+    // Item has it's state already modified, manually track the change.
+    TrackBefore<AttributeState>(item, name, oldValue);
+    TrackAfter<AttributeState>(item, name, value);
 }
 
-void UndoManager::TrackState(const XMLElement& element, const Variant& value)
+XMLElement Manager::XMLCreate(XMLElement& parent, const String& name)
 {
-    Track(new UndoableXMLVariantState(element, value));
+    auto element = parent.CreateChild(name);
+    TrackBefore<XMLParentState>(element);                       // "Removed" element has empty variant value.
+    TrackAfter<XMLParentState>(element, element.GetParent());   // When value is set element exists.
+    return element;
 }
 
-void UndoManager::Track(UndoableState* state)
+void Manager::XMLRemove(XMLElement& element)
 {
-    assert(state);
+    TrackBefore<XMLParentState>(element, element.GetParent());  // When value is set element exists.
+    TrackAfter<XMLParentState>(element);                        // "Removed" element has empty variant value.
+    element.Remove();
+}
 
-    // If current state matches state to be tracked - do nothing.
-    if (!stack_.Empty() && stack_.Back()->Equals(state))
-        return;
+void Manager::XMLSetVariantValue(XMLElement& element, const Variant& value)
+{
+    TrackBefore<XMLVariantState>(element, element.GetVariant());
+    TrackAfter<XMLVariantState>(element, value);
+    element.SetVariantValue(value);
+}
 
-    // Discards any state that is further on the stack.
-    stack_.Resize(++index_);
-    // Tracks new state.
-    stack_.Push(SharedPtr<UndoableState>(state));
-    context_->GetLog()->Write(LOG_DEBUG, ToString("UNDO: Save %d: %s", index_, state->ToString().CString()));
+template<typename T, typename... Args>
+void Manager::TrackBefore(Args... args)
+{
+    previous_.Push(SharedPtr<State>(new T(args...)));
+}
+
+template<typename T, typename... Args>
+void Manager::TrackAfter(Args... args)
+{
+    next_.Push(SharedPtr<State>(new T(args...)));
+}
+void Manager::Connect(Scene* scene)
+{
+    UnsubscribeFromEvent(E_NODEADDED);
+    UnsubscribeFromEvent(E_NODEREMOVED);
+
+    SubscribeToEvent(scene, E_NODEADDED, [&](StringHash, VariantMap& args) {
+        if (trackingSuspended_)
+            return;
+
+        using namespace NodeRemoved;
+        auto node = dynamic_cast<Node*>(args[P_NODE].GetPtr());
+        auto parent = dynamic_cast<Node*>(args[P_PARENT].GetPtr());
+
+        TrackBefore<NodeParentState>(node, nullptr);        // Removed from the scene state
+        TrackAfter<NodeParentState>(node, parent);          // Present in the scene state
+    });
+
+    SubscribeToEvent(scene, E_NODEREMOVED, [&](StringHash, VariantMap& args) {
+        if (trackingSuspended_)
+            return;
+
+        using namespace NodeRemoved;
+        auto node = dynamic_cast<Node*>(args[P_NODE].GetPtr());
+        auto parent = dynamic_cast<Node*>(args[P_PARENT].GetPtr());
+
+        TrackBefore<NodeParentState>(node, parent);        // Present in the scene state
+        TrackAfter<NodeParentState>(node, nullptr);        // Removed from the scene state
+    });
+}
+
+void Manager::Connect(AttributeInspector* inspector)
+{
+    UnsubscribeFromEvent(E_ATTRIBUTEINSPECTVALUEMODIFIED);
+
+    SubscribeToEvent(inspector, E_ATTRIBUTEINSPECTVALUEMODIFIED, [&](StringHash, VariantMap& args) {
+        if (trackingSuspended_)
+            return;
+
+        using namespace AttributeInspectorValueModified;
+        auto item = dynamic_cast<Serializable*>(args[P_SERIALIZABLE].GetPtr());
+
+        auto attributeName = reinterpret_cast<AttributeInfo*>(args[P_ATTRIBUTEINFO].GetVoidPtr())->name_;
+        TrackBefore<AttributeState>(item, attributeName, args[P_OLDVALUE]);
+        TrackAfter<AttributeState>(item, attributeName, args[P_NEWVALUE]);
+    });
+}
+
+void Manager::Connect(UIElement* root)
+{
+    UnsubscribeFromEvent(E_ELEMENTADDED);
+    UnsubscribeFromEvent(E_ELEMENTREMOVED);
+
+    SubscribeToEvent(E_ELEMENTADDED, [&, root](StringHash, VariantMap& args) {
+        if (trackingSuspended_)
+            return;
+
+        using namespace ElementAdded;
+        auto element = dynamic_cast<UIElement*>(args[P_ELEMENT].GetPtr());
+        auto parent = dynamic_cast<UIElement*>(args[P_PARENT].GetPtr());
+        auto eventRoot = dynamic_cast<UIElement*>(args[P_ROOT].GetPtr());
+
+        if (root != eventRoot)
+            return;
+
+        TrackBefore<ElementParentState>(element, nullptr);        // Removed from the scene state
+        TrackAfter<ElementParentState>(element, parent);          // Present in the scene state
+    });
+
+    SubscribeToEvent(E_ELEMENTREMOVED, [&, root](StringHash, VariantMap& args) {
+        if (trackingSuspended_)
+            return;
+
+        using namespace ElementRemoved;
+        auto element = dynamic_cast<UIElement*>(args[P_ELEMENT].GetPtr());
+        auto parent = dynamic_cast<UIElement*>(args[P_PARENT].GetPtr());
+        auto eventRoot = dynamic_cast<UIElement*>(args[P_ROOT].GetPtr());
+
+        if (root != eventRoot)
+            return;
+
+        TrackBefore<ElementParentState>(element, parent);        // Removed from the scene state
+        TrackAfter<ElementParentState>(element, nullptr);        // Present in the scene state
+    });
+}
+
+void Manager::Connect(Gizmo* gizmo)
+{
+    // TODO
+}
+
 }
 
 }

@@ -84,11 +84,19 @@ inline unsigned MakeHash(const ResizeType& value)
     return value;
 }
 
+URHO3D_EVENT(E_ELEMENTRESIZESTART, ElementResizeStart)
+{
+}
+
+URHO3D_EVENT(E_ELEMENTRESIZEEND, ElementResizeEnd)
+{
+}
+
 class TransformSelector : public Object
 {
 URHO3D_OBJECT(TransformSelector, Object);
 public:
-    /// A flag indicationg type of resize action currently in progress
+    /// A flag indicating type of resize action currently in progress
     ResizeType resizing_ = RESIZE_NONE;
     /// A cache of system cursors
     HashMap<ResizeType, SDL_Cursor*> cursors;
@@ -96,7 +104,7 @@ public:
     SDL_Cursor* cursorArrow;
     /// Flag indicating that this selector set cursor handle
     bool ownsCursor_ = false;
-    /// Flag required for sending single "ResizeStart" event, but only when item is being resized (mouse delta is not zero).
+    /// Flag required for sending single E_ELEMENTRESIZESTART event, but only when item is being resized (mouse delta is not zero).
     bool resizeStartSent_ = false;
 
     explicit TransformSelector(Context* context)
@@ -212,14 +220,14 @@ public:
             {
                 resizing_ = RESIZE_NONE;
                 resizeStartSent_ = false;
-                SendEvent("ResizeEnd");
+                SendEvent(E_ELEMENTRESIZEEND);
             }
             else if (d != IntVector2::ZERO)
             {
                 if (!resizeStartSent_)
                 {
                     resizeStartSent_ = true;
-                    SendEvent("ResizeStart");
+                    SendEvent(E_ELEMENTRESIZESTART);
                 }
 
                 if (resizing_ == RESIZE_MOVE)
@@ -258,7 +266,7 @@ public:
     SharedPtr<Scene> scene_;
     WeakPtr<UIElement> selectedElement_;
     WeakPtr<Camera> camera_;
-    UndoManager undo_;
+    Undo::Manager undo_;
     String currentFilePath_;
     String currentStyleFilePath_;
     bool showInternal_ = false;
@@ -273,6 +281,8 @@ public:
     AttributeInspector inspector_;
     ImGuiWindowFlags_ rectWindowFlags_ = (ImGuiWindowFlags_)0;
     IntRect rectWindowDeltaAccumulator_;
+    IntVector2 resizeStartPos_;
+    IntVector2 resizeStartSize_;
 
     explicit UIEditor(Context* context) : Application(context), undo_(context), inspector_(context)
     {
@@ -315,11 +325,13 @@ public:
         // Events
         SubscribeToEvent(E_UPDATE, std::bind(&UIEditor::RenderSystemUI, this));
         SubscribeToEvent(E_DROPFILE, std::bind(&UIEditor::OnFileDrop, this, _2));
-        SubscribeToEvent(uiElementTransform_, "ResizeStart", std::bind(&UIEditor::UIElementResizeTrack, this));
-        SubscribeToEvent(uiElementTransform_, "ResizeEnd", std::bind(&UIEditor::UIElementResizeTrack, this));
-        SubscribeToEvent(E_ATTRIBUTEINSPECTVALUEMODIFIED, std::bind(&UIEditor::UIElementTrackAttributes, this, _2));
+        SubscribeToEvent(uiElementTransform_, E_ELEMENTRESIZESTART, std::bind(&UIEditor::UIElementResizeStart, this));
+        SubscribeToEvent(uiElementTransform_, E_ELEMENTRESIZEEND, std::bind(&UIEditor::UIElementResizeEnd, this));
         SubscribeToEvent(E_ATTRIBUTEINSPECTORMENU, std::bind(&UIEditor::AttributeMenu, this, _2));
         SubscribeToEvent(E_ATTRIBUTEINSPECTOATTRIBUTE, std::bind(&UIEditor::AttributeCustomize, this, _2));
+
+        undo_.Connect(rootElement_);
+        undo_.Connect(&inspector_);
 
         // UI style
         GetSystemUI()->ApplyStyleDefault(true, 1.0f);
@@ -330,26 +342,21 @@ public:
             LoadFile(arg);
     }
 
-    void UIElementResizeTrack()
+    void UIElementResizeStart()
     {
-        if (auto selected = GetSelected())
-            undo_.TrackState(selected, {{"Position", selected->GetPosition()},
-                                        {"Size",     selected->GetSize()}});
-    }
-
-    void UIElementTrackAttributes(VariantMap& args)
-    {
-        using namespace AttributeInspectorValueModified;
-
         if (auto selected = GetSelected())
         {
-            if (args[P_SERIALIZABLE].GetPtr() != selected)
-                return;
+            resizeStartPos_ = selected->GetPosition();
+            resizeStartSize_ = selected->GetSize();
+        }
+    }
 
-            auto* info = static_cast<AttributeInfo*>(args[P_ATTRIBUTEINFO].GetVoidPtr());
-            // Make sure old value is on undo stack. Most of the time this is optional, but not always.
-            undo_.TrackState(selected, info->name_, args[P_OLDVALUE]);
-            undo_.TrackState(selected, info->name_, args[P_NEWVALUE]);
+    void UIElementResizeEnd()
+    {
+        if (auto selected = GetSelected())
+        {
+            undo_.TrackState(selected, "Position", selected->GetPosition(), resizeStartPos_);
+            undo_.TrackState(selected, "Size", selected->GetSize(), resizeStartSize_);
         }
     }
 
@@ -374,10 +381,9 @@ public:
                 {
                     if (ui::MenuItem("Reset to style"))
                     {
-                        undo_.TrackState(item, info->name_, value);
+                        undo_.TrackState(item, info->name_, styleVariant, value);
                         item->SetAttribute(info->name_, styleVariant);
                         item->ApplyAttributes();
-                        undo_.TrackState(item, info->name_, styleVariant);
                     }
                 }
 
@@ -387,16 +393,14 @@ public:
                     {
                         if (styleAttribute.IsNull())
                         {
-                            styleAttribute = styleXml.CreateChild("attribute");
+                            styleAttribute = undo_.XMLCreate(styleXml, "attribute");
                             styleAttribute.SetAttribute("name", info->name_);
                             styleAttribute.SetVariantValue(value);
-                            undo_.TrackCreation(styleAttribute);
                         }
                         else
                         {
-                            undo_.TrackState(styleAttribute, styleAttribute.GetVariantValue(info->type_));
-                            styleAttribute.SetVariantValue(value);
-                            undo_.TrackState(styleAttribute, value);
+                            undo_.XMLSetVariantValue(styleAttribute, styleAttribute.GetVariantValue(info->type_));
+                            undo_.XMLSetVariantValue(styleAttribute, value);
                         }
                     }
                 }
@@ -405,10 +409,7 @@ public:
             if (styleAttribute.NotNull() && !styleVariant.IsEmpty())
             {
                 if (ui::MenuItem("Remove from style"))
-                {
-                    undo_.TrackRemoval(styleAttribute);
-                    styleAttribute.Remove();
-                }
+                    undo_.XMLRemove(styleAttribute);
             }
 
             if (info->type_ == VAR_INTRECT && dynamic_cast<BorderImage*>(selected) != nullptr)
@@ -617,8 +618,7 @@ public:
         {
             if (input->GetKeyPress(KEY_DELETE))
             {
-                undo_.TrackRemoval(selected);
-                selectedElement_->Remove();
+                selected->Remove();
                 SelectItem(nullptr);
             }
         }
@@ -630,24 +630,23 @@ public:
             {
                 if (ui::BeginMenu("Add Child"))
                 {
-                    const char* ui_types[] = {"BorderImage", "Button", "CheckBox", "Cursor", "DropDownList", "LineEdit",
+                    const char* uiTypes[] = {"BorderImage", "Button", "CheckBox", "Cursor", "DropDownList", "LineEdit",
                                               "ListView", "Menu", "ProgressBar", "ScrollBar", "ScrollView", "Slider",
                                               "Sprite", "Text", "ToolTip", "UIElement", "View3D", "Window", nullptr
                     };
-                    for (auto i = 0; ui_types[i] != nullptr; i++)
+                    for (auto i = 0; uiTypes[i] != nullptr; i++)
                     {
                         // TODO: element creation with custom styles more usable.
                         if (input->GetKeyDown(KEY_SHIFT))
                         {
-                            if (ui::BeginMenu(ui_types[i]))
+                            if (ui::BeginMenu(uiTypes[i]))
                             {
                                 for (auto j = 0; j < styleNames_.Size(); j++)
                                 {
                                     if (ui::MenuItem(styleNames_[j].CString()))
                                     {
-                                        SelectItem(selectedElement_->CreateChild(ui_types[i]));
+                                        SelectItem(selectedElement_->CreateChild(uiTypes[i]));
                                         selectedElement_->SetStyle(styleNames_[j]);
-                                        undo_.TrackCreation(selectedElement_);
                                     }
                                 }
                                 ui::EndMenu();
@@ -655,11 +654,10 @@ public:
                         }
                         else
                         {
-                            if (ui::MenuItem(ui_types[i]))
+                            if (ui::MenuItem(uiTypes[i]))
                             {
-                                SelectItem(selectedElement_->CreateChild(ui_types[i]));
+                                SelectItem(selectedElement_->CreateChild(uiTypes[i]));
                                 selectedElement_->SetStyleAuto();
-                                undo_.TrackCreation(selectedElement_);
                             }
                         }
                     }
@@ -670,7 +668,6 @@ public:
                 {
                     if (ui::MenuItem("Delete Element"))
                     {
-                        undo_.TrackRemoval(selectedElement_);
                         selectedElement_->Remove();
                         SelectItem(nullptr);
                     }
@@ -889,6 +886,7 @@ public:
                         for (const auto& oldChild : children)
                             oldChild->Remove();
 
+                        undo_.Clear();
                         return true;
                     }
                     else

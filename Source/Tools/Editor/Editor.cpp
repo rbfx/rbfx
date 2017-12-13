@@ -205,7 +205,10 @@ void Editor::OnUpdate(VariantMap& args)
 
 
     if (!activeTab_.Expired())
+    {
+        activeTab_->OnActiveUpdate();
         ui::SetNextDockPos(activeTab_->GetUniqueTitle().CString(), ui::Slot_Right, ImGuiCond_FirstUseEver);
+    }
     if (ui::BeginDock("Inspector"))
     {
         if (!activeTab_.Expired())

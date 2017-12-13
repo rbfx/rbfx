@@ -28,6 +28,7 @@
 #include <Toolbox/SystemUI/Gizmo.h>
 #include <Toolbox/SystemUI/ImGuiDock.h>
 #include <Toolbox/Graphics/SceneView.h>
+#include <Toolbox/Common/UndoManager.h>
 #include "IDPool.h"
 
 namespace Urho3D
@@ -89,6 +90,10 @@ public:
     void ClearCachedPaths();
     /// Return true if scene view was rendered on this frame.
     bool IsRendered() const { return isRendered_; }
+    /// Called on every frame when tab is active.
+    void OnActiveUpdate();
+    /// Remove selected items from the scene.
+    void RemoveSelection();
 
 protected:
     /// Called when node selection changes.
@@ -126,6 +131,8 @@ protected:
     SharedPtr<SceneSettings> settings_;
     /// Serializable which handles scene postprocess effect settings.
     SharedPtr<SceneEffects> effectSettings_;
+    /// State change tracker.
+    Undo::Manager undo_;
 };
 
 };

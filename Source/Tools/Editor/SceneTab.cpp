@@ -40,6 +40,7 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
     , placeAfter_(afterDockName)
     , placePosition_(position)
     , id_(id)
+    , undo_(context)
 {
     SetTitle(title_);
 
@@ -48,7 +49,15 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
 
     SubscribeToEvent(this, E_EDITORSELECTIONCHANGED, std::bind(&SceneTab::OnNodeSelectionChanged, this));
     SubscribeToEvent(effectSettings_, E_EDITORSCENEEFFECTSCHANGED, std::bind(&AttributeInspector::CopyEffectsFrom,
-                                                                             &inspector_, viewport_));
+        &inspector_, viewport_));
+
+    undo_.Connect(scene_);
+    undo_.Connect(&inspector_);
+    undo_.Connect(&gizmo_);
+
+    SubscribeToEvent(scene_, E_ASYNCLOADFINISHED, [&](StringHash, VariantMap&) {
+        undo_.Clear();
+    });
 }
 
 SceneTab::~SceneTab() = default;
@@ -453,6 +462,8 @@ void SceneTab::LoadProject(XMLElement scene)
 
     settings_->LoadProject(scene);
     effectSettings_->LoadProject(scene);
+
+    undo_.Clear();
 }
 
 void SceneTab::SaveProject(XMLElement scene) const
@@ -479,6 +490,32 @@ void SceneTab::SetTitle(const String& title)
 void SceneTab::ClearCachedPaths()
 {
     path_.Clear();
+}
+
+void SceneTab::OnActiveUpdate()
+{
+    if (GetSubsystem<SystemUI>()->IsAnyItemActive())
+        return;
+
+    Input* input = GetSubsystem<Input>();
+
+    if (input->GetKeyDown(KEY_CTRL))
+    {
+        if (input->GetKeyPress(KEY_Y) || (input->GetKeyDown(KEY_SHIFT) && input->GetKeyPress(KEY_Z)))
+            undo_.Redo();
+        else if (input->GetKeyPress(KEY_Z))
+            undo_.Undo();
+    }
+
+    if (input->GetKeyPress(KEY_DELETE))
+        RemoveSelection();
+}
+
+void SceneTab::RemoveSelection()
+{
+    for (auto& selected : GetSelection())
+        selected->Remove();
+    UnselectAll();
 }
 
 }
