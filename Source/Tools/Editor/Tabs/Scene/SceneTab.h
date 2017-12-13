@@ -30,7 +30,7 @@
 #include <Toolbox/Graphics/SceneView.h>
 #include <Toolbox/Common/UndoManager.h>
 #include "IDPool.h"
-#include "Tab.h"
+#include "Tabs/Tab.h"
 
 
 namespace Urho3D

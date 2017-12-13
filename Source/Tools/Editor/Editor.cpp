@@ -22,8 +22,8 @@
 
 #include "Editor.h"
 #include "EditorEvents.h"
-#include "SceneTab.h"
-#include "SceneSettings.h"
+#include "Tabs/Scene/SceneTab.h"
+#include "Tabs/Scene/SceneSettings.h"
 #include <Toolbox/IO/ContentUtilities.h>
 #include <Toolbox/SystemUI/ResourceBrowser.h>
 #include <Toolbox/SystemUI/Widgets.h>
