@@ -53,8 +53,6 @@ static void HandleIKLog(const char* msg)
 }
 #endif
 
-static Context* contextInstance_ = nullptr;
-
 void EventReceiverGroup::BeginSendEvent()
 {
     ++inSend_;
@@ -131,9 +129,6 @@ Context::Context() :
 
     // Set the main thread ID (assuming the Context is created in it)
     Thread::SetMainThread();
-
-    assert(contextInstance_ == nullptr);
-    contextInstance_ = this;
 }
 
 Context::~Context()
@@ -153,9 +148,6 @@ Context::~Context()
     for (PODVector<VariantMap*>::Iterator i = eventDataMaps_.Begin(); i != eventDataMaps_.End(); ++i)
         delete *i;
     eventDataMaps_.Clear();
-
-    assert(contextInstance_ == this);
-    contextInstance_ = nullptr;
 }
 
 SharedPtr<Object> Context::CreateObject(StringHash objectType)
@@ -466,11 +458,6 @@ void Context::BeginSendEvent(Object* sender, StringHash eventType)
 void Context::EndSendEvent()
 {
     eventSenders_.Pop();
-}
-
-Context* Context::GetContext()
-{
-    return contextInstance_;
 }
 
 }

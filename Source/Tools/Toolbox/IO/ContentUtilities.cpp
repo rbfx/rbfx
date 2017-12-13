@@ -91,7 +91,8 @@ ContentType GetContentType(const String& resourcePath)
     auto extension = GetExtension(resourcePath).ToLower();
     if (extension == ".xml")
     {
-        SharedPtr<XMLFile> xml(Context::GetContext()->GetCache()->GetResource<XMLFile>(resourcePath));
+        auto systemUI = (SystemUI*)ui::GetIO().UserData;
+        SharedPtr<XMLFile> xml(systemUI->GetCache()->GetResource<XMLFile>(resourcePath));
         auto rootElementName = xml->GetRoot().GetName();
         if (rootElementName == "scene")
             return CTYPE_SCENE;

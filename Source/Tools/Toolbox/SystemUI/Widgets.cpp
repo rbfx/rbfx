@@ -136,8 +136,8 @@ int DoubleClickSelectable(const char* label, bool selected, ImGuiSelectableFlags
 
 bool DroppedOnItem()
 {
-    auto context = Urho3D::Context::GetContext();
-    return ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && context->GetSystemUI()->HasDragData() && !ui::IsMouseDown(0);
+    auto systemUI = (Urho3D::SystemUI*)ui::GetIO().UserData;
+    return ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && systemUI->HasDragData() && !ui::IsMouseDown(0);
 }
 
 bool CollapsingHeaderSimple(const char* label, ImGuiTreeNodeFlags flags)

@@ -203,9 +203,6 @@ public:
         return i != eventReceivers_.End() ? i->second_ : nullptr;
     }
 
-    /// Return application context.
-    static Context* GetContext();
-
     /// Return engine subsystem.
     inline Engine* GetEngine() const { return engine_; }
     /// Return time subsystem.
