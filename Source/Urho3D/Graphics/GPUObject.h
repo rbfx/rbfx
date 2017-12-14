@@ -58,7 +58,7 @@ public:
     void ClearDataLost();
 
     /// Return the graphics subsystem associated with this GPU object.
-    Graphics* GetObjectGraphics() const;
+    Graphics* GetGraphics() const;
     /// Return the object pointer. Applicable only on Direct3D.
     void* GetGPUObject() const { return object_.ptr_; }
     /// Return the object name. Applicable only on OpenGL.

@@ -187,6 +187,7 @@ public:
     /// Return the data type corresponding to an OpenGL internal format.
     static unsigned GetDataType(unsigned format);
 
+    using GPUObject::GetGraphics;
 protected:
     /// Check whether texture memory budget has been exceeded. Free unused materials in that case to release the texture references.
     void CheckTextureBudget(StringHash type);

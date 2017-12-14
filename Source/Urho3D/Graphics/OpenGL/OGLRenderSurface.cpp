@@ -53,7 +53,7 @@ RenderSurface::RenderSurface(Texture* parentTexture) :
 
 bool RenderSurface::CreateRenderBuffer(unsigned width, unsigned height, unsigned format, int multiSample)
 {
-    Graphics* graphics = parentTexture_->GetObjectGraphics();
+    Graphics* graphics = parentTexture_->GetGraphics();
     if (!graphics)
         return false;
 
@@ -89,7 +89,7 @@ bool RenderSurface::CreateRenderBuffer(unsigned width, unsigned height, unsigned
 
 void RenderSurface::OnDeviceLost()
 {
-    Graphics* graphics = parentTexture_->GetObjectGraphics();
+    Graphics* graphics = parentTexture_->GetGraphics();
     if (!graphics)
         return;
 
@@ -110,7 +110,7 @@ void RenderSurface::OnDeviceLost()
 
 void RenderSurface::Release()
 {
-    Graphics* graphics = parentTexture_->GetObjectGraphics();
+    Graphics* graphics = parentTexture_->GetGraphics();
     if (!graphics)
         return;
 
