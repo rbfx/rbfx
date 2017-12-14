@@ -189,26 +189,37 @@ endif ()
 target_include_directories(Urho3D PUBLIC ${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS})
 
 if (BUILD_SHARED_LIBS OR EMSCRIPTEN)
-    set (INSTALL_TARGET Urho3D)
     target_compile_options(Urho3D PRIVATE -DURHO3D_EXPORTS)
     if (WIN32)
         set_target_properties(Urho3D PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
     endif ()
-else ()
+elseif (NOT XCODE)
     target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC_DEFINE)
     get_property(URHO3D_INTERFACE_LINK_LIBRARIES TARGET Urho3D PROPERTY INTERFACE_LINK_LIBRARIES)
     foreach (lib ${URHO3D_INTERFACE_LINK_LIBRARIES})
         if (TARGET ${lib})
-            list (APPEND URHO3D_LINK_TARGETS ${lib})
+            list (APPEND ARCHIVES "$<TARGET_FILE:${lib}>")
         endif ()
     endforeach ()
 
-    set_target_properties(Urho3D PROPERTIES OUTPUT_NAME Urho3DBase)
-    merge_libraries(TARGET Urho3D_M STATIC Urho3D ${URHO3D_LINK_TARGETS} OUTPUT_NAME Urho3D)
-    set (INSTALL_TARGET Urho3D_M)
+    if (NOT APPLE AND NOT MSVC)
+        set_property (TARGET Urho3D APPEND PROPERTY LINK_LIBRARIES -Wl,--no-whole-archive)
+    endif ()
+
+    configure_file (${Urho3D_SOURCE_DIR}/CMake/Modules/UrhoMergeLibs.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/UrhoMergeLibs.cmake.in @ONLY)
+    file (GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/UrhoMergeLibs-$<CONFIG>.cmake INPUT ${CMAKE_CURRENT_BINARY_DIR}/UrhoMergeLibs.cmake.in)
+    add_custom_command (TARGET Urho3D POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
+                -DCMAKE_CURRENT_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR} -DCMAKE_AR=${CMAKE_AR}
+                -DCMAKE_HOST_WIN32=${CMAKE_HOST_WIN32} -DCMAKE_RANLIB=${CMAKE_RANLIB} -DMSVC=${MSVC} -DAPPLE=${APPLE}
+                -DEMSCRIPTEN=${EMSCRIPTEN}
+                -P ${CMAKE_CURRENT_BINARY_DIR}/UrhoMergeLibs-$<CONFIG>.cmake
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Merging all archives into a single static library"
+    )
 endif ()
 
-install(TARGETS ${INSTALL_TARGET}
+install(TARGETS Urho3D
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION ${SHARED_LIB_INSTALL_DIR}
     ARCHIVE DESTINATION lib${LIB_SUFFIX}
@@ -266,3 +277,4 @@ string (REPLACE ";" ">\n#include <Urho3D/" HEADER_FILES "${HEADER_FILES}")
 set (HEADER_FILES "#include <Urho3D/${HEADER_FILES}>")
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Urho3DAll.h.in ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h @ONLY)
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h DESTINATION ${DEST_INCLUDE_DIR})
+install_to_build_tree(Urho3D)

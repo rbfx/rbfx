@@ -20,7 +20,6 @@
 # THE SOFTWARE.
 #
 
-include(UrhoMonolithicLib)
 include(ucm)
 
 # Set compiler variable
