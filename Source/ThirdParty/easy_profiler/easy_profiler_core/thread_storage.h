@@ -53,8 +53,6 @@ The Apache License, Version 2.0 (the "License");
 
 //////////////////////////////////////////////////////////////////////////
 
-using namespace profiler;
-
 template <class T, const uint16_t N>
 struct BlocksList
 {

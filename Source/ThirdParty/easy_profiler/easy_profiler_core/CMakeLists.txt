@@ -47,7 +47,7 @@ if (MINGW)
     target_compile_options(easy_profiler PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++11>)
 endif ()
 
-install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/ FILES_MATCHING PATTERN *.h)
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS} FILES_MATCHING PATTERN *.h)
 install_to_build_tree(easy_profiler)
 
 # If we're on MSVC, we need a /MD version of the easy profiler library to link with Qt

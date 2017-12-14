@@ -41,8 +41,8 @@ The Apache License, Version 2.0 (the "License");
 **/
 
 #include "nonscoped_block.h"
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 
 NonscopedBlock::NonscopedBlock(const profiler::BaseBlockDescriptor* _desc, const char* _runtimeName, bool)
     : profiler::Block(_desc, _runtimeName, false), m_runtimeName(nullptr)
