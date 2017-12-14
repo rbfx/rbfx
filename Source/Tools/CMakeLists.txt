@@ -35,7 +35,6 @@ if (URHO3D_TOOLS)
     add_subdirectory (OgreImporter)
     add_subdirectory (RampGenerator)
     add_subdirectory (SpritePacker)
-    add_subdirectory (UIEditor)
     add_subdirectory (Editor)
 endif ()
 
