@@ -46,7 +46,7 @@ void Image(const String& name)
             {(float) rect.right_ / texture->GetWidth(), (float) rect.bottom_ / texture->GetHeight()});
     }
     else
-        URHO3D_LOGERRORF("Editor icon \"%s\" does not exist.", name);
+        URHO3D_LOGERRORF("Editor icon \"%s\" does not exist.", name.CString());
 }
 
 bool ImageButton(const String& name)
@@ -63,7 +63,7 @@ bool ImageButton(const String& name)
             {(float) rect.right_ / texture->GetWidth(), (float) rect.bottom_ / texture->GetHeight()});
     }
     else
-        URHO3D_LOGERRORF("Editor icon \"%s\" does not exist.", name);
+        URHO3D_LOGERRORF("Editor icon \"%s\" does not exist.", name.CString());
 
     return false;
 }
