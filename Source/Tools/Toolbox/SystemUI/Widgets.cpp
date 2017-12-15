@@ -181,7 +181,7 @@ bool ToolbarButton(const char* label)
 void SetHelpTooltip(const char* text)
 {
     if (ui::IsItemHovered() && ui::IsKeyDown(SDL_SCANCODE_LALT))
-        ui::SetTooltip(text);
+        ui::SetTooltip("%s", text);
 }
 
 bool IconButton(const char* label)
