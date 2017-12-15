@@ -31,7 +31,7 @@ add_subdirectory(ThirdParty)
 
 add_subdirectory (Urho3D)
 
-if (NOT CMAKE_CROSS_COMPILING)
+if (NOT CMAKE_CROSS_COMPILING AND URHO3D_TOOLS)
     add_subdirectory (Tools)
     if (URHO3D_EXTRAS)
         add_subdirectory (Extras)

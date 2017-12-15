@@ -32,10 +32,7 @@ import java.util.*;
 
 public class Urho3D extends SDLActivity {
 
-    public static final String SCRIPTS = "scripts";
-    public static final String PICKED_SCRIPT = "pickedScript";
     private static final String TAG = "Urho3D";
-    private static final int OBTAINING_SCRIPT = 1;
     private static String[] mArguments = new String[0];
 
     @Override
@@ -45,7 +42,7 @@ public class Urho3D extends SDLActivity {
 
     @Override
     protected boolean onLoadLibrary(ArrayList<String> libraryNames) {
-        // Ensure "Urho3D" shared library (if any) and "Urho3DPlayer" are being sorted to the top of the list
+        // Ensure "Urho3D" shared library (if any) is being sorted to the top of the list
         // Also ensure STL runtime shared library (if any) is sorted to the top most entry
         Collections.sort(libraryNames, new Comparator<String>() {
             private String sortName(String name) {
@@ -59,7 +56,7 @@ public class Urho3D extends SDLActivity {
         });
 
         // All shared shared libraries must always be loaded if available, so exclude it from return result and all list operations below
-        int startIndex = libraryNames.indexOf("Urho3DPlayer");
+        int startIndex = libraryNames.indexOf("Urho3D");
 
         // Determine the intention
         Intent intent = getIntent();
@@ -80,36 +77,13 @@ public class Urho3D extends SDLActivity {
                 // However, since we have already started Urho3D activity, let's the activity runs its whole lifecycle by falling through to call the super implementation
                 setResult(RESULT_CANCELED);
             }
-        } else {
-            // Intention for loading a picked library name (and remove all others)
-            libraryNames.subList(startIndex, libraryNames.size()).clear();
-            mArguments = pickedLibrary.split(":");
-            libraryNames.add(mArguments[0]);
-            if ("Urho3DPlayer".equals(mArguments[0]) && mArguments.length == 1) {
-                // Urho3DPlayer needs a script name to play
-                try {
-                    final AssetManager assetManager = getContext().getAssets();
-                    HashMap<String, ArrayList<String>> scripts = new HashMap<String, ArrayList<String>>(2) {{
-                        put("AngelScript", new ArrayList<String>(Arrays.asList(assetManager.list("Data/Scripts"))));
-                        put("Lua", new ArrayList<String>(Arrays.asList(assetManager.list("Data/LuaScripts"))));
-                    }};
-                    startActivityForResult(new Intent(this, ScriptPicker.class).putExtra(SCRIPTS, scripts), OBTAINING_SCRIPT);
-                } catch (IOException e) {
-                    Log.e(TAG, "Could not scan assets directory for playable scripts", e);
-                }
-            }
         }
 
         return super.onLoadLibrary(libraryNames);
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (OBTAINING_SCRIPT != requestCode || RESULT_CANCELED == resultCode)
-            return;
-        String script = data.getStringExtra(PICKED_SCRIPT);
-        script = (script.endsWith(".as") ? "Scripts/" : "LuaScripts/") + script;
-        mArguments = new String[]{mArguments[0], script};
+    public void onBackPressed() {
+        finish();
     }
-
 }

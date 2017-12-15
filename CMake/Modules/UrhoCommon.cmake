@@ -152,7 +152,12 @@ endmacro ()
 
 macro (add_sample TARGET)
     file (GLOB SOURCE_FILES *.cpp *.h)
-    add_executable (${TARGET} WIN32 ${SOURCE_FILES})
+    if (ANDROID)
+        list (APPEND SOURCE_FILES ${Urho3D_SOURCE_DIR}/Source/ThirdParty/SDL/src/main/android/SDL_android_main.c)
+        add_library(${TARGET} SHARED ${SOURCE_FILES})
+    else ()
+        add_executable (${TARGET} WIN32 ${SOURCE_FILES})
+    endif ()
     target_link_libraries (${TARGET} Urho3D)
     target_include_directories(${TARGET} PRIVATE ..)
     set_target_properties(${TARGET} PROPERTIES FOLDER Samples)
@@ -161,7 +166,7 @@ macro (add_sample TARGET)
         set_target_properties(${TARGET} PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}"
         )
-    else ()
+    elseif (NOT ANDROID)
         install(TARGETS ${TARGET} RUNTIME DESTINATION ${DEST_SHARE_DIR}/Samples)
     endif ()
 

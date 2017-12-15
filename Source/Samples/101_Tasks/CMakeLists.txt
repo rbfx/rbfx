@@ -21,7 +21,7 @@
 #
 
 # Emscripten does not support ucontext/setjmp/longjmp
-if (EMSCRIPTEN)
+if (NOT URHO3D_TASKS)
     return ()
 endif ()
 

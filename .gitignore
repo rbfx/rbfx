@@ -20,6 +20,7 @@ generated/
 /Source/Urho3D/Urho3D.pc.msvc
 /Source/Urho3D/Urho3DAll.h
 /Source/Urho3D/librevision.h
+Android/build
 
 # Compiled shaders
 *.vs?
@@ -47,6 +48,7 @@ generated/
 
 # JetBrains IDE project settings
 /.idea/
+*.iml
 /cmake-build-*/
 
 # Code::Blocks project settings
@@ -60,9 +62,7 @@ generated/
 /Android/local.properties
 
 # Android output directories
-/Android/Urho3D/
-/Android/ThirdParty/
-/Android/libs/
+gradle*
 
 # CMake generated build files
 CMakeCache.txt
@@ -97,4 +97,4 @@ configure*
 *.log
 *.bak
 Thumbs.db
-.directory
+.*
