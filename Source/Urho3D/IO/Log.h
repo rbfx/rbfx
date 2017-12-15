@@ -154,7 +154,7 @@ private:
 #define URHO3D_LOGWARNING(message) ((void)0)
 #define URHO3D_LOGERROR(message) ((void)0)
 #define URHO3D_LOGRAW(message) ((void)0)
-#define URHO3D_LOGTRACEF(message) ((void)0)
+#define URHO3D_LOGTRACEF(...) ((void)0)
 #define URHO3D_LOGDEBUGF(...) ((void)0)
 #define URHO3D_LOGINFOF(...) ((void)0)
 #define URHO3D_LOGWARNINGF(...) ((void)0)
