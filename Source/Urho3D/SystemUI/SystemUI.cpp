@@ -35,6 +35,7 @@
 #include <ImGuizmo/ImGuizmo.h>
 #include <ImGui/imgui_internal.h>
 #include <ImGui/imgui_freetype.h>
+#include <IO/Log.h>
 
 
 using namespace std::placeholders;
@@ -363,6 +364,12 @@ void SystemUI::SetScale(Vector3 scale)
 
     if (scale == Vector3::ZERO)
         scale = GetGraphics()->GetDisplayDPI() / 96.f;
+
+    if (scale == Vector3::ZERO)
+    {
+        URHO3D_LOGWARNING("SystemUI failed to set font scaling, DPI unknown.");
+        return;
+    }
 
     io.DisplayFramebufferScale = {scale.x_, scale.y_};
     fontScale_ = scale.z_;
