@@ -233,9 +233,10 @@ public:
     inline Graphics* GetGraphics() const { return graphics_; }
     /// Return renderer subsystem.
     inline Renderer* GetRenderer() const { return renderer_; }
+#if URHO3D_TASKS
     /// Return tasks subsystem.
     inline Tasks* GetTasks() const { return tasks_; }
-
+#endif
 private:
     /// Add event receiver.
     void AddEventReceiver(Object* receiver, StringHash eventType);
@@ -308,9 +309,10 @@ private:
     WeakPtr<Graphics> graphics_;
     /// Cached pointer of renderer susbsystem.
     WeakPtr<Renderer> renderer_;
+#if URHO3D_TASKS
     /// Cached pointer to tasks subsystem.
     WeakPtr<Tasks> tasks_;
-
+#endif
     friend class Engine;
 };
 

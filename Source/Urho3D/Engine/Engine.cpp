@@ -137,8 +137,9 @@ Engine::Engine(Context* context) :
     context_->RegisterSubsystem(new Input(context_));
     context_->RegisterSubsystem(new Audio(context_));
     context_->RegisterSubsystem(new UI(context_));
+#if URHO3D_TASKS
     context_->RegisterSubsystem(new Tasks(context_));
-
+#endif
     // Register object factories for libraries which are not automatically registered along with subsystem creation
     RegisterSceneLibrary(context_);
 
@@ -173,7 +174,9 @@ Engine::Engine(Context* context) :
     context_->input_ = context_->GetSubsystem<Input>();
     context_->audio_ = context_->GetSubsystem<Audio>();
     context_->ui_ = context_->GetSubsystem<UI>();
+#if URHO3D_TASKS
     context_->tasks_ = context_->GetSubsystem<Tasks>();
+#endif
 }
 
 Engine::~Engine()

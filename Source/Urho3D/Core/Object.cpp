@@ -657,12 +657,12 @@ template <> Renderer* Object::GetSubsystem<Renderer>() const
 {
     return context_->renderer_;
 }
-
+#if URHO3D_TASKS
 template <> Tasks* Object::GetSubsystem<Tasks>() const
 {
     return context_->tasks_;
 }
-
+#endif
 Engine* Object::GetEngine() const
 {
     return context_->engine_;
@@ -736,10 +736,10 @@ Renderer* Object::GetRenderer() const
 {
     return context_->renderer_;
 }
-
+#if URHO3D_TASKS
 Tasks* Object::GetTasks() const
 {
     return context_->tasks_;
 }
-
+#endif
 }
