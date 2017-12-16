@@ -252,13 +252,13 @@ public:
     void RegisterSubsystem(Time* subsystem);
     /// Register work queue subsystem and cache it's pointer.
     void RegisterSubsystem(WorkQueue* subsystem);
-#ifdef URHO3D_PROFILING
+#if URHO3D_PROFILING
     /// Register profiler subsystem and cache it's pointer.
     void RegisterSubsystem(Profiler* subsystem);
 #endif
     /// Register file system subsystem and cache it's pointer.
     void RegisterSubsystem(FileSystem* subsystem);
-#ifdef URHO3D_LOGGING
+#if URHO3D_LOGGING
     /// Register logging subsystem and cache it's pointer.
     void RegisterSubsystem(Log* subsystem);
 #endif
@@ -266,7 +266,7 @@ public:
     void RegisterSubsystem(ResourceCache* subsystem);
     /// Register localization subsystem and cache it's pointer.
     void RegisterSubsystem(Localization* subsystem);
-#ifdef URHO3D_NETWORK
+#if URHO3D_NETWORK
     /// Register network subsystem and cache it's pointer.
     void RegisterSubsystem(Network* subsystem);
 #endif

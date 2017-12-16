@@ -104,8 +104,8 @@ endif ()
 
 add_library(Urho3D ${URHO3D_LIBRARY_TYPE} ${SOURCE_FILES} ${HEADER_FILES})
 target_include_directories(Urho3D PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/..      # For parent projects to find engine headers
     ${CMAKE_CURRENT_BINARY_DIR}/..      # For parent projects to find auto-generated engine headers
+    ${CMAKE_CURRENT_SOURCE_DIR}/..      # For parent projects to find engine headers
 )
 
 # Add any variables starting with URHO3D_ as project defines
@@ -288,8 +288,15 @@ install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h DESTINATION ${DEST_INCLUD
 # Generate import/export header with engine configuration defines
 get_property(URHO3D_ENGINE_CONFIG TARGET Urho3D PROPERTY COMPILE_DEFINITIONS)
 list (REMOVE_ITEM URHO3D_ENGINE_CONFIG URHO3D_64BIT URHO3D_SSE)
-list (INSERT URHO3D_ENGINE_CONFIG 0 "Engine configuration")     # This will be commented out line in the header.
+# Define all values as enabled.
+string (REPLACE ";" "=1;" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
+# Remove enabling of values if they already were enabled/disabled.
+string (REPLACE "=1=1;" "=1;" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
+string (REPLACE "=0=1;" "=0;" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
+# Turn list into valid c++ preprocessor syntax
 string (REPLACE "=" " " URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
+# This will be commented out line in the header.
+list (INSERT URHO3D_ENGINE_CONFIG 0 "Engine configuration")
 string (REPLACE ";" "\n#define " URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Urho3D.h ${CMAKE_CURRENT_BINARY_DIR}/Urho3D.h @ONLY)
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3D.h DESTINATION ${DEST_INCLUDE_DIR})
