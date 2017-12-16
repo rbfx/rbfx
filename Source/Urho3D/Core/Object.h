@@ -34,17 +34,24 @@ class EventHandler;
 class Engine;
 class Time;
 class WorkQueue;
+#if URHO3D_PROFILING
 class Profiler;
+#endif
 class FileSystem;
+#if URHO3D_LOGGING
 class Log;
+#endif
 class ResourceCache;
 class Localization;
+#if URHO3D_NETWORK
 class Network;
-class Web;
+#endif
 class Input;
 class Audio;
 class UI;
+#if URHO3D_SYSTEMUI
 class SystemUI;
+#endif
 class Graphics;
 class Renderer;
 #if URHO3D_TASKS
@@ -197,26 +204,34 @@ public:
     Time* GetTime() const;
     /// Return work queue subsystem.
     WorkQueue* GetWorkQueue() const;
+#if URHO3D_PROFILING
     /// Return profiler subsystem.
     Profiler* GetProfiler() const;
+#endif
     /// Return file system subsystem.
     FileSystem* GetFileSystem() const;
+#if URHO3D_LOGGING
     /// Return logging subsystem.
     Log* GetLog() const;
+#endif
     /// Return resource cache subsystem.
     ResourceCache* GetCache() const;
     /// Return localization subsystem.
     Localization* GetLocalization() const;
+#if URHO3D_NETWORK
     /// Return network subsystem.
     Network* GetNetwork() const;
+#endif
     /// Return input subsystem.
     Input* GetInput() const;
     /// Return audio subsystem.
     Audio* GetAudio() const;
     /// Return UI subsystem.
     UI* GetUI() const;
+#if URHO3D_SYSTEMUI
     /// Return system ui subsystem.
     SystemUI* GetSystemUI() const;
+#endif
     /// Return graphics subsystem.
     Graphics* GetGraphics() const;
     /// Return renderer subsystem.
@@ -438,17 +453,24 @@ struct URHO3D_API EventNameRegistrar
 template <> URHO3D_API Engine* Object::GetSubsystem<Engine>() const;
 template <> URHO3D_API Time* Object::GetSubsystem<Time>() const;
 template <> URHO3D_API WorkQueue* Object::GetSubsystem<WorkQueue>() const;
+#if URHO3D_PROFILING
 template <> URHO3D_API Profiler* Object::GetSubsystem<Profiler>() const;
+#endif
 template <> URHO3D_API FileSystem* Object::GetSubsystem<FileSystem>() const;
+#if URHO3D_LOGGING
 template <> URHO3D_API Log* Object::GetSubsystem<Log>() const;
+#endif
 template <> URHO3D_API ResourceCache* Object::GetSubsystem<ResourceCache>() const;
 template <> URHO3D_API Localization* Object::GetSubsystem<Localization>() const;
+#if URHO3D_NETWORK
 template <> URHO3D_API Network* Object::GetSubsystem<Network>() const;
-template <> URHO3D_API Web* Object::GetSubsystem<Web>() const;
+#endif
 template <> URHO3D_API Input* Object::GetSubsystem<Input>() const;
 template <> URHO3D_API Audio* Object::GetSubsystem<Audio>() const;
 template <> URHO3D_API UI* Object::GetSubsystem<UI>() const;
+#if URHO3D_SYSTEMUI
 template <> URHO3D_API SystemUI* Object::GetSubsystem<SystemUI>() const;
+#endif
 template <> URHO3D_API Graphics* Object::GetSubsystem<Graphics>() const;
 template <> URHO3D_API Renderer* Object::GetSubsystem<Renderer>() const;
 #if URHO3D_TASKS

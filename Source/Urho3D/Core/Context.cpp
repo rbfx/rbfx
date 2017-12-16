@@ -26,6 +26,24 @@
 #include "../Core/Profiler.h"
 #include "../IO/Log.h"
 
+#include "../Audio/Audio.h"
+#include "../Engine/Engine.h"
+#include "../Core/WorkQueue.h"
+#if URHO3D_TASKS
+#include "../Core/Tasks.h"
+#endif
+#include "../IO/FileSystem.h"
+#include "../Resource/ResourceCache.h"
+#include "../Resource/Localization.h"
+#if URHO3D_NETWORK
+#include "../Network/Network.h"
+#endif
+#include "../Input/Input.h"
+#include "../UI/UI.h"
+#if URHO3D_SYSTEMUI
+#include "../SystemUI/SystemUI.h"
+#endif
+
 #ifndef MINI_URHO
 #include <SDL/SDL.h>
 #ifdef URHO3D_IK
@@ -458,6 +476,90 @@ void Context::BeginSendEvent(Object* sender, StringHash eventType)
 void Context::EndSendEvent()
 {
     eventSenders_.Pop();
+}
+
+void Context::RegisterSubsystem(Engine* subsystem)
+{
+    engine_ = subsystem;
+    RegisterSubsystem((Object*)subsystem);
+}
+
+void Context::RegisterSubsystem(Time* subsystem)
+{
+    time_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+
+void Context::RegisterSubsystem(WorkQueue* subsystem)
+{
+    workQueue_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+
+void Context::RegisterSubsystem(Profiler* subsystem)
+{
+    profiler_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+
+void Context::RegisterSubsystem(FileSystem* subsystem)
+{
+    fileSystem_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+
+void Context::RegisterSubsystem(Log* subsystem)
+{
+    log_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+
+void Context::RegisterSubsystem(ResourceCache* subsystem)
+{
+    cache_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+
+void Context::RegisterSubsystem(Localization* subsystem)
+{
+    l18n_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+
+void Context::RegisterSubsystem(Network* subsystem)
+{
+    network_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+
+void Context::RegisterSubsystem(Input* subsystem)
+{
+    input_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+
+void Context::RegisterSubsystem(Audio* subsystem)
+{
+    audio_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+
+void Context::RegisterSubsystem(UI* subsystem)
+{
+    ui_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+
+void Context::RegisterSubsystem(Tasks* subsystem)
+{
+    tasks_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+
+void Context::RegisterSubsystem(SystemUI* subsystem)
+{
+    systemUi_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
 }
 
 }

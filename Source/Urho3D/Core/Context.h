@@ -209,26 +209,34 @@ public:
     inline Time* GetTime() const { return time_; }
     /// Return work queue subsystem.
     inline WorkQueue* GetWorkQueue() const { return workQueue_; }
+#if URHO3D_PROFILING
     /// Return profiler subsystem.
     inline Profiler* GetProfiler() const { return profiler_; }
+#endif
     /// Return file system subsystem.
     inline FileSystem* GetFileSystem() const { return fileSystem_; }
+#if URHO3D_LOGGING
     /// Return logging subsystem.
     inline Log* GetLog() const { return log_; }
+#endif
     /// Return resource cache subsystem.
     inline ResourceCache* GetCache() const { return cache_; }
     /// Return localization subsystem.
     inline Localization* GetLocalization() const { return l18n_; }
+#if URHO3D_NETWORK
     /// Return network subsystem.
     inline Network* GetNetwork() const { return network_; }
+#endif
     /// Return input subsystem.
     inline Input* GetInput() const { return input_; }
     /// Return audio subsystem.
     inline Audio* GetAudio() const { return audio_; }
     /// Return UI subsystem.
     inline UI* GetUI() const { return ui_; }
+#if URHO3D_SYSTEMUI
     /// Return system ui subsystem.
     inline SystemUI* GetSystemUI() const { return systemUi_; }
+#endif
     /// Return graphics subsystem.
     inline Graphics* GetGraphics() const { return graphics_; }
     /// Return renderer subsystem.
@@ -237,6 +245,46 @@ public:
     /// Return tasks subsystem.
     inline Tasks* GetTasks() const { return tasks_; }
 #endif
+
+    /// Register engine subsystem and cache it's pointer.
+    void RegisterSubsystem(Engine* subsystem);
+    /// Register time subsystem and cache it's pointer.
+    void RegisterSubsystem(Time* subsystem);
+    /// Register work queue subsystem and cache it's pointer.
+    void RegisterSubsystem(WorkQueue* subsystem);
+#ifdef URHO3D_PROFILING
+    /// Register profiler subsystem and cache it's pointer.
+    void RegisterSubsystem(Profiler* subsystem);
+#endif
+    /// Register file system subsystem and cache it's pointer.
+    void RegisterSubsystem(FileSystem* subsystem);
+#ifdef URHO3D_LOGGING
+    /// Register logging subsystem and cache it's pointer.
+    void RegisterSubsystem(Log* subsystem);
+#endif
+    /// Register resource cache subsystem and cache it's pointer.
+    void RegisterSubsystem(ResourceCache* subsystem);
+    /// Register localization subsystem and cache it's pointer.
+    void RegisterSubsystem(Localization* subsystem);
+#ifdef URHO3D_NETWORK
+    /// Register network subsystem and cache it's pointer.
+    void RegisterSubsystem(Network* subsystem);
+#endif
+    /// Register input subsystem and cache it's pointer.
+    void RegisterSubsystem(Input* subsystem);
+    /// Register audio subsystem and cache it's pointer.
+    void RegisterSubsystem(Audio* subsystem);
+    /// Register UI subsystem and cache it's pointer.
+    void RegisterSubsystem(UI* subsystem);
+#if URHO3D_TASKS
+    /// Register tasks subsystem and cache it's pointer.
+    void RegisterSubsystem(Tasks* subsystem);
+#endif
+#if URHO3D_SYSTEMUI
+    /// Register system UI subsystem and cache it's pointer.
+    void RegisterSubsystem(SystemUI* subsystem);
+#endif
+
 private:
     /// Add event receiver.
     void AddEventReceiver(Object* receiver, StringHash eventType);
@@ -286,25 +334,33 @@ private:
     /// Cached pointer of work queue susbsystem.
     WeakPtr<WorkQueue> workQueue_;
     /// Cached pointer of profiler susbsystem.
+#if URHO3D_PROFILING
     WeakPtr<Profiler> profiler_;
+#endif
     /// Cached pointer of file system susbsystem.
     WeakPtr<FileSystem> fileSystem_;
+#if URHO3D_LOGGING
     /// Cached pointer of logging susbsystem.
     WeakPtr<Log> log_;
+#endif
     /// Cached pointer of resource cache susbsystem.
     WeakPtr<ResourceCache> cache_;
     /// Cached pointer of internationalization susbsystem.
     WeakPtr<Localization> l18n_;
+#if URHO3D_NETWORK
     /// Cached pointer of network susbsystem.
     WeakPtr<Network> network_;
+#endif
     /// Cached pointer of input susbsystem.
     WeakPtr<Input> input_;
     /// Cached pointer of audio susbsystem.
     WeakPtr<Audio> audio_;
     /// Cached pointer of UI susbsystem.
     WeakPtr<UI> ui_;
+#if URHO3D_SYSTEMUI
     /// Cached pointer of system UI susbsystem.
     WeakPtr<SystemUI> systemUi_;
+#endif
     /// Cached pointer of graphics susbsystem.
     WeakPtr<Graphics> graphics_;
     /// Cached pointer of renderer susbsystem.

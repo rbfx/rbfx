@@ -597,22 +597,22 @@ template <> WorkQueue* Object::GetSubsystem<WorkQueue>() const
 {
     return context_->workQueue_;
 }
-
+#if URHO3D_PROFILING
 template <> Profiler* Object::GetSubsystem<Profiler>() const
 {
     return context_->profiler_;
 }
-
+#endif
 template <> FileSystem* Object::GetSubsystem<FileSystem>() const
 {
     return context_->fileSystem_;
 }
-
+#if URHO3D_LOGGING
 template <> Log* Object::GetSubsystem<Log>() const
 {
     return context_->log_;
 }
-
+#endif
 template <> ResourceCache* Object::GetSubsystem<ResourceCache>() const
 {
     return context_->cache_;
@@ -622,12 +622,12 @@ template <> Localization* Object::GetSubsystem<Localization>() const
 {
     return context_->l18n_;
 }
-
+#if URHO3D_NETWORK
 template <> Network* Object::GetSubsystem<Network>() const
 {
     return context_->network_;
 }
-
+#endif
 template <> Input* Object::GetSubsystem<Input>() const
 {
     return context_->input_;
@@ -642,12 +642,12 @@ template <> UI* Object::GetSubsystem<UI>() const
 {
     return context_->ui_;
 }
-
+#if URHO3D_SYSTEMUI
 template <> SystemUI* Object::GetSubsystem<SystemUI>() const
 {
     return context_->systemUi_;
 }
-
+#endif
 template <> Graphics* Object::GetSubsystem<Graphics>() const
 {
     return context_->graphics_;
@@ -676,22 +676,22 @@ WorkQueue* Object::GetWorkQueue() const
 {
     return context_->workQueue_;
 }
-
+#if URHO3D_PROFILING
 Profiler* Object::GetProfiler() const
 {
     return context_->profiler_;
 }
-
+#endif
 FileSystem* Object::GetFileSystem() const
 {
     return context_->fileSystem_;
 }
-
+#if URHO3D_LOGGING
 Log* Object::GetLog() const
 {
     return context_->log_;
 }
-
+#endif
 ResourceCache* Object::GetCache() const
 {
     return context_->cache_;
@@ -701,12 +701,12 @@ Localization* Object::GetLocalization() const
 {
     return context_->l18n_;
 }
-
+#if URHO3D_NETWORK
 Network* Object::GetNetwork() const
 {
     return context_->network_;
 }
-
+#endif
 Input* Object::GetInput() const
 {
     return context_->input_;
@@ -721,12 +721,12 @@ UI* Object::GetUI() const
 {
     return context_->ui_;
 }
-
+#if URHO3D_SYSTEMUI
 SystemUI* Object::GetSystemUI() const
 {
     return context_->systemUi_;
 }
-
+#endif
 Graphics* Object::GetGraphics() const
 {
     return context_->graphics_;

@@ -156,27 +156,6 @@ Engine::Engine(Context* context) :
 #endif
 
     SubscribeToEvent(E_EXITREQUESTED, URHO3D_HANDLER(Engine, HandleExitRequested));
-    context_->engine_ = context_->GetSubsystem<Engine>();
-    context_->time_ = context_->GetSubsystem<Time>();
-    context_->workQueue_ = context_->GetSubsystem<WorkQueue>();
-#ifdef URHO3D_PROFILING
-    context_->profiler_ = context_->GetSubsystem<Profiler>();
-#endif
-    context_->fileSystem_ = context_->GetSubsystem<FileSystem>();
-#ifdef URHO3D_LOGGING
-    context_->log_ = context_->GetSubsystem<Log>();
-#endif
-    context_->cache_ = context_->GetSubsystem<ResourceCache>();
-    context_->l18n_ = context_->GetSubsystem<Localization>();
-#ifdef URHO3D_NETWORK
-    context_->network_ = context_->GetSubsystem<Network>();
-#endif
-    context_->input_ = context_->GetSubsystem<Input>();
-    context_->audio_ = context_->GetSubsystem<Audio>();
-    context_->ui_ = context_->GetSubsystem<UI>();
-#if URHO3D_TASKS
-    context_->tasks_ = context_->GetSubsystem<Tasks>();
-#endif
 }
 
 Engine::~Engine()
@@ -344,7 +323,6 @@ bool Engine::Initialize(const VariantMap& parameters)
     {
 #ifdef URHO3D_SYSTEMUI
         context_->RegisterSubsystem(new SystemUI(context_));
-        context_->systemUi_ = context_->GetSubsystem<SystemUI>();
 #endif
     }
     frameTimer_.Reset();
