@@ -1,6 +1,5 @@
 version: '{build}'
 platform:
-  - x86
   - x64
 environment:
   global:

@@ -24,7 +24,7 @@ branches:
 matrix:
   fast_finish: true
   include:
-    - &Linux-64bit
+    - &Linux
       addons:
         apt:
           packages: &linux_packages_64bit
@@ -32,14 +32,14 @@ matrix:
             - libxrandr-dev
             - libgl1-mesa-dev
             - libglu1-mesa-dev
-    - <<: *Linux-64bit
+    - <<: *Linux
       compiler: clang
-    - <<: *Linux-64bit
+    - <<: *Linux
       env: BUILD_SHARED_LIBS=ON
-    - <<: *Linux-64bit
+    - <<: *Linux
       compiler: clang
       env: BUILD_SHARED_LIBS=ON
-    - &MingW-64bit
+    - &MingW
       env:
         CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake
         CMAKE_SYSTEM_PROCESSOR=x86_64
@@ -50,34 +50,17 @@ matrix:
             - gcc-mingw-w64-x86-64
             - g++-mingw-w64-x86-64
             - binutils-mingw-w64-x86-64
-    - &MingW-32bit
-      env:
-        CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake
-        CMAKE_SYSTEM_PROCESSOR=i686
-        URHO3D_RENDERER=D3D9
-      addons:
-        apt:
-          packages:
-            - gcc-mingw-w64-i686
-            - g++-mingw-w64-i686
-            - binutils-mingw-w64-i686
-    - <<: *MingW-64bit
+    - <<: *MingW
       env:
         BUILD_SHARED_LIBS=ON
         CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake
         CMAKE_SYSTEM_PROCESSOR=x86_64
         URHO3D_RENDERER=D3D9
-    - <<: *MingW-32bit
-      env:
-        BUILD_SHARED_LIBS=ON
-        CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake
-        CMAKE_SYSTEM_PROCESSOR=i686
-        URHO3D_RENDERER=D3D9
-    - &MacOS-64bit
+    - &MacOS
       os: osx
       osx_image: xcode8.3
       compiler: clang
-    - <<: *MacOS-64bit
+    - <<: *MacOS
       env:
         BUILD_SHARED_LIBS=ON
 
