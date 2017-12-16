@@ -31,6 +31,7 @@ macro (define_engine_source_files)
         # Get header files
         file (${_action} _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${path}/*.h)
         list (APPEND HEADER_FILES ${_files})
+        list (REMOVE_ITEM HEADER_FILES Urho3D.h)
         # Install them
         install (FILES ${_files} DESTINATION ${DEST_INCLUDE_DIR}/${path})
         # Get source files
@@ -281,4 +282,14 @@ string (REPLACE ";" ">\n#include <Urho3D/" HEADER_FILES "${HEADER_FILES}")
 set (HEADER_FILES "#include <Urho3D/${HEADER_FILES}>")
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Urho3DAll.h.in ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h @ONLY)
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h DESTINATION ${DEST_INCLUDE_DIR})
+
+# Generate import/export header with engine configuration defines
+get_property(URHO3D_ENGINE_CONFIG TARGET Urho3D PROPERTY COMPILE_DEFINITIONS)
+list (REMOVE_ITEM URHO3D_ENGINE_CONFIG URHO3D_64BIT URHO3D_SSE)
+list (INSERT URHO3D_ENGINE_CONFIG 0 "Engine configuration")     # This will be commented out line in the header.
+string (REPLACE "=" " " URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
+string (REPLACE ";" "\n#define " URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
+configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Urho3D.h ${CMAKE_CURRENT_BINARY_DIR}/Urho3D.h @ONLY)
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3D.h DESTINATION ${DEST_INCLUDE_DIR})
+
 install_to_build_tree(Urho3D)

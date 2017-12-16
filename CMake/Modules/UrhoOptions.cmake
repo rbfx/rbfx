@@ -137,3 +137,13 @@ endif ()
 if (ANDROID)
     set(URHO3D_SSE OFF)
 endif ()
+
+# Unset any default config variables so they do not pollute namespace
+get_cmake_property(__cmake_variables VARIABLES)
+foreach (var ${__cmake_variables})
+    if ("${var}" MATCHES "^URHO3D_.*_DEFAULT")
+        if (${${var}})
+            set(${var})
+        endif ()
+    endif ()
+endforeach()
