@@ -20,5 +20,9 @@
 # THE SOFTWARE.
 #
 
+if (NOT URHO3D_URHO2D)
+    return ()
+endif ()
+
 add_sample (49_Urho2DIsometricDemo)
 target_link_libraries(49_Urho2DIsometricDemo Utilities2D)

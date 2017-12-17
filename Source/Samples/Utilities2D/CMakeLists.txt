@@ -20,7 +20,12 @@
 # THE SOFTWARE.
 #
 
+if (NOT URHO3D_URHO2D)
+    return ()
+endif ()
+
 file(GLOB SOURCE_FILES *.h *.cpp)
 add_library(Utilities2D STATIC ${SOURCE_FILES})
 target_link_libraries(Utilities2D Urho3D)
 target_include_directories(Utilities2D PUBLIC ..)
+set_target_properties(Utilities2D PROPERTIES FOLDER Samples)

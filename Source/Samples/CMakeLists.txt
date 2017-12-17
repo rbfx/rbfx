@@ -23,8 +23,6 @@
 # Set project name
 project (Urho3D-Samples)
 
-add_subdirectory(Utilities2D)
-
 set (COMMON_SAMPLE_H_FILES "${CMAKE_CURRENT_SOURCE_DIR}/Sample.h" "${CMAKE_CURRENT_SOURCE_DIR}/Sample.inl")
 set (INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
 set (CMAKE_INSTALL_RPATH "../../../lib${LIB_SUFFIX}")

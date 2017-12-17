@@ -20,5 +20,9 @@
 # THE SOFTWARE.
 #
 
+if (NOT URHO3D_URHO2D)
+    return ()
+endif ()
+
 add_sample (50_Urho2DPlatformer)
 target_link_libraries(50_Urho2DPlatformer Utilities2D)
