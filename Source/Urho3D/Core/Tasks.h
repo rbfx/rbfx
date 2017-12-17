@@ -29,6 +29,7 @@
 #include "../Container/List.h"
 
 
+#if URHO3D_TASKS
 namespace Urho3D
 {
 
@@ -147,3 +148,4 @@ private:
 };
 
 };
+#endif

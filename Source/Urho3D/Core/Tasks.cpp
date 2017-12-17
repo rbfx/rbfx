@@ -25,6 +25,7 @@
 #include "../Core/Tasks.h"
 
 
+#if URHO3D_TASKS
 #if defined(_CPPUNWIND) || defined(__cpp_exceptions)
 #   define URHO3D_TASKS_USE_EXCEPTIONS
 #endif
@@ -354,3 +355,4 @@ unsigned Tasks::GetActiveTaskCount() const
 }
 
 }
+#endif

@@ -43,10 +43,6 @@ endmacro()
 define_engine_source_files (NORECURSE . Graphics)
 define_engine_source_files (Audio Container Core Engine Input IO Math Resource Scene UI)
 
-if (NOT URHO3D_TASKS)
-    list (REMOVE_ITEM SOURCE_FILES Core/Tasks.h Core/Tasks.cpp)
-endif ()
-
 if (URHO3D_OPENGL)
     define_engine_source_files (Graphics/OpenGL)
 elseif (URHO3D_D3D11)
@@ -141,7 +137,7 @@ if (URHO3D_SSE AND NOT MSVC)
     target_compile_options (Urho3D PUBLIC -msse -msse2)
 endif ()
 
-if (UNIX)
+if (UNIX AND URHO3D_TASKS)
     # glibc prevents tasks from switching stacks as a security precaution. Disable that.
     target_compile_definitions(Urho3D PUBLIC -D_FORTIFY_SOURCE=0)
 endif ()
