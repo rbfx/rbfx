@@ -284,16 +284,14 @@ install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h DESTINATION ${DEST_INCLUD
 # Generate import/export header with engine configuration defines
 get_property(URHO3D_ENGINE_CONFIG TARGET Urho3D PROPERTY COMPILE_DEFINITIONS)
 list (REMOVE_ITEM URHO3D_ENGINE_CONFIG URHO3D_64BIT URHO3D_SSE)
-# Define all values as enabled.
-string (REPLACE ";" "=1;" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
-# Remove enabling of values if they already were enabled/disabled.
-string (REPLACE "=1=1;" "=1;" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
-string (REPLACE "=0=1;" "=0;" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
-# Turn list into valid c++ preprocessor syntax
-string (REPLACE "=" " " URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
+list (APPEND URHO3D_ENGINE_CONFIG "")   # For last item to be processed correctly.
+# Give defines without value a value "1".
+string (REGEX REPLACE "([^;]+);" "\\1=1;" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
+# Turn list into c++ preprocessor code
+string (REGEX REPLACE "([^;]+)=([^;]+);" "#ifndef \\1\n#   define \\1 \\2\n#endif\n" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
 # This will be commented out line in the header.
 list (INSERT URHO3D_ENGINE_CONFIG 0 "Engine configuration")
-string (REPLACE ";" "\n#define " URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
+string (REPLACE ";" "\n" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Urho3D.h ${CMAKE_CURRENT_BINARY_DIR}/Urho3D.h @ONLY)
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3D.h DESTINATION ${DEST_INCLUDE_DIR})
 
