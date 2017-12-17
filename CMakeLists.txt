@@ -72,14 +72,15 @@ file (GLOB CMAKE_SCRIPTS ${CMAKE_SOURCE_DIR}/*${SCRIPT_EXT})
 install (PROGRAMS ${CMAKE_SCRIPTS} DESTINATION ${DEST_SHARE_DIR}/Scripts)
 # Install data files
 file (MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-foreach (RES_DIR ${RESOURCE_DIRS})
-    get_filename_component (NAME ${RES_DIR} NAME)
-    install (DIRECTORY ${RES_DIR} DESTINATION ${DEST_RESOURCE_DIR})
-    if (NOT EXISTS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${NAME})
-        create_symlink(${RES_DIR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${NAME})
-    endif ()
-endforeach ()
-
+if (NOT ANDROID)
+    foreach (RES_DIR ${RESOURCE_DIRS})
+        get_filename_component (NAME ${RES_DIR} NAME)
+        install (DIRECTORY ${RES_DIR} DESTINATION ${DEST_RESOURCE_DIR})
+        if (NOT EXISTS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${NAME})
+            create_symlink(${RES_DIR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${NAME})
+        endif ()
+    endforeach ()
+endif ()
 
 # Print current build configuration
 message(STATUS "Urho3D Configuration:")
