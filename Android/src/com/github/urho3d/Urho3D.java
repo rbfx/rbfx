@@ -23,17 +23,16 @@
 package com.github.urho3d;
 
 import android.content.Intent;
-import android.content.res.AssetManager;
-import android.util.Log;
+
 import org.libsdl.app.SDLActivity;
 
-import java.io.IOException;
 import java.util.*;
 
 public class Urho3D extends SDLActivity {
 
     private static final String TAG = "Urho3D";
     private static String[] mArguments = new String[0];
+    private String mSelectedSharedLib;
 
     @Override
     protected String[] getArguments() {
@@ -60,7 +59,7 @@ public class Urho3D extends SDLActivity {
 
         // Determine the intention
         Intent intent = getIntent();
-        String pickedLibrary = intent.getStringExtra(SampleLauncher.PICKED_LIBRARY);
+        String pickedLibrary = mSelectedSharedLib = intent.getStringExtra(SampleLauncher.PICKED_LIBRARY);
         if (pickedLibrary == null) {
             // Intention for obtaining library names
             String[] array = libraryNames.subList(startIndex, libraryNames.size()).toArray(new String[libraryNames.size() - startIndex]);
@@ -77,9 +76,15 @@ public class Urho3D extends SDLActivity {
                 // However, since we have already started Urho3D activity, let's the activity runs its whole lifecycle by falling through to call the super implementation
                 setResult(RESULT_CANCELED);
             }
+        } else {
+            mSelectedSharedLib = "lib" + mSelectedSharedLib + ".so";
         }
 
         return super.onLoadLibrary(libraryNames);
+    }
+
+    protected String getMainSharedObject() {
+        return mSelectedSharedLib;
     }
 
     @Override

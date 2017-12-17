@@ -53,4 +53,8 @@ android {
         // If you get "Java heap error" you may need to add "org.gradle.jvmargs=-Xms128m -Xmx4096m" to gradle.properties
         // in gradle service directory path (find it in Settings>Build>Gradle).
     }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 }
