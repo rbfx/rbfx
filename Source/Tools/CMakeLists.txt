@@ -28,7 +28,7 @@ if (URHO3D_PACKAGING OR         # When packing resources
     URHO3D_TOOLS)
     add_subdirectory (PackageTool)
 endif ()
-if (URHO3D_TOOLS)
+if (URHO3D_TOOLS AND DESKTOP)
     add_subdirectory (Toolbox)
     add_subdirectory (AssetImporter)
     add_subdirectory (AssetViewer)
