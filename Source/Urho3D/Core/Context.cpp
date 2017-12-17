@@ -495,25 +495,25 @@ void Context::RegisterSubsystem(WorkQueue* subsystem)
     workQueue_ = subsystem;
     RegisterSubsystem((Object*) subsystem);
 }
-
+#if URHO3D_PROFILING
 void Context::RegisterSubsystem(Profiler* subsystem)
 {
     profiler_ = subsystem;
     RegisterSubsystem((Object*) subsystem);
 }
-
+#endif
 void Context::RegisterSubsystem(FileSystem* subsystem)
 {
     fileSystem_ = subsystem;
     RegisterSubsystem((Object*) subsystem);
 }
-
+#if URHO3D_LOGGING
 void Context::RegisterSubsystem(Log* subsystem)
 {
     log_ = subsystem;
     RegisterSubsystem((Object*) subsystem);
 }
-
+#endif
 void Context::RegisterSubsystem(ResourceCache* subsystem)
 {
     cache_ = subsystem;
@@ -525,13 +525,13 @@ void Context::RegisterSubsystem(Localization* subsystem)
     l18n_ = subsystem;
     RegisterSubsystem((Object*) subsystem);
 }
-
+#if URHO3D_NETWORK
 void Context::RegisterSubsystem(Network* subsystem)
 {
     network_ = subsystem;
     RegisterSubsystem((Object*) subsystem);
 }
-
+#endif
 void Context::RegisterSubsystem(Input* subsystem)
 {
     input_ = subsystem;
@@ -549,17 +549,18 @@ void Context::RegisterSubsystem(UI* subsystem)
     ui_ = subsystem;
     RegisterSubsystem((Object*) subsystem);
 }
-
+#if URHO3D_TASKS
 void Context::RegisterSubsystem(Tasks* subsystem)
 {
     tasks_ = subsystem;
     RegisterSubsystem((Object*) subsystem);
 }
-
+#endif
+#if URHO3D_SYSTEMUI
 void Context::RegisterSubsystem(SystemUI* subsystem)
 {
     systemUi_ = subsystem;
     RegisterSubsystem((Object*) subsystem);
 }
-
+#endif
 }
