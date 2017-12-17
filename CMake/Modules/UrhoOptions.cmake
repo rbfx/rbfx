@@ -37,6 +37,21 @@ foreach(key ${ENVIRONMENT})
     endif ()
 endforeach()
 
+# Set platform variables
+if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
+    set (LINUX ON)
+endif ()
+
+if (ANDROID OR IOS)
+    set (MOBILE ON)
+elseif (APPLE)
+    set (MACOS ON)
+endif ()
+
+if (WIN32 OR LINUX OR MACOS)
+    set (DESKTOP ON)
+endif ()
+
 option(URHO3D_ENABLE_ALL "Enables all optional subsystems by default" OFF)
 
 # Determine library type
