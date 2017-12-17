@@ -138,11 +138,13 @@ void Sample::InitMouseMode(MouseMode mode)
         if (useMouseMode_ == MM_FREE)
             input->SetMouseVisible(true);
 
+#if URHO3D_SYSTEMUI
         Console* console = GetSubsystem<Console>();
+#endif
         if (useMouseMode_ != MM_ABSOLUTE)
         {
             input->SetMouseMode(useMouseMode_);
-#ifdef URHO3D_SYSTEMUI
+#if URHO3D_SYSTEMUI
             if (console && console->IsVisible())
                 input->SetMouseMode(MM_ABSOLUTE, true);
 #endif
@@ -227,7 +229,7 @@ void Sample::HandleKeyUp(StringHash /*eventType*/, VariantMap& eventData)
     // Close console (if open) or exit when ESC is pressed
     if (key == KEY_ESCAPE)
     {
-#ifdef URHO3D_SYSTEMUI
+#if URHO3D_SYSTEMUI
         Console* console = GetSubsystem<Console>();
         if (console->IsVisible())
             console->SetVisible(false);
@@ -253,7 +255,7 @@ void Sample::HandleKeyDown(StringHash /*eventType*/, VariantMap& eventData)
     int key = eventData[P_KEY].GetInt();
 
     // Toggle console with F1 or backquote
-#ifdef URHO3D_SYSTEMUI
+#if URHO3D_SYSTEMUI
     if (key == KEY_F1 || key == KEY_BACKQUOTE)
     {
         GetSubsystem<Console>()->Toggle();
@@ -407,7 +409,7 @@ void Sample::HandleTouchBegin(StringHash /*eventType*/, VariantMap& eventData)
 // If the user clicks the canvas, attempt to switch to relative mouse mode on web platform
 void Sample::HandleMouseModeRequest(StringHash /*eventType*/, VariantMap& eventData)
 {
-#ifdef URHO3D_SYSTEMUI
+#if URHO3D_SYSTEMUI
     Console* console = GetSubsystem<Console>();
     if (console && console->IsVisible())
         return;
