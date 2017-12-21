@@ -65,7 +65,6 @@ if (URHO3D_PHYSICS)
 endif ()
 
 if (URHO3D_PROFILING)
-    set (EASY_PROFILER_NO_SAMPLES ON)
     add_subdirectory (easy_profiler)
 endif ()
 
