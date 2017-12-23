@@ -117,6 +117,7 @@ endforeach()
 if (MINI_URHO)
     target_compile_definitions(Urho3D PUBLIC -DMINI_URHO)
 endif ()
+target_compile_definitions(Urho3D PRIVATE -DURHO3D_IS_BUILDING)
 
 # Define generated source files
 if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/librevision.h)
@@ -283,7 +284,12 @@ install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h DESTINATION ${DEST_INCLUD
 
 # Generate import/export header with engine configuration defines
 get_property(URHO3D_ENGINE_CONFIG TARGET Urho3D PROPERTY COMPILE_DEFINITIONS)
-list (REMOVE_ITEM URHO3D_ENGINE_CONFIG URHO3D_64BIT URHO3D_SSE)
+list (REMOVE_ITEM URHO3D_ENGINE_CONFIG URHO3D_64BIT URHO3D_SSE URHO3D_IS_BUILDING)
+foreach (def ${URHO3D_ENGINE_CONFIG})
+    if (NOT "${def}" MATCHES "^URHO3D_.*" AND NOT "${def}" MATCHES "^IK_.*" AND NOT "${def}" MATCHES "^IMGUI_.*")
+        list (REMOVE_ITEM URHO3D_ENGINE_CONFIG "${def}")
+    endif ()
+endforeach ()
 list (APPEND URHO3D_ENGINE_CONFIG "")   # For last item to be processed correctly.
 # Give defines without value a value "1".
 string (REGEX REPLACE "(^|;)([a-zA-Z0-9_]+);" "\\1\\2=1;" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
