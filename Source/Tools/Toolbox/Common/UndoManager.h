@@ -151,12 +151,12 @@ public:
     Variant value_;
 };
 
-/// Tracks item parent state. Used for tracking adding and removing UIElements.
-class XMLParentState : public State
+/// Tracks contents of xml file. Used for tracking UI element style changes..
+class XMLFileContentState : public State
 {
 public:
     /// Construct item from the state and parent.
-    explicit XMLParentState(const XMLElement& item, const XMLElement& parent=XMLElement());
+    explicit XMLFileContentState(XMLFile* file);
     /// Set parent of the item if it is different and return true if operation was carried out.
     void Apply() override;
     /// Return true if state of this object matches state of specified object.
@@ -164,10 +164,10 @@ public:
     /// Return string representation of current state.
     String ToString() const override;
 
-    /// XMLElement whose state is saved.
-    XMLElement item_;
-    /// Parent of XMLElement item.
-    XMLElement parent_;
+    /// File whose contents are being tracked.
+    SharedPtr<XMLFile> file_;
+    /// Serialized content of the file.
+    String content_;
 };
 
 /// A collection of states that are applied together.

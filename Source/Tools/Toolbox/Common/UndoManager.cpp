@@ -186,31 +186,30 @@ String XMLVariantState::ToString() const
     return Urho3D::ToString("XMLVariantState value = %s", value_.ToString().CString());
 }
 
-XMLParentState::XMLParentState(const XMLElement& item, const XMLElement& parent) : item_(item), parent_(parent)
+XMLFileContentState::XMLFileContentState(XMLFile* file)
+    : file_(file)
+    , content_(file->ToString())
 {
 }
 
-void XMLParentState::Apply()
+void XMLFileContentState::Apply()
 {
-    if (parent_.NotNull())
-        parent_.AppendChild(item_);
-    else
-        item_.GetParent().RemoveChild(item_);
+    file_->FromString(content_);
 }
 
-bool XMLParentState::Equals(State* other) const
+bool XMLFileContentState::Equals(State* other) const
 {
-    auto other_ = dynamic_cast<XMLParentState*>(other);
+    auto other_ = dynamic_cast<XMLFileContentState*>(other);
 
     if (other_ == nullptr)
         return false;
 
-    return item_.GetNode() == other_->item_.GetNode() && parent_.GetNode() == other_->parent_.GetNode();
+    return file_ == other_->file_ && content_ == other_->content_;
 }
 
-String XMLParentState::ToString() const
+String XMLFileContentState::ToString() const
 {
-    return Urho3D::ToString("XMLParentState parent = %s", parent_.IsNull() ? "null" : "set");
+    return Urho3D::ToString("XMLFileContentState");
 }
 
 void StateCollection::Apply()
@@ -320,17 +319,19 @@ void Manager::TrackState(Serializable* item, const String& name, const Variant& 
 
 XMLElement Manager::XMLCreate(XMLElement& parent, const String& name)
 {
+    XMLFile* file = parent.GetFile();
+    TrackBefore<XMLFileContentState>(file);                                      // "Removed" element has empty variant value.
     auto element = parent.CreateChild(name);
-    TrackBefore<XMLParentState>(element);                       // "Removed" element has empty variant value.
-    TrackAfter<XMLParentState>(element, element.GetParent());   // When value is set element exists.
+    TrackAfter<XMLFileContentState>(file);                                       // When value is set element exists.
     return element;
 }
 
 void Manager::XMLRemove(XMLElement& element)
 {
-    TrackBefore<XMLParentState>(element, element.GetParent());  // When value is set element exists.
-    TrackAfter<XMLParentState>(element);                        // "Removed" element has empty variant value.
+    XMLFile* file = element.GetFile();
+    TrackBefore<XMLFileContentState>(file);                                     // When value is set element exists.
     element.Remove();
+    TrackAfter<XMLFileContentState>(file);                                      // "Removed" element has empty variant value.
 }
 
 void Manager::XMLSetVariantValue(XMLElement& element, const Variant& value)

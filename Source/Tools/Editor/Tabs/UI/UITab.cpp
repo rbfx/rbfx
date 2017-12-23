@@ -688,8 +688,7 @@ void UITab::AttributeMenu(VariantMap& args)
                 {
                     if (styleAttribute.IsNull())
                     {
-                        //styleAttribute = undo_.XMLCreate(styleXml, "attribute");
-                        styleAttribute = styleXml.CreateChild("attribute");
+                        styleAttribute = undo_.XMLCreate(styleXml, "attribute");
                         styleAttribute.SetAttribute("name", info->name_);
                         styleAttribute.SetVariantValue(value);
                     }
@@ -706,8 +705,7 @@ void UITab::AttributeMenu(VariantMap& args)
         {
             if (ui::MenuItem("Remove from style"))
             {
-                styleAttribute.Remove();
-                // undo_.XMLRemove(styleAttribute);
+                undo_.XMLRemove(styleAttribute);
             }
         }
 
