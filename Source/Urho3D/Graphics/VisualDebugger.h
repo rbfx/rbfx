@@ -18,7 +18,7 @@ namespace Urho3D
 	class Camera;
 	class Text;
 	class Node;
-	
+
 
 	//Subsytem providing persistant visualization of debug geometry.
 	class URHO3D_API VisualDebugger : public Object {
@@ -26,6 +26,8 @@ namespace Urho3D
 
 	public:
 		VisualDebugger(Context* context);
+
+		static void RegisterObject(Context* context);
 
 		class URHO3D_API VisualDebuggerObject : public Object {
 			URHO3D_OBJECT(VisualDebuggerObject, Object);

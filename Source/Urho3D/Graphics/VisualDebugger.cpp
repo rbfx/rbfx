@@ -21,6 +21,11 @@ VisualDebugger::VisualDebugger(Context* context) : Object(context)
 	mTimer.Reset();
 }
 
+void VisualDebugger::RegisterObject(Context* context)
+{
+	context->RegisterFactory<VisualDebugger>();
+}
+
 VisualDebugger::VisualDebuggerCircle* VisualDebugger::AddCircle(const Vector3& center, const Vector3& normal, float radius, const Color& color, int steps /*= 64*/, bool depthTest /*= true*/)
 {
 	VisualDebuggerCircle* newDbgObject = new VisualDebuggerCircle(this, context_);
