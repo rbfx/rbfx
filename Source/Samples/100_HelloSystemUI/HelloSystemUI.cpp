@@ -92,8 +92,13 @@ void HelloSystemUi::RenderUi(StringHash eventType, VariantMap& eventData)
 
         if (ui::Button("Toggle console"))
             GetSubsystem<Console>()->Toggle();
+
+        if (ui::Button("Toggle demo window"))
+            demoOpen_ ^= true;
     }
     ui::End();
+    if (demoOpen_)
+        ui::ShowDemoWindow(&demoOpen_);
 }
 
 void HelloSystemUi::HandleKeyDown(StringHash eventType, VariantMap& eventData)

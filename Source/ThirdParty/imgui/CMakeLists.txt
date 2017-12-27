@@ -23,7 +23,7 @@
 # When syncing repository with upstream be sure to delete stb_rectpack.h. This will make imgui use main instance of
 # stb_rectpack already included in the engine.
 
-add_library (imgui STATIC imgui.cpp imgui_draw.cpp imgui_freetype.cpp)
+add_library (imgui STATIC imgui.cpp imgui_draw.cpp imgui_freetype.cpp imgui_demo.cpp)
 target_link_libraries (imgui STB FreeType)
 target_compile_definitions(imgui PUBLIC -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1
     PRIVATE -DIMGUI_DISABLE_STB_RECT_PACK_IMPLEMENTATION -DIMGUI_DISABLE_STB_TRUETYPE_IMPLEMENTATION=1
