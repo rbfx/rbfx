@@ -338,8 +338,7 @@ struct DockContext
         ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                                  ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
                                  ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar |
-                                 ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_ShowBorders | 
-                                 ImGuiWindowFlags_NoBringToFrontOnFocus;
+                                 ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus;
         Dock* root = getRootDock();
         if (root)
         {
@@ -352,6 +351,7 @@ struct DockContext
             SetNextWindowSize(GetIO().DisplaySize);
         }
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
         Begin("###DockPanel", nullptr, flags);
         splits();
     }
@@ -360,7 +360,7 @@ struct DockContext
     void endPanel()
     {
         End();
-        ImGui::PopStyleVar();
+        ImGui::PopStyleVar(2);
     }
 
 
@@ -1018,9 +1018,10 @@ struct DockContext
         {
             SetNextWindowPos(dock.pos);
             SetNextWindowSize(dock.size, ImGuiCond_FirstUseEver);
+//            ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
             bool ret = Begin(label,
                 opened,
-                ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_ShowBorders | extra_flags);
+                ImGuiWindowFlags_NoCollapse | extra_flags);
             m_end_action = EndAction_End;
             dock.pos = GetWindowPos();
             dock.size = GetWindowSize();
