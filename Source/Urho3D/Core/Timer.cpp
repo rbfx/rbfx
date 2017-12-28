@@ -72,7 +72,7 @@ Time::~Time()
 static unsigned Tick()
 {
 #ifdef _WIN32
-    return (unsigned)timeGetTime();
+    return (unsigned)GetTickCount();
 #elif __EMSCRIPTEN__
     return (unsigned)emscripten_get_now();
 #else
@@ -92,7 +92,7 @@ static long long HiresTick()
         return counter.QuadPart;
     }
     else
-        return timeGetTime();
+        return GetTickCount();
 #elif __EMSCRIPTEN__
     return (unsigned)(emscripten_get_now()*1000.0);
 #else
