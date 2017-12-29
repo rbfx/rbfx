@@ -8,9 +8,11 @@
 #include "../Graphics/Camera.h"
 #include "../Graphics/Graphics.h"
 #include "../Core/Context.h"
+#include "../Core/Timer.h"
 
 #include "../UI/UI.h"
 #include "../UI/Text.h"
+
 
 
 namespace Urho3D
@@ -176,18 +178,31 @@ VisualDebugger::VisualDebuggerSphereSector* VisualDebugger::AddSphereSector(Sphe
 	return newDbgObject;
 }
 
-void VisualDebugger::DrawDebugGeometry(DebugRenderer* debugRenderer)
+void VisualDebugger::DrawDebugGeometry(DebugRenderer* debugRenderer, unsigned int maxTimeMs)
 {
+	Timer timer;
+	unsigned int startTimeMs = timer.GetMSec(false);
 	auto i = mDebuggerObjects.Begin();
+	unsigned int drawCount = 0;
 	while (i != mDebuggerObjects.End())
 	{
+
+		if (timer.GetMSec(false) >= startTimeMs)
+			return;
+
+		if (drawCount >= mMaxRenderObjects)
+			return;
+
 		i->Get()->DrawDebugGeometry(debugRenderer);
+		drawCount++;
 
 		//check if the object has exceeded its lifetime and if so remove.
 		if ((i->Get()->creationTimeMS_ + i->Get()->lifetimeMS_) <= mTimer.GetMSec(false)) {
 			i->Get()->TearDown();
 			mDebuggerObjects.Erase(i);
 		}
+
+
 
 		i++;
 	}
@@ -211,6 +226,11 @@ void VisualDebugger::SetObjectLifeTimeMs(unsigned int lifeTimeMs)
 void VisualDebugger::SetPrimaryCamera(Camera* camera)
 {
 	mCamera = camera;
+}
+
+void VisualDebugger::SetMaxRenderObjects(unsigned int maxObjects /*= UINT_MAX*/)
+{
+	mMaxRenderObjects = maxObjects;
 }
 
 void VisualDebugger::SetupAndAddObjectToList(VisualDebuggerObject* object, bool depthTest, Color color)

@@ -401,7 +401,7 @@ namespace Urho3D
 		VisualDebuggerSphereSector* AddSphereSector(Sphere sphere, Quaternion rotation, float angle, bool drawLines, Color color, bool depthTest);
 
 		//Draws all the debug geometry
-		void DrawDebugGeometry(DebugRenderer* debugRenderer);
+		void DrawDebugGeometry(DebugRenderer* debugRenderer, unsigned int maxTimeMs = UINT_MAX);
 
 		//enables or disables all drawing
 		void SetEnabled(bool enabled);
@@ -412,6 +412,9 @@ namespace Urho3D
 		//sets which camera to use for world to screen cordinate mapping
 		void SetPrimaryCamera(Camera* camera);
 
+		//sets the max number of objects to render at a time.
+		void SetMaxRenderObjects(unsigned int maxObjects = UINT_MAX);
+
 	protected:
 
 		void SetupAndAddObjectToList(VisualDebuggerObject* object, bool depthTest, Color color);
@@ -420,6 +423,7 @@ namespace Urho3D
 		Timer mTimer;
 		unsigned int mDefaultLifetimeMs = 2000;
 		WeakPtr<Camera> mCamera;
+		unsigned int mMaxRenderObjects = UINT_MAX;
 	};
 
 
