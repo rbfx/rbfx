@@ -30,159 +30,59 @@
 #   define URHO3D_TASKS_USE_EXCEPTIONS
 #endif
 
-#ifdef _WIN32
-#   include <windows.h>
+#include <fcontext/fcontext.h>
+
+#if defined(HAVE_VALGRIND)
+#   include <valgrind/valgrind.h>
 #else
-#   include <ucontext.h>
-#   include <csetjmp>
-
-// Windows fiber API implementation for unix operating systems.
-
-// Dummy value for compatibility with windows API
-#define FIBER_FLAG_FLOAT_SWITCH 0
-#define WINAPI
-
-typedef void(*LPFIBER_START_ROUTINE)(void*);
-
-/// Internal fiber context data.
-struct FiberContext
-{
-    /// Destruct.
-    ~FiberContext()
-    {
-        delete[] stack_;
-    }
-
-    /// Current fiber context, used for switching in mid of execution.
-    jmp_buf currentContext_{};
-    /// Fiber stack.
-    uint8_t* stack_ = nullptr;
-};
-
-/// Fiber context data required only for first context switch.
-struct FiberStartContext
-{
-    FiberContext* fiber_;
-    /// Initial fiber context, used for switching to a fiber very first time. It is responsible for setting newly allocated stack in a platform-independent way.
-    ucontext_t fiberContext_;
-    /// Context for resuming from fiber execution first time.
-    ucontext_t resumeContext_;
-    /// Fiber task function which is executed on newly allocated stack.
-    void (*taskFunction_)(void*);
-    /// Parameter passed to taskFunction_.
-    void* taskParameter_;
-};
-
-/// Thread fiber context. Keeps track of main thread fiber context and currently executing fiber.
-struct ThreadFiberContext
-{
-    /// Fiber that is currently executing.
-    FiberContext* currentFiber_ = nullptr;
-    /// Main thread fiber.
-    FiberContext* mainThreadFiber_ = nullptr;
-};
-
-thread_local ThreadFiberContext threadFiberContext_;
-
-void _FiberSetup(void* p)
-{
-    // Copy context to local stack because it will be destroyed after setcontext() call below.
-    FiberStartContext context = *(FiberStartContext*)p;
-    // Set up a task context so it can be switched by using setjmp/longjmp.
-    if (_setjmp(context.fiber_->currentContext_) == 0)
-    {
-        // Resume back to CreateFiber() and not execute task just yet.
-        setcontext(&context.resumeContext_);
-    }
-    // SwitchToFiber() was just called, execute actual fiber.
-    context.taskFunction_(context.taskParameter_);
-    assert(false);  // On windows returning from a fiber causes a thread to exit, therefore this should never be reached.
-}
-
-void* ConvertThreadToFiberEx(void* parameter, unsigned flags)
-{
-    (void)(parameter);
-    (void)(flags);
-    if (threadFiberContext_.mainThreadFiber_ == nullptr)
-        threadFiberContext_.mainThreadFiber_ = threadFiberContext_.currentFiber_ = new FiberContext();
-    return threadFiberContext_.mainThreadFiber_;
-}
-
-void* CreateFiberEx(unsigned stackSize, unsigned _, unsigned flags, void(*startAddress)(void*), void* parameter)
-{
-    (void)(_);
-    (void)(flags);
-    FiberStartContext startContext{};
-    startContext.fiber_ = new FiberContext();
-    startContext.fiber_->stack_ = new uint8_t[stackSize];
-    startContext.taskFunction_ = startAddress;
-    startContext.taskParameter_ = parameter;
-    // Create a fiber context ucontext. This is a portable way to switch stack pointer. Be aware - costs 2 syscalls.
-    getcontext(&startContext.fiberContext_);
-    startContext.fiberContext_.uc_stack.ss_size = stackSize;
-    startContext.fiberContext_.uc_stack.ss_sp = startContext.fiber_->stack_;
-    startContext.fiberContext_.uc_link = nullptr;
-    makecontext(&startContext.fiberContext_, reinterpret_cast<void (*)()>(_FiberSetup), 1, &startContext);
-    // Immediately switch to a fiber. Fiber will not execute just yet, but it will set up state for SwitchToFiber() to work.
-    swapcontext(&startContext.resumeContext_, &startContext.fiberContext_);
-    return startContext.fiber_;
-}
-
-void SwitchToFiber(void* fiber)
-{
-    // _setjmp/_longjmp are used instead. They are much faster because they do not perform any syscalls.
-    FiberContext* task = static_cast<FiberContext*>(fiber);
-    if (_setjmp(threadFiberContext_.currentFiber_->currentContext_) == 0)
-    {
-        threadFiberContext_.currentFiber_ = task;
-        _longjmp(task->currentContext_, 1);
-    }
-}
-
-void DeleteFiber(void* fiber)
-{
-    FiberContext* context = static_cast<FiberContext*>(fiber);
-    if (context == threadFiberContext_.mainThreadFiber_)
-        threadFiberContext_.mainThreadFiber_ = threadFiberContext_.currentFiber_ = nullptr;
-    else
-        assert(context != threadFiberContext_.currentFiber_);
-    delete context;
-}
+#   define VALGRIND_STACK_REGISTER(s, e) 0
+#   define VALGRIND_STACK_DEREGISTER(id)
 #endif
-
 namespace Urho3D
 {
-
-thread_local struct
-{
-    /// Thread fiber, used to store context of thread so fibers can resume execution to it.
-    Task threadTask_{};
-    /// Task that is executing at the moment.
-    Task* currentTask_ = nullptr;
-} taskData_;
 
 /// Exception which causes task termination. Intentionally does not inherit std::exception to prevent user catching termination request.
 class TerminateTaskException { };
 
+#if !URHO3D_TASKS_NO_TLS
+thread_local Task* currentTask_ = nullptr;
+#endif
+
+void Task::ExecuteTaskWrapper(ContextTransferData transfer)
+{
+    Task* task = static_cast<Task*>(transfer.data);
+    task->SetPreviousTaskContext(transfer.context);
+    task->ExecuteTask();
+}
+
+Task::Task(TaskScheduler* scheduler, const std::function<void()>& taskFunction, unsigned int stackSize)
+    : scheduler_(scheduler)
+    , taskProc_(taskFunction)
+{
+    if (taskFunction)
+    {
+        fcontext_stack_t stack = create_fcontext_stack(stackSize);
+        stack_ = stack.sptr;
+        stackSize_ = stack.ssize;
+        stackId_ = VALGRIND_STACK_REGISTER((uint8_t*)stack_ + stackSize, (uint8_t*)stack_);
+        context_ = make_fcontext(stack_, stackSize_, reinterpret_cast<pfn_fcontext>(&ExecuteTaskWrapper));
+    }
+}
+
 Task::~Task()
 {
-    if (fiber_ != nullptr)
-        DeleteFiber(fiber_);
+    if (stack_)
+    {
+        VALGRIND_STACK_DEREGISTER(stackId_);
+        fcontext_stack_t stack{stack_, stackSize_};
+        destroy_fcontext_stack(&stack);
+    }
 }
 
-bool Task::IsReady()
+void Task::SetPreviousTaskContext(void* context)
 {
-    if (sleepTimer_.GetMSec(false) < sleepMSec_)
-        return false;
-
-    sleepTimer_.Reset();
-    sleepMSec_ = 0;
-    return true;
-}
-
-void Task::ExecuteTaskWrapper(void* parameter)
-{
-    static_cast<Task*>(parameter)->ExecuteTask();
+    if (!scheduler_.Expired())
+        scheduler_->previous_->context_ = context;
 }
 
 void Task::ExecuteTask()
@@ -210,16 +110,19 @@ void Task::ExecuteTask()
 
 void Task::Suspend(float time)
 {
+    if (scheduler_.Expired())
+    {
+        URHO3D_LOGERROR("Manually scheduled tasks can not be suspended.");
+        return;
+    }
+
 #ifdef URHO3D_TASKS_USE_EXCEPTIONS
     if (state_ == TSTATE_TERMINATE)
         throw TerminateTaskException();
 #endif
 
-    // Save sleep time of current task
-    taskData_.currentTask_->sleepMSec_ = static_cast<unsigned>(1000.f * time);
-    // Switch to main thread task
-    taskData_.currentTask_ = &taskData_.threadTask_;
-    taskData_.currentTask_->SwitchTo();
+    nextRunTime_ = Time::GetSystemTime() + static_cast<unsigned>(1000.f * time);
+    scheduler_->threadTask_.SwitchTo();
 }
 
 bool Task::SwitchTo()
@@ -236,63 +139,72 @@ bool Task::SwitchTo()
         return false;
     }
 
-    taskData_.currentTask_ = this;
-    SwitchToFiber(fiber_);
+    if (!scheduler_.Expired())
+    {
+        scheduler_->previous_ = scheduler_->current_;
+        scheduler_->current_ = this;
+#if !URHO3D_TASKS_NO_TLS
+        currentTask_ = this;
+#endif
+    }
+
+    SetPreviousTaskContext(jump_fcontext(context_, this).ctx);
     return true;
 }
 
-Task* Task::GetThreadTask()
+TaskScheduler::TaskScheduler(Context* context)
+    : Object(context)
+    , threadTask_(this, nullptr)
 {
-    Task& threadTask = taskData_.threadTask_;
-    if (threadTask.fiber_ == nullptr)
-    {
-        threadTask.fiber_ = ConvertThreadToFiberEx(nullptr, FIBER_FLAG_FLOAT_SWITCH);
-        threadTask.state_ = TSTATE_EXECUTING;
-    }
-    return &threadTask;
-}
-
-Task::Task(const std::function<void()>& taskFunction, unsigned int stackSize)
-{
-    taskProc_ = taskFunction;
-    // On x86 Windows ExecuteTaskWrapper should be stdcall, but is cdecl instead. Invalid calling convention is not a
-    // problem because ExecuteTaskWrapper never returns. This saves us exposing platform quirks in the header.
-    fiber_ = CreateFiberEx(stackSize, stackSize, FIBER_FLAG_FLOAT_SWITCH, (LPFIBER_START_ROUTINE)&ExecuteTaskWrapper, this);
-}
-
-TaskScheduler::TaskScheduler(Context* context) : Object(context)
-{
-    // Initialize task for current thread.
-    Task::GetThreadTask();
+    threadTask_.state_ = TSTATE_EXECUTING;
+    threadTask_.scheduler_ = this;
+    current_ = currentTask_ = &threadTask_;
+    previous_ = &threadTask_;
 }
 
 TaskScheduler::~TaskScheduler() = default;
 
 Task* TaskScheduler::Create(const std::function<void()>& taskFunction, unsigned stackSize)
 {
-    SharedPtr<Task> task(new Task(taskFunction, stackSize));
+    SharedPtr<Task> task(new Task(this, taskFunction, stackSize));
     tasks_.Push(task);
     return task;
 }
 
 void TaskScheduler::ExecuteTasks()
 {
-    for (auto it = tasks_.Begin(); it != tasks_.End();)
+    // Tasks with smallest next runtime value end up at the beginning of the list. Null pointers end up at the end of
+    // the list.
+    Sort(tasks_.Begin(), tasks_.End(), [](SharedPtr<Task>& a, SharedPtr<Task>& b) {
+        if (a.Null())
+            return false;
+        if (b.Null())
+            return true;
+        return a->nextRunTime_ < b->nextRunTime_;
+    });
+    // Count null pointers at the end and discard them.
+    unsigned newSize = tasks_.Size();
+    for (auto it = tasks_.End(); it != tasks_.Begin();)
+    {
+        if (!(*--it))
+            newSize--;
+        else
+            break;
+    }
+    tasks_.Resize(newSize);
+    // Schedule sorted tasks.
+    for (auto it = tasks_.Begin(); it != tasks_.End(); it++)
     {
         Task* task = *it;
 
+        // Any further pointers will be to objects that are not ready therefore early exit is ok.
         if (!task->IsReady())
-        {
-            ++it;
-            continue;
-        }
+            break;
 
         task->SwitchTo();
 
         if (task->state_ == TSTATE_FINISHED)
-            it = tasks_.Erase(it);
-        else
-            ++it;
+            *it = nullptr;
     }
 }
 
@@ -311,10 +223,12 @@ void TaskScheduler::ExecuteAllTasks()
     }
 }
 
+#if !URHO3D_TASKS_NO_TLS
 void SuspendTask(float time)
 {
-    taskData_.currentTask_->Suspend(time);
+    currentTask_->Suspend(time);
 }
+#endif
 
 Tasks::Tasks(Context* context) : Object(context)
 {

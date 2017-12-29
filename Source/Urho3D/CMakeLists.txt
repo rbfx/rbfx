@@ -128,7 +128,7 @@ target_include_directories(Urho3D PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # Link dependencies
 
-foreach (dep FreeType JO LZ4 PugiXml rapidjson SDL StanHull STB Mustache IconFontCppHeaders Civetweb kNet ik Detour DetourCrowd DetourTileCache Recast Box2D WebP Bullet easy_profiler imgui ImGuizmo LibCpuId GLEW MojoShader tinyfiledialogs)
+foreach (dep FreeType JO LZ4 PugiXml rapidjson SDL StanHull STB Mustache IconFontCppHeaders Civetweb kNet ik Detour DetourCrowd DetourTileCache Recast Box2D WebP Bullet easy_profiler imgui ImGuizmo LibCpuId GLEW MojoShader tinyfiledialogs fcontext)
     if (TARGET "${dep}")
         target_link_libraries(Urho3D "${dep}")
     endif ()
@@ -138,9 +138,12 @@ if (URHO3D_SSE AND NOT MSVC)
     target_compile_options (Urho3D PUBLIC -msse -msse2)
 endif ()
 
-if (UNIX AND URHO3D_TASKS)
-    # glibc prevents tasks from switching stacks as a security precaution. Disable that.
-    target_compile_definitions(Urho3D PUBLIC -D_FORTIFY_SOURCE=0)
+if (URHO3D_TASKS)
+    include(CheckIncludeFile)
+    check_include_file("valgrind/valgrind.h" HAVE_VALGRIND)
+    if (HAVE_VALGRIND EQUAL 1)
+        target_compile_definitions(Urho3D PRIVATE -DHAVE_VALGRIND=${HAVE_VALGRIND})
+    endif ()
 endif ()
 
 if (WIN32)

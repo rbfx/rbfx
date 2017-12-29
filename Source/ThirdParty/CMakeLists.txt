@@ -86,6 +86,10 @@ if (URHO3D_SYSTEMUI)
     add_subdirectory(tinyfiledialogs)
 endif ()
 
+if (URHO3D_TASKS)
+    add_subdirectory(fcontext)
+endif ()
+
 # Group third party dependencies into ThirdParty subfolder in VS solution.
 file(GLOB third_party_dirs RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
 foreach (lib ${third_party_dirs})

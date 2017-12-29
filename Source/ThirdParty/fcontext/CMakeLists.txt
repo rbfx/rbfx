@@ -45,7 +45,11 @@ elseif(WIN32)
     else()
         set(CPU_ARCH "i386")
     endif()
-    set(ASM_EXT "ms_pe_masm.asm")
+    if (MSVC)
+        set(ASM_EXT "ms_pe_masm.asm")
+    else ()
+        set(ASM_EXT "ms_pe_gas.S")
+    endif ()
 endif()
 
 set(ASM_SOURCES "asm/make_${CPU_ARCH}_${ASM_EXT}"
@@ -53,11 +57,9 @@ set(ASM_SOURCES "asm/make_${CPU_ARCH}_${ASM_EXT}"
                 "asm/ontop_${CPU_ARCH}_${ASM_EXT}")
 
 add_library(fcontext STATIC include/fcontext/fcontext.h source/stack.cpp ${ASM_SOURCES})
-if(MSVC)
-    target_compile_definitions(fcontext PRIVATE -D_ITERATOR_DEBUG_LEVEL=0 -D_HAS_EXCEPTIONS=0)
-endif()
 target_compile_definitions(fcontext PRIVATE -DBOOST_CONTEXT_EXPORT=)
 target_include_directories(fcontext PRIVATE include/fcontext INTERFACE include)
+
 
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS} FILES_MATCHING PATTERN *.h)
 install_to_build_tree(fcontext)
