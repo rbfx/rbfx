@@ -180,6 +180,9 @@ VisualDebugger::VisualDebuggerSphereSector* VisualDebugger::AddSphereSector(Sphe
 
 void VisualDebugger::DrawDebugGeometry(DebugRenderer* debugRenderer, unsigned int maxTimeMs)
 {
+	if (!mEnabled)
+		return;
+
 	Timer timer;
 	unsigned int startTimeMs = timer.GetMSec(false);
 	auto i = mDebuggerObjects.Begin();
@@ -216,6 +219,7 @@ void VisualDebugger::SetEnabled(bool enabled)
 		i->Get()->SetEnabled(enabled);
 		i++;
 	}
+	mEnabled = enabled;
 }
 
 void VisualDebugger::SetObjectLifeTimeMs(unsigned int lifeTimeMs)

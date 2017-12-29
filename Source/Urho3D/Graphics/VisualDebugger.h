@@ -400,7 +400,7 @@ namespace Urho3D
 
 		VisualDebuggerSphereSector* AddSphereSector(Sphere sphere, Quaternion rotation, float angle, bool drawLines, Color color, bool depthTest);
 
-		//Draws all the debug geometry
+		//Draws all the debug geometry with optional max time argument.
 		void DrawDebugGeometry(DebugRenderer* debugRenderer, unsigned int maxTimeMs = UINT_MAX);
 
 		//enables or disables all drawing
@@ -424,6 +424,7 @@ namespace Urho3D
 		unsigned int mDefaultLifetimeMs = 2000;
 		WeakPtr<Camera> mCamera;
 		unsigned int mMaxRenderObjects = UINT_MAX;
+		bool mEnabled = true;
 	};
 
 
