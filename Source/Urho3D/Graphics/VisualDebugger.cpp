@@ -187,7 +187,7 @@ void VisualDebugger::DrawDebugGeometry(DebugRenderer* debugRenderer, unsigned in
 	while (i != mDebuggerObjects.End())
 	{
 
-		if (timer.GetMSec(false) >= startTimeMs)
+		if (timer.GetMSec(false) >= (startTimeMs + maxTimeMs))
 			return;
 
 		if (drawCount >= mMaxRenderObjects)
