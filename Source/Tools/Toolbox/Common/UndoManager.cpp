@@ -256,19 +256,27 @@ Manager::Manager(Context* ctx) : Object(ctx)
                     stack_.Resize(1);
                     index_++;
                 }
+                else if (index_ < (stack_.Size() - 1))
+                {
+                    // When we rewind a state to previous index and perform a new action, that action should overwrite
+                    // entire state, instead of appending to it.
+                    stack_[index_].Clear();
+                }
 
                 for (auto& state : previous_)
                 {
-                    if (stack_.Back().PushUnique(state))
+                    if (stack_[index_].PushUnique(state))
                         URHO3D_LOGDEBUGF("UNDO: Save %d: %s", index_, state->ToString().CString());
                 }
 
                 index_++;
                 stack_.Resize(index_ + 1);
+                // In some cases old state may linger on the stack if we did ctrl+z. New state always overwrites old one.
+                stack_[index_].Clear();
 
                 for (auto& state : next_)
                 {
-                    if (stack_.Back().PushUnique(state))
+                    if (stack_[index_].PushUnique(state))
                         URHO3D_LOGDEBUGF("UNDO: Save %d: %s", index_, state->ToString().CString());
                 }
                 previous_.Clear();

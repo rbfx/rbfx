@@ -180,6 +180,8 @@ public:
     bool Contains(State* other) const;
     /// Append state to the collection if such state does not already exist.
     bool PushUnique(const SharedPtr<State>& state);
+    /// Clear all stored states.
+    void Clear() { states_.Clear(); }
 
     /// List of states that should be applied together.
     Vector<SharedPtr<State>> states_;
