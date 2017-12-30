@@ -81,6 +81,7 @@ void Editor::Start()
     RegisterToolboxTypes(context_);
     context_->RegisterFactory<Editor>();
     context_->RegisterSubsystem(this);
+    SceneSettings::RegisterObject(context_);
 
     GetSystemUI()->ApplyStyleDefault(true, 1.0f);
     GetSystemUI()->AddFont("Fonts/fontawesome-webfont.ttf", 0, {ICON_MIN_FA, ICON_MAX_FA, 0}, true);

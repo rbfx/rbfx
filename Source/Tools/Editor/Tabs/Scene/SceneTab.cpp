@@ -337,7 +337,7 @@ void SceneTab::RenderInspector()
     {
         auto node = GetSelection().Front();
         PODVector<Serializable*> items;
-        items.Push(dynamic_cast<Serializable*>(node.Get()));
+        items.Push(node.Get());
         if (node == view_.GetScene())
         {
             effectSettings_->Prepare();
@@ -345,7 +345,7 @@ void SceneTab::RenderInspector()
             items.Push(effectSettings_.Get());
         }
         for (Component* component : node->GetComponents())
-            items.Push(dynamic_cast<Serializable*>(component));
+            items.Push(component);
         inspector_.RenderAttributes(items);
     }
 }

@@ -233,11 +233,13 @@ void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
 
         if (ui::CollapsingHeader(item->GetTypeName().CString(), ImGuiTreeNodeFlags_DefaultOpen))
         {
-            ui::PushID(item);
             const char* modifiedThisFrame = nullptr;
-            const auto& attributes = *item->GetAttributes();
+            const Vector<AttributeInfo>* attributes = item->GetAttributes();
+            if (attributes == nullptr)
+                continue;
 
-            for (const AttributeInfo& info: attributes)
+            ui::PushID(item);
+            for (const AttributeInfo& info: *attributes)
             {
                 bool hidden = false;
                 Color color = Color::WHITE;
