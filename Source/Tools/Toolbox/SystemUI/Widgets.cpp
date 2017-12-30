@@ -453,4 +453,19 @@ ImVec2 GetPixelPerfectDPIScale()
     return ppScale;
 }
 
+bool EditorToolbarButton(const char* text, const char* tooltip, bool active)
+{
+    const auto& style = ui::GetStyle();
+    if (active)
+        ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_ButtonActive]);
+    else
+        ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
+    bool result = ui::ToolbarButton(text);
+    ui::PopStyleColor();
+    ui::SameLine(0, 0);
+    if (ui::IsItemHovered())
+        ui::SetTooltip("%s", tooltip);
+    return result;
+}
+
 }

@@ -105,5 +105,7 @@ bool TransformRect(Urho3D::IntRect& inOut, Urho3D::IntRect& delta, TransformSele
 Urho3D::SystemUI* GetSystemUI();
 /// Return a vector for scaling images pixel-perfectly. Scaling is done in increments of power of 2.
 ImVec2 GetPixelPerfectDPIScale();
+/// Create a optionally toggleable toolbar button with a tooltip.
+bool EditorToolbarButton(const char* text, const char* tooltip=nullptr, bool active=false);
 
 }
