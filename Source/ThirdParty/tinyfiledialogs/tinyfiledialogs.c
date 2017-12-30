@@ -5024,15 +5024,15 @@ char const * tinyfd_saveFileDialog (
     while ( fgets ( lBuff , sizeof ( lBuff ) , lIn ) != NULL )
     {}
     pclose ( lIn ) ;
+	if ( ! strlen(lBuff) )
+	{
+		return NULL;
+	}
     if ( lBuff[strlen ( lBuff ) -1] == '\n' )
     {
     	lBuff[strlen ( lBuff ) -1] = '\0' ;
     }
 	/* printf ( "lBuff: %s\n" , lBuff ) ; */
-	if ( ! strlen(lBuff) )
-	{
-		return NULL;
-	}
     getPathWithoutFinalSlash ( lString , lBuff ) ;
     if ( strlen ( lString ) && ! dirExists ( lString ) )
     {
