@@ -26,6 +26,7 @@
 #include <Toolbox/IO/ContentUtilities.h>
 #include <Toolbox/SystemUI/Widgets.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
+#include "Editor/EditorEvents.h"
 #include "Editor/Editor.h"
 #include "Editor/Widgets.h"
 #include "UITab.h"
@@ -52,8 +53,7 @@ UITab::UITab(Urho3D::Context* context, Urho3D::StringHash id, const Urho3D::Stri
     rootElement_->SetRenderTexture(texture_);
     rootElement_->SetEnabled(true);
 
-    // Prevents crashes due to uninitialized texture.
-    UpdateViewRect({0, 0, 512, 512});
+    UpdateViewRect();                                                 // Initializes view texture
 
     undo_.Connect(rootElement_);
     undo_.Connect(&inspector_);
@@ -136,13 +136,10 @@ void UITab::RenderInspector()
 
 bool UITab::RenderWindowContent()
 {
-    IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->InnerRect);
+    RenderToolbarButtons();
+    IntRect tabRect = UpdateViewRect();
 
-    if (tabRect.Width() != texture_->GetWidth() || tabRect.Height() != texture_->GetHeight())
-        UpdateViewRect(tabRect);
-
-    auto& style = ui::GetStyle();
-    ui::SetCursorPos(ui::GetCursorPos() - style.WindowPadding);
+    ui::SetCursorScreenPos(ToImGui(tabRect.Min()));
     ui::Image(texture_, ToImGui(tabRect.Size()));
 
     if (auto selected = GetSelected())
@@ -262,18 +259,24 @@ void UITab::OnActiveUpdate()
     RenderElementContextMenu();
 }
 
-void UITab::UpdateViewRect(const IntRect& rect)
+IntRect UITab::UpdateViewRect()
 {
-    if (texture_->SetSize(rect.Width(), rect.Height(), GetSubsystem<Graphics>()->GetRGBAFormat(),
-        TEXTURE_RENDERTARGET))
-    {
-        rootElement_->SetSize(rect.Width(), rect.Height());
-        rootElement_->SetOffset(rect.Min());
-        texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
-    }
-    else
-        URHO3D_LOGERROR("UITab: resizing texture failed.");
+    IntRect rect = Tab::UpdateViewRect();
 
+    if (rect.Width() != texture_->GetWidth() || rect.Height() != texture_->GetHeight())
+    {
+        if (texture_->SetSize(rect.Width(), rect.Height(), GetSubsystem<Graphics>()->GetRGBAFormat(),
+                              TEXTURE_RENDERTARGET))
+        {
+            rootElement_->SetSize(rect.Width(), rect.Height());
+            rootElement_->SetOffset(rect.Min());
+            texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
+        }
+        else
+            URHO3D_LOGERROR("UITab: resizing texture failed.");
+    }
+
+    return rect;
 }
 
 void UITab::LoadResource(const String& resourcePath)

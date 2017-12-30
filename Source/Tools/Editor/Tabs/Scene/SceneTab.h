@@ -91,6 +91,8 @@ protected:
     void CreateObjects();
     /// Render content of the tab window.
     bool RenderWindowContent() override;
+    ///
+    IntRect UpdateViewRect() override;
 
     /// Scene renderer.
     SceneView view_;

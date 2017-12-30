@@ -60,8 +60,8 @@ public:
     UIElement* GetSelected() const;
 
 protected:
-    /// Set screen rectangle where scene is being rendered.
-    void UpdateViewRect(const IntRect& rect);
+    ///
+    IntRect UpdateViewRect() override;
     /// Render scene hierarchy window.
     void RenderNodeTree(UIElement* element);
     /// Select element. Pass null to unselect current element.

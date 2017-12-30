@@ -86,4 +86,11 @@ void Tab::SetTitle(const String& title)
     uniqueTitle_ = ToString("%s###%s", title.CString(), id_.ToString().CString());
 }
 
+IntRect Tab::UpdateViewRect()
+{
+    IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->InnerRect);
+    tabRect += IntRect(0, ui::GetCursorPosY(), 0, 0);
+    return tabRect;
+}
+
 }

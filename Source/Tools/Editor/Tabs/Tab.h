@@ -78,6 +78,9 @@ public:
     StringHash GetID() const { return id_; }
 
 protected:
+    ///
+    virtual IntRect UpdateViewRect();
+
     /// Unique scene id.
     StringHash id_;
     /// Scene title. Should be unique.

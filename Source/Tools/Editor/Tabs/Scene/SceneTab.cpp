@@ -82,11 +82,10 @@ bool SceneTab::RenderWindowContent()
     }
     ImGuizmo::SetDrawlist();
 
-    IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->InnerRect);
-    view_.SetSize(tabRect);
-    gizmo_.SetScreenRect(tabRect);
+    RenderToolbarButtons();
+    IntRect tabRect = UpdateViewRect();
 
-    ui::SetCursorPos(ui::GetCursorPos() - style.WindowPadding);
+    ui::SetCursorScreenPos(ToImGui(tabRect.Min()));
     ui::Image(view_.GetTexture(), ToImGui(tabRect.Size()));
 
     view_.GetCamera()->GetNode()->GetComponent<DebugCameraController>()->SetEnabled(isActive_);
@@ -573,6 +572,14 @@ void SceneTab::RemoveSelection()
             selected->Remove();
         UnselectAll();
     }
+}
+
+IntRect SceneTab::UpdateViewRect()
+{
+    IntRect tabRect = Tab::UpdateViewRect();
+    view_.SetSize(tabRect);
+    gizmo_.SetScreenRect(tabRect);
+    return tabRect;
 }
 
 }
