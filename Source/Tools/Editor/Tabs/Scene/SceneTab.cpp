@@ -60,6 +60,9 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
     SubscribeToEvent(view_.GetScene(), E_ASYNCLOADFINISHED, [&](StringHash, VariantMap&) {
         undo_.Clear();
     });
+
+    CreateObjects();
+    undo_.Clear();
 }
 
 SceneTab::~SceneTab() = default;
