@@ -42,4 +42,9 @@ URHO3D_EVENT(E_EDITORSCENEEFFECTSCHANGED, EditorSceneEffectsChanged)
     URHO3D_PARAM(P_SCENETAB, SceneTab);               // SceneTab pointer.
 }
 
+/// Event sent when editor successfully saves a resource.
+URHO3D_EVENT(E_EDITORRESOURCESAVED, EditorResourceSaved)
+{
+}
+
 }

@@ -370,6 +370,8 @@ bool UITab::SaveResource(const String& resourcePath)
     if (!path_.Empty())
         SetTitle(GetFileName(path_));
 
+    SendEvent(E_EDITORRESOURCESAVED);
+
     return true;
 }
 

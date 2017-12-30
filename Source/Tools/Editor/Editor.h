@@ -50,7 +50,7 @@ public:
     void Stop() override;
 
     /// Save editor configuration.
-    void SaveProject(const String& filePath);
+    void SaveProject(String filePath);
     /// Load saved editor configuration.
     void LoadProject(const String& filePath);
     /// Renders UI elements.
@@ -69,6 +69,10 @@ public:
     StringVector GetObjectCategories() const;
     /// Return a map of names and type hashes from specified category.
     StringVector GetObjectsByCategory(const String& category);
+    /// Get absolute path of `resourceName`. If it is empty, use `defaultResult`. If no resource is found then save file
+    /// dialog will be invoked for selecting a new path.
+    String GetResourceAbsolutePath(const String& resourceName, const String& defaultResult, const char** patterns,
+                                   const String& description, const String& dialogTitle);
 
 protected:
     /// Pool tracking availability of unique IDs used by editor.

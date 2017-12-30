@@ -159,7 +159,8 @@ void SceneTab::LoadResource(const String& resourcePath)
 
     if (resourcePath.EndsWith(".xml", false))
     {
-        if (view_.GetScene()->LoadXML(GetCache()->GetResource<XMLFile>(resourcePath)->GetRoot()))
+        XMLFile* file = GetCache()->GetResource<XMLFile>(resourcePath);
+        if (file && view_.GetScene()->LoadXML(file->GetRoot()))
         {
             path_ = resourcePath;
             CreateObjects();
@@ -169,7 +170,8 @@ void SceneTab::LoadResource(const String& resourcePath)
     }
     else if (resourcePath.EndsWith(".json", false))
     {
-        if (view_.GetScene()->LoadJSON(GetCache()->GetResource<JSONFile>(resourcePath)->GetRoot()))
+        JSONFile* file = GetCache()->GetResource<JSONFile>(resourcePath);
+        if (file && view_.GetScene()->LoadJSON(file->GetRoot()))
         {
             path_ = resourcePath;
             CreateObjects();
@@ -185,8 +187,11 @@ void SceneTab::LoadResource(const String& resourcePath)
 
 bool SceneTab::SaveResource(const String& resourcePath)
 {
-    auto resourcePath_ = resourcePath.Empty() ? path_ : resourcePath;
-    auto fullPath = GetCache()->GetResourceFileName(resourcePath);
+    const char* patterns[] = { "*.xml" };
+    auto fullPath = GetSubsystem<Editor>()->GetResourceAbsolutePath(resourcePath, path_, patterns, "XML Files", "Save Scene As");
+    if (fullPath.Empty())
+        return false;
+
     File file(context_, fullPath, FILE_WRITE);
     bool result = false;
 
@@ -215,6 +220,9 @@ bool SceneTab::SaveResource(const String& resourcePath)
     }
     else
         URHO3D_LOGERRORF("Saving scene to %s failed.", resourcePath.CString());
+
+    if (result)
+        SendEvent(E_EDITORRESOURCESAVED);
 
     return result;
 }

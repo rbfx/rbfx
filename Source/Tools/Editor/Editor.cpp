@@ -92,6 +92,7 @@ void Editor::Start()
     GetCache()->SetAutoReloadResources(true);
 
     SubscribeToEvent(E_UPDATE, std::bind(&Editor::OnUpdate, this, _2));
+    SubscribeToEvent(E_EDITORRESOURCESAVED, std::bind(&Editor::SaveProject, this, ""));
 
     LoadProject("Etc/DefaultEditorProject.xml");
     // Prevent overwriting example scene.
@@ -100,12 +101,20 @@ void Editor::Start()
 
 void Editor::Stop()
 {
-    SaveProject(projectFilePath_);
+    if (projectFilePath_ != "Etc/DefaultEditorProject.xml")
+        SaveProject(projectFilePath_);
     ui::ShutdownDock();
 }
 
-void Editor::SaveProject(const String& filePath)
+void Editor::SaveProject(String filePath)
 {
+    // Saving project data of tabs may trigger saving resources, which in turn triggers saving editor project. Avoid
+    // that loop.
+    UnsubscribeFromEvent(E_EDITORRESOURCESAVED);
+
+    const char* patterns[] = {"*.xml"};
+    filePath = GetResourceAbsolutePath(filePath, projectFilePath_, patterns, "XML Files", "Save Project As");;
+
     if (filePath.Empty())
         return;
 
@@ -129,7 +138,12 @@ void Editor::SaveProject(const String& filePath)
     ui::SaveDock(root.CreateChild("docks"));
 
     if (!xml->SaveFile(filePath))
+    {
+        projectFilePath_.Clear();
         URHO3D_LOGERRORF("Saving project to %s failed", filePath.CString());
+    }
+
+    SubscribeToEvent(E_EDITORRESOURCESAVED, std::bind(&Editor::SaveProject, this, ""));
 }
 
 void Editor::LoadProject(const String& filePath)
@@ -176,6 +190,8 @@ void Editor::LoadProject(const String& filePath)
 
         ui::LoadDock(root.GetChild("docks"));
     }
+
+    projectFilePath_ = filePath;
 }
 
 void Editor::OnUpdate(VariantMap& args)
@@ -288,14 +304,7 @@ void Editor::RenderMenuBar()
     }
 
     if (save)
-    {
-        if (projectFilePath_.Empty())
-        {
-            const char* patterns[] = {"*.xml"};
-            projectFilePath_ = tinyfd_saveFileDialog("Save Project As", ".", 1, patterns, "XML Files");
-        }
         SaveProject(projectFilePath_);
-    }
 }
 
 template<typename T>
@@ -349,6 +358,20 @@ StringVector Editor::GetObjectsByCategory(const String& category)
         }
     }
     return result;
+}
+
+String Editor::GetResourceAbsolutePath(const String& resourceName, const String& defaultResult, const char** patterns,
+                                       const String& description, const String& dialogTitle)
+{
+    String resourcePath = resourceName.Empty() ? defaultResult : resourceName;
+    String fullPath;
+    if (!resourcePath.Empty())
+        fullPath = GetCache()->GetResourceFileName(resourcePath);
+
+    if (fullPath.Empty())
+        fullPath = tinyfd_saveFileDialog(dialogTitle.CString(), ".", 1, patterns, description.CString());
+
+    return fullPath;
 }
 
 }
