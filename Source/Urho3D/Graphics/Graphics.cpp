@@ -49,6 +49,7 @@
 #include "../Graphics/Texture3D.h"
 #include "../Graphics/TextureCube.h"
 #include "../Graphics/Zone.h"
+#include "../Graphics/VisualDebugger.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 
@@ -430,6 +431,7 @@ void RegisterGraphicsLibrary(Context* context)
     Terrain::RegisterObject(context);
     TerrainPatch::RegisterObject(context);
     DebugRenderer::RegisterObject(context);
+	VisualDebugger::RegisterObject(context);
     Octree::RegisterObject(context);
     Zone::RegisterObject(context);
 }
