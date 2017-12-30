@@ -281,13 +281,6 @@ void Editor::RenderMenuBar()
 
         if (!activeTab_.Expired())
         {
-            save |= ui::ToolbarButton(ICON_FA_FLOPPY_O);
-            ui::SameLine(0, 2.f);
-            if (ui::IsItemHovered())
-                ui::SetTooltip("Save");
-            ui::TextUnformatted("|");
-            ui::SameLine(0, 3.f);
-            activeTab_->RenderToolbarButtons();
             SendEvent(E_EDITORTOOLBARBUTTONS);
         }
 

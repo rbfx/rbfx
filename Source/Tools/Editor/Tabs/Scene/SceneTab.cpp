@@ -263,60 +263,46 @@ const Vector<WeakPtr<Node>>& SceneTab::GetSelection() const
 
 void SceneTab::RenderToolbarButtons()
 {
-    const auto& style = ui::GetStyle();
+    auto& style = ui::GetStyle();
+    auto oldRounding = style.FrameRounding;
+    style.FrameRounding = 0;
 
-    auto drawGizmoOperationButton = [&](GizmoOperation operation, const char* icon, const char* tooltip)
-    {
-        if (gizmo_.GetOperation() == operation)
-            ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_ButtonActive]);
-        else
-            ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
-        if (ui::ToolbarButton(icon))
-            gizmo_.SetOperation(operation);
-        ui::PopStyleColor();
-        ui::SameLine(0, 3.f);
-        if (ui::IsItemHovered())
-            ui::SetTooltip("%s", tooltip);
-    };
+    if (ui::EditorToolbarButton(ICON_FA_FLOPPY_O, "Save"))
+        Tab::SaveResource();
 
-    auto drawGizmoTransformButton = [&](TransformSpace transformSpace, const char* icon, const char* tooltip)
-    {
-        if (gizmo_.GetTransformSpace() == transformSpace)
-            ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_ButtonActive]);
-        else
-            ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
-        if (ui::ToolbarButton(icon))
-            gizmo_.SetTransformSpace(transformSpace);
-        ui::PopStyleColor();
-        ui::SameLine(0, 3.f);
-        if (ui::IsItemHovered())
-            ui::SetTooltip("%s", tooltip);
-    };
-
-    drawGizmoOperationButton(GIZMOOP_TRANSLATE, ICON_FA_ARROWS, "Translate");
-    drawGizmoOperationButton(GIZMOOP_ROTATE, ICON_FA_REPEAT, "Rotate");
-    drawGizmoOperationButton(GIZMOOP_SCALE, ICON_FA_ARROWS_ALT, "Scale");
-    ui::TextUnformatted("|");
-    ui::SameLine(0, 3.f);
-    drawGizmoTransformButton(TS_WORLD, ICON_FA_ARROWS, "World");
-    drawGizmoTransformButton(TS_LOCAL, ICON_FA_ARROWS_ALT, "Local");
-    ui::TextUnformatted("|");
     ui::SameLine(0, 3.f);
 
+    if (ui::EditorToolbarButton(ICON_FA_UNDO, "Undo"))
+        undo_.Undo();
+    if (ui::EditorToolbarButton(ICON_FA_REPEAT, "Redo"))
+        undo_.Redo();
+
+    ui::SameLine(0, 3.f);
+
+    if (ui::EditorToolbarButton(ICON_FA_ARROWS, "Translate", gizmo_.GetOperation() == GIZMOOP_TRANSLATE))
+        gizmo_.SetOperation(GIZMOOP_TRANSLATE);
+    if (ui::EditorToolbarButton(ICON_FA_REPEAT, "Rotate", gizmo_.GetOperation() == GIZMOOP_ROTATE))
+        gizmo_.SetOperation(GIZMOOP_ROTATE);
+    if (ui::EditorToolbarButton(ICON_FA_ARROWS_ALT, "Scale", gizmo_.GetOperation() == GIZMOOP_SCALE))
+        gizmo_.SetOperation(GIZMOOP_SCALE);
+
+    ui::SameLine(0, 3.f);
+
+    if (ui::EditorToolbarButton(ICON_FA_ARROWS_ALT, "World", gizmo_.GetTransformSpace() == TS_WORLD))
+        gizmo_.SetTransformSpace(TS_WORLD);
+    if (ui::EditorToolbarButton(ICON_FA_ARROWS_ALT, "Local", gizmo_.GetTransformSpace() == TS_LOCAL))
+        gizmo_.SetTransformSpace(TS_LOCAL);
+
+    ui::SameLine(0, 3.f);
 
     if (Light* light = view_.GetCamera()->GetNode()->GetComponent<Light>())
     {
-        if (light->IsEnabled())
-            ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_ButtonActive]);
-        else
-            ui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
-        if (ui::ToolbarButton(ICON_FA_LIGHTBULB_O))
+        if (ui::EditorToolbarButton(ICON_FA_LIGHTBULB_O, "Camera Headlight", light->IsEnabled()))
             light->SetEnabled(!light->IsEnabled());
-        ui::PopStyleColor();
-        ui::SameLine(0, 3.f);
-        if (ui::IsItemHovered())
-            ui::SetTooltip("Camera Headlight");
     }
+
+    ui::NewLine();
+    style.FrameRounding = oldRounding;
 }
 
 bool SceneTab::IsSelected(Node* node) const

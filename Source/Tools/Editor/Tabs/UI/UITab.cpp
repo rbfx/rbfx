@@ -193,27 +193,27 @@ bool UITab::RenderWindowContent()
 
 void UITab::RenderToolbarButtons()
 {
-    if (ui::Button(ICON_FA_UNDO))
+    auto& style = ui::GetStyle();
+    auto oldRounding = style.FrameRounding;
+    style.FrameRounding = 0;
+
+    if (ui::EditorToolbarButton(ICON_FA_FLOPPY_O, "Save"))
+        Tab::SaveResource();
+
+    ui::SameLine(0, 3.f);
+
+    if (ui::EditorToolbarButton(ICON_FA_UNDO, "Undo"))
         undo_.Undo();
-
-    if (ui::IsItemHovered())
-        ui::SetTooltip("Undo.");
-    ui::SameLine();
-
-    if (ui::Button(ICON_FA_REPEAT))
+    if (ui::EditorToolbarButton(ICON_FA_REPEAT, "Redo"))
         undo_.Redo();
 
-    if (ui::IsItemHovered())
-        ui::SetTooltip("Redo.");
-
-    ui::SameLine();
+    ui::SameLine(0, 3.f);
 
     ui::Checkbox("Show Internal", &showInternal_);
     ui::SameLine();
-
     ui::Checkbox("Hide Resize Handles", &hideResizeHandles_);
-    ui::SameLine();
 
+    style.FrameRounding = oldRounding;
 }
 
 void UITab::OnActiveUpdate()
