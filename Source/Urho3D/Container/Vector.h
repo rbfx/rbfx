@@ -87,7 +87,7 @@ public:
     ~Vector()
     {
         DestructElements(Buffer(), size_);
-        delete[] buffer_;
+        FreeBuffer(buffer_);
     }
 
     /// Assign from another vector.
@@ -379,7 +379,7 @@ public:
 
             // Delete the old buffer
             DestructElements(Buffer(), size_);
-            delete[] buffer_;
+            FreeBuffer(buffer_);
             buffer_ = reinterpret_cast<unsigned char*>(newBuffer);
         }
     }

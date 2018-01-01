@@ -309,6 +309,7 @@ public:
 
 protected:
     static unsigned char* AllocateBuffer(unsigned size);
+    static void FreeBuffer(unsigned char* buffer);
 
     /// Size of vector.
     unsigned size_;

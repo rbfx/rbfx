@@ -34,4 +34,9 @@ unsigned char* VectorBase::AllocateBuffer(unsigned size)
     return new unsigned char[size];
 }
 
+void VectorBase::FreeBuffer(unsigned char* buffer)
+{
+    delete[] buffer;
+}
+
 }
