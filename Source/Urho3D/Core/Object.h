@@ -188,7 +188,12 @@ public:
 
     /// Template version of returning a subsystem.
     template <class T> T* GetSubsystem() const;
-    /// Return object category. Categories are (optionally) registered along with the object factory. Return an empty string if the object category is not registered.
+    
+	/// Template version of returning a subsystem.
+	template <class T> T* GSS() const;
+
+	
+	/// Return object category. Categories are (optionally) registered along with the object factory. Return an empty string if the object category is not registered.
     const String& GetCategory() const;
 
     /// Send event with parameters to all subscribers.
@@ -267,6 +272,8 @@ private:
 };
 
 template <class T> T* Object::GetSubsystem() const { return static_cast<T*>(GetSubsystem(T::GetTypeStatic())); }
+
+template <class T> T* Object::GSS() const { return static_cast<T*>(GetSubsystem(T::GetTypeStatic())); }
 
 /// Base class for object factories.
 class URHO3D_API ObjectFactory : public RefCounted
