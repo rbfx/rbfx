@@ -110,7 +110,7 @@ void Profiler::BeginBlock(const char* name, const char* file, int line, unsigned
     const ::profiler::BaseBlockDescriptor* desc = 0;
     if (it == blockDescriptorCache_.End())
     {
-        String uniqueName = ToString("%s:%d", file, line);
+        String uniqueName = ToString("%s at %s:%d", name, file, line);
         desc = ::profiler::registerDescription((::profiler::EasyBlockStatus)status, uniqueName.CString(), name, file,
                                                line, ::profiler::BLOCK_TYPE_BLOCK, argb, true);
     }
@@ -131,15 +131,22 @@ void Profiler::RegisterCurrentThread(const char* name)
         profilerThreadName = ::profiler::registerThread(name);
 }
 
-ProfilerBlock::ProfilerBlock(const char* name, const char* file, int line, unsigned int argb,
+ProfilerDescriptor::ProfilerDescriptor(const char* name, const char* file, int line, unsigned int argb,
     unsigned char status)
 {
-    Profiler::BeginBlock(name, file, line, argb, status);
+    String uniqueName = ToString("%p", this);
+    descriptor_ = (void*) ::profiler::registerDescription((::profiler::EasyBlockStatus)status, uniqueName.CString(),
+        name, file, line, ::profiler::BLOCK_TYPE_BLOCK, argb, true);
+}
+
+ProfilerBlock::ProfilerBlock(ProfilerDescriptor& descriptor, const char* name)
+{
+    ::profiler::beginNonScopedBlock(static_cast<const profiler::BaseBlockDescriptor*>(descriptor.descriptor_), name);
 }
 
 ProfilerBlock::~ProfilerBlock()
 {
-    Profiler::EndBlock();
+    ::profiler::endBlock();
 }
 
 }
