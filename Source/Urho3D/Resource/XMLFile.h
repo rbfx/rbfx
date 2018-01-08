@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -44,16 +44,16 @@ class URHO3D_API XMLFile : public Resource
 
 public:
     /// Construct.
-    XMLFile(Context* context);
+    explicit XMLFile(Context* context);
     /// Destruct.
-    virtual ~XMLFile() override;
+    ~XMLFile() override;
     /// Register object factory.
     static void RegisterObject(Context* context);
 
     /// Load resource from stream. May be called from a worker thread. Return true if successful.
-    virtual bool BeginLoad(Deserializer& source) override;
+    bool BeginLoad(Deserializer& source) override;
     /// Save resource with default indentation (one tab). Return true if successful.
-    virtual bool Save(Serializer& dest) const override;
+    bool Save(Serializer& dest) const override;
     /// Save resource with user-defined indentation. Return true if successful.
     bool Save(Serializer& dest, const String& indentation) const;
 

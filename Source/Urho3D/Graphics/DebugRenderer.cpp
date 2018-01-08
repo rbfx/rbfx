@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -58,9 +58,7 @@ DebugRenderer::DebugRenderer(Context* context) :
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(DebugRenderer, HandleEndFrame));
 }
 
-DebugRenderer::~DebugRenderer()
-{
-}
+DebugRenderer::~DebugRenderer() = default;
 
 void DebugRenderer::RegisterObject(Context* context)
 {
@@ -399,7 +397,7 @@ void DebugRenderer::AddTriangleMesh(const void* vertexData, unsigned vertexSize,
     unsigned indexSize, unsigned indexStart, unsigned indexCount, const Matrix3x4& transform, const Color& color, bool depthTest)
 {
     unsigned uintColor = color.ToUInt();
-    const unsigned char* srcData = ((const unsigned char*)vertexData) + vertexStart;
+    const auto* srcData = ((const unsigned char*)vertexData) + vertexStart;
 
     // 16-bit indices
     if (indexSize == sizeof(unsigned short))
@@ -512,7 +510,7 @@ void DebugRenderer::Render()
     if (!HasContent())
         return;
 
-    Graphics* graphics = GetSubsystem<Graphics>();
+    auto* graphics = GetSubsystem<Graphics>();
     // Engine does not render when window is closed or device is lost
     assert(graphics && graphics->IsInitialized() && !graphics->IsDeviceLost());
 
@@ -526,7 +524,7 @@ void DebugRenderer::Render()
     if (vertexBuffer_->GetVertexCount() < numVertices || vertexBuffer_->GetVertexCount() > numVertices * 2)
         vertexBuffer_->SetSize(numVertices, MASK_POSITION | MASK_COLOR, true);
 
-    float* dest = (float*)vertexBuffer_->Lock(0, numVertices, true);
+    auto* dest = (float*)vertexBuffer_->Lock(0, numVertices, true);
     if (!dest)
         return;
 

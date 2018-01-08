@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2014 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -58,9 +58,9 @@ class Sample2D : public Object
 
 public:
     /// Construct.
-    Sample2D(Context* context);
+    explicit Sample2D(Context* context);
     /// Destruct.
-    ~Sample2D();
+    ~Sample2D() override = default;
 
     /// Generate physics collision shapes from the tmx file's objects located in tileMapLayer.
     void CreateCollisionShapesFromTMXObjects(Node* tileMapNode, TileMapLayer2D* tileMapLayer, TileMapInfo2D info);

@@ -1,4 +1,4 @@
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -51,6 +51,7 @@
 #include "../Urho2D/TileMap2D.h"
 #include "../Urho2D/TileMapLayer2D.h"
 #include "../Urho2D/TmxFile2D.h"
+#include "../Urho2D/Urho2D.h"
 
 #include "../DebugNew.h"
 

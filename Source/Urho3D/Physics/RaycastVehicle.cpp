@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -74,7 +74,7 @@ struct RaycastVehicleData
         int rightIndex = 0;
         int upIndex = 1;
         int forwardIndex = 2;
-        PhysicsWorld* pPhysWorld = scene->GetComponent<PhysicsWorld>();
+        auto* pPhysWorld = scene->GetComponent<PhysicsWorld>();
         btDynamicsWorld* pbtDynWorld = pPhysWorld->GetWorld();
         if (!pbtDynWorld)
             return;
@@ -147,34 +147,34 @@ RaycastVehicle::~RaycastVehicle()
     wheelNodes_.Clear();
 }
 
-static const StringVector wheelElementNames =
-{
-    "Number of wheels",
-    "   Wheel node id",
-    "   Wheel direction",
-    "   Wheel axle",
-    "   Wheel rest length",
-    "   Wheel radius",
-    "   Wheel is front wheel",
-    "   Steering",
-    "   Connection point vector",
-    "   Original rotation",
-    "   Cumulative skid info",
-    "   Side skip speed",
-    "   Grounded",
-    "   Contact position",
-    "   Contact normal",
-    "   Suspension stiffness",
-    "   Damping relaxation",
-    "   Damping compression",
-    "   Friction slip",
-    "   Roll influence",
-    "   Engine force",
-    "   Brake"
-};
-
 void RaycastVehicle::RegisterObject(Context* context)
 {
+    static const StringVector wheelElementNames =
+        {
+            "Number of wheels",
+            "   Wheel node id",
+            "   Wheel direction",
+            "   Wheel axle",
+            "   Wheel rest length",
+            "   Wheel radius",
+            "   Wheel is front wheel",
+            "   Steering",
+            "   Connection point vector",
+            "   Original rotation",
+            "   Cumulative skid info",
+            "   Side skip speed",
+            "   Grounded",
+            "   Contact position",
+            "   Contact normal",
+            "   Suspension stiffness",
+            "   Damping relaxation",
+            "   Damping compression",
+            "   Friction slip",
+            "   Roll influence",
+            "   Engine force",
+            "   Brake"
+        };
+
     context->RegisterFactory<RaycastVehicle>();
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Wheel data", GetWheelDataAttr, SetWheelDataAttr, VariantVector, Variant::emptyVariantVector, AM_DEFAULT)
         .SetMetadata(AttributeMetadata::P_VECTOR_STRUCT_ELEMENTS, wheelElementNames);

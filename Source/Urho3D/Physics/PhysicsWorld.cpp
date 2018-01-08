@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -127,10 +127,10 @@ struct PhysicsQueryCallback : public btCollisionWorld::ContactResultCallback
     }
 
     /// Add a contact result.
-    virtual btScalar addSingleResult(btManifoldPoint&, const btCollisionObjectWrapper* colObj0Wrap, int, int,
+    btScalar addSingleResult(btManifoldPoint&, const btCollisionObjectWrapper* colObj0Wrap, int, int,
         const btCollisionObjectWrapper* colObj1Wrap, int, int) override
     {
-        RigidBody* body = reinterpret_cast<RigidBody*>(colObj0Wrap->getCollisionObject()->getUserPointer());
+        auto* body = reinterpret_cast<RigidBody*>(colObj0Wrap->getCollisionObject()->getUserPointer());
         if (body && !result_.Contains(body) && (body->GetCollisionLayer() & collisionMask_))
             result_.Push(body);
         body = reinterpret_cast<RigidBody*>(colObj1Wrap->getCollisionObject()->getUserPointer());
@@ -538,7 +538,7 @@ void PhysicsWorld::ConvexCast(PhysicsRaycastResult& result, CollisionShape* shap
     }
 
     // If shape is attached in a rigidbody, set its collision group temporarily to 0 to make sure it is not returned in the sweep result
-    RigidBody* bodyComp = shape->GetComponent<RigidBody>();
+    auto* bodyComp = shape->GetComponent<RigidBody>();
     btRigidBody* body = bodyComp ? bodyComp->GetBody() : nullptr;
     btBroadphaseProxy* proxy = body ? body->getBroadphaseProxy() : nullptr;
     short group = 0;
@@ -760,7 +760,7 @@ void PhysicsWorld::AddDelayedWorldTransform(const DelayedWorldTransform& transfo
 
 void PhysicsWorld::DrawDebugGeometry(bool depthTest)
 {
-    DebugRenderer* debug = GetComponent<DebugRenderer>();
+    auto* debug = GetComponent<DebugRenderer>();
     DrawDebugGeometry(debug, depthTest);
 }
 
@@ -856,8 +856,8 @@ void PhysicsWorld::SendCollisionEvents()
             const btCollisionObject* objectA = contactManifold->getBody0();
             const btCollisionObject* objectB = contactManifold->getBody1();
 
-            RigidBody* bodyA = static_cast<RigidBody*>(objectA->getUserPointer());
-            RigidBody* bodyB = static_cast<RigidBody*>(objectB->getUserPointer());
+            auto* bodyA = static_cast<RigidBody*>(objectA->getUserPointer());
+            auto* bodyB = static_cast<RigidBody*>(objectB->getUserPointer());
             // If it's not a rigidbody, maybe a ghost object
             if (!bodyA || !bodyB)
                 continue;

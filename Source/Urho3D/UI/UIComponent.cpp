@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -145,8 +145,8 @@ protected:
 };
 
 UIComponent::UIComponent(Context* context)
-    : Component(context)
-    , viewportIndex_(0)
+    : Component(context),
+    viewportIndex_(0)
 {
     texture_ = context_->CreateObject<Texture2D>();
     texture_->SetFilterMode(FILTER_BILINEAR);
@@ -169,9 +169,7 @@ UIComponent::UIComponent(Context* context)
     rootElement_->SetSize(UICOMPONENT_DEFAULT_TEXTURE_SIZE, UICOMPONENT_DEFAULT_TEXTURE_SIZE);
 }
 
-UIComponent::~UIComponent()
-{
-}
+UIComponent::~UIComponent() = default;
 
 void UIComponent::RegisterObject(Context* context)
 {
@@ -242,7 +240,7 @@ void UIComponent::SetViewportIndex(unsigned int index)
     viewportIndex_ = index;
     if (Scene* scene = GetScene())
     {
-        Renderer* renderer = GetSubsystem<Renderer>();
+        auto* renderer = GetSubsystem<Renderer>();
         Viewport* viewport = renderer->GetViewportForScene(scene, index);
         rootElement_->SetViewport(viewport);
     }

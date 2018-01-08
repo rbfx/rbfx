@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -470,7 +470,7 @@ void Connection::ProcessLoadScene(int msgID, MemoryBuffer& msg)
 
     // In case we have joined other scenes in this session, remove first all downloaded package files from the resource system
     // to prevent resource conflicts
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    auto* cache = GetSubsystem<ResourceCache>();
     const String& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
 
     Vector<SharedPtr<PackageFile> > packages = cache->GetPackageFiles();
@@ -536,7 +536,7 @@ void Connection::ProcessSceneUpdate(int msgID, MemoryBuffer& msg)
 
             // Read initial attributes, then snap the motion smoothing immediately to the end
             node->ReadDeltaUpdate(msg);
-            SmoothedTransform* transform = node->GetComponent<SmoothedTransform>();
+            auto* transform = node->GetComponent<SmoothedTransform>();
             if (transform)
                 transform->Update(1.0f, 0.0f);
 
@@ -1213,7 +1213,7 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
 
     // Check from the interest management component, if exists, whether should update
     /// \todo Searching for the component is a potential CPU hotspot. It should be cached
-    NetworkPriority* priority = node->GetComponent<NetworkPriority>();
+    auto* priority = node->GetComponent<NetworkPriority>();
     if (priority && (!priority->GetAlwaysUpdateOwner() || node->GetOwner() != this))
     {
         float distance = (node->GetWorldPosition() - position_).Length();
@@ -1378,7 +1378,7 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
 
 bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
 {
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    auto* cache = GetSubsystem<ResourceCache>();
     const String& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
 
     Vector<SharedPtr<PackageFile> > packages = cache->GetPackageFiles();

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -71,7 +71,7 @@ public:
     /// Construct.
     Context();
     /// Destruct.
-    virtual ~Context() override;
+    ~Context() override;
 
     /// Create an object by type. Return pointer to it or null if no factory found.
     template <class T> inline SharedPtr<T> CreateObject()

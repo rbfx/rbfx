@@ -1,5 +1,5 @@
 ﻿//
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -93,7 +93,7 @@ void Node::RegisterObject(Context* context)
         AM_NET | AM_NOEDIT);
 }
 
-bool Node::Load(Deserializer& source, bool setInstanceDefault)
+bool Node::Load(Deserializer& source)
 {
     SceneResolver resolver;
 
@@ -153,7 +153,7 @@ bool Node::Save(Serializer& dest) const
     return true;
 }
 
-bool Node::LoadXML(const XMLElement& source, bool setInstanceDefault)
+bool Node::LoadXML(const XMLElement& source)
 {
     SceneResolver resolver;
 
@@ -172,7 +172,7 @@ bool Node::LoadXML(const XMLElement& source, bool setInstanceDefault)
     return success;
 }
 
-bool Node::LoadJSON(const JSONValue& source, bool setInstanceDefault)
+bool Node::LoadJSON(const JSONValue& source)
 {
     SceneResolver resolver;
 
@@ -1442,7 +1442,7 @@ void Node::ResetScene()
 
 void Node::SetNetPositionAttr(const Vector3& value)
 {
-    SmoothedTransform* transform = GetComponent<SmoothedTransform>();
+    auto* transform = GetComponent<SmoothedTransform>();
     if (transform)
         transform->SetTargetPosition(value);
     else
@@ -1452,7 +1452,7 @@ void Node::SetNetPositionAttr(const Vector3& value)
 void Node::SetNetRotationAttr(const PODVector<unsigned char>& value)
 {
     MemoryBuffer buf(value);
-    SmoothedTransform* transform = GetComponent<SmoothedTransform>();
+    auto* transform = GetComponent<SmoothedTransform>();
     if (transform)
         transform->SetTargetRotation(buf.ReadPackedQuaternion());
     else
@@ -1717,7 +1717,7 @@ void Node::PrepareNetworkUpdate()
             for (PODVector<ReplicationState*>::Iterator j = networkState_->replicationStates_.Begin();
                  j != networkState_->replicationStates_.End(); ++j)
             {
-                NodeReplicationState* nodeState = static_cast<NodeReplicationState*>(*j);
+                auto* nodeState = static_cast<NodeReplicationState*>(*j);
                 nodeState->dirtyAttributes_.Set(i);
 
                 // Add node to the dirty set if not added yet
@@ -1742,7 +1742,7 @@ void Node::PrepareNetworkUpdate()
             for (PODVector<ReplicationState*>::Iterator j = networkState_->replicationStates_.Begin();
                  j != networkState_->replicationStates_.End(); ++j)
             {
-                NodeReplicationState* nodeState = static_cast<NodeReplicationState*>(*j);
+                auto* nodeState = static_cast<NodeReplicationState*>(*j);
                 nodeState->dirtyVars_.Insert(i->first_);
 
                 if (!nodeState->markedDirty_)
@@ -1779,7 +1779,7 @@ void Node::MarkReplicationDirty()
         for (PODVector<ReplicationState*>::Iterator j = networkState_->replicationStates_.Begin();
              j != networkState_->replicationStates_.End(); ++j)
         {
-            NodeReplicationState* nodeState = static_cast<NodeReplicationState*>(*j);
+            auto* nodeState = static_cast<NodeReplicationState*>(*j);
             if (!nodeState->markedDirty_)
             {
                 nodeState->markedDirty_ = true;

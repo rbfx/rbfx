@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -177,10 +177,10 @@ void UIElement::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Priority", GetPriority, SetPriority, int, 0, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Opacity", GetOpacity, SetOpacity, float, 1.0f, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Color", GetColorAttr, SetColor, Color, Color::WHITE, AM_FILE);
-    URHO3D_ATTRIBUTE("Top Left Color", Color, color_[0], Color::WHITE, AM_FILE);
-    URHO3D_ATTRIBUTE("Top Right Color", Color, color_[1], Color::WHITE, AM_FILE);
-    URHO3D_ATTRIBUTE("Bottom Left Color", Color, color_[2], Color::WHITE, AM_FILE);
-    URHO3D_ATTRIBUTE("Bottom Right Color", Color, color_[3], Color::WHITE, AM_FILE);
+    URHO3D_ATTRIBUTE("Top Left Color", Color, colors_[0], Color::WHITE, AM_FILE);
+    URHO3D_ATTRIBUTE("Top Right Color", Color, colors_[1], Color::WHITE, AM_FILE);
+    URHO3D_ATTRIBUTE("Bottom Left Color", Color, colors_[2], Color::WHITE, AM_FILE);
+    URHO3D_ATTRIBUTE("Bottom Right Color", Color, colors_[3], Color::WHITE, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, false, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Is Editable", IsEditable, SetEditable, bool, true, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Is Selected", IsSelected, SetSelected, bool, false, AM_FILE);
@@ -208,17 +208,17 @@ void UIElement::ApplyAttributes()
 
     for (unsigned i = 1; i < MAX_UIELEMENT_CORNERS; ++i)
     {
-        if (color_[i] != color_[0])
+        if (colors_[i] != colors_[0])
             colorGradient_ = true;
     }
 }
 
-bool UIElement::LoadXML(const XMLElement& source, bool setInstanceDefault)
+bool UIElement::LoadXML(const XMLElement& source)
 {
-    return LoadXML(source, nullptr, setInstanceDefault);
+    return LoadXML(source, nullptr);
 }
 
-bool UIElement::LoadXML(const XMLElement& source, XMLFile* styleFile, bool setInstanceDefault)
+bool UIElement::LoadXML(const XMLElement& source, XMLFile* styleFile)
 {
     // If this is a root element get style file from which style is loaded.
     String defaultStyleFileName = source.GetAttribute("styleFile");
@@ -272,7 +272,7 @@ bool UIElement::LoadXML(const XMLElement& source, XMLFile* styleFile, bool setIn
     DisableLayoutUpdate();
 
     // Then load rest of the attributes from the source
-    if (!Animatable::LoadXML(source, setInstanceDefault))
+    if (!Animatable::LoadXML(source))
         return false;
 
     unsigned nextInternalChild = 0;
@@ -310,7 +310,7 @@ bool UIElement::LoadXML(const XMLElement& source, XMLFile* styleFile, bool setIn
         {
             if (!styleFile)
                 styleFile = GetDefaultStyle();
-            if (!child->LoadXML(childElem, styleFile, setInstanceDefault))
+            if (!child->LoadXML(childElem, styleFile))
                 return false;
         }
 
@@ -325,7 +325,7 @@ bool UIElement::LoadXML(const XMLElement& source, XMLFile* styleFile, bool setIn
     return true;
 }
 
-UIElement* UIElement::LoadChildXML(const XMLElement& childElem, XMLFile* styleFile, bool setInstanceDefault)
+UIElement* UIElement::LoadChildXML(const XMLElement& childElem, XMLFile* styleFile)
 {
     bool internalElem = childElem.GetBool("internal");
     if (internalElem)
@@ -344,7 +344,7 @@ UIElement* UIElement::LoadChildXML(const XMLElement& childElem, XMLFile* styleFi
     {
         if (!styleFile)
             styleFile = GetDefaultStyle();
-        if (!child->LoadXML(childElem, styleFile, setInstanceDefault))
+        if (!child->LoadXML(childElem, styleFile))
         {
             RemoveChild(child, index);
             return nullptr;
@@ -891,21 +891,21 @@ void UIElement::SetClipBorder(const IntRect& rect)
 
 void UIElement::SetColor(const Color& color)
 {
-    for (unsigned i = 0; i < MAX_UIELEMENT_CORNERS; ++i)
-        color_[i] = color;
+    for (auto& cornerColor : colors_)
+        cornerColor = color;
     colorGradient_ = false;
     derivedColorDirty_ = true;
 }
 
 void UIElement::SetColor(Corner corner, const Color& color)
 {
-    color_[corner] = color;
+    colors_[corner] = color;
     colorGradient_ = false;
     derivedColorDirty_ = true;
 
     for (unsigned i = 0; i < MAX_UIELEMENT_CORNERS; ++i)
     {
-        if (i != corner && color_[i] != color_[corner])
+        if (i != corner && colors_[i] != colors_[corner])
             colorGradient_ = true;
     }
 }
@@ -1002,7 +1002,7 @@ void UIElement::SetFocus(bool enable)
     if (focusMode_ < FM_FOCUSABLE || !IsVisibleEffective())
         enable = false;
 
-    UI* ui = GetSubsystem<UI>();
+    auto* ui = GetSubsystem<UI>();
     // Can be null at exit time; no-op in that case
     if (!ui)
         return;
@@ -1026,7 +1026,7 @@ void UIElement::SetSelected(bool enable)
 
 void UIElement::SetVisible(bool enable)
 {
-    UI* ui = GetSubsystem<UI>();
+    auto* ui = GetSubsystem<UI>();
     // Can be null at exit time; no-op in that case
     if (!ui)
         return;
@@ -1095,7 +1095,10 @@ bool UIElement::SetStyle(const XMLElement& element)
     appliedStyle_ = element.GetAttribute("type");
 
     // Consider style attribute values as instance-level attribute default values
-    return LoadXML(element, true);
+    SetInstanceDefault(true);
+    bool success = LoadXML(element);
+    SetInstanceDefault(false);
+    return success;
 }
 
 bool UIElement::SetStyleAuto(XMLFile* file)
@@ -1184,7 +1187,7 @@ void UIElement::UpdateLayout()
             if (!children_[i]->IsVisible())
                 continue;
             positions.Push(baseIndentWidth);
-            unsigned indent = (unsigned)children_[i]->GetIndentWidth();
+            auto indent = (unsigned)children_[i]->GetIndentWidth();
             sizes.Push(children_[i]->GetWidth() + indent);
             minSizes.Push(children_[i]->GetEffectiveMinSize().x_ + indent);
             maxSizes.Push(children_[i]->GetMaxWidth() + indent);
@@ -1607,7 +1610,7 @@ float UIElement::GetDerivedOpacity() const
 
 bool UIElement::HasFocus() const
 {
-    UI* ui = GetSubsystem<UI>();
+    auto* ui = GetSubsystem<UI>();
     return ui ? ui->GetFocusElement() == this : false;
 }
 
@@ -1744,7 +1747,7 @@ const Color& UIElement::GetDerivedColor() const
 {
     if (derivedColorDirty_)
     {
-        derivedColor_ = color_[C_TOPLEFT];
+        derivedColor_ = colors_[C_TOPLEFT];
         derivedColor_.a_ *= GetDerivedOpacity();
         derivedColorDirty_ = false;
     }
@@ -1912,7 +1915,7 @@ void UIElement::GetBatchesWithOffset(IntVector2& offset, PODVector<UIBatch>& bat
 
 UIElement* UIElement::GetElementEventSender() const
 {
-    UIElement* element = const_cast<UIElement*>(this);
+    auto* element = const_cast<UIElement*>(this);
     if (elementEventSender_)
         return element;
 
@@ -2168,7 +2171,7 @@ void UIElement::CalculateLayout(PODVector<int>& positions, PODVector<int>& sizes
     // Initial pass
     for (unsigned i = 0; i < numChildren; ++i)
     {
-        int targetSize = (int)(targetChildSize * flexScales[i]);
+        auto targetSize = (int)(targetChildSize * flexScales[i]);
         if (remainder)
         {
             acc += add;

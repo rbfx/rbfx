@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -70,9 +70,9 @@ class URHO3D_API FontFace : public RefCounted
 
 public:
     /// Construct.
-    FontFace(Font* font);
+    explicit FontFace(Font* font);
     /// Destruct.
-    virtual ~FontFace() override;
+    ~FontFace() override;
 
     /// Load font face.
     virtual bool Load(const unsigned char* fontData, unsigned fontDataSize, float pointSize) = 0;

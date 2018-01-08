@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -39,7 +39,7 @@ class TmxLayer2D : public RefCounted
 {
 public:
     TmxLayer2D(TmxFile2D* tmxFile, TileMapLayerType2D type);
-    virtual ~TmxLayer2D() override;
+    ~TmxLayer2D() override;
 
     /// Return tmx file.
     TmxFile2D* GetTmxFile() const;
@@ -91,7 +91,7 @@ protected:
 class TmxTileLayer2D : public TmxLayer2D
 {
 public:
-    TmxTileLayer2D(TmxFile2D* tmxFile);
+    explicit TmxTileLayer2D(TmxFile2D* tmxFile);
 
     /// Load from XML element.
     bool Load(const XMLElement& element, const TileMapInfo2D& info);
@@ -107,7 +107,7 @@ protected:
 class TmxObjectGroup2D : public TmxLayer2D
 {
 public:
-    TmxObjectGroup2D(TmxFile2D* tmxFile);
+    explicit TmxObjectGroup2D(TmxFile2D* tmxFile);
 
     /// Load from XML element.
     bool Load(const XMLElement& element, const TileMapInfo2D& info);
@@ -130,7 +130,7 @@ private:
 class TmxImageLayer2D : public TmxLayer2D
 {
 public:
-    TmxImageLayer2D(TmxFile2D* tmxFile);
+    explicit TmxImageLayer2D(TmxFile2D* tmxFile);
 
     /// Load from XML element.
     bool Load(const XMLElement& element, const TileMapInfo2D& info);
@@ -160,16 +160,16 @@ class URHO3D_API TmxFile2D : public Resource
 
 public:
     /// Construct.
-    TmxFile2D(Context* context);
+    explicit TmxFile2D(Context* context);
     /// Destruct.
-    virtual ~TmxFile2D() override;
+    ~TmxFile2D() override;
     /// Register object factory.
     static void RegisterObject(Context* context);
 
     /// Load resource from stream. May be called from a worker thread. Return true if successful.
-    virtual bool BeginLoad(Deserializer& source) override;
+    bool BeginLoad(Deserializer& source) override;
     /// Finish resource loading. Always called from the main thread. Return true if successful.
-    virtual bool EndLoad() override;
+    bool EndLoad() override;
 
     /// Set Tilemap information.
     bool SetInfo(Orientation2D orientation, int width, int height, float tileWidth, float tileHeight);

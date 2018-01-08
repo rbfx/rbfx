@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
+#include "../Core/ProcessUtils.h"
 #include "../Core/Thread.h"
 #include "../Core/Profiler.h"
 #include "../IO/Log.h"
@@ -40,9 +41,7 @@ TypeInfo::TypeInfo(const char* typeName, const TypeInfo* baseTypeInfo) :
 {
 }
 
-TypeInfo::~TypeInfo()
-{
-}
+TypeInfo::~TypeInfo() = default;
 
 bool TypeInfo::IsTypeOf(StringHash type) const
 {
@@ -558,10 +557,18 @@ void Object::RemoveEventSender(Object* sender)
 }
 
 
-Urho3D::StringHash EventNameRegistrar::RegisterEventName(const char* eventName)
+Urho3D::StringHash EventNameRegistrar::RegisterEventName(const char* eventName) noexcept
 {
     StringHash id(eventName);
-    GetEventNameMap()[id] = eventName;
+    try
+    {
+        GetEventNameMap()[id] = eventName;
+    }
+    catch (std::bad_alloc&)
+    {
+        PrintLine("An out-of-memory error occurred. The application will now terminate.", true);
+        std::terminate();
+    }
     return id;
 }
 

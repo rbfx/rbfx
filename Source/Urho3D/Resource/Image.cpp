@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -255,9 +255,7 @@ Image::Image(Context* context) :
 {
 }
 
-Image::~Image()
-{
-}
+Image::~Image() = default;
 
 void Image::RegisterObject(Context* context)
 {
@@ -469,7 +467,7 @@ bool Image::BeginLoad(Deserializer& source)
                 {
                 case 4:
                 {
-                    unsigned* src = (unsigned*)currentImage->data_.Get();
+                    auto* src = (unsigned*)currentImage->data_.Get();
                     unsigned char* dest = rgbaData.Get();
 
                     while (numPixels--)
@@ -502,7 +500,7 @@ bool Image::BeginLoad(Deserializer& source)
 
                 default:
                 {
-                    unsigned short* src = (unsigned short*)currentImage->data_.Get();
+                    auto* src = (unsigned short*)currentImage->data_.Get();
                     unsigned char* dest = rgbaData.Get();
 
                     while (numPixels--)
@@ -620,7 +618,7 @@ bool Image::BeginLoad(Deserializer& source)
         }
 
         source.Seek(source.GetPosition() + keyValueBytes);
-        unsigned dataSize = (unsigned)(source.GetSize() - source.GetPosition() - mipmaps * sizeof(unsigned));
+        auto dataSize = (unsigned)(source.GetSize() - source.GetPosition() - mipmaps * sizeof(unsigned));
 
         data_ = new unsigned char[dataSize];
         width_ = width;
@@ -919,7 +917,7 @@ void Image::SetPixelInt(int x, int y, int z, unsigned uintColor)
         return;
 
     unsigned char* dest = data_ + (z * width_ * height_ + y * width_ + x) * components_;
-    unsigned char* src = (unsigned char*)&uintColor;
+    auto* src = (unsigned char*)&uintColor;
 
     switch (components_)
     {
@@ -1161,7 +1159,7 @@ bool Image::Resize(int width, int height)
             float yF = (height_ > 1) ? (float)y / (float)(height - 1) : 0.0f;
             unsigned uintColor = GetPixelBilinear(xF, yF).ToUInt();
             unsigned char* dest = newData + (y * width + x) * components_;
-            unsigned char* src = (unsigned char*)&uintColor;
+            auto* src = (unsigned char*)&uintColor;
 
             switch (components_)
             {
@@ -1209,14 +1207,14 @@ void Image::ClearInt(unsigned uintColor)
     if (components_ == 4)
     {
         unsigned color = uintColor;
-        unsigned* data = (unsigned*)GetData();
-        unsigned* data_end = (unsigned*)(GetData() + width_ * height_ * depth_ * components_);
+        auto* data = (unsigned*)GetData();
+        auto* data_end = (unsigned*)(GetData() + width_ * height_ * depth_ * components_);
         for (; data < data_end; ++data)
             *data = color;
     }
     else
     {
-        unsigned char* src = (unsigned char*)&uintColor;
+        auto* src = (unsigned char*)&uintColor;
         for (unsigned i = 0; i < width_ * height_ * depth_ * components_; ++i)
             data_[i] = src[i % components_];
     }
@@ -1226,7 +1224,7 @@ bool Image::SaveBMP(const String& fileName) const
 {
     URHO3D_PROFILE(SaveImageBMP);
 
-    FileSystem* fileSystem = GetSubsystem<FileSystem>();
+    auto* fileSystem = GetSubsystem<FileSystem>();
     if (fileSystem && !fileSystem->CheckAccess(GetPath(fileName)))
     {
         URHO3D_LOGERROR("Access denied to " + fileName);
@@ -1260,7 +1258,7 @@ bool Image::SaveTGA(const String& fileName) const
 {
     URHO3D_PROFILE(SaveImageTGA);
 
-    FileSystem* fileSystem = GetSubsystem<FileSystem>();
+    auto* fileSystem = GetSubsystem<FileSystem>();
     if (fileSystem && !fileSystem->CheckAccess(GetPath(fileName)))
     {
         URHO3D_LOGERROR("Access denied to " + fileName);
@@ -1283,7 +1281,7 @@ bool Image::SaveJPG(const String& fileName, int quality) const
 {
     URHO3D_PROFILE(SaveImageJPG);
 
-    FileSystem* fileSystem = GetSubsystem<FileSystem>();
+    auto* fileSystem = GetSubsystem<FileSystem>();
     if (fileSystem && !fileSystem->CheckAccess(GetPath(fileName)))
     {
         URHO3D_LOGERROR("Access denied to " + fileName);
@@ -1359,7 +1357,7 @@ bool Image::SaveWEBP(const String& fileName, float compression /* = 0.0f */) con
 #ifdef URHO3D_WEBP
     URHO3D_PROFILE(SaveImageWEBP);
 
-    FileSystem* fileSystem(GetSubsystem<FileSystem>());
+    auto* fileSystem(GetSubsystem<FileSystem>());
     File outFile(context_, fileName, FILE_WRITE);
 
     if (fileSystem && !fileSystem->CheckAccess(GetPath(fileName)))
@@ -1527,8 +1525,8 @@ Color Image::GetPixelBilinear(float x, float y) const
     x = Clamp(x * width_ - 0.5f, 0.0f, (float)(width_ - 1));
     y = Clamp(y * height_ - 0.5f, 0.0f, (float)(height_ - 1));
 
-    int xI = (int)x;
-    int yI = (int)y;
+    auto xI = (int)x;
+    auto yI = (int)y;
     float xF = Fract(x);
     float yF = Fract(y);
 
@@ -1546,9 +1544,9 @@ Color Image::GetPixelTrilinear(float x, float y, float z) const
     y = Clamp(y * height_ - 0.5f, 0.0f, (float)(height_ - 1));
     z = Clamp(z * depth_ - 0.5f, 0.0f, (float)(depth_ - 1));
 
-    int xI = (int)x;
-    int yI = (int)y;
-    int zI = (int)z;
+    auto xI = (int)x;
+    auto yI = (int)y;
+    auto zI = (int)z;
     if (zI == depth_ - 1)
         return GetPixelBilinear(x, y);
     float xF = Fract(x);
@@ -2094,7 +2092,7 @@ Image* Image::GetSubimage(const IntRect& rect) const
         int width = rect.Width();
         int height = rect.Height();
 
-        Image* image = new Image(context_);
+        auto* image = new Image(context_);
         image->SetSize(width, height, components_);
 
         unsigned char* dest = image->GetData();
@@ -2163,7 +2161,7 @@ Image* Image::GetSubimage(const IntRect& rect) const
             return nullptr;
         }
 
-        Image* image = new Image(context_);
+        auto* image = new Image(context_);
         image->width_ = paddedRect.Width();
         image->height_ = paddedRect.Height();
         image->depth_ = 1;
@@ -2227,7 +2225,7 @@ SDL_Surface* Image::GetSDLSurface(const IntRect& rect) const
     {
         SDL_LockSurface(surface);
 
-        unsigned char* destination = reinterpret_cast<unsigned char*>(surface->pixels);
+        auto* destination = reinterpret_cast<unsigned char*>(surface->pixels);
         unsigned char* source = data_ + components_ * (imageWidth * imageRect.top_ + imageRect.left_);
         for (int i = 0; i < height; ++i)
         {

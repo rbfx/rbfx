@@ -159,6 +159,7 @@ Urho3D development, contributions and bugfixes by:
 - PredatorMF
 - Scellow
 - Skrylar
+- SuperWangKai
 - TheComet93
 - Y-way
 - 1vanK
@@ -257,7 +258,7 @@ License / copyright information included with the assets as necessary. All other
 
 \page License License
 
-Copyright (c) 2008-2017 the Urho3D project.
+Copyright (c) 2008-2018 the Urho3D project.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -1370,6 +1371,7 @@ From 1.6 to 1.7:
 From 1.7 to master:
 - URHO3D_CXX11 define was removed. C++11 mode is unconditionally enabled.
 - URHO3D_ACCESSOR_VARIANT_VECTOR_STRUCTURE_ATTRIBUTE and URHO3D_MIXED_ACCESSOR_VARIANT_VECTOR_STRUCTURE_ATTRIBUTE macros were removed. Use attribute metadata instead. Element names shall be stored in StringVector (without trailing zero) instead of const char*[].
+- Build system - the Android Java classes started to use Java 7 and 8 language features, so they must be built with Java 8 support turned on.
 
 */
 
