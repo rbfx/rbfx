@@ -244,11 +244,6 @@ public:
 protected:
     /// Execution context.
     Context* context_;
-    
-    /// Send profiled event if profiler is enabled.
-    void SendEventProfiled(StringHash eventType, VariantMap& eventData);
-    /// Send non-profiled event even if profiler is enabled.
-    void SendEventNonProfiled(StringHash eventType, VariantMap& eventData);
 
 private:
     /// Find the first event handler with no specific sender.

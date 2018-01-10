@@ -297,31 +297,6 @@ void Object::SendEvent(StringHash eventType)
 
 void Object::SendEvent(StringHash eventType, VariantMap& eventData)
 {
-#if URHO3D_PROFILING
-    bool eventProfilingEnabled = false;
-    if (Profiler* profiler = GetSubsystem<Profiler>())
-        eventProfilingEnabled = profiler->GetEventProfilingEnabled();
-
-    if (eventProfilingEnabled)
-        SendEventProfiled(eventType, eventData);
-    else
-#endif
-        SendEventNonProfiled(eventType, eventData);
-}
-
-void Object::SendEventProfiled(StringHash eventType, VariantMap& eventData)
-{
-#if URHO3D_PROFILING
-    String eventName = EventNameRegistrar::GetEventName(eventType);
-    if (eventName.Empty())
-        eventName = eventType.ToString();
-    URHO3D_PROFILE_SCOPED(eventName.CString(), PROFILER_COLOR_EVENTS);
-#endif
-    SendEventNonProfiled(eventType, eventData);
-}
-
-void Object::SendEventNonProfiled(StringHash eventType, VariantMap& eventData)
-{
     if (!Thread::IsMainThread())
     {
         URHO3D_LOGERROR("Sending events is only supported from the main thread");
@@ -330,6 +305,19 @@ void Object::SendEventNonProfiled(StringHash eventType, VariantMap& eventData)
 
     if (blockEvents_)
         return;
+
+#if URHO3D_PROFILING
+    ProfilerBlockStatus blockStatus = ProfilerBlockStatus::OFF;
+    String eventName;
+    if (GetSubsystem<Profiler>()->GetEventProfilingEnabled())
+    {
+        blockStatus = ProfilerBlockStatus::ON;
+        eventName = EventNameRegistrar::GetEventName(eventType);
+        if (eventName.Empty())
+            eventName = eventType.ToString();
+    }
+    URHO3D_PROFILE_SCOPED(eventName.CString(), PROFILER_COLOR_EVENTS, blockStatus);
+#endif
 
     // Make a weak pointer to self to check for destruction during event handling
     WeakPtr<Object> self(this);
