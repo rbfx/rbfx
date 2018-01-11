@@ -106,7 +106,8 @@ bool Texture3D::SetData(unsigned level, int x, int y, int z, int width, int heig
     bgfx::TextureHandle handle;
     handle.idx = object_.idx_;
 
-    bgfx::updateTexture3D(handle, (uint8_t)level, (uint16_t)x, (uint16_t)y, (uint16_t)z, (uint16_t)width, (uint16_t)height, (uint16_t)depth, bgfx::makeRef(data, sizeof(data)));
+	const bgfx::Memory* mem = bgfx::copy(data, GetDataSize(width, height, depth));
+	bgfx::updateTexture3D(handle, (uint8_t)level, (uint16_t)x, (uint16_t)y, (uint16_t)z, (uint16_t)width, (uint16_t)height, (uint16_t)depth, mem);
 
     return true;
 }

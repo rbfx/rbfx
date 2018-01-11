@@ -122,7 +122,8 @@ bool Texture2DArray::SetData(unsigned layer, unsigned level, int x, int y, int w
     bgfx::TextureHandle handle;
     handle.idx = object_.idx_;
 
-    bgfx::updateTexture2D(handle, (uint16_t)layer, (uint8_t)level, (uint16_t)x, (uint16_t)y, (uint16_t)width, (uint16_t)height, bgfx::makeRef(data, sizeof(data)));
+	const bgfx::Memory* mem = bgfx::copy(data, GetDataSize(width, height));
+	bgfx::updateTexture2D(handle, (uint16_t)layer, (uint8_t)level, (uint16_t)x, (uint16_t)y, (uint16_t)width, (uint16_t)height, mem, GetRowDataSize(width));
 
     return true;
 }
