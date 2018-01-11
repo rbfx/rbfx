@@ -1937,7 +1937,7 @@ void Graphics::PrepareDraw()
         bgfx::setState(stateFlags);
     }
 
-    if (impl_->scissorRectDirty_)
+    if (impl_->scissorRectDirty_ && scissorRect_.Size() != IntVector2::ZERO)
     {
         bgfx::setScissor(scissorRect_.left_, scissorRect_.top_, scissorRect_.right_, scissorRect_.bottom_ );
         impl_->scissorRectDirty_ = false;
