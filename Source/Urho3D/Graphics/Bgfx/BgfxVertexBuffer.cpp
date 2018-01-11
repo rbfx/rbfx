@@ -224,7 +224,7 @@ bool VertexBuffer::SetDataRange(const void* data, unsigned start, unsigned count
     {
         bgfx::DynamicVertexBufferHandle handle;
         handle.idx = object_.idx_;
-        bgfx::updateDynamicVertexBuffer(handle, start * vertexSize_, bgfx::makeRef(data, vertexCount_ * vertexSize_));
+        bgfx::updateDynamicVertexBuffer(handle, start * vertexSize_, bgfx::makeRef(data, count * vertexSize_));
     }
 
     return true;

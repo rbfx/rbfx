@@ -151,9 +151,9 @@ bool IndexBuffer::SetDataRange(const void* data, unsigned start, unsigned count,
 
     if (object_.idx_ != bgfx::kInvalidHandle && dynamic_)
     {
-        bgfx::DynamicVertexBufferHandle handle;
+        bgfx::DynamicIndexBufferHandle handle;
         handle.idx = object_.idx_;
-        bgfx::updateDynamicVertexBuffer(handle, start * indexSize_, bgfx::makeRef(data, indexCount_ * indexSize_));
+        bgfx::updateDynamicIndexBuffer(handle, start * indexSize_, bgfx::makeRef(data, count * indexSize_));
     }
 
     return true;
