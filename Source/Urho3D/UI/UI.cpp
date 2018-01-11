@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -65,7 +65,7 @@
 #include "../SystemUI/SystemUI.h"
 #endif
 
-#include <assert.h>
+#include <cassert>
 #include <SDL/SDL.h>
 
 #include "../DebugNew.h"
@@ -98,6 +98,7 @@ UI::UI(Context* context) :
     dragBeginDistance_(DEFAULT_DRAGBEGIN_DISTANCE),
     mouseButtons_(0),
     lastMouseButtons_(0),
+    maxDoubleClickDist_(M_LARGE_VALUE),
     qualifiers_(0),
     maxFontTextureSize_(DEFAULT_FONT_TEXTURE_MAX_SIZE),
     initialized_(false),
@@ -147,9 +148,7 @@ UI::UI(Context* context) :
     Initialize();
 }
 
-UI::~UI()
-{
-}
+UI::~UI() = default;
 
 void UI::SetCursor(Cursor* cursor)
 {
@@ -252,7 +251,7 @@ bool UI::SetModalElement(UIElement* modalElement, bool enable)
         modalElement->SetParent(rootModalElement_);
 
         // If it is a popup element, bring along its top-level parent
-        UIElement* originElement = static_cast<UIElement*>(modalElement->GetVar(VAR_ORIGIN).GetPtr());
+        auto* originElement = static_cast<UIElement*>(modalElement->GetVar(VAR_ORIGIN).GetPtr());
         if (originElement)
         {
             UIElement* element = originElement;
@@ -279,15 +278,15 @@ bool UI::SetModalElement(UIElement* modalElement, bool enable)
         // Revert back to original parent
         modalElement->SetParent(static_cast<UIElement*>(modalElement->GetVar(VAR_ORIGINAL_PARENT).GetPtr()),
             modalElement->GetVar(VAR_ORIGINAL_CHILD_INDEX).GetUInt());
-        VariantMap& vars = const_cast<VariantMap&>(modalElement->GetVars());
+        auto& vars = const_cast<VariantMap&>(modalElement->GetVars());
         vars.Erase(VAR_ORIGINAL_PARENT);
         vars.Erase(VAR_ORIGINAL_CHILD_INDEX);
 
         // If it is a popup element, revert back its top-level parent
-        UIElement* originElement = static_cast<UIElement*>(modalElement->GetVar(VAR_ORIGIN).GetPtr());
+        auto* originElement = static_cast<UIElement*>(modalElement->GetVar(VAR_ORIGIN).GetPtr());
         if (originElement)
         {
-            UIElement* element = static_cast<UIElement*>(originElement->GetVar(VAR_PARENT_CHANGED).GetPtr());
+            auto* element = static_cast<UIElement*>(originElement->GetVar(VAR_PARENT_CHANGED).GetPtr());
             if (element)
             {
                 const_cast<VariantMap&>(originElement->GetVars()).Erase(VAR_PARENT_CHANGED);
@@ -321,7 +320,7 @@ void UI::Update(float timeStep)
     for (HashMap<WeakPtr<UIElement>, bool>::Iterator i = hoveredElements_.Begin(); i != hoveredElements_.End(); ++i)
         i->second_ = false;
 
-    Input* input = GetSubsystem<Input>();
+    auto* input = GetSubsystem<Input>();
     bool mouseGrabbed = input->IsMouseGrabbed();
 
     IntVector2 cursorPos;
@@ -645,6 +644,11 @@ void UI::SetDoubleClickInterval(float interval)
     doubleClickInterval_ = Max(interval, 0.0f);
 }
 
+void UI::SetMaxDoubleClickDistance(float distPixels)
+{
+    maxDoubleClickDist_ = distPixels;
+}
+
 void UI::SetDragBeginInterval(float interval)
 {
     dragBeginInterval_ = Max(interval, 0.0f);
@@ -923,7 +927,7 @@ bool UI::HasModalElement() const
 
 void UI::Initialize()
 {
-    Graphics* graphics = GetSubsystem<Graphics>();
+    auto* graphics = GetSubsystem<Graphics>();
 
     if (!graphics || !graphics->IsInitialized())
         return;
@@ -1205,7 +1209,7 @@ void UI::GetElementAt(UIElement*& result, UIElement* current, const IntVector2& 
 
                         if (screenPos < 0 && layoutMaxSize > 0)
                         {
-                            unsigned toSkip = (unsigned)(-screenPos / layoutMaxSize);
+                            auto toSkip = (unsigned)(-screenPos / layoutMaxSize);
                             if (toSkip > 0)
                                 i += (toSkip - 1);
                         }
@@ -1252,7 +1256,7 @@ void UI::GetCursorPositionAndVisible(IntVector2& pos, bool& visible)
         visible = true;
     else
     {
-        Input* input = GetSubsystem<Input>();
+        auto* input = GetSubsystem<Input>();
         pos = input->GetMousePosition();
         visible = input->IsMouseVisible();
 
@@ -1397,17 +1401,18 @@ void UI::ProcessClickBegin(const IntVector2& windowCursorPos, int button, int bu
             element->OnClickBegin(element->ScreenToElement(cursorPos), cursorPos, button, buttons, qualifiers, cursor);
             SendClickEvent(E_UIMOUSECLICK, nullptr, element, cursorPos, button, buttons, qualifiers);
 
-            // Fire double click event if element matches and is in time
+            // Fire double click event if element matches and is in time and is within max distance from the original click
             if (doubleClickElement_ && element == doubleClickElement_ &&
-                clickTimer_.GetMSec(true) < (unsigned)(doubleClickInterval_ * 1000) && lastMouseButtons_ == buttons)
+                (clickTimer_.GetMSec(true) < (unsigned)(doubleClickInterval_ * 1000)) && lastMouseButtons_ == buttons && (windowCursorPos - doubleClickFirstPos_).Length() < maxDoubleClickDist_)
             {
                 element->OnDoubleClick(element->ScreenToElement(cursorPos), cursorPos, button, buttons, qualifiers, cursor);
                 doubleClickElement_.Reset();
-                SendClickEvent(E_UIMOUSEDOUBLECLICK, nullptr, element, cursorPos, button, buttons, qualifiers);
+                SendDoubleClickEvent(nullptr, element, doubleClickFirstPos_, cursorPos, button, buttons, qualifiers);
             }
             else
             {
                 doubleClickElement_ = element;
+                doubleClickFirstPos_ = windowCursorPos;
                 clickTimer_.Reset();
             }
 
@@ -1415,7 +1420,7 @@ void UI::ProcessClickBegin(const IntVector2& windowCursorPos, int button, int bu
             bool dragElementsContain = dragElements_.Contains(element);
             if (element && !dragElementsContain)
             {
-                DragData* dragData = new DragData();
+                auto* dragData = new DragData();
                 dragElements_[element] = dragData;
                 dragData->dragBeginPending = true;
                 dragData->sumPos = cursorPos;
@@ -1443,8 +1448,8 @@ void UI::ProcessClickBegin(const IntVector2& windowCursorPos, int button, int bu
                 SetFocusElement(nullptr);
             SendClickEvent(E_UIMOUSECLICK, nullptr, element, cursorPos, button, buttons, qualifiers);
 
-            if (clickTimer_.GetMSec(true) < (unsigned)(doubleClickInterval_ * 1000) && lastMouseButtons_ == buttons)
-                SendClickEvent(E_UIMOUSEDOUBLECLICK, nullptr, element, cursorPos, button, buttons, qualifiers);
+            if (clickTimer_.GetMSec(true) < (unsigned)(doubleClickInterval_ * 1000) && lastMouseButtons_ == buttons && (windowCursorPos - doubleClickFirstPos_).Length() < maxDoubleClickDist_)
+                SendDoubleClickEvent(nullptr, element, doubleClickFirstPos_, cursorPos, button, buttons, qualifiers);
         }
 
         lastMouseButtons_ = buttons;
@@ -1525,7 +1530,7 @@ void UI::ProcessMove(const IntVector2& windowCursorPos, const IntVector2& cursor
         IntVector2 cursorPos;
         GetElementAt(windowCursorPos, true, &cursorPos);
 
-        Input* input = GetSubsystem<Input>();
+        auto* input = GetSubsystem<Input>();
         bool mouseGrabbed = input->IsMouseGrabbed();
         for (HashMap<WeakPtr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
         {
@@ -1652,13 +1657,36 @@ void UI::SendClickEvent(StringHash eventType, UIElement* beginElement, UIElement
             endElement->SendEvent(E_CLICK, eventData);
         else if (eventType == E_UIMOUSECLICKEND)
             endElement->SendEvent(E_CLICKEND, eventData);
-        else if (eventType == E_UIMOUSEDOUBLECLICK)
-            endElement->SendEvent(E_DOUBLECLICK, eventData);
     }
 
     // Send the global event from the UI subsystem last
     SendEvent(eventType, eventData);
 }
+
+void UI::SendDoubleClickEvent(UIElement* beginElement, UIElement* endElement, const IntVector2& firstPos, const IntVector2& secondPos, int button,
+    int buttons, int qualifiers)
+{
+    VariantMap& eventData = GetEventDataMap();
+    eventData[UIMouseDoubleClick::P_ELEMENT] = endElement;
+    eventData[UIMouseDoubleClick::P_X] = secondPos.x_;
+    eventData[UIMouseDoubleClick::P_Y] = secondPos.y_;
+    eventData[UIMouseDoubleClick::P_XBEGIN] = firstPos.x_;
+    eventData[UIMouseDoubleClick::P_YBEGIN] = firstPos.y_;
+    eventData[UIMouseDoubleClick::P_BUTTON] = button;
+    eventData[UIMouseDoubleClick::P_BUTTONS] = buttons;
+    eventData[UIMouseDoubleClick::P_QUALIFIERS] = qualifiers;
+
+
+    if (endElement)
+    {
+        // Send also element version of the event
+        endElement->SendEvent(E_DOUBLECLICK, eventData);
+    }
+
+    // Send the global event from the UI subsystem last
+    SendEvent(E_UIMOUSEDOUBLECLICK, eventData);
+}
+
 
 void UI::HandleScreenMode(StringHash eventType, VariantMap& eventData)
 {
@@ -1691,7 +1719,7 @@ void UI::HandleMouseButtonDown(StringHash eventType, VariantMap& eventData)
         return;
 #endif
 
-    Input* input = GetSubsystem<Input>();
+    auto* input = GetSubsystem<Input>();
 
     if (!input->IsMouseGrabbed())
         ProcessClickBegin(cursorPos, eventData[P_BUTTON].GetInt(), mouseButtons_, qualifiers_, cursor_, cursorVisible);
@@ -1719,7 +1747,7 @@ void UI::HandleMouseMove(StringHash eventType, VariantMap& eventData)
     qualifiers_ = eventData[P_QUALIFIERS].GetInt();
     usingTouchInput_ = false;
 
-    Input* input = GetSubsystem<Input>();
+    auto* input = GetSubsystem<Input>();
     const IntVector2& rootSize = rootElement_->GetSize();
     const IntVector2& rootPos = rootElement_->GetPosition();
 
@@ -1764,7 +1792,7 @@ void UI::HandleMouseMove(StringHash eventType, VariantMap& eventData)
 
 void UI::HandleMouseWheel(StringHash eventType, VariantMap& eventData)
 {
-    Input* input = GetSubsystem<Input>();
+    auto* input = GetSubsystem<Input>();
     if (input->IsMouseGrabbed())
         return;
 
@@ -1814,7 +1842,7 @@ void UI::HandleMouseWheel(StringHash eventType, VariantMap& eventData)
 
 void UI::HandleTouchBegin(StringHash eventType, VariantMap& eventData)
 {
-    Input* input = GetSubsystem<Input>();
+    auto* input = GetSubsystem<Input>();
     if (input->IsMouseGrabbed())
         return;
 
@@ -1928,7 +1956,7 @@ void UI::HandleKeyDown(StringHash eventType, VariantMap& eventData)
         else
         {
             // If it is a modal window, by resetting its modal flag
-            Window* window = dynamic_cast<Window*>(element);
+            auto* window = dynamic_cast<Window*>(element);
             if (window && window->GetModalAutoDismiss())
                 window->SetModal(false);
         }
@@ -2014,7 +2042,7 @@ void UI::HandleRenderUpdate(StringHash eventType, VariantMap& eventData)
 
 void UI::HandleDropFile(StringHash eventType, VariantMap& eventData)
 {
-    Input* input = GetSubsystem<Input>();
+    auto* input = GetSubsystem<Input>();
 
     // Sending the UI variant of the event only makes sense if the OS cursor is visible (not locked to window center)
     if (input->IsMouseVisible())
@@ -2097,7 +2125,7 @@ IntVector2 UI::SumTouchPositions(UI::DragData* dragData, const IntVector2& oldSe
     {
         int buttons = dragData->dragButtons;
         dragData->sumPos = IntVector2::ZERO;
-        Input* input = GetSubsystem<Input>();
+        auto* input = GetSubsystem<Input>();
         for (int i = 0; (1 << i) <= buttons; i++)
         {
             if ((1 << i) & buttons)

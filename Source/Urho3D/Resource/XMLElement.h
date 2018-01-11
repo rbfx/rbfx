@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -178,7 +178,7 @@ public:
     /// Return whether refers to an element or an XPath node.
     bool NotNull() const;
     /// Return true if refers to an element or an XPath node.
-    operator bool() const;
+    explicit operator bool() const;
     /// Return element name (or attribute name if it is an attribute only XPath query result).
     String GetName() const;
     /// Return whether has a child element.
@@ -357,7 +357,7 @@ public:
     /// Construct empty.
     XPathQuery();
     /// Construct XPath query object with query string and variable string. The variable string format is "name1:type1,name2:type2,..." where type is one of "Bool", "Float", "String", "ResultSet".
-    XPathQuery(const String& queryString, const String& variableString = String::EMPTY);
+    explicit XPathQuery(const String& queryString, const String& variableString = String::EMPTY);
     /// Destruct.
     ~XPathQuery();
     /// Bind query object with variable set.

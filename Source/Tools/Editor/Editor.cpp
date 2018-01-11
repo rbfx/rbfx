@@ -334,7 +334,7 @@ T* Editor::CreateNewTab(XMLElement project)
 
     // In order to render scene to a texture we must add a dummy node to scene rendered to a screen, which has material
     // pointing to scene texture. This object must also be visible to main camera.
-    tabs_.Push(tab);
+    tabs_.Push(DynamicCast<Tab>(tab));
     return tab;
 }
 

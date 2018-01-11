@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -58,14 +58,14 @@ class URHO3D_API AnimatedSprite2D : public StaticSprite2D
 
 public:
     /// Construct.
-    AnimatedSprite2D(Context* context);
+    explicit AnimatedSprite2D(Context* context);
     /// Destruct.
-    virtual ~AnimatedSprite2D() override;
+    ~AnimatedSprite2D() override;
     /// Register object factory.
     static void RegisterObject(Context* context);
 
     /// Handle enabled/disabled state change.
-    virtual void OnSetEnabled() override;
+    void OnSetEnabled() override;
 
     /// Set animation set.
     void SetAnimationSet(AnimationSet2D* animationSet);
@@ -98,9 +98,9 @@ public:
 
 protected:
     /// Handle scene being assigned.
-    virtual void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* scene) override;
     /// Handle update vertices.
-    virtual void UpdateSourceBatches() override;
+    void UpdateSourceBatches() override;
     /// Handle scene post update.
     void HandleScenePostUpdate(StringHash eventType, VariantMap& eventData);
     /// Update animation.
@@ -141,7 +141,7 @@ protected:
     /// Animation state.
     spAnimationState* animationState_;
 #endif
-    
+
     /// Spriter instance.
     UniquePtr<Spriter::SpriterInstance> spriterInstance_;
 };

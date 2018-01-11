@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -43,9 +43,9 @@ class URHO3D_API Pass : public RefCounted
 {
 public:
     /// Construct.
-    Pass(const String& passName);
+    explicit Pass(const String& passName);
     /// Destruct.
-    virtual ~Pass() override;
+    ~Pass() override;
 
     /// Set blend mode.
     void SetBlendMode(BlendMode mode);
@@ -119,7 +119,7 @@ public:
 
     /// Return pixel shader defines.
     const String& GetPixelShaderDefines() const { return pixelShaderDefines_; }
-    
+
     /// Return vertex shader define excludes.
     const String& GetVertexShaderDefineExcludes() const { return vertexShaderDefineExcludes_; }
 
@@ -193,14 +193,14 @@ class URHO3D_API Technique : public Resource
 
 public:
     /// Construct.
-    Technique(Context* context);
+    explicit Technique(Context* context);
     /// Destruct.
-    virtual ~Technique() override;
+    ~Technique() override;
     /// Register object factory.
     static void RegisterObject(Context* context);
 
     /// Load resource from stream. May be called from a worker thread. Return true if successful.
-    virtual bool BeginLoad(Deserializer& source) override;
+    bool BeginLoad(Deserializer& source) override;
 
     /// Set whether requires desktop level hardware.
     void SetIsDesktop(bool enable);

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -40,12 +40,6 @@ namespace Urho3D
 
 extern const char* GEOMETRY_CATEGORY;
 
-static const StringVector instanceNodesStructureElementNames =
-{
-    "Instance Count",
-    "   NodeID"
-};
-
 StaticModelGroup::StaticModelGroup(Context* context) :
     StaticModel(context),
     nodesDirty_(false),
@@ -55,12 +49,16 @@ StaticModelGroup::StaticModelGroup(Context* context) :
     UpdateNodeIDs();
 }
 
-StaticModelGroup::~StaticModelGroup()
-{
-}
+StaticModelGroup::~StaticModelGroup() = default;
 
 void StaticModelGroup::RegisterObject(Context* context)
 {
+    static const StringVector instanceNodesStructureElementNames =
+        {
+            "Instance Count",
+            "   NodeID"
+        };
+
     context->RegisterFactory<StaticModelGroup>(GEOMETRY_CATEGORY);
 
     URHO3D_COPY_BASE_ATTRIBUTES(StaticModel);

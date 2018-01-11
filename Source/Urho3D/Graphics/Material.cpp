@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -98,7 +98,7 @@ TextureUnit ParseTextureUnitName(String name)
 {
     name = name.ToLower().Trimmed();
 
-    TextureUnit unit = (TextureUnit)GetStringListIndex(name.CString(), textureUnitNames, MAX_TEXTURE_UNITS);
+    auto unit = (TextureUnit)GetStringListIndex(name.CString(), textureUnitNames, MAX_TEXTURE_UNITS);
     if (unit == MAX_TEXTURE_UNITS)
     {
         // Check also for shorthand names
@@ -155,8 +155,6 @@ StringHash ParseTextureTypeXml(ResourceCache* cache, String filename)
     return type;
 }
 
-static TechniqueEntry noEntry;
-
 bool CompareTechniqueEntries(const TechniqueEntry& lhs, const TechniqueEntry& rhs)
 {
     if (lhs.lodDistance_ != rhs.lodDistance_)
@@ -165,21 +163,17 @@ bool CompareTechniqueEntries(const TechniqueEntry& lhs, const TechniqueEntry& rh
         return lhs.qualityLevel_ > rhs.qualityLevel_;
 }
 
-TechniqueEntry::TechniqueEntry() :
+TechniqueEntry::TechniqueEntry() noexcept :
     qualityLevel_(0),
     lodDistance_(0.0f)
 {
 }
 
-TechniqueEntry::TechniqueEntry(Technique* tech, unsigned qualityLevel, float lodDistance) :
+TechniqueEntry::TechniqueEntry(Technique* tech, unsigned qualityLevel, float lodDistance) noexcept :
     technique_(tech),
     original_(tech),
     qualityLevel_(qualityLevel),
     lodDistance_(lodDistance)
-{
-}
-
-TechniqueEntry::~TechniqueEntry()
 {
 }
 
@@ -190,15 +184,9 @@ ShaderParameterAnimationInfo::ShaderParameterAnimationInfo(Material* target, con
 {
 }
 
-ShaderParameterAnimationInfo::ShaderParameterAnimationInfo(const ShaderParameterAnimationInfo& other) :
-    ValueAnimationInfo(other),
-    name_(other.name_)
-{
-}
+ShaderParameterAnimationInfo::ShaderParameterAnimationInfo(const ShaderParameterAnimationInfo& other) = default;
 
-ShaderParameterAnimationInfo::~ShaderParameterAnimationInfo()
-{
-}
+ShaderParameterAnimationInfo::~ShaderParameterAnimationInfo() = default;
 
 void ShaderParameterAnimationInfo::ApplyValue(const Variant& newValue)
 {
@@ -219,9 +207,7 @@ Material::Material(Context* context) :
     ResetToDefaults();
 }
 
-Material::~Material()
-{
-}
+Material::~Material() = default;
 
 void Material::RegisterObject(Context* context)
 {
@@ -231,7 +217,7 @@ void Material::RegisterObject(Context* context)
 bool Material::BeginLoad(Deserializer& source)
 {
     // In headless mode, do not actually load the material, just return success
-    Graphics* graphics = GetSubsystem<Graphics>();
+    auto* graphics = GetSubsystem<Graphics>();
     if (!graphics)
         return true;
 
@@ -266,7 +252,7 @@ bool Material::BeginLoad(Deserializer& source)
 bool Material::EndLoad()
 {
     // In headless mode, do not actually load the material, just return success
-    Graphics* graphics = GetSubsystem<Graphics>();
+    auto* graphics = GetSubsystem<Graphics>();
     if (!graphics)
         return true;
 
@@ -299,7 +285,7 @@ bool Material::BeginLoadXML(Deserializer& source)
         // and request them to also be loaded. Can not do anything else at this point
         if (GetAsyncLoadState() == ASYNC_LOADING)
         {
-            ResourceCache* cache = GetSubsystem<ResourceCache>();
+            auto* cache = GetSubsystem<ResourceCache>();
             XMLElement rootElem = loadXMLFile_->GetRoot();
             XMLElement techniqueElem = rootElem.GetChild("technique");
             while (techniqueElem)
@@ -358,7 +344,7 @@ bool Material::BeginLoadJSON(Deserializer& source)
         // and request them to also be loaded. Can not do anything else at this point
         if (GetAsyncLoadState() == ASYNC_LOADING)
         {
-            ResourceCache* cache = GetSubsystem<ResourceCache>();
+            auto* cache = GetSubsystem<ResourceCache>();
             const JSONValue& rootVal = loadJSONFile_->GetRoot();
 
             JSONArray techniqueArray = rootVal.Get("techniques").GetArray();
@@ -424,7 +410,7 @@ bool Material::Load(const XMLElement& source)
         return false;
     }
 
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    auto* cache = GetSubsystem<ResourceCache>();
 
     XMLElement shaderElem = source.GetChild("shader");
     if (shaderElem)
@@ -438,7 +424,7 @@ bool Material::Load(const XMLElement& source)
 
     while (techniqueElem)
     {
-        Technique* tech = cache->GetResource<Technique>(techniqueElem.GetAttribute("name"));
+        auto* tech = cache->GetResource<Technique>(techniqueElem.GetAttribute("name"));
         if (tech)
         {
             TechniqueEntry newTechnique;
@@ -575,7 +561,7 @@ bool Material::Load(const JSONValue& source)
         return false;
     }
 
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    auto* cache = GetSubsystem<ResourceCache>();
 
     const JSONValue& shaderVal = source.Get("shader");
     if (!shaderVal.IsNull())
@@ -592,7 +578,7 @@ bool Material::Load(const JSONValue& source)
     for (unsigned i = 0; i < techniquesArray.Size(); i++)
     {
         const JSONValue& techVal = techniquesArray[i];
-        Technique* tech = cache->GetResource<Technique>(techVal.Get("name").GetString());
+        auto* tech = cache->GetResource<Technique>(techVal.Get("name").GetString());
         if (tech)
         {
             TechniqueEntry newTechnique;
@@ -1200,6 +1186,8 @@ void Material::MarkForAuxView(unsigned frameNumber)
 
 const TechniqueEntry& Material::GetTechniqueEntry(unsigned index) const
 {
+    static TechniqueEntry noEntry;
+
     return index < techniques_.Size() ? techniques_[index] : noEntry;
 }
 
@@ -1273,7 +1261,7 @@ void Material::ResetToDefaults()
     pixelShaderDefines_.Clear();
 
     SetNumTechniques(1);
-    Renderer* renderer = GetSubsystem<Renderer>();
+    auto* renderer = GetSubsystem<Renderer>();
     SetTechnique(0, renderer ? renderer->GetDefaultTechnique() :
         GetSubsystem<ResourceCache>()->GetResource<Technique>("Techniques/NoTexture.xml"));
 

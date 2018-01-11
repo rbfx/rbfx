@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
+#include "../Core/ProcessUtils.h"
 #include "../Core/Thread.h"
 #include "../Core/Profiler.h"
 #include "../IO/Log.h"
@@ -40,9 +41,7 @@ TypeInfo::TypeInfo(const char* typeName, const TypeInfo* baseTypeInfo) :
 {
 }
 
-TypeInfo::~TypeInfo()
-{
-}
+TypeInfo::~TypeInfo() = default;
 
 bool TypeInfo::IsTypeOf(StringHash type) const
 {
@@ -298,31 +297,6 @@ void Object::SendEvent(StringHash eventType)
 
 void Object::SendEvent(StringHash eventType, VariantMap& eventData)
 {
-#if URHO3D_PROFILING
-    bool eventProfilingEnabled = false;
-    if (Profiler* profiler = GetSubsystem<Profiler>())
-        eventProfilingEnabled = profiler->GetEventProfilingEnabled();
-
-    if (eventProfilingEnabled)
-        SendEventProfiled(eventType, eventData);
-    else
-#endif
-        SendEventNonProfiled(eventType, eventData);
-}
-
-void Object::SendEventProfiled(StringHash eventType, VariantMap& eventData)
-{
-#if URHO3D_PROFILING
-    String eventName = EventNameRegistrar::GetEventName(eventType);
-    if (eventName.Empty())
-        eventName = eventType.ToString();
-    URHO3D_PROFILE_SCOPED(eventName.CString(), PROFILER_COLOR_EVENTS);
-#endif
-    SendEventNonProfiled(eventType, eventData);
-}
-
-void Object::SendEventNonProfiled(StringHash eventType, VariantMap& eventData)
-{
     if (!Thread::IsMainThread())
     {
         URHO3D_LOGERROR("Sending events is only supported from the main thread");
@@ -331,6 +305,19 @@ void Object::SendEventNonProfiled(StringHash eventType, VariantMap& eventData)
 
     if (blockEvents_)
         return;
+
+#if URHO3D_PROFILING
+    ProfilerBlockStatus blockStatus = ProfilerBlockStatus::OFF;
+    String eventName;
+    if (GetSubsystem<Profiler>()->GetEventProfilingEnabled())
+    {
+        blockStatus = ProfilerBlockStatus::ON;
+        eventName = EventNameRegistrar::GetEventName(eventType);
+        if (eventName.Empty())
+            eventName = eventType.ToString();
+    }
+    URHO3D_PROFILE_SCOPED(eventName.CString(), PROFILER_COLOR_EVENTS, blockStatus);
+#endif
 
     // Make a weak pointer to self to check for destruction during event handling
     WeakPtr<Object> self(this);
@@ -558,10 +545,18 @@ void Object::RemoveEventSender(Object* sender)
 }
 
 
-Urho3D::StringHash EventNameRegistrar::RegisterEventName(const char* eventName)
+Urho3D::StringHash EventNameRegistrar::RegisterEventName(const char* eventName) noexcept
 {
     StringHash id(eventName);
-    GetEventNameMap()[id] = eventName;
+    try
+    {
+        GetEventNameMap()[id] = eventName;
+    }
+    catch (std::bad_alloc&)
+    {
+        PrintLine("An out-of-memory error occurred. The application will now terminate.", true);
+        std::terminate();
+    }
     return id;
 }
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -74,9 +74,7 @@ Sound::Sound(Context* context) :
 {
 }
 
-Sound::~Sound()
-{
-}
+Sound::~Sound() = default;
 
 void Sound::RegisterObject(Context* context)
 {
@@ -342,7 +340,7 @@ unsigned Sound::GetSampleSize() const
 
 void Sound::LoadParameters()
 {
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    auto* cache = GetSubsystem<ResourceCache>();
     String xmlName = ReplaceExtension(GetName(), ".xml");
 
     SharedPtr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));

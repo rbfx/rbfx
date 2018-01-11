@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -44,9 +44,7 @@ FontFaceBitmap::FontFaceBitmap(Font* font) :
 {
 }
 
-FontFaceBitmap::~FontFaceBitmap()
-{
-}
+FontFaceBitmap::~FontFaceBitmap() = default;
 
 bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, float pointSize)
 {
@@ -83,7 +81,7 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
     unsigned pages = commonElem.GetUInt("pages");
     textures_.Reserve(pages);
 
-    ResourceCache* resourceCache = font_->GetSubsystem<ResourceCache>();
+    auto* resourceCache = font_->GetSubsystem<ResourceCache>();
     String fontPath = GetPath(font_->GetName());
     unsigned totalTextureSize = 0;
 
@@ -93,7 +91,7 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
         if (pageElem.IsNull())
         {
             URHO3D_LOGERROR("Could not find Page element for page: " + String(i));
-            return 0;
+            return false;
         }
 
         // Assume the font image is in the same directory as the font description file
@@ -105,11 +103,11 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
         if (!fontFile || !fontImage->Load(*fontFile))
         {
             URHO3D_LOGERROR("Failed to load font image file");
-            return 0;
+            return false;
         }
         SharedPtr<Texture2D> texture = LoadFaceTexture(fontImage);
         if (!texture)
-            return 0;
+            return false;
 
         textures_.Push(texture);
 
@@ -153,7 +151,7 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
         {
             int first = kerningElem.GetInt("first");
             int second = kerningElem.GetInt("second");
-            unsigned value = (unsigned)((first << 16) + second);
+            auto value = (unsigned)((first << 16) + second);
             kerningMapping_[value] = (short)kerningElem.GetInt("amount");
 
             kerningElem = kerningElem.GetNext("kerning");
@@ -283,7 +281,7 @@ bool FontFaceBitmap::Save(Serializer& dest, int pointSize, const String& indenta
 
     // Construct the path to store the texture
     String pathName;
-    File* file = dynamic_cast<File*>(&dest);
+    auto* file = dynamic_cast<File*>(&dest);
     if (file)
         // If serialize to file, use the file's path
         pathName = GetPath(file->GetName());

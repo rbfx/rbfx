@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -61,9 +61,9 @@ class URHO3D_API UI : public Object
 
 public:
     /// Construct.
-    UI(Context* context);
+    explicit UI(Context* context);
     /// Destruct.
-    virtual ~UI() override;
+    ~UI() override;
 
     /// Set cursor UI element.
     void SetCursor(Cursor* cursor);
@@ -92,6 +92,8 @@ public:
     void SetClipboardText(const String& text);
     /// Set UI element double click interval in seconds.
     void SetDoubleClickInterval(float interval);
+    /// Set max screen distance in pixels between double click clicks.
+    void SetMaxDoubleClickDistance(float pixels);
     /// Set UI drag event start interval in seconds.
     void SetDragBeginInterval(float interval);
     /// Set UI drag event start distance threshold in pixels.
@@ -163,7 +165,10 @@ public:
 
     /// Return UI element double click interval in seconds.
     float GetDoubleClickInterval() const { return doubleClickInterval_; }
-
+    
+    /// Get max screen distance in pixels for double clicks to register. 
+    float GetMaxDoubleClickDistance() const { return maxDoubleClickDist_;}
+    
     /// Return UI drag start event interval in seconds.
     float GetDragBeginInterval() const { return dragBeginInterval_; }
 
@@ -289,10 +294,14 @@ private:
     /// Send a UI element drag or hover begin event.
     void SendDragOrHoverEvent
         (StringHash eventType, UIElement* element, const IntVector2& screenPos, const IntVector2& deltaPos, UI::DragData* dragData);
-    /// Send a UI click or double click event.
+    /// Send a UI click event.
     void SendClickEvent
         (StringHash eventType, UIElement* beginElement, UIElement* endElement, const IntVector2& pos, int button, int buttons,
             int qualifiers);
+
+    /// Send a UI double click event
+    void SendDoubleClickEvent(UIElement* beginElement, UIElement* endElement, const IntVector2& firstPos, const IntVector2& secondPos, int button, int buttons, int qualifiers);
+    
     /// Handle screen mode event.
     void HandleScreenMode(StringHash eventType, VariantMap& eventData);
     /// Handle mouse button down event.
@@ -402,6 +411,10 @@ private:
     Timer clickTimer_;
     /// UI element last clicked for tracking double clicks.
     WeakPtr<UIElement> doubleClickElement_;
+    /// Screen position of first mouse click for double click distance checking.
+    IntVector2 doubleClickFirstPos_;
+    /// Max screen distance the first click in a double click can be from the second click in a double click.
+    float maxDoubleClickDist_;
     /// Currently hovered elements.
     HashMap<WeakPtr<UIElement>, bool> hoveredElements_;
     /// Currently dragged elements.

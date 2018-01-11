@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -43,7 +43,7 @@ public:
     }
 
     /// Process work items until stopped.
-    virtual void ThreadFunction() override
+    void ThreadFunction() override
     {
         // Init FPU state first
         InitFPU();
@@ -390,7 +390,7 @@ void WorkQueue::ReturnToPool(SharedPtr<WorkItem>& item)
     // Check if this was a pooled item and set it to usable
     if (item->pooled_)
     {
-        // Reset the values to their defaults. This should 
+        // Reset the values to their defaults. This should
         // be safe to do here as the completed event has
         // already been handled and this is part of the
         // internal pool.

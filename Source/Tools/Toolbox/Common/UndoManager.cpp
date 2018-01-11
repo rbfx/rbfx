@@ -178,7 +178,7 @@ bool XMLVariantState::Equals(State* other) const
     if (other_ == nullptr)
         return false;
 
-    return item_ == other_->item_ && value_ == other_->value_;
+    return item_.GetVariant() == other_->item_.GetVariant() && value_ == other_->value_;
 }
 
 String XMLVariantState::ToString() const

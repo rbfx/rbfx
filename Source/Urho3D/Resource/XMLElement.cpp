@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -778,7 +778,7 @@ bool XMLElement::GetBuffer(const String& name, void* dest, unsigned size) const
     if (size < bytes.Size())
         return false;
 
-    unsigned char* destBytes = (unsigned char*)dest;
+    auto* destBytes = (unsigned char*)dest;
     for (unsigned i = 0; i < bytes.Size(); ++i)
         destBytes[i] = (unsigned char)ToInt(bytes[i]);
     return true;
@@ -1058,18 +1058,14 @@ bool XPathResultSet::Empty() const
     return resultSet_ ? resultSet_->empty() : true;
 }
 
-XPathQuery::XPathQuery()
-{
-}
+XPathQuery::XPathQuery() = default;
 
 XPathQuery::XPathQuery(const String& queryString, const String& variableString)
 {
     SetQuery(queryString, variableString);
 }
 
-XPathQuery::~XPathQuery()
-{
-}
+XPathQuery::~XPathQuery() = default;
 
 void XPathQuery::Bind()
 {

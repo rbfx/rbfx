@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -40,9 +40,9 @@ class URHO3D_API Texture : public ResourceWithMetadata, public GPUObject
 {
 public:
     /// Construct.
-    Texture(Context* context);
+    explicit Texture(Context* context);
     /// Destruct.
-    virtual ~Texture() override;
+    ~Texture() override;
 
     /// Set number of requested mip levels. Needs to be called before setting size.
     /** The default value (0) allocates as many mip levels as necessary to reach 1x1 size. Set value 1 to disable mipmapping.
@@ -89,7 +89,7 @@ public:
     TextureFilterMode GetFilterMode() const { return filterMode_; }
 
     /// Return addressing mode by texture coordinate.
-    TextureAddressMode GetAddressMode(TextureCoordinate coord) const { return addressMode_[coord]; }
+    TextureAddressMode GetAddressMode(TextureCoordinate coord) const { return addressModes_[coord]; }
 
     /// Return texture max. anisotropy level. Value 0 means to use the default value from Renderer.
     unsigned GetAnisotropy() const { return anisotropy_; }
@@ -226,7 +226,7 @@ protected:
     /// Filtering mode.
     TextureFilterMode filterMode_;
     /// Addressing mode.
-    TextureAddressMode addressMode_[MAX_COORDS];
+    TextureAddressMode addressModes_[MAX_COORDS];
     /// Texture anisotropy level.
     unsigned anisotropy_;
     /// Mip levels to skip when loading per texture quality setting.

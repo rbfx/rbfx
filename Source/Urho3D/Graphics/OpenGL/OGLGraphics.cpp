@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -1657,7 +1657,7 @@ void Graphics::SetTextureParametersDirty()
 
     for (PODVector<GPUObject*>::Iterator i = gpuObjects_.Begin(); i != gpuObjects_.End(); ++i)
     {
-        Texture* texture = dynamic_cast<Texture*>(*i);
+        auto* texture = dynamic_cast<Texture*>(*i);
         if (texture)
             texture->SetParametersDirty();
     }
@@ -2177,7 +2177,7 @@ ShaderVariation* Graphics::GetShader(ShaderType type, const char* name, const ch
 {
     if (lastShaderName_ != name || !lastShader_)
     {
-        ResourceCache* cache = GetSubsystem<ResourceCache>();
+        auto* cache = GetSubsystem<ResourceCache>();
 
         String fullShaderName = shaderPath_ + name + shaderExtension_;
         // Try to reduce repeated error log prints because of missing shaders
@@ -2910,9 +2910,9 @@ void Graphics::PrepareDraw()
         bool noFbo = !depthStencil_;
         if (noFbo)
         {
-            for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
+            for (auto& renderTarget : renderTargets_)
             {
-                if (renderTargets_[i])
+                if (renderTarget)
                 {
                     noFbo = false;
                     break;
@@ -3233,8 +3233,8 @@ void Graphics::CleanupFramebuffers()
 
 void Graphics::ResetCachedState()
 {
-    for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
-        vertexBuffers_[i] = nullptr;
+    for (auto& vertexBuffer : vertexBuffers_)
+        vertexBuffer = nullptr;
 
     for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
     {
@@ -3242,8 +3242,8 @@ void Graphics::ResetCachedState()
         impl_->textureTypes_[i] = 0;
     }
 
-    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
-        renderTargets_[i] = nullptr;
+    for (auto& renderTarget : renderTargets_)
+        renderTarget = nullptr;
 
     depthStencil_ = nullptr;
     viewport_ = IntRect(0, 0, 0, 0);
@@ -3291,8 +3291,8 @@ void Graphics::ResetCachedState()
         SetDepthWrite(true);
     }
 
-    for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS * 2; ++i)
-        impl_->constantBuffers_[i] = nullptr;
+    for (auto& constantBuffer : impl_->constantBuffers_)
+        constantBuffer = nullptr;
     impl_->dirtyConstantBuffers_.Clear();
 }
 

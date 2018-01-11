@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,7 @@
 #include "../Resource/PListFile.h"
 #include "../Resource/XMLFile.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "../DebugNew.h"
 
@@ -216,7 +216,7 @@ IntRect PListValue::GetIntRect() const
 
     int x, y, w, h;
     sscanf(string_->CString(), "{{%d,%d},{%d,%d}}", &x, &y, &w, &h);
-    return IntRect(x, y, x + w, y + h);
+    return {x, y, x + w, y + h};
 }
 
 IntVector2 PListValue::GetIntVector2() const
@@ -301,9 +301,7 @@ PListFile::PListFile(Context* context) :
 {
 }
 
-PListFile::~PListFile()
-{
-}
+PListFile::~PListFile() = default;
 
 void PListFile::RegisterObject(Context* context)
 {

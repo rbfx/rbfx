@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -57,9 +57,7 @@ Slider::Slider(Context* context) :
     UpdateSlider();
 }
 
-Slider::~Slider()
-{
-}
+Slider::~Slider() = default;
 
 void Slider::RegisterObject(Context* context)
 {
@@ -234,7 +232,7 @@ void Slider::UpdateSlider()
     {
         if (orientation_ == O_HORIZONTAL)
         {
-            int sliderLength = (int)Max((float)GetWidth() / (range_ + 1.0f), (float)(border.left_ + border.right_));
+            auto sliderLength = (int)Max((float)GetWidth() / (range_ + 1.0f), (float)(border.left_ + border.right_));
 
             if (knob_->IsFixedWidth())
                 sliderLength = knob_->GetWidth();
@@ -251,7 +249,7 @@ void Slider::UpdateSlider()
         }
         else
         {
-            int sliderLength = (int)Max((float)GetHeight() / (range_ + 1.0f), (float)(border.top_ + border.bottom_));
+            auto sliderLength = (int)Max((float)GetHeight() / (range_ + 1.0f), (float)(border.top_ + border.bottom_));
 
             if (knob_->IsFixedHeight())
                 sliderLength = knob_->GetHeight();
@@ -283,7 +281,7 @@ void Slider::Page(const IntVector2& position, bool pressed)
 
     IntVector2 offsetXY = position - knob_->GetPosition() - knob_->GetSize() / 2;
     int offset = orientation_ == O_HORIZONTAL ? offsetXY.x_ : offsetXY.y_;
-    float length = (float)(orientation_ == O_HORIZONTAL ? GetWidth() : GetHeight());
+    auto length = (float)(orientation_ == O_HORIZONTAL ? GetWidth() : GetHeight());
 
     using namespace SliderPaged;
 

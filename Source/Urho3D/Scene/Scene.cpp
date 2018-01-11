@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -111,7 +111,7 @@ void Scene::RegisterObject(Context* context)
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Variable Names", GetVarNamesAttr, SetVarNamesAttr, String, String::EMPTY, AM_FILE | AM_NOEDIT);
 }
 
-bool Scene::Load(Deserializer& source, bool setInstanceDefault)
+bool Scene::Load(Deserializer& source)
 {
     URHO3D_PROFILE(LoadScene);
 
@@ -129,7 +129,7 @@ bool Scene::Load(Deserializer& source, bool setInstanceDefault)
     Clear();
 
     // Load the whole scene, then perform post-load if successfully loaded
-    if (Node::Load(source, setInstanceDefault))
+    if (Node::Load(source))
     {
         FinishLoading(&source);
         return true;
@@ -149,7 +149,7 @@ bool Scene::Save(Serializer& dest) const
         return false;
     }
 
-    Deserializer* ptr = dynamic_cast<Deserializer*>(&dest);
+    auto* ptr = dynamic_cast<Deserializer*>(&dest);
     if (ptr)
         URHO3D_LOGINFO("Saving scene to " + ptr->GetName());
 
@@ -162,7 +162,7 @@ bool Scene::Save(Serializer& dest) const
         return false;
 }
 
-bool Scene::LoadXML(const XMLElement& source, bool setInstanceDefault)
+bool Scene::LoadXML(const XMLElement& source)
 {
     URHO3D_PROFILE(LoadSceneXML);
 
@@ -170,7 +170,7 @@ bool Scene::LoadXML(const XMLElement& source, bool setInstanceDefault)
 
     // Load the whole scene, then perform post-load if successfully loaded
     // Note: the scene filename and checksum can not be set, as we only used an XML element
-    if (Node::LoadXML(source, setInstanceDefault))
+    if (Node::LoadXML(source))
     {
         FinishLoading(nullptr);
         return true;
@@ -179,7 +179,7 @@ bool Scene::LoadXML(const XMLElement& source, bool setInstanceDefault)
         return false;
 }
 
-bool Scene::LoadJSON(const JSONValue& source, bool setInstanceDefault)
+bool Scene::LoadJSON(const JSONValue& source)
 {
     URHO3D_PROFILE(LoadSceneJSON);
 
@@ -187,7 +187,7 @@ bool Scene::LoadJSON(const JSONValue& source, bool setInstanceDefault)
 
     // Load the whole scene, then perform post-load if successfully loaded
     // Note: the scene filename and checksum can not be set, as we only used an XML element
-    if (Node::LoadJSON(source, setInstanceDefault))
+    if (Node::LoadJSON(source))
     {
         FinishLoading(nullptr);
         return true;
@@ -269,7 +269,7 @@ bool Scene::SaveXML(Serializer& dest, const String& indentation) const
     if (!SaveXML(rootElem))
         return false;
 
-    Deserializer* ptr = dynamic_cast<Deserializer*>(&dest);
+    auto* ptr = dynamic_cast<Deserializer*>(&dest);
     if (ptr)
         URHO3D_LOGINFO("Saving scene to " + ptr->GetName());
 
@@ -291,7 +291,7 @@ bool Scene::SaveJSON(Serializer& dest, const String& indentation) const
     if (!SaveJSON(rootVal))
         return false;
 
-    Deserializer* ptr = dynamic_cast<Deserializer*>(&dest);
+    auto* ptr = dynamic_cast<Deserializer*>(&dest);
     if (ptr)
         URHO3D_LOGINFO("Saving scene to " + ptr->GetName());
 
@@ -1156,7 +1156,7 @@ void Scene::MarkReplicationDirty(Node* node)
         for (PODVector<ReplicationState*>::Iterator i = networkState_->replicationStates_.Begin();
              i != networkState_->replicationStates_.End(); ++i)
         {
-            NodeReplicationState* nodeState = static_cast<NodeReplicationState*>(*i);
+            auto* nodeState = static_cast<NodeReplicationState*>(*i);
             nodeState->sceneState_->dirtyNodes_.Insert(id);
         }
     }
@@ -1177,7 +1177,7 @@ void Scene::HandleResourceBackgroundLoaded(StringHash eventType, VariantMap& eve
 
     if (asyncLoading_)
     {
-        Resource* resource = static_cast<Resource*>(eventData[P_RESOURCE].GetPtr());
+        auto* resource = static_cast<Resource*>(eventData[P_RESOURCE].GetPtr());
         if (asyncProgress_.resources_.Contains(resource->GetNameHash()))
         {
             asyncProgress_.resources_.Erase(resource->GetNameHash());
@@ -1281,7 +1281,7 @@ void Scene::FinishLoading(Deserializer* source)
 
 void Scene::FinishSaving(Serializer* dest) const
 {
-    Deserializer* ptr = dynamic_cast<Deserializer*>(dest);
+    auto* ptr = dynamic_cast<Deserializer*>(dest);
     if (ptr)
     {
         fileName_ = ptr->GetName();
@@ -1293,7 +1293,7 @@ void Scene::PreloadResources(File* file, bool isSceneFile)
 {
     // If not threaded, can not background load resources, so rather load synchronously later when needed
 #ifdef URHO3D_THREADING
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    auto* cache = GetSubsystem<ResourceCache>();
 
     // Read node ID (not needed)
     /*unsigned nodeID = */file->ReadUInt();
@@ -1369,7 +1369,7 @@ void Scene::PreloadResourcesXML(const XMLElement& element)
 {
     // If not threaded, can not background load resources, so rather load synchronously later when needed
 #ifdef URHO3D_THREADING
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    auto* cache = GetSubsystem<ResourceCache>();
 
     // Node or Scene attributes do not include any resources; therefore skip to the components
     XMLElement compElem = element.GetChild("component");
@@ -1449,7 +1449,7 @@ void Scene::PreloadResourcesJSON(const JSONValue& value)
 {
     // If not threaded, can not background load resources, so rather load synchronously later when needed
 #ifdef URHO3D_THREADING
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    auto* cache = GetSubsystem<ResourceCache>();
 
     // Node or Scene attributes do not include any resources; therefore skip to the components
     JSONArray componentArray = value.Get("components").GetArray();

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -50,9 +50,9 @@ public:
     /// Default constructor.
     Spline();
     /// Constructor setting interpolation mode.
-    Spline(InterpolationMode mode);
+    explicit Spline(InterpolationMode mode);
     /// Constructor setting knots and interpolation mode.
-    Spline(const Vector<Variant>& knots, InterpolationMode mode = BEZIER_CURVE);
+    explicit Spline(const Vector<Variant>& knots, InterpolationMode mode = BEZIER_CURVE);
     /// Copy constructor.
     Spline(const Spline& rhs);
 

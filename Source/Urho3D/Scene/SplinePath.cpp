@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -33,12 +33,6 @@ namespace Urho3D
 extern const char* interpolationModeNames[];
 extern const char* LOGIC_CATEGORY;
 
-static const StringVector controlPointsStructureElementNames =
-{
-    "Control Point Count",
-    "   NodeID"
-};
-
 SplinePath::SplinePath(Context* context) :
     Component(context),
     spline_(BEZIER_CURVE),
@@ -54,6 +48,12 @@ SplinePath::SplinePath(Context* context) :
 
 void SplinePath::RegisterObject(Context* context)
 {
+    static const StringVector controlPointsStructureElementNames =
+        {
+            "Control Point Count",
+            "   NodeID"
+        };
+
     context->RegisterFactory<SplinePath>(LOGIC_CATEGORY);
 
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Interpolation Mode", GetInterpolationMode, SetInterpolationMode, InterpolationMode,

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -146,7 +146,7 @@ Engine::Engine(Context* context) :
 #ifdef URHO3D_IK
     RegisterIKLibrary(context_);
 #endif
-    
+
 #ifdef URHO3D_PHYSICS
     RegisterPhysicsLibrary(context_);
 #endif
@@ -158,9 +158,7 @@ Engine::Engine(Context* context) :
     SubscribeToEvent(E_EXITREQUESTED, URHO3D_HANDLER(Engine, HandleExitRequested));
 }
 
-Engine::~Engine()
-{
-}
+Engine::~Engine() = default;
 
 bool Engine::Initialize(const VariantMap& parameters)
 {
@@ -168,14 +166,12 @@ bool Engine::Initialize(const VariantMap& parameters)
         return true;
 
 #ifdef URHO3D_PROFILING
-    if (Profiler* profiler = GetSubsystem<Profiler>())
+    if (auto* profiler = GetSubsystem<Profiler>())
     {
+        profiler->SetEnabled(true);
+        profiler->SetEventProfilingEnabled(GetParameter(parameters, EP_EVENT_PROFILER, true).GetBool());
         if (GetParameter(parameters, EP_PROFILER_LISTEN, false).GetBool())
-        {
-            profiler->SetEnabled(true);
             profiler->StartListen((unsigned short)GetParameter(parameters, EP_PROFILER_PORT, PROFILER_DEFAULT_PORT).GetInt());
-            profiler->SetEventProfilingEnabled(GetParameter(parameters, EP_EVENT_PROFILER, true).GetBool());
-        }
     }
 #endif
 
@@ -204,7 +200,7 @@ bool Engine::Initialize(const VariantMap& parameters)
 #endif
 
     // Start logging
-    Log* log = GetSubsystem<Log>();
+    auto* log = GetSubsystem<Log>();
     if (log)
     {
         if (HasParameter(parameters, EP_LOG_LEVEL))
@@ -236,14 +232,14 @@ bool Engine::Initialize(const VariantMap& parameters)
     if (!InitializeResourceCache(parameters, false))
         return false;
 
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
-    FileSystem* fileSystem = GetSubsystem<FileSystem>();
+    auto* cache = GetSubsystem<ResourceCache>();
+    auto* fileSystem = GetSubsystem<FileSystem>();
 
     // Initialize graphics & audio output
     if (!headless_)
     {
-        Graphics* graphics = GetSubsystem<Graphics>();
-        Renderer* renderer = GetSubsystem<Renderer>();
+        auto* graphics = GetSubsystem<Graphics>();
+        auto* renderer = GetSubsystem<Renderer>();
 
         if (HasParameter(parameters, EP_EXTERNAL_WINDOW))
             graphics->SetExternalWindow(GetParameter(parameters, EP_EXTERNAL_WINDOW).GetVoidPtr());
@@ -334,8 +330,8 @@ bool Engine::Initialize(const VariantMap& parameters)
 
 bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOld /*= true*/)
 {
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
-    FileSystem* fileSystem = GetSubsystem<FileSystem>();
+    auto* cache = GetSubsystem<ResourceCache>();
+    auto* fileSystem = GetSubsystem<FileSystem>();
 
     // Remove all resource paths and packages
     if (removeOld)
@@ -496,9 +492,9 @@ void Engine::RunFrame()
 
     // Note: there is a minimal performance cost to looking up subsystems (uses a hashmap); if they would be looked up several
     // times per frame it would be better to cache the pointers
-    Time* time = GetSubsystem<Time>();
-    Input* input = GetSubsystem<Input>();
-    Audio* audio = GetSubsystem<Audio>();
+    auto* time = GetSubsystem<Time>();
+    auto* input = GetSubsystem<Input>();
+    auto* audio = GetSubsystem<Audio>();
 
     URHO3D_PROFILE(DoFrame);
     time->BeginFrame(timeStep_);
@@ -538,7 +534,7 @@ Console* Engine::CreateConsole()
 
 #ifdef URHO3D_SYSTEMUI
     // Return existing console if possible
-    Console* console = GetSubsystem<Console>();
+    auto* console = GetSubsystem<Console>();
     if (!console)
     {
         console = new Console(context_);
@@ -558,7 +554,7 @@ DebugHud* Engine::CreateDebugHud()
 
 #ifdef URHO3D_SYSTEMUI
     // Return existing debug HUD if possible
-    DebugHud* debugHud = GetSubsystem<DebugHud>();
+    auto* debugHud = GetSubsystem<DebugHud>();
     if (!debugHud)
     {
         debugHud = new DebugHud(context_);
@@ -635,7 +631,7 @@ void Engine::DumpResources(bool dumpFileName)
     if (!Thread::IsMainThread())
         return;
 
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    auto* cache = GetSubsystem<ResourceCache>();
     const HashMap<StringHash, ResourceGroup>& resourceGroups = cache->GetAllResources();
     if (dumpFileName)
     {
@@ -724,7 +720,7 @@ void Engine::Render()
     URHO3D_PROFILE(Render);
 
     // If device is lost, BeginFrame will fail and we skip rendering
-    Graphics* graphics = GetSubsystem<Graphics>();
+    auto* graphics = GetSubsystem<Graphics>();
     if (!graphics->BeginFrame())
         return;
 
@@ -739,7 +735,7 @@ void Engine::ApplyFrameLimit()
         return;
 
     unsigned maxFps = maxFps_;
-    Input* input = GetSubsystem<Input>();
+    auto* input = GetSubsystem<Input>();
     if (input && !input->HasFocus())
         maxFps = Min(maxInactiveFps_, maxFps);
 
@@ -768,7 +764,7 @@ void Engine::ApplyFrameLimit()
             // Sleep if 1 ms or more off the frame limiting goal
             if (targetMax - elapsed >= 1000LL)
             {
-                unsigned sleepTime = (unsigned)((targetMax - elapsed) / 1000LL);
+                auto sleepTime = (unsigned)((targetMax - elapsed) / 1000LL);
                 Time::Sleep(sleepTime);
             }
         }
@@ -1011,7 +1007,7 @@ void Engine::HandleExitRequested(StringHash eventType, VariantMap& eventData)
 
 void Engine::DoExit()
 {
-    Graphics* graphics = GetSubsystem<Graphics>();
+    auto* graphics = GetSubsystem<Graphics>();
     if (graphics)
         graphics->Close();
 
