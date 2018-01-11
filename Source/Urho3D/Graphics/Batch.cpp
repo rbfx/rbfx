@@ -267,8 +267,8 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
 #ifdef URHO3D_BGFX
             // We need to pad out the bones to Matrix4 for BGFX.
             for (unsigned i = 0; i < numWorldTransforms_; ++i)
-                renderer->SetBoneMatrix(i, (worldTransform_ + i * 12)->ToMatrix4());
-            bgfx::setTransform(reinterpret_cast<const float*>(renderer->GetBoneMatrices()[0].Data()), numWorldTransforms_);
+                renderer->SetBoneMatrix(i, (worldTransform_ + i)->ToMatrix4());
+            bgfx::setTransform(renderer->GetBoneMatrices(), numWorldTransforms_);
 #else
             graphics->SetShaderParameter(VSP_SKINMATRICES, reinterpret_cast<const float*>(worldTransform_),
                 12 * numWorldTransforms_);

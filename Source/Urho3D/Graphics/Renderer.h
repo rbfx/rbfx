@@ -431,7 +431,7 @@ public:
     /// Set bone matrix. BGFX only.
     void SetBoneMatrix(unsigned index, Matrix4& boneMatrix);
     /// Get bone matrices. BGFX only.
-    const Vector<Matrix4> GetBoneMatrices() const { return boneMatrices_; }
+    const Matrix4* GetBoneMatrices() const { return &boneMatrices_[0]; }
 
 private:
     /// Initialize when screen mode initially set.
