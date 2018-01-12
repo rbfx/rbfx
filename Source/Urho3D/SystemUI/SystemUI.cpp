@@ -75,7 +75,7 @@ SystemUI::SystemUI(Urho3D::Context* context)
     io.UserData = this;
 
     SetScale();
-    AddFont("Fonts/BlueHighway.ttf", defaultFontSize, nullptr);
+    AddFont("Fonts/DejaVuSansMono.ttf", defaultFontSize, nullptr);
     ReallocateFontTexture();
     UpdateProjectionMatrix();
     // Initializes ImGui. ImGui::Render() can not be called unless imgui is initialized. This call avoids initialization
