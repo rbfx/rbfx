@@ -21,7 +21,7 @@
 #
 
 file (GLOB SOURCE_FILES src/*.c include/*.h)
-add_library (Civetweb STATIC ${SOURCE_FILES})
+add_library (Civetweb OBJECT ${SOURCE_FILES})
 target_include_directories(Civetweb PRIVATE include)
 
 # Define preprocessor macros
@@ -37,7 +37,7 @@ if (WIN32)
             target_compile_definitions(Civetweb PRIVATE -D_TIMESPEC_DEFINED)
         endif ()
     endif ()
-    target_link_libraries(Civetweb ws2_32.lib)
+    object_target_link_libraries(Civetweb ws2_32.lib)
 elseif (APPLE AND (NOT IOS OR IPHONEOS_DEPLOYMENT_TARGET STREQUAL "" OR NOT IPHONEOS_DEPLOYMENT_TARGET VERSION_LESS 10.0))    # We cheat a little bit here with a hard-coded check because iOS 10.3 SDK when targeting 9.3 has strong symbol for iPhoneOS archs but weak symbol for iPhoneSimulator archs
     include (CheckLibraryExists)
     check_library_exists (c clock_gettime "" FOUND_CLOCK_GETTIME_IN_C)
@@ -47,4 +47,3 @@ elseif (APPLE AND (NOT IOS OR IPHONEOS_DEPLOYMENT_TARGET STREQUAL "" OR NOT IPHO
 endif ()
 
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/Civetweb FILES_MATCHING PATTERN *.h)
-install_to_build_tree(Civetweb)

@@ -21,6 +21,5 @@
 #
 
 file (GLOB SOURCE_FILES src/*.cpp src/*.hpp)
-add_library (PugiXml STATIC ${SOURCE_FILES})
+add_library (PugiXml OBJECT ${SOURCE_FILES})
 install (DIRECTORY src/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/PugiXml FILES_MATCHING PATTERN *.hpp)
-install_to_build_tree(PugiXml)

@@ -21,8 +21,7 @@
 #
 
 file (GLOB SOURCE_FILES *.c)
-add_library (GLEW STATIC ${SOURCE_FILES})
+add_library (GLEW OBJECT ${SOURCE_FILES})
 target_compile_definitions(GLEW PUBLIC -DGLEW_STATIC -DGLEW_NO_GLU)
 
 install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/GLEW FILES_MATCHING PATTERN *.h)
-install_to_build_tree(GLEW)

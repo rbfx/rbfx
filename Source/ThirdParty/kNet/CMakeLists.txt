@@ -45,7 +45,7 @@ elseif (UNIX)
    # Urho3D: KNET_UNIX definition removed
 endif ()
 
-add_library (kNet STATIC ${kNetSourceFiles} ${kNetHeaderFiles})
+add_library (kNet OBJECT ${kNetSourceFiles} ${kNetHeaderFiles})
 target_include_directories(kNet PRIVATE include)
 if (UNIX)
    target_compile_definitions(kNet PUBLIC -DKNET_UNIX)
@@ -57,7 +57,7 @@ if (WIN32)
       get_filename_component (baseName ${srcFile} NAME)
       set_source_files_properties (${srcFile} PROPERTIES COMPILE_FLAGS "-DDEBUG_CPP_NAME=\"\\\"${baseName}\"\\\"")
    endforeach ()
-   target_link_libraries (kNet ws2_32.lib)
+   object_target_link_libraries (kNet ws2_32.lib)
 endif ()
 
 # Install headers for building and using the Urho3D library (install dependency for Urho3D/Network/Connection.h and Urho3D/Network/Network.h)
@@ -65,4 +65,3 @@ install (DIRECTORY include/kNet/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/kNet FIL
 install (DIRECTORY include/kNet/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/kNet FILES_MATCHING PATTERN *.inl)
 file (GLOB kNetHeaderFiles include/*.h)
 install (FILES ${kNetHeaderFiles} DESTINATION ${DEST_THIRDPARTY_HEADERS}/kNet)
-install_to_build_tree(kNet)

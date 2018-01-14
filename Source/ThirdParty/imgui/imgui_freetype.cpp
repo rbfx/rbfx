@@ -230,8 +230,9 @@ namespace
 }
 
 #define STBRP_ASSERT(x)    IM_ASSERT(x)
-#define STBRP_STATIC
-#define STB_RECT_PACK_IMPLEMENTATION
+// Urho3D
+//#define STBRP_STATIC
+//#define STB_RECT_PACK_IMPLEMENTATION
 #include "stb_rect_pack.h"
 
 bool ImGuiFreeType::BuildFontAtlas(ImFontAtlas* atlas, unsigned int extra_flags)

@@ -34,11 +34,10 @@ endif ()
 file (GLOB SOURCE_FILES src/*.c src/*.h)
 list (APPEND SOURCE_FILES ${ASM_FILES})
 
-add_library (LibCpuId STATIC ${SOURCE_FILES})
+add_library (LibCpuId OBJECT ${SOURCE_FILES})
 target_compile_definitions (LibCpuId PRIVATE -DVERSION="0.4.0")
 if (HAVE_STDINT_H)
     target_compile_definitions (LibCpuId PRIVATE -DHAVE_STDINT_H)
 endif ()
 
 install (DIRECTORY src/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/LibCpuId FILES_MATCHING PATTERN *.h)
-install_to_build_tree(LibCpuId)

@@ -21,9 +21,8 @@
 #
 
 file (GLOB SOURCE_FILES source/*.cpp include/*.h)
-add_library (DetourCrowd STATIC ${SOURCE_FILES})
-target_include_directories(DetourCrowd PUBLIC include)
-target_link_libraries(DetourCrowd Detour)
+add_library (DetourCrowd OBJECT ${SOURCE_FILES})
+target_include_directories(DetourCrowd PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}/DetourCrowd>)
+target_link_objects(DetourCrowd Detour)
 
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/DetourCrowd FILES_MATCHING PATTERN *.h)
-install_to_build_tree(DetourCrowd)

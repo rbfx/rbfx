@@ -176,6 +176,5 @@ source_group(Dynamics\\Joints FILES ${BOX2D_Joints_SRCS} ${BOX2D_Joints_HDRS})
 source_group(Include FILES ${BOX2D_General_HDRS})
 source_group(Rope FILES ${BOX2D_Rope_SRCS} ${BOX2D_Rope_HDRS})
 
-add_library (Box2D STATIC ${SOURCE_FILES})
+add_library (Box2D OBJECT ${SOURCE_FILES})
 install(DIRECTORY Box2D DESTINATION ${DEST_THIRDPARTY_HEADERS} FILES_MATCHING PATTERN *.h)
-install_to_build_tree(Box2D)

@@ -20,6 +20,5 @@
 # THE SOFTWARE.
 #
 
-add_library(rapidjson STATIC INTERFACE.cpp)
+add_library(rapidjson OBJECT INTERFACE.cpp)
 install (DIRECTORY include/rapidjson/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/rapidjson FILES_MATCHING PATTERN *.h)
-install_to_build_tree(rapidjson)

@@ -21,6 +21,5 @@
 #
 
 file (GLOB_RECURSE SOURCE_FILES src/*.c src/*.h)
-add_library (WebP STATIC ${SOURCE_FILES})
+add_library (WebP OBJECT ${SOURCE_FILES})
 install (DIRECTORY src/webp/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/webp FILES_MATCHING PATTERN *.h)
-install_to_build_tree(WebP)

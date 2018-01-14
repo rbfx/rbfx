@@ -10,8 +10,17 @@
 //#define IM_ASSERT(_EXPR)  MyAssert(_EXPR)
 
 //---- Define attributes of all API symbols declarations, e.g. for DLL under Windows.
-//#define IMGUI_API __declspec( dllexport )
-//#define IMGUI_API __declspec( dllimport )
+#if _WIN32
+#   ifdef _EXPORTS
+#       define IMGUI_API __declspec(dllexport)
+#   elif _IMPORTS
+#       define IMGUI_API __declspec(dllimport)
+#	else
+#		define IMGUI_API
+#   endif
+#elif _EXPORTS || _IMPORTS
+#   define IMGUI_API __attribute__((visibility("default")))
+#endif
 
 //---- Don't define obsolete functions names. Consider enabling from time to time or when updating to reduce like hood of using already obsolete function/names
 //#define IMGUI_DISABLE_OBSOLETE_FUNCTIONS

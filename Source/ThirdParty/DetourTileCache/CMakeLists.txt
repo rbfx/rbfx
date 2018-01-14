@@ -21,9 +21,10 @@
 #
 
 file (GLOB SOURCE_FILES source/*.cpp include/*.h)
-add_library (DetourTileCache STATIC ${SOURCE_FILES})
-target_link_libraries(DetourTileCache Detour)
-target_include_directories(DetourTileCache PUBLIC include)
+add_library (DetourTileCache OBJECT ${SOURCE_FILES})
+target_link_objects(DetourTileCache Detour)
+target_include_directories(DetourTileCache PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}/DetourTileCache>
+)
 
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/DetourTileCache FILES_MATCHING PATTERN *.h)
-install_to_build_tree(DetourTileCache)

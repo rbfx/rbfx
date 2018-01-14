@@ -1,9 +1,9 @@
 
 file (GLOB_RECURSE SOURCE_FILES *.h *.cpp)
-add_library(easy_profiler STATIC ${SOURCE_FILES} resources.rc)
+add_library(easy_profiler OBJECT ${SOURCE_FILES} resources.rc)
 target_include_directories(easy_profiler PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>  # <prefix>/include
+    $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}/easy>
 )
 target_compile_definitions(easy_profiler PRIVATE
 
@@ -35,11 +35,11 @@ target_compile_definitions(easy_profiler
 if (UNIX)
     target_compile_options(easy_profiler PRIVATE -Wall -Wno-long-long -Wno-reorder -Wno-braced-scalar-init -pedantic -O3)
     if (NOT ANDROID)
-        target_link_libraries(easy_profiler pthread)
+        object_target_link_libraries(easy_profiler pthread)
     endif ()
 elseif (WIN32)
     target_compile_definitions(easy_profiler PRIVATE -D_WIN32_WINNT=0x0600 -D_CRT_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS)
-    target_link_libraries(easy_profiler ws2_32 psapi)
+    object_target_link_libraries(easy_profiler ws2_32 psapi)
 endif ()
 
 if (MINGW)
@@ -48,7 +48,6 @@ if (MINGW)
 endif ()
 
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS} FILES_MATCHING PATTERN *.h)
-install_to_build_tree(easy_profiler)
 
 # If we're on MSVC, we need a /MD version of the easy profiler library to link with Qt
 if (MSVC AND Qt5Widgets_FOUND)

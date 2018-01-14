@@ -41,3 +41,5 @@ endif ()
 if (URHO3D_SAMPLES)
     add_subdirectory (Samples)
 endif ()
+
+install(EXPORT Urho3D DESTINATION ${DEST_SHARE_DIR}/CMake)

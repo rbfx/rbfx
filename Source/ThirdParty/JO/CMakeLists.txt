@@ -20,7 +20,6 @@
 # THE SOFTWARE.
 #
 
-add_library (JO STATIC jo_jpeg.cpp jo_jpeg.h)
+add_library (JO OBJECT jo_jpeg.cpp jo_jpeg.h)
 
 install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/JO FILES_MATCHING PATTERN *.h)
-install_to_build_tree(JO)
