@@ -23,5 +23,4 @@
 file (GLOB SOURCE_FILES *.cpp *.h)
 add_executable (RampGenerator ${SOURCE_FILES})
 target_link_libraries (RampGenerator Urho3D)
-set_target_properties(RampGenerator PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
 install(TARGETS RampGenerator RUNTIME DESTINATION bin)

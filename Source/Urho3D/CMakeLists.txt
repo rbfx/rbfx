@@ -111,13 +111,14 @@ endforeach()
 add_library(Urho3D ${URHO3D_LIBRARY_TYPE} ${SOURCE_FILES} ${HEADER_FILES})
 target_include_directories(Urho3D PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>        # For parent projects to find auto-generated engine headers
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>       # For parent projects to find engine headers
-    $<INSTALL_INTERFACE:${DEST_INCLUDE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>        # For parent projects to find engine headers
     $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS}>
+    $<INSTALL_INTERFACE:${DEST_INCLUDE_DIR}>
     $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}>
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
 )
 set_target_properties(Urho3D PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+add_dependencies(Urho3D InstallThirdpartyHeaders)
 
 # Add any variables starting with URHO3D_ as project defines
 get_cmake_property(__cmake_variables VARIABLES)
@@ -149,7 +150,6 @@ foreach (dep ${THIRD_PARTY_DEPENDENCIES})
         else ()
             target_link_libraries(Urho3D "${dep}")
         endif ()
-        install_to_build_tree(${dep} Urho3D)
     endif ()
 endforeach()
 
@@ -212,9 +212,6 @@ endif ()
 
 if (BUILD_SHARED_LIBS OR EMSCRIPTEN)
     target_compile_options(Urho3D PRIVATE -DURHO3D_EXPORTS)
-    if (WIN32)
-        set_target_properties(Urho3D PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
-    endif ()
 else ()
     target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC_DEFINE)
 endif ()

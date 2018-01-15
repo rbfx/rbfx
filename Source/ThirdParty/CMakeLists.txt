@@ -90,11 +90,15 @@ if (URHO3D_TASKS)
     add_subdirectory(fcontext)
 endif ()
 
+add_custom_target(InstallThirdpartyHeaders)
+set_target_properties(InstallThirdpartyHeaders PROPERTIES FOLDER ThirdParty)
+
 # Group third party dependencies into ThirdParty subfolder in VS solution.
 file(GLOB third_party_dirs RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
 foreach (lib ${third_party_dirs})
     if (TARGET ${lib})
         set_target_properties(${lib} PROPERTIES FOLDER ThirdParty)
+        install_to_build_tree(${lib} InstallThirdpartyHeaders)
     endif ()
 endforeach ()
 if (TARGET profiler_gui)

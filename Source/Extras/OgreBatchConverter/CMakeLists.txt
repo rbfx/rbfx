@@ -23,5 +23,4 @@
 file (GLOB SOURCE_FILES *.cpp *.h)
 add_executable (OgreBatchConverter ${SOURCE_FILES})
 target_link_libraries(OgreBatchConverter Urho3D)
-set_target_properties(OgreBatchConverter PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
 install(TARGETS OgreBatchConverter RUNTIME DESTINATION bin)

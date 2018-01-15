@@ -64,13 +64,8 @@ void Sample::Setup()
     engineParameters_[EP_HEADLESS]     = false;
     engineParameters_[EP_SOUND]        = false;
 
-    // Construct a search path to find the resource prefix with two entries:
-    // The first entry is an empty path which will be substituted with program/bin directory -- this entry is for binary when it is still in build tree
-    // The second entry is relative paths from the installed program/bin directory to the asset directory -- these entries are for binary when it is in the Urho3D SDK installation location
-    // The fourth entry is a relative path from cmake build tree to data directory symlink in bin dir
-    // The fifth entry is for msvc build tree
     if (!engineParameters_.Contains(EP_RESOURCE_PREFIX_PATHS))
-        engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";../Resources;../../../bin;..";
+        engineParameters_[EP_RESOURCE_PREFIX_PATHS] = context_->GetFileSystem()->GetProgramDir() + ";;../share/Resources";
 }
 
 void Sample::Start()
