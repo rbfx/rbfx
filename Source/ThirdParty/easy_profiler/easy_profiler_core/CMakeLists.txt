@@ -3,7 +3,6 @@ file (GLOB_RECURSE SOURCE_FILES *.h *.cpp)
 add_library(easy_profiler OBJECT ${SOURCE_FILES} resources.rc)
 target_include_directories(easy_profiler PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}/easy>
 )
 target_compile_definitions(easy_profiler PRIVATE
 
