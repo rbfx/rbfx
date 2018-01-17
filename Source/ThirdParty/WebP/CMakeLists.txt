@@ -22,4 +22,4 @@
 
 file (GLOB_RECURSE SOURCE_FILES src/*.c src/*.h)
 add_library (WebP OBJECT ${SOURCE_FILES})
-install (DIRECTORY src/webp/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/webp FILES_MATCHING PATTERN *.h)
+target_include_directories(WebP PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)

@@ -54,7 +54,8 @@ if (WIN32)
 else ()
     set (SHARED_LIB_INSTALL_DIR lib${LIB_SUFFIX})
 endif ()
-
+# Configuration step will try to create symlinks in this dir. It must exist.
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS})
 if (NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
     set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR})
 endif ()

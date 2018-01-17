@@ -45,5 +45,8 @@ elseif (APPLE AND (NOT IOS OR IPHONEOS_DEPLOYMENT_TARGET STREQUAL "" OR NOT IPHO
         target_compile_definitions(Civetweb PRIVATE -DHAVE_CLOCK_GETTIME)
     endif ()
 endif ()
+if (BUILD_SHARED_LIBS)
+    target_compile_definitions(Civetweb PRIVATE -DCIVETWEB_DLL_EXPORTS INTERFACE -DCIVETWEB_DLL_IMPORTS)
+endif ()
 
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/Civetweb FILES_MATCHING PATTERN *.h)

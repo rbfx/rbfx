@@ -23,4 +23,4 @@
 file (GLOB SOURCE_FILES source/*.cpp include/*.h)
 add_library (Recast OBJECT ${SOURCE_FILES})
 target_include_directories(Recast PRIVATE include)
-install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/Recast FILES_MATCHING PATTERN *.h)  # Note: the trailing slash is significant
+create_symlink(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS}/Recast)

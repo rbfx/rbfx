@@ -98,7 +98,7 @@ if (APPLE)
     list (APPEND SOURCE_FILES IO/MacFileWatcher.m)
 endif ()
 
-set (THIRD_PARTY_DEPENDENCIES FreeType JO LZ4 PugiXml rapidjson SDL StanHull STB Mustache IconFontCppHeaders Civetweb kNet ik Detour DetourCrowd DetourTileCache Recast Box2D WebP Bullet easy_profiler imgui ImGuizmo LibCpuId GLEW MojoShader tinyfiledialogs fcontext)
+set (THIRD_PARTY_DEPENDENCIES FreeType JO LZ4 PugiXml rapidjson SDL StanHull STB Mustache IconFontCppHeaders Civetweb kNet ik Detour DetourCrowd DetourTileCache Recast Box2D WebP Bullet easy_profiler imgui ImGuizmo LibCpuId GLEW MojoShader fcontext)
 foreach (dep ${THIRD_PARTY_DEPENDENCIES})
     if (TARGET "${dep}")
         get_target_property(_TARGET_TYPE ${dep} TYPE)
@@ -211,12 +211,15 @@ else ()
 endif ()
 
 if (BUILD_SHARED_LIBS OR EMSCRIPTEN)
-    target_compile_definitions(Urho3D PRIVATE -DURHO3D_EXPORTS -D_EXPORTS -DLZ4_DLL_EXPORT=1)
-    if (MINGW)
-        ucm_add_linker_flags(SHARED -Wl,--export-all-symbols,--exclude-symbols,_DllMain@12:DllMain)
-    endif ()
+    target_compile_definitions(Urho3D PRIVATE -DURHO3D_EXPORTS=1)
+    # Also add export flags of third party libraries. They are required because those are OBJECT libraries and Urho3D
+    # should not try to import from them as if they were DLLs.
+    target_compile_definitions(Urho3D
+        PRIVATE -D_EXPORTS=1 -DLZ4_DLL_EXPORT=1 -DCIVETWEB_DLL_EXPORTS=1
+        PUBLIC  -D_IMPORTS=1 -DLZ4_DLL_IMPORT=1 -DCIVETWEB_DLL_IMPORTS=1
+    )
 else ()
-    target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC_DEFINE)
+    target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC)
 endif ()
 
 install(TARGETS Urho3D

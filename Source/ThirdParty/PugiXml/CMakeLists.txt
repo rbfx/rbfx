@@ -22,4 +22,7 @@
 
 file (GLOB SOURCE_FILES src/*.cpp src/*.hpp)
 add_library (PugiXml OBJECT ${SOURCE_FILES})
+if (BUILD_SHARED_LIBS)
+    target_compile_definitions(PugiXml PRIVATE -D_EXPORTS INTERFACE -D_IMPORTS)
+endif ()
 install (DIRECTORY src/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/PugiXml FILES_MATCHING PATTERN *.hpp)

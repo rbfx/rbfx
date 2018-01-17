@@ -1494,6 +1494,9 @@ target_include_directories (SDL PUBLIC
     $<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include/generated> $<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}/SDL>
 )
+if (BUILD_SHARED_LIBS)
+  target_compile_definitions(SDL PUBLIC -DSDL_EXPORTS)
+endif ()
 
 # Install headers for building and using the Urho3D library (install dependency for InputEvents.h)
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/SDL FILES_MATCHING PATTERN *.h)    # Note: the trailing slash is significant

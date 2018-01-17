@@ -72,8 +72,4 @@ configure_file (include/ik/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/gener
 
 add_library (ik OBJECT ${SOURCE_FILES})
 target_compile_definitions(ik PUBLIC -DIK_STATIC)
-target_include_directories(ik PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/include/generated include)
-
-# Install headers for building the Urho3D library
-install (DIRECTORY include/ik/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/ik FILES_MATCHING PATTERN *.h)  # Note: the trailing slash is significant
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/include/generated/ik/export.h ${CMAKE_CURRENT_BINARY_DIR}/include/generated/ik/config.h DESTINATION ${DEST_THIRDPARTY_HEADERS}/ik)
+target_include_directories(ik PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/generated> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
