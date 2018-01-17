@@ -31,7 +31,7 @@ struct b2ContactVelocityConstraint;
 struct b2Profile;
 
 /// This is an internal class.
-class b2Island
+class BOX2D_API b2Island
 {
 public:
 	b2Island(int32 bodyCapacity, int32 contactCapacity, int32 jointCapacity,

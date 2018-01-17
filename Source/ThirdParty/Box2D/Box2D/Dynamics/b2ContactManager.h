@@ -27,7 +27,7 @@ class b2ContactListener;
 class b2BlockAllocator;
 
 // Delegate of b2World.
-class b2ContactManager
+class BOX2D_API b2ContactManager
 {
 public:
 	b2ContactManager();

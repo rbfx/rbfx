@@ -23,7 +23,7 @@
 
 /// Timer for profiling. This has platform specific code and may
 /// not work on every platform.
-class b2Timer
+class BOX2D_API b2Timer
 {
 public:
 

@@ -25,7 +25,7 @@ const float32 b2_minPulleyLength = 2.0f;
 
 /// Pulley joint definition. This requires two ground anchors,
 /// two dynamic body anchor points, and a pulley ratio.
-struct b2PulleyJointDef : public b2JointDef
+struct BOX2D_API b2PulleyJointDef : public b2JointDef
 {
 	b2PulleyJointDef()
 	{
@@ -76,7 +76,7 @@ struct b2PulleyJointDef : public b2JointDef
 /// work better when combined with prismatic joints. You should also cover the
 /// the anchor points with static shapes to prevent one side from going to
 /// zero length.
-class b2PulleyJoint : public b2Joint
+class BOX2D_API b2PulleyJoint : public b2Joint
 {
 public:
 	b2Vec2 GetAnchorA() const;

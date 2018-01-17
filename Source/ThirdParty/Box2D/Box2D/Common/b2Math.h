@@ -50,7 +50,7 @@ inline float32 b2InvSqrt(float32 x)
 #define	b2Atan2(y, x)	atan2f(y, x)
 
 /// A 2D column vector.
-struct b2Vec2
+struct BOX2D_API b2Vec2
 {
 	/// Default constructor does nothing (for performance).
 	b2Vec2() {}
@@ -141,7 +141,7 @@ struct b2Vec2
 };
 
 /// A 2D column vector with 3 elements.
-struct b2Vec3
+struct BOX2D_API b2Vec3
 {
 	/// Default constructor does nothing (for performance).
 	b2Vec3() {}
@@ -180,7 +180,7 @@ struct b2Vec3
 };
 
 /// A 2-by-2 matrix. Stored in column-major order.
-struct b2Mat22
+struct BOX2D_API b2Mat22
 {
 	/// The default constructor does nothing (for performance).
 	b2Mat22() {}
@@ -254,7 +254,7 @@ struct b2Mat22
 };
 
 /// A 3-by-3 matrix. Stored in column-major order.
-struct b2Mat33
+struct BOX2D_API b2Mat33
 {
 	/// The default constructor does nothing (for performance).
 	b2Mat33() {}
@@ -296,7 +296,7 @@ struct b2Mat33
 };
 
 /// Rotation
-struct b2Rot
+struct BOX2D_API b2Rot
 {
 	b2Rot() {}
 
@@ -347,7 +347,7 @@ struct b2Rot
 
 /// A transform contains translation and rotation. It is used to represent
 /// the position and orientation of rigid frames.
-struct b2Transform
+struct BOX2D_API b2Transform
 {
 	/// The default constructor does nothing.
 	b2Transform() {}
@@ -377,7 +377,7 @@ struct b2Transform
 /// Shapes are defined with respect to the body origin, which may
 /// no coincide with the center of mass. However, to support dynamics
 /// we must interpolate the center of mass position.
-struct b2Sweep
+struct BOX2D_API b2Sweep
 {
 	/// Get the interpolated transform at a specific time.
 	/// @param beta is a factor in [0,1], where 0 indicates alpha0.

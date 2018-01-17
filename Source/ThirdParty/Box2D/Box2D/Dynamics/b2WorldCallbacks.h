@@ -33,7 +33,7 @@ struct b2Manifold;
 /// Joints and fixtures are destroyed when their associated
 /// body is destroyed. Implement this listener so that you
 /// may nullify references to these joints and shapes.
-class b2DestructionListener
+class BOX2D_API b2DestructionListener
 {
 public:
 	virtual ~b2DestructionListener() {}
@@ -49,7 +49,7 @@ public:
 
 /// Implement this class to provide collision filtering. In other words, you can implement
 /// this class if you want finer control over contact creation.
-class b2ContactFilter
+class BOX2D_API b2ContactFilter
 {
 public:
 	virtual ~b2ContactFilter() {}
@@ -62,7 +62,7 @@ public:
 /// Contact impulses for reporting. Impulses are used instead of forces because
 /// sub-step forces may approach infinity for rigid body collisions. These
 /// match up one-to-one with the contact points in b2Manifold.
-struct b2ContactImpulse
+struct BOX2D_API b2ContactImpulse
 {
 	float32 normalImpulses[b2_maxManifoldPoints];
 	float32 tangentImpulses[b2_maxManifoldPoints];
@@ -78,7 +78,7 @@ struct b2ContactImpulse
 /// You should strive to make your callbacks efficient because there may be
 /// many callbacks per time step.
 /// @warning You cannot create/destroy Box2D entities inside these callbacks.
-class b2ContactListener
+class BOX2D_API b2ContactListener
 {
 public:
 	virtual ~b2ContactListener() {}
@@ -120,7 +120,7 @@ public:
 
 /// Callback class for AABB queries.
 /// See b2World::Query
-class b2QueryCallback
+class BOX2D_API b2QueryCallback
 {
 public:
 	virtual ~b2QueryCallback() {}
@@ -132,7 +132,7 @@ public:
 
 /// Callback class for ray casts.
 /// See b2World::RayCast
-class b2RayCastCallback
+class BOX2D_API b2RayCastCallback
 {
 public:
 	virtual ~b2RayCastCallback() {}

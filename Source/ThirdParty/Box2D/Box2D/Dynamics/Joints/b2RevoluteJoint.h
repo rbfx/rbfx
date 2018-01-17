@@ -32,7 +32,7 @@
 /// 1. you might not know where the center of mass will be.
 /// 2. if you add/remove shapes from a body and recompute the mass,
 ///    the joints will be broken.
-struct b2RevoluteJointDef : public b2JointDef
+struct BOX2D_API b2RevoluteJointDef : public b2JointDef
 {
 	b2RevoluteJointDef()
 	{
@@ -87,7 +87,7 @@ struct b2RevoluteJointDef : public b2JointDef
 /// a joint limit that specifies a lower and upper angle. You can use a motor
 /// to drive the relative rotation about the shared point. A maximum motor torque
 /// is provided so that infinite forces are not generated.
-class b2RevoluteJoint : public b2Joint
+class BOX2D_API b2RevoluteJoint : public b2Joint
 {
 public:
 	b2Vec2 GetAnchorA() const;

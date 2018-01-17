@@ -29,7 +29,7 @@ class b2BroadPhase;
 class b2Fixture;
 
 /// This holds contact filtering data.
-struct b2Filter
+struct BOX2D_API b2Filter
 {
 	b2Filter()
 	{
@@ -53,7 +53,7 @@ struct b2Filter
 
 /// A fixture definition is used to create a fixture. This class defines an
 /// abstract fixture definition. You can reuse fixture definitions safely.
-struct b2FixtureDef
+struct BOX2D_API b2FixtureDef
 {
 	/// The constructor sets the default fixture definition values.
 	b2FixtureDef()
@@ -91,7 +91,7 @@ struct b2FixtureDef
 };
 
 /// This proxy is used internally to connect fixtures to the broad-phase.
-struct b2FixtureProxy
+struct BOX2D_API b2FixtureProxy
 {
 	b2AABB aabb;
 	b2Fixture* fixture;
@@ -104,7 +104,7 @@ struct b2FixtureProxy
 /// such as friction, collision filters, etc.
 /// Fixtures are created via b2Body::CreateFixture.
 /// @warning you cannot reuse fixtures.
-class b2Fixture
+class BOX2D_API b2Fixture
 {
 public:
 	/// Get the type of the child shape. You can use this to down cast to the concrete shape.

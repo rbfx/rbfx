@@ -48,7 +48,7 @@ enum b2BodyType
 
 /// A body definition holds all the data needed to construct a rigid body.
 /// You can safely re-use body definitions. Shapes are added to a body after construction.
-struct b2BodyDef
+struct BOX2D_API b2BodyDef
 {
 	/// This constructor sets the body definition default values.
 	b2BodyDef()
@@ -123,7 +123,7 @@ struct b2BodyDef
 };
 
 /// A rigid body. These are created via b2World::CreateBody.
-class b2Body
+class BOX2D_API b2Body
 {
 public:
 	/// Creates a fixture and attach it to this body. Use this function if you need

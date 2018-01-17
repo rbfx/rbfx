@@ -142,7 +142,7 @@ void b2Log(const char* string, ...);
 
 /// Version numbering scheme.
 /// See http://en.wikipedia.org/wiki/Software_versioning
-struct b2Version
+struct BOX2D_API b2Version
 {
 	int32 major;		///< significant changes
 	int32 minor;		///< incremental changes

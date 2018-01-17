@@ -117,7 +117,6 @@ target_include_directories(Urho3D PUBLIC
     $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}>
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
 )
-set_target_properties(Urho3D PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 add_dependencies(Urho3D InstallThirdpartyHeaders)
 
 # Add any variables starting with URHO3D_ as project defines

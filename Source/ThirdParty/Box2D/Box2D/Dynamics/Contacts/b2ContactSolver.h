@@ -28,7 +28,7 @@ class b2Body;
 class b2StackAllocator;
 struct b2ContactPositionConstraint;
 
-struct b2VelocityConstraintPoint
+struct BOX2D_API b2VelocityConstraintPoint
 {
 	b2Vec2 rA;
 	b2Vec2 rB;
@@ -39,7 +39,7 @@ struct b2VelocityConstraintPoint
 	float32 velocityBias;
 };
 
-struct b2ContactVelocityConstraint
+struct BOX2D_API b2ContactVelocityConstraint
 {
 	b2VelocityConstraintPoint points[b2_maxManifoldPoints];
 	b2Vec2 normal;
@@ -56,7 +56,7 @@ struct b2ContactVelocityConstraint
 	int32 contactIndex;
 };
 
-struct b2ContactSolverDef
+struct BOX2D_API b2ContactSolverDef
 {
 	b2TimeStep step;
 	b2Contact** contacts;
@@ -66,7 +66,7 @@ struct b2ContactSolverDef
 	b2StackAllocator* allocator;
 };
 
-class b2ContactSolver
+class BOX2D_API b2ContactSolver
 {
 public:
 	b2ContactSolver(b2ContactSolverDef* def);

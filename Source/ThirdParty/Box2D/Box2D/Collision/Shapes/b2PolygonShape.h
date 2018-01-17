@@ -25,7 +25,7 @@
 /// the left of each edge.
 /// Polygons have a maximum number of vertices equal to b2_maxPolygonVertices.
 /// In most cases you should not need many vertices for a convex polygon.
-class b2PolygonShape : public b2Shape
+class BOX2D_API b2PolygonShape : public b2Shape
 {
 public:
 	b2PolygonShape();

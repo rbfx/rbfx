@@ -23,7 +23,7 @@
 
 /// Mouse joint definition. This requires a world target point,
 /// tuning parameters, and the time step.
-struct b2MouseJointDef : public b2JointDef
+struct BOX2D_API b2MouseJointDef : public b2JointDef
 {
 	b2MouseJointDef()
 	{
@@ -57,7 +57,7 @@ struct b2MouseJointDef : public b2JointDef
 /// NOTE: this joint is not documented in the manual because it was
 /// developed to be used in the testbed. If you want to learn how to
 /// use the mouse joint, look at the testbed.
-class b2MouseJoint : public b2Joint
+class BOX2D_API b2MouseJoint : public b2Joint
 {
 public:
 

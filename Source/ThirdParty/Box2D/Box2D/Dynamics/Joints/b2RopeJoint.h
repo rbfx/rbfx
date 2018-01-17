@@ -25,7 +25,7 @@
 /// a maximum lengths.
 /// Note: by default the connected objects will not collide.
 /// see collideConnected in b2JointDef.
-struct b2RopeJointDef : public b2JointDef
+struct BOX2D_API b2RopeJointDef : public b2JointDef
 {
 	b2RopeJointDef()
 	{
@@ -55,7 +55,7 @@ struct b2RopeJointDef : public b2JointDef
 /// would have some sponginess, so I chose not to implement it
 /// that way. See b2DistanceJoint if you want to dynamically
 /// control length.
-class b2RopeJoint : public b2Joint
+class BOX2D_API b2RopeJoint : public b2Joint
 {
 public:
 	b2Vec2 GetAnchorA() const;

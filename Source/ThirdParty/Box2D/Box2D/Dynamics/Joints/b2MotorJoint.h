@@ -22,7 +22,7 @@
 #include "Box2D/Dynamics/Joints/b2Joint.h"
 
 /// Motor joint definition.
-struct b2MotorJointDef : public b2JointDef
+struct BOX2D_API b2MotorJointDef : public b2JointDef
 {
 	b2MotorJointDef()
 	{
@@ -56,7 +56,7 @@ struct b2MotorJointDef : public b2JointDef
 /// A motor joint is used to control the relative motion
 /// between two bodies. A typical usage is to control the movement
 /// of a dynamic body with respect to the ground.
-class b2MotorJoint : public b2Joint
+class BOX2D_API b2MotorJoint : public b2Joint
 {
 public:
 	b2Vec2 GetAnchorA() const;

@@ -29,7 +29,7 @@ class b2EdgeShape;
 /// Since there may be many vertices, they are allocated using b2Alloc.
 /// Connectivity information is used to create smooth collisions.
 /// WARNING: The chain will not collide properly if there are self-intersections.
-class b2ChainShape : public b2Shape
+class BOX2D_API b2ChainShape : public b2Shape
 {
 public:
 	b2ChainShape();

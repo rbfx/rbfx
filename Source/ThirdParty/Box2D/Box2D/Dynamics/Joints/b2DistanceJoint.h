@@ -27,7 +27,7 @@
 /// so that the initial configuration can violate the constraint
 /// slightly. This helps when saving and loading a game.
 /// @warning Do not use a zero or short length.
-struct b2DistanceJointDef : public b2JointDef
+struct BOX2D_API b2DistanceJointDef : public b2JointDef
 {
 	b2DistanceJointDef()
 	{
@@ -64,7 +64,7 @@ struct b2DistanceJointDef : public b2JointDef
 /// A distance joint constrains two points on two bodies
 /// to remain at a fixed distance from each other. You can view
 /// this as a massless, rigid rod.
-class b2DistanceJoint : public b2Joint
+class BOX2D_API b2DistanceJoint : public b2Joint
 {
 public:
 

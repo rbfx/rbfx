@@ -22,7 +22,7 @@
 #include "Box2D/Common/b2Math.h"
 
 /// Color for debug drawing. Each value has the range [0,1].
-struct b2Color
+struct BOX2D_API b2Color
 {
 	b2Color() {}
 	b2Color(float32 rIn, float32 gIn, float32 bIn, float32 aIn = 1.0f)
@@ -40,7 +40,7 @@ struct b2Color
 
 /// Implement and register this class with a b2World to provide debug drawing of physics
 /// entities in your game.
-class b2Draw
+class BOX2D_API b2Draw
 {
 public:
 	b2Draw();

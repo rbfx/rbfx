@@ -23,7 +23,7 @@
 
 class b2BlockAllocator;
 
-class b2PolygonAndCircleContact : public b2Contact
+class BOX2D_API b2PolygonAndCircleContact : public b2Contact
 {
 public:
 	static b2Contact* Create(b2Fixture* fixtureA, int32 indexA, b2Fixture* fixtureB, int32 indexB, b2BlockAllocator* allocator);

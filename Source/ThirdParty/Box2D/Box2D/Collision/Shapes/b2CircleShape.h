@@ -22,7 +22,7 @@
 #include "Box2D/Collision/Shapes/b2Shape.h"
 
 /// A circle shape.
-class b2CircleShape : public b2Shape
+class BOX2D_API b2CircleShape : public b2Shape
 {
 public:
 	b2CircleShape();

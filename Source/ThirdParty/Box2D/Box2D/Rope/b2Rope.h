@@ -24,7 +24,7 @@
 class b2Draw;
 
 /// 
-struct b2RopeDef
+struct BOX2D_API b2RopeDef
 {
 	b2RopeDef()
 	{
@@ -60,7 +60,7 @@ struct b2RopeDef
 };
 
 /// 
-class b2Rope
+class BOX2D_API b2Rope
 {
 public:
 	b2Rope();

@@ -26,7 +26,7 @@ class b2Shape;
 
 /// A distance proxy is used by the GJK algorithm.
 /// It encapsulates any shape.
-struct b2DistanceProxy
+struct BOX2D_API b2DistanceProxy
 {
 	b2DistanceProxy() : m_vertices(NULL), m_count(0), m_radius(0.0f) {}
 
@@ -54,7 +54,7 @@ struct b2DistanceProxy
 
 /// Used to warm start b2Distance.
 /// Set count to zero on first call.
-struct b2SimplexCache
+struct BOX2D_API b2SimplexCache
 {
 	float32 metric;		///< length or area
 	uint16 count;
@@ -65,7 +65,7 @@ struct b2SimplexCache
 /// Input for b2Distance.
 /// You have to option to use the shape radii
 /// in the computation. Even 
-struct b2DistanceInput
+struct BOX2D_API b2DistanceInput
 {
 	b2DistanceProxy proxyA;
 	b2DistanceProxy proxyB;
@@ -75,7 +75,7 @@ struct b2DistanceInput
 };
 
 /// Output for b2Distance.
-struct b2DistanceOutput
+struct BOX2D_API b2DistanceOutput
 {
 	b2Vec2 pointA;		///< closest point on shapeA
 	b2Vec2 pointB;		///< closest point on shapeB

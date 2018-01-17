@@ -35,7 +35,7 @@ const uint8 b2_nullFeature = UCHAR_MAX;
 
 /// The features that intersect to form the contact point
 /// This must be 4 bytes or less.
-struct b2ContactFeature
+struct BOX2D_API b2ContactFeature
 {
 	enum Type
 	{
@@ -66,7 +66,7 @@ union b2ContactID
 /// This structure is stored across time steps, so we keep it small.
 /// Note: the impulses are used for internal caching and may not
 /// provide reliable contact forces, especially for high speed collisions.
-struct b2ManifoldPoint
+struct BOX2D_API b2ManifoldPoint
 {
 	b2Vec2 localPoint;		///< usage depends on manifold type
 	float32 normalImpulse;	///< the non-penetration impulse
@@ -90,7 +90,7 @@ struct b2ManifoldPoint
 /// account for movement, which is critical for continuous physics.
 /// All contact scenarios must be expressed in one of these types.
 /// This structure is stored across time steps, so we keep it small.
-struct b2Manifold
+struct BOX2D_API b2Manifold
 {
 	enum Type
 	{
@@ -107,7 +107,7 @@ struct b2Manifold
 };
 
 /// This is used to compute the current state of a contact manifold.
-struct b2WorldManifold
+struct BOX2D_API b2WorldManifold
 {
 	/// Evaluate the manifold with supplied transforms. This assumes
 	/// modest motion from the original state. This does not change the
@@ -137,14 +137,14 @@ void b2GetPointStates(b2PointState state1[b2_maxManifoldPoints], b2PointState st
 					  const b2Manifold* manifold1, const b2Manifold* manifold2);
 
 /// Used for computing contact manifolds.
-struct b2ClipVertex
+struct BOX2D_API b2ClipVertex
 {
 	b2Vec2 v;
 	b2ContactID id;
 };
 
 /// Ray-cast input data. The ray extends from p1 to p1 + maxFraction * (p2 - p1).
-struct b2RayCastInput
+struct BOX2D_API b2RayCastInput
 {
 	b2Vec2 p1, p2;
 	float32 maxFraction;
@@ -152,14 +152,14 @@ struct b2RayCastInput
 
 /// Ray-cast output data. The ray hits at p1 + fraction * (p2 - p1), where p1 and p2
 /// come from b2RayCastInput.
-struct b2RayCastOutput
+struct BOX2D_API b2RayCastOutput
 {
 	b2Vec2 normal;
 	float32 fraction;
 };
 
 /// An axis aligned bounding box.
-struct b2AABB
+struct BOX2D_API b2AABB
 {
 	/// Verify that the bounds are sorted.
 	bool IsValid() const;

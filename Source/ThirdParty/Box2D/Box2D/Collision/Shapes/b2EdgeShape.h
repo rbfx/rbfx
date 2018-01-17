@@ -24,7 +24,7 @@
 /// A line segment (edge) shape. These can be connected in chains or loops
 /// to other edge shapes. The connectivity information is used to ensure
 /// correct contact normals.
-class b2EdgeShape : public b2Shape
+class BOX2D_API b2EdgeShape : public b2Shape
 {
 public:
 	b2EdgeShape();
