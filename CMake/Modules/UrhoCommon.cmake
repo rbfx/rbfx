@@ -175,21 +175,6 @@ macro (add_sample TARGET)
     endif ()
 endmacro ()
 
-macro (install_to_build_tree TARGET)
-    # Install target itself
-    get_target_property(TARGET_BINARY_DIR ${TARGET} BINARY_DIR)
-    set (BEFORE_TARGET ${ARGN})
-    if (BEFORE_TARGET)
-        set (INSTALL_TARGET ${BEFORE_TARGET})
-        set (INSTALL_TIME PRE_BUILD)
-    else ()
-        set (INSTALL_TARGET ${TARGET})
-        set (INSTALL_TIME POST_BUILD)
-    endif ()
-    add_custom_command(TARGET ${INSTALL_TARGET} ${INSTALL_TIME} COMMAND "${CMAKE_COMMAND}"
-        -D CMAKE_INSTALL_PREFIX:string=${CMAKE_BINARY_DIR} -D BUILD_TYPE:string=$<CONFIGURATION> -P "${TARGET_BINARY_DIR}/cmake_install.cmake")
-endmacro ()
-
 # Macro deploys Qt dlls to folder where target executable is located.
 # Macro arguments:
 #  target - name of target which links to Qt.
