@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Engine/Application.h"
+#include "../Engine/EngineEvents.h"
 #include "../IO/IOEvents.h"
 #include "../IO/Log.h"
 #include "../Core/Profiler.h"
@@ -82,6 +83,8 @@ int Application::Run()
         Start();
         if (exitCode_)
             return exitCode_;
+
+        SendEvent(E_APPLICATIONSTARTED);
 
         // Platforms other than iOS/tvOS and Emscripten run a blocking main loop
 #if !defined(IOS) && !defined(TVOS) && !defined(__EMSCRIPTEN__)

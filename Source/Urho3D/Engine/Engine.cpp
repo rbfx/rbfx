@@ -63,6 +63,7 @@
 #include "../Urho2D/Urho2D.h"
 #endif
 #include "../Core/Tasks.h"
+#include "../Engine/EngineEvents.h"
 
 #if defined(__EMSCRIPTEN__) && defined(URHO3D_TESTING)
 #include <emscripten/emscripten.h>
@@ -325,6 +326,7 @@ bool Engine::Initialize(const VariantMap& parameters)
 
     URHO3D_LOGINFO("Initialized engine");
     initialized_ = true;
+    SendEvent(E_ENGINEINITIALIZED);
     return true;
 }
 

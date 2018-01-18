@@ -83,7 +83,8 @@ void Editor::Start()
     SceneSettings::RegisterObject(context_);
 
     GetSystemUI()->ApplyStyleDefault(true, 1.0f);
-    GetSystemUI()->AddFont("Fonts/fontawesome-webfont.ttf", 0, {ICON_MIN_FA, ICON_MAX_FA, 0}, true);
+    GetSystemUI()->AddFont("Fonts/DejaVuSansMono.ttf");
+    GetSystemUI()->AddFont("Fonts/fontawesome-webfont.ttf", {ICON_MIN_FA, ICON_MAX_FA, 0}, 0, true);
     ui::GetStyle().WindowRounding = 3;
     // Disable imgui saving ui settings on it's own. These should be serialized to project file.
     ui::GetIO().IniFilename = 0;
