@@ -14,7 +14,7 @@ namespace Urho3D
 
 
 	//encapsulates a single tweekable value.
-	class Tweek : public Object {
+	class URHO3D_API Tweek : public Object {
 
 		URHO3D_OBJECT(Tweek, Object);
 
@@ -107,7 +107,7 @@ namespace Urho3D
 	typedef HashMap<StringHash, Vector<SharedPtr<Tweek>>> TweekSectionMap;
 
 	//subsystem designed to add easy/FAST access to simple value types that can be easily tweeked by an overlay gui as well as saved/loaded from a config file.
-	class Tweeks : public Object {
+	class URHO3D_API Tweeks : public Object {
 
 		URHO3D_OBJECT(Tweeks, Object);
 
