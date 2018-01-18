@@ -30,8 +30,21 @@
 #define PUGIXML_NO_EXCEPTIONS
 
 // Set this to control attributes for public classes/functions, i.e.:
-// #define PUGIXML_API __declspec(dllexport) // to export all public symbols from DLL
-// #define PUGIXML_CLASS __declspec(dllimport) // to import all classes from DLL
+#if _WIN32
+#   if _EXPORTS
+#       define PUGIXML_API __declspec(dllexport)
+#       define PUGIXML_CLASS __declspec(dllexport)
+#   elif _IMPORTS
+#       define PUGIXML_API __declspec(dllimport)
+#       define PUGIXML_CLASS __declspec(dllimport)
+#   endif
+#elif _EXPORTS || _IMPORTS
+#   define PUGIXML_API __attribute__((visibility("default")))
+#   define PUGIXML_CLASS __attribute__((visibility("default")))
+#else
+#   define PUGIXML_API
+#   define PUGIXML_CLASS
+#endif
 // #define PUGIXML_FUNCTION __fastcall // to set calling conventions to all public functions to fastcall
 // In absence of PUGIXML_CLASS/PUGIXML_FUNCTION definitions PUGIXML_API is used instead
 

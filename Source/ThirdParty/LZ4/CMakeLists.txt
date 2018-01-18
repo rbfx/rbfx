@@ -21,6 +21,8 @@
 #
 
 file (GLOB SOURCE_FILES *.c *.h)
-add_library (LZ4 STATIC ${SOURCE_FILES})
+add_library (LZ4 OBJECT ${SOURCE_FILES})
+if (BUILD_SHARED_LIBS)
+    target_compile_definitions(LZ4 PRIVATE -DLZ4_DLL_EXPORT=1 INTERFACE -DLZ4_DLL_IMPORT=1)
+endif ()
 install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/LZ4 FILES_MATCHING PATTERN *.h)
-install_to_build_tree(LZ4)

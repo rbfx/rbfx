@@ -19,6 +19,7 @@
 #ifndef B2_ISLAND_H
 #define B2_ISLAND_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Common/b2Math.h"
 #include "Box2D/Dynamics/b2Body.h"
 #include "Box2D/Dynamics/b2TimeStep.h"
@@ -31,7 +32,7 @@ struct b2ContactVelocityConstraint;
 struct b2Profile;
 
 /// This is an internal class.
-class b2Island
+class BOX2D_API b2Island
 {
 public:
 	b2Island(int32 bodyCapacity, int32 contactCapacity, int32 jointCapacity,

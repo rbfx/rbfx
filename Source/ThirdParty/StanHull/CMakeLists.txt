@@ -20,6 +20,5 @@
 # THE SOFTWARE.
 #
 
-add_library (StanHull STATIC hull.cpp hull.h)
-install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/StanHull FILES_MATCHING PATTERN *.h)
-install_to_build_tree(StanHull)
+add_library (StanHull OBJECT hull.cpp hull.h)
+create_symlink(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS}/StanHull)

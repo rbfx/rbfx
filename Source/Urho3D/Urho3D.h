@@ -30,7 +30,7 @@
 #pragma warning(disable: 4275)
 #endif
 
-#ifdef URHO3D_STATIC_DEFINE
+#ifdef URHO3D_STATIC
 #  define URHO3D_API
 #  define URHO3D_NO_EXPORT
 #else
@@ -68,7 +68,7 @@
 
 #else
 
-#ifdef URHO3D_STATIC_DEFINE
+#ifdef URHO3D_STATIC
 #ifndef URHO3D_API
 #  define URHO3D_API
 #endif

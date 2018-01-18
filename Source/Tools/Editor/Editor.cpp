@@ -60,8 +60,7 @@ void Editor::Setup()
 
     engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
     engineParameters_[EP_HEADLESS] = false;
-    engineParameters_[EP_RESOURCE_PREFIX_PATHS] =
-        context_->GetFileSystem()->GetProgramDir() + ";;..;../share/Urho3D/Resources";
+    engineParameters_[EP_RESOURCE_PREFIX_PATHS] = context_->GetFileSystem()->GetProgramDir() + ";;../share/Resources";
     engineParameters_[EP_FULL_SCREEN] = false;
     engineParameters_[EP_WINDOW_HEIGHT] = 1080;
     engineParameters_[EP_WINDOW_WIDTH] = 1920;
@@ -84,7 +83,8 @@ void Editor::Start()
     SceneSettings::RegisterObject(context_);
 
     GetSystemUI()->ApplyStyleDefault(true, 1.0f);
-    GetSystemUI()->AddFont("Fonts/fontawesome-webfont.ttf", 0, {ICON_MIN_FA, ICON_MAX_FA, 0}, true);
+    GetSystemUI()->AddFont("Fonts/DejaVuSansMono.ttf");
+    GetSystemUI()->AddFont("Fonts/fontawesome-webfont.ttf", {ICON_MIN_FA, ICON_MAX_FA, 0}, 0, true);
     ui::GetStyle().WindowRounding = 3;
     // Disable imgui saving ui settings on it's own. These should be serialized to project file.
     ui::GetIO().IniFilename = 0;

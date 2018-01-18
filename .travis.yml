@@ -6,8 +6,8 @@ sudo: false
 cache:
   apt: true
   directories:
-    - $HOME/cmake-3.3.2-Linux-x86_64/bin
-    - $HOME/cmake-3.3.2-Linux-x86_64/share
+    - $HOME/cmake-3.4.3-Linux-x86_64/bin
+    - $HOME/cmake-3.4.3-Linux-x86_64/share
 git:
   submodules: false
 env:
@@ -65,17 +65,17 @@ matrix:
         BUILD_SHARED_LIBS=ON
 
 script: |
-  # Update CMake to 3.3 (minimum required version)
+  # Update CMake to minimum required version
   cmake --version
   if [[ $TRAVIS_OS_NAME == 'linux' ]];
   then
-      if [[ ! -f $HOME/cmake-3.3.2-Linux-x86_64/bin/cmake ]];
+      if [[ ! -f $HOME/cmake-3.4.3-Linux-x86_64/bin/cmake ]];
       then
-          wget --no-check-certificate https://cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.tar.gz -O $HOME/cmake.tar.gz && \
+          wget --no-check-certificate https://cmake.org/files/v3.4/cmake-3.4.3-Linux-x86_64.tar.gz -O $HOME/cmake.tar.gz && \
           tar xf $HOME/cmake.tar.gz -C $HOME && \
           rm $HOME/cmake.tar.gz
       fi
-      export PATH=$HOME/cmake-3.3.2-Linux-x86_64/bin:$PATH
+      export PATH=$HOME/cmake-3.4.3-Linux-x86_64/bin:$PATH
   fi
   mkdir build
   cd build

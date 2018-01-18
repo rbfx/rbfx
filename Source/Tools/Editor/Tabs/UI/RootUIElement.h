@@ -24,7 +24,7 @@
 
 
 #include <Urho3D/UI/UIElement.h>
-#include "Editor/Tabs/Tab.h"
+#include "Tabs/Tab.h"
 
 
 namespace Urho3D

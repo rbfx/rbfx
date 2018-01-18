@@ -22,6 +22,5 @@
 
 file (GLOB SOURCE_FILES *.cpp *.h)
 add_executable (PackageTool ${SOURCE_FILES})
-target_link_libraries (PackageTool Urho3D LZ4)
-set_target_properties(PackageTool PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
+target_link_libraries (PackageTool Urho3D)
 install(TARGETS PackageTool RUNTIME DESTINATION bin)

@@ -42,8 +42,6 @@ using namespace std::placeholders;
 namespace Urho3D
 {
 
-const float defaultFontSize = 14.f;
-
 SystemUI::SystemUI(Urho3D::Context* context)
     : Object(context)
     , vertexBuffer_(context)
@@ -75,13 +73,18 @@ SystemUI::SystemUI(Urho3D::Context* context)
     io.UserData = this;
 
     SetScale();
-    AddFont("Fonts/DejaVuSansMono.ttf", defaultFontSize, nullptr);
-    ReallocateFontTexture();
-    UpdateProjectionMatrix();
-    // Initializes ImGui. ImGui::Render() can not be called unless imgui is initialized. This call avoids initialization
-    // check on every frame in E_ENDRENDERING.
-    ImGui::NewFrame();
-    ImGui::EndFrame();
+
+    SubscribeToEvent(E_APPLICATIONSTARTED, [&](StringHash, VariantMap&) {
+        if (io.Fonts->Fonts.empty())
+            io.Fonts->AddFontDefault();
+        ReallocateFontTexture();
+        UpdateProjectionMatrix();
+        // Initializes ImGui. ImGui::Render() can not be called unless imgui is initialized. This call avoids initialization
+        // check on every frame in E_ENDRENDERING.
+        ImGui::NewFrame();
+        ImGui::EndFrame();
+        UnsubscribeFromEvent(E_APPLICATIONSTARTED);
+    });
 
     // Subscribe to events
     SubscribeToEvent(E_SDLRAWINPUT, std::bind(&SystemUI::OnRawEvent, this, _2));
@@ -284,7 +287,7 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
     graphics->SetScissorTest(false);
 }
 
-ImFont* SystemUI::AddFont(const String& fontPath, float size, const unsigned short* ranges, bool merge)
+ImFont* SystemUI::AddFont(const String& fontPath, const unsigned short* ranges, float size, bool merge)
 {
     auto io = ImGui::GetIO();
 
@@ -293,8 +296,9 @@ ImFont* SystemUI::AddFont(const String& fontPath, float size, const unsigned sho
     if (size == 0)
     {
         if (io.Fonts->Fonts.empty())
-            return nullptr;
-        size = io.Fonts->Fonts.back()->FontSize;
+            size = SYSTEMUI_DEFAULT_FONT_SIZE * fontScale_;
+        else
+            size = io.Fonts->Fonts.back()->FontSize;
     }
     else
         size *= fontScale_;
@@ -317,10 +321,10 @@ ImFont* SystemUI::AddFont(const String& fontPath, float size, const unsigned sho
     return nullptr;
 }
 
-ImFont* SystemUI::AddFont(const Urho3D::String& fontPath, float size,
-    const std::initializer_list<unsigned short>& ranges, bool merge)
+ImFont* SystemUI::AddFont(const Urho3D::String& fontPath, const std::initializer_list<unsigned short>& ranges,
+    float size, bool merge)
 {
-    return AddFont(fontPath, size, ranges.size() ? &*ranges.begin() : nullptr, merge);
+    return AddFont(fontPath, ranges.size() ? &*ranges.begin() : nullptr, size, merge);
 }
 
 void SystemUI::ReallocateFontTexture()
@@ -375,7 +379,7 @@ void SystemUI::SetScale(Vector3 scale)
     io.DisplayFramebufferScale = {scale.x_, scale.y_};
     fontScale_ = scale.z_;
 
-    float prevSize = defaultFontSize;
+    float prevSize = SYSTEMUI_DEFAULT_FONT_SIZE;
     for (auto i = 0; i < io.Fonts->Fonts.size(); i++)
     {
         float sizePixels = fontSizes_[i];

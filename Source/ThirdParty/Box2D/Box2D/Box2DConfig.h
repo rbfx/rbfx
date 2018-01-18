@@ -16,25 +16,18 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef B2_CHAIN_AND_CIRCLE_CONTACT_H
-#define B2_CHAIN_AND_CIRCLE_CONTACT_H
+#pragma once
 
-#include "Box2D/Box2DConfig.h"
-#include "Box2D/Dynamics/Contacts/b2Contact.h"
-
-class b2BlockAllocator;
-
-class BOX2D_API b2ChainAndCircleContact : public b2Contact
-{
-public:
-	static b2Contact* Create(	b2Fixture* fixtureA, int32 indexA,
-								b2Fixture* fixtureB, int32 indexB, b2BlockAllocator* allocator);
-	static void Destroy(b2Contact* contact, b2BlockAllocator* allocator);
-
-	b2ChainAndCircleContact(b2Fixture* fixtureA, int32 indexA, b2Fixture* fixtureB, int32 indexB);
-	~b2ChainAndCircleContact() {}
-
-	void Evaluate(b2Manifold* manifold, const b2Transform& xfA, const b2Transform& xfB);
-};
-
+#if _WIN32
+#   if _EXPORTS
+#       define BOX2D_API __declspec(dllexport)
+#   elif _IMPORTS
+#       define BOX2D_API __declspec(dllimport)
+#	else
+#		define BOX2D_API
+#   endif
+#elif _EXPORTS || _IMPORTS
+#   define BOX2D_API __attribute__((visibility("default")))
+#else
+#   define BOX2D_API
 #endif

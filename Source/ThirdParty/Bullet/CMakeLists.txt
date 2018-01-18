@@ -41,8 +41,18 @@ file (GLOB H_FILES *.h src/BulletCollision/BroadphaseCollision/*.h
     src/BulletDynamics/MLCPSolvers/*.h src/BulletDynamics/Vehicle/*.h src/BulletSoftBody/*.h
     src/LinearMath/*.h)
 set (SOURCE_FILES ${CPP_FILES} ${H_FILES})
-
-add_library (Bullet STATIC ${SOURCE_FILES})
-target_include_directories(Bullet PUBLIC src)
+if (BUILD_SHARED_LIBS)
+    set (LIB_TYPE STATIC)
+else ()
+    set (LIB_TYPE OBJECT)
+endif ()
+add_library (Bullet ${LIB_TYPE} ${SOURCE_FILES})
+target_include_directories(Bullet PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src> $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}/Bullet>)
 install (DIRECTORY src/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/Bullet FILES_MATCHING PATTERN *.h)
-install_to_build_tree(Bullet)
+if (BUILD_SHARED_LIBS)
+    install(TARGETS Bullet
+        EXPORT Urho3D
+        LIBRARY DESTINATION ${SHARED_LIB_INSTALL_DIR}
+        ARCHIVE DESTINATION ${SHARED_LIB_INSTALL_DIR}
+    )
+endif ()

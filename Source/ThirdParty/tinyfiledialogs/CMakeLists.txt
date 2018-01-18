@@ -21,7 +21,5 @@
 #
 
 add_library (tinyfiledialogs STATIC tinyfiledialogs.h tinyfiledialogs.c)
-target_include_directories (tinyfiledialogs PUBLIC .)
-
-install (DIRECTORY . DESTINATION ${DEST_THIRDPARTY_HEADERS}/tinyfiledialogs FILES_MATCHING PATTERN *.h)
-install_to_build_tree (tinyfiledialogs)
+target_include_directories (tinyfiledialogs PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+create_symlink(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS}/tinyfiledialogs)

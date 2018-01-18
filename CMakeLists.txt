@@ -21,7 +21,7 @@
 #
 
 # Set CMake minimum version and CMake policy required by UrhoCommon module
-cmake_minimum_required (VERSION 3.2.3)
+cmake_minimum_required (VERSION 3.4.3)
 
 # Set project name
 project (Urho3D)
@@ -61,7 +61,7 @@ else ()
     ucm_set_runtime(DYNAMIC)
 endif ()
 
-if (URHO3D_TASKS AND MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 4)
+if (URHO3D_TASKS AND MSVC AND NOT URHO3D_64BIT)
     ucm_add_linker_flags("/SAFESEH:NO")
 endif()
 

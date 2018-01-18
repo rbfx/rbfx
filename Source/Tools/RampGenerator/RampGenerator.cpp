@@ -30,7 +30,9 @@
 #ifdef WIN32
 #include <windows.h>
 #endif
-
+#if !URHO3D_STATIC
+#   define STB_IMAGE_WRITE_IMPLEMENTATION
+#endif
 #include <STB/stb_image_write.h>
 
 #include <Urho3D/DebugNew.h>

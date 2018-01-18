@@ -21,7 +21,10 @@
 #
 
 file (GLOB SOURCE_FILES *.cpp *.h)
-add_library (ImGuizmo STATIC ${SOURCE_FILES})
-target_link_libraries(ImGuizmo imgui)
+add_library (ImGuizmo OBJECT ${SOURCE_FILES})
+target_link_objects(ImGuizmo imgui)
+target_compile_definitions(ImGuizmo PUBLIC -DUSE_IMGUI_API=1)
+if (BUILD_SHARED_LIBS)
+    target_compile_definitions(ImGuizmo PRIVATE -D_EXPORTS INTERFACE -D_IMPORTS)
+endif ()
 install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/ImGuizmo FILES_MATCHING PATTERN *.h)
-install_to_build_tree(ImGuizmo)

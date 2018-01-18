@@ -35,6 +35,9 @@
 #endif
 
 #define STBRP_LARGE_RECTS
+#if !URHO3D_STATIC
+#   define STB_RECT_PACK_IMPLEMENTATION
+#endif
 #include <STB/stb_rect_pack.h>
 
 #include <Urho3D/DebugNew.h>

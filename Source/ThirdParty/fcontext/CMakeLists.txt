@@ -56,10 +56,6 @@ set(ASM_SOURCES "asm/make_${CPU_ARCH}_${ASM_EXT}"
                 "asm/jump_${CPU_ARCH}_${ASM_EXT}"
                 "asm/ontop_${CPU_ARCH}_${ASM_EXT}")
 
-add_library(fcontext STATIC include/fcontext/fcontext.h source/stack.cpp ${ASM_SOURCES})
+add_library(fcontext OBJECT include/fcontext/fcontext.h source/stack.cpp ${ASM_SOURCES})
 target_compile_definitions(fcontext PRIVATE -DBOOST_CONTEXT_EXPORT=)
-target_include_directories(fcontext PRIVATE include/fcontext INTERFACE include)
-
-
-install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS} FILES_MATCHING PATTERN *.h)
-install_to_build_tree(fcontext)
+target_include_directories(fcontext PRIVATE include/fcontext INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)

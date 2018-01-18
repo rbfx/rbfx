@@ -28,8 +28,8 @@
 
 #include "SceneTab.h"
 #include "EditorEvents.h"
-#include "Editor/Editor.h"
-#include "Editor/Widgets.h"
+#include "Editor.h"
+#include "Widgets.h"
 #include "SceneSettings.h"
 #include <ImGui/imgui_internal.h>
 
