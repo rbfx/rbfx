@@ -19,6 +19,7 @@
 #ifndef B2_SETTINGS_H
 #define B2_SETTINGS_H
 
+#include "Box2D/Box2DConfig.h"
 #include <stddef.h>
 #include <assert.h>
 #include <float.h>

@@ -19,6 +19,7 @@
 #ifndef B2_FIXTURE_H
 #define B2_FIXTURE_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Dynamics/b2Body.h"
 #include "Box2D/Collision/b2Collision.h"
 #include "Box2D/Collision/Shapes/b2Shape.h"

@@ -19,6 +19,7 @@
 #ifndef B2_ISLAND_H
 #define B2_ISLAND_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Common/b2Math.h"
 #include "Box2D/Dynamics/b2Body.h"
 #include "Box2D/Dynamics/b2TimeStep.h"

@@ -19,6 +19,7 @@
 #ifndef B2_SHAPE_H
 #define B2_SHAPE_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Common/b2BlockAllocator.h"
 #include "Box2D/Common/b2Math.h"
 #include "Box2D/Collision/b2Collision.h"

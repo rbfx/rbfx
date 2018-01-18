@@ -31,6 +31,7 @@ For discussion please visit http://box2d.org/forum
 
 // These include files constitute the main Box2D API
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Common/b2Settings.h"
 #include "Box2D/Common/b2Draw.h"
 #include "Box2D/Common/b2Timer.h"

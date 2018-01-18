@@ -19,6 +19,7 @@
 #ifndef B2_MOUSE_JOINT_H
 #define B2_MOUSE_JOINT_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Dynamics/Joints/b2Joint.h"
 
 /// Mouse joint definition. This requires a world target point,

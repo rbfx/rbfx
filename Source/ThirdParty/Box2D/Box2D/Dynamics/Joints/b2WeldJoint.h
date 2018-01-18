@@ -19,6 +19,7 @@
 #ifndef B2_WELD_JOINT_H
 #define B2_WELD_JOINT_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Dynamics/Joints/b2Joint.h"
 
 /// Weld joint definition. You need to specify local anchor points

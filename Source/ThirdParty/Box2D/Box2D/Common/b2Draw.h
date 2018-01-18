@@ -19,6 +19,7 @@
 #ifndef B2_DRAW_H
 #define B2_DRAW_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Common/b2Math.h"
 
 /// Color for debug drawing. Each value has the range [0,1].

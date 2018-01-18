@@ -19,6 +19,7 @@
 #ifndef B2_CHAIN_SHAPE_H
 #define B2_CHAIN_SHAPE_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Collision/Shapes/b2Shape.h"
 
 class b2EdgeShape;

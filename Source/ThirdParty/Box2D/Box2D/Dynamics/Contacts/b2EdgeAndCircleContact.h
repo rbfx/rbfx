@@ -19,6 +19,7 @@
 #ifndef B2_EDGE_AND_CIRCLE_CONTACT_H
 #define B2_EDGE_AND_CIRCLE_CONTACT_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Dynamics/Contacts/b2Contact.h"
 
 class b2BlockAllocator;

@@ -19,6 +19,7 @@
 #ifndef B2_EDGE_SHAPE_H
 #define B2_EDGE_SHAPE_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Collision/Shapes/b2Shape.h"
 
 /// A line segment (edge) shape. These can be connected in chains or loops
