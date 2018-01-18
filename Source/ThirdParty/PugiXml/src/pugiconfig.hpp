@@ -38,9 +38,12 @@
 #       define PUGIXML_API __declspec(dllimport)
 #       define PUGIXML_CLASS __declspec(dllimport)
 #   endif
-#else
+#elif _EXPORTS || _IMPORTS
 #   define PUGIXML_API __attribute__((visibility("default")))
 #   define PUGIXML_CLASS __attribute__((visibility("default")))
+#else
+#   define PUGIXML_API
+#   define PUGIXML_CLASS
 #endif
 // #define PUGIXML_FUNCTION __fastcall // to set calling conventions to all public functions to fastcall
 // In absence of PUGIXML_CLASS/PUGIXML_FUNCTION definitions PUGIXML_API is used instead

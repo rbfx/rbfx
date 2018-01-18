@@ -20,6 +20,8 @@
 #   endif
 #elif _EXPORTS || _IMPORTS
 #   define IMGUI_API __attribute__((visibility("default")))
+#else
+#   define IMGUI_API
 #endif
 
 //---- Don't define obsolete functions names. Consider enabling from time to time or when updating to reduce like hood of using already obsolete function/names

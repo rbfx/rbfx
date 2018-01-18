@@ -28,4 +28,6 @@
 #   endif
 #elif _EXPORTS || _IMPORTS
 #   define BOX2D_API __attribute__((visibility("default")))
+#else
+#   define BOX2D_API
 #endif
