@@ -25,7 +25,7 @@
 
 #include <Urho3D/Urho3DAll.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
-#include "Editor/Tabs/UI/UITab.h"
+#include "Tabs/UI/UITab.h"
 #include "IDPool.h"
 
 using namespace std::placeholders;

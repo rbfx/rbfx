@@ -26,9 +26,9 @@
 #include <Toolbox/IO/ContentUtilities.h>
 #include <Toolbox/SystemUI/Widgets.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
-#include "Editor/EditorEvents.h"
-#include "Editor/Editor.h"
-#include "Editor/Widgets.h"
+#include "EditorEvents.h"
+#include "Editor.h"
+#include "Widgets.h"
 #include "UITab.h"
 
 

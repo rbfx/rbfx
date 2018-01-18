@@ -25,7 +25,7 @@
 
 #include <Urho3D/Urho3DAll.h>
 #include <Toolbox/Common/UndoManager.h>
-#include "Editor/Tabs/Tab.h"
+#include "Tabs/Tab.h"
 #include "Tabs/UI/RootUIElement.h"
 
 
