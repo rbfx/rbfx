@@ -210,12 +210,12 @@ else ()
 endif ()
 
 if (BUILD_SHARED_LIBS OR EMSCRIPTEN)
-    target_compile_definitions(Urho3D PRIVATE -DURHO3D_EXPORTS=1)
+    target_compile_definitions(Urho3D PRIVATE -DURHO3D_EXPORTS)
     # Also add export flags of third party libraries. They are required because those are OBJECT libraries and Urho3D
     # should not try to import from them as if they were DLLs.
     target_compile_definitions(Urho3D
-        PRIVATE -D_EXPORTS=1 -DLZ4_DLL_EXPORT=1 -DCIVETWEB_DLL_EXPORTS=1
-        PUBLIC  -D_IMPORTS=1 -DLZ4_DLL_IMPORT=1 -DCIVETWEB_DLL_IMPORTS=1
+        PRIVATE -D_EXPORTS -DLZ4_DLL_EXPORT=1 -DCIVETWEB_DLL_EXPORTS
+        PUBLIC  -D_IMPORTS -DLZ4_DLL_IMPORT=1 -DCIVETWEB_DLL_IMPORTS
     )
 else ()
     target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC)

@@ -11,7 +11,7 @@
 
 //---- Define attributes of all API symbols declarations, e.g. for DLL under Windows.
 #if _WIN32
-#   ifdef _EXPORTS
+#   if _EXPORTS
 #       define IMGUI_API __declspec(dllexport)
 #   elif _IMPORTS
 #       define IMGUI_API __declspec(dllimport)
