@@ -154,18 +154,17 @@ bool VertexBuffer::SetData(const void* data)
     {
         bgfx::VertexDecl decl;
         decl.begin();
-        for (PODVector<VertexElement>::ConstIterator i = elements_.Begin(); i != elements_.End(); ++i)
-        {
+		for (PODVector<VertexElement>::ConstIterator i = elements_.Begin(); i != elements_.End(); ++i)
+		{
             bgfx::Attrib::Enum attrib = bgfxAttrib[i->semantic_];
             bgfx::AttribType::Enum type = bgfxAttribType[i->type_];
-            bool normalized = false;
+            bool asInt = i->type_ == TYPE_UBYTE4 || i->type_ == TYPE_INT;
+            bool normalized = i->type_ == TYPE_UBYTE4_NORM;
             if (attrib == bgfx::Attrib::TexCoord0)
                 attrib = bgfxAttribTexcoords[i->index_];
             else if (attrib == bgfx::Attrib::Color0)
                 attrib = bgfxAttribColors[i->index_];
-            if (type == bgfx::AttribType::Uint8)
-                normalized = true;
-            decl.add(attrib, bgfxAttribSize[i->type_], type, normalized, false);
+            decl.add(attrib, bgfxAttribSize[i->type_], type, normalized, asInt);
         }
         decl.end();
 
@@ -312,14 +311,13 @@ bool VertexBuffer::Create()
             {
                 bgfx::Attrib::Enum attrib = bgfxAttrib[i->semantic_];
                 bgfx::AttribType::Enum type = bgfxAttribType[i->type_];
-                bool normalized = false;
+                bool asInt = i->type_ == TYPE_UBYTE4 || i->type_ == TYPE_INT;
+                bool normalized = i->type_ == TYPE_UBYTE4_NORM;
                 if (attrib == bgfx::Attrib::TexCoord0)
                     attrib = bgfxAttribTexcoords[i->index_];
                 else if (attrib == bgfx::Attrib::Color0)
                     attrib = bgfxAttribColors[i->index_];
-                if (type == bgfx::AttribType::Uint8)
-                    normalized = true;
-                decl.add(attrib, bgfxAttribSize[i->type_], type, normalized, false);
+                decl.add(attrib, bgfxAttribSize[i->type_], type, normalized, asInt);
             }
             decl.end();
 
