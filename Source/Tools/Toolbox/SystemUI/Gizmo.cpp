@@ -71,30 +71,23 @@ bool Gizmo::Manipulate(const Camera* camera, const Vector<WeakPtr<Node>>& nodes)
     if (!IsActive())
     {
         // Find center point of all nodes
-        if (nodes.Size() == 1)
+        // It is not clear what should be rotation and scale of center point for multiselection, therefore we limit
+        // multiselection operations to world space (see above).
+        Vector3 center = Vector3::ZERO;
+        auto count = 0;
+        for (const auto& node: nodes)
         {
-            // Scene itself may not be manipulated as it does nothing
-            if (nodes.Front()->GetType() == Scene::GetTypeStatic())
-                return false;
+            if (node.Expired() || node->GetType() == Scene::GetTypeStatic())
+                continue;
+            center += node->GetWorldPosition();
+            count++;
+        }
 
-            currentOrigin_ = nodes.Front()->GetTransform().ToMatrix4();     // Makes gizmo work in local space too.
-        }
-        else
-        {
-            // It is not clear what should be rotation and scale of center point for multiselection, therefore we limit
-            // multiselection operations to world space (see above).
-            Vector3 center = Vector3::ZERO;
-            auto count = 0;
-            for (const auto& node: nodes)
-            {
-                if (node->GetType() == Scene::GetTypeStatic())
-                    continue;
-                center += node->GetWorldPosition();
-                count++;
-            }
-            center /= count;
-            currentOrigin_.SetTranslation(center);
-        }
+        if (count == 0)
+            return false;
+
+        center /= count;
+        currentOrigin_.SetTranslation(center);
     }
 
     // Enums are compatible.
