@@ -29,6 +29,7 @@
 #include "../Graphics/Camera.h"
 #include "../Graphics/CustomGeometry.h"
 #include "../Graphics/DebugRenderer.h"
+#include "../Graphics/VisualDebugger.h"
 #include "../Graphics/DecalSet.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsImpl.h"
@@ -430,6 +431,7 @@ void RegisterGraphicsLibrary(Context* context)
     Terrain::RegisterObject(context);
     TerrainPatch::RegisterObject(context);
     DebugRenderer::RegisterObject(context);
+	VisualDebugger::RegisterObject(context);
     Octree::RegisterObject(context);
     Zone::RegisterObject(context);
 }
