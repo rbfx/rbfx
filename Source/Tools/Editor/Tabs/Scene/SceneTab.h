@@ -93,6 +93,8 @@ protected:
     bool RenderWindowContent() override;
     ///
     IntRect UpdateViewRect() override;
+    /// Manually updates scene.
+    void OnUpdate(VariantMap& args);
 
     /// Scene renderer.
     SceneView view_;
@@ -108,6 +110,10 @@ protected:
     SharedPtr<SceneEffects> effectSettings_;
     /// State change tracker.
     Undo::Manager undo_;
+    /// Flag controlling scene updates in the viewport.
+    bool scenePlaying_ = false;
+    /// Temporary storage of scene data used in play/pause functionality.
+    XMLFile sceneState_;
 };
 
 };

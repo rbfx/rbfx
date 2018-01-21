@@ -42,6 +42,7 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
     , view_(context, {0, 0, 1024, 768})
     , gizmo_(context)
     , undo_(context)
+    , sceneState_(context)
 {
     SetTitle("New Scene");
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
@@ -52,6 +53,7 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
     SubscribeToEvent(this, E_EDITORSELECTIONCHANGED, std::bind(&SceneTab::OnNodeSelectionChanged, this));
     SubscribeToEvent(effectSettings_, E_EDITORSCENEEFFECTSCHANGED, std::bind(&AttributeInspector::CopyEffectsFrom,
         &inspector_, view_.GetViewport()));
+    SubscribeToEvent(E_UPDATE, std::bind(&SceneTab::OnUpdate, this, _2));
 
     undo_.Connect(view_.GetScene());
     undo_.Connect(&inspector_);
@@ -60,6 +62,9 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
     SubscribeToEvent(view_.GetScene(), E_ASYNCLOADFINISHED, [&](StringHash, VariantMap&) {
         undo_.Clear();
     });
+
+    // Scene is updated manually.
+    view_.GetScene()->SetUpdateEnabled(false);
 
     CreateObjects();
     undo_.Clear();
@@ -201,10 +206,12 @@ bool SceneTab::SaveResource(const String& resourcePath)
         view_.GetScene()->SetElapsedTime(0);
     }
 
+    view_.GetScene()->SetUpdateEnabled(true);
     if (fullPath.EndsWith(".xml", false))
         result = view_.GetScene()->SaveXML(file);
     else if (fullPath.EndsWith(".json", false))
         result = view_.GetScene()->SaveJSON(file);
+    view_.GetScene()->SetUpdateEnabled(false);
 
     if (!settings_->saveElapsedTime_)
         view_.GetScene()->SetElapsedTime(elapsed);
@@ -311,6 +318,35 @@ void SceneTab::RenderToolbarButtons()
             light->SetEnabled(!light->IsEnabled());
     }
 
+    ui::SameLine(0, 3.f);
+
+    if (ui::EditorToolbarButton(scenePlaying_ ? ICON_FA_PAUSE : ICON_FA_PLAY, scenePlaying_ ? "Pause" : "Play"))
+    {
+        Scene* scene = view_.GetScene();
+        scenePlaying_ ^= true;
+        if (scenePlaying_)
+        {
+            undo_.SetTrackingEnabled(false);
+            XMLElement root = sceneState_.CreateRoot("scene");
+            scene->SaveXML(root);
+        }
+        else
+        {
+            // Migrade editor objects to a newly loaded scene without destroying them.
+            Vector<SharedPtr<Node>> temporaries;
+            for (auto& node : scene->GetChildren())
+            {
+                if (node->IsTemporary())
+                    temporaries.Push(SharedPtr<Node>(node));
+            }
+            scene->LoadXML(sceneState_.GetRoot());
+            for (auto& node : temporaries)
+                scene->AddChild(node);
+            undo_.SetTrackingEnabled(true);
+            sceneState_.GetRoot().Remove();
+        }
+    }
+
     ui::NewLine();
     style.FrameRounding = oldRounding;
 }
@@ -390,7 +426,7 @@ void SceneTab::RenderNodeTree(Node* node)
             UnselectAll();
         ToggleSelection(node);
     }
-    else if (ui::IsItemClicked(2))
+    else if (ui::IsItemClicked(2) && !scenePlaying_)
     {
         if (GetSelection().Empty())
             ToggleSelection(node);
@@ -398,7 +434,7 @@ void SceneTab::RenderNodeTree(Node* node)
     }
 
     bool wasDeleted = false;
-    if (ui::BeginPopup("Node context menu"))
+    if (ui::BeginPopup("Node context menu") && !scenePlaying_)
     {
         Input* input = GetSubsystem<Input>();
         bool alternative = input->GetKeyDown(KEY_SHIFT);
@@ -600,6 +636,16 @@ IntRect SceneTab::UpdateViewRect()
     view_.SetSize(tabRect);
     gizmo_.SetScreenRect(tabRect);
     return tabRect;
+}
+
+void SceneTab::OnUpdate(VariantMap& args)
+{
+    float timeStep = args[Update::P_TIMESTEP].GetFloat();
+
+    if (scenePlaying_)
+        view_.GetScene()->Update(timeStep);
+
+    view_.GetCamera()->GetComponent<DebugCameraController>()->Update(timeStep);
 }
 
 }
