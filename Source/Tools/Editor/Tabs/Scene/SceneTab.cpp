@@ -332,6 +332,9 @@ void SceneTab::RenderInspector()
     if (GetSelection().Size() == 1)
     {
         auto node = GetSelection().Front();
+        if (node.Expired())
+            return;
+
         PODVector<Serializable*> items;
         items.Push(node.Get());
         if (node == view_.GetScene())
@@ -389,8 +392,8 @@ void SceneTab::RenderNodeTree(Node* node)
     }
     else if (ui::IsItemClicked(2))
     {
-        UnselectAll();
-        ToggleSelection(node);
+        if (GetSelection().Empty())
+            ToggleSelection(node);
         ui::OpenPopup("Node context menu");
     }
 
@@ -402,8 +405,11 @@ void SceneTab::RenderNodeTree(Node* node)
 
         if (ui::MenuItem(alternative ? "Create Child (Local)" : "Create Child"))
         {
-            UnselectAll();
-            Select(node->CreateChild(String::EMPTY, alternative ? LOCAL : REPLICATED));
+            for (auto& selectedNode : GetSelection())
+            {
+                if (!selectedNode.Expired())
+                    Select(selectedNode->CreateChild(String::EMPTY, alternative ? LOCAL : REPLICATED));
+            }
         }
 
         if (ui::BeginMenu(alternative ? "Create Component (local)" : "Create Component"))
@@ -424,7 +430,14 @@ void SceneTab::RenderNodeTree(Node* node)
                         ui::Image(component);
                         ui::SameLine();
                         if (ui::MenuItem(component.CString()))
-                            node->CreateComponent(StringHash(component), alternative ? LOCAL : REPLICATED);
+                        {
+                            for (auto& selectedNode : GetSelection())
+                            {
+                                if (!selectedNode.Expired())
+                                    selectedNode->CreateComponent(StringHash(component),
+                                                                  alternative ? LOCAL : REPLICATED);
+                            }
+                        }
                     }
                     ui::EndMenu();
                 }
@@ -436,8 +449,15 @@ void SceneTab::RenderNodeTree(Node* node)
 
         if (ui::MenuItem("Remove"))
         {
-            Unselect(node);
-            node->Remove();
+            for (auto& selectedNode : GetSelection())
+            {
+                if (!selectedNode.Expired())
+                    selectedNode->Remove();
+            }
+
+            if (!selectedComponent_.Expired())
+                selectedComponent_->Remove();
+
             wasDeleted = true;
         }
         ui::EndPopup();
