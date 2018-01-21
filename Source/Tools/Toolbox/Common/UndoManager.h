@@ -24,6 +24,13 @@
 
 
 #include <Urho3D/Core/Object.h>
+#include <Urho3D/Graphics/Drawable.h>
+#include <Urho3D/Math/MathDefs.h>
+#include <Urho3D/Resource/XMLFile.h>
+#include <Urho3D/Scene/Node.h>
+#include <Urho3D/Scene/Scene.h>
+#include <Urho3D/UI/UI.h>
+#include <Urho3D/UI/UIElement.h>
 
 
 namespace Urho3D
@@ -36,160 +43,560 @@ class Scene;
 namespace Undo
 {
 
-/// Abstract class for implementing various trackable states.
-class State : public RefCounted
+class EditAction : public RefCounted
 {
 public:
-    /// Apply state saved in this object.
-    virtual void Apply() = 0;
-    /// Return true if state of this object matches state of specified object.
-    virtual bool Equals(State* other) const = 0;
-    /// Return string representation of current state.
-    virtual String ToString() const { return "State"; }
+    virtual void Undo() = 0;
+    virtual void Redo() = 0;
 };
 
-/// Tracks attribute values of Serializable item.
-class AttributeState : public State
+class CreateNodeAction : public EditAction
 {
 public:
-    /// Construct state consisting of single attribute.
-    AttributeState(Serializable* item, const String& name, const Variant& value);
-    /// Apply attributes if they are different and return true if operation was carried out.
-    void Apply() override;
-    /// Return true if state of this object matches state of specified object.
-    bool Equals(State* other) const override;
-    /// Return string representation of current state.
-    String ToString() const override;
+    unsigned nodeID;
+    unsigned parentID;
+    XMLFile nodeData;
+    WeakPtr<Scene> editorScene;
 
-    /// Object that was modified.
-    SharedPtr<Serializable> item_;
-    /// Changed attribute name.
-    String name_;
-    /// Changed attribute value.
-    Variant value_;
+    explicit CreateNodeAction(Node* node)
+        : nodeData(node->GetContext())
+        , editorScene(node->GetScene())
+    {
+        nodeID = node->GetID();
+        parentID = node->GetParent()->GetID();
+        XMLElement rootElem = nodeData.CreateRoot("node");
+        node->SaveXML(rootElem);
+    }
+
+    void Undo() override
+    {
+        Node* parent = editorScene->GetNode(parentID);
+        Node* node = editorScene->GetNode(nodeID);
+        if (parent != nullptr && node != nullptr)
+        {
+            parent->RemoveChild(node);
+        }
+    }
+
+    void Redo() override
+    {
+        Node* parent = editorScene->GetNode(parentID);
+        if (parent != nullptr)
+        {
+            Node* node = parent->CreateChild("", nodeID < FIRST_LOCAL_ID ? REPLICATED : LOCAL, nodeID);
+            node->LoadXML(nodeData.GetRoot());
+            // FocusNode(node);
+        }
+    }
 };
 
-/// Tracks UIElement parent state. Used for tracking adding and removing UIElements.
-class ElementParentState : public State
+class DeleteNodeAction : public EditAction
 {
 public:
-    /// Construct item from the state and parent
-    ElementParentState(UIElement* item, UIElement* parent);
-    /// Set parent of the item if it is different and return true if operation was carried out.
-    void Apply() override;
-    /// Return true if state of this object matches state of specified object.
-    bool Equals(State* other) const override;
-    /// Return string representation of current state.
-    String ToString() const override;
+    unsigned nodeID;
+    unsigned parentID;
+    XMLFile nodeData;
+    WeakPtr<Scene> editorScene;
 
-    /// UIElement whose state is saved.
-    SharedPtr<UIElement> item_;
-    /// Parent of item_ at the time when state was saved.
-    SharedPtr<UIElement> parent_;
-    /// Position at which item was inserted to parent's children list.
-    unsigned index_ = M_MAX_UNSIGNED;
+    explicit DeleteNodeAction(Node* node)
+        : nodeData(node->GetContext())
+        , editorScene(node->GetScene())
+    {
+        nodeID = node->GetID();
+        parentID = node->GetParent()->GetID();
+        XMLElement rootElem = nodeData.CreateRoot("node");
+        node->SaveXML(rootElem);
+        rootElem.SetUInt("parentIndex", node->GetParent()->GetChildren().IndexOf(SharedPtr<Node>(node)));
+    }
+
+    void Undo() override
+    {
+        Node* parent = editorScene->GetNode(parentID);
+        if (parent != nullptr)
+        {
+            SharedPtr<Node> node(new Node(parent->GetContext()));
+            node->SetID(nodeID);
+            if (node->LoadXML(nodeData.GetRoot()))
+            {
+                // FocusNode(node);
+                parent->AddChild(node, nodeData.GetRoot().GetUInt("parentIndex"));
+            }
+        }
+    }
+
+    void Redo() override
+    {
+        Node* parent = editorScene->GetNode(parentID);
+        Node* node = editorScene->GetNode(nodeID);
+        if (parent != nullptr && node != nullptr)
+        {
+            parent->RemoveChild(node);
+        }
+    }
 };
 
-/// Tracks Node parent state. Used for tracking adding and removing scene nodes.
-class NodeParentState : public State
+class ReparentNodeAction : public EditAction
 {
 public:
-    /// Construct item from the state and parent
-    NodeParentState(Node* item, Node* parent);
-    /// Set parent of the item if it is different and return true if operation was carried out.
-    void Apply() override;
-    /// Return true if state of this object matches state of specified object.
-    bool Equals(State* other) const override;
-    /// Return string representation of current state.
-    String ToString() const override;
+    unsigned nodeID;
+    unsigned oldParentID;
+    unsigned newParentID;
+    PODVector<unsigned> nodeList; // 2 uints get inserted per node (node, node->GetParent())
+    bool multiple;
+    WeakPtr<Scene> editorScene;
 
-    /// UIElement whose state is saved.
-    SharedPtr<Node> item_;
-    /// Parent of item_ at the time when state was saved.
-    SharedPtr<Node> parent_;
-    /// Position at which item was inserted to parent's children list.
-    unsigned index_ = M_MAX_UNSIGNED;
+    ReparentNodeAction(Node* node, Node* newParent)
+        : editorScene(node->GetScene())
+    {
+        multiple = false;
+        nodeID = node->GetID();
+        oldParentID = node->GetParent()->GetID();
+        newParentID = newParent->GetID();
+    }
+
+    ReparentNodeAction(const Vector<Node*>& nodes, Node* newParent)
+        : editorScene(newParent->GetScene())
+    {
+        multiple = true;
+        newParentID = newParent->GetID();
+        for(unsigned i = 0; i < nodes.Size(); ++i)
+        {
+            Node* node = nodes[i];
+            nodeList.Push(node->GetID());
+            nodeList.Push(node->GetParent()->GetID());
+        }
+    }
+
+    void Undo() override
+    {
+        if (multiple)
+        {
+            for (unsigned i = 0; i < nodeList.Size(); i+=2)
+            {
+                unsigned nodeID_ = nodeList[i];
+                unsigned oldParentID_ = nodeList[i+1];
+                Node* parent = editorScene->GetNode(oldParentID_);
+                Node* node = editorScene->GetNode(nodeID_);
+                if (parent != nullptr && node != nullptr)
+                node->SetParent(parent);
+            }
+        }
+        else
+        {
+            Node* parent = editorScene->GetNode(oldParentID);
+            Node* node = editorScene->GetNode(nodeID);
+            if (parent != nullptr && node != nullptr)
+            node->SetParent(parent);
+        }
+    }
+
+    void Redo() override
+    {
+        if (multiple)
+        {
+            Node* parent = editorScene->GetNode(newParentID);
+            if (parent == nullptr)
+                return;
+
+            for (unsigned i = 0; i < nodeList.Size(); i+=2)
+            {
+                unsigned nodeID_ = nodeList[i];
+                Node* node = editorScene->GetNode(nodeID_);
+                if (node != nullptr)
+                node->SetParent(parent);
+            }
+        }
+        else
+        {
+            Node* parent = editorScene->GetNode(newParentID);
+            Node* node = editorScene->GetNode(nodeID);
+            if (parent != nullptr && node != nullptr)
+            node->SetParent(parent);
+        }
+    }
 };
 
-/// Tracks Component parent state. Used for tracking adding and removing components.
-class ComponentParentState : public State
+class CreateComponentAction : public EditAction
 {
 public:
-    /// Construct item from the state and parent
-    ComponentParentState(Component* item, Node* parent);
-    /// Set parent of the item if it is different and return true if operation was carried out.
-    void Apply() override;
-    /// Return true if state of this object matches state of specified object.
-    bool Equals(State* other) const override;
-    /// Return string representation of current state.
-    String ToString() const override;
+    unsigned nodeID;
+    unsigned componentID;
+    XMLFile componentData;
+    WeakPtr<Scene> editorScene;
 
-    /// UIElement whose state is saved.
-    SharedPtr<Component> item_;
-    /// Parent of item_ at the time when state was saved.
-    SharedPtr<Node> parent_;
-    /// ID of the component.
-    unsigned id_;
+    explicit CreateComponentAction(Component* component)
+        : editorScene(component->GetScene())
+        , componentData(component->GetContext())
+    {
+        componentID = component->GetID();
+        nodeID = component->GetNode()->GetID();
+        XMLElement rootElem = componentData.CreateRoot("component");
+        component->SaveXML(rootElem);
+    }
+
+    void Undo() override
+    {
+        Node* node = editorScene->GetNode(nodeID);
+        Component* component = editorScene->GetComponent(componentID);
+        if (node != nullptr && component != nullptr)
+            node->RemoveComponent(component);
+    }
+
+    void Redo() override
+    {
+        Node* node = editorScene->GetNode(nodeID);
+        if (node != nullptr)
+        {
+            Component* component = node->CreateComponent(
+                componentData.GetRoot().GetAttribute("type"),
+                componentID < FIRST_LOCAL_ID ? REPLICATED : LOCAL, componentID);
+            component->LoadXML(componentData.GetRoot());
+            component->ApplyAttributes();
+            // FocusComponent(component);
+        }
+    }
+
 };
 
-/// Tracks xml parent state. Used for tracking adding and removing xml elements to and from data files.
-class XMLVariantState : public State
+class DeleteComponentAction : public EditAction
 {
 public:
-    /// Construct item from the state and parent
-    XMLVariantState(const XMLElement& item, const Variant& value);
-    /// Set parent of the item if it is different and return true if operation was carried out.
-    void Apply() override;
-    /// Return true if state of this object matches state of specified object.
-    bool Equals(State* other) const override;
-    /// Return string representation of current state.
-    String ToString() const override;
+    unsigned nodeID;
+    unsigned componentID;
+    XMLFile componentData;
+    WeakPtr<Scene> editorScene;
 
-    /// XMLElement whose state is saved.
-    XMLElement item_;
-    /// Value of XMLElement item.
-    Variant value_;
+    DeleteComponentAction(Component* component)
+        : componentData(component->GetContext())
+        , editorScene(component->GetScene())
+    {
+        componentID = component->GetID();
+        nodeID = component->GetNode()->GetID();
+        XMLElement rootElem = componentData.CreateRoot("component");
+        component->SaveXML(rootElem);
+    }
+
+    void Undo() override
+    {
+        Node* node = editorScene->GetNode(nodeID);
+        if (node != nullptr)
+        {
+            Component* component = node->CreateComponent(
+                componentData.GetRoot().GetAttribute("type"), componentID < FIRST_LOCAL_ID ? REPLICATED : LOCAL, componentID);
+            if (component->LoadXML(componentData.GetRoot()))
+            {
+                component->ApplyAttributes();
+                // FocusComponent(component);
+            }
+        }
+    }
+
+    void Redo() override
+    {
+        Node* node = editorScene->GetNode(nodeID);
+        Component* component = editorScene->GetComponent(componentID);
+        if (node != nullptr && component != nullptr)
+        {
+            node->RemoveComponent(component);
+        }
+    }
 };
 
-/// Tracks contents of xml file. Used for tracking UI element style changes..
-class XMLFileContentState : public State
+static unsigned GetID(Serializable* serializable)
+{
+    if (auto node = dynamic_cast<Node*>(serializable))
+        return node->GetID();
+
+    if (auto component = dynamic_cast<Component*>(serializable))
+        return component->GetID();
+
+    if (auto element = dynamic_cast<UIElement*>(serializable))
+    {
+        static unsigned uiElementIdIndex = 1;
+        unsigned id = element->GetVar("UIElementID").GetUInt();
+        if (!id)
+        {
+            id = uiElementIdIndex++;
+            element->SetVar("UIElementID", id);
+        }
+        return id;
+    }
+
+    return M_MAX_UNSIGNED;
+};
+
+class EditAttributeAction : public EditAction
 {
 public:
-    /// Construct item from the state and parent.
-    explicit XMLFileContentState(XMLFile* file);
-    /// Set parent of the item if it is different and return true if operation was carried out.
-    void Apply() override;
-    /// Return true if state of this object matches state of specified object.
-    bool Equals(State* other) const override;
-    /// Return string representation of current state.
-    String ToString() const override;
+    unsigned targetID;
+    String attrName;
+    Variant undoValue;
+    Variant redoValue;
+    StringHash targetType;
+    WeakPtr<Scene> editorScene;
+    WeakPtr<UIElement> root;
 
-    /// File whose contents are being tracked.
-    SharedPtr<XMLFile> file_;
-    /// Serialized content of the file.
-    String content_;
+    EditAttributeAction(Serializable* target, const String& name, const Variant& oldValue)
+    {
+        attrName = name;
+        undoValue = oldValue;
+        redoValue = target->GetAttribute(attrName);
+        targetID = GetID(target);
+
+        if (auto node = dynamic_cast<Node*>(target))
+        {
+            editorScene = node->GetScene();
+            targetType = Node::GetTypeStatic();
+        }
+        else if (auto component = dynamic_cast<Component*>(target))
+        {
+            editorScene = component->GetScene();
+            targetType = Component::GetTypeStatic();
+        }
+        else if (auto element = dynamic_cast<UIElement*>(target))
+        {
+            root = element->GetRoot();
+            targetType = UIElement::GetTypeStatic();
+        }
+    }
+
+    Serializable* GetTarget()
+    {
+        if (targetType == Node::GetTypeStatic())
+            return editorScene->GetNode(targetID);
+        else if (targetType == Component::GetTypeStatic())
+            return editorScene->GetComponent(targetID);
+        else if (targetType == UIElement::GetTypeStatic())
+            return root->GetChild("UIElementID", targetID, true);
+
+        return nullptr;
+    }
+
+    void Undo() override
+    {
+        Serializable* target = GetTarget();
+        if (target != nullptr)
+        {
+            target->SetAttribute(attrName, undoValue);
+            target->ApplyAttributes();
+        }
+    }
+
+    void Redo() override
+    {
+        Serializable* target = GetTarget();
+        if (target != nullptr)
+        {
+            target->SetAttribute(attrName, redoValue);
+            target->ApplyAttributes();
+        }
+    }
 };
 
-/// A collection of states that are applied together.
-class StateCollection
+class CreateUIElementAction : public EditAction
 {
 public:
-    /// Set parent of the item if it is different and return true if operation was carried out.
-    void Apply();
-    /// Return true if state of this object matches state of specified object.
-    bool Contains(State* other) const;
-    /// Append state to the collection if such state does not already exist.
-    bool PushUnique(const SharedPtr<State>& state);
-    /// Clear all stored states.
-    void Clear() { states_.Clear(); }
+    Variant elementID;
+    Variant parentID;
+    XMLFile elementData;
+    SharedPtr<XMLFile> styleFile;
+    WeakPtr<UIElement> root;
 
-    /// List of states that should be applied together.
-    Vector<SharedPtr<State>> states_;
+    explicit CreateUIElementAction(UIElement* element)
+        : elementData(element->GetContext())
+    {
+        root = element->GetRoot();
+        elementID = GetID(element);
+        parentID = GetID(element->GetParent());
+        XMLElement rootElem = elementData.CreateRoot("element");
+        element->SaveXML(rootElem);
+        rootElem.SetUInt("index", element->GetParent()->FindChild(element));
+        styleFile = element->GetDefaultStyle();
+    }
+
+    void Undo() override
+    {
+        UIElement* parent = root->GetChild("UIElementID", parentID, true);
+        UIElement* element = root->GetChild("UIElementID", elementID, true);
+        if (parent != nullptr && element != nullptr)
+            parent->RemoveChild(element);
+    }
+
+    void Redo() override
+    {
+        UIElement* parent = root->GetChild("UIElementID", parentID, true);
+        if (parent != nullptr)
+            parent->LoadChildXML(elementData.GetRoot(), styleFile);
+    }
 };
+
+class DeleteUIElementAction : public EditAction
+{
+public:
+    Variant elementID;
+    Variant parentID;
+    XMLFile elementData;
+    SharedPtr<XMLFile> styleFile;
+    WeakPtr<UIElement> root;
+
+    explicit DeleteUIElementAction(UIElement* element)
+        : elementData(element->GetContext())
+    {
+        root = element->GetRoot();
+        elementID = GetID(element);
+        parentID = GetID(element->GetParent());
+        XMLElement rootElem = elementData.CreateRoot("element");
+        element->SaveXML(rootElem);
+        rootElem.SetUInt("index", element->GetParent()->FindChild(element));
+        styleFile = SharedPtr<XMLFile>(element->GetDefaultStyle());
+    }
+
+    void Undo() override
+    {
+        UIElement* parent = root->GetChild("UIElementID", parentID, true);
+        if (parent != nullptr)
+            parent->LoadChildXML(elementData.GetRoot(), styleFile);
+    }
+
+    void Redo() override
+    {
+        UIElement* parent = root->GetChild("UIElementID", parentID, true);
+        UIElement* element = root->GetChild("UIElementID", elementID, true);
+        if (parent != nullptr && element != nullptr)
+            parent->RemoveChild(element);
+    }
+};
+
+class ReparentUIElementAction : public EditAction
+{
+public:
+    Variant elementID;
+    Variant oldParentID;
+    unsigned oldChildIndex;
+    Variant newParentID;
+    WeakPtr<UIElement> root;
+
+    ReparentUIElementAction(UIElement* element, UIElement* newParent)
+    : root(element->GetRoot())
+    {
+        elementID = GetID(element);
+        oldParentID = GetID(element->GetParent());
+        oldChildIndex = element->GetParent()->FindChild(element);
+        newParentID = GetID(newParent);
+    }
+
+    void Undo() override
+    {
+        UIElement* parent = root->GetChild("UIElementID", oldParentID, true);
+        UIElement* element = root->GetChild("UIElementID", elementID, true);
+        if (parent != nullptr && element != nullptr)
+            element->SetParent(parent, oldChildIndex);
+    }
+
+    void Redo() override
+    {
+        UIElement* parent = root->GetChild("UIElementID", newParentID, true);
+        UIElement* element = root->GetChild("UIElementID", elementID, true);
+        if (parent != nullptr && element != nullptr)
+            element->SetParent(parent);
+    }
+};
+
+class ApplyUIElementStyleAction : public EditAction
+{
+public:
+    Variant elementID;
+    Variant parentID;
+    XMLFile elementData;
+    XMLFile* styleFile;
+    String elementOldStyle;
+    String elementNewStyle;
+    WeakPtr<UIElement> root;
+
+    ApplyUIElementStyleAction(UIElement* element, const String& newStyle)
+        : elementData(element->GetContext())
+    {
+        root = element->GetRoot();
+        elementID = GetID(element);
+        parentID = GetID(element->GetParent());
+        XMLElement rootElem = elementData.CreateRoot("element");
+        element->SaveXML(rootElem);
+        rootElem.SetUInt("index", element->GetParent()->FindChild(element));
+        styleFile = element->GetDefaultStyle();
+        elementOldStyle = element->GetAppliedStyle();
+        elementNewStyle = newStyle;
+    }
+
+    void ApplyStyle(const String& style)
+    {
+        UIElement* parent = root->GetChild("UIElementID", parentID, true);
+        UIElement* element = root->GetChild("UIElementID", elementID, true);
+        if (parent != nullptr && element != nullptr)
+        {
+            // Apply the style in the XML data
+            elementData.GetRoot().SetAttribute("style", style);
+            parent->RemoveChild(element);
+            parent->LoadChildXML(elementData.GetRoot(), styleFile);
+        }
+    }
+
+    void Undo() override
+    {
+        ApplyStyle(elementOldStyle);
+    }
+
+    void Redo() override
+    {
+        ApplyStyle(elementNewStyle);
+    }
+};
+
+class EditUIStyleAction : public EditAction
+{
+public:
+    XMLFile oldStyle;
+    XMLFile newStyle;
+    unsigned elementId;
+    WeakPtr<UIElement> root;
+
+    EditUIStyleAction(UIElement* element, XMLElement& styleElement, const Variant& newValue)
+        : oldStyle(element->GetContext())
+        , newStyle(element->GetContext())
+    {
+        root = element->GetRoot();
+        elementId = GetID(element);
+        oldStyle.CreateRoot("style").AppendChild(element->GetDefaultStyle()->GetRoot(), true);
+        if (newValue.IsEmpty())
+            styleElement.Remove();
+        else
+            styleElement.SetVariantValue(newValue);
+        newStyle.CreateRoot("style").AppendChild(element->GetDefaultStyle()->GetRoot(), true);
+    }
+
+    void Undo() override
+    {
+        UIElement* element = root->GetChild("UIElementID", elementId, true);
+        XMLElement root = element->GetDefaultStyle()->GetRoot();
+        root.RemoveChildren();
+        for (auto child = oldStyle.GetRoot().GetChild(); !child.IsNull(); child = child.GetNext())
+            root.AppendChild(child, true);
+    }
+
+    void Redo() override
+    {
+        UIElement* element = root->GetChild("UIElementID", elementId, true);
+        XMLElement root = element->GetDefaultStyle()->GetRoot();
+        root.RemoveChildren();
+        for (auto child = newStyle.GetRoot().GetChild(); !child.IsNull(); child = child.GetNext())
+            root.AppendChild(child, true);
+    }
+};
+
+using StateCollection = Vector<SharedPtr<EditAction>>;
 
 class Manager : public Object
 {
-    URHO3D_OBJECT(Manager, Object);
+URHO3D_OBJECT(Manager, Object);
 public:
     /// Construct.
     explicit Manager(Context* ctx);
@@ -209,38 +616,23 @@ public:
     /// Track changes performed by this gizmo.
     void Connect(Gizmo* gizmo);
 
-    /// Track item state consisting of single attribute. Old value must be specified manually for tracking. Use when
-    /// item state has changed already, but old value is known. Use this only when it is not possible to make changes
-    /// tracked automatically.
-    void TrackState(Serializable* item, const String& name, const Variant& value, const Variant& oldValue);
+    template<typename T, typename... Args>
+    void Track(Args... args) { currentFrameStates_.Push(SharedPtr<T>(new T(args...))); };
 
-    /// Tracked XMLElement creation.
-    XMLElement XMLCreate(XMLElement& parent, const String& name);
-    /// Tracked XMLElement removal.
-    void XMLRemove(XMLElement& element);
-    /// Track XMLElement state.
-    void XMLSetVariantValue(XMLElement& element, const Variant& value);
+    /// Enables or disables tracking changes.
+    void SetTrackingEnabled(bool enabled) { trackingEnabled_ = enabled; }
+    /// Return true if manager is tracking undoable changes.
+    bool IsTrackingEnabled() const { return trackingEnabled_; }
 
 protected:
-    /// Apply state going to specified direction in the state stack.
-    void ApplyStateFromStack(bool forward);
-    /// Track object state as old.
-    template<typename T, typename... Args>
-    void TrackBefore(Args...);
-    /// Track object state as new.
-    template<typename T, typename... Args>
-    void TrackAfter(Args...);
-
     /// State stack
     Vector<StateCollection> stack_;
-    /// Current state index, -1 when stack is empty.
-    int32_t index_ = -1;
+    /// Current state index.
+    int32_t index_ = 0;
     /// Flag indicating that state tracking is suspended. For example when undo manager is restoring states.
-    bool trackingSuspended_ = false;
-    /// List of old object states.
-    Vector<SharedPtr<State>> previous_;
-    /// List of new object states.
-    Vector<SharedPtr<State>> next_;
+    bool trackingEnabled_ = true;
+    /// All actions performed on current frame. They will be applied together.
+    StateCollection currentFrameStates_;
 };
 
 }

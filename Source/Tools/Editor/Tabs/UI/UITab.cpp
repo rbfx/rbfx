@@ -178,8 +178,8 @@ bool UITab::RenderWindowContent()
         if (s->resizeActive_ && !ui::IsItemActive())
         {
             s->resizeActive_ = false;
-            undo_.TrackState(selected, "Position", selected->GetPosition(), s->resizeStartPos_);
-            undo_.TrackState(selected, "Size", selected->GetSize(), s->resizeStartSize_);
+            undo_.Track<Undo::EditAttributeAction>(selected, "Position", s->resizeStartPos_);
+            undo_.Track<Undo::EditAttributeAction>(selected, "Size", s->resizeStartSize_);
         }
     }
 
@@ -287,6 +287,9 @@ void UITab::LoadResource(const String& resourcePath)
         return;
     }
 
+    undo_.Clear();
+    undo_.SetTrackingEnabled(false);
+
     auto cache = GetSubsystem<ResourceCache>();
 
     SharedPtr<XMLFile> xml(new XMLFile(context_));
@@ -310,8 +313,6 @@ void UITab::LoadResource(const String& resourcePath)
 
             for (const auto& oldChild : children)
                 oldChild->Remove();
-
-            undo_.Clear();
         }
         else
         {
@@ -321,6 +322,8 @@ void UITab::LoadResource(const String& resourcePath)
     }
     else
         URHO3D_LOGERRORF("Loading file %s failed.", resourcePath.CString());
+
+    undo_.SetTrackingEnabled(true);
 }
 
 bool UITab::SaveResource(const String& resourcePath)
@@ -603,8 +606,7 @@ void UITab::RenderRectSelector()
         else if (s->isResizing_)
         {
             s->isResizing_ = false;
-            undo_.TrackState(selected, textureSelectorAttribute_,
-                selectedElement_->GetAttribute(textureSelectorAttribute_), s->startRect_);
+            undo_.Track<Undo::EditAttributeAction>(selected, textureSelectorAttribute_, s->startRect_);
         }
     }
     ui::End();
@@ -681,9 +683,9 @@ void UITab::AttributeMenu(VariantMap& args)
             {
                 if (ui::MenuItem("Reset to style"))
                 {
-                    undo_.TrackState(item, info->name_, styleVariant, value);
                     item->SetAttribute(info->name_, styleVariant);
                     item->ApplyAttributes();
+                    undo_.Track<Undo::EditAttributeAction>(item, info->name_, value);
                 }
             }
 
@@ -693,15 +695,11 @@ void UITab::AttributeMenu(VariantMap& args)
                 {
                     if (styleAttribute.IsNull())
                     {
-                        styleAttribute = undo_.XMLCreate(styleXml, "attribute");
+                        styleAttribute = styleXml.CreateChild("attribute");
                         styleAttribute.SetAttribute("name", info->name_);
-                        styleAttribute.SetVariantValue(value);
                     }
-                    else
-                    {
-                        undo_.XMLSetVariantValue(styleAttribute, styleAttribute.GetVariantValue(info->type_));
-                        undo_.XMLSetVariantValue(styleAttribute, value);
-                    }
+                    // To save some writing undo system performs value update action as well.
+                    undo_.Track<Undo::EditUIStyleAction>(selected, styleAttribute, value);
                 }
             }
         }
@@ -710,7 +708,8 @@ void UITab::AttributeMenu(VariantMap& args)
         {
             if (ui::MenuItem("Remove from style"))
             {
-                undo_.XMLRemove(styleAttribute);
+                // To save some writing undo system performs value update action as well. Empty variant means removal.
+                undo_.Track<Undo::EditUIStyleAction>(selected, styleAttribute, Variant::EMPTY);
             }
         }
 
