@@ -23,15 +23,15 @@
 #include "Precompiled.h"
 
 #include "LibraryInfo.h"
-#include "librevision.h"
+//#include "librevision.h"
 
 namespace Urho3D
 {
 
-const char* GetRevision()
-{
-    return revision;
-}
+//const char* GetRevision()
+//{
+//    return revision;
+//}
 
 const char* GetCompilerDefines()
 {

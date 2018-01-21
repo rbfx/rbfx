@@ -136,10 +136,10 @@ endif ()
 target_compile_definitions(Urho3D PRIVATE -DURHO3D_IS_BUILDING)
 
 # Define generated source files
-if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/librevision.h)
-    execute_process (COMMAND ${CMAKE_COMMAND} -DFILENAME=${CMAKE_CURRENT_BINARY_DIR}/librevision.h -P ${Urho3D_SOURCE_DIR}/CMake/Modules/GetUrhoRevision.cmake
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
-endif ()
+#if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/librevision.h)
+#    execute_process (COMMAND ${CMAKE_COMMAND} -DFILENAME=${CMAKE_CURRENT_BINARY_DIR}/librevision.h -P ${Urho3D_SOURCE_DIR}/CMake/Modules/GetUrhoRevision.cmake
+#        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
+#endif ()
 
 # Link dependencies
 foreach (dep ${THIRD_PARTY_DEPENDENCIES})
