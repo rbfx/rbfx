@@ -61,10 +61,6 @@ else ()
     ucm_set_runtime(DYNAMIC)
 endif ()
 
-if (URHO3D_TASKS AND MSVC AND NOT URHO3D_64BIT)
-    ucm_add_linker_flags("/SAFESEH:NO")
-endif()
-
 add_subdirectory(Source)
 
 include(UrhoPackaging)
