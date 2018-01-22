@@ -485,15 +485,7 @@ void SceneTab::RenderNodeTree(Node* node)
 
         if (ui::MenuItem("Remove"))
         {
-            for (auto& selectedNode : GetSelection())
-            {
-                if (!selectedNode.Expired())
-                    selectedNode->Remove();
-            }
-
-            if (!selectedComponent_.Expired())
-                selectedComponent_->Remove();
-
+            RemoveSelection();
             wasDeleted = true;
         }
         ui::EndPopup();
@@ -532,7 +524,7 @@ void SceneTab::RenderNodeTree(Node* node)
                 if (ui::BeginPopup("Component context menu"))
                 {
                     if (ui::MenuItem("Remove"))
-                        RemoveSelection();          // Removes component because it was just selected.
+                        selectedComponent_->Remove();
                     ui::EndPopup();
                 }
 
@@ -598,7 +590,7 @@ void SceneTab::ClearCachedPaths()
 
 void SceneTab::OnActiveUpdate()
 {
-    if (ui::IsAnyItemActive())
+    if (ui::IsAnyItemActive() || scenePlaying_)
         return;
 
     Input* input = GetSubsystem<Input>();
@@ -618,16 +610,14 @@ void SceneTab::OnActiveUpdate()
 void SceneTab::RemoveSelection()
 {
     if (!selectedComponent_.Expired())
-    {
         selectedComponent_->Remove();
-        selectedComponent_ = nullptr;
-    }
-    else
+
+    for (auto& selected : GetSelection())
     {
-        for (auto& selected : GetSelection())
+        if (!selected.Expired())
             selected->Remove();
-        UnselectAll();
     }
+    UnselectAll();
 }
 
 IntRect SceneTab::UpdateViewRect()
