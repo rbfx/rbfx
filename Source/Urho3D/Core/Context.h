@@ -84,6 +84,10 @@ public:
     void RegisterFactory(ObjectFactory* factory);
     /// Register a factory for an object type and specify the object category.
     void RegisterFactory(ObjectFactory* factory, const char* category);
+    /// Remove object factory.
+    void RemoveFactory(StringHash type);
+    /// remove object factory.
+    void RemoveFactory(StringHash type, const char* category);
     /// Register a subsystem.
     void RegisterSubsystem(Object* subsystem);
     /// Remove a subsystem.

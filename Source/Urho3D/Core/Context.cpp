@@ -195,6 +195,18 @@ void Context::RegisterFactory(ObjectFactory* factory, const char* category)
         objectCategories_[category].Push(factory->GetType());
 }
 
+void Context::RemoveFactory(StringHash type)
+{
+    factories_.Erase(type);
+}
+
+void Context::RemoveFactory(StringHash type, const char* category)
+{
+    RemoveFactory(type);
+    if (String::CStringLength(category))
+        objectCategories_[category].Remove(type);
+}
+
 void Context::RegisterSubsystem(Object* object)
 {
     if (!object)
