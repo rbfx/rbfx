@@ -32,7 +32,7 @@
 
 #include <ImGui/imgui_internal.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
-#include <tinyfiledialogs/tinyfiledialogs.h>
+#include <nfd.h>
 
 URHO3D_DEFINE_APPLICATION_MAIN(Editor);
 
@@ -112,8 +112,7 @@ void Editor::SaveProject(String filePath)
     // that loop.
     UnsubscribeFromEvent(E_EDITORRESOURCESAVED);
 
-    const char* patterns[] = {"*.xml"};
-    filePath = GetResourceAbsolutePath(filePath, projectFilePath_, patterns, "XML Files", "Save Project As");;
+    filePath = GetResourceAbsolutePath(filePath, projectFilePath_, "xml", "Save Project As");
 
     if (filePath.Empty())
         return;
@@ -274,9 +273,13 @@ void Editor::RenderMenuBar()
 
             if (ui::MenuItem("Open Project"))
             {
-                const char* patterns[] = {"*.xml"};
-                projectFilePath_ = tinyfd_openFileDialog("Open Project", ".", 1, patterns, "XML Files", 0);
-                LoadProject(projectFilePath_);
+                nfdchar_t* projectFilePath = nullptr;
+                if (NFD_OpenDialog("xml", ".", &projectFilePath) == NFD_OKAY)
+                {
+                    projectFilePath_ = projectFilePath;
+                    NFD_FreePath(projectFilePath);
+                    LoadProject(projectFilePath_);
+                }
             }
 
             ui::Separator();
@@ -360,8 +363,8 @@ StringVector Editor::GetObjectsByCategory(const String& category)
     return result;
 }
 
-String Editor::GetResourceAbsolutePath(const String& resourceName, const String& defaultResult, const char** patterns,
-                                       const String& description, const String& dialogTitle)
+String Editor::GetResourceAbsolutePath(const String& resourceName, const String& defaultResult, const char* patterns,
+    const String& dialogTitle)
 {
     String resourcePath = resourceName.Empty() ? defaultResult : resourceName;
     String fullPath;
@@ -369,7 +372,14 @@ String Editor::GetResourceAbsolutePath(const String& resourceName, const String&
         fullPath = GetCache()->GetResourceFileName(resourcePath);
 
     if (fullPath.Empty())
-        fullPath = tinyfd_saveFileDialog(dialogTitle.CString(), ".", 1, patterns, description.CString());
+    {
+        nfdchar_t* savePath = nullptr;
+        if (NFD_SaveDialog(patterns, ".", &savePath) == NFD_OKAY)
+        {
+            fullPath = savePath;
+            NFD_FreePath(savePath);
+        }
+    }
 
     return fullPath;
 }

@@ -26,5 +26,5 @@ endif ()
 
 file (GLOB_RECURSE SOURCE_FILES *.cpp *.h *.hpp)
 add_executable (Editor WIN32 ${SOURCE_FILES})
-target_link_libraries (Editor Toolbox Urho3D tinyfiledialogs)
+target_link_libraries (Editor Toolbox Urho3D nativefiledialog)
 install(TARGETS Editor RUNTIME DESTINATION bin)

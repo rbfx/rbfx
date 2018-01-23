@@ -191,8 +191,7 @@ void SceneTab::LoadResource(const String& resourcePath)
 
 bool SceneTab::SaveResource(const String& resourcePath)
 {
-    const char* patterns[] = { "*.xml" };
-    auto fullPath = GetSubsystem<Editor>()->GetResourceAbsolutePath(resourcePath, path_, patterns, "XML Files", "Save Scene As");
+    auto fullPath = GetSubsystem<Editor>()->GetResourceAbsolutePath(resourcePath, path_, "xml", "Save Scene As");
     if (fullPath.Empty())
         return false;
 
