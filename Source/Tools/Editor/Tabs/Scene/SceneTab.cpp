@@ -55,16 +55,16 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
         &inspector_, view_.GetViewport()));
     SubscribeToEvent(E_UPDATE, std::bind(&SceneTab::OnUpdate, this, _2));
 
-    undo_.Connect(view_.GetScene());
+    undo_.Connect(GetScene());
     undo_.Connect(&inspector_);
     undo_.Connect(&gizmo_);
 
-    SubscribeToEvent(view_.GetScene(), E_ASYNCLOADFINISHED, [&](StringHash, VariantMap&) {
+    SubscribeToEvent(GetScene(), E_ASYNCLOADFINISHED, [&](StringHash, VariantMap&) {
         undo_.Clear();
     });
 
     // Scene is updated manually.
-    view_.GetScene()->SetUpdateEnabled(false);
+    GetScene()->SetUpdateEnabled(false);
 
     CreateObjects();
     undo_.Clear();
@@ -113,13 +113,13 @@ bool SceneTab::RenderWindowContent()
             PODVector<RayQueryResult> results;
 
             RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY);
-            view_.GetScene()->GetComponent<Octree>()->RaycastSingle(query);
+            GetScene()->GetComponent<Octree>()->RaycastSingle(query);
 
             if (!results.Size())
             {
                 // When object geometry was not hit by a ray - query for object bounding box.
                 RayOctreeQuery query2(results, cameraRay, RAY_OBB, M_INFINITY, DRAWABLE_GEOMETRY);
-                view_.GetScene()->GetComponent<Octree>()->RaycastSingle(query2);
+                GetScene()->GetComponent<Octree>()->RaycastSingle(query2);
             }
 
             if (results.Size())
@@ -164,7 +164,7 @@ void SceneTab::LoadResource(const String& resourcePath)
     if (resourcePath.EndsWith(".xml", false))
     {
         XMLFile* file = GetCache()->GetResource<XMLFile>(resourcePath);
-        if (file && view_.GetScene()->LoadXML(file->GetRoot()))
+        if (file && GetScene()->LoadXML(file->GetRoot()))
         {
             path_ = resourcePath;
             CreateObjects();
@@ -175,7 +175,7 @@ void SceneTab::LoadResource(const String& resourcePath)
     else if (resourcePath.EndsWith(".json", false))
     {
         JSONFile* file = GetCache()->GetResource<JSONFile>(resourcePath);
-        if (file && view_.GetScene()->LoadJSON(file->GetRoot()))
+        if (file && GetScene()->LoadJSON(file->GetRoot()))
         {
             path_ = resourcePath;
             CreateObjects();
@@ -201,19 +201,19 @@ bool SceneTab::SaveResource(const String& resourcePath)
     float elapsed = 0;
     if (!settings_->saveElapsedTime_)
     {
-        elapsed = view_.GetScene()->GetElapsedTime();
-        view_.GetScene()->SetElapsedTime(0);
+        elapsed = GetScene()->GetElapsedTime();
+        GetScene()->SetElapsedTime(0);
     }
 
-    view_.GetScene()->SetUpdateEnabled(true);
+    GetScene()->SetUpdateEnabled(true);
     if (fullPath.EndsWith(".xml", false))
-        result = view_.GetScene()->SaveXML(file);
+        result = GetScene()->SaveXML(file);
     else if (fullPath.EndsWith(".json", false))
-        result = view_.GetScene()->SaveJSON(file);
-    view_.GetScene()->SetUpdateEnabled(false);
+        result = GetScene()->SaveJSON(file);
+    GetScene()->SetUpdateEnabled(false);
 
     if (!settings_->saveElapsedTime_)
-        view_.GetScene()->SetElapsedTime(elapsed);
+        GetScene()->SetElapsedTime(elapsed);
 
     if (result)
     {
@@ -372,7 +372,7 @@ void SceneTab::RenderInspector()
 
         PODVector<Serializable*> items;
         items.Push(node.Get());
-        if (node == view_.GetScene())
+        if (node == GetScene())
         {
             effectSettings_->Prepare();
             items.Push(settings_.Get());
@@ -388,7 +388,7 @@ void SceneTab::RenderNodeTree()
 {
     auto oldSpacing = ui::GetStyle().IndentSpacing;
     ui::GetStyle().IndentSpacing = 10;
-    RenderNodeTree(view_.GetScene());
+    RenderNodeTree(GetScene());
     ui::GetStyle().IndentSpacing = oldSpacing;
 }
 
@@ -632,7 +632,7 @@ void SceneTab::OnUpdate(VariantMap& args)
     float timeStep = args[Update::P_TIMESTEP].GetFloat();
 
     if (scenePlaying_)
-        view_.GetScene()->Update(timeStep);
+        GetScene()->Update(timeStep);
 
     view_.GetCamera()->GetComponent<DebugCameraController>()->Update(timeStep);
 }
