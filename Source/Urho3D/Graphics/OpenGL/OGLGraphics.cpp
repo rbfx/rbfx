@@ -2275,7 +2275,7 @@ void Graphics::OnWindowResized()
     CleanupFramebuffers();
     ResetRenderTargets();
 
-    URHO3D_LOGDEBUGF("Window was resized to %dx%d", width_, height_);
+    URHO3D_LOGTRACEF("Window was resized to %dx%d", width_, height_);
 
     using namespace ScreenMode;
 
