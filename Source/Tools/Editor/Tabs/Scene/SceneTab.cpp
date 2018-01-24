@@ -93,8 +93,8 @@ bool SceneTab::RenderWindowContent()
     ui::SetCursorScreenPos(ToImGui(tabRect.Min()));
     ui::Image(view_.GetTexture(), ToImGui(tabRect.Size()));
 
-    bool isClickedLeft = ui::IsMouseClicked(MOUSEB_LEFT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
-    bool isClickedRight = ui::IsMouseClicked(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+    bool isClickedLeft = ui::IsMouseReleased(MOUSEB_LEFT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+    bool isClickedRight = ui::IsMouseReleased(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
     view_.GetCamera()->GetNode()->GetComponent<DebugCameraController>()->SetEnabled(isActive_);
     gizmo_.ManipulateSelection(view_.GetCamera());
@@ -105,7 +105,7 @@ bool SceneTab::RenderWindowContent()
     else
         windowFlags_ &= ~ImGuiWindowFlags_NoMove;
 
-    if (!gizmo_.IsActive() && (isClickedLeft || isClickedRight))
+    if (!gizmo_.IsActive() && (isClickedLeft || isClickedRight) && GetInput()->IsMouseVisible())
     {
         // Handle object selection.
         IntVector2 pos = GetInput()->GetMousePosition();
@@ -592,13 +592,19 @@ void SceneTab::OnUpdate(VariantMap& args)
     view_.GetCamera()->GetComponent<DebugCameraController>()->Update(timeStep);
 }
 
-bool SceneTab::RenderNodeContextMenu()
+void SceneTab::RenderNodeContextMenu()
 {
-    bool wasOpen = false;
     if (ui::BeginPopup("Node context menu") && !scenePlaying_)
     {
-        wasOpen = true;
         Input* input = GetSubsystem<Input>();
+        if (input->GetKeyPress(KEY_ESCAPE) || !input->IsMouseVisible())
+        {
+            // Close when interacting with scene camera.
+            ui::CloseCurrentPopup();
+            ui::EndPopup();
+            return;
+        }
+
         bool alternative = input->GetKeyDown(KEY_SHIFT);
 
         if (ui::MenuItem(alternative ? "Create Child (Local)" : "Create Child"))
@@ -650,8 +656,6 @@ bool SceneTab::RenderNodeContextMenu()
 
         ui::EndPopup();
     }
-
-    return wasOpen;
 }
 
 }
