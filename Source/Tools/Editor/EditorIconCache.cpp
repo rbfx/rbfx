@@ -66,7 +66,7 @@ EditorIconCache::IconData* EditorIconCache::GetIconData(const String& name)
     auto it = iconCache_.Find(name);
     if (it != iconCache_.End())
         return &it->second_;
-    return nullptr;
+    return &iconCache_.Find("Unknown")->second_;
 }
 
 }
