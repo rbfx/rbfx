@@ -24,6 +24,7 @@
 #pragma once
 
 #include "Urho3D/Core/Object.h"
+#include "Urho3D/Container/Pair.h"
 
 namespace Urho3D
 {
@@ -89,7 +90,7 @@ private:
     /// Last used command interpreter.
     int currentInterpreter_;
     /// Command history.
-    Vector<String> history_;
+    Vector<Pair<int, String>> history_;
     /// Command history maximum rows.
     unsigned historyRows_;
     /// Is console window open.
