@@ -181,6 +181,12 @@ target_include_directories(shaderc PRIVATE
     3rdparty/glsl-optimizer/include
     3rdparty/glsl-optimizer/src/glsl
 )
+target_compile_definitions(shaderc PRIVATE
+    -DNINCLUDE=64
+    -DNWORK=65536
+    -DNBUFF=65536
+    -DOLD_PREPROCESSOR=0
+)
 set_target_properties(shaderc PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
 if (EXISTS $<TARGET_FILE:shaderc>)
     install(TARGETS shaderc RUNTIME DESTINATION bin)
