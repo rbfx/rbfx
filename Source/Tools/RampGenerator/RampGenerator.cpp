@@ -339,12 +339,12 @@ void WriteIES(unsigned char* data, unsigned width, unsigned height, PODVector<fl
     // otherwise the space used would fit the light's traits and potentially incude a lot of wasted black space
     const float angularFactor = 90.0f;
     const float fraction = angularFactor / ((float)width);
-    ::memset(data, 0, width * height);
+    ::memset(data, 0, (size_t)width * height);
 
-    for (unsigned y = 0; y < height; ++y, dirY += stepY)
+    for (unsigned y = 0; y < height; ++y)
     {
         float dirX = -1.0f;
-        for (unsigned x = 0; x < width; ++x, dirX += stepX)
+        for (unsigned x = 0; x < width; ++x)
         {
             Vector3 dirVec(dirX * width, dirY * height, 0);
             const float len = dirVec.Length();
@@ -382,7 +382,11 @@ void WriteIES(unsigned char* data, unsigned width, unsigned height, PODVector<fl
             }
             *data = (unsigned char)(inverseLightValue * value * 255.0f);
             ++data;
+
+            dirX += stepX;
         }
+
+        dirY += stepY;
     }
 }
 

@@ -357,8 +357,10 @@ float Sample2D::Zoom(Camera* camera)
     float zoom_ = camera->GetZoom();
 
     if (input->GetMouseMoveWheel() != 0)
+    {
         zoom_ = Clamp(zoom_ + input->GetMouseMoveWheel() * 0.1f, CAMERA_MIN_DIST, CAMERA_MAX_DIST);
         camera->SetZoom(zoom_);
+    }
 
     if (input->GetKeyDown(KEY_PAGEUP))
     {
@@ -383,7 +385,7 @@ PODVector<Vector2> Sample2D::CreatePathFromPoints(TileMapObject2D* object, Vecto
     return path;
 }
 
-void Sample2D::CreateUIContent(String demoTitle, int remainingLifes, int remainingCoins)
+void Sample2D::CreateUIContent(const String& demoTitle, int remainingLifes, int remainingCoins)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* ui = GetSubsystem<UI>();
@@ -497,7 +499,7 @@ void Sample2D::SaveScene(bool initial)
     scene_->SaveXML(saveFile);
 }
 
-void Sample2D::CreateBackgroundSprite(TileMapInfo2D info, float scale, String texture, bool animate)
+void Sample2D::CreateBackgroundSprite(TileMapInfo2D info, float scale, const String& texture, bool animate)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     Node* node = scene_->CreateChild("Background");
@@ -529,7 +531,7 @@ void Sample2D::SpawnEffect(Node* node)
     particleEmitter->SetEffect(cache->GetResource<ParticleEffect2D>("Urho2D/sun.pex"));
 }
 
-void Sample2D::PlaySoundEffect(String soundName)
+void Sample2D::PlaySoundEffect(const String& soundName)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* source = scene_->CreateComponent<SoundSource>();

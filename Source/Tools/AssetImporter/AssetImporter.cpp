@@ -210,7 +210,7 @@ void CopyTextures(const HashSet<String>& usedTextures, const String& sourcePath)
 
 void CombineLods(const PODVector<float>& lodDistances, const Vector<String>& modelNames, const String& outName);
 
-void GetMeshesUnderNode(Vector<Pair<aiNode*, aiMesh*> >& meshes, aiNode* node);
+void GetMeshesUnderNode(Vector<Pair<aiNode*, aiMesh*> >& dest, aiNode* node);
 unsigned GetMeshIndex(aiMesh* mesh);
 unsigned GetBoneIndex(OutModel& model, const String& boneName);
 aiBone* GetMeshBone(OutModel& model, const String& boneName);
@@ -2010,7 +2010,7 @@ void CopyTextures(const HashSet<String>& usedTextures, const String& sourcePath)
                     PrintLine("Saving embedded RGBA texture " + GetFileNameAndExtension(fullDestName));
                     Image image(context_);
                     image.SetSize(tex->mWidth, tex->mHeight, 4);
-                    memcpy(image.GetData(), (const void*)tex->pcData, tex->mWidth * tex->mHeight * 4);
+                    memcpy(image.GetData(), (const void*)tex->pcData, (size_t)tex->mWidth * tex->mHeight * 4);
                     image.SavePNG(fullDestName);
                 }
             }
@@ -2659,7 +2659,7 @@ void FillChainTransforms(OutModel &model, aiMatrix4x4 *chain, const String& main
     }
 }
 
-void ExpandAnimatedChannelKeys(aiAnimation* anim, unsigned mainChannel, int *channelIndices)
+void ExpandAnimatedChannelKeys(aiAnimation* anim, unsigned mainChannel, const int *channelIndices)
 {
     aiNodeAnim* channel = anim->mChannels[mainChannel];
     unsigned int poskeyFrames = channel->mNumPositionKeys;
