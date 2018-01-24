@@ -17,5 +17,4 @@ find_package(Qt5Widgets QUIET)
 if (Qt5Widgets_FOUND AND URHO3D_TOOLS)
     # Only include the Qt client if on we're building desktop platform and Qt5 was found on system
     add_subdirectory(profiler_gui)
-    set_target_properties(profiler_gui PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
 endif()

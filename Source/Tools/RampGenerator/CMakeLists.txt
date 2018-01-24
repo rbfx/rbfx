@@ -23,4 +23,4 @@
 file (GLOB SOURCE_FILES *.cpp *.h)
 add_executable (RampGenerator ${SOURCE_FILES})
 target_link_libraries (RampGenerator Urho3D)
-install(TARGETS RampGenerator RUNTIME DESTINATION bin)
+install(TARGETS RampGenerator RUNTIME DESTINATION ${DEST_TOOLS_DIR})

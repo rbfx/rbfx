@@ -23,4 +23,4 @@
 file (GLOB SOURCE_FILES *.cpp *.h)
 add_executable (PackageTool ${SOURCE_FILES})
 target_link_libraries (PackageTool Urho3D)
-install(TARGETS PackageTool RUNTIME DESTINATION bin)
+install(TARGETS PackageTool RUNTIME DESTINATION ${DEST_TOOLS_DIR})
