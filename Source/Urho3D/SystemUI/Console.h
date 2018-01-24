@@ -67,6 +67,8 @@ public:
 
     /// Remove all rows.
     void Clear();
+    /// Render contents of the console window. Useful for embedding console into custom UI.
+    void RenderContent();
 
 private:
     /// Populate the command line interpreters that could handle the console command.
