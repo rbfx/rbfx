@@ -430,6 +430,8 @@ bool TransformRect(Urho3D::IntRect& inOut, Urho3D::IntRect& delta, TransformSele
             if (modified)
                 inOut += delta;
         }
+        else if (ui::IsItemActive())
+            ui::SetActiveID(0, ui::GetCurrentWindow());
     }
     return modified;
 }
@@ -463,7 +465,7 @@ bool EditorToolbarButton(const char* text, const char* tooltip, bool active)
     bool result = ui::ToolbarButton(text);
     ui::PopStyleColor();
     ui::SameLine(0, 0);
-    if (ui::IsItemHovered())
+    if (ui::IsItemHovered() && tooltip)
         ui::SetTooltip("%s", tooltip);
     return result;
 }
