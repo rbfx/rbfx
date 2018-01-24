@@ -14,3 +14,7 @@ elseif (WIN32)
 endif ()
 add_library(nativefiledialog STATIC ${SOURCE_FILES})
 target_include_directories(nativefiledialog PUBLIC src/include)
+
+if (WIN32)
+    target_link_libraries(nativefiledialog shell32 ole32 uuid)
+endif ()
