@@ -69,11 +69,11 @@ public:
     void Clear();
     /// Render contents of the console window. Useful for embedding console into custom UI.
     void RenderContent();
+    /// Populate the command line interpreters that could handle the console command.
+    void RefreshInterpreters();
 
 private:
-    /// Populate the command line interpreters that could handle the console command.
-    bool PopulateInterpreter();
-    ///
+    /// Update console size on application window changes.
     void HandleScreenMode(StringHash eventType, VariantMap& eventData);
     /// Handle a log message.
     void HandleLogMessage(StringHash eventType, VariantMap& eventData);

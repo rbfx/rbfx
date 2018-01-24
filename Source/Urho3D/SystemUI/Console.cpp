@@ -54,7 +54,7 @@ Console::Console(Context* context) :
     SetNumHistoryRows(DEFAULT_HISTORY_SIZE);
     VariantMap dummy;
     HandleScreenMode(0, dummy);
-    PopulateInterpreter();
+    RefreshInterpreters();
 
     SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(Console, HandleScreenMode));
     SubscribeToEvent(E_LOGMESSAGE, URHO3D_HANDLER(Console, HandleLogMessage));
@@ -97,18 +97,19 @@ bool Console::IsVisible() const
     return isOpen_;
 }
 
-bool Console::PopulateInterpreter()
+void Console::RefreshInterpreters()
 {
+    interpreters_.Clear();
+    interpretersPointers_.Clear();
+
     EventReceiverGroup* group = context_->GetEventReceivers(E_CONSOLECOMMAND);
     if (!group || group->receivers_.Empty())
-        return false;
+        return;
 
     String currentInterpreterName;
     if (currentInterpreter_ < interpreters_.Size())
         currentInterpreterName = interpreters_[currentInterpreter_];
 
-    interpreters_.Clear();
-    interpretersPointers_.Clear();
     for (unsigned i = 0; i < group->receivers_.Size(); ++i)
     {
         Object* receiver = group->receivers_[i];
@@ -124,7 +125,7 @@ bool Console::PopulateInterpreter()
     if (currentInterpreter_ == interpreters_.Size())
         currentInterpreter_ = 0;
 
-    return true;
+    return;
 }
 
 void Console::HandleLogMessage(StringHash eventType, VariantMap& eventData)
@@ -159,14 +160,14 @@ void Console::RenderContent()
 
     ui::EndChild();
 
-    ui::PushItemWidth(100);
+    ui::PushItemWidth(110);
     if (ui::Combo("##ConsoleInterpreter", &currentInterpreter_, &interpretersPointers_.Front(), interpretersPointers_.Size()))
     {
 
     }
     ui::PopItemWidth();
     ui::SameLine();
-    ui::PushItemWidth(region.x - 110);
+    ui::PushItemWidth(region.x - 120);
     if (focusInput_)
     {
         ui::SetKeyboardFocusHere();
@@ -176,10 +177,10 @@ void Console::RenderContent()
     {
         focusInput_ = true;
         String line(inputBuffer_);
-        if (line.Length())
+        if (line.Length() && currentInterpreter_ < interpreters_.Size())
         {
             // Store to history, then clear the lineedit
-            history_.Push(line);
+            URHO3D_LOGINFOF("> %s", line.CString());
             if (history_.Size() > historyRows_)
                 history_.Erase(history_.Begin());
             scrollToEnd_ = true;
@@ -233,7 +234,7 @@ void Console::Clear()
 
 void Console::SetCommandInterpreter(const String& interpreter)
 {
-    PopulateInterpreter();
+    RefreshInterpreters();
 
     auto index = interpreters_.IndexOf(interpreter);
     if (index == interpreters_.Size())

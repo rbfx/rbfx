@@ -98,7 +98,11 @@ void Editor::Start()
     // Prevent overwriting example scene.
     DynamicCast<SceneTab>(tabs_.Front())->ClearCachedPaths();
     // Creates console but makes sure it's UI is not rendered. Console rendering is done manually in editor.
-    engine_->CreateConsole()->SetAutoVisibleOnError(false);
+    auto* console = engine_->CreateConsole();
+    console->SetAutoVisibleOnError(false);
+    GetFileSystem()->SetExecuteConsoleCommands(false);
+    SubscribeToEvent(E_CONSOLECOMMAND, std::bind(&Editor::OnConsoleCommand, this, _2));
+    console->RefreshInterpreters();
 }
 
 void Editor::Stop()
@@ -388,6 +392,16 @@ String Editor::GetResourceAbsolutePath(const String& resourceName, const String&
     }
 
     return fullPath;
+}
+
+void Editor::OnConsoleCommand(VariantMap& args)
+{
+    using namespace ConsoleCommand;
+    String command = args[P_COMMAND].GetString();
+    if (command == "revision")
+        URHO3D_LOGINFOF("Engine revision: %s", GetRevision());
+    else
+        URHO3D_LOGWARNINGF("Unknown command \"%s\"", command.CString());
 }
 
 }
