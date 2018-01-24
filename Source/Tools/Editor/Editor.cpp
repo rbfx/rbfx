@@ -247,7 +247,7 @@ void Editor::OnUpdate(VariantMap& args)
     String selected;
     if (tabs_.Size())
         ui::SetNextDockPos(tabs_.Back()->GetUniqueTitle().CString(), ui::Slot_Bottom, ImGuiCond_FirstUseEver);
-    if (ResourceBrowserWindow(selected, &resourceBrowserWindowOpen_))
+    if (ResourceBrowserWindow(selected))
     {
         auto type = GetContentType(selected);
         if (type == CTYPE_SCENE)

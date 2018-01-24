@@ -34,7 +34,7 @@
 namespace Urho3D
 {
 
-bool ResourceBrowserWindow(String& selected, bool* open)
+bool ResourceBrowserWindow(String& selected)
 {
     struct State
     {
@@ -45,7 +45,7 @@ bool ResourceBrowserWindow(String& selected, bool* open)
     bool result = false;
     auto systemUI = (SystemUI*)ui::GetIO().UserData;
     auto fs = systemUI->GetFileSystem();
-    if (ui::BeginDock("Resources", open))
+    if (ui::BeginDock("Resources"))
     {
         State* state = ui::GetUIState<State>();
 
