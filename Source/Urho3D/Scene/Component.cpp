@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -60,9 +60,7 @@ Component::Component(Context* context) :
 {
 }
 
-Component::~Component()
-{
-}
+Component::~Component() = default;
 
 bool Component::Save(Serializer& dest) const
 {
@@ -191,7 +189,7 @@ void Component::PrepareNetworkUpdate()
             for (PODVector<ReplicationState*>::Iterator j = networkState_->replicationStates_.Begin();
                  j != networkState_->replicationStates_.End(); ++j)
             {
-                ComponentReplicationState* compState = static_cast<ComponentReplicationState*>(*j);
+                auto* compState = static_cast<ComponentReplicationState*>(*j);
                 compState->dirtyAttributes_.Set(i);
 
                 // Add component's parent node to the dirty set if not added yet

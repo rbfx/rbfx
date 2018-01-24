@@ -19,11 +19,12 @@
 #ifndef B2_CIRCLE_CONTACT_H
 #define B2_CIRCLE_CONTACT_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Dynamics/Contacts/b2Contact.h"
 
 class b2BlockAllocator;
 
-class b2CircleContact : public b2Contact
+class BOX2D_API b2CircleContact : public b2Contact
 {
 public:
 	static b2Contact* Create(	b2Fixture* fixtureA, int32 indexA,

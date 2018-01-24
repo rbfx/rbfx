@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -53,7 +53,7 @@ RenderSurface::RenderSurface(Texture* parentTexture) :
 
 bool RenderSurface::CreateRenderBuffer(unsigned width, unsigned height, unsigned format, int multiSample)
 {
-    Graphics* graphics = parentTexture_->GetObjectGraphics();
+    Graphics* graphics = parentTexture_->GetGraphics();
     if (!graphics)
         return false;
 
@@ -89,7 +89,7 @@ bool RenderSurface::CreateRenderBuffer(unsigned width, unsigned height, unsigned
 
 void RenderSurface::OnDeviceLost()
 {
-    Graphics* graphics = parentTexture_->GetObjectGraphics();
+    Graphics* graphics = parentTexture_->GetGraphics();
     if (!graphics)
         return;
 
@@ -110,7 +110,7 @@ void RenderSurface::OnDeviceLost()
 
 void RenderSurface::Release()
 {
-    Graphics* graphics = parentTexture_->GetObjectGraphics();
+    Graphics* graphics = parentTexture_->GetGraphics();
     if (!graphics)
         return;
 

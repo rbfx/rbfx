@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -63,6 +63,7 @@
 #include "../Urho2D/Urho2D.h"
 #endif
 #include "../Core/Tasks.h"
+#include "../Engine/EngineEvents.h"
 
 #if defined(__EMSCRIPTEN__) && defined(URHO3D_TESTING)
 #include <emscripten/emscripten.h>
@@ -137,15 +138,16 @@ Engine::Engine(Context* context) :
     context_->RegisterSubsystem(new Input(context_));
     context_->RegisterSubsystem(new Audio(context_));
     context_->RegisterSubsystem(new UI(context_));
+#if URHO3D_TASKS
     context_->RegisterSubsystem(new Tasks(context_));
-
+#endif
     // Register object factories for libraries which are not automatically registered along with subsystem creation
     RegisterSceneLibrary(context_);
 
 #ifdef URHO3D_IK
     RegisterIKLibrary(context_);
 #endif
-    
+
 #ifdef URHO3D_PHYSICS
     RegisterPhysicsLibrary(context_);
 #endif
@@ -155,35 +157,24 @@ Engine::Engine(Context* context) :
 #endif
 
     SubscribeToEvent(E_EXITREQUESTED, URHO3D_HANDLER(Engine, HandleExitRequested));
-    context_->engine_ = context_->GetSubsystem<Engine>();
-    context_->time_ = context_->GetSubsystem<Time>();
-    context_->workQueue_ = context_->GetSubsystem<WorkQueue>();
-#ifdef URHO3D_PROFILING
-    context_->profiler_ = context_->GetSubsystem<Profiler>();
-#endif
-    context_->fileSystem_ = context_->GetSubsystem<FileSystem>();
-#ifdef URHO3D_LOGGING
-    context_->log_ = context_->GetSubsystem<Log>();
-#endif
-    context_->cache_ = context_->GetSubsystem<ResourceCache>();
-    context_->l18n_ = context_->GetSubsystem<Localization>();
-#ifdef URHO3D_NETWORK
-    context_->network_ = context_->GetSubsystem<Network>();
-#endif
-    context_->input_ = context_->GetSubsystem<Input>();
-    context_->audio_ = context_->GetSubsystem<Audio>();
-    context_->ui_ = context_->GetSubsystem<UI>();
-    context_->tasks_ = context_->GetSubsystem<Tasks>();
 }
 
-Engine::~Engine()
-{
-}
+Engine::~Engine() = default;
 
 bool Engine::Initialize(const VariantMap& parameters)
 {
     if (initialized_)
         return true;
+
+#ifdef URHO3D_PROFILING
+    if (auto* profiler = GetSubsystem<Profiler>())
+    {
+        profiler->SetEnabled(true);
+        profiler->SetEventProfilingEnabled(GetParameter(parameters, EP_EVENT_PROFILER, true).GetBool());
+        if (GetParameter(parameters, EP_PROFILER_LISTEN, false).GetBool())
+            profiler->StartListen((unsigned short)GetParameter(parameters, EP_PROFILER_PORT, PROFILER_DEFAULT_PORT).GetInt());
+    }
+#endif
 
     URHO3D_PROFILE(InitEngine);
 
@@ -210,7 +201,7 @@ bool Engine::Initialize(const VariantMap& parameters)
 #endif
 
     // Start logging
-    Log* log = GetSubsystem<Log>();
+    auto* log = GetSubsystem<Log>();
     if (log)
     {
         if (HasParameter(parameters, EP_LOG_LEVEL))
@@ -242,14 +233,14 @@ bool Engine::Initialize(const VariantMap& parameters)
     if (!InitializeResourceCache(parameters, false))
         return false;
 
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
-    FileSystem* fileSystem = GetSubsystem<FileSystem>();
+    auto* cache = GetSubsystem<ResourceCache>();
+    auto* fileSystem = GetSubsystem<FileSystem>();
 
     // Initialize graphics & audio output
     if (!headless_)
     {
-        Graphics* graphics = GetSubsystem<Graphics>();
-        Renderer* renderer = GetSubsystem<Renderer>();
+        auto* graphics = GetSubsystem<Graphics>();
+        auto* renderer = GetSubsystem<Renderer>();
 
         if (HasParameter(parameters, EP_EXTERNAL_WINDOW))
             graphics->SetExternalWindow(GetParameter(parameters, EP_EXTERNAL_WINDOW).GetVoidPtr());
@@ -355,33 +346,24 @@ bool Engine::Initialize(const VariantMap& parameters)
     if (HasParameter(parameters, EP_TIME_OUT))
         timeOut_ = GetParameter(parameters, EP_TIME_OUT, 0).GetInt() * 1000000LL;
 #endif
-
-#ifdef URHO3D_PROFILING
-    if (Profiler* profiler = GetSubsystem<Profiler>())
-    {
-        if (GetParameter(parameters, EP_PROFILER_LISTEN, false).GetBool())
-            profiler->StartListen((unsigned short)GetParameter(parameters, EP_PROFILER_PORT, PROFILER_DEFAULT_PORT).GetInt());
-        profiler->SetEventProfilingEnabled(GetParameter(parameters, EP_EVENT_PROFILER, true).GetBool());
-    }
-#endif
     if (!headless_)
     {
 #ifdef URHO3D_SYSTEMUI
         context_->RegisterSubsystem(new SystemUI(context_));
-        context_->systemUi_ = context_->GetSubsystem<SystemUI>();
 #endif
     }
     frameTimer_.Reset();
 
     URHO3D_LOGINFO("Initialized engine");
     initialized_ = true;
+    SendEvent(E_ENGINEINITIALIZED);
     return true;
 }
 
 bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOld /*= true*/)
 {
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
-    FileSystem* fileSystem = GetSubsystem<FileSystem>();
+    auto* cache = GetSubsystem<ResourceCache>();
+    auto* fileSystem = GetSubsystem<FileSystem>();
 
     // Remove all resource paths and packages
     if (removeOld)
@@ -542,9 +524,9 @@ void Engine::RunFrame()
 
     // Note: there is a minimal performance cost to looking up subsystems (uses a hashmap); if they would be looked up several
     // times per frame it would be better to cache the pointers
-    Time* time = GetSubsystem<Time>();
-    Input* input = GetSubsystem<Input>();
-    Audio* audio = GetSubsystem<Audio>();
+    auto* time = GetSubsystem<Time>();
+    auto* input = GetSubsystem<Input>();
+    auto* audio = GetSubsystem<Audio>();
 
     URHO3D_PROFILE(DoFrame);
     time->BeginFrame(timeStep_);
@@ -584,7 +566,7 @@ Console* Engine::CreateConsole()
 
 #ifdef URHO3D_SYSTEMUI
     // Return existing console if possible
-    Console* console = GetSubsystem<Console>();
+    auto* console = GetSubsystem<Console>();
     if (!console)
     {
         console = new Console(context_);
@@ -604,7 +586,7 @@ DebugHud* Engine::CreateDebugHud()
 
 #ifdef URHO3D_SYSTEMUI
     // Return existing debug HUD if possible
-    DebugHud* debugHud = GetSubsystem<DebugHud>();
+    auto* debugHud = GetSubsystem<DebugHud>();
     if (!debugHud)
     {
         debugHud = new DebugHud(context_);
@@ -671,9 +653,7 @@ void Engine::DumpProfiler()
     if (!Thread::IsMainThread())
         return;
 
-    Profiler* profiler = GetSubsystem<Profiler>();
-    if (profiler)
-        URHO3D_LOGRAW(profiler->PrintData(true, true) + "\n");
+    // TODO: Put something here or remove API
 #endif
 }
 
@@ -683,7 +663,7 @@ void Engine::DumpResources(bool dumpFileName)
     if (!Thread::IsMainThread())
         return;
 
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    auto* cache = GetSubsystem<ResourceCache>();
     const HashMap<StringHash, ResourceGroup>& resourceGroups = cache->GetAllResources();
     if (dumpFileName)
     {
@@ -772,7 +752,7 @@ void Engine::Render()
     URHO3D_PROFILE(Render);
 
     // If device is lost, BeginFrame will fail and we skip rendering
-    Graphics* graphics = GetSubsystem<Graphics>();
+    auto* graphics = GetSubsystem<Graphics>();
     if (!graphics->BeginFrame())
         return;
 
@@ -787,7 +767,7 @@ void Engine::ApplyFrameLimit()
         return;
 
     unsigned maxFps = maxFps_;
-    Input* input = GetSubsystem<Input>();
+    auto* input = GetSubsystem<Input>();
     if (input && !input->HasFocus())
         maxFps = Min(maxInactiveFps_, maxFps);
 
@@ -816,7 +796,7 @@ void Engine::ApplyFrameLimit()
             // Sleep if 1 ms or more off the frame limiting goal
             if (targetMax - elapsed >= 1000LL)
             {
-                unsigned sleepTime = (unsigned)((targetMax - elapsed) / 1000LL);
+                auto sleepTime = (unsigned)((targetMax - elapsed) / 1000LL);
                 Time::Sleep(sleepTime);
             }
         }
@@ -1017,6 +997,17 @@ VariantMap Engine::ParseParameters(const Vector<String>& arguments)
                 ++i;
             }
 #endif
+#ifdef URHO3D_PROFILE
+            else if (argument == "pr")
+                ret[EP_PROFILER_LISTEN] = true;
+            else if (argument == "prp" && !value.Empty())
+            {
+                ret[EP_PROFILER_PORT] = ToInt(value);
+                ++i;
+            }
+            else if (argument == "prnoev")
+                ret[EP_EVENT_PROFILER] = false;
+#endif
 #ifdef URHO3D_BGFX
             else if (argument == "graphicsapi" && !value.Empty())
             {
@@ -1055,7 +1046,7 @@ void Engine::HandleExitRequested(StringHash eventType, VariantMap& eventData)
 
 void Engine::DoExit()
 {
-    Graphics* graphics = GetSubsystem<Graphics>();
+    auto* graphics = GetSubsystem<Graphics>();
     if (graphics)
         graphics->Close();
 

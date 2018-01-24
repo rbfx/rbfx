@@ -31,6 +31,7 @@ macro (define_engine_source_files)
         # Get header files
         file (${_action} _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${path}/*.h)
         list (APPEND HEADER_FILES ${_files})
+        list (REMOVE_ITEM HEADER_FILES Urho3D.h)
         # Install them
         install (FILES ${_files} DESTINATION ${DEST_INCLUDE_DIR}/${path})
         # Get source files
@@ -97,11 +98,30 @@ group_sources("SystemUI")
 group_sources("UI")
 group_sources("Urho2D")
 
-add_library(Urho3D ${SOURCE_FILES} ${HEADER_FILES})
+if (APPLE)
+    list (APPEND SOURCE_FILES IO/MacFileWatcher.m)
+endif ()
+
+set (THIRD_PARTY_DEPENDENCIES FreeType JO LZ4 PugiXml rapidjson SDL StanHull STB Mustache IconFontCppHeaders Civetweb kNet ik Detour DetourCrowd DetourTileCache Recast Box2D WebP Bullet easy_profiler imgui ImGuizmo LibCpuId GLEW MojoShader fcontext)
+foreach (dep ${THIRD_PARTY_DEPENDENCIES})
+    if (TARGET "${dep}")
+        get_target_property(_TARGET_TYPE ${dep} TYPE)
+        if(_TARGET_TYPE STREQUAL "OBJECT_LIBRARY")
+            list(APPEND SOURCE_FILES "$<TARGET_OBJECTS:${dep}>")
+        endif ()
+    endif ()
+endforeach()
+
+add_library(Urho3D ${URHO3D_LIBRARY_TYPE} ${SOURCE_FILES} ${HEADER_FILES})
 target_include_directories(Urho3D PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/..      # For parent projects to find engine headers
-    ${CMAKE_CURRENT_BINARY_DIR}/..      # For parent projects to find auto-generated engine headers
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>        # For parent projects to find auto-generated engine headers
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>        # For parent projects to find engine headers
+    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS}>
+    $<INSTALL_INTERFACE:${DEST_INCLUDE_DIR}>
+    $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}>
+    PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
 )
+add_dependencies(Urho3D InstallThirdpartyHeaders)
 
 # Add any variables starting with URHO3D_ as project defines
 get_cmake_property(__cmake_variables VARIABLES)
@@ -113,29 +133,39 @@ foreach (var ${__cmake_variables})
     endif ()
 endforeach()
 
+if (MINI_URHO)
+    target_compile_definitions(Urho3D PUBLIC -DMINI_URHO)
+endif ()
+target_compile_definitions(Urho3D PRIVATE -DURHO3D_IS_BUILDING)
+
 # Define generated source files
 if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/librevision.h)
     execute_process (COMMAND ${CMAKE_COMMAND} -DFILENAME=${CMAKE_CURRENT_BINARY_DIR}/librevision.h -P ${Urho3D_SOURCE_DIR}/CMake/Modules/GetUrhoRevision.cmake
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
 endif ()
-target_include_directories(Urho3D PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # Link dependencies
-
-foreach (dep FreeType JO LZ4 PugiXml rapidjson SDL StanHull STB Mustache IconFontCppHeaders Civetweb kNet ik Detour DetourCrowd DetourTileCache Recast Box2D WebP Bullet easy_profiler imgui ImGuizmo LibCpuId GLEW MojoShader tinyfiledialogs)
+foreach (dep ${THIRD_PARTY_DEPENDENCIES})
     if (TARGET "${dep}")
-        target_link_libraries(Urho3D "${dep}")
+        get_target_property(_TARGET_TYPE ${dep} TYPE)
+        if(_TARGET_TYPE STREQUAL "OBJECT_LIBRARY")
+            target_link_objects(Urho3D "${dep}")
+        else ()
+            target_link_libraries(Urho3D "${dep}")
+        endif ()
     endif ()
 endforeach()
-
 
 if (URHO3D_SSE AND NOT MSVC)
     target_compile_options (Urho3D PUBLIC -msse -msse2)
 endif ()
 
-if (UNIX)
-    # glibc prevents tasks from switching stacks as a security precaution. Disable that.
-    target_compile_definitions(Urho3D PUBLIC -D_FORTIFY_SOURCE=0)
+if (URHO3D_TASKS)
+    include(CheckIncludeFile)
+    check_include_file("valgrind/valgrind.h" HAVE_VALGRIND)
+    if (HAVE_VALGRIND EQUAL 1)
+        target_compile_definitions(Urho3D PRIVATE -DHAVE_VALGRIND=${HAVE_VALGRIND})
+    endif ()
 endif ()
 
 if (WIN32)
@@ -144,6 +174,8 @@ if (WIN32)
         target_link_libraries (Urho3D dbghelp)
     endif ()
 elseif (APPLE)
+    target_compile_definitions(Urho3D PUBLIC -D_XOPEN_SOURCE=1)
+    target_compile_options(Urho3D PUBLIC -stdlib=libc++)
     target_link_libraries (Urho3D iconv "-framework AudioToolbox" "-framework CoreAudio" )
     if (ARM)
         target_link_libraries (Urho3D "-framework AVFoundation" "-framework CoreGraphics" "-framework CoreMotion" "-framework Foundation" "-framework GameController" "-framework OpenGLES" "-framework QuartzCore" "-framework UIKit")
@@ -158,7 +190,7 @@ endif ()
 
 # Disable very annoying warning
 if (GNU OR Clang)
-    target_compile_options(Urho3D PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
+    target_compile_options(Urho3D PUBLIC -Wno-invalid-offsetof)
 endif ()
 
 # Graphics
@@ -191,35 +223,20 @@ elseif(URHO3D_D3D11)
     target_link_libraries (Urho3D ${DIRECT3D_LIBRARIES})
 endif ()
 
-target_include_directories(Urho3D PUBLIC ${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS})
-
-if (BUILD_SHARED_LIBS)
-    set (INSTALL_TARGET Urho3D)
-    target_compile_options(Urho3D PRIVATE -DURHO3D_EXPORTS)
-    if (WIN32)
-        set_target_properties(Urho3D PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
-    endif ()
+if (BUILD_SHARED_LIBS OR EMSCRIPTEN)
+    target_compile_definitions(Urho3D PRIVATE -DURHO3D_EXPORTS)
+    # Also add export flags of third party libraries. They are required because those are OBJECT libraries and Urho3D
+    # should not try to import from them as if they were DLLs.
+    target_compile_definitions(Urho3D
+        PRIVATE -D_EXPORTS -DLZ4_DLL_EXPORT=1 -DCIVETWEB_DLL_EXPORTS
+        PUBLIC  -D_IMPORTS -DLZ4_DLL_IMPORT=1 -DCIVETWEB_DLL_IMPORTS
+    )
 else ()
-    target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC_DEFINE)
-    get_property(URHO3D_INTERFACE_LINK_LIBRARIES TARGET Urho3D PROPERTY INTERFACE_LINK_LIBRARIES)
-    foreach (lib ${URHO3D_INTERFACE_LINK_LIBRARIES})
-        if (TARGET ${lib})
-            list (APPEND URHO3D_LINK_TARGETS ${lib})
-        endif ()
-    endforeach ()
-
-    set_target_properties(Urho3D PROPERTIES OUTPUT_NAME Urho3DBase)
-    merge_libraries(TARGET Urho3D_M STATIC Urho3D ${URHO3D_LINK_TARGETS} OUTPUT_NAME Urho3D)
-    set (INSTALL_TARGET Urho3D_M)
+    target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC)
 endif ()
 
-if (WIN32)
-    set (SHARED_LIB_INSTALL_DIR bin)
-else ()
-    set (SHARED_LIB_INSTALL_DIR lib${LIB_SUFFIX})
-endif ()
-
-install(TARGETS ${INSTALL_TARGET}
+install(TARGETS Urho3D
+    EXPORT Urho3D
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION ${SHARED_LIB_INSTALL_DIR}
     ARCHIVE DESTINATION lib${LIB_SUFFIX}
@@ -245,6 +262,7 @@ else ()
     string (REPLACE ";" " -l" URHO3D_LIBS "-l${LIB_NAME};${URHO3D_LIBS}")
 endif ()
 get_property(URHO3D_COMPILE_DEFINITIONS TARGET Urho3D PROPERTY INTERFACE_COMPILE_DEFINITIONS)
+list (REMOVE_DUPLICATES URHO3D_COMPILE_DEFINITIONS)
 string (REPLACE ";" " ${DASH}D" URHO3D_COMPILE_DEFINITIONS "${DASH}D${URHO3D_COMPILE_DEFINITIONS}")
 get_directory_property (GLOBAL_INCLUDE_DIRS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} INCLUDE_DIRECTORIES)
 if (GLOBAL_INCLUDE_DIRS)
@@ -277,3 +295,22 @@ string (REPLACE ";" ">\n#include <Urho3D/" HEADER_FILES "${HEADER_FILES}")
 set (HEADER_FILES "#include <Urho3D/${HEADER_FILES}>")
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Urho3DAll.h.in ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h @ONLY)
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h DESTINATION ${DEST_INCLUDE_DIR})
+
+# Generate import/export header with engine configuration defines
+get_property(URHO3D_ENGINE_CONFIG TARGET Urho3D PROPERTY COMPILE_DEFINITIONS)
+list (REMOVE_ITEM URHO3D_ENGINE_CONFIG URHO3D_64BIT URHO3D_SSE URHO3D_IS_BUILDING)
+foreach (def ${URHO3D_ENGINE_CONFIG})
+    if (NOT "${def}" MATCHES "^URHO3D_.*" AND NOT "${def}" MATCHES "^IK_.*" AND NOT "${def}" MATCHES "^IMGUI_.*")
+        list (REMOVE_ITEM URHO3D_ENGINE_CONFIG "${def}")
+    endif ()
+endforeach ()
+list (APPEND URHO3D_ENGINE_CONFIG "")   # For last item to be processed correctly.
+# Give defines without value a value "1".
+string (REGEX REPLACE "(^|;)([a-zA-Z0-9_]+);" "\\1\\2=1;" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
+# Turn list into c++ preprocessor code
+string (REGEX REPLACE "([^=]+)=([^;]+);" "#ifndef \\1\n#   define \\1 \\2\n#endif\n" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
+# This will be commented out line in the header.
+list (INSERT URHO3D_ENGINE_CONFIG 0 "Engine configuration")
+string (REPLACE ";" "\n" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
+configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Urho3D.h ${CMAKE_CURRENT_BINARY_DIR}/Urho3D.h @ONLY)
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3D.h DESTINATION ${DEST_INCLUDE_DIR})

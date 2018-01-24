@@ -26,7 +26,6 @@ add_subdirectory(LZ4)
 add_subdirectory(PugiXml)
 add_subdirectory(rapidjson)
 add_subdirectory(SDL)
-add_subdirectory(StanHull)
 add_subdirectory(STB)
 add_subdirectory(Mustache)
 add_subdirectory(IconFontCppHeaders)
@@ -68,10 +67,10 @@ endif ()
 
 if (URHO3D_PHYSICS)
     add_subdirectory (Bullet)
+    add_subdirectory(StanHull)
 endif ()
 
 if (URHO3D_PROFILING)
-    set (EASY_PROFILER_NO_SAMPLES ON)
     add_subdirectory (easy_profiler)
 endif ()
 
@@ -81,24 +80,37 @@ if (NOT ANDROID AND NOT ARM AND NOT WEB)
     elseif (URHO3D_D3D9)
         add_subdirectory (MojoShader)
     endif ()
-    if (WIN32)
+    if (WIN32 OR APPLE)
         add_subdirectory (LibCpuId)
     endif ()
 endif ()
 
 if (URHO3D_TOOLS)
-    add_subdirectory(poco)
     add_subdirectory(Assimp)
 endif ()
 if (URHO3D_SYSTEMUI)
-    add_subdirectory(tinyfiledialogs)
+    add_subdirectory(nativefiledialog)
 endif ()
 
-# Group third party dependencies into ThirdParty subfolder in VS solution.
+if (URHO3D_TASKS)
+    add_subdirectory(fcontext)
+endif ()
+
+# A dummy target that handles installation of third party dependencies into a build tree. Engine uses some include paths
+# that can not be exported by cmake therefore installation is required for engine to be able to find these includes.
+add_custom_target(InstallThirdpartyHeaders)
+set_target_properties(InstallThirdpartyHeaders PROPERTIES FOLDER ThirdParty)
+# Group third party dependencies into ThirdParty subfolder in VS solution and install them.
 file(GLOB third_party_dirs RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
 foreach (lib ${third_party_dirs})
     if (TARGET ${lib})
         set_target_properties(${lib} PROPERTIES FOLDER ThirdParty)
+        get_target_property(TARGET_BINARY_DIR ${lib} BINARY_DIR)
+        add_custom_command(TARGET InstallThirdpartyHeaders POST_BUILD
+            COMMAND "${CMAKE_COMMAND}" -DCMAKE_INSTALL_PREFIX:string=${CMAKE_BINARY_DIR} -DBUILD_TYPE:string=$<CONFIGURATION>
+                    -P "${TARGET_BINARY_DIR}/cmake_install.cmake"
+        )
+        add_dependencies(InstallThirdpartyHeaders ${lib})
     endif ()
 endforeach ()
 if (TARGET profiler_gui)

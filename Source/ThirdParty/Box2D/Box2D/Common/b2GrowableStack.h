@@ -18,6 +18,7 @@
 
 #ifndef B2_GROWABLE_STACK_H
 #define B2_GROWABLE_STACK_H
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Common/b2Settings.h"
 #include <string.h>
 

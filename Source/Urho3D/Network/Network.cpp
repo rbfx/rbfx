@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -345,9 +345,9 @@ void Network::SetSimulatedLatency(int ms)
     ConfigureNetworkSimulator();
 }
 
-void Network::SetSimulatedPacketLoss(float loss)
+void Network::SetSimulatedPacketLoss(float probability)
 {
-    simulatedPacketLoss_ = Clamp(loss, 0.0f, 1.0f);
+    simulatedPacketLoss_ = Clamp(probability, 0.0f, 1.0f);
     ConfigureNetworkSimulator();
 }
 

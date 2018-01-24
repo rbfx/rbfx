@@ -52,7 +52,7 @@ Urho3D uses the following third-party libraries:
 - pugixml 1.7 (http://pugixml.org)
 - rapidjson 1.1.0 (https://github.com/miloyip/rapidjson)
 - Recast/Detour (https://github.com/memononen/recastnavigation)
-- SDL 2.0.5 (https://www.libsdl.org)
+- SDL 2.0.7 (https://www.libsdl.org)
 - StanHull (https://codesuppository.blogspot.com/2006/03/john-ratcliffs-code-suppository-blog.html)
 - stb_image 2.15 (https://nothings.org)
 - stb_image_write 1.05 (https://nothings.org)
@@ -61,11 +61,12 @@ Urho3D uses the following third-party libraries:
 - stb_truetype 1.15 (https://nothings.org)
 - stb_vorbis 1.10 (https://nothings.org)
 - WebP (https://chromium.googlesource.com/webm/libwebp)
-- imgui 1.51 (https://github.com/ocornut/imgui)
+- imgui 1.52 (https://github.com/ocornut/imgui)
 - easy_profiler 1.3.0 (https://github.com/yse/easy_profiler)
-- tinyfiledialogs v2.9.1 (http://tinyfiledialogs.sourceforge.net/)
+- nativefiledialog (https://github.com/mlabbe/nativefiledialog)
 - IconFontCppHeaders (https://github.com/juliettef/IconFontCppHeaders)
 - ImGuizmo (https://github.com/CedricGuillemet/ImGuizmo)
+- deboost.context (https://github.com/septag/deboost.context)
 
 DXT / ETC1 / PVRTC decompression code based on the Squish library and the Oolong Engine.
 Jack and mushroom models from the realXtend project. (https://www.realxtend.org)

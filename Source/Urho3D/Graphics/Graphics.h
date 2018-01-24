@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -84,9 +84,9 @@ class URHO3D_API Graphics : public Object
 
 public:
     /// Construct.
-    Graphics(Context* context);
+    explicit Graphics(Context* context);
     /// Destruct. Release the Direct3D11 device and close the window.
-    virtual ~Graphics();
+    ~Graphics() override;
 
     /// Set external window handle. Only effective before setting the initial screen mode.
     void SetExternalWindow(void* window);
@@ -316,7 +316,7 @@ public:
 
     /// Return whether the main window is using sRGB conversion on write.
     bool GetSRGB() const { return sRGB_; }
-    
+
     /// Return whether rendering output is dithered.
     bool GetDither() const;
 
@@ -379,6 +379,13 @@ public:
     IntVector2 GetDesktopResolution(int monitor) const;
     /// Return the number of currently connected monitors.
     int GetMonitorCount() const;
+    /// Returns the index of the display containing the center of the window on success or a negative error code on failure.
+    int GetCurrentMonitor() const;
+    /// Returns true if window is maximized or runs in full screen mode.
+    bool GetMaximized() const;
+    /// Return display dpi information: (hdpi, vdpi, ddpi). On failure returns zero vector.
+    Vector3 GetDisplayDPI(int monitor=0) const;
+
     /// Return hardware format for a compressed image format, or 0 if unsupported.
     unsigned GetFormat(CompressedFormat format) const;
     /// Return a shader variation by name and defines.
@@ -501,6 +508,8 @@ public:
     void Maximize();
     /// Minimize the window.
     void Minimize();
+    /// Raises window if it was minimized.
+    void Raise() const;
     /// Add a GPU object to keep track of. Called by GPUObject.
     void AddGPUObject(GPUObject* object);
     /// Remove a GPU object. Called by GPUObject.

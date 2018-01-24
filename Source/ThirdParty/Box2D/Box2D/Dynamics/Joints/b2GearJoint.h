@@ -19,11 +19,12 @@
 #ifndef B2_GEAR_JOINT_H
 #define B2_GEAR_JOINT_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Dynamics/Joints/b2Joint.h"
 
 /// Gear joint definition. This definition requires two existing
 /// revolute or prismatic joints (any combination will work).
-struct b2GearJointDef : public b2JointDef
+struct BOX2D_API b2GearJointDef : public b2JointDef
 {
 	b2GearJointDef()
 	{
@@ -53,7 +54,7 @@ struct b2GearJointDef : public b2JointDef
 /// of length or units of 1/length.
 /// @warning You have to manually destroy the gear joint if joint1 or joint2
 /// is destroyed.
-class b2GearJoint : public b2Joint
+class BOX2D_API b2GearJoint : public b2Joint
 {
 public:
 	b2Vec2 GetAnchorA() const;

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -63,9 +63,7 @@ TerrainPatch::TerrainPatch(Context* context) :
     batches_[0].geometryType_ = GEOM_STATIC_NOINSTANCING;
 }
 
-TerrainPatch::~TerrainPatch()
-{
-}
+TerrainPatch::~TerrainPatch() = default;
 
 void TerrainPatch::RegisterObject(Context* context)
 {
@@ -210,7 +208,23 @@ bool TerrainPatch::DrawOcclusion(OcclusionBuffer* buffer)
 
 void TerrainPatch::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
-    // Intentionally no operation
+    if (!vertexBuffer_->IsShadowed())
+    {
+        URHO3D_LOGERROR("TerrainPatch requires shadowed vertex buffer for drawing debug geometry.");
+        return;
+    }
+
+    if (auto node = GetNode())
+    {
+        auto geometry = GetLodGeometry(0, lodLevel_);
+        auto vbo = geometry->GetVertexBuffer(0);
+        auto ibo = geometry->GetIndexBuffer();
+        auto vboData = vbo->GetShadowData();
+        auto iboData = ibo->GetShadowData();
+        debug->AddTriangleMesh(vboData, vbo->GetVertexSize(), geometry->GetVertexStart(), iboData, ibo->GetIndexSize(),
+                               geometry->GetIndexStart(), geometry->GetIndexCount(), node->GetWorldTransform(),
+                               Color::GREEN, depthTest);
+    }
 }
 
 void TerrainPatch::SetOwner(Terrain* terrain)

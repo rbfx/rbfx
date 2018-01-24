@@ -19,12 +19,13 @@
 #ifndef B2_ROPE_H
 #define B2_ROPE_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Common/b2Math.h"
 
 class b2Draw;
 
 /// 
-struct b2RopeDef
+struct BOX2D_API b2RopeDef
 {
 	b2RopeDef()
 	{
@@ -60,7 +61,7 @@ struct b2RopeDef
 };
 
 /// 
-class b2Rope
+class BOX2D_API b2Rope
 {
 public:
 	b2Rope();

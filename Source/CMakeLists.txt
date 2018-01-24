@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2017 the Urho3D project.
+# Copyright (c) 2008-2018 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -31,14 +31,15 @@ add_subdirectory(ThirdParty)
 
 add_subdirectory (Urho3D)
 
-if (URHO3D_TOOLS)
+if (NOT CMAKE_CROSS_COMPILING AND URHO3D_TOOLS)
     add_subdirectory (Tools)
+    if (URHO3D_EXTRAS)
+        add_subdirectory (Extras)
+    endif ()
 endif ()
 
 if (URHO3D_SAMPLES)
     add_subdirectory (Samples)
 endif ()
 
-if (URHO3D_EXTRAS)
-    add_subdirectory (Extras)
-endif ()
+install(EXPORT Urho3D DESTINATION ${DEST_SHARE_DIR}/CMake)

@@ -24,6 +24,7 @@
 #include "Urho3D/Core/CoreEvents.h"
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Core/Utils.h"
 #include "Urho3D/Engine/EngineEvents.h"
 #include "Urho3D/Graphics/GraphicsEvents.h"
 #include "Urho3D/Graphics/Graphics.h"
@@ -33,6 +34,8 @@
 #include <SDL/SDL.h>
 #include <ImGuizmo/ImGuizmo.h>
 #include <ImGui/imgui_internal.h>
+#include <ImGui/imgui_freetype.h>
+#include <IO/Log.h>
 
 
 using namespace std::placeholders;
@@ -69,24 +72,35 @@ SystemUI::SystemUI(Urho3D::Context* context)
 
     io.UserData = this;
 
-    io.Fonts->AddFontDefault();
-    ReallocateFontTexture();
-    UpdateProjectionMatrix();
-    // Initializes ImGui. ImGui::Render() can not be called unless imgui is initialized. This call avoids initialization
-    // check on every frame in E_ENDRENDERING.
-    ImGui::NewFrame();
+    SetScale();
+
+    SubscribeToEvent(E_APPLICATIONSTARTED, [&](StringHash, VariantMap&) {
+        if (io.Fonts->Fonts.empty())
+            io.Fonts->AddFontDefault();
+        ReallocateFontTexture();
+        UpdateProjectionMatrix();
+        // Initializes ImGui. ImGui::Render() can not be called unless imgui is initialized. This call avoids initialization
+        // check on every frame in E_ENDRENDERING.
+        ImGui::NewFrame();
+        ImGui::EndFrame();
+        UnsubscribeFromEvent(E_APPLICATIONSTARTED);
+    });
 
     // Subscribe to events
     SubscribeToEvent(E_SDLRAWINPUT, std::bind(&SystemUI::OnRawEvent, this, _2));
     SubscribeToEvent(E_SCREENMODE, std::bind(&SystemUI::UpdateProjectionMatrix, this));
-    SubscribeToEvent(E_ENDRENDERING, [&](StringHash, VariantMap&)
+    SubscribeToEvent(E_INPUTEND, [&](StringHash, VariantMap&)
     {
-        URHO3D_PROFILE(SystemUiRender);
-        ImGui::Render();
         float timeStep = GetTime()->GetTimeStep();
         ImGui::GetIO().DeltaTime = timeStep > 0.0f ? timeStep : 1.0f / 60.0f;
         ImGui::NewFrame();
         ImGuizmo::BeginFrame();
+    });
+    SubscribeToEvent(E_ENDRENDERING, [&](StringHash, VariantMap&)
+    {
+        URHO3D_PROFILE(SystemUiRender);
+        OnUpdate();
+        ImGui::Render();
     });
 }
 
@@ -108,9 +122,9 @@ void SystemUI::UpdateProjectionMatrix()
     Vector2 offset(-1.0f, 1.0f);
 
     projection_ = Matrix4(Matrix4::IDENTITY);
-    projection_.m00_ = scale.x_ * uiScale_;
+    projection_.m00_ = scale.x_ * uiZoom_;
     projection_.m03_ = offset.x_;
-    projection_.m11_ = scale.y_ * uiScale_;
+    projection_.m11_ = scale.y_ * uiZoom_;
     projection_.m13_ = offset.y_;
     projection_.m22_ = 1.0f;
     projection_.m23_ = 0.0f;
@@ -143,22 +157,26 @@ void SystemUI::OnRawEvent(VariantMap& args)
     case SDL_MOUSEWHEEL:
         io.MouseWheel = evt->wheel.y;
         break;
+    URHO3D_FALLTHROUGH
     case SDL_MOUSEBUTTONUP:
+    URHO3D_FALLTHROUGH
     case SDL_MOUSEBUTTONDOWN:
         io.MouseDown[evt->button.button - 1] = evt->type == SDL_MOUSEBUTTONDOWN;
     case SDL_MOUSEMOTION:
-        io.MousePos.x = evt->motion.x / uiScale_;
-        io.MousePos.y = evt->motion.y / uiScale_;
+        io.MousePos.x = evt->motion.x / uiZoom_;
+        io.MousePos.y = evt->motion.y / uiZoom_;
         break;
+    URHO3D_FALLTHROUGH
     case SDL_FINGERUP:
         io.MouseDown[0] = false;
         io.MousePos.x = -1;
         io.MousePos.y = -1;
+    URHO3D_FALLTHROUGH
     case SDL_FINGERDOWN:
         io.MouseDown[0] = true;
     case SDL_FINGERMOTION:
-        io.MousePos.x = evt->tfinger.x / uiScale_;
-        io.MousePos.y = evt->tfinger.y / uiScale_;
+        io.MousePos.x = evt->tfinger.x / uiZoom_;
+        io.MousePos.y = evt->tfinger.y / uiZoom_;
         break;
     case SDL_TEXTINPUT:
         ImGui::GetIO().AddInputCharactersUTF8(evt->text.text);
@@ -175,11 +193,6 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
     assert(graphics && graphics->IsInitialized() && !graphics->IsDeviceLost());
 
     ImGuiIO& io = ImGui::GetIO();
-    int fbWidth = (int)(io.DisplaySize.x * io.DisplayFramebufferScale.x);
-    int fbHeight = (int)(io.DisplaySize.y * io.DisplayFramebufferScale.y);
-    if (fbWidth == 0 || fbHeight == 0)
-        return;
-    data->ScaleClipRects(io.DisplayFramebufferScale);
 
     for (int n = 0; n < data->CmdListsCount; n++)
     {
@@ -259,8 +272,8 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
                 graphics->SetShaderParameter(VSP_ELAPSEDTIME, elapsedTime);
                 graphics->SetShaderParameter(PSP_ELAPSEDTIME, elapsedTime);
 
-                IntRect scissor = IntRect(int(cmd->ClipRect.x * uiScale_), int(cmd->ClipRect.y * uiScale_),
-                                          int(cmd->ClipRect.z * uiScale_), int(cmd->ClipRect.w * uiScale_));
+                IntRect scissor = IntRect(int(cmd->ClipRect.x * uiZoom_), int(cmd->ClipRect.y * uiZoom_),
+                                          int(cmd->ClipRect.z * uiZoom_), int(cmd->ClipRect.w * uiZoom_));
 
                 graphics->SetBlendMode(BLEND_ALPHA);
                 graphics->SetScissorTest(true, scissor);
@@ -274,16 +287,21 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
     graphics->SetScissorTest(false);
 }
 
-ImFont* SystemUI::AddFont(const String& fontPath, float size, const unsigned short* ranges, bool merge)
+ImFont* SystemUI::AddFont(const String& fontPath, const unsigned short* ranges, float size, bool merge)
 {
     auto io = ImGui::GetIO();
+
+    fontSizes_.Push(size);
 
     if (size == 0)
     {
         if (io.Fonts->Fonts.empty())
-            return nullptr;
-        size = io.Fonts->Fonts.back()->FontSize;
+            size = SYSTEMUI_DEFAULT_FONT_SIZE * fontScale_;
+        else
+            size = io.Fonts->Fonts.back()->FontSize;
     }
+    else
+        size *= fontScale_;
 
     if (auto fontFile = GetSubsystem<ResourceCache>()->GetFile(fontPath))
     {
@@ -293,6 +311,7 @@ ImFont* SystemUI::AddFont(const String& fontPath, float size, const unsigned sho
         ImFontConfig cfg;
         cfg.MergeMode = merge;
         cfg.FontDataOwnedByAtlas = false;
+        cfg.PixelSnapH = true;
         if (auto newFont = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(&data.Front(), bytesLen, size, &cfg, ranges))
         {
             ReallocateFontTexture();
@@ -302,10 +321,10 @@ ImFont* SystemUI::AddFont(const String& fontPath, float size, const unsigned sho
     return nullptr;
 }
 
-ImFont* SystemUI::AddFont(const Urho3D::String& fontPath, float size,
-    const std::initializer_list<unsigned short>& ranges, bool merge)
+ImFont* SystemUI::AddFont(const Urho3D::String& fontPath, const std::initializer_list<unsigned short>& ranges,
+    float size, bool merge)
 {
-    return AddFont(fontPath, size, ranges.size() ? &*ranges.begin() : nullptr, merge);
+    return AddFont(fontPath, ranges.size() ? &*ranges.begin() : nullptr, size, merge);
 }
 
 void SystemUI::ReallocateFontTexture()
@@ -314,115 +333,75 @@ void SystemUI::ReallocateFontTexture()
     // Create font texture.
     unsigned char* pixels;
     int width, height;
-    // Load as RGBA 32-bits for OpenGL3 demo because it is more likely to be compatible with user's existing shader.
+
+    ImGuiFreeType::BuildFontAtlas(io.Fonts, ImGuiFreeType::ForceAutoHint);
     io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
-    if (!fontTexture_ || width != fontTexture_->GetWidth() || height != fontTexture_->GetHeight())
+    if (fontTexture_.Null())
     {
         fontTexture_ = new Texture2D(context_);
         fontTexture_->SetNumLevels(1);
-        fontTexture_->SetSize(width, height, Graphics::GetRGBAFormat());
-        fontTexture_->SetData(0, 0, 0, width, height, pixels);
         fontTexture_->SetFilterMode(FILTER_BILINEAR);
-
-        // Store our identifier
-        io.Fonts->TexID = (void*)fontTexture_.Get();
-        io.Fonts->ClearTexData();
     }
+
+    if (fontTexture_->GetWidth() != width || fontTexture_->GetHeight() != height)
+        fontTexture_->SetSize(width, height, Graphics::GetRGBAFormat());
+
+    fontTexture_->SetData(0, 0, 0, width, height, pixels);
+
+    // Store our identifier
+    io.Fonts->TexID = (void*)fontTexture_.Get();
+    io.Fonts->ClearTexData();
 }
 
-void SystemUI::SetScale(float scale)
+void SystemUI::SetZoom(float zoom)
 {
-    if (uiScale_ == scale)
+    if (uiZoom_ == zoom)
         return;
-    uiScale_ = scale;
+    uiZoom_ = zoom;
     UpdateProjectionMatrix();
+}
+
+void SystemUI::SetScale(Vector3 scale)
+{
+    auto& io = ui::GetIO();
+    auto& style = ui::GetStyle();
+
+    if (scale == Vector3::ZERO)
+        scale = GetGraphics()->GetDisplayDPI() / 96.f;
+
+    if (scale == Vector3::ZERO)
+    {
+        URHO3D_LOGWARNING("SystemUI failed to set font scaling, DPI unknown.");
+        return;
+    }
+
+    io.DisplayFramebufferScale = {scale.x_, scale.y_};
+    fontScale_ = scale.z_;
+
+    float prevSize = SYSTEMUI_DEFAULT_FONT_SIZE;
+    for (auto i = 0; i < io.Fonts->Fonts.size(); i++)
+    {
+        float sizePixels = fontSizes_[i];
+        if (sizePixels == 0)
+            sizePixels = prevSize;
+        io.Fonts->ConfigData[i].SizePixels = sizePixels * fontScale_;
+    }
+
+    if (io.Fonts->Fonts.size() > 0)
+        ReallocateFontTexture();
 }
 
 void SystemUI::ApplyStyleDefault(bool darkStyle, float alpha)
 {
     ImGuiStyle& style = ImGui::GetStyle();
-
-    // light style from Pacôme Danhiez (user itamago) https://github.com/ocornut/imgui/pull/511#issuecomment-175719267
+    if (darkStyle)
+        ui::StyleColorsDark(&style);
+    else
+        ui::StyleColorsLight(&style);
     style.Alpha = 1.0f;
     style.FrameRounding = 3.0f;
-    style.Colors[ImGuiCol_Text]                  = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
-    style.Colors[ImGuiCol_TextDisabled]          = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
-    style.Colors[ImGuiCol_WindowBg]              = ImVec4(0.94f, 0.94f, 0.94f, 0.94f);
-    style.Colors[ImGuiCol_ChildWindowBg]         = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-    style.Colors[ImGuiCol_PopupBg]               = ImVec4(1.00f, 1.00f, 1.00f, 0.94f);
-    style.Colors[ImGuiCol_Border]                = ImVec4(0.00f, 0.00f, 0.00f, 0.39f);
-    style.Colors[ImGuiCol_BorderShadow]          = ImVec4(1.00f, 1.00f, 1.00f, 0.10f);
-    style.Colors[ImGuiCol_FrameBg]               = ImVec4(1.00f, 1.00f, 1.00f, 0.94f);
-    style.Colors[ImGuiCol_FrameBgHovered]        = ImVec4(0.26f, 0.59f, 0.98f, 0.40f);
-    style.Colors[ImGuiCol_FrameBgActive]         = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
-    style.Colors[ImGuiCol_TitleBg]               = ImVec4(0.96f, 0.96f, 0.96f, 1.00f);
-    style.Colors[ImGuiCol_TitleBgCollapsed]      = ImVec4(1.00f, 1.00f, 1.00f, 0.51f);
-    style.Colors[ImGuiCol_TitleBgActive]         = ImVec4(0.82f, 0.82f, 0.82f, 1.00f);
-    style.Colors[ImGuiCol_MenuBarBg]             = ImVec4(0.86f, 0.86f, 0.86f, 1.00f);
-    style.Colors[ImGuiCol_ScrollbarBg]           = ImVec4(0.98f, 0.98f, 0.98f, 0.53f);
-    style.Colors[ImGuiCol_ScrollbarGrab]         = ImVec4(0.69f, 0.69f, 0.69f, 1.00f);
-    style.Colors[ImGuiCol_ScrollbarGrabHovered]  = ImVec4(0.59f, 0.59f, 0.59f, 1.00f);
-    style.Colors[ImGuiCol_ScrollbarGrabActive]   = ImVec4(0.49f, 0.49f, 0.49f, 1.00f);
-    style.Colors[ImGuiCol_ComboBg]               = ImVec4(0.86f, 0.86f, 0.86f, 0.99f);
-    style.Colors[ImGuiCol_CheckMark]             = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
-    style.Colors[ImGuiCol_SliderGrab]            = ImVec4(0.24f, 0.52f, 0.88f, 1.00f);
-    style.Colors[ImGuiCol_SliderGrabActive]      = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
-    style.Colors[ImGuiCol_Button]                = ImVec4(0.26f, 0.59f, 0.98f, 0.40f);
-    style.Colors[ImGuiCol_ButtonHovered]         = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
-    style.Colors[ImGuiCol_ButtonActive]          = ImVec4(0.06f, 0.53f, 0.98f, 1.00f);
-    style.Colors[ImGuiCol_Header]                = ImVec4(0.26f, 0.59f, 0.98f, 0.31f);
-    style.Colors[ImGuiCol_HeaderHovered]         = ImVec4(0.26f, 0.59f, 0.98f, 0.80f);
-    style.Colors[ImGuiCol_HeaderActive]          = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
-//    style.Colors[ImGuiCol_Column]                = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
-//    style.Colors[ImGuiCol_ColumnHovered]         = ImVec4(0.26f, 0.59f, 0.98f, 0.78f);
-//    style.Colors[ImGuiCol_ColumnActive]          = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
-    style.Colors[ImGuiCol_ResizeGrip]            = ImVec4(1.00f, 1.00f, 1.00f, 0.50f);
-    style.Colors[ImGuiCol_ResizeGripHovered]     = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
-    style.Colors[ImGuiCol_ResizeGripActive]      = ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
-    style.Colors[ImGuiCol_CloseButton]           = ImVec4(0.59f, 0.59f, 0.59f, 0.50f);
-    style.Colors[ImGuiCol_CloseButtonHovered]    = ImVec4(0.98f, 0.39f, 0.36f, 1.00f);
-    style.Colors[ImGuiCol_CloseButtonActive]     = ImVec4(0.98f, 0.39f, 0.36f, 1.00f);
-    style.Colors[ImGuiCol_PlotLines]             = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
-    style.Colors[ImGuiCol_PlotLinesHovered]      = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
-    style.Colors[ImGuiCol_PlotHistogram]         = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
-    style.Colors[ImGuiCol_PlotHistogramHovered]  = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
-    style.Colors[ImGuiCol_TextSelectedBg]        = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
-    style.Colors[ImGuiCol_ModalWindowDarkening]  = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
-
-    if( darkStyle )
-    {
-        for (int i = 0; i < ImGuiCol_COUNT; i++)
-        {
-            ImVec4& col = style.Colors[i];
-            float H, S, V;
-            ImGui::ColorConvertRGBtoHSV( col.x, col.y, col.z, H, S, V );
-
-            if( S < 0.1f )
-            {
-                V = 1.0f - V;
-            }
-            ImGui::ColorConvertHSVtoRGB( H, S, V, col.x, col.y, col.z );
-            if( col.w < 1.00f )
-            {
-                col.w *= alpha;
-            }
-        }
-    }
-    else
-    {
-        for (int i = 0; i < ImGuiCol_COUNT; i++)
-        {
-            ImVec4& col = style.Colors[i];
-            if( col.w < 1.00f )
-            {
-                col.x *= alpha;
-                col.y *= alpha;
-                col.z *= alpha;
-                col.w *= alpha;
-            }
-        }
-    }
+    style.ScaleAllSizes(GetFontScale());
 }
 
 bool SystemUI::IsAnyItemActive() const
@@ -435,5 +414,76 @@ bool SystemUI::IsAnyItemHovered() const
     return ui::IsAnyItemHovered() || ui::IsAnyWindowHovered();
 }
 
+void SystemUI::OnUpdate()
+{
+    // Draw dragged item
+    if (dragData_.GetType() != VAR_NONE)
+    {
+        if (ui::IsMouseDown(0))
+        {
+            ImGuiIO& io = ImGui::GetIO();
+            ui::SetNextWindowPos(ui::GetMousePos() - ImVec2(10, 10), ImGuiCond_Always);
+            ui::SetNextWindowFocus();
+            ui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
+            ui::Begin("SystemUI drag", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar |
+                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize |
+                ImGuiWindowFlags_NoSavedSettings);
+            ui::TextUnformatted(dragData_.ToString().CString());
+            ui::End();
+            ui::PopStyleVar();
+        }
+        else
+            dragData_.Clear();
+    }
 }
 
+int ToImGui(MouseButton button)
+{
+    switch (button)
+    {
+    case MOUSEB_LEFT:
+        return 0;
+    case MOUSEB_MIDDLE:
+        return 1;
+    case MOUSEB_RIGHT:
+        return 2;
+    case MOUSEB_X1:
+        return 3;
+    case MOUSEB_X2:
+        return 4;
+    default:
+        return -1;
+    }
+}
+
+}
+
+bool ImGui::IsMouseDown(Urho3D::MouseButton button)
+{
+    return ImGui::IsMouseDown(Urho3D::ToImGui(button));
+}
+
+bool ImGui::IsMouseDoubleClicked(Urho3D::MouseButton button)
+{
+    return ImGui::IsMouseDoubleClicked(Urho3D::ToImGui(button));
+}
+
+bool ImGui::IsMouseDragging(Urho3D::MouseButton button, float lock_threshold)
+{
+    return ImGui::IsMouseDragging(Urho3D::ToImGui(button), lock_threshold);
+}
+
+bool ImGui::IsMouseReleased(Urho3D::MouseButton button)
+{
+    return ImGui::IsMouseReleased(Urho3D::ToImGui(button));
+}
+
+bool ImGui::IsMouseClicked(Urho3D::MouseButton button, bool repeat)
+{
+    return ImGui::IsMouseClicked(Urho3D::ToImGui(button), repeat);
+}
+
+bool ImGui::IsItemClicked(Urho3D::MouseButton button)
+{
+    return ImGui::IsItemClicked(Urho3D::ToImGui(button));
+}

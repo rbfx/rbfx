@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2017 the Urho3D project.
+# Copyright (c) 2008-2018 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -176,6 +176,9 @@ source_group(Dynamics\\Joints FILES ${BOX2D_Joints_SRCS} ${BOX2D_Joints_HDRS})
 source_group(Include FILES ${BOX2D_General_HDRS})
 source_group(Rope FILES ${BOX2D_Rope_SRCS} ${BOX2D_Rope_HDRS})
 
-add_library (Box2D STATIC ${SOURCE_FILES})
+add_library (Box2D OBJECT ${SOURCE_FILES})
+target_include_directories(Box2D PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+if (BUILD_SHARED_LIBS)
+    target_compile_definitions(Box2D PRIVATE -D_EXPORTS INTERFACE -D_IMPORTS)
+endif ()
 install(DIRECTORY Box2D DESTINATION ${DEST_THIRDPARTY_HEADERS} FILES_MATCHING PATTERN *.h)
-install_to_build_tree(Box2D)

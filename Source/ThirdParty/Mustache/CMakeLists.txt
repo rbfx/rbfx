@@ -20,6 +20,5 @@
 # THE SOFTWARE.
 #
 
-add_library(Mustache STATIC INTERFACE.cpp)
+add_library(Mustache OBJECT INTERFACE.cpp mustache.hpp)
 install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/Mustache FILES_MATCHING PATTERN *.hpp)
-install_to_build_tree(Mustache)

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -217,7 +217,7 @@ public:
     /// Construct.
     RenderPath();
     /// Destruct.
-    virtual ~RenderPath() override;
+    ~RenderPath() override;
 
     /// Clone the rendering path.
     SharedPtr<RenderPath> Clone();
@@ -227,6 +227,10 @@ public:
     bool Append(XMLFile* file);
     /// Enable/disable commands and rendertargets by tag.
     void SetEnabled(const String& tag, bool active);
+    /// Return true of any of render targets or commands with specified tag are enabled.
+    bool IsEnabled(const String& tag) const;
+    /// Return true if renderpath or command with given tag exists.
+    bool IsAdded(const String& tag) const;
     /// Toggle enabled state of commands and rendertargets by tag.
     void ToggleEnabled(const String& tag);
     /// Assign rendertarget at index.

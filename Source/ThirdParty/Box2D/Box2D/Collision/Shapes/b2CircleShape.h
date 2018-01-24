@@ -19,10 +19,11 @@
 #ifndef B2_CIRCLE_SHAPE_H
 #define B2_CIRCLE_SHAPE_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Collision/Shapes/b2Shape.h"
 
 /// A circle shape.
-class b2CircleShape : public b2Shape
+class BOX2D_API b2CircleShape : public b2Shape
 {
 public:
 	b2CircleShape();

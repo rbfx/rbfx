@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2017 the Urho3D project.
+# Copyright (c) 2008-2018 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,16 +23,18 @@
 # Set project name
 project (Urho3D-Samples)
 
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_SAMPLES_DIR})
+
 set (COMMON_SAMPLE_H_FILES "${CMAKE_CURRENT_SOURCE_DIR}/Sample.h" "${CMAKE_CURRENT_SOURCE_DIR}/Sample.inl")
 set (INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
-set (CMAKE_INSTALL_RPATH "../../../lib${LIB_SUFFIX}")
+set (CMAKE_INSTALL_RPATH "../lib${LIB_SUFFIX}")
 
 ## Add samples
 file (GLOB_RECURSE DIRS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CMakeLists.txt)
 list (SORT DIRS)
 foreach (DIR ${DIRS})
     get_filename_component (DIR ${DIR} PATH)
-    if (DIR)
+    if (DIR AND NOT TARGET ${DIR})
         add_subdirectory (${DIR})
     endif ()
 endforeach ()

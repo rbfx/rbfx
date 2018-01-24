@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -175,8 +175,12 @@ void Graphics::SetShaderParameter(StringHash param, const Variant& value)
 IntVector2 Graphics::GetWindowPosition() const
 {
     if (window_)
-        return position_;
-    return IntVector2::ZERO;
+    {
+        IntVector2 position;
+        SDL_GetWindowPosition(window_, &position.x_, &position.y_);
+        return position;
+    }
+    return position_;
 }
 
 PODVector<IntVector3> Graphics::GetResolutions(int monitor) const
@@ -184,7 +188,7 @@ PODVector<IntVector3> Graphics::GetResolutions(int monitor) const
     PODVector<IntVector3> ret;
     // Emscripten is not able to return a valid list
 #ifndef __EMSCRIPTEN__
-    unsigned numModes = (unsigned)SDL_GetNumDisplayModes(monitor);
+    auto numModes = (unsigned)SDL_GetNumDisplayModes(monitor);
 
     for (unsigned i = 0; i < numModes; ++i)
     {
@@ -230,6 +234,29 @@ int Graphics::GetMonitorCount() const
     return SDL_GetNumVideoDisplays();
 }
 
+int Graphics::GetCurrentMonitor() const
+{
+    if (!window_)
+        return 0;
+
+    return SDL_GetWindowDisplayIndex(window_);
+}
+
+bool Graphics::GetMaximized() const
+{
+    if (!window_)
+        return false;
+
+    return SDL_GetWindowFlags(window_) & SDL_WINDOW_MAXIMIZED;
+}
+
+Vector3 Graphics::GetDisplayDPI(int monitor) const
+{
+    Vector3 result;
+    SDL_GetDisplayDPI(monitor, &result.z_, &result.x_, &result.y_);
+    return result;
+}
+
 void Graphics::Maximize()
 {
     if (!window_)
@@ -244,6 +271,14 @@ void Graphics::Minimize()
         return;
 
     SDL_MinimizeWindow(window_);
+}
+
+void Graphics::Raise() const
+{
+    if (!window_)
+        return;
+
+    SDL_RaiseWindow(window_);
 }
 
 void Graphics::BeginDumpShaders(const String& fileName)
@@ -406,35 +441,5 @@ void RegisterGraphicsLibrary(Context* context)
     Zone::RegisterObject(context);
 }
 
-int Graphics::GetCurrentMonitor()
-{
-    return SDL_GetWindowDisplayIndex((SDL_Window*) this->GetSDLWindow());
-}
-
-int Graphics::GetNumMonitors()
-{
-    return SDL_GetNumVideoDisplays();
-}
-
-bool Graphics::GetMaximized()
-{
-    if (!window_)
-        return false;
-
-    return SDL_GetWindowFlags(window_) & SDL_WINDOW_MAXIMIZED;
-}
-
-IntVector2 Graphics::GetMonitorResolution(int monitorId) const
-{
-    SDL_DisplayMode mode;
-    SDL_GetDesktopDisplayMode(monitorId, &mode);
-    return IntVector2(mode.w, mode.h);
-}
-
-void Graphics::RaiseWindow()
-{
-    if (window_)
-        SDL_RaiseWindow(window_);
-}
 
 }

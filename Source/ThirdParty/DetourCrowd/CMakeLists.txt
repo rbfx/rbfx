@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2017 the Urho3D project.
+# Copyright (c) 2008-2018 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +21,7 @@
 #
 
 file (GLOB SOURCE_FILES source/*.cpp include/*.h)
-add_library (DetourCrowd STATIC ${SOURCE_FILES})
-target_include_directories(DetourCrowd PUBLIC include)
-target_link_libraries(DetourCrowd Detour)
-
-install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/DetourCrowd FILES_MATCHING PATTERN *.h)
-install_to_build_tree(DetourCrowd)
+add_library (DetourCrowd OBJECT ${SOURCE_FILES})
+target_include_directories(DetourCrowd PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+target_link_objects(DetourCrowd Detour)
+create_symlink(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS}/DetourCrowd)

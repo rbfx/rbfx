@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -220,8 +220,8 @@ static void GetGLPrimitiveType(unsigned elementCount, PrimitiveType type, unsign
 const Vector2 Graphics::pixelUVOffset(0.0f, 0.0f);
 bool Graphics::gl3Support = false;
 
-Graphics::Graphics(Context* context_) :
-    Object(context_),
+Graphics::Graphics(Context* context) :
+    Object(context),
     impl_(new GraphicsImpl()),
     window_(nullptr),
     externalWindow_(nullptr),
@@ -427,10 +427,8 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
             SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
         }
 
-        // Reposition the window on the specified monitor
         SDL_Rect display_rect;
         SDL_GetDisplayBounds(monitor, &display_rect);
-        SDL_SetWindowPosition(window_, display_rect.x, display_rect.y);
         bool reposition = fullscreen || (borderless && width >= display_rect.w && height >= display_rect.h);
 
         int x = reposition ? display_rect.x : position_.x_;
@@ -479,6 +477,10 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
                 }
             }
         }
+
+        // Reposition the window on the specified monitor
+        if (reposition)
+            SDL_SetWindowPosition(window_, display_rect.x, display_rect.y);
 
         CreateWindowIcon();
 
@@ -1657,7 +1659,7 @@ void Graphics::SetTextureParametersDirty()
 
     for (PODVector<GPUObject*>::Iterator i = gpuObjects_.Begin(); i != gpuObjects_.End(); ++i)
     {
-        Texture* texture = dynamic_cast<Texture*>(*i);
+        auto* texture = dynamic_cast<Texture*>(*i);
         if (texture)
             texture->SetParametersDirty();
     }
@@ -2110,7 +2112,7 @@ PODVector<int> Graphics::GetMultiSampleLevels() const
     for (int i = 2; i <= maxSamples && i <= 16; i *= 2)
         ret.Push(i);
 #endif
-    
+
     return ret;
 }
 
@@ -2177,7 +2179,7 @@ ShaderVariation* Graphics::GetShader(ShaderType type, const char* name, const ch
 {
     if (lastShaderName_ != name || !lastShader_)
     {
-        ResourceCache* cache = GetSubsystem<ResourceCache>();
+        auto* cache = GetSubsystem<ResourceCache>();
 
         String fullShaderName = shaderPath_ + name + shaderExtension_;
         // Try to reduce repeated error log prints because of missing shaders
@@ -2303,7 +2305,7 @@ void Graphics::OnWindowMoved()
     position_.x_ = newX;
     position_.y_ = newY;
 
-    URHO3D_LOGDEBUGF("Window was moved to %d,%d", position_.x_, position_.y_);
+    URHO3D_LOGTRACEF("Window was moved to %d,%d", position_.x_, position_.y_);
 
     using namespace WindowPos;
 
@@ -2374,12 +2376,12 @@ void Graphics::CleanupShaderPrograms(ShaderVariation* variation)
         impl_->shaderProgram_ = nullptr;
 }
 
-ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType /*type*/,  unsigned bindingIndex, unsigned size)
+ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType /*type*/,  unsigned index, unsigned size)
 {
     // Note: shaderType parameter is not used on OpenGL, instead binding index should already use the PS range
     // for PS constant buffers
 
-    unsigned key = (bindingIndex << 16) | size;
+    unsigned key = (index << 16) | size;
     HashMap<unsigned, SharedPtr<ConstantBuffer> >::Iterator i = impl_->allConstantBuffers_.Find(key);
     if (i == impl_->allConstantBuffers_.End())
     {
@@ -2910,9 +2912,9 @@ void Graphics::PrepareDraw()
         bool noFbo = !depthStencil_;
         if (noFbo)
         {
-            for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
+            for (auto& renderTarget : renderTargets_)
             {
-                if (renderTargets_[i])
+                if (renderTarget)
                 {
                     noFbo = false;
                     break;
@@ -3233,8 +3235,8 @@ void Graphics::CleanupFramebuffers()
 
 void Graphics::ResetCachedState()
 {
-    for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
-        vertexBuffers_[i] = nullptr;
+    for (auto& vertexBuffer : vertexBuffers_)
+        vertexBuffer = nullptr;
 
     for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
     {
@@ -3242,8 +3244,8 @@ void Graphics::ResetCachedState()
         impl_->textureTypes_[i] = 0;
     }
 
-    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
-        renderTargets_[i] = nullptr;
+    for (auto& renderTarget : renderTargets_)
+        renderTarget = nullptr;
 
     depthStencil_ = nullptr;
     viewport_ = IntRect(0, 0, 0, 0);
@@ -3291,8 +3293,8 @@ void Graphics::ResetCachedState()
         SetDepthWrite(true);
     }
 
-    for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS * 2; ++i)
-        impl_->constantBuffers_[i] = nullptr;
+    for (auto& constantBuffer : impl_->constantBuffers_)
+        constantBuffer = nullptr;
     impl_->dirtyConstantBuffers_.Clear();
 }
 

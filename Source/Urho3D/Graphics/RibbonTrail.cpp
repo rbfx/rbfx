@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -92,9 +92,7 @@ RibbonTrail::RibbonTrail(Context* context) :
     batches_[0].numWorldTransforms_ = 1;
 }
 
-RibbonTrail::~RibbonTrail()
-{
-}
+RibbonTrail::~RibbonTrail() = default;
 
 void RibbonTrail::RegisterObject(Context* context)
 {
@@ -473,7 +471,7 @@ void RibbonTrail::UpdateBufferSize()
     }
 
     // Indices do not change for a given tail generator capacity
-    unsigned short* dest = (unsigned short*)indexBuffer_->Lock(0, ((numPoints_ - 1) * indexPerSegment), true);
+    auto* dest = (unsigned short*)indexBuffer_->Lock(0, ((numPoints_ - 1) * indexPerSegment), true);
     if (!dest)
         return;
 
@@ -570,7 +568,7 @@ void RibbonTrail::UpdateVertexBuffer(const FrameInfo& frame)
     bufferDirty_ = false;
     forceUpdate_ = false;
 
-    float* dest = (float*)vertexBuffer_->Lock(0, (numPoints_ - 1) * vertexPerSegment, true);
+    auto* dest = (float*)vertexBuffer_->Lock(0, (numPoints_ - 1) * vertexPerSegment, true);
     if (!dest)
         return;
 
@@ -853,7 +851,7 @@ void RibbonTrail::SetTrailType(TrailType type)
 
 void RibbonTrail::SetMaterialAttr(const ResourceRef& value)
 {
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    auto* cache = GetSubsystem<ResourceCache>();
     SetMaterial(cache->GetResource<Material>(value.name_));
     Commit();
 }

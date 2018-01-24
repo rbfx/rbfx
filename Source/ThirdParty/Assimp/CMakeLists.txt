@@ -47,7 +47,9 @@
 
 # Modified by Lasse Oorni and Yao Wei Tjong for Urho3D
 
-INCLUDE_DIRECTORIES( . code include contrib/unzip contrib/rapidjson/include contrib/irrXML )
+LIST(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules)
+
+INCLUDE_DIRECTORIES( . code include contrib contrib/unzip contrib/rapidjson/include contrib/irrXML )
 
 SET( HEADER_PATH include/assimp )
 
@@ -914,7 +916,5 @@ if (XCODE AND DEFINED ENV{CI})
     target_compile_options (Assimp -w)
 endif ()
 
-install(DIRECTORY include/assimp DESTINATION ${DEST_THIRDPARTY_HEADERS} FILES_MATCHING PATTERN *.h)
-install(DIRECTORY include/assimp DESTINATION ${DEST_THIRDPARTY_HEADERS} FILES_MATCHING PATTERN *.inl)
-install(DIRECTORY include/assimp DESTINATION ${DEST_THIRDPARTY_HEADERS} FILES_MATCHING PATTERN *.hpp)
-install_to_build_tree(Assimp)
+
+create_symlink(${CMAKE_CURRENT_SOURCE_DIR}/include/assimp ${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS}/assimp)

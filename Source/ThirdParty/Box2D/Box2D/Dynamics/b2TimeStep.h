@@ -19,10 +19,11 @@
 #ifndef B2_TIME_STEP_H
 #define B2_TIME_STEP_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Common/b2Math.h"
 
 /// Profiling data. Times are in milliseconds.
-struct b2Profile
+struct BOX2D_API b2Profile
 {
 	float32 step;
 	float32 collide;
@@ -35,7 +36,7 @@ struct b2Profile
 };
 
 /// This is an internal structure.
-struct b2TimeStep
+struct BOX2D_API b2TimeStep
 {
 	float32 dt;			// time step
 	float32 inv_dt;		// inverse time step (0 if dt == 0).
@@ -46,21 +47,21 @@ struct b2TimeStep
 };
 
 /// This is an internal structure.
-struct b2Position
+struct BOX2D_API b2Position
 {
 	b2Vec2 c;
 	float32 a;
 };
 
 /// This is an internal structure.
-struct b2Velocity
+struct BOX2D_API b2Velocity
 {
 	b2Vec2 v;
 	float32 w;
 };
 
 /// Solver Data
-struct b2SolverData
+struct BOX2D_API b2SolverData
 {
 	b2TimeStep step;
 	b2Position* positions;

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+cd /tmp/Urho3D-crossbuild
+
+
+OPTIONS="-DCMAKE_BUILD_TYPE=Release -DURHO3D_ENABLE_ALL=ON -DURHO3D_PACKAGING=OFF $CMAKE_OPTIONS"
+if [[ "$STATIC" == "1" ]];
+then
+    OPTIONS="$OPTIONS -DCMAKE_BUILD_SHARED_LIBS=OFF"
+    mkdir -p $CROSS_TRIPLE-static
+    cd $CROSS_TRIPLE-static
+else
+    OPTIONS="$OPTIONS -DCMAKE_BUILD_SHARED_LIBS=ON"
+    mkdir -p $CROSS_TRIPLE-shared
+    cd $CROSS_TRIPLE-shared
+fi
+
+if [[ "$CROSS_TRIPLE" == "x86_64-apple-darwin14" ]];
+then
+    OPTIONS="$OPTIONS -DCMAKE_TOOLCHAIN_FILE=/workdir/CMake/Toolchains/MacOS.cmake"
+elif [[ "$CROSS_TRIPLE" == "i686-w64-mingw32" ]];
+then
+    OPTIONS="$OPTIONS -DCMAKE_TOOLCHAIN_FILE=/workdir/CMake/Toolchains/MinGW.cmake -DCMAKE_SYSTEM_PROCESSOR=i686"
+elif [[ "$CROSS_TRIPLE" == "x86_64-w64-mingw32" ]];
+then
+    OPTIONS="$OPTIONS -DCMAKE_TOOLCHAIN_FILE=/workdir/CMake/Toolchains/MinGW.cmake -DCMAKE_SYSTEM_PROCESSOR=x86_64"
+fi
+
+cmake /workdir $OPTIONS
+cmake --build . -- -j$(nproc --all)
+ 

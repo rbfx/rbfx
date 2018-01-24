@@ -1,0 +1,60 @@
+apply plugin: 'com.android.application'
+
+buildscript {
+    repositories {
+        google()
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.0.1'
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+android {
+    compileSdkVersion 21
+    buildToolsVersion '26.0.2'
+    defaultConfig {
+        applicationId 'com.github.urho3d'
+        minSdkVersion 14
+        targetSdkVersion 21
+        ndk {
+            abiFilters 'x86_64', 'armeabi-v7a', 'arm64-v8a'
+        }
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_STL=c++_static', '-DANDROID_TOOLCHAIN=clang',
+                          '-DANDROID_PLATFORM=android-21', '-DANDROID=1', '-DANDROID_ARM_MODE=arm',
+                          '-DBUILD_SHARED_LIBS=ON', '-DURHO3D_ENABLE_ALL=ON'
+            }
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path '../CMakeLists.txt'
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt')
+
+        }
+    }
+    sourceSets.main {
+        manifest.srcFile 'AndroidManifest.xml'
+        java.srcDirs = ['src']
+        res.srcDirs = ['res']
+        assets.srcDirs = ['assets', '../bin']
+    }
+    dexOptions {
+        javaMaxHeapSize "4g"
+        // If you get "Java heap error" you may need to add "org.gradle.jvmargs=-Xms128m -Xmx4096m" to gradle.properties
+        // in gradle service directory path (find it in Settings>Build>Gradle).
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}

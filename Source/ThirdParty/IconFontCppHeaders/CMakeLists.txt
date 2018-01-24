@@ -20,6 +20,5 @@
 # THE SOFTWARE.
 #
 
-add_library(IconFontCppHeaders STATIC INTERFACE.cpp)
+add_library(IconFontCppHeaders OBJECT INTERFACE.cpp)
 install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/IconFontCppHeaders FILES_MATCHING PATTERN *.h)
-install_to_build_tree(IconFontCppHeaders)

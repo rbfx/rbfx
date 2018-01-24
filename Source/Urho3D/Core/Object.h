@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@
 #include "../Container/LinkedList.h"
 #include "../Core/Variant.h"
 #include <functional>
+#include <utility>
 
 namespace Urho3D
 {
@@ -34,20 +35,29 @@ class EventHandler;
 class Engine;
 class Time;
 class WorkQueue;
+#if URHO3D_PROFILING
 class Profiler;
+#endif
 class FileSystem;
+#if URHO3D_LOGGING
 class Log;
+#endif
 class ResourceCache;
 class Localization;
+#if URHO3D_NETWORK
 class Network;
-class Web;
+#endif
 class Input;
 class Audio;
 class UI;
+#if URHO3D_SYSTEMUI
 class SystemUI;
+#endif
 class Graphics;
 class Renderer;
+#if URHO3D_TASKS
 class Tasks;
+#endif
 
 /// Type info.
 class URHO3D_API TypeInfo
@@ -99,9 +109,9 @@ class URHO3D_API Object : public RefCounted
 
 public:
     /// Construct.
-    Object(Context* context);
+    explicit Object(Context* context);
     /// Destruct. Clean up self from event sender & receiver structures.
-    virtual ~Object() override;
+    ~Object() override;
 
     /// Return type hash.
     virtual StringHash GetType() const = 0;
@@ -120,6 +130,10 @@ public:
     bool IsInstanceOf(const TypeInfo* typeInfo) const;
     /// Check current instance is type of specified class.
     template<typename T> bool IsInstanceOf() const { return IsInstanceOf(T::GetTypeInfoStatic()); }
+    /// Cast the object to specified most derived class.
+    template<typename T> T* Cast() { return IsInstanceOf<T>() ? static_cast<T*>(this) : nullptr; }
+    /// Cast the object to specified most derived class.
+    template<typename T> const T* Cast() const { return IsInstanceOf<T>() ? static_cast<const T*>(this) : nullptr; }
 
     /// Subscribe to an event that can be sent by any sender.
     void SubscribeToEvent(StringHash eventType, EventHandler* handler);
@@ -191,41 +205,45 @@ public:
     Time* GetTime() const;
     /// Return work queue subsystem.
     WorkQueue* GetWorkQueue() const;
+#if URHO3D_PROFILING
     /// Return profiler subsystem.
     Profiler* GetProfiler() const;
+#endif
     /// Return file system subsystem.
     FileSystem* GetFileSystem() const;
+#if URHO3D_LOGGING
     /// Return logging subsystem.
     Log* GetLog() const;
+#endif
     /// Return resource cache subsystem.
     ResourceCache* GetCache() const;
     /// Return localization subsystem.
     Localization* GetLocalization() const;
+#if URHO3D_NETWORK
     /// Return network subsystem.
     Network* GetNetwork() const;
+#endif
     /// Return input subsystem.
     Input* GetInput() const;
     /// Return audio subsystem.
     Audio* GetAudio() const;
     /// Return UI subsystem.
     UI* GetUI() const;
+#if URHO3D_SYSTEMUI
     /// Return system ui subsystem.
     SystemUI* GetSystemUI() const;
+#endif
     /// Return graphics subsystem.
     Graphics* GetGraphics() const;
     /// Return renderer subsystem.
     Renderer* GetRenderer() const;
+#if URHO3D_TASKS
     /// Return tasks subsystem.
     Tasks* GetTasks() const;
-
+#endif
 protected:
     /// Execution context.
     Context* context_;
-    
-    /// Send profiled event if profiler is enabled.
-    void SendEventProfiled(StringHash eventType, VariantMap& eventData);
-    /// Send non-profiled event even if profiler is enabled.
-    void SendEventNonProfiled(StringHash eventType, VariantMap& eventData);
 
 private:
     /// Find the first event handler with no specific sender.
@@ -251,7 +269,7 @@ class URHO3D_API ObjectFactory : public RefCounted
 {
 public:
     /// Construct.
-    ObjectFactory(Context* context) :
+    explicit ObjectFactory(Context* context) :
         context_(context)
     {
         assert(context_);
@@ -284,14 +302,14 @@ template <class T> class ObjectFactoryImpl : public ObjectFactory
 {
 public:
     /// Construct.
-    ObjectFactoryImpl(Context* context) :
+    explicit ObjectFactoryImpl(Context* context) :
         ObjectFactory(context)
     {
         typeInfo_ = T::GetTypeInfoStatic();
     }
 
     /// Create an object of the specific type.
-    virtual SharedPtr<Object> CreateObject() override { return SharedPtr<Object>(new T(context_)); }
+    SharedPtr<Object> CreateObject() override { return SharedPtr<Object>(new T(context_)); }
 };
 
 /// Internal helper class for invoking event handler functions.
@@ -299,7 +317,7 @@ class URHO3D_API EventHandler : public LinkedListNode
 {
 public:
     /// Construct with specified receiver and userdata.
-    EventHandler(Object* receiver, void* userData = nullptr) :
+    explicit EventHandler(Object* receiver, void* userData = nullptr) :
         receiver_(receiver),
         sender_(nullptr),
         userData_(userData)
@@ -307,7 +325,7 @@ public:
     }
 
     /// Destruct.
-    virtual ~EventHandler() { }
+    virtual ~EventHandler() = default;
 
     /// Set sender and event type.
     void SetSenderAndEventType(Object* sender, StringHash eventType)
@@ -360,14 +378,14 @@ public:
     }
 
     /// Invoke event handler function.
-    virtual void Invoke(VariantMap& eventData) override
+    void Invoke(VariantMap& eventData) override
     {
-        T* receiver = static_cast<T*>(receiver_);
+        auto* receiver = static_cast<T*>(receiver_);
         (receiver->*function_)(eventType_, eventData);
     }
 
     /// Return a unique copy of the event handler.
-    virtual EventHandler* Clone() const override
+    EventHandler* Clone() const override
     {
         return new EventHandlerImpl(static_cast<T*>(receiver_), function_, userData_);
     }
@@ -382,21 +400,21 @@ class EventHandler11Impl : public EventHandler
 {
 public:
     /// Construct with receiver and function pointers and userdata.
-    EventHandler11Impl(std::function<void(StringHash, VariantMap&)> function, void* userData = nullptr) :
+    explicit EventHandler11Impl(std::function<void(StringHash, VariantMap&)> function, void* userData = nullptr) :
         EventHandler(nullptr, userData),
-        function_(function)
+        function_(std::move(function))
     {
         assert(function_);
     }
 
     /// Invoke event handler function.
-    virtual void Invoke(VariantMap& eventData) override
+    void Invoke(VariantMap& eventData) override
     {
         function_(eventType_, eventData);
     }
 
     /// Return a unique copy of the event handler.
-    virtual EventHandler* Clone() const override
+    EventHandler* Clone() const override
     {
         return new EventHandler11Impl(function_, userData_);
     }
@@ -431,19 +449,27 @@ struct URHO3D_API EventNameRegistrar
 template <> URHO3D_API Engine* Object::GetSubsystem<Engine>() const;
 template <> URHO3D_API Time* Object::GetSubsystem<Time>() const;
 template <> URHO3D_API WorkQueue* Object::GetSubsystem<WorkQueue>() const;
+#if URHO3D_PROFILING
 template <> URHO3D_API Profiler* Object::GetSubsystem<Profiler>() const;
+#endif
 template <> URHO3D_API FileSystem* Object::GetSubsystem<FileSystem>() const;
+#if URHO3D_LOGGING
 template <> URHO3D_API Log* Object::GetSubsystem<Log>() const;
+#endif
 template <> URHO3D_API ResourceCache* Object::GetSubsystem<ResourceCache>() const;
 template <> URHO3D_API Localization* Object::GetSubsystem<Localization>() const;
+#if URHO3D_NETWORK
 template <> URHO3D_API Network* Object::GetSubsystem<Network>() const;
-template <> URHO3D_API Web* Object::GetSubsystem<Web>() const;
+#endif
 template <> URHO3D_API Input* Object::GetSubsystem<Input>() const;
 template <> URHO3D_API Audio* Object::GetSubsystem<Audio>() const;
 template <> URHO3D_API UI* Object::GetSubsystem<UI>() const;
+#if URHO3D_SYSTEMUI
 template <> URHO3D_API SystemUI* Object::GetSubsystem<SystemUI>() const;
+#endif
 template <> URHO3D_API Graphics* Object::GetSubsystem<Graphics>() const;
 template <> URHO3D_API Renderer* Object::GetSubsystem<Renderer>() const;
+#if URHO3D_TASKS
 template <> URHO3D_API Tasks* Object::GetSubsystem<Tasks>() const;
-
+#endif
 }

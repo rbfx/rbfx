@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -68,7 +68,7 @@ void Texture2DArray::RegisterObject(Context* context)
 
 bool Texture2DArray::BeginLoad(Deserializer& source)
 {
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    auto* cache = GetSubsystem<ResourceCache>();
 
     // In headless mode, do not actually load the texture, just return success
     if (!graphics_)
@@ -213,7 +213,7 @@ bool Texture2DArray::SetSize(unsigned layers, int width, int height, unsigned fo
 
 void Texture2DArray::HandleRenderSurfaceUpdate(StringHash eventType, VariantMap& eventData)
 {
-    Renderer* renderer = GetSubsystem<Renderer>();
+    auto* renderer = GetSubsystem<Renderer>();
 
     for (unsigned i = 0; i < renderSurfaces_.Size(); ++i)
     {

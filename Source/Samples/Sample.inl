@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -64,13 +64,8 @@ void Sample::Setup()
     engineParameters_[EP_HEADLESS]     = false;
     engineParameters_[EP_SOUND]        = false;
 
-    // Construct a search path to find the resource prefix with two entries:
-    // The first entry is an empty path which will be substituted with program/bin directory -- this entry is for binary when it is still in build tree
-    // The second entry is relative paths from the installed program/bin directory to the asset directory -- these entries are for binary when it is in the Urho3D SDK installation location
-    // The fourth entry is a relative path from cmake build tree to data directory symlink in bin dir
-    // The fifth entry is for msvc build tree
     if (!engineParameters_.Contains(EP_RESOURCE_PREFIX_PATHS))
-        engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";../Resources;../../../bin;..";
+        engineParameters_[EP_RESOURCE_PREFIX_PATHS] = context_->GetFileSystem()->GetProgramDir() + ";;../share/Resources";
 }
 
 void Sample::Start()
@@ -138,11 +133,13 @@ void Sample::InitMouseMode(MouseMode mode)
         if (useMouseMode_ == MM_FREE)
             input->SetMouseVisible(true);
 
+#if URHO3D_SYSTEMUI
         Console* console = GetSubsystem<Console>();
+#endif
         if (useMouseMode_ != MM_ABSOLUTE)
         {
             input->SetMouseMode(useMouseMode_);
-#ifdef URHO3D_SYSTEMUI
+#if URHO3D_SYSTEMUI
             if (console && console->IsVisible())
                 input->SetMouseMode(MM_ABSOLUTE, true);
 #endif
@@ -227,7 +224,7 @@ void Sample::HandleKeyUp(StringHash /*eventType*/, VariantMap& eventData)
     // Close console (if open) or exit when ESC is pressed
     if (key == KEY_ESCAPE)
     {
-#ifdef URHO3D_SYSTEMUI
+#if URHO3D_SYSTEMUI
         Console* console = GetSubsystem<Console>();
         if (console->IsVisible())
             console->SetVisible(false);
@@ -253,7 +250,7 @@ void Sample::HandleKeyDown(StringHash /*eventType*/, VariantMap& eventData)
     int key = eventData[P_KEY].GetInt();
 
     // Toggle console with F1 or backquote
-#ifdef URHO3D_SYSTEMUI
+#if URHO3D_SYSTEMUI
     if (key == KEY_F1 || key == KEY_BACKQUOTE)
     {
         GetSubsystem<Console>()->Toggle();
@@ -407,7 +404,7 @@ void Sample::HandleTouchBegin(StringHash /*eventType*/, VariantMap& eventData)
 // If the user clicks the canvas, attempt to switch to relative mouse mode on web platform
 void Sample::HandleMouseModeRequest(StringHash /*eventType*/, VariantMap& eventData)
 {
-#ifdef URHO3D_SYSTEMUI
+#if URHO3D_SYSTEMUI
     Console* console = GetSubsystem<Console>();
     if (console && console->IsVisible())
         return;

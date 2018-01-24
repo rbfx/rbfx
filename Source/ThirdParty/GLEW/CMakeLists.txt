@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2017 the Urho3D project.
+# Copyright (c) 2008-2018 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,8 +21,6 @@
 #
 
 file (GLOB SOURCE_FILES *.c)
-add_library (GLEW STATIC ${SOURCE_FILES})
-target_compile_definitions(GLEW PRIVATE -DGLEW_STATIC -DGLEW_NO_GLU)
-
-install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/GLEW FILES_MATCHING PATTERN *.h)
-install_to_build_tree(GLEW)
+add_library (GLEW OBJECT ${SOURCE_FILES})
+target_compile_definitions(GLEW PUBLIC -DGLEW_STATIC -DGLEW_NO_GLU)
+create_symlink(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS}/GLEW)

@@ -6,8 +6,8 @@ sudo: false
 cache:
   apt: true
   directories:
-    - $HOME/cmake-3.3.2-Linux-x86_64/bin
-    - $HOME/cmake-3.3.2-Linux-x86_64/share
+    - $HOME/cmake-3.4.3-Linux-x86_64/bin
+    - $HOME/cmake-3.4.3-Linux-x86_64/share
 git:
   submodules: false
 env:
@@ -20,11 +20,11 @@ notifications:
     on_failure: never
 branches:
   except:
-    - /^appveyor-.*$/
+    - /^(.*[^\w])?appveyor-.+$/
 matrix:
   fast_finish: true
   include:
-    - &Linux-64bit
+    - &Linux
       addons:
         apt:
           packages: &linux_packages_64bit
@@ -32,55 +32,52 @@ matrix:
             - libxrandr-dev
             - libgl1-mesa-dev
             - libglu1-mesa-dev
-    - <<: *Linux-64bit
+    - <<: *Linux
       compiler: clang
-    - <<: *Linux-64bit
+    - <<: *Linux
       env: BUILD_SHARED_LIBS=ON
-    - <<: *Linux-64bit
+    - <<: *Linux
       compiler: clang
       env: BUILD_SHARED_LIBS=ON
-    - &MingW-64bit
-      env: CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake CMAKE_SYSTEM_PROCESSOR=x86_64 URHO3D_RENDERER=D3D9
+    - &MacOS
+      os: osx
+      osx_image: xcode8.3
+      compiler: clang
+    - <<: *MacOS
+      env:
+        BUILD_SHARED_LIBS=ON
+  exclude:
+    - &MingW
+      env:
+        CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake
+        CMAKE_SYSTEM_PROCESSOR=x86_64
+        URHO3D_RENDERER=D3D9
       addons:
         apt:
           packages:
             - gcc-mingw-w64-x86-64
             - g++-mingw-w64-x86-64
             - binutils-mingw-w64-x86-64
-    - &MingW-32bit
-      env: CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake CMAKE_SYSTEM_PROCESSOR=i686 URHO3D_RENDERER=D3D9
-      addons:
-        apt:
-          packages:
-            - gcc-mingw-w64-i686
-            - g++-mingw-w64-i686
-            - binutils-mingw-w64-i686
-    - <<: *MingW-64bit
-      env: BUILD_SHARED_LIBS=ON CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake CMAKE_SYSTEM_PROCESSOR=x86_64 URHO3D_RENDERER=D3D9
-    - <<: *MingW-32bit
-      env: BUILD_SHARED_LIBS=ON CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake CMAKE_SYSTEM_PROCESSOR=i686 URHO3D_RENDERER=D3D9
-  exclude:
-    - &Linux-32bit
-      addons:
-        apt:
-          packages:
-            - g++-multilib
-            - libasound2-dev:i386
-            - libxrandr-dev:i386
-            - libgl1-mesa-dev:i386
-            - libglu1-mesa-dev:i386
-      env: LINUX=1 URHO3D_64BIT=0 CFLAGS=-m32 CXXFLAGS=-m32
-    - <<: *Linux-32bit
-      compiler: clang
+    - <<: *MingW
+      env:
+        BUILD_SHARED_LIBS=ON
+        CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake
+        CMAKE_SYSTEM_PROCESSOR=x86_64
+        URHO3D_RENDERER=D3D9
+
 script: |
-  # Update CMake to 3.3 (minimum required version)
-  if [[ ! -f $HOME/cmake-3.3.2-Linux-x86_64/bin/cmake ]];
+  # Update CMake to minimum required version
+  cmake --version
+  if [[ $TRAVIS_OS_NAME == 'linux' ]];
   then
-      wget --no-check-certificate https://cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.tar.gz -O $HOME/cmake.tar.gz && \
-      tar xf $HOME/cmake.tar.gz -C $HOME && \
-      rm $HOME/cmake.tar.gz
+      if [[ ! -f $HOME/cmake-3.4.3-Linux-x86_64/bin/cmake ]];
+      then
+          wget --no-check-certificate https://cmake.org/files/v3.4/cmake-3.4.3-Linux-x86_64.tar.gz -O $HOME/cmake.tar.gz && \
+          tar xf $HOME/cmake.tar.gz -C $HOME && \
+          rm $HOME/cmake.tar.gz
+      fi
+      export PATH=$HOME/cmake-3.4.3-Linux-x86_64/bin:$PATH
   fi
-  export PATH=$HOME/cmake-3.3.2-Linux-x86_64/bin:$PATH
   mkdir build
   cd build
   cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} ..
