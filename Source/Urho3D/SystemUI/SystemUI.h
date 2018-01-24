@@ -29,6 +29,7 @@
 #include "Urho3D/Graphics/IndexBuffer.h"
 #include "Urho3D/Math/Matrix4.h"
 #include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/Input/InputEvents.h"
 #include "SystemUIEvents.h"
 
 #include <ImGui/imgui.h>
@@ -122,5 +123,17 @@ inline ImRect ToImGui(const IntRect& rect) { return { ToImGui(rect.Min()), ToImG
 inline IntVector2 ToIntVector2(const ImVec2& vec) { return {(int)Round(vec.x), (int)Round(vec.y)}; }
 /// Convert ImRect to IntRect
 inline IntRect ToIntRect(const ImRect& rect) { return {ToIntVector2(rect.Min), ToIntVector2(rect.Max)}; }
+
+}
+
+namespace ImGui
+{
+
+bool URHO3D_API IsMouseDown(Urho3D::MouseButton button);
+bool URHO3D_API IsMouseDoubleClicked(Urho3D::MouseButton button);
+bool URHO3D_API IsMouseDragging(Urho3D::MouseButton button, float lock_threshold=-1.f);
+bool URHO3D_API IsMouseReleased(Urho3D::MouseButton button);
+bool URHO3D_API IsMouseClicked(Urho3D::MouseButton button, bool repeat=false);
+bool URHO3D_API IsItemClicked(Urho3D::MouseButton button);
 
 }
