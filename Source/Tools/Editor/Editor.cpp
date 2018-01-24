@@ -97,6 +97,8 @@ void Editor::Start()
     LoadProject("Etc/DefaultEditorProject.xml");
     // Prevent overwriting example scene.
     DynamicCast<SceneTab>(tabs_.Front())->ClearCachedPaths();
+    // Creates console but makes sure it's UI is not rendered. Console rendering is done manually in editor.
+    engine_->CreateConsole()->SetAutoVisibleOnError(false);
 }
 
 void Editor::Stop()
@@ -242,6 +244,10 @@ void Editor::OnUpdate(VariantMap& args)
         if (!activeTab_.Expired())
             activeTab_->RenderInspector();
     }
+    ui::EndDock();
+
+    if (ui::BeginDock("Console"))
+        GetSubsystem<Console>()->RenderContent();
     ui::EndDock();
 
     String selected;
