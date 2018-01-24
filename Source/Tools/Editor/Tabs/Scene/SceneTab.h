@@ -97,6 +97,8 @@ protected:
     IntRect UpdateViewRect() override;
     /// Manually updates scene.
     void OnUpdate(VariantMap& args);
+    /// Render context menu of a scene node.
+    bool RenderNodeContextMenu();
 
     /// Scene renderer.
     SceneView view_;

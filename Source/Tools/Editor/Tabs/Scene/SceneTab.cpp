@@ -93,49 +93,54 @@ bool SceneTab::RenderWindowContent()
     ui::SetCursorScreenPos(ToImGui(tabRect.Min()));
     ui::Image(view_.GetTexture(), ToImGui(tabRect.Size()));
 
-    view_.GetCamera()->GetNode()->GetComponent<DebugCameraController>()->SetEnabled(isActive_);
+    bool isClickedLeft = ui::IsMouseClicked(MOUSEB_LEFT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+    bool isClickedRight = ui::IsMouseClicked(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
+    view_.GetCamera()->GetNode()->GetComponent<DebugCameraController>()->SetEnabled(isActive_);
     gizmo_.ManipulateSelection(view_.GetCamera());
 
-    if (ui::IsItemHovered())
-    {
-        // Prevent dragging window when scene view is clicked.
+    // Prevent dragging window when scene view is clicked.
+    if (ui::IsWindowHovered())
         windowFlags_ |= ImGuiWindowFlags_NoMove;
-
-        // Handle object selection.
-        if (!gizmo_.IsActive() && GetInput()->GetMouseButtonPress(MOUSEB_LEFT))
-        {
-            IntVector2 pos = GetInput()->GetMousePosition();
-            pos -= tabRect.Min();
-
-            Ray cameraRay = view_.GetCamera()->GetScreenRay((float)pos.x_ / tabRect.Width(), (float)pos.y_ / tabRect.Height());
-            // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
-            PODVector<RayQueryResult> results;
-
-            RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY);
-            GetScene()->GetComponent<Octree>()->RaycastSingle(query);
-
-            if (!results.Size())
-            {
-                // When object geometry was not hit by a ray - query for object bounding box.
-                RayOctreeQuery query2(results, cameraRay, RAY_OBB, M_INFINITY, DRAWABLE_GEOMETRY);
-                GetScene()->GetComponent<Octree>()->RaycastSingle(query2);
-            }
-
-            if (results.Size())
-            {
-                WeakPtr<Node> clickNode(results[0].drawable_->GetNode());
-                if (!GetInput()->GetKeyDown(KEY_CTRL))
-                    UnselectAll();
-
-                ToggleSelection(clickNode);
-            }
-            else
-                UnselectAll();
-        }
-    }
     else
         windowFlags_ &= ~ImGuiWindowFlags_NoMove;
+
+    if (!gizmo_.IsActive() && (isClickedLeft || isClickedRight))
+    {
+        // Handle object selection.
+        IntVector2 pos = GetInput()->GetMousePosition();
+        pos -= tabRect.Min();
+
+        Ray cameraRay = view_.GetCamera()->GetScreenRay((float)pos.x_ / tabRect.Width(), (float)pos.y_ / tabRect.Height());
+        // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
+        PODVector<RayQueryResult> results;
+
+        RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY);
+        GetScene()->GetComponent<Octree>()->RaycastSingle(query);
+
+        if (!results.Size())
+        {
+            // When object geometry was not hit by a ray - query for object bounding box.
+            RayOctreeQuery query2(results, cameraRay, RAY_OBB, M_INFINITY, DRAWABLE_GEOMETRY);
+            GetScene()->GetComponent<Octree>()->RaycastSingle(query2);
+        }
+
+        if (results.Size())
+        {
+            WeakPtr<Node> clickNode(results[0].drawable_->GetNode());
+            bool appendSelection = GetInput()->GetKeyDown(KEY_CTRL);
+            if (!appendSelection)
+                UnselectAll();
+            ToggleSelection(clickNode);
+
+            if (isClickedRight)
+                ui::OpenPopupEx(ui::GetID("Node context menu"), true);
+        }
+        else
+            UnselectAll();
+    }
+
+    RenderNodeContextMenu();
 
     const auto tabContextMenuTitle = "SceneTab context menu";
     if (ui::IsDockTabHovered() && GetInput()->GetMouseButtonPress(MOUSEB_RIGHT))
@@ -419,80 +424,30 @@ void SceneTab::RenderNodeTree(Node* node)
         ui::PushID(name.CString());
     }
 
-    if (ui::IsItemClicked(0))
+    // Popup may delete node. Weak reference will convey that information.
+    WeakPtr<Node> nodeRef(node);
+
+    if (ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
     {
-        if (!GetInput()->GetKeyDown(KEY_CTRL))
-            UnselectAll();
-        ToggleSelection(node);
-    }
-    else if (ui::IsItemClicked(2) && !scenePlaying_)
-    {
-        if (GetSelection().Empty())
+        if (ui::IsMouseClicked(MOUSEB_LEFT))
+        {
+            if (!GetInput()->GetKeyDown(KEY_CTRL))
+                UnselectAll();
             ToggleSelection(node);
-        ui::OpenPopup("Node context menu");
+        }
+        else if (ui::IsMouseClicked(MOUSEB_RIGHT) && !scenePlaying_)
+        {
+            UnselectAll();
+            ToggleSelection(node);
+            ui::OpenPopupEx(ui::GetID("Node context menu"), true);
+        }
     }
 
-    bool wasDeleted = false;
-    if (ui::BeginPopup("Node context menu") && !scenePlaying_)
-    {
-        Input* input = GetSubsystem<Input>();
-        bool alternative = input->GetKeyDown(KEY_SHIFT);
-
-        if (ui::MenuItem(alternative ? "Create Child (Local)" : "Create Child"))
-        {
-            for (auto& selectedNode : GetSelection())
-            {
-                if (!selectedNode.Expired())
-                    Select(selectedNode->CreateChild(String::EMPTY, alternative ? LOCAL : REPLICATED));
-            }
-        }
-
-        if (ui::BeginMenu(alternative ? "Create Component (local)" : "Create Component"))
-        {
-            Editor* editor = GetSubsystem<Editor>();
-            auto categories = editor->GetObjectCategories();
-            categories.Remove("UI");
-
-            for (const String& category : categories)
-            {
-                if (ui::BeginMenu(category.CString()))
-                {
-                    auto components = editor->GetObjectsByCategory(category);
-                    Sort(components.Begin(), components.End());
-
-                    for (const String& component : components)
-                    {
-                        ui::Image(component);
-                        ui::SameLine();
-                        if (ui::MenuItem(component.CString()))
-                        {
-                            for (auto& selectedNode : GetSelection())
-                            {
-                                if (!selectedNode.Expired())
-                                    selectedNode->CreateComponent(StringHash(component),
-                                                                  alternative ? LOCAL : REPLICATED);
-                            }
-                        }
-                    }
-                    ui::EndMenu();
-                }
-            }
-            ui::EndMenu();
-        }
-
-        ui::Separator();
-
-        if (ui::MenuItem("Remove"))
-        {
-            RemoveSelection();
-            wasDeleted = true;
-        }
-        ui::EndPopup();
-    }
+    RenderNodeContextMenu();
 
     if (opened)
     {
-        if (!wasDeleted)
+        if (!nodeRef.Expired())
         {
             for (auto& component: node->GetComponents())
             {
@@ -507,10 +462,10 @@ void SceneTab::RenderNodeTree(Node* node)
                 bool selected = selectedComponent_ == component;
                 selected = ui::Selectable(component->GetTypeName().CString(), selected);
 
-                if (ui::IsItemClicked(2))
+                if (ui::IsMouseClicked(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
                 {
                     selected = true;
-                    ui::OpenPopup("Component context menu");
+                    ui::OpenPopupEx(ui::GetID("Component context menu"), true);
                 }
 
                 if (selected)
@@ -635,6 +590,68 @@ void SceneTab::OnUpdate(VariantMap& args)
         GetScene()->Update(timeStep);
 
     view_.GetCamera()->GetComponent<DebugCameraController>()->Update(timeStep);
+}
+
+bool SceneTab::RenderNodeContextMenu()
+{
+    bool wasOpen = false;
+    if (ui::BeginPopup("Node context menu") && !scenePlaying_)
+    {
+        wasOpen = true;
+        Input* input = GetSubsystem<Input>();
+        bool alternative = input->GetKeyDown(KEY_SHIFT);
+
+        if (ui::MenuItem(alternative ? "Create Child (Local)" : "Create Child"))
+        {
+            for (auto& selectedNode : GetSelection())
+            {
+                if (!selectedNode.Expired())
+                    Select(selectedNode->CreateChild(String::EMPTY, alternative ? LOCAL : REPLICATED));
+            }
+        }
+
+        if (ui::BeginMenu(alternative ? "Create Component (Local)" : "Create Component"))
+        {
+            Editor* editor = GetSubsystem<Editor>();
+            auto categories = editor->GetObjectCategories();
+            categories.Remove("UI");
+
+            for (const String& category : categories)
+            {
+                if (ui::BeginMenu(category.CString()))
+                {
+                    auto components = editor->GetObjectsByCategory(category);
+                    Sort(components.Begin(), components.End());
+
+                    for (const String& component : components)
+                    {
+                        ui::Image(component);
+                        ui::SameLine();
+                        if (ui::MenuItem(component.CString()))
+                        {
+                            for (auto& selectedNode : GetSelection())
+                            {
+                                if (!selectedNode.Expired())
+                                    selectedNode->CreateComponent(StringHash(component),
+                                        alternative ? LOCAL : REPLICATED);
+                            }
+                        }
+                    }
+                    ui::EndMenu();
+                }
+            }
+            ui::EndMenu();
+        }
+
+        ui::Separator();
+
+        if (ui::MenuItem("Remove"))
+            RemoveSelection();
+
+        ui::EndPopup();
+    }
+
+    return wasOpen;
 }
 
 }
