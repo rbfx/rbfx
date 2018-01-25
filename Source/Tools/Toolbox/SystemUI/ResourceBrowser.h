@@ -30,6 +30,6 @@ namespace Urho3D
 {
 
 /// Create docked resource browser window.
-bool ResourceBrowserWindow(String& selected, bool* open);
+bool ResourceBrowserWindow(String& selected);
 
 }

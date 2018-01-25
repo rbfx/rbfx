@@ -20,6 +20,8 @@
 # THE SOFTWARE.
 #
 
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_TOOLS_DIR})
+
 # Urho3D extras
 add_subdirectory (OgreBatchConverter)
 

@@ -104,7 +104,7 @@ public:
         engineParameters_[EP_HEADLESS]       = false;
         engineParameters_[EP_SOUND]          = false;
         engineParameters_[EP_RESOURCE_PATHS] = "CoreData";
-        engineParameters_[EP_RESOURCE_PREFIX_PATHS] = context_->GetFileSystem()->GetProgramDir() + ";;../share/Resources";
+        engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..";
         engineParameters_[EP_WINDOW_RESIZABLE] = true;
 
         ui::GetIO().IniFilename = nullptr;    // Disable saving of settings.

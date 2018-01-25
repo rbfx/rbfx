@@ -67,7 +67,7 @@ public:
     int frameX;
     int frameY;
 
-    PackerInfo(String path_, String name_) :
+    PackerInfo(const String& path_, const String& name_) :
         path(path_),
         name(name_),
         x(0),
@@ -340,7 +340,7 @@ void Run(Vector<String>& arguments)
     spriteSheetImage.SetSize(packedWidth, packedHeight, 4);
 
     // zero out image
-    spriteSheetImage.SetData((unsigned char*)calloc(sizeof(unsigned char), packedWidth * packedHeight * 4));
+    spriteSheetImage.SetData((unsigned char*)calloc(sizeof(unsigned char), (size_t)packedWidth * packedHeight * 4));
 
     XMLFile xml(context);
     XMLElement root = xml.CreateRoot("TextureAtlas");

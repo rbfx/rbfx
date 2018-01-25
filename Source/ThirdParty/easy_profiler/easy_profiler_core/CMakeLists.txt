@@ -34,11 +34,11 @@ target_compile_definitions(easy_profiler
 if (UNIX)
     target_compile_options(easy_profiler PRIVATE -Wall -Wno-long-long -Wno-reorder -Wno-braced-scalar-init -pedantic -O3)
     if (NOT ANDROID)
-        object_target_link_libraries(easy_profiler pthread)
+        target_link_objects(easy_profiler pthread)
     endif ()
 elseif (WIN32)
     target_compile_definitions(easy_profiler PRIVATE -D_WIN32_WINNT=0x0600 -D_CRT_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS)
-    object_target_link_libraries(easy_profiler ws2_32 psapi)
+    target_link_objects(easy_profiler ws2_32 psapi)
 endif ()
 
 if (MINGW)

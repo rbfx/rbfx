@@ -32,7 +32,7 @@
 
 #include <ImGui/imgui_internal.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
-#include <tinyfiledialogs/tinyfiledialogs.h>
+#include <nfd.h>
 
 URHO3D_DEFINE_APPLICATION_MAIN(Editor);
 
@@ -60,7 +60,7 @@ void Editor::Setup()
 
     engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
     engineParameters_[EP_HEADLESS] = false;
-    engineParameters_[EP_RESOURCE_PREFIX_PATHS] = context_->GetFileSystem()->GetProgramDir() + ";;../share/Resources";
+    engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..";
     engineParameters_[EP_FULL_SCREEN] = false;
     engineParameters_[EP_WINDOW_HEIGHT] = 1080;
     engineParameters_[EP_WINDOW_WIDTH] = 1920;
@@ -97,6 +97,8 @@ void Editor::Start()
     LoadProject("Etc/DefaultEditorProject.xml");
     // Prevent overwriting example scene.
     DynamicCast<SceneTab>(tabs_.Front())->ClearCachedPaths();
+    // Creates console but makes sure it's UI is not rendered. Console rendering is done manually in editor.
+    engine_->CreateConsole()->SetAutoVisibleOnError(false);
 }
 
 void Editor::Stop()
@@ -112,8 +114,7 @@ void Editor::SaveProject(String filePath)
     // that loop.
     UnsubscribeFromEvent(E_EDITORRESOURCESAVED);
 
-    const char* patterns[] = {"*.xml"};
-    filePath = GetResourceAbsolutePath(filePath, projectFilePath_, patterns, "XML Files", "Save Project As");;
+    filePath = GetResourceAbsolutePath(filePath, projectFilePath_, "xml", "Save Project As");
 
     if (filePath.Empty())
         return;
@@ -245,10 +246,14 @@ void Editor::OnUpdate(VariantMap& args)
     }
     ui::EndDock();
 
+    if (ui::BeginDock("Console"))
+        GetSubsystem<Console>()->RenderContent();
+    ui::EndDock();
+
     String selected;
     if (tabs_.Size())
         ui::SetNextDockPos(tabs_.Back()->GetUniqueTitle().CString(), ui::Slot_Bottom, ImGuiCond_FirstUseEver);
-    if (ResourceBrowserWindow(selected, &resourceBrowserWindowOpen_))
+    if (ResourceBrowserWindow(selected))
     {
         auto type = GetContentType(selected);
         if (type == CTYPE_SCENE)
@@ -274,9 +279,13 @@ void Editor::RenderMenuBar()
 
             if (ui::MenuItem("Open Project"))
             {
-                const char* patterns[] = {"*.xml"};
-                projectFilePath_ = tinyfd_openFileDialog("Open Project", ".", 1, patterns, "XML Files", 0);
-                LoadProject(projectFilePath_);
+                nfdchar_t* projectFilePath = nullptr;
+                if (NFD_OpenDialog("xml", ".", &projectFilePath) == NFD_OKAY)
+                {
+                    projectFilePath_ = projectFilePath;
+                    NFD_FreePath(projectFilePath);
+                    LoadProject(projectFilePath_);
+                }
             }
 
             ui::Separator();
@@ -360,8 +369,8 @@ StringVector Editor::GetObjectsByCategory(const String& category)
     return result;
 }
 
-String Editor::GetResourceAbsolutePath(const String& resourceName, const String& defaultResult, const char** patterns,
-                                       const String& description, const String& dialogTitle)
+String Editor::GetResourceAbsolutePath(const String& resourceName, const String& defaultResult, const char* patterns,
+    const String& dialogTitle)
 {
     String resourcePath = resourceName.Empty() ? defaultResult : resourceName;
     String fullPath;
@@ -369,7 +378,14 @@ String Editor::GetResourceAbsolutePath(const String& resourceName, const String&
         fullPath = GetCache()->GetResourceFileName(resourcePath);
 
     if (fullPath.Empty())
-        fullPath = tinyfd_saveFileDialog(dialogTitle.CString(), ".", 1, patterns, description.CString());
+    {
+        nfdchar_t* savePath = nullptr;
+        if (NFD_SaveDialog(patterns, ".", &savePath) == NFD_OKAY)
+        {
+            fullPath = savePath;
+            NFD_FreePath(savePath);
+        }
+    }
 
     return fullPath;
 }

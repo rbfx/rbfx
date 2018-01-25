@@ -89,7 +89,7 @@ public:
     /// Get pointer to an usable WorkItem from the item pool. Allocate one if no more free items.
     SharedPtr<WorkItem> GetFreeItem();
     /// Add a work item and resume worker threads.
-    void AddWorkItem(SharedPtr<WorkItem> item);
+    void AddWorkItem(const SharedPtr<WorkItem>& item);
     /// Add a work item and resume worker threads.
     void AddWorkItem(std::function<void()> workFunction, unsigned priority = 0);
     /// Remove a work item before it has started executing. Return true if successfully removed.

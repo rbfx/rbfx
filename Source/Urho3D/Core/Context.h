@@ -84,8 +84,12 @@ public:
     void RegisterFactory(ObjectFactory* factory);
     /// Register a factory for an object type and specify the object category.
     void RegisterFactory(ObjectFactory* factory, const char* category);
+    /// Remove object factory.
+    void RemoveFactory(StringHash type);
+    /// remove object factory.
+    void RemoveFactory(StringHash type, const char* category);
     /// Register a subsystem.
-    void RegisterSubsystem(Object* subsystem);
+    void RegisterSubsystem(Object* object);
     /// Remove a subsystem.
     void RemoveSubsystem(StringHash objectType);
     /// Register object attribute.
@@ -381,7 +385,7 @@ template <class T> void Context::RegisterFactory(const char* category)
 
 template <class T> T* Context::RegisterSubsystem()
 {
-    T* subsystem = new T(this);
+    auto* subsystem = new T(this);
     RegisterSubsystem(subsystem);
     return subsystem;
 }

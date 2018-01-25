@@ -23,4 +23,4 @@
 file (GLOB SOURCE_FILES *.cpp *.h)
 add_executable (OgreImporter ${SOURCE_FILES})
 target_link_libraries (OgreImporter Urho3D)
-install(TARGETS OgreImporter RUNTIME DESTINATION bin)
+install(TARGETS OgreImporter RUNTIME DESTINATION ${DEST_TOOLS_DIR})

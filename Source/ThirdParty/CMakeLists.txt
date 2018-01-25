@@ -84,7 +84,7 @@ if (URHO3D_TOOLS)
     add_subdirectory(Assimp)
 endif ()
 if (URHO3D_SYSTEMUI)
-    add_subdirectory(tinyfiledialogs)
+    add_subdirectory(nativefiledialog)
 endif ()
 
 if (URHO3D_TASKS)

@@ -33,6 +33,12 @@ namespace Urho3D
 extern const char* interpolationModeNames[];
 extern const char* LOGIC_CATEGORY;
 
+static const StringVector controlPointsStructureElementNames =
+{
+    "Control Point Count",
+    "   NodeID"
+};
+
 SplinePath::SplinePath(Context* context) :
     Component(context),
     spline_(BEZIER_CURVE),
@@ -48,12 +54,6 @@ SplinePath::SplinePath(Context* context) :
 
 void SplinePath::RegisterObject(Context* context)
 {
-    static const StringVector controlPointsStructureElementNames =
-        {
-            "Control Point Count",
-            "   NodeID"
-        };
-
     context->RegisterFactory<SplinePath>(LOGIC_CATEGORY);
 
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Interpolation Mode", GetInterpolationMode, SetInterpolationMode, InterpolationMode,
@@ -113,16 +113,16 @@ void SplinePath::ApplyAttributes()
     dirty_ = false;
 }
 
-void SplinePath::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
+void SplinePath::DrawDebugGeometry(DebugRenderer* debug, bool /*depthTest*/)
 {
     if (debug && node_ && IsEnabledEffective())
     {
         if (spline_.GetKnots().Size() > 1)
         {
             Vector3 a = spline_.GetPoint(0.f).GetVector3();
-            for (float f = 0.01f; f <= 1.0f; f = f + 0.01f)
+            for (auto i = 1; i <= 100; ++i)
             {
-                Vector3 b = spline_.GetPoint(f).GetVector3();
+                Vector3 b = spline_.GetPoint(i / 100.f).GetVector3();
                 debug->AddLine(a, b, Color::GREEN);
                 a = b;
             }
@@ -346,9 +346,9 @@ void SplinePath::CalculateLength()
     length_ = 0.f;
 
     Vector3 a = spline_.GetKnot(0).GetVector3();
-    for (float f = 0.000f; f <= 1.000f; f += 0.001f)
+    for (auto i = 0; i <= 1000; ++i)
     {
-        Vector3 b = spline_.GetPoint(f).GetVector3();
+        Vector3 b = spline_.GetPoint(i / 1000.f).GetVector3();
         length_ += Abs((a - b).Length());
         a = b;
     }

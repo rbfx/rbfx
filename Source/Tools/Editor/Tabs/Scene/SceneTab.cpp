@@ -55,16 +55,16 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
         &inspector_, view_.GetViewport()));
     SubscribeToEvent(E_UPDATE, std::bind(&SceneTab::OnUpdate, this, _2));
 
-    undo_.Connect(view_.GetScene());
+    undo_.Connect(GetScene());
     undo_.Connect(&inspector_);
     undo_.Connect(&gizmo_);
 
-    SubscribeToEvent(view_.GetScene(), E_ASYNCLOADFINISHED, [&](StringHash, VariantMap&) {
+    SubscribeToEvent(GetScene(), E_ASYNCLOADFINISHED, [&](StringHash, VariantMap&) {
         undo_.Clear();
     });
 
     // Scene is updated manually.
-    view_.GetScene()->SetUpdateEnabled(false);
+    GetScene()->SetUpdateEnabled(false);
 
     CreateObjects();
     undo_.Clear();
@@ -93,49 +93,54 @@ bool SceneTab::RenderWindowContent()
     ui::SetCursorScreenPos(ToImGui(tabRect.Min()));
     ui::Image(view_.GetTexture(), ToImGui(tabRect.Size()));
 
-    view_.GetCamera()->GetNode()->GetComponent<DebugCameraController>()->SetEnabled(isActive_);
+    bool isClickedLeft = ui::IsMouseClicked(MOUSEB_LEFT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+    bool isClickedRight = ui::IsMouseClicked(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
+    view_.GetCamera()->GetNode()->GetComponent<DebugCameraController>()->SetEnabled(isActive_);
     gizmo_.ManipulateSelection(view_.GetCamera());
 
-    if (ui::IsItemHovered())
-    {
-        // Prevent dragging window when scene view is clicked.
+    // Prevent dragging window when scene view is clicked.
+    if (ui::IsWindowHovered())
         windowFlags_ |= ImGuiWindowFlags_NoMove;
-
-        // Handle object selection.
-        if (!gizmo_.IsActive() && GetInput()->GetMouseButtonPress(MOUSEB_LEFT))
-        {
-            IntVector2 pos = GetInput()->GetMousePosition();
-            pos -= tabRect.Min();
-
-            Ray cameraRay = view_.GetCamera()->GetScreenRay((float)pos.x_ / tabRect.Width(), (float)pos.y_ / tabRect.Height());
-            // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
-            PODVector<RayQueryResult> results;
-
-            RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY);
-            view_.GetScene()->GetComponent<Octree>()->RaycastSingle(query);
-
-            if (!results.Size())
-            {
-                // When object geometry was not hit by a ray - query for object bounding box.
-                RayOctreeQuery query2(results, cameraRay, RAY_OBB, M_INFINITY, DRAWABLE_GEOMETRY);
-                view_.GetScene()->GetComponent<Octree>()->RaycastSingle(query2);
-            }
-
-            if (results.Size())
-            {
-                WeakPtr<Node> clickNode(results[0].drawable_->GetNode());
-                if (!GetInput()->GetKeyDown(KEY_CTRL))
-                    UnselectAll();
-
-                ToggleSelection(clickNode);
-            }
-            else
-                UnselectAll();
-        }
-    }
     else
         windowFlags_ &= ~ImGuiWindowFlags_NoMove;
+
+    if (!gizmo_.IsActive() && (isClickedLeft || isClickedRight))
+    {
+        // Handle object selection.
+        IntVector2 pos = GetInput()->GetMousePosition();
+        pos -= tabRect.Min();
+
+        Ray cameraRay = view_.GetCamera()->GetScreenRay((float)pos.x_ / tabRect.Width(), (float)pos.y_ / tabRect.Height());
+        // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
+        PODVector<RayQueryResult> results;
+
+        RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY);
+        GetScene()->GetComponent<Octree>()->RaycastSingle(query);
+
+        if (!results.Size())
+        {
+            // When object geometry was not hit by a ray - query for object bounding box.
+            RayOctreeQuery query2(results, cameraRay, RAY_OBB, M_INFINITY, DRAWABLE_GEOMETRY);
+            GetScene()->GetComponent<Octree>()->RaycastSingle(query2);
+        }
+
+        if (results.Size())
+        {
+            WeakPtr<Node> clickNode(results[0].drawable_->GetNode());
+            bool appendSelection = GetInput()->GetKeyDown(KEY_CTRL);
+            if (!appendSelection)
+                UnselectAll();
+            ToggleSelection(clickNode);
+
+            if (isClickedRight)
+                ui::OpenPopupEx(ui::GetID("Node context menu"), true);
+        }
+        else
+            UnselectAll();
+    }
+
+    RenderNodeContextMenu();
 
     const auto tabContextMenuTitle = "SceneTab context menu";
     if (ui::IsDockTabHovered() && GetInput()->GetMouseButtonPress(MOUSEB_RIGHT))
@@ -164,7 +169,7 @@ void SceneTab::LoadResource(const String& resourcePath)
     if (resourcePath.EndsWith(".xml", false))
     {
         XMLFile* file = GetCache()->GetResource<XMLFile>(resourcePath);
-        if (file && view_.GetScene()->LoadXML(file->GetRoot()))
+        if (file && GetScene()->LoadXML(file->GetRoot()))
         {
             path_ = resourcePath;
             CreateObjects();
@@ -175,7 +180,7 @@ void SceneTab::LoadResource(const String& resourcePath)
     else if (resourcePath.EndsWith(".json", false))
     {
         JSONFile* file = GetCache()->GetResource<JSONFile>(resourcePath);
-        if (file && view_.GetScene()->LoadJSON(file->GetRoot()))
+        if (file && GetScene()->LoadJSON(file->GetRoot()))
         {
             path_ = resourcePath;
             CreateObjects();
@@ -191,8 +196,7 @@ void SceneTab::LoadResource(const String& resourcePath)
 
 bool SceneTab::SaveResource(const String& resourcePath)
 {
-    const char* patterns[] = { "*.xml" };
-    auto fullPath = GetSubsystem<Editor>()->GetResourceAbsolutePath(resourcePath, path_, patterns, "XML Files", "Save Scene As");
+    auto fullPath = GetSubsystem<Editor>()->GetResourceAbsolutePath(resourcePath, path_, "xml", "Save Scene As");
     if (fullPath.Empty())
         return false;
 
@@ -202,19 +206,19 @@ bool SceneTab::SaveResource(const String& resourcePath)
     float elapsed = 0;
     if (!settings_->saveElapsedTime_)
     {
-        elapsed = view_.GetScene()->GetElapsedTime();
-        view_.GetScene()->SetElapsedTime(0);
+        elapsed = GetScene()->GetElapsedTime();
+        GetScene()->SetElapsedTime(0);
     }
 
-    view_.GetScene()->SetUpdateEnabled(true);
+    GetScene()->SetUpdateEnabled(true);
     if (fullPath.EndsWith(".xml", false))
-        result = view_.GetScene()->SaveXML(file);
+        result = GetScene()->SaveXML(file);
     else if (fullPath.EndsWith(".json", false))
-        result = view_.GetScene()->SaveJSON(file);
-    view_.GetScene()->SetUpdateEnabled(false);
+        result = GetScene()->SaveJSON(file);
+    GetScene()->SetUpdateEnabled(false);
 
     if (!settings_->saveElapsedTime_)
-        view_.GetScene()->SetElapsedTime(elapsed);
+        GetScene()->SetElapsedTime(elapsed);
 
     if (result)
     {
@@ -373,7 +377,7 @@ void SceneTab::RenderInspector()
 
         PODVector<Serializable*> items;
         items.Push(node.Get());
-        if (node == view_.GetScene())
+        if (node == GetScene())
         {
             effectSettings_->Prepare();
             items.Push(settings_.Get());
@@ -389,7 +393,7 @@ void SceneTab::RenderNodeTree()
 {
     auto oldSpacing = ui::GetStyle().IndentSpacing;
     ui::GetStyle().IndentSpacing = 10;
-    RenderNodeTree(view_.GetScene());
+    RenderNodeTree(GetScene());
     ui::GetStyle().IndentSpacing = oldSpacing;
 }
 
@@ -420,88 +424,30 @@ void SceneTab::RenderNodeTree(Node* node)
         ui::PushID(name.CString());
     }
 
-    if (ui::IsItemClicked(0))
+    // Popup may delete node. Weak reference will convey that information.
+    WeakPtr<Node> nodeRef(node);
+
+    if (ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
     {
-        if (!GetInput()->GetKeyDown(KEY_CTRL))
-            UnselectAll();
-        ToggleSelection(node);
-    }
-    else if (ui::IsItemClicked(2) && !scenePlaying_)
-    {
-        if (GetSelection().Empty())
+        if (ui::IsMouseClicked(MOUSEB_LEFT))
+        {
+            if (!GetInput()->GetKeyDown(KEY_CTRL))
+                UnselectAll();
             ToggleSelection(node);
-        ui::OpenPopup("Node context menu");
+        }
+        else if (ui::IsMouseClicked(MOUSEB_RIGHT) && !scenePlaying_)
+        {
+            UnselectAll();
+            ToggleSelection(node);
+            ui::OpenPopupEx(ui::GetID("Node context menu"), true);
+        }
     }
 
-    bool wasDeleted = false;
-    if (ui::BeginPopup("Node context menu") && !scenePlaying_)
-    {
-        Input* input = GetSubsystem<Input>();
-        bool alternative = input->GetKeyDown(KEY_SHIFT);
-
-        if (ui::MenuItem(alternative ? "Create Child (Local)" : "Create Child"))
-        {
-            for (auto& selectedNode : GetSelection())
-            {
-                if (!selectedNode.Expired())
-                    Select(selectedNode->CreateChild(String::EMPTY, alternative ? LOCAL : REPLICATED));
-            }
-        }
-
-        if (ui::BeginMenu(alternative ? "Create Component (local)" : "Create Component"))
-        {
-            Editor* editor = GetSubsystem<Editor>();
-            auto categories = editor->GetObjectCategories();
-            categories.Remove("UI");
-
-            for (const String& category : categories)
-            {
-                if (ui::BeginMenu(category.CString()))
-                {
-                    auto components = editor->GetObjectsByCategory(category);
-                    Sort(components.Begin(), components.End());
-
-                    for (const String& component : components)
-                    {
-                        ui::Image(component);
-                        ui::SameLine();
-                        if (ui::MenuItem(component.CString()))
-                        {
-                            for (auto& selectedNode : GetSelection())
-                            {
-                                if (!selectedNode.Expired())
-                                    selectedNode->CreateComponent(StringHash(component),
-                                                                  alternative ? LOCAL : REPLICATED);
-                            }
-                        }
-                    }
-                    ui::EndMenu();
-                }
-            }
-            ui::EndMenu();
-        }
-
-        ui::Separator();
-
-        if (ui::MenuItem("Remove"))
-        {
-            for (auto& selectedNode : GetSelection())
-            {
-                if (!selectedNode.Expired())
-                    selectedNode->Remove();
-            }
-
-            if (!selectedComponent_.Expired())
-                selectedComponent_->Remove();
-
-            wasDeleted = true;
-        }
-        ui::EndPopup();
-    }
+    RenderNodeContextMenu();
 
     if (opened)
     {
-        if (!wasDeleted)
+        if (!nodeRef.Expired())
         {
             for (auto& component: node->GetComponents())
             {
@@ -516,10 +462,10 @@ void SceneTab::RenderNodeTree(Node* node)
                 bool selected = selectedComponent_ == component;
                 selected = ui::Selectable(component->GetTypeName().CString(), selected);
 
-                if (ui::IsItemClicked(2))
+                if (ui::IsMouseClicked(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
                 {
                     selected = true;
-                    ui::OpenPopup("Component context menu");
+                    ui::OpenPopupEx(ui::GetID("Component context menu"), true);
                 }
 
                 if (selected)
@@ -532,7 +478,7 @@ void SceneTab::RenderNodeTree(Node* node)
                 if (ui::BeginPopup("Component context menu"))
                 {
                     if (ui::MenuItem("Remove"))
-                        RemoveSelection();          // Removes component because it was just selected.
+                        selectedComponent_->Remove();
                     ui::EndPopup();
                 }
 
@@ -598,7 +544,7 @@ void SceneTab::ClearCachedPaths()
 
 void SceneTab::OnActiveUpdate()
 {
-    if (ui::IsAnyItemActive())
+    if (ui::IsAnyItemActive() || scenePlaying_)
         return;
 
     Input* input = GetSubsystem<Input>();
@@ -618,16 +564,14 @@ void SceneTab::OnActiveUpdate()
 void SceneTab::RemoveSelection()
 {
     if (!selectedComponent_.Expired())
-    {
         selectedComponent_->Remove();
-        selectedComponent_ = nullptr;
-    }
-    else
+
+    for (auto& selected : GetSelection())
     {
-        for (auto& selected : GetSelection())
+        if (!selected.Expired())
             selected->Remove();
-        UnselectAll();
     }
+    UnselectAll();
 }
 
 IntRect SceneTab::UpdateViewRect()
@@ -643,9 +587,71 @@ void SceneTab::OnUpdate(VariantMap& args)
     float timeStep = args[Update::P_TIMESTEP].GetFloat();
 
     if (scenePlaying_)
-        view_.GetScene()->Update(timeStep);
+        GetScene()->Update(timeStep);
 
     view_.GetCamera()->GetComponent<DebugCameraController>()->Update(timeStep);
+}
+
+bool SceneTab::RenderNodeContextMenu()
+{
+    bool wasOpen = false;
+    if (ui::BeginPopup("Node context menu") && !scenePlaying_)
+    {
+        wasOpen = true;
+        Input* input = GetSubsystem<Input>();
+        bool alternative = input->GetKeyDown(KEY_SHIFT);
+
+        if (ui::MenuItem(alternative ? "Create Child (Local)" : "Create Child"))
+        {
+            for (auto& selectedNode : GetSelection())
+            {
+                if (!selectedNode.Expired())
+                    Select(selectedNode->CreateChild(String::EMPTY, alternative ? LOCAL : REPLICATED));
+            }
+        }
+
+        if (ui::BeginMenu(alternative ? "Create Component (Local)" : "Create Component"))
+        {
+            Editor* editor = GetSubsystem<Editor>();
+            auto categories = editor->GetObjectCategories();
+            categories.Remove("UI");
+
+            for (const String& category : categories)
+            {
+                if (ui::BeginMenu(category.CString()))
+                {
+                    auto components = editor->GetObjectsByCategory(category);
+                    Sort(components.Begin(), components.End());
+
+                    for (const String& component : components)
+                    {
+                        ui::Image(component);
+                        ui::SameLine();
+                        if (ui::MenuItem(component.CString()))
+                        {
+                            for (auto& selectedNode : GetSelection())
+                            {
+                                if (!selectedNode.Expired())
+                                    selectedNode->CreateComponent(StringHash(component),
+                                        alternative ? LOCAL : REPLICATED);
+                            }
+                        }
+                    }
+                    ui::EndMenu();
+                }
+            }
+            ui::EndMenu();
+        }
+
+        ui::Separator();
+
+        if (ui::MenuItem("Remove"))
+            RemoveSelection();
+
+        ui::EndPopup();
+    }
+
+    return wasOpen;
 }
 
 }

@@ -23,4 +23,4 @@
 file (GLOB SOURCE_FILES *.cpp *.h)
 add_executable (SpritePacker ${SOURCE_FILES})
 target_link_libraries (SpritePacker Urho3D)
-install(TARGETS SpritePacker RUNTIME DESTINATION bin)
+install(TARGETS SpritePacker RUNTIME DESTINATION ${DEST_TOOLS_DIR})

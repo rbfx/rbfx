@@ -37,7 +37,7 @@ if (WIN32)
             target_compile_definitions(Civetweb PRIVATE -D_TIMESPEC_DEFINED)
         endif ()
     endif ()
-    object_target_link_libraries(Civetweb ws2_32.lib)
+    target_link_objects(Civetweb ws2_32.lib)
 elseif (APPLE AND (NOT IOS OR IPHONEOS_DEPLOYMENT_TARGET STREQUAL "" OR NOT IPHONEOS_DEPLOYMENT_TARGET VERSION_LESS 10.0))    # We cheat a little bit here with a hard-coded check because iOS 10.3 SDK when targeting 9.3 has strong symbol for iPhoneOS archs but weak symbol for iPhoneSimulator archs
     include (CheckLibraryExists)
     check_library_exists (c clock_gettime "" FOUND_CLOCK_GETTIME_IN_C)

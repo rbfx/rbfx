@@ -99,7 +99,7 @@ void Manager::Connect(AttributeInspector* inspector)
             return;
         using namespace AttributeInspectorValueModified;
         auto item = dynamic_cast<Serializable*>(args[P_SERIALIZABLE].GetPtr());
-        auto name = reinterpret_cast<AttributeInfo*>(args[P_ATTRIBUTEINFO].GetVoidPtr())->name_;
+        const auto& name = reinterpret_cast<AttributeInfo*>(args[P_ATTRIBUTEINFO].GetVoidPtr())->name_;
         Track<EditAttributeAction>(item, name, args[P_OLDVALUE]);
     });
 }
@@ -137,8 +137,8 @@ void Manager::Connect(Gizmo* gizmo)
             return;
         using namespace GizmoNodeModified;
         auto node = dynamic_cast<Node*>(args[P_NODE].GetPtr());
-        auto oldTransform = args[P_OLDTRANSFORM].GetMatrix3x4();
-        auto newTransform = args[P_NEWTRANSFORM].GetMatrix3x4();
+        const auto& oldTransform = args[P_OLDTRANSFORM].GetMatrix3x4();
+        const auto& newTransform = args[P_NEWTRANSFORM].GetMatrix3x4();
 
         Track<EditAttributeAction>(node, "Position", oldTransform.Translation());
         Track<EditAttributeAction>(node, "Rotation", oldTransform.Rotation());

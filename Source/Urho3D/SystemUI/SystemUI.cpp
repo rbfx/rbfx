@@ -437,5 +437,53 @@ void SystemUI::OnUpdate()
     }
 }
 
+int ToImGui(MouseButton button)
+{
+    switch (button)
+    {
+    case MOUSEB_LEFT:
+        return 0;
+    case MOUSEB_MIDDLE:
+        return 1;
+    case MOUSEB_RIGHT:
+        return 2;
+    case MOUSEB_X1:
+        return 3;
+    case MOUSEB_X2:
+        return 4;
+    default:
+        return -1;
+    }
 }
 
+}
+
+bool ImGui::IsMouseDown(Urho3D::MouseButton button)
+{
+    return ImGui::IsMouseDown(Urho3D::ToImGui(button));
+}
+
+bool ImGui::IsMouseDoubleClicked(Urho3D::MouseButton button)
+{
+    return ImGui::IsMouseDoubleClicked(Urho3D::ToImGui(button));
+}
+
+bool ImGui::IsMouseDragging(Urho3D::MouseButton button, float lock_threshold)
+{
+    return ImGui::IsMouseDragging(Urho3D::ToImGui(button), lock_threshold);
+}
+
+bool ImGui::IsMouseReleased(Urho3D::MouseButton button)
+{
+    return ImGui::IsMouseReleased(Urho3D::ToImGui(button));
+}
+
+bool ImGui::IsMouseClicked(Urho3D::MouseButton button, bool repeat)
+{
+    return ImGui::IsMouseClicked(Urho3D::ToImGui(button), repeat);
+}
+
+bool ImGui::IsItemClicked(Urho3D::MouseButton button)
+{
+    return ImGui::IsItemClicked(Urho3D::ToImGui(button));
+}

@@ -23,4 +23,4 @@
 file (GLOB SOURCE_FILES *.cpp *.h)
 add_executable (AssetImporter ${SOURCE_FILES})
 target_link_libraries(AssetImporter Urho3D Assimp)
-install(TARGETS AssetImporter RUNTIME DESTINATION bin)
+install(TARGETS AssetImporter RUNTIME DESTINATION ${DEST_TOOLS_DIR})

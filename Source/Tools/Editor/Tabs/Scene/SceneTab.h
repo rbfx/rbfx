@@ -81,6 +81,8 @@ public:
     void RemoveSelection();
     /// Return scene view.
     SceneView* GetSceneView() { return &view_; }
+    /// Return scene displayed in the tab viewport.
+    Scene* GetScene() { return view_.GetScene(); }
 
 protected:
     /// Render scene hierarchy window starting from specified node.
@@ -95,6 +97,8 @@ protected:
     IntRect UpdateViewRect() override;
     /// Manually updates scene.
     void OnUpdate(VariantMap& args);
+    /// Render context menu of a scene node.
+    bool RenderNodeContextMenu();
 
     /// Scene renderer.
     SceneView view_;

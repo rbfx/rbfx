@@ -28,10 +28,10 @@
 namespace Urho3D
 {
 
-//const char* GetRevision()
-//{
-//    return revision;
-//}
+const char* GetRevision()
+{
+    return Urho3D::revision;
+}
 
 const char* GetCompilerDefines()
 {

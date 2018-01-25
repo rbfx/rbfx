@@ -57,7 +57,7 @@ if (WIN32)
       get_filename_component (baseName ${srcFile} NAME)
       set_source_files_properties (${srcFile} PROPERTIES COMPILE_FLAGS "-DDEBUG_CPP_NAME=\"\\\"${baseName}\"\\\"")
    endforeach ()
-   object_target_link_libraries (kNet ws2_32.lib)
+   target_link_objects (kNet ws2_32.lib)
 endif ()
 
 # Install headers for building and using the Urho3D library (install dependency for Urho3D/Network/Connection.h and Urho3D/Network/Network.h)

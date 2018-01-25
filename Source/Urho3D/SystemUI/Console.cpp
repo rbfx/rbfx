@@ -132,36 +132,69 @@ void Console::HandleLogMessage(StringHash eventType, VariantMap& eventData)
     using namespace LogMessage;
 
     int level = eventData[P_LEVEL].GetInt();
-    String levelText;
-    switch (level)
-    {
-    case LOG_DEBUG:
-        levelText = "[Debug] ";
-        break;
-    case LOG_INFO:
-        levelText = "[Info]  ";
-        break;
-    case LOG_WARNING:
-        levelText = "[Warn]  ";
-        break;
-    case LOG_ERROR:
-        levelText = "[Error] ";
-        break;
-    case LOG_NONE:
-    case LOG_RAW:
-    default:
-        break;
-    }
 
     // The message may be multi-line, so split to rows in that case
     Vector<String> rows = eventData[P_MESSAGE].GetString().Split('\n');
-
-    for (unsigned i = 0; i < rows.Size(); ++i)
-        history_.Push(levelText + rows[i]);
+    for (const auto& row : rows)
+        history_.Push(row);
     scrollToEnd_ = true;
 
     if (autoVisibleOnError_ && level == LOG_ERROR && !IsVisible())
         SetVisible(true);
+}
+
+void Console::RenderContent()
+{
+    auto region = ui::GetContentRegionAvail();
+    ui::BeginChild("ConsoleScrillArea", ImVec2(region.x, region.y - 30), false, ImGuiWindowFlags_HorizontalScrollbar);
+
+    for (const auto& row : history_)
+        ui::TextUnformatted(row.CString());
+
+    if (scrollToEnd_)
+    {
+        ui::SetScrollHere();
+        scrollToEnd_ = false;
+    }
+
+    ui::EndChild();
+
+    ui::PushItemWidth(100);
+    if (ui::Combo("##ConsoleInterpreter", &currentInterpreter_, &interpretersPointers_.Front(), interpretersPointers_.Size()))
+    {
+
+    }
+    ui::PopItemWidth();
+    ui::SameLine();
+    ui::PushItemWidth(region.x - 110);
+    if (focusInput_)
+    {
+        ui::SetKeyboardFocusHere();
+        focusInput_ = false;
+    }
+    if (ui::InputText("##ConsoleInput", inputBuffer_, sizeof(inputBuffer_), ImGuiInputTextFlags_EnterReturnsTrue))
+    {
+        focusInput_ = true;
+        String line(inputBuffer_);
+        if (line.Length())
+        {
+            // Store to history, then clear the lineedit
+            history_.Push(line);
+            if (history_.Size() > historyRows_)
+                history_.Erase(history_.Begin());
+            scrollToEnd_ = true;
+            inputBuffer_[0] = 0;
+
+            // Send the command as an event for script subsystem
+            using namespace ConsoleCommand;
+
+            VariantMap& newEventData = GetEventDataMap();
+            newEventData[P_COMMAND] = line;
+            newEventData[P_ID] = interpreters_[currentInterpreter_];
+            SendEvent(E_CONSOLECOMMAND, newEventData);
+        }
+    }
+    ui::PopItemWidth();
 }
 
 void Console::RenderUi(StringHash eventType, VariantMap& eventData)
@@ -174,59 +207,10 @@ void Console::RenderUi(StringHash eventType, VariantMap& eventData)
 
     auto old_rounding = ui::GetStyle().WindowRounding;
     ui::GetStyle().WindowRounding = 0;
-    if (ui::Begin("Debug Console", &isOpen_, ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoMove|
-                     ImGuiWindowFlags_NoSavedSettings))
+    if (ui::Begin("Debug Console", &isOpen_, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoSavedSettings))
     {
-        auto region = ui::GetContentRegionAvail();
-        ui::BeginChild("scrolling", ImVec2(region.x, region.y - 30), false, ImGuiWindowFlags_HorizontalScrollbar);
-
-        for (const auto& row : history_)
-            ui::TextUnformatted(row.CString());
-
-        if (scrollToEnd_)
-        {
-            ui::SetScrollHere();
-            scrollToEnd_ = false;
-        }
-
-        ui::EndChild();
-
-        ui::PushItemWidth(100);
-        if (ui::Combo("", &currentInterpreter_, &interpretersPointers_.Front(), interpretersPointers_.Size()))
-        {
-
-        }
-        ui::PopItemWidth();
-        ui::SameLine();
-        ui::PushItemWidth(region.x - 110);
-        if (focusInput_)
-        {
-            ui::SetKeyboardFocusHere();
-            focusInput_ = false;
-        }
-        if (ui::InputText("", inputBuffer_, sizeof(inputBuffer_), ImGuiInputTextFlags_EnterReturnsTrue))
-        {
-            focusInput_ = true;
-            String line(inputBuffer_);
-            if (line.Length())
-            {
-                // Store to history, then clear the lineedit
-                history_.Push(line);
-                if (history_.Size() > historyRows_)
-                    history_.Erase(history_.Begin());
-                scrollToEnd_ = true;
-                inputBuffer_[0] = 0;
-
-                // Send the command as an event for script subsystem
-                using namespace ConsoleCommand;
-
-                VariantMap& newEventData = GetEventDataMap();
-                newEventData[P_COMMAND] = line;
-                newEventData[P_ID] = interpreters_[currentInterpreter_];
-                SendEvent(E_CONSOLECOMMAND, newEventData);
-            }
-        }
-        ui::PopItemWidth();
+        RenderContent();
     }
     else if (wasOpen)
     {

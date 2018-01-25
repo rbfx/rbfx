@@ -1108,7 +1108,7 @@ Texture* Renderer::GetScreenBuffer(int width, int height, unsigned format, int m
         newBuffer->ResetUseTimer();
         screenBuffers_[searchKey].Push(newBuffer);
 
-        URHO3D_LOGDEBUG("Allocated new screen buffer size " + String(width) + "x" + String(height) + " format " + String(format));
+        // URHO3D_LOGDEBUG("Allocated new screen buffer size " + String(width) + "x" + String(height) + " format " + String(format));
         return newBuffer;
     }
     else
@@ -1143,7 +1143,7 @@ OcclusionBuffer* Renderer::GetOcclusionBuffer(Camera* camera)
     }
 
     int width = occlusionBufferSize_;
-    auto height = (int)((float)occlusionBufferSize_ / camera->GetAspectRatio() + 0.5f);
+    auto height = RoundToInt(occlusionBufferSize_ / camera->GetAspectRatio());
 
     OcclusionBuffer* buffer = occlusionBuffers_[numOcclusionBuffers_++];
     buffer->SetSize(width, height, threadedOcclusion_);
@@ -1583,8 +1583,8 @@ void Renderer::RemoveUnusedBuffers()
             Texture* buffer = buffers[j];
             if (buffer->GetUseTimer() > MAX_BUFFER_AGE)
             {
-                URHO3D_LOGDEBUG("Removed unused screen buffer size " + String(buffer->GetWidth()) + "x" + String(buffer->GetHeight()) +
-                         " format " + String(buffer->GetFormat()));
+                // URHO3D_LOGDEBUG("Removed unused screen buffer size " + String(buffer->GetWidth()) + "x" + String(buffer->GetHeight()) +
+                //          " format " + String(buffer->GetFormat()));
                 buffers.Erase(j);
             }
         }
@@ -2009,7 +2009,7 @@ void Renderer::BlurShadowMap(View* view, Texture2D* shadowMap, float blurScale)
     graphics_->SetViewport(IntRect(0, 0, shadowMap->GetWidth(), shadowMap->GetHeight()));
 
     // Get shaders
-    static const String shaderName("ShadowBlur");
+    static const char* shaderName = "ShadowBlur";
     ShaderVariation* vs = graphics_->GetShader(VS, shaderName);
     ShaderVariation* ps = graphics_->GetShader(PS, shaderName);
     graphics_->SetShaders(vs, ps);

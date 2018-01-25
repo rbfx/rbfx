@@ -21,7 +21,8 @@
 #
 
 # Urho3D tools
-set (CMAKE_INSTALL_RPATH "../lib${LIB_SUFFIX}")
+set (CMAKE_INSTALL_RPATH ".:..")
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_TOOLS_DIR})
 
 if (URHO3D_PACKAGING OR         # When packing resources
     URHO3D_PACKAGING_TOOL OR    # When crosscompiling and tool is required
