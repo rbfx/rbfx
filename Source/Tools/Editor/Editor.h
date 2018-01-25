@@ -75,6 +75,9 @@ public:
     const String& dialogTitle);
 
 protected:
+    /// Process console commands.
+    void OnConsoleCommand(VariantMap& args);
+
     /// Pool tracking availability of unique IDs used by editor.
     IDPool idPool_;
     /// List of active scene tabs.

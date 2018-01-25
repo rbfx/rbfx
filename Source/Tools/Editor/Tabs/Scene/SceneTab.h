@@ -98,7 +98,7 @@ protected:
     /// Manually updates scene.
     void OnUpdate(VariantMap& args);
     /// Render context menu of a scene node.
-    bool RenderNodeContextMenu();
+    void RenderNodeContextMenu();
 
     /// Scene renderer.
     SceneView view_;

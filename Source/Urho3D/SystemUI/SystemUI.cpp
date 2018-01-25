@@ -395,6 +395,7 @@ void SystemUI::SetScale(Vector3 scale)
 void SystemUI::ApplyStyleDefault(bool darkStyle, float alpha)
 {
     ImGuiStyle& style = ImGui::GetStyle();
+    style.ScrollbarSize = 10.f;
     if (darkStyle)
         ui::StyleColorsDark(&style);
     else
