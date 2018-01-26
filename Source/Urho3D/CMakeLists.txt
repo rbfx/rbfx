@@ -117,7 +117,6 @@ target_include_directories(Urho3D PUBLIC
     $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}>
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
 )
-add_dependencies(Urho3D InstallThirdpartyHeaders)
 
 # Add any variables starting with URHO3D_ as project defines
 get_cmake_property(__cmake_variables VARIABLES)
@@ -223,7 +222,6 @@ endif ()
 
 install(TARGETS Urho3D
     EXPORT Urho3D
-    RUNTIME DESTINATION bin
     LIBRARY DESTINATION ${SHARED_LIB_INSTALL_DIR}
     ARCHIVE DESTINATION lib${LIB_SUFFIX}
 )
