@@ -44,7 +44,6 @@ elseif(WIN32)
         set(CPU_ARCH "x86_64")
     else()
         set(CPU_ARCH "i386")
-		set(SAFESEH ON)
     endif()
     if (MSVC)
         set(ASM_EXT "ms_pe_masm.asm")
@@ -57,7 +56,7 @@ set(ASM_SOURCES "asm/make_${CPU_ARCH}_${ASM_EXT}"
                 "asm/jump_${CPU_ARCH}_${ASM_EXT}"
                 "asm/ontop_${CPU_ARCH}_${ASM_EXT}")
 
-if (SAFESEH)
+if (CMAKE_SIZEOF_VOID_P EQUAL 4 AND MSVC)
 	set_source_files_properties(${ASM_SOURCES} PROPERTIES COMPILE_FLAGS "/safeseh")
 endif ()
 
