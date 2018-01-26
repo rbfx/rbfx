@@ -17,7 +17,7 @@
 namespace Urho3D
 {
 	template <class T>
-	class BiDirectionalMap {
+	class URHO3D_API BiDirectionalMap {
 	public:
 
 		//inserts/update entries into both lookups.
