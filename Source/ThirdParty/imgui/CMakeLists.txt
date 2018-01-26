@@ -23,14 +23,17 @@
 # When syncing repository with upstream be sure to delete stb_rectpack.h. This will make imgui use main instance of
 # stb_rectpack already included in the engine.
 
-file (GLOB SOURCE_FILES *.cpp *.h)
+file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
 add_library (imgui OBJECT ${SOURCE_FILES})
 target_link_objects(imgui STB FreeType)
 target_compile_definitions(imgui PUBLIC -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1
     PRIVATE -DIMGUI_DISABLE_STB_RECT_PACK_IMPLEMENTATION -DIMGUI_DISABLE_STB_TRUETYPE_IMPLEMENTATION=1
     PUBLIC  -DIMGUI_DEFINE_MATH_OPERATORS=1)
-target_include_directories(imgui PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+target_include_directories(imgui
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ImGui>
+)
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(imgui PRIVATE -D_EXPORTS PUBLIC -D_IMPORTS)
 endif ()
-install(FILES imgui.h imgui_internal.h imconfig.h imgui_freetype.h DESTINATION ${DEST_THIRDPARTY_HEADERS}/ImGui)
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/ FILES_MATCHING PATTERN *.h)

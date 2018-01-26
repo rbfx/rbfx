@@ -27,7 +27,8 @@ endif ()
 file (GLOB_RECURSE SOURCE_FILES *.cpp *.h *.hpp)
 add_library (Toolbox STATIC ${SOURCE_FILES})
 target_link_libraries (Toolbox Urho3D)
-target_include_directories(Toolbox PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/${DEST_INCLUDE_DIR}>)
+target_include_directories(Toolbox
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+)
 install(TARGETS Toolbox EXPORT Urho3D ARCHIVE DESTINATION lib)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h)
-create_symlink(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/${DEST_INCLUDE_DIR}/Toolbox)

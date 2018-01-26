@@ -20,9 +20,13 @@
 # THE SOFTWARE.
 #
 
-file (GLOB SOURCE_FILES src/*.c include/*.h)
+file (GLOB_RECURSE SOURCE_FILES *.c *.h *.inl)
 add_library (Civetweb OBJECT ${SOURCE_FILES})
-target_include_directories(Civetweb PRIVATE include)
+target_include_directories(Civetweb
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/Civetweb>
+)
+
 
 # Define preprocessor macros
 # Always disable Common Gateway Interface
@@ -49,4 +53,4 @@ if (BUILD_SHARED_LIBS)
     target_compile_definitions(Civetweb PRIVATE -DCIVETWEB_DLL_EXPORTS INTERFACE -DCIVETWEB_DLL_IMPORTS)
 endif ()
 
-install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/Civetweb FILES_MATCHING PATTERN *.h)
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/ FILES_MATCHING PATTERN *.h)
