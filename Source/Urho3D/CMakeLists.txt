@@ -41,7 +41,7 @@ macro (define_engine_source_files)
 endmacro()
 
 define_engine_source_files (NORECURSE . Graphics)
-define_engine_source_files (Audio Container Core Engine Input IO Math Resource Scene UI Tweeks)
+define_engine_source_files (Audio Container Core Engine Input IO Math Resource Scene UI Tweeks Misc)
 
 if (URHO3D_OPENGL)
     define_engine_source_files (Graphics/OpenGL)
@@ -94,6 +94,7 @@ group_sources("SystemUI")
 group_sources("UI")
 group_sources("Urho2D")
 group_sources("Tweeks")
+group_sources("Misc")
 
 if (APPLE)
     list (APPEND SOURCE_FILES IO/MacFileWatcher.m)

@@ -41,6 +41,7 @@
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../IO/PackageFile.h"
+#include "../Misc/FreeFunctions.h"
 #ifdef URHO3D_IK
 #include "../IK/IK.h"
 #endif
@@ -141,6 +142,7 @@ Engine::Engine(Context* context) :
 #if URHO3D_TASKS
     context_->RegisterSubsystem(new Tasks(context_));
 #endif
+	context_->RegisterSubsystem(new FreeFunctions(context_));
     // Register object factories for libraries which are not automatically registered along with subsystem creation
     RegisterSceneLibrary(context_);
 
@@ -155,6 +157,9 @@ Engine::Engine(Context* context) :
 #ifdef URHO3D_NAVIGATION
     RegisterNavigationLibrary(context_);
 #endif
+
+
+
 
     SubscribeToEvent(E_EXITREQUESTED, URHO3D_HANDLER(Engine, HandleExitRequested));
 }
