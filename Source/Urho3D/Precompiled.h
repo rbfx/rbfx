@@ -29,7 +29,7 @@
 #include "Container/HashSet.h"
 #include "Container/Sort.h"
 #include "Container/Str.h"
-
+#include "Container/BiDirectionalMap.h"
 #endif
 
 #endif
