@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,42 +20,51 @@
 // THE SOFTWARE.
 //
 
-#pragma once
+#include "../Core/Context.h"
+#include "../Engine/PluginApplication.h"
+#include <cr/cr.h>
 
 
 namespace Urho3D
 {
 
-/// Event sent during construction of toolbar buttons. Subscribe to it to add new buttons.
-URHO3D_EVENT(E_EDITORTOOLBARBUTTONS, EditorToolbarButtons)
-{
-}
+static const StringHash contextKey("PluginApplication");
 
-/// Event sent when node selection in scene view changes.
-URHO3D_EVENT(E_EDITORSELECTIONCHANGED, EditorSelectionChanged)
+int PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*),
+    void(*destroyer)(PluginApplication*))
 {
-    URHO3D_PARAM(P_SCENETAB, SceneTab);               // SceneTab pointer.
-}
+    assert(ctx_);
+    auto* ctx = static_cast<cr_plugin*>(ctx_);
+    auto context = static_cast<Context*>(ctx->userdata);
+    auto application = dynamic_cast<PluginApplication*>(context->GetGlobalVar(contextKey).GetPtr());
 
-/// Event sent when scene has it's rendering settings modified.
-URHO3D_EVENT(E_EDITORSCENEEFFECTSCHANGED, EditorSceneEffectsChanged)
-{
-    URHO3D_PARAM(P_SCENETAB, SceneTab);               // SceneTab pointer.
-}
-
-/// Event sent when editor successfully saves a resource.
-URHO3D_EVENT(E_EDITORRESOURCESAVED, EditorResourceSaved)
-{
-}
-
-/// Event sent right before reloading user components.
-URHO3D_EVENT(E_EDITORUSERCODERELOADSTART, EditorUserCodeReloadStart)
-{
-}
-
-/// Event sent right after reloading user components.
-URHO3D_EVENT(E_EDITORUSERCODERELOADEND, EditorUserCodeReloadEnd)
-{
+    switch (operation)
+    {
+    case CR_LOAD:
+    {
+        application = factory(context);
+        context->SetGlobalVar(contextKey, application);
+        application->OnLoad();
+        return 0;
+    }
+    case CR_UNLOAD:
+    case CR_CLOSE:
+    {
+        context->SetGlobalVar(contextKey, Variant::EMPTY);
+        application->OnUnload();
+        destroyer(application);
+        return 0;
+    }
+    case CR_STEP:
+    {
+        application->OnUpdate();
+        return 0;
+    }
+    default:
+		break;
+    }
+	assert(false);
+	return -3;
 }
 
 }

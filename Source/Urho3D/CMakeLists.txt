@@ -163,6 +163,12 @@ if (URHO3D_TASKS)
     endif ()
 endif ()
 
+if (DESKTOP AND NOT APPLE)    # cr.h does not support MacOS yet.
+    target_compile_definitions(Urho3D PUBLIC -DURHO3D_PLUGINS=1)
+else ()
+    target_compile_definitions(Urho3D PUBLIC -DURHO3D_PLUGINS=0)
+endif ()
+
 if (WIN32)
     target_link_libraries(Urho3D winmm user32 gdi32 winmm imm32 ole32 oleaut32 version uuid)
     if (URHO3D_MINIDUMPS)
