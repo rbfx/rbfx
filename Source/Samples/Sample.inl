@@ -65,7 +65,7 @@ void Sample::Setup()
     engineParameters_[EP_SOUND]        = false;
 
     if (!engineParameters_.Contains(EP_RESOURCE_PREFIX_PATHS))
-        engineParameters_[EP_RESOURCE_PREFIX_PATHS] = context_->GetFileSystem()->GetProgramDir() + ";;../share/Resources";
+        engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..";
 }
 
 void Sample::Start()
