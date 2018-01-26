@@ -239,7 +239,11 @@ static int stbi__start_write_file(stbi__write_context *s, const char *filename)
       wpath = wpath_big;
    }
    if (MultiByteToWideChar(CP_UTF8, 0, filename, -1, wpath, wlen) != wlen)
+   {
+      if (wpath_big)
+         free(wpath_big);
       return 0;
+   }
 
    FILE *f = _wfopen(wpath, L"wb");
 
