@@ -333,6 +333,8 @@ public:
     Iterator Insert(const Iterator& dest, const Iterator& start, const Iterator& end);
     /// Insert a character by iterator.
     Iterator Insert(const Iterator& dest, char c);
+	/// Return number of times c occurs in string.
+	unsigned int Count(char c);
     /// Erase a substring.
     void Erase(unsigned pos, unsigned length = 1);
     /// Erase a character by iterator.
