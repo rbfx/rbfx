@@ -23,4 +23,4 @@
 file (GLOB SOURCE_FILES *.cpp *.h)
 add_executable (OgreBatchConverter ${SOURCE_FILES})
 target_link_libraries(OgreBatchConverter Urho3D)
-install(TARGETS OgreBatchConverter RUNTIME DESTINATION bin)
+install(TARGETS OgreBatchConverter RUNTIME DESTINATION ${DEST_TOOLS_DIR})

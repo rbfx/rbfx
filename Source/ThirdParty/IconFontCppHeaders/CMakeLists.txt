@@ -20,5 +20,9 @@
 # THE SOFTWARE.
 #
 
-add_library(IconFontCppHeaders OBJECT INTERFACE.cpp)
-install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/IconFontCppHeaders FILES_MATCHING PATTERN *.h)
+file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
+add_library(IconFontCppHeaders OBJECT ${SOURCE_FILES})
+target_include_directories(IconFontCppHeaders
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/ FILES_MATCHING PATTERN *.h)

@@ -53,7 +53,7 @@ public:
     }
 
     /// Work function. Called with the work item and thread index (0 = main thread) as parameters.
-    std::function<void(const WorkItem*, unsigned)> workFunction_;
+    void(*workFunction_)(const WorkItem*, unsigned);
     /// Data start pointer.
     void* start_;
     /// Data end pointer.
@@ -69,6 +69,8 @@ public:
 
 private:
     bool pooled_;
+    /// Work function. Called without any parameters.
+    std::function<void()> workLambda_;
 };
 
 /// Work queue subsystem for multithreading.

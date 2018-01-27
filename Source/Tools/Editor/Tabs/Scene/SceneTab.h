@@ -93,8 +93,12 @@ protected:
     void CreateObjects();
     /// Render content of the tab window.
     bool RenderWindowContent() override;
-    ///
+    /// Update objects with current tab view rect size.
     IntRect UpdateViewRect() override;
+    /// Serialize scene to xml file.
+    void SceneStateSave(XMLFile& destination);
+    /// Unserialize scene from xml file.
+    void SceneStateRestore(XMLFile& source);
     /// Manually updates scene.
     void OnUpdate(VariantMap& args);
     /// Render context menu of a scene node.
@@ -118,6 +122,8 @@ protected:
     bool scenePlaying_ = false;
     /// Temporary storage of scene data used in play/pause functionality.
     XMLFile sceneState_;
+    /// Temporary storage of scene data used during client code reloads.
+    XMLFile sceneStateReloading_;
 };
 
 };

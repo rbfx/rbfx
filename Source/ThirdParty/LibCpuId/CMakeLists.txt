@@ -27,7 +27,7 @@ if (MSVC AND URHO3D_64BIT)
 endif ()
 
 # Define source files
-file (GLOB SOURCE_FILES src/*.c src/*.h)
+file (GLOB_RECURSE SOURCE_FILES *.c *.h)
 list (APPEND SOURCE_FILES ${ASM_FILES})
 
 add_library (LibCpuId OBJECT ${SOURCE_FILES})
@@ -35,5 +35,7 @@ target_compile_definitions (LibCpuId PRIVATE -DVERSION="0.4.0")
 if (HAVE_STDINT_H)
     target_compile_definitions (LibCpuId PRIVATE -DHAVE_STDINT_H)
 endif ()
-
-create_symlink(${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS}/LibCpuId)
+target_include_directories(LibCpuId
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/LibCpuId>
+)

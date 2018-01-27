@@ -20,5 +20,9 @@
 # THE SOFTWARE.
 #
 
-add_library(Mustache OBJECT INTERFACE.cpp mustache.hpp)
-install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/Mustache FILES_MATCHING PATTERN *.hpp)
+file (GLOB_RECURSE SOURCE_FILES *.cpp *.hpp)
+add_library(Mustache OBJECT ${SOURCE_FILES})
+target_include_directories(Mustache
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/ FILES_MATCHING PATTERN *.hpp)

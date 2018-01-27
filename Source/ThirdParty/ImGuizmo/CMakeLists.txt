@@ -20,11 +20,15 @@
 # THE SOFTWARE.
 #
 
-file (GLOB SOURCE_FILES *.cpp *.h)
+file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
 add_library (ImGuizmo OBJECT ${SOURCE_FILES})
 target_link_objects(ImGuizmo imgui)
 target_compile_definitions(ImGuizmo PUBLIC -DUSE_IMGUI_API=1)
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(ImGuizmo PRIVATE -D_EXPORTS INTERFACE -D_IMPORTS)
 endif ()
-install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/ImGuizmo FILES_MATCHING PATTERN *.h)
+target_include_directories(ImGuizmo
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ImGuizmo>
+)
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/ FILES_MATCHING PATTERN *.h)

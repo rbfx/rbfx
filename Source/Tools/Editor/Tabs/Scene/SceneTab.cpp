@@ -43,6 +43,7 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
     , gizmo_(context)
     , undo_(context)
     , sceneState_(context)
+    , sceneStateReloading_(context)
 {
     SetTitle("New Scene");
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
@@ -54,6 +55,19 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
     SubscribeToEvent(effectSettings_, E_EDITORSCENEEFFECTSCHANGED, std::bind(&AttributeInspector::CopyEffectsFrom,
         &inspector_, view_.GetViewport()));
     SubscribeToEvent(E_UPDATE, std::bind(&SceneTab::OnUpdate, this, _2));
+    // On plugin code reload all scene state is serialized, plugin library is reloaded and scene state is unserialized.
+    // This way scene recreates all plugin-provided components on reload and gets to use new versions of them.
+    SubscribeToEvent(E_EDITORUSERCODERELOADSTART, [&](StringHash, VariantMap&) {
+        SceneStateSave(sceneStateReloading_);
+        for (auto node : GetScene()->GetChildren(true))
+        {
+            if (!node->HasTag("__EDITOR_OBJECT__"))
+                node->Remove();
+        }
+    });
+    SubscribeToEvent(E_EDITORUSERCODERELOADEND, [&](StringHash, VariantMap&) {
+        SceneStateRestore(sceneStateReloading_);
+    });
 
     undo_.Connect(GetScene());
     undo_.Connect(&inspector_);
@@ -326,28 +340,16 @@ void SceneTab::RenderToolbarButtons()
 
     if (ui::EditorToolbarButton(scenePlaying_ ? ICON_FA_PAUSE : ICON_FA_PLAY, scenePlaying_ ? "Pause" : "Play"))
     {
-        Scene* scene = view_.GetScene();
         scenePlaying_ ^= true;
         if (scenePlaying_)
         {
             undo_.SetTrackingEnabled(false);
-            XMLElement root = sceneState_.CreateRoot("scene");
-            scene->SaveXML(root);
+            SceneStateSave(sceneState_);
         }
         else
         {
-            // Migrade editor objects to a newly loaded scene without destroying them.
-            Vector<SharedPtr<Node>> temporaries;
-            for (auto& node : scene->GetChildren())
-            {
-                if (node->IsTemporary())
-                    temporaries.Push(SharedPtr<Node>(node));
-            }
-            scene->LoadXML(sceneState_.GetRoot());
-            for (auto& node : temporaries)
-                scene->AddChild(node);
+            SceneStateRestore(sceneState_);
             undo_.SetTrackingEnabled(true);
-            sceneState_.GetRoot().Remove();
         }
     }
 
@@ -590,6 +592,38 @@ void SceneTab::OnUpdate(VariantMap& args)
         GetScene()->Update(timeStep);
 
     view_.GetCamera()->GetComponent<DebugCameraController>()->Update(timeStep);
+}
+
+void SceneTab::SceneStateSave(XMLFile& destination)
+{
+    bool isUndoTracking = undo_.IsTrackingEnabled();
+    undo_.SetTrackingEnabled(false);
+
+    destination.GetRoot().Remove();
+    XMLElement root = destination.CreateRoot("scene");
+    GetScene()->SaveXML(root);
+
+    undo_.SetTrackingEnabled(isUndoTracking);
+}
+
+void SceneTab::SceneStateRestore(XMLFile& source)
+{
+    bool isUndoTracking = undo_.IsTrackingEnabled();
+    undo_.SetTrackingEnabled(false);
+
+    // Migrate editor objects to a newly loaded scene without destroying them.
+    Vector<SharedPtr<Node>> temporaries;
+    for (auto& node : GetScene()->GetChildrenWithTag("__EDITOR_OBJECT__"))
+        temporaries.Push(SharedPtr<Node>(node));
+
+    GetScene()->LoadXML(source.GetRoot());
+
+    for (auto& node : temporaries)
+        GetScene()->AddChild(node);
+
+    source.GetRoot().Remove();
+
+    undo_.SetTrackingEnabled(isUndoTracking);
 }
 
 void SceneTab::RenderNodeContextMenu()

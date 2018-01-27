@@ -20,7 +20,10 @@
 # THE SOFTWARE.
 #
 
-file (GLOB SOURCE_FILES source/*.cpp include/*.h)
+file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
 add_library (Recast OBJECT ${SOURCE_FILES})
 target_include_directories(Recast PRIVATE include)
-create_symlink(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS}/Recast)
+target_include_directories(Recast
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/Recast>
+)

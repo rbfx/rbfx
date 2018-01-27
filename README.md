@@ -67,6 +67,7 @@ Urho3D uses the following third-party libraries:
 - IconFontCppHeaders (https://github.com/juliettef/IconFontCppHeaders)
 - ImGuizmo (https://github.com/CedricGuillemet/ImGuizmo)
 - deboost.context (https://github.com/septag/deboost.context)
+- cr (https://github.com/fungos/cr)
 
 DXT / ETC1 / PVRTC decompression code based on the Squish library and the Oolong Engine.
 Jack and mushroom models from the realXtend project. (https://www.realxtend.org)
