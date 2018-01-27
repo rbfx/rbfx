@@ -112,7 +112,6 @@ add_library(Urho3D ${URHO3D_LIBRARY_TYPE} ${SOURCE_FILES} ${HEADER_FILES})
 target_include_directories(Urho3D PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>        # For parent projects to find auto-generated engine headers
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>        # For parent projects to find engine headers
-    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS}>
     $<INSTALL_INTERFACE:${DEST_INCLUDE_DIR}>
     $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}>
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
