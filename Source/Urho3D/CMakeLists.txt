@@ -102,7 +102,7 @@ if (APPLE)
     list (APPEND SOURCE_FILES IO/MacFileWatcher.m)
 endif ()
 
-set (THIRD_PARTY_DEPENDENCIES FreeType JO LZ4 PugiXml rapidjson SDL StanHull STB Mustache IconFontCppHeaders Civetweb kNet ik Detour DetourCrowd DetourTileCache Recast Box2D WebP Bullet easy_profiler imgui ImGuizmo LibCpuId GLEW MojoShader fcontext)
+set (THIRD_PARTY_DEPENDENCIES FreeType JO LZ4 PugiXml rapidjson SDL StanHull STB Mustache IconFontCppHeaders Civetweb kNet ik Detour DetourCrowd DetourTileCache Recast Box2D WebP Bullet easy_profiler imgui ImGuizmo LibCpuId GLEW MojoShader fcontext cr)
 foreach (dep ${THIRD_PARTY_DEPENDENCIES})
     if (TARGET "${dep}")
         get_target_property(_TARGET_TYPE ${dep} TYPE)
@@ -121,7 +121,6 @@ target_include_directories(Urho3D PUBLIC
     $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}>
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
 )
-add_dependencies(Urho3D InstallThirdpartyHeaders)
 
 # Add any variables starting with URHO3D_ as project defines
 get_cmake_property(__cmake_variables VARIABLES)
@@ -166,6 +165,12 @@ if (URHO3D_TASKS)
     if (HAVE_VALGRIND EQUAL 1)
         target_compile_definitions(Urho3D PRIVATE -DHAVE_VALGRIND=${HAVE_VALGRIND})
     endif ()
+endif ()
+
+if (DESKTOP AND NOT APPLE)    # cr.h does not support MacOS yet.
+    target_compile_definitions(Urho3D PUBLIC -DURHO3D_PLUGINS=1)
+else ()
+    target_compile_definitions(Urho3D PUBLIC -DURHO3D_PLUGINS=0)
 endif ()
 
 if (WIN32)
@@ -237,7 +242,6 @@ endif ()
 
 install(TARGETS Urho3D
     EXPORT Urho3D
-    RUNTIME DESTINATION bin
     LIBRARY DESTINATION ${SHARED_LIB_INSTALL_DIR}
     ARCHIVE DESTINATION lib${LIB_SUFFIX}
 )

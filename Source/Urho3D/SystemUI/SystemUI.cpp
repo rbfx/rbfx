@@ -76,8 +76,10 @@ SystemUI::SystemUI(Urho3D::Context* context)
 
     SubscribeToEvent(E_APPLICATIONSTARTED, [&](StringHash, VariantMap&) {
         if (io.Fonts->Fonts.empty())
+        {
             io.Fonts->AddFontDefault();
-        ReallocateFontTexture();
+            ReallocateFontTexture();
+        }
         UpdateProjectionMatrix();
         // Initializes ImGui. ImGui::Render() can not be called unless imgui is initialized. This call avoids initialization
         // check on every frame in E_ENDRENDERING.
@@ -395,6 +397,7 @@ void SystemUI::SetScale(Vector3 scale)
 void SystemUI::ApplyStyleDefault(bool darkStyle, float alpha)
 {
     ImGuiStyle& style = ImGui::GetStyle();
+    style.ScrollbarSize = 10.f;
     if (darkStyle)
         ui::StyleColorsDark(&style);
     else

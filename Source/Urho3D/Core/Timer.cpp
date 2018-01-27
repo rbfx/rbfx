@@ -163,10 +163,12 @@ unsigned Time::GetTimeSinceEpoch()
 
 String Time::GetTimeStamp()
 {
+    char dateTime[20];
     time_t sysTime;
     time(&sysTime);
-    const char* dateTime = ctime(&sysTime);
-    return String(dateTime).Replaced("\n", "");
+    tm* timeInfo = localtime(&sysTime);
+    strftime(dateTime, sizeof(dateTime), "%Y-%m-%d %H:%M:%S", timeInfo);
+    return dateTime;
 }
 
 void Time::Sleep(unsigned mSec)

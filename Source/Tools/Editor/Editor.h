@@ -24,6 +24,7 @@
 
 
 #include <Urho3D/Urho3DAll.h>
+#include <cr/cr.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
 #include "Tabs/UI/UITab.h"
 #include "IDPool.h"
@@ -75,6 +76,11 @@ public:
     const String& dialogTitle);
 
 protected:
+    /// Process console commands.
+    void OnConsoleCommand(VariantMap& args);
+    /// Load a native user plugin from a specified shared library.
+    bool LoadNativePlugin(const String& path);
+
     /// Pool tracking availability of unique IDs used by editor.
     IDPool idPool_;
     /// List of active scene tabs.
@@ -83,8 +89,10 @@ protected:
     WeakPtr<Tab> activeTab_;
     /// Path to a project file.
     String projectFilePath_;
-    /// Flag which opens resource browser window.
-    bool resourceBrowserWindowOpen_ = true;
+    /// User plugin context.
+    cr_plugin userCodeContext_{};
+    /// Path of current user plugin.
+    String userCodeLibPath_;
 };
 
 }

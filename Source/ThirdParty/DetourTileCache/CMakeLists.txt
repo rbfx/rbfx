@@ -20,8 +20,10 @@
 # THE SOFTWARE.
 #
 
-file (GLOB SOURCE_FILES source/*.cpp include/*.h)
+file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
 add_library (DetourTileCache OBJECT ${SOURCE_FILES})
 target_link_objects(DetourTileCache Detour)
-target_include_directories(DetourTileCache PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-create_symlink(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS}/DetourTileCache)
+target_include_directories(DetourTileCache
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/DetourTileCache>
+)

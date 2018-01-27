@@ -165,7 +165,9 @@ void Log::Write(int level, const String& message)
         return;
 
     String formattedMessage = logLevelPrefixes[level];
-    formattedMessage += ": " + message;
+    formattedMessage += ": ";
+    formattedMessage += String(' ', 9 - formattedMessage.Length());
+    formattedMessage += message;
     logInstance->lastMessage_ = message;
 
     if (logInstance->timeStamp_)

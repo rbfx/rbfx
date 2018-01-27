@@ -30,6 +30,8 @@
 #pragma warning(disable: 4275)
 #endif
 
+#define URHO3D_EXPORT_API __declspec(dllexport)
+
 #ifdef URHO3D_STATIC
 #  define URHO3D_API
 #  define URHO3D_NO_EXPORT
@@ -37,7 +39,7 @@
 #  ifndef URHO3D_API
 #    ifdef URHO3D_EXPORTS
         /* We are building this library */
-#      define URHO3D_API __declspec(dllexport)
+#      define URHO3D_API URHO3D_EXPORT_API
 #    else
         /* We are using this library */
 #      define URHO3D_API __declspec(dllimport)
@@ -68,22 +70,15 @@
 
 #else
 
+#define URHO3D_EXPORT_API __attribute__((visibility("default")))
+
 #ifdef URHO3D_STATIC
 #ifndef URHO3D_API
 #  define URHO3D_API
 #endif
 #  define URHO3D_NO_EXPORT
 #else
-#  ifndef URHO3D_API
-#    ifdef URHO3D_EXPORTS
-/* We are building this library */
-#      define URHO3D_API __attribute__((visibility("default")))
-#    else
-/* We are using this library */
-#      define URHO3D_API __attribute__((visibility("default")))
-#    endif
-#  endif
-
+#  define URHO3D_API URHO3D_EXPORT_API
 #  ifndef URHO3D_NO_EXPORT
 #    define URHO3D_NO_EXPORT __attribute__((visibility("hidden")))
 #  endif

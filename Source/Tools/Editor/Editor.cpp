@@ -19,7 +19,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-
+#if URHO3D_PLUGINS
+#   define CR_HOST
+#endif
 #include "Editor.h"
 #include "EditorEvents.h"
 #include "EditorIconCache.h"
@@ -27,10 +29,7 @@
 #include "Tabs/Scene/SceneSettings.h"
 #include <Toolbox/IO/ContentUtilities.h>
 #include <Toolbox/SystemUI/ResourceBrowser.h>
-#include <Toolbox/SystemUI/Widgets.h>
 #include <Toolbox/Toolbox.h>
-
-#include <ImGui/imgui_internal.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
 #include <nfd.h>
 
@@ -98,7 +97,11 @@ void Editor::Start()
     // Prevent overwriting example scene.
     DynamicCast<SceneTab>(tabs_.Front())->ClearCachedPaths();
     // Creates console but makes sure it's UI is not rendered. Console rendering is done manually in editor.
-    engine_->CreateConsole()->SetAutoVisibleOnError(false);
+    auto* console = engine_->CreateConsole();
+    console->SetAutoVisibleOnError(false);
+    GetFileSystem()->SetExecuteConsoleCommands(false);
+    SubscribeToEvent(E_CONSOLECOMMAND, std::bind(&Editor::OnConsoleCommand, this, _2));
+    console->RefreshInterpreters();
 }
 
 void Editor::Stop()
@@ -128,6 +131,13 @@ void Editor::SaveProject(String filePath)
     window.SetAttribute("height", ToString("%d", GetGraphics()->GetHeight()));
     window.SetAttribute("x", ToString("%d", GetGraphics()->GetWindowPosition().x_));
     window.SetAttribute("y", ToString("%d", GetGraphics()->GetWindowPosition().y_));
+
+    if (!userCodeLibPath_.Empty())
+    {
+        auto plugins = root.CreateChild("plugins");
+        auto plugin = plugins.CreateChild("plugin");
+        plugin.SetValue(userCodeLibPath_);
+    }
 
     auto scenes = root.CreateChild("tabs");
     for (auto& tab: tabs_)
@@ -174,6 +184,10 @@ void Editor::LoadProject(const String& filePath)
             GetGraphics()->SetWindowPosition(ToInt(window.GetAttribute("x")), ToInt(window.GetAttribute("y")));
         }
 
+        auto plugins = root.GetChild("plugins");
+        for (auto plugin = plugins.GetChild("plugin"); plugin.NotNull(); plugin = plugin.GetNext("plugin"))
+            LoadNativePlugin(plugin.GetValue());
+
         auto tabs = root.GetChild("tabs");
         tabs_.Clear();
         if (tabs.NotNull())
@@ -197,6 +211,28 @@ void Editor::LoadProject(const String& filePath)
 
 void Editor::OnUpdate(VariantMap& args)
 {
+#if URHO3D_PLUGINS
+    if (userCodeContext_.userdata)
+    {
+        bool reloading = cr_plugin_changed(userCodeContext_);
+        if (reloading)
+            SendEvent(E_EDITORUSERCODERELOADSTART);
+
+        if (cr_plugin_update(userCodeContext_) != 0)
+        {
+            URHO3D_LOGERRORF("Processing plugin \"%s\" failed and it was unloaded.", GetFileNameAndExtension(userCodeLibPath_).CString());
+            cr_plugin_close(userCodeContext_);
+            userCodeContext_.userdata = nullptr;
+        }
+
+        if (reloading)
+        {
+            SendEvent(E_EDITORUSERCODERELOADEND);
+            if (userCodeContext_.userdata != nullptr)
+                URHO3D_LOGINFOF("Loaded plugin \"%s\" version %d.", GetFileNameAndExtension(userCodeLibPath_).CString(), userCodeContext_.version);
+        }
+    }
+#endif
     ui::RootDock({0, 20}, ui::GetIO().DisplaySize - ImVec2(0, 20));
 
     RenderMenuBar();
@@ -297,6 +333,23 @@ void Editor::RenderMenuBar()
                 CreateNewTab<UITab>();
 
             ui::Separator();
+#if URHO3D_PLUGINS
+            if (ui::MenuItem("Load User Plugin"))
+            {
+#if _WIN32
+                const char* filter = "dll";
+#else
+                const char* filter = "so";
+#endif
+                nfdchar_t* selected = nullptr;
+                if (NFD_OpenDialog(filter, nullptr, &selected) == NFD_OKAY)
+                {
+                    LoadNativePlugin(selected);
+                    NFD_FreePath(selected);
+                }
+            }
+            ui::Separator();
+#endif
 
             if (ui::MenuItem("Exit"))
                 engine_->Exit();
@@ -388,6 +441,38 @@ String Editor::GetResourceAbsolutePath(const String& resourceName, const String&
     }
 
     return fullPath;
+}
+
+void Editor::OnConsoleCommand(VariantMap& args)
+{
+    using namespace ConsoleCommand;
+    String command = args[P_COMMAND].GetString();
+    if (command == "revision")
+        URHO3D_LOGINFOF("Engine revision: %s", GetRevision());
+    else
+        URHO3D_LOGWARNINGF("Unknown command \"%s\".", command.CString());
+}
+
+bool Editor::LoadNativePlugin(const String& path)
+{
+#if URHO3D_PLUGINS
+    if (userCodeContext_.userdata)
+        cr_plugin_close(userCodeContext_);
+
+    if (cr_plugin_load(userCodeContext_, path.CString()))
+    {
+        userCodeLibPath_ = path;
+        userCodeContext_.userdata = context_;
+    }
+    else
+    {
+        userCodeLibPath_.Clear();
+        userCodeContext_.userdata = nullptr;
+        URHO3D_LOGWARNINGF("Failed loading plugin \"%s\".", GetFileNameAndExtension(path).CString());
+    }
+#endif
+
+    return userCodeContext_.userdata != nullptr;
 }
 
 }

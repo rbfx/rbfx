@@ -20,9 +20,13 @@
 # THE SOFTWARE.
 #
 
-file (GLOB SOURCE_FILES src/*.cpp src/*.hpp)
+file (GLOB_RECURSE SOURCE_FILES *.cpp *.hpp)
 add_library (PugiXml OBJECT ${SOURCE_FILES})
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(PugiXml PRIVATE -D_EXPORTS INTERFACE -D_IMPORTS)
 endif ()
-install (DIRECTORY src/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/PugiXml FILES_MATCHING PATTERN *.hpp)
+target_include_directories(PugiXml
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/PugiXml>
+)
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/ FILES_MATCHING PATTERN *.hpp)

@@ -48,4 +48,14 @@ URHO3D_EVENT(E_EDITORRESOURCESAVED, EditorResourceSaved)
 {
 }
 
+/// Event sent right before reloading user components.
+URHO3D_EVENT(E_EDITORUSERCODERELOADSTART, EditorUserCodeReloadStart)
+{
+}
+
+/// Event sent right after reloading user components.
+URHO3D_EVENT(E_EDITORUSERCODERELOADEND, EditorUserCodeReloadEnd)
+{
+}
+
 }

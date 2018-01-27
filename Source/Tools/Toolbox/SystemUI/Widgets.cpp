@@ -26,7 +26,6 @@
 #include <Urho3D/Input/Input.h>
 #include <SDL/SDL_scancode.h>
 #include <Urho3D/SystemUI/SystemUI.h>
-#include <ThirdParty/SDL/include/SDL_scancode.h>
 
 using namespace Urho3D;
 
