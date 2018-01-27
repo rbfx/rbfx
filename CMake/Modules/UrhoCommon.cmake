@@ -77,6 +77,21 @@ if (NOT DEFINED URHO3D_64BIT)
     endif ()
 endif ()
 
+if (MINGW)
+    find_file(DLL_FILE_PATH_1 "libstdc++-6.dll")
+    find_file(DLL_FILE_PATH_2 "libgcc_s_seh-1.dll")
+    find_file(DLL_FILE_PATH_3 "libwinpthread-1.dll")
+    foreach (DLL_FILE_PATH ${DLL_FILE_PATH_1} ${DLL_FILE_PATH_2} ${DLL_FILE_PATH_3})
+        if (DLL_FILE_PATH)
+            # Copies dlls to bin or tools.
+            file (COPY ${DLL_FILE_PATH} DESTINATION ${CMAKE_BINARY_DIR}/${DEST_TOOLS_DIR})
+            if (NOT URHO3D_STATIC_RUNTIME)
+                file (COPY ${DLL_FILE_PATH} DESTINATION ${CMAKE_BINARY_DIR}/${DEST_SAMPLES_DIR})
+            endif ()
+        endif ()
+    endforeach ()
+endif ()
+
 # Configure for web
 if (EMSCRIPTEN)
     # Emscripten-specific setup
