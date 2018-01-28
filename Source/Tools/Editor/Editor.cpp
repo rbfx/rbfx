@@ -59,13 +59,48 @@ void Editor::Setup()
 
     engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
     engineParameters_[EP_HEADLESS] = false;
-    engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..";
     engineParameters_[EP_FULL_SCREEN] = false;
     engineParameters_[EP_WINDOW_HEIGHT] = 1080;
     engineParameters_[EP_WINDOW_WIDTH] = 1920;
     engineParameters_[EP_LOG_LEVEL] = LOG_DEBUG;
     engineParameters_[EP_WINDOW_RESIZABLE] = true;
-    engineParameters_[EP_RESOURCE_PATHS] = "CoreData;Data;Autoload;";
+
+    String resourcePaths = "";
+    String autoloadPaths = "";
+    Vector<String> engineDataPaths = engineResourcePaths;
+
+    auto collectDataPaths = [&](const String& prefix) {
+        Vector<String> paths;
+        GetFileSystem()->ScanDir(paths, prefix, "*", SCAN_DIRS, false);
+
+        for (const String& path : paths)
+        {
+            if (path.EndsWith("Data"))
+            {
+                resourcePaths += path + ";";
+                if (!engineDataPaths.Contains(path))
+                    GetFileSystem()->CreateDir(AddTrailingSlash(prefix) + path + "Cache");
+            }
+            else if (path.EndsWith("Autoload"))
+                autoloadPaths += path + ";";
+        }
+    };
+    collectDataPaths(".");
+
+    if (resourcePaths.Empty() && autoloadPaths.Empty())
+    {
+        collectDataPaths("..");
+        if (resourcePaths.Empty() && autoloadPaths.Empty())
+            ErrorExit("No resource path was found.");
+
+        engineParameters_[EP_RESOURCE_PREFIX_PATHS] = "..";
+    }
+
+    if (resourcePaths.Empty() && autoloadPaths.Empty())
+        ErrorExit("No resource path was found.");
+
+    engineParameters_[EP_RESOURCE_PATHS] = resourcePaths;
+    engineParameters_[EP_AUTOLOAD_PATHS] = autoloadPaths;
 
     SetRandomSeed(Time::GetTimeSinceEpoch());
 }

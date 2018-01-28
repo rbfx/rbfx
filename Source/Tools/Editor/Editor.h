@@ -37,6 +37,8 @@ namespace Urho3D
 class Tab;
 class SceneTab;
 
+#define engineResourcePaths {"CoreData", "Data", "Autoload", "EditorData"}
+
 class Editor : public Application
 {
     URHO3D_OBJECT(Editor, Application);
