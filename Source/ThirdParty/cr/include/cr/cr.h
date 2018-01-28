@@ -270,13 +270,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // defining CR_HOST, ie.: #define CR_HOST CR_SAFEST
 enum cr_mode {
     CR_SAFEST = 0, // validate address and size of the state section, if
-    // anything changes the load will rollback
-        CR_SAFE = 1,   // validate only the size of the state section, this means
-    // that address is assumed to be safe if avoided keeping
-    // references to global/static states
-        CR_UNSAFE = 2, // don't validate anything but that the size of the section
-    // fits, may not be identical though
-        CR_DISABLE = 3 // completely disable the auto state transfer
+                   // anything changes the load will rollback
+    CR_SAFE = 1,   // validate only the size of the state section, this means
+                   // that address is assumed to be safe if avoided keeping 
+                   // references to global/static states
+    CR_UNSAFE = 2, // don't validate anything but that the size of the section
+                   // fits, may not be identical though
+    CR_DISABLE = 3 // completely disable the auto state transfer
 };
 
 // cr_op is passed into the guest process to indicate the current operation
@@ -297,8 +297,8 @@ enum cr_failure {
     CR_BOUNDS,   // EXCEPTION_ARRAY_BOUNDS_EXCEEDED
     CR_STACKOVERFLOW, // EXCEPTION_STACK_OVERFLOW
     CR_STATE_INVALIDATED, // one or more global data sectio changed and does
-    // not safely match basically a failure of
-    // cr_plugin_validate_sections
+                          // not safely match basically a failure of
+                          // cr_plugin_validate_sections
 
     CR_OTHER,    // Unknown or other signal,
     CR_USER = 0x100,
@@ -367,26 +367,25 @@ struct cr_plugin {
 #define CR_OP_MODE CR_HOST
 #endif
 
-#include <cassert>                 // assert
-#include <chrono>                  // duration for sleep
-#include <thread>                  // this_thread::sleep_for
-#include <string>
 #include <algorithm>
+#include <cassert> // assert
+#include <chrono>  // duration for sleep
+#include <string>
+#include <thread> // this_thread::sleep_for
 
 #if _WIN32
-#define CR_SEPARATOR '\\'
+#define CR_PATH_SEPARATOR '\\'
+#define CR_PATH_SEPARATOR_INVALID '/'
 #else
-#define CR_SEPARATOR '/'
+#define CR_PATH_SEPARATOR '/'
+#define CR_PATH_SEPARATOR_INVALID '\\'
 #endif
 
 static void cr_split_path(std::string path, std::string &parent_dir,
                           std::string &base_name, std::string &ext) {
-#if _WIN32
-    std::replace(path.begin(), path.end(), '/', CR_SEPARATOR);
-#else
-    std::replace(path.begin(), path.end(), '\\', CR_SEPARATOR);
-#endif
-    auto sep_pos = path.rfind(CR_SEPARATOR);
+    std::replace(path.begin(), path.end(), CR_PATH_SEPARATOR_INVALID,
+                 CR_PATH_SEPARATOR);
+    auto sep_pos = path.rfind(CR_PATH_SEPARATOR);
     auto dot_pos = path.rfind('.');
 
     if (sep_pos == std::string::npos) {
@@ -483,15 +482,15 @@ static std::wstring cr_utf8_to_wstring(const std::string &str) {
     int wlen = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, 0, 0);
     wchar_t wpath_small[MAX_PATH];
     std::unique_ptr<wchar_t[]> wpath_big;
-    wchar_t* wpath = wpath_small;
-    if (wlen > _countof(wpath_small))
-    {
+    wchar_t *wpath = wpath_small;
+    if (wlen > _countof(wpath_small)) {
         wpath_big = std::unique_ptr<wchar_t[]>(new wchar_t[wlen]);
         wpath = wpath_big.get();
     }
 
-    if (MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, wpath, wlen) != wlen)
+    if (MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, wpath, wlen) != wlen) {
         return L"";
+    }
 
     return wpath;
 }
@@ -499,8 +498,9 @@ static std::wstring cr_utf8_to_wstring(const std::string &str) {
 static size_t file_size(const std::string &path) {
     std::wstring wpath = cr_utf8_to_wstring(path);
     WIN32_FILE_ATTRIBUTE_DATA fad;
-    if (!GetFileAttributesExW(wpath.c_str(), GetFileExInfoStandard, &fad))
+    if (!GetFileAttributesExW(wpath.c_str(), GetFileExInfoStandard, &fad)) {
         return -1;
+    }
 
     LARGE_INTEGER size;
     size.HighPart = fad.nFileSizeHigh;
@@ -512,8 +512,9 @@ static size_t file_size(const std::string &path) {
 static time_t cr_last_write_time(const std::string &path) {
     std::wstring wpath = cr_utf8_to_wstring(path);
     WIN32_FILE_ATTRIBUTE_DATA fad;
-    if (!GetFileAttributesExW(wpath.c_str(), GetFileExInfoStandard, &fad))
+    if (!GetFileAttributesExW(wpath.c_str(), GetFileExInfoStandard, &fad)) {
         return -1;
+    }
 
     LARGE_INTEGER time;
     time.HighPart = fad.ftLastWriteTime.dwHighDateTime;
@@ -926,15 +927,13 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
 #endif
         if (p->main) {
             return p->main(&ctx, operation);
-        } else {
-            ctx.failure = CR_OTHER;
         }
 #ifndef __MINGW32__
     } __except (cr_seh_filter(ctx, GetExceptionCode())) {
         return -1;
     }
 #endif
-    return 0;
+    return -1;
 }
 
 #endif // _WIN32
@@ -960,15 +959,17 @@ using so_handle = void *;
 
 static size_t cr_file_size(const std::string &path) {
     struct stat stats {};
-    if (stat(path.c_str(), &stats) == -1)
+    if (stat(path.c_str(), &stats) == -1) {
         return 0;
+    }
     return static_cast<size_t>(stats.st_size);
 }
 
 static time_t cr_last_write_time(const std::string &path) {
     struct stat stats {};
-    if (stat(path.c_str(), &stats) == -1)
+    if (stat(path.c_str(), &stats) == -1) {
         return -1;
+    }
     return stats.st_mtim.tv_sec;
 }
 
@@ -984,8 +985,9 @@ static void cr_copy(const std::string &from, const std::string &to) {
     FILE *source = fopen(from.c_str(), "rb");
     FILE *destination = fopen(to.c_str(), "wb");
 
-    while ((size = fread(buffer, 1, BUFSIZ, source)) != 0)
+    while ((size = fread(buffer, 1, BUFSIZ, source)) != 0) {
         fwrite(buffer, 1, size, destination);
+    }
 
     fclose(source);
     fclose(destination);
@@ -1277,12 +1279,10 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
         assert(p);
         if (p->main) {
             return p->main(&ctx, operation);
-        } else {
-            ctx.failure = CR_OTHER;
         }
     }
 
-    return 0;
+    return -1;
 }
 #endif // __unix__
 
