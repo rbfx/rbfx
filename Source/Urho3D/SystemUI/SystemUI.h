@@ -85,12 +85,6 @@ public:
     bool IsAnyItemActive() const;
     /// Return whether mouse is hovering any system ui component.
     bool IsAnyItemHovered() const;
-    /// Set data which is currently being dragged.
-    void SetDragData(const Variant& dragData) { dragData_ = dragData; }
-    /// Return data which is currently dragged.
-    Variant GetDragData() const { return dragData_; }
-    /// Return true if item is being dragged.
-    bool HasDragData() const { return dragData_.GetType() != VAR_NONE; }
     /// Return font scale.
     float GetFontScale() const { return fontScale_; }
 
@@ -101,14 +95,12 @@ protected:
     VertexBuffer vertexBuffer_;
     IndexBuffer indexBuffer_;
     SharedPtr<Texture2D> fontTexture_;
-    Variant dragData_;
     PODVector<float> fontSizes_;
 
     void ReallocateFontTexture();
     void UpdateProjectionMatrix();
     void OnRenderDrawLists(ImDrawData* data);
     void OnRawEvent(VariantMap& args);
-    void OnUpdate();
 };
 
 /// Convert Color to ImVec4.
@@ -129,11 +121,13 @@ inline IntRect ToIntRect(const ImRect& rect) { return {ToIntVector2(rect.Min), T
 namespace ImGui
 {
 
-bool URHO3D_API IsMouseDown(Urho3D::MouseButton button);
-bool URHO3D_API IsMouseDoubleClicked(Urho3D::MouseButton button);
-bool URHO3D_API IsMouseDragging(Urho3D::MouseButton button, float lock_threshold=-1.f);
-bool URHO3D_API IsMouseReleased(Urho3D::MouseButton button);
-bool URHO3D_API IsMouseClicked(Urho3D::MouseButton button, bool repeat=false);
-bool URHO3D_API IsItemClicked(Urho3D::MouseButton button);
+URHO3D_API bool IsMouseDown(Urho3D::MouseButton button);
+URHO3D_API bool IsMouseDoubleClicked(Urho3D::MouseButton button);
+URHO3D_API bool IsMouseDragging(Urho3D::MouseButton button, float lock_threshold=-1.f);
+URHO3D_API bool IsMouseReleased(Urho3D::MouseButton button);
+URHO3D_API bool IsMouseClicked(Urho3D::MouseButton button, bool repeat=false);
+URHO3D_API bool IsItemClicked(Urho3D::MouseButton button);
+URHO3D_API bool SetDragDropVariant(const char* type, const Urho3D::Variant& variant, ImGuiCond cond = 0);
+URHO3D_API const Urho3D::Variant& AcceptDragDropVariant(const char* type, ImGuiDragDropFlags flags = 0);
 
 }

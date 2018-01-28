@@ -136,11 +136,6 @@ int DoubleClickSelectable(const char* label, bool selected, ImGuiSelectableFlags
     return DoubleClickSelectable(label, &selected, flags, size);
 }
 
-bool DroppedOnItem()
-{
-    return ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && ui::GetSystemUI()->HasDragData() && !ui::IsMouseDown(0);
-}
-
 bool CollapsingHeaderSimple(const char* label, ImGuiTreeNodeFlags flags)
 {
     ImGuiWindow* window = ui::GetCurrentWindow();

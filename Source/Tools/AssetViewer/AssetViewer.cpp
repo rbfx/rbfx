@@ -22,56 +22,13 @@
 
 #include <Urho3D/Urho3DAll.h>
 #include <Toolbox/SystemUI/Gizmo.h>
-#include <time.h>
-#include <stdio.h>
+#include <ctime>
+#include <cstdio>
 
 using namespace std::placeholders;
 
-#ifdef _WIN32
-#   include <direct.h>
-#   define getcwd _getcwd
-#   define chdir _chdir
-#   define popen _popen
-#   define pclose _pclose
-#else
-#   include <unistd.h>
-#endif
-
 namespace Urho3D
 {
-
-String POpen(const String& command, const std::initializer_list<String>& args, const String& currentDir=String::EMPTY)
-{
-    String lastDir;
-    char buffer[1024];
-
-    if (!currentDir.Empty())
-    {
-        if (getcwd(buffer, sizeof(buffer)) == nullptr)
-            return "";
-        lastDir = buffer;
-        chdir(currentDir.CString());
-    }
-
-    String commandLine = "\"" + command.Replaced("\"", "\\\"") + "\" ";
-    for (const auto& arg: args)
-    {
-        commandLine.Append("\"");
-        commandLine.Append(arg.Replaced("\"", "\\\""));
-        commandLine.Append("\" ");
-    }
-
-    String output;
-    FILE* stream = popen(commandLine.CString(), "r");
-    while (fgets(buffer, sizeof(buffer), stream) != NULL)
-        output.Append(buffer);
-    pclose(stream);
-
-    if (!currentDir.Empty())
-        chdir(lastDir.CString());
-
-    return output;
-}
 
 class AssetViewer
     : public Application
@@ -287,31 +244,40 @@ public:
         auto material_list_file = temp + "/mdl/out.txt";
         fs->Delete(model_file);
 
-        POpen(fs->GetProgramDir() + "AssetImporter", {"model", file_path, model_file.CString(), "-na", "-l"}, ".");
-        if (fs->FileExists(model_file))
+        Process proc(fs->GetProgramDir() + "AssetImporter", {"model", file_path, model_file.CString(), "-na", "-l"});
+        if (proc.Run() == 0)
         {
-            Vector<String> materials;
-            File fp(context_, material_list_file);
-            if (fp.IsOpen())
+            if (fs->FileExists(model_file))
             {
-                while (!fp.IsEof())
-                    materials.Push(temp + "/mdl/" + fp.ReadLine());
+                Vector<String> materials;
+                File fp(context_, material_list_file);
+                if (fp.IsOpen())
+                {
+                    while (!fp.IsEof())
+                        materials.Push(temp + "/mdl/" + fp.ReadLine());
+                }
+                LoadModel(model_file, materials);
             }
-            LoadModel(model_file, materials);
+
+            Vector<String> animations;
+            fs->ScanDir(animations, animation_path, "*.ani", SCAN_FILES, false);
+            for (const auto& filename : animations)
+                fs->Delete(animation_path + "/" + filename);
+
+            proc = Process(fs->GetProgramDir() + "AssetImporter",
+                {"anim", file_path, animation_path + "/out_" + ToString("%ld", time(nullptr))});
+            if (proc.Run())
+            {
+                fs->ScanDir(animations, animation_path, "*.ani", SCAN_FILES, false);
+
+                if (animations.Size())
+                    LoadAnimation(animation_path + "/" + animations[0]);
+            }
+            else
+                URHO3D_LOGERROR("Importing animations failed.");
         }
-
-        Vector<String> animations;
-        fs->ScanDir(animations, animation_path, "*.ani", SCAN_FILES, false);
-        for (const auto& filename : animations)
-            fs->Delete(animation_path + "/" + filename);
-
-        POpen(fs->GetProgramDir() + "AssetImporter",
-              {"anim", file_path, animation_path + "/out_" + ToString("%ld", time(nullptr))});
-
-        fs->ScanDir(animations, animation_path, "*.ani", SCAN_FILES, false);
-
-        if (animations.Size())
-            LoadAnimation(animation_path + "/" + animations[0]);
+        else
+            URHO3D_LOGERROR("Importing model failed.");
     }
 };
 

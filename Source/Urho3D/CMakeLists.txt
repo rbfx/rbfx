@@ -76,25 +76,7 @@ if (URHO3D_SYSTEMUI)
 endif ()
 
 # Group source code in VS solution
-group_sources("Audio")
-group_sources("Container")
-group_sources("Core")
-group_sources("Engine")
-group_sources("Graphics")
-group_sources("IK")
-group_sources("Input")
-group_sources("IO")
-group_sources("Math")
-group_sources("Navigation")
-group_sources("Network")
-group_sources("Physics")
-group_sources("Resource")
-group_sources("Scene")
-group_sources("SystemUI")
-group_sources("UI")
-group_sources("Urho2D")
-group_sources("Tweeks")
-group_sources("Misc")
+group_sources()
 
 if (APPLE)
     list (APPEND SOURCE_FILES IO/MacFileWatcher.m)
@@ -114,7 +96,6 @@ add_library(Urho3D ${URHO3D_LIBRARY_TYPE} ${SOURCE_FILES} ${HEADER_FILES})
 target_include_directories(Urho3D PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>        # For parent projects to find auto-generated engine headers
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>        # For parent projects to find engine headers
-    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS}>
     $<INSTALL_INTERFACE:${DEST_INCLUDE_DIR}>
     $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}>
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>

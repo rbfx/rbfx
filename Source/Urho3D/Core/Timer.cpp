@@ -167,7 +167,7 @@ String Time::GetTimeStamp()
     time_t sysTime;
     time(&sysTime);
     tm* timeInfo = localtime(&sysTime);
-    strftime(dateTime, sizeof(dateTime), "%F %T", timeInfo);
+    strftime(dateTime, sizeof(dateTime), "%Y-%m-%d %H:%M:%S", timeInfo);
     return dateTime;
 }
 

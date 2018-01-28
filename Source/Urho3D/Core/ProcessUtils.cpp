@@ -25,6 +25,7 @@
 #include "../Core/ProcessUtils.h"
 #include "../Core/StringUtils.h"
 #include "../IO/FileSystem.h"
+#include "../IO/Log.h"
 
 #include <cstdio>
 #include <fcntl.h>
@@ -44,6 +45,10 @@ extern "C" unsigned SDL_TVOS_GetActiveProcessorCount();
 #if defined(_WIN32)
 #include <windows.h>
 #include <io.h>
+#include <direct.h>
+#define getcwd _getcwd
+#define popen _popen
+#define pclose _pclose
 #if defined(_MSC_VER)
 #include <float.h>
 #include <Lmcons.h> // For UNLEN.
@@ -708,6 +713,42 @@ String GetOSVersion()
     }
 #endif
     return "(?)";
+}
+
+Process::Process(const String& command, const Vector<String>& args)
+{
+    command_ = "\"" + GetNativePath(command).Replaced("\"", "\\\"") + "\" ";
+    for (const auto& arg: args)
+    {
+        command_ += "\"";
+        command_ += arg.Replaced("\"", "\\\"");
+        command_ += "\" ";
+    }
+}
+
+int Process::Run()
+{
+    char buffer[1024];
+    String command;
+    if (!subprocessDir_.Empty())
+    {
+        command = "cd \"";
+        command += GetNativePath(AddTrailingSlash(subprocessDir_)).Replaced("\"", "\\\"");
+        command += "\"";
+#if _WIN32
+        command += "&";
+#else
+        command += ";";
+#endif
+        command += command_;
+    }
+
+    String output;
+    FILE* stream = popen(command.Empty() ? command_.CString() : command.CString(), "r");
+    while (fgets(buffer, sizeof(buffer), stream) != nullptr)
+        output.Append(buffer);
+
+    return pclose(stream);
 }
 
 }

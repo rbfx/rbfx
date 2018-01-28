@@ -106,11 +106,12 @@ bool SceneTab::RenderWindowContent()
 
     ui::SetCursorScreenPos(ToImGui(tabRect.Min()));
     ui::Image(view_.GetTexture(), ToImGui(tabRect.Size()));
+    if (GetInput()->IsMouseVisible())
+        mouseHoversViewport_ = ui::IsItemHovered();
 
     bool isClickedLeft = ui::IsMouseReleased(MOUSEB_LEFT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
     bool isClickedRight = ui::IsMouseReleased(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
-    view_.GetCamera()->GetNode()->GetComponent<DebugCameraController>()->SetEnabled(isActive_);
     gizmo_.ManipulateSelection(view_.GetCamera());
 
     // Prevent dragging window when scene view is clicked.
@@ -591,7 +592,11 @@ void SceneTab::OnUpdate(VariantMap& args)
     if (scenePlaying_)
         GetScene()->Update(timeStep);
 
-    view_.GetCamera()->GetComponent<DebugCameraController>()->Update(timeStep);
+    if (auto component = view_.GetCamera()->GetComponent<DebugCameraController>())
+    {
+        if (mouseHoversViewport_)
+            component->Update(timeStep);
+    }
 }
 
 void SceneTab::SceneStateSave(XMLFile& destination)

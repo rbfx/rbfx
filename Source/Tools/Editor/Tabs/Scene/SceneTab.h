@@ -124,6 +124,8 @@ protected:
     XMLFile sceneState_;
     /// Temporary storage of scene data used during client code reloads.
     XMLFile sceneStateReloading_;
+    /// Flag indicating that mouse is hovering scene viewport.
+    bool mouseHoversViewport_ = false;
 };
 
 };

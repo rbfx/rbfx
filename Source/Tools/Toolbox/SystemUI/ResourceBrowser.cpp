@@ -119,8 +119,19 @@ bool ResourceBrowserWindow(String& selected)
                 break;
             }
 
-            if (ui::IsItemHovered() && ui::IsMouseDragging() && !systemUI->HasDragData())
-                systemUI->SetDragData(state->path + item);
+            if (ui::IsItemActive())
+            {
+                if (ui::BeginDragDropSource())
+                {
+                    String path = state->path + item;
+                    ui::SetDragDropVariant("path", path);
+
+                    // TODO: show actual preview of a resource.
+                    ui::Text("%s", path.CString());
+
+                    ui::EndDragDropSource();
+                }
+            }
         }
     }
     ui::EndDock();
