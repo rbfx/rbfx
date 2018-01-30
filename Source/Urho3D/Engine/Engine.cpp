@@ -450,7 +450,7 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
                     if (dir.StartsWith("."))
                         continue;
 
-                    String autoResourceDir = autoLoadPath + "/" + dir;
+                    String autoResourceDir = AddTrailingSlash(autoLoadPath) + dir;
                     if (!cache->AddResourceDir(autoResourceDir, 0))
                         return false;
                 }

@@ -36,9 +36,6 @@
 #include <ImGui/imgui_internal.h>
 
 
-namespace ui = ImGui;
-
-
 namespace Urho3D
 {
 
@@ -131,3 +128,5 @@ URHO3D_API bool SetDragDropVariant(const char* type, const Urho3D::Variant& vari
 URHO3D_API const Urho3D::Variant& AcceptDragDropVariant(const char* type, ImGuiDragDropFlags flags = 0);
 
 }
+
+namespace ui = ImGui;

@@ -32,6 +32,7 @@
 #include <Toolbox/Toolbox.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
 #include <nfd.h>
+#include "Assets/AssetConverter.h"
 
 URHO3D_DEFINE_APPLICATION_MAIN(Editor);
 
@@ -57,15 +58,20 @@ void Editor::Setup()
     }
 #endif
 
+    engineResourceAutoloadPaths_ = {"Autoload"};
+    engineResourcePrefixPaths_ = {GetFileSystem()->GetProgramDir(), GetParentPath(GetFileSystem()->GetProgramDir())};
+    engineResourcePaths_ = {"Cache", "CoreData", "EditorData"};
+
     engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
     engineParameters_[EP_HEADLESS] = false;
-    engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..";
     engineParameters_[EP_FULL_SCREEN] = false;
     engineParameters_[EP_WINDOW_HEIGHT] = 1080;
     engineParameters_[EP_WINDOW_WIDTH] = 1920;
     engineParameters_[EP_LOG_LEVEL] = LOG_DEBUG;
     engineParameters_[EP_WINDOW_RESIZABLE] = true;
-    engineParameters_[EP_RESOURCE_PATHS] = "CoreData;Data;Autoload;";
+    engineParameters_[EP_AUTOLOAD_PATHS] = String::Joined(engineResourceAutoloadPaths_, ";");
+    engineParameters_[EP_RESOURCE_PREFIX_PATHS] = String::Joined(engineResourcePrefixPaths_, ";");
+    engineParameters_[EP_RESOURCE_PATHS] = String::Joined(engineResourcePaths_, ";");
 
     SetRandomSeed(Time::GetTimeSinceEpoch());
 }
@@ -86,28 +92,30 @@ void Editor::Start()
     GetSystemUI()->AddFont("Fonts/fontawesome-webfont.ttf", {ICON_MIN_FA, ICON_MAX_FA, 0}, 0, true);
     ui::GetStyle().WindowRounding = 3;
     // Disable imgui saving ui settings on it's own. These should be serialized to project file.
-    ui::GetIO().IniFilename = 0;
+    ui::GetIO().IniFilename = nullptr;
 
     GetCache()->SetAutoReloadResources(true);
 
     SubscribeToEvent(E_UPDATE, std::bind(&Editor::OnUpdate, this, _2));
     SubscribeToEvent(E_EDITORRESOURCESAVED, std::bind(&Editor::SaveProject, this, ""));
 
-    LoadProject("Etc/DefaultEditorProject.xml");
-    // Prevent overwriting example scene.
-    DynamicCast<SceneTab>(tabs_.Front())->ClearCachedPaths();
     // Creates console but makes sure it's UI is not rendered. Console rendering is done manually in editor.
     auto* console = engine_->CreateConsole();
     console->SetAutoVisibleOnError(false);
     GetFileSystem()->SetExecuteConsoleCommands(false);
     SubscribeToEvent(E_CONSOLECOMMAND, std::bind(&Editor::OnConsoleCommand, this, _2));
     console->RefreshInterpreters();
+
+    assetConverter_ = new AssetConverter(context_);
+
+    // Load default project on start
+    LoadProject("Etc/DefaultEditorProject.xml");
+    // Prevent overwriting example scene.
+    DynamicCast<SceneTab>(tabs_.Front())->ClearCachedPaths();
 }
 
 void Editor::Stop()
 {
-    if (projectFilePath_ != "Etc/DefaultEditorProject.xml")
-        SaveProject(projectFilePath_);
     ui::ShutdownDock();
 }
 
@@ -131,6 +139,18 @@ void Editor::SaveProject(String filePath)
     window.SetAttribute("height", ToString("%d", GetGraphics()->GetHeight()));
     window.SetAttribute("x", ToString("%d", GetGraphics()->GetWindowPosition().x_));
     window.SetAttribute("y", ToString("%d", GetGraphics()->GetWindowPosition().y_));
+
+    auto resources = root.CreateChild("resources");
+    for (const auto& dir : GetCache()->GetResourceDirs())
+    {
+        if (IsInternalResourcePath(dir))
+            continue;
+
+        // Saving relative paths allows moving projects easily.
+        String relative;
+        GetRelativePath(GetPath(filePath), dir, relative);
+        resources.CreateChild("path").SetValue(relative);
+    }
 
     if (!userCodeLibPath_.Empty())
     {
@@ -157,31 +177,50 @@ void Editor::SaveProject(String filePath)
     SubscribeToEvent(E_EDITORRESOURCESAVED, std::bind(&Editor::SaveProject, this, ""));
 }
 
-void Editor::LoadProject(const String& filePath)
+void Editor::LoadProject(String filePath)
 {
     if (filePath.Empty())
         return;
 
-    SharedPtr<XMLFile> xml;
     if (!IsAbsolutePath(filePath))
-        xml = GetCache()->GetResource<XMLFile>(filePath);
+        filePath = GetCache()->GetResourceFileName(filePath);
 
-    if (xml.Null())
-    {
-        xml = new XMLFile(context_);
-        if (!xml->LoadFile(filePath))
-            return;
-    }
+    SharedPtr<XMLFile> xml(new XMLFile(context_));
+    if (!xml->LoadFile(filePath))
+        return;
 
     auto root = xml->GetRoot();
     if (root.NotNull())
     {
-        idPool_.Clear();
+        Vector<String> cacheDirectories = GetCache()->GetResourceDirs();
+        for (const auto& dir : cacheDirectories)
+        {
+            if (IsInternalResourcePath(dir))
+                continue;
+
+            assetConverter_->RemoveAssetDirectory(dir);
+            GetCache()->RemoveResourceDir(dir);
+        }
+
+            idPool_.Clear();
         auto window = root.GetChild("window");
         if (window.NotNull())
         {
             GetGraphics()->SetMode(ToInt(window.GetAttribute("width")), ToInt(window.GetAttribute("height")));
             GetGraphics()->SetWindowPosition(ToInt(window.GetAttribute("x")), ToInt(window.GetAttribute("y")));
+        }
+
+        auto resources = root.GetChild("resources");
+        for (auto path = resources.GetChild("path"); path.NotNull(); path = path.GetNext("path"))
+        {
+            String resourceDir = GetAbsolutePath(GetPath(filePath) + path.GetValue());
+            if (GetFileSystem()->DirExists(resourceDir))
+            {
+                GetCache()->AddResourceDir(resourceDir);
+                assetConverter_->AddAssetDirectory(resourceDir);
+            }
+            else
+                URHO3D_LOGWARNINGF("Project tried to load missing resource path \"%s\"", resourceDir.CString());
         }
 
         auto plugins = root.GetChild("plugins");
@@ -207,6 +246,7 @@ void Editor::LoadProject(const String& filePath)
     }
 
     projectFilePath_ = filePath;
+    assetConverter_->VerifyCacheAsync();
 }
 
 void Editor::OnUpdate(VariantMap& args)
@@ -357,6 +397,35 @@ void Editor::RenderMenuBar()
             ui::EndMenu();
         }
 
+        if (ui::BeginMenu("Settings"))
+        {
+            Vector<String> cacheDirectories = GetCache()->GetResourceDirs();
+            for (const auto& dir : cacheDirectories)
+            {
+                if (IsInternalResourcePath(dir))
+                    continue;
+
+                if (ui::Button(ICON_FA_TRASH))
+                {
+                    assetConverter_->RemoveAssetDirectory(dir);
+                    GetCache()->RemoveResourceDir(dir);
+                }
+
+                ui::SameLine();
+                ui::TextUnformatted(dir.CString());
+            }
+            if (ui::Button(ICON_FA_FOLDER_OPEN " Add data directory"))
+            {
+                nfdchar_t* result = nullptr;
+                if (NFD_PickFolder(".", &result) == NFD_OKAY)
+                {
+                    GetCache()->AddResourceDir(result);
+                    NFD_FreePath(result);
+                }
+            }
+            ui::EndMenu();
+        }
+
         if (!activeTab_.Expired())
         {
             SendEvent(E_EDITORTOOLBARBUTTONS);
@@ -449,6 +518,8 @@ void Editor::OnConsoleCommand(VariantMap& args)
     String command = args[P_COMMAND].GetString();
     if (command == "revision")
         URHO3D_LOGINFOF("Engine revision: %s", GetRevision());
+    else if (command == "cache.sync")
+        assetConverter_->VerifyCacheAsync();
     else
         URHO3D_LOGWARNINGF("Unknown command \"%s\".", command.CString());
 }
@@ -473,6 +544,29 @@ bool Editor::LoadNativePlugin(const String& path)
 #endif
 
     return userCodeContext_.userdata != nullptr;
+}
+
+bool Editor::IsInternalResourcePath(const String& fullPath) const
+{
+    for (const auto& prefix : engineResourcePrefixPaths_)
+    {
+        for (const auto& path : engineResourcePaths_)
+        {
+            if (fullPath == AddTrailingSlash(prefix + path))
+                return true;
+        }
+    }
+
+    for (const auto& prefix : engineResourcePrefixPaths_)
+    {
+        for (const auto& path : engineResourceAutoloadPaths_)
+        {
+            if (fullPath.StartsWith(AddTrailingSlash(prefix + path)))
+                return true;
+        }
+    }
+
+    return false;
 }
 
 }
