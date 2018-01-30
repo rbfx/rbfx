@@ -1345,4 +1345,27 @@ String FileSystem::GetTemporaryDir() const
 #endif
 }
 
+String GetAbsolutePath(const String& path)
+{
+    Vector<String> parts;
+#if !_WIN32
+    parts.Push("");
+#endif
+    parts.Push(path.Split('/'));
+
+    int index = 0;
+    while (index < parts.Size() - 1)
+    {
+        if (parts[index] != ".." && parts[index + 1] == "..")
+        {
+            parts.Erase(index, 2);
+            index = Max(0, --index);
+        }
+        else
+            ++index;
+    }
+
+    return String::Joined(parts, "/");
+}
+
 }
