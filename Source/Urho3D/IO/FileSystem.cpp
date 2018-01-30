@@ -1245,7 +1245,7 @@ String GetSanitizedPath(const String& path)
 
     bool hasTrailingSlash = path.EndsWith("/") || path.EndsWith("\\");
 
-#ifndef URHO3D_PLATFORM_WINDOWS
+#ifndef _WIN32
 
     bool absolute = IsAbsolutePath(path);
     sanitized = String::Joined(parts, "/");
