@@ -1168,9 +1168,7 @@ bool FileSystem::RemoveDir(const String& directoryIn, bool recursive)
 
 #ifdef WIN32
         return RemoveDirectoryW(GetWideNativePath(directory).CString()) != 0;
-#endif
-
-#ifdef __APPLE__
+#else
         return remove(GetNativePath(directory).CString()) == 0;
 #endif
     }
