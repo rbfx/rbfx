@@ -784,6 +784,8 @@ unsigned long long ResourceCache::GetTotalMemoryUse() const
 
 String ResourceCache::GetResourceFileName(const String& name) const
 {
+    MutexLock lock(resourceMutex_);
+
     auto* fileSystem = GetSubsystem<FileSystem>();
     for (unsigned i = 0; i < resourceDirs_.Size(); ++i)
     {
