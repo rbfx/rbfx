@@ -36,8 +36,7 @@ namespace Urho3D
 
 class Tab;
 class SceneTab;
-
-#define engineResourcePaths {"CoreData", "Data", "Autoload", "EditorData"}
+class AssetConverter;
 
 class Editor : public Application
 {
@@ -55,7 +54,7 @@ public:
     /// Save editor configuration.
     void SaveProject(String filePath);
     /// Load saved editor configuration.
-    void LoadProject(const String& filePath);
+    void LoadProject(String filePath);
     /// Renders UI elements.
     void OnUpdate(VariantMap& args);
     /// Renders menu bar at the top of the screen.
@@ -82,6 +81,8 @@ protected:
     void OnConsoleCommand(VariantMap& args);
     /// Load a native user plugin from a specified shared library.
     bool LoadNativePlugin(const String& path);
+    /// Returns true if specified path is internal engine or editor resource path.
+    bool IsInternalResourcePath(const String& fullPath) const;
 
     /// Pool tracking availability of unique IDs used by editor.
     IDPool idPool_;
@@ -95,6 +96,11 @@ protected:
     cr_plugin userCodeContext_{};
     /// Path of current user plugin.
     String userCodeLibPath_;
+    /// Converter responsible for watching resource directories and converting assets to required formats.
+    SharedPtr<AssetConverter> assetConverter_;
+    Vector<String> engineResourcePaths_;
+    Vector<String> engineResourcePrefixPaths_;
+    Vector<String> engineResourceAutoloadPaths_;
 };
 
 }

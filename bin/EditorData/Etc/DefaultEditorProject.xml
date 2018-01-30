@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 <project version="0">
 	<window width="1920" height="1080" x="283" y="194" />
+	<resources>
+		<path>../../Data/</path>
+	</resources>
 	<tabs>
 		<tab type="scene" id="52C5ADA6" path="Scenes/SceneLoadExample.xml">
 			<camera>
