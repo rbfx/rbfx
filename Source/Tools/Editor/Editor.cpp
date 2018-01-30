@@ -141,8 +141,6 @@ void Editor::Start()
 
 void Editor::Stop()
 {
-    if (projectFilePath_ != "Etc/DefaultEditorProject.xml")
-        SaveProject(projectFilePath_);
     ui::ShutdownDock();
 }
 
