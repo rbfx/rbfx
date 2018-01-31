@@ -375,7 +375,8 @@ Sprite2D* TmxImageLayer2D::GetSprite() const
 }
 
 TmxFile2D::TmxFile2D(Context* context) :
-    Resource(context)
+    Resource(context),
+    edgeOffset_(0.f)
 {
 }
 
@@ -585,6 +586,13 @@ const TmxLayer2D* TmxFile2D::GetLayer(unsigned index) const
         return nullptr;
 
     return layers_[index];
+}
+
+void TmxFile2D::SetSpriteTextureEdgeOffset(float offset)
+{
+    edgeOffset_ = offset;
+    for (auto& i : gidToSpriteMapping_)
+        i.second_->SetTextureEdgeOffset(offset);
 }
 
 SharedPtr<XMLFile> TmxFile2D::LoadTSXFile(const String& source)
