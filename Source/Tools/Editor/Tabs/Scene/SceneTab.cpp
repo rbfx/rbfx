@@ -43,7 +43,6 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
     , gizmo_(context)
     , undo_(context)
     , sceneState_(context)
-    , sceneStateReloading_(context)
 {
     SetTitle("New Scene");
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
@@ -58,7 +57,8 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
     // On plugin code reload all scene state is serialized, plugin library is reloaded and scene state is unserialized.
     // This way scene recreates all plugin-provided components on reload and gets to use new versions of them.
     SubscribeToEvent(E_EDITORUSERCODERELOADSTART, [&](StringHash, VariantMap&) {
-        SceneStateSave(sceneStateReloading_);
+        Pause();
+        SceneStateSave();
         for (auto node : GetScene()->GetChildren(true))
         {
             if (!node->HasTag("__EDITOR_OBJECT__"))
@@ -66,7 +66,7 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
         }
     });
     SubscribeToEvent(E_EDITORUSERCODERELOADEND, [&](StringHash, VariantMap&) {
-        SceneStateRestore(sceneStateReloading_);
+        SceneStateRestore(sceneState_);
     });
 
     undo_.Connect(GetScene());
@@ -343,15 +343,9 @@ void SceneTab::RenderToolbarButtons()
     {
         scenePlaying_ ^= true;
         if (scenePlaying_)
-        {
-            undo_.SetTrackingEnabled(false);
-            SceneStateSave(sceneState_);
-        }
+            Pause();
         else
-        {
-            SceneStateRestore(sceneState_);
-            undo_.SetTrackingEnabled(true);
-        }
+            Play();
     }
 
     ui::NewLine();
@@ -599,13 +593,19 @@ void SceneTab::OnUpdate(VariantMap& args)
     }
 }
 
-void SceneTab::SceneStateSave(XMLFile& destination)
+void SceneTab::SceneStateSave()
 {
     bool isUndoTracking = undo_.IsTrackingEnabled();
     undo_.SetTrackingEnabled(false);
 
-    destination.GetRoot().Remove();
-    XMLElement root = destination.CreateRoot("scene");
+    for (auto& node : GetSelection())
+    {
+        if (node)
+            node->AddTag("__EDITOR_SELECTED__");
+    }
+
+    sceneState_.GetRoot().Remove();
+    XMLElement root = sceneState_.CreateRoot("scene");
     GetScene()->SaveXML(root);
 
     undo_.SetTrackingEnabled(isUndoTracking);
@@ -627,6 +627,10 @@ void SceneTab::SceneStateRestore(XMLFile& source)
         GetScene()->AddChild(node);
 
     source.GetRoot().Remove();
+
+    gizmo_.UnselectAll();
+    for (auto node : GetScene()->GetChildrenWithTag("__EDITOR_SELECTED__", true))
+        gizmo_.Select(node);
 
     undo_.SetTrackingEnabled(isUndoTracking);
 }
@@ -694,6 +698,25 @@ void SceneTab::RenderNodeContextMenu()
             RemoveSelection();
 
         ui::EndPopup();
+    }
+}
+
+void SceneTab::Play()
+{
+    if (!scenePlaying_)
+    {
+        SceneStateRestore(sceneState_);
+        undo_.SetTrackingEnabled(true);
+    }
+}
+
+void SceneTab::Pause()
+{
+    if (scenePlaying_)
+    {
+        undo_.SetTrackingEnabled(false);
+        SceneStateSave();
+        gizmo_.UnselectAll();
     }
 }
 
