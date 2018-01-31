@@ -96,7 +96,7 @@ The documentation is also available online at
 Documentation on how to build Urho3D:
   https://urho3d.github.io/documentation/HEAD/_building.html
 Documentation on how to use Urho3D as external library
-  https://urho3d.github.io/documentation/HEAD/_using_library.htmhttps://github.com/CedricGuillemet/ImGuizmol
+  https://urho3d.github.io/documentation/HEAD/_using_library.html
 
 Replace HEAD with a specific release version in the above links to obtain the
 documentation pertinent to the specified release. Alternatively, use the
