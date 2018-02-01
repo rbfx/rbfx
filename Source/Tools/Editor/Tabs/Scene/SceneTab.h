@@ -107,6 +107,10 @@ protected:
     void OnUpdate(VariantMap& args);
     /// Render context menu of a scene node.
     void RenderNodeContextMenu();
+    /// Inserts extra editor objects for representing some components.
+    void OnComponentAdded(VariantMap& args);
+    /// Removes extra editor objects that were used for representing some components.
+    void OnComponentRemoved(VariantMap& args);
 
     /// Scene renderer.
     SceneView view_;

@@ -68,6 +68,8 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
     SubscribeToEvent(E_EDITORUSERCODERELOADEND, [&](StringHash, VariantMap&) {
         SceneStateRestore(sceneState_);
     });
+    SubscribeToEvent(GetScene(), E_COMPONENTADDED, std::bind(&SceneTab::OnComponentAdded, this, _2));
+    SubscribeToEvent(GetScene(), E_COMPONENTREMOVED, std::bind(&SceneTab::OnComponentRemoved, this, _2));
 
     undo_.Connect(GetScene());
     undo_.Connect(&inspector_);
@@ -725,6 +727,64 @@ void SceneTab::Pause()
         undo_.SetTrackingEnabled(false);
         SceneStateSave();
         gizmo_.UnselectAll();
+    }
+}
+
+void SceneTab::OnComponentAdded(VariantMap& args)
+{
+    using namespace ComponentAdded;
+    auto* component = dynamic_cast<Component*>(args[P_COMPONENT].GetPtr());
+    auto* node = dynamic_cast<Node*>(args[P_NODE].GetPtr());
+
+    if (node->IsTemporary())
+        return;
+
+    auto* material = GetCache()->GetResource<Material>("Materials/Editor/DebugIcon" + component->GetTypeName() + ".xml", false);
+    if (material != nullptr)
+    {
+        int count = node->GetChildrenWithTag("DebugIcon").Size();
+        node = node->CreateChild();
+        node->AddTag("DebugIcon");
+        node->AddTag("DebugIcon" + component->GetTypeName());
+        node->AddTag("__EDITOR_OBJECT__");
+        node->SetTemporary(true);
+
+        auto* billboard = node->CreateComponent<BillboardSet>();
+        billboard->SetFaceCameraMode(FaceCameraMode::FC_LOOKAT_Y);
+        billboard->SetNumBillboards(1);
+        billboard->SetMaterial(material);
+        billboard->SetViewMask(0x80000000);
+        if (auto* bb = billboard->GetBillboard(0))
+        {
+            bb->size_ = Vector2::ONE * 0.2f;
+            bb->enabled_ = true;
+            bb->position_ = {0, count * 0.4f, 0};
+        }
+        billboard->Commit();
+    }
+}
+
+void SceneTab::OnComponentRemoved(VariantMap& args)
+{
+    using namespace ComponentRemoved;
+    auto* component = dynamic_cast<Component*>(args[P_COMPONENT].GetPtr());
+    auto* node = dynamic_cast<Node*>(args[P_NODE].GetPtr());
+
+    if (!node->IsTemporary())
+    {
+        for (auto* icon : node->GetChildrenWithTag("DebugIcon" + component->GetTypeName()))
+            icon->Remove();
+
+        int index = 0;
+        for (auto* icon : node->GetChildrenWithTag("DebugIcon"))
+        {
+            if (auto* billboard = icon->GetComponent<BillboardSet>())
+            {
+                billboard->GetBillboard(0)->position_ = {0, index * 0.4f, 0};
+                billboard->Commit();
+                index++;
+            }
+        }
     }
 }
 
