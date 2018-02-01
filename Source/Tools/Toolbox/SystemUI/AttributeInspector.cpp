@@ -371,7 +371,8 @@ void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
                     item->SetAttribute(info.name_, value);
                     item->ApplyAttributes();
                 }
-                else if (modifiedLastFrame && !ui::IsAnyItemActive())
+
+                if ((modified || modifiedLastFrame) && !ui::IsAnyItemActive())
                 {
                     // This attribute was modified on last frame, but not on this frame. Continuous attribute value modification
                     // has ended and we can fire attribute modification event.
