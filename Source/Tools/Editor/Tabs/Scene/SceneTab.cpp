@@ -605,8 +605,7 @@ void SceneTab::OnUpdate(VariantMap& args)
 
 void SceneTab::SceneStateSave()
 {
-    bool isUndoTracking = undo_.IsTrackingEnabled();
-    undo_.SetTrackingEnabled(false);
+    Undo::SetTrackingScoped tracking(undo_, false);
 
     for (auto& node : GetSelection())
     {
@@ -617,14 +616,11 @@ void SceneTab::SceneStateSave()
     sceneState_.GetRoot().Remove();
     XMLElement root = sceneState_.CreateRoot("scene");
     GetScene()->SaveXML(root);
-
-    undo_.SetTrackingEnabled(isUndoTracking);
 }
 
 void SceneTab::SceneStateRestore(XMLFile& source)
 {
-    bool isUndoTracking = undo_.IsTrackingEnabled();
-    undo_.SetTrackingEnabled(false);
+    Undo::SetTrackingScoped tracking(undo_, false);
 
     // Migrate editor objects to a newly loaded scene without destroying them.
     Vector<SharedPtr<Node>> temporaries;
@@ -641,8 +637,6 @@ void SceneTab::SceneStateRestore(XMLFile& source)
     gizmo_.UnselectAll();
     for (auto node : GetScene()->GetChildrenWithTag("__EDITOR_SELECTED__", true))
         gizmo_.Select(node);
-
-    undo_.SetTrackingEnabled(isUndoTracking);
 }
 
 void SceneTab::RenderNodeContextMenu()
@@ -745,6 +739,7 @@ void SceneTab::OnComponentAdded(VariantMap& args)
         if (node->GetChildrenWithTag("DebugIcon" + component->GetTypeName()).Size() > 0)
             return;
 
+        Undo::SetTrackingScoped tracking(undo_, false);
         int count = node->GetChildrenWithTag("DebugIcon").Size();
         node = node->CreateChild();
         node->AddTag("DebugIcon");
@@ -775,6 +770,8 @@ void SceneTab::OnComponentRemoved(VariantMap& args)
 
     if (!node->IsTemporary())
     {
+        Undo::SetTrackingScoped tracking(undo_, false);
+
         for (auto* icon : node->GetChildrenWithTag("DebugIcon" + component->GetTypeName()))
             icon->Remove();
 
