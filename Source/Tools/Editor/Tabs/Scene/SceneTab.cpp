@@ -143,13 +143,20 @@ bool SceneTab::RenderWindowContent()
         if (results.Size())
         {
             WeakPtr<Node> clickNode(results[0].drawable_->GetNode());
-            bool appendSelection = GetInput()->GetKeyDown(KEY_CTRL);
-            if (!appendSelection)
-                UnselectAll();
-            ToggleSelection(clickNode);
+            // Temporary nodes can not be selected.
+            while (!clickNode.Expired() && clickNode->HasTag("__EDITOR_OBJECT__"))
+                clickNode = clickNode->GetParent();
 
-            if (isClickedRight)
-                ui::OpenPopupEx(ui::GetID("Node context menu"), true);
+            if (!clickNode.Expired())
+            {
+                bool appendSelection = GetInput()->GetKeyDown(KEY_CTRL);
+                if (!appendSelection)
+                    UnselectAll();
+                ToggleSelection(clickNode);
+
+                if (isClickedRight)
+                    ui::OpenPopupEx(ui::GetID("Node context menu"), true);
+            }
         }
         else
             UnselectAll();
