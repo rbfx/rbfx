@@ -742,6 +742,9 @@ void SceneTab::OnComponentAdded(VariantMap& args)
     auto* material = GetCache()->GetResource<Material>("Materials/Editor/DebugIcon" + component->GetTypeName() + ".xml", false);
     if (material != nullptr)
     {
+        if (node->GetChildrenWithTag("DebugIcon" + component->GetTypeName()).Size() > 0)
+            return;
+
         int count = node->GetChildrenWithTag("DebugIcon").Size();
         node = node->CreateChild();
         node->AddTag("DebugIcon");
