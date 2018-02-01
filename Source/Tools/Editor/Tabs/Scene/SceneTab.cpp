@@ -453,7 +453,8 @@ void SceneTab::RenderNodeTree(Node* node)
     {
         if (!nodeRef.Expired())
         {
-            for (auto& component: node->GetComponents())
+            Vector<SharedPtr<Component>> components = node->GetComponents();
+            for (auto component: components)
             {
                 if (component->IsTemporary())
                     continue;
@@ -482,7 +483,7 @@ void SceneTab::RenderNodeTree(Node* node)
                 if (ui::BeginPopup("Component context menu"))
                 {
                     if (ui::MenuItem("Remove"))
-                        selectedComponent_->Remove();
+                        component->Remove();
                     ui::EndPopup();
                 }
 
