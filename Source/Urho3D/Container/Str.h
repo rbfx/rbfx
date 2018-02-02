@@ -27,6 +27,7 @@
 #include <cstdarg>
 #include <cstring>
 #include <cctype>
+#include <string>
 
 namespace Urho3D
 {
@@ -86,6 +87,24 @@ public:
     {
         Resize(length);
         CopyChars(buffer_, str, length);
+    }
+
+    /// Construct from std::string.
+    String(const std::string& str) :
+        length_(0),
+        capacity_(0),
+        buffer_(&endZero)
+    {
+        *this = str.c_str();
+    }
+
+    /// Construct from std::wstring.
+    String(const std::wstring& str) :
+        length_(0),
+        capacity_(0),
+        buffer_(&endZero)
+    {
+        SetUTF8FromWChar(str.c_str());
     }
 
     /// Construct from a null-terminated wide character array.
