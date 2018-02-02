@@ -266,7 +266,7 @@ public:
 
             proc = Process(fs->GetProgramDir() + "AssetImporter",
                 {"anim", file_path, animation_path + "/out_" + ToString("%ld", time(nullptr))});
-            if (proc.Run())
+            if (proc.Run() == 0)
             {
                 fs->ScanDir(animations, animation_path, "*.ani", SCAN_FILES, false);
 
