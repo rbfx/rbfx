@@ -717,7 +717,7 @@ String GetOSVersion()
 
 Process::Process(const String& command, const Vector<String>& args)
 {
-    command_ = "\"" + GetNativePath("./" + command).Replaced("\"", "\\\"") + "\" ";
+    command_ = "\"" + GetNativePath((IsAbsolutePath(command) ? "" : "./") + command).Replaced("\"", "\\\"") + "\" ";
     for (const auto& arg: args)
     {
         command_ += "\"";

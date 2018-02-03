@@ -322,6 +322,8 @@ Input::Input(Context* context) :
     Object(context),
     mouseButtonDown_(0),
     mouseButtonPress_(0),
+    mouseButtonClick_(0),
+    mousePressPosition_(MOUSE_POSITION_OFFSCREEN),
     lastVisibleMousePosition_(MOUSE_POSITION_OFFSCREEN),
     mouseMoveWheel_(0),
     inputScale_(Vector2::ONE),
@@ -1328,6 +1330,11 @@ bool Input::GetMouseButtonPress(int button) const
     return (mouseButtonPress_ & button) != 0;
 }
 
+bool Input::GetMouseButtonClick(int button) const
+{
+    return (mouseButtonClick_ & button) != 0;
+}
+
 bool Input::GetQualifierDown(int qualifier) const
 {
     if (qualifier == QUAL_SHIFT)
@@ -1529,6 +1536,7 @@ void Input::ResetInputAccumulation()
     keyPress_.Clear();
     scancodePress_.Clear();
     mouseButtonPress_ = 0;
+    mouseButtonClick_ = 0;
     mouseMove_ = IntVector2::ZERO;
     mouseMoveWheel_ = 0;
     for (HashMap<SDL_JoystickID, JoystickState>::Iterator i = joysticks_.Begin(); i != joysticks_.End(); ++i)
@@ -1611,6 +1619,7 @@ void Input::ResetState()
     mouseMove_ = IntVector2::ZERO;
     mouseMoveWheel_ = 0;
     mouseButtonPress_ = 0;
+    mouseButtonClick_ = 0;
 }
 
 void Input::ResetTouches()
@@ -1710,9 +1719,14 @@ void Input::SetMouseButton(int button, bool newState)
             mouseButtonPress_ |= button;
 
         mouseButtonDown_ |= button;
+        mousePressTimer_.Reset();
+        mousePressPosition_ = GetMousePosition();
     }
     else
     {
+        if (mousePressTimer_.GetMSec(false) < 250 && mousePressPosition_ == GetMousePosition())
+            mouseButtonClick_ |= button;
+
         if (!(mouseButtonDown_ & button))
             return;
 

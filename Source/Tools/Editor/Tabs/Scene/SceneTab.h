@@ -83,6 +83,10 @@ public:
     SceneView* GetSceneView() { return &view_; }
     /// Return scene displayed in the tab viewport.
     Scene* GetScene() { return view_.GetScene(); }
+    /// Start scene simulation.
+    void Play();
+    /// Stop scene simulation.
+    void Pause();
 
 protected:
     /// Render scene hierarchy window starting from specified node.
@@ -96,13 +100,17 @@ protected:
     /// Update objects with current tab view rect size.
     IntRect UpdateViewRect() override;
     /// Serialize scene to xml file.
-    void SceneStateSave(XMLFile& destination);
+    void SceneStateSave();
     /// Unserialize scene from xml file.
     void SceneStateRestore(XMLFile& source);
     /// Manually updates scene.
     void OnUpdate(VariantMap& args);
     /// Render context menu of a scene node.
     void RenderNodeContextMenu();
+    /// Inserts extra editor objects for representing some components.
+    void OnComponentAdded(VariantMap& args);
+    /// Removes extra editor objects that were used for representing some components.
+    void OnComponentRemoved(VariantMap& args);
 
     /// Scene renderer.
     SceneView view_;
@@ -122,8 +130,6 @@ protected:
     bool scenePlaying_ = false;
     /// Temporary storage of scene data used in play/pause functionality.
     XMLFile sceneState_;
-    /// Temporary storage of scene data used during client code reloads.
-    XMLFile sceneStateReloading_;
     /// Flag indicating that mouse is hovering scene viewport.
     bool mouseHoversViewport_ = false;
 };

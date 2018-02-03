@@ -635,6 +635,29 @@ protected:
     StateCollection currentFrameStates_;
 };
 
+class SetTrackingScoped
+{
+public:
+    /// Set undo manager tracking in this scope. Restore to the old value on scope exit.
+    explicit SetTrackingScoped(Manager& manager, bool tracking)
+        : manager_(manager)
+        , tracking_(manager.IsTrackingEnabled())
+    {
+        manager.SetTrackingEnabled(tracking);
+    }
+
+    ~SetTrackingScoped()
+    {
+        manager_.SetTrackingEnabled(tracking_);
+    }
+
+protected:
+    /// Undo manager which is being operated upon.
+    Manager& manager_;
+    /// Old tracking value.
+    bool tracking_;
+};
+
 }
 
 }
