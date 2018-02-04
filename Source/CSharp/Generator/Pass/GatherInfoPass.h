@@ -45,7 +45,7 @@ public:
     bool Visit(const cppast::cpp_entity& e, cppast::visitor_info info) override;
 
 protected:
-    cppast::cpp_access_specifier_kind access_ = cppast::cpp_private;
+    PODVector<cppast::cpp_access_specifier_kind> access_;
     IncludedChecker typeChecker_;
 };
 
