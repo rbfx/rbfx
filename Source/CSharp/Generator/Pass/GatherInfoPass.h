@@ -41,11 +41,9 @@ public:
     explicit GatherInfoPass(Context* context) : ParserPass(context) { };
 
     void Start() override;
-    void StartFile(const String& filePath) override;
     bool Visit(const cppast::cpp_entity& e, cppast::visitor_info info) override;
 
 protected:
-    PODVector<cppast::cpp_access_specifier_kind> access_;
     IncludedChecker typeChecker_;
 };
 

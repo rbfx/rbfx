@@ -35,39 +35,19 @@ void GatherInfoPass::Start()
     typeChecker_.Load(GetSubsystem<GeneratorContext>()->GetRules()->GetRoot().GetChild("types"));
 }
 
-void GatherInfoPass::StartFile(const String& filePath)
-{
-    // Global scope is public
-    access_.Push(cppast::cpp_public);
-}
-
 bool GatherInfoPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info info)
 {
-    if (e.kind() == cppast::cpp_entity_kind::access_specifier_t)
-        access_.Back() = dynamic_cast<const cppast::cpp_access_specifier&>(e).access_specifier();
-    else if (e.kind() == cppast::cpp_entity_kind::class_t)
-    {
-        const auto& cls = dynamic_cast<const cppast::cpp_class&>(e);
-        // Default class access is private
-        if (info.event == info.container_entity_enter)
-            access_.Push(cls.class_kind() == cppast::cpp_class_kind::class_t ? cppast::cpp_private : cppast::cpp_public);
-        else if (info.event == info.container_entity_exit)
-            access_.Pop();
-    }
-
-    GetUserData(e)->access = access_.Back();
-
     if (e.kind() == cppast::cpp_entity_kind::function_t || e.kind() == cppast::cpp_entity_kind::member_function_t || e.kind() == cppast::cpp_entity_kind::member_variable_t)
     {
         if (e.parent().value().kind() == cppast::cpp_entity_kind::class_t)
         {
-            if (access_.Back() == cppast::cpp_private)
+            if (info.access == cppast::cpp_private)
             {
                 GetUserData(e)->generated = false;
                 if (info.event == cppast::visitor_info::container_entity_enter)
                     return false;
             }
-            else if (access_.Back() == cppast::cpp_protected)
+            else if (info.access == cppast::cpp_protected)
                 GetUserData(e.parent().value())->hasProtected = true;
         }
     }

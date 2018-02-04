@@ -39,7 +39,6 @@ struct UserData
     bool generated = true;
     bool hasProtected = false;
     bool hasVirtual = true;
-    cppast::cpp_access_specifier_kind access = cppast::cpp_access_specifier_kind::cpp_public;
     String cFunctionName;
 };
 
