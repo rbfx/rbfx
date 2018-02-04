@@ -24,16 +24,16 @@
 #include <Urho3D/IO/File.h>
 #include <cppast/cpp_function.hpp>
 #include <cppast/cpp_member_function.hpp>
-#include "GenerateCAPI.h"
+#include "GenerateCApiPass.h"
 #include "GeneratorContext.h"
 
 
 namespace Urho3D
 {
 
-void GenerateCAPI::Start()
+void GenerateCApiPass::Start()
 {
-    URHO3D_LOGDEBUGF("~~~~~ GenerateCAPI ~~~~~");
+    URHO3D_LOGDEBUGF("~~~~~ GenerateCApiPass ~~~~~");
 
     printer_ << "#include <Urho3D/Urho3DAll.h>";
     printer_ << "#include \"CSharp.h\"";
@@ -43,7 +43,7 @@ void GenerateCAPI::Start()
     printer_ << "";
 }
 
-bool GenerateCAPI::Visit(const cppast::cpp_entity& e, cppast::visitor_info info)
+bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info info)
 {
     auto generator = GetSubsystem<GeneratorContext>();
 
@@ -151,7 +151,7 @@ bool GenerateCAPI::Visit(const cppast::cpp_entity& e, cppast::visitor_info info)
     return true;
 }
 
-void GenerateCAPI::Stop()
+void GenerateCApiPass::Stop()
 {
     // Close extern "C"
     printer_ << "}";
@@ -166,7 +166,7 @@ void GenerateCAPI::Stop()
     file.Close();
 }
 
-String GenerateCAPI::GetUniqueName(const String& baseName)
+String GenerateCApiPass::GetUniqueName(const String& baseName)
 {
     unsigned index = 0;
     String newName;

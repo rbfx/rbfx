@@ -25,7 +25,7 @@
 #include <Urho3D/Urho3DAll.h>
 #include <Pass/GatherInfoPass.h>
 #include <Pass/UnknownTypesPass.h>
-#include <Pass/CSharp/GenerateCAPI.h>
+#include <Pass/CSharp/GenerateCApiPass.h>
 #include "GeneratorContext.h"
 
 
@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
 
     context->RegisterFactory<GatherInfoPass>();
     context->RegisterFactory<UnknownTypesPass>();
-    context->RegisterFactory<GenerateCAPI>();
+    context->RegisterFactory<GenerateCApiPass>();
 
 
     auto* generator = new GeneratorContext(context);
@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
 
     generator->AddPass<GatherInfoPass>();
     generator->AddPass<UnknownTypesPass>();
-    generator->AddPass<GenerateCAPI>();
+    generator->AddPass<GenerateCApiPass>();
 
     generator->Generate(outputDir);
 }

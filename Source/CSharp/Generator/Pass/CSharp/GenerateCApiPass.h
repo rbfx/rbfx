@@ -34,11 +34,11 @@ namespace Urho3D
 {
 
 /// Walk AST and gather known defined classes. Exclude protected/private members from generation.
-class GenerateCAPI : public ParserPass
+class GenerateCApiPass : public ParserPass
 {
-    URHO3D_OBJECT(GenerateCAPI, ParserPass);
+    URHO3D_OBJECT(GenerateCApiPass, ParserPass);
 public:
-    explicit GenerateCAPI(Context* context) : ParserPass(context) { };
+    explicit GenerateCApiPass(Context* context) : ParserPass(context) { };
 
     void Start() override;
     bool Visit(const cppast::cpp_entity& e, cppast::visitor_info info) override;
