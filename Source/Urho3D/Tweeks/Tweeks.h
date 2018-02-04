@@ -119,47 +119,54 @@ namespace Urho3D
 		virtual ~Tweeks();
 
 		static void RegisterObject(Context* context);
+		/// Saves all tweeks to dest
 		bool Save(Serializer* dest);
+		/// Saves all tweeks to filename
+		bool Save(String filename);
+		
+		/// clears all tweeks and Loads source.
 		bool Load(Deserializer* source);
+		/// clears all tweeks and Loads filename.
+		bool Load(String filename);
 
-		//returns the entire map of tweeks
+		/// returns the entire map of tweeks
 		TweekMap GetTweeks();
 
-		//returns map of tweeks with easily lookup by section
+		/// returns map of tweeks with easily lookup by section
 		TweekSectionMap GetTweekSectionMap();
 
-		//returns a list of tweeks in a section
+		/// returns a list of tweeks in a section
 		Vector<SharedPtr<Tweek>> GetTweeksInSection(String section);
 
-		//returns the names of all sections
+		/// returns the names of all sections
 		StringVector GetSections();
 
-		//start a new section
+		/// start a new section
 		void BeginSection(String section);
 
-		//returns the current section.
+		/// returns the current section.
 		String CurrentSection();
 
-		//ends the current section restoring the previous section.
+		/// ends the current section restoring the previous section.
 		void EndSection();
 
-		//starts a new default tweek lifetime.
+		/// starts a new default tweek lifetime.
 		void BeginTweekTime(unsigned int tweekLifeTimeMs);
 
-		//returns the current default tweek time.
+		/// returns the current default tweek time.
 		unsigned int CurrentTweekTime();
 
-		//ends the current tweek time - restoring the previous tweek time.
+		/// ends the current tweek time - restoring the previous tweek time.
 		void EndTweekTime();
 
-		//clears all tweeks.
+		/// clears all tweeks.
 		void Clear();
 
-		//iterates through all tweeks and removes the tweeks that have expired.
+		/// iterates through all tweeks and removes the tweeks that have expired.
 		void TrimExpired();
 
 
-		//returns a new or existing tweek.
+		/// returns a new or existing tweek.
 		Tweek* GetTweek(String name, String section = "");
 		
 		bool TweekExists(String name, String section = "");
@@ -187,7 +194,7 @@ namespace Urho3D
 			return GetDefault<T>(name, T(), section, tweek_out);
 		}
 
-		//updates a tweek with value, will create a new tweek if needed.
+		/// updates a tweek with value, will create a new tweek if needed.
 		template <typename T>
 		Tweek* Update(String name, T value, String section = "") {
 			Tweek* tw = nullptr;
@@ -204,6 +211,15 @@ namespace Urho3D
 			}
 			return tw;
 		}
+
+
+		/// shows the ui console on imgui
+		void RenderUIConsole();
+
+		/// renders a single tweek on imgui
+		void RenderTweekUI(Tweek* tweek);
+
+
 	protected:
 
 		void insertTweek(Tweek* tweek);
@@ -212,6 +228,8 @@ namespace Urho3D
 		TweekMap mTweekMap; //tweek lookup by name
 		TweekSectionMap mTweekSectionMap;//lookup list of tweeks by section
 		StringVector mSections;
+		String mDefaultFileName = "Tweeks.twks";
+		String mCurrentSaveFileName;
 
 		StringVector mCurSectionStack;
 		Vector<unsigned int> mTweekTimeStack;
