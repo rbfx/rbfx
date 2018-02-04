@@ -80,6 +80,13 @@ if (NOT ANDROID)
             create_symlink(${RES_DIR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${NAME})
         endif ()
     endforeach ()
+    foreach (RES_DIR ${AUTOLOAD_DIRS})
+        get_filename_component (NAME ${RES_DIR} NAME)
+        install (DIRECTORY ${RES_DIR} DESTINATION ${DEST_RESOURCE_DIR}/Autoload)
+        if (NOT EXISTS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Autoload/${NAME})
+            create_symlink(${RES_DIR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Autoload/${NAME})
+        endif ()
+    endforeach ()
 endif ()
 
 # Print current build configuration
