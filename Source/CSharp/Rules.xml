@@ -1,0 +1,34 @@
+<rules>
+    <headers>
+        <include>Container/RefCounted.h</include>
+        <include>Math/StringHash.h</include>
+        <include>Core/Object.h</include>
+        <include>Engine/*.h</include>
+    </headers>
+    <compiler>
+        <define>URHO3D_API</define>
+    </compiler>
+    <types>
+        <include>Urho3D::*</include>
+        <exclude>Urho3D::ObjectFactory</exclude>
+        <exclude>Urho3D::EventHandler</exclude>
+        <exclude>Urho3D::EventHandler11Impl</exclude>
+        <exclude>Urho3D::EventNameRegistrar</exclude>
+        <manual>Urho3D::String</manual>
+        <manual>Urho3D::WString</manual>
+    </types>
+    <!--
+    <typemaps>
+        <typemap>
+            <c>wchar_t*</c>
+            <cpp>Urho3D::String</cpp>
+            <lang>String</lang>
+        </typemap>
+        <typemap>
+            <c>wchar_t*</c>
+            <cpp>Urho3D::WString</cpp>
+            <lang>String</lang>
+        </typemap>
+    </typemaps>
+    -->
+</rules>
