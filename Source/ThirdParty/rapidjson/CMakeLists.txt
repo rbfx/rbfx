@@ -20,5 +20,10 @@
 # THE SOFTWARE.
 #
 
-add_library(rapidjson OBJECT INTERFACE.cpp)
-install (DIRECTORY include/rapidjson/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/rapidjson FILES_MATCHING PATTERN *.h)
+file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
+add_library(rapidjson OBJECT ${SOURCE_FILES})
+target_include_directories(rapidjson
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/rapidjson>
+)
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/ FILES_MATCHING PATTERN *.h)

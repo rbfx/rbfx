@@ -1168,9 +1168,7 @@ bool FileSystem::RemoveDir(const String& directoryIn, bool recursive)
 
 #ifdef WIN32
         return RemoveDirectoryW(GetWideNativePath(directory).CString()) != 0;
-#endif
-
-#ifdef __APPLE__
+#else
         return remove(GetNativePath(directory).CString()) == 0;
 #endif
     }
@@ -1247,7 +1245,7 @@ String GetSanitizedPath(const String& path)
 
     bool hasTrailingSlash = path.EndsWith("/") || path.EndsWith("\\");
 
-#ifndef URHO3D_PLATFORM_WINDOWS
+#ifndef _WIN32
 
     bool absolute = IsAbsolutePath(path);
     sanitized = String::Joined(parts, "/");
@@ -1345,6 +1343,29 @@ String FileSystem::GetTemporaryDir() const
     return "/tmp/";
 #endif
 #endif
+}
+
+String GetAbsolutePath(const String& path)
+{
+    Vector<String> parts;
+#if !_WIN32
+    parts.Push("");
+#endif
+    parts.Push(path.Split('/'));
+
+    int index = 0;
+    while (index < parts.Size() - 1)
+    {
+        if (parts[index] != ".." && parts[index + 1] == "..")
+        {
+            parts.Erase(index, 2);
+            index = Max(0, --index);
+        }
+        else
+            ++index;
+    }
+
+    return String::Joined(parts, "/");
 }
 
 }

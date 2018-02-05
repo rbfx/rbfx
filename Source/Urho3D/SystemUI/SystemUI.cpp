@@ -76,8 +76,10 @@ SystemUI::SystemUI(Urho3D::Context* context)
 
     SubscribeToEvent(E_APPLICATIONSTARTED, [&](StringHash, VariantMap&) {
         if (io.Fonts->Fonts.empty())
+        {
             io.Fonts->AddFontDefault();
-        ReallocateFontTexture();
+            ReallocateFontTexture();
+        }
         UpdateProjectionMatrix();
         // Initializes ImGui. ImGui::Render() can not be called unless imgui is initialized. This call avoids initialization
         // check on every frame in E_ENDRENDERING.
@@ -99,7 +101,6 @@ SystemUI::SystemUI(Urho3D::Context* context)
     SubscribeToEvent(E_ENDRENDERING, [&](StringHash, VariantMap&)
     {
         URHO3D_PROFILE(SystemUiRender);
-        OnUpdate();
         ImGui::Render();
     });
 }
@@ -415,29 +416,6 @@ bool SystemUI::IsAnyItemHovered() const
     return ui::IsAnyItemHovered() || ui::IsAnyWindowHovered();
 }
 
-void SystemUI::OnUpdate()
-{
-    // Draw dragged item
-    if (dragData_.GetType() != VAR_NONE)
-    {
-        if (ui::IsMouseDown(0))
-        {
-            ImGuiIO& io = ImGui::GetIO();
-            ui::SetNextWindowPos(ui::GetMousePos() - ImVec2(10, 10), ImGuiCond_Always);
-            ui::SetNextWindowFocus();
-            ui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
-            ui::Begin("SystemUI drag", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar |
-                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize |
-                ImGuiWindowFlags_NoSavedSettings);
-            ui::TextUnformatted(dragData_.ToString().CString());
-            ui::End();
-            ui::PopStyleVar();
-        }
-        else
-            dragData_.Clear();
-    }
-}
-
 int ToImGui(MouseButton button)
 {
     switch (button)
@@ -487,4 +465,25 @@ bool ImGui::IsMouseClicked(Urho3D::MouseButton button, bool repeat)
 bool ImGui::IsItemClicked(Urho3D::MouseButton button)
 {
     return ImGui::IsItemClicked(Urho3D::ToImGui(button));
+}
+
+bool ImGui::SetDragDropVariant(const char* type, const Urho3D::Variant& variant, ImGuiCond cond)
+{
+    if (SetDragDropPayload(type, nullptr, 0, cond))
+    {
+        auto* systemUI = static_cast<Urho3D::SystemUI*>(GetIO().UserData);
+        systemUI->GetContext()->SetGlobalVar(Urho3D::ToString("SystemUI_Drag&Drop_%s", type), variant);
+        return true;
+    }
+    return false;
+}
+
+const Urho3D::Variant& ImGui::AcceptDragDropVariant(const char* type, ImGuiDragDropFlags flags)
+{
+    if (AcceptDragDropPayload(type, flags))
+    {
+        auto* systemUI = static_cast<Urho3D::SystemUI*>(GetIO().UserData);
+        return systemUI->GetContext()->GetGlobalVar(Urho3D::ToString("SystemUI_Drag&Drop_%s", type));
+    }
+    return Urho3D::Variant::EMPTY;
 }

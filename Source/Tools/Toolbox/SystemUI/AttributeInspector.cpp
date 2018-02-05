@@ -371,7 +371,8 @@ void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
                     item->SetAttribute(info.name_, value);
                     item->ApplyAttributes();
                 }
-                else if (modifiedLastFrame && !ui::IsAnyItemActive())
+
+                if ((modified || modifiedLastFrame) && !ui::IsAnyItemActive())
                 {
                     // This attribute was modified on last frame, but not on this frame. Continuous attribute value modification
                     // has ended and we can fire attribute modification event.
@@ -744,31 +745,31 @@ bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, 
 {
     auto handleDragAndDrop = [&](StringHash resourceType, SharedPtr<Resource>& resource)
     {
-        if (ui::DroppedOnItem())
+        bool dropped = false;
+        if (ui::BeginDragDropTarget())
         {
-            Variant dragData = GetSystemUI()->GetDragData();
-
-            if (dragData.GetType() == VAR_STRING)
-                resource = GetCache()->GetResource(resourceType, dragData.GetString());
-            else if (dragData.GetType() == VAR_RESOURCEREF)
-                resource = GetCache()->GetResource(resourceType, dragData.GetResourceRef().name_);
-
-            return resource.NotNull();
+            Variant payload = ui::AcceptDragDropVariant("path");
+            if (!payload.IsEmpty())
+            {
+                resource = GetCache()->GetResource(resourceType, payload.GetString());
+                dropped = resource.NotNull();
+            }
+            ui::EndDragDropTarget();
         }
-        else
-            ui::SetHelpTooltip("Drag resource here.");
+        ui::SetHelpTooltip("Drag resource here.");
+        return dropped;
     };
 
     SharedPtr<Resource> resource;
     ui::PushItemWidth(ui::ScaleX(-30));
     ui::InputText("", (char*)name.CString(), name.Length(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
-    ui::PopItemWidth();
     if (handleDragAndDrop(type, resource))
     {
         result = resource->GetName();
         ui::ExpireUIState<MaterialView>();
         return true;
     }
+    ui::PopItemWidth();
 
     ui::SameLine();
     if (ui::IconButton(ICON_FA_TRASH))

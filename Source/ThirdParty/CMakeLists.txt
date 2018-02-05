@@ -30,6 +30,10 @@ add_subdirectory(STB)
 add_subdirectory(Mustache)
 add_subdirectory(IconFontCppHeaders)
 add_subdirectory(glm)
+add_subdirectory(cr)
+if (DESKTOP AND NOT APPLE)
+    add_subdirectory(crunch)
+endif ()
 
 if (URHO3D_SYSTEMUI)
     add_subdirectory(imgui)
@@ -91,23 +95,16 @@ if (URHO3D_TASKS)
     add_subdirectory(fcontext)
 endif ()
 
-# A dummy target that handles installation of third party dependencies into a build tree. Engine uses some include paths
-# that can not be exported by cmake therefore installation is required for engine to be able to find these includes.
-add_custom_target(InstallThirdpartyHeaders)
-set_target_properties(InstallThirdpartyHeaders PROPERTIES FOLDER ThirdParty)
 # Group third party dependencies into ThirdParty subfolder in VS solution and install them.
 file(GLOB third_party_dirs RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
 foreach (lib ${third_party_dirs})
     if (TARGET ${lib})
         set_target_properties(${lib} PROPERTIES FOLDER ThirdParty)
-        get_target_property(TARGET_BINARY_DIR ${lib} BINARY_DIR)
-        add_custom_command(TARGET InstallThirdpartyHeaders POST_BUILD
-            COMMAND "${CMAKE_COMMAND}" -DCMAKE_INSTALL_PREFIX:string=${CMAKE_BINARY_DIR} -DBUILD_TYPE:string=$<CONFIGURATION>
-                    -P "${TARGET_BINARY_DIR}/cmake_install.cmake"
-        )
-        add_dependencies(InstallThirdpartyHeaders ${lib})
     endif ()
 endforeach ()
 if (TARGET profiler_gui)
     set_target_properties(profiler_gui PROPERTIES FOLDER Tools)
+endif ()
+if (TARGET crnlib)
+    set_target_properties(crnlib PROPERTIES FOLDER ThirdParty)
 endif ()

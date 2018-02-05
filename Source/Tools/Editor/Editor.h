@@ -24,6 +24,7 @@
 
 
 #include <Urho3D/Urho3DAll.h>
+#include <cr/cr.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
 #include "Tabs/UI/UITab.h"
 #include "IDPool.h"
@@ -35,6 +36,7 @@ namespace Urho3D
 
 class Tab;
 class SceneTab;
+class AssetConverter;
 
 class Editor : public Application
 {
@@ -52,7 +54,7 @@ public:
     /// Save editor configuration.
     void SaveProject(String filePath);
     /// Load saved editor configuration.
-    void LoadProject(const String& filePath);
+    void LoadProject(String filePath);
     /// Renders UI elements.
     void OnUpdate(VariantMap& args);
     /// Renders menu bar at the top of the screen.
@@ -77,6 +79,10 @@ public:
 protected:
     /// Process console commands.
     void OnConsoleCommand(VariantMap& args);
+    /// Load a native user plugin from a specified shared library.
+    bool LoadNativePlugin(const String& path);
+    /// Returns true if specified path is internal engine or editor resource path.
+    bool IsInternalResourcePath(const String& fullPath) const;
 
     /// Pool tracking availability of unique IDs used by editor.
     IDPool idPool_;
@@ -86,8 +92,15 @@ protected:
     WeakPtr<Tab> activeTab_;
     /// Path to a project file.
     String projectFilePath_;
-    /// Flag which opens resource browser window.
-    bool resourceBrowserWindowOpen_ = true;
+    /// User plugin context.
+    cr_plugin userCodeContext_{};
+    /// Path of current user plugin.
+    String userCodeLibPath_;
+    /// Converter responsible for watching resource directories and converting assets to required formats.
+    SharedPtr<AssetConverter> assetConverter_;
+    Vector<String> engineResourcePaths_;
+    Vector<String> engineResourcePrefixPaths_;
+    Vector<String> engineResourceAutoloadPaths_;
 };
 
 }

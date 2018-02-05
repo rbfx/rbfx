@@ -26,33 +26,20 @@ if (MINGW AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6.1.0 OR CMAKE_CXX_COM
 endif ()
 
 # Define source files
-file (GLOB CPP_FILES src/BulletCollision/BroadphaseCollision/*.cpp
-    src/BulletCollision/CollisionDispatch/*.cpp src/BulletCollision/CollisionShapes/*.cpp
-    src/BulletCollision/Gimpact/*.cpp src/BulletCollision/NarrowPhaseCollision/*.cpp
-    src/BulletDynamics/Character/*.cpp src/BulletDynamics/ConstraintSolver/*.cpp
-    src/BulletDynamics/Dynamics/*.cpp src/BulletDynamics/Featherstone/*.cpp
-    src/BulletDynamics/MLCPSolvers/*.cpp src/BulletDynamics/Vehicle/*.cpp src/BulletSoftBody/*.cpp
-    src/LinearMath/*.cpp)
-file (GLOB H_FILES *.h src/BulletCollision/BroadphaseCollision/*.h
-    src/BulletCollision/CollisionDispatch/*.h src/BulletCollision/CollisionShapes/*.h
-    src/BulletCollision/Gimpact/*.h src/BulletCollision/NarrowPhaseCollision/*.h
-    src/BulletDynamics/Character/*.h src/BulletDynamics/ConstraintSolver/*.h
-    src/BulletDynamics/Dynamics/*.h src/BulletDynamics/Featherstone/*.h
-    src/BulletDynamics/MLCPSolvers/*.h src/BulletDynamics/Vehicle/*.h src/BulletSoftBody/*.h
-    src/LinearMath/*.h)
-set (SOURCE_FILES ${CPP_FILES} ${H_FILES})
+file (GLOB_RECURSE SOURCE_FILES *.h *.cpp)
+set (SOURCE_FILES ${SOURCE_FILES})
 if (BUILD_SHARED_LIBS)
     set (LIB_TYPE STATIC)
 else ()
     set (LIB_TYPE OBJECT)
 endif ()
 add_library (Bullet ${LIB_TYPE} ${SOURCE_FILES})
-target_include_directories(Bullet PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src> $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}/Bullet>)
+target_include_directories(Bullet
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Bullet>
+           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+           $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}/Bullet>
+)
 install (DIRECTORY src/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/Bullet FILES_MATCHING PATTERN *.h)
 if (BUILD_SHARED_LIBS)
-    install(TARGETS Bullet
-        EXPORT Urho3D
-        LIBRARY DESTINATION ${SHARED_LIB_INSTALL_DIR}
-        ARCHIVE DESTINATION ${SHARED_LIB_INSTALL_DIR}
-    )
+    install(TARGETS Bullet EXPORT Urho3D ARCHIVE DESTINATION ${DEST_LIBRARY_DIR})
 endif ()

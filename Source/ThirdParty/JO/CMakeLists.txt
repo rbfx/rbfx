@@ -20,5 +20,9 @@
 # THE SOFTWARE.
 #
 
-add_library (JO OBJECT jo_jpeg.cpp jo_jpeg.h)
-create_symlink(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS}/JO)
+file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
+add_library (JO OBJECT ${SOURCE_FILES})
+target_include_directories(JO
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/JO>
+)

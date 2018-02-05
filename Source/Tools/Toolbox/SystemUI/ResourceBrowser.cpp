@@ -52,24 +52,31 @@ bool ResourceBrowserWindow(String& selected)
         Vector<String> mergedDirs;
         Vector<String> mergedFiles;
 
+        String cacheDir;
         for (const auto& dir: systemUI->GetCache()->GetResourceDirs())
         {
+            if (dir.EndsWith("/Cache/"))
+            {
+                cacheDir = dir;
+                continue;
+            }
+
             Vector<String> items;
             fs->ScanDir(items, dir + state->path, "", SCAN_FILES, false);
             for (const auto& item: items)
             {
-                if (item == "." || item == ".." || mergedFiles.Contains(item))
-                    continue;
-                mergedFiles.Push(item);
+                if (!mergedFiles.Contains(item))
+                    mergedFiles.Push(item);
             }
 
             items.Clear();
             fs->ScanDir(items, dir + state->path, "", SCAN_DIRS, false);
+            items.Remove(".");
+            items.Remove("..");
             for (const auto& item: items)
             {
-                if (item == "." || item == ".." || mergedDirs.Contains(item))
-                    continue;
-                mergedDirs.Push(item);
+                if (!mergedDirs.Contains(item))
+                    mergedDirs.Push(item);
             }
         }
 
@@ -102,10 +109,8 @@ bool ResourceBrowserWindow(String& selected)
             }
         }
 
-        Sort(mergedFiles.Begin(), mergedFiles.End());
-        for (const auto& item: mergedFiles)
-        {
-            auto title = GetFileIcon(item) + " " + item;
+        auto renderAssetEntry = [&](const String& item) {
+            auto title = GetFileIcon(item) + " " + GetFileNameAndExtension(item);
             switch (ui::DoubleClickSelectable(title.CString(), state->selected == item))
             {
             case 1:
@@ -119,8 +124,65 @@ bool ResourceBrowserWindow(String& selected)
                 break;
             }
 
-            if (ui::IsItemHovered() && ui::IsMouseDragging() && !systemUI->HasDragData())
-                systemUI->SetDragData(state->path + item);
+            if (ui::IsItemActive())
+            {
+                if (ui::BeginDragDropSource())
+                {
+                    String path = state->path + item;
+                    ui::SetDragDropVariant("path", path);
+
+                    // TODO: show actual preview of a resource.
+                    ui::Text("%s", path.CString());
+
+                    ui::EndDragDropSource();
+                }
+            }
+        };
+
+        Sort(mergedFiles.Begin(), mergedFiles.End());
+        for (const auto& item: mergedFiles)
+        {
+            if (fs->DirExists(cacheDir + state->path + item))
+            {
+                // File is converted asset.
+                std::function<void(const String&)> renderCacheAssetTree = [&](const String& subPath)
+                {
+                    String targetPath = cacheDir + state->path + subPath;
+
+                    if (fs->DirExists(targetPath))
+                    {
+                        ui::TextUnformatted(ICON_FA_FOLDER_OPEN);
+                        ui::SameLine();
+                        if (ui::TreeNode(GetFileNameAndExtension(subPath).CString()))
+                        {
+                            Vector<String> files;
+                            Vector<String> dirs;
+                            fs->ScanDir(files, targetPath, "", SCAN_FILES, false);
+                            fs->ScanDir(dirs, targetPath, "", SCAN_DIRS, false);
+                            dirs.Remove(".");
+                            dirs.Remove("..");
+                            Sort(files.Begin(), files.End());
+                            Sort(dirs.Begin(), dirs.End());
+
+                            for (const auto& dir : dirs)
+                                renderCacheAssetTree(subPath + "/" + dir);
+
+                            for (const auto& file : files)
+                                renderAssetEntry(subPath + "/" + file);
+
+                            ui::TreePop();
+                        }
+                    }
+                    else
+                        renderAssetEntry(subPath);
+                };
+                renderCacheAssetTree(item);
+            }
+            else
+            {
+                // File exists only in data directories.
+                renderAssetEntry(item);
+            }
         }
     }
     ui::EndDock();

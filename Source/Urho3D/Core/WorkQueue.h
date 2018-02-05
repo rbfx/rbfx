@@ -53,7 +53,7 @@ public:
     }
 
     /// Work function. Called with the work item and thread index (0 = main thread) as parameters.
-    std::function<void(const WorkItem*, unsigned)> workFunction_;
+    void(*workFunction_)(const WorkItem*, unsigned);
     /// Data start pointer.
     void* start_;
     /// Data end pointer.
@@ -69,6 +69,8 @@ public:
 
 private:
     bool pooled_;
+    /// Work function. Called without any parameters.
+    std::function<void()> workLambda_;
 };
 
 /// Work queue subsystem for multithreading.
@@ -91,7 +93,7 @@ public:
     /// Add a work item and resume worker threads.
     void AddWorkItem(const SharedPtr<WorkItem>& item);
     /// Add a work item and resume worker threads.
-    void AddWorkItem(std::function<void()> workFunction, unsigned priority = 0);
+    WorkItem* AddWorkItem(std::function<void()> workFunction, unsigned priority = 0);
     /// Remove a work item before it has started executing. Return true if successfully removed.
     bool RemoveWorkItem(SharedPtr<WorkItem> item);
     /// Remove a number of work items before they have started executing. Return the number of items successfully removed.

@@ -27,6 +27,7 @@
 #include <cstdarg>
 #include <cstring>
 #include <cctype>
+#include <string>
 
 namespace Urho3D
 {
@@ -86,6 +87,24 @@ public:
     {
         Resize(length);
         CopyChars(buffer_, str, length);
+    }
+
+    /// Construct from std::string.
+    String(const std::string& str) :
+        length_(0),
+        capacity_(0),
+        buffer_(&endZero)
+    {
+        *this = str.c_str();
+    }
+
+    /// Construct from std::wstring.
+    String(const std::wstring& str) :
+        length_(0),
+        capacity_(0),
+        buffer_(&endZero)
+    {
+        SetUTF8FromWChar(str.c_str());
     }
 
     /// Construct from a null-terminated wide character array.
@@ -333,6 +352,8 @@ public:
     Iterator Insert(const Iterator& dest, const Iterator& start, const Iterator& end);
     /// Insert a character by iterator.
     Iterator Insert(const Iterator& dest, char c);
+	/// Return number of times c occurs in string.
+	unsigned int Count(char c);
     /// Erase a substring.
     void Erase(unsigned pos, unsigned length = 1);
     /// Erase a character by iterator.

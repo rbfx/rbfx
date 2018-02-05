@@ -241,6 +241,8 @@ public:
     bool GetMouseButtonDown(int button) const;
     /// Check if a mouse button has been pressed on this frame.
     bool GetMouseButtonPress(int button) const;
+    /// Check if a mouse button was pressed and released without moving within a short duration of time.
+    bool GetMouseButtonClick(int button) const;
     /// Check if a qualifier key is held down.
     bool GetQualifierDown(int qualifier) const;
     /// Check if a qualifier key has been pressed on this frame.
@@ -387,6 +389,12 @@ private:
     unsigned mouseButtonDown_;
     /// Mouse buttons' pressed state.
     unsigned mouseButtonPress_;
+    /// Mouse buttons' clicked state.
+    unsigned mouseButtonClick_;
+    /// Position when last mouse button was pressed.
+    IntVector2 mousePressPosition_;
+    /// Time since last mouse press.
+    Timer mousePressTimer_;
     /// Last mouse position for calculating movement.
     IntVector2 lastMousePosition_;
     /// Last mouse position before being set to not visible.

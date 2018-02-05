@@ -54,6 +54,22 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
     SubscribeToEvent(effectSettings_, E_EDITORSCENEEFFECTSCHANGED, std::bind(&AttributeInspector::CopyEffectsFrom,
         &inspector_, view_.GetViewport()));
     SubscribeToEvent(E_UPDATE, std::bind(&SceneTab::OnUpdate, this, _2));
+    // On plugin code reload all scene state is serialized, plugin library is reloaded and scene state is unserialized.
+    // This way scene recreates all plugin-provided components on reload and gets to use new versions of them.
+    SubscribeToEvent(E_EDITORUSERCODERELOADSTART, [&](StringHash, VariantMap&) {
+        Pause();
+        SceneStateSave();
+        for (auto node : GetScene()->GetChildren(true))
+        {
+            if (!node->HasTag("__EDITOR_OBJECT__"))
+                node->Remove();
+        }
+    });
+    SubscribeToEvent(E_EDITORUSERCODERELOADEND, [&](StringHash, VariantMap&) {
+        SceneStateRestore(sceneState_);
+    });
+    SubscribeToEvent(GetScene(), E_COMPONENTADDED, std::bind(&SceneTab::OnComponentAdded, this, _2));
+    SubscribeToEvent(GetScene(), E_COMPONENTREMOVED, std::bind(&SceneTab::OnComponentRemoved, this, _2));
 
     undo_.Connect(GetScene());
     undo_.Connect(&inspector_);
@@ -92,11 +108,12 @@ bool SceneTab::RenderWindowContent()
 
     ui::SetCursorScreenPos(ToImGui(tabRect.Min()));
     ui::Image(view_.GetTexture(), ToImGui(tabRect.Size()));
+    if (GetInput()->IsMouseVisible())
+        mouseHoversViewport_ = ui::IsItemHovered();
 
-    bool isClickedLeft = ui::IsMouseReleased(MOUSEB_LEFT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
-    bool isClickedRight = ui::IsMouseReleased(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+    bool isClickedLeft = GetInput()->GetMouseButtonClick(MOUSEB_LEFT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+    bool isClickedRight = GetInput()->GetMouseButtonClick(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
-    view_.GetCamera()->GetNode()->GetComponent<DebugCameraController>()->SetEnabled(isActive_);
     gizmo_.ManipulateSelection(view_.GetCamera());
 
     // Prevent dragging window when scene view is clicked.
@@ -128,13 +145,20 @@ bool SceneTab::RenderWindowContent()
         if (results.Size())
         {
             WeakPtr<Node> clickNode(results[0].drawable_->GetNode());
-            bool appendSelection = GetInput()->GetKeyDown(KEY_CTRL);
-            if (!appendSelection)
-                UnselectAll();
-            ToggleSelection(clickNode);
+            // Temporary nodes can not be selected.
+            while (!clickNode.Expired() && clickNode->HasTag("__EDITOR_OBJECT__"))
+                clickNode = clickNode->GetParent();
 
-            if (isClickedRight)
-                ui::OpenPopupEx(ui::GetID("Node context menu"), true);
+            if (!clickNode.Expired())
+            {
+                bool appendSelection = GetInput()->GetKeyDown(KEY_CTRL);
+                if (!appendSelection)
+                    UnselectAll();
+                ToggleSelection(clickNode);
+
+                if (isClickedRight)
+                    ui::OpenPopupEx(ui::GetID("Node context menu"), true);
+            }
         }
         else
             UnselectAll();
@@ -326,29 +350,11 @@ void SceneTab::RenderToolbarButtons()
 
     if (ui::EditorToolbarButton(scenePlaying_ ? ICON_FA_PAUSE : ICON_FA_PLAY, scenePlaying_ ? "Pause" : "Play"))
     {
-        Scene* scene = view_.GetScene();
         scenePlaying_ ^= true;
         if (scenePlaying_)
-        {
-            undo_.SetTrackingEnabled(false);
-            XMLElement root = sceneState_.CreateRoot("scene");
-            scene->SaveXML(root);
-        }
+            Pause();
         else
-        {
-            // Migrade editor objects to a newly loaded scene without destroying them.
-            Vector<SharedPtr<Node>> temporaries;
-            for (auto& node : scene->GetChildren())
-            {
-                if (node->IsTemporary())
-                    temporaries.Push(SharedPtr<Node>(node));
-            }
-            scene->LoadXML(sceneState_.GetRoot());
-            for (auto& node : temporaries)
-                scene->AddChild(node);
-            undo_.SetTrackingEnabled(true);
-            sceneState_.GetRoot().Remove();
-        }
+            Play();
     }
 
     ui::NewLine();
@@ -449,7 +455,8 @@ void SceneTab::RenderNodeTree(Node* node)
     {
         if (!nodeRef.Expired())
         {
-            for (auto& component: node->GetComponents())
+            Vector<SharedPtr<Component>> components = node->GetComponents();
+            for (auto component: components)
             {
                 if (component->IsTemporary())
                     continue;
@@ -478,7 +485,7 @@ void SceneTab::RenderNodeTree(Node* node)
                 if (ui::BeginPopup("Component context menu"))
                 {
                     if (ui::MenuItem("Remove"))
-                        selectedComponent_->Remove();
+                        component->Remove();
                     ui::EndPopup();
                 }
 
@@ -589,7 +596,47 @@ void SceneTab::OnUpdate(VariantMap& args)
     if (scenePlaying_)
         GetScene()->Update(timeStep);
 
-    view_.GetCamera()->GetComponent<DebugCameraController>()->Update(timeStep);
+    if (auto component = view_.GetCamera()->GetComponent<DebugCameraController>())
+    {
+        if (mouseHoversViewport_)
+            component->Update(timeStep);
+    }
+}
+
+void SceneTab::SceneStateSave()
+{
+    Undo::SetTrackingScoped tracking(undo_, false);
+
+    for (auto& node : GetSelection())
+    {
+        if (node)
+            node->AddTag("__EDITOR_SELECTED__");
+    }
+
+    sceneState_.GetRoot().Remove();
+    XMLElement root = sceneState_.CreateRoot("scene");
+    GetScene()->SaveXML(root);
+}
+
+void SceneTab::SceneStateRestore(XMLFile& source)
+{
+    Undo::SetTrackingScoped tracking(undo_, false);
+
+    // Migrate editor objects to a newly loaded scene without destroying them.
+    Vector<SharedPtr<Node>> temporaries;
+    for (auto& node : GetScene()->GetChildrenWithTag("__EDITOR_OBJECT__"))
+        temporaries.Push(SharedPtr<Node>(node));
+
+    GetScene()->LoadXML(source.GetRoot());
+
+    for (auto& node : temporaries)
+        GetScene()->AddChild(node);
+
+    source.GetRoot().Remove();
+
+    gizmo_.UnselectAll();
+    for (auto node : GetScene()->GetChildrenWithTag("__EDITOR_SELECTED__", true))
+        gizmo_.Select(node);
 }
 
 void SceneTab::RenderNodeContextMenu()
@@ -655,6 +702,89 @@ void SceneTab::RenderNodeContextMenu()
             RemoveSelection();
 
         ui::EndPopup();
+    }
+}
+
+void SceneTab::Play()
+{
+    if (!scenePlaying_)
+    {
+        SceneStateRestore(sceneState_);
+        undo_.SetTrackingEnabled(true);
+    }
+}
+
+void SceneTab::Pause()
+{
+    if (scenePlaying_)
+    {
+        undo_.SetTrackingEnabled(false);
+        SceneStateSave();
+        gizmo_.UnselectAll();
+    }
+}
+
+void SceneTab::OnComponentAdded(VariantMap& args)
+{
+    using namespace ComponentAdded;
+    auto* component = dynamic_cast<Component*>(args[P_COMPONENT].GetPtr());
+    auto* node = dynamic_cast<Node*>(args[P_NODE].GetPtr());
+
+    if (node->IsTemporary())
+        return;
+
+    auto* material = GetCache()->GetResource<Material>("Materials/Editor/DebugIcon" + component->GetTypeName() + ".xml", false);
+    if (material != nullptr)
+    {
+        if (node->GetChildrenWithTag("DebugIcon" + component->GetTypeName()).Size() > 0)
+            return;
+
+        Undo::SetTrackingScoped tracking(undo_, false);
+        int count = node->GetChildrenWithTag("DebugIcon").Size();
+        node = node->CreateChild();
+        node->AddTag("DebugIcon");
+        node->AddTag("DebugIcon" + component->GetTypeName());
+        node->AddTag("__EDITOR_OBJECT__");
+        node->SetTemporary(true);
+
+        auto* billboard = node->CreateComponent<BillboardSet>();
+        billboard->SetFaceCameraMode(FaceCameraMode::FC_LOOKAT_Y);
+        billboard->SetNumBillboards(1);
+        billboard->SetMaterial(material);
+        billboard->SetViewMask(0x80000000);
+        if (auto* bb = billboard->GetBillboard(0))
+        {
+            bb->size_ = Vector2::ONE * 0.2f;
+            bb->enabled_ = true;
+            bb->position_ = {0, count * 0.4f, 0};
+        }
+        billboard->Commit();
+    }
+}
+
+void SceneTab::OnComponentRemoved(VariantMap& args)
+{
+    using namespace ComponentRemoved;
+    auto* component = dynamic_cast<Component*>(args[P_COMPONENT].GetPtr());
+    auto* node = dynamic_cast<Node*>(args[P_NODE].GetPtr());
+
+    if (!node->IsTemporary())
+    {
+        Undo::SetTrackingScoped tracking(undo_, false);
+
+        for (auto* icon : node->GetChildrenWithTag("DebugIcon" + component->GetTypeName()))
+            icon->Remove();
+
+        int index = 0;
+        for (auto* icon : node->GetChildrenWithTag("DebugIcon"))
+        {
+            if (auto* billboard = icon->GetComponent<BillboardSet>())
+            {
+                billboard->GetBillboard(0)->position_ = {0, index * 0.4f, 0};
+                billboard->Commit();
+                index++;
+            }
+        }
     }
 }
 

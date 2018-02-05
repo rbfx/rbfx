@@ -9,13 +9,19 @@
 #include "../IO/Deserializer.h"
 #include "../IO/Serializer.h"
 #include "../Core/CoreEvents.h"
+#include "../SystemUI/SystemUI.h"
+#include "../IO/File.h"
 
 namespace Urho3D {
 
 	Tweeks::Tweeks(Context* context) : Object(context)
 	{
+		mDefaultFileName.Resize(128);
+		mCurrentSaveFileName = mDefaultFileName;
 		BeginSection("default section");
 		BeginTweekTime(TWEEK_LIFETIME_DEFAULT_MS);
+
+		Load(mDefaultFileName.Trimmed());
 	}
 
 	Tweeks::~Tweeks()
@@ -45,6 +51,12 @@ namespace Urho3D {
 		return true;
 	}
 
+	bool Tweeks::Save(String filename)
+	{
+		SharedPtr<File> file = SharedPtr<File>(new File(context_, filename, FILE_WRITE));
+		return Save((Serializer*)file);
+	}
+
 	bool Tweeks::Load(Deserializer* source)
 	{
 		if (source == nullptr)
@@ -65,6 +77,39 @@ namespace Urho3D {
 		return true;
 	}
 
+
+	bool Tweeks::Load(String filename)
+	{
+		SharedPtr<File> file = SharedPtr<File>(new File(context_, filename, FILE_READ));
+		return Load((Deserializer*)file);
+	}
+
+	Urho3D::Tweek* Tweeks::GetTweek(String name /*= ""*/, String section /*= ""*/)
+	{			
+		if (section.Empty())
+				section = CurrentSection();//use the section stack if section is not specified.
+
+		if (TweekExists(name, section))
+		{
+			Tweek* existingTweek = mTweekMap[name + section];
+			existingTweek->ExtendLifeTime();
+			return existingTweek;
+		}
+		else {
+
+
+			SharedPtr<Tweek> newTweek = context_->CreateObject<Tweek>();
+			newTweek->mExpirationTimer.SetTimeoutDuration(CurrentTweekTime());
+			if (name.Empty()) {
+				name = Tweek::GetTypeNameStatic();
+			}
+
+			newTweek->mName = (name);
+			newTweek->mSection = (section);
+			insertTweek(newTweek);
+			return newTweek;
+		}
+	}
 
 	TweekMap Tweeks::GetTweeks()
 	{
@@ -153,33 +198,6 @@ namespace Urho3D {
 
 
 
-	Urho3D::Tweek* Tweeks::GetTweek(String name /*= ""*/, String section /*= ""*/)
-	{			
-		if (section.Empty())
-				section = CurrentSection();//use the section stack if section is not specified.
-
-		if (TweekExists(name, section))
-		{
-			Tweek* existingTweek = mTweekMap[name + section];
-			existingTweek->ExtendLifeTime();
-			return existingTweek;
-		}
-		else {
-
-
-			SharedPtr<Tweek> newTweek = context_->CreateObject<Tweek>();
-			newTweek->mExpirationTimer.SetTimeoutDuration(CurrentTweekTime());
-			if (name.Empty()) {
-				name = Tweek::GetTypeNameStatic();
-			}
-
-			newTweek->mName = (name);
-			newTweek->mSection = (section);
-			insertTweek(newTweek);
-			return newTweek;
-		}
-	}
-
 	bool Tweeks::TweekExists(String name, String section /*= ""*/)
 	{
 		if (section.Empty())
@@ -187,6 +205,290 @@ namespace Urho3D {
 
 		return mTweekMap.Contains(name + section);
 	}
+
+	void Tweeks::RenderUIConsole()
+	{
+#ifdef URHO3D_SYSTEMUI
+
+
+
+		//Tweeks
+		//for each tweek in tweeks, make an approprate widget for alteration.
+		Tweeks* twks = GetSubsystem<Tweeks>();
+		Vector<SharedPtr<Tweek>> values = twks->GetTweeks().Values();
+		ImGui::Begin("Tweeks");
+	
+
+		ImGui::InputText("File Name", (char*)mCurrentSaveFileName.CString(), mCurrentSaveFileName.Length());
+
+		ImGui::SameLine(0, 10);
+		if (ImGui::Button("Reset"))
+		{
+			mCurrentSaveFileName = mDefaultFileName;
+		}
+
+		if (ImGui::Button("Load")) {
+			Load(mCurrentSaveFileName.Trimmed());
+		}
+		ImGui::SameLine(0, 10);
+		if (ImGui::Button("Save")) {
+			Save(mCurrentSaveFileName.Trimmed());
+		}
+		ImGui::SameLine(0, 10);
+		if (ImGui::Button("Trim Expired")) {
+			TrimExpired();
+		}
+		ImGui::SameLine(0, 10);
+		if (ImGui::Button("Clear")) {
+			twks->Clear();
+		}
+
+
+
+		TweekSectionMap tweekSectionMap = twks->GetTweekSectionMap();
+		StringVector sections = twks->GetSections();
+
+		for (auto section : sections) {
+			if (ImGui::TreeNode(section.CString()))
+			{
+				Vector<SharedPtr<Tweek>> tweeksInSec = twks->GetTweeksInSection(section);
+				for (auto tweek : tweeksInSec) {
+					RenderTweekUI(tweek);
+				}
+				ImGui::TreePop();
+			}
+		}
+		ImGui::End();
+
+#endif
+	}
+
+	void Tweeks::RenderTweekUI(Tweek* tweek) {
+
+#ifdef URHO3D_SYSTEMUI
+
+		String name = tweek->GetName().CString();
+		const char* tweekName = name.CString();
+		VariantType type = tweek->mValue.GetType();
+		bool tweekAltered = false;
+
+		if (tweek->IsExpired())
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+
+		switch (type)
+		{
+		case Urho3D::VAR_NONE:
+			ImGui::Text("No Variant For Tweek: %s", tweekName);
+			break;
+		case Urho3D::VAR_INT: {
+			int v = tweek->mValue.GetInt();
+			ImGui::InputInt(tweekName, &v);
+
+			if (tweek->mValue.GetInt() != v) {
+				tweek->mValue = v;
+				tweekAltered = true;
+			}
+			break;
+		}
+		case Urho3D::VAR_BOOL: {
+			bool v = tweek->mValue.GetBool();
+			ImGui::Checkbox(tweekName, &v);
+			if (tweek->mValue.GetBool() != v) {
+				tweek->mValue = v;
+				tweekAltered = true;
+			}
+			break;
+		}
+		case Urho3D::VAR_FLOAT: {
+			float v = tweek->mValue.GetFloat();
+			ImGui::InputFloat(tweekName, &v);
+			if (tweek->mValue.GetFloat() != v) {
+				tweek->mValue = v;
+				tweekAltered = true;
+			}
+			break;
+		}
+		case Urho3D::VAR_VECTOR2: {
+			Vector2 v = tweek->mValue.GetVector2();
+			float vals[2] = { v.x_, v.y_ };
+			ImGui::InputFloat2(tweekName, vals);
+			v = Vector2(vals[0], vals[1]);
+			if (tweek->mValue.GetVector2() != v) {
+				tweek->mValue = v;
+				tweekAltered = true;
+			}
+
+			break;
+		}
+		case Urho3D::VAR_VECTOR3: {
+			Vector3 v = tweek->mValue.GetVector3();
+			float vals[3] = { v.x_, v.y_, v.z_ };
+			ImGui::InputFloat3(tweekName, vals);
+			v = Vector3(vals[0], vals[1], vals[2]);
+			if (tweek->mValue.GetVector3() != v) {
+				tweek->mValue = v;
+				tweekAltered = true;
+			}
+			break;
+		}
+		case Urho3D::VAR_VECTOR4: {
+			Vector4 v = tweek->mValue.GetVector4();
+			float vals[4] = { v.x_, v.y_, v.z_, v.w_ };
+			ImGui::InputFloat4(tweekName, vals);
+			v = Vector4(vals[0], vals[1], vals[2], vals[3]);
+			if (tweek->mValue.GetVector4() != v) {
+				tweek->mValue = v;
+				tweekAltered = true;
+			}
+			break;
+		}
+		case Urho3D::VAR_QUATERNION: {
+			Quaternion v = tweek->mValue.GetQuaternion();
+			float vals[4] = { v.x_, v.y_, v.z_, v.w_ };
+			ImGui::InputFloat4(tweekName, vals);
+			v = Quaternion(vals[3], vals[0], vals[1], vals[2]);
+			if (tweek->mValue.GetQuaternion() != v) {
+				tweek->mValue = v;
+				tweekAltered = true;
+			}
+			break;
+		}
+		case Urho3D::VAR_COLOR: {
+			Color v = tweek->mValue.GetColor();
+			float vals[4] = { v.r_, v.g_, v.b_, v.a_ };
+			ImGui::ColorEdit4(tweekName, vals);
+			v = Color(vals[0], vals[1], vals[2], vals[3]);
+			if (tweek->mValue.GetColor() != v) {
+				tweek->mValue = v;
+				tweekAltered = true;
+			}
+			break;
+		}
+		case Urho3D::VAR_STRING: {
+			String v = tweek->mValue.GetString();
+
+			//v.Resize(128);
+			//v[v.Length() - 1] = '\0';
+			//ImGui::InputText(tweekName, (char*)v.CString(), v.Length());
+			//if (tweek->mValue.GetString() != v) {
+			//	tweek->mValue = v;
+			//	tweekAltered = true;
+			//}
+			//break;
+		}
+		case Urho3D::VAR_BUFFER:
+			break;
+		case Urho3D::VAR_VOIDPTR:
+			break;
+		case Urho3D::VAR_RESOURCEREF:
+			break;
+		case Urho3D::VAR_RESOURCEREFLIST:
+			break;
+		case Urho3D::VAR_VARIANTVECTOR:
+			break;
+		case Urho3D::VAR_VARIANTMAP:
+			break;
+		case Urho3D::VAR_INTRECT: {
+			IntRect v = tweek->mValue.GetIntRect();
+			int vals[4] = { v.left_, v.top_, v.right_, v.bottom_ };
+			ImGui::InputInt4(tweekName, vals);
+			v = IntRect(IntVector2(vals[0], vals[1]), IntVector2(vals[2], vals[3]));
+			if (tweek->mValue.GetIntRect() != v) {
+				tweek->mValue = v;
+				tweekAltered = true;
+			}
+			break;
+		}
+		case Urho3D::VAR_INTVECTOR2: {
+			IntVector2 v = tweek->mValue.GetIntVector2();
+			int vals[2] = { v.x_, v.y_ };
+			ImGui::InputInt2(tweekName, vals);
+			v = IntVector2(vals[0], vals[1]);
+			if (tweek->mValue.GetIntVector2() != v) {
+				tweek->mValue = v;
+				tweekAltered = true;
+			}
+			break;
+		}
+		case Urho3D::VAR_PTR:
+			break;
+		case Urho3D::VAR_MATRIX3:
+			break;
+		case Urho3D::VAR_MATRIX3X4:
+			break;
+		case Urho3D::VAR_MATRIX4:
+			break;
+		case Urho3D::VAR_DOUBLE: {
+			float v = tweek->mValue.GetDouble();
+			ImGui::InputFloat(tweekName, &v);
+			if (tweek->mValue.GetDouble() != v) {
+				tweek->mValue = v;
+				tweekAltered = true;
+			}
+			break;
+		}
+		case Urho3D::VAR_STRINGVECTOR:
+			break;
+		case Urho3D::VAR_RECT: {
+			Rect v = tweek->mValue.GetRect();
+			float vals[4] = { v.min_.x_, v.min_.y_, v.max_.x_, v.max_.y_ };
+			ImGui::InputFloat4(tweekName, vals);
+			v = Rect(Vector2(vals[0], vals[1]), Vector2(vals[2], vals[3]));
+			if (tweek->mValue.GetRect() != v) {
+				tweek->mValue = v;
+				tweekAltered = true;
+			}
+			break;
+		}
+		case Urho3D::VAR_INTVECTOR3: {
+			IntVector3 v = tweek->mValue.GetIntVector3();
+			int vals[3] = { v.x_, v.y_, v.z_ };
+			ImGui::InputInt3(tweekName, vals);
+			v = IntVector3(vals[0], vals[1], vals[2]);
+			if (tweek->mValue.GetIntVector3() != v) {
+				tweek->mValue = v;
+				tweekAltered = true;
+			}
+			break;
+		}
+		case Urho3D::VAR_INT64: {
+			int v = tweek->mValue.GetInt();
+			ImGui::InputInt(tweekName, &v);
+			if (tweek->mValue.GetInt() != v) {
+				tweek->mValue = v;
+				tweekAltered = true;
+			}
+			break;
+		}
+		case Urho3D::VAR_CUSTOM_HEAP:
+			break;
+		case Urho3D::VAR_CUSTOM_STACK:
+			break;
+		case Urho3D::MAX_VAR_TYPES:
+			break;
+		default:
+			break;
+		}
+
+		if (!tweek->IsDefaultValue()) {
+			ImGui::SameLine(0.0f, 10.0f);
+			if (ImGui::Button("Reset To Default"))
+				tweek->RevertToDefaultValue();
+
+			if (type == VAR_QUATERNION) {
+				ImGui::SameLine(0.0f, 10.0f);
+				if (ImGui::Button("Normalize"))
+					tweek->mValue = tweek->mValue.GetQuaternion().Normalized();
+			}
+		}
+
+		if (tweek->IsExpired())
+			ImGui::PopStyleColor();
+#endif
+
+	}
+
+
 
 	void Tweeks::insertTweek(Tweek* tweek)
 	{

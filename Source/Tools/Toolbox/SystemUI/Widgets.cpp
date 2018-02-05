@@ -26,7 +26,6 @@
 #include <Urho3D/Input/Input.h>
 #include <SDL/SDL_scancode.h>
 #include <Urho3D/SystemUI/SystemUI.h>
-#include <ThirdParty/SDL/include/SDL_scancode.h>
 
 using namespace Urho3D;
 
@@ -135,11 +134,6 @@ int DoubleClickSelectable(const char* label, bool* p_selected, ImGuiSelectableFl
 int DoubleClickSelectable(const char* label, bool selected, ImGuiSelectableFlags flags, const ImVec2& size)
 {
     return DoubleClickSelectable(label, &selected, flags, size);
-}
-
-bool DroppedOnItem()
-{
-    return ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && ui::GetSystemUI()->HasDragData() && !ui::IsMouseDown(0);
 }
 
 bool CollapsingHeaderSimple(const char* label, ImGuiTreeNodeFlags flags)

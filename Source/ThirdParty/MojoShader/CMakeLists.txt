@@ -20,9 +20,12 @@
 # THE SOFTWARE.
 #
 
-file (GLOB SOURCE_FILES *.c)
+file (GLOB_RECURSE SOURCE_FILES *.c *.h)
 add_library (MojoShader OBJECT ${SOURCE_FILES})
 if (MSVC)
     target_compile_definitions (MojoShader PRIVATE -D_CRT_SECURE_NO_WARNINGS=1 -TP)
 endif ()
-create_symlink(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS}/MojoShader)
+target_include_directories(MojoShader
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/MojoShader>
+)

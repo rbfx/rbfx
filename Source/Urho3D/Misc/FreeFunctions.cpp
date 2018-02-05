@@ -18,41 +18,7 @@ namespace Urho3D {
 		context->RegisterSubsystem(new FreeFunctions(context));
 	}
 
-	unsigned int StringCount(const String& str, char ch)
-	{
-		unsigned int count = 0;
-		for (unsigned int i = 0; i < str.Length(); i++) {
-			if (str[i] == ch) {
-				count++;
-			}
-		}
-		return count;
-	}
 
-	void PrintRayQueryResults(PODVector<RayQueryResult>& results)
-	{
-		URHO3D_LOGINFO("Printing RayQueryResults:");
-		int i = 0;
-		for (auto r : results) {
-			URHO3D_LOGINFO("RayQuery: " + String(i));
-			URHO3D_LOGINFO("distance_: " + String(r.distance_));
-			URHO3D_LOGINFO("drawable_: " + String((long long)(void*)r.drawable_));
-			URHO3D_LOGINFO("node_: " + String((long long)(void*)r.node_));
-			URHO3D_LOGINFO("node_ name: " + String(r.node_->GetName()));
-			URHO3D_LOGINFO("components: ");
-			auto components = r.node_->GetComponents();
-			for (auto c : components) {
-				URHO3D_LOGINFO("	" + String(c->GetTypeName()));
-			}
-
-			URHO3D_LOGINFO("normal_: " + String(r.normal_));
-			URHO3D_LOGINFO("position_: " + String(r.position_));
-			URHO3D_LOGINFO("subObject_: " + String(r.subObject_));
-			URHO3D_LOGINFO("textureUV_: " + String(r.textureUV_));
-			URHO3D_LOGINFO("");
-			i++;
-		}
-	}
 
 	bool FreeFunctions::SaveStringToFile(String& str, String fileFullPath)
 	{
@@ -95,4 +61,31 @@ namespace Urho3D {
 			return "";
 	}
 
+
+
+
+	void PrintRayQueryResults(PODVector<RayQueryResult>& results)
+	{
+		URHO3D_LOGINFO("Printing RayQueryResults:");
+		int i = 0;
+		for (auto r : results) {
+			URHO3D_LOGINFO("RayQuery: " + String(i));
+			URHO3D_LOGINFO("distance_: " + String(r.distance_));
+			URHO3D_LOGINFO("drawable_: " + String((long long)(void*)r.drawable_));
+			URHO3D_LOGINFO("node_: " + String((long long)(void*)r.node_));
+			URHO3D_LOGINFO("node_ name: " + String(r.node_->GetName()));
+			URHO3D_LOGINFO("components: ");
+			auto components = r.node_->GetComponents();
+			for (auto c : components) {
+				URHO3D_LOGINFO("	" + String(c->GetTypeName()));
+			}
+
+			URHO3D_LOGINFO("normal_: " + String(r.normal_));
+			URHO3D_LOGINFO("position_: " + String(r.position_));
+			URHO3D_LOGINFO("subObject_: " + String(r.subObject_));
+			URHO3D_LOGINFO("textureUV_: " + String(r.textureUV_));
+			URHO3D_LOGINFO("");
+			i++;
+		}
+	}
 }

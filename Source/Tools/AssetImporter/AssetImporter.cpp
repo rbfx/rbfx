@@ -1270,10 +1270,18 @@ void BuildAndSaveAnimations(OutModel* model)
 
         if (animName.Empty())
             animName = "Anim" + String(i + 1);
-        if (model)
-            animOutName = GetPath(model->outName_) + GetFileName(model->outName_) + "_" + SanitateAssetName(animName) + ".ani";
+
+        String outName = model ? model->outName_ : outName_;
+
+        if (context_->GetFileSystem()->DirExists(outName))
+        {
+            animName = SanitateAssetName(animName);
+            outName = AddTrailingSlash(outName);
+        }
         else
-            animOutName = outPath_ + GetFileName(outName_) + "_" + SanitateAssetName(animName) + ".ani";
+            animName = GetFileName(outName) + "_" + SanitateAssetName(animName);
+
+        animOutName = GetPath(outName) + animName + ".ani";
 
         auto ticksPerSecond = (float)anim->mTicksPerSecond;
         // If ticks per second not specified, it's probably a .X file. In this case use the default tick rate

@@ -916,5 +916,7 @@ if (XCODE AND DEFINED ENV{CI})
     target_compile_options (Assimp -w)
 endif ()
 
-
-create_symlink(${CMAKE_CURRENT_SOURCE_DIR}/include/assimp ${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS}/assimp)
+target_include_directories(Assimp
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/assimp>
+)

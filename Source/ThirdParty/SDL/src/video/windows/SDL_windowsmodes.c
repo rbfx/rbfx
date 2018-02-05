@@ -23,8 +23,8 @@
 #if SDL_VIDEO_DRIVER_WINDOWS
 
 #include "SDL_windowsvideo.h"
-#include "../../../include/SDL_assert.h"
-#include "../../../include/SDL_log.h"
+#include "SDL/SDL_assert.h"
+#include "SDL/SDL_log.h"
 
 /* Windows CE compatibility */
 #ifndef CDS_FULLSCREEN

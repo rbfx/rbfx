@@ -167,5 +167,7 @@ URHO3D_API String GetSanitizedPath(const String& path);
 /// Given two absolute directory paths, get the relative path from one to the other
 /// Returns false if either path isn't absolute, or if they are unrelated
 URHO3D_API bool GetRelativePath(const String& fromPath, const String& toPath, String& output);
+/// Convert relative path to full path.
+URHO3D_API String GetAbsolutePath(const String& path);
 
 }

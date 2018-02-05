@@ -1376,8 +1376,8 @@ endif()
 # endif()
 
 # Urho3D - use 'generated' path suffix for generated config header file (need the suffix as we support both out-of-source in-source build tree)
-configure_file("${SDL2_SOURCE_DIR}/include/SDL_config.h.cmake"
-  "${SDL2_BINARY_DIR}/include/generated/SDL_config.h")
+configure_file("${SDL2_SOURCE_DIR}/include/SDL/SDL_config.h.cmake"
+  "${SDL2_BINARY_DIR}/include/SDL/generated/SDL_config.h")
 
 # Prepare the flags and remove duplicates
 if(EXTRA_LDFLAGS)
@@ -1482,7 +1482,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${EXTRA_CFLAGS}")
 # Urho3D - anything below this line is Urho3D specific
 
 # Define source files
-file (GLOB H_FILES include/*.h)     # Adding the headers into source files list is just for easier file browsing in the IDE
+file (GLOB_RECURSE H_FILES include/*.h)     # Adding the headers into source files list is just for easier file browsing in the IDE
 list (APPEND SOURCE_FILES ${H_FILES})
 
 # Setup target as STATIC library (as the result we never use EXTRA_LDFLAGS linker flags)
@@ -1490,14 +1490,15 @@ add_library (SDL OBJECT ${SOURCE_FILES})
 
 # General includes
 # Urho3D - use 'generated' path suffix for generated config header file, the suffic prevents overwriting the header file with the same name in the source tree in case of non out-of-source build tree is being used
-target_include_directories (SDL PUBLIC
-    $<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include/generated> $<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}/SDL>
+target_include_directories (SDL
+    PUBLIC $<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include/SDL/generated>
+           $<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include/SDL>
+           $<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>
 )
 if (BUILD_SHARED_LIBS)
   target_compile_definitions(SDL PUBLIC -DSDL_EXPORTS)
 endif ()
 
 # Install headers for building and using the Urho3D library (install dependency for InputEvents.h)
-install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/SDL FILES_MATCHING PATTERN *.h)    # Note: the trailing slash is significant
-install (FILES ${SDL2_BINARY_DIR}/include/generated/SDL_config.h DESTINATION ${DEST_THIRDPARTY_HEADERS}/SDL)
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/ FILES_MATCHING PATTERN *.h)    # Note: the trailing slash is significant
+install (FILES ${SDL2_BINARY_DIR}/include/SDL/generated/SDL_config.h DESTINATION ${DEST_THIRDPARTY_HEADERS}/SDL)

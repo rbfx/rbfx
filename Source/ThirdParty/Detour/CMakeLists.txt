@@ -20,7 +20,9 @@
 # THE SOFTWARE.
 #
 
-file (GLOB SOURCE_FILES source/*.cpp include/*.h)
+file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
 add_library (Detour OBJECT ${SOURCE_FILES})
-target_include_directories(Detour PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-create_symlink(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_BINARY_DIR}/${DEST_THIRDPARTY_HEADERS}/Detour)
+target_include_directories(Detour
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/Detour>
+)

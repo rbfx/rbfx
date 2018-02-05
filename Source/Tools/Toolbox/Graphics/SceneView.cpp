@@ -66,6 +66,7 @@ void SceneView::CreateObjects()
 {
     camera_ = scene_->CreateChild("EditorCamera", LOCAL, M_MAX_UNSIGNED, true);
     camera_->CreateComponent<Camera>();
+    camera_->AddTag("__EDITOR_OBJECT__");
     auto debug = scene_->GetComponent<DebugRenderer>();
     if (debug == nullptr)
     {
