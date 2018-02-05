@@ -212,13 +212,14 @@ namespace Urho3D
 			return tw;
 		}
 
+#ifdef URHO3D_SYSTEMUI
 
 		/// shows the ui console on imgui
 		void RenderUIConsole();
 
 		/// renders a single tweek on imgui
 		void RenderTweekUI(Tweek* tweek);
-
+#endif
 
 	protected:
 

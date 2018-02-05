@@ -9,7 +9,9 @@
 #include "../IO/Deserializer.h"
 #include "../IO/Serializer.h"
 #include "../Core/CoreEvents.h"
+#ifdef URHO3D_SYSTEMUI
 #include "../SystemUI/SystemUI.h"
+#endif
 #include "../IO/File.h"
 
 namespace Urho3D {
@@ -206,10 +208,27 @@ namespace Urho3D {
 		return mTweekMap.Contains(name + section);
 	}
 
-	void Tweeks::RenderUIConsole()
+
+	void Tweeks::insertTweek(Tweek* tweek)
 	{
+		mTweekMap[tweekHash(tweek)] = SharedPtr<Tweek>(tweek);
+		mTweekSectionMap[tweek->GetSection()].Push(SharedPtr<Tweek>(tweek));
+
+		if (!mSections.Contains(tweek->GetSection())) {
+			mSections.Push(tweek->GetSection());
+		}
+	}
+
+	StringHash Tweeks::tweekHash(Tweek* tweek)
+	{
+		return tweek->GetName() + tweek->GetSection();
+	}
+
+
 #ifdef URHO3D_SYSTEMUI
 
+	void Tweeks::RenderUIConsole()
+	{
 
 
 		//Tweeks
@@ -260,12 +279,12 @@ namespace Urho3D {
 		}
 		ImGui::End();
 
-#endif
+
 	}
 
 	void Tweeks::RenderTweekUI(Tweek* tweek) {
 
-#ifdef URHO3D_SYSTEMUI
+
 
 		String name = tweek->GetName().CString();
 		const char* tweekName = name.CString();
@@ -484,26 +503,45 @@ namespace Urho3D {
 
 		if (tweek->IsExpired())
 			ImGui::PopStyleColor();
+	}
 #endif
 
-	}
 
 
 
-	void Tweeks::insertTweek(Tweek* tweek)
-	{
-		mTweekMap[tweekHash(tweek)] = SharedPtr<Tweek>(tweek);
-		mTweekSectionMap[tweek->GetSection()].Push(SharedPtr<Tweek>(tweek));
 
-		if (!mSections.Contains(tweek->GetSection())) {
-			mSections.Push(tweek->GetSection());
-		}
-	}
 
-	StringHash Tweeks::tweekHash(Tweek* tweek)
-	{
-		return tweek->GetName() + tweek->GetSection();
-	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
