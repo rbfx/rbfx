@@ -24,6 +24,7 @@
 #include <Urho3D/IO/File.h>
 #include <cppast/cpp_function.hpp>
 #include <cppast/cpp_member_function.hpp>
+#include <cppast/cpp_member_variable.hpp>
 #include "GenerateCApiPass.h"
 #include "GeneratorContext.h"
 
@@ -92,6 +93,11 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
         UserData* data = GetUserData(e);
         data->cFunctionName = GetUniqueName(Sanitize(symbolName));
 
+        const auto& parent = dynamic_cast<const cppast::cpp_class&>(e.parent().value());
+        String className = parent.name().c_str();
+        if (GetUserData(parent)->hasWrapperClass)
+            className += "Ex";
+
         mustache::data params{mustache::data::type::list};
         for (const auto& param : func.parameters())
         {
@@ -104,7 +110,7 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
         printer_ << fmt("URHO3D_EXPORT_API {{c_return_type}} {{c_function_name}}({{class_name}}* cls{{#parameter_list}}, {{type}} {{name}}{{/parameter_list}})", {
             {"c_return_type", generator->MapToCType(func.return_type()).CString()},
             {"c_function_name", data->cFunctionName.CString()},
-            {"class_name", dynamic_cast<const cppast::cpp_class&>(e.parent().value()).name()},
+            {"class_name", className.CString()},
             {"parameter_list", params}
         });
         printer_.Indent();
@@ -117,6 +123,56 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
                 }).CString()}
             });
         }
+        printer_.Dedent();
+        printer_.WriteLine();
+
+        if (func.is_virtual())
+        {
+            auto vars = fmt({
+                {"name", func.name()},
+                {"class_name", className.CString()},
+            });
+            // void - the lazy way out o7
+            printer_ << fmt("URHO3D_EXPORT_API void set_{{class_name}}_fn{{name}}({{class_name}}* cls, void* fn)", vars);
+            printer_.Indent();
+            printer_ << fmt("cls->fn{{name}} = (decltype(cls->fn{{name}}))fn;", vars);
+            printer_.Dedent();
+            printer_.WriteLine();
+        }
+    }
+    else if (e.kind() == cppast::cpp_entity_kind::member_variable_t)
+    {
+        const auto& var = dynamic_cast<const cppast::cpp_member_variable&>(e);
+        const auto& cls = dynamic_cast<const cppast::cpp_class&>(e.parent().value());
+        UserData* data = GetUserData(e);
+
+        auto className = cls.name();
+        if (GetUserData(cls)->hasWrapperClass)
+            className += "Ex";
+
+        data->cFunctionName = Sanitize(GetSymbolName(var.parent().value()) + "_" + var.name().c_str());
+        auto vars = fmt({{"c_type",          generator->MapToCType(var.type()).CString()},
+                         {"c_function_name", data->cFunctionName.CString()},
+                         {"class_name",      className},
+                         {"name",            var.name()},});
+        // Getter
+        printer_ << fmt("URHO3D_EXPORT_API {{c_type}} get_{{c_function_name}}({{class_name}}* cls)", vars);
+        printer_.Indent();
+        if (info.access == cppast::cpp_protected)
+            printer_ << fmt("return ToCSharp(cls->__get_{{name}}());", vars);
+        else
+            printer_ << fmt("return ToCSharp(cls->{{name}});", vars);
+
+        printer_.Dedent();
+        printer_.WriteLine();
+
+        // Setter
+        printer_ << fmt("URHO3D_EXPORT_API void set_{{c_function_name}}({{class_name}}* cls, {{c_type}} value)", vars);
+        printer_.Indent();
+        if (info.access == cppast::cpp_protected)
+            printer_ << fmt("cls->__set_{{name}}(FromCSharp(value));", vars);
+        else
+            printer_ << fmt("cls->{{name}} = FromCSharp(value);", vars);
         printer_.Dedent();
         printer_.WriteLine();
     }

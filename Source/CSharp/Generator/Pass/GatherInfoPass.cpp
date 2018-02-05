@@ -36,6 +36,9 @@ void GatherInfoPass::Start()
 
 bool GatherInfoPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info info)
 {
+    // Save access to user data. Then other passes can use this access info while iterating children of entity.
+    GetUserData(e)->access = info.access;
+
     if (e.kind() == cppast::cpp_entity_kind::function_t || e.kind() == cppast::cpp_entity_kind::member_function_t || e.kind() == cppast::cpp_entity_kind::member_variable_t)
     {
         if (e.parent().value().kind() == cppast::cpp_entity_kind::class_t)
