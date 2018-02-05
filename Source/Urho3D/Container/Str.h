@@ -392,7 +392,7 @@ public:
     /// Return a substring with length from position.
     String Substring(unsigned pos, unsigned length) const;
     /// Return string with whitespace trimmed from the beginning and the end.
-    String Trimmed() const;
+    String Trimmed(const String& chars=" \t\r\n") const;
     /// Return string in uppercase.
     String ToUpper() const;
     /// Return string in lowercase.

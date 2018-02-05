@@ -517,7 +517,7 @@ String String::Substring(unsigned pos, unsigned length) const
         return String();
 }
 
-String String::Trimmed() const
+String String::Trimmed(const String& chars) const
 {
     unsigned trimStart = 0;
     unsigned trimEnd = length_;
@@ -525,14 +525,14 @@ String String::Trimmed() const
     while (trimStart < trimEnd)
     {
         char c = buffer_[trimStart];
-        if (c != ' ' && c != 9)
+        if (!chars.Contains(c))
             break;
         ++trimStart;
     }
     while (trimEnd > trimStart)
     {
         char c = buffer_[trimEnd - 1];
-        if (c != ' ' && c != 9)
+        if (!chars.Contains(c))
             break;
         --trimEnd;
     }
