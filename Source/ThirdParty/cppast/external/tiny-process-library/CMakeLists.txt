@@ -22,20 +22,6 @@ else()
   list(APPEND process_source_files process_unix.cpp)
 endif()
 
-add_library(tiny-process-library ${process_source_files})
+add_library(tiny-process-library STATIC ${process_source_files})
 
 target_link_libraries(tiny-process-library ${CMAKE_THREAD_LIBS_INIT})
-
-add_executable(examples examples.cpp)
-target_link_libraries(examples tiny-process-library)
-
-option(BUILD_TESTING Off)
-
-# To enable tests: cmake -DBUILD_TESTING=1 ..
-if(BUILD_TESTING)
-  enable_testing()
-  add_subdirectory(tests)
-endif()
-
-install(TARGETS tiny-process-library DESTINATION lib)
-install(FILES process.hpp DESTINATION include)

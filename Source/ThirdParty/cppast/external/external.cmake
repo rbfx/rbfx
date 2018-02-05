@@ -24,12 +24,12 @@ find_package(Threads REQUIRED QUIET)
 # create a target here instead of using the one provided
 set(tiny_process_dir ${CMAKE_CURRENT_SOURCE_DIR}/external/tiny-process-library)
 if(WIN32)
-    add_library(_cppast_tiny_process EXCLUDE_FROM_ALL
+    add_library(_cppast_tiny_process STATIC EXCLUDE_FROM_ALL
                     ${tiny_process_dir}/process.hpp
                     ${tiny_process_dir}/process.cpp
                     ${tiny_process_dir}/process_win.cpp)
 else()
-    add_library(_cppast_tiny_process EXCLUDE_FROM_ALL
+    add_library(_cppast_tiny_process STATIC EXCLUDE_FROM_ALL
                     ${tiny_process_dir}/process.hpp
                     ${tiny_process_dir}/process.cpp
                     ${tiny_process_dir}/process_unix.cpp)
