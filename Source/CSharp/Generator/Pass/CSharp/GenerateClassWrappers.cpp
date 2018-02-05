@@ -47,7 +47,10 @@ bool GenerateClassWrappers::Visit(const cppast::cpp_entity& e, cppast::visitor_i
         {
             if (info.event == info.container_entity_enter)
             {
-                printer_ < "class URHO3D_EXPORT_API " < e.name() < "Ex : public " < GetSymbolName(e) < "\n";
+                printer_ << fmt("class URHO3D_EXPORT_API {{name}}Ex : public {{symbol}}", {
+                    {"name", e.name()},
+                    {"symbol", GetSymbolName(e).CString()},
+                });
                 printer_.Indent();
                 printer_.WriteLine("public:", false);
             }
@@ -64,8 +67,12 @@ bool GenerateClassWrappers::Visit(const cppast::cpp_entity& e, cppast::visitor_i
     {
         // Getters and setters for protected class variables.
         const auto& var = dynamic_cast<const cppast::cpp_member_variable&>(e);
-        printer_ < cppast::to_string(var.type()) < " __get_" < e.name() < "() const { return " < e.name() < "; }\n";
-        printer_ < "void __set_" < e.name() < "(" < cppast::to_string(var.type()) < " value) { " < e.name() < " = value; }\n";
+        auto vars = fmt({
+            {"name", e.name()},
+            {"type", cppast::to_string(var.type())}
+        });
+        printer_ << fmt("{{type}} __get_{{name}}() const { return {{name}}; }", vars);
+        printer_ << fmt("void __set_{{name}}({{type}} value) { {{name}} = value; }", vars);
     }
     else if (e.kind() == cppast::cpp_entity_kind::member_function_t)
     {
@@ -78,17 +85,18 @@ bool GenerateClassWrappers::Visit(const cppast::cpp_entity& e, cppast::visitor_i
         if (func.is_virtual())
         {
             // Function pointer that virtual method will call
-            printer_ < cppast::to_string(func.return_type()) < "(" < func.parent().value().name() < "::*fn" < e.name() < ")(" < ParameterList(func.parameters()) < ") = nullptr;\n";
-
+            auto vars = fmt({
+                {"type", cppast::to_string(func.return_type())},
+                {"name", e.name()},
+                {"class_name", func.parent().value().name()},
+                {"parameter_list", ParameterList(func.parameters()).CString()},
+                {"parameter_name_list", ParameterNameList(func.parameters()).CString()},
+                {"return", IsVoid(func.return_type()) ? "" : "return"},
+                {"const", func.cv_qualifier() == cppast::cpp_cv_const ? "const " : ""}
+            });
+            printer_ << fmt("{{type}}({{class_name}}::*fn{{name}})({{parameter_list}}) {{const}}= nullptr;", vars);
             // Virtual method that calls said pointer
-            printer_ < "virtual " < cppast::to_string(func.return_type()) < " " < func.name() < "(" < ParameterList(func.parameters()) < ")";
-            printer_.Indent();
-            {
-                if (!IsVoid(func.return_type()))
-                    printer_ < "return ";
-                printer_ < "(this->*fn" < e.name() < ")(" < ParameterNameList(func.parameters()) < ");";
-            }
-            printer_.Dedent();
+            printer_ << fmt("{{type}} {{name}}({{parameter_list}}) {{const}}override { {{return}}(this->*fn{{name}})({{parameter_name_list}}); }", vars);
         }
     }
     return true;

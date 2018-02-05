@@ -37,6 +37,8 @@ void GenerateCApiPass::Start()
     printer_ << "#include \"CSharp.h\"";
     printer_ << "#include \"ClassWrappers.hpp\"";
     printer_ << "";
+    printer_ << "using namespace Urho3D;";
+    printer_ << "";
     printer_ << "extern \"C\"";
     printer_ << "{";
     printer_ << "";
@@ -57,18 +59,23 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
         UserData* data = GetUserData(e);
         data->cFunctionName = GetUniqueName(Sanitize(symbolName));
 
-        printer_ < "URHO3D_EXPORT_API " < generator->MapToCType(func.return_type()) < " " < data->cFunctionName;
-        printer_ < "(" < ParameterList(func.parameters(), std::bind(&GeneratorContext::MapToCType, generator, std::placeholders::_1)) < ")";
+        // c wrapper function declaration
+        printer_ << fmt("URHO3D_EXPORT_API {{c_return_type}} {{c_function_name}}({{parameter_list}})", {
+            {"c_return_type", generator->MapToCType(func.return_type()).CString()},
+            {"c_function_name", data->cFunctionName.CString()},
+            {"parameter_list", ParameterList(func.parameters(), std::bind(&GeneratorContext::MapToCType, generator, std::placeholders::_1)).CString()}
+        });
+
+        // function body that calls actual api
         printer_.Indent();
         {
-            if (!IsVoid(func.return_type()))
-                printer_ < "return ToCSharp(";
-            printer_ < symbolName < "(" < ParameterNameList(func.parameters(), [](const String& name) {
-                return "FromCSharp(" + name + ")";
+            printer_ << fmt("{{return}}ToCSharp({{symbol_name}}({{parameter_list}}));", {
+                {"return", IsVoid(func.return_type()) ? "" : "return "},
+                {"symbol_name", symbolName.CString()},
+                {"parameter_list", ParameterNameList(func.parameters(), [](const String& name) {
+                    return "FromCSharp(" + name + ")";
+                }).CString()}
             });
-            if (!IsVoid(func.return_type()))
-                printer_ < ")";
-            printer_ < ");";
         }
         printer_.Dedent();
         printer_.WriteLine();
@@ -85,22 +92,30 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
         UserData* data = GetUserData(e);
         data->cFunctionName = GetUniqueName(Sanitize(symbolName));
 
-        printer_ < "URHO3D_EXPORT_API " < generator->MapToCType(func.return_type()) < " " < data->cFunctionName < "(";
-        printer_ < dynamic_cast<const cppast::cpp_class&>(e.parent().value()).name() < "* cls";
+        mustache::data params{mustache::data::type::list};
         for (const auto& param : func.parameters())
-            printer_ < ", " < generator->MapToCType(param.type()) < " " < param.name();
+        {
+            mustache::data tuple{mustache::data::type::object};
+            tuple.set("type", generator->MapToCType(param.type()).CString()),
+            tuple.set("name", param.name());
+            params << tuple;
+        }
 
-        printer_ < ")";
+        printer_ << fmt("URHO3D_EXPORT_API {{c_return_type}} {{c_function_name}}({{class_name}}* cls{{#parameter_list}}, {{type}} {{name}}{{/parameter_list}})", {
+            {"c_return_type", generator->MapToCType(func.return_type()).CString()},
+            {"c_function_name", data->cFunctionName.CString()},
+            {"class_name", dynamic_cast<const cppast::cpp_class&>(e.parent().value()).name()},
+            {"parameter_list", params}
+        });
         printer_.Indent();
         {
-            if (!IsVoid(func.return_type()))
-                printer_ < "return ToCSharp(";
-            printer_ < "cls->" < e.name() < "(" < ParameterNameList(func.parameters(), [](const String& name) {
-                return "FromCSharp(" + name + ")";
+            printer_ << fmt("{{return}}(cls->{{name}}({{parameter_list}}));", {
+                {"return", !IsVoid(func.return_type()) ? "return ToCSharp" : ""},
+                {"name", e.name()},
+                {"parameter_list", ParameterNameList(func.parameters(), [](const String& name) {
+                    return "FromCSharp(" + name + ")";
+                }).CString()}
             });
-            if (!IsVoid(func.return_type()))
-                printer_ < ")";
-            printer_ < ");";
         }
         printer_.Dedent();
         printer_.WriteLine();
