@@ -29,10 +29,6 @@
 
 namespace Urho3D
 {
-void UnknownTypesPass::Start()
-{
-    URHO3D_LOGDEBUGF("~~~~~ UnknownTypesPass ~~~~~");
-}
 
 bool UnknownTypesPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info info)
 {

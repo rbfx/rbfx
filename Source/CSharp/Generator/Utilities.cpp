@@ -109,6 +109,52 @@ bool IsVoid(const cppast::cpp_type& type)
     return cppast::to_string(type) == "void";
 }
 
+String ParameterList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
+    const std::function<String(const cppast::cpp_type&)>& typeToString)
+{
+    Vector<String> parts;
+    for (const auto& param : params)
+    {
+        String typeString;
+        if (typeToString)
+            typeString = typeToString(param.type());
+        else
+            typeString = cppast::to_string(param.type());
+        parts.Push(typeString + " " + param.name());
+    }
+    return String::Joined(parts, ", ");
+}
+
+String ParameterNameList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
+    const std::function<String(const String&)>& nameFilter)
+{
+    Vector<String> parts;
+    for (const auto& param : params)
+    {
+        String name = param.name();
+        if (nameFilter)
+            name = nameFilter(name);
+        parts.Push(name);
+    }
+    return String::Joined(parts, ", ");
+}
+
+String ParameterTypeList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
+    const std::function<String(const cppast::cpp_type&)>& typeToString)
+{
+    Vector<String> parts;
+    for (const auto& param : params)
+    {
+        String typeString;
+        if (typeToString)
+            typeString = typeToString(param.type());
+        else
+            typeString = cppast::to_string(param.type());
+        parts.Push(typeString);
+    }
+    return String::Joined(parts, ", ");
+}
+
 IncludedChecker::IncludedChecker(const XMLElement& rules)
 {
     Load(rules);

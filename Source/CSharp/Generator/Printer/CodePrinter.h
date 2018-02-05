@@ -36,7 +36,7 @@ public:
     void Dedent();
 
     void Write(const String& text);
-    void WriteLine(const String& line="");
+    void WriteLine(const String& line="", bool indent=true);
     CodePrinter& operator<<(const String& line);
     CodePrinter& operator<(const String& text);
 

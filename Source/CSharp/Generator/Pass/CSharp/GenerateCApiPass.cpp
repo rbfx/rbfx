@@ -33,10 +33,9 @@ namespace Urho3D
 
 void GenerateCApiPass::Start()
 {
-    URHO3D_LOGDEBUGF("~~~~~ GenerateCApiPass ~~~~~");
-
     printer_ << "#include <Urho3D/Urho3DAll.h>";
     printer_ << "#include \"CSharp.h\"";
+    printer_ << "#include \"ClassWrappers.hpp\"";
     printer_ << "";
     printer_ << "extern \"C\"";
     printer_ << "{";
@@ -47,6 +46,7 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
 {
     auto generator = GetSubsystem<GeneratorContext>();
 
+    // Visit entities just once
     if (info.event == cppast::visitor_info::container_entity_exit)
         return true;
 
@@ -57,40 +57,15 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
         UserData* data = GetUserData(e);
         data->cFunctionName = GetUniqueName(Sanitize(symbolName));
 
-        printer_ < "URHO3D_EXPORT_API " < generator->MapToCType(func.return_type()) < " " < data->cFunctionName < "(";
-
-        bool isFirst = true;
-        for (const auto& param : func.parameters())
-        {
-            if (isFirst)
-                isFirst = false;
-            else
-                printer_ < ", ";
-            printer_ < generator->MapToCType(param.type()) < " " < param.name();
-        }
-
-        printer_ < ")";
+        printer_ < "URHO3D_EXPORT_API " < generator->MapToCType(func.return_type()) < " " < data->cFunctionName;
+        printer_ < "(" < ParameterList(func.parameters(), std::bind(&GeneratorContext::MapToCType, generator, std::placeholders::_1)) < ")";
         printer_.Indent();
         {
             if (!IsVoid(func.return_type()))
                 printer_ < "return ToCSharp(";
-            printer_ < symbolName < "(";
-            if (!func.parameters().empty())
-            {
-                printer_.Indent("");
-                {
-                    isFirst = true;
-                    for (const auto& param : func.parameters())
-                    {
-                        if (isFirst)
-                            isFirst = false;
-                        else
-                            printer_ < ", ";
-                        printer_ < "FromCSharp(" < param.name() < ")";
-                    }
-                }
-                printer_.Dedent("");
-            }
+            printer_ < symbolName < "(" < ParameterNameList(func.parameters(), [](const String& name) {
+                return "FromCSharp(" + name + ")";
+            });
             if (!IsVoid(func.return_type()))
                 printer_ < ")";
             printer_ < ");";
@@ -120,26 +95,9 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
         {
             if (!IsVoid(func.return_type()))
                 printer_ < "return ToCSharp(";
-            printer_ < "cls->" < e.name() < "(";
-            if (!func.parameters().empty())
-            {
-                printer_.Indent("");
-                {
-                    bool isFirst = true;
-                    for (const auto& param : func.parameters())
-                    {
-                        if (isFirst)
-                            isFirst = false;
-                        else
-                        {
-                            printer_ < ", ";
-                            printer_.Flush();
-                        }
-                        printer_ < "FromCSharp(" < param.name() < ")";
-                    }
-                }
-                printer_.Dedent("");
-            }
+            printer_ < "cls->" < e.name() < "(" < ParameterNameList(func.parameters(), [](const String& name) {
+                return "FromCSharp(" + name + ")";
+            });
             if (!IsVoid(func.return_type()))
                 printer_ < ")";
             printer_ < ");";
@@ -153,8 +111,7 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
 
 void GenerateCApiPass::Stop()
 {
-    // Close extern "C"
-    printer_ << "}";
+    printer_ << "}";    // Close extern "C"
 
     File file(context_, GetSubsystem<GeneratorContext>()->GetOutputDir() + "CApi.cpp", FILE_WRITE);
     if (!file.IsOpen())

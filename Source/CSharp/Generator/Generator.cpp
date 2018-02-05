@@ -26,6 +26,7 @@
 #include <Pass/GatherInfoPass.h>
 #include <Pass/UnknownTypesPass.h>
 #include <Pass/CSharp/GenerateCApiPass.h>
+#include <Pass/CSharp/GenerateClassWrappers.h>
 #include "GeneratorContext.h"
 
 
@@ -56,6 +57,7 @@ int main(int argc, char* argv[])
     context->RegisterFactory<GatherInfoPass>();
     context->RegisterFactory<UnknownTypesPass>();
     context->RegisterFactory<GenerateCApiPass>();
+    context->RegisterFactory<GenerateClassWrappers>();
 
 
     auto* generator = new GeneratorContext(context);
@@ -80,6 +82,7 @@ int main(int argc, char* argv[])
 
     generator->AddPass<GatherInfoPass>();
     generator->AddPass<UnknownTypesPass>();
+    generator->AddPass<GenerateClassWrappers>();
     generator->AddPass<GenerateCApiPass>();
 
     generator->Generate(outputDir);

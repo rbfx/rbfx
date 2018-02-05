@@ -38,13 +38,15 @@ void CodePrinter::Dedent()
 
 void CodePrinter::Write(const String& text)
 {
-    buffer_ += text;
+    buffer_ += text.Trimmed("\r\n");
+    if (text.EndsWith("\n"))
+        Flush();
 }
 
-void CodePrinter::WriteLine(const String& line)
+void CodePrinter::WriteLine(const String& line, bool indent)
 {
     Flush();
-    lines_ += (String(' ', indent_ * 4) + line);
+    lines_ += String(' ', indent ? indent_ * 4 : 0) + line;
 }
 
 CodePrinter& CodePrinter::operator<<(const String& line)

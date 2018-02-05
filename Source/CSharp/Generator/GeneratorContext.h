@@ -37,8 +37,7 @@ namespace Urho3D
 struct UserData
 {
     bool generated = true;
-    bool hasProtected = false;
-    bool hasVirtual = true;
+    bool hasWrapperClass = false;
     String cFunctionName;
 };
 

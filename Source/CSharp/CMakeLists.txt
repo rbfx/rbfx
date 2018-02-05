@@ -34,7 +34,8 @@ add_custom_target(CSharpGenerateBindings
 )
 
 file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/CApi.cpp "")
-add_library(Urho3DCSharp SHARED CSharp.h CSharp.cpp ${CMAKE_CURRENT_BINARY_DIR}/CApi.cpp)
+file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/ClassWrappers.hpp "")
+add_library(Urho3DCSharp SHARED CSharp.h CSharp.cpp ${CMAKE_CURRENT_BINARY_DIR}/CApi.cpp ${CMAKE_CURRENT_BINARY_DIR}/ClassWrappers.hpp)
 target_link_libraries(Urho3DCSharp Urho3D)
 target_include_directories(Urho3DCSharp PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 add_dependencies(Urho3DCSharp CSharpGenerateBindings)

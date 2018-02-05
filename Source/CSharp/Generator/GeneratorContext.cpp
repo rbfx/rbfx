@@ -155,6 +155,7 @@ void GeneratorContext::Generate(const String& outputDir)
 
     for (const auto& pass : passes_)
     {
+        URHO3D_LOGINFOF("#### Run pass: %s", pass->GetTypeName().CString());
         pass->Start();
         for (const auto& pair : parsed_)
         {

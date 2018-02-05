@@ -28,6 +28,7 @@
 #include <cppast/cpp_entity.hpp>
 #include <Urho3D/Resource/XMLElement.h>
 #include <cppast/cpp_type.hpp>
+#include <cppast/cpp_function.hpp>
 
 
 namespace Urho3D
@@ -60,5 +61,11 @@ protected:
     Vector<std::regex> excludes_;
 };
 
+String ParameterList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
+    const std::function<String(const cppast::cpp_type&)>& typeToString=nullptr);
+String ParameterNameList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
+    const std::function<String(const String&)>& nameFilter=nullptr);
+String ParameterTypeList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
+    const std::function<String(const cppast::cpp_type&)>& typeToString=nullptr);
 
 }

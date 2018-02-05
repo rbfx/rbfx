@@ -31,7 +31,6 @@ namespace Urho3D
 
 void GatherInfoPass::Start()
 {
-    URHO3D_LOGDEBUGF("~~~~~ GatherInfo ~~~~~");
     typeChecker_.Load(GetSubsystem<GeneratorContext>()->GetRules()->GetRoot().GetChild("types"));
 }
 
@@ -48,7 +47,10 @@ bool GatherInfoPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info inf
                     return false;
             }
             else if (info.access == cppast::cpp_protected)
-                GetUserData(e.parent().value())->hasProtected = true;
+            {
+                assert(e.parent().value().kind() == cppast::cpp_entity_kind::class_t);
+                GetUserData(e.parent().value())->hasWrapperClass = true;
+            }
         }
     }
     else if (e.kind() == cppast::cpp_entity_kind::class_t && cppast::is_definition(e) && !cppast::is_templated(e))
@@ -65,7 +67,10 @@ bool GatherInfoPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info inf
         if (func.is_variadic())
             GetUserData(e)->generated = false;
         else if (func.is_virtual())
-            GetUserData(e.parent().value())->hasVirtual = true;
+        {
+            assert(e.parent().value().kind() == cppast::cpp_entity_kind::class_t);
+            GetUserData(e.parent().value())->hasWrapperClass = true;
+        }
     }
 
     return true;

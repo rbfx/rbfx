@@ -26,21 +26,26 @@
 #include <Urho3D/Core/Object.h>
 #include <cppast/cpp_entity.hpp>
 #include <cppast/visitor.hpp>
-#include "ParserPass.h"
+#include "Pass/ParserPass.h"
 #include "Utilities.h"
-
+#include "Printer/CSharpPrinter.h"
 
 namespace Urho3D
 {
 
 /// Walk AST and gather known defined classes. Exclude protected/private members from generation.
-class UnknownTypesPass : public ParserPass
+class GenerateClassWrappers : public ParserPass
 {
-URHO3D_OBJECT(UnknownTypesPass, ParserPass);
+URHO3D_OBJECT(GenerateClassWrappers, ParserPass);
 public:
-    explicit UnknownTypesPass(Context* context) : ParserPass(context) { };
+    explicit GenerateClassWrappers(Context* context) : ParserPass(context) { };
 
+    void Start() override;
     bool Visit(const cppast::cpp_entity& e, cppast::visitor_info info) override;
+    void Stop() override;
+
+protected:
+    CSharpPrinter printer_;
 };
 
 }
