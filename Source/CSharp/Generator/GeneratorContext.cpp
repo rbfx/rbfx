@@ -138,7 +138,8 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
         typeMaps_.Push({
             .cType = typeMap.GetChild("c").GetValue(),
             .cppType = typeMap.GetChild("cpp").GetValue(),
-            .langType = typeMap.GetChild("lang").GetValue(),
+            .csType = typeMap.GetChild("cs").GetValue(),
+            .pInvokeAttribute = typeMap.GetChild("cs").GetAttribute("pinvoke")
         });
     }
 
@@ -205,27 +206,89 @@ bool GeneratorContext::IsKnownType(const cppast::cpp_type& type)
 
     CppTypeInfo info(type);
     if (info)
-    {
-        if (types_.Contains(info.name_))
-            return true;
+        return IsKnownType(info.name_);
 
-        if (manualTypes_.Contains(info.name_))
-            return true;
-    }
     return false;
 }
 
-String GeneratorContext::MapToCType(const cppast::cpp_type& type)
+bool GeneratorContext::IsKnownType(const String& name)
+{
+    if (types_.Contains(name))
+        return true;
+
+    if (manualTypes_.Contains(name))
+        return true;
+
+    return false;
+}
+
+TypeMap GeneratorContext::GetTypeMap(const cppast::cpp_type& type)
 {
     CppTypeInfo info(type);
 
     for (const auto& map : typeMaps_)
     {
         if (map.cppType == info.name_)
-            return map.cType;
+            return map;
     }
 
-    return info.fullName_;
+    TypeMap default_;
+    default_.cType = info.fullName_;
+    default_.cppType = info.fullName_;
+    default_.csType = info.name_.Replaced("::", ".");
+
+    return default_;
+}
+
+String GeneratorContext::GetCSType(const cppast::cpp_type& type, bool pInvoke)
+{
+    CppTypeInfo info(type);
+
+    static HashMap<String, String> cppToCS = {
+        {"char", "char"},
+        {"unsigned char", "byte"},
+        {"short", "short"},
+        {"unsigned short", "ushort"},
+        {"int", "int"},
+        {"unsigned int", "uint"},
+        {"long long", "long"},
+        {"unsigned long long", "ulong"},
+    };
+
+    String typeName;
+    switch (type.kind())
+    {
+    case cppast::cpp_type_kind::builtin_t:
+    {
+        auto name = cppast::to_string(type);
+        auto it = cppToCS.Find(name);
+        if (it != cppToCS.End())
+            typeName = it->second_;
+        else
+        {
+            URHO3D_LOGERROR("Failed mapping builtin cpp type '%s' to cs type.");
+            typeName = "IntPtr";
+        }
+        break;
+    }
+    case cppast::cpp_type_kind::user_defined_t:
+        typeName = GetTypeMap(type).csType;
+    default:
+        break;
+    }
+
+    if (type.kind() == cppast::cpp_type_kind::pointer_t || type.kind() == cppast::cpp_type_kind::reference_t)
+    {
+        if (info.notNull_)
+            typeName = "ref " + typeName;
+        else if (info.pointer_)
+            typeName = "out " + typeName;
+    }
+
+    if (pInvoke)
+        typeName = GetTypeMap(type).pInvokeAttribute + " " + typeName;
+
+    return typeName;
 }
 
 }

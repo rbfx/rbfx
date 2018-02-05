@@ -42,7 +42,7 @@ public:
 
     void Start() override;
     bool Visit(const cppast::cpp_entity& e, cppast::visitor_info info) override;
-    void Stop();
+    void Stop() override;
 
 protected:
     String GetUniqueName(const String& baseName);

@@ -23,14 +23,29 @@
 #pragma once
 
 
-#include <Urho3D/Urho3DAll.h>
+#include <Urho3D/Core/Object.h>
+#include <cppast/cpp_entity.hpp>
+#include <cppast/visitor.hpp>
+#include "Pass/ParserPass.h"
+#include "Utilities.h"
+#include "Printer/CSharpPrinter.h"
 
-// Type converters between c++ and c types. Corresponding entries must exist in Rules.xml.
-inline const char* ToCSharp(const String& value) { return value.CString(); }
-inline String FromCSharp(const char* value) { return value; }
+namespace Urho3D
+{
 
-// Do not convert any other types.
-template<typename T> const T& ToCSharp(const T& value) { return value; }
-template<typename T> T& ToCSharp(T& value) { return value; }
-template<typename T> const T& FromCSharp(const T& value) { return value; }
-template<typename T> T& FromCSharp(T& value) { return value; }
+/// Walk AST and gather known defined classes. Exclude protected/private members from generation.
+class GeneratePInvokePass : public ParserPass
+{
+    URHO3D_OBJECT(GeneratePInvokePass, ParserPass);
+public:
+    explicit GeneratePInvokePass(Context* context) : ParserPass(context) { };
+
+    void Start() override;
+    bool Visit(const cppast::cpp_entity& e, cppast::visitor_info info) override;
+    void Stop() override;
+
+protected:
+    CSharpPrinter printer_;
+};
+
+}

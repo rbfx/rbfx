@@ -46,6 +46,14 @@ struct UserData
     cppast::cpp_access_specifier_kind access = cppast::cpp_access_specifier_kind::cpp_public;
 };
 
+struct TypeMap
+{
+    String cType;
+    String cppType;
+    String csType;
+    String pInvokeAttribute;
+};
+
 class GeneratorContext
     : public Object
 {
@@ -67,7 +75,9 @@ public:
     void RegisterKnownType(const String& name, const cppast::cpp_entity& e);
     const cppast::cpp_entity* GetKnownType(const String& name);
     bool IsKnownType(const cppast::cpp_type& type);
-    String MapToCType(const cppast::cpp_type& type);
+    bool IsKnownType(const String& name);
+    TypeMap GetTypeMap(const cppast::cpp_type& type);
+    String GetCSType(const cppast::cpp_type& type, bool pInvoke=false);
 
 protected:
     String sourceDir_;
@@ -77,12 +87,6 @@ protected:
     HashMap<String, const cppast::cpp_entity*> types_;
     std::map<String, std::unique_ptr<cppast::cpp_file>> parsed_;
     Vector<SharedPtr<ParserPass>> passes_;
-    struct TypeMap
-    {
-        String cType;
-        String cppType;
-        String langType;
-    };
     Vector<TypeMap> typeMaps_;
     Vector<String> manualTypes_;
 };

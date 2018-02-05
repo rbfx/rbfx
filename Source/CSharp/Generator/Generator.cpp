@@ -27,6 +27,7 @@
 #include <Pass/UnknownTypesPass.h>
 #include <Pass/CSharp/GenerateCApiPass.h>
 #include <Pass/CSharp/GenerateClassWrappers.h>
+#include <Pass/CSharp/GeneratePInvokePass.h>
 #include "GeneratorContext.h"
 
 
@@ -53,13 +54,14 @@ int main(int argc, char* argv[])
     context->RegisterSubsystem(new Log(context));
     context->GetLog()->SetLevel(LOG_DEBUG);
 
-
+    // Register factories
     context->RegisterFactory<GatherInfoPass>();
     context->RegisterFactory<UnknownTypesPass>();
     context->RegisterFactory<GenerateCApiPass>();
     context->RegisterFactory<GenerateClassWrappers>();
+    context->RegisterFactory<GeneratePInvokePass>();
 
-
+    // Generate bindings
     auto* generator = new GeneratorContext(context);
     context->RegisterSubsystem(generator);
 
@@ -84,6 +86,7 @@ int main(int argc, char* argv[])
     generator->AddPass<UnknownTypesPass>();
     generator->AddPass<GenerateClassWrappers>();
     generator->AddPass<GenerateCApiPass>();
+    generator->AddPass<GeneratePInvokePass>();
 
     generator->Generate(outputDir);
 }

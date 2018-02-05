@@ -17,18 +17,17 @@
         <manual>Urho3D::String</manual>
         <manual>Urho3D::WString</manual>
     </types>
-    <!--
     <typemaps>
         <typemap>
-            <c>wchar_t*</c>
+            <c>const char*</c>
             <cpp>Urho3D::String</cpp>
-            <lang>String</lang>
+            <cs pinvoke="UnmanagedType.LPUTF8Str">string</cs>
         </typemap>
         <typemap>
-            <c>wchar_t*</c>
+            <c>const wchar_t*</c>
             <cpp>Urho3D::WString</cpp>
-            <lang>String</lang>
+            <cs pinvoke="UnmanagedType.LPWStr">string</cs>
         </typemap>
     </typemaps>
-    -->
+
 </rules>

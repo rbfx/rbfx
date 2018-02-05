@@ -62,9 +62,11 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
 
         // c wrapper function declaration
         printer_ << fmt("URHO3D_EXPORT_API {{c_return_type}} {{c_function_name}}({{parameter_list}})", {
-            {"c_return_type", generator->MapToCType(func.return_type()).CString()},
+            {"c_return_type", generator->GetTypeMap(func.return_type()).cType.CString()},
             {"c_function_name", data->cFunctionName.CString()},
-            {"parameter_list", ParameterList(func.parameters(), std::bind(&GeneratorContext::MapToCType, generator, std::placeholders::_1)).CString()}
+            {"parameter_list", ParameterList(func.parameters(), [&](const cppast::cpp_type& type) {
+                return generator->GetTypeMap(type).cType;
+            }).CString()}
         });
 
         // function body that calls actual api
@@ -102,13 +104,13 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
         for (const auto& param : func.parameters())
         {
             mustache::data tuple{mustache::data::type::object};
-            tuple.set("type", generator->MapToCType(param.type()).CString()),
+            tuple.set("type", generator->GetTypeMap(param.type()).cType.CString()),
             tuple.set("name", param.name());
             params << tuple;
         }
 
         printer_ << fmt("URHO3D_EXPORT_API {{c_return_type}} {{c_function_name}}({{class_name}}* cls{{#parameter_list}}, {{type}} {{name}}{{/parameter_list}})", {
-            {"c_return_type", generator->MapToCType(func.return_type()).CString()},
+            {"c_return_type", generator->GetTypeMap(func.return_type()).cType.CString()},
             {"c_function_name", data->cFunctionName.CString()},
             {"class_name", className.CString()},
             {"parameter_list", params}
@@ -151,7 +153,7 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
             className += "Ex";
 
         data->cFunctionName = Sanitize(GetSymbolName(var.parent().value()) + "_" + var.name().c_str());
-        auto vars = fmt({{"c_type",          generator->MapToCType(var.type()).CString()},
+        auto vars = fmt({{"c_type", generator->GetTypeMap(var.type()).cType.CString()},
                          {"c_function_name", data->cFunctionName.CString()},
                          {"class_name",      className},
                          {"name",            var.name()},});

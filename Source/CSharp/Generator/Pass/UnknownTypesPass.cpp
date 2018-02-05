@@ -75,8 +75,13 @@ bool UnknownTypesPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
                 cppast::to_string(var.type()).c_str());
         }
     }
-    else if (e.kind() == cppast::cpp_entity_kind::class_t && !cppast::is_definition(e))
-        GetUserData(e)->generated = false;  // Forward decl
+    else if (e.kind() == cppast::cpp_entity_kind::class_t)
+    {
+        if (!cppast::is_definition(e))
+            GetUserData(e)->generated = false;  // Forward decl
+        else
+            GetUserData(e)->generated = generator->IsKnownType(GetSymbolName(e));
+    }
     return true;
 }
 }
