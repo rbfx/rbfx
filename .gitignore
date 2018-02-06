@@ -12,6 +12,7 @@
 /lib*/
 generated/
 /Source/Urho3D/tolua++-prefix/
+/[Bb]uild/*
 
 # Output files
 /Source/**/*.a
