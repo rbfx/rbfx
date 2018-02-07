@@ -40,14 +40,14 @@ public:
 
     /// Full type identifier.
     String fullName_;
-    /// True when type is pointer or reference.
-    bool pointer_;
-    /// True when type is reference.
-    bool notNull_;
-    /// True when type is const.
-    bool const_;
     /// Base type identifier.
     String name_;
+    /// True when type is pointer or reference.
+    bool pointer_ = false;
+    /// True when type is reference.
+    bool notNull_ = false;
+    /// True when type is const.
+    bool const_ = false;
     /// Is type parsed successfully.
     bool valid_ = true;
 };
