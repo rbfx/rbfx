@@ -135,12 +135,12 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
     XMLElement typeMaps = rules_->GetRoot().GetChild("typemaps");
     for (auto typeMap = typeMaps.GetChild("typemap"); typeMap.NotNull(); typeMap = typeMap.GetNext("typemap"))
     {
-        typeMaps_.Push({
-            .cType = typeMap.GetChild("c").GetValue(),
-            .cppType = typeMap.GetChild("cpp").GetValue(),
-            .csType = typeMap.GetChild("cs").GetValue(),
-            .pInvokeAttribute = typeMap.GetChild("cs").GetAttribute("pinvoke")
-        });
+        TypeMap map;
+        map.cType = typeMap.GetChild("c").GetValue(),
+        map.cppType = typeMap.GetChild("cpp").GetValue(),
+        map.csType = typeMap.GetChild("cs").GetValue(),
+        map.pInvokeAttribute = typeMap.GetChild("cs").GetAttribute("pinvoke");
+        typeMaps_.Push(map);
     }
 
     XMLElement types = rules_->GetRoot().GetChild("types");
@@ -232,12 +232,7 @@ TypeMap GeneratorContext::GetTypeMap(const cppast::cpp_type& type)
             return map;
     }
 
-    TypeMap default_;
-    default_.cType = info.fullName_;
-    default_.cppType = info.fullName_;
-    default_.csType = info.name_.Replaced("::", ".");
-
-    return default_;
+    return TypeMap{type};
 }
 
 bool GeneratorContext::IsSubclassOf(const cppast::cpp_class& cls, const String& baseName)
@@ -255,6 +250,46 @@ bool GeneratorContext::IsSubclassOf(const cppast::cpp_class& cls, const String& 
         }
     }
     return false;
+}
+
+TypeMap::TypeMap(const cppast::cpp_type& type)
+{
+    const CppTypeInfo info(type);
+    cType = info.fullName_;
+    cppType = info.fullName_;
+    csType = info.name_.Replaced("::", ".");
+
+    static HashMap<String, String> cppToCS = {
+        {"char", "char"},
+        {"unsigned char", "byte"},
+        {"short", "short"},
+        {"unsigned short", "ushort"},
+        {"int", "int"},
+        {"unsigned int", "uint"},
+        {"long long", "long"},
+        {"unsigned long long", "ulong"},
+        {"void", "void"},
+        {"void*", "IntPtr"},
+        {"bool", "bool"},
+        {"float", "float"},
+        {"double", "double"},
+    };
+
+    switch (type.kind())
+    {
+    case cppast::cpp_type_kind::builtin_t:
+    {
+        auto it = cppToCS.Find(info.name_);
+        assert(it != cppToCS.End());
+        assert(!info.pointer_);         // Handle later if needed
+        csType = it->second_;
+        break;
+    }
+    default:
+        csType = "IntPtr";
+        break;
+    }
+
 }
 
 }

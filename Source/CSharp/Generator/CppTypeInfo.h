@@ -34,6 +34,7 @@ namespace Urho3D
 class CppTypeInfo
 {
 public:
+    explicit CppTypeInfo(const String& type);
     explicit CppTypeInfo(const cppast::cpp_type& type);
     /// Verify that parsing of type info succeeded.
     operator bool() const { return valid_; }
@@ -50,6 +51,11 @@ public:
     bool const_ = false;
     /// Is type parsed successfully.
     bool valid_ = true;
+    /// Reference to type this info was constructed from.
+    const cppast::cpp_type* const type_ = nullptr;
+
+protected:
+    void ParseType(const String& fullName);
 };
 
 }

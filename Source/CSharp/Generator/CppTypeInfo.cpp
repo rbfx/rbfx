@@ -29,9 +29,20 @@ namespace Urho3D
 {
 
 CppTypeInfo::CppTypeInfo(const cppast::cpp_type& type)
+    : type_(&type)
+{
+    ParseType(cppast::to_string(type));
+}
+
+CppTypeInfo::CppTypeInfo(const String& type)
+{
+    ParseType(type);
+}
+
+void CppTypeInfo::ParseType(const String& type)
 {
     // Worst code ever. Do not do this at home...
-    fullName_ = cppast::to_string(type);
+    fullName_ = type;
     std::vector<std::string> tokens;
 
     bool nameSaved = false;

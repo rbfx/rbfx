@@ -29,6 +29,7 @@
 #include <cppast/libclang_parser.hpp>
 #include <Urho3D/Resource/XMLFile.h>
 #include "Pass/ParserPass.h"
+#include "CppTypeInfo.h"
 
 
 namespace Urho3D
@@ -48,6 +49,8 @@ struct UserData
 
 struct TypeMap
 {
+    TypeMap() = default;
+    TypeMap(const cppast::cpp_type& type);
     String cType;
     String cppType;
     String csType;

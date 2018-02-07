@@ -31,22 +31,6 @@
 namespace Urho3D
 {
 
-static HashMap<String, String> cppToCS = {
-    {"char", "char"},
-    {"unsigned char", "byte"},
-    {"short", "short"},
-    {"unsigned short", "ushort"},
-    {"int", "int"},
-    {"unsigned int", "uint"},
-    {"long long", "long"},
-    {"unsigned long long", "ulong"},
-    {"void", "void"},
-    {"void*", "IntPtr"},
-    {"bool", "bool"},
-    {"float", "float"},
-    {"double", "double"},
-};
-
 void GeneratePInvokePass::Start()
 {
     printer_ << "using System;";
@@ -63,51 +47,6 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
     const char* dllImport = "[DllImport(\"Urho3DCSharp\", CallingConvention = CallingConvention.Cdecl)]";
     auto data = GetUserData(e);
     auto* generator = GetSubsystem<GeneratorContext>();
-
-    auto GetCSType = [&](const cppast::cpp_type& type, bool pInvoke=false) -> String
-    {
-        CppTypeInfo typeInfo(type);
-        String typeName;
-        switch (type.kind())
-        {
-        case cppast::cpp_type_kind::builtin_t:
-        {
-            auto name = cppast::to_string(type);
-            auto it = cppToCS.Find(name);
-            if (it != cppToCS.End())
-                typeName = it->second_;
-            else
-            {
-                URHO3D_LOGERRORF("Failed mapping builtin cpp type '%s' to cs type.", typeInfo.fullName_.CString());
-                typeName = "IntPtr";
-            }
-            break;
-        }
-        default:
-        {
-            const auto& typeMap = generator->GetTypeMap(type);
-            if (typeMap.cType == "const char*" && pInvoke)
-                typeName = "string";
-            else
-                typeName = "IntPtr";
-            break;
-        }
-        }
-
-//    if (type.kind() == cppast::cpp_type_kind::pointer_t || type.kind() == cppast::cpp_type_kind::reference_t)
-//    {
-//        if (info.notNull_)
-//            typeName = "ref " + typeName;
-//        else if (info.pointer_)
-//            typeName = "out " + typeName;
-//    }
-
-//        if (pInvoke)
-//            typeName = GetTypeMap(type).pInvokeAttribute + " " + typeName;
-
-        return typeName;
-    };
-
 
     if (e.kind() == cppast::cpp_entity_kind::class_t)
     {
@@ -174,7 +113,7 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
             printer_ << "[return: MarshalAs(" + typeMap.pInvokeAttribute + ")]";
 
         auto vars = fmt({
-            {"cs_type", GetCSType(var.type()).CString()},
+            {"cs_type", typeMap.csType.CString()},
             {"c_function_name", data->cFunctionName.CString()},
             {"attribute", (typeMap.pInvokeAttribute.Empty() ? String::EMPTY : "[param: MarshalAs(" + typeMap.pInvokeAttribute + ")]").CString()},
         });
@@ -189,9 +128,14 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
     else if (e.kind() == cppast::cpp_entity_kind::constructor_t)
     {
         const auto& ctor = dynamic_cast<const cppast::cpp_constructor&>(e);
+
         printer_ << dllImport;
         auto csParams = ParameterList(ctor.parameters(), [&](const cppast::cpp_type& type) {
-            return GetCSType(type, true);
+            auto typeMap = generator->GetTypeMap(type);
+            auto csType = typeMap.csType;
+            if (!typeMap.pInvokeAttribute.Empty())
+                csType = "[param: MarshalAs(" + typeMap.pInvokeAttribute + ")]" + csType;
+            return csType;
         });
         auto vars = fmt({
             {"c_function_name", data->cFunctionName.CString()},
@@ -203,15 +147,27 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
     else if (e.kind() == cppast::cpp_entity_kind::member_function_t)
     {
         const auto& func = dynamic_cast<const cppast::cpp_member_function&>(e);
-
         printer_ << dllImport;
         auto csParams = ParameterList(func.parameters(), [&](const cppast::cpp_type& type) {
-            return GetCSType(type, false);
+            auto typeMap = generator->GetTypeMap(type);
+            auto csType = typeMap.csType;
+            if (!typeMap.pInvokeAttribute.Empty())
+                csType = "[param: MarshalAs(" + typeMap.pInvokeAttribute + ")]" + csType;
+            return csType;
         });
+
+        String csRetType = "IntPtr";
+        if (!IsVoid(func.return_type()))
+        {
+            const auto& retType = func.return_type();
+            if (retType.kind() == cppast::cpp_type_kind::builtin_t)
+                csRetType = generator->GetTypeMap(retType).csType;
+        }
+
         auto vars = fmt({
             {"c_function_name", data->cFunctionName.CString()},
             {"cs_param_list", csParams.CString()},
-            {"cs_return", GetCSType(func.return_type(), false).CString()},
+            {"cs_return", csRetType.CString()},
             {"has_params", !func.parameters().empty()}
         });
         printer_ << fmt("internal static extern {{cs_return}} {{c_function_name}}(IntPtr instance{{#has_params}}, {{cs_param_list}}{{/has_params}});", vars);
