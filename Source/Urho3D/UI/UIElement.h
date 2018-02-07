@@ -410,6 +410,12 @@ public:
     /// Return height.
     int GetHeight() const { return size_.y_; }
 
+    /// Get the x position of the right side of the element
+    int GetRight() const { return position_.x_ + size_.x_; }
+
+    /// Get the y position of the bottom of the element
+    int GetBottom() const { return position_.y_ + size_.y_; }
+
     /// Return minimum size.
     const IntVector2& GetMinSize() const { return minSize_; }
 
