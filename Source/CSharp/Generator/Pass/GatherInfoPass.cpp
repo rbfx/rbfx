@@ -53,12 +53,14 @@ bool GatherInfoPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info inf
             GetUserData(e.parent().value())->hasWrapperClass = true;
     }
 
-    if (e.kind() == cppast::cpp_entity_kind::class_t && cppast::is_definition(e) && !cppast::is_templated(e))
+    if (e.kind() == cppast::cpp_entity_kind::class_t || e.kind() == cppast::cpp_entity_kind::class_template_t)
     {
         // TODO: typedefs, templates
         auto name = GetSymbolName(e);
-        if (typeChecker_.IsIncluded(name))
+        if (typeChecker_.IsIncluded(name) && cppast::is_definition(e) && !cppast::is_templated(e))
             GetSubsystem<GeneratorContext>()->RegisterKnownType(name, e);
+        else
+            GetUserData(e)->generated = false;
     }
 
     if (e.kind() == cppast::cpp_entity_kind::member_function_t)
