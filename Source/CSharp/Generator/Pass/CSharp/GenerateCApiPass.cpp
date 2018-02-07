@@ -109,9 +109,9 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
     {
         const auto& func = dynamic_cast<const cppast::cpp_constructor&>(e);
 
-        String symbolName = GetSymbolName(e);
+        String symbolName = GetSymbolName(func.parent().value());
         UserData* data = GetUserData(e);
-        data->cFunctionName = GetUniqueName(Sanitize(symbolName));
+        data->cFunctionName = GetUniqueName("construct_" + Sanitize(symbolName));
 
         const auto& parent = dynamic_cast<const cppast::cpp_class&>(e.parent().value());
         String className = parent.name().c_str();
@@ -125,27 +125,27 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
             {"parameter_name_list", ParameterNameList(func.parameters(), toCppType).CString()},
         });
 
-        printer_ << fmt("URHO3D_EXPORT_API {{class_name}}* construct_{{c_function_name}}({{c_parameter_list}})", vars);
+        printer_ << fmt("URHO3D_EXPORT_API {{class_name}}* {{c_function_name}}({{c_parameter_list}})", vars);
         printer_.Indent();
         {
             printer_ << fmt("return new {{class_name}}({{parameter_name_list}});", vars);
         }
         printer_.Dedent();
     }
-    else if (e.kind() == cppast::cpp_entity_kind::destructor_t)
+    else if (e.kind() == cppast::cpp_entity_kind::class_t)
     {
-        const auto& func = dynamic_cast<const cppast::cpp_destructor&>(e);
+        const auto& cls = dynamic_cast<const cppast::cpp_class&>(e);
 
-        String symbolName = GetSymbolName(e);
+        // Destructor always exists even if it is not defined in the class
+        String symbolName = GetSymbolName(cls);
         UserData* data = GetUserData(e);
-        data->cFunctionName = GetUniqueName(Sanitize(symbolName));
+        data->cFunctionName = GetUniqueName("destruct_" + Sanitize(symbolName));
 
-        const auto& parent = dynamic_cast<const cppast::cpp_class&>(e.parent().value());
-        String className = parent.name().c_str();
-        if (GetUserData(parent)->hasWrapperClass)
+        String className = cls.name().c_str();
+        if (GetUserData(cls)->hasWrapperClass)
             className += "Ex";
 
-        printer_ << fmt("URHO3D_EXPORT_API void destruct_{{c_function_name}}({{class_name}}* cls)", {
+        printer_ << fmt("URHO3D_EXPORT_API void {{c_function_name}}({{class_name}}* cls)", {
             {"c_function_name",     data->cFunctionName.CString()},
             {"class_name",          className.CString()},
         });
@@ -154,6 +154,7 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
             printer_ << "delete cls;";
         }
         printer_.Dedent();
+        printer_ << "";
     }
     else if (e.kind() == cppast::cpp_entity_kind::member_function_t)
     {
