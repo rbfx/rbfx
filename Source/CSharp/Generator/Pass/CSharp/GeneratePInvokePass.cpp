@@ -24,15 +24,33 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <ThirdParty/cppast/include/cppast/cpp_member_variable.hpp>
+#include <CppTypeInfo.h>
 #include "GeneratorContext.h"
 #include "GeneratePInvokePass.h"
 
 namespace Urho3D
 {
 
+static HashMap<String, String> cppToCS = {
+    {"char", "char"},
+    {"unsigned char", "byte"},
+    {"short", "short"},
+    {"unsigned short", "ushort"},
+    {"int", "int"},
+    {"unsigned int", "uint"},
+    {"long long", "long"},
+    {"unsigned long long", "ulong"},
+    {"void", "void"},
+    {"void*", "IntPtr"},
+    {"bool", "bool"},
+    {"float", "float"},
+    {"double", "double"},
+};
+
 void GeneratePInvokePass::Start()
 {
     printer_ << "using System;";
+    printer_ << "using System.Threading;";
     printer_ << "using System.Runtime.InteropServices;";
     printer_ << "";
     printer_ << "namespace Urho3D";
@@ -42,6 +60,55 @@ void GeneratePInvokePass::Start()
 
 bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_info info)
 {
+    const char* dllImport = "[DllImport(\"Urho3DCSharp\", CallingConvention = CallingConvention.Cdecl)]";
+    auto data = GetUserData(e);
+    auto* generator = GetSubsystem<GeneratorContext>();
+
+    auto GetCSType = [&](const cppast::cpp_type& type, bool pInvoke=false) -> String
+    {
+        CppTypeInfo typeInfo(type);
+        String typeName;
+        switch (type.kind())
+        {
+        case cppast::cpp_type_kind::builtin_t:
+        {
+            auto name = cppast::to_string(type);
+            auto it = cppToCS.Find(name);
+            if (it != cppToCS.End())
+                typeName = it->second_;
+            else
+            {
+                URHO3D_LOGERRORF("Failed mapping builtin cpp type '%s' to cs type.", typeInfo.fullName_.CString());
+                typeName = "IntPtr";
+            }
+            break;
+        }
+        default:
+        {
+            const auto& typeMap = generator->GetTypeMap(type);
+            if (typeMap.cType == "const char*" && pInvoke)
+                typeName = "string";
+            else
+                typeName = "IntPtr";
+            break;
+        }
+        }
+
+//    if (type.kind() == cppast::cpp_type_kind::pointer_t || type.kind() == cppast::cpp_type_kind::reference_t)
+//    {
+//        if (info.notNull_)
+//            typeName = "ref " + typeName;
+//        else if (info.pointer_)
+//            typeName = "out " + typeName;
+//    }
+
+//        if (pInvoke)
+//            typeName = GetTypeMap(type).pInvokeAttribute + " " + typeName;
+
+        return typeName;
+    };
+
+
     if (e.kind() == cppast::cpp_entity_kind::class_t)
     {
         const auto& cls = dynamic_cast<const cppast::cpp_class&>(e);
@@ -52,15 +119,42 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
             for (const auto& base : cls.bases())
                 bases.Push(base.name().c_str());
 
-            printer_ << fmt("public partial class {{name}}{{#has_bases}} : {{bases}}{{/has_bases}}", {
+            auto vars = fmt({
                 {"name", cls.name()},
                 {"bases", String::Joined(bases, ", ").CString()},
                 {"has_bases", !cls.bases().empty()},
             });
+
+            printer_ << fmt("public partial class {{name}} : {{#has_bases}}{{bases}}, {{/has_bases}}IDisposable", vars);
             printer_.Indent();
             if (bases.Empty())
+            {
                 printer_ << "internal IntPtr instance_;";
+                printer_ << "protected volatile int disposed_;";
+                printer_ << "";
+            }
+            printer_ << fmt("public{{#has_bases}} new{{/has_bases}} void Dispose()", vars);
+            printer_.Indent();
+            {
+                printer_ << "if (Interlocked.Increment(ref disposed_) == 1)";
+                printer_.Indent();
+                if (generator->IsSubclassOf(cls, "Urho3D::RefCounted"))
+                    printer_ << "Urho3D__RefCounted__ReleaseRef(instance_);";
+                else
+                    printer_ << "destruct_" + Sanitize(GetSymbolName(cls)) + "(instance_);";
+                printer_.Dedent();
+                printer_ << "instance_ = IntPtr.Zero;";
+            }
+            printer_.Dedent();
             printer_ << "";
+
+            // Destructor always exists even if it is not defined in the c++ class
+            printer_ << dllImport;
+            printer_ << fmt("internal static extern void destruct_{{symbol_name}}(IntPtr instance);", {
+                {"symbol_name", Sanitize(GetSymbolName(cls)).CString()}
+            });
+            printer_ << "";
+
         }
         else if (info.event == info.container_entity_exit)
         {
@@ -71,16 +165,58 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
     else if (e.kind() == cppast::cpp_entity_kind::member_variable_t)
     {
         const auto& var = dynamic_cast<const cppast::cpp_member_variable&>(e);
-        auto* generator = GetSubsystem<GeneratorContext>();
         auto typeMap = generator->GetTypeMap(var.type());
-        printer_ << "[DllImport(\"Urho3DCSharp\", CallingConvention = CallingConvention.Cdecl)]";
+
+        // Getter
+        printer_ << dllImport;
         if (!typeMap.pInvokeAttribute.Empty())
+            // This is safe as member variables are always returned by reference from a getter.
             printer_ << "[return: MarshalAs(" + typeMap.pInvokeAttribute + ")]";
 
-        printer_ << fmt("internal static extern {{c_type}} get_{{c_function_name}}(IntPtr cls);", {
-            {"c_type", generator->GetCSType(var.type()).CString()},
-            {"c_function_name", GetUserData(e)->cFunctionName.CString()},
+        auto vars = fmt({
+            {"cs_type", GetCSType(var.type()).CString()},
+            {"c_function_name", data->cFunctionName.CString()},
+            {"attribute", (typeMap.pInvokeAttribute.Empty() ? String::EMPTY : "[param: MarshalAs(" + typeMap.pInvokeAttribute + ")]").CString()},
         });
+        printer_ << fmt("internal static extern {{cs_type}} get_{{c_function_name}}(IntPtr cls);", vars);
+        printer_ << "";
+
+        // Setter
+        printer_ << dllImport;
+        printer_ << fmt("internal static extern void set_{{c_function_name}}(IntPtr cls, {{attribute}}{{cs_type}} value);", vars);
+        printer_ << "";
+    }
+    else if (e.kind() == cppast::cpp_entity_kind::constructor_t)
+    {
+        const auto& ctor = dynamic_cast<const cppast::cpp_constructor&>(e);
+        printer_ << dllImport;
+        auto csParams = ParameterList(ctor.parameters(), [&](const cppast::cpp_type& type) {
+            return GetCSType(type, true);
+        });
+        auto vars = fmt({
+            {"c_function_name", data->cFunctionName.CString()},
+            {"cs_param_list", csParams.CString()}
+        });
+        printer_ << fmt("internal static extern IntPtr {{c_function_name}}({{cs_param_list}});", vars);
+        printer_ << "";
+    }
+    else if (e.kind() == cppast::cpp_entity_kind::member_function_t)
+    {
+        const auto& func = dynamic_cast<const cppast::cpp_member_function&>(e);
+
+        printer_ << dllImport;
+        auto csParams = ParameterList(func.parameters(), [&](const cppast::cpp_type& type) {
+            return GetCSType(type, false);
+        });
+        auto vars = fmt({
+            {"c_function_name", data->cFunctionName.CString()},
+            {"cs_param_list", csParams.CString()},
+            {"cs_return", GetCSType(func.return_type(), false).CString()},
+            {"has_params", !func.parameters().empty()}
+        });
+        printer_ << fmt("internal static extern {{cs_return}} {{c_function_name}}(IntPtr instance{{#has_params}}, {{cs_param_list}}{{/has_params}});", vars);
+        printer_ << "";
+
     }
     return true;
 }

@@ -240,57 +240,6 @@ TypeMap GeneratorContext::GetTypeMap(const cppast::cpp_type& type)
     return default_;
 }
 
-String GeneratorContext::GetCSType(const cppast::cpp_type& type, bool pInvoke)
-{
-    CppTypeInfo info(type);
-
-    static HashMap<String, String> cppToCS = {
-        {"char", "char"},
-        {"unsigned char", "byte"},
-        {"short", "short"},
-        {"unsigned short", "ushort"},
-        {"int", "int"},
-        {"unsigned int", "uint"},
-        {"long long", "long"},
-        {"unsigned long long", "ulong"},
-    };
-
-    String typeName;
-    switch (type.kind())
-    {
-    case cppast::cpp_type_kind::builtin_t:
-    {
-        auto name = cppast::to_string(type);
-        auto it = cppToCS.Find(name);
-        if (it != cppToCS.End())
-            typeName = it->second_;
-        else
-        {
-            URHO3D_LOGERROR("Failed mapping builtin cpp type '%s' to cs type.");
-            typeName = "IntPtr";
-        }
-        break;
-    }
-    case cppast::cpp_type_kind::user_defined_t:
-        typeName = GetTypeMap(type).csType;
-    default:
-        break;
-    }
-
-    if (type.kind() == cppast::cpp_type_kind::pointer_t || type.kind() == cppast::cpp_type_kind::reference_t)
-    {
-        if (info.notNull_)
-            typeName = "ref " + typeName;
-        else if (info.pointer_)
-            typeName = "out " + typeName;
-    }
-
-    if (pInvoke)
-        typeName = GetTypeMap(type).pInvokeAttribute + " " + typeName;
-
-    return typeName;
-}
-
 bool GeneratorContext::IsSubclassOf(const cppast::cpp_class& cls, const String& baseName)
 {
     if (GetSymbolName(cls) == baseName)
