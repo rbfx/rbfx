@@ -78,6 +78,7 @@ public:
     bool IsKnownType(const String& name);
     TypeMap GetTypeMap(const cppast::cpp_type& type);
     String GetCSType(const cppast::cpp_type& type, bool pInvoke=false);
+    bool IsSubclassOf(const cppast::cpp_class& cls, const String& baseName);
 
 protected:
     String sourceDir_;

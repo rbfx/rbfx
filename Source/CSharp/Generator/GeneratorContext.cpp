@@ -291,4 +291,21 @@ String GeneratorContext::GetCSType(const cppast::cpp_type& type, bool pInvoke)
     return typeName;
 }
 
+bool GeneratorContext::IsSubclassOf(const cppast::cpp_class& cls, const String& baseName)
+{
+    if (GetSymbolName(cls) == baseName)
+        return true;
+
+    for (const auto& base : cls.bases())
+    {
+        auto baseName2 = cppast::to_string(base.type());
+        if (const auto* baseCls = dynamic_cast<const cppast::cpp_class*>(GetKnownType(baseName2)))
+        {
+            if (IsSubclassOf(*baseCls, baseName))
+                return true;
+        }
+    }
+    return false;
+}
+
 }

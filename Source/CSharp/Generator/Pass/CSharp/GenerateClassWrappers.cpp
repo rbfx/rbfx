@@ -56,17 +56,23 @@ bool GenerateClassWrappers::Visit(const cppast::cpp_entity& e, cppast::visitor_i
 
     if (info.event == info.container_entity_enter)
     {
+        auto* generator = GetSubsystem<GeneratorContext>();
+        const auto& cls = dynamic_cast<const cppast::cpp_class&>(e);
         printer_ << fmt("class URHO3D_EXPORT_API {{name}}Ex : public {{symbol}}", {
             {"name", e.name()},
             {"symbol", GetSymbolName(e).CString()},
         });
         printer_.Indent();
+
+        // Urho3D-specific
+        bool isRefCounted = generator->IsSubclassOf(cls, "Urho3D::RefCounted");
+        if (isRefCounted)
+            printer_ << fmt("URHO3D_OBJECT({{name}}Ex, {{name}});", {{"name", e.name()}});
+
         printer_.WriteLine("public:", false);
-        const auto& cls = dynamic_cast<const cppast::cpp_class&>(e);
         // Wrap constructors
-        for (auto it = cls.begin(); it != cls.end(); it++)
+        for (const auto& e : cls)
         {
-            const auto& e = *it;
             if (e.kind() == cppast::cpp_entity_kind::constructor_t)
             {
                 const auto& ctor = dynamic_cast<const cppast::cpp_constructor&>(e);
@@ -84,9 +90,8 @@ bool GenerateClassWrappers::Visit(const cppast::cpp_entity& e, cppast::visitor_i
         Vector<const cppast::cpp_member_function*> wrappedList;
         auto implementWrapperClassMembers = [&](const cppast::cpp_class& cls)
         {
-            for (auto it = cls.begin(); it != cls.end(); it++)
+            for (const auto& e : cls)
             {
-                const auto& e = *it;
                 // Manually iterating subtree may encounter ignored nodes.
                 if (!GetUserData(e)->generated)
                     continue;
@@ -115,6 +120,13 @@ bool GenerateClassWrappers::Visit(const cppast::cpp_entity& e, cppast::visitor_i
                         if (skip)
                             // Method was already wrapped as overload of downstream class.
                             break;
+                    }
+
+                    // Urho3D-specific.
+                    if (func.is_virtual() && (func.name() == "GetType" || func.name() == "GetTypeName" || func.name() == "GetTypeInfo"))
+                    {
+                        skip = true;
+                        GetUserData(func)->generated = false;
                     }
 
                     if (!skip)
@@ -149,7 +161,6 @@ bool GenerateClassWrappers::Visit(const cppast::cpp_entity& e, cppast::visitor_i
             }
         };
 
-        auto generator = GetSubsystem<GeneratorContext>();
         std::function<void(const cppast::cpp_class&)> implementBaseWrapperClassMembers = [&](const cppast::cpp_class& cls)
         {
             for (const auto& base : cls.bases())
