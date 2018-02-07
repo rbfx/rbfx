@@ -21,8 +21,11 @@
 //
 
 #include <Urho3D/Core/StringUtils.h>
+#include <cppast/cpp_member_function.hpp>
+#include <Urho3D/IO/Log.h>
 #include "Utilities.h"
 #include "GeneratorContext.h"
+#include "CppTypeInfo.h"
 
 
 namespace Urho3D
@@ -82,20 +85,6 @@ String GetSymbolName(const cppast::cpp_entity& e)
     return String::Joined(elements, "::");
 }
 
-bool IsConstructor(const cppast::cpp_entity& e)
-{
-    if (e.kind() == cppast::cpp_entity_kind::member_function_t)
-        return e.name() == e.parent().value().name();
-    return false;
-}
-
-bool IsDestructor(const cppast::cpp_entity& e)
-{
-    if (e.kind() == cppast::cpp_entity_kind::member_function_t)
-        return e.name()[0] == '~';
-    return false;
-}
-
 String Sanitize(const String& value)
 {
     String result = std::regex_replace(value.CString(), std::regex("[^a-zA-Z0-9_]"), "_").c_str();
@@ -126,14 +115,14 @@ String ParameterList(const cppast::detail::iteratable_intrusive_list<cppast::cpp
 }
 
 String ParameterNameList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
-    const std::function<String(const String&)>& nameFilter)
+    const std::function<String(const cppast::cpp_function_parameter&)>& nameFilter)
 {
     Vector<String> parts;
     for (const auto& param : params)
     {
         String name = param.name();
         if (nameFilter)
-            name = nameFilter(name);
+            name = nameFilter(param);
         parts.Push(name);
     }
     return String::Joined(parts, ", ");
@@ -153,6 +142,16 @@ String ParameterTypeList(const cppast::detail::iteratable_intrusive_list<cppast:
         parts.Push(typeString);
     }
     return String::Joined(parts, ", ");
+}
+
+String GetConversionType(const cppast::cpp_type& type)
+{
+    CppTypeInfo info(type);
+
+    if (info.notNull_)
+        return info.name_;
+    else
+        return info.fullName_;
 }
 
 IncludedChecker::IncludedChecker(const XMLElement& rules)

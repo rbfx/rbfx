@@ -18,8 +18,14 @@
         <exclude>Urho3D::ObjectFactoryImpl</exclude>
         <manual>Urho3D::String</manual>
         <manual>Urho3D::WString</manual>
+        <manual>Urho3D::StringHash</manual>
     </types>
     <typemaps>
+        <typemap>
+            <c>unsigned</c>
+            <cpp>Urho3D::StringHash</cpp>
+            <cs>uint</cs>
+        </typemap>
         <typemap>
             <c>const char*</c>
             <cpp>Urho3D::String</cpp>
@@ -31,5 +37,4 @@
             <cs pinvoke="UnmanagedType.LPWStr">string</cs>
         </typemap>
     </typemaps>
-
 </rules>

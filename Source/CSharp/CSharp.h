@@ -25,12 +25,41 @@
 
 #include <Urho3D/Urho3DAll.h>
 
-// Type converters between c++ and c types. Corresponding entries must exist in Rules.xml.
-inline const char* ToCSharp(const String& value) { return value.CString(); }
-inline String FromCSharp(const char* value) { return value; }
+using namespace Urho3D;
 
-// Do not convert any other types.
-template<typename T> const T& ToCSharp(const T& value) { return value; }
-template<typename T> T& ToCSharp(T& value) { return value; }
-template<typename T> const T& FromCSharp(const T& value) { return value; }
-template<typename T> T& FromCSharp(T& value) { return value; }
+
+template<typename T>
+struct CSharpTypeConverter
+{
+    using CppType = T;
+    using CType = T;
+
+    static CType toC(CppType value, bool byCopy=false) { return value; }
+    static CppType toCpp(CType value) { return value; }
+};
+
+template<>
+struct CSharpTypeConverter<String>
+{
+    using CppType = String;
+    using CType = const char*;
+
+    // Returning pointer to a const reference is safe
+    static const char* toC(const String& value, bool byCopy=false)
+    {
+        if (byCopy)
+            return strdup(value.CString());
+        return value.CString();
+    }
+    static String toCpp(const char* value) { return value; }
+};
+
+template<>
+struct CSharpTypeConverter<StringHash>
+{
+    using CppType = StringHash;
+    using CType = unsigned;
+
+    static unsigned toC(const StringHash& value, bool byCopy=false) { return value.Value(); }
+    static StringHash toCpp(unsigned value) { return StringHash(value); }
+};

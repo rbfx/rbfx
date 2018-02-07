@@ -29,6 +29,7 @@
 #include <Urho3D/Resource/XMLElement.h>
 #include <cppast/cpp_type.hpp>
 #include <cppast/cpp_function.hpp>
+#include <cppast/cpp_member_function.hpp>
 
 
 namespace Urho3D
@@ -36,13 +37,15 @@ namespace Urho3D
 
 struct UserData;
 
+/// Convert a wildcard string to regular expression. "*" matches anything except /, "**" matches everything including /.
 std::regex WildcardToRegex(const String& wildcard);
+/// Returns custom used data structure attached to an entity. If user data does not exist it will be allocated.
 UserData* GetUserData(const cppast::cpp_entity& e);
+/// Returns entity name including names of it's parents (separated by ::).
 String GetSymbolName(const cppast::cpp_entity& e);
-bool IsConstructor(const cppast::cpp_entity& e);
-bool IsDestructor(const cppast::cpp_entity& e);
 /// Ensure arbitrary string is a valid identifier by replacing invalid characters with "_". "_" will be prepended if string starts with a number.
 String Sanitize(const String& value);
+/// Returns true if type is void.
 bool IsVoid(const cppast::cpp_type& type);
 
 class IncludedChecker
@@ -60,12 +63,16 @@ protected:
     Vector<std::regex> includes_;
     Vector<std::regex> excludes_;
 };
-
+/// Returns a list of parameter types and names as if they were in a function declaration.
 String ParameterList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
     const std::function<String(const cppast::cpp_type&)>& typeToString=nullptr);
+/// Returns a list of parameter names separated by comma.
 String ParameterNameList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
-    const std::function<String(const String&)>& nameFilter=nullptr);
+    const std::function<String(const cppast::cpp_function_parameter&)>& nameFilter=nullptr);
+/// Returns a list of parameter types separated comma. Useful for creating function signatures.
 String ParameterTypeList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
     const std::function<String(const cppast::cpp_type&)>& typeToString=nullptr);
+/// Returns a type string which is used as template parameter for CSharpTypeConverter<> struct.
+String GetConversionType(const cppast::cpp_type& type);
 
 }
