@@ -39,24 +39,21 @@ bool GatherInfoPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info inf
     // Save access to user data. Then other passes can use this access info while iterating children of entity.
     GetUserData(e)->access = info.access;
 
-    if (e.kind() == cppast::cpp_entity_kind::function_t || e.kind() == cppast::cpp_entity_kind::member_function_t || e.kind() == cppast::cpp_entity_kind::member_variable_t)
+    if (info.access == cppast::cpp_private)
     {
-        if (e.parent().value().kind() == cppast::cpp_entity_kind::class_t)
-        {
-            if (info.access == cppast::cpp_private)
-            {
-                GetUserData(e)->generated = false;
-                if (info.event == cppast::visitor_info::container_entity_enter)
-                    return false;
-            }
-            else if (info.access == cppast::cpp_protected)
-            {
-                assert(e.parent().value().kind() == cppast::cpp_entity_kind::class_t);
-                GetUserData(e.parent().value())->hasWrapperClass = true;
-            }
-        }
+        GetUserData(e)->generated = false;
+        if (info.event == cppast::visitor_info::container_entity_enter)
+            return false;
     }
-    else if (e.kind() == cppast::cpp_entity_kind::class_t && cppast::is_definition(e) && !cppast::is_templated(e))
+
+    if (info.access == cppast::cpp_protected)
+    {
+        const auto& parent = e.parent();
+        if (e.parent().has_value() && e.parent().value().kind() == cppast::cpp_entity_kind::class_t)
+            GetUserData(e.parent().value())->hasWrapperClass = true;
+    }
+
+    if (e.kind() == cppast::cpp_entity_kind::class_t && cppast::is_definition(e) && !cppast::is_templated(e))
     {
         // TODO: typedefs, templates
         auto name = GetSymbolName(e);
