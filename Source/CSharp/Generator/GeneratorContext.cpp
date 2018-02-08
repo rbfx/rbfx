@@ -138,7 +138,7 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
         TypeMap map;
         map.cType = typeMap.GetChild("c").GetValue(),
         map.cppType = typeMap.GetChild("cpp").GetValue(),
-        map.csType = typeMap.GetChild("cs").GetValue(),
+        map.csType = map.csPInvokeType = typeMap.GetChild("cs").GetValue(),
         map.pInvokeAttribute = typeMap.GetChild("cs").GetAttribute("pinvoke");
         typeMaps_.Push(map);
     }
@@ -213,10 +213,12 @@ bool GeneratorContext::IsKnownType(const cppast::cpp_type& type)
 
 bool GeneratorContext::IsKnownType(const String& name)
 {
-    if (types_.Contains(name))
+    String convertedName = name.Replaced(".", "::");
+
+    if (types_.Contains(convertedName))
         return true;
 
-    if (manualTypes_.Contains(name))
+    if (manualTypes_.Contains(convertedName))
         return true;
 
     return false;

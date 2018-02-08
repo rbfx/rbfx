@@ -43,6 +43,15 @@ void GenerateCSApiPass::Start()
 bool GenerateCSApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info info)
 {
     auto* generator = GetSubsystem<GeneratorContext>();
+    auto getClassInstances = [&](const cppast::cpp_function_parameter& param) {
+        const auto& typeMap = generator->GetTypeMap(param.type());
+        if (generator->IsKnownType(typeMap.csType))
+            return EnsureNotKeyword(param.name()) + ".instance_";
+        return EnsureNotKeyword(param.name());
+    };
+    auto toCSParam = [&](const cppast::cpp_type& type) {
+        return generator->GetTypeMap(type).csType;
+    };
     if (e.kind() == cppast::cpp_entity_kind::class_t)
     {
         const auto& cls = dynamic_cast<const cppast::cpp_class&>(e);
@@ -71,31 +80,55 @@ bool GenerateCSApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info 
     {
         const auto& ctor = dynamic_cast<const cppast::cpp_constructor&>(e);
         const auto& cls = dynamic_cast<const cppast::cpp_class&>(e.parent().value());
-        auto toCSParam = [&](const cppast::cpp_type& type) {
-            const auto& map = generator->GetTypeMap(type);
-            return map.csType;
-        };
-        auto getClassInstances = [&](const cppast::cpp_function_parameter& param) {
-            if (generator->IsKnownType(param.type()))
-                return param.name() + ".instance_";
-            return param.name();
-        };
-
         auto vars = fmt({
             {"class_name", e.parent().value().name()},
-            {"cs_parameter_list", ParameterList(ctor.parameters(), toCSParam).CString()},
+            {"parameter_list", ParameterList(ctor.parameters(), toCSParam).CString()},
             {"symbol_name", Sanitize(GetSymbolName(e.parent().value())).CString()},
             {"param_name_list", ParameterNameList(ctor.parameters(), getClassInstances).CString()},
             {"has_base", !cls.bases().empty()}
         });
 
         // If class has a base class we call base constructor that does nothing. Class will be fully constructed here.
-        printer_ << fmt("public {{class_name}}({{cs_parameter_list}}){{#has_base}} : base(IntPtr.Zero){{/has_base}}", vars);
+        printer_ << fmt("public {{class_name}}({{parameter_list}}){{#has_base}} : base(IntPtr.Zero){{/has_base}}", vars);
         printer_.Indent();
         {
             printer_ << fmt("instance_ = construct_{{symbol_name}}({{param_name_list}});", vars);
         }
         printer_.Dedent();
+        printer_ << "";
+    }
+    else if (e.kind() == cppast::cpp_entity_kind::member_function_t)
+    {
+        const auto& func = dynamic_cast<const cppast::cpp_member_function&>(e);
+        const auto& typeMap = generator->GetTypeMap(func.return_type());
+        auto vars = fmt({
+            {"name", func.name()},
+            {"return_type", toCSParam(func.return_type()).CString()},
+            {"parameter_list", ParameterList(func.parameters(), toCSParam).CString()},
+            {"c_function_name", GetUserData(func)->cFunctionName.CString()},
+            {"param_name_list", ParameterNameList(func.parameters(), getClassInstances).CString()},
+            {"has_params", !func.parameters().empty()},
+            {"virtual", func.is_virtual() ? "virtual " : ""},
+        });
+        printer_ << fmt("public {{virtual}}{{return_type}} {{name}}({{parameter_list}})", vars);
+        printer_.Indent();
+        {
+            String call = fmt("{{c_function_name}}(instance_{{#has_params}}, {{/has_params}}{{param_name_list}})", vars);
+            if (IsVoid(func.return_type()))
+                printer_ << call + ";";
+            else
+            {
+                if (generator->IsKnownType(typeMap.csType))
+                    printer_ << fmt("return new {{class_name}}({{call}});", {
+                        {"class_name", typeMap.csType.CString()},
+                        {"call", call.CString()}
+                    });
+                else
+                    printer_ << "return " + call + ";";
+            }
+        }
+        printer_.Dedent();
+        printer_ << "";
     }
 
     return true;

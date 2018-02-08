@@ -146,7 +146,24 @@ bool GenerateClassWrappers::Visit(const cppast::cpp_entity& e, cppast::visitor_i
                         {
                             printer_ << fmt("{{type}}(*fn{{name}})({{class_name}} {{const}}*{{#has_params}}, {{/has_params}}{{parameter_list}}) = nullptr;", vars);
                             // Virtual method that calls said pointer
-                            printer_ << fmt("{{type}} {{name}}({{parameter_list}}) {{const}}override { {{return}}(fn{{name}})(this{{#has_params}}, {{/has_params}}{{parameter_name_list}}); }", vars);
+                            printer_ << fmt("{{type}} {{name}}({{parameter_list}}) {{const}}override", vars);
+                            printer_.Indent();
+                            {
+                                printer_ << fmt("if (fn{{name}} == nullptr)", vars);
+                                printer_.Indent();
+                                {
+                                    printer_ << fmt("{{class_name}}::{{name}}({{parameter_name_list}});", vars);
+                                }
+                                printer_.Dedent();
+                                printer_ << "else";
+                                printer_.Indent();
+                                {
+                                    printer_ << fmt("{{return}}(fn{{name}})(this{{#has_params}}, {{/has_params}}{{parameter_name_list}});", vars);
+                                }
+                                printer_.Dedent();
+
+                            }
+                            printer_.Dedent();
                         }
                         if (access == cppast::cpp_protected)
                         {

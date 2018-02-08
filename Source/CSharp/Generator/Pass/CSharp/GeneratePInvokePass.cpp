@@ -76,9 +76,16 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
                 printer_ << fmt("internal {{name}}(IntPtr instance)", vars);
                 printer_.Indent();
                 {
-                    printer_ << "instance_ = instance;";
-                    if (generator->IsSubclassOf(cls, "Urho3D::RefCounted"))
-                        printer_ << "Urho3D__RefCounted__AddRef(instance);";
+                    // Parent class may calls this constructor with null pointer when parent class constructor itself is
+                    // creating instance.
+                    printer_ << "if (instance != IntPtr.Zero)";
+                    printer_.Indent();
+                    {
+                        printer_ << "instance_ = instance;";
+                        if (generator->IsSubclassOf(cls, "Urho3D::RefCounted"))
+                            printer_ << "Urho3D__RefCounted__AddRef(instance);";
+                    }
+                    printer_.Dedent();
                 }
                 printer_.Dedent();
                 printer_ << "";
@@ -167,11 +174,7 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
 
         String csRetType = "IntPtr";
         if (!IsVoid(func.return_type()))
-        {
-            const auto& retType = func.return_type();
-            if (retType.kind() == cppast::cpp_type_kind::builtin_t)
-                csRetType = generator->GetTypeMap(retType).csPInvokeType;
-        }
+            csRetType = generator->GetTypeMap(func.return_type()).GetPInvokeType(true);
 
         auto vars = fmt({
             {"c_function_name", data->cFunctionName.CString()},
