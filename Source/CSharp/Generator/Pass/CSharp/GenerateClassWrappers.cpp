@@ -58,7 +58,7 @@ bool GenerateClassWrappers::Visit(const cppast::cpp_entity& e, cppast::visitor_i
     {
         auto* generator = GetSubsystem<GeneratorContext>();
         const auto& cls = dynamic_cast<const cppast::cpp_class&>(e);
-        printer_ << fmt("class URHO3D_EXPORT_API {{name}}Ex : public {{symbol}}", {
+        printer_ << fmt("class URHO3D_EXPORT_API {{name}} : public {{symbol}}", {
             {"name", e.name()},
             {"symbol", GetSymbolName(e).CString()},
         });
@@ -67,7 +67,7 @@ bool GenerateClassWrappers::Visit(const cppast::cpp_entity& e, cppast::visitor_i
         // Urho3D-specific
         bool isRefCounted = generator->IsSubclassOf(cls, "Urho3D::RefCounted");
         if (isRefCounted)
-            printer_ << fmt("URHO3D_OBJECT({{name}}Ex, {{name}});", {{"name", e.name()}});
+            printer_ << fmt("URHO3D_OBJECT({{name}}, {{name}});", {{"name", e.name()}});
 
         printer_.WriteLine("public:", false);
         // Wrap constructors
@@ -78,14 +78,15 @@ bool GenerateClassWrappers::Visit(const cppast::cpp_entity& e, cppast::visitor_i
                 const auto& ctor = dynamic_cast<const cppast::cpp_constructor&>(e);
                 if (!ctor.parameters().empty() && ctor.name() == cls.name())
                 {
-                    printer_ << fmt("{{name}}Ex({{parameter_list}}) : {{name}}({{parameter_name_list}}) { }",
+                    printer_ << fmt("{{name}}({{parameter_list}}) : {{symbol_name}}({{parameter_name_list}}) { }",
                         {{"name",                cls.name()},
+                         {"symbol_name",         GetSymbolName(cls).CString()},
                          {"parameter_list",      ParameterList(ctor.parameters()).CString()},
                          {"parameter_name_list", ParameterNameList(ctor.parameters()).CString()},});
                 }
             }
         }
-        printer_ << fmt("virtual ~{{name}}Ex() = default;", {{"name", e.name()}});
+        printer_ << fmt("virtual ~{{name}}() = default;", {{"name", e.name()}});
 
         Vector<const cppast::cpp_member_function*> wrappedList;
         auto implementWrapperClassMembers = [&](const cppast::cpp_class& cls)
