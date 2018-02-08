@@ -35,6 +35,7 @@ void GeneratePInvokePass::Start()
 {
     printer_ << "using System;";
     printer_ << "using System.Threading;";
+    printer_ << "using System.Collections.Concurrent;";
     printer_ << "using System.Runtime.InteropServices;";
     printer_ << "";
     printer_ << "namespace Urho3D";
@@ -66,6 +67,9 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
 
             printer_ << fmt("public partial class {{name}} : {{#has_bases}}{{bases}}, {{/has_bases}}IDisposable", vars);
             printer_.Indent();
+            // Cache managed objects. API will always return same object for existing native object pointer.
+            printer_ << fmt("internal static {{#has_bases}}new {{/has_bases}}ConcurrentDictionary<IntPtr, {{name}}> cache_ = new ConcurrentDictionary<IntPtr, {{name}}>();", vars);
+            printer_ << "";
             if (bases.Empty())
             {
                 printer_ << "internal IntPtr instance_;";
@@ -102,6 +106,8 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
             {
                 printer_ << "if (Interlocked.Increment(ref disposed_) == 1)";
                 printer_.Indent();
+                printer_ << "var self = this;";
+                printer_ << "cache_.TryRemove(instance_, out self);";
                 if (generator->IsSubclassOf(cls, "Urho3D::RefCounted"))
                     printer_ << "Urho3D__RefCounted__ReleaseRef(instance_);";
                 else

@@ -101,9 +101,10 @@ bool GenerateCSApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info 
     {
         const auto& func = dynamic_cast<const cppast::cpp_member_function&>(e);
         const auto& typeMap = generator->GetTypeMap(func.return_type());
+        const auto returnType = toCSParam(func.return_type());
         auto vars = fmt({
             {"name", func.name()},
-            {"return_type", toCSParam(func.return_type()).CString()},
+            {"return_type", returnType.CString()},
             {"parameter_list", ParameterList(func.parameters(), toCSParam).CString()},
             {"c_function_name", GetUserData(func)->cFunctionName.CString()},
             {"param_name_list", ParameterNameList(func.parameters(), getClassInstances).CString()},
@@ -119,10 +120,14 @@ bool GenerateCSApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info 
             else
             {
                 if (generator->IsKnownType(typeMap.csType))
-                    printer_ << fmt("return new {{class_name}}({{call}});", {
-                        {"class_name", typeMap.csType.CString()},
-                        {"call", call.CString()}
-                    });
+                {
+                    printer_ << fmt("return {{return_type}}.cache_.GetOrAdd({{call}}, "
+                        "(instance) => { return new {{class_name}}(instance); });", {
+                            {"class_name",  typeMap.csType.CString()},
+                            {"call",        call.CString()},
+                            {"return_type", returnType.CString()}
+                        });
+                }
                 else
                     printer_ << "return " + call + ";";
             }
