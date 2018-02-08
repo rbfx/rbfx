@@ -211,6 +211,12 @@ namespace Urho3D
 		/// Return bottom coordinate.
 		int Bottom() const { return bottom_; }
 
+		/// Return the rounded mid point
+		IntVector2 MidPointRounded() const {
+			return VectorRoundToInt( ( Vector2( left_, top_) + Vector2( right_, bottom_) ) * 0.5f);
+		}
+
+
 		/// Left coordinate.
 		int left_;
 		/// Top coordinate.
