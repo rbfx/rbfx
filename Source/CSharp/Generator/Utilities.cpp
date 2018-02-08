@@ -33,8 +33,13 @@ namespace Urho3D
 
 std::regex WildcardToRegex(const Urho3D::String& wildcard)
 {
+    const String wildcardCharacter("@@WILDCARD_STAR@@");
+
     // Wildcard is converted to regex
     String regex = wildcard;
+
+    // * is regex character. Make sure our regex will not interfere with wildcard values
+    regex.Replace("*", wildcardCharacter);
 
     // Escape regex characters except for *
     const char* special = "\\.^$|()[]{}+?";
@@ -42,8 +47,8 @@ std::regex WildcardToRegex(const Urho3D::String& wildcard)
         regex.Replace(String(c), ToString("\\%c", c));
 
     // Replace wildcard characters
-    regex.Replace("**", ".+");
-    regex.Replace("*", "[^/]+");
+    regex.Replace(wildcardCharacter + wildcardCharacter, ".*");
+    regex.Replace(wildcardCharacter, "[^/]*");
     regex = "^" + regex + "$";
 
     return std::regex(regex.CString());
