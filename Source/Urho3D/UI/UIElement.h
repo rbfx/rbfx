@@ -401,6 +401,11 @@ public:
     /// Return position.
     const IntVector2& GetPosition() const { return position_; }
 
+	/// Return bounding rectangle in parent space.
+	const IntRect GetBounds() const {
+		return {position_.x_, position_.y_, position_.x_ + size_.x_, position_.y_ + size_.y_};
+	}
+
     /// Return size.
     const IntVector2& GetSize() const { return size_; }
 
@@ -409,6 +414,12 @@ public:
 
     /// Return height.
     int GetHeight() const { return size_.y_; }
+
+    /// Get the x position of the right side of the element
+    int GetRight() const { return position_.x_ + size_.x_; }
+
+    /// Get the y position of the bottom of the element
+    int GetBottom() const { return position_.y_ + size_.y_; }
 
     /// Return minimum size.
     const IntVector2& GetMinSize() const { return minSize_; }
