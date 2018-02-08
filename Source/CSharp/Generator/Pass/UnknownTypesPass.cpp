@@ -82,6 +82,12 @@ bool UnknownTypesPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
         else
             GetUserData(e)->generated = generator->IsKnownType(GetSymbolName(e));
     }
+    else if (e.kind() == cppast::cpp_entity_kind::constructor_t)
+    {
+        const auto& ctor = dynamic_cast<const cppast::cpp_constructor&>(e);
+        if (ctor.body_kind() == cppast::cpp_function_body_kind::cpp_function_deleted)
+            GetUserData(e)->generated = false;
+    }
     return true;
 }
 }
