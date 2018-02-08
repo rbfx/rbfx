@@ -3,6 +3,7 @@
         <include>Container/RefCounted.h</include>
         <include>Math/StringHash.h</include>
         <include>Core/Object.h</include>
+        <include>Core/Context.h</include>
         <include>Engine/*.h</include>
     </headers>
     <compiler>
@@ -29,6 +30,11 @@
         <typemap>
             <c>const char*</c>
             <cpp>Urho3D::String</cpp>
+            <cs pinvoke="UnmanagedType.LPUTF8Str">string</cs>
+        </typemap>
+        <typemap>
+            <c>const char*</c>
+            <cpp>char const*</cpp>
             <cs pinvoke="UnmanagedType.LPUTF8Str">string</cs>
         </typemap>
         <typemap>

@@ -58,7 +58,7 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
     auto toCppType = [](const cppast::cpp_function_parameter& param) {
         return fmt("CSharpTypeConverter<{{type}}>::toCpp({{name}})", {
             {"type", GetConversionType(param.type()).CString()},
-            {"name", param.name()}
+            {"name", EnsureNotKeyword(param.name()).CString()}
         });
     };
     auto toCTypeReturn = [&](const cppast::cpp_type& returnType, const String& callExpr) {

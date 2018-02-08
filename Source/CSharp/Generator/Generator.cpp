@@ -28,6 +28,7 @@
 #include <Pass/CSharp/GenerateCApiPass.h>
 #include <Pass/CSharp/GenerateClassWrappers.h>
 #include <Pass/CSharp/GeneratePInvokePass.h>
+#include <Pass/CSharp/GenerateCSApiPass.h>
 #include "GeneratorContext.h"
 
 
@@ -60,6 +61,7 @@ int main(int argc, char* argv[])
     context->RegisterFactory<GenerateCApiPass>();
     context->RegisterFactory<GenerateClassWrappers>();
     context->RegisterFactory<GeneratePInvokePass>();
+    context->RegisterFactory<GenerateCSApiPass>();
 
     // Generate bindings
     auto* generator = new GeneratorContext(context);
@@ -87,6 +89,7 @@ int main(int argc, char* argv[])
     generator->AddPass<GenerateClassWrappers>();
     generator->AddPass<GenerateCApiPass>();
     generator->AddPass<GeneratePInvokePass>();
+    generator->AddPass<GenerateCSApiPass>();
 
     generator->Generate(outputDir);
 }

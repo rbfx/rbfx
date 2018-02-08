@@ -47,6 +47,8 @@ String GetSymbolName(const cppast::cpp_entity& e);
 String Sanitize(const String& value);
 /// Returns true if type is void.
 bool IsVoid(const cppast::cpp_type& type);
+/// Returns string padded with _ if value is a common keyword in programming languages.
+String EnsureNotKeyword(const String& value);
 
 class IncludedChecker
 {

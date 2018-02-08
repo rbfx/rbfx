@@ -71,7 +71,25 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
                 printer_ << "internal IntPtr instance_;";
                 printer_ << "protected volatile int disposed_;";
                 printer_ << "";
+
+                // Constructor that initializes form instance value
+                printer_ << fmt("internal {{name}}(IntPtr instance)", vars);
+                printer_.Indent();
+                {
+                    printer_ << "instance_ = instance;";
+                    if (generator->IsSubclassOf(cls, "Urho3D::RefCounted"))
+                        printer_ << "Urho3D__RefCounted__AddRef(instance);";
+                }
+                printer_.Dedent();
+                printer_ << "";
             }
+            else
+            {
+                // Proxy constructor to one defined above
+                printer_ << fmt("internal {{name}}(IntPtr instance) : base(instance) { }", vars);
+                printer_ << "";
+            }
+
             printer_ << fmt("public{{#has_bases}} new{{/has_bases}} void Dispose()", vars);
             printer_.Indent();
             {
@@ -93,7 +111,6 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
                 {"symbol_name", Sanitize(GetSymbolName(cls)).CString()}
             });
             printer_ << "";
-
         }
         else if (info.event == info.container_entity_exit)
         {
@@ -113,16 +130,16 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
             printer_ << "[return: MarshalAs(" + typeMap.pInvokeAttribute + ")]";
 
         auto vars = fmt({
-            {"cs_type", typeMap.csType.CString()},
+            {"cs_type", typeMap.GetPInvokeType().CString()},
+            {"cs_ret_type", typeMap.GetPInvokeType(true).CString()},
             {"c_function_name", data->cFunctionName.CString()},
-            {"attribute", (typeMap.pInvokeAttribute.Empty() ? String::EMPTY : "[param: MarshalAs(" + typeMap.pInvokeAttribute + ")]").CString()},
         });
-        printer_ << fmt("internal static extern {{cs_type}} get_{{c_function_name}}(IntPtr cls);", vars);
+        printer_ << fmt("internal static extern {{cs_ret_type}} get_{{c_function_name}}(IntPtr cls);", vars);
         printer_ << "";
 
         // Setter
         printer_ << dllImport;
-        printer_ << fmt("internal static extern void set_{{c_function_name}}(IntPtr cls, {{attribute}}{{cs_type}} value);", vars);
+        printer_ << fmt("internal static extern void set_{{c_function_name}}(IntPtr cls, {{cs_type}} value);", vars);
         printer_ << "";
     }
     else if (e.kind() == cppast::cpp_entity_kind::constructor_t)
@@ -131,11 +148,7 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
 
         printer_ << dllImport;
         auto csParams = ParameterList(ctor.parameters(), [&](const cppast::cpp_type& type) {
-            auto typeMap = generator->GetTypeMap(type);
-            auto csType = typeMap.csType;
-            if (!typeMap.pInvokeAttribute.Empty())
-                csType = "[param: MarshalAs(" + typeMap.pInvokeAttribute + ")]" + csType;
-            return csType;
+            return generator->GetTypeMap(type).GetPInvokeType();
         });
         auto vars = fmt({
             {"c_function_name", data->cFunctionName.CString()},
@@ -149,11 +162,7 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
         const auto& func = dynamic_cast<const cppast::cpp_member_function&>(e);
         printer_ << dllImport;
         auto csParams = ParameterList(func.parameters(), [&](const cppast::cpp_type& type) {
-            auto typeMap = generator->GetTypeMap(type);
-            auto csType = typeMap.csType;
-            if (!typeMap.pInvokeAttribute.Empty())
-                csType = "[param: MarshalAs(" + typeMap.pInvokeAttribute + ")]" + csType;
-            return csType;
+            return generator->GetTypeMap(type).GetPInvokeType();
         });
 
         String csRetType = "IntPtr";
@@ -161,7 +170,7 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
         {
             const auto& retType = func.return_type();
             if (retType.kind() == cppast::cpp_type_kind::builtin_t)
-                csRetType = generator->GetTypeMap(retType).csType;
+                csRetType = generator->GetTypeMap(retType).csPInvokeType;
         }
 
         auto vars = fmt({

@@ -228,7 +228,7 @@ TypeMap GeneratorContext::GetTypeMap(const cppast::cpp_type& type)
 
     for (const auto& map : typeMaps_)
     {
-        if (map.cppType == info.name_)
+        if (map.cppType == info.name_ || map.cppType == info.fullName_)
             return map;
     }
 
@@ -257,7 +257,6 @@ TypeMap::TypeMap(const cppast::cpp_type& type)
     const CppTypeInfo info(type);
     cType = info.fullName_;
     cppType = info.fullName_;
-    csType = info.name_.Replaced("::", ".");
 
     static HashMap<String, String> cppToCS = {
         {"char", "char"},
@@ -275,21 +274,25 @@ TypeMap::TypeMap(const cppast::cpp_type& type)
         {"double", "double"},
     };
 
-    switch (type.kind())
-    {
-    case cppast::cpp_type_kind::builtin_t:
+    if (csType.Empty() && type.kind() == cppast::cpp_type_kind::builtin_t)
     {
         auto it = cppToCS.Find(info.name_);
         assert(it != cppToCS.End());
         assert(!info.pointer_);         // Handle later if needed
-        csType = it->second_;
-        break;
+        csType = csPInvokeType = it->second_;
     }
-    default:
-        csType = "IntPtr";
-        break;
-    }
+    else
+        csType = info.name_.Replaced("::", ".");
+}
 
+String TypeMap::GetPInvokeType(bool forReturn)
+{
+    if (pInvokeAttribute.Empty())
+        return csPInvokeType;
+    else if (forReturn)
+        return csType;
+    else
+        return "[param: MarshalAs(" + pInvokeAttribute + ")]" + csType;
 }
 
 }

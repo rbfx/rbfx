@@ -36,6 +36,7 @@ add_custom_target(CSharpGenerateBindings
 file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/CApi.cpp "")
 file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/ClassWrappers.hpp "")
 file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/PInvoke.cs "")
+file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/Urho3D.cs "")
 
 add_library(Urho3DCSharp SHARED CSharp.h CSharp.cpp ${CMAKE_CURRENT_BINARY_DIR}/CApi.cpp ${CMAKE_CURRENT_BINARY_DIR}/ClassWrappers.hpp)
 target_link_libraries(Urho3DCSharp Urho3D)
@@ -49,6 +50,6 @@ elseif (DESKTOP)
 endif()
 add_custom_target(Urho3DNet
     COMMAND csc /target:library ${NET_PLATFORM} /reference:System.dll /out:${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Urho3DNet.dll
-    ${CMAKE_CURRENT_BINARY_DIR}/PInvoke.cs
+    ${CMAKE_CURRENT_BINARY_DIR}/PInvoke.cs ${CMAKE_CURRENT_BINARY_DIR}/Urho3D.cs
 )
 add_dependencies(Urho3DNet Urho3DCSharp)

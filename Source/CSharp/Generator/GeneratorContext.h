@@ -50,11 +50,14 @@ struct UserData
 struct TypeMap
 {
     TypeMap() = default;
-    TypeMap(const cppast::cpp_type& type);
-    String cType;
-    String cppType;
-    String csType;
-    String pInvokeAttribute;
+    explicit TypeMap(const cppast::cpp_type& type);
+    String cType = "void*";
+    String cppType = "void*";
+    String csType = "";
+    String csPInvokeType = "IntPtr";
+    String pInvokeAttribute = "";
+
+    String GetPInvokeType(bool forReturn = false);
 };
 
 class GeneratorContext
