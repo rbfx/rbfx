@@ -24,8 +24,208 @@
 
 #include "../Math/Vector4.h"
 
+
 namespace Urho3D
 {
+	/// Two-dimensional bounding rectangle with integer values.
+	class URHO3D_API IntRect
+	{
+	public:
+		/// Construct a zero rect.
+		IntRect() noexcept :
+			left_(0),
+			top_(0),
+			right_(0),
+			bottom_(0)
+		{
+		}
+
+		/// Construct from minimum and maximum vectors.
+		IntRect(const IntVector2& min, const IntVector2& max) noexcept :
+		left_(min.x_),
+			top_(min.y_),
+			right_(max.x_),
+			bottom_(max.y_)
+		{
+		}
+
+		/// Construct from coordinates.
+		IntRect(int left, int top, int right, int bottom) noexcept :
+		left_(left),
+			top_(top),
+			right_(right),
+			bottom_(bottom)
+		{
+		}
+
+		/// Construct from an int array.
+		explicit IntRect(const int* data) noexcept :
+		left_(data[0]),
+			top_(data[1]),
+			right_(data[2]),
+			bottom_(data[3])
+		{
+		}
+
+		/// Test for equality with another rect.
+		bool operator ==(const IntRect& rhs) const
+		{
+			return left_ == rhs.left_ && top_ == rhs.top_ && right_ == rhs.right_ && bottom_ == rhs.bottom_;
+		}
+
+		/// Test for inequality with another rect.
+		bool operator !=(const IntRect& rhs) const
+		{
+			return left_ != rhs.left_ || top_ != rhs.top_ || right_ != rhs.right_ || bottom_ != rhs.bottom_;
+		}
+
+		/// Add another rect to this one inplace.
+		IntRect& operator +=(const IntRect& rhs)
+		{
+			left_ += rhs.left_;
+			top_ += rhs.top_;
+			right_ += rhs.right_;
+			bottom_ += rhs.bottom_;
+			return *this;
+		}
+
+		/// Subtract another rect from this one inplace.
+		IntRect& operator -=(const IntRect& rhs)
+		{
+			left_ -= rhs.left_;
+			top_ -= rhs.top_;
+			right_ -= rhs.right_;
+			bottom_ -= rhs.bottom_;
+			return *this;
+		}
+
+		/// Divide by scalar inplace.
+		IntRect& operator /=(float value)
+		{
+			left_ = static_cast<int>(left_ / value);
+			top_ = static_cast<int>(top_ / value);
+			right_ = static_cast<int>(right_ / value);
+			bottom_ = static_cast<int>(bottom_ / value);
+			return *this;
+		}
+
+		/// Multiply by scalar inplace.
+		IntRect& operator *=(float value)
+		{
+			left_ = static_cast<int>(left_ * value);
+			top_ = static_cast<int>(top_ * value);
+			right_ = static_cast<int>(right_ * value);
+			bottom_ = static_cast<int>(bottom_ * value);
+			return *this;
+		}
+
+		/// Divide by scalar (component wise).
+		IntRect operator /(float value) const
+		{
+			return {
+				static_cast<int>(left_ / value), static_cast<int>(top_ / value),
+				static_cast<int>(right_ / value), static_cast<int>(bottom_ / value)
+			};
+		}
+
+		/// Multiply by scalar (component wise).
+		IntRect operator *(float value) const
+		{
+			return {
+				static_cast<int>(left_ * value), static_cast<int>(top_ * value),
+				static_cast<int>(right_ * value), static_cast<int>(bottom_ * value)
+			};
+		}
+
+		/// Add another rect.
+		IntRect operator +(const IntRect& rhs) const
+		{
+			return {
+				left_ + rhs.left_, top_ + rhs.top_,
+				right_ + rhs.right_, bottom_ + rhs.bottom_
+			};
+		}
+
+		/// Subtract another rect.
+		IntRect operator -(const IntRect& rhs) const
+		{
+			return {
+				left_ - rhs.left_, top_ - rhs.top_,
+				right_ - rhs.right_, bottom_ - rhs.bottom_
+			};
+		}
+
+		/// Return size.
+		IntVector2 Size() const { return IntVector2(Width(), Height()); }
+
+		/// Return width.
+		int Width() const { return right_ - left_; }
+
+		/// Return height.
+		int Height() const { return bottom_ - top_; }
+
+		/// Test whether a point is inside.
+		Intersection IsInside(const IntVector2& point) const
+		{
+			if (point.x_ < left_ || point.y_ < top_ || point.x_ >= right_ || point.y_ >= bottom_)
+				return OUTSIDE;
+			else
+				return INSIDE;
+		}
+
+		/// Clip with another rect.  Since IntRect does not have an undefined state
+		/// like Rect, return (0, 0, 0, 0) if the result is empty.
+		void Clip(const IntRect& rect);
+
+		/// Merge a rect (combining bounds).  If this rect was empty, become the other rect.  If the
+		/// other rect is empty, do nothing.
+		void Merge(const IntRect& rect);
+
+		/// Return integer data.
+		const int* Data() const { return &left_; }
+
+		/// Return as string.
+		String ToString() const;
+
+		/// Return left-top corner position.
+		IntVector2 Min() const { return { left_, top_ }; }
+
+		/// Return right-bottom corner position.
+		IntVector2 Max() const { return { right_, bottom_ }; }
+
+		/// Set the min bound (top left)
+		void SetMin(IntVector2 min) { left_ = min.x_; top_ = min.y_; }
+
+		/// Set the max bound (bottom right)
+		void SetMax(IntVector2 max) { right_ = max.x_; bottom_ = max.y_; }
+
+		/// Return left coordinate.
+		int Left() const { return left_; }
+
+		/// Return top coordinate.
+		int Top() const { return top_; }
+
+		/// Return right coordinate.
+		int Right() const { return right_; }
+
+		/// Return bottom coordinate.
+		int Bottom() const { return bottom_; }
+
+		/// Left coordinate.
+		int left_;
+		/// Top coordinate.
+		int top_;
+		/// Right coordinate.
+		int right_;
+		/// Bottom coordinate.
+		int bottom_;
+
+		/// Zero-sized rect.
+		static const IntRect ZERO;
+	};
+
+
+
 
 /// Two-dimensional bounding rectangle.
 class URHO3D_API Rect
@@ -58,6 +258,13 @@ public:
         max_(vector.z_, vector.w_)
     {
     }
+
+	/// Construct from a IntRect.
+	explicit Rect(const IntRect& rect) noexcept :
+	min_(rect.left_, rect.top_),
+		max_(rect.right_, rect.bottom_)
+	{
+	}
 
     /// Construct from a float array.
     explicit Rect(const float* data) noexcept :
@@ -268,195 +475,12 @@ public:
     static const Rect ZERO;
 };
 
-/// Two-dimensional bounding rectangle with integer values.
-class URHO3D_API IntRect
-{
-public:
-    /// Construct a zero rect.
-    IntRect() noexcept :
-        left_(0),
-        top_(0),
-        right_(0),
-        bottom_(0)
-    {
-    }
 
-    /// Construct from minimum and maximum vectors.
-    IntRect(const IntVector2& min, const IntVector2& max) noexcept :
-        left_(min.x_),
-        top_(min.y_),
-        right_(max.x_),
-        bottom_(max.y_)
-    {
-    }
 
-    /// Construct from coordinates.
-    IntRect(int left, int top, int right, int bottom) noexcept :
-        left_(left),
-        top_(top),
-        right_(right),
-        bottom_(bottom)
-    {
-    }
+/// Per-component round of Rect. Returns IntRect.
+inline IntRect RectRoundToInt(const Rect& rect) { return IntRect(VectorRoundToInt(rect.min_), VectorRoundToInt(rect.max_)); }
 
-    /// Construct from an int array.
-    explicit IntRect(const int* data) noexcept :
-        left_(data[0]),
-        top_(data[1]),
-        right_(data[2]),
-        bottom_(data[3])
-    {
-    }
 
-    /// Test for equality with another rect.
-    bool operator ==(const IntRect& rhs) const
-    {
-        return left_ == rhs.left_ && top_ == rhs.top_ && right_ == rhs.right_ && bottom_ == rhs.bottom_;
-    }
 
-    /// Test for inequality with another rect.
-    bool operator !=(const IntRect& rhs) const
-    {
-        return left_ != rhs.left_ || top_ != rhs.top_ || right_ != rhs.right_ || bottom_ != rhs.bottom_;
-    }
-
-    /// Add another rect to this one inplace.
-    IntRect& operator +=(const IntRect& rhs)
-    {
-        left_ += rhs.left_;
-        top_ += rhs.top_;
-        right_ += rhs.right_;
-        bottom_ += rhs.bottom_;
-        return *this;
-    }
-
-    /// Subtract another rect from this one inplace.
-    IntRect& operator -=(const IntRect& rhs)
-    {
-        left_ -= rhs.left_;
-        top_ -= rhs.top_;
-        right_ -= rhs.right_;
-        bottom_ -= rhs.bottom_;
-        return *this;
-    }
-
-    /// Divide by scalar inplace.
-    IntRect& operator /=(float value)
-    {
-        left_ = static_cast<int>(left_ / value);
-        top_ = static_cast<int>(top_ / value);
-        right_ = static_cast<int>(right_ / value);
-        bottom_ = static_cast<int>(bottom_ / value);
-        return *this;
-    }
-
-    /// Multiply by scalar inplace.
-    IntRect& operator *=(float value)
-    {
-        left_ = static_cast<int>(left_ * value);
-        top_ = static_cast<int>(top_ * value);
-        right_ = static_cast<int>(right_ * value);
-        bottom_ = static_cast<int>(bottom_ * value);
-        return *this;
-    }
-
-    /// Divide by scalar.
-    IntRect operator /(float value) const
-    {
-        return {
-            static_cast<int>(left_ / value), static_cast<int>(top_ / value),
-            static_cast<int>(right_ / value), static_cast<int>(bottom_ / value)
-        };
-    }
-
-    /// Multiply by scalar.
-    IntRect operator *(float value) const
-    {
-        return {
-            static_cast<int>(left_ * value), static_cast<int>(top_ * value),
-            static_cast<int>(right_ * value), static_cast<int>(bottom_ * value)
-        };
-    }
-
-    /// Add another rect.
-    IntRect operator +(const IntRect& rhs) const
-    {
-        return {
-            left_ + rhs.left_, top_ + rhs.top_,
-            right_ + rhs.right_, bottom_ + rhs.bottom_
-        };
-    }
-
-    /// Subtract another rect.
-    IntRect operator -(const IntRect& rhs) const
-    {
-        return {
-            left_ - rhs.left_, top_ - rhs.top_,
-            right_ - rhs.right_, bottom_ - rhs.bottom_
-        };
-    }
-
-    /// Return size.
-    IntVector2 Size() const { return IntVector2(Width(), Height()); }
-
-    /// Return width.
-    int Width() const { return right_ - left_; }
-
-    /// Return height.
-    int Height() const { return bottom_ - top_; }
-
-    /// Test whether a point is inside.
-    Intersection IsInside(const IntVector2& point) const
-    {
-        if (point.x_ < left_ || point.y_ < top_ || point.x_ >= right_ || point.y_ >= bottom_)
-            return OUTSIDE;
-        else
-            return INSIDE;
-    }
-
-    /// Clip with another rect.  Since IntRect does not have an undefined state
-    /// like Rect, return (0, 0, 0, 0) if the result is empty.
-    void Clip(const IntRect& rect);
-
-    /// Merge a rect.  If this rect was empty, become the other rect.  If the
-    /// other rect is empty, do nothing.
-    void Merge(const IntRect& rect);
-
-    /// Return integer data.
-    const int* Data() const { return &left_; }
-
-    /// Return as string.
-    String ToString() const;
-
-    /// Return left-top corner position.
-    IntVector2 Min() const { return {left_, top_}; }
-
-    /// Return right-bottom corner position.
-    IntVector2 Max() const { return {right_, bottom_}; }
-
-    /// Return left coordinate.
-    int Left() const { return left_; }
-
-    /// Return top coordinate.
-    int Top() const { return top_; }
-
-    /// Return right coordinate.
-    int Right() const { return right_; }
-
-    /// Return bottom coordinate.
-    int Bottom() const { return bottom_; }
-
-    /// Left coordinate.
-    int left_;
-    /// Top coordinate.
-    int top_;
-    /// Right coordinate.
-    int right_;
-    /// Bottom coordinate.
-    int bottom_;
-
-    /// Zero-sized rect.
-    static const IntRect ZERO;
-};
 
 }
