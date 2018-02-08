@@ -12,11 +12,10 @@
     <types>
         <include>Urho3D::*</include>
         <exclude>Urho3D::ObjectFactory</exclude>
-        <exclude>Urho3D::EventHandler</exclude>
-        <exclude>Urho3D::EventHandlerImpl</exclude>
-        <exclude>Urho3D::EventHandler11Impl</exclude>
+        <exclude>Urho3D::EventHandler*</exclude>
         <exclude>Urho3D::EventNameRegistrar</exclude>
         <exclude>Urho3D::ObjectFactoryImpl</exclude>
+        <exclude>Urho3D::CustomVariantValue*</exclude>
         <manual>Urho3D::String</manual>
         <manual>Urho3D::WString</manual>
         <manual>Urho3D::StringHash</manual>
