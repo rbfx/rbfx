@@ -4,6 +4,7 @@
         <include>Math/StringHash.h</include>
         <include>Core/Object.h</include>
         <include>Core/Context.h</include>
+        <include>Core/Variant.h</include>
         <include>Engine/*.h</include>
     </headers>
     <compiler>
@@ -16,30 +17,26 @@
         <exclude>Urho3D::EventNameRegistrar</exclude>
         <exclude>Urho3D::ObjectFactoryImpl</exclude>
         <exclude>Urho3D::CustomVariantValue*</exclude>
-        <manual>Urho3D::String</manual>
-        <manual>Urho3D::WString</manual>
-        <manual>Urho3D::StringHash</manual>
+        <exclude>Urho3D::String</exclude>
+        <exclude>Urho3D::WString</exclude>
+        <exclude>Urho3D::StringHash</exclude>
     </types>
     <typemaps>
-        <typemap>
-            <c>unsigned</c>
-            <cpp>Urho3D::StringHash</cpp>
-            <cs>uint</cs>
+        <typemap type="Urho3D::StringHash" ctype="unsigned" cstype="Urho3D.StringHash">
+            <cpp_to_c>{{value}}.Value()</cpp_to_c>
+            <c_to_cpp>Urho3D::StringHash({{value}})</c_to_cpp>
+            <pinvoke_to_cs>new StringHash({{value}})</pinvoke_to_cs>
+            <cs_to_pinvoke>{{value}}.Hash</cs_to_pinvoke>
         </typemap>
-        <typemap>
-            <c>const char*</c>
-            <cpp>Urho3D::String</cpp>
-            <cs pinvoke="UnmanagedType.LPUTF8Str">string</cs>
+        <typemap type="Urho3D::String" ctype="char const*" cstype="string">
+            <cpp_to_c>{{value}}.CString()</cpp_to_c>
+            <c_to_cpp>Urho3D::String({{value}})</c_to_cpp>
+            <copy>strdup({{value}})</copy>
+            <from_copy>MarshalTools.GetUtf8StringFree({{value}})</from_copy>
         </typemap>
-        <typemap>
-            <c>const char*</c>
-            <cpp>char const*</cpp>
-            <cs pinvoke="UnmanagedType.LPUTF8Str">string</cs>
-        </typemap>
-        <typemap>
-            <c>const wchar_t*</c>
-            <cpp>Urho3D::WString</cpp>
-            <cs pinvoke="UnmanagedType.LPWStr">string</cs>
+        <typemap type="char const*">
+            <copy>strdup({{value}})</copy>
+            <from_copy>MarshalTools.GetUtf8StringFree({{value}})</from_copy>
         </typemap>
     </typemaps>
 </rules>

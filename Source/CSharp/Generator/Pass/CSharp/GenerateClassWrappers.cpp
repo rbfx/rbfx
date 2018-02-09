@@ -22,9 +22,8 @@
 
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/Log.h>
-#include <ThirdParty/cppast/include/cppast/cpp_member_variable.hpp>
-#include <ThirdParty/cppast/include/cppast/cpp_member_function.hpp>
-#include "CppTypeInfo.h"
+#include <cppast/cpp_member_variable.hpp>
+#include <cppast/cpp_member_function.hpp>
 #include "GenerateClassWrappers.h"
 #include "GeneratorContext.h"
 
@@ -35,7 +34,6 @@ namespace Urho3D
 void GenerateClassWrappers::Start()
 {
     printer_ << "#include <Urho3D/Urho3DAll.h>";
-    printer_ << "#include \"CSharp.h\"";
     printer_ << "";
 }
 
@@ -186,7 +184,7 @@ bool GenerateClassWrappers::Visit(const cppast::cpp_entity& e, cppast::visitor_i
                 if (base.access_specifier() == cppast::cpp_private)
                     continue;
 
-                const auto* parentCls = dynamic_cast<const cppast::cpp_class*>(generator->GetKnownType(CppTypeInfo(base.type()).name_));
+                const auto* parentCls = dynamic_cast<const cppast::cpp_class*>(generator->GetKnownType(Urho3D::GetTypeName(base.type())));
                 if (parentCls != nullptr)
                 {
                     implementBaseWrapperClassMembers(*parentCls);

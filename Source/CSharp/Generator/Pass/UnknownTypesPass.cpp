@@ -33,24 +33,27 @@ namespace Urho3D
 bool UnknownTypesPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info info)
 {
     auto generator = GetSubsystem<GeneratorContext>();
+    auto checkFunctionParams = [&](const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params) {
+        for (const auto& param : params)
+        {
+            if (!generator->IsKnownType(param.type()) && param.type().kind() != cppast::cpp_type_kind::builtin_t)
+            {
+                URHO3D_LOGINFOF("Ignore: %s, unknown parameter type %s", GetSymbolName(e).CString(),
+                                cppast::to_string(param.type()).c_str());
+                return false;
+            }
+        }
+        return true;
+    };
     auto checkFunctionTypes = [&](const cppast::cpp_type& returnType,
-        const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params) {
-        if (!generator->IsKnownType(returnType))
+                                  const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params) {
+        if (!generator->IsKnownType(returnType) && returnType.kind() != cppast::cpp_type_kind::builtin_t)
         {
             URHO3D_LOGINFOF("Ignore: %s, unknown return type %s", GetSymbolName(e).CString(),
                 cppast::to_string(returnType).c_str());
             return false;
         }
-        for (const auto& param : params)
-        {
-            if (!generator->IsKnownType(param.type()))
-            {
-                URHO3D_LOGINFOF("Ignore: %s, unknown parameter type %s", GetSymbolName(e).CString(),
-                    cppast::to_string(param.type()).c_str());
-                return false;
-            }
-        }
-        return true;
+        return checkFunctionParams(params);
     };
 
     if (e.kind() == cppast::cpp_entity_kind::function_t)
@@ -68,7 +71,7 @@ bool UnknownTypesPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
     else if (e.kind() == cppast::cpp_entity_kind::member_variable_t || e.kind() == cppast::cpp_entity_kind::variable_t)
     {
         const auto& var = dynamic_cast<const cppast::cpp_variable_base&>(e);
-        if (!generator->IsKnownType(var.type()))
+        if (!generator->IsKnownType(var.type()) && var.type().kind() != cppast::cpp_type_kind::builtin_t)
         {
             GetUserData(e)->generated = false;
             URHO3D_LOGINFOF("Ignore: %s, unknown return type %s", GetSymbolName(e).CString(),
@@ -86,6 +89,9 @@ bool UnknownTypesPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
     {
         const auto& ctor = dynamic_cast<const cppast::cpp_constructor&>(e);
         if (ctor.body_kind() == cppast::cpp_function_body_kind::cpp_function_deleted)
+            GetUserData(e)->generated = false;
+
+        if (!checkFunctionParams(ctor.parameters()))
             GetUserData(e)->generated = false;
     }
     return true;

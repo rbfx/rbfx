@@ -26,6 +26,7 @@
 #include <Urho3D/Core/Object.h>
 #include <cppast/cpp_entity.hpp>
 #include <cppast/visitor.hpp>
+#include <GeneratorContext.h>
 #include "Pass/ParserPass.h"
 #include "Utilities.h"
 #include "Printer/CSharpPrinter.h"
@@ -47,6 +48,8 @@ public:
 protected:
     String GetUniqueName(const String& baseName);
 
+    WeakPtr<GeneratorContext> generator_;
+    TypeMapper* typeMapper_ = nullptr;
     CSharpPrinter printer_;
     StringVector usedNames_;
 };

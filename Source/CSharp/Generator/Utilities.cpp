@@ -25,7 +25,6 @@
 #include <Urho3D/IO/Log.h>
 #include "Utilities.h"
 #include "GeneratorContext.h"
-#include "CppTypeInfo.h"
 
 
 namespace Urho3D
@@ -158,12 +157,25 @@ String ParameterTypeList(const cppast::detail::iteratable_intrusive_list<cppast:
 
 String GetConversionType(const cppast::cpp_type& type)
 {
-    CppTypeInfo info(type);
-
-    if (info.notNull_)
-        return info.name_;
+    if (type.kind() == cppast::cpp_type_kind::reference_t || type.kind() == cppast::cpp_type_kind::pointer_t)
+        return Urho3D::GetTypeName(type);
     else
-        return info.fullName_;
+        return cppast::to_string(type);
+}
+
+String GetTypeName(const cppast::cpp_type& type)
+{
+    switch (type.kind())
+    {
+    case cppast::cpp_type_kind::cv_qualified_t:
+        return cppast::to_string(static_cast<const cppast::cpp_cv_qualified_type&>(type).type());
+    case cppast::cpp_type_kind::pointer_t:
+        return cppast::to_string(static_cast<const cppast::cpp_pointer_type&>(type).pointee());
+    case cppast::cpp_type_kind::reference_t:
+        return cppast::to_string(static_cast<const cppast::cpp_reference_type&>(type).referee());
+    default:
+        return cppast::to_string(type);
+    }
 }
 
 IncludedChecker::IncludedChecker(const XMLElement& rules)

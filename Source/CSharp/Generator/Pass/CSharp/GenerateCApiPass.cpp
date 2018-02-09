@@ -27,7 +27,6 @@
 #include <cppast/cpp_member_variable.hpp>
 #include "GenerateCApiPass.h"
 #include "GeneratorContext.h"
-#include "CppTypeInfo.h"
 
 
 namespace Urho3D
@@ -35,8 +34,10 @@ namespace Urho3D
 
 void GenerateCApiPass::Start()
 {
+    generator_ = GetSubsystem<GeneratorContext>();
+    typeMapper_ = &generator_->GetTypeMapper();
+
     printer_ << "#include <Urho3D/Urho3DAll.h>";
-    printer_ << "#include \"CSharp.h\"";
     printer_ << "#include \"ClassWrappers.hpp\"";
     printer_ << "";
     printer_ << "using namespace Urho3D;";
@@ -48,30 +49,13 @@ void GenerateCApiPass::Start()
 
 bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info info)
 {
-    auto generator = GetSubsystem<GeneratorContext>();
-
     // Visit entities just once
     if (info.event == cppast::visitor_info::container_entity_exit)
         return true;
 
-    auto toCType = [&](const cppast::cpp_type& type) { return generator->GetTypeMap(type).cType; };
-    auto toCppType = [](const cppast::cpp_function_parameter& param) {
-        return fmt("CSharpTypeConverter<{{type}}>::toCpp({{name}})", {
-            {"type", GetConversionType(param.type()).CString()},
-            {"name", EnsureNotKeyword(param.name()).CString()}
-        });
-    };
-    auto toCTypeReturn = [&](const cppast::cpp_type& returnType, const String& callExpr) {
-        CppTypeInfo typeInfo(returnType);
-        String expr = fmt("return CSharpTypeConverter<{{type}}>::toC({{call}}", {
-            {"type", GetConversionType(returnType).CString()},
-            {"call", callExpr.CString()}
-        });
-        // Value types returned by copy
-        if (!typeInfo.pointer_)
-            expr += ", true";
-        expr += ");";
-        return expr;
+    auto toCType = [&](const cppast::cpp_type& type) { return typeMapper_->ToCType(type); };
+    auto toCppType = [&](const cppast::cpp_function_parameter& param) {
+        return typeMapper_->MapToCpp(param.type(), EnsureNotKeyword(param.name()));
     };
 
     if (e.kind() == cppast::cpp_entity_kind::function_t)
@@ -100,7 +84,11 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
             if (IsVoid(func.return_type()))
                 printer_ << call + ";";
             else
-                printer_ << toCTypeReturn(func.return_type(), call);
+            {
+                printer_ << fmt("return {{expr}};", {
+                    {"expr", typeMapper_->MapToC(func.return_type(), call, true).CString()}
+                });
+            }
         }
         printer_.Dedent();
         printer_.WriteLine();
@@ -170,7 +158,7 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
             className = "::" + className;
 
         auto parameterNameList = ParameterNameList(func.parameters(), toCppType);
-        auto cReturnType = generator->GetTypeMap(func.return_type()).cType;
+        auto cReturnType = typeMapper_->ToCType(func.return_type());
         auto cParameterList = ParameterList(func.parameters(), toCType);
 
         // Method c wrappers always have first parameter implicitly.
@@ -194,7 +182,11 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
             if (IsVoid(func.return_type()))
                 printer_ << call + ";";
             else
-                printer_ << toCTypeReturn(func.return_type(), call);
+            {
+                printer_ << fmt("return {{expr}};", {
+                    {"expr", typeMapper_->MapToC(func.return_type(), call, true).CString()}
+                });
+            }
         }
         printer_.Dedent();
         printer_.WriteLine();
@@ -222,7 +214,7 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
             className = "::" + className;
 
         data->cFunctionName = Sanitize(GetSymbolName(var.parent().value()) + "_" + var.name().c_str());
-        auto vars = fmt({{"c_type", generator->GetTypeMap(var.type()).cType.CString()},
+        auto vars = fmt({{"c_type", typeMapper_->ToCType(var.type()).CString()},
                          {"c_function_name", data->cFunctionName.CString()},
                          {"class_name",      className},
                          {"name",            var.name()},
@@ -231,10 +223,14 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
         // Getter
         printer_ << fmt("URHO3D_EXPORT_API {{c_type}} get_{{c_function_name}}({{class_name}}* cls)", vars);
         printer_.Indent();
+
+        String expr;
         if (info.access == cppast::cpp_protected)
-            printer_ << fmt("return CSharpTypeConverter<{{type}}>::toC(cls->__get_{{name}}());", vars);
+            expr = fmt("cls->__get_{{name}}()", vars);
         else
-            printer_ << fmt("return CSharpTypeConverter<{{type}}>::toC(cls->{{name}});", vars);
+            expr = fmt("cls->{{name}}", vars);
+        // Variables are non-temporary therefore they do not need copying.
+        printer_ << fmt("return {{mapped}};", {{"mapped", typeMapper_->MapToC(var.type(), expr, false).CString()}});
 
         printer_.Dedent();
         printer_.WriteLine();
@@ -242,10 +238,12 @@ bool GenerateCApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
         // Setter
         printer_ << fmt("URHO3D_EXPORT_API void set_{{c_function_name}}({{class_name}}* cls, {{c_type}} value)", vars);
         printer_.Indent();
+
+        vars.set("value", typeMapper_->MapToCpp(var.type(), "value").CString());
         if (info.access == cppast::cpp_protected)
-            printer_ << fmt("cls->__set_{{name}}(CSharpTypeConverter<{{type}}>::toC(value));", vars);
+            printer_ << fmt("cls->__set_{{name}}({{value}});", vars);
         else
-            printer_ << fmt("cls->{{name}} = CSharpTypeConverter<{{type}}>::toC(value);", vars);
+            printer_ << fmt("cls->{{name}} = {{value}};", vars);
         printer_.Dedent();
         printer_.WriteLine();
     }

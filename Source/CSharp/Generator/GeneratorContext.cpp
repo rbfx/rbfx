@@ -28,7 +28,6 @@
 #include <Urho3D/Urho3DAll.h>
 #include "GeneratorContext.h"
 #include "Utilities.h"
-#include "CppTypeInfo.h"
 
 
 namespace Urho3D
@@ -36,6 +35,7 @@ namespace Urho3D
 
 GeneratorContext::GeneratorContext(Urho3D::Context* context)
     : Object(context)
+    , typeMapper_(context)
 {
 
 }
@@ -103,6 +103,8 @@ bool GeneratorContext::LoadRules(const String& xmlPath)
 
 bool GeneratorContext::ParseFiles(const String& sourceDir)
 {
+    typeMapper_.Load(rules_);
+
     sourceDir_ = AddTrailingSlash(sourceDir);
     Vector<String> sourceFiles;
     GetFileSystem()->ScanDir(sourceFiles, sourceDir_, "", SCAN_FILES, true);
@@ -130,22 +132,6 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
         else
             parsed_[filePath] = std::move(file);
     }
-
-    // Load typemaps
-    XMLElement typeMaps = rules_->GetRoot().GetChild("typemaps");
-    for (auto typeMap = typeMaps.GetChild("typemap"); typeMap.NotNull(); typeMap = typeMap.GetNext("typemap"))
-    {
-        TypeMap map;
-        map.cType = typeMap.GetChild("c").GetValue(),
-        map.cppType = typeMap.GetChild("cpp").GetValue(),
-        map.csType = map.csPInvokeType = typeMap.GetChild("cs").GetValue(),
-        map.pInvokeAttribute = typeMap.GetChild("cs").GetAttribute("pinvoke");
-        typeMaps_.Push(map);
-    }
-
-    XMLElement types = rules_->GetRoot().GetChild("types");
-    for (auto manual = types.GetChild("manual"); manual.NotNull(); manual = manual.GetNext("manual"))
-        manualTypes_.Push(manual.GetValue());
 
     return true;
 }
@@ -201,40 +187,13 @@ const cppast::cpp_entity* GeneratorContext::GetKnownType(const String& name)
 
 bool GeneratorContext::IsKnownType(const cppast::cpp_type& type)
 {
-    if (type.kind() == cppast::cpp_type_kind::builtin_t)
-        return true;
-
-    CppTypeInfo info(type);
-    if (info)
-        return IsKnownType(info.name_);
-
-    return false;
+    return IsKnownType(Urho3D::GetTypeName(type));
 }
 
 bool GeneratorContext::IsKnownType(const String& name)
 {
     String convertedName = name.Replaced(".", "::");
-
-    if (types_.Contains(convertedName))
-        return true;
-
-    if (manualTypes_.Contains(convertedName))
-        return true;
-
-    return false;
-}
-
-TypeMap GeneratorContext::GetTypeMap(const cppast::cpp_type& type)
-{
-    CppTypeInfo info(type);
-
-    for (const auto& map : typeMaps_)
-    {
-        if (map.cppType == info.name_ || map.cppType == info.fullName_)
-            return map;
-    }
-
-    return TypeMap{type};
+    return types_.Contains(convertedName) || typeMapper_.GetTypeMap(convertedName) != nullptr;
 }
 
 bool GeneratorContext::IsSubclassOf(const cppast::cpp_class& cls, const String& baseName)
@@ -252,49 +211,6 @@ bool GeneratorContext::IsSubclassOf(const cppast::cpp_class& cls, const String& 
         }
     }
     return false;
-}
-
-TypeMap::TypeMap(const cppast::cpp_type& type)
-{
-    const CppTypeInfo info(type);
-    cType = info.fullName_;
-    cppType = info.fullName_;
-
-    static HashMap<String, String> cppToCS = {
-        {"char", "char"},
-        {"unsigned char", "byte"},
-        {"short", "short"},
-        {"unsigned short", "ushort"},
-        {"int", "int"},
-        {"unsigned int", "uint"},
-        {"long long", "long"},
-        {"unsigned long long", "ulong"},
-        {"void", "void"},
-        {"void*", "IntPtr"},
-        {"bool", "bool"},
-        {"float", "float"},
-        {"double", "double"},
-    };
-
-    if (csType.Empty() && type.kind() == cppast::cpp_type_kind::builtin_t)
-    {
-        auto it = cppToCS.Find(info.name_);
-        assert(it != cppToCS.End());
-        assert(!info.pointer_);         // Handle later if needed
-        csType = csPInvokeType = it->second_;
-    }
-    else
-        csType = info.name_.Replaced("::", ".");
-}
-
-String TypeMap::GetPInvokeType(bool forReturn)
-{
-    if (pInvokeAttribute.Empty())
-        return csPInvokeType;
-    else if (forReturn)
-        return csType;
-    else
-        return "[param: MarshalAs(" + pInvokeAttribute + ")]" + csType;
 }
 
 }

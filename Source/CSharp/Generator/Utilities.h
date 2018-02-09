@@ -49,6 +49,8 @@ String Sanitize(const String& value);
 bool IsVoid(const cppast::cpp_type& type);
 /// Returns string padded with _ if value is a common keyword in programming languages.
 String EnsureNotKeyword(const String& value);
+/// Return name of underlying type.
+String GetTypeName(const cppast::cpp_type& type);
 
 class IncludedChecker
 {

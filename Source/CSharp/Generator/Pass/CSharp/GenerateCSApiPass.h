@@ -46,6 +46,8 @@ public:
 
 protected:
     CSharpPrinter printer_;
+    WeakPtr<GeneratorContext> generator_;
+    TypeMapper* typeMapper_ = nullptr;
 };
 
 }

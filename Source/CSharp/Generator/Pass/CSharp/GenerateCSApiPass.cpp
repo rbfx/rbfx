@@ -23,8 +23,7 @@
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
-#include <ThirdParty/cppast/include/cppast/cpp_member_variable.hpp>
-#include <CppTypeInfo.h>
+#include <cppast/cpp_member_variable.hpp>
 #include "GeneratorContext.h"
 #include "GenerateCSApiPass.h"
 
@@ -33,6 +32,9 @@ namespace Urho3D
 
 void GenerateCSApiPass::Start()
 {
+    generator_ = GetSubsystem<GeneratorContext>();
+    typeMapper_ = &generator_->GetTypeMapper();
+
     printer_ << "using System;";
     printer_ << "";
     printer_ << "namespace Urho3D";
@@ -43,14 +45,8 @@ void GenerateCSApiPass::Start()
 bool GenerateCSApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info info)
 {
     auto* generator = GetSubsystem<GeneratorContext>();
-    auto getClassInstances = [&](const cppast::cpp_function_parameter& param) {
-        const auto& typeMap = generator->GetTypeMap(param.type());
-        if (generator->IsKnownType(typeMap.csType))
-            return EnsureNotKeyword(param.name()) + ".instance_";
-        return EnsureNotKeyword(param.name());
-    };
-    auto toCSParam = [&](const cppast::cpp_type& type) {
-        return generator->GetTypeMap(type).csType;
+    auto mapToPInvoke = [&](const cppast::cpp_function_parameter& param) {
+        return typeMapper_->MapToPInvoke(param.type(), EnsureNotKeyword(param.name()));
     };
     if (e.kind() == cppast::cpp_entity_kind::class_t)
     {
@@ -80,19 +76,21 @@ bool GenerateCSApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info 
     {
         const auto& ctor = dynamic_cast<const cppast::cpp_constructor&>(e);
         const auto& cls = dynamic_cast<const cppast::cpp_class&>(e.parent().value());
+
         auto vars = fmt({
             {"class_name", e.parent().value().name()},
-            {"parameter_list", ParameterList(ctor.parameters(), toCSParam).CString()},
+            {"parameter_list", ParameterList(ctor.parameters(), std::bind(&TypeMapper::ToCSType, typeMapper_, std::placeholders::_1)).CString()},
             {"symbol_name", Sanitize(GetSymbolName(e.parent().value())).CString()},
-            {"param_name_list", ParameterNameList(ctor.parameters(), getClassInstances).CString()},
-            {"has_base", !cls.bases().empty()}
+            {"param_name_list", ParameterNameList(ctor.parameters(), mapToPInvoke).CString()},
+            {"has_base", !cls.bases().empty()},
+            {"c_function_name", GetUserData(e)->cFunctionName.CString()}
         });
 
         // If class has a base class we call base constructor that does nothing. Class will be fully constructed here.
         printer_ << fmt("public {{class_name}}({{parameter_list}}){{#has_base}} : base(IntPtr.Zero){{/has_base}}", vars);
         printer_.Indent();
         {
-            printer_ << fmt("instance_ = construct_{{symbol_name}}({{param_name_list}});", vars);
+            printer_ << fmt("instance_ = {{c_function_name}}({{param_name_list}});", vars);
         }
         printer_.Dedent();
         printer_ << "";
@@ -100,14 +98,18 @@ bool GenerateCSApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info 
     else if (e.kind() == cppast::cpp_entity_kind::member_function_t)
     {
         const auto& func = dynamic_cast<const cppast::cpp_member_function&>(e);
-        const auto& typeMap = generator->GetTypeMap(func.return_type());
-        const auto returnType = toCSParam(func.return_type());
+        const auto returnType = typeMapper_->ToCSType(func.return_type());
+
+        // TODO: operator support
+        if (String(func.name()).StartsWith("operator"))
+            return true;
+
         auto vars = fmt({
             {"name", func.name()},
             {"return_type", returnType.CString()},
-            {"parameter_list", ParameterList(func.parameters(), toCSParam).CString()},
+            {"parameter_list", ParameterList(func.parameters(), std::bind(&TypeMapper::ToCSType, typeMapper_, std::placeholders::_1)).CString()},
             {"c_function_name", GetUserData(func)->cFunctionName.CString()},
-            {"param_name_list", ParameterNameList(func.parameters(), getClassInstances).CString()},
+            {"param_name_list", ParameterNameList(func.parameters(), mapToPInvoke).CString()},
             {"has_params", !func.parameters().empty()},
             {"virtual", func.is_virtual() ? "virtual " : ""},
         });
@@ -118,19 +120,7 @@ bool GenerateCSApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info 
             if (IsVoid(func.return_type()))
                 printer_ << call + ";";
             else
-            {
-                if (generator->IsKnownType(typeMap.csType))
-                {
-                    printer_ << fmt("return {{return_type}}.cache_.GetOrAdd({{call}}, "
-                        "(instance) => { return new {{class_name}}(instance); });", {
-                            {"class_name",  typeMap.csType.CString()},
-                            {"call",        call.CString()},
-                            {"return_type", returnType.CString()}
-                        });
-                }
-                else
-                    printer_ << "return " + call + ";";
-            }
+                printer_ << "return " + typeMapper_->MapToCS(func.return_type(), call, true) + ";";
         }
         printer_.Dedent();
         printer_ << "";

@@ -25,31 +25,13 @@ add_subdirectory(Generator)
 file (GLOB_RECURSE ${Urho3D_SOURCE_DIR}/Source/Urho3D *.h)
 add_custom_target(CSharpGenerateBindings
     COMMAND $<TARGET_FILE:CSharpGenerator>
-        ${CMAKE_CURRENT_SOURCE_DIR}/Rules.xml
-        ${Urho3D_SOURCE_DIR}/Source/Urho3D
-        ${CMAKE_BINARY_DIR}/compile_commands.json
-        ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/Rules.xml
+    ${Urho3D_SOURCE_DIR}/Source/Urho3D
+    ${CMAKE_BINARY_DIR}/compile_commands.json
+    ${CMAKE_CURRENT_BINARY_DIR}
     SOURCES ${GLOB_RECURSE}
     DEPENDS CSharpGenerator
 )
 
-file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/CApi.cpp "")
-file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/ClassWrappers.hpp "")
-file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/PInvoke.cs "")
-file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/Urho3D.cs "")
-
-add_library(Urho3DCSharp SHARED CSharp.h CSharp.cpp ${CMAKE_CURRENT_BINARY_DIR}/CApi.cpp ${CMAKE_CURRENT_BINARY_DIR}/ClassWrappers.hpp)
-target_link_libraries(Urho3DCSharp Urho3D)
-target_include_directories(Urho3DCSharp PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-add_dependencies(Urho3DCSharp CSharpGenerateBindings)
-
-if (URHO3D_64BIT)
-    set (NET_PLATFORM /platform:x64)
-elseif (DESKTOP)
-    set (NET_PLATFORM /platform:x86)
-endif()
-add_custom_target(Urho3DNet
-    COMMAND csc /target:library ${NET_PLATFORM} /reference:System.dll /out:${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Urho3DNet.dll
-    ${CMAKE_CURRENT_BINARY_DIR}/PInvoke.cs ${CMAKE_CURRENT_BINARY_DIR}/Urho3D.cs
-)
-add_dependencies(Urho3DNet Urho3DCSharp)
+add_subdirectory(Urho3DCsharp)
+add_subdirectory(Urho3DNet)

@@ -29,7 +29,7 @@
 #include <cppast/libclang_parser.hpp>
 #include <Urho3D/Resource/XMLFile.h>
 #include "Pass/ParserPass.h"
-#include "CppTypeInfo.h"
+#include "TypeMapper.h"
 
 
 namespace Urho3D
@@ -45,19 +45,6 @@ struct UserData
     String cFunctionName;
     /// Cache access info so that we have this info when iterating over children nodes.
     cppast::cpp_access_specifier_kind access = cppast::cpp_access_specifier_kind::cpp_public;
-};
-
-struct TypeMap
-{
-    TypeMap() = default;
-    explicit TypeMap(const cppast::cpp_type& type);
-    String cType = "void*";
-    String cppType = "void*";
-    String csType = "";
-    String csPInvokeType = "IntPtr";
-    String pInvokeAttribute = "";
-
-    String GetPInvokeType(bool forReturn = false);
 };
 
 class GeneratorContext
@@ -82,8 +69,9 @@ public:
     const cppast::cpp_entity* GetKnownType(const String& name);
     bool IsKnownType(const cppast::cpp_type& type);
     bool IsKnownType(const String& name);
-    TypeMap GetTypeMap(const cppast::cpp_type& type);
     bool IsSubclassOf(const cppast::cpp_class& cls, const String& baseName);
+
+    TypeMapper& GetTypeMapper() { return typeMapper_; }
 
 protected:
     String sourceDir_;
@@ -93,8 +81,7 @@ protected:
     HashMap<String, const cppast::cpp_entity*> types_;
     std::map<String, std::unique_ptr<cppast::cpp_file>> parsed_;
     Vector<SharedPtr<ParserPass>> passes_;
-    Vector<TypeMap> typeMaps_;
-    Vector<String> manualTypes_;
+    TypeMapper typeMapper_;
 };
 
 }

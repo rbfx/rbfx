@@ -23,8 +23,7 @@
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
-#include <ThirdParty/cppast/include/cppast/cpp_member_variable.hpp>
-#include <CppTypeInfo.h>
+#include <cppast/cpp_member_variable.hpp>
 #include "GeneratorContext.h"
 #include "GeneratePInvokePass.h"
 
@@ -33,6 +32,9 @@ namespace Urho3D
 
 void GeneratePInvokePass::Start()
 {
+    generator_ = GetSubsystem<GeneratorContext>();
+    typeMapper_ = &generator_->GetTypeMapper();
+
     printer_ << "using System;";
     printer_ << "using System.Threading;";
     printer_ << "using System.Collections.Concurrent;";
@@ -118,6 +120,14 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
             printer_.Dedent();
             printer_ << "";
 
+            printer_ << fmt("~{{name}}()", vars);
+            printer_.Indent();
+            {
+                printer_ << "Dispose();";
+            }
+            printer_.Dedent();
+            printer_ << "";
+
             // Destructor always exists even if it is not defined in the c++ class
             printer_ << dllImport;
             printer_ << fmt("internal static extern void destruct_{{symbol_name}}(IntPtr instance);", {
@@ -134,20 +144,20 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
     else if (e.kind() == cppast::cpp_entity_kind::member_variable_t)
     {
         const auto& var = dynamic_cast<const cppast::cpp_member_variable&>(e);
-        auto typeMap = generator->GetTypeMap(var.type());
 
         // Getter
         printer_ << dllImport;
-        if (!typeMap.pInvokeAttribute.Empty())
-            // This is safe as member variables are always returned by reference from a getter.
-            printer_ << "[return: MarshalAs(" + typeMap.pInvokeAttribute + ")]";
-
+        String csType = typeMapper_->ToPInvokeTypeReturn(var.type(), true);
         auto vars = fmt({
-            {"cs_type", typeMap.GetPInvokeType().CString()},
-            {"cs_ret_type", typeMap.GetPInvokeType(true).CString()},
+            {"cs_type", csType.CString()},
             {"c_function_name", data->cFunctionName.CString()},
         });
-        printer_ << fmt("internal static extern {{cs_ret_type}} get_{{c_function_name}}(IntPtr cls);", vars);
+        if (csType == "string")
+        {
+            // This is safe as member variables are always returned by reference from a getter.
+            printer_ << "[return: MarshalAs(UnmanagedType.LPUTF8Str)]";
+        }
+        printer_ << fmt("internal static extern {{cs_type}} get_{{c_function_name}}(IntPtr cls);", vars);
         printer_ << "";
 
         // Setter
@@ -160,9 +170,7 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
         const auto& ctor = dynamic_cast<const cppast::cpp_constructor&>(e);
 
         printer_ << dllImport;
-        auto csParams = ParameterList(ctor.parameters(), [&](const cppast::cpp_type& type) {
-            return generator->GetTypeMap(type).GetPInvokeType();
-        });
+        auto csParams = ParameterList(ctor.parameters(), std::bind(&TypeMapper::ToPInvokeTypeParam, typeMapper_, std::placeholders::_1));
         auto vars = fmt({
             {"c_function_name", data->cFunctionName.CString()},
             {"cs_param_list", csParams.CString()}
@@ -174,21 +182,18 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
     {
         const auto& func = dynamic_cast<const cppast::cpp_member_function&>(e);
         printer_ << dllImport;
-        auto csParams = ParameterList(func.parameters(), [&](const cppast::cpp_type& type) {
-            return generator->GetTypeMap(type).GetPInvokeType();
-        });
-
-        String csRetType = "IntPtr";
-        if (!IsVoid(func.return_type()))
-            csRetType = generator->GetTypeMap(func.return_type()).GetPInvokeType(true);
-
+        auto csParams = ParameterList(func.parameters(), std::bind(&TypeMapper::ToPInvokeTypeParam, typeMapper_, std::placeholders::_1));
+        String csRetType = typeMapper_->ToPInvokeTypeReturn(func.return_type(), false);
         auto vars = fmt({
             {"c_function_name", data->cFunctionName.CString()},
             {"cs_param_list", csParams.CString()},
             {"cs_return", csRetType.CString()},
-            {"has_params", !func.parameters().empty()}
+            {"has_params", !func.parameters().empty()},
+            {"ret_attribute", ""}
         });
-        printer_ << fmt("internal static extern {{cs_return}} {{c_function_name}}(IntPtr instance{{#has_params}}, {{cs_param_list}}{{/has_params}});", vars);
+        if (csRetType == "string")
+            vars.set("ret_attribute", "[return: MarshalAs(UnmanagedType.LPUTF8Str)]");
+        printer_ << fmt("internal static extern {{ret_attribute}}{{cs_return}} {{c_function_name}}(IntPtr instance{{#has_params}}, {{cs_param_list}}{{/has_params}});", vars);
         printer_ << "";
 
     }
