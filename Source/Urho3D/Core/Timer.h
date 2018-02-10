@@ -43,7 +43,7 @@ public:
     /// Return the clock value in milliseconds when the timer was started.
     unsigned GetStartTime();
 
-    /// Sets a new timeout duration in milliseconds.  duration is from the starting time of the timer. optionally reset.
+    /// Sets a new timeout duration in milliseconds.  duration is from the starting time of the timer. Timer will not be timed-out if timeoutDuration is 0. optionally reset.
     void SetTimeoutDuration(unsigned timeoutDurationMs, bool reset = false);
 
     /// Return the duration in milliseconds for the timeout.
