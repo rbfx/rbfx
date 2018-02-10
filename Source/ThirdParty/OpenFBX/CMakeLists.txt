@@ -20,10 +20,12 @@
 # THE SOFTWARE.
 #
 
-add_executable (AssetImporter AssetImporter.cpp)
-target_link_libraries(AssetImporter Urho3D Assimp)
-install(TARGETS AssetImporter RUNTIME DESTINATION ${DEST_TOOLS_DIR})
+file (GLOB_RECURSE SOURCE_FILES src/*)
+set (CMAKE_CXX_STANDARD 14)
+add_library (OpenFBX STATIC ${SOURCE_FILES})
+target_include_directories(PugiXml
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+)
 
-add_executable (FbxImporter FbxImporter.cpp CLI11.hpp)
-target_link_libraries(FbxImporter Urho3D OpenFBX)
-install(TARGETS FbxImporter RUNTIME DESTINATION ${DEST_TOOLS_DIR})
+add_executable(OpenFBXDemo demo/main.cpp)
+target_link_libraries(OpenFBXDemo Urho3D OpenFBX)
