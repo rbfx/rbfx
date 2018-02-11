@@ -83,14 +83,16 @@ bool GenerateCSApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info 
             {"symbol_name", Sanitize(GetSymbolName(e.parent().value())).CString()},
             {"param_name_list", ParameterNameList(ctor.parameters(), mapToPInvoke).CString()},
             {"has_base", !cls.bases().empty()},
-            {"c_function_name", GetUserData(e)->cFunctionName.CString()}
+            {"c_function_name", GetUserData(e)->cFunctionName.CString()},
+            {"access", info.access == cppast::cpp_public ? "public" : "protected"}
         });
 
         // If class has a base class we call base constructor that does nothing. Class will be fully constructed here.
-        printer_ << fmt("public {{class_name}}({{parameter_list}}){{#has_base}} : base(IntPtr.Zero){{/has_base}}", vars);
+        printer_ << fmt("{{access}} {{class_name}}({{parameter_list}}){{#has_base}} : base(IntPtr.Zero){{/has_base}}", vars);
         printer_.Indent();
         {
             printer_ << fmt("instance_ = {{c_function_name}}({{param_name_list}});", vars);
+            printer_ << fmt("{{class_name}}.cache_[instance_] = this;", vars);
 
             for (const auto& child : cls)
             {
@@ -133,18 +135,18 @@ bool GenerateCSApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info 
     else if (e.kind() == cppast::cpp_entity_kind::member_function_t)
     {
         const auto& func = dynamic_cast<const cppast::cpp_member_function&>(e);
-        const auto returnType = typeMapper_->ToCSType(func.return_type());
 
         auto vars = fmt({
             {"name", func.name()},
-            {"return_type", returnType.CString()},
+            {"return_type", typeMapper_->ToCSType(func.return_type()).CString()},
             {"parameter_list", ParameterList(func.parameters(), std::bind(&TypeMapper::ToCSType, typeMapper_, std::placeholders::_1)).CString()},
             {"c_function_name", GetUserData(func)->cFunctionName.CString()},
             {"param_name_list", ParameterNameList(func.parameters(), mapToPInvoke).CString()},
             {"has_params", !func.parameters().empty()},
             {"virtual", func.is_virtual() ? "virtual " : ""},
+            {"access", info.access == cppast::cpp_public ? "public" : "protected"}
         });
-        printer_ << fmt("public {{virtual}}{{return_type}} {{name}}({{parameter_list}})", vars);
+        printer_ << fmt("{{access}} {{virtual}}{{return_type}} {{name}}({{parameter_list}})", vars);
         printer_.Indent();
         {
             String call = fmt("{{c_function_name}}(instance_{{#has_params}}, {{/has_params}}{{param_name_list}})", vars);
@@ -155,6 +157,28 @@ bool GenerateCSApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info 
         }
         printer_.Dedent();
         printer_ << "";
+    }
+    else if (e.kind() == cppast::cpp_entity_kind::member_variable_t)
+    {
+        const auto& var = dynamic_cast<const cppast::cpp_member_variable&>(e);
+
+        auto vars = fmt({
+            {"cs_type", typeMapper_->ToCSType(var.type()).CString()},
+            {"name", var.name()},
+            {"class_symbol", Sanitize(GetSymbolName(var.parent().value())).CString()},
+            {"access", info.access == cppast::cpp_public ? "public" : "protected"}
+        });
+        printer_ << fmt("{{access}} {{cs_type}} {{name}}", vars);
+        printer_.Indent();
+        {
+            // Getter
+            String call = typeMapper_->MapToCS(var.type(), fmt("get_{{class_symbol}}_{{name}}(instance_)", vars), false);
+            printer_ << fmt("get { return {{call}}; }", {{"call", call.CString()}});
+            // Setter
+            vars.set("value", typeMapper_->MapToPInvoke(var.type(), "value").CString());
+            printer_ << fmt("set { set_{{class_symbol}}_{{name}}(instance_, {{value}}); }", vars);
+        }
+        printer_.Dedent();
     }
 
     return true;
