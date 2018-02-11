@@ -189,13 +189,25 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
             {"cs_param_list", csParams.CString()},
             {"cs_return", csRetType.CString()},
             {"has_params", !func.parameters().empty()},
-            {"ret_attribute", ""}
+            {"ret_attribute", ""},
+            {"class_name", func.parent().value().name()},
+            {"name", func.name()},
         });
         if (csRetType == "string")
-            vars.set("ret_attribute", "[return: MarshalAs(UnmanagedType.LPUTF8Str)]");
-        printer_ << fmt("internal static extern {{ret_attribute}}{{cs_return}} {{c_function_name}}(IntPtr instance{{#has_params}}, {{cs_param_list}}{{/has_params}});", vars);
+            printer_ << "[return: MarshalAs(UnmanagedType.LPUTF8Str)]";
+        printer_ << fmt("internal static extern {{cs_return}} {{c_function_name}}(IntPtr instance{{#has_params}}, {{cs_param_list}}{{/has_params}});", vars);
         printer_ << "";
 
+        if (func.is_virtual())
+        {
+            // API for setting callbacks of virtual methods
+            printer_ << "[UnmanagedFunctionPointer(CallingConvention.Cdecl)]";
+            printer_ << fmt("internal delegate {{ret_attribute}}{{cs_return}} {{name}}Delegate(IntPtr instance{{#has_params}}, {{cs_param_list}}{{/has_params}});", vars);
+            printer_ << "";
+            printer_ << dllImport;
+            printer_ << fmt("internal static extern void set_{{class_name}}_fn{{name}}(IntPtr instance, {{name}}Delegate cb);", vars);
+            printer_ << "";
+        }
     }
     return true;
 }

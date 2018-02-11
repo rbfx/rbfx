@@ -91,6 +91,41 @@ bool GenerateCSApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info 
         printer_.Indent();
         {
             printer_ << fmt("instance_ = {{c_function_name}}({{param_name_list}});", vars);
+
+            for (const auto& child : cls)
+            {
+                if (child.kind() == cppast::cpp_entity_kind::member_function_t)
+                {
+                    const auto& func = dynamic_cast<const cppast::cpp_member_function&>(child);
+                    if (func.is_virtual())
+                    {
+                        if (!GetUserData(func)->generated)
+                            continue;
+
+                        if (generator->IsSubclassOf(cls, "Urho3D::RefCounted"))
+                        {
+                            // These are covered by c# itself.
+                            if (func.name() == "GetType" || func.name() == "GetTypeName" ||
+                                func.name() == "GetTypeInfo")
+                                continue;
+                        }
+
+                        auto vars = fmt({
+                            {"class_name", e.parent().value().name()},
+                            {"name", func.name()},
+                            {"has_params", !func.parameters().empty()},
+                            {"param_name_list", ParameterNameList(func.parameters()).CString()},
+                        });
+                        printer_ << fmt("set_{{class_name}}_fn{{name}}(instance_, (instance{{#has_params}}, {{param_name_list}}{{/has_params}}) =>", vars);
+                        printer_.Indent();
+                        {
+                            printer_ << fmt("this.{{name}}({{param_name_list}});", vars);
+                        }
+                        printer_.Dedent("});");
+                    }
+                }
+            }
+
         }
         printer_.Dedent();
         printer_ << "";
