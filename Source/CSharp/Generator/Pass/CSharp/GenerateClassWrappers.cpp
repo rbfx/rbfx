@@ -135,6 +135,7 @@ bool GenerateClassWrappers::Visit(const cppast::cpp_entity& e, cppast::visitor_i
                             {"type",                cppast::to_string(func.return_type())},
                             {"name",                e.name()},
                             {"class_name",          func.parent().value().name()},
+                            {"full_class_name",     GetSymbolName(func.parent().value()).CString()},
                             {"parameter_list",      ParameterList(func.parameters()).CString()},
                             {"parameter_name_list", ParameterNameList(func.parameters()).CString()},
                             {"return",              IsVoid(func.return_type()) ? "" : "return"},
@@ -151,7 +152,7 @@ bool GenerateClassWrappers::Visit(const cppast::cpp_entity& e, cppast::visitor_i
                                 printer_ << fmt("if (fn{{name}} == nullptr)", vars);
                                 printer_.Indent();
                                 {
-                                    printer_ << fmt("{{class_name}}::{{name}}({{parameter_name_list}});", vars);
+                                    printer_ << fmt("{{full_class_name}}::{{name}}({{parameter_name_list}});", vars);
                                 }
                                 printer_.Dedent();
                                 printer_ << "else";
