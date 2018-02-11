@@ -101,11 +101,17 @@ bool GenerateClassWrappers::Visit(const cppast::cpp_entity& e, cppast::visitor_i
                 {
                     // Getters and setters for protected class variables.
                     const auto& var = dynamic_cast<const cppast::cpp_member_variable&>(e);
+                    // Avoid returning non-builtin complex types as by copy
+                    bool wouldReturnByCopy = var.type().kind() != cppast::cpp_type_kind::pointer_t &&
+                                             var.type().kind() != cppast::cpp_type_kind::reference_t &&
+                                             var.type().kind() != cppast::cpp_type_kind::builtin_t;
                     auto vars = fmt({
                         {"name", e.name()},
-                        {"type", cppast::to_string(var.type())}
+                        {"type", cppast::to_string(var.type())},
+                        {"ref", wouldReturnByCopy ? "&" : ""}
                     });
-                    printer_ << fmt("{{type}} __get_{{name}}() const { return {{name}}; }", vars);
+
+                    printer_ << fmt("{{type}}{{ref}} __get_{{name}}() { return {{name}}; }", vars);
                     printer_ << fmt("void __set_{{name}}({{type}} value) { {{name}} = value; }", vars);
                 }
                 else if (e.kind() == cppast::cpp_entity_kind::member_function_t)

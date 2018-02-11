@@ -147,22 +147,23 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
 
         // Getter
         printer_ << dllImport;
-        String csType = typeMapper_->ToPInvokeTypeReturn(var.type(), true);
+        String csReturnType = typeMapper_->ToPInvokeTypeReturn(var.type(), false);
         auto vars = fmt({
-            {"cs_type", csType.CString()},
+            {"cs_return", csReturnType.CString()},
+            {"cs_param", typeMapper_->ToPInvokeTypeParam(var.type()).CString()},
             {"c_function_name", data->cFunctionName.CString()},
         });
-        if (csType == "string")
+        if (csReturnType == "string")
         {
             // This is safe as member variables are always returned by reference from a getter.
             printer_ << "[return: MarshalAs(UnmanagedType.LPUTF8Str)]";
         }
-        printer_ << fmt("internal static extern {{cs_type}} get_{{c_function_name}}(IntPtr cls);", vars);
+        printer_ << fmt("internal static extern {{cs_return}} get_{{c_function_name}}(IntPtr cls);", vars);
         printer_ << "";
 
         // Setter
         printer_ << dllImport;
-        printer_ << fmt("internal static extern void set_{{c_function_name}}(IntPtr cls, {{cs_type}} value);", vars);
+        printer_ << fmt("internal static extern void set_{{c_function_name}}(IntPtr cls, {{cs_param}} value);", vars);
         printer_ << "";
     }
     else if (e.kind() == cppast::cpp_entity_kind::constructor_t)
@@ -183,7 +184,7 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
         const auto& func = dynamic_cast<const cppast::cpp_member_function&>(e);
         printer_ << dllImport;
         auto csParams = ParameterList(func.parameters(), std::bind(&TypeMapper::ToPInvokeTypeParam, typeMapper_, std::placeholders::_1));
-        String csRetType = typeMapper_->ToPInvokeTypeReturn(func.return_type(), false);
+        String csRetType = typeMapper_->ToPInvokeTypeReturn(func.return_type(), true);
         auto vars = fmt({
             {"c_function_name", data->cFunctionName.CString()},
             {"cs_param_list", csParams.CString()},

@@ -45,11 +45,20 @@ void TypeMapper::Load(XMLFile* rules)
         map.cppType_ = typeMap.GetAttribute("type");
         map.cType_ = typeMap.GetAttribute("ctype");
         map.csType_ = typeMap.GetAttribute("cstype");
+        map.pInvokeType_ = typeMap.GetAttribute("ptype");
+        map.pInvokeValueType_ = typeMap.GetAttribute("pvaltype");
+
         if (map.cType_.Empty())
             map.cType_ = map.cppType_;
-        map.pInvokeType_ = ToPInvokeType(map.cType_, "");
+
+        if (map.pInvokeType_.Empty())
+            map.pInvokeType_ = ToPInvokeType(map.cType_, "");
+
         if (map.csType_.Empty())
             map.csType_ = map.pInvokeType_;
+
+        if (map.pInvokeValueType_.Empty())
+            map.pInvokeValueType_ = map.pInvokeType_;
 
         if (auto cppToC = typeMap.GetChild("cpp_to_c"))
             map.cppToCTemplate_ = cppToC.GetValue();
@@ -57,17 +66,23 @@ void TypeMapper::Load(XMLFile* rules)
         if (auto cToCpp = typeMap.GetChild("c_to_cpp"))
             map.cToCppTemplate_ = cToCpp.GetValue();
 
-        if (auto copy = typeMap.GetChild("copy"))
-            map.copyTemplate_ = copy.GetValue();
+        if (auto cppToCValue = typeMap.GetChild("cpp_to_c_value"))
+            map.cppToCValueTemplate_ = cppToCValue.GetValue();
+
+        if (map.cppToCValueTemplate_.Empty())
+            map.cppToCValueTemplate_ = map.cppToCTemplate_;
 
         if (auto toCS = typeMap.GetChild("pinvoke_to_cs"))
             map.pInvokeToCSTemplate_ = toCS.GetValue();
 
+        if (auto copyToPInvoke = typeMap.GetChild("pinvoke_to_cs_value"))
+            map.pInvokeToCSValueTemplate_ = copyToPInvoke.GetValue();
+
+        if (map.pInvokeToCSValueTemplate_.Empty())
+            map.pInvokeToCSValueTemplate_ = map.pInvokeToCSTemplate_;
+
         if (auto toPInvoke = typeMap.GetChild("cs_to_pinvoke"))
             map.csToPInvokeTemplate_ = toPInvoke.GetValue();
-
-        if (auto copyToPInvoke = typeMap.GetChild("from_copy"))
-            map.copyToCSTemplate_ = copyToPInvoke.GetValue();
 
         typeMaps_[map.cppType_] = map;
     }
@@ -117,7 +132,12 @@ String TypeMapper::ToCType(const cppast::cpp_type& type)
 String TypeMapper::ToPInvokeType(const cppast::cpp_type& type, const String& default_)
 {
     if (const auto* map = GetTypeMap(type))
-        return map->pInvokeType_;
+    {
+        if (IsComplexValueType(type))
+            return map->pInvokeValueType_;
+        else
+            return map->pInvokeType_;
+    }
     else
     {
         String name = cppast::to_string(type);
@@ -164,14 +184,9 @@ String TypeMapper::ToPInvokeType(const String& name, const String& default_)
     return default_;
 }
 
-String TypeMapper::ToPInvokeTypeReturn(const cppast::cpp_type& type, bool safe)
+String TypeMapper::ToPInvokeTypeReturn(const cppast::cpp_type& type, bool canCopy)
 {
     String result = ToPInvokeType(type);
-    if (!safe && result == "string")
-    {
-        // PInvoke type returns a string copy which must be converted and freed manually.
-        return "IntPtr";
-    }
     return result;
 }
 
@@ -190,16 +205,12 @@ String TypeMapper::MapToC(const cppast::cpp_type& type, const String& expression
 
     if (map)
     {
-        result = fmt(map->cppToCTemplate_.CString(), {{"value", expression.CString()}});
-
-        if (canCopy)
-        {
-            if (type.kind() != cppast::cpp_type_kind::pointer_t && type.kind() != cppast::cpp_type_kind::reference_t &&
-                type.kind() != cppast::cpp_type_kind::builtin_t)
-                result = fmt(map->copyTemplate_.CString(), {{"value", result.CString()}});
-        }
+        if (IsComplexValueType(type))
+            result = fmt(map->cppToCValueTemplate_.CString(), {{"value", result.CString()}});
+        else
+            result = fmt(map->cppToCTemplate_.CString(), {{"value", result.CString()}});
     }
-    else if (type.kind() != cppast::cpp_type_kind::builtin_t && type.kind() != cppast::cpp_type_kind::pointer_t && type.kind() != cppast::cpp_type_kind::reference_t)
+    else if (IsComplexValueType(type))
         // A unmapped value type - return it's address.
         result = "&" + result;
 
@@ -212,8 +223,8 @@ String TypeMapper::MapToCpp(const cppast::cpp_type& type, const String& expressi
     String result = expression;
 
     if (map)
-        result = fmt(map->cToCppTemplate_.CString(), {{"value", expression.CString()}});
-    else if (type.kind() != cppast::cpp_type_kind::builtin_t && type.kind() != cppast::cpp_type_kind::pointer_t && type.kind() != cppast::cpp_type_kind::reference_t)
+        result = fmt(map->cToCppTemplate_.CString(), {{"value", result.CString()}});
+    else if (IsComplexValueType(type))
         // A unmapped value type - dereference.
         result = "*" + result;
 
@@ -246,14 +257,10 @@ String TypeMapper::MapToCS(const cppast::cpp_type& type, const String& expressio
     String result = expression;
     if (const auto* map = GetTypeMap(type))
     {
-        result = fmt(map->pInvokeToCSTemplate_.CString(), {{"value", result.CString()}});
-
-        if (canCopy)
-        {
-            if (type.kind() != cppast::cpp_type_kind::pointer_t && type.kind() != cppast::cpp_type_kind::reference_t &&
-                type.kind() != cppast::cpp_type_kind::builtin_t)
-                result = fmt(map->copyToCSTemplate_.CString(), {{"value", result.CString()}});
-        }
+        if (IsComplexValueType(type))
+            result = fmt(map->pInvokeToCSValueTemplate_.CString(), {{"value", result.CString()}});
+        else
+            result = fmt(map->pInvokeToCSTemplate_.CString(), {{"value", result.CString()}});
     }
     else if (GetSubsystem<GeneratorContext>()->IsKnownType(type))
     {

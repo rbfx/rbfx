@@ -28,15 +28,18 @@
             <pinvoke_to_cs>new StringHash({{value}})</pinvoke_to_cs>
             <cs_to_pinvoke>{{value}}.Hash</cs_to_pinvoke>
         </typemap>
+        <!-- TODO: Avoid string copying when possible.
+        String typemaps always return a copy of string which is freed by mono. Sometimes this is not necessary and c api
+        could return pointer pointing to string content held by the engine. However mono is required to not free such
+        string after conversion, which implies handling it manually. Also investigate how .net framework behaves in this
+        situation.
+        -->
         <typemap type="Urho3D::String" ctype="char const*" cstype="string">
-            <cpp_to_c>{{value}}.CString()</cpp_to_c>
+            <cpp_to_c>strdup({{value}}.CString())</cpp_to_c>
             <c_to_cpp>Urho3D::String({{value}})</c_to_cpp>
-            <copy>strdup({{value}})</copy>
-            <from_copy>MarshalTools.GetUtf8StringFree({{value}})</from_copy>
         </typemap>
         <typemap type="char const*">
-            <copy>strdup({{value}})</copy>
-            <from_copy>MarshalTools.GetUtf8StringFree({{value}})</from_copy>
+            <cpp_to_c>strdup({{value}})</cpp_to_c>
         </typemap>
     </typemaps>
 </rules>

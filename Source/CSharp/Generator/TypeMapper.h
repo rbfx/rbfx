@@ -37,12 +37,13 @@ struct TypeMap
     String cType_ = "void*";
     String csType_ = "IntPtr";
     String pInvokeType_ = "IntPtr";
+    String pInvokeValueType_ = "IntPtr";
     String cToCppTemplate_ = "{{value}}";
     String cppToCTemplate_ = "{{value}}";
-    String copyTemplate_ = "{{value}}";
+    String cppToCValueTemplate_ = "";
     String csToPInvokeTemplate_ = "{{value}}";
     String pInvokeToCSTemplate_ = "{{value}}";
-    String copyToCSTemplate_ = "{{value}}";
+    String pInvokeToCSValueTemplate_ = "";
 };
 
 class TypeMapper : public Object
@@ -57,7 +58,7 @@ public:
 
     String ToCType(const cppast::cpp_type& type);
     String ToCSType(const cppast::cpp_type& type);
-    String ToPInvokeTypeReturn(const cppast::cpp_type& type, bool safe);
+    String ToPInvokeTypeReturn(const cppast::cpp_type& type, bool canCopy);
     String ToPInvokeTypeParam(const cppast::cpp_type& type);
 
     String MapToC(const cppast::cpp_type& type, const String& expression, bool canCopy);

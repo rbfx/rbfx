@@ -178,6 +178,12 @@ String GetTypeName(const cppast::cpp_type& type)
     }
 }
 
+bool IsComplexValueType(const cppast::cpp_type& type)
+{
+    return type.kind() != cppast::cpp_type_kind::builtin_t && type.kind() != cppast::cpp_type_kind::pointer_t &&
+        type.kind() != cppast::cpp_type_kind::reference_t;
+}
+
 IncludedChecker::IncludedChecker(const XMLElement& rules)
 {
     Load(rules);

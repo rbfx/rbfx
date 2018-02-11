@@ -78,5 +78,7 @@ String ParameterTypeList(const cppast::detail::iteratable_intrusive_list<cppast:
     const std::function<String(const cppast::cpp_type&)>& typeToString=nullptr);
 /// Returns a type string which is used as template parameter for CSharpTypeConverter<> struct.
 String GetConversionType(const cppast::cpp_type& type);
+/// Returns true if a type is non-builtin value type (not a pointer or reference to a struct/class).
+bool IsComplexValueType(const cppast::cpp_type& type);
 
 }
