@@ -100,10 +100,6 @@ bool GenerateCSApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info 
         const auto& func = dynamic_cast<const cppast::cpp_member_function&>(e);
         const auto returnType = typeMapper_->ToCSType(func.return_type());
 
-        // TODO: operator support
-        if (String(func.name()).StartsWith("operator"))
-            return true;
-
         auto vars = fmt({
             {"name", func.name()},
             {"return_type", returnType.CString()},

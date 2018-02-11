@@ -59,13 +59,25 @@ bool UnknownTypesPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info i
     if (e.kind() == cppast::cpp_entity_kind::function_t)
     {
         const auto& func = dynamic_cast<const cppast::cpp_function&>(e);
-        if (!checkFunctionTypes(func.return_type(), func.parameters()))
+
+        if (String(func.name()).StartsWith("operator"))
+        {
+            GetUserData(e)->generated = false;
+            URHO3D_LOGINFOF("Ignore: %s, operators not supported.", func.name().c_str());
+        }
+        else if (!checkFunctionTypes(func.return_type(), func.parameters()))
             GetUserData(e)->generated = false;
     }
     else if (e.kind() == cppast::cpp_entity_kind::member_function_t)
     {
         const auto& func = dynamic_cast<const cppast::cpp_member_function&>(e);
-        if (!checkFunctionTypes(func.return_type(), func.parameters()))
+
+        if (String(func.name()).StartsWith("operator"))
+        {
+            GetUserData(e)->generated = false;
+            URHO3D_LOGINFOF("Ignore: %s::%s, operators not supported.", func.parent().value().name().c_str(), func.name().c_str());
+        }
+        else if (!checkFunctionTypes(func.return_type(), func.parameters()))
             GetUserData(e)->generated = false;
     }
     else if (e.kind() == cppast::cpp_entity_kind::member_variable_t || e.kind() == cppast::cpp_entity_kind::variable_t)
