@@ -42,8 +42,11 @@
 #include "../Scene/SplinePath.h"
 #include "../Scene/UnknownComponent.h"
 #include "../Scene/ValueAnimation.h"
-
+#include "../Scene/ASyncNodeLoader.h"
+#include "../Scene/ASyncNodeUnloader.h"
 #include "../DebugNew.h"
+
+
 
 namespace Urho3D
 {
@@ -1536,6 +1539,8 @@ void RegisterSceneLibrary(Context* context)
     SmoothedTransform::RegisterObject(context);
     UnknownComponent::RegisterObject(context);
     SplinePath::RegisterObject(context);
+	ASyncNodeLoader::RegisterObject(context);
+	ASyncNodeUnLoader::RegisterObject(context);
 }
 
 }
