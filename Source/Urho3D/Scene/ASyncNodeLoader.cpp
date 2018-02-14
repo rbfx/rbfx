@@ -98,6 +98,7 @@ namespace Urho3D {
 		isLoading = false;
 		mRootNode = nullptr;
 		mParentNode = nullptr;
+		mFile = nullptr;
 		UnsubscribeFromEvent(E_UPDATE);
 	}
 
