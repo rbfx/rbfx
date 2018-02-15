@@ -28,7 +28,7 @@
 #include <cppast/cpp_entity.hpp>
 #include <cppast/libclang_parser.hpp>
 #include <Urho3D/Resource/XMLFile.h>
-#include "Pass/ParserPass.h"
+#include "Pass/CppPass.h"
 #include "TypeMapper.h"
 
 
@@ -47,6 +47,47 @@ struct UserData
     cppast::cpp_access_specifier_kind access = cppast::cpp_access_specifier_kind::cpp_public;
 };
 
+/// Maps symbol names to their api declarations
+class TypeTracker
+{
+public:
+    bool Has(const String& symbol)
+    {
+        return Get(symbol) != nullptr;
+    }
+
+    bool Has(const cppast::cpp_type& type)
+    {
+        return Has(GetTypeName(type));
+    }
+
+    void Add(const String& symbol, Declaration* decl)
+    {
+        nameToDeclaration_[symbol] = decl;
+    }
+
+    void Remove(const String& symbol)
+    {
+        nameToDeclaration_.Erase(symbol);
+    }
+
+    Declaration* Get(const String& symbol)
+    {
+        auto it = nameToDeclaration_.Find(symbol);
+        if (it == nameToDeclaration_.End())
+            return nullptr;
+        if (it->second_.Expired())
+        {
+            nameToDeclaration_.Erase(it);
+            return nullptr;
+        }
+        return it->second_;
+    }
+
+protected:
+    HashMap<String, WeakPtr<Declaration>> nameToDeclaration_;
+};
+
 class GeneratorContext
     : public Object
 {
@@ -54,34 +95,26 @@ class GeneratorContext
 public:
     explicit GeneratorContext(Context* context);
     bool LoadCompileConfig(const String& pathToFile);
-    cppast::libclang_compile_config& GetCompilerConfig() { return config_; }
-    String GetSourceDir() const { return sourceDir_; }
-    String GetOutputDir() const { return outputDir_; }
-    XMLFile* GetRules() const { return rules_; }
 
     bool LoadRules(const String& xmlPath);
     bool ParseFiles(const String& sourceDir);
     template<typename T, typename... Args>
-    void AddPass(Args... args) { passes_.Push(DynamicCast<ParserPass>(SharedPtr<T>(new T(context_, args...)))); }
+    void AddCppPass(Args... args) { cppPasses_.Push(DynamicCast<CppAstPass>(SharedPtr<T>(new T(context_, args...)))); }
+    template<typename T, typename... Args>
+    void AddApiPass(Args... args) { apiPasses_.Push(DynamicCast<CppApiPass>(SharedPtr<T>(new T(context_, args...)))); }
     void Generate(const String& outputDir);
+    bool IsAcceptableType(const cppast::cpp_type& type);
 
-    void RegisterKnownType(const String& name, const cppast::cpp_entity& e);
-    const cppast::cpp_entity* GetKnownType(const String& name);
-    bool IsKnownType(const cppast::cpp_type& type);
-    bool IsKnownType(const String& name);
-    bool IsSubclassOf(const cppast::cpp_class& cls, const String& baseName);
-
-    TypeMapper& GetTypeMapper() { return typeMapper_; }
-
-protected:
     String sourceDir_;
     String outputDir_;
     SharedPtr<XMLFile> rules_;
     cppast::libclang_compile_config config_;
-    HashMap<String, const cppast::cpp_entity*> types_;
     std::map<String, std::unique_ptr<cppast::cpp_file>> parsed_;
-    Vector<SharedPtr<ParserPass>> passes_;
+    Vector<SharedPtr<CppAstPass>> cppPasses_;
+    Vector<SharedPtr<CppApiPass>> apiPasses_;
     TypeMapper typeMapper_;
+    SharedPtr<Declaration> apiRoot_;
+    TypeTracker types_;
 };
 
 }

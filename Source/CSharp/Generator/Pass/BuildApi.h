@@ -24,24 +24,38 @@
 
 
 #include <Urho3D/Core/Object.h>
-#include <cppast/cpp_entity.hpp>
-#include <cppast/visitor.hpp>
+#include "CppPass.h"
+#include "Utilities.h"
 
+#include "Declarations/Declaration.hpp"
+#include "Declarations/Namespace.hpp"
+#include "Declarations/Class.hpp"
+#include "Declarations/Enum.hpp"
+#include "Declarations/Function.hpp"
+#include "Declarations/Variable.hpp"
+
+#include "Printer/CSharpPrinter.h"
 
 namespace Urho3D
 {
 
-class ParserPass : public Object
+/// Walk AST and build API tree which later can be altered and used for generating a wrapper.
+class BuildApiPass : public CppAstPass
 {
-    URHO3D_OBJECT(ParserPass, Object)
+    URHO3D_OBJECT(BuildApiPass, CppAstPass);
 public:
-    explicit ParserPass(Context* context) : Object(context) { };
+    explicit BuildApiPass(Context* context) : CppAstPass(context) { };
 
-    virtual void Start() { }
-    virtual void StartFile(const String& filePath) { }
-    virtual bool Visit(const cppast::cpp_entity& e, cppast::visitor_info info) = 0;
-    virtual void StopFile(const String& filePath) { }
-    virtual void Stop() { }
+    void Start() override;
+    bool Visit(const cppast::cpp_entity& e, cppast::visitor_info info) override;
+
+protected:
+    template<typename T>
+    T* GetDeclaration(const cppast::cpp_entity& e, const cppast::cpp_access_specifier_kind access);
+
+    IncludedChecker symbolChecker_;
+    Vector<Declaration*> stack_;
+    GeneratorContext* generator_ = nullptr;
 };
 
 }

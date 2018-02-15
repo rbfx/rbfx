@@ -20,32 +20,40 @@
 // THE SOFTWARE.
 //
 
-#pragma once
+#include <Declarations/Class.hpp>
+#include "FindBaseClassesPass.h"
 
-
-#include <Urho3D/Core/Object.h>
-#include <cppast/cpp_entity.hpp>
-#include <cppast/visitor.hpp>
-#include "Pass/CppPass.h"
-#include "Utilities.h"
-#include "Printer/CSharpPrinter.h"
 
 namespace Urho3D
 {
 
-/// Walk AST and gather known defined classes. Exclude protected/private members from generation.
-class GenerateClassWrappers : public CppApiPass
+void FindBaseClassesPass::Start()
 {
-URHO3D_OBJECT(GenerateClassWrappers, CppApiPass);
-public:
-    explicit GenerateClassWrappers(Context* context) : CppApiPass(context) { };
+    generator_ = GetSubsystem<GeneratorContext>();
+}
 
-    void Start() override;
-    bool Visit(Declaration* decl, Event event) override;
-    void Stop() override;
+bool FindBaseClassesPass::Visit(Declaration* decl, CppApiPass::Event event)
+{
+    if (decl->kind_ == Declaration::Kind::Class)
+    {
+        if (decl->source_ == nullptr)
+            return false;
 
-protected:
-    CSharpPrinter printer_;
-};
+        Class* cls = dynamic_cast<Class*>(decl);
+
+        const cppast::cpp_class* astCls = dynamic_cast<const cppast::cpp_class*>(decl->source_);
+        for (const auto& base : astCls->bases())
+        {
+            Class* baseClass = dynamic_cast<Class*>(generator_->types_.Get(cppast::to_string(base.type())));
+            if (baseClass != nullptr)
+            {
+                WeakPtr<Class> basePtr(baseClass);
+                if (cls->bases_.Contains(basePtr))
+                    cls->bases_.Push(basePtr);
+            }
+        }
+    }
+    return true;
+}
 
 }

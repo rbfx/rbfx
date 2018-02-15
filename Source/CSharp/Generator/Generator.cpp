@@ -23,14 +23,30 @@
 #include <cppast/libclang_parser.hpp>
 #include <CLI11/CLI11.hpp>
 #include <Urho3D/Urho3DAll.h>
-#include <Pass/GatherInfoPass.h>
 #include <Pass/UnknownTypesPass.h>
 #include <Pass/CSharp/GenerateCApiPass.h>
 #include <Pass/CSharp/GenerateClassWrappers.h>
 #include <Pass/CSharp/GeneratePInvokePass.h>
 #include <Pass/CSharp/GenerateCSApiPass.h>
+#include <Pass/BuildApi.h>
+#include <Pass/FindBaseClassesPass.h>
 #include "GeneratorContext.h"
 
+
+void AssembleDebugApiHeader(CSharpPrinter& printer, const Declaration* decl)
+{
+    if (decl->isIgnored_)
+        return;
+    printer << decl->ToString();
+    const Namespace* ns = dynamic_cast<const Namespace*>(decl);
+    if (ns != nullptr)
+    {
+        printer.Indent();
+        for (const auto& child : ns->children_)
+            AssembleDebugApiHeader(printer, child);
+        printer.Dedent();
+    }
+}
 
 int main(int argc, char* argv[])
 {
@@ -55,14 +71,6 @@ int main(int argc, char* argv[])
     context->RegisterSubsystem(new Log(context));
     context->GetLog()->SetLevel(LOG_DEBUG);
 
-    // Register factories
-    context->RegisterFactory<GatherInfoPass>();
-    context->RegisterFactory<UnknownTypesPass>();
-    context->RegisterFactory<GenerateCApiPass>();
-    context->RegisterFactory<GenerateClassWrappers>();
-    context->RegisterFactory<GeneratePInvokePass>();
-    context->RegisterFactory<GenerateCSApiPass>();
-
     // Generate bindings
     auto* generator = new GeneratorContext(context);
     context->RegisterSubsystem(generator);
@@ -74,22 +82,32 @@ int main(int argc, char* argv[])
     }
 
 #if _WIN32
-    generator->GetCompilerConfig().set_flags(cppast::cpp_standard::cpp_11, {
+    generator->config_.set_flags(cppast::cpp_standard::cpp_11, {
         cppast::compile_flag::ms_compatibility | cppast::compile_flag::ms_extensions
     });
 #else
-    generator->GetCompilerConfig().set_flags(cppast::cpp_standard::cpp_11, {cppast::compile_flag::gnu_extensions});
+    generator->config_.set_flags(cppast::cpp_standard::cpp_11, {cppast::compile_flag::gnu_extensions});
 #endif
 
     generator->LoadRules(rulesFile);
     generator->ParseFiles(sourceDir);
 
-    generator->AddPass<GatherInfoPass>();
-    generator->AddPass<UnknownTypesPass>();
-    generator->AddPass<GenerateClassWrappers>();
-    generator->AddPass<GenerateCApiPass>();
-    generator->AddPass<GeneratePInvokePass>();
-    generator->AddPass<GenerateCSApiPass>();
+    generator->AddCppPass<BuildApiPass>();
+    generator->AddApiPass<FindBaseClassesPass>();
+    generator->AddApiPass<UnknownTypesPass>();
+    generator->AddApiPass<GenerateClassWrappers>();
+    generator->AddApiPass<GenerateCApiPass>();
+    generator->AddApiPass<GeneratePInvokePass>();
+    generator->AddApiPass<GenerateCSApiPass>();
 
     generator->Generate(outputDir);
+
+    File file(context, "API.hpp", FILE_WRITE);
+    CSharpPrinter printer;
+    AssembleDebugApiHeader(printer, generator->apiRoot_);
+    file.WriteString(printer.Get());
+    file.Seek(file.GetSize() - 1);
+    file.Write(" ", 1);
+    file.Close();
+
 }

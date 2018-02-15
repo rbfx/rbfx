@@ -10,7 +10,8 @@
     <compiler>
         <define>URHO3D_API</define>
     </compiler>
-    <types>
+    <symbols>
+        <include>Urho3D</include>
         <include>Urho3D::*</include>
         <exclude>Urho3D::ObjectFactory</exclude>
         <exclude>Urho3D::EventHandler*</exclude>
@@ -20,7 +21,16 @@
         <exclude>Urho3D::String</exclude>
         <exclude>Urho3D::WString</exclude>
         <exclude>Urho3D::StringHash</exclude>
-    </types>
+        <exclude>Urho3D::Variant::customValue*_</exclude>
+        <!-- C# reflection can be used instead of these -->
+        <exclude>Urho3D::TypeInfo</exclude>
+        <exclude>Urho3D::*::GetType</exclude>
+        <exclude>Urho3D::*::GetTypeStatic</exclude>
+        <exclude>Urho3D::*::GetTypeName</exclude>
+        <exclude>Urho3D::*::GetTypeNameStatic</exclude>
+        <exclude>Urho3D::*::GetTypeInfo</exclude>
+        <exclude>Urho3D::*::GetTypeInfoStatic</exclude>
+    </symbols>
     <typemaps>
         <typemap type="Urho3D::StringHash" ctype="unsigned" cstype="Urho3D.StringHash">
             <cpp_to_c>{{value}}.Value()</cpp_to_c>

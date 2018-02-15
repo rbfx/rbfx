@@ -236,7 +236,7 @@ String TypeMapper::ToCSType(const cppast::cpp_type& type)
     String result;
     if (const auto* map = GetTypeMap(type))
         result = map->csType_;
-    else if (GetSubsystem<GeneratorContext>()->IsKnownType(type))
+    else if (GetSubsystem<GeneratorContext>()->types_.Has(type))
         return Urho3D::GetTypeName(type).Replaced("::", ".");
     else
         result = ToPInvokeType(type);
@@ -247,7 +247,7 @@ String TypeMapper::MapToPInvoke(const cppast::cpp_type& type, const String& expr
 {
     if (const auto* map = GetTypeMap(type))
         return fmt(map->csToPInvokeTemplate_.CString(), {{"value", expression.CString()}});
-    else if (GetSubsystem<GeneratorContext>()->IsKnownType(type))
+    else if (GetSubsystem<GeneratorContext>()->types_.Has(type))
         return expression + ".instance_";
     return expression;
 }
@@ -262,7 +262,7 @@ String TypeMapper::MapToCS(const cppast::cpp_type& type, const String& expressio
         else
             result = fmt(map->pInvokeToCSTemplate_.CString(), {{"value", result.CString()}});
     }
-    else if (GetSubsystem<GeneratorContext>()->IsKnownType(type))
+    else if (GetSubsystem<GeneratorContext>()->types_.Has(type))
     {
         // Class references are cached
         String returnType = Urho3D::GetTypeName(type).Replaced("::", ".");

@@ -20,7 +20,7 @@
 # THE SOFTWARE.
 #
 
-file (GLOB_RECURSE SOURCE_FILES *.h *.cpp)
+file (GLOB_RECURSE SOURCE_FILES *.h *.hpp *.cpp)
 add_executable(CSharpGenerator ${SOURCE_FILES})
 target_link_objects(CSharpGenerator CLI11)
 target_link_libraries(CSharpGenerator Urho3D cppast)

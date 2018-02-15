@@ -43,6 +43,8 @@ std::regex WildcardToRegex(const String& wildcard);
 UserData* GetUserData(const cppast::cpp_entity& e);
 /// Returns entity name including names of it's parents (separated by ::).
 String GetSymbolName(const cppast::cpp_entity& e);
+/// Returns entity name including names of it's parents (separated by ::).
+String GetSymbolName(const cppast::cpp_entity* e);
 /// Ensure arbitrary string is a valid identifier by replacing invalid characters with "_". "_" will be prepended if string starts with a number.
 String Sanitize(const String& value);
 /// Returns true if type is void.

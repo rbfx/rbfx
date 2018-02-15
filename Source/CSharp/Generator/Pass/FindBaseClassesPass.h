@@ -24,27 +24,25 @@
 
 
 #include <Urho3D/Core/Object.h>
-#include <cppast/cpp_entity.hpp>
-#include <cppast/visitor.hpp>
-#include "ParserPass.h"
-#include "Utilities.h"
+#include "GeneratorContext.h"
+#include "CppPass.h"
 
 
 namespace Urho3D
 {
 
-/// Walk AST and gather known defined classes. Exclude protected/private members from generation.
-class GatherInfoPass : public ParserPass
+/// Walk AST and gather known base classes.
+class FindBaseClassesPass : public CppApiPass
 {
-    URHO3D_OBJECT(GatherInfoPass, ParserPass);
+    URHO3D_OBJECT(FindBaseClassesPass, CppAstPass);
 public:
-    explicit GatherInfoPass(Context* context) : ParserPass(context) { };
+    explicit FindBaseClassesPass(Context* context) : CppApiPass(context) { };
 
     void Start() override;
-    bool Visit(const cppast::cpp_entity& e, cppast::visitor_info info) override;
+    bool Visit(Declaration* decl, Event event) override;
 
 protected:
-    IncludedChecker typeChecker_;
+    GeneratorContext* generator_ = nullptr;
 };
 
 }

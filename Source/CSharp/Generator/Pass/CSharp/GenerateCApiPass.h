@@ -27,7 +27,7 @@
 #include <cppast/cpp_entity.hpp>
 #include <cppast/visitor.hpp>
 #include <GeneratorContext.h>
-#include "Pass/ParserPass.h"
+#include "Pass/CppPass.h"
 #include "Utilities.h"
 #include "Printer/CSharpPrinter.h"
 
@@ -35,14 +35,14 @@ namespace Urho3D
 {
 
 /// Walk AST and gather known defined classes. Exclude protected/private members from generation.
-class GenerateCApiPass : public ParserPass
+class GenerateCApiPass : public CppApiPass
 {
-    URHO3D_OBJECT(GenerateCApiPass, ParserPass);
+    URHO3D_OBJECT(GenerateCApiPass, CppAstPass);
 public:
-    explicit GenerateCApiPass(Context* context) : ParserPass(context) { };
+    explicit GenerateCApiPass(Context* context) : CppApiPass(context) { };
 
     void Start() override;
-    bool Visit(const cppast::cpp_entity& e, cppast::visitor_info info) override;
+    bool Visit(Declaration* decl, Event event) override;
     void Stop() override;
 
 protected:

@@ -23,9 +23,11 @@
 #include <regex>
 #include <cppast/libclang_parser.hpp>
 #include <Urho3D/IO/File.h>
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/JSONValue.h>
 #include <Urho3D/Resource/JSONFile.h>
-#include <Urho3D/Urho3DAll.h>
+#include <Declarations/Namespace.hpp>
 #include "GeneratorContext.h"
 #include "Utilities.h"
 
@@ -36,6 +38,7 @@ namespace Urho3D
 GeneratorContext::GeneratorContext(Urho3D::Context* context)
     : Object(context)
     , typeMapper_(context)
+    , apiRoot_(new Namespace(nullptr))
 {
 
 }
@@ -140,7 +143,7 @@ void GeneratorContext::Generate(const String& outputDir)
 {
     outputDir_ = outputDir;
 
-    for (const auto& pass : passes_)
+    for (const auto& pass : cppPasses_)
     {
         URHO3D_LOGINFOF("#### Run pass: %s", pass->GetTypeName().CString());
         pass->Start();
@@ -166,51 +169,44 @@ void GeneratorContext::Generate(const String& outputDir)
         pass->Stop();
     }
 
-}
+    std::function<void(CppApiPass*, Declaration*)> visitDeclaration = [&](CppApiPass* pass, Declaration* decl) {
+        if (decl->isIgnored_)
+            return;
 
-void GeneratorContext::RegisterKnownType(const String& name, const cppast::cpp_entity& e)
-{
-    if (!types_.Contains(name))
+        if (decl->IsNamespaceLike())
+        {
+            Namespace* ns = dynamic_cast<Namespace*>(decl);
+            pass->Visit(decl, CppApiPass::ENTER);
+            for (const auto& child : ns->children_)
+            {
+                if (!child->isIgnored_)
+                    visitDeclaration(pass, child);
+            }
+            pass->Visit(decl, CppApiPass::EXIT);
+        }
+        else
+            pass->Visit(decl, CppApiPass::LEAF);
+    };
+
+    for (const auto& pass : apiPasses_)
     {
-        types_[name] = &e;
-        URHO3D_LOGDEBUGF("Known type: %s", GetSymbolName(e).CString());
+        URHO3D_LOGINFOF("#### Run pass: %s", pass->GetTypeName().CString());
+        pass->Start();
+        visitDeclaration(pass, apiRoot_);
+        pass->Stop();
     }
 }
 
-const cppast::cpp_entity* GeneratorContext::GetKnownType(const String& name)
+bool GeneratorContext::IsAcceptableType(const cppast::cpp_type& type)
 {
-    const cppast::cpp_entity* result = nullptr;
-    if (types_.TryGetValue(name, result))
-        return result;
-    return nullptr;
-}
-
-bool GeneratorContext::IsKnownType(const cppast::cpp_type& type)
-{
-    return IsKnownType(Urho3D::GetTypeName(type));
-}
-
-bool GeneratorContext::IsKnownType(const String& name)
-{
-    String convertedName = name.Replaced(".", "::");
-    return types_.Contains(convertedName) || typeMapper_.GetTypeMap(convertedName) != nullptr;
-}
-
-bool GeneratorContext::IsSubclassOf(const cppast::cpp_class& cls, const String& baseName)
-{
-    if (GetSymbolName(cls) == baseName)
+    if (type.kind() == cppast::cpp_type_kind::builtin_t)
         return true;
 
-    for (const auto& base : cls.bases())
-    {
-        auto baseName2 = cppast::to_string(base.type());
-        if (const auto* baseCls = dynamic_cast<const cppast::cpp_class*>(GetKnownType(baseName2)))
-        {
-            if (IsSubclassOf(*baseCls, baseName))
-                return true;
-        }
-    }
-    return false;
+    if (types_.Has(type))
+        return true;
+
+    return typeMapper_.GetTypeMap(type) != nullptr;
+
 }
 
 }

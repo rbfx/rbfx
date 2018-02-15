@@ -26,6 +26,9 @@
 #include <cppast/cpp_member_function.hpp>
 #include "GenerateClassWrappers.h"
 #include "GeneratorContext.h"
+#include "Declarations/Class.hpp"
+#include "Declarations/Variable.hpp"
+#include "Declarations/Function.hpp"
 
 
 namespace Urho3D
@@ -35,185 +38,188 @@ void GenerateClassWrappers::Start()
 {
     printer_ << "#include <Urho3D/Urho3DAll.h>";
     printer_ << "";
+    printer_ << "namespace Wrappers";
+    printer_ << "{";
 }
 
-bool GenerateClassWrappers::Visit(const cppast::cpp_entity& e, cppast::visitor_info info)
+bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
 {
-    if (e.kind() != cppast::cpp_entity_kind::class_t)
+    if (decl->kind_ != Declaration::Kind::Class || decl->isIgnored_)
         return true;
 
-    auto* data = GetUserData(e);
-    if (!data->hasWrapperClass)
+    Class* cls = static_cast<Class*>(decl);
+    if (!cls->HasVirtual() && !cls->HasProtected())
     {
         // Skip children for classes that do not have virtual or protected members
-        if (info.event == info.container_entity_enter)
-            return false;
-        else
-            return true;
+        return event != Event::ENTER;
     }
 
-    if (info.event == info.container_entity_enter)
+    // Visit only once
+    if (event != Event::ENTER)
+        return true;
+
+    auto* generator = GetSubsystem<GeneratorContext>();
+    printer_ << fmt("class URHO3D_EXPORT_API {{name}} : public {{symbol}}", {
+        {"name", cls->name_.CString()},
+        {"symbol", cls->symbolName_.CString()},
+    });
+    printer_.Indent();
+
+    // Urho3D-specific
+    if (cls->IsSubclassOf("Urho3D::Object"))
     {
-        auto* generator = GetSubsystem<GeneratorContext>();
-        const auto& cls = dynamic_cast<const cppast::cpp_class&>(e);
-        printer_ << fmt("class URHO3D_EXPORT_API {{name}} : public {{symbol}}", {
-            {"name", e.name()},
-            {"symbol", GetSymbolName(e).CString()},
-        });
-        printer_.Indent();
+        printer_ << fmt("URHO3D_OBJECT({{name}}, {{symbol_name}});", {{"name",        cls->name_.CString()},
+                                                                      {"symbol_name", cls->symbolName_.CString()}});
+    }
 
-        // Urho3D-specific
-        bool isRefCounted = generator->IsSubclassOf(cls, "Urho3D::RefCounted");
-        if (isRefCounted)
-            printer_ << fmt("URHO3D_OBJECT({{name}}, {{name}});", {{"name", e.name()}});
-
-        printer_.WriteLine("public:", false);
-        // Wrap constructors
-        for (const auto& e : cls)
+    printer_.WriteLine("public:", false);
+    // Wrap constructors
+    for (const auto& e : cls->children_)
+    {
+        if (e->kind_ == Declaration::Kind::Constructor)
         {
-            if (e.kind() == cppast::cpp_entity_kind::constructor_t)
+            const auto* ctor = dynamic_cast<const Function*>(e.Get());
+            if (!ctor->GetParameters().empty() /*&& ctor->name_ == cls->name_ /*not a parent constructor*/)
             {
-                const auto& ctor = dynamic_cast<const cppast::cpp_constructor&>(e);
-                if (!ctor.parameters().empty() && ctor.name() == cls.name())
+                printer_ << fmt("{{name}}({{parameter_list}}) : {{symbol_name}}({{parameter_name_list}}) { }",
+                    {{"name",                cls->name_.CString()},
+                     {"symbol_name",         cls->symbolName_.CString()},
+                     {"parameter_list",      ParameterList(ctor->GetParameters()).CString()},
+                     {"parameter_name_list", ParameterNameList(ctor->GetParameters()).CString()},});
+            }
+        }
+    }
+    printer_ << fmt("virtual ~{{name}}() = default;", {{"name", cls->name_.CString()}});
+
+    Vector<const Function*> wrappedList;
+    auto implementWrapperClassMembers = [&](const Class* cls)
+    {
+        for (const auto& child : cls->children_)
+        {
+            // Manually iterating subtree may encounter ignored nodes.
+            if (child->isIgnored_)
+                continue;
+
+            if (child->kind_ == Declaration::Kind::Variable && !child->isPublic_)
+            {
+                // Getters and setters for protected class variables.
+                Variable* var = dynamic_cast<Variable*>(child.Get());
+                const auto& type = var->GetType();
+
+                // Avoid returning non-builtin complex types as by copy
+                bool wouldReturnByCopy =
+                    type.kind() != cppast::cpp_type_kind::pointer_t &&
+                    type.kind() != cppast::cpp_type_kind::reference_t &&
+                    type.kind() != cppast::cpp_type_kind::builtin_t;
+
+                auto vars = fmt({
+                    {"name", var->name_.CString()},
+                    {"type", cppast::to_string(type)},
+                    {"ref", wouldReturnByCopy ? "&" : ""}
+                });
+
+                printer_ << fmt("{{type}}{{ref}} __get_{{name}}() { return {{name}}; }", vars);
+                printer_ << fmt("void __set_{{name}}({{type}} value) { {{name}} = value; }", vars);
+            }
+            else if (child->kind_ == Declaration::Kind::Method)
+            {
+                Function* func = dynamic_cast<Function*>(child.Get());
+
+                bool skip = false;
+                for (const auto* wrapped : wrappedList)
                 {
-                    printer_ << fmt("{{name}}({{parameter_list}}) : {{symbol_name}}({{parameter_name_list}}) { }",
-                        {{"name",                cls.name()},
-                         {"symbol_name",         GetSymbolName(cls).CString()},
-                         {"parameter_list",      ParameterList(ctor.parameters()).CString()},
-                         {"parameter_name_list", ParameterNameList(ctor.parameters()).CString()},});
+                    skip = func == wrapped;
+                    if (skip)
+                        // Method was already wrapped as overload of downstream class.
+                        break;
+                }
+
+                if (!skip)
+                {
+                    // Function pointer that virtual method will call
+                    Class* cls = dynamic_cast<Class*>(func->parent_.Get());
+                    auto vars = fmt({
+                        {"type",                cppast::to_string(func->GetReturnType())},
+                        {"name",                func->name_.CString()},
+                        {"class_name",          cls->name_.CString()},
+                        {"full_class_name",     cls->symbolName_.CString()},
+                        {"parameter_list",      ParameterList(func->GetParameters()).CString()},
+                        {"parameter_name_list", ParameterNameList(func->GetParameters()).CString()},
+                        {"return",              IsVoid(func->GetReturnType()) ? "" : "return"},
+                        {"const",               func->isConstant_ ? "const " : ""},
+                        {"has_params",          !func->GetParameters().empty()},
+                    });
+                    if (func->IsVirtual())
+                    {
+                        printer_ << fmt("{{type}}(*fn{{name}})({{class_name}} {{const}}*{{#has_params}}, {{/has_params}}{{parameter_list}}) = nullptr;", vars);
+                        // Virtual method that calls said pointer
+                        printer_ << fmt("{{type}} {{name}}({{parameter_list}}) {{const}}override", vars);
+                        printer_.Indent();
+                        {
+                            printer_ << fmt("if (fn{{name}} == nullptr)", vars);
+                            printer_.Indent();
+                            {
+                                printer_ << fmt("{{full_class_name}}::{{name}}({{parameter_name_list}});", vars);
+                            }
+                            printer_.Dedent();
+                            printer_ << "else";
+                            printer_.Indent();
+                            {
+                                printer_ << fmt("{{return}}(fn{{name}})(this{{#has_params}}, {{/has_params}}{{parameter_name_list}});", vars);
+                            }
+                            printer_.Dedent();
+
+                        }
+                        printer_.Dedent();
+                    }
+                    if (!child->isPublic_)
+                    {
+                        printer_ << fmt("{{type}} __public_{{name}}({{parameter_list}})", vars);
+                        printer_.Indent();
+                        printer_ << fmt("{{name}}({{parameter_name_list}});", vars);
+                        printer_.Dedent();
+                    }
+                    wrappedList.Push(func);
                 }
             }
         }
-        printer_ << fmt("virtual ~{{name}}() = default;", {{"name", e.name()}});
+    };
 
-        Vector<const cppast::cpp_member_function*> wrappedList;
-        auto implementWrapperClassMembers = [&](const cppast::cpp_class& cls)
+    std::function<void(Class*)> implementBaseWrapperClassMembers = [&](Class* cls)
+    {
+        const auto* astCls = dynamic_cast<const cppast::cpp_class*>(cls->source_);
+        for (const auto& base : astCls->bases())
         {
-            for (const auto& e : cls)
+            if (base.access_specifier() == cppast::cpp_private)
+                continue;
+
+
+
+            auto* parentCls = dynamic_cast<Class*>(generator->types_.Get(Urho3D::GetTypeName(base.type())));
+            if (parentCls != nullptr)
             {
-                // Manually iterating subtree may encounter ignored nodes.
-                if (!GetUserData(e)->generated)
-                    continue;
-
-                auto access = GetUserData(e)->access;
-
-                if (e.kind() == cppast::cpp_entity_kind::member_variable_t && access == cppast::cpp_protected)
-                {
-                    // Getters and setters for protected class variables.
-                    const auto& var = dynamic_cast<const cppast::cpp_member_variable&>(e);
-                    // Avoid returning non-builtin complex types as by copy
-                    bool wouldReturnByCopy = var.type().kind() != cppast::cpp_type_kind::pointer_t &&
-                                             var.type().kind() != cppast::cpp_type_kind::reference_t &&
-                                             var.type().kind() != cppast::cpp_type_kind::builtin_t;
-                    auto vars = fmt({
-                        {"name", e.name()},
-                        {"type", cppast::to_string(var.type())},
-                        {"ref", wouldReturnByCopy ? "&" : ""}
-                    });
-
-                    printer_ << fmt("{{type}}{{ref}} __get_{{name}}() { return {{name}}; }", vars);
-                    printer_ << fmt("void __set_{{name}}({{type}} value) { {{name}} = value; }", vars);
-                }
-                else if (e.kind() == cppast::cpp_entity_kind::member_function_t)
-                {
-                    const auto& func = dynamic_cast<const cppast::cpp_member_function&>(e);
-
-                    bool skip = false;
-                    for (const auto* wrapped : wrappedList)
-                    {
-                        skip = func.name() == wrapped->name() && func.signature() == wrapped->signature();
-                        if (skip)
-                            // Method was already wrapped as overload of downstream class.
-                            break;
-                    }
-
-                    // Urho3D-specific.
-                    if (func.is_virtual() && (func.name() == "GetType" || func.name() == "GetTypeName" || func.name() == "GetTypeInfo"))
-                    {
-                        skip = true;
-                        GetUserData(func)->generated = false;
-                    }
-
-                    if (!skip)
-                    {
-                        // Function pointer that virtual method will call
-                        auto vars = fmt({
-                            {"type",                cppast::to_string(func.return_type())},
-                            {"name",                e.name()},
-                            {"class_name",          func.parent().value().name()},
-                            {"full_class_name",     GetSymbolName(func.parent().value()).CString()},
-                            {"parameter_list",      ParameterList(func.parameters()).CString()},
-                            {"parameter_name_list", ParameterNameList(func.parameters()).CString()},
-                            {"return",              IsVoid(func.return_type()) ? "" : "return"},
-                            {"const",               func.cv_qualifier() == cppast::cpp_cv_const ? "const " : ""},
-                            {"has_params",          !func.parameters().empty()},
-                        });
-                        if (func.is_virtual())
-                        {
-                            printer_ << fmt("{{type}}(*fn{{name}})({{class_name}} {{const}}*{{#has_params}}, {{/has_params}}{{parameter_list}}) = nullptr;", vars);
-                            // Virtual method that calls said pointer
-                            printer_ << fmt("{{type}} {{name}}({{parameter_list}}) {{const}}override", vars);
-                            printer_.Indent();
-                            {
-                                printer_ << fmt("if (fn{{name}} == nullptr)", vars);
-                                printer_.Indent();
-                                {
-                                    printer_ << fmt("{{full_class_name}}::{{name}}({{parameter_name_list}});", vars);
-                                }
-                                printer_.Dedent();
-                                printer_ << "else";
-                                printer_.Indent();
-                                {
-                                    printer_ << fmt("{{return}}(fn{{name}})(this{{#has_params}}, {{/has_params}}{{parameter_name_list}});", vars);
-                                }
-                                printer_.Dedent();
-
-                            }
-                            printer_.Dedent();
-                        }
-                        if (access == cppast::cpp_protected)
-                        {
-                            printer_ << fmt("{{type}} __public_{{name}}({{parameter_list}})", vars);
-                            printer_.Indent();
-                            printer_ << fmt("{{name}}({{parameter_name_list}});", vars);
-                            printer_.Dedent();
-                        }
-                        wrappedList.Push(&func);
-                    }
-                }
+                implementBaseWrapperClassMembers(parentCls);
+                implementWrapperClassMembers(parentCls);
             }
-        };
+            else
+                URHO3D_LOGWARNINGF("Base class %s not found!", base.name().c_str());
+        }
+    };
 
-        std::function<void(const cppast::cpp_class&)> implementBaseWrapperClassMembers = [&](const cppast::cpp_class& cls)
-        {
-            for (const auto& base : cls.bases())
-            {
-                if (base.access_specifier() == cppast::cpp_private)
-                    continue;
+    implementBaseWrapperClassMembers(cls);
+    implementWrapperClassMembers(cls);
 
-                const auto* parentCls = dynamic_cast<const cppast::cpp_class*>(generator->GetKnownType(Urho3D::GetTypeName(base.type())));
-                if (parentCls != nullptr)
-                {
-                    implementBaseWrapperClassMembers(*parentCls);
-                    implementWrapperClassMembers(*parentCls);
-                }
-                else
-                    URHO3D_LOGWARNINGF("Base class %s not found!", base.name().c_str());
-            }
-        };
-
-        implementBaseWrapperClassMembers(cls);
-        implementWrapperClassMembers(cls);
-
-        printer_.Dedent("};");
-        printer_ << "";
-    }
+    printer_.Dedent("};");
+    printer_ << "";
+    cls->sourceName_ = "Wrappers::" + cls->sourceName_;    // Wrap a wrapper class
     return true;
 }
 
 void GenerateClassWrappers::Stop()
 {
-    File file(context_, GetSubsystem<GeneratorContext>()->GetOutputDir() + "ClassWrappers.hpp", FILE_WRITE);
+    printer_ << "}";    // namespace Wrappers
+
+    File file(context_, GetSubsystem<GeneratorContext>()->outputDir_ + "ClassWrappers.hpp", FILE_WRITE);
     if (!file.IsOpen())
     {
         URHO3D_LOGERROR("Failed saving ClassWrappers.hpp");

@@ -23,88 +23,74 @@
 #include <Urho3D/IO/Log.h>
 #include <cppast/cpp_function.hpp>
 #include <cppast/cpp_member_function.hpp>
+#include <Declarations/Function.hpp>
+#include <Declarations/Variable.hpp>
 #include "UnknownTypesPass.h"
-#include "GeneratorContext.h"
 
 
 namespace Urho3D
 {
 
-bool UnknownTypesPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info info)
+void UnknownTypesPass::Start()
 {
-    auto generator = GetSubsystem<GeneratorContext>();
+    generator_ = GetSubsystem<GeneratorContext>();
+}
+
+bool UnknownTypesPass::Visit(Declaration* decl, Event event)
+{
+    if (decl->source_ == nullptr)
+        return true;
+
     auto checkFunctionParams = [&](const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params) {
         for (const auto& param : params)
         {
-            if (!generator->IsKnownType(param.type()) && param.type().kind() != cppast::cpp_type_kind::builtin_t)
+            if (!generator_->IsAcceptableType(param.type()))
             {
-                URHO3D_LOGINFOF("Ignore: %s, unknown parameter type %s", GetSymbolName(e).CString(),
+                URHO3D_LOGINFOF("Ignore: %s, unknown parameter type %s", decl->symbolName_.CString(),
                                 cppast::to_string(param.type()).c_str());
                 return false;
             }
         }
         return true;
     };
+
     auto checkFunctionTypes = [&](const cppast::cpp_type& returnType,
                                   const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params) {
-        if (!generator->IsKnownType(returnType) && returnType.kind() != cppast::cpp_type_kind::builtin_t)
+        String s = cppast::to_string(returnType);
+        if (!generator_->IsAcceptableType(returnType))
         {
-            URHO3D_LOGINFOF("Ignore: %s, unknown return type %s", GetSymbolName(e).CString(),
+            URHO3D_LOGINFOF("Ignore: %s, unknown return type %s", decl->symbolName_.CString(),
                 cppast::to_string(returnType).c_str());
             return false;
         }
         return checkFunctionParams(params);
     };
 
-    if (e.kind() == cppast::cpp_entity_kind::function_t)
+    if (decl->IsFunctionLike())
     {
-        const auto& func = dynamic_cast<const cppast::cpp_function&>(e);
-
-        if (String(func.name()).StartsWith("operator"))
+        Function* func = static_cast<Function*>(decl);
+        if (decl->name_.StartsWith("operator"))
         {
-            GetUserData(e)->generated = false;
-            URHO3D_LOGINFOF("Ignore: %s, operators not supported.", func.name().c_str());
+            decl->Ignore();
+            URHO3D_LOGINFOF("Ignore: %s, operators not supported.", decl->name_.CString());
         }
-        else if (!checkFunctionTypes(func.return_type(), func.parameters()))
-            GetUserData(e)->generated = false;
+        else if (!checkFunctionTypes(func->GetReturnType(), func->GetParameters()))
+            decl->Ignore();
     }
-    else if (e.kind() == cppast::cpp_entity_kind::member_function_t)
+    else if (decl->kind_ == Declaration::Kind::Variable)
     {
-        const auto& func = dynamic_cast<const cppast::cpp_member_function&>(e);
-
-        if (String(func.name()).StartsWith("operator"))
+        Variable* var = static_cast<Variable*>(decl);
+        const auto& type = var->GetType();
+        if (!generator_->IsAcceptableType(type))
         {
-            GetUserData(e)->generated = false;
-            URHO3D_LOGINFOF("Ignore: %s::%s, operators not supported.", func.parent().value().name().c_str(), func.name().c_str());
-        }
-        else if (!checkFunctionTypes(func.return_type(), func.parameters()))
-            GetUserData(e)->generated = false;
-    }
-    else if (e.kind() == cppast::cpp_entity_kind::member_variable_t || e.kind() == cppast::cpp_entity_kind::variable_t)
-    {
-        const auto& var = dynamic_cast<const cppast::cpp_variable_base&>(e);
-        if (!generator->IsKnownType(var.type()) && var.type().kind() != cppast::cpp_type_kind::builtin_t)
-        {
-            GetUserData(e)->generated = false;
-            URHO3D_LOGINFOF("Ignore: %s, unknown return type %s", GetSymbolName(e).CString(),
-                cppast::to_string(var.type()).c_str());
+            decl->Ignore();
+            URHO3D_LOGINFOF("Ignore: %s, unknown return type %s", decl->symbolName_.CString(),
+                            cppast::to_string(type).c_str());
         }
     }
-    else if (e.kind() == cppast::cpp_entity_kind::class_t)
+    else if (decl->kind_ == Declaration::Kind::Class)
     {
-        if (!cppast::is_definition(e))
-            GetUserData(e)->generated = false;  // Forward decl
-        else
-            GetUserData(e)->generated = generator->IsKnownType(GetSymbolName(e));
-    }
-    else if (e.kind() == cppast::cpp_entity_kind::constructor_t)
-    {
-        const auto& ctor = dynamic_cast<const cppast::cpp_constructor&>(e);
-        if (ctor.body_kind() == cppast::cpp_function_body_kind::cpp_function_deleted)
-            GetUserData(e)->generated = false;
-
-        if (!checkFunctionParams(ctor.parameters()))
-            GetUserData(e)->generated = false;
+        decl->isIgnored_ = !generator_->types_.Has(decl->symbolName_);
     }
     return true;
 }

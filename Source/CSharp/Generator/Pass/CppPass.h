@@ -26,26 +26,45 @@
 #include <Urho3D/Core/Object.h>
 #include <cppast/cpp_entity.hpp>
 #include <cppast/visitor.hpp>
-#include "Pass/CppPass.h"
-#include "Utilities.h"
-#include "Printer/CSharpPrinter.h"
+#include "Declarations/Declaration.hpp"
+
 
 namespace Urho3D
 {
 
-/// Walk AST and gather known defined classes. Exclude protected/private members from generation.
-class GenerateClassWrappers : public CppApiPass
+class CppAstPass : public Object
 {
-URHO3D_OBJECT(GenerateClassWrappers, CppApiPass);
+    URHO3D_OBJECT(CppAstPass, Object)
 public:
-    explicit GenerateClassWrappers(Context* context) : CppApiPass(context) { };
+    explicit CppAstPass(Context* context) : Object(context) { };
 
-    void Start() override;
-    bool Visit(Declaration* decl, Event event) override;
-    void Stop() override;
-
-protected:
-    CSharpPrinter printer_;
+    virtual void Start() { }
+    virtual void StartFile(const String& filePath) { }
+    virtual bool Visit(const cppast::cpp_entity& e, cppast::visitor_info info) = 0;
+    virtual void StopFile(const String& filePath) { }
+    virtual void Stop() { }
 };
+
+class CppApiPass : public Object
+{
+URHO3D_OBJECT(CppApiPass, Object)
+public:
+    explicit CppApiPass(Context* context) : Object(context) { };
+
+    enum Event
+    {
+        /// Set when visiting namespace before visiting it's children.
+        ENTER,
+        /// Set when visiting namespace after visiting it's children.
+        EXIT,
+        /// Set when visiting non-namespace declaration.
+        LEAF
+    };
+
+    virtual void Start() { }
+    virtual bool Visit(Declaration* decl, Event event) = 0;
+    virtual void Stop() { }
+};
+
 
 }

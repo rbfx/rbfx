@@ -66,20 +66,17 @@ UserData* GetUserData(const cppast::cpp_entity& e)
 
 String GetSymbolName(const cppast::cpp_entity& e)
 {
-    Vector<String> elements = { e.name().c_str() };
-
-    auto parentRef = e.parent();
-
-    while (parentRef.has_value())
+    Vector<String> elements = {e.name()};
+    type_safe::optional_ref<const cppast::cpp_entity> ref(e.parent());
+    while (ref.has_value())
     {
-        if (parentRef.value().kind() == cppast::cpp_entity_kind::class_t ||
-            parentRef.value().kind() == cppast::cpp_entity_kind::namespace_t)
+        if (!cppast::is_templated(ref.value()) && !cppast::is_friended(ref.value()) && ref.value().kind() != cppast::cpp_entity_kind::file_t)
         {
-            elements.Push(parentRef.value().name().c_str());
-            parentRef = parentRef.value().parent();
+            const auto& scope = ref.value().scope_name();
+            if (scope.has_value())
+                elements.Push(scope.value().name().c_str());
         }
-        else
-            break;
+        ref = ref.value().parent();
     }
 
     // Reverse
@@ -87,6 +84,11 @@ String GetSymbolName(const cppast::cpp_entity& e)
         Swap(elements[i], elements[elements.Size() - i - 1]);
 
     return String::Joined(elements, "::");
+}
+
+String GetSymbolName(const cppast::cpp_entity* e)
+{
+    return GetSymbolName(*e);
 }
 
 String Sanitize(const String& value)
@@ -99,7 +101,9 @@ String Sanitize(const String& value)
 
 bool IsVoid(const cppast::cpp_type& type)
 {
-    return cppast::to_string(type) == "void";
+    if (type.kind() == cppast::cpp_type_kind::builtin_t)
+        return dynamic_cast<const cppast::cpp_builtin_type&>(type).builtin_type_kind() == cppast::cpp_builtin_type_kind::cpp_void;
+    return false;
 }
 
 String EnsureNotKeyword(const String& value)

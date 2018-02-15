@@ -24,6 +24,8 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <cppast/cpp_member_variable.hpp>
+#include <Declarations/Class.hpp>
+#include <Declarations/Variable.hpp>
 #include "GeneratorContext.h"
 #include "GeneratePInvokePass.h"
 
@@ -33,7 +35,7 @@ namespace Urho3D
 void GeneratePInvokePass::Start()
 {
     generator_ = GetSubsystem<GeneratorContext>();
-    typeMapper_ = &generator_->GetTypeMapper();
+    typeMapper_ = &generator_->typeMapper_;
 
     printer_ << "using System;";
     printer_ << "using System.Threading;";
@@ -45,26 +47,24 @@ void GeneratePInvokePass::Start()
     printer_ << "";
 }
 
-bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_info info)
+bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
 {
     const char* dllImport = "[DllImport(\"Urho3DCSharp\", CallingConvention = CallingConvention.Cdecl)]";
-    auto data = GetUserData(e);
-    auto* generator = GetSubsystem<GeneratorContext>();
 
-    if (e.kind() == cppast::cpp_entity_kind::class_t)
+    if (decl->kind_ == Declaration::Kind::Class)
     {
-        const auto& cls = dynamic_cast<const cppast::cpp_class&>(e);
+        Class* cls = dynamic_cast<Class*>(decl);
 
-        if (info.event == info.container_entity_enter)
+        if (event == Event::ENTER)
         {
             Vector<String> bases;
-            for (const auto& base : cls.bases())
-                bases.Push(base.name().c_str());
+            for (const auto& base : cls->bases_)
+                bases.Push(base->name_);
 
             auto vars = fmt({
-                {"name", cls.name()},
+                {"name", cls->name_.CString()},
                 {"bases", String::Joined(bases, ", ").CString()},
-                {"has_bases", !cls.bases().empty()},
+                {"has_bases", !cls->bases_.Empty()},
             });
 
             printer_ << fmt("public partial class {{name}} : {{#has_bases}}{{bases}}, {{/has_bases}}IDisposable", vars);
@@ -88,7 +88,7 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
                     printer_.Indent();
                     {
                         printer_ << "instance_ = instance;";
-                        if (generator->IsSubclassOf(cls, "Urho3D::RefCounted"))
+                        if (cls->IsSubclassOf("Urho3D::RefCounted"))
                             printer_ << "Urho3D__RefCounted__AddRef(instance);";
                     }
                     printer_.Dedent();
@@ -110,10 +110,11 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
                 printer_.Indent();
                 printer_ << "var self = this;";
                 printer_ << "cache_.TryRemove(instance_, out self);";
-                if (generator->IsSubclassOf(cls, "Urho3D::RefCounted"))
+                Class* clsDecl = dynamic_cast<Class*>(decl);
+                if (clsDecl->IsSubclassOf("Urho3D::RefCounted"))
                     printer_ << "Urho3D__RefCounted__ReleaseRef(instance_);";
                 else
-                    printer_ << "destruct_" + Sanitize(GetSymbolName(cls)) + "(instance_);";
+                    printer_ << Sanitize(cls->symbolName_) + "_destructor(instance_);";
                 printer_.Dedent();
                 printer_ << "instance_ = IntPtr.Zero;";
             }
@@ -130,28 +131,36 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
 
             // Destructor always exists even if it is not defined in the c++ class
             printer_ << dllImport;
-            printer_ << fmt("internal static extern void destruct_{{symbol_name}}(IntPtr instance);", {
-                {"symbol_name", Sanitize(GetSymbolName(cls)).CString()}
+            printer_ << fmt("internal static extern void {{symbol_name}}_destructor(IntPtr instance);", {
+                {"symbol_name", Sanitize(cls->symbolName_).CString()}
             });
             printer_ << "";
         }
-        else if (info.event == info.container_entity_exit)
+        else if (event == Event::EXIT)
         {
             printer_.Dedent();
             printer_ << "";
         }
     }
-    else if (e.kind() == cppast::cpp_entity_kind::member_variable_t)
+    else if (decl->kind_ == Declaration::Kind::Variable)
     {
-        const auto& var = dynamic_cast<const cppast::cpp_member_variable&>(e);
+        Variable* var = dynamic_cast<Variable*>(decl);
+
+        if (var->parent_->kind_ != Declaration::Kind::Class)
+            // TODO: this should never happen, api should be pre-processed and global scope variables should be moved into dummy classes.
+            return true;
+
+        if (var->isStatic_)
+            // TODO: support static variables
+            return true;
 
         // Getter
         printer_ << dllImport;
-        String csReturnType = typeMapper_->ToPInvokeTypeReturn(var.type(), false);
+        String csReturnType = typeMapper_->ToPInvokeTypeReturn(var->GetType(), false);
         auto vars = fmt({
             {"cs_return", csReturnType.CString()},
-            {"cs_param", typeMapper_->ToPInvokeTypeParam(var.type()).CString()},
-            {"c_function_name", data->cFunctionName.CString()},
+            {"cs_param", typeMapper_->ToPInvokeTypeParam(var->GetType()).CString()},
+            {"c_function_name", decl->cFunctionName_.CString()},
         });
         if (csReturnType == "string")
         {
@@ -166,40 +175,41 @@ bool GeneratePInvokePass::Visit(const cppast::cpp_entity& e, cppast::visitor_inf
         printer_ << fmt("internal static extern void set_{{c_function_name}}(IntPtr cls, {{cs_param}} value);", vars);
         printer_ << "";
     }
-    else if (e.kind() == cppast::cpp_entity_kind::constructor_t)
+    else if (decl->kind_ == Declaration::Kind::Constructor)
     {
-        const auto& ctor = dynamic_cast<const cppast::cpp_constructor&>(e);
+        Function* ctor = dynamic_cast<Function*>(decl);
 
         printer_ << dllImport;
-        auto csParams = ParameterList(ctor.parameters(), std::bind(&TypeMapper::ToPInvokeTypeParam, typeMapper_, std::placeholders::_1));
+        auto csParams = ParameterList(ctor->GetParameters(), std::bind(&TypeMapper::ToPInvokeTypeParam, typeMapper_, std::placeholders::_1));
         auto vars = fmt({
-            {"c_function_name", data->cFunctionName.CString()},
+            {"c_function_name", decl->cFunctionName_.CString()},
             {"cs_param_list", csParams.CString()}
         });
         printer_ << fmt("internal static extern IntPtr {{c_function_name}}({{cs_param_list}});", vars);
         printer_ << "";
     }
-    else if (e.kind() == cppast::cpp_entity_kind::member_function_t)
+    else if (decl->kind_ == Declaration::Kind::Method)
     {
-        const auto& func = dynamic_cast<const cppast::cpp_member_function&>(e);
+        Function* func = dynamic_cast<Function*>(decl);
+
         printer_ << dllImport;
-        auto csParams = ParameterList(func.parameters(), std::bind(&TypeMapper::ToPInvokeTypeParam, typeMapper_, std::placeholders::_1));
-        String csRetType = typeMapper_->ToPInvokeTypeReturn(func.return_type(), true);
+        auto csParams = ParameterList(func->GetParameters(), std::bind(&TypeMapper::ToPInvokeTypeParam, typeMapper_, std::placeholders::_1));
+        String csRetType = typeMapper_->ToPInvokeTypeReturn(func->GetReturnType(), true);
         auto vars = fmt({
-            {"c_function_name", data->cFunctionName.CString()},
+            {"c_function_name", decl->cFunctionName_.CString()},
             {"cs_param_list", csParams.CString()},
             {"cs_return", csRetType.CString()},
-            {"has_params", !func.parameters().empty()},
+            {"has_params", !func->GetParameters().empty()},
             {"ret_attribute", ""},
-            {"class_name", func.parent().value().name()},
-            {"name", func.name()},
+            {"class_name", func->parent_->name_.CString()},
+            {"name", func->name_.CString()},
         });
         if (csRetType == "string")
             printer_ << "[return: MarshalAs(UnmanagedType.LPUTF8Str)]";
         printer_ << fmt("internal static extern {{cs_return}} {{c_function_name}}(IntPtr instance{{#has_params}}, {{cs_param_list}}{{/has_params}});", vars);
         printer_ << "";
 
-        if (func.is_virtual())
+        if (func->IsVirtual())
         {
             // API for setting callbacks of virtual methods
             printer_ << "[UnmanagedFunctionPointer(CallingConvention.Cdecl)]";
@@ -218,7 +228,7 @@ void GeneratePInvokePass::Stop()
     printer_ << "}";    // namespace Urho3D
 
     auto* generator = GetSubsystem<GeneratorContext>();
-    String outputFile = generator->GetOutputDir() + "PInvoke.cs";
+    String outputFile = generator->outputDir_ + "PInvoke.cs";
     File file(context_, outputFile, FILE_WRITE);
     if (!file.IsOpen())
     {
