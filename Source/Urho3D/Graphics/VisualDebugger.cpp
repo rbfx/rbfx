@@ -12,6 +12,9 @@
 
 #include "../UI/UI.h"
 #include "../UI/Text.h"
+#include "../IO/Log.h"
+#include "../UI/Font.h"
+#include "../Resource/ResourceCache.h"
 
 
 
@@ -272,12 +275,16 @@ void VisualDebugger::VisualDebuggerUILabel::Setup()
 {
 	VisualDebuggerObject::Setup();
 	mUIText = context_->GetSubsystem<UI>()->GetRoot()->CreateChild<Text>();
-	mUIText->SetText(GetText());
-	mUIText->SetFont("Fonts/Anonymous Pro.ttf");
+	mUIText->SetText(mText);
+	mUIText->SetFont(GSS<ResourceCache>()->GetResource<Font>("Fonts/BlueHighway.ttf"));
 	mUIText->SetColor(color_);
-	//mUIText->SetEnabled(mEnabled);
-	mUIText->SetVisible(enabled_);
+	mUIText->SetEnabled(enabled_);
 	UpdatePosition();
+
+	if (visDebugger_->mCamera == nullptr) {
+		URHO3D_LOGWARNING("VisualDebugger: No Active Camera Set! (Needed for UILabel)");
+	}
+		
 }
 
 void VisualDebugger::VisualDebuggerUILabel::TearDown()
@@ -289,7 +296,6 @@ void VisualDebugger::VisualDebuggerUILabel::TearDown()
 void VisualDebugger::VisualDebuggerUILabel::SetEnabled(bool enabled)
 {
 	VisualDebuggerObject::SetEnabled(enabled);
-	//mUIText->SetEnabled(mEnabled);
 	mUIText->SetVisible(enabled_);
 }
 
@@ -303,7 +309,7 @@ void VisualDebugger::VisualDebuggerUILabel::UpdatePosition()
 		//screen point has range of 0-1. - convert back to pixels
 		screenPoint *= Vector2(GetSubsystem<Graphics>()->GetSize());
 	}
-	
+
 
 	mUIText->SetPosition(IntVector2(screenPoint.x_, screenPoint.y_));
 }
