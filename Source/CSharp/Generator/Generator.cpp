@@ -29,7 +29,8 @@
 #include <Pass/CSharp/GeneratePInvokePass.h>
 #include <Pass/CSharp/GenerateCSApiPass.h>
 #include <Pass/BuildApi.h>
-#include <Pass/FindBaseClassesPass.h>
+#include "Pass/FindBaseClassesPass.h"
+#include "Pass/CSharp/MoveGlobalsPass.h"
 #include "GeneratorContext.h"
 
 
@@ -93,6 +94,7 @@ int main(int argc, char* argv[])
     generator->AddCppPass<BuildApiPass>();
     generator->AddApiPass<FindBaseClassesPass>();
     generator->AddApiPass<UnknownTypesPass>();
+    generator->AddApiPass<MoveGlobalsPass>();
     generator->AddApiPass<GenerateClassWrappers>();
     generator->AddApiPass<GenerateCApiPass>();
     generator->AddApiPass<GeneratePInvokePass>();
@@ -100,7 +102,7 @@ int main(int argc, char* argv[])
 
     generator->Generate(outputDir);
 
-    File file(context, "API.hpp", FILE_WRITE);
+    File file(context, outputDir + "/API.hpp", FILE_WRITE);
     CSharpPrinter printer;
     AssembleDebugApiHeader(printer, generator->apiRoot_);
     file.WriteString(printer.Get());
