@@ -24,10 +24,7 @@
 
 
 #include <Urho3D/Core/Object.h>
-#include <cppast/cpp_entity.hpp>
-#include <cppast/visitor.hpp>
 #include "Pass/CppPass.h"
-#include "Utilities.h"
 #include "Printer/CSharpPrinter.h"
 
 namespace Urho3D

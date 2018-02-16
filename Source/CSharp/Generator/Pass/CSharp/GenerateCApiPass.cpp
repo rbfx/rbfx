@@ -22,9 +22,6 @@
 
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/IO/File.h>
-#include <cppast/cpp_function.hpp>
-#include <cppast/cpp_member_function.hpp>
-#include <cppast/cpp_member_variable.hpp>
 #include <Declarations/Namespace.hpp>
 #include <Declarations/Class.hpp>
 #include <Declarations/Variable.hpp>

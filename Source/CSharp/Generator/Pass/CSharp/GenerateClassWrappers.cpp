@@ -22,13 +22,10 @@
 
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/Log.h>
-#include <cppast/cpp_member_variable.hpp>
-#include <cppast/cpp_member_function.hpp>
 #include "GenerateClassWrappers.h"
 #include "GeneratorContext.h"
 #include "Declarations/Class.hpp"
 #include "Declarations/Variable.hpp"
-#include "Declarations/Function.hpp"
 
 
 namespace Urho3D

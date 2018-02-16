@@ -23,7 +23,6 @@
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
-#include <cppast/cpp_member_variable.hpp>
 #include <Declarations/Class.hpp>
 #include <Declarations/Variable.hpp>
 #include "GeneratorContext.h"
