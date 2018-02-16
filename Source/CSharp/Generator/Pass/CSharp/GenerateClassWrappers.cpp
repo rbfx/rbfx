@@ -188,7 +188,7 @@ bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
 
 
 
-            auto* parentCls = dynamic_cast<Class*>(generator->types_.Get(Urho3D::GetTypeName(base.type())));
+            auto* parentCls = dynamic_cast<Class*>(generator->symbols_.Get(Urho3D::GetTypeName(base.type())));
             if (parentCls != nullptr)
             {
                 implementBaseWrapperClassMembers(parentCls);

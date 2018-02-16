@@ -156,13 +156,13 @@ template<typename T>
 T* BuildApiPass::GetDeclaration(const cppast::cpp_entity& e, const cppast::cpp_access_specifier_kind access)
 {
     String name = GetSymbolName(e);
-    auto* result = generator_->types_.Get(name);
+    auto* result = generator_->symbols_.Get(name);
     if (result != nullptr)
         assert(dynamic_cast<T*>(result) != nullptr);
     else
     {
         result = new T(&e);
-        generator_->types_.Add(name, result);
+        generator_->symbols_.Add(name, result);
     }
     result->isPublic_ = access == cppast::cpp_public;
     return static_cast<T*>(result);

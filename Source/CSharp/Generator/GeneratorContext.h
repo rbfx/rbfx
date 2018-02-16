@@ -25,6 +25,7 @@
 
 #include <map>
 #include <Urho3D/Core/Object.h>
+#include <Urho3D/IO/Log.h>
 #include <cppast/cpp_entity.hpp>
 #include <cppast/libclang_parser.hpp>
 #include <Urho3D/Resource/XMLFile.h>
@@ -48,7 +49,7 @@ struct UserData
 };
 
 /// Maps symbol names to their api declarations
-class TypeTracker
+class SymbolTracker
 {
 public:
     bool Has(const String& symbol)
@@ -63,6 +64,7 @@ public:
 
     void Add(const String& symbol, Declaration* decl)
     {
+        URHO3D_LOGINFOF("Known symbol: %s", symbol.CString());
         nameToDeclaration_[symbol] = decl;
     }
 
@@ -114,7 +116,7 @@ public:
     Vector<SharedPtr<CppApiPass>> apiPasses_;
     TypeMapper typeMapper_;
     SharedPtr<Declaration> apiRoot_;
-    TypeTracker types_;
+    SymbolTracker symbols_;
 };
 
 }

@@ -199,7 +199,7 @@ bool GeneratorContext::IsAcceptableType(const cppast::cpp_type& type)
     if (type.kind() == cppast::cpp_type_kind::builtin_t)
         return true;
 
-    if (types_.Has(type))
+    if (symbols_.Has(type))
         return true;
 
     return typeMapper_.GetTypeMap(type) != nullptr;

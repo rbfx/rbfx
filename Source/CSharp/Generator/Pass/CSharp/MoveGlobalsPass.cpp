@@ -43,7 +43,7 @@ bool MoveGlobalsPass::Visit(Declaration* decl, Event event)
             GeneratorContext* generator = GetSubsystem<GeneratorContext>();
             String className = ns->name_;
             String classSymbol = ns->symbolName_ + "::" + className;
-            SharedPtr<Class> toClass(reinterpret_cast<Class*>(generator->types_.Get(classSymbol)));
+            SharedPtr<Class> toClass(reinterpret_cast<Class*>(generator->symbols_.Get(classSymbol)));
             if (toClass == nullptr)
             {
                 toClass = SharedPtr<Class>(new Class(nullptr));
@@ -51,7 +51,7 @@ bool MoveGlobalsPass::Visit(Declaration* decl, Event event)
                 toClass->sourceName_ = ns->sourceName_;
                 toClass->symbolName_ = classSymbol;
                 ns->Add(toClass);
-                generator->types_.Add(classSymbol, toClass.Get());
+                generator->symbols_.Add(classSymbol, toClass.Get());
             }
             toClass->Add(var);
         }
