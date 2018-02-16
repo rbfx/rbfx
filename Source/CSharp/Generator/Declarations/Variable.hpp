@@ -24,6 +24,7 @@
 
 
 #include <cppast/cpp_variable.hpp>
+#include <cppast/cpp_entity_kind.hpp>
 #include <cppast/cpp_member_variable.hpp>
 #include "Declaration.hpp"
 
@@ -41,8 +42,8 @@ public:
         if (source != nullptr)
         {
             // Global scope
-            if (source->kind() == cppast::cpp_entity_kind::variable_t)
-                isStatic_ = true;
+            if (source->kind() == cppast::cpp_entity_kind::member_variable_t)
+                isStatic_ = false;
 
             if (GetType().kind() == cppast::cpp_type_kind::cv_qualified_t)
             {
@@ -50,12 +51,43 @@ public:
                 if (cppast::is_const(cvVar.cv_qualifier()))
                     isConstant_ = true;
             }
+
+            if (isConstant_)
+            {
+                const cppast::cpp_expression* defaultValue = nullptr;
+                if (source_->kind() == cppast::cpp_entity_kind::variable_t)
+                {
+                    const auto& var = dynamic_cast<const cppast::cpp_variable&>(*source_);
+                    if (var.default_value().has_value())
+                        defaultValue = &var.default_value().value();
+                }
+                else if (source_->kind() == cppast::cpp_entity_kind::member_variable_t)
+                {
+                    const auto& var = dynamic_cast<const cppast::cpp_member_variable&>(*source_);
+                    if (var.default_value().has_value())
+                        defaultValue = &var.default_value().value();
+                }
+
+                if (defaultValue != nullptr)
+                {
+                    if (defaultValue->kind() == cppast::cpp_expression_kind::literal_t)
+                    {
+                        defaultValue_ = dynamic_cast<const cppast::cpp_literal_expression*>(defaultValue)->value();
+                        isLitteral_ = true;
+                    }
+                    else
+                        defaultValue_ = dynamic_cast<const cppast::cpp_unexposed_expression*>(defaultValue)->expression().as_string();
+                }
+            }
         }
     }
 
     String ToString() const override
     {
-        return String() + cppast::to_string(GetType()) + " " + name_;
+        String result = String() + cppast::to_string(GetType()) + " " + name_;
+        if (!defaultValue_.Empty())
+            result += " = " + defaultValue_;
+        return result;
     }
 
     const cppast::cpp_type& GetType() const
@@ -68,10 +100,8 @@ public:
             assert(false);
     }
 
-
-    bool isStatic_ = false;
-    bool isConstant_ = false;
-    bool isProperty_ = false;
+    bool isLitteral_ = false;
+    String defaultValue_ = "";
 };
 
 }

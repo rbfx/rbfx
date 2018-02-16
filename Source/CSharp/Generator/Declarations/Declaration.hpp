@@ -101,8 +101,12 @@ public:
     Kind kind_ = Kind::Unknown;
     /// Pointer to owner of this declaration.
     WeakPtr<Namespace> parent_;
-    /// When set to true passes will not iterate over this declaration.
-    bool isIgnored_ = false;
+    /// When set to true indicates that declaration does not belong to an instance of a object.
+    bool isStatic_ = true;
+    /// When set to true indicates that value of declaration never changes.
+    bool isConstant_ = false;
+    /// When set to true it hints generator to generate wrapper interface as properties where applicable.
+    bool isProperty_ = false;
 };
 
 }

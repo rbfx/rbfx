@@ -52,6 +52,7 @@ public:
         }
         case cppast::cpp_entity_kind::member_function_t:
         {
+            isStatic_ = false;
             kind_ = Kind::Method;
             const auto& func = dynamic_cast<const cppast::cpp_member_function&>(*source);
             isConstant_ = func.cv_qualifier() == cppast::cpp_cv_const ||
@@ -60,11 +61,13 @@ public:
         }
         case cppast::cpp_entity_kind::constructor_t:
         {
+            isStatic_ = false;
             kind_ = Kind::Constructor;
             break;
         }
         case cppast::cpp_entity_kind::destructor_t:
         {
+            isStatic_ = false;
             kind_ = Kind::Destructor;
             break;
         }
@@ -165,10 +168,6 @@ public:
             break;
         }
     }
-
-    bool isStatic_ = false;
-    bool isConstant_ = false;
-    bool isProperty_ = false;
 };
 
 }
