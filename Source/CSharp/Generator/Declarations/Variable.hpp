@@ -42,8 +42,7 @@ public:
         if (source != nullptr)
         {
             // Global scope
-            if (source->kind() == cppast::cpp_entity_kind::member_variable_t)
-                isStatic_ = false;
+            isStatic_ = source->kind() != cppast::cpp_entity_kind::member_variable_t;
 
             if (GetType().kind() == cppast::cpp_type_kind::cv_qualified_t)
             {

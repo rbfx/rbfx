@@ -56,6 +56,14 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
 
         if (event == Event::ENTER)
         {
+            if (cls->isStatic_)
+            {
+                // A class will not have any methods. This is likely a dummy class for constant storage or something
+                // similar.
+                printer_ << fmt("public static partial class {{name}}", {{"name", cls->name_.CString()}});
+                printer_.Indent();
+                return true;
+            }
             Vector<String> bases;
             for (const auto& base : cls->bases_)
                 bases.Push(base->name_);
@@ -145,12 +153,8 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
     {
         Variable* var = dynamic_cast<Variable*>(decl);
 
-        if (var->parent_->kind_ != Declaration::Kind::Class)
-            // TODO: this should never happen, api should be pre-processed and global scope variables should be moved into dummy classes.
-            return true;
-
-        if (var->isStatic_)
-            // TODO: support static variables
+        // Constants with values get converted to native c# constants in GenerateCSApiPass
+        if (var->isConstant_ && !var->defaultValue_.Empty())
             return true;
 
         // Getter
@@ -160,19 +164,24 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             {"cs_return", csReturnType.CString()},
             {"cs_param", typeMapper_->ToPInvokeTypeParam(var->GetType()).CString()},
             {"c_function_name", decl->cFunctionName_.CString()},
+            {"not_static", !decl->isStatic_},
         });
         if (csReturnType == "string")
         {
             // This is safe as member variables are always returned by reference from a getter.
             printer_ << "[return: MarshalAs(UnmanagedType.LPUTF8Str)]";
         }
-        printer_ << fmt("internal static extern {{cs_return}} get_{{c_function_name}}(IntPtr cls);", vars);
+        printer_ << fmt("internal static extern {{cs_return}} get_{{c_function_name}}({{#not_static}}IntPtr cls{{/not_static}});", vars);
         printer_ << "";
 
         // Setter
-        printer_ << dllImport;
-        printer_ << fmt("internal static extern void set_{{c_function_name}}(IntPtr cls, {{cs_param}} value);", vars);
-        printer_ << "";
+        if (!var->isConstant_)
+        {
+            printer_ << dllImport;
+            printer_
+                << fmt("internal static extern void set_{{c_function_name}}({{#not_static}}IntPtr cls, {{/not_static}}{{cs_param}} value);", vars);
+            printer_ << "";
+        }
     }
     else if (decl->kind_ == Declaration::Kind::Constructor)
     {

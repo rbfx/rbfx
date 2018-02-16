@@ -45,9 +45,6 @@ void GenerateCSApiPass::Start()
 
 bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
 {
-    if (!decl->source_)
-        return true;
-
     auto mapToPInvoke = [&](const cppast::cpp_function_parameter& param) {
         return typeMapper_->MapToPInvoke(param.type(), EnsureNotKeyword(param.name()));
     };
@@ -57,6 +54,15 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
         Class* cls = dynamic_cast<Class*>(decl);
         if (event == Event::ENTER)
         {
+            if (cls->isStatic_)
+            {
+                // A class will not have any methods. This is likely a dummy class for constant storage or something
+                // similar.
+                printer_ << fmt("public static partial class {{name}}", {{"name", cls->name_.CString()}});
+                printer_.Indent();
+                return true;
+            }
+
             Vector<String> bases;
             for (const auto& base : cls->bases_)
                 bases.Push(base->name_);
@@ -154,27 +160,48 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
     {
         Variable* var = dynamic_cast<Variable*>(decl);
         Class* cls = dynamic_cast<Class*>(var->parent_.Get());
-        if (var->isStatic_)
-            // TODO: static variable support
-            return true;
+
+        bool isStatic = decl->isStatic_;
+        if (cls->isStatic_ && !var->defaultValue_.Empty())
+            // C# class is marked as static and this is a constant value. Constants in static classes must not be marked
+            // as static in c# for some strange reason.
+            isStatic = false;
 
         auto vars = fmt({
             {"cs_type", typeMapper_->ToCSType(var->GetType()).CString()},
             {"name", var->name_.CString()},
             {"class_symbol", Sanitize(cls->symbolName_).CString()},
-            {"access", decl->isPublic_ ? "public" : "protected"}
+            {"access", decl->isPublic_ ? "public " : "protected "},
+            {"static", isStatic ? "static " : ""},
+            {"const", decl->isConstant_ && !var->defaultValue_.Empty() ? "const " : ""},
+            {"not_static", !decl->isStatic_},
         });
-        printer_ << fmt("{{access}} {{cs_type}} {{name}}", vars);
-        printer_.Indent();
+
+        String line = fmt("{{access}}{{static}}{{const}}{{cs_type}} {{name}}", vars);
+        if (!var->defaultValue_.Empty() && var->isConstant_)
         {
-            // Getter
-            String call = typeMapper_->MapToCS(var->GetType(), fmt("get_{{class_symbol}}_{{name}}(instance_)", vars), false);
-            printer_ << fmt("get { return {{call}}; }", {{"call", call.CString()}});
-            // Setter
-            vars.set("value", typeMapper_->MapToPInvoke(var->GetType(), "value").CString());
-            printer_ << fmt("set { set_{{class_symbol}}_{{name}}(instance_, {{value}}); }", vars);
+            // A constant value
+            printer_ << line + " = " + var->defaultValue_ + ";";
         }
-        printer_.Dedent();
+        else
+        {
+            // A property with getters and setters
+            printer_ << line;
+            printer_.Indent();
+            {
+                // Getter
+                String call = typeMapper_->MapToCS(
+                    var->GetType(), fmt("get_{{class_symbol}}_{{name}}({{#not_static}}instance_{{/not_static}})", vars), false);
+                printer_ << fmt("get { return {{call}}; }", {{"call", call.CString()}});
+                // Setter
+                if (!var->isConstant_)
+                {
+                    vars.set("value", typeMapper_->MapToPInvoke(var->GetType(), "value").CString());
+                    printer_ << fmt("set { set_{{class_symbol}}_{{name}}({{#not_static}}instance_, {{/not_static}}{{value}}); }", vars);
+                }
+            }
+            printer_.Dedent();
+        }
     }
 
     return true;

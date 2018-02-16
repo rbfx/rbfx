@@ -48,8 +48,8 @@ bool MoveGlobalsPass::Visit(Declaration* decl, Event event)
             {
                 toClass = SharedPtr<Class>(new Class(nullptr));
                 toClass->name_ = className;
+                toClass->sourceName_ = ns->sourceName_;
                 toClass->symbolName_ = classSymbol;
-                toClass->parent_ = ns;
                 ns->Add(toClass);
                 generator->types_.Add(classSymbol, toClass.Get());
             }

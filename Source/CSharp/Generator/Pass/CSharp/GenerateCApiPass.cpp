@@ -149,32 +149,37 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
     else if (decl->kind_ == Declaration::Kind::Variable)
     {
         auto* var = dynamic_cast<Variable*>(decl);
-        auto* cls = dynamic_cast<Class*>(var->parent_.Get());
+        auto* ns = dynamic_cast<Namespace*>(var->parent_.Get());
 
-        // Constants should be turned into target-native constant values
-        if (var->isConstant_)
+        // Constants with values get converted to native c# constants in GenerateCSApiPass
+        if (var->isConstant_ && !var->defaultValue_.Empty())
             return true;
 
-        if (cls == nullptr)
-            // TODO: Wrap variables in global scope?
-            return true;
-
-        var->cFunctionName_ = Sanitize(cls->symbolName_ + "_" + var->name_);
+        var->cFunctionName_ = Sanitize(ns->symbolName_ + "_" + var->name_);
         auto vars = fmt({{"c_type", typeMapper_->ToCType(var->GetType()).CString()},
                          {"c_function_name", var->cFunctionName_.CString()},
-                         {"class_name",      cls->sourceName_.CString()},
+                         {"namespace_name",  ns->sourceName_.CString()},
                          {"name",            var->name_.CString()},
                          {"type",            GetConversionType(var->GetType()).CString()}
         });
         // Getter
-        printer_ << fmt("URHO3D_EXPORT_API {{c_type}} get_{{c_function_name}}({{class_name}}* cls)", vars);
+        printer_.Write(fmt("URHO3D_EXPORT_API {{c_type}} get_{{c_function_name}}(", vars));
+        if (!var->isStatic_)
+            printer_.Write(fmt("{{namespace_name}}* cls", vars));
+        printer_.Write(")");
         printer_.Indent();
 
         String expr;
-        if (!decl->isPublic_)
-            expr = fmt("cls->__get_{{name}}()", vars);
+        if (!var->isStatic_)
+            expr += "cls->";
         else
-            expr = fmt("cls->{{name}}", vars);
+            expr += ns->sourceName_ + "::";
+
+        if (!decl->isPublic_)
+            expr += fmt("__get_{{name}}()", vars).c_str();
+        else
+            expr += fmt("{{name}}", vars).c_str();
+
         // Variables are non-temporary therefore they do not need copying.
         printer_ << fmt("return {{mapped}};", {{"mapped", typeMapper_->MapToC(var->GetType(), expr, false).CString()}});
 
@@ -184,15 +189,23 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
         // Setter
         if (!var->isConstant_)
         {
-            printer_
-                << fmt("URHO3D_EXPORT_API void set_{{c_function_name}}({{class_name}}* cls, {{c_type}} value)", vars);
+            printer_.Write(fmt("URHO3D_EXPORT_API void set_{{c_function_name}}(", vars));
+            if (!var->isStatic_)
+                printer_.Write(fmt("{{namespace_name}}* cls, ", vars));
+            printer_.Write(fmt("{{c_type}} value)", vars));
             printer_.Indent();
 
             vars.set("value", typeMapper_->MapToCpp(var->GetType(), "value").CString());
-            if (!decl->isPublic_)
-                printer_ << fmt("cls->__set_{{name}}({{value}});", vars);
+            if (!var->isStatic_)
+                printer_.Write("cls->");
             else
-                printer_ << fmt("cls->{{name}} = {{value}};", vars);
+                expr += ns->sourceName_ + "::";
+
+            if (!decl->isPublic_)
+                printer_.Write(fmt("__set_{{name}}({{value}});", vars));
+            else
+                printer_.Write(fmt("{{name}} = {{value}};", vars));
+
             printer_.Dedent();
             printer_.WriteLine();
         }
