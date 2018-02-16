@@ -35,8 +35,6 @@
 
 void AssembleDebugApiHeader(CSharpPrinter& printer, const Declaration* decl)
 {
-    if (decl->isIgnored_)
-        return;
     printer << decl->ToString();
     const Namespace* ns = dynamic_cast<const Namespace*>(decl);
     if (ns != nullptr)

@@ -142,10 +142,7 @@ bool BuildApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info info)
         else
         {
             if (parent != nullptr && declaration->parent_ == nullptr)
-            {
-                declaration->parent_ = parent;
-                parent->children_.Push(SharedPtr<Declaration>(declaration));
-            }
+                parent->Add(declaration);
 
             if (info.event == cppast::visitor_info::container_entity_enter)
                 stack_.Push(declaration);

@@ -47,7 +47,8 @@ public:
         return name_;
     }
 
-    void Ignore() { isIgnored_ = true; }
+    /// Removes declaration from API.
+    void Ignore();
 
     /// Returns true if object is of `Function` type.
     bool IsFunctionLike() const

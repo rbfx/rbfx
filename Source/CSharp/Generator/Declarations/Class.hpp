@@ -26,7 +26,7 @@ public:
     {
         for (const auto& child : children_)
         {
-            if (!child->isIgnored_ && !child->isPublic_)
+            if (!child->isPublic_)
                 return true;
         }
         return false;
@@ -36,7 +36,7 @@ public:
     {
         for (const auto& child : children_)
         {
-            if (!child->isIgnored_ && child->IsFunctionLike())
+            if (child->IsFunctionLike())
             {
                 if (const auto* func = dynamic_cast<const Function*>(child.Get()))
                 {

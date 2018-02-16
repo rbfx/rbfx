@@ -170,18 +170,15 @@ void GeneratorContext::Generate(const String& outputDir)
     }
 
     std::function<void(CppApiPass*, Declaration*)> visitDeclaration = [&](CppApiPass* pass, Declaration* decl) {
-        if (decl->isIgnored_)
-            return;
-
         if (decl->IsNamespaceLike())
         {
             Namespace* ns = dynamic_cast<Namespace*>(decl);
             pass->Visit(decl, CppApiPass::ENTER);
-            for (const auto& child : ns->children_)
-            {
-                if (!child->isIgnored_)
-                    visitDeclaration(pass, child);
-            }
+            // Passes may alter API structure while they are running. Copying children list ensures that we are
+            // iterating over container that is guaranteed to not be modified.
+            auto childrenCopy = ns->children_;
+            for (const auto& child : childrenCopy)
+                visitDeclaration(pass, child);
             pass->Visit(decl, CppApiPass::EXIT);
         }
         else

@@ -32,7 +32,7 @@
         <exclude>Urho3D::*::GetTypeInfoStatic</exclude>
     </symbols>
     <typemaps>
-        <typemap type="Urho3D::StringHash" ctype="unsigned" cstype="Urho3D.StringHash">
+        <typemap type="Urho3D::StringHash" ctype="unsigned" cstype="global::Urho3D.StringHash">
             <cpp_to_c>{{value}}.Value()</cpp_to_c>
             <c_to_cpp>Urho3D::StringHash({{value}})</c_to_cpp>
             <pinvoke_to_cs>new StringHash({{value}})</pinvoke_to_cs>

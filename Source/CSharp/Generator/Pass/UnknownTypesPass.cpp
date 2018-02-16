@@ -90,7 +90,8 @@ bool UnknownTypesPass::Visit(Declaration* decl, Event event)
     }
     else if (decl->kind_ == Declaration::Kind::Class)
     {
-        decl->isIgnored_ = !generator_->types_.Has(decl->symbolName_);
+        if (!generator_->types_.Has(decl->symbolName_))
+            decl->Ignore();
     }
     return true;
 }

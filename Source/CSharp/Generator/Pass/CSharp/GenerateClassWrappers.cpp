@@ -41,7 +41,7 @@ void GenerateClassWrappers::Start()
 
 bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
 {
-    if (decl->kind_ != Declaration::Kind::Class || decl->isIgnored_)
+    if (decl->kind_ != Declaration::Kind::Class)
         return true;
 
     Class* cls = static_cast<Class*>(decl);
@@ -93,10 +93,6 @@ bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
     {
         for (const auto& child : cls->children_)
         {
-            // Manually iterating subtree may encounter ignored nodes.
-            if (child->isIgnored_)
-                continue;
-
             if (child->kind_ == Declaration::Kind::Variable && !child->isPublic_)
             {
                 // Getters and setters for protected class variables.

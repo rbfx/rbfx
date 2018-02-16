@@ -103,7 +103,7 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
                 if (child->kind_ == Declaration::Kind::Method)
                 {
                     const auto& func = dynamic_cast<Function*>(child.Get());
-                    if (func->IsVirtual() && !func->isIgnored_)
+                    if (func->IsVirtual())
                     {
                         auto vars = fmt({
                             {"class_name", cls->name_.CString()},
