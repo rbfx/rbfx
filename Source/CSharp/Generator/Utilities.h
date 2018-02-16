@@ -35,12 +35,8 @@
 namespace Urho3D
 {
 
-struct UserData;
-
 /// Convert a wildcard string to regular expression. "*" matches anything except /, "**" matches everything including /.
 std::regex WildcardToRegex(const String& wildcard);
-/// Returns custom used data structure attached to an entity. If user data does not exist it will be allocated.
-UserData* GetUserData(const cppast::cpp_entity& e);
 /// Returns entity name including names of it's parents (separated by ::).
 String GetSymbolName(const cppast::cpp_entity& e);
 /// Returns entity name including names of it's parents (separated by ::).

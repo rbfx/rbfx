@@ -53,17 +53,6 @@ std::regex WildcardToRegex(const Urho3D::String& wildcard)
     return std::regex(regex.CString());
 }
 
-UserData* GetUserData(const cppast::cpp_entity& e)
-{
-    auto* result = static_cast<UserData*>(e.user_data());
-    if (result == nullptr)
-    {
-        result = new UserData{};
-        e.set_user_data(result);
-    }
-    return result;
-}
-
 String GetSymbolName(const cppast::cpp_entity& e)
 {
     Vector<String> elements = {e.name()};

@@ -156,13 +156,7 @@ void GeneratorContext::Generate(const String& outputDir)
                     // templated and friended entities are just proxies, so skip those as well
                     // return true to continue visit for children
                     return true;
-
-                if (GetUserData(e)->generated)
-                    return pass->Visit(e, info);
-                else if (info.event == cppast::visitor_info::container_entity_enter)
-                    // Ignore children of ignored nodes.
-                    return false;
-                return true;
+                return pass->Visit(e, info);
             });
             pass->StopFile(pair.first);
         }

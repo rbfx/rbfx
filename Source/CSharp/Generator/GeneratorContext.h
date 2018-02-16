@@ -36,18 +36,6 @@
 namespace Urho3D
 {
 
-struct UserData
-{
-    /// Setting this to false ignores node.
-    bool generated = true;
-    /// Wrapper classes faciliate protected member access and virtual method overriding.
-    bool hasWrapperClass = false;
-    /// Full name for methods, base name for getters/setters, prepend get_ or set_ for full name.
-    String cFunctionName;
-    /// Cache access info so that we have this info when iterating over children nodes.
-    cppast::cpp_access_specifier_kind access = cppast::cpp_access_specifier_kind::cpp_public;
-};
-
 /// Maps symbol names to their api declarations
 class SymbolTracker
 {
