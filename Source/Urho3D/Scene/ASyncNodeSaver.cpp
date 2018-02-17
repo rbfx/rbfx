@@ -15,7 +15,7 @@ namespace Urho3D {
 	{
 	}
 
-	void ASyncNodeSaver::StartLoad(File* file, Node* node, bool inPlace)
+	void ASyncNodeSaver::StartSave(File* file, Node* node, bool inPlace)
 	{
 		mFile = file;
 		startStreamPos = file->GetPosition();
@@ -40,12 +40,12 @@ namespace Urho3D {
 	}
 
 
-	void ASyncNodeSaver::StartLoad(String filePath, Node* node, bool inPlace /*= false*/)
+	void ASyncNodeSaver::StartSave(String filePath, Node* node, bool inPlace /*= false*/)
 	{
-		StartLoad(new File(context_, filePath, FILE_READ), node, inPlace);
+		StartSave(new File(context_, filePath, FILE_READ), node, inPlace);
 	}
 
-	void ASyncNodeSaver::CancelLoading()
+	void ASyncNodeSaver::CancelSaving()
 	{
 		endLoad();
 	}
