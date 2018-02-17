@@ -185,6 +185,7 @@ namespace
     }
 
     // get the command that preprocess a translation unit given the macros
+    // macro_file_path == nullptr <=> don't do fast preprocessing
     std::string get_preprocess_command(const libclang_compile_config& c, const char* full_path,
                                        const char* macro_file_path)
     {
@@ -192,11 +193,16 @@ namespace
         // -E: print preprocessor output
         // -CC: keep comments, even in macro
         // -dD: keep macros
-        // -no*: disable default include search paths
-        auto flags = std::string("-x c++ -E -CC -dD -nostdinc -nostdinc++");
+        auto flags = std::string("-x c++ -E -CC -dD");
+
+        if (macro_file_path)
+            // -no*: disable default include search paths
+            flags += " -nostdinc -nostdinc++";
+
         if (detail::libclang_compile_config_access::clang_version(c) >= 40000)
             // -Xclang -dI: print include directives as well (clang >= 4.0.0)
             flags += " -Xclang -dI";
+
         flags += diagnostics_flags();
 
         if (macro_file_path)
@@ -209,13 +215,14 @@ namespace
         std::string cmd(detail::libclang_compile_config_access::clang_binary(c) + " "
                         + std::move(flags) + " ");
 
-        // other flags, as long as they don't add include directories (if we're doing the single file optimization)
+        // other flags
         for (const auto& flag : detail::libclang_compile_config_access::flags(c))
         {
             DEBUG_ASSERT(flag.size() > 2u && flag[0] == '-', detail::assert_handler{},
                          "that's an odd flag");
-            if (macro_file_path && (flag[0] != '-' || flag[1] != 'I'))
+            if (!macro_file_path || flag[1] != 'I')
             {
+                // only add this flag if it is not an include or we're not doing fast preprocessing
                 cmd += flag;
                 cmd += ' ';
             }
@@ -230,7 +237,114 @@ namespace
         return "standardese-macro-file-" + std::to_string(++counter) + ".delete-me";
     }
 
-    std::string write_macro_file(const libclang_compile_config& c, const char* full_path,
+    template <std::size_t N>
+    void bump_until(std::istreambuf_iterator<char>& iter, const char (&str)[N])
+    {
+        auto ptr = &str[0];
+        while (ptr != &str[N - 1])
+        {
+            if (iter == std::istreambuf_iterator<char>{})
+                // end of file
+                break;
+            else if (*iter != *ptr)
+            {
+                // try again
+                ptr = &str[0];
+                if (*iter == *ptr)
+                    ++ptr; // it was the first character again
+            }
+            else
+                // okay, move forward
+                ++ptr;
+
+            ++iter;
+        }
+    }
+
+    template <typename Iter>
+    void skip_whitespace(Iter& begin, Iter end)
+    {
+        while (begin != end && (*begin == ' ' || *begin == '\t'))
+            ++begin;
+    }
+
+    template <typename Iter>
+    std::string get_line(Iter& begin, Iter end)
+    {
+        std::string line;
+        while (begin != end && *begin != '\n')
+            line += *begin++;
+        ++begin; // newline
+        return line;
+    }
+
+    type_safe::optional<std::string> get_include_guard_macro(const std::string& full_path)
+    {
+        std::ifstream file(full_path);
+
+        auto iter = std::istreambuf_iterator<char>(file);
+        while (iter != std::istreambuf_iterator<char>{})
+        {
+            if (*iter == '/')
+            {
+                ++iter;
+                if (*iter == '/')
+                    // C++ style comment, bump until \n
+                    bump_until(iter, "\n");
+                else if (*iter == '*')
+                    // C style comment
+                    bump_until(iter, "*/");
+            }
+            else if (*iter == ' ' || *iter == '\t' || *iter == '\n')
+                ++iter; // empty
+            else if (*iter == '#')
+            {
+                // preprocessor line
+                auto if_line = get_line(iter, {});
+                if (if_line.compare(0, 3, "#if") != 0)
+                    // not something starting with #if
+                    break;
+
+                skip_whitespace(iter, {});
+
+                auto macro_line = get_line(iter, {});
+                if (macro_line.compare(0, 7, "#define") != 0)
+                    // not a corresponding define
+                    break;
+
+                auto macro_name_begin = std::next(macro_line.begin(), 7);
+                // skip whitespace after define
+                skip_whitespace(macro_name_begin, macro_line.end());
+
+                auto macro_name_end = macro_name_begin;
+                // skip over identifier
+                while (macro_name_end != macro_line.end()
+                       && (*macro_name_end == '_' || std::isalnum(*macro_name_end)))
+                    ++macro_name_end;
+
+                auto trailing_ws = macro_line.rbegin();
+                skip_whitespace(trailing_ws, macro_line.rend());
+                if (macro_name_end != trailing_ws.base())
+                    // anything else after macro
+                    break;
+
+                std::string macro_name(macro_name_begin, macro_name_end);
+                if (if_line.find(macro_name) == std::string::npos)
+                    // macro name doesn't occur in if line
+                    break;
+                else
+                    return macro_name;
+            }
+            else
+                // line is neither empty, comment, nor preprocessor
+                break;
+        }
+
+        // assume no include guard followed a bad line
+        return type_safe::nullopt;
+    }
+
+    std::string write_macro_file(const libclang_compile_config& c, const std::string& full_path,
                                  const diagnostic_logger& logger)
     {
         std::string diagnostic;
@@ -252,12 +366,16 @@ namespace
         auto          file = get_macro_file_name();
         std::ofstream stream(file);
 
-        auto         cmd = get_macro_command(c, full_path);
+        auto         cmd = get_macro_command(c, full_path.c_str());
         tpl::Process process(cmd, "",
                              [&](const char* str, std::size_t n) {
                                  stream.write(str, std::streamsize(n));
                              },
                              diagnostic_logger);
+
+        if (auto include_guard = get_include_guard_macro(full_path))
+            // undefine include guard
+            stream << "#undef " << include_guard.value();
 
         auto exit_code = process.get_exit_status();
         DEBUG_ASSERT(diagnostic.empty(), detail::assert_handler{});
@@ -275,7 +393,8 @@ namespace
     };
 
     clang_preprocess_result clang_preprocess_impl(const libclang_compile_config& c,
-                                                  const char* full_path, const char* macro_path)
+                                                  const std::string&             full_path,
+                                                  const char*                    macro_path)
     {
         clang_preprocess_result result;
 
@@ -299,7 +418,7 @@ namespace
                     diagnostic.push_back(*str);
         };
 
-        auto         cmd = get_preprocess_command(c, full_path, macro_path);
+        auto         cmd = get_preprocess_command(c, full_path.c_str(), macro_path);
         tpl::Process process(cmd, "",
                              [&](const char* str, std::size_t n) {
                                  result.file.reserve(result.file.size() + n);
@@ -319,6 +438,10 @@ namespace
     clang_preprocess_result clang_preprocess(const libclang_compile_config& c,
                                              const char* full_path, const diagnostic_logger& logger)
     {
+        // if we're fast preprocessing we only preprocess the main file, not includes
+        // this is done by disabling all include search paths when doing the preprocessing
+        // to allow macros a separate preprocessing with the -dM flag is done that extracts all macros
+        // they are then manually defined before
         auto fast_preprocessing = detail::libclang_compile_config_access::fast_preprocessing(c);
 
         auto macro_file = fast_preprocessing ? write_macro_file(c, full_path, logger) : "";
@@ -594,7 +717,7 @@ namespace
         if (starts_with(p, "*/"))
             // empty comment
             p.skip(2u);
-        else if (starts_with(p, "*") || starts_with(p, "!"))
+        else if (p.write_enabled() && (starts_with(p, "*") || starts_with(p, "!")))
         {
             // doc comment
             p.skip();
@@ -659,14 +782,14 @@ namespace
             return false;
         p.skip(2u);
 
-        if (starts_with(p, "/") || starts_with(p, "!"))
+        if (p.write_enabled() && (starts_with(p, "/") || starts_with(p, "!")))
         {
             // C++ style doc comment
             p.skip();
             auto comment = parse_cpp_doc_comment(p, false);
             merge_or_add(output, std::move(comment));
         }
-        else if (starts_with(p, "<"))
+        else if (p.write_enabled() && starts_with(p, "<"))
         {
             // end of line doc comment
             p.skip();
@@ -790,6 +913,9 @@ namespace
         skip(p, " /* clang -E -dI */");
         DEBUG_ASSERT(starts_with(p, "\n"), detail::assert_handler{});
         // don't skip newline
+
+        if (!p.write_enabled())
+            return type_safe::nullopt;
 
         if (filename.size() > 2u && filename[0] == '.'
             && (filename[1] == '/' || filename[1] == '\\'))
@@ -971,7 +1097,10 @@ detail::preprocessor_output detail::preprocess(const libclang_compile_config& co
             else if (lm.value().flag == linemarker::enter_old)
             {
                 if (lm.value().file == path)
+                {
                     p.enable_write();
+                    p.set_line(lm.value().line);
+                }
             }
             else if (lm.value().flag == linemarker::line_directive && p.write_enabled())
             {
@@ -993,7 +1122,7 @@ detail::preprocessor_output detail::preprocess(const libclang_compile_config& co
                 }
                 else
                 {
-                    // DEBUG_ASSERT(lm.value().line >= p.cur_line(), detail::assert_handler{});
+                    DEBUG_ASSERT(lm.value().line >= p.cur_line(), detail::assert_handler{});
                     while (p.cur_line() < lm.value().line)
                         p.write_str("\n");
                 }
