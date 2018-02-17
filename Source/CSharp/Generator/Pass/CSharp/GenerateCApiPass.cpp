@@ -152,7 +152,7 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
         auto* ns = dynamic_cast<Namespace*>(var->parent_.Get());
 
         // Constants with values get converted to native c# constants in GenerateCSApiPass
-        if (var->isConstant_ && !var->defaultValue_.Empty())
+        if (var->isConstant_ && (!var->defaultValue_.Empty() || ns->kind_ == Declaration::Kind::Enum))
             return true;
 
         var->cFunctionName_ = Sanitize(ns->symbolName_ + "_" + var->name_);

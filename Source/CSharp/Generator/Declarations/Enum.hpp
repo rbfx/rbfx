@@ -23,16 +23,16 @@
 #pragma once
 
 
-#include "Declaration.hpp"
+#include "Namespace.hpp"
 
 namespace Urho3D
 {
 
-class Enum : public Declaration
+class Enum : public Namespace
 {
 public:
     explicit Enum(const cppast::cpp_entity* source)
-        : Declaration(source)
+        : Namespace(source)
     {
         kind_ = Kind::Enum;
     }

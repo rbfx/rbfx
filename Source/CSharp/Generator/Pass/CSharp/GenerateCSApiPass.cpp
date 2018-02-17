@@ -159,10 +159,10 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
     else if (decl->kind_ == Declaration::Kind::Variable)
     {
         Variable* var = dynamic_cast<Variable*>(decl);
-        Class* cls = dynamic_cast<Class*>(var->parent_.Get());
+        Namespace* ns = dynamic_cast<Namespace*>(var->parent_.Get());
 
         bool isStatic = decl->isStatic_;
-        if (cls->isStatic_ && !var->defaultValue_.Empty())
+        if (ns->isStatic_ && !var->defaultValue_.Empty())
             // C# class is marked as static and this is a constant value. Constants in static classes must not be marked
             // as static in c# for some strange reason.
             isStatic = false;
@@ -170,18 +170,25 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
         auto vars = fmt({
             {"cs_type", typeMapper_->ToCSType(var->GetType()).CString()},
             {"name", var->name_.CString()},
-            {"class_symbol", Sanitize(cls->symbolName_).CString()},
+            {"ns_symbol", Sanitize(ns->symbolName_).CString()},
             {"access", decl->isPublic_ ? "public " : "protected "},
             {"static", isStatic ? "static " : ""},
             {"const", decl->isConstant_ && !var->defaultValue_.Empty() ? "const " : ""},
             {"not_static", !decl->isStatic_},
+            {"not_enum", ns->kind_ != Declaration::Kind::Enum}
         });
 
-        String line = fmt("{{access}}{{static}}{{const}}{{cs_type}} {{name}}", vars);
-        if (!var->defaultValue_.Empty() && var->isConstant_)
+        String line = fmt("{{#not_enum}}{{access}}{{static}}{{const}}{{cs_type}} {{/not_enum}}{{name}}", vars);
+        if ((!var->defaultValue_.Empty() || ns->kind_ == Declaration::Kind::Enum) && var->isConstant_)
         {
             // A constant value
-            printer_ << line + " = " + var->defaultValue_ + ";";
+            if (!var->defaultValue_.Empty())
+                line += " = " + var->defaultValue_;
+            if (ns->kind_ == Declaration::Kind::Enum)
+                line += ",";
+            else
+                line += ";";
+            printer_ << line;
         }
         else
         {
@@ -191,17 +198,27 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
             {
                 // Getter
                 String call = typeMapper_->MapToCS(
-                    var->GetType(), fmt("get_{{class_symbol}}_{{name}}({{#not_static}}instance_{{/not_static}})", vars), false);
+                    var->GetType(), fmt("get_{{ns_symbol}}_{{name}}({{#not_static}}instance_{{/not_static}})", vars), false);
                 printer_ << fmt("get { return {{call}}; }", {{"call", call.CString()}});
                 // Setter
                 if (!var->isConstant_)
                 {
                     vars.set("value", typeMapper_->MapToPInvoke(var->GetType(), "value").CString());
-                    printer_ << fmt("set { set_{{class_symbol}}_{{name}}({{#not_static}}instance_, {{/not_static}}{{value}}); }", vars);
+                    printer_ << fmt("set { set_{{ns_symbol}}_{{name}}({{#not_static}}instance_, {{/not_static}}{{value}}); }", vars);
                 }
             }
             printer_.Dedent();
         }
+    }
+    else if (decl->kind_ == Declaration::Kind::Enum)
+    {
+        if (event == Event::ENTER)
+        {
+            printer_ << "public enum " + decl->name_;
+            printer_.Indent();
+        }
+        else if (event == Event::EXIT)
+            printer_.Dedent();
     }
 
     return true;

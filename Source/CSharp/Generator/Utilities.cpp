@@ -171,10 +171,35 @@ String GetTypeName(const cppast::cpp_type& type)
     }
 }
 
+bool IsEnumType(const cppast::cpp_type& type)
+{
+    if (type.kind() == cppast::cpp_type_kind::user_defined_t)
+    {
+        const auto& entity = static_cast<const cppast::cpp_user_defined_type&>(type).entity();
+        const auto& ref = entity.get(generator->index_);
+        if (!ref.empty())
+        {
+            const auto& definition = ref[0u].get();
+            if (definition.kind() == cppast::cpp_entity_kind::enum_t)
+                return true;
+        }
+    }
+    return false;
+}
+
 bool IsComplexValueType(const cppast::cpp_type& type)
 {
-    return type.kind() != cppast::cpp_type_kind::builtin_t && type.kind() != cppast::cpp_type_kind::pointer_t &&
-        type.kind() != cppast::cpp_type_kind::reference_t;
+    switch (type.kind())
+    {
+    case cppast::cpp_type_kind::builtin_t:
+    case cppast::cpp_type_kind::pointer_t:
+    case cppast::cpp_type_kind::reference_t:
+        return false;
+    case cppast::cpp_type_kind::user_defined_t:
+        return !IsEnumType(type);
+    default:
+        return true;
+    }
 }
 
 IncludedChecker::IncludedChecker(const XMLElement& rules)

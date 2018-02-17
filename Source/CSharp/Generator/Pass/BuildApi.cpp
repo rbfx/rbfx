@@ -77,15 +77,13 @@ bool BuildApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info info)
     case cppast::cpp_entity_kind::enum_t:
         declaration = GetDeclaration<Enum>(e, info.access);
         break;
-    case cppast::cpp_entity_kind::enum_value_t:break;
     case cppast::cpp_entity_kind::class_t:
         declaration = GetDeclaration<Class>(e, info.access);
         break;
     case cppast::cpp_entity_kind::access_specifier_t:break;
     case cppast::cpp_entity_kind::base_class_t:break;
     case cppast::cpp_entity_kind::variable_t:
-        declaration = GetDeclaration<Variable>(e, info.access);
-        break;
+    case cppast::cpp_entity_kind::enum_value_t:
     case cppast::cpp_entity_kind::member_variable_t:
         declaration = GetDeclaration<Variable>(e, info.access);
         break;

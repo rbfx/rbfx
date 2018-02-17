@@ -105,6 +105,9 @@ public:
     TypeMapper typeMapper_;
     SharedPtr<Declaration> apiRoot_;
     SymbolTracker symbols_;
+    cppast::cpp_entity_index index_;
 };
+
+extern GeneratorContext* generator;
 
 }

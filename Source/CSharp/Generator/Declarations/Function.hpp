@@ -26,12 +26,6 @@
 #include "Declaration.hpp"
 #include <cppast/cpp_entity_kind.hpp>
 
-namespace cppast
-{
-
-static auto void_type_instance = cppast::cpp_builtin_type::build(cppast::cpp_void);
-
-}
 
 namespace Urho3D
 {

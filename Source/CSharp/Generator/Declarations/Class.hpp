@@ -62,7 +62,7 @@ public:
             {
                 if (const auto* func = dynamic_cast<const Function*>(child.Get()))
                 {
-                    if (func->IsVirtual())
+                    if (func->kind_ != Declaration::Kind::Destructor && func->IsVirtual())
                         return true;
                 }
             }

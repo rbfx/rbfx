@@ -5,7 +5,14 @@
         <include>Core/Object.h</include>
         <include>Core/Context.h</include>
         <include>Core/Variant.h</include>
+        <!--<include>Core/Attribute.h</include>-->
+        <include>Core/Profiler.h</include>
+        <!--<include>Core/Spline.h</include>-->
+        <include>Core/Timer.h</include>
         <include>Engine/*.h</include>
+        <include>IK/*.h</include>
+        <exclude>IK/IKConverters.h</exclude>
+        <include>Input/*.h</include>
     </headers>
     <compiler>
         <define>URHO3D_API</define>

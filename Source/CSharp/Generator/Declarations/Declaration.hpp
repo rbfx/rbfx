@@ -30,6 +30,14 @@
 #include "Utilities.h"
 
 
+namespace cppast
+{
+
+static auto void_type_instance = cppast::cpp_builtin_type::build(cppast::cpp_void);
+static auto int_type_instance = cppast::cpp_builtin_type::build(cppast::cpp_int);
+
+}
+
 namespace Urho3D
 {
 
@@ -82,7 +90,7 @@ public:
     /// Returns true if object is of or inherits `Namespace` type.
     bool IsNamespaceLike() const
     {
-        return kind_ == Declaration::Kind::Namespace || kind_ == Declaration::Kind::Class;
+        return kind_ == Declaration::Kind::Namespace || kind_ == Declaration::Kind::Class || kind_ == Declaration::Kind::Enum;
     }
 
     /// Name of this declaration in a produced wrapper.

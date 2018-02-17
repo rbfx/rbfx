@@ -26,6 +26,7 @@
 #include <cppast/cpp_variable.hpp>
 #include <cppast/cpp_entity_kind.hpp>
 #include <cppast/cpp_member_variable.hpp>
+#include <ThirdParty/cppast/include/cppast/cpp_enum.hpp>
 #include "Declaration.hpp"
 
 namespace Urho3D
@@ -44,7 +45,9 @@ public:
             // Global scope
             isStatic_ = source->kind() != cppast::cpp_entity_kind::member_variable_t;
 
-            if (GetType().kind() == cppast::cpp_type_kind::cv_qualified_t)
+            if (source->kind() == cppast::cpp_entity_kind::enum_value_t)
+                isConstant_ = true;
+            else if (GetType().kind() == cppast::cpp_type_kind::cv_qualified_t)
             {
                 const auto& cvVar = dynamic_cast<const cppast::cpp_cv_qualified_type&>(GetType());
                 if (cppast::is_const(cvVar.cv_qualifier()))
@@ -65,6 +68,12 @@ public:
                     const auto& var = dynamic_cast<const cppast::cpp_member_variable&>(*source_);
                     if (var.default_value().has_value())
                         defaultValue = &var.default_value().value();
+                }
+                else if (source_->kind() == cppast::cpp_entity_kind::enum_value_t)
+                {
+                    const auto& var = dynamic_cast<const cppast::cpp_enum_value&>(*source_);
+                    if (var.value().has_value())
+                        defaultValue = &var.value().value();
                 }
 
                 if (defaultValue != nullptr)
@@ -95,6 +104,8 @@ public:
             return dynamic_cast<const cppast::cpp_variable&>(*source_).type();
         else if (source_->kind() == cppast::cpp_entity_kind::member_variable_t)
             return dynamic_cast<const cppast::cpp_member_variable&>(*source_).type();
+        else if (source_->kind() == cppast::cpp_entity_kind::enum_value_t)
+            return *cppast::int_type_instance.get();
         else
             assert(false);
     }

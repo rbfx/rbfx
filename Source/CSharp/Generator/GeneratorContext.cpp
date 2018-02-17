@@ -113,9 +113,6 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
     GetFileSystem()->ScanDir(sourceFiles, sourceDir_, "", SCAN_FILES, true);
 
     cppast::stderr_diagnostic_logger logger;
-    // the entity index is used to resolve cross references in the AST
-    // we don't need that, so it will not be needed afterwards
-    cppast::cpp_entity_index idx;
     // the parser is used to parse the entity
     // there can be multiple parser implementations
     cppast::libclang_parser parser(type_safe::ref(logger));
@@ -126,7 +123,7 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
         if (!checker.IsIncluded(filePath))
             continue;
 
-        auto file = parser.parse(idx, (sourceDir_ + filePath).CString(), config_);
+        auto file = parser.parse(index_, (sourceDir_ + filePath).CString(), config_);
         if (parser.error())
         {
             URHO3D_LOGERRORF("Failed parsing %s", filePath.CString());

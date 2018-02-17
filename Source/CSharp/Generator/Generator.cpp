@@ -33,6 +33,12 @@
 #include "Pass/CSharp/MoveGlobalsPass.h"
 #include "GeneratorContext.h"
 
+namespace Urho3D
+{
+
+GeneratorContext* generator = nullptr;
+
+}
 
 void AssembleDebugApiHeader(CSharpPrinter& printer, const Declaration* decl)
 {
@@ -71,7 +77,7 @@ int main(int argc, char* argv[])
     context->GetLog()->SetLevel(LOG_DEBUG);
 
     // Generate bindings
-    auto* generator = new GeneratorContext(context);
+    generator = new GeneratorContext(context);
     context->RegisterSubsystem(generator);
 
     if (!generator->LoadCompileConfig(compileCommands))

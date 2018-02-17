@@ -120,9 +120,7 @@ String TypeMapper::ToCType(const cppast::cpp_type& type)
         return map->cType_;
 
     String typeName = cppast::to_string(type);
-    if (type.kind() == cppast::cpp_type_kind::builtin_t)
-        return typeName;
-    else if (type.kind() != cppast::cpp_type_kind::pointer_t && type.kind() != cppast::cpp_type_kind::reference_t)
+    if (IsComplexValueType(type))
         // A value type is turned into pointer.
         return typeName + "*";
 
@@ -138,6 +136,8 @@ String TypeMapper::ToPInvokeType(const cppast::cpp_type& type, const String& def
         else
             return map->pInvokeType_;
     }
+    else if (IsEnumType(type))
+        return "global::" + Urho3D::GetTypeName(type).Replaced("::", ".");
     else
     {
         String name = cppast::to_string(type);
@@ -236,7 +236,7 @@ String TypeMapper::ToCSType(const cppast::cpp_type& type)
     String result;
     if (const auto* map = GetTypeMap(type))
         result = map->csType_;
-    else if (GetSubsystem<GeneratorContext>()->symbols_.Has(type))
+    else if (generator->symbols_.Has(type))
         return "global::" + Urho3D::GetTypeName(type).Replaced("::", ".");
     else
         result = ToPInvokeType(type);
@@ -247,7 +247,7 @@ String TypeMapper::MapToPInvoke(const cppast::cpp_type& type, const String& expr
 {
     if (const auto* map = GetTypeMap(type))
         return fmt(map->csToPInvokeTemplate_.CString(), {{"value", expression.CString()}});
-    else if (GetSubsystem<GeneratorContext>()->symbols_.Has(type))
+    else if (!IsEnumType(type) && generator->symbols_.Has(type))
         return expression + ".instance_";
     return expression;
 }
@@ -262,7 +262,7 @@ String TypeMapper::MapToCS(const cppast::cpp_type& type, const String& expressio
         else
             result = fmt(map->pInvokeToCSTemplate_.CString(), {{"value", result.CString()}});
     }
-    else if (GetSubsystem<GeneratorContext>()->symbols_.Has(type))
+    else if (!IsEnumType(type) && generator->symbols_.Has(type))
     {
         // Class references are cached
         String returnType = "global::" + Urho3D::GetTypeName(type).Replaced("::", ".");
