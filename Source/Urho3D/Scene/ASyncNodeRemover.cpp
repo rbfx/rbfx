@@ -1,16 +1,16 @@
-#include "ASyncNodeUnloader.h"
+#include "ASyncNodeRemover.h"
 #include "../Scene/Scene.h"
 #include "../Core/CoreEvents.h"
 #include "../IO/File.h"
 namespace Urho3D
 {
 
-	ASyncNodeUnLoader::ASyncNodeUnLoader(Context* context) : Object(context)
+	ASyncNodeRemover::ASyncNodeRemover(Context* context) : Object(context)
 	{
 
 	}
 
-	ASyncNodeUnLoader::~ASyncNodeUnLoader()
+	ASyncNodeRemover::~ASyncNodeRemover()
 	{
 
 	}
@@ -20,7 +20,7 @@ namespace Urho3D
 
 
 
-	void ASyncNodeUnLoader::StartUnLoad(Node* node)
+	void ASyncNodeRemover::StartRemove(Node* node)
 	{
 		mChildren.Clear();
 
@@ -33,23 +33,23 @@ namespace Urho3D
 			mChildren.Push(WeakPtr<Node>(children[i]));
 		}
 
-		SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(ASyncNodeUnLoader, HandleUpdate));
+		SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(ASyncNodeRemover, HandleUpdate));
 		isUnLoading = true;
 		mRootNode = node;
 	}
 
-	void ASyncNodeUnLoader::CancelUnLoading()
+	void ASyncNodeRemover::CancelRemove()
 	{
-		endUnload();
+		endRemove();
 	}
 
-	void ASyncNodeUnLoader::continueUnLoading()
+	void ASyncNodeRemover::continueRemove()
 	{
 		for (int i = 0; i < mNodesPerFrame && isUnLoading; i++)
 			processNextNode();
 	}
 
-	void ASyncNodeUnLoader::processNextNode()
+	void ASyncNodeRemover::processNextNode()
 	{
 		if (mChildren.Size()) {
 
@@ -62,21 +62,21 @@ namespace Urho3D
 			{
 				if (!mRootNode.Expired())
 					mRootNode->Remove();
-				endUnload();
+				endRemove();
 			}
 		}
 	}
 
-	void ASyncNodeUnLoader::endUnload()
+	void ASyncNodeRemover::endRemove()
 	{
 		isUnLoading = false;
 		mRootNode = nullptr;
 		UnsubscribeFromEvent(E_UPDATE);
 	}
 
-	void ASyncNodeUnLoader::HandleUpdate(StringHash eventName, VariantMap& eventData)
+	void ASyncNodeRemover::HandleUpdate(StringHash eventName, VariantMap& eventData)
 	{
-		continueUnLoading();
+		continueRemove();
 	}
 
 }

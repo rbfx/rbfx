@@ -10,22 +10,22 @@
 
 namespace Urho3D
 {
-	class URHO3D_API ASyncNodeUnLoader : public Object {
+	class URHO3D_API ASyncNodeRemover : public Object {
 
-		URHO3D_OBJECT(ASyncNodeUnLoader, Object);
+		URHO3D_OBJECT(ASyncNodeRemover, Object);
 
 	public:
-		explicit ASyncNodeUnLoader(Context* context);
-		virtual ~ASyncNodeUnLoader();
+		explicit ASyncNodeRemover(Context* context);
+		virtual ~ASyncNodeRemover();
 
 		static void RegisterObject(Context* context)
 		{
-			context->RegisterFactory<ASyncNodeUnLoader>();
+			context->RegisterFactory<ASyncNodeRemover>();
 		}
 
 
-		/// Starts removeing the given node by removing its children over time.
-		void StartUnLoad(Node* node);
+		/// Starts removeing the given node by removing its children over time.  The given node is not removed.
+		void StartRemove(Node* node);
 
 		/// set how many nodes to remove per frame
 		void SetNodesPerFrame(int nodesPerFrame) { mNodesPerFrame = nodesPerFrame; }
@@ -34,19 +34,19 @@ namespace Urho3D
 		int GetNodesPerFrame() const { return mNodesPerFrame; }
 
 		/// returns true if loading is in progress.
-		bool IsUnLoading() const { return isUnLoading; }
+		bool IsRemoving() const { return isUnLoading; }
 
 		/// Cancels the current loading process.
-		void CancelUnLoading();
+		void CancelRemove();
 
 
 	protected:
 
 
 
-		void continueUnLoading();
+		void continueRemove();
 		void processNextNode();
-		void endUnload();
+		void endRemove();
 
 		void HandleUpdate(StringHash eventName, VariantMap& eventData);
 

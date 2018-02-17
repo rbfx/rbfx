@@ -43,7 +43,7 @@
 #include "../Scene/UnknownComponent.h"
 #include "../Scene/ValueAnimation.h"
 #include "../Scene/ASyncNodeLoader.h"
-#include "../Scene/ASyncNodeUnloader.h"
+#include "../Scene/ASyncNodeRemover.h"
 #include "../DebugNew.h"
 
 
@@ -1540,7 +1540,7 @@ void RegisterSceneLibrary(Context* context)
     UnknownComponent::RegisterObject(context);
     SplinePath::RegisterObject(context);
 	ASyncNodeLoader::RegisterObject(context);
-	ASyncNodeUnLoader::RegisterObject(context);
+	ASyncNodeRemover::RegisterObject(context);
 }
 
 }
