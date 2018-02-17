@@ -114,43 +114,50 @@ bool Node::Load(Deserializer& source)
 
 bool Node::Save(Serializer& dest) const
 {
-    // Write node ID
-    if (!dest.WriteUInt(id_))
-        return false;
+	return Save(dest, true);
+}
 
-    // Write attributes
-    if (!Animatable::Save(dest))
-        return false;
+bool Node::Save(Serializer& dest, bool recursive) const
+{
+	// Write node ID
+	if (!dest.WriteUInt(id_))
+		return false;
 
-    // Write components
-    dest.WriteVLE(GetNumPersistentComponents());
-    for (unsigned i = 0; i < components_.Size(); ++i)
-    {
-        Component* component = components_[i];
-        if (component->IsTemporary())
-            continue;
+	// Write attributes
+	if (!Animatable::Save(dest))
+		return false;
 
-        // Create a separate buffer to be able to skip failing components during deserialization
-        VectorBuffer compBuffer;
-        if (!component->Save(compBuffer))
-            return false;
-        dest.WriteVLE(compBuffer.GetSize());
-        dest.Write(compBuffer.GetData(), compBuffer.GetSize());
-    }
+	// Write components
+	dest.WriteVLE(GetNumPersistentComponents());
+	for (unsigned i = 0; i < components_.Size(); ++i)
+	{
+		Component* component = components_[i];
+		if (component->IsTemporary())
+			continue;
 
-    // Write child nodes
-    dest.WriteVLE(GetNumPersistentChildren());
-    for (unsigned i = 0; i < children_.Size(); ++i)
-    {
-        Node* node = children_[i];
-        if (node->IsTemporary())
-            continue;
+		// Create a separate buffer to be able to skip failing components during deserialization
+		VectorBuffer compBuffer;
+		if (!component->Save(compBuffer))
+			return false;
+		dest.WriteVLE(compBuffer.GetSize());
+		dest.Write(compBuffer.GetData(), compBuffer.GetSize());
+	}
 
-        if (!node->Save(dest))
-            return false;
-    }
+	// Write child nodes
+	dest.WriteVLE(GetNumPersistentChildren());
+	if (recursive) {
+		for (unsigned i = 0; i < children_.Size(); ++i)
+		{
+			Node* node = children_[i];
+			if (node->IsTemporary())
+				continue;
 
-    return true;
+			if (!node->Save(dest))
+				return false;
+		}
+	}
+
+	return true;
 }
 
 bool Node::LoadXML(const XMLElement& source)

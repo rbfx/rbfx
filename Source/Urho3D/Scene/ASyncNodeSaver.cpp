@@ -15,39 +15,32 @@ namespace Urho3D {
 	{
 	}
 
-	void ASyncNodeSaver::StartSave(File* file, Node* node, bool inPlace)
+	void ASyncNodeSaver::RegisterObject(Context* context)
+	{
+		context->RegisterFactory<ASyncNodeSaver>();
+	}
+
+	void ASyncNodeSaver::StartSave(File* file, Node* node)
 	{
 		mFile = file;
-		startStreamPos = file->GetPosition();
 
-		//start the loading process
+		//start the saving process
 		SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(ASyncNodeSaver, HandleUpdate));
-		isLoading = true;
+		isSaving = true;
 		mIsInError = false;
-		mInPlaceRoot = inPlace;
-		mSceneResolver.Reset();
+		mRootNode = node;
 
-		if (inPlace)
-		{
-			mParentNode = nullptr;
-			mRootNode = node;
-		}
-		else
-		{
-			mParentNode = node;
-			mRootNode = nullptr;
-		}
 	}
 
 
-	void ASyncNodeSaver::StartSave(String filePath, Node* node, bool inPlace /*= false*/)
+	void ASyncNodeSaver::StartSave(String filePath, Node* node)
 	{
-		StartSave(new File(context_, filePath, FILE_READ), node, inPlace);
+		StartSave(new File(context_, filePath, FILE_WRITE), node);
 	}
 
 	void ASyncNodeSaver::CancelSaving()
 	{
-		endLoad();
+		endSave();
 	}
 
 	Node* ASyncNodeSaver::FinishedNode() const
@@ -60,9 +53,9 @@ namespace Urho3D {
 		return mIsInError;
 	}
 
-	void ASyncNodeSaver::continueLoading()
+	void ASyncNodeSaver::continueSaving()
 	{
-		for (int i = 0; i < mNodesPerFrame && isLoading; i++)
+		for (int i = 0; i < mNodesPerFrame && isSaving; i++)
 			processNextNode();
 	}
 
@@ -71,32 +64,50 @@ namespace Urho3D {
 	{
 		if (mLoadStack.Size())
 		{
-			LoadLevel& curLevel = mLoadStack.Back();
+			SaveLevel& curLevel = mLoadStack.Back();
 			if (curLevel.curChild <= (curLevel.childrenCount - 1)) {
 				curLevel.curChild++;
-				if (!createNodeAndPushToStack(curLevel.node))
-					endLoad();
+
+				PushAndSave(curLevel.node->GetChildren()[curLevel.curChild - 1]);
 			}
 			else
 			{
 				mLoadStack.Pop();
 				if (mLoadStack.Size() == 0)
-					endLoad();
+					endSave();
 			}
 		}
 		else
 		{
 			//if rootnode is already defined - we are in inplace mode.
 			if (mRootNode != nullptr)
-				LoadNodeAndPushToStack(mRootNode);
-			else
-				mRootNode = createNodeAndPushToStack(mParentNode);
+			{
+				PushAndSave(mRootNode);
+			}
+			
 		}
-
 	}
 
-	void ASyncNodeSaver::endLoad() {
-		isLoading = false;
+	void ASyncNodeSaver::PushAndSave(Node* node)
+	{
+		SaveLevel newLevel;
+		newLevel.node = node;
+		newLevel.childrenCount = node->GetNumChildren();
+		newLevel.curChild = 0;
+
+		mLoadStack.Push(newLevel);
+
+		node->Save(*mFile, false);
+	}
+
+
+
+
+
+
+
+	void ASyncNodeSaver::endSave() {
+		isSaving = false;
 		mRootNode = nullptr;
 		mParentNode = nullptr;
 		mFile = nullptr;
@@ -105,53 +116,8 @@ namespace Urho3D {
 
 	void ASyncNodeSaver::HandleUpdate(StringHash eventName, VariantMap& eventData)
 	{
-		continueLoading();
+		continueSaving();
 	}
 
 
-	//creates a new node, loads it, and pushes the info to the stack.
-	Node* ASyncNodeSaver::createNodeAndPushToStack(Node* parent)
-	{
-		Node* newNode = parent->CreateChild();
-		//record this load to the stack
-		LoadLevel loadState;
-		loadState.node = newNode;
-		loadState.nodeId = mFile->ReadUInt();
-		loadState.curChild = 0;
-
-		loadNodeAndChildInfo(newNode, loadState);
-
-
-		mLoadStack.Push(loadState);
-
-		return newNode;
-	}
-
-	Node* ASyncNodeSaver::LoadNodeAndPushToStack(Node* existingNode)
-	{
-
-		//record this load to the stack
-		LoadLevel loadState;
-		loadState.node = existingNode;
-		loadState.nodeId = mFile->ReadUInt();
-		loadState.curChild = 0;
-
-		loadNodeAndChildInfo(existingNode, loadState);
-
-		mLoadStack.Push(loadState);
-
-		return existingNode;
-	}
-
-
-	bool ASyncNodeSaver::loadNodeAndChildInfo(Node* newNode, LoadLevel &loadState)
-	{
-		bool loadSuccess = newNode->Load(*mFile, mSceneResolver, false);
-		if (!loadSuccess) {
-			mIsInError = true;
-			return false;
-		}
-		loadState.childrenCount = mFile->ReadVLE();
-		return true;
-	}
 }

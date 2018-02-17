@@ -20,34 +20,30 @@ namespace Urho3D
 		explicit ASyncNodeSaver(Context* context);
 		virtual ~ASyncNodeSaver();
 
-		static void RegisterObject(Context* context)
-		{
-			context->RegisterFactory<ASyncNodeSaver>();
-			//attributes here
-		}
+		static void RegisterObject(Context* context);
 
-		struct LoadLevel {
+		struct SaveLevel {
 			WeakPtr<Node> node;
 			unsigned nodeId;
 			int childrenCount = 0;
 			int curChild = 0;
 		};
 
-		/// Starts Loading the node as a child of the given node or inplace on the given node.
-		void StartLoad(File* file, Node* node, bool inPlace = false);
-		void StartLoad(String filePath, Node* node, bool inPlace = false);
+		/// Starts Saving the node and its children.
+		void StartSave(File* file, Node* node);
+		void StartSave(String filePath, Node* node);
 
 		/// set how many nodes to load per frame
 		void SetNodesPerFrame(int nodesPerFrame) { mNodesPerFrame = nodesPerFrame; }
 
-		/// return how many nodes are loaded per frame.
+		/// return how many nodes are saved per frame.
 		int GetNodesPerFrame() const { return mNodesPerFrame; }
 
-		/// returns true if loading is in progress.
-		bool IsLoading() const { return isLoading; }
+		/// returns true if saving is in progress.
+		bool IsSaving() const { return isSaving; }
 
-		/// Cancels the current loading process.
-		void CancelLoading();
+		/// Cancels the current saving process.
+		void CancelSaving();
 
 		/// returns the new node after loading has finished else returns nullptr;
 		Node* FinishedNode() const;
@@ -58,30 +54,22 @@ namespace Urho3D
 	protected:
 
 
-		void continueLoading();
+		void continueSaving();
 		void processNextNode();
-		void endLoad();
+		void PushAndSave(Node* node);
+		void endSave();
 
 
-		Node* createNodeAndPushToStack(Node* parent);
-		Node* LoadNodeAndPushToStack(Node* existingNode);
-
-
-		bool loadNodeAndChildInfo(Node* newNode, LoadLevel &loadState);
 
 
 		void HandleUpdate(StringHash eventName, VariantMap& eventData);
 
 
-		bool isLoading = false;
-		unsigned startStreamPos = 0;
+		bool isSaving = false;
 		SharedPtr<File> mFile;
-		SceneResolver mSceneResolver;
-
-		Vector<LoadLevel> mLoadStack;
+		Vector<SaveLevel> mLoadStack;
 		WeakPtr<Node> mParentNode;
 		WeakPtr<Node> mRootNode;
-		bool mInPlaceRoot = false;
 		bool mIsInError = false;
 		int mNodesPerFrame = 10;
 	};
