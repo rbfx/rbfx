@@ -13,6 +13,7 @@
         <include>IK/*.h</include>
         <exclude>IK/IKConverters.h</exclude>
         <include>Input/*.h</include>
+        <include>Scene/*.h</include>
     </headers>
     <compiler>
         <define>URHO3D_API</define>

@@ -211,8 +211,22 @@ String TypeMapper::MapToC(const cppast::cpp_type& type, const String& expression
             result = fmt(map->cppToCTemplate_.CString(), {{"value", result.CString()}});
     }
     else if (IsComplexValueType(type))
-        // A unmapped value type - return it's address.
-        result = "&" + result;
+    {
+        if (type.kind() == cppast::cpp_type_kind::reference_t)
+        {
+            // A unmapped type reference - return it's address.
+            result = "&" + result;
+        }
+        else
+        {
+            // TODO: ensure non-refcounted objects are **always** copied when passing them to c#
+            // A unmapped value type - return it's copy.
+            result = fmt("new {{type}}({{value}})", {
+                {"type", Urho3D::GetTypeName(type).CString()},
+                {"value", result.CString()}
+            });
+        }
+    }
 
     return result;
 }

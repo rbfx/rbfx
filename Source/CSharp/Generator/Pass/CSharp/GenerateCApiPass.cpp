@@ -118,7 +118,11 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
                 call = fmt("{{name}}({{parameter_name_list}})", vars);
 
                 if (!func->isStatic_)
+                {
+                    if (!func->isPublic_ && !func->IsVirtual())
+                        call = "__public_" + call;
                     call = "cls->" + call;
+                }
             }
 
             if (!IsVoid(func->GetReturnType()) || func->kind_ == Declaration::Kind::Constructor)

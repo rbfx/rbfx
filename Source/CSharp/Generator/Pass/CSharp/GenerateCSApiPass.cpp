@@ -49,6 +49,10 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
         return typeMapper_->MapToPInvoke(param.type(), EnsureNotKeyword(param.name()));
     };
 
+    auto mapToCS = [&](const cppast::cpp_function_parameter& param) {
+        return typeMapper_->MapToCS(param.type(), EnsureNotKeyword(param.name()), true);
+    };
+
     if (decl->kind_ == Declaration::Kind::Class)
     {
         Class* cls = dynamic_cast<Class*>(decl);
@@ -116,11 +120,13 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
                             {"name", func->name_.CString()},
                             {"has_params", !func->GetParameters().empty()},
                             {"param_name_list", ParameterNameList(func->GetParameters()).CString()},
+                            {"cs_param_name_list", ParameterNameList(func->GetParameters(), mapToCS).CString()},
+                            {"return", !IsVoid(func->GetReturnType()) ? "return " : ""}
                         });
-                        printer_ << fmt("set_{{class_name}}_fn{{name}}(instance_, (instance{{#has_params}}, {{param_name_list}}{{/has_params}}) =>", vars);
+                        printer_ << fmt("set_{{class_name}}_fn{{name}}(instance_, (instance__{{#has_params}}, {{param_name_list}}{{/has_params}}) =>", vars);
                         printer_.Indent();
                         {
-                            printer_ << fmt("this.{{name}}({{param_name_list}});", vars);
+                            printer_ << fmt("{{return}}this.{{name}}({{cs_param_name_list}});", vars);
                         }
                         printer_.Dedent("});");
                     }

@@ -88,7 +88,7 @@ bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
     }
     printer_ << fmt("virtual ~{{name}}() = default;", {{"name", cls->name_.CString()}});
 
-    Vector<const Function*> wrappedList;
+    Vector<String> wrappedList;
     auto implementWrapperClassMembers = [&](const Class* cls)
     {
         for (const auto& child : cls->children_)
@@ -118,17 +118,10 @@ bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
             {
                 Function* func = dynamic_cast<Function*>(child.Get());
 
-                bool skip = false;
-                for (const auto* wrapped : wrappedList)
+                String signature = func->name_ + dynamic_cast<const cppast::cpp_member_function*>(func->source_)->signature().c_str();
+                if (!wrappedList.Contains(signature))
                 {
-                    skip = func == wrapped;
-                    if (skip)
-                        // Method was already wrapped as overload of downstream class.
-                        break;
-                }
-
-                if (!skip)
-                {
+                    wrappedList.Push(signature);
                     // Function pointer that virtual method will call
                     Class* cls = dynamic_cast<Class*>(func->parent_.Get());
                     auto vars = fmt({
@@ -165,14 +158,13 @@ bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
                         }
                         printer_.Dedent();
                     }
-                    if (!child->isPublic_)
+                    else if (!child->isPublic_) // Protected virtuals are not exposed, no point
                     {
                         printer_ << fmt("{{type}} __public_{{name}}({{parameter_list}})", vars);
                         printer_.Indent();
                         printer_ << fmt("{{name}}({{parameter_name_list}});", vars);
                         printer_.Dedent();
                     }
-                    wrappedList.Push(func);
                 }
             }
         }
@@ -186,21 +178,19 @@ bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
             if (base.access_specifier() == cppast::cpp_private)
                 continue;
 
-
-
             auto* parentCls = dynamic_cast<Class*>(generator->symbols_.Get(Urho3D::GetTypeName(base.type())));
             if (parentCls != nullptr)
             {
-                implementBaseWrapperClassMembers(parentCls);
                 implementWrapperClassMembers(parentCls);
+                implementBaseWrapperClassMembers(parentCls);
             }
             else
                 URHO3D_LOGWARNINGF("Base class %s not found!", base.name().c_str());
         }
     };
 
-    implementBaseWrapperClassMembers(cls);
     implementWrapperClassMembers(cls);
+    implementBaseWrapperClassMembers(cls);
 
     printer_.Dedent("};");
     printer_ << "";
