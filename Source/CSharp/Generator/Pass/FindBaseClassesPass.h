@@ -38,11 +38,7 @@ class FindBaseClassesPass : public CppApiPass
 public:
     explicit FindBaseClassesPass(Context* context) : CppApiPass(context) { };
 
-    void Start() override;
     bool Visit(Declaration* decl, Event event) override;
-
-protected:
-    GeneratorContext* generator_ = nullptr;
 };
 
 }

@@ -27,11 +27,6 @@
 namespace Urho3D
 {
 
-void FindBaseClassesPass::Start()
-{
-    generator_ = GetSubsystem<GeneratorContext>();
-}
-
 bool FindBaseClassesPass::Visit(Declaration* decl, CppApiPass::Event event)
 {
     if (decl->kind_ == Declaration::Kind::Class)
@@ -44,7 +39,7 @@ bool FindBaseClassesPass::Visit(Declaration* decl, CppApiPass::Event event)
         const cppast::cpp_class* astCls = dynamic_cast<const cppast::cpp_class*>(decl->source_);
         for (const auto& base : astCls->bases())
         {
-            Class* baseClass = dynamic_cast<Class*>(generator_->symbols_.Get(cppast::to_string(base.type())));
+            Class* baseClass = dynamic_cast<Class*>(generator->symbols_.Get(cppast::to_string(base.type())));
             if (baseClass != nullptr)
             {
                 WeakPtr<Class> basePtr(baseClass);
