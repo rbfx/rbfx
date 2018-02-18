@@ -27,7 +27,6 @@ namespace Urho3D {
 		//start the saving process
 		SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(ASyncNodeSaver, HandleUpdate));
 		isSaving = true;
-		mIsInError = false;
 		mRootNode = node;
 
 	}
@@ -48,10 +47,7 @@ namespace Urho3D {
 		return mRootNode;
 	}
 
-	bool ASyncNodeSaver::IsError()
-	{
-		return mIsInError;
-	}
+
 
 	void ASyncNodeSaver::continueSaving()
 	{
@@ -102,14 +98,9 @@ namespace Urho3D {
 
 
 
-
-
-
-
 	void ASyncNodeSaver::endSave() {
 		isSaving = false;
 		mRootNode = nullptr;
-		mParentNode = nullptr;
 		mFile = nullptr;
 		UnsubscribeFromEvent(E_UPDATE);
 	}
