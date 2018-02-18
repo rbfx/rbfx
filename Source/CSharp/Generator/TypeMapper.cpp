@@ -141,9 +141,7 @@ String TypeMapper::ToPInvokeType(const cppast::cpp_type& type, const String& def
     else
     {
         String name = cppast::to_string(type);
-        String result = ToPInvokeType(Urho3D::GetTypeName(type), ToPInvokeType(name));
-        if (result.Empty())
-            result = default_;
+        String result = ToPInvokeType(name, ToPInvokeType(Urho3D::GetTypeName(type), default_));
         return result;
     }
 }
@@ -152,7 +150,7 @@ String TypeMapper::ToPInvokeType(const String& name, const String& default_)
 {
     if (name == "char const*")
         return "string";
-    if (name == "void*")
+    if (name == "void*" || name == "signed char*")
         return "IntPtr";
     if (name == "char")
         return "char";
@@ -186,13 +184,13 @@ String TypeMapper::ToPInvokeType(const String& name, const String& default_)
 
 String TypeMapper::ToPInvokeTypeReturn(const cppast::cpp_type& type, bool canCopy)
 {
-    String result = ToPInvokeType(type);
+    String result = ToPInvokeType(cppast::remove_const(type));
     return result;
 }
 
 String TypeMapper::ToPInvokeTypeParam(const cppast::cpp_type& type)
 {
-    String result = ToPInvokeType(type);
+    String result = ToPInvokeType(cppast::remove_const(type));
     if (result == "string")
         return "[param: MarshalAs(UnmanagedType.LPUTF8Str)]" + result;
     return result;

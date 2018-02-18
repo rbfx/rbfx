@@ -109,8 +109,6 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
     typeMapper_.Load(rules_);
 
     sourceDir_ = AddTrailingSlash(sourceDir);
-    Vector<String> sourceFiles;
-    GetFileSystem()->ScanDir(sourceFiles, sourceDir_, "", SCAN_FILES, true);
 
     cppast::stderr_diagnostic_logger logger;
     // the parser is used to parse the entity
@@ -118,20 +116,33 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
     cppast::libclang_parser parser(type_safe::ref(logger));
 
     IncludedChecker checker(rules_->GetRoot().GetChild("headers"));
-    for (const auto& filePath : sourceFiles)
-    {
-        if (!checker.IsIncluded(filePath))
-            continue;
 
-        auto file = parser.parse(index_, (sourceDir_ + filePath).CString(), config_);
-        if (parser.error())
+    auto parseFiles = [&](const String& subdir)
+    {
+        Vector<String> sourceFiles;
+        GetFileSystem()->ScanDir(sourceFiles, sourceDir_ + subdir, "", SCAN_FILES, true);
+        for (const auto& filePath : sourceFiles)
         {
-            URHO3D_LOGERRORF("Failed parsing %s", filePath.CString());
-            parser.reset_error();
+            String absPath = sourceDir_ + subdir + filePath;
+
+            if (!checker.IsIncluded(filePath))
+                continue;
+
+             URHO3D_LOGDEBUGF("Parse: %s", filePath.CString());
+
+            auto file = parser.parse(index_, absPath.CString(), config_);
+            if (parser.error())
+            {
+                URHO3D_LOGERRORF("Failed parsing %s", filePath.CString());
+                parser.reset_error();
+            }
+            else
+                parsed_[absPath] = std::move(file);
         }
-        else
-            parsed_[filePath] = std::move(file);
-    }
+    };
+
+    parseFiles("../ThirdParty/");
+    parseFiles("");
 
     return true;
 }
@@ -187,12 +198,22 @@ void GeneratorContext::Generate(const String& outputDir)
 
 bool GeneratorContext::IsAcceptableType(const cppast::cpp_type& type)
 {
+    // Builtins map directly to c# types
     if (type.kind() == cppast::cpp_type_kind::builtin_t)
         return true;
 
+    // Some non-builtin types also map to c# types (like some pointers)
+    if (!typeMapper_.ToPInvokeType(cppast::to_string(type), "").Empty())
+        return true;
+
+    if (!typeMapper_.ToPInvokeType(Urho3D::GetTypeName(type), "").Empty())
+        return true;
+
+    // Known symbols will be classes that are being wrapped
     if (symbols_.Has(type))
         return true;
 
+    // Any other manually handled types
     return typeMapper_.GetTypeMap(type) != nullptr;
 
 }

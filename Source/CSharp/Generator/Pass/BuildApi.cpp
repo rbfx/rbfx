@@ -40,11 +40,12 @@ void BuildApiPass::Start()
 
 bool BuildApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info info)
 {
-    if (e.kind() != cppast::cpp_entity_kind::file_t)
-    {
-        if (!symbolChecker_.IsIncluded(GetSymbolName(e)))
-            return info.event != cppast::visitor_info::container_entity_enter;
-    }
+    if (e.kind() == cppast::cpp_entity_kind::file_t || e.kind() == cppast::cpp_entity_kind::language_linkage_t)
+        return true;
+
+    auto symbolName = GetSymbolName(e);
+    if (!symbolName.StartsWith("anonymous_") /* we may need children of anonymous */ && !symbolChecker_.IsIncluded(symbolName))
+        return info.event != cppast::visitor_info::container_entity_enter;
 
     // Skip children of private entities
     if (info.access == cppast::cpp_private)

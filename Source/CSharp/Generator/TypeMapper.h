@@ -66,7 +66,6 @@ public:
     String MapToPInvoke(const cppast::cpp_type& type, const String& expression);
     String MapToCS(const cppast::cpp_type& type, const String& expression, bool canCopy);
 
-protected:
     String ToPInvokeType(const String& name, const String& default_="IntPtr");
     String ToPInvokeType(const cppast::cpp_type& type, const String& default_="IntPtr");
 

@@ -55,7 +55,12 @@ std::regex WildcardToRegex(const Urho3D::String& wildcard)
 
 String GetSymbolName(const cppast::cpp_entity& e)
 {
-    Vector<String> elements = {e.name()};
+    String name = e.name();
+    if (name.Empty())
+        // Give unique symbol to anonymous entities
+        name = ToString("anonymous_%p", (void*)&e);
+
+    Vector<String> elements{name};
     type_safe::optional_ref<const cppast::cpp_entity> ref(e.parent());
     while (ref.has_value())
     {

@@ -68,6 +68,8 @@ public:
         {
             name_ = sourceName_ = source->name();
             symbolName_ = GetSymbolName(*source);
+            if (name_.Empty())
+                name_ = sourceName_ = symbolName_;
         }
     }
 

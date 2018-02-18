@@ -12,19 +12,27 @@
         <include>Engine/*.h</include>
         <include>IK/*.h</include>
         <exclude>IK/IKConverters.h</exclude>
+        <include>**/SDL/SDL_scancode.h</include>
+        <include>**/SDL/SDL_joystick.h</include>
+        <include>**/SDL/SDL_gamecontroller.h</include>
+        <include>**/SDL/SDL_keycode.h</include>
+        <include>**/SDL/SDL_mouse.h</include>
         <include>Input/*.h</include>
         <include>Scene/*.h</include>
+        <include>Audio/*.h</include>
     </headers>
     <compiler>
         <define>URHO3D_API</define>
     </compiler>
     <symbols>
+        <include>SDL_*</include>
+        <include>SDLK_*</include>
         <include>Urho3D</include>
         <include>Urho3D::*</include>
-        <exclude>Urho3D::ObjectFactory</exclude>
+        <exclude>Urho3D::*Impl</exclude>
         <exclude>Urho3D::EventHandler*</exclude>
+        <exclude>Urho3D::ObjectFactory</exclude>
         <exclude>Urho3D::EventNameRegistrar</exclude>
-        <exclude>Urho3D::ObjectFactoryImpl</exclude>
         <exclude>Urho3D::CustomVariantValue*</exclude>
         <exclude>Urho3D::String</exclude>
         <exclude>Urho3D::WString</exclude>
@@ -39,6 +47,11 @@
         <exclude>Urho3D::*::GetTypeInfo</exclude>
         <exclude>Urho3D::*::GetTypeInfoStatic</exclude>
     </symbols>
+    <inheritable>
+        <class>Urho3D::Application</class>
+        <class>Urho3D::Component</class>
+        <class>Urho3D::LogicComponent</class>
+    </inheritable>
     <typemaps>
         <typemap type="Urho3D::StringHash" ctype="unsigned" cstype="global::Urho3D.StringHash">
             <cpp_to_c>{{value}}.Value()</cpp_to_c>

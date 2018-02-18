@@ -31,6 +31,7 @@
 #include "Pass/BuildApi.h"
 #include "Pass/FindBaseClassesPass.h"
 #include "Pass/CSharp/MoveGlobalsPass.h"
+#include "Pass/CSharp/Urho3DCustomPass.h"
 #include "GeneratorContext.h"
 
 namespace Urho3D
@@ -101,6 +102,7 @@ int main(int argc, char* argv[])
     generator->AddApiPass<FindBaseClassesPass>();
     generator->AddApiPass<UnknownTypesPass>();
     generator->AddApiPass<MoveGlobalsPass>();
+    generator->AddApiPass<Urho3DCustomPass>();
     generator->AddApiPass<GenerateClassWrappers>();
     generator->AddApiPass<GenerateCApiPass>();
     generator->AddApiPass<GeneratePInvokePass>();
