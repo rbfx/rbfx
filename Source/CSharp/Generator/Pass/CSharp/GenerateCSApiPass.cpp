@@ -106,7 +106,7 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
         printer_.Indent();
         {
             printer_ << fmt("instance_ = {{c_function_name}}({{param_name_list}});", vars);
-            printer_ << fmt("{{class_name}}.cache_[instance_] = this;", vars);
+            printer_ << fmt("{{class_name}}.cache_.Add(instance_, this);", vars);
 
             for (const auto& child : cls->children_)
             {

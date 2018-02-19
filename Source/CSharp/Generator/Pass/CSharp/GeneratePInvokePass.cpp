@@ -77,7 +77,7 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             printer_ << fmt("public partial class {{name}} : {{#has_bases}}{{bases}}, {{/has_bases}}IDisposable", vars);
             printer_.Indent();
             // Cache managed objects. API will always return same object for existing native object pointer.
-            printer_ << fmt("internal static {{#has_bases}}new {{/has_bases}}ConcurrentDictionary<IntPtr, {{name}}> cache_ = new ConcurrentDictionary<IntPtr, {{name}}>();", vars);
+            printer_ << fmt("internal static {{#has_bases}}new {{/has_bases}}WeakDictionary<IntPtr, {{name}}> cache_ = new WeakDictionary<IntPtr, {{name}}>();", vars);
             printer_ << "";
             if (bases.Empty())
             {
@@ -115,8 +115,7 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             {
                 printer_ << "if (Interlocked.Increment(ref disposed_) == 1)";
                 printer_.Indent();
-                printer_ << "var self = this;";
-                printer_ << "cache_.TryRemove(instance_, out self);";
+                printer_ << "cache_.Remove(instance_);";
                 Class* clsDecl = dynamic_cast<Class*>(decl);
                 if (clsDecl->IsSubclassOf("Urho3D::RefCounted"))
                     printer_ << "Urho3D__RefCounted__ReleaseRef(instance_);";
