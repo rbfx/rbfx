@@ -2,7 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
-namespace Urho3D
+namespace CSharp
 {
     public sealed class WeakDictionary<TKey, TValue> {
         private ConcurrentDictionary<TKey, WeakReference> map_;

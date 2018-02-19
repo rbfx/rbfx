@@ -40,6 +40,7 @@ void GeneratePInvokePass::Start()
     printer_ << "using System.Threading;";
     printer_ << "using System.Collections.Concurrent;";
     printer_ << "using System.Runtime.InteropServices;";
+    printer_ << "using CSharp;";
     printer_ << "";
     printer_ << "namespace Urho3D";
     printer_ << "{";
@@ -81,23 +82,19 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             printer_ << "";
             if (bases.Empty())
             {
-                printer_ << "internal IntPtr instance_;";
+                printer_ << "internal IntPtr handle_;";
                 printer_ << "protected volatile int disposed_;";
                 printer_ << "";
 
-                // Constructor that initializes form instance value
-                printer_ << fmt("internal {{name}}(IntPtr instance)", vars);
+                // Constructor that initializes form a handle
+                printer_ << fmt("internal {{name}}(IntPtr handle)", vars);
                 printer_.Indent();
                 {
                     // Parent class may calls this constructor with null pointer when parent class constructor itself is
                     // creating instance.
-                    printer_ << "if (instance != IntPtr.Zero)";
+                    printer_ << "if (handle != IntPtr.Zero)";
                     printer_.Indent();
-                    {
-                        printer_ << "instance_ = instance;";
-                        if (cls->IsSubclassOf("Urho3D::RefCounted"))
-                            printer_ << "Urho3D__RefCounted__AddRef(instance);";
-                    }
+                        printer_ << "handle_ = handle;";
                     printer_.Dedent();
                 }
                 printer_.Dedent();
@@ -106,7 +103,7 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             else
             {
                 // Proxy constructor to one defined above
-                printer_ << fmt("internal {{name}}(IntPtr instance) : base(instance) { }", vars);
+                printer_ << fmt("internal {{name}}(IntPtr handle) : base(handle) { }", vars);
                 printer_ << "";
             }
 
@@ -115,14 +112,10 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             {
                 printer_ << "if (Interlocked.Increment(ref disposed_) == 1)";
                 printer_.Indent();
-                printer_ << "cache_.Remove(instance_);";
-                Class* clsDecl = dynamic_cast<Class*>(decl);
-                if (clsDecl->IsSubclassOf("Urho3D::RefCounted"))
-                    printer_ << "Urho3D__RefCounted__ReleaseRef(instance_);";
-                else
-                    printer_ << Sanitize(cls->symbolName_) + "_destructor(instance_);";
+                printer_ << "cache_.Remove(handle_);";
+                printer_ << Sanitize(cls->symbolName_) + "_destructor(handle_);";
                 printer_.Dedent();
-                printer_ << "instance_ = IntPtr.Zero;";
+                printer_ << "handle_ = IntPtr.Zero;";
             }
             printer_.Dedent();
             printer_ << "";
@@ -137,7 +130,7 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
 
             // Destructor always exists even if it is not defined in the c++ class
             printer_ << dllImport;
-            printer_ << fmt("internal static extern void {{symbol_name}}_destructor(IntPtr instance);", {
+            printer_ << fmt("internal static extern void {{symbol_name}}_destructor(IntPtr handle);", {
                 {"symbol_name", Sanitize(cls->symbolName_).CString()}
             });
             printer_ << "";
@@ -213,17 +206,17 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
         });
         if (csRetType == "string")
             printer_ << "[return: MarshalAs(UnmanagedType.LPUTF8Str)]";
-        printer_ << fmt("internal static extern {{cs_return}} {{c_function_name}}(IntPtr instance{{#has_params}}, {{cs_param_list}}{{/has_params}});", vars);
+        printer_ << fmt("internal static extern {{cs_return}} {{c_function_name}}(IntPtr handle{{#has_params}}, {{cs_param_list}}{{/has_params}});", vars);
         printer_ << "";
 
         if (func->IsVirtual())
         {
             // API for setting callbacks of virtual methods
             printer_ << "[UnmanagedFunctionPointer(CallingConvention.Cdecl)]";
-            printer_ << fmt("internal delegate {{ret_attribute}}{{cs_return}} {{name}}Delegate(IntPtr instance{{#has_params}}, {{cs_param_list}}{{/has_params}});", vars);
+            printer_ << fmt("internal delegate {{ret_attribute}}{{cs_return}} {{name}}Delegate(IntPtr handle{{#has_params}}, {{cs_param_list}}{{/has_params}});", vars);
             printer_ << "";
             printer_ << dllImport;
-            printer_ << fmt("internal static extern void set_{{class_name}}_fn{{name}}(IntPtr instance, {{name}}Delegate cb);", vars);
+            printer_ << fmt("internal static extern void set_{{class_name}}_fn{{name}}(IntPtr handle, {{name}}Delegate cb);", vars);
             printer_ << "";
         }
     }

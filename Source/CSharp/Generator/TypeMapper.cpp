@@ -46,7 +46,6 @@ void TypeMapper::Load(XMLFile* rules)
         map.cType_ = typeMap.GetAttribute("ctype");
         map.csType_ = typeMap.GetAttribute("cstype");
         map.pInvokeType_ = typeMap.GetAttribute("ptype");
-        map.pInvokeValueType_ = typeMap.GetAttribute("pvaltype");
 
         if (map.cType_.Empty())
             map.cType_ = map.cppType_;
@@ -57,29 +56,14 @@ void TypeMapper::Load(XMLFile* rules)
         if (map.csType_.Empty())
             map.csType_ = map.pInvokeType_;
 
-        if (map.pInvokeValueType_.Empty())
-            map.pInvokeValueType_ = map.pInvokeType_;
-
         if (auto cppToC = typeMap.GetChild("cpp_to_c"))
             map.cppToCTemplate_ = cppToC.GetValue();
 
         if (auto cToCpp = typeMap.GetChild("c_to_cpp"))
             map.cToCppTemplate_ = cToCpp.GetValue();
 
-        if (auto cppToCValue = typeMap.GetChild("cpp_to_c_value"))
-            map.cppToCValueTemplate_ = cppToCValue.GetValue();
-
-        if (map.cppToCValueTemplate_.Empty())
-            map.cppToCValueTemplate_ = map.cppToCTemplate_;
-
         if (auto toCS = typeMap.GetChild("pinvoke_to_cs"))
             map.pInvokeToCSTemplate_ = toCS.GetValue();
-
-        if (auto copyToPInvoke = typeMap.GetChild("pinvoke_to_cs_value"))
-            map.pInvokeToCSValueTemplate_ = copyToPInvoke.GetValue();
-
-        if (map.pInvokeToCSValueTemplate_.Empty())
-            map.pInvokeToCSValueTemplate_ = map.pInvokeToCSTemplate_;
 
         if (auto toPInvoke = typeMap.GetChild("cs_to_pinvoke"))
             map.csToPInvokeTemplate_ = toPInvoke.GetValue();
@@ -114,28 +98,26 @@ const TypeMap* TypeMapper::GetTypeMap(const String& typeName)
 
 String TypeMapper::ToCType(const cppast::cpp_type& type)
 {
-    const auto* map = GetTypeMap(type);
-
-    if (map)
+    if (const auto* map = GetTypeMap(type))
         return map->cType_;
 
     String typeName = cppast::to_string(type);
+
+    if (IsEnumType(type))
+        return typeName;
+
     if (IsComplexValueType(type))
         // A value type is turned into pointer.
-        return typeName + "*";
+        return "NativeObjectHandle*";
 
+    // Builtin type
     return typeName;
 }
 
 String TypeMapper::ToPInvokeType(const cppast::cpp_type& type, const String& default_)
 {
     if (const auto* map = GetTypeMap(type))
-    {
-        if (IsComplexValueType(type))
-            return map->pInvokeValueType_;
-        else
-            return map->pInvokeType_;
-    }
+        return map->pInvokeType_;
     else if (IsEnumType(type))
         return "global::" + Urho3D::GetTypeName(type).Replaced("::", ".");
     else
@@ -202,28 +184,18 @@ String TypeMapper::MapToC(const cppast::cpp_type& type, const String& expression
     String result = expression;
 
     if (map)
+        result = fmt(map->cppToCTemplate_.CString(), {{"value", result.CString()}});
+    else if (IsComplexValueType(type) || (IsVoid(type) && !canCopy))
+        // Stinks! If cosntructor is being mapped then it's return value naturally is void in the AST. However
+        // constructors immediately yield ownership of the object. Exploit `canCopy` to handle this case.
     {
-        if (IsComplexValueType(type))
-            result = fmt(map->cppToCValueTemplate_.CString(), {{"value", result.CString()}});
-        else
-            result = fmt(map->cppToCTemplate_.CString(), {{"value", result.CString()}});
-    }
-    else if (IsComplexValueType(type))
-    {
-        if (type.kind() == cppast::cpp_type_kind::reference_t)
-        {
-            // A unmapped type reference - return it's address.
-            result = "&" + result;
-        }
-        else
-        {
-            // TODO: ensure non-refcounted objects are **always** copied when passing them to c#
-            // A unmapped value type - return it's copy.
-            result = fmt("new {{type}}({{value}})", {
-                {"type", Urho3D::GetTypeName(type).CString()},
-                {"value", result.CString()}
-            });
-        }
+        // A unmapped type. Refcounted objects will be returned as references ignoring `canCopy` value. Value types will
+        // always get copied because it is the only sensible way to move them. Objects pointed by pointers will be
+        // copied only if `canCopy` is `true`, otherwise handle will assume ownership if such object.
+        result = fmt("script->GetObjectHandle({{value}}, {{copy}})", {
+            {"value", result.CString()},
+            {"copy", canCopy ? "true" : "false"}
+        });
     }
 
     return result;
@@ -237,8 +209,16 @@ String TypeMapper::MapToCpp(const cppast::cpp_type& type, const String& expressi
     if (map)
         result = fmt(map->cToCppTemplate_.CString(), {{"value", result.CString()}});
     else if (IsComplexValueType(type))
-        // A unmapped value type - dereference.
-        result = "*" + result;
+    {
+        result = fmt("({{value}})->instance_", {{"value", result.CString()}});
+        result = fmt("({{type_name}}*)({{value}})", {
+            {"type_name", Urho3D::GetTypeName(type).CString()},
+            {"value",     result.CString()},
+        });
+
+        if (type.kind() != cppast::cpp_type_kind::pointer_t)
+            result = "*" + result;
+    }
 
     return result;
 }
@@ -260,7 +240,7 @@ String TypeMapper::MapToPInvoke(const cppast::cpp_type& type, const String& expr
     if (const auto* map = GetTypeMap(type))
         return fmt(map->csToPInvokeTemplate_.CString(), {{"value", expression.CString()}});
     else if (!IsEnumType(type) && generator->symbols_.Has(type))
-        return expression + ".instance_";
+        return expression + ".handle_";
     return expression;
 }
 
@@ -268,12 +248,7 @@ String TypeMapper::MapToCS(const cppast::cpp_type& type, const String& expressio
 {
     String result = expression;
     if (const auto* map = GetTypeMap(type))
-    {
-        if (IsComplexValueType(type))
-            result = fmt(map->pInvokeToCSValueTemplate_.CString(), {{"value", result.CString()}});
-        else
-            result = fmt(map->pInvokeToCSTemplate_.CString(), {{"value", result.CString()}});
-    }
+        result = fmt(map->pInvokeToCSTemplate_.CString(), {{"value", result.CString()}});
     else if (!IsEnumType(type) && generator->symbols_.Has(type))
     {
         // Class references are cached

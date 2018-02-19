@@ -66,10 +66,13 @@ public:
     {
         if (source != nullptr)
         {
-            name_ = sourceName_ = source->name();
-            symbolName_ = GetSymbolName(*source);
+            name_ = source->name();
+            symbolName_ = sourceName_ = GetSymbolName(*source);
             if (name_.Empty())
-                name_ = sourceName_ = symbolName_;
+            {
+                name_ = symbolName_;
+                sourceName_ = "";
+            }
         }
     }
 

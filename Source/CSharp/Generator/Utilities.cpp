@@ -197,9 +197,11 @@ bool IsComplexValueType(const cppast::cpp_type& type)
     switch (type.kind())
     {
     case cppast::cpp_type_kind::builtin_t:
-    case cppast::cpp_type_kind::pointer_t:
-    case cppast::cpp_type_kind::reference_t:
         return false;
+    case cppast::cpp_type_kind::pointer_t:
+        return IsComplexValueType(dynamic_cast<const cppast::cpp_pointer_type&>(type).pointee());
+    case cppast::cpp_type_kind::reference_t:
+        return IsComplexValueType(dynamic_cast<const cppast::cpp_reference_type&>(type).referee());
     case cppast::cpp_type_kind::user_defined_t:
         return !IsEnumType(type);
     default:

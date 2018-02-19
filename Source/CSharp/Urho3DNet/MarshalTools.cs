@@ -2,14 +2,14 @@ using System;
 using System.Text;
 using System.Runtime.InteropServices;
 
-namespace Urho3D
+namespace CSharp
 {
     internal static class MarshalTools
     {
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void Urho3D__Free(IntPtr ptr);
 
-        public static string GetUtf8String(IntPtr ptr)
+        internal static string GetUtf8String(IntPtr ptr)
         {
             var len = 0;
             while (Marshal.ReadByte(ptr, len) != 0)
@@ -19,7 +19,7 @@ namespace Urho3D
             return Encoding.UTF8.GetString(buffer);
         }
 
-        public static string GetUtf8StringFree(IntPtr ptr)
+        internal static string GetUtf8StringFree(IntPtr ptr)
         {
             string result = GetUtf8String(ptr);
             Urho3D__Free(ptr);

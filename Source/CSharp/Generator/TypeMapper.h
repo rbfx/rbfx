@@ -35,15 +35,12 @@ struct TypeMap
 {
     String cppType_ = "void*";
     String cType_ = "void*";
-    String csType_ = "IntPtr";
+    String csType_ = "";
     String pInvokeType_ = "IntPtr";
-    String pInvokeValueType_ = "IntPtr";
     String cToCppTemplate_ = "{{value}}";
     String cppToCTemplate_ = "{{value}}";
-    String cppToCValueTemplate_ = "";
     String csToPInvokeTemplate_ = "{{value}}";
     String pInvokeToCSTemplate_ = "{{value}}";
-    String pInvokeToCSValueTemplate_ = "";
 };
 
 class TypeMapper : public Object

@@ -194,7 +194,7 @@ bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
 
     printer_.Dedent("};");
     printer_ << "";
-    cls->sourceName_ = "Wrappers::" + cls->sourceName_;    // Wrap a wrapper class
+    cls->sourceName_ = "Wrappers::" + cls->name_;    // Wrap a wrapper class
     return true;
 }
 

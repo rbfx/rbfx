@@ -37,6 +37,7 @@ void GenerateCSApiPass::Start()
     typeMapper_ = &generator_->typeMapper_;
 
     printer_ << "using System;";
+    printer_ << "using CSharp;";
     printer_ << "";
     printer_ << "namespace Urho3D";
     printer_ << "{";
@@ -105,8 +106,8 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
         printer_ << fmt("{{access}} {{class_name}}({{parameter_list}}){{#has_base}} : base(IntPtr.Zero){{/has_base}}", vars);
         printer_.Indent();
         {
-            printer_ << fmt("instance_ = {{c_function_name}}({{param_name_list}});", vars);
-            printer_ << fmt("{{class_name}}.cache_.Add(instance_, this);", vars);
+            printer_ << fmt("handle_ = {{c_function_name}}({{param_name_list}});", vars);
+            printer_ << fmt("{{class_name}}.cache_.Add(handle_, this);", vars);
 
             for (const auto& child : cls->children_)
             {
@@ -123,7 +124,7 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
                             {"cs_param_name_list", ParameterNameList(func->GetParameters(), mapToCS).CString()},
                             {"return", !IsVoid(func->GetReturnType()) ? "return " : ""}
                         });
-                        printer_ << fmt("set_{{class_name}}_fn{{name}}(instance_, (instance__{{#has_params}}, {{param_name_list}}{{/has_params}}) =>", vars);
+                        printer_ << fmt("set_{{class_name}}_fn{{name}}(handle_, (handle__{{#has_params}}, {{param_name_list}}{{/has_params}}) =>", vars);
                         printer_.Indent();
                         {
                             printer_ << fmt("{{return}}this.{{name}}({{cs_param_name_list}});", vars);
@@ -153,7 +154,7 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
         printer_ << fmt("{{access}} {{virtual}}{{return_type}} {{name}}({{parameter_list}})", vars);
         printer_.Indent();
         {
-            String call = fmt("{{c_function_name}}(instance_{{#has_params}}, {{/has_params}}{{param_name_list}})", vars);
+            String call = fmt("{{c_function_name}}(handle_{{#has_params}}, {{/has_params}}{{param_name_list}})", vars);
             if (IsVoid(func->GetReturnType()))
                 printer_ << call + ";";
             else
@@ -204,13 +205,13 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
             {
                 // Getter
                 String call = typeMapper_->MapToCS(
-                    var->GetType(), fmt("get_{{ns_symbol}}_{{name}}({{#not_static}}instance_{{/not_static}})", vars), false);
+                    var->GetType(), fmt("get_{{ns_symbol}}_{{name}}({{#not_static}}handle_{{/not_static}})", vars), false);
                 printer_ << fmt("get { return {{call}}; }", {{"call", call.CString()}});
                 // Setter
                 if (!var->isConstant_)
                 {
                     vars.set("value", typeMapper_->MapToPInvoke(var->GetType(), "value").CString());
-                    printer_ << fmt("set { set_{{ns_symbol}}_{{name}}({{#not_static}}instance_, {{/not_static}}{{value}}); }", vars);
+                    printer_ << fmt("set { set_{{ns_symbol}}_{{name}}({{#not_static}}handle_, {{/not_static}}{{value}}); }", vars);
                 }
             }
             printer_.Dedent();
