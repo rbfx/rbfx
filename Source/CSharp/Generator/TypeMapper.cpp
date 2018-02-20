@@ -134,7 +134,7 @@ String TypeMapper::ToPInvokeType(const String& name, const String& default_)
         return "string";
     if (name == "void*" || name == "signed char*")
         return "IntPtr";
-    if (name == "char")
+    if (name == "char" || name == "signed char")
         return "char";
     if (name == "unsigned char")
         return "byte";
@@ -237,27 +237,29 @@ String TypeMapper::ToCSType(const cppast::cpp_type& type)
 
 String TypeMapper::MapToPInvoke(const cppast::cpp_type& type, const String& expression)
 {
+    String name = cppast::to_string(type);
     if (const auto* map = GetTypeMap(type))
         return fmt(map->csToPInvokeTemplate_.CString(), {{"value", expression.CString()}});
-    else if (!IsEnumType(type) && generator->symbols_.Has(type))
-        return expression + ".handle_";
+    else if (IsComplexValueType(type))
+    {
+        String returnType = "global::" + Urho3D::GetTypeName(type).Replaced("::", ".");
+        return fmt("{{type}}.__ToPInvoke({{call}})", {{"type", returnType.CString()},
+                                                      {"call", expression.CString()}});
+    }
     return expression;
 }
 
 String TypeMapper::MapToCS(const cppast::cpp_type& type, const String& expression, bool canCopy)
 {
-    String result = expression;
     if (const auto* map = GetTypeMap(type))
-        result = fmt(map->pInvokeToCSTemplate_.CString(), {{"value", result.CString()}});
-    else if (!IsEnumType(type) && generator->symbols_.Has(type))
+        return fmt(map->pInvokeToCSTemplate_.CString(), {{"value", expression.CString()}});
+    else if (IsComplexValueType(type))
     {
-        // Class references are cached
         String returnType = "global::" + Urho3D::GetTypeName(type).Replaced("::", ".");
-        result = fmt("{{return_type}}.cache_.GetOrAdd({{call}}, (instance) => { return new {{return_type}}(instance); })",
-                   {{"call",        result.CString()},
-                    {"return_type", returnType.CString()}});
+        return fmt("{{type}}.__FromPInvoke({{call}})", {{"type", returnType.CString()},
+                                                        {"call", expression.CString()}});
     }
-    return result;
+    return expression;
 }
 
 }

@@ -79,7 +79,6 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             printer_.Indent();
             // Cache managed objects. API will always return same object for existing native object pointer.
             printer_ << fmt("internal static {{#has_bases}}new {{/has_bases}}WeakDictionary<IntPtr, {{name}}> cache_ = new WeakDictionary<IntPtr, {{name}}>();", vars);
-            printer_ << "";
             if (bases.Empty())
             {
                 printer_ << "internal IntPtr handle_;";
@@ -128,6 +127,23 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             printer_.Dedent();
             printer_ << "";
 
+            // Helpers for marshalling type between public and pinvoke APIs
+            printer_ << fmt("internal static {{name}} __FromPInvoke(IntPtr source)", vars);
+            printer_.Indent();
+            {
+                printer_ << fmt("return {{name}}.cache_.GetOrAdd(source, ptr => new {{name}}(ptr));", vars);
+            }
+            printer_.Dedent();
+            printer_ << "";
+
+            printer_ << fmt("internal static IntPtr __ToPInvoke({{name}} source)", vars);
+            printer_.Indent();
+            {
+                printer_ << fmt("return source.handle_;", vars);
+            }
+            printer_.Dedent();
+            printer_ << "";
+
             // Destructor always exists even if it is not defined in the c++ class
             printer_ << dllImport;
             printer_ << fmt("internal static extern void {{symbol_name}}_destructor(IntPtr handle);", {
@@ -160,10 +176,10 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
         });
         if (csReturnType == "string")
         {
-            // This is safe as member variables are always returned by reference from a getter.
+            // This is safe as member variables are always returned by copy from a getter.
             printer_ << "[return: MarshalAs(UnmanagedType.LPUTF8Str)]";
         }
-        printer_ << fmt("internal static extern {{cs_return}} get_{{c_function_name}}({{#not_static}}IntPtr cls{{/not_static}});", vars);
+        printer_ << fmt("internal static extern {{cs_return}} get_{{c_function_name}}({{#not_static}}IntPtr handle{{/not_static}});", vars);
         printer_ << "";
 
         // Setter
@@ -171,7 +187,7 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
         {
             printer_ << dllImport;
             printer_
-                << fmt("internal static extern void set_{{c_function_name}}({{#not_static}}IntPtr cls, {{/not_static}}{{cs_param}} value);", vars);
+                << fmt("internal static extern void set_{{c_function_name}}({{#not_static}}IntPtr handle, {{/not_static}}{{cs_param}} value);", vars);
             printer_ << "";
         }
     }

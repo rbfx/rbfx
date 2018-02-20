@@ -20,6 +20,11 @@ public struct StringHash
         value_ = Calculate(value);
     }
 
+    public static implicit operator StringHash(string value)
+    {
+        return new StringHash(value);
+    }
+
     public static uint Calculate(string value, uint hash=0)
     {
         // Perform the actual hashing as case-insensitive
@@ -34,6 +39,16 @@ public struct StringHash
     public override string ToString()
     {
         return String.Format("{:08X}", value_);
+    }
+
+    internal static StringHash __FromPInvoke(uint source)
+    {
+        return new StringHash(source);
+    }
+
+    internal static uint __ToPInvoke(StringHash source)
+    {
+        return source.Hash;
     }
 }
 

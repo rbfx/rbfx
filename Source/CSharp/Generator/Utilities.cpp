@@ -236,6 +236,8 @@ bool IsComplexValueType(const cppast::cpp_type& type)
         return IsComplexValueType(dynamic_cast<const cppast::cpp_reference_type&>(type).referee());
     case cppast::cpp_type_kind::user_defined_t:
         return !IsEnumType(type);
+    case cppast::cpp_type_kind::cv_qualified_t:
+        return IsComplexValueType(dynamic_cast<const cppast::cpp_cv_qualified_type&>(type).type());
     default:
         return true;
     }
