@@ -25,7 +25,7 @@
 #include <Urho3D/IO/File.h>
 #include <Printer/CodePrinter.h>
 #include "GeneratorContext.h"
-#include "BuildApi.h"
+#include "BuildApiPass.h"
 
 
 namespace Urho3D

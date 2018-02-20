@@ -28,7 +28,7 @@
 #include "Pass/CSharp/GenerateClassWrappers.h"
 #include "Pass/CSharp/GeneratePInvokePass.h"
 #include "Pass/CSharp/GenerateCSApiPass.h"
-#include "Pass/BuildApi.h"
+#include "Pass/BuildApiPass.h"
 #include "Pass/FindBaseClassesPass.h"
 #include "Pass/CSharp/MoveGlobalsPass.h"
 #include "Pass/CSharp/Urho3DCustomPass.h"
