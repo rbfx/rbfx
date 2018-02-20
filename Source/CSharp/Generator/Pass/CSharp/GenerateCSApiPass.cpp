@@ -122,14 +122,25 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
                             {"has_params", !func->GetParameters().empty()},
                             {"param_name_list", ParameterNameList(func->GetParameters()).CString()},
                             {"cs_param_name_list", ParameterNameList(func->GetParameters(), mapToCS).CString()},
-                            {"return", !IsVoid(func->GetReturnType()) ? "return " : ""}
+                            {"return", !IsVoid(func->GetReturnType()) ? "return " : ""},
+                            {"source_class_name", Sanitize(cls->sourceName_).CString()},
+                            {"c_function_name", func->cFunctionName_.CString()},
                         });
-                        printer_ << fmt("set_{{class_name}}_fn{{name}}(handle_, (handle__{{#has_params}}, {{param_name_list}}{{/has_params}}) =>", vars);
-                        printer_.Indent();
-                        {
-                            printer_ << fmt("{{return}}this.{{name}}({{cs_param_name_list}});", vars);
-                        }
-                        printer_.Dedent("});");
+                        // Optimization: do not route c++ virtual method calls through .NET if user does not override
+                        // such method in a managed class.
+//                        printer_ << fmt("if (typeof({{class_name}}).GetMethod(\"{{name}}\").DeclaringType == "
+//                                            "typeof({{class_name}}))", vars);
+//                        printer_.Indent();
+//                        {
+                            printer_ << fmt("set_{{source_class_name}}_fn{{c_function_name}}(handle_, "
+                                            "(handle__{{#has_params}}, {{param_name_list}}{{/has_params}}) =>", vars);
+                            printer_.Indent();
+                            {
+                                printer_ << fmt("{{return}}this.{{name}}({{cs_param_name_list}});", vars);
+                            }
+                            printer_.Dedent("});");
+//                        }
+//                        printer_.Dedent();
                     }
                 }
             }

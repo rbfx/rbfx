@@ -1,19 +1,14 @@
 #pragma once
 #include <Urho3D/Urho3DAll.h>
 #include <string>
+#include <type_traits>
 
 
 /// Object that manages lifetime of native object which was passed to managed runtime.
 struct NativeObjectHandle
 {
     void* instance_ = nullptr;
-
     void (* deleter_)(NativeObjectHandle* handle) = nullptr;
-
-    NativeObjectHandle(void* instance, void(* deleter)(NativeObjectHandle*))
-        : instance_(instance), deleter_(deleter)
-    {
-    }
 
     ~NativeObjectHandle()
     {
@@ -32,60 +27,30 @@ public:
     NativeObjectHandle* GetObjectHandle(const Urho3D::String& str) = delete;
     NativeObjectHandle* GetObjectHandle(const Urho3D::WString& str) = delete;
     NativeObjectHandle* GetObjectHandle(const std::wstring& str) = delete;
-    /// Returns a native object handle which holds a reference to native refcounted object.
-    NativeObjectHandle* GetObjectHandle(Urho3D::RefCounted* ref, bool doCopy)
-    {
-        MutexLock scoped(lock_);
-        ref->AddRef();
-        return handlesAllocator_.Reserve((void*) ref, [](NativeObjectHandle* handle)
-        {
-            ((Urho3D::RefCounted*) handle->instance_)->ReleaseRef();
-        });
-    }
-    /// Returns a native object handle which holds a reference to native refcounted object.
-    template<typename T>
-    NativeObjectHandle* GetObjectHandle(const Urho3D::SharedPtr<T>& ref, bool doCopy)
-    {
-        MutexLock scoped(lock_);
-        ref->AddRef();
-        return handlesAllocator_.Reserve((void*) ref, [](NativeObjectHandle* handle)
-        {
-            ((T*) handle->instance_)->ReleaseRef();
-        });
-    }
-    /// Returns a native object handle which holds a reference to native refcounted object.
-    template<typename T>
-    NativeObjectHandle* GetObjectHandle(const Urho3D::WeakPtr<T>& ref, bool doCopy)
-    {
-        MutexLock scoped(lock_);
-        ref->AddRef();
-        return handlesAllocator_.Reserve((void*) ref, [](NativeObjectHandle* handle)
-        {
-            ((T*) handle->instance_)->ReleaseRef();
-        });
-    }
+
     /// Returns a native object handle which holds a copy of native object.
     template<typename T>
-    NativeObjectHandle* GetObjectHandle(const T& value, bool doCopy)
+    NativeObjectHandle* GetObjectHandle(T* value)
     {
         MutexLock scoped(lock_);
-        return handlesAllocator_.Reserve((void*) new T(value), [](NativeObjectHandle* handle)
-        {
-            delete ((T*) handle->instance_);
-        });
+        auto* handle = handlesAllocator_.Reserve();
+        TypeHandler<T, std::is_base_of<Urho3D::RefCounted, T>::value, std::is_copy_constructible<T>::value>::AddRef(value);
+        handle->instance_ = (void*)value;
+        handle->deleter_ = [](NativeObjectHandle* handle) { TypeHandler<T, std::is_base_of<Urho3D::RefCounted, T>::value, std::is_copy_constructible<T>::value>::ReleaseRef((T*) handle->instance_); };
+        return handle;
     }
+    template<typename T>
+    NativeObjectHandle* GetObjectCopyHandle(T* value)
+    {
+        T* copy = TypeHandler<T, std::is_base_of<Urho3D::RefCounted, T>::value, std::is_copy_constructible<T>::value>::Copy(value);
+        return GetObjectHandle(copy);  // Takes ownership of `copy`.
+    }
+
     /// Returns a native object handle which holds a copy of native object.
     template<typename T>
-    NativeObjectHandle* GetObjectHandle(const T* value, bool doCopy)
-    {
-        MutexLock scoped(lock_);
-        if (doCopy)
-            value = new T(*value);
-        return handlesAllocator_.Reserve((void*)value, [](NativeObjectHandle* handle)
-        {
-            delete ((T*) handle->instance_);
-        });
-    }
+    NativeObjectHandle* GetObjectHandle(const T& value) { return GetObjectHandle(const_cast<T*>(&value)); }
+    template<typename T>
+    NativeObjectHandle* GetObjectCopyHandle(const T& value) { return GetObjectCopyHandle(const_cast<T*>(&value)); }
 
     void FreeObjectHandle(NativeObjectHandle* handle)
     {
@@ -94,6 +59,38 @@ public:
     }
 
 protected:
+    template<typename T, bool TRefCounted, bool TCopyable> struct TypeHandler { };
+
+    // Refcounted
+    template<typename T> struct TypeHandler<T, true, true>
+    {
+        static void AddRef(T* object) { object->AddRef(); }
+        static void ReleaseRef(T* object) { object->ReleaseRef(); }
+        static T* Copy(T* object) { return object; }
+    };
+    template<typename T> struct TypeHandler<T, true, false>
+    {
+        static void AddRef(T* object) { object->AddRef(); }
+        static void ReleaseRef(T* object) { object->ReleaseRef(); }
+        static T* Copy(T* object) { return object; }
+    };
+
+    // Copyable
+    template<typename T> struct TypeHandler<T, false, true>
+    {
+        static void AddRef(T* object) { }
+        static void ReleaseRef(T* object) { delete object; }
+        static T* Copy(T* object) { return new T(*object); }
+    };
+
+    // Non-copyable
+    template<typename T> struct TypeHandler<T, false, false>
+    {
+        static void AddRef(T* object) { }
+        static void ReleaseRef(T* object) { }
+        static T* Copy(T* object) { return object; }
+    };
+
     Mutex lock_;
     Allocator<NativeObjectHandle> handlesAllocator_;
 };

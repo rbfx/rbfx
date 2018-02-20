@@ -53,18 +53,19 @@ std::regex WildcardToRegex(const Urho3D::String& wildcard)
     return std::regex(regex.CString());
 }
 
-String GetSymbolName(const cppast::cpp_entity& e)
+String GetBaseSymbolName(const cppast::cpp_entity& e)
 {
     String name = e.name();
     if (name.Empty())
         // Give unique symbol to anonymous entities
-        name = ToString("anonymous_%p", (void*)&e);
+        name = ToString("anonymous_%p", (void*) &e);
 
     Vector<String> elements{name};
     type_safe::optional_ref<const cppast::cpp_entity> ref(e.parent());
     while (ref.has_value())
     {
-        if (!cppast::is_templated(ref.value()) && !cppast::is_friended(ref.value()) && ref.value().kind() != cppast::cpp_entity_kind::file_t)
+        if (!cppast::is_templated(ref.value()) && !cppast::is_friended(ref.value()) &&
+            ref.value().kind() != cppast::cpp_entity_kind::file_t)
         {
             const auto& scope = ref.value().scope_name();
             if (scope.has_value())
@@ -78,6 +79,37 @@ String GetSymbolName(const cppast::cpp_entity& e)
         Swap(elements[i], elements[elements.Size() - i - 1]);
 
     return String::Joined(elements, "::");
+}
+
+String GetSymbolName(const cppast::cpp_entity& e)
+{
+    String name = GetBaseSymbolName(e);
+    // Make signature unique for overloaded functions
+    switch (e.kind())
+    {
+    case cppast::cpp_entity_kind::function_t:
+    {
+        const auto& func = dynamic_cast<const cppast::cpp_function&>(e);
+        name += func.signature().c_str();
+        break;
+    }
+    case cppast::cpp_entity_kind::member_function_t:
+    {
+        const auto& func = dynamic_cast<const cppast::cpp_member_function&>(e);
+        name += func.signature().c_str();
+        break;
+    }
+    case cppast::cpp_entity_kind::constructor_t:
+    {
+        const auto& func = dynamic_cast<const cppast::cpp_constructor&>(e);
+        name += func.signature().c_str();
+        break;
+    }
+    default:
+        break;
+    }
+
+    return name;
 }
 
 String GetSymbolName(const cppast::cpp_entity* e)

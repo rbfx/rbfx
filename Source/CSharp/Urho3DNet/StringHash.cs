@@ -8,7 +8,7 @@ namespace Urho3D
 public struct StringHash
 {
     private uint value_;
-    public uint Hash { get { return value_; } }
+    public uint Hash => value_;
 
     public StringHash(uint value)
     {

@@ -68,6 +68,7 @@ public:
         {
             name_ = source->name();
             symbolName_ = sourceName_ = GetSymbolName(*source);
+            baseSymbolName_ = GetBaseSymbolName(*source);
             if (name_.Empty())
             {
                 name_ = symbolName_;
@@ -102,8 +103,10 @@ public:
     String name_;
     /// Name of declaration that is to be wrapped.
     String sourceName_;
-    /// Unique name pointing to entity in c++ ast.
+    /// Unique name pointing to entity in c++ ast. It includes function signature.
     String symbolName_;
+    /// Not necessarily unique name pointing to entity. Same as symbolName_ without function signature.
+    String baseSymbolName_;
     /// C API function (base) name of this declaration.
     String cFunctionName_;
     /// When `false` declaration is protected.

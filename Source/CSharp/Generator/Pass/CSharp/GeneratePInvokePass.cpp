@@ -202,6 +202,7 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             {"has_params", !func->GetParameters().empty()},
             {"ret_attribute", ""},
             {"class_name", func->parent_->name_.CString()},
+            {"source_class_name", Sanitize(func->parent_->sourceName_).CString()},
             {"name", func->name_.CString()},
         });
         if (csRetType == "string")
@@ -216,7 +217,7 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             printer_ << fmt("internal delegate {{ret_attribute}}{{cs_return}} {{name}}Delegate(IntPtr handle{{#has_params}}, {{cs_param_list}}{{/has_params}});", vars);
             printer_ << "";
             printer_ << dllImport;
-            printer_ << fmt("internal static extern void set_{{class_name}}_fn{{name}}(IntPtr handle, {{name}}Delegate cb);", vars);
+            printer_ << fmt("internal static extern void set_{{source_class_name}}_fn{{c_function_name}}(IntPtr handle, {{name}}Delegate cb);", vars);
             printer_ << "";
         }
     }

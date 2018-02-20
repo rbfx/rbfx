@@ -33,6 +33,7 @@ namespace Urho3D
 
 void GenerateClassWrappers::Start()
 {
+    printer_ << "#pragma once";
     printer_ << "#include <Urho3D/Urho3DAll.h>";
     printer_ << "";
     printer_ << "namespace Wrappers";
@@ -134,15 +135,16 @@ bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
                         {"return",              IsVoid(func->GetReturnType()) ? "" : "return"},
                         {"const",               func->isConstant_ ? "const " : ""},
                         {"has_params",          !func->GetParameters().empty()},
+                        {"symbol_name",         Sanitize(func->symbolName_).CString()}
                     });
                     if (func->IsVirtual())
                     {
-                        printer_ << fmt("{{type}}(*fn{{name}})({{class_name}} {{const}}*{{#has_params}}, {{/has_params}}{{parameter_list}}) = nullptr;", vars);
+                        printer_ << fmt("{{type}}(*fn{{symbol_name}})({{class_name}} {{const}}*{{#has_params}}, {{/has_params}}{{parameter_list}}) = nullptr;", vars);
                         // Virtual method that calls said pointer
                         printer_ << fmt("{{type}} {{name}}({{parameter_list}}) {{const}}override", vars);
                         printer_.Indent();
                         {
-                            printer_ << fmt("if (fn{{name}} == nullptr)", vars);
+                            printer_ << fmt("if (fn{{symbol_name}} == nullptr)", vars);
                             printer_.Indent();
                             {
                                 printer_ << fmt("{{full_class_name}}::{{name}}({{parameter_name_list}});", vars);
@@ -151,7 +153,7 @@ bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
                             printer_ << "else";
                             printer_.Indent();
                             {
-                                printer_ << fmt("{{return}}(fn{{name}})(this{{#has_params}}, {{/has_params}}{{parameter_name_list}});", vars);
+                                printer_ << fmt("{{return}}(fn{{symbol_name}})(this{{#has_params}}, {{/has_params}}{{parameter_name_list}});", vars);
                             }
                             printer_.Dedent();
 

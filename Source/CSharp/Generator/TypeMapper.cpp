@@ -192,9 +192,9 @@ String TypeMapper::MapToC(const cppast::cpp_type& type, const String& expression
         // A unmapped type. Refcounted objects will be returned as references ignoring `canCopy` value. Value types will
         // always get copied because it is the only sensible way to move them. Objects pointed by pointers will be
         // copied only if `canCopy` is `true`, otherwise handle will assume ownership if such object.
-        result = fmt("script->GetObjectHandle({{value}}, {{copy}})", {
+        result = fmt("script->GetObject{{#copy}}Copy{{/copy}}Handle({{value}})", {
             {"value", result.CString()},
-            {"copy", canCopy ? "true" : "false"}
+            {"copy", canCopy},
         });
     }
 

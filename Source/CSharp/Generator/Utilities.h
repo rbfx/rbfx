@@ -37,8 +37,10 @@ namespace Urho3D
 
 /// Convert a wildcard string to regular expression. "*" matches anything except /, "**" matches everything including /.
 std::regex WildcardToRegex(const String& wildcard);
-/// Returns entity name including names of it's parents (separated by ::).
+/// Returns entity name including names of it's parents (separated by ::). Also includes function signature.
 String GetSymbolName(const cppast::cpp_entity& e);
+/// Returns entity name including names of it's parents (separated by ::).
+String GetBaseSymbolName(const cppast::cpp_entity& e);
 /// Returns entity name including names of it's parents (separated by ::).
 String GetSymbolName(const cppast::cpp_entity* e);
 /// Ensure arbitrary string is a valid identifier by replacing invalid characters with "_". "_" will be prepended if string starts with a number.

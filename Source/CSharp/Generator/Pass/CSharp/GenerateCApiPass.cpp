@@ -86,7 +86,9 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
             {"name",                func->name_.CString()},
             {"c_function_name",     func->cFunctionName_.CString()},
             {"parameter_name_list", ParameterNameList(func->GetParameters(), toCppType).CString()},
-            {"instance",            fmt("(({{class_name}}*)handle->instance_)", {{"class_name", func->parent_->sourceName_.CString()}}).c_str()}
+            {"instance",            fmt("(({{class_name}}*)handle->instance_)", {{"class_name", func->parent_->sourceName_.CString()}}).c_str()},
+            {"base_symbol_name",    func->baseSymbolName_.CString()},
+            {"is_public",           func->isPublic_},
         });
 
         if (!func->isStatic_)
@@ -117,14 +119,20 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
                 call = fmt("new {{class_name}}({{parameter_name_list}})", vars);
             else
             {
-                call = fmt("{{name}}({{parameter_name_list}})", vars);
+                if (func->IsVirtual())
+                    // Virtual methods always overriden in wrapper class so accessing them by simple name should not be
+                    // an issue.
+                    call = fmt("{{name}}({{parameter_name_list}})", vars);
+                else if (func->isPublic_)
+                    // Non-virtual public methods sometimes have issues being called. Use fully qualified name for
+                    // calling them.
+                    call = fmt("{{base_symbol_name}}({{parameter_name_list}})", vars);
+                else
+                    // Protected non-virtual methods are wrapped in public proxy methods.
+                    call = fmt("__public_{{name}}({{parameter_name_list}})", vars);
 
                 if (!func->isStatic_)
-                {
-                    if (!func->isPublic_ && !func->IsVirtual())
-                        call = "__public_" + call;
                     call = fmt("{{instance}}->", vars).c_str() + call;
-                }
             }
 
             if (!IsVoid(func->GetReturnType()) || func->kind_ == Declaration::Kind::Constructor)
@@ -142,11 +150,11 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
 
         if (func->IsVirtual())
         {
-            printer_ << fmt("URHO3D_EXPORT_API void set_{{class_name_sanitized}}_fn{{name}}(NativeObjectHandle* handle, void* fn)",
+            printer_ << fmt("URHO3D_EXPORT_API void set_{{class_name_sanitized}}_fn{{c_function_name}}(NativeObjectHandle* handle, void* fn)",
                 vars);
             printer_.Indent();
             {
-                printer_ << fmt("{{instance}}->fn{{name}} = (decltype({{instance}}->fn{{name}}))fn;", vars);
+                printer_ << fmt("{{instance}}->fn{{c_function_name}} = (decltype({{instance}}->fn{{c_function_name}}))fn;", vars);
             }
             printer_.Dedent();
             printer_.WriteLine();

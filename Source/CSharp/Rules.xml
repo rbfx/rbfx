@@ -38,14 +38,15 @@
         <exclude>Urho3D::WString</exclude>
         <exclude>Urho3D::StringHash</exclude>
         <exclude>Urho3D::Variant::customValue*_</exclude>
+        <exclude>Urho3D::Variant::Variant(void*)</exclude>
         <!-- C# reflection can be used instead of these -->
         <exclude>Urho3D::TypeInfo</exclude>
-        <exclude>Urho3D::*::GetType</exclude>
-        <exclude>Urho3D::*::GetTypeStatic</exclude>
-        <exclude>Urho3D::*::GetTypeName</exclude>
-        <exclude>Urho3D::*::GetTypeNameStatic</exclude>
-        <exclude>Urho3D::*::GetTypeInfo</exclude>
-        <exclude>Urho3D::*::GetTypeInfoStatic</exclude>
+        <exclude>Urho3D::*::GetType() const</exclude>
+        <exclude>Urho3D::*::GetTypeStatic()</exclude>
+        <exclude>Urho3D::*::GetTypeName() const</exclude>
+        <exclude>Urho3D::*::GetTypeNameStatic()</exclude>
+        <exclude>Urho3D::*::GetTypeInfo() const</exclude>
+        <exclude>Urho3D::*::GetTypeInfoStatic()</exclude>
     </symbols>
     <inheritable>
         <class>Urho3D::Application</class>
