@@ -671,12 +671,12 @@ void UIElement::SetHeight(int height)
 }
 
 
-void UIElement::SetRight(int pos, bool maintainLeft /*= true*/)
+void UIElement::SetRight(int right, bool maintainLeft /*= true*/)
 {
     if (maintainLeft)
-        size_.x_ = pos - position_.x_;//alter size
+        size_.x_ = right - position_.x_;//alter size
     else
-        position_.x_ += pos - (position_.x_ + size_.x_);//shift element
+        position_.x_ += right - (position_.x_ + size_.x_);//shift element
 }
 
 void UIElement::SetLeft(int left, bool maintainRight /*= true*/)
