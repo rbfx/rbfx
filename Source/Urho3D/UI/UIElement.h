@@ -222,6 +222,14 @@ public:
     void SetWidth(int width);
     /// Set height only.
     void SetHeight(int height);
+    /// Set the right position in parent space. if maintainLeft is false the element will be shifted.
+    void SetRight(int right, bool maintainLeft = true);
+    /// Set the left position in parent space. if maintainRight is false the element will be shifted.
+    void SetLeft(int left, bool maintainRight = true);
+    /// Set the top position in parent space. if maintainBottom is false the element will be shifted.
+    void SetTop(int top, bool maintainBottom = true);
+    /// Set the bottom position in parent space. if maintainTop is false the element will be shifted.
+    void SetBottom(int bottom, bool maintainTop = true);
     /// Set minimum size.
     void SetMinSize(const IntVector2& minSize);
     /// Set minimum size.
@@ -401,10 +409,10 @@ public:
     /// Return position.
     const IntVector2& GetPosition() const { return position_; }
 
-	/// Return bounding rectangle in parent space.
-	const IntRect GetBounds() const {
-		return {position_.x_, position_.y_, position_.x_ + size_.x_, position_.y_ + size_.y_};
-	}
+    /// Return bounding rectangle in parent space.
+    const IntRect GetBounds() const {
+        return {position_.x_, position_.y_, position_.x_ + size_.x_, position_.y_ + size_.y_};
+    }
 
     /// Return size.
     const IntVector2& GetSize() const { return size_; }
@@ -417,7 +425,10 @@ public:
 
     /// Get the x position of the right side of the element
     int GetRight() const { return position_.x_ + size_.x_; }
-
+    /// Get the x position of the left side of the element
+    int GetLeft() const { return position_.x_; }
+    /// Get the y position of the top side of the element
+    int GetTop() const { return position_.y_; }
     /// Get the y position of the bottom of the element
     int GetBottom() const { return position_.y_ + size_.y_; }
 

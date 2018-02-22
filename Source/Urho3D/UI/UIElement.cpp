@@ -670,6 +670,43 @@ void UIElement::SetHeight(int height)
     SetSize(IntVector2(size_.x_, height));
 }
 
+
+void UIElement::SetRight(int pos, bool maintainLeft /*= true*/)
+{
+    if (maintainLeft)
+        size_.x_ = pos - position_.x_;//alter size
+    else
+        position_.x_ += pos - (position_.x_ + size_.x_);//shift element
+}
+
+void UIElement::SetLeft(int left, bool maintainRight /*= true*/)
+{
+    if (maintainRight) {
+        size_.x_ += (position_.x_ - left);//resize
+        position_.x_ = left;//then shift
+    }
+    else
+        position_.x_ = left;
+}
+
+void UIElement::SetTop(int top, bool maintainBottom /*= true*/)
+{
+    if (maintainBottom) {
+        size_.y_ += (position_.y_ - top);//resize
+        position_.y_ = top;//then shift
+    }
+    else
+        position_.y_ = top;
+}
+
+void UIElement::SetBottom(int bottom, bool maintainTop /*= true*/)
+{
+    if (maintainTop)
+        size_.y_ = bottom - position_.y_;//alter size
+    else
+        position_.y_ += bottom - (position_.y_ + size_.y_);//shift element
+}
+
 void UIElement::SetMinSize(const IntVector2& minSize)
 {
     minSize_.x_ = Max(minSize.x_, 0);
