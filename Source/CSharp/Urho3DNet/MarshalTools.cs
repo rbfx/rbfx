@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using System.Text;
 using System.Runtime.InteropServices;
 
@@ -24,6 +25,19 @@ namespace CSharp
             string result = GetUtf8String(ptr);
             Urho3D__Free(ptr);
             return result;
+        }
+
+        internal static bool HasOverride(this MethodInfo method)
+        {
+            return (method.Attributes & MethodAttributes.Virtual) != 0 &&
+                   (method.Attributes & MethodAttributes.NewSlot) == 0;
+        }
+
+        internal static bool HasOverride(this Type type, string methodName, params Type[] paramTypes)
+        {
+            var method = type.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
+                CallingConventions.HasThis, paramTypes, new ParameterModifier[0]);
+            return method != null && method.HasOverride();
         }
     }
 }
