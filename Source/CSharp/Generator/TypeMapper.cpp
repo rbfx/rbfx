@@ -108,7 +108,7 @@ String TypeMapper::ToCType(const cppast::cpp_type& type)
 
     if (IsComplexValueType(type))
         // A value type is turned into pointer.
-        return "NativeObjectHandle*";
+        return Urho3D::GetTypeName(type) + "*";
 
     // Builtin type
     return typeName;
@@ -164,7 +164,7 @@ String TypeMapper::ToPInvokeType(const String& name, const String& default_)
     return default_;
 }
 
-String TypeMapper::ToPInvokeTypeReturn(const cppast::cpp_type& type, bool canCopy)
+String TypeMapper::ToPInvokeTypeReturn(const cppast::cpp_type& type)
 {
     String result = ToPInvokeType(cppast::remove_const(type));
     return result;
@@ -178,23 +178,36 @@ String TypeMapper::ToPInvokeTypeParam(const cppast::cpp_type& type)
     return result;
 }
 
-String TypeMapper::MapToC(const cppast::cpp_type& type, const String& expression, bool canCopy)
+String TypeMapper::MapToC(const cppast::cpp_type& type, const String& expression)
 {
     const auto* map = GetTypeMap(type);
     String result = expression;
 
     if (map)
         result = fmt(map->cppToCTemplate_.CString(), {{"value", result.CString()}});
-    else if (IsComplexValueType(type) || (IsVoid(type) && !canCopy))
-        // Stinks! If cosntructor is being mapped then it's return value naturally is void in the AST. However
-        // constructors immediately yield ownership of the object. Exploit `canCopy` to handle this case.
+    else if (IsComplexValueType(type))
     {
-        // A unmapped type. Refcounted objects will be returned as references ignoring `canCopy` value. Value types will
-        // always get copied because it is the only sensible way to move them. Objects pointed by pointers will be
-        // copied only if `canCopy` is `true`, otherwise handle will assume ownership if such object.
-        result = fmt("script->GetObject{{#copy}}Copy{{/copy}}Handle({{value}})", {
+        result = fmt("script->AddRef<{{type}}>({{value}})", {
             {"value", result.CString()},
-            {"copy", canCopy},
+            {"type", Urho3D::GetTypeName(type).CString()},
+        });
+    }
+
+    return result;
+}
+
+String TypeMapper::MapToCNoCopy(const String& type, const String& expression)
+{
+    const auto* map = GetTypeMap(type);
+    String result = expression;
+
+    if (map)
+        result = fmt(map->cppToCTemplate_.CString(), {{"value", result.CString()}});
+    else if (ToPInvokeType(type, "").Empty())
+    {
+        result = fmt("script->TakeOwnership<{{type}}>({{value}})", {
+            {"value", result.CString()},
+            {"type", type.CString()},
         });
     }
 
@@ -210,12 +223,6 @@ String TypeMapper::MapToCpp(const cppast::cpp_type& type, const String& expressi
         result = fmt(map->cToCppTemplate_.CString(), {{"value", result.CString()}});
     else if (IsComplexValueType(type))
     {
-        result = fmt("({{value}})->instance_", {{"value", result.CString()}});
-        result = fmt("({{type_name}}*)({{value}})", {
-            {"type_name", Urho3D::GetTypeName(type).CString()},
-            {"value",     result.CString()},
-        });
-
         if (type.kind() != cppast::cpp_type_kind::pointer_t)
             result = "*" + result;
     }
@@ -249,7 +256,7 @@ String TypeMapper::MapToPInvoke(const cppast::cpp_type& type, const String& expr
     return expression;
 }
 
-String TypeMapper::MapToCS(const cppast::cpp_type& type, const String& expression, bool canCopy)
+String TypeMapper::MapToCS(const cppast::cpp_type& type, const String& expression)
 {
     if (const auto* map = GetTypeMap(type))
         return fmt(map->pInvokeToCSTemplate_.CString(), {{"value", expression.CString()}});

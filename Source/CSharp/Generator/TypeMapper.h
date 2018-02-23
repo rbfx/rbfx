@@ -55,13 +55,14 @@ public:
 
     String ToCType(const cppast::cpp_type& type);
     String ToCSType(const cppast::cpp_type& type);
-    String ToPInvokeTypeReturn(const cppast::cpp_type& type, bool canCopy);
+    String ToPInvokeTypeReturn(const cppast::cpp_type& type);
     String ToPInvokeTypeParam(const cppast::cpp_type& type);
 
-    String MapToC(const cppast::cpp_type& type, const String& expression, bool canCopy);
+    String MapToC(const cppast::cpp_type& type, const String& expression);
+    String MapToCNoCopy(const String& type, const String& expression);
     String MapToCpp(const cppast::cpp_type& type, const String& expression);
     String MapToPInvoke(const cppast::cpp_type& type, const String& expression);
-    String MapToCS(const cppast::cpp_type& type, const String& expression, bool canCopy);
+    String MapToCS(const cppast::cpp_type& type, const String& expression);
 
     String ToPInvokeType(const String& name, const String& default_="IntPtr");
     String ToPInvokeType(const cppast::cpp_type& type, const String& default_="IntPtr");

@@ -81,19 +81,19 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             printer_ << fmt("internal static {{#has_bases}}new {{/has_bases}}WeakDictionary<IntPtr, {{name}}> cache_ = new WeakDictionary<IntPtr, {{name}}>();", vars);
             if (bases.Empty())
             {
-                printer_ << "internal IntPtr handle_;";
+                printer_ << "internal IntPtr instance_;";
                 printer_ << "protected volatile int disposed_;";
                 printer_ << "";
 
-                // Constructor that initializes form a handle
-                printer_ << fmt("internal {{name}}(IntPtr handle)", vars);
+                // Constructor that initializes form a instance
+                printer_ << fmt("internal {{name}}(IntPtr instance)", vars);
                 printer_.Indent();
                 {
                     // Parent class may calls this constructor with null pointer when parent class constructor itself is
                     // creating instance.
-                    printer_ << "if (handle != IntPtr.Zero)";
+                    printer_ << "if (instance != IntPtr.Zero)";
                     printer_.Indent();
-                        printer_ << "handle_ = handle;";
+                        printer_ << "instance_ = instance;";
                     printer_.Dedent();
                 }
                 printer_.Dedent();
@@ -102,7 +102,7 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             else
             {
                 // Proxy constructor to one defined above
-                printer_ << fmt("internal {{name}}(IntPtr handle) : base(handle) { }", vars);
+                printer_ << fmt("internal {{name}}(IntPtr instance) : base(instance) { }", vars);
                 printer_ << "";
             }
 
@@ -111,10 +111,10 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             {
                 printer_ << "if (Interlocked.Increment(ref disposed_) == 1)";
                 printer_.Indent();
-                printer_ << "cache_.Remove(handle_);";
-                printer_ << Sanitize(cls->symbolName_) + "_destructor(handle_);";
+                printer_ << "cache_.Remove(instance_);";
+                printer_ << Sanitize(cls->symbolName_) + "_destructor(instance_);";
                 printer_.Dedent();
-                printer_ << "handle_ = IntPtr.Zero;";
+                printer_ << "instance_ = IntPtr.Zero;";
             }
             printer_.Dedent();
             printer_ << "";
@@ -139,14 +139,14 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             printer_ << fmt("internal static IntPtr __ToPInvoke({{name}} source)", vars);
             printer_.Indent();
             {
-                printer_ << fmt("return source.handle_;", vars);
+                printer_ << fmt("return source.instance_;", vars);
             }
             printer_.Dedent();
             printer_ << "";
 
             // Destructor always exists even if it is not defined in the c++ class
             printer_ << dllImport;
-            printer_ << fmt("internal static extern void {{symbol_name}}_destructor(IntPtr handle);", {
+            printer_ << fmt("internal static extern void {{symbol_name}}_destructor(IntPtr instance);", {
                 {"symbol_name", Sanitize(cls->symbolName_).CString()}
             });
             printer_ << "";
@@ -167,7 +167,7 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
 
         // Getter
         printer_ << dllImport;
-        String csReturnType = typeMapper_->ToPInvokeTypeReturn(var->GetType(), false);
+        String csReturnType = typeMapper_->ToPInvokeTypeReturn(var->GetType());
         auto vars = fmt({
             {"cs_return", csReturnType.CString()},
             {"cs_param", typeMapper_->ToPInvokeTypeParam(var->GetType()).CString()},
@@ -179,7 +179,7 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             // This is safe as member variables are always returned by copy from a getter.
             printer_ << "[return: MarshalAs(UnmanagedType.LPUTF8Str)]";
         }
-        printer_ << fmt("internal static extern {{cs_return}} get_{{c_function_name}}({{#not_static}}IntPtr handle{{/not_static}});", vars);
+        printer_ << fmt("internal static extern {{cs_return}} get_{{c_function_name}}({{#not_static}}IntPtr instance{{/not_static}});", vars);
         printer_ << "";
 
         // Setter
@@ -187,7 +187,7 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
         {
             printer_ << dllImport;
             printer_
-                << fmt("internal static extern void set_{{c_function_name}}({{#not_static}}IntPtr handle, {{/not_static}}{{cs_param}} value);", vars);
+                << fmt("internal static extern void set_{{c_function_name}}({{#not_static}}IntPtr instance, {{/not_static}}{{cs_param}} value);", vars);
             printer_ << "";
         }
     }
@@ -210,7 +210,7 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
 
         printer_ << dllImport;
         auto csParams = ParameterList(func->GetParameters(), std::bind(&TypeMapper::ToPInvokeTypeParam, typeMapper_, std::placeholders::_1));
-        String csRetType = typeMapper_->ToPInvokeTypeReturn(func->GetReturnType(), true);
+        String csRetType = typeMapper_->ToPInvokeTypeReturn(func->GetReturnType());
         auto vars = fmt({
             {"c_function_name", decl->cFunctionName_.CString()},
             {"cs_param_list", csParams.CString()},
@@ -223,17 +223,17 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
         });
         if (csRetType == "string")
             printer_ << "[return: MarshalAs(UnmanagedType.LPUTF8Str)]";
-        printer_ << fmt("internal static extern {{cs_return}} {{c_function_name}}(IntPtr handle{{#has_params}}, {{cs_param_list}}{{/has_params}});", vars);
+        printer_ << fmt("internal static extern {{cs_return}} {{c_function_name}}(IntPtr instance{{#has_params}}, {{cs_param_list}}{{/has_params}});", vars);
         printer_ << "";
 
         if (func->IsVirtual())
         {
             // API for setting callbacks of virtual methods
             printer_ << "[UnmanagedFunctionPointer(CallingConvention.Cdecl)]";
-            printer_ << fmt("internal delegate {{ret_attribute}}{{cs_return}} {{name}}Delegate(IntPtr handle{{#has_params}}, {{cs_param_list}}{{/has_params}});", vars);
+            printer_ << fmt("internal delegate {{ret_attribute}}{{cs_return}} {{name}}Delegate(IntPtr instance{{#has_params}}, {{cs_param_list}}{{/has_params}});", vars);
             printer_ << "";
             printer_ << dllImport;
-            printer_ << fmt("internal static extern void set_{{source_class_name}}_fn{{c_function_name}}(IntPtr handle, {{name}}Delegate cb);", vars);
+            printer_ << fmt("internal static extern void set_{{source_class_name}}_fn{{c_function_name}}(IntPtr instance, {{name}}Delegate cb);", vars);
             printer_ << "";
         }
     }

@@ -7,7 +7,9 @@ set (SOURCE_FILES_GENERATED
 )
 
 foreach (filename ${SOURCE_FILES_GENERATED})
-    file (WRITE ${filename} "")
+    if (NOT EXISTS ${filename})
+        file (WRITE ${filename} "")
+    endif ()
 endforeach ()
 
 add_library(Urho3DCSharp SHARED ${SOURCE_FILES_MANUAL} ${SOURCE_FILES_GENERATED})

@@ -73,5 +73,11 @@
         <typemap type="char const*">
             <cpp_to_c>strdup({{value}})</cpp_to_c>
         </typemap>
+        <typemap type="Urho3D::VariantMap" ctype="Urho3D::VariantMap*" ptype="IntPtr" cstype="global::Urho3D.VariantMap">
+            <cpp_to_c>script->AddRef&lt;Urho3D::VariantMap&gt;({{value}})</cpp_to_c>
+            <c_to_cpp>*{{value}}</c_to_cpp>
+            <pinvoke_to_cs>new global::Urho3D.VariantMap({{value}})</pinvoke_to_cs>
+            <cs_to_pinvoke>{{value}}.instance_</cs_to_pinvoke>
+        </typemap>
     </typemaps>
 </rules>

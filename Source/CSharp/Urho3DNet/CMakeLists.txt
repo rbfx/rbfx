@@ -12,7 +12,9 @@ set (SOURCE_FILES_GENERATED
 )
 
 foreach (filename ${SOURCE_FILES_GENERATED})
-    file (WRITE ${filename} "")
+    if (NOT EXISTS ${filename})
+        file (WRITE ${filename} "")
+    endif ()
 endforeach ()
 
 add_custom_target(Urho3DNet

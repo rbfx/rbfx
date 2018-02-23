@@ -65,13 +65,13 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
         // Destructor always exists even if it is not defined in the class
         String cFunctionName = GetUniqueName(Sanitize(cls->symbolName_) + "_destructor");
 
-        printer_ << fmt("URHO3D_EXPORT_API void {{c_function_name}}(NativeObjectHandle* handle)", {
+        printer_ << fmt("URHO3D_EXPORT_API void {{c_function_name}}({{class_name}}* instance)", {
             {"c_function_name",     cFunctionName.CString()},
             {"class_name",          cls->name_.CString()},
         });
         printer_.Indent();
         {
-            printer_ << "script->FreeObjectHandle(handle);";
+            printer_ << "script->ReleaseRef(instance);";
         }
         printer_.Dedent();
         printer_ << "";
@@ -86,9 +86,9 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
             {"name",                func->name_.CString()},
             {"c_function_name",     func->cFunctionName_.CString()},
             {"parameter_name_list", ParameterNameList(func->GetParameters(), toCppType).CString()},
-            {"instance",            fmt("(({{class_name}}*)handle->instance_)", {{"class_name", func->parent_->sourceName_.CString()}}).c_str()},
             {"base_symbol_name",    func->baseSymbolName_.CString()},
             {"is_public",           func->isPublic_},
+            {"class_name",          func->parent_->sourceName_.CString()},
         });
 
         if (!func->isStatic_)
@@ -98,7 +98,7 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
             {
                 if (!cParameterList.Empty())
                     cParameterList = ", " + cParameterList;
-                cParameterList = "NativeObjectHandle* handle" + cParameterList;
+                cParameterList = func->parent_->sourceName_ + "* instance" + cParameterList;
             }
             vars.set("class_name", func->parent_->sourceName_.CString());
             vars.set("class_name_sanitized", Sanitize(func->parent_->sourceName_).CString());
@@ -107,7 +107,7 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
 
         // Constructor wrapper returns a pointer, but Declaration has a void return type for constructors.
         if (func->kind_ == Declaration::Kind::Constructor)
-            vars.set("c_return_type", "NativeObjectHandle*");
+            vars.set("c_return_type", (func->parent_->sourceName_ + "*").CString());
         else
             vars.set("c_return_type", typeMapper_->ToCType(func->GetReturnType()).CString());
 
@@ -132,13 +132,18 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
                     call = fmt("__public_{{name}}({{parameter_name_list}})", vars);
 
                 if (!func->isStatic_)
-                    call = fmt("{{instance}}->", vars).c_str() + call;
+                    call = fmt("instance->", vars).c_str() + call;
             }
 
-            if (!IsVoid(func->GetReturnType()) || func->kind_ == Declaration::Kind::Constructor)
+            if (!IsVoid(func->GetReturnType()))
             {
                 printer_.Write("return ");
-                call = typeMapper_->MapToC(func->GetReturnType(), call, func->kind_ != Declaration::Kind::Constructor);
+                call = typeMapper_->MapToC(func->GetReturnType(), call);
+            }
+            else if (func->kind_ == Declaration::Kind::Constructor)
+            {
+                printer_.Write("return ");
+                call = typeMapper_->MapToCNoCopy(func->parent_->sourceName_, call);
             }
 
             printer_.Write(call);
@@ -150,11 +155,11 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
 
         if (func->IsVirtual())
         {
-            printer_ << fmt("URHO3D_EXPORT_API void set_{{class_name_sanitized}}_fn{{c_function_name}}(NativeObjectHandle* handle, void* fn)",
+            printer_ << fmt("URHO3D_EXPORT_API void set_{{class_name_sanitized}}_fn{{c_function_name}}({{class_name}}* instance, void* fn)",
                 vars);
             printer_.Indent();
             {
-                printer_ << fmt("{{instance}}->fn{{c_function_name}} = (decltype({{instance}}->fn{{c_function_name}}))fn;", vars);
+                printer_ << fmt("instance->fn{{c_function_name}} = (decltype(instance->fn{{c_function_name}}))fn;", vars);
             }
             printer_.Dedent();
             printer_.WriteLine();
@@ -174,18 +179,18 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
                          {"c_function_name", var->cFunctionName_.CString()},
                          {"namespace_name",  ns->sourceName_.CString()},
                          {"name",            var->name_.CString()},
-                         {"type",            GetConversionType(var->GetType()).CString()}
+                         {"type",            GetConversionType(var->GetType()).CString()},
         });
         // Getter
         printer_.Write(fmt("URHO3D_EXPORT_API {{c_type}} get_{{c_function_name}}(", vars));
         if (!var->isStatic_)
-            printer_.Write(fmt("NativeObjectHandle* handle", vars));
+            printer_.Write(fmt("{{namespace_name}}* instance", vars));
         printer_.Write(")");
         printer_.Indent();
 
         String expr;
         if (!var->isStatic_)
-            expr += fmt("(({{namespace_name}}*)handle->instance_)->", vars).c_str();
+            expr += "instance->";
         else
             expr += ns->sourceName_ + "::";
 
@@ -195,7 +200,7 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
             expr += fmt("{{name}}", vars).c_str();
 
         // Variables are non-temporary therefore they do not need copying.
-        printer_ << fmt("return {{mapped}};", {{"mapped", typeMapper_->MapToC(var->GetType(), expr, false).CString()}});
+        printer_ << fmt("return {{mapped}};", {{"mapped", typeMapper_->MapToC(var->GetType(), expr).CString()}});
 
         printer_.Dedent();
         printer_.WriteLine();
@@ -205,13 +210,13 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
         {
             printer_.Write(fmt("URHO3D_EXPORT_API void set_{{c_function_name}}(", vars));
             if (!var->isStatic_)
-                printer_.Write(fmt("NativeObjectHandle* handle, ", vars));
+                printer_.Write(fmt("{{namespace_name}}* instance, ", vars));
             printer_.Write(fmt("{{c_type}} value)", vars));
             printer_.Indent();
 
             vars.set("value", typeMapper_->MapToCpp(var->GetType(), "value").CString());
             if (!var->isStatic_)
-                printer_.Write(fmt("(({{namespace_name}}*)handle->instance_)->", vars));
+                printer_.Write(fmt("instance->", vars));
             else
                 expr += ns->sourceName_ + "::";
 
