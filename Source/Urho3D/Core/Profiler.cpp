@@ -101,7 +101,7 @@ bool Profiler::GetEventProfilingEnabled() const
 
 HashMap<unsigned, ::profiler::BaseBlockDescriptor*> blockDescriptorCache_;
 
-void Profiler::BeginBlock(const char* name, const char* file, int line, unsigned int argb, unsigned char status)
+void Profiler::BeginBlock(const char* name, const char* file, int line, unsigned int argb, ProfilerBlockStatus status)
 {
     // Line used as starting hash value for efficiency.
     // This is likely to not play well with hot code reload.
@@ -132,7 +132,7 @@ void Profiler::RegisterCurrentThread(const char* name)
 }
 
 ProfilerDescriptor::ProfilerDescriptor(const char* name, const char* file, int line, unsigned int argb,
-    unsigned char status)
+                                       ProfilerBlockStatus status)
 {
     String uniqueName = ToString("%p", this);
     descriptor_ = (void*) ::profiler::registerDescription((::profiler::EasyBlockStatus)status, uniqueName.CString(),

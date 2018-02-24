@@ -32,9 +32,9 @@ namespace Urho3D
 {
 
 static const int PROFILER_DEFAULT_PORT = 28077;
-static const uint32_t PROFILER_COLOR_DEFAULT = 0xffffecb3;
-static const uint32_t PROFILER_COLOR_EVENTS = 0xffff9800;
-static const uint32_t PROFILER_COLOR_RESOURCES = 0xff00bcd4;
+static const unsigned PROFILER_COLOR_DEFAULT = 0xffffecb3;
+static const unsigned PROFILER_COLOR_EVENTS = 0xffff9800;
+static const unsigned PROFILER_COLOR_RESOURCES = 0xff00bcd4;
 
 // Copied from easy_profiler
 enum ProfilerBlockStatus
@@ -86,7 +86,7 @@ public:
     /// Begin non-scoped profiled block. Block has to be terminated with call to EndBlock(). This is slow and is for
     /// integration with scripting lnaguages. Use URHO3D_PROFILE* macros when writing c++ code instead.
     static void BeginBlock(const char* name, const char* file, int line, unsigned int argb=PROFILER_COLOR_DEFAULT,
-                           unsigned char status=ProfilerBlockStatus::ON);
+                           ProfilerBlockStatus status=ProfilerBlockStatus::ON);
     /// End block started with BeginBlock().
     static void EndBlock();
     /// Register name of current thread. Threads will be labeled in profiler data.
@@ -101,7 +101,7 @@ class URHO3D_API ProfilerDescriptor
 {
 public:
     ProfilerDescriptor(const char* name, const char* file, int line, unsigned int argb=PROFILER_COLOR_DEFAULT,
-        unsigned char status=ProfilerBlockStatus::ON);
+                       ProfilerBlockStatus status=ProfilerBlockStatus::ON);
 
     void* descriptor_;
 };
