@@ -1539,8 +1539,10 @@ unsigned UIElement::FindChild(UIElement* element) const
 
 void UIElement::SetParent(UIElement* parent, unsigned index)
 {
-    if (parent)
-        parent->InsertChild(index, this);
+	if (parent)
+		parent->InsertChild(index, this);
+	else if (parent_)
+		parent_->RemoveChild(this);
 }
 
 void UIElement::SetVar(StringHash key, const Variant& value)
