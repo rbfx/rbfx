@@ -77,14 +77,11 @@ bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
         if (e->kind_ == Declaration::Kind::Constructor)
         {
             const auto* ctor = dynamic_cast<const Function*>(e.Get());
-            if (!ctor->GetParameters().empty() /*&& ctor->name_ == cls->name_ /*not a parent constructor*/)
-            {
-                printer_ << fmt("{{name}}({{parameter_list}}) : {{symbol_name}}({{parameter_name_list}}) { }",
-                    {{"name",                cls->name_.CString()},
-                     {"symbol_name",         cls->symbolName_.CString()},
-                     {"parameter_list",      ParameterList(ctor->GetParameters()).CString()},
-                     {"parameter_name_list", ParameterNameList(ctor->GetParameters()).CString()},});
-            }
+            printer_ << fmt("{{name}}({{parameter_list}}) : {{symbol_name}}({{parameter_name_list}}) { }",
+                {{"name",                cls->name_.CString()},
+                 {"symbol_name",         cls->symbolName_.CString()},
+                 {"parameter_list",      ParameterList(ctor->GetParameters()).CString()},
+                 {"parameter_name_list", ParameterNameList(ctor->GetParameters()).CString()},});
         }
     }
     printer_ << fmt("virtual ~{{name}}() = default;", {{"name", cls->name_.CString()}});

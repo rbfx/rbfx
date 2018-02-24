@@ -50,10 +50,6 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
         return typeMapper_->MapToPInvoke(param.type(), EnsureNotKeyword(param.name()));
     };
 
-    auto mapToCS = [&](const cppast::cpp_function_parameter& param) {
-        return typeMapper_->MapToCS(param.type(), EnsureNotKeyword(param.name()));
-    };
-
     if (decl->kind_ == Declaration::Kind::Class)
     {
         Class* cls = dynamic_cast<Class*>(decl);
@@ -120,8 +116,13 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
                             {"class_name", cls->name_.CString()},
                             {"name", func->name_.CString()},
                             {"has_params", !func->GetParameters().empty()},
-                            {"param_name_list", ParameterNameList(func->GetParameters()).CString()},
-                            {"cs_param_name_list", ParameterNameList(func->GetParameters(), mapToCS).CString()},
+                            {"param_name_list", ParameterNameList(func->GetParameters(), [&](const cppast::cpp_function_parameter& param) {
+                                // Avoid possible parameter name collision in enclosing scope.
+                                return param.name() + "_";
+                            }).CString()},
+                            {"cs_param_name_list", ParameterNameList(func->GetParameters(), [&](const cppast::cpp_function_parameter& param) {
+                                return typeMapper_->MapToCS(param.type(), param.name() + "_");
+                            }).CString()},
                             {"cs_param_type_list", ParameterTypeList(func->GetParameters(), [&](const cppast::cpp_type& type) {
                                 return ToString("typeof(%s)", generator->typeMapper_.ToCSType(type).CString());
                             }).CString()},

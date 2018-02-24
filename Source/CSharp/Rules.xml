@@ -20,6 +20,7 @@
         <include>Input/*.h</include>
         <include>Scene/*.h</include>
         <include>Audio/*.h</include>
+        <include>IO/*.h</include>
         <include>Navigation/*.h</include>
     </headers>
     <compiler>
@@ -48,6 +49,8 @@
         <exclude>Urho3D::*::GetTypeNameStatic()</exclude>
         <exclude>Urho3D::*::GetTypeInfo() const</exclude>
         <exclude>Urho3D::*::GetTypeInfoStatic()</exclude>
+        <exclude>Urho3D::File::ReadText(Urho3D::String&amp;)</exclude>
+        <exclude>Urho3D::FileWatcher::GetNextChange(Urho3D::String&amp;)</exclude>  <!-- TODO: Wrap manually returning a string instead of bool -->
     </symbols>
     <inheritable>
         <class>Urho3D::Application</class>
