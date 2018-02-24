@@ -69,7 +69,8 @@ protected:
 };
 /// Returns a list of parameter types and names as if they were in a function declaration.
 String ParameterList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
-    const std::function<String(const cppast::cpp_type&)>& typeToString=nullptr);
+                     const std::function<String(const cppast::cpp_type&)>& typeToString=nullptr,
+                     const char* defaultValueNamespaceSeparator=nullptr);
 /// Returns a list of parameter names separated by comma.
 String ParameterNameList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
     const std::function<String(const cppast::cpp_function_parameter&)>& nameFilter=nullptr);
@@ -91,5 +92,7 @@ int Count(const cppast::detail::iteratable_intrusive_list<T>& list)
         count++;
     return count;
 }
+/// Convert cppast expression into string.
+String ToString(const cppast::cpp_expression& expression);
 
 }

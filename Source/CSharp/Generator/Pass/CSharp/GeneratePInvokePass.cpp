@@ -219,7 +219,9 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
         Function* func = dynamic_cast<Function*>(decl);
 
         printer_ << dllImport;
-        auto csParams = ParameterList(func->GetParameters(), std::bind(&TypeMapper::ToPInvokeTypeParam, typeMapper_, std::placeholders::_1));
+        auto csParams = ParameterList(func->GetParameters(),
+                                      std::bind(&TypeMapper::ToPInvokeTypeParam, typeMapper_, std::placeholders::_1),
+                                      nullptr);
         String csRetType = typeMapper_->ToPInvokeTypeReturn(func->GetReturnType());
         auto vars = fmt({
             {"c_function_name", decl->cFunctionName_.CString()},

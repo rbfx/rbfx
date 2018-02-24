@@ -1,13 +1,13 @@
 <rules>
     <headers>
+        <include>Math/MathDefs.h</include>
         <include>Container/RefCounted.h</include>
-        <include>Math/StringHash.h</include>
         <include>Core/Object.h</include>
         <include>Core/Context.h</include>
         <include>Core/Variant.h</include>
-        <!--<include>Core/Attribute.h</include>-->
+        <include>Core/Attribute.h</include>
         <include>Core/Profiler.h</include>
-        <!--<include>Core/Spline.h</include>-->
+        <include>Core/Spline.h</include>
         <include>Core/Timer.h</include>
         <include>Engine/*.h</include>
         <include>IK/*.h</include>
@@ -21,7 +21,9 @@
         <include>Scene/*.h</include>
         <include>Audio/*.h</include>
         <include>IO/*.h</include>
+        <exclude>IO/MacFileWatcher.h</exclude>
         <include>Navigation/*.h</include>
+        <include>Resource/*.h</include>
     </headers>
     <compiler>
         <define>URHO3D_API</define>
@@ -51,6 +53,8 @@
         <exclude>Urho3D::*::GetTypeInfoStatic()</exclude>
         <exclude>Urho3D::File::ReadText(Urho3D::String&amp;)</exclude>
         <exclude>Urho3D::FileWatcher::GetNextChange(Urho3D::String&amp;)</exclude>  <!-- TODO: Wrap manually returning a string instead of bool -->
+        <exclude>Urho3D::AttributeInfo::enumNames_</exclude>
+        <exclude>Urho3D::ResourceRouter</exclude>
     </symbols>
     <inheritable>
         <class>Urho3D::Application</class>

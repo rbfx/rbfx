@@ -23,6 +23,8 @@
 #include <Urho3D/Core/StringUtils.h>
 #include <cppast/cpp_member_function.hpp>
 #include <Urho3D/IO/Log.h>
+#include "Declarations/Variable.hpp"
+#include "Declarations/Namespace.hpp"
 #include "Utilities.h"
 #include "GeneratorContext.h"
 
@@ -140,7 +142,8 @@ String EnsureNotKeyword(const String& value)
 }
 
 String ParameterList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
-    const std::function<String(const cppast::cpp_type&)>& typeToString)
+                     const std::function<String(const cppast::cpp_type&)>& typeToString,
+                     const char* defaultValueNamespaceSeparator)
 {
     Vector<String> parts;
     for (const auto& param : params)
@@ -150,7 +153,22 @@ String ParameterList(const cppast::detail::iteratable_intrusive_list<cppast::cpp
             typeString = typeToString(param.type());
         else
             typeString = cppast::to_string(param.type());
-        parts.Push(typeString + " " + EnsureNotKeyword(param.name()));
+        typeString += " " + EnsureNotKeyword(param.name());
+
+        if (defaultValueNamespaceSeparator != nullptr && param.default_value().has_value())
+        {
+            String value = ToString(param.default_value().value());
+
+            // TODO: Ugly band-aid for enum values as default parameter values. Get rid of it.
+            if (auto* var = dynamic_cast<Variable*>(generator->symbols_.Get("Urho3D::" + value)))
+                value = var->parent_->symbolName_ + "::" + value;
+            if (strcmp(defaultValueNamespaceSeparator, ".") == 0 && value == "nullptr")
+                value = "null";
+
+            value.Replace("::", defaultValueNamespaceSeparator);
+            typeString += "=" + value;
+        }
+        parts.Push(typeString);
     }
     return String::Joined(parts, ", ");
 }
@@ -287,4 +305,13 @@ bool IncludedChecker::IsIncluded(const String& value)
 
     return match;
 }
+
+String ToString(const cppast::cpp_expression& expression)
+{
+    if (expression.kind() == cppast::cpp_expression_kind::literal_t)
+        return dynamic_cast<const cppast::cpp_literal_expression&>(expression).value();
+    else
+        return dynamic_cast<const cppast::cpp_unexposed_expression&>(expression).expression().as_string();
+}
+
 }

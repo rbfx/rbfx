@@ -121,6 +121,8 @@ public:
     bool isStatic_ = true;
     /// When set to true indicates that value of declaration never changes.
     bool isConstant_ = false;
+    /// When set to true indicates that value is read-only. Used by C# for runtime-calculated constant values.
+    bool isReadOnly_ = false;
     /// When set to true it hints generator to generate wrapper interface as properties where applicable.
     bool isProperty_ = false;
 };

@@ -33,7 +33,11 @@ void Urho3DCustomPass::Start()
 {
     // Translate to c# expression, original is "sizeof(void*) * 4" which requires unsafe context.
     if (auto* var = dynamic_cast<Variable*>(generator->symbols_.Get("Urho3D::VARIANT_VALUE_SIZE")))
-        var->defaultValue_ = "32"; // TODO: fix for 32bit, "(uint)(IntPtr.Size * 4)";
+    {
+        var->defaultValue_ = "(uint)(IntPtr.Size * 4)";
+        var->isConstant_ = false;
+        var->isReadOnly_ = true;
+    }
 
     // C# does not understand octal escape sequences
     if (auto* var = dynamic_cast<Variable*>(generator->symbols_.Get("SDLK_DELETE")))
@@ -41,6 +45,15 @@ void Urho3DCustomPass::Start()
 
     if (auto* var = dynamic_cast<Variable*>(generator->symbols_.Get("SDLK_ESCAPE")))
         var->defaultValue_ = "27";
+
+    if (auto* var = dynamic_cast<Variable*>(generator->symbols_.Get("Urho3D::M_INFINITY")))
+        var->defaultValue_ = "float.PositiveInfinity";
+
+    if (auto* var = dynamic_cast<Variable*>(generator->symbols_.Get("Urho3D::M_MIN_INT")))
+        var->defaultValue_ = "int.MinValue";
+
+    if (auto* var = dynamic_cast<Variable*>(generator->symbols_.Get("Urho3D::M_MAX_INT")))
+        var->defaultValue_ = "int.MaxValue";
 }
 
 bool Urho3DCustomPass::Visit(Declaration* decl, Event event)

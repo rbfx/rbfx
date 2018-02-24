@@ -26,8 +26,9 @@
 #include <cppast/cpp_variable.hpp>
 #include <cppast/cpp_entity_kind.hpp>
 #include <cppast/cpp_member_variable.hpp>
-#include <ThirdParty/cppast/include/cppast/cpp_enum.hpp>
+#include <cppast/cpp_enum.hpp>
 #include "Declaration.hpp"
+#include "Utilities.h"
 
 namespace Urho3D
 {
@@ -78,13 +79,8 @@ public:
 
                 if (defaultValue != nullptr)
                 {
-                    if (defaultValue->kind() == cppast::cpp_expression_kind::literal_t)
-                    {
-                        defaultValue_ = dynamic_cast<const cppast::cpp_literal_expression*>(defaultValue)->value();
-                        isLitteral_ = true;
-                    }
-                    else
-                        defaultValue_ = dynamic_cast<const cppast::cpp_unexposed_expression*>(defaultValue)->expression().as_string();
+                    defaultValue_ = Urho3D::ToString(*defaultValue);
+                    isLitteral_ = defaultValue->kind() == cppast::cpp_expression_kind::literal_t;
                 }
             }
         }

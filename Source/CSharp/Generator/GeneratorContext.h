@@ -52,7 +52,7 @@ public:
 
     void Add(const String& symbol, Declaration* decl)
     {
-        URHO3D_LOGINFOF("Known symbol: %s", symbol.CString());
+        URHO3D_LOGTRACEF("Known symbol: %s", symbol.CString());
         nameToDeclaration_[symbol] = decl;
     }
 

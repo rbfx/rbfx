@@ -90,7 +90,9 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
 
         auto vars = fmt({
             {"class_name", cls->name_.CString()},
-            {"parameter_list", ParameterList(ctor->GetParameters(), std::bind(&TypeMapper::ToCSType, typeMapper_, std::placeholders::_1)).CString()},
+            {"parameter_list", ParameterList(ctor->GetParameters(),
+                                             std::bind(&TypeMapper::ToCSType, typeMapper_, std::placeholders::_1),
+                                             ".").CString()},
             {"symbol_name", Sanitize(cls->symbolName_).CString()},
             {"param_name_list", ParameterNameList(ctor->GetParameters(), mapToPInvoke).CString()},
             {"has_base", !cls->bases_.Empty()},
@@ -174,7 +176,9 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
         auto vars = fmt({
             {"name", func->name_.CString()},
             {"return_type", typeMapper_->ToCSType(func->GetReturnType()).CString()},
-            {"parameter_list", ParameterList(func->GetParameters(), std::bind(&TypeMapper::ToCSType, typeMapper_, std::placeholders::_1)).CString()},
+            {"parameter_list", ParameterList(func->GetParameters(),
+                                             std::bind(&TypeMapper::ToCSType, typeMapper_, std::placeholders::_1),
+                                             ".").CString()},
             {"c_function_name", func->cFunctionName_.CString()},
             {"param_name_list", ParameterNameList(func->GetParameters(), mapToPInvoke).CString()},
             {"has_params", !func->GetParameters().empty()},
@@ -198,7 +202,7 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
         Variable* var = dynamic_cast<Variable*>(decl);
         Namespace* ns = dynamic_cast<Namespace*>(var->parent_.Get());
 
-        bool isConstant = decl->isConstant_ && !var->defaultValue_.Empty();
+        bool isConstant = decl->isConstant_ && !decl->isReadOnly_ && !var->defaultValue_.Empty();
         bool isStatic = decl->isStatic_;
         if (isConstant)     // const implies static in c#
             isStatic = false;
@@ -210,12 +214,13 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
             {"access", decl->isPublic_ ? "public " : "protected "},
             {"static", isStatic ? "static " : ""},
             {"const", isConstant ? "const " : ""},
+            {"readonly", decl->isReadOnly_ ? "readonly " : ""},
             {"not_static", !decl->isStatic_},
             {"not_enum", ns->kind_ != Declaration::Kind::Enum}
         });
 
-        String line = fmt("{{#not_enum}}{{access}}{{static}}{{const}}{{cs_type}} {{/not_enum}}{{name}}", vars);
-        if ((!var->defaultValue_.Empty() || ns->kind_ == Declaration::Kind::Enum) && var->isConstant_)
+        String line = fmt("{{#not_enum}}{{access}}{{static}}{{const}}{{readonly}}{{cs_type}} {{/not_enum}}{{name}}", vars);
+        if ((!var->defaultValue_.Empty() || ns->kind_ == Declaration::Kind::Enum) && (var->isConstant_ || var->isReadOnly_))
         {
             // A constant value
             if (!var->defaultValue_.Empty())
@@ -237,7 +242,7 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
                                                                        vars));
                 printer_ << fmt("get { return {{call}}; }", {{"call", call.CString()}});
                 // Setter
-                if (!var->isConstant_)
+                if (!var->isConstant_ && !decl->isReadOnly_)
                 {
                     vars.set("value", typeMapper_->MapToPInvoke(var->GetType(), "value").CString());
                     printer_ << fmt("set { set_{{ns_symbol}}_{{name}}({{#not_static}}instance_, {{/not_static}}{{value}}); }", vars);
