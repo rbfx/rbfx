@@ -43,7 +43,7 @@ bool FindBaseClassesPass::Visit(Declaration* decl, CppApiPass::Event event)
             if (baseClass != nullptr)
             {
                 WeakPtr<Class> basePtr(baseClass);
-                if (cls->bases_.Contains(basePtr))
+                if (!cls->bases_.Contains(basePtr))
                     cls->bases_.Push(basePtr);
             }
         }
