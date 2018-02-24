@@ -55,7 +55,7 @@ class URHO3D_API Profiler : public Object
 
 public:
     /// Construct.
-    Profiler(Context* context);
+    explicit Profiler(Context* context);
     /// Destruct.
     virtual ~Profiler();
 
