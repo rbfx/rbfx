@@ -149,6 +149,22 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
         }
         printer_.Dedent();
         printer_ << "";
+
+        // Implicit constructors with one parameter get conversion operators generated for them.
+        if (ctor->source_ != nullptr && Count(ctor->GetParameters()) == 1)
+        {
+            const auto* astCtor = (const cppast::cpp_constructor*) ctor->source_;
+            if (!astCtor->is_explicit())
+            {
+                printer_ << fmt("public static implicit operator {{class_name}}({{parameter_list}})", vars);
+                printer_.Indent();
+                {
+                    printer_ << fmt("return new {{class_name}}({{param_name_list}});", vars);
+                }
+                printer_.Dedent();
+                printer_ << "";
+            }
+        }
     }
     else if (decl->kind_ == Declaration::Kind::Method)
     {

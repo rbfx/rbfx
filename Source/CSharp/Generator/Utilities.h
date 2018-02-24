@@ -82,5 +82,14 @@ String GetConversionType(const cppast::cpp_type& type);
 bool IsEnumType(const cppast::cpp_type& type);
 /// Returns true if a type is non-builtin value type (not a pointer or reference to a struct/class).
 bool IsComplexValueType(const cppast::cpp_type& type);
+/// Count number of items in cppast intrusive list.
+template<typename T>
+int Count(const cppast::detail::iteratable_intrusive_list<T>& list)
+{
+    int count = 0;
+    for (const auto& element : list)
+        count++;
+    return count;
+}
 
 }
