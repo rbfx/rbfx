@@ -40,7 +40,7 @@ public:
     bool Visit(Declaration* decl, Event event) override;
 
 protected:
-    CSharpPrinter printer_;
+    String GetFileName(const cppast::cpp_entity& entity);
 };
 
 }

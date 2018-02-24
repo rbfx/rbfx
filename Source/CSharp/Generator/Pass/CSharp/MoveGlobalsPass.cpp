@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include <Urho3D/IO/FileSystem.h>
 #include <Declarations/Variable.hpp>
 #include <GeneratorContext.h>
 #include <Declarations/Class.hpp>
@@ -43,6 +44,13 @@ bool MoveGlobalsPass::Visit(Declaration* decl, Event event)
             GeneratorContext* generator = GetSubsystem<GeneratorContext>();
             String className = ns->name_;
             String classSymbol = ns->symbolName_ + "::" + className;
+
+            if (ns->symbolName_ == className && decl->source_ != nullptr)
+            {
+                className = GetFileName(*decl->source_);
+                classSymbol = ns->symbolName_ + "::" + className;
+            }
+
             SharedPtr<Class> toClass(reinterpret_cast<Class*>(generator->symbols_.Get(classSymbol)));
             if (toClass == nullptr)
             {
@@ -58,6 +66,15 @@ bool MoveGlobalsPass::Visit(Declaration* decl, Event event)
     }
 
     return true;
+}
+
+String MoveGlobalsPass::GetFileName(const cppast::cpp_entity& entity)
+{
+    const cppast::cpp_entity* e = &entity;
+    while (e->kind() != cppast::cpp_entity_kind::file_t)
+        e = &e->parent().value();
+
+    return Urho3D::GetFileName(e->name());
 }
 
 }

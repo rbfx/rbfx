@@ -197,10 +197,9 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
         Variable* var = dynamic_cast<Variable*>(decl);
         Namespace* ns = dynamic_cast<Namespace*>(var->parent_.Get());
 
+        bool isConstant = decl->isConstant_ && !var->defaultValue_.Empty();
         bool isStatic = decl->isStatic_;
-        if (ns->isStatic_ && !var->defaultValue_.Empty())
-            // C# class is marked as static and this is a constant value. Constants in static classes must not be marked
-            // as static in c# for some strange reason.
+        if (isConstant)     // const implies static in c#
             isStatic = false;
 
         auto vars = fmt({
@@ -209,7 +208,7 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
             {"ns_symbol", Sanitize(ns->symbolName_).CString()},
             {"access", decl->isPublic_ ? "public " : "protected "},
             {"static", isStatic ? "static " : ""},
-            {"const", decl->isConstant_ && !var->defaultValue_.Empty() ? "const " : ""},
+            {"const", isConstant ? "const " : ""},
             {"not_static", !decl->isStatic_},
             {"not_enum", ns->kind_ != Declaration::Kind::Enum}
         });
@@ -254,7 +253,10 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
             printer_.Indent();
         }
         else if (event == Event::EXIT)
+        {
             printer_.Dedent();
+            printer_ << "";
+        }
     }
 
     return true;
