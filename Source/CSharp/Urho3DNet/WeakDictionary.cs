@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace CSharp
 {
-    public sealed class WeakDictionary<TKey, TValue> {
+    public sealed class WeakDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, WeakReference>> {
         private ConcurrentDictionary<TKey, WeakReference> map_;
 
         public WeakDictionary()
@@ -39,6 +40,16 @@ namespace CSharp
                 Add(key, target);
             }
             return target;
+        }
+
+        public IEnumerator<KeyValuePair<TKey, WeakReference>> GetEnumerator()
+        {
+            return map_.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }

@@ -61,7 +61,7 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             {
                 // A class will not have any methods. This is likely a dummy class for constant storage or something
                 // similar.
-                printer_ << fmt("public static partial class {{name}}", {{"name", cls->name_.CString()}});
+                printer_ << fmt("public static partial class {{class_name}}", {{"class_name", cls->name_.CString()}});
                 printer_.Indent();
                 return true;
             }
@@ -70,15 +70,13 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
                 bases.Push(base->name_);
 
             auto vars = fmt({
-                {"name", cls->name_.CString()},
+                {"class_name", cls->name_.CString()},
                 {"bases", String::Joined(bases, ", ").CString()},
                 {"has_bases", !cls->bases_.Empty()},
             });
 
-            printer_ << fmt("public partial class {{name}} : {{#has_bases}}{{bases}}, {{/has_bases}}IDisposable", vars);
+            printer_ << fmt("public partial class {{class_name}} : {{#has_bases}}{{bases}}, {{/has_bases}}IDisposable", vars);
             printer_.Indent();
-            // Cache managed objects. API will always return same object for existing native object pointer.
-            printer_ << fmt("internal static {{#has_bases}}new {{/has_bases}}WeakDictionary<IntPtr, {{name}}> cache_ = new WeakDictionary<IntPtr, {{name}}>();", vars);
             if (bases.Empty())
             {
                 printer_ << "internal IntPtr instance_;";
@@ -86,7 +84,7 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
                 printer_ << "";
 
                 // Constructor that initializes form a instance
-                printer_ << fmt("internal {{name}}(IntPtr instance)", vars);
+                printer_ << fmt("internal {{class_name}}(IntPtr instance)", vars);
                 printer_.Indent();
                 {
                     // Parent class may calls this constructor with null pointer when parent class constructor itself is
@@ -102,7 +100,7 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             else
             {
                 // Proxy constructor to one defined above
-                printer_ << fmt("internal {{name}}(IntPtr instance) : base(instance) { }", vars);
+                printer_ << fmt("internal {{class_name}}(IntPtr instance) : base(instance) { }", vars);
                 printer_ << "";
             }
 
@@ -111,7 +109,19 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             {
                 printer_ << "if (Interlocked.Increment(ref disposed_) == 1)";
                 printer_.Indent();
-                printer_ << "cache_.Remove(instance_);";
+                printer_ << fmt("InstanceCache.Remove<{{class_name}}>(instance_);", vars);
+                if (cls->symbolName_ == "Urho3D::Context")
+                {
+                    // When context is disposing we are still likely holding on to some objects. This causes a crash
+                    // upon application exit, because references we are holding on will be disposed after Context no
+                    // longer exists. If such references inherit from Object they will try to access Context and crash.
+                    // In order to avoid this crash we explicitly dispose of all remaining native references just before
+                    // destroying Context instance. It is critical that native objects are not interacted with after
+                    // Context is destroyed. Creating and destroying multiple contexts will make things go boom as well.
+                    // It is very likely that same thing will happen when trying to have multiple Context instances in
+                    // the same process. This usage is very atypical, so do not do it.
+                    printer_ << "InstanceCache.Dispose();";
+                }
                 printer_ << Sanitize(cls->symbolName_) + "_destructor(instance_);";
                 printer_.Dedent();
                 printer_ << "instance_ = IntPtr.Zero;";
@@ -119,7 +129,7 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             printer_.Dedent();
             printer_ << "";
 
-            printer_ << fmt("~{{name}}()", vars);
+            printer_ << fmt("~{{class_name}}()", vars);
             printer_.Indent();
             {
                 printer_ << "Dispose();";
@@ -128,15 +138,15 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             printer_ << "";
 
             // Helpers for marshalling type between public and pinvoke APIs
-            printer_ << fmt("internal static {{name}} __FromPInvoke(IntPtr source)", vars);
+            printer_ << fmt("internal{{#has_bases}} new{{/has_bases}} static {{class_name}} __FromPInvoke(IntPtr source)", vars);
             printer_.Indent();
             {
-                printer_ << fmt("return {{name}}.cache_.GetOrAdd(source, ptr => new {{name}}(ptr));", vars);
+                printer_ << fmt("return InstanceCache.GetOrAdd<{{class_name}}>(source, ptr => new {{class_name}}(ptr));", vars);
             }
             printer_.Dedent();
             printer_ << "";
 
-            printer_ << fmt("internal static IntPtr __ToPInvoke({{name}} source)", vars);
+            printer_ << fmt("internal static IntPtr __ToPInvoke({{class_name}} source)", vars);
             printer_.Indent();
             {
                 printer_ << fmt("return source.instance_;", vars);
