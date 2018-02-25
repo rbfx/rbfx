@@ -157,7 +157,7 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
         if (ctor->source_ != nullptr && Count(ctor->GetParameters()) == 1)
         {
             const auto* astCtor = (const cppast::cpp_constructor*) ctor->source_;
-            if (!astCtor->is_explicit())
+            if (!astCtor->is_explicit() && Urho3D::GetTypeName(ctor->GetParameters().begin()->type()) != cls->symbolName_)
             {
                 printer_ << fmt("public static implicit operator {{class_name}}({{parameter_list}})", vars);
                 printer_.Indent();
