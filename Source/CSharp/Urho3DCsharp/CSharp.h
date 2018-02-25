@@ -47,21 +47,7 @@ public:
     template<typename T> T* AddRef(const SharedPtr<T>& object)          { return (T*) AddRefCountedRef(object.Get()); }
     template<typename T> T* AddRef(const WeakPtr<T>& object)            { return (T*) AddRefCountedRef(object.Get()); }
     // Type is a pointer to subclass of RefCounted, always return a reference.
-    template<typename T> T* AddRef(RefCountedType<T>* object)           { return (T*) AddRefCountedRef(object); }
-    // Type is copy-constructibe and backed by existing storage - return a reference. User is responsible to make sure
-    // everything does not blow up.
-    template<typename T> T* AddRef(const CopyableType<T>& object)
-    {
-        MutexLock scoped(lock_);
-        if (instanceToHandler_.Contains((void*)&object))
-            return (T*)&object;
-
-        auto* handler = handlesAllocator_.Reserve();
-        handler->instance_ = (void*)&object;
-        handler->deleter_ = nullptr;
-        instanceToHandler_[handler->instance_] = handler;
-        return (T*)&object;
-    }
+    template<typename T> T* AddRef(const RefCountedType<T>* object)     { return (T*) AddRefCountedRef(const_cast<T*>(object)); }
     // Type is copy-constructibe and rvalue reference, most likely being returned by value. Make a copy.
     template<typename T> T* AddRef(const CopyableType<T>&& object)
     {
@@ -75,7 +61,7 @@ public:
         return (T*)handler->instance_;
     }
     // Pointer to any non-refcounted object. Always return a copy.
-    template<typename T> T* AddRef(NonRefCountedType<T>* object)
+    template<typename T> T* AddRef(const NonRefCountedType<T>* object)
     {
         MutexLock scoped(lock_);
         auto* handler = handlesAllocator_.Reserve();
@@ -99,6 +85,20 @@ public:
         };
         instanceToHandler_[handler->instance_] = handler;
         return (T*)handler->instance_;
+    }
+    // Type is some rvalue reference backed by existing storage - return a reference. User is responsible to make sure
+    // everything does not blow up.
+    template<typename T> T* AddRef(const T& object)
+    {
+        MutexLock scoped(lock_);
+        if (instanceToHandler_.Contains((void*)&object))
+            return (T*)&object;
+
+        auto* handler = handlesAllocator_.Reserve();
+        handler->instance_ = (void*)&object;
+        handler->deleter_ = nullptr;
+        instanceToHandler_[handler->instance_] = handler;
+        return (T*)&object;
     }
 
     // Should usually not be called. Target runtime is responsible for freeing this string.

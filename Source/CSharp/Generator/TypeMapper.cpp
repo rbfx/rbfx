@@ -132,7 +132,7 @@ String TypeMapper::ToPInvokeType(const String& name, const String& default_)
 {
     if (name == "char const*")
         return "string";
-    if (name == "void*" || name == "signed char*")
+    if (name == "void*" || name == "signed char*" || name == "void const*")
         return "IntPtr";
     if (name == "char" || name == "signed char")
         return "char";

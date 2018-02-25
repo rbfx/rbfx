@@ -20,10 +20,19 @@
         <include>Input/*.h</include>
         <include>Scene/*.h</include>
         <include>Audio/*.h</include>
-        <include>IO/*.h</include>
-        <exclude>IO/MacFileWatcher.h</exclude>
+        <include>IO/Serializer.h</include>
+        <include>IO/Deserializer.h</include>
+        <include>IO/AbstractFile.h</include>
+        <include>IO/Log.h</include>
+        <include>IO/PackageFile.h</include>
         <include>Navigation/*.h</include>
-        <include>Resource/*.h</include>
+        <include>Resource/BackgroundLoader.h</include>
+        <include>Resource/Image.h</include>
+        <include>Resource/Localization.h</include>
+        <include>Resource/PListFile.h</include>
+        <include>Resource/Resource.h</include>
+        <include>Resource/ResourceCache.h</include>
+        <include>Resource/ResourceEvents.h</include>
     </headers>
     <compiler>
         <define>URHO3D_API</define>
@@ -55,6 +64,17 @@
         <exclude>Urho3D::FileWatcher::GetNextChange(Urho3D::String&amp;)</exclude>  <!-- TODO: Wrap manually returning a string instead of bool -->
         <exclude>Urho3D::AttributeInfo::enumNames_</exclude>
         <exclude>Urho3D::ResourceRouter</exclude>
+        <exclude>Urho3D::*::FindAttributeAnimationTarget(Urho3D::String const&amp;,Urho3D::String&amp;)</exclude>   <!-- out parameters -->
+        <!-- https://github.com/foonathan/cppast/issues/41 -->
+        <exclude>Urho3D::ValueAnimation::SetEventFrame(float,Urho3D::StringHash const&amp;,Urho3D::VariantMap const&amp;)</exclude>
+        <exclude>Urho3D::Object::SendEvent(Urho3D::StringHash,Urho3D::VariantMap const&amp;)</exclude>
+        <exclude>Urho3D::Variant::Variant(Urho3D::String const&amp;)</exclude>
+        <exclude>Urho3D::Variant::Variant(Urho3D::String const&amp;,Urho3D::String const&amp;)</exclude>
+        <exclude>Urho3D::Variant::Variant(Urho3D::VariantType,Urho3D::String const&amp;)</exclude>
+        <exclude>Urho3D::Variant::FromString(Urho3D::String const&amp;,Urho3D::String const&amp;)</exclude>
+        <exclude>Urho3D::Variant::FromString(Urho3D::VariantType,Urho3D::String const&amp;)</exclude>
+        <exclude>Urho3D::Node::GetChild(Urho3D::String const&amp;,bool) const</exclude>
+        <exclude>Urho3D::ResourceRef::ResourceRef(Urho3D::String const&amp;,Urho3D::String const&amp;)</exclude>
     </symbols>
     <inheritable>
         <class>Urho3D::Application</class>

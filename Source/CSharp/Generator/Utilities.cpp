@@ -136,7 +136,7 @@ bool IsVoid(const cppast::cpp_type& type)
 
 String EnsureNotKeyword(const String& value)
 {
-    if (value == "object")
+    if (value == "object" || value == "params")
         return value + "_";
     return value;
 }
@@ -164,6 +164,9 @@ String ParameterList(const cppast::detail::iteratable_intrusive_list<cppast::cpp
                 value = var->parent_->symbolName_ + "::" + value;
             if (strcmp(defaultValueNamespaceSeparator, ".") == 0 && value == "nullptr")
                 value = "null";
+            if (value == "String::EMPTY")
+                value = "\"\"";
+            // ---------------------------------------------------------------------------------------------------------
 
             value.Replace("::", defaultValueNamespaceSeparator);
             typeString += "=" + value;
@@ -216,11 +219,11 @@ String GetTypeName(const cppast::cpp_type& type)
     switch (type.kind())
     {
     case cppast::cpp_type_kind::cv_qualified_t:
-        return cppast::to_string(static_cast<const cppast::cpp_cv_qualified_type&>(type).type());
+        return GetTypeName(static_cast<const cppast::cpp_cv_qualified_type&>(type).type());
     case cppast::cpp_type_kind::pointer_t:
-        return cppast::to_string(static_cast<const cppast::cpp_pointer_type&>(type).pointee());
+        return GetTypeName(static_cast<const cppast::cpp_pointer_type&>(type).pointee());
     case cppast::cpp_type_kind::reference_t:
-        return cppast::to_string(static_cast<const cppast::cpp_reference_type&>(type).referee());
+        return GetTypeName(static_cast<const cppast::cpp_reference_type&>(type).referee());
     default:
         return cppast::to_string(type);
     }
