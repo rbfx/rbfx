@@ -145,13 +145,13 @@ bool TmxTileLayer2D::Load(const XMLElement& element, const TileMapInfo2D& info)
                 if (!tileElem)
                     return false;
 
-                int gid = tileElem.GetInt("gid");
+                unsigned gid = tileElem.GetUInt("gid");
                 if (gid > 0)
                 {
                     SharedPtr<Tile2D> tile(new Tile2D());
                     tile->gid_ = gid;
-                    tile->sprite_ = tmxFile_->GetTileSprite(gid);
-                    tile->propertySet_ = tmxFile_->GetTilePropertySet(gid);
+                    tile->sprite_ = tmxFile_->GetTileSprite(gid & ~FLIP_ALL);
+                    tile->propertySet_ = tmxFile_->GetTilePropertySet(gid & ~FLIP_ALL);
                     tiles_[y * width_ + x] = tile;
                 }
 
@@ -169,13 +169,13 @@ bool TmxTileLayer2D::Load(const XMLElement& element, const TileMapInfo2D& info)
             for (int x = 0; x < width_; ++x)
             {
                 gidVector[currentIndex].Replace("\n", "");
-                int gid = ToInt(gidVector[currentIndex]);
+                unsigned gid = ToUInt(gidVector[currentIndex]);
                 if (gid > 0)
                 {
                     SharedPtr<Tile2D> tile(new Tile2D());
                     tile->gid_ = gid;
-                    tile->sprite_ = tmxFile_->GetTileSprite(gid);
-                    tile->propertySet_ = tmxFile_->GetTilePropertySet(gid);
+                    tile->sprite_ = tmxFile_->GetTileSprite(gid & ~FLIP_ALL);
+                    tile->propertySet_ = tmxFile_->GetTilePropertySet(gid & ~FLIP_ALL);
                     tiles_[y * width_ + x] = tile;
                 }
                 ++currentIndex;
@@ -196,14 +196,16 @@ bool TmxTileLayer2D::Load(const XMLElement& element, const TileMapInfo2D& info)
             for (int x = 0; x < width_; ++x)
             {
                 // buffer contains 32-bit integers in little-endian format
-                int gid = (buffer[currentIndex+3] << 24) | (buffer[currentIndex+2] << 16)
-                        | (buffer[currentIndex+1] << 8) | buffer[currentIndex];
+                unsigned gid = ((unsigned)buffer[currentIndex+3] << 24)
+                             | ((unsigned)buffer[currentIndex+2] << 16)
+                             | ((unsigned)buffer[currentIndex+1] << 8)
+                             | (unsigned)buffer[currentIndex];
                 if (gid > 0)
                 {
                     SharedPtr<Tile2D> tile(new Tile2D());
                     tile->gid_ = gid;
-                    tile->sprite_ = tmxFile_->GetTileSprite(gid);
-                    tile->propertySet_ = tmxFile_->GetTilePropertySet(gid);
+                    tile->sprite_ = tmxFile_->GetTileSprite(gid & ~FLIP_ALL);
+                    tile->propertySet_ = tmxFile_->GetTilePropertySet(gid & ~FLIP_ALL);
                     tiles_[y * width_ + x] = tile;
                 }
                 currentIndex += 4;
@@ -278,8 +280,8 @@ void TmxObjectGroup2D::StoreObject(const XMLElement& objectElem, const SharedPtr
 
         case OT_TILE:
             object->position_ = info.ConvertPosition(position);
-            object->gid_ = objectElem.GetInt("gid");
-            object->sprite_ = tmxFile_->GetTileSprite(object->gid_);
+            object->gid_ = objectElem.GetUInt("gid");
+            object->sprite_ = tmxFile_->GetTileSprite(object->gid_ & ~FLIP_ALL);
 
             if (objectElem.HasAttribute("width") || objectElem.HasAttribute("height"))
             {
@@ -553,28 +555,28 @@ void TmxFile2D::AddLayer(TmxLayer2D *layer)
     layers_.Push(layer);
 }
 
-Sprite2D* TmxFile2D::GetTileSprite(int gid) const
+Sprite2D* TmxFile2D::GetTileSprite(unsigned gid) const
 {
-    HashMap<int, SharedPtr<Sprite2D> >::ConstIterator i = gidToSpriteMapping_.Find(gid);
+    HashMap<unsigned, SharedPtr<Sprite2D> >::ConstIterator i = gidToSpriteMapping_.Find(gid);
     if (i == gidToSpriteMapping_.End())
         return nullptr;
 
     return i->second_;
 }
 
-Vector<SharedPtr<TileMapObject2D> > TmxFile2D::GetTileCollisionShapes(int gid) const
+Vector<SharedPtr<TileMapObject2D> > TmxFile2D::GetTileCollisionShapes(unsigned gid) const
 {
     Vector<SharedPtr<TileMapObject2D> > tileShapes;
-    HashMap<int, Vector<SharedPtr<TileMapObject2D> > >::ConstIterator i = gidToCollisionShapeMapping_.Find(gid);
+    HashMap<unsigned, Vector<SharedPtr<TileMapObject2D> > >::ConstIterator i = gidToCollisionShapeMapping_.Find(gid);
     if (i == gidToCollisionShapeMapping_.End())
         return tileShapes;
 
     return i->second_;
 }
 
-PropertySet2D* TmxFile2D::GetTilePropertySet(int gid) const
+PropertySet2D* TmxFile2D::GetTilePropertySet(unsigned gid) const
 {
-    HashMap<int, SharedPtr<PropertySet2D> >::ConstIterator i = gidToPropertySetMapping_.Find(gid);
+    HashMap<unsigned, SharedPtr<PropertySet2D> >::ConstIterator i = gidToPropertySetMapping_.Find(gid);
     if (i == gidToPropertySetMapping_.End())
         return nullptr;
     return i->second_;
@@ -611,7 +613,7 @@ SharedPtr<XMLFile> TmxFile2D::LoadTSXFile(const String& source)
 
 struct TileImageInfo {
     Image* image;
-    int tileGid;
+    unsigned tileGid;
     int imageWidth;
     int imageHeight;
     int x;
@@ -620,7 +622,7 @@ struct TileImageInfo {
 
 bool TmxFile2D::LoadTileSet(const XMLElement& element)
 {
-    int firstgid = element.GetInt("firstgid");
+    unsigned firstgid = element.GetUInt("firstgid");
 
     XMLElement tileSetElem;
     if (element.HasAttribute("source"))
@@ -678,7 +680,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
             imageWidth = imageElem.GetInt("width");
             imageHeight = imageElem.GetInt("height");
 
-            int gid = firstgid;
+            unsigned gid = firstgid;
             for (int y = margin; y + tileHeight <= imageHeight - margin; y += tileHeight + spacing)
             {
                 for (int x = margin; x + tileWidth <= imageWidth - margin; x += tileWidth + spacing)
@@ -697,7 +699,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
     Vector<TileImageInfo> tileImageInfos;
     for (XMLElement tileElem = tileSetElem.GetChild("tile"); tileElem; tileElem = tileElem.GetNext("tile"))
     {
-        int gid = firstgid + tileElem.GetInt("id");
+        unsigned gid = firstgid + tileElem.GetUInt("id");
         // Tileset based on collection of images
         if (!isSingleTileSet)
         {
