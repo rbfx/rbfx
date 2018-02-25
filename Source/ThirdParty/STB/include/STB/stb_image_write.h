@@ -145,6 +145,10 @@ LICENSE
 #ifndef INCLUDE_STB_IMAGE_WRITE_H
 #define INCLUDE_STB_IMAGE_WRITE_H
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -276,17 +280,30 @@ static void stbi__stdio_write(void *context, void *data, int size)
 static int stbi__start_write_file(stbi__write_context *s, const char *filename)
 {
    FILE *f;
-   // Urho3D: proper UTF8 handling for Windows, requires Urho3D WString class
-#ifndef _WIN32
+   // Urho3D: proper UTF8 handling for Windows
+#ifdef _WIN32
+   int wlen = MultiByteToWideChar(CP_UTF8, 0, filename, -1, 0, 0);
+   wchar_t wpath_small[MAX_PATH];
+   wchar_t* wpath_big = 0;
+   wchar_t* wpath = wpath_small;
+   if (wlen > _countof(wpath_small))
+   {
+      wpath_big = (wchar_t*)malloc(sizeof(wchar_t) * wlen);
+      wpath = wpath_big;
+   }
+   if (MultiByteToWideChar(CP_UTF8, 0, filename, -1, wpath, wlen) != wlen)
+   {
+      if (wpath_big)
+         free(wpath_big);
+      return 0;
+   }
+
+   f = _wfopen(wpath, L"wb");
+
+   if (wpath_big)
+      free(wpath_big);
+#else
    f = fopen(filename, "wb");
-#else
-   Urho3D::WString wstr(filename);
-#ifdef STBI_MSC_SECURE_CRT
-   if (_wfopen_s(&f, wstr.CString(), L"wb")
-      f = NULL;
-#else
-   f = _wfopen(wstr.CString(), L"wb");
-#endif
 #endif
    stbi__start_write_callbacks(s, stbi__stdio_write, (void *) f);
    return f != NULL;
