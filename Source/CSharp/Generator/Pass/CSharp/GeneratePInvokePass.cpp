@@ -242,10 +242,10 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
         {
             // API for setting callbacks of virtual methods
             printer_ << "[UnmanagedFunctionPointer(CallingConvention.Cdecl)]";
-            printer_ << fmt("internal delegate {{ret_attribute}}{{cs_return}} {{name}}Delegate(IntPtr instance{{#has_params}}, {{cs_param_list}}{{/has_params}});", vars);
+            printer_ << fmt("internal delegate {{ret_attribute}}{{cs_return}} {{class_name}}{{name}}Delegate(IntPtr instance{{#has_params}}, {{cs_param_list}}{{/has_params}});", vars);
             printer_ << "";
             printer_ << dllImport;
-            printer_ << fmt("internal static extern void set_{{source_class_name}}_fn{{c_function_name}}(IntPtr instance, {{name}}Delegate cb);", vars);
+            printer_ << fmt("internal static extern void set_{{source_class_name}}_fn{{c_function_name}}(IntPtr instance, {{class_name}}{{name}}Delegate cb);", vars);
             printer_ << "";
         }
     }
