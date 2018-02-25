@@ -70,13 +70,13 @@ macro (CSHARP_BIND_TARGET TARGET RULES)
         set (NET_PLATFORM /platform:x86)
     endif()
 
-    file (GLOB COMMON_NET_SOURCE_FILES_MANUAL CommonNet/*.cs)
+    file (GLOB_RECURSE COMMON_NET_SOURCE_FILES_MANUAL CommonNet/*.cs ${TARGET}Net/*.cs)
     set (COMMON_NET_SOURCE_FILES_GENERATED
         ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}Net/PInvoke.cs
         ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}Net/Urho3D.cs
     )
     add_custom_target(${TARGET}Net
-        COMMAND csc /target:library ${NET_PLATFORM} /reference:System.dll
+        COMMAND csc /target:library ${NET_PLATFORM} /unsafe /reference:System.dll
                 /out:${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET}Net.dll
                 ${COMMON_NET_SOURCE_FILES_MANUAL} ${COMMON_NET_SOURCE_FILES_GENERATED}
     )
