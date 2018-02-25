@@ -557,8 +557,8 @@ public:
 
     /// Return applied style name. Return an empty string when the applied style is an 'auto' style (i.e. style derived from instance's type).
     const String& GetAppliedStyle() const;
-    /// Return default style.
-    XMLFile* GetDefaultStyle(bool recursiveUp = true) const;
+    /// Return default style. If recursiveUp is set the sytle the next defined style of parent will be returned. if rootFallback is set the style of the UI subsystem root will be returned if all other methods fail.
+    XMLFile* GetDefaultStyle(bool recursiveUp = true, bool rootFallback = true) const;
 
     /// Return layout mode.
     LayoutMode GetLayoutMode() const { return layoutMode_; }

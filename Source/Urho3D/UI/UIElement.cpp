@@ -1702,7 +1702,7 @@ const String& UIElement::GetAppliedStyle() const
     return appliedStyle_ == GetTypeName() ? String::EMPTY : appliedStyle_;
 }
 
-XMLFile* UIElement::GetDefaultStyle(bool recursiveUp) const
+XMLFile* UIElement::GetDefaultStyle(bool recursiveUp, bool rootFallback) const
 {
     if (recursiveUp)
     {
@@ -1713,10 +1713,27 @@ XMLFile* UIElement::GetDefaultStyle(bool recursiveUp) const
                 return element->defaultStyle_;
             element = element->parent_;
         }
-        return nullptr;
+        if (rootFallback) {
+            //try getting style from root
+            return GetSubsystem<UI>()->GetRoot()->GetDefaultStyle(false);
+        }
+        else
+            return nullptr;
     }
     else
-        return defaultStyle_;
+    {
+        if (defaultStyle_)
+            return defaultStyle_;
+        else
+        {
+            if (rootFallback) {
+                //try getting style from root
+                return GetSubsystem<UI>()->GetRoot()->GetDefaultStyle(false);
+            }
+            else
+                return false;
+        }
+    }
 }
 
 void UIElement::GetChildren(PODVector<UIElement*>& dest, bool recursive) const
