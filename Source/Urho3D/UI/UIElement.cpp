@@ -673,38 +673,55 @@ void UIElement::SetHeight(int height)
 
 void UIElement::SetRight(int right, bool maintainLeft /*= true*/)
 {
-    if (maintainLeft)
-        size_.x_ = right - position_.x_;//alter size
-    else
-        position_.x_ += right - (position_.x_ + size_.x_);//shift element
+	if (maintainLeft) {
+		int newSizeX = right - position_.x_;//alter size
+		SetSize(newSizeX, size_.y_);
+	}
+	else {
+		int newPosX = position_.x_ + right - (position_.x_ + size_.x_);
+		SetPosition(newPosX, position_.y_);
+	}
 }
 
 void UIElement::SetLeft(int left, bool maintainRight /*= true*/)
 {
     if (maintainRight) {
-        size_.x_ += (position_.x_ - left);//resize
-        position_.x_ = left;//then shift
+        
+		int newSizeX = size_.x_ + (position_.x_ - left);//resize
+		int newPosX = left;//then shift
+		SetSize(newSizeX, size_.y_);
+		SetPosition(newPosX, position_.y_);
     }
-    else
-        position_.x_ = left;
+	else
+	{
+		SetPosition(left, position_.y_);
+	}
 }
 
 void UIElement::SetTop(int top, bool maintainBottom /*= true*/)
 {
-    if (maintainBottom) {
-        size_.y_ += (position_.y_ - top);//resize
-        position_.y_ = top;//then shift
-    }
-    else
-        position_.y_ = top;
+	if (maintainBottom) {
+
+		int newSizeY = size_.y_ + (position_.y_ - top);//resize
+		int newPosY = top;//then shift
+
+		SetSize(size_.x_, newSizeY);
+		SetPosition(position_.x_, newPosY);
+	}
+	else
+		SetPosition(position_.x_, top);
 }
 
 void UIElement::SetBottom(int bottom, bool maintainTop /*= true*/)
 {
-    if (maintainTop)
-        size_.y_ = bottom - position_.y_;//alter size
-    else
-        position_.y_ += bottom - (position_.y_ + size_.y_);//shift element
+	if (maintainTop) {
+		int newSizeY = bottom - position_.y_;//alter size
+		SetSize(size_.x_, newSizeY);
+	}
+	else {
+		int newPosY = position_.y_ + bottom - (position_.y_ + size_.y_);//shift element
+		SetPosition(position_.x_, newPosY);
+	}
 }
 
 void UIElement::SetMinSize(const IntVector2& minSize)
