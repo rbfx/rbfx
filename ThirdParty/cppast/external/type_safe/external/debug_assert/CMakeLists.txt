@@ -43,10 +43,6 @@ target_compile_definitions(debug_assert INTERFACE
                                         ${_debug_assert_assume}
                                         ${_debug_assert_force_inline})
 
-# example target
-add_executable(debug_assert_example EXCLUDE_FROM_ALL example.cpp)
-target_link_libraries(debug_assert_example PUBLIC debug_assert)
-
 # Create package config files
 include( CMakePackageConfigHelpers )
 set(CONFIG_PACKAGE_INSTALL_DIR lib/cmake/debug_assert)
@@ -62,22 +58,3 @@ write_basic_package_version_file(
   VERSION 1.1
   COMPATIBILITY SameMajorVersion
 )
-
-
-# Install target and header
-install(TARGETS debug_assert
-    EXPORT debug_assert-targets
-    DESTINATION lib)
-
-install(FILES debug_assert.hpp DESTINATION include)
-
-install( EXPORT debug_assert-targets
-  DESTINATION
-    ${CONFIG_PACKAGE_INSTALL_DIR}
-)
-
-install( FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/debug_assert-config.cmake
-  ${CMAKE_CURRENT_BINARY_DIR}/debug_assert-config-version.cmake
-  DESTINATION
-    ${CONFIG_PACKAGE_INSTALL_DIR} )
