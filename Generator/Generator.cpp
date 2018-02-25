@@ -56,36 +56,45 @@ void AssembleDebugApiHeader(CSharpPrinter& printer, const Declaration* decl)
 
 int main(int argc, char* argv[])
 {
-    String compileCommands;
     String rulesFile;
     String sourceDir;
-    String outputDir;
+    String outputDirCpp;
+    String outputDirCs;
+    std::vector<std::string> includes;
+    std::vector<std::string> defines;
+    std::vector<std::string> options;
     SharedPtr<Context> context;
 
     CLI::App app{"CSharp bindings generator"};
+
+    app.add_option("-I", includes, "Target include paths.");
+    app.add_option("-D", defines, "Target preprocessor definitions.");
+    app.add_option("-O", options, "Target compiler options.");
+    app.add_option("--out-cpp", outputDirCpp, "Output directory for generated C++ code.");
+    app.add_option("--out-cs", outputDirCs, "Output directory for generated C# code.");
+
     app.add_option("rules", rulesFile, "Path to rules xml file")->check(CLI::ExistingFile);
     app.add_option("source", sourceDir, "Path to source directory")->check(CLI::ExistingDirectory);
-    app.add_option("compile-commands", compileCommands, "Path to compile_commands.json")->check(CLI::ExistingFile);
-    app.add_option("output", outputDir, "Path to output directory");
 
     CLI11_PARSE(app, argc, argv);
+
     sourceDir = AddTrailingSlash(sourceDir);
-    outputDir = AddTrailingSlash(outputDir);
+    outputDirCpp = AddTrailingSlash(outputDirCpp);
+    outputDirCs = AddTrailingSlash(outputDirCs);
 
     context = new Context();
     context->RegisterSubsystem(new FileSystem(context));
     context->RegisterSubsystem(new Log(context));
     context->GetLog()->SetLevel(LOG_DEBUG);
 
+    context->GetFileSystem()->CreateDirsRecursive(outputDirCpp);
+    context->GetFileSystem()->CreateDirsRecursive(outputDirCs);
+
     // Generate bindings
     generator = new GeneratorContext(context);
     context->RegisterSubsystem(generator);
 
-    if (!generator->LoadCompileConfig(compileCommands))
-    {
-        URHO3D_LOGERROR("Loading compile commands failed.");
-        return -1;
-    }
+    generator->LoadCompileConfig(includes, defines, options);
 
 #if _WIN32
     generator->config_.set_flags(cppast::cpp_standard::cpp_11, {
@@ -108,9 +117,9 @@ int main(int argc, char* argv[])
     generator->AddApiPass<GeneratePInvokePass>();
     generator->AddApiPass<GenerateCSApiPass>();
 
-    generator->Generate(outputDir);
+    generator->Generate(outputDirCpp, outputDirCs);
 
-    File file(context, outputDir + "/API.hpp", FILE_WRITE);
+    File file(context, outputDirCpp + "/API.hpp", FILE_WRITE);
     CSharpPrinter printer;
     AssembleDebugApiHeader(printer, generator->apiRoot_);
     file.WriteString(printer.Get());

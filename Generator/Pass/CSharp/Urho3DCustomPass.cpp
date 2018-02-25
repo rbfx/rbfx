@@ -20,9 +20,9 @@
 // THE SOFTWARE.
 //
 
-#include <Declarations/Variable.hpp>
-#include <GeneratorContext.h>
-#include <Declarations/Enum.hpp>
+#include "Declarations/Variable.hpp"
+#include "GeneratorContext.h"
+#include "Declarations/Enum.hpp"
 #include "Urho3DCustomPass.h"
 
 

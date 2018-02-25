@@ -84,7 +84,8 @@ class GeneratorContext
     URHO3D_OBJECT(GeneratorContext, Object);
 public:
     explicit GeneratorContext(Context* context);
-    bool LoadCompileConfig(const String& pathToFile);
+    void LoadCompileConfig(const std::vector<std::string>& includes, std::vector<std::string>& defines,
+        const std::vector<std::string>& options);
 
     bool LoadRules(const String& xmlPath);
     bool ParseFiles(const String& sourceDir);
@@ -92,11 +93,12 @@ public:
     void AddCppPass(Args... args) { cppPasses_.Push(DynamicCast<CppAstPass>(SharedPtr<T>(new T(context_, args...)))); }
     template<typename T, typename... Args>
     void AddApiPass(Args... args) { apiPasses_.Push(DynamicCast<CppApiPass>(SharedPtr<T>(new T(context_, args...)))); }
-    void Generate(const String& outputDir);
+    void Generate(const String& outputDirCpp, const String& outputDirCs);
     bool IsAcceptableType(const cppast::cpp_type& type);
 
     String sourceDir_;
-    String outputDir_;
+    String outputDirCpp_;
+    String outputDirCs_;
     SharedPtr<XMLFile> rules_;
     cppast::libclang_compile_config config_;
     std::map<String, std::unique_ptr<cppast::cpp_file>> parsed_;

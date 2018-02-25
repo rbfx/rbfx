@@ -273,7 +273,7 @@ void GenerateCSApiPass::Stop()
     printer_ << "}";    // namespace Urho3D
 
     auto* generator = GetSubsystem<GeneratorContext>();
-    String outputFile = generator->outputDir_ + "Urho3D.cs";
+    String outputFile = generator->outputDirCs_ + "Urho3D.cs";
     File file(context_, outputFile, FILE_WRITE);
     if (!file.IsOpen())
     {

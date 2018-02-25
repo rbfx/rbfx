@@ -20,18 +20,67 @@
 # THE SOFTWARE.
 #
 
+set (CMAKE_INCLUDE_CURRENT_DIR ON)
+
+add_subdirectory(ThirdParty)
 add_subdirectory(Generator)
 
-file (GLOB_RECURSE ${Urho3D_SOURCE_DIR}/Source/Urho3D *.h)
-add_custom_target(CSharpGenerateBindings
-    COMMAND $<TARGET_FILE:CSharpGenerator>
-    ${CMAKE_CURRENT_SOURCE_DIR}/Rules.xml
-    ${Urho3D_SOURCE_DIR}/Source/Urho3D
-    ${CMAKE_BINARY_DIR}/compile_commands.json
-    ${CMAKE_CURRENT_BINARY_DIR}
-    SOURCES ${GLOB_RECURSE}
-    DEPENDS CSharpGenerator
-)
+macro (CSHARP_BIND_TARGET TARGET RULES)
+    get_target_property(INCLUDES ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)
+    get_target_property(DEFINES  ${TARGET} INTERFACE_COMPILE_DEFINITIONS)
+    get_target_property(OPTIONS  ${TARGET} INTERFACE_COMPILE_OPTIONS)
+    get_target_property(SOURCE_DIR ${TARGET} SOURCE_DIR)
+    foreach(item ${INCLUDES})
+        list(APPEND GENERATOR_OPTIONS -I${item})
+    endforeach()
+    foreach(item ${DEFINES})
+        list(APPEND GENERATOR_OPTIONS -D${item})
+    endforeach()
+    foreach(item ${OPTIONS})
+        list(APPEND GENERATOR_OPTIONS -O${item})
+    endforeach()
+    list (APPEND GENERATOR_OPTIONS
+        --out-cpp ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}CSharp
+        --out-cs ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}Net
+    )
+    list (APPEND GENERATOR_OPTIONS ${RULES})
+    list (APPEND GENERATOR_OPTIONS ${SOURCE_DIR})
 
-add_subdirectory(Urho3DCsharp)
-add_subdirectory(Urho3DNet)
+    add_custom_target(CSharpGenerateBindings
+        COMMAND $<TARGET_FILE:CSharpGenerator> ${GENERATOR_OPTIONS}
+        DEPENDS CSharpGenerator
+    )
+
+    # CSharp target (native)
+    file (GLOB COMMON_CSHARP_SOURCE_FILES_MANUAL CommonCSharp/*.cpp CommonCSharp/*.h)
+    set (COMMON_CSHARP_SOURCE_FILES_GENERATED
+        ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}CSharp/CApi.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}CSharp/ClassWrappers.hpp
+    )
+    set_source_files_properties(${COMMON_CSHARP_SOURCE_FILES_GENERATED} PROPERTIES GENERATED TRUE)
+    add_library(${TARGET}CSharp SHARED ${COMMON_CSHARP_SOURCE_FILES_MANUAL} ${COMMON_CSHARP_SOURCE_FILES_GENERATED})
+    target_link_libraries(${TARGET}CSharp Urho3D)
+    target_include_directories(${TARGET}CSharp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/CommonCSharp)
+    add_dependencies(${TARGET}CSharp CSharpGenerateBindings)
+
+    # Net target (managed)
+    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set (NET_PLATFORM /platform:x64)
+    elseif (DESKTOP)
+        set (NET_PLATFORM /platform:x86)
+    endif()
+
+    file (GLOB COMMON_NET_SOURCE_FILES_MANUAL CommonNet/*.cs)
+    set (COMMON_NET_SOURCE_FILES_GENERATED
+        ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}Net/PInvoke.cs
+        ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}Net/Urho3D.cs
+    )
+    add_custom_target(${TARGET}Net
+        COMMAND csc /target:library ${NET_PLATFORM} /reference:System.dll
+                /out:${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET}Net.dll
+                ${COMMON_NET_SOURCE_FILES_MANUAL} ${COMMON_NET_SOURCE_FILES_GENERATED}
+    )
+    add_dependencies(${TARGET}Net ${TARGET}CSharp)
+endmacro ()
+
+CSHARP_BIND_TARGET(Urho3D ${CMAKE_CURRENT_SOURCE_DIR}/Rules.xml)

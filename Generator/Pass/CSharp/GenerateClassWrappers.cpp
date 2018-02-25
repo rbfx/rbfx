@@ -201,7 +201,7 @@ void GenerateClassWrappers::Stop()
 {
     printer_ << "}";    // namespace Wrappers
 
-    File file(context_, GetSubsystem<GeneratorContext>()->outputDir_ + "ClassWrappers.hpp", FILE_WRITE);
+    File file(context_, GetSubsystem<GeneratorContext>()->outputDirCpp_ + "ClassWrappers.hpp", FILE_WRITE);
     if (!file.IsOpen())
     {
         URHO3D_LOGERROR("Failed saving ClassWrappers.hpp");

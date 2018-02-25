@@ -27,7 +27,7 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/JSONValue.h>
 #include <Urho3D/Resource/JSONFile.h>
-#include <Declarations/Namespace.hpp>
+#include "Declarations/Namespace.hpp"
 #include "GeneratorContext.h"
 #include "Utilities.h"
 
@@ -43,59 +43,23 @@ GeneratorContext::GeneratorContext(Urho3D::Context* context)
 
 }
 
-bool GeneratorContext::LoadCompileConfig(const String& pathToFile)
+void GeneratorContext::LoadCompileConfig(const std::vector<std::string>& includes, std::vector<std::string>& defines,
+    const std::vector<std::string>& options)
 {
-    File file(context_);
-    if (!file.Open(pathToFile))
-        return false;
+    for (const auto& item : includes)
+        config_.add_include_dir(item);
 
-    JSONValue value;
-    if (!JSONFile::ParseJSON(file.ReadString(), value))
-        return false;
-
-    if (!value.IsArray())
-        return false;
-
-    JSONArray array = value.GetArray();
-
-    if (array.Size() < 1)
-        return false;
-
-    JSONValue entry = value.GetArray().At(0);
-
-    if (!entry.IsObject())
-        return false;
-
-    JSONValue command;
-    if (!entry.GetObject().TryGetValue("command", command))
-        return false;
-
-    if (!command.IsString())
-        return false;
-
-    std::string commandStr = command.GetCString();
-    std::regex re(R"( +(?=(?:[^"]*"[^"]*")*[^"]*$))");
-    for (std::sregex_token_iterator it(commandStr.begin(), commandStr.end(), re, -1), end ; it != end; ++it)
+    for (const String item : defines)
     {
-        String parameter = std::string(*it);
-        if (parameter.StartsWith("-D"))
+        auto parts = item.Split('=');
+        if (parts.Contains("="))
         {
-            String name, value;
-            unsigned eqIndex = parameter.Find("=");
-            if (eqIndex == String::NPOS)
-                name = parameter.Substring(2);
-            else
-            {
-                name = parameter.Substring(2, eqIndex - 2);
-                value = parameter.Substring(eqIndex + 1);
-            }
-            config_.define_macro(name.CString(), value.CString());
+            assert(parts.Size() == 2);
+            config_.define_macro(parts[0].CString(), parts[1].CString());
         }
-        else if (parameter.StartsWith("-I"))
-            config_.add_include_dir(parameter.Substring(2).CString());
+        else
+            config_.define_macro(item.CString(), "");
     }
-
-    return true;
 }
 
 bool GeneratorContext::LoadRules(const String& xmlPath)
@@ -147,9 +111,10 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
     return true;
 }
 
-void GeneratorContext::Generate(const String& outputDir)
+void GeneratorContext::Generate(const String& outputDirCpp, const String& outputDirCs)
 {
-    outputDir_ = outputDir;
+    outputDirCpp_ = outputDirCpp;
+    outputDirCs_ = outputDirCs;
 
     for (const auto& pass : cppPasses_)
     {
