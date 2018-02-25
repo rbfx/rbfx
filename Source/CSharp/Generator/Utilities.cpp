@@ -159,17 +159,25 @@ String ParameterList(const cppast::detail::iteratable_intrusive_list<cppast::cpp
         {
             String value = ToString(param.default_value().value());
 
-            // TODO: Ugly band-aid for enum values as default parameter values. Get rid of it.
-            if (auto* var = dynamic_cast<Variable*>(generator->symbols_.Get("Urho3D::" + value)))
-                value = var->parent_->symbolName_ + "::" + value;
-            if (strcmp(defaultValueNamespaceSeparator, ".") == 0 && value == "nullptr")
-                value = "null";
-            if (value == "String::EMPTY")
-                value = "\"\"";
+            // TODO: Ugly band-aid for enum values as default parameter values. Get rid of it ASAP!
+            if (strcmp(defaultValueNamespaceSeparator, ".") == 0)
+            {
+                if (value == "nullptr")
+                    value = "null";
+                else if (value == "String::EMPTY")
+                    value = "\"\"";
+                else if (value == "Variant::EMPTY")
+                    value = "";
+                else if (auto* var = dynamic_cast<Variable*>(generator->symbols_.Get("Urho3D::" + value)))
+                    value = var->parent_->symbolName_ + "::" + value;
+            }
             // ---------------------------------------------------------------------------------------------------------
 
-            value.Replace("::", defaultValueNamespaceSeparator);
-            typeString += "=" + value;
+            if (!value.Empty())
+            {
+                value.Replace("::", defaultValueNamespaceSeparator);
+                typeString += "=" + value;
+            }
         }
         parts.Push(typeString);
     }

@@ -33,6 +33,8 @@
         <include>Resource/Resource.h</include>
         <include>Resource/ResourceCache.h</include>
         <include>Resource/ResourceEvents.h</include>
+        <include>UI/*.h</include>
+        <exclude>UI/FontFace*.h</exclude>
     </headers>
     <compiler>
         <define>URHO3D_API</define>
@@ -75,6 +77,8 @@
         <exclude>Urho3D::Variant::FromString(Urho3D::VariantType,Urho3D::String const&amp;)</exclude>
         <exclude>Urho3D::Node::GetChild(Urho3D::String const&amp;,bool) const</exclude>
         <exclude>Urho3D::ResourceRef::ResourceRef(Urho3D::String const&amp;,Urho3D::String const&amp;)</exclude>
+        <exclude>Urho3D::Text3D::text_</exclude>    <!-- TODO: Setter should not be generated -->
+        <exclude>Urho3D::UI::DragData</exclude>
     </symbols>
     <inheritable>
         <class>Urho3D::Application</class>
