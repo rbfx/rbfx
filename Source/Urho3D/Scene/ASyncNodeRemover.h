@@ -24,8 +24,8 @@ namespace Urho3D
 		}
 
 
-		/// Starts removeing the given node by removing its children over time.  The given node is not removed.
-		void StartRemove(Node* node);
+		/// Starts removeing the given node by removing its children over time.  The given node is removed if removeRoot is true.
+		void StartRemove(Node* node, bool removeRoot = true);
 
 		/// set how many nodes to remove per frame
 		void SetNodesPerFrame(int nodesPerFrame) { mNodesPerFrame = nodesPerFrame; }
@@ -55,6 +55,7 @@ namespace Urho3D
 		bool isUnLoading = false;
 		WeakPtr<Node> mRootNode;
 		int mNodesPerFrame = 10;
+		bool mRemoveRoot = true;
 	};
 
 

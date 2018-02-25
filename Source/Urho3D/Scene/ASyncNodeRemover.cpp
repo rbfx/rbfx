@@ -20,7 +20,7 @@ namespace Urho3D
 
 
 
-	void ASyncNodeRemover::StartRemove(Node* node)
+	void ASyncNodeRemover::StartRemove(Node* node, bool removeRoot)
 	{
 		mChildren.Clear();
 
@@ -36,6 +36,7 @@ namespace Urho3D
 		SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(ASyncNodeRemover, HandleUpdate));
 		isUnLoading = true;
 		mRootNode = node;
+		mRemoveRoot = removeRoot;
 	}
 
 	void ASyncNodeRemover::CancelRemove()
@@ -71,6 +72,7 @@ namespace Urho3D
 	{
 		isUnLoading = false;
 		mRootNode = nullptr;
+		mRemoveRoot = true;
 		UnsubscribeFromEvent(E_UPDATE);
 	}
 
