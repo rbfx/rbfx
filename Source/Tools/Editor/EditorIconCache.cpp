@@ -26,7 +26,7 @@ EditorIconCache::EditorIconCache(Context* context)
     : Object(context)
 {
     ResourceCache* cache = ui::GetSystemUI()->GetSubsystem<ResourceCache>();
-    XMLFile* icons = cache->GetResource<XMLFile>("UI/EditorIcons.xml");
+    auto* icons = cache->GetResource<XMLFile>("UI/EditorIcons.xml");
     if (icons == nullptr)
         return;
 

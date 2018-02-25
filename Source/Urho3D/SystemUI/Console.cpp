@@ -53,7 +53,7 @@ Console::Console(Context* context) :
 
     SetNumHistoryRows(DEFAULT_HISTORY_SIZE);
     VariantMap dummy;
-    HandleScreenMode(0, dummy);
+    HandleScreenMode(nullptr, dummy);
     RefreshInterpreters();
 
     SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(Console, HandleScreenMode));
@@ -76,7 +76,7 @@ void Console::SetVisible(bool enable)
     else
     {
         UnsubscribeFromEvent(E_UPDATE);
-        ui::SetWindowFocus(0);
+        ui::SetWindowFocus(nullptr);
     }
 }
 
@@ -124,8 +124,6 @@ void Console::RefreshInterpreters()
     currentInterpreter_ = interpreters_.IndexOf(currentInterpreterName);
     if (currentInterpreter_ == interpreters_.Size())
         currentInterpreter_ = 0;
-
-    return;
 }
 
 void Console::HandleLogMessage(StringHash eventType, VariantMap& eventData)
@@ -238,7 +236,7 @@ void Console::RenderUi(StringHash eventType, VariantMap& eventData)
     else if (wasOpen)
     {
         SetVisible(false);
-        ui::SetWindowFocus(0);
+        ui::SetWindowFocus(nullptr);
         SendEvent(E_CONSOLECLOSED);
     }
 

@@ -42,7 +42,7 @@ public:
     /// Save settings into project file.
     void SaveProject(XMLElement scene);
     /// Load settings from a project file.
-    void LoadProject(XMLElement scene);
+    void LoadProject(const XMLElement& scene);
     /// Register object with engine.
     static void RegisterObject(Context* context);
 
@@ -62,7 +62,7 @@ public:
     /// Save settings into project file.
     void SaveProject(XMLElement scene);
     /// Load settings from a project file.
-    void LoadProject(XMLElement scene);
+    void LoadProject(const XMLElement& scene);
     /// Returns custom list of attributes that are different per instance.
     const Vector<AttributeInfo>* GetAttributes() const override;
 

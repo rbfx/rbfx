@@ -39,7 +39,7 @@ void SceneSettings::SaveProject(XMLElement scene)
     settings.CreateChild("saveElapsedTime").SetVariant(saveElapsedTime_);
 }
 
-void SceneSettings::LoadProject(XMLElement scene)
+void SceneSettings::LoadProject(const XMLElement& scene)
 {
     if (auto saveElapsedTime = scene.GetChild("saveElapsedTime"))
         saveElapsedTime_ = saveElapsedTime.GetVariant().GetBool();
@@ -144,7 +144,7 @@ void SceneEffects::Prepare(bool force)
         for (const auto& effectFileName: effects)
         {
             auto effectPath = resourcePath + effectFileName;
-            XMLFile* effect = GetCache()->GetResource<XMLFile>(effectPath);
+            auto* effect = GetCache()->GetResource<XMLFile>(effectPath);
 
             auto root = effect->GetRoot();
             String tag;
@@ -382,7 +382,7 @@ void SceneEffects::SaveProject(XMLElement scene)
 
 }
 
-void SceneEffects::LoadProject(XMLElement scene)
+void SceneEffects::LoadProject(const XMLElement& scene)
 {
     if (auto renderpath = scene.GetChild("renderpath"))
     {

@@ -60,7 +60,7 @@ protected:
     bool RenderAttributeLabel(const AttributeInfo& info, Color color, bool expandable);
 
     /// A filter value. Attributes whose titles do not contain substring sored in this variable will not be rendered.
-    std::array<char, 0x100> filter_;
+    std::array<char, 0x100> filter_{};
     /// Last serializable whose attribute list was rendered.
     PODVector<Serializable*> lastSerializables_;
     /// Name of attribute that was modified on last frame.

@@ -50,7 +50,7 @@ thread_local Task* currentTask_ = nullptr;
 
 void Task::ExecuteTaskWrapper(ContextTransferData transfer)
 {
-    Task* task = static_cast<Task*>(transfer.data);
+    auto* task = static_cast<Task*>(transfer.data);
     task->SetPreviousTaskContext(transfer.context);
     task->ExecuteTask();
 }

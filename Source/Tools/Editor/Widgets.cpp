@@ -34,13 +34,13 @@ namespace ImGui
 
 void Image(const String& name)
 {
-    EditorIconCache* icons = ui::GetSystemUI()->GetSubsystem<EditorIconCache>();
+    auto* icons = ui::GetSystemUI()->GetSubsystem<EditorIconCache>();
 
     if (auto iconData = icons->GetIconData(name))
     {
         IntRect rect = iconData->rect_;
         ResourceCache* cache = ui::GetSystemUI()->GetSubsystem<ResourceCache>();
-        Texture2D* texture = cache->GetResource<Texture2D>(iconData->textureRef_.name_);
+        auto* texture = cache->GetResource<Texture2D>(iconData->textureRef_.name_);
         ui::Image(texture, ToImGui(rect.Size()) * ui::GetPixelPerfectDPIScale(),
             {(float) rect.left_ / texture->GetWidth(), (float) rect.top_ / texture->GetHeight()},
             {(float) rect.right_ / texture->GetWidth(), (float) rect.bottom_ / texture->GetHeight()});
@@ -51,13 +51,13 @@ void Image(const String& name)
 
 bool ImageButton(const String& name)
 {
-    EditorIconCache* icons = ui::GetSystemUI()->GetSubsystem<EditorIconCache>();
+    auto* icons = ui::GetSystemUI()->GetSubsystem<EditorIconCache>();
 
     if (auto iconData = icons->GetIconData(name))
     {
         IntRect rect = iconData->rect_;
         ResourceCache* cache = ui::GetSystemUI()->GetSubsystem<ResourceCache>();
-        Texture2D* texture = cache->GetResource<Texture2D>(iconData->textureRef_.name_);
+        auto* texture = cache->GetResource<Texture2D>(iconData->textureRef_.name_);
         return ui::ImageButton(texture, ToImGui(rect.Size()) * ui::GetPixelPerfectDPIScale(),
             {(float) rect.left_ / texture->GetWidth(), (float) rect.top_ / texture->GetHeight()},
             {(float) rect.right_ / texture->GetWidth(), (float) rect.bottom_ / texture->GetHeight()});

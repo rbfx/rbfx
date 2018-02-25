@@ -96,7 +96,7 @@ private:
     /// Is console window open.
     bool isOpen_;
     /// Input box buffer.
-    char inputBuffer_[0x1000];
+    char inputBuffer_[0x1000]{};
     IntVector2 windowSize_;
     bool scrollToEnd_ = false;
     bool focusInput_ = false;

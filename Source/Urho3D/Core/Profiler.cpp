@@ -35,9 +35,7 @@ Profiler::Profiler(Context* context)
 {
 }
 
-Profiler::~Profiler()
-{
-}
+Profiler::~Profiler() = default;
 
 void Profiler::SetEnabled(bool enabled)
 {
@@ -107,7 +105,7 @@ void Profiler::BeginBlock(const char* name, const char* file, int line, unsigned
     // This is likely to not play well with hot code reload.
     unsigned hash = StringHash::Calculate(file, (unsigned)line);    // TODO: calculate hash at compile time
     HashMap<unsigned, ::profiler::BaseBlockDescriptor*>::Iterator it = blockDescriptorCache_.Find(hash);
-    const ::profiler::BaseBlockDescriptor* desc = 0;
+    const ::profiler::BaseBlockDescriptor* desc = nullptr;
     if (it == blockDescriptorCache_.End())
     {
         String uniqueName = ToString("%s at %s:%d", name, file, line);
@@ -126,7 +124,7 @@ void Profiler::EndBlock()
 
 void Profiler::RegisterCurrentThread(const char* name)
 {
-    static thread_local const char* profilerThreadName = 0;
+    static thread_local const char* profilerThreadName = nullptr;
     if (profilerThreadName == nullptr)
         profilerThreadName = ::profiler::registerThread(name);
 }

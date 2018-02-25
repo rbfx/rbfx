@@ -305,7 +305,7 @@ bool TransformRect(Urho3D::IntRect& inOut, Urho3D::IntRect& delta, TransformSele
     auto handleSize = Max(Min(Min(size.x_ / 4, size.y_ / 4), 8), 2);
     bool modified = false;
 
-    State* s = ui::GetUIState<State>();
+    auto* s = ui::GetUIState<State>();
     auto id = ui::GetID(s);
 
     // Extend rect to cover resize handles that are sticking out of ui element boundaries.

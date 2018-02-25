@@ -47,7 +47,7 @@ bool ResourceBrowserWindow(String& selected)
     auto fs = systemUI->GetFileSystem();
     if (ui::BeginDock("Resources"))
     {
-        State* state = ui::GetUIState<State>();
+        auto* state = ui::GetUIState<State>();
 
         Vector<String> mergedDirs;
         Vector<String> mergedFiles;

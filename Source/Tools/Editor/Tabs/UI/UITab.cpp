@@ -161,7 +161,7 @@ bool UITab::RenderWindowContent()
             IntVector2 resizeStartPos_;
             IntVector2 resizeStartSize_;
         };
-        State* s = ui::GetUIState<State>();
+        auto* s = ui::GetUIState<State>();
 
         if (ui::TransformRect(screenRect, delta, flags))
         {
@@ -414,7 +414,7 @@ void UITab::AutoLoadDefaultStyle()
             // Icons file is also a style file. Without this ugly workaround sometimes wrong style gets applied.
             if (GetContentType(resourcePath) == CTYPE_UISTYLE && !resourcePath.EndsWith("Icons.xml"))
             {
-                XMLFile* style = cache->GetResource<XMLFile>(resourcePath);
+                auto* style = cache->GetResource<XMLFile>(resourcePath);
                 rootElement_->SetDefaultStyle(style);
 
                 auto styles = style->GetRoot().SelectPrepared(XPathQuery("/elements/element"));
@@ -520,7 +520,7 @@ String UITab::GetAppliedStyle(UIElement* element)
 
 void UITab::RenderRectSelector()
 {
-    BorderImage* selected = dynamic_cast<BorderImage*>(GetSelected());
+    auto* selected = dynamic_cast<BorderImage*>(GetSelected());
 
     if (textureSelectorAttribute_.Empty() || selected == nullptr)
         return;
@@ -533,7 +533,7 @@ void UITab::RenderRectSelector()
         int windowFlags_ = ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar;
         IntRect rectWindowDeltaAccumulator_;
     };
-    State* s = ui::GetUIState<State>();
+    auto* s = ui::GetUIState<State>();
 
     bool open = true;
     auto texture = selected->GetTexture();
