@@ -81,11 +81,11 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
         Function* func = dynamic_cast<Function*>(decl);
         func->cFunctionName_ = GetUniqueName(Sanitize(func->symbolName_));
 
-        std::string cParameterList = ParameterList(func->GetParameters(), toCType);
+        std::string cParameterList = ParameterList(func->parameters_, toCType);
         auto vars = fmt({
             {"name",                func->name_},
             {"c_function_name",     func->cFunctionName_},
-            {"parameter_name_list", ParameterNameList(func->GetParameters(), toCppType)},
+            {"parameter_name_list", ParameterNameList(func->parameters_, toCppType)},
             {"base_symbol_name",    func->baseSymbolName_},
             {"is_public",           func->isPublic_},
             {"class_name",          func->parent_->sourceName_},
@@ -109,7 +109,7 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
         if (func->kind_ == Declaration::Kind::Constructor)
             vars.set("c_return_type", (func->parent_->sourceName_ + "*"));
         else
-            vars.set("c_return_type", typeMapper_->ToCType(func->GetReturnType()));
+            vars.set("c_return_type", typeMapper_->ToCType(*func->returnType_));
 
         printer_ << fmt("URHO3D_EXPORT_API {{c_return_type}} {{c_function_name}}({{c_parameter_list}})", vars);
         printer_.Indent();
@@ -135,10 +135,10 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
                     call = fmt("instance->", vars) + call;
             }
 
-            if (!IsVoid(func->GetReturnType()))
+            if (!IsVoid(func->returnType_))
             {
                 printer_.Write("return ");
-                call = typeMapper_->MapToC(func->GetReturnType(), call);
+                call = typeMapper_->MapToC(*func->returnType_, call);
             }
             else if (func->kind_ == Declaration::Kind::Constructor)
             {

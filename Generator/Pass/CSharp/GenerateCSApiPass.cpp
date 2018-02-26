@@ -90,10 +90,10 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
 
         auto vars = fmt({
             {"class_name", cls->name_},
-            {"parameter_list", ParameterList(ctor->GetParameters(),
+            {"parameter_list", ParameterList(ctor->parameters_,
                 std::bind(&TypeMapper::ToCSType, typeMapper_, std::placeholders::_1), ".")},
             {"symbol_name", Sanitize(cls->symbolName_)},
-            {"param_name_list", ParameterNameList(ctor->GetParameters(), mapToPInvoke)},
+            {"param_name_list", ParameterNameList(ctor->parameters_, mapToPInvoke)},
             {"has_base", !cls->bases_.Empty()},
             {"c_function_name", decl->cFunctionName_},
             {"access", decl->isPublic_ ? "public" : "protected"}
@@ -116,18 +116,18 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
                         auto vars = fmt({
                             {"class_name", cls->name_},
                             {"name", func->name_},
-                            {"has_params", !func->GetParameters().empty()},
-                            {"param_name_list", ParameterNameList(func->GetParameters(), [&](const cppast::cpp_function_parameter& param) {
+                            {"has_params", !func->parameters_.empty()},
+                            {"param_name_list", ParameterNameList(func->parameters_, [&](const cppast::cpp_function_parameter& param) {
                                 // Avoid possible parameter name collision in enclosing scope.
                                 return param.name() + "_";
                             })},
-                            {"cs_param_name_list", ParameterNameList(func->GetParameters(), [&](const cppast::cpp_function_parameter& param) {
+                            {"cs_param_name_list", ParameterNameList(func->parameters_, [&](const cppast::cpp_function_parameter& param) {
                                 return typeMapper_->MapToCS(param.type(), param.name() + "_");
                             })},
-                            {"cs_param_type_list", ParameterTypeList(func->GetParameters(), [&](const cppast::cpp_type& type) {
+                            {"cs_param_type_list", ParameterTypeList(func->parameters_, [&](const cppast::cpp_type& type) {
                                 return ToString("typeof(%s)", generator->typeMapper_.ToCSType(type)).CString();
                             })},
-                            {"return", !IsVoid(func->GetReturnType()) ? "return " : ""},
+                            {"return", !IsVoid(func->returnType_) ? "return " : ""},
                             {"source_class_name", Sanitize(cls->sourceName_)},
                             {"c_function_name", func->cFunctionName_},
                         });
@@ -153,10 +153,10 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
         printer_ << "";
 
         // Implicit constructors with one parameter get conversion operators generated for them.
-        if (ctor->source_ != nullptr && Count(ctor->GetParameters()) == 1)
+        if (ctor->source_ != nullptr && ctor->parameters_.size() == 1)
         {
             const auto* astCtor = (const cppast::cpp_constructor*) ctor->source_;
-            if (!astCtor->is_explicit() && Urho3D::GetTypeName(ctor->GetParameters().begin()->type()) != cls->symbolName_)
+            if (!astCtor->is_explicit() && Urho3D::GetTypeName(ctor->parameters_[0]->type()) != cls->symbolName_)
             {
                 printer_ << fmt("public static implicit operator {{class_name}}({{parameter_list}})", vars);
                 printer_.Indent();
@@ -174,13 +174,12 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
 
         auto vars = fmt({
             {"name", func->name_},
-            {"return_type", typeMapper_->ToCSType(func->GetReturnType())},
-            {"parameter_list", ParameterList(func->GetParameters(),
-                                             std::bind(&TypeMapper::ToCSType, typeMapper_, std::placeholders::_1),
-                                             ".")},
+            {"return_type", typeMapper_->ToCSType(*func->returnType_)},
+            {"parameter_list", ParameterList(func->parameters_,
+                std::bind(&TypeMapper::ToCSType, typeMapper_, std::placeholders::_1), ".")},
             {"c_function_name", func->cFunctionName_},
-            {"param_name_list", ParameterNameList(func->GetParameters(), mapToPInvoke)},
-            {"has_params", !func->GetParameters().empty()},
+            {"param_name_list", ParameterNameList(func->parameters_, mapToPInvoke)},
+            {"has_params", !func->parameters_.empty()},
             {"virtual", func->IsVirtual() ? "virtual " : ""},
             {"access", decl->isPublic_ ? "public" : "protected"}
         });
@@ -188,10 +187,10 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
         printer_.Indent();
         {
             std::string call = fmt("{{c_function_name}}(instance_{{#has_params}}, {{/has_params}}{{param_name_list}})", vars);
-            if (IsVoid(func->GetReturnType()))
+            if (IsVoid(func->returnType_))
                 printer_ << call + ";";
             else
-                printer_ << "return " + typeMapper_->MapToCS(func->GetReturnType(), call) + ";";
+                printer_ << "return " + typeMapper_->MapToCS(*func->returnType_, call) + ";";
         }
         printer_.Dedent();
         printer_ << "";

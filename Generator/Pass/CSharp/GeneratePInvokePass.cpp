@@ -206,7 +206,7 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
         Function* ctor = dynamic_cast<Function*>(decl);
 
         printer_ << dllImport;
-        auto csParams = ParameterList(ctor->GetParameters(), std::bind(&TypeMapper::ToPInvokeTypeParam, typeMapper_, std::placeholders::_1));
+        auto csParams = ParameterList(ctor->parameters_, std::bind(&TypeMapper::ToPInvokeTypeParam, typeMapper_, std::placeholders::_1));
         auto vars = fmt({
             {"c_function_name", decl->cFunctionName_},
             {"cs_param_list", csParams}
@@ -219,14 +219,14 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
         Function* func = dynamic_cast<Function*>(decl);
 
         printer_ << dllImport;
-        auto csParams = ParameterList(func->GetParameters(),
+        auto csParams = ParameterList(func->parameters_,
             std::bind(&TypeMapper::ToPInvokeTypeParam, typeMapper_, std::placeholders::_1), nullptr);
-        String csRetType = typeMapper_->ToPInvokeTypeReturn(func->GetReturnType());
+        String csRetType = typeMapper_->ToPInvokeTypeReturn(*func->returnType_);
         auto vars = fmt({
             {"c_function_name", decl->cFunctionName_},
             {"cs_param_list", csParams},
             {"cs_return", csRetType.CString()},
-            {"has_params", !func->GetParameters().empty()},
+            {"has_params", !func->parameters_.empty()},
             {"ret_attribute", ""},
             {"class_name", func->parent_->name_},
             {"source_class_name", Sanitize(func->parent_->sourceName_)},

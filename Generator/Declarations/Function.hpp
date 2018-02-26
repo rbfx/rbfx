@@ -40,29 +40,39 @@ public:
         {
         case cppast::cpp_entity_kind::function_t:
         {
+            const auto& func = dynamic_cast<const cppast::cpp_function&>(*source);
+            for (const auto& param : func.parameters())
+                parameters_.emplace_back(&param);
             kind_ = Kind::Function;
             isStatic_ = true;
             break;
         }
         case cppast::cpp_entity_kind::member_function_t:
         {
+            const auto& func = dynamic_cast<const cppast::cpp_member_function&>(*source);
+            for (const auto& param : func.parameters())
+                parameters_.emplace_back(&param);
             isStatic_ = false;
             kind_ = Kind::Method;
-            const auto& func = dynamic_cast<const cppast::cpp_member_function&>(*source);
             isConstant_ = func.cv_qualifier() == cppast::cpp_cv_const ||
                 func.cv_qualifier() == cppast::cpp_cv_const_volatile;
             break;
         }
         case cppast::cpp_entity_kind::constructor_t:
         {
+            const auto& func = dynamic_cast<const cppast::cpp_constructor&>(*source);
+            for (const auto& param : func.parameters())
+                parameters_.emplace_back(&param);
             isStatic_ = false;
             kind_ = Kind::Constructor;
+            returnType_ = reinterpret_cast<const cppast::cpp_type*>(&cppast::void_type_instance);
             break;
         }
         case cppast::cpp_entity_kind::destructor_t:
         {
             isStatic_ = false;
             kind_ = Kind::Destructor;
+            returnType_ = reinterpret_cast<const cppast::cpp_type*>(&cppast::void_type_instance);
             break;
         }
         default:
@@ -73,35 +83,7 @@ public:
 
     String ToString() const override
     {
-        if (source_ == nullptr)
-            return name_;
-
-        switch (source_->kind())
-        {
-        case cppast::cpp_entity_kind::function_t:
-        {
-            const auto& func = dynamic_cast<const cppast::cpp_function&>(*source_);
-            return String() + cppast::to_string(func.return_type()) + " " + name_ + func.signature();
-        }
-        case cppast::cpp_entity_kind::member_function_t:
-        {
-            const auto& func = dynamic_cast<const cppast::cpp_member_function&>(*source_);
-            return String() + cppast::to_string(func.return_type()) + " " + name_ + func.signature();
-        }
-        case cppast::cpp_entity_kind::constructor_t:
-        {
-            const auto& func = dynamic_cast<const cppast::cpp_constructor&>(*source_);
-            return name_ + func.signature();
-        }
-        case cppast::cpp_entity_kind::destructor_t:
-        {
-            const auto& func = dynamic_cast<const cppast::cpp_destructor&>(*source_);
-            return name_ + func.signature();
-        }
-        default:
-            assert(false);
-            break;
-        }
+        return cppast::to_string(*returnType_) + " " + symbolName_;
     }
 
     bool IsVirtual() const
@@ -123,45 +105,10 @@ public:
         }
     }
 
-    cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter> GetParameters() const
-    {
-        assert(source_ != nullptr);
-
-        switch (source_->kind())
-        {
-        case cppast::cpp_entity_kind::function_t:
-            return dynamic_cast<const cppast::cpp_function&>(*source_).parameters();
-        case cppast::cpp_entity_kind::member_function_t:
-            return dynamic_cast<const cppast::cpp_member_function&>(*source_).parameters();
-        case cppast::cpp_entity_kind::constructor_t:
-            return dynamic_cast<const cppast::cpp_constructor&>(*source_).parameters();
-        case cppast::cpp_entity_kind::destructor_t:
-            return dynamic_cast<const cppast::cpp_destructor&>(*source_).parameters();
-        default:
-            assert(false);
-            break;
-        }
-    }
-
-    const cppast::cpp_type& GetReturnType() const
-    {
-        assert(source_ != nullptr);
-
-        switch (source_->kind())
-        {
-        case cppast::cpp_entity_kind::function_t:
-            return dynamic_cast<const cppast::cpp_function&>(*source_).return_type();
-        case cppast::cpp_entity_kind::member_function_t:
-            return dynamic_cast<const cppast::cpp_member_function&>(*source_).return_type();
-        case cppast::cpp_entity_kind::constructor_t:
-            return *cppast::void_type_instance.get();
-        case cppast::cpp_entity_kind::destructor_t:
-            return *cppast::void_type_instance.get();
-        default:
-            assert(false);
-            break;
-        }
-    }
+    /// Return type of function. Constructors and destructors have a void type.
+    const cppast::cpp_type* returnType_ = nullptr;
+    /// Parameters of a function.
+    std::vector<const cppast::cpp_function_parameter*> parameters_;
 };
 
 }

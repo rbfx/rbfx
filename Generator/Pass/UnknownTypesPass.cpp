@@ -41,13 +41,13 @@ bool UnknownTypesPass::Visit(Declaration* decl, Event event)
     if (decl->source_ == nullptr)
         return true;
 
-    auto checkFunctionParams = [&](const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params) {
+    auto checkFunctionParams = [&](const std::vector<const cppast::cpp_function_parameter*>& params) {
         for (const auto& param : params)
         {
-            if (!generator_->IsAcceptableType(param.type()))
+            if (!generator_->IsAcceptableType(param->type()))
             {
                 URHO3D_LOGINFOF("Ignore: %s, unknown parameter type %s", decl->symbolName_.c_str(),
-                                cppast::to_string(param.type()).c_str());
+                                cppast::to_string(param->type()).c_str());
                 return false;
             }
         }
@@ -55,7 +55,7 @@ bool UnknownTypesPass::Visit(Declaration* decl, Event event)
     };
 
     auto checkFunctionTypes = [&](const cppast::cpp_type& returnType,
-                                  const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params) {
+                                  const std::vector<const cppast::cpp_function_parameter*>& params) {
         String s = cppast::to_string(returnType);
         if (!generator_->IsAcceptableType(returnType))
         {
@@ -74,7 +74,7 @@ bool UnknownTypesPass::Visit(Declaration* decl, Event event)
             decl->Ignore();
             URHO3D_LOGINFOF("Ignore: %s, operators not supported.", decl->name_.c_str());
         }
-        else if (!checkFunctionTypes(func->GetReturnType(), func->GetParameters()))
+        else if (!checkFunctionTypes(*func->returnType_, func->parameters_))
             decl->Ignore();
     }
     else if (decl->kind_ == Declaration::Kind::Variable)

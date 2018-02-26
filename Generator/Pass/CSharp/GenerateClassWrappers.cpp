@@ -80,8 +80,8 @@ bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
             printer_ << fmt("{{name}}({{parameter_list}}) : {{symbol_name}}({{parameter_name_list}}) { }",
                 {{"name",                cls->name_},
                  {"symbol_name",         cls->symbolName_},
-                 {"parameter_list",      ParameterList(ctor->GetParameters())},
-                 {"parameter_name_list", ParameterNameList(ctor->GetParameters())},});
+                 {"parameter_list",      ParameterList(ctor->parameters_)},
+                 {"parameter_name_list", ParameterNameList(ctor->parameters_)},});
         }
     }
     printer_ << fmt("virtual ~{{name}}() = default;", {{"name", cls->name_}});
@@ -123,15 +123,15 @@ bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
                     // Function pointer that virtual method will call
                     Class* cls = dynamic_cast<Class*>(func->parent_.Get());
                     auto vars = fmt({
-                        {"type",                cppast::to_string(func->GetReturnType())},
+                        {"type",                cppast::to_string(*func->returnType_)},
                         {"name",                func->name_},
                         {"class_name",          cls->name_},
                         {"full_class_name",     cls->symbolName_},
-                        {"parameter_list",      ParameterList(func->GetParameters())},
-                        {"parameter_name_list", ParameterNameList(func->GetParameters())},
-                        {"return",              IsVoid(func->GetReturnType()) ? "" : "return"},
+                        {"parameter_list",      ParameterList(func->parameters_)},
+                        {"parameter_name_list", ParameterNameList(func->parameters_)},
+                        {"return",              IsVoid(func->returnType_) ? "" : "return"},
                         {"const",               func->isConstant_ ? "const " : ""},
-                        {"has_params",          !func->GetParameters().empty()},
+                        {"has_params",          !func->parameters_.empty()},
                         {"symbol_name",         Sanitize(func->symbolName_)}
                     });
                     if (func->IsVirtual())

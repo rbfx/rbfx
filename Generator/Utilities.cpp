@@ -130,6 +130,11 @@ bool IsVoid(const cppast::cpp_type& type)
     return false;
 }
 
+bool IsVoid(const cppast::cpp_type* type)
+{
+    return type == nullptr || IsVoid(*type);
+}
+
 std::string EnsureNotKeyword(const std::string& value)
 {
     // TODO: Refactor this
@@ -138,23 +143,23 @@ std::string EnsureNotKeyword(const std::string& value)
     return value;
 }
 
-std::string ParameterList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
+std::string ParameterList(const std::vector<const cppast::cpp_function_parameter*>& params,
                      const std::function<std::string(const cppast::cpp_type&)>& typeToString,
                      const char* defaultValueNamespaceSeparator)
 {
-    Vector<String> parts;
+    std::vector<std::string> parts;
     for (const auto& param : params)
     {
-        String typeString;
+        std::string typeString;
         if (typeToString)
-            typeString = typeToString(param.type());
+            typeString = typeToString(param->type());
         else
-            typeString = cppast::to_string(param.type());
-        typeString += (" " + EnsureNotKeyword(param.name())).c_str();
+            typeString = cppast::to_string(param->type());
+        typeString += (" " + EnsureNotKeyword(param->name())).c_str();
 
-        if (defaultValueNamespaceSeparator != nullptr && param.default_value().has_value())
+        if (defaultValueNamespaceSeparator != nullptr && param->default_value().has_value())
         {
-            String value = ToString(param.default_value().value());
+            std::string value = ToString(param->default_value().value());
 
             // TODO: Ugly band-aid for enum values as default parameter values. Get rid of it ASAP!
             if (strcmp(defaultValueNamespaceSeparator, ".") == 0)
@@ -166,36 +171,33 @@ std::string ParameterList(const cppast::detail::iteratable_intrusive_list<cppast
                 else if (value == "Variant::EMPTY")
                     value = "";
                 else if (auto* var = dynamic_cast<Variable*>(generator->symbols_.Get("Urho3D::" + value)))
-                    value = (var->parent_->symbolName_ + "::" + value.CString()).c_str();
+                    value = var->parent_->symbolName_ + "::" + value;
             }
             // ---------------------------------------------------------------------------------------------------------
 
-            if (!value.Empty())
-            {
-                value.Replace("::", defaultValueNamespaceSeparator);
-                typeString += "=" + value;
-            }
+            if (!value.empty())
+                typeString += "=" + str::replace_str(value, "::", defaultValueNamespaceSeparator);
         }
-        parts.Push(typeString);
+        parts.emplace_back(typeString);
     }
-    return String::Joined(parts, ", ").CString();
+    return str::join(parts, ", ");
 }
 
-std::string ParameterNameList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
+std::string ParameterNameList(const std::vector<const cppast::cpp_function_parameter*>& params,
     const std::function<std::string(const cppast::cpp_function_parameter&)>& nameFilter)
 {
     std::vector<std::string> parts;
-    for (const auto& param : params)
+    for (const auto* param : params)
     {
-        auto name = EnsureNotKeyword(param.name());
+        auto name = EnsureNotKeyword(param->name());
         if (nameFilter)
-            name = nameFilter(param);
+            name = nameFilter(*param);
         parts.emplace_back(name);
     }
     return str::join(parts, ", ");
 }
 
-std::string ParameterTypeList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
+std::string ParameterTypeList(const std::vector<const cppast::cpp_function_parameter*>& params,
     const std::function<std::string(const cppast::cpp_type&)>& typeToString)
 {
     std::vector<std::string> parts;
@@ -203,9 +205,9 @@ std::string ParameterTypeList(const cppast::detail::iteratable_intrusive_list<cp
     {
         std::string typeString;
         if (typeToString)
-            typeString = typeToString(param.type());
+            typeString = typeToString(param->type());
         else
-            typeString = cppast::to_string(param.type());
+            typeString = cppast::to_string(param->type());
         parts.emplace_back(typeString);
     }
     return str::join(parts, ", ");
@@ -327,7 +329,7 @@ std::string ToString(const cppast::cpp_expression& expression)
 namespace str
 {
 
-std::string& replace_str(std::string&& dest, const std::string& find, const std::string& replace)
+std::string& replace_str(std::string& dest, const std::string& find, const std::string& replace)
 {
     while(dest.find(find) != std::string::npos)
         dest.replace(dest.find(find), find.size(), replace);
@@ -344,6 +346,11 @@ std::string join(const std::vector<std::string>& collection, const std::string& 
         result += glue + *it;
 
     return result;
+}
+
+std::string& replace_str(std::string&& dest, const std::string& find, const std::string& replace)
+{
+    return replace_str(dest, find, replace);
 }
 
 }
