@@ -41,6 +41,7 @@ public:
         case cppast::cpp_entity_kind::function_t:
         {
             const auto& func = dynamic_cast<const cppast::cpp_function&>(*source);
+            returnType_ = &func.return_type();
             for (const auto& param : func.parameters())
                 parameters_.emplace_back(&param);
             kind_ = Kind::Function;
@@ -50,6 +51,7 @@ public:
         case cppast::cpp_entity_kind::member_function_t:
         {
             const auto& func = dynamic_cast<const cppast::cpp_member_function&>(*source);
+            returnType_ = &func.return_type();
             for (const auto& param : func.parameters())
                 parameters_.emplace_back(&param);
             isStatic_ = false;
@@ -61,18 +63,18 @@ public:
         case cppast::cpp_entity_kind::constructor_t:
         {
             const auto& func = dynamic_cast<const cppast::cpp_constructor&>(*source);
+            returnType_ = reinterpret_cast<const cppast::cpp_type*>(cppast::void_type_instance.get());
             for (const auto& param : func.parameters())
                 parameters_.emplace_back(&param);
             isStatic_ = false;
             kind_ = Kind::Constructor;
-            returnType_ = reinterpret_cast<const cppast::cpp_type*>(&cppast::void_type_instance);
             break;
         }
         case cppast::cpp_entity_kind::destructor_t:
         {
             isStatic_ = false;
             kind_ = Kind::Destructor;
-            returnType_ = reinterpret_cast<const cppast::cpp_type*>(&cppast::void_type_instance);
+            returnType_ = reinterpret_cast<const cppast::cpp_type*>(cppast::void_type_instance.get());
             break;
         }
         default:
