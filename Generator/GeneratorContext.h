@@ -28,7 +28,7 @@
 #include <Urho3D/IO/Log.h>
 #include <cppast/cpp_entity.hpp>
 #include <cppast/libclang_parser.hpp>
-#include <Urho3D/Resource/XMLFile.h>
+#include <Urho3D/Resource/JSONFile.h>
 #include "Pass/CppPass.h"
 #include "TypeMapper.h"
 
@@ -87,7 +87,7 @@ public:
     void LoadCompileConfig(const std::vector<std::string>& includes, std::vector<std::string>& defines,
         const std::vector<std::string>& options);
 
-    bool LoadRules(const String& xmlPath);
+    bool LoadRules(const String& jsonPath);
     bool ParseFiles(const String& sourceDir);
     template<typename T, typename... Args>
     void AddCppPass(Args... args) { cppPasses_.Push(DynamicCast<CppAstPass>(SharedPtr<T>(new T(context_, args...)))); }
@@ -99,7 +99,7 @@ public:
     String sourceDir_;
     String outputDirCpp_;
     String outputDirCs_;
-    SharedPtr<XMLFile> rules_;
+    SharedPtr<JSONFile> rules_;
     cppast::libclang_compile_config config_;
     std::map<String, std::unique_ptr<cppast::cpp_file>> parsed_;
     Vector<SharedPtr<CppAstPass>> cppPasses_;

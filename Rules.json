@@ -1,0 +1,141 @@
+{
+  "headers": {
+    "include": [
+      "Math/MathDefs.h",
+      "Container/RefCounted.h",
+      "Core/Object.h",
+      "Core/Context.h",
+      "Core/Variant.h",
+      "Core/Attribute.h",
+      "Core/Profiler.h",
+      "Core/Spline.h",
+      "Core/Timer.h",
+      "Engine/*.h",
+      "IK/*.h",
+      "**/SDL/SDL_scancode.h",
+      "**/SDL/SDL_joystick.h",
+      "**/SDL/SDL_gamecontroller.h",
+      "**/SDL/SDL_keycode.h",
+      "**/SDL/SDL_mouse.h",
+      "Input/*.h",
+      "Scene/*.h",
+      "Audio/*.h",
+      "IO/Serializer.h",
+      "IO/Deserializer.h",
+      "IO/AbstractFile.h",
+      "IO/Log.h",
+      "IO/PackageFile.h",
+      "Navigation/*.h",
+      "Resource/BackgroundLoader.h",
+      "Resource/Image.h",
+      "Resource/Localization.h",
+      "Resource/PListFile.h",
+      "Resource/Resource.h",
+      "Resource/ResourceCache.h",
+      "Resource/ResourceEvents.h",
+      "UI/*.h"
+    ],
+    "exclude": [
+      "IK/IKConverters.h",
+      "UI/FontFace*.h"
+    ]
+  },
+  "compiler": {
+    "defines": [
+      "URHO3D_API"
+    ]
+  },
+  "symbols": {
+    "include": [
+      "SDL_*",
+      "SDLK_*",
+      "Urho3D",
+      "Urho3D::*"
+    ],
+    "exclude": [
+      "Urho3D::*Impl",
+      "Urho3D::EventHandler*",
+      "Urho3D::ObjectFactory",
+      "Urho3D::EventNameRegistrar",
+      "Urho3D::CustomVariantValue*",
+      "Urho3D::String",
+      "Urho3D::WString",
+      "Urho3D::StringHash",
+      "Urho3D::Variant::customValue*_",
+      "Urho3D::Variant::Variant(void*)",
+      // C# reflection can be used instead of these
+      "Urho3D::TypeInfo",
+      "Urho3D::*::GetType() const",
+      "Urho3D::*::GetTypeStatic()",
+      "Urho3D::*::GetTypeName() const",
+      "Urho3D::*::GetTypeNameStatic()",
+      "Urho3D::*::GetTypeInfo() const",
+      "Urho3D::*::GetTypeInfoStatic()",
+      "Urho3D::File::ReadText(Urho3D::String&)",
+      // TODO: Wrap manually returning a string instead of bool
+      "Urho3D::FileWatcher::GetNextChange(Urho3D::String&)",
+      "Urho3D::AttributeInfo::enumNames_",
+      "Urho3D::ResourceRouter",
+      // TODO: `out` parameters
+      "Urho3D::*::FindAttributeAnimationTarget(Urho3D::String const&,Urho3D::String&)",
+      // https://github.com/foonathan/cppast/issues/41
+      "Urho3D::ValueAnimation::SetEventFrame(float,Urho3D::StringHash const&,Urho3D::VariantMap const&)",
+      "Urho3D::Object::SendEvent(Urho3D::StringHash,Urho3D::VariantMap const&)",
+      "Urho3D::Variant::Variant(Urho3D::String const&)",
+      "Urho3D::Variant::Variant(Urho3D::String const&,Urho3D::String const&)",
+      "Urho3D::Variant::Variant(Urho3D::VariantType,Urho3D::String const&)",
+      "Urho3D::Variant::FromString(Urho3D::String const&,Urho3D::String const&)",
+      "Urho3D::Variant::FromString(Urho3D::VariantType,Urho3D::String const&)",
+      "Urho3D::Node::GetChild(Urho3D::String const&,bool) const",
+      "Urho3D::ResourceRef::ResourceRef(Urho3D::String const&,Urho3D::String const&)",
+      // TODO: Setter should not be generated
+      "Urho3D::Text3D::text_",
+      "Urho3D::UI::DragData",
+      // TODO: `out` parameters
+//      "Urho3D::CrowdManager::Raycast(Urho3D::Vector3 const&,Urho3D::Vector3 const&,int,Urho3D::Vector3*)",
+//      "Urho3D::CrowdManager::GetDistanceToWall(Urho3D::Vector3 const&,float,int,Urho3D::Vector3*,Urho3D::Vector3*)"
+    ]
+  },
+  "typemaps": [
+    {
+      "type": "Urho3D::StringHash",
+      "ctype": "unsigned",
+      "cstype": "global::Urho3D.StringHash",
+      "cpp_to_c": "{{value}}.Value()",
+      "c_to_cpp": "Urho3D::StringHash({{value}})",
+      "pinvoke_to_cs": "new StringHash({{value}})",
+      "cs_to_pinvoke": "{{value}}.Hash"
+    },
+    // TODO: Avoid string copying when possible.
+    // String typemaps always return a copy of string which is freed by mono. Sometimes this is not necessary and c api
+    // could return pointer pointing to string content held by the engine. However mono is required to not free such
+    // string after conversion, which implies handling it manually. Also investigate how .net framework behaves in this
+    // situation.
+    {
+      "type": "Urho3D::String",
+      "ctype": "char const*",
+      "cstype": "string",
+      "cpp_to_c": "strdup({{value}}.CString())",
+      "c_to_cpp": "Urho3D::String({{value}})"
+    },
+    {
+      "type": "char const*",
+      "cpp_to_c": "strdup({{value}})"
+    },
+    {
+      "type": "Urho3D::VariantMap",
+      "ctype": "Urho3D::VariantMap*",
+      "ptype": "IntPtr",
+      "cstype": "global::Urho3D.VariantMap",
+      "cpp_to_c": "script->AddRef<Urho3D::VariantMap>({{value}})",
+      "c_to_cpp": "*{{value}}",
+      "pinvoke_to_cs": "new global::Urho3D.VariantMap({{value}})",
+      "cs_to_pinvoke": "{{value}}.instance_"
+    },
+    {
+      "type": "Urho3D::Vector3",
+      "cstype": "Urho3D.Vector3",
+      "ptype": "Urho3D.Vector3"
+    }
+  ]
+}

@@ -26,7 +26,6 @@
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/JSONValue.h>
-#include <Urho3D/Resource/JSONFile.h>
 #include "Declarations/Namespace.hpp"
 #include "GeneratorContext.h"
 #include "Utilities.h"
@@ -62,15 +61,15 @@ void GeneratorContext::LoadCompileConfig(const std::vector<std::string>& include
     }
 }
 
-bool GeneratorContext::LoadRules(const String& xmlPath)
+bool GeneratorContext::LoadRules(const String& jsonPath)
 {
-    rules_ = new XMLFile(context_);
-    return rules_->LoadFile(xmlPath);
+    rules_ = new JSONFile(context_);
+    return rules_->LoadFile(jsonPath);
 }
 
 bool GeneratorContext::ParseFiles(const String& sourceDir)
 {
-    typeMapper_.Load(rules_);
+    typeMapper_.Load(rules_->GetRoot());
 
     sourceDir_ = AddTrailingSlash(sourceDir);
 
@@ -79,7 +78,7 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
     // there can be multiple parser implementations
     cppast::libclang_parser parser(type_safe::ref(logger));
 
-    IncludedChecker checker(rules_->GetRoot().GetChild("headers"));
+    IncludedChecker checker(rules_->GetRoot().Get("headers"));
 
     auto parseFiles = [&](const String& subdir)
     {

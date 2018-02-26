@@ -50,7 +50,7 @@ class TypeMapper : public Object
 
     TypeMapper(Context* context);;
 public:
-    void Load(XMLFile* rules);
+    void Load(const JSONValue& rules);
     const TypeMap* GetTypeMap(const cppast::cpp_type& type);
     const TypeMap* GetTypeMap(const std::string& typeName);
 

@@ -34,7 +34,7 @@ namespace Urho3D
 void BuildApiPass::Start()
 {
     generator_ = GetSubsystem<GeneratorContext>();
-    symbolChecker_.Load(generator_->rules_->GetRoot().GetChild("symbols"));
+    symbolChecker_.Load(generator_->rules_->GetRoot().Get("symbols"));
     stack_.Push(generator_->apiRoot_.Get());
 }
 

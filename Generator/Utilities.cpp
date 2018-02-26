@@ -271,22 +271,18 @@ bool IsComplexValueType(const cppast::cpp_type& type)
     }
 }
 
-IncludedChecker::IncludedChecker(const XMLElement& rules)
+IncludedChecker::IncludedChecker(const JSONValue& rules)
 {
     Load(rules);
 }
 
-void IncludedChecker::Load(const XMLElement& rules)
+void IncludedChecker::Load(const JSONValue& rules)
 {
-    for (XMLElement include = rules.GetChild("include"); include.NotNull(); include = include.GetNext("include"))
-        includes_.Push(WildcardToRegex(include.GetValue()));
+    for (const auto& include : rules.Get("include").GetArray())
+        includes_.Push(WildcardToRegex(include.GetString()));
 
-    for (XMLElement exclude = rules.GetChild("exclude"); exclude.NotNull(); exclude = exclude.GetNext("exclude"))
-        excludes_.Push(WildcardToRegex(exclude.GetValue()));
-
-    // "Manual" stuff is also excluded. We guarantee that user implementation will exist.
-    for (XMLElement manual = rules.GetChild("manual"); manual.NotNull(); manual = manual.GetNext("manual"))
-        excludes_.Push(WildcardToRegex(manual.GetValue()));
+    for (const auto& exclude : rules.Get("exclude").GetArray())
+        excludes_.Push(WildcardToRegex(exclude.GetString()));
 }
 
 bool IncludedChecker::IsIncluded(const String& value)

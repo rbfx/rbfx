@@ -36,16 +36,16 @@ TypeMapper::TypeMapper(Context* context)
 {
 }
 
-void TypeMapper::Load(XMLFile* rules)
+void TypeMapper::Load(const JSONValue& rules)
 {
-    XMLElement typeMaps = rules->GetRoot().GetChild("typemaps");
-    for (auto typeMap = typeMaps.GetChild("typemap"); typeMap.NotNull(); typeMap = typeMap.GetNext("typemap"))
+    const JSONArray& typeMaps = rules.Get("typemaps").GetArray();
+    for (const auto& typeMap : typeMaps)
     {
         TypeMap map;
-        map.cppType_ = typeMap.GetAttribute("type").CString();
-        map.cType_ = typeMap.GetAttribute("ctype").CString();
-        map.csType_ = typeMap.GetAttribute("cstype").CString();
-        map.pInvokeType_ = typeMap.GetAttribute("ptype").CString();
+        map.cppType_ = typeMap.Get("type").GetString().CString();
+        map.cType_ = typeMap.Get("ctype").GetString().CString();
+        map.csType_ = typeMap.Get("cstype").GetString().CString();
+        map.pInvokeType_ = typeMap.Get("ptype").GetString().CString();
 
         if (map.cType_.empty())
             map.cType_ = map.cppType_;
@@ -56,17 +56,21 @@ void TypeMapper::Load(XMLFile* rules)
         if (map.csType_.empty())
             map.csType_ = map.pInvokeType_;
 
-        if (auto cppToC = typeMap.GetChild("cpp_to_c"))
-            map.cppToCTemplate_ = cppToC.GetValue().CString();
+        const auto& cppToC = typeMap.Get("cpp_to_c");
+        if (!cppToC.IsNull())
+            map.cppToCTemplate_ = cppToC.GetString().CString();
 
-        if (auto cToCpp = typeMap.GetChild("c_to_cpp"))
-            map.cToCppTemplate_ = cToCpp.GetValue().CString();
+        const auto& cToCpp = typeMap.Get("c_to_cpp");
+        if (!cToCpp.IsNull())
+            map.cToCppTemplate_ = cToCpp.GetString().CString();
 
-        if (auto toCS = typeMap.GetChild("pinvoke_to_cs"))
-            map.pInvokeToCSTemplate_ = toCS.GetValue().CString();
+        const auto& toCS = typeMap.Get("pinvoke_to_cs");
+        if (!toCS.IsNull())
+            map.pInvokeToCSTemplate_ = toCS.GetString().CString();
 
-        if (auto toPInvoke = typeMap.GetChild("cs_to_pinvoke"))
-            map.csToPInvokeTemplate_ = toPInvoke.GetValue().CString();
+        const auto& toPInvoke = typeMap.Get("cs_to_pinvoke");
+        if (!toPInvoke.IsNull())
+            map.csToPInvokeTemplate_ = toPInvoke.GetString().CString();
 
         typeMaps_[map.cppType_] = map;
     }

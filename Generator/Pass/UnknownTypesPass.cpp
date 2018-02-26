@@ -56,7 +56,6 @@ bool UnknownTypesPass::Visit(Declaration* decl, Event event)
 
     auto checkFunctionTypes = [&](const cppast::cpp_type& returnType,
                                   const std::vector<const cppast::cpp_function_parameter*>& params) {
-        String s = cppast::to_string(returnType);
         if (!generator_->IsAcceptableType(returnType))
         {
             URHO3D_LOGINFOF("Ignore: %s, unknown return type %s", decl->symbolName_.c_str(),

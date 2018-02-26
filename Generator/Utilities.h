@@ -26,7 +26,7 @@
 #include <regex>
 #include <Urho3D/Container/Str.h>
 #include <cppast/cpp_entity.hpp>
-#include <Urho3D/Resource/XMLElement.h>
+#include <Urho3D/Resource/JSONValue.h>
 #include <cppast/cpp_type.hpp>
 #include <cppast/cpp_function.hpp>
 #include <cppast/cpp_member_function.hpp>
@@ -58,9 +58,9 @@ class IncludedChecker
 public:
     IncludedChecker() = default;
     /// Initialize with XMLElement that consists of <include> and <exclude> children tags with wildcards as their values.
-    explicit IncludedChecker(const XMLElement& rules);
+    explicit IncludedChecker(const JSONValue& rules);
     /// Initialize with XMLElement that consists of <include> and <exclude> children tags with wildcards as their values.
-    void Load(const XMLElement& rules);
+    void Load(const JSONValue& rules);
     /// Verify string is matched by include rules and not matched by exclude rules.
     bool IsIncluded(const String& value);
 
