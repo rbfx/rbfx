@@ -340,11 +340,12 @@ std::string join(const std::vector<std::string>& collection, const std::string& 
 {
     std::string result;
     if (!collection.empty())
+    {
         result = collection.front();
 
-    for (auto it = collection.begin() + 1; it != collection.end(); it++)
-        result += glue + *it;
-
+        for (auto it = collection.begin() + 1; it != collection.end(); it++)
+            result += glue + *it;
+    }
     return result;
 }
 
