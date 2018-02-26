@@ -79,6 +79,9 @@
         <exclude>Urho3D::ResourceRef::ResourceRef(Urho3D::String const&amp;,Urho3D::String const&amp;)</exclude>
         <exclude>Urho3D::Text3D::text_</exclude>    <!-- TODO: Setter should not be generated -->
         <exclude>Urho3D::UI::DragData</exclude>
+        <!-- TODO: `out` parameters -->
+        <exclude>Urho3D::CrowdManager::Raycast(Urho3D::Vector3 const&amp;,Urho3D::Vector3 const&amp;,int,Urho3D::Vector3*)</exclude>
+        <exclude>Urho3D::CrowdManager::GetDistanceToWall(Urho3D::Vector3 const&amp;,float,int,Urho3D::Vector3*,Urho3D::Vector3*)</exclude>
     </symbols>
     <inheritable>
         <class>Urho3D::Application</class>
@@ -111,5 +114,6 @@
             <pinvoke_to_cs>new global::Urho3D.VariantMap({{value}})</pinvoke_to_cs>
             <cs_to_pinvoke>{{value}}.instance_</cs_to_pinvoke>
         </typemap>
+        <typemap type="Urho3D::Vector3" cstype="Urho3D.Vector3" ptype="Urho3D.Vector3" />
     </typemaps>
 </rules>

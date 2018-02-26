@@ -180,6 +180,7 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
                          {"namespace_name",  ns->sourceName_.CString()},
                          {"name",            var->name_.CString()},
                          {"type",            GetConversionType(var->GetType()).CString()},
+                         {"is_static",       decl->isStatic_},
         });
         // Getter
         printer_.Write(fmt("URHO3D_EXPORT_API {{c_type}} get_{{c_function_name}}(", vars));
@@ -223,7 +224,7 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
             if (!decl->isPublic_)
                 printer_.Write(fmt("__set_{{name}}({{value}});", vars));
             else
-                printer_.Write(fmt("{{name}} = {{value}};", vars));
+                printer_.Write(fmt("{{#is_static}}{{namespace_name}}::{{/is_static}}{{name}} = {{value}};", vars));
 
             printer_.Dedent();
             printer_.WriteLine();
