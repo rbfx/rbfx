@@ -23,6 +23,7 @@
 #include <cppast/libclang_parser.hpp>
 #include <CLI11/CLI11.hpp>
 #include <Urho3D/Urho3DAll.h>
+#include <thread>
 #include "Pass/UnknownTypesPass.h"
 #include "Pass/CSharp/GenerateCApiPass.h"
 #include "Pass/CSharp/GenerateClassWrappers.h"
@@ -85,7 +86,9 @@ int main(int argc, char* argv[])
     context = new Context();
     context->RegisterSubsystem(new FileSystem(context));
     context->RegisterSubsystem(new Log(context));
+    context->RegisterSubsystem(new WorkQueue(context));
     context->GetLog()->SetLevel(LOG_DEBUG);
+    context->GetWorkQueue()->CreateThreads(std::thread::hardware_concurrency());
 
     context->GetFileSystem()->CreateDirsRecursive(outputDirCpp);
     context->GetFileSystem()->CreateDirsRecursive(outputDirCs);

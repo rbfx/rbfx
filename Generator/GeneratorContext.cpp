@@ -22,6 +22,9 @@
 
 #include <regex>
 #include <cppast/libclang_parser.hpp>
+#include <Urho3D/Core/CoreEvents.h>
+#include <Urho3D/Core/WorkQueue.h>
+#include <Urho3D/Core/Thread.h>
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/IO/FileSystem.h>
@@ -73,25 +76,21 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
 
     sourceDir_ = AddTrailingSlash(sourceDir);
 
-    cppast::stderr_diagnostic_logger logger;
-    // the parser is used to parse the entity
-    // there can be multiple parser implementations
-    cppast::libclang_parser parser(type_safe::ref(logger));
-
     IncludedChecker checker(rules_->GetRoot().Get("headers"));
 
     auto parseFiles = [&](const String& subdir)
     {
         Vector<String> sourceFiles;
         GetFileSystem()->ScanDir(sourceFiles, sourceDir_ + subdir, "", SCAN_FILES, true);
-        for (const auto& filePath : sourceFiles)
-        {
-            String absPath = sourceDir_ + subdir + filePath;
+        Mutex m;
 
-            if (!checker.IsIncluded(filePath))
-                continue;
+        auto workItem = [&](String absPath, String filePath) {
+            URHO3D_LOGDEBUGF("Parse: %s", filePath.CString());
 
-             URHO3D_LOGDEBUGF("Parse: %s", filePath.CString());
+            cppast::stderr_diagnostic_logger logger;
+            // the parser is used to parse the entity
+            // there can be multiple parser implementations
+            cppast::libclang_parser parser(type_safe::ref(logger));
 
             auto file = parser.parse(index_, absPath.CString(), config_);
             if (parser.error())
@@ -100,8 +99,27 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
                 parser.reset_error();
             }
             else
+            {
+                MutexLock scoped(m);
                 parsed_[absPath] = std::move(file);
+            }
+
+            // Ensures log messages are displayed.
+            if (Thread::IsMainThread())
+                SendEvent(E_ENDFRAME);
+        };
+
+        for (const auto& filePath : sourceFiles)
+        {
+            if (!checker.IsIncluded(filePath))
+                continue;
+
+            String absPath = sourceDir_ + subdir + filePath;
+            GetWorkQueue()->AddWorkItem(std::bind(workItem, absPath, filePath));
         }
+
+        GetWorkQueue()->Complete(0);
+        SendEvent(E_ENDFRAME);            // Ensures log messages are displayed.
     };
 
     parseFiles("../ThirdParty/");
