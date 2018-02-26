@@ -42,31 +42,31 @@ void TypeMapper::Load(XMLFile* rules)
     for (auto typeMap = typeMaps.GetChild("typemap"); typeMap.NotNull(); typeMap = typeMap.GetNext("typemap"))
     {
         TypeMap map;
-        map.cppType_ = typeMap.GetAttribute("type");
-        map.cType_ = typeMap.GetAttribute("ctype");
-        map.csType_ = typeMap.GetAttribute("cstype");
-        map.pInvokeType_ = typeMap.GetAttribute("ptype");
+        map.cppType_ = typeMap.GetAttribute("type").CString();
+        map.cType_ = typeMap.GetAttribute("ctype").CString();
+        map.csType_ = typeMap.GetAttribute("cstype").CString();
+        map.pInvokeType_ = typeMap.GetAttribute("ptype").CString();
 
-        if (map.cType_.Empty())
+        if (map.cType_.empty())
             map.cType_ = map.cppType_;
 
-        if (map.pInvokeType_.Empty())
+        if (map.pInvokeType_.empty())
             map.pInvokeType_ = ToPInvokeType(map.cType_, "");
 
-        if (map.csType_.Empty())
+        if (map.csType_.empty())
             map.csType_ = map.pInvokeType_;
 
         if (auto cppToC = typeMap.GetChild("cpp_to_c"))
-            map.cppToCTemplate_ = cppToC.GetValue();
+            map.cppToCTemplate_ = cppToC.GetValue().CString();
 
         if (auto cToCpp = typeMap.GetChild("c_to_cpp"))
-            map.cToCppTemplate_ = cToCpp.GetValue();
+            map.cToCppTemplate_ = cToCpp.GetValue().CString();
 
         if (auto toCS = typeMap.GetChild("pinvoke_to_cs"))
-            map.pInvokeToCSTemplate_ = toCS.GetValue();
+            map.pInvokeToCSTemplate_ = toCS.GetValue().CString();
 
         if (auto toPInvoke = typeMap.GetChild("cs_to_pinvoke"))
-            map.csToPInvokeTemplate_ = toPInvoke.GetValue();
+            map.csToPInvokeTemplate_ = toPInvoke.GetValue().CString();
 
         typeMaps_[map.cppType_] = map;
     }
@@ -74,34 +74,34 @@ void TypeMapper::Load(XMLFile* rules)
 
 const TypeMap* TypeMapper::GetTypeMap(const cppast::cpp_type& type)
 {
-    String baseName = Urho3D::GetTypeName(type);
-    String fullName = cppast::to_string(type);
+    std::string baseName = Urho3D::GetTypeName(type);
+    std::string fullName = cppast::to_string(type);
 
-    auto it = typeMaps_.Find(baseName);
-    if (it == typeMaps_.End())
-        it = typeMaps_.Find(fullName);
+    auto it = typeMaps_.find(baseName);
+    if (it == typeMaps_.end())
+        it = typeMaps_.find(fullName);
 
-    if (it != typeMaps_.End())
-        return &it->second_;
+    if (it != typeMaps_.end())
+        return &it->second;
 
     return nullptr;
 }
 
-const TypeMap* TypeMapper::GetTypeMap(const String& typeName)
+const TypeMap* TypeMapper::GetTypeMap(const std::string& typeName)
 {
-    auto it = typeMaps_.Find(typeName);
-    if (it != typeMaps_.End())
-        return &it->second_;
+    auto it = typeMaps_.find(typeName);
+    if (it != typeMaps_.end())
+        return &it->second;
 
     return nullptr;
 }
 
-String TypeMapper::ToCType(const cppast::cpp_type& type)
+std::string TypeMapper::ToCType(const cppast::cpp_type& type)
 {
     if (const auto* map = GetTypeMap(type))
         return map->cType_;
 
-    String typeName = cppast::to_string(type);
+    std::string typeName = cppast::to_string(type);
 
     if (IsEnumType(type))
         return typeName;
@@ -114,21 +114,21 @@ String TypeMapper::ToCType(const cppast::cpp_type& type)
     return typeName;
 }
 
-String TypeMapper::ToPInvokeType(const cppast::cpp_type& type, const String& default_)
+std::string TypeMapper::ToPInvokeType(const cppast::cpp_type& type, const std::string& default_)
 {
     if (const auto* map = GetTypeMap(type))
         return map->pInvokeType_;
     else if (IsEnumType(type))
-        return "global::" + Urho3D::GetTypeName(type).Replaced("::", ".");
+        return "global::" + str::replace_str(Urho3D::GetTypeName(type), "::", ".");
     else
     {
-        String name = cppast::to_string(type);
-        String result = ToPInvokeType(name, ToPInvokeType(Urho3D::GetTypeName(type), default_));
+        std::string name = cppast::to_string(type);
+        std::string result = ToPInvokeType(name, ToPInvokeType(Urho3D::GetTypeName(type), default_));
         return result;
     }
 }
 
-String TypeMapper::ToPInvokeType(const String& name, const String& default_)
+std::string TypeMapper::ToPInvokeType(const std::string& name, const std::string& default_)
 {
     if (name == "char const*")
         return "string";
@@ -164,63 +164,63 @@ String TypeMapper::ToPInvokeType(const String& name, const String& default_)
     return default_;
 }
 
-String TypeMapper::ToPInvokeTypeReturn(const cppast::cpp_type& type)
+std::string TypeMapper::ToPInvokeTypeReturn(const cppast::cpp_type& type)
 {
-    String result = ToPInvokeType(cppast::remove_const(type));
+    std::string result = ToPInvokeType(cppast::remove_const(type));
     return result;
 }
 
-String TypeMapper::ToPInvokeTypeParam(const cppast::cpp_type& type)
+std::string TypeMapper::ToPInvokeTypeParam(const cppast::cpp_type& type)
 {
-    String result = ToPInvokeType(cppast::remove_const(type));
+    std::string result = ToPInvokeType(cppast::remove_const(type));
     if (result == "string")
         return "[param: MarshalAs(UnmanagedType.LPUTF8Str)]" + result;
     return result;
 }
 
-String TypeMapper::MapToC(const cppast::cpp_type& type, const String& expression)
+std::string TypeMapper::MapToC(const cppast::cpp_type& type, const std::string& expression)
 {
     const auto* map = GetTypeMap(type);
-    String result = expression;
+    std::string result = expression;
 
     if (map)
-        result = fmt(map->cppToCTemplate_.CString(), {{"value", result.CString()}});
+        result = fmt(map->cppToCTemplate_.c_str(), {{"value", result}});
     else if (IsComplexValueType(type))
     {
         result = fmt("script->AddRef<{{type}}>({{value}})", {
-            {"value", result.CString()},
-            {"type", Urho3D::GetTypeName(type).CString()},
+            {"value", result},
+            {"type", Urho3D::GetTypeName(type)},
         });
     }
 
     return result;
 }
 
-String TypeMapper::MapToCNoCopy(const String& type, const String& expression)
+std::string TypeMapper::MapToCNoCopy(const std::string& type, const std::string& expression)
 {
     const auto* map = GetTypeMap(type);
-    String result = expression;
+    std::string result = expression;
 
     if (map)
-        result = fmt(map->cppToCTemplate_.CString(), {{"value", result.CString()}});
-    else if (ToPInvokeType(type, "").Empty())
+        result = fmt(map->cppToCTemplate_.c_str(), {{"value", result}});
+    else if (ToPInvokeType(type, "").empty())
     {
         result = fmt("script->TakeOwnership<{{type}}>({{value}})", {
-            {"value", result.CString()},
-            {"type", type.CString()},
+            {"value", result},
+            {"type", type},
         });
     }
 
     return result;
 }
 
-String TypeMapper::MapToCpp(const cppast::cpp_type& type, const String& expression)
+std::string TypeMapper::MapToCpp(const cppast::cpp_type& type, const std::string& expression)
 {
     const auto* map = GetTypeMap(type);
-    String result = expression;
+    std::string result = expression;
 
     if (map)
-        result = fmt(map->cToCppTemplate_.CString(), {{"value", result.CString()}});
+        result = fmt(map->cToCppTemplate_.c_str(), {{"value", result}});
     else if (IsComplexValueType(type))
     {
         if (type.kind() != cppast::cpp_type_kind::pointer_t)
@@ -230,41 +230,40 @@ String TypeMapper::MapToCpp(const cppast::cpp_type& type, const String& expressi
     return result;
 }
 
-String TypeMapper::ToCSType(const cppast::cpp_type& type)
+std::string TypeMapper::ToCSType(const cppast::cpp_type& type)
 {
-    String result;
+    std::string result;
     if (const auto* map = GetTypeMap(type))
         result = map->csType_;
     else if (generator->symbols_.Has(type))
-        return "global::" + Urho3D::GetTypeName(type).Replaced("::", ".");
+        return "global::" + str::replace_str(Urho3D::GetTypeName(type), "::", ".");
     else
         result = ToPInvokeType(type);
     return result;
 }
 
-String TypeMapper::MapToPInvoke(const cppast::cpp_type& type, const String& expression)
+std::string TypeMapper::MapToPInvoke(const cppast::cpp_type& type, const std::string& expression)
 {
-    String name = cppast::to_string(type);
+    std::string name = cppast::to_string(type);
     if (const auto* map = GetTypeMap(type))
-        return fmt(map->csToPInvokeTemplate_.CString(), {{"value", expression.CString()}});
+        return fmt(map->csToPInvokeTemplate_.c_str(), {{"value", expression}});
     else if (IsComplexValueType(type))
     {
-        String returnType = "global::" + Urho3D::GetTypeName(type).Replaced("::", ".");
-        return fmt("{{type}}.__ToPInvoke({{call}})", {{"type", returnType.CString()},
-                                                      {"call", expression.CString()}});
+        std::string returnType = "global::" + str::replace_str(Urho3D::GetTypeName(type), "::", ".");
+        return fmt("{{type}}.__ToPInvoke({{call}})", {{"type", returnType},
+                                                      {"call", expression}});
     }
     return expression;
 }
 
-String TypeMapper::MapToCS(const cppast::cpp_type& type, const String& expression)
+std::string TypeMapper::MapToCS(const cppast::cpp_type& type, const std::string& expression)
 {
     if (const auto* map = GetTypeMap(type))
-        return fmt(map->pInvokeToCSTemplate_.CString(), {{"value", expression.CString()}});
+        return fmt(map->pInvokeToCSTemplate_.c_str(), {{"value", expression}});
     else if (IsComplexValueType(type))
     {
-        String returnType = "global::" + Urho3D::GetTypeName(type).Replaced("::", ".");
-        return fmt("{{type}}.__FromPInvoke({{call}})", {{"type", returnType.CString()},
-                                                        {"call", expression.CString()}});
+        std::string returnType = "global::" + str::replace_str(Urho3D::GetTypeName(type), "::", ".");
+        return fmt("{{type}}.__FromPInvoke({{call}})", {{"type", returnType}, {"call", expression}});
     }
     return expression;
 }

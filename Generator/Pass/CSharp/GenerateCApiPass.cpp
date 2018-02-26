@@ -67,7 +67,7 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
 
         printer_ << fmt("URHO3D_EXPORT_API void {{c_function_name}}({{class_name}}* instance)", {
             {"c_function_name",     cFunctionName.CString()},
-            {"class_name",          cls->name_.CString()},
+            {"class_name",          cls->name_},
         });
         printer_.Indent();
         {
@@ -81,14 +81,14 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
         Function* func = dynamic_cast<Function*>(decl);
         func->cFunctionName_ = GetUniqueName(Sanitize(func->symbolName_));
 
-        String cParameterList = ParameterList(func->GetParameters(), toCType);
+        std::string cParameterList = ParameterList(func->GetParameters(), toCType);
         auto vars = fmt({
-            {"name",                func->name_.CString()},
-            {"c_function_name",     func->cFunctionName_.CString()},
-            {"parameter_name_list", ParameterNameList(func->GetParameters(), toCppType).CString()},
-            {"base_symbol_name",    func->baseSymbolName_.CString()},
+            {"name",                func->name_},
+            {"c_function_name",     func->cFunctionName_},
+            {"parameter_name_list", ParameterNameList(func->GetParameters(), toCppType)},
+            {"base_symbol_name",    func->baseSymbolName_},
             {"is_public",           func->isPublic_},
-            {"class_name",          func->parent_->sourceName_.CString()},
+            {"class_name",          func->parent_->sourceName_},
         });
 
         if (!func->isStatic_)
@@ -96,25 +96,25 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
             // If function wraps a class method then insert first parameter - a class pointer.
             if (func->kind_ != Declaration::Kind::Constructor)
             {
-                if (!cParameterList.Empty())
+                if (!cParameterList.empty())
                     cParameterList = ", " + cParameterList;
                 cParameterList = func->parent_->sourceName_ + "* instance" + cParameterList;
             }
-            vars.set("class_name", func->parent_->sourceName_.CString());
-            vars.set("class_name_sanitized", Sanitize(func->parent_->sourceName_).CString());
+            vars.set("class_name", func->parent_->sourceName_);
+            vars.set("class_name_sanitized", Sanitize(func->parent_->sourceName_));
         }
-        vars.set("c_parameter_list", cParameterList.CString());
+        vars.set("c_parameter_list", cParameterList);
 
         // Constructor wrapper returns a pointer, but Declaration has a void return type for constructors.
         if (func->kind_ == Declaration::Kind::Constructor)
-            vars.set("c_return_type", (func->parent_->sourceName_ + "*").CString());
+            vars.set("c_return_type", (func->parent_->sourceName_ + "*"));
         else
-            vars.set("c_return_type", typeMapper_->ToCType(func->GetReturnType()).CString());
+            vars.set("c_return_type", typeMapper_->ToCType(func->GetReturnType()));
 
         printer_ << fmt("URHO3D_EXPORT_API {{c_return_type}} {{c_function_name}}({{c_parameter_list}})", vars);
         printer_.Indent();
         {
-            String call;
+            std::string call;
             if (func->kind_ == Declaration::Kind::Constructor)
                 call = fmt("new {{class_name}}({{parameter_name_list}})", vars);
             else
@@ -132,7 +132,7 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
                     call = fmt("__public_{{name}}({{parameter_name_list}})", vars);
 
                 if (!func->isStatic_)
-                    call = fmt("instance->", vars).c_str() + call;
+                    call = fmt("instance->", vars) + call;
             }
 
             if (!IsVoid(func->GetReturnType()))
@@ -175,11 +175,11 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
             return true;
 
         var->cFunctionName_ = Sanitize(ns->symbolName_ + "_" + var->name_);
-        auto vars = fmt({{"c_type", typeMapper_->ToCType(var->GetType()).CString()},
-                         {"c_function_name", var->cFunctionName_.CString()},
-                         {"namespace_name",  ns->sourceName_.CString()},
-                         {"name",            var->name_.CString()},
-                         {"type",            GetConversionType(var->GetType()).CString()},
+        auto vars = fmt({{"c_type", typeMapper_->ToCType(var->GetType())},
+                         {"c_function_name", var->cFunctionName_},
+                         {"namespace_name",  ns->sourceName_},
+                         {"name",            var->name_},
+                         {"type",            GetConversionType(var->GetType())},
                          {"is_static",       decl->isStatic_},
         });
         // Getter
@@ -189,19 +189,19 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
         printer_.Write(")");
         printer_.Indent();
 
-        String expr;
+        std::string expr;
         if (!var->isStatic_)
             expr += "instance->";
         else
             expr += ns->sourceName_ + "::";
 
         if (!decl->isPublic_)
-            expr += fmt("__get_{{name}}()", vars).c_str();
+            expr += fmt("__get_{{name}}()", vars);
         else
-            expr += fmt("{{name}}", vars).c_str();
+            expr += fmt("{{name}}", vars);
 
         // Variables are non-temporary therefore they do not need copying.
-        printer_ << fmt("return {{mapped}};", {{"mapped", typeMapper_->MapToC(var->GetType(), expr).CString()}});
+        printer_ << fmt("return {{mapped}};", {{"mapped", typeMapper_->MapToC(var->GetType(), expr)}});
 
         printer_.Dedent();
         printer_.WriteLine();
@@ -215,7 +215,7 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
             printer_.Write(fmt("{{c_type}} value)", vars));
             printer_.Indent();
 
-            vars.set("value", typeMapper_->MapToCpp(var->GetType(), "value").CString());
+            vars.set("value", typeMapper_->MapToCpp(var->GetType(), "value"));
             if (!var->isStatic_)
                 printer_.Write(fmt("instance->", vars));
             else
@@ -248,12 +248,12 @@ void GenerateCApiPass::Stop()
     file.Close();
 }
 
-String GenerateCApiPass::GetUniqueName(const String& baseName)
+std::string GenerateCApiPass::GetUniqueName(const std::string& baseName)
 {
     unsigned index = 0;
-    String newName;
+    std::string newName;
     for (newName = Sanitize(baseName); usedNames_.Contains(newName); index++)
-        newName = baseName + String(index);
+        newName = baseName + std::to_string(index);
 
     usedNames_.Push(newName);
     return newName;

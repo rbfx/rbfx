@@ -69,7 +69,7 @@ public:
             name_ = source->name();
             symbolName_ = sourceName_ = GetSymbolName(*source);
             baseSymbolName_ = GetBaseSymbolName(*source);
-            if (name_.Empty())
+            if (name_.empty())
             {
                 name_ = symbolName_;
                 sourceName_ = "";
@@ -100,15 +100,15 @@ public:
     }
 
     /// Name of this declaration in a produced wrapper.
-    String name_;
+    std::string name_;
     /// Name of declaration that is to be wrapped.
-    String sourceName_;
+    std::string sourceName_;
     /// Unique name pointing to entity in c++ ast. It includes function signature.
-    String symbolName_;
+    std::string symbolName_;
     /// Not necessarily unique name pointing to entity. Same as symbolName_ without function signature.
-    String baseSymbolName_;
+    std::string baseSymbolName_;
     /// C API function (base) name of this declaration.
-    String cFunctionName_;
+    std::string cFunctionName_;
     /// When `false` declaration is protected.
     bool isPublic_ = true;
     /// C++ ast entity from which declaration is being generated. Can be null.

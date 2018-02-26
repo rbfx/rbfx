@@ -59,7 +59,7 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
             {
                 // A class will not have any methods. This is likely a dummy class for constant storage or something
                 // similar.
-                printer_ << fmt("public static partial class {{name}}", {{"name", cls->name_.CString()}});
+                printer_ << fmt("public static partial class {{name}}", {{"name", cls->name_}});
                 printer_.Indent();
                 return true;
             }
@@ -69,7 +69,7 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
                 bases.Push(base->name_);
 
             auto vars = fmt({
-                {"name", cls->name_.CString()},
+                {"name", cls->name_},
                 {"bases", String::Joined(bases, ", ").CString()},
                 {"has_bases", !cls->bases_.Empty()},
             });
@@ -89,14 +89,13 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
         Class* cls = dynamic_cast<Class*>(decl->parent_.Get());
 
         auto vars = fmt({
-            {"class_name", cls->name_.CString()},
+            {"class_name", cls->name_},
             {"parameter_list", ParameterList(ctor->GetParameters(),
-                                             std::bind(&TypeMapper::ToCSType, typeMapper_, std::placeholders::_1),
-                                             ".").CString()},
-            {"symbol_name", Sanitize(cls->symbolName_).CString()},
-            {"param_name_list", ParameterNameList(ctor->GetParameters(), mapToPInvoke).CString()},
+                std::bind(&TypeMapper::ToCSType, typeMapper_, std::placeholders::_1), ".")},
+            {"symbol_name", Sanitize(cls->symbolName_)},
+            {"param_name_list", ParameterNameList(ctor->GetParameters(), mapToPInvoke)},
             {"has_base", !cls->bases_.Empty()},
-            {"c_function_name", decl->cFunctionName_.CString()},
+            {"c_function_name", decl->cFunctionName_},
             {"access", decl->isPublic_ ? "public" : "protected"}
         });
 
@@ -115,22 +114,22 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
                     if (func->IsVirtual())
                     {
                         auto vars = fmt({
-                            {"class_name", cls->name_.CString()},
-                            {"name", func->name_.CString()},
+                            {"class_name", cls->name_},
+                            {"name", func->name_},
                             {"has_params", !func->GetParameters().empty()},
                             {"param_name_list", ParameterNameList(func->GetParameters(), [&](const cppast::cpp_function_parameter& param) {
                                 // Avoid possible parameter name collision in enclosing scope.
                                 return param.name() + "_";
-                            }).CString()},
+                            })},
                             {"cs_param_name_list", ParameterNameList(func->GetParameters(), [&](const cppast::cpp_function_parameter& param) {
                                 return typeMapper_->MapToCS(param.type(), param.name() + "_");
-                            }).CString()},
+                            })},
                             {"cs_param_type_list", ParameterTypeList(func->GetParameters(), [&](const cppast::cpp_type& type) {
-                                return ToString("typeof(%s)", generator->typeMapper_.ToCSType(type).CString());
-                            }).CString()},
+                                return ToString("typeof(%s)", generator->typeMapper_.ToCSType(type)).CString();
+                            })},
                             {"return", !IsVoid(func->GetReturnType()) ? "return " : ""},
-                            {"source_class_name", Sanitize(cls->sourceName_).CString()},
-                            {"c_function_name", func->cFunctionName_.CString()},
+                            {"source_class_name", Sanitize(cls->sourceName_)},
+                            {"c_function_name", func->cFunctionName_},
                         });
                         // Optimization: do not route c++ virtual method calls through .NET if user does not override
                         // such method in a managed class.
@@ -174,13 +173,13 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
         Function* func = dynamic_cast<Function*>(decl);
 
         auto vars = fmt({
-            {"name", func->name_.CString()},
-            {"return_type", typeMapper_->ToCSType(func->GetReturnType()).CString()},
+            {"name", func->name_},
+            {"return_type", typeMapper_->ToCSType(func->GetReturnType())},
             {"parameter_list", ParameterList(func->GetParameters(),
                                              std::bind(&TypeMapper::ToCSType, typeMapper_, std::placeholders::_1),
-                                             ".").CString()},
-            {"c_function_name", func->cFunctionName_.CString()},
-            {"param_name_list", ParameterNameList(func->GetParameters(), mapToPInvoke).CString()},
+                                             ".")},
+            {"c_function_name", func->cFunctionName_},
+            {"param_name_list", ParameterNameList(func->GetParameters(), mapToPInvoke)},
             {"has_params", !func->GetParameters().empty()},
             {"virtual", func->IsVirtual() ? "virtual " : ""},
             {"access", decl->isPublic_ ? "public" : "protected"}
@@ -188,7 +187,7 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
         printer_ << fmt("{{access}} {{virtual}}{{return_type}} {{name}}({{parameter_list}})", vars);
         printer_.Indent();
         {
-            String call = fmt("{{c_function_name}}(instance_{{#has_params}}, {{/has_params}}{{param_name_list}})", vars);
+            std::string call = fmt("{{c_function_name}}(instance_{{#has_params}}, {{/has_params}}{{param_name_list}})", vars);
             if (IsVoid(func->GetReturnType()))
                 printer_ << call + ";";
             else
@@ -208,9 +207,9 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
             isStatic = false;
 
         auto vars = fmt({
-            {"cs_type", typeMapper_->ToCSType(var->GetType()).CString()},
-            {"name", var->name_.CString()},
-            {"ns_symbol", Sanitize(ns->symbolName_).CString()},
+            {"cs_type", typeMapper_->ToCSType(var->GetType())},
+            {"name", var->name_},
+            {"ns_symbol", Sanitize(ns->symbolName_)},
             {"access", decl->isPublic_ ? "public " : "protected "},
             {"static", isStatic ? "static " : ""},
             {"const", isConstant ? "const " : ""},
@@ -244,7 +243,7 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
                 // Setter
                 if (!var->isConstant_ && !decl->isReadOnly_)
                 {
-                    vars.set("value", typeMapper_->MapToPInvoke(var->GetType(), "value").CString());
+                    vars.set("value", typeMapper_->MapToPInvoke(var->GetType(), "value"));
                     printer_ << fmt("set { set_{{ns_symbol}}_{{name}}({{#not_static}}instance_, {{/not_static}}{{value}}); }", vars);
                 }
             }

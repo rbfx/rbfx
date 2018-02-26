@@ -61,7 +61,7 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             {
                 // A class will not have any methods. This is likely a dummy class for constant storage or something
                 // similar.
-                printer_ << fmt("public static partial class {{class_name}}", {{"class_name", cls->name_.CString()}});
+                printer_ << fmt("public static partial class {{class_name}}", {{"class_name", cls->name_}});
                 printer_.Indent();
                 return true;
             }
@@ -70,7 +70,7 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
                 bases.Push(base->name_);
 
             auto vars = fmt({
-                {"class_name", cls->name_.CString()},
+                {"class_name", cls->name_},
                 {"bases", String::Joined(bases, ", ").CString()},
                 {"has_bases", !cls->bases_.Empty()},
             });
@@ -157,7 +157,7 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
             // Destructor always exists even if it is not defined in the c++ class
             printer_ << dllImport;
             printer_ << fmt("internal static extern void {{symbol_name}}_destructor(IntPtr instance);", {
-                {"symbol_name", Sanitize(cls->symbolName_).CString()}
+                {"symbol_name", Sanitize(cls->symbolName_)}
             });
             printer_ << "";
         }
@@ -180,8 +180,8 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
         String csReturnType = typeMapper_->ToPInvokeTypeReturn(var->GetType());
         auto vars = fmt({
             {"cs_return", csReturnType.CString()},
-            {"cs_param", typeMapper_->ToPInvokeTypeParam(var->GetType()).CString()},
-            {"c_function_name", decl->cFunctionName_.CString()},
+            {"cs_param", typeMapper_->ToPInvokeTypeParam(var->GetType())},
+            {"c_function_name", decl->cFunctionName_},
             {"not_static", !decl->isStatic_},
         });
         if (csReturnType == "string")
@@ -208,8 +208,8 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
         printer_ << dllImport;
         auto csParams = ParameterList(ctor->GetParameters(), std::bind(&TypeMapper::ToPInvokeTypeParam, typeMapper_, std::placeholders::_1));
         auto vars = fmt({
-            {"c_function_name", decl->cFunctionName_.CString()},
-            {"cs_param_list", csParams.CString()}
+            {"c_function_name", decl->cFunctionName_},
+            {"cs_param_list", csParams}
         });
         printer_ << fmt("internal static extern IntPtr {{c_function_name}}({{cs_param_list}});", vars);
         printer_ << "";
@@ -220,18 +220,17 @@ bool GeneratePInvokePass::Visit(Declaration* decl, Event event)
 
         printer_ << dllImport;
         auto csParams = ParameterList(func->GetParameters(),
-                                      std::bind(&TypeMapper::ToPInvokeTypeParam, typeMapper_, std::placeholders::_1),
-                                      nullptr);
+            std::bind(&TypeMapper::ToPInvokeTypeParam, typeMapper_, std::placeholders::_1), nullptr);
         String csRetType = typeMapper_->ToPInvokeTypeReturn(func->GetReturnType());
         auto vars = fmt({
-            {"c_function_name", decl->cFunctionName_.CString()},
-            {"cs_param_list", csParams.CString()},
+            {"c_function_name", decl->cFunctionName_},
+            {"cs_param_list", csParams},
             {"cs_return", csRetType.CString()},
             {"has_params", !func->GetParameters().empty()},
             {"ret_attribute", ""},
-            {"class_name", func->parent_->name_.CString()},
-            {"source_class_name", Sanitize(func->parent_->sourceName_).CString()},
-            {"name", func->name_.CString()},
+            {"class_name", func->parent_->name_},
+            {"source_class_name", Sanitize(func->parent_->sourceName_)},
+            {"name", func->name_},
         });
         if (csRetType == "string")
             printer_ << "[return: MarshalAs(UnmanagedType.LPUTF8Str)]";

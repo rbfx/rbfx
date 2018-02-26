@@ -168,10 +168,10 @@ bool GeneratorContext::IsAcceptableType(const cppast::cpp_type& type)
         return true;
 
     // Some non-builtin types also map to c# types (like some pointers)
-    if (!typeMapper_.ToPInvokeType(cppast::to_string(type), "").Empty())
+    if (!typeMapper_.ToPInvokeType(cppast::to_string(type), "").empty())
         return true;
 
-    if (!typeMapper_.ToPInvokeType(Urho3D::GetTypeName(type), "").Empty())
+    if (!typeMapper_.ToPInvokeType(Urho3D::GetTypeName(type), "").empty())
         return true;
 
     // Known symbols will be classes that are being wrapped

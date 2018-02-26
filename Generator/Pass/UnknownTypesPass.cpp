@@ -46,7 +46,7 @@ bool UnknownTypesPass::Visit(Declaration* decl, Event event)
         {
             if (!generator_->IsAcceptableType(param.type()))
             {
-                URHO3D_LOGINFOF("Ignore: %s, unknown parameter type %s", decl->symbolName_.CString(),
+                URHO3D_LOGINFOF("Ignore: %s, unknown parameter type %s", decl->symbolName_.c_str(),
                                 cppast::to_string(param.type()).c_str());
                 return false;
             }
@@ -59,7 +59,7 @@ bool UnknownTypesPass::Visit(Declaration* decl, Event event)
         String s = cppast::to_string(returnType);
         if (!generator_->IsAcceptableType(returnType))
         {
-            URHO3D_LOGINFOF("Ignore: %s, unknown return type %s", decl->symbolName_.CString(),
+            URHO3D_LOGINFOF("Ignore: %s, unknown return type %s", decl->symbolName_.c_str(),
                 cppast::to_string(returnType).c_str());
             return false;
         }
@@ -69,10 +69,10 @@ bool UnknownTypesPass::Visit(Declaration* decl, Event event)
     if (decl->IsFunctionLike())
     {
         Function* func = static_cast<Function*>(decl);
-        if (decl->name_.StartsWith("operator"))
+        if (decl->name_.find("operator") == 0)
         {
             decl->Ignore();
-            URHO3D_LOGINFOF("Ignore: %s, operators not supported.", decl->name_.CString());
+            URHO3D_LOGINFOF("Ignore: %s, operators not supported.", decl->name_.c_str());
         }
         else if (!checkFunctionTypes(func->GetReturnType(), func->GetParameters()))
             decl->Ignore();
@@ -84,7 +84,7 @@ bool UnknownTypesPass::Visit(Declaration* decl, Event event)
         if (!generator_->IsAcceptableType(type))
         {
             decl->Ignore();
-            URHO3D_LOGINFOF("Ignore: %s, unknown return type %s", decl->symbolName_.CString(),
+            URHO3D_LOGINFOF("Ignore: %s, unknown return type %s", decl->symbolName_.c_str(),
                             cppast::to_string(type).c_str());
         }
     }

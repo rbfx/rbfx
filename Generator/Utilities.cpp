@@ -55,14 +55,14 @@ std::regex WildcardToRegex(const Urho3D::String& wildcard)
     return std::regex(regex.CString());
 }
 
-String GetBaseSymbolName(const cppast::cpp_entity& e)
+std::string GetBaseSymbolName(const cppast::cpp_entity& e)
 {
-    String name = e.name();
-    if (name.Empty())
+    std::string name = e.name();
+    if (name.empty())
         // Give unique symbol to anonymous entities
-        name = ToString("anonymous_%p", (void*) &e);
+        name = ToString("anonymous_%p", (void*) &e).CString();
 
-    Vector<String> elements{name};
+    std::vector<std::string> elements{name};
     type_safe::optional_ref<const cppast::cpp_entity> ref(e.parent());
     while (ref.has_value())
     {
@@ -71,21 +71,17 @@ String GetBaseSymbolName(const cppast::cpp_entity& e)
         {
             const auto& scope = ref.value().scope_name();
             if (scope.has_value())
-                elements.Push(scope.value().name().c_str());
+                elements.emplace_back(scope.value().name());
         }
         ref = ref.value().parent();
     }
-
-    // Reverse
-    for (auto i = 0; i < elements.Size() / 2; i++)
-        Swap(elements[i], elements[elements.Size() - i - 1]);
-
-    return String::Joined(elements, "::");
+    std::reverse(elements.begin(), elements.end());
+    return str::join(elements, "::");
 }
 
-String GetSymbolName(const cppast::cpp_entity& e)
+std::string GetSymbolName(const cppast::cpp_entity& e)
 {
-    String name = GetBaseSymbolName(e);
+    std::string name = GetBaseSymbolName(e);
     // Make signature unique for overloaded functions
     switch (e.kind())
     {
@@ -114,14 +110,14 @@ String GetSymbolName(const cppast::cpp_entity& e)
     return name;
 }
 
-String GetSymbolName(const cppast::cpp_entity* e)
+std::string GetSymbolName(const cppast::cpp_entity* e)
 {
     return GetSymbolName(*e);
 }
 
-String Sanitize(const String& value)
+std::string Sanitize(const std::string& value)
 {
-    String result = std::regex_replace(value.CString(), std::regex("[^a-zA-Z0-9_]"), "_").c_str();
+    std::string result = std::regex_replace(value, std::regex("[^a-zA-Z0-9_]"), "_").c_str();
     if (result[0] >= '0' && result[0] <= '9')
         result = "_" + result;
     return result;
@@ -134,15 +130,16 @@ bool IsVoid(const cppast::cpp_type& type)
     return false;
 }
 
-String EnsureNotKeyword(const String& value)
+std::string EnsureNotKeyword(const std::string& value)
 {
+    // TODO: Refactor this
     if (value == "object" || value == "params")
         return value + "_";
     return value;
 }
 
-String ParameterList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
-                     const std::function<String(const cppast::cpp_type&)>& typeToString,
+std::string ParameterList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
+                     const std::function<std::string(const cppast::cpp_type&)>& typeToString,
                      const char* defaultValueNamespaceSeparator)
 {
     Vector<String> parts;
@@ -153,7 +150,7 @@ String ParameterList(const cppast::detail::iteratable_intrusive_list<cppast::cpp
             typeString = typeToString(param.type());
         else
             typeString = cppast::to_string(param.type());
-        typeString += " " + EnsureNotKeyword(param.name());
+        typeString += (" " + EnsureNotKeyword(param.name())).c_str();
 
         if (defaultValueNamespaceSeparator != nullptr && param.default_value().has_value())
         {
@@ -169,7 +166,7 @@ String ParameterList(const cppast::detail::iteratable_intrusive_list<cppast::cpp
                 else if (value == "Variant::EMPTY")
                     value = "";
                 else if (auto* var = dynamic_cast<Variable*>(generator->symbols_.Get("Urho3D::" + value)))
-                    value = var->parent_->symbolName_ + "::" + value;
+                    value = (var->parent_->symbolName_ + "::" + value.CString()).c_str();
             }
             // ---------------------------------------------------------------------------------------------------------
 
@@ -181,40 +178,40 @@ String ParameterList(const cppast::detail::iteratable_intrusive_list<cppast::cpp
         }
         parts.Push(typeString);
     }
-    return String::Joined(parts, ", ");
+    return String::Joined(parts, ", ").CString();
 }
 
-String ParameterNameList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
-    const std::function<String(const cppast::cpp_function_parameter&)>& nameFilter)
+std::string ParameterNameList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
+    const std::function<std::string(const cppast::cpp_function_parameter&)>& nameFilter)
 {
-    Vector<String> parts;
+    std::vector<std::string> parts;
     for (const auto& param : params)
     {
-        String name = EnsureNotKeyword(param.name());
+        auto name = EnsureNotKeyword(param.name());
         if (nameFilter)
             name = nameFilter(param);
-        parts.Push(name);
+        parts.emplace_back(name);
     }
-    return String::Joined(parts, ", ");
+    return str::join(parts, ", ");
 }
 
-String ParameterTypeList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
-    const std::function<String(const cppast::cpp_type&)>& typeToString)
+std::string ParameterTypeList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
+    const std::function<std::string(const cppast::cpp_type&)>& typeToString)
 {
-    Vector<String> parts;
+    std::vector<std::string> parts;
     for (const auto& param : params)
     {
-        String typeString;
+        std::string typeString;
         if (typeToString)
             typeString = typeToString(param.type());
         else
             typeString = cppast::to_string(param.type());
-        parts.Push(typeString);
+        parts.emplace_back(typeString);
     }
-    return String::Joined(parts, ", ");
+    return str::join(parts, ", ");
 }
 
-String GetConversionType(const cppast::cpp_type& type)
+std::string GetConversionType(const cppast::cpp_type& type)
 {
     if (type.kind() == cppast::cpp_type_kind::reference_t || type.kind() == cppast::cpp_type_kind::pointer_t)
         return Urho3D::GetTypeName(type);
@@ -222,7 +219,7 @@ String GetConversionType(const cppast::cpp_type& type)
         return cppast::to_string(type);
 }
 
-String GetTypeName(const cppast::cpp_type& type)
+std::string GetTypeName(const cppast::cpp_type& type)
 {
     switch (type.kind())
     {
@@ -317,12 +314,36 @@ bool IncludedChecker::IsIncluded(const String& value)
     return match;
 }
 
-String ToString(const cppast::cpp_expression& expression)
+std::string ToString(const cppast::cpp_expression& expression)
 {
     if (expression.kind() == cppast::cpp_expression_kind::literal_t)
         return dynamic_cast<const cppast::cpp_literal_expression&>(expression).value();
     else
         return dynamic_cast<const cppast::cpp_unexposed_expression&>(expression).expression().as_string();
+}
+
+}
+
+namespace str
+{
+
+std::string& replace_str(std::string&& dest, const std::string& find, const std::string& replace)
+{
+    while(dest.find(find) != std::string::npos)
+        dest.replace(dest.find(find), find.size(), replace);
+    return dest;
+}
+
+std::string join(const std::vector<std::string>& collection, const std::string& glue)
+{
+    std::string result;
+    if (!collection.empty())
+        result = collection.front();
+
+    for (auto it = collection.begin() + 1; it != collection.end(); it++)
+        result += glue + *it;
+
+    return result;
 }
 
 }

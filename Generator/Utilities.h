@@ -38,19 +38,19 @@ namespace Urho3D
 /// Convert a wildcard string to regular expression. "*" matches anything except /, "**" matches everything including /.
 std::regex WildcardToRegex(const String& wildcard);
 /// Returns entity name including names of it's parents (separated by ::). Also includes function signature.
-String GetSymbolName(const cppast::cpp_entity& e);
+std::string GetSymbolName(const cppast::cpp_entity& e);
 /// Returns entity name including names of it's parents (separated by ::).
-String GetBaseSymbolName(const cppast::cpp_entity& e);
+std::string GetBaseSymbolName(const cppast::cpp_entity& e);
 /// Returns entity name including names of it's parents (separated by ::).
-String GetSymbolName(const cppast::cpp_entity* e);
+std::string GetSymbolName(const cppast::cpp_entity* e);
 /// Ensure arbitrary string is a valid identifier by replacing invalid characters with "_". "_" will be prepended if string starts with a number.
-String Sanitize(const String& value);
+std::string Sanitize(const std::string& value);
 /// Returns true if type is void.
 bool IsVoid(const cppast::cpp_type& type);
 /// Returns string padded with _ if value is a common keyword in programming languages.
-String EnsureNotKeyword(const String& value);
+std::string EnsureNotKeyword(const std::string& value);
 /// Return name of underlying type.
-String GetTypeName(const cppast::cpp_type& type);
+std::string GetTypeName(const cppast::cpp_type& type);
 
 class IncludedChecker
 {
@@ -68,17 +68,17 @@ protected:
     Vector<std::regex> excludes_;
 };
 /// Returns a list of parameter types and names as if they were in a function declaration.
-String ParameterList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
-                     const std::function<String(const cppast::cpp_type&)>& typeToString=nullptr,
+std::string ParameterList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
+                     const std::function<std::string(const cppast::cpp_type&)>& typeToString=nullptr,
                      const char* defaultValueNamespaceSeparator=nullptr);
 /// Returns a list of parameter names separated by comma.
-String ParameterNameList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
-    const std::function<String(const cppast::cpp_function_parameter&)>& nameFilter=nullptr);
+std::string ParameterNameList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
+    const std::function<std::string(const cppast::cpp_function_parameter&)>& nameFilter=nullptr);
 /// Returns a list of parameter types separated comma. Useful for creating function signatures.
-String ParameterTypeList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
-    const std::function<String(const cppast::cpp_type&)>& typeToString=nullptr);
+std::string ParameterTypeList(const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& params,
+    const std::function<std::string(const cppast::cpp_type&)>& typeToString=nullptr);
 /// Returns a type string which is used as template parameter for CSharpTypeConverter<> struct.
-String GetConversionType(const cppast::cpp_type& type);
+std::string GetConversionType(const cppast::cpp_type& type);
 /// Returns true if specified type is an enumeration.
 bool IsEnumType(const cppast::cpp_type& type);
 /// Returns true if a type is non-builtin value type (not a pointer or reference to a struct/class).
@@ -93,6 +93,14 @@ int Count(const cppast::detail::iteratable_intrusive_list<T>& list)
     return count;
 }
 /// Convert cppast expression into string.
-String ToString(const cppast::cpp_expression& expression);
+std::string ToString(const cppast::cpp_expression& expression);
+
+}
+
+namespace str
+{
+
+std::string& replace_str(std::string&& dest, const std::string& find, const std::string& replace);
+std::string join(const std::vector<std::string>& collection, const std::string& glue);
 
 }

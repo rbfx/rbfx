@@ -43,7 +43,7 @@ public:
     void Stop() override;
 
 protected:
-    String GetUniqueName(const String& baseName);
+    std::string GetUniqueName(const std::string& baseName);
 
     WeakPtr<GeneratorContext> generator_;
     TypeMapper* typeMapper_ = nullptr;

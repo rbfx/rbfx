@@ -24,6 +24,7 @@
 
 
 #include <string>
+#include <unordered_map>
 #include <Urho3D/Container/HashMap.h>
 #include <cppast/cpp_type.hpp>
 
@@ -33,14 +34,14 @@ namespace Urho3D
 
 struct TypeMap
 {
-    String cppType_ = "void*";
-    String cType_ = "void*";
-    String csType_ = "";
-    String pInvokeType_ = "IntPtr";
-    String cToCppTemplate_ = "{{value}}";
-    String cppToCTemplate_ = "{{value}}";
-    String csToPInvokeTemplate_ = "{{value}}";
-    String pInvokeToCSTemplate_ = "{{value}}";
+    std::string cppType_ = "void*";
+    std::string cType_ = "void*";
+    std::string csType_ = "";
+    std::string pInvokeType_ = "IntPtr";
+    std::string cToCppTemplate_ = "{{value}}";
+    std::string cppToCTemplate_ = "{{value}}";
+    std::string csToPInvokeTemplate_ = "{{value}}";
+    std::string pInvokeToCSTemplate_ = "{{value}}";
 };
 
 class TypeMapper : public Object
@@ -51,23 +52,23 @@ class TypeMapper : public Object
 public:
     void Load(XMLFile* rules);
     const TypeMap* GetTypeMap(const cppast::cpp_type& type);
-    const TypeMap* GetTypeMap(const String& typeName);
+    const TypeMap* GetTypeMap(const std::string& typeName);
 
-    String ToCType(const cppast::cpp_type& type);
-    String ToCSType(const cppast::cpp_type& type);
-    String ToPInvokeTypeReturn(const cppast::cpp_type& type);
-    String ToPInvokeTypeParam(const cppast::cpp_type& type);
+    std::string ToCType(const cppast::cpp_type& type);
+    std::string ToCSType(const cppast::cpp_type& type);
+    std::string ToPInvokeTypeReturn(const cppast::cpp_type& type);
+    std::string ToPInvokeTypeParam(const cppast::cpp_type& type);
 
-    String MapToC(const cppast::cpp_type& type, const String& expression);
-    String MapToCNoCopy(const String& type, const String& expression);
-    String MapToCpp(const cppast::cpp_type& type, const String& expression);
-    String MapToPInvoke(const cppast::cpp_type& type, const String& expression);
-    String MapToCS(const cppast::cpp_type& type, const String& expression);
+    std::string MapToC(const cppast::cpp_type& type, const std::string& expression);
+    std::string MapToCNoCopy(const std::string& type, const std::string& expression);
+    std::string MapToCpp(const cppast::cpp_type& type, const std::string& expression);
+    std::string MapToPInvoke(const cppast::cpp_type& type, const std::string& expression);
+    std::string MapToCS(const cppast::cpp_type& type, const std::string& expression);
 
-    String ToPInvokeType(const String& name, const String& default_="IntPtr");
-    String ToPInvokeType(const cppast::cpp_type& type, const String& default_="IntPtr");
+    std::string ToPInvokeType(const std::string& name, const std::string& default_="IntPtr");
+    std::string ToPInvokeType(const cppast::cpp_type& type, const std::string& default_="IntPtr");
 
-    HashMap<String, TypeMap> typeMaps_;
+    std::unordered_map<std::string, TypeMap> typeMaps_;
 };
 
 }

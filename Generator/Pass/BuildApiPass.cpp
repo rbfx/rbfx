@@ -44,7 +44,7 @@ bool BuildApiPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info info)
         return true;
 
     auto symbolName = GetSymbolName(e);
-    if (!symbolName.StartsWith("anonymous_") /* we may need children of anonymous */ && !symbolChecker_.IsIncluded(symbolName))
+    if (!symbolName.find("anonymous_") == 0 /* we may need children of anonymous */ && !symbolChecker_.IsIncluded(symbolName))
         return info.event != cppast::visitor_info::container_entity_enter;
 
     // Skip children of private entities

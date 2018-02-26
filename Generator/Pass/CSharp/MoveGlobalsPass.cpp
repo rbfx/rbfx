@@ -42,8 +42,8 @@ bool MoveGlobalsPass::Visit(Declaration* decl, Event event)
         if (var->isStatic_ && ns->kind_ == Declaration::Kind::Namespace)
         {
             GeneratorContext* generator = GetSubsystem<GeneratorContext>();
-            String className = ns->name_;
-            String classSymbol = ns->symbolName_ + "::" + className;
+            std::string className = ns->name_;
+            std::string classSymbol = ns->symbolName_ + "::" + className;
 
             if (ns->symbolName_ == className && decl->source_ != nullptr)
             {
@@ -68,13 +68,13 @@ bool MoveGlobalsPass::Visit(Declaration* decl, Event event)
     return true;
 }
 
-String MoveGlobalsPass::GetFileName(const cppast::cpp_entity& entity)
+std::string MoveGlobalsPass::GetFileName(const cppast::cpp_entity& entity)
 {
     const cppast::cpp_entity* e = &entity;
     while (e->kind() != cppast::cpp_entity_kind::file_t)
         e = &e->parent().value();
 
-    return Urho3D::GetFileName(e->name());
+    return Urho3D::GetFileName(e->name()).CString();
 }
 
 }

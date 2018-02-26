@@ -61,7 +61,7 @@ bool Urho3DCustomPass::Visit(Declaration* decl, Event event)
     if (decl->kind_ == Declaration::Kind::Enum)
     {
         Enum* ns = dynamic_cast<Enum*>(decl);
-        if (ns->name_.StartsWith("anonymous_"))
+        if (ns->name_.find("anonymous_") == 0)
         {
             if (ns->children_.Empty())
             {
@@ -75,12 +75,12 @@ bool Urho3DCustomPass::Visit(Declaration* decl, Event event)
             if (firstVar->defaultValue_.Empty())
                 firstVar->defaultValue_ = "0";
 
-            String targetEnum;
-            if (firstVar->name_.StartsWith("SDL"))
+            std::string targetEnum;
+            if (firstVar->name_.find("SDL") == 0)
                 targetEnum = "SDL";
             else
             {
-                URHO3D_LOGWARNINGF("No idea where to put %s and it's siblings.", firstVar->name_.CString());
+                URHO3D_LOGWARNINGF("No idea where to put %s and it's siblings.", firstVar->name_);
                 ns->Ignore();
                 return false;
             }
@@ -102,7 +102,7 @@ bool Urho3DCustomPass::Visit(Declaration* decl, Event event)
             ns->Ignore();
         }
     }
-    else if (decl->name_.StartsWith("anonymous_"))
+    else if (decl->name_.find("anonymous_") == 0)
         decl->Ignore();
     else if (decl->kind_ == Declaration::Kind::Variable)
     {
@@ -114,7 +114,7 @@ bool Urho3DCustomPass::Visit(Declaration* decl, Event event)
                 var->defaultValue_ = "(int)SDL." + var->defaultValue_;
         }
     }
-    else if (decl->name_.StartsWith("SDL_") && event != Event::ENTER)
+    else if (decl->name_.find("SDL_") == 0 && event != Event::ENTER)
         decl->Ignore();
     return true;
 }

@@ -40,7 +40,7 @@ public:
     bool Visit(Declaration* decl, Event event) override;
 
 protected:
-    String GetFileName(const cppast::cpp_entity& entity);
+    std::string GetFileName(const cppast::cpp_entity& entity);
 };
 
 }

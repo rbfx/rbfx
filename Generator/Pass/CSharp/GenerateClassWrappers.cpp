@@ -58,16 +58,16 @@ bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
 
     auto* generator = GetSubsystem<GeneratorContext>();
     printer_ << fmt("class URHO3D_EXPORT_API {{name}} : public {{symbol}}", {
-        {"name", cls->name_.CString()},
-        {"symbol", cls->symbolName_.CString()},
+        {"name", cls->name_},
+        {"symbol", cls->symbolName_},
     });
     printer_.Indent();
 
     // Urho3D-specific
     if (cls->IsSubclassOf("Urho3D::Object"))
     {
-        printer_ << fmt("URHO3D_OBJECT({{name}}, {{symbol_name}});", {{"name",        cls->name_.CString()},
-                                                                      {"symbol_name", cls->symbolName_.CString()}});
+        printer_ << fmt("URHO3D_OBJECT({{name}}, {{symbol_name}});", {{"name",        cls->name_},
+                                                                      {"symbol_name", cls->symbolName_}});
     }
 
     printer_.WriteLine("public:", false);
@@ -78,13 +78,13 @@ bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
         {
             const auto* ctor = dynamic_cast<const Function*>(e.Get());
             printer_ << fmt("{{name}}({{parameter_list}}) : {{symbol_name}}({{parameter_name_list}}) { }",
-                {{"name",                cls->name_.CString()},
-                 {"symbol_name",         cls->symbolName_.CString()},
-                 {"parameter_list",      ParameterList(ctor->GetParameters()).CString()},
-                 {"parameter_name_list", ParameterNameList(ctor->GetParameters()).CString()},});
+                {{"name",                cls->name_},
+                 {"symbol_name",         cls->symbolName_},
+                 {"parameter_list",      ParameterList(ctor->GetParameters())},
+                 {"parameter_name_list", ParameterNameList(ctor->GetParameters())},});
         }
     }
-    printer_ << fmt("virtual ~{{name}}() = default;", {{"name", cls->name_.CString()}});
+    printer_ << fmt("virtual ~{{name}}() = default;", {{"name", cls->name_}});
 
     Vector<String> wrappedList;
     auto implementWrapperClassMembers = [&](const Class* cls)
@@ -104,7 +104,7 @@ bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
                     type.kind() != cppast::cpp_type_kind::builtin_t;
 
                 auto vars = fmt({
-                    {"name", var->name_.CString()},
+                    {"name", var->name_},
                     {"type", cppast::to_string(type)},
                     {"ref", wouldReturnByCopy ? "&" : ""}
                 });
@@ -124,15 +124,15 @@ bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
                     Class* cls = dynamic_cast<Class*>(func->parent_.Get());
                     auto vars = fmt({
                         {"type",                cppast::to_string(func->GetReturnType())},
-                        {"name",                func->name_.CString()},
-                        {"class_name",          cls->name_.CString()},
-                        {"full_class_name",     cls->symbolName_.CString()},
-                        {"parameter_list",      ParameterList(func->GetParameters()).CString()},
-                        {"parameter_name_list", ParameterNameList(func->GetParameters()).CString()},
+                        {"name",                func->name_},
+                        {"class_name",          cls->name_},
+                        {"full_class_name",     cls->symbolName_},
+                        {"parameter_list",      ParameterList(func->GetParameters())},
+                        {"parameter_name_list", ParameterNameList(func->GetParameters())},
                         {"return",              IsVoid(func->GetReturnType()) ? "" : "return"},
                         {"const",               func->isConstant_ ? "const " : ""},
                         {"has_params",          !func->GetParameters().empty()},
-                        {"symbol_name",         Sanitize(func->symbolName_).CString()}
+                        {"symbol_name",         Sanitize(func->symbolName_)}
                     });
                     if (func->IsVirtual())
                     {
