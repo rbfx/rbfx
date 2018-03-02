@@ -89,6 +89,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     }
                 }
             }
+            auto newTag = hasBases ? "new " : " ";
 
             printer_ << fmt::format("public unsafe partial class {} : IDisposable", entity->name_);
             printer_.Indent();
@@ -121,7 +122,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 printer_ << "";
             }
 
-            printer_ << fmt::format("public {}void Dispose()", hasBases ? "" : "new ");
+            printer_ << fmt::format("public {}void Dispose()", newTag);
             printer_.Indent();
             {
                 printer_ << "if (Interlocked.Increment(ref disposed_) == 1)";
@@ -155,7 +156,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_ << "";
 
             // Helpers for marshalling type between public and pinvoke APIs
-            printer_ << fmt::format("internal {}static {} __FromPInvoke(IntPtr source)", hasBases ? "" : "new ", entity->name_);
+            printer_ << fmt::format("internal {}static {} __FromPInvoke(IntPtr source)", newTag, entity->name_);
             printer_.Indent();
             {
                 printer_ << fmt::format("return InstanceCache.GetOrAdd<{className}>(source, ptr => new {className}(ptr));",
