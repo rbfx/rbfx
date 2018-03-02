@@ -252,8 +252,8 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         bool isConstant = IsConst(var.type()) && !(entity->flags_ & HintReadOnly) && !defaultValue.empty();
         auto csType = ToCSType(var.type());
         auto name = entity->name_;
-        auto constant = entity->flags_ & HintReadOnly ? "readonly" :
-                                           isConstant ? "const"    : "static";
+        auto constant = entity->flags_ & HintReadOnly ? "static readonly" :
+                                           isConstant ? "const"           : "static";
         auto access = entity->access_ == cppast::cpp_public ? "public" : "protected";
 
         auto line = fmt::format("{access} {constant} {csType} {name}",

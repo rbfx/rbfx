@@ -97,8 +97,8 @@ int main(int argc, char* argv[])
 
     generator->AddCppPass<BuildMetaAST>();
     generator->AddApiPass<UnknownTypesPass>();
-    generator->AddApiPass<MoveGlobalsPass>();
     generator->AddApiPass<Urho3DCustomPass>();
+    generator->AddApiPass<MoveGlobalsPass>();
     generator->AddApiPass<GenerateClassWrappers>();
     generator->AddApiPass<GenerateCApiPass>();
     generator->AddApiPass<GeneratePInvokePass>();

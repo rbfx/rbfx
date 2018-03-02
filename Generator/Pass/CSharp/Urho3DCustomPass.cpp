@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include <fmt/format.h>
 #include "GeneratorContext.h"
 #include "Urho3DCustomPass.h"
 
@@ -105,6 +106,14 @@ bool Urho3DCustomPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto defaultValue = entity->GetDefaultValue();
         if (defaultValue.find("SDL") == 0)
             entity->defaultValue_ = "(int)SDL." + defaultValue;
+        else if (defaultValue.empty() && entity->parent_->kind_ == cppast::cpp_entity_kind::namespace_t &&
+            (entity->name_.find("P_") == 0 || entity->name_.find("E_") == 0) &&
+            Urho3D::GetTypeName(entity->Ast<cppast::cpp_variable>().type()) == "Urho3D::StringHash")
+        {
+            // Give default values to event names and parameters
+            entity->defaultValue_ = fmt::format("new Urho3D.StringHash(\"{}\")", entity->name_);
+            entity->flags_ |= HintReadOnly;
+        }
     }
     else if (entity->name_.find("SDL_") == 0)   // Get rid of anything else belonging to sdl
         entity->Remove();
