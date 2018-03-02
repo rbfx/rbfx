@@ -140,9 +140,24 @@
       "cs_to_pinvoke": "{value}.instance_"
     },
     {
+      "type": "Urho3D::Vector2",
+      "cstype": "Urho3D.Vector2",
+      "ptype": "Urho3D.Vector2"
+    },
+    {
+      "type": "Urho3D::IntVector2",
+      "cstype": "Urho3D.IntVector2",
+      "ptype": "Urho3D.IntVector2"
+    },
+    {
       "type": "Urho3D::Vector3",
       "cstype": "Urho3D.Vector3",
       "ptype": "Urho3D.Vector3"
+    },
+    {
+      "type": "Urho3D::IntVector3",
+      "cstype": "Urho3D.IntVector3",
+      "ptype": "Urho3D.IntVector3"
     }
   ],
   "final": [

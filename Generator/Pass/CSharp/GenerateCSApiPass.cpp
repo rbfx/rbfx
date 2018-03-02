@@ -297,10 +297,10 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         auto name = entity->name_;
         auto nsSymbol = Sanitize(ns->symbolName_);
-        auto constant = entity->flags_ & HintReadOnly ? "readonly " :
-                                           isConstant ? "const "    : " ";
+        auto constant = entity->flags_ & HintReadOnly ? "readonly" :
+                                           isConstant ? "const"    : "";
 
-        auto line = fmt::format("{access} {constant}{csType} {name}",
+        auto line = fmt::format("{access} {constant} {csType} {name}",
             fmt::arg("access", entity->access_ == cppast::cpp_public? "public" : "protected"),
             FMT_CAPTURE(constant), FMT_CAPTURE(csType), FMT_CAPTURE(name));
 

@@ -53,6 +53,12 @@ void Urho3DCustomPass::Start()
 
     if (generator->symbols_.TryGetValue("Urho3D::M_MAX_INT", entity))
         entity->defaultValue_ = "int.MaxValue";
+
+    if (generator->symbols_.TryGetValue("Urho3D::MOUSE_POSITION_OFFSCREEN", entity))
+    {
+        entity->defaultValue_ = "new Urho3D.IntVector2(MathDefs.M_MIN_INT, MathDefs.M_MIN_INT)";
+        entity->flags_ |= HintReadOnly;
+    }
 }
 
 bool Urho3DCustomPass::Visit(MetaEntity* entity, cppast::visitor_info info)
