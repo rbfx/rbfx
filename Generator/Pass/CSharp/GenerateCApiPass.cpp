@@ -61,10 +61,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         // Destructor always exists even if it is not defined in the class
         String cFunctionName = GetUniqueName(Sanitize(entity->uniqueName_) + "_destructor");
 
-        printer_ << fmt("URHO3D_EXPORT_API void {{c_function_name}}({{class_name}}* instance)", {
-            {"c_function_name",     cFunctionName.CString()},
-            {"class_name",          entity->name_},
-        });
+        printer_ << fmt::format("URHO3D_EXPORT_API void {}({}* instance)", cFunctionName.CString(), entity->name_);
         printer_.Indent();
         {
             printer_ << "script->ReleaseRef(instance);";
@@ -77,18 +74,14 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         const auto& func = entity->Ast<cppast::cpp_constructor>();
         entity->cFunctionName_ = GetUniqueName(Sanitize(entity->uniqueName_));
         std::string className = entity->parent_->sourceName_;
-        auto vars = fmt({
-            {"c_function_name",     entity->cFunctionName_},
-            {"parameter_name_list", ParameterNameList(func.parameters(), toCppType)},
-            {"class_name",          className},
-            {"c_parameter_list",    ParameterList(func.parameters(), toCType)},
-            {"c_return_type",       className + "*"},
-        });
-        printer_ << fmt("URHO3D_EXPORT_API {{c_return_type}} {{c_function_name}}({{c_parameter_list}})", vars);
+        printer_ << fmt::format("URHO3D_EXPORT_API {type} {name}({params})",
+            fmt::arg("type", className + "*"), fmt::arg("name", entity->cFunctionName_),
+            fmt::arg("params", ParameterList(func.parameters(), toCType)));
         printer_.Indent();
         {
             printer_ << "return " + MapToCNoCopy(entity->parent_->sourceName_,
-                fmt("new {{class_name}}({{parameter_name_list}})", vars)) + ";";
+                fmt::format("new {class}({params})", fmt::arg("class", className),
+                    fmt::arg("params", ParameterNameList(func.parameters(), toCppType)))) + ";";
         }
         printer_.Dedent();
         printer_.WriteLine();
@@ -98,33 +91,29 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         const auto& func = entity->Ast<cppast::cpp_member_function>();
         entity->cFunctionName_ = GetUniqueName(Sanitize(entity->uniqueName_));
 
-        auto vars = fmt({
-            {"name",                entity->name_},
-            {"c_function_name",     entity->cFunctionName_},
-            {"parameter_name_list", ParameterNameList(func.parameters(), toCppType)},
-            {"base_symbol_name",    entity->symbolName_},
-            {"class_name",          entity->parent_->sourceName_},
-            {"class_name_sanitized", Sanitize(entity->parent_->sourceName_)},
-            {"c_parameter_list",    ParameterList(func.parameters(), toCType)},
-            {"c_return_type",       ToCType(func.return_type())},
-            {"psep",                func.parameters().empty() ? "" : ", "}
-        });
+        auto name = entity->name_;
+        auto cFunction = entity->cFunctionName_;
+        auto paramNames = ParameterNameList(func.parameters(), toCppType);
+        auto className = entity->parent_->sourceName_;
 
-        printer_ << fmt("URHO3D_EXPORT_API {{c_return_type}} {{c_function_name}}({{class_name}}* instance{{psep}}{{c_parameter_list}})", vars);
+        printer_ << fmt::format("URHO3D_EXPORT_API {rtype} {cFunction}({className}* instance{psep}{params})",
+            fmt::arg("rtype", ToCType(func.return_type())), FMT_CAPTURE(cFunction), FMT_CAPTURE(className),
+            fmt::arg("psep", func.parameters().empty() ? "" : ", "),
+            fmt::arg("params", ParameterList(func.parameters(), toCType)));
         printer_.Indent();
         {
             std::string call = "instance->";
             if (func.is_virtual())
                 // Virtual methods always overriden in wrapper class so accessing them by simple name should not be
                 // an issue.
-                call += fmt("{{name}}({{parameter_name_list}})", vars);
+                call += fmt::format("{}({})", entity->name_, paramNames);
             else if (entity->access_ == cppast::cpp_public)
                 // Non-virtual public methods sometimes have issues being called. Use fully qualified name for
                 // calling them.
-                call += fmt("{{base_symbol_name}}({{parameter_name_list}})", vars);
+                call += fmt::format("{}({})", entity->symbolName_, paramNames);
             else
                 // Protected non-virtual methods are wrapped in public proxy methods.
-                call += fmt("__public_{{name}}({{parameter_name_list}})", vars);
+                call += fmt::format("__public_{}({})", entity->name_, paramNames);
 
             if (!IsVoid(func.return_type()))
                 call = "return " + MapToC(func.return_type(), call);
@@ -137,11 +126,13 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         if (func.is_virtual())
         {
-            printer_ << fmt("URHO3D_EXPORT_API void set_{{class_name_sanitized}}_fn{{c_function_name}}({{class_name}}* instance, void* fn)",
-                vars);
+            printer_ << fmt::format("URHO3D_EXPORT_API void set_{name}_fn{cFunction}({className}* instance, void* fn)",
+                fmt::arg("name", Sanitize(entity->parent_->sourceName_)), FMT_CAPTURE(cFunction),
+                FMT_CAPTURE(className));
             printer_.Indent();
             {
-                printer_ << fmt("instance->fn{{c_function_name}} = (decltype(instance->fn{{c_function_name}}))fn;", vars);
+                printer_ << fmt::format("instance->fn{cFunction} = (decltype(instance->fn{cFunction}))fn;",
+                    FMT_CAPTURE(cFunction));
             }
             printer_.Dedent();
             printer_.WriteLine();
@@ -151,28 +142,20 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     {
         const auto& func = entity->Ast<cppast::cpp_function>();
         entity->cFunctionName_ = GetUniqueName(Sanitize(entity->uniqueName_));
+        auto paramNames = ParameterNameList(func.parameters(), toCppType);
 
-        auto vars = fmt({
-            {"name",                entity->name_},
-            {"c_function_name",     entity->cFunctionName_},
-            {"parameter_name_list", ParameterNameList(func.parameters(), toCppType)},
-            {"base_symbol_name",    entity->symbolName_},
-            {"class_name",          entity->parent_->sourceName_},
-            {"c_parameter_list",    ParameterList(func.parameters(), toCType)},
-            {"c_return_type",       ToCType(func.return_type())},
-        });
-
-        printer_ << fmt("URHO3D_EXPORT_API {{c_return_type}} {{c_function_name}}({{c_parameter_list}})", vars);
+        printer_ << fmt::format("URHO3D_EXPORT_API {} {}({})",
+            ToCType(func.return_type()), entity->cFunctionName_, ParameterList(func.parameters(), toCType));
         printer_.Indent();
         {
             std::string call;
             if (entity->access_ == cppast::cpp_public)
                 // Non-virtual public methods sometimes have issues being called. Use fully qualified name for
                 // calling them.
-                call = fmt("{{base_symbol_name}}({{parameter_name_list}})", vars);
+                call = fmt::format("{}({})", entity->symbolName_, paramNames);
             else
                 // Protected non-virtual methods are wrapped in public proxy methods.
-                call = fmt("__public_{{name}}({{parameter_name_list}})", vars);
+                call = fmt::format("__public_{}({})", entity->name_, paramNames);
 
             if (!IsVoid(func.return_type()))
             {
@@ -197,18 +180,18 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             return true;
 
         entity->cFunctionName_ = Sanitize(ns->symbolName_ + "_" + entity->name_);
-        auto vars = fmt({{"c_type",          ToCType(var.type())},
-                         {"c_function_name", entity->cFunctionName_},
-                         {"namespace_name",  ns->sourceName_},
-                         {"name",            entity->name_},
-                         {"value",           MapToCpp(var.type(), "value")}
-        });
+        auto rtype = ToCType(var.type());
+        auto cFunction = entity->cFunctionName_;
+        auto namespaceName = ns->sourceName_;
+        auto name = entity->name_;
+        auto value = MapToCpp(var.type(), "value");
+
         // Getter
-        printer_.Write(fmt("URHO3D_EXPORT_API {{c_type}} get_{{c_function_name}}(", vars));
-        printer_.Write(")");
+        printer_.Write(fmt::format("URHO3D_EXPORT_API {rtype} get_{cFunction}()", FMT_CAPTURE(rtype),
+            FMT_CAPTURE(cFunction)));
         printer_.Indent();
 
-        std::string expr = fmt("{{namespace_name}}::{{name}}", vars);
+        std::string expr = fmt::format("{namespaceName}::{name}", FMT_CAPTURE(namespaceName), FMT_CAPTURE(name));
 
         // Variables are non-temporary therefore they do not need copying.
         printer_ << "return " + MapToC(var.type(), expr) + ";";
@@ -219,11 +202,12 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         // Setter
         if (!IsConst(var.type()))
         {
-            printer_.Write(fmt("URHO3D_EXPORT_API void set_{{c_function_name}}(", vars));
-            printer_.Write(fmt("{{c_type}} value)", vars));
+            printer_.Write(fmt::format("URHO3D_EXPORT_API void set_{cFunction}(", FMT_CAPTURE(cFunction)));
+            printer_.Write(fmt::format("{rtype} value)", FMT_CAPTURE(rtype)));
             printer_.Indent();
 
-            printer_.Write(fmt("{{namespace_name}}::{{name}} = {{value}};", vars));
+            printer_.Write(fmt::format("{namespaceName}::{name} = {value};", FMT_CAPTURE(namespaceName),
+                FMT_CAPTURE(name), FMT_CAPTURE(value)));
 
             printer_.Dedent();
             printer_.WriteLine();
@@ -239,23 +223,25 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             return true;
 
         entity->cFunctionName_ = Sanitize(ns->symbolName_ + "_" + entity->name_);
-        auto vars = fmt({{"c_type",          ToCType(var.type())},
-                         {"c_function_name", entity->cFunctionName_},
-                         {"namespace_name",  ns->sourceName_},
-                         {"name",            entity->name_},
-        });
+        auto cType = ToCType(var.type());
+        auto cFunction = entity->cFunctionName_;
+        auto namespaceName = ns->sourceName_;
+        auto name = entity->name_;
+
         // Getter
-        printer_.Write(fmt("URHO3D_EXPORT_API {{c_type}} get_{{c_function_name}}({{namespace_name}}* instance)", vars));
+        printer_.Write(fmt::format("URHO3D_EXPORT_API {cType} get_{cFunction}({namespaceName}* instance)",
+            FMT_CAPTURE(cType), FMT_CAPTURE(cFunction), FMT_CAPTURE(namespaceName)));
         printer_.Indent();
         {
             std::string expr = "instance->";
             if (entity->access_ != cppast::cpp_public)
-                expr += fmt("__get_{{name}}()", vars);
+                expr += fmt::format("__get_{}()", name);
             else
-                expr += fmt("{{name}}", vars);
+                expr += name;
 
             // Variables are non-temporary therefore they do not need copying.
-            printer_ << fmt("return {{mapped}};", {{"mapped", MapToC(var.type(), expr)}});
+            auto mapped = MapToC(var.type(), expr);
+            printer_ << fmt::format("return {mapped};", FMT_CAPTURE(mapped));
         }
         printer_.Dedent();
         printer_.WriteLine();
@@ -263,16 +249,16 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         // Setter
         if (!IsConst(var.type()))
         {
-            printer_.Write(fmt("URHO3D_EXPORT_API void set_{{c_function_name}}(", vars));
-            printer_.Write(fmt("{{namespace_name}}* instance, {{c_type}} value)", vars));
+            printer_.Write(fmt::format("URHO3D_EXPORT_API void set_{cFunction}(", FMT_CAPTURE(cFunction)));
+            printer_.Write(fmt::format("{namespaceName}* instance, {cType} value)",
+                FMT_CAPTURE(namespaceName), FMT_CAPTURE(cType)));
             printer_.Indent();
 
-            vars.set("value", MapToCpp(var.type(), "value"));
-
+            auto value = MapToCpp(var.type(), "value");
             if (entity->access_ != cppast::cpp_public)
-                printer_.Write(fmt("instance->__set_{{name}}({{value}});", vars));
+                printer_.Write(fmt::format("instance->__set_{name}({value});", FMT_CAPTURE(name), FMT_CAPTURE(value)));
             else
-                printer_.Write(fmt("instance->{{name}} = {{value}};", vars));
+                printer_.Write(fmt::format("instance->{name} = {value};", FMT_CAPTURE(name), FMT_CAPTURE(value)));
 
             printer_.Dedent();
             printer_.WriteLine();
