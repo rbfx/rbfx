@@ -72,26 +72,4 @@ String CodePrinter::Get()
     return text;
 }
 
-mustache::data fmt(const std::initializer_list<std::pair<std::string, mustache::data>>& params)
-{
-    mustache::data data;
-    for (const auto& pair : params)
-        data.set(pair.first, pair.second);
-    return data;
-}
-
-std::string fmt(const char* format, const std::initializer_list<std::pair<std::string, mustache::data>>& params)
-{
-    return fmt(format, fmt(params));
-}
-
-std::string fmt(const char* format, const mustache::data& params)
-{
-    mustache::mustache tpl(format);
-    tpl.set_custom_escape([](const std::string& s) {
-        return s;
-    });
-    return tpl.render(params);
-}
-
 }

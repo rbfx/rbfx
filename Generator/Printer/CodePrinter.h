@@ -24,7 +24,6 @@
 
 
 #include <Urho3D/Container/Str.h>
-#include <Mustache/mustache.hpp>
 
 
 namespace Urho3D
@@ -68,9 +67,5 @@ public:
 protected:
     CodePrinter& printer_;
 };
-
-mustache::data fmt(const std::initializer_list<std::pair<std::string, mustache::data>>& params);
-std::string fmt(const char* format, const std::initializer_list<std::pair<std::string, mustache::data>>& params);
-std::string fmt(const char* format, const mustache::data& params);
 
 }

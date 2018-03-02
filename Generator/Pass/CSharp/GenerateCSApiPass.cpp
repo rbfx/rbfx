@@ -51,7 +51,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         if (info.event == info.container_entity_enter)
         {
-            printer_ << fmt("namespace {{name}}", {{"name", entity->name_}});
+            printer_ << fmt::format("namespace {}", entity->name_);
             printer_.Indent();
         }
         else if (info.event == info.container_entity_exit)
@@ -86,15 +86,10 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 bases.emplace_back("IDisposable");
             }
 
-            auto vars = fmt({
-                {"name", entity->name_},
-                {"bases", str::join(bases, ", ")},
-            });
-
             if (isStatic)
-                printer_ << fmt("public static partial class {{name}}", vars);
+                printer_ << fmt::format("public static partial class {}", entity->name_);
             else
-                printer_ << fmt("public unsafe partial class {{name}} : {{bases}}", vars);
+                printer_ << fmt::format("public unsafe partial class {} : {}", entity->name_, str::join(bases, ", "));
 
             printer_.Indent();
         }
@@ -129,30 +124,30 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         bool hasBase = false;
         for (const auto& base : cls->Ast<cppast::cpp_class>().bases())
         {
-            if (const auto* baseClass = GetEntity(base.type()))
+            if (GetEntity(base.type()) != nullptr)
             {
                 hasBase = true;
                 break;
             }
         }
 
-        auto vars = fmt({
-            {"class_name", cls->name_},
-            {"parameter_list", ParameterList(ctor.parameters(),
-                std::bind(&GenerateCSApiPass::ToCSType, this, std::placeholders::_1), ".")},
-            {"symbol_name", Sanitize(cls->symbolName_)},
-            {"param_name_list", ParameterNameList(ctor.parameters(), mapToPInvoke)},
-            {"has_base", hasBase},
-            {"c_function_name", entity->cFunctionName_},
-            {"access", entity->access_ == cppast::cpp_public ? "public" : "protected"}
-        });
+        auto className = cls->name_;
+        auto baseCtor = hasBase ? " : base(IntPtr.Zero)" : "";
+        auto paramList = ParameterList(ctor.parameters(),
+            std::bind(&GenerateCSApiPass::ToCSType, this, std::placeholders::_1), ".");
+        auto paramNameList = ParameterNameList(ctor.parameters(), mapToPInvoke);
+        auto cFunctionName = entity->cFunctionName_;
 
         // If class has a base class we call base constructor that does nothing. Class will be fully constructed here.
-        printer_ << fmt("{{access}} {{class_name}}({{parameter_list}}){{#has_base}} : base(IntPtr.Zero){{/has_base}}", vars);
+        printer_ << fmt::format("{access} {className}({paramList}){baseCtor}",
+            fmt::arg("access", entity->access_ == cppast::cpp_public ? "public" : "protected"), FMT_CAPTURE(className),
+            FMT_CAPTURE(paramList), FMT_CAPTURE(baseCtor));
+
         printer_.Indent();
         {
-            printer_ << fmt("instance_ = {{c_function_name}}({{param_name_list}});", vars);
-            printer_ << fmt("InstanceCache.Add<{{class_name}}>(instance_, this);", vars);
+            printer_ << fmt::format("instance_ = {cFunctionName}({paramNameList});",
+                FMT_CAPTURE(cFunctionName), FMT_CAPTURE(paramNameList));
+            printer_ << fmt::format("InstanceCache.Add<{className}>(instance_, this);", FMT_CAPTURE(className));
 
             for (const auto& child : cls->children_)
             {
@@ -161,34 +156,38 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     const auto& func = child->Ast<cppast::cpp_member_function>();
                     if (func.is_virtual())
                     {
-                        auto vars = fmt({
-                            {"class_name", cls->name_},
-                            {"name", child->name_},
-                            {"has_params", !func.parameters().empty()},
-                            {"param_name_list", ParameterNameList(func.parameters(), [&](const cppast::cpp_function_parameter& param) {
+                        auto name = child->name_;
+                        auto pc = func.parameters().empty() ? "" : ", ";
+                        auto paramTypeList = ParameterTypeList(func.parameters(),
+                            [&](const cppast::cpp_type& type) -> std::string {
+                                return fmt::format("typeof({})", ToCSType(type));
+                            });
+                        auto paramNameListCs = ParameterNameList(func.parameters(),
+                            [&](const cppast::cpp_function_parameter& param) {
+                                return MapToCS(param.type(), param.name() + "_");
+                            });
+                        auto paramNameList = ParameterNameList(func.parameters(),
+                            [&](const cppast::cpp_function_parameter& param) {
                                 // Avoid possible parameter name collision in enclosing scope.
                                 return param.name() + "_";
-                            })},
-                            {"cs_param_name_list", ParameterNameList(func.parameters(), [&](const cppast::cpp_function_parameter& param) {
-                                return MapToCS(param.type(), param.name() + "_");
-                            })},
-                            {"cs_param_type_list", ParameterTypeList(func.parameters(), [&](const cppast::cpp_type& type) -> std::string {
-                                return fmt("typeof({{type}})", {{"type", ToCSType(type)}});
-                            })},
-                            {"return", !IsVoid(func.return_type()) ? "return " : ""},
-                            {"source_class_name", Sanitize(cls->sourceName_)},
-                            {"c_function_name", child->cFunctionName_},
-                        });
-                        // Optimization: do not route c++ virtual method calls through .NET if user does not override
+                            });
+
+                             // Optimization: do not route c++ virtual method calls through .NET if user does not override
                         // such method in a managed class.
-                        printer_ << fmt("if (GetType().HasOverride(nameof({{name}}){{#has_params}}, {{/has_params}}{{cs_param_type_list}}))", vars);
+                        printer_ << fmt::format("if (GetType().HasOverride(nameof({name}){pc}{paramTypeList}))",
+                            FMT_CAPTURE(name), FMT_CAPTURE(pc), FMT_CAPTURE(paramTypeList));
                         printer_.Indent();
                         {
-                            printer_ << fmt("set_{{source_class_name}}_fn{{c_function_name}}(instance_, "
-                                            "(instance__{{#has_params}}, {{param_name_list}}{{/has_params}}) =>", vars);
+                            printer_ << fmt::format("set_{sourceClass}_fn{cFunction}(instance_, "
+                                "(instance__{pc}{paramNameList}) =>",
+                                fmt::arg("sourceClass", Sanitize(cls->sourceName_)),
+                                fmt::arg("cFunction", child->cFunctionName_), FMT_CAPTURE(pc),
+                                FMT_CAPTURE(paramNameList));
                             printer_.Indent();
                             {
-                                printer_ << fmt("{{return}}this.{{name}}({{cs_param_name_list}});", vars);
+                                printer_ << fmt::format("{return}this.{name}({paramNameListCs});",
+                                    fmt::arg("return", IsVoid(func.return_type()) ? "" : "return "), FMT_CAPTURE(name),
+                                    FMT_CAPTURE(paramNameListCs));
                             }
                             printer_.Dedent("});");
                         }
@@ -205,10 +204,12 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         {
             if (!ctor.is_explicit() && Urho3D::GetTypeName((*ctor.parameters().begin()).type()) != cls->symbolName_)
             {
-                printer_ << fmt("public static implicit operator {{class_name}}({{parameter_list}})", vars);
+                printer_ << fmt::format("public static implicit operator {className}({paramList})",
+                    FMT_CAPTURE(className), FMT_CAPTURE(paramList));
                 printer_.Indent();
                 {
-                    printer_ << fmt("return new {{class_name}}({{param_name_list}});", vars);
+                    printer_ << fmt::format("return new {className}({paramNameList});",
+                        FMT_CAPTURE(className), FMT_CAPTURE(paramNameList));
                 }
                 printer_.Dedent();
                 printer_ << "";
@@ -219,21 +220,21 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     {
         const auto& func = entity->Ast<cppast::cpp_member_function>();
 
-        auto vars = fmt({
-            {"name", entity->name_},
-            {"return_type", ToCSType(func.return_type())},
-            {"parameter_list", ParameterList(func.parameters(),
-                std::bind(&GenerateCSApiPass::ToCSType, this, std::placeholders::_1), ".")},
-            {"c_function_name", entity->cFunctionName_},
-            {"param_name_list", ParameterNameList(func.parameters(), mapToPInvoke)},
-            {"has_params", !func.parameters().empty()},
-            {"virtual", func.is_virtual() ? "virtual " : ""},
-            {"access", entity->access_ == cppast::cpp_public ? "public" : "protected"}
-        });
-        printer_ << fmt("{{access}} {{virtual}}{{return_type}} {{name}}({{parameter_list}})", vars);
+        auto rtype = ToCSType(func.return_type());
+        auto paramList = ParameterList(func.parameters(),
+            std::bind(&GenerateCSApiPass::ToCSType, this, std::placeholders::_1), ".");
+        auto pc = func.parameters().empty() ? "" : ", ";
+        auto paramNameList = ParameterNameList(func.parameters(), mapToPInvoke);
+
+        printer_ << fmt::format("{access} {virtual}{rtype} {name}({paramList})",
+            fmt::arg("access", entity->access_ == cppast::cpp_public ? "public" : "protected"),
+            fmt::arg("virtual", func.is_virtual() ? "virtual " : ""), FMT_CAPTURE(rtype), FMT_CAPTURE(paramList),
+            fmt::arg("name", entity->name_));
         printer_.Indent();
         {
-            std::string call = fmt("{{c_function_name}}(instance_{{#has_params}}, {{/has_params}}{{param_name_list}})", vars);
+            std::string call = fmt::format("{cFunction}(instance_{pc}{paramNameList})",
+                fmt::arg("cFunction", entity->cFunctionName_), FMT_CAPTURE(pc), FMT_CAPTURE(paramNameList));
+
             if (IsVoid(func.return_type()))
                 printer_ << call + ";";
             else
@@ -249,18 +250,15 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         auto defaultValue = ExpandDefaultValue(ns->name_, entity->GetDefaultValue());
         bool isConstant = IsConst(var.type()) && !(entity->flags_ & HintReadOnly) && !defaultValue.empty();
+        auto csType = ToCSType(var.type());
+        auto name = entity->name_;
+        auto constant = entity->flags_ & HintReadOnly ? "readonly" :
+                                           isConstant ? "const"    : "static";
+        auto access = entity->access_ == cppast::cpp_public ? "public" : "protected";
 
-        auto vars = fmt({
-            {"cs_type", ToCSType(var.type())},
-            {"name", entity->name_},
-            {"ns_symbol", Sanitize(ns->symbolName_)},
-            {"access", entity->access_ == cppast::cpp_public ? "public" : "protected"},
-            {"const", entity->flags_ & HintReadOnly ? "readonly" :
-                                         isConstant ? "const"    : "static"
-            },
-        });
+        auto line = fmt::format("{access} {constant} {csType} {name}",
+            FMT_CAPTURE(access), FMT_CAPTURE(constant), FMT_CAPTURE(csType), FMT_CAPTURE(name));
 
-        auto line = fmt("{{access}} {{const}} {{cs_type}} {{name}}", vars);
         if (isConstant || entity->flags_ & HintReadOnly)
         {
             line += " = " + defaultValue + ";";
@@ -269,17 +267,20 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         else
         {
             // A property with getters and setters
+            auto nsSymbol = Sanitize(ns->symbolName_);
             printer_ << line;
             printer_.Indent();
             {
                 // Getter
-                String call = MapToCS(var.type(), fmt("get_{{ns_symbol}}_{{name}}()", vars));
-                printer_ << fmt("get { return {{call}}; }", {{"call", call.CString()}});
+                auto call = MapToCS(var.type(),
+                    fmt::format("get_{nsSymbol}_{name}()", FMT_CAPTURE(nsSymbol), FMT_CAPTURE(name)));
+                printer_ << fmt::format("get {{ return {call}; }}", fmt::arg("call", call));
                 // Setter
                 if (!IsConst(var.type()) && !(entity->flags_ & HintReadOnly))
                 {
-                    vars.set("value", MapToPInvoke(var.type(), "value"));
-                    printer_ << fmt("set { set_{{ns_symbol}}_{{name}}({{value}}); }", vars);
+                    auto value = MapToPInvoke(var.type(), "value");
+                    printer_ << fmt::format("set {{ set_{nsSymbol}_{name}({value}); }}",
+                        FMT_CAPTURE(nsSymbol), FMT_CAPTURE(name), FMT_CAPTURE(value));
                 }
             }
             printer_.Dedent();
@@ -292,18 +293,17 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         auto defaultValue = ExpandDefaultValue(ns->parent_->name_, entity->GetDefaultValue());
         bool isConstant = IsConst(var.type()) && !(entity->flags_ & HintReadOnly) && !defaultValue.empty();
+        auto csType = ToCSType(var.type());
 
-        auto vars = fmt({
-            {"cs_type", ToCSType(var.type())},
-            {"name", entity->name_},
-            {"ns_symbol", Sanitize(ns->symbolName_)},
-            {"access", entity->access_ == cppast::cpp_public? "public " : "protected "},
-            {"const", entity->flags_ & HintReadOnly ? "readonly " :
-                                         isConstant ? "const "    : " "
-            },
-        });
+        auto name = entity->name_;
+        auto nsSymbol = Sanitize(ns->symbolName_);
+        auto constant = entity->flags_ & HintReadOnly ? "readonly " :
+                                           isConstant ? "const "    : " ";
 
-        auto line = fmt("{{access}}{{const}}{{cs_type}} {{name}}", vars);
+        auto line = fmt::format("{access} {constant}{csType} {name}",
+            fmt::arg("access", entity->access_ == cppast::cpp_public? "public" : "protected"),
+            FMT_CAPTURE(constant), FMT_CAPTURE(csType), FMT_CAPTURE(name));
+
         if (isConstant)
             line += " = " + defaultValue + ";";
         else
@@ -313,14 +313,15 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_.Indent();
             {
                 // Getter
-                String call = MapToCS(var.type(), fmt("get_{{ns_symbol}}_{{name}}(instance_)",
-                    vars));
-                printer_ << fmt("get { return {{call}}; }", {{"call", call.CString()}});
+                auto call = MapToCS(var.type(), fmt::format("get_{nsSymbol}_{name}(instance_)",
+                    FMT_CAPTURE(nsSymbol), FMT_CAPTURE(name)));
+                printer_ << fmt::format("get {{ return {}; }}", call);
                 // Setter
                 if (!IsConst(var.type()) && !(entity->flags_ & HintReadOnly))
                 {
-                    vars.set("value", MapToPInvoke(var.type(), "value"));
-                    printer_ << fmt("set { set_{{ns_symbol}}_{{name}}(instance_, {{value}}); }", vars);
+                    auto value = MapToPInvoke(var.type(), "value");
+                    printer_ << fmt::format("set {{ set_{nsSymbol}_{name}(instance_, {value}); }}",
+                        FMT_CAPTURE(nsSymbol), FMT_CAPTURE(name), FMT_CAPTURE(value));
                 }
             }
             printer_.Dedent();
