@@ -65,7 +65,7 @@ public:
     std::string MapToPInvoke(const cppast::cpp_type& type, const std::string& expression);
     std::string MapToCS(const cppast::cpp_type& type, const std::string& expression);
 
-    std::string ToPInvokeType(const std::string& name, const std::string& default_="IntPtr");
+    std::string BuiltinToPInvokeType(const cppast::cpp_type& type);
     std::string ToPInvokeType(const cppast::cpp_type& type, const std::string& default_="IntPtr");
 
     std::unordered_map<std::string, TypeMap> typeMaps_;

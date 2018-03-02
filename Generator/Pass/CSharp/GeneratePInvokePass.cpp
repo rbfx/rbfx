@@ -93,7 +93,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 {"has_bases", hasBases},
             });
 
-            printer_ << fmt("public partial class {{class_name}} : IDisposable", vars);
+            printer_ << fmt("public unsafe partial class {{class_name}} : IDisposable", vars);
             printer_.Indent();
             if (!hasBases)
             {

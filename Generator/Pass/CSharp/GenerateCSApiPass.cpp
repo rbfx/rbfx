@@ -93,7 +93,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             if (isStatic)
                 printer_ << fmt("public static partial class {{name}}", vars);
             else
-                printer_ << fmt("public partial class {{name}} : {{bases}}", vars);
+                printer_ << fmt("public unsafe partial class {{name}} : {{bases}}", vars);
 
             printer_.Indent();
         }

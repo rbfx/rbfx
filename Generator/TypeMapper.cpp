@@ -50,9 +50,6 @@ void TypeMapper::Load(const JSONValue& rules)
         if (map.cType_.empty())
             map.cType_ = map.cppType_;
 
-        if (map.pInvokeType_.empty())
-            map.pInvokeType_ = ToPInvokeType(map.cType_, "");
-
         if (map.csType_.empty())
             map.csType_ = map.pInvokeType_;
 
@@ -124,59 +121,74 @@ std::string TypeMapper::ToPInvokeType(const cppast::cpp_type& type, const std::s
         return map->pInvokeType_;
     else if (IsEnumType(type))
         return "global::" + str::replace_str(Urho3D::GetTypeName(type), "::", ".");
+    else if (IsComplexValueType(type))
+        return default_;
     else
-    {
-        std::string name = cppast::to_string(type);
-        std::string result = ToPInvokeType(name, ToPInvokeType(Urho3D::GetTypeName(type), default_));
-        return result;
-    }
+        return BuiltinToPInvokeType(type);
 }
 
-std::string TypeMapper::ToPInvokeType(const std::string& name, const std::string& default_)
+std::string TypeMapper::BuiltinToPInvokeType(const cppast::cpp_type& type)
 {
-    if (name == "char const*")
-        return "string";
-    if (name == "void*" || name == "signed char*" || name == "void const*")
-        return "IntPtr";
-    if (name == "char" || name == "signed char")
-        return "char";
-    if (name == "unsigned char")
-        return "byte";
-    if (name == "short")
-        return "short";
-    if (name == "unsigned short")
-        return "ushort";
-    if (name == "int")
-        return "int";
-    if (name == "unsigned int" || name == "unsigned")
-        return "uint";
-    if (name == "long long")
-        return "long";
-    if (name == "unsigned long long")
-        return "ulong";
-    if (name == "void")
-        return "void";
-    if (name == "bool")
-        return "bool";
-    if (name == "float")
-        return "float";
-    if (name == "double")
-        return "double";
-    if (name == "char const*")
-        return "string";
+    switch (type.kind())
+    {
 
-    return default_;
+    case cppast::cpp_type_kind::builtin_t:
+    {
+        const auto& builtin = dynamic_cast<const cppast::cpp_builtin_type&>(type);
+        switch (builtin.builtin_type_kind())
+        {
+        case cppast::cpp_void: return "void";
+        case cppast::cpp_bool: return "bool";
+        case cppast::cpp_uchar: return "byte";
+        case cppast::cpp_ushort: return "ushort";
+        case cppast::cpp_uint: return "uint";
+        case cppast::cpp_ulong: return "uint";
+        case cppast::cpp_ulonglong: return "ulong";
+        case cppast::cpp_uint128: assert(false);
+        case cppast::cpp_schar: return "byte";
+        case cppast::cpp_short: return "short";
+        case cppast::cpp_int: return "int";
+        case cppast::cpp_long: return "int";
+        case cppast::cpp_longlong: return "long";
+        case cppast::cpp_int128: assert(false);
+        case cppast::cpp_float: return "float";
+        case cppast::cpp_double: return "double";
+        case cppast::cpp_longdouble: assert(false);
+        case cppast::cpp_float128: assert(false);
+        case cppast::cpp_char: return "char";
+        case cppast::cpp_wchar: assert(false);
+        case cppast::cpp_char16: assert(false);
+        case cppast::cpp_char32: assert(false);
+        case cppast::cpp_nullptr: return "IntPtr";
+        }
+        break;
+    }
+    case cppast::cpp_type_kind::user_defined_t: return "IntPtr";
+    case cppast::cpp_type_kind::cv_qualified_t:
+    {
+        auto name = BuiltinToPInvokeType(dynamic_cast<const cppast::cpp_cv_qualified_type&>(type).type());
+        if (name == "char*")
+            return "string";
+        return name;
+    }
+    case cppast::cpp_type_kind::pointer_t:
+        return BuiltinToPInvokeType(dynamic_cast<const cppast::cpp_pointer_type&>(type).pointee()) + "*";
+    case cppast::cpp_type_kind::reference_t:
+        return BuiltinToPInvokeType(dynamic_cast<const cppast::cpp_reference_type&>(type).referee()) + "*";
+    default:
+        assert(false);
+    }
 }
 
 std::string TypeMapper::ToPInvokeTypeReturn(const cppast::cpp_type& type)
 {
-    std::string result = ToPInvokeType(cppast::remove_const(type));
+    std::string result = ToPInvokeType(type);
     return result;
 }
 
 std::string TypeMapper::ToPInvokeTypeParam(const cppast::cpp_type& type)
 {
-    std::string result = ToPInvokeType(cppast::remove_const(type));
+    std::string result = ToPInvokeType(type);
     if (result == "string")
         return "[param: MarshalAs(UnmanagedType.LPUTF8Str)]" + result;
     return result;
@@ -207,7 +219,7 @@ std::string TypeMapper::MapToCNoCopy(const std::string& type, const std::string&
 
     if (map)
         result = fmt(map->cppToCTemplate_.c_str(), {{"value", result}});
-    else if (ToPInvokeType(type, "").empty())
+    else if (generator->symbols_.Contains(type))
     {
         result = fmt("script->TakeOwnership<{{type}}>({{value}})", {
             {"value", result},
@@ -236,7 +248,6 @@ std::string TypeMapper::MapToCpp(const cppast::cpp_type& type, const std::string
 
 std::string TypeMapper::ToCSType(const cppast::cpp_type& type)
 {
-    auto name = cppast::to_string(type);
     std::string result;
     if (const auto* map = GetTypeMap(type))
         result = map->csType_;
@@ -249,7 +260,6 @@ std::string TypeMapper::ToCSType(const cppast::cpp_type& type)
 
 std::string TypeMapper::MapToPInvoke(const cppast::cpp_type& type, const std::string& expression)
 {
-    std::string name = cppast::to_string(type);
     if (const auto* map = GetTypeMap(type))
         return fmt(map->csToPInvokeTemplate_.c_str(), {{"value", expression}});
     else if (IsComplexValueType(type))

@@ -190,12 +190,51 @@ bool GeneratorContext::IsAcceptableType(const cppast::cpp_type& type)
     if (type.kind() == cppast::cpp_type_kind::builtin_t)
         return true;
 
-    // Some non-builtin types also map to c# types (like some pointers)
-    if (!typeMapper_.ToPInvokeType(cppast::to_string(type), "").empty())
-        return true;
+    std::function<bool(const cppast::cpp_type&)> isPInvokable = [&](const cppast::cpp_type& type)
+    {
+        switch (type.kind())
+        {
+        case cppast::cpp_type_kind::builtin_t:
+        {
+            const auto& builtin = dynamic_cast<const cppast::cpp_builtin_type&>(type);
+            switch (builtin.builtin_type_kind())
+            {
+            case cppast::cpp_void:
+            case cppast::cpp_bool:
+            case cppast::cpp_uchar:
+            case cppast::cpp_ushort:
+            case cppast::cpp_uint:
+            case cppast::cpp_ulong:
+            case cppast::cpp_ulonglong:
+            case cppast::cpp_schar:
+            case cppast::cpp_short:
+            case cppast::cpp_int:
+            case cppast::cpp_long:
+            case cppast::cpp_longlong:
+            case cppast::cpp_float:
+            case cppast::cpp_double:
+            case cppast::cpp_char:
+            case cppast::cpp_nullptr:
+                return true;
+            default:
+                break;
+            }
+            break;
+        }
+        case cppast::cpp_type_kind::cv_qualified_t:
+            return isPInvokable(dynamic_cast<const cppast::cpp_cv_qualified_type&>(type).type());
+        case cppast::cpp_type_kind::pointer_t:
+            return isPInvokable(dynamic_cast<const cppast::cpp_pointer_type&>(type).pointee());
+        case cppast::cpp_type_kind::reference_t:
+            return isPInvokable(dynamic_cast<const cppast::cpp_reference_type&>(type).referee());
+        default:
+            break;
+        }
+        return false;
+    };
 
-    // This probably should be removed? Returns true even for say "int**" even if it is not supported.
-    if (!typeMapper_.ToPInvokeType(Urho3D::GetTypeName(type), "").empty())
+    // Some non-builtin types also map to c# types (like some pointers)
+    if (isPInvokable(type))
         return true;
 
     // Manually handled types

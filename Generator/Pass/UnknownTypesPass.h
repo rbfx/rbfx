@@ -135,9 +135,6 @@ public:
         case cppast::cpp_entity_kind::constructor_t:
         {
             const auto& e = entity->Ast<cppast::cpp_constructor>();
-            if (e.signature().find("VariantVector") != std::string::npos)
-                int a = 2;
-
             if (!checkFunctionParams(e.parameters()))
                 entity->Remove();
             break;
