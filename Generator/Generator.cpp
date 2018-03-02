@@ -31,7 +31,7 @@
 #include "Pass/CSharp/GenerateCApiPass.h"
 #include "Pass/CSharp/GeneratePInvokePass.h"
 #include "Pass/CSharp/GenerateCSApiPass.h"
-#include "Pass/BuildOverlayAST.h"
+#include "Pass/BuildMetaAST.h"
 
 namespace Urho3D
 {
@@ -95,7 +95,7 @@ int main(int argc, char* argv[])
     generator->LoadRules(rulesFile);
     generator->ParseFiles(sourceDir);
 
-    generator->AddCppPass<BuildOverlayAST>();
+    generator->AddCppPass<BuildMetaAST>();
     generator->AddApiPass<UnknownTypesPass>();
     generator->AddApiPass<MoveGlobalsPass>();
     generator->AddApiPass<Urho3DCustomPass>();

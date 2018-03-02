@@ -32,11 +32,11 @@ namespace Urho3D
 {
 
 /// Walk AST and build API tree which later can be altered and used for generating a wrapper.
-class BuildOverlayAST : public CppAstPass
+class BuildMetaAST : public CppAstPass
 {
-    URHO3D_OBJECT(BuildOverlayAST, CppAstPass);
+    URHO3D_OBJECT(BuildMetaAST, CppAstPass);
 public:
-    explicit BuildOverlayAST(Context* context) : CppAstPass(context) { };
+    explicit BuildMetaAST(Context* context) : CppAstPass(context) { };
 
     void Start() override
     {
