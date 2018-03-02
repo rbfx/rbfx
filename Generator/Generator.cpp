@@ -25,34 +25,19 @@
 #include <Urho3D/Urho3DAll.h>
 #include <thread>
 #include "Pass/UnknownTypesPass.h"
-#include "Pass/CSharp/GenerateCApiPass.h"
-#include "Pass/CSharp/GenerateClassWrappers.h"
-#include "Pass/CSharp/GeneratePInvokePass.h"
-#include "Pass/CSharp/GenerateCSApiPass.h"
-#include "Pass/BuildApiPass.h"
-#include "Pass/FindBaseClassesPass.h"
 #include "Pass/CSharp/MoveGlobalsPass.h"
 #include "Pass/CSharp/Urho3DCustomPass.h"
-#include "GeneratorContext.h"
+#include "Pass/CSharp/GenerateClassWrappers.h"
+#include "Pass/CSharp/GenerateCApiPass.h"
+#include "Pass/CSharp/GeneratePInvokePass.h"
+#include "Pass/CSharp/GenerateCSApiPass.h"
+#include "Pass/BuildOverlayAST.h"
 
 namespace Urho3D
 {
 
 GeneratorContext* generator = nullptr;
 
-}
-
-void AssembleDebugApiHeader(CSharpPrinter& printer, const Declaration* decl)
-{
-    printer << decl->ToString();
-    const Namespace* ns = dynamic_cast<const Namespace*>(decl);
-    if (ns != nullptr)
-    {
-        printer.Indent();
-        for (const auto& child : ns->children_)
-            AssembleDebugApiHeader(printer, child);
-        printer.Dedent();
-    }
 }
 
 int main(int argc, char* argv[])
@@ -110,8 +95,7 @@ int main(int argc, char* argv[])
     generator->LoadRules(rulesFile);
     generator->ParseFiles(sourceDir);
 
-    generator->AddCppPass<BuildApiPass>();
-    generator->AddApiPass<FindBaseClassesPass>();
+    generator->AddCppPass<BuildOverlayAST>();
     generator->AddApiPass<UnknownTypesPass>();
     generator->AddApiPass<MoveGlobalsPass>();
     generator->AddApiPass<Urho3DCustomPass>();
@@ -121,13 +105,4 @@ int main(int argc, char* argv[])
     generator->AddApiPass<GenerateCSApiPass>();
 
     generator->Generate(outputDirCpp, outputDirCs);
-
-    File file(context, outputDirCpp + "/API.hpp", FILE_WRITE);
-    CSharpPrinter printer;
-    AssembleDebugApiHeader(printer, generator->apiRoot_);
-    file.WriteString(printer.Get());
-    file.Seek(file.GetSize() - 1);
-    file.Write(" ", 1);
-    file.Close();
-
 }

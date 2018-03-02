@@ -25,6 +25,7 @@
 
 #include <Urho3D/Core/Object.h>
 #include <cppast/cpp_entity.hpp>
+#include <cppast/cpp_variable.hpp>
 #include <cppast/visitor.hpp>
 #include "GeneratorContext.h"
 #include "CppPass.h"
@@ -37,15 +38,130 @@ namespace Urho3D
 /// Walk AST and gather known defined classes. Exclude protected/private members from generation.
 class UnknownTypesPass : public CppApiPass
 {
-URHO3D_OBJECT(UnknownTypesPass, CppAstPass);
+URHO3D_OBJECT(UnknownTypesPass, CppApiPass);
 public:
     explicit UnknownTypesPass(Context* context) : CppApiPass(context) { };
 
-    void Start();
-    bool Visit(Declaration* decl, Event event) override;
+    bool Visit(MetaEntity* entity, cppast::visitor_info info) override
+    {
+        if (entity->ast_ == nullptr || info.event == info.container_entity_exit)
+            return true;
 
-protected:
-    GeneratorContext* generator_;
+        using ParameterList = cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>;
+
+        auto checkFunctionParams = [&](const ParameterList& params) {
+            for (const auto& param : params)
+            {
+                if (!generator->IsAcceptableType(param.type()))
+                {
+                    URHO3D_LOGINFOF("Ignore: %s, unknown parameter type %s", entity->uniqueName_.c_str(),
+                        cppast::to_string(param.type()).c_str());
+                    return false;
+                }
+            }
+            return true;
+        };
+
+        auto checkFunctionTypes = [&](const cppast::cpp_type& returnType,
+            const ParameterList& params) {
+            if (!generator->IsAcceptableType(returnType))
+            {
+                URHO3D_LOGINFOF("Ignore: %s, unknown return type %s", entity->uniqueName_.c_str(),
+                    cppast::to_string(returnType).c_str());
+                return false;
+            }
+            return checkFunctionParams(params);
+        };
+
+        switch (entity->ast_->kind())
+        {
+        case cppast::cpp_entity_kind::file_t:break;
+        case cppast::cpp_entity_kind::macro_definition_t:break;
+        case cppast::cpp_entity_kind::include_directive_t:break;
+        case cppast::cpp_entity_kind::language_linkage_t:break;
+        case cppast::cpp_entity_kind::namespace_t:break;
+        case cppast::cpp_entity_kind::namespace_alias_t:break;
+        case cppast::cpp_entity_kind::using_directive_t:break;
+        case cppast::cpp_entity_kind::using_declaration_t:break;
+        case cppast::cpp_entity_kind::type_alias_t:break;
+        case cppast::cpp_entity_kind::enum_t:break;
+        case cppast::cpp_entity_kind::enum_value_t:break;
+        case cppast::cpp_entity_kind::class_t:break;
+        case cppast::cpp_entity_kind::access_specifier_t:break;
+        case cppast::cpp_entity_kind::base_class_t:break;
+        case cppast::cpp_entity_kind::variable_t:
+        {
+            const auto& e = entity->Ast<cppast::cpp_variable>();
+            if (!generator->IsAcceptableType(e.type()))
+            {
+                URHO3D_LOGINFOF("Ignore: %s, type %s", entity->uniqueName_.c_str(),
+                    cppast::to_string(e.type()).c_str());
+                entity->Remove();
+            }
+            break;
+        }
+        case cppast::cpp_entity_kind::member_variable_t:
+        {
+            const auto& e = entity->Ast<cppast::cpp_member_variable>();
+            if (!generator->IsAcceptableType(e.type()))
+            {
+                URHO3D_LOGINFOF("Ignore: %s, type %s", entity->uniqueName_.c_str(),
+                    cppast::to_string(e.type()).c_str());
+                entity->Remove();
+            }
+            break;
+        }
+        case cppast::cpp_entity_kind::bitfield_t:break;
+        case cppast::cpp_entity_kind::function_parameter_t:break;
+        case cppast::cpp_entity_kind::function_t:
+        {
+            const auto& e = entity->Ast<cppast::cpp_function>();
+            if (!checkFunctionTypes(e.return_type(), e.parameters()))
+                entity->Remove();
+            if (e.name().find("operator") == 0)
+                entity->Remove();
+            break;
+        }
+        case cppast::cpp_entity_kind::member_function_t:
+        {
+            const auto& e = entity->Ast<cppast::cpp_member_function>();
+            if (!checkFunctionTypes(e.return_type(), e.parameters()))
+                entity->Remove();
+            if (e.name().find("operator") == 0)
+                entity->Remove();
+            break;
+        }
+        case cppast::cpp_entity_kind::conversion_op_t:break;
+        case cppast::cpp_entity_kind::constructor_t:
+        {
+            const auto& e = entity->Ast<cppast::cpp_constructor>();
+            if (e.signature().find("VariantVector") != std::string::npos)
+                int a = 2;
+
+            if (!checkFunctionParams(e.parameters()))
+                entity->Remove();
+            break;
+        }
+        case cppast::cpp_entity_kind::destructor_t:break;
+        case cppast::cpp_entity_kind::friend_t:break;
+        case cppast::cpp_entity_kind::template_type_parameter_t:
+        case cppast::cpp_entity_kind::non_type_template_parameter_t:
+        case cppast::cpp_entity_kind::template_template_parameter_t:
+        case cppast::cpp_entity_kind::alias_template_t:
+        case cppast::cpp_entity_kind::variable_template_t:
+        case cppast::cpp_entity_kind::function_template_t:
+        case cppast::cpp_entity_kind::function_template_specialization_t:
+        case cppast::cpp_entity_kind::class_template_t:
+        case cppast::cpp_entity_kind::class_template_specialization_t:
+        case cppast::cpp_entity_kind::static_assert_t:
+            entity->Remove();
+            break;
+        case cppast::cpp_entity_kind::unexposed_t:break;
+        case cppast::cpp_entity_kind::count:break;
+        }
+
+        return true;
+    }
 };
 
 }

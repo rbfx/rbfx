@@ -29,7 +29,6 @@
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/JSONValue.h>
-#include "Declarations/Namespace.hpp"
 #include "GeneratorContext.h"
 #include "Utilities.h"
 
@@ -40,9 +39,8 @@ namespace Urho3D
 GeneratorContext::GeneratorContext(Urho3D::Context* context)
     : Object(context)
     , typeMapper_(context)
-    , apiRoot_(new Namespace(nullptr))
 {
-
+    apiRoot_ = new MetaEntity();
 }
 
 void GeneratorContext::LoadCompileConfig(const std::vector<std::string>& includes, std::vector<std::string>& defines,
@@ -67,7 +65,14 @@ void GeneratorContext::LoadCompileConfig(const std::vector<std::string>& include
 bool GeneratorContext::LoadRules(const String& jsonPath)
 {
     rules_ = new JSONFile(context_);
-    return rules_->LoadFile(jsonPath);
+    if (!rules_->LoadFile(jsonPath))
+        return false;
+
+    const auto& final = rules_->GetRoot().Get("final").GetArray();
+    for (auto i = 0; i < final.Size(); i++)
+        final_.Push(final[i].GetCString());
+
+    return true;
 }
 
 bool GeneratorContext::ParseFiles(const String& sourceDir)
@@ -153,27 +158,28 @@ void GeneratorContext::Generate(const String& outputDirCpp, const String& output
         pass->Stop();
     }
 
-    std::function<void(CppApiPass*, Declaration*)> visitDeclaration = [&](CppApiPass* pass, Declaration* decl) {
-        if (decl->IsNamespaceLike())
-        {
-            Namespace* ns = dynamic_cast<Namespace*>(decl);
-            pass->Visit(decl, CppApiPass::ENTER);
-            // Passes may alter API structure while they are running. Copying children list ensures that we are
-            // iterating over container that is guaranteed to not be modified.
-            auto childrenCopy = ns->children_;
-            for (const auto& child : childrenCopy)
-                visitDeclaration(pass, child);
-            pass->Visit(decl, CppApiPass::EXIT);
-        }
-        else
-            pass->Visit(decl, CppApiPass::LEAF);
-    };
+    std::function<void(CppApiPass*, MetaEntity*)> visitOverlayEntity = [&](CppApiPass* pass, MetaEntity* entity)
+    {
+        cppast::visitor_info info{};
+        info.access = entity->access_;
+        info.event = entity->children_.empty() ? cppast::visitor_info::leaf_entity :
+                     cppast::visitor_info::container_entity_enter;
 
+        if (pass->Visit(entity, info) && !entity->children_.empty())
+        {
+            std::vector<SharedPtr<MetaEntity>> childrenCopy = entity->children_;
+            for (const auto& childEntity : childrenCopy)
+                visitOverlayEntity(pass, childEntity.Get());
+
+            info.event = cppast::visitor_info::container_entity_exit;
+            pass->Visit(entity, info);
+        }
+    };
     for (const auto& pass : apiPasses_)
     {
         URHO3D_LOGINFOF("#### Run pass: %s", pass->GetTypeName().CString());
         pass->Start();
-        visitDeclaration(pass, apiRoot_);
+        visitOverlayEntity(pass, apiRoot_);
         pass->Stop();
     }
 }
@@ -188,16 +194,16 @@ bool GeneratorContext::IsAcceptableType(const cppast::cpp_type& type)
     if (!typeMapper_.ToPInvokeType(cppast::to_string(type), "").empty())
         return true;
 
+    // This probably should be removed? Returns true even for say "int**" even if it is not supported.
     if (!typeMapper_.ToPInvokeType(Urho3D::GetTypeName(type), "").empty())
         return true;
 
-    // Known symbols will be classes that are being wrapped
-    if (symbols_.Has(type))
+    // Manually handled types
+    if (typeMapper_.GetTypeMap(type) != nullptr)
         return true;
 
-    // Any other manually handled types
-    return typeMapper_.GetTypeMap(type) != nullptr;
-
+    // Known symbols will be classes that are being wrapped
+    return symbols_.Contains(cppast::to_string(GetBaseType(type)));
 }
 
 }

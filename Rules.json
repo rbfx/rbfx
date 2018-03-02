@@ -57,11 +57,11 @@
       "Urho3D::EventHandler*",
       "Urho3D::ObjectFactory",
       "Urho3D::EventNameRegistrar",
-      "Urho3D::CustomVariantValue*",
+      "Urho3D::*VariantValue*",
       "Urho3D::String",
       "Urho3D::WString",
       "Urho3D::StringHash",
-      "Urho3D::Variant::customValue*_",
+      "Urho3D::Variant*::customValue*_",
       "Urho3D::Variant::Variant(void*)",
       // C# reflection can be used instead of these
       "Urho3D::TypeInfo",
@@ -92,8 +92,11 @@
       "Urho3D::Text3D::text_",
       "Urho3D::UI::DragData",
       // TODO: `out` parameters
-//      "Urho3D::CrowdManager::Raycast(Urho3D::Vector3 const&,Urho3D::Vector3 const&,int,Urho3D::Vector3*)",
-//      "Urho3D::CrowdManager::GetDistanceToWall(Urho3D::Vector3 const&,float,int,Urho3D::Vector3*,Urho3D::Vector3*)"
+      "Urho3D::CrowdManager::Raycast(Urho3D::Vector3 const&,Urho3D::Vector3 const&,int,Urho3D::Vector3*)",
+      "Urho3D::CrowdManager::GetDistanceToWall(Urho3D::Vector3 const&,float,int,Urho3D::Vector3*,Urho3D::Vector3*)",
+      "Urho3D::JoystickState::joystick_",
+      "Urho3D::JoystickState::controller_",
+      "Urho3D::CursorShapeInfo::osCursor_"
     ]
   },
   "typemaps": [
@@ -137,5 +140,8 @@
       "cstype": "Urho3D.Vector3",
       "ptype": "Urho3D.Vector3"
     }
+  ],
+  "final": [
+    "Urho3D::IKSolver"
   ]
 }

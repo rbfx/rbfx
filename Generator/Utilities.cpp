@@ -23,8 +23,6 @@
 #include <Urho3D/Core/StringUtils.h>
 #include <cppast/cpp_member_function.hpp>
 #include <Urho3D/IO/Log.h>
-#include "Declarations/Variable.hpp"
-#include "Declarations/Namespace.hpp"
 #include "Utilities.h"
 #include "GeneratorContext.h"
 
@@ -55,7 +53,7 @@ std::regex WildcardToRegex(const Urho3D::String& wildcard)
     return std::regex(regex.CString());
 }
 
-std::string GetBaseSymbolName(const cppast::cpp_entity& e)
+std::string GetScopeName(const cppast::cpp_entity& e)
 {
     std::string name = e.name();
     if (name.empty())
@@ -79,9 +77,9 @@ std::string GetBaseSymbolName(const cppast::cpp_entity& e)
     return str::join(elements, "::");
 }
 
-std::string GetSymbolName(const cppast::cpp_entity& e)
+std::string GetUniqueName(const cppast::cpp_entity& e)
 {
-    std::string name = GetBaseSymbolName(e);
+    std::string name = GetScopeName(e);
     // Make signature unique for overloaded functions
     switch (e.kind())
     {
@@ -110,9 +108,40 @@ std::string GetSymbolName(const cppast::cpp_entity& e)
     return name;
 }
 
-std::string GetSymbolName(const cppast::cpp_entity* e)
+std::string GetUniqueName(const cppast::cpp_entity* e)
 {
-    return GetSymbolName(*e);
+    return GetUniqueName(*e);
+}
+
+std::string GetSymbolName(const cppast::cpp_entity& e)
+{
+    switch (e.kind())
+    {
+    case cppast::cpp_entity_kind::namespace_t:
+    case cppast::cpp_entity_kind::enum_t:
+    case cppast::cpp_entity_kind::enum_value_t:
+    case cppast::cpp_entity_kind::class_t:
+    case cppast::cpp_entity_kind::variable_t:
+    case cppast::cpp_entity_kind::member_variable_t:
+    case cppast::cpp_entity_kind::function_t:
+    case cppast::cpp_entity_kind::member_function_t:
+    case cppast::cpp_entity_kind::constructor_t:
+    case cppast::cpp_entity_kind::destructor_t:
+    // case cppast::cpp_entity_kind::conversion_op_t:
+    {
+        auto name = e.name();
+        if (e.parent().has_value())
+        {
+            auto parentName = GetSymbolName(e.parent().value());
+            if (!parentName.empty())
+                name = parentName + "::" + name;
+        }
+        return name;
+    }
+    default:
+        break;
+    }
+    return "";
 }
 
 std::string Sanitize(const std::string& value)
@@ -143,35 +172,39 @@ std::string EnsureNotKeyword(const std::string& value)
     return value;
 }
 
-std::string ParameterList(const std::vector<const cppast::cpp_function_parameter*>& params,
-                     const std::function<std::string(const cppast::cpp_type&)>& typeToString,
-                     const char* defaultValueNamespaceSeparator)
+std::string ParameterList(const CppParameters& params,
+    const std::function<std::string(const cppast::cpp_type&)>& typeToString, const char* defaultValueNamespaceSeparator)
 {
     std::vector<std::string> parts;
     for (const auto& param : params)
     {
         std::string typeString;
         if (typeToString)
-            typeString = typeToString(param->type());
+            typeString = typeToString(param.type());
         else
-            typeString = cppast::to_string(param->type());
-        typeString += (" " + EnsureNotKeyword(param->name())).c_str();
+            typeString = cppast::to_string(param.type());
+        typeString += (" " + EnsureNotKeyword(param.name())).c_str();
 
-        if (defaultValueNamespaceSeparator != nullptr && param->default_value().has_value())
+        if (defaultValueNamespaceSeparator != nullptr && param.default_value().has_value())
         {
-            std::string value = ToString(param->default_value().value());
+            std::string value = ToString(param.default_value().value());
 
             // TODO: Ugly band-aid for enum values as default parameter values. Get rid of it ASAP!
             if (strcmp(defaultValueNamespaceSeparator, ".") == 0)
             {
+                WeakPtr<MetaEntity> entity;
                 if (value == "nullptr")
                     value = "null";
                 else if (value == "String::EMPTY")
                     value = "\"\"";
                 else if (value == "Variant::EMPTY")
                     value = "";
-                else if (auto* var = dynamic_cast<Variable*>(generator->symbols_.Get("Urho3D::" + value)))
-                    value = var->parent_->symbolName_ + "::" + value;
+                else if (value == "Vector3::UP")
+                    value = "";
+                else if (generator->symbols_.TryGetValue("Urho3D::" + value, entity))
+                    value = entity->symbolName_;
+                else if (generator->enumValues_.TryGetValue(value, entity))
+                    value = entity->symbolName_;
             }
             // ---------------------------------------------------------------------------------------------------------
 
@@ -183,21 +216,21 @@ std::string ParameterList(const std::vector<const cppast::cpp_function_parameter
     return str::join(parts, ", ");
 }
 
-std::string ParameterNameList(const std::vector<const cppast::cpp_function_parameter*>& params,
+std::string ParameterNameList(const CppParameters& params,
     const std::function<std::string(const cppast::cpp_function_parameter&)>& nameFilter)
 {
     std::vector<std::string> parts;
-    for (const auto* param : params)
+    for (const auto& param : params)
     {
-        auto name = EnsureNotKeyword(param->name());
+        auto name = EnsureNotKeyword(param.name());
         if (nameFilter)
-            name = nameFilter(*param);
+            name = nameFilter(param);
         parts.emplace_back(name);
     }
     return str::join(parts, ", ");
 }
 
-std::string ParameterTypeList(const std::vector<const cppast::cpp_function_parameter*>& params,
+std::string ParameterTypeList(const CppParameters& params,
     const std::function<std::string(const cppast::cpp_type&)>& typeToString)
 {
     std::vector<std::string> parts;
@@ -205,9 +238,9 @@ std::string ParameterTypeList(const std::vector<const cppast::cpp_function_param
     {
         std::string typeString;
         if (typeToString)
-            typeString = typeToString(param->type());
+            typeString = typeToString(param.type());
         else
-            typeString = cppast::to_string(param->type());
+            typeString = cppast::to_string(param.type());
         parts.emplace_back(typeString);
     }
     return str::join(parts, ", ");
@@ -221,35 +254,30 @@ std::string GetConversionType(const cppast::cpp_type& type)
         return cppast::to_string(type);
 }
 
-std::string GetTypeName(const cppast::cpp_type& type)
+const cppast::cpp_type& GetBaseType(const cppast::cpp_type& type)
 {
     switch (type.kind())
     {
     case cppast::cpp_type_kind::cv_qualified_t:
-        return GetTypeName(static_cast<const cppast::cpp_cv_qualified_type&>(type).type());
+        return GetBaseType(static_cast<const cppast::cpp_cv_qualified_type&>(type).type());
     case cppast::cpp_type_kind::pointer_t:
-        return GetTypeName(static_cast<const cppast::cpp_pointer_type&>(type).pointee());
+        return GetBaseType(static_cast<const cppast::cpp_pointer_type&>(type).pointee());
     case cppast::cpp_type_kind::reference_t:
-        return GetTypeName(static_cast<const cppast::cpp_reference_type&>(type).referee());
+        return GetBaseType(static_cast<const cppast::cpp_reference_type&>(type).referee());
     default:
-        return cppast::to_string(type);
+        return type;
     }
+}
+
+std::string GetTypeName(const cppast::cpp_type& type)
+{
+    return cppast::to_string(GetBaseType(type));
 }
 
 bool IsEnumType(const cppast::cpp_type& type)
 {
-    if (type.kind() == cppast::cpp_type_kind::user_defined_t)
-    {
-        const auto& entity = static_cast<const cppast::cpp_user_defined_type&>(type).entity();
-        const auto& ref = entity.get(generator->index_);
-        if (!ref.empty())
-        {
-            const auto& definition = ref[0u].get();
-            if (definition.kind() == cppast::cpp_entity_kind::enum_t)
-                return true;
-        }
-    }
-    return false;
+    const auto* entity = GetEntity(type);
+    return entity != nullptr && entity->kind() == cppast::cpp_entity_kind::enum_t;
 }
 
 bool IsComplexValueType(const cppast::cpp_type& type)
@@ -318,6 +346,108 @@ std::string ToString(const cppast::cpp_expression& expression)
         return dynamic_cast<const cppast::cpp_literal_expression&>(expression).value();
     else
         return dynamic_cast<const cppast::cpp_unexposed_expression&>(expression).expression().as_string();
+}
+
+const cppast::cpp_entity* GetEntity(const cppast::cpp_type& type)
+{
+    const auto& realType = GetBaseType(type);
+    if (realType.kind() == cppast::cpp_type_kind::user_defined_t)
+    {
+        const auto& userType = dynamic_cast<const cppast::cpp_user_defined_type&>(realType);
+        const auto& ref = userType.entity().get(generator->index_);
+        if (!ref.empty())
+        {
+            const auto& definition = ref[0].get();
+            if (cppast::is_definition(definition))
+                return &definition;
+        }
+    }
+    return nullptr;
+}
+
+bool HasVirtual(const cppast::cpp_class& cls)
+{
+    for (const auto& e : cls)
+    {
+        if (e.kind() == cppast::cpp_entity_kind::member_function_t)
+        {
+            const auto& func = dynamic_cast<const cppast::cpp_member_function&>(e);
+            if (cppast::is_virtual(func.virtual_info()))
+                return true;
+        }
+    }
+    return false;
+}
+
+bool HasProtected(const cppast::cpp_class& cls)
+{
+    auto* entity = static_cast<MetaEntity*>(cls.user_data());
+    if (entity == nullptr)
+        return false;
+
+    for (auto& child : entity->children_)
+    {
+        if (child->kind_ == cppast::cpp_entity_kind::member_function_t ||
+            child->kind_ == cppast::cpp_entity_kind::member_variable_t)
+        {
+            if (child->access_ == cppast::cpp_access_specifier_kind::cpp_protected)
+                return true;
+        }
+    }
+
+    return false;
+}
+
+bool IsSubclassOf(const cppast::cpp_class& cls, const std::string& symbol)
+{
+    auto* entity = static_cast<MetaEntity*>(cls.user_data());
+    if (entity->uniqueName_ == symbol)
+        return true;
+
+    for (const auto& base : cls.bases())
+    {
+        if (const auto* baseEntity = GetEntity(base.type()))
+        {
+            if (IsSubclassOf(dynamic_cast<const cppast::cpp_class&>(*baseEntity), symbol))
+                return true;
+        }
+    }
+
+    return false;
+}
+
+bool IsConst(const cppast::cpp_type& type)
+{
+    if (type.kind() == cppast::cpp_type_kind::cv_qualified_t)
+        return cppast::is_const(dynamic_cast<const cppast::cpp_cv_qualified_type&>(type).cv_qualifier());
+    return false;
+}
+
+bool IsStatic(const cppast::cpp_entity& entity)
+{
+    switch (entity.kind())
+    {
+    case cppast::cpp_entity_kind::class_t:
+    {
+        for (const auto& child : dynamic_cast<const cppast::cpp_class&>(entity))
+        {
+            if (!IsStatic(child))
+                return false;
+        }
+        return true;
+    }
+    case cppast::cpp_entity_kind::variable_t:
+    case cppast::cpp_entity_kind::function_t:
+    case cppast::cpp_entity_kind::namespace_t:
+        return true;
+    case cppast::cpp_entity_kind::member_variable_t:
+    case cppast::cpp_entity_kind::member_function_t:
+    case cppast::cpp_entity_kind::constructor_t:
+    case cppast::cpp_entity_kind::destructor_t:
+        return false;
+    }
+
+    return true;
 }
 
 }

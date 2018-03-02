@@ -23,6 +23,7 @@
 #pragma once
 
 
+#include <fmt/format.h>
 #include <Urho3D/Core/Object.h>
 #include "Pass/CppPass.h"
 #include "Printer/CSharpPrinter.h"
@@ -38,7 +39,7 @@ public:
     explicit GenerateClassWrappers(Context* context) : CppApiPass(context) { };
 
     void Start() override;
-    bool Visit(Declaration* decl, Event event) override;
+    bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
     void Stop() override;
 
 protected:

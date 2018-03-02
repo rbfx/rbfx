@@ -34,12 +34,12 @@ namespace Urho3D
 /// Walk AST and gather known defined classes. Exclude protected/private members from generation.
 class GenerateCApiPass : public CppApiPass
 {
-    URHO3D_OBJECT(GenerateCApiPass, CppAstPass);
+    URHO3D_OBJECT(GenerateCApiPass, CppApiPass);
 public:
     explicit GenerateCApiPass(Context* context) : CppApiPass(context) { };
 
     void Start() override;
-    bool Visit(Declaration* decl, Event event) override;
+    bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
     void Stop() override;
 
 protected:

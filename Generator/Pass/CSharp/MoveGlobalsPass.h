@@ -24,6 +24,7 @@
 
 
 #include <Urho3D/Core/Object.h>
+#include <fmt/format.h>
 #include "Pass/CppPass.h"
 #include "Printer/CSharpPrinter.h"
 
@@ -37,7 +38,7 @@ class MoveGlobalsPass : public CppApiPass
 public:
     explicit MoveGlobalsPass(Context* context) : CppApiPass(context) { };
 
-    bool Visit(Declaration* decl, Event event) override;
+    bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
 
 protected:
     std::string GetFileName(const cppast::cpp_entity& entity);

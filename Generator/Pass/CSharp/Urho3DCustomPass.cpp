@@ -20,9 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "Declarations/Variable.hpp"
 #include "GeneratorContext.h"
-#include "Declarations/Enum.hpp"
 #include "Urho3DCustomPass.h"
 
 
@@ -31,91 +29,85 @@ namespace Urho3D
 
 void Urho3DCustomPass::Start()
 {
+    // C# does not understand octal escape sequences
+    WeakPtr<MetaEntity> entity;
+    if (generator->symbols_.TryGetValue("SDLK_DELETE", entity))
+        entity->defaultValue_ = "127";
+
+    if (generator->symbols_.TryGetValue("SDLK_ESCAPE", entity))
+        entity->defaultValue_ = "27";
+
     // Translate to c# expression, original is "sizeof(void*) * 4" which requires unsafe context.
-    if (auto* var = dynamic_cast<Variable*>(generator->symbols_.Get("Urho3D::VARIANT_VALUE_SIZE")))
+    if (generator->symbols_.TryGetValue("Urho3D::VARIANT_VALUE_SIZE", entity))
     {
-        var->defaultValue_ = "(uint)(IntPtr.Size * 4)";
-        var->isConstant_ = false;
-        var->isReadOnly_ = true;
+        entity->defaultValue_ = "(uint)(IntPtr.Size * 4)";
+        entity->flags_ = HintReadOnly;
     }
 
-    // C# does not understand octal escape sequences
-    if (auto* var = dynamic_cast<Variable*>(generator->symbols_.Get("SDLK_DELETE")))
-        var->defaultValue_ = "127";
+    if (generator->symbols_.TryGetValue("Urho3D::M_INFINITY", entity))
+        entity->defaultValue_ = "float.PositiveInfinity";
 
-    if (auto* var = dynamic_cast<Variable*>(generator->symbols_.Get("SDLK_ESCAPE")))
-        var->defaultValue_ = "27";
+    if (generator->symbols_.TryGetValue("Urho3D::M_MIN_INT", entity))
+        entity->defaultValue_ = "int.MinValue";
 
-    if (auto* var = dynamic_cast<Variable*>(generator->symbols_.Get("Urho3D::M_INFINITY")))
-        var->defaultValue_ = "float.PositiveInfinity";
-
-    if (auto* var = dynamic_cast<Variable*>(generator->symbols_.Get("Urho3D::M_MIN_INT")))
-        var->defaultValue_ = "int.MinValue";
-
-    if (auto* var = dynamic_cast<Variable*>(generator->symbols_.Get("Urho3D::M_MAX_INT")))
-        var->defaultValue_ = "int.MaxValue";
+    if (generator->symbols_.TryGetValue("Urho3D::M_MAX_INT", entity))
+        entity->defaultValue_ = "int.MaxValue";
 }
 
-bool Urho3DCustomPass::Visit(Declaration* decl, Event event)
+bool Urho3DCustomPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
-    if (decl->kind_ == Declaration::Kind::Enum)
+    if (entity->kind_ == cppast::cpp_entity_kind::enum_t && entity->name_.empty())
     {
-        Enum* ns = dynamic_cast<Enum*>(decl);
-        if (ns->name_.find("anonymous_") == 0)
+        if (entity->children_.empty())
         {
-            if (ns->children_.Empty())
-            {
-                ns->Ignore();
-                return true;
-            }
-
-            // Give initial value to first element if there isn't any. This will keep correct enum values when they are
-            // merged into mega-enum.
-            Variable* firstVar = dynamic_cast<Variable*>(ns->children_[0].Get());
-            if (firstVar->defaultValue_.Empty())
-                firstVar->defaultValue_ = "0";
-
-            std::string targetEnum;
-            if (firstVar->name_.find("SDL") == 0)
-                targetEnum = "SDL";
-            else
-            {
-                URHO3D_LOGWARNINGF("No idea where to put %s and it's siblings.", firstVar->name_);
-                ns->Ignore();
-                return false;
-            }
-
-            // Sort out anonymous SDL enums
-            Enum* toEnum = dynamic_cast<Enum*>(generator->symbols_.Get(targetEnum));
-            if (toEnum == nullptr)
-            {
-                toEnum = new Enum(nullptr);
-                toEnum->name_ = toEnum->symbolName_ = targetEnum;
-                toEnum->sourceName_ = "::";
-                ns->parent_->Add(toEnum);
-                generator->symbols_.Add(targetEnum, toEnum);
-            }
-
-            auto children = ns->children_;
-            for (auto& child : children)
-                toEnum->Add(child);
-            ns->Ignore();
+            entity->Remove();
+            return true;
         }
+
+        // Give initial value to first element if there isn't any. This will keep correct enum values when they are
+        // merged into mega-enum.
+        MetaEntity* firstVar = entity->children_[0].Get();
+        if (firstVar->GetDefaultValue().empty())
+            firstVar->defaultValue_ = "0";
+
+        std::string targetEnum;
+        if (firstVar->name_.find("SDL") == 0)
+            targetEnum = "SDL";
+        else
+        {
+            URHO3D_LOGWARNINGF("No idea where to put %s and it's siblings.", firstVar->name_.c_str());
+            entity->Remove();
+            return false;
+        }
+
+        // Sort out anonymous SDL enums
+        WeakPtr<MetaEntity> toEnum;
+        if (!generator->symbols_.TryGetValue(targetEnum, toEnum))
+        {
+            toEnum = new MetaEntity();
+            toEnum->name_ = toEnum->uniqueName_ = toEnum->symbolName_ = targetEnum;
+            toEnum->kind_ = cppast::cpp_entity_kind::enum_t;
+            entity->parent_->Add(toEnum);
+            generator->symbols_[targetEnum] = toEnum;
+        }
+
+        auto children = entity->children_;
+        for (const auto& child : children)
+            toEnum->Add(child);
+
+        // No longer needed
+        entity->Remove();
     }
-    else if (decl->name_.find("anonymous_") == 0)
-        decl->Ignore();
-    else if (decl->kind_ == Declaration::Kind::Variable)
+    else if (entity->kind_ == cppast::cpp_entity_kind::enum_value_t ||
+        entity->kind_ == cppast::cpp_entity_kind::variable_t)
     {
-        if (decl->isConstant_ && decl->isStatic_)
-        {
-            Variable* var = dynamic_cast<Variable*>(decl);
-            // Global Urho3D constants use anonymous SDL enums, update expressions to point to the named enums
-            if (var->defaultValue_.StartsWith("SDL"))
-                var->defaultValue_ = "(int)SDL." + var->defaultValue_;
-        }
+        // Global Urho3D constants use anonymous SDL enums, update expressions to point to the named enums
+        auto defaultValue = entity->GetDefaultValue();
+        if (defaultValue.find("SDL") == 0)
+            entity->defaultValue_ = "(int)SDL." + defaultValue;
     }
-    else if (decl->name_.find("SDL_") == 0 && event != Event::ENTER)
-        decl->Ignore();
+    else if (entity->name_.find("SDL_") == 0)   // Get rid of anything else belonging to sdl
+        entity->Remove();
     return true;
 }
 

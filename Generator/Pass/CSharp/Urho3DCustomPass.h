@@ -23,6 +23,7 @@
 #pragma once
 
 
+#include <unordered_map>
 #include <Urho3D/Core/Object.h>
 #include "Pass/CppPass.h"
 #include "Printer/CSharpPrinter.h"
@@ -36,9 +37,8 @@ class Urho3DCustomPass : public CppApiPass
     URHO3D_OBJECT(Urho3DCustomPass, CppApiPass);
 public:
     explicit Urho3DCustomPass(Context* context) : CppApiPass(context) { };
-
     void Start() override;
-    bool Visit(Declaration* decl, Event event) override;
+    bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
 };
 
 }

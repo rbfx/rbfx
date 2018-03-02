@@ -37,13 +37,11 @@ public:
     explicit GeneratePInvokePass(Context* context) : CppApiPass(context) { };
 
     void Start() override;
-    bool Visit(Declaration* decl, Event event) override;
+    bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
     void Stop() override;
 
 protected:
     CSharpPrinter printer_;
-    WeakPtr<GeneratorContext> generator_;
-    TypeMapper* typeMapper_ = nullptr;
 };
 
 }

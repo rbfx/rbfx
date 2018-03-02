@@ -23,7 +23,9 @@
 #pragma once
 
 
-#include <map>
+#include <Urho3D/Math/MathDefs.h>
+#include <Urho3D/Container/Hash.h>
+#include <string>
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/IO/Log.h>
 #include <cppast/cpp_entity.hpp>
@@ -36,47 +38,23 @@
 namespace Urho3D
 {
 
-/// Maps symbol names to their api declarations
-class SymbolTracker
+/// C string hash function.
+template <> inline unsigned MakeHash(const char* value)
 {
-public:
-    bool Has(const String& symbol)
+    unsigned hash = 0;
+    while (*value)
     {
-        return Get(symbol) != nullptr;
+        hash = SDBMHash(hash, static_cast<unsigned char>(*value));
+        ++value;
     }
+    return hash;
+}
 
-    bool Has(const cppast::cpp_type& type)
-    {
-        return Has(GetTypeName(type));
-    }
-
-    void Add(const String& symbol, Declaration* decl)
-    {
-        URHO3D_LOGTRACEF("Known symbol: %s", symbol.CString());
-        nameToDeclaration_[symbol] = decl;
-    }
-
-    void Remove(const String& symbol)
-    {
-        nameToDeclaration_.Erase(symbol);
-    }
-
-    Declaration* Get(const String& symbol)
-    {
-        auto it = nameToDeclaration_.Find(symbol);
-        if (it == nameToDeclaration_.End())
-            return nullptr;
-        if (it->second_.Expired())
-        {
-            nameToDeclaration_.Erase(it);
-            return nullptr;
-        }
-        return it->second_;
-    }
-
-protected:
-    HashMap<String, WeakPtr<Declaration>> nameToDeclaration_;
-};
+/// std::String hash function.
+template <> inline unsigned MakeHash(const std::string& value)
+{
+    return MakeHash(value.c_str());
+}
 
 class GeneratorContext
     : public Object
@@ -105,9 +83,12 @@ public:
     Vector<SharedPtr<CppAstPass>> cppPasses_;
     Vector<SharedPtr<CppApiPass>> apiPasses_;
     TypeMapper typeMapper_;
-    SharedPtr<Declaration> apiRoot_;
-    SymbolTracker symbols_;
+    SharedPtr<MetaEntity> apiRoot_;
     cppast::cpp_entity_index index_;
+    std::string defaultNamespace_ = "Urho3D";
+    HashMap<std::string, WeakPtr<MetaEntity>> symbols_;
+    Vector<std::string> final_;
+    HashMap<std::string, WeakPtr<MetaEntity>> enumValues_;
 };
 
 extern GeneratorContext* generator;

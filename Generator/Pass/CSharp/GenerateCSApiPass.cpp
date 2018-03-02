@@ -23,8 +23,7 @@
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
-#include <Declarations/Class.hpp>
-#include <Declarations/Variable.hpp>
+#include <cppast/cpp_namespace.hpp>
 #include "GeneratorContext.h"
 #include "GenerateCSApiPass.h"
 
@@ -33,70 +32,118 @@ namespace Urho3D
 
 void GenerateCSApiPass::Start()
 {
-    generator_ = GetSubsystem<GeneratorContext>();
-    typeMapper_ = &generator_->typeMapper_;
-
     printer_ << "using System;";
     printer_ << "using CSharp;";
     printer_ << "";
-    printer_ << "namespace Urho3D";
-    printer_ << "{";
-    printer_ << "";
 }
 
-bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
+bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
     auto mapToPInvoke = [&](const cppast::cpp_function_parameter& param) {
-        return typeMapper_->MapToPInvoke(param.type(), EnsureNotKeyword(param.name()));
+        return generator->typeMapper_.MapToPInvoke(param.type(), EnsureNotKeyword(param.name()));
     };
 
-    if (decl->kind_ == Declaration::Kind::Class)
+    if (entity->kind_ == cppast::cpp_entity_kind::namespace_t)
     {
-        Class* cls = dynamic_cast<Class*>(decl);
-        if (event == Event::ENTER)
+        if (entity->children_.empty())
+            return false;
+
+        if (info.event == info.container_entity_enter)
         {
-            if (cls->isStatic_)
-            {
-                // A class will not have any methods. This is likely a dummy class for constant storage or something
-                // similar.
-                printer_ << fmt("public static partial class {{name}}", {{"name", cls->name_}});
-                printer_.Indent();
-                return true;
-            }
-
-            Vector<String> bases;
-            for (const auto& base : cls->bases_)
-                bases.Push(base->name_);
-
-            auto vars = fmt({
-                {"name", cls->name_},
-                {"bases", String::Joined(bases, ", ").CString()},
-                {"has_bases", !cls->bases_.Empty()},
-            });
-
-            printer_ << fmt("public partial class {{name}} : {{#has_bases}}{{bases}}, {{/has_bases}}IDisposable", vars);
+            printer_ << fmt("namespace {{name}}", {{"name", entity->name_}});
             printer_.Indent();
         }
-        else if (event == Event::EXIT)
+        else if (info.event == info.container_entity_exit)
+        {
+            printer_.Dedent();
+            printer_ << "";
+        }
+        return true;
+    }
+    else if (entity->kind_ == cppast::cpp_entity_kind::class_t)
+    {
+        if (info.event == info.container_entity_enter)
+        {
+            bool isStatic = false;
+            std::vector<std::string> bases;
+            if (entity->ast_ != nullptr)
+                isStatic = IsStatic(*entity->ast_);
+            else
+                isStatic = true;
+
+            if (!isStatic && entity->ast_->kind() == cppast::cpp_entity_kind::class_t)
+            {
+                const auto& cls = entity->Ast<cppast::cpp_class>();
+                // Not necessary here, but makes it convenient allowing to not handle case where no bases exist.
+                for (const auto& base : cls.bases())
+                {
+                    if (const auto* baseClass = GetEntity(base.type()))
+                        bases.emplace_back(base.name());
+                    else
+                        URHO3D_LOGWARNINGF("Unknown base class: %s", cppast::to_string(base.type()).c_str());
+                }
+                bases.emplace_back("IDisposable");
+            }
+
+            auto vars = fmt({
+                {"name", entity->name_},
+                {"bases", str::join(bases, ", ")},
+            });
+
+            if (isStatic)
+                printer_ << fmt("public static partial class {{name}}", vars);
+            else
+                printer_ << fmt("public partial class {{name}} : {{bases}}", vars);
+
+            printer_.Indent();
+        }
+        else if (info.event == info.container_entity_exit)
         {
             printer_.Dedent();
             printer_ << "";
         }
     }
-    else if (decl->kind_ == Declaration::Kind::Constructor)
+    else if (entity->kind_ == cppast::cpp_entity_kind::enum_t)
     {
-        Function* ctor = dynamic_cast<Function*>(decl);
-        Class* cls = dynamic_cast<Class*>(decl->parent_.Get());
+        if (info.event == info.container_entity_enter)
+        {
+            printer_ << "public enum " + entity->name_;
+            printer_.Indent();
+        }
+        else if (info.event == info.container_entity_exit)
+        {
+            printer_.Dedent();
+            printer_ << "";
+        }
+    }
+
+    if (info.event == info.container_entity_exit)
+        return true;
+
+    if (entity->kind_ == cppast::cpp_entity_kind::constructor_t)
+    {
+        const auto& ctor = entity->Ast<cppast::cpp_constructor>();
+        MetaEntity* cls = entity->parent_.Get();
+
+        bool hasBase = false;
+        for (const auto& base : cls->Ast<cppast::cpp_class>().bases())
+        {
+            if (const auto* baseClass = GetEntity(base.type()))
+            {
+                hasBase = true;
+                break;
+            }
+        }
 
         auto vars = fmt({
             {"class_name", cls->name_},
-            {"parameter_list", ParameterList(ctor->parameters_,
-                std::bind(&TypeMapper::ToCSType, typeMapper_, std::placeholders::_1), ".")},
+            {"parameter_list", ParameterList(ctor.parameters(),
+                std::bind(&TypeMapper::ToCSType, &generator->typeMapper_, std::placeholders::_1), ".")},
             {"symbol_name", Sanitize(cls->symbolName_)},
-            {"param_name_list", ParameterNameList(ctor->parameters_, mapToPInvoke)},
-            {"has_base", !cls->bases_.Empty()},
-            {"c_function_name", decl->cFunctionName_},
-            {"access", decl->isPublic_ ? "public" : "protected"}
+            {"param_name_list", ParameterNameList(ctor.parameters(), mapToPInvoke)},
+            {"has_base", hasBase},
+            {"c_function_name", entity->cFunctionName_},
+            {"access", entity->access_ == cppast::cpp_public ? "public" : "protected"}
         });
 
         // If class has a base class we call base constructor that does nothing. Class will be fully constructed here.
@@ -108,28 +155,28 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
 
             for (const auto& child : cls->children_)
             {
-                if (child->kind_ == Declaration::Kind::Method)
+                if (child->kind_ == cppast::cpp_entity_kind::member_function_t)
                 {
-                    const auto& func = dynamic_cast<Function*>(child.Get());
-                    if (func->IsVirtual())
+                    const auto& func = child->Ast<cppast::cpp_member_function>();
+                    if (func.is_virtual())
                     {
                         auto vars = fmt({
                             {"class_name", cls->name_},
-                            {"name", func->name_},
-                            {"has_params", !func->parameters_.empty()},
-                            {"param_name_list", ParameterNameList(func->parameters_, [&](const cppast::cpp_function_parameter& param) {
+                            {"name", child->name_},
+                            {"has_params", !func.parameters().empty()},
+                            {"param_name_list", ParameterNameList(func.parameters(), [&](const cppast::cpp_function_parameter& param) {
                                 // Avoid possible parameter name collision in enclosing scope.
                                 return param.name() + "_";
                             })},
-                            {"cs_param_name_list", ParameterNameList(func->parameters_, [&](const cppast::cpp_function_parameter& param) {
-                                return typeMapper_->MapToCS(param.type(), param.name() + "_");
+                            {"cs_param_name_list", ParameterNameList(func.parameters(), [&](const cppast::cpp_function_parameter& param) {
+                                return generator->typeMapper_.MapToCS(param.type(), param.name() + "_");
                             })},
-                            {"cs_param_type_list", ParameterTypeList(func->parameters_, [&](const cppast::cpp_type& type) {
-                                return ToString("typeof(%s)", generator->typeMapper_.ToCSType(type)).CString();
+                            {"cs_param_type_list", ParameterTypeList(func.parameters(), [&](const cppast::cpp_type& type) -> std::string {
+                                return fmt("typeof({{type}})", {{"type", generator->typeMapper_.ToCSType(type)}});
                             })},
-                            {"return", !IsVoid(func->returnType_) ? "return " : ""},
+                            {"return", !IsVoid(func.return_type()) ? "return " : ""},
                             {"source_class_name", Sanitize(cls->sourceName_)},
-                            {"c_function_name", func->cFunctionName_},
+                            {"c_function_name", child->cFunctionName_},
                         });
                         // Optimization: do not route c++ virtual method calls through .NET if user does not override
                         // such method in a managed class.
@@ -153,10 +200,9 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
         printer_ << "";
 
         // Implicit constructors with one parameter get conversion operators generated for them.
-        if (ctor->source_ != nullptr && ctor->parameters_.size() == 1)
+        if (Count(ctor.parameters()) == 1)
         {
-            const auto* astCtor = (const cppast::cpp_constructor*) ctor->source_;
-            if (!astCtor->is_explicit() && Urho3D::GetTypeName(ctor->parameters_[0]->type()) != cls->symbolName_)
+            if (!ctor.is_explicit() && Urho3D::GetTypeName((*ctor.parameters().begin()).type()) != cls->symbolName_)
             {
                 printer_ << fmt("public static implicit operator {{class_name}}({{parameter_list}})", vars);
                 printer_.Indent();
@@ -168,65 +214,55 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
             }
         }
     }
-    else if (decl->kind_ == Declaration::Kind::Method)
+    else if (entity->kind_ == cppast::cpp_entity_kind::member_function_t)
     {
-        Function* func = dynamic_cast<Function*>(decl);
+        const auto& func = entity->Ast<cppast::cpp_member_function>();
 
         auto vars = fmt({
-            {"name", func->name_},
-            {"return_type", typeMapper_->ToCSType(*func->returnType_)},
-            {"parameter_list", ParameterList(func->parameters_,
-                std::bind(&TypeMapper::ToCSType, typeMapper_, std::placeholders::_1), ".")},
-            {"c_function_name", func->cFunctionName_},
-            {"param_name_list", ParameterNameList(func->parameters_, mapToPInvoke)},
-            {"has_params", !func->parameters_.empty()},
-            {"virtual", func->IsVirtual() ? "virtual " : ""},
-            {"access", decl->isPublic_ ? "public" : "protected"}
+            {"name", entity->name_},
+            {"return_type", generator->typeMapper_.ToCSType(func.return_type())},
+            {"parameter_list", ParameterList(func.parameters(),
+                std::bind(&TypeMapper::ToCSType, &generator->typeMapper_, std::placeholders::_1), ".")},
+            {"c_function_name", entity->cFunctionName_},
+            {"param_name_list", ParameterNameList(func.parameters(), mapToPInvoke)},
+            {"has_params", !func.parameters().empty()},
+            {"virtual", func.is_virtual() ? "virtual " : ""},
+            {"access", entity->access_ == cppast::cpp_public ? "public" : "protected"}
         });
         printer_ << fmt("{{access}} {{virtual}}{{return_type}} {{name}}({{parameter_list}})", vars);
         printer_.Indent();
         {
             std::string call = fmt("{{c_function_name}}(instance_{{#has_params}}, {{/has_params}}{{param_name_list}})", vars);
-            if (IsVoid(func->returnType_))
+            if (IsVoid(func.return_type()))
                 printer_ << call + ";";
             else
-                printer_ << "return " + typeMapper_->MapToCS(*func->returnType_, call) + ";";
+                printer_ << "return " + generator->typeMapper_.MapToCS(func.return_type(), call) + ";";
         }
         printer_.Dedent();
         printer_ << "";
     }
-    else if (decl->kind_ == Declaration::Kind::Variable)
+    else if (entity->kind_ == cppast::cpp_entity_kind::variable_t)
     {
-        Variable* var = dynamic_cast<Variable*>(decl);
-        Namespace* ns = dynamic_cast<Namespace*>(var->parent_.Get());
+        const auto& var = entity->Ast<cppast::cpp_variable>();
+        auto* ns = entity->parent_.Get();
 
-        bool isConstant = decl->isConstant_ && !decl->isReadOnly_ && !var->defaultValue_.Empty();
-        bool isStatic = decl->isStatic_;
-        if (isConstant)     // const implies static in c#
-            isStatic = false;
+        auto defaultValue = ExpandDefaultValue(ns->name_, entity->GetDefaultValue());
+        bool isConstant = IsConst(var.type()) && !(entity->flags_ & HintReadOnly) && !defaultValue.empty();
 
         auto vars = fmt({
-            {"cs_type", typeMapper_->ToCSType(var->GetType())},
-            {"name", var->name_},
+            {"cs_type", generator->typeMapper_.ToCSType(var.type())},
+            {"name", entity->name_},
             {"ns_symbol", Sanitize(ns->symbolName_)},
-            {"access", decl->isPublic_ ? "public " : "protected "},
-            {"static", isStatic ? "static " : ""},
-            {"const", isConstant ? "const " : ""},
-            {"readonly", decl->isReadOnly_ ? "readonly " : ""},
-            {"not_static", !decl->isStatic_},
-            {"not_enum", ns->kind_ != Declaration::Kind::Enum}
+            {"access", entity->access_ == cppast::cpp_public ? "public" : "protected"},
+            {"const", entity->flags_ & HintReadOnly ? "readonly" :
+                                         isConstant ? "const"    : "static"
+            },
         });
 
-        String line = fmt("{{#not_enum}}{{access}}{{static}}{{const}}{{readonly}}{{cs_type}} {{/not_enum}}{{name}}", vars);
-        if ((!var->defaultValue_.Empty() || ns->kind_ == Declaration::Kind::Enum) && (var->isConstant_ || var->isReadOnly_))
+        auto line = fmt("{{access}} {{const}} {{cs_type}} {{name}}", vars);
+        if (isConstant || entity->flags_ & HintReadOnly)
         {
-            // A constant value
-            if (!var->defaultValue_.Empty())
-                line += " = " + var->defaultValue_;
-            if (ns->kind_ == Declaration::Kind::Enum)
-                line += ",";
-            else
-                line += ";";
+            line += " = " + defaultValue + ";";
             printer_ << line;
         }
         else
@@ -236,31 +272,66 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
             printer_.Indent();
             {
                 // Getter
-                String call = typeMapper_->MapToCS(var->GetType(), fmt("get_{{ns_symbol}}_{{name}}({{#not_static}}instance_{{/not_static}})",
-                                                                       vars));
+                String call = generator->typeMapper_.MapToCS(var.type(), fmt("get_{{ns_symbol}}_{{name}}()", vars));
                 printer_ << fmt("get { return {{call}}; }", {{"call", call.CString()}});
                 // Setter
-                if (!var->isConstant_ && !decl->isReadOnly_)
+                if (!IsConst(var.type()) && !(entity->flags_ & HintReadOnly))
                 {
-                    vars.set("value", typeMapper_->MapToPInvoke(var->GetType(), "value"));
-                    printer_ << fmt("set { set_{{ns_symbol}}_{{name}}({{#not_static}}instance_, {{/not_static}}{{value}}); }", vars);
+                    vars.set("value", generator->typeMapper_.MapToPInvoke(var.type(), "value"));
+                    printer_ << fmt("set { set_{{ns_symbol}}_{{name}}({{value}}); }", vars);
                 }
             }
             printer_.Dedent();
         }
     }
-    else if (decl->kind_ == Declaration::Kind::Enum)
+    else if (entity->kind_ == cppast::cpp_entity_kind::member_variable_t)
     {
-        if (event == Event::ENTER)
+        const auto& var = entity->Ast<cppast::cpp_member_variable>();
+        auto* ns = entity->parent_.Get();
+
+        auto defaultValue = ExpandDefaultValue(ns->parent_->name_, entity->GetDefaultValue());
+        bool isConstant = IsConst(var.type()) && !(entity->flags_ & HintReadOnly) && !defaultValue.empty();
+
+        auto vars = fmt({
+            {"cs_type", generator->typeMapper_.ToCSType(var.type())},
+            {"name", entity->name_},
+            {"ns_symbol", Sanitize(ns->symbolName_)},
+            {"access", entity->access_ == cppast::cpp_public? "public " : "protected "},
+            {"const", entity->flags_ & HintReadOnly ? "readonly " :
+                                         isConstant ? "const "    : " "
+            },
+        });
+
+        auto line = fmt("{{access}}{{const}}{{cs_type}} {{name}}", vars);
+        if (isConstant)
+            line += " = " + defaultValue + ";";
+        else
         {
-            printer_ << "public enum " + decl->name_;
+            // A property with getters and setters
+            printer_ << line;
             printer_.Indent();
-        }
-        else if (event == Event::EXIT)
-        {
+            {
+                // Getter
+                String call = generator->typeMapper_.MapToCS(var.type(), fmt("get_{{ns_symbol}}_{{name}}(instance_)",
+                    vars));
+                printer_ << fmt("get { return {{call}}; }", {{"call", call.CString()}});
+                // Setter
+                if (!IsConst(var.type()) && !(entity->flags_ & HintReadOnly))
+                {
+                    vars.set("value", generator->typeMapper_.MapToPInvoke(var.type(), "value"));
+                    printer_ << fmt("set { set_{{ns_symbol}}_{{name}}(instance_, {{value}}); }", vars);
+                }
+            }
             printer_.Dedent();
-            printer_ << "";
         }
+    }
+    else if (entity->kind_ == cppast::cpp_entity_kind::enum_value_t)
+    {
+        auto line = entity->name_;
+        auto defaultValue = entity->GetDefaultValue();
+        if (!defaultValue.empty())
+            line += " = " + defaultValue;
+        printer_ << line + ",";
     }
 
     return true;
@@ -268,8 +339,6 @@ bool GenerateCSApiPass::Visit(Declaration* decl, Event event)
 
 void GenerateCSApiPass::Stop()
 {
-    printer_ << "}";    // namespace Urho3D
-
     auto* generator = GetSubsystem<GeneratorContext>();
     String outputFile = generator->outputDirCs_ + "Urho3D.cs";
     File file(context_, outputFile, FILE_WRITE);
@@ -280,6 +349,20 @@ void GenerateCSApiPass::Stop()
     }
     file.WriteLine(printer_.Get());
     file.Close();
+}
+
+std::string GenerateCSApiPass::ExpandDefaultValue(const std::string& currentNamespace, const std::string& value)
+{
+    WeakPtr<MetaEntity> entity;
+    if (generator->symbols_.Contains(value))
+        return value;
+    if (!currentNamespace.empty())
+    {
+        std::string fullName = currentNamespace + "::" + value;
+        if (generator->symbols_.Contains(fullName))
+            return str::replace_str(fullName, "::", ".");
+    }
+    return value;
 }
 
 }

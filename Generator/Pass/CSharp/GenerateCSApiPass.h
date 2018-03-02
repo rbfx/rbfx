@@ -37,13 +37,13 @@ public:
     explicit GenerateCSApiPass(Context* context) : CppApiPass(context) { };
 
     void Start() override;
-    bool Visit(Declaration* decl, Event event) override;
+    bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
     void Stop() override;
 
 protected:
+    std::string ExpandDefaultValue(const std::string& currentNamespace, const std::string& value);
+
     CSharpPrinter printer_;
-    WeakPtr<GeneratorContext> generator_;
-    TypeMapper* typeMapper_ = nullptr;
 };
 
 }

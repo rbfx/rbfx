@@ -21,47 +21,66 @@
 //
 
 #include <Urho3D/IO/FileSystem.h>
-#include <Declarations/Variable.hpp>
-#include <GeneratorContext.h>
-#include <Declarations/Class.hpp>
+#include <cppast/cpp_variable.hpp>
+#include <cppast/cpp_namespace.hpp>
+#include "GeneratorContext.h"
 #include "MoveGlobalsPass.h"
 
 
 namespace Urho3D
 {
 
-bool MoveGlobalsPass::Visit(Declaration* decl, Event event)
+bool MoveGlobalsPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
-    if (event == Event::EXIT)
+    if (info.event == info.container_entity_exit)
         return true;
 
-    if (decl->kind_ == Declaration::Kind::Variable)
+    if (entity->kind_ == cppast::cpp_entity_kind::namespace_t)
     {
-        Variable* var = dynamic_cast<Variable*>(decl);
-        Namespace* ns = dynamic_cast<Namespace*>(var->parent_.Get());
-        if (var->isStatic_ && ns->kind_ == Declaration::Kind::Namespace)
+        // Convert non-top-level namespaces to classes if they have any functions or variables.
+        if (!entity->parent_->name_.empty())
         {
-            GeneratorContext* generator = GetSubsystem<GeneratorContext>();
-            std::string className = ns->name_;
-            std::string classSymbol = ns->symbolName_ + "::" + className;
-
-            if (ns->symbolName_ == className && decl->source_ != nullptr)
+            const auto& ns = entity->Ast<cppast::cpp_namespace>();
+            for (const auto& child : ns)
             {
-                className = GetFileName(*decl->source_);
-                classSymbol = ns->symbolName_ + "::" + className;
+                if (child.kind() == cppast::cpp_entity_kind::function_t ||
+                    child.kind() == cppast::cpp_entity_kind::variable_t)
+                {
+                    entity->kind_ = cppast::cpp_entity_kind::class_t;
+                    return true;
+                }
             }
+        }
+    }
+    else if (entity->kind_ == cppast::cpp_entity_kind::variable_t)
+    {
+        const auto& var = entity->Ast<cppast::cpp_variable>();
+        auto& ns = *entity->parent_;
+        if (ns.kind_ != cppast::cpp_entity_kind::class_t)
+        {
+            std::string className = ns.name_;
+            std::string classSymbol = ns.uniqueName_ + "::" + className;
 
-            SharedPtr<Class> toClass(reinterpret_cast<Class*>(generator->symbols_.Get(classSymbol)));
-            if (toClass == nullptr)
+            if (ns.uniqueName_ == className && entity->ast_ != nullptr)
             {
-                toClass = SharedPtr<Class>(new Class(nullptr));
-                toClass->name_ = className;
-                toClass->sourceName_ = ns->sourceName_;
-                toClass->symbolName_ = classSymbol;
-                ns->Add(toClass);
-                generator->symbols_.Add(classSymbol, toClass.Get());
+                className = GetFileName(*entity->ast_);
+                classSymbol = ns.uniqueName_ + "::" + className;
+
+                WeakPtr<MetaEntity> toClass;
+                if (!generator->symbols_.TryGetValue(classSymbol, toClass) || toClass.Expired())
+                {
+                    toClass = new MetaEntity();
+                    toClass->name_ = className;
+                    toClass->sourceName_ = ns.sourceName_;
+                    toClass->uniqueName_ = toClass->symbolName_ = classSymbol;
+                    toClass->kind_ = cppast::cpp_entity_kind::class_t;
+                    ns.Add(toClass);
+                    generator->symbols_[classSymbol] = toClass;
+                }
+
+                entity->symbolName_ = toClass->uniqueName_ + "::" + entity->name_;
+                toClass->Add(entity);
             }
-            toClass->Add(var);
         }
     }
 

@@ -24,8 +24,6 @@
 #include <Urho3D/IO/Log.h>
 #include "GenerateClassWrappers.h"
 #include "GeneratorContext.h"
-#include "Declarations/Class.hpp"
-#include "Declarations/Variable.hpp"
 
 
 namespace Urho3D
@@ -40,62 +38,68 @@ void GenerateClassWrappers::Start()
     printer_ << "{";
 }
 
-bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
+bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
-    if (decl->kind_ != Declaration::Kind::Class)
+    if (entity->ast_ == nullptr)
         return true;
 
-    Class* cls = static_cast<Class*>(decl);
-    if (!cls->HasVirtual() && !cls->HasProtected())
-    {
-        // Skip children for classes that do not have virtual or protected members
-        return event != Event::ENTER;
-    }
+    if (entity->ast_->kind() != cppast::cpp_entity_kind::class_t)
+        return true;
 
     // Visit only once
-    if (event != Event::ENTER)
+    if (info.event == info.container_entity_exit)
         return true;
 
-    auto* generator = GetSubsystem<GeneratorContext>();
+    // Class is not supposed to be inherited
+    if (generator->final_.Contains(entity->uniqueName_))
+        return true;
+
+    const auto& cls = entity->Ast<cppast::cpp_class>();
+    if (!HasVirtual(cls) && !HasProtected(cls))
+    {
+        // Skip children for classes that do not have virtual or protected members
+        return info.event != info.container_entity_enter;
+    }
+
     printer_ << fmt("class URHO3D_EXPORT_API {{name}} : public {{symbol}}", {
-        {"name", cls->name_},
-        {"symbol", cls->symbolName_},
+        {"name", entity->name_},
+        {"symbol", entity->uniqueName_},
     });
     printer_.Indent();
 
     // Urho3D-specific
-    if (cls->IsSubclassOf("Urho3D::Object"))
+    if (IsSubclassOf(cls, "Urho3D::Object"))
     {
-        printer_ << fmt("URHO3D_OBJECT({{name}}, {{symbol_name}});", {{"name",        cls->name_},
-                                                                      {"symbol_name", cls->symbolName_}});
+        printer_ << fmt("URHO3D_OBJECT({{name}}, {{symbol_name}});", {{"name",        entity->name_},
+                                                                      {"symbol_name", entity->uniqueName_}});
     }
 
     printer_.WriteLine("public:", false);
     // Wrap constructors
-    for (const auto& e : cls->children_)
+    for (const auto& e : entity->children_)
     {
-        if (e->kind_ == Declaration::Kind::Constructor)
+        if (e->kind_ == cppast::cpp_entity_kind::constructor_t)
         {
-            const auto* ctor = dynamic_cast<const Function*>(e.Get());
+            const auto& ctor = e->Ast<cppast::cpp_constructor>();
             printer_ << fmt("{{name}}({{parameter_list}}) : {{symbol_name}}({{parameter_name_list}}) { }",
-                {{"name",                cls->name_},
-                 {"symbol_name",         cls->symbolName_},
-                 {"parameter_list",      ParameterList(ctor->parameters_)},
-                 {"parameter_name_list", ParameterNameList(ctor->parameters_)},});
+                {{"name",                entity->name_},
+                 {"symbol_name",         entity->uniqueName_},
+                 {"parameter_list",      ParameterList(ctor.parameters())},
+                 {"parameter_name_list", ParameterNameList(ctor.parameters())},});
         }
     }
-    printer_ << fmt("virtual ~{{name}}() = default;", {{"name", cls->name_}});
+    printer_ << fmt("virtual ~{{name}}() = default;", {{"name", entity->name_}});
 
-    Vector<String> wrappedList;
-    auto implementWrapperClassMembers = [&](const Class* cls)
+    std::vector<std::string> wrappedList;
+    auto implementWrapperClassMembers = [&](const MetaEntity* cls)
     {
         for (const auto& child : cls->children_)
         {
-            if (child->kind_ == Declaration::Kind::Variable && !child->isPublic_)
+            if (child->kind_ == cppast::cpp_entity_kind::member_variable_t && child->access_ == cppast::cpp_protected)
             {
                 // Getters and setters for protected class variables.
-                Variable* var = dynamic_cast<Variable*>(child.Get());
-                const auto& type = var->GetType();
+                const auto& var = child->Ast<cppast::cpp_member_variable>();
+                const auto& type = var.type();
 
                 // Avoid returning non-builtin complex types as by copy
                 bool wouldReturnByCopy =
@@ -104,7 +108,7 @@ bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
                     type.kind() != cppast::cpp_type_kind::builtin_t;
 
                 auto vars = fmt({
-                    {"name", var->name_},
+                    {"name", child->name_},
                     {"type", cppast::to_string(type)},
                     {"ref", wouldReturnByCopy ? "&" : ""}
                 });
@@ -112,29 +116,29 @@ bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
                 printer_ << fmt("{{type}}{{ref}} __get_{{name}}() { return {{name}}; }", vars);
                 printer_ << fmt("void __set_{{name}}({{type}} value) { {{name}} = value; }", vars);
             }
-            else if (child->kind_ == Declaration::Kind::Method)
+            else if (child->kind_ == cppast::cpp_entity_kind::member_function_t)
             {
-                Function* func = dynamic_cast<Function*>(child.Get());
+                const auto& func = child->Ast<cppast::cpp_member_function>();
 
-                String signature = func->name_ + dynamic_cast<const cppast::cpp_member_function*>(func->source_)->signature().c_str();
-                if (!wrappedList.Contains(signature))
+                auto methodId = func.name() + func.signature();
+                if (std::find(wrappedList.begin(), wrappedList.end(), methodId) == wrappedList.end())
                 {
-                    wrappedList.Push(signature);
+                    wrappedList.emplace_back(methodId);
                     // Function pointer that virtual method will call
-                    Class* cls = dynamic_cast<Class*>(func->parent_.Get());
+                    const auto& cls = child->parent_;
                     auto vars = fmt({
-                        {"type",                cppast::to_string(*func->returnType_)},
-                        {"name",                func->name_},
-                        {"class_name",          cls->name_},
-                        {"full_class_name",     cls->symbolName_},
-                        {"parameter_list",      ParameterList(func->parameters_)},
-                        {"parameter_name_list", ParameterNameList(func->parameters_)},
-                        {"return",              IsVoid(func->returnType_) ? "" : "return"},
-                        {"const",               func->isConstant_ ? "const " : ""},
-                        {"has_params",          !func->parameters_.empty()},
-                        {"symbol_name",         Sanitize(func->symbolName_)}
+                        {"type",                cppast::to_string(func.return_type())},
+                        {"name",                child->name_},
+                        {"class_name",          entity->name_},
+                        {"full_class_name",     entity->uniqueName_},
+                        {"parameter_list",      ParameterList(func.parameters())},
+                        {"parameter_name_list", ParameterNameList(func.parameters())},
+                        {"return",              IsVoid(func.return_type()) ? "" : "return"},
+                        {"const",               cppast::is_const(func.cv_qualifier()) ? "const " : ""},
+                        {"has_params",          Count(func.parameters()) > 0},
+                        {"symbol_name",         Sanitize(child->uniqueName_)}
                     });
-                    if (func->IsVirtual())
+                    if (func.is_virtual())
                     {
                         printer_ << fmt("{{type}}(*fn{{symbol_name}})({{class_name}} {{const}}*{{#has_params}}, {{/has_params}}{{parameter_list}}) = nullptr;", vars);
                         // Virtual method that calls said pointer
@@ -157,7 +161,7 @@ bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
                         }
                         printer_.Dedent();
                     }
-                    else if (!child->isPublic_) // Protected virtuals are not exposed, no point
+                    else if (child->access_ == cppast::cpp_protected) // Protected virtuals are not exposed, no point
                     {
                         printer_ << fmt("{{type}} __public_{{name}}({{parameter_list}})", vars);
                         printer_.Indent();
@@ -169,31 +173,32 @@ bool GenerateClassWrappers::Visit(Declaration* decl, Event event)
         }
     };
 
-    std::function<void(Class*)> implementBaseWrapperClassMembers = [&](Class* cls)
+    std::function<void(MetaEntity*)> implementBaseWrapperClassMembers = [&](MetaEntity* cls)
     {
-        const auto* astCls = dynamic_cast<const cppast::cpp_class*>(cls->source_);
-        for (const auto& base : astCls->bases())
+        const auto& astCls = cls->Ast<cppast::cpp_class>();
+        for (const auto& base : astCls.bases())
         {
             if (base.access_specifier() == cppast::cpp_private)
                 continue;
 
-            auto* parentCls = dynamic_cast<Class*>(generator->symbols_.Get(Urho3D::GetTypeName(base.type())));
+            auto* parentCls = GetEntity(base.type());
             if (parentCls != nullptr)
             {
-                implementWrapperClassMembers(parentCls);
-                implementBaseWrapperClassMembers(parentCls);
+                auto* baseOverlay = static_cast<MetaEntity*>(parentCls->user_data());
+                implementWrapperClassMembers(baseOverlay);
+                implementBaseWrapperClassMembers(baseOverlay);
             }
             else
                 URHO3D_LOGWARNINGF("Base class %s not found!", base.name().c_str());
         }
     };
 
-    implementWrapperClassMembers(cls);
-    implementBaseWrapperClassMembers(cls);
+    implementWrapperClassMembers(entity);
+    implementBaseWrapperClassMembers(entity);
 
     printer_.Dedent("};");
     printer_ << "";
-    cls->sourceName_ = "Wrappers::" + cls->name_;    // Wrap a wrapper class
+    entity->sourceName_ = "Wrappers::" + entity->name_;    // Wrap a wrapper class
     return true;
 }
 

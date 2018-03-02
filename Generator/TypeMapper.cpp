@@ -236,10 +236,11 @@ std::string TypeMapper::MapToCpp(const cppast::cpp_type& type, const std::string
 
 std::string TypeMapper::ToCSType(const cppast::cpp_type& type)
 {
+    auto name = cppast::to_string(type);
     std::string result;
     if (const auto* map = GetTypeMap(type))
         result = map->csType_;
-    else if (generator->symbols_.Has(type))
+    else if (GetEntity(type) != nullptr)
         return "global::" + str::replace_str(Urho3D::GetTypeName(type), "::", ".");
     else
         result = ToPInvokeType(type);

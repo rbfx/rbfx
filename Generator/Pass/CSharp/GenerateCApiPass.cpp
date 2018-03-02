@@ -22,9 +22,6 @@
 
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/IO/File.h>
-#include <Declarations/Namespace.hpp>
-#include <Declarations/Class.hpp>
-#include <Declarations/Variable.hpp>
 #include "GenerateCApiPass.h"
 
 
@@ -47,10 +44,10 @@ void GenerateCApiPass::Start()
     printer_ << "";
 }
 
-bool GenerateCApiPass::Visit(Declaration* decl, Event event)
+bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
     // Visit entities just once
-    if (event == Event::EXIT || decl->source_ == nullptr)
+    if (info.event == info.container_entity_exit || entity->ast_ == nullptr || entity->name_.empty())
         return true;
 
     auto toCType = [&](const cppast::cpp_type& type) { return typeMapper_->ToCType(type); };
@@ -58,16 +55,17 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
         return typeMapper_->MapToCpp(param.type(), EnsureNotKeyword(param.name()));
     };
 
-    if (decl->kind_ == Declaration::Kind::Class)
+    if (entity->kind_ == cppast::cpp_entity_kind::class_t)
     {
-        auto* cls = dynamic_cast<Class*>(decl);
+        if (IsStatic(*entity->ast_))
+            return true;
 
         // Destructor always exists even if it is not defined in the class
-        String cFunctionName = GetUniqueName(Sanitize(cls->symbolName_) + "_destructor");
+        String cFunctionName = GetUniqueName(Sanitize(entity->uniqueName_) + "_destructor");
 
         printer_ << fmt("URHO3D_EXPORT_API void {{c_function_name}}({{class_name}}* instance)", {
             {"c_function_name",     cFunctionName.CString()},
-            {"class_name",          cls->name_},
+            {"class_name",          entity->name_},
         });
         printer_.Indent();
         {
@@ -76,84 +74,70 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
         printer_.Dedent();
         printer_ << "";
     }
-    else if (decl->kind_ == Declaration::Kind::Constructor || decl->kind_ == Declaration::Kind::Method)
+    else if (entity->kind_ == cppast::cpp_entity_kind::constructor_t)
     {
-        Function* func = dynamic_cast<Function*>(decl);
-        func->cFunctionName_ = GetUniqueName(Sanitize(func->symbolName_));
-
-        std::string cParameterList = ParameterList(func->parameters_, toCType);
+        const auto& func = entity->Ast<cppast::cpp_constructor>();
+        entity->cFunctionName_ = GetUniqueName(Sanitize(entity->uniqueName_));
+        std::string className = entity->parent_->sourceName_;
         auto vars = fmt({
-            {"name",                func->name_},
-            {"c_function_name",     func->cFunctionName_},
-            {"parameter_name_list", ParameterNameList(func->parameters_, toCppType)},
-            {"base_symbol_name",    func->baseSymbolName_},
-            {"is_public",           func->isPublic_},
-            {"class_name",          func->parent_->sourceName_},
+            {"c_function_name",     entity->cFunctionName_},
+            {"parameter_name_list", ParameterNameList(func.parameters(), toCppType)},
+            {"class_name",          className},
+            {"c_parameter_list",    ParameterList(func.parameters(), toCType)},
+            {"c_return_type",       className + "*"},
         });
-
-        if (!func->isStatic_)
-        {
-            // If function wraps a class method then insert first parameter - a class pointer.
-            if (func->kind_ != Declaration::Kind::Constructor)
-            {
-                if (!cParameterList.empty())
-                    cParameterList = ", " + cParameterList;
-                cParameterList = func->parent_->sourceName_ + "* instance" + cParameterList;
-            }
-            vars.set("class_name", func->parent_->sourceName_);
-            vars.set("class_name_sanitized", Sanitize(func->parent_->sourceName_));
-        }
-        vars.set("c_parameter_list", cParameterList);
-
-        // Constructor wrapper returns a pointer, but Declaration has a void return type for constructors.
-        if (func->kind_ == Declaration::Kind::Constructor)
-            vars.set("c_return_type", (func->parent_->sourceName_ + "*"));
-        else
-            vars.set("c_return_type", typeMapper_->ToCType(*func->returnType_));
-
         printer_ << fmt("URHO3D_EXPORT_API {{c_return_type}} {{c_function_name}}({{c_parameter_list}})", vars);
         printer_.Indent();
         {
-            std::string call;
-            if (func->kind_ == Declaration::Kind::Constructor)
-                call = fmt("new {{class_name}}({{parameter_name_list}})", vars);
+            printer_ << "return " + typeMapper_->MapToCNoCopy(entity->parent_->sourceName_,
+                fmt("new {{class_name}}({{parameter_name_list}})", vars)) + ";";
+        }
+        printer_.Dedent();
+        printer_.WriteLine();
+    }
+    else if (entity->kind_ == cppast::cpp_entity_kind::member_function_t)
+    {
+        const auto& func = entity->Ast<cppast::cpp_member_function>();
+        entity->cFunctionName_ = GetUniqueName(Sanitize(entity->uniqueName_));
+
+        auto vars = fmt({
+            {"name",                entity->name_},
+            {"c_function_name",     entity->cFunctionName_},
+            {"parameter_name_list", ParameterNameList(func.parameters(), toCppType)},
+            {"base_symbol_name",    entity->symbolName_},
+            {"class_name",          entity->parent_->sourceName_},
+            {"class_name_sanitized", Sanitize(entity->parent_->sourceName_)},
+            {"c_parameter_list",    ParameterList(func.parameters(), toCType)},
+            {"c_return_type",       typeMapper_->ToCType(func.return_type())},
+            {"psep",                func.parameters().empty() ? "" : ", "}
+        });
+
+        printer_ << fmt("URHO3D_EXPORT_API {{c_return_type}} {{c_function_name}}({{class_name}}* instance{{psep}}{{c_parameter_list}})", vars);
+        printer_.Indent();
+        {
+            std::string call = "instance->";
+            if (func.is_virtual())
+                // Virtual methods always overriden in wrapper class so accessing them by simple name should not be
+                // an issue.
+                call += fmt("{{name}}({{parameter_name_list}})", vars);
+            else if (entity->access_ == cppast::cpp_public)
+                // Non-virtual public methods sometimes have issues being called. Use fully qualified name for
+                // calling them.
+                call += fmt("{{base_symbol_name}}({{parameter_name_list}})", vars);
             else
-            {
-                if (func->IsVirtual())
-                    // Virtual methods always overriden in wrapper class so accessing them by simple name should not be
-                    // an issue.
-                    call = fmt("{{name}}({{parameter_name_list}})", vars);
-                else if (func->isPublic_)
-                    // Non-virtual public methods sometimes have issues being called. Use fully qualified name for
-                    // calling them.
-                    call = fmt("{{base_symbol_name}}({{parameter_name_list}})", vars);
-                else
-                    // Protected non-virtual methods are wrapped in public proxy methods.
-                    call = fmt("__public_{{name}}({{parameter_name_list}})", vars);
+                // Protected non-virtual methods are wrapped in public proxy methods.
+                call += fmt("__public_{{name}}({{parameter_name_list}})", vars);
 
-                if (!func->isStatic_)
-                    call = fmt("instance->", vars) + call;
-            }
+            if (!IsVoid(func.return_type()))
+                call = "return " + typeMapper_->MapToC(func.return_type(), call);
 
-            if (!IsVoid(func->returnType_))
-            {
-                printer_.Write("return ");
-                call = typeMapper_->MapToC(*func->returnType_, call);
-            }
-            else if (func->kind_ == Declaration::Kind::Constructor)
-            {
-                printer_.Write("return ");
-                call = typeMapper_->MapToCNoCopy(func->parent_->sourceName_, call);
-            }
-
-            printer_.Write(call);
-            printer_.Write(";");
+            printer_ << call + ";";
             printer_.Flush();
         }
         printer_.Dedent();
         printer_.WriteLine();
 
-        if (func->IsVirtual())
+        if (func.is_virtual())
         {
             printer_ << fmt("URHO3D_EXPORT_API void set_{{class_name_sanitized}}_fn{{c_function_name}}({{class_name}}* instance, void* fn)",
                 vars);
@@ -165,66 +149,132 @@ bool GenerateCApiPass::Visit(Declaration* decl, Event event)
             printer_.WriteLine();
         }
     }
-    else if (decl->kind_ == Declaration::Kind::Variable)
+    else if (entity->kind_ == cppast::cpp_entity_kind::function_t)
     {
-        auto* var = dynamic_cast<Variable*>(decl);
-        auto* ns = dynamic_cast<Namespace*>(var->parent_.Get());
+        const auto& func = entity->Ast<cppast::cpp_function>();
+        entity->cFunctionName_ = GetUniqueName(Sanitize(entity->uniqueName_));
+
+        auto vars = fmt({
+            {"name",                entity->name_},
+            {"c_function_name",     entity->cFunctionName_},
+            {"parameter_name_list", ParameterNameList(func.parameters(), toCppType)},
+            {"base_symbol_name",    entity->symbolName_},
+            {"class_name",          entity->parent_->sourceName_},
+            {"c_parameter_list",    ParameterList(func.parameters(), toCType)},
+            {"c_return_type",       typeMapper_->ToCType(func.return_type())},
+        });
+
+        printer_ << fmt("URHO3D_EXPORT_API {{c_return_type}} {{c_function_name}}({{c_parameter_list}})", vars);
+        printer_.Indent();
+        {
+            std::string call;
+            if (entity->access_ == cppast::cpp_public)
+                // Non-virtual public methods sometimes have issues being called. Use fully qualified name for
+                // calling them.
+                call = fmt("{{base_symbol_name}}({{parameter_name_list}})", vars);
+            else
+                // Protected non-virtual methods are wrapped in public proxy methods.
+                call = fmt("__public_{{name}}({{parameter_name_list}})", vars);
+
+            if (!IsVoid(func.return_type()))
+            {
+                printer_.Write("return ");
+                call = typeMapper_->MapToC(func.return_type(), call);
+            }
+
+            printer_.Write(call);
+            printer_.Write(";");
+            printer_.Flush();
+        }
+        printer_.Dedent();
+        printer_.WriteLine();
+    }
+    else if (entity->kind_ == cppast::cpp_entity_kind::variable_t)
+    {
+        const auto& var = entity->Ast<cppast::cpp_variable>();
+        auto* ns = entity->parent_.Get();
 
         // Constants with values get converted to native c# constants in GenerateCSApiPass
-        if ((var->isConstant_ || var->isReadOnly_) && (!var->defaultValue_.Empty() || ns->kind_ == Declaration::Kind::Enum))
+        if ((IsConst(var.type()) || entity->flags_ & HintReadOnly) && !entity->GetDefaultValue().empty())
             return true;
 
-        var->cFunctionName_ = Sanitize(ns->symbolName_ + "_" + var->name_);
-        auto vars = fmt({{"c_type", typeMapper_->ToCType(var->GetType())},
-                         {"c_function_name", var->cFunctionName_},
+        entity->cFunctionName_ = Sanitize(ns->symbolName_ + "_" + entity->name_);
+        auto vars = fmt({{"c_type",          typeMapper_->ToCType(var.type())},
+                         {"c_function_name", entity->cFunctionName_},
                          {"namespace_name",  ns->sourceName_},
-                         {"name",            var->name_},
-                         {"type",            GetConversionType(var->GetType())},
-                         {"is_static",       decl->isStatic_},
+                         {"name",            entity->name_},
+                         {"value",           typeMapper_->MapToCpp(var.type(), "value")}
         });
         // Getter
         printer_.Write(fmt("URHO3D_EXPORT_API {{c_type}} get_{{c_function_name}}(", vars));
-        if (!var->isStatic_)
-            printer_.Write(fmt("{{namespace_name}}* instance", vars));
         printer_.Write(")");
         printer_.Indent();
 
-        std::string expr;
-        if (!var->isStatic_)
-            expr += "instance->";
-        else
-            expr += ns->sourceName_ + "::";
-
-        if (!decl->isPublic_)
-            expr += fmt("__get_{{name}}()", vars);
-        else
-            expr += fmt("{{name}}", vars);
+        std::string expr = fmt("{{namespace_name}}::{{name}}", vars);
 
         // Variables are non-temporary therefore they do not need copying.
-        printer_ << fmt("return {{mapped}};", {{"mapped", typeMapper_->MapToC(var->GetType(), expr)}});
+        printer_ << "return " + typeMapper_->MapToC(var.type(), expr) + ";";
 
         printer_.Dedent();
         printer_.WriteLine();
 
         // Setter
-        if (!var->isConstant_)
+        if (!IsConst(var.type()))
         {
             printer_.Write(fmt("URHO3D_EXPORT_API void set_{{c_function_name}}(", vars));
-            if (!var->isStatic_)
-                printer_.Write(fmt("{{namespace_name}}* instance, ", vars));
             printer_.Write(fmt("{{c_type}} value)", vars));
             printer_.Indent();
 
-            vars.set("value", typeMapper_->MapToCpp(var->GetType(), "value"));
-            if (!var->isStatic_)
-                printer_.Write(fmt("instance->", vars));
-            else
-                expr += ns->sourceName_ + "::";
+            printer_.Write(fmt("{{namespace_name}}::{{name}} = {{value}};", vars));
 
-            if (!decl->isPublic_)
-                printer_.Write(fmt("__set_{{name}}({{value}});", vars));
+            printer_.Dedent();
+            printer_.WriteLine();
+        }
+    }
+    else if (entity->kind_ == cppast::cpp_entity_kind::member_variable_t)
+    {
+        const auto& var = entity->Ast<cppast::cpp_member_variable>();
+        auto* ns = entity->parent_.Get();
+
+        // Constants with values get converted to native c# constants in GenerateCSApiPass
+        if ((IsConst(var.type()) || entity->flags_ & HintReadOnly) && !entity->GetDefaultValue().empty())
+            return true;
+
+        entity->cFunctionName_ = Sanitize(ns->symbolName_ + "_" + entity->name_);
+        auto vars = fmt({{"c_type", typeMapper_->ToCType(var.type())},
+                         {"c_function_name", entity->cFunctionName_},
+                         {"namespace_name",  ns->sourceName_},
+                         {"name",            entity->name_},
+        });
+        // Getter
+        printer_.Write(fmt("URHO3D_EXPORT_API {{c_type}} get_{{c_function_name}}({{namespace_name}}* instance)", vars));
+        printer_.Indent();
+        {
+            std::string expr = "instance->";
+            if (entity->access_ != cppast::cpp_public)
+                expr += fmt("__get_{{name}}()", vars);
             else
-                printer_.Write(fmt("{{#is_static}}{{namespace_name}}::{{/is_static}}{{name}} = {{value}};", vars));
+                expr += fmt("{{name}}", vars);
+
+            // Variables are non-temporary therefore they do not need copying.
+            printer_ << fmt("return {{mapped}};", {{"mapped", typeMapper_->MapToC(var.type(), expr)}});
+        }
+        printer_.Dedent();
+        printer_.WriteLine();
+
+        // Setter
+        if (!IsConst(var.type()))
+        {
+            printer_.Write(fmt("URHO3D_EXPORT_API void set_{{c_function_name}}(", vars));
+            printer_.Write(fmt("{{namespace_name}}* instance, {{c_type}} value)", vars));
+            printer_.Indent();
+
+            vars.set("value", typeMapper_->MapToCpp(var.type(), "value"));
+
+            if (entity->access_ != cppast::cpp_public)
+                printer_.Write(fmt("instance->__set_{{name}}({{value}});", vars));
+            else
+                printer_.Write(fmt("instance->{{name}} = {{value}};", vars));
 
             printer_.Dedent();
             printer_.WriteLine();
