@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include <fmt/format.h>
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
@@ -368,11 +369,11 @@ std::string GenerateCSApiPass::ExpandDefaultValue(const std::string& currentName
 std::string GenerateCSApiPass::MapToCS(const cppast::cpp_type& type, const std::string& expression)
 {
     if (const auto* map = generator->GetTypeMap(type))
-        return fmt(map->pInvokeToCSTemplate_.c_str(), {{"value", expression}});
+        return fmt::format(map->pInvokeToCSTemplate_.c_str(), fmt::arg("value", expression));
     else if (IsComplexValueType(type))
     {
         std::string returnType = "global::" + str::replace_str(Urho3D::GetTypeName(type), "::", ".");
-        return fmt("{{type}}.__FromPInvoke({{call}})", {{"type", returnType}, {"call", expression}});
+        return fmt::format("{}.__FromPInvoke({})", returnType, expression);
     }
     return expression;
 }
@@ -392,12 +393,11 @@ std::string GenerateCSApiPass::ToCSType(const cppast::cpp_type& type)
 std::string GenerateCSApiPass::MapToPInvoke(const cppast::cpp_type& type, const std::string& expression)
 {
     if (const auto* map = generator->GetTypeMap(type))
-        return fmt(map->csToPInvokeTemplate_.c_str(), {{"value", expression}});
+        return fmt::format(map->csToPInvokeTemplate_.c_str(), fmt::arg("value", expression));
     else if (IsComplexValueType(type))
     {
         std::string returnType = "global::" + str::replace_str(Urho3D::GetTypeName(type), "::", ".");
-        return fmt("{{type}}.__ToPInvoke({{call}})", {{"type", returnType},
-                                                      {"call", expression}});
+        return fmt::format("{}.__ToPInvoke({})", returnType, expression);
     }
     return expression;
 }

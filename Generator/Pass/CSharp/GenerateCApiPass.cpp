@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include <fmt/format.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/IO/File.h>
 #include "GenerateCApiPass.h"
@@ -312,14 +313,9 @@ std::string GenerateCApiPass::MapToCNoCopy(const std::string& type, const std::s
     std::string result = expression;
 
     if (map)
-        result = fmt(map->cppToCTemplate_.c_str(), {{"value", result}});
+        result = fmt::format(map->cppToCTemplate_.c_str(), fmt::arg("value", result));
     else if (generator->symbols_.Contains(type))
-    {
-        result = fmt("script->TakeOwnership<{{type}}>({{value}})", {
-            {"value", result},
-            {"type", type},
-        });
-    }
+        result = fmt::format("script->TakeOwnership<{type}>({result})", FMT_CAPTURE(result), FMT_CAPTURE(type));
 
     return result;
 }
@@ -330,7 +326,7 @@ std::string GenerateCApiPass::MapToCpp(const cppast::cpp_type& type, const std::
     std::string result = expression;
 
     if (map)
-        result = fmt(map->cToCppTemplate_.c_str(), {{"value", result}});
+        result = fmt::format(map->cToCppTemplate_.c_str(), fmt::arg("value", result));
     else if (IsComplexValueType(type))
     {
         if (type.kind() != cppast::cpp_type_kind::pointer_t)
@@ -346,14 +342,10 @@ std::string GenerateCApiPass::MapToC(const cppast::cpp_type& type, const std::st
     std::string result = expression;
 
     if (map)
-        result = fmt(map->cppToCTemplate_.c_str(), {{"value", result}});
+        result = fmt::format(map->cppToCTemplate_.c_str(), fmt::arg("value", result));
     else if (IsComplexValueType(type))
-    {
-        result = fmt("script->AddRef<{{type}}>({{value}})", {
-            {"value", result},
-            {"type", Urho3D::GetTypeName(type)},
-        });
-    }
+        result = fmt::format("script->AddRef<{type}>({result})", FMT_CAPTURE(result),
+            fmt::arg("type", Urho3D::GetTypeName(type)));
 
     return result;
 }

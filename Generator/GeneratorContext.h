@@ -61,10 +61,10 @@ struct TypeMap
     std::string cType_ = "void*";
     std::string csType_ = "";
     std::string pInvokeType_ = "IntPtr";
-    std::string cToCppTemplate_ = "{{value}}";
-    std::string cppToCTemplate_ = "{{value}}";
-    std::string csToPInvokeTemplate_ = "{{value}}";
-    std::string pInvokeToCSTemplate_ = "{{value}}";
+    std::string cToCppTemplate_ = "{value}";
+    std::string cppToCTemplate_ = "{value}";
+    std::string csToPInvokeTemplate_ = "{value}";
+    std::string pInvokeToCSTemplate_ = "{value}";
 };
 
 class GeneratorContext
