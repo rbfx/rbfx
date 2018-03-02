@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include <fmt/format.h>
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/Log.h>
 #include "GenerateClassWrappers.h"
@@ -61,18 +62,12 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
         return info.event != info.container_entity_enter;
     }
 
-    printer_ << fmt("class URHO3D_EXPORT_API {{name}} : public {{symbol}}", {
-        {"name", entity->name_},
-        {"symbol", entity->uniqueName_},
-    });
+    printer_ << fmt::format("class URHO3D_EXPORT_API {} : public {}", entity->name_, entity->uniqueName_);
     printer_.Indent();
 
     // Urho3D-specific
     if (IsSubclassOf(cls, "Urho3D::Object"))
-    {
-        printer_ << fmt("URHO3D_OBJECT({{name}}, {{symbol_name}});", {{"name",        entity->name_},
-                                                                      {"symbol_name", entity->uniqueName_}});
-    }
+        printer_ << fmt::format("URHO3D_OBJECT({}, {});", entity->name_, entity->uniqueName_);
 
     printer_.WriteLine("public:", false);
     // Wrap constructors
@@ -81,14 +76,11 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
         if (e->kind_ == cppast::cpp_entity_kind::constructor_t)
         {
             const auto& ctor = e->Ast<cppast::cpp_constructor>();
-            printer_ << fmt("{{name}}({{parameter_list}}) : {{symbol_name}}({{parameter_name_list}}) { }",
-                {{"name",                entity->name_},
-                 {"symbol_name",         entity->uniqueName_},
-                 {"parameter_list",      ParameterList(ctor.parameters())},
-                 {"parameter_name_list", ParameterNameList(ctor.parameters())},});
+            printer_ << fmt::format("{}({}) : {}({}) {{ }}", entity->name_, ParameterList(ctor.parameters()),
+                entity->uniqueName_, ParameterNameList(ctor.parameters()));
         }
     }
-    printer_ << fmt("virtual ~{{name}}() = default;", {{"name", entity->name_}});
+    printer_ << fmt::format("virtual ~{}() = default;", entity->name_);
 
     std::vector<std::string> wrappedList;
     auto implementWrapperClassMembers = [&](const MetaEntity* cls)
@@ -107,14 +99,14 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
                     type.kind() != cppast::cpp_type_kind::reference_t &&
                     type.kind() != cppast::cpp_type_kind::builtin_t;
 
-                auto vars = fmt({
-                    {"name", child->name_},
-                    {"type", cppast::to_string(type)},
-                    {"ref", wouldReturnByCopy ? "&" : ""}
-                });
+                auto name = child->name_;
+                auto typeName = cppast::to_string(type);
+                auto ref = wouldReturnByCopy ? "&" : "";
 
-                printer_ << fmt("{{type}}{{ref}} __get_{{name}}() { return {{name}}; }", vars);
-                printer_ << fmt("void __set_{{name}}({{type}} value) { {{name}} = value; }", vars);
+                printer_ << fmt::format("{typeName}{ref} __get_{name}() {{ return {name}; }}",
+                    FMT_CAPTURE(name), FMT_CAPTURE(typeName), FMT_CAPTURE(ref));
+                printer_ << fmt::format("void __set_{name}({typeName} value) {{ {name} = value; }}",
+                    FMT_CAPTURE(name), FMT_CAPTURE(typeName), FMT_CAPTURE(ref));
             }
             else if (child->kind_ == cppast::cpp_entity_kind::member_function_t)
             {
@@ -126,35 +118,40 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
                     wrappedList.emplace_back(methodId);
                     // Function pointer that virtual method will call
                     const auto& cls = child->parent_;
-                    auto vars = fmt({
-                        {"type",                cppast::to_string(func.return_type())},
-                        {"name",                child->name_},
-                        {"class_name",          entity->name_},
-                        {"full_class_name",     entity->uniqueName_},
-                        {"parameter_list",      ParameterList(func.parameters())},
-                        {"parameter_name_list", ParameterNameList(func.parameters())},
-                        {"return",              IsVoid(func.return_type()) ? "" : "return"},
-                        {"const",               cppast::is_const(func.cv_qualifier()) ? "const " : ""},
-                        {"has_params",          Count(func.parameters()) > 0},
-                        {"symbol_name",         Sanitize(child->uniqueName_)}
-                    });
+                    auto typeName = cppast::to_string(func.return_type());
+                    auto name = child->name_;
+                    auto parameterList = ParameterList(func.parameters());
+                    auto parameterNameList = ParameterNameList(func.parameters());
+                    auto constModifier = cppast::is_const(func.cv_qualifier()) ? "const " : "";
+                    auto pc = Count(func.parameters()) > 0 ? ", " : "";
+                    auto symbolName = Sanitize(child->uniqueName_);
+                    auto fullClassName = entity->uniqueName_;
+                    auto className = entity->name_;
+
                     if (func.is_virtual())
                     {
-                        printer_ << fmt("{{type}}(*fn{{symbol_name}})({{class_name}} {{const}}*{{#has_params}}, {{/has_params}}{{parameter_list}}) = nullptr;", vars);
+                        printer_ << fmt::format("{typeName}(*fn{symbolName})({className} {constModifier}*{pc}{parameterList}) = nullptr;",
+                            FMT_CAPTURE(typeName), FMT_CAPTURE(symbolName), FMT_CAPTURE(className),
+                            FMT_CAPTURE(constModifier), FMT_CAPTURE(pc), FMT_CAPTURE(parameterList));
                         // Virtual method that calls said pointer
-                        printer_ << fmt("{{type}} {{name}}({{parameter_list}}) {{const}}override", vars);
+                        printer_ << fmt::format("{typeName} {name}({parameterList}) {constModifier}override",
+                            FMT_CAPTURE(typeName), FMT_CAPTURE(name), FMT_CAPTURE(parameterList),
+                            FMT_CAPTURE(constModifier));
                         printer_.Indent();
                         {
-                            printer_ << fmt("if (fn{{symbol_name}} == nullptr)", vars);
+                            printer_ << fmt::format("if (fn{symbolName} == nullptr)", FMT_CAPTURE(symbolName));
                             printer_.Indent();
                             {
-                                printer_ << fmt("{{full_class_name}}::{{name}}({{parameter_name_list}});", vars);
+                                printer_ << fmt::format("{fullClassName}::{name}({parameterNameList});",
+                                    FMT_CAPTURE(fullClassName), FMT_CAPTURE(name), FMT_CAPTURE(parameterNameList));
                             }
                             printer_.Dedent();
                             printer_ << "else";
                             printer_.Indent();
                             {
-                                printer_ << fmt("{{return}}(fn{{symbol_name}})(this{{#has_params}}, {{/has_params}}{{parameter_name_list}});", vars);
+                                printer_ << (IsVoid(func.return_type()) ? "" : "return ") +
+                                    fmt::format("(fn{symbolName})(this{pc}{parameterNameList});",
+                                        FMT_CAPTURE(symbolName), FMT_CAPTURE(pc), FMT_CAPTURE(parameterNameList));
                             }
                             printer_.Dedent();
 
@@ -163,9 +160,11 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
                     }
                     else if (child->access_ == cppast::cpp_protected) // Protected virtuals are not exposed, no point
                     {
-                        printer_ << fmt("{{type}} __public_{{name}}({{parameter_list}})", vars);
+                        printer_ << fmt::format("{typeName} __public_{name}({parameterList})",
+                            FMT_CAPTURE(typeName), FMT_CAPTURE(name), FMT_CAPTURE(parameterList));
                         printer_.Indent();
-                        printer_ << fmt("{{name}}({{parameter_name_list}});", vars);
+                        printer_ << fmt::format("{name}({parameterNameList});", FMT_CAPTURE(name),
+                            FMT_CAPTURE(parameterNameList));
                         printer_.Dedent();
                     }
                 }
