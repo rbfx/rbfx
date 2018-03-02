@@ -266,7 +266,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto cFunction = entity->cFunctionName_;
         auto className = entity->parent_->name_;
         auto sourceClassName = Sanitize(entity->parent_->sourceName_);
-        auto name = entity->name_;
+        auto uniqueName = Sanitize(entity->uniqueName_);
         auto pc = func.parameters().empty() ? "" : ", ";
 
         if (rtype == "string")
@@ -279,12 +279,12 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
         {
             // API for setting callbacks of virtual methods
             printer_ << "[UnmanagedFunctionPointer(CallingConvention.Cdecl)]";
-            printer_ << fmt::format("internal delegate {rtype} {className}{name}Delegate(IntPtr instance{pc}{csParams});",
-                FMT_CAPTURE(rtype), FMT_CAPTURE(className), FMT_CAPTURE(name), FMT_CAPTURE(pc), FMT_CAPTURE(csParams));
+            printer_ << fmt::format("internal delegate {rtype} {className}{cFunction}Delegate(IntPtr instance{pc}{csParams});",
+                FMT_CAPTURE(rtype), FMT_CAPTURE(className), FMT_CAPTURE(cFunction), FMT_CAPTURE(pc), FMT_CAPTURE(csParams));
             printer_ << "";
             printer_ << dllImport;
-            printer_ << fmt::format("internal static extern void set_{sourceClassName}_fn{cFunction}(IntPtr instance, {className}{name}Delegate cb);",
-                FMT_CAPTURE(sourceClassName), FMT_CAPTURE(cFunction), FMT_CAPTURE(className), FMT_CAPTURE(name));
+            printer_ << fmt::format("internal static extern void set_{sourceClassName}_fn{cFunction}(IntPtr instance, {className}{cFunction}Delegate cb);",
+                FMT_CAPTURE(sourceClassName), FMT_CAPTURE(cFunction), FMT_CAPTURE(className));
             printer_ << "";
         }
     }
