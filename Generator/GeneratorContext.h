@@ -32,7 +32,6 @@
 #include <cppast/libclang_parser.hpp>
 #include <Urho3D/Resource/JSONFile.h>
 #include "Pass/CppPass.h"
-#include "TypeMapper.h"
 
 
 namespace Urho3D
@@ -56,6 +55,18 @@ template <> inline unsigned MakeHash(const std::string& value)
     return MakeHash(value.c_str());
 }
 
+struct TypeMap
+{
+    std::string cppType_ = "void*";
+    std::string cType_ = "void*";
+    std::string csType_ = "";
+    std::string pInvokeType_ = "IntPtr";
+    std::string cToCppTemplate_ = "{{value}}";
+    std::string cppToCTemplate_ = "{{value}}";
+    std::string csToPInvokeTemplate_ = "{{value}}";
+    std::string pInvokeToCSTemplate_ = "{{value}}";
+};
+
 class GeneratorContext
     : public Object
 {
@@ -73,6 +84,8 @@ public:
     void AddApiPass(Args... args) { apiPasses_.Push(DynamicCast<CppApiPass>(SharedPtr<T>(new T(context_, args...)))); }
     void Generate(const String& outputDirCpp, const String& outputDirCs);
     bool IsAcceptableType(const cppast::cpp_type& type);
+    const TypeMap* GetTypeMap(const cppast::cpp_type& type);
+    const TypeMap* GetTypeMap(const std::string& typeName);
 
     String sourceDir_;
     String outputDirCpp_;
@@ -82,13 +95,13 @@ public:
     std::map<String, std::unique_ptr<cppast::cpp_file>> parsed_;
     Vector<SharedPtr<CppAstPass>> cppPasses_;
     Vector<SharedPtr<CppApiPass>> apiPasses_;
-    TypeMapper typeMapper_;
     SharedPtr<MetaEntity> apiRoot_;
     cppast::cpp_entity_index index_;
     std::string defaultNamespace_ = "Urho3D";
     HashMap<std::string, WeakPtr<MetaEntity>> symbols_;
     Vector<std::string> final_;
     HashMap<std::string, WeakPtr<MetaEntity>> enumValues_;
+    std::unordered_map<std::string, TypeMap> typeMaps_;
 };
 
 extern GeneratorContext* generator;

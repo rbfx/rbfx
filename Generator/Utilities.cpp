@@ -450,6 +450,71 @@ bool IsStatic(const cppast::cpp_entity& entity)
     return true;
 }
 
+std::string BuiltinToPInvokeType(const cppast::cpp_type& type)
+{
+    switch (type.kind())
+    {
+
+    case cppast::cpp_type_kind::builtin_t:
+    {
+        const auto& builtin = dynamic_cast<const cppast::cpp_builtin_type&>(type);
+        switch (builtin.builtin_type_kind())
+        {
+        case cppast::cpp_void: return "void";
+        case cppast::cpp_bool: return "bool";
+        case cppast::cpp_uchar: return "byte";
+        case cppast::cpp_ushort: return "ushort";
+        case cppast::cpp_uint: return "uint";
+        case cppast::cpp_ulong: return "uint";
+        case cppast::cpp_ulonglong: return "ulong";
+        case cppast::cpp_uint128: assert(false);
+        case cppast::cpp_schar: return "byte";
+        case cppast::cpp_short: return "short";
+        case cppast::cpp_int: return "int";
+        case cppast::cpp_long: return "int";
+        case cppast::cpp_longlong: return "long";
+        case cppast::cpp_int128: assert(false);
+        case cppast::cpp_float: return "float";
+        case cppast::cpp_double: return "double";
+        case cppast::cpp_longdouble: assert(false);
+        case cppast::cpp_float128: assert(false);
+        case cppast::cpp_char: return "char";
+        case cppast::cpp_wchar: assert(false);
+        case cppast::cpp_char16: assert(false);
+        case cppast::cpp_char32: assert(false);
+        case cppast::cpp_nullptr: return "IntPtr";
+        }
+        break;
+    }
+    case cppast::cpp_type_kind::user_defined_t: return "IntPtr";
+    case cppast::cpp_type_kind::cv_qualified_t:
+    {
+        auto name = BuiltinToPInvokeType(dynamic_cast<const cppast::cpp_cv_qualified_type&>(type).type());
+        if (name == "char*")
+            return "string";
+        return name;
+    }
+    case cppast::cpp_type_kind::pointer_t:
+        return BuiltinToPInvokeType(dynamic_cast<const cppast::cpp_pointer_type&>(type).pointee()) + "*";
+    case cppast::cpp_type_kind::reference_t:
+        return BuiltinToPInvokeType(dynamic_cast<const cppast::cpp_reference_type&>(type).referee()) + "*";
+    default:
+        assert(false);
+    }
+}
+
+std::string ToPInvokeType(const cppast::cpp_type& type, const std::string& default_)
+{
+    if (const auto* map = generator->GetTypeMap(type))
+        return map->pInvokeType_;
+    else if (IsEnumType(type))
+        return "global::" + str::replace_str(Urho3D::GetTypeName(type), "::", ".");
+    else if (IsComplexValueType(type))
+        return default_;
+    else
+        return BuiltinToPInvokeType(type);
+}
+
 }
 
 namespace str

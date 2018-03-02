@@ -44,9 +44,11 @@ public:
 
 protected:
     std::string GetUniqueName(const std::string& baseName);
+    std::string MapToCNoCopy(const std::string& type, const std::string& expression);
+    std::string MapToCpp(const cppast::cpp_type& type, const std::string& expression);
+    std::string MapToC(const cppast::cpp_type& type, const std::string& expression);
+    std::string ToCType(const cppast::cpp_type& type);
 
-    WeakPtr<GeneratorContext> generator_;
-    TypeMapper* typeMapper_ = nullptr;
     CSharpPrinter printer_;
     StringVector usedNames_;
 };

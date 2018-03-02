@@ -112,6 +112,10 @@ int Count(const cppast::detail::iteratable_intrusive_list<T>& list)
 }
 /// Returns true if storage class of entity is static or if entity contains only static members.
 bool IsStatic(const cppast::cpp_entity& entity);
+/// Converts a builtin type to pinvoke-compatible type.
+std::string BuiltinToPInvokeType(const cppast::cpp_type& type);
+/// Convert type to pinvoke-compatible type.
+std::string ToPInvokeType(const cppast::cpp_type& type, const std::string& default_);
 
 }
 

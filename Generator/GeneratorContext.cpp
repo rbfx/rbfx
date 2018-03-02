@@ -38,7 +38,6 @@ namespace Urho3D
 
 GeneratorContext::GeneratorContext(Urho3D::Context* context)
     : Object(context)
-    , typeMapper_(context)
 {
     apiRoot_ = new MetaEntity();
 }
@@ -72,13 +71,45 @@ bool GeneratorContext::LoadRules(const String& jsonPath)
     for (auto i = 0; i < final.Size(); i++)
         final_.Push(final[i].GetCString());
 
+    const JSONArray& typeMaps = rules_->GetRoot().Get("typemaps").GetArray();
+    for (const auto& typeMap : typeMaps)
+    {
+        TypeMap map;
+        map.cppType_ = typeMap.Get("type").GetString().CString();
+        map.cType_ = typeMap.Get("ctype").GetString().CString();
+        map.csType_ = typeMap.Get("cstype").GetString().CString();
+        map.pInvokeType_ = typeMap.Get("ptype").GetString().CString();
+
+        if (map.cType_.empty())
+            map.cType_ = map.cppType_;
+
+        if (map.csType_.empty())
+            map.csType_ = map.pInvokeType_;
+
+        const auto& cppToC = typeMap.Get("cpp_to_c");
+        if (!cppToC.IsNull())
+            map.cppToCTemplate_ = cppToC.GetString().CString();
+
+        const auto& cToCpp = typeMap.Get("c_to_cpp");
+        if (!cToCpp.IsNull())
+            map.cToCppTemplate_ = cToCpp.GetString().CString();
+
+        const auto& toCS = typeMap.Get("pinvoke_to_cs");
+        if (!toCS.IsNull())
+            map.pInvokeToCSTemplate_ = toCS.GetString().CString();
+
+        const auto& toPInvoke = typeMap.Get("cs_to_pinvoke");
+        if (!toPInvoke.IsNull())
+            map.csToPInvokeTemplate_ = toPInvoke.GetString().CString();
+
+        typeMaps_[map.cppType_] = map;
+    }
+
     return true;
 }
 
 bool GeneratorContext::ParseFiles(const String& sourceDir)
 {
-    typeMapper_.Load(rules_->GetRoot());
-
     sourceDir_ = AddTrailingSlash(sourceDir);
 
     IncludedChecker checker(rules_->GetRoot().Get("headers"));
@@ -238,11 +269,35 @@ bool GeneratorContext::IsAcceptableType(const cppast::cpp_type& type)
         return true;
 
     // Manually handled types
-    if (typeMapper_.GetTypeMap(type) != nullptr)
+    if (GetTypeMap(type) != nullptr)
         return true;
 
     // Known symbols will be classes that are being wrapped
     return symbols_.Contains(cppast::to_string(GetBaseType(type)));
+}
+
+const TypeMap* GeneratorContext::GetTypeMap(const cppast::cpp_type& type)
+{
+    std::string baseName = Urho3D::GetTypeName(type);
+    std::string fullName = cppast::to_string(type);
+
+    auto it = typeMaps_.find(baseName);
+    if (it == typeMaps_.end())
+        it = typeMaps_.find(fullName);
+
+    if (it != typeMaps_.end())
+        return &it->second;
+
+    return nullptr;
+}
+
+const TypeMap* GeneratorContext::GetTypeMap(const std::string& typeName)
+{
+    auto it = typeMaps_.find(typeName);
+    if (it != typeMaps_.end())
+        return &it->second;
+
+    return nullptr;
 }
 
 }

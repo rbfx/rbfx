@@ -42,6 +42,9 @@ public:
 
 protected:
     std::string ExpandDefaultValue(const std::string& currentNamespace, const std::string& value);
+    std::string MapToCS(const cppast::cpp_type& type, const std::string& expression);
+    std::string ToCSType(const cppast::cpp_type& type);
+    std::string MapToPInvoke(const cppast::cpp_type& type, const std::string& expression);
 
     CSharpPrinter printer_;
 };

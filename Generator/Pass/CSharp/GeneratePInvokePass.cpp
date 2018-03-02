@@ -201,10 +201,10 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         // Getter
         printer_ << dllImport;
-        String csReturnType = generator->typeMapper_.ToPInvokeTypeReturn(var.type());
+        String csReturnType = ToPInvokeTypeReturn(var.type());
         auto vars = fmt({
             {"cs_return", csReturnType.CString()},
-            {"cs_param", generator->typeMapper_.ToPInvokeTypeParam(var.type())},
+            {"cs_param", ToPInvokeTypeParam(var.type())},
             {"c_function_name", entity->cFunctionName_},
         });
         if (csReturnType == "string")
@@ -234,10 +234,10 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         // Getter
         printer_ << dllImport;
-        String csReturnType = generator->typeMapper_.ToPInvokeTypeReturn(var.type());
+        String csReturnType = ToPInvokeTypeReturn(var.type());
         auto vars = fmt({
             {"cs_return", csReturnType.CString()},
-            {"cs_param", generator->typeMapper_.ToPInvokeTypeParam(var.type())},
+            {"cs_param", ToPInvokeTypeParam(var.type())},
             {"c_function_name", entity->cFunctionName_},
         });
         if (csReturnType == "string")
@@ -262,7 +262,8 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
         const auto& ctor = entity->Ast<cppast::cpp_constructor>();
 
         printer_ << dllImport;
-        auto csParams = ParameterList(ctor.parameters(), std::bind(&TypeMapper::ToPInvokeTypeParam, &generator->typeMapper_, std::placeholders::_1));
+        auto csParams = ParameterList(ctor.parameters(), std::bind(&GeneratePInvokePass::ToPInvokeTypeParam,
+            this, std::placeholders::_1));
         auto vars = fmt({
             {"c_function_name", entity->cFunctionName_},
             {"cs_param_list", csParams}
@@ -276,8 +277,8 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         printer_ << dllImport;
         auto csParams = ParameterList(func.parameters(),
-            std::bind(&TypeMapper::ToPInvokeTypeParam, &generator->typeMapper_, std::placeholders::_1), nullptr);
-        String csRetType = generator->typeMapper_.ToPInvokeTypeReturn(func.return_type());
+            std::bind(&GeneratePInvokePass::ToPInvokeTypeParam, this, std::placeholders::_1), nullptr);
+        String csRetType = ToPInvokeTypeReturn(func.return_type());
         auto vars = fmt({
             {"c_function_name", entity->cFunctionName_},
             {"cs_param_list", csParams},
@@ -318,6 +319,20 @@ void GeneratePInvokePass::Stop()
     }
     file.WriteLine(printer_.Get());
     file.Close();
+}
+
+std::string GeneratePInvokePass::ToPInvokeTypeReturn(const cppast::cpp_type& type)
+{
+    std::string result = ToPInvokeType(type, "IntPtr");
+    return result;
+}
+
+std::string GeneratePInvokePass::ToPInvokeTypeParam(const cppast::cpp_type& type)
+{
+    std::string result = ToPInvokeType(type, "IntPtr");
+    if (result == "string")
+        return "[param: MarshalAs(UnmanagedType.LPUTF8Str)]" + result;
+    return result;
 }
 
 }

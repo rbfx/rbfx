@@ -40,7 +40,7 @@ void GenerateCSApiPass::Start()
 bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
     auto mapToPInvoke = [&](const cppast::cpp_function_parameter& param) {
-        return generator->typeMapper_.MapToPInvoke(param.type(), EnsureNotKeyword(param.name()));
+        return MapToPInvoke(param.type(), EnsureNotKeyword(param.name()));
     };
 
     if (entity->kind_ == cppast::cpp_entity_kind::namespace_t)
@@ -138,7 +138,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto vars = fmt({
             {"class_name", cls->name_},
             {"parameter_list", ParameterList(ctor.parameters(),
-                std::bind(&TypeMapper::ToCSType, &generator->typeMapper_, std::placeholders::_1), ".")},
+                std::bind(&GenerateCSApiPass::ToCSType, this, std::placeholders::_1), ".")},
             {"symbol_name", Sanitize(cls->symbolName_)},
             {"param_name_list", ParameterNameList(ctor.parameters(), mapToPInvoke)},
             {"has_base", hasBase},
@@ -169,10 +169,10 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                                 return param.name() + "_";
                             })},
                             {"cs_param_name_list", ParameterNameList(func.parameters(), [&](const cppast::cpp_function_parameter& param) {
-                                return generator->typeMapper_.MapToCS(param.type(), param.name() + "_");
+                                return MapToCS(param.type(), param.name() + "_");
                             })},
                             {"cs_param_type_list", ParameterTypeList(func.parameters(), [&](const cppast::cpp_type& type) -> std::string {
-                                return fmt("typeof({{type}})", {{"type", generator->typeMapper_.ToCSType(type)}});
+                                return fmt("typeof({{type}})", {{"type", ToCSType(type)}});
                             })},
                             {"return", !IsVoid(func.return_type()) ? "return " : ""},
                             {"source_class_name", Sanitize(cls->sourceName_)},
@@ -220,9 +220,9 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         auto vars = fmt({
             {"name", entity->name_},
-            {"return_type", generator->typeMapper_.ToCSType(func.return_type())},
+            {"return_type", ToCSType(func.return_type())},
             {"parameter_list", ParameterList(func.parameters(),
-                std::bind(&TypeMapper::ToCSType, &generator->typeMapper_, std::placeholders::_1), ".")},
+                std::bind(&GenerateCSApiPass::ToCSType, this, std::placeholders::_1), ".")},
             {"c_function_name", entity->cFunctionName_},
             {"param_name_list", ParameterNameList(func.parameters(), mapToPInvoke)},
             {"has_params", !func.parameters().empty()},
@@ -236,7 +236,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             if (IsVoid(func.return_type()))
                 printer_ << call + ";";
             else
-                printer_ << "return " + generator->typeMapper_.MapToCS(func.return_type(), call) + ";";
+                printer_ << "return " + MapToCS(func.return_type(), call) + ";";
         }
         printer_.Dedent();
         printer_ << "";
@@ -250,7 +250,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         bool isConstant = IsConst(var.type()) && !(entity->flags_ & HintReadOnly) && !defaultValue.empty();
 
         auto vars = fmt({
-            {"cs_type", generator->typeMapper_.ToCSType(var.type())},
+            {"cs_type", ToCSType(var.type())},
             {"name", entity->name_},
             {"ns_symbol", Sanitize(ns->symbolName_)},
             {"access", entity->access_ == cppast::cpp_public ? "public" : "protected"},
@@ -272,12 +272,12 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_.Indent();
             {
                 // Getter
-                String call = generator->typeMapper_.MapToCS(var.type(), fmt("get_{{ns_symbol}}_{{name}}()", vars));
+                String call = MapToCS(var.type(), fmt("get_{{ns_symbol}}_{{name}}()", vars));
                 printer_ << fmt("get { return {{call}}; }", {{"call", call.CString()}});
                 // Setter
                 if (!IsConst(var.type()) && !(entity->flags_ & HintReadOnly))
                 {
-                    vars.set("value", generator->typeMapper_.MapToPInvoke(var.type(), "value"));
+                    vars.set("value", MapToPInvoke(var.type(), "value"));
                     printer_ << fmt("set { set_{{ns_symbol}}_{{name}}({{value}}); }", vars);
                 }
             }
@@ -293,7 +293,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         bool isConstant = IsConst(var.type()) && !(entity->flags_ & HintReadOnly) && !defaultValue.empty();
 
         auto vars = fmt({
-            {"cs_type", generator->typeMapper_.ToCSType(var.type())},
+            {"cs_type", ToCSType(var.type())},
             {"name", entity->name_},
             {"ns_symbol", Sanitize(ns->symbolName_)},
             {"access", entity->access_ == cppast::cpp_public? "public " : "protected "},
@@ -312,13 +312,13 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_.Indent();
             {
                 // Getter
-                String call = generator->typeMapper_.MapToCS(var.type(), fmt("get_{{ns_symbol}}_{{name}}(instance_)",
+                String call = MapToCS(var.type(), fmt("get_{{ns_symbol}}_{{name}}(instance_)",
                     vars));
                 printer_ << fmt("get { return {{call}}; }", {{"call", call.CString()}});
                 // Setter
                 if (!IsConst(var.type()) && !(entity->flags_ & HintReadOnly))
                 {
-                    vars.set("value", generator->typeMapper_.MapToPInvoke(var.type(), "value"));
+                    vars.set("value", MapToPInvoke(var.type(), "value"));
                     printer_ << fmt("set { set_{{ns_symbol}}_{{name}}(instance_, {{value}}); }", vars);
                 }
             }
@@ -363,6 +363,43 @@ std::string GenerateCSApiPass::ExpandDefaultValue(const std::string& currentName
             return str::replace_str(fullName, "::", ".");
     }
     return value;
+}
+
+std::string GenerateCSApiPass::MapToCS(const cppast::cpp_type& type, const std::string& expression)
+{
+    if (const auto* map = generator->GetTypeMap(type))
+        return fmt(map->pInvokeToCSTemplate_.c_str(), {{"value", expression}});
+    else if (IsComplexValueType(type))
+    {
+        std::string returnType = "global::" + str::replace_str(Urho3D::GetTypeName(type), "::", ".");
+        return fmt("{{type}}.__FromPInvoke({{call}})", {{"type", returnType}, {"call", expression}});
+    }
+    return expression;
+}
+
+std::string GenerateCSApiPass::ToCSType(const cppast::cpp_type& type)
+{
+    std::string result;
+    if (const auto* map = generator->GetTypeMap(type))
+        result = map->csType_;
+    else if (GetEntity(type) != nullptr)
+        return "global::" + str::replace_str(Urho3D::GetTypeName(type), "::", ".");
+    else
+        result = ToPInvokeType(type, "IntPtr");
+    return result;
+}
+
+std::string GenerateCSApiPass::MapToPInvoke(const cppast::cpp_type& type, const std::string& expression)
+{
+    if (const auto* map = generator->GetTypeMap(type))
+        return fmt(map->csToPInvokeTemplate_.c_str(), {{"value", expression}});
+    else if (IsComplexValueType(type))
+    {
+        std::string returnType = "global::" + str::replace_str(Urho3D::GetTypeName(type), "::", ".");
+        return fmt("{{type}}.__ToPInvoke({{call}})", {{"type", returnType},
+                                                      {"call", expression}});
+    }
+    return expression;
 }
 
 }

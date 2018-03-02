@@ -41,6 +41,9 @@ public:
     void Stop() override;
 
 protected:
+    std::string ToPInvokeTypeReturn(const cppast::cpp_type& type);
+    std::string ToPInvokeTypeParam(const cppast::cpp_type& type);
+
     CSharpPrinter printer_;
 };
 
