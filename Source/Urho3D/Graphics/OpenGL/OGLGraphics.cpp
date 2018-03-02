@@ -232,7 +232,7 @@ Graphics::Graphics(Context* context) :
     fullscreen_(false),
     borderless_(false),
     resizable_(false),
-    highDPI_(false),
+	virtualPixelToPixelRatio_(1.0f),
     vsync_(false),
     monitor_(0),
     refreshRate_(0),
@@ -285,7 +285,7 @@ Graphics::~Graphics()
     context_->ReleaseSDL();
 }
 
-bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, bool resizable, bool highDPI, bool vsync,
+bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, bool resizable, float virtualp_to_pixel_Ratio, bool vsync,
     bool tripleBuffer, int multiSample, int monitor, int refreshRate)
 {
     URHO3D_PROFILE(SetScreenMode);
@@ -313,12 +313,12 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
     multiSample = Clamp(multiSample, 1, 16);
 
     if (IsInitialized() && width == width_ && height == height_ && fullscreen == fullscreen_ && borderless == borderless_ &&
-        resizable == resizable_ && vsync == vsync_ && tripleBuffer == tripleBuffer_ && multiSample == multiSample_)
+        resizable == resizable_ && vsync == vsync_ && virtualp_to_pixel_Ratio == virtualPixelToPixelRatio_ && tripleBuffer == tripleBuffer_ && multiSample == multiSample_)
         return true;
 
     // If only vsync changes, do not destroy/recreate the context
     if (IsInitialized() && width == width_ && height == height_ && fullscreen == fullscreen_ && borderless == borderless_ &&
-        resizable == resizable_ && tripleBuffer == tripleBuffer_ && multiSample == multiSample_ && vsync != vsync_)
+        resizable == resizable_ && virtualp_to_pixel_Ratio == virtualPixelToPixelRatio_ && tripleBuffer == tripleBuffer_ && multiSample == multiSample_ && vsync != vsync_)
     {
         SDL_GL_SetSwapInterval(vsync ? 1 : 0);
         vsync_ = vsync;
@@ -439,7 +439,7 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
             flags |= SDL_WINDOW_BORDERLESS;
         if (resizable)
             flags |= SDL_WINDOW_RESIZABLE;
-        if (highDPI)
+        if (virtualp_to_pixel_Ratio < 1.0f)
             flags |= SDL_WINDOW_ALLOW_HIGHDPI;
 
         SDL_SetHint(SDL_HINT_ORIENTATIONS, orientations_.CString());
@@ -512,6 +512,7 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
     multiSample_ = multiSample;
     monitor_ = monitor;
     refreshRate_ = refreshRate;
+	virtualPixelToPixelRatio_ = virtualp_to_pixel_Ratio;
 
     SDL_GL_GetDrawableSize(window_, &width_, &height_);
     if (!fullscreen)
@@ -519,7 +520,7 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
 
     int logicalWidth, logicalHeight;
     SDL_GetWindowSize(window_, &logicalWidth, &logicalHeight);
-    highDPI_ = (width_ != logicalWidth) || (height_ != logicalHeight);
+    //virtualPixelToPixelRatio_ = float(logicalWidth) / float(width_);
 
     // Reset rendertargets and viewport for the new screen mode
     ResetRenderTargets();
@@ -542,25 +543,15 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
     URHO3D_LOGINFO(msg);
 #endif
 
-    using namespace ScreenMode;
 
-    VariantMap& eventData = GetEventDataMap();
-    eventData[P_WIDTH] = width_;
-    eventData[P_HEIGHT] = height_;
-    eventData[P_FULLSCREEN] = fullscreen_;
-    eventData[P_BORDERLESS] = borderless_;
-    eventData[P_RESIZABLE] = resizable_;
-    eventData[P_HIGHDPI] = highDPI_;
-    eventData[P_MONITOR] = monitor_;
-    eventData[P_REFRESHRATE] = refreshRate_;
-    SendEvent(E_SCREENMODE, eventData);
+	sendScreenModeEvent();
 
     return true;
 }
 
 bool Graphics::SetMode(int width, int height)
 {
-    return SetMode(width, height, fullscreen_, borderless_, resizable_, highDPI_, vsync_, tripleBuffer_, multiSample_, monitor_, refreshRate_);
+    return SetMode(width, height, fullscreen_, borderless_, resizable_, virtualPixelToPixelRatio_, vsync_, tripleBuffer_, multiSample_, monitor_, refreshRate_);
 }
 
 void Graphics::SetSRGB(bool enable)
@@ -2269,7 +2260,7 @@ void Graphics::OnWindowResized()
 
     int logicalWidth, logicalHeight;
     SDL_GetWindowSize(window_, &logicalWidth, &logicalHeight);
-    highDPI_ = (width_ != logicalWidth) || (height_ != logicalHeight);
+	//virtualPixelToPixelRatio_ = float(logicalWidth) / float(width_);
 
     // Reset rendertargets and viewport for the new screen size. Also clean up any FBO's, as they may be screen size dependent
     CleanupFramebuffers();
@@ -2277,18 +2268,23 @@ void Graphics::OnWindowResized()
 
     URHO3D_LOGTRACEF("Window was resized to %dx%d", width_, height_);
 
-    using namespace ScreenMode;
+	sendScreenModeEvent();
 
-    VariantMap& eventData = GetEventDataMap();
-    eventData[P_WIDTH] = width_;
-    eventData[P_HEIGHT] = height_;
-    eventData[P_FULLSCREEN] = fullscreen_;
-    eventData[P_RESIZABLE] = resizable_;
-    eventData[P_BORDERLESS] = borderless_;
-    eventData[P_HIGHDPI] = highDPI_;
-    SendEvent(E_SCREENMODE, eventData);
 }
-
+void Graphics::sendScreenModeEvent()
+{
+	using namespace ScreenMode;
+	VariantMap& eventData = GetEventDataMap();
+	eventData[P_WIDTH] = width_;
+	eventData[P_HEIGHT] = height_;
+	eventData[P_FULLSCREEN] = fullscreen_;
+	eventData[P_BORDERLESS] = borderless_;
+	eventData[P_RESIZABLE] = resizable_;
+	eventData[P_PIXELRATIO] = virtualPixelToPixelRatio_;
+	eventData[P_MONITOR] = monitor_;
+	eventData[P_REFRESHRATE] = refreshRate_;
+	SendEvent(E_SCREENMODE, eventData);
+}
 void Graphics::OnWindowMoved()
 {
     if (!window_ || fullscreen_)

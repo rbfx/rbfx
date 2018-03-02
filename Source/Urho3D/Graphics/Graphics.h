@@ -100,7 +100,7 @@ public:
     void SetWindowPosition(int x, int y);
     /// Set screen mode. Return true if successful.
     bool SetMode
-        (int width, int height, bool fullscreen, bool borderless, bool resizable, bool highDPI, bool vsync, bool tripleBuffer,
+        (int width, int height, bool fullscreen, bool borderless, bool resizable, float virtualp_to_pixel_Ratio, bool vsync, bool tripleBuffer,
             int multiSample, int monitor, int refreshRate);
     /// Set screen resolution only. Return true if successful.
     bool SetMode(int width, int height);
@@ -294,8 +294,9 @@ public:
     /// Return whether window is resizable.
     bool GetResizable() const { return resizable_; }
 
-    /// Return whether window is high DPI.
-    bool GetHighDPI() const { return highDPI_; }
+	void SetVirtualPixelToPixelRatio(float ratio);
+
+	float GetVirtualPixelToPixelRatio() const { return virtualPixelToPixelRatio_; }
 
     /// Return whether vertical sync is on.
     bool GetVSync() const { return vsync_; }
@@ -495,7 +496,10 @@ public:
 
     /// Window was resized through user interaction. Called by Input subsystem.
     void OnWindowResized();
-    /// Window was moved through user interaction. Called by Input subsystem.
+
+
+
+	/// Window was moved through user interaction. Called by Input subsystem.
     void OnWindowMoved();
     /// Restore GPU objects and reinitialize state. Requires an open window. Used only on OpenGL.
     void Restore();
@@ -639,8 +643,10 @@ private:
     void SetVertexAttribDivisor(unsigned location, unsigned divisor);
     /// Release/clear GPU objects and optionally close the window. Used only on OpenGL.
     void Release(bool clearGPUObjects, bool closeWindow);
-
-    /// Mutex for accessing the GPU objects vector from several threads.
+	
+	void sendScreenModeEvent();
+   
+	/// Mutex for accessing the GPU objects vector from several threads.
     Mutex gpuObjectMutex_;
     /// Implementation.
     GraphicsImpl* impl_;
@@ -666,8 +672,8 @@ private:
     bool borderless_;
     /// Resizable flag.
     bool resizable_;
-    /// High DPI flag.
-    bool highDPI_;
+    /// ratio of virtual pixels to real pixels (High DPI would be 0.5f)
+    float virtualPixelToPixelRatio_;
     /// Vertical sync flag.
     bool vsync_;
     /// Refresh rate in Hz. Only used in fullscreen, 0 when windowed

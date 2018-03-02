@@ -104,7 +104,7 @@ void Graphics::SetOrientations(const String& orientations)
 
 bool Graphics::ToggleFullscreen()
 {
-    return SetMode(width_, height_, !fullscreen_, borderless_, resizable_, highDPI_, vsync_, tripleBuffer_, multiSample_, monitor_, refreshRate_);
+    return SetMode(width_, height_, !fullscreen_, borderless_, resizable_, virtualPixelToPixelRatio_, vsync_, tripleBuffer_, multiSample_, monitor_, refreshRate_);
 }
 
 void Graphics::SetShaderParameter(StringHash param, const Variant& value)
@@ -175,6 +175,11 @@ IntVector2 Graphics::GetWindowPosition() const
         return position;
     }
     return position_;
+}
+
+void Graphics::SetVirtualPixelToPixelRatio(float ratio)
+{
+	SetMode(width_, height_, fullscreen_, borderless_, resizable_, ratio, vsync_, tripleBuffer_, multiSample_, monitor_, refreshRate_);
 }
 
 PODVector<IntVector3> Graphics::GetResolutions(int monitor) const
@@ -402,6 +407,8 @@ void Graphics::CreateWindowIcon()
         }
     }
 }
+
+
 
 void RegisterGraphicsLibrary(Context* context)
 {
