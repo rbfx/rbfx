@@ -185,9 +185,16 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                                 FMT_CAPTURE(paramNameList));
                             printer_.Indent();
                             {
-                                printer_ << fmt::format("{return}this.{name}({paramNameListCs});",
-                                    fmt::arg("return", IsVoid(func.return_type()) ? "" : "return "), FMT_CAPTURE(name),
+                                auto expr = fmt::format("{name}({paramNameListCs})", FMT_CAPTURE(name),
                                     FMT_CAPTURE(paramNameListCs));
+                                if (!IsVoid(func.return_type()))
+                                {
+                                    expr = MapToPInvoke(func.return_type(), expr);
+                                    printer_.Write(fmt::format("return {}", expr));
+                                }
+                                else
+                                    printer_.Write(expr);
+                                printer_.Write(";");
                             }
                             printer_.Dedent("});");
                         }

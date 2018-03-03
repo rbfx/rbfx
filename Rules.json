@@ -27,13 +27,7 @@
       "IO/PackageFile.h",
       "Navigation/*.h",
       "Network/*.h",
-      "Resource/BackgroundLoader.h",
-      "Resource/Image.h",
-      "Resource/Localization.h",
-      "Resource/PListFile.h",
-      "Resource/Resource.h",
-      "Resource/ResourceCache.h",
-      "Resource/ResourceEvents.h",
+      "Resource/*.h",
       "UI/*.h"
     ],
     "exclude": [
@@ -100,6 +94,11 @@
       "Urho3D::CursorShapeInfo::osCursor_",
       // TODO: support multiple inheritance by generating interfaces
       "Urho3D::HttpRequest",
+      "Urho3D::XMLElement::*(Urho3D::String const&)*",
+      "Urho3D::XMLElement::*(Urho3D::String const&,Urho3D::String const&)*",
+      "Urho3D::JSONFile::GetRoot() const",
+      "Urho3D::JSONValue::JSONValue(Urho3D::String const&)",
+      "Urho3D::XPathQuery::SetVariable(Urho3D::String const&,Urho3D::String const&)"
     ]
   },
   "typemaps": [
