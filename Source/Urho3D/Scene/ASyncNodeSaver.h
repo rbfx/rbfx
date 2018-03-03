@@ -61,6 +61,7 @@ namespace Urho3D
 
 		bool isSaving = false;
 		SharedPtr<File> mFile;
+		String mFilePath;
 		Vector<SaveLevel> mLoadStack;
 		WeakPtr<Node> mRootNode;
 		int mNodesPerFrame = 10;

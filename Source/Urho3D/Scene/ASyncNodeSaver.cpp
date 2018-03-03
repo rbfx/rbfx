@@ -3,6 +3,7 @@
 #include "../Scene/Scene.h"
 #include "../Core/CoreEvents.h"
 #include "../IO/File.h"
+#include "../IO/FileSystem.h"
 
 namespace Urho3D {
 
@@ -34,7 +35,8 @@ namespace Urho3D {
 
 	void ASyncNodeSaver::StartSave(String filePath, Node* node)
 	{
-		StartSave(new File(context_, filePath, FILE_WRITE), node);
+		mFilePath = filePath;
+		StartSave(new File(context_, mFilePath + ".tmp", FILE_WRITE), node);
 	}
 
 	void ASyncNodeSaver::CancelSaving()
@@ -102,6 +104,8 @@ namespace Urho3D {
 		isSaving = false;
 		mRootNode = nullptr;
 		mFile = nullptr;
+		GSS<FileSystem>()->Rename(mFilePath + ".tmp", mFilePath);
+		mFilePath = "";
 		UnsubscribeFromEvent(E_UPDATE);
 	}
 
