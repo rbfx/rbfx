@@ -63,6 +63,10 @@ void Urho3DCustomPass::Start()
     // Remove default value of up vector due to C# limitations
     if (generator->symbols_.TryGetValue("Urho3D::Node::LookAt(Urho3D::Vector3 const&,Urho3D::Vector3 const&,Urho3D::TransformSpace)", entity))
         entity->children_[1]->flags_ |= HintIgnoreAstDefaultValue;
+
+    // Third parameter is not suitable for default value therefore ignore default value of second parameter as well
+    if (generator->symbols_.TryGetValue("Urho3D::UIElement::SetLayout(Urho3D::LayoutMode,int,Urho3D::IntRect const&)", entity))
+        entity->children_[1]->flags_ |= HintIgnoreAstDefaultValue;
 }
 
 bool Urho3DCustomPass::Visit(MetaEntity* entity, cppast::visitor_info info)

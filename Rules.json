@@ -2,6 +2,7 @@
   "headers": {
     "include": [
       "Math/MathDefs.h",
+      "Math/Color.h",
       "Container/RefCounted.h",
       "Core/Object.h",
       "Core/Context.h",
@@ -209,7 +210,20 @@
     {
       "type": "Urho3D::Plane",
       "cstype": "Urho3D.Plane",
-      "ptype": "Urho3D.Plane"
+      "ptype": "Urho3D.Plane",
+      "isValueType": true,
+    },
+    {
+      "type": "Urho3D::Rect",
+      "cstype": "Urho3D.Rect",
+      "ptype": "Urho3D.Rect",
+      "isValueType": true,
+    },
+    {
+      "type": "Urho3D::IntRect",
+      "cstype": "Urho3D.IntRect",
+      "ptype": "Urho3D.IntRect",
+      "isValueType": true,
     },
   ],
   "final": [
