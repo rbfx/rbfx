@@ -79,6 +79,7 @@ bool GeneratorContext::LoadRules(const String& jsonPath)
         map.cType_ = typeMap.Get("ctype").GetString().CString();
         map.csType_ = typeMap.Get("cstype").GetString().CString();
         map.pInvokeType_ = typeMap.Get("ptype").GetString().CString();
+        map.isValueType = typeMap.Get("isValueType").GetBool();
 
         if (map.cType_.empty())
             map.cType_ = map.cppType_;

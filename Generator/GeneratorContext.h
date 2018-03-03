@@ -65,6 +65,7 @@ struct TypeMap
     std::string cppToCTemplate_ = "{value}";
     std::string csToPInvokeTemplate_ = "{value}";
     std::string pInvokeToCSTemplate_ = "{value}";
+    bool isValueType = false;
 };
 
 class GeneratorContext

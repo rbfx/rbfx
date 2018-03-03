@@ -161,42 +161,50 @@
     {
       "type": "Urho3D::Vector2",
       "cstype": "Urho3D.Vector2",
-      "ptype": "Urho3D.Vector2"
+      "ptype": "Urho3D.Vector2",
+      "isValueType": true,
     },
     {
       "type": "Urho3D::IntVector2",
       "cstype": "Urho3D.IntVector2",
-      "ptype": "Urho3D.IntVector2"
+      "ptype": "Urho3D.IntVector2",
+      "isValueType": true,
     },
     {
       "type": "Urho3D::Vector3",
       "cstype": "Urho3D.Vector3",
-      "ptype": "Urho3D.Vector3"
+      "ptype": "Urho3D.Vector3",
+      "isValueType": true,
     },
     {
       "type": "Urho3D::IntVector3",
       "cstype": "Urho3D.IntVector3",
-      "ptype": "Urho3D.IntVector3"
+      "ptype": "Urho3D.IntVector3",
+      "isValueType": true,
     },
     {
       "type": "Urho3D::Vector4",
       "cstype": "Urho3D.Vector4",
-      "ptype": "Urho3D.Vector4"
+      "ptype": "Urho3D.Vector4",
+      "isValueType": true,
     },
     {
       "type": "Urho3D::Matrix3",
       "cstype": "Urho3D.Matrix3",
-      "ptype": "Urho3D.Matrix3"
+      "ptype": "Urho3D.Matrix3",
+      "isValueType": true,
     },
     {
       "type": "Urho3D::Matrix4",
       "cstype": "Urho3D.Matrix4",
-      "ptype": "Urho3D.Matrix4"
+      "ptype": "Urho3D.Matrix4",
+      "isValueType": true,
     },
     {
       "type": "Urho3D::Quaternion",
       "cstype": "Urho3D.Quaternion",
-      "ptype": "Urho3D.Quaternion"
+      "ptype": "Urho3D.Quaternion",
+      "isValueType": true,
     },
     {
       "type": "Urho3D::Plane",
