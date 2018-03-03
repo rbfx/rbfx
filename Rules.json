@@ -26,6 +26,7 @@
       "IO/Log.h",
       "IO/PackageFile.h",
       "Navigation/*.h",
+      "Network/*.h",
       "Resource/BackgroundLoader.h",
       "Resource/Image.h",
       "Resource/Localization.h",
@@ -96,7 +97,9 @@
       "Urho3D::CrowdManager::GetDistanceToWall(Urho3D::Vector3 const&,float,int,Urho3D::Vector3*,Urho3D::Vector3*)",
       "Urho3D::JoystickState::joystick_",
       "Urho3D::JoystickState::controller_",
-      "Urho3D::CursorShapeInfo::osCursor_"
+      "Urho3D::CursorShapeInfo::osCursor_",
+      // TODO: support multiple inheritance by generating interfaces
+      "Urho3D::HttpRequest",
     ]
   },
   "typemaps": [
@@ -137,7 +140,7 @@
       "cpp_to_c": "script->AddRef<Urho3D::VariantMap>({value})",
       "c_to_cpp": "*{value}",
       "pinvoke_to_cs": "new global::Urho3D.VariantMap({value})",
-      "cs_to_pinvoke": "{value}.instance_"
+      "cs_to_pinvoke": "VariantMap.__ToPInvoke({value})",
     },
     {
       "type": "Urho3D::Vector2",
@@ -158,7 +161,32 @@
       "type": "Urho3D::IntVector3",
       "cstype": "Urho3D.IntVector3",
       "ptype": "Urho3D.IntVector3"
-    }
+    },
+    {
+      "type": "Urho3D::Vector4",
+      "cstype": "Urho3D.Vector4",
+      "ptype": "Urho3D.Vector4"
+    },
+    {
+      "type": "Urho3D::Matrix3",
+      "cstype": "Urho3D.Matrix3",
+      "ptype": "Urho3D.Matrix3"
+    },
+    {
+      "type": "Urho3D::Matrix4",
+      "cstype": "Urho3D.Matrix4",
+      "ptype": "Urho3D.Matrix4"
+    },
+    {
+      "type": "Urho3D::Quaternion",
+      "cstype": "Urho3D.Quaternion",
+      "ptype": "Urho3D.Quaternion"
+    },
+    {
+      "type": "Urho3D::Plane",
+      "cstype": "Urho3D.Plane",
+      "ptype": "Urho3D.Plane"
+    },
   ],
   "final": [
     "Urho3D::IKSolver"

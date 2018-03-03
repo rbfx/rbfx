@@ -75,8 +75,7 @@ protected:
 using CppParameters = cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>;
 /// Returns a list of parameter types and names as if they were in a function declaration.
 std::string ParameterList(const CppParameters& params,
-    const std::function<std::string(const cppast::cpp_type&)>& typeToString = nullptr,
-    const char* defaultValueNamespaceSeparator = nullptr);
+    const std::function<std::string(const cppast::cpp_type&)>& typeToString = nullptr);
 /// Returns a list of parameter names separated by comma.
 std::string ParameterNameList(const CppParameters& params,
     const std::function<std::string(const cppast::cpp_function_parameter&)>& nameFilter = nullptr);

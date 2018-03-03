@@ -168,6 +168,12 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_ << fmt::format("internal static IntPtr __ToPInvoke({} source)", entity->name_);
             printer_.Indent();
             {
+                printer_ << "if (source == null)";
+                printer_.Indent();
+                {
+                    printer_ << "return IntPtr.Zero;";
+                }
+                printer_.Dedent();
                 printer_ << "return source.instance_;";
             }
             printer_.Dedent();
@@ -251,8 +257,8 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
     {
         const auto& ctor = entity->Ast<cppast::cpp_constructor>();
         printer_ << dllImport;
-        auto csParams = ParameterList(ctor.parameters(), std::bind(&GeneratePInvokePass::ToPInvokeTypeParam,
-            this, std::placeholders::_1));
+        auto csParams = ParameterList(ctor.parameters(),
+            std::bind(&GeneratePInvokePass::ToPInvokeTypeParam, this, std::placeholders::_1));
         printer_ << fmt::format("internal static extern IntPtr {}({});", entity->cFunctionName_, csParams);
         printer_ << "";
     }
@@ -262,7 +268,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         printer_ << dllImport;
         auto csParams = ParameterList(func.parameters(),
-            std::bind(&GeneratePInvokePass::ToPInvokeTypeParam, this, std::placeholders::_1), nullptr);
+            std::bind(&GeneratePInvokePass::ToPInvokeTypeParam, this, std::placeholders::_1));
         auto rtype = ToPInvokeTypeReturn(func.return_type());
         auto cFunction = entity->cFunctionName_;
         auto className = entity->parent_->name_;

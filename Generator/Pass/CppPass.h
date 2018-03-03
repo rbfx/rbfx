@@ -39,6 +39,7 @@ enum CppEntityHints
 {
     HintNone = 0,
     HintReadOnly = 1,
+    HintIgnoreAstDefaultValue = 2,
 };
 
 URHO3D_TO_FLAGS_ENUM(CppEntityHints);
@@ -91,39 +92,43 @@ struct MetaEntity : public RefCounted
         if (!defaultValue_.empty())
             return defaultValue_;
 
-        switch (kind_)
+        if ((flags_ & HintIgnoreAstDefaultValue) == 0)
         {
-        case cppast::cpp_entity_kind::enum_value_t:
-        {
-            const auto& val = Ast<cppast::cpp_enum_value>().value();
-            if (val.has_value())
-                return ToString(val.value());
-            break;
-        }
-        case cppast::cpp_entity_kind::variable_t:
-        {
-            const auto& val = Ast<cppast::cpp_variable>().default_value();
-            if (val.has_value())
-                return ToString(val.value());
-            break;
-        }
-        case cppast::cpp_entity_kind::member_variable_t:
-        {
-            const auto& val = Ast<cppast::cpp_member_variable>().default_value();
-            if (val.has_value())
-                return ToString(val.value());
-            break;
-        }
-        case cppast::cpp_entity_kind::bitfield_t:break;
-        case cppast::cpp_entity_kind::function_parameter_t:
-        {
-            const auto& val = Ast<cppast::cpp_function_parameter>().default_value();
-            if (val.has_value())
-                return ToString(val.value());
-            break;
-        }
-        default:
-            break;
+            switch (kind_)
+            {
+            case cppast::cpp_entity_kind::enum_value_t:
+            {
+                const auto& val = Ast<cppast::cpp_enum_value>().value();
+                if (val.has_value())
+                    return ToString(val.value());
+                break;
+            }
+            case cppast::cpp_entity_kind::variable_t:
+            {
+                const auto& val = Ast<cppast::cpp_variable>().default_value();
+                if (val.has_value())
+                    return ToString(val.value());
+                break;
+            }
+            case cppast::cpp_entity_kind::member_variable_t:
+            {
+                const auto& val = Ast<cppast::cpp_member_variable>().default_value();
+                if (val.has_value())
+                    return ToString(val.value());
+                break;
+            }
+            case cppast::cpp_entity_kind::bitfield_t:
+                break;
+            case cppast::cpp_entity_kind::function_parameter_t:
+            {
+                const auto& val = Ast<cppast::cpp_function_parameter>().default_value();
+                if (val.has_value())
+                    return ToString(val.value());
+                break;
+            }
+            default:
+                break;
+            }
         }
 
         return "";

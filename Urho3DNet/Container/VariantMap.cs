@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using CSharp;
 
 namespace Urho3D
 {
@@ -174,5 +175,19 @@ namespace Urho3D
 
         public ICollection<StringHash> Keys => this.Select(kv => kv.Key).Distinct().ToList();
         public ICollection<Variant> Values => this.Select(kv => kv.Value).Distinct().ToList();
+
+        internal static VariantMap __FromPInvoke(IntPtr source)
+        {
+            return InstanceCache.GetOrAdd<VariantMap>(source, ptr => new VariantMap(ptr));
+        }
+
+        internal static IntPtr __ToPInvoke(VariantMap source)
+        {
+            if (source == null)
+            {
+                return IntPtr.Zero;
+            }
+            return source.instance_;
+        }
     }
 }

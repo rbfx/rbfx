@@ -133,15 +133,15 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         auto className = cls->name_;
         auto baseCtor = hasBase ? " : base(IntPtr.Zero)" : "";
-        auto paramList = ParameterList(ctor.parameters(),
-            std::bind(&GenerateCSApiPass::ToCSType, this, std::placeholders::_1), ".");
         auto paramNameList = ParameterNameList(ctor.parameters(), mapToPInvoke);
         auto cFunctionName = entity->cFunctionName_;
 
         // If class has a base class we call base constructor that does nothing. Class will be fully constructed here.
-        printer_ << fmt::format("{access} {className}({paramList}){baseCtor}",
-            fmt::arg("access", entity->access_ == cppast::cpp_public ? "public" : "protected"), FMT_CAPTURE(className),
-            FMT_CAPTURE(paramList), FMT_CAPTURE(baseCtor));
+        printer_.Write(fmt::format("{access} {className}(", fmt::arg("access",
+            entity->access_ == cppast::cpp_public ? "public" : "protected"), FMT_CAPTURE(className)));
+
+        PrintCSParameterList(entity->children_);
+        printer_.Write(fmt::format("){baseCtor}", FMT_CAPTURE(baseCtor)));
 
         printer_.Indent();
         {
@@ -204,8 +204,10 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         {
             if (!ctor.is_explicit() && Urho3D::GetTypeName((*ctor.parameters().begin()).type()) != cls->symbolName_)
             {
-                printer_ << fmt::format("public static implicit operator {className}({paramList})",
-                    FMT_CAPTURE(className), FMT_CAPTURE(paramList));
+                printer_.Write(fmt::format("public static implicit operator {className}(", FMT_CAPTURE(className)));
+                PrintCSParameterList(entity->children_);
+                printer_.Write(")");
+
                 printer_.Indent();
                 {
                     printer_ << fmt::format("return new {className}({paramNameList});",
@@ -221,15 +223,20 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         const auto& func = entity->Ast<cppast::cpp_member_function>();
 
         auto rtype = ToCSType(func.return_type());
-        auto paramList = ParameterList(func.parameters(),
-            std::bind(&GenerateCSApiPass::ToCSType, this, std::placeholders::_1), ".");
         auto pc = func.parameters().empty() ? "" : ", ";
         auto paramNameList = ParameterNameList(func.parameters(), mapToPInvoke);
 
-        printer_ << fmt::format("{access} {virtual}{rtype} {name}({paramList})",
+        // Function start
+        printer_.Write(fmt::format("{access} {virtual}{rtype} {name}(",
             fmt::arg("access", entity->access_ == cppast::cpp_public ? "public" : "protected"),
-            fmt::arg("virtual", func.is_virtual() ? "virtual " : ""), FMT_CAPTURE(rtype), FMT_CAPTURE(paramList),
-            fmt::arg("name", entity->name_));
+            fmt::arg("virtual", func.is_virtual() ? "virtual " : ""), FMT_CAPTURE(rtype),
+            fmt::arg("name", entity->name_)));
+
+        // Parameter list
+        PrintCSParameterList(entity->children_);
+        printer_.Write(")");
+
+        // Body
         printer_.Indent();
         {
             std::string call = fmt::format("{cFunction}(instance_{pc}{paramNameList})",
@@ -401,6 +408,44 @@ std::string GenerateCSApiPass::MapToPInvoke(const cppast::cpp_type& type, const 
         return fmt::format("{}.__ToPInvoke({})", returnType, expression);
     }
     return expression;
+}
+
+void GenerateCSApiPass::PrintCSParameterList(const std::vector<SharedPtr<MetaEntity>>& parameters)
+{
+    for (const auto& param : parameters)
+    {
+        const auto& cppType = param->Ast<cppast::cpp_function_parameter>().type();
+        auto value = param->GetDefaultValue();
+        printer_.Write(fmt::format("{} {}", ToCSType(cppType), EnsureNotKeyword(param->name_)));
+
+        if (!value.empty())
+        {
+            printer_.Write("=");
+            WeakPtr<MetaEntity> entity;
+            if (IsComplexValueType(cppType) || value == "nullptr")
+            {
+                // C# may only have default values constructed by default constructor. Because of this such default
+                // values are replaced with null. Function body will construct actual default value if parameter is
+                // null.
+                value = "null";
+            }
+            else if (value == "String::EMPTY")
+                value = "\"\"";
+            else if (value == "Variant::EMPTY")
+                value = "";
+            else if (value == "Vector3::UP")
+                value = "";
+            else if (generator->symbols_.TryGetValue("Urho3D::" + value, entity))
+                value = entity->symbolName_;
+            else if (generator->enumValues_.TryGetValue(value, entity))
+                value = entity->symbolName_;
+
+            printer_.Write(str::replace_str(value, "::", "."));
+        }
+
+        if (param != parameters.back())
+            printer_.Write(", ");
+    }
 }
 
 }

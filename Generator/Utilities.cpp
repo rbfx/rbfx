@@ -173,7 +173,7 @@ std::string EnsureNotKeyword(const std::string& value)
 }
 
 std::string ParameterList(const CppParameters& params,
-    const std::function<std::string(const cppast::cpp_type&)>& typeToString, const char* defaultValueNamespaceSeparator)
+    const std::function<std::string(const cppast::cpp_type&)>& typeToString)
 {
     std::vector<std::string> parts;
     for (const auto& param : params)
@@ -184,33 +184,6 @@ std::string ParameterList(const CppParameters& params,
         else
             typeString = cppast::to_string(param.type());
         typeString += (" " + EnsureNotKeyword(param.name())).c_str();
-
-        if (defaultValueNamespaceSeparator != nullptr && param.default_value().has_value())
-        {
-            std::string value = ToString(param.default_value().value());
-
-            // TODO: Ugly band-aid for enum values as default parameter values. Get rid of it ASAP!
-            if (strcmp(defaultValueNamespaceSeparator, ".") == 0)
-            {
-                WeakPtr<MetaEntity> entity;
-                if (value == "nullptr")
-                    value = "null";
-                else if (value == "String::EMPTY")
-                    value = "\"\"";
-                else if (value == "Variant::EMPTY")
-                    value = "";
-                else if (value == "Vector3::UP")
-                    value = "";
-                else if (generator->symbols_.TryGetValue("Urho3D::" + value, entity))
-                    value = entity->symbolName_;
-                else if (generator->enumValues_.TryGetValue(value, entity))
-                    value = entity->symbolName_;
-            }
-            // ---------------------------------------------------------------------------------------------------------
-
-            if (!value.empty())
-                typeString += "=" + str::replace_str(value, "::", defaultValueNamespaceSeparator);
-        }
         parts.emplace_back(typeString);
     }
     return str::join(parts, ", ");

@@ -59,6 +59,10 @@ void Urho3DCustomPass::Start()
         entity->defaultValue_ = "new Urho3D.IntVector2(MathDefs.M_MIN_INT, MathDefs.M_MIN_INT)";
         entity->flags_ |= HintReadOnly;
     }
+
+    // Remove default value of up vector due to C# limitations
+    if (generator->symbols_.TryGetValue("Urho3D::Node::LookAt(Urho3D::Vector3 const&,Urho3D::Vector3 const&,Urho3D::TransformSpace)", entity))
+        entity->children_[1]->flags_ |= HintIgnoreAstDefaultValue;
 }
 
 bool Urho3DCustomPass::Visit(MetaEntity* entity, cppast::visitor_info info)
@@ -123,6 +127,14 @@ bool Urho3DCustomPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     }
     else if (entity->name_.find("SDL_") == 0)   // Get rid of anything else belonging to sdl
         entity->Remove();
+    else if (entity->kind_ == cppast::cpp_entity_kind::member_function_t)
+    {
+        for (const auto& param : entity->children_)
+        {
+            if (param->GetDefaultValue() == "Variant::emptyVariantMap")
+                param->defaultValue_ = " ";
+        }
+    }
     return true;
 }
 
