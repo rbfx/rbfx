@@ -68,7 +68,7 @@ std::string GetScopeName(const cppast::cpp_entity& e)
             ref.value().kind() != cppast::cpp_entity_kind::file_t)
         {
             const auto& scope = ref.value().scope_name();
-            if (scope.has_value())
+            if (scope.has_value() && !scope.value().name().empty())
                 elements.emplace_back(scope.value().name());
         }
         ref = ref.value().parent();
