@@ -179,7 +179,12 @@ IntVector2 Graphics::GetWindowPosition() const
 
 void Graphics::SetVirtualPixelToPixelRatio(float ratio)
 {
-	SetMode(width_, height_, fullscreen_, borderless_, resizable_, ratio, vsync_, tripleBuffer_, multiSample_, monitor_, refreshRate_);
+	//round ratio to nearest multiple of 2.
+	float power = Ln(ratio) / Ln(2);
+	int powerInt = RoundToInt(power);
+	float roundedRatio = pow(float(2), float(powerInt));
+
+	SetMode(width_, height_, fullscreen_, borderless_, resizable_, roundedRatio, vsync_, tripleBuffer_, multiSample_, monitor_, refreshRate_);
 }
 
 PODVector<IntVector3> Graphics::GetResolutions(int monitor) const

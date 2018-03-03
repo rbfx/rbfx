@@ -294,8 +294,10 @@ public:
     /// Return whether window is resizable.
     bool GetResizable() const { return resizable_; }
 
+	/// Set the ratio of virtual pixels to device pixels. values will be rounded to nearset multiple of 2 (..., 1/4, 1/2, 1, 2, 4, ...)
 	void SetVirtualPixelToPixelRatio(float ratio);
 
+	/// Return the ratio of virtual pixel to device pixels.
 	float GetVirtualPixelToPixelRatio() const { return virtualPixelToPixelRatio_; }
 
     /// Return whether vertical sync is on.
