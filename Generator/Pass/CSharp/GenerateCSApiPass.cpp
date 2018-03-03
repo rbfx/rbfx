@@ -420,21 +420,22 @@ void GenerateCSApiPass::PrintCSParameterList(const std::vector<SharedPtr<MetaEnt
 
         if (!value.empty())
         {
+            auto* typeMap = generator->GetTypeMap(cppType);
             printer_.Write("=");
             WeakPtr<MetaEntity> entity;
-            if (IsComplexValueType(cppType) || value == "nullptr")
+            if (typeMap != nullptr && typeMap->csType_ == "string")
+            {
+                // String literals
+                if (value == "String::EMPTY")  // TODO: move to json?
+                    value = "\"\"";
+            }
+            else if (IsComplexValueType(cppType) || value == "nullptr")
             {
                 // C# may only have default values constructed by default constructor. Because of this such default
                 // values are replaced with null. Function body will construct actual default value if parameter is
                 // null.
                 value = "null";
             }
-            else if (value == "String::EMPTY")
-                value = "\"\"";
-            else if (value == "Variant::EMPTY")
-                value = "";
-            else if (value == "Vector3::UP")
-                value = "";
             else if (generator->symbols_.TryGetValue("Urho3D::" + value, entity))
                 value = entity->symbolName_;
             else if (generator->enumValues_.TryGetValue(value, entity))

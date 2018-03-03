@@ -79,6 +79,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             fmt::arg("params", ParameterList(func.parameters(), toCType)));
         printer_.Indent();
         {
+            PrintDefaultValueCode(entity->children_);
             printer_ << "return " + MapToCNoCopy(entity->parent_->sourceName_,
                 fmt::format("new {class}({params})", fmt::arg("class", className),
                     fmt::arg("params", ParameterNameList(func.parameters(), toCppType)))) + ";";
@@ -102,6 +103,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             fmt::arg("params", ParameterList(func.parameters(), toCType)));
         printer_.Indent();
         {
+            PrintDefaultValueCode(entity->children_);
             std::string call = "instance->";
             if (func.is_virtual())
                 // Virtual methods always overriden in wrapper class so accessing them by simple name should not be
@@ -148,6 +150,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             ToCType(func.return_type()), entity->cFunctionName_, ParameterList(func.parameters(), toCType));
         printer_.Indent();
         {
+            PrintDefaultValueCode(entity->children_);
             std::string call;
             if (entity->access_ == cppast::cpp_public)
                 // Non-virtual public methods sometimes have issues being called. Use fully qualified name for
@@ -352,6 +355,41 @@ std::string GenerateCApiPass::ToCType(const cppast::cpp_type& type)
 
     // Builtin type
     return typeName;
+}
+
+void GenerateCApiPass::PrintDefaultValueCode(const std::vector<SharedPtr<MetaEntity>>& parameters)
+{
+    for (const auto& param : parameters)
+    {
+        auto value = param->GetDefaultValue();
+        if (value.empty())
+            continue;
+
+        const auto& cppType = param->Ast<cppast::cpp_function_parameter>().type();
+        auto* typeMap = generator->GetTypeMap(cppType);
+        if (typeMap != nullptr && typeMap->csType_ == "string")
+        {
+            printer_ << fmt::format("if ({} == nullptr)", param->name_);
+            printer_.Indent();
+            {
+                printer_ << fmt::format("{} = \"\";", param->name_);
+            }
+            printer_.Dedent();
+        }
+        else if (IsComplexValueType(cppType) && value != "nullptr")
+        {
+            printer_ << fmt::format("if ({} == nullptr)", param->name_);
+            printer_.Indent();
+            {
+                auto typeName = Urho3D::GetTypeName(cppType);
+                std::string ref;
+                if (cppType.kind() == cppast::cpp_type_kind::reference_t)
+                    ref = "&";
+                printer_ << fmt::format("{} = {}const_cast<{}{}>({});", param->name_, ref, typeName, ref, value);
+            }
+            printer_.Dedent();
+        }
+    }
 }
 
 }

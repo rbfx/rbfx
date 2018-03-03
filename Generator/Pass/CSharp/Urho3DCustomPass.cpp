@@ -127,14 +127,7 @@ bool Urho3DCustomPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     }
     else if (entity->name_.find("SDL_") == 0)   // Get rid of anything else belonging to sdl
         entity->Remove();
-    else if (entity->kind_ == cppast::cpp_entity_kind::member_function_t)
-    {
-        for (const auto& param : entity->children_)
-        {
-            if (param->GetDefaultValue() == "Variant::emptyVariantMap")
-                param->defaultValue_ = " ";
-        }
-    }
+
     return true;
 }
 
