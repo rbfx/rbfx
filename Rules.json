@@ -28,11 +28,20 @@
       "Navigation/*.h",
       "Network/*.h",
       "Resource/*.h",
-      "UI/*.h"
+      "UI/*.h",
+      "Graphics/*.h"
     ],
     "exclude": [
       "IK/IKConverters.h",
-      "UI/FontFace*.h"
+      "UI/FontFace*.h",
+      "Graphics/AnimationState.h",
+      "Graphics/GPUObject.h",
+      "Graphics/Geometry.h",
+      "Graphics/IndexBuffer.h",
+      "Graphics/OcclusionBuffer.h",
+      "Graphics/OctreeQuery.h",
+      "Graphics/Renderer.h",
+      "Graphics/Tangent.h",
     ]
   },
   "compiler": {
@@ -94,11 +103,19 @@
       "Urho3D::CursorShapeInfo::osCursor_",
       // TODO: support multiple inheritance by generating interfaces
       "Urho3D::HttpRequest",
+      "Urho3D::Octree",
       "Urho3D::XMLElement::*(Urho3D::String const&)*",
       "Urho3D::XMLElement::*(Urho3D::String const&,Urho3D::String const&)*",
       "Urho3D::JSONFile::GetRoot() const",
       "Urho3D::JSONValue::JSONValue(Urho3D::String const&)",
-      "Urho3D::XPathQuery::SetVariable(Urho3D::String const&,Urho3D::String const&)"
+      "Urho3D::XPathQuery::SetVariable(Urho3D::String const&,Urho3D::String const&)",
+      "Urho3D::RenderPath",
+      "Urho3D::RenderPathCommand",
+      "Urho3D::Texture::shaderResourceView_",
+      "Urho3D::Texture::target_",
+      "Urho3D::Graphics::GetCurrentMonitor()",
+      "Urho3D::Graphics::GetMaximized()",
+      "Urho3D::Skeleton::GetBone(Urho3D::String const&)",
     ]
   },
   "typemaps": [
@@ -188,6 +205,10 @@
     },
   ],
   "final": [
-    "Urho3D::IKSolver"
+    "Urho3D::IKSolver",
+    "Urho3D::Texture",
+    "Urho3D::Texture2D",
+    "Urho3D::Texture2DArray",
+    "Urho3D::Texture3D",
   ]
 }
