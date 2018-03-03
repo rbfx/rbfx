@@ -227,6 +227,10 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::member_function_t)
     {
+        auto isFinal = generator->final_.Contains(entity->parent_->symbolName_);
+        if (isFinal && entity->access_ != cppast::cpp_public)
+            return true;
+
         const auto& func = entity->Ast<cppast::cpp_member_function>();
 
         auto rtype = ToCSType(func.return_type());
@@ -302,6 +306,10 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::member_variable_t)
     {
+        auto isFinal = generator->final_.Contains(entity->parent_->symbolName_);
+        if (isFinal && entity->access_ != cppast::cpp_public)
+            return true;
+
         const auto& var = entity->Ast<cppast::cpp_member_variable>();
         auto* ns = entity->parent_.Get();
 

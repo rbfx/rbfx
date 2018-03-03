@@ -90,6 +90,11 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     else if (entity->kind_ == cppast::cpp_entity_kind::member_function_t)
     {
         const auto& func = entity->Ast<cppast::cpp_member_function>();
+
+        auto isFinal = generator->final_.Contains(entity->parent_->symbolName_);
+        if (isFinal && entity->access_ != cppast::cpp_public)
+            return true;
+
         entity->cFunctionName_ = GetUniqueName(Sanitize(entity->uniqueName_));
 
         auto name = entity->name_;
@@ -126,7 +131,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_.Dedent();
         printer_.WriteLine();
 
-        if (func.is_virtual())
+        if (func.is_virtual() && !isFinal)
         {
             printer_ << fmt::format("URHO3D_EXPORT_API void set_{name}_fn{cFunction}({className}* instance, void* fn)",
                 fmt::arg("name", Sanitize(entity->parent_->sourceName_)), FMT_CAPTURE(cFunction),
@@ -223,6 +228,10 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         // Constants with values get converted to native c# constants in GenerateCSApiPass
         if ((IsConst(var.type()) || entity->flags_ & HintReadOnly) && !entity->GetDefaultValue().empty())
+            return true;
+
+        auto isFinal = generator->final_.Contains(entity->parent_->symbolName_);
+        if (isFinal && entity->access_ != cppast::cpp_public)
             return true;
 
         entity->cFunctionName_ = Sanitize(ns->symbolName_ + "_" + entity->name_);

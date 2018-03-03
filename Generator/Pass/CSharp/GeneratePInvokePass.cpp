@@ -227,6 +227,10 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
     {
         const auto& var = entity->Ast<cppast::cpp_member_variable>();
 
+        auto isFinal = generator->final_.Contains(entity->parent_->symbolName_);
+        if (isFinal && entity->access_ != cppast::cpp_public)
+            return true;
+
         // Constants with values get converted to native c# constants in GenerateCSApiPass
         if (IsConst(var.type()) && !entity->GetDefaultValue().empty())
             return true;
@@ -264,6 +268,10 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::member_function_t)
     {
+        auto isFinal = generator->final_.Contains(entity->parent_->symbolName_);
+        if (isFinal && entity->access_ != cppast::cpp_public)
+            return true;
+
         const auto& func = entity->Ast<cppast::cpp_member_function>();
 
         printer_ << dllImport;
