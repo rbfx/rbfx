@@ -95,7 +95,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto name = entity->name_;
         auto cFunction = entity->cFunctionName_;
         auto paramNames = ParameterNameList(func.parameters(), toCppType);
-        auto className = entity->parent_->sourceName_;
+        auto className = entity->access_ == cppast::cpp_public ? entity->parent_->symbolName_ : entity->parent_->sourceName_;
 
         printer_ << fmt::format("URHO3D_EXPORT_API {rtype} {cFunction}({className}* instance{psep}{params})",
             fmt::arg("rtype", ToCType(func.return_type())), FMT_CAPTURE(cFunction), FMT_CAPTURE(className),
@@ -130,7 +130,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         {
             printer_ << fmt::format("URHO3D_EXPORT_API void set_{name}_fn{cFunction}({className}* instance, void* fn)",
                 fmt::arg("name", Sanitize(entity->parent_->sourceName_)), FMT_CAPTURE(cFunction),
-                FMT_CAPTURE(className));
+                fmt::arg("className", entity->parent_->sourceName_));
             printer_.Indent();
             {
                 printer_ << fmt::format("instance->fn{cFunction} = (decltype(instance->fn{cFunction}))fn;",
