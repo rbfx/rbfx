@@ -41,11 +41,11 @@ public:
     void Stop() override;
 
 protected:
-    std::string ExpandDefaultValue(const std::string& currentNamespace, const std::string& value);
     std::string MapToCS(const cppast::cpp_type& type, const std::string& expression);
     std::string ToCSType(const cppast::cpp_type& type);
     std::string MapToPInvoke(const cppast::cpp_type& type, const std::string& expression);
     void PrintCSParameterList(const std::vector<SharedPtr<MetaEntity>>& parameters);
+    std::string GetConvertedDefaultValue(MetaEntity* param, bool allowComplex);
 
     CSharpPrinter printer_;
 };

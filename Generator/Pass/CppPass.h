@@ -93,44 +93,48 @@ struct MetaEntity : public RefCounted
             return defaultValue_;
 
         if ((flags_ & HintIgnoreAstDefaultValue) == 0)
-        {
-            switch (kind_)
-            {
-            case cppast::cpp_entity_kind::enum_value_t:
-            {
-                const auto& val = Ast<cppast::cpp_enum_value>().value();
-                if (val.has_value())
-                    return ToString(val.value());
-                break;
-            }
-            case cppast::cpp_entity_kind::variable_t:
-            {
-                const auto& val = Ast<cppast::cpp_variable>().default_value();
-                if (val.has_value())
-                    return ToString(val.value());
-                break;
-            }
-            case cppast::cpp_entity_kind::member_variable_t:
-            {
-                const auto& val = Ast<cppast::cpp_member_variable>().default_value();
-                if (val.has_value())
-                    return ToString(val.value());
-                break;
-            }
-            case cppast::cpp_entity_kind::bitfield_t:
-                break;
-            case cppast::cpp_entity_kind::function_parameter_t:
-            {
-                const auto& val = Ast<cppast::cpp_function_parameter>().default_value();
-                if (val.has_value())
-                    return ToString(val.value());
-                break;
-            }
-            default:
-                break;
-            }
-        }
+            return GetNativeDefaultValue();
 
+        return "";
+    }
+
+    std::string GetNativeDefaultValue() const
+    {
+        switch (kind_)
+        {
+        case cppast::cpp_entity_kind::enum_value_t:
+        {
+            const auto& val = Ast<cppast::cpp_enum_value>().value();
+            if (val.has_value())
+                return ToString(val.value());
+            break;
+        }
+        case cppast::cpp_entity_kind::variable_t:
+        {
+            const auto& val = Ast<cppast::cpp_variable>().default_value();
+            if (val.has_value())
+                return ToString(val.value());
+            break;
+        }
+        case cppast::cpp_entity_kind::member_variable_t:
+        {
+            const auto& val = Ast<cppast::cpp_member_variable>().default_value();
+            if (val.has_value())
+                return ToString(val.value());
+            break;
+        }
+        case cppast::cpp_entity_kind::bitfield_t:
+            break;
+        case cppast::cpp_entity_kind::function_parameter_t:
+        {
+            const auto& val = Ast<cppast::cpp_function_parameter>().default_value();
+            if (val.has_value())
+                return ToString(val.value());
+            break;
+        }
+        default:
+            break;
+        }
         return "";
     }
 
@@ -151,7 +155,7 @@ struct MetaEntity : public RefCounted
     std::string sourceName_;
     /// Name of the symbol used in wrapping API. Used for renaming entities in target language API.
     std::string name_;
-    /// Override default value of this entity. This is an expression in target language.
+    /// Override default value of this entity. This can an expression in target language.
     std::string defaultValue_;
     /// Various hints about this entity.
     CppEntityHints flags_ = HintNone;

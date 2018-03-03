@@ -149,56 +149,62 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 FMT_CAPTURE(cFunctionName), FMT_CAPTURE(paramNameList));
             printer_ << fmt::format("InstanceCache.Add<{className}>(instance_, this);", FMT_CAPTURE(className));
 
-            for (const auto& child : cls->children_)
+            if (!generator->final_.Contains(entity->parent_->symbolName_))
             {
-                if (child->kind_ == cppast::cpp_entity_kind::member_function_t)
+                for (const auto& child : cls->children_)
                 {
-                    const auto& func = child->Ast<cppast::cpp_member_function>();
-                    if (func.is_virtual())
+                    if (child->kind_ == cppast::cpp_entity_kind::member_function_t)
                     {
-                        auto name = child->name_;
-                        auto pc = func.parameters().empty() ? "" : ", ";
-                        auto paramTypeList = ParameterTypeList(func.parameters(),
-                            [&](const cppast::cpp_type& type) -> std::string {
-                                return fmt::format("typeof({})", ToCSType(type));
-                            });
-                        auto paramNameListCs = ParameterNameList(func.parameters(),
-                            [&](const cppast::cpp_function_parameter& param) {
-                                return MapToCS(param.type(), param.name() + "_");
-                            });
-                        auto paramNameList = ParameterNameList(func.parameters(),
-                            [&](const cppast::cpp_function_parameter& param) {
-                                // Avoid possible parameter name collision in enclosing scope.
-                                return param.name() + "_";
-                            });
-
-                             // Optimization: do not route c++ virtual method calls through .NET if user does not override
-                        // such method in a managed class.
-                        printer_ << fmt::format("if (GetType().HasOverride(nameof({name}){pc}{paramTypeList}))",
-                            FMT_CAPTURE(name), FMT_CAPTURE(pc), FMT_CAPTURE(paramTypeList));
-                        printer_.Indent();
+                        const auto& func = child->Ast<cppast::cpp_member_function>();
+                        if (func.is_virtual())
                         {
-                            printer_ << fmt::format("set_{sourceClass}_fn{cFunction}(instance_, "
-                                "(instance__{pc}{paramNameList}) =>",
-                                fmt::arg("sourceClass", Sanitize(cls->sourceName_)),
-                                fmt::arg("cFunction", child->cFunctionName_), FMT_CAPTURE(pc),
-                                FMT_CAPTURE(paramNameList));
+                            auto name = child->name_;
+                            auto pc = func.parameters().empty() ? "" : ", ";
+                            auto paramTypeList = ParameterTypeList(func.parameters(),
+                                [&](const cppast::cpp_type& type) -> std::string
+                                {
+                                    return fmt::format("typeof({})", ToCSType(type));
+                                });
+                            auto paramNameListCs = ParameterNameList(func.parameters(),
+                                [&](const cppast::cpp_function_parameter& param)
+                                {
+                                    return MapToCS(param.type(), param.name() + "_");
+                                });
+                            auto paramNameList = ParameterNameList(func.parameters(),
+                                [&](const cppast::cpp_function_parameter& param)
+                                {
+                                    // Avoid possible parameter name collision in enclosing scope.
+                                    return param.name() + "_";
+                                });
+
+                            // Optimization: do not route c++ virtual method calls through .NET if user does not override
+                            // such method in a managed class.
+                            printer_ << fmt::format("if (GetType().HasOverride(nameof({name}){pc}{paramTypeList}))",
+                                FMT_CAPTURE(name), FMT_CAPTURE(pc), FMT_CAPTURE(paramTypeList));
                             printer_.Indent();
                             {
-                                auto expr = fmt::format("{name}({paramNameListCs})", FMT_CAPTURE(name),
-                                    FMT_CAPTURE(paramNameListCs));
-                                if (!IsVoid(func.return_type()))
+                                printer_ << fmt::format("set_{sourceClass}_fn{cFunction}(instance_, "
+                                        "(instance__{pc}{paramNameList}) =>",
+                                    fmt::arg("sourceClass", Sanitize(cls->sourceName_)),
+                                    fmt::arg("cFunction", child->cFunctionName_), FMT_CAPTURE(pc),
+                                    FMT_CAPTURE(paramNameList));
+                                printer_.Indent();
                                 {
-                                    expr = MapToPInvoke(func.return_type(), expr);
-                                    printer_.Write(fmt::format("return {}", expr));
+                                    auto expr = fmt::format("{name}({paramNameListCs})", FMT_CAPTURE(name),
+                                        FMT_CAPTURE(paramNameListCs));
+                                    if (!IsVoid(func.return_type()))
+                                    {
+                                        expr = MapToPInvoke(func.return_type(), expr);
+                                        printer_.Write(fmt::format("return {}", expr));
+                                    }
+                                    else
+                                        printer_.Write(expr);
+                                    printer_.Write(";");
                                 }
-                                else
-                                    printer_.Write(expr);
-                                printer_.Write(";");
+                                printer_.Dedent("});");
                             }
-                            printer_.Dedent("});");
+                            printer_.Dedent();
                         }
-                        printer_.Dedent();
                     }
                 }
             }
@@ -266,7 +272,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         const auto& var = entity->Ast<cppast::cpp_variable>();
         auto* ns = entity->parent_.Get();
 
-        auto defaultValue = ExpandDefaultValue(ns->name_, entity->GetDefaultValue());
+        auto defaultValue = GetConvertedDefaultValue(entity, true);
         bool isConstant = IsConst(var.type()) && !(entity->flags_ & HintReadOnly) && !defaultValue.empty();
         auto csType = ToCSType(var.type());
         auto name = entity->name_;
@@ -313,7 +319,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         const auto& var = entity->Ast<cppast::cpp_member_variable>();
         auto* ns = entity->parent_.Get();
 
-        auto defaultValue = ExpandDefaultValue(ns->parent_->name_, entity->GetDefaultValue());
+        auto defaultValue = GetConvertedDefaultValue(entity, true);
         bool isConstant = IsConst(var.type()) && !(entity->flags_ & HintReadOnly) && !defaultValue.empty();
         auto csType = ToCSType(var.type());
 
@@ -375,20 +381,6 @@ void GenerateCSApiPass::Stop()
     file.Close();
 }
 
-std::string GenerateCSApiPass::ExpandDefaultValue(const std::string& currentNamespace, const std::string& value)
-{
-    WeakPtr<MetaEntity> entity;
-    if (generator->symbols_.Contains(value))
-        return value;
-    if (!currentNamespace.empty())
-    {
-        std::string fullName = currentNamespace + "::" + value;
-        if (generator->symbols_.Contains(fullName))
-            return str::replace_str(fullName, "::", ".");
-    }
-    return value;
-}
-
 std::string GenerateCSApiPass::MapToCS(const cppast::cpp_type& type, const std::string& expression)
 {
     if (const auto* map = generator->GetTypeMap(type))
@@ -430,38 +422,62 @@ void GenerateCSApiPass::PrintCSParameterList(const std::vector<SharedPtr<MetaEnt
     for (const auto& param : parameters)
     {
         const auto& cppType = param->Ast<cppast::cpp_function_parameter>().type();
-        auto value = param->GetDefaultValue();
         printer_.Write(fmt::format("{} {}", ToCSType(cppType), EnsureNotKeyword(param->name_)));
 
-        if (!value.empty())
-        {
-            auto* typeMap = generator->GetTypeMap(cppType);
-            printer_.Write("=");
-            WeakPtr<MetaEntity> entity;
-            if (typeMap != nullptr && typeMap->csType_ == "string")
-            {
-                // String literals
-                if (value == "String::EMPTY")  // TODO: move to json?
-                    value = "\"\"";
-            }
-            else if (IsComplexValueType(cppType) || value == "nullptr")
-            {
-                // C# may only have default values constructed by default constructor. Because of this such default
-                // values are replaced with null. Function body will construct actual default value if parameter is
-                // null.
-                value = "null";
-            }
-            else if (generator->symbols_.TryGetValue("Urho3D::" + value, entity))
-                value = entity->symbolName_;
-            else if (generator->enumValues_.TryGetValue(value, entity))
-                value = entity->symbolName_;
-
-            printer_.Write(str::replace_str(value, "::", "."));
-        }
+        auto defaultValue = GetConvertedDefaultValue(param, false);
+        if (!defaultValue.empty())
+            printer_.Write("=" + defaultValue);
 
         if (param != parameters.back())
             printer_.Write(", ");
     }
+}
+
+std::string GenerateCSApiPass::GetConvertedDefaultValue(MetaEntity* param, bool allowComplex)
+{
+    const cppast::cpp_type* cppType;
+
+    switch (param->kind_)
+    {
+    case cppast::cpp_entity_kind::function_parameter_t:
+        cppType = &param->Ast<cppast::cpp_function_parameter>().type();
+        break;
+    case cppast::cpp_entity_kind::member_variable_t:
+        cppType = &param->Ast<cppast::cpp_member_variable>().type();
+        break;
+    case cppast::cpp_entity_kind::variable_t:
+        cppType = &param->Ast<cppast::cpp_variable>().type();
+        break;
+    default:
+        assert(false);
+    }
+
+    auto value = param->GetDefaultValue();
+    if (!value.empty())
+    {
+        auto* typeMap = generator->GetTypeMap(*cppType);
+        WeakPtr<MetaEntity> entity;
+        if (typeMap != nullptr && typeMap->csType_ == "string")
+        {
+            // String literals
+            if (value == "String::EMPTY")  // TODO: move to json?
+                value = "\"\"";
+        }
+        else if ((!allowComplex && IsComplexValueType(*cppType)) || value == "nullptr")
+        {
+            // C# may only have default values constructed by default constructor. Because of this such default
+            // values are replaced with null. Function body will construct actual default value if parameter is
+            // null.
+            value = "null";
+        }
+        else if (generator->symbols_.TryGetValue("Urho3D::" + value, entity))
+            value = entity->symbolName_;
+        else if (generator->enumValues_.TryGetValue(value, entity))
+            value = entity->symbolName_;
+
+        str::replace_str(value, "::", ".");
+    }
+    return value;
 }
 
 }

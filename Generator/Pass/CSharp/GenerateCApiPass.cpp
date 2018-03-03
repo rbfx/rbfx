@@ -370,7 +370,7 @@ void GenerateCApiPass::PrintDefaultValueCode(const std::vector<SharedPtr<MetaEnt
 {
     for (const auto& param : parameters)
     {
-        auto value = param->GetDefaultValue();
+        auto value = param->GetNativeDefaultValue();
         if (value.empty())
             continue;
 
@@ -385,7 +385,7 @@ void GenerateCApiPass::PrintDefaultValueCode(const std::vector<SharedPtr<MetaEnt
             }
             printer_.Dedent();
         }
-        else if (IsComplexValueType(cppType) && value != "nullptr")
+        else if (typeMap == nullptr && IsComplexValueType(cppType) && value != "nullptr")
         {
             printer_ << fmt::format("if ({} == nullptr)", param->name_);
             printer_.Indent();
