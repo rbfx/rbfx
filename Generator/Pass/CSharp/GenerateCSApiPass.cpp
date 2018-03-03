@@ -457,13 +457,20 @@ std::string GenerateCSApiPass::GetConvertedDefaultValue(MetaEntity* param, bool 
     {
         auto* typeMap = generator->GetTypeMap(*cppType);
         WeakPtr<MetaEntity> entity;
-        if (typeMap != nullptr && typeMap->csType_ == "string")
+        if (typeMap != nullptr)
         {
-            // String literals
-            if (value == "String::EMPTY")  // TODO: move to json?
-                value = "\"\"";
+            if (typeMap->csType_ == "string")
+            {
+                // String literals
+                if (value == "String::EMPTY")  // TODO: move to json?
+                    value = "\"\"";
+            }
+            else if (typeMap->isValueType && !allowComplex)
+                // C# is rather limited on default values of value types. Ignore them.
+                return "";
         }
-        else if ((!allowComplex && IsComplexValueType(*cppType)) || value == "nullptr")
+
+        if (!allowComplex && IsComplexValueType(*cppType) || value == "nullptr")
         {
             // C# may only have default values constructed by default constructor. Because of this such default
             // values are replaced with null. Function body will construct actual default value if parameter is
