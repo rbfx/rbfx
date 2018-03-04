@@ -52,7 +52,7 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
         return true;
 
     // Class is not supposed to be inherited
-    if (generator->final_.Contains(entity->uniqueName_))
+    if (!generator->inheritable_.IsIncluded(entity->uniqueName_))
         return true;
 
     const auto& cls = entity->Ast<cppast::cpp_class>();

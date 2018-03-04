@@ -149,7 +149,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 FMT_CAPTURE(cFunctionName), FMT_CAPTURE(paramNameList));
             printer_ << fmt::format("InstanceCache.Add<{className}>(instance_, this);", FMT_CAPTURE(className));
 
-            if (!generator->final_.Contains(entity->parent_->symbolName_))
+            if (generator->inheritable_.IsIncluded(entity->parent_->symbolName_))
             {
                 for (const auto& child : cls->children_)
                 {
@@ -233,7 +233,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::member_function_t)
     {
-        auto isFinal = generator->final_.Contains(entity->parent_->symbolName_);
+        auto isFinal = !generator->inheritable_.IsIncluded(entity->parent_->symbolName_);
         if (isFinal && entity->access_ != cppast::cpp_public)
             return true;
 
@@ -246,7 +246,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         // Function start
         printer_.Write(fmt::format("{access} {virtual}{rtype} {name}(",
             fmt::arg("access", entity->access_ == cppast::cpp_public ? "public" : "protected"),
-            fmt::arg("virtual", func.is_virtual() ? "virtual " : ""), FMT_CAPTURE(rtype),
+            fmt::arg("virtual", !isFinal && func.is_virtual() ? "virtual " : ""), FMT_CAPTURE(rtype),
             fmt::arg("name", entity->name_)));
 
         // Parameter list
@@ -312,7 +312,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::member_variable_t)
     {
-        auto isFinal = generator->final_.Contains(entity->parent_->symbolName_);
+        auto isFinal = !generator->inheritable_.IsIncluded(entity->parent_->symbolName_);
         if (isFinal && entity->access_ != cppast::cpp_public)
             return true;
 

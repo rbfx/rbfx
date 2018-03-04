@@ -226,11 +226,22 @@
       "isValueType": true,
     },
   ],
-  "final": [
-    "Urho3D::IKSolver",
-    "Urho3D::Texture",
-    "Urho3D::Texture2D",
-    "Urho3D::Texture2DArray",
-    "Urho3D::Texture3D",
-  ]
+  "inheritable": {
+    "include": [
+      "Urho3D::Application",
+      "Urho3D::PluginApplication",
+      "Urho3D::Component",
+      "Urho3D::LogicComponent",
+      "Urho3D::Serializable",
+      "Urho3D::Serializer",
+      "Urho3D::Deserializer",
+      "Urho3D::AbstractFile",
+      "Urho3D::Object",
+      "Urho3D::Animatable",
+      "Urho3D::Drawable",
+      "Urho3D::SoundStream",
+    ],
+    "exclude": [
+    ]
+  }
 }

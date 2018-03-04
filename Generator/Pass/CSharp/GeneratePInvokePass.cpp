@@ -227,7 +227,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
     {
         const auto& var = entity->Ast<cppast::cpp_member_variable>();
 
-        auto isFinal = generator->final_.Contains(entity->parent_->symbolName_);
+        auto isFinal = !generator->inheritable_.IsIncluded(entity->parent_->symbolName_);
         if (isFinal && entity->access_ != cppast::cpp_public)
             return true;
 
@@ -268,7 +268,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::member_function_t)
     {
-        auto isFinal = generator->final_.Contains(entity->parent_->symbolName_);
+        auto isFinal = !generator->inheritable_.IsIncluded(entity->parent_->symbolName_);
         if (isFinal && entity->access_ != cppast::cpp_public)
             return true;
 

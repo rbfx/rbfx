@@ -67,9 +67,7 @@ bool GeneratorContext::LoadRules(const String& jsonPath)
     if (!rules_->LoadFile(jsonPath))
         return false;
 
-    const auto& final = rules_->GetRoot().Get("final").GetArray();
-    for (auto i = 0; i < final.Size(); i++)
-        final_.Push(final[i].GetCString());
+    inheritable_.Load(rules_->GetRoot().Get("inheritable"));
 
     const JSONArray& typeMaps = rules_->GetRoot().Get("typemaps").GetArray();
     for (const auto& typeMap : typeMaps)

@@ -91,7 +91,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     {
         const auto& func = entity->Ast<cppast::cpp_member_function>();
 
-        auto isFinal = generator->final_.Contains(entity->parent_->symbolName_);
+        auto isFinal = !generator->inheritable_.IsIncluded(entity->parent_->symbolName_);
         if (isFinal && entity->access_ != cppast::cpp_public)
             return true;
 
@@ -230,7 +230,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         if ((IsConst(var.type()) || entity->flags_ & HintReadOnly) && !entity->GetDefaultValue().empty())
             return true;
 
-        auto isFinal = generator->final_.Contains(entity->parent_->symbolName_);
+        auto isFinal = !generator->inheritable_.IsIncluded(entity->parent_->symbolName_);
         if (isFinal && entity->access_ != cppast::cpp_public)
             return true;
 

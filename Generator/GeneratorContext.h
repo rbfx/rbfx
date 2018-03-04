@@ -100,9 +100,9 @@ public:
     cppast::cpp_entity_index index_;
     std::string defaultNamespace_ = "Urho3D";
     HashMap<std::string, WeakPtr<MetaEntity>> symbols_;
-    Vector<std::string> final_;
     HashMap<std::string, WeakPtr<MetaEntity>> enumValues_;
     std::unordered_map<std::string, TypeMap> typeMaps_;
+    IncludedChecker inheritable_;
 };
 
 extern GeneratorContext* generator;
