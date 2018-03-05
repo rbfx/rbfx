@@ -86,7 +86,10 @@ public:
         case cppast::cpp_entity_kind::type_alias_t:break;
         case cppast::cpp_entity_kind::enum_t:break;
         case cppast::cpp_entity_kind::enum_value_t:break;
-        case cppast::cpp_entity_kind::class_t:break;
+        case cppast::cpp_entity_kind::class_t:
+            if (entity->name_.empty())
+                entity->Remove();
+            break;
         case cppast::cpp_entity_kind::access_specifier_t:break;
         case cppast::cpp_entity_kind::base_class_t:break;
         case cppast::cpp_entity_kind::variable_t:
