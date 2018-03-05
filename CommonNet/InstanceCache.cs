@@ -5,22 +5,22 @@ namespace CSharp
 {
     static class InstanceCache
     {
-        internal static ConcurrentDictionary<Type, WeakDictionary<IntPtr, object>> cache_ =
-            new ConcurrentDictionary<Type, WeakDictionary<IntPtr, object>>();
+        internal static ConcurrentDictionary<Type, WeakDictionary<IntPtr, IDisposable>> cache_ =
+            new ConcurrentDictionary<Type, WeakDictionary<IntPtr, IDisposable>>();
 
-        private static WeakDictionary<IntPtr, object> GetContainer<T>()
+        private static WeakDictionary<IntPtr, IDisposable> GetContainer<T>()
         {
-            return cache_.GetOrAdd(typeof(T), t => new WeakDictionary<IntPtr, object>());
+            return cache_.GetOrAdd(typeof(T), t => new WeakDictionary<IntPtr, IDisposable>());
         }
 
         public static T GetOrAdd<T>(IntPtr instance, Func<IntPtr, T> factory)
         {
-            return (T)GetContainer<T>().GetOrAdd(instance, ptr => (object)factory(ptr));
+            return (T)GetContainer<T>().GetOrAdd(instance, ptr => (IDisposable)factory(ptr));
         }
 
         public static void Add<T>(IntPtr instance, T object_)
         {
-            GetContainer<T>().Add(instance, object_);
+            GetContainer<T>().Add(instance, (IDisposable)object_);
         }
 
         public static void Remove<T>(IntPtr instance)
@@ -37,7 +37,8 @@ namespace CSharp
             {
                 foreach (var item in pair.Value)
                 {
-                    ((IDisposable)item.Value.Target)?.Dispose();
+                    if (item.Value.Target != null)
+                        ((IDisposable)item.Value.Target).Dispose();
                 }
             }
             cache_.Clear();

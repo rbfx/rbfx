@@ -13,7 +13,7 @@ namespace Urho3D
         public IntPtr ptr_;
     }
 
-    public class VariantMap : IDictionary<StringHash, Variant>
+    public class VariantMap : IDictionary<StringHash, Variant>, IDisposable
     {
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
         internal static extern uint Urho3D_HashMap_StringHash_Variant_GetKey(HashIteratorBase it);
@@ -188,6 +188,10 @@ namespace Urho3D
                 return IntPtr.Zero;
             }
             return source.instance_;
+        }
+
+        public void Dispose()
+        {
         }
     }
 }
