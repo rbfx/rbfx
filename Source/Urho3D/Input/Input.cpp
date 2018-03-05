@@ -460,7 +460,7 @@ void Input::Update()
         const int height = graphics_->GetHeight() - buffer * 2;
 
         // SetMousePosition utilizes backbuffer coordinate system, scale now from window coordinates
-		float pixelRatio = graphics_->GetVirtualPixelToPixelRatio();
+		float pixelRatio = graphics_->GetPixelToDevicePixelRatio();
         mpos.x_ = (int)(mpos.x_ * pixelRatio);
         mpos.y_ = (int)(mpos.y_ * pixelRatio);
 
@@ -1411,7 +1411,7 @@ IntVector2 Input::GetMousePosition() const
         return ret;
 
     SDL_GetMouseState(&ret.x_, &ret.y_);
-	float pixelRatio = graphics_->GetVirtualPixelToPixelRatio();
+	float pixelRatio = graphics_->GetPixelToDevicePixelRatio();
     ret.x_ = (int)(ret.x_ * pixelRatio);
     ret.y_ = (int)(ret.y_ * pixelRatio);
 
@@ -1420,7 +1420,7 @@ IntVector2 Input::GetMousePosition() const
 
 IntVector2 Input::GetMouseMove() const
 {
-	float pixelRatio = graphics_->GetVirtualPixelToPixelRatio();
+	float pixelRatio = graphics_->GetPixelToDevicePixelRatio();
     if (!suppressNextMouseMove_)
         return mouseMoveScaled_ ? mouseMove_ : IntVector2((int)(mouseMove_.x_ * pixelRatio), (int)(mouseMove_.y_ * pixelRatio));
     else
@@ -1429,7 +1429,7 @@ IntVector2 Input::GetMouseMove() const
 
 int Input::GetMouseMoveX() const
 {
-	float pixelRatio = graphics_->GetVirtualPixelToPixelRatio();
+	float pixelRatio = graphics_->GetPixelToDevicePixelRatio();
     if (!suppressNextMouseMove_)
         return mouseMoveScaled_ ? mouseMove_.x_ : (int)(mouseMove_.x_ * pixelRatio);
     else
@@ -1438,7 +1438,7 @@ int Input::GetMouseMoveX() const
 
 int Input::GetMouseMoveY() const
 {
-	float pixelRatio = graphics_->GetVirtualPixelToPixelRatio();
+	float pixelRatio = graphics_->GetPixelToDevicePixelRatio();
     if (!suppressNextMouseMove_)
         return mouseMoveScaled_ ? mouseMove_.y_ : mouseMove_.y_ * pixelRatio;
     else
@@ -1847,7 +1847,7 @@ void Input::SetMousePosition(const IntVector2& position)
 {
     if (!graphics_)
         return;
-	float pixelRatio = graphics_->GetVirtualPixelToPixelRatio();
+	float pixelRatio = graphics_->GetPixelToDevicePixelRatio();
     SDL_WarpMouseInWindow(graphics_->GetWindow(), (int)(position.x_ / pixelRatio), (int)(position.y_ / pixelRatio));
 }
 
@@ -1877,7 +1877,7 @@ void Input::UnsuppressMouseMove()
 void Input::HandleSDLEvent(void* sdlEvent)
 {
     SDL_Event& evt = *static_cast<SDL_Event*>(sdlEvent);
-	float pixelRatio = graphics_->GetVirtualPixelToPixelRatio();
+	float pixelRatio = graphics_->GetPixelToDevicePixelRatio();
     // While not having input focus, skip key/mouse/touch/joystick events, except for the "click to focus" mechanism
     if (!inputFocus_ && evt.type >= SDL_KEYDOWN && evt.type <= SDL_MULTIGESTURE)
     {
