@@ -23,6 +23,7 @@
 #include <fmt/format.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/IO/File.h>
+#include <cppast/cpp_template.hpp>
 #include "GenerateCApiPass.h"
 
 
@@ -327,6 +328,12 @@ std::string GenerateCApiPass::MapToCpp(const cppast::cpp_type& type, const std::
         result = fmt::format(map->cToCppTemplate_.c_str(), fmt::arg("value", result));
     else if (IsComplexValueType(type))
     {
+        if (type.kind() == cppast::cpp_type_kind::template_instantiation_t)
+        {
+            return fmt::format("{type}({expr})", fmt::arg("type", Urho3D::GetTypeName(type)),
+                fmt::arg("expr", expression));
+        }
+
         if (type.kind() != cppast::cpp_type_kind::pointer_t)
             result = "*" + result;
     }
@@ -342,8 +349,12 @@ std::string GenerateCApiPass::MapToC(const cppast::cpp_type& type, const std::st
     if (map)
         result = fmt::format(map->cppToCTemplate_.c_str(), fmt::arg("value", result));
     else if (IsComplexValueType(type))
-        result = fmt::format("script->AddRef<{type}>({result})", FMT_CAPTURE(result),
-            fmt::arg("type", Urho3D::GetTypeName(type)));
+    {
+        auto typeName = GetTemplateSubtype(type);
+        if (typeName.empty())
+            typeName = Urho3D::GetTypeName(type);
+        result = fmt::format("script->AddRef<{type}>({result})", FMT_CAPTURE(result), fmt::arg("type", typeName));
+    }
 
     return result;
 }
@@ -353,17 +364,19 @@ std::string GenerateCApiPass::ToCType(const cppast::cpp_type& type)
     if (const auto* map = generator->GetTypeMap(type))
         return map->cType_;
 
-    std::string typeName = cppast::to_string(type);
+    auto typeName = GetTemplateSubtype(type);
+    if (!typeName.empty())
+        return typeName + "*";
 
     if (IsEnumType(type))
-        return typeName;
+        return cppast::to_string(type);
 
     if (IsComplexValueType(type))
         // A value type is turned into pointer.
         return Urho3D::GetTypeName(type) + "*";
 
     // Builtin type
-    return typeName;
+    return cppast::to_string(type);
 }
 
 void GenerateCApiPass::PrintDefaultValueCode(const std::vector<SharedPtr<MetaEntity>>& parameters)

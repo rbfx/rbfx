@@ -387,8 +387,12 @@ std::string GenerateCSApiPass::MapToCS(const cppast::cpp_type& type, const std::
         return fmt::format(map->pInvokeToCSTemplate_.c_str(), fmt::arg("value", expression));
     else if (IsComplexValueType(type))
     {
-        std::string returnType = "global::" + str::replace_str(Urho3D::GetTypeName(type), "::", ".");
-        return fmt::format("{}.__FromPInvoke({})", returnType, expression);
+        auto typeName = GetTemplateSubtype(type);
+        if (typeName.empty())
+            typeName = Urho3D::GetTypeName(type);
+
+        typeName = "global::" + str::replace_str(typeName, "::", ".");
+        return fmt::format("{}.__FromPInvoke({})", typeName, expression);
     }
     return expression;
 }
@@ -397,12 +401,16 @@ std::string GenerateCSApiPass::ToCSType(const cppast::cpp_type& type)
 {
     std::string result;
     if (const auto* map = generator->GetTypeMap(type))
-        result = map->csType_;
-    else if (GetEntity(type) != nullptr)
-        return "global::" + str::replace_str(Urho3D::GetTypeName(type), "::", ".");
-    else
-        result = ToPInvokeType(type, "IntPtr");
-    return result;
+        return map->csType_;
+
+    auto typeName = GetTemplateSubtype(type);
+    if (typeName.empty() && GetEntity(type) != nullptr)
+        typeName = Urho3D::GetTypeName(type);
+
+    if (!typeName.empty())
+        return "global::" + str::replace_str(typeName, "::", ".");
+
+    return ToPInvokeType(type, "IntPtr");
 }
 
 std::string GenerateCSApiPass::MapToPInvoke(const cppast::cpp_type& type, const std::string& expression)
@@ -411,8 +419,12 @@ std::string GenerateCSApiPass::MapToPInvoke(const cppast::cpp_type& type, const 
         return fmt::format(map->csToPInvokeTemplate_.c_str(), fmt::arg("value", expression));
     else if (IsComplexValueType(type))
     {
-        std::string returnType = "global::" + str::replace_str(Urho3D::GetTypeName(type), "::", ".");
-        return fmt::format("{}.__ToPInvoke({})", returnType, expression);
+        auto typeName = GetTemplateSubtype(type);
+        if (typeName.empty())
+            typeName = Urho3D::GetTypeName(type);
+
+        typeName = "global::" + str::replace_str(typeName, "::", ".");
+        return fmt::format("{}.__ToPInvoke({})", typeName, expression);
     }
     return expression;
 }

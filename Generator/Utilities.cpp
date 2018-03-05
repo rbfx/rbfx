@@ -21,8 +21,9 @@
 //
 
 #include <Urho3D/Core/StringUtils.h>
-#include <cppast/cpp_member_function.hpp>
 #include <Urho3D/IO/Log.h>
+#include <cppast/cpp_member_function.hpp>
+#include <cppast/cpp_template.hpp>
 #include "Utilities.h"
 #include "GeneratorContext.h"
 
@@ -217,14 +218,6 @@ std::string ParameterTypeList(const CppParameters& params,
         parts.emplace_back(typeString);
     }
     return str::join(parts, ", ");
-}
-
-std::string GetConversionType(const cppast::cpp_type& type)
-{
-    if (type.kind() == cppast::cpp_type_kind::reference_t || type.kind() == cppast::cpp_type_kind::pointer_t)
-        return Urho3D::GetTypeName(type);
-    else
-        return cppast::to_string(type);
 }
 
 const cppast::cpp_type& GetBaseType(const cppast::cpp_type& type)
@@ -486,6 +479,29 @@ std::string ToPInvokeType(const cppast::cpp_type& type, const std::string& defau
         return default_;
     else
         return BuiltinToPInvokeType(type);
+}
+
+std::string GetTemplateSubtype(const cppast::cpp_type& type)
+{
+    const auto& baseType = GetBaseType(type);
+    if (baseType.kind() == cppast::cpp_type_kind::template_instantiation_t)
+    {
+        const auto& templateType = dynamic_cast<const cppast::cpp_template_instantiation_type&>(baseType);
+        auto templateName = templateType.primary_template().name();
+        if (templateName == "SharedPtr" || templateName == "WeakPtr")
+        {
+            if (templateType.arguments_exposed())
+            {
+                assert(templateType.arguments().has_value());
+                const auto& templateArgs = templateType.arguments().value();
+                const auto& realType = templateArgs[0u].type().value();
+                return Urho3D::GetTypeName(realType);
+            }
+            else
+                return templateType.unexposed_arguments();
+        }
+    }
+    return "";
 }
 
 }

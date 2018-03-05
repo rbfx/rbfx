@@ -82,8 +82,6 @@ std::string ParameterNameList(const CppParameters& params,
 /// Returns a list of parameter types separated comma. Useful for creating function signatures.
 std::string ParameterTypeList(const CppParameters& params,
     const std::function<std::string(const cppast::cpp_type&)>& typeToString = nullptr);
-/// Returns a type string which is used as template parameter for CSharpTypeConverter<> struct.
-std::string GetConversionType(const cppast::cpp_type& type);
 /// Returns true if specified type is an enumeration.
 bool IsEnumType(const cppast::cpp_type& type);
 /// Returns true if a type is non-builtin value type (not a pointer or reference to a struct/class).
@@ -115,7 +113,8 @@ bool IsStatic(const cppast::cpp_entity& entity);
 std::string BuiltinToPInvokeType(const cppast::cpp_type& type);
 /// Convert type to pinvoke-compatible type.
 std::string ToPInvokeType(const cppast::cpp_type& type, const std::string& default_);
-
+/// Return actual type that is wrapped by supported template types. Like a class type if type is shared pointer.
+std::string GetTemplateSubtype(const cppast::cpp_type& type);
 }
 
 namespace str
