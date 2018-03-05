@@ -42,7 +42,6 @@
       "Graphics/IndexBuffer.h",
       "Graphics/OcclusionBuffer.h",
       "Graphics/OctreeQuery.h",
-      "Graphics/Renderer.h",
       "Graphics/Tangent.h",
     ]
   },
