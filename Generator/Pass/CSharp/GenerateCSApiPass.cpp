@@ -272,7 +272,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         const auto& var = entity->Ast<cppast::cpp_variable>();
         auto* ns = entity->parent_.Get();
 
-        auto defaultValue = GetConvertedDefaultValue(entity, true);
+        auto defaultValue = entity->GetDefaultValue();
         bool isConstant = IsConst(var.type()) && !(entity->flags_ & HintReadOnly) && !defaultValue.empty();
         auto csType = ToCSType(var.type());
         auto name = entity->name_;
@@ -319,7 +319,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         const auto& var = entity->Ast<cppast::cpp_member_variable>();
         auto* ns = entity->parent_.Get();
 
-        auto defaultValue = GetConvertedDefaultValue(entity, true);
+        auto defaultValue = entity->GetDefaultValue();
         bool isConstant = IsConst(var.type()) && !(entity->flags_ & HintReadOnly) && !defaultValue.empty();
         auto csType = ToCSType(var.type());
 
@@ -436,67 +436,13 @@ void GenerateCSApiPass::PrintCSParameterList(const std::vector<SharedPtr<MetaEnt
         const auto& cppType = param->Ast<cppast::cpp_function_parameter>().type();
         printer_.Write(fmt::format("{} {}", ToCSType(cppType), EnsureNotKeyword(param->name_)));
 
-        auto defaultValue = GetConvertedDefaultValue(param, false);
+        auto defaultValue = param->GetDefaultValue();
         if (!defaultValue.empty())
             printer_.Write("=" + defaultValue);
 
         if (param != parameters.back())
             printer_.Write(", ");
     }
-}
-
-std::string GenerateCSApiPass::GetConvertedDefaultValue(MetaEntity* param, bool allowComplex)
-{
-    const cppast::cpp_type* cppType;
-
-    switch (param->kind_)
-    {
-    case cppast::cpp_entity_kind::function_parameter_t:
-        cppType = &param->Ast<cppast::cpp_function_parameter>().type();
-        break;
-    case cppast::cpp_entity_kind::member_variable_t:
-        cppType = &param->Ast<cppast::cpp_member_variable>().type();
-        break;
-    case cppast::cpp_entity_kind::variable_t:
-        cppType = &param->Ast<cppast::cpp_variable>().type();
-        break;
-    default:
-        assert(false);
-    }
-
-    auto value = param->GetDefaultValue();
-    if (!value.empty())
-    {
-        auto* typeMap = generator->GetTypeMap(*cppType);
-        WeakPtr<MetaEntity> entity;
-        if (typeMap != nullptr)
-        {
-            if (typeMap->csType_ == "string")
-            {
-                // String literals
-                if (value == "String::EMPTY")  // TODO: move to json?
-                    value = "\"\"";
-            }
-            else if (typeMap->isValueType && !allowComplex)
-                // C# is rather limited on default values of value types. Ignore them.
-                return "";
-        }
-
-        if (!allowComplex && IsComplexValueType(*cppType) || value == "nullptr")
-        {
-            // C# may only have default values constructed by default constructor. Because of this such default
-            // values are replaced with null. Function body will construct actual default value if parameter is
-            // null.
-            value = "null";
-        }
-        else if (generator->symbols_.TryGetValue("Urho3D::" + value, entity))
-            value = entity->symbolName_;
-        else if (generator->enumValues_.TryGetValue(value, entity))
-            value = entity->symbolName_;
-
-        str::replace_str(value, "::", ".");
-    }
-    return value;
 }
 
 }

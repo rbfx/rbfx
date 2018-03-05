@@ -25,28 +25,20 @@
 
 #include <Urho3D/Core/Object.h>
 #include "Pass/CppPass.h"
-#include "Printer/CSharpPrinter.h"
 
 namespace Urho3D
 {
 
-class GenerateCSApiPass : public CppApiPass
+/// Walk AST and gather known defined classes. Exclude protected/private members from generation.
+class DefaultValuesPass : public CppApiPass
 {
-    URHO3D_OBJECT(GenerateCSApiPass, CppApiPass);
+    URHO3D_OBJECT(DefaultValuesPass, CppApiPass);
 public:
-    explicit GenerateCSApiPass(Context* context) : CppApiPass(context) { };
-
-    void Start() override;
+    explicit DefaultValuesPass(Context* context) : CppApiPass(context) { };
     bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
-    void Stop() override;
 
 protected:
-    std::string MapToCS(const cppast::cpp_type& type, const std::string& expression);
-    std::string ToCSType(const cppast::cpp_type& type);
-    std::string MapToPInvoke(const cppast::cpp_type& type, const std::string& expression);
-    void PrintCSParameterList(const std::vector<SharedPtr<MetaEntity>>& parameters);
-
-    CSharpPrinter printer_;
+    std::string GetConvertedDefaultValue(MetaEntity* param, bool allowComplex);
 };
 
 }
