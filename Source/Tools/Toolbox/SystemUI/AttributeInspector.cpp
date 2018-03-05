@@ -99,7 +99,7 @@ public:
 
     void Render()
     {
-        int size = static_cast<int>(ui::GetWindowWidth() - ui::GetCursorPosX());
+        auto size = static_cast<int>(ui::GetWindowWidth() - ui::GetCursorPosX());
         SetSize({0, 0, size, size});
         ui::Image(texture_.Get(), ToImGui(rect_.Size()));
         Input* input = camera_->GetInput();
@@ -502,7 +502,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         case VAR_STRING:
         {
             auto& v = const_cast<String&>(value.GetString());
-            AttributeInspectorBuffer* state = ui::GetUIState<AttributeInspectorBuffer>(v);
+            auto* state = ui::GetUIState<AttributeInspectorBuffer>(v);
             bool dirty = v != state->buffer_;
             if (dirty)
                 ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
@@ -620,7 +620,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         case VAR_DOUBLE:
         {
             // TODO: replace this with custom control that properly handles double types.
-            float v = static_cast<float>(value.GetDouble());
+            auto v = static_cast<float>(value.GetDouble());
             modified |= ui::DragFloat("", &v, floatStep, floatMin, floatMax, "%.3f", power);
             if (modified)
                 value = (double)v;
@@ -632,7 +632,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
 
             // Insert new item.
             {
-                AttributeInspectorBuffer* state = ui::GetUIState<AttributeInspectorBuffer>();
+                auto* state = ui::GetUIState<AttributeInspectorBuffer>();
                 if (ui::InputText("", state->buffer_, IM_ARRAYSIZE(state->buffer_), ImGuiInputTextFlags_EnterReturnsTrue))
                 {
                     v.Push(state->buffer_);
@@ -655,7 +655,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
                 String& sv = *it;
 
                 ui::PushID(++index);
-                AttributeInspectorBuffer* state = ui::GetUIState<AttributeInspectorBuffer>(sv);
+                auto* state = ui::GetUIState<AttributeInspectorBuffer>(sv);
                 if (ui::Button(ICON_FA_TRASH))
                 {
                     it = v.Erase(it);
@@ -718,7 +718,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         case VAR_INT64:
         {
             // TODO: replace this with custom control that properly handles int types.
-            int v = static_cast<int>(value.GetInt64());
+            auto v = static_cast<int>(value.GetInt64());
             if (value.GetInt64() > M_MAX_INT || value.GetInt64() < M_MIN_INT)
                 URHO3D_LOGWARNINGF("AttributeInspector truncated 64bit integer value.");
             modified |= ui::DragInt("", &v, 1, M_MIN_INT, M_MAX_INT, "%d");
@@ -748,7 +748,7 @@ bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, 
         bool dropped = false;
         if (ui::BeginDragDropTarget())
         {
-            Variant payload = ui::AcceptDragDropVariant("path");
+            const Variant& payload = ui::AcceptDragDropVariant("path");
             if (!payload.IsEmpty())
             {
                 resource = GetCache()->GetResource(resourceType, payload.GetString());
@@ -783,11 +783,11 @@ bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, 
 
     if (type == Material::GetTypeStatic())
     {
-        Material* material = GetCache()->GetResource<Material>(name);
+        auto* material = GetCache()->GetResource<Material>(name);
         if (material == nullptr)
             return false;
 
-        MaterialView* state = ui::GetUIState<MaterialView>(context_, material, effectSource_);
+        auto* state = ui::GetUIState<MaterialView>(context_, material, effectSource_);
         ui::Indent(attributeIndentLevel);
 
         state->Render();
@@ -890,7 +890,7 @@ bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, 
         for (unsigned i = 0; i < material->GetNumTechniques(); i++)
         {
             ui::PushID(i);
-            TechniqueEntry& tech = const_cast<TechniqueEntry&>(material->GetTechniqueEntry(i));
+            auto& tech = const_cast<TechniqueEntry&>(material->GetTechniqueEntry(i));
 
             bool open = ui::CollapsingHeaderSimple(ToString("Technique %d", i).CString());
             NextColumn();

@@ -46,7 +46,7 @@ public:
 };
 
 /// Main function of the plugin.
-int URHO3D_API PluginMain(void* ctx, size_t operation, PluginApplication*(*factory)(Context*),
+int URHO3D_API PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*),
     void(*destroyer)(PluginApplication*));
 
 }

@@ -45,6 +45,7 @@ if (APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 endif ()
 
+set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set (CMAKE_INCLUDE_CURRENT_DIR ON)
 set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -119,3 +120,18 @@ message(STATUS "  Tools           ${URHO3D_TOOLS}")
 if (TARGET Profiler)
     message(STATUS "     Profiler GUI ${URHO3D_PROFILING}")
 endif ()
+
+# clang-tidy target
+find_program(CLANG_TIDY clang-tidy)
+if (CLANG_TIDY)
+    file (GLOB_RECURSE SOURCE_FILES
+        Source/Samples/**.cpp Source/Samples/**.h Source/Samples/**.hpp Source/Samples/**.inl
+        Source/Urho3D/**.cpp Source/Urho3D/**.h Source/Urho3D/**.hpp
+        Source/Tools/**.cpp Source/Tools/**.h Source/Tools/**.hpp
+    )
+    add_custom_target(tidy
+        COMMAND ${CLANG_TIDY} -p . -export-fixes=clang-tidy.yml -fix ${SOURCE_FILES}
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+    set_target_properties(tidy PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
+endif()

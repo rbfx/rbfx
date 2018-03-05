@@ -47,12 +47,12 @@ class URHO3D_API DynamicNavigationMesh : public NavigationMesh
 
 public:
     /// Constructor.
-    explicit DynamicNavigationMesh(Context*);
+    explicit DynamicNavigationMesh(Context* context);
     /// Destructor.
     ~DynamicNavigationMesh() override;
 
     /// Register with engine context.
-    static void RegisterObject(Context*);
+    static void RegisterObject(Context* context);
 
     /// Allocate the navigation mesh without building any tiles. Bounding box is not padded. Return true if successful.
     bool Allocate(const BoundingBox& boundingBox, unsigned maxTiles) override;
@@ -111,7 +111,7 @@ protected:
     /// Used by Obstacle class to update itself.
     void ObstacleChanged(Obstacle* obstacle);
     /// Used by Obstacle class to remove itself from the tile cache, if 'silent' an event will not be raised.
-    void RemoveObstacle(Obstacle*, bool silent = false);
+    void RemoveObstacle(Obstacle* obstacle, bool silent = false);
 
     /// Build one tile of the navigation mesh. Return true if successful.
     int BuildTile(Vector<NavigationGeometryInfo>& geometryList, int x, int z, TileCacheData* tiles);

@@ -192,7 +192,7 @@ void SceneTab::LoadResource(const String& resourcePath)
 
     if (resourcePath.EndsWith(".xml", false))
     {
-        XMLFile* file = GetCache()->GetResource<XMLFile>(resourcePath);
+        auto* file = GetCache()->GetResource<XMLFile>(resourcePath);
         if (file && GetScene()->LoadXML(file->GetRoot()))
         {
             path_ = resourcePath;
@@ -203,7 +203,7 @@ void SceneTab::LoadResource(const String& resourcePath)
     }
     else if (resourcePath.EndsWith(".json", false))
     {
-        JSONFile* file = GetCache()->GetResource<JSONFile>(resourcePath);
+        auto* file = GetCache()->GetResource<JSONFile>(resourcePath);
         if (file && GetScene()->LoadJSON(file->GetRoot()))
         {
             path_ = resourcePath;
@@ -340,7 +340,7 @@ void SceneTab::RenderToolbarButtons()
 
     ui::SameLine(0, 3.f);
 
-    if (Light* light = view_.GetCamera()->GetNode()->GetComponent<Light>())
+    if (auto* light = view_.GetCamera()->GetNode()->GetComponent<Light>())
     {
         if (ui::EditorToolbarButton(ICON_FA_LIGHTBULB_O, "Camera Headlight", light->IsEnabled()))
             light->SetEnabled(!light->IsEnabled());
@@ -456,7 +456,7 @@ void SceneTab::RenderNodeTree(Node* node)
         if (!nodeRef.Expired())
         {
             Vector<SharedPtr<Component>> components = node->GetComponents();
-            for (auto component: components)
+            for (const auto& component: components)
             {
                 if (component->IsTemporary())
                     continue;
@@ -665,7 +665,7 @@ void SceneTab::RenderNodeContextMenu()
 
         if (ui::BeginMenu(alternative ? "Create Component (Local)" : "Create Component"))
         {
-            Editor* editor = GetSubsystem<Editor>();
+            auto* editor = GetSubsystem<Editor>();
             auto categories = editor->GetObjectCategories();
             categories.Remove("UI");
 

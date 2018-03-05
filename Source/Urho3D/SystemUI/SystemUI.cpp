@@ -245,7 +245,7 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
                 ShaderVariation* ps;
                 ShaderVariation* vs;
 
-                Texture2D* texture = static_cast<Texture2D*>(cmd->TextureId);
+                auto* texture = static_cast<Texture2D*>(cmd->TextureId);
                 if (!texture)
                 {
                     ps = graphics->GetShader(PS, "Basic", "VERTEXCOLOR");
@@ -389,7 +389,7 @@ void SystemUI::SetScale(Vector3 scale)
         io.Fonts->ConfigData[i].SizePixels = sizePixels * fontScale_;
     }
 
-    if (io.Fonts->Fonts.size() > 0)
+    if (!io.Fonts->Fonts.empty())
         ReallocateFontTexture();
 }
 

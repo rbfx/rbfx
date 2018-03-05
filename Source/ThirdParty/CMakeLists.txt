@@ -21,7 +21,6 @@
 #
 
 add_subdirectory(FreeType)
-add_subdirectory(JO)
 add_subdirectory(LZ4)
 add_subdirectory(PugiXml)
 add_subdirectory(rapidjson)
