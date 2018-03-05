@@ -192,10 +192,52 @@ void GeneratorContext::Generate(const String& outputDirCpp, const String& output
     {
         cppast::visitor_info info{};
         info.access = entity->access_;
-        info.event = entity->children_.empty() ? cppast::visitor_info::leaf_entity :
-                     cppast::visitor_info::container_entity_enter;
-
-        if (pass->Visit(entity, info) && !entity->children_.empty())
+        
+        switch (entity->kind_)
+        {
+        case cppast::cpp_entity_kind::file_t:
+        case cppast::cpp_entity_kind::language_linkage_t:
+        case cppast::cpp_entity_kind::namespace_t:
+        case cppast::cpp_entity_kind::enum_t:
+        case cppast::cpp_entity_kind::class_t:
+        case cppast::cpp_entity_kind::function_template_t:
+        case cppast::cpp_entity_kind::class_template_t:
+            info.event = info.container_entity_enter;
+            break;
+        case cppast::cpp_entity_kind::macro_definition_t:
+        case cppast::cpp_entity_kind::include_directive_t:
+        case cppast::cpp_entity_kind::namespace_alias_t:
+        case cppast::cpp_entity_kind::using_directive_t:
+        case cppast::cpp_entity_kind::using_declaration_t:
+        case cppast::cpp_entity_kind::type_alias_t:
+        case cppast::cpp_entity_kind::enum_value_t:
+        case cppast::cpp_entity_kind::access_specifier_t: // ?
+        case cppast::cpp_entity_kind::base_class_t:
+        case cppast::cpp_entity_kind::variable_t:
+        case cppast::cpp_entity_kind::member_variable_t:
+        case cppast::cpp_entity_kind::bitfield_t:
+        case cppast::cpp_entity_kind::function_parameter_t:
+        case cppast::cpp_entity_kind::function_t:
+        case cppast::cpp_entity_kind::member_function_t:
+        case cppast::cpp_entity_kind::conversion_op_t:
+        case cppast::cpp_entity_kind::constructor_t:
+        case cppast::cpp_entity_kind::destructor_t:
+        case cppast::cpp_entity_kind::friend_t:
+        case cppast::cpp_entity_kind::template_type_parameter_t:
+        case cppast::cpp_entity_kind::non_type_template_parameter_t:
+        case cppast::cpp_entity_kind::template_template_parameter_t:
+        case cppast::cpp_entity_kind::alias_template_t:
+        case cppast::cpp_entity_kind::variable_template_t:
+        case cppast::cpp_entity_kind::function_template_specialization_t:
+        case cppast::cpp_entity_kind::class_template_specialization_t:
+        case cppast::cpp_entity_kind::static_assert_t:
+        case cppast::cpp_entity_kind::unexposed_t:
+        case cppast::cpp_entity_kind::count:
+            info.event = info.leaf_entity;
+            break;
+        }
+        
+        if (pass->Visit(entity, info) && info.event == info.container_entity_enter)
         {
             std::vector<SharedPtr<MetaEntity>> childrenCopy = entity->children_;
             for (const auto& childEntity : childrenCopy)

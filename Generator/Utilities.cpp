@@ -395,6 +395,9 @@ bool IsStatic(const cppast::cpp_entity& entity)
     {
     case cppast::cpp_entity_kind::class_t:
     {
+        if (!dynamic_cast<const cppast::cpp_class&>(entity).bases().empty())
+            return false;
+
         for (const auto& child : dynamic_cast<const cppast::cpp_class&>(entity))
         {
             if (!IsStatic(child))
