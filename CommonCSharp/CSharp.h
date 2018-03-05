@@ -76,9 +76,12 @@ public:
     template<typename T> T* AddRef(const WeakPtr<T>& object)            { return (T*)AddRefCountedRef(object.Get()); }
     template<typename T> T* AddRef(const RefCountedType<T>* object)     { return (T*)AddRefCountedRef(const_cast<T*>(object)); }
     // Type is copy-constructibe or rvalue reference, most likely being returned by value. Make a copy.
+    template<typename T> T* AddRef(CopyableType<T>&& object)            { return (T*)TakePointerOwnership<T>(new T(object)); }
     template<typename T> T* AddRef(const CopyableType<T>&& object)      { return (T*)TakePointerOwnership<T>(new T(object)); }
-    template<typename T> T* AddRef(const CopyableType<T>& object)       { return (T*)TakePointerOwnership<T>(new T(object)); }
-    template<typename T> T* AddRef(const CopyableType<T>* object)       { return (T*)TakePointerOwnership<T>(new T(*object)); }
+    template<typename T> T* AddRef(CopyableType<T>& object)       { return (T*)TakePointerReference<T>(&object); }
+    template<typename T> T* AddRef(const CopyableType<T>& object)       { return (T*)TakePointerReference<T>(&object); }
+    template<typename T> T* AddRef(CopyableType<T>* object)             { return (T*)TakePointerReference<T>(object); }
+    template<typename T> T* AddRef(const CopyableType<T>* object)       { return (T*)TakePointerReference<T>(object); }
     // Type is non-refcounted and non-copyable, return reference
     template<typename T> T* AddRef(const NonRefCountedType<T>&& object) { return (T*)TakePointerOwnership<T>(&object); }
     template<typename T> T* AddRef(const NonRefCountedType<T>& object)  { return (T*)TakePointerOwnership<T>(&object); }
