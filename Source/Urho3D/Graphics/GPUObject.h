@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -45,7 +45,7 @@ class URHO3D_API GPUObject
 {
 public:
     /// Construct with graphics subsystem pointer.
-    GPUObject(Graphics* graphics);
+    explicit GPUObject(Graphics* graphics);
     /// Destruct. Remove from the Graphics.
     virtual ~GPUObject();
 
@@ -60,7 +60,7 @@ public:
     void ClearDataLost();
 
     /// Return the graphics subsystem associated with this GPU object.
-    Graphics* GetObjectGraphics() const;
+    Graphics* GetGraphics() const;
     /// Return the object pointer. Applicable only on Direct3D.
     void* GetGPUObject() const { return object_.ptr_; }
     /// Return the object name. Applicable only on OpenGL.

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2017 the Urho3D project.
+# Copyright (c) 2008-2018 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,7 +20,9 @@
 # THE SOFTWARE.
 #
 
-add_library (JO STATIC jo_jpeg.cpp jo_jpeg.h)
-
-install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/JO FILES_MATCHING PATTERN *.h)
-install_to_build_tree(JO)
+file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
+add_library (JO OBJECT ${SOURCE_FILES})
+target_include_directories(JO
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/JO>
+)

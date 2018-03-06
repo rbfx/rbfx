@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -56,9 +56,7 @@ StaticSprite2D::StaticSprite2D(Context* context) :
     sourceBatches_[0].owner_ = this;
 }
 
-StaticSprite2D::~StaticSprite2D()
-{
-}
+StaticSprite2D::~StaticSprite2D() = default;
 
 void StaticSprite2D::RegisterObject(Context* context)
 {
@@ -254,7 +252,7 @@ ResourceRef StaticSprite2D::GetSpriteAttr() const
 
 void StaticSprite2D::SetCustomMaterialAttr(const ResourceRef& value)
 {
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    auto* cache = GetSubsystem<ResourceCache>();
     SetCustomMaterial(cache->GetResource<Material>(value.name_));
 }
 

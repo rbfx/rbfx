@@ -19,6 +19,7 @@
 #ifndef B2_WORLD_H
 #define B2_WORLD_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Common/b2Math.h"
 #include "Box2D/Common/b2BlockAllocator.h"
 #include "Box2D/Common/b2StackAllocator.h"
@@ -38,7 +39,7 @@ class b2Joint;
 /// The world class manages all physics entities, dynamic simulation,
 /// and asynchronous queries. The world also contains efficient memory
 /// management facilities.
-class b2World
+class BOX2D_API b2World
 {
 public:
 	/// Construct a world object.

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -45,10 +45,8 @@ struct RaycastVehicleData
 
     ~RaycastVehicleData()
     {
-        if (vehicleRayCaster_)
-        {
-            delete vehicleRayCaster_;
-        }
+        delete vehicleRayCaster_;
+
         vehicleRayCaster_ = nullptr;
         if (vehicle_)
         {
@@ -74,14 +72,13 @@ struct RaycastVehicleData
         int rightIndex = 0;
         int upIndex = 1;
         int forwardIndex = 2;
-        PhysicsWorld* pPhysWorld = scene->GetComponent<PhysicsWorld>();
+        auto* pPhysWorld = scene->GetComponent<PhysicsWorld>();
         btDynamicsWorld* pbtDynWorld = pPhysWorld->GetWorld();
         if (!pbtDynWorld)
             return;
 
         // Delete old vehicle & action first
-        if (vehicleRayCaster_)
-            delete vehicleRayCaster_;
+        delete vehicleRayCaster_;
         if (vehicle_)
         {
             if (added_)
@@ -412,7 +409,7 @@ Vector3 RaycastVehicle::GetWheelPosition(int wheel)
 Quaternion RaycastVehicle::GetWheelRotation(int wheel)
 {
     btRaycastVehicle* vehicle = vehicleData_->Get();
-    btTransform transform = vehicle->getWheelTransformWS(wheel);
+    const btTransform& transform = vehicle->getWheelTransformWS(wheel);
     Quaternion rotation = ToQuaternion(transform.getRotation());
     return rotation;
 }

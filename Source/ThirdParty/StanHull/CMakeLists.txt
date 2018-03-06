@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2017 the Urho3D project.
+# Copyright (c) 2008-2018 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +20,9 @@
 # THE SOFTWARE.
 #
 
-add_library (StanHull STATIC hull.cpp hull.h)
-install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/StanHull FILES_MATCHING PATTERN *.h)
-install_to_build_tree(StanHull)
+file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
+add_library (StanHull OBJECT ${SOURCE_FILES})
+target_include_directories(StanHull
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/StanHull>
+)

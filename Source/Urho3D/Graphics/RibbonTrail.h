@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -62,23 +62,23 @@ class URHO3D_API RibbonTrail : public Drawable
 
 public:
     /// Construct.
-    RibbonTrail(Context* context);
+    explicit RibbonTrail(Context* context);
     /// Destruct.
-    virtual ~RibbonTrail() override;
+    ~RibbonTrail() override;
     /// Register object factory.
     static void RegisterObject(Context* context);
     /// Process octree raycast. May be called from a worker thread.
-    virtual void ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryResult>& results) override;
+    void ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryResult>& results) override;
     /// Handle enabled/disabled state change.
-    virtual void OnSetEnabled() override;
+    void OnSetEnabled() override;
     /// Update before octree reinsertion. Is called from a main thread.
-    virtual void Update(const FrameInfo &frame) override;
+    void Update(const FrameInfo &frame) override;
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
-    virtual void UpdateBatches(const FrameInfo& frame) override;
+    void UpdateBatches(const FrameInfo& frame) override;
     /// Prepare geometry for rendering. Called from a worker thread if possible (no GPU update.)
-    virtual void UpdateGeometry(const FrameInfo& frame) override;
+    void UpdateGeometry(const FrameInfo& frame) override;
     /// Return whether a geometry update is necessary, and if it can happen in a worker thread.
-    virtual UpdateGeometryType GetUpdateGeometryType() override;
+    UpdateGeometryType GetUpdateGeometryType() override;
 
     /// Set material.
     void SetMaterial(Material* material);
@@ -160,9 +160,9 @@ public:
 
 protected:
     /// Handle node being assigned.
-    virtual void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* scene) override;
     /// Recalculate the world-space bounding box.
-    virtual void OnWorldBoundingBoxUpdate() override;
+    void OnWorldBoundingBoxUpdate() override;
     /// Mark vertex buffer to need an update.
     void MarkPositionsDirty();
     /// Tails.

@@ -19,10 +19,11 @@
 #ifndef B2_FRICTION_JOINT_H
 #define B2_FRICTION_JOINT_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Dynamics/Joints/b2Joint.h"
 
 /// Friction joint definition.
-struct b2FrictionJointDef : public b2JointDef
+struct BOX2D_API b2FrictionJointDef : public b2JointDef
 {
 	b2FrictionJointDef()
 	{
@@ -52,7 +53,7 @@ struct b2FrictionJointDef : public b2JointDef
 
 /// Friction joint. This is used for top-down friction.
 /// It provides 2D translational friction and angular friction.
-class b2FrictionJoint : public b2Joint
+class BOX2D_API b2FrictionJoint : public b2Joint
 {
 public:
 	b2Vec2 GetAnchorA() const;

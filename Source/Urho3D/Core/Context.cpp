@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,24 @@
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../IO/Log.h"
+
+#include "../Audio/Audio.h"
+#include "../Engine/Engine.h"
+#include "../Core/WorkQueue.h"
+#if URHO3D_TASKS
+#include "../Core/Tasks.h"
+#endif
+#include "../IO/FileSystem.h"
+#include "../Resource/ResourceCache.h"
+#include "../Resource/Localization.h"
+#if URHO3D_NETWORK
+#include "../Network/Network.h"
+#endif
+#include "../Input/Input.h"
+#include "../UI/UI.h"
+#if URHO3D_SYSTEMUI
+#include "../SystemUI/SystemUI.h"
+#endif
 
 #ifndef MINI_URHO
 #include <SDL/SDL.h>
@@ -52,7 +70,6 @@ static void HandleIKLog(const char* msg)
     URHO3D_LOGINFOF("[IK] %s", msg);
 }
 #endif
-
 
 void EventReceiverGroup::BeginSendEvent()
 {
@@ -178,6 +195,18 @@ void Context::RegisterFactory(ObjectFactory* factory, const char* category)
         objectCategories_[category].Push(factory->GetType());
 }
 
+void Context::RemoveFactory(StringHash type)
+{
+    factories_.Erase(type);
+}
+
+void Context::RemoveFactory(StringHash type, const char* category)
+{
+    RemoveFactory(type);
+    if (String::CStringLength(category))
+        objectCategories_[category].Remove(type);
+}
+
 void Context::RegisterSubsystem(Object* object)
 {
     if (!object)
@@ -223,6 +252,12 @@ void Context::RemoveAttribute(StringHash objectType, const char* name)
 {
     RemoveNamedAttribute(attributes_, objectType, name);
     RemoveNamedAttribute(networkAttributes_, objectType, name);
+}
+
+void Context::RemoveAllAttributes(StringHash objectType)
+{
+    attributes_.Erase(objectType);
+    networkAttributes_.Erase(objectType);
 }
 
 void Context::UpdateAttributeDefaultValue(StringHash objectType, const char* name, const Variant& defaultValue)
@@ -455,4 +490,89 @@ void Context::EndSendEvent()
     eventSenders_.Pop();
 }
 
+void Context::RegisterSubsystem(Engine* subsystem)
+{
+    engine_ = subsystem;
+    RegisterSubsystem((Object*)subsystem);
+}
+
+void Context::RegisterSubsystem(Time* subsystem)
+{
+    time_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+
+void Context::RegisterSubsystem(WorkQueue* subsystem)
+{
+    workQueue_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+#if URHO3D_PROFILING
+void Context::RegisterSubsystem(Profiler* subsystem)
+{
+    profiler_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+#endif
+void Context::RegisterSubsystem(FileSystem* subsystem)
+{
+    fileSystem_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+#if URHO3D_LOGGING
+void Context::RegisterSubsystem(Log* subsystem)
+{
+    log_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+#endif
+void Context::RegisterSubsystem(ResourceCache* subsystem)
+{
+    cache_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+
+void Context::RegisterSubsystem(Localization* subsystem)
+{
+    l18n_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+#if URHO3D_NETWORK
+void Context::RegisterSubsystem(Network* subsystem)
+{
+    network_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+#endif
+void Context::RegisterSubsystem(Input* subsystem)
+{
+    input_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+
+void Context::RegisterSubsystem(Audio* subsystem)
+{
+    audio_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+
+void Context::RegisterSubsystem(UI* subsystem)
+{
+    ui_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+#if URHO3D_TASKS
+void Context::RegisterSubsystem(Tasks* subsystem)
+{
+    tasks_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+#endif
+#if URHO3D_SYSTEMUI
+void Context::RegisterSubsystem(SystemUI* subsystem)
+{
+    systemUi_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+#endif
 }

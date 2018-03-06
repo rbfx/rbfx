@@ -1,7 +1,7 @@
 version: '{build}'
 platform:
-  - x86
   - x64
+image: Visual Studio 2017
 environment:
   global:
     URHO3D_D3D11: 1
@@ -10,9 +10,10 @@ environment:
     - BUILD_SHARED_LIBS: OFF
     - BUILD_SHARED_LIBS: ON
 before_build:
+  - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
   - mkdir "%APPVEYOR_BUILD_FOLDER%\Build"
   - cd "%APPVEYOR_BUILD_FOLDER%\Build"
-  - cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="%APPVEYOR_BUILD_FOLDER%\Urho3D-SDK" ..
+  - cmake -G "Visual Studio 15 Win64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="%APPVEYOR_BUILD_FOLDER%\Urho3D-SDK" ..
 build_script:
   - cd "%APPVEYOR_BUILD_FOLDER%\Build"
   - cmake --build . --target install
@@ -24,4 +25,4 @@ artifacts:
   path: Urho3D-SDK.7z
 branches:
   except:
-    - /^travis-.*$/
+    - /^(.*[^\w])?travis-.+$/

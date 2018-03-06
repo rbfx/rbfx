@@ -44,8 +44,8 @@ URHO3D_EVENT(E_ATTRIBUTEINSPECTVALUEMODIFIED, AttributeInspectorValueModified)
 {
     URHO3D_PARAM(P_SERIALIZABLE, Serializable);                  // Serializable pointer
     URHO3D_PARAM(P_ATTRIBUTEINFO, AttributeInfo);                // AttributeInfo pointer
-    URHO3D_PARAM(P_OLDVALUE, OldValue);                          // AttributeInfo pointer
-    URHO3D_PARAM(P_NEWVALUE, NewValue);                          // AttributeInfo pointer
+    URHO3D_PARAM(P_OLDVALUE, OldValue);                          // Variant
+    URHO3D_PARAM(P_NEWVALUE, NewValue);                          // Variant
 }
 
 URHO3D_EVENT(E_ATTRIBUTEINSPECTOATTRIBUTE, AttributeInspectorAttribute)
@@ -57,6 +57,11 @@ URHO3D_EVENT(E_ATTRIBUTEINSPECTOATTRIBUTE, AttributeInspectorAttribute)
     URHO3D_PARAM(P_TOOLTIP, Tooltip);                            // String
 }
 
-
+URHO3D_EVENT(E_GIZMONODEMODIFIED, GizmoNodeModified)
+{
+    URHO3D_PARAM(P_NODE, Node);                                  // Node pointer
+    URHO3D_PARAM(P_OLDTRANSFORM, OldTransform);                  // Matrix3x4
+    URHO3D_PARAM(P_NEWTRANSFORM, NewTransform);                  // Matrix3x4
+}
 
 }

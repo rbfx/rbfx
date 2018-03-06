@@ -19,12 +19,13 @@
 #ifndef B2_WELD_JOINT_H
 #define B2_WELD_JOINT_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Dynamics/Joints/b2Joint.h"
 
 /// Weld joint definition. You need to specify local anchor points
 /// where they are attached and the relative body angle. The position
 /// of the anchor points is important for computing the reaction torque.
-struct b2WeldJointDef : public b2JointDef
+struct BOX2D_API b2WeldJointDef : public b2JointDef
 {
 	b2WeldJointDef()
 	{
@@ -59,7 +60,7 @@ struct b2WeldJointDef : public b2JointDef
 
 /// A weld joint essentially glues two bodies together. A weld joint may
 /// distort somewhat because the island constraint solver is approximate.
-class b2WeldJoint : public b2Joint
+class BOX2D_API b2WeldJoint : public b2Joint
 {
 public:
 	b2Vec2 GetAnchorA() const;

@@ -19,11 +19,12 @@
 #ifndef B2_TIME_OF_IMPACT_H
 #define B2_TIME_OF_IMPACT_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Common/b2Math.h"
 #include "Box2D/Collision/b2Distance.h"
 
 /// Input parameters for b2TimeOfImpact
-struct b2TOIInput
+struct BOX2D_API b2TOIInput
 {
 	b2DistanceProxy proxyA;
 	b2DistanceProxy proxyB;
@@ -33,7 +34,7 @@ struct b2TOIInput
 };
 
 // Output parameters for b2TimeOfImpact.
-struct b2TOIOutput
+struct BOX2D_API b2TOIOutput
 {
 	enum State
 	{

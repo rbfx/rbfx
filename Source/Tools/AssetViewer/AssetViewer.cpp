@@ -21,14 +21,60 @@
 //
 
 #include <Urho3D/Urho3DAll.h>
-#include <Poco/Process.h>
+#include <Toolbox/SystemUI/Gizmo.h>
 #include <time.h>
-
+#include <stdio.h>
 
 using namespace std::placeholders;
 
+#ifdef _WIN32
+#   include <direct.h>
+#   define getcwd _getcwd
+#   define chdir _chdir
+#   define popen _popen
+#   define pclose _pclose
+#else
+#   include <unistd.h>
+#endif
 
-class AssetViewer : public Application
+namespace Urho3D
+{
+
+String POpen(const String& command, const std::initializer_list<String>& args, const String& currentDir=String::EMPTY)
+{
+    String lastDir;
+    char buffer[1024];
+
+    if (!currentDir.Empty())
+    {
+        if (getcwd(buffer, sizeof(buffer)) == nullptr)
+            return "";
+        lastDir = buffer;
+        chdir(currentDir.CString());
+    }
+
+    String commandLine = "\"" + command.Replaced("\"", "\\\"") + "\" ";
+    for (const auto& arg: args)
+    {
+        commandLine.Append("\"");
+        commandLine.Append(arg.Replaced("\"", "\\\""));
+        commandLine.Append("\" ");
+    }
+
+    String output;
+    FILE* stream = popen(commandLine.CString(), "r");
+    while (fgets(buffer, sizeof(buffer), stream) != NULL)
+        output.Append(buffer);
+    pclose(stream);
+
+    if (!currentDir.Empty())
+        chdir(lastDir.CString());
+
+    return output;
+}
+
+class AssetViewer
+    : public Application
 {
     URHO3D_OBJECT(AssetViewer, Application);
 public:
@@ -44,7 +90,8 @@ public:
     Gizmo gizmo_;
     bool showHelp_ = false;
 
-    explicit AssetViewer(Context* context) : Application(context), gizmo_(context)
+    explicit AssetViewer(Context* context)
+        : Application(context), gizmo_(context)
     {
     }
 
@@ -57,8 +104,7 @@ public:
         engineParameters_[EP_HEADLESS]       = false;
         engineParameters_[EP_SOUND]          = false;
         engineParameters_[EP_RESOURCE_PATHS] = "CoreData";
-        engineParameters_[EP_RESOURCE_PREFIX_PATHS] =
-            context_->GetFileSystem()->GetProgramDir() + ";;..;../share/Urho3D/Resources";
+        engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..";
         engineParameters_[EP_WINDOW_RESIZABLE] = true;
 
         ui::GetIO().IniFilename = nullptr;    // Disable saving of settings.
@@ -114,10 +160,7 @@ public:
                     {
                         camera_->GetNode()->RotateAround(Vector3::ZERO,
                             Quaternion(input->GetMouseMoveX() * 0.1f * lookSensitivity_, camera_->GetNode()->GetUp()) *
-                                Quaternion(input->GetMouseMoveY() * 0.1f * lookSensitivity_,
-                                    camera_->GetNode()->GetRight()),
-                            TS_WORLD
-                        );
+                            Quaternion(input->GetMouseMoveY() * 0.1f * lookSensitivity_, camera_->GetNode()->GetRight()), TS_WORLD);
                     }
                 }
                 else if (input->GetMouseButtonDown(MOUSEB_MIDDLE))
@@ -141,7 +184,9 @@ public:
 
 
         ui::SetNextWindowPos({0, 0}, ImGuiCond_Always);
-        if (ui::Begin("Settings", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings))
+        if (ui::Begin("Settings", nullptr,
+                      ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
+                      ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings))
         {
             gizmo_.RenderUI();
 
@@ -182,7 +227,7 @@ public:
             LoadFbx(file_path);
     }
 
-    void LoadModel(const String& file_path, const Vector<String>& materials={})
+    void LoadModel(const String& file_path, const Vector<String>& materials = { })
     {
         if (node_.NotNull())
             node_->Remove();
@@ -208,7 +253,8 @@ public:
             parentNode_->SetPosition(Vector3::ZERO);
             parentNode_->SetRotation(Quaternion::IDENTITY);
             // Scale model to size of 1 unit
-            node_->SetScale(1.f / model_->GetBoundingBox().Size().y_);
+            auto size = model_->GetBoundingBox().Size();
+            node_->SetScale(1.f / Max(size.x_, Max(size.y_, size.z_)));
             // Snap center of the model to {0,0,0}
             node_->SetWorldPosition(node_->GetWorldPosition() - model_->GetWorldBoundingBox().Center());
             node_->SetRotation(Quaternion::IDENTITY);
@@ -228,21 +274,20 @@ public:
     void LoadFbx(const String& file_path)
     {
         auto fs = GetSubsystem<FileSystem>();
-        String temp = fs->GetTemporaryPath();
+        String temp = fs->GetTemporaryDir();
         temp += "AssetViewer/";
         if (!fs->DirExists(temp))
         {
-            fs->CreateDirs(temp, "mdl");
-            fs->CreateDirs(temp, "ani");
+            fs->CreateDir(temp);
+            fs->CreateDir(temp + "/mdl");
+            fs->CreateDir(temp + "/ani");
         }
         auto animation_path = temp + "/ani";
         auto model_file = temp + "/mdl/out.mdl";
         auto material_list_file = temp + "/mdl/out.txt";
         fs->Delete(model_file);
 
-        Poco::Process::launch((fs->GetProgramDir() + "AssetImporter").CString(),
-            {"model", file_path.CString(), model_file.CString(), "-na", "-l"}, ".").wait();
-
+        POpen(fs->GetProgramDir() + "AssetImporter", {"model", file_path, model_file.CString(), "-na", "-l"}, ".");
         if (fs->FileExists(model_file))
         {
             Vector<String> materials;
@@ -260,8 +305,8 @@ public:
         for (const auto& filename : animations)
             fs->Delete(animation_path + "/" + filename);
 
-        Poco::Process::launch("./AssetImporter", {"anim", file_path.CString(),
-            (animation_path + "/out_" + ToString("%ld", time(nullptr))).CString()}, ".").wait();
+        POpen(fs->GetProgramDir() + "AssetImporter",
+              {"anim", file_path, animation_path + "/out_" + ToString("%ld", time(nullptr))});
 
         fs->ScanDir(animations, animation_path, "*.ani", SCAN_FILES, false);
 
@@ -270,4 +315,6 @@ public:
     }
 };
 
-URHO3D_DEFINE_APPLICATION_MAIN(AssetViewer);
+}
+
+URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::AssetViewer);

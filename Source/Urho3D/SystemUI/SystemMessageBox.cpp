@@ -79,7 +79,8 @@ void SystemMessageBox::RenderFrame(StringHash eventType, VariantMap& eventData)
 {
     using namespace MessageACK;
     ImGui::SetNextWindowPos(windowPosition_, ImGuiCond_FirstUseEver);
-    if (ImGui::Begin(titleText_.CString(), &isOpen_, windowSize_, -1, ImGuiWindowFlags_NoCollapse|
+    ImGui::SetNextWindowSize(windowSize_, ImGuiCond_Always);
+    if (ImGui::Begin(titleText_.CString(), &isOpen_, ImGuiWindowFlags_NoCollapse|
                      ImGuiWindowFlags_NoSavedSettings))
     {
         ImGui::TextUnformatted(messageText_.CString());

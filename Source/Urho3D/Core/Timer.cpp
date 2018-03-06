@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -72,12 +72,12 @@ Time::~Time()
 static unsigned Tick()
 {
 #ifdef _WIN32
-    return (unsigned)timeGetTime();
+    return (unsigned)GetTickCount();
 #elif __EMSCRIPTEN__
     return (unsigned)emscripten_get_now();
 #else
     struct timeval time;
-    gettimeofday(&time, NULL);
+    gettimeofday(&time, nullptr);
     return (unsigned)(time.tv_sec * 1000 + time.tv_usec / 1000);
 #endif
 }
@@ -92,12 +92,12 @@ static long long HiresTick()
         return counter.QuadPart;
     }
     else
-        return timeGetTime();
+        return GetTickCount();
 #elif __EMSCRIPTEN__
     return (unsigned)(emscripten_get_now()*1000.0);
 #else
     struct timeval time;
-    gettimeofday(&time, NULL);
+    gettimeofday(&time, nullptr);
     return time.tv_sec * 1000000LL + time.tv_usec;
 #endif
 }
@@ -163,10 +163,12 @@ unsigned Time::GetTimeSinceEpoch()
 
 String Time::GetTimeStamp()
 {
+    char dateTime[20];
     time_t sysTime;
     time(&sysTime);
-    const char* dateTime = ctime(&sysTime);
-    return String(dateTime).Replaced("\n", "");
+    tm* timeInfo = localtime(&sysTime);
+    strftime(dateTime, sizeof(dateTime), "%Y-%m-%d %H:%M:%S", timeInfo);
+    return dateTime;
 }
 
 void Time::Sleep(unsigned mSec)
@@ -177,7 +179,7 @@ void Time::Sleep(unsigned mSec)
     timespec time;
     time.tv_sec = mSec / 1000;
     time.tv_nsec = (mSec % 1000) * 1000000;
-    nanosleep(&time, 0);
+    nanosleep(&time, nullptr);
 #endif
 }
 

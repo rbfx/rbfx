@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2017 the Urho3D project.
+# Copyright (c) 2008-2018 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,6 @@ endif ()
 
 file (GLOB SOURCE_FILES *.cpp *.h)
 add_executable (AssetViewer WIN32 ${SOURCE_FILES})
-target_link_libraries(AssetViewer Urho3D poco)
-set_target_properties(AssetViewer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
+target_link_libraries(AssetViewer Toolbox Urho3D)
 add_dependencies(AssetViewer AssetImporter)
-install(TARGETS AssetViewer RUNTIME DESTINATION bin)
+install(TARGETS AssetViewer RUNTIME DESTINATION ${DEST_TOOLS_DIR})

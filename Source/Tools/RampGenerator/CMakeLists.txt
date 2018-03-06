@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2017 the Urho3D project.
+# Copyright (c) 2008-2018 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,5 +23,4 @@
 file (GLOB SOURCE_FILES *.cpp *.h)
 add_executable (RampGenerator ${SOURCE_FILES})
 target_link_libraries (RampGenerator Urho3D)
-set_target_properties(RampGenerator PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
-install(TARGETS RampGenerator RUNTIME DESTINATION bin)
+install(TARGETS RampGenerator RUNTIME DESTINATION ${DEST_TOOLS_DIR})

@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2016 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2017 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -19,10 +19,10 @@
   3. This notice may not be removed or altered from any source distribution.
 */
 #include "../SDL_internal.h"
-#include "../../include/SDL_touch.h"
+#include "SDL/SDL_touch.h"
 
-#ifndef _SDL_touch_c_h
-#define _SDL_touch_c_h
+#ifndef SDL_touch_c_h_
+#define SDL_touch_c_h_
 
 typedef struct SDL_Touch
 {
@@ -56,6 +56,6 @@ extern void SDL_DelTouch(SDL_TouchID id);
 /* Shutdown the touch subsystem */
 extern void SDL_TouchQuit(void);
 
-#endif /* _SDL_touch_c_h */
+#endif /* SDL_touch_c_h_ */
 
 /* vi: set ts=4 sw=4 expandtab: */

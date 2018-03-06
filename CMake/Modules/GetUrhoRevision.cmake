@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2017 the Urho3D project.
+# Copyright (c) 2008-2018 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -37,7 +37,7 @@ if (NOT GIT_EXIT_CODE EQUAL 0)
 endif ()
 if (FILENAME)
     # Output complete revision number to a file
-    file (WRITE ${FILENAME} "const char* revision=\"${LIB_REVISION}\";\n")
+    file (WRITE ${FILENAME} "namespace Urho3D { static const char* revision = \"${LIB_REVISION}\"; };\n")
 else ()
     # Output just major.minor.patch number to stdout
     string (REGEX MATCH "[^.]+\\.[^-]+" VERSION ${LIB_REVISION})            # Assume release tag always has major.minor format

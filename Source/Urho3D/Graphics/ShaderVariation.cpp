@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -37,10 +37,10 @@ ShaderVariation::ShaderVariation(Shader* owner, ShaderType type) :
     type_(type),
     elementHash_(0)
 {
-    for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
-        useTextureUnit_[i] = false;
-    for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
-        constantBufferSizes_[i] = 0;
+    for (bool& useTextureUnit : useTextureUnits_)
+        useTextureUnit = false;
+    for (unsigned& constantBufferSize : constantBufferSizes_)
+        constantBufferSize = 0;
 }
 
 ShaderVariation::~ShaderVariation()

@@ -19,6 +19,7 @@
 #ifndef B2_JOINT_H
 #define B2_JOINT_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Common/b2Math.h"
 
 class b2Body;
@@ -50,7 +51,7 @@ enum b2LimitState
 	e_equalLimits
 };
 
-struct b2Jacobian
+struct BOX2D_API b2Jacobian
 {
 	b2Vec2 linear;
 	float32 angularA;
@@ -62,7 +63,7 @@ struct b2Jacobian
 /// is an edge. A joint edge belongs to a doubly linked list
 /// maintained in each attached body. Each joint has two joint
 /// nodes, one for each attached body.
-struct b2JointEdge
+struct BOX2D_API b2JointEdge
 {
 	b2Body* other;			///< provides quick access to the other body attached.
 	b2Joint* joint;			///< the joint
@@ -71,7 +72,7 @@ struct b2JointEdge
 };
 
 /// Joint definitions are used to construct joints.
-struct b2JointDef
+struct BOX2D_API b2JointDef
 {
 	b2JointDef()
 	{
@@ -100,7 +101,7 @@ struct b2JointDef
 
 /// The base joint class. Joints are used to constraint two bodies together in
 /// various fashions. Some joints also feature limits and motors.
-class b2Joint
+class BOX2D_API b2Joint
 {
 public:
 

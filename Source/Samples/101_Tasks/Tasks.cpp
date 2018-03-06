@@ -160,35 +160,32 @@ void MultithreadedTasksWork(const WorkItem* item, unsigned threadIndex)
         URHO3D_LOGINFO("==== Manual task scheduling ====");
         SharedPtr<Task> task1, task2;
 
-        // Always obtain thread task before creating other tasks.
-        Task* threadTask = Task::GetThreadTask();
-
-        task1 = SharedPtr<Task>(new Task([&]() {
+        task1 = taskScheduler.Create([&]() {
             URHO3D_LOGINFO("Task1 executing");
             // Manually schedule execution of task 2. It stars executing immediately. Bear in mind that manually
             // scheduled tasks should not use SuspendTask(). SuspendTask() yields execution to the main thread and
             // requires task scheduler in order to handle suspending for prolonged period of time.
             task2->SwitchTo();
             URHO3D_LOGINFO("Task1 terminating");
-        }));
+        });
 
-        task2 = SharedPtr<Task>(new Task([&]() {
+        task2 = taskScheduler.Create([&]() {
             URHO3D_LOGINFO("Task2 executing");
             // Manually resume execution of main thread.
-            threadTask->SwitchTo();
+            taskScheduler.SwitchTo();
             URHO3D_LOGINFO("Task2 terminating");
-        }));
+        });
 
         // Start execution of Task1
         task1->SwitchTo();
-        URHO3D_LOGINFO("Main thread resumes execution after Task2");
+        URHO3D_LOGINFO("Main thread resumes execution after Task1");
         // At this point execution of both tasks is paused at SwitchTo() call. In order to avoid possible memory leaks
         // tasks have to be allowed to return properly. Switching to a task is enough. Upon task termination execution
         // automatically switches to main thread.
         task1->SwitchTo();
         URHO3D_LOGINFO("Main thread knows that Task1 just terminated");
         task2->SwitchTo();
-        URHO3D_LOGINFO("Main thread knows that Task1 just terminated");
+        URHO3D_LOGINFO("Main thread knows that Task2 just terminated");
     }
 
     URHO3D_LOGINFOF("All tasks on thread %u finished.", Thread::GetCurrentThreadID());

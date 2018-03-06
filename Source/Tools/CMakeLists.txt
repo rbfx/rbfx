@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2017 the Urho3D project.
+# Copyright (c) 2008-2018 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,14 +21,23 @@
 #
 
 # Urho3D tools
-set (CMAKE_INSTALL_RPATH "../lib${LIB_SUFFIX}")
-add_subdirectory (AssetImporter)
-add_subdirectory (AssetViewer)
-add_subdirectory (OgreImporter)
-add_subdirectory (PackageTool)
-add_subdirectory (RampGenerator)
-add_subdirectory (SpritePacker)
-add_subdirectory (UIEditor)
+set (CMAKE_INSTALL_RPATH ".:..")
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_TOOLS_DIR})
+
+if (URHO3D_PACKAGING OR         # When packing resources
+    URHO3D_PACKAGING_TOOL OR    # When crosscompiling and tool is required
+    URHO3D_TOOLS)
+    add_subdirectory (PackageTool)
+endif ()
+if (URHO3D_TOOLS AND DESKTOP)
+    add_subdirectory (Toolbox)
+    add_subdirectory (AssetImporter)
+    add_subdirectory (AssetViewer)
+    add_subdirectory (OgreImporter)
+    add_subdirectory (RampGenerator)
+    add_subdirectory (SpritePacker)
+    add_subdirectory (Editor)
+endif ()
 
 file(GLOB tool_dirs RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
 foreach (tool ${tool_dirs})

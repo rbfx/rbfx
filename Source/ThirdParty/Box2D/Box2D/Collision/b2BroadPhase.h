@@ -19,12 +19,13 @@
 #ifndef B2_BROAD_PHASE_H
 #define B2_BROAD_PHASE_H
 
+#include "Box2D/Box2DConfig.h"
 #include "Box2D/Common/b2Settings.h"
 #include "Box2D/Collision/b2Collision.h"
 #include "Box2D/Collision/b2DynamicTree.h"
 #include <algorithm>
 
-struct b2Pair
+struct BOX2D_API b2Pair
 {
 	int32 proxyIdA;
 	int32 proxyIdB;
@@ -33,7 +34,7 @@ struct b2Pair
 /// The broad-phase is used for computing pairs and performing volume queries and ray casts.
 /// This broad-phase does not persist pairs. Instead, this reports potentially new pairs.
 /// It is up to the client to consume the new pairs and to track subsequent overlap.
-class b2BroadPhase
+class BOX2D_API b2BroadPhase
 {
 public:
 

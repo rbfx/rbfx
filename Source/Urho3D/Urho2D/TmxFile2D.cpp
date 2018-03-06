@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,6 @@
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
-#include "../Resource/Image.h"
 #include "../Urho2D/Sprite2D.h"
 #include "../Urho2D/TmxFile2D.h"
 #include "../Math/AreaAllocator.h"
@@ -49,9 +48,7 @@ TmxLayer2D::TmxLayer2D(TmxFile2D* tmxFile, TileMapLayerType2D type) :
 
 }
 
-TmxLayer2D::~TmxLayer2D()
-{
-}
+TmxLayer2D::~TmxLayer2D() = default;
 
 TmxFile2D* TmxLayer2D::GetTmxFile() const
 {
@@ -250,7 +247,7 @@ bool TmxObjectGroup2D::Load(const XMLElement& element, const TileMapInfo2D& info
     return true;
 }
 
-void TmxObjectGroup2D::StoreObject(XMLElement objectElem, SharedPtr<TileMapObject2D> object, const TileMapInfo2D& info, bool isTile)
+void TmxObjectGroup2D::StoreObject(const XMLElement& objectElem, const SharedPtr<TileMapObject2D>& object, const TileMapInfo2D& info, bool isTile)
 {
         if (objectElem.HasAttribute("name"))
             object->name_ = objectElem.GetAttribute("name");
@@ -352,7 +349,7 @@ bool TmxImageLayer2D::Load(const XMLElement& element, const TileMapInfo2D& info)
     position_ = Vector2(0.0f, info.GetMapHeight());
     source_ = imageElem.GetAttribute("source");
     String textureFilePath = GetParentPath(tmxFile_->GetName()) + source_;
-    ResourceCache* cache = tmxFile_->GetSubsystem<ResourceCache>();
+    auto* cache = tmxFile_->GetSubsystem<ResourceCache>();
     SharedPtr<Texture2D> texture(cache->GetResource<Texture2D>(textureFilePath));
     if (!texture)
     {
@@ -496,14 +493,14 @@ bool TmxFile2D::EndLoad()
             ret = LoadTileSet(childElement);
         else if (name == "layer")
         {
-            TmxTileLayer2D* tileLayer = new TmxTileLayer2D(this);
+            auto* tileLayer = new TmxTileLayer2D(this);
             ret = tileLayer->Load(childElement, info_);
 
             layers_.Push(tileLayer);
         }
         else if (name == "objectgroup")
         {
-            TmxObjectGroup2D* objectGroup = new TmxObjectGroup2D(this);
+            auto* objectGroup = new TmxObjectGroup2D(this);
             ret = objectGroup->Load(childElement, info_);
 
             layers_.Push(objectGroup);
@@ -511,7 +508,7 @@ bool TmxFile2D::EndLoad()
         }
         else if (name == "imagelayer")
         {
-            TmxImageLayer2D* imageLayer = new TmxImageLayer2D(this);
+            auto* imageLayer = new TmxImageLayer2D(this);
             ret = imageLayer->Load(childElement, info_);
 
             layers_.Push(imageLayer);
@@ -647,7 +644,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
     int imageHeight;
     bool isSingleTileSet = false;
 
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    auto* cache = GetSubsystem<ResourceCache>();
     {
         XMLElement imageElem = tileSetElem.GetChild("image");
         // Tileset based on single tileset image
@@ -758,7 +755,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
         texture->SetNumLevels(1);
         texture->SetSize(allocator.GetWidth(), allocator.GetHeight(), Graphics::GetRGBAFormat());
 
-        unsigned textureDataSize = allocator.GetWidth() * allocator.GetHeight() * 4;
+        auto textureDataSize = (unsigned)allocator.GetWidth() * allocator.GetHeight() * 4;
         SharedArrayPtr<unsigned char> textureData(new unsigned char[textureDataSize]);
         memset(textureData.Get(), 0, textureDataSize);
 
@@ -770,7 +767,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
             for (int y = 0; y < image->GetHeight(); ++y)
             {
                 memcpy(textureData.Get() + ((info.y + y) * allocator.GetWidth() + info.x) * 4,
-                    image->GetData() + y * image->GetWidth() * 4, image->GetWidth() * 4);
+                    image->GetData() + y * image->GetWidth() * 4, (size_t)image->GetWidth() * 4);
             }
 
             SharedPtr<Sprite2D> sprite(new Sprite2D(context_));

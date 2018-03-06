@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -51,21 +51,21 @@ class URHO3D_API Component : public Animatable
 
 public:
     /// Construct.
-    Component(Context* context);
+    explicit Component(Context* context);
     /// Destruct.
-    virtual ~Component() override;
+    ~Component() override;
 
     /// Handle enabled/disabled state change.
     virtual void OnSetEnabled() { }
 
     /// Save as binary data. Return true if successful.
-    virtual bool Save(Serializer& dest) const override;
+    bool Save(Serializer& dest) const override;
     /// Save as XML data. Return true if successful.
-    virtual bool SaveXML(XMLElement& dest) const override;
+    bool SaveXML(XMLElement& dest) const override;
     /// Save as JSON data. Return true if successful.
-    virtual bool SaveJSON(JSONValue& dest) const override;
+    bool SaveJSON(JSONValue& dest) const override;
     /// Mark for attribute check on the next network update.
-    virtual void MarkNetworkUpdate() override;
+    void MarkNetworkUpdate() override;
     /// Return the depended on nodes to order network updates.
     virtual void GetDependencyNodes(PODVector<Node*>& dest);
     /// Visualize the component as debug geometry.
@@ -108,9 +108,9 @@ public:
 
 protected:
     /// Handle attribute animation added.
-    virtual void OnAttributeAnimationAdded() override;
+    void OnAttributeAnimationAdded() override;
     /// Handle attribute animation removed.
-    virtual void OnAttributeAnimationRemoved() override;
+    void OnAttributeAnimationRemoved() override;
     /// Handle scene node being assigned at creation.
     virtual void OnNodeSet(Node* node);
     /// Handle scene being assigned. This may happen several times during the component's lifetime. Scene-wide subsystems and events are subscribed to here.

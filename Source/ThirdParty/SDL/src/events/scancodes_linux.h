@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2016 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2017 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -18,7 +18,7 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
-#include "../../include/SDL_scancode.h"
+#include "SDL/SDL_scancode.h"
 
 /* Linux virtual key code to SDL_Keycode mapping table
    Sources:
@@ -194,7 +194,7 @@ static SDL_Scancode const linux_scancode_table[] = {
     /*  165 */    SDL_SCANCODE_AUDIOPREV, /* KEY_PREVIOUSSONG */
     /*  166 */    SDL_SCANCODE_AUDIOSTOP, /* KEY_STOPCD */
     /*  167 */    SDL_SCANCODE_UNKNOWN, /* KEY_RECORD */
-    /*  168 */    SDL_SCANCODE_UNKNOWN, /* KEY_REWIND */
+    /*  168 */    SDL_SCANCODE_AUDIOREWIND, /* KEY_REWIND */
     /*  169 */    SDL_SCANCODE_UNKNOWN, /* KEY_PHONE */
     /*  170 */    SDL_SCANCODE_UNKNOWN, /* KEY_ISO */
     /*  171 */    SDL_SCANCODE_UNKNOWN, /* KEY_CONFIG */
@@ -230,7 +230,7 @@ static SDL_Scancode const linux_scancode_table[] = {
     /*  205 */    SDL_SCANCODE_UNKNOWN, /* KEY_SUSPEND */
     /*  206 */    SDL_SCANCODE_UNKNOWN, /* KEY_CLOSE */
     /*  207 */    SDL_SCANCODE_UNKNOWN, /* KEY_PLAY */
-    /*  208 */    SDL_SCANCODE_UNKNOWN, /* KEY_FASTFORWARD */
+    /*  208 */    SDL_SCANCODE_AUDIOFASTFORWARD, /* KEY_FASTFORWARD */
     /*  209 */    SDL_SCANCODE_UNKNOWN, /* KEY_BASSBOOST */
     /*  210 */    SDL_SCANCODE_UNKNOWN, /* KEY_PRINT */
     /*  211 */    SDL_SCANCODE_UNKNOWN, /* KEY_HP */

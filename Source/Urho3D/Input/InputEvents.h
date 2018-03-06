@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -244,11 +244,16 @@ URHO3D_EVENT(E_INPUTEND, InputEnd)
 {
 }
 
-static const int MOUSEB_LEFT = SDL_BUTTON_LMASK;
-static const int MOUSEB_MIDDLE = SDL_BUTTON_MMASK;
-static const int MOUSEB_RIGHT = SDL_BUTTON_RMASK;
-static const int MOUSEB_X1 = SDL_BUTTON_X1MASK;
-static const int MOUSEB_X2 = SDL_BUTTON_X2MASK;
+enum MouseButton
+{
+    MOUSEB_NONE,
+    MOUSEB_LEFT = SDL_BUTTON_LMASK,
+    MOUSEB_MIDDLE = SDL_BUTTON_MMASK,
+    MOUSEB_RIGHT = SDL_BUTTON_RMASK,
+    MOUSEB_X1 = SDL_BUTTON_X1MASK,
+    MOUSEB_X2 = SDL_BUTTON_X2MASK,
+    MOUSEB_ANY = ~0
+};
 
 static const int QUAL_SHIFT = 1;
 static const int QUAL_CTRL = 2;
@@ -367,7 +372,6 @@ static const int KEY_LCTRL = SDLK_LCTRL;
 static const int KEY_RCTRL = SDLK_RCTRL;
 static const int KEY_LALT = SDLK_LALT;
 static const int KEY_RALT = SDLK_RALT;
-
 static const int KEY_AC_BACK = SDLK_AC_BACK;
 static const int KEY_AC_BOOKMARKS = SDLK_AC_BOOKMARKS;
 static const int KEY_AC_FORWARD = SDLK_AC_FORWARD;

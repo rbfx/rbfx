@@ -24,6 +24,7 @@
 #pragma once
 
 #include "Urho3D/Core/Object.h"
+#include "Urho3D/Container/Pair.h"
 
 namespace Urho3D
 {
@@ -67,11 +68,13 @@ public:
 
     /// Remove all rows.
     void Clear();
+    /// Render contents of the console window. Useful for embedding console into custom UI.
+    void RenderContent();
+    /// Populate the command line interpreters that could handle the console command.
+    void RefreshInterpreters();
 
 private:
-    /// Populate the command line interpreters that could handle the console command.
-    bool PopulateInterpreter();
-    ///
+    /// Update console size on application window changes.
     void HandleScreenMode(StringHash eventType, VariantMap& eventData);
     /// Handle a log message.
     void HandleLogMessage(StringHash eventType, VariantMap& eventData);
@@ -87,7 +90,7 @@ private:
     /// Last used command interpreter.
     int currentInterpreter_;
     /// Command history.
-    Vector<String> history_;
+    Vector<Pair<int, String>> history_;
     /// Command history maximum rows.
     unsigned historyRows_;
     /// Is console window open.

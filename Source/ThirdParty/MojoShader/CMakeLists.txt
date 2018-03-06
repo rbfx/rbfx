@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2017 the Urho3D project.
+# Copyright (c) 2008-2018 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,11 +20,12 @@
 # THE SOFTWARE.
 #
 
-file (GLOB SOURCE_FILES *.c)
-add_library (MojoShader STATIC ${SOURCE_FILES})
+file (GLOB_RECURSE SOURCE_FILES *.c *.h)
+add_library (MojoShader OBJECT ${SOURCE_FILES})
 if (MSVC)
     target_compile_definitions (MojoShader PRIVATE -D_CRT_SECURE_NO_WARNINGS=1 -TP)
 endif ()
-
-install (DIRECTORY ./ DESTINATION ${DEST_THIRDPARTY_HEADERS}/MojoShader FILES_MATCHING PATTERN *.h)
-install_to_build_tree(MojoShader)
+target_include_directories(MojoShader
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/MojoShader>
+)

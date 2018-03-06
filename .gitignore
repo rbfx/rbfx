@@ -20,6 +20,7 @@ generated/
 /Source/Urho3D/Urho3D.pc.msvc
 /Source/Urho3D/Urho3DAll.h
 /Source/Urho3D/librevision.h
+Android/build
 
 # Compiled shaders
 *.vs?
@@ -35,6 +36,10 @@ generated/
 /Docs/html/
 /Docs/qch/
 
+# Saved sample scenes
+/bin/Data/Scenes/Isometric2D.xml
+/bin/Data/Scenes/Platformer2D.xml
+
 # Eclipse project settings
 /.*project
 /.settings
@@ -47,6 +52,7 @@ generated/
 
 # JetBrains IDE project settings
 /.idea/
+*.iml
 /cmake-build-*/
 
 # Code::Blocks project settings
@@ -60,9 +66,7 @@ generated/
 /Android/local.properties
 
 # Android output directories
-/Android/Urho3D/
-/Android/ThirdParty/
-/Android/libs/
+gradle*
 
 # CMake generated build files
 CMakeCache.txt
@@ -77,6 +81,7 @@ CTestTestfile.cmake
 /Source/**/*.cmake
 !/Source/ThirdParty/SDL/cmake/*.cmake
 !/Source/ThirdParty/SDL/include/*cmake
+!/Source/ThirdParty/Assimp/cmake-modules/*cmake
 /Docs/**/*.cmake
 
 # Precompiled header files
@@ -96,4 +101,4 @@ configure*
 *.log
 *.bak
 Thumbs.db
-.directory
+.*

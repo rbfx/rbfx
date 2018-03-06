@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Engine/Application.h"
+#include "../Engine/EngineEvents.h"
 #include "../IO/IOEvents.h"
 #include "../IO/Log.h"
 #include "../Core/Profiler.h"
@@ -64,7 +65,7 @@ Application::Application(Context* context) :
 int Application::Run()
 {
     // Profiler requires main thread to be named "Main" as fps calculations depend on it.
-    URHO3D_PROFILE_THREAD("Main");
+    URHO3D_PROFILE_THREAD(Main);
 #if !defined(__GNUC__) || __EXCEPTIONS
     try
     {
@@ -82,6 +83,8 @@ int Application::Run()
         Start();
         if (exitCode_)
             return exitCode_;
+
+        SendEvent(E_APPLICATIONSTARTED);
 
         // Platforms other than iOS/tvOS and Emscripten run a blocking main loop
 #if !defined(IOS) && !defined(TVOS) && !defined(__EMSCRIPTEN__)
