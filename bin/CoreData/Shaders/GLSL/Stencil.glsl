@@ -30,6 +30,6 @@ void VS()
 
 void PS()
 {
-    gl_FragColor = vec4(1.0);
+    gl_FragColor = vec4_splat(1.0);
 }
 

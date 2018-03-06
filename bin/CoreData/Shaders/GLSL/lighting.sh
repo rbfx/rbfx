@@ -78,10 +78,13 @@ float GetVertexLightVolumetric(int index, vec3 worldPos)
 #endif
 
 void GetShadowPos(vec4 projWorldPos, vec3 normal, 
-                  out vec4 shadowPos0,
-                  out vec4 shadowPos1,
-                  out vec4 shadowPos2,
-                  out vec4 shadowPos3)
+                  out vec4 shadowPos0
+#if defined(DIRLIGHT)
+                  , out vec4 shadowPos1
+                  , out vec4 shadowPos2
+                  , out vec4 shadowPos3
+#endif
+                  )
 {
     // Shadow projection: transform from world space to shadow space
     #ifdef NORMALOFFSET
@@ -367,16 +370,20 @@ float GetDirShadowDeferred(vec4 projWorldPos, vec3 normal, float depth)
 #endif
 
 #ifndef GL_ES
-float GetShadow(const vec4 iShadowPos0, 
+float GetShadow(const vec4 iShadowPos0,
+#ifdef DIRLIGHT
                 const vec4 iShadowPos1, 
                 const vec4 iShadowPos2, 
-                const vec4 iShadowPos3, 
+                const vec4 iShadowPos3,
+#endif
                 float depth)
 #else
-float GetShadow(const highp vec4 iShadowPos0, 
+float GetShadow(const highp vec4 iShadowPos0,
+#ifdef DIRLIGHT
                 const highp vec4 iShadowPos1, 
                 const highp vec4 iShadowPos2, 
-                const highp vec4 iShadowPos3, 
+                const highp vec4 iShadowPos3,
+#endif
                 float depth)
 #endif
 {
