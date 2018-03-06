@@ -122,7 +122,7 @@
 #define iNormal a_normal
 #define iTexCoord a_texcoord0
 #define iColor a_color0
-#define iTexCoord2 a_texcoord1
+#define iTexCoord1 a_texcoord1
 #define iTangent a_tangent
 #define iBlendWeights a_weight
 #define iBlendIndices a_indices
