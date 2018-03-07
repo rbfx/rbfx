@@ -34,6 +34,9 @@
 #define STB_TRUETYPE_IMPLEMENTATION 1
 #include "stb_truetype.h"
 
+#define STB_IMAGE_RESIZE_IMPLEMENTATION 1
+#include "stb_image_resize.h"
+
 // So far only imgui is using textedit. Also use of this header requires extensive configuration. Due to these reasons
 // header implementation is not enabled here until other parts of project require it.
 //#define STB_TEXTEDIT_IMPLEMENTATION 1
