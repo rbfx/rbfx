@@ -30,7 +30,8 @@ BX_PRAGMA_DIAGNOSTIC_IGNORED_MSVC(4127) // warning C4127: conditional expression
 #define LODEPNG_NO_COMPILE_ANCILLARY_CHUNKS
 #define LODEPNG_NO_COMPILE_ALLOCATORS
 #define LODEPNG_NO_COMPILE_CPP
-#include <lodepng/lodepng.cpp>
+// Urho3D fix
+#include <lodepng/lodepng.h>
 BX_PRAGMA_DIAGNOSTIC_POP();
 
 void* lodepng_malloc(size_t _size)
@@ -62,8 +63,8 @@ BX_PRAGMA_DIAGNOSTIC_IGNORED_GCC("-Wimplicit-fallthrough");
 #define STBI_MALLOC(_size)        lodepng_malloc(_size)
 #define STBI_REALLOC(_ptr, _size) lodepng_realloc(_ptr, _size)
 #define STBI_FREE(_ptr)           lodepng_free(_ptr)
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb/stb_image.h>
+// Urho3D fix
+#include <STB/stb_image.h>
 BX_PRAGMA_DIAGNOSTIC_POP();
 
 namespace bimg
