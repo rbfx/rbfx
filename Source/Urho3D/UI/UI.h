@@ -110,7 +110,7 @@ public:
     void SetUseScreenKeyboard(bool enable);
     /// Set whether to use mutable (eraseable) glyphs to ensure a font face never expands to more than one texture. Default false.
     void SetUseMutableGlyphs(bool enable);
-    /// Set whether to force font autohinting instead of using FreeType's TTF bytecode interpreter.
+    /// Set whether to force font autohinting instead of using FreeType's TTF bytecode interpreter. Default false
     void SetForceAutoHint(bool enable);
     /// Set the hinting level used by FreeType fonts.
     void SetFontHintLevel(FontHintLevel level);
