@@ -294,7 +294,7 @@ public:
     /// Return whether window is resizable.
     bool GetResizable() const { return resizable_; }
 
-	/// Set the ratio of virtual pixels to device pixels. values will be rounded to nearset multiple of 2 (..., 1/4, 1/2, 1, 2, 4, ...)
+	/// Set the ratio of virtual pixels to device pixels. values should be a multiple of 2 (..., 1/4, 1/2, 1, 2, 4, ...)
 	void SetPixelToDevicePixelRatio(float ratio);
 
 	/// Return the ratio of virtual pixel to device pixels.
