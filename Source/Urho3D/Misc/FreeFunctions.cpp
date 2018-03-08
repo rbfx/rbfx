@@ -38,6 +38,19 @@ namespace Urho3D {
 		return (bytesRead == fileSize);
 	}
 
+	bool FreeFunctions::FileIsAscii(String fileFullPath)
+	{
+		SharedPtr<File> inFile = SharedPtr<File>(new File(context_, fileFullPath, Urho3D::FileMode::FILE_READ));
+		int byte = inFile->ReadByte();
+		while (byte > 0 && !inFile->IsEof()) {
+			byte = inFile->ReadByte();
+		}
+		if (!inFile->IsEof())
+			return false;
+		
+		return true;
+	}
+
 	String FreeFunctions::GetResourceBinDir() {
 		if (GetSubsystem<ResourceCache>()->GetResourceDirs().Size())
 			return GetParentPath(GetSubsystem<ResourceCache>()->GetResourceDirs().Front());
@@ -88,4 +101,13 @@ namespace Urho3D {
 			i++;
 		}
 	}
+
+	void URHO3D_API PrintVariantMap(VariantMap& map)
+	{
+		URHO3D_LOGINFO("Printing Variant Map Of Size " + String(map.Size()));
+		for (auto pair : map) {
+			URHO3D_LOGINFO("Key{" + String(pair.first_) + "} value{" + String(pair.second_) + "}");
+		}
+	}
+
 }

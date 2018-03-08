@@ -23,8 +23,10 @@ namespace Urho3D {
 		static void RegisterObject(Context* context);
 
 		bool SaveStringToFile(String& str, String fileFullPath);
-
 		bool ReadFileToString(String& str, String fileFullPath);
+
+
+		bool FileIsAscii(String fileFullPath);
 
 		String GetResourceBinDir();
 		String GetResourceDataDir();
@@ -32,5 +34,6 @@ namespace Urho3D {
 	};
 
 	void URHO3D_API PrintRayQueryResults(PODVector<RayQueryResult>& results);
+	void URHO3D_API PrintVariantMap(VariantMap& map);
 
 }
