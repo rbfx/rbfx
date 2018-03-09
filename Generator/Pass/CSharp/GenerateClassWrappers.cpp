@@ -35,8 +35,18 @@ void GenerateClassWrappers::Start()
     printer_ << "#pragma once";
     printer_ << "#include <Urho3D/Urho3DAll.h>";
     printer_ << "";
+    printer_ << "";
+    printer_ << "void RegisterWrapperFactories(Context* context);";
+    printer_ << "";
     printer_ << "namespace Wrappers";
     printer_ << "{";
+    printer_ << "";
+
+    initPrinter_ << "#include <Urho3D/Urho3DAll.h>";
+    initPrinter_ << "#include \"ClassWrappers.hpp\"";
+    initPrinter_ << "";
+    initPrinter_ << "void RegisterWrapperFactories(Context* context)";
+    initPrinter_.Indent();
 }
 
 bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
@@ -67,7 +77,13 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
 
     // Urho3D-specific
     if (IsSubclassOf(cls, "Urho3D::Object"))
-        printer_ << fmt::format("URHO3D_OBJECT({}, {});", entity->name_, entity->uniqueName_);
+    {
+        printer_ << fmt::format("URHO3D_OBJECT(Wrappers::{}, {});", entity->name_, entity->uniqueName_);
+
+        // TODO: Get rid of this. Drawable does not have constructor with single Context parameter.
+        if (entity->symbolName_ != "Urho3D::Drawable")
+            initPrinter_ << fmt::format("context->RegisterFactory<Wrappers::{}>();", entity->name_);
+    }
 
     printer_.WriteLine("public:", false);
     // Wrap constructors
@@ -139,6 +155,10 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
                             FMT_CAPTURE(constModifier));
                         printer_.Indent();
                         {
+                            // Urho3D-specific: slip in call to registration of wrapper class factories.
+                            if (cls->symbolName_ == "Urho3D::Application" && name == "Start")
+                                printer_ << "RegisterWrapperFactories(context_);";
+
                             printer_ << fmt::format("if (fn{symbolName} == nullptr)", FMT_CAPTURE(symbolName));
                             printer_.Indent();
                             {
@@ -203,16 +223,30 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
 
 void GenerateClassWrappers::Stop()
 {
+    initPrinter_.Dedent();
     printer_ << "}";    // namespace Wrappers
 
-    File file(context_, GetSubsystem<GeneratorContext>()->outputDirCpp_ + "ClassWrappers.hpp", FILE_WRITE);
-    if (!file.IsOpen())
+    // Save ClassWrappers.hpp
     {
-        URHO3D_LOGERROR("Failed saving ClassWrappers.hpp");
-        return;
+        File file(context_, generator->outputDirCpp_ + "ClassWrappers.hpp", FILE_WRITE);
+        if (!file.IsOpen())
+        {
+            URHO3D_LOGERROR("Failed saving ClassWrappers.hpp");
+            return;
+        }
+        file.WriteLine(printer_.Get());
     }
-    file.WriteLine(printer_.Get());
-    file.Close();
+
+    // Save RegisterFactories.cpp
+    {
+        File file(context_, generator->outputDirCpp_ + "RegisterFactories.cpp", FILE_WRITE);
+        if (!file.IsOpen())
+        {
+            URHO3D_LOGERROR("Failed saving RegisterFactories.cpp");
+            return;
+        }
+        file.WriteLine(initPrinter_.Get());
+    }
 }
 
 }

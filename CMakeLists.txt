@@ -65,11 +65,13 @@ macro (CSHARP_BIND_TARGET TARGET RULES)
     set (COMMON_CSHARP_SOURCE_FILES_GENERATED
         ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}CSharp/CApi.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}CSharp/ClassWrappers.hpp
+        ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}CSharp/RegisterFactories.cpp
     )
     set_source_files_properties(${COMMON_CSHARP_SOURCE_FILES_GENERATED} PROPERTIES GENERATED TRUE)
     add_library(${TARGET}CSharp SHARED ${COMMON_CSHARP_SOURCE_FILES_MANUAL} ${COMMON_CSHARP_SOURCE_FILES_GENERATED})
     target_link_libraries(${TARGET}CSharp Urho3D)
-    target_include_directories(${TARGET}CSharp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/CommonCSharp)
+    target_include_directories(${TARGET}CSharp PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/CommonCSharp ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}CSharp)
     add_dependencies(${TARGET}CSharp CSharpGenerateBindings)
 
     # Net target (managed)

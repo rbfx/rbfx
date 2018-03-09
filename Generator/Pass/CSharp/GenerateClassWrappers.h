@@ -44,6 +44,7 @@ public:
 
 protected:
     CSharpPrinter printer_;
+    CSharpPrinter initPrinter_;
 };
 
 }
