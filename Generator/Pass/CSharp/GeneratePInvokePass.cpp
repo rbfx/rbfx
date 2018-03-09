@@ -127,20 +127,8 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             {
                 printer_ << "if (Interlocked.Increment(ref disposed_) == 1)";
                 printer_.Indent();
-                printer_ << fmt::format("InstanceCache.Remove<{}>(instance_);", entity->name_);
-                if (entity->uniqueName_ == "Urho3D::Context")
-                {
-                    // When context is disposing we are still likely holding on to some objects. This causes a crash
-                    // upon application exit, because references we are holding on will be disposed after Context no
-                    // longer exists. If such references inherit from Object they will try to access Context and crash.
-                    // In order to avoid this crash we explicitly dispose of all remaining native references just before
-                    // destroying Context instance. It is critical that native objects are not interacted with after
-                    // Context is destroyed. Creating and destroying multiple contexts will make things go boom as well.
-                    // It is very likely that same thing will happen when trying to have multiple Context instances in
-                    // the same process. This usage is very atypical, so do not do it.
-                    printer_ << "InstanceCache.Dispose();";
-                }
                 printer_ << Sanitize(entity->uniqueName_) + "_destructor(instance_);";
+                printer_ << fmt::format("InstanceCache.Remove<{}>(instance_, this);", entity->name_);
                 printer_.Dedent();
                 printer_ << "instance_ = IntPtr.Zero;";
             }

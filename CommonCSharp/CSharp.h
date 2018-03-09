@@ -3,6 +3,11 @@
 #include <string>
 #include <type_traits>
 
+struct ManagedInterface
+{
+    void*(*FreeGCHandle)(void*);
+};
+
 /// Object that manages lifetime of native object which was passed to managed runtime.
 struct NativeObjectHandler
 {
@@ -25,6 +30,9 @@ class ScriptSubsystem
 public:
     RefCounted* AddRefCountedRef(RefCounted* instance)
     {
+        if (instance == nullptr)
+            return nullptr;
+
         MutexLock scoped(lock_);
         if (instanceToHandler_.Contains((void*)instance))
             return instance;
@@ -41,6 +49,9 @@ public:
 
     template<typename T> T* TakePointerOwnership(const T* instance)
     {
+        if (instance == nullptr)
+            return nullptr;
+
         MutexLock scoped(lock_);
         if (instanceToHandler_.Contains((void*)instance))
             return (T*)instance;
@@ -56,6 +67,8 @@ public:
 
     template<typename T> T* TakePointerReference(const T* instance)
     {
+        assert(instance != nullptr);
+
         MutexLock scoped(lock_);
         if (instanceToHandler_.Contains((void*)instance))
             return (T*)instance;
@@ -72,13 +85,13 @@ public:
     template<typename T> using CopyableType = typename std::enable_if<!std::is_base_of<Urho3D::RefCounted, T>::value && std::is_copy_constructible<T>::value, T>::type;
 
     // Type is RefCounted, always return a reference.
-    template<typename T> T* AddRef(const SharedPtr<T>& object)          { return (T*)AddRefCountedRef(object.Get()); }
-    template<typename T> T* AddRef(const WeakPtr<T>& object)            { return (T*)AddRefCountedRef(object.Get()); }
-    template<typename T> T* AddRef(const RefCountedType<T>* object)     { return (T*)AddRefCountedRef(const_cast<T*>(object)); }
+    template<typename T> T* AddRef(const SharedPtr<T>& object)          { return object.Get(); }
+    template<typename T> T* AddRef(const WeakPtr<T>& object)            { return object.Get(); }
+    template<typename T> T* AddRef(const RefCountedType<T>* object)     { return const_cast<T*>(object); }
     // Type is copy-constructibe or rvalue reference, most likely being returned by value. Make a copy.
     template<typename T> T* AddRef(CopyableType<T>&& object)            { return (T*)TakePointerOwnership<T>(new T(object)); }
     template<typename T> T* AddRef(const CopyableType<T>&& object)      { return (T*)TakePointerOwnership<T>(new T(object)); }
-    template<typename T> T* AddRef(CopyableType<T>& object)       { return (T*)TakePointerReference<T>(&object); }
+    template<typename T> T* AddRef(CopyableType<T>& object)             { return (T*)TakePointerReference<T>(&object); }
     template<typename T> T* AddRef(const CopyableType<T>& object)       { return (T*)TakePointerReference<T>(&object); }
     template<typename T> T* AddRef(CopyableType<T>* object)             { return (T*)TakePointerReference<T>(object); }
     template<typename T> T* AddRef(const CopyableType<T>* object)       { return (T*)TakePointerReference<T>(object); }
@@ -87,7 +100,7 @@ public:
     template<typename T> T* AddRef(const NonRefCountedType<T>& object)  { return (T*)TakePointerOwnership<T>(&object); }
     template<typename T> T* AddRef(const NonRefCountedType<T>* object)  { return (T*)TakePointerOwnership<T>(object); }
     // Pointer to any RefCounted object. Refcount increased/decreased as usual.
-    template<typename T> T* TakeOwnership(RefCountedType<T>* object)    { return (T*)AddRefCountedRef(object); }
+    template<typename T> T* TakeOwnership(RefCountedType<T>* object)    { return object; }
     template<typename T> T* TakeOwnership(NonRefCountedType<T>* object) { return (T*)TakePointerOwnership<T>(object); }
     template<typename T> T* TakeOwnership(CopyableType<T>* object)      { return (T*)TakePointerOwnership<T>(object); }
     // Type is some rvalue reference backed by existing storage - return a reference. User is responsible to make sure
@@ -98,6 +111,9 @@ public:
     // Should usually not be called. Target runtime is responsible for freeing this string.
     const char* AddRef(const String& object)           { return strdup(object.CString()); }
     const char* AddRef(const std::string& object)      { return strdup(object.c_str()); }
+
+    // RefCounted instances are released on managed side. Swallow these calls to avoid warning in function below.
+    template<typename T> void ReleaseRef(RefCountedType<T>* object) { }
 
     template<typename T>
     void ReleaseRef(T* instance)
@@ -121,6 +137,8 @@ public:
             return nullptr;
         return it->second_;
     }
+
+    ManagedInterface net_;
 
 protected:
     Mutex lock_;

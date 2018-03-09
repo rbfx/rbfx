@@ -65,7 +65,9 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_ << fmt::format("URHO3D_EXPORT_API void {}({}* instance)", cFunctionName.CString(), entity->name_);
         printer_.Indent();
         {
-            printer_ << "script->ReleaseRef(instance);";
+            // Using sourceName_ with wrapper classes causes weird build errors.
+            std::string className = entity->symbolName_;
+            printer_ << fmt::format("script->ReleaseRef<{}>(instance);", className);
         }
         printer_.Dedent();
         printer_ << "";

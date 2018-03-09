@@ -59,4 +59,9 @@ URHO3D_EXPORT_API Variant* Urho3D_HashMap_StringHash_Variant_TryGet(Urho3D::Vari
     return nullptr;
 }
 
+URHO3D_EXPORT_API void CSharp_SetManagedAPI(ManagedInterface netApi)
+{
+    script->net_ = netApi;
+}
+
 }

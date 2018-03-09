@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using Urho3D;
 
 namespace CSharp
 {
@@ -15,17 +16,41 @@ namespace CSharp
 
         public static T GetOrAdd<T>(IntPtr instance, Func<IntPtr, T> factory)
         {
-            return (T)GetContainer<T>().GetOrAdd(instance, ptr => (IDisposable)factory(ptr));
+            return (T)GetContainer<T>().GetOrAdd(instance, ptr =>
+            {
+                var object_ = (IDisposable)factory(ptr);
+                // In case this is RefCounted object add a reference for duration of object's lifetime.
+                (object_ as RefCounted)?.AddRef();
+                return object_;
+            });
+        }
+
+        public static void Add<T>(IntPtr instance, Context object_)
+        {
+            NativeInterface.Setup();
+            // In case this is RefCounted object add a reference for duration of object's lifetime.
+            object_.AddRef();
+            GetContainer<T>().Add(instance, object_);
         }
 
         public static void Add<T>(IntPtr instance, T object_)
         {
+            // In case this is RefCounted object add a reference for duration of object's lifetime.
+            (object_ as RefCounted)?.AddRef();
             GetContainer<T>().Add(instance, (IDisposable)object_);
         }
 
-        public static void Remove<T>(IntPtr instance)
+        public static void Remove<T>(IntPtr native, Context object_)
         {
-            GetContainer<T>().Remove(instance);
+            GetContainer<T>().Remove(native);
+            NativeInterface.Dispose();
+            object_.ReleaseRef();
+        }
+
+        public static void Remove<T>(IntPtr native, T object_)
+        {
+            GetContainer<T>().Remove(native);
+            (object_ as RefCounted)?.ReleaseRef();
         }
 
         /// <summary>
@@ -37,8 +62,7 @@ namespace CSharp
             {
                 foreach (var item in pair.Value)
                 {
-                    if (item.Value.Target != null)
-                        ((IDisposable)item.Value.Target).Dispose();
+                    ((IDisposable) item.Value.Target)?.Dispose();
                 }
             }
             cache_.Clear();

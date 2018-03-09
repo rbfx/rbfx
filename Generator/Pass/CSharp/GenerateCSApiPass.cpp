@@ -78,7 +78,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 // Not necessary here, but makes it convenient allowing to not handle case where no bases exist.
                 for (const auto& base : cls.bases())
                 {
-                    if (const auto* baseClass = GetEntity(base.type()))
+                    if (generator->symbols_.Contains(Urho3D::GetTypeName(base.type())))
                         bases.emplace_back(base.name());
                     else
                         URHO3D_LOGWARNINGF("Unknown base class: %s", cppast::to_string(base.type()).c_str());

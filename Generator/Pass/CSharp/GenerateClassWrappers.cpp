@@ -34,6 +34,7 @@ void GenerateClassWrappers::Start()
 {
     printer_ << "#pragma once";
     printer_ << "#include <Urho3D/Urho3DAll.h>";
+    printer_ << "#include <CSharp.h>";
     printer_ << "";
     printer_ << "";
     printer_ << "void RegisterWrapperFactories(Context* context);";
@@ -86,6 +87,8 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
     }
 
     printer_.WriteLine("public:", false);
+    printer_ << "void* gcHandle_ = nullptr;";
+
     // Wrap constructors
     for (const auto& e : entity->children_)
     {
@@ -96,7 +99,18 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
                 entity->uniqueName_, ParameterNameList(ctor.parameters()));
         }
     }
-    printer_ << fmt::format("virtual ~{}() = default;", entity->name_);
+    printer_ << fmt::format("virtual ~{}()", entity->name_);
+    printer_.Indent();
+    {
+        printer_ << "if (gcHandle_ != nullptr)";
+        printer_.Indent();
+        {
+            printer_ << "script->net_.FreeGCHandle(gcHandle_);";
+            printer_ << "gcHandle_ = nullptr;";
+        }
+        printer_.Dedent();
+    }
+    printer_.Dedent();
 
     std::vector<std::string> wrappedList;
     auto implementWrapperClassMembers = [&](const MetaEntity* cls)
