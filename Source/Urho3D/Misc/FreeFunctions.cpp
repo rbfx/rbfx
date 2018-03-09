@@ -5,6 +5,8 @@
 #include "../Scene/Node.h"
 #include "../IO/FileSystem.h"
 #include "../Resource/ResourceCache.h"
+#include "../Resource/XMLFile.h"
+#include "../Resource/JSONFile.h"
 
 namespace Urho3D {
 
@@ -38,7 +40,7 @@ namespace Urho3D {
 		return (bytesRead == fileSize);
 	}
 
-	bool FreeFunctions::FileIsAscii(String fileFullPath)
+	bool FreeFunctions::TestFileIsAscii(String fileFullPath)
 	{
 		SharedPtr<File> inFile = SharedPtr<File>(new File(context_, fileFullPath, Urho3D::FileMode::FILE_READ));
 		int byte = inFile->ReadByte();
@@ -49,6 +51,29 @@ namespace Urho3D {
 			return false;
 		
 		return true;
+	}
+
+	bool FreeFunctions::TestFileIsUrhoNode(String fileFullPath)
+	{
+		SharedPtr<File> inFile = SharedPtr<File>(new File(context_, fileFullPath, Urho3D::FileMode::FILE_READ));
+		SharedPtr<Node> node = context_->CreateObject<Node>();
+		bool binLoad = node->Load(*inFile);
+		if (binLoad)
+			return true;
+
+		SharedPtr<XMLFile> xmlFile = context_->CreateObject<XMLFile>();
+		inFile->Seek(0);
+		String textContent = inFile->ReadText();
+		xmlFile->FromString(textContent);
+		String rootElementName = xmlFile->GetRoot().GetName();
+		if (rootElementName.ToLower() == "node" || rootElementName.ToLower() == "scene")
+			return true;
+
+
+		//#todo test json
+
+
+		return false;
 	}
 
 	String FreeFunctions::GetResourceBinDir() {

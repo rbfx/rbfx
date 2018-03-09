@@ -26,7 +26,8 @@ namespace Urho3D {
 		bool ReadFileToString(String& str, String fileFullPath);
 
 
-		bool FileIsAscii(String fileFullPath);
+		bool TestFileIsAscii(String fileFullPath);
+		bool TestFileIsUrhoNode(String fileFullPath);
 
 		String GetResourceBinDir();
 		String GetResourceDataDir();
