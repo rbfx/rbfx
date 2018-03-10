@@ -40,5 +40,13 @@ namespace Urho3D
 			AbsNormal = new Vector3(Math.Abs(plane.X), Math.Abs(plane.Y), Math.Abs(plane.Z));
 			D = plane.W;
 		}
+
+		/// <summary>
+		/// A horizontal plane at origin point
+		/// </summary>
+		public static readonly Plane Up = new Plane(new Vector3(0, 1, 0), new Vector3(0, 0, 0));
+
+		// Temporary compatibility constants
+		public static readonly Plane UP = Up;
 	}
 }
