@@ -160,7 +160,7 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
 
                     if (func.is_virtual())
                     {
-                        printer_ << fmt::format("{typeName}(*fn{symbolName})({className} {constModifier}*{pc}{parameterList}) = nullptr;",
+                        printer_ << fmt::format("{typeName}(*fn{symbolName})(void* gcHandle{pc}{parameterList}) = nullptr;",
                             FMT_CAPTURE(typeName), FMT_CAPTURE(symbolName), FMT_CAPTURE(className),
                             FMT_CAPTURE(constModifier), FMT_CAPTURE(pc), FMT_CAPTURE(parameterList));
                         // Virtual method that calls said pointer
@@ -184,7 +184,7 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
                             printer_.Indent();
                             {
                                 printer_ << (IsVoid(func.return_type()) ? "" : "return ") +
-                                    fmt::format("(fn{symbolName})(this{pc}{parameterNameList});",
+                                    fmt::format("(fn{symbolName})(gcHandle_{pc}{parameterNameList});",
                                         FMT_CAPTURE(symbolName), FMT_CAPTURE(pc), FMT_CAPTURE(parameterNameList));
                             }
                             printer_.Dedent();

@@ -59,10 +59,10 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         if (IsStatic(*entity->ast_))
             return true;
 
-        // Destructor always exists even if it is not defined in the class
-        String cFunctionName = GetUniqueName(Sanitize(entity->uniqueName_) + "_destructor");
+        auto baseName = Sanitize(entity->uniqueName_);
 
-        printer_ << fmt::format("URHO3D_EXPORT_API void {}({}* instance)", cFunctionName.CString(), entity->name_);
+        // Destructor always exists even if it is not defined in the class
+        printer_ << fmt::format("URHO3D_EXPORT_API void {}_destructor({}* instance)", baseName, entity->sourceName_);
         printer_.Indent();
         {
             // Using sourceName_ with wrapper classes causes weird build errors.
@@ -71,6 +71,19 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         }
         printer_.Dedent();
         printer_ << "";
+
+        // Method for pinning managed class instance to native class. Ensures that managed class is nog GC'ed before
+        // native class is freed. It is important only for classes that can be inherited.
+        if (generator->inheritable_.IsIncluded(entity->symbolName_))
+        {
+            printer_ << fmt::format("URHO3D_EXPORT_API void {}_pin({}* instance, void* gcHandle)", baseName, entity->sourceName_);
+            printer_.Indent();
+            {
+                printer_ << "instance->gcHandle_ = gcHandle;";
+            }
+            printer_.Dedent();
+            printer_ << "";
+        }
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::constructor_t)
     {

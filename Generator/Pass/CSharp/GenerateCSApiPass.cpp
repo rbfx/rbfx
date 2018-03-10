@@ -34,6 +34,8 @@ namespace Urho3D
 void GenerateCSApiPass::Start()
 {
     printer_ << "using System;";
+    printer_ << "using System.Diagnostics;";
+    printer_ << "using System.Runtime.InteropServices;";
     printer_ << "using CSharp;";
     printer_ << "";
 }
@@ -147,6 +149,9 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         {
             printer_ << fmt::format("instance_ = {cFunctionName}({paramNameList});",
                 FMT_CAPTURE(cFunctionName), FMT_CAPTURE(paramNameList));
+            printer_ << fmt::format("Debug.Assert(instance_ != IntPtr.Zero);");
+            if (generator->inheritable_.IsIncluded(cls->uniqueName_))
+                printer_ << fmt::format("{}_pin(instance_, GCHandle.ToIntPtr(GCHandle.Alloc(this)));", Sanitize(cls->uniqueName_));
             printer_ << fmt::format("InstanceCache.Add<{className}>(instance_, this);", FMT_CAPTURE(className));
 
             if (generator->inheritable_.IsIncluded(entity->parent_->symbolName_))
@@ -184,14 +189,14 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                             printer_.Indent();
                             {
                                 printer_ << fmt::format("set_{sourceClass}_fn{cFunction}(instance_, "
-                                        "(instance__{pc}{paramNameList}) =>",
+                                        "(gcHandle_{pc}{paramNameList}) =>",
                                     fmt::arg("sourceClass", Sanitize(cls->sourceName_)),
                                     fmt::arg("cFunction", child->cFunctionName_), FMT_CAPTURE(pc),
                                     FMT_CAPTURE(paramNameList));
                                 printer_.Indent();
                                 {
-                                    auto expr = fmt::format("{name}({paramNameListCs})", FMT_CAPTURE(name),
-                                        FMT_CAPTURE(paramNameListCs));
+                                    auto expr = fmt::format("(({className})GCHandle.FromIntPtr(gcHandle_).Target).{name}({paramNameListCs})",
+                                        FMT_CAPTURE(className), FMT_CAPTURE(name), FMT_CAPTURE(paramNameListCs));
                                     if (!IsVoid(func.return_type()))
                                     {
                                         expr = MapToPInvoke(func.return_type(), expr);

@@ -90,6 +90,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 }
             }
             auto newTag = hasBases ? "new " : " ";
+            auto baseName = Sanitize(entity->uniqueName_);
 
             printer_ << fmt::format("public unsafe partial class {} : IDisposable", entity->name_);
             printer_.Indent();
@@ -127,7 +128,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             {
                 printer_ << "if (Interlocked.Increment(ref disposed_) == 1)";
                 printer_.Indent();
-                printer_ << Sanitize(entity->uniqueName_) + "_destructor(instance_);";
+                printer_ << baseName + "_destructor(instance_);";
                 printer_ << fmt::format("InstanceCache.Remove<{}>(instance_, this);", entity->name_);
                 printer_.Dedent();
                 printer_ << "instance_ = IntPtr.Zero;";
@@ -169,9 +170,16 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
             // Destructor always exists even if it is not defined in the c++ class
             printer_ << dllImport;
-            printer_ << fmt::format("internal static extern void {}_destructor(IntPtr instance);",
-                Sanitize(entity->uniqueName_));
+            printer_ << fmt::format("internal static extern void {}_destructor(IntPtr instance);", baseName);
             printer_ << "";
+
+            // Method for pinning managed object to native instance
+            if (generator->inheritable_.IsIncluded(entity->uniqueName_))
+            {
+                printer_ << dllImport;
+                printer_ << fmt::format("internal static extern void {}_pin(IntPtr instance, IntPtr gcHandle);", baseName);
+                printer_ << "";
+            }
         }
         else if (info.event == info.container_entity_exit)
         {
