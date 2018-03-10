@@ -341,12 +341,12 @@ namespace Urho3D
 		/// <summary>
 		/// Defines a zero-length Vector2.
 		/// </summary>
-		public static readonly Vector2 Zero = new Vector2(0, 0);
+		public static readonly Vector2 ZERO = new Vector2(0, 0);
 
 		/// <summary>
 		/// Defines an instance with all components set to 1.
 		/// </summary>
-		public static readonly Vector2 One = new Vector2(1, 1);
+		public static readonly Vector2 ONE = new Vector2(1, 1);
 
 		/// <summary>
 		/// Defines the size of the Vector2 struct in bytes.

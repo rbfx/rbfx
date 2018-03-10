@@ -55,7 +55,7 @@ namespace Urho3D
 		/// <summary>
 		/// The identity matrix
 		/// </summary>
-		public static Matrix4 Identity = new Matrix4(Vector4.UnitX, Vector4.UnitY, Vector4.UnitZ, Vector4.UnitW);
+		public static Matrix4 IDENTITY = new Matrix4(Vector4.UnitX, Vector4.UnitY, Vector4.UnitZ, Vector4.UnitW);
 
 		#endregion
 
@@ -444,7 +444,7 @@ namespace Urho3D
 		/// <param name="result">The resulting Matrix4 instance.</param>
 		public static void CreateTranslation(float x, float y, float z, out Matrix4 result)
 		{
-			result = Identity;
+			result = IDENTITY;
 			result.Row3 = new Vector4(x, y, z, 1);
 		}
 
@@ -455,7 +455,7 @@ namespace Urho3D
 		/// <param name="result">The resulting Matrix4 instance.</param>
 		public static void CreateTranslation(ref Vector3 vector, out Matrix4 result)
 		{
-			result = Identity;
+			result = IDENTITY;
 			result.Row3 = new Vector4(vector.X, vector.Y, vector.Z, 1);
 		}
 
@@ -730,7 +730,7 @@ namespace Urho3D
 		[Obsolete("Use CreateTranslation instead.")]
 		public static Matrix4 Translation(float x, float y, float z)
 		{
-			Matrix4 result = Identity;
+			Matrix4 result = IDENTITY;
 			result.Row3 = new Vector4(x, y, z, 1.0f);
 			return result;
 		}

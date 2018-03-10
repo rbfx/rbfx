@@ -343,22 +343,22 @@ namespace Urho3D
 		public static readonly Vector3 UnitZ = new Vector3(0, 0, 1);
 
 		//From URHO3D:
-		public static readonly Vector3 Up =   new Vector3(0,  1, 0);
-		public static readonly Vector3 Down = new Vector3(0, -1, 0);
-		public static readonly Vector3 Forward = new Vector3(0, 0,  1);
-		public static readonly Vector3 Back =    new Vector3(0, 0, -1);
-		public static readonly Vector3 Left =  new Vector3(-1, 0, 0);
-		public static readonly Vector3 Right = new Vector3( 1, 0, 0);
+		public static readonly Vector3 UP =   new Vector3(0,  1, 0);
+		public static readonly Vector3 DOWN = new Vector3(0, -1, 0);
+		public static readonly Vector3 FORWARD = new Vector3(0, 0,  1);
+		public static readonly Vector3 BACK =    new Vector3(0, 0, -1);
+		public static readonly Vector3 LEFT =  new Vector3(-1, 0, 0);
+		public static readonly Vector3 RIGHT = new Vector3( 1, 0, 0);
 
 		/// <summary>
 		/// Defines a zero-length Vector3.
 		/// </summary>
-		public static readonly Vector3 Zero = new Vector3(0, 0, 0);
+		public static readonly Vector3 ZERO = new Vector3(0, 0, 0);
 
 		/// <summary>
 		/// Defines an instance with all components set to 1.
 		/// </summary>
-		public static readonly Vector3 One = new Vector3(1, 1, 1);
+		public static readonly Vector3 ONE = new Vector3(1, 1, 1);
 
 		#endregion
 

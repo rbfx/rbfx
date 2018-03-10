@@ -80,12 +80,12 @@ namespace Urho3D
 		/// <summary>
 		/// Defines a zero-length Vector4.
 		/// </summary>
-		public static Vector4 Zero = new Vector4(0, 0, 0, 0);
+		public static Vector4 ZERO = new Vector4(0, 0, 0, 0);
 
 		/// <summary>
 		/// Defines an instance with all components set to 1.
 		/// </summary>
-		public static readonly Vector4 One = new Vector4(1, 1, 1, 1);
+		public static readonly Vector4 ONE = new Vector4(1, 1, 1, 1);
 
 		/// <summary>
 		/// Defines the size of the Vector4 struct in bytes.

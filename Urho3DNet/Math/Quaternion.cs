@@ -293,7 +293,7 @@ namespace Urho3D
 		/// <summary>
 		/// Defines the identity quaternion.
 		/// </summary>
-		public static Quaternion Identity = new Quaternion(0, 0, 0, 1);
+		public static readonly Quaternion IDENTITY = new Quaternion(0, 0, 0, 1);
 
 		#endregion
 
@@ -600,7 +600,7 @@ namespace Urho3D
 			{
 				if (q2.LengthSquared == 0.0f)
 				{
-					return Identity;
+					return IDENTITY;
 				}
 				return q2;
 			}
@@ -646,7 +646,7 @@ namespace Urho3D
 			if (result.LengthSquared > 0.0f)
 				return Normalize(result);
 			else
-				return Identity;
+				return IDENTITY;
 		}
 
 		#endregion
