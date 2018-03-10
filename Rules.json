@@ -118,6 +118,10 @@
       "Urho3D::RigidBody::*etWorldTransform(*",
       "Urho3D::PhysicsWorld::draw*(*",
       "Urho3D::PhysicsWorld::isVisible(*",
+      // TODO: this field is a pointer and is not handled correctly.
+      "Urho3D::Batch::worldTransform_",
+      "Urho3D::SourceBatch::worldTransform_",
+      "Urho3D::InstanceData"
     ]
   },
   "typemaps": [
@@ -194,6 +198,12 @@
       "type": "Urho3D::Matrix3",
       "cstype": "Urho3D.Matrix3",
       "ptype": "Urho3D.Matrix3",
+      "isValueType": true,
+    },
+    {
+      "type": "Urho3D::Matrix3x4",
+      "cstype": "Urho3D.Matrix3x4",
+      "ptype": "Urho3D.Matrix3x4",
       "isValueType": true,
     },
     {
