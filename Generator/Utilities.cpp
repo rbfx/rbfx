@@ -173,6 +173,15 @@ std::string EnsureNotKeyword(const std::string& value)
     return value;
 }
 
+std::string MapParameterList(std::vector<SharedPtr<MetaEntity>>& parameters,
+    const std::function<std::string(MetaEntity*)>& callable)
+{
+    std::vector<std::string> parts;
+    for (const auto& param : parameters)
+        parts.emplace_back(callable(param.Get()));
+    return str::join(parts, ", ");
+}
+
 std::string ParameterList(const CppParameters& params,
     const std::function<std::string(const cppast::cpp_type&)>& typeToString)
 {
@@ -200,22 +209,6 @@ std::string ParameterNameList(const CppParameters& params,
         if (nameFilter)
             name = nameFilter(param);
         parts.emplace_back(name);
-    }
-    return str::join(parts, ", ");
-}
-
-std::string ParameterTypeList(const CppParameters& params,
-    const std::function<std::string(const cppast::cpp_type&)>& typeToString)
-{
-    std::vector<std::string> parts;
-    for (const auto& param : params)
-    {
-        std::string typeString;
-        if (typeToString)
-            typeString = typeToString(param.type());
-        else
-            typeString = cppast::to_string(param.type());
-        parts.emplace_back(typeString);
     }
     return str::join(parts, ", ");
 }

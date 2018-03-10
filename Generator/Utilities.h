@@ -35,6 +35,8 @@
 namespace Urho3D
 {
 
+class MetaEntity;
+
 /// Convert a wildcard string to regular expression. "*" matches anything except /, "**" matches everything including /.
 std::regex WildcardToRegex(const String& wildcard);
 /// Returns entity name including names of it's parent scopes (separated by ::). Also includes function signature.
@@ -79,9 +81,9 @@ std::string ParameterList(const CppParameters& params,
 /// Returns a list of parameter names separated by comma.
 std::string ParameterNameList(const CppParameters& params,
     const std::function<std::string(const cppast::cpp_function_parameter&)>& nameFilter = nullptr);
-/// Returns a list of parameter types separated comma. Useful for creating function signatures.
-std::string ParameterTypeList(const CppParameters& params,
-    const std::function<std::string(const cppast::cpp_type&)>& typeToString = nullptr);
+/// Applies callable to every parameter MetaEntity and returns all results of callables separated by comma.
+std::string MapParameterList(std::vector<SharedPtr<MetaEntity>>& parameters,
+    const std::function<std::string(MetaEntity*)>& callable);
 /// Returns true if specified type is an enumeration.
 bool IsEnumType(const cppast::cpp_type& type);
 /// Returns true if a type is non-builtin value type (not a pointer or reference to a struct/class).

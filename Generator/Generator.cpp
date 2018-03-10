@@ -32,7 +32,6 @@
 #include "Pass/CSharp/GenerateCApiPass.h"
 #include "Pass/CSharp/GeneratePInvokePass.h"
 #include "Pass/CSharp/GenerateCSApiPass.h"
-#include "Pass/CSharp/DefaultValuesPass.h"
 
 namespace Urho3D
 {
@@ -100,7 +99,6 @@ int main(int argc, char* argv[])
     generator->AddApiPass<UnknownTypesPass>();
     generator->AddApiPass<Urho3DCustomPass>();
     generator->AddApiPass<MoveGlobalsPass>();
-    generator->AddApiPass<DefaultValuesPass>();
     generator->AddApiPass<GenerateClassWrappers>();
     generator->AddApiPass<GenerateCApiPass>();
     generator->AddApiPass<GeneratePInvokePass>();

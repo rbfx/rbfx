@@ -42,8 +42,20 @@ void GenerateCSApiPass::Start()
 
 bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
-    auto mapToPInvoke = [&](const cppast::cpp_function_parameter& param) {
-        return MapToPInvoke(param.type(), EnsureNotKeyword(param.name()));
+    auto mapToPInvoke = [&](MetaEntity* metaParam) {
+        const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
+        auto expr = EnsureNotKeyword(param.name());
+        if (auto* map = generator->GetTypeMap(param.type()))
+        {
+            if (map->isValueType)
+            {
+                auto defaultValue = metaParam->GetDefaultValue();
+                defaultValue = ConvertDefaultValueToCS(defaultValue, param.type(), true);
+                if (!defaultValue.empty())
+                    expr += fmt::format(".GetValueOrDefault({})", defaultValue);
+            }
+        }
+        return MapToPInvoke(param.type(), expr);
     };
 
     if (entity->kind_ == cppast::cpp_entity_kind::namespace_t)
@@ -135,7 +147,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         auto className = cls->name_;
         auto baseCtor = hasBase ? " : base(IntPtr.Zero)" : "";
-        auto paramNameList = ParameterNameList(ctor.parameters(), mapToPInvoke);
+        auto paramNameList = MapParameterList(entity->children_, mapToPInvoke);
         auto cFunctionName = entity->cFunctionName_;
 
         // If class has a base class we call base constructor that does nothing. Class will be fully constructed here.
@@ -165,19 +177,22 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                         {
                             auto name = child->name_;
                             auto pc = func.parameters().empty() ? "" : ", ";
-                            auto paramTypeList = ParameterTypeList(func.parameters(),
-                                [&](const cppast::cpp_type& type) -> std::string
+                            auto paramTypeList = MapParameterList(child->children_,
+                                [&](MetaEntity* metaParam)
                                 {
-                                    return fmt::format("typeof({})", ToCSType(type));
+                                    const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
+                                    return fmt::format("typeof({})", ToCSType(param.type()));
                                 });
-                            auto paramNameListCs = ParameterNameList(func.parameters(),
-                                [&](const cppast::cpp_function_parameter& param)
+                            auto paramNameListCs = MapParameterList(child->children_,
+                                [&](MetaEntity* metaParam)
                                 {
+                                    const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
                                     return MapToCS(param.type(), param.name() + "_");
                                 });
-                            auto paramNameList = ParameterNameList(func.parameters(),
-                                [&](const cppast::cpp_function_parameter& param)
+                            auto paramNameList = MapParameterList(child->children_,
+                                [&](MetaEntity* metaParam)
                                 {
+                                    const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
                                     // Avoid possible parameter name collision in enclosing scope.
                                     return param.name() + "_";
                                 });
@@ -246,7 +261,6 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         auto rtype = ToCSType(func.return_type());
         auto pc = func.parameters().empty() ? "" : ", ";
-        auto paramNameList = ParameterNameList(func.parameters(), mapToPInvoke);
 
         // Function start
         printer_.Write(fmt::format("{access} {virtual}{rtype} {name}(",
@@ -257,6 +271,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         // Parameter list
         PrintCSParameterList(entity->children_);
         printer_.Write(")");
+        auto paramNameList = MapParameterList(entity->children_, mapToPInvoke);
 
         // Body
         printer_.Indent();
@@ -277,7 +292,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         const auto& var = entity->Ast<cppast::cpp_variable>();
         auto* ns = entity->parent_.Get();
 
-        auto defaultValue = entity->GetDefaultValue();
+        auto defaultValue = ConvertDefaultValueToCS(entity->GetDefaultValue(), var.type(), true);
         bool isConstant = IsConst(var.type()) && !(entity->flags_ & HintReadOnly) && !defaultValue.empty();
         auto csType = ToCSType(var.type());
         auto name = entity->name_;
@@ -324,7 +339,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         const auto& var = entity->Ast<cppast::cpp_member_variable>();
         auto* ns = entity->parent_.Get();
 
-        auto defaultValue = entity->GetDefaultValue();
+        auto defaultValue = ConvertDefaultValueToCS(entity->GetDefaultValue(), var.type(), true);
         bool isConstant = IsConst(var.type()) && !(entity->flags_ & HintReadOnly) && !defaultValue.empty();
         auto csType = ToCSType(var.type());
 
@@ -439,15 +454,64 @@ void GenerateCSApiPass::PrintCSParameterList(const std::vector<SharedPtr<MetaEnt
     for (const auto& param : parameters)
     {
         const auto& cppType = param->Ast<cppast::cpp_function_parameter>().type();
-        printer_.Write(fmt::format("{} {}", ToCSType(cppType), EnsureNotKeyword(param->name_)));
-
+        auto csType = ToCSType(cppType);
         auto defaultValue = param->GetDefaultValue();
+        if (auto* map = generator->GetTypeMap(cppType))
+        {
+            // Value types are made nullable in order to allow default values.
+            if (map->isValueType && !defaultValue.empty())
+                csType += "?";
+        }
+        printer_.Write(fmt::format("{} {}", csType, EnsureNotKeyword(param->name_)));
+
         if (!defaultValue.empty())
-            printer_.Write("=" + defaultValue);
+            printer_.Write("=" + ConvertDefaultValueToCS(defaultValue, cppType, false));
 
         if (param != parameters.back())
             printer_.Write(", ");
     }
+}
+
+std::string GenerateCSApiPass::ConvertDefaultValueToCS(std::string value, const cppast::cpp_type& type,
+    bool allowComplex)
+{
+    if (value.empty())
+        return value;
+
+    if (value == "nullptr")
+        return "null";
+
+    WeakPtr<MetaEntity> entity;
+    if (auto* map = generator->GetTypeMap(type))
+    {
+        if (map->csType_ == "string")
+        {
+            // String literals
+            if (value == "String::EMPTY")  // TODO: move to json?
+                value = "\"\"";
+        }
+        else if (map->isValueType && !allowComplex)
+        {
+            // Value type parameters are turned to nullables when they have default values.
+            return "null";
+        }
+    }
+
+    if (!allowComplex && IsComplexValueType(type))
+    {
+        // C# may only have default values constructed by default constructor. Because of this such default
+        // values are replaced with null. Function body will construct actual default value if parameter is
+        // null.
+        value = "null";
+    }
+    else if (generator->symbols_.TryGetValue("Urho3D::" + value, entity))
+        value = entity->symbolName_;
+    else if (generator->enumValues_.TryGetValue(value, entity))
+        value = entity->symbolName_;
+
+    str::replace_str(value, "::", ".");
+
+    return value;
 }
 
 }
