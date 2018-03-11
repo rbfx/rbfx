@@ -8,7 +8,7 @@ namespace CSharp
     internal static class MarshalTools
     {
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void Urho3D__Free(IntPtr ptr);
+        internal static extern void c_free(IntPtr ptr);
 
         internal static string GetUtf8String(IntPtr ptr)
         {
@@ -23,7 +23,7 @@ namespace CSharp
         internal static string GetUtf8StringFree(IntPtr ptr)
         {
             string result = GetUtf8String(ptr);
-            Urho3D__Free(ptr);
+            c_free(ptr);
             return result;
         }
 

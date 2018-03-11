@@ -61,7 +61,8 @@ macro (CSHARP_BIND_TARGET TARGET RULES)
     )
 
     # CSharp target (native)
-    file (GLOB COMMON_CSHARP_SOURCE_FILES_MANUAL CommonCSharp/*.cpp CommonCSharp/*.h)
+    file (GLOB COMMON_CSHARP_SOURCE_FILES_MANUAL CommonCSharp/*.cpp CommonCSharp/*.h
+        ${TARGET}CSharp/*.cpp ${TARGET}CSharp/*.h)
     set (COMMON_CSHARP_SOURCE_FILES_GENERATED
         ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}CSharp/CApi.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}CSharp/ClassWrappers.hpp
