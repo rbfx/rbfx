@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using CSharp;
 
 namespace Urho3D
@@ -31,6 +32,8 @@ namespace Urho3D
         internal static extern bool Urho3D_HashMap_StringHash_Variant_Contains(IntPtr map, uint key);
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr Urho3D_HashMap_StringHash_Variant_TryGet(IntPtr map, uint key);
+        [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void Urho3D_HashMap_StringHash_Variant_destructor(IntPtr map);
 
         class Enumerator : IEnumerator<KeyValuePair<StringHash, Variant>>
         {
@@ -190,8 +193,20 @@ namespace Urho3D
             return source.instance_;
         }
 
+        protected volatile int disposed_;
         public void Dispose()
         {
+            if (Interlocked.Increment(ref disposed_) == 1)
+            {
+                Urho3D_HashMap_StringHash_Variant_destructor(instance_);
+                InstanceCache.Remove(instance_, this);
+            }
+            instance_ = IntPtr.Zero;
+        }
+
+        ~VariantMap()
+        {
+            Dispose();
         }
     }
 }

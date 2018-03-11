@@ -53,4 +53,9 @@ URHO3D_EXPORT_API Variant* Urho3D_HashMap_StringHash_Variant_TryGet(Urho3D::Vari
     return nullptr;
 }
 
+URHO3D_EXPORT_API void Urho3D_HashMap_StringHash_Variant_destructor(Urho3D::VariantMap* map)
+{
+    script->ReleaseRef<Urho3D::VariantMap>(map);
+}
+
 }
