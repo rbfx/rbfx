@@ -20,7 +20,14 @@ public partial class Node
             AddComponent(component, id, mode);
             return component;
         }
-        Debug.Assert(componentInstance != IntPtr.Zero);
+        return InstanceCache.GetOrAdd(componentInstance, ptr => (T)Activator.CreateInstance(typeof(T), BindingFlags.NonPublic | BindingFlags.Instance, null, new object[] { ptr }, null));
+    }
+
+    public T GetComponent<T>(bool recursive = false)
+    {
+        var componentInstance = Urho3D__Node__GetComponent_Urho3D__StringHash_bool__const(instance_, StringHash.Calculate(typeof(T).Name), recursive);
+        if (componentInstance == IntPtr.Zero)
+            return default(T);
         return InstanceCache.GetOrAdd(componentInstance, ptr => (T)Activator.CreateInstance(typeof(T), BindingFlags.NonPublic | BindingFlags.Instance, null, new object[] { ptr }, null));
     }
 }
