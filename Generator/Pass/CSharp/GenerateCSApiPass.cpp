@@ -243,6 +243,9 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
                 printer_.Indent();
                 {
+                    auto paramNameList = MapParameterList(entity->children_, [&](MetaEntity* metaParam) {
+                        return metaParam->name_;
+                    });
                     printer_ << fmt::format("return new {className}({paramNameList});",
                         FMT_CAPTURE(className), FMT_CAPTURE(paramNameList));
                 }
