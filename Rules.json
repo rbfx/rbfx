@@ -165,6 +165,16 @@
       "cs_to_pinvoke": "VariantMap.__ToPInvoke({value})",
     },
     {
+      "type": "Urho3D::StringVector",
+      "ctype": "Urho3D::StringVector*",
+      "ptype": "IntPtr",
+      "cstype": "global::Urho3D.StringVector",
+      "cpp_to_c": "script->AddRef<Urho3D::StringVector>({value})",
+      "c_to_cpp": "*{value}",
+      "pinvoke_to_cs": "StringVector.__FromPInvoke({value})",
+      "cs_to_pinvoke": "StringVector.__ToPInvoke({value})",
+    },
+    {
       "type": "Urho3D::Vector2",
       "cstype": "Urho3D.Vector2",
       "ptype": "Urho3D.Vector2",
