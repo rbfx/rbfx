@@ -346,7 +346,7 @@ std::string GenerateCApiPass::MapToCpp(const cppast::cpp_type& type, const std::
         if (type.kind() == cppast::cpp_type_kind::template_instantiation_t)
         {
             return fmt::format("{type}({expr})", fmt::arg("type", Urho3D::GetTypeName(type)),
-                fmt::arg("expr", expression));
+                fmt::arg("expr", result));
         }
 
         if (type.kind() != cppast::cpp_type_kind::pointer_t)

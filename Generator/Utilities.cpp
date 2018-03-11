@@ -412,6 +412,36 @@ bool IsStatic(const cppast::cpp_entity& entity)
     return true;
 }
 
+std::string PrimitiveToPInvokeType(cppast::cpp_builtin_type_kind kind)
+{
+    switch (kind)
+    {
+    case cppast::cpp_void: return "void";
+    case cppast::cpp_bool: return "bool";
+    case cppast::cpp_uchar: return "byte";
+    case cppast::cpp_ushort: return "ushort";
+    case cppast::cpp_uint: return "uint";
+    case cppast::cpp_ulong: return "uint";
+    case cppast::cpp_ulonglong: return "ulong";
+    case cppast::cpp_uint128: assert(false);
+    case cppast::cpp_schar: return "byte";
+    case cppast::cpp_short: return "short";
+    case cppast::cpp_int: return "int";
+    case cppast::cpp_long: return "int";
+    case cppast::cpp_longlong: return "long";
+    case cppast::cpp_int128: assert(false);
+    case cppast::cpp_float: return "float";
+    case cppast::cpp_double: return "double";
+    case cppast::cpp_longdouble: assert(false);
+    case cppast::cpp_float128: assert(false);
+    case cppast::cpp_char: return "char";
+    case cppast::cpp_wchar: assert(false);
+    case cppast::cpp_char16: assert(false);
+    case cppast::cpp_char32: assert(false);
+    case cppast::cpp_nullptr: return "IntPtr";
+    }
+}
+
 std::string BuiltinToPInvokeType(const cppast::cpp_type& type)
 {
     switch (type.kind())
@@ -420,33 +450,7 @@ std::string BuiltinToPInvokeType(const cppast::cpp_type& type)
     case cppast::cpp_type_kind::builtin_t:
     {
         const auto& builtin = dynamic_cast<const cppast::cpp_builtin_type&>(type);
-        switch (builtin.builtin_type_kind())
-        {
-        case cppast::cpp_void: return "void";
-        case cppast::cpp_bool: return "bool";
-        case cppast::cpp_uchar: return "byte";
-        case cppast::cpp_ushort: return "ushort";
-        case cppast::cpp_uint: return "uint";
-        case cppast::cpp_ulong: return "uint";
-        case cppast::cpp_ulonglong: return "ulong";
-        case cppast::cpp_uint128: assert(false);
-        case cppast::cpp_schar: return "byte";
-        case cppast::cpp_short: return "short";
-        case cppast::cpp_int: return "int";
-        case cppast::cpp_long: return "int";
-        case cppast::cpp_longlong: return "long";
-        case cppast::cpp_int128: assert(false);
-        case cppast::cpp_float: return "float";
-        case cppast::cpp_double: return "double";
-        case cppast::cpp_longdouble: assert(false);
-        case cppast::cpp_float128: assert(false);
-        case cppast::cpp_char: return "char";
-        case cppast::cpp_wchar: assert(false);
-        case cppast::cpp_char16: assert(false);
-        case cppast::cpp_char32: assert(false);
-        case cppast::cpp_nullptr: return "IntPtr";
-        }
-        break;
+        return PrimitiveToPInvokeType(builtin.builtin_type_kind());
     }
     case cppast::cpp_type_kind::user_defined_t: return "IntPtr";
     case cppast::cpp_type_kind::cv_qualified_t:
@@ -463,6 +467,61 @@ std::string BuiltinToPInvokeType(const cppast::cpp_type& type)
     default:
         assert(false);
     }
+}
+
+cppast::cpp_builtin_type_kind PrimitiveToCppType(const std::string& type)
+{
+    if (type == "void")
+        return cppast::cpp_void;
+
+    if (type == "bool")
+        return cppast::cpp_bool;
+
+    if (type == "unsigned char")
+        return cppast::cpp_uchar;
+    if (type == "unsigned short")
+        return cppast::cpp_ushort;
+    if (type == "unsigned int")
+        return cppast::cpp_uint;
+    if (type == "unsigned long")
+        return cppast::cpp_ulong;
+    if (type == "unsigned long long")
+        return cppast::cpp_ulonglong;
+    if (type == "unsigned __int128")
+        return cppast::cpp_uint128;
+
+    if (type == "signed char")
+        return cppast::cpp_schar;
+    if (type == "short")
+        return cppast::cpp_short;
+    if (type == "int")
+        return cppast::cpp_int;
+    if (type == "long")
+        return cppast::cpp_long;
+    if (type == "long long")
+        return cppast::cpp_longlong;
+    if (type == "__int128")
+        return cppast::cpp_int128;
+
+    if (type == "float")
+        return cppast::cpp_float;
+    if (type == "double")
+        return cppast::cpp_double;
+    if (type == "long double")
+        return cppast::cpp_longdouble;
+    if (type == "__float128")
+        return cppast::cpp_float128;
+
+    if (type == "char")
+        return cppast::cpp_char;
+    if (type == "wchar_t")
+        return cppast::cpp_wchar;
+    if (type == "char16_t")
+        return cppast::cpp_char16;
+    if (type == "char32_t")
+        return cppast::cpp_char32;
+
+    return cppast::cpp_builtin_type_kind::cpp_void;
 }
 
 std::string ToPInvokeType(const cppast::cpp_type& type, const std::string& default_)
@@ -500,6 +559,17 @@ std::string GetTemplateSubtype(const cppast::cpp_type& type)
     return "";
 }
 
+std::string CamelCaseIdentifier(const std::string& name)
+{
+    auto tokens = str::split(name, "_");
+    for (auto& value : tokens)
+    {
+        std::transform(value.begin(), value.end(), value.begin(), tolower);
+        value.front() = (char)toupper(value.front());
+    }
+    return str::join(tokens, "");
+}
+
 }
 
 namespace str
@@ -528,6 +598,25 @@ std::string join(const std::vector<std::string>& collection, const std::string& 
 std::string& replace_str(std::string&& dest, const std::string& find, const std::string& replace)
 {
     return replace_str(dest, find, replace);
+}
+
+std::vector<std::string> split(const std::string& value, const std::string& separator, bool keepEmpty)
+{
+    assert(!separator.empty());
+    std::vector<std::string> result;
+    std::string::const_iterator itStart = value.begin(), itEnd;
+
+    for (;;)
+    {
+        itEnd = search(itStart, value.end(), separator.begin(), separator.end());
+        std::string token(itStart, itEnd);
+        if (keepEmpty || !token.empty())
+            result.push_back(token);
+        if (itEnd == value.end())
+            break;
+        itStart = itEnd + separator.size();
+    }
+    return result;
 }
 
 }

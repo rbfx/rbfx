@@ -26,6 +26,7 @@
 #include <thread>
 #include "Pass/BuildMetaAST.h"
 #include "Pass/UnknownTypesPass.h"
+#include "Pass/CSharp/Urho3DTypeMaps.h"
 #include "Pass/CSharp/MoveGlobalsPass.h"
 #include "Pass/CSharp/Urho3DCustomPass.h"
 #include "Pass/CSharp/GenerateClassWrappers.h"
@@ -96,6 +97,7 @@ int main(int argc, char* argv[])
     generator->ParseFiles(sourceDir);
 
     generator->AddCppPass<BuildMetaAST>();
+    generator->AddApiPass<Urho3DTypeMaps>();
     generator->AddApiPass<UnknownTypesPass>();
     generator->AddApiPass<Urho3DCustomPass>();
     generator->AddApiPass<MoveGlobalsPass>();

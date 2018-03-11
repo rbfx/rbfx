@@ -111,12 +111,19 @@ int Count(const cppast::detail::iteratable_intrusive_list<T>& list)
 }
 /// Returns true if storage class of entity is static or if entity contains only static members.
 bool IsStatic(const cppast::cpp_entity& entity);
+/// Return pinvoke type corresponding to builting cpp type.
+std::string PrimitiveToPInvokeType(cppast::cpp_builtin_type_kind kind);
 /// Converts a builtin type to pinvoke-compatible type.
 std::string BuiltinToPInvokeType(const cppast::cpp_type& type);
+/// Convert string representation of c++ builtin type to type kind. void_t on error.
+cppast::cpp_builtin_type_kind PrimitiveToCppType(const std::string& type);
 /// Convert type to pinvoke-compatible type.
 std::string ToPInvokeType(const cppast::cpp_type& type, const std::string& default_);
 /// Return actual type that is wrapped by supported template types. Like a class type if type is shared pointer.
 std::string GetTemplateSubtype(const cppast::cpp_type& type);
+/// Converts identifier to CamelCase.
+std::string CamelCaseIdentifier(const std::string& name);
+
 }
 
 namespace str
@@ -125,5 +132,6 @@ namespace str
 std::string& replace_str(std::string& dest, const std::string& find, const std::string& replace);
 std::string& replace_str(std::string&& dest, const std::string& find, const std::string& replace);
 std::string join(const std::vector<std::string>& collection, const std::string& glue);
+std::vector<std::string> split(const std::string& value, const std::string& separator, bool keepEmpty=false);
 
 }

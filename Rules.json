@@ -113,6 +113,7 @@
       "Urho3D::Graphics::GetCurrentMonitor()",
       "Urho3D::Graphics::GetMaximized()",
       "Urho3D::Skeleton::GetBone(Urho3D::String const&)",
+      "Urho3D::Image::GetLevels(PODVector<Urho3D::Image*>&)",
       "Urho3D::To*(* const*)",
       "Bullet::btVector3",
       "Urho3D::RigidBody::*etWorldTransform(*",
@@ -121,7 +122,8 @@
       // TODO: this field is a pointer and is not handled correctly.
       "Urho3D::Batch::worldTransform_",
       "Urho3D::SourceBatch::worldTransform_",
-      "Urho3D::InstanceData"
+      "Urho3D::InstanceData",
+      "Urho3D::UIBatch",
     ]
   },
   "typemaps": [
