@@ -97,7 +97,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         {
             PrintDefaultValueCode(entity->children_);
             printer_ << "return " + MapToCNoCopy(entity->parent_->sourceName_,
-                fmt::format("script->AddRef<{class}>(new {class}({params}))", fmt::arg("class", className),
+                fmt::format("new {class}({params})", fmt::arg("class", className),
                     fmt::arg("params", ParameterNameList(func.parameters(), toCppType)))) + ";";
         }
         printer_.Dedent();
