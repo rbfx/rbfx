@@ -619,7 +619,7 @@ public:
     /// Destruct.
     ~PODVector()
     {
-        delete[] buffer_;
+        FreeBuffer(buffer_);
     }
 
     /// Assign from another vector.
@@ -932,7 +932,7 @@ public:
             if (buffer_)
             {
                 CopyElements(reinterpret_cast<T*>(newBuffer), Buffer(), size_);
-                delete[] buffer_;
+                FreeBuffer(buffer_);
             }
             buffer_ = newBuffer;
         }
@@ -959,7 +959,7 @@ public:
             }
 
             // Delete the old buffer
-            delete[] buffer_;
+            FreeBuffer(buffer_);
             buffer_ = newBuffer;
         }
     }
