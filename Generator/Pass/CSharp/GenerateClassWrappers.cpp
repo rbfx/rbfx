@@ -176,8 +176,9 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
                             printer_ << fmt::format("if (fn{symbolName} == nullptr)", FMT_CAPTURE(symbolName));
                             printer_.Indent();
                             {
-                                printer_ << fmt::format("{fullClassName}::{name}({parameterNameList});",
-                                    FMT_CAPTURE(fullClassName), FMT_CAPTURE(name), FMT_CAPTURE(parameterNameList));
+                                printer_ << (IsVoid(func.return_type()) ? "" : "return ") +
+                                    fmt::format("{fullClassName}::{name}({parameterNameList});",
+                                        FMT_CAPTURE(fullClassName), FMT_CAPTURE(name), FMT_CAPTURE(parameterNameList));
                             }
                             printer_.Dedent();
                             printer_ << "else";
@@ -197,8 +198,9 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
                         printer_ << fmt::format("{typeName} __public_{name}({parameterList})",
                             FMT_CAPTURE(typeName), FMT_CAPTURE(name), FMT_CAPTURE(parameterList));
                         printer_.Indent();
-                        printer_ << fmt::format("{name}({parameterNameList});", FMT_CAPTURE(name),
-                            FMT_CAPTURE(parameterNameList));
+                        printer_ << (IsVoid(func.return_type()) ? "" : "return ") +
+                            fmt::format("{name}({parameterNameList});", FMT_CAPTURE(name),
+                                FMT_CAPTURE(parameterNameList));
                         printer_.Dedent();
                     }
                 }
