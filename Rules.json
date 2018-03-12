@@ -78,8 +78,6 @@
       "Urho3D::FileWatcher::GetNextChange(Urho3D::String&)",
       "Urho3D::AttributeInfo::enumNames_",
       "Urho3D::ResourceRouter",
-      // TODO: `out` parameters
-      "Urho3D::*::FindAttributeAnimationTarget(Urho3D::String const&,Urho3D::String&)",
       // https://github.com/foonathan/cppast/issues/41
       "Urho3D::ValueAnimation::SetEventFrame(float,Urho3D::StringHash const&,Urho3D::VariantMap const&)",
       "Urho3D::Object::SendEvent(Urho3D::StringHash,Urho3D::VariantMap const&)",
@@ -94,8 +92,11 @@
       "Urho3D::Text3D::text_",
       "Urho3D::UI::DragData",
       // TODO: `out` parameters
+      "Urho3D::*::FindAttributeAnimationTarget(Urho3D::String const&,Urho3D::String&)",
       "Urho3D::CrowdManager::Raycast(Urho3D::Vector3 const&,Urho3D::Vector3 const&,int,Urho3D::Vector3*)",
       "Urho3D::CrowdManager::GetDistanceToWall(Urho3D::Vector3 const&,float,int,Urho3D::Vector3*,Urho3D::Vector3*)",
+      "Urho3D::Camera::GetFrustumSize(Urho3D::Vector3&,Urho3D::Vector3&) const",
+      "Urho3D::UIElement::AdjustScissor(Urho3D::IntRect&)",
       "Urho3D::JoystickState::joystick_",
       "Urho3D::JoystickState::controller_",
       "Urho3D::CursorShapeInfo::osCursor_",
