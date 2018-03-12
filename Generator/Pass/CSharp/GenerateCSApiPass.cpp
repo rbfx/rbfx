@@ -97,6 +97,8 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     else
                         URHO3D_LOGWARNINGF("Unknown base class: %s", cppast::to_string(base.type()).c_str());
                 }
+                if (bases.empty())
+                    bases.emplace_back("NativeObject");
                 bases.emplace_back("IDisposable");
             }
 
@@ -106,6 +108,86 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 printer_ << fmt::format("public unsafe partial class {} : {}", entity->name_, str::join(bases, ", "));
 
             printer_.Indent();
+
+            if (!isStatic)
+            {
+                printer_ << "internal override void SetupInstance(IntPtr instance)";
+                printer_.Indent();
+                {
+                    auto className = entity->name_;
+                    printer_ << fmt::format("Debug.Assert(instance != IntPtr.Zero);");
+                    printer_ << "instance_ = instance;";
+                    if (generator->inheritable_.IsIncluded(entity->uniqueName_))
+                        printer_ << fmt::format("{}_pin(instance, GCHandle.ToIntPtr(GCHandle.Alloc(this)));",
+                            Sanitize(entity->uniqueName_));
+                    printer_ << fmt::format("InstanceCache.Add<{className}>(instance, this);", FMT_CAPTURE(className));
+
+                    if (generator->inheritable_.IsIncluded(entity->symbolName_))
+                    {
+                        for (const auto& child : entity->children_)
+                        {
+                            if (child->kind_ == cppast::cpp_entity_kind::member_function_t)
+                            {
+                                const auto& func = child->Ast<cppast::cpp_member_function>();
+                                if (func.is_virtual())
+                                {
+                                    auto name = child->name_;
+                                    auto pc = func.parameters().empty() ? "" : ", ";
+                                    auto paramTypeList = MapParameterList(child->children_, [&](MetaEntity* metaParam)
+                                    {
+                                        const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
+                                        return fmt::format("typeof({})", ToCSType(param.type()));
+                                    });
+                                    auto paramNameListCs = MapParameterList(child->children_, [&](MetaEntity* metaParam)
+                                    {
+                                        const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
+                                        return MapToCS(param.type(), param.name() + "_");
+                                    });
+                                    auto paramNameList = MapParameterList(child->children_, [&](MetaEntity* metaParam)
+                                    {
+                                        const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
+                                        // Avoid possible parameter name collision in enclosing scope.
+                                        return param.name() + "_";
+                                    });
+
+                                    // Optimization: do not route c++ virtual method calls through .NET if user does not override
+                                    // such method in a managed class.
+                                    printer_
+                                        << fmt::format("if (GetType().HasOverride(nameof({name}){pc}{paramTypeList}))",
+                                            FMT_CAPTURE(name), FMT_CAPTURE(pc), FMT_CAPTURE(paramTypeList));
+                                    printer_.Indent();
+                                    {
+                                        printer_ << fmt::format("set_{sourceClass}_fn{cFunction}(instance, "
+                                                "(gcHandle_{pc}{paramNameList}) =>",
+                                            fmt::arg("sourceClass", Sanitize(entity->sourceName_)),
+                                            fmt::arg("cFunction", child->cFunctionName_), FMT_CAPTURE(pc),
+                                            FMT_CAPTURE(paramNameList));
+                                        printer_.Indent();
+                                        {
+                                            auto expr = fmt::format(
+                                                "(({className})GCHandle.FromIntPtr(gcHandle_).Target).{name}({paramNameListCs})",
+                                                FMT_CAPTURE(className), FMT_CAPTURE(name),
+                                                FMT_CAPTURE(paramNameListCs));
+                                            if (!IsVoid(func.return_type()))
+                                            {
+                                                expr = MapToPInvoke(func.return_type(), expr);
+                                                printer_.Write(fmt::format("return {}", expr));
+                                            }
+                                            else
+                                                printer_.Write(expr);
+                                            printer_.Write(";");
+                                        }
+                                        printer_.Dedent("});");
+                                    }
+                                    printer_.Dedent();
+                                }
+                            }
+                        }
+                    }
+                }
+                printer_.Dedent();
+                printer_ << "";
+            }
         }
         else if (info.event == info.container_entity_exit)
         {
@@ -159,75 +241,9 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         printer_.Indent();
         {
-            printer_ << fmt::format("instance_ = {cFunctionName}({paramNameList});",
+            printer_ << fmt::format("var instance = {cFunctionName}({paramNameList});",
                 FMT_CAPTURE(cFunctionName), FMT_CAPTURE(paramNameList));
-            printer_ << fmt::format("Debug.Assert(instance_ != IntPtr.Zero);");
-            if (generator->inheritable_.IsIncluded(cls->uniqueName_))
-                printer_ << fmt::format("{}_pin(instance_, GCHandle.ToIntPtr(GCHandle.Alloc(this)));", Sanitize(cls->uniqueName_));
-            printer_ << fmt::format("InstanceCache.Add<{className}>(instance_, this);", FMT_CAPTURE(className));
-
-            if (generator->inheritable_.IsIncluded(entity->parent_->symbolName_))
-            {
-                for (const auto& child : cls->children_)
-                {
-                    if (child->kind_ == cppast::cpp_entity_kind::member_function_t)
-                    {
-                        const auto& func = child->Ast<cppast::cpp_member_function>();
-                        if (func.is_virtual())
-                        {
-                            auto name = child->name_;
-                            auto pc = func.parameters().empty() ? "" : ", ";
-                            auto paramTypeList = MapParameterList(child->children_,
-                                [&](MetaEntity* metaParam)
-                                {
-                                    const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
-                                    return fmt::format("typeof({})", ToCSType(param.type()));
-                                });
-                            auto paramNameListCs = MapParameterList(child->children_,
-                                [&](MetaEntity* metaParam)
-                                {
-                                    const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
-                                    return MapToCS(param.type(), param.name() + "_");
-                                });
-                            auto paramNameList = MapParameterList(child->children_,
-                                [&](MetaEntity* metaParam)
-                                {
-                                    const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
-                                    // Avoid possible parameter name collision in enclosing scope.
-                                    return param.name() + "_";
-                                });
-
-                            // Optimization: do not route c++ virtual method calls through .NET if user does not override
-                            // such method in a managed class.
-                            printer_ << fmt::format("if (GetType().HasOverride(nameof({name}){pc}{paramTypeList}))",
-                                FMT_CAPTURE(name), FMT_CAPTURE(pc), FMT_CAPTURE(paramTypeList));
-                            printer_.Indent();
-                            {
-                                printer_ << fmt::format("set_{sourceClass}_fn{cFunction}(instance_, "
-                                        "(gcHandle_{pc}{paramNameList}) =>",
-                                    fmt::arg("sourceClass", Sanitize(cls->sourceName_)),
-                                    fmt::arg("cFunction", child->cFunctionName_), FMT_CAPTURE(pc),
-                                    FMT_CAPTURE(paramNameList));
-                                printer_.Indent();
-                                {
-                                    auto expr = fmt::format("(({className})GCHandle.FromIntPtr(gcHandle_).Target).{name}({paramNameListCs})",
-                                        FMT_CAPTURE(className), FMT_CAPTURE(name), FMT_CAPTURE(paramNameListCs));
-                                    if (!IsVoid(func.return_type()))
-                                    {
-                                        expr = MapToPInvoke(func.return_type(), expr);
-                                        printer_.Write(fmt::format("return {}", expr));
-                                    }
-                                    else
-                                        printer_.Write(expr);
-                                    printer_.Write(";");
-                                }
-                                printer_.Dedent("});");
-                            }
-                            printer_.Dedent();
-                        }
-                    }
-                }
-            }
+            printer_ << "SetupInstance(instance);";
         }
         printer_.Dedent();
         printer_ << "";

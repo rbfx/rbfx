@@ -5,7 +5,8 @@
 
 struct ManagedInterface
 {
-    void*(*FreeGCHandle)(void*);
+    void(*FreeGCHandle)(void* gcHandle);
+    Object*(*CreateObject)(Context* context, unsigned managedType);
 };
 
 /// Object that manages lifetime of native object which was passed to managed runtime.

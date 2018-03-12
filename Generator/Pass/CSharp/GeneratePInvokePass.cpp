@@ -82,7 +82,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
                 for (const auto& base : cls.bases())
                 {
-                    if (const auto* baseClass = GetEntity(base.type()))
+                    if (GetEntity(base.type()) != nullptr)
                     {
                         hasBases = true;
                         break;
@@ -94,34 +94,8 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
             printer_ << fmt::format("public unsafe partial class {} : IDisposable", entity->name_);
             printer_.Indent();
-            if (!hasBases)
-            {
-                printer_ << "internal IntPtr instance_;";
-                printer_ << "protected volatile int disposed_;";
-                printer_ << "";
-
-                // Constructor that initializes form a instance
-                printer_ << fmt::format("internal {}(IntPtr instance)", entity->name_);
-                printer_.Indent();
-                {
-                    // Parent class may calls this constructor with null pointer when parent class constructor itself is
-                    // creating instance.
-                    printer_ << "if (instance != IntPtr.Zero)";
-                    printer_.Indent();
-                    {
-                        printer_ << "instance_ = instance;";
-                    }
-                    printer_.Dedent();
-                }
-                printer_.Dedent();
-                printer_ << "";
-            }
-            else
-            {
-                // Proxy constructor to one defined above
-                printer_ << fmt::format("internal {}(IntPtr instance) : base(instance) {{ }}", entity->name_);
-                printer_ << "";
-            }
+            printer_ << fmt::format("internal {}(IntPtr instance) : base(instance) {{ }}", entity->name_);
+            printer_ << "";
 
             printer_ << fmt::format("public {}void Dispose()", newTag);
             printer_.Indent();

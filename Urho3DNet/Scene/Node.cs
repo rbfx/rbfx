@@ -13,14 +13,10 @@ public partial class Node
     {
         var componentInstance = Urho3D__Node__CreateComponent_Urho3D__StringHash_Urho3D__CreateMode_unsigned_int_(instance_, StringHash.Calculate(typeof(T).Name), mode, id);
         if (componentInstance == IntPtr.Zero)
-        {
-            var component = (T)Activator.CreateInstance(typeof(T), BindingFlags.Public | BindingFlags.Instance, null, new object[] { context_ }, null);
-            if (mode == CreateMode.REPLICATED && !IsReplicated())
-                mode = CreateMode.LOCAL;
-            AddComponent(component, id, mode);
-            return component;
-        }
-        return InstanceCache.GetOrAdd(componentInstance, ptr => (T)Activator.CreateInstance(typeof(T), BindingFlags.NonPublic | BindingFlags.Instance, null, new object[] { ptr }, null));
+            return default(T);
+        return InstanceCache.GetOrAdd(componentInstance, ptr => (T) Activator.CreateInstance(typeof(T),
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+            null, new object[] {ptr}, null));
     }
 
     public T GetComponent<T>(bool recursive = false)
@@ -28,7 +24,8 @@ public partial class Node
         var componentInstance = Urho3D__Node__GetComponent_Urho3D__StringHash_bool__const(instance_, StringHash.Calculate(typeof(T).Name), recursive);
         if (componentInstance == IntPtr.Zero)
             return default(T);
-        return InstanceCache.GetOrAdd(componentInstance, ptr => (T)Activator.CreateInstance(typeof(T), BindingFlags.NonPublic | BindingFlags.Instance, null, new object[] { ptr }, null));
+        return InstanceCache.GetOrAdd(componentInstance, ptr => (T)Activator.CreateInstance(typeof(T),
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, new object[] { ptr }, null));
     }
 }
 
