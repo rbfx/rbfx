@@ -85,6 +85,13 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
 
     printer_.WriteLine("public:", false);
     printer_ << "void* gcHandle_ = nullptr;";
+    if (IsSubclassOf(entity->Ast<cppast::cpp_class>(), "Urho3D::Object"))
+    {
+        printer_ << "Urho3D::TypeInfo* typeInfo_ = nullptr;";
+        printer_ << "StringHash GetType() const override { return typeInfo_->GetType(); }";
+        printer_ << "const Urho3D::String& GetTypeName() const override { return typeInfo_->GetTypeName(); }";
+        printer_ << "const Urho3D::TypeInfo* GetTypeInfo() const override { return typeInfo_; }";
+    }
 
     // Wrap constructors
     for (const auto& e : entity->children_)
@@ -106,6 +113,11 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_ << "gcHandle_ = nullptr;";
         }
         printer_.Dedent();
+        if (IsSubclassOf(entity->Ast<cppast::cpp_class>(), "Urho3D::Object"))
+        {
+            printer_ << "delete typeInfo_;";
+            printer_ << "typeInfo_ = nullptr;";
+        }
     }
     printer_.Dedent();
 

@@ -151,7 +151,8 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             if (generator->inheritable_.IsIncluded(entity->uniqueName_))
             {
                 printer_ << dllImport;
-                printer_ << fmt::format("internal static extern void {}_pin(IntPtr instance, IntPtr gcHandle);", baseName);
+                printer_ << fmt::format("internal static extern void {}_setup(IntPtr instance, IntPtr gcHandle, "
+                    "[param: MarshalAs(UnmanagedType.LPUTF8Str)]string typeName);", baseName);
                 printer_ << "";
             }
         }

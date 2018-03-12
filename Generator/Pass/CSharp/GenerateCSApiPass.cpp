@@ -118,7 +118,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     printer_ << fmt::format("Debug.Assert(instance != IntPtr.Zero);");
                     printer_ << "instance_ = instance;";
                     if (generator->inheritable_.IsIncluded(entity->uniqueName_))
-                        printer_ << fmt::format("{}_pin(instance, GCHandle.ToIntPtr(GCHandle.Alloc(this)));",
+                        printer_ << fmt::format("{}_setup(instance, GCHandle.ToIntPtr(GCHandle.Alloc(this)), GetType().Name);",
                             Sanitize(entity->uniqueName_));
                     printer_ << fmt::format("InstanceCache.Add<{className}>(instance, this);", FMT_CAPTURE(className));
 

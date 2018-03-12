@@ -77,10 +77,13 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         // native class is freed. It is important only for classes that can be inherited.
         if (generator->inheritable_.IsIncluded(entity->symbolName_))
         {
-            printer_ << fmt::format("URHO3D_EXPORT_API void {}_pin({}* instance, void* gcHandle)", baseName, entity->sourceSymbolName_);
+            printer_ << fmt::format("URHO3D_EXPORT_API void {}_setup({}* instance, void* gcHandle, const char* typeName)", baseName, entity->sourceSymbolName_);
             printer_.Indent();
             {
+                printer_ << "assert(instance->gcHandle_ == nullptr);";
                 printer_ << "instance->gcHandle_ = gcHandle;";
+                if (IsSubclassOf(entity->Ast<cppast::cpp_class>(), "Urho3D::Object"))
+                    printer_ << fmt::format("instance->typeInfo_ = new Urho3D::TypeInfo(typeName, {}::GetTypeInfoStatic());", entity->sourceSymbolName_);
             }
             printer_.Dedent();
             printer_ << "";
