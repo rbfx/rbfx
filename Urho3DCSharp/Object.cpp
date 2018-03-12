@@ -13,11 +13,7 @@ public:
         , baseType_(baseType)
         , managedType_(typeName)
     {
-        const auto& factories = context_->GetObjectFactories();
-        SharedPtr<ObjectFactory> factory;
-        if (factories.TryGetValue(baseType, factory))
-            typeInfo_ = new TypeInfo(typeName, factory->GetTypeInfo());
-        assert(typeInfo_ != nullptr);
+        typeInfo_ = new TypeInfo(typeName, script->GetRegisteredType(baseType));
     }
 
     ~ManagedObjectFactory() override

@@ -139,12 +139,26 @@ public:
         return it->second_;
     }
 
+    template<typename T>
+    void RegisterType()
+    {
+        typeInfos_[T::GetTypeStatic()] = T::GetTypeInfoStatic();
+    }
+
+    const TypeInfo* GetRegisteredType(StringHash type)
+    {
+        const TypeInfo* typeInfo = nullptr;
+        typeInfos_.TryGetValue(type, typeInfo);
+        return typeInfo;
+    }
+
     ManagedInterface net_;
 
 protected:
     Mutex lock_;
     Allocator<NativeObjectHandler> handlesAllocator_;
     HashMap<void*, NativeObjectHandler*> instanceToHandler_;
+    HashMap<StringHash, const TypeInfo*> typeInfos_;
 };
 
 extern ScriptSubsystem* script;
