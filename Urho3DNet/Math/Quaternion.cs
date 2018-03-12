@@ -34,14 +34,14 @@ namespace Urho3D
     public struct Quaternion : IEquatable<Quaternion>
     {
         /// <summary>
-        /// The X, Y and Z components of this instance.
-        /// </summary>
-        public Vector3 Xyz;
-
-        /// <summary>
         /// The W component of this instance.
         /// </summary>
         public float W;
+
+        /// <summary>
+        /// The X, Y and Z components of this instance.
+        /// </summary>
+        public Vector3 Xyz;
 
         /// <summary>
         /// Construct a new Quaternion from vector and w components
@@ -66,18 +66,18 @@ namespace Urho3D
         { }
 
         /// <summary>
-        /// Construct a new Quaternion from given Euler angles in radians. 
+        /// Construct a new Quaternion from given Euler angles in degrees.
         /// The rotations will get applied in following order:
-        /// 1. around X axis, 2. around Y axis, 3. around Z axis
+        /// 1. around Z axis, 2. around X axis, 3. around Y axis
         /// </summary>
         /// <param name="rotationX">Counterclockwise rotation around X axis in radian</param>
         /// <param name="rotationY">Counterclockwise rotation around Y axis in radian</param>
         /// <param name="rotationZ">Counterclockwise rotation around Z axis in radian</param>
         public Quaternion(float rotationX, float rotationY, float rotationZ)
         {
-            rotationX *= 0.5f;
-            rotationY *= 0.5f;
-            rotationZ *= 0.5f;
+            rotationX = MathHelper.DegreesToRadians(rotationX) * 0.5f;
+            rotationY = MathHelper.DegreesToRadians(rotationY) * 0.5f;
+            rotationZ = MathHelper.DegreesToRadians(rotationZ) * 0.5f;
 
             float c1 = (float)Math.Cos(rotationX);
             float c2 = (float)Math.Cos(rotationY);
@@ -86,10 +86,10 @@ namespace Urho3D
             float s2 = (float)Math.Sin(rotationY);
             float s3 = (float)Math.Sin(rotationZ);
 
-            W = c1 * c2 * c3 - s1 * s2 * s3;
-            Xyz.X = s1 * c2 * c3 + c1 * s2 * s3;
-            Xyz.Y = c1 * s2 * c3 - s1 * c2 * s3;
-            Xyz.Z = c1 * c2 * s3 + s1 * s2 * c3;
+            W = c2 * c1 * c3 + s2 * s1 * s3;
+            Xyz.X = c2 * s1 * c3 + s2 * c1 * s3;
+            Xyz.Y = s2 * c1 * c3 - c2 * s1 * s3;
+            Xyz.Z = c2 * c1 * s3 - s2 * s1 * c3;
         }
 
         /// <summary>
