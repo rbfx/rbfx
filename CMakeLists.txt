@@ -72,7 +72,9 @@ macro (CSHARP_BIND_TARGET TARGET RULES)
     add_library(${TARGET}CSharp SHARED ${COMMON_CSHARP_SOURCE_FILES_MANUAL} ${COMMON_CSHARP_SOURCE_FILES_GENERATED})
     target_link_libraries(${TARGET}CSharp Urho3D)
     target_include_directories(${TARGET}CSharp PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/CommonCSharp ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}CSharp)
+        ${CMAKE_CURRENT_SOURCE_DIR}/CommonCSharp
+        ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}CSharp
+        ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET}CSharp)
     add_dependencies(${TARGET}CSharp CSharpGenerateBindings)
 
     # Net target (managed)

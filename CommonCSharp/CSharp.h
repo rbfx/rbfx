@@ -148,3 +148,15 @@ protected:
 };
 
 extern ScriptSubsystem* script;
+
+/// Force-cast between incompatible types.
+template<typename T0, typename T1>
+inline T0 force_cast(T1 input)
+{
+    union
+    {
+        T1 input;
+        T0 output;
+    } u = { input };
+    return u.output;
+};
