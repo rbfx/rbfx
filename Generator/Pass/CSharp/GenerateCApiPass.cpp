@@ -63,7 +63,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto baseName = Sanitize(entity->uniqueName_);
 
         // Destructor always exists even if it is not defined in the class
-        printer_ << fmt::format("URHO3D_EXPORT_API void {}_destructor({}* instance)", baseName, entity->sourceName_);
+        printer_ << fmt::format("URHO3D_EXPORT_API void {}_destructor({}* instance)", baseName, entity->sourceSymbolName_);
         printer_.Indent();
         {
             // Using sourceName_ with wrapper classes causes weird build errors.
@@ -77,7 +77,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         // native class is freed. It is important only for classes that can be inherited.
         if (generator->inheritable_.IsIncluded(entity->symbolName_))
         {
-            printer_ << fmt::format("URHO3D_EXPORT_API void {}_pin({}* instance, void* gcHandle)", baseName, entity->sourceName_);
+            printer_ << fmt::format("URHO3D_EXPORT_API void {}_pin({}* instance, void* gcHandle)", baseName, entity->sourceSymbolName_);
             printer_.Indent();
             {
                 printer_ << "instance->gcHandle_ = gcHandle;";
@@ -90,14 +90,14 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     {
         const auto& func = entity->Ast<cppast::cpp_constructor>();
         entity->cFunctionName_ = GetUniqueName(Sanitize(entity->uniqueName_));
-        std::string className = entity->parent_->sourceName_;
+        std::string className = entity->parent_->sourceSymbolName_;
         printer_ << fmt::format("URHO3D_EXPORT_API {type} {name}({params})",
             fmt::arg("type", className + "*"), fmt::arg("name", entity->cFunctionName_),
             fmt::arg("params", ParameterList(func.parameters(), toCType)));
         printer_.Indent();
         {
             PrintDefaultValueCode(entity->children_);
-            printer_ << "return " + MapToCNoCopy(entity->parent_->sourceName_,
+            printer_ << "return " + MapToCNoCopy(entity->parent_->sourceSymbolName_,
                 fmt::format("new {class}({params})", fmt::arg("class", className),
                     fmt::arg("params", ParameterNameList(func.parameters(), toCppType)))) + ";";
         }
@@ -114,10 +114,9 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         entity->cFunctionName_ = GetUniqueName(Sanitize(entity->uniqueName_));
 
-        auto name = entity->name_;
         auto cFunction = entity->cFunctionName_;
         auto paramNames = ParameterNameList(func.parameters(), toCppType);
-        auto className = entity->access_ == cppast::cpp_public ? entity->parent_->symbolName_ : entity->parent_->sourceName_;
+        auto className = entity->access_ == cppast::cpp_public ? entity->parent_->symbolName_ : entity->parent_->sourceSymbolName_;
 
         printer_ << fmt::format("URHO3D_EXPORT_API {rtype} {cFunction}({className}* instance{psep}{params})",
             fmt::arg("rtype", ToCType(func.return_type())), FMT_CAPTURE(cFunction), FMT_CAPTURE(className),
@@ -130,14 +129,14 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             if (func.is_virtual())
                 // Virtual methods always overriden in wrapper class so accessing them by simple name should not be
                 // an issue.
-                call += fmt::format("{}({})", entity->name_, paramNames);
+                call += fmt::format("{}({})", entity->sourceName_, paramNames);
             else if (entity->access_ == cppast::cpp_public)
                 // Non-virtual public methods sometimes have issues being called. Use fully qualified name for
                 // calling them.
                 call += fmt::format("{}({})", entity->symbolName_, paramNames);
             else
                 // Protected non-virtual methods are wrapped in public proxy methods.
-                call += fmt::format("__public_{}({})", entity->name_, paramNames);
+                call += fmt::format("__public_{}({})", entity->sourceName_, paramNames);
 
             if (!IsVoid(func.return_type()))
                 call = "return " + MapToC(func.return_type(), call);
@@ -151,8 +150,8 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         if (func.is_virtual() && !isFinal)
         {
             printer_ << fmt::format("URHO3D_EXPORT_API void set_{name}_fn{cFunction}({className}* instance, void* fn)",
-                fmt::arg("name", Sanitize(entity->parent_->sourceName_)), FMT_CAPTURE(cFunction),
-                fmt::arg("className", entity->parent_->sourceName_));
+                fmt::arg("name", Sanitize(entity->parent_->sourceSymbolName_)), FMT_CAPTURE(cFunction),
+                fmt::arg("className", entity->parent_->sourceSymbolName_));
             printer_.Indent();
             {
                 printer_ << fmt::format("instance->fn{cFunction} = (decltype(instance->fn{cFunction}))fn;",
@@ -207,7 +206,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         entity->cFunctionName_ = Sanitize(ns->symbolName_ + "_" + entity->name_);
         auto rtype = ToCType(var.type());
         auto cFunction = entity->cFunctionName_;
-        auto namespaceName = ns->sourceName_;
+        auto namespaceName = ns->sourceSymbolName_;
         auto name = entity->name_;
         auto value = MapToCpp(var.type(), "value");
 
@@ -254,7 +253,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         entity->cFunctionName_ = Sanitize(ns->symbolName_ + "_" + entity->name_);
         auto cType = ToCType(var.type());
         auto cFunction = entity->cFunctionName_;
-        auto namespaceName = ns->sourceName_;
+        auto namespaceName = ns->sourceSymbolName_;
         auto name = entity->name_;
 
         // Getter

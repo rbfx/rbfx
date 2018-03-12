@@ -53,10 +53,10 @@ struct MetaEntity : public RefCounted
         : ast_(&source)
         , access_(access)
     {
-        name_ = source.name();
+        sourceName_ = name_ = source.name();
         kind_ = source.kind();
         uniqueName_ = GetUniqueName(source);
-        sourceName_ = symbolName_ = GetSymbolName(source);
+        sourceSymbolName_ = symbolName_ = GetSymbolName(source);
         ast_->set_user_data((void*)this);
     }
 
@@ -149,6 +149,8 @@ struct MetaEntity : public RefCounted
     std::vector<SharedPtr<MetaEntity>> children_;
     /// A full name of c++ symbol.
     std::string symbolName_;
+    /// A original full name of c++ symbol.
+    std::string sourceSymbolName_;
     /// Unique name identifying this entity. It is symbolName + methodSignature or just symbolName.
     std::string uniqueName_;
     /// Name which will be used to access symbol in C API.

@@ -73,6 +73,7 @@ bool MoveGlobalsPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     toClass->name_ = className;
                     toClass->sourceName_ = ns.sourceName_;
                     toClass->uniqueName_ = toClass->symbolName_ = classSymbol;
+                    toClass->sourceSymbolName_ = ns.sourceSymbolName_;
                     toClass->kind_ = cppast::cpp_entity_kind::class_t;
                     ns.Add(toClass);
                     generator->symbols_[classSymbol] = toClass;

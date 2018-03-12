@@ -66,13 +66,7 @@
       "Urho3D::Variant*::customValue*_",
       "Urho3D::Variant::Variant(void*)",
       // C# reflection can be used instead of these
-      "Urho3D::TypeInfo",
-      "Urho3D::*::GetType() const",
-      "Urho3D::*::GetTypeStatic()",
-      "Urho3D::*::GetTypeName() const",
-      "Urho3D::*::GetTypeNameStatic()",
-      "Urho3D::*::GetTypeInfo() const",
-      "Urho3D::*::GetTypeInfoStatic()",
+      "Urho3D::*::GetType*Static()",
       "Urho3D::File::ReadText(Urho3D::String&)",
       // TODO: Wrap manually returning a string instead of bool
       "Urho3D::FileWatcher::GetNextChange(Urho3D::String&)",

@@ -159,7 +159,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                                     {
                                         printer_ << fmt::format("set_{sourceClass}_fn{cFunction}(instance, "
                                                 "(gcHandle_{pc}{paramNameList}) =>",
-                                            fmt::arg("sourceClass", Sanitize(entity->sourceName_)),
+                                            fmt::arg("sourceClass", Sanitize(entity->sourceSymbolName_)),
                                             fmt::arg("cFunction", child->cFunctionName_), FMT_CAPTURE(pc),
                                             FMT_CAPTURE(paramNameList));
                                         printer_.Indent();

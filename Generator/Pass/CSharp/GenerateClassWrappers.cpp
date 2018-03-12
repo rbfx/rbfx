@@ -79,11 +79,8 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
     // Urho3D-specific
     if (IsSubclassOf(cls, "Urho3D::Object"))
     {
-        printer_ << fmt::format("URHO3D_OBJECT(Wrappers::{}, {});", entity->name_, entity->uniqueName_);
-
-        // TODO: Get rid of this. Drawable does not have constructor with single Context parameter.
-        if (entity->symbolName_ != "Urho3D::Drawable")
-            initPrinter_ << fmt::format("context->RegisterFactory<Wrappers::{}>();", entity->name_);
+        printer_ << fmt::format("URHO3D_OBJECT_STATIC(Wrappers::{}, {});", entity->name_, entity->uniqueName_);
+        initPrinter_ << fmt::format("script->RegisterType<Wrappers::{}>();", entity->name_);
     }
 
     printer_.WriteLine("public:", false);
@@ -149,7 +146,7 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
                     // Function pointer that virtual method will call
                     const auto& cls = child->parent_;
                     auto typeName = cppast::to_string(func.return_type());
-                    auto name = child->name_;
+                    auto name = child->sourceName_;
                     auto parameterList = ParameterList(func.parameters());
                     auto parameterNameList = ParameterNameList(func.parameters());
                     auto constModifier = cppast::is_const(func.cv_qualifier()) ? "const " : "";
@@ -233,7 +230,7 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
 
     printer_.Dedent("};");
     printer_ << "";
-    entity->sourceName_ = "Wrappers::" + entity->name_;    // Wrap a wrapper class
+    entity->sourceSymbolName_ = "Wrappers::" + entity->name_;    // Wrap a wrapper class
     return true;
 }
 

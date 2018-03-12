@@ -250,7 +250,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto rtype = ToPInvokeTypeReturn(func.return_type());
         auto cFunction = entity->cFunctionName_;
         auto className = entity->parent_->name_;
-        auto sourceClassName = Sanitize(entity->parent_->sourceName_);
+        auto sourceClassName = Sanitize(entity->parent_->sourceSymbolName_);
         auto uniqueName = Sanitize(entity->uniqueName_);
         auto pc = func.parameters().empty() ? "" : ", ";
 

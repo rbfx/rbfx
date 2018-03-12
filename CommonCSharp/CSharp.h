@@ -174,3 +174,11 @@ inline T0 force_cast(T1 input)
     } u = { input };
     return u.output;
 };
+
+#define URHO3D_OBJECT_STATIC(typeName, baseTypeName) \
+    public: \
+        using ClassName = typeName; \
+        using BaseClassName = baseTypeName; \
+        static Urho3D::StringHash GetTypeStatic() { return GetTypeInfoStatic()->GetType(); } \
+        static const Urho3D::String& GetTypeNameStatic() { return GetTypeInfoStatic()->GetTypeName(); } \
+        static const Urho3D::TypeInfo* GetTypeInfoStatic() { static const Urho3D::TypeInfo typeInfoStatic(#typeName, BaseClassName::GetTypeInfoStatic()); return &typeInfoStatic; }
