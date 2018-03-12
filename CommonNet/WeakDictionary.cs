@@ -51,5 +51,10 @@ namespace CSharp
         {
             return GetEnumerator();
         }
+
+        public void Clear()
+        {
+            map_.Clear();
+        }
     }
 }
