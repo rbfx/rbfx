@@ -63,6 +63,9 @@ void Urho3DCustomPass::Start()
 
 bool Urho3DCustomPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
+    if (info.event == info.container_entity_exit)
+        return true;
+
     if (entity->kind_ == cppast::cpp_entity_kind::enum_t && entity->name_.empty())
     {
         if (entity->children_.empty())
