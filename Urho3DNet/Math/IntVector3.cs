@@ -161,7 +161,7 @@ namespace Urho3D
         {
             get
             {
-                return 1.0f / MathHelper.InverseSqrtFast(X * X + Y * Y + Z * Z);
+                return 1.0f / MathDefs.InverseSqrtFast(X * X + Y * Y + Z * Z);
             }
         }
 
@@ -208,7 +208,7 @@ namespace Urho3D
         /// </summary>
         public void NormalizeFast()
         {
-            float scale = MathHelper.InverseSqrtFast(X * X + Y * Y + Z * Z);
+            float scale = MathDefs.InverseSqrtFast(X * X + Y * Y + Z * Z);
             X = (int)Math.Round(X * scale);
             Y = (int)Math.Round(Y * scale);
             Z = (int)Math.Round(Z * scale);
@@ -640,7 +640,7 @@ namespace Urho3D
         /// <returns>The normalized vector</returns>
         public static IntVector3 NormalizeFast(IntVector3 vec)
         {
-            float scale = MathHelper.InverseSqrtFast(vec.X * vec.X + vec.Y * vec.Y + vec.Z * vec.Z);
+            float scale = MathDefs.InverseSqrtFast(vec.X * vec.X + vec.Y * vec.Y + vec.Z * vec.Z);
             vec.X = (int)Math.Round(vec.X * scale);
             vec.Y = (int)Math.Round(vec.Y * scale);
             vec.Z = (int)Math.Round(vec.Z * scale);
@@ -654,7 +654,7 @@ namespace Urho3D
         /// <param name="result">The normalized vector</param>
         public static void NormalizeFast(ref IntVector3 vec, out IntVector3 result)
         {
-            float scale = MathHelper.InverseSqrtFast(vec.X * vec.X + vec.Y * vec.Y + vec.Z * vec.Z);
+            float scale = MathDefs.InverseSqrtFast(vec.X * vec.X + vec.Y * vec.Y + vec.Z * vec.Z);
             result.X = (int)Math.Round(vec.X * scale);
             result.Y = (int)Math.Round(vec.Y * scale);
             result.Z = (int)Math.Round(vec.Z * scale);
@@ -1040,7 +1040,7 @@ namespace Urho3D
         {
             int temp;
             IntVector3.Dot(ref first, ref second, out temp);
-            result = (int)System.Math.Acos(MathHelper.Clamp(temp / (first.Length * second.Length), -1.0, 1.0));
+            result = (int)System.Math.Acos(MathDefs.Clamp(temp / (first.Length * second.Length), -1.0, 1.0));
         }
 
         /// <summary>

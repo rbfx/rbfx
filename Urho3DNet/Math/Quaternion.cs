@@ -75,9 +75,9 @@ namespace Urho3D
         /// <param name="rotationZ">Counterclockwise rotation around Z axis in radian</param>
         public Quaternion(float rotationX, float rotationY, float rotationZ)
         {
-            rotationX = MathHelper.DegreesToRadians(rotationX) * 0.5f;
-            rotationY = MathHelper.DegreesToRadians(rotationY) * 0.5f;
-            rotationZ = MathHelper.DegreesToRadians(rotationZ) * 0.5f;
+            rotationX = MathDefs.DegreesToRadians(rotationX) * 0.5f;
+            rotationY = MathDefs.DegreesToRadians(rotationY) * 0.5f;
+            rotationZ = MathDefs.DegreesToRadians(rotationZ) * 0.5f;
 
             float c1 = (float)Math.Cos(rotationX);
             float c2 = (float)Math.Cos(rotationY);

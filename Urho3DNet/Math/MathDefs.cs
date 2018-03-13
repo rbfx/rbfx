@@ -14,7 +14,7 @@ namespace Urho3D
     /// <summary>
     /// Contains common mathematical functions and constants.
     /// </summary>
-    public static class MathHelper
+    public static partial class MathDefs
     {
         /// <summary>
         /// Defines the value of Pi as a <see cref="System.Single"/>.

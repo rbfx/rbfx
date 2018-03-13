@@ -173,7 +173,7 @@ namespace Urho3D
         {
             get
             {
-                return 1.0f / MathHelper.InverseSqrtFast(X * X + Y * Y + Z * Z);
+                return 1.0f / MathDefs.InverseSqrtFast(X * X + Y * Y + Z * Z);
             }
         }
 
@@ -220,7 +220,7 @@ namespace Urho3D
         /// </summary>
         public void NormalizeFast()
         {
-            float scale = MathHelper.InverseSqrtFast(X * X + Y * Y + Z * Z);
+            float scale = MathDefs.InverseSqrtFast(X * X + Y * Y + Z * Z);
             X *= scale;
             Y *= scale;
             Z *= scale;
@@ -652,7 +652,7 @@ namespace Urho3D
         /// <returns>The normalized vector</returns>
         public static Vector3 NormalizeFast(Vector3 vec)
         {
-            float scale = MathHelper.InverseSqrtFast(vec.X * vec.X + vec.Y * vec.Y + vec.Z * vec.Z);
+            float scale = MathDefs.InverseSqrtFast(vec.X * vec.X + vec.Y * vec.Y + vec.Z * vec.Z);
             vec.X *= scale;
             vec.Y *= scale;
             vec.Z *= scale;
@@ -666,7 +666,7 @@ namespace Urho3D
         /// <param name="result">The normalized vector</param>
         public static void NormalizeFast(ref Vector3 vec, out Vector3 result)
         {
-            float scale = MathHelper.InverseSqrtFast(vec.X * vec.X + vec.Y * vec.Y + vec.Z * vec.Z);
+            float scale = MathDefs.InverseSqrtFast(vec.X * vec.X + vec.Y * vec.Y + vec.Z * vec.Z);
             result.X = vec.X * scale;
             result.Y = vec.Y * scale;
             result.Z = vec.Z * scale;
@@ -1051,7 +1051,7 @@ namespace Urho3D
         {
             float temp;
             Vector3.Dot(ref first, ref second, out temp);
-            result = (float)System.Math.Acos(MathHelper.Clamp(temp / (first.Length * second.Length), -1.0, 1.0));
+            result = (float)System.Math.Acos(MathDefs.Clamp(temp / (first.Length * second.Length), -1.0, 1.0));
         }
 
         /// <summary>
