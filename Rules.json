@@ -20,11 +20,7 @@
       "Input/*.h",
       "Scene/*.h",
       "Audio/*.h",
-      "IO/Serializer.h",
-      "IO/Deserializer.h",
-      "IO/AbstractFile.h",
-      "IO/Log.h",
-      "IO/PackageFile.h",
+      "IO/*.h",
       "Navigation/*.h",
       "Network/*.h",
       "Resource/*.h",
@@ -36,9 +32,14 @@
       "IK/IKConverters.h",
       "UI/FontFace*.h",
       "Graphics/AnimationState.h",
-      "Graphics/GPUObject.h",
       "Graphics/OctreeQuery.h",
       "Graphics/Tangent.h",
+      "IO/FileWatcher.h",       // TODO: out parameters
+      "IO/MacFileWatcher.h",
+      "IO/MemoryBuffer.h",
+      "IO/NamedPipe.h",
+      "IO/RWOpsWrapper.h",
+      "IO/VectorBuffer.h",
     ]
   },
   "compiler": {
@@ -94,9 +95,6 @@
       "Urho3D::JoystickState::joystick_",
       "Urho3D::JoystickState::controller_",
       "Urho3D::CursorShapeInfo::osCursor_",
-      // TODO: support multiple inheritance by generating interfaces
-      "Urho3D::HttpRequest",
-      "Urho3D::Octant",
       "Urho3D::XMLElement::*(Urho3D::String const&)*",
       "Urho3D::XMLElement::*(Urho3D::String const&,Urho3D::String const&)*",
       "Urho3D::JSONFile::GetRoot() const",

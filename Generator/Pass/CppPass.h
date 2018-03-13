@@ -40,6 +40,7 @@ enum CppEntityHints
     HintNone = 0,
     HintReadOnly = 1,
     HintIgnoreAstDefaultValue = 2,
+    HintInterface = 4,
 };
 
 URHO3D_TO_FLAGS_ENUM(CppEntityHints);
@@ -58,6 +59,27 @@ struct MetaEntity : public RefCounted
         uniqueName_ = GetUniqueName(source);
         sourceSymbolName_ = symbolName_ = GetSymbolName(source);
         ast_->set_user_data((void*)this);
+    }
+
+    MetaEntity(const MetaEntity& other)
+    {
+
+        kind_ = other.kind_;
+        ast_ = other.ast_;
+        access_ = other.access_;
+        parent_ = nullptr;
+
+        symbolName_ = other.symbolName_;
+        sourceSymbolName_ = other.sourceSymbolName_;
+        uniqueName_ = other.uniqueName_;
+        sourceName_ = other.sourceName_;
+        name_ = other.name_;
+        defaultValue_ = other.defaultValue_;
+        flags_ = other.flags_;
+        cFunctionName_ = other.cFunctionName_;
+
+        for (const auto& child : other.children_)
+            children_.emplace_back(new MetaEntity(*child));
     }
 
     template<typename T>

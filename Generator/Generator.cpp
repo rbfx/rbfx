@@ -28,6 +28,7 @@
 #include "Pass/UnknownTypesPass.h"
 #include "Pass/CSharp/Urho3DTypeMaps.h"
 #include "Pass/CSharp/MoveGlobalsPass.h"
+#include "Pass/CSharp/ImplementInterfacesPass.h"
 #include "Pass/CSharp/Urho3DCustomPass.h"
 #include "Pass/CSharp/GenerateClassWrappers.h"
 #include "Pass/CSharp/GenerateCApiPass.h"
@@ -101,6 +102,7 @@ int main(int argc, char* argv[])
     generator->AddApiPass<UnknownTypesPass>();
     generator->AddApiPass<Urho3DCustomPass>();
     generator->AddApiPass<MoveGlobalsPass>();
+    generator->AddApiPass<ImplementInterfacesPass>();
     generator->AddApiPass<GenerateClassWrappers>();
     generator->AddApiPass<GenerateCApiPass>();
     generator->AddApiPass<GeneratePInvokePass>();
