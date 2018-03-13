@@ -307,10 +307,10 @@ public:
         Urho3D::Swap(buffer_, rhs.buffer_);
     }
 
-protected:
     static unsigned char* AllocateBuffer(unsigned size);
     static void FreeBuffer(unsigned char* buffer);
 
+protected:
     /// Size of vector.
     unsigned size_;
     /// Buffer capacity.
