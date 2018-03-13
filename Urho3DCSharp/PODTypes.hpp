@@ -1,7 +1,7 @@
-namespace Urho3DMath
+namespace Urho3D
 {
 
-struct IntVector2
+struct PODIntVector2
 {
     /// X coordinate.
     int x_;
@@ -9,7 +9,7 @@ struct IntVector2
     int y_;
 };
 
-struct Vector2
+struct PODVector2
 {
     /// X coordinate.
     float x_;
@@ -17,7 +17,7 @@ struct Vector2
     float y_;
 };
 
-struct IntVector3
+struct PODIntVector3
 {
     /// X coordinate.
     int x_;
@@ -27,7 +27,7 @@ struct IntVector3
     int z_;
 };
 
-struct Vector3
+struct PODVector3
 {
     /// X coordinate.
     float x_;
@@ -37,19 +37,7 @@ struct Vector3
     float z_;
 };
 
-struct Vector4
-{
-    /// X coordinate.
-    float x_;
-    /// Y coordinate.
-    float y_;
-    /// Z coordinate.
-    float z_;
-    /// W coordinate.
-    float w_;
-};
-
-struct Quaternion
+struct PODVector4
 {
     /// X coordinate.
     float x_;
@@ -61,7 +49,19 @@ struct Quaternion
     float w_;
 };
 
-struct Color
+struct PODQuaternion
+{
+    /// X coordinate.
+    float x_;
+    /// Y coordinate.
+    float y_;
+    /// Z coordinate.
+    float z_;
+    /// W coordinate.
+    float w_;
+};
+
+struct PODColor
 {
     /// Red value.
     float r_;
@@ -73,7 +73,7 @@ struct Color
     float a_;
 };
 
-struct Rect
+struct PODRect
 {
     /// Minimum vector.
     Vector2 min_;
@@ -81,7 +81,7 @@ struct Rect
     Vector2 max_;
 };
 
-struct IntRect
+struct PODIntRect
 {
     /// Left coordinate.
     int left_;
@@ -93,7 +93,7 @@ struct IntRect
     int bottom_;
 };
 
-struct BoundingBox
+struct PODBoundingBox
 {
     /// Minimum vector.
     Vector3 min_;
@@ -103,7 +103,7 @@ struct BoundingBox
     float dummyMax_; // This is never used, but exists to pad the max_ value to four floats.
 };
 
-struct Plane
+struct PODPlane
 {
     /// Plane normal.
     Vector3 normal_;
@@ -113,7 +113,7 @@ struct Plane
     float d_;
 };
 
-struct Matrix2
+struct PODMatrix2
 {
     float m00_;
     float m01_;
@@ -121,7 +121,7 @@ struct Matrix2
     float m11_;
 };
 
-struct Matrix3
+struct PODMatrix3
 {
     float m00_;
     float m01_;
@@ -134,7 +134,7 @@ struct Matrix3
     float m22_;
 };
 
-struct Matrix3x4
+struct PODMatrix3x4
 {
     float m00_;
     float m01_;
@@ -150,7 +150,7 @@ struct Matrix3x4
     float m23_;
 };
 
-struct Matrix4
+struct PODMatrix4
 {
     float m00_;
     float m01_;

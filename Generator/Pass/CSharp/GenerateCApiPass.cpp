@@ -35,7 +35,7 @@ void GenerateCApiPass::Start()
     printer_ << "#include <Urho3D/Urho3DAll.h>";
     printer_ << "#include \"CSharp.h\"";
     printer_ << "#include \"ClassWrappers.hpp\"";
-    printer_ << "#include \"Urho3DMath.hpp\"";
+    printer_ << "#include \"PODTypes.hpp\"";
     printer_ << "";
     printer_ << "using namespace Urho3D;";
     printer_ << "";
