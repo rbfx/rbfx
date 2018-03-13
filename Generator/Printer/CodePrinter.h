@@ -38,14 +38,12 @@ public:
     void Write(const String& text);
     void WriteLine(const String& line="", bool indent=true);
     CodePrinter& operator<<(const String& line);
-
     String Get();
-
     void Flush();
 
-protected:
-
     int indent_ = 0;
+
+protected:
     Vector<String> buffer_;
     Vector<String> lines_;
 };
