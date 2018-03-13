@@ -31,15 +31,14 @@
     "exclude": [
       "IK/IKConverters.h",
       "UI/FontFace*.h",
-      "Graphics/AnimationState.h",
       "Graphics/OctreeQuery.h",
-      "Graphics/Tangent.h",
       "IO/FileWatcher.h",       // TODO: out parameters
       "IO/MacFileWatcher.h",
       "IO/MemoryBuffer.h",
       "IO/NamedPipe.h",
       "IO/RWOpsWrapper.h",
       "IO/VectorBuffer.h",
+      "IO/FileSystem.h",
     ]
   },
   "compiler": {
