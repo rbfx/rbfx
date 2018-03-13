@@ -2,7 +2,6 @@
   "headers": {
     "include": [
       "Math/MathDefs.h",
-      "Math/Color.h",
       "Container/RefCounted.h",
       "Core/Object.h",
       "Core/Context.h",
@@ -278,6 +277,15 @@
       "ptype": "Urho3D.IntRect",
       "cpp_to_c": "force_cast<Urho3D::PODIntRect>({value})",
       "c_to_cpp": "force_cast<Urho3D::IntRect>({value})",
+      "isValueType": true,
+    },
+    {
+      "type": "Urho3D::Color",
+      "ctype": "Urho3D::PODColor",
+      "cstype": "Urho3D.Color",
+      "ptype": "Urho3D.Color",
+      "cpp_to_c": "force_cast<Urho3D::PODColor>({value})",
+      "c_to_cpp": "force_cast<Urho3D::Color>({value})",
       "isValueType": true,
     },
   ],
