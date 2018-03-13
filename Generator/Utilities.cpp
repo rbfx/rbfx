@@ -575,10 +575,15 @@ std::string CamelCaseIdentifier(const std::string& name)
 namespace str
 {
 
-std::string& replace_str(std::string& dest, const std::string& find, const std::string& replace)
+std::string& replace_str(std::string& dest, const std::string& find, const std::string& replace, unsigned maxReplacements)
 {
     while(dest.find(find) != std::string::npos)
+    {
         dest.replace(dest.find(find), find.size(), replace);
+        maxReplacements--;
+        if (maxReplacements == 0)
+            break;
+    }
     return dest;
 }
 
@@ -595,9 +600,9 @@ std::string join(const std::vector<std::string>& collection, const std::string& 
     return result;
 }
 
-std::string& replace_str(std::string&& dest, const std::string& find, const std::string& replace)
+std::string& replace_str(std::string&& dest, const std::string& find, const std::string& replace, unsigned maxReplacements)
 {
-    return replace_str(dest, find, replace);
+    return replace_str(dest, find, replace, maxReplacements);
 }
 
 std::vector<std::string> split(const std::string& value, const std::string& separator, bool keepEmpty)

@@ -129,8 +129,10 @@ std::string CamelCaseIdentifier(const std::string& name);
 namespace str
 {
 
-std::string& replace_str(std::string& dest, const std::string& find, const std::string& replace);
-std::string& replace_str(std::string&& dest, const std::string& find, const std::string& replace);
+std::string& replace_str(std::string& dest, const std::string& find, const std::string& replace,
+    unsigned maxReplacements=std::numeric_limits<unsigned>::max());
+std::string& replace_str(std::string&& dest, const std::string& find, const std::string& replace,
+    unsigned maxReplacements=std::numeric_limits<unsigned>::max());
 std::string join(const std::vector<std::string>& collection, const std::string& glue);
 std::vector<std::string> split(const std::string& value, const std::string& separator, bool keepEmpty=false);
 
