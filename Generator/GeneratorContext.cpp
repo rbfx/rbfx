@@ -111,12 +111,16 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
 {
     sourceDir_ = AddTrailingSlash(sourceDir);
 
-    IncludedChecker checker(rules_->GetRoot().Get("headers"));
+    auto parse = rules_->GetRoot().Get("parse");
+    assert(parse.IsObject());
 
-    auto parseFiles = [&](const String& subdir)
+    for (auto it = parse.Begin(); it != parse.End(); it++)
     {
+        auto baseSourceDir = AddTrailingSlash(sourceDir_ + it->first_);
+        IncludedChecker checker(it->second_);
+
         Vector<String> sourceFiles;
-        GetFileSystem()->ScanDir(sourceFiles, sourceDir_ + subdir, "", SCAN_FILES, true);
+        GetFileSystem()->ScanDir(sourceFiles, baseSourceDir, "", SCAN_FILES, true);
         Mutex m;
 
         auto workItem = [&](String absPath, String filePath) {
@@ -149,16 +153,13 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
             if (!checker.IsIncluded(filePath))
                 continue;
 
-            String absPath = sourceDir_ + subdir + filePath;
+            String absPath = baseSourceDir + filePath;
             GetWorkQueue()->AddWorkItem(std::bind(workItem, absPath, filePath));
         }
 
         GetWorkQueue()->Complete(0);
         SendEvent(E_ENDFRAME);            // Ensures log messages are displayed.
-    };
-
-    parseFiles("../ThirdParty/");
-    parseFiles("");
+    }
 
     return true;
 }

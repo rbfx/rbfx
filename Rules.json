@@ -1,45 +1,51 @@
 {
-  "headers": {
-    "include": [
-      "Math/MathDefs.h",
-      "Container/RefCounted.h",
-      "Core/Object.h",
-      "Core/Context.h",
-      "Core/Variant.h",
-      "Core/Attribute.h",
-      "Core/Profiler.h",
-      "Core/Spline.h",
-      "Core/Timer.h",
-      "Engine/*.h",
-      "IK/*.h",
-      "**/SDL/SDL_scancode.h",
-      "**/SDL/SDL_joystick.h",
-      "**/SDL/SDL_gamecontroller.h",
-      "**/SDL/SDL_keycode.h",
-      "**/SDL/SDL_mouse.h",
-      "Input/*.h",
-      "Scene/*.h",
-      "Audio/*.h",
-      "IO/*.h",
-      "Navigation/*.h",
-      "Network/*.h",
-      "Resource/*.h",
-      "UI/*.h",
-      "Graphics/*.h",
-      "Physics/*.h"
-    ],
-    "exclude": [
-      "IK/IKConverters.h",
-      "UI/FontFace*.h",
-      "Graphics/OctreeQuery.h",
-      "IO/FileWatcher.h",       // TODO: out parameters
-      "IO/MacFileWatcher.h",
-      "IO/MemoryBuffer.h",
-      "IO/NamedPipe.h",
-      "IO/RWOpsWrapper.h",
-      "IO/VectorBuffer.h",
-      "IO/FileSystem.h",
-    ]
+  "parse": {
+    "Urho3D": {
+      "include": [
+        "Math/MathDefs.h",
+        "Container/RefCounted.h",
+        "Core/Object.h",
+        "Core/Context.h",
+        "Core/Variant.h",
+        "Core/Attribute.h",
+        "Core/Profiler.h",
+        "Core/Spline.h",
+        "Core/Timer.h",
+        "Engine/*.h",
+        "IK/*.h",
+        "Input/*.h",
+        "Scene/*.h",
+        "Audio/*.h",
+        "IO/*.h",
+        "Navigation/*.h",
+        "Network/*.h",
+        "Resource/*.h",
+        "UI/*.h",
+        "Graphics/*.h",
+        "Physics/*.h"
+      ],
+      "exclude": [
+        "IK/IKConverters.h",
+        "UI/FontFace*.h",
+        "Graphics/OctreeQuery.h",
+        "IO/FileWatcher.h",       // TODO: out parameters
+        "IO/MacFileWatcher.h",
+        "IO/MemoryBuffer.h",
+        "IO/NamedPipe.h",
+        "IO/RWOpsWrapper.h",
+        "IO/VectorBuffer.h",
+        "IO/FileSystem.h",
+      ]
+    },
+    "ThirdParty/SDL/include": {
+      "include": [
+        "SDL/SDL_scancode.h",
+        "SDL/SDL_joystick.h",
+        "SDL/SDL_gamecontroller.h",
+        "SDL/SDL_keycode.h",
+        "SDL/SDL_mouse.h",
+      ]
+    }
   },
   "compiler": {
     "defines": [
