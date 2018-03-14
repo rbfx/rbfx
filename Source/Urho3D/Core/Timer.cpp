@@ -256,7 +256,7 @@ long long HiresTimer::GetUSec(bool reset)
 {
     long long currentTime = HiresTick();
 
-    long long elapsedTicks = currentTime - startTick_;
+    long long elapsedTicks = currentTime - startTime_;
 
     // Correct for possible weirdness with changing internal frequency
     if (elapsedTicks < 0)
@@ -270,7 +270,7 @@ long long HiresTimer::GetUSec(bool reset)
 
 long long HiresTimer::GetStartTime()
 {
-    return startTick_;
+    return startTime_;
 }
 
 void HiresTimer::SetTimeoutDuration(long long timeoutDurationUs, bool reset)
@@ -288,14 +288,14 @@ long long HiresTimer::GetTimeoutDuration()
 bool HiresTimer::IsTimedOut()
 {
     long long currentTick = HiresTick();
-    if (currentTick - startTick_ >= timeoutDurationTicks_ && (timeoutDurationTicks_ != 0))
+    if (currentTick - startTime_ >= timeoutDurationTicks_ && (timeoutDurationTicks_ != 0))
         return true;
     return false;
 }
 
 void HiresTimer::Reset()
 {
-    startTick_ = HiresTick();
+	startTime_ = HiresTick();
 }
 
 long long HiresTimer::TicksToUSec( long long ticks)
