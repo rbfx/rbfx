@@ -70,8 +70,13 @@ macro (CSHARP_BIND_TARGET TARGET RULES)
     list (APPEND GENERATOR_OPTIONS ${SOURCE_DIR})
     list (REMOVE_DUPLICATES GENERATOR_OPTIONS)
 
+	# Clear file
+	file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt "")
+	foreach (opt ${GENERATOR_OPTIONS})
+		file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt "${opt}\n")
+	endforeach ()
     add_custom_target(CSharpGenerateBindings
-        COMMAND $<TARGET_FILE:CSharpGenerator> ${GENERATOR_OPTIONS}
+        COMMAND $<TARGET_FILE:CSharpGenerator> ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt
         DEPENDS CSharpGenerator
     )
 

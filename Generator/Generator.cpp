@@ -20,10 +20,11 @@
 // THE SOFTWARE.
 //
 
+#include <fstream>
+#include <thread>
 #include <cppast/libclang_parser.hpp>
 #include <CLI11/CLI11.hpp>
 #include <Urho3D/Urho3DAll.h>
-#include <thread>
 #include "Pass/BuildMetaAST.h"
 #include "Pass/UnknownTypesPass.h"
 #include "Pass/CSharp/Urho3DTypeMaps.h"
@@ -64,6 +65,30 @@ int main(int argc, char* argv[])
     app.add_option("rules", rulesFile, "Path to rules xml file")->check(CLI::ExistingFile);
     app.add_option("source", sourceDir, "Path to source directory")->check(CLI::ExistingDirectory);
 
+    std::vector<std::string> cmdLines;
+    if (argc == 2)
+    {
+        std::ifstream infile(argv[1]);
+        std::string line;
+        while (std::getline(infile, line))
+        {
+            if (!line.empty())
+                cmdLines.push_back(line);
+        }
+
+        char** newArgv = new char*[cmdLines.size()];
+        auto newArgvStart = newArgv;
+        newArgv[0] = argv[0];
+        newArgv++;
+        for (const auto& ln : cmdLines)
+        {
+            *newArgv = (char*)ln.c_str();
+            newArgv++;
+        }
+        argv = newArgvStart;
+        argc = cmdLines.size() + 1;
+    }
+
     CLI11_PARSE(app, argc, argv);
 
     sourceDir = AddTrailingSlash(sourceDir);
@@ -85,7 +110,6 @@ int main(int argc, char* argv[])
     context->RegisterSubsystem(generator);
 
     generator->LoadCompileConfig(includes, defines, options);
-
 #if _WIN32
     generator->config_.set_flags(cppast::cpp_standard::cpp_11, {
         cppast::compile_flag::ms_compatibility | cppast::compile_flag::ms_extensions
