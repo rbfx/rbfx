@@ -41,6 +41,7 @@ enum CppEntityHints
     HintReadOnly = 1,
     HintIgnoreAstDefaultValue = 2,
     HintInterface = 4,
+    HintProperty = 8,
 };
 
 URHO3D_TO_FLAGS_ENUM(CppEntityHints);
@@ -158,6 +159,16 @@ struct MetaEntity : public RefCounted
             break;
         }
         return "";
+    }
+
+    MetaEntity* GetFirstParentOfKind(cppast::cpp_entity_kind kind)
+    {
+        MetaEntity* entity = this;
+        do
+        {
+            entity = entity->parent_;
+        } while (entity != nullptr && entity->kind_ != kind);
+        return entity;
     }
 
     cppast::cpp_entity_kind kind_ = cppast::cpp_entity_kind::file_t;

@@ -383,47 +383,84 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::member_variable_t)
     {
-        auto isFinal = !generator->inheritable_.IsIncluded(entity->parent_->symbolName_);
-        if (isFinal && entity->access_ != cppast::cpp_public)
-            return true;
-
-        const auto& var = entity->Ast<cppast::cpp_member_variable>();
-        auto* ns = entity->parent_.Get();
-
-        auto defaultValue = ConvertDefaultValueToCS(entity->GetDefaultValue(), var.type(), true);
-        bool isConstant = IsConst(var.type()) && !(entity->flags_ & HintReadOnly) && !defaultValue.empty();
-        auto csType = ToCSType(var.type());
-
-        auto name = entity->name_;
-        auto nsSymbol = Sanitize(ns->symbolName_);
-        auto constant = entity->flags_ & HintReadOnly ? "readonly" :
-                                           isConstant ? "const"    : "";
-
-        auto line = fmt::format("{access} {constant} {csType} {name}",
-            fmt::arg("access", entity->access_ == cppast::cpp_public? "public" : "protected"),
-            FMT_CAPTURE(constant), FMT_CAPTURE(csType), FMT_CAPTURE(name));
-
-        if (isConstant)
-            line += " = " + defaultValue + ";";
-        else
+        if (entity->flags_ & HintProperty)
         {
-            // A property with getters and setters
-            printer_ << line;
+            MetaEntity* getter = nullptr;
+            MetaEntity* setter = nullptr;
+            for (const auto& child : entity->children_)
+            {
+                if (child->name_ == "set")
+                    setter = child;
+                else
+                    getter = child;
+            }
+            assert(getter != nullptr);
+
+            const auto& getterFunc = getter->Ast<cppast::cpp_member_function>();
+            auto csType = ToCSType(getterFunc.return_type());
+
+            auto access = entity->access_ == cppast::cpp_public ? "public" : "protected";
+            printer_ << fmt::format("{access} {csType} {name}", FMT_CAPTURE(access), FMT_CAPTURE(csType),
+                fmt::arg("name", entity->name_));
             printer_.Indent();
             {
-                // Getter
-                auto call = MapToCS(var.type(), fmt::format("get_{nsSymbol}_{name}(instance_)",
-                    FMT_CAPTURE(nsSymbol), FMT_CAPTURE(name)));
-                printer_ << fmt::format("get {{ return {}; }}", call);
-                // Setter
-                if (!IsConst(var.type()) && !(entity->flags_ & HintReadOnly))
+                auto call = MapToCS(getterFunc.return_type(), fmt::format("{cFunction}(instance_)",
+                    fmt::arg("cFunction", getter->cFunctionName_)));
+                printer_ << fmt::format("get {{ return {call}; }}", FMT_CAPTURE(call));
+
+                if (setter != nullptr)
                 {
-                    auto value = MapToPInvoke(var.type(), "value");
-                    printer_ << fmt::format("set {{ set_{nsSymbol}_{name}(instance_, {value}); }}",
-                        FMT_CAPTURE(nsSymbol), FMT_CAPTURE(name), FMT_CAPTURE(value));
+                    auto value = MapToPInvoke(getterFunc.return_type(), "value");
+                    printer_ << fmt::format("set {{ {cFunction}(instance_, {value}); }}",
+                        fmt::arg("cFunction", setter->cFunctionName_), FMT_CAPTURE(value));
                 }
             }
             printer_.Dedent();
+            printer_ << "";
+        }
+        else
+        {
+            auto isFinal = !generator->inheritable_.IsIncluded(entity->parent_->symbolName_);
+            if (isFinal && entity->access_ != cppast::cpp_public)
+                return true;
+
+            const auto& var = entity->Ast<cppast::cpp_member_variable>();
+            auto* ns = entity->parent_.Get();
+
+            auto defaultValue = ConvertDefaultValueToCS(entity->GetDefaultValue(), var.type(), true);
+            bool isConstant = IsConst(var.type()) && !(entity->flags_ & HintReadOnly) && !defaultValue.empty();
+            auto csType = ToCSType(var.type());
+
+            auto name = entity->name_;
+            auto nsSymbol = Sanitize(ns->symbolName_);
+            auto constant = entity->flags_ & HintReadOnly ? "readonly" : isConstant ? "const" : "";
+
+            auto line = fmt::format("{access} {constant} {csType} {name}",
+                fmt::arg("access", entity->access_ == cppast::cpp_public ? "public" : "protected"),
+                FMT_CAPTURE(constant), FMT_CAPTURE(csType), FMT_CAPTURE(name));
+
+            if (isConstant)
+                line += " = " + defaultValue + ";";
+            else
+            {
+                // A property with getters and setters
+                printer_ << line;
+                printer_.Indent();
+                {
+                    // Getter
+                    auto call = MapToCS(var.type(),
+                        fmt::format("get_{nsSymbol}_{name}(instance_)", FMT_CAPTURE(nsSymbol), FMT_CAPTURE(name)));
+                    printer_ << fmt::format("get {{ return {}; }}", call);
+                    // Setter
+                    if (!IsConst(var.type()) && !(entity->flags_ & HintReadOnly))
+                    {
+                        auto value = MapToPInvoke(var.type(), "value");
+                        printer_ << fmt::format("set {{ set_{nsSymbol}_{name}(instance_, {value}); }}",
+                            FMT_CAPTURE(nsSymbol), FMT_CAPTURE(name), FMT_CAPTURE(value));
+                    }
+                }
+                printer_.Dedent();
+            }
         }
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::enum_value_t)

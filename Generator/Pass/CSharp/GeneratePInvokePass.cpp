@@ -45,6 +45,14 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
     const char* dllImport = "[DllImport(\"Urho3DCSharp\", CallingConvention = CallingConvention.Cdecl)]";
 
+    // Generate C API for property getters and seters. Visitor will not visit these notes on it's own.
+    if (entity->flags_ & HintProperty)
+    {
+        for (const auto& child : entity->children_)
+            Visit(child, info);
+        return true;
+    }
+
     if (entity->kind_ == cppast::cpp_entity_kind::namespace_t)
     {
         if (entity->children_.empty())

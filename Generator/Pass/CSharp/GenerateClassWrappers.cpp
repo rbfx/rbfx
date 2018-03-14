@@ -58,6 +58,9 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
     if (entity->ast_->kind() != cppast::cpp_entity_kind::class_t)
         return true;
 
+    if (entity->flags_ & HintProperty)
+        return true;
+
     // Visit only once
     if (info.event == info.container_entity_exit)
         return true;

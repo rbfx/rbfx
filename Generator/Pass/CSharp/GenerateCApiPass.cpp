@@ -46,6 +46,14 @@ void GenerateCApiPass::Start()
 
 bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
+    // Generate C API for property getters and seters. Visitor will not visit these notes on it's own.
+    if (entity->flags_ & HintProperty)
+    {
+        for (const auto& child : entity->children_)
+            Visit(child, info);
+        return true;
+    }
+
     // Visit entities just once
     if (info.event == info.container_entity_exit || entity->ast_ == nullptr || entity->name_.empty())
         return true;
@@ -119,7 +127,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         auto cFunction = entity->cFunctionName_;
         auto paramNames = ParameterNameList(func.parameters(), toCppType);
-        auto className = entity->access_ == cppast::cpp_public ? entity->parent_->symbolName_ : entity->parent_->sourceSymbolName_;
+        auto className = entity->GetFirstParentOfKind(cppast::cpp_entity_kind::class_t)->sourceSymbolName_;
 
         printer_ << fmt::format("URHO3D_EXPORT_API {rtype} {cFunction}({className}* instance{psep}{params})",
             fmt::arg("rtype", ToCType(func.return_type())), FMT_CAPTURE(cFunction), FMT_CAPTURE(className),
@@ -153,8 +161,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         if (func.is_virtual() && !isFinal)
         {
             printer_ << fmt::format("URHO3D_EXPORT_API void set_{name}_fn{cFunction}({className}* instance, void* fn)",
-                fmt::arg("name", Sanitize(entity->parent_->sourceSymbolName_)), FMT_CAPTURE(cFunction),
-                fmt::arg("className", entity->parent_->sourceSymbolName_));
+                fmt::arg("name", Sanitize(className)), FMT_CAPTURE(cFunction), FMT_CAPTURE(className));
             printer_.Indent();
             {
                 printer_ << fmt::format("instance->fn{cFunction} = (decltype(instance->fn{cFunction}))fn;",

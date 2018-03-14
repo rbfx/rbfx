@@ -59,6 +59,11 @@ void Urho3DCustomPass::Start()
         entity->defaultValue_ = "new Urho3D.IntVector2(MathDefs.M_MIN_INT, MathDefs.M_MIN_INT)";
         entity->flags_ |= HintReadOnly;
     }
+
+    // Fix name to property-compatible as this can be turned to a property.
+    if (generator->symbols_.TryGetValue("Urho3D::Menu::ShowPopup", entity))
+        entity->name_ = "GetShowPopup";
+
 }
 
 bool Urho3DCustomPass::Visit(MetaEntity* entity, cppast::visitor_info info)
