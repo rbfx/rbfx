@@ -57,9 +57,7 @@ public:
 
 private:
     /// Starting clock value in milliseconds.
-    unsigned startTime_;
-
-    /// clock value in milliseconds when the timer will time-out.
+    unsigned startTime_{};
     unsigned timeoutDuration_;
 };
 
@@ -107,7 +105,7 @@ public:
 
 private:
     /// Starting clock value in CPU ticks.
-    long long startTick_;
+    long long startTime_{};
 
     /// Clock ticks until the timer times-out.
     long long timeoutDurationTicks_;
