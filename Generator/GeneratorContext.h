@@ -23,9 +23,10 @@
 #pragma once
 
 
+#include <string>
+#include <unordered_map>
 #include <Urho3D/Math/MathDefs.h>
 #include <Urho3D/Container/Hash.h>
-#include <string>
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/IO/Log.h>
 #include <cppast/cpp_entity.hpp>
@@ -93,7 +94,7 @@ public:
     String outputDirCs_;
     SharedPtr<JSONFile> rules_;
     cppast::libclang_compile_config config_;
-    std::map<String, std::unique_ptr<cppast::cpp_file>> parsed_;
+    std::unordered_map<std::string, std::unique_ptr<cppast::cpp_file>> parsed_;
     Vector<SharedPtr<CppAstPass>> cppPasses_;
     Vector<SharedPtr<CppApiPass>> apiPasses_;
     SharedPtr<MetaEntity> apiRoot_;

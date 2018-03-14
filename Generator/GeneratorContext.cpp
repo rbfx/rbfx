@@ -136,7 +136,7 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
             else
             {
                 MutexLock scoped(m);
-                parsed_[absPath] = std::move(file);
+                parsed_[absPath.CString()] = std::move(file);
             }
 
             // Ensures log messages are displayed.

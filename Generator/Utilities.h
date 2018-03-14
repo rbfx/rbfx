@@ -23,6 +23,7 @@
 #pragma once
 
 
+#include <limits>
 #include <regex>
 #include <Urho3D/Container/Str.h>
 #include <cppast/cpp_entity.hpp>
@@ -30,6 +31,9 @@
 #include <cppast/cpp_type.hpp>
 #include <cppast/cpp_function.hpp>
 #include <cppast/cpp_member_function.hpp>
+
+#undef min
+#undef max
 
 
 namespace Urho3D
