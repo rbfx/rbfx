@@ -344,17 +344,33 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto* ns = entity->parent_.Get();
 
         auto defaultValue = ConvertDefaultValueToCS(entity->GetDefaultValue(), var.type(), true);
-        bool isConstant = IsConst(var.type()) && !(entity->flags_ & HintReadOnly) && !defaultValue.empty();
+        auto access = entity->access_ == cppast::cpp_public ? "public" : "protected";
         auto csType = ToCSType(var.type());
         auto name = entity->name_;
-        auto constant = entity->flags_ & HintReadOnly ? "static readonly" :
-                                           isConstant ? "const"           : "static";
-        auto access = entity->access_ == cppast::cpp_public ? "public" : "protected";
+        std::string constant;
+        if (defaultValue.empty())
+            // No default value means we will have to generate a property with a getter.
+            constant = "static";
+        else if (entity->flags_ & HintReadOnly)
+            // Explicitly requested to be readonly
+            constant = "static readonly";
+        else if (IsConst(var.type()))
+        {
+            if (GetBaseType(var.type()).kind() == cppast::cpp_type_kind::builtin_t)
+                // Builtin type constants with default value can be "const". It also implies "static".
+                constant = "const";
+            else
+                // Complex constant types with default values must be readonly.
+                constant = "static readonly";
+        }
+        else
+            // Anything else is simply static.
+            constant = "static";
 
         auto line = fmt::format("{access} {constant} {csType} {name}",
             FMT_CAPTURE(access), FMT_CAPTURE(constant), FMT_CAPTURE(csType), FMT_CAPTURE(name));
 
-        if (isConstant || entity->flags_ & HintReadOnly)
+        if (constant != "static")
         {
             line += " = " + defaultValue + ";";
             printer_ << line;

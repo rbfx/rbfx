@@ -4,6 +4,7 @@
       "include": [
         "Math/MathDefs.h",
         "Container/RefCounted.h",
+        "Core/CoreEvents.h",
         "Core/Object.h",
         "Core/Context.h",
         "Core/Variant.h",
