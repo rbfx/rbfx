@@ -25,12 +25,7 @@ namespace CSharp
         internal NativeObject(IntPtr instance)
         {
             if (instance != IntPtr.Zero)
-            {
                 instance_ = instance;
-                // This method does not depend on any internal state therefore calling it while most derived constructor
-                // has not run yet is OK.
-                SetupInstance(instance);
-            }
         }
 
         internal NativeObject()
