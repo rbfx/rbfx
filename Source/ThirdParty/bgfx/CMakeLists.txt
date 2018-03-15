@@ -32,14 +32,23 @@ file (GLOB_RECURSE SOURCE_FILES
     3rdparty/ib-compress/*.h
 )
 list (REMOVE_ITEM SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/amalgamated.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/amalgamated.mm)
-add_library(bgfx STATIC ${SOURCE_FILES})
-target_link_libraries(bgfx bimg)
+add_library(bgfx OBJECT ${SOURCE_FILES})
+target_link_objects(bgfx bx bimg)
 
 if (WIN32)
-    target_link_libraries(bgfx dbghelp psapi)
+    target_link_objects (bgfx opengl32 dbghelp psapi)
+else ()
+    if (ANDROID OR ARM)
+        target_link_libraries (bgfx GLESv1_CM GLESv2)
+    else ()
+        target_link_objects (bgfx GL)
+        if (LINUX)
+            target_link_objects (bgfx X11)
+        endif ()
+    endif ()
 endif ()
 
-target_include_directories(bgfx PUBLIC include
+target_include_directories(bgfx PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE
     3rdparty
     3rdparty/dxsdk/include
@@ -47,14 +56,14 @@ target_include_directories(bgfx PUBLIC include
     3rdparty/khronos
 )
 
-install (DIRECTORY include/bgfx/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/bgfx FILES_MATCHING PATTERN *.h)
-install_to_build_tree(bgfx)
+add_library(bgfx-static STATIC $<TARGET_OBJECTS:bx> $<TARGET_OBJECTS:bimg> $<TARGET_OBJECTS:bgfx>)
+target_link_objects(bgfx-static bx bimg bgfx)
 
 # Tools
 
 # geometryc
 add_executable(geometryc tools/geometryc/geometryc.cpp examples/common/bounds.cpp)
-target_link_libraries(geometryc bgfx ${CMAKE_DL_LIBS})
+target_link_libraries(geometryc bgfx-static ${CMAKE_DL_LIBS})
 target_include_directories(geometryc PRIVATE 3rdparty examples/common)
 set_target_properties(geometryc PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
 if (EXISTS $<TARGET_FILE:geometryc>)
@@ -83,7 +92,7 @@ else ()
 endif ()
 add_library(glslang STATIC ${GLSL_LANG_SOURCE_FILES})
 target_compile_options(glslang PRIVATE -DENABLE_HLSL=1)
-target_include_directories(glslang PUBLIC 3rdparty/glslang)
+target_include_directories(glslang PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/glslang>)
 if (MSVC)
     target_compile_options(glslang PRIVATE
         /wd4005    # warning C4005: '_CRT_SECURE_NO_WARNINGS': macro redefinition
@@ -167,7 +176,7 @@ endif ()
 
 file (GLOB SHADERC_SOURCE_FILES tools/shaderc/*.cpp)
 add_executable(shaderc ${SHADERC_SOURCE_FILES})
-target_link_libraries(shaderc glsl-optimizer glslang bgfx ${CMAKE_DL_LIBS})
+target_link_libraries(shaderc glsl-optimizer glslang bgfx-static ${CMAKE_DL_LIBS})
 if (UNIX)
     target_link_libraries(shaderc pthread)
 endif ()

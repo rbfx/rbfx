@@ -17,8 +17,8 @@ BX_PRAGMA_DIAGNOSTIC_PUSH();
 BX_PRAGMA_DIAGNOSTIC_IGNORED_MSVC(4100) // warning C4100: 'alloc_context': unreferenced formal parameter
 BX_PRAGMA_DIAGNOSTIC_IGNORED_MSVC(4702) // warning C4702: unreachable code
 BX_PRAGMA_DIAGNOSTIC_IGNORED_CLANG_GCC("-Wunused-parameter") // warning: unused parameter ‘alloc_context’ [-Wunused-parameter]
-#define STB_IMAGE_RESIZE_IMPLEMENTATION
-#include <stb/stb_image_resize.h>
+// Urho3D fix
+#include <STB/stb_image_resize.h>
 BX_PRAGMA_DIAGNOSTIC_POP();
 
 extern "C" {

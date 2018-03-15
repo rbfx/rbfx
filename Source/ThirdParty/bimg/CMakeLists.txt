@@ -21,14 +21,11 @@
 #
 
 file (GLOB_RECURSE SOURCE_FILES src/*.cpp src/*.h include/*.h 3rdparty/*.c 3rdparty/*.cpp 3rdparty/*.h 3rdparty/*.hpp)
-add_library(bimg STATIC ${SOURCE_FILES})
-target_link_libraries(bimg bx)
-target_include_directories(bimg PUBLIC include
+add_library(bimg OBJECT ${SOURCE_FILES})
+target_link_objects(bimg bx STB)
+target_include_directories(bimg PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE
     3rdparty
     3rdparty/iqa/include
     3rdparty/nvtt
 )
-
-install (DIRECTORY include/bimg/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/bimg FILES_MATCHING PATTERN *.h)
-install_to_build_tree(bimg)
