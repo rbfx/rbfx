@@ -59,7 +59,8 @@ void Editor::Setup()
 #endif
 
     engineResourceAutoloadPaths_ = {"Autoload"};
-    engineResourcePrefixPaths_ = {GetFileSystem()->GetProgramDir(), GetParentPath(GetFileSystem()->GetProgramDir())};
+    engineResourcePrefixPaths_ = {GetFileSystem()->GetProgramDir(), GetParentPath(GetFileSystem()->GetProgramDir()), 
+        GetParentPath(GetParentPath(GetFileSystem()->GetProgramDir())) };
     engineResourcePaths_ = {"Cache", "CoreData", "EditorData"};
 
     engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
