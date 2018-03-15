@@ -137,7 +137,7 @@ bool ShaderVariation::Create()
                             unit = NumberPostfix(name);
 
                         if (unit < MAX_TEXTURE_UNITS)
-                            useTextureUnit_[unit] = true;
+                            useTextureUnits_[unit] = true;
                     }
 
                     ShaderParameter parameter;
@@ -201,7 +201,7 @@ void ShaderVariation::Release()
     compilerOutput_.Clear();
 
     for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
-        useTextureUnit_[i] = false;
+        useTextureUnits_[i] = false;
     parameters_.Clear();
     byteCode_.Clear();
     elementHash_ = 0;

@@ -128,7 +128,7 @@ unsigned Texture::GetDSVFormat(unsigned format)
 unsigned Texture::GetBGFXFlags()
 {
     unsigned flags = 0;
-    flags |= bgfxWrapU[addressMode_[0]] | bgfxWrapV[addressMode_[1]] | bgfxWrapW[addressMode_[2]] | bgfxFilterMode[filterMode_];
+    flags |= bgfxWrapU[addressModes_[0]] | bgfxWrapV[addressModes_[1]] | bgfxWrapW[addressModes_[2]] | bgfxFilterMode[filterMode_];
     if (sRGB_)
         flags |= BGFX_TEXTURE_SRGB;
     if ((usage_ == TEXTURE_RENDERTARGET) || (usage_ == TEXTURE_DEPTHSTENCIL))
