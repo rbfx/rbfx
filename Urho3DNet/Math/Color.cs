@@ -74,19 +74,19 @@ namespace Urho3D
         /// Test for equality with another color without epsilon.
         public static bool operator ==(Color lhs, Color rhs)
         {
-            return MathDefs.ApproximatelyEqualEpsilon(lhs.R, rhs.R, MathDefs.M_EPSILON) &&
-                   MathDefs.ApproximatelyEqualEpsilon(lhs.G, rhs.G, MathDefs.M_EPSILON) &&
-                   MathDefs.ApproximatelyEqualEpsilon(lhs.B, rhs.B, MathDefs.M_EPSILON) &&
-                   MathDefs.ApproximatelyEqualEpsilon(lhs.A, rhs.A, MathDefs.M_EPSILON);
+            return MathDefs.Equals(lhs.R, rhs.R) &&
+                   MathDefs.Equals(lhs.G, rhs.G) &&
+                   MathDefs.Equals(lhs.B, rhs.B) &&
+                   MathDefs.Equals(lhs.A, rhs.A);
         }
 
         /// Test for inequality with another color without epsilon.
         public static bool operator !=(Color lhs, Color rhs)
         {
-            return !MathDefs.ApproximatelyEqualEpsilon(lhs.R, rhs.R, MathDefs.M_EPSILON) ||
-                   !MathDefs.ApproximatelyEqualEpsilon(lhs.G, rhs.G, MathDefs.M_EPSILON) ||
-                   !MathDefs.ApproximatelyEqualEpsilon(lhs.B, rhs.B, MathDefs.M_EPSILON) ||
-                   !MathDefs.ApproximatelyEqualEpsilon(lhs.A, rhs.A, MathDefs.M_EPSILON);
+            return !MathDefs.Equals(lhs.R, rhs.R) ||
+                   !MathDefs.Equals(lhs.G, rhs.G) ||
+                   !MathDefs.Equals(lhs.B, rhs.B) ||
+                   !MathDefs.Equals(lhs.A, rhs.A);
         }
 
         /// Multiply with a scalar.
@@ -360,10 +360,10 @@ namespace Urho3D
         /// Test for equality with another color with epsilon.
         public bool Equals(Color obj)
         {
-            return MathDefs.ApproximatelyEqualEpsilon(R, obj.R, MathDefs.M_EPSILON) &&
-                   MathDefs.ApproximatelyEqualEpsilon(G, obj.G, MathDefs.M_EPSILON) &&
-                   MathDefs.ApproximatelyEqualEpsilon(B, obj.B, MathDefs.M_EPSILON) &&
-                   MathDefs.ApproximatelyEqualEpsilon(A, obj.A, MathDefs.M_EPSILON);
+            return MathDefs.Equals(R, obj.R) &&
+                   MathDefs.Equals(G, obj.G) &&
+                   MathDefs.Equals(B, obj.B) &&
+                   MathDefs.Equals(A, obj.A);
         }
 
         /// Test for equality with another color with epsilon.
@@ -406,9 +406,9 @@ namespace Urho3D
                 return 0.0f;
 
             // Calculate and return hue
-            if (MathDefs.ApproximatelyEqualEpsilon(G, max, MathDefs.M_EPSILON))
+            if (MathDefs.Equals(G, max))
                 return (B + 2.0f * chroma - R) / (6.0f * chroma);
-            else if (MathDefs.ApproximatelyEqualEpsilon(B, max, MathDefs.M_EPSILON))
+            else if (MathDefs.Equals(B, max))
                 return (4.0f * chroma - G + R) / (6.0f * chroma);
             else
             {

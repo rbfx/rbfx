@@ -348,7 +348,7 @@ namespace Urho3D
         /// <param name="epsilon">The maximum error between the two.</param>
         /// <returns><value>true</value> if the values are approximately equal within the error margin; otherwise, <value>false</value>.</returns>
         [SuppressMessage("ReSharper", "CompareOfFloatsByEqualityOperator")]
-        public static bool ApproximatelyEqualEpsilon(double a, double b, double epsilon)
+        public static bool Equals(double a, double b, double epsilon=M_EPSILON)
         {
             const double doubleNormal = (1L << 52) * double.Epsilon;
             double absA = Math.Abs(a);
@@ -381,7 +381,7 @@ namespace Urho3D
         /// <param name="epsilon">The maximum error between the two.</param>
         /// <returns><value>true</value> if the values are approximately equal within the error margin; otherwise, <value>false</value>.</returns>
         [SuppressMessage("ReSharper", "CompareOfFloatsByEqualityOperator")]
-        public static bool ApproximatelyEqualEpsilon(float a, float b, float epsilon)
+        public static bool Equals(float a, float b, float epsilon=M_EPSILON)
         {
             const float floatNormal = (1 << 23) * float.Epsilon;
             float absA = Math.Abs(a);
