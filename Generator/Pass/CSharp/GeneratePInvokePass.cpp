@@ -130,6 +130,12 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_ << fmt::format("internal {}static {} __FromPInvoke(IntPtr source)", newTag, entity->name_);
             printer_.Indent();
             {
+                printer_ << "if (source == IntPtr.Zero)";
+                printer_.Indent();
+                {
+                    printer_ << "return null;";
+                }
+                printer_.Dedent();
                 printer_ << fmt::format("return InstanceCache.GetOrAdd<{className}>(source, ptr => new {className}(ptr));",
                     fmt::arg("className", entity->name_));
             }
