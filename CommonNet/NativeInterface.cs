@@ -6,6 +6,7 @@ using Urho3D;
 namespace CSharp
 {
     internal delegate void CSharp_FreeGCHandle(IntPtr handle);
+    internal delegate IntPtr CSharp_CloneGCHandle(IntPtr handle);
     internal delegate IntPtr CSharp_CreateObject(IntPtr context, uint managedType);
 
     [StructLayout(LayoutKind.Sequential)]
@@ -13,6 +14,8 @@ namespace CSharp
     {
         [MarshalAs(UnmanagedType.FunctionPtr)]
         internal CSharp_FreeGCHandle FreeGcHandle;
+        [MarshalAs(UnmanagedType.FunctionPtr)]
+        internal CSharp_CloneGCHandle CloneGcHandle;
         [MarshalAs(UnmanagedType.FunctionPtr)]
         internal CSharp_CreateObject CreateObject;
     }
@@ -75,8 +78,13 @@ namespace CSharp
             _api.FreeGcHandle = ptr =>
             {
                 var handle = GCHandle.FromIntPtr(ptr);
-                ((IDisposable) handle.Target)?.Dispose(); // Just in case
+                (handle.Target as IDisposable)?.Dispose(); // Just in case
                 handle.Free();
+            };
+            _api.CloneGcHandle = ptr =>
+            {
+                var handle = GCHandle.FromIntPtr(ptr);
+                return GCHandle.ToIntPtr(GCHandle.Alloc(handle.Target));
             };
             _api.CreateObject = (contextPtr, managedType) =>
             {

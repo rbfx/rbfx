@@ -6,6 +6,7 @@
 struct ManagedInterface
 {
     void(*FreeGCHandle)(void* gcHandle);
+    void*(*CloneGCHandle)(void* gcHandle);
     Object*(*CreateObject)(Context* context, unsigned managedType);
 };
 
