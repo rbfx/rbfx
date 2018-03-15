@@ -329,6 +329,9 @@ typedef DWORD clockid_t;
 #endif
 
 // Urho3D - use CMake auto-detection to avoid hard-coding the exceptional cases
+#if defined(_MSC_VER) && (_MSC_VER >= 1900)
+#define _TIMESPEC_DEFINED
+#endif
 #ifndef _TIMESPEC_DEFINED
 struct timespec {
 	time_t tv_sec; /* seconds */

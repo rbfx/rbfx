@@ -60,15 +60,8 @@ using namespace Urho3D;
 
 struct OutModel
 {
-    OutModel() :
-        rootBone_(nullptr),
-        totalVertices_(0),
-        totalIndices_(0)
-    {
-    }
-
     String outName_;
-    aiNode* rootNode_;
+    aiNode* rootNode_{};
     HashSet<unsigned> meshIndices_;
     PODVector<aiMesh*> meshes_;
     PODVector<aiNode*> meshNodes_;
@@ -77,15 +70,15 @@ struct OutModel
     PODVector<aiAnimation*> animations_;
     PODVector<float> boneRadii_;
     PODVector<BoundingBox> boneHitboxes_;
-    aiNode* rootBone_;
-    unsigned totalVertices_;
-    unsigned totalIndices_;
+    aiNode* rootBone_{};
+    unsigned totalVertices_{};
+    unsigned totalIndices_{};
 };
 
 struct OutScene
 {
     String outName_;
-    aiNode* rootNode_;
+    aiNode* rootNode_{};
     Vector<OutModel> models_;
     PODVector<aiNode*> nodes_;
     PODVector<unsigned> nodeModelIndices_;
@@ -1270,10 +1263,18 @@ void BuildAndSaveAnimations(OutModel* model)
 
         if (animName.Empty())
             animName = "Anim" + String(i + 1);
-        if (model)
-            animOutName = GetPath(model->outName_) + GetFileName(model->outName_) + "_" + SanitateAssetName(animName) + ".ani";
+
+        String outName = model ? model->outName_ : outName_;
+
+        if (context_->GetFileSystem()->DirExists(outName))
+        {
+            animName = SanitateAssetName(animName);
+            outName = AddTrailingSlash(outName);
+        }
         else
-            animOutName = outPath_ + GetFileName(outName_) + "_" + SanitateAssetName(animName) + ".ani";
+            animName = GetFileName(outName) + "_" + SanitateAssetName(animName);
+
+        animOutName = GetPath(outName) + animName + ".ani";
 
         auto ticksPerSecond = (float)anim->mTicksPerSecond;
         // If ticks per second not specified, it's probably a .X file. In this case use the default tick rate
@@ -1695,7 +1696,9 @@ void BuildAndSaveScene(OutScene& scene, bool asPrefab)
     {
         const OutModel& model = scene.models_[scene.nodeModelIndices_[i]];
         Node* modelNode = CreateSceneNode(outScene, scene.nodes_[i], nodeMapping);
-        StaticModel* staticModel = model.bones_.Empty() ? modelNode->CreateComponent<StaticModel>() : modelNode->CreateComponent<AnimatedModel>();
+        auto* staticModel =
+            static_cast<StaticModel*>(
+                model.bones_.Empty() ? modelNode->CreateComponent<StaticModel>() : modelNode->CreateComponent<AnimatedModel>());
 
         // Create a dummy model so that the reference can be stored
         String modelName = (useSubdirs_ ? "Models/" : "") + GetFileNameAndExtension(model.outName_);

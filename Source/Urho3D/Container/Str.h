@@ -27,6 +27,7 @@
 #include <cstdarg>
 #include <cstring>
 #include <cctype>
+#include <string>
 
 namespace Urho3D
 {
@@ -86,6 +87,24 @@ public:
     {
         Resize(length);
         CopyChars(buffer_, str, length);
+    }
+
+    /// Construct from std::string.
+    String(const std::string& str) :
+        length_(0),
+        capacity_(0),
+        buffer_(&endZero)
+    {
+        *this = str.c_str();
+    }
+
+    /// Construct from std::wstring.
+    String(const std::wstring& str) :
+        length_(0),
+        capacity_(0),
+        buffer_(&endZero)
+    {
+        SetUTF8FromWChar(str.c_str());
     }
 
     /// Construct from a null-terminated wide character array.
@@ -373,7 +392,7 @@ public:
     /// Return a substring with length from position.
     String Substring(unsigned pos, unsigned length) const;
     /// Return string with whitespace trimmed from the beginning and the end.
-    String Trimmed() const;
+    String Trimmed(const String& chars=" \t\r\n") const;
     /// Return string in uppercase.
     String ToUpper() const;
     /// Return string in lowercase.

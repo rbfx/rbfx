@@ -91,7 +91,7 @@ bool Gizmo::Manipulate(const Camera* camera, const Vector<WeakPtr<Node>>& nodes)
     }
 
     // Enums are compatible.
-    ImGuizmo::OPERATION operation = static_cast<ImGuizmo::OPERATION>(operation_);
+    auto operation = static_cast<ImGuizmo::OPERATION>(operation_);
     ImGuizmo::MODE mode = ImGuizmo::WORLD;
     // Scaling only works in local space. Multiselections only work in world space.
     if (transformSpace_ == TS_LOCAL)

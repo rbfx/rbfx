@@ -38,6 +38,11 @@
 #include "../UI/Text.h"
 #include "../UI/UI.h"
 
+#ifdef _WIN32
+#include "../Engine/Engine.h"
+#endif
+
+
 #include <SDL/SDL.h>
 
 #ifdef __EMSCRIPTEN__
@@ -141,7 +146,7 @@ MouseMode EmscriptenInput::invalidatedRequestedMouseMode_ = MM_INVALID;
 EmscriptenInput::EmscriptenInput(Input* inputInst) :
     inputInst_(inputInst)
 {
-    void* vInputInst = (void*)inputInst;
+    auto* vInputInst = (void*)inputInst;
 
     // Handle pointer lock
     emscripten_set_pointerlockchange_callback(NULL, vInputInst, false, EmscriptenInput::HandlePointerLockChange);
@@ -195,7 +200,7 @@ bool EmscriptenInput::IsVisible()
 
 EM_BOOL EmscriptenInput::HandlePointerLockChange(int eventType, const EmscriptenPointerlockChangeEvent* keyEvent, void* userData)
 {
-    Input* const inputInst = (Input*)userData;
+    auto* const inputInst = (Input*)userData;
 
     bool invalid = false;
     const bool suppress = suppressMouseModeEvent_;
@@ -251,7 +256,7 @@ EM_BOOL EmscriptenInput::HandlePointerLockChange(int eventType, const Emscripten
 
 EM_BOOL EmscriptenInput::HandleFocusChange(int eventType, const EmscriptenFocusEvent* keyEvent, void* userData)
 {
-    Input* const inputInst = (Input*)userData;
+    auto* const inputInst = (Input*)userData;
 
     inputInst->SuppressNextMouseMove();
 
@@ -266,7 +271,7 @@ EM_BOOL EmscriptenInput::HandleFocusChange(int eventType, const EmscriptenFocusE
 EM_BOOL EmscriptenInput::HandleMouseJump(int eventType, const EmscriptenMouseEvent * mouseEvent, void* userData)
 {
     // Suppress mouse jump on pointer-lock change
-    Input* const inputInst = (Input*)userData;
+    auto* const inputInst = (Input*)userData;
     bool suppress = false;
     if (eventType == EMSCRIPTEN_EVENT_MOUSEDOWN && inputInst->emscriptenEnteredPointerLock_)
     {
@@ -286,13 +291,39 @@ EM_BOOL EmscriptenInput::HandleMouseJump(int eventType, const EmscriptenMouseEve
 
 int EmscriptenInput::HandleSDLEvents(void* userData, SDL_Event* event)
 {
-    Input* const inputInst = (Input*)userData;
+    auto* const inputInst = (Input*)userData;
 
     inputInst->HandleSDLEvent(event);
 
     return 0;
 }
 
+#endif
+
+#ifdef _WIN32
+// On Windows repaint while the window is actively being resized.
+int Win32_ResizingEventWatcher(void* data, SDL_Event* event)
+{
+    if (event->type == SDL_WINDOWEVENT && event->window.event == SDL_WINDOWEVENT_RESIZED)
+    {
+        SDL_Window* win = SDL_GetWindowFromID(event->window.windowID);
+        if (win == (SDL_Window*)data)
+        {
+            if (auto* ctx = (Context*)SDL_GetWindowData(win, "URHO3D_CONTEXT"))
+            {
+                if (auto* graphics = ctx->GetSubsystem<Graphics>())
+                {
+                    if (graphics->IsInitialized())
+                    {
+                        graphics->OnWindowResized();
+                        ctx->GetSubsystem<Engine>()->RunFrame();
+                    }
+                }
+            }
+        }
+    }
+    return 0;
+}
 #endif
 
 void JoystickState::Initialize(unsigned numButtons, unsigned numAxes, unsigned numHats)
@@ -322,6 +353,8 @@ Input::Input(Context* context) :
     Object(context),
     mouseButtonDown_(0),
     mouseButtonPress_(0),
+    mouseButtonClick_(0),
+    mousePressPosition_(MOUSE_POSITION_OFFSCREEN),
     lastVisibleMousePosition_(MOUSE_POSITION_OFFSCREEN),
     mouseMoveWheel_(0),
     inputScale_(Vector2::ONE),
@@ -1328,6 +1361,11 @@ bool Input::GetMouseButtonPress(int button) const
     return (mouseButtonPress_ & button) != 0;
 }
 
+bool Input::GetMouseButtonClick(int button) const
+{
+    return (mouseButtonClick_ & button) != 0;
+}
+
 bool Input::GetQualifierDown(int qualifier) const
 {
     if (qualifier == QUAL_SHIFT)
@@ -1510,6 +1548,15 @@ void Input::Initialize()
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Input, HandleEndFrame));
 #endif
 
+#ifdef _WIN32
+    // Register callback for resizing in order to repaint.
+    if (SDL_Window* window = graphics_->GetWindow())
+    {
+        SDL_SetWindowData(window, "URHO3D_CONTEXT", GetContext());
+        SDL_AddEventWatch(Win32_ResizingEventWatcher, window);
+    }
+#endif
+
     URHO3D_LOGINFO("Initialized input");
 }
 
@@ -1529,6 +1576,7 @@ void Input::ResetInputAccumulation()
     keyPress_.Clear();
     scancodePress_.Clear();
     mouseButtonPress_ = 0;
+    mouseButtonClick_ = 0;
     mouseMove_ = IntVector2::ZERO;
     mouseMoveWheel_ = 0;
     for (HashMap<SDL_JoystickID, JoystickState>::Iterator i = joysticks_.Begin(); i != joysticks_.End(); ++i)
@@ -1611,6 +1659,7 @@ void Input::ResetState()
     mouseMove_ = IntVector2::ZERO;
     mouseMoveWheel_ = 0;
     mouseButtonPress_ = 0;
+    mouseButtonClick_ = 0;
 }
 
 void Input::ResetTouches()
@@ -1710,9 +1759,14 @@ void Input::SetMouseButton(int button, bool newState)
             mouseButtonPress_ |= button;
 
         mouseButtonDown_ |= button;
+        mousePressTimer_.Reset();
+        mousePressPosition_ = GetMousePosition();
     }
     else
     {
+        if (mousePressTimer_.GetMSec(false) < 250 && mousePressPosition_ == GetMousePosition())
+            mouseButtonClick_ |= button;
+
         if (!(mouseButtonDown_ & button))
             return;
 

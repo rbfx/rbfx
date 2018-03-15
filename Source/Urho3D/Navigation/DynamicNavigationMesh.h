@@ -47,12 +47,12 @@ class URHO3D_API DynamicNavigationMesh : public NavigationMesh
 
 public:
     /// Constructor.
-    explicit DynamicNavigationMesh(Context*);
+    explicit DynamicNavigationMesh(Context* context);
     /// Destructor.
     ~DynamicNavigationMesh() override;
 
     /// Register with engine context.
-    static void RegisterObject(Context*);
+    static void RegisterObject(Context* context);
 
     /// Allocate the navigation mesh without building any tiles. Bounding box is not padded. Return true if successful.
     bool Allocate(const BoundingBox& boundingBox, unsigned maxTiles) override;
@@ -111,7 +111,7 @@ protected:
     /// Used by Obstacle class to update itself.
     void ObstacleChanged(Obstacle* obstacle);
     /// Used by Obstacle class to remove itself from the tile cache, if 'silent' an event will not be raised.
-    void RemoveObstacle(Obstacle*, bool silent = false);
+    void RemoveObstacle(Obstacle* obstacle, bool silent = false);
 
     /// Build one tile of the navigation mesh. Return true if successful.
     int BuildTile(Vector<NavigationGeometryInfo>& geometryList, int x, int z, TileCacheData* tiles);
@@ -131,7 +131,7 @@ private:
     void ReleaseTileCache();
 
     /// Detour tile cache instance that works with the nav mesh.
-    dtTileCache* tileCache_;
+    dtTileCache* tileCache_{};
     /// Used by dtTileCache to allocate blocks of memory.
     UniquePtr<dtTileCacheAlloc> allocator_;
     /// Used by dtTileCache to compress the original tiles to use when reconstructing for changes.
@@ -139,11 +139,11 @@ private:
     /// Mesh processor used by Detour, in this case a 'pass-through' processor.
     UniquePtr<dtTileCacheMeshProcess> meshProcessor_;
     /// Maximum number of obstacle objects allowed.
-    unsigned maxObstacles_;
+    unsigned maxObstacles_{1024};
     /// Maximum number of layers that are allowed to be constructed.
-    unsigned maxLayers_;
+    unsigned maxLayers_{};
     /// Debug draw Obstacles.
-    bool drawObstacles_;
+    bool drawObstacles_{};
     /// Queue of tiles to be built.
     PODVector<IntVector2> tileQueue_;
 };

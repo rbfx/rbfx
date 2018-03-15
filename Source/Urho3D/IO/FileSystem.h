@@ -128,9 +128,9 @@ private:
     /// Async execution queue.
     List<AsyncExecRequest*> asyncExecQueue_;
     /// Next async execution ID.
-    unsigned nextAsyncExecID_;
+    unsigned nextAsyncExecID_{1};
     /// Flag for executing engine console commands as OS-specific system command. Default to true.
-    bool executeConsoleCommands_;
+    bool executeConsoleCommands_{};
 };
 
 /// Split a full path to path, filename and extension. The extension will be converted to lowercase by default.
@@ -167,5 +167,7 @@ URHO3D_API String GetSanitizedPath(const String& path);
 /// Given two absolute directory paths, get the relative path from one to the other
 /// Returns false if either path isn't absolute, or if they are unrelated
 URHO3D_API bool GetRelativePath(const String& fromPath, const String& toPath, String& output);
+/// Convert relative path to full path.
+URHO3D_API String GetAbsolutePath(const String& path);
 
 }

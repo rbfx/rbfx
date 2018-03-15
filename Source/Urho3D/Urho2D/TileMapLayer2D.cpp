@@ -37,10 +37,7 @@ namespace Urho3D
 {
 
 TileMapLayer2D::TileMapLayer2D(Context* context) :
-    Component(context),
-    tmxLayer_(nullptr),
-    drawOrder_(0),
-    visible_(true)
+    Component(context)
 {
 }
 
@@ -360,6 +357,7 @@ void TileMapLayer2D::SetTileLayer(const TmxTileLayer2D* tileLayer)
 
             auto* staticSprite = tileNode->CreateComponent<StaticSprite2D>();
             staticSprite->SetSprite(tile->GetSprite());
+            staticSprite->SetFlip(tile->GetFlipX(), tile->GetFlipY(), tile->GetSwapXY());
             staticSprite->SetLayer(drawOrder_);
             staticSprite->SetOrderInLayer(y * width + x);
 
@@ -388,6 +386,7 @@ void TileMapLayer2D::SetObjectGroup(const TmxObjectGroup2D* objectGroup)
         {
             auto* staticSprite = objectNode->CreateComponent<StaticSprite2D>();
             staticSprite->SetSprite(object->GetTileSprite());
+            staticSprite->SetFlip(object->GetTileFlipX(), object->GetTileFlipY(), object->GetTileSwapXY());
             staticSprite->SetLayer(drawOrder_);
             staticSprite->SetOrderInLayer((int)((10.0f - object->GetPosition().y_) * 100));
 

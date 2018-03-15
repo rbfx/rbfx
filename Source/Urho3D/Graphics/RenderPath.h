@@ -22,6 +22,8 @@
 
 #pragma once
 
+
+#include "../Core/Variant.h"
 #include "../Container/Ptr.h"
 #include "../Container/RefCounted.h"
 #include "../Graphics/GraphicsDefs.h"

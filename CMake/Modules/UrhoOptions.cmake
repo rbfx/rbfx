@@ -44,8 +44,8 @@ endif ()
 
 if (ANDROID OR IOS)
     set (MOBILE ON)
-elseif (APPLE)
-    set (MACOS ON)
+elseif (APPLE OR "${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
+    set (APPLE ON)
 endif ()
 
 if (WIN32 OR LINUX OR MACOS)

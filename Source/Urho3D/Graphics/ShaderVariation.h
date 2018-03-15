@@ -38,15 +38,18 @@ class Shader;
 struct ShaderParameter
 {
     /// Construct with defaults.
-    ShaderParameter() :
-        bufferPtr_(nullptr)
-    {
-    }
+    ShaderParameter() = default;
+    /// Construct with name, glType and location, leaving the remaining attributes zero-initialized (used only in OpenGL).
+    ShaderParameter(const String& name, unsigned glType, int location);
+    /// Construct with type, name, offset, size, and buffer, leaving the remaining attributes zero-initialized (used only in Direct3D11).
+    ShaderParameter(ShaderType type, const String& name, unsigned offset, unsigned size, unsigned buffer);
+    /// Construct with type, name, register, and register count, leaving the remaining attributes zero-initialized (used only in Direct3D9).
+    ShaderParameter(ShaderType type, const String& name, unsigned reg, unsigned regCount);
 
     /// %Shader type.
-    ShaderType type_;
+    ShaderType type_{};
     /// Name of the parameter.
-    String name_;
+    String name_{};
 
     union
     {
@@ -75,12 +78,12 @@ struct ShaderParameter
 	union
 	{
 		/// Constant buffer index. Only used on Direct3D11.
-		unsigned buffer_;
+        unsigned buffer_;
 		/// Texture unit of sampler. Only used on BGFX.
 		unsigned texUnit_;
 	};
     /// Constant buffer pointer. Defined only in shader programs.
-    ConstantBuffer* bufferPtr_;
+    ConstantBuffer* bufferPtr_{};
 };
 
 /// Vertex or pixel shader on the GPU.
@@ -163,13 +166,13 @@ private:
     /// Shader type.
     ShaderType type_;
     /// Vertex element hash for vertex shaders. Zero for pixel shaders. Note that hashing is different than vertex buffers.
-    unsigned long long elementHash_;
+    unsigned long long elementHash_{};
     /// Shader parameters.
     HashMap<StringHash, ShaderParameter> parameters_;
     /// Texture unit use flags.
-    bool useTextureUnits_[MAX_TEXTURE_UNITS];
+    bool useTextureUnits_[MAX_TEXTURE_UNITS]{};
     /// Constant buffer sizes. 0 if a constant buffer slot is not in use.
-    unsigned constantBufferSizes_[MAX_SHADER_PARAMETER_GROUPS];
+    unsigned constantBufferSizes_[MAX_SHADER_PARAMETER_GROUPS]{};
     /// Shader bytecode. Needed for inspecting the input signature and parameters. Not used on OpenGL.
     PODVector<unsigned char> byteCode_;
     /// Shader name.

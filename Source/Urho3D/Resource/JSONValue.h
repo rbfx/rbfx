@@ -27,6 +27,8 @@
 namespace Urho3D
 {
 
+class Context;
+
 /// JSON value type.
 enum JSONValueType
 {

@@ -309,12 +309,15 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData)
 #if URHO3D_PROFILING
     ProfilerBlockStatus blockStatus = ProfilerBlockStatus::OFF;
     String eventName;
-    if (GetSubsystem<Profiler>()->GetEventProfilingEnabled())
+    if (auto profiler = GetSubsystem<Profiler>())
     {
-        blockStatus = ProfilerBlockStatus::ON;
-        eventName = EventNameRegistrar::GetEventName(eventType);
-        if (eventName.Empty())
-            eventName = eventType.ToString();
+        if (profiler->GetEventProfilingEnabled())
+        {
+            blockStatus = ProfilerBlockStatus::ON;
+            eventName = EventNameRegistrar::GetEventName(eventType);
+            if (eventName.Empty())
+                eventName = eventType.ToString();
+        }
     }
     URHO3D_PROFILE_SCOPED(eventName.CString(), PROFILER_COLOR_EVENTS, blockStatus);
 #endif

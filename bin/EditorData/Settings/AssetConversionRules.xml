@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<converters>
+    <converter regex="Models/(.*)\.fbx">
+        <popen executable="AssetImporter">
+            <arg>model</arg>
+            <arg>${resourcePath}</arg>
+            <arg output="y">${resourceCacheDir}${resourceName}/Models/asset.mdl</arg>
+            <arg>-na</arg>
+        </popen>
+    </converter>
+    <converter wildcard="Animations/**.fbx">
+        <popen executable="AssetImporter">
+            <arg>anim</arg>
+            <arg>${resourcePath}</arg>
+            <arg output="y">${resourceCacheDir}${resourceName}/</arg>
+        </popen>
+    </converter>
+</converters>

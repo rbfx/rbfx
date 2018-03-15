@@ -79,4 +79,27 @@ URHO3D_API String GetLoginName();
 URHO3D_API String GetHostName();
 /// Return the version of the currently running OS, or (?) if not identified.
 URHO3D_API String GetOSVersion();
+
+/// Class which creates a subprocess and returns it's return code and output.
+class URHO3D_API Process
+{
+public:
+    /// Construct a process object.
+    Process(const String& command, const Vector<String>& args={});
+    /// Set current directory subprocess will execute in. If not set defaults to current directory of executing process.
+    void SetCurrentDirectory(const String& directory) { subprocessDir_ = directory; }
+    /// Execute subprocess and return it's return code.
+    int Run();
+    /// Get output of subprocess.
+    String GetOutput() const { return output_; }
+
+protected:
+    /// Path to a directory subprocess will execute in.
+    String subprocessDir_ = ".";
+    /// Full command to be executed. Contains arguments as well.
+    String command_;
+    /// Subprocess output.
+    String output_;
+};
+
 }

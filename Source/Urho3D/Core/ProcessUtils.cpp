@@ -25,6 +25,7 @@
 #include "../Core/ProcessUtils.h"
 #include "../Core/StringUtils.h"
 #include "../IO/FileSystem.h"
+#include "../IO/Log.h"
 
 #include <cstdio>
 #include <fcntl.h>
@@ -44,6 +45,10 @@ extern "C" unsigned SDL_TVOS_GetActiveProcessorCount();
 #if defined(_WIN32)
 #include <windows.h>
 #include <io.h>
+#include <direct.h>
+#define getcwd _getcwd
+#define popen _popen
+#define pclose _pclose
 #if defined(_MSC_VER)
 #include <float.h>
 #include <Lmcons.h> // For UNLEN.
@@ -446,7 +451,7 @@ unsigned GetNumPhysicalCPUs()
     return SDL_TVOS_GetActiveProcessorCount();
 #endif
 #elif defined(__linux__)
-    struct CpuCoreCount data;
+    struct CpuCoreCount data{};
     GetCPUData(&data);
     return data.numPhysicalCores_;
 #elif defined(__EMSCRIPTEN__)
@@ -479,7 +484,7 @@ unsigned GetNumLogicalCPUs()
     return SDL_TVOS_GetActiveProcessorCount();
 #endif
 #elif defined(__linux__)
-    struct CpuCoreCount data;
+    struct CpuCoreCount data{};
     GetCPUData(&data);
     return data.numLogicalCores_;
 #elif defined(__EMSCRIPTEN__)
@@ -521,7 +526,7 @@ String GetMiniDumpDir()
 unsigned long long GetTotalMemory()
 {
 #if defined(__linux__) && !defined(__ANDROID__)
-    struct sysinfo s;
+    struct sysinfo s{};
     if (sysinfo(&s) != -1)
         return s.totalram;
 #elif defined(_WIN32)
@@ -607,7 +612,7 @@ static void GetOS(RTL_OSVERSIONINFOW *r)
 String GetOSVersion()
 {
 #if defined(__linux__) && !defined(__ANDROID__)
-    struct utsname u;
+    struct utsname u{};
     if (uname(&u) == 0)
         return String(u.sysname) + " " + u.release;
 #elif defined(_WIN32) && defined(HAVE_RTL_OSVERSIONINFOW) && !defined(MINI_URHO)
@@ -708,6 +713,42 @@ String GetOSVersion()
     }
 #endif
     return "(?)";
+}
+
+Process::Process(const String& command, const Vector<String>& args)
+{
+    command_ = "\"" + GetNativePath((IsAbsolutePath(command) ? "" : "./") + command).Replaced("\"", "\\\"") + "\" ";
+    for (const auto& arg: args)
+    {
+        command_ += "\"";
+        command_ += arg.Replaced("\"", "\\\"");
+        command_ += "\" ";
+    }
+}
+
+int Process::Run()
+{
+    char buffer[1024];
+    String command;
+    if (!subprocessDir_.Empty())
+    {
+        command = "cd \"";
+        command += GetNativePath(AddTrailingSlash(subprocessDir_)).Replaced("\"", "\\\"");
+        command += "\"";
+#if _WIN32
+        command += "&";
+#else
+        command += ";";
+#endif
+        command += command_;
+    }
+
+    String output;
+    FILE* stream = popen(command.Empty() ? command_.CString() : command.CString(), "r");
+    while (fgets(buffer, sizeof(buffer), stream) != nullptr)
+        output.Append(buffer);
+
+    return pclose(stream);
 }
 
 }

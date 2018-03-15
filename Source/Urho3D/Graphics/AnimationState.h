@@ -24,6 +24,7 @@
 
 #include "../Container/HashMap.h"
 #include "../Container/Ptr.h"
+#include "../Math/StringHash.h"
 
 namespace Urho3D
 {
@@ -31,6 +32,7 @@ namespace Urho3D
 class Animation;
 class AnimatedModel;
 class Deserializer;
+class Node;
 class Serializer;
 class Skeleton;
 struct AnimationTrack;

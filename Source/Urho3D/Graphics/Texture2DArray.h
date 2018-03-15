@@ -85,7 +85,7 @@ private:
     void HandleRenderSurfaceUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Texture array layers number.
-    unsigned layers_;
+    unsigned layers_{};
     /// Render surfaces. Only on BGFX it is represented as multiple.
     Vector<SharedPtr<RenderSurface> > renderSurfaces_;
     /// Memory use per layer.
