@@ -30,6 +30,8 @@
 namespace Urho3D
 {
 
+class DiscoverInterfacesPass;
+
 class GeneratePInvokePass : public CppApiPass
 {
     URHO3D_OBJECT(GeneratePInvokePass, CppApiPass);
@@ -45,6 +47,7 @@ protected:
     std::string ToPInvokeTypeParam(const cppast::cpp_type& type);
 
     CSharpPrinter printer_;
+    DiscoverInterfacesPass* discoverInterfacesPass_ = nullptr;
 };
 
 }

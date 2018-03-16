@@ -183,3 +183,11 @@ inline T0 force_cast(T1 input)
         static Urho3D::StringHash GetTypeStatic() { return GetTypeInfoStatic()->GetType(); } \
         static const Urho3D::String& GetTypeNameStatic() { return GetTypeInfoStatic()->GetTypeName(); } \
         static const Urho3D::TypeInfo* GetTypeInfoStatic() { static const Urho3D::TypeInfo typeInfoStatic(#typeName, BaseClassName::GetTypeInfoStatic()); return &typeInfoStatic; }
+
+
+template<typename Derived, typename Base>
+inline constexpr size_t GetBaseClassOffset()
+{
+    // Dragons be here
+    return reinterpret_cast<uintptr_t>(static_cast<Base*>(reinterpret_cast<Derived*>(1))) - 1;
+};

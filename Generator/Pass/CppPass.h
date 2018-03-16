@@ -217,7 +217,7 @@ public:
 
 class CppApiPass : public Object
 {
-URHO3D_OBJECT(CppApiPass, Object)
+    URHO3D_OBJECT(CppApiPass, Object)
 public:
     explicit CppApiPass(Context* context) : Object(context) { };
 

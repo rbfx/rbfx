@@ -88,6 +88,16 @@ public:
     bool IsAcceptableType(const cppast::cpp_type& type);
     const TypeMap* GetTypeMap(const cppast::cpp_type& type);
     const TypeMap* GetTypeMap(const std::string& typeName);
+    template<typename T>
+    T* GetPass()
+    {
+        for (const auto& pass : apiPasses_)
+        {
+            if (pass->GetType() == T::GetTypeStatic())
+                return (T*)pass.Get();
+        }
+        return nullptr;
+    }
 
     String sourceDir_;
     String outputDirCpp_;

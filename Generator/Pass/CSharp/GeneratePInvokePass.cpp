@@ -27,6 +27,8 @@
 #include <cppast/cpp_namespace.hpp>
 #include "GeneratorContext.h"
 #include "GeneratePInvokePass.h"
+#include "ImplementInterfacesPass.h"
+
 
 namespace Urho3D
 {
@@ -39,6 +41,8 @@ void GeneratePInvokePass::Start()
     printer_ << "using System.Runtime.InteropServices;";
     printer_ << "using CSharp;";
     printer_ << "";
+
+    discoverInterfacesPass_ = generator->GetPass<DiscoverInterfacesPass>();
 }
 
 bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
@@ -142,7 +146,30 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_.Dedent();
             printer_ << "";
 
-            printer_ << fmt::format("internal static IntPtr __ToPInvoke({} source)", entity->name_);
+            // Offsets for multiple inheritance
+            auto it = discoverInterfacesPass_->inheritedBy_.Find(WeakPtr<MetaEntity>(entity));
+            if (it != discoverInterfacesPass_->inheritedBy_.End())
+            {
+                for (const auto& inheritor : it->second_)
+                {
+                    if (inheritor.Expired())
+                        continue;
+
+                    auto baseSym = Sanitize(it->first_->symbolName_);
+                    auto derivedSym = Sanitize(inheritor->symbolName_);
+
+                    printer_ << dllImport;
+                    printer_ << fmt::format("internal static extern int {derivedSym}_{baseSym}_offset();",
+                        FMT_CAPTURE(derivedSym), FMT_CAPTURE(baseSym));
+                    printer_ << fmt::format("static int {derivedSym}_offset = {derivedSym}_{baseSym}_offset();",
+                        FMT_CAPTURE(derivedSym), FMT_CAPTURE(baseSym));
+                    printer_ << "";
+                }
+            }
+            //////////////////////////////////
+
+            printer_ << fmt::format("internal static IntPtr __ToPInvoke({} source)",
+                ((entity->flags_ & HintInterface) ? "I" : "") + entity->name_);
             printer_.Indent();
             {
                 printer_ << "if (source == null)";
@@ -151,7 +178,32 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     printer_ << "return IntPtr.Zero;";
                 }
                 printer_.Dedent();
-                printer_ << "return source.instance_;";
+
+                // Offsets for multiple inheritance
+                if (it != discoverInterfacesPass_->inheritedBy_.End())
+                {
+                    for (const auto& inheritor : it->second_)
+                    {
+                        if (inheritor.Expired())
+                            continue;
+
+                        auto baseSym = Sanitize(it->first_->symbolName_);
+                        auto derivedSym = Sanitize(inheritor->symbolName_);
+                        auto derivedName = inheritor->symbolName_;
+                        str::replace_str(derivedName, "::", ".");
+
+                        printer_ << fmt::format("if (source is {derivedName})", FMT_CAPTURE(derivedName));
+                        printer_.Indent();
+                        {
+                            printer_ << fmt::format("return source.__GetInstance() + {derivedSym}_offset;",
+                                FMT_CAPTURE(derivedSym));
+                        }
+                        printer_.Dedent();
+                    }
+                }
+                ///////////////////////////////////
+
+                printer_ << "return source.__GetInstance();";
             }
             printer_.Dedent();
             printer_ << "";

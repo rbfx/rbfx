@@ -25,6 +25,7 @@
 #include <Urho3D/IO/File.h>
 #include <cppast/cpp_template.hpp>
 #include "GenerateCApiPass.h"
+#include "Pass/CSharp/ImplementInterfacesPass.h"
 
 
 namespace Urho3D
@@ -308,6 +309,29 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
 void GenerateCApiPass::Stop()
 {
+    // Generate calls that obtain object offsets in case of multiple inheritance
+    auto* pass = generator->GetPass<DiscoverInterfacesPass>();
+    for (const auto& pair : pass->inheritedBy_)
+    {
+        if (pair.first_.Expired())
+            continue;
+
+        for (const auto& inheritor : pair.second_)
+        {
+            if (inheritor.Expired())
+                continue;
+
+            printer_ << fmt::format("URHO3D_EXPORT_API int {}_{}_offset()", Sanitize(inheritor->symbolName_),
+                Sanitize(pair.first_->symbolName_));
+            printer_.Indent();
+            {
+                printer_ << fmt::format("return GetBaseClassOffset<{}, {}>();", inheritor->symbolName_, pair.first_->symbolName_);
+            }
+            printer_.Dedent();
+            printer_ << "";
+        }
+    }
+
     printer_ << "}";    // Close extern "C"
 
     File file(context_, GetSubsystem<GeneratorContext>()->outputDirCpp_ + "CApi.cpp", FILE_WRITE);

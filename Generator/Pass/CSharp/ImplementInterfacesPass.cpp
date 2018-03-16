@@ -60,6 +60,24 @@ bool DiscoverInterfacesPass::Visit(MetaEntity* entity, cppast::visitor_info info
                     }
                 }
             }
+
+            std::function<void(const cppast::cpp_class*)> putInheritorToBases = [&](const cppast::cpp_class* cls)
+            {
+                for (auto it = cls->bases().begin(); it != cls->bases().end(); it++)
+                {
+                    const cppast::cpp_type& base = it->type();
+                    WeakPtr<MetaEntity> metaBase;
+                    if (generator->symbols_.TryGetValue(Urho3D::GetTypeName(it->type()), metaBase))
+                    {
+                        if (metaBase->flags_ & HintInterface)
+                        {
+                            inheritedBy_[WeakPtr<MetaEntity>(metaBase)].emplace_back(WeakPtr<MetaEntity>(entity));
+                            putInheritorToBases(dynamic_cast<const cppast::cpp_class*>(metaBase->ast_));
+                        }
+                    }
+                };
+            };
+            putInheritorToBases(cls);
         }
     }
     return true;

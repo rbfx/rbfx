@@ -20,7 +20,12 @@ namespace CSharp
         internal CSharp_CreateObject CreateObject;
     }
 
-    public class NativeObject : IEquatable<NativeObject>
+    public interface INativeObject
+    {
+        IntPtr __GetInstance();
+    }
+
+    public abstract class NativeObject : INativeObject, IEquatable<NativeObject>
     {
         internal IntPtr instance_;
         protected volatile int disposed_;
@@ -35,11 +40,9 @@ namespace CSharp
         {
         }
 
-        internal virtual void SetupInstance(IntPtr instance)
-        {
-            // Derived types will put object initialization code here. At the time of writing such code sets up virtual
-            // method callbacks and nothing more.
-        }
+        // Derived types will put object initialization code here. At the time of writing such code sets up virtual
+        // method callbacks and nothing more.
+        internal abstract void SetupInstance(IntPtr instance);
 
         public bool Equals(NativeObject other)
         {
@@ -62,6 +65,11 @@ namespace CSharp
             {
                 return (instance_.GetHashCode() * 397) ^ disposed_;
             }
+        }
+
+        public IntPtr __GetInstance()
+        {
+            return instance_;
         }
     }
 

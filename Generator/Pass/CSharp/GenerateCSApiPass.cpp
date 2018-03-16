@@ -81,7 +81,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         {
             bool isStatic = false;
             std::vector<std::string> bases;
-            std::vector<std::string> baseInterfaces;
+            std::vector<std::string> baseInterfaces{"INativeObject"};
             if (entity->ast_ != nullptr)
                 isStatic = IsStatic(*entity->ast_);
             else
@@ -549,7 +549,16 @@ std::string GenerateCSApiPass::ToCSType(const cppast::cpp_type& type)
         typeName = Urho3D::GetTypeName(type);
 
     if (!typeName.empty())
+    {
+        WeakPtr<MetaEntity> entity;
+        if (generator->symbols_.TryGetValue(typeName, entity))
+        {
+            // Use interface types if class implements this interface.
+            if (entity->flags_ & HintInterface)
+                typeName = entity->parent_->symbolName_ + "::I" + entity->name_;
+        }
         return "global::" + str::replace_str(typeName, "::", ".");
+    }
 
     return ToPInvokeType(type, "IntPtr");
 }
