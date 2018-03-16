@@ -35,6 +35,8 @@ class URHO3D_API ConstantBuffer : public Object, public GPUObject
 {
     URHO3D_OBJECT(ConstantBuffer, Object);
 
+    using GPUObject::GetGraphics;
+
 public:
     /// Construct.
     explicit ConstantBuffer(Context* context);

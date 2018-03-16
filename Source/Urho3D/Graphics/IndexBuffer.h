@@ -35,6 +35,8 @@ class URHO3D_API IndexBuffer : public Object, public GPUObject
 {
     URHO3D_OBJECT(IndexBuffer, Object);
 
+    using GPUObject::GetGraphics;
+
 public:
     /// Construct. Optionally force headless (no GPU-side buffer) operation.
     explicit IndexBuffer(Context* context, bool forceHeadless = false);
