@@ -89,6 +89,7 @@ if (NOT ANDROID)
         endif ()
     endforeach ()
 endif ()
+install (DIRECTORY ${CMAKE_BINARY_DIR}/bin/Cache DESTINATION ${DEST_RESOURCE_DIR})
 
 # Print current build configuration
 message(STATUS "Urho3D Configuration:")
