@@ -30,7 +30,17 @@
 namespace Urho3D
 {
 
-/// Walk AST and gather known defined classes. Exclude protected/private members from generation.
+/// Walk AST and mark suitable classes as interfaces. This has to be done beforehand so entity order does not cause
+/// some interface methods be not implemented.
+class DiscoverInterfacesPass : public CppApiPass
+{
+    URHO3D_OBJECT(DiscoverInterfacesPass, CppApiPass);
+public:
+    explicit DiscoverInterfacesPass(Context* context) : CppApiPass(context) { };
+    bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
+};
+
+/// Copy methods into classes that implement interfaces but do not have these methods defined.
 class ImplementInterfacesPass : public CppApiPass
 {
     URHO3D_OBJECT(ImplementInterfacesPass, CppApiPass);

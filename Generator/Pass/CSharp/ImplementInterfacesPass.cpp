@@ -30,6 +30,41 @@
 namespace Urho3D
 {
 
+bool DiscoverInterfacesPass::Visit(MetaEntity* entity, cppast::visitor_info info)
+{
+    if (entity->ast_ == nullptr)
+        return true;
+
+    if (info.event == info.container_entity_enter)
+    {
+        if (entity->kind_ == cppast::cpp_entity_kind::class_t)
+        {
+            const auto* cls = dynamic_cast<const cppast::cpp_class*>(entity->ast_);
+            if (cls == nullptr || Count(cls->bases()) < 2)
+                return true;
+
+            for (auto it = cls->bases().begin(); it != cls->bases().end(); it++)
+            {
+                const cppast::cpp_type& base = it->type();
+                WeakPtr<MetaEntity> metaBase;
+                if (generator->symbols_.TryGetValue(Urho3D::GetTypeName(it->type()), metaBase))
+                {
+                    if (!(metaBase->flags_ & HintInterface))
+                    {
+                        // If first class is not an interface then allow it to be consumed as parent class.
+                        if (it == cls->bases().begin())
+                            continue;
+
+                        metaBase->flags_ |= HintInterface;
+                        URHO3D_LOGINFOF("Interface candidate found: %s", it->name().c_str());
+                    }
+                }
+            }
+        }
+    }
+    return true;
+}
+
 bool ImplementInterfacesPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
     if (entity->ast_ == nullptr)
@@ -40,20 +75,18 @@ bool ImplementInterfacesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
         if (entity->kind_ == cppast::cpp_entity_kind::class_t)
         {
             const auto* cls = dynamic_cast<const cppast::cpp_class*>(entity->ast_);
-            if (cls == nullptr || cls->bases().empty())
+            if (cls == nullptr || Count(cls->bases()) < 2)
                 return true;
 
-            for (auto it = ++cls->bases().begin(); it != cls->bases().end(); it++)
+            for (const auto& baseCls : cls->bases())
             {
-                const cppast::cpp_type& base = it->type();
+                const cppast::cpp_type& base = baseCls.type();
                 WeakPtr<MetaEntity> metaBase;
-                if (generator->symbols_.TryGetValue(Urho3D::GetTypeName(it->type()), metaBase))
+                auto baseClassName = Urho3D::GetTypeName(baseCls.type());
+                if (generator->symbols_.TryGetValue(baseClassName, metaBase))
                 {
                     if (!(metaBase->flags_ & HintInterface))
-                    {
-                        metaBase->flags_ |= HintInterface;
-                        URHO3D_LOGINFOF("Interface candidate found: %s", it->name().c_str());
-                    }
+                        continue;
 
                     // This class inherits an interface. Clone non-overriden methods from interface class to current
                     // one. This will cause further passes to generate proper C and C# API for these methods. We can not
@@ -79,9 +112,11 @@ bool ImplementInterfacesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
                                     return child->Ast<cppast::cpp_member_function>().signature() ==
                                         interfaceMethod->Ast<cppast::cpp_member_function>().signature();
                                 });
+
                             if (it != entity->children_.end())
                                 continue;
 
+                            interfaceMethod->flags_ |= HintInterface;
                             auto* newEntity = new MetaEntity(*interfaceMethod);
 
                             // Avoid C API name collisions
@@ -91,15 +126,21 @@ bool ImplementInterfacesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
                             // Give new identity
                             str::replace_str(newEntity->uniqueName_, metaBase->symbolName_, entity->symbolName_, 1);
 
+                            // Just to be safe that right method is called
+                            str::replace_str(newEntity->sourceSymbolName_, metaBase->sourceSymbolName_,
+                                entity->sourceSymbolName_, 1);
+                            newEntity->symbolName_ = newEntity->sourceSymbolName_;
+
                             entity->Add(newEntity);
                         }
                     }
                 }
+                else
+                    URHO3D_LOGWARNINGF("Interface base class not found: %s", baseClassName.c_str());
             }
         }
     }
 
     return true;
 }
-
 }

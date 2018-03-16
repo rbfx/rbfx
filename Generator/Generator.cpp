@@ -125,11 +125,12 @@ int main(int argc, char* argv[])
     generator->AddCppPass<BuildMetaAST>();
     generator->AddApiPass<Urho3DTypeMaps>();
     generator->AddApiPass<UnknownTypesPass>();
+    generator->AddApiPass<DiscoverInterfacesPass>();
+    generator->AddApiPass<ImplementInterfacesPass>();
     generator->AddApiPass<GenerateClassWrappers>();
     generator->AddApiPass<Urho3DCustomPass>();
     generator->AddApiPass<MoveGlobalsPass>();
     generator->AddApiPass<ConvertToPropertiesPass>();
-    generator->AddApiPass<ImplementInterfacesPass>();
     generator->AddApiPass<GenerateCApiPass>();
     generator->AddApiPass<GeneratePInvokePass>();
     generator->AddApiPass<GenerateCSApiPass>();

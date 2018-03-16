@@ -375,6 +375,31 @@ bool IsSubclassOf(const cppast::cpp_class& cls, const std::string& symbol)
     return false;
 }
 
+bool IsAbstract(const cppast::cpp_class& cls)
+{
+    for (const auto& member : cls)
+    {
+        if (member.kind() == cppast::cpp_entity_kind::member_function_t)
+        {
+            auto virtualInfo = dynamic_cast<const cppast::cpp_member_function&>(member).virtual_info();
+            if (virtualInfo.has_value())
+            {
+                if (cppast::is_pure(virtualInfo.value()))
+                    return true;
+            }
+        }
+    }
+
+    for (const auto& base : cls.bases())
+    {
+        const auto* baseCls = GetEntity(base.type());
+        assert(baseCls != nullptr);
+        if (IsAbstract(dynamic_cast<const cppast::cpp_class&>(*baseCls)))
+            return true;
+    }
+    return false;
+}
+
 bool IsConst(const cppast::cpp_type& type)
 {
     if (type.kind() == cppast::cpp_type_kind::cv_qualified_t)

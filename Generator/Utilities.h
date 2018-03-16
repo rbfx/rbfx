@@ -102,6 +102,8 @@ bool HasVirtual(const cppast::cpp_class& cls);
 bool HasProtected(const cppast::cpp_class& cls);
 /// Returns true if `cls` is subclass of class named `symbol`.
 bool IsSubclassOf(const cppast::cpp_class& cls, const std::string& symbol);
+/// Returns true when class or it's base classes have at least one pure virtual method.
+bool IsAbstract(const cppast::cpp_class& cls);
 /// Returns true if `type` is const.
 bool IsConst(const cppast::cpp_type& type);
 /// Count number of items in cppast intrusive list.

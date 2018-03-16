@@ -81,6 +81,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         {
             bool isStatic = false;
             std::vector<std::string> bases;
+            std::vector<std::string> baseInterfaces;
             if (entity->ast_ != nullptr)
                 isStatic = IsStatic(*entity->ast_);
             else
@@ -97,7 +98,11 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     {
                         std::string name;
                         if (baseEntity->flags_ & HintInterface)
-                            name = "I";
+                        {
+                            baseInterfaces.emplace_back("I" + base.name());
+                            if (!bases.empty())
+                                name = "I";
+                        }
                         name += base.name();
                         bases.emplace_back(name);
                     }
@@ -110,9 +115,13 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     bases.emplace_back("NativeObject");
 
                 // If this class was used in multiple inheritance and is marked as interface - it implements it's
-                // own interface.
+                // own interface. It's own interface will be implementing other interfaces of the class so no point
+                // listing them here again.
                 if (entity->flags_ & HintInterface)
+                {
+                    bases.resize(1);
                     bases.emplace_back("I" + entity->name_);
+                }
 
                 bases.emplace_back("IDisposable");
             }
@@ -125,8 +134,11 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
                 if (entity->flags_ & HintInterface)
                 {
+                    auto interfaces = str::join(baseInterfaces, ", ");
+                    if (!interfaces.empty())
+                        interfaces = " : " + interfaces;
                     interface_.indent_ = 0;
-                    interface_ << fmt::format("public unsafe interface I{}", entity->name_);
+                    interface_ << fmt::format("public unsafe interface I{}{}", entity->name_, interfaces);
                     interface_.indent_ = printer_.indent_;
                     interface_.Indent();
                 }
@@ -318,8 +330,13 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         if (entity->access_ == cppast::cpp_public && entity->parent_->flags_ & HintInterface)
         {
-            interface_ << fmt::format("{rtype} {name}({csParams});", FMT_CAPTURE(rtype),
-                fmt::arg("name", entity->name_), FMT_CAPTURE(csParams));
+            // Implement interface methods that come directly from interfaced class. If interfaced class inherits other
+            // interfaces then these interfaces will be inherited instead.
+            if (entity->sourceSymbolName_.find(entity->parent_->symbolName_) == 0)
+            {
+                interface_ << fmt::format("{rtype} {name}({csParams});", FMT_CAPTURE(rtype),
+                    fmt::arg("name", entity->name_), FMT_CAPTURE(csParams));
+            }
         }
 
         auto paramNameList = MapParameterList(entity->children_, mapToPInvoke);

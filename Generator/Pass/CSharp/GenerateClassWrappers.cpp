@@ -70,7 +70,7 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
         return true;
 
     const auto& cls = entity->Ast<cppast::cpp_class>();
-    if (!HasVirtual(cls) && !HasProtected(cls))
+    if (!HasVirtual(cls) && !HasProtected(cls) && !IsAbstract(cls))
     {
         // Skip children for classes that do not have virtual or protected members
         return info.event != info.container_entity_enter;
@@ -166,14 +166,14 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
                     auto parameterNameList = ParameterNameList(func.parameters());
                     auto constModifier = cppast::is_const(func.cv_qualifier()) ? "const " : "";
                     auto pc = Count(func.parameters()) > 0 ? ", " : "";
-                    auto symbolName = Sanitize(child->uniqueName_);
+                    auto cFunctionName = Sanitize(child->uniqueName_);
                     auto fullClassName = entity->uniqueName_;
                     auto className = entity->name_;
 
                     if (func.is_virtual())
                     {
-                        printer_ << fmt::format("{typeName}(*fn{symbolName})(void* gcHandle{pc}{parameterList}) = nullptr;",
-                            FMT_CAPTURE(typeName), FMT_CAPTURE(symbolName), FMT_CAPTURE(className),
+                        printer_ << fmt::format("{typeName}(*fn{cFunctionName})(void* gcHandle{pc}{parameterList}) = nullptr;",
+                            FMT_CAPTURE(typeName), FMT_CAPTURE(cFunctionName), FMT_CAPTURE(className),
                             FMT_CAPTURE(constModifier), FMT_CAPTURE(pc), FMT_CAPTURE(parameterList));
                         // Virtual method that calls said pointer
                         printer_ << fmt::format("{typeName} {name}({parameterList}) {constModifier}override",
@@ -185,7 +185,7 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
                             if (cls->symbolName_ == "Urho3D::Application" && name == "Start")
                                 printer_ << "RegisterWrapperFactories(context_);";
 
-                            printer_ << fmt::format("if (fn{symbolName} == nullptr)", FMT_CAPTURE(symbolName));
+                            printer_ << fmt::format("if (fn{cFunctionName} == nullptr)", FMT_CAPTURE(cFunctionName));
                             printer_.Indent();
                             {
                                 printer_ << (IsVoid(func.return_type()) ? "" : "return ") +
@@ -197,8 +197,8 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
                             printer_.Indent();
                             {
                                 printer_ << (IsVoid(func.return_type()) ? "" : "return ") +
-                                    fmt::format("(fn{symbolName})(gcHandle_{pc}{parameterNameList});",
-                                        FMT_CAPTURE(symbolName), FMT_CAPTURE(pc), FMT_CAPTURE(parameterNameList));
+                                    fmt::format("(fn{cFunctionName})(gcHandle_{pc}{parameterNameList});",
+                                        FMT_CAPTURE(cFunctionName), FMT_CAPTURE(pc), FMT_CAPTURE(parameterNameList));
                             }
                             printer_.Dedent();
 
