@@ -38,7 +38,16 @@ bool ConvertToPropertiesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
     if (entity->flags_ & HintProperty)
         return true;
 
-    if (entity->access_ != cppast::cpp_public && !generator->inheritable_.IsIncluded(entity->parent_->symbolName_))
+    if (entity->access_ != cppast::cpp_public)
+        return true;
+
+    // Virtual getters/setters of inheritable classes can not be turned to properties in order to allow overriding.
+    if (entity->Ast<cppast::cpp_member_function>().is_virtual() &&
+        !generator->inheritable_.IsIncluded(entity->parent_->symbolName_))
+        return true;
+
+    // If method is part of interface then getters/setters must appear as methods.
+    if (entity->flags_ & HintInterface)
         return true;
 
     if (std::regex_match(entity->name_, rxGetterName_))
