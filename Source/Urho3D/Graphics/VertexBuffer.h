@@ -35,6 +35,8 @@ class URHO3D_API VertexBuffer : public Object, public GPUObject
 {
     URHO3D_OBJECT(VertexBuffer, Object);
 
+    using GPUObject::GetGraphics;
+
 public:
     /// Construct. Optionally force headless (no GPU-side buffer) operation.
     explicit VertexBuffer(Context* context, bool forceHeadless = false);
