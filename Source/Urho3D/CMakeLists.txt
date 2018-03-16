@@ -38,6 +38,7 @@ macro (define_engine_source_files)
             Graphics/Direct3D9/D3D9GraphicsImpl.h
             Graphics/GraphicsImpl.h
             Graphics/OpenGL/OGLGraphicsImpl.h
+            IK/IKConverters.h
         )
         list (APPEND HEADER_FILES ${_files})
         # Install them
@@ -104,7 +105,7 @@ add_library(Urho3D ${URHO3D_LIBRARY_TYPE} ${SOURCE_FILES} ${HEADER_FILES})
 target_include_directories(Urho3D PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>        # For parent projects to find auto-generated engine headers
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>        # For parent projects to find engine headers
-    $<INSTALL_INTERFACE:${DEST_INCLUDE_DIR}>
+    $<INSTALL_INTERFACE:${DEST_BASE_INCLUDE_DIR}>
     $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}>
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
 )
