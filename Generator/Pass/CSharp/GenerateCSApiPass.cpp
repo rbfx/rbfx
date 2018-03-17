@@ -621,6 +621,7 @@ std::string GenerateCSApiPass::ConvertDefaultValueToCS(std::string value, const 
             // String literals
             if (value == "String::EMPTY")  // TODO: move to json?
                 value = "\"\"";
+            return value;
         }
         else if (map->isValueType && !allowComplex)
         {
