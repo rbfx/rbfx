@@ -137,8 +137,6 @@
       "Urho3D::RenderPathCommand",
       "Urho3D::Texture::shaderResourceView_",
       "Urho3D::Texture::target_",
-      "Urho3D::Graphics::GetCurrentMonitor()",
-      "Urho3D::Graphics::GetMaximized()",
       "Urho3D::Skeleton::GetBone(Urho3D::String const&)",
       "Urho3D::Image::GetLevels(PODVector<Urho3D::Image*>&)",
       "Urho3D::To*(* const*)",
