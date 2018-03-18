@@ -87,13 +87,14 @@
       "Urho3D::Variant::Variant(Urho3D::VariantType,Urho3D::String const&)",
       "Urho3D::Variant::FromString(Urho3D::String const&,Urho3D::String const&)",
       "Urho3D::Variant::FromString(Urho3D::VariantType,Urho3D::String const&)",
-      "Urho3D::Variant::GetBufferPtr()",
+      "Urho3D::Variant::Get*Ptr(*",
       "Urho3D::Variant::emptyBuffer",
       "Urho3D::Node::GetChild(Urho3D::String const&,bool) const",
       "Urho3D::ResourceRef::ResourceRef(Urho3D::String const&,Urho3D::String const&)",
       // TODO: Setter should not be generated
       "Urho3D::Text3D::text_",
       "Urho3D::UI::DragData",
+      "Urho3D::*::Get*Batches*(*",
       // TODO: `out` parameters
       "Urho3D::*::FindAttributeAnimationTarget(Urho3D::String const&,Urho3D::String&)",
       "Urho3D::CrowdManager::Raycast(Urho3D::Vector3 const&,Urho3D::Vector3 const&,int,Urho3D::Vector3*)",
@@ -120,6 +121,9 @@
       "Urho3D::BatchQueue::SortFrontToBack2Pass(PODVector<Urho3D::Batch *>&)",
       "Urho3D::UIElement::GetChildren(PODVector<Urho3D::UIElement *>&,bool) const",
       "Urho3D::UIElement::GetChildrenWithTag(PODVector<Urho3D::UIElement *>&,Urho3D::String const&,bool) const",
+      "Urho3D::CrowdManager::FindPath(PODVector<Urho3D::Vector3>&,Urho3D::Vector3 const&,Urho3D::Vector3 const&,int)",
+      "Urho3D::Geometry::GetRawData(unsigned char const*&,unsigned int&,unsigned char const*&,unsigned int&,PODVector<Urho3D::VertexElement> const*&) const",
+      "Urho3D::VertexBuffer::UpdateOffsets(PODVector<Urho3D::VertexElement>&)",
       // ---------------------------------------------------------------------------------------------------------------
       "Urho3D::JoystickState::joystick_",
       "Urho3D::JoystickState::controller_",
@@ -129,6 +133,7 @@
       "Urho3D::JSONFile::GetRoot() const",
       "Urho3D::JSONValue::JSONValue(Urho3D::String const&)",
       "Urho3D::XPathQuery::SetVariable(Urho3D::String const&,Urho3D::String const&)",
+      "Urho3D::Graphics::SetVertexBuffers(Vector<SharedPtr<Urho3D::VertexBuffer>> const&,unsigned int)",
       "Urho3D::RenderPathCommand",
       "Urho3D::Texture::shaderResourceView_",
       "Urho3D::Texture::target_",
