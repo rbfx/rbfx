@@ -69,7 +69,8 @@ public:
 
     template<typename T> T* TakePointerReference(const T* instance)
     {
-        assert(instance != nullptr);
+        if (instance == nullptr)
+            return nullptr;
 
         MutexLock scoped(lock_);
         if (instanceToHandler_.Contains((void*)instance))
