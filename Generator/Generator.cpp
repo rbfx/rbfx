@@ -69,6 +69,7 @@ int main(int argc, char* argv[])
     std::vector<std::string> cmdLines;
     if (argc == 2)
     {
+        cmdLines.emplace_back(argv[0]);
         std::ifstream infile(argv[1]);
         std::string line;
         while (std::getline(infile, line))
@@ -77,17 +78,13 @@ int main(int argc, char* argv[])
                 cmdLines.push_back(line);
         }
 
-        char** newArgv = new char*[cmdLines.size()];
-        auto newArgvStart = newArgv;
-        newArgv[0] = argv[0];
-        newArgv++;
+        char** newArgv = argv = new char*[cmdLines.size()];
         for (const auto& ln : cmdLines)
         {
             *newArgv = (char*)ln.c_str();
             newArgv++;
         }
-        argv = newArgvStart;
-        argc = cmdLines.size() + 1;
+        argc = (int)cmdLines.size();
     }
 
     CLI11_PARSE(app, argc, argv);
