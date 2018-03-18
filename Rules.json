@@ -149,6 +149,7 @@
       "Urho3D::SourceBatch::worldTransform_",
       "Urho3D::InstanceData",
       "Urho3D::UIBatch",
+      "Urho3D::*::TestDrawables(*",
     ]
   },
   "typemaps": [
