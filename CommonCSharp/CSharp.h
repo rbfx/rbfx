@@ -191,3 +191,42 @@ inline constexpr size_t GetBaseClassOffset()
     // Dragons be here
     return reinterpret_cast<uintptr_t>(static_cast<Base*>(reinterpret_cast<Derived*>(1))) - 1;
 };
+
+struct SafeArray
+{
+    void* data;
+    unsigned size;
+    bool owns;
+};
+
+template<typename CppType>
+struct CSharpConverter { };
+
+// Convert PODVector
+template<typename T>
+struct CSharpConverter<PODVector<T>>
+{
+    using CppType=PODVector<T>;
+    using CType=SafeArray;
+
+    static CType ToCSharp(const CppType& value)
+    {
+        return {(void*)&value.Front(), value.Size() * (unsigned)sizeof(T), false};
+    }
+
+    static CType ToCSharp(const CppType&& value)
+    {
+        SafeArray result{nullptr, value.Size() * (unsigned)sizeof(T), true};
+        result.data = malloc(result.size);
+        memcpy(result.data, &value.Front(), result.size);
+        return result;
+    }
+
+    static CppType FromCSharp(const SafeArray& value)
+    {
+        CppType result{(const T*)value.data, (unsigned)(value.size / sizeof(T))};
+        if (value.owns)
+            free(value.data);
+        return result;
+    }
+};

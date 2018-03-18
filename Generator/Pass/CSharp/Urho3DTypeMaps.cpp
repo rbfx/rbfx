@@ -62,7 +62,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
         return;
 
     auto typeName = cppast::to_string(type);
-    if (typeName.find("PODVector") == std::string::npos)
+    if (typeName.find("PODVector<") != 0)
         return;
 
     // Typemap already generated
@@ -71,6 +71,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
 
     const auto& tpl = dynamic_cast<const cppast::cpp_template_instantiation_type&>(realType);
     std::string csType;
+    std::string cppType;
 
     if (tpl.arguments_exposed())
     {
@@ -80,7 +81,11 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
             const cppast::cpp_template_argument& tplArg = args[0u];
             const auto& tplType = tplArg.type().value();
             if (tplType.kind() == cppast::cpp_type_kind::builtin_t)
-                csType = PrimitiveToPInvokeType(dynamic_cast<const cppast::cpp_builtin_type&>(tplType).builtin_type_kind());
+            {
+                cppType = cppast::to_string(tplType);
+                csType = PrimitiveToPInvokeType(
+                    dynamic_cast<const cppast::cpp_builtin_type&>(tplType).builtin_type_kind());
+            }
             else if (tplType.kind() == cppast::cpp_type_kind::pointer_t)
                 csType = Urho3D::GetTypeName(tplType);
         }
@@ -88,7 +93,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
     else
     {
         // cppast has no info for us. Make a best guess about the type in question.
-        auto cppType = tpl.unexposed_arguments();
+        cppType = tpl.unexposed_arguments();
         auto primitiveType = PrimitiveToCppType(cppType);
         if (primitiveType == cppast::cpp_builtin_type_kind::cpp_void)
         {
@@ -113,18 +118,15 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
     {
         TypeMap map;
         map.cppType_ = typeName;
-        map.cType_ = "Urho3D::VectorBase*";
-        map.pInvokeType_ = "global::Urho3D.VectorBase*";
-        map.csType_ = fmt::format("global::Urho3D.PODVector<{csType}>", FMT_CAPTURE(csType));
-        map.cppToCTemplate_ = "script->AddRef<Urho3D::VectorBase>({value})";
-        const auto& nonConstType = cppast::remove_const(type);
-        const auto& conversionType = cppast::to_string(realType);
-        if (nonConstType.kind() == cppast::cpp_type_kind::pointer_t)
-            map.cToCppTemplate_ = fmt::format("({conversionType}*){{value}}", FMT_CAPTURE(conversionType));
-        else
-            map.cToCppTemplate_ = fmt::format("({conversionType}&)*{{value}}", FMT_CAPTURE(conversionType));
-        map.csToPInvokeTemplate_ = fmt::format("global::Urho3D.PODVector<{csType}>.__ToPInvoke({{value}})", FMT_CAPTURE(csType));
-        map.pInvokeToCSTemplate_ = fmt::format("global::Urho3D.PODVector<{csType}>.__FromPInvoke({{value}})", FMT_CAPTURE(csType));
+        map.cType_ = "SafeArray";
+        map.pInvokeType_ = "SafeArray";
+        map.csType_ = fmt::format("{csType}[]", FMT_CAPTURE(csType));
+        map.cppToCTemplate_ = fmt::format("CSharpConverter<Urho3D::PODVector<{cppType}>>::ToCSharp({{value}})",
+            FMT_CAPTURE(cppType));
+        map.cToCppTemplate_ = fmt::format("CSharpConverter<Urho3D::PODVector<{cppType}>>::FromCSharp({{value}})",
+            FMT_CAPTURE(cppType));
+        map.csToPInvokeTemplate_ = fmt::format("SafeArray.__ToPInvoke<{csType}>({{value}})", FMT_CAPTURE(csType));
+        map.pInvokeToCSTemplate_ = fmt::format("SafeArray.__FromPInvoke<{csType}>({{value}})", FMT_CAPTURE(csType));
 
         generator->typeMaps_[typeName] = map;
     }
