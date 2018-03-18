@@ -415,22 +415,24 @@ std::string GenerateCApiPass::MapToC(const cppast::cpp_type& type, const std::st
 
 std::string GenerateCApiPass::ToCType(const cppast::cpp_type& type)
 {
+    std::string typeName = GetTemplateSubtype(type);    // SharedPtr/WeakPtr unwrapping
     if (const auto* map = generator->GetTypeMap(type))
-        return map->cType_;
+        typeName = map->cType_;
+    else if (IsEnumType(type))
+        typeName = cppast::to_string(type);
+    else if (typeName.empty())
+    {
+        if (IsComplexType(type))
+            typeName = Urho3D::GetTypeName(type) + "*";
+        else
+            // Builtin type
+            typeName = cppast::to_string(type);
+    }
+    else
+        // Complex type from SharedPtr or WeakPtr
+        typeName += "*";
 
-    auto typeName = GetTemplateSubtype(type);
-    if (!typeName.empty())
-        return typeName + "*";
-
-    if (IsEnumType(type))
-        return cppast::to_string(type);
-
-    if (IsComplexType(type))
-        // A value type is turned into pointer.
-        return Urho3D::GetTypeName(type) + "*";
-
-    // Builtin type
-    return cppast::to_string(type);
+    return typeName;
 }
 
 void GenerateCApiPass::PrintDefaultValueCode(const std::vector<SharedPtr<MetaEntity>>& parameters)
