@@ -241,6 +241,9 @@ bool IsEnumType(const cppast::cpp_type& type)
 
 bool IsComplexType(const cppast::cpp_type& type)
 {
+    if (auto* map = generator->GetTypeMap(type))
+        return !map->isValueType_;
+
     switch (type.kind())
     {
     case cppast::cpp_type_kind::builtin_t:
