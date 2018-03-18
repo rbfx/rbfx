@@ -203,7 +203,7 @@ struct SafeArray
 template<typename CppType>
 struct CSharpConverter { };
 
-// Convert PODVector
+// Convert PODVector<T>
 template<typename T>
 struct CSharpConverter<PODVector<T>>
 {
@@ -225,7 +225,36 @@ struct CSharpConverter<PODVector<T>>
 
     static CppType FromCSharp(const SafeArray& value)
     {
-        CppType result{(const T*)value.data, (unsigned)(value.size / sizeof(T))};
+        CppType result{(const T*)value.data, value.size / (unsigned)sizeof(T)};
+        if (value.owns)
+            free(value.data);
+        return result;
+    }
+};
+
+// Convert Vector<SharedPtr<T>>
+template<typename T>
+struct CSharpConverter<Vector<SharedPtr<T>>>
+{
+    using CppType=Vector<SharedPtr<T>>;
+    using CType=SafeArray;
+
+    static CType ToCSharp(const CppType& value)
+    {
+        SafeArray result{nullptr, value.Size() * (unsigned)sizeof(void*), true};
+        result.data = malloc(result.size);
+        auto** array = (T**)result.data;
+        for (const auto& ptr : value)
+            *array++ = ptr.Get();
+        return result;
+    }
+
+    static CppType FromCSharp(const SafeArray& value)
+    {
+        CppType result{value.size / (unsigned)sizeof(void*)};
+        auto** array = (T**)value.data;
+        for (auto& ptr : result)
+            ptr = *array++;
         if (value.owns)
             free(value.data);
         return result;

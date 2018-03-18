@@ -62,19 +62,26 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
         return;
 
     auto typeName = cppast::to_string(type);
-    if (typeName.find("PODVector<") != 0)
-        return;
 
     // Typemap already generated
     if (generator->typeMaps_.find(typeName) != generator->typeMaps_.end())
         return;
 
-    const auto& tpl = dynamic_cast<const cppast::cpp_template_instantiation_type&>(realType);
     std::string csType;
     std::string cppType;
+    std::string vectorKind;
 
+    if (typeName.find("PODVector<") == 0)
+        vectorKind = "PODVector";
+    else if (typeName.find("Vector<SharedPtr<") == 0)
+        vectorKind = "Vector";
+    else
+        return;
+
+    const auto& tpl = dynamic_cast<const cppast::cpp_template_instantiation_type&>(realType);
     if (tpl.arguments_exposed())
     {
+        assert(false);  // TODO: finish implementing this when needed
         if (tpl.arguments().has_value())
         {
             const auto& args = tpl.arguments().value();
@@ -95,17 +102,35 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
         // cppast has no info for us. Make a best guess about the type in question.
         cppType = tpl.unexposed_arguments();
         auto primitiveType = PrimitiveToCppType(cppType);
-        if (primitiveType == cppast::cpp_builtin_type_kind::cpp_void)
+        if (auto* map = generator->GetTypeMap(cppType))
+        {
+            if (map->isValueType)
+                csType = map->csType_;
+        }
+        else if (primitiveType == cppast::cpp_builtin_type_kind::cpp_void)
         {
             // Class pointer array
-            if (cppType.rfind(" *") == cppType.length() - 2)
+            if (cppType.find("SharedPtr<") == 0)                    // starts with
             {
+                // Get T from SharedPtr<T>
+                csType = cppType.substr(10, cppType.length() - 11);
+            }
+            else if (cppType.rfind(" *") == cppType.length() - 2)   // ends with
+            {
+                // Get pointer type
                 csType = cppType.substr(0, cppType.length() - 2);
                 if (csType.find("const ") == 0)
                     csType = csType.substr(6);
-                str::replace_str(csType, "::", ".");
-                csType = "global::" + csType;
             }
+            else
+                csType = cppType;
+
+            if (!generator->symbols_.Contains(csType))
+                // Undefined type, required because unknown types pass is yet to run
+                return;
+
+            str::replace_str(csType, "::", ".");
+            csType = "global::" + csType;
         }
         else
         {
@@ -121,10 +146,10 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
         map.cType_ = "SafeArray";
         map.pInvokeType_ = "SafeArray";
         map.csType_ = fmt::format("{csType}[]", FMT_CAPTURE(csType));
-        map.cppToCTemplate_ = fmt::format("CSharpConverter<Urho3D::PODVector<{cppType}>>::ToCSharp({{value}})",
-            FMT_CAPTURE(cppType));
-        map.cToCppTemplate_ = fmt::format("CSharpConverter<Urho3D::PODVector<{cppType}>>::FromCSharp({{value}})",
-            FMT_CAPTURE(cppType));
+        map.cppToCTemplate_ = fmt::format("CSharpConverter<Urho3D::{vectorKind}<{cppType}>>::ToCSharp({{value}})",
+            FMT_CAPTURE(cppType), FMT_CAPTURE(vectorKind));
+        map.cToCppTemplate_ = fmt::format("CSharpConverter<Urho3D::{vectorKind}<{cppType}>>::FromCSharp({{value}})",
+            FMT_CAPTURE(cppType), FMT_CAPTURE(vectorKind));
         map.csToPInvokeTemplate_ = fmt::format("SafeArray.__ToPInvoke<{csType}>({{value}})", FMT_CAPTURE(csType));
         map.pInvokeToCSTemplate_ = fmt::format("SafeArray.__FromPInvoke<{csType}>({{value}})", FMT_CAPTURE(csType));
 
