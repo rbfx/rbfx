@@ -193,7 +193,7 @@ std::string ParameterList(const CppParameters& params,
             typeString = typeToString(param.type());
         else
             typeString = cppast::to_string(param.type());
-        typeString += (" " + EnsureNotKeyword(param.name())).c_str();
+        typeString += " " + EnsureNotKeyword(param.name());
         parts.emplace_back(typeString);
     }
     return str::join(parts, ", ");
@@ -260,6 +260,25 @@ bool IsComplexType(const cppast::cpp_type& type)
         return true;
     }
 }
+
+bool IsValueType(const cppast::cpp_type& type)
+{
+    if (auto* map = generator->GetTypeMap(type))
+        return map->isValueType_;
+
+    switch (type.kind())
+    {
+    case cppast::cpp_type_kind::builtin_t:
+        return true;
+    case cppast::cpp_type_kind::user_defined_t:
+        return true;
+    case cppast::cpp_type_kind::cv_qualified_t:
+        return IsValueType(dynamic_cast<const cppast::cpp_cv_qualified_type&>(type).type());
+    default:
+        return false;
+    }
+}
+
 
 IncludedChecker::IncludedChecker(const JSONValue& rules)
 {
@@ -596,6 +615,56 @@ std::string CamelCaseIdentifier(const std::string& name)
         value.front() = (char)toupper(value.front());
     }
     return str::join(tokens, "");
+}
+
+bool IsOutputType(const cppast::cpp_type& type)
+{
+    auto checkType = [](const cppast::cpp_type* type) {
+        if (type->kind() == cppast::cpp_type_kind::cv_qualified_t)
+        {
+            const auto* cvType = dynamic_cast<const cppast::cpp_cv_qualified_type*>(type);
+            if (cppast::is_const(cvType->cv_qualifier()))
+                return false;
+            type = &cvType->type();
+        }
+
+        if (type->kind() == cppast::cpp_type_kind::builtin_t)
+        {
+            const auto* builtinType = dynamic_cast<const cppast::cpp_builtin_type*>(type);
+            if (builtinType->builtin_type_kind() == cppast::cpp_builtin_type_kind::cpp_void)
+                return false;
+        }
+
+        return true;
+    };
+
+    switch (type.kind())
+    {
+    case cppast::cpp_type_kind::reference_t:
+        return checkType(&dynamic_cast<const cppast::cpp_reference_type&>(type).referee());
+    // case cppast::cpp_type_kind::pointer_t:
+    //     return checkType(&dynamic_cast<const cppast::cpp_pointer_type&>(type).pointee());
+    default:
+        return false;
+    }
+}
+
+bool IsReference(const cppast::cpp_type& type)
+{
+    if (type.kind() == cppast::cpp_type_kind::reference_t)
+        return true;
+    if (type.kind() == cppast::cpp_type_kind::cv_qualified_t)
+        return IsReference(dynamic_cast<const cppast::cpp_cv_qualified_type&>(type).type());
+    return false;
+}
+
+bool IsPointer(const cppast::cpp_type& type)
+{
+    if (type.kind() == cppast::cpp_type_kind::pointer_t)
+        return true;
+    if (type.kind() == cppast::cpp_type_kind::cv_qualified_t)
+        return IsReference(dynamic_cast<const cppast::cpp_cv_qualified_type&>(type).type());
+    return false;
 }
 
 }

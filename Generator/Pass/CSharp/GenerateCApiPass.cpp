@@ -387,10 +387,12 @@ std::string GenerateCApiPass::MapToCpp(const cppast::cpp_type& type, const std::
             return fmt::format("{type}({expr})", fmt::arg("type", Urho3D::GetTypeName(type)),
                 fmt::arg("expr", result));
         }
-
-        if (type.kind() != cppast::cpp_type_kind::pointer_t)
-            result = "*" + result;
     }
+
+    // TODO: This is getting out of hand, simplify this. Maybe implement dereferencing in c++?
+    if (map == nullptr && (IsReference(type) || (IsValueType(type) && type.kind() != cppast::cpp_type_kind::builtin_t &&
+        !IsEnumType(type))))
+        result = "*" + result;
 
     return result;
 }
@@ -415,6 +417,25 @@ std::string GenerateCApiPass::MapToC(const cppast::cpp_type& type, const std::st
 
 std::string GenerateCApiPass::ToCType(const cppast::cpp_type& type)
 {
+    std::function<std::string(const cppast::cpp_type&)> toCType = [&](const cppast::cpp_type& t) {
+        switch (t.kind())
+        {
+        case cppast::cpp_type_kind::builtin_t:
+        case cppast::cpp_type_kind::user_defined_t:
+            return cppast::to_string(t);
+        case cppast::cpp_type_kind::cv_qualified_t:
+        {
+            const auto& cv = dynamic_cast<const cppast::cpp_cv_qualified_type&>(t);
+            return (cppast::is_volatile(cv.cv_qualifier()) ? "volatile " : "") + toCType(cv.type());
+        }
+        case cppast::cpp_type_kind::pointer_t:
+            return toCType(dynamic_cast<const cppast::cpp_pointer_type&>(t).pointee()) + "*";
+        case cppast::cpp_type_kind::reference_t:
+            return toCType(dynamic_cast<const cppast::cpp_reference_type&>(t).referee()) + "*";
+        }
+        assert(false);
+    };
+
     std::string typeName = GetTemplateSubtype(type);    // SharedPtr/WeakPtr unwrapping
     if (const auto* map = generator->GetTypeMap(type))
         typeName = map->cType_;
@@ -422,11 +443,10 @@ std::string GenerateCApiPass::ToCType(const cppast::cpp_type& type)
         typeName = cppast::to_string(type);
     else if (typeName.empty())
     {
-        if (IsComplexType(type))
-            typeName = Urho3D::GetTypeName(type) + "*";
-        else
-            // Builtin type
-            typeName = cppast::to_string(type);
+        typeName = toCType(type);
+        if (IsValueType(type) && IsComplexType(type))
+            // Value types turned into pointers
+            typeName += "*";
     }
     else
         // Complex type from SharedPtr or WeakPtr

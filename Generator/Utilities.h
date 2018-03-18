@@ -92,6 +92,8 @@ std::string MapParameterList(std::vector<SharedPtr<MetaEntity>>& parameters,
 bool IsEnumType(const cppast::cpp_type& type);
 /// Returns true if a type is non-builtin value type (not a pointer or reference to a struct/class).
 bool IsComplexType(const cppast::cpp_type& type);
+/// Returns true if type is a value type (not a pointer or reference).
+bool IsValueType(const cppast::cpp_type& type);
 /// Convert cppast expression into string.
 std::string ToString(const cppast::cpp_expression& expression);
 /// Get entity which defines user type pointed by `type`. Returns null if not found.
@@ -106,6 +108,10 @@ bool IsSubclassOf(const cppast::cpp_class& cls, const std::string& symbol);
 bool IsAbstract(const cppast::cpp_class& cls);
 /// Returns true if `type` is const.
 bool IsConst(const cppast::cpp_type& type);
+/// Returns true if type is a reference to something.
+bool IsReference(const cppast::cpp_type& type);
+/// Returns true if type is a pointer to something.
+bool IsPointer(const cppast::cpp_type& type);
 /// Count number of items in cppast intrusive list.
 template<typename T>
 int Count(const cppast::detail::iteratable_intrusive_list<T>& list)
@@ -129,6 +135,8 @@ std::string ToPInvokeType(const cppast::cpp_type& type, const std::string& defau
 std::string GetTemplateSubtype(const cppast::cpp_type& type);
 /// Converts identifier to CamelCase.
 std::string CamelCaseIdentifier(const std::string& name);
+/// Returns true if type is non-const reference or pointer.
+bool IsOutputType(const cppast::cpp_type& type);
 
 }
 

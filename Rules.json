@@ -150,6 +150,7 @@
       "Urho3D::InstanceData",
       "Urho3D::UIBatch",
       "Urho3D::*::TestDrawables(*",
+      "Urho3D::OcclusionBatch",
     ]
   },
   "typemaps": [
@@ -174,7 +175,7 @@
       "ptype": "string",
       "cstype": "string",
       "cpp_to_c": "strdup({value}.CString())",
-      "c_to_cpp": "Urho3D::String({value})"
+      "c_to_cpp": "Urho3D::String({value})",
     },
     {
       "type": "char const*",
