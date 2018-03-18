@@ -104,7 +104,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
         auto primitiveType = PrimitiveToCppType(cppType);
         if (auto* map = generator->GetTypeMap(cppType))
         {
-            if (map->isValueType)
+            if (map->isValueType_)
                 csType = map->csType_;
         }
         else if (primitiveType == cppast::cpp_builtin_type_kind::cpp_void)

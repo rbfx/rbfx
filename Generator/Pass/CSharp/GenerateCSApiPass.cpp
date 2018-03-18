@@ -47,7 +47,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto expr = EnsureNotKeyword(param.name());
         if (auto* map = generator->GetTypeMap(param.type()))
         {
-            if (map->isValueType)
+            if (map->isValueType_)
             {
                 auto defaultValue = metaParam->GetDefaultValue();
                 defaultValue = ConvertDefaultValueToCS(defaultValue, param.type(), true);
@@ -590,7 +590,7 @@ std::string GenerateCSApiPass::FormatCSParameterList(const std::vector<SharedPtr
         if (auto* map = generator->GetTypeMap(cppType))
         {
             // Value types are made nullable in order to allow default values.
-            if (map->isValueType && !defaultValue.empty())
+            if (map->isValueType_ && !defaultValue.empty())
                 csType += "?";
         }
         result += fmt::format("{} {}", csType, EnsureNotKeyword(param->name_));
@@ -623,7 +623,7 @@ std::string GenerateCSApiPass::ConvertDefaultValueToCS(std::string value, const 
                 value = "\"\"";
             return value;
         }
-        else if (map->isValueType && !allowComplex)
+        else if (map->isValueType_ && !allowComplex)
         {
             // Value type parameters are turned to nullables when they have default values.
             return "null";
