@@ -91,7 +91,7 @@ std::string MapParameterList(std::vector<SharedPtr<MetaEntity>>& parameters,
 /// Returns true if specified type is an enumeration.
 bool IsEnumType(const cppast::cpp_type& type);
 /// Returns true if a type is non-builtin value type (not a pointer or reference to a struct/class).
-bool IsComplexValueType(const cppast::cpp_type& type);
+bool IsComplexType(const cppast::cpp_type& type);
 /// Convert cppast expression into string.
 std::string ToString(const cppast::cpp_expression& expression);
 /// Get entity which defines user type pointed by `type`. Returns null if not found.

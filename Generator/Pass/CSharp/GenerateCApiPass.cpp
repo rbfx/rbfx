@@ -380,7 +380,7 @@ std::string GenerateCApiPass::MapToCpp(const cppast::cpp_type& type, const std::
 
     if (map)
         result = fmt::format(map->cToCppTemplate_.c_str(), fmt::arg("value", result));
-    else if (IsComplexValueType(type))
+    else if (IsComplexType(type))
     {
         if (type.kind() == cppast::cpp_type_kind::template_instantiation_t)
         {
@@ -402,7 +402,7 @@ std::string GenerateCApiPass::MapToC(const cppast::cpp_type& type, const std::st
 
     if (map)
         result = fmt::format(map->cppToCTemplate_.c_str(), fmt::arg("value", result));
-    else if (IsComplexValueType(type))
+    else if (IsComplexType(type))
     {
         auto typeName = GetTemplateSubtype(type);
         if (typeName.empty())
@@ -425,7 +425,7 @@ std::string GenerateCApiPass::ToCType(const cppast::cpp_type& type)
     if (IsEnumType(type))
         return cppast::to_string(type);
 
-    if (IsComplexValueType(type))
+    if (IsComplexType(type))
         // A value type is turned into pointer.
         return Urho3D::GetTypeName(type) + "*";
 
@@ -452,7 +452,7 @@ void GenerateCApiPass::PrintDefaultValueCode(const std::vector<SharedPtr<MetaEnt
             }
             printer_.Dedent();
         }
-        else if (typeMap == nullptr && IsComplexValueType(cppType) && value != "nullptr")
+        else if (typeMap == nullptr && IsComplexType(cppType) && value != "nullptr")
         {
             printer_ << fmt::format("if ({} == nullptr)", param->name_);
             printer_.Indent();

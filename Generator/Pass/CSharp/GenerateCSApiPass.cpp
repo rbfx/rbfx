@@ -526,7 +526,7 @@ std::string GenerateCSApiPass::MapToCS(const cppast::cpp_type& type, const std::
 {
     if (const auto* map = generator->GetTypeMap(type))
         return fmt::format(map->pInvokeToCSTemplate_.c_str(), fmt::arg("value", expression));
-    else if (IsComplexValueType(type))
+    else if (IsComplexType(type))
     {
         auto typeName = GetTemplateSubtype(type);
         if (typeName.empty())
@@ -567,7 +567,7 @@ std::string GenerateCSApiPass::MapToPInvoke(const cppast::cpp_type& type, const 
 {
     if (const auto* map = generator->GetTypeMap(type))
         return fmt::format(map->csToPInvokeTemplate_.c_str(), fmt::arg("value", expression));
-    else if (IsComplexValueType(type))
+    else if (IsComplexType(type))
     {
         auto typeName = GetTemplateSubtype(type);
         if (typeName.empty())
@@ -630,7 +630,7 @@ std::string GenerateCSApiPass::ConvertDefaultValueToCS(std::string value, const 
         }
     }
 
-    if (!allowComplex && IsComplexValueType(type))
+    if (!allowComplex && IsComplexType(type))
     {
         // C# may only have default values constructed by default constructor. Because of this such default
         // values are replaced with null. Function body will construct actual default value if parameter is

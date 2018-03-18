@@ -239,20 +239,20 @@ bool IsEnumType(const cppast::cpp_type& type)
     return entity != nullptr && entity->kind() == cppast::cpp_entity_kind::enum_t;
 }
 
-bool IsComplexValueType(const cppast::cpp_type& type)
+bool IsComplexType(const cppast::cpp_type& type)
 {
     switch (type.kind())
     {
     case cppast::cpp_type_kind::builtin_t:
         return false;
     case cppast::cpp_type_kind::pointer_t:
-        return IsComplexValueType(dynamic_cast<const cppast::cpp_pointer_type&>(type).pointee());
+        return IsComplexType(dynamic_cast<const cppast::cpp_pointer_type&>(type).pointee());
     case cppast::cpp_type_kind::reference_t:
-        return IsComplexValueType(dynamic_cast<const cppast::cpp_reference_type&>(type).referee());
+        return IsComplexType(dynamic_cast<const cppast::cpp_reference_type&>(type).referee());
     case cppast::cpp_type_kind::user_defined_t:
         return !IsEnumType(type);
     case cppast::cpp_type_kind::cv_qualified_t:
-        return IsComplexValueType(dynamic_cast<const cppast::cpp_cv_qualified_type&>(type).type());
+        return IsComplexType(dynamic_cast<const cppast::cpp_cv_qualified_type&>(type).type());
     default:
         return true;
     }
@@ -555,7 +555,7 @@ std::string ToPInvokeType(const cppast::cpp_type& type, const std::string& defau
         return map->pInvokeType_;
     else if (IsEnumType(type))
         return "global::" + str::replace_str(Urho3D::GetTypeName(type), "::", ".");
-    else if (IsComplexValueType(type))
+    else if (IsComplexType(type))
         return default_;
     else
         return BuiltinToPInvokeType(type);
