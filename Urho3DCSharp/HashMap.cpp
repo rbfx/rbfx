@@ -28,10 +28,8 @@ URHO3D_EXPORT_API bool Urho3D_HashMap_StringHash_Variant_Remove(Urho3D::VariantM
 URHO3D_EXPORT_API bool Urho3D_HashMap_StringHash_Variant_First(Urho3D::VariantMap* map,
     Urho3D::VariantMap::Iterator& it)
 {
-    if (it == map->End())
-        return false;
     it = map->Begin();
-    return true;
+    return it != map->End();
 }
 
 URHO3D_EXPORT_API bool Urho3D_HashMap_StringHash_Variant_Next(Urho3D::VariantMap* map, Urho3D::VariantMap::Iterator& it)
