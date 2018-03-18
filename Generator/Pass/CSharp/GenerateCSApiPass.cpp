@@ -332,7 +332,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         {
             // Implement interface methods that come directly from interfaced class. If interfaced class inherits other
             // interfaces then these interfaces will be inherited instead.
-            if (entity->sourceSymbolName_.find(entity->parent_->symbolName_) == 0)
+            if (entity->symbolName_.find(entity->parent_->symbolName_) == 0)
             {
                 interface_ << fmt::format("{rtype} {name}({csParams});", FMT_CAPTURE(rtype),
                     fmt::arg("name", entity->name_), FMT_CAPTURE(csParams));

@@ -147,7 +147,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             else if (entity->access_ == cppast::cpp_public)
                 // Non-virtual public methods sometimes have issues being called. Use fully qualified name for
                 // calling them.
-                call += fmt::format("{}({})", entity->symbolName_, paramNames);
+                call += fmt::format("{}({})", entity->sourceSymbolName_, paramNames);
             else
                 // Protected non-virtual methods are wrapped in public proxy methods.
                 call += fmt::format("__public_{}({})", entity->sourceName_, paramNames);

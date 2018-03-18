@@ -147,7 +147,6 @@ bool ImplementInterfacesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
                             // Just to be safe that right method is called
                             str::replace_str(newEntity->sourceSymbolName_, metaBase->sourceSymbolName_,
                                 entity->sourceSymbolName_, 1);
-                            newEntity->symbolName_ = newEntity->sourceSymbolName_;
 
                             entity->Add(newEntity);
                         }
