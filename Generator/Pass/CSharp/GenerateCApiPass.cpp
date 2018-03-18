@@ -103,6 +103,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         const auto& func = entity->Ast<cppast::cpp_constructor>();
         entity->cFunctionName_ = GetUniqueName(Sanitize(entity->uniqueName_));
         std::string className = entity->parent_->sourceSymbolName_;
+        printer_ << "// " + entity->uniqueName_;
         printer_ << fmt::format("URHO3D_EXPORT_API {type} {name}({params})",
             fmt::arg("type", className + "*"), fmt::arg("name", entity->cFunctionName_),
             fmt::arg("params", ParameterList(func.parameters(), toCType)));
@@ -130,6 +131,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto paramNames = ParameterNameList(func.parameters(), toCppType);
         auto className = entity->GetFirstParentOfKind(cppast::cpp_entity_kind::class_t)->sourceSymbolName_;
 
+        printer_ << "// " + entity->uniqueName_;
         printer_ << fmt::format("URHO3D_EXPORT_API {rtype} {cFunction}({className}* instance{psep}{params})",
             fmt::arg("rtype", ToCType(func.return_type())), FMT_CAPTURE(cFunction), FMT_CAPTURE(className),
             fmt::arg("psep", func.parameters().empty() ? "" : ", "),
@@ -178,6 +180,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         entity->cFunctionName_ = GetUniqueName(Sanitize(entity->uniqueName_));
         auto paramNames = ParameterNameList(func.parameters(), toCppType);
 
+        printer_ << "// " + entity->uniqueName_;
         printer_ << fmt::format("URHO3D_EXPORT_API {} {}({})",
             ToCType(func.return_type()), entity->cFunctionName_, ParameterList(func.parameters(), toCType));
         printer_.Indent();
@@ -222,6 +225,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto value = MapToCpp(var.type(), "value");
 
         // Getter
+        printer_ << "// " + entity->uniqueName_;
         printer_.Write(fmt::format("URHO3D_EXPORT_API {rtype} get_{cFunction}()", FMT_CAPTURE(rtype),
             FMT_CAPTURE(cFunction)));
         printer_.Indent();
@@ -268,6 +272,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto name = entity->name_;
 
         // Getter
+        printer_ << "// " + entity->uniqueName_;
         printer_.Write(fmt::format("URHO3D_EXPORT_API {cType} get_{cFunction}({namespaceName}* instance)",
             FMT_CAPTURE(cType), FMT_CAPTURE(cFunction), FMT_CAPTURE(namespaceName)));
         printer_.Indent();
