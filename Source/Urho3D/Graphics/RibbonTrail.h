@@ -83,6 +83,8 @@ public:
     void UpdateGeometry(const FrameInfo& frame) override;
     /// Return whether a geometry update is necessary, and if it can happen in a worker thread.
     UpdateGeometryType GetUpdateGeometryType() override;
+	/// Update/Rebuild tail mesh only if position changed (called by UpdateBatches())
+	void UpdateTail(float timeStep);
 
     /// Set material.
     void SetMaterial(Material* material);
@@ -195,8 +197,7 @@ private:
     void UpdateBufferSize();
     /// Rewrite RibbonTrail vertex buffer.
     void UpdateVertexBuffer(const FrameInfo& frame);
-    /// Update/Rebuild tail mesh only if position changed (called by UpdateBatches())
-    void UpdateTail(float timeStep);
+
     /// Geometry.
     SharedPtr<Geometry> geometry_;
     /// Vertex buffer.
