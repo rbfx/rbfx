@@ -1000,6 +1000,11 @@ String ReplaceExtension(const String& fullPath, const String& newExtension)
     return path + file + newExtension;
 }
 
+StringVector GetDirectorySplit(const String& fullPath) {
+	String path = GetPath(fullPath);
+	return path.Split('/');
+}
+
 String AddTrailingSlash(const String& pathName)
 {
     String ret = pathName.Trimmed();

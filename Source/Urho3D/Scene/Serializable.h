@@ -223,7 +223,7 @@ SharedPtr<AttributeAccessor> MakeVariantAttributeAccessor(TGetFunction getFuncti
 namespace AttributeMetadata
 {
     /// Names of vector struct elements. StringVector.
-    static const StringHash P_VECTOR_STRUCT_ELEMENTS("VectorStructElements");
+    static const StringHash P_VECTOR_STRUCT_ELEMENTS = "VectorStructElements";
 }
 
 // The following macros need to be used within a class member function such as ClassName::RegisterObject().

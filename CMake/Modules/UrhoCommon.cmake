@@ -41,7 +41,8 @@ if (ANDROID)
     # For Android platform, install to a path based on the chosen Android ABI, e.g. libs/armeabi-v7a
     set (LIB_SUFFIX s/${ANDROID_NDK_ABI_NAME})
 endif ()
-set (DEST_INCLUDE_DIR include/Urho3D)
+set (DEST_BASE_INCLUDE_DIR include)
+set (DEST_INCLUDE_DIR ${DEST_BASE_INCLUDE_DIR}/Urho3D)
 set (DEST_BIN_DIR bin)
 if (WIN32 AND BUILD_SHARED_LIBS)
     # Windows can not find shared libraries in other directories.

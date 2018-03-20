@@ -146,6 +146,8 @@ URHO3D_API String GetExtension(const String& fullPath, bool lowercaseExtension =
 URHO3D_API String GetFileNameAndExtension(const String& fileName, bool lowercaseExtension = false);
 /// Replace the extension of a file name with another.
 URHO3D_API String ReplaceExtension(const String& fullPath, const String& newExtension);
+/// Return a string vector where each string is a directory from a fullPath.
+URHO3D_API StringVector GetDirectorySplit(const String& fullPath);
 /// Add a slash at the end of the path if missing and convert to internal format (use slashes.)
 URHO3D_API String AddTrailingSlash(const String& pathName);
 /// Remove the slash from the end of a path if exists and convert to internal format (use slashes.)
