@@ -146,14 +146,16 @@ URHO3D_API String GetExtension(const String& fullPath, bool lowercaseExtension =
 URHO3D_API String GetFileNameAndExtension(const String& fileName, bool lowercaseExtension = false);
 /// Replace the extension of a file name with another.
 URHO3D_API String ReplaceExtension(const String& fullPath, const String& newExtension);
-/// Return a string vector where each string is a directory from a fullPath.
-URHO3D_API StringVector GetDirectorySplit(const String& fullPath);
+/// Return a path formed by a vector of individual directory names.
+URHO3D_API String PathFromSplit(const StringVector& dirSplit);
 /// Add a slash at the end of the path if missing and convert to internal format (use slashes.)
 URHO3D_API String AddTrailingSlash(const String& pathName);
 /// Remove the slash from the end of a path if exists and convert to internal format (use slashes.)
 URHO3D_API String RemoveTrailingSlash(const String& pathName);
 /// Return the parent path, or the path itself if not available.
 URHO3D_API String GetParentPath(const String& path);
+/// Return a path with "./" and "../" resolved back into a full path: eg ("foo/bar/../" --> "foo/")
+URHO3D_API String GetSimplifiedPath(const String& path);
 /// Convert a path to internal format (use slashes.)
 URHO3D_API String GetInternalPath(const String& pathName);
 /// Convert a path to the format required by the operating system.
