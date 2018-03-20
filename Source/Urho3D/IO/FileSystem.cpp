@@ -1038,34 +1038,6 @@ String GetParentPath(const String& path)
         return String();
 }
 
-String GetSimplifiedPath(const String& path)
-{
-	StringVector dirSplit = path.Split('/');
-
-	Vector<int> keepIndxes;
-	for (int i = 0; i < dirSplit.Size(); i++) {
-		if (dirSplit[i] == ".") {
-
-		}
-		else if (dirSplit[i] == "..") {
-			if (keepIndxes.Size())
-				keepIndxes.Pop();
-			else
-				keepIndxes += i;
-		}
-		else
-			keepIndxes += i;
-	}
-
-	StringVector newDirs;
-	for (int k = 0; k < keepIndxes.Size(); k++)
-	{
-		newDirs.Push(dirSplit[keepIndxes[k]]);
-	}
-
-	return PathFromSplit(newDirs);
-}
-
 
 String GetInternalPath(const String& pathName)
 {

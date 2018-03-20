@@ -154,8 +154,6 @@ URHO3D_API String AddTrailingSlash(const String& pathName);
 URHO3D_API String RemoveTrailingSlash(const String& pathName);
 /// Return the parent path, or the path itself if not available.
 URHO3D_API String GetParentPath(const String& path);
-/// Return a path with "./" and "../" resolved back into a full path: eg ("foo/bar/../" --> "foo/")
-URHO3D_API String GetSimplifiedPath(const String& path);
 /// Convert a path to internal format (use slashes.)
 URHO3D_API String GetInternalPath(const String& pathName);
 /// Convert a path to the format required by the operating system.
