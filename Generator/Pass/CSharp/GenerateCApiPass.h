@@ -47,7 +47,7 @@ protected:
     std::string MapToCNoCopy(const std::string& type, const std::string& expression);
     std::string MapToCpp(const cppast::cpp_type& type, const std::string& expression);
     std::string MapToC(const cppast::cpp_type& type, const std::string& expression);
-    std::string ToCType(const cppast::cpp_type& type);
+    std::string ToCType(const cppast::cpp_type& type, bool disallowReferences=false);
     void PrintDefaultValueCode(const std::vector<SharedPtr<MetaEntity>>& parameters);
 
     CSharpPrinter printer_;

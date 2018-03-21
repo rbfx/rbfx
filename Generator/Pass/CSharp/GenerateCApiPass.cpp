@@ -133,7 +133,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         printer_ << "// " + entity->uniqueName_;
         printer_ << fmt::format("URHO3D_EXPORT_API {rtype} {cFunction}({className}* instance{psep}{params})",
-            fmt::arg("rtype", ToCType(func.return_type())), FMT_CAPTURE(cFunction), FMT_CAPTURE(className),
+            fmt::arg("rtype", ToCType(func.return_type(), true)), FMT_CAPTURE(cFunction), FMT_CAPTURE(className),
             fmt::arg("psep", func.parameters().empty() ? "" : ", "),
             fmt::arg("params", ParameterList(func.parameters(), toCType)));
         printer_.Indent();
@@ -182,7 +182,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         printer_ << "// " + entity->uniqueName_;
         printer_ << fmt::format("URHO3D_EXPORT_API {} {}({})",
-            ToCType(func.return_type()), entity->cFunctionName_, ParameterList(func.parameters(), toCType));
+            ToCType(func.return_type(), true), entity->cFunctionName_, ParameterList(func.parameters(), toCType));
         printer_.Indent();
         {
             PrintDefaultValueCode(entity->children_);
@@ -218,7 +218,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             return true;
 
         entity->cFunctionName_ = Sanitize(ns->symbolName_ + "_" + entity->name_);
-        auto rtype = ToCType(var.type());
+        auto rtype = ToCType(var.type(), true);
         auto cFunction = entity->cFunctionName_;
         auto namespaceName = ns->sourceSymbolName_;
         auto name = entity->name_;
@@ -266,7 +266,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             return true;
 
         entity->cFunctionName_ = Sanitize(ns->symbolName_ + "_" + entity->name_);
-        auto cType = ToCType(var.type());
+        auto cType = ToCType(var.type(), true);
         auto cFunction = entity->cFunctionName_;
         auto namespaceName = ns->sourceSymbolName_;
         auto name = entity->name_;
@@ -407,7 +407,7 @@ std::string GenerateCApiPass::MapToC(const cppast::cpp_type& type, const std::st
     return result;
 }
 
-std::string GenerateCApiPass::ToCType(const cppast::cpp_type& type)
+std::string GenerateCApiPass::ToCType(const cppast::cpp_type& type, bool disallowReferences)
 {
     std::function<std::string(const cppast::cpp_type&)> toCType = [&](const cppast::cpp_type& t) {
         switch (t.kind())
@@ -441,7 +441,8 @@ std::string GenerateCApiPass::ToCType(const cppast::cpp_type& type)
     if (const auto* map = generator->GetTypeMap(type))
     {
         typeName = map->cType_;
-        if (IsOutType(type))
+        if (IsOutType(type) && !disallowReferences)
+            // Typemaps map to blittable types therefore we should return them as values.
             typeName += "*";
     }
     else
