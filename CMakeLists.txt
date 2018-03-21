@@ -95,7 +95,7 @@ macro (CSHARP_BIND_TARGET TARGET RULES SOURCE_DIR)
     )
     set_source_files_properties(${COMMON_CSHARP_SOURCE_FILES_GENERATED} PROPERTIES GENERATED TRUE)
     add_library(${TARGET}CSharp SHARED ${COMMON_CSHARP_SOURCE_FILES_MANUAL} ${COMMON_CSHARP_SOURCE_FILES_GENERATED})
-    target_link_libraries(${TARGET}CSharp Urho3D)
+    target_link_libraries(${TARGET}CSharp ${TARGET})
     target_include_directories(${TARGET}CSharp PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/CommonCSharp
         ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}CSharp
