@@ -119,8 +119,12 @@ macro (CSHARP_BIND_TARGET TARGET RULES SOURCE_DIR)
         ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}Net/PInvoke.cs
         ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}Net/Urho3D.cs
     )
+    find_program(CSC csc)
+    if (NOT CSC)
+        message(FATAL_ERROR "C# compiler could not be found.")
+    endif ()
     add_custom_target(${TARGET}Net
-        COMMAND ${TERM_WORKAROUND} csc /target:library ${NET_PLATFORM} /unsafe /reference:System.dll
+        COMMAND ${TERM_WORKAROUND} ${CSC} /target:library ${NET_PLATFORM} /unsafe /reference:System.dll
                 /out:${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET}Net.dll
                 ${COMMON_NET_SOURCE_FILES_MANUAL} ${COMMON_NET_SOURCE_FILES_GENERATED}
     )
