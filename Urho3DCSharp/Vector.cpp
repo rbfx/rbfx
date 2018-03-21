@@ -59,7 +59,7 @@ URHO3D_EXPORT_API unsigned char* Urho3D_VectorBase_AllocateBuffer(int size)
     return VectorBase::AllocateBuffer(size);
 }
 
-URHO3D_EXPORT_API unsigned char* Urho3D_VectorBase_FreeBuffer(unsigned char* buffer)
+URHO3D_EXPORT_API void Urho3D_VectorBase_FreeBuffer(unsigned char* buffer)
 {
     VectorBase::FreeBuffer(buffer);
 }

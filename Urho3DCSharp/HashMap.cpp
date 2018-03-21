@@ -22,7 +22,7 @@ URHO3D_EXPORT_API void Urho3D_HashMap_StringHash_Variant_Add(Urho3D::VariantMap*
 
 URHO3D_EXPORT_API bool Urho3D_HashMap_StringHash_Variant_Remove(Urho3D::VariantMap* map, unsigned key)
 {
-    map->Erase(StringHash(key));
+    return map->Erase(StringHash(key));
 }
 
 URHO3D_EXPORT_API bool Urho3D_HashMap_StringHash_Variant_First(Urho3D::VariantMap* map,
