@@ -92,16 +92,16 @@ namespace Urho3D
 		}
 
 		/// Construct from 8 bit components
-		Color(int r256, int g256, int b256, int a256) noexcept :
-		r_(r256),
-			g_(g256),
-			b_(b256),
-			a_(a256)
+		explicit Color(int r, int g, int b, int a = 255) noexcept :
+		r_(r),
+			g_(g),
+			b_(b),
+			a_(a)
 		{
-			r_ = Clamp(r256, 0, 255) / 255.0f;
-			g_ = Clamp(g256, 0, 255) / 255.0f;
-			b_ = Clamp(b256, 0, 255) / 255.0f;
-			a_ = Clamp(a256, 0, 255) / 255.0f;
+			r_ = Clamp(r, 0, 255) / 255.0f;
+			g_ = Clamp(g, 0, 255) / 255.0f;
+			b_ = Clamp(b, 0, 255) / 255.0f;
+			a_ = Clamp(a, 0, 255) / 255.0f;
 		}
 
 
