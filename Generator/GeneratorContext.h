@@ -86,7 +86,7 @@ public:
     void AddApiPass(Args... args) { apiPasses_.Push(DynamicCast<CppApiPass>(SharedPtr<T>(new T(context_, args...)))); }
     void Generate(const String& outputDirCpp, const String& outputDirCs);
     bool IsAcceptableType(const cppast::cpp_type& type);
-    const TypeMap* GetTypeMap(const cppast::cpp_type& type);
+    const TypeMap* GetTypeMap(const cppast::cpp_type& type, bool strict=false);
     const TypeMap* GetTypeMap(const std::string& typeName);
     template<typename T>
     T* GetPass()

@@ -108,6 +108,8 @@ bool IsSubclassOf(const cppast::cpp_class& cls, const std::string& symbol);
 bool IsAbstract(const cppast::cpp_class& cls);
 /// Returns true if `type` is const.
 bool IsConst(const cppast::cpp_type& type);
+/// Returns true if type is a non-const reference to any type or non-const pointer to builtin type.
+bool IsOutType(const cppast::cpp_type& type);
 /// Returns true if type is a reference to something.
 bool IsReference(const cppast::cpp_type& type);
 /// Returns true if type is a pointer to something.
@@ -135,8 +137,6 @@ std::string ToPInvokeType(const cppast::cpp_type& type, const std::string& defau
 std::string GetTemplateSubtype(const cppast::cpp_type& type);
 /// Converts identifier to CamelCase.
 std::string CamelCaseIdentifier(const std::string& name);
-/// Returns true if type is non-const reference or pointer.
-bool IsOutputType(const cppast::cpp_type& type);
 
 }
 

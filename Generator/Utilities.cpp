@@ -263,7 +263,7 @@ bool IsComplexType(const cppast::cpp_type& type)
 
 bool IsValueType(const cppast::cpp_type& type)
 {
-    if (auto* map = generator->GetTypeMap(type))
+    if (auto* map = generator->GetTypeMap(type, false))
         return map->isValueType_;
 
     switch (type.kind())
@@ -617,36 +617,42 @@ std::string CamelCaseIdentifier(const std::string& name)
     return str::join(tokens, "");
 }
 
-bool IsOutputType(const cppast::cpp_type& type)
+bool IsOutType(const cppast::cpp_type& type)
 {
-    auto checkType = [](const cppast::cpp_type* type) {
-        if (type->kind() == cppast::cpp_type_kind::cv_qualified_t)
-        {
-            const auto* cvType = dynamic_cast<const cppast::cpp_cv_qualified_type*>(type);
-            if (cppast::is_const(cvType->cv_qualifier()))
-                return false;
-            type = &cvType->type();
-        }
-
-        if (type->kind() == cppast::cpp_type_kind::builtin_t)
-        {
-            const auto* builtinType = dynamic_cast<const cppast::cpp_builtin_type*>(type);
-            if (builtinType->builtin_type_kind() == cppast::cpp_builtin_type_kind::cpp_void)
-                return false;
-        }
-
-        return true;
-    };
-
-    switch (type.kind())
+    if (type.kind() == cppast::cpp_type_kind::pointer_t || type.kind() == cppast::cpp_type_kind::reference_t)
     {
-    case cppast::cpp_type_kind::reference_t:
-        return checkType(&dynamic_cast<const cppast::cpp_reference_type&>(type).referee());
-    // case cppast::cpp_type_kind::pointer_t:
-    //     return checkType(&dynamic_cast<const cppast::cpp_pointer_type&>(type).pointee());
-    default:
-        return false;
+        const auto& pointee = type.kind() == cppast::cpp_type_kind::pointer_t ?
+                              dynamic_cast<const cppast::cpp_pointer_type&>(type).pointee() :
+                              dynamic_cast<const cppast::cpp_reference_type&>(type).referee();
+
+        if (IsConst(pointee))
+            return false;
+
+        const auto& nonCvPointee = cppast::remove_cv(pointee);
+
+        // A pointer to builtin is (almost) definitely output parameter. In some cases (like when pointer to builtin
+        // type means a location within array) c++ code should be tweaked to better reflect intent of parameter or c++
+        // function should be ignored completely.
+        if (nonCvPointee.kind() == cppast::cpp_type_kind::builtin_t)
+            return true;
+
+        // Any type mapped to a value type (like std::string mapped to System.String) are output parameters.
+        auto* map = generator->GetTypeMap(type);
+        if (map != nullptr && map->isValueType_)
+            return true;
+
+        if (nonCvPointee.kind() == cppast::cpp_type_kind::user_defined_t)
+        {
+            if (IsEnumType(nonCvPointee))
+                // Does this even happen ever?
+                return true;
+            else
+                // A pointer to object is not necessarily output parameter.
+                return false;
+        }
     }
+
+    return false;
 }
 
 bool IsReference(const cppast::cpp_type& type)

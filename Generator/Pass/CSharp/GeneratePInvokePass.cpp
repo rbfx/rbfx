@@ -25,6 +25,10 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <cppast/cpp_namespace.hpp>
+#include <cppast/cpp_template.hpp>
+#include <cppast/cpp_type.hpp>
+#include <cppast/cpp_array_type.hpp>
+#include <cppast/cpp_function_type.hpp>
 #include "GeneratorContext.h"
 #include "GeneratePInvokePass.h"
 #include "ImplementInterfacesPass.h"
@@ -358,16 +362,80 @@ void GeneratePInvokePass::Stop()
 
 std::string GeneratePInvokePass::ToPInvokeTypeReturn(const cppast::cpp_type& type)
 {
-    std::string result = ToPInvokeType(type, "IntPtr");
+    std::string result = ToPInvokeType(type);
     return result;
 }
 
 std::string GeneratePInvokePass::ToPInvokeTypeParam(const cppast::cpp_type& type)
 {
-    std::string result = ToPInvokeType(type, "IntPtr");
-    if (result == "string")
+    std::string result = ToPInvokeType(type);
+    if (result == "string" || result == "ref string")
         return "[param: MarshalAs(UnmanagedType.LPUTF8Str)]" + result;
+
     return result;
+}
+
+std::string GeneratePInvokePass::ToPInvokeType(const cppast::cpp_type& type)
+{
+    std::function<std::string(const cppast::cpp_type&)> toPInvokeType = [&](const cppast::cpp_type& t) -> std::string {
+        switch (t.kind())
+        {
+        case cppast::cpp_type_kind::builtin_t:
+            return Urho3D::PrimitiveToPInvokeType(dynamic_cast<const cppast::cpp_builtin_type&>(t).builtin_type_kind());
+        case cppast::cpp_type_kind::user_defined_t:
+            if (IsEnumType(t))
+                return cppast::to_string(t);
+            // In case this is complex object returned by value always treat it as a pointer.
+            return "IntPtr";
+        case cppast::cpp_type_kind::cv_qualified_t:
+            return toPInvokeType(dynamic_cast<const cppast::cpp_cv_qualified_type&>(t).type());
+        case cppast::cpp_type_kind::pointer_t:
+        case cppast::cpp_type_kind::reference_t:
+        {
+            const auto& pointee = cppast::remove_cv(
+                t.kind() == cppast::cpp_type_kind::pointer_t ?
+                dynamic_cast<const cppast::cpp_pointer_type&>(t).pointee() :
+                dynamic_cast<const cppast::cpp_reference_type&>(t).referee());
+
+            if (pointee.kind() == cppast::cpp_type_kind::builtin_t)
+            {
+                const auto& builtin = dynamic_cast<const cppast::cpp_builtin_type&>(pointee);
+                if (builtin.builtin_type_kind() == cppast::cpp_builtin_type_kind::cpp_char)
+                    return "string";
+                if (t.kind() == cppast::cpp_type_kind::pointer_t)
+                    return "IntPtr";
+                return "ref " + toPInvokeType(pointee);
+            }
+            else if (pointee.kind() == cppast::cpp_type_kind::user_defined_t && !IsEnumType(t))
+                return "IntPtr";
+
+            return "IntPtr";
+        }
+        case cppast::cpp_type_kind::template_instantiation_t:
+        {
+            const auto& tpl = dynamic_cast<const cppast::cpp_template_instantiation_type&>(t);
+            auto tplName = tpl.primary_template().name();
+            if (tplName == "SharedPtr" || tplName == "WeakPtr")
+                return "IntPtr";
+            assert(false);
+        }
+        default:
+            assert(false);
+        }
+    };
+
+    std::string typeName;
+    if (auto* map = generator->GetTypeMap(type))
+    {
+        typeName = map->pInvokeType_;
+        if (IsOutType(type))
+            typeName = "ref " + typeName;
+    }
+    else
+        typeName = toPInvokeType(type);
+
+    str::replace_str(typeName, "::", ".");
+    return typeName;
 }
 
 }

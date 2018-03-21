@@ -25,6 +25,8 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <cppast/cpp_namespace.hpp>
+#include <cppast/cpp_template.hpp>
+#include <cppast/cpp_type.hpp>
 #include "GeneratorContext.h"
 #include "GenerateCSApiPass.h"
 
@@ -45,9 +47,9 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     auto mapToPInvoke = [&](MetaEntity* metaParam) {
         const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
         auto expr = EnsureNotKeyword(param.name());
-        if (auto* map = generator->GetTypeMap(param.type()))
+        if (auto* map = generator->GetTypeMap(param.type(), false))
         {
-            if (map->isValueType_)
+            if (map->isValueType_ && map->csType_ != "string")
             {
                 auto defaultValue = metaParam->GetDefaultValue();
                 defaultValue = ConvertDefaultValueToCS(defaultValue, param.type(), true);
@@ -524,15 +526,12 @@ void GenerateCSApiPass::Stop()
 
 std::string GenerateCSApiPass::MapToCS(const cppast::cpp_type& type, const std::string& expression)
 {
-    if (const auto* map = generator->GetTypeMap(type))
+    auto typeName = ToCSType(type);
+    if (const auto* map = generator->GetTypeMap(type, false))
+        // TODO: ref types
         return fmt::format(map->pInvokeToCSTemplate_.c_str(), fmt::arg("value", expression));
     else if (IsComplexType(type))
     {
-        auto typeName = GetTemplateSubtype(type);
-        if (typeName.empty())
-            typeName = Urho3D::GetTypeName(type);
-
-        typeName = "global::" + str::replace_str(typeName, "::", ".");
         return fmt::format("{}.__FromPInvoke({})", typeName, expression);
     }
     return expression;
@@ -540,42 +539,89 @@ std::string GenerateCSApiPass::MapToCS(const cppast::cpp_type& type, const std::
 
 std::string GenerateCSApiPass::ToCSType(const cppast::cpp_type& type)
 {
-    std::string result;
-    if (const auto* map = generator->GetTypeMap(type))
-        return map->csType_;
+    bool isRef = false;
+    return ToCSType(type, isRef);
+}
 
-    auto typeName = GetTemplateSubtype(type);
-    if (typeName.empty() && GetEntity(type) != nullptr)
-        typeName = Urho3D::GetTypeName(type);
+std::string GenerateCSApiPass::ToCSType(const cppast::cpp_type& type, bool& isRef)
+{
+    isRef = false;
 
-    if (!typeName.empty())
-    {
-        WeakPtr<MetaEntity> entity;
-        if (generator->symbols_.TryGetValue(typeName, entity))
+    std::function<std::string(const cppast::cpp_type&)> toCSType = [&](const cppast::cpp_type& t) -> std::string {
+        switch (t.kind())
         {
-            // Use interface types if class implements this interface.
-            if (entity->flags_ & HintInterface)
-                typeName = entity->parent_->symbolName_ + "::I" + entity->name_;
-        }
-        return "global::" + str::replace_str(typeName, "::", ".");
-    }
+        case cppast::cpp_type_kind::builtin_t:
+            return Urho3D::PrimitiveToPInvokeType(dynamic_cast<const cppast::cpp_builtin_type&>(t).builtin_type_kind());
+        case cppast::cpp_type_kind::user_defined_t:
+            return cppast::to_string(t);
+        case cppast::cpp_type_kind::cv_qualified_t:
+            return toCSType(dynamic_cast<const cppast::cpp_cv_qualified_type&>(t).type());
+        case cppast::cpp_type_kind::pointer_t:
+        case cppast::cpp_type_kind::reference_t:
+        {
+            const auto& pointee = cppast::remove_cv(
+                t.kind() == cppast::cpp_type_kind::pointer_t ?
+                dynamic_cast<const cppast::cpp_pointer_type&>(t).pointee() :
+                dynamic_cast<const cppast::cpp_reference_type&>(t).referee());
 
-    return ToPInvokeType(type, "IntPtr");
+            if (pointee.kind() == cppast::cpp_type_kind::builtin_t)
+            {
+                const auto& builtin = dynamic_cast<const cppast::cpp_builtin_type&>(pointee);
+                if (builtin.builtin_type_kind() == cppast::cpp_builtin_type_kind::cpp_char)
+                    return "string";
+                if (t.kind() == cppast::cpp_type_kind::pointer_t)
+                    return "IntPtr";
+                isRef = true;
+                return "ref " + toCSType(pointee);
+            }
+            else if (pointee.kind() == cppast::cpp_type_kind::user_defined_t)
+                return toCSType(pointee);
+            else
+            {
+                isRef = true;
+                return "ref " + toCSType(pointee);
+            }
+        }
+        case cppast::cpp_type_kind::template_instantiation_t:
+        {
+            const auto& tpl = dynamic_cast<const cppast::cpp_template_instantiation_type&>(t);
+            auto tplName = tpl.primary_template().name();
+            if (tplName == "SharedPtr" || tplName == "WeakPtr")
+                return tpl.unexposed_arguments();
+            assert(false);
+        }
+        default:
+            assert(false);
+        }
+    };
+
+    std::string typeName;
+    if (auto* map = generator->GetTypeMap(type))
+    {
+        typeName = map->csType_;
+        if (IsOutType(type))
+        {
+            isRef = true;
+            typeName = "ref " + typeName;
+        }
+    }
+    else
+        typeName = toCSType(type);
+
+    str::replace_str(typeName, "::", ".");
+    return typeName;
 }
 
 std::string GenerateCSApiPass::MapToPInvoke(const cppast::cpp_type& type, const std::string& expression)
 {
-    if (const auto* map = generator->GetTypeMap(type))
+    bool isRef = false;
+    auto typeName = ToCSType(type, isRef);
+    if (const auto* map = generator->GetTypeMap(type, false))
         return fmt::format(map->csToPInvokeTemplate_.c_str(), fmt::arg("value", expression));
     else if (IsComplexType(type))
-    {
-        auto typeName = GetTemplateSubtype(type);
-        if (typeName.empty())
-            typeName = Urho3D::GetTypeName(type);
-
-        typeName = "global::" + str::replace_str(typeName, "::", ".");
         return fmt::format("{}.__ToPInvoke({})", typeName, expression);
-    }
+    if (isRef)
+        return "ref " + expression; // TODO: typemapped ref
     return expression;
 }
 
@@ -587,10 +633,10 @@ std::string GenerateCSApiPass::FormatCSParameterList(const std::vector<SharedPtr
         const auto& cppType = param->Ast<cppast::cpp_function_parameter>().type();
         auto csType = ToCSType(cppType);
         auto defaultValue = param->GetDefaultValue();
-        if (auto* map = generator->GetTypeMap(cppType))
+        if (auto* map = generator->GetTypeMap(cppType, false))
         {
             // Value types are made nullable in order to allow default values.
-            if (map->isValueType_ && !defaultValue.empty())
+            if (map->isValueType_ && !defaultValue.empty() && map->csType_ != "string")
                 csType += "?";
         }
         result += fmt::format("{} {}", csType, EnsureNotKeyword(param->name_));
@@ -614,7 +660,7 @@ std::string GenerateCSApiPass::ConvertDefaultValueToCS(std::string value, const 
         return "null";
 
     WeakPtr<MetaEntity> entity;
-    if (auto* map = generator->GetTypeMap(type))
+    if (auto* map = generator->GetTypeMap(type, false))
     {
         if (map->csType_ == "string")
         {

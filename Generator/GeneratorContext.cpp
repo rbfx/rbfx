@@ -313,25 +313,26 @@ bool GeneratorContext::IsAcceptableType(const cppast::cpp_type& type)
     if (isPInvokable(type))
         return true;
 
+    auto baseTypeName = Urho3D::GetTypeName(type);
+
     // Manually handled types
-    if (GetTypeMap(type) != nullptr)
+    if (GetTypeMap(baseTypeName) != nullptr)
         return true;
 
     // Known symbols will be classes that are being wrapped
-    return symbols_.Contains(cppast::to_string(GetBaseType(type)));
+    return symbols_.Contains(baseTypeName);
 }
 
-const TypeMap* GeneratorContext::GetTypeMap(const cppast::cpp_type& type)
+const TypeMap* GeneratorContext::GetTypeMap(const cppast::cpp_type& type, bool strict)
 {
-    std::string baseName = Urho3D::GetTypeName(type);
-    std::string fullName = cppast::to_string(type);
+    if (auto* map = GetTypeMap(cppast::to_string(type)))
+        return map;
 
-    auto it = typeMaps_.find(baseName);
-    if (it == typeMaps_.end())
-        it = typeMaps_.find(fullName);
-
-    if (it != typeMaps_.end())
-        return &it->second;
+    if (!strict)
+    {
+        if (auto* map = GetTypeMap(cppast::to_string(GetBaseType(type))))
+            return map;
+    }
 
     return nullptr;
 }

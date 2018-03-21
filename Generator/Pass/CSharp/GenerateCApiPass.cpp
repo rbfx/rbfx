@@ -375,25 +375,17 @@ std::string GenerateCApiPass::MapToCNoCopy(const std::string& type, const std::s
 
 std::string GenerateCApiPass::MapToCpp(const cppast::cpp_type& type, const std::string& expression)
 {
-    const auto* map = generator->GetTypeMap(type);
+    const auto* map = generator->GetTypeMap(type, false);
     std::string result = expression;
 
     if (map)
-        result = fmt::format(map->cToCppTemplate_.c_str(), fmt::arg("value", result));
-    else if (IsComplexType(type))
-    {
-        if (type.kind() == cppast::cpp_type_kind::template_instantiation_t)
-        {
-            return fmt::format("{type}({expr})", fmt::arg("type", Urho3D::GetTypeName(type)),
-                fmt::arg("expr", result));
-        }
-    }
+        return fmt::format(map->cToCppTemplate_.c_str(), fmt::arg("value", result));
+    else if (type.kind() == cppast::cpp_type_kind::template_instantiation_t)
+        return fmt::format("{type}({expr})", fmt::arg("type", Urho3D::GetTypeName(type)), fmt::arg("expr", result));
 
     // TODO: This is getting out of hand, simplify this. Maybe implement dereferencing in c++?
-    if (map == nullptr && (IsReference(type) || (IsValueType(type) && type.kind() != cppast::cpp_type_kind::builtin_t &&
-        !IsEnumType(type))))
+    if (!IsEnumType(type) && ((IsValueType(type) && IsComplexType(type)) || IsReference(type)))
         result = "*" + result;
-
     return result;
 }
 
@@ -432,26 +424,33 @@ std::string GenerateCApiPass::ToCType(const cppast::cpp_type& type)
             return toCType(dynamic_cast<const cppast::cpp_pointer_type&>(t).pointee()) + "*";
         case cppast::cpp_type_kind::reference_t:
             return toCType(dynamic_cast<const cppast::cpp_reference_type&>(t).referee()) + "*";
+        case cppast::cpp_type_kind::template_instantiation_t:
+        {
+            const auto& tpl = dynamic_cast<const cppast::cpp_template_instantiation_type&>(t);
+            auto tplName = tpl.primary_template().name();
+            if (tplName == "SharedPtr" || tplName == "WeakPtr")
+                return tpl.unexposed_arguments() + "*";
+            assert(false);
         }
-        assert(false);
+        default:
+            assert(false);
+        }
     };
 
-    std::string typeName = GetTemplateSubtype(type);    // SharedPtr/WeakPtr unwrapping
+    std::string typeName;
     if (const auto* map = generator->GetTypeMap(type))
+    {
         typeName = map->cType_;
-    else if (IsEnumType(type))
-        typeName = cppast::to_string(type);
-    else if (typeName.empty())
+        if (IsOutType(type))
+            typeName += "*";
+    }
+    else
     {
         typeName = toCType(type);
         if (IsValueType(type) && IsComplexType(type))
             // Value types turned into pointers
             typeName += "*";
     }
-    else
-        // Complex type from SharedPtr or WeakPtr
-        typeName += "*";
-
     return typeName;
 }
 
@@ -464,7 +463,7 @@ void GenerateCApiPass::PrintDefaultValueCode(const std::vector<SharedPtr<MetaEnt
             continue;
 
         const auto& cppType = param->Ast<cppast::cpp_function_parameter>().type();
-        auto* typeMap = generator->GetTypeMap(cppType);
+        auto* typeMap = generator->GetTypeMap(GetBaseType(cppType));
         if (typeMap != nullptr && typeMap->csType_ == "string")
         {
             printer_ << fmt::format("if ({} == nullptr)", param->name_);

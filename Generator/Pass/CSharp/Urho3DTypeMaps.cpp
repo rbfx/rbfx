@@ -130,7 +130,6 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
                 return;
 
             str::replace_str(csType, "::", ".");
-            csType = "global::" + csType;
         }
         else
         {
