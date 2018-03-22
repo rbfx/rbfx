@@ -235,8 +235,10 @@ std::string GetTypeName(const cppast::cpp_type& type)
 
 bool IsEnumType(const cppast::cpp_type& type)
 {
-    const auto* entity = GetEntity(type);
-    return entity != nullptr && entity->kind() == cppast::cpp_entity_kind::enum_t;
+    WeakPtr<MetaEntity> entity;
+    if (generator->symbols_.TryGetValue(GetTypeName(type), entity))
+         return entity->kind_ == cppast::cpp_entity_kind::enum_t;
+    return false;
 }
 
 bool IsComplexType(const cppast::cpp_type& type)
