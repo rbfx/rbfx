@@ -185,15 +185,18 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
                             if (cls->symbolName_ == "Urho3D::Application" && name == "Start")
                                 printer_ << "RegisterWrapperFactories(context_);";
 
-                            printer_ << fmt::format("if (fn{cFunctionName} == nullptr)", FMT_CAPTURE(cFunctionName));
-                            printer_.Indent();
+                            if (!cppast::is_pure(child->Ast<cppast::cpp_member_function>().virtual_info()))
                             {
-                                printer_ << (IsVoid(func.return_type()) ? "" : "return ") +
-                                    fmt::format("{fullClassName}::{name}({parameterNameList});",
-                                        FMT_CAPTURE(fullClassName), FMT_CAPTURE(name), FMT_CAPTURE(parameterNameList));
+                                printer_ << fmt::format("if (fn{cFunctionName} == nullptr)", FMT_CAPTURE(cFunctionName));
+                                printer_.Indent();
+                                {
+                                    printer_ << (IsVoid(func.return_type()) ? "" : "return ") +
+                                        fmt::format("{fullClassName}::{name}({parameterNameList});",
+                                            FMT_CAPTURE(fullClassName), FMT_CAPTURE(name), FMT_CAPTURE(parameterNameList));
+                                }
+                                printer_.Dedent();
+                                printer_ << "else";
                             }
-                            printer_.Dedent();
-                            printer_ << "else";
                             printer_.Indent();
                             {
                                 printer_ << (IsVoid(func.return_type()) ? "" : "return ") +
