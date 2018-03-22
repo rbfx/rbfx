@@ -109,7 +109,8 @@ namespace
         auto harmless_diag =
             message.find("invalid filename for #line directive") != std::string::npos;
 
-        logger.log("preprocessor", diagnostic{std::move(message), std::move(loc), sev});
+        if (!harmless_diag)
+            logger.log("preprocessor", diagnostic{std::move(message), std::move(loc), sev});
 
         return harmless_diag;
     }
