@@ -29,6 +29,7 @@
 #include <cppast/cpp_type.hpp>
 #include "GeneratorContext.h"
 #include "GenerateCSApiPass.h"
+#include "Pass/CSharp/GeneratePInvokePass.h"
 
 namespace Urho3D
 {
@@ -46,7 +47,12 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
     auto mapToPInvoke = [&](MetaEntity* metaParam) {
         const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
-        auto expr = EnsureNotKeyword(param.name());
+        std::string expr;
+        if (IsComplexOutputType(param.type()))
+            return "ref " + param.name() + "Out";
+        else
+            expr = EnsureNotKeyword(param.name());
+
         if (auto* map = generator->GetTypeMap(param.type(), false))
         {
             if (map->isValueType_ && map->csType_ != "string")
@@ -57,7 +63,11 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     expr += fmt::format(".GetValueOrDefault({})", defaultValue);
             }
         }
-        return MapToPInvoke(param.type(), expr);
+        expr = MapToPInvoke(param.type(), expr);
+        if (IsOutType(param.type()))
+            expr = "ref " + expr;
+
+        return expr;
     };
 
     if (entity->kind_ == cppast::cpp_entity_kind::namespace_t)
@@ -175,18 +185,28 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                                     auto paramTypeList = MapParameterList(child->children_, [&](MetaEntity* metaParam)
                                     {
                                         const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
-                                        return fmt::format("typeof({})", ToCSType(param.type()));
+                                        return fmt::format("typeof({})", ToCSType(param.type(), true));
                                     });
                                     auto paramNameListCs = MapParameterList(child->children_, [&](MetaEntity* metaParam)
                                     {
                                         const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
-                                        return MapToCS(param.type(), param.name() + "_");
+                                        std::string result;
+                                        if (IsComplexOutputType(param.type()))
+                                            result = param.name() + "Out";
+                                        else
+                                            result = MapToCS(param.type(), param.name() + "_");
+                                        if (IsOutType(param.type()))
+                                            result = "ref " + result;
+                                        return result;
                                     });
                                     auto paramNameList = MapParameterList(child->children_, [&](MetaEntity* metaParam)
                                     {
                                         const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
-                                        // Avoid possible parameter name collision in enclosing scope.
-                                        return param.name() + "_";
+                                        // Types in lambda declaration are required in case of ref parameters.
+                                        auto type = GeneratePInvokePass::ToPInvokeType(param.type());
+                                        auto name = param.name();
+                                        // Avoid possible parameter name collision in enclosing scope by appending _.
+                                        return fmt::format("{type} {name}_", FMT_CAPTURE(type), FMT_CAPTURE(name));
                                     });
 
                                     // Optimization: do not route c++ virtual method calls through .NET if user does not override
@@ -197,12 +217,20 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                                     printer_.Indent();
                                     {
                                         printer_ << fmt::format("set_{sourceClass}_fn{cFunction}(instance, "
-                                                "(gcHandle_{pc}{paramNameList}) =>",
+                                                "(IntPtr gcHandle_{pc}{paramNameList}) =>",
                                             fmt::arg("sourceClass", Sanitize(entity->sourceSymbolName_)),
                                             fmt::arg("cFunction", child->cFunctionName_), FMT_CAPTURE(pc),
                                             FMT_CAPTURE(paramNameList));
                                         printer_.Indent();
                                         {
+                                            // ref parameters typemapped to C# types
+                                            for (const auto& param : child->children_)
+                                            {
+                                                const auto& type = param->Ast<cppast::cpp_function_parameter>().type();
+                                                if (IsComplexOutputType(type))
+                                                    printer_ << "var " + param->name_ + "Out = " + MapToCS(type, param->name_ + "_") + ";";
+                                            }
+
                                             auto expr = fmt::format(
                                                 "(({className})GCHandle.FromIntPtr(gcHandle_).Target).{name}({paramNameListCs})",
                                                 FMT_CAPTURE(className), FMT_CAPTURE(name),
@@ -210,11 +238,21 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                                             if (!IsVoid(func.return_type()))
                                             {
                                                 expr = MapToPInvoke(func.return_type(), expr);
-                                                printer_.Write(fmt::format("return {}", expr));
+                                                printer_ << fmt::format("var returnValue = {}", expr) + ";";
                                             }
                                             else
-                                                printer_.Write(expr);
-                                            printer_.Write(";");
+                                                printer_ << expr + ";";
+
+                                            // ref parameters typemapped back to pInvoke
+                                            for (const auto& param : child->children_)
+                                            {
+                                                const auto& type = param->Ast<cppast::cpp_function_parameter>().type();
+                                                if (IsComplexOutputType(type))
+                                                    printer_ << param->name_ + "_" + " = " + MapToPInvoke(type, param->name_ + "Out") + ";";
+                                            }
+
+                                            if (!IsVoid(func.return_type()))
+                                                printer_ << "return returnValue;";
                                         }
                                         printer_.Dedent("});");
                                     }
@@ -285,9 +323,11 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         printer_.Indent();
         {
+            PrintParameterHandlingCodePre(entity->children_);
             printer_ << fmt::format("var instance = {cFunctionName}({paramNameList});",
                 FMT_CAPTURE(cFunctionName), FMT_CAPTURE(paramNameList));
             printer_ << "SetupInstance(instance);";
+            PrintParameterHandlingCodePost(entity->children_);
         }
         printer_.Dedent();
         printer_ << "";
@@ -321,7 +361,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         const auto& func = entity->Ast<cppast::cpp_member_function>();
 
-        auto rtype = ToCSType(func.return_type());
+        auto rtype = ToCSType(func.return_type(), true);
         auto pc = func.parameters().empty() ? "" : ", ";
 
         auto csParams = FormatCSParameterList(entity->children_);
@@ -348,11 +388,19 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         {
             std::string call = fmt::format("{cFunction}(instance_{pc}{paramNameList})",
                 fmt::arg("cFunction", entity->cFunctionName_), FMT_CAPTURE(pc), FMT_CAPTURE(paramNameList));
+            call = MapToCS(func.return_type(), call);
 
-            if (IsVoid(func.return_type()))
-                printer_ << call + ";";
-            else
-                printer_ << "return " + MapToCS(func.return_type(), call) + ";";
+            if (!IsVoid(func.return_type()))
+                call = "var returnValue = " + call;
+
+            PrintParameterHandlingCodePre(entity->children_);
+
+            printer_ << call + ";";
+
+            PrintParameterHandlingCodePost(entity->children_);
+
+            if (!IsVoid(func.return_type()))
+                printer_ << "return returnValue;";
         }
         printer_.Dedent();
         printer_ << "";
@@ -364,7 +412,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         auto defaultValue = ConvertDefaultValueToCS(entity->GetDefaultValue(), var.type(), true);
         auto access = entity->access_ == cppast::cpp_public ? "public" : "protected";
-        auto csType = ToCSType(var.type());
+        auto csType = ToCSType(var.type(), true);
         auto name = entity->name_;
         std::string constant;
         if (defaultValue.empty())
@@ -432,7 +480,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             assert(getter != nullptr);
 
             const auto& getterFunc = getter->Ast<cppast::cpp_member_function>();
-            auto csType = ToCSType(getterFunc.return_type());
+            auto csType = ToCSType(getterFunc.return_type(), true);
 
             auto access = entity->access_ == cppast::cpp_public ? "public" : "protected";
             printer_ << fmt::format("{access} {csType} {name}", FMT_CAPTURE(access), FMT_CAPTURE(csType),
@@ -464,7 +512,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
             auto defaultValue = ConvertDefaultValueToCS(entity->GetDefaultValue(), var.type(), true);
             bool isConstant = IsConst(var.type()) && !(entity->flags_ & HintReadOnly) && !defaultValue.empty();
-            auto csType = ToCSType(var.type());
+            auto csType = ToCSType(var.type(), true);
 
             auto name = entity->name_;
             auto nsSymbol = Sanitize(ns->symbolName_);
@@ -526,26 +574,21 @@ void GenerateCSApiPass::Stop()
 
 std::string GenerateCSApiPass::MapToCS(const cppast::cpp_type& type, const std::string& expression)
 {
-    auto typeName = ToCSType(type);
+    if (IsVoid(type))
+        return expression;
+
+
     if (const auto* map = generator->GetTypeMap(type, false))
-        // TODO: ref types
         return fmt::format(map->pInvokeToCSTemplate_.c_str(), fmt::arg("value", expression));
     else if (IsComplexType(type))
-    {
-        return fmt::format("{}.__FromPInvoke({})", typeName, expression);
-    }
+        return fmt::format("{}.__FromPInvoke({})", ToCSType(type), expression);
+
     return expression;
 }
 
-std::string GenerateCSApiPass::ToCSType(const cppast::cpp_type& type)
+std::string GenerateCSApiPass::ToCSType(const cppast::cpp_type& type, bool disallowReferences)
 {
     bool isRef = false;
-    return ToCSType(type, isRef);
-}
-
-std::string GenerateCSApiPass::ToCSType(const cppast::cpp_type& type, bool& isRef)
-{
-    isRef = false;
 
     std::function<std::string(const cppast::cpp_type&)> toCSType = [&](const cppast::cpp_type& t) -> std::string {
         switch (t.kind())
@@ -572,14 +615,14 @@ std::string GenerateCSApiPass::ToCSType(const cppast::cpp_type& type, bool& isRe
                 if (t.kind() == cppast::cpp_type_kind::pointer_t)
                     return "IntPtr";
                 isRef = true;
-                return "ref " + toCSType(pointee);
+                return toCSType(pointee);
             }
             else if (pointee.kind() == cppast::cpp_type_kind::user_defined_t)
                 return toCSType(pointee);
             else
             {
                 isRef = true;
-                return "ref " + toCSType(pointee);
+                return toCSType(pointee);
             }
         }
         case cppast::cpp_type_kind::template_instantiation_t:
@@ -602,11 +645,14 @@ std::string GenerateCSApiPass::ToCSType(const cppast::cpp_type& type, bool& isRe
         if (IsOutType(type))
         {
             isRef = true;
-            typeName = "ref " + typeName;
+            typeName = typeName;
         }
     }
     else
         typeName = toCSType(type);
+
+    if (!disallowReferences && isRef)
+        typeName = "ref " + typeName;
 
     str::replace_str(typeName, "::", ".");
     return typeName;
@@ -614,14 +660,11 @@ std::string GenerateCSApiPass::ToCSType(const cppast::cpp_type& type, bool& isRe
 
 std::string GenerateCSApiPass::MapToPInvoke(const cppast::cpp_type& type, const std::string& expression)
 {
-    bool isRef = false;
-    auto typeName = ToCSType(type, isRef);
     if (const auto* map = generator->GetTypeMap(type, false))
         return fmt::format(map->csToPInvokeTemplate_.c_str(), fmt::arg("value", expression));
     else if (IsComplexType(type))
-        return fmt::format("{}.__ToPInvoke({})", typeName, expression);
-    if (isRef)
-        return "ref " + expression; // TODO: typemapped ref
+        return fmt::format("{}.__ToPInvoke({})", ToCSType(type, true), expression);
+
     return expression;
 }
 
@@ -691,6 +734,26 @@ std::string GenerateCSApiPass::ConvertDefaultValueToCS(std::string value, const 
     str::replace_str(value, "::", ".");
 
     return value;
+}
+
+void GenerateCSApiPass::PrintParameterHandlingCodePre(const std::vector<SharedPtr<MetaEntity>>& parameters)
+{
+    for (const auto& param : parameters)
+    {
+        const auto& type = param->Ast<cppast::cpp_function_parameter>().type();
+        if (IsComplexOutputType(type))
+            printer_ << "var " + param->name_ + "Out = " + MapToPInvoke(type, param->name_) + ";";
+    }
+}
+
+void GenerateCSApiPass::PrintParameterHandlingCodePost(const std::vector<SharedPtr<MetaEntity>>& parameters)
+{
+    for (const auto& param : parameters)
+    {
+        const auto& type = param->Ast<cppast::cpp_function_parameter>().type();
+        if (IsComplexOutputType(type))
+            printer_ << param->name_ + " = " + MapToCS(type, param->name_ + "Out") + ";";
+    }
 }
 
 }

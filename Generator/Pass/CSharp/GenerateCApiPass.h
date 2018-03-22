@@ -48,7 +48,8 @@ protected:
     std::string MapToCpp(const cppast::cpp_type& type, const std::string& expression);
     std::string MapToC(const cppast::cpp_type& type, const std::string& expression);
     std::string ToCType(const cppast::cpp_type& type, bool disallowReferences=false);
-    void PrintDefaultValueCode(const std::vector<SharedPtr<MetaEntity>>& parameters);
+    void PrintParameterHandlingCodePre(const std::vector<SharedPtr<MetaEntity>>& parameters);
+    void PrintParameterHandlingCodePost(const std::vector<SharedPtr<MetaEntity>>& parameters);
 
     CSharpPrinter printer_;
     StringVector usedNames_;

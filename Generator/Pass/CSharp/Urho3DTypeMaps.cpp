@@ -140,6 +140,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
 
     if (!csType.empty())
     {
+        URHO3D_LOGINFOF("Auto-typemap: %s", typeName.c_str());
         TypeMap map;
         map.cppType_ = typeName;
         map.cType_ = "SafeArray";
@@ -151,7 +152,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
             FMT_CAPTURE(cppType), FMT_CAPTURE(vectorKind));
         map.csToPInvokeTemplate_ = fmt::format("SafeArray.__ToPInvoke<{csType}>({{value}})", FMT_CAPTURE(csType));
         map.pInvokeToCSTemplate_ = fmt::format("SafeArray.__FromPInvoke<{csType}>({{value}})", FMT_CAPTURE(csType));
-
+        map.isValueType_ = true;
         generator->typeMaps_[typeName] = map;
     }
 }

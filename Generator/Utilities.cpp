@@ -619,11 +619,9 @@ std::string CamelCaseIdentifier(const std::string& name)
 
 bool IsOutType(const cppast::cpp_type& type)
 {
-    if (type.kind() == cppast::cpp_type_kind::pointer_t || type.kind() == cppast::cpp_type_kind::reference_t)
+    if (type.kind() == cppast::cpp_type_kind::reference_t)
     {
-        const auto& pointee = type.kind() == cppast::cpp_type_kind::pointer_t ?
-                              dynamic_cast<const cppast::cpp_pointer_type&>(type).pointee() :
-                              dynamic_cast<const cppast::cpp_reference_type&>(type).referee();
+        const auto& pointee = dynamic_cast<const cppast::cpp_reference_type&>(type).referee();
 
         if (IsConst(pointee))
             return false;
@@ -652,6 +650,19 @@ bool IsOutType(const cppast::cpp_type& type)
         }
     }
 
+    return false;
+}
+
+bool IsComplexOutputType(const cppast::cpp_type& type)
+{
+    if (IsOutType(type) && generator->GetTypeMap(type) != nullptr)
+    {
+        // Complex typemapped have to output to c++ type and have it converted to c type before function return.
+        assert(type.kind() == cppast::cpp_type_kind::reference_t);
+        auto kind = cppast::remove_cv(dynamic_cast<const cppast::cpp_reference_type&>(type).referee()).kind();
+        if (kind == cppast::cpp_type_kind::user_defined_t || kind == cppast::cpp_type_kind::template_instantiation_t)
+            return true;
+    }
     return false;
 }
 

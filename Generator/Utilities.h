@@ -110,6 +110,8 @@ bool IsAbstract(const cppast::cpp_class& cls);
 bool IsConst(const cppast::cpp_type& type);
 /// Returns true if type is a non-const reference to any type or non-const pointer to builtin type.
 bool IsOutType(const cppast::cpp_type& type);
+/// Returns true if type is output type and it requires parameter be typemapped for input/output.
+bool IsComplexOutputType(const cppast::cpp_type& type);
 /// Returns true if type is a reference to something.
 bool IsReference(const cppast::cpp_type& type);
 /// Returns true if type is a pointer to something.

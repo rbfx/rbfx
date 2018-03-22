@@ -42,11 +42,11 @@ public:
     bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
     void Stop() override;
 
-protected:
-    std::string ToPInvokeTypeReturn(const cppast::cpp_type& type);
-    std::string ToPInvokeTypeParam(const cppast::cpp_type& type);
-    std::string ToPInvokeType(const cppast::cpp_type& type);
+    static std::string ToPInvokeTypeReturn(const cppast::cpp_type& type);
+    static std::string ToPInvokeTypeParam(const cppast::cpp_type& type);
+    static std::string ToPInvokeType(const cppast::cpp_type& type);
 
+protected:
     CSharpPrinter printer_;
     DiscoverInterfacesPass* discoverInterfacesPass_ = nullptr;
 };
