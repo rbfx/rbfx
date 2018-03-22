@@ -50,6 +50,9 @@ namespace CSharp
 
         public static SafeArray __ToPInvoke<T>(T[] data)
         {
+            if (data == null)
+                return new SafeArray();
+
             var type = typeof(T);
             var result = new SafeArray {owns = true};
 
