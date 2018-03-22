@@ -39,7 +39,7 @@
 namespace Urho3D
 {
 
-class MetaEntity;
+struct MetaEntity;
 
 /// Convert a wildcard string to regular expression. "*" matches anything except /, "**" matches everything including /.
 std::regex WildcardToRegex(const String& wildcard);
