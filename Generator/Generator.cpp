@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
 
     generator->LoadCompileConfig(includes, defines, options);
 #if _WIN32
-    generator->config_.set_flags(cppast::cpp_standard::cpp_11, {
+    generator->config_.set_flags(cppast::cpp_standard::cpp_14, {
         cppast::compile_flag::ms_compatibility | cppast::compile_flag::ms_extensions
     });
 #else
