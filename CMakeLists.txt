@@ -75,11 +75,11 @@ macro (CSHARP_BIND_TARGET TARGET RULES SOURCE_DIR)
     list (APPEND GENERATOR_OPTIONS ${SOURCE_DIR})
     list (REMOVE_DUPLICATES GENERATOR_OPTIONS)
 
-	# Clear file
-	file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt "")
-	foreach (opt ${GENERATOR_OPTIONS})
-		file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt "${opt}\n")
-	endforeach ()
+    # Clear file
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt "")
+    foreach (opt ${GENERATOR_OPTIONS})
+        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt "${opt}\n")
+    endforeach ()
     add_custom_target(CSharpGenerateBindings
         COMMAND $<TARGET_FILE:CSharpGenerator> ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt
         DEPENDS CSharpGenerator
@@ -123,9 +123,14 @@ macro (CSHARP_BIND_TARGET TARGET RULES SOURCE_DIR)
     if (NOT CSC)
         message(FATAL_ERROR "C# compiler could not be found.")
     endif ()
+    if (MSVC)
+        set (NET_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>)
+    else ()
+        set (NET_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    endif ()
     add_custom_target(${TARGET}Net
         COMMAND ${TERM_WORKAROUND} ${CSC} /target:library ${NET_PLATFORM} /unsafe /reference:System.dll
-                /out:${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET}Net.dll
+                /out:${NET_OUTPUT_DIRECTORY}/${TARGET}Net.dll
                 ${COMMON_NET_SOURCE_FILES_MANUAL} ${COMMON_NET_SOURCE_FILES_GENERATED}
     )
     add_dependencies(${TARGET}Net ${TARGET}CSharp)
