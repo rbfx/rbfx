@@ -167,7 +167,6 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
                     auto constModifier = cppast::is_const(func.cv_qualifier()) ? "const " : "";
                     auto pc = Count(func.parameters()) > 0 ? ", " : "";
                     auto cFunctionName = Sanitize(child->uniqueName_);
-                    auto fullClassName = entity->uniqueName_;
                     auto className = entity->name_;
 
                     if (func.is_virtual())
@@ -189,8 +188,8 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
                             printer_.Indent();
                             {
                                 printer_ << (IsVoid(func.return_type()) ? "" : "return ") +
-                                    fmt::format("{fullClassName}::{name}({parameterNameList});",
-                                        FMT_CAPTURE(fullClassName), FMT_CAPTURE(name), FMT_CAPTURE(parameterNameList));
+                                    fmt::format("{name}({parameterNameList});", FMT_CAPTURE(name),
+                                        FMT_CAPTURE(parameterNameList));
                             }
                             printer_.Dedent();
                             printer_ << "else";
