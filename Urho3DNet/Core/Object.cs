@@ -9,9 +9,6 @@ namespace Urho3D
     {
         public void SubscribeToEvent(StringHash eventType, Action<StringHash, VariantMap> function)
         {
-            if (!ReferenceEquals(this, function.Target))
-                throw new ArgumentException("Callback target object must be object on which SubscribeEvent() was " +
-                                            "called.");
             Urho3D_Object_SubscribeToEvent(__ToPInvoke(this), GCHandle.ToIntPtr(GCHandle.Alloc(function)),
                 eventType.Hash, (gcHandle, type, args) =>
                 {
@@ -22,9 +19,6 @@ namespace Urho3D
 
         public void SubscribeToEvent(StringHash eventType, Action<VariantMap> function)
         {
-            if (!ReferenceEquals(this, function.Target))
-                throw new ArgumentException("Callback target object must be object on which SubscribeEvent() was " +
-                                            "called.");
             Urho3D_Object_SubscribeToEvent(__ToPInvoke(this), GCHandle.ToIntPtr(GCHandle.Alloc(function)),
                 eventType.Hash, (gcHandle, type, args) =>
                 {
@@ -35,9 +29,6 @@ namespace Urho3D
 
         public void SubscribeToEvent(Object sender, StringHash eventType, Action<StringHash, VariantMap> function)
         {
-            if (!ReferenceEquals(this, function.Target))
-                throw new ArgumentException("Callback target object must be object on which SubscribeEvent() was " +
-                                            "called.");
             Urho3D_Object_SubscribeToEvent(__ToPInvoke(this), GCHandle.ToIntPtr(GCHandle.Alloc(function)),
                 eventType.Hash, (gcHandle, type, args) =>
                 {
@@ -48,9 +39,6 @@ namespace Urho3D
 
         public void SubscribeToEvent(Object sender, StringHash eventType, Action<VariantMap> function)
         {
-            if (!ReferenceEquals(this, function.Target))
-                throw new ArgumentException("Callback target object must be object on which SubscribeEvent() was " +
-                                            "called.");
             Urho3D_Object_SubscribeToEvent(__ToPInvoke(this), GCHandle.ToIntPtr(GCHandle.Alloc(function)),
                 eventType.Hash, (gcHandle, type, args) =>
                 {
