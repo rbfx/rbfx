@@ -212,11 +212,6 @@ struct CSharpConverter<PODVector<T>>
 
     static CType ToCSharp(const CppType& value)
     {
-        return {(void*)&value.Front(), value.Size() * (unsigned)sizeof(T), false};
-    }
-
-    static CType ToCSharp(const CppType&& value)
-    {
         SafeArray result{nullptr, value.Size() * (unsigned)sizeof(T), true};
         result.data = malloc(result.size);
         memcpy(result.data, &value.Front(), result.size);
