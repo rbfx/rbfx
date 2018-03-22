@@ -127,9 +127,9 @@ int main(int argc, char* argv[])
     generator->AddApiPass<GenerateClassWrappers>();
     generator->AddApiPass<Urho3DCustomPass>();
     generator->AddApiPass<MoveGlobalsPass>();
-    generator->AddApiPass<ConvertToPropertiesPass>();
     generator->AddApiPass<GenerateCApiPass>();
     generator->AddApiPass<GeneratePInvokePass>();
+    generator->AddApiPass<ConvertToPropertiesPass>();
     generator->AddApiPass<GenerateCSApiPass>();
 
     generator->Generate(outputDirCpp, outputDirCs);

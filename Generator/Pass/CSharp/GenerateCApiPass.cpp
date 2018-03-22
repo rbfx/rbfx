@@ -47,14 +47,6 @@ void GenerateCApiPass::Start()
 
 bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
-    // Generate C API for property getters and seters. Visitor will not visit these notes on it's own.
-    if (entity->flags_ & HintProperty)
-    {
-        for (const auto& child : entity->children_)
-            Visit(child, info);
-        return true;
-    }
-
     // Visit entities just once
     if (info.event == info.container_entity_exit || entity->ast_ == nullptr || entity->name_.empty())
         return true;

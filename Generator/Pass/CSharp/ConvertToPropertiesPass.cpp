@@ -53,19 +53,27 @@ bool ConvertToPropertiesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
     if (std::regex_match(entity->name_, rxGetterName_))
     {
         if (!entity->children_.empty())
-            return true;   // Getter can not be with parameters
+            // Getter can not be with parameters
+            return true;
+
+        if (entity->cFunctionName_.empty())
+            // Getter has no C API
+            return true;
 
         auto getterType = cppast::to_string(entity->Ast<cppast::cpp_member_function>().return_type());
         auto propertyName = entity->name_;
 
-        bool skipSetter = false;
+        std::string setterName;
         if (propertyName[1] == 's') // "Is" getter
         {
             propertyName = propertyName;
-            skipSetter = true;
+            setterName = "Set" + propertyName.substr(2);
         }
         else                        // "Get" getter
+        {
             propertyName = propertyName.substr(3);
+            setterName = "Set" + propertyName;
+        }
 
         if (propertyName == entity->parent_->name_)
         {
@@ -91,32 +99,30 @@ bool ConvertToPropertiesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
         property->name_ = propertyName;
         property->flags_ = HintProperty;
         property->access_ = entity->access_;
-        entity->name_ = "get";
         entity->parent_->Add(property);
 
-        if (!skipSetter)
-        {
-            auto setterName = "Set" + propertyName;
-            if (islower(entity->name_[0]))
-                setterName[0] = static_cast<char>(tolower(setterName[0]));
+        if (islower(entity->name_[0]))
+            setterName[0] = static_cast<char>(tolower(setterName[0]));
 
-            // Find sibling setter with single parameter of same type as getter
-            for (const auto& sibling : siblings)
+        // Find sibling setter with single parameter of same type as getter
+        for (const auto& sibling : siblings)
+        {
+            if (sibling->kind_ == cppast::cpp_entity_kind::member_function_t && sibling->name_ == setterName &&
+                sibling->children_.size() == 1)
             {
-                if (sibling->kind_ == cppast::cpp_entity_kind::member_function_t && sibling->name_ == setterName &&
-                    sibling->children_.size() == 1)
+                auto setterType = cppast::to_string(
+                    sibling->children_[0]->Ast<cppast::cpp_function_parameter>().type());
+                if (setterType == getterType && !sibling->cFunctionName_.empty() &&
+                    entity->access_ == sibling->access_ && !(sibling->flags_ & HintInterface))
                 {
-                    auto setterType = cppast::to_string(
-                        sibling->children_[0]->Ast<cppast::cpp_function_parameter>().type());
-                    if (setterType == getterType)
-                    {
-                        sibling->name_ = "set";
-                        property->Add(sibling);
-                        break;
-                    }
+                    sibling->name_ = "set";
+                    property->Add(sibling);
+                    break;
                 }
             }
         }
+
+        entity->name_ = "get";
         property->Add(entity);
     }
 
