@@ -265,6 +265,10 @@ bool GeneratorContext::IsAcceptableType(const cppast::cpp_type& type)
     if (type.kind() == cppast::cpp_type_kind::builtin_t)
         return true;
 
+    // Manually handled types
+    if (GetTypeMap(type) != nullptr)
+        return true;
+
     if (type.kind() == cppast::cpp_type_kind::template_instantiation_t)
         return symbols_.Contains(GetTemplateSubtype(type));
 
@@ -313,10 +317,6 @@ bool GeneratorContext::IsAcceptableType(const cppast::cpp_type& type)
 
     // Some non-builtin types also map to c# types (like some pointers)
     if (isPInvokable(type))
-        return true;
-
-    // Manually handled types
-    if (GetTypeMap(type) != nullptr)
         return true;
 
     // Known symbols will be classes that are being wrapped
