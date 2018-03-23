@@ -1336,6 +1336,7 @@ void UI::ProcessHover(const IntVector2& windowCursorPos, int buttons, int qualif
             {
                 SendDragOrHoverEvent(E_HOVERBEGIN, element, cursorPos, IntVector2::ZERO, nullptr);
                 // Exit if element is destroyed by the event handling
+				
                 if (!element)
                     return;
             }

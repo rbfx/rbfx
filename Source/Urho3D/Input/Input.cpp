@@ -1415,6 +1415,8 @@ IntVector2 Input::GetMousePosition() const
     ret.x_ = (int)(ret.x_ * pixelRatio);
     ret.y_ = (int)(ret.y_ * pixelRatio);
 
+	//URHO3D_LOGINFO("mpos: " + String(ret.x_) + ", " + String(ret.y_));
+
     return ret;
 }
 
