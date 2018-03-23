@@ -279,7 +279,7 @@ private:
     /// File to run.
     String fileName_;
     /// Command line split in arguments.
-    const Vector<String>& arguments_;
+    const Vector<String> arguments_;
 };
 
 FileSystem::FileSystem(Context* context) :
