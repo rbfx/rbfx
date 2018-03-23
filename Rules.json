@@ -172,7 +172,17 @@
       "cpp_to_c": "script->AddRef<Urho3D::StringVector>({value})",
       "c_to_cpp": "*{value}",
       "pinvoke_to_cs": "StringVector.__FromPInvoke({value})",
-      "cs_to_pinvoke": "StringVector.__ToPInvoke({value})",
+      "cs_to_pinvoke": "StringVector.__ToPInvoke({value})"
+    },
+    {
+      "type": "Vector<Urho3D::String>",
+      "ctype": "Urho3D::StringVector*",
+      "ptype": "IntPtr",
+      "cstype": "Urho3D.StringVector",
+      "cpp_to_c": "script->AddRef<Urho3D::StringVector>({value})",
+      "c_to_cpp": "*{value}",
+      "pinvoke_to_cs": "StringVector.__FromPInvoke({value})",
+      "cs_to_pinvoke": "StringVector.__ToPInvoke({value})"
     },
     {
       "type": "Urho3D::Vector2",
