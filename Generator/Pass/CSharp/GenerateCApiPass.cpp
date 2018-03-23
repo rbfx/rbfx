@@ -63,6 +63,10 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         if (IsStatic(*entity->ast_))
             return true;
 
+        const auto& cls = entity->Ast<cppast::cpp_class>();
+        if (!IsExported(cls))
+            return true;
+
         auto baseName = Sanitize(entity->uniqueName_);
 
         // Destructor always exists even if it is not defined in the class
@@ -94,7 +98,14 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::constructor_t)
     {
+        const auto& cls = entity->parent_->Ast<cppast::cpp_class>();
         const auto& func = entity->Ast<cppast::cpp_constructor>();
+        if (!IsExported(cls))
+        {
+            entity->Remove();
+            return true;
+        }
+
         entity->cFunctionName_ = GetUniqueName(Sanitize(entity->uniqueName_));
         std::string className = entity->parent_->sourceSymbolName_;
         printer_ << "// " + entity->uniqueName_;
@@ -116,6 +127,12 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     else if (entity->kind_ == cppast::cpp_entity_kind::member_function_t)
     {
         const auto& func = entity->Ast<cppast::cpp_member_function>();
+        const auto& cls = entity->parent_->Ast<cppast::cpp_class>();
+        if (!IsExported(cls))
+        {
+            entity->Remove();
+            return true;
+        }
 
         auto isFinal = !generator->inheritable_.IsIncluded(entity->parent_->symbolName_);
         if (isFinal && entity->access_ != cppast::cpp_public)

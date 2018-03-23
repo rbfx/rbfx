@@ -686,6 +686,27 @@ bool IsPointer(const cppast::cpp_type& type)
     return false;
 }
 
+bool IsExported(const cppast::cpp_class& cls)
+{
+    for (const auto& attr : cls.attributes())
+    {
+        if (attr.name() == "visibility")
+        {
+            if (attr.arguments().has_value())
+            {
+                if (attr.arguments().value().as_string() == "\"default\"")
+                    return true;
+            }
+        }
+        else if (attr.name() == "dllexport" || attr.name() == "dllimport")
+            // dllimport also checked because headers are likely to have system in place which uses dllexport during
+            // build and dllimport when headers are included by consumer application. Instead of having user take care
+            // of this case in rules file we just assume that imported entity is also exported entity.
+            return true;
+    }
+    return false;
+}
+
 }
 
 namespace str

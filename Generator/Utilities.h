@@ -139,6 +139,8 @@ std::string ToPInvokeType(const cppast::cpp_type& type, const std::string& defau
 std::string GetTemplateSubtype(const cppast::cpp_type& type);
 /// Converts identifier to CamelCase.
 std::string CamelCaseIdentifier(const std::string& name);
+/// Returns true if class is exported from dynamic library.
+bool IsExported(const cppast::cpp_class& cls);
 
 }
 
