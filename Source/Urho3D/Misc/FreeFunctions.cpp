@@ -76,28 +76,6 @@ namespace Urho3D {
 		return false;
 	}
 
-	String FreeFunctions::GetResourceBinDir() {
-		if (GetSubsystem<ResourceCache>()->GetResourceDirs().Size())
-			return GetParentPath(GetSubsystem<ResourceCache>()->GetResourceDirs().Front());
-		else
-			return "";
-	}
-
-	String FreeFunctions::GetResourceDataDir()
-	{
-		if (!GetResourceBinDir().Empty())
-			return GetResourceBinDir() + "Data";
-		else
-			return "";
-	}
-
-	String FreeFunctions::GetResourceCoreDataDir()
-	{
-		if (!GetResourceBinDir().Empty())
-			return GetResourceBinDir() + "CoreData";
-		else
-			return "";
-	}
 
 
 
