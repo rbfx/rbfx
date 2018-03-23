@@ -48,11 +48,6 @@
       ]
     }
   },
-  "compiler": {
-    "defines": [
-      "URHO3D_API"
-    ]
-  },
   "symbols": {
     "include": [
       "SDL_*",
@@ -124,7 +119,6 @@
       "Urho3D::*Batch*",
       "Urho3D::*::TestDrawables(*",
       "Urho3D::Occlusion*",
-      "Urho3D::MessageBox",
       "Urho3D::RegisterIKLibrary(*",
     ]
   },

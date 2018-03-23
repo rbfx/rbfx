@@ -255,6 +255,3 @@ struct CSharpConverter<Vector<SharedPtr<T>>>
         return result;
     }
 };
-
-#undef near
-#undef far
