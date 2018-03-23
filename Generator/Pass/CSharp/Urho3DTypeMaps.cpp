@@ -61,7 +61,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
     if (realType.kind() != cppast::cpp_type_kind::template_instantiation_t)
         return;
 
-    auto typeName = cppast::to_string(type);
+    auto typeName = cppast::to_string(realType);
 
     // Typemap already generated
     if (generator->typeMaps_.find(typeName) != generator->typeMaps_.end())
