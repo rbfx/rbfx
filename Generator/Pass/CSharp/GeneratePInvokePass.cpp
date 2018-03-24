@@ -118,8 +118,8 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             {
                 printer_ << "if (Interlocked.Increment(ref disposed_) == 1)";
                 printer_.Indent();
+                printer_ << "InstanceCache.Remove(instance_);";
                 printer_ << baseName + "_destructor(instance_);";
-                printer_ << fmt::format("InstanceCache.Remove<{}>(instance_, this);", entity->name_);
                 printer_.Dedent();
                 printer_ << "instance_ = IntPtr.Zero;";
             }
@@ -136,7 +136,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     printer_ << "return null;";
                 }
                 printer_.Dedent();
-                printer_ << fmt::format("return InstanceCache.GetOrAdd<{className}>(source, ptr => new {className}(ptr));",
+                printer_ << fmt::format("return InstanceCache.GetOrAdd(source, ptr => new {className}(ptr));",
                     fmt::arg("className", entity->name_));
             }
             printer_.Dedent();
@@ -191,7 +191,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
                         printer_ << fmt::format("if (source is {derivedName})", FMT_CAPTURE(derivedName));
                         printer_.Indent();
                         {
-                            printer_ << fmt::format("return source.__GetInstance() + {derivedSym}_offset;",
+                            printer_ << fmt::format("return source.NativeInstance + {derivedSym}_offset;",
                                 FMT_CAPTURE(derivedSym));
                         }
                         printer_.Dedent();
@@ -199,7 +199,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 }
                 ///////////////////////////////////
 
-                printer_ << "return source.__GetInstance();";
+                printer_ << "return source.NativeInstance;";
             }
             printer_.Dedent();
             printer_ << "";

@@ -22,7 +22,7 @@ namespace CSharp
 
     public interface INativeObject : IDisposable
     {
-        IntPtr __GetInstance();
+        IntPtr NativeInstance { get; }
     }
 
     public abstract class NativeObject : INativeObject, IEquatable<NativeObject>
@@ -74,10 +74,7 @@ namespace CSharp
             }
         }
 
-        public IntPtr __GetInstance()
-        {
-            return instance_;
-        }
+        public IntPtr NativeInstance => instance_;
 
         public virtual void Dispose()
         {

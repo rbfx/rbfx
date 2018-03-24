@@ -63,9 +63,9 @@ namespace CSharp
         }
 
         private static ConcurrentDictionary<IntPtr, CacheEntry> _cache = new ConcurrentDictionary<IntPtr, CacheEntry>();
-        private static IEnumerator<KeyValuePair<IntPtr, CacheEntry>> _expirationEnumerator = _cache.GetEnumerator();
+        private static IEnumerator<KeyValuePair<IntPtr, CacheEntry>> _expirationEnumerator;
         private static int _lastCacheEnumeratorResetTime = 0;
-        private static bool _needsReset;
+        private static bool _needsReset = true;
 
         public static T GetOrAdd<T>(IntPtr instance, Func<IntPtr, T> factory) where T: NativeObject
         {
@@ -81,38 +81,30 @@ namespace CSharp
             return (T)entry.Target;
         }
 
-        public static void Add<T>(IntPtr instance, Context object_) where T: NativeObject
+        public static void Add<T>(T instance) where T: NativeObject
         {
             ExpireCache();
-            NativeInterface.Setup();
+            if (instance is Context)
+                NativeInterface.Setup();
             // In case this is RefCounted object add a reference for duration of object's lifetime.
-            object_.AddRef();
-            _cache[instance] = new CacheEntry(object_);
+            (instance as RefCounted)?.AddRef();
+            _cache[instance.NativeInstance] = new CacheEntry(instance);
         }
 
-        public static void Add<T>(IntPtr instance, T object_) where T: NativeObject
-        {
-            ExpireCache();
-            // In case this is RefCounted object add a reference for duration of object's lifetime.
-            (object_ as RefCounted)?.AddRef();
-            _cache[instance] = new CacheEntry(object_);
-        }
-
-        public static void Remove<T>(IntPtr native, Context object_) where T: NativeObject
+        public static void Remove(IntPtr instance)
         {
             ExpireCache();
             CacheEntry entry;
-            _cache.TryRemove(native, out entry);
-            NativeInterface.Dispose();
-            object_.ReleaseRef();
-        }
+            _cache.TryRemove(instance, out entry);
+            var target = entry.Target;
+            if (target == null)
+                return;
 
-        public static void Remove<T>(IntPtr native, T object_) where T: NativeObject
-        {
-            ExpireCache();
-            CacheEntry entry;
-            _cache.TryRemove(native, out entry);
-            (object_ as RefCounted)?.ReleaseRef();
+            if (target is Context)
+                NativeInterface.Dispose();
+
+            if (entry.Target is RefCounted)
+                ((RefCounted) target).ReleaseRef();
         }
 
         /// <summary>
@@ -131,7 +123,7 @@ namespace CSharp
             {
                 if (Environment.TickCount - _lastCacheEnumeratorResetTime < CacheIterationInterval)
                     return;
-                _expirationEnumerator.Reset();
+                _expirationEnumerator = _cache.GetEnumerator();
                 _needsReset = false;
             }
 
@@ -139,7 +131,7 @@ namespace CSharp
             {
                 var entry = _expirationEnumerator.Current;
                 if (entry.Value.Expired)
-                    Remove(entry.Key, entry.Value.Target);
+                    Remove(entry.Value.Target.NativeInstance);
             }
             else
                 _needsReset = true;

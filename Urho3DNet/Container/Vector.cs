@@ -124,8 +124,8 @@ namespace Urho3D
         {
             if (Interlocked.Increment(ref disposed_) == 1)
             {
+                InstanceCache.Remove(instance_);
                 Urho3D_StringVector_destructor(instance_);
-                InstanceCache.Remove(instance_, this);
             }
             instance_ = IntPtr.Zero;
         }
