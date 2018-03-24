@@ -38,7 +38,9 @@ void GenerateCApiPass::Start()
     printer_ << "#include \"ClassWrappers.hpp\"";
     printer_ << "#include \"PODTypes.hpp\"";
     printer_ << "";
-    printer_ << "using namespace Urho3D;";
+    printer_ << "#undef TRANSPARENT";
+    printer_ << "#undef near";
+    printer_ << "#undef far";
     printer_ << "";
     printer_ << "extern \"C\"";
     printer_ << "{";
