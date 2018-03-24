@@ -9,13 +9,13 @@ namespace CSharp
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct SafeArray
     {
-        public IntPtr data;
-        public int size;
-        public bool owns;
+        public IntPtr Data;
+        public int Size;
+        public bool Owns;
 
         public static T[] __FromPInvoke<T>(SafeArray data)
         {
-            if (data.size == 0)
+            if (data.Size == 0)
                 return new T[0];
 
             var type = typeof(T);
@@ -24,26 +24,26 @@ namespace CSharp
             {
                 // Array of structs or builtin types.
                 var size = Marshal.SizeOf<T>();
-                result = new T[data.size / size];
+                result = new T[data.Size / size];
                 var handle = GCHandle.Alloc(result, GCHandleType.Pinned);
-                Buffer.MemoryCopy((void*)data.data, (void*)handle.AddrOfPinnedObject(), data.size, data.size);
+                Buffer.MemoryCopy((void*)data.Data, (void*)handle.AddrOfPinnedObject(), data.Size, data.Size);
                 handle.Free();
             }
             else
             {
                 // Array of pointers to objects
                 var tFromPInvoke = type.GetMethod("__FromPInvoke", BindingFlags.NonPublic | BindingFlags.Static);
-                var pointers = (void**) data.data;
+                var pointers = (void**) data.Data;
                 Debug.Assert(pointers != null);
                 Debug.Assert(tFromPInvoke != null);
-                var count = data.size / IntPtr.Size;
+                var count = data.Size / IntPtr.Size;
                 result = new T[count];
                 for (int i = 0; i < count; i++)
                     result[i] = (T)tFromPInvoke.Invoke(null, new object[]{new IntPtr(pointers[i])});
             }
 
-            if (data.owns)
-                MarshalTools.c_free(data.data);
+            if (data.Owns)
+                MarshalTools.c_free(data.Data);
 
             return result;
         }
@@ -54,24 +54,24 @@ namespace CSharp
                 return new SafeArray();
 
             var type = typeof(T);
-            var result = new SafeArray {owns = true};
+            var result = new SafeArray {Owns = true};
 
             if (type.IsValueType)
             {
                 // Array of structs or builtin types.
-                result.size = data.Length * Marshal.SizeOf<T>();
-                result.data = MarshalTools.c_alloc(result.size);
+                result.Size = data.Length * Marshal.SizeOf<T>();
+                result.Data = MarshalTools.c_alloc(result.Size);
                 var handle = GCHandle.Alloc(result, GCHandleType.Pinned);
-                Buffer.MemoryCopy((void*)handle.AddrOfPinnedObject(), (void*)result.data, result.size, result.size);
+                Buffer.MemoryCopy((void*)handle.AddrOfPinnedObject(), (void*)result.Data, result.Size, result.Size);
                 handle.Free();
             }
             else
             {
                 // Array of pointers to objects
-                result.size = data.Length * IntPtr.Size;
-                result.data = MarshalTools.c_alloc(result.size);
+                result.Size = data.Length * IntPtr.Size;
+                result.Data = MarshalTools.c_alloc(result.Size);
                 var tToPInvoke = type.GetMethod("__ToPInvoke", BindingFlags.NonPublic | BindingFlags.Static);
-                var pointers = (void**) result.size;
+                var pointers = (void**) result.Size;
                 Debug.Assert(tToPInvoke != null);
                 Debug.Assert(pointers != null);
                 for (var i = 0; i < data.Length; i++)

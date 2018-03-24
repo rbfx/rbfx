@@ -7,17 +7,16 @@ namespace Urho3D
 
 public struct StringHash
 {
-    private uint value_;
-    public uint Hash => value_;
+    public uint Hash { get; }
 
     public StringHash(uint value)
     {
-        value_ = value;
+        Hash = value;
     }
 
     public StringHash(string value)
     {
-        value_ = Calculate(value);
+        Hash = Calculate(value);
     }
 
     public static implicit operator StringHash(string value)
@@ -38,7 +37,7 @@ public struct StringHash
 
     public override string ToString()
     {
-        return String.Format("{:08X}", value_);
+        return string.Format("{:08X}", Hash);
     }
 
     internal static StringHash __FromPInvoke(uint source)

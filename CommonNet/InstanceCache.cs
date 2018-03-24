@@ -24,7 +24,7 @@ namespace CSharp
             // entry is removed from cache.
 
             private NativeObject _target;
-            private WeakReference<NativeObject> _targetWeak;
+            private readonly WeakReference<NativeObject> _targetWeak;
             public int LastAccess;
 
             public NativeObject Target

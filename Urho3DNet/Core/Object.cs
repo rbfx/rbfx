@@ -48,7 +48,7 @@ namespace Urho3D
         }
 
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void Urho3D_Object_SubscribeToEvent(IntPtr receiver, IntPtr gcHandle, uint eventType,
+        private static extern void Urho3D_Object_SubscribeToEvent(IntPtr receiver, IntPtr gcHandle, uint eventType,
             EventHandler function, IntPtr sender);
     }
 }

@@ -17,57 +17,57 @@ namespace Urho3D
     public class VariantMap : NativeObject, IDictionary<StringHash, Variant>
     {
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern uint Urho3D_HashMap_StringHash_Variant_GetKey(HashIteratorBase it);
+        private static extern uint Urho3D_HashMap_StringHash_Variant_GetKey(HashIteratorBase it);
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern IntPtr Urho3D_HashMap_StringHash_Variant_GetValue(HashIteratorBase it);
+        private static extern IntPtr Urho3D_HashMap_StringHash_Variant_GetValue(HashIteratorBase it);
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void Urho3D_HashMap_StringHash_Variant_Add(IntPtr map, uint key, IntPtr value);
+        private static extern void Urho3D_HashMap_StringHash_Variant_Add(IntPtr map, uint key, IntPtr value);
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern bool Urho3D_HashMap_StringHash_Variant_Remove(IntPtr map, uint key);
+        private static extern bool Urho3D_HashMap_StringHash_Variant_Remove(IntPtr map, uint key);
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern bool Urho3D_HashMap_StringHash_Variant_First(IntPtr map, out HashIteratorBase it);
+        private static extern bool Urho3D_HashMap_StringHash_Variant_First(IntPtr map, out HashIteratorBase it);
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern bool Urho3D_HashMap_StringHash_Variant_Next(IntPtr map, ref HashIteratorBase it);
+        private static extern bool Urho3D_HashMap_StringHash_Variant_Next(IntPtr map, ref HashIteratorBase it);
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern bool Urho3D_HashMap_StringHash_Variant_Contains(IntPtr map, uint key);
+        private static extern bool Urho3D_HashMap_StringHash_Variant_Contains(IntPtr map, uint key);
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern IntPtr Urho3D_HashMap_StringHash_Variant_TryGet(IntPtr map, uint key);
+        private static extern IntPtr Urho3D_HashMap_StringHash_Variant_TryGet(IntPtr map, uint key);
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void Urho3D_HashMap_StringHash_Variant_destructor(IntPtr map);
+        private static extern void Urho3D_HashMap_StringHash_Variant_destructor(IntPtr map);
 
         class Enumerator : IEnumerator<KeyValuePair<StringHash, Variant>>
         {
-            private readonly VariantMap hashMap_;
-            private HashIteratorBase iterator_;
-            private bool isFirst_ = true;
+            private readonly VariantMap _hashMap;
+            private HashIteratorBase _iterator;
+            private bool _isFirst = true;
 
             public Enumerator(VariantMap hashMap)
             {
-                hashMap_ = hashMap;
+                _hashMap = hashMap;
                 Reset();
             }
 
             public bool MoveNext()
             {
-                if (isFirst_)
+                if (_isFirst)
                 {
-                    isFirst_ = false;
-                    return Urho3D_HashMap_StringHash_Variant_First(hashMap_.instance_, out iterator_);
+                    _isFirst = false;
+                    return Urho3D_HashMap_StringHash_Variant_First(_hashMap.instance_, out _iterator);
                 }
-                return Urho3D_HashMap_StringHash_Variant_Next(hashMap_.instance_, ref iterator_);
+                return Urho3D_HashMap_StringHash_Variant_Next(_hashMap.instance_, ref _iterator);
             }
 
             public void Reset()
             {
-                isFirst_ = true;
+                _isFirst = true;
             }
 
             public KeyValuePair<StringHash, Variant> Current
             {
                 get
                 {
-                    var rawKey = Urho3D_HashMap_StringHash_Variant_GetKey(iterator_);
-                    var rawVal = Urho3D_HashMap_StringHash_Variant_GetValue(iterator_);
+                    var rawKey = Urho3D_HashMap_StringHash_Variant_GetKey(_iterator);
+                    var rawVal = Urho3D_HashMap_StringHash_Variant_GetValue(_iterator);
                     var key = StringHash.__FromPInvoke(rawKey);
                     var value = Variant.__FromPInvoke(rawVal);
                     return new KeyValuePair<StringHash, Variant>(key, value);

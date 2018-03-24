@@ -12,36 +12,36 @@ namespace Urho3D
     [StructLayout(LayoutKind.Sequential)]
     internal struct VectorBase
     {
-        public uint size_;
-        public uint capacity_;
-        public IntPtr buffer_;
+        public uint Size;
+        public uint Capacity;
+        public IntPtr Buffer;
     }
 
     public unsafe class StringVector : NativeObject, IList<string>
     {
         private class Enumerator : IEnumerator<string>
         {
-            private StringVector instance_;
-            private int index_;
+            private readonly StringVector _instance;
+            private int _index;
 
             public Enumerator(StringVector instance)
             {
-                instance_ = instance;
+                _instance = instance;
                 Reset();
             }
 
             public bool MoveNext()
             {
-                index_++;
-                return instance_.Count > index_;
+                _index++;
+                return _instance.Count > _index;
             }
 
             public void Reset()
             {
-                index_ = -1;
+                _index = -1;
             }
 
-            public string Current => instance_[index_];
+            public string Current => _instance[_index];
 
             object IEnumerator.Current => Current;
 
@@ -71,7 +71,7 @@ namespace Urho3D
         }
 
         public bool Remove(string item) => Urho3D_StringVector_Remove(instance_, item);
-        public int Count => (int)((VectorBase*) instance_)->size_;
+        public int Count => (int)((VectorBase*) instance_)->Size;
         public bool IsReadOnly => false;
         public int IndexOf(string item) => Urho3D_StringVector_IndexOf(instance_, item);
         public void Insert(int index, string item) => Urho3D_StringVector_InsertAt(instance_, index, item);
@@ -85,26 +85,26 @@ namespace Urho3D
 
         #region Interop
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void Urho3D_StringVector_Add(IntPtr instance, [param: MarshalAs(UnmanagedType.LPUTF8Str)]string value);
+        private static extern void Urho3D_StringVector_Add(IntPtr instance, [param: MarshalAs(UnmanagedType.LPUTF8Str)]string value);
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void Urho3D_StringVector_InsertAt(IntPtr instance, int index, [param: MarshalAs(UnmanagedType.LPUTF8Str)]string value);
+        private static extern void Urho3D_StringVector_InsertAt(IntPtr instance, int index, [param: MarshalAs(UnmanagedType.LPUTF8Str)]string value);
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void Urho3D_StringVector_Set(IntPtr instance, int index, [param: MarshalAs(UnmanagedType.LPUTF8Str)]string value);
+        private static extern void Urho3D_StringVector_Set(IntPtr instance, int index, [param: MarshalAs(UnmanagedType.LPUTF8Str)]string value);
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.LPUTF8Str)]
-        internal static extern string Urho3D_StringVector_Get(IntPtr instance, int index);
+        private static extern string Urho3D_StringVector_Get(IntPtr instance, int index);
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern bool Urho3D_StringVector_Remove(IntPtr instance, [param: MarshalAs(UnmanagedType.LPUTF8Str)]string value);
+        private static extern bool Urho3D_StringVector_Remove(IntPtr instance, [param: MarshalAs(UnmanagedType.LPUTF8Str)]string value);
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern bool Urho3D_StringVector_RemoveAt(IntPtr instance, int index);
+        private static extern bool Urho3D_StringVector_RemoveAt(IntPtr instance, int index);
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void Urho3D_StringVector_Clear(IntPtr instance);
+        private static extern void Urho3D_StringVector_Clear(IntPtr instance);
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern bool Urho3D_StringVector_Contains(IntPtr instance, [param: MarshalAs(UnmanagedType.LPUTF8Str)]string value);
+        private static extern bool Urho3D_StringVector_Contains(IntPtr instance, [param: MarshalAs(UnmanagedType.LPUTF8Str)]string value);
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern int Urho3D_StringVector_IndexOf(IntPtr instance, [param: MarshalAs(UnmanagedType.LPUTF8Str)]string value);
+        private static extern int Urho3D_StringVector_IndexOf(IntPtr instance, [param: MarshalAs(UnmanagedType.LPUTF8Str)]string value);
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void Urho3D_StringVector_destructor(IntPtr instnace);
+        private static extern void Urho3D_StringVector_destructor(IntPtr instnace);
 
         internal static StringVector __FromPInvoke(IntPtr source)
         {

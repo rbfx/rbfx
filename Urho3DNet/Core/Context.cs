@@ -7,12 +7,12 @@ namespace Urho3D
 {
     public partial class Context
     {
-        private readonly Dictionary<uint, Type> factoryTypes_ = new Dictionary<uint, Type>();
+        private readonly Dictionary<uint, Type> _factoryTypes = new Dictionary<uint, Type>();
 
         public void RegisterFactory<T>(string category="") where T: Object
         {
             var type = typeof(T);
-            factoryTypes_[StringHash.Calculate(type.Name)] = type;
+            _factoryTypes[StringHash.Calculate(type.Name)] = type;
 
             // Find a wrapper base type.
             var baseType = type.BaseType;
@@ -28,7 +28,7 @@ namespace Urho3D
         internal IntPtr CreateObject(uint managedType)
         {
             Type type;
-            if (!factoryTypes_.TryGetValue(managedType, out type))
+            if (!_factoryTypes.TryGetValue(managedType, out type))
                 return IntPtr.Zero;
             var managed = (Object)Activator.CreateInstance(type, BindingFlags.Public | BindingFlags.Instance,
                 null, new object[] { this }, null);
@@ -36,7 +36,7 @@ namespace Urho3D
         }
 
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void Urho3D_Context_RegisterFactory(IntPtr context,
+        private static extern void Urho3D_Context_RegisterFactory(IntPtr context,
             [param: MarshalAs(UnmanagedType.LPUTF8Str)]
             string typeName, uint baseType, [param: MarshalAs(UnmanagedType.LPUTF8Str)]
             string category);
