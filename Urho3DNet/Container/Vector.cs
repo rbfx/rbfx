@@ -17,7 +17,7 @@ namespace Urho3D
         public IntPtr buffer_;
     }
 
-    public unsafe class StringVector : IList<string>, IDisposable
+    public unsafe class StringVector : NativeObject, IList<string>
     {
         private class Enumerator : IEnumerator<string>
         {
@@ -49,8 +49,6 @@ namespace Urho3D
             {
             }
         }
-
-        private IntPtr instance_;
 
         internal StringVector(IntPtr instance)
         {
@@ -105,6 +103,8 @@ namespace Urho3D
         internal static extern bool Urho3D_StringVector_Contains(IntPtr instance, [param: MarshalAs(UnmanagedType.LPUTF8Str)]string value);
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
         internal static extern int Urho3D_StringVector_IndexOf(IntPtr instance, [param: MarshalAs(UnmanagedType.LPUTF8Str)]string value);
+        [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void Urho3D_StringVector_destructor(IntPtr instnace);
 
         internal static StringVector __FromPInvoke(IntPtr source)
         {
@@ -120,9 +120,16 @@ namespace Urho3D
             return source.instance_;
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
+            if (Interlocked.Increment(ref disposed_) == 1)
+            {
+                Urho3D_StringVector_destructor(instance_);
+                InstanceCache.Remove(instance_, this);
+            }
+            instance_ = IntPtr.Zero;
         }
+
         #endregion
     }
 }

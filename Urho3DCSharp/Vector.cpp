@@ -53,6 +53,11 @@ URHO3D_EXPORT_API int Urho3D_StringVector_IndexOf(StringVector* instance, const 
     return index;
 }
 
+URHO3D_EXPORT_API int Urho3D_StringVector_destructor(StringVector* instance)
+{
+    script->ReleaseRef<StringVector>(instance);
+}
+
 ///////////////////////////////////////////////// VectorBase ///////////////////////////////////////////////////////////
 URHO3D_EXPORT_API unsigned char* Urho3D_VectorBase_AllocateBuffer(int size)
 {
