@@ -53,7 +53,7 @@ URHO3D_EXPORT_API int Urho3D_StringVector_IndexOf(StringVector* instance, const 
     return index;
 }
 
-URHO3D_EXPORT_API int Urho3D_StringVector_destructor(StringVector* instance)
+URHO3D_EXPORT_API void Urho3D_StringVector_destructor(StringVector* instance)
 {
     script->ReleaseRef<StringVector>(instance);
 }

@@ -220,7 +220,7 @@ struct CSharpConverter<PODVector<T>>
 
     static CppType FromCSharp(const SafeArray& value)
     {
-        CppType result{(const T*)value.data, value.size / (unsigned)sizeof(T)};
+        CppType result((const T*)value.data, value.size / (unsigned)sizeof(T));
         if (value.owns)
             free(value.data);
         return result;
