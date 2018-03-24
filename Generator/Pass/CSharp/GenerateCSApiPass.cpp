@@ -134,8 +134,6 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     bases.resize(1);
                     bases.emplace_back("I" + entity->name_);
                 }
-
-                bases.emplace_back("IDisposable");
             }
 
             if (isStatic)

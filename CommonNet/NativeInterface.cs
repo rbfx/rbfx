@@ -20,7 +20,7 @@ namespace CSharp
         internal CSharp_CreateObject CreateObject;
     }
 
-    public interface INativeObject
+    public interface INativeObject : IDisposable
     {
         IntPtr __GetInstance();
     }
@@ -40,9 +40,16 @@ namespace CSharp
         {
         }
 
+        ~NativeObject()
+        {
+            Dispose();
+        }
+
         // Derived types will put object initialization code here. At the time of writing such code sets up virtual
         // method callbacks and nothing more.
-        internal abstract void SetupInstance(IntPtr instance);
+        internal virtual void SetupInstance(IntPtr instance)
+        {
+        }
 
         public bool Equals(NativeObject other)
         {
@@ -70,6 +77,10 @@ namespace CSharp
         public IntPtr __GetInstance()
         {
             return instance_;
+        }
+
+        public virtual void Dispose()
+        {
         }
     }
 

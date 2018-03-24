@@ -108,12 +108,12 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             auto newTag = hasBases ? "new " : " ";
             auto baseName = Sanitize(entity->uniqueName_);
 
-            printer_ << fmt::format("public unsafe partial class {} : IDisposable", entity->name_);
+            printer_ << fmt::format("public unsafe partial class {} : INativeObject", entity->name_);
             printer_.Indent();
             printer_ << fmt::format("internal {}(IntPtr instance) : base(instance) {{ }}", entity->name_);
             printer_ << "";
 
-            printer_ << fmt::format("public {}void Dispose()", newTag);
+            printer_ << fmt::format("public override void Dispose()");
             printer_.Indent();
             {
                 printer_ << "if (Interlocked.Increment(ref disposed_) == 1)";
@@ -122,14 +122,6 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 printer_ << fmt::format("InstanceCache.Remove<{}>(instance_, this);", entity->name_);
                 printer_.Dedent();
                 printer_ << "instance_ = IntPtr.Zero;";
-            }
-            printer_.Dedent();
-            printer_ << "";
-
-            printer_ << fmt::format("~{}()", entity->name_);
-            printer_.Indent();
-            {
-                printer_ << "Dispose();";
             }
             printer_.Dedent();
             printer_ << "";
