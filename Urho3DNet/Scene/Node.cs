@@ -19,7 +19,7 @@ public partial class Node
             null, new object[] {ptr}, null));
     }
 
-    public T GetComponent<T>(bool recursive = false)
+    public T GetComponent<T>(bool recursive = false) where T: Component
     {
         var componentInstance = Urho3D__Node__GetComponent_Urho3D__StringHash_bool__const(instance_, StringHash.Calculate(typeof(T).Name), recursive);
         if (componentInstance == IntPtr.Zero)
