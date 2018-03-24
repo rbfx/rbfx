@@ -63,8 +63,8 @@ int main(int argc, char* argv[])
     app.add_option("--out-cpp", outputDirCpp, "Output directory for generated C++ code.");
     app.add_option("--out-cs", outputDirCs, "Output directory for generated C# code.");
 
-    app.add_option("rules", rulesFile, "Path to rules xml file")->check(CLI::ExistingFile);
-    app.add_option("source", sourceDir, "Path to source directory")->check(CLI::ExistingDirectory);
+    app.add_option("rules", rulesFile, "Path to rules xml file")->required(true)->check(CLI::ExistingFile);
+    app.add_option("source", sourceDir, "Path to source directory")->required(true)->check(CLI::ExistingDirectory);
 
     std::vector<std::string> cmdLines;
     if (argc == 2)
