@@ -69,7 +69,6 @@ namespace CSharp
 
         public static T GetOrAdd<T>(IntPtr instance, Func<IntPtr, T> factory) where T: NativeObject
         {
-            ExpireCache();
             var entry = _cache.GetOrAdd(instance, ptr =>
             {
                 var object_ = (NativeObject) factory(ptr);
@@ -78,6 +77,7 @@ namespace CSharp
                 return new CacheEntry(object_);
             });
             entry.LastAccess = Environment.TickCount;
+            ExpireCache();
             return (T)entry.Target;
         }
 
@@ -95,7 +95,9 @@ namespace CSharp
         {
             ExpireCache();
             CacheEntry entry;
-            _cache.TryRemove(instance, out entry);
+            if (!_cache.TryRemove(instance, out entry))
+                return;
+
             var target = entry.Target;
             if (target == null)
                 return;
@@ -131,7 +133,7 @@ namespace CSharp
             {
                 var entry = _expirationEnumerator.Current;
                 if (entry.Value.Expired)
-                    Remove(entry.Value.Target.NativeInstance);
+                    Remove(entry.Key);
             }
             else
                 _needsReset = true;
