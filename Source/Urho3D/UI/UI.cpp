@@ -915,7 +915,7 @@ void UI::Initialize()
 
     initialized_ = true;
 
-    SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(UI, HandleBeginFrame));
+    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(UI, HandleUpdate));
     SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(UI, HandlePostUpdate));
     SubscribeToEvent(E_RENDERUPDATE, URHO3D_HANDLER(UI, HandleRenderUpdate));
 
@@ -1992,7 +1992,7 @@ void UI::HandleTextInput(StringHash eventType, VariantMap& eventData)
         element->OnTextInput(eventData[P_TEXT].GetString());
 }
 
-void UI::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
+void UI::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
     // If have a cursor, and a drag is not going on, reset the cursor shape. Application logic that wants to apply
     // custom shapes can do it after this, but needs to do it each frame

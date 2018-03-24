@@ -1171,8 +1171,7 @@ void Scene::HandleUpdate(StringHash eventType, VariantMap& eventData)
     if (!updateEnabled_)
         return;
 
-    using namespace Update;
-    Update(eventData[P_TIMESTEP].GetFloat());
+    Update(eventData[Update::P_TIMESTEP].GetFloat());
 }
 
 void Scene::HandleResourceBackgroundLoaded(StringHash eventType, VariantMap& eventData)

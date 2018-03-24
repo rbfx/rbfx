@@ -114,7 +114,7 @@ void Renderer2D::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQuery
         Sort(results.Begin() + resultSize, results.End(), CompareRayQueryResults);
 }
 
-void Renderer2D::UpdateBatches(const FrameInfo& frame)
+void Renderer2D::UpdateBatches(const RenderFrameInfo& frame)
 {
     unsigned count = batches_.Size();
 
@@ -126,7 +126,7 @@ void Renderer2D::UpdateBatches(const FrameInfo& frame)
     }
 }
 
-void Renderer2D::UpdateGeometry(const FrameInfo& frame)
+void Renderer2D::UpdateGeometry(const RenderFrameInfo& frame)
 {
     unsigned indexCount = 0;
     for (HashMap<Camera*, ViewBatchInfo2D>::ConstIterator i = viewBatchInfos_.Begin(); i != viewBatchInfos_.End(); ++i)

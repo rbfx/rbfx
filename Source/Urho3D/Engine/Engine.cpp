@@ -97,16 +97,9 @@ extern const char* logLevelPrefixes[];
 
 Engine::Engine(Context* context) :
     Object(context),
-    timeStep_(0.0f),
-    timeStepSmoothing_(2),
-    minFps_(10),
 #if defined(IOS) || defined(TVOS) || defined(__ANDROID__) || defined(__arm__) || defined(__aarch64__)
-    maxFps_(60),
-    maxInactiveFps_(10),
     pauseMinimized_(true),
 #else
-    maxFps_(200),
-    maxInactiveFps_(60),
     pauseMinimized_(false),
 #endif
 #ifdef URHO3D_TESTING
@@ -118,6 +111,9 @@ Engine::Engine(Context* context) :
     headless_(false),
     audioPaused_(false)
 {
+
+
+
     // Register self as a subsystem
     context_->RegisterSubsystem(this);
 
@@ -219,8 +215,8 @@ bool Engine::Initialize(const VariantMap& parameters)
     GetSubsystem<Time>()->SetTimerPeriod(1);
 
     // Configure max FPS
-    if (GetParameter(parameters, EP_FRAME_LIMITER, true) == false)
-        SetMaxFps(0);
+    //if (GetParameter(parameters, EP_FRAME_LIMITER, true) == false)
+    //    SetMaxFps(0);
 
     // Set amount of worker threads according to the available physical CPU cores. Using also hyperthreaded cores results in
     // unpredictable extra synchronization overhead. Also reserve one core for the main thread
@@ -327,7 +323,20 @@ bool Engine::Initialize(const VariantMap& parameters)
         context_->RegisterSubsystem(new SystemUI(context_));
 #endif
     }
-    frameTimer_.Reset();
+
+
+
+
+
+	updateTimeStepsBufferMs_.Resize(64);
+	renderTimeStepsBufferMs_.Resize(64);
+
+    updateTimerTracker_.Reset();
+	renderTimerTracker_.Reset();
+
+	updateUpdateTimeTimer();
+	updateFpsGoalTimer();
+	
 
     URHO3D_LOGINFO("Initialized engine");
     initialized_ = true;
@@ -485,55 +494,6 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
     return true;
 }
 
-void Engine::RunFrame()
-{
-    URHO3D_PROFILE(RunFrame);
-    assert(initialized_);
-
-    // If not headless, and the graphics subsystem no longer has a window open, assume we should exit
-    if (!headless_ && !GetSubsystem<Graphics>()->IsInitialized())
-        exiting_ = true;
-
-    if (exiting_)
-        return;
-
-    // Note: there is a minimal performance cost to looking up subsystems (uses a hashmap); if they would be looked up several
-    // times per frame it would be better to cache the pointers
-    auto* time = GetSubsystem<Time>();
-    auto* input = GetSubsystem<Input>();
-    auto* audio = GetSubsystem<Audio>();
-
-    URHO3D_PROFILE(DoFrame);
-    time->BeginFrame(timeStep_);
-
-    // If pause when minimized -mode is in use, stop updates and audio as necessary
-    if (pauseMinimized_ && input->IsMinimized())
-    {
-        if (audio->IsPlaying())
-        {
-            audio->Stop();
-            audioPaused_ = true;
-        }
-    }
-    else
-    {
-        // Only unpause when it was paused by the engine
-        if (audioPaused_)
-        {
-            audio->Play();
-            audioPaused_ = false;
-        }
-
-        Update();
-    }
-
-    Render();
-    URHO3D_PROFILE_END();
-    ApplyFrameLimit();
-
-    time->EndFrame();
-}
-
 Console* Engine::CreateConsole()
 {
     if (headless_ || !initialized_)
@@ -574,24 +534,18 @@ DebugHud* Engine::CreateDebugHud()
 #endif
 }
 
-void Engine::SetTimeStepSmoothing(int frames)
+
+void Engine::SetRenderFpsGoal(int fps)
 {
-    timeStepSmoothing_ = (unsigned)Clamp(frames, 1, 20);
+	renderFpsGoal = fps;
+	updateFpsGoalTimer();
+
 }
 
-void Engine::SetMinFps(int fps)
+void Engine::SetUpdateTimeUs(unsigned updateTimeUs)
 {
-    minFps_ = (unsigned)Max(fps, 0);
-}
-
-void Engine::SetMaxFps(int fps)
-{
-    maxFps_ = (unsigned)Max(fps, 0);
-}
-
-void Engine::SetMaxInactiveFps(int fps)
-{
-    maxInactiveFps_ = (unsigned)Max(fps, 0);
+	updateTimeGoalUs = updateTimeUs;
+	updateUpdateTimeTimer();
 }
 
 void Engine::SetPauseMinimized(bool enable)
@@ -608,10 +562,6 @@ void Engine::SetAutoExit(bool enable)
     autoExit_ = enable;
 }
 
-void Engine::SetNextTimeStep(float seconds)
-{
-    timeStep_ = Max(seconds, 0.0f);
-}
 
 void Engine::Exit()
 {
@@ -698,25 +648,78 @@ void Engine::DumpMemory()
 #endif
 }
 
+unsigned Engine::FreeUpdate()
+{
+	
+	// If not headless, and the graphics subsystem no longer has a window open, assume we should exit
+	if (!headless_ && !GetSubsystem<Graphics>()->IsInitialized())
+		exiting_ = true;
+
+	if (exiting_)
+		return 0;
+
+
+	// Note: there is a minimal performance cost to looking up subsystems (uses a hashmap); if they would be looked up several
+	// times per frame it would be better to cache the pointers
+	auto* time = static_cast<Time*>(context_->time_);
+	auto* input = static_cast<Input*>(context_->input_);
+
+	updateAudioPausing();
+
+
+	if (updateTimer_.IsTimedOut()) {
+		Update();
+		updateTimer_.Reset();
+		return 0;
+	}
+	
+
+	if (renderGoalTimer_.IsTimedOut())
+	{
+		//Render
+		Render();
+		renderGoalTimer_.Reset();
+		return 0;
+	}
+	
+	//lets compute approximate time we have until next update or render
+	{
+		unsigned updateTimeLeft = updateTimer_.GetTimeoutDuration() - updateTimer_.GetUSec(false);
+		unsigned renderTimeLeft = renderGoalTimer_.GetTimeoutDuration() - renderGoalTimer_.GetUSec(false);
+
+		unsigned timeLeftUS = Urho3D::Min(updateTimeLeft, renderTimeLeft);
+		if (timeLeftUS > 0)
+			return timeLeftUS;
+		else
+			return 0;
+	}
+
+
+	return 0;
+}
+
+
+
 void Engine::Update()
 {
     URHO3D_PROFILE(Update);
 
-    // Logic update event
-    using namespace Update;
+	//compute times
+	updateTick_++;
+	updateTimeStepsBufferMs_[0] = (float(updateTimerTracker_.GetUSec(true))/1000000.0f);
 
+
+
+    // Logic update event
     VariantMap& eventData = GetEventDataMap();
-    eventData[P_TIMESTEP] = timeStep_;
+    eventData[Update::P_TIMESTEP] = updateTimeStepsBufferMs_[0];
+	eventData[Update::P_UPDATETICK] = updateTick_;
     SendEvent(E_UPDATE, eventData);
 
     // Logic post-update event
     SendEvent(E_POSTUPDATE, eventData);
+	
 
-    // Rendering update event
-    SendEvent(E_RENDERUPDATE, eventData);
-
-    // Post-render update event
-    SendEvent(E_POSTRENDERUPDATE, eventData);
 }
 
 void Engine::Render()
@@ -726,89 +729,34 @@ void Engine::Render()
 
     URHO3D_PROFILE(Render);
 
+
     // If device is lost, BeginFrame will fail and we skip rendering
     auto* graphics = GetSubsystem<Graphics>();
     if (!graphics->BeginFrame())
         return;
 
+	//compute times
+	renderTick_++;
+	renderTimeStepsBufferMs_[0] = (float(renderTimerTracker_.GetUSec(true)) / 1000000.0f);
+
+
+
+	VariantMap& eventData = GetEventDataMap();
+	eventData[RenderUpdate::P_TIMESTEP] = renderTimeStepsBufferMs_[0]*1000.0f;
+	eventData[RenderUpdate::P_RENDERTICK] = renderTick_;
+	
+	// Rendering update event
+	SendEvent(E_RENDERUPDATE, eventData);
+
+
     GetSubsystem<Renderer>()->Render();
     GetSubsystem<UI>()->Render();
     graphics->EndFrame();
-}
 
-void Engine::ApplyFrameLimit()
-{
-    if (!initialized_)
-        return;
 
-    unsigned maxFps = maxFps_;
-    auto* input = GetSubsystem<Input>();
-    if (input && !input->HasFocus())
-        maxFps = Min(maxInactiveFps_, maxFps);
 
-    long long elapsed = 0;
-
-#ifndef __EMSCRIPTEN__
-    // Perform waiting loop if maximum FPS set
-#if !defined(IOS) && !defined(TVOS)
-    if (maxFps)
-#else
-    // If on iOS/tvOS and target framerate is 60 or above, just let the animation callback handle frame timing
-    // instead of waiting ourselves
-    if (maxFps < 60)
-#endif
-    {
-        URHO3D_PROFILE(ApplyFrameLimit);
-
-        long long targetMax = 1000000LL / maxFps;
-
-        for (;;)
-        {
-            elapsed = frameTimer_.GetUSec(false);
-            if (elapsed >= targetMax)
-                break;
-
-            // Sleep if 1 ms or more off the frame limiting goal
-            if (targetMax - elapsed >= 1000LL)
-            {
-                auto sleepTime = (unsigned)((targetMax - elapsed) / 1000LL);
-                Time::Sleep(sleepTime);
-            }
-        }
-    }
-#endif
-
-    elapsed = frameTimer_.GetUSec(true);
-#ifdef URHO3D_TESTING
-    if (timeOut_ > 0)
-    {
-        timeOut_ -= elapsed;
-        if (timeOut_ <= 0)
-            Exit();
-    }
-#endif
-
-    // If FPS lower than minimum, clamp elapsed time
-    if (minFps_)
-    {
-        long long targetMin = 1000000LL / minFps_;
-        if (elapsed > targetMin)
-            elapsed = targetMin;
-    }
-
-    // Perform timestep smoothing
-    timeStep_ = 0.0f;
-    lastTimeSteps_.Push(elapsed / 1000000.0f);
-    if (lastTimeSteps_.Size() > timeStepSmoothing_)
-    {
-        // If the smoothing configuration was changed, ensure correct amount of samples
-        lastTimeSteps_.Erase(0, lastTimeSteps_.Size() - timeStepSmoothing_);
-        for (unsigned i = 0; i < lastTimeSteps_.Size(); ++i)
-            timeStep_ += lastTimeSteps_[i];
-        timeStep_ /= lastTimeSteps_.Size();
-    }
-    else
-        timeStep_ = lastTimeSteps_.Back();
+	// Post-render update event
+	SendEvent(E_POSTRENDERUPDATE, eventData);
 }
 
 VariantMap Engine::ParseParameters(const Vector<String>& arguments)
@@ -1022,6 +970,41 @@ void Engine::DoExit()
 #if defined(__EMSCRIPTEN__) && defined(URHO3D_TESTING)
     emscripten_force_exit(EXIT_SUCCESS);    // Some how this is required to signal emrun to stop
 #endif
+}
+
+void Engine::updateAudioPausing()
+{
+	auto* audio = static_cast<Audio*>(context_->audio_);
+	auto* input = GetSubsystem<Input>();
+
+	// If pause when minimized -mode is in use, stop updates and audio as necessary
+	if (pauseMinimized_ && input->IsMinimized())
+	{
+		if (audio->IsPlaying())
+		{
+			audio->Stop();
+			audioPaused_ = true;
+		}
+	}
+	else
+	{
+		// Only unpause when it was paused by the engine
+		if (audioPaused_)
+		{
+			audio->Play();
+			audioPaused_ = false;
+		}
+	}
+}
+
+void Engine::updateFpsGoalTimer()
+{
+	renderGoalTimer_.SetTimeoutDuration((long long)((1.0f / float(renderFpsGoal))*1000000.0f), false);
+}
+
+void Engine::updateUpdateTimeTimer()
+{
+	updateTimer_.SetTimeoutDuration(updateTimeGoalUs);
 }
 
 }

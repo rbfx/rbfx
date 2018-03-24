@@ -377,7 +377,7 @@ public:
     VertexBuffer* GetInstancingBuffer() const { return dynamicInstancing_ ? instancingBuffer_.Get() : nullptr; }
 
     /// Return the frame update parameters.
-    const FrameInfo& GetFrameInfo() const { return frame_; }
+    const RenderFrameInfo& GetFrameInfo() const { return frame_; }
 
     /// Update for rendering. Called by HandleRenderUpdate().
     void Update(float timeStep);
@@ -533,7 +533,7 @@ private:
     /// Current variation names for deferred light volume shaders.
     Vector<String> deferredLightPSVariations_;
     /// Frame info for rendering.
-    FrameInfo frame_;
+    RenderFrameInfo frame_;
     /// Texture anisotropy level.
     int textureAnisotropy_{4};
     /// Texture filtering mode.

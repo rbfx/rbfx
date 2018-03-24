@@ -123,7 +123,7 @@ public:
     /// Define with rendertarget and viewport. Return true if successful.
     bool Define(RenderSurface* renderTarget, Viewport* viewport);
     /// Update and cull objects and construct rendering batches.
-    void Update(const FrameInfo& frame);
+    void Update(const RenderFrameInfo& frame);
     /// Render batches.
     void Render();
 
@@ -140,7 +140,7 @@ public:
     Camera* GetCullCamera() const { return cullCamera_; }
 
     /// Return information of the frame being rendered.
-    const FrameInfo& GetFrameInfo() const { return frame_; }
+    const RenderFrameInfo& GetFrameInfo() const { return frame_; }
 
     /// Return the rendertarget. 0 if using the backbuffer.
     RenderSurface* GetRenderTarget() const { return renderTarget_; }
@@ -344,7 +344,7 @@ private:
     /// Destination rendertarget size.
     IntVector2 rtSize_;
     /// Information of the frame being rendered.
-    FrameInfo frame_{};
+    RenderFrameInfo frame_{};
     /// View aspect ratio.
     float aspectRatio_{};
     /// Minimum Z value of the visible scene.

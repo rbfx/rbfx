@@ -229,7 +229,7 @@ private:
     /// Update a resource group. Recalculate memory use and release resources if over memory budget.
     void UpdateResourceGroup(StringHash type);
     /// Handle begin frame event. Automatic resource reloads and the finalization of background loaded resources are processed here.
-    void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
+    void HandleUpdate(StringHash eventType, VariantMap& eventData);
     /// Search FileSystem for file.
     File* SearchResourceDirs(const String& name);
     /// Search resource packages for file.

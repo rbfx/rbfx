@@ -212,7 +212,7 @@ void DecalSet::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryRe
     // Do not return raycast hits
 }
 
-void DecalSet::UpdateBatches(const FrameInfo& frame)
+void DecalSet::UpdateBatches(const RenderFrameInfo& frame)
 {
     const BoundingBox& worldBoundingBox = GetWorldBoundingBox();
     const Matrix3x4& worldTransform = node_->GetWorldTransform();
@@ -226,7 +226,7 @@ void DecalSet::UpdateBatches(const FrameInfo& frame)
         batches_[0].worldTransform_ = &worldTransform;
 }
 
-void DecalSet::UpdateGeometry(const FrameInfo& frame)
+void DecalSet::UpdateGeometry(const RenderFrameInfo& frame)
 {
     if (bufferDirty_ || vertexBuffer_->IsDataLost() || indexBuffer_->IsDataLost())
         UpdateBuffers();

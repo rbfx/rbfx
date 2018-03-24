@@ -166,7 +166,7 @@ void StaticModelGroup::ProcessRayQuery(const RayOctreeQuery& query, PODVector<Ra
     }
 }
 
-void StaticModelGroup::UpdateBatches(const FrameInfo& frame)
+void StaticModelGroup::UpdateBatches(const RenderFrameInfo& frame)
 {
     // Getting the world bounding box ensures the transforms are updated
     const BoundingBox& worldBoundingBox = GetWorldBoundingBox();

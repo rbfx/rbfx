@@ -172,7 +172,7 @@ public:
 
 private:
     /// Handle end of frame. Clear debug geometry.
-    void HandleEndFrame(StringHash eventType, VariantMap& eventData);
+    void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Lines rendered with depth test.
     PODVector<DebugLine> lines_;

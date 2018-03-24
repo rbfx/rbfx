@@ -36,6 +36,7 @@
 #include <ImGui/imgui_internal.h>
 #include <ImGui/imgui_freetype.h>
 #include <IO/Log.h>
+#include "Engine/Engine.h"
 
 
 using namespace std::placeholders;
@@ -93,7 +94,7 @@ SystemUI::SystemUI(Urho3D::Context* context)
     SubscribeToEvent(E_SCREENMODE, std::bind(&SystemUI::UpdateProjectionMatrix, this));
     SubscribeToEvent(E_INPUTEND, [&](StringHash, VariantMap&)
     {
-        float timeStep = GetTime()->GetTimeStep();
+        float timeStep = GetSubsystem<Engine>()->GetLastRenderTimeStepMs();
         ImGui::GetIO().DeltaTime = timeStep > 0.0f ? timeStep : 1.0f / 60.0f;
         ImGui::NewFrame();
         ImGuizmo::BeginFrame();

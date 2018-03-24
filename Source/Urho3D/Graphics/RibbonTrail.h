@@ -76,11 +76,11 @@ public:
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
     /// Update before octree reinsertion. Is called from a main thread.
-    void Update(const FrameInfo &frame) override;
+    void Update(const RenderFrameInfo &frame) override;
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
-    void UpdateBatches(const FrameInfo& frame) override;
+    void UpdateBatches(const RenderFrameInfo& frame) override;
     /// Prepare geometry for rendering. Called from a worker thread if possible (no GPU update.)
-    void UpdateGeometry(const FrameInfo& frame) override;
+    void UpdateGeometry(const RenderFrameInfo& frame) override;
     /// Return whether a geometry update is necessary, and if it can happen in a worker thread.
     UpdateGeometryType GetUpdateGeometryType() override;
 	/// Update/Rebuild tail mesh only if position changed (called by UpdateBatches())
@@ -196,7 +196,7 @@ private:
     /// Resize RibbonTrail vertex and index buffers.
     void UpdateBufferSize();
     /// Rewrite RibbonTrail vertex buffer.
-    void UpdateVertexBuffer(const FrameInfo& frame);
+    void UpdateVertexBuffer(const RenderFrameInfo& frame);
 
     /// Geometry.
     SharedPtr<Geometry> geometry_;

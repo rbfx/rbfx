@@ -225,7 +225,7 @@ void AnimatedModel::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQu
     }
 }
 
-void AnimatedModel::Update(const FrameInfo& frame)
+void AnimatedModel::Update(const RenderFrameInfo& frame)
 {
     // If node was invisible last frame, need to decide animation LOD distance here
     // If headless, retain the current animation distance (should be 0)
@@ -256,7 +256,7 @@ void AnimatedModel::Update(const FrameInfo& frame)
         UpdateBoneBoundingBox();
 }
 
-void AnimatedModel::UpdateBatches(const FrameInfo& frame)
+void AnimatedModel::UpdateBatches(const RenderFrameInfo& frame)
 {
     const Matrix3x4& worldTransform = node_->GetWorldTransform();
     const BoundingBox& worldBoundingBox = GetWorldBoundingBox();
@@ -294,7 +294,7 @@ void AnimatedModel::UpdateBatches(const FrameInfo& frame)
     }
 }
 
-void AnimatedModel::UpdateGeometry(const FrameInfo& frame)
+void AnimatedModel::UpdateGeometry(const RenderFrameInfo& frame)
 {
     // Late update in case the model came into view and animation was dirtied in the meanwhile
     if (forceAnimationUpdate_)
@@ -1252,7 +1252,7 @@ void AnimatedModel::SetGeometryBoneMappings()
     }
 }
 
-void AnimatedModel::UpdateAnimation(const FrameInfo& frame)
+void AnimatedModel::UpdateAnimation(const RenderFrameInfo& frame)
 {
     // If using animation LOD, accumulate time and see if it is time to update
     if (animationLodBias_ > 0.0f && animationLodDistance_ > 0.0f)

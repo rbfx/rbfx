@@ -340,7 +340,7 @@ private:
     /// Handle screen mode event.
     void HandleScreenMode(StringHash eventType, VariantMap& eventData);
     /// Handle frame start event.
-    void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
+    void HandleUpdate(StringHash eventType, VariantMap& eventData);
     /// Handle touch events from the controls of screen joystick(s).
     void HandleScreenJoystickTouch(StringHash eventType, VariantMap& eventData);
     /// Handle SDL event.
@@ -359,7 +359,7 @@ private:
     /// SetMouseMode  (Emscripten platform only).
     void SetMouseModeEmscripten(MouseMode mode, bool suppressEvent);
     /// Handle frame end event.
-    void HandleEndFrame(StringHash eventType, VariantMap& eventData);
+    void HandleUpdate(StringHash eventType, VariantMap& eventData);
 #endif
 
     /// Graphics subsystem.
