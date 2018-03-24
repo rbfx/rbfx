@@ -125,6 +125,7 @@ namespace CSharp
             {
                 if (Environment.TickCount - _lastCacheEnumeratorResetTime < CacheIterationInterval)
                     return;
+                _lastCacheEnumeratorResetTime = Environment.TickCount;
                 _expirationEnumerator = _cache.GetEnumerator();
                 _needsReset = false;
             }
