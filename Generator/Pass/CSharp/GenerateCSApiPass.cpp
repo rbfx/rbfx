@@ -412,6 +412,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto access = entity->access_ == cppast::cpp_public ? "public" : "protected";
         auto csType = ToCSType(var.type(), true);
         auto name = entity->name_;
+        auto sourceName = entity->sourceName_;
         std::string constant;
         if (defaultValue.empty())
             // No default value means we will have to generate a property with a getter.
@@ -449,14 +450,14 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             {
                 // Getter
                 auto call = MapToCS(var.type(),
-                    fmt::format("get_{nsSymbol}_{name}()", FMT_CAPTURE(nsSymbol), FMT_CAPTURE(name)));
+                    fmt::format("get_{nsSymbol}_{sourceName}()", FMT_CAPTURE(nsSymbol), FMT_CAPTURE(sourceName)));
                 printer_ << fmt::format("get {{ return {call}; }}", fmt::arg("call", call));
                 // Setter
                 if (!IsConst(var.type()) && !(entity->flags_ & HintReadOnly))
                 {
                     auto value = MapToPInvoke(var.type(), "value");
-                    printer_ << fmt::format("set {{ set_{nsSymbol}_{name}({value}); }}",
-                        FMT_CAPTURE(nsSymbol), FMT_CAPTURE(name), FMT_CAPTURE(value));
+                    printer_ << fmt::format("set {{ set_{nsSymbol}_{sourceName}({value}); }}",
+                        FMT_CAPTURE(nsSymbol), FMT_CAPTURE(sourceName), FMT_CAPTURE(value));
                 }
             }
             printer_.Dedent();
@@ -513,6 +514,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             auto csType = ToCSType(var.type(), true);
 
             auto name = entity->name_;
+            auto sourceName = entity->sourceName_;
             auto nsSymbol = Sanitize(ns->symbolName_);
             auto constant = entity->flags_ & HintReadOnly ? "readonly" : isConstant ? "const" : "";
 
@@ -530,14 +532,15 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 {
                     // Getter
                     auto call = MapToCS(var.type(),
-                        fmt::format("get_{nsSymbol}_{name}(instance_)", FMT_CAPTURE(nsSymbol), FMT_CAPTURE(name)));
+                        fmt::format("get_{nsSymbol}_{sourceName}(instance_)", FMT_CAPTURE(nsSymbol),
+                            FMT_CAPTURE(sourceName)));
                     printer_ << fmt::format("get {{ return {}; }}", call);
                     // Setter
                     if (!IsConst(var.type()) && !(entity->flags_ & HintReadOnly))
                     {
                         auto value = MapToPInvoke(var.type(), "value");
-                        printer_ << fmt::format("set {{ set_{nsSymbol}_{name}(instance_, {value}); }}",
-                            FMT_CAPTURE(nsSymbol), FMT_CAPTURE(name), FMT_CAPTURE(value));
+                        printer_ << fmt::format("set {{ set_{nsSymbol}_{sourceName}(instance_, {value}); }}",
+                            FMT_CAPTURE(nsSymbol), FMT_CAPTURE(sourceName), FMT_CAPTURE(value));
                     }
                 }
                 printer_.Dedent();

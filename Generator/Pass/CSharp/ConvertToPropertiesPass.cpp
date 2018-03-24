@@ -52,16 +52,18 @@ bool ConvertToPropertiesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
 
     if (std::regex_match(entity->name_, rxGetterName_))
     {
-        if (!entity->children_.empty())
+        MetaEntity* getter = entity;
+        MetaEntity* setter = entity;
+        if (!getter->children_.empty())
             // Getter can not be with parameters
             return true;
 
-        if (entity->cFunctionName_.empty())
+        if (getter->cFunctionName_.empty())
             // Getter has no C API
             return true;
 
-        auto getterType = cppast::to_string(entity->Ast<cppast::cpp_member_function>().return_type());
-        auto propertyName = entity->name_;
+        auto getterType = cppast::to_string(getter->Ast<cppast::cpp_member_function>().return_type());
+        auto propertyName = getter->name_;
 
         std::string setterName;
         if (propertyName[1] == 's') // "Is" getter
@@ -75,21 +77,48 @@ bool ConvertToPropertiesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
             setterName = "Set" + propertyName;
         }
 
-        if (propertyName == entity->parent_->name_)
+        if (propertyName == getter->parent_->name_)
         {
             URHO3D_LOGWARNINGF("%s was not converted to property because property name would match enclosing parent.",
-                entity->sourceSymbolName_.c_str());
+                getter->sourceSymbolName_.c_str());
             return true;
         }
 
-        auto siblings = entity->parent_->children_;
+        auto siblings = getter->parent_->children_;
+        // Find setter
         for (const auto& sibling : siblings)
         {
-            if (sibling != entity && sibling->name_ == propertyName)
+            if (sibling->kind_ == cppast::cpp_entity_kind::member_function_t && sibling->name_ == setterName &&
+                sibling->children_.size() == 1 && sibling->access_ == getter->access_)
             {
-                URHO3D_LOGWARNINGF("Could not convert %s to property because %s already exists.",
-                    entity->sourceSymbolName_.c_str(), sibling->sourceSymbolName_.c_str());
-                return true;
+                auto setterType = cppast::to_string(
+                    sibling->children_[0]->Ast<cppast::cpp_function_parameter>().type());
+                if (setterType == getterType && !sibling->cFunctionName_.empty() &&
+                    getter->access_ == sibling->access_ && !(sibling->flags_ & HintInterface))
+                {
+                    setter = sibling;
+                    break;
+                }
+            }
+        }
+
+        // Find if sibling with matching name exists, it may interfere with property generation.
+        for (const auto& sibling : siblings)
+        {
+            if (sibling != getter && sibling->name_ == propertyName)
+            {
+                if (setter != nullptr && sibling->kind_ == cppast::cpp_entity_kind::member_variable_t)
+                {
+                    // Both getter and setter were found and their access matches, hence getter/setter property may
+                    // replace a variable for which this property is generated.
+                    sibling->Remove();
+                }
+                else
+                {
+                    URHO3D_LOGWARNINGF("Could not convert %s to property because %s already exists.",
+                        getter->sourceSymbolName_.c_str(), sibling->sourceSymbolName_.c_str());
+                    return true;
+                }
             }
         }
 
@@ -98,32 +127,17 @@ bool ConvertToPropertiesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
         property->kind_ = cppast::cpp_entity_kind::member_variable_t;
         property->name_ = propertyName;
         property->flags_ = HintProperty;
-        property->access_ = entity->access_;
-        entity->parent_->Add(property);
+        property->access_ = getter->access_;
+        getter->parent_->Add(property);
 
-        if (islower(entity->name_[0]))
+        if (islower(getter->name_[0]))
             setterName[0] = static_cast<char>(tolower(setterName[0]));
 
-        // Find sibling setter with single parameter of same type as getter
-        for (const auto& sibling : siblings)
-        {
-            if (sibling->kind_ == cppast::cpp_entity_kind::member_function_t && sibling->name_ == setterName &&
-                sibling->children_.size() == 1)
-            {
-                auto setterType = cppast::to_string(
-                    sibling->children_[0]->Ast<cppast::cpp_function_parameter>().type());
-                if (setterType == getterType && !sibling->cFunctionName_.empty() &&
-                    entity->access_ == sibling->access_ && !(sibling->flags_ & HintInterface))
-                {
-                    sibling->name_ = "set";
-                    property->Add(sibling);
-                    break;
-                }
-            }
-        }
+        setter->name_ = "set";
+        property->Add(setter);
 
-        entity->name_ = "get";
-        property->Add(entity);
+        getter->name_ = "get";
+        property->Add(getter);
     }
 
     return true;

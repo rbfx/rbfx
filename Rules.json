@@ -86,6 +86,7 @@
       "Urho3D::Variant::emptyBuffer",
       "Urho3D::Node::GetChild(Urho3D::String const&,bool) const",
       "Urho3D::ResourceRef::ResourceRef(Urho3D::String const&,Urho3D::String const&)",
+      "Urho3D::DirtyBits::Count() const",
       // TODO: Setter should not be generated
       "Urho3D::Text3D::text_",
       "Urho3D::UI::DragData",

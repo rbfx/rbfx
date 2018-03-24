@@ -34,6 +34,7 @@
 #include "Pass/CSharp/Urho3DCustomPass.h"
 #include "Pass/CSharp/GenerateClassWrappers.h"
 #include "Pass/CSharp/GenerateCApiPass.h"
+#include "Pass/CSharp/RenameMembersPass.h"
 #include "Pass/CSharp/GeneratePInvokePass.h"
 #include "Pass/CSharp/GenerateCSApiPass.h"
 
@@ -128,6 +129,7 @@ int main(int argc, char* argv[])
     generator->AddApiPass<Urho3DCustomPass>();
     generator->AddApiPass<MoveGlobalsPass>();
     generator->AddApiPass<GenerateCApiPass>();
+    generator->AddApiPass<RenameMembersPass>();
     generator->AddApiPass<GeneratePInvokePass>();
     generator->AddApiPass<ConvertToPropertiesPass>();
     generator->AddApiPass<GenerateCSApiPass>();
