@@ -14,7 +14,7 @@ namespace Urho3D
         public IntPtr ptr_;
     }
 
-    public class VariantMap : IDictionary<StringHash, Variant>, IDisposable
+    public class VariantMap : NativeObject, IDictionary<StringHash, Variant>
     {
         [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
         internal static extern uint Urho3D_HashMap_StringHash_Variant_GetKey(HashIteratorBase it);
@@ -80,8 +80,6 @@ namespace Urho3D
             {
             }
         }
-
-        internal IntPtr instance_;
 
         internal VariantMap(IntPtr instance)
         {
@@ -193,8 +191,7 @@ namespace Urho3D
             return source.instance_;
         }
 
-        protected volatile int disposed_;
-        public void Dispose()
+        public override void Dispose()
         {
             if (Interlocked.Increment(ref disposed_) == 1)
             {
@@ -202,11 +199,6 @@ namespace Urho3D
                 InstanceCache.Remove(instance_, this);
             }
             instance_ = IntPtr.Zero;
-        }
-
-        ~VariantMap()
-        {
-            Dispose();
         }
     }
 }
