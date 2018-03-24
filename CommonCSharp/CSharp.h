@@ -1,7 +1,12 @@
 #pragma once
-#include <Urho3D/Urho3DAll.h>
+#include <Urho3D/Core/Context.h>
+#include <Urho3D/Core/Mutex.h>
+#include <Urho3D/Core/Object.h>
+#include <Urho3D/IO/Log.h>
 #include <string>
 #include <type_traits>
+
+using namespace Urho3D;
 
 struct ManagedInterface
 {
