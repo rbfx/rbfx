@@ -336,6 +336,23 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_ << "";
         }
     }
+    else if (entity->kind_ == cppast::cpp_entity_kind::function_t)
+    {
+        const auto& func = entity->Ast<cppast::cpp_function>();
+
+        printer_ << dllImport;
+        auto csParams = ParameterList(func.parameters(),
+            std::bind(&GeneratePInvokePass::ToPInvokeTypeParam, std::placeholders::_1));
+        auto rtype = ToPInvokeTypeReturn(func.return_type());
+        auto cFunction = entity->cFunctionName_;
+
+        if (rtype == "string")
+            printer_ << "[return: MarshalAs(UnmanagedType.LPUTF8Str)]";
+        printer_ << fmt::format("internal static extern {rtype} {cFunction}({csParams});",
+            FMT_CAPTURE(rtype), FMT_CAPTURE(cFunction), FMT_CAPTURE(csParams));
+        printer_ << "";
+    }
+
     return true;
 }
 

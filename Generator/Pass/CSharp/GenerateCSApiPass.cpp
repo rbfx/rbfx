@@ -403,6 +403,40 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_.Dedent();
         printer_ << "";
     }
+    else if (entity->kind_ == cppast::cpp_entity_kind::function_t)
+    {
+        const auto& func = entity->Ast<cppast::cpp_function>();
+        auto rtype = ToCSType(func.return_type(), true);
+        auto csParams = FormatCSParameterList(entity->children_);
+
+        printer_ << fmt::format("{access} static {rtype} {name}({csParams})",
+            fmt::arg("access", entity->access_ == cppast::cpp_public ? "public" : "protected"), FMT_CAPTURE(rtype),
+            fmt::arg("name", entity->name_), FMT_CAPTURE(csParams));
+
+        auto paramNameList = MapParameterList(entity->children_, mapToPInvoke);
+
+        // Body
+        printer_.Indent();
+        {
+            std::string call = fmt::format("{cFunction}({paramNameList})",
+                fmt::arg("cFunction", entity->cFunctionName_), FMT_CAPTURE(paramNameList));
+            call = MapToCS(func.return_type(), call);
+
+            if (!IsVoid(func.return_type()))
+                call = "var returnValue = " + call;
+
+            PrintParameterHandlingCodePre(entity->children_);
+
+            printer_ << call + ";";
+
+            PrintParameterHandlingCodePost(entity->children_);
+
+            if (!IsVoid(func.return_type()))
+                printer_ << "return returnValue;";
+        }
+        printer_.Dedent();
+        printer_ << "";
+    }
     else if (entity->kind_ == cppast::cpp_entity_kind::variable_t)
     {
         const auto& var = entity->Ast<cppast::cpp_variable>();

@@ -52,9 +52,9 @@ bool MoveGlobalsPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             }
         }
     }
-    else if (entity->kind_ == cppast::cpp_entity_kind::variable_t)
+    else if (entity->kind_ == cppast::cpp_entity_kind::variable_t ||
+        entity->kind_ == cppast::cpp_entity_kind::function_t)
     {
-        const auto& var = entity->Ast<cppast::cpp_variable>();
         auto& ns = *entity->parent_;
         if (ns.kind_ != cppast::cpp_entity_kind::class_t)
         {
