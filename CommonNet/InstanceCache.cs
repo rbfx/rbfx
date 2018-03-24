@@ -1,49 +1,117 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
 using Urho3D;
 
 namespace CSharp
 {
     static class InstanceCache
     {
-        internal static WeakDictionary<IntPtr, IDisposable> cache_ = new WeakDictionary<IntPtr, IDisposable>();
+        /// <summary>
+        /// How long (ms) strong reference is kept in CacheEntry after last access.
+        /// </summary>
+        private const int StrongRefExpirationTime = 10000;
+        /// <summary>
+        /// One iteration through entire cache is allowed during this interval (ms).
+        /// </summary>
+        private const int CacheIterationInterval = 30000;
 
-        public static T GetOrAdd<T>(IntPtr instance, Func<IntPtr, T> factory)
+        internal class CacheEntry
         {
-            return (T)cache_.GetOrAdd(instance, ptr =>
+            // Strong reference is kept for some time after last object access and then set to null. This prevents
+            // garbage-collection of often used objects whose reference is not kept around. When weak reference expires
+            // entry is removed from cache.
+
+            private NativeObject _target;
+            private WeakReference<NativeObject> _targetWeak;
+            public int LastAccess;
+
+            public NativeObject Target
             {
-                var object_ = (IDisposable)factory(ptr);
-                // In case this is RefCounted object add a reference for duration of object's lifetime.
-                (object_ as RefCounted)?.AddRef();
-                return object_;
-            });
+                get
+                {
+                    var result = _target;
+                    if (result == null)
+                        _targetWeak.TryGetTarget(out result);
+
+                    if (result == null)
+                        return null;
+
+                    LastAccess = Environment.TickCount;
+                    return result;
+                }
+            }
+
+            public CacheEntry(NativeObject cachedTarget)
+            {
+                _target = cachedTarget;
+                _targetWeak = new WeakReference<NativeObject>(cachedTarget);
+                LastAccess = Environment.TickCount;
+            }
+
+            internal bool Expired
+            {
+                get
+                {
+                    if (_target != null && Environment.TickCount - LastAccess > StrongRefExpirationTime)
+                        _target = null;
+                    NativeObject result;
+                    return !_targetWeak.TryGetTarget(out result);
+                }
+            }
         }
 
-        public static void Add<T>(IntPtr instance, Context object_)
+        private static ConcurrentDictionary<IntPtr, CacheEntry> _cache = new ConcurrentDictionary<IntPtr, CacheEntry>();
+        private static IEnumerator<KeyValuePair<IntPtr, CacheEntry>> _expirationEnumerator = _cache.GetEnumerator();
+        private static int _lastCacheEnumeratorResetTime = 0;
+        private static bool _needsReset;
+
+        public static T GetOrAdd<T>(IntPtr instance, Func<IntPtr, T> factory) where T: NativeObject
         {
+            ExpireCache();
+            var entry = _cache.GetOrAdd(instance, ptr =>
+            {
+                var object_ = (NativeObject) factory(ptr);
+                // In case this is RefCounted object add a reference for duration of object's lifetime.
+                (object_ as RefCounted)?.AddRef();
+                return new CacheEntry(object_);
+            });
+            entry.LastAccess = Environment.TickCount;
+            return (T)entry.Target;
+        }
+
+        public static void Add<T>(IntPtr instance, Context object_) where T: NativeObject
+        {
+            ExpireCache();
             NativeInterface.Setup();
             // In case this is RefCounted object add a reference for duration of object's lifetime.
             object_.AddRef();
-            cache_.Add(instance, object_);
+            _cache[instance] = new CacheEntry(object_);
         }
 
-        public static void Add<T>(IntPtr instance, T object_)
+        public static void Add<T>(IntPtr instance, T object_) where T: NativeObject
         {
+            ExpireCache();
             // In case this is RefCounted object add a reference for duration of object's lifetime.
             (object_ as RefCounted)?.AddRef();
-            cache_.Add(instance, (IDisposable)object_);
+            _cache[instance] = new CacheEntry(object_);
         }
 
-        public static void Remove<T>(IntPtr native, Context object_)
+        public static void Remove<T>(IntPtr native, Context object_) where T: NativeObject
         {
-            cache_.Remove(native);
+            ExpireCache();
+            CacheEntry entry;
+            _cache.TryRemove(native, out entry);
             NativeInterface.Dispose();
             object_.ReleaseRef();
         }
 
-        public static void Remove<T>(IntPtr native, T object_)
+        public static void Remove<T>(IntPtr native, T object_) where T: NativeObject
         {
-            cache_.Remove(native);
+            ExpireCache();
+            CacheEntry entry;
+            _cache.TryRemove(native, out entry);
             (object_ as RefCounted)?.ReleaseRef();
         }
 
@@ -52,9 +120,29 @@ namespace CSharp
         /// </summary>
         public static void Dispose()
         {
-            foreach (var item in cache_)
-                ((IDisposable) item.Value.Target)?.Dispose();
-            cache_.Clear();
+            foreach (var item in _cache)
+                item.Value.Target?.Dispose();
+            _cache.Clear();
+        }
+
+        private static void ExpireCache()
+        {
+            if (_needsReset)
+            {
+                if (Environment.TickCount - _lastCacheEnumeratorResetTime < CacheIterationInterval)
+                    return;
+                _expirationEnumerator.Reset();
+                _needsReset = false;
+            }
+
+            if (_expirationEnumerator.MoveNext())
+            {
+                var entry = _expirationEnumerator.Current;
+                if (entry.Value.Expired)
+                    Remove(entry.Key, entry.Value.Target);
+            }
+            else
+                _needsReset = true;
         }
     }
 }
