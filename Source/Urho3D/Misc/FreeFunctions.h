@@ -29,9 +29,6 @@ namespace Urho3D {
 		bool TestFileIsAscii(String fileFullPath);
 		bool TestFileIsUrhoNode(String fileFullPath);
 
-		String GetResourceBinDir();
-		String GetResourceDataDir();
-		String GetResourceCoreDataDir();
 	};
 
 	void URHO3D_API PrintRayQueryResults(PODVector<RayQueryResult>& results);

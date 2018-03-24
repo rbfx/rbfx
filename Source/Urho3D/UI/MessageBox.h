@@ -23,6 +23,8 @@
 #pragma once
 
 #include "../Core/Object.h"
+#undef MessageBox
+#undef GetMessage
 
 namespace Urho3D
 {
