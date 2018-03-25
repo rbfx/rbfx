@@ -316,7 +316,7 @@ int Win32_ResizingEventWatcher(void* data, SDL_Event* event)
                     if (graphics->IsInitialized())
                     {
                         graphics->OnWindowResized();
-                        ctx->GetSubsystem<Engine>()->RunFrame();
+                        ctx->GetSubsystem<Engine>()->FreeUpdate();
                     }
                 }
             }
@@ -1549,9 +1549,9 @@ void Input::Initialize()
     ResetJoysticks();
     ResetState();
 
-    SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(Input, HandleBeginFrame));
+    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Input, HandleUpdate));
 #ifdef __EMSCRIPTEN__
-    SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Input, HandleEndFrame));
+    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Input, HandleUpdate));
 #endif
 
 #ifdef _WIN32
@@ -2440,7 +2440,7 @@ void Input::HandleScreenMode(StringHash eventType, VariantMap& eventData)
 
 }
 
-void Input::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
+void Input::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
     // Update input right at the beginning of the frame
     SendEvent(E_INPUTBEGIN);
@@ -2449,7 +2449,7 @@ void Input::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
 }
 
 #ifdef __EMSCRIPTEN__
-void Input::HandleEndFrame(StringHash eventType, VariantMap& eventData)
+void Input::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
     if (suppressNextMouseMove_ && mouseMove_ != IntVector2::ZERO)
         UnsuppressMouseMove();

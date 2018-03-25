@@ -236,7 +236,7 @@ void ProcessLightWork(const WorkItem* item, unsigned threadIndex)
 
 void UpdateDrawableGeometriesWork(const WorkItem* item, unsigned threadIndex)
 {
-    const FrameInfo& frame = *(reinterpret_cast<FrameInfo*>(item->aux_));
+    const RenderFrameInfo& frame = *(reinterpret_cast<RenderFrameInfo*>(item->aux_));
     auto** start = reinterpret_cast<Drawable**>(item->start_);
     auto** end = reinterpret_cast<Drawable**>(item->end_);
 
@@ -515,7 +515,7 @@ bool View::Define(RenderSurface* renderTarget, Viewport* viewport)
     return true;
 }
 
-void View::Update(const FrameInfo& frame)
+void View::Update(const RenderFrameInfo& frame)
 {
     // No need to update if using another prepared view
     if (sourceView_)
@@ -1339,7 +1339,7 @@ void View::UpdateGeometries()
                 SharedPtr<WorkItem> item = queue->GetFreeItem();
                 item->priority_ = M_MAX_UNSIGNED;
                 item->workFunction_ = UpdateDrawableGeometriesWork;
-                item->aux_ = const_cast<FrameInfo*>(&frame_);
+                item->aux_ = const_cast<RenderFrameInfo*>(&frame_);
                 item->start_ = &(*start);
                 item->end_ = &(*end);
                 queue->AddWorkItem(item);

@@ -175,7 +175,7 @@ public:
     /// Set size and maximum subdivision levels. If octree is not empty, drawable objects will be temporarily moved to the root.
     void SetSize(const BoundingBox& box, unsigned numLevels);
     /// Update and reinsert drawable objects.
-    void Update(const FrameInfo& frame);
+    void Update(const RenderFrameInfo& frame);
     /// Add a drawable manually.
     void AddManualDrawable(Drawable* drawable);
     /// Remove a manually added drawable.

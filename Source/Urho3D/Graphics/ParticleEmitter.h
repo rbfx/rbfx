@@ -66,7 +66,7 @@ public:
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
     /// Update before octree reinsertion. Is called from a worker thread.
-    void Update(const FrameInfo& frame) override;
+    void Update(const RenderFrameInfo& frame) override;
 
     /// Set particle effect.
     void SetEffect(ParticleEffect* effect);

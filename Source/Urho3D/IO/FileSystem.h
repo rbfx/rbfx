@@ -119,7 +119,7 @@ private:
     void ScanDirInternal
         (Vector<String>& result, String path, const String& startPath, const String& filter, unsigned flags, bool recursive) const;
     /// Handle begin frame event to check for completed async executions.
-    void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
+    void HandleUpdate(StringHash eventType, VariantMap& eventData);
     /// Handle a console command event.
     void HandleConsoleCommand(StringHash eventType, VariantMap& eventData);
 

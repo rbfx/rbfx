@@ -115,7 +115,7 @@ void TerrainPatch::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQue
     }
 }
 
-void TerrainPatch::UpdateBatches(const FrameInfo& frame)
+void TerrainPatch::UpdateBatches(const RenderFrameInfo& frame)
 {
     const Matrix3x4& worldTransform = node_->GetWorldTransform();
     distance_ = frame.camera_->GetDistance(GetWorldBoundingBox().Center());
@@ -138,7 +138,7 @@ void TerrainPatch::UpdateBatches(const FrameInfo& frame)
     lodLevel_ = GetCorrectedLodLevel(newLodLevel);
 }
 
-void TerrainPatch::UpdateGeometry(const FrameInfo& frame)
+void TerrainPatch::UpdateGeometry(const RenderFrameInfo& frame)
 {
     if (vertexBuffer_->IsDataLost())
     {

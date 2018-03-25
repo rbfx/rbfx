@@ -128,27 +128,14 @@ public:
     /// Destruct. Reset the low-resolution timer period if set.
     ~Time() override;
 
-    /// Begin new frame, with (last) frame duration in seconds and send frame start event.
-    void BeginFrame(float timeStep);
-    /// End frame. Increment total time and send frame end event.
-    void EndFrame();
     /// Set the low-resolution timer period in milliseconds. 0 resets to the default period.
     void SetTimerPeriod(unsigned mSec);
-
-    /// Return frame number, starting from 1 once BeginFrame() is called for the first time.
-    unsigned GetFrameNumber() const { return frameNumber_; }
-
-    /// Return current frame timestep as seconds.
-    float GetTimeStep() const { return timeStep_; }
 
     /// Return current low-resolution timer period in milliseconds.
     unsigned GetTimerPeriod() const { return timerPeriod_; }
 
     /// Return elapsed time from program start as seconds.
     float GetElapsedTime();
-
-    /// Return current frames per second.
-    float GetFramesPerSecond() const;
 
     /// Get system time as milliseconds.
     static unsigned GetSystemTime();

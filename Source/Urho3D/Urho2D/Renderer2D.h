@@ -33,7 +33,7 @@ class IndexBuffer;
 class Material;
 class Technique;
 class VertexBuffer;
-struct FrameInfo;
+struct RenderFrameInfo;
 struct SourceBatch2D;
 
 /// 2D view batch info.
@@ -82,9 +82,9 @@ public:
     /// Process octree raycast. May be called from a worker thread.
     void ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryResult>& results) override;
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
-    void UpdateBatches(const FrameInfo& frame) override;
+    void UpdateBatches(const RenderFrameInfo& frame) override;
     /// Prepare geometry for rendering. Called from a worker thread if possible (no GPU update.)
-    void UpdateGeometry(const FrameInfo& frame) override;
+    void UpdateGeometry(const RenderFrameInfo& frame) override;
     /// Return whether a geometry update is necessary, and if it can happen in a worker thread.
     UpdateGeometryType GetUpdateGeometryType() override;
 
@@ -120,7 +120,7 @@ private:
     /// Drawables.
     PODVector<Drawable2D*> drawables_;
     /// View frame info for current frame.
-    FrameInfo frame_;
+    RenderFrameInfo frame_;
     /// View batch info.
     HashMap<Camera*, ViewBatchInfo2D> viewBatchInfos_;
     /// Frustum for current frame.

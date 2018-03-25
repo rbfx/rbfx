@@ -48,9 +48,9 @@ public:
     /// Apply attribute changes that can not be applied immediately.
     void ApplyAttributes() override;
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
-    void UpdateBatches(const FrameInfo& frame) override;
+    void UpdateBatches(const RenderFrameInfo& frame) override;
     /// Prepare geometry for rendering. Called from a worker thread if possible (no GPU update.)
-    void UpdateGeometry(const FrameInfo& frame) override;
+    void UpdateGeometry(const RenderFrameInfo& frame) override;
     /// Return whether a geometry update is necessary, and if it can happen in a worker thread.
     UpdateGeometryType GetUpdateGeometryType() override;
 
@@ -184,7 +184,7 @@ protected:
     /// Create materials for text rendering. May only be called from the main thread. Text %UI batches must be up-to-date.
     void UpdateTextMaterials(bool forceUpdate = false);
     /// Recalculate camera facing and fixed screen size.
-    void CalculateFixedScreenSize(const FrameInfo& frame);
+    void CalculateFixedScreenSize(const RenderFrameInfo& frame);
 
     /// Internally used text element.
     Text text_;

@@ -310,7 +310,7 @@ private:
     /// Handle text input event.
     void HandleTextInput(StringHash eventType, VariantMap& eventData);
     /// Handle frame begin event.
-    void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
+    void HandleUpdate(StringHash eventType, VariantMap& eventData);
     /// Handle logic post-update event.
     void HandlePostUpdate(StringHash eventType, VariantMap& eventData);
     /// Handle render update event.

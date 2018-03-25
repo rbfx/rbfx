@@ -102,36 +102,6 @@ static long long HiresTick()
 #endif
 }
 
-void Time::BeginFrame(float timeStep)
-{
-    ++frameNumber_;
-    if (!frameNumber_)
-        ++frameNumber_;
-
-    timeStep_ = timeStep;
-
-    {
-        URHO3D_PROFILE(BeginFrame);
-
-        // Frame begin event
-        using namespace BeginFrame;
-
-        VariantMap& eventData = GetEventDataMap();
-        eventData[P_FRAMENUMBER] = frameNumber_;
-        eventData[P_TIMESTEP] = timeStep_;
-        SendEvent(E_BEGINFRAME, eventData);
-    }
-}
-
-void Time::EndFrame()
-{
-    {
-        URHO3D_PROFILE(EndFrame);
-
-        // Frame end event
-        SendEvent(E_ENDFRAME);
-    }
-}
 
 void Time::SetTimerPeriod(unsigned mSec)
 {
@@ -181,10 +151,7 @@ void Time::Sleep(unsigned mSec)
 #endif
 }
 
-float Time::GetFramesPerSecond() const
-{
-    return 1.0f / timeStep_;
-}
+
 
 Timer::Timer()
 {

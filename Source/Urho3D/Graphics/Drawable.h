@@ -63,7 +63,7 @@ enum UpdateGeometryType
 };
 
 /// Rendering frame update parameters.
-struct FrameInfo
+struct RenderFrameInfo
 {
     /// Frame number.
     unsigned frameNumber_;
@@ -126,11 +126,11 @@ public:
     /// Process octree raycast. May be called from a worker thread.
     virtual void ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryResult>& results);
     /// Update before octree reinsertion. Is called from a worker thread
-    virtual void Update(const FrameInfo& frame) { }
+    virtual void Update(const RenderFrameInfo& frame) { }
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
-    virtual void UpdateBatches(const FrameInfo& frame);
+    virtual void UpdateBatches(const RenderFrameInfo& frame);
     /// Prepare geometry for rendering.
-    virtual void UpdateGeometry(const FrameInfo& frame) { }
+    virtual void UpdateGeometry(const RenderFrameInfo& frame) { }
 
     /// Return whether a geometry update is necessary, and if it can happen in a worker thread.
     virtual UpdateGeometryType GetUpdateGeometryType() { return UPDATE_NONE; }
@@ -234,7 +234,7 @@ public:
     }
 
     /// Mark in view. Also clear the light list.
-    void MarkInView(const FrameInfo& frame);
+    void MarkInView(const RenderFrameInfo& frame);
     /// Mark in view without specifying a camera. Used for shadow casters.
     void MarkInView(unsigned frameNumber);
     /// Sort and limit per-pixel lights to maximum allowed. Convert extra lights into vertex lights.
@@ -264,7 +264,7 @@ public:
     float GetSortValue() const { return sortValue_; }
 
     /// Return whether is in view on the current frame. Called by View.
-    bool IsInView(const FrameInfo& frame, bool anyCamera = false) const;
+    bool IsInView(const RenderFrameInfo& frame, bool anyCamera = false) const;
 
     /// Return whether has a base pass.
     bool HasBasePass(unsigned batchIndex) const { return (basePassFlags_ & (1 << batchIndex)) != 0; }

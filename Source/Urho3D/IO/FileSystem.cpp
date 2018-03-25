@@ -285,7 +285,7 @@ private:
 FileSystem::FileSystem(Context* context) :
     Object(context)
 {
-    SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(FileSystem, HandleBeginFrame));
+    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(FileSystem, HandleUpdate));
 
     // Subscribe to console commands
     SetExecuteConsoleCommands(true);
@@ -905,7 +905,7 @@ void FileSystem::ScanDirInternal(Vector<String>& result, String path, const Stri
 #endif
 }
 
-void FileSystem::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
+void FileSystem::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
     /// Go through the execution queue and post + remove completed requests
     for (List<AsyncExecRequest*>::Iterator i = asyncExecQueue_.Begin(); i != asyncExecQueue_.End();)

@@ -49,6 +49,7 @@
 #include "../Scene/Scene.h"
 
 #include "../DebugNew.h"
+#include "Engine/Engine.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:6293)
@@ -657,7 +658,7 @@ void Renderer::Update(float timeStep)
         return;
 
     // Set up the frameinfo structure for this frame
-    frame_.frameNumber_ = GetSubsystem<Time>()->GetFrameNumber();
+    frame_.frameNumber_ = GetSubsystem<Engine>()->GetRenderCount();
     frame_.timeStep_ = timeStep;
     frame_.camera_ = nullptr;
     numShadowCameras_ = 0;
@@ -1619,7 +1620,7 @@ void Renderer::LoadShaders()
 
     // Release old material shaders, mark them for reload
     ReleaseMaterialShaders();
-    shadersChangedFrameNumber_ = GetSubsystem<Time>()->GetFrameNumber();
+    shadersChangedFrameNumber_ = GetSubsystem<Engine>()->GetRenderCount();
 
     // Construct new names for deferred light volume pixel shaders based on rendering options
     deferredLightPSVariations_.Resize(MAX_DEFERRED_LIGHT_PS_VARIATIONS);
