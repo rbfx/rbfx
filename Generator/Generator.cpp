@@ -61,38 +61,60 @@ int main(int argc, char* argv[])
     app.add_option("-I", includes, "Target include paths.");
     app.add_option("-D", defines, "Target preprocessor definitions.");
     app.add_option("-O", options, "Target compiler options.");
-    app.add_option("--out-cpp", outputDirCpp, "Output directory for generated C++ code.");
-    app.add_option("--out-cs", outputDirCs, "Output directory for generated C# code.");
 
-    app.add_option("rules", rulesFile, "Path to rules xml file")->required(true)->check(CLI::ExistingFile);
-    app.add_option("source", sourceDir, "Path to source directory")->required(true)->check(CLI::ExistingDirectory);
+    app.add_option("rules", rulesFile, "Path to rules json file")->required();//->check(CLI::ExistingFile);
+    app.add_option("source", sourceDir, "Path to source directory")->required();//->check(CLI::ExistingDirectory);
+    app.add_option("output", outputDirCpp, "Path to output directory")->required();
 
     std::vector<std::string> cmdLines;
-    if (argc == 2)
+    do
     {
+        if (argc != 2)
+            break;
+
+        std::string parametersPath;
+        CLI::App app{"CSharp bindings generator"};
+        app.add_option("parameters", parametersPath)->required()->check(CLI::ExistingFile);;
+
+        try
+        {
+            app.parse(argc, argv);
+        }
+        catch(const CLI::ParseError &e)
+        {
+            // First parameter is not file path with parameters. Could be a --help flag for example.
+            break;
+        }
+
         cmdLines.emplace_back(argv[0]);
-        std::ifstream infile(argv[1]);
+        std::ifstream infile(parametersPath);
         std::string line;
         while (std::getline(infile, line))
         {
+            str::rtrim(line);
             if (!line.empty())
                 cmdLines.push_back(line);
         }
 
         char** newArgv = argv = new char*[cmdLines.size()];
         for (const auto& ln : cmdLines)
-        {
-            *newArgv = (char*)ln.c_str();
-            newArgv++;
-        }
+            *newArgv++ = (char*)ln.c_str();
         argc = (int)cmdLines.size();
-    }
+    } while (false);
 
     CLI11_PARSE(app, argc, argv);
 
+    // Remove preceding _ from `options` because if they start with - then CLI11 treats them as options and not as
+    // values to -O flag.
+    for (auto& opt : options)
+    {
+        if (opt.find("_-") == 0)
+            opt = opt.substr(1);
+    }
+
     sourceDir = AddTrailingSlash(sourceDir);
-    outputDirCpp = AddTrailingSlash(outputDirCpp);
-    outputDirCs = AddTrailingSlash(outputDirCs);
+    outputDirCs = AddTrailingSlash(outputDirCpp) + "CSharp/";
+    outputDirCpp = AddTrailingSlash(outputDirCpp) + "Native/";
 
     context = new Context();
     context->RegisterSubsystem(new FileSystem(context));

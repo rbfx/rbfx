@@ -20,6 +20,8 @@
 # THE SOFTWARE.
 #
 
+project(Urho3DNet)
+
 set (CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_subdirectory(ThirdParty)
@@ -40,16 +42,39 @@ macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)
     endif()
 endmacro()
 
-macro (CSHARP_BIND_TARGET TARGET RULES SOURCE_DIR)
-    __TARGET_GET_PROPERTIES_RECURSIVE(INCLUDES ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)
-    __TARGET_GET_PROPERTIES_RECURSIVE(DEFINES  ${TARGET} INTERFACE_COMPILE_DEFINITIONS)
-    __TARGET_GET_PROPERTIES_RECURSIVE(OPTIONS  ${TARGET} INTERFACE_COMPILE_OPTIONS)
+macro (csharp_bind_target TARGET SOURCE_DIR)
+    set (CSHARP_DIR ${ARGN})
+
     if (NOT SOURCE_DIR)
         get_target_property(SOURCE_DIR ${TARGET} SOURCE_DIR)
     endif ()
-    if (NOT RULES)
-        set (RULES ${SOURCE_DIR}/bindings-config.json)
+
+    if (NOT CSHARP_DIR)
+        set (CSHARP_DIR ${Urho3DNet_SOURCE_DIR}/CSharp/${TARGET})
+        if (NOT IS_DIRECTORY ${CSHARP_DIR})
+            unset (CSHARP_DIR)
+        endif ()
     endif ()
+
+    if (CSHARP_DIR)
+        set (RULES ${CSHARP_DIR}/config-csharp.json)
+    endif ()
+
+    if (NOT EXISTS ${RULES})
+        set (RULES ${SOURCE_DIR}/config-csharp.json)
+    endif ()
+
+    if (NOT EXISTS ${RULES})
+        message(FATAL_ERROR "config-csharp.json was not found. It must reside in SOURCE_DIR or CSHARP_DIR.")
+    endif ()
+
+    # Parse bindings using same compile definitions as built target
+    __TARGET_GET_PROPERTIES_RECURSIVE(INCLUDES ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)
+    __TARGET_GET_PROPERTIES_RECURSIVE(DEFINES  ${TARGET} INTERFACE_COMPILE_DEFINITIONS)
+    __TARGET_GET_PROPERTIES_RECURSIVE(OPTIONS  ${TARGET} INTERFACE_COMPILE_OPTIONS)
+    list (REMOVE_DUPLICATES INCLUDES)
+    list (REMOVE_DUPLICATES DEFINES)
+    list (REMOVE_DUPLICATES OPTIONS)
     foreach(item ${INCLUDES})
         if ("${item}" MATCHES "\\$<INSTALL_INTERFACE:.+")
             continue()
@@ -59,23 +84,18 @@ macro (CSHARP_BIND_TARGET TARGET RULES SOURCE_DIR)
             math(EXPR len "${len} - 19")
             string(SUBSTRING "${item}" 18 ${len} item)
         endif ()
-        list(APPEND GENERATOR_OPTIONS -I${item})
+        list(APPEND GENERATOR_OPTIONS -I ${item})
     endforeach()
     foreach(item ${DEFINES})
-        list(APPEND GENERATOR_OPTIONS -D${item})
+        list(APPEND GENERATOR_OPTIONS -D ${item})
     endforeach()
     foreach(item ${OPTIONS})
-        list(APPEND GENERATOR_OPTIONS -O${item})
+        list(APPEND GENERATOR_OPTIONS -O _${item})
     endforeach()
-    list (APPEND GENERATOR_OPTIONS
-        --out-cpp ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}CSharp
-        --out-cs ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}Net
-    )
-    list (APPEND GENERATOR_OPTIONS ${RULES})
-    list (APPEND GENERATOR_OPTIONS ${SOURCE_DIR})
-    list (REMOVE_DUPLICATES GENERATOR_OPTIONS)
+    set (BINDINGS_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}Net)
+    set (COMMON_DIR ${Urho3DNet_SOURCE_DIR}/CSharp/Common)
+    list (APPEND GENERATOR_OPTIONS ${RULES} ${SOURCE_DIR} ${BINDINGS_OUTPUT_DIR})
 
-    # Clear file
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt "")
     foreach (opt ${GENERATOR_OPTIONS})
         file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt "${opt}\n")
@@ -86,20 +106,18 @@ macro (CSHARP_BIND_TARGET TARGET RULES SOURCE_DIR)
     )
 
     # CSharp target (native)
-    file (GLOB COMMON_CSHARP_SOURCE_FILES_MANUAL CommonCSharp/*.cpp CommonCSharp/*.h
-        ${TARGET}CSharp/*.cpp ${TARGET}CSharp/*.h)
+    file (GLOB COMMON_CSHARP_SOURCE_FILES_MANUAL
+        ${COMMON_DIR}/Native/*.cpp ${CSHARP_DIR}/Native/*.cpp)
     set (COMMON_CSHARP_SOURCE_FILES_GENERATED
-        ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}CSharp/CApi.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}CSharp/ClassWrappers.hpp
-        ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}CSharp/RegisterFactories.cpp
+        ${BINDINGS_OUTPUT_DIR}/Native/CApi.cpp
+        ${BINDINGS_OUTPUT_DIR}/Native/ClassWrappers.hpp
+        ${BINDINGS_OUTPUT_DIR}/Native/RegisterFactories.cpp
     )
     set_source_files_properties(${COMMON_CSHARP_SOURCE_FILES_GENERATED} PROPERTIES GENERATED TRUE)
     add_library(${TARGET}CSharp SHARED ${COMMON_CSHARP_SOURCE_FILES_MANUAL} ${COMMON_CSHARP_SOURCE_FILES_GENERATED})
     target_link_libraries(${TARGET}CSharp ${TARGET})
     target_include_directories(${TARGET}CSharp PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/CommonCSharp
-        ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}CSharp
-        ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET}CSharp)
+        ${COMMON_DIR}/Native ${CSHARP_DIR}/Native ${BINDINGS_OUTPUT_DIR}/Native)
     add_dependencies(${TARGET}CSharp CSharpGenerateBindings)
 
     # Net target (managed)
@@ -114,10 +132,10 @@ macro (CSHARP_BIND_TARGET TARGET RULES SOURCE_DIR)
         set (TERM_WORKAROUND env TERM=xterm)
     endif ()
 
-    file (GLOB_RECURSE COMMON_NET_SOURCE_FILES_MANUAL CommonNet/*.cs ${TARGET}Net/*.cs)
+    file (GLOB_RECURSE COMMON_NET_SOURCE_FILES_MANUAL ${COMMON_DIR}/CSharp/*.cs ${CSHARP_DIR}/CSharp/*.cs)
     set (COMMON_NET_SOURCE_FILES_GENERATED
-        ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}Net/PInvoke.cs
-        ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}Net/Urho3D.cs
+        ${BINDINGS_OUTPUT_DIR}/CSharp/PInvoke.cs
+        ${BINDINGS_OUTPUT_DIR}/CSharp/CSharp.cs
     )
     find_program(CSC csc)
     if (NOT CSC)
@@ -135,6 +153,3 @@ macro (CSHARP_BIND_TARGET TARGET RULES SOURCE_DIR)
     )
     add_dependencies(${TARGET}Net ${TARGET}CSharp)
 endmacro ()
-
-get_target_property(SOURCE_DIR Urho3D SOURCE_DIR)
-CSHARP_BIND_TARGET(Urho3D ${CMAKE_CURRENT_SOURCE_DIR}/Rules.json "${SOURCE_DIR}/../")
