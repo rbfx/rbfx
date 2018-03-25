@@ -668,15 +668,15 @@ unsigned Engine::FreeUpdate()
 
 
 	if (updateTimer_.IsTimedOut()) {
-		Update();
 		updateTimer_.Reset();
+		Update();
 		return 0;
 	}
 	else if (renderGoalTimer_.IsTimedOut())
 	{
 		//Render
-		Render();
 		renderGoalTimer_.Reset();
+		Render();
 		return 0;
 	}
 	

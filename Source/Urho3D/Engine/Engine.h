@@ -134,7 +134,7 @@ private:
 	HiresTimer updateTimer_;
 	HiresTimer renderGoalTimer_;
 
-	int renderFpsGoal{ 60 };
+	int renderFpsGoal{ 200 };
 	unsigned updateTimeGoalUs{ 16000 };
 
     /// Previous timesteps for smoothing.
