@@ -192,7 +192,7 @@ inline T0 force_cast(T1 input)
 
 
 template<typename Derived, typename Base>
-inline constexpr size_t GetBaseClassOffset()
+inline size_t GetBaseClassOffset()
 {
     // Dragons be here
     return reinterpret_cast<uintptr_t>(static_cast<Base*>(reinterpret_cast<Derived*>(1))) - 1;
