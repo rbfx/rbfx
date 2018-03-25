@@ -42,36 +42,56 @@ macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)
     endif()
 endmacro()
 
-macro (csharp_bind_target TARGET SOURCE_DIR)
-    set (CSHARP_DIR ${ARGN})
+macro (add_target_csharp TARGET)
+    find_program(CSC csc)
+    if (NOT CSC)
+        message(FATAL_ERROR "C# compiler could not be found.")
+    endif ()
+    if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
+        # Workaround for some cases where csc has issues when invoked by CMake.
+        set (TERM_WORKAROUND env TERM=xterm)
+    endif ()
+    # Net target (managed)
+    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set (NET_PLATFORM /platform:x64)
+    elseif (DESKTOP)
+        set (NET_PLATFORM /platform:x86)
+    else ()
+        message(FATAL_ERROR "Unsupported platform")
+    endif()
+    add_custom_target(${TARGET} COMMAND ${TERM_WORKAROUND} ${CSC} ${ARGN} ${NET_PLATFORM})
+endmacro ()
 
-    if (NOT SOURCE_DIR)
-        get_target_property(SOURCE_DIR ${TARGET} SOURCE_DIR)
+macro (csharp_bind_target)
+    cmake_parse_arguments(BIND "INTERNAL;EXTERNAL" "TARGET;SOURCE_DIR;CSHARP_DIR" "" ${ARGN})
+
+    if (NOT BIND_SOURCE_DIR)
+        get_target_property(BIND_SOURCE_DIR ${BIND_TARGET} BIND_SOURCE_DIR)
     endif ()
 
-    if (NOT CSHARP_DIR)
-        set (CSHARP_DIR ${Urho3DNet_SOURCE_DIR}/CSharp/${TARGET})
-        if (NOT IS_DIRECTORY ${CSHARP_DIR})
-            unset (CSHARP_DIR)
+    if (NOT BIND_CSHARP_DIR)
+        set (BIND_CSHARP_DIR ${Urho3DNet_SOURCE_DIR}/CSharp/${BIND_TARGET})
+        if (NOT IS_DIRECTORY ${BIND_CSHARP_DIR})
+            unset (BIND_CSHARP_DIR)
         endif ()
     endif ()
 
-    if (CSHARP_DIR)
-        set (RULES ${CSHARP_DIR}/config-csharp.json)
+    if (BIND_CSHARP_DIR)
+        set (RULES ${BIND_CSHARP_DIR}/config-csharp.json)
     endif ()
 
     if (NOT EXISTS ${RULES})
-        set (RULES ${SOURCE_DIR}/config-csharp.json)
+        set (RULES ${BIND_SOURCE_DIR}/config-csharp.json)
     endif ()
 
     if (NOT EXISTS ${RULES})
-        message(FATAL_ERROR "config-csharp.json was not found. It must reside in SOURCE_DIR or CSHARP_DIR.")
+        message(FATAL_ERROR "config-csharp.json was not found. It must reside in BIND_SOURCE_DIR or BIND_CSHARP_DIR.")
     endif ()
 
     # Parse bindings using same compile definitions as built target
-    __TARGET_GET_PROPERTIES_RECURSIVE(INCLUDES ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)
-    __TARGET_GET_PROPERTIES_RECURSIVE(DEFINES  ${TARGET} INTERFACE_COMPILE_DEFINITIONS)
-    __TARGET_GET_PROPERTIES_RECURSIVE(OPTIONS  ${TARGET} INTERFACE_COMPILE_OPTIONS)
+    __TARGET_GET_PROPERTIES_RECURSIVE(INCLUDES ${BIND_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
+    __TARGET_GET_PROPERTIES_RECURSIVE(DEFINES  ${BIND_TARGET} INTERFACE_COMPILE_DEFINITIONS)
+    __TARGET_GET_PROPERTIES_RECURSIVE(OPTIONS  ${BIND_TARGET} INTERFACE_COMPILE_OPTIONS)
     if (INCLUDES)
         list (REMOVE_DUPLICATES INCLUDES)
     endif ()
@@ -98,73 +118,67 @@ macro (csharp_bind_target TARGET SOURCE_DIR)
     foreach(item ${OPTIONS})
         list(APPEND GENERATOR_OPTIONS -O _${item})
     endforeach()
-    set (BINDINGS_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}Net)
+    set (BINDINGS_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}Net)
     set (COMMON_DIR ${Urho3DNet_SOURCE_DIR}/CSharp/Common)
-    list (APPEND GENERATOR_OPTIONS ${RULES} ${SOURCE_DIR} ${BINDINGS_OUTPUT_DIR})
+    list (APPEND GENERATOR_OPTIONS ${RULES} ${BIND_SOURCE_DIR} ${BINDINGS_OUTPUT_DIR})
 
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt "")
     foreach (opt ${GENERATOR_OPTIONS})
         file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt "${opt}\n")
     endforeach ()
-    add_custom_target(CSharpGenerateBindings
-        COMMAND $<TARGET_FILE:CSharpGenerator> ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt
-        DEPENDS CSharpGenerator
-    )
 
     # CSharp target (native)
     file (GLOB COMMON_CSHARP_SOURCE_FILES_MANUAL
-        ${COMMON_DIR}/Native/*.cpp ${CSHARP_DIR}/Native/*.cpp)
-    set (COMMON_CSHARP_SOURCE_FILES_GENERATED
+        ${COMMON_DIR}/Native/*.cpp ${BIND_CSHARP_DIR}/Native/*.cpp)
+    set (CSHARP_SOURCE_FILES_GENERATED
         ${BINDINGS_OUTPUT_DIR}/Native/CApi.cpp
         ${BINDINGS_OUTPUT_DIR}/Native/ClassWrappers.hpp
         ${BINDINGS_OUTPUT_DIR}/Native/RegisterFactories.cpp
     )
-    set_source_files_properties(${COMMON_CSHARP_SOURCE_FILES_GENERATED} PROPERTIES GENERATED TRUE)
-    add_library(${TARGET}CSharp SHARED ${COMMON_CSHARP_SOURCE_FILES_MANUAL} ${COMMON_CSHARP_SOURCE_FILES_GENERATED})
-    target_link_libraries(${TARGET}CSharp ${TARGET})
-    target_include_directories(${TARGET}CSharp PRIVATE
-        ${COMMON_DIR}/Native ${CSHARP_DIR}/Native ${BINDINGS_OUTPUT_DIR}/Native)
-    add_dependencies(${TARGET}CSharp CSharpGenerateBindings)
+    set_source_files_properties(${CSHARP_SOURCE_FILES_GENERATED} PROPERTIES GENERATED TRUE)
 
-    # Net target (managed)
-    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set (NET_PLATFORM /platform:x64)
-    elseif (DESKTOP)
-        set (NET_PLATFORM /platform:x86)
-    endif()
-
-    if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
-        # Workaround for some cases where csc has issues when invoked by CMake.
-        set (TERM_WORKAROUND env TERM=xterm)
+    if (BIND_INTERNAL)
+        set (CSHARP_LIBRARY_NAME ${BIND_TARGET})
+        target_sources(${BIND_TARGET} PRIVATE ${COMMON_CSHARP_SOURCE_FILES_MANUAL} ${CSHARP_SOURCE_FILES_GENERATED})
+    elseif (BIND_EXTERNAL)
+        set (CSHARP_LIBRARY_NAME ${BIND_TARGET}CSharp)
+        add_library(${CSHARP_LIBRARY_NAME} SHARED ${COMMON_CSHARP_SOURCE_FILES_MANUAL} ${CSHARP_SOURCE_FILES_GENERATED})
+        target_link_libraries(${CSHARP_LIBRARY_NAME} ${BIND_TARGET})
+    else ()
+        message(FATAL_ERROR "Please pass INTERNAL or EXTERNAL to csharp_bind_target()")
     endif ()
+    target_include_directories(${CSHARP_LIBRARY_NAME} PRIVATE
+        ${COMMON_DIR}/Native ${BIND_CSHARP_DIR}/Native ${BINDINGS_OUTPUT_DIR}/Native)
+
+    # Target that generates bindings source
+    add_custom_target(${CSHARP_LIBRARY_NAME}Generate
+        COMMAND $<TARGET_FILE:CSharpGenerator> ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt
+        DEPENDS CSharpGenerator
+    )
+    add_dependencies(${CSHARP_LIBRARY_NAME} ${CSHARP_LIBRARY_NAME}Generate)
 
     file (WRITE ${BINDINGS_OUTPUT_DIR}/CSharp/Config.cs
 "namespace CSharp
 {
     internal static partial class Config
     {
-        public const string NativeLibraryName = \"${TARGET}CSharp\";
+        public const string NativeLibraryName = \"${CSHARP_LIBRARY_NAME}\";
     }
 }\n")
-    file (GLOB_RECURSE COMMON_NET_SOURCE_FILES_MANUAL ${COMMON_DIR}/CSharp/*.cs ${CSHARP_DIR}/CSharp/*.cs)
+    file (GLOB_RECURSE COMMON_NET_SOURCE_FILES_MANUAL ${COMMON_DIR}/CSharp/*.cs ${BIND_CSHARP_DIR}/CSharp/*.cs)
     set (COMMON_NET_SOURCE_FILES_GENERATED
         ${BINDINGS_OUTPUT_DIR}/CSharp/PInvoke.cs
         ${BINDINGS_OUTPUT_DIR}/CSharp/CSharp.cs
         ${BINDINGS_OUTPUT_DIR}/CSharp/Config.cs
     )
-    find_program(CSC csc)
-    if (NOT CSC)
-        message(FATAL_ERROR "C# compiler could not be found.")
-    endif ()
     if (MSVC)
         set (NET_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>)
     else ()
         set (NET_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
     endif ()
-    add_custom_target(${TARGET}Net
-        COMMAND ${TERM_WORKAROUND} ${CSC} /target:library ${NET_PLATFORM} /unsafe /reference:System.dll
-                /out:${NET_OUTPUT_DIRECTORY}/${TARGET}Net.dll
-                ${COMMON_NET_SOURCE_FILES_MANUAL} ${COMMON_NET_SOURCE_FILES_GENERATED}
+    add_target_csharp(${BIND_TARGET}Net /target:library /unsafe /reference:System.dll
+        /out:${NET_OUTPUT_DIRECTORY}/${BIND_TARGET}Net.dll ${COMMON_NET_SOURCE_FILES_MANUAL}
+        ${COMMON_NET_SOURCE_FILES_GENERATED}
     )
-    add_dependencies(${TARGET}Net ${TARGET}CSharp)
+    add_dependencies(${BIND_TARGET}Net ${CSHARP_LIBRARY_NAME})
 endmacro ()
