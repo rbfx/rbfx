@@ -327,10 +327,6 @@ bool Engine::Initialize(const VariantMap& parameters)
 
 
 
-
-	updateTimeStepsBufferMs_.Resize(64);
-	renderTimeStepsBufferMs_.Resize(64);
-
     updateTimerTracker_.Reset();
 	renderTimerTracker_.Reset();
 
@@ -535,16 +531,54 @@ DebugHud* Engine::CreateDebugHud()
 }
 
 
-void Engine::SetRenderFpsGoal(int fps)
+float Engine::GetAverageRenderTimeMs()
 {
-	renderFpsGoal = fps;
-	updateFpsGoalTimer();
-
+	return avgRenderTimeUs_/1000;
 }
 
-void Engine::SetUpdateTimeUs(unsigned updateTimeUs)
+float Engine::GetAverageUpdateTimeMs()
 {
-	updateTimeGoalUs = updateTimeUs;
+	return avgUpdateTimeUs_/1000;
+}
+
+bool Engine::GetUpdateIsLimited()
+{
+	if (avgUpdateTimeUs_ < updateTimeGoalUs)
+		return true;
+	
+	return false;
+}
+
+bool Engine::GetRenderIsLimited()
+{
+	if (avgRenderTimeUs_ < renderTimeGoalUs)
+		return true;
+
+	return false;
+}
+
+void Engine::SetRenderFpsGoal(int fps)
+{
+	renderTimeGoalUs = (1.0f/float(fps))*1000000.0f;
+	updateFpsGoalTimer();
+}
+
+void Engine::SetRenderTimeGoalUs(unsigned timeUs)
+{
+	renderTimeGoalUs = timeUs;
+	updateFpsGoalTimer();
+}
+
+void Engine::SetUpdateFpsGoal(unsigned fps)
+{
+	updateTimeGoalUs = (1.0f / float(fps))*1000000.0f;
+	updateUpdateTimeTimer();
+}
+
+
+void Engine::SetUpdateTimeGoalUs(unsigned timeUs)
+{
+	updateTimeGoalUs = timeUs;
 	updateUpdateTimeTimer();
 }
 
@@ -704,13 +738,13 @@ void Engine::Update()
 
 	//compute times
 	updateTick_++;
-	updateTimeStepsBufferMs_[0] = (float(updateTimerTracker_.GetUSec(true))/1000000.0f);
+	lastUpdateTimeUs_ = updateTimerTracker_.GetUSec(true);
 
 
 
     // Logic update event
     VariantMap& eventData = GetEventDataMap();
-    eventData[Update::P_TIMESTEP] = updateTimeStepsBufferMs_[0];
+    eventData[Update::P_TIMESTEP] = float(lastUpdateTimeUs_) / 1000000.0f;
 	eventData[Update::P_UPDATETICK] = updateTick_;
     SendEvent(E_UPDATE, eventData);
 
@@ -735,12 +769,12 @@ void Engine::Render()
 
 	//compute times
 	renderTick_++;
-	renderTimeStepsBufferMs_[0] = (float(renderTimerTracker_.GetUSec(true)) / 1000000.0f);
+	lastRenderTimeUs_ = renderTimerTracker_.GetUSec(true);
 
 
 
 	VariantMap& eventData = GetEventDataMap();
-	eventData[RenderUpdate::P_TIMESTEP] = renderTimeStepsBufferMs_[0]*1000.0f;
+	eventData[RenderUpdate::P_TIMESTEP] = float(lastRenderTimeUs_)/1000.0f;
 	eventData[RenderUpdate::P_RENDERTICK] = renderTick_;
 	
 	// Rendering update event
@@ -997,12 +1031,12 @@ void Engine::updateAudioPausing()
 
 void Engine::updateFpsGoalTimer()
 {
-	renderGoalTimer_.SetTimeoutDuration((long long)((1.0f / float(renderFpsGoal))*1000000.0f), false);
+	renderGoalTimer_.SetTimeoutDuration(renderTimeGoalUs, false);
 }
 
 void Engine::updateUpdateTimeTimer()
 {
-	updateTimer_.SetTimeoutDuration(updateTimeGoalUs);
+	updateTimer_.SetTimeoutDuration(updateTimeGoalUs, false);
 }
 
 }

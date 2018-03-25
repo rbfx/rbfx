@@ -94,7 +94,7 @@ SystemUI::SystemUI(Urho3D::Context* context)
     SubscribeToEvent(E_SCREENMODE, std::bind(&SystemUI::UpdateProjectionMatrix, this));
     SubscribeToEvent(E_INPUTEND, [&](StringHash, VariantMap&)
     {
-        float timeStep = GetSubsystem<Engine>()->GetLastRenderTimeStepMs();
+        float timeStep = GetSubsystem<Engine>()->GetLastRenderTimeMs();
         ImGui::GetIO().DeltaTime = timeStep > 0.0f ? timeStep : 1.0f / 60.0f;
         ImGui::NewFrame();
         ImGuizmo::BeginFrame();

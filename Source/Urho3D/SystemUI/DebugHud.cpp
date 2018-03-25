@@ -217,8 +217,8 @@ void DebugHud::RenderUi(VariantMap& eventData)
             }
 
             ui::SetCursorPos({posStats_.x_, posStats_.y_});
-            ui::Text("FPS (Update) %f", (1.0f / GSS<Engine>()->GetLastUpdateTimeStepMs()));
-			ui::Text("FPS (Render) %f", (1.0f / GSS<Engine>()->GetLastRenderTimeStepMs()));
+            ui::Text("FPS (Update) %f", (1.0f / GSS<Engine>()->GetAverageUpdateTimeMs()));
+			ui::Text("FPS (Render) %f", (1.0f / GSS<Engine>()->GetAverageRenderTimeMs()));
             ui::Text("Triangles %u", primitives);
             ui::Text("Batches %u", batches);
             ui::Text("Views %u", renderer->GetNumViews());
