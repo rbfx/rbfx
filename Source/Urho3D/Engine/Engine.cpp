@@ -333,6 +333,8 @@ bool Engine::Initialize(const VariantMap& parameters)
 	updateUpdateTimeTimer();
 	updateFpsGoalTimer();
 	
+	SetUpdateAveragingTimeUs(1 * 1000000);
+	SetRenderAveragingTimeUs(1 * 1000000);
 
     URHO3D_LOGINFO("Initialized engine");
     initialized_ = true;
@@ -533,17 +535,17 @@ DebugHud* Engine::CreateDebugHud()
 
 float Engine::GetAverageRenderTimeMs()
 {
-	return avgRenderTimeUs_/1000;
+	return avgRenderTimeUs_/1000.0f;
 }
 
 float Engine::GetAverageUpdateTimeMs()
 {
-	return avgUpdateTimeUs_/1000;
+	return avgUpdateTimeUs_/1000.0f;
 }
 
 bool Engine::GetUpdateIsLimited()
 {
-	if (avgUpdateTimeUs_ < updateTimeGoalUs)
+	if (avgUpdateTimeUs_ > updateTimeGoalUs + updateTimeGoalUs/5) //5% buffer
 		return true;
 	
 	return false;
@@ -551,7 +553,7 @@ bool Engine::GetUpdateIsLimited()
 
 bool Engine::GetRenderIsLimited()
 {
-	if (avgRenderTimeUs_ < renderTimeGoalUs)
+	if (avgRenderTimeUs_ > renderTimeGoalUs + renderTimeGoalUs / 5)//5% buffer
 		return true;
 
 	return false;
@@ -580,6 +582,34 @@ void Engine::SetUpdateTimeGoalUs(unsigned timeUs)
 {
 	updateTimeGoalUs = timeUs;
 	updateUpdateTimeTimer();
+}
+
+void Engine::SetUpdateAveragingTimeUs(unsigned averagingTimeUs)
+{
+	updateTimeUsBuffer_.Resize(averagingTimeUs / updateTimeGoalUs);
+	
+	//reset the buffer contents to the goal
+	for (int i = 0; i < updateTimeUsBuffer_.Size(); i++) {
+		updateTimeUsBuffer_[i] = updateTimeGoalUs;
+	}
+
+	//reset the current average
+	avgUpdateTimeUs_ = updateTimeGoalUs;
+	updateTimeAvgIdx_ = 0;
+}
+
+void Engine::SetRenderAveragingTimeUs(unsigned averagingTimeUs)
+{
+	renderTimeUsBuffer_.Resize(averagingTimeUs / renderTimeGoalUs);
+
+	//reset the buffer contents to the goal
+	for (int i = 0; i < renderTimeUsBuffer_.Size(); i++) {
+		renderTimeUsBuffer_[i] = renderTimeGoalUs;
+	}
+
+	//reset the current average
+	avgRenderTimeUs_ = renderTimeGoalUs;
+	renderTimeAvgIdx_ = 0;
 }
 
 void Engine::SetPauseMinimized(bool enable)
@@ -740,6 +770,14 @@ void Engine::Update()
 	updateTick_++;
 	lastUpdateTimeUs_ = updateTimerTracker_.GetUSec(true);
 
+	//update rolling average
+	avgUpdateTimeUs_ -= updateTimeUsBuffer_[updateTimeAvgIdx_] / updateTimeUsBuffer_.Size();
+	updateTimeUsBuffer_[updateTimeAvgIdx_] = lastUpdateTimeUs_;
+	avgUpdateTimeUs_ += lastUpdateTimeUs_ / updateTimeUsBuffer_.Size();
+
+	updateTimeAvgIdx_++;
+	if (updateTimeAvgIdx_ >= updateTimeUsBuffer_.Size())
+		updateTimeAvgIdx_ = 0;
 
 
     // Logic update event
@@ -770,6 +808,17 @@ void Engine::Render()
 	//compute times
 	renderTick_++;
 	lastRenderTimeUs_ = renderTimerTracker_.GetUSec(true);
+
+
+	//update rolling average
+	avgRenderTimeUs_ -= renderTimeUsBuffer_[renderTimeAvgIdx_] / renderTimeUsBuffer_.Size();
+	renderTimeUsBuffer_[renderTimeAvgIdx_] = lastRenderTimeUs_;
+	avgRenderTimeUs_ += lastRenderTimeUs_ / renderTimeUsBuffer_.Size();
+
+	renderTimeAvgIdx_++;
+	if (renderTimeAvgIdx_ >= renderTimeUsBuffer_.Size())
+		renderTimeAvgIdx_ = 0;
+
 
 
 
