@@ -106,6 +106,11 @@ bool ImplementInterfacesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
                     if (!(metaBase->flags_ & HintInterface))
                         continue;
 
+                    // Bases have to be visited before derived classes, otherwise derived classes will have methods missing.
+                    // This is a crude workaround to ensure this requirement as depending on the order of files parsed pass
+                    // may fail if stars align incorrectly.
+                    Visit(metaBase, info);
+
                     // This class inherits an interface. Clone non-overriden methods from interface class to current
                     // one. This will cause further passes to generate proper C and C# API for these methods. We can not
                     // just use C api of interfaced class because this API takes instance pointer with interface class
