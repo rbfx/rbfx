@@ -138,10 +138,19 @@ macro (csharp_bind_target TARGET SOURCE_DIR)
         set (TERM_WORKAROUND env TERM=xterm)
     endif ()
 
+    file (WRITE ${BINDINGS_OUTPUT_DIR}/CSharp/Config.cs
+"namespace CSharp
+{
+    internal static partial class Config
+    {
+        public const string NativeLibraryName = \"${TARGET}CSharp\";
+    }
+}\n")
     file (GLOB_RECURSE COMMON_NET_SOURCE_FILES_MANUAL ${COMMON_DIR}/CSharp/*.cs ${CSHARP_DIR}/CSharp/*.cs)
     set (COMMON_NET_SOURCE_FILES_GENERATED
         ${BINDINGS_OUTPUT_DIR}/CSharp/PInvoke.cs
         ${BINDINGS_OUTPUT_DIR}/CSharp/CSharp.cs
+        ${BINDINGS_OUTPUT_DIR}/CSharp/Config.cs
     )
     find_program(CSC csc)
     if (NOT CSC)
