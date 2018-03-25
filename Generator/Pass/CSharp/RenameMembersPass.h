@@ -40,8 +40,7 @@ public:
 
 protected:
     std::vector<std::string> SplitName(const std::string& name);
-
-    std::regex constantName_{"([A-Z]+_?)+"};
+    bool IsConstantName(const std::string& name);
 };
 
 }

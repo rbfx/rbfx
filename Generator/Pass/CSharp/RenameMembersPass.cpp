@@ -35,7 +35,7 @@ bool RenameMembersPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     {
     case cppast::cpp_entity_kind::member_variable_t:
     case cppast::cpp_entity_kind::variable_t:
-        if (std::regex_match(entity->name_, constantName_))
+        if (IsConstantName(entity->name_))
             // Constants are used in default parameter expressions. Since these expressions come in as raw strings it is
             // rather complicate to rename these entities.
             return true;
@@ -80,6 +80,16 @@ std::vector<std::string> RenameMembersPass::SplitName(const std::string& name)
     }
 
     return result;
+}
+
+bool RenameMembersPass::IsConstantName(const std::string& name)
+{
+    for (char c : name)
+    {
+        if (!isupper(c) && c != '_')
+            return false;
+    }
+    return true;
 }
 
 }
