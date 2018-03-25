@@ -804,7 +804,7 @@ void PhysicsWorld::PreStep(float timeStep)
     SendEvent(E_PHYSICSPRESTEP, eventData);
 
     // Start profiling block for the actual simulation step
-    URHO3D_PROFILE_NONSCOPED("PhysicsStepSimulation");
+    URHO3D_PROFILE_NONSCOPED(PhysicsStepSimulation);
 }
 
 void PhysicsWorld::PostStep(float timeStep)
