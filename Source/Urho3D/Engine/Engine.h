@@ -60,15 +60,39 @@ public:
 	/// Return how many Updates have occured.
 	long long GetUpdateCount() const { return updateTick_; }
 
-	float GetLastRenderTimeStepMs() const { return renderTimeStepsBufferMs_[0]; }
+	/// Return the duration in milliseconds of the last render frame.
+	float GetLastRenderTimeMs() const { return lastRenderTimeUs_; }
 
-	float GetLastUpdateTimeStepMs() const { return updateTimeStepsBufferMs_[0]; }
+	/// Return the duration in milliseconds of the last update frame.
+	float GetLastUpdateTimeMs() const { return lastUpdateTimeUs_; }
+
+	/// Return the average duration in milliseconds of the previous render frames.
+	float GetAverageRenderTimeMs();
+
+	/// Return the average duration in milliseconds of the previous update frames.
+	float GetAverageUpdateTimeMs();
+
+	/// Returns true if the update duration is consistently below the goal update rate. Else returns false. Average Update Time is used to determine this.
+	bool GetUpdateIsLimited();
+
+	/// Returns true if the render duration is consistently below the goal render rate. Else returns false. Average Update Time is used to determine this.
+	bool GetRenderIsLimited();
 
 
-    /// Set maximum frames per second. The engine will sleep if FPS is higher than this.
+
+    /// Set fps goal for rendering
     void SetRenderFpsGoal(int fps);
-	/// Set the time interval for Update events (defaults to 16000 (60fps)
-	void SetUpdateTimeUs(unsigned updateTimeUs);
+	/// Set render time goal for rendering
+	void SetRenderTimeGoalUs(unsigned timeUs);
+	/// Set fps goal for update
+	void SetUpdateFpsGoal(unsigned fps);
+	/// Set the time interval for Update events
+	void SetUpdateTimeGoalUs(unsigned updateTimeUs);
+	/// Set the time interval in mircoseconds for update averaging metrics
+	void SetUpdateAveragingTimeUs(unsigned averagingTimeUs);
+	/// Set the time interval in mircoseconds for render averaging metrics
+	void SetRenderAveragingTimeUs(unsigned averagingTimeUs);
+
     /// Set whether to pause update events and audio when minimized.
     void SetPauseMinimized(bool enable);
     /// Set whether to exit automatically on exit request (window close button.)
@@ -134,12 +158,20 @@ private:
 	HiresTimer updateTimer_;
 	HiresTimer renderGoalTimer_;
 
-	int renderFpsGoal{ 200 };
-	unsigned updateTimeGoalUs{ 16000 };
+	unsigned renderTimeGoalUs{ 5000 };  //200 Hz   
+	unsigned updateTimeGoalUs{ 16666 }; //60 Hz
 
-    /// Previous timesteps for smoothing.
-	PODVector<float> updateTimeStepsBufferMs_;
-	PODVector<float> renderTimeStepsBufferMs_;
+	int avgRenderTimeUs_{ 5000 };
+	int avgUpdateTimeUs_{ 16666 };
+
+	int lastRenderTimeUs_{ 0 };
+	int lastUpdateTimeUs_{ 0 };
+
+	PODVector<int> renderTimeUsBuffer_;
+	PODVector<int> updateTimeUsBuffer_;
+
+	int renderTimeAvgIdx_{ 0 };
+	int updateTimeAvgIdx_{ 0 };
 
     /// Pause when minimized flag.
     bool pauseMinimized_;

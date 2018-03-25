@@ -327,16 +327,14 @@ bool Engine::Initialize(const VariantMap& parameters)
 
 
 
-
-	updateTimeStepsBufferMs_.Resize(64);
-	renderTimeStepsBufferMs_.Resize(64);
-
     updateTimerTracker_.Reset();
 	renderTimerTracker_.Reset();
 
 	updateUpdateTimeTimer();
 	updateFpsGoalTimer();
 	
+	SetUpdateAveragingTimeUs(1 * 1000000);
+	SetRenderAveragingTimeUs(1 * 1000000);
 
     URHO3D_LOGINFO("Initialized engine");
     initialized_ = true;
@@ -535,17 +533,83 @@ DebugHud* Engine::CreateDebugHud()
 }
 
 
-void Engine::SetRenderFpsGoal(int fps)
+float Engine::GetAverageRenderTimeMs()
 {
-	renderFpsGoal = fps;
-	updateFpsGoalTimer();
-
+	return avgRenderTimeUs_/1000.0f;
 }
 
-void Engine::SetUpdateTimeUs(unsigned updateTimeUs)
+float Engine::GetAverageUpdateTimeMs()
 {
-	updateTimeGoalUs = updateTimeUs;
+	return avgUpdateTimeUs_/1000.0f;
+}
+
+bool Engine::GetUpdateIsLimited()
+{
+	if (avgUpdateTimeUs_ > updateTimeGoalUs + updateTimeGoalUs/5) //5% buffer
+		return true;
+	
+	return false;
+}
+
+bool Engine::GetRenderIsLimited()
+{
+	if (avgRenderTimeUs_ > renderTimeGoalUs + renderTimeGoalUs / 5)//5% buffer
+		return true;
+
+	return false;
+}
+
+void Engine::SetRenderFpsGoal(int fps)
+{
+	renderTimeGoalUs = (1.0f/float(fps))*1000000.0f;
+	updateFpsGoalTimer();
+}
+
+void Engine::SetRenderTimeGoalUs(unsigned timeUs)
+{
+	renderTimeGoalUs = timeUs;
+	updateFpsGoalTimer();
+}
+
+void Engine::SetUpdateFpsGoal(unsigned fps)
+{
+	updateTimeGoalUs = (1.0f / float(fps))*1000000.0f;
 	updateUpdateTimeTimer();
+}
+
+
+void Engine::SetUpdateTimeGoalUs(unsigned timeUs)
+{
+	updateTimeGoalUs = timeUs;
+	updateUpdateTimeTimer();
+}
+
+void Engine::SetUpdateAveragingTimeUs(unsigned averagingTimeUs)
+{
+	updateTimeUsBuffer_.Resize(averagingTimeUs / updateTimeGoalUs);
+	
+	//reset the buffer contents to the goal
+	for (int i = 0; i < updateTimeUsBuffer_.Size(); i++) {
+		updateTimeUsBuffer_[i] = updateTimeGoalUs;
+	}
+
+	//reset the current average
+	avgUpdateTimeUs_ = updateTimeGoalUs;
+	updateTimeAvgIdx_ = 0;
+}
+
+void Engine::SetRenderAveragingTimeUs(unsigned averagingTimeUs)
+{
+	renderTimeUsBuffer_.Resize(averagingTimeUs / renderTimeGoalUs);
+
+	//reset the buffer contents to the goal
+	for (int i = 0; i < renderTimeUsBuffer_.Size(); i++) {
+		renderTimeUsBuffer_[i] = renderTimeGoalUs;
+	}
+
+	//reset the current average
+	avgRenderTimeUs_ = renderTimeGoalUs;
+	renderTimeAvgIdx_ = 0;
 }
 
 void Engine::SetPauseMinimized(bool enable)
@@ -704,13 +768,21 @@ void Engine::Update()
 
 	//compute times
 	updateTick_++;
-	updateTimeStepsBufferMs_[0] = (float(updateTimerTracker_.GetUSec(true))/1000000.0f);
+	lastUpdateTimeUs_ = updateTimerTracker_.GetUSec(true);
 
+	//update rolling average
+	avgUpdateTimeUs_ -= updateTimeUsBuffer_[updateTimeAvgIdx_] / updateTimeUsBuffer_.Size();
+	updateTimeUsBuffer_[updateTimeAvgIdx_] = lastUpdateTimeUs_;
+	avgUpdateTimeUs_ += lastUpdateTimeUs_ / updateTimeUsBuffer_.Size();
+
+	updateTimeAvgIdx_++;
+	if (updateTimeAvgIdx_ >= updateTimeUsBuffer_.Size())
+		updateTimeAvgIdx_ = 0;
 
 
     // Logic update event
     VariantMap& eventData = GetEventDataMap();
-    eventData[Update::P_TIMESTEP] = updateTimeStepsBufferMs_[0];
+    eventData[Update::P_TIMESTEP] = float(lastUpdateTimeUs_) / 1000000.0f;
 	eventData[Update::P_UPDATETICK] = updateTick_;
     SendEvent(E_UPDATE, eventData);
 
@@ -735,12 +807,23 @@ void Engine::Render()
 
 	//compute times
 	renderTick_++;
-	renderTimeStepsBufferMs_[0] = (float(renderTimerTracker_.GetUSec(true)) / 1000000.0f);
+	lastRenderTimeUs_ = renderTimerTracker_.GetUSec(true);
+
+
+	//update rolling average
+	avgRenderTimeUs_ -= renderTimeUsBuffer_[renderTimeAvgIdx_] / renderTimeUsBuffer_.Size();
+	renderTimeUsBuffer_[renderTimeAvgIdx_] = lastRenderTimeUs_;
+	avgRenderTimeUs_ += lastRenderTimeUs_ / renderTimeUsBuffer_.Size();
+
+	renderTimeAvgIdx_++;
+	if (renderTimeAvgIdx_ >= renderTimeUsBuffer_.Size())
+		renderTimeAvgIdx_ = 0;
+
 
 
 
 	VariantMap& eventData = GetEventDataMap();
-	eventData[RenderUpdate::P_TIMESTEP] = renderTimeStepsBufferMs_[0]*1000.0f;
+	eventData[RenderUpdate::P_TIMESTEP] = float(lastRenderTimeUs_)/1000.0f;
 	eventData[RenderUpdate::P_RENDERTICK] = renderTick_;
 	
 	// Rendering update event
@@ -997,12 +1080,12 @@ void Engine::updateAudioPausing()
 
 void Engine::updateFpsGoalTimer()
 {
-	renderGoalTimer_.SetTimeoutDuration((long long)((1.0f / float(renderFpsGoal))*1000000.0f), false);
+	renderGoalTimer_.SetTimeoutDuration(renderTimeGoalUs, false);
 }
 
 void Engine::updateUpdateTimeTimer()
 {
-	updateTimer_.SetTimeoutDuration(updateTimeGoalUs);
+	updateTimer_.SetTimeoutDuration(updateTimeGoalUs, false);
 }
 
 }
