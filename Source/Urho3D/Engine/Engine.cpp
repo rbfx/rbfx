@@ -672,9 +672,7 @@ unsigned Engine::FreeUpdate()
 		updateTimer_.Reset();
 		return 0;
 	}
-	
-
-	if (renderGoalTimer_.IsTimedOut())
+	else if (renderGoalTimer_.IsTimedOut())
 	{
 		//Render
 		Render();
