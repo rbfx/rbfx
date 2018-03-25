@@ -20,31 +20,15 @@
 # THE SOFTWARE.
 #
 
-if (MSVC)
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-    # Enable parallel builds
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+# Emscripten does not support ucontext/setjmp/longjmp
+if (NOT URHO3D_CSHARP)
+    return ()
 endif ()
 
-add_subdirectory(ThirdParty)
-
-if (URHO3D_CSHARP)
-    initialize_submodule(${CMAKE_CURRENT_SOURCE_DIR}/Urho3DNet)
-	add_subdirectory(Urho3DNet)
-endif ()
-
-add_subdirectory (Urho3D)
-
-if (NOT CMAKE_CROSS_COMPILING AND URHO3D_TOOLS)
-    add_subdirectory (Tools)
-    if (URHO3D_EXTRAS)
-        add_subdirectory (Extras)
-    endif ()
-endif ()
-
-if (URHO3D_SAMPLES)
-    add_subdirectory (Samples)
-endif ()
-
-install(EXPORT Urho3D DESTINATION ${DEST_SHARE_DIR}/CMake)
+# Managed executable must find Urho3DCSharp and Urho3DNet in the same directory, that is why it is put to DEST_BIN_DIR
+# instead of samples directory.
+add_target_csharp(102_CSharpProject /target:exe /reference:System.dll
+    /reference:${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}/Urho3DNet.dll
+    /out:${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}/102_CSharpProject.exe ${CMAKE_CURRENT_SOURCE_DIR}/Program.cs
+)
+add_dependencies(102_CSharpProject Urho3DNet)

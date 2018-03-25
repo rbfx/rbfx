@@ -218,6 +218,14 @@ else ()
     target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC)
 endif ()
 
+# CSharp support
+if (URHO3D_CSHARP)
+    get_target_property(SOURCE_DIR Urho3D SOURCE_DIR)
+    get_filename_component(SOURCE_DIR ${SOURCE_DIR} DIRECTORY)
+    csharp_bind_target(TARGET Urho3D SOURCE_DIR ${SOURCE_DIR} EXTERNAL)
+endif ()
+
+# SDK installation
 install(TARGETS Urho3D
     EXPORT Urho3D
     LIBRARY DESTINATION ${SHARED_LIB_INSTALL_DIR}

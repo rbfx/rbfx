@@ -290,6 +290,26 @@ macro (target_link_objects TARGET)
     endforeach()
 endmacro()
 
+macro (initialize_submodule SUBMODULE_DIR)
+    file(GLOB SUBMODULE_FILES ${SUBMODULE_DIR}/*)
+    list(LENGTH SUBMODULE_FILES SUBMODULE_FILES_LEN)
+
+    if (SUBMODULE_FILES_LEN LESS 2)
+        find_program(GIT git)
+        if (NOT GIT)
+            message(FATAL_ERROR "git not found.")
+        endif ()
+        execute_process(
+            COMMAND git submodule update --init --remote "${SUBMODULE_DIR}"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            RESULT_VARIABLE SUBMODULE_RESULT
+        )
+        if (NOT SUBMODULE_RESULT EQUAL 0)
+            message(FATAL_ERROR "Failed to initialize submodule ${SUBMODULE_DIR}")
+        endif ()
+    endif ()
+endmacro ()
+
 # Configure for MingW
 if (CMAKE_CROSSCOMPILING AND MINGW)
     # Symlink windows libraries and headers to appease some libraries that do not use all-lowercase names and break on
