@@ -371,7 +371,7 @@ void GeneratePInvokePass::Stop()
 
 std::string GeneratePInvokePass::ToPInvokeTypeReturn(const cppast::cpp_type& type)
 {
-    std::string result = ToPInvokeType(type);
+    std::string result = ToPInvokeType(type, true);
     return result;
 }
 
@@ -384,7 +384,7 @@ std::string GeneratePInvokePass::ToPInvokeTypeParam(const cppast::cpp_type& type
     return result;
 }
 
-std::string GeneratePInvokePass::ToPInvokeType(const cppast::cpp_type& type)
+std::string GeneratePInvokePass::ToPInvokeType(const cppast::cpp_type& type, bool disallowReferences)
 {
     std::function<std::string(const cppast::cpp_type&)> toPInvokeType = [&](const cppast::cpp_type& t) -> std::string {
         switch (t.kind())
@@ -413,7 +413,10 @@ std::string GeneratePInvokePass::ToPInvokeType(const cppast::cpp_type& type)
                     return "string";
                 if (t.kind() == cppast::cpp_type_kind::pointer_t)
                     return "IntPtr";
-                return "ref " + toPInvokeType(pointee);
+                auto typeName = toPInvokeType(pointee);
+                if (!disallowReferences)
+                    typeName = "ref " + typeName;
+                return typeName;
             }
             else if (pointee.kind() == cppast::cpp_type_kind::user_defined_t && !IsEnumType(t))
                 return "IntPtr";
@@ -437,7 +440,7 @@ std::string GeneratePInvokePass::ToPInvokeType(const cppast::cpp_type& type)
     if (auto* map = generator->GetTypeMap(type))
     {
         typeName = map->pInvokeType_;
-        if (IsOutType(type))
+        if (!disallowReferences && IsOutType(type))
             typeName = "ref " + typeName;
     }
     else

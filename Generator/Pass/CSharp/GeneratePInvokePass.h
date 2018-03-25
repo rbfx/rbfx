@@ -44,7 +44,7 @@ public:
 
     static std::string ToPInvokeTypeReturn(const cppast::cpp_type& type);
     static std::string ToPInvokeTypeParam(const cppast::cpp_type& type);
-    static std::string ToPInvokeType(const cppast::cpp_type& type);
+    static std::string ToPInvokeType(const cppast::cpp_type& type, bool disallowReferences=false);
 
 protected:
     CSharpPrinter printer_;
