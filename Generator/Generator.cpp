@@ -120,9 +120,12 @@ int main(int argc, char* argv[])
     context->RegisterSubsystem(new FileSystem(context));
     context->RegisterSubsystem(new Log(context));
     context->RegisterSubsystem(new WorkQueue(context));
+#if URHO3D_LOGGING
     context->GetLog()->SetLevel(LOG_DEBUG);
+#endif
+#if URHO3D_THREADING
     context->GetWorkQueue()->CreateThreads(std::thread::hardware_concurrency());
-
+#endif
     context->GetFileSystem()->CreateDirsRecursive(outputDirCpp);
     context->GetFileSystem()->CreateDirsRecursive(outputDirCs);
 
