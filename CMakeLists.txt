@@ -63,6 +63,7 @@ macro (add_target_csharp TARGET)
         message(FATAL_ERROR "Unsupported platform")
     endif()
     add_custom_target(${TARGET} COMMAND ${TERM_WORKAROUND} ${CSC} ${ARGN} ${NET_PLATFORM})
+    set_target_properties(${TARGET} PROPERTIES EXCLUDE_FROM_ALL OFF)
 endmacro ()
 
 macro (csharp_bind_target)
@@ -130,15 +131,22 @@ macro (csharp_bind_target)
         file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt "${opt}\n")
     endforeach ()
 
-    # CSharp target (native)
-    file (GLOB COMMON_CSHARP_SOURCE_FILES_MANUAL
-        ${COMMON_DIR}/Native/*.cpp ${BIND_CSHARP_DIR}/Native/*.cpp)
+    # Generated source files
     set (CSHARP_SOURCE_FILES_GENERATED
         ${BINDINGS_OUTPUT_DIR}/Native/CApi.cpp
         ${BINDINGS_OUTPUT_DIR}/Native/ClassWrappers.hpp
         ${BINDINGS_OUTPUT_DIR}/Native/RegisterFactories.cpp
     )
-    set_source_files_properties(${CSHARP_SOURCE_FILES_GENERATED} PROPERTIES GENERATED TRUE)
+    set (COMMON_NET_SOURCE_FILES_GENERATED
+        ${BINDINGS_OUTPUT_DIR}/CSharp/PInvoke.cs
+        ${BINDINGS_OUTPUT_DIR}/CSharp/CSharp.cs
+    )
+    set_source_files_properties(${CSHARP_SOURCE_FILES_GENERATED} ${COMMON_NET_SOURCE_FILES_GENERATED} PROPERTIES GENERATED TRUE)
+
+    # CSharp target (native)
+    file (GLOB COMMON_CSHARP_SOURCE_FILES_MANUAL
+        ${COMMON_DIR}/Native/*.cpp ${BIND_CSHARP_DIR}/Native/*.cpp)
+
 
     if (BIND_INTERNAL)
         set (CSHARP_LIBRARY_NAME ${BIND_TARGET})
@@ -154,11 +162,13 @@ macro (csharp_bind_target)
         ${COMMON_DIR}/Native ${BIND_CSHARP_DIR}/Native ${BINDINGS_OUTPUT_DIR}/Native)
 
     # Target that generates bindings source
-    add_custom_target(${CSHARP_LIBRARY_NAME}Generate
+    add_custom_command(OUTPUT ${CSHARP_SOURCE_FILES_GENERATED} ${COMMON_NET_SOURCE_FILES_GENERATED}
         COMMAND $<TARGET_FILE:CSharpGenerator> ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt
-        DEPENDS CSharpGenerator
-    )
-    add_dependencies(${CSHARP_LIBRARY_NAME} ${CSHARP_LIBRARY_NAME}Generate)
+        DEPENDS CSharpGenerator)
+    add_custom_target(${CSHARP_LIBRARY_NAME}Regenerate
+        COMMAND $<TARGET_FILE:CSharpGenerator> ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt
+        DEPENDS CSharpGenerator)
+    set_target_properties(${CSHARP_LIBRARY_NAME}Regenerate PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
 
     file (WRITE ${BINDINGS_OUTPUT_DIR}/CSharp/Config.cs
 "namespace CSharp
@@ -169,11 +179,6 @@ macro (csharp_bind_target)
     }
 }\n")
     file (GLOB_RECURSE COMMON_NET_SOURCE_FILES_MANUAL ${COMMON_DIR}/CSharp/*.cs ${BIND_CSHARP_DIR}/CSharp/*.cs)
-    set (COMMON_NET_SOURCE_FILES_GENERATED
-        ${BINDINGS_OUTPUT_DIR}/CSharp/PInvoke.cs
-        ${BINDINGS_OUTPUT_DIR}/CSharp/CSharp.cs
-        ${BINDINGS_OUTPUT_DIR}/CSharp/Config.cs
-    )
     if (MSVC)
         set (NET_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>)
     else ()
@@ -181,7 +186,7 @@ macro (csharp_bind_target)
     endif ()
     add_target_csharp(${BIND_TARGET}Net /target:library /unsafe /reference:System.dll
         /out:${NET_OUTPUT_DIRECTORY}/${BIND_TARGET}Net.dll ${COMMON_NET_SOURCE_FILES_MANUAL}
-        ${COMMON_NET_SOURCE_FILES_GENERATED}
+        ${COMMON_NET_SOURCE_FILES_GENERATED} ${BINDINGS_OUTPUT_DIR}/CSharp/Config.cs
     )
     add_dependencies(${BIND_TARGET}Net ${CSHARP_LIBRARY_NAME})
 endmacro ()
