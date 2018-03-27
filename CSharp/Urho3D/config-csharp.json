@@ -3,6 +3,7 @@
     "Urho3D": {
       "include": [
         "Math/MathDefs.h",
+        "Math/Ray.h",
         "Container/RefCounted.h",
         "Core/CoreEvents.h",
         "Core/Object.h",
@@ -95,8 +96,6 @@
       "Urho3D::UI::DragData",
       "Urho3D::*::Get*Batches*(*",
       // TODO: `out` parameters
-      "Urho3D::CrowdManager::Raycast(Urho3D::Vector3 const&,Urho3D::Vector3 const&,int,Urho3D::Vector3*)",
-      "Urho3D::CrowdManager::GetDistanceToWall(Urho3D::Vector3 const&,float,int,Urho3D::Vector3*,Urho3D::Vector3*)",
       "Urho3D::Geometry::GetRawData(unsigned char const*&,unsigned int&,unsigned char const*&,unsigned int&,PODVector<Urho3D::VertexElement> const*&) const",
       // ---------------------------------------------------------------------------------------------------------------
       "Urho3D::JoystickState::joystick_",

@@ -621,9 +621,11 @@ std::string CamelCaseIdentifier(const std::string& name)
 
 bool IsOutType(const cppast::cpp_type& type)
 {
-    if (type.kind() == cppast::cpp_type_kind::reference_t)
+    if (type.kind() == cppast::cpp_type_kind::reference_t || type.kind() == cppast::cpp_type_kind::pointer_t)
     {
-        const auto& pointee = dynamic_cast<const cppast::cpp_reference_type&>(type).referee();
+        const auto& pointee = type.kind() == cppast::cpp_type_kind::pointer_t ?
+            dynamic_cast<const cppast::cpp_pointer_type&>(type).pointee() :
+            dynamic_cast<const cppast::cpp_reference_type&>(type).referee();
 
         if (IsConst(pointee))
             return false;
@@ -633,7 +635,7 @@ bool IsOutType(const cppast::cpp_type& type)
         // A pointer to builtin is (almost) definitely output parameter. In some cases (like when pointer to builtin
         // type means a location within array) c++ code should be tweaked to better reflect intent of parameter or c++
         // function should be ignored completely.
-        if (nonCvPointee.kind() == cppast::cpp_type_kind::builtin_t)
+        if (nonCvPointee.kind() == cppast::cpp_type_kind::builtin_t && type.kind() == cppast::cpp_type_kind::reference_t)
             return true;
 
         // Any type mapped to a value type (like std::string mapped to System.String) are output parameters.
@@ -657,10 +659,9 @@ bool IsOutType(const cppast::cpp_type& type)
 
 bool IsComplexOutputType(const cppast::cpp_type& type)
 {
-    if (IsOutType(type) && generator->GetTypeMap(type) != nullptr)
+    if (type.kind() == cppast::cpp_type_kind::reference_t && IsOutType(type) && generator->GetTypeMap(type) != nullptr)
     {
         // Complex typemapped have to output to c++ type and have it converted to c type before function return.
-        assert(type.kind() == cppast::cpp_type_kind::reference_t);
         auto kind = cppast::remove_cv(dynamic_cast<const cppast::cpp_reference_type&>(type).referee()).kind();
         if (kind == cppast::cpp_type_kind::user_defined_t || kind == cppast::cpp_type_kind::template_instantiation_t)
             return true;

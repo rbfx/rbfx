@@ -53,17 +53,22 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         else
             expr = EnsureNotKeyword(param.name());
 
-        if (auto* map = generator->GetTypeMap(param.type(), false))
+        if (!IsOutType(param.type()))
         {
-            if (map->isValueType_ && map->csType_ != "string")
+            if (auto* map = generator->GetTypeMap(param.type(), false))
             {
-                auto defaultValue = metaParam->GetDefaultValue();
-                defaultValue = ConvertDefaultValueToCS(defaultValue, param.type(), true);
-                if (!defaultValue.empty())
-                    expr += fmt::format(".GetValueOrDefault({})", defaultValue);
+                if (map->isValueType_ && map->csType_ != "string")
+                {
+                    auto defaultValue = metaParam->GetDefaultValue();
+                    defaultValue = ConvertDefaultValueToCS(defaultValue, param.type(), true);
+                    if (!defaultValue.empty())
+                        expr += fmt::format(".GetValueOrDefault({})", defaultValue);
+                }
             }
         }
+
         expr = MapToPInvoke(param.type(), expr);
+
         if (IsOutType(param.type()))
             expr = "ref " + expr;
 
@@ -358,6 +363,9 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             return true;
 
         const auto& func = entity->Ast<cppast::cpp_member_function>();
+
+        if (func.name() == "FreeScratchBuffer")
+            int a = 2;
 
         auto rtype = ToCSType(func.return_type(), true);
         auto pc = func.parameters().empty() ? "" : ", ";
@@ -711,11 +719,16 @@ std::string GenerateCSApiPass::FormatCSParameterList(const std::vector<SharedPtr
         const auto& cppType = param->Ast<cppast::cpp_function_parameter>().type();
         auto csType = ToCSType(cppType);
         auto defaultValue = param->GetDefaultValue();
-        if (auto* map = generator->GetTypeMap(cppType, false))
+        if (IsOutType(cppType))
+            defaultValue.clear();
+        else
         {
-            // Value types are made nullable in order to allow default values.
-            if (map->isValueType_ && !defaultValue.empty() && map->csType_ != "string")
-                csType += "?";
+            if (auto* map = generator->GetTypeMap(cppType, false))
+            {
+                // Value types are made nullable in order to allow default values.
+                if (map->isValueType_ && !defaultValue.empty() && map->csType_ != "string")
+                    csType += "?";
+            }
         }
         result += fmt::format("{} {}", csType, EnsureNotKeyword(param->name_));
 

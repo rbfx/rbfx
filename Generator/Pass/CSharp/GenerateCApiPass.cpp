@@ -56,7 +56,12 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     auto toCType = [&](const cppast::cpp_type& type) { return ToCType(type); };
     auto toCppType = [&](const cppast::cpp_function_parameter& param) {
         if (IsComplexOutputType(param.type()))
-            return param.name() + "Out";
+        {
+            auto name = param.name() + "Out";
+            if (param.type().kind() == cppast::cpp_type_kind::pointer_t)
+                name = "&" + name;
+            return name;
+        }
         return MapToCpp(param.type(), EnsureNotKeyword(param.name()));
     };
 
