@@ -122,7 +122,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_.Indent();
         {
             PrintParameterHandlingCodePre(entity->children_);
-            printer_ << "auto returnValue = " + MapToCNoCopy(entity->parent_->sourceSymbolName_,
+            printer_ << "auto&& returnValue = " + MapToCNoCopy(entity->parent_->sourceSymbolName_,
                 fmt::format("new {class}({params})", fmt::arg("class", className),
                     fmt::arg("params", ParameterNameList(func.parameters(), toCppType)))) + ";";
             PrintParameterHandlingCodePost(entity->children_);
