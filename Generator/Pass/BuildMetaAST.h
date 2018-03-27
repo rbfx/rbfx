@@ -55,6 +55,9 @@ public:
         case cppast::cpp_entity_kind::using_directive_t:
         case cppast::cpp_entity_kind::using_declaration_t:
         case cppast::cpp_entity_kind::type_alias_t:
+        case cppast::cpp_entity_kind::access_specifier_t:
+        case cppast::cpp_entity_kind::function_template_t:
+        case cppast::cpp_entity_kind::function_template_specialization_t:
             return true;
         default:
             break;
