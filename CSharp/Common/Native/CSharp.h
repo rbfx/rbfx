@@ -182,17 +182,6 @@ inline T0 force_cast(T1 input)
     return u.output;
 };
 
-template<typename T0, typename T1>
-inline T0* force_cast(T1* input)
-{
-    union
-    {
-        T1* input;
-        T0* output;
-    } u = { input };
-    return u.output;
-};
-
 #define URHO3D_OBJECT_STATIC(typeName, baseTypeName) \
     public: \
         using ClassName = typeName; \
