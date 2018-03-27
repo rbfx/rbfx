@@ -1,4 +1,4 @@
-// Copyright (C) 2016-2017 Jonathan Müller <jonathanmueller.dev@gmail.com>
+// Copyright (C) 2016-2018 Jonathan Müller <jonathanmueller.dev@gmail.com>
 // This file is subject to the license terms in the LICENSE file
 // found in the top-level directory of this distribution.
 
@@ -7,6 +7,7 @@
 
 #include <iosfwd>
 #include <type_traits>
+#include <functional>
 #include <utility>
 
 #include <type_safe/detail/force_inline.hpp>
@@ -41,7 +42,7 @@ namespace type_safe
     ///
     /// It is a tiny, no overhead wrapper over `bool`.
     /// It can only be constructed from `bool` values
-    /// and does not implictly convert to integral types.
+    /// and does not implicitly convert to integral types.
     /// \module types
     class boolean
     {
@@ -84,7 +85,7 @@ namespace type_safe
         bool value_;
     };
 
-    //=== comparision ===//
+    //=== comparison ===//
     /// [ts::boolean]() equality comparison.
     /// \returns `true` if (1) both [ts::boolean]() objects have the same value,
     /// (2)/(3) the boolean has the same value as the given value,
@@ -152,7 +153,7 @@ namespace type_safe
     /// \module types
     template <typename Char, class CharTraits>
     std::basic_istream<Char, CharTraits>& operator>>(std::basic_istream<Char, CharTraits>& in,
-                                                     boolean& b)
+                                                     boolean&                              b)
     {
         bool val;
         in >> val;
@@ -165,7 +166,7 @@ namespace type_safe
     /// \module types
     template <typename Char, class CharTraits>
     std::basic_ostream<Char, CharTraits>& operator<<(std::basic_ostream<Char, CharTraits>& out,
-                                                     const boolean& b)
+                                                     const boolean&                        b)
     {
         return out << static_cast<bool>(b);
     }
@@ -186,10 +187,10 @@ namespace type_safe
     };
 
     /// Comparison functors similar to the `std::` version,
-    /// but explictly cast the result of the comparison to `bool`.
+    /// but explicitly cast the result of the comparison to `bool`.
     ///
     /// This allows using types where the comparison operator returns [ts::boolean](),
-    /// as it can not be implictly converted to `bool`
+    /// as it can not be implicitly converted to `bool`
     /// so, for example, [std::less]() can not be used.
     /// \notes These comparison functors are always transparent,
     /// i.e. can be used with two different types.
@@ -209,5 +210,19 @@ namespace type_safe
 
 #undef TYPE_SAFE_DETAIL_MAKE_PREDICATE
 } // namespace type_safe
+
+namespace std
+{
+    /// Hash specialization for [ts::boolean]().
+    /// \module types
+    template <>
+    struct hash<type_safe::boolean>
+    {
+        std::size_t operator()(type_safe::boolean b) const noexcept
+        {
+            return std::hash<bool>()(static_cast<bool>(b));
+        }
+    };
+} // namespace std
 
 #endif // TYPE_SAFE_BOOLEAN_HPP_INCLUDED

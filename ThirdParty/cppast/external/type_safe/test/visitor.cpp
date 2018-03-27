@@ -1,4 +1,4 @@
-// Copyright (C) 2016-2017 Jonathan Müller <jonathanmueller.dev@gmail.com>
+// Copyright (C) 2016-2018 Jonathan Müller <jonathanmueller.dev@gmail.com>
 // This file is subject to the license terms in the LICENSE file
 // found in the top-level directory of this distribution.
 
@@ -117,6 +117,23 @@ TEST_CASE("visit variant")
         a = 3.14f;
         visit(visitor{-1}, a);
         visit(visitor{32}, a, b);
+    }
+    SECTION("returning reference")
+    {
+        struct visitor
+        {
+            int  value;
+            int& operator()(int)
+            {
+                return value;
+            }
+        };
+
+        visitor      v{1};
+        variant<int> x{1};
+        visit(v, x) = 2;
+
+        REQUIRE(v.value == 2);
     }
     SECTION("rarely empty variant")
     {

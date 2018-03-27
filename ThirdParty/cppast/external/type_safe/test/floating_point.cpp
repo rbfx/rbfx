@@ -1,4 +1,4 @@
-// Copyright (C) 2016-2017 Jonathan Müller <jonathanmueller.dev@gmail.com>
+// Copyright (C) 2016-2018 Jonathan Müller <jonathanmueller.dev@gmail.com>
 // This file is subject to the license terms in the LICENSE file
 // found in the top-level directory of this distribution.
 
@@ -140,7 +140,7 @@ TEST_CASE("floating_point")
         normal  = -11.0 / normal;
         REQUIRE(static_cast<double>(wrapper) == normal);
     }
-    SECTION("comparision")
+    SECTION("comparison")
     {
         // <
         REQUIRE(bool(float_t(4.) < float_t(5.)));

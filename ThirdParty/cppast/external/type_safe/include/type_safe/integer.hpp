@@ -1,4 +1,4 @@
-// Copyright (C) 2016-2017 Jonathan Müller <jonathanmueller.dev@gmail.com>
+// Copyright (C) 2016-2018 Jonathan Müller <jonathanmueller.dev@gmail.com>
 // This file is subject to the license terms in the LICENSE file
 // found in the top-level directory of this distribution.
 
@@ -7,6 +7,7 @@
 
 #include <iosfwd>
 #include <limits>
+#include <functional>
 #include <type_traits>
 
 #include <type_safe/detail/assert.hpp>
@@ -23,19 +24,17 @@ namespace type_safe
     {
         template <typename T>
         struct is_integer
-            : std::integral_constant<bool,
-                                     std::is_integral<T>::value && !std::is_same<T, bool>::value
-                                         && !std::is_same<T, char>::value>
+        : std::integral_constant<bool, std::is_integral<T>::value && !std::is_same<T, bool>::value
+                                           && !std::is_same<T, char>::value>
         {
         };
 
         template <typename From, typename To>
         struct is_safe_integer_conversion
-            : std::
-                  integral_constant<bool,
-                                    detail::is_integer<From>::value && detail::is_integer<To>::value
-                                        && sizeof(From) <= sizeof(To)
-                                        && std::is_signed<From>::value == std::is_signed<To>::value>
+        : std::integral_constant<bool,
+                                 detail::is_integer<From>::value && detail::is_integer<To>::value
+                                     && sizeof(From) <= sizeof(To)
+                                     && std::is_signed<From>::value == std::is_signed<To>::value>
         {
         };
 
@@ -48,33 +47,31 @@ namespace type_safe
             typename std::enable_if<!is_safe_integer_conversion<From, To>::value>::type;
 
         template <typename A, typename B>
-        struct is_safe_integer_comparision
-            : std::integral_constant<bool,
-                                     is_safe_integer_conversion<A, B>::value
-                                         || is_safe_integer_conversion<B, A>::value>
+        struct is_safe_integer_comparison
+        : std::integral_constant<bool, is_safe_integer_conversion<A, B>::value
+                                           || is_safe_integer_conversion<B, A>::value>
         {
         };
 
         template <typename A, typename B>
-        using enable_safe_integer_comparision =
-            typename std::enable_if<is_safe_integer_comparision<A, B>::value>::type;
+        using enable_safe_integer_comparison =
+            typename std::enable_if<is_safe_integer_comparison<A, B>::value>::type;
 
         template <typename A, typename B>
-        using fallback_safe_integer_comparision =
-            typename std::enable_if<!is_safe_integer_comparision<A, B>::value>::type;
+        using fallback_safe_integer_comparison =
+            typename std::enable_if<!is_safe_integer_comparison<A, B>::value>::type;
 
         template <typename A, typename B>
         struct is_safe_integer_operation
-            : std::integral_constant<bool,
-                                     detail::is_integer<A>::value && detail::is_integer<B>::value
-                                         && std::is_signed<A>::value == std::is_signed<B>::value>
+        : std::integral_constant<bool, detail::is_integer<A>::value && detail::is_integer<B>::value
+                                           && std::is_signed<A>::value == std::is_signed<B>::value>
         {
         };
 
         template <typename A, typename B>
         struct integer_result_type
-            : std::enable_if<is_safe_integer_operation<A, B>::value,
-                             typename std::conditional<sizeof(A) < sizeof(B), B, A>::type>
+        : std::enable_if<is_safe_integer_operation<A, B>::value,
+                         typename std::conditional<sizeof(A) < sizeof(B), B, A>::type>
         {
         };
 
@@ -230,7 +227,7 @@ namespace type_safe
 #define TYPE_SAFE_DETAIL_MAKE_OP(Op)                                                               \
     /** \group compound_assign
      * \param 1
-     * \exclude */                                  \
+     * \exclude */                                                                     \
     template <typename T, typename = detail::enable_safe_integer_conversion<T, integer_type>>      \
     TYPE_SAFE_FORCE_INLINE integer& operator Op(const T& other)                                    \
     {                                                                                              \
@@ -455,33 +452,33 @@ namespace type_safe
 #define TYPE_SAFE_DETAIL_MAKE_OP(Op)                                                               \
     /** \group int_comp
      * \param 3
-     * \exclude */                                         \
+     * \exclude */                                                                            \
     template <typename A, typename B, class Policy,                                                \
-              typename = detail::enable_safe_integer_comparision<A, B>>                            \
+              typename = detail::enable_safe_integer_comparison<A, B>>                             \
     TYPE_SAFE_FORCE_INLINE constexpr bool operator Op(const A& a, const integer<B, Policy>& b)     \
     {                                                                                              \
         return integer<A, Policy>(a) Op b;                                                         \
     }                                                                                              \
     /** \group int_comp
      * \param 3
-     * \exclude */                                         \
+     * \exclude */                                                                            \
     template <typename A, class Policy, typename B,                                                \
-              typename = detail::enable_safe_integer_comparision<A, B>>                            \
+              typename = detail::enable_safe_integer_comparison<A, B>>                             \
     TYPE_SAFE_FORCE_INLINE constexpr bool operator Op(const integer<A, Policy>& a, const B& b)     \
     {                                                                                              \
         return a Op integer<B, Policy>(b);                                                         \
     }                                                                                              \
     /** \exclude */                                                                                \
     template <typename A, class Policy, typename B,                                                \
-              typename = detail::fallback_safe_integer_comparision<A, B>>                          \
+              typename = detail::fallback_safe_integer_comparison<A, B>>                           \
     constexpr bool operator Op(integer<A, Policy>, integer<B, Policy>) = delete;                   \
     /** \exclude */                                                                                \
     template <typename A, typename B, class Policy,                                                \
-              typename = detail::fallback_safe_integer_comparision<A, B>>                          \
+              typename = detail::fallback_safe_integer_comparison<A, B>>                           \
     constexpr bool operator Op(A, integer<B, Policy>) = delete;                                    \
     /** \exclude */                                                                                \
     template <typename A, class Policy, typename B,                                                \
-              typename = detail::fallback_safe_integer_comparision<A, B>>                          \
+              typename = detail::fallback_safe_integer_comparison<A, B>>                           \
     constexpr bool operator Op(integer<A, Policy>, B) = delete;
 
     /// \returns The result of the comparison of the stored integer value in the [ts::integer]().
@@ -492,7 +489,7 @@ namespace type_safe
     /// \param 3
     /// \exclude
     template <typename A, typename B, class Policy,
-              typename = detail::enable_safe_integer_comparision<A, B>>
+              typename = detail::enable_safe_integer_comparison<A, B>>
     TYPE_SAFE_FORCE_INLINE constexpr bool operator==(const integer<A, Policy>& a,
                                                      const integer<B, Policy>& b)
     {
@@ -504,7 +501,7 @@ namespace type_safe
     /// \param 3
     /// \exclude
     template <typename A, typename B, class Policy,
-              typename = detail::enable_safe_integer_comparision<A, B>>
+              typename = detail::enable_safe_integer_comparison<A, B>>
     TYPE_SAFE_FORCE_INLINE constexpr bool operator!=(const integer<A, Policy>& a,
                                                      const integer<B, Policy>& b)
     {
@@ -516,7 +513,7 @@ namespace type_safe
     /// \param 3
     /// \exclude
     template <typename A, typename B, class Policy,
-              typename = detail::enable_safe_integer_comparision<A, B>>
+              typename = detail::enable_safe_integer_comparison<A, B>>
     TYPE_SAFE_FORCE_INLINE constexpr bool operator<(const integer<A, Policy>& a,
                                                     const integer<B, Policy>& b)
     {
@@ -528,7 +525,7 @@ namespace type_safe
     /// \param 3
     /// \exclude
     template <typename A, typename B, class Policy,
-              typename = detail::enable_safe_integer_comparision<A, B>>
+              typename = detail::enable_safe_integer_comparison<A, B>>
     TYPE_SAFE_FORCE_INLINE constexpr bool operator<=(const integer<A, Policy>& a,
                                                      const integer<B, Policy>& b)
     {
@@ -540,7 +537,7 @@ namespace type_safe
     /// \param 3
     /// \exclude
     template <typename A, typename B, class Policy,
-              typename = detail::enable_safe_integer_comparision<A, B>>
+              typename = detail::enable_safe_integer_comparison<A, B>>
     TYPE_SAFE_FORCE_INLINE constexpr bool operator>(const integer<A, Policy>& a,
                                                     const integer<B, Policy>& b)
     {
@@ -552,7 +549,7 @@ namespace type_safe
     /// \param 3
     /// \exclude
     template <typename A, typename B, class Policy,
-              typename = detail::enable_safe_integer_comparision<A, B>>
+              typename = detail::enable_safe_integer_comparison<A, B>>
     TYPE_SAFE_FORCE_INLINE constexpr bool operator>=(const integer<A, Policy>& a,
                                                      const integer<B, Policy>& b)
     {
@@ -567,7 +564,7 @@ namespace type_safe
 /// \exclude
 #define TYPE_SAFE_DETAIL_MAKE_OP(Op)                                                               \
     /** \exclude return
-      * \group int_binary_op */                                            \
+      * \group int_binary_op */                                                                            \
     template <typename A, typename B, class Policy>                                                \
     TYPE_SAFE_FORCE_INLINE constexpr auto operator Op(const A& a, const integer<B, Policy>& b)     \
         ->integer<detail::integer_result_t<A, B>, Policy>                                          \
@@ -575,7 +572,7 @@ namespace type_safe
         return integer<A, Policy>(a) Op b;                                                         \
     }                                                                                              \
     /** \exclude return
-      * \group int_binary_op */                                            \
+      * \group int_binary_op */                                                                            \
     template <typename A, class Policy, typename B>                                                \
     TYPE_SAFE_FORCE_INLINE constexpr auto operator Op(const integer<A, Policy>& a, const B& b)     \
         ->integer<detail::integer_result_t<A, B>, Policy>                                          \
@@ -668,7 +665,7 @@ namespace type_safe
     /// \output_section Input/output
     template <typename Char, class CharTraits, typename IntegerT, class Policy>
     std::basic_istream<Char, CharTraits>& operator>>(std::basic_istream<Char, CharTraits>& in,
-                                                     integer<IntegerT, Policy>& i)
+                                                     integer<IntegerT, Policy>&            i)
     {
         IntegerT val;
         in >> val;
@@ -680,10 +677,24 @@ namespace type_safe
     /// \module types
     template <typename Char, class CharTraits, typename IntegerT, class Policy>
     std::basic_ostream<Char, CharTraits>& operator<<(std::basic_ostream<Char, CharTraits>& out,
-                                                     const integer<IntegerT, Policy>& i)
+                                                     const integer<IntegerT, Policy>&      i)
     {
         return out << static_cast<IntegerT>(i);
     }
 } // namespace type_safe
+
+namespace std
+{
+    /// Hash specialization for [ts::integer].
+    /// \module types
+    template <typename IntegerT, class Policy>
+    struct hash<type_safe::integer<IntegerT, Policy>>
+    {
+        std::size_t operator()(const type_safe::integer<IntegerT, Policy>& i) const noexcept
+        {
+            return std::hash<IntegerT>()(static_cast<IntegerT>(i));
+        }
+    };
+} // namespace std
 
 #endif // TYPE_SAFE_INTEGER_HPP_INCLUDED

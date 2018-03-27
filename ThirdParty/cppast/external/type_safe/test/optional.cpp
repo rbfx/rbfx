@@ -1,4 +1,4 @@
-// Copyright (C) 2016-2017 Jonathan Müller <jonathanmueller.dev@gmail.com>
+// Copyright (C) 2016-2018 Jonathan Müller <jonathanmueller.dev@gmail.com>
 // This file is subject to the license terms in the LICENSE file
 // found in the top-level directory of this distribution.
 
@@ -340,7 +340,7 @@ TEST_CASE("optional")
         REQUIRE(a.has_value());
         REQUIRE(a.value() == 1);
     }
-    SECTION("comparision")
+    SECTION("comparison")
     {
         optional<int> a;
         optional<int> b(1);

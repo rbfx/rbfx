@@ -1,4 +1,4 @@
-// Copyright (C) 2016-2017 Jonathan Müller <jonathanmueller.dev@gmail.com>
+// Copyright (C) 2016-2018 Jonathan Müller <jonathanmueller.dev@gmail.com>
 // This file is subject to the license terms in the LICENSE file
 // found in the top-level directory of this distribution.
 
@@ -20,7 +20,7 @@ namespace type_safe
     /// It works especially well with [ts::output_parameter]().
     ///
     /// It has two states:
-    /// Either it is *intialized* in which case you can get its value,
+    /// Either it is *initialized* in which case you can get its value,
     /// or it is *un-initialized* in which case you cannot get its value.
     /// All objects start out un-initialized.
     /// For consistency with [ts::basic_optional]() it provides a similar interface,
@@ -35,9 +35,7 @@ namespace type_safe
         //=== constructors/assignment/destructor ===//
         /// Default constructor.
         /// \effects Creates it in the un-initialized state.
-        deferred_construction() noexcept : initialized_(false)
-        {
-        }
+        deferred_construction() noexcept : initialized_(false) {}
 
         /// Copy constructor:
         /// \effects If `other` is un-initialized, it will be un-initialized as well.

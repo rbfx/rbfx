@@ -1,4 +1,4 @@
-// Copyright (C) 2016-2017 Jonathan Müller <jonathanmueller.dev@gmail.com>
+// Copyright (C) 2016-2018 Jonathan Müller <jonathanmueller.dev@gmail.com>
 // This file is subject to the license terms in the LICENSE file
 // found in the top-level directory of this distribution.
 
@@ -65,9 +65,7 @@ namespace type_safe
         using rebind = reference_optional_storage<U, XValue>;
 
         /// \effects Creates it without a bound reference.
-        reference_optional_storage() noexcept : pointer_(nullptr)
-        {
-        }
+        reference_optional_storage() noexcept : pointer_(nullptr) {}
 
         /// \effects Binds the same reference as stored in the optional.
         /// \notes This function only participates in overload resolution, if `U` is a reference compatible with `T`.
@@ -238,7 +236,7 @@ namespace type_safe
     template <typename T>
     optional<typename std::remove_const<T>::type> copy(const optional_ref<T>& ref)
     {
-        return ref.has_value() ? make_optional(ref.value()) : nullopt;
+        return ref.has_value() ? type_safe::make_optional(ref.value()) : nullopt;
     }
 
     /// \returns A [ts::optional<T>]() containing a copy of the value of `ref` created by move constructing
@@ -249,7 +247,7 @@ namespace type_safe
     optional<T> move(const optional_xvalue_ref<T>& ref) noexcept(
         std::is_nothrow_move_constructible<T>::value)
     {
-        return ref.has_value() ? make_optional(ref.value()) : nullopt;
+        return ref.has_value() ? type_safe::make_optional(ref.value()) : nullopt;
     }
 } // namespace type_safe
 

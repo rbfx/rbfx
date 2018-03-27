@@ -1,4 +1,4 @@
-# Copyright (C) 2016-2017 Jonathan Müller <jonathanmueller.dev@gmail.com>
+# Copyright (C) 2016-2018 Jonathan Müller <jonathanmueller.dev@gmail.com>
 # This file is subject to the license terms in the LICENSE file
 # found in the top-level directory of this distribution.
 
@@ -43,6 +43,12 @@ target_compile_definitions(debug_assert INTERFACE
                                         ${_debug_assert_assume}
                                         ${_debug_assert_force_inline})
 
+# example target
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    add_executable(debug_assert_example EXCLUDE_FROM_ALL example.cpp)
+    target_link_libraries(debug_assert_example PUBLIC debug_assert)
+endif()
+
 # Create package config files
 include( CMakePackageConfigHelpers )
 set(CONFIG_PACKAGE_INSTALL_DIR lib/cmake/debug_assert)
@@ -55,6 +61,25 @@ set(debug_assert_LIBRARIES debug_assert)
 
 write_basic_package_version_file(
   ${CMAKE_CURRENT_BINARY_DIR}/debug_assert-config-version.cmake
-  VERSION 1.1
+  VERSION 1.3.1
   COMPATIBILITY SameMajorVersion
 )
+
+
+# Install target and header
+install(TARGETS debug_assert
+    EXPORT debug_assert-targets
+    DESTINATION lib)
+
+install(FILES debug_assert.hpp DESTINATION include)
+
+install( EXPORT debug_assert-targets
+  DESTINATION
+    ${CONFIG_PACKAGE_INSTALL_DIR}
+)
+
+install( FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/debug_assert-config.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/debug_assert-config-version.cmake
+  DESTINATION
+    ${CONFIG_PACKAGE_INSTALL_DIR} )

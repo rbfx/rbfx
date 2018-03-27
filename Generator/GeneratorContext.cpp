@@ -59,8 +59,6 @@ void GeneratorContext::LoadCompileConfig(const std::vector<std::string>& include
         else
             config_.define_macro(item.CString(), "");
     }
-    // Fixes errors in MSVC. https://github.com/foonathan/cppast/issues/46
-    config_.define_macro("_DEBUG_FUNCTIONAL_MACHINERY", "1");
 }
 
 bool GeneratorContext::LoadRules(const String& jsonPath)

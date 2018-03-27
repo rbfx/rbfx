@@ -1,4 +1,4 @@
-// Copyright (C) 2016-2017 Jonathan Müller <jonathanmueller.dev@gmail.com>
+// Copyright (C) 2016-2018 Jonathan Müller <jonathanmueller.dev@gmail.com>
 // This file is subject to the license terms in the LICENSE file
 // found in the top-level directory of this distribution.
 
@@ -24,9 +24,7 @@ namespace type_safe
     /// \module variant
     struct nullvar_t
     {
-        constexpr nullvar_t()
-        {
-        }
+        constexpr nullvar_t() {}
     };
 
     /// Tag object of type [ts::nullvar_t]().
@@ -42,7 +40,7 @@ namespace type_safe
     /// There are multiple ways of handling this, so it is outsourced in a policy.
     /// The variant policy is a class that must have the following members:
     /// * `allow_empty` - either [std::true_type]() or [std::false_type]().
-    /// If it is "true", the variant can be put in the empty state explictly.
+    /// If it is "true", the variant can be put in the empty state explicitly.
     /// * `void change_value(variant_type<T>, tagged_union<Types...>&, Args&&... args)` - changes the value and type.
     /// It will be called when the variant already contains an object of a different type.
     /// It must destroy the old type and create a new one with the given type and arguments.
@@ -71,9 +69,8 @@ namespace type_safe
         /// \exclude
         /// \param 1
         /// \exclude
-        template <
-            typename Dummy = void,
-            typename = typename std::enable_if<VariantPolicy::allow_empty::value, Dummy>::type>
+        template <typename Dummy = void, typename = typename std::enable_if<
+                                             VariantPolicy::allow_empty::value, Dummy>::type>
         basic_variant() noexcept
         {
         }
@@ -83,9 +80,8 @@ namespace type_safe
         /// \exclude
         /// \param 1
         /// \exclude
-        template <
-            typename Dummy = void,
-            typename = typename std::enable_if<VariantPolicy::allow_empty::value, Dummy>::type>
+        template <typename Dummy = void, typename = typename std::enable_if<
+                                             VariantPolicy::allow_empty::value, Dummy>::type>
         basic_variant(nullvar_t) noexcept : basic_variant()
         {
         }
@@ -181,9 +177,8 @@ namespace type_safe
         /// \exclude
         /// \param 1
         /// \exclude
-        template <
-            typename Dummy = void,
-            typename = typename std::enable_if<VariantPolicy::allow_empty::value, Dummy>::type>
+        template <typename Dummy = void, typename = typename std::enable_if<
+                                             VariantPolicy::allow_empty::value, Dummy>::type>
         basic_variant& operator=(nullvar_t) noexcept
         {
             reset();
@@ -246,9 +241,8 @@ namespace type_safe
         /// \exclude
         /// \param 1
         /// \exclude
-        template <
-            typename Dummy = void,
-            typename = typename std::enable_if<VariantPolicy::allow_empty::value, Dummy>::type>
+        template <typename Dummy = void, typename = typename std::enable_if<
+                                             VariantPolicy::allow_empty::value, Dummy>::type>
         void reset() noexcept
         {
             destroy(storage_.get_union());
@@ -261,7 +255,7 @@ namespace type_safe
         /// \throws Anything thrown by the chosen assignment operator
         /// or the other `emplace()`.
         /// If the assignment operator throws,
-        /// the variant contains a partially assigned oject.
+        /// the variant contains a partially assigned object.
         /// Otherwise it depends on the variant policy.
         /// \notes This function does not participate in overload resolution,
         /// unless `T` is a valid type for the variant and assignable from the argument
@@ -283,7 +277,7 @@ namespace type_safe
         }
 
         /// Changes the value to a new object of given type.
-        /// \effects If variant is empty, creates the object directly inplace
+        /// \effects If variant is empty, creates the object directly in place
         /// by perfectly forwarding the arguments.
         /// Otherwise it forwards to the variant policy's `change_value()` function.
         /// \throws Anything thrown by `T`s constructor or possibly move constructor.
@@ -312,7 +306,7 @@ namespace type_safe
         }
 
     public:
-        //=== abservers ===//
+        //=== observers ===//
         /// \returns The type id representing the type of the value currently stored in the variant.
         /// \notes If it does not have a value stored, returns [*invalid_type]().
         type_id type() const noexcept
@@ -547,9 +541,7 @@ namespace type_safe
         {
         };
 
-        basic_variant(force_empty) noexcept
-        {
-        }
+        basic_variant(force_empty) noexcept {}
 
         detail::variant_storage<VariantPolicy, HeadT, TailT...> storage_;
 
@@ -704,8 +696,8 @@ namespace type_safe
     bool operator==(const basic_variant<VariantPolicy, Head, Types...>& lhs,
                     const basic_variant<VariantPolicy, Head, Types...>& rhs)
     {
-        return detail::compare_variant<basic_variant<VariantPolicy, Head,
-                                                     Types...>>::compare_equal(lhs, rhs);
+        return detail::compare_variant<
+            basic_variant<VariantPolicy, Head, Types...>>::compare_equal(lhs, rhs);
     }
 
     /// \group variant_comp
@@ -721,8 +713,8 @@ namespace type_safe
     bool operator<(const basic_variant<VariantPolicy, Head, Types...>& lhs,
                    const basic_variant<VariantPolicy, Head, Types...>& rhs)
     {
-        return detail::compare_variant<basic_variant<VariantPolicy, Head,
-                                                     Types...>>::compare_less(lhs, rhs);
+        return detail::compare_variant<
+            basic_variant<VariantPolicy, Head, Types...>>::compare_less(lhs, rhs);
     }
 
     /// \group variant_comp
@@ -938,7 +930,7 @@ namespace type_safe
     ///
     /// When changing the type of the variant, it will use a the move constructor with a temporary.
     /// If the move constructor throws, the variant will be left in the empty state.
-    /// Putting it into the empty state explictly is not allowed.
+    /// Putting it into the empty state explicitly is not allowed.
     /// \module variant
     using rarely_empty_variant_policy = detail::non_empty_variant_policy<false>;
 

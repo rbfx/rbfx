@@ -1,7 +1,8 @@
-# type_safe
+# type_safe 
 
 [![Build Status](https://travis-ci.org/foonathan/type_safe.svg?branch=master)](https://travis-ci.org/foonathan/type_safe)
 [![Build status](https://ci.appveyor.com/api/projects/status/aw1j2h2s52g4laen/branch/master?svg=true)](https://ci.appveyor.com/project/foonathan/type-safe/branch/master)
+[ ![Download](https://api.bintray.com/packages/manu343726/conan-packages/type_safe%3AManu343726/images/download.svg) ](https://bintray.com/manu343726/conan-packages/type_safe%3AManu343726/_latestVersion)
 
 type_safe provides zero overhead abstractions that use the C++ type system to prevent bugs.
 
@@ -19,14 +20,14 @@ I highly suggest that you check out [the first](https://foonathan.github.io/blog
 * `ts::integer<T>` - a zero overhead wrapper over a built-in integer type
     * no default constructor to force meaningful initialization
     * no "lossy" conversions (i.e. from a bigger type or a type with a different signedness)
-    * no mixed arithmetic/comparision with floating points or integer types of a different signedness
+    * no mixed arithmetic/comparison with floating points or integer types of a different signedness
     * over/underflow is undefined behavior in release mode - even for `unsigned` integers,
       enabling compiler optimizations
 * `ts::floating_point<T>` - a zero overhead wrapper over a built-in floating point
     * no default constructor to force meaningful initialization
     * no "lossy"  conversion (i.e. from a bigger type)
-    * no "lossy" comparisions
-    * no mixed arithmetic/comparision with integers
+    * no "lossy" comparisons
+    * no mixed arithmetic/comparison with integers
 * `ts::boolean` - a zero overhead wrapper over `bool`
     * no default constructor to force meaningful initialization
     * no conversion from integer values

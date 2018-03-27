@@ -1,5 +1,5 @@
 //======================================================================//
-// Copyright (C) 2016-2017 Jonathan Müller <jonathanmueller.dev@gmail.com>
+// Copyright (C) 2016-2018 Jonathan Müller <jonathanmueller.dev@gmail.com>
 //
 // This software is provided 'as-is', without any express or
 // implied warranty. In no event will the authors be held
@@ -101,7 +101,7 @@ namespace debug_assert
 #define DEBUG_ASSERT_CUR_SOURCE_LOCATION                                                           \
     debug_assert::source_location                                                                  \
     {                                                                                              \
-        __FILE__, __LINE__                                                                         \
+        __FILE__, static_cast<unsigned>(__LINE__)                                                  \
     }
 
     //=== level ===//
@@ -120,7 +120,7 @@ namespace debug_assert
     };
 
     template <unsigned Level>
-    const unsigned     set_level<Level>::level;
+    const unsigned set_level<Level>::level;
 
     /// Helper class that controls whether the handler can throw or not.
     /// Inherit from it in your module handler.
