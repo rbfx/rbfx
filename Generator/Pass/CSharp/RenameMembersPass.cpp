@@ -33,61 +33,28 @@ bool RenameMembersPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
     switch (entity->kind_)
     {
-    case cppast::cpp_entity_kind::member_variable_t:
     case cppast::cpp_entity_kind::variable_t:
-        if (IsConstantName(entity->name_))
-            // Constants are used in default parameter expressions. Since these expressions come in as raw strings it is
-            // rather complicate to rename these entities.
+        if (entity->name_.find("E_") == 0 || entity->name_.find("P_") == 0)
+            // Events and parameters
             return true;
-        entity->name_ = str::join(SplitName(entity->name_), "");
-//        if (info.access != cppast::cpp_public)
-//            entity->name_[0] = static_cast<char>(tolower(entity->name_[0]));
-        break;
+    case cppast::cpp_entity_kind::member_variable_t:
     case cppast::cpp_entity_kind::member_function_t:
     case cppast::cpp_entity_kind::function_t:
     // case cppast::cpp_entity_kind::enum_t:
     // case cppast::cpp_entity_kind::enum_value_t:
     // Enums appear in default parameters as well. Reason for skipping them is same as constants above.
-        entity->name_ = str::join(SplitName(entity->name_), "");
-    default:
+    {
+        auto parts = str::SplitName(entity->name_);
+        if (parts.size() > 1 && entity->name_.length() > 2 && isupper(entity->name_[0]) && entity->name_[1] == '_')
+            // Prefixes like M_
+            parts.erase(parts.begin());
+
+        entity->name_ = str::join(parts, "");
+        entity->symbolName_ = entity->parent_->symbolName_ + "::" + entity->name_;
         break;
     }
-    return true;
-}
-
-std::vector<std::string> RenameMembersPass::SplitName(const std::string& name)
-{
-    std::vector<std::string> result;
-
-    std::string fragment;
-    for (int last = 0, first = 0; first < name.length();)
-    {
-        bool isUnderscore = name[last] == '_';
-        if (isUnderscore || (isupper(name[last]) && islower(name[std::max(last - 1, 0)])) || last == name.length())
-        {
-            fragment = name.substr(first, last - first);
-            if (isUnderscore)
-                last++;
-            first = last;
-            if (!fragment.empty())
-            {
-                std::transform(fragment.begin(), fragment.end(), fragment.begin(), ::tolower);
-                fragment[0] = static_cast<char>(::toupper(fragment[0]));
-                result.emplace_back(fragment);
-            }
-        }
-        last++;
-    }
-
-    return result;
-}
-
-bool RenameMembersPass::IsConstantName(const std::string& name)
-{
-    for (char c : name)
-    {
-        if (!isupper(c) && c != '_')
-            return false;
+    default:
+        break;
     }
     return true;
 }

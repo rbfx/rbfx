@@ -769,4 +769,31 @@ void rtrim(std::string& s)
     }).base(), s.end());
 }
 
+std::vector<std::string> SplitName(const std::string& name)
+{
+    std::vector<std::string> result;
+
+    std::string fragment;
+    for (int last = 0, first = 0; first < name.length();)
+    {
+        bool isUnderscore = name[last] == '_';
+        if (isUnderscore || (isupper(name[last]) && islower(name[std::max(last - 1, 0)])) || last == name.length())
+        {
+            fragment = name.substr(first, last - first);
+            if (isUnderscore)
+                last++;
+            first = last;
+            if (!fragment.empty())
+            {
+                std::transform(fragment.begin(), fragment.end(), fragment.begin(), ::tolower);
+                fragment[0] = static_cast<char>(::toupper(fragment[0]));
+                result.emplace_back(fragment);
+            }
+        }
+        last++;
+    }
+
+    return result;
+}
+
 }

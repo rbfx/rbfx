@@ -39,6 +39,11 @@ public:
     explicit Urho3DCustomPass(Context* context) : CppApiPass(context) { };
     void Start() override;
     bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
+    void Stop() override;
+
+protected:
+
+    std::unordered_map<std::string, std::string> defaultValueRemap_;
 };
 
 }

@@ -743,8 +743,5 @@ namespace Urho3D
         {
             return Xyz == other.Xyz && W == other.W;
         }
-
-        // Temporary compatibility constants
-        public static readonly Quaternion IDENTITY = Identity;
     }
 }

@@ -37,10 +37,6 @@ URHO3D_OBJECT(RenameMembersPass, CppApiPass);
 public:
     explicit RenameMembersPass(Context* context) : CppApiPass(context) { }
     bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
-
-protected:
-    std::vector<std::string> SplitName(const std::string& name);
-    bool IsConstantName(const std::string& name);
 };
 
 }

@@ -48,6 +48,11 @@ namespace Urho3D
         public Vector4 Row2;
 
         /// <summary>
+        /// The identity matrix.
+        /// </summary>
+        public static readonly Matrix3x4 Identity = new Matrix3x4(Vector4.UnitX, Vector4.UnitY, Vector4.UnitZ);
+
+        /// <summary>
         /// The zero matrix
         /// </summary>
         public static Matrix3x4 Zero = new Matrix3x4(Vector4.Zero, Vector4.Zero, Vector4.Zero);
@@ -853,8 +858,5 @@ namespace Urho3D
                 Row1 == other.Row1 &&
                 Row2 == other.Row2;
         }
-
-        // Temporary compatibility constants
-        public static readonly Matrix3x4 IDENTITY = IDENTITY;
     }
 }

@@ -98,6 +98,7 @@ public:
         }
         return nullptr;
     }
+    MetaEntity* GetEntityOfConstant(MetaEntity* user, const std::string& constant);
 
     String sourceDir_;
     String outputDirCpp_;

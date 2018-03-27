@@ -17,9 +17,9 @@ namespace Urho3D
 			max_ = new Vector2(maxX, maxY);
 		}
 
-		public static readonly Rect FULL = new Rect(-1.0f, -1.0f, 1.0f, 1.0f);
-		public static readonly Rect POSITIVE = new Rect(0.0f, 0.0f, 1.0f, 1.0f);
-		public static readonly Rect ZERO = new Rect(0.0f, 0.0f, 0.0f, 0.0f);
+		public static readonly Rect Full = new Rect(-1.0f, -1.0f, 1.0f, 1.0f);
+		public static readonly Rect Positive = new Rect(0.0f, 0.0f, 1.0f, 1.0f);
+		public static readonly Rect Zero = new Rect(0.0f, 0.0f, 0.0f, 0.0f);
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
@@ -42,6 +42,6 @@ namespace Urho3D
 			bottom_ = bottom;
 		}
 
-		public static readonly IntRect ZERO = new IntRect(0, 0, 0, 0);
+		public static readonly IntRect Zero = new IntRect(0, 0, 0, 0);
 	}
 }

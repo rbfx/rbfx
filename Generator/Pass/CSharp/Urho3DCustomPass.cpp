@@ -45,18 +45,9 @@ void Urho3DCustomPass::Start()
         entity->flags_ = HintReadOnly;
     }
 
-    if (generator->symbols_.TryGetValue("Urho3D::M_INFINITY", entity))
-        entity->defaultValue_ = "float.PositiveInfinity";
-
-    if (generator->symbols_.TryGetValue("Urho3D::M_MIN_INT", entity))
-        entity->defaultValue_ = "int.MinValue";
-
-    if (generator->symbols_.TryGetValue("Urho3D::M_MAX_INT", entity))
-        entity->defaultValue_ = "int.MaxValue";
-
     if (generator->symbols_.TryGetValue("Urho3D::MOUSE_POSITION_OFFSCREEN", entity))
     {
-        entity->defaultValue_ = "new Urho3D.IntVector2(MathDefs.M_MIN_INT, MathDefs.M_MIN_INT)";
+        entity->defaultValue_ = "new Urho3D.IntVector2(int.MinValue, int.MaxValue)";
         entity->flags_ |= HintReadOnly;
     }
 
@@ -64,12 +55,51 @@ void Urho3DCustomPass::Start()
     if (generator->symbols_.TryGetValue("Urho3D::Menu::ShowPopup", entity))
         entity->name_ = "GetShowPopup";
 
+    defaultValueRemap_ = {
+        {"M_PI",  "MathDefs.Pi"},
+        {"M_MIN_INT", "int.MinValue"},
+        {"M_MAX_INT", "int.MaxValue"},
+        {"M_MIN_UNSIGNED", "uint.MinValue"},
+        {"M_MAX_UNSIGNED", "uint.MaxValue"},
+        {"M_INFINITY", "float.PositiveInfinity"},
+    };
 }
 
 bool Urho3DCustomPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
     if (info.event == info.container_entity_exit)
         return true;
+
+    auto fixDefaultValue = [&](MetaEntity* subEntity) {
+        auto value = subEntity->GetDefaultValue();
+        if (!value.empty())
+        {
+            auto it = defaultValueRemap_.find(value);
+            if (it != defaultValueRemap_.end())
+                // Known default vlaue mappings
+                subEntity->defaultValue_ = it->second;
+            else
+            {
+                MetaEntity* constantEntity = generator->GetEntityOfConstant(entity, value);
+                if (constantEntity != nullptr && constantEntity->kind_ == cppast::cpp_entity_kind::variable_t)
+                {
+                    subEntity->defaultValue_ = constantEntity->symbolName_;
+                    str::replace_str(subEntity->defaultValue_, "::", ".");
+                }
+            }
+        }
+    };
+
+    if (entity->kind_ == cppast::cpp_entity_kind::constructor_t ||
+        entity->kind_ == cppast::cpp_entity_kind::function_t ||
+        entity->kind_ == cppast::cpp_entity_kind::member_function_t)
+    {
+        for (auto& param : entity->children_)
+            fixDefaultValue(param);
+    }
+
+    if (entity->kind_ == cppast::cpp_entity_kind::variable_t)
+        fixDefaultValue(entity);
 
     if (entity->kind_ == cppast::cpp_entity_kind::enum_t && entity->name_.empty())
     {
@@ -148,6 +178,28 @@ bool Urho3DCustomPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         entity->Remove();
 
     return true;
+}
+
+void Urho3DCustomPass::Stop()
+{
+    auto removeSymbol = [&](const char* name) {
+        WeakPtr<MetaEntity> entity;
+        if (generator->symbols_.TryGetValue(name, entity))
+            entity->Remove();
+    };
+
+    // Provied by C#
+    removeSymbol("Urho3D::M_INFINITY");
+    removeSymbol("Urho3D::M_MIN_INT");
+    removeSymbol("Urho3D::M_MAX_INT");
+    removeSymbol("Urho3D::M_MIN_UNSIGNED");
+    removeSymbol("Urho3D::M_MAX_UNSIGNED");
+    // Provided by OpenTK
+    removeSymbol("Urho3D::M_PI");
+    removeSymbol("Urho3D::M_HALF_PI");
+    removeSymbol("Urho3D::M_DEGTORAD");
+    removeSymbol("Urho3D::M_DEGTORAD_2");
+    removeSymbol("Urho3D::M_RADTODEG");
 }
 
 }

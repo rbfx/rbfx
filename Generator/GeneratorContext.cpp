@@ -344,4 +344,26 @@ const TypeMap* GeneratorContext::GetTypeMap(const std::string& typeName)
     return nullptr;
 }
 
+MetaEntity* GeneratorContext::GetEntityOfConstant(MetaEntity* user, const std::string& constant)
+{
+    WeakPtr<MetaEntity> entity;
+
+    // In case constnat is referenced by a full name
+    if (generator->symbols_.TryGetValue(constant, entity))
+        return entity;
+
+    // Walk back the parents and try referencing them to guess full name of constant.
+    for (; user != nullptr; user = user->parent_)
+    {
+        if (user->kind_ != cppast::cpp_entity_kind::class_t || user->kind_ != cppast::cpp_entity_kind::namespace_t)
+        {
+            auto symbolName = user->symbolName_ + "::" + constant;
+            if (generator->symbols_.TryGetValue(symbolName, entity))
+                return entity;
+        }
+    }
+
+    return nullptr;
+}
+
 }

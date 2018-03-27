@@ -57,8 +57,10 @@ struct MetaEntity : public RefCounted
     {
         sourceName_ = name_ = source.name();
         kind_ = source.kind();
-        uniqueName_ = GetUniqueName(source);
         sourceSymbolName_ = symbolName_ = GetSymbolName(source);
+        uniqueName_ = GetUniqueName(source);
+        if (uniqueName_.empty())
+            uniqueName_ = symbolName_;
         ast_->set_user_data((void*)this);
     }
 

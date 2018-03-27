@@ -1434,15 +1434,5 @@ namespace Urho3D
                 Y == other.Y &&
                 Z == other.Z;
         }
-
-        // Temporary compatibility constants
-        public static readonly Vector3 UP = Up;
-        public static readonly Vector3 DOWN = Down;
-        public static readonly Vector3 FORWARD = Forward;
-        public static readonly Vector3 BACK = Back;
-        public static readonly Vector3 LEFT = Left;
-        public static readonly Vector3 RIGHT = Right;
-        public static readonly Vector3 ONE = One;
-        public static readonly Vector3 ZERO = Zero;
     }
 }

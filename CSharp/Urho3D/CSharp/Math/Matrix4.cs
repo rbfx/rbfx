@@ -1509,8 +1509,5 @@ namespace Urho3D
                 Row2 == other.Row2 &&
                 Row3 == other.Row3;
         }
-
-        // Temporary compatibility constants
-        public static readonly Matrix4 IDENTITY = Identity;
     }
 }

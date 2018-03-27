@@ -45,8 +45,5 @@ namespace Urho3D
 		/// A horizontal plane at origin point
 		/// </summary>
 		public static readonly Plane Up = new Plane(new Vector3(0, 1, 0), new Vector3(0, 0, 0));
-
-		// Temporary compatibility constants
-		public static readonly Plane UP = Up;
 	}
 }

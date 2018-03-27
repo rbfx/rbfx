@@ -913,9 +913,5 @@ namespace Urho3D
                 X == other.X &&
                 Y == other.Y;
         }
-
-        // Temporary compatibility constants
-        public static readonly IntVector2 ZERO = Zero;
-        public static readonly IntVector2 ONE = One;
     }
 }

@@ -60,7 +60,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 if (map->isValueType_ && map->csType_ != "string")
                 {
                     auto defaultValue = metaParam->GetDefaultValue();
-                    defaultValue = ConvertDefaultValueToCS(defaultValue, param.type(), true);
+                    defaultValue = ConvertDefaultValueToCS(metaParam, defaultValue, param.type(), true);
                     if (!defaultValue.empty())
                         expr += fmt::format(".GetValueOrDefault({})", defaultValue);
                 }
@@ -450,7 +450,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         const auto& var = entity->Ast<cppast::cpp_variable>();
         auto* ns = entity->parent_.Get();
 
-        auto defaultValue = ConvertDefaultValueToCS(entity->GetDefaultValue(), var.type(), true);
+        auto defaultValue = ConvertDefaultValueToCS(entity, entity->GetDefaultValue(), var.type(), true);
         auto access = entity->access_ == cppast::cpp_public ? "public" : "protected";
         auto csType = ToCSType(var.type(), true);
         auto name = entity->name_;
@@ -551,7 +551,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             const auto& var = entity->Ast<cppast::cpp_member_variable>();
             auto* ns = entity->parent_.Get();
 
-            auto defaultValue = ConvertDefaultValueToCS(entity->GetDefaultValue(), var.type(), true);
+            auto defaultValue = ConvertDefaultValueToCS(entity, entity->GetDefaultValue(), var.type(), true);
             bool isConstant = IsConst(var.type()) && !(entity->flags_ & HintReadOnly) && !defaultValue.empty();
             auto csType = ToCSType(var.type(), true);
 
@@ -733,7 +733,7 @@ std::string GenerateCSApiPass::FormatCSParameterList(const std::vector<SharedPtr
         result += fmt::format("{} {}", csType, EnsureNotKeyword(param->name_));
 
         if (!defaultValue.empty())
-            result += "=" + ConvertDefaultValueToCS(defaultValue, cppType, false);
+            result += "=" + ConvertDefaultValueToCS(param, defaultValue, cppType, false);
 
         if (param != parameters.back())
             result += ", ";
@@ -741,7 +741,7 @@ std::string GenerateCSApiPass::FormatCSParameterList(const std::vector<SharedPtr
     return result;
 }
 
-std::string GenerateCSApiPass::ConvertDefaultValueToCS(std::string value, const cppast::cpp_type& type,
+std::string GenerateCSApiPass::ConvertDefaultValueToCS(MetaEntity* user, std::string value, const cppast::cpp_type& type,
     bool allowComplex)
 {
     if (value.empty())
@@ -774,10 +774,20 @@ std::string GenerateCSApiPass::ConvertDefaultValueToCS(std::string value, const 
         // null.
         value = "null";
     }
-    else if (generator->symbols_.TryGetValue("Urho3D::" + value, entity))
-        value = entity->symbolName_;
-    else if (generator->enumValues_.TryGetValue(value, entity))
-        value = entity->symbolName_;
+    else if (auto* constant = generator->GetEntityOfConstant(user, value))
+        value = constant->symbolName_;
+    else if (value.find("::") != std::string::npos)
+    {
+        // TODO: enums are not renamed for now
+        if (!generator->symbols_.TryGetValue(Urho3D::GetTypeName(type), entity) ||
+            entity->kind_ != cppast::cpp_entity_kind::enum_t)
+        {
+            // Possibly a constant from typemapped class
+            auto parts = str::split(value, "::");
+            parts.back() = str::join(str::SplitName(parts.back()), "");
+            value = str::join(parts, "::");
+        }
+    }
 
     str::replace_str(value, "::", ".");
 

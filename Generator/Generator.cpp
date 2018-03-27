@@ -151,10 +151,10 @@ int main(int argc, char* argv[])
     generator->AddApiPass<DiscoverInterfacesPass>();
     generator->AddApiPass<ImplementInterfacesPass>();
     generator->AddApiPass<GenerateClassWrappers>();
-    generator->AddApiPass<Urho3DCustomPass>();
     generator->AddApiPass<MoveGlobalsPass>();
     generator->AddApiPass<GenerateCApiPass>();
     generator->AddApiPass<RenameMembersPass>();
+    generator->AddApiPass<Urho3DCustomPass>();
     generator->AddApiPass<GeneratePInvokePass>();
     generator->AddApiPass<ConvertToPropertiesPass>();
     generator->AddApiPass<GenerateCSApiPass>();

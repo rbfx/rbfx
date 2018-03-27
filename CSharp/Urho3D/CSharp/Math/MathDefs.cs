@@ -24,6 +24,11 @@ namespace Urho3D
         /// <summary>
         /// Defines the value of Pi divided by two as a <see cref="System.Single"/>.
         /// </summary>
+        public const float HalfPi = Pi / 2;
+
+        /// <summary>
+        /// Defines the value of Pi divided by two as a <see cref="System.Single"/>.
+        /// </summary>
         public const float PiOver2 = Pi / 2;
 
         /// <summary>
@@ -348,7 +353,7 @@ namespace Urho3D
         /// <param name="epsilon">The maximum error between the two.</param>
         /// <returns><value>true</value> if the values are approximately equal within the error margin; otherwise, <value>false</value>.</returns>
         [SuppressMessage("ReSharper", "CompareOfFloatsByEqualityOperator")]
-        public static bool Equals(double a, double b, double epsilon=M_EPSILON)
+        public static bool Equals(double a, double b, double epsilon=Epsilon)
         {
             const double doubleNormal = (1L << 52) * double.Epsilon;
             double absA = Math.Abs(a);
@@ -381,7 +386,7 @@ namespace Urho3D
         /// <param name="epsilon">The maximum error between the two.</param>
         /// <returns><value>true</value> if the values are approximately equal within the error margin; otherwise, <value>false</value>.</returns>
         [SuppressMessage("ReSharper", "CompareOfFloatsByEqualityOperator")]
-        public static bool Equals(float a, float b, float epsilon=M_EPSILON)
+        public static bool Equals(float a, float b, float epsilon=Epsilon)
         {
             const float floatNormal = (1 << 23) * float.Epsilon;
             float absA = Math.Abs(a);

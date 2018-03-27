@@ -402,7 +402,7 @@ namespace Urho3D
             float chroma = max - min;
 
             // If chroma equals zero, hue is undefined
-            if (chroma <= MathDefs.M_EPSILON)
+            if (chroma <= MathDefs.Epsilon)
                 return 0.0f;
 
             // Calculate and return hue
@@ -421,7 +421,7 @@ namespace Urho3D
         private float SaturationHSV(float min, float max)
         {
             // Avoid div-by-zero: result undefined
-            if (max <= MathDefs.M_EPSILON)
+            if (max <= MathDefs.Epsilon)
                 return 0.0f;
 
             // Saturation equals chroma:value ratio
@@ -432,7 +432,7 @@ namespace Urho3D
         private float SaturationHSL(float min, float max)
         {
             // Avoid div-by-zero: result undefined
-            if (max <= MathDefs.M_EPSILON || min >= 1.0f - MathDefs.M_EPSILON)
+            if (max <= MathDefs.Epsilon || min >= 1.0f - MathDefs.Epsilon)
                 return 0.0f;
 
             // Chroma = max - min, lightness = (max + min) * 0.5
@@ -514,33 +514,33 @@ namespace Urho3D
         float A;
 
         /// Opaque white color.
-        public static readonly Color WHITE = new Color(1.0f, 1.0f, 1.0f, 1.0f);
+        public static readonly Color White = new Color(1.0f, 1.0f, 1.0f, 1.0f);
 
         /// Opaque gray color.
-        public static readonly Color GRAY = new Color(0.5f, 0.5f, 0.5f);
+        public static readonly Color Gray = new Color(0.5f, 0.5f, 0.5f);
 
         /// Opaque black color.
-        public static readonly Color BLACK = new Color(0.0f, 0.0f, 0.0f);
+        public static readonly Color Black = new Color(0.0f, 0.0f, 0.0f);
 
         /// Opaque red color.
-        public static readonly Color RED = new Color(1.0f, 0.0f, 0.0f);
+        public static readonly Color Red = new Color(1.0f, 0.0f, 0.0f);
 
         /// Opaque green color.
-        public static readonly Color GREEN = new Color(0.0f, 1.0f, 0.0f);
+        public static readonly Color Green = new Color(0.0f, 1.0f, 0.0f);
 
         /// Opaque blue color.
-        public static readonly Color BLUE = new Color(0.0f, 0.0f, 1.0f);
+        public static readonly Color Blue = new Color(0.0f, 0.0f, 1.0f);
 
         /// Opaque cyan color.
-        public static readonly Color CYAN = new Color(0.0f, 1.0f, 1.0f);
+        public static readonly Color Cyan = new Color(0.0f, 1.0f, 1.0f);
 
         /// Opaque magenta color.
-        public static readonly Color MAGENTA = new Color(1.0f, 0.0f, 1.0f);
+        public static readonly Color Magenta = new Color(1.0f, 0.0f, 1.0f);
 
         /// Opaque yellow color.
-        public static readonly Color YELLOW = new Color(1.0f, 1.0f, 0.0f);
+        public static readonly Color Yellow = new Color(1.0f, 1.0f, 0.0f);
 
         /// Transparent color (black with no alpha).
-        public static readonly Color TRANSPARENT = new Color(0.0f, 0.0f, 0.0f, 0.0f);
+        public static readonly Color Transparent = new Color(0.0f, 0.0f, 0.0f, 0.0f);
     }
 }
