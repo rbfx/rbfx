@@ -148,14 +148,14 @@
       "cstype": "string",
       "cpp_to_c": "strdup({value}.CString())",
       "c_to_cpp": "Urho3D::String({value})",
-      "isValueType": true,
+      "is_value_type": true,
     },
     {
       "type": "char const*",
       "ptype": "string",
       "cstype": "string",
       "cpp_to_c": "strdup({value})",
-      "isValueType": true,
+      "is_value_type": true,
     },
     {
       "type": "Urho3D::VariantMap",
@@ -194,7 +194,7 @@
       "ptype": "Urho3D.Vector2",
       "cpp_to_c": "force_cast<Urho3D::PODVector2>({value})",
       "c_to_cpp": "force_cast<Urho3D::Vector2>({value})",
-      "isValueType": true,
+      "is_value_type": true,
     },
     {
       "type": "Urho3D::IntVector2",
@@ -203,7 +203,7 @@
       "ptype": "Urho3D.IntVector2",
       "cpp_to_c": "force_cast<Urho3D::PODIntVector2>({value})",
       "c_to_cpp": "force_cast<Urho3D::IntVector2>({value})",
-      "isValueType": true,
+      "is_value_type": true,
     },
     {
       "type": "Urho3D::Vector3",
@@ -212,7 +212,7 @@
       "ptype": "Urho3D.Vector3",
       "cpp_to_c": "force_cast<Urho3D::PODVector3>({value})",
       "c_to_cpp": "force_cast<Urho3D::Vector3>({value})",
-      "isValueType": true,
+      "is_value_type": true,
     },
     {
       "type": "Urho3D::IntVector3",
@@ -221,7 +221,7 @@
       "ptype": "Urho3D.IntVector3",
       "cpp_to_c": "force_cast<Urho3D::PODIntVector3>({value})",
       "c_to_cpp": "force_cast<Urho3D::IntVector3>({value})",
-      "isValueType": true,
+      "is_value_type": true,
     },
     {
       "type": "Urho3D::Vector4",
@@ -230,7 +230,7 @@
       "ptype": "Urho3D.Vector4",
       "cpp_to_c": "force_cast<Urho3D::PODVector4>({value})",
       "c_to_cpp": "force_cast<Urho3D::Vector4>({value})",
-      "isValueType": true,
+      "is_value_type": true,
     },
     {
       "type": "Urho3D::Matrix3",
@@ -239,7 +239,7 @@
       "ptype": "Urho3D.Matrix3",
       "cpp_to_c": "force_cast<Urho3D::PODMatrix3>({value})",
       "c_to_cpp": "force_cast<Urho3D::Matrix3>({value})",
-      "isValueType": true,
+      "is_value_type": true,
     },
     {
       "type": "Urho3D::Matrix3x4",
@@ -248,7 +248,7 @@
       "ptype": "Urho3D.Matrix3x4",
       "cpp_to_c": "force_cast<Urho3D::PODMatrix3x4>({value})",
       "c_to_cpp": "force_cast<Urho3D::Matrix3x4>({value})",
-      "isValueType": true,
+      "is_value_type": true,
     },
     {
       "type": "Urho3D::Matrix4",
@@ -257,7 +257,7 @@
       "ptype": "Urho3D.Matrix4",
       "cpp_to_c": "force_cast<Urho3D::PODMatrix4>({value})",
       "c_to_cpp": "force_cast<Urho3D::Matrix4>({value})",
-      "isValueType": true,
+      "is_value_type": true,
     },
     {
       "type": "Urho3D::Quaternion",
@@ -266,7 +266,7 @@
       "ptype": "Urho3D.Quaternion",
       "cpp_to_c": "force_cast<Urho3D::PODQuaternion>({value})",
       "c_to_cpp": "force_cast<Urho3D::Quaternion>({value})",
-      "isValueType": true,
+      "is_value_type": true,
     },
     {
       "type": "Urho3D::Plane",
@@ -275,7 +275,7 @@
       "ptype": "Urho3D.Plane",
       "cpp_to_c": "force_cast<Urho3D::PODPlane>({value})",
       "c_to_cpp": "force_cast<Urho3D::Plane>({value})",
-      "isValueType": true,
+      "is_value_type": true,
     },
     {
       "type": "Urho3D::Rect",
@@ -284,7 +284,7 @@
       "ptype": "Urho3D.Rect",
       "cpp_to_c": "force_cast<Urho3D::PODRect>({value})",
       "c_to_cpp": "force_cast<Urho3D::Rect>({value})",
-      "isValueType": true,
+      "is_value_type": true,
     },
     {
       "type": "Urho3D::IntRect",
@@ -293,7 +293,7 @@
       "ptype": "Urho3D.IntRect",
       "cpp_to_c": "force_cast<Urho3D::PODIntRect>({value})",
       "c_to_cpp": "force_cast<Urho3D::IntRect>({value})",
-      "isValueType": true,
+      "is_value_type": true,
     },
     {
       "type": "Urho3D::Color",
@@ -302,7 +302,7 @@
       "ptype": "Urho3D.Color",
       "cpp_to_c": "force_cast<Urho3D::PODColor>({value})",
       "c_to_cpp": "force_cast<Urho3D::Color>({value})",
-      "isValueType": true,
+      "is_value_type": true,
     },
   ],
   "inheritable": {
