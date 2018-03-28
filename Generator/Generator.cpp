@@ -28,6 +28,7 @@
 #include "Pass/BuildMetaAST.h"
 #include "Pass/UnknownTypesPass.h"
 #include "Pass/CSharp/Urho3DTypeMaps.h"
+#include "Pass/CSharp/Urho3DEventsPass.h"
 #include "Pass/CSharp/MoveGlobalsPass.h"
 #include "Pass/CSharp/ConvertToPropertiesPass.h"
 #include "Pass/CSharp/ImplementInterfacesPass.h"
@@ -151,6 +152,7 @@ int main(int argc, char* argv[])
     generator->AddApiPass<DiscoverInterfacesPass>();
     generator->AddApiPass<ImplementInterfacesPass>();
     generator->AddApiPass<GenerateClassWrappers>();
+    generator->AddApiPass<Urho3DEventsPass>();
     generator->AddApiPass<MoveGlobalsPass>();
     generator->AddApiPass<GenerateCApiPass>();
     generator->AddApiPass<RenameMembersPass>();
