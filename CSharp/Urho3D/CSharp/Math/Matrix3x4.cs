@@ -95,6 +95,14 @@ namespace Urho3D
             Row2 = new Vector4(m20, m21, m22, m23);
         }
 
+        /// Copy-construct from a 3x3 matrix and set the extra elements to identity.
+        public Matrix3x4(Matrix3 matrix)
+        {
+            Row0 = new Vector4(matrix.Row0, 0.0f);
+            Row1 = new Vector4(matrix.Row1, 0.0f);
+            Row2 = new Vector4(matrix.Row2, 0.0f);
+        }
+
         /// <summary>
         /// Gets the first column of this matrix.
         /// </summary>
@@ -761,6 +769,20 @@ namespace Urho3D
         public static Matrix3x4 operator *(Matrix3x4 left, float right)
         {
             return Matrix3x4.Mult(left, right);
+        }
+        /// <summary>
+        /// Multiply a Vector3 which is assumed to represent position.
+        /// </summary>
+        /// <param name="left">left-hand operand</param>
+        /// <param name="right">right-hand operand</param>
+        /// <returns>A new Matrix3x4 which holds the result of the multiplication</returns>
+        public static Vector3 operator *(Matrix3x4 left, Vector3 right)
+        {
+            return new Vector3(
+                (left.M00 * right.X + left.M01 * right.Y + left.M02 * right.Z + left.M03),
+                (left.M10 * right.X + left.M11 * right.Y + left.M12 * right.Z + left.M13),
+                (left.M20 * right.X + left.M21 * right.Y + left.M22 * right.Z + left.M23)
+            );
         }
 
         /// <summary>
