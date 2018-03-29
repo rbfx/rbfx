@@ -17,6 +17,32 @@ namespace Urho3D
 			Max = new Vector2(maxX, maxY);
 		}
 
+	    /// Merge a point.
+	    public void Merge(Vector2 point)
+	    {
+	        if (point.X < Min.X)
+	            Min.X = point.X;
+	        if (point.X > Max.X)
+	            Max.X = point.X;
+	        if (point.Y < Min.Y)
+	            Min.Y = point.Y;
+	        if (point.Y > Max.Y)
+	            Max.Y = point.Y;
+	    }
+
+	    /// Merge a rect.
+	    public void Merge(Rect rect)
+	    {
+	        if (rect.Min.X < Min.X)
+	            Min.X = rect.Min.X;
+	        if (rect.Min.Y < Min.Y)
+	            Min.Y = rect.Min.Y;
+	        if (rect.Max.X > Max.X)
+	            Max.X = rect.Max.X;
+	        if (rect.Max.Y > Max.Y)
+	            Max.Y = rect.Max.Y;
+	    }
+
 		public static readonly Rect Full = new Rect(-1.0f, -1.0f, 1.0f, 1.0f);
 		public static readonly Rect Positive = new Rect(0.0f, 0.0f, 1.0f, 1.0f);
 		public static readonly Rect Zero = new Rect(0.0f, 0.0f, 0.0f, 0.0f);
