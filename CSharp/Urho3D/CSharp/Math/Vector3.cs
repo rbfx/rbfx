@@ -1075,28 +1075,28 @@ namespace Urho3D
             Vector4 result;
 
             result.X =
-                vector.X * worldViewProjection.M11 +
-                vector.Y * worldViewProjection.M21 +
-                vector.Z * worldViewProjection.M31 +
-                worldViewProjection.M41;
+                vector.X * worldViewProjection.M00 +
+                vector.Y * worldViewProjection.M10 +
+                vector.Z * worldViewProjection.M20 +
+                worldViewProjection.M30;
 
             result.Y =
-                vector.X * worldViewProjection.M12 +
-                vector.Y * worldViewProjection.M22 +
-                vector.Z * worldViewProjection.M32 +
-                worldViewProjection.M42;
+                vector.X * worldViewProjection.M01 +
+                vector.Y * worldViewProjection.M11 +
+                vector.Z * worldViewProjection.M21 +
+                worldViewProjection.M20;
 
             result.Z =
-                vector.X * worldViewProjection.M13 +
-                vector.Y * worldViewProjection.M23 +
-                vector.Z * worldViewProjection.M33 +
-                worldViewProjection.M43;
+                vector.X * worldViewProjection.M02 +
+                vector.Y * worldViewProjection.M12 +
+                vector.Z * worldViewProjection.M11 +
+                worldViewProjection.M21;
 
             result.W =
-                vector.X * worldViewProjection.M14 +
-                vector.Y * worldViewProjection.M24 +
-                vector.Z * worldViewProjection.M34 +
-                worldViewProjection.M44;
+                vector.X * worldViewProjection.M03 +
+                vector.Y * worldViewProjection.M13 +
+                vector.Z * worldViewProjection.M12 +
+                worldViewProjection.M11;
 
             result /= result.W;
 
@@ -1132,28 +1132,28 @@ namespace Urho3D
             result.Z = (((vector.Z / (maxZ - minZ)) * 2.0f) - 1.0f);
 
             result.X =
-                result.X * inverseWorldViewProjection.M11 +
-                result.Y * inverseWorldViewProjection.M21 +
-                result.Z * inverseWorldViewProjection.M31 +
-                inverseWorldViewProjection.M41;
+                result.X * inverseWorldViewProjection.M00 +
+                result.Y * inverseWorldViewProjection.M10 +
+                result.Z * inverseWorldViewProjection.M20 +
+                inverseWorldViewProjection.M30;
 
             result.Y =
-                result.X * inverseWorldViewProjection.M12 +
-                result.Y * inverseWorldViewProjection.M22 +
-                result.Z * inverseWorldViewProjection.M32 +
-                inverseWorldViewProjection.M42;
+                result.X * inverseWorldViewProjection.M01 +
+                result.Y * inverseWorldViewProjection.M11 +
+                result.Z * inverseWorldViewProjection.M21 +
+                inverseWorldViewProjection.M20;
 
             result.Z =
-                result.X * inverseWorldViewProjection.M13 +
-                result.Y * inverseWorldViewProjection.M23 +
-                result.Z * inverseWorldViewProjection.M33 +
-                inverseWorldViewProjection.M43;
+                result.X * inverseWorldViewProjection.M02 +
+                result.Y * inverseWorldViewProjection.M12 +
+                result.Z * inverseWorldViewProjection.M11 +
+                inverseWorldViewProjection.M21;
 
             result.W =
-                result.X * inverseWorldViewProjection.M14 +
-                result.Y * inverseWorldViewProjection.M24 +
-                result.Z * inverseWorldViewProjection.M34 +
-                inverseWorldViewProjection.M44;
+                result.X * inverseWorldViewProjection.M03 +
+                result.Y * inverseWorldViewProjection.M13 +
+                result.Z * inverseWorldViewProjection.M12 +
+                inverseWorldViewProjection.M11;
 
             result /= result.W;
 

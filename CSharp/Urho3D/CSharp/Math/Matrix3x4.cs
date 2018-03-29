@@ -130,62 +130,62 @@ namespace Urho3D
         /// <summary>
         /// Gets or sets the value at row 1, column 1 of this instance.
         /// </summary>
-        public float M11 { get { return Row0.X; } set { Row0.X = value; } }
+        public float M00 { get { return Row0.X; } set { Row0.X = value; } }
 
         /// <summary>
         /// Gets or sets the value at row 1, column 2 of this instance.
         /// </summary>
-        public float M12 { get { return Row0.Y; } set { Row0.Y = value; } }
+        public float M01 { get { return Row0.Y; } set { Row0.Y = value; } }
 
         /// <summary>
         /// Gets or sets the value at row 1, column 3 of this instance.
         /// </summary>
-        public float M13 { get { return Row0.Z; } set { Row0.Z = value; } }
+        public float M02 { get { return Row0.Z; } set { Row0.Z = value; } }
 
         /// <summary>
         /// Gets or sets the value at row 1, column 4 of this instance.
         /// </summary>
-        public float M14 { get { return Row0.W; } set { Row0.W = value; } }
+        public float M03 { get { return Row0.W; } set { Row0.W = value; } }
 
         /// <summary>
         /// Gets or sets the value at row 2, column 1 of this instance.
         /// </summary>
-        public float M21 { get { return Row1.X; } set { Row1.X = value; } }
+        public float M10 { get { return Row1.X; } set { Row1.X = value; } }
 
         /// <summary>
         /// Gets or sets the value at row 2, column 2 of this instance.
         /// </summary>
-        public float M22 { get { return Row1.Y; } set { Row1.Y = value; } }
+        public float M11 { get { return Row1.Y; } set { Row1.Y = value; } }
 
         /// <summary>
         /// Gets or sets the value at row 2, column 3 of this instance.
         /// </summary>
-        public float M23 { get { return Row1.Z; } set { Row1.Z = value; } }
+        public float M12 { get { return Row1.Z; } set { Row1.Z = value; } }
 
         /// <summary>
         /// Gets or sets the value at row 2, column 4 of this instance.
         /// </summary>
-        public float M24 { get { return Row1.W; } set { Row1.W = value; } }
+        public float M13 { get { return Row1.W; } set { Row1.W = value; } }
 
         /// <summary>
         /// Gets or sets the value at row 3, column 1 of this instance.
         /// </summary>
-        public float M31 { get { return Row2.X; } set { Row2.X = value; } }
+        public float M20 { get { return Row2.X; } set { Row2.X = value; } }
 
         /// <summary>
         /// Gets or sets the value at row 3, column 2 of this instance.
         /// </summary>
-        public float M32 { get { return Row2.Y; } set { Row2.Y = value; } }
+        public float M21 { get { return Row2.Y; } set { Row2.Y = value; } }
 
         /// <summary>
         /// Gets or sets the value at row 3, column 3 of this instance.
         /// </summary>
-        public float M33 { get { return Row2.Z; } set { Row2.Z = value; } }
+        public float M22 { get { return Row2.Z; } set { Row2.Z = value; } }
 
         /// <summary>
         /// Gets or sets the value at row 3, column 4 of this instance.
         /// </summary>
-        public float M34 { get { return Row2.W; } set { Row2.W = value; } }
+        public float M23 { get { return Row2.W; } set { Row2.W = value; } }
 
         /// <summary>
         /// Gets or sets the values along the main diagonal of the matrix.
@@ -600,34 +600,34 @@ namespace Urho3D
         /// <param name="result">A new instance that is the result of the multiplication</param>
         public static void Mult(ref Matrix3x4 left, ref Matrix3x4 right, out Matrix3x4 result)
         {
-            float lM11 = left.Row0.X, lM12 = left.Row0.Y, lM13 = left.Row0.Z, lM14 = left.Row0.W,
-                lM21 = left.Row1.X, lM22 = left.Row1.Y, lM23 = left.Row1.Z, lM24 = left.Row1.W,
-                lM31 = left.Row2.X, lM32 = left.Row2.Y, lM33 = left.Row2.Z, lM34 = left.Row2.W,
-                rM11 = right.Row0.X, rM12 = right.Row0.Y, rM13 = right.Row0.Z, rM14 = right.Row0.W,
-                rM21 = right.Row1.X, rM22 = right.Row1.Y, rM23 = right.Row1.Z, rM24 = right.Row1.W,
-                rM31 = right.Row2.X, rM32 = right.Row2.Y, rM33 = right.Row2.Z, rM34 = right.Row2.W;
+            float lM00 = left.Row0.X, lM01 = left.Row0.Y, lM02 = left.Row0.Z, lM03 = left.Row0.W,
+                lM10 = left.Row1.X, lM11 = left.Row1.Y, lM12 = left.Row1.Z, lM13 = left.Row1.W,
+                lM20 = left.Row2.X, lM21 = left.Row2.Y, lM22 = left.Row2.Z, lM23 = left.Row2.W,
+                rM00 = right.Row0.X, rM01 = right.Row0.Y, rM02 = right.Row0.Z, rM03 = right.Row0.W,
+                rM10 = right.Row1.X, rM11 = right.Row1.Y, rM12 = right.Row1.Z, rM13 = right.Row1.W,
+                rM20 = right.Row2.X, rM21 = right.Row2.Y, rM22 = right.Row2.Z, rM23 = right.Row2.W;
 
-            result.Row0.X = (lM11 * rM11) + (lM12 * rM21) + (lM13 * rM31);
-            result.Row0.Y = (lM11 * rM12) + (lM12 * rM22) + (lM13 * rM32);
-            result.Row0.Z = (lM11 * rM13) + (lM12 * rM23) + (lM13 * rM33);
-            result.Row0.W = (lM11 * rM14) + (lM12 * rM24) + (lM13 * rM34) + lM14;
-            result.Row1.X = (lM21 * rM11) + (lM22 * rM21) + (lM23 * rM31);
-            result.Row1.Y = (lM21 * rM12) + (lM22 * rM22) + (lM23 * rM32);
-            result.Row1.Z = (lM21 * rM13) + (lM22 * rM23) + (lM23 * rM33);
-            result.Row1.W = (lM21 * rM14) + (lM22 * rM24) + (lM23 * rM34) + lM24;
-            result.Row2.X = (lM31 * rM11) + (lM32 * rM21) + (lM33 * rM31);
-            result.Row2.Y = (lM31 * rM12) + (lM32 * rM22) + (lM33 * rM32);
-            result.Row2.Z = (lM31 * rM13) + (lM32 * rM23) + (lM33 * rM33);
-            result.Row2.W = (lM31 * rM14) + (lM32 * rM24) + (lM33 * rM34) + lM34;
+            result.Row0.X = (lM00 * rM00) + (lM01 * rM10) + (lM02 * rM20);
+            result.Row0.Y = (lM00 * rM01) + (lM01 * rM11) + (lM02 * rM21);
+            result.Row0.Z = (lM00 * rM02) + (lM01 * rM12) + (lM02 * rM22);
+            result.Row0.W = (lM00 * rM03) + (lM01 * rM13) + (lM02 * rM23) + lM03;
+            result.Row1.X = (lM10 * rM00) + (lM11 * rM10) + (lM12 * rM20);
+            result.Row1.Y = (lM10 * rM01) + (lM11 * rM11) + (lM12 * rM21);
+            result.Row1.Z = (lM10 * rM02) + (lM11 * rM12) + (lM12 * rM22);
+            result.Row1.W = (lM10 * rM03) + (lM11 * rM13) + (lM12 * rM23) + lM13;
+            result.Row2.X = (lM20 * rM00) + (lM21 * rM10) + (lM22 * rM20);
+            result.Row2.Y = (lM20 * rM01) + (lM21 * rM11) + (lM22 * rM21);
+            result.Row2.Z = (lM20 * rM02) + (lM21 * rM12) + (lM22 * rM22);
+            result.Row2.W = (lM20 * rM03) + (lM21 * rM13) + (lM22 * rM23) + lM23;
 
-            /*result.Row0 = (right.Row0 * lM11 + right.Row1 * lM12 + right.Row2 * lM13);
-            result.Row0.W += lM14;
+            /*result.Row0 = (right.Row0 * lM00 + right.Row1 * lM01 + right.Row2 * lM02);
+            result.Row0.W += lM03;
 
-            result.Row1 = (right.Row0 * lM21 + right.Row1 * lM22 + right.Row2 * lM23);
-            result.Row1.W += lM24;
+            result.Row1 = (right.Row0 * lM10 + right.Row1 * lM11 + right.Row2 * lM12);
+            result.Row1.W += lM13;
 
-            result.Row2 = (right.Row0 * lM31 + right.Row1 * lM32 + right.Row2 * lM33);
-            result.Row2.W += lM34;*/
+            result.Row2 = (right.Row0 * lM20 + right.Row1 * lM21 + right.Row2 * lM22);
+            result.Row2.W += lM23;*/
         }
 
         /// <summary>

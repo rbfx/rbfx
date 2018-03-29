@@ -110,22 +110,22 @@ namespace Urho3D
         /// <summary>
         /// Gets or sets the value at row 1, column 1 of this instance.
         /// </summary>
-        public float M11 { get { return Row0.X; } set { Row0.X = value; } }
+        public float M00 { get { return Row0.X; } set { Row0.X = value; } }
 
         /// <summary>
         /// Gets or sets the value at row 1, column 2 of this instance.
         /// </summary>
-        public float M12 { get { return Row0.Y; } set { Row0.Y = value; } }
+        public float M01 { get { return Row0.Y; } set { Row0.Y = value; } }
 
         /// <summary>
         /// Gets or sets the value at row 2, column 1 of this instance.
         /// </summary>
-        public float M21 { get { return Row1.X; } set { Row1.X = value; } }
+        public float M10 { get { return Row1.X; } set { Row1.X = value; } }
 
         /// <summary>
         /// Gets or sets the value at row 2, column 2 of this instance.
         /// </summary>
-        public float M22 { get { return Row1.Y; } set { Row1.Y = value; } }
+        public float M11 { get { return Row1.Y; } set { Row1.Y = value; } }
 
         /// <summary>
         /// Gets or sets the values along the main diagonal of the matrix.
@@ -338,15 +338,15 @@ namespace Urho3D
         /// <param name="result">A new instance that is the result of the multiplication.</param>
         public static void Mult(ref Matrix2 left, ref Matrix2 right, out Matrix2 result)
         {
-            float lM11 = left.Row0.X, lM12 = left.Row0.Y,
-                lM21 = left.Row1.X, lM22 = left.Row1.Y,
-                rM11 = right.Row0.X, rM12 = right.Row0.Y,
-                rM21 = right.Row1.X, rM22 = right.Row1.Y;
+            float lM00 = left.Row0.X, lM01 = left.Row0.Y,
+                lM10 = left.Row1.X, lM11 = left.Row1.Y,
+                rM00 = right.Row0.X, rM01 = right.Row0.Y,
+                rM10 = right.Row1.X, rM11 = right.Row1.Y;
 
-            result.Row0.X = (lM11 * rM11) + (lM12 * rM21);
-            result.Row0.Y = (lM11 * rM12) + (lM12 * rM22);
-            result.Row1.X = (lM21 * rM11) + (lM22 * rM21);
-            result.Row1.Y = (lM21 * rM12) + (lM22 * rM22);
+            result.Row0.X = (lM00 * rM00) + (lM01 * rM10);
+            result.Row0.Y = (lM00 * rM01) + (lM01 * rM11);
+            result.Row1.X = (lM10 * rM00) + (lM11 * rM10);
+            result.Row1.Y = (lM10 * rM01) + (lM11 * rM11);
         }
 
         /// <summary>
