@@ -79,11 +79,11 @@ namespace Urho3D
         /// Constructs a new Vector3 from the given Vector2.
         /// </summary>
         /// <param name="v">The Vector2 to copy components from.</param>
-        public Vector3(Vector2 v)
+        public Vector3(Vector2 v, float z = 0.0f)
         {
             X = v.X;
             Y = v.Y;
-            Z = 0.0f;
+            Z = z;
         }
 
         /// <summary>
@@ -518,27 +518,25 @@ namespace Urho3D
         }
 
         /// <summary>
-        /// Returns the Vector3 with the minimum magnitude
+        /// Per-component min of two 3-vectors.
         /// </summary>
         /// <param name="left">Left operand</param>
         /// <param name="right">Right operand</param>
         /// <returns>The minimum Vector3</returns>
-        [Obsolete("Use MagnitudeMin() instead.")]
         public static Vector3 Min(Vector3 left, Vector3 right)
         {
-            return left.LengthSquared < right.LengthSquared ? left : right;
+            return new Vector3(Math.Min(left.X, right.X), Math.Min(left.Y, right.Y), Math.Min(left.Z, right.Z));
         }
 
         /// <summary>
-        /// Returns the Vector3 with the minimum magnitude
+        /// Per-component max of two 3-vectors.
         /// </summary>
         /// <param name="left">Left operand</param>
         /// <param name="right">Right operand</param>
         /// <returns>The minimum Vector3</returns>
-        [Obsolete("Use MagnitudeMax() instead.")]
         public static Vector3 Max(Vector3 left, Vector3 right)
         {
-            return left.LengthSquared >= right.LengthSquared ? left : right;
+            return new Vector3(Math.Max(left.X, right.X), Math.Max(left.Y, right.Y), Math.Max(left.Z, right.Z));
         }
 
         /// <summary>
