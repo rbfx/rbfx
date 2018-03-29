@@ -1415,6 +1415,23 @@ namespace Urho3D
         }
 
         /// <summary>
+        /// Multiply a Vector3 which is assumed to represent position.
+        /// </summary>
+        /// <param name="left">left-hand operand</param>
+        /// <param name="right">right-hand operand</param>
+        /// <returns>A new Matrix4 which holds the result of the multiplication</returns>
+        public static Vector3 operator *(Matrix4 left, Vector3 right)
+        {
+            float invW = 1.0f / (left.M30 * right.X + left.M31 * right.Y + left.M32 * right.Z + left.M33);
+
+            return new Vector3(
+                (left.M00 * right.X + left.M01 * right.Y + left.M02 * right.Z + left.M03) * invW,
+                (left.M10 * right.X + left.M11 * right.Y + left.M12 * right.Z + left.M13) * invW,
+                (left.M20 * right.X + left.M21 * right.Y + left.M22 * right.Z + left.M23) * invW
+            );
+        }
+
+        /// <summary>
         /// Matrix addition
         /// </summary>
         /// <param name="left">left-hand operand</param>
