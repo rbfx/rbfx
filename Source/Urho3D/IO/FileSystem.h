@@ -31,12 +31,13 @@ namespace Urho3D
 
 class AsyncExecRequest;
 
-/// Return files.
-static const unsigned SCAN_FILES = 0x1;
-/// Return directories.
-static const unsigned SCAN_DIRS = 0x2;
-/// Return also hidden files.
-static const unsigned SCAN_HIDDEN = 0x4;
+
+enum ScanFlags {
+	SCAN_FILES = 0x1,
+	SCAN_DIRS = 0x2,
+	SCAN_HIDDEN = 0x4
+};
+
 
 /// Subsystem for file and directory operations and access control.
 class URHO3D_API FileSystem : public Object
