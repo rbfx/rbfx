@@ -7,14 +7,14 @@ namespace Urho3D
 	public struct Rect
 	{
         /// Minimum vector.
-        Vector2 min_;
+        public Vector2 Min;
         /// Maximum vector.
-        Vector2 max_;
+        public Vector2 Max;
 
 		public Rect(float minX, float minY, float maxX, float maxY)
 		{
-			min_ = new Vector2(minX, minY);
-			max_ = new Vector2(maxX, maxY);
+			Min = new Vector2(minX, minY);
+			Max = new Vector2(maxX, maxY);
 		}
 
 		public static readonly Rect Full = new Rect(-1.0f, -1.0f, 1.0f, 1.0f);
@@ -26,20 +26,20 @@ namespace Urho3D
 	public struct IntRect
 	{
         /// Left coordinate.
-        int left_;
+        public int Left;
         /// Top coordinate.
-        int top_;
+        public int Top;
         /// Right coordinate.
-        int right_;
+        public int Right;
         /// Bottom coordinate.
-        int bottom_;
+        public int Bottom;
 
 		public IntRect(int left, int top, int right, int bottom)
 		{
-			left_ = left;
-			top_ = top;
-			right_ = right;
-			bottom_ = bottom;
+			Left = left;
+			Top = top;
+			Right = right;
+			Bottom = bottom;
 		}
 
 		public static readonly IntRect Zero = new IntRect(0, 0, 0, 0);
