@@ -304,6 +304,15 @@
       "c_to_cpp": "CSharpPODConverter<Urho3D::Color>::FromCSharp({value})",
       "is_value_type": true,
     },
+    {
+      "type": "Urho3D::BoundingBox",
+      "ctype": "Urho3D::PODBoundingBox",
+      "cstype": "Urho3D.BoundingBox",
+      "ptype": "Urho3D.BoundingBox",
+      "cpp_to_c": "CSharpPODConverter<Urho3D::BoundingBox>::ToCSharp({value})",
+      "c_to_cpp": "CSharpPODConverter<Urho3D::BoundingBox>::FromCSharp({value})",
+      "is_value_type": true,
+    },
   ],
   "inheritable": {
     "include": [
