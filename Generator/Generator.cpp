@@ -63,8 +63,8 @@ int main(int argc, char* argv[])
     app.add_option("-D", defines, "Target preprocessor definitions.");
     app.add_option("-O", options, "Target compiler options.");
 
-    app.add_option("rules", rulesFile, "Path to rules json file")->required();//->check(CLI::ExistingFile);
-    app.add_option("source", sourceDir, "Path to source directory")->required();//->check(CLI::ExistingDirectory);
+    app.add_option("rules", rulesFile, "Path to rules json file")->required()->check(CLI::ExistingFile);
+    app.add_option("source", sourceDir, "Path to source directory")->required()->check(CLI::ExistingDirectory);
     app.add_option("output", outputDirCpp, "Path to output directory")->required();
 
     std::vector<std::string> cmdLines;
