@@ -163,6 +163,9 @@ private:
 
 	int avgRenderTimeUs_{ 5000 };
 	int avgUpdateTimeUs_{ 16666 };
+	int renderAveragingTimeWindowUs_{ 1000000 };
+	int updateAveragingTimeWindowUs_{ 1000000 };
+
 
 	int lastRenderTimeUs_{ 0 };
 	int lastUpdateTimeUs_{ 0 };
@@ -192,6 +195,8 @@ private:
 
 	void updateFpsGoalTimer();
 	void updateUpdateTimeTimer();
+	void updateAveragingTimeWindows();
+
 };
 
 }

@@ -586,30 +586,14 @@ void Engine::SetUpdateTimeGoalUs(unsigned timeUs)
 
 void Engine::SetUpdateAveragingTimeUs(unsigned averagingTimeUs)
 {
-	updateTimeUsBuffer_.Resize(averagingTimeUs / updateTimeGoalUs);
-	
-	//reset the buffer contents to the goal
-	for (int i = 0; i < updateTimeUsBuffer_.Size(); i++) {
-		updateTimeUsBuffer_[i] = updateTimeGoalUs;
-	}
-
-	//reset the current average
-	avgUpdateTimeUs_ = updateTimeGoalUs;
-	updateTimeAvgIdx_ = 0;
+	updateAveragingTimeWindowUs_ = averagingTimeUs;
+	updateAveragingTimeWindows();
 }
 
 void Engine::SetRenderAveragingTimeUs(unsigned averagingTimeUs)
 {
-	renderTimeUsBuffer_.Resize(averagingTimeUs / renderTimeGoalUs);
-
-	//reset the buffer contents to the goal
-	for (int i = 0; i < renderTimeUsBuffer_.Size(); i++) {
-		renderTimeUsBuffer_[i] = renderTimeGoalUs;
-	}
-
-	//reset the current average
-	avgRenderTimeUs_ = renderTimeGoalUs;
-	renderTimeAvgIdx_ = 0;
+	renderAveragingTimeWindowUs_ = averagingTimeUs;
+	updateAveragingTimeWindows();
 }
 
 void Engine::SetPauseMinimized(bool enable)
@@ -1086,6 +1070,34 @@ void Engine::updateFpsGoalTimer()
 void Engine::updateUpdateTimeTimer()
 {
 	updateTimer_.SetTimeoutDuration(updateTimeGoalUs, false);
+}
+
+void Engine::updateAveragingTimeWindows()
+{
+
+	renderTimeUsBuffer_.Resize(renderAveragingTimeWindowUs_ / renderTimeGoalUs);
+	//reset the buffer contents to the goal
+	for (int i = 0; i < renderTimeUsBuffer_.Size(); i++) {
+		renderTimeUsBuffer_[i] = renderTimeGoalUs;
+	}
+	//reset the current average
+	avgRenderTimeUs_ = renderTimeGoalUs;
+	renderTimeAvgIdx_ = 0;
+
+
+
+	updateTimeUsBuffer_.Resize(updateAveragingTimeWindowUs_ / updateTimeGoalUs);
+
+	//reset the buffer contents to the goal
+	for (int i = 0; i < updateTimeUsBuffer_.Size(); i++) {
+		updateTimeUsBuffer_[i] = updateTimeGoalUs;
+	}
+
+	//reset the current average
+	avgUpdateTimeUs_ = updateTimeGoalUs;
+	updateTimeAvgIdx_ = 0;
+
+
 }
 
 }
