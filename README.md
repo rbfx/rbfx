@@ -8,6 +8,14 @@
 
 Main website: [https://urho3d.github.io/](https://urho3d.github.io/)
 
+## Differences
+- This fork routinely merges from https://github.com/rokups/Urho3D.
+- Update rates are seperated from render update rates. There are no "Frame" events.  
+  Rendering is viewed as a sampling of the current update state.
+- Other smaller changes.
+
+
+
 ## License
 Licensed under the MIT license, see [LICENSE](https://github.com/urho3d/Urho3D/blob/master/LICENSE) for details.
 
