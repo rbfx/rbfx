@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using CSharp;
 
 namespace Urho3D
 {
@@ -47,7 +48,7 @@ namespace Urho3D
                 }, __ToPInvoke(sender));
         }
 
-        [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern void Urho3D_Object_SubscribeToEvent(IntPtr receiver, IntPtr gcHandle, uint eventType,
             EventHandler function, IntPtr sender);
     }

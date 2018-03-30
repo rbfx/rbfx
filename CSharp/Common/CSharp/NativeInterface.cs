@@ -120,7 +120,7 @@ namespace CSharp
             InstanceCache.Dispose();
         }
 
-        [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void CSharp_SetManagedAPI(ManagedInterface netApi);
     }
 }

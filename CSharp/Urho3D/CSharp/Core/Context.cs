@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using CSharp;
 
 namespace Urho3D
 {
@@ -35,7 +36,7 @@ namespace Urho3D
             return managed.instance_;
         }
 
-        [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern void Urho3D_Context_RegisterFactory(IntPtr context,
             [param: MarshalAs(UnmanagedType.LPUTF8Str)]
             string typeName, uint baseType, [param: MarshalAs(UnmanagedType.LPUTF8Str)]

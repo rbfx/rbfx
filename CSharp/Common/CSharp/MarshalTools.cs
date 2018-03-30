@@ -84,9 +84,9 @@ namespace CSharp
 
     internal static class MarshalTools
     {
-        [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void c_free(IntPtr ptr);
-        [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr c_alloc(int size);
 
         internal static string GetUtf8String(IntPtr ptr)
