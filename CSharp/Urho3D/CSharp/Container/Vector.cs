@@ -52,7 +52,7 @@ namespace Urho3D
 
         internal StringVector(IntPtr instance)
         {
-            instance_ = instance;
+            SetupInstance(instance);
         }
 
         public IEnumerator<string> GetEnumerator() => new Enumerator(this);

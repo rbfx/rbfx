@@ -83,7 +83,7 @@ namespace Urho3D
 
         internal VariantMap(IntPtr instance)
         {
-            instance_ = instance;
+            SetupInstance(instance);
         }
 
         public IEnumerator<KeyValuePair<StringHash, Variant>> GetEnumerator()

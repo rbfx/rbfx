@@ -49,6 +49,8 @@ namespace CSharp
         // method callbacks and nothing more.
         internal virtual void SetupInstance(IntPtr instance)
         {
+            instance_ = instance;
+            InstanceCache.Add(this);
         }
 
         public bool Equals(NativeObject other)
