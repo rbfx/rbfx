@@ -2,6 +2,8 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using Urho3D;
 
 namespace CSharp
@@ -16,6 +18,39 @@ namespace CSharp
         /// One iteration through entire cache is allowed during this interval (ms).
         /// </summary>
         private const int CacheIterationInterval = 30000;
+        /// <summary>
+        /// A map of types that inherit Urho3D.Object.
+        /// </summary>
+        private static readonly Dictionary<IntPtr, Type> _knownTypes = new Dictionary<IntPtr, Type>();
+
+        static InstanceCache()
+        {
+            var objectType = typeof(NativeObject);
+            var noParams = new object[] { };
+            var noTypes = new Type[] { };
+            foreach (var type in Assembly.GetCallingAssembly().GetTypes())
+            {
+                if (type == null)
+                    continue;
+
+                if (type.IsSubclassOf(objectType))
+                {
+                    var getTypeId = type.GetMethod("GetNativeTypeId", BindingFlags.NonPublic | BindingFlags.Static,
+                        null, noTypes, null);
+                    if (getTypeId != null)
+                    {
+                        var typeId = (IntPtr) getTypeId.Invoke(null, noParams);
+                        _knownTypes[typeId] = type;
+                    }
+                }
+            }
+        }
+
+        internal static Type GetNativeType(IntPtr typeId)
+        {
+            Type result;
+            return _knownTypes.TryGetValue(typeId, out result) ? result : null;
+        }
 
         internal class CacheEntry
         {
@@ -71,7 +106,7 @@ namespace CSharp
         {
             var entry = _cache.GetOrAdd(instance, ptr =>
             {
-                var object_ = (NativeObject) factory(ptr);
+                var object_ = factory(ptr);
                 // In case this is RefCounted object add a reference for duration of object's lifetime.
                 (object_ as RefCounted)?.AddRef();
                 return new CacheEntry(object_);

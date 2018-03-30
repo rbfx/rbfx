@@ -260,3 +260,15 @@ struct CSharpConverter<Vector<SharedPtr<T>>>
         return result;
     }
 };
+
+template<typename T>
+std::uintptr_t GetTypeID()
+{
+    return reinterpret_cast<std::uintptr_t>(&typeid(T));
+}
+
+template<typename T>
+std::uintptr_t GetTypeID(const T* instance)
+{
+    return reinterpret_cast<std::uintptr_t>(&typeid(*instance));
+}

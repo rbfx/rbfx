@@ -52,6 +52,7 @@ void GeneratePInvokePass::Start()
 bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
     const char* dllImport = "[DllImport(CSharp.Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]";
+    const char* dllImportEp = "[DllImport(CSharp.Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl, EntryPoint = \"{}\")]";
 
     // Generate C API for property getters and seters. Visitor will not visit these notes on it's own.
     if (entity->flags_ & HintProperty)
@@ -136,8 +137,26 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     printer_ << "return null;";
                 }
                 printer_.Dedent();
-                printer_ << fmt::format("return InstanceCache.GetOrAdd(source, ptr => new {className}(ptr));",
-                    fmt::arg("className", entity->name_));
+
+                printer_ << "return InstanceCache.GetOrAdd(source, ptr =>";
+                printer_.Indent();
+                {
+                    printer_ << "var type = InstanceCache.GetNativeType(GetNativeTypeId(ptr));";
+                    printer_ << "if (type == null)";
+                    printer_.Indent("");
+                    {
+                        printer_ << fmt::format("return new {className}(ptr);", fmt::arg("className", entity->name_));
+                    }
+                    printer_.Dedent("");
+                    printer_ << "else";
+                    printer_.Indent("");
+                    {
+                        printer_ << fmt::format("return ({className})Activator.CreateInstance(type, ptr);",
+                            fmt::arg("className", entity->name_));
+                    }
+                    printer_.Dedent("");
+                }
+                printer_.Dedent("});");
             }
             printer_.Dedent();
             printer_ << "";
@@ -217,6 +236,15 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     "[param: MarshalAs(UnmanagedType.LPUTF8Str)]string typeName);", baseName);
                 printer_ << "";
             }
+
+            // Method for getting type id.
+            printer_ << fmt::format(dllImportEp, fmt::format("{}_typeid", baseName));
+            printer_ << "internal static extern IntPtr GetNativeTypeId();";
+            printer_ << "";
+
+            printer_ << fmt::format(dllImportEp, fmt::format("{}_instance_typeid", baseName));
+            printer_ << fmt::format("internal static extern IntPtr GetNativeTypeId(IntPtr instance);", baseName);
+            printer_ << "";
         }
         else if (info.event == info.container_entity_exit)
         {

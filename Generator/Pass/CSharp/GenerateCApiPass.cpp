@@ -71,10 +71,27 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             return true;
 
         const auto& cls = entity->Ast<cppast::cpp_class>();
+        auto baseName = Sanitize(entity->uniqueName_);
+
+        // Method for getting type id.
+        printer_ << fmt::format("URHO3D_EXPORT_API std::uintptr_t {}_typeid()", baseName);
+        printer_.Indent();
+        {
+            printer_ << fmt::format("return GetTypeID<{}>();", entity->symbolName_);
+        }
+        printer_.Dedent();
+        printer_ << "";
+
+        printer_ << fmt::format("URHO3D_EXPORT_API std::uintptr_t {}_instance_typeid({}* instance)", baseName, entity->sourceSymbolName_);
+        printer_.Indent();
+        {
+            printer_ << fmt::format("return GetTypeID(instance);");
+        }
+        printer_.Dedent();
+        printer_ << "";
+
         if (!IsExported(cls))
             return true;
-
-        auto baseName = Sanitize(entity->uniqueName_);
 
         // Destructor always exists even if it is not defined in the class
         printer_ << fmt::format("URHO3D_EXPORT_API void {}_destructor({}* instance)", baseName, entity->sourceSymbolName_);
