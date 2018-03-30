@@ -132,11 +132,11 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_.Indent();
             {
                 printer_ << "if (source == IntPtr.Zero)";
-                printer_.Indent();
+                printer_.Indent("");
                 {
                     printer_ << "return null;";
                 }
-                printer_.Dedent();
+                printer_.Dedent("");
 
                 printer_ << "return InstanceCache.GetOrAdd(source, ptr =>";
                 printer_.Indent();
@@ -188,11 +188,11 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_.Indent();
             {
                 printer_ << "if (source == null)";
-                printer_.Indent();
+                printer_.Indent("");
                 {
                     printer_ << "return IntPtr.Zero;";
                 }
-                printer_.Dedent();
+                printer_.Dedent("");
 
                 // Offsets for multiple inheritance
                 if (it != discoverInterfacesPass_->inheritedBy_.End())
