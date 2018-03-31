@@ -15,23 +15,6 @@ struct ManagedInterface
     Object*(*CreateObject)(Context* context, unsigned managedType);
 };
 
-/// Object that manages lifetime of native object which was passed to managed runtime.
-struct NativeObjectHandler
-{
-    /// Pointer to the instance of the object.
-    void* instance_ = nullptr;
-    /// Function that handles releasing of native resources. May be null.
-    void (*deleter_)(NativeObjectHandler* handler) = nullptr;
-
-    ~NativeObjectHandler()
-    {
-        if (deleter_ != nullptr)
-            deleter_(this);
-        deleter_ = nullptr;
-        instance_ = nullptr;
-    }
-};
-
 class ScriptSubsystem
 {
 public:
@@ -48,10 +31,24 @@ public:
         return typeInfo;
     }
 
-    ManagedInterface net_;
+    void QueueForDeletion(RefCounted* instance)
+    {
+        MutexLock lock(mutex_);
+        deletionQueue_.Push(instance);
+    }
+
+    void DeleteRefCounted()
+    {
+        MutexLock lock(mutex_);
+        for (auto* instance : deletionQueue_)
+            delete instance;
+        deletionQueue_.Clear();
+    }
 
 protected:
     HashMap<StringHash, const TypeInfo*> typeInfos_;
+    PODVector<RefCounted*> deletionQueue_;
+    Mutex mutex_;
 };
 
 extern ManagedInterface managedAPI;
