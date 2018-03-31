@@ -142,10 +142,6 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
                 MutexLock scoped(m);
                 parsed_[absPath.CString()] = std::move(file);
             }
-
-            // Ensures log messages are displayed.
-            if (Thread::IsMainThread())
-                SendEvent(E_ENDFRAME);
         };
 
         for (const auto& filePath : sourceFiles)
@@ -157,8 +153,11 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
             GetWorkQueue()->AddWorkItem(std::bind(workItem, absPath, filePath));
         }
 
-        GetWorkQueue()->Complete(0);
-        SendEvent(E_ENDFRAME);            // Ensures log messages are displayed.
+        while (!GetWorkQueue()->IsCompleted(0))
+        {
+            Time::Sleep(30);
+            SendEvent(E_ENDFRAME);            // Ensures log messages are displayed.
+        }
     }
 
     return true;
