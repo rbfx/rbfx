@@ -57,9 +57,9 @@ namespace Urho3D
 
         public IEnumerator<string> GetEnumerator() => new Enumerator(this);
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        public void Add(string item) => Urho3D_StringVector_Add(instance_, item);
-        public void Clear() => Urho3D_StringVector_Clear(instance_);
-        public bool Contains(string item) => Urho3D_StringVector_Contains(instance_, item);
+        public void Add(string item) => Urho3D_StringVector_Add(NativeInstance, item);
+        public void Clear() => Urho3D_StringVector_Clear(NativeInstance);
+        public bool Contains(string item) => Urho3D_StringVector_Contains(NativeInstance, item);
 
         public void CopyTo(string[] array, int arrayIndex)
         {
@@ -70,17 +70,17 @@ namespace Urho3D
                 array[arrayIndex++] = value;
         }
 
-        public bool Remove(string item) => Urho3D_StringVector_Remove(instance_, item);
-        public int Count => (int)((VectorBase*) instance_)->Size;
+        public bool Remove(string item) => Urho3D_StringVector_Remove(NativeInstance, item);
+        public int Count => (int)((VectorBase*) NativeInstance)->Size;
         public bool IsReadOnly => false;
-        public int IndexOf(string item) => Urho3D_StringVector_IndexOf(instance_, item);
-        public void Insert(int index, string item) => Urho3D_StringVector_InsertAt(instance_, index, item);
-        public void RemoveAt(int index) => Urho3D_StringVector_RemoveAt(instance_, index);
+        public int IndexOf(string item) => Urho3D_StringVector_IndexOf(NativeInstance, item);
+        public void Insert(int index, string item) => Urho3D_StringVector_InsertAt(NativeInstance, index, item);
+        public void RemoveAt(int index) => Urho3D_StringVector_RemoveAt(NativeInstance, index);
 
         public string this[int index]
         {
-            get { return Urho3D_StringVector_Get(instance_, index); }
-            set { Urho3D_StringVector_Set(instance_, index, value); }
+            get { return Urho3D_StringVector_Get(NativeInstance, index); }
+            set { Urho3D_StringVector_Set(NativeInstance, index, value); }
         }
 
         #region Interop
@@ -117,17 +117,17 @@ namespace Urho3D
             {
                 return IntPtr.Zero;
             }
-            return source.instance_;
+            return source.NativeInstance;
         }
 
         public override void Dispose()
         {
-            if (Interlocked.Increment(ref disposed_) == 1)
+            if (Interlocked.Increment(ref IsDisposed) == 1)
             {
-                InstanceCache.Remove(instance_);
-                Urho3D_StringVector_destructor(instance_);
+                InstanceCache.Remove(NativeInstance);
+                Urho3D_StringVector_destructor(NativeInstance);
             }
-            instance_ = IntPtr.Zero;
+            NativeInstance = IntPtr.Zero;
         }
 
         #endregion

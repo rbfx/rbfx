@@ -27,13 +27,13 @@ namespace CSharp
 
     public abstract class NativeObject : INativeObject, IEquatable<NativeObject>
     {
-        internal IntPtr instance_;
-        protected volatile int disposed_;
+        public IntPtr NativeInstance { get; set; }
+        protected volatile int IsDisposed = 1;
 
         internal NativeObject(IntPtr instance)
         {
             if (instance != IntPtr.Zero)
-                instance_ = instance;
+                NativeInstance = instance;
         }
 
         internal NativeObject()
@@ -49,7 +49,7 @@ namespace CSharp
         // method callbacks and nothing more.
         internal virtual void SetupInstance(IntPtr instance)
         {
-            instance_ = instance;
+            NativeInstance = instance;
             InstanceCache.Add(this);
         }
 
@@ -57,7 +57,7 @@ namespace CSharp
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
-            return instance_.Equals(other.instance_) && disposed_ == other.disposed_;
+            return NativeInstance.Equals(other.NativeInstance) && IsDisposed == other.IsDisposed;
         }
 
         public override bool Equals(object obj)
@@ -72,11 +72,9 @@ namespace CSharp
         {
             unchecked
             {
-                return (instance_.GetHashCode() * 397) ^ disposed_;
+                return (NativeInstance.GetHashCode() * 397) ^ IsDisposed;
             }
         }
-
-        public IntPtr NativeInstance => instance_;
 
         public virtual void Dispose()
         {

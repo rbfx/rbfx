@@ -168,7 +168,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 {
                     auto className = entity->name_;
                     printer_ << fmt::format("Debug.Assert(instance != IntPtr.Zero);");
-                    printer_ << "instance_ = instance;";
+                    printer_ << "NativeInstance = instance;";
                     if (generator->inheritable_.IsIncluded(entity->uniqueName_))
                         printer_ << fmt::format("{}_setup(instance, GCHandle.ToIntPtr(GCHandle.Alloc(this)), GetType().Name);",
                             Sanitize(entity->uniqueName_));
@@ -392,7 +392,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         // Body
         printer_.Indent();
         {
-            std::string call = fmt::format("{cFunction}(instance_{pc}{paramNameList})",
+            std::string call = fmt::format("{cFunction}(NativeInstance{pc}{paramNameList})",
                 fmt::arg("cFunction", entity->cFunctionName_), FMT_CAPTURE(pc), FMT_CAPTURE(paramNameList));
             call = MapToCS(func.return_type(), call);
 
@@ -528,14 +528,14 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 fmt::arg("name", entity->name_));
             printer_.Indent();
             {
-                auto call = MapToCS(getterFunc.return_type(), fmt::format("{cFunction}(instance_)",
+                auto call = MapToCS(getterFunc.return_type(), fmt::format("{cFunction}(NativeInstance)",
                     fmt::arg("cFunction", getter->cFunctionName_)));
                 printer_ << fmt::format("get {{ return {call}; }}", FMT_CAPTURE(call));
 
                 if (setter != nullptr)
                 {
                     auto value = MapToPInvoke(getterFunc.return_type(), "value");
-                    printer_ << fmt::format("set {{ {cFunction}(instance_, {value}); }}",
+                    printer_ << fmt::format("set {{ {cFunction}(NativeInstance, {value}); }}",
                         fmt::arg("cFunction", setter->cFunctionName_), FMT_CAPTURE(value));
                 }
             }
@@ -574,14 +574,14 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 {
                     // Getter
                     auto call = MapToCS(var.type(),
-                        fmt::format("get_{nsSymbol}_{sourceName}(instance_)", FMT_CAPTURE(nsSymbol),
+                        fmt::format("get_{nsSymbol}_{sourceName}(NativeInstance)", FMT_CAPTURE(nsSymbol),
                             FMT_CAPTURE(sourceName)));
                     printer_ << fmt::format("get {{ return {}; }}", call);
                     // Setter
                     if (!IsConst(var.type()) && !(entity->flags_ & HintReadOnly))
                     {
                         auto value = MapToPInvoke(var.type(), "value");
-                        printer_ << fmt::format("set {{ set_{nsSymbol}_{sourceName}(instance_, {value}); }}",
+                        printer_ << fmt::format("set {{ set_{nsSymbol}_{sourceName}(NativeInstance, {value}); }}",
                             FMT_CAPTURE(nsSymbol), FMT_CAPTURE(sourceName), FMT_CAPTURE(value));
                     }
                 }

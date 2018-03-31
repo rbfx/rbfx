@@ -33,7 +33,7 @@ namespace Urho3D
                 return IntPtr.Zero;
             var managed = (Object)Activator.CreateInstance(type, BindingFlags.Public | BindingFlags.Instance,
                 null, new object[] { this }, null);
-            return managed.instance_;
+            return managed.NativeInstance;
         }
 
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]

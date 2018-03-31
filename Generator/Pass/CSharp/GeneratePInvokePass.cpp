@@ -117,12 +117,12 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_ << fmt::format("public override void Dispose()");
             printer_.Indent();
             {
-                printer_ << "if (Interlocked.Increment(ref disposed_) == 1)";
+                printer_ << "if (Interlocked.Increment(ref IsDisposed) == 1)";
                 printer_.Indent();
-                printer_ << "InstanceCache.Remove(instance_);";
-                printer_ << baseName + "_destructor(instance_);";
+                printer_ << "InstanceCache.Remove(NativeInstance);";
+                printer_ << baseName + "_destructor(NativeInstance);";
                 printer_.Dedent();
-                printer_ << "instance_ = IntPtr.Zero;";
+                printer_ << "NativeInstance = IntPtr.Zero;";
             }
             printer_.Dedent();
             printer_ << "";

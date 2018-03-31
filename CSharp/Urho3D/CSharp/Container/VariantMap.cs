@@ -52,9 +52,9 @@ namespace Urho3D
                 if (_isFirst)
                 {
                     _isFirst = false;
-                    return Urho3D_HashMap_StringHash_Variant_First(_hashMap.instance_, out _iterator);
+                    return Urho3D_HashMap_StringHash_Variant_First(_hashMap.NativeInstance, out _iterator);
                 }
-                return Urho3D_HashMap_StringHash_Variant_Next(_hashMap.instance_, ref _iterator);
+                return Urho3D_HashMap_StringHash_Variant_Next(_hashMap.NativeInstance, ref _iterator);
             }
 
             public void Reset()
@@ -137,22 +137,22 @@ namespace Urho3D
         {
             var pInvokeKey = StringHash.__ToPInvoke(key);
             var pInvokeValue = Variant.__ToPInvoke(value);
-            Urho3D_HashMap_StringHash_Variant_Add(instance_, pInvokeKey, pInvokeValue);
+            Urho3D_HashMap_StringHash_Variant_Add(NativeInstance, pInvokeKey, pInvokeValue);
         }
 
         public bool ContainsKey(StringHash key)
         {
-            return Urho3D_HashMap_StringHash_Variant_Contains(instance_, key.Hash);
+            return Urho3D_HashMap_StringHash_Variant_Contains(NativeInstance, key.Hash);
         }
 
         public bool Remove(StringHash key)
         {
-            return Urho3D_HashMap_StringHash_Variant_Remove(instance_, key.Hash);
+            return Urho3D_HashMap_StringHash_Variant_Remove(NativeInstance, key.Hash);
         }
 
         public bool TryGetValue(StringHash key, out Variant value)
         {
-            var instance = Urho3D_HashMap_StringHash_Variant_TryGet(instance_, key.Hash);
+            var instance = Urho3D_HashMap_StringHash_Variant_TryGet(NativeInstance, key.Hash);
             if (instance == IntPtr.Zero)
             {
                 value = null;
@@ -188,17 +188,17 @@ namespace Urho3D
             {
                 return IntPtr.Zero;
             }
-            return source.instance_;
+            return source.NativeInstance;
         }
 
         public override void Dispose()
         {
-            if (Interlocked.Increment(ref disposed_) == 1)
+            if (Interlocked.Increment(ref IsDisposed) == 1)
             {
-                InstanceCache.Remove(instance_);
-                Urho3D_HashMap_StringHash_Variant_destructor(instance_);
+                InstanceCache.Remove(NativeInstance);
+                Urho3D_HashMap_StringHash_Variant_destructor(NativeInstance);
             }
-            instance_ = IntPtr.Zero;
+            NativeInstance = IntPtr.Zero;
         }
     }
 }
