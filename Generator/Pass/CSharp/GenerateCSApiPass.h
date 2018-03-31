@@ -48,6 +48,7 @@ protected:
     std::string ConvertDefaultValueToCS(MetaEntity* user, std::string value, const cppast::cpp_type& type, bool allowComplex);
     void PrintParameterHandlingCodePre(const std::vector<SharedPtr<MetaEntity>>& parameters);
     void PrintParameterHandlingCodePost(const std::vector<SharedPtr<MetaEntity>>& parameters);
+    void PrintInstanceDisposedCheck(const std::string& objectName);
 
     CSharpPrinter printer_;
     CSharpPrinter interface_;

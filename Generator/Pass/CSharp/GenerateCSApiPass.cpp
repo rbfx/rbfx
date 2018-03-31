@@ -170,7 +170,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     printer_ << fmt::format("Debug.Assert(instance != IntPtr.Zero);");
                     printer_ << "NativeInstance = instance;";
                     printer_ << "OwnsNativeInstance = ownsInstance;";
-                    if (generator->inheritable_.IsIncluded(entity->uniqueName_))
+                    if (generator->inheritable_.IsIncluded(entity->uniqueName_) || IsSubclassOf(entity->Ast<cppast::cpp_class>(), "Urho3D::RefCounted"))
                         printer_ << fmt::format("{}_setup(instance, GCHandle.ToIntPtr(GCHandle.Alloc(this)), GetType().Name);",
                             Sanitize(entity->uniqueName_));
                     printer_ << "InstanceCache.Add(this);";
@@ -367,9 +367,6 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         const auto& func = entity->Ast<cppast::cpp_member_function>();
 
-        if (func.name() == "FreeScratchBuffer")
-            int a = 2;
-
         auto rtype = ToCSType(func.return_type(), true);
         auto pc = func.parameters().empty() ? "" : ", ";
 
@@ -395,6 +392,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         // Body
         printer_.Indent();
         {
+            PrintInstanceDisposedCheck(entity->parent_->name_);
             std::string call = fmt::format("{cFunction}(NativeInstance{pc}{paramNameList})",
                 fmt::arg("cFunction", entity->cFunctionName_), FMT_CAPTURE(pc), FMT_CAPTURE(paramNameList));
             call = MapToCS(func.return_type(), call);
@@ -531,15 +529,28 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 fmt::arg("name", entity->name_));
             printer_.Indent();
             {
+                // Getter
                 auto call = MapToCS(getterFunc.return_type(),
                     fmt::format("{cFunction}(NativeInstance)", fmt::arg("cFunction", getter->cFunctionName_)));
-                printer_ << fmt::format("get {{ return {call}; }}", FMT_CAPTURE(call));
+                printer_ << "get";
+                printer_.Indent();
+                {
+                    PrintInstanceDisposedCheck(entity->parent_->name_);
+                    printer_ << fmt::format("return {call};", FMT_CAPTURE(call));
+                }
+                printer_.Dedent();
 
                 if (setter != nullptr)
                 {
                     auto value = MapToPInvoke(getterFunc.return_type(), "value");
-                    printer_ << fmt::format("set {{ {cFunction}(NativeInstance, {value}); }}",
-                        fmt::arg("cFunction", setter->cFunctionName_), FMT_CAPTURE(value));
+                    printer_ << "set";
+                    printer_.Indent();
+                    {
+                        PrintInstanceDisposedCheck(entity->parent_->name_);
+                        printer_ << fmt::format("{cFunction}(NativeInstance, {value});",
+                            fmt::arg("cFunction", setter->cFunctionName_), FMT_CAPTURE(value));
+                    }
+                    printer_.Dedent();
                 }
             }
             printer_.Dedent();
@@ -576,16 +587,28 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 printer_.Indent();
                 {
                     // Getter
-                    auto call = MapToCS(var.type(),
-                        fmt::format("get_{nsSymbol}_{sourceName}(NativeInstance)", FMT_CAPTURE(nsSymbol),
-                            FMT_CAPTURE(sourceName)));
-                    printer_ << fmt::format("get {{ return {}; }}", call);
+                    printer_ << "get";
+                    printer_.Indent();
+                    {
+                        PrintInstanceDisposedCheck(entity->parent_->name_);
+                        auto call = MapToCS(var.type(), fmt::format("get_{nsSymbol}_{sourceName}(NativeInstance)",
+                            FMT_CAPTURE(nsSymbol), FMT_CAPTURE(sourceName)));
+                        printer_ << fmt::format("return {};", call);
+                    }
+                    printer_.Dedent();
+
                     // Setter
                     if (!IsConst(var.type()) && !(entity->flags_ & HintReadOnly))
                     {
-                        auto value = MapToPInvoke(var.type(), "value");
-                        printer_ << fmt::format("set {{ set_{nsSymbol}_{sourceName}(NativeInstance, {value}); }}",
-                            FMT_CAPTURE(nsSymbol), FMT_CAPTURE(sourceName), FMT_CAPTURE(value));
+                        printer_ << "set";
+                        printer_.Indent();
+                        {
+                            PrintInstanceDisposedCheck(entity->parent_->name_);
+                            auto value = MapToPInvoke(var.type(), "value");
+                            printer_ << fmt::format("set_{nsSymbol}_{sourceName}(NativeInstance, {value});",
+                                FMT_CAPTURE(nsSymbol), FMT_CAPTURE(sourceName), FMT_CAPTURE(value));
+                        }
+                        printer_.Dedent();
                     }
                 }
                 printer_.Dedent();
@@ -818,6 +841,16 @@ void GenerateCSApiPass::PrintParameterHandlingCodePost(const std::vector<SharedP
         if (IsComplexOutputType(type))
             printer_ << param->name_ + " = " + MapToCS(type, param->name_ + "Out") + ";";
     }
+}
+
+void GenerateCSApiPass::PrintInstanceDisposedCheck(const std::string& objectName)
+{
+    printer_ << "if (NativeInstance == IntPtr.Zero)";
+    printer_.Indent("");
+    {
+        printer_ << fmt::format("throw new ObjectDisposedException(\"{}\");", objectName);
+    }
+    printer_.Dedent("");
 }
 
 }
