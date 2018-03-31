@@ -105,7 +105,7 @@ public:
     String outputDirCs_;
     SharedPtr<JSONFile> rules_;
     cppast::libclang_compile_config config_;
-    std::unordered_map<std::string, std::unique_ptr<cppast::cpp_file>> parsed_;
+    std::map<std::string, std::unique_ptr<cppast::cpp_file>> parsed_;
     Vector<SharedPtr<CppAstPass>> cppPasses_;
     Vector<SharedPtr<CppApiPass>> apiPasses_;
     SharedPtr<MetaEntity> apiRoot_;
