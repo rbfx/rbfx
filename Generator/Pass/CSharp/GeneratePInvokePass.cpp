@@ -42,6 +42,7 @@ void GeneratePInvokePass::Start()
     printer_ << "using System;";
     printer_ << "using System.Threading;";
     printer_ << "using System.Collections.Concurrent;";
+    printer_ << "using System.Reflection;";
     printer_ << "using System.Runtime.InteropServices;";
     printer_ << "using CSharp;";
     printer_ << "";
@@ -111,7 +112,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
             printer_ << fmt::format("public unsafe partial class {} : INativeObject", entity->name_);
             printer_.Indent();
-            printer_ << fmt::format("internal {}(IntPtr instance) : base(instance) {{ }}", entity->name_);
+            printer_ << fmt::format("internal {}(IntPtr instance, bool ownsInstance) : base(instance, ownsInstance) {{ }}", entity->name_);
             printer_ << "";
 
             printer_ << fmt::format("public override void Dispose()");
@@ -128,7 +129,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_ << "";
 
             // Helpers for marshalling type between public and pinvoke APIs
-            printer_ << fmt::format("internal {}static {} __FromPInvoke(IntPtr source)", newTag, entity->name_);
+            printer_ << fmt::format("internal {}static {} __FromPInvoke(IntPtr source, bool owns=false)", newTag, entity->name_);
             printer_.Indent();
             {
                 printer_ << "if (source == IntPtr.Zero)";
@@ -145,13 +146,13 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     printer_ << "if (type == null)";
                     printer_.Indent("");
                     {
-                        printer_ << fmt::format("return new {className}(ptr);", fmt::arg("className", entity->name_));
+                        printer_ << fmt::format("return new {className}(ptr, owns);", fmt::arg("className", entity->name_));
                     }
                     printer_.Dedent("");
                     printer_ << "else";
                     printer_.Indent("");
                     {
-                        printer_ << fmt::format("return ({className})Activator.CreateInstance(type, ptr);",
+                        printer_ << fmt::format("return ({className})Activator.CreateInstance(type, BindingFlags.NonPublic | BindingFlags.Instance, null, new object[]{{ptr, owns}}, null);",
                             fmt::arg("className", entity->name_));
                     }
                     printer_.Dedent("");

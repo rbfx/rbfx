@@ -81,9 +81,9 @@ namespace Urho3D
             }
         }
 
-        internal VariantMap(IntPtr instance)
+        internal VariantMap(IntPtr instance, bool ownsInstnace)
         {
-            SetupInstance(instance);
+            SetupInstance(instance, ownsInstnace);
         }
 
         public IEnumerator<KeyValuePair<StringHash, Variant>> GetEnumerator()
@@ -177,9 +177,9 @@ namespace Urho3D
         public ICollection<StringHash> Keys => this.Select(kv => kv.Key).Distinct().ToList();
         public ICollection<Variant> Values => this.Select(kv => kv.Value).Distinct().ToList();
 
-        internal static VariantMap __FromPInvoke(IntPtr source)
+        internal static VariantMap __FromPInvoke(IntPtr source, bool ownsNativeInstnace)
         {
-            return InstanceCache.GetOrAdd<VariantMap>(source, ptr => new VariantMap(ptr));
+            return InstanceCache.GetOrAdd<VariantMap>(source, ptr => new VariantMap(ptr, ownsNativeInstnace));
         }
 
         internal static IntPtr __ToPInvoke(VariantMap source)
@@ -196,7 +196,8 @@ namespace Urho3D
             if (Interlocked.Increment(ref IsDisposed) == 1)
             {
                 InstanceCache.Remove(NativeInstance);
-                Urho3D_HashMap_StringHash_Variant_destructor(NativeInstance);
+                if (OwnsNativeInstance)
+                    Urho3D_HashMap_StringHash_Variant_destructor(NativeInstance);
             }
             NativeInstance = IntPtr.Zero;
         }

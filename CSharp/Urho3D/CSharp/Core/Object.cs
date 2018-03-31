@@ -14,7 +14,7 @@ namespace Urho3D
                 eventType.Hash, (gcHandle, type, args) =>
                 {
                     var callback = (Action<StringHash, VariantMap>) GCHandle.FromIntPtr(gcHandle).Target;
-                    callback.Invoke(StringHash.__FromPInvoke(type), VariantMap.__FromPInvoke(args));
+                    callback.Invoke(StringHash.__FromPInvoke(type), VariantMap.__FromPInvoke(args, false));
                 }, IntPtr.Zero);
         }
 
@@ -24,7 +24,7 @@ namespace Urho3D
                 eventType.Hash, (gcHandle, type, args) =>
                 {
                     var callback = (Action<VariantMap>) GCHandle.FromIntPtr(gcHandle).Target;
-                    callback.Invoke(VariantMap.__FromPInvoke(args));
+                    callback.Invoke(VariantMap.__FromPInvoke(args, false));
                 }, IntPtr.Zero);
         }
 
@@ -34,7 +34,7 @@ namespace Urho3D
                 eventType.Hash, (gcHandle, type, args) =>
                 {
                     var callback = (Action<StringHash, VariantMap>) GCHandle.FromIntPtr(gcHandle).Target;
-                    callback.Invoke(StringHash.__FromPInvoke(type), VariantMap.__FromPInvoke(args));
+                    callback.Invoke(StringHash.__FromPInvoke(type), VariantMap.__FromPInvoke(args, false));
                 }, __ToPInvoke(sender));
         }
 
@@ -44,7 +44,7 @@ namespace Urho3D
                 eventType.Hash, (gcHandle, type, args) =>
                 {
                     var callback = (Action<VariantMap>) GCHandle.FromIntPtr(gcHandle).Target;
-                    callback.Invoke(VariantMap.__FromPInvoke(args));
+                    callback.Invoke(VariantMap.__FromPInvoke(args, false));
                 }, __ToPInvoke(sender));
         }
 

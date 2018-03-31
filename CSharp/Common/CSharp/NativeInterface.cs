@@ -27,13 +27,17 @@ namespace CSharp
 
     public abstract class NativeObject : INativeObject, IEquatable<NativeObject>
     {
-        public IntPtr NativeInstance { get; set; }
+        public IntPtr NativeInstance { get; set; } = IntPtr.Zero;
+        protected bool OwnsNativeInstance { get; set; } = false;
         protected volatile int IsDisposed = 1;
 
-        internal NativeObject(IntPtr instance)
+        internal NativeObject(IntPtr instance, bool ownsInstance=false)
         {
             if (instance != IntPtr.Zero)
+            {
                 NativeInstance = instance;
+                OwnsNativeInstance = ownsInstance;
+            }
         }
 
         internal NativeObject()
@@ -47,8 +51,9 @@ namespace CSharp
 
         // Derived types will put object initialization code here. At the time of writing such code sets up virtual
         // method callbacks and nothing more.
-        internal virtual void SetupInstance(IntPtr instance)
+        internal virtual void SetupInstance(IntPtr instance, bool ownsInstance)
         {
+            OwnsNativeInstance = ownsInstance;
             NativeInstance = instance;
             InstanceCache.Add(this);
         }

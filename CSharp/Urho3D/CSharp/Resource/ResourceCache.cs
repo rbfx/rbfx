@@ -14,7 +14,7 @@ public partial class ResourceCache
         var componentInstance = Urho3D__ResourceCache__GetResource_Urho3D__StringHash_Urho3D__String_const__bool_(NativeInstance, typeHash.Hash, name, sendEventOnFailure);
         return InstanceCache.GetOrAdd(componentInstance, ptr => {
             Type type = typeof(T);
-            return (T)Activator.CreateInstance(type, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, new object[] { ptr }, null);
+            return (T)Activator.CreateInstance(type, BindingFlags.NonPublic | BindingFlags.Instance, null, new object[] { ptr, false }, null);
         });
     }
 }

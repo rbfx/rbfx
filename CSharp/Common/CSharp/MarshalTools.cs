@@ -13,7 +13,7 @@ namespace CSharp
         public int Size;
         public bool Owns;
 
-        public static T[] __FromPInvoke<T>(SafeArray data)
+        public static T[] __FromPInvoke<T>(SafeArray data, bool ownsNativeInstance)
         {
             if (data.Size == 0)
                 return new T[0];

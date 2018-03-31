@@ -15,8 +15,8 @@ public partial class Node
         if (componentInstance == IntPtr.Zero)
             return default(T);
         return InstanceCache.GetOrAdd(componentInstance, ptr => (T) Activator.CreateInstance(typeof(T),
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
-            null, new object[] {ptr}, null));
+            BindingFlags.NonPublic | BindingFlags.Instance,
+            null, new object[] {ptr, false}, null));
     }
 
     public T GetComponent<T>(bool recursive = false) where T: Component
@@ -25,7 +25,7 @@ public partial class Node
         if (componentInstance == IntPtr.Zero)
             return default(T);
         return InstanceCache.GetOrAdd(componentInstance, ptr => (T)Activator.CreateInstance(typeof(T),
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, new object[] { ptr }, null));
+            BindingFlags.NonPublic | BindingFlags.Instance, null, new object[] { ptr, false }, null));
     }
 }
 

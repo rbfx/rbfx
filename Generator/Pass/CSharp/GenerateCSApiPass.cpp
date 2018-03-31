@@ -163,12 +163,13 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
             if (!isStatic)
             {
-                printer_ << "internal override void SetupInstance(IntPtr instance)";
+                printer_ << "internal override void SetupInstance(IntPtr instance, bool ownsInstance)";
                 printer_.Indent();
                 {
                     auto className = entity->name_;
                     printer_ << fmt::format("Debug.Assert(instance != IntPtr.Zero);");
                     printer_ << "NativeInstance = instance;";
+                    printer_ << "OwnsNativeInstance = ownsInstance;";
                     if (generator->inheritable_.IsIncluded(entity->uniqueName_))
                         printer_ << fmt::format("{}_setup(instance, GCHandle.ToIntPtr(GCHandle.Alloc(this)), GetType().Name);",
                             Sanitize(entity->uniqueName_));
@@ -315,7 +316,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         }
 
         auto className = cls->name_;
-        auto baseCtor = hasBase ? " : base(IntPtr.Zero)" : "";
+        auto baseCtor = hasBase ? " : base(IntPtr.Zero, true)" : "";
         auto paramNameList = MapParameterList(entity->children_, mapToPInvoke);
         auto cFunctionName = entity->cFunctionName_;
 
@@ -329,7 +330,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             PrintParameterHandlingCodePre(entity->children_);
             printer_ << fmt::format("var instance = {cFunctionName}({paramNameList});",
                 FMT_CAPTURE(cFunctionName), FMT_CAPTURE(paramNameList));
-            printer_ << "SetupInstance(instance);";
+            printer_ << "SetupInstance(instance, true);";
             PrintParameterHandlingCodePost(entity->children_);
         }
         printer_.Dedent();
@@ -528,8 +529,8 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 fmt::arg("name", entity->name_));
             printer_.Indent();
             {
-                auto call = MapToCS(getterFunc.return_type(), fmt::format("{cFunction}(NativeInstance)",
-                    fmt::arg("cFunction", getter->cFunctionName_)));
+                auto call = MapToCS(getterFunc.return_type(),
+                    fmt::format("{cFunction}(NativeInstance)", fmt::arg("cFunction", getter->cFunctionName_)));
                 printer_ << fmt::format("get {{ return {call}; }}", FMT_CAPTURE(call));
 
                 if (setter != nullptr)
@@ -620,11 +621,14 @@ std::string GenerateCSApiPass::MapToCS(const cppast::cpp_type& type, const std::
     if (IsVoid(type))
         return expression;
 
+    bool isComplex = IsComplexType(type);
+    bool isValue = IsValueType(type);
+    auto owns = isComplex && isValue ? "true" : "false";
 
     if (const auto* map = generator->GetTypeMap(type, false))
-        return fmt::format(map->pInvokeToCSTemplate_.c_str(), fmt::arg("value", expression));
+        return fmt::format(map->pInvokeToCSTemplate_.c_str(), fmt::arg("value", expression), FMT_CAPTURE(owns));
     else if (IsComplexType(type))
-        return fmt::format("{}.__FromPInvoke({})", ToCSType(type), expression);
+        return fmt::format("{}.__FromPInvoke({}, {})", ToCSType(type), expression, owns);
 
     return expression;
 }

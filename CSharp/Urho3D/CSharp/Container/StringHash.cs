@@ -40,7 +40,7 @@ public struct StringHash
         return string.Format("{:08X}", Hash);
     }
 
-    internal static StringHash __FromPInvoke(uint source)
+    internal static StringHash __FromPInvoke(uint source, bool ownsNativeInstnace=false)
     {
         return new StringHash(source);
     }
