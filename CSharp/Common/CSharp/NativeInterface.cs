@@ -88,12 +88,12 @@ namespace CSharp
 
     public static class NativeInterface
     {
-        static ManagedInterface _api;
-        static volatile int count_;
+        private static ManagedInterface _api;
+        private static volatile int _count;
 
         internal static void Setup()
         {
-            if (Interlocked.Increment(ref count_) != 1)
+            if (Interlocked.Increment(ref _count) != 1)
                 return;
 
             _api.FreeGcHandle = ptr =>
@@ -109,7 +109,7 @@ namespace CSharp
             };
             _api.CreateObject = (contextPtr, managedType) =>
             {
-                var context = Context.__FromPInvoke(contextPtr);
+                var context = Context.__FromPInvoke(contextPtr, true);
                 return context.CreateObject(managedType);
             };
             CSharp_SetManagedAPI(_api);
@@ -117,7 +117,7 @@ namespace CSharp
 
         internal static void Dispose()
         {
-            if (Interlocked.Decrement(ref count_) != 0)
+            if (Interlocked.Decrement(ref _count) != 0)
                 return;
 
             InstanceCache.Dispose();

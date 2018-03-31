@@ -24,7 +24,7 @@ public:
 public:
     SharedPtr<Object> CreateObject() override
     {
-        return SharedPtr<Object>(script->net_.CreateObject(context_, managedType_.Value()));
+        return SharedPtr<Object>(managedAPI.CreateObject(context_, managedType_.Value()));
     }
 
 protected:
@@ -44,18 +44,18 @@ public:
 
     ~ManagedEventHandler() override
     {
-        script->net_.FreeGCHandle(gcHandle_);
+        managedAPI.FreeGCHandle(gcHandle_);
         gcHandle_ = nullptr;
     }
 
     void Invoke(VariantMap& eventData) override
     {
-        function_(gcHandle_, eventType_, script->AddRef<Urho3D::VariantMap>(eventData));
+        function_(gcHandle_, eventType_, &eventData);
     }
 
     EventHandler* Clone() const override
     {
-        return new ManagedEventHandler(receiver_, script->net_.CloneGCHandle(gcHandle_), function_);
+        return new ManagedEventHandler(receiver_, managedAPI.CloneGCHandle(gcHandle_), function_);
     }
 
 public:

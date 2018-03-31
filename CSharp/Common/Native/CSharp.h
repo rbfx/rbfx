@@ -35,54 +35,6 @@ struct NativeObjectHandler
 class ScriptSubsystem
 {
 public:
-    RefCounted* AddRefCountedRef(RefCounted* instance)
-    {
-        if (instance == nullptr)
-            return nullptr;
-        return instance;
-    }
-
-    template<typename T> T* TakePointerOwnership(const T* instance)
-    {
-        if (instance == nullptr)
-            return nullptr;
-        return (T*)instance;
-    }
-
-    template<typename T> T* TakePointerReference(const T* instance)
-    {
-        if (instance == nullptr)
-            return nullptr;
-        return (T*)instance;
-    }
-
-    template<typename T> using RefCountedType = typename std::enable_if<std::is_base_of<Urho3D::RefCounted, T>::value, T>::type;
-    template<typename T> using NonRefCountedType = typename std::enable_if<!std::is_base_of<Urho3D::RefCounted, T>::value && !std::is_copy_constructible<T>::value, T>::type;
-    template<typename T> using CopyableType = typename std::enable_if<!std::is_base_of<Urho3D::RefCounted, T>::value && std::is_copy_constructible<T>::value, T>::type;
-
-    // Type is RefCounted, always return a reference.
-    template<typename T> T* AddRef(const SharedPtr<T>& object)          { return object.Get(); }
-    template<typename T> T* AddRef(const WeakPtr<T>& object)            { return object.Get(); }
-    template<typename T> T* AddRef(const RefCountedType<T>* object)     { return const_cast<T*>(object); }
-    // Type is copy-constructibe or rvalue reference, most likely being returned by value. Make a copy.
-    template<typename T> T* AddRef(CopyableType<T>&& object)            { return (T*)TakePointerOwnership<T>(new T(object)); }
-    template<typename T> T* AddRef(const CopyableType<T>&& object)      { return (T*)TakePointerOwnership<T>(new T(object)); }
-    template<typename T> T* AddRef(CopyableType<T>& object)             { return (T*)TakePointerReference<T>(&object); }
-    template<typename T> T* AddRef(const CopyableType<T>& object)       { return (T*)TakePointerReference<T>(&object); }
-    template<typename T> T* AddRef(CopyableType<T>* object)             { return (T*)TakePointerReference<T>(object); }
-    template<typename T> T* AddRef(const CopyableType<T>* object)       { return (T*)TakePointerReference<T>(object); }
-    // Type is non-refcounted and non-copyable, return reference
-    template<typename T> T* AddRef(const NonRefCountedType<T>&& object) { return (T*)TakePointerOwnership<T>(&object); }
-    template<typename T> T* AddRef(const NonRefCountedType<T>& object)  { return (T*)TakePointerOwnership<T>(&object); }
-    template<typename T> T* AddRef(const NonRefCountedType<T>* object)  { return (T*)TakePointerOwnership<T>(object); }
-    // Pointer to any RefCounted object. Refcount increased/decreased as usual.
-    template<typename T> T* TakeOwnership(RefCountedType<T>* object)    { return object; }
-    template<typename T> T* TakeOwnership(NonRefCountedType<T>* object) { return (T*)TakePointerOwnership<T>(object); }
-    template<typename T> T* TakeOwnership(CopyableType<T>* object)      { return (T*)TakePointerOwnership<T>(object); }
-    // Type is some rvalue reference backed by existing storage - return a reference. User is responsible to make sure
-    // everything does not blow up.
-//    template<typename T> T* AddRef(const T& object)    { return TakePointerReference<T>(&object); }
-
     template<typename T>
     void RegisterType()
     {
@@ -102,6 +54,7 @@ protected:
     HashMap<StringHash, const TypeInfo*> typeInfos_;
 };
 
+extern ManagedInterface managedAPI;
 extern ScriptSubsystem* script;
 
 /// Force-cast between incompatible types.
@@ -193,6 +146,21 @@ struct CSharpConverter<Vector<SharedPtr<T>>>
             free(value.data);
         return result;
     }
+};
+
+struct CSharpObjConverter
+{
+    template<typename T> using RefCountedType = typename std::enable_if<std::is_base_of<Urho3D::RefCounted, T>::value, T>::type;
+    template<typename T> using NonRefCountedType = typename std::enable_if<!std::is_base_of<Urho3D::RefCounted, T>::value && !std::is_copy_constructible<T>::value, T>::type;
+    template<typename T> using CopyableType = typename std::enable_if<!std::is_base_of<Urho3D::RefCounted, T>::value && std::is_copy_constructible<T>::value, T>::type;
+
+    template<typename T> static T* ToCSharp(const SharedPtr<T>& object)          { return object.Get(); }
+    template<typename T> static T* ToCSharp(const WeakPtr<T>& object)            { return object.Get(); }
+    template<typename T> static T* ToCSharp(const RefCountedType<T>* object)     { return const_cast<T*>(object); }
+    template<typename T> static T* ToCSharp(CopyableType<T>&& object)            { return new T(object); }
+    template<typename T> static T* ToCSharp(const CopyableType<T>& object)       { return (T*)&object; }
+    template<typename T> static T* ToCSharp(const CopyableType<T>* object)       { return (T*)object; }
+    template<typename T> static T* ToCSharp(const NonRefCountedType<T>&& object) { return (T*)&object; }
 };
 
 template<typename T>

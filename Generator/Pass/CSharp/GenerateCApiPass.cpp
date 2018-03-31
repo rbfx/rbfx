@@ -144,9 +144,9 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             // Do not AddRef to RefCounted objects here because we may end up having several managed classes pointing to
             // same native instance, therefore wrapper classes AddRef instead.
             PrintParameterHandlingCodePre(entity->children_);
-            printer_ << "auto&& returnValue = " + MapToCNoCopy(entity->parent_->sourceSymbolName_,
+            printer_ << "auto&& returnValue = " +
                 fmt::format("new {class}({params})", fmt::arg("class", className),
-                    fmt::arg("params", ParameterNameList(func.parameters(), toCppType)))) + ";";
+                    fmt::arg("params", ParameterNameList(func.parameters(), toCppType))) + ";";
             PrintParameterHandlingCodePost(entity->children_);
             printer_ << "return returnValue;";
         }
@@ -408,19 +408,6 @@ std::string GenerateCApiPass::GetUniqueName(const std::string& baseName)
     return newName;
 }
 
-std::string GenerateCApiPass::MapToCNoCopy(const std::string& type, const std::string& expression)
-{
-    const auto* map = generator->GetTypeMap(type);
-    std::string result = expression;
-
-    if (map)
-        result = fmt::format(map->cppToCTemplate_.c_str(), fmt::arg("value", result));
-    else if (generator->symbols_.Contains(type))
-        result = fmt::format("script->TakeOwnership<{type}>({result})", FMT_CAPTURE(result), FMT_CAPTURE(type));
-
-    return result;
-}
-
 std::string GenerateCApiPass::MapToCpp(const cppast::cpp_type& type, const std::string& expression)
 {
     const auto* map = generator->GetTypeMap(type, false);
@@ -449,7 +436,7 @@ std::string GenerateCApiPass::MapToC(const cppast::cpp_type& type, const std::st
         auto typeName = GetTemplateSubtype(type);
         if (typeName.empty())
             typeName = Urho3D::GetTypeName(type);
-        result = fmt::format("script->AddRef<{type}>({result})", FMT_CAPTURE(result), fmt::arg("type", typeName));
+        result = fmt::format("CSharpObjConverter::ToCSharp<{type}>({result})", FMT_CAPTURE(result), fmt::arg("type", typeName));
     }
 
     return result;

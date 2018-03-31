@@ -144,7 +144,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_ << "";
 
             // Helpers for marshalling type between public and pinvoke APIs
-            printer_ << fmt::format("internal {}static {} __FromPInvoke(IntPtr source, bool owns=false)", newTag, entity->name_);
+            printer_ << fmt::format("internal {}static {} __FromPInvoke(IntPtr source, bool owns)", newTag, entity->name_);
             printer_.Indent();
             {
                 printer_ << "if (source == IntPtr.Zero)";

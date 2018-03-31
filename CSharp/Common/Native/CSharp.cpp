@@ -2,6 +2,7 @@
 #include <memory>
 
 
+ManagedInterface managedAPI;
 ScriptSubsystem* script = new ScriptSubsystem();
 
 extern "C"
@@ -19,7 +20,7 @@ URHO3D_EXPORT_API void* c_alloc(int size)
 
 URHO3D_EXPORT_API void CSharp_SetManagedAPI(ManagedInterface netApi)
 {
-    script->net_ = netApi;
+    managedAPI = netApi;
 }
 
 }

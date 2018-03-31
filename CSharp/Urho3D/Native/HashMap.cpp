@@ -11,7 +11,7 @@ URHO3D_EXPORT_API unsigned Urho3D_HashMap_StringHash_Variant_GetKey(Urho3D::Vari
 
 URHO3D_EXPORT_API void* Urho3D_HashMap_StringHash_Variant_GetValue(Urho3D::VariantMap::Iterator it)
 {
-    return (void*) script->AddRef<Variant>(it->second_);
+    return (void*) &it->second_;
 }
 
 URHO3D_EXPORT_API void Urho3D_HashMap_StringHash_Variant_Add(Urho3D::VariantMap* map, unsigned key,
@@ -47,7 +47,7 @@ URHO3D_EXPORT_API Variant* Urho3D_HashMap_StringHash_Variant_TryGet(Urho3D::Vari
 {
     Variant result;
     if (map->TryGetValue(StringHash(key), result))
-        return script->AddRef<Variant>(std::move(result));
+        return new Variant(result);
     return nullptr;
 }
 

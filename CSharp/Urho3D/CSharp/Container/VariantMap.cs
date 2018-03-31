@@ -68,8 +68,8 @@ namespace Urho3D
                 {
                     var rawKey = Urho3D_HashMap_StringHash_Variant_GetKey(_iterator);
                     var rawVal = Urho3D_HashMap_StringHash_Variant_GetValue(_iterator);
-                    var key = StringHash.__FromPInvoke(rawKey);
-                    var value = Variant.__FromPInvoke(rawVal);
+                    var key = StringHash.__FromPInvoke(rawKey, false);
+                    var value = Variant.__FromPInvoke(rawVal, false);
                     return new KeyValuePair<StringHash, Variant>(key, value);
                 }
             }
@@ -158,7 +158,7 @@ namespace Urho3D
                 value = null;
                 return false;
             }
-            value = Variant.__FromPInvoke(instance);
+            value = Variant.__FromPInvoke(instance, true);
             return true;
         }
 

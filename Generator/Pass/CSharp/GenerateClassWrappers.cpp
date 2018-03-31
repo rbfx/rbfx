@@ -112,7 +112,7 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_ << "if (gcHandle_ != nullptr)";
         printer_.Indent();
         {
-            printer_ << "script->net_.FreeGCHandle(gcHandle_);";
+            printer_ << "managedAPI.FreeGCHandle(gcHandle_);";
             printer_ << "gcHandle_ = nullptr;";
         }
         printer_.Dedent();
