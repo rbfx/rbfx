@@ -245,7 +245,8 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_ << "";
 
             // Method for pinning managed object to native instance
-            if (generator->inheritable_.IsIncluded(entity->uniqueName_))
+            if (generator->inheritable_.IsIncluded(entity->uniqueName_) ||
+                IsSubclassOf(entity->Ast<cppast::cpp_class>(), "Urho3D::RefCounted"))
             {
                 printer_ << dllImport;
                 printer_ << fmt::format("internal static extern void {}_setup(IntPtr instance, IntPtr gcHandle, "

@@ -109,15 +109,35 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         // Method for pinning managed class instance to native class. Ensures that managed class is nog GC'ed before
         // native class is freed. It is important only for classes that can be inherited.
-        if (generator->inheritable_.IsIncluded(entity->symbolName_))
+        bool isInheritable = generator->inheritable_.IsIncluded(entity->symbolName_);
+        bool isRefCounted = IsSubclassOf(cls, "Urho3D::RefCounted");
+        if (isInheritable || isRefCounted)
         {
             printer_ << fmt::format("URHO3D_EXPORT_API void {}_setup({}* instance, void* gcHandle, const char* typeName)", baseName, entity->sourceSymbolName_);
             printer_.Indent();
             {
-                printer_ << "assert(instance->gcHandle_ == nullptr);";
-                printer_ << "instance->gcHandle_ = gcHandle;";
-                if (IsSubclassOf(entity->Ast<cppast::cpp_class>(), "Urho3D::Object"))
-                    printer_ << fmt::format("instance->typeInfo_ = new Urho3D::TypeInfo(typeName, {}::GetTypeInfoStatic());", entity->sourceSymbolName_);
+                const auto& cls = entity->Ast<cppast::cpp_class>();
+                if (isRefCounted)
+                {
+                    printer_ << "assert(instance->HasDeleter() == false);";
+                    printer_ << "instance->SetDeleter([](RefCounted* instance_, void* gcHandle_) {";
+                    printer_.Indent("");
+                    {
+                        // TODO: If deleter runs form another thread delegate deletion to the main thread
+                        printer_ << "managedAPI.FreeGCHandle(gcHandle_);";
+                        printer_ << "delete instance_;";
+                    }
+                    printer_.Dedent("}, gcHandle);");
+                }
+                if (isInheritable)
+                {
+                    if (isRefCounted)
+                        // Ensure that different GC handles are stored in wrapepr class and refcounted deleter user data
+                        printer_ << "gcHandle = managedAPI.CloneGCHandle(gcHandle);";
+                    printer_ << "instance->gcHandle_ = gcHandle;";
+                    if (IsSubclassOf(cls, "Urho3D::Object"))
+                        printer_ << fmt::format("instance->typeInfo_ = new Urho3D::TypeInfo(typeName, {}::GetTypeInfoStatic());", entity->sourceSymbolName_);
+                }
             }
             printer_.Dedent();
             printer_ << "";
