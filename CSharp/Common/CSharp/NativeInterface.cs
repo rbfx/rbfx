@@ -23,13 +23,15 @@ namespace CSharp
     public interface INativeObject : IDisposable
     {
         IntPtr NativeInstance { get; }
+        bool IsDisposed { get; }
     }
 
     public abstract class NativeObject : INativeObject, IEquatable<NativeObject>
     {
-        public IntPtr NativeInstance { get; set; } = IntPtr.Zero;
-        protected bool OwnsNativeInstance { get; set; } = false;
-        protected volatile int IsDisposed = 1;
+        public IntPtr NativeInstance { get; protected set; } = IntPtr.Zero;
+        protected bool OwnsNativeInstance { get; set; }
+        public bool IsDisposed => DisposedCounter == 0;
+        protected volatile int DisposedCounter = 0;
 
         internal NativeObject(IntPtr instance, bool ownsInstance=false)
         {
@@ -77,7 +79,7 @@ namespace CSharp
         {
             unchecked
             {
-                return (NativeInstance.GetHashCode() * 397) ^ IsDisposed;
+                return (NativeInstance.GetHashCode() * 397) ^ DisposedCounter;
             }
         }
 

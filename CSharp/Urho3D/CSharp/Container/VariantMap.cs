@@ -193,7 +193,7 @@ namespace Urho3D
 
         public override void Dispose()
         {
-            if (Interlocked.Increment(ref IsDisposed) == 1)
+            if (Interlocked.Increment(ref DisposedCounter) == 1)
             {
                 InstanceCache.Remove(NativeInstance);
                 if (OwnsNativeInstance)
