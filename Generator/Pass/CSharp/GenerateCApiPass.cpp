@@ -190,7 +190,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 call += fmt::format("__public_{}({})", entity->sourceName_, paramNames);
 
             if (!IsVoid(func.return_type()))
-                call = "auto returnValue = " + MapToC(func.return_type(), call);
+                call = "auto&& returnValue = " + MapToC(func.return_type(), call);
 
             printer_ << call + ";";
             PrintParameterHandlingCodePost(entity->children_);
@@ -238,7 +238,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
             if (!IsVoid(func.return_type()))
             {
-                printer_.Write("auto returnValue = ");
+                printer_.Write("auto&& returnValue = ");
                 call = MapToC(func.return_type(), call);
             }
 
