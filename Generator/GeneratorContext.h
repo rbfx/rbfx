@@ -24,6 +24,7 @@
 
 
 #include <string>
+#include <map>
 #include <unordered_map>
 #include <Urho3D/Math/MathDefs.h>
 #include <Urho3D/Container/Hash.h>
