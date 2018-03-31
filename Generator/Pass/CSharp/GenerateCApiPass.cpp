@@ -99,7 +99,10 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         {
             // Using sourceName_ with wrapper classes causes weird build errors.
             std::string className = entity->symbolName_;
-            printer_ << fmt::format("script->ReleaseRef<{}>(instance);", className);
+            if (IsSubclassOf(cls, "Urho3D::RefCounted"))
+                printer_ << "instance->ReleaseRef();";
+            else
+                printer_ << "delete instance;";
         }
         printer_.Dedent();
         printer_ << "";
@@ -138,6 +141,8 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             fmt::arg("params", ParameterList(func.parameters(), toCType)));
         printer_.Indent();
         {
+            // Do not AddRef to RefCounted objects here because we may end up having several managed classes pointing to
+            // same native instance, therefore wrapper classes AddRef instead.
             PrintParameterHandlingCodePre(entity->children_);
             printer_ << "auto&& returnValue = " + MapToCNoCopy(entity->parent_->sourceSymbolName_,
                 fmt::format("new {class}({params})", fmt::arg("class", className),

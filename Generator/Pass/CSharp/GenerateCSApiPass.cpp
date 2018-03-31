@@ -331,6 +331,8 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_ << fmt::format("var instance = {cFunctionName}({paramNameList});",
                 FMT_CAPTURE(cFunctionName), FMT_CAPTURE(paramNameList));
             printer_ << "SetupInstance(instance, true);";
+            if (IsSubclassOf(cls->Ast<cppast::cpp_class>(), "Urho3D::RefCounted"))
+                printer_ << "AddRef();";
             PrintParameterHandlingCodePost(entity->children_);
         }
         printer_.Dedent();

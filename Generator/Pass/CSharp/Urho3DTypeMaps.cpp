@@ -151,7 +151,8 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
         map.cToCppTemplate_ = fmt::format("CSharpConverter<Urho3D::{vectorKind}<{cppType}>>::FromCSharp({{value}})",
             FMT_CAPTURE(cppType), FMT_CAPTURE(vectorKind));
         map.csToPInvokeTemplate_ = fmt::format("SafeArray.__ToPInvoke<{csType}>({{value}})", FMT_CAPTURE(csType));
-        map.pInvokeToCSTemplate_ = fmt::format("SafeArray.__FromPInvoke<{csType}>({{value}}, false /*TODO*/)", FMT_CAPTURE(csType));
+        map.pInvokeToCSTemplate_ = fmt::format("SafeArray.__FromPInvoke<{csType}>({{value}}, {owns})",
+            FMT_CAPTURE(csType), fmt::arg("owns", IsComplexType(type) && IsValueType(type) ? "true" : "false"));
         map.isValueType_ = true;
         generator->typeMaps_[typeName] = map;
     }

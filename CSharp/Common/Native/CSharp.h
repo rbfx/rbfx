@@ -39,18 +39,6 @@ public:
     {
         if (instance == nullptr)
             return nullptr;
-
-        MutexLock scoped(lock_);
-        if (instanceToHandler_.Contains((void*)instance))
-            return instance;
-
-        instance->AddRef();
-        auto* handler = handlesAllocator_.Reserve();
-        handler->instance_ = (void*)instance;
-        handler->deleter_ = [](NativeObjectHandler* handler) {
-            ((RefCounted*)handler->instance_)->ReleaseRef();
-        };
-        instanceToHandler_[handler->instance_] = handler;
         return instance;
     }
 
@@ -58,34 +46,14 @@ public:
     {
         if (instance == nullptr)
             return nullptr;
-
-        MutexLock scoped(lock_);
-        if (instanceToHandler_.Contains((void*)instance))
-            return (T*)instance;
-
-        auto* handler = handlesAllocator_.Reserve();
-        handler->instance_ = (void*)instance;
-        handler->deleter_ = [](NativeObjectHandler* handler){
-            delete ((T*)handler->instance_);
-        };
-        instanceToHandler_[handler->instance_] = handler;
-        return (T*)handler->instance_;
+        return (T*)instance;
     }
 
     template<typename T> T* TakePointerReference(const T* instance)
     {
         if (instance == nullptr)
             return nullptr;
-
-        MutexLock scoped(lock_);
-        if (instanceToHandler_.Contains((void*)instance))
-            return (T*)instance;
-
-        auto* handler = handlesAllocator_.Reserve();
-        handler->instance_ = (void*)instance;
-        handler->deleter_ = nullptr;
-        instanceToHandler_[handler->instance_] = handler;
-        return (T*)handler->instance_;
+        return (T*)instance;
     }
 
     template<typename T> using RefCountedType = typename std::enable_if<std::is_base_of<Urho3D::RefCounted, T>::value, T>::type;
@@ -115,37 +83,6 @@ public:
     // everything does not blow up.
 //    template<typename T> T* AddRef(const T& object)    { return TakePointerReference<T>(&object); }
 
-
-    // Should usually not be called. Target runtime is responsible for freeing this string.
-    const char* AddRef(const String& object)           { return strdup(object.CString()); }
-    const char* AddRef(const std::string& object)      { return strdup(object.c_str()); }
-
-    // RefCounted instances are released on managed side. Swallow these calls to avoid warning in function below.
-    template<typename T> void ReleaseRef(RefCountedType<T>* object) { }
-
-    template<typename T>
-    void ReleaseRef(T* instance)
-    {
-        MutexLock scoped(lock_);
-        auto it = instanceToHandler_.Find((void*)instance);
-        if (it == instanceToHandler_.End())
-        {
-            URHO3D_LOGERROR("Tried to release unreferenced script object!");
-            return;
-        }
-        handlesAllocator_.Free(it->second_);
-        instanceToHandler_.Erase(it);
-    }
-
-    NativeObjectHandler* GetHandler(void* instance)
-    {
-        MutexLock scoped(lock_);
-        auto it = instanceToHandler_.Find(instance);
-        if (it == instanceToHandler_.End())
-            return nullptr;
-        return it->second_;
-    }
-
     template<typename T>
     void RegisterType()
     {
@@ -162,9 +99,6 @@ public:
     ManagedInterface net_;
 
 protected:
-    Mutex lock_;
-    Allocator<NativeObjectHandler> handlesAllocator_;
-    HashMap<void*, NativeObjectHandler*> instanceToHandler_;
     HashMap<StringHash, const TypeInfo*> typeInfos_;
 };
 

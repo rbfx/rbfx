@@ -107,8 +107,6 @@ namespace CSharp
             var entry = _cache.GetOrAdd(instance, ptr =>
             {
                 var object_ = factory(ptr);
-                // In case this is RefCounted object add a reference for duration of object's lifetime.
-                (object_ as RefCounted)?.AddRef();
                 return new CacheEntry(object_);
             });
             entry.LastAccess = Environment.TickCount;
@@ -116,13 +114,16 @@ namespace CSharp
             return (T)entry.Target;
         }
 
+        public static void Add(Context instance)
+        {
+            ExpireCache();
+            NativeInterface.Setup();
+            _cache[instance.NativeInstance] = new CacheEntry(instance);
+        }
+
         public static void Add<T>(T instance) where T: NativeObject
         {
             ExpireCache();
-            if (instance is Context)
-                NativeInterface.Setup();
-            // In case this is RefCounted object add a reference for duration of object's lifetime.
-            (instance as RefCounted)?.AddRef();
             _cache[instance.NativeInstance] = new CacheEntry(instance);
         }
 
@@ -133,15 +134,8 @@ namespace CSharp
             if (!_cache.TryRemove(instance, out entry))
                 return;
 
-            var target = entry.Target;
-            if (target == null)
-                return;
-
-            if (target is Context)
+            if (entry.Target is Context)
                 NativeInterface.Dispose();
-
-            if (entry.Target is RefCounted)
-                ((RefCounted) target).ReleaseRef();
         }
 
         /// <summary>

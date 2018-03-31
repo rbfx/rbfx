@@ -112,7 +112,22 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
             printer_ << fmt::format("public unsafe partial class {} : INativeObject", entity->name_);
             printer_.Indent();
-            printer_ << fmt::format("internal {}(IntPtr instance, bool ownsInstance) : base(instance, ownsInstance) {{ }}", entity->name_);
+            printer_ << fmt::format("internal {}(IntPtr instance, bool ownsInstance) : base(instance, ownsInstance)", entity->name_);
+            printer_.Indent();
+            {
+                if (entity->symbolName_ == "Urho3D::RefCounted")
+                {
+                    // If instance is null then managed side is initiating object construction and will call AddRef
+                    // after SetupInstance().
+                    printer_ << "if (instance != IntPtr.Zero)";
+                    printer_.Indent("");
+                    {
+                        printer_ << "AddRef();";
+                    }
+                    printer_.Dedent("");
+                }
+            }
+            printer_.Dedent();
             printer_ << "";
 
             printer_ << fmt::format("public override void Dispose()");

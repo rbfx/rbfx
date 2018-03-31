@@ -55,40 +55,7 @@ URHO3D_EXPORT_API int Urho3D_StringVector_IndexOf(StringVector* instance, const 
 
 URHO3D_EXPORT_API void Urho3D_StringVector_destructor(StringVector* instance)
 {
-    script->ReleaseRef<StringVector>(instance);
-}
-
-///////////////////////////////////////////////// VectorBase ///////////////////////////////////////////////////////////
-URHO3D_EXPORT_API unsigned char* Urho3D_VectorBase_AllocateBuffer(int size)
-{
-    return VectorBase::AllocateBuffer(size);
-}
-
-URHO3D_EXPORT_API void Urho3D_VectorBase_FreeBuffer(unsigned char* buffer)
-{
-    VectorBase::FreeBuffer(buffer);
-}
-
-URHO3D_EXPORT_API VectorBase* Urho3D_VectorBase_VectorBase()
-{
-    return script->TakeOwnership<VectorBase>(new VectorBase());
-}
-
-class VectorBaseAccessor : public VectorBase
-{
-public:
-    unsigned char* Buffer() { return buffer_; }
-};
-
-URHO3D_EXPORT_API void Urho3D_VectorBase_destructor(VectorBase* instance)
-{
-    if (auto handler = script->GetHandler(instance))
-    {
-        // Undefined behavior. Most likely safe but proper solution should be figured out some time.
-        if (handler->deleter_ != nullptr)
-            VectorBase::FreeBuffer(((VectorBaseAccessor*)instance)->Buffer());
-    }
-    script->ReleaseRef<VectorBase>(instance);
+    delete instance;
 }
 
 }
