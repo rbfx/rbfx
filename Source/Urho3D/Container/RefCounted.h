@@ -76,6 +76,11 @@ public:
     /// Return pointer to the reference count structure.
     RefCount* RefCountPtr() { return refCount_; }
 
+    /// Set a custom deleter function which will be in charge of deallocating object.
+    void SetDeleter(void(*deleter)(RefCounted* instance, void* userData), void* userData = nullptr);
+    /// Returns true when object has custom deleter set.
+    bool HasDeleter() const { return deleter_ != nullptr; }
+
 private:
     /// Prevent copy construction.
     RefCounted(const RefCounted& rhs);
@@ -84,6 +89,11 @@ private:
 
     /// Pointer to the reference count structure.
     RefCount* refCount_;
+
+    /// Custom pointer that will be passed to deleter when object refcount reaches zero.
+    void* deleterUserData_ = nullptr;
+    /// Custom deleter which will be deallocating native object.
+    void(*deleter_)(RefCounted* instance, void* userData) = nullptr;
 };
 
 }
