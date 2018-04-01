@@ -30,7 +30,7 @@ namespace DemoApplication
     {
         public RotateObject(Context context) : base(context)
         {
-            UpdateEventMask = USE_UPDATE;
+            UpdateEventMask = UseUpdate;
         }
 
         public override void Update(float timeStep)
@@ -55,11 +55,11 @@ namespace DemoApplication
         public override void Setup()
         {
             var currentDir = Directory.GetCurrentDirectory();
-            EngineParameters[EngineDefs.EP_FULL_SCREEN] = false;
-            EngineParameters[EngineDefs.EP_WINDOW_WIDTH] = 1920;
-            EngineParameters[EngineDefs.EP_WINDOW_HEIGHT] = 1080;
-            EngineParameters[EngineDefs.EP_WINDOW_TITLE] = "Hello C#";
-            EngineParameters[EngineDefs.EP_RESOURCE_PREFIX_PATHS] = $"{currentDir};{currentDir}/..";
+            EngineParameters[EngineDefs.EpFullScreen] = false;
+            EngineParameters[EngineDefs.EpWindowWidth] = 1920;
+            EngineParameters[EngineDefs.EpWindowHeight] = 1080;
+            EngineParameters[EngineDefs.EpWindowTitle] = "Hello C#";
+            EngineParameters[EngineDefs.EpResourcePrefixPaths] = $"{currentDir};{currentDir}/..";
         }
 
         public override void Start()
@@ -81,7 +81,7 @@ namespace DemoApplication
 
             // Scene
             _camera.Position = new Vector3(0, 2, -2);
-            _camera.LookAt(Vector3.ZERO);
+            _camera.LookAt(Vector3.Zero);
 
             // Cube
             _cube = _scene.CreateChild("Cube");
@@ -94,7 +94,7 @@ namespace DemoApplication
             _light = _scene.CreateChild("Light");
             _light.CreateComponent<Light>();
             _light.Position = new Vector3(0, 2, -1);
-            _light.LookAt(Vector3.ZERO);
+            _light.LookAt(Vector3.Zero);
 
             SubscribeToEvent(CoreEvents.E_UPDATE, args =>
             {
