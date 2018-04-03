@@ -708,6 +708,7 @@ std::string GenerateCSApiPass::ToCSType(const cppast::cpp_type& type, bool disal
         default:
             assert(false);
         }
+        return "";
     };
 
     std::string typeName;

@@ -479,6 +479,7 @@ std::string GeneratePInvokePass::ToPInvokeType(const cppast::cpp_type& type, boo
         default:
             assert(false);
         }
+        return "";
     };
 
     std::string typeName;

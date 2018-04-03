@@ -509,6 +509,7 @@ std::string GenerateCApiPass::ToCType(const cppast::cpp_type& type, bool disallo
         default:
             assert(false);
         }
+        return "";
     };
 
     std::string typeName;
