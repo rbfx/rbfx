@@ -25,10 +25,16 @@ if (NOT URHO3D_CSHARP)
     return ()
 endif ()
 
+if (MSVC)
+    set (URHO3DNET_LIBRARY ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}/$<CONFIG>/Urho3DNet.dll)
+else ()
+    set (URHO3DNET_LIBRARY ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}/Urho3DNet.dll)
+endif ()
+
 # Managed executable must find Urho3DCSharp and Urho3DNet in the same directory, that is why it is put to DEST_BIN_DIR
 # instead of samples directory.
 add_target_csharp(102_CSharpProject /target:exe /reference:System.dll
-    /reference:${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}/Urho3DNet.dll
-    /out:${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}/102_CSharpProject.exe ${CMAKE_CURRENT_SOURCE_DIR}/Program.cs
+    /reference:${URHO3DNET_LIBRARY} /out:${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}/102_CSharpProject.exe
+    ${CMAKE_CURRENT_SOURCE_DIR}/Program.cs
 )
 add_dependencies(102_CSharpProject Urho3DNet)
