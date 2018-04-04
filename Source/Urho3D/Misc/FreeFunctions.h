@@ -31,6 +31,9 @@ namespace Urho3D {
 
 	};
 
+	/// Other Free Functions that could be moved to elsewhere within the Urho3D namespace!
+
+
 	void URHO3D_API PrintRayQueryResults(PODVector<RayQueryResult>& results);
 	void URHO3D_API PrintVariantMap(VariantMap& map);
 
