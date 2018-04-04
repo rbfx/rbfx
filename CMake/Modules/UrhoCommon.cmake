@@ -115,6 +115,14 @@ if (EMSCRIPTEN)
     set (CMAKE_MODULE_LINKER_FLAGS_DEBUG "${CMAKE_MODULE_LINKER_FLAGS_DEBUG} -g4 -s DISABLE_EXCEPTION_CATCHING=1")
 endif ()
 
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    set (CLANG ON)
+    set (GNU ON)
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    set (GCC ON)
+    set (GNU ON)
+endif()
+
 # Macro for setting symbolic link on platform that supports it
 macro (create_symlink SOURCE DESTINATION)
     # Make absolute paths so they work more reliably on cmake-gui
