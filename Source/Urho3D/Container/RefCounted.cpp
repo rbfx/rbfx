@@ -62,7 +62,12 @@ void RefCounted::ReleaseRef()
     assert(refCount_->refs_ > 0);
     (refCount_->refs_)--;
     if (!refCount_->refs_)
-        delete this;
+    {
+        if (deleter_ != nullptr)
+            deleter_(this, deleterUserData_);
+        else
+            delete this;
+    }
 }
 
 int RefCounted::Refs() const
@@ -74,6 +79,12 @@ int RefCounted::WeakRefs() const
 {
     // Subtract one to not return the internally held reference
     return refCount_->weakRefs_ - 1;
+}
+
+void RefCounted::SetDeleter(void (* deleter)(RefCounted*, void*), void* userData)
+{
+    deleter_ = deleter;
+    deleterUserData_ = userData;
 }
 
 }
