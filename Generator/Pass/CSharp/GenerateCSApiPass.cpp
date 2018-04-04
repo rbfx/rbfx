@@ -635,7 +635,7 @@ void GenerateCSApiPass::Stop()
         URHO3D_LOGERRORF("Failed writing %s", outputFile.c_str());
         return;
     }
-    fp << printer_.Get().CString();
+    fp << printer_.Get();
 }
 
 std::string GenerateCSApiPass::MapToCS(const cppast::cpp_type& type, const std::string& expression)

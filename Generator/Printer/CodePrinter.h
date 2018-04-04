@@ -23,7 +23,8 @@
 #pragma once
 
 
-#include <Urho3D/Container/Str.h>
+#include <string>
+#include <vector>
 
 
 namespace Urho3D
@@ -35,17 +36,17 @@ public:
     void Indent();
     void Dedent();
 
-    void Write(const String& text);
-    void WriteLine(const String& line="", bool indent=true);
-    CodePrinter& operator<<(const String& line);
-    String Get();
+    void Write(const std::string& text);
+    void WriteLine(const std::string& line="", bool indent=true);
+    CodePrinter& operator<<(const std::string& line);
+    std::string Get();
     void Flush();
 
     int indent_ = 0;
 
 protected:
-    Vector<String> buffer_;
-    Vector<String> lines_;
+    std::vector<std::string> buffer_;
+    std::vector<std::string> lines_;
 };
 
 class PrinterScope

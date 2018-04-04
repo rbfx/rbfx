@@ -26,19 +26,19 @@
 namespace Urho3D
 {
 
-void CSharpPrinter::Indent(const String& symbol)
+void CSharpPrinter::Indent(const std::string& symbol)
 {
     Flush();
-    if (!symbol.Empty())
+    if (!symbol.empty())
         WriteLine(symbol);
     CodePrinter::Indent();
 }
 
-void CSharpPrinter::Dedent(const String& symbol)
+void CSharpPrinter::Dedent(const std::string& symbol)
 {
     Flush();
     CodePrinter::Dedent();
-    if (!symbol.Empty())
+    if (!symbol.empty())
         WriteLine(symbol);
 }
 

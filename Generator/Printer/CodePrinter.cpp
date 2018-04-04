@@ -21,6 +21,7 @@
 //
 
 #include "CodePrinter.h"
+#include "Utilities.h"
 
 
 namespace Urho3D
@@ -36,20 +37,20 @@ void CodePrinter::Dedent()
     indent_--;
 }
 
-void CodePrinter::Write(const String& text)
+void CodePrinter::Write(const std::string& text)
 {
-    buffer_ += text.Trimmed("\r\n");
-    if (text.EndsWith("\n"))
+    buffer_.emplace_back(text);
+    if (text.back() == '\n')
         Flush();
 }
 
-void CodePrinter::WriteLine(const String& line, bool indent)
+void CodePrinter::WriteLine(const std::string& line, bool indent)
 {
     Flush();
-    lines_ += String(' ', indent ? indent_ * 4 : 0) + line;
+    lines_.emplace_back(std::string(indent ? indent_ * 4 : 0, ' ') + line);
 }
 
-CodePrinter& CodePrinter::operator<<(const String& line)
+CodePrinter& CodePrinter::operator<<(const std::string& line)
 {
     WriteLine(line);
     return *this;
@@ -57,18 +58,18 @@ CodePrinter& CodePrinter::operator<<(const String& line)
 
 void CodePrinter::Flush()
 {
-    if (!buffer_.Empty())
+    if (!buffer_.empty())
     {
-        lines_ += (String(' ', indent_ * 4) + String::Joined(buffer_, ""));
-        buffer_.Clear();
+        lines_.emplace_back(std::string(indent_ * 4, ' ') + str::join(buffer_, ""));
+        buffer_.clear();
     }
 }
 
-String CodePrinter::Get()
+std::string CodePrinter::Get()
 {
     Flush();
-    String text = String::Joined(lines_, "\n");
-    lines_.Clear();
+    auto text = str::join(lines_, "\n");
+    lines_.clear();
     return text;
 }
 

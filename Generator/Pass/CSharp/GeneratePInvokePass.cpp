@@ -409,7 +409,7 @@ void GeneratePInvokePass::Stop()
         URHO3D_LOGERRORF("Failed writing %s", outputFile.c_str());
         return;
     }
-    fp << printer_.Get().CString();
+    fp << printer_.Get();
 }
 
 std::string GeneratePInvokePass::ToPInvokeTypeReturn(const cppast::cpp_type& type)

@@ -265,7 +265,7 @@ void GenerateClassWrappers::Stop()
             URHO3D_LOGERROR("Failed saving ClassWrappers.hpp");
             return;
         }
-        fp << printer_.Get().CString();
+        fp << printer_.Get();
     }
 
     // Save RegisterFactories.cpp
@@ -276,7 +276,7 @@ void GenerateClassWrappers::Stop()
             URHO3D_LOGERROR("Failed saving RegisterFactories.cpp");
             return;
         }
-        fp << initPrinter_.Get().CString();
+        fp << initPrinter_.Get();
     }
 }
 

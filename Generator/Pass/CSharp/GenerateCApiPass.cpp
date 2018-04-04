@@ -432,7 +432,7 @@ void GenerateCApiPass::Stop()
         URHO3D_LOGERROR("Failed saving CApi.cpp");
         return;
     }
-    fp << printer_.Get().CString();
+    fp << printer_.Get();
 }
 
 std::string GenerateCApiPass::GetUniqueName(const std::string& baseName)

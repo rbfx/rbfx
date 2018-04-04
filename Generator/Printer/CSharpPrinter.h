@@ -32,8 +32,8 @@ namespace Urho3D
 class CSharpPrinter : public CodePrinter
 {
 public:
-    void Indent(const String& symbol="{");
-    void Dedent(const String& symbol="}");
+    void Indent(const std::string& symbol="{");
+    void Dedent(const std::string& symbol="}");
 
 };
 
