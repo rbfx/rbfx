@@ -42,7 +42,7 @@ namespace Urho3D
 struct MetaEntity;
 
 /// Convert a wildcard string to regular expression. "*" matches anything except /, "**" matches everything including /.
-std::regex WildcardToRegex(const String& wildcard);
+std::regex WildcardToRegex(const std::string& wildcard);
 /// Returns entity name including names of it's parent scopes (separated by ::). Also includes function signature.
 std::string GetUniqueName(const cppast::cpp_entity& e);
 /// Returns entity name including names of it's parent scopes (separated by ::).
@@ -72,7 +72,7 @@ public:
     /// Initialize with XMLElement that consists of <include> and <exclude> children tags with wildcards as their values.
     void Load(const JSONValue& rules);
     /// Verify string is matched by include rules and not matched by exclude rules.
-    bool IsIncluded(const String& value);
+    bool IsIncluded(const std::string& value);
 
 protected:
     Vector<std::regex> includes_;

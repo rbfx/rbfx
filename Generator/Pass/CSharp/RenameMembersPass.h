@@ -24,7 +24,6 @@
 
 
 #include <regex>
-#include <Urho3D/Core/Object.h>
 #include "Pass/CppPass.h"
 
 namespace Urho3D

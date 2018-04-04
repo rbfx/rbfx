@@ -28,7 +28,6 @@
 #include <unordered_map>
 #include <Urho3D/Math/MathDefs.h>
 #include <Urho3D/Container/Hash.h>
-#include <Urho3D/Core/Object.h>
 #include <Urho3D/IO/Log.h>
 #include <cppast/cpp_entity.hpp>
 #include <cppast/libclang_parser.hpp>
@@ -51,7 +50,7 @@ template <> inline unsigned MakeHash(const char* value)
     return hash;
 }
 
-/// std::String hash function.
+/// std::string hash function.
 template <> inline unsigned MakeHash(const std::string& value)
 {
     return MakeHash(value.c_str());
@@ -77,7 +76,7 @@ public:
     void LoadCompileConfig(const std::vector<std::string>& includes, std::vector<std::string>& defines,
         const std::vector<std::string>& options);
 
-    bool LoadRules(const String& jsonPath);
+    bool LoadRules(const std::string& jsonPath);
     bool ParseFiles(const std::string& sourceDir);
     template<typename T, typename... Args>
     void AddCppPass(Args... args) { cppPasses_.emplace_back(std::move(std::unique_ptr<CppAstPass>(dynamic_cast<CppAstPass*>(new T(args...))))); }

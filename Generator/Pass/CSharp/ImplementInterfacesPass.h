@@ -26,7 +26,6 @@
 #include <Urho3D/Container/Ptr.h>
 #include <Urho3D/Container/HashMap.h>
 #include <unordered_map>
-#include <Urho3D/Core/Object.h>
 #include "Pass/CppPass.h"
 
 

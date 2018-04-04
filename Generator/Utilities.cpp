@@ -24,6 +24,7 @@
 #include <Urho3D/IO/Log.h>
 #include <cppast/cpp_member_function.hpp>
 #include <cppast/cpp_template.hpp>
+#include <fmt/format.h>
 #include "Utilities.h"
 #include "GeneratorContext.h"
 
@@ -31,27 +32,27 @@
 namespace Urho3D
 {
 
-std::regex WildcardToRegex(const Urho3D::String& wildcard)
+std::regex WildcardToRegex(const std::string& wildcard)
 {
-    const String wildcardCharacter("@@WILDCARD_STAR@@");
+    const std::string wildcardCharacter("@@WILDCARD_STAR@@");
 
     // Wildcard is converted to regex
-    String regex = wildcard;
+    std::string regex = wildcard;
 
     // * is regex character. Make sure our regex will not interfere with wildcard values
-    regex.Replace("*", wildcardCharacter);
+    str::replace_str(regex, "*", wildcardCharacter);
 
     // Escape regex characters except for *
     const char* special = "\\.^$|()[]{}+?";
     for (char c = *special; c != 0; c = *(++special))
-        regex.Replace(String(c), ToString("\\%c", c));
+        str::replace_str(regex, std::string(1, c), fmt::format("\\{}", c));
 
     // Replace wildcard characters
-    regex.Replace(wildcardCharacter + wildcardCharacter, ".*");
-    regex.Replace(wildcardCharacter, "[^/]*");
+    str::replace_str(regex, wildcardCharacter + wildcardCharacter, ".*");
+    str::replace_str(regex, wildcardCharacter, "[^/]*");
     regex = "^" + regex + "$";
 
-    return std::regex(regex.CString());
+    return std::regex(regex);
 }
 
 std::string GetScopeName(const cppast::cpp_entity& e)
@@ -59,7 +60,7 @@ std::string GetScopeName(const cppast::cpp_entity& e)
     std::string name = e.name();
     if (name.empty())
         // Give unique symbol to anonymous entities
-        name = ToString("anonymous_%p", (void*) &e).CString();
+        name = fmt::format("anonymous_{}", (void*) &e);
 
     std::vector<std::string> elements{name};
     type_safe::optional_ref<const cppast::cpp_entity> ref(e.parent());
@@ -290,19 +291,19 @@ IncludedChecker::IncludedChecker(const JSONValue& rules)
 void IncludedChecker::Load(const JSONValue& rules)
 {
     for (const auto& include : rules.Get("include").GetArray())
-        includes_.Push(WildcardToRegex(include.GetString()));
+        includes_.Push(WildcardToRegex(include.GetString().CString()));
 
     for (const auto& exclude : rules.Get("exclude").GetArray())
-        excludes_.Push(WildcardToRegex(exclude.GetString()));
+        excludes_.Push(WildcardToRegex(exclude.GetString().CString()));
 }
 
-bool IncludedChecker::IsIncluded(const String& value)
+bool IncludedChecker::IsIncluded(const std::string& value)
 {
     // Verify item is included
     bool match = false;
     for (const auto& re : includes_)
     {
-        match = std::regex_match(value.CString(), re);
+        match = std::regex_match(value, re);
         if (match)
             break;
     }
@@ -312,7 +313,7 @@ bool IncludedChecker::IsIncluded(const String& value)
     {
         for (const auto& re : excludes_)
         {
-            if (std::regex_match(value.CString(), re))
+            if (std::regex_match(value, re))
             {
                 match = false;
                 break;

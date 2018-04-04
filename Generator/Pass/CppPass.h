@@ -210,9 +210,9 @@ public:
     virtual ~CppAstPass() = default;
 
     virtual void Start() { }
-    virtual void StartFile(const String& filePath) { }
+    virtual void StartFile(const std::string& filePath) { }
     virtual bool Visit(const cppast::cpp_entity& e, cppast::visitor_info info) = 0;
-    virtual void StopFile(const String& filePath) { }
+    virtual void StopFile(const std::string& filePath) { }
     virtual void Stop() { }
 };
 

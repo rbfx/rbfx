@@ -51,23 +51,23 @@ void GeneratorContext::LoadCompileConfig(const std::vector<std::string>& include
     for (const auto& item : includes)
         config_.add_include_dir(item);
 
-    for (const String item : defines)
+    for (const auto& item : defines)
     {
-        auto parts = item.Split('=');
-        if (parts.Contains("="))
+        auto parts = str::split(item, "=");
+        if (std::find(parts.begin(), parts.end(), "=") != parts.end())
         {
-            assert(parts.Size() == 2);
-            config_.define_macro(parts[0].CString(), parts[1].CString());
+            assert(parts.size() == 2);
+            config_.define_macro(parts[0], parts[1]);
         }
         else
-            config_.define_macro(item.CString(), "");
+            config_.define_macro(item, "");
     }
 }
 
-bool GeneratorContext::LoadRules(const String& jsonPath)
+bool GeneratorContext::LoadRules(const std::string& jsonPath)
 {
     rules_ = new JSONFile(context);
-    if (!rules_->LoadFile(jsonPath))
+    if (!rules_->LoadFile(jsonPath.c_str()))
         return false;
 
     inheritable_.Load(rules_->GetRoot().Get("inheritable"));
@@ -126,34 +126,34 @@ bool GeneratorContext::ParseFiles(const std::string& sourceDir)
         context->GetFileSystem()->ScanDir(sourceFiles, baseSourceDir, "", SCAN_FILES, true);
         Mutex m;
 
-        auto workItem = [&](String absPath, String filePath) {
-            URHO3D_LOGDEBUGF("Parse: %s", filePath.CString());
+        auto workItem = [&](std::string absPath, std::string filePath) {
+            URHO3D_LOGDEBUGF("Parse: %s", filePath.c_str());
 
             cppast::stderr_diagnostic_logger logger;
             // the parser is used to parse the entity
             // there can be multiple parser implementations
             cppast::libclang_parser parser(type_safe::ref(logger));
 
-            auto file = parser.parse(index_, absPath.CString(), config_);
+            auto file = parser.parse(index_, absPath.c_str(), config_);
             if (parser.error())
             {
-                URHO3D_LOGERRORF("Failed parsing %s", filePath.CString());
+                URHO3D_LOGERRORF("Failed parsing %s", filePath.c_str());
                 parser.reset_error();
             }
             else
             {
                 MutexLock scoped(m);
-                parsed_[absPath.CString()] = std::move(file);
+                parsed_[absPath] = std::move(file);
             }
         };
 
         for (const auto& filePath : sourceFiles)
         {
-            if (!checker.IsIncluded(filePath))
+            if (!checker.IsIncluded(filePath.CString()))
                 continue;
 
-            String absPath = baseSourceDir + filePath.CString();
-            context->GetWorkQueue()->AddWorkItem(std::bind(workItem, absPath, filePath));
+            std::string absPath = baseSourceDir + filePath.CString();
+            context->GetWorkQueue()->AddWorkItem(std::bind(workItem, absPath, filePath.CString()));
         }
 
         while (!context->GetWorkQueue()->IsCompleted(0))
