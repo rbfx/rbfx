@@ -139,7 +139,8 @@
       "cpp_to_c": "{value}.Value()",
       "c_to_cpp": "Urho3D::StringHash({value})",
       "pinvoke_to_cs": "new StringHash({value})",
-      "cs_to_pinvoke": "{value}.Hash"
+      "cs_to_pinvoke": "{value}.Hash",
+      "is_value_type": true,
     },
     // TODO: Avoid string copying when possible.
     // String typemaps always return a copy of string which is freed by mono. Sometimes this is not necessary and c api

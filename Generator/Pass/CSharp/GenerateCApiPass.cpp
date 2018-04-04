@@ -183,7 +183,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             // Do not AddRef to RefCounted objects here because we may end up having several managed classes pointing to
             // same native instance, therefore wrapper classes AddRef instead.
             PrintParameterHandlingCodePre(entity->children_);
-            printer_ << "auto&& returnValue = " +
+            printer_ << "auto* returnValue = " +
                 fmt::format("new {class}({params})", fmt::arg("class", className),
                     fmt::arg("params", ParameterNameList(func.parameters(), toCppType))) + ";";
             PrintParameterHandlingCodePost(entity->children_);
@@ -234,7 +234,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 call += fmt::format("__public_{}({})", entity->sourceName_, paramNames);
 
             if (!IsVoid(func.return_type()))
-                call = "auto&& returnValue = " + MapToC(func.return_type(), call);
+                call = GetAutoType(func.return_type()) + " returnValue = " + MapToC(func.return_type(), call);
 
             printer_ << call + ";";
             PrintParameterHandlingCodePost(entity->children_);
@@ -282,11 +282,11 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
             if (!IsVoid(func.return_type()))
             {
-                printer_.Write("auto&& returnValue = ");
+                printer_.Write(GetAutoType(func.return_type()) + " returnValue = ");
                 call = MapToC(func.return_type(), call);
             }
 
-            printer_ << call + ";";
+            printer_.Write(call + ";");
             PrintParameterHandlingCodePost(entity->children_);
 
             if (!IsVoid(func.return_type()))
@@ -578,6 +578,24 @@ void GenerateCApiPass::PrintParameterHandlingCodePost(const std::vector<SharedPt
         if (IsComplexOutputType(type))
             printer_ << "*" + param->name_ + " = " + MapToC(type, param->name_ + "Out") + ";";
     }
+}
+
+std::string GenerateCApiPass::GetAutoType(const cppast::cpp_type& type)
+{
+    const auto& nonCvType = cppast::remove_cv(type);
+    if (auto* map = generator->GetTypeMap(nonCvType))
+    {
+        if (map->csType_ == "string")
+            return "auto*";
+        else if (map->isValueType_)
+            return "auto&&";
+        else
+            return "auto*";
+    }
+    else if (nonCvType.kind() == cppast::cpp_type_kind::builtin_t || IsEnumType(nonCvType))
+        return "auto&&";
+    else
+        return "auto*";
 }
 
 }

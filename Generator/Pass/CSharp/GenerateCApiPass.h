@@ -49,6 +49,7 @@ protected:
     std::string ToCType(const cppast::cpp_type& type, bool disallowReferences=false);
     void PrintParameterHandlingCodePre(const std::vector<SharedPtr<MetaEntity>>& parameters);
     void PrintParameterHandlingCodePost(const std::vector<SharedPtr<MetaEntity>>& parameters);
+    std::string GetAutoType(const cppast::cpp_type& type);
 
     CSharpPrinter printer_;
     StringVector usedNames_;
