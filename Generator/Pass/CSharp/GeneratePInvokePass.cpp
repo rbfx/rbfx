@@ -21,8 +21,7 @@
 //
 
 #include <fmt/format.h>
-#include <Urho3D/IO/File.h>
-#include <Urho3D/IO/FileSystem.h>
+#include <fstream>
 #include <Urho3D/IO/Log.h>
 #include <cppast/cpp_namespace.hpp>
 #include <cppast/cpp_template.hpp>
@@ -403,15 +402,14 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
 void GeneratePInvokePass::Stop()
 {
-    String outputFile = generator->outputDirCs_ + "PInvoke.cs";
-    File file(context, outputFile, FILE_WRITE);
-    if (!file.IsOpen())
+    auto outputFile = generator->outputDirCs_ + "PInvoke.cs";
+    std::ofstream fp(outputFile);
+    if (!fp.is_open())
     {
-        URHO3D_LOGERRORF("Failed writing %s", outputFile.CString());
+        URHO3D_LOGERRORF("Failed writing %s", outputFile.c_str());
         return;
     }
-    file.WriteLine(printer_.Get());
-    file.Close();
+    fp << printer_.Get().CString();
 }
 
 std::string GeneratePInvokePass::ToPInvokeTypeReturn(const cppast::cpp_type& type)

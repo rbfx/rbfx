@@ -23,7 +23,6 @@
 #pragma once
 
 
-#include <Urho3D/Core/Object.h>
 #include <cppast/cpp_entity.hpp>
 #include <cppast/cpp_variable.hpp>
 #include <cppast/visitor.hpp>

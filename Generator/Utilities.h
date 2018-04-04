@@ -155,5 +155,6 @@ std::string join(const std::vector<std::string>& collection, const std::string& 
 std::vector<std::string> split(const std::string& value, const std::string& separator, bool keepEmpty=false);
 void rtrim(std::string &s);
 std::vector<std::string> SplitName(const std::string& name);
+std::string AddTrailingSlash(const std::string& str);
 
 }

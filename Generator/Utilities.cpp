@@ -796,4 +796,11 @@ std::vector<std::string> SplitName(const std::string& name)
     return result;
 }
 
+std::string AddTrailingSlash(const std::string& str)
+{
+    if (str.back() != '/')
+        return str + "/";
+    return str;
+}
+
 }

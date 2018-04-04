@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/IO/FileSystem.h>
 #include <cppast/cpp_variable.hpp>
 #include <cppast/cpp_namespace.hpp>
 #include "GeneratorContext.h"

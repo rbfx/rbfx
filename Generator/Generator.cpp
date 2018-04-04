@@ -49,10 +49,10 @@ SharedPtr<Context> context;
 
 int main(int argc, char* argv[])
 {
-    String rulesFile;
-    String sourceDir;
-    String outputDirCpp;
-    String outputDirCs;
+    std::string rulesFile;
+    std::string sourceDir;
+    std::string outputDirCpp;
+    std::string outputDirCs;
     std::vector<std::string> includes;
     std::vector<std::string> defines;
     std::vector<std::string> options;
@@ -113,9 +113,9 @@ int main(int argc, char* argv[])
             opt = opt.substr(1);
     }
 
-    sourceDir = AddTrailingSlash(sourceDir);
-    outputDirCs = AddTrailingSlash(outputDirCpp) + "CSharp/";
-    outputDirCpp = AddTrailingSlash(outputDirCpp) + "Native/";
+    sourceDir = str::AddTrailingSlash(sourceDir);
+    outputDirCs = str::AddTrailingSlash(outputDirCpp) + "CSharp/";
+    outputDirCpp = str::AddTrailingSlash(outputDirCpp) + "Native/";
 
     context = new Context();
     context->RegisterSubsystem(new FileSystem(context));

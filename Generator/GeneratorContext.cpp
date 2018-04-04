@@ -110,16 +110,16 @@ bool GeneratorContext::LoadRules(const String& jsonPath)
     return true;
 }
 
-bool GeneratorContext::ParseFiles(const String& sourceDir)
+bool GeneratorContext::ParseFiles(const std::string& sourceDir)
 {
-    sourceDir_ = AddTrailingSlash(sourceDir);
+    sourceDir_ = str::AddTrailingSlash(sourceDir);
 
     auto parse = rules_->GetRoot().Get("parse");
     assert(parse.IsObject());
 
     for (auto it = parse.Begin(); it != parse.End(); it++)
     {
-        auto baseSourceDir = AddTrailingSlash(sourceDir_ + it->first_);
+        std::string baseSourceDir = str::AddTrailingSlash(sourceDir_ + it->first_.CString());
         IncludedChecker checker(it->second_);
 
         Vector<String> sourceFiles;
@@ -152,7 +152,7 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
             if (!checker.IsIncluded(filePath))
                 continue;
 
-            String absPath = baseSourceDir + filePath;
+            String absPath = baseSourceDir + filePath.CString();
             context->GetWorkQueue()->AddWorkItem(std::bind(workItem, absPath, filePath));
         }
 
@@ -166,7 +166,7 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
     return true;
 }
 
-void GeneratorContext::Generate(const String& outputDirCpp, const String& outputDirCs)
+void GeneratorContext::Generate(const std::string& outputDirCpp, const std::string& outputDirCs)
 {
     outputDirCpp_ = outputDirCpp;
     outputDirCs_ = outputDirCs;

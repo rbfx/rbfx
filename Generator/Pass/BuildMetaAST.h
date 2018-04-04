@@ -23,7 +23,6 @@
 #pragma once
 
 
-#include <Urho3D/Core/Object.h>
 #include "CppPass.h"
 #include "Utilities.h"
 #include "GeneratorContext.h"

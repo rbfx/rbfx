@@ -21,7 +21,7 @@
 //
 
 #include <fmt/format.h>
-#include <Urho3D/IO/File.h>
+#include <fstream>
 #include <Urho3D/IO/Log.h>
 #include "GenerateClassWrappers.h"
 #include "GeneratorContext.h"
@@ -259,24 +259,24 @@ void GenerateClassWrappers::Stop()
 
     // Save ClassWrappers.hpp
     {
-        File file(context, generator->outputDirCpp_ + "ClassWrappers.hpp", FILE_WRITE);
-        if (!file.IsOpen())
+        std::ofstream fp(generator->outputDirCpp_ + "ClassWrappers.hpp");
+        if (!fp.is_open())
         {
             URHO3D_LOGERROR("Failed saving ClassWrappers.hpp");
             return;
         }
-        file.WriteLine(printer_.Get());
+        fp << printer_.Get().CString();
     }
 
     // Save RegisterFactories.cpp
     {
-        File file(context, generator->outputDirCpp_ + "RegisterFactories.cpp", FILE_WRITE);
-        if (!file.IsOpen())
+        std::ofstream fp(generator->outputDirCpp_ + "RegisterFactories.cpp");
+        if (!fp.is_open())
         {
             URHO3D_LOGERROR("Failed saving RegisterFactories.cpp");
             return;
         }
-        file.WriteLine(initPrinter_.Get());
+        fp << initPrinter_.Get().CString();
     }
 }
 

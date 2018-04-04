@@ -78,12 +78,12 @@ public:
         const std::vector<std::string>& options);
 
     bool LoadRules(const String& jsonPath);
-    bool ParseFiles(const String& sourceDir);
+    bool ParseFiles(const std::string& sourceDir);
     template<typename T, typename... Args>
     void AddCppPass(Args... args) { cppPasses_.emplace_back(std::move(std::unique_ptr<CppAstPass>(dynamic_cast<CppAstPass*>(new T(args...))))); }
     template<typename T, typename... Args>
     void AddApiPass(Args... args) { apiPasses_.emplace_back(std::move(std::unique_ptr<CppApiPass>(dynamic_cast<CppApiPass*>(new T(args...))))); }
-    void Generate(const String& outputDirCpp, const String& outputDirCs);
+    void Generate(const std::string& outputDirCpp, const std::string& outputDirCs);
     bool IsAcceptableType(const cppast::cpp_type& type);
     const TypeMap* GetTypeMap(const cppast::cpp_type& type, bool strict=false);
     const TypeMap* GetTypeMap(const std::string& typeName);
@@ -101,9 +101,9 @@ public:
     }
     MetaEntity* GetEntityOfConstant(MetaEntity* user, const std::string& constant);
 
-    String sourceDir_;
-    String outputDirCpp_;
-    String outputDirCs_;
+    std::string sourceDir_;
+    std::string outputDirCpp_;
+    std::string outputDirCs_;
     SharedPtr<JSONFile> rules_;
     cppast::libclang_compile_config config_;
     std::map<std::string, std::unique_ptr<cppast::cpp_file>> parsed_;

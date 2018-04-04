@@ -24,7 +24,6 @@
 
 
 #include <unordered_map>
-#include <Urho3D/Core/Object.h>
 #include "Pass/CppPass.h"
 #include "Printer/CSharpPrinter.h"
 
