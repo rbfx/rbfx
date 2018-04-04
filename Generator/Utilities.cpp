@@ -715,10 +715,12 @@ namespace str
 
 std::string& replace_str(std::string& dest, const std::string& find, const std::string& replace, unsigned maxReplacements)
 {
-    while(dest.find(find) != std::string::npos)
+    int pos = 0;
+    while((pos = dest.find(find, pos)) != std::string::npos)
     {
         dest.replace(dest.find(find), find.size(), replace);
         maxReplacements--;
+        pos += replace.size();
         if (maxReplacements == 0)
             break;
     }
