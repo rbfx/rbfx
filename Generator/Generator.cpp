@@ -43,6 +43,7 @@ namespace Urho3D
 {
 
 GeneratorContext* generator = nullptr;
+SharedPtr<Context> context;
 
 }
 
@@ -55,7 +56,6 @@ int main(int argc, char* argv[])
     std::vector<std::string> includes;
     std::vector<std::string> defines;
     std::vector<std::string> options;
-    SharedPtr<Context> context;
 
     CLI::App app{"CSharp bindings generator"};
 
@@ -131,8 +131,7 @@ int main(int argc, char* argv[])
     context->GetFileSystem()->CreateDirsRecursive(outputDirCs);
 
     // Generate bindings
-    generator = new GeneratorContext(context);
-    context->RegisterSubsystem(generator);
+    generator = new GeneratorContext();
 
     generator->LoadCompileConfig(includes, defines, options);
 #if _WIN32

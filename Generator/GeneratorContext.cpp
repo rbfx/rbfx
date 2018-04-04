@@ -21,10 +21,14 @@
 //
 
 #include <regex>
+#if __GNUC__
+#include <cxxabi.h>
+#endif
 #include <cppast/libclang_parser.hpp>
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/WorkQueue.h>
 #include <Urho3D/Core/Thread.h>
+#include <Urho3D/Core/Context.h>
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/IO/FileSystem.h>
@@ -36,8 +40,7 @@
 namespace Urho3D
 {
 
-GeneratorContext::GeneratorContext(Urho3D::Context* context)
-    : Object(context)
+GeneratorContext::GeneratorContext()
 {
     apiRoot_ = new MetaEntity();
 }
@@ -63,7 +66,7 @@ void GeneratorContext::LoadCompileConfig(const std::vector<std::string>& include
 
 bool GeneratorContext::LoadRules(const String& jsonPath)
 {
-    rules_ = new JSONFile(context_);
+    rules_ = new JSONFile(context);
     if (!rules_->LoadFile(jsonPath))
         return false;
 
@@ -120,7 +123,7 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
         IncludedChecker checker(it->second_);
 
         Vector<String> sourceFiles;
-        GetFileSystem()->ScanDir(sourceFiles, baseSourceDir, "", SCAN_FILES, true);
+        context->GetFileSystem()->ScanDir(sourceFiles, baseSourceDir, "", SCAN_FILES, true);
         Mutex m;
 
         auto workItem = [&](String absPath, String filePath) {
@@ -150,13 +153,13 @@ bool GeneratorContext::ParseFiles(const String& sourceDir)
                 continue;
 
             String absPath = baseSourceDir + filePath;
-            GetWorkQueue()->AddWorkItem(std::bind(workItem, absPath, filePath));
+            context->GetWorkQueue()->AddWorkItem(std::bind(workItem, absPath, filePath));
         }
 
-        while (!GetWorkQueue()->IsCompleted(0))
+        while (!context->GetWorkQueue()->IsCompleted(0))
         {
             Time::Sleep(30);
-            SendEvent(E_ENDFRAME);            // Ensures log messages are displayed.
+            context->GetWorkQueue()->SendEvent(E_ENDFRAME);            // Ensures log messages are displayed.
         }
     }
 
@@ -168,9 +171,19 @@ void GeneratorContext::Generate(const String& outputDirCpp, const String& output
     outputDirCpp_ = outputDirCpp;
     outputDirCs_ = outputDirCs;
 
+    auto getNiceName = [](const char* name) -> std::string
+    {
+        int status;
+#if __GNUC__
+        return abi::__cxa_demangle(name, 0, 0, &status);
+#else
+        return name;
+#endif
+    };
+
     for (const auto& pass : cppPasses_)
     {
-        URHO3D_LOGINFOF("#### Run pass: %s", pass->GetTypeName().CString());
+        URHO3D_LOGINFOF("#### Run pass: %s", getNiceName(typeid(*pass.get()).name()).c_str());
         pass->Start();
         for (const auto& pair : parsed_)
         {
@@ -249,9 +262,9 @@ void GeneratorContext::Generate(const String& outputDirCpp, const String& output
     };
     for (const auto& pass : apiPasses_)
     {
-        URHO3D_LOGINFOF("#### Run pass: %s", pass->GetTypeName().CString());
+        URHO3D_LOGINFOF("#### Run pass: %s", getNiceName(typeid(*pass.get()).name()).c_str());
         pass->Start();
-        visitOverlayEntity(pass, apiRoot_);
+        visitOverlayEntity(pass.get(), apiRoot_);
         pass->Stop();
     }
 }

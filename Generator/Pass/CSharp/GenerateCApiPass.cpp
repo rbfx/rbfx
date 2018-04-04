@@ -426,7 +426,7 @@ void GenerateCApiPass::Stop()
 
     printer_ << "}";    // Close extern "C"
 
-    File file(context_, GetSubsystem<GeneratorContext>()->outputDirCpp_ + "CApi.cpp", FILE_WRITE);
+    File file(context, generator->outputDirCpp_ + "CApi.cpp", FILE_WRITE);
     if (!file.IsOpen())
     {
         URHO3D_LOGERROR("Failed saving CApi.cpp");

@@ -71,20 +71,18 @@ struct TypeMap
 };
 
 class GeneratorContext
-    : public Object
 {
-    URHO3D_OBJECT(GeneratorContext, Object);
 public:
-    explicit GeneratorContext(Context* context);
+    explicit GeneratorContext();
     void LoadCompileConfig(const std::vector<std::string>& includes, std::vector<std::string>& defines,
         const std::vector<std::string>& options);
 
     bool LoadRules(const String& jsonPath);
     bool ParseFiles(const String& sourceDir);
     template<typename T, typename... Args>
-    void AddCppPass(Args... args) { cppPasses_.Push(DynamicCast<CppAstPass>(SharedPtr<T>(new T(context_, args...)))); }
+    void AddCppPass(Args... args) { cppPasses_.emplace_back(std::move(std::unique_ptr<CppAstPass>(dynamic_cast<CppAstPass*>(new T(args...))))); }
     template<typename T, typename... Args>
-    void AddApiPass(Args... args) { apiPasses_.Push(DynamicCast<CppApiPass>(SharedPtr<T>(new T(context_, args...)))); }
+    void AddApiPass(Args... args) { apiPasses_.emplace_back(std::move(std::unique_ptr<CppApiPass>(dynamic_cast<CppApiPass*>(new T(args...))))); }
     void Generate(const String& outputDirCpp, const String& outputDirCs);
     bool IsAcceptableType(const cppast::cpp_type& type);
     const TypeMap* GetTypeMap(const cppast::cpp_type& type, bool strict=false);
@@ -92,10 +90,12 @@ public:
     template<typename T>
     T* GetPass()
     {
+        auto& id = typeid(T);
         for (const auto& pass : apiPasses_)
         {
-            if (pass->GetType() == T::GetTypeStatic())
-                return (T*)pass.Get();
+            auto& passId = typeid(*pass.get());
+            if (id == passId)
+                return (T*)pass.get();
         }
         return nullptr;
     }
@@ -107,8 +107,8 @@ public:
     SharedPtr<JSONFile> rules_;
     cppast::libclang_compile_config config_;
     std::map<std::string, std::unique_ptr<cppast::cpp_file>> parsed_;
-    Vector<SharedPtr<CppAstPass>> cppPasses_;
-    Vector<SharedPtr<CppApiPass>> apiPasses_;
+    std::vector<std::unique_ptr<CppAstPass>> cppPasses_;
+    std::vector<std::unique_ptr<CppApiPass>> apiPasses_;
     SharedPtr<MetaEntity> apiRoot_;
     cppast::cpp_entity_index index_;
     std::string defaultNamespace_ = "Urho3D";
@@ -119,5 +119,6 @@ public:
 };
 
 extern GeneratorContext* generator;
+extern SharedPtr<Context> context;
 
 }

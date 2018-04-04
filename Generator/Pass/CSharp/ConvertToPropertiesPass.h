@@ -33,9 +33,8 @@ namespace Urho3D
 /// Walk AST and convert suitable methods to properties.
 class ConvertToPropertiesPass : public CppApiPass
 {
-    URHO3D_OBJECT(ConvertToPropertiesPass, CppApiPass);
 public:
-    explicit ConvertToPropertiesPass(Context* context) : CppApiPass(context) { };
+    explicit ConvertToPropertiesPass() { };
     bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
 
 protected:

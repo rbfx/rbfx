@@ -259,7 +259,7 @@ void GenerateClassWrappers::Stop()
 
     // Save ClassWrappers.hpp
     {
-        File file(context_, generator->outputDirCpp_ + "ClassWrappers.hpp", FILE_WRITE);
+        File file(context, generator->outputDirCpp_ + "ClassWrappers.hpp", FILE_WRITE);
         if (!file.IsOpen())
         {
             URHO3D_LOGERROR("Failed saving ClassWrappers.hpp");
@@ -270,7 +270,7 @@ void GenerateClassWrappers::Stop()
 
     // Save RegisterFactories.cpp
     {
-        File file(context_, generator->outputDirCpp_ + "RegisterFactories.cpp", FILE_WRITE);
+        File file(context, generator->outputDirCpp_ + "RegisterFactories.cpp", FILE_WRITE);
         if (!file.IsOpen())
         {
             URHO3D_LOGERROR("Failed saving RegisterFactories.cpp");

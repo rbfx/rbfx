@@ -629,9 +629,8 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
 void GenerateCSApiPass::Stop()
 {
-    auto* generator = GetSubsystem<GeneratorContext>();
     String outputFile = generator->outputDirCs_ + "CSharp.cs";
-    File file(context_, outputFile, FILE_WRITE);
+    File file(context, outputFile, FILE_WRITE);
     if (!file.IsOpen())
     {
         URHO3D_LOGERRORF("Failed writing %s", outputFile.CString());

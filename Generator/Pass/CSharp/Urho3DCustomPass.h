@@ -34,9 +34,8 @@ namespace Urho3D
 /// Walk AST and gather known defined classes. Exclude protected/private members from generation.
 class Urho3DCustomPass : public CppApiPass
 {
-    URHO3D_OBJECT(Urho3DCustomPass, CppApiPass);
-public:
-    explicit Urho3DCustomPass(Context* context) : CppApiPass(context) { };
+    public:
+    explicit Urho3DCustomPass() { };
     void Start() override;
     bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
     void Stop() override;

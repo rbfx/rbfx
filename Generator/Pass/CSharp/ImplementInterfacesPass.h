@@ -37,9 +37,8 @@ namespace Urho3D
 /// some interface methods be not implemented.
 class DiscoverInterfacesPass : public CppApiPass
 {
-    URHO3D_OBJECT(DiscoverInterfacesPass, CppApiPass);
-public:
-    explicit DiscoverInterfacesPass(Context* context) : CppApiPass(context) { };
+    public:
+    explicit DiscoverInterfacesPass() { };
     bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
 
     /// Map name of symbol to list of classes that multiple-inherit that symbol.
@@ -49,9 +48,8 @@ public:
 /// Copy methods into classes that implement interfaces but do not have these methods defined.
 class ImplementInterfacesPass : public CppApiPass
 {
-    URHO3D_OBJECT(ImplementInterfacesPass, CppApiPass);
-public:
-    explicit ImplementInterfacesPass(Context* context) : CppApiPass(context) { };
+    public:
+    explicit ImplementInterfacesPass() { };
     bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
 
 };

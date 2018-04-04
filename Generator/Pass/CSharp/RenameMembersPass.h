@@ -33,9 +33,8 @@ namespace Urho3D
 /// Walk AST and generate typemaps for every instance of template containers.
 class RenameMembersPass : public CppApiPass
 {
-URHO3D_OBJECT(RenameMembersPass, CppApiPass);
 public:
-    explicit RenameMembersPass(Context* context) : CppApiPass(context) { }
+    explicit RenameMembersPass() { }
     bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
 };
 

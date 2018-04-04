@@ -404,7 +404,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 void GeneratePInvokePass::Stop()
 {
     String outputFile = generator->outputDirCs_ + "PInvoke.cs";
-    File file(context_, outputFile, FILE_WRITE);
+    File file(context, outputFile, FILE_WRITE);
     if (!file.IsOpen())
     {
         URHO3D_LOGERRORF("Failed writing %s", outputFile.CString());

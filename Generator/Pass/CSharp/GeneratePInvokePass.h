@@ -34,9 +34,8 @@ class DiscoverInterfacesPass;
 
 class GeneratePInvokePass : public CppApiPass
 {
-    URHO3D_OBJECT(GeneratePInvokePass, CppApiPass);
-public:
-    explicit GeneratePInvokePass(Context* context) : CppApiPass(context) { };
+    public:
+    explicit GeneratePInvokePass() { };
 
     void Start() override;
     bool Visit(MetaEntity* entity, cppast::visitor_info info) override;

@@ -33,9 +33,8 @@ namespace Urho3D
 /// Walk AST and generate typemaps for every instance of template containers.
 class Urho3DTypeMaps : public CppApiPass
 {
-    URHO3D_OBJECT(Urho3DTypeMaps, CppApiPass);
-public:
-    explicit Urho3DTypeMaps(Context* context) : CppApiPass(context) { };
+    public:
+    explicit Urho3DTypeMaps() { };
     bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
     void HandleType(const cppast::cpp_type& type);
 };

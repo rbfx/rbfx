@@ -34,9 +34,8 @@ namespace Urho3D
 /// Walk AST and gather known defined classes. Exclude protected/private members from generation.
 class GenerateClassWrappers : public CppApiPass
 {
-URHO3D_OBJECT(GenerateClassWrappers, CppApiPass);
 public:
-    explicit GenerateClassWrappers(Context* context) : CppApiPass(context) { };
+    explicit GenerateClassWrappers() { };
 
     void Start() override;
     bool Visit(MetaEntity* entity, cppast::visitor_info info) override;

@@ -204,11 +204,11 @@ protected:
     void Unregister();
 };
 
-class CppAstPass : public Object
+class CppAstPass
 {
-    URHO3D_OBJECT(CppAstPass, Object)
 public:
-    explicit CppAstPass(Context* context) : Object(context) { };
+    explicit CppAstPass() { };
+    virtual ~CppAstPass() = default;
 
     virtual void Start() { }
     virtual void StartFile(const String& filePath) { }
@@ -217,11 +217,11 @@ public:
     virtual void Stop() { }
 };
 
-class CppApiPass : public Object
+class CppApiPass
 {
-    URHO3D_OBJECT(CppApiPass, Object)
 public:
-    explicit CppApiPass(Context* context) : Object(context) { };
+    explicit CppApiPass() { };
+    virtual ~CppApiPass() = default;
 
     virtual void Start() { }
     virtual bool Visit(MetaEntity* entity, cppast::visitor_info info) = 0;
