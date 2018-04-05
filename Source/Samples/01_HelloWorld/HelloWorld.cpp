@@ -56,9 +56,6 @@ void HelloWorld::Start()
     Sample::InitMouseMode(MM_FREE);
 
 
-	GSS<FileSystem>()->RemoveDir("TestDir", true);
-	GSS<FileSystem>()->CreateDir("TestDir");
-
 }
 
 void HelloWorld::CreateText()
