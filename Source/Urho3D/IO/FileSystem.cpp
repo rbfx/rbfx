@@ -47,6 +47,7 @@
 #ifndef _MSC_VER
 #define _WIN32_IE 0x501
 #endif
+#define CREATDIR_MAX_RETRIES 50
 #include <windows.h>
 #include <shellapi.h>
 #include <direct.h>
@@ -344,8 +345,24 @@ bool FileSystem::CreateDir(const String& pathName)
     }
 
 #ifdef _WIN32
-    bool success = (CreateDirectoryW(GetWideNativePath(RemoveTrailingSlash(pathName)).CString(), nullptr) == TRUE) ||
-        (GetLastError() == ERROR_ALREADY_EXISTS);
+
+	bool retry = false;
+	int retryCount = 0;
+	bool success;
+	do {
+		success = (CreateDirectoryW(GetWideNativePath(RemoveTrailingSlash(pathName)).CString(), nullptr) == TRUE);
+		DWORD lastError = GetLastError();
+
+		if (lastError == ERROR_ALREADY_EXISTS)
+			success = true;
+
+		retry = (lastError == ERROR_ACCESS_DENIED);//#try_again https://stackoverflow.com/questions/3570618/what-causes-createdirectory-to-return-error-access-denied
+		if (retry)
+			retryCount++;
+	} while (retry && retryCount <= CREATDIR_MAX_RETRIES);
+
+	if(retryCount >= CREATDIR_MAX_RETRIES)
+		URHO3D_LOGERROR("Failed to create directory perhaps not enough retry attempts (Windows): " + pathName);
 #else
     bool success = mkdir(GetNativePath(RemoveTrailingSlash(pathName)).CString(), S_IRWXU) == 0 || errno == EEXIST;
 #endif
@@ -354,6 +371,7 @@ bool FileSystem::CreateDir(const String& pathName)
         URHO3D_LOGDEBUG("Created directory " + pathName);
     else
         URHO3D_LOGERROR("Failed to create directory " + pathName);
+
 
     return success;
 }

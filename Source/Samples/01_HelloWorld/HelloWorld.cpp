@@ -54,6 +54,11 @@ void HelloWorld::Start()
 
     // Set the mouse mode to use in the sample
     Sample::InitMouseMode(MM_FREE);
+
+
+	GSS<FileSystem>()->RemoveDir("TestDir", true);
+	GSS<FileSystem>()->CreateDir("TestDir");
+
 }
 
 void HelloWorld::CreateText()
