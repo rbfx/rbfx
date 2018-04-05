@@ -11,8 +11,12 @@ Main website: [https://urho3d.github.io/](https://urho3d.github.io/)
 ## Differences
 - This fork routinely merges from https://github.com/rokups/Urho3D.
 - Update rates are seperated from render update rates. There are no "Frame" events.  
-  Rendering is viewed as a sampling of the current update state.
-- Other smaller changes.
+  Rendering is viewed as a sampling of the current update state.  Transform Tweening is planned.
+- Tweeks Subsystem.
+- Other smaller changes as well as fixes.
+
+## Further Goals
+- Newton Game Dynamics Integration (as an option in addition to bullet)
 
 
 
