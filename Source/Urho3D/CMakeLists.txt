@@ -222,7 +222,7 @@ endif ()
 if (URHO3D_CSHARP)
     get_target_property(SOURCE_DIR Urho3D SOURCE_DIR)
     get_filename_component(SOURCE_DIR ${SOURCE_DIR} DIRECTORY)
-    csharp_bind_target(TARGET Urho3D SOURCE_DIR ${SOURCE_DIR} EXTERNAL)
+    csharp_bind_target(TARGET Urho3D SOURCE_DIR ${SOURCE_DIR} INTERNAL)
 endif ()
 
 # SDK installation
