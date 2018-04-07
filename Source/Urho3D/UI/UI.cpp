@@ -915,8 +915,6 @@ void UI::Initialize()
 
     initialized_ = true;
 
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(UI, HandleUpdate));
-    SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(UI, HandlePostUpdate));
     SubscribeToEvent(E_RENDERUPDATE, URHO3D_HANDLER(UI, HandleRenderUpdate));
 
     URHO3D_LOGINFO("Initialized user interface");
@@ -1992,24 +1990,17 @@ void UI::HandleTextInput(StringHash eventType, VariantMap& eventData)
         element->OnTextInput(eventData[P_TEXT].GetString());
 }
 
-void UI::HandleUpdate(StringHash eventType, VariantMap& eventData)
+
+void UI::HandleRenderUpdate(StringHash eventType, VariantMap& eventData)
 {
     // If have a cursor, and a drag is not going on, reset the cursor shape. Application logic that wants to apply
     // custom shapes can do it after this, but needs to do it each frame
     if (cursor_ && dragElementsCount_ == 0)
         cursor_->SetShape(CS_NORMAL);
-}
-
-void UI::HandlePostUpdate(StringHash eventType, VariantMap& eventData)
-{
-    using namespace PostUpdate;
-
-    Update(eventData[P_TIMESTEP].GetFloat());
-}
-
-void UI::HandleRenderUpdate(StringHash eventType, VariantMap& eventData)
-{
-    RenderUpdate();
+   
+	Update(eventData[RenderUpdate::P_TIMESTEP].GetFloat());
+    
+	RenderUpdate();
 }
 
 void UI::HandleDropFile(StringHash eventType, VariantMap& eventData)
