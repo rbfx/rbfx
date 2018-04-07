@@ -121,8 +121,8 @@ int main(int argc, char* argv[])
 
     spdlog::set_level(spdlog::level::debug);
     spdlog::stdout_color_mt("console");
-//    context->GetFileSystem()->CreateDirsRecursive(outputDirCpp);
-//    context->GetFileSystem()->CreateDirsRecursive(outputDirCs);
+    Urho3D::CreateDirsRecursive(outputDirCpp);
+    Urho3D::CreateDirsRecursive(outputDirCs);
 
     // Generate bindings
     generator = new GeneratorContext();

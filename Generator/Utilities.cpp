@@ -24,6 +24,9 @@
 #include <cppast/cpp_template.hpp>
 #include <fmt/format.h>
 #include <tinydir.h>
+#if _WIN32
+#   include <direct.h>
+#endif
 #include "Utilities.h"
 #include "GeneratorContext.h"
 
@@ -771,6 +774,22 @@ bool ScanDirectory(const std::string& directoryPath, std::vector<std::string>& r
 
     tinydir_close(&dir);
     return true;
+}
+
+void CreateDirsRecursive(const std::string& path)
+{
+    auto parts = str::split(path, "/", true);
+    std::string partialPath;
+    for (const auto& part : parts)
+    {
+        partialPath += part;
+        partialPath += "/";
+#if _WIN32
+        _mkdir(partialPath.c_str());
+#else
+        mkdir(partialPath.c_str(), 0755);
+#endif
+    }
 }
 
 }

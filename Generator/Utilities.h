@@ -151,6 +151,7 @@ enum ScanDirectoryFlags
 };
 bool ScanDirectory(const std::string& directoryPath, std::vector<std::string>& result, int flags,
                    const std::string& relativeTo="");
+void CreateDirsRecursive(const std::string& path);
 
 }
 
