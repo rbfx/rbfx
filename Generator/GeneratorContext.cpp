@@ -29,9 +29,7 @@
 #include <Urho3D/Core/WorkQueue.h>
 #include <Urho3D/Core/Thread.h>
 #include <Urho3D/Core/Context.h>
-#include <Urho3D/IO/File.h>
 #include <Urho3D/IO/Log.h>
-#include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/JSONValue.h>
 #include "GeneratorContext.h"
 #include "Utilities.h"
@@ -122,8 +120,15 @@ bool GeneratorContext::ParseFiles(const std::string& sourceDir)
         std::string baseSourceDir = str::AddTrailingSlash(sourceDir_ + it->first_.CString());
         IncludedChecker checker(it->second_);
 
-        Vector<String> sourceFiles;
-        context->GetFileSystem()->ScanDir(sourceFiles, baseSourceDir, "", SCAN_FILES, true);
+        std::vector<std::string> sourceFiles;
+        if (!ScanDirectory(baseSourceDir, sourceFiles, ScanDirectoryFlags::IncludeFiles | ScanDirectoryFlags::Recurse,
+                           baseSourceDir))
+        {
+            URHO3D_LOGERRORF("Failed to scan directory %s", baseSourceDir.c_str());
+            continue;
+        }
+
+
         Mutex m;
 
         auto workItem = [&](std::string absPath, std::string filePath) {
@@ -149,11 +154,10 @@ bool GeneratorContext::ParseFiles(const std::string& sourceDir)
 
         for (const auto& filePath : sourceFiles)
         {
-            if (!checker.IsIncluded(filePath.CString()))
+            if (!checker.IsIncluded(filePath))
                 continue;
 
-            std::string absPath = baseSourceDir + filePath.CString();
-            context->GetWorkQueue()->AddWorkItem(std::bind(workItem, absPath, filePath.CString()));
+            context->GetWorkQueue()->AddWorkItem(std::bind(workItem, baseSourceDir + filePath, filePath));
         }
 
         while (!context->GetWorkQueue()->IsCompleted(0))

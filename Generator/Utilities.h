@@ -142,6 +142,16 @@ std::string CamelCaseIdentifier(const std::string& name);
 /// Returns true if class is exported from dynamic library.
 bool IsExported(const cppast::cpp_class& cls);
 
+enum ScanDirectoryFlags
+{
+    IncludeFiles = 1,
+    IncludeDirs = 2,
+    Recurse = 4,
+    All = -1
+};
+bool ScanDirectory(const std::string& directoryPath, std::vector<std::string>& result, int flags,
+                   const std::string& relativeTo="");
+
 }
 
 namespace str

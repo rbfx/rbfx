@@ -20,11 +20,11 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/IO/Log.h>
 #include <cppast/cpp_member_function.hpp>
 #include <cppast/cpp_template.hpp>
 #include <fmt/format.h>
+#include <tinydir.h>
 #include "Utilities.h"
 #include "GeneratorContext.h"
 
@@ -707,6 +707,65 @@ bool IsExported(const cppast::cpp_class& cls)
             return true;
     }
     return false;
+}
+
+bool ScanDirectory(const std::string& directoryPath, std::vector<std::string>& result, int flags,
+                   const std::string& relativeTo)
+{
+    tinydir_dir dir{};
+    if (tinydir_open(&dir, directoryPath.c_str()) != 0)
+    {
+        URHO3D_LOGERRORF("Failed to scan directory %s", directoryPath.c_str());
+        return false;
+    }
+
+    auto takePath = [&](const char* path) {
+        std::string finalPath(path);
+#if _WIN32
+        str::replace_str(finalPath, "\\", "/");
+#endif
+        if (!relativeTo.empty())
+        {
+            assert(finalPath.find(relativeTo) == 0);
+            finalPath = finalPath.substr(relativeTo.length() + (relativeTo.back() == '/' ? 0 : 1));
+        }
+        result.emplace_back(finalPath);
+    };
+
+    while (dir.has_next)
+    {
+        tinydir_file file;
+        if (tinydir_readfile(&dir, &file) != 0)
+        {
+            URHO3D_LOGERRORF("Reading directory file failed");
+            continue;
+        }
+
+        // todo: convert wchar_t* to utf-8 on windows
+
+        if (file.is_dir)
+        {
+            if (strcmp(file.name, ".") != 0 && strcmp(file.name, "..") != 0)
+            {
+                if (flags & ScanDirectoryFlags::IncludeDirs)
+                    takePath(file.path);
+                if (flags & ScanDirectoryFlags::Recurse)
+                {
+                    if (!ScanDirectory(file.path, result, flags, relativeTo))
+                    {
+                        tinydir_close(&dir);
+                        return false;
+                    }
+                }
+            }
+        }
+        else
+            takePath(file.path);
+        tinydir_next(&dir);
+    }
+
+    tinydir_close(&dir);
+    return true;
 }
 
 }

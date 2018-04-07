@@ -23,3 +23,4 @@
 add_subdirectory(CLI11)
 add_subdirectory(cppast)
 add_subdirectory(fmt)
+add_subdirectory(tinydir)
