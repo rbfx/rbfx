@@ -39,7 +39,7 @@ public:
     void Start() override
     {
         symbolChecker_.Load(generator->rules_->GetRoot().Get("symbols"));
-        stack_.Push(generator->apiRoot_.Get());
+        stack_.emplace_back(generator->apiRoot_.Get());
     }
 
     bool Visit(const cppast::cpp_entity& e, cppast::visitor_info info) override
@@ -81,15 +81,15 @@ public:
 
         if (info.event == cppast::visitor_info::container_entity_exit)
         {
-            stack_.Pop();
+            stack_.pop_back();
             return true;
         }
         else
         {
             auto* entity = new MetaEntity(e, info.access);
-            stack_.Back()->Add(entity);
+            stack_.back()->Add(entity);
             if (info.event == cppast::visitor_info::container_entity_enter)
-                stack_.Push(entity);
+                stack_.emplace_back(entity);
 
             if (e.kind() == cppast::cpp_entity_kind::enum_value_t)
             {
@@ -125,7 +125,7 @@ public:
 
 protected:
     IncludedChecker symbolChecker_;
-    Vector<MetaEntity*> stack_;
+    std::vector<MetaEntity*> stack_;
 };
 
 }

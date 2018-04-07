@@ -75,8 +75,8 @@ public:
     bool IsIncluded(const std::string& value);
 
 protected:
-    Vector<std::regex> includes_;
-    Vector<std::regex> excludes_;
+    std::vector<std::regex> includes_;
+    std::vector<std::regex> excludes_;
 };
 using CppParameters = cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>;
 /// Returns a list of parameter types and names as if they were in a function declaration.

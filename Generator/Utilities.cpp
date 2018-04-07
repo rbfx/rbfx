@@ -291,10 +291,10 @@ IncludedChecker::IncludedChecker(const JSONValue& rules)
 void IncludedChecker::Load(const JSONValue& rules)
 {
     for (const auto& include : rules.Get("include").GetArray())
-        includes_.Push(WildcardToRegex(include.GetString().CString()));
+        includes_.emplace_back(WildcardToRegex(include.GetString().CString()));
 
     for (const auto& exclude : rules.Get("exclude").GetArray())
-        excludes_.Push(WildcardToRegex(exclude.GetString().CString()));
+        excludes_.emplace_back(WildcardToRegex(exclude.GetString().CString()));
 }
 
 bool IncludedChecker::IsIncluded(const std::string& value)
