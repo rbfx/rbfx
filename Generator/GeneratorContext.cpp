@@ -25,11 +25,7 @@
 #include <cxxabi.h>
 #endif
 #include <cppast/libclang_parser.hpp>
-#include <Urho3D/Core/CoreEvents.h>
-#include <Urho3D/Core/WorkQueue.h>
-#include <Urho3D/Core/Thread.h>
-#include <Urho3D/Core/Context.h>
-#include <Urho3D/IO/Log.h>
+#include <spdlog/spdlog.h>
 #include <fstream>
 #include <thread>
 #include <chrono>
@@ -130,47 +126,59 @@ bool GeneratorContext::ParseFiles(const std::string& sourceDir)
         if (!ScanDirectory(baseSourceDir, sourceFiles, ScanDirectoryFlags::IncludeFiles | ScanDirectoryFlags::Recurse,
                            baseSourceDir))
         {
-            URHO3D_LOGERRORF("Failed to scan directory %s", baseSourceDir.c_str());
+            spdlog::get("console")->error("Failed to scan directory {}", baseSourceDir);
             continue;
         }
 
-
-        Mutex m;
-
-        auto workItem = [&](std::string absPath, std::string filePath) {
-            URHO3D_LOGDEBUGF("Parse: %s", filePath.c_str());
-
-            cppast::stderr_diagnostic_logger logger;
-            // the parser is used to parse the entity
-            // there can be multiple parser implementations
-            cppast::libclang_parser parser(type_safe::ref(logger));
-
-            auto file = parser.parse(index_, absPath.c_str(), config_);
-            if (parser.error())
+        std::mutex m;
+        auto workItem = [&] {
+            for (;;)
             {
-                URHO3D_LOGERRORF("Failed parsing %s", filePath.c_str());
-                parser.reset_error();
-            }
-            else
-            {
-                MutexLock scoped(m);
-                parsed_[absPath] = std::move(file);
+                std::string filePath;
+                // Initialize
+                {
+                    std::unique_lock<std::mutex> lock(m);
+                    while (!sourceFiles.empty())
+                    {
+                        filePath = sourceFiles.back();
+                        sourceFiles.pop_back();
+                        if (!checker.IsIncluded(filePath))
+                            filePath.clear();
+                        else
+                            break;
+                    }
+                    if (sourceFiles.empty() && filePath.empty())
+                        return;
+                }
+                std::string absPath = baseSourceDir + filePath;
+
+                spdlog::get("console")->debug("Parse: {}", filePath);
+
+                cppast::stderr_diagnostic_logger logger;
+                // the parser is used to parse the entity
+                // there can be multiple parser implementations
+                cppast::libclang_parser parser(type_safe::ref(logger));
+
+                auto file = parser.parse(index_, absPath.c_str(), config_);
+                if (parser.error())
+                {
+                    spdlog::get("console")->error("Failed parsing {}", filePath);
+                    parser.reset_error();
+                }
+                else
+                {
+                    std::unique_lock<std::mutex> lock(m);
+                    parsed_[absPath] = std::move(file);
+                }
             }
         };
 
-        for (const auto& filePath : sourceFiles)
-        {
-            if (!checker.IsIncluded(filePath))
-                continue;
+        std::vector<std::thread> pool;
+        for (auto i = 0; i < std::thread::hardware_concurrency(); i++)
+            pool.emplace_back(std::thread(workItem));
 
-            context->GetWorkQueue()->AddWorkItem(std::bind(workItem, baseSourceDir + filePath, filePath));
-        }
-
-        while (!context->GetWorkQueue()->IsCompleted(0))
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(30));
-            context->GetWorkQueue()->SendEvent(E_ENDFRAME);            // Ensures log messages are displayed.
-        }
+        for (auto& t : pool)
+            t.join();
     }
 
     return true;
@@ -193,7 +201,7 @@ void GeneratorContext::Generate(const std::string& outputDirCpp, const std::stri
 
     for (const auto& pass : cppPasses_)
     {
-        URHO3D_LOGINFOF("#### Run pass: %s", getNiceName(typeid(*pass.get()).name()).c_str());
+        spdlog::get("console")->info("#### Run pass: {}", getNiceName(typeid(*pass.get()).name()));
         pass->Start();
         for (const auto& pair : parsed_)
         {
@@ -272,7 +280,7 @@ void GeneratorContext::Generate(const std::string& outputDirCpp, const std::stri
     };
     for (const auto& pass : apiPasses_)
     {
-        URHO3D_LOGINFOF("#### Run pass: %s", getNiceName(typeid(*pass.get()).name()).c_str());
+        spdlog::get("console")->info("#### Run pass: {}", getNiceName(typeid(*pass.get()).name()));
         pass->Start();
         visitOverlayEntity(pass.get(), apiRoot_.get());
         pass->Stop();

@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/IO/FileSystem.h>
 #include <cppast/cpp_variable.hpp>
 #include <cppast/cpp_namespace.hpp>
 #include "GeneratorContext.h"
@@ -95,7 +94,16 @@ std::string MoveGlobalsPass::GetFileName(const cppast::cpp_entity& entity)
     while (e->kind() != cppast::cpp_entity_kind::file_t)
         e = &e->parent().value();
 
-    return Urho3D::GetFileName(e->name()).CString();
+    auto fileName = e->name();
+    auto index = fileName.rfind('/');
+    if (index != std::string::npos)
+        fileName = fileName.substr(index + 1);
+
+    index = fileName.find('.');
+    if (index != std::string::npos)
+        fileName = fileName.substr(0, index);
+
+    return fileName;
 }
 
 }

@@ -140,7 +140,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
 
     if (!csType.empty())
     {
-        URHO3D_LOGINFOF("Auto-typemap: %s", typeName.c_str());
+        spdlog::get("console")->info("Auto-typemap: {}", typeName);
         TypeMap map;
         map.cppType_ = typeName;
         map.cType_ = "SafeArray";

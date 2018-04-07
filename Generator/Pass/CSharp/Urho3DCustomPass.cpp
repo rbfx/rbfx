@@ -21,6 +21,7 @@
 //
 
 #include <fmt/format.h>
+#include <spdlog/spdlog.h>
 #include "GeneratorContext.h"
 #include "Urho3DCustomPass.h"
 
@@ -120,7 +121,7 @@ bool Urho3DCustomPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             targetEnum = "SDL";
         else
         {
-            URHO3D_LOGWARNINGF("No idea where to put %s and it's siblings.", firstVar->name_.c_str());
+            spdlog::get("console")->warn("No idea where to put {} and it's siblings.", firstVar->name_);
             entity->Remove();
             return false;
         }
@@ -155,7 +156,7 @@ bool Urho3DCustomPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     else if (entity->name_.find("SDL_") == 0)   // Get rid of anything else belonging to sdl
     {
         entity->Remove();
-        URHO3D_LOGINFOF("Ignore: %s", entity->uniqueName_.c_str());
+        spdlog::get("console")->info("Ignore: {}", entity->uniqueName_);
     }
 
     return true;

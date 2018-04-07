@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/IO/Log.h>
 #include <cppast/cpp_member_function.hpp>
 #include <cppast/cpp_template.hpp>
 #include <fmt/format.h>
@@ -721,7 +720,7 @@ bool ScanDirectory(const std::string& directoryPath, std::vector<std::string>& r
     tinydir_dir dir{};
     if (tinydir_open(&dir, directoryPath.c_str()) != 0)
     {
-        URHO3D_LOGERRORF("Failed to scan directory %s", directoryPath.c_str());
+        spdlog::get("console")->error("Failed to scan directory {}", directoryPath);
         return false;
     }
 
@@ -743,7 +742,7 @@ bool ScanDirectory(const std::string& directoryPath, std::vector<std::string>& r
         tinydir_file file;
         if (tinydir_readfile(&dir, &file) != 0)
         {
-            URHO3D_LOGERRORF("Reading directory file failed");
+            spdlog::get("console")->error("Reading directory file failed");
             continue;
         }
 

@@ -22,7 +22,6 @@
 
 #include <fmt/format.h>
 #include <fstream>
-#include <Urho3D/IO/Log.h>
 #include <cppast/cpp_template.hpp>
 #include "GenerateCApiPass.h"
 #include "Pass/CSharp/ImplementInterfacesPass.h"
@@ -432,7 +431,7 @@ void GenerateCApiPass::Stop()
     std::ofstream fp(generator->outputDirCpp_ + "CApi.cpp");
     if (!fp.is_open())
     {
-        URHO3D_LOGERROR("Failed saving CApi.cpp");
+        spdlog::get("console")->error("Failed saving CApi.cpp");
         return;
     }
     fp << printer_.Get();
@@ -442,10 +441,8 @@ std::string GenerateCApiPass::GetUniqueName(const std::string& baseName)
 {
     unsigned index = 0;
     std::string newName;
-    for (newName = Sanitize(baseName); usedNames_.Contains(newName); index++)
-        newName = baseName + std::to_string(index);
-
-    usedNames_.Push(newName);
+    for (newName = Sanitize(baseName); std::find(usedNames_.begin(), usedNames_.end(), newName) != usedNames_.end(); index++);
+    usedNames_.emplace_back(baseName + std::to_string(index));
     return newName;
 }
 

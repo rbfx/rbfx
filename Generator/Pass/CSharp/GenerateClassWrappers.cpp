@@ -22,7 +22,7 @@
 
 #include <fmt/format.h>
 #include <fstream>
-#include <Urho3D/IO/Log.h>
+#include <spdlog/spdlog.h>
 #include "GenerateClassWrappers.h"
 #include "GeneratorContext.h"
 
@@ -239,7 +239,7 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
                 implementBaseWrapperClassMembers(baseOverlay);
             }
             else
-                URHO3D_LOGWARNINGF("Base class %s not found!", base.name().c_str());
+                spdlog::get("console")->warn("Base class {} not found!", base.name());
         }
     };
 
@@ -262,7 +262,7 @@ void GenerateClassWrappers::Stop()
         std::ofstream fp(generator->outputDirCpp_ + "ClassWrappers.hpp");
         if (!fp.is_open())
         {
-            URHO3D_LOGERROR("Failed saving ClassWrappers.hpp");
+            spdlog::get("console")->error("Failed saving ClassWrappers.hpp");
             return;
         }
         fp << printer_.Get();
@@ -273,7 +273,7 @@ void GenerateClassWrappers::Stop()
         std::ofstream fp(generator->outputDirCpp_ + "RegisterFactories.cpp");
         if (!fp.is_open())
         {
-            URHO3D_LOGERROR("Failed saving RegisterFactories.cpp");
+            spdlog::get("console")->error("Failed saving RegisterFactories.cpp");
             return;
         }
         fp << initPrinter_.Get();

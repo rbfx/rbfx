@@ -30,6 +30,7 @@
 #include <cppast/cpp_function.hpp>
 #include <cppast/cpp_member_function.hpp>
 #include <rapidjson/document.h>
+#include <spdlog/spdlog.h>
 
 #undef min
 #undef max

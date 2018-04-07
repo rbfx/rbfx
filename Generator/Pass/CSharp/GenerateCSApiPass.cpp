@@ -22,7 +22,6 @@
 
 #include <fmt/format.h>
 #include <fstream>
-#include <Urho3D/IO/Log.h>
 #include <cppast/cpp_namespace.hpp>
 #include <cppast/cpp_template.hpp>
 #include <cppast/cpp_type.hpp>
@@ -123,7 +122,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                         bases.emplace_back(name);
                     }
                     else
-                        URHO3D_LOGWARNINGF("Unknown base class: %s", cppast::to_string(base.type()).c_str());
+                        spdlog::get("console")->warn("Unknown base class: {}", cppast::to_string(base.type()));
                 }
 
                 // Root object for native objects.
@@ -632,7 +631,7 @@ void GenerateCSApiPass::Stop()
     std::ofstream fp(outputFile);
     if (!fp.is_open())
     {
-        URHO3D_LOGERRORF("Failed writing %s", outputFile.c_str());
+        spdlog::get("console")->error("Failed writing {}", outputFile);
         return;
     }
     fp << printer_.Get();

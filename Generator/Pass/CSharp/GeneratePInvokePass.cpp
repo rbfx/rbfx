@@ -22,7 +22,6 @@
 
 #include <fmt/format.h>
 #include <fstream>
-#include <Urho3D/IO/Log.h>
 #include <cppast/cpp_namespace.hpp>
 #include <cppast/cpp_template.hpp>
 #include <cppast/cpp_type.hpp>
@@ -416,7 +415,7 @@ void GeneratePInvokePass::Stop()
     std::ofstream fp(outputFile);
     if (!fp.is_open())
     {
-        URHO3D_LOGERRORF("Failed writing %s", outputFile.c_str());
+        spdlog::get("console")->error("Failed writing {}", outputFile);
         return;
     }
     fp << printer_.Get();

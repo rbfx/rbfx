@@ -24,7 +24,6 @@
 #include <thread>
 #include <cppast/libclang_parser.hpp>
 #include <CLI11/CLI11.hpp>
-#include <Urho3D/Urho3DAll.h>
 #include "Pass/BuildMetaAST.h"
 #include "Pass/UnknownTypesPass.h"
 #include "Pass/CSharp/Urho3DTypeMaps.h"
@@ -38,14 +37,17 @@
 #include "Pass/CSharp/RenameMembersPass.h"
 #include "Pass/CSharp/GeneratePInvokePass.h"
 #include "Pass/CSharp/GenerateCSApiPass.h"
+#include <spdlog/spdlog.h>
 
 namespace Urho3D
 {
 
 GeneratorContext* generator = nullptr;
-SharedPtr<Context> context;
 
 }
+
+using namespace Urho3D;
+
 
 int main(int argc, char* argv[])
 {
@@ -117,18 +119,10 @@ int main(int argc, char* argv[])
     outputDirCs = str::AddTrailingSlash(outputDirCpp) + "CSharp/";
     outputDirCpp = str::AddTrailingSlash(outputDirCpp) + "Native/";
 
-    context = new Context();
-    context->RegisterSubsystem(new FileSystem(context));
-    context->RegisterSubsystem(new Log(context));
-    context->RegisterSubsystem(new WorkQueue(context));
-#if URHO3D_LOGGING
-    context->GetLog()->SetLevel(LOG_DEBUG);
-#endif
-#if URHO3D_THREADING
-    context->GetWorkQueue()->CreateThreads(std::thread::hardware_concurrency());
-#endif
-    context->GetFileSystem()->CreateDirsRecursive(outputDirCpp);
-    context->GetFileSystem()->CreateDirsRecursive(outputDirCs);
+    spdlog::set_level(spdlog::level::debug);
+    spdlog::stdout_color_mt("console");
+//    context->GetFileSystem()->CreateDirsRecursive(outputDirCpp);
+//    context->GetFileSystem()->CreateDirsRecursive(outputDirCs);
 
     // Generate bindings
     generator = new GeneratorContext();

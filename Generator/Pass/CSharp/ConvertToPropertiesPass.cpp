@@ -79,8 +79,8 @@ bool ConvertToPropertiesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
 
         if (propertyName == getter->GetParent()->name_)
         {
-            URHO3D_LOGWARNINGF("%s was not converted to property because property name would match enclosing parent.",
-                getter->sourceSymbolName_.c_str());
+            spdlog::get("console")->warn("{} was not converted to property because property name would match enclosing "
+                                         "parent.", getter->sourceSymbolName_);
             return true;
         }
 
@@ -115,8 +115,8 @@ bool ConvertToPropertiesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
                 }
                 else
                 {
-                    URHO3D_LOGWARNINGF("Could not convert %s to property because %s already exists.",
-                        getter->sourceSymbolName_.c_str(), sibling->sourceSymbolName_.c_str());
+                    spdlog::get("console")->warn("Could not convert {} to property because {} already exists.",
+                        getter->sourceSymbolName_, sibling->sourceSymbolName_);
                     return true;
                 }
             }

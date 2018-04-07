@@ -52,8 +52,8 @@ public:
             {
                 if (!generator->IsAcceptableType(param.type()))
                 {
-                    URHO3D_LOGINFOF("Ignore: %s, unknown parameter type %s", entity->uniqueName_.c_str(),
-                        cppast::to_string(param.type()).c_str());
+                    spdlog::get("console")->info("Ignore: {}, unknown parameter type {}", entity->uniqueName_,
+                        cppast::to_string(param.type()));
                     return false;
                 }
             }
@@ -64,8 +64,8 @@ public:
             const ParameterList& params) {
             if (!generator->IsAcceptableType(returnType))
             {
-                URHO3D_LOGINFOF("Ignore: %s, unknown return type %s", entity->uniqueName_.c_str(),
-                    cppast::to_string(returnType).c_str());
+                spdlog::get("console")->info("Ignore: {}, unknown return type {}", entity->uniqueName_,
+                    cppast::to_string(returnType));
                 return false;
             }
             return checkFunctionParams(params);
@@ -95,8 +95,7 @@ public:
             const auto& e = entity->Ast<cppast::cpp_variable>();
             if (!generator->IsAcceptableType(e.type()))
             {
-                URHO3D_LOGINFOF("Ignore: %s, type %s", entity->uniqueName_.c_str(),
-                    cppast::to_string(e.type()).c_str());
+                spdlog::get("console")->info("Ignore: {}, type {}", entity->uniqueName_, cppast::to_string(e.type()));
                 entity->Remove();
             }
             break;
@@ -106,8 +105,7 @@ public:
             const auto& e = entity->Ast<cppast::cpp_member_variable>();
             if (!generator->IsAcceptableType(e.type()))
             {
-                URHO3D_LOGINFOF("Ignore: %s, type %s", entity->uniqueName_.c_str(),
-                    cppast::to_string(e.type()).c_str());
+                spdlog::get("console")->info("Ignore: {}, type {}", entity->uniqueName_, cppast::to_string(e.type()));
                 entity->Remove();
             }
             break;

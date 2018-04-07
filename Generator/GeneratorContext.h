@@ -26,7 +26,6 @@
 #include <string>
 #include <map>
 #include <unordered_map>
-#include <Urho3D/IO/Log.h>
 #include <cppast/cpp_entity.hpp>
 #include <cppast/libclang_parser.hpp>
 #include <rapidjson/document.h>
@@ -35,24 +34,6 @@
 
 namespace Urho3D
 {
-
-/// C string hash function.
-template <> inline unsigned MakeHash(const char* value)
-{
-    unsigned hash = 0;
-    while (*value)
-    {
-        hash = SDBMHash(hash, static_cast<unsigned char>(*value));
-        ++value;
-    }
-    return hash;
-}
-
-/// std::string hash function.
-template <> inline unsigned MakeHash(const std::string& value)
-{
-    return MakeHash(value.c_str());
-}
 
 struct TypeMap
 {
@@ -118,6 +99,5 @@ public:
 };
 
 extern GeneratorContext* generator;
-extern SharedPtr<Context> context;
 
 }

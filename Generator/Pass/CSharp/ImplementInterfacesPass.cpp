@@ -22,6 +22,7 @@
 
 #include <cppast/cpp_variable.hpp>
 #include <cppast/cpp_namespace.hpp>
+#include <spdlog/spdlog.h>
 #include "GeneratorContext.h"
 #include "ImplementInterfacesPass.h"
 
@@ -55,7 +56,7 @@ bool DiscoverInterfacesPass::Visit(MetaEntity* entity, cppast::visitor_info info
                             continue;
 
                         metaBase->flags_ |= HintInterface;
-                        URHO3D_LOGINFOF("Interface candidate found: %s", it->name().c_str());
+                        spdlog::get("console")->info("Interface candidate found: {}", it->name());
                     }
                 }
             }
@@ -157,7 +158,7 @@ bool ImplementInterfacesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
                     }
                 }
                 else
-                    URHO3D_LOGWARNINGF("Interface base class not found: %s", baseClassName.c_str());
+                    spdlog::get("console")->warn("Interface base class not found: {}", baseClassName);
             }
         }
     }

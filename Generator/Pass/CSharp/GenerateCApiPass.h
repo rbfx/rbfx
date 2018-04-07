@@ -50,7 +50,7 @@ protected:
     std::string GetAutoType(const cppast::cpp_type& type);
 
     CSharpPrinter printer_;
-    StringVector usedNames_;
+    std::vector<std::string> usedNames_;
 };
 
 }
