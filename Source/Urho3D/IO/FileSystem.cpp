@@ -1199,29 +1199,73 @@ bool FileSystem::RemoveDir(const String& directoryIn, bool recursive)
         return remove(GetNativePath(directory).CString()) == 0;
 #endif
     }
+	else
+	{
+		//remove all contents
+		bool removeContentsSuc = RemoveDirContents(directoryIn, recursive);
 
-    // delete all files at this level
-    ScanDir(results, directory, "*", SCAN_FILES | SCAN_HIDDEN, false );
-    for (unsigned i = 0; i < results.Size(); i++)
-    {
-        if (!Delete(directory + results[i]))
-            return false;
-    }
-    results.Clear();
+		//and the directory
+		return RemoveDir(directory, false) && removeContentsSuc;
+	}
+}
 
-    // recurse into subfolders
-    ScanDir(results, directory, "*", SCAN_DIRS, false );
-    for (unsigned i = 0; i < results.Size(); i++)
-    {
-        if (results[i] == "." || results[i] == "..")
-            continue;
+bool FileSystem::RemoveDirContents(const String& directoryIn, bool recursive)
+{
+	String directory = AddTrailingSlash(directoryIn);
 
-        if (!RemoveDir(directory + results[i], true))
-            return false;
-    }
+	if (!DirExists(directory))
+		return false;
 
-    return RemoveDir(directory, false);
+	if (DirEmpty(directory))
+		return true;
 
+	// delete all files at this level
+	Vector<String> results;
+	bool fullSuccess = true;
+	ScanDir(results, directory, "*", SCAN_FILES | SCAN_HIDDEN | SCAN_DIRS, false);
+	for (unsigned i = 0; i < results.Size(); i++)
+	{
+		if (!Delete(directory + results[i]))
+			fullSuccess = false;
+	}
+
+	if (!fullSuccess)
+		return false;
+
+	results.Clear();
+
+	if (recursive)
+	{
+		// recurse into subdirs
+		ScanDir(results, directory, "*", SCAN_DIRS, false);
+		for (unsigned i = 0; i < results.Size(); i++)
+		{
+			if (results[i] == "." || results[i] == "..")
+				continue;
+
+			if (!RemoveDirContents(directory + results[i], true))
+				fullSuccess = false;
+		}
+	}
+
+	if (!fullSuccess)
+		URHO3D_LOGWARNING("Unable to fully remove contents of directory: " + directoryIn);
+
+	return fullSuccess;
+}
+
+bool FileSystem::DirEmpty(const String& directoryIn)
+{
+	String directory = AddTrailingSlash(directoryIn);
+
+	if (!DirExists(directory))
+		return false;
+
+
+	Vector<String> results;
+	ScanDir(results, directoryIn, "*", SCAN_FILES, true);
+
+	return (results.Size() == 0);
 }
 
 bool FileSystem::CopyDir(const String& directoryIn, const String& directoryOut)
@@ -1248,7 +1292,6 @@ bool FileSystem::CopyDir(const String& directoryIn, const String& directoryOut)
     }
 
     return true;
-
 }
 
 bool IsAbsoluteParentPath(const String& absParentPath, const String& fullPath)
