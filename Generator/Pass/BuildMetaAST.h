@@ -95,7 +95,7 @@ public:
             {
                 // Cache enum values. They will be used when inserting default arguments.
                 // TODO: Assertion is likely to cause issues if two enums have values with identical names.
-                assert(!generator->enumValues_.Contains(entity->name_));
+                assert(!container::contains(generator->enumValues_, entity->name_));
                 generator->enumValues_[entity->name_] = entity;
             }
 

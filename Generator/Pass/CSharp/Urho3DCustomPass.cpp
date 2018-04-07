@@ -30,29 +30,32 @@ namespace Urho3D
 
 void Urho3DCustomPass::Start()
 {
+    // Ugly method to convert c strings to std::string
+    std::string s;
+
     // C# does not understand octal escape sequences
     WeakPtr<MetaEntity> entity;
-    if (generator->symbols_.TryGetValue("SDLK_DELETE", entity))
+    if (container::try_get(generator->symbols_, s+"SDLK_DELETE", entity))
         entity->defaultValue_ = "127";
 
-    if (generator->symbols_.TryGetValue("SDLK_ESCAPE", entity))
+    if (container::try_get(generator->symbols_, s+"SDLK_ESCAPE", entity))
         entity->defaultValue_ = "27";
 
     // Translate to c# expression, original is "sizeof(void*) * 4" which requires unsafe context.
-    if (generator->symbols_.TryGetValue("Urho3D::VARIANT_VALUE_SIZE", entity))
+    if (container::try_get(generator->symbols_, s+"Urho3D::VARIANT_VALUE_SIZE", entity))
     {
         entity->defaultValue_ = "(uint)(IntPtr.Size * 4)";
         entity->flags_ = HintReadOnly;
     }
 
-    if (generator->symbols_.TryGetValue("Urho3D::MOUSE_POSITION_OFFSCREEN", entity))
+    if (container::try_get(generator->symbols_, s+"Urho3D::MOUSE_POSITION_OFFSCREEN", entity))
     {
         entity->defaultValue_ = "new Urho3D.IntVector2(int.MinValue, int.MaxValue)";
         entity->flags_ |= HintReadOnly;
     }
 
     // Fix name to property-compatible as this can be turned to a property.
-    if (generator->symbols_.TryGetValue("Urho3D::Menu::ShowPopup", entity))
+    if (container::try_get(generator->symbols_, s+"Urho3D::Menu::ShowPopup", entity))
         entity->name_ = "GetShowPopup";
 
     defaultValueRemap_ = {
@@ -127,7 +130,7 @@ bool Urho3DCustomPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         // Sort out anonymous SDL enums
         WeakPtr<MetaEntity> toEnum;
-        if (!generator->symbols_.TryGetValue(targetEnum, toEnum))
+        if (!container::try_get(generator->symbols_, targetEnum, toEnum))
         {
             toEnum = new MetaEntity();
             toEnum->name_ = toEnum->uniqueName_ = toEnum->symbolName_ = targetEnum;
@@ -161,7 +164,7 @@ void Urho3DCustomPass::Stop()
 {
     auto removeSymbol = [&](const char* name) {
         WeakPtr<MetaEntity> entity;
-        if (generator->symbols_.TryGetValue(name, entity))
+        if (container::try_get(generator->symbols_, std::string(name), entity))
             entity->Remove();
     };
 

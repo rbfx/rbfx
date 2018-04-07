@@ -67,7 +67,7 @@ bool MoveGlobalsPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 classSymbol = ns.uniqueName_ + "::" + className;
 
                 WeakPtr<MetaEntity> toClass;
-                if (!generator->symbols_.TryGetValue(classSymbol, toClass) || toClass.Expired())
+                if (!container::try_get(generator->symbols_, classSymbol, toClass) || toClass.Expired())
                 {
                     toClass = new MetaEntity();
                     toClass->name_ = className;

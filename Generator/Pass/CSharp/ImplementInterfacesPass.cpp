@@ -46,7 +46,7 @@ bool DiscoverInterfacesPass::Visit(MetaEntity* entity, cppast::visitor_info info
             {
                 const cppast::cpp_type& base = it->type();
                 WeakPtr<MetaEntity> metaBase;
-                if (generator->symbols_.TryGetValue(Urho3D::GetTypeName(it->type()), metaBase))
+                if (container::try_get(generator->symbols_, Urho3D::GetTypeName(it->type()), metaBase))
                 {
                     if (!(metaBase->flags_ & HintInterface))
                     {
@@ -66,7 +66,7 @@ bool DiscoverInterfacesPass::Visit(MetaEntity* entity, cppast::visitor_info info
                 {
                     const cppast::cpp_type& base = it->type();
                     WeakPtr<MetaEntity> metaBase;
-                    if (generator->symbols_.TryGetValue(Urho3D::GetTypeName(it->type()), metaBase))
+                    if (container::try_get(generator->symbols_, Urho3D::GetTypeName(it->type()), metaBase))
                     {
                         if (metaBase->flags_ & HintInterface)
                         {
@@ -100,7 +100,7 @@ bool ImplementInterfacesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
                 const cppast::cpp_type& base = baseCls.type();
                 WeakPtr<MetaEntity> metaBase;
                 auto baseClassName = Urho3D::GetTypeName(baseCls.type());
-                if (generator->symbols_.TryGetValue(baseClassName, metaBase))
+                if (container::try_get(generator->symbols_, baseClassName, metaBase))
                 {
                     if (!(metaBase->flags_ & HintInterface))
                         continue;

@@ -158,3 +158,42 @@ std::vector<std::string> SplitName(const std::string& name);
 std::string AddTrailingSlash(const std::string& str);
 
 }
+
+namespace container
+{
+
+template<typename Key, typename Value>
+bool try_get(const std::unordered_map<Key, Value>& container, const Key& key, Value& result)
+{
+    auto it = container.find(key);
+    if (it == container.end())
+        return false;
+
+    result = it->second;
+    return true;
+};
+
+
+template<typename Container, typename Key>
+bool contains(const Container& container, const Key& key);
+
+
+template<typename Key, typename Value>
+bool contains(const std::map<Key, Value>& container, const Key& key)
+{
+    return container.find(key) != container.end();
+};
+
+template<typename Key, typename Value>
+bool contains(const std::unordered_map<Key, Value>& container, const Key& key)
+{
+    return container.find(key) != container.end();
+};
+
+template<typename Value>
+bool contains(const std::vector<Value>& container, const Value& value)
+{
+    return std::find(container.begin(), container.end(), value) != container.end();
+};
+
+}

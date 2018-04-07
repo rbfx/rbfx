@@ -280,7 +280,7 @@ bool GeneratorContext::IsAcceptableType(const cppast::cpp_type& type)
         return true;
 
     if (type.kind() == cppast::cpp_type_kind::template_instantiation_t)
-        return symbols_.Contains(GetTemplateSubtype(type));
+        return container::contains(symbols_, GetTemplateSubtype(type));
 
     std::function<bool(const cppast::cpp_type&)> isPInvokable = [&](const cppast::cpp_type& type)
     {
@@ -330,7 +330,7 @@ bool GeneratorContext::IsAcceptableType(const cppast::cpp_type& type)
         return true;
 
     // Known symbols will be classes that are being wrapped
-    return symbols_.Contains(Urho3D::GetTypeName(type));
+    return container::contains(symbols_, Urho3D::GetTypeName(type));
 }
 
 const TypeMap* GeneratorContext::GetTypeMap(const cppast::cpp_type& type, bool strict)
@@ -361,7 +361,7 @@ MetaEntity* GeneratorContext::GetEntityOfConstant(MetaEntity* user, const std::s
     WeakPtr<MetaEntity> entity;
 
     // In case constnat is referenced by a full name
-    if (generator->symbols_.TryGetValue(constant, entity))
+    if (container::try_get(generator->symbols_, constant, entity))
         return entity;
 
     // Walk back the parents and try referencing them to guess full name of constant.
@@ -370,7 +370,7 @@ MetaEntity* GeneratorContext::GetEntityOfConstant(MetaEntity* user, const std::s
         if (user->kind_ != cppast::cpp_entity_kind::class_t || user->kind_ != cppast::cpp_entity_kind::namespace_t)
         {
             auto symbolName = user->symbolName_ + "::" + constant;
-            if (generator->symbols_.TryGetValue(symbolName, entity))
+            if (container::try_get(generator->symbols_, symbolName, entity))
                 return entity;
         }
     }

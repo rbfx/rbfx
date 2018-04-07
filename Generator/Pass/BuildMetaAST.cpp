@@ -14,7 +14,7 @@ void MetaEntity::Register()
 
 void MetaEntity::Unregister()
 {
-    generator->symbols_.Erase(uniqueName_);
+    generator->symbols_.erase(uniqueName_);
 }
 
 }

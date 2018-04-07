@@ -110,7 +110,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 for (const auto& base : cls.bases())
                 {
                     WeakPtr<MetaEntity> baseEntity;
-                    if (generator->symbols_.TryGetValue(Urho3D::GetTypeName(base.type()), baseEntity))
+                    if (container::try_get(generator->symbols_, Urho3D::GetTypeName(base.type()), baseEntity))
                     {
                         std::string name;
                         if (baseEntity->flags_ & HintInterface)
@@ -806,7 +806,7 @@ std::string GenerateCSApiPass::ConvertDefaultValueToCS(MetaEntity* user, std::st
     else if (value.find("::") != std::string::npos)
     {
         // TODO: enums are not renamed for now
-        if (!generator->symbols_.TryGetValue(Urho3D::GetTypeName(type), entity) ||
+        if (!container::try_get(generator->symbols_, Urho3D::GetTypeName(type), entity) ||
             entity->kind_ != cppast::cpp_entity_kind::enum_t)
         {
             // Possibly a constant from typemapped class

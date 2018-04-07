@@ -237,7 +237,7 @@ std::string GetTypeName(const cppast::cpp_type& type)
 bool IsEnumType(const cppast::cpp_type& type)
 {
     WeakPtr<MetaEntity> entity;
-    if (generator->symbols_.TryGetValue(GetTypeName(type), entity))
+    if (container::try_get(generator->symbols_, GetTypeName(type), entity))
          return entity->kind_ == cppast::cpp_entity_kind::enum_t;
     return false;
 }

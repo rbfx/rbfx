@@ -177,15 +177,15 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_ << "";
 
             // Offsets for multiple inheritance
-            auto it = discoverInterfacesPass_->inheritedBy_.Find(WeakPtr<MetaEntity>(entity));
-            if (it != discoverInterfacesPass_->inheritedBy_.End())
+            auto it = discoverInterfacesPass_->inheritedBy_.find(WeakPtr<MetaEntity>(entity));
+            if (it != discoverInterfacesPass_->inheritedBy_.end())
             {
-                for (const auto& inheritor : it->second_)
+                for (const auto& inheritor : it->second)
                 {
                     if (inheritor.Expired())
                         continue;
 
-                    auto baseSym = Sanitize(it->first_->symbolName_);
+                    auto baseSym = Sanitize(it->first->symbolName_);
                     auto derivedSym = Sanitize(inheritor->symbolName_);
 
                     printer_ << dllImport;
@@ -210,14 +210,14 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 printer_.Dedent("");
 
                 // Offsets for multiple inheritance
-                if (it != discoverInterfacesPass_->inheritedBy_.End())
+                if (it != discoverInterfacesPass_->inheritedBy_.end())
                 {
-                    for (const auto& inheritor : it->second_)
+                    for (const auto& inheritor : it->second)
                     {
                         if (inheritor.Expired())
                             continue;
 
-                        auto baseSym = Sanitize(it->first_->symbolName_);
+                        auto baseSym = Sanitize(it->first->symbolName_);
                         auto derivedSym = Sanitize(inheritor->symbolName_);
                         auto derivedName = inheritor->symbolName_;
                         str::replace_str(derivedName, "::", ".");

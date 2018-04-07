@@ -24,10 +24,21 @@
 
 
 #include <Urho3D/Container/Ptr.h>
-#include <Urho3D/Container/HashMap.h>
 #include <unordered_map>
 #include "Pass/CppPass.h"
 
+namespace std
+{
+
+template<> struct hash<Urho3D::WeakPtr<Urho3D::MetaEntity>>
+{
+    size_t operator()(Urho3D::WeakPtr<Urho3D::MetaEntity> const& ptr) const noexcept
+    {
+        return (size_t)ptr.Get();
+    }
+};
+
+}
 
 namespace Urho3D
 {
@@ -41,7 +52,7 @@ class DiscoverInterfacesPass : public CppApiPass
     bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
 
     /// Map name of symbol to list of classes that multiple-inherit that symbol.
-    HashMap<Urho3D::WeakPtr<MetaEntity>, std::vector<Urho3D::WeakPtr<MetaEntity>>> inheritedBy_;
+    std::unordered_map<Urho3D::WeakPtr<MetaEntity>, std::vector<Urho3D::WeakPtr<MetaEntity>>> inheritedBy_;
 };
 
 /// Copy methods into classes that implement interfaces but do not have these methods defined.

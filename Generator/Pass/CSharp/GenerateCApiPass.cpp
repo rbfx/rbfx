@@ -405,19 +405,19 @@ void GenerateCApiPass::Stop()
     auto* pass = generator->GetPass<DiscoverInterfacesPass>();
     for (const auto& pair : pass->inheritedBy_)
     {
-        if (pair.first_.Expired())
+        if (pair.first.Expired())
             continue;
 
-        for (const auto& inheritor : pair.second_)
+        for (const auto& inheritor : pair.second)
         {
             if (inheritor.Expired())
                 continue;
 
             printer_ << fmt::format("URHO3D_EXPORT_API int {}_{}_offset()", Sanitize(inheritor->symbolName_),
-                Sanitize(pair.first_->symbolName_));
+                Sanitize(pair.first->symbolName_));
             printer_.Indent();
             {
-                printer_ << fmt::format("return GetBaseClassOffset<{}, {}>();", inheritor->symbolName_, pair.first_->symbolName_);
+                printer_ << fmt::format("return GetBaseClassOffset<{}, {}>();", inheritor->symbolName_, pair.first->symbolName_);
             }
             printer_.Dedent();
             printer_ << "";

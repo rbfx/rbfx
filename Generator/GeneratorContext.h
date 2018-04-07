@@ -111,8 +111,8 @@ public:
     SharedPtr<MetaEntity> apiRoot_;
     cppast::cpp_entity_index index_;
     std::string defaultNamespace_ = "Urho3D";
-    HashMap<std::string, WeakPtr<MetaEntity>> symbols_;
-    HashMap<std::string, WeakPtr<MetaEntity>> enumValues_;
+    std::unordered_map<std::string, WeakPtr<MetaEntity>> symbols_;
+    std::unordered_map<std::string, WeakPtr<MetaEntity>> enumValues_;
     std::unordered_map<std::string, TypeMap> typeMaps_;
     IncludedChecker inheritable_;
 };
