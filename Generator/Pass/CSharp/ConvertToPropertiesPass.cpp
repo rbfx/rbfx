@@ -43,7 +43,7 @@ bool ConvertToPropertiesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
 
     // Virtual getters/setters of inheritable classes can not be turned to properties in order to allow overriding.
     if (entity->Ast<cppast::cpp_member_function>().is_virtual() &&
-        !generator->inheritable_.IsIncluded(entity->parent_->symbolName_))
+        !generator->inheritable_.IsIncluded(entity->GetParent()->symbolName_))
         return true;
 
     // If method is part of interface then getters/setters must appear as methods.
@@ -77,14 +77,14 @@ bool ConvertToPropertiesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
             setterName = "Set" + propertyName;
         }
 
-        if (propertyName == getter->parent_->name_)
+        if (propertyName == getter->GetParent()->name_)
         {
             URHO3D_LOGWARNINGF("%s was not converted to property because property name would match enclosing parent.",
                 getter->sourceSymbolName_.c_str());
             return true;
         }
 
-        auto siblings = getter->parent_->children_;
+        auto siblings = getter->GetParent()->children_;
         // Find setter
         for (const auto& sibling : siblings)
         {
@@ -96,7 +96,7 @@ bool ConvertToPropertiesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
                 if (setterType == getterType && !sibling->cFunctionName_.empty() &&
                     getter->access_ == sibling->access_ && !(sibling->flags_ & HintInterface))
                 {
-                    setter = sibling;
+                    setter = sibling.get();
                     break;
                 }
             }
@@ -105,7 +105,7 @@ bool ConvertToPropertiesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
         // Find if sibling with matching name exists, it may interfere with property generation.
         for (const auto& sibling : siblings)
         {
-            if (sibling != getter && sibling->name_ == propertyName)
+            if (sibling.get() != getter && sibling->name_ == propertyName)
             {
                 if (setter != nullptr && sibling->kind_ == cppast::cpp_entity_kind::member_variable_t)
                 {
@@ -123,12 +123,12 @@ bool ConvertToPropertiesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
         }
 
         // Getter
-        auto* property = new MetaEntity();
+        std::shared_ptr<MetaEntity> property(new MetaEntity());
         property->kind_ = cppast::cpp_entity_kind::member_variable_t;
         property->name_ = propertyName;
         property->flags_ = HintProperty;
         property->access_ = getter->access_;
-        getter->parent_->Add(property);
+        getter->GetParent()->Add(property.get());
 
         if (islower(getter->name_[0]))
             setterName[0] = static_cast<char>(tolower(setterName[0]));

@@ -159,7 +159,7 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
                 {
                     wrappedList.emplace_back(methodId);
                     // Function pointer that virtual method will call
-                    const auto& cls = child->parent_;
+                    const auto& cls = child->GetParent();
                     auto typeName = cppast::to_string(func.return_type());
                     auto name = child->sourceName_;
                     auto parameterList = ParameterList(func.parameters());

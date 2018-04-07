@@ -30,32 +30,29 @@ namespace Urho3D
 
 void Urho3DCustomPass::Start()
 {
-    // Ugly method to convert c strings to std::string
-    std::string s;
-
     // C# does not understand octal escape sequences
-    WeakPtr<MetaEntity> entity;
-    if (container::try_get(generator->symbols_, s+"SDLK_DELETE", entity))
+    std::shared_ptr<MetaEntity> entity;
+    if (auto* entity = generator->GetSymbol("SDLK_DELETE"))
         entity->defaultValue_ = "127";
 
-    if (container::try_get(generator->symbols_, s+"SDLK_ESCAPE", entity))
+    if (auto* entity = generator->GetSymbol("SDLK_ESCAPE"))
         entity->defaultValue_ = "27";
 
     // Translate to c# expression, original is "sizeof(void*) * 4" which requires unsafe context.
-    if (container::try_get(generator->symbols_, s+"Urho3D::VARIANT_VALUE_SIZE", entity))
+    if (auto* entity = generator->GetSymbol("Urho3D::VARIANT_VALUE_SIZE"))
     {
         entity->defaultValue_ = "(uint)(IntPtr.Size * 4)";
         entity->flags_ = HintReadOnly;
     }
 
-    if (container::try_get(generator->symbols_, s+"Urho3D::MOUSE_POSITION_OFFSCREEN", entity))
+    if (auto* entity = generator->GetSymbol("Urho3D::MOUSE_POSITION_OFFSCREEN"))
     {
         entity->defaultValue_ = "new Urho3D.IntVector2(int.MinValue, int.MaxValue)";
         entity->flags_ |= HintReadOnly;
     }
 
     // Fix name to property-compatible as this can be turned to a property.
-    if (container::try_get(generator->symbols_, s+"Urho3D::Menu::ShowPopup", entity))
+    if (auto* entity = generator->GetSymbol("Urho3D::Menu::ShowPopup"))
         entity->name_ = "GetShowPopup";
 
     defaultValueRemap_ = {
@@ -98,7 +95,7 @@ bool Urho3DCustomPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         entity->kind_ == cppast::cpp_entity_kind::member_function_t)
     {
         for (auto& param : entity->children_)
-            fixDefaultValue(param);
+            fixDefaultValue(param.get());
     }
 
     if (entity->kind_ == cppast::cpp_entity_kind::variable_t)
@@ -114,7 +111,7 @@ bool Urho3DCustomPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         // Give initial value to first element if there isn't any. This will keep correct enum values when they are
         // merged into mega-enum.
-        MetaEntity* firstVar = entity->children_[0].Get();
+        MetaEntity* firstVar = entity->children_[0].get();
         if (firstVar->GetDefaultValue().empty())
             firstVar->defaultValue_ = "0";
 
@@ -129,19 +126,20 @@ bool Urho3DCustomPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         }
 
         // Sort out anonymous SDL enums
-        WeakPtr<MetaEntity> toEnum;
-        if (!container::try_get(generator->symbols_, targetEnum, toEnum))
+        auto* toEnum = generator->GetSymbol(targetEnum);
+        if (toEnum == nullptr)
         {
-            toEnum = new MetaEntity();
+            std::shared_ptr<MetaEntity> newEnum(new MetaEntity());
+            toEnum = newEnum.get();
             toEnum->name_ = toEnum->uniqueName_ = toEnum->symbolName_ = targetEnum;
             toEnum->kind_ = cppast::cpp_entity_kind::enum_t;
-            entity->parent_->Add(toEnum);
-            generator->symbols_[targetEnum] = toEnum;
+            entity->GetParent()->Add(toEnum);
+            generator->symbols_[targetEnum] = toEnum->shared_from_this();
         }
 
         auto children = entity->children_;
         for (const auto& child : children)
-            toEnum->Add(child);
+            toEnum->Add(child.get());
 
         // No longer needed
         entity->Remove();
@@ -166,8 +164,7 @@ bool Urho3DCustomPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 void Urho3DCustomPass::Stop()
 {
     auto removeSymbol = [&](const char* name) {
-        WeakPtr<MetaEntity> entity;
-        if (container::try_get(generator->symbols_, std::string(name), entity))
+        if (auto* entity = generator->GetSymbol(name))
             entity->Remove();
     };
 

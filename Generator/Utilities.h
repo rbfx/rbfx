@@ -25,7 +25,6 @@
 
 #include <limits>
 #include <regex>
-#include <Urho3D/Container/Ptr.h>
 #include <cppast/cpp_entity.hpp>
 #include <cppast/cpp_type.hpp>
 #include <cppast/cpp_function.hpp>
@@ -86,7 +85,7 @@ std::string ParameterList(const CppParameters& params,
 std::string ParameterNameList(const CppParameters& params,
     const std::function<std::string(const cppast::cpp_function_parameter&)>& nameFilter = nullptr);
 /// Applies callable to every parameter MetaEntity and returns all results of callables separated by comma.
-std::string MapParameterList(std::vector<SharedPtr<MetaEntity>>& parameters,
+std::string MapParameterList(std::vector<std::shared_ptr<MetaEntity>>& parameters,
     const std::function<std::string(MetaEntity*)>& callable);
 /// Returns true if specified type is an enumeration.
 bool IsEnumType(const cppast::cpp_type& type);
@@ -171,18 +170,6 @@ std::string AddTrailingSlash(const std::string& str);
 
 namespace container
 {
-
-template<typename Key, typename Value>
-bool try_get(const std::unordered_map<Key, Value>& container, const Key& key, Value& result)
-{
-    auto it = container.find(key);
-    if (it == container.end())
-        return false;
-
-    result = it->second;
-    return true;
-};
-
 
 template<typename Container, typename Key>
 bool contains(const Container& container, const Key& key);

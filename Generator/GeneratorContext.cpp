@@ -42,7 +42,7 @@ namespace Urho3D
 
 GeneratorContext::GeneratorContext()
 {
-    apiRoot_ = new MetaEntity();
+    apiRoot_ = std::shared_ptr<MetaEntity>(new MetaEntity());
 }
 
 void GeneratorContext::LoadCompileConfig(const std::vector<std::string>& includes, std::vector<std::string>& defines,
@@ -262,9 +262,9 @@ void GeneratorContext::Generate(const std::string& outputDirCpp, const std::stri
         
         if (pass->Visit(entity, info) && info.event == info.container_entity_enter)
         {
-            std::vector<SharedPtr<MetaEntity>> childrenCopy = entity->children_;
+            auto childrenCopy = entity->children_;
             for (const auto& childEntity : childrenCopy)
-                visitOverlayEntity(pass, childEntity.Get());
+                visitOverlayEntity(pass, childEntity.get());
 
             info.event = cppast::visitor_info::container_entity_exit;
             pass->Visit(entity, info);
@@ -274,7 +274,7 @@ void GeneratorContext::Generate(const std::string& outputDirCpp, const std::stri
     {
         URHO3D_LOGINFOF("#### Run pass: %s", getNiceName(typeid(*pass.get()).name()).c_str());
         pass->Start();
-        visitOverlayEntity(pass.get(), apiRoot_);
+        visitOverlayEntity(pass.get(), apiRoot_.get());
         pass->Stop();
     }
 }
@@ -368,24 +368,30 @@ const TypeMap* GeneratorContext::GetTypeMap(const std::string& typeName)
 
 MetaEntity* GeneratorContext::GetEntityOfConstant(MetaEntity* user, const std::string& constant)
 {
-    WeakPtr<MetaEntity> entity;
-
-    // In case constnat is referenced by a full name
-    if (container::try_get(generator->symbols_, constant, entity))
+    // In case constant is referenced by a full name
+    if (MetaEntity* entity = generator->GetSymbol(constant))
         return entity;
 
     // Walk back the parents and try referencing them to guess full name of constant.
-    for (; user != nullptr; user = user->parent_)
+    for (; user != nullptr; user = user->GetParent())
     {
         if (user->kind_ != cppast::cpp_entity_kind::class_t || user->kind_ != cppast::cpp_entity_kind::namespace_t)
         {
             auto symbolName = user->symbolName_ + "::" + constant;
-            if (container::try_get(generator->symbols_, symbolName, entity))
+            if (MetaEntity* entity = generator->GetSymbol(symbolName))
                 return entity;
         }
     }
 
     return nullptr;
+}
+
+MetaEntity* GeneratorContext::GetSymbol(const std::string& symbolName)
+{
+    auto it = symbols_.find(symbolName);
+    if (it == symbols_.end() || it->second.expired())
+        return nullptr;
+    return it->second.lock().get();
 }
 
 }

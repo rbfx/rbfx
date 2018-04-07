@@ -38,7 +38,7 @@ bool MoveGlobalsPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     if (entity->kind_ == cppast::cpp_entity_kind::namespace_t)
     {
         // Convert non-top-level namespaces to classes if they have any functions or variables.
-        if (!entity->parent_->name_.empty())
+        if (!entity->GetParent()->name_.empty())
         {
             const auto& ns = entity->Ast<cppast::cpp_namespace>();
             for (const auto& child : ns)
@@ -55,7 +55,7 @@ bool MoveGlobalsPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     else if (entity->kind_ == cppast::cpp_entity_kind::variable_t ||
         entity->kind_ == cppast::cpp_entity_kind::function_t)
     {
-        auto& ns = *entity->parent_;
+        auto& ns = *entity->GetParent();
         if (ns.kind_ != cppast::cpp_entity_kind::class_t)
         {
             std::string className = ns.name_;
@@ -66,17 +66,18 @@ bool MoveGlobalsPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 className = GetFileName(*entity->ast_);
                 classSymbol = ns.uniqueName_ + "::" + className;
 
-                WeakPtr<MetaEntity> toClass;
-                if (!container::try_get(generator->symbols_, classSymbol, toClass) || toClass.Expired())
+                auto* toClass = generator->GetSymbol(classSymbol);
+                if (toClass == nullptr)
                 {
-                    toClass = new MetaEntity();
+                    std::shared_ptr<MetaEntity> newClass(new MetaEntity());
+                    toClass = newClass.get();
                     toClass->name_ = className;
                     toClass->sourceName_ = ns.sourceName_;
                     toClass->uniqueName_ = toClass->symbolName_ = classSymbol;
                     toClass->sourceSymbolName_ = ns.sourceSymbolName_;
                     toClass->kind_ = cppast::cpp_entity_kind::class_t;
                     ns.Add(toClass);
-                    generator->symbols_[classSymbol] = toClass;
+                    generator->symbols_[classSymbol] = toClass->shared_from_this();
                 }
 
                 entity->symbolName_ = toClass->uniqueName_ + "::" + entity->name_;

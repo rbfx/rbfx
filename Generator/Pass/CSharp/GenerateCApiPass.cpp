@@ -164,7 +164,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::constructor_t)
     {
-        const auto& cls = entity->parent_->Ast<cppast::cpp_class>();
+        const auto& cls = entity->GetParent()->Ast<cppast::cpp_class>();
         const auto& func = entity->Ast<cppast::cpp_constructor>();
         if (!IsExported(cls))
         {
@@ -173,7 +173,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         }
 
         entity->cFunctionName_ = GetUniqueName(Sanitize(entity->uniqueName_));
-        std::string className = entity->parent_->sourceSymbolName_;
+        std::string className = entity->GetParent()->sourceSymbolName_;
         printer_ << "// " + entity->uniqueName_;
         printer_ << fmt::format("URHO3D_EXPORT_API {type} {name}({params})",
             fmt::arg("type", className + "*"), fmt::arg("name", entity->cFunctionName_),
@@ -195,14 +195,14 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     else if (entity->kind_ == cppast::cpp_entity_kind::member_function_t)
     {
         const auto& func = entity->Ast<cppast::cpp_member_function>();
-        const auto& cls = entity->parent_->Ast<cppast::cpp_class>();
+        const auto& cls = entity->GetParent()->Ast<cppast::cpp_class>();
         if (!IsExported(cls))
         {
             entity->Remove();
             return true;
         }
 
-        auto isFinal = !generator->inheritable_.IsIncluded(entity->parent_->symbolName_);
+        auto isFinal = !generator->inheritable_.IsIncluded(entity->GetParent()->symbolName_);
         if (isFinal && entity->access_ != cppast::cpp_public)
             return true;
 
@@ -298,7 +298,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     else if (entity->kind_ == cppast::cpp_entity_kind::variable_t)
     {
         const auto& var = entity->Ast<cppast::cpp_variable>();
-        auto* ns = entity->parent_.Get();
+        auto* ns = entity->GetParent();
 
         // Constants with values get converted to native c# constants in GenerateCSApiPass
         if ((IsConst(var.type()) || entity->flags_ & HintReadOnly) && !entity->GetDefaultValue().empty())
@@ -342,13 +342,13 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     else if (entity->kind_ == cppast::cpp_entity_kind::member_variable_t)
     {
         const auto& var = entity->Ast<cppast::cpp_member_variable>();
-        auto* ns = entity->parent_.Get();
+        auto* ns = entity->GetParent();
 
         // Constants with values get converted to native c# constants in GenerateCSApiPass
         if ((IsConst(var.type()) || entity->flags_ & HintReadOnly) && !entity->GetDefaultValue().empty())
             return true;
 
-        auto isFinal = !generator->inheritable_.IsIncluded(entity->parent_->symbolName_);
+        auto isFinal = !generator->inheritable_.IsIncluded(entity->GetParent()->symbolName_);
         if (isFinal && entity->access_ != cppast::cpp_public)
             return true;
 
@@ -403,21 +403,24 @@ void GenerateCApiPass::Stop()
 {
     // Generate calls that obtain object offsets in case of multiple inheritance
     auto* pass = generator->GetPass<DiscoverInterfacesPass>();
-    for (const auto& pair : pass->inheritedBy_)
+    for (const auto& pair: pass->inheritedBy_)
     {
-        if (pair.first.Expired())
+        auto* inherited = generator->GetSymbol(pair.first);
+        if (inherited == nullptr)
             continue;
 
-        for (const auto& inheritor : pair.second)
+        for (const auto& inheritorName : pair.second)
         {
-            if (inheritor.Expired())
+            auto inheritor = generator->GetSymbol(inheritorName);
+            if (inheritor == nullptr)
                 continue;
 
             printer_ << fmt::format("URHO3D_EXPORT_API int {}_{}_offset()", Sanitize(inheritor->symbolName_),
-                Sanitize(pair.first->symbolName_));
+                Sanitize(inherited->symbolName_));
             printer_.Indent();
             {
-                printer_ << fmt::format("return GetBaseClassOffset<{}, {}>();", inheritor->symbolName_, pair.first->symbolName_);
+                printer_ << fmt::format("return GetBaseClassOffset<{}, {}>();", inheritor->symbolName_,
+                                        inherited->symbolName_);
             }
             printer_.Dedent();
             printer_ << "";
@@ -529,7 +532,7 @@ std::string GenerateCApiPass::ToCType(const cppast::cpp_type& type, bool disallo
     return typeName;
 }
 
-void GenerateCApiPass::PrintParameterHandlingCodePre(const std::vector<SharedPtr<MetaEntity>>& parameters)
+void GenerateCApiPass::PrintParameterHandlingCodePre(const std::vector<std::shared_ptr<MetaEntity>>& parameters)
 {
     for (const auto& param : parameters)
     {
@@ -569,7 +572,7 @@ void GenerateCApiPass::PrintParameterHandlingCodePre(const std::vector<SharedPtr
     }
 }
 
-void GenerateCApiPass::PrintParameterHandlingCodePost(const std::vector<SharedPtr<MetaEntity>>& parameters)
+void GenerateCApiPass::PrintParameterHandlingCodePost(const std::vector<std::shared_ptr<MetaEntity>>& parameters)
 {
     for (const auto& param : parameters)
     {

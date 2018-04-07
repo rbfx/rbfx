@@ -58,7 +58,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
     if (entity->flags_ & HintProperty)
     {
         for (const auto& child : entity->children_)
-            Visit(child, info);
+            Visit(child.get(), info);
         return true;
     }
 
@@ -177,16 +177,21 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_ << "";
 
             // Offsets for multiple inheritance
-            auto it = discoverInterfacesPass_->inheritedBy_.find(WeakPtr<MetaEntity>(entity));
+            auto it = discoverInterfacesPass_->inheritedBy_.find(entity->symbolName_);
             if (it != discoverInterfacesPass_->inheritedBy_.end())
             {
-                for (const auto& inheritor : it->second)
+                for (const auto& inheritorName : it->second)
                 {
-                    if (inheritor.Expired())
+                    auto* inheritor = generator->GetSymbol(inheritorName);
+                    if (inheritor == nullptr)
                         continue;
 
-                    auto baseSym = Sanitize(it->first->symbolName_);
-                    auto derivedSym = Sanitize(inheritor->symbolName_);
+                    auto* base = generator->GetSymbol(it->first);
+                    if (base == nullptr)
+                        continue;
+
+                    auto baseSym = Sanitize(it->first);
+                    auto derivedSym = Sanitize(inheritorName);
 
                     printer_ << dllImport;
                     printer_ << fmt::format("internal static extern int {derivedSym}_{baseSym}_offset();",
@@ -212,14 +217,19 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 // Offsets for multiple inheritance
                 if (it != discoverInterfacesPass_->inheritedBy_.end())
                 {
-                    for (const auto& inheritor : it->second)
+                    for (const auto& inheritorName : it->second)
                     {
-                        if (inheritor.Expired())
+                        auto* inheritor = generator->GetSymbol(inheritorName);
+                        if (inheritor == nullptr)
                             continue;
 
-                        auto baseSym = Sanitize(it->first->symbolName_);
-                        auto derivedSym = Sanitize(inheritor->symbolName_);
-                        auto derivedName = inheritor->symbolName_;
+                        auto* base = generator->GetSymbol(it->first);
+                        if (base == nullptr)
+                            continue;
+
+                        auto baseSym = Sanitize(base->symbolName_);
+                        auto derivedSym = Sanitize(inheritorName);
+                        auto derivedName = inheritorName;
                         str::replace_str(derivedName, "::", ".");
 
                         printer_ << fmt::format("if (source is {derivedName})", FMT_CAPTURE(derivedName));
@@ -304,7 +314,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
     {
         const auto& var = entity->Ast<cppast::cpp_member_variable>();
 
-        auto isFinal = !generator->inheritable_.IsIncluded(entity->parent_->symbolName_);
+        auto isFinal = !generator->inheritable_.IsIncluded(entity->GetParent()->symbolName_);
         if (isFinal && entity->access_ != cppast::cpp_public)
             return true;
 
@@ -345,7 +355,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::member_function_t)
     {
-        auto isFinal = !generator->inheritable_.IsIncluded(entity->parent_->symbolName_);
+        auto isFinal = !generator->inheritable_.IsIncluded(entity->GetParent()->symbolName_);
         if (isFinal && entity->access_ != cppast::cpp_public)
             return true;
 
@@ -356,8 +366,8 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             std::bind(&GeneratePInvokePass::ToPInvokeTypeParam, std::placeholders::_1));
         auto rtype = ToPInvokeTypeReturn(func.return_type());
         auto cFunction = entity->cFunctionName_;
-        auto className = entity->parent_->name_;
-        auto sourceClassName = Sanitize(entity->parent_->sourceSymbolName_);
+        auto className = entity->GetParent()->name_;
+        auto sourceClassName = Sanitize(entity->GetParent()->sourceSymbolName_);
         auto uniqueName = Sanitize(entity->uniqueName_);
         auto pc = func.parameters().empty() ? "" : ", ";
 

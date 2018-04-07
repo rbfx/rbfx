@@ -50,7 +50,7 @@ bool RenameMembersPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             parts.erase(parts.begin());
 
         entity->name_ = str::join(parts, "");
-        entity->symbolName_ = entity->parent_->symbolName_ + "::" + entity->name_;
+        entity->symbolName_ = entity->GetParent()->symbolName_ + "::" + entity->name_;
         break;
     }
     default:

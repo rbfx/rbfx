@@ -9,7 +9,7 @@ void MetaEntity::Register()
     if (uniqueName_.empty())
         // Could be stuff injected into AST.
         return;
-    generator->symbols_[uniqueName_] = this;
+    generator->symbols_[uniqueName_] = shared_from_this();
 }
 
 void MetaEntity::Unregister()

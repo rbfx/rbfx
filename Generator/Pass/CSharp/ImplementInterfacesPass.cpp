@@ -45,8 +45,8 @@ bool DiscoverInterfacesPass::Visit(MetaEntity* entity, cppast::visitor_info info
             for (auto it = cls->bases().begin(); it != cls->bases().end(); it++)
             {
                 const cppast::cpp_type& base = it->type();
-                WeakPtr<MetaEntity> metaBase;
-                if (container::try_get(generator->symbols_, Urho3D::GetTypeName(it->type()), metaBase))
+                std::shared_ptr<MetaEntity> metaBase;
+                if (auto* metaBase = generator->GetSymbol(Urho3D::GetTypeName(it->type())))
                 {
                     if (!(metaBase->flags_ & HintInterface))
                     {
@@ -65,12 +65,12 @@ bool DiscoverInterfacesPass::Visit(MetaEntity* entity, cppast::visitor_info info
                 for (auto it = cls->bases().begin(); it != cls->bases().end(); it++)
                 {
                     const cppast::cpp_type& base = it->type();
-                    WeakPtr<MetaEntity> metaBase;
-                    if (container::try_get(generator->symbols_, Urho3D::GetTypeName(it->type()), metaBase))
+                    std::shared_ptr<MetaEntity> metaBase;
+                    if (auto* metaBase = generator->GetSymbol(Urho3D::GetTypeName(it->type())))
                     {
                         if (metaBase->flags_ & HintInterface)
                         {
-                            inheritedBy_[WeakPtr<MetaEntity>(metaBase)].emplace_back(WeakPtr<MetaEntity>(entity));
+                            inheritedBy_[metaBase->symbolName_].emplace_back(entity->symbolName_);
                             putInheritorToBases(dynamic_cast<const cppast::cpp_class*>(metaBase->ast_));
                         }
                     }
@@ -98,9 +98,9 @@ bool ImplementInterfacesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
             for (const auto& baseCls : cls->bases())
             {
                 const cppast::cpp_type& base = baseCls.type();
-                WeakPtr<MetaEntity> metaBase;
+                std::shared_ptr<MetaEntity> metaBase;
                 auto baseClassName = Urho3D::GetTypeName(baseCls.type());
-                if (container::try_get(generator->symbols_, baseClassName, metaBase))
+                if (auto* metaBase = generator->GetSymbol(baseClassName))
                 {
                     if (!(metaBase->flags_ & HintInterface))
                         continue;
@@ -124,7 +124,7 @@ bool ImplementInterfacesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
                             // If current class implements method from interface then do not pull it from
                             // interfaced class.
                             auto it = std::find_if(entity->children_.begin(), entity->children_.end(),
-                                [&](SharedPtr<MetaEntity> child) {
+                                [&](std::shared_ptr<MetaEntity> child) {
                                     if (child->kind_ != cppast::cpp_entity_kind::member_function_t || child->ast_ == nullptr)
                                         return false;
 
@@ -139,7 +139,7 @@ bool ImplementInterfacesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
                                 continue;
 
                             interfaceMethod->flags_ |= HintInterface;
-                            auto* newEntity = new MetaEntity(*interfaceMethod);
+                            std::shared_ptr<MetaEntity> newEntity(new MetaEntity(*interfaceMethod));
 
                             // Avoid C API name collisions
                             str::replace_str(newEntity->cFunctionName_, Sanitize(metaBase->sourceSymbolName_),
@@ -152,7 +152,7 @@ bool ImplementInterfacesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
                             str::replace_str(newEntity->sourceSymbolName_, metaBase->sourceSymbolName_,
                                 entity->sourceSymbolName_, 1);
 
-                            entity->Add(newEntity);
+                            entity->Add(newEntity.get());
                         }
                     }
                 }

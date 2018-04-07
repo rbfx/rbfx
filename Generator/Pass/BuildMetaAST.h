@@ -39,7 +39,7 @@ public:
     void Start() override
     {
         symbolChecker_.Load(generator->rules_["symbols"]);
-        stack_.emplace_back(generator->apiRoot_.Get());
+        stack_.emplace_back(generator->apiRoot_.get());
     }
 
     bool Visit(const cppast::cpp_entity& e, cppast::visitor_info info) override
@@ -86,17 +86,17 @@ public:
         }
         else
         {
-            auto* entity = new MetaEntity(e, info.access);
-            stack_.back()->Add(entity);
+            std::shared_ptr<MetaEntity> entity(new MetaEntity(e, info.access));
+            stack_.back()->Add(entity.get());
             if (info.event == cppast::visitor_info::container_entity_enter)
-                stack_.emplace_back(entity);
+                stack_.emplace_back(entity.get());
 
             if (e.kind() == cppast::cpp_entity_kind::enum_value_t)
             {
                 // Cache enum values. They will be used when inserting default arguments.
                 // TODO: Assertion is likely to cause issues if two enums have values with identical names.
                 assert(!container::contains(generator->enumValues_, entity->name_));
-                generator->enumValues_[entity->name_] = entity;
+                generator->enumValues_[entity->name_] = entity->shared_from_this();
             }
 
             if (info.event != cppast::visitor_info::container_entity_exit)
@@ -105,17 +105,17 @@ public:
                 if (e.kind() == cppast::cpp_entity_kind::function_t)
                 {
                     for (const auto& param : entity->Ast<cppast::cpp_function>().parameters())
-                        entity->Add(new MetaEntity(param, cppast::cpp_public));
+                        entity->Add(std::shared_ptr<MetaEntity>(new MetaEntity(param, cppast::cpp_public)).get());
                 }
                 else if (e.kind() == cppast::cpp_entity_kind::member_function_t)
                 {
                     for (const auto& param : entity->Ast<cppast::cpp_member_function>().parameters())
-                        entity->Add(new MetaEntity(param, cppast::cpp_public));
+                        entity->Add(std::shared_ptr<MetaEntity>(new MetaEntity(param, cppast::cpp_public)).get());
                 }
                 else if (e.kind() == cppast::cpp_entity_kind::constructor_t)
                 {
                     for (const auto& param : entity->Ast<cppast::cpp_constructor>().parameters())
-                        entity->Add(new MetaEntity(param, cppast::cpp_public));
+                        entity->Add(std::shared_ptr<MetaEntity>(new MetaEntity(param, cppast::cpp_public)).get());
                 }
             }
         }

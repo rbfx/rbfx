@@ -174,12 +174,12 @@ std::string EnsureNotKeyword(const std::string& value)
     return value;
 }
 
-std::string MapParameterList(std::vector<SharedPtr<MetaEntity>>& parameters,
+std::string MapParameterList(std::vector<std::shared_ptr<MetaEntity>>& parameters,
     const std::function<std::string(MetaEntity*)>& callable)
 {
     std::vector<std::string> parts;
     for (const auto& param : parameters)
-        parts.emplace_back(callable(param.Get()));
+        parts.emplace_back(callable(param.get()));
     return str::join(parts, ", ");
 }
 
@@ -236,8 +236,7 @@ std::string GetTypeName(const cppast::cpp_type& type)
 
 bool IsEnumType(const cppast::cpp_type& type)
 {
-    WeakPtr<MetaEntity> entity;
-    if (container::try_get(generator->symbols_, GetTypeName(type), entity))
+    if (auto* entity = generator->GetSymbol(GetTypeName(type)))
          return entity->kind_ == cppast::cpp_entity_kind::enum_t;
     return false;
 }

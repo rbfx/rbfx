@@ -45,8 +45,8 @@ protected:
     std::string MapToCpp(const cppast::cpp_type& type, const std::string& expression);
     std::string MapToC(const cppast::cpp_type& type, const std::string& expression);
     std::string ToCType(const cppast::cpp_type& type, bool disallowReferences=false);
-    void PrintParameterHandlingCodePre(const std::vector<SharedPtr<MetaEntity>>& parameters);
-    void PrintParameterHandlingCodePost(const std::vector<SharedPtr<MetaEntity>>& parameters);
+    void PrintParameterHandlingCodePre(const std::vector<std::shared_ptr<MetaEntity>>& parameters);
+    void PrintParameterHandlingCodePost(const std::vector<std::shared_ptr<MetaEntity>>& parameters);
     std::string GetAutoType(const cppast::cpp_type& type);
 
     CSharpPrinter printer_;

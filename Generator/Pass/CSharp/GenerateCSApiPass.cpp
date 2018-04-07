@@ -109,8 +109,8 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 // Not necessary here, but makes it convenient allowing to not handle case where no bases exist.
                 for (const auto& base : cls.bases())
                 {
-                    WeakPtr<MetaEntity> baseEntity;
-                    if (container::try_get(generator->symbols_, Urho3D::GetTypeName(base.type()), baseEntity))
+                    std::shared_ptr<MetaEntity> baseEntity;
+                    if (auto* baseEntity = generator->GetSymbol(Urho3D::GetTypeName(base.type())))
                     {
                         std::string name;
                         if (baseEntity->flags_ & HintInterface)
@@ -302,7 +302,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     if (entity->kind_ == cppast::cpp_entity_kind::constructor_t)
     {
         const auto& ctor = entity->Ast<cppast::cpp_constructor>();
-        MetaEntity* cls = entity->parent_.Get();
+        MetaEntity* cls = entity->GetParent();
 
         bool hasBase = false;
         for (const auto& base : cls->Ast<cppast::cpp_class>().bases())
@@ -360,7 +360,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::member_function_t)
     {
-        auto isFinal = !generator->inheritable_.IsIncluded(entity->parent_->symbolName_);
+        auto isFinal = !generator->inheritable_.IsIncluded(entity->GetParent()->symbolName_);
         if (isFinal && entity->access_ != cppast::cpp_public)
             return true;
 
@@ -375,11 +375,11 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             fmt::arg("virtual", /*!isFinal &&*/ func.is_virtual() ? "virtual " : ""), FMT_CAPTURE(rtype),
             fmt::arg("name", entity->name_), FMT_CAPTURE(csParams));
 
-        if (entity->access_ == cppast::cpp_public && entity->parent_->flags_ & HintInterface)
+        if (entity->access_ == cppast::cpp_public && entity->GetParent()->flags_ & HintInterface)
         {
             // Implement interface methods that come directly from interfaced class. If interfaced class inherits other
             // interfaces then these interfaces will be inherited instead.
-            if (entity->symbolName_.find(entity->parent_->symbolName_) == 0)
+            if (entity->symbolName_.find(entity->GetParent()->symbolName_) == 0)
             {
                 interface_ << fmt::format("{rtype} {name}({csParams});", FMT_CAPTURE(rtype),
                     fmt::arg("name", entity->name_), FMT_CAPTURE(csParams));
@@ -391,7 +391,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         // Body
         printer_.Indent();
         {
-            PrintInstanceDisposedCheck(entity->parent_->name_);
+            PrintInstanceDisposedCheck(entity->GetParent()->name_);
             std::string call = fmt::format("{cFunction}(NativeInstance{pc}{paramNameList})",
                 fmt::arg("cFunction", entity->cFunctionName_), FMT_CAPTURE(pc), FMT_CAPTURE(paramNameList));
             call = MapToCS(func.return_type(), call);
@@ -448,7 +448,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     else if (entity->kind_ == cppast::cpp_entity_kind::variable_t)
     {
         const auto& var = entity->Ast<cppast::cpp_variable>();
-        auto* ns = entity->parent_.Get();
+        auto* ns = entity->GetParent();
 
         auto defaultValue = ConvertDefaultValueToCS(entity, entity->GetDefaultValue(), var.type(), true);
         auto access = entity->access_ == cppast::cpp_public ? "public" : "protected";
@@ -514,9 +514,9 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             for (const auto& child : entity->children_)
             {
                 if (child->name_ == "set")
-                    setter = child;
+                    setter = child.get();
                 else
-                    getter = child;
+                    getter = child.get();
             }
             assert(getter != nullptr);
 
@@ -534,7 +534,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 printer_ << "get";
                 printer_.Indent();
                 {
-                    PrintInstanceDisposedCheck(entity->parent_->name_);
+                    PrintInstanceDisposedCheck(entity->GetParent()->name_);
                     printer_ << fmt::format("return {call};", FMT_CAPTURE(call));
                 }
                 printer_.Dedent();
@@ -545,7 +545,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     printer_ << "set";
                     printer_.Indent();
                     {
-                        PrintInstanceDisposedCheck(entity->parent_->name_);
+                        PrintInstanceDisposedCheck(entity->GetParent()->name_);
                         printer_ << fmt::format("{cFunction}(NativeInstance, {value});",
                             fmt::arg("cFunction", setter->cFunctionName_), FMT_CAPTURE(value));
                     }
@@ -557,12 +557,12 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         }
         else
         {
-            auto isFinal = !generator->inheritable_.IsIncluded(entity->parent_->symbolName_);
+            auto isFinal = !generator->inheritable_.IsIncluded(entity->GetParent()->symbolName_);
             if (isFinal && entity->access_ != cppast::cpp_public)
                 return true;
 
             const auto& var = entity->Ast<cppast::cpp_member_variable>();
-            auto* ns = entity->parent_.Get();
+            auto* ns = entity->GetParent();
 
             auto defaultValue = ConvertDefaultValueToCS(entity, entity->GetDefaultValue(), var.type(), true);
             bool isConstant = IsConst(var.type()) && !(entity->flags_ & HintReadOnly) && !defaultValue.empty();
@@ -589,7 +589,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     printer_ << "get";
                     printer_.Indent();
                     {
-                        PrintInstanceDisposedCheck(entity->parent_->name_);
+                        PrintInstanceDisposedCheck(entity->GetParent()->name_);
                         auto call = MapToCS(var.type(), fmt::format("get_{nsSymbol}_{sourceName}(NativeInstance)",
                             FMT_CAPTURE(nsSymbol), FMT_CAPTURE(sourceName)));
                         printer_ << fmt::format("return {};", call);
@@ -602,7 +602,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                         printer_ << "set";
                         printer_.Indent();
                         {
-                            PrintInstanceDisposedCheck(entity->parent_->name_);
+                            PrintInstanceDisposedCheck(entity->GetParent()->name_);
                             auto value = MapToPInvoke(var.type(), "value");
                             printer_ << fmt::format("set_{nsSymbol}_{sourceName}(NativeInstance, {value});",
                                 FMT_CAPTURE(nsSymbol), FMT_CAPTURE(sourceName), FMT_CAPTURE(value));
@@ -738,7 +738,7 @@ std::string GenerateCSApiPass::MapToPInvoke(const cppast::cpp_type& type, const 
     return expression;
 }
 
-std::string GenerateCSApiPass::FormatCSParameterList(const std::vector<SharedPtr<MetaEntity>>& parameters)
+std::string GenerateCSApiPass::FormatCSParameterList(const std::vector<std::shared_ptr<MetaEntity>>& parameters)
 {
     std::string result;
     for (const auto& param : parameters)
@@ -760,7 +760,7 @@ std::string GenerateCSApiPass::FormatCSParameterList(const std::vector<SharedPtr
         result += fmt::format("{} {}", csType, EnsureNotKeyword(param->name_));
 
         if (!defaultValue.empty())
-            result += "=" + ConvertDefaultValueToCS(param, defaultValue, cppType, false);
+            result += "=" + ConvertDefaultValueToCS(param.get(), defaultValue, cppType, false);
 
         if (param != parameters.back())
             result += ", ";
@@ -777,7 +777,6 @@ std::string GenerateCSApiPass::ConvertDefaultValueToCS(MetaEntity* user, std::st
     if (value == "nullptr")
         return "null";
 
-    WeakPtr<MetaEntity> entity;
     if (auto* map = generator->GetTypeMap(type, false))
     {
         if (map->csType_ == "string")
@@ -806,8 +805,8 @@ std::string GenerateCSApiPass::ConvertDefaultValueToCS(MetaEntity* user, std::st
     else if (value.find("::") != std::string::npos)
     {
         // TODO: enums are not renamed for now
-        if (!container::try_get(generator->symbols_, Urho3D::GetTypeName(type), entity) ||
-            entity->kind_ != cppast::cpp_entity_kind::enum_t)
+        auto* entity = generator->GetSymbol(Urho3D::GetTypeName(type));
+        if (entity == nullptr || entity->kind_ != cppast::cpp_entity_kind::enum_t)
         {
             // Possibly a constant from typemapped class
             auto parts = str::split(value, "::");
@@ -821,7 +820,7 @@ std::string GenerateCSApiPass::ConvertDefaultValueToCS(MetaEntity* user, std::st
     return value;
 }
 
-void GenerateCSApiPass::PrintParameterHandlingCodePre(const std::vector<SharedPtr<MetaEntity>>& parameters)
+void GenerateCSApiPass::PrintParameterHandlingCodePre(const std::vector<std::shared_ptr<MetaEntity>>& parameters)
 {
     for (const auto& param : parameters)
     {
@@ -831,7 +830,7 @@ void GenerateCSApiPass::PrintParameterHandlingCodePre(const std::vector<SharedPt
     }
 }
 
-void GenerateCSApiPass::PrintParameterHandlingCodePost(const std::vector<SharedPtr<MetaEntity>>& parameters)
+void GenerateCSApiPass::PrintParameterHandlingCodePost(const std::vector<std::shared_ptr<MetaEntity>>& parameters)
 {
     for (const auto& param : parameters)
     {

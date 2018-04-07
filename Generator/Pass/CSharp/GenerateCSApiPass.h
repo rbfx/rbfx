@@ -42,10 +42,10 @@ protected:
     std::string MapToCS(const cppast::cpp_type& type, const std::string& expression);
     std::string ToCSType(const cppast::cpp_type& type,bool disallowReferences=false);
     std::string MapToPInvoke(const cppast::cpp_type& type, const std::string& expression);
-    std::string FormatCSParameterList(const std::vector<SharedPtr<MetaEntity>>& parameters);
+    std::string FormatCSParameterList(const std::vector<std::shared_ptr<MetaEntity>>& parameters);
     std::string ConvertDefaultValueToCS(MetaEntity* user, std::string value, const cppast::cpp_type& type, bool allowComplex);
-    void PrintParameterHandlingCodePre(const std::vector<SharedPtr<MetaEntity>>& parameters);
-    void PrintParameterHandlingCodePost(const std::vector<SharedPtr<MetaEntity>>& parameters);
+    void PrintParameterHandlingCodePre(const std::vector<std::shared_ptr<MetaEntity>>& parameters);
+    void PrintParameterHandlingCodePost(const std::vector<std::shared_ptr<MetaEntity>>& parameters);
     void PrintInstanceDisposedCheck(const std::string& objectName);
 
     CSharpPrinter printer_;

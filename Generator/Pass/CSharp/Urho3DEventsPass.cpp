@@ -36,14 +36,14 @@ bool Urho3DEventsPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     if (entity->kind_ == cppast::cpp_entity_kind::variable_t)
     {
         auto defaultValue = entity->GetDefaultValue();
-        if (defaultValue.empty() && entity->parent_->kind_ == cppast::cpp_entity_kind::namespace_t &&
+        if (defaultValue.empty() && entity->GetParent()->kind_ == cppast::cpp_entity_kind::namespace_t &&
             Urho3D::GetTypeName(entity->Ast<cppast::cpp_variable>().type()) == "Urho3D::StringHash")
         {
             // Give default values to event names
             if (entity->name_.find("E_") == 0)
             {
-                const auto& siblings = entity->parent_->children_;
-                auto it = std::find(siblings.begin(), siblings.end(), entity);
+                const auto& siblings = entity->GetParent()->children_;
+                auto it = std::find(siblings.begin(), siblings.end(), entity->shared_from_this());
                 assert(it != siblings.end());
 
                 // Next sibling which is supposed to be namespace containing event parameters. Name of namespace is
@@ -52,7 +52,7 @@ bool Urho3DEventsPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
                 if (it != siblings.end())
                 {
-                    MetaEntity* eventNamespace = *it;
+                    auto* eventNamespace = it->get();
                     assert(eventNamespace->kind_ == cppast::cpp_entity_kind::namespace_t);
                     entity->defaultValue_ = fmt::format("\"{}\"", eventNamespace->name_);
                     entity->flags_ |= HintReadOnly;

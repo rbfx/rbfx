@@ -97,6 +97,8 @@ public:
         return nullptr;
     }
     MetaEntity* GetEntityOfConstant(MetaEntity* user, const std::string& constant);
+    MetaEntity* GetSymbol(const char* symbolName) { return GetSymbol(std::string(symbolName)); }
+    MetaEntity* GetSymbol(const std::string& symbolName);
 
     std::string sourceDir_;
     std::string outputDirCpp_;
@@ -106,11 +108,11 @@ public:
     std::map<std::string, std::unique_ptr<cppast::cpp_file>> parsed_;
     std::vector<std::unique_ptr<CppAstPass>> cppPasses_;
     std::vector<std::unique_ptr<CppApiPass>> apiPasses_;
-    SharedPtr<MetaEntity> apiRoot_;
+    std::shared_ptr<MetaEntity> apiRoot_;
     cppast::cpp_entity_index index_;
     std::string defaultNamespace_ = "Urho3D";
-    std::unordered_map<std::string, WeakPtr<MetaEntity>> symbols_;
-    std::unordered_map<std::string, WeakPtr<MetaEntity>> enumValues_;
+    std::unordered_map<std::string, std::weak_ptr<MetaEntity>> symbols_;
+    std::unordered_map<std::string, std::weak_ptr<MetaEntity>> enumValues_;
     std::unordered_map<std::string, TypeMap> typeMaps_;
     IncludedChecker inheritable_;
 };

@@ -44,7 +44,7 @@ enum CppEntityHints
 
 /// Wrapper over cppast::cpp_entity. Overlay-AST is assembled from these entities. This allows freely modifying AST
 /// structure while maintianing original information of AST entities.
-struct MetaEntity : public RefCounted
+struct MetaEntity : public std::enable_shared_from_this<MetaEntity>
 {
     MetaEntity() = default;
     MetaEntity(const cppast::cpp_entity& source, cppast::cpp_access_specifier_kind access)
@@ -66,7 +66,7 @@ struct MetaEntity : public RefCounted
         kind_ = other.kind_;
         ast_ = other.ast_;
         access_ = other.access_;
-        parent_ = nullptr;
+        parent_.reset();
 
         symbolName_ = other.symbolName_;
         sourceSymbolName_ = other.sourceSymbolName_;
@@ -78,7 +78,10 @@ struct MetaEntity : public RefCounted
         cFunctionName_ = other.cFunctionName_;
 
         for (const auto& child : other.children_)
-            children_.emplace_back(new MetaEntity(*child));
+        {
+            std::shared_ptr<MetaEntity> childCopy(new MetaEntity(*child));
+            children_.emplace_back(childCopy);
+        }
     }
 
     template<typename T>
@@ -86,24 +89,24 @@ struct MetaEntity : public RefCounted
 
     void Remove()
     {
-        if (parent_ != nullptr)
+        if (auto* parent = GetParent())
         {
             Unregister();
-            SharedPtr<MetaEntity> ref(this);
-            auto& children = parent_->children_;
-            children.erase(std::find(children.begin(), children.end(), this));
-            parent_ = nullptr;
+            std::shared_ptr<MetaEntity> ref = shared_from_this();
+            auto& children = parent->children_;
+            children.erase(std::find(children.begin(), children.end(), shared_from_this()));
+            parent_.reset();
         }
     }
 
     void Add(MetaEntity* entity)
     {
-        if (std::find(children_.begin(), children_.end(), this) != children_.end())
+        if (std::find(children_.begin(), children_.end(), shared_from_this()) != children_.end())
             return;
 
-        SharedPtr<MetaEntity> ref(entity);
+        std::shared_ptr<MetaEntity> ref(entity->shared_from_this());
         ref->Remove();
-        ref->parent_ = this;
+        ref->parent_ = std::weak_ptr<MetaEntity>(shared_from_this());
         children_.emplace_back(ref);
         entity->Register();
     }
@@ -164,9 +167,16 @@ struct MetaEntity : public RefCounted
         MetaEntity* entity = this;
         do
         {
-            entity = entity->parent_;
+            entity = entity->GetParent();
         } while (entity != nullptr && entity->kind_ != kind);
         return entity;
+    }
+
+    MetaEntity* GetParent() const
+    {
+        if (parent_.expired())
+            return nullptr;
+        return parent_.lock().get();
     }
 
     cppast::cpp_entity_kind kind_ = cppast::cpp_entity_kind::file_t;
@@ -175,9 +185,9 @@ struct MetaEntity : public RefCounted
     /// Source ast info.
     cppast::cpp_access_specifier_kind access_ = cppast::cpp_access_specifier_kind::cpp_public;
     /// Parent of this entity.
-    WeakPtr<MetaEntity> parent_ = nullptr;
+    std::weak_ptr<MetaEntity> parent_;
     /// Children of overlay ast entity.
-    std::vector<SharedPtr<MetaEntity>> children_;
+    std::vector<std::shared_ptr<MetaEntity>> children_;
     /// A full name of c++ symbol.
     std::string symbolName_;
     /// A original full name of c++ symbol.
