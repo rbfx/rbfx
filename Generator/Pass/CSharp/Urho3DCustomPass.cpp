@@ -155,7 +155,10 @@ bool Urho3DCustomPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             entity->defaultValue_ = "(int)SDL." + defaultValue;
     }
     else if (entity->name_.find("SDL_") == 0)   // Get rid of anything else belonging to sdl
+    {
         entity->Remove();
+        URHO3D_LOGINFOF("Ignore: %s", entity->uniqueName_.c_str());
+    }
 
     return true;
 }

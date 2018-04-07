@@ -38,7 +38,7 @@ public:
 
     void Start() override
     {
-        symbolChecker_.Load(generator->rules_->GetRoot().Get("symbols"));
+        symbolChecker_.Load(generator->rules_["symbols"]);
         stack_.emplace_back(generator->apiRoot_.Get());
     }
 

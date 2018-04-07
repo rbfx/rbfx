@@ -283,18 +283,25 @@ bool IsValueType(const cppast::cpp_type& type)
 }
 
 
-IncludedChecker::IncludedChecker(const JSONValue& rules)
+IncludedChecker::IncludedChecker(const rapidjson::Value& rules)
 {
     Load(rules);
 }
 
-void IncludedChecker::Load(const JSONValue& rules)
+void IncludedChecker::Load(const rapidjson::Value& rules)
 {
-    for (const auto& include : rules.Get("include").GetArray())
-        includes_.emplace_back(WildcardToRegex(include.GetString().CString()));
+    assert(rules.HasMember("include"));
 
-    for (const auto& exclude : rules.Get("exclude").GetArray())
-        excludes_.emplace_back(WildcardToRegex(exclude.GetString().CString()));
+    const auto& include = rules["include"];
+    for (auto it = include.Begin(); it != include.End(); ++it)
+        includes_.emplace_back(WildcardToRegex(it->GetString()));
+
+    if (!rules.HasMember("exclude"))
+        return;
+
+    const auto& exclude = rules["exclude"];
+    for (auto it = exclude.Begin(); it != exclude.End(); ++it)
+        excludes_.emplace_back(WildcardToRegex(it->GetString()));
 }
 
 bool IncludedChecker::IsIncluded(const std::string& value)

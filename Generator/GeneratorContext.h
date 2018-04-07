@@ -26,12 +26,10 @@
 #include <string>
 #include <map>
 #include <unordered_map>
-#include <Urho3D/Math/MathDefs.h>
-#include <Urho3D/Container/Hash.h>
 #include <Urho3D/IO/Log.h>
 #include <cppast/cpp_entity.hpp>
 #include <cppast/libclang_parser.hpp>
-#include <Urho3D/Resource/JSONFile.h>
+#include <rapidjson/document.h>
 #include "Pass/CppPass.h"
 
 
@@ -59,7 +57,7 @@ template <> inline unsigned MakeHash(const std::string& value)
 struct TypeMap
 {
     std::string cppType_ = "void*";
-    std::string cType_ = "void*";
+    std::string cType_ = "";
     std::string csType_ = "";
     std::string pInvokeType_ = "IntPtr";
     std::string cToCppTemplate_ = "{value}";
@@ -103,7 +101,7 @@ public:
     std::string sourceDir_;
     std::string outputDirCpp_;
     std::string outputDirCs_;
-    SharedPtr<JSONFile> rules_;
+    rapidjson::Document rules_;
     cppast::libclang_compile_config config_;
     std::map<std::string, std::unique_ptr<cppast::cpp_file>> parsed_;
     std::vector<std::unique_ptr<CppAstPass>> cppPasses_;

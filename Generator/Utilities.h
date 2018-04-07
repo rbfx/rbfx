@@ -25,12 +25,12 @@
 
 #include <limits>
 #include <regex>
-#include <Urho3D/Container/Str.h>
+#include <Urho3D/Container/Ptr.h>
 #include <cppast/cpp_entity.hpp>
-#include <Urho3D/Resource/JSONValue.h>
 #include <cppast/cpp_type.hpp>
 #include <cppast/cpp_function.hpp>
 #include <cppast/cpp_member_function.hpp>
+#include <rapidjson/document.h>
 
 #undef min
 #undef max
@@ -68,9 +68,9 @@ class IncludedChecker
 public:
     IncludedChecker() = default;
     /// Initialize with XMLElement that consists of <include> and <exclude> children tags with wildcards as their values.
-    explicit IncludedChecker(const JSONValue& rules);
+    explicit IncludedChecker(const rapidjson::Value& rules);
     /// Initialize with XMLElement that consists of <include> and <exclude> children tags with wildcards as their values.
-    void Load(const JSONValue& rules);
+    void Load(const rapidjson::Value& rules);
     /// Verify string is matched by include rules and not matched by exclude rules.
     bool IsIncluded(const std::string& value);
 

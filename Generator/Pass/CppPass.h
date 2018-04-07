@@ -23,7 +23,6 @@
 #pragma once
 
 
-#include <Urho3D/Core/Utils.h>
 #include <cppast/cpp_entity.hpp>
 #include <cppast/cpp_member_variable.hpp>
 #include <cppast/cpp_variable.hpp>
@@ -42,8 +41,6 @@ enum CppEntityHints
     HintInterface = 4,
     HintProperty = 8,
 };
-
-URHO3D_TO_FLAGS_ENUM(CppEntityHints);
 
 /// Wrapper over cppast::cpp_entity. Overlay-AST is assembled from these entities. This allows freely modifying AST
 /// structure while maintianing original information of AST entities.
@@ -194,7 +191,7 @@ struct MetaEntity : public RefCounted
     /// Override default value of this entity. This can an expression in target language.
     std::string defaultValue_;
     /// Various hints about this entity.
-    CppEntityHints flags_ = HintNone;
+    int flags_ = HintNone;
     /// Name of a function wrapping this entity in a C wrapper.
     std::string cFunctionName_;
 

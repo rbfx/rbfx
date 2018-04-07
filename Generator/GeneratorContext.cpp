@@ -30,7 +30,9 @@
 #include <Urho3D/Core/Thread.h>
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/IO/Log.h>
-#include <Urho3D/Resource/JSONValue.h>
+#include <fstream>
+#include <thread>
+#include <chrono>
 #include "GeneratorContext.h"
 #include "Utilities.h"
 
@@ -64,21 +66,29 @@ void GeneratorContext::LoadCompileConfig(const std::vector<std::string>& include
 
 bool GeneratorContext::LoadRules(const std::string& jsonPath)
 {
-    rules_ = new JSONFile(context);
-    if (!rules_->LoadFile(jsonPath.c_str()))
+    std::ifstream fp(jsonPath);
+    std::stringstream buffer;
+    buffer << fp.rdbuf();
+    auto json = buffer.str();
+    rules_.Parse<rapidjson::kParseCommentsFlag | rapidjson::kParseTrailingCommasFlag>(json.c_str(), json.length());
+
+    if (!rules_.IsObject())
         return false;
 
-    inheritable_.Load(rules_->GetRoot().Get("inheritable"));
+    inheritable_.Load(rules_["inheritable"]);
 
-    const JSONArray& typeMaps = rules_->GetRoot().Get("typemaps").GetArray();
-    for (const auto& typeMap : typeMaps)
+    const auto& typeMaps = rules_["typemaps"];
+    for (auto it = typeMaps.Begin(); it != typeMaps.End(); ++it)
     {
+        const auto& typeMap = *it;
         TypeMap map;
-        map.cppType_ = typeMap.Get("type").GetString().CString();
-        map.cType_ = typeMap.Get("ctype").GetString().CString();
-        map.csType_ = typeMap.Get("cstype").GetString().CString();
-        map.pInvokeType_ = typeMap.Get("ptype").GetString().CString();
-        map.isValueType_ = typeMap.Get("is_value_type").GetBool();
+        map.cppType_ = typeMap["type"].GetString();
+        if (typeMap.HasMember("ctype"))
+            map.cType_ = typeMap["ctype"].GetString();
+        if (typeMap.HasMember("cstype"))
+            map.csType_ = typeMap["cstype"].GetString();
+        map.pInvokeType_ = typeMap["ptype"].GetString();
+        map.isValueType_ = typeMap.HasMember("is_value_type") && typeMap["is_value_type"].GetBool();
 
         if (map.cType_.empty())
             map.cType_ = map.cppType_;
@@ -86,21 +96,17 @@ bool GeneratorContext::LoadRules(const std::string& jsonPath)
         if (map.csType_.empty())
             map.csType_ = map.pInvokeType_;
 
-        const auto& cppToC = typeMap.Get("cpp_to_c");
-        if (!cppToC.IsNull())
-            map.cppToCTemplate_ = cppToC.GetString().CString();
+        if (typeMap.HasMember("cpp_to_c"))
+            map.cppToCTemplate_ = typeMap["cpp_to_c"].GetString();
 
-        const auto& cToCpp = typeMap.Get("c_to_cpp");
-        if (!cToCpp.IsNull())
-            map.cToCppTemplate_ = cToCpp.GetString().CString();
+        if (typeMap.HasMember("c_to_cpp"))
+            map.cToCppTemplate_ = typeMap["c_to_cpp"].GetString();
 
-        const auto& toCS = typeMap.Get("pinvoke_to_cs");
-        if (!toCS.IsNull())
-            map.pInvokeToCSTemplate_ = toCS.GetString().CString();
+        if (typeMap.HasMember("pinvoke_to_cs"))
+            map.pInvokeToCSTemplate_ = typeMap["pinvoke_to_cs"].GetString();
 
-        const auto& toPInvoke = typeMap.Get("cs_to_pinvoke");
-        if (!toPInvoke.IsNull())
-            map.csToPInvokeTemplate_ = toPInvoke.GetString().CString();
+        if (typeMap.HasMember("cs_to_pinvoke"))
+            map.csToPInvokeTemplate_ = typeMap["cs_to_pinvoke"].GetString();
 
         typeMaps_[map.cppType_] = map;
     }
@@ -112,13 +118,13 @@ bool GeneratorContext::ParseFiles(const std::string& sourceDir)
 {
     sourceDir_ = str::AddTrailingSlash(sourceDir);
 
-    auto parse = rules_->GetRoot().Get("parse");
+    const auto& parse = rules_["parse"];
     assert(parse.IsObject());
 
-    for (auto it = parse.Begin(); it != parse.End(); it++)
+    for (auto it = parse.MemberBegin(); it != parse.MemberEnd(); it++)
     {
-        std::string baseSourceDir = str::AddTrailingSlash(sourceDir_ + it->first_.CString());
-        IncludedChecker checker(it->second_);
+        std::string baseSourceDir = str::AddTrailingSlash(sourceDir_ + it->name.GetString());
+        IncludedChecker checker(it->value);
 
         std::vector<std::string> sourceFiles;
         if (!ScanDirectory(baseSourceDir, sourceFiles, ScanDirectoryFlags::IncludeFiles | ScanDirectoryFlags::Recurse,
@@ -162,7 +168,7 @@ bool GeneratorContext::ParseFiles(const std::string& sourceDir)
 
         while (!context->GetWorkQueue()->IsCompleted(0))
         {
-            Time::Sleep(30);
+            std::this_thread::sleep_for(std::chrono::milliseconds(30));
             context->GetWorkQueue()->SendEvent(E_ENDFRAME);            // Ensures log messages are displayed.
         }
     }
