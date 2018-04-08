@@ -13,6 +13,7 @@ Main website: [https://urho3d.github.io/](https://urho3d.github.io/)
 - Update rates are seperated from render update rates. There are no "Frame" events.  
   Rendering is viewed as a sampling of the current update state.  Transform Tweening is planned.
 - Tweeks Subsystem.
+- Node::GetChild(index) has been removed in favor of O(log(n)) child remove times using a HashSet as children container.
 - Other smaller changes as well as fixes.
 
 ## Further Goals
