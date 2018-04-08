@@ -807,7 +807,7 @@ Node* Node::CreateTemporaryChild(const String& name, CreateMode mode, unsigned i
     return CreateChild(name, mode, id, true);
 }
 
-void Node::AddChild(Node* node)
+void Node::AddChild(Node* node, unsigned index)
 {
     // Check for illegal or redundant parent assignment
     if (!node || node == this || node->parent_ == this)
@@ -845,6 +845,7 @@ void Node::AddChild(Node* node)
 
     // Add to the child vector, then add to the scene if not added yet
     children_.Insert(nodeShared);
+	nodeShared->index_ = index;
     if (scene_ && node->GetScene() != scene_)
         scene_->NodeAdded(node);
 
@@ -1308,7 +1309,15 @@ PODVector<Node*> Node::GetChildrenWithTag(const String& tag, bool recursive) con
     return dest;
 }
 
+Node* Node::GetChild(unsigned index) const
+{
+	for (SharedPtr<Node> child : children_)
+		if (child->index_ == index)
+			return child;
 
+	return nullptr;
+
+}
 
 Node* Node::GetChild(const String& name, bool recursive) const
 {
@@ -1940,8 +1949,7 @@ Animatable* Node::FindAttributeAnimationTarget(const String& name, String& outNa
             if (s >= '0' && s <= '9')
             {
                 unsigned index = ToUInt(name);
-				URHO3D_LOGWARNING("Node::FindAttributeAnimationTarget Need to ReImplement lookup for index based children..");
-                //node = node->GetChild(index);
+                node = node->GetChild(index);
             }
             else
             {

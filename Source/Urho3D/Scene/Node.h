@@ -293,8 +293,8 @@ public:
     Node* CreateChild(const String& name = String::EMPTY, CreateMode mode = REPLICATED, unsigned id = 0, bool temporary = false);
     /// Create a temporary child scene node (with specified ID if provided).
     Node* CreateTemporaryChild(const String& name = String::EMPTY, CreateMode mode = REPLICATED, unsigned id = 0);
-    /// Add a child scene node
-    void AddChild(Node* node);
+    /// Add a child scene node at a specific index. If index is not explicitly specified or is greater than current children size, append the new child at the end.
+    void AddChild(Node* node, unsigned index = M_MAX_UNSIGNED);
     /// Remove a child scene node.
     void RemoveChild(Node* node);
     /// Remove all child scene nodes.
@@ -528,7 +528,8 @@ public:
     /// Return child scene nodes with a specific tag.
     PODVector<Node*> GetChildrenWithTag(const String& tag, bool recursive = false) const;
 
-
+    /// Return child scene node by index.
+    Node* GetChild(unsigned index) const;
     /// Return child scene node by name.
     Node* GetChild(const String& name, bool recursive = false) const;
     /// Return child scene node by name.
@@ -688,6 +689,8 @@ private:
     Scene* scene_;
     /// Unique ID within the scene.
     unsigned id_;
+	///child index within siblings.
+	unsigned index_{ 0 };
     /// Position.
     Vector3 position_;
     /// Rotation.
