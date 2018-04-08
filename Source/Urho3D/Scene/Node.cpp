@@ -875,7 +875,17 @@ void Node::RemoveChild(Node* node)
     if (!node)
         return;
 
+
 	children_.Erase(SharedPtr<Node>(node));
+
+    //for (Vector<SharedPtr<Node> >::Iterator i = children_.Begin(); i != children_.End(); ++i)
+    //{
+    //    if (*i == node)
+    //    {
+    //        RemoveChild(i);
+    //        return;
+    //    }
+    //}
 }
 
 void Node::RemoveAllChildren()
