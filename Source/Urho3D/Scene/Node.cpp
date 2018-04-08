@@ -146,9 +146,9 @@ bool Node::Save(Serializer& dest, bool recursive) const
 	// Write child nodes
 	dest.WriteVLE(GetNumPersistentChildren());
 	if (recursive) {
-		for (SharedPtr<Node> child : children_)
+		for (unsigned i = 0; i < children_.Size(); ++i)
 		{
-			Node* node = child;
+			Node* node = children_[i];
 			if (node->IsTemporary())
 				continue;
 
@@ -221,9 +221,9 @@ bool Node::SaveXML(XMLElement& dest) const
     }
 
     // Write child nodes
-	for (SharedPtr<Node> child : children_)
+    for (unsigned i = 0; i < children_.Size(); ++i)
     {
-        Node* node = child;
+        Node* node = children_[i];
         if (node->IsTemporary())
             continue;
 
@@ -263,9 +263,9 @@ bool Node::SaveJSON(JSONValue& dest) const
     // Write child nodes
     JSONArray childrenArray;
     childrenArray.Reserve(children_.Size());
-	for (SharedPtr<Node> child : children_)
+    for (unsigned i = 0; i < children_.Size(); ++i)
     {
-        Node* node = child;
+        Node* node = children_[i];
         if (node->IsTemporary())
             continue;
 
@@ -284,8 +284,8 @@ void Node::ApplyAttributes()
     for (unsigned i = 0; i < components_.Size(); ++i)
         components_[i]->ApplyAttributes();
 
-	for (SharedPtr<Node> child : children_)
-		child->ApplyAttributes();
+    for (unsigned i = 0; i < children_.Size(); ++i)
+        children_[i]->ApplyAttributes();
 }
 
 void Node::MarkNetworkUpdate()
@@ -726,10 +726,8 @@ void Node::ResetDeepEnabled()
 {
     SetEnabled(enabledPrev_, false, false);
 
-    //for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
-
-	for(SharedPtr<Node> node : children_)
-		node->ResetDeepEnabled();
+    for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+        (*i)->ResetDeepEnabled();
 }
 
 void Node::SetEnabledRecursive(bool enable)
@@ -744,7 +742,9 @@ void Node::SetOwner(Connection* owner)
 
 void Node::MarkDirty()
 {
-
+    Node *cur = this;
+    for (;;)
+    {
         // Precondition:
         // a) whenever a node is marked dirty, all its children are marked dirty as well.
         // b) whenever a node is cleared from being dirty, all its parents must have been
@@ -752,47 +752,41 @@ void Node::MarkDirty()
         // Therefore if we are recursing here to mark this node dirty, and it already was,
         // then all children of this node must also be already dirty, and we don't need to
         // reflag them again.
-        if (dirty_)
+        if (cur->dirty_)
             return;
-
-        dirty_ = true;
+        cur->dirty_ = true;
 
         // Notify listener components first, then mark child nodes
-        for (Vector<WeakPtr<Component> >::Iterator i = listeners_.Begin(); i != listeners_.End();)
+        for (Vector<WeakPtr<Component> >::Iterator i = cur->listeners_.Begin(); i != cur->listeners_.End();)
         {
             Component *c = *i;
             if (c)
             {
-                c->OnMarkedDirty(this);
+                c->OnMarkedDirty(cur);
                 ++i;
             }
             // If listener has expired, erase from list (swap with the last element to avoid O(n^2) behavior)
             else
             {
-                *i = listeners_.Back();
-                listeners_.Pop();
+                *i = cur->listeners_.Back();
+                cur->listeners_.Pop();
             }
         }
 
-
-		//Recurse on children
-		for (SharedPtr<Node> child : children_)
-			child->MarkDirty();
-
-        //// Tail call optimization: Don't recurse to mark the first child dirty, but
-        //// instead process it in the context of the current function. If there are more
-        //// than one child, then recurse to the excess children.
-        //Vector<SharedPtr<Node> >::Iterator i = cur->children_.Begin();
-        //if (i != cur->children_.End())
-        //{
-        //    Node *next = *i;
-        //    for (++i; i != cur->children_.End(); ++i)
-        //        (*i)->MarkDirty();
-        //    cur = next;
-        //}
-        //else
-        //    return;
-    
+        // Tail call optimization: Don't recurse to mark the first child dirty, but
+        // instead process it in the context of the current function. If there are more
+        // than one child, then recurse to the excess children.
+        Vector<SharedPtr<Node> >::Iterator i = cur->children_.Begin();
+        if (i != cur->children_.End())
+        {
+            Node *next = *i;
+            for (++i; i != cur->children_.End(); ++i)
+                (*i)->MarkDirty();
+            cur = next;
+        }
+        else
+            return;
+    }
 }
 
 Node* Node::CreateChild(const String& name, CreateMode mode, unsigned id, bool temporary)
@@ -839,13 +833,12 @@ void Node::AddChild(Node* node, unsigned index)
                 scene_->SendEvent(E_NODEREMOVED, eventData);
             }
 
-            oldParent->children_.Erase(nodeShared);
+            oldParent->children_.Remove(nodeShared);
         }
     }
 
     // Add to the child vector, then add to the scene if not added yet
-    children_.Insert(nodeShared);
-	nodeShared->index_ = index;
+    children_.Insert(index, nodeShared);
     if (scene_ && node->GetScene() != scene_)
         scene_->NodeAdded(node);
 
@@ -875,17 +868,14 @@ void Node::RemoveChild(Node* node)
     if (!node)
         return;
 
-
-	children_.Erase(SharedPtr<Node>(node));
-
-    //for (Vector<SharedPtr<Node> >::Iterator i = children_.Begin(); i != children_.End(); ++i)
-    //{
-    //    if (*i == node)
-    //    {
-    //        RemoveChild(i);
-    //        return;
-    //    }
-    //}
+    for (Vector<SharedPtr<Node> >::Iterator i = children_.Begin(); i != children_.End(); ++i)
+    {
+        if (*i == node)
+        {
+            RemoveChild(i);
+            return;
+        }
+    }
 }
 
 void Node::RemoveAllChildren()
@@ -897,10 +887,10 @@ void Node::RemoveChildren(bool removeReplicated, bool removeLocal, bool recursiv
 {
     unsigned numRemoved = 0;
 
-    for (auto i = children_.Begin(); i != children_.End(); i++)
+    for (unsigned i = children_.Size() - 1; i < children_.Size(); --i)
     {
         bool remove = false;
-        Node* childNode = *i;
+        Node* childNode = children_[i];
 
         if (recursive)
             childNode->RemoveChildren(removeReplicated, removeLocal, true);
@@ -911,12 +901,10 @@ void Node::RemoveChildren(bool removeReplicated, bool removeLocal, bool recursiv
 
         if (remove)
         {
-			//i.GotoPrev();
-            RemoveChild(childNode);
+            RemoveChild(children_.Begin() + i);
             ++numRemoved;
         }
     }
-
 
     // Mark node dirty in all replication states
     if (numRemoved)
@@ -1238,8 +1226,8 @@ unsigned Node::GetNumChildren(bool recursive) const
     else
     {
         unsigned allChildren = children_.Size();
-        for (SharedPtr<Node> child : children_)
-            allChildren += child->GetNumChildren(true);
+        for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+            allChildren += (*i)->GetNumChildren(true);
 
         return allChildren;
     }
@@ -1251,8 +1239,8 @@ void Node::GetChildren(PODVector<Node*>& dest, bool recursive) const
 
     if (!recursive)
     {
-		for (SharedPtr<Node> child : children_)
-            dest.Push(child);
+        for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+            dest.Push(*i);
     }
     else
         GetChildrenRecursive(dest);
@@ -1265,24 +1253,16 @@ PODVector<Node*> Node::GetChildren(bool recursive) const
     return dest;
 }
 
-const Vector<SharedPtr<Urho3D::Node>> Node::GetChildren() const
-{
-	Vector<SharedPtr<Urho3D::Node>> list;
-	for (SharedPtr<Node> child : children_)
-		list.Push(child);
-	return list;
-}
-
 void Node::GetChildrenWithComponent(PODVector<Node*>& dest, StringHash type, bool recursive) const
 {
     dest.Clear();
 
     if (!recursive)
     {
-		for (SharedPtr<Node> child : children_)
+        for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
         {
-            if (child->HasComponent(type))
-                dest.Push(child);
+            if ((*i)->HasComponent(type))
+                dest.Push(*i);
         }
     }
     else
@@ -1302,10 +1282,10 @@ void Node::GetChildrenWithTag(PODVector<Node*>& dest, const String& tag, bool re
 
     if (!recursive)
     {
-		for (SharedPtr<Node> child : children_)
+        for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
         {
-            if (child->HasTag(tag))
-                dest.Push(child);
+            if ((*i)->HasTag(tag))
+                dest.Push(*i);
         }
     }
     else
@@ -1321,12 +1301,7 @@ PODVector<Node*> Node::GetChildrenWithTag(const String& tag, bool recursive) con
 
 Node* Node::GetChild(unsigned index) const
 {
-	for (SharedPtr<Node> child : children_)
-		if (child->index_ == index)
-			return child;
-
-	return nullptr;
-
+    return index < children_.Size() ? children_[index].Get() : nullptr;
 }
 
 Node* Node::GetChild(const String& name, bool recursive) const
@@ -1341,14 +1316,14 @@ Node* Node::GetChild(const char* name, bool recursive) const
 
 Node* Node::GetChild(StringHash nameHash, bool recursive) const
 {
-	for (SharedPtr<Node> child : children_)
+    for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
     {
-        if (child->GetNameHash() == nameHash)
-            return child;
+        if ((*i)->GetNameHash() == nameHash)
+            return *i;
 
         if (recursive)
         {
-            Node* node = child->GetChild(nameHash, true);
+            Node* node = (*i)->GetChild(nameHash, true);
             if (node)
                 return node;
         }
@@ -1433,9 +1408,9 @@ Component* Node::GetComponent(StringHash type, bool recursive) const
 
     if (recursive)
     {
-		for (SharedPtr<Node> child : children_)
+        for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
         {
-            Component* component = child->GetComponent(type, true);
+            Component* component = (*i)->GetComponent(type, true);
             if (component)
                 return component;
         }
@@ -1894,10 +1869,10 @@ unsigned Node::GetNumPersistentChildren() const
 {
     unsigned ret = 0;
 
-	for (SharedPtr<Node> child : children_)
+    for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
     {
-        if (!child->IsTemporary())
-            ret++;
+        if (!(*i)->IsTemporary())
+            ++ret;
     }
 
     return ret;
@@ -2079,8 +2054,8 @@ void Node::SetEnabled(bool enable, bool recursive, bool storeSelf)
 
     if (recursive)
     {
-		for (SharedPtr<Node> child : children_)
-			child->SetEnabled(enable, recursive, storeSelf);
+        for (Vector<SharedPtr<Node> >::Iterator i = children_.Begin(); i != children_.End(); ++i)
+            (*i)->SetEnabled(enable, recursive, storeSelf);
     }
 }
 
@@ -2128,7 +2103,7 @@ void Node::UpdateWorldTransform() const
     dirty_ = false;
 }
 
-void Node::RemoveChild(HashSet<SharedPtr<Node> >::Iterator i)
+void Node::RemoveChild(Vector<SharedPtr<Node> >::Iterator i)
 {
     // Keep a shared pointer to the child about to be removed, to make sure the erase from container completes first. Otherwise
     // it would be possible that other child nodes get removed as part of the node's components' cleanup, causing a re-entrant
@@ -2159,9 +2134,9 @@ void Node::RemoveChild(HashSet<SharedPtr<Node> >::Iterator i)
 
 void Node::GetChildrenRecursive(PODVector<Node*>& dest) const
 {
-	for (SharedPtr<Node> child : children_)
+    for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
     {
-        Node* node = child;
+        Node* node = *i;
         dest.Push(node);
         if (!node->children_.Empty())
             node->GetChildrenRecursive(dest);
@@ -2170,9 +2145,9 @@ void Node::GetChildrenRecursive(PODVector<Node*>& dest) const
 
 void Node::GetChildrenWithComponentRecursive(PODVector<Node*>& dest, StringHash type) const
 {
-	for (SharedPtr<Node> child : children_)
+    for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
     {
-        Node* node = child;
+        Node* node = *i;
         if (node->HasComponent(type))
             dest.Push(node);
         if (!node->children_.Empty())
@@ -2187,15 +2162,15 @@ void Node::GetComponentsRecursive(PODVector<Component*>& dest, StringHash type) 
         if ((*i)->GetType() == type)
             dest.Push(*i);
     }
-	for (SharedPtr<Node> child : children_)
-        child->GetComponentsRecursive(dest, type);
+    for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+        (*i)->GetComponentsRecursive(dest, type);
 }
 
 void Node::GetChildrenWithTagRecursive(PODVector<Node*>& dest, const String& tag) const
 {
-	for (SharedPtr<Node> child : children_)
+    for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
     {
-        Node* node = child;
+        Node* node = *i;
         if (node->HasTag(tag))
             dest.Push(node);
         if (!node->children_.Empty())
@@ -2237,9 +2212,9 @@ Node* Node::CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mod
     }
 
     // Clone child nodes recursively
-	for (SharedPtr<Node> child : children_)
+    for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
     {
-        Node* node = child;
+        Node* node = *i;
         if (node->IsTemporary())
             continue;
 
