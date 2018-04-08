@@ -69,6 +69,12 @@ struct URHO3D_API NodeImpl
     mutable VectorBuffer attrBuffer_;
 };
 
+struct URHO3D_API NodeChildEntry
+{
+	SharedPtr<Node> node_;
+	unsigned orderIndex_;
+};
+
 /// %Scene node that may contain components and child nodes.
 class URHO3D_API Node : public Animatable
 {
@@ -507,7 +513,7 @@ public:
     unsigned GetNumChildren(bool recursive = false) const;
 
     /// Return immediate child scene nodes.
-    const Vector<SharedPtr<Node> >& GetChildren() const { return children_; }
+    const Vector<SharedPtr<Node> > GetChildren() const;
 
     /// Return child scene nodes, optionally recursive.
     void GetChildren(PODVector<Node*>& dest, bool recursive = false) const;
@@ -647,7 +653,7 @@ private:
     /// Recalculate the world transform.
     void UpdateWorldTransform() const;
     /// Remove child node by iterator.
-    void RemoveChild(Vector<SharedPtr<Node> >::Iterator i);
+    void RemoveChild(HashSet<SharedPtr<Node> >::Iterator i);
     /// Return child nodes recursively.
     void GetChildrenRecursive(PODVector<Node*>& dest) const;
     /// Return child nodes with a specific component recursively.
@@ -683,6 +689,8 @@ private:
     Scene* scene_;
     /// Unique ID within the scene.
     unsigned id_;
+	///child index within siblings.
+	unsigned index_{ 0 };
     /// Position.
     Vector3 position_;
     /// Rotation.
@@ -694,7 +702,7 @@ private:
     /// Components.
     Vector<SharedPtr<Component> > components_;
     /// Child scene nodes.
-    Vector<SharedPtr<Node> > children_;
+    HashSet<SharedPtr<Node>> children_;
     /// Node listeners.
     Vector<WeakPtr<Component> > listeners_;
     /// Pointer to implementation.
@@ -746,9 +754,9 @@ template <class T> T* Node::GetDerivedComponent(bool recursive) const
 
     if (recursive)
     {
-        for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+		for (SharedPtr<Node> child : children_)
         {
-            T* component = (*i)->GetDerivedComponent<T>(true);
+            T* component = child->GetDerivedComponent<T>(true);
             if (component)
                 return component;
         }
@@ -788,8 +796,8 @@ template <class T> void Node::GetDerivedComponents(PODVector<T*>& dest, bool rec
 
     if (recursive)
     {
-        for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
-            (*i)->GetDerivedComponents<T>(dest, true, false);
+		for (SharedPtr<Node> child : children_)
+			child->GetDerivedComponents<T>(dest, true, false);
     }
 }
 
