@@ -123,6 +123,8 @@ namespace Urho3D
 		bool Save(Serializer* dest);
 		/// Saves all tweeks to filename
 		bool Save(String filename);
+		/// Saves all tweeks to last loaded filename.
+		bool Save();
 		
 		/// clears all tweeks and Loads source.
 		bool Load(Deserializer* source);

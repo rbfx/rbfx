@@ -59,6 +59,11 @@ namespace Urho3D {
 		return Save((Serializer*)file);
 	}
 
+	bool Tweeks::Save()
+	{
+		return Save(mCurrentSaveFileName);
+	}
+
 	bool Tweeks::Load(Deserializer* source)
 	{
 		if (source == nullptr)
@@ -83,7 +88,11 @@ namespace Urho3D {
 	bool Tweeks::Load(String filename)
 	{
 		SharedPtr<File> file = SharedPtr<File>(new File(context_, filename, FILE_READ));
-		return Load((Deserializer*)file);
+		bool s = Load((Deserializer*)file);
+		if (s)
+			mCurrentSaveFileName = filename;
+
+		return s;
 	}
 
 	Urho3D::Tweek* Tweeks::GetTweek(String name /*= ""*/, String section /*= ""*/)
