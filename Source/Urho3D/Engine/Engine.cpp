@@ -41,6 +41,7 @@
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../IO/PackageFile.h"
+#include "IO/FileWatcher.h"
 #include "../Misc/FreeFunctions.h"
 #ifdef URHO3D_IK
 #include "../IK/IK.h"
@@ -124,6 +125,7 @@ Engine::Engine(Context* context) :
     context_->RegisterSubsystem(new Profiler(context_));
 #endif
     context_->RegisterSubsystem(new FileSystem(context_));
+	context_->RegisterFactory<FileWatcher>();
 #ifdef URHO3D_LOGGING
     context_->RegisterSubsystem(new Log(context_));
 #endif
