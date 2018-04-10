@@ -100,8 +100,16 @@ public:
     String GetProgramDir() const;
     /// Return the user documents directory.
     String GetUserDocumentsDir() const;
+    /// Set the default Orginization and App names
+    void SetDefaultOrgAndAppCredentials(const String& org, const String& app);
+    /// return default orginization name
+    String GetOrginizationName() const { return lastPrefOrg_; }
+    /// return default application name
+    String GetApplicationName() const { return lastPrefApp_; }
     /// Return the application preferences directory.
     String GetAppPreferencesDir(const String& org, const String& app) const;
+    /// Return the application preferences directory based on default org name and app name
+    String GetAppPreferencesDir() const;
     /// Check if a file or directory exists at the specified path
     bool Exists(const String& pathName) const { return FileExists(pathName) || DirExists(pathName); }
     /// Copy a directory. directoryOut must not exist and is subsequently created with the contents of directoryIn
@@ -129,6 +137,10 @@ private:
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
     /// Handle a console command event.
     void HandleConsoleCommand(StringHash eventType, VariantMap& eventData);
+
+
+    String lastPrefOrg_;
+    String lastPrefApp_;
 
     /// Allowed directories.
     HashSet<String> allowedPaths_;

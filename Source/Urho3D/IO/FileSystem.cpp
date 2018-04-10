@@ -761,10 +761,18 @@ String FileSystem::GetUserDocumentsDir() const
 #endif
 }
 
+void FileSystem::SetDefaultOrgAndAppCredentials(const String& org, const String& app)
+{
+	lastPrefApp_ = app;
+	lastPrefOrg_ = org;
+}
+
 String FileSystem::GetAppPreferencesDir(const String& org, const String& app) const
 {
     String dir;
 #ifndef MINI_URHO
+
+
     char* prefPath = SDL_GetPrefPath(org.CString(), app.CString());
     if (prefPath)
     {
@@ -776,6 +784,11 @@ String FileSystem::GetAppPreferencesDir(const String& org, const String& app) co
         URHO3D_LOGWARNING("Could not get application preferences directory");
 
     return dir;
+}
+
+String FileSystem::GetAppPreferencesDir() const
+{
+	return GetAppPreferencesDir(lastPrefOrg_, lastPrefApp_);
 }
 
 void FileSystem::RegisterPath(const String& pathName)
