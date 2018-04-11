@@ -53,11 +53,17 @@ namespace CSharp
 
         // Derived types will put object initialization code here. At the time of writing such code sets up virtual
         // method callbacks and nothing more.
-        internal virtual void SetupInstance(IntPtr instance, bool ownsInstance)
+        internal virtual void PerformInstanceSetup(IntPtr instance, bool ownsInstance)
         {
             OwnsNativeInstance = ownsInstance;
             NativeInstance = instance;
             InstanceCache.Add(this);
+        }
+
+        // This method may be overriden in partial class in order to attach extra logic to object constructor
+        internal virtual void SetupInstance(IntPtr instance, bool ownsInstance)
+        {
+            PerformInstanceSetup(instance, ownsInstance);
         }
 
         public bool Equals(NativeObject other)

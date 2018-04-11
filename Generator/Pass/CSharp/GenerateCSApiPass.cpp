@@ -161,7 +161,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
             if (!isStatic)
             {
-                printer_ << "internal override void SetupInstance(IntPtr instance, bool ownsInstance)";
+                printer_ << "internal override void PerformInstanceSetup(IntPtr instance, bool ownsInstance)";
                 printer_.Indent();
                 {
                     auto className = entity->name_;
