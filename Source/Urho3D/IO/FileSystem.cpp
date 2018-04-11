@@ -1003,6 +1003,15 @@ String GetPath(const String& fullPath)
     return path;
 }
 
+
+String GetDirName(const String& fullPath)
+{
+	StringVector splits = fullPath.Split('/');
+	if(splits.Size())
+		return splits.Back();
+
+	return "";
+}
 String GetFileName(const String& fullPath)
 {
     String path, file, extension;

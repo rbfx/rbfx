@@ -27,6 +27,7 @@
 #include "../Core/Mutex.h"
 #include "../IO/File.h"
 #include "../Resource/Resource.h"
+#include "../IO/FileSystem.h"
 
 namespace Urho3D
 {
@@ -214,6 +215,16 @@ public:
     /// Get resource directory at a given index
     const String& GetResourceDir(unsigned index) const { return index < resourceDirs_.Size() ? resourceDirs_[index] : String::EMPTY; }
     
+	/// Get the full path to a resource directory given its directory name (ie "Data")
+	String GetResourceDir(String resourceDirName) {
+		for (String resourceDir : resourceDirs_)
+		{
+			if (GetDirName(resourceDir) == resourceDirName)
+				return resourceDir;
+		}
+		return "";
+	}
+
     /// Scan for specified files.
     void Scan(Vector<String>& result, const String& pathName, const String& filter, unsigned flags, bool recursive) const;
     /// Returns a formatted string containing the currently loaded resources with optional type name filter.
