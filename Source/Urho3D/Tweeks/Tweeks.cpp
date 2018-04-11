@@ -13,6 +13,7 @@
 #include "../SystemUI/SystemUI.h"
 #endif
 #include "../IO/File.h"
+#include "../IO/FileSystem.h"
 
 namespace Urho3D {
 
@@ -87,6 +88,9 @@ namespace Urho3D {
 
 	bool Tweeks::Load(String filename)
 	{
+		if (!GSS<FileSystem>()->FileExists(filename))
+			return false;
+
 		SharedPtr<File> file = SharedPtr<File>(new File(context_, filename, FILE_READ));
 		bool s = Load((Deserializer*)file);
 		if (s)
