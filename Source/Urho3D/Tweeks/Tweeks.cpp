@@ -23,8 +23,6 @@ namespace Urho3D {
 		mCurrentSaveFileName = mDefaultFileName;
 		BeginSection("default section");
 		BeginTweekTime(TWEEK_LIFETIME_DEFAULT_MS);
-
-		Load(mDefaultFileName.Trimmed());
 	}
 
 	Tweeks::~Tweeks()
@@ -88,13 +86,13 @@ namespace Urho3D {
 
 	bool Tweeks::Load(String filename)
 	{
+        mCurrentSaveFileName = filename;
+
 		if (!GSS<FileSystem>()->FileExists(filename))
 			return false;
 
 		SharedPtr<File> file = SharedPtr<File>(new File(context_, filename, FILE_READ));
 		bool s = Load((Deserializer*)file);
-		if (s)
-			mCurrentSaveFileName = filename;
 
 		return s;
 	}
