@@ -114,13 +114,6 @@ namespace CSharp
             return (T)entry.Target;
         }
 
-        public static void Add(Context instance)
-        {
-            ExpireCache();
-            NativeInterface.Setup();
-            _cache[instance.NativeInstance] = new CacheEntry(instance);
-        }
-
         public static void Add<T>(T instance) where T: NativeObject
         {
             ExpireCache();
