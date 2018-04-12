@@ -1251,8 +1251,6 @@ bool FileSystem::RemoveDirContents(const String& directoryIn, bool recursive)
 			fullSuccess = false;
 	}
 
-	if (!fullSuccess)
-		return false;
 
 	results.Clear();
 
