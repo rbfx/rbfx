@@ -89,60 +89,10 @@ UnknownComponent::UnknownComponent(Context* context) :
 void UnknownComponent::RegisterObject(Context* context)
 {
     context->RegisterFactory<UnknownComponent>();
+	URHO3D_ATTRIBUTE("storedTypeName", String, typeNameStored_, "", AM_FILE);
+	URHO3D_ATTRIBUTE("storedTypeHash", StringHash, typeHashStored_, "", AM_FILE);
 }
 
-bool UnknownComponent::Load(Deserializer& source)
-{
-	typeNameStored_ = source.ReadString();
-	return Component::Load(source);
-}
-
-bool UnknownComponent::LoadXML(const XMLElement& source)
-{
-	if (source.HasAttribute("storedTypeName"))
-		typeNameStored_ = source.GetAttribute("storedTypeName");
-	else
-		return false;
-
-
-	return Component::LoadXML(source);
-}
-
-
-bool UnknownComponent::LoadJSON(const JSONValue& source)
-{
-	if (source.Contains("storedTypeName"))
-		typeNameStored_ = source.Get("storedTypeName").GetString();
-	else
-		return false;
-
-	return Component::LoadJSON(source);
-}
-
-
-bool UnknownComponent::Save(Serializer& dest) const
-{
-	// Write the stored typename
-	dest.WriteString(typeNameStored_);
-
-
-	return Component::Save(dest);
-}
-
-bool UnknownComponent::SaveXML(XMLElement& dest) const
-{
-	// Write the stored typename
-	if (!dest.SetString("storedTypeName", typeNameStored_))
-		return false;
-
-	return Component::SaveXML(dest);
-}
-
-bool UnknownComponent::SaveJSON(JSONValue& dest) const
-{
-	dest.Set("storedTypeName", typeNameStored_);
-	return Component::SaveJSON(dest);
-}
 
 void UnknownComponent::SetStoredTypeName(const String& typeName)
 {

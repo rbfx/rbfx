@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -2075,9 +2075,9 @@ Component* Node::SafeCreateComponent(const String& typeName, StringHash type, Cr
         // Else create as UnknownComponent
         SharedPtr<UnknownComponent> newComponent(new UnknownComponent(context_));
         if (typeName.Empty() || typeName.StartsWith("Unknown", false))
-            newComponent->SetType(type);
+            newComponent->SetStoredType(type);
         else
-            newComponent->SetTypeName(typeName);
+            newComponent->SetStoredTypeName(typeName);
 
         AddComponent(newComponent, id, mode);
         return newComponent;

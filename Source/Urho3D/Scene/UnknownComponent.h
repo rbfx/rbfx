@@ -48,18 +48,6 @@ public:
     /// Return type name of the stored component.
     const String& GetStoredTypeName() const  { return typeNameStored_; }
 
-    /// Load from binary data. Return true if successful.
-    bool Load(Deserializer& source) override;
-    /// Load from XML data. Return true if successful.
-    bool LoadXML(const XMLElement& source) override;
-    /// Load from JSON data. Return true if successful.
-    bool LoadJSON(const JSONValue& source) override;
-    /// Save as binary data. Return true if successful.
-    bool Save(Serializer& dest) const override;
-    /// Save as XML data. Return true if successful.
-    bool SaveXML(XMLElement& dest) const override;
-    /// Save as JSON data. Return true if successful.
-    bool SaveJSON(JSONValue& dest) const override;
 
 private:
     /// Type of stored component.
