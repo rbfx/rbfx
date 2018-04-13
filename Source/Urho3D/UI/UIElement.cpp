@@ -1212,7 +1212,7 @@ void UIElement::UpdateLayout()
         int minWidth = CalculateLayoutParentSize(minSizes, layoutBorder_.left_, layoutBorder_.right_, layoutSpacing_);
         int minHeight = minChildHeight + layoutBorder_.top_ + layoutBorder_.bottom_;
         layoutMinSize_ = IntVector2(minWidth, minHeight);
-        SetSize(width, height);
+        //SetSize(width, height); layouts should update children sizes - not the size of the element itself!
         // Validate the size before resizing child elements, in case of min/max limits
         width = size_.x_;
         height = size_.y_;
@@ -1251,7 +1251,7 @@ void UIElement::UpdateLayout()
         int minHeight = CalculateLayoutParentSize(minSizes, layoutBorder_.top_, layoutBorder_.bottom_, layoutSpacing_);
         int minWidth = minChildWidth + layoutBorder_.left_ + layoutBorder_.right_;
         layoutMinSize_ = IntVector2(minWidth, minHeight);
-        SetSize(width, height);
+        //SetSize(width, height); layouts should update children sizes - not the size of the element itself!
         width = size_.x_;
         height = size_.y_;
 
