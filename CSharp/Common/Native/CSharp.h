@@ -158,6 +158,8 @@ struct CSharpObjConverter
     template<typename T> static T* ToCSharp(const CopyableType<T>& object)       { return (T*)&object; }
     template<typename T> static T* ToCSharp(const CopyableType<T>* object)       { return (T*)object; }
     template<typename T> static T* ToCSharp(const NonRefCountedType<T>&& object) { return (T*)&object; }
+    template<typename T> static T* ToCSharp(const NonRefCountedType<T>& object)  { return (T*)&object; }
+    template<typename T> static T* ToCSharp(const NonRefCountedType<T>* object)  { return (T*)object; }
 };
 
 template<typename T>
