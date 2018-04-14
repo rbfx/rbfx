@@ -107,14 +107,6 @@ int main(int argc, char* argv[])
 
     CLI11_PARSE(app, argc, argv);
 
-    // Remove preceding _ from `options` because if they start with - then CLI11 treats them as options and not as
-    // values to -O flag.
-    for (auto& opt : options)
-    {
-        if (opt.find("_-") == 0)
-            opt = opt.substr(1);
-    }
-
     sourceDir = str::AddTrailingSlash(sourceDir);
     outputDirCs = str::AddTrailingSlash(outputDirCpp) + "CSharp/";
     outputDirCpp = str::AddTrailingSlash(outputDirCpp) + "Native/";
