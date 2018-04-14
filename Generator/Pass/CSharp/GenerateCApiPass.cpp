@@ -99,18 +99,9 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             // Using sourceName_ with wrapper classes causes weird build errors.
             std::string className = entity->symbolName_;
             if (IsSubclassOf(cls, "Urho3D::RefCounted"))
-                // TODO: What if destructor is called from non-main thread?
                 printer_ << "instance->ReleaseRef();";
             else
                 printer_ << "delete instance;";
-
-            // TODO: Move this out to a more appropriate spot
-            printer_ << "if (Thread::IsMainThread())";
-            printer_.Indent("");
-            {
-                printer_ << "script->DeleteRefCounted();";
-            }
-            printer_.Dedent("");
         }
         printer_.Dedent();
         printer_ << "";

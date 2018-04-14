@@ -11,9 +11,31 @@ namespace Urho3D
         public string Category { get; set; } = "";
     }
 
+    internal class RefCountedDeleter : Object
+    {
+        private int _lastDeletionTickCount;
+        private const int DeletionInterval = 1000;
+
+        [DllImport(CSharp.Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+        private static extern void CSharp_FreePendingRefCounted();
+
+        public RefCountedDeleter(Context context) : base(context)
+        {
+            SubscribeToEvent(CoreEvents.E_ENDFRAME, args =>
+            {
+                if (Environment.TickCount - _lastDeletionTickCount >= DeletionInterval)
+                {
+                    CSharp_FreePendingRefCounted();
+                    _lastDeletionTickCount = Environment.TickCount;
+                }
+            });
+        }
+    }
+
     public partial class Context
     {
         private readonly Dictionary<uint, Type> _factoryTypes = new Dictionary<uint, Type>();
+        private RefCountedDeleter _refCountedDeleter;
 
         // This method may be overriden in partial class in order to attach extra logic to object constructor
         internal override void SetupInstance(IntPtr instance, bool ownsInstance)
@@ -30,6 +52,9 @@ namespace Urho3D
                 foreach (var pair in assembly.GetTypesWithAttribute<RegisterFactoryAttribute>())
                     RegisterFactory(pair.Item1, pair.Item2.Category);
             }
+
+            // Performs scheduled deletion of RefCounted
+            _refCountedDeleter = new RefCountedDeleter(this);
         }
 
         public void RegisterFactory<T>(string category = "") where T : Object
