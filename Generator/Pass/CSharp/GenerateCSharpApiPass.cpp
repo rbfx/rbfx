@@ -189,74 +189,16 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                                         const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
                                         return fmt::format("typeof({})", ToCSType(param.type(), true));
                                     });
-                                    auto paramNameListCs = MapParameterList(child->children_, [&](MetaEntity* metaParam)
-                                    {
-                                        const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
-                                        std::string result;
-                                        if (IsComplexOutputType(param.type()))
-                                            result = param.name() + "Out";
-                                        else
-                                            result = MapToCS(param.type(), param.name() + "_");
-                                        if (IsOutType(param.type()))
-                                            result = "ref " + result;
-                                        return result;
-                                    });
-                                    auto paramNameList = MapParameterList(child->children_, [&](MetaEntity* metaParam)
-                                    {
-                                        const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
-                                        // Types in lambda declaration are required in case of ref parameters.
-                                        auto type = GeneratePInvokePass::ToPInvokeType(param.type());
-                                        auto name = param.name();
-                                        // Avoid possible parameter name collision in enclosing scope by appending _.
-                                        return fmt::format("{type} {name}_", FMT_CAPTURE(type), FMT_CAPTURE(name));
-                                    });
 
                                     // Optimization: do not route c++ virtual method calls through .NET if user does not override
                                     // such method in a managed class.
-                                    printer_
-                                        << fmt::format("if (GetType().HasOverride(nameof({name}){pc}{paramTypeList}))",
-                                            FMT_CAPTURE(name), FMT_CAPTURE(pc), FMT_CAPTURE(paramTypeList));
+                                    printer_ << fmt::format("if (GetType().HasOverride(nameof({name}){pc}{paramTypeList}))",
+                                        FMT_CAPTURE(name), FMT_CAPTURE(pc), FMT_CAPTURE(paramTypeList));
                                     printer_.Indent();
                                     {
-                                        printer_ << fmt::format("set_{sourceClass}_fn{cFunction}(instance, "
-                                                "(IntPtr gcHandle_{pc}{paramNameList}) =>",
-                                            fmt::arg("sourceClass", Sanitize(entity->sourceSymbolName_)),
-                                            fmt::arg("cFunction", child->cFunctionName_), FMT_CAPTURE(pc),
-                                            FMT_CAPTURE(paramNameList));
-                                        printer_.Indent();
-                                        {
-                                            // ref parameters typemapped to C# types
-                                            for (const auto& param : child->children_)
-                                            {
-                                                const auto& type = param->Ast<cppast::cpp_function_parameter>().type();
-                                                if (IsComplexOutputType(type))
-                                                    printer_ << "var " + param->name_ + "Out = " + MapToCS(type, param->name_ + "_") + ";";
-                                            }
-
-                                            auto expr = fmt::format(
-                                                "(({className})GCHandle.FromIntPtr(gcHandle_).Target).{name}({paramNameListCs})",
-                                                FMT_CAPTURE(className), FMT_CAPTURE(name),
-                                                FMT_CAPTURE(paramNameListCs));
-                                            if (!IsVoid(func.return_type()))
-                                            {
-                                                expr = MapToPInvoke(func.return_type(), expr);
-                                                printer_ << fmt::format("var returnValue = {}", expr) + ";";
-                                            }
-                                            else
-                                                printer_ << expr + ";";
-
-                                            // ref parameters typemapped back to pInvoke
-                                            for (const auto& param : child->children_)
-                                            {
-                                                const auto& type = param->Ast<cppast::cpp_function_parameter>().type();
-                                                if (IsComplexOutputType(type))
-                                                    printer_ << param->name_ + "_" + " = " + MapToPInvoke(type, param->name_ + "Out") + ";";
-                                            }
-
-                                            if (!IsVoid(func.return_type()))
-                                                printer_ << "return returnValue;";
-                                        }
-                                        printer_.Dedent("});");
+                                        printer_ << fmt::format("set_fn{cFunction}(instance, "
+                                                "Marshal.GetFunctionPointerForDelegate(({className}{cFunction}Delegate){cFunction}_virtual));",
+                                            FMT_CAPTURE(className), fmt::arg("cFunction", child->cFunctionName_));
                                     }
                                     printer_.Dedent();
                                 }
@@ -409,6 +351,72 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         }
         printer_.Dedent();
         printer_ << "";
+
+        if (!isFinal && func.is_virtual())
+        {
+            auto paramNameListCs = MapParameterList(entity->children_, [&](MetaEntity* metaParam)
+            {
+                const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
+                std::string result;
+                if (IsComplexOutputType(param.type()))
+                    result = param.name() + "Out";
+                else
+                    result = MapToCS(param.type(), param.name());
+                if (IsOutType(param.type()))
+                    result = "ref " + result;
+                return result;
+            });
+            auto paramNameList = MapParameterList(entity->children_, [&](MetaEntity* metaParam)
+            {
+                const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
+                // Types in lambda declaration are required in case of ref parameters.
+                auto type = GeneratePInvokePass::ToPInvokeType(param.type());
+                auto name = param.name();
+                // Avoid possible parameter name collision in enclosing scope by appending _.
+                return fmt::format("{type} {name}", FMT_CAPTURE(type), FMT_CAPTURE(name));
+            });
+            auto rtype = GeneratePInvokePass::ToPInvokeType(func.return_type());
+
+            printer_ << fmt::format("private static {rtype} {cFunction}_virtual(IntPtr gcHandle{pc}{paramNameList})",
+                fmt::arg("sourceClass", Sanitize(entity->GetParent()->sourceSymbolName_)),
+                fmt::arg("cFunction", entity->cFunctionName_), FMT_CAPTURE(pc), FMT_CAPTURE(paramNameList),
+                FMT_CAPTURE(rtype));
+            printer_.Indent();
+            {
+                // ref parameters typemapped to C# types
+                for (const auto& param : entity->children_)
+                {
+                    const auto& type = param->Ast<cppast::cpp_function_parameter>().type();
+                    if (IsComplexOutputType(type))
+                        printer_ << "var " + param->name_ + "Out = " + MapToCS(type, param->name_) + ";";
+                }
+
+                auto expr = fmt::format(
+                    "(({className})GCHandle.FromIntPtr(gcHandle).Target).{name}({paramNameListCs})",
+                    fmt::arg("className", entity->GetParent()->name_), fmt::arg("name", entity->name_),
+                    FMT_CAPTURE(paramNameListCs));
+                if (!IsVoid(func.return_type()))
+                {
+                    expr = MapToPInvoke(func.return_type(), expr);
+                    printer_ << fmt::format("var returnValue = {}", expr) + ";";
+                }
+                else
+                    printer_ << expr + ";";
+
+                // ref parameters typemapped back to pInvoke
+                for (const auto& param : entity->children_)
+                {
+                    const auto& type = param->Ast<cppast::cpp_function_parameter>().type();
+                    if (IsComplexOutputType(type))
+                        printer_ << param->name_ + " = " + MapToPInvoke(type, param->name_ + "Out") + ";";
+                }
+
+                if (!IsVoid(func.return_type()))
+                    printer_ << "return returnValue;";
+            }
+            printer_.Dedent("}");
+            printer_ << "";
+        }
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::function_t)
     {

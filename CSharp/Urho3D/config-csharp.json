@@ -152,16 +152,10 @@
       "ctype": "char const*",
       "ptype": "string",
       "cstype": "string",
-      "cpp_to_c": "strdup({value}.CString())",
+      "cpp_to_c": "{value}.CString()",
       "c_to_cpp": "Urho3D::String({value})",
       "is_value_type": true,
-    },
-    {
-      "type": "char const*",
-      "ptype": "string",
-      "cstype": "string",
-      "cpp_to_c": "strdup({value})",
-      "is_value_type": true,
+      "supports_wchar": true,
     },
     {
       "type": "Urho3D::VariantMap",

@@ -27,6 +27,11 @@ set (CMAKE_INCLUDE_CURRENT_DIR ON)
 add_subdirectory(ThirdParty)
 add_subdirectory(Generator)
 
+include(FindPkgConfig)
+if (UNIX AND URHO3D_CSHARP_MONO)
+    pkg_check_modules(MONO REQUIRED mono-2)
+endif ()
+
 macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)
     get_target_property(values ${TARGET} ${PROPERTY})
     if (values)
@@ -122,6 +127,11 @@ macro (csharp_bind_target)
     foreach(item ${OPTIONS})
         list(APPEND GENERATOR_OPTIONS -O_${item})
     endforeach()
+
+    if (MONO_FOUND)
+        list (APPEND GENERATOR_OPTIONS --use-mono)
+    endif ()
+
     set (BINDINGS_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}Net)
     set (COMMON_DIR ${Urho3DNet_SOURCE_DIR}/CSharp/Common)
     list (APPEND GENERATOR_OPTIONS ${RULES} ${BIND_SOURCE_DIR} ${BINDINGS_OUTPUT_DIR})
@@ -163,6 +173,11 @@ macro (csharp_bind_target)
     endif ()
     target_include_directories(${CSHARP_LIBRARY_NAME} PRIVATE
         ${COMMON_DIR}/Native ${BIND_CSHARP_DIR}/Native ${BINDINGS_OUTPUT_DIR}/Native)
+    if (MONO_FOUND)
+        target_include_directories(${CSHARP_LIBRARY_NAME} PRIVATE ${MONO_INCLUDE_DIRS})
+        target_link_libraries(${CSHARP_LIBRARY_NAME} ${MONO_LIBRARIES})
+        target_compile_options(${CSHARP_LIBRARY_NAME} PRIVATE ${MONO_CFLAGS})
+    endif ()
 
     # Target that generates bindings source
     add_custom_command(OUTPUT ${CSHARP_SOURCE_FILES_GENERATED} ${COMMON_NET_SOURCE_FILES_GENERATED}

@@ -41,6 +41,8 @@ void GeneratePInvokePass::Start()
     printer_ << "using System.Threading;";
     printer_ << "using System.Collections.Concurrent;";
     printer_ << "using System.Reflection;";
+    if (generator->useMono_)
+        printer_ << "using System.Runtime.CompilerServices;";
     printer_ << "using System.Runtime.InteropServices;";
     printer_ << "using CSharp;";
     printer_ << "";
@@ -50,8 +52,11 @@ void GeneratePInvokePass::Start()
 
 bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
-    const char* dllImport = "[DllImport(CSharp.Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]";
-    const char* dllImportEp = "[DllImport(CSharp.Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl, EntryPoint = \"{}\")]";
+    const char* dllImport;
+    if (generator->useMono_)
+        dllImport = "[MethodImplAttribute(MethodImplOptions.InternalCall)]";
+    else
+        dllImport = "[DllImport(CSharp.Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]";
 
     // Generate C API for property getters and seters. Visitor will not visit these notes on it's own.
     if (entity->flags_ & HintProperty)
@@ -258,17 +263,19 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             {
                 printer_ << dllImport;
                 printer_ << fmt::format("internal static extern void {}_setup(IntPtr instance, IntPtr gcHandle, "
-                    "[param: MarshalAs(UnmanagedType.LPUTF8Str)]string typeName);", baseName);
+                    "{}string typeName);", baseName, generator->useMono_ ? "" : "[param: MarshalAs(UnmanagedType.LPUTF8Str)]");
                 printer_ << "";
             }
 
             // Method for getting type id.
-            printer_ << fmt::format(dllImportEp, fmt::format("{}_typeid", baseName));
-            printer_ << "internal static extern IntPtr GetNativeTypeId();";
+            printer_ << dllImport;
+            printer_ << fmt::format("private static extern IntPtr {}_typeid();", baseName);
+            printer_ << fmt::format("internal static IntPtr GetNativeTypeId() {{ return {}_typeid(); }}", baseName);
             printer_ << "";
 
-            printer_ << fmt::format(dllImportEp, fmt::format("{}_instance_typeid", baseName));
-            printer_ << fmt::format("internal static extern IntPtr GetNativeTypeId(IntPtr instance);", baseName);
+            printer_ << dllImport;
+            printer_ << fmt::format("private static extern IntPtr {}_instance_typeid(IntPtr instance);", baseName);
+            printer_ << fmt::format("internal static IntPtr GetNativeTypeId(IntPtr instance) {{ return {}_instance_typeid(instance); }}", baseName);
             printer_ << "";
         }
         else if (info.event == info.container_entity_exit)
@@ -293,10 +300,10 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_ << dllImport;
         auto csParam = ToPInvokeTypeParam(var.type());
         auto csReturnType = ToPInvokeTypeReturn(var.type());
-        if (csReturnType == "string")
+        if (auto* map = generator->GetTypeMap(var.type()))
         {
-            // This is safe as member variables are always returned by copy from a getter.
-            printer_ << "[return: MarshalAs(UnmanagedType.LPUTF8Str)]";
+            if (!map->marshalAttribute_.empty())
+                printer_ << fmt::format("[return: {}]", map->marshalAttribute_);
         }
         printer_ << fmt::format("internal static extern {} get_{}();", csReturnType, entity->cFunctionName_);
         printer_ << "";
@@ -325,10 +332,10 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_ << dllImport;
         auto csReturnType = ToPInvokeTypeReturn(var.type());
         auto csParam = ToPInvokeTypeParam(var.type());
-        if (csReturnType == "string")
+        if (auto* map = generator->GetTypeMap(var.type()))
         {
-            // This is safe as member variables are always returned by copy from a getter.
-            printer_ << "[return: MarshalAs(UnmanagedType.LPUTF8Str)]";
+            if (!map->marshalAttribute_.empty())
+                printer_ << fmt::format("[return: {}]", map->marshalAttribute_);
         }
         printer_ << fmt::format("internal static extern {} get_{}(IntPtr instance);",
             csReturnType, entity->cFunctionName_);
@@ -370,8 +377,11 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto uniqueName = Sanitize(entity->uniqueName_);
         auto pc = func.parameters().empty() ? "" : ", ";
 
-        if (rtype == "string")
-            printer_ << "[return: MarshalAs(UnmanagedType.LPUTF8Str)]";
+        if (auto* map = generator->GetTypeMap(func.return_type()))
+        {
+            if (!map->marshalAttribute_.empty())
+                printer_ << fmt::format("[return: {}]", map->marshalAttribute_);
+        }
         printer_ << fmt::format("internal static extern {rtype} {cFunction}(IntPtr instance{pc}{csParams});",
             FMT_CAPTURE(rtype), FMT_CAPTURE(cFunction), FMT_CAPTURE(pc), FMT_CAPTURE(csParams));
         printer_ << "";
@@ -384,8 +394,8 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 FMT_CAPTURE(rtype), FMT_CAPTURE(className), FMT_CAPTURE(cFunction), FMT_CAPTURE(pc), FMT_CAPTURE(csParams));
             printer_ << "";
             printer_ << dllImport;
-            printer_ << fmt::format("internal static extern void set_{sourceClassName}_fn{cFunction}(IntPtr instance, {className}{cFunction}Delegate cb);",
-                FMT_CAPTURE(sourceClassName), FMT_CAPTURE(cFunction), FMT_CAPTURE(className));
+            printer_ << fmt::format("internal static extern void set_fn{cFunction}(IntPtr instance, IntPtr cb);",
+                FMT_CAPTURE(cFunction), FMT_CAPTURE(className));
             printer_ << "";
         }
     }
@@ -399,8 +409,11 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto rtype = ToPInvokeTypeReturn(func.return_type());
         auto cFunction = entity->cFunctionName_;
 
-        if (rtype == "string")
-            printer_ << "[return: MarshalAs(UnmanagedType.LPUTF8Str)]";
+        if (auto* map = generator->GetTypeMap(func.return_type()))
+        {
+            if (!map->marshalAttribute_.empty())
+                printer_ << fmt::format("[return: {}]", map->marshalAttribute_);
+        }
         printer_ << fmt::format("internal static extern {rtype} {cFunction}({csParams});",
             FMT_CAPTURE(rtype), FMT_CAPTURE(cFunction), FMT_CAPTURE(csParams));
         printer_ << "";
@@ -430,8 +443,12 @@ std::string GeneratePInvokePass::ToPInvokeTypeReturn(const cppast::cpp_type& typ
 std::string GeneratePInvokePass::ToPInvokeTypeParam(const cppast::cpp_type& type)
 {
     std::string result = ToPInvokeType(type);
-    if (result == "string" || result == "ref string")
-        return "[param: MarshalAs(UnmanagedType.LPUTF8Str)]" + result;
+
+    if (auto* map = generator->GetTypeMap(type))
+    {
+        if (!map->marshalAttribute_.empty())
+            result = fmt::format("[param: {}]", map->marshalAttribute_) + result;
+    }
 
     return result;
 }

@@ -73,7 +73,19 @@ bool GeneratorContext::LoadRules(const std::string& jsonPath)
 
     inheritable_.Load(rules_["inheritable"]);
 
-    const auto& typeMaps = rules_["typemaps"];
+    auto& typeMaps = rules_["typemaps"];
+
+    // Typemap const char* strings
+    {
+        rapidjson::Value stringMap(rapidjson::kObjectType);
+        stringMap.AddMember("type", "char const*", rules_.GetAllocator());
+        stringMap.AddMember("ptype", "string", rules_.GetAllocator());
+        stringMap.AddMember("cstype", "string", rules_.GetAllocator());
+        stringMap.AddMember("cpp_to_c", "{value}", rules_.GetAllocator());
+        stringMap.AddMember("is_value_type", true, rules_.GetAllocator());
+        typeMaps.PushBack(stringMap, rules_.GetAllocator());
+    }
+
     for (auto it = typeMaps.Begin(); it != typeMaps.End(); ++it)
     {
         const auto& typeMap = *it;
@@ -103,6 +115,33 @@ bool GeneratorContext::LoadRules(const std::string& jsonPath)
 
         if (typeMap.HasMember("cs_to_pinvoke"))
             map.csToPInvokeTemplate_ = typeMap["cs_to_pinvoke"].GetString();
+
+        if (typeMap.HasMember("marshal_attribute"))
+            map.marshalAttribute_ = typeMap["marshal_attribute"].GetString();
+
+        // Doctor string typemaps with some internal details.
+        if (map.csType_ == "string")
+        {
+            if (useMono_)
+            {
+                map.cType_ = "MonoString*";
+                map.cppToCTemplate_ = fmt::format("mono_string_new(mono_domain_get(), {})", map.cppToCTemplate_);
+#if _WIN32
+                if (typeMap.HasMember("supports_wchar") && typeMap["supports_wchar"].GetBool())
+                    map.cToCppTemplate_ = fmt::format(map.cToCppTemplate_, fmt::arg("value", "(const wchar_t*)mono_string_chars({value})"));
+                else
+#endif
+                    map.cToCppTemplate_ = fmt::format(map.cToCppTemplate_, fmt::arg("value", "FreeMonoStringWhenDone(mono_string_to_utf8({value}))()"));
+
+            }
+            else
+            {
+                // When char* is returned by C API and return value of call is marshalled as utf8 string .net runtime
+                // marshalls returned pointer to .net string and frees returned pointer.
+                map.cppToCTemplate_ = fmt::format("strdup({})", map.cppToCTemplate_);
+                map.marshalAttribute_ = "MarshalAs(UnmanagedType.LPUTF8Str)";
+            }
+        }
 
         typeMaps_[map.cppType_] = map;
     }

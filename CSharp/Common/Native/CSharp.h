@@ -173,3 +173,24 @@ std::uintptr_t GetTypeID(const T* instance)
 {
     return reinterpret_cast<std::uintptr_t>(&typeid(*instance));
 }
+
+#if URHO3D_CSHARP_MONO
+#include <mono/utils/mono-publib.h>
+struct FreeMonoStringWhenDone
+{
+    char* string;
+
+    explicit FreeMonoStringWhenDone(char* s)
+    {
+        string = s;
+    }
+
+    ~FreeMonoStringWhenDone()
+    {
+        mono_free(string);
+        string = nullptr;
+    }
+
+    char* operator()() { return string; }
+};
+#endif

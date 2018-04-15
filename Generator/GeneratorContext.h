@@ -45,6 +45,7 @@ struct TypeMap
     std::string cppToCTemplate_ = "{value}";
     std::string csToPInvokeTemplate_ = "{value}";
     std::string pInvokeToCSTemplate_ = "{value}";
+    std::string marshalAttribute_;
     bool isValueType_ = false;
 };
 
@@ -96,6 +97,7 @@ public:
     std::unordered_map<std::string, std::weak_ptr<MetaEntity>> enumValues_;
     std::unordered_map<std::string, TypeMap> typeMaps_;
     IncludedChecker inheritable_;
+    bool useMono_ = false;
 };
 
 extern GeneratorContext* generator;
