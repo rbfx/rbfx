@@ -285,7 +285,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
     {
         const auto& var = entity->Ast<cppast::cpp_variable>();
 
-        // Constants with values get converted to native c# constants in GenerateCSApiPass
+        // Constants with values get converted to native c# constants in GenerateCSharpApiPass
         if ((IsConst(var.type()) || entity->flags_ & HintReadOnly) && !entity->GetDefaultValue().empty())
             return true;
 
@@ -317,7 +317,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
         if (isFinal && entity->access_ != cppast::cpp_public)
             return true;
 
-        // Constants with values get converted to native c# constants in GenerateCSApiPass
+        // Constants with values get converted to native c# constants in GenerateCSharpApiPass
         if (IsConst(var.type()) && !entity->GetDefaultValue().empty())
             return true;
 

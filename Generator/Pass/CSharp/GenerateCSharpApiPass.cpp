@@ -26,13 +26,13 @@
 #include <cppast/cpp_template.hpp>
 #include <cppast/cpp_type.hpp>
 #include "GeneratorContext.h"
-#include "GenerateCSApiPass.h"
+#include "GenerateCSharpApiPass.h"
 #include "Pass/CSharp/GeneratePInvokePass.h"
 
 namespace Urho3D
 {
 
-void GenerateCSApiPass::Start()
+void GenerateCSharpApiPass::Start()
 {
     printer_ << "using System;";
     printer_ << "using System.Diagnostics;";
@@ -41,7 +41,7 @@ void GenerateCSApiPass::Start()
     printer_ << "";
 }
 
-bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
+bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
     auto mapToPInvoke = [&](MetaEntity* metaParam) {
         const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
@@ -625,7 +625,7 @@ bool GenerateCSApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     return true;
 }
 
-void GenerateCSApiPass::Stop()
+void GenerateCSharpApiPass::Stop()
 {
     auto outputFile = generator->outputDirCs_ + "CSharp.cs";
     std::ofstream fp(outputFile);
@@ -637,7 +637,7 @@ void GenerateCSApiPass::Stop()
     fp << printer_.Get();
 }
 
-std::string GenerateCSApiPass::MapToCS(const cppast::cpp_type& type, const std::string& expression)
+std::string GenerateCSharpApiPass::MapToCS(const cppast::cpp_type& type, const std::string& expression)
 {
     if (IsVoid(type))
         return expression;
@@ -654,7 +654,7 @@ std::string GenerateCSApiPass::MapToCS(const cppast::cpp_type& type, const std::
     return expression;
 }
 
-std::string GenerateCSApiPass::ToCSType(const cppast::cpp_type& type, bool disallowReferences)
+std::string GenerateCSharpApiPass::ToCSType(const cppast::cpp_type& type, bool disallowReferences)
 {
     bool isRef = false;
 
@@ -727,7 +727,7 @@ std::string GenerateCSApiPass::ToCSType(const cppast::cpp_type& type, bool disal
     return typeName;
 }
 
-std::string GenerateCSApiPass::MapToPInvoke(const cppast::cpp_type& type, const std::string& expression)
+std::string GenerateCSharpApiPass::MapToPInvoke(const cppast::cpp_type& type, const std::string& expression)
 {
     if (const auto* map = generator->GetTypeMap(type, false))
         return fmt::format(map->csToPInvokeTemplate_.c_str(), fmt::arg("value", expression));
@@ -737,7 +737,7 @@ std::string GenerateCSApiPass::MapToPInvoke(const cppast::cpp_type& type, const 
     return expression;
 }
 
-std::string GenerateCSApiPass::FormatCSParameterList(const std::vector<std::shared_ptr<MetaEntity>>& parameters)
+std::string GenerateCSharpApiPass::FormatCSParameterList(const std::vector<std::shared_ptr<MetaEntity>>& parameters)
 {
     std::string result;
     for (const auto& param : parameters)
@@ -767,7 +767,7 @@ std::string GenerateCSApiPass::FormatCSParameterList(const std::vector<std::shar
     return result;
 }
 
-std::string GenerateCSApiPass::ConvertDefaultValueToCS(MetaEntity* user, std::string value, const cppast::cpp_type& type,
+std::string GenerateCSharpApiPass::ConvertDefaultValueToCS(MetaEntity* user, std::string value, const cppast::cpp_type& type,
     bool allowComplex)
 {
     if (value.empty())
@@ -819,7 +819,7 @@ std::string GenerateCSApiPass::ConvertDefaultValueToCS(MetaEntity* user, std::st
     return value;
 }
 
-void GenerateCSApiPass::PrintParameterHandlingCodePre(const std::vector<std::shared_ptr<MetaEntity>>& parameters)
+void GenerateCSharpApiPass::PrintParameterHandlingCodePre(const std::vector<std::shared_ptr<MetaEntity>>& parameters)
 {
     for (const auto& param : parameters)
     {
@@ -829,7 +829,7 @@ void GenerateCSApiPass::PrintParameterHandlingCodePre(const std::vector<std::sha
     }
 }
 
-void GenerateCSApiPass::PrintParameterHandlingCodePost(const std::vector<std::shared_ptr<MetaEntity>>& parameters)
+void GenerateCSharpApiPass::PrintParameterHandlingCodePost(const std::vector<std::shared_ptr<MetaEntity>>& parameters)
 {
     for (const auto& param : parameters)
     {
@@ -839,7 +839,7 @@ void GenerateCSApiPass::PrintParameterHandlingCodePost(const std::vector<std::sh
     }
 }
 
-void GenerateCSApiPass::PrintInstanceDisposedCheck(const std::string& objectName)
+void GenerateCSharpApiPass::PrintInstanceDisposedCheck(const std::string& objectName)
 {
     printer_ << "if (NativeInstance == IntPtr.Zero)";
     printer_.Indent("");

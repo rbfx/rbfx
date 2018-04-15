@@ -36,7 +36,7 @@
 #include "Pass/CSharp/GenerateCApiPass.h"
 #include "Pass/CSharp/RenameMembersPass.h"
 #include "Pass/CSharp/GeneratePInvokePass.h"
-#include "Pass/CSharp/GenerateCSApiPass.h"
+#include "Pass/CSharp/GenerateCSharpApiPass.h"
 #include <spdlog/spdlog.h>
 
 namespace Urho3D
@@ -144,7 +144,7 @@ int main(int argc, char* argv[])
     generator->AddApiPass<Urho3DCustomPass>();
     generator->AddApiPass<GeneratePInvokePass>();
     generator->AddApiPass<ConvertToPropertiesPass>();
-    generator->AddApiPass<GenerateCSApiPass>();
+    generator->AddApiPass<GenerateCSharpApiPass>();
 
     generator->Generate(outputDirCpp, outputDirCs);
 }

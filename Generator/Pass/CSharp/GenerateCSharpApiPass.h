@@ -29,10 +29,10 @@
 namespace Urho3D
 {
 
-class GenerateCSApiPass : public CppApiPass
+class GenerateCSharpApiPass : public CppApiPass
 {
     public:
-    explicit GenerateCSApiPass() { };
+    explicit GenerateCSharpApiPass() { };
 
     void Start() override;
     bool Visit(MetaEntity* entity, cppast::visitor_info info) override;

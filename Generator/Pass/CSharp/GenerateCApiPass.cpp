@@ -305,7 +305,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         const auto& var = entity->Ast<cppast::cpp_variable>();
         auto* ns = entity->GetParent();
 
-        // Constants with values get converted to native c# constants in GenerateCSApiPass
+        // Constants with values get converted to native c# constants in GenerateCSharpApiPass
         if ((IsConst(var.type()) || entity->flags_ & HintReadOnly) && !entity->GetDefaultValue().empty())
             return true;
 
@@ -349,7 +349,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         const auto& var = entity->Ast<cppast::cpp_member_variable>();
         auto* ns = entity->GetParent();
 
-        // Constants with values get converted to native c# constants in GenerateCSApiPass
+        // Constants with values get converted to native c# constants in GenerateCSharpApiPass
         if ((IsConst(var.type()) || entity->flags_ & HintReadOnly) && !entity->GetDefaultValue().empty())
             return true;
 
