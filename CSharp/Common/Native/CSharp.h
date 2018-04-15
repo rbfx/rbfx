@@ -5,6 +5,12 @@
 #include <Urho3D/IO/Log.h>
 #include <string>
 #include <type_traits>
+#if URHO3D_CSHARP_MONO
+#include <mono/utils/mono-publib.h>
+#include <mono/metadata/object.h>
+#include <mono/metadata/class.h>
+#include <mono/metadata/appdomain.h>
+#endif
 
 using namespace Urho3D;
 
@@ -90,11 +96,11 @@ struct SafeArray
 };
 
 template<typename CppType>
-struct CSharpConverter { };
+struct PInvokeArrayConverter { };
 
 // Convert PODVector<T>
 template<typename T>
-struct CSharpConverter<PODVector<T>>
+struct PInvokeArrayConverter<PODVector<T>>
 {
     using CppType=PODVector<T>;
     using CType=SafeArray;
@@ -118,7 +124,7 @@ struct CSharpConverter<PODVector<T>>
 
 // Convert Vector<SharedPtr<T>>
 template<typename T>
-struct CSharpConverter<Vector<SharedPtr<T>>>
+struct PInvokeArrayConverter<Vector<SharedPtr<T>>>
 {
     using CppType=Vector<SharedPtr<T>>;
     using CType=SafeArray;
@@ -144,6 +150,84 @@ struct CSharpConverter<Vector<SharedPtr<T>>>
         return result;
     }
 };
+
+#if URHO3D_CSHARP_MONO
+template<typename CppType> inline const char* GetMonoBuiltinType() { return "IntPtr"; };
+template<> inline const char* GetMonoBuiltinType<bool>() { return "Boolean"; }
+template<> inline const char* GetMonoBuiltinType<unsigned char>() { return "Byte"; }
+template<> inline const char* GetMonoBuiltinType<signed char>() { return "SByte"; }
+template<> inline const char* GetMonoBuiltinType<char>() { return "Char"; }
+template<> inline const char* GetMonoBuiltinType<double>() { return "Double"; }
+template<> inline const char* GetMonoBuiltinType<float>() { return "Single"; }
+template<> inline const char* GetMonoBuiltinType<int>() { return "Int32"; }
+template<> inline const char* GetMonoBuiltinType<long>() { return "Int32"; }
+template<> inline const char* GetMonoBuiltinType<unsigned int>() { return "UInt32"; }
+template<> inline const char* GetMonoBuiltinType<long long>() { return "Int64"; }
+template<> inline const char* GetMonoBuiltinType<unsigned long long>() { return "UInt64"; }
+template<> inline const char* GetMonoBuiltinType<short>() { return "Int16"; }
+template<> inline const char* GetMonoBuiltinType<unsigned short>() { return "UInt16"; }
+
+template<typename CppType>
+struct MonoArrayConverter { };
+
+// Convert PODVector<T>
+template<typename T>
+struct MonoArrayConverter<PODVector<T>>
+{
+    using CppType=PODVector<T>;
+    using CType=MonoArray*;
+
+    static CType ToCSharp(const CppType& value)
+    {
+        auto* klass = mono_class_from_name(mono_get_corlib(), "System", GetMonoBuiltinType<T>());
+        auto* array = mono_array_new(mono_domain_get(), klass, value.Size());
+
+        for (auto i = 0; i < value.Size(); i++)
+            mono_array_set(array, T, i, value[i]);
+
+        return array;
+    }
+
+    static CppType FromCSharp(CType value)
+    {
+        CppType result(mono_array_length(value));
+
+        for (auto i = 0; i < result.Size(); i++)
+            result[i] = mono_array_get(value, T, i);
+
+        return result;
+    }
+};
+
+// Convert Vector<SharedPtr<T>>
+template<typename T>
+struct MonoArrayConverter<Vector<SharedPtr<T>>>
+{
+    using CppType=Vector<SharedPtr<T>>;
+    using CType=MonoArray*;
+
+    static CType ToCSharp(const CppType& value)
+    {
+        auto* klass = mono_class_from_name(mono_get_corlib(), "System", "IntPtr");
+        auto* array = mono_array_new(mono_domain_get(), klass, value.Size());
+
+        for (auto i = 0; i < value.Size(); i++)
+            mono_array_set(array, void*, i, (void*)value[i].Get());
+
+        return array;
+    }
+
+    static CppType FromCSharp(CType value)
+    {
+        CppType result(mono_array_length(value));
+
+        for (auto i = 0; i < result.Size(); i++)
+            result[i] = (T*)mono_array_get(value, void*, i);
+
+        return result;
+    }
+};
+#endif
 
 struct CSharpObjConverter
 {
@@ -175,7 +259,6 @@ std::uintptr_t GetTypeID(const T* instance)
 }
 
 #if URHO3D_CSHARP_MONO
-#include <mono/utils/mono-publib.h>
 struct FreeMonoStringWhenDone
 {
     char* string;

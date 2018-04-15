@@ -68,8 +68,10 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
         return;
 
     std::string csType;
+    std::string pInvokeType = "IntPtr";
     std::string cppType;
     std::string vectorKind;
+    bool isTypeMapped = false;
 
     if (typeName.find("PODVector<") == 0)
         vectorKind = "PODVector";
@@ -90,7 +92,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
             if (tplType.kind() == cppast::cpp_type_kind::builtin_t)
             {
                 cppType = cppast::to_string(tplType);
-                csType = PrimitiveToPInvokeType(
+                csType = pInvokeType = PrimitiveToPInvokeType(
                     dynamic_cast<const cppast::cpp_builtin_type&>(tplType).builtin_type_kind());
             }
             else if (tplType.kind() == cppast::cpp_type_kind::pointer_t)
@@ -104,8 +106,12 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
         auto primitiveType = PrimitiveToCppType(cppType);
         if (auto* map = generator->GetTypeMap(cppType))
         {
-            if (map->isValueType_)
+            isTypeMapped = true;
+            if (map->isValueType_)  // is this needed?
+            {
                 csType = map->csType_;
+                pInvokeType = map->pInvokeType_;
+            }
         }
         else if (primitiveType == cppast::cpp_builtin_type_kind::cpp_void)
         {
@@ -134,7 +140,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
         else
         {
             // Builtin type
-            csType = PrimitiveToPInvokeType(primitiveType);
+            csType = pInvokeType = PrimitiveToPInvokeType(primitiveType);
         }
     }
 
@@ -143,16 +149,45 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
         spdlog::get("console")->info("Auto-typemap: {}", typeName);
         TypeMap map;
         map.cppType_ = typeName;
-        map.cType_ = "SafeArray";
-        map.pInvokeType_ = "SafeArray";
+
         map.csType_ = fmt::format("{csType}[]", FMT_CAPTURE(csType));
-        map.cppToCTemplate_ = fmt::format("CSharpConverter<Urho3D::{vectorKind}<{cppType}>>::ToCSharp({{value}})",
-            FMT_CAPTURE(cppType), FMT_CAPTURE(vectorKind));
-        map.cToCppTemplate_ = fmt::format("CSharpConverter<Urho3D::{vectorKind}<{cppType}>>::FromCSharp({{value}})",
-            FMT_CAPTURE(cppType), FMT_CAPTURE(vectorKind));
-        map.csToPInvokeTemplate_ = fmt::format("SafeArray.__ToPInvoke<{csType}>({{value}})", FMT_CAPTURE(csType));
-        map.pInvokeToCSTemplate_ = fmt::format("SafeArray.__FromPInvoke<{csType}>({{value}}, {owns})",
-            FMT_CAPTURE(csType), fmt::arg("owns", IsComplexType(type) && IsValueType(type) ? "true" : "false"));
+        if (generator->useMono_)
+        {
+            map.cType_ = "MonoArray*";
+            map.pInvokeType_ = fmt::format("{pInvokeType}[]", FMT_CAPTURE(pInvokeType));
+            map.cppToCTemplate_ = fmt::format(
+                "MonoArrayConverter<Urho3D::{vectorKind}<{cppType}>>::ToCSharp({{value}})", FMT_CAPTURE(cppType),
+                FMT_CAPTURE(vectorKind));
+            map.cToCppTemplate_ = fmt::format(
+                "MonoArrayConverter<Urho3D::{vectorKind}<{cppType}>>::FromCSharp({{value}})", FMT_CAPTURE(cppType),
+                FMT_CAPTURE(vectorKind));
+            if (isTypeMapped)
+            {
+                map.csToPInvokeTemplate_ = fmt::format("MarshalTools.ToPInvokeArray<{pInvokeType}, {csType}>({{value}})",
+                    FMT_CAPTURE(pInvokeType), FMT_CAPTURE(csType));
+                map.pInvokeToCSTemplate_ = fmt::format("MarshalTools.ToCSharpArray<{pInvokeType}, {csType}>({{value}})",
+                    FMT_CAPTURE(pInvokeType), FMT_CAPTURE(csType));
+            }
+            else if (pInvokeType == "IntPtr")
+            {
+                map.csToPInvokeTemplate_ = fmt::format("MarshalTools.ToIntPtrArray<{csType}>({{value}})", FMT_CAPTURE(csType));
+                map.pInvokeToCSTemplate_ = fmt::format("MarshalTools.ToObjectArray<{csType}>({{value}})", FMT_CAPTURE(csType));
+            }
+        }
+        else
+        {
+            map.cType_ = "SafeArray";
+            map.pInvokeType_ = "SafeArray";
+            map.cppToCTemplate_ = fmt::format(
+                "PInvokeArrayConverter<Urho3D::{vectorKind}<{cppType}>>::ToCSharp({{value}})", FMT_CAPTURE(cppType),
+                FMT_CAPTURE(vectorKind));
+            map.cToCppTemplate_ = fmt::format(
+                "PInvokeArrayConverter<Urho3D::{vectorKind}<{cppType}>>::FromCSharp({{value}})", FMT_CAPTURE(cppType),
+                FMT_CAPTURE(vectorKind));
+            map.csToPInvokeTemplate_ = fmt::format("SafeArray.__ToPInvoke<{csType}>({{value}})", FMT_CAPTURE(csType));
+            map.pInvokeToCSTemplate_ = fmt::format("SafeArray.__FromPInvoke<{csType}>({{value}}, {owns})",
+                FMT_CAPTURE(csType), fmt::arg("owns", IsComplexType(type) && IsValueType(type) ? "true" : "false"));
+        }
         map.isValueType_ = true;
         generator->typeMaps_[typeName] = map;
     }

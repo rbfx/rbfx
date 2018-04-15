@@ -38,6 +38,7 @@ void GenerateCApiPass::Start()
         printer_ << "#include <mono/metadata/loader.h>";
         printer_ << "#include <mono/metadata/object.h>";
         printer_ << "#include <mono/metadata/appdomain.h>";
+        printer_ << "#include <mono/metadata/class.h>";
     }
     printer_ << "#include <Urho3D/Urho3DAll.h>";
     printer_ << "#include \"CSharp.h\"";
