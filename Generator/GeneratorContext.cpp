@@ -127,6 +127,8 @@ bool GeneratorContext::LoadRules(const std::string& jsonPath)
                 map.cType_ = "MonoString*";
                 map.cppToCTemplate_ = fmt::format("mono_string_new(mono_domain_get(), {})", map.cppToCTemplate_);
 #if _WIN32
+                // This optimization is only viable on windows because mono internally uses 2-byte wide characters for
+                // strings, but on unix platforms wchar_t is 4 bytes.
                 if (typeMap.HasMember("supports_wchar") && typeMap["supports_wchar"].GetBool())
                     map.cToCppTemplate_ = fmt::format(map.cToCppTemplate_, fmt::arg("value", "(const wchar_t*)mono_string_chars({value})"));
                 else
