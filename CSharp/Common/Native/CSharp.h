@@ -31,23 +31,23 @@ public:
         return typeInfo;
     }
 
-    void QueueForDeletion(RefCounted* instance)
+    void QueueReleaseRef(RefCounted* instance)
     {
         MutexLock lock(mutex_);
-        deletionQueue_.Push(instance);
+        releaseQueue_.Push(instance);
     }
 
-    void DeleteRefCounted()
+    void ReleaseRefCounted()
     {
         MutexLock lock(mutex_);
-        for (auto* instance : deletionQueue_)
-            delete instance;
-        deletionQueue_.Clear();
+        for (auto* instance : releaseQueue_)
+            instance->ReleaseRef();
+        releaseQueue_.Clear();
     }
 
 protected:
     HashMap<StringHash, const TypeInfo*> typeInfos_;
-    PODVector<RefCounted*> deletionQueue_;
+    PODVector<RefCounted*> releaseQueue_;
     Mutex mutex_;
 };
 

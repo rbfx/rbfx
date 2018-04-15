@@ -23,9 +23,9 @@ URHO3D_EXPORT_API void CSharp_SetManagedAPI(ManagedInterface netApi)
     managedAPI = netApi;
 }
 
-URHO3D_EXPORT_API void CSharp_FreePendingRefCounted()
+URHO3D_EXPORT_API void CSharp_ReleasePendingRefCounted()
 {
-    script->DeleteRefCounted();
+    script->ReleaseRefCounted();
 }
 
 }

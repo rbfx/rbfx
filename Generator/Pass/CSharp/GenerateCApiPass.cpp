@@ -99,8 +99,34 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             // Using sourceName_ with wrapper classes causes weird build errors.
             std::string className = entity->symbolName_;
             if (IsSubclassOf(cls, "Urho3D::RefCounted"))
-                printer_ << "instance->ReleaseRef();";
+            {
+                // RefCounted is not thread-safe therefore extra care has to be taken here.
+
+                // When managed object is releasing a reference and this is last reference we trust that deletion is
+                // free to happen on any thread (like finalizers thread) or that user explicitly invoked object disposal
+                // on appropriate thread.
+                // If managed object is releasing a reference on main thread then we trust this is safe to delete object
+                // as well. Engine still may hold reference to an object but is mostly single-threaded therefore this
+                // should be safe.
+                printer_ << "if (instance->Refs() == 1 || Thread::IsMainThread())";
+                printer_.Indent("");
+                {
+                    printer_ << "instance->ReleaseRef();";
+                }
+                printer_.Dedent("");
+                printer_ << "else";
+                printer_.Indent("");
+                {
+                    // This is not a last ref and managed object is being disposed most likely by a finalizer. Schedule
+                    // reference releasing to be done on main thread. This should be safe in most cases. For example if
+                    // engine is holding a reference then it is most likely interacted with on main thread.
+                    printer_ << "script->QueueReleaseRef(instance);";
+                }
+                printer_.Dedent("");
+            }
             else
+                // Non-RefCounted objects are deleted wherever destruction is invoked. User is trusted to make a
+                // decision on which thread object deletion should happen.
                 printer_ << "delete instance;";
         }
         printer_.Dedent();
@@ -123,18 +149,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     printer_.Indent("");
                     {
                         printer_ << "managedAPI.FreeGCHandle(gcHandle_);";
-                        printer_ << "if (Thread::IsMainThread())";
-                        printer_.Indent("");
-                        {
-                            printer_ << "delete instance_;";
-                        }
-                        printer_.Dedent("");
-                        printer_ << "else";
-                        printer_.Indent("");
-                        {
-                            printer_ << "script->QueueForDeletion(instance_);";
-                        }
-                        printer_.Dedent("");
+                        printer_ << "delete instance_;";
                     }
                     printer_.Dedent("}, gcHandle);");
                 }

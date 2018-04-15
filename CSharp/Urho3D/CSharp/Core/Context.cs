@@ -17,7 +17,7 @@ namespace Urho3D
         private const int DeletionInterval = 1000;
 
         [DllImport(CSharp.Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void CSharp_FreePendingRefCounted();
+        private static extern void CSharp_ReleasePendingRefCounted();
 
         public RefCountedDeleter(Context context) : base(context)
         {
@@ -25,7 +25,7 @@ namespace Urho3D
             {
                 if (Environment.TickCount - _lastDeletionTickCount >= DeletionInterval)
                 {
-                    CSharp_FreePendingRefCounted();
+                    CSharp_ReleasePendingRefCounted();
                     _lastDeletionTickCount = Environment.TickCount;
                 }
             });
