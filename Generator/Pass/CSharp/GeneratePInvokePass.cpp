@@ -139,7 +139,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 printer_ << "if (Interlocked.Increment(ref DisposedCounter) == 1)";
                 printer_.Indent();
                 printer_ << "InstanceCache.Remove(NativeInstance);";
-                printer_ << baseName + "_destructor(NativeInstance);";
+                printer_ << baseName + "_destructor(NativeInstance, OwnsNativeInstance);";
                 printer_.Dedent();
                 printer_ << "NativeInstance = IntPtr.Zero;";
             }
@@ -254,7 +254,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
             // Destructor always exists even if it is not defined in the c++ class
             printer_ << dllImport;
-            printer_ << fmt::format("internal static extern void {}_destructor(IntPtr instance);", baseName);
+            printer_ << fmt::format("internal static extern void {}_destructor(IntPtr instance, bool owner);", baseName);
             printer_ << "";
 
             // Method for pinning managed object to native instance

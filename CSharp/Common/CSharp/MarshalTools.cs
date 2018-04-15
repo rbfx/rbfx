@@ -39,7 +39,7 @@ namespace CSharp
                 var count = data.Size / IntPtr.Size;
                 result = new T[count];
                 for (int i = 0; i < count; i++)
-                    result[i] = (T)tFromPInvoke.Invoke(null, new object[]{new IntPtr(pointers[i])});
+                    result[i] = (T)tFromPInvoke.Invoke(null, new object[]{new IntPtr(pointers[i]), false});
             }
 
             if (data.Owns)
