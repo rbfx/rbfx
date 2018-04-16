@@ -24,7 +24,6 @@ project(Urho3DNet)
 
 set (CMAKE_INCLUDE_CURRENT_DIR ON)
 
-add_subdirectory(ThirdParty)
 add_subdirectory(Generator)
 
 include(FindPkgConfig)
