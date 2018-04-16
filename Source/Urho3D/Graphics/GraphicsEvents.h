@@ -62,6 +62,7 @@ URHO3D_EVENT(E_ENDRENDERING, EndRendering)
 {
 }
 
+
 /// Update of a view started.
 URHO3D_EVENT(E_BEGINVIEWUPDATE, BeginViewUpdate)
 {

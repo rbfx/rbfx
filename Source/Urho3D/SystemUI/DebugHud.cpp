@@ -112,7 +112,7 @@ void DebugHud::CycleMode()
         break;
     case DEBUGHUD_SHOW_ALL:
     default:
-        SetMode(DEBUGHUD_SHOW_NONE);
+        SetMode(DEBUGHUD_SHOW_NONE); 
         break;
     }
 }

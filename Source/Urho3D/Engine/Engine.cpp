@@ -770,7 +770,11 @@ void Engine::Update()
     VariantMap& eventData = GetEventDataMap();
     eventData[Update::P_TIMESTEP] = float(lastUpdateTimeUs_) / 1000000.0f;
 	eventData[Update::P_UPDATETICK] = updateTick_;
-    SendEvent(E_UPDATE, eventData);
+
+
+	SendEvent(E_PREUPDATE, eventData);
+
+	SendEvent(E_UPDATE, eventData);
 
     // Logic post-update event
     SendEvent(E_POSTUPDATE, eventData);

@@ -44,67 +44,84 @@ namespace Urho3D
 {
 
 SystemUI::SystemUI(Urho3D::Context* context)
-    : Object(context)
-    , vertexBuffer_(context)
-    , indexBuffer_(context)
+	: Object(context)
+	, vertexBuffer_(context)
+	, indexBuffer_(context)
 {
-    ImGuiIO& io = ImGui::GetIO();
-    io.KeyMap[ImGuiKey_Tab] = SCANCODE_TAB;
-    io.KeyMap[ImGuiKey_LeftArrow] = SCANCODE_LEFT;
-    io.KeyMap[ImGuiKey_RightArrow] = SCANCODE_RIGHT;
-    io.KeyMap[ImGuiKey_UpArrow] = SCANCODE_UP;
-    io.KeyMap[ImGuiKey_DownArrow] = SCANCODE_DOWN;
-    io.KeyMap[ImGuiKey_Home] = SCANCODE_HOME;
-    io.KeyMap[ImGuiKey_End] = SCANCODE_END;
-    io.KeyMap[ImGuiKey_Delete] = SCANCODE_DELETE;
-    io.KeyMap[ImGuiKey_Backspace] = SCANCODE_BACKSPACE;
-    io.KeyMap[ImGuiKey_Enter] = SCANCODE_RETURN;
-    io.KeyMap[ImGuiKey_Escape] = SCANCODE_ESCAPE;
-    io.KeyMap[ImGuiKey_A] = SCANCODE_A;
-    io.KeyMap[ImGuiKey_C] = SCANCODE_C;
-    io.KeyMap[ImGuiKey_V] = SCANCODE_V;
-    io.KeyMap[ImGuiKey_X] = SCANCODE_X;
-    io.KeyMap[ImGuiKey_Y] = SCANCODE_Y;
-    io.KeyMap[ImGuiKey_Z] = SCANCODE_Z;
+	ImGuiIO& io = ImGui::GetIO();
+	io.KeyMap[ImGuiKey_Tab] = SCANCODE_TAB;
+	io.KeyMap[ImGuiKey_LeftArrow] = SCANCODE_LEFT;
+	io.KeyMap[ImGuiKey_RightArrow] = SCANCODE_RIGHT;
+	io.KeyMap[ImGuiKey_UpArrow] = SCANCODE_UP;
+	io.KeyMap[ImGuiKey_DownArrow] = SCANCODE_DOWN;
+	io.KeyMap[ImGuiKey_Home] = SCANCODE_HOME;
+	io.KeyMap[ImGuiKey_End] = SCANCODE_END;
+	io.KeyMap[ImGuiKey_Delete] = SCANCODE_DELETE;
+	io.KeyMap[ImGuiKey_Backspace] = SCANCODE_BACKSPACE;
+	io.KeyMap[ImGuiKey_Enter] = SCANCODE_RETURN;
+	io.KeyMap[ImGuiKey_Escape] = SCANCODE_ESCAPE;
+	io.KeyMap[ImGuiKey_A] = SCANCODE_A;
+	io.KeyMap[ImGuiKey_C] = SCANCODE_C;
+	io.KeyMap[ImGuiKey_V] = SCANCODE_V;
+	io.KeyMap[ImGuiKey_X] = SCANCODE_X;
+	io.KeyMap[ImGuiKey_Y] = SCANCODE_Y;
+	io.KeyMap[ImGuiKey_Z] = SCANCODE_Z;
 
-    io.RenderDrawListsFn = [](ImDrawData* data) { ((SystemUI*)ImGui::GetIO().UserData)->OnRenderDrawLists(data); };
-    io.SetClipboardTextFn = [](void* userData, const char* text) { SDL_SetClipboardText(text); };
-    io.GetClipboardTextFn = [](void* userData) -> const char* { return SDL_GetClipboardText(); };
+	io.RenderDrawListsFn = [](ImDrawData* data) { ((SystemUI*)ImGui::GetIO().UserData)->OnRenderDrawLists(data); };
+	io.SetClipboardTextFn = [](void* userData, const char* text) { SDL_SetClipboardText(text); };
+	io.GetClipboardTextFn = [](void* userData) -> const char* { return SDL_GetClipboardText(); };
 
-    io.UserData = this;
+	io.UserData = this;
 
-    SetScale();
+	SetScale();
 
-    SubscribeToEvent(E_APPLICATIONSTARTED, [&](StringHash, VariantMap&) {
-        if (io.Fonts->Fonts.empty())
-        {
-            io.Fonts->AddFontDefault();
-            ReallocateFontTexture();
-        }
-        UpdateProjectionMatrix();
-        // Initializes ImGui. ImGui::Render() can not be called unless imgui is initialized. This call avoids initialization
-        // check on every frame in E_ENDRENDERING.
-        ImGui::NewFrame();
-        ImGui::EndFrame();
-        UnsubscribeFromEvent(E_APPLICATIONSTARTED);
-    });
+	SubscribeToEvent(E_APPLICATIONSTARTED, [&](StringHash, VariantMap&) {
+		if (io.Fonts->Fonts.empty())
+		{
+			io.Fonts->AddFontDefault();
+			ReallocateFontTexture();
+		}
+		UpdateProjectionMatrix();
+		// Initializes ImGui. ImGui::Render() can not be called unless imgui is initialized. This call avoids initialization
+		// check on every frame in E_ENDRENDERING.
+		ImGui::NewFrame();
+		ImGui::EndFrame();
+		UnsubscribeFromEvent(E_APPLICATIONSTARTED);
+	});
 
-    // Subscribe to events
-    SubscribeToEvent(E_SDLRAWINPUT, std::bind(&SystemUI::OnRawEvent, this, _2));
-    SubscribeToEvent(E_SCREENMODE, std::bind(&SystemUI::UpdateProjectionMatrix, this));
-    SubscribeToEvent(E_INPUTEND, [&](StringHash, VariantMap&)
-    {
-        float timeStep = GetSubsystem<Engine>()->GetLastRenderTimeMs();
-        ImGui::GetIO().DeltaTime = timeStep > 0.0f ? timeStep : 1.0f / 60.0f;
-        ImGui::NewFrame();
-        ImGuizmo::BeginFrame();
-    });
-    SubscribeToEvent(E_ENDRENDERING, [&](StringHash, VariantMap&)
-    {
-        URHO3D_PROFILE(SystemUiRender);
-        ImGui::Render();
-    });
+	// Subscribe to events
+	SubscribeToEvent(E_SDLRAWINPUT, std::bind(&SystemUI::OnRawEvent, this, _2));
+	SubscribeToEvent(E_SCREENMODE, std::bind(&SystemUI::UpdateProjectionMatrix, this));
+	SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(SystemUI, HandlePostUpdate));
+	SubscribeToEvent(E_PREUPDATE, URHO3D_HANDLER(SystemUI, HandlePreUpdate));
+	SubscribeToEvent(E_ENDRENDERING, URHO3D_HANDLER(SystemUI, HandleEndRender));
+	SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(SystemUI, HandleEndRenderPostSwap));
+
+
 }
+
+
+void SystemUI::HandleEndRender(StringHash event, VariantMap& data)
+{
+    URHO3D_PROFILE(SystemUIRender);
+	ImGui::Render();
+}
+
+void SystemUI::HandleEndRenderPostSwap(StringHash event, VariantMap& data)
+{
+}
+
+void SystemUI::HandlePostUpdate(StringHash event, VariantMap& data)
+{
+}
+void SystemUI::HandlePreUpdate(StringHash event, VariantMap& data)
+{
+	ImGui::NewFrame();
+	ImGuizmo::BeginFrame();
+
+}
+
+
 
 SystemUI::~SystemUI()
 {
