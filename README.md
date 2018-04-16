@@ -10,14 +10,14 @@ Main website: [https://urho3d.github.io/](https://urho3d.github.io/)
 
 ## Differences
 - This fork routinely merges from https://github.com/rokups/Urho3D.
+- Update rates are fixed and a prioritized as having constant timing.  If you want to you can ignore using P_TIMESTEP in your update logic.
 - Update rates are seperated from render update rates. There are no "Frame" events.  
   Rendering is viewed as a sampling of the current update state.  Transform Tweening is planned.
 - Tweeks Subsystem.
-- Node::GetChild(index) has been removed in favor of O(log(n)) child remove times using a HashSet as children container.
 - Other smaller changes as well as fixes.
 
 ## Further Goals
-- Newton Game Dynamics Integration (as an option in addition to bullet)
+- Newton Game Dynamics Integration
 
 
 
