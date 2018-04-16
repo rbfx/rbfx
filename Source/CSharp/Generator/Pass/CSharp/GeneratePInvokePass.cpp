@@ -41,8 +41,7 @@ void GeneratePInvokePass::Start()
     printer_ << "using System.Threading;";
     printer_ << "using System.Collections.Concurrent;";
     printer_ << "using System.Reflection;";
-    if (generator->useMono_)
-        printer_ << "using System.Runtime.CompilerServices;";
+    printer_ << "using System.Runtime.CompilerServices;";
     printer_ << "using System.Runtime.InteropServices;";
     printer_ << "using CSharp;";
     printer_ << "";
@@ -52,11 +51,7 @@ void GeneratePInvokePass::Start()
 
 bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
-    const char* dllImport;
-    if (generator->useMono_)
-        dllImport = "[MethodImplAttribute(MethodImplOptions.InternalCall)]";
-    else
-        dllImport = "[DllImport(CSharp.Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]";
+    const char* dllImport = "[MethodImplAttribute(MethodImplOptions.InternalCall)]";
 
     // Generate C API for property getters and seters. Visitor will not visit these notes on it's own.
     if (entity->flags_ & HintProperty)
@@ -263,7 +258,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             {
                 printer_ << dllImport;
                 printer_ << fmt::format("internal static extern void {}_setup(IntPtr instance, IntPtr gcHandle, "
-                    "{}string typeName);", baseName, generator->useMono_ ? "" : "[param: MarshalAs(UnmanagedType.LPUTF8Str)]");
+                    "string typeName);", baseName);
                 printer_ << "";
             }
 

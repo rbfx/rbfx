@@ -66,7 +66,6 @@ int main(int argc, char* argv[])
     app.add_option("-I", includes, "Target include paths.");
     app.add_option("-D", defines, "Target preprocessor definitions.");
     app.add_option("-O", options, "Target compiler options.");
-    app.add_flag("--use-mono", generator->useMono_, "Enable mono-specific optimizations");
 
     app.add_option("rules", rulesFile, "Path to rules json file")->required()->check(CLI::ExistingFile);
     app.add_option("source", sourceDir, "Path to source directory")->required()->check(CLI::ExistingDirectory);

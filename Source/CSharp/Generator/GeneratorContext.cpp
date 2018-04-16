@@ -122,27 +122,16 @@ bool GeneratorContext::LoadRules(const std::string& jsonPath)
         // Doctor string typemaps with some internal details.
         if (map.csType_ == "string")
         {
-            if (useMono_)
-            {
-                map.cType_ = "MonoString*";
-                map.cppToCTemplate_ = fmt::format("mono_string_new(mono_domain_get(), {})", map.cppToCTemplate_);
+            map.cType_ = "MonoString*";
+            map.cppToCTemplate_ = fmt::format("mono_string_new(mono_domain_get(), {})", map.cppToCTemplate_);
 #if _WIN32
-                // This optimization is only viable on windows because mono internally uses 2-byte wide characters for
-                // strings, but on unix platforms wchar_t is 4 bytes.
-                if (typeMap.HasMember("supports_wchar") && typeMap["supports_wchar"].GetBool())
-                    map.cToCppTemplate_ = fmt::format(map.cToCppTemplate_, fmt::arg("value", "(const wchar_t*)mono_string_chars({value})"));
-                else
-#endif
-                    map.cToCppTemplate_ = fmt::format(map.cToCppTemplate_, fmt::arg("value", "FreeMonoStringWhenDone(mono_string_to_utf8({value}))()"));
-
-            }
+            // This optimization is only viable on windows because mono internally uses 2-byte wide characters for
+            // strings, but on unix platforms wchar_t is 4 bytes.
+            if (typeMap.HasMember("supports_wchar") && typeMap["supports_wchar"].GetBool())
+                map.cToCppTemplate_ = fmt::format(map.cToCppTemplate_, fmt::arg("value", "(const wchar_t*)mono_string_chars({value})"));
             else
-            {
-                // When char* is returned by C API and return value of call is marshalled as utf8 string .net runtime
-                // marshalls returned pointer to .net string and frees returned pointer.
-                map.cppToCTemplate_ = fmt::format("strdup({})", map.cppToCTemplate_);
-                map.marshalAttribute_ = "MarshalAs(UnmanagedType.LPUTF8Str)";
-            }
+#endif
+                map.cToCppTemplate_ = fmt::format(map.cToCppTemplate_, fmt::arg("value", "FreeMonoStringWhenDone(mono_string_to_utf8({value}))()"));
         }
 
         typeMaps_[map.cppType_] = map;

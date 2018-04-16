@@ -20,16 +20,11 @@
 # THE SOFTWARE.
 #
 
-project(Urho3DNet)
+project(CSHARP)
 
 set (CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_subdirectory(Generator)
-
-include(FindPkgConfig)
-if (UNIX AND URHO3D_CSHARP_MONO)
-    pkg_check_modules(MONO REQUIRED mono-2)
-endif ()
 
 macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)
     get_target_property(values ${TARGET} ${PROPERTY})
@@ -78,7 +73,7 @@ macro (csharp_bind_target)
     endif ()
 
     if (NOT BIND_CSHARP_DIR)
-        set (BIND_CSHARP_DIR ${Urho3DNet_SOURCE_DIR}/CSharp/${BIND_TARGET})
+        set (BIND_CSHARP_DIR ${CSHARP_SOURCE_DIR}/CSharp/${BIND_TARGET})
         if (NOT IS_DIRECTORY ${BIND_CSHARP_DIR})
             unset (BIND_CSHARP_DIR)
         endif ()
@@ -127,17 +122,13 @@ macro (csharp_bind_target)
         list(APPEND GENERATOR_OPTIONS -O_${item})
     endforeach()
 
-    if (MONO_FOUND)
-        list (APPEND GENERATOR_OPTIONS --use-mono)
-    endif ()
-
     set (BINDINGS_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}Net)
-    set (COMMON_DIR ${Urho3DNet_SOURCE_DIR}/CSharp/Common)
+    set (COMMON_DIR ${CSHARP_SOURCE_DIR}/CSharp/Common)
     list (APPEND GENERATOR_OPTIONS ${RULES} ${BIND_SOURCE_DIR} ${BINDINGS_OUTPUT_DIR})
 
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt "")
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp_generator_commandline.txt "")
     foreach (opt ${GENERATOR_OPTIONS})
-        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt "${opt}\n")
+        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp_generator_commandline.txt "${opt}\n")
     endforeach ()
 
     # Generated source files
@@ -172,18 +163,18 @@ macro (csharp_bind_target)
     endif ()
     target_include_directories(${CSHARP_LIBRARY_NAME} PRIVATE
         ${COMMON_DIR}/Native ${BIND_CSHARP_DIR}/Native ${BINDINGS_OUTPUT_DIR}/Native)
-    if (MONO_FOUND)
-        target_include_directories(${CSHARP_LIBRARY_NAME} PRIVATE ${MONO_INCLUDE_DIRS})
-        target_link_libraries(${CSHARP_LIBRARY_NAME} ${MONO_LIBRARIES})
-        target_compile_options(${CSHARP_LIBRARY_NAME} PRIVATE ${MONO_CFLAGS})
-    endif ()
+
+    find_package(Mono REQUIRED)
+    target_include_directories(${CSHARP_LIBRARY_NAME} PRIVATE ${MONO_INCLUDE_DIRS})
+    target_link_libraries(${CSHARP_LIBRARY_NAME} ${MONO_LIBRARIES})
+    target_compile_options(${CSHARP_LIBRARY_NAME} PRIVATE ${MONO_CFLAGS})
 
     # Target that generates bindings source
     add_custom_command(OUTPUT ${CSHARP_SOURCE_FILES_GENERATED} ${COMMON_NET_SOURCE_FILES_GENERATED}
-        COMMAND $<TARGET_FILE:CSharpGenerator> ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt
+        COMMAND $<TARGET_FILE:CSharpGenerator> ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp_generator_commandline.txt
         DEPENDS CSharpGenerator)
     add_custom_target(${CSHARP_LIBRARY_NAME}Regenerate
-        COMMAND $<TARGET_FILE:CSharpGenerator> ${CMAKE_CURRENT_BINARY_DIR}/generator_commandline.txt
+        COMMAND $<TARGET_FILE:CSharpGenerator> ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp_generator_commandline.txt
         DEPENDS CSharpGenerator)
     set_target_properties(${CSHARP_LIBRARY_NAME}Regenerate PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
 

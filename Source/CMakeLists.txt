@@ -30,7 +30,6 @@ endif ()
 add_subdirectory(ThirdParty)
 
 if (URHO3D_CSHARP)
-    initialize_submodule(${CMAKE_CURRENT_SOURCE_DIR}/CSharp)
 	add_subdirectory(CSharp)
 endif ()
 

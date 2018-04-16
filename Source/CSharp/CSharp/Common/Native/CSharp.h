@@ -5,12 +5,10 @@
 #include <Urho3D/IO/Log.h>
 #include <string>
 #include <type_traits>
-#if URHO3D_CSHARP_MONO
 #include <mono/utils/mono-publib.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/appdomain.h>
-#endif
 
 using namespace Urho3D;
 
@@ -88,70 +86,6 @@ inline size_t GetBaseClassOffset()
     return reinterpret_cast<uintptr_t>(static_cast<Base*>(reinterpret_cast<Derived*>(1))) - 1;
 };
 
-struct SafeArray
-{
-    void* data;
-    unsigned size;
-    bool owns;
-};
-
-template<typename CppType>
-struct PInvokeArrayConverter { };
-
-// Convert PODVector<T>
-template<typename T>
-struct PInvokeArrayConverter<PODVector<T>>
-{
-    using CppType=PODVector<T>;
-    using CType=SafeArray;
-
-    static CType ToCSharp(const CppType& value)
-    {
-        SafeArray result{nullptr, value.Size() * (unsigned)sizeof(T), true};
-        result.data = malloc(result.size);
-        memcpy(result.data, &value.Front(), result.size);
-        return result;
-    }
-
-    static CppType FromCSharp(const SafeArray& value)
-    {
-        CppType result((const T*)value.data, value.size / (unsigned)sizeof(T));
-        if (value.owns)
-            free(value.data);
-        return result;
-    }
-};
-
-// Convert Vector<SharedPtr<T>>
-template<typename T>
-struct PInvokeArrayConverter<Vector<SharedPtr<T>>>
-{
-    using CppType=Vector<SharedPtr<T>>;
-    using CType=SafeArray;
-
-    static CType ToCSharp(const CppType& value)
-    {
-        SafeArray result{nullptr, value.Size() * (unsigned)sizeof(void*), true};
-        result.data = malloc(result.size);
-        auto** array = (T**)result.data;
-        for (const auto& ptr : value)
-            *array++ = ptr.Get();
-        return result;
-    }
-
-    static CppType FromCSharp(const SafeArray& value)
-    {
-        CppType result{value.size / (unsigned)sizeof(void*)};
-        auto** array = (T**)value.data;
-        for (auto& ptr : result)
-            ptr = *array++;
-        if (value.owns)
-            free(value.data);
-        return result;
-    }
-};
-
-#if URHO3D_CSHARP_MONO
 template<typename CppType> inline const char* GetMonoBuiltinType() { return "IntPtr"; };
 template<> inline const char* GetMonoBuiltinType<bool>() { return "Boolean"; }
 template<> inline const char* GetMonoBuiltinType<unsigned char>() { return "Byte"; }
@@ -227,7 +161,6 @@ struct MonoArrayConverter<Vector<SharedPtr<T>>>
         return result;
     }
 };
-#endif
 
 struct CSharpObjConverter
 {
@@ -258,7 +191,6 @@ std::uintptr_t GetTypeID(const T* instance)
     return reinterpret_cast<std::uintptr_t>(&typeid(*instance));
 }
 
-#if URHO3D_CSHARP_MONO
 struct FreeMonoStringWhenDone
 {
     char* string;
@@ -276,4 +208,3 @@ struct FreeMonoStringWhenDone
 
     char* operator()() { return string; }
 };
-#endif
