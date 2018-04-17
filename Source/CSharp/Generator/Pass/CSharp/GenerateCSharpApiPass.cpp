@@ -37,7 +37,7 @@ void GenerateCSharpApiPass::Start()
     printer_ << "using System;";
     printer_ << "using System.Diagnostics;";
     printer_ << "using System.Runtime.InteropServices;";
-    printer_ << "using CSharp;";
+    printer_ << "using Urho3D.CSharp;";
     printer_ << "";
 }
 

@@ -43,7 +43,7 @@ void GeneratePInvokePass::Start()
     printer_ << "using System.Reflection;";
     printer_ << "using System.Runtime.CompilerServices;";
     printer_ << "using System.Runtime.InteropServices;";
-    printer_ << "using CSharp;";
+    printer_ << "using Urho3D.CSharp;";
     printer_ << "";
 
     discoverInterfacesPass_ = generator->GetPass<DiscoverInterfacesPass>();

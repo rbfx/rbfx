@@ -1,25 +1,8 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using System.Threading;
-using Urho3D;
 
-namespace CSharp
+namespace Urho3D.CSharp
 {
-    internal delegate void CSharp_FreeGCHandle(IntPtr handle);
-    internal delegate IntPtr CSharp_CloneGCHandle(IntPtr handle);
-    internal delegate IntPtr CSharp_CreateObject(IntPtr context, uint managedType);
-
-    [StructLayout(LayoutKind.Sequential)]
-    struct ManagedInterface
-    {
-        [MarshalAs(UnmanagedType.FunctionPtr)]
-        internal CSharp_FreeGCHandle FreeGcHandle;
-        [MarshalAs(UnmanagedType.FunctionPtr)]
-        internal CSharp_CloneGCHandle CloneGcHandle;
-        [MarshalAs(UnmanagedType.FunctionPtr)]
-        internal CSharp_CreateObject CreateObject;
-    }
-
     public interface INativeObject : IDisposable
     {
         IntPtr NativeInstance { get; }
@@ -96,42 +79,28 @@ namespace CSharp
 
     public static class NativeInterface
     {
-        private static ManagedInterface _api;
-        private static volatile int _count;
-
-        internal static void Setup()
+        internal static void FreeGcHandle(IntPtr ptr)
         {
-            if (Interlocked.Increment(ref _count) != 1)
-                return;
+            var handle = GCHandle.FromIntPtr(ptr);
+            (handle.Target as IDisposable)?.Dispose(); // Just in case
+            handle.Free();
+        }
 
-            _api.FreeGcHandle = ptr =>
-            {
-                var handle = GCHandle.FromIntPtr(ptr);
-                (handle.Target as IDisposable)?.Dispose(); // Just in case
-                handle.Free();
-            };
-            _api.CloneGcHandle = ptr =>
-            {
-                var handle = GCHandle.FromIntPtr(ptr);
-                return GCHandle.ToIntPtr(GCHandle.Alloc(handle.Target));
-            };
-            _api.CreateObject = (contextPtr, managedType) =>
-            {
-                var context = Context.__FromPInvoke(contextPtr, true);
-                return context.CreateObject(managedType);
-            };
-            CSharp_SetManagedAPI(_api);
+        internal static IntPtr CloneGcHandle(IntPtr ptr)
+        {
+            var handle = GCHandle.FromIntPtr(ptr);
+            return GCHandle.ToIntPtr(GCHandle.Alloc(handle.Target));
+        }
+
+        internal static IntPtr CreateObject(IntPtr contextPtr, uint managedType)
+        {
+            var context = Context.__FromPInvoke(contextPtr, true);
+            return context.CreateObject(managedType);
         }
 
         internal static void Dispose()
         {
-            if (Interlocked.Decrement(ref _count) != 0)
-                return;
-
             InstanceCache.Dispose();
         }
-
-        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void CSharp_SetManagedAPI(ManagedInterface netApi);
     }
 }

@@ -37,8 +37,6 @@ void GenerateClassWrappers::Start()
     printer_ << "#include <CSharp.h>";
     printer_ << "";
     printer_ << "";
-    printer_ << "void RegisterWrapperFactories(Context* context);";
-    printer_ << "";
     printer_ << "namespace Wrappers";
     printer_ << "{";
     printer_ << "";
@@ -46,8 +44,10 @@ void GenerateClassWrappers::Start()
     initPrinter_ << "#include <Urho3D/Urho3DAll.h>";
     initPrinter_ << "#include \"ClassWrappers.hpp\"";
     initPrinter_ << "";
-    initPrinter_ << "void RegisterWrapperFactories(Context* context)";
+    initPrinter_ << fmt::format("extern \"C\" URHO3D_EXPORT_API void {}RegisterWrapperFactories(Context* context)",
+                                generator->defaultNamespace_);
     initPrinter_.Indent();
+    initPrinter_ << "auto* script = context->GetScripts();";
 }
 
 bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
@@ -112,7 +112,7 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_ << "if (gcHandle_ != nullptr)";
         printer_.Indent();
         {
-            printer_ << "managedAPI.FreeGCHandle(gcHandle_);";
+            printer_ << "scriptSubsystem->FreeGCHandle(gcHandle_);";
             printer_ << "gcHandle_ = nullptr;";
         }
         printer_.Dedent();
@@ -181,10 +181,6 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
                             FMT_CAPTURE(constModifier));
                         printer_.Indent();
                         {
-                            // Urho3D-specific: slip in call to registration of wrapper class factories.
-                            if (cls->symbolName_ == "Urho3D::Application" && name == "Start")
-                                printer_ << "RegisterWrapperFactories(context_);";
-
                             if (!cppast::is_pure(child->Ast<cppast::cpp_member_function>().virtual_info()))
                             {
                                 printer_ << fmt::format("if (fn{cFunctionName} == nullptr)", FMT_CAPTURE(cFunctionName));

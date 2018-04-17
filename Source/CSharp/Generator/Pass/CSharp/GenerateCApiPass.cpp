@@ -135,7 +135,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     // This is not a last ref and managed object is being disposed most likely by a finalizer. Schedule
                     // reference releasing to be done on main thread. This should be safe in most cases. For example if
                     // engine is holding a reference then it is most likely interacted with on main thread.
-                    printer_ << "script->QueueReleaseRef(instance);";
+                    printer_ << "Urho3D::scriptSubsystem->QueueReleaseRef(instance);";
                 }
                 printer_.Dedent("");
             }
@@ -175,7 +175,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     printer_ << "instance->SetDeleter([](RefCounted* instance_, void* gcHandle_) {";
                     printer_.Indent("");
                     {
-                        printer_ << "managedAPI.FreeGCHandle(gcHandle_);";
+                        printer_ << "scriptSubsystem->FreeGCHandle(gcHandle_);";
                         printer_ << "delete instance_;";
                     }
                     printer_.Dedent("}, gcHandle);");
@@ -184,7 +184,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 {
                     if (isRefCounted)
                         // Ensure that different GC handles are stored in wrapepr class and refcounted deleter user data
-                        printer_ << "gcHandle = managedAPI.CloneGCHandle(gcHandle);";
+                        printer_ << "gcHandle = scriptSubsystem->CloneGCHandle(gcHandle);";
                     printer_ << "instance->gcHandle_ = gcHandle;";
                     if (IsSubclassOf(cls, "Urho3D::Object"))
                         printer_ << fmt::format("instance->typeInfo_ = new Urho3D::TypeInfo(typeName, {}::GetTypeInfoStatic());", entity->sourceSymbolName_);

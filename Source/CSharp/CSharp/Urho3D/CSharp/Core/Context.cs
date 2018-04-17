@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using CSharp;
+using Urho3D.CSharp;
 
 namespace Urho3D
 {
@@ -11,38 +11,13 @@ namespace Urho3D
         public string Category { get; set; } = "";
     }
 
-    internal class RefCountedDeleter : Object
-    {
-        private int _lastDeletionTickCount;
-        private const int DeletionInterval = 1000;
-
-        [DllImport(CSharp.Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void CSharp_ReleasePendingRefCounted();
-
-        public RefCountedDeleter(Context context) : base(context)
-        {
-            SubscribeToEvent(CoreEvents.E_ENDFRAME, args =>
-            {
-                if (Environment.TickCount - _lastDeletionTickCount >= DeletionInterval)
-                {
-                    CSharp_ReleasePendingRefCounted();
-                    _lastDeletionTickCount = Environment.TickCount;
-                }
-            });
-        }
-    }
-
     public partial class Context
     {
         private readonly Dictionary<uint, Type> _factoryTypes = new Dictionary<uint, Type>();
-        private RefCountedDeleter _refCountedDeleter;
 
         // This method may be overriden in partial class in order to attach extra logic to object constructor
         internal override void SetupInstance(IntPtr instance, bool ownsInstance)
         {
-            // Wrapper initialization routines
-            NativeInterface.Setup();
-
             // Set up this instance
             PerformInstanceSetup(instance, ownsInstance);
 
@@ -52,9 +27,6 @@ namespace Urho3D
                 foreach (var pair in assembly.GetTypesWithAttribute<RegisterFactoryAttribute>())
                     RegisterFactory(pair.Item1, pair.Item2.Category);
             }
-
-            // Performs scheduled deletion of RefCounted
-            _refCountedDeleter = new RefCountedDeleter(this);
         }
 
         public void RegisterFactory<T>(string category = "") where T : Object
@@ -95,5 +67,11 @@ namespace Urho3D
             [param: MarshalAs(UnmanagedType.LPUTF8Str)]
             string typeName, uint baseType, [param: MarshalAs(UnmanagedType.LPUTF8Str)]
             string category);
+
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Urho3DRegisterMonoInternalCalls();
+
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void Urho3DRegisterWrapperFactories(IntPtr contextPtr);
     }
 }

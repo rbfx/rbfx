@@ -13,7 +13,7 @@ public:
         , baseType_(baseType)
         , managedType_(typeName)
     {
-        typeInfo_ = new TypeInfo(typeName, script->GetRegisteredType(baseType));
+        typeInfo_ = new TypeInfo(typeName, context_->GetScripts()->GetRegisteredType(baseType));
     }
 
     ~ManagedObjectFactory() override
@@ -24,7 +24,7 @@ public:
 public:
     SharedPtr<Object> CreateObject() override
     {
-        return SharedPtr<Object>(managedAPI.CreateObject(context_, managedType_.Value()));
+        return SharedPtr<Object>(context_->GetScripts()->CreateObject(context_, managedType_.Value()));
     }
 
 protected:
@@ -44,7 +44,7 @@ public:
 
     ~ManagedEventHandler() override
     {
-        managedAPI.FreeGCHandle(gcHandle_);
+        receiver_->GetScripts()->FreeGCHandle(gcHandle_);
         gcHandle_ = nullptr;
     }
 
@@ -55,7 +55,7 @@ public:
 
     EventHandler* Clone() const override
     {
-        return new ManagedEventHandler(receiver_, managedAPI.CloneGCHandle(gcHandle_), function_);
+        return new ManagedEventHandler(receiver_, receiver_->GetScripts()->CloneGCHandle(gcHandle_), function_);
     }
 
 public:

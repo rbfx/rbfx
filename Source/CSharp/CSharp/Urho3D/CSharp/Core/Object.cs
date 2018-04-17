@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using CSharp;
+using Urho3D.CSharp;
 
 namespace Urho3D
 {

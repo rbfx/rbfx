@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Urho3D;
 
-namespace CSharp
+namespace Urho3D.CSharp
 {
     static class InstanceCache
     {

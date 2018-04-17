@@ -179,7 +179,7 @@ macro (csharp_bind_target)
     set_target_properties(${CSHARP_LIBRARY_NAME}Regenerate PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
 
     file (WRITE ${BINDINGS_OUTPUT_DIR}/CSharp/Config.cs
-"namespace CSharp
+"namespace Urho3D.CSharp
 {
     internal static partial class Config
     {

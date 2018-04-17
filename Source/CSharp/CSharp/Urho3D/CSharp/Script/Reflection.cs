@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace CSharp
+namespace Urho3D.CSharp
 {
     public static class ReflectionExtensions
     {
