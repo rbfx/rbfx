@@ -778,8 +778,6 @@ void Engine::Update()
 
     // Logic post-update event
     SendEvent(E_POSTUPDATE, eventData);
-	
-
 }
 
 void Engine::Render()
@@ -820,14 +818,16 @@ void Engine::Render()
 	SendEvent(E_RENDERUPDATE, eventData);
 
 
+	// Post-render update event
+	SendEvent(E_POSTRENDERUPDATE, eventData);
+
+
     GetSubsystem<Renderer>()->Render();
     GetSubsystem<UI>()->Render();
     graphics->EndFrame();
 
 
 
-	// Post-render update event
-	SendEvent(E_POSTRENDERUPDATE, eventData);
 }
 
 VariantMap Engine::ParseParameters(const Vector<String>& arguments)
