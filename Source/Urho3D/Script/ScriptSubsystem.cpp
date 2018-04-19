@@ -39,6 +39,12 @@ URHO3D_API ScriptSubsystem* scriptSubsystem = nullptr;
 ScriptSubsystem::ScriptSubsystem(Context* context)
     : Object(context)
 {
+    auto* domain = mono_domain_get();
+    if (domain == nullptr)
+        // This library does not run in context of managed process. Subsystem is noop.
+        // TODO: Support for subystem initiating hosting of .net runtime.
+        return;
+
     // This global instance is mainly required for queueing ReleaseRef() calls. Not every RefCounted has pointer to
     // Context therefore if multiple contexts exist they may run on different threads. Then there would be no way to
     // know on which main thread ReleaseRef() should be called. Assert below limits application to having single
@@ -48,7 +54,7 @@ ScriptSubsystem::ScriptSubsystem(Context* context)
 
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(ScriptSubsystem, OnEndFrame));
 
-    auto* assembly = mono_domain_assembly_open(mono_domain_get(), "Urho3DNet.dll");
+    auto* assembly = mono_domain_assembly_open(domain, "Urho3DNet.dll");
     auto* image =  mono_assembly_get_image(assembly);
     auto* klass = mono_class_from_name(image, "Urho3D.CSharp", "NativeInterface");
 
@@ -101,7 +107,9 @@ Object* ScriptSubsystem::CreateObject(Context* context, unsigned managedType)
 
 void ScriptSubsystem::RegisterCurrentThread()
 {
-    mono_thread_attach(mono_domain_get());
+    auto* domain = mono_domain_get();
+    if (domain != nullptr)
+        mono_thread_attach(domain);
 }
 
 }
