@@ -36,4 +36,4 @@ target_include_directories(imgui
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(imgui PRIVATE -D_EXPORTS PUBLIC -D_IMPORTS)
 endif ()
-install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/ FILES_MATCHING PATTERN *.h)
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)

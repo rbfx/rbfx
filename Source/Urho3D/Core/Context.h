@@ -249,6 +249,10 @@ public:
     /// Return tasks subsystem.
     inline Tasks* GetTasks() const { return tasks_; }
 #endif
+#if URHO3D_CSHARP
+    /// Return tasks subsystem.
+    inline ScriptSubsystem* GetScripts() const { return scripts_; }
+#endif
 
     /// Register engine subsystem and cache it's pointer.
     void RegisterSubsystem(Engine* subsystem);
@@ -283,6 +287,10 @@ public:
 #if URHO3D_TASKS
     /// Register tasks subsystem and cache it's pointer.
     void RegisterSubsystem(Tasks* subsystem);
+#endif
+#if URHO3D_CSHARP
+    /// Register scripting subsystem and cache it's pointer.
+    void RegisterSubsystem(ScriptSubsystem* subsystem);
 #endif
 #if URHO3D_SYSTEMUI
     /// Register system UI subsystem and cache it's pointer.
@@ -372,6 +380,10 @@ private:
 #if URHO3D_TASKS
     /// Cached pointer to tasks subsystem.
     WeakPtr<Tasks> tasks_;
+#endif
+#if URHO3D_CSHARP
+    /// Cached pointer to scripting subsystem.
+    WeakPtr<ScriptSubsystem> scripts_;
 #endif
     friend class Engine;
 };

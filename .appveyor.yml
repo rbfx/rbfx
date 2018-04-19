@@ -4,16 +4,25 @@ platform:
 image: Visual Studio 2017
 environment:
   global:
+    MONO_SETUP: mono-5.10.1.47-x64-0.msi
     URHO3D_D3D11: 1
     URHO3D_ENABLE_ALL: ON
   matrix:
     - BUILD_SHARED_LIBS: OFF
     - BUILD_SHARED_LIBS: ON
+cache:
+  - "%MONO_SETUP%"
+install:
+  - ps: |
+     if (-not (test-path "C:\Program Files\Mono\$ENV:MONO_SETUP")) {
+       Start-FileDownload "https://download.mono-project.com/archive/5.10.1/windows-installer/$ENV:MONO_SETUP";
+     }
+     msiexec /quiet /qn /norestart /i $ENV:MONO_SETUP
 before_build:
   - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
   - mkdir "%APPVEYOR_BUILD_FOLDER%\Build"
   - cd "%APPVEYOR_BUILD_FOLDER%\Build"
-  - cmake -G "Visual Studio 15 Win64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="%APPVEYOR_BUILD_FOLDER%\Urho3D-SDK" ..
+  - cmake -G "Visual Studio 15 Win64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="%APPVEYOR_BUILD_FOLDER%\Urho3D-SDK" -DLLVM_VERSION_EXPLICIT=5.0.0 -DLIBCLANG_LIBRARY="C:/Program Files/LLVM/lib/libclang.lib" -DLIBCLANG_INCLUDE_DIR="C:/Program Files/LLVM/include" -DLIBCLANG_SYSTEM_INCLUDE_DIR="C:/"Program Files"/LLVM/lib/clang/5.0.0/include" -DCLANG_BINARY="C:/Program Files/LLVM/bin/clang++.exe" ..
 build_script:
   - cd "%APPVEYOR_BUILD_FOLDER%\Build"
   - cmake --build . --target install
