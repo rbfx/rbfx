@@ -585,6 +585,43 @@ bool Serializable::SaveJSON(JSONValue& dest) const
     return true;
 }
 
+bool Serializable::CopyTo(Serializable& dest) const
+{
+	const Vector<AttributeInfo>* attributes = GetAttributes();
+	if (!attributes)
+		return true;
+
+
+	Variant value;
+
+	for (unsigned i = 0; i < attributes->Size(); ++i)
+	{
+		const AttributeInfo& attr = attributes->At(i);
+
+		OnGetAttribute(attr, value);
+
+		bool setSuccess = true;
+
+		//if object types are the same do a set by index, else do a set by name (slower)
+		if (dest.GetTypeName() == GetTypeName()) {
+			setSuccess &= dest.SetAttribute(i, value);
+		}
+		else
+		{
+			setSuccess &= dest.SetAttribute(attr.name_, value);
+		}
+
+
+		if (!setSuccess)
+		{
+			URHO3D_LOGERROR("Could not copy " + GetTypeName() + ", writing to destination failed");
+			return false;
+		}
+	}
+
+	return true;
+}
+
 bool Serializable::SetAttribute(unsigned index, const Variant& value)
 {
     const Vector<AttributeInfo>* attributes = GetAttributes();
