@@ -110,7 +110,7 @@ target_include_directories(Urho3D PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>        # For parent projects to find auto-generated engine headers
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>        # For parent projects to find engine headers
     $<INSTALL_INTERFACE:${DEST_BASE_INCLUDE_DIR}>
-    $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}>
+    $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}>
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
 )
 
@@ -241,9 +241,9 @@ endif ()
 # SDK installation
 install(TARGETS Urho3D
     EXPORT Urho3D
-    LIBRARY DESTINATION ${SHARED_LIB_INSTALL_DIR}
-    RUNTIME DESTINATION ${SHARED_LIB_INSTALL_DIR}
-    ARCHIVE DESTINATION lib${LIB_SUFFIX}
+    LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
+    RUNTIME DESTINATION ${DEST_BIN_DIR}
+    ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
 )
 
 # Generate platform specific pkg-config file for the benefit of Urho3D library users via SDK without CMake

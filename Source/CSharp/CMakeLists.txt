@@ -164,6 +164,11 @@ macro (csharp_bind_target)
         if (CLANG)
             target_compile_options(${CSHARP_LIBRARY_NAME} PRIVATE -Wno-return-type-c-linkage)
         endif ()
+        install(TARGETS ${CSHARP_LIBRARY_NAME}
+            LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
+            RUNTIME DESTINATION ${DEST_BIN_DIR}
+            ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
+        )
     else ()
         message(FATAL_ERROR "Please pass INTERNAL or EXTERNAL to csharp_bind_target()")
     endif ()
@@ -203,4 +208,5 @@ macro (csharp_bind_target)
         ${COMMON_NET_SOURCE_FILES_GENERATED} ${BINDINGS_OUTPUT_DIR}/CSharp/Config.cs
     )
     add_dependencies(${BIND_TARGET}Net ${CSHARP_LIBRARY_NAME})
+    install (FILES ${NET_OUTPUT_DIRECTORY}/${BIND_TARGET}Net.dll DESTINATION ${DEST_LIBRARY_DIR})
 endmacro ()
