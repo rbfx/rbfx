@@ -698,6 +698,10 @@ bool IsPointer(const cppast::cpp_type& type)
 
 bool IsExported(const cppast::cpp_class& cls)
 {
+    if (generator->isStatic_)
+        // Binding static library. All symbols are always visible.
+        return true;
+
     for (const auto& attr : cls.attributes())
     {
         if (attr.name() == "visibility")

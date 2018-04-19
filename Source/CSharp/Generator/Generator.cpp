@@ -63,6 +63,7 @@ int main(int argc, char* argv[])
 
     CLI::App app{"CSharp bindings generator"};
 
+    app.add_flag("--static", generator->isStatic_, "Generate bindings for static library.");
     app.add_option("-I", includes, "Target include paths.");
     app.add_option("-D", defines, "Target preprocessor definitions.");
     app.add_option("-O", options, "Target compiler options.");

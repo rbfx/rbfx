@@ -97,6 +97,7 @@ public:
     std::unordered_map<std::string, std::weak_ptr<MetaEntity>> enumValues_;
     std::unordered_map<std::string, TypeMap> typeMaps_;
     IncludedChecker inheritable_;
+    bool isStatic_ = false;
 };
 
 extern GeneratorContext* generator;

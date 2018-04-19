@@ -122,13 +122,19 @@ macro (csharp_bind_target)
         list(APPEND GENERATOR_OPTIONS -O_${item})
     endforeach()
 
+    get_target_property(_TARGET_TYPE ${BIND_TARGET} TYPE)
+    if(_TARGET_TYPE STREQUAL "STATIC_LIBRARY")
+        list (APPEND GENERATOR_OPTIONS --static)
+    endif ()
+
     set (BINDINGS_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}Net)
     set (COMMON_DIR ${CSHARP_SOURCE_DIR}/CSharp/Common)
     list (APPEND GENERATOR_OPTIONS ${RULES} ${BIND_SOURCE_DIR} ${BINDINGS_OUTPUT_DIR})
 
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp_generator_commandline.txt "")
+    set (CSHARP_BINDING_GENERATOR_OPTIONS ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp_generator_commandline.txt)
+    file(WRITE ${CSHARP_BINDING_GENERATOR_OPTIONS} "")
     foreach (opt ${GENERATOR_OPTIONS})
-        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp_generator_commandline.txt "${opt}\n")
+        file(APPEND ${CSHARP_BINDING_GENERATOR_OPTIONS} "${opt}\n")
     endforeach ()
 
     # Generated source files
@@ -171,10 +177,10 @@ macro (csharp_bind_target)
 
     # Target that generates bindings source
     add_custom_command(OUTPUT ${CSHARP_SOURCE_FILES_GENERATED} ${COMMON_NET_SOURCE_FILES_GENERATED}
-        COMMAND $<TARGET_FILE:CSharpGenerator> ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp_generator_commandline.txt
+        COMMAND $<TARGET_FILE:CSharpGenerator> ${CSHARP_BINDING_GENERATOR_OPTIONS}
         DEPENDS CSharpGenerator)
     add_custom_target(${CSHARP_LIBRARY_NAME}Regenerate
-        COMMAND $<TARGET_FILE:CSharpGenerator> ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp_generator_commandline.txt
+        COMMAND $<TARGET_FILE:CSharpGenerator> ${CSHARP_BINDING_GENERATOR_OPTIONS}
         DEPENDS CSharpGenerator)
     set_target_properties(${CSHARP_LIBRARY_NAME}Regenerate PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
 
