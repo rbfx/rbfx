@@ -288,7 +288,7 @@ public:
     /// Register tasks subsystem and cache it's pointer.
     void RegisterSubsystem(Tasks* subsystem);
 #endif
-#if URHO3D_TASKS
+#if URHO3D_CSHARP
     /// Register scripting subsystem and cache it's pointer.
     void RegisterSubsystem(ScriptSubsystem* subsystem);
 #endif
