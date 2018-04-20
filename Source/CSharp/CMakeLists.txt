@@ -161,9 +161,6 @@ macro (csharp_bind_target)
         set (CSHARP_LIBRARY_NAME ${BIND_TARGET}CSharp)
         add_library(${CSHARP_LIBRARY_NAME} SHARED ${COMMON_CSHARP_SOURCE_FILES_MANUAL} ${CSHARP_SOURCE_FILES_GENERATED})
         target_link_libraries(${CSHARP_LIBRARY_NAME} ${BIND_TARGET})
-        if (CLANG)
-            target_compile_options(${CSHARP_LIBRARY_NAME} PRIVATE -Wno-return-type-c-linkage)
-        endif ()
         install(TARGETS ${CSHARP_LIBRARY_NAME}
             LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
             RUNTIME DESTINATION ${DEST_BIN_DIR}
@@ -171,6 +168,9 @@ macro (csharp_bind_target)
         )
     else ()
         message(FATAL_ERROR "Please pass INTERNAL or EXTERNAL to csharp_bind_target()")
+    endif ()
+    if (CLANG)
+        target_compile_options(${CSHARP_LIBRARY_NAME} PRIVATE -Wno-return-type-c-linkage)
     endif ()
     target_include_directories(${CSHARP_LIBRARY_NAME} PRIVATE
         ${COMMON_DIR}/Native ${BIND_CSHARP_DIR}/Native ${BINDINGS_OUTPUT_DIR}/Native)

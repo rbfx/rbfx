@@ -12,7 +12,6 @@ env:
     - URHO3D_ENABLE_ALL=ON
     - CMAKE_VERSION=3.4
     - CMAKE_PATCH=3
-    - URHO3D_CSHARP=OFF
 addons:
   apt:
     sources:
@@ -43,31 +42,30 @@ matrix:
       env:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
         - LLVM_CONFIG_BINARY=/usr/bin/llvm-config-5.0
-        - URHO3D_CSHARP=ON
     - <<: *Linux-gcc
       env:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
         - LLVM_CONFIG_BINARY=/usr/bin/llvm-config-5.0
-        - URHO3D_CSHARP=ON
         - BUILD_SHARED_LIBS=ON
     - &Linux-clang
       os: linux
       compiler: clang
       env:
         - LLVM_CONFIG_BINARY=/usr/bin/llvm-config-5.0
-        - URHO3D_CSHARP=ON
     - <<: *Linux-clang
       env:
         - LLVM_CONFIG_BINARY=/usr/bin/llvm-config-5.0
-        - URHO3D_CSHARP=ON
         - BUILD_SHARED_LIBS=ON
     - &MacOS
       os: osx
       osx_image: xcode8.3
       compiler: clang
+      env:
+        - LLVM_CONFIG_BINARY=/usr/local/opt/llvm/bin/llvm-config
     - <<: *MacOS
       env:
-        BUILD_SHARED_LIBS=ON
+        - LLVM_CONFIG_BINARY=/usr/local/opt/llvm/bin/llvm-config
+        - BUILD_SHARED_LIBS=ON
   exclude:
     - &MingW
       env:
@@ -94,6 +92,8 @@ before_install: |
       sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
       echo "deb http://download.mono-project.com/repo/ubuntu stable-trusty main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
       sudo apt-get update -qq
+  else
+      brew update
   fi
 
 install: |
@@ -107,6 +107,8 @@ install: |
       fi
       export PATH=$HOME/cmake-$CMAKE_VERSION.$CMAKE_PATCH-Linux-x86_64/bin:$PATH
       sudo apt-get install -y --force-yes mono-devel
+  else
+      brew install pkg-config mono llvm@6
   fi
 
 script: |
