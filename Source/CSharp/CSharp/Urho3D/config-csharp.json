@@ -331,5 +331,12 @@
     ],
     "exclude": [
     ]
+  },
+  "initialization": {
+    "mono-calls": [
+      "RegisterVectorInternalCalls",
+      "RegisterObjectInternalCalls",
+      "RegisterVariantMapInternalCalls",
+    ]
   }
 }

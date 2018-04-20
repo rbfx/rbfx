@@ -136,6 +136,14 @@ bool GeneratorContext::LoadRules(const std::string& jsonPath)
         typeMaps_[map.cppType_] = map;
     }
 
+    const auto& initialization = rules_["initialization"];
+    if (initialization.HasMember("mono-calls"))
+    {
+        const auto& initMonoCalls = initialization["mono-calls"];
+        for (auto it = initMonoCalls.Begin(); it != initMonoCalls.End(); it++)
+            extraMonoCallInitializers_.emplace_back(it->GetString());
+    }
+
     return true;
 }
 

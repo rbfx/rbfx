@@ -11,7 +11,7 @@ namespace Urho3D
             PerformInstanceSetup(instance, ownsInstance);
 
             // Initialize inheritable classes
-            Context.Urho3DRegisterWrapperFactories(Context.NativeInstance);
+            Context.Urho3DRegisterCSharp(Context.NativeInstance);
         }
     }
 }

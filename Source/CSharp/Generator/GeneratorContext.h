@@ -98,6 +98,7 @@ public:
     std::unordered_map<std::string, TypeMap> typeMaps_;
     IncludedChecker inheritable_;
     bool isStatic_ = false;
+    std::vector<std::string> extraMonoCallInitializers_;
 };
 
 extern GeneratorContext* generator;

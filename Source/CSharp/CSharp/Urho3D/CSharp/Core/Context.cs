@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Urho3D.CSharp;
 
@@ -13,6 +14,11 @@ namespace Urho3D
 
     public partial class Context
     {
+        static Context()
+        {
+            Urho3DRegisterMonoInternalCalls();
+        }
+
         private readonly Dictionary<uint, Type> _factoryTypes = new Dictionary<uint, Type>();
 
         // This method may be overriden in partial class in order to attach extra logic to object constructor
@@ -62,16 +68,14 @@ namespace Urho3D
             return managed.NativeInstance;
         }
 
-        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void Urho3D_Context_RegisterFactory(IntPtr context,
-            [param: MarshalAs(UnmanagedType.LPUTF8Str)]
-            string typeName, uint baseType, [param: MarshalAs(UnmanagedType.LPUTF8Str)]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void Urho3D_Context_RegisterFactory(IntPtr context, string typeName, uint baseType,
             string category);
 
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Urho3DRegisterMonoInternalCalls();
 
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void Urho3DRegisterWrapperFactories(IntPtr contextPtr);
+        internal static extern void Urho3DRegisterCSharp(IntPtr contextPtr);
     }
 }

@@ -50,6 +50,12 @@ void GenerateCApiPass::Start()
     printer_ << "{";
     printer_ << "";
 
+    printer_ << fmt::format("void {}RegisterWrapperFactories(Urho3D::Context* context);", generator->defaultNamespace_);
+
+    // Declare extra mono call initializers
+    for (const auto& initializer : generator->extraMonoCallInitializers_)
+        printer_ << fmt::format("void {}();", initializer);
+
     printerInternalCalls_ << fmt::format("URHO3D_EXPORT_API void {}RegisterMonoInternalCalls()",
         generator->defaultNamespace_);
     printerInternalCalls_.Indent();
@@ -82,7 +88,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto baseName = Sanitize(entity->uniqueName_);
 
         // Method for getting type id.
-        printer_ << fmt::format("URHO3D_EXPORT_API std::uintptr_t {}_typeid()", baseName);
+        printer_ << fmt::format("std::uintptr_t {}_typeid()", baseName);
         printer_.Indent();
         {
             printer_ << fmt::format("return GetTypeID<{}>();", entity->symbolName_);
@@ -90,7 +96,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_.Dedent();
         printer_ << "";
 
-        printer_ << fmt::format("URHO3D_EXPORT_API std::uintptr_t {}_instance_typeid({}* instance)", baseName, entity->sourceSymbolName_);
+        printer_ << fmt::format("std::uintptr_t {}_instance_typeid({}* instance)", baseName, entity->sourceSymbolName_);
         printer_.Indent();
         {
             printer_ << fmt::format("return GetTypeID(instance);");
@@ -98,17 +104,14 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_.Dedent();
         printer_ << "";
 
-        std::string monoSymbol = GetMonoInternalCallClassName(entity);
-        printerInternalCalls_ << fmt::format("mono_add_internal_call(\"{monoSymbol}::{base}_typeid\", (const void*)&{base}_typeid);",
-            FMT_CAPTURE(monoSymbol), fmt::arg("base", baseName));
-        printerInternalCalls_ << fmt::format("mono_add_internal_call(\"{monoSymbol}::{base}_instance_typeid\", (const void*)&{base}_instance_typeid);",
-            FMT_CAPTURE(monoSymbol), fmt::arg("base", baseName));
+        RegisterMonoInternalCall(entity, baseName + "_typeid");
+        RegisterMonoInternalCall(entity, baseName + "_instance_typeid");
 
         if (!IsExported(cls))
             return true;
 
         // Destructor always exists even if it is not defined in the class
-        printer_ << fmt::format("URHO3D_EXPORT_API void {}_destructor({}* instance, bool owner)", baseName, entity->sourceSymbolName_);
+        printer_ << fmt::format("void {}_destructor({}* instance, bool owner)", baseName, entity->sourceSymbolName_);
         printer_.Indent();
         {
             // Using sourceName_ with wrapper classes causes weird build errors.
@@ -156,8 +159,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_.Dedent();
         printer_ << "";
 
-        printerInternalCalls_ << fmt::format("mono_add_internal_call(\"{monoSymbol}::{base}_destructor\", (const void*)&{base}_destructor);",
-            FMT_CAPTURE(monoSymbol), fmt::arg("base", baseName));
+        RegisterMonoInternalCall(entity, baseName + "_destructor");
 
         // Method for pinning managed class instance to native class. Ensures that managed class is nog GC'ed before
         // native class is freed. It is important only for classes that can be inherited.
@@ -165,7 +167,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         bool isRefCounted = IsSubclassOf(cls, "Urho3D::RefCounted");
         if (isInheritable || isRefCounted)
         {
-            printer_ << fmt::format("URHO3D_EXPORT_API void {}_setup({}* instance, void* gcHandle, const char* typeName)", baseName, entity->sourceSymbolName_);
+            printer_ << fmt::format("void {}_setup({}* instance, void* gcHandle, const char* typeName)", baseName, entity->sourceSymbolName_);
             printer_.Indent();
             {
                 const auto& cls = entity->Ast<cppast::cpp_class>();
@@ -193,8 +195,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_.Dedent();
             printer_ << "";
 
-            printerInternalCalls_ << fmt::format("mono_add_internal_call(\"{monoSymbol}::{base}_setup\", (const void*)&{base}_setup);",
-                FMT_CAPTURE(monoSymbol), fmt::arg("base", baseName));
+            RegisterMonoInternalCall(entity, baseName + "_setup");
         }
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::constructor_t)
@@ -210,7 +211,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         entity->cFunctionName_ = GetUniqueName(Sanitize(entity->uniqueName_));
         std::string className = entity->GetParent()->sourceSymbolName_;
         printer_ << "// " + entity->uniqueName_;
-        printer_ << fmt::format("URHO3D_EXPORT_API {type} {name}({params})",
+        printer_ << fmt::format("{type} {name}({params})",
             fmt::arg("type", className + "*"), fmt::arg("name", entity->cFunctionName_),
             fmt::arg("params", ParameterList(func.parameters(), toCType)));
         printer_.Indent();
@@ -227,8 +228,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_.Dedent();
         printer_ << "";
 
-        printerInternalCalls_ << fmt::format("mono_add_internal_call(\"{sym}::{cFunction}\", (const void*)&{cFunction});",
-            fmt::arg("sym", GetMonoInternalCallClassName(entity->parent_.lock().get())), fmt::arg("cFunction", entity->cFunctionName_));
+        RegisterMonoInternalCall(entity->parent_.lock().get(), entity->cFunctionName_);
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::member_function_t)
     {
@@ -251,7 +251,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto className = entity->GetFirstParentOfKind(cppast::cpp_entity_kind::class_t)->sourceSymbolName_;
 
         printer_ << "// " + entity->uniqueName_;
-        printer_ << fmt::format("URHO3D_EXPORT_API {rtype} {cFunction}({className}* instance{psep}{params})",
+        printer_ << fmt::format("{rtype} {cFunction}({className}* instance{psep}{params})",
             fmt::arg("rtype", ToCType(func.return_type(), true)), FMT_CAPTURE(cFunction), FMT_CAPTURE(className),
             fmt::arg("psep", func.parameters().empty() ? "" : ", "),
             fmt::arg("params", ParameterList(func.parameters(), toCType)));
@@ -284,14 +284,12 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_.Dedent();
         printer_ << "";
 
-        std::string monoSymbol = GetMonoInternalCallClassName(entity->parent_.lock().get());
-        printerInternalCalls_ << fmt::format("mono_add_internal_call(\"{monoSymbol}::{cFunction}\", (const void*)&{cFunction});",
-            FMT_CAPTURE(monoSymbol), fmt::arg("cFunction", entity->cFunctionName_));
+        RegisterMonoInternalCall(entity->parent_.lock().get(), entity->cFunctionName_);
 
         if (func.is_virtual() && !isFinal)
         {
             auto virtCFunction = fmt::format("set_fn{cFunction}", FMT_CAPTURE(cFunction));
-            printer_ << fmt::format("URHO3D_EXPORT_API void {virtCFunction}({className}* instance, void* fn)",
+            printer_ << fmt::format("void {virtCFunction}({className}* instance, void* fn)",
                 FMT_CAPTURE(virtCFunction), FMT_CAPTURE(className));
             printer_.Indent();
             {
@@ -301,8 +299,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_.Dedent();
             printer_ << "";
 
-            printerInternalCalls_ << fmt::format("mono_add_internal_call(\"{monoSymbol}::{virtCFunction}\", (const void*)&{virtCFunction});",
-                FMT_CAPTURE(monoSymbol), FMT_CAPTURE(virtCFunction));
+            RegisterMonoInternalCall(entity->parent_.lock().get(), virtCFunction);
         }
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::function_t)
@@ -312,7 +309,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto paramNames = ParameterNameList(func.parameters(), toCppType);
 
         printer_ << "// " + entity->uniqueName_;
-        printer_ << fmt::format("URHO3D_EXPORT_API {} {}({})",
+        printer_ << fmt::format("{} {}({})",
             ToCType(func.return_type(), true), entity->cFunctionName_, ParameterList(func.parameters(), toCType));
         printer_.Indent();
         {
@@ -341,8 +338,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_.Dedent();
         printer_ << "";
 
-        printerInternalCalls_ << fmt::format("mono_add_internal_call(\"{sym}::{cFunction}\", (const void*)&{cFunction});",
-            fmt::arg("sym", GetMonoInternalCallClassName(entity->parent_.lock().get())), fmt::arg("cFunction", entity->cFunctionName_));
+        RegisterMonoInternalCall(entity->parent_.lock().get(), entity->cFunctionName_);
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::variable_t)
     {
@@ -362,7 +358,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         // Getter
         printer_ << "// " + entity->uniqueName_;
-        printer_.Write(fmt::format("URHO3D_EXPORT_API {rtype} get_{cFunction}()", FMT_CAPTURE(rtype),
+        printer_.Write(fmt::format("{rtype} get_{cFunction}()", FMT_CAPTURE(rtype),
             FMT_CAPTURE(cFunction)));
         printer_.Indent();
 
@@ -374,14 +370,12 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_.Dedent();
         printer_ << "";
 
-        std::string monoSymbol = GetMonoInternalCallClassName(entity->parent_.lock().get());
-        printerInternalCalls_ << fmt::format("mono_add_internal_call(\"{monoSymbol}::get_{cFunction}\", (const void*)&get_{cFunction});",
-            FMT_CAPTURE(monoSymbol), FMT_CAPTURE(cFunction));
+        RegisterMonoInternalCall(entity->parent_.lock().get(), "get_" + cFunction);
 
         // Setter
         if (!IsConst(var.type()))
         {
-            printer_.Write(fmt::format("URHO3D_EXPORT_API void set_{cFunction}(", FMT_CAPTURE(cFunction)));
+            printer_.Write(fmt::format("void set_{cFunction}(", FMT_CAPTURE(cFunction)));
             printer_.Write(fmt::format("{rtype} value)", FMT_CAPTURE(rtype)));
             printer_.Indent();
 
@@ -391,8 +385,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_.Dedent();
             printer_ << "";
 
-            printerInternalCalls_ << fmt::format("mono_add_internal_call(\"{monoSymbol}::set_{cFunction}\", (const void*)&set_{cFunction});",
-                FMT_CAPTURE(monoSymbol), FMT_CAPTURE(cFunction));
+            RegisterMonoInternalCall(entity->parent_.lock().get(), "set_" + cFunction);
         }
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::member_variable_t)
@@ -416,7 +409,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         // Getter
         printer_ << "// " + entity->uniqueName_;
-        printer_.Write(fmt::format("URHO3D_EXPORT_API {cType} get_{cFunction}({namespaceName}* instance)",
+        printer_.Write(fmt::format("{cType} get_{cFunction}({namespaceName}* instance)",
             FMT_CAPTURE(cType), FMT_CAPTURE(cFunction), FMT_CAPTURE(namespaceName)));
         printer_.Indent();
         {
@@ -433,15 +426,12 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_.Dedent();
         printer_ << "";
 
-        std::string monoSymbol;
-        monoSymbol = GetMonoInternalCallClassName(entity->parent_.lock().get());
-        printerInternalCalls_ << fmt::format("mono_add_internal_call(\"{monoSymbol}::get_{cFunction}\", (const void*)&get_{cFunction});",
-            FMT_CAPTURE(monoSymbol), FMT_CAPTURE(cFunction));
+        RegisterMonoInternalCall(entity->parent_.lock().get(), "get_" + cFunction);
 
         // Setter
         if (!IsConst(var.type()))
         {
-            printer_.Write(fmt::format("URHO3D_EXPORT_API void set_{cFunction}(", FMT_CAPTURE(cFunction)));
+            printer_.Write(fmt::format("void set_{cFunction}(", FMT_CAPTURE(cFunction)));
             printer_.Write(fmt::format("{namespaceName}* instance, {cType} value)",
                 FMT_CAPTURE(namespaceName), FMT_CAPTURE(cType)));
             printer_.Indent();
@@ -455,8 +445,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_.Dedent();
             printer_ << "";
 
-            printerInternalCalls_ << fmt::format("mono_add_internal_call(\"{monoSymbol}::set_{cFunction}\", (const void*)&set_{cFunction});",
-                FMT_CAPTURE(monoSymbol), FMT_CAPTURE(cFunction));
+            RegisterMonoInternalCall(entity->parent_.lock().get(), "set_" + cFunction);
         }
     }
 
@@ -481,7 +470,7 @@ void GenerateCApiPass::Stop()
 
             auto cFunction = fmt::format("{}_{}_offset", Sanitize(inheritor->symbolName_),
                 Sanitize(inherited->symbolName_));
-            printer_ << fmt::format("URHO3D_EXPORT_API int {cFunction}()", FMT_CAPTURE(cFunction));
+            printer_ << fmt::format("int {cFunction}()", FMT_CAPTURE(cFunction));
             printer_.Indent();
             {
                 printer_ << fmt::format("return GetBaseClassOffset<{}, {}>();", inheritor->symbolName_,
@@ -490,13 +479,26 @@ void GenerateCApiPass::Stop()
             printer_.Dedent();
             printer_ << "";
 
-            printerInternalCalls_ << fmt::format("mono_add_internal_call(\"{sym}::{cFunction}\", (const void*)&{cFunction});",
-                fmt::arg("sym", GetMonoInternalCallClassName(inherited)), FMT_CAPTURE(cFunction));
+            RegisterMonoInternalCall(inherited, cFunction);
         }
     }
 
+    // Call extra initialization functions
+    for (const auto& initializer : generator->extraMonoCallInitializers_)
+        printerInternalCalls_ << initializer + "();";
+
     printerInternalCalls_.Dedent();
     printer_ << printerInternalCalls_.Get();
+    printer_ << "";
+
+    printer_ << fmt::format("URHO3D_EXPORT_API void {}RegisterCSharp(Urho3D::Context* context)", generator->defaultNamespace_);
+    printer_.Indent();
+    {
+        printer_ << fmt::format("{}RegisterWrapperFactories(context);", generator->defaultNamespace_);
+        // Put other wrapper late initialization code here.
+    }
+    printer_.Dedent();
+
     printer_ << "";
     printer_ << "}";    // Close extern "C"
 
@@ -704,6 +706,11 @@ std::string GenerateCApiPass::GetMonoInternalCallClassName(MetaEntity* cls)
     }
 
     return result;
+}
+
+void GenerateCApiPass::RegisterMonoInternalCall(MetaEntity* cls, const std::string& function)
+{
+    printerInternalCalls_ << fmt::format("MONO_INTERNAL_CALL({}, {});", GetMonoInternalCallClassName(cls), function);
 }
 
 }

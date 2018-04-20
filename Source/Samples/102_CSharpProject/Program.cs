@@ -108,10 +108,6 @@ namespace DemoApplication
     {
         public static void Main(string[] args)
         {
-            // Required for standalone managed applications that initialize engine runtime.
-            // TODO: Make this call not necessary.
-            Context.Urho3DRegisterMonoInternalCalls();
-
             using (var context = new Context())
             {
                 using (var application = new DemoApplication(context))

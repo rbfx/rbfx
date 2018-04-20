@@ -49,6 +49,7 @@ protected:
     void PrintParameterHandlingCodePost(const std::vector<std::shared_ptr<MetaEntity>>& parameters);
     std::string GetAutoType(const cppast::cpp_type& type);
     std::string GetMonoInternalCallClassName(MetaEntity* cls);
+    void RegisterMonoInternalCall(MetaEntity* cls, const std::string& function);
 
     CSharpPrinter printer_;
     CSharpPrinter printerInternalCalls_;

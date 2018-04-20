@@ -230,3 +230,6 @@ std::uintptr_t GetTypeID(const T* instance)
 {
     return reinterpret_cast<std::uintptr_t>(&typeid(*instance));
 }
+
+#define MONO_INTERNAL_CALL(destination, function) \
+    mono_add_internal_call(#destination "::" #function, (void*)&function)

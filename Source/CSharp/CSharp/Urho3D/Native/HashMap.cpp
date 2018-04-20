@@ -56,4 +56,17 @@ URHO3D_EXPORT_API void Urho3D_HashMap_StringHash_Variant_destructor(Urho3D::Vari
     delete map;
 }
 
+void RegisterVariantMapInternalCalls(Context* context)
+{
+    MONO_INTERNAL_CALL(Urho3D.VariantMap, Urho3D_HashMap_StringHash_Variant_GetKey);
+    MONO_INTERNAL_CALL(Urho3D.VariantMap, Urho3D_HashMap_StringHash_Variant_GetValue);
+    MONO_INTERNAL_CALL(Urho3D.VariantMap, Urho3D_HashMap_StringHash_Variant_Add);
+    MONO_INTERNAL_CALL(Urho3D.VariantMap, Urho3D_HashMap_StringHash_Variant_Remove);
+    MONO_INTERNAL_CALL(Urho3D.VariantMap, Urho3D_HashMap_StringHash_Variant_First);
+    MONO_INTERNAL_CALL(Urho3D.VariantMap, Urho3D_HashMap_StringHash_Variant_Next);
+    MONO_INTERNAL_CALL(Urho3D.VariantMap, Urho3D_HashMap_StringHash_Variant_Contains);
+    MONO_INTERNAL_CALL(Urho3D.VariantMap, Urho3D_HashMap_StringHash_Variant_TryGet);
+    MONO_INTERNAL_CALL(Urho3D.VariantMap, Urho3D_HashMap_StringHash_Variant_destructor);
+}
+
 }

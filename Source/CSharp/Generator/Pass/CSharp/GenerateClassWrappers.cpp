@@ -44,7 +44,7 @@ void GenerateClassWrappers::Start()
     initPrinter_ << "#include <Urho3D/Urho3DAll.h>";
     initPrinter_ << "#include \"ClassWrappers.hpp\"";
     initPrinter_ << "";
-    initPrinter_ << fmt::format("extern \"C\" URHO3D_EXPORT_API void {}RegisterWrapperFactories(Context* context)",
+    initPrinter_ << fmt::format("extern \"C\" void {}RegisterWrapperFactories(Context* context)",
                                 generator->defaultNamespace_);
     initPrinter_.Indent();
     initPrinter_ << "auto* script = context->GetScripts();";

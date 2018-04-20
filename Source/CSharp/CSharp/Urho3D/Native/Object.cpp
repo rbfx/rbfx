@@ -70,13 +70,13 @@ protected:
 extern "C"
 {
 
-URHO3D_EXPORT_API void Urho3D_Context_RegisterFactory(Context* context, const char* typeName, unsigned baseType,
+void Urho3D_Context_RegisterFactory(Context* context, MonoString* typeName, unsigned baseType,
     const char* category)
 {
-    context->RegisterFactory(new Urho3D::ManagedObjectFactory(context, typeName, StringHash(baseType)), category);
+    context->RegisterFactory(new Urho3D::ManagedObjectFactory(context, CSharpConverter<MonoString>::FromCSharp<MonoStringHolder>(typeName), StringHash(baseType)), category);
 }
 
-URHO3D_EXPORT_API void Urho3D_Object_SubscribeToEvent(Object* receiver, void* gcHandle, unsigned eventType,
+void Urho3D_Object_SubscribeToEvent(Object* receiver, void* gcHandle, unsigned eventType,
     void(*function)(void*, StringHash, VariantMap*), Object* sender)
 {
     // gcHandle is a handle to Action<> which references receiver object. We have to ensure object is alive as long as
@@ -86,6 +86,12 @@ URHO3D_EXPORT_API void Urho3D_Object_SubscribeToEvent(Object* receiver, void* gc
         receiver->SubscribeToEvent(StringHash(eventType), new ManagedEventHandler(receiver, gcHandle, function));
     else
         receiver->SubscribeToEvent(sender, StringHash(eventType), new ManagedEventHandler(receiver, gcHandle, function));
+}
+
+void RegisterObjectInternalCalls(Context* context)
+{
+    MONO_INTERNAL_CALL(Urho3D.Context, Urho3D_Context_RegisterFactory);
+    MONO_INTERNAL_CALL(Urho3D.Object, Urho3D_Object_SubscribeToEvent);
 }
 
 }
