@@ -113,4 +113,22 @@ namespace Urho3D {
 		}
 	}
 
+	String URHO3D_API AttributeInfoString(Serializable& serializable)
+	{
+		const Vector<AttributeInfo>* attributes = serializable.GetAttributes();
+		if (!attributes)
+			return "";
+
+		Variant value;
+		JSONValue attributesValue;
+		String str;
+		for (unsigned i = 0; i < attributes->Size(); ++i)
+		{
+			const AttributeInfo& attr = attributes->At(i);
+
+			str += attr.name_ + " | " + serializable.GetAttribute(i).ToString() + "\n";
+		}
+		return str;
+	}
+
 }

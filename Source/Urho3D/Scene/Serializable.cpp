@@ -1053,6 +1053,30 @@ bool Serializable::GetInterceptNetworkUpdate(const String& attributeName) const
     return false;
 }
 
+
+
+
+
+void Serializable::PrintAttributes() const
+{
+	const Vector<AttributeInfo>* attributes = GetAttributes();
+	if (!attributes)
+		return;
+
+	Variant value;
+	JSONValue attributesValue;
+
+	for (unsigned i = 0; i < attributes->Size(); ++i)
+	{
+		const AttributeInfo& attr = attributes->At(i);
+
+		URHO3D_LOGINFO(attr.name_ + " | " + GetAttribute(i).ToString());
+	}
+}
+
+
+
+
 void Serializable::SetInstanceDefault(const String& name, const Variant& defaultValue)
 {
     // Allocate the instance level default value

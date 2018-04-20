@@ -37,4 +37,8 @@ namespace Urho3D {
 	void URHO3D_API PrintRayQueryResults(PODVector<RayQueryResult>& results);
 	void URHO3D_API PrintVariantMap(VariantMap& map);
 
+    //print all attributes from serializable into a string.
+	String URHO3D_API AttributeInfoString(Serializable& serializable);
+
+
 }
