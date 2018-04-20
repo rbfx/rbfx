@@ -136,6 +136,8 @@ public:
     /// Return the network attribute state, if allocated.
     NetworkState* GetNetworkState() const { return networkState_.Get(); }
 
+    /// Prints all attributes to the log file.
+	virtual void PrintAttributes() const;
 protected:
     /// Network attribute state.
     UniquePtr<NetworkState> networkState_;
