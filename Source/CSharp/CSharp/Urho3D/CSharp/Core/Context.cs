@@ -7,7 +7,7 @@ using Urho3D.CSharp;
 
 namespace Urho3D
 {
-    public class RegisterFactoryAttribute : System.Attribute
+    public class ObjectFactoryAttribute : System.Attribute
     {
         public string Category { get; set; } = "";
     }
@@ -34,7 +34,7 @@ namespace Urho3D
             // Register factories marked with attributes
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                foreach (var pair in assembly.GetTypesWithAttribute<RegisterFactoryAttribute>())
+                foreach (var pair in assembly.GetTypesWithAttribute<ObjectFactoryAttribute>())
                     RegisterFactory(pair.Item1, pair.Item2.Category);
             }
         }

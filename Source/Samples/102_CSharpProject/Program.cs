@@ -26,6 +26,7 @@ using Urho3D;
 
 namespace DemoApplication
 {
+    [ObjectFactory]
     class RotateObject : LogicComponent
     {
         public RotateObject(Context context) : base(context)
@@ -65,8 +66,6 @@ namespace DemoApplication
         public override void Start()
         {
             Input.SetMouseVisible(true);
-
-            Context.RegisterFactory<RotateObject>();
 
             // Viewport
             _scene = new Scene(Context);
