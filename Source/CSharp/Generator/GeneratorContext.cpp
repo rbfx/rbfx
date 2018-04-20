@@ -122,16 +122,15 @@ bool GeneratorContext::LoadRules(const std::string& jsonPath)
         // Doctor string typemaps with some internal details.
         if (map.csType_ == "string")
         {
-            map.cType_ = "MonoString*";
-            map.cppToCTemplate_ = fmt::format("mono_string_new(mono_domain_get(), {})", map.cppToCTemplate_);
-#if _WIN32
-            // This optimization is only viable on windows because mono internally uses 2-byte wide characters for
-            // strings, but on unix platforms wchar_t is 4 bytes.
-            if (typeMap.HasMember("supports_wchar") && typeMap["supports_wchar"].GetBool())
-                map.cToCppTemplate_ = fmt::format(map.cToCppTemplate_, fmt::arg("value", "(const wchar_t*)mono_string_chars({value})"));
+            std::string useConverter;
+            if (map.cppType_ == "char const*")
+                useConverter = "MonoStringHolder";
             else
-#endif
-                map.cToCppTemplate_ = fmt::format(map.cToCppTemplate_, fmt::arg("value", "FreeMonoStringWhenDone(mono_string_to_utf8({value}))()"));
+                useConverter = map.cppType_;
+
+            map.cType_ = "MonoString*";
+            map.cppToCTemplate_ = fmt::format("CSharpConverter<MonoString>::ToCSharp({})", map.cppToCTemplate_);
+            map.cToCppTemplate_ = fmt::format(map.cToCppTemplate_, fmt::arg("value", fmt::format("CSharpConverter<MonoString>::FromCSharp<{}>({{value}})", useConverter)));
         }
 
         typeMaps_[map.cppType_] = map;
