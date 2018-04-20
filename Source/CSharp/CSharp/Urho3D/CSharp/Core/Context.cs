@@ -16,6 +16,7 @@ namespace Urho3D
     {
         static Context()
         {
+            // Register engine API
             Urho3DRegisterMonoInternalCalls();
         }
 
@@ -26,6 +27,9 @@ namespace Urho3D
         {
             // Set up this instance
             PerformInstanceSetup(instance, ownsInstance);
+
+            // Set up engine bindings
+            Urho3DRegisterCSharp(instance);
 
             // Register factories marked with attributes
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
