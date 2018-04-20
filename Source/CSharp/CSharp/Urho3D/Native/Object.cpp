@@ -71,9 +71,11 @@ extern "C"
 {
 
 void Urho3D_Context_RegisterFactory(Context* context, MonoString* typeName, unsigned baseType,
-    const char* category)
+                                    MonoString* category)
 {
-    context->RegisterFactory(new Urho3D::ManagedObjectFactory(context, CSharpConverter<MonoString>::FromCSharp<MonoStringHolder>(typeName), StringHash(baseType)), category);
+    context->RegisterFactory(new Urho3D::ManagedObjectFactory(context,
+        CSharpConverter<MonoString>::FromCSharp<MonoStringHolder>(typeName), StringHash(baseType)),
+        CSharpConverter<MonoString>::FromCSharp<MonoStringHolder>(category));
 }
 
 void Urho3D_Object_SubscribeToEvent(Object* receiver, void* gcHandle, unsigned eventType,
