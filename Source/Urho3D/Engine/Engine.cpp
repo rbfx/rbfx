@@ -147,7 +147,8 @@ Engine::Engine(Context* context) :
     context_->RegisterSubsystem(new Tasks(context_));
 #endif
 #if URHO3D_CSHARP
-    context_->RegisterSubsystem(new ScriptSubsystem(context_));
+    if (context_->GetScripts() == nullptr)
+        context_->RegisterSubsystem(new ScriptSubsystem(context_));
 #endif
     // Register object factories for libraries which are not automatically registered along with subsystem creation
     RegisterSceneLibrary(context_);

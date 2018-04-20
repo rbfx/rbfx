@@ -494,6 +494,13 @@ void GenerateCApiPass::Stop()
     printer_ << fmt::format("URHO3D_EXPORT_API void {}RegisterCSharp(Urho3D::Context* context)", generator->defaultNamespace_);
     printer_.Indent();
     {
+        printer_ << "if (context->GetScripts() == nullptr)";
+        printer_.Indent("");
+        {
+            printer_ << "context->RegisterSubsystem(new ScriptSubsystem(context));";
+        }
+        printer_.Dedent("");
+
         printer_ << fmt::format("{}RegisterWrapperFactories(context);", generator->defaultNamespace_);
         // Put other wrapper late initialization code here.
     }
