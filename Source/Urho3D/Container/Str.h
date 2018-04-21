@@ -465,7 +465,7 @@ public:
         const char* ptr = buffer_;
         while (*ptr)
         {
-            hash = *ptr + (hash << 6) + (hash << 16) - hash;
+            hash = *ptr + (hash << 6u) + (hash << 16u) - hash;
             ++ptr;
         }
 

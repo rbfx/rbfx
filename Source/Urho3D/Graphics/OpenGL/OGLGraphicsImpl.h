@@ -77,26 +77,16 @@ using ShaderProgramMap = HashMap<Pair<ShaderVariation*, ShaderVariation*>, Share
 /// Cached state of a frame buffer object
 struct FrameBufferObject
 {
-    FrameBufferObject() :
-        fbo_(0),
-        depthAttachment_(nullptr),
-        readBuffers_(M_MAX_UNSIGNED),
-        drawBuffers_(M_MAX_UNSIGNED)
-    {
-        for (auto& colorAttachment : colorAttachments_)
-            colorAttachment = nullptr;
-    }
-
     /// Frame buffer handle.
-    unsigned fbo_;
+    unsigned fbo_{};
     /// Bound color attachment textures.
-    RenderSurface* colorAttachments_[MAX_RENDERTARGETS];
+    RenderSurface* colorAttachments_[MAX_RENDERTARGETS]{};
     /// Bound depth/stencil attachment.
-    RenderSurface* depthAttachment_;
+    RenderSurface* depthAttachment_{};
     /// Read buffer bits.
-    unsigned readBuffers_;
+    unsigned readBuffers_{M_MAX_UNSIGNED};
     /// Draw buffer bits.
-    unsigned drawBuffers_;
+    unsigned drawBuffers_{M_MAX_UNSIGNED};
 };
 
 /// %Graphics subsystem implementation. Holds API-specific objects.
@@ -151,7 +141,7 @@ private:
     /// Last used instance data offset.
     unsigned lastInstanceOffset_{};
     /// Map for additional depth textures, to emulate Direct3D9 ability to mix render texture and backbuffer rendering.
-    HashMap<int, SharedPtr<Texture2D> > depthTextures_;
+    HashMap<unsigned, SharedPtr<Texture2D> > depthTextures_;
     /// Shader program in use.
     ShaderProgram* shaderProgram_{};
     /// Linked shader programs.
