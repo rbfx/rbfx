@@ -108,7 +108,7 @@ install: |
       export PATH=$HOME/cmake-$CMAKE_VERSION.$CMAKE_PATCH-Linux-x86_64/bin:$PATH
       sudo apt-get install -y --force-yes mono-devel
   else
-      brew install pkg-config mono llvm@6
+      brew install pkg-config mono llvm
   fi
 
 script: |
