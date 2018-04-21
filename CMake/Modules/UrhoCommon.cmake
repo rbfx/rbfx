@@ -167,12 +167,13 @@ macro (add_sample TARGET)
             file (GLOB SOURCE_FILES *.cs)
             if (MSVC)
                 set (URHO3DNET_LIBRARY ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}/$<CONFIG>/Urho3DNet.dll)
+				set (OUTPUT_FILE ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}/$<CONFIG>/${TARGET}.exe)
             else ()
                 set (URHO3DNET_LIBRARY ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}/Urho3DNet.dll)
+				set (OUTPUT_FILE ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}/${TARGET}.exe)
             endif ()
             # Managed executable must find Urho3DCSharp and Urho3DNet in the same directory, that is why it is put to DEST_BIN_DIR
             # instead of samples directory.
-            set (OUTPUT_FILE ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}/${TARGET}.exe)
             add_target_csharp(102_CSharpProject /target:exe /reference:System.dll
                 /reference:${URHO3DNET_LIBRARY} /out:${OUTPUT_FILE}
                 ${SOURCE_FILES}
