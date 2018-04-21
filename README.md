@@ -36,7 +36,7 @@ Urho3D is greatly inspired by OGRE (http://www.ogre3d.org) and Horde3D
 - Comparison of several sorting algorithms by Juha Nieminen
   http://warp.povusers.org/SortComparison/
 
-Urho3D uses the following third-party libraries:
+Urho3D bundles the following third-party libraries:
 - Box2D 2.3.2 WIP (http://box2d.org)
 - Bullet 2.86.1 (http://www.bulletphysics.org)
 - Civetweb 1.7 (https://github.com/civetweb/civetweb)
@@ -67,6 +67,16 @@ Urho3D uses the following third-party libraries:
 - ImGuizmo (https://github.com/CedricGuillemet/ImGuizmo)
 - deboost.context (https://github.com/septag/deboost.context)
 - cr (https://github.com/fungos/cr)
+- crunch (https://github.com/Unity-Technologies/crunch/)
+- cppast (https://github.com/foonathan/cppast)
+- CLI11 v1.5.1 (https://github.com/CLIUtils/CLI11/)
+- fmt 4.1.0 (http://fmtlib.net)
+- spdlog 0.16.3 (https://github.com/gabime/spdlog)
+- tinydir 1.2.3 (https://github.com/cxong/tinydir/)
+
+Urho3D optionally uses the following external third-party libraries:
+- Mono (http://www.mono-project.com/download/stable/)
+- LLVM (http://releases.llvm.org/download.html)
 
 DXT / ETC1 / PVRTC decompression code based on the Squish library and the Oolong Engine.
 Jack and mushroom models from the realXtend project. (https://www.realxtend.org)
