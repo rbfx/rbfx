@@ -1,19 +1,31 @@
-os: linux
-dist: trusty
-compiler: gcc
-language: cpp
 sudo: false
+dist: trusty
+language: cpp
 cache:
   apt: true
   directories:
-    - $HOME/cmake-3.4.3-Linux-x86_64/bin
-    - $HOME/cmake-3.4.3-Linux-x86_64/share
-git:
-  submodules: false
+    - $HOME/cmake-$CMAKE_VERSION.$CMAKE_PATCH-Linux-x86_64/bin
+    - $HOME/cmake-$CMAKE_VERSION.$CMAKE_PATCH-Linux-x86_64/share
 env:
   global:
     - MAKEFLAGS=-j4
     - URHO3D_ENABLE_ALL=ON
+    - CMAKE_VERSION=3.4
+    - CMAKE_PATCH=3
+addons:
+  apt:
+    sources:
+      - llvm-toolchain-trusty-5.0
+      - ubuntu-toolchain-r-test
+    packages:
+      - libasound2-dev
+      - libxrandr-dev
+      - libgl1-mesa-dev
+      - libglu1-mesa-dev
+      - g++-5
+      - llvm-5.0
+      - clang-5.0
+      - libclang-5.0-dev
 notifications:
   email:
     on_success: never
@@ -24,28 +36,36 @@ branches:
 matrix:
   fast_finish: true
   include:
-    - &Linux
-      addons:
-        apt:
-          packages: &linux_packages_64bit
-            - libasound2-dev
-            - libxrandr-dev
-            - libgl1-mesa-dev
-            - libglu1-mesa-dev
-    - <<: *Linux
+    - &Linux-gcc
+      os: linux
+      compiler: gcc
+      env:
+        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+        - LLVM_CONFIG_BINARY=/usr/bin/llvm-config-5.0
+    - <<: *Linux-gcc
+      env:
+        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+        - LLVM_CONFIG_BINARY=/usr/bin/llvm-config-5.0
+        - BUILD_SHARED_LIBS=ON
+    - &Linux-clang
+      os: linux
       compiler: clang
-    - <<: *Linux
-      env: BUILD_SHARED_LIBS=ON
-    - <<: *Linux
-      compiler: clang
-      env: BUILD_SHARED_LIBS=ON
+      env:
+        - LLVM_CONFIG_BINARY=/usr/bin/llvm-config-5.0
+    - <<: *Linux-clang
+      env:
+        - LLVM_CONFIG_BINARY=/usr/bin/llvm-config-5.0
+        - BUILD_SHARED_LIBS=ON
     - &MacOS
       os: osx
       osx_image: xcode8.3
       compiler: clang
+      env:
+        - LLVM_CONFIG_BINARY=/usr/local/opt/llvm/bin/llvm-config
     - <<: *MacOS
       env:
-        BUILD_SHARED_LIBS=ON
+        - LLVM_CONFIG_BINARY=/usr/local/opt/llvm/bin/llvm-config
+        - BUILD_SHARED_LIBS=ON
   exclude:
     - &MingW
       env:
@@ -65,20 +85,38 @@ matrix:
         CMAKE_SYSTEM_PROCESSOR=x86_64
         URHO3D_RENDERER=D3D9
 
-script: |
-  # Update CMake to minimum required version
-  cmake --version
+before_install: |
+  eval "${MATRIX_EVAL}"
   if [[ $TRAVIS_OS_NAME == 'linux' ]];
   then
-      if [[ ! -f $HOME/cmake-3.4.3-Linux-x86_64/bin/cmake ]];
-      then
-          wget --no-check-certificate https://cmake.org/files/v3.4/cmake-3.4.3-Linux-x86_64.tar.gz -O $HOME/cmake.tar.gz && \
-          tar xf $HOME/cmake.tar.gz -C $HOME && \
-          rm $HOME/cmake.tar.gz
-      fi
-      export PATH=$HOME/cmake-3.4.3-Linux-x86_64/bin:$PATH
+      sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+      echo "deb http://download.mono-project.com/repo/ubuntu stable-trusty main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
+      sudo apt-get update -qq
+  else
+      brew update
   fi
+
+install: |
+  # Update CMake to minimum required version
+  if [[ $TRAVIS_OS_NAME == 'linux' ]];
+  then
+      if [[ ! -f $HOME/cmake-$CMAKE_VERSION.$CMAKE_PATCH-Linux-x86_64/bin/cmake ]];
+      then
+          wget --no-check-certificate https://cmake.org/files/v$CMAKE_VERSION/cmake-$CMAKE_VERSION.$CMAKE_PATCH-Linux-x86_64.tar.gz -O $HOME/cmake.tar.gz && \
+          tar xf $HOME/cmake.tar.gz -C $HOME && rm $HOME/cmake.tar.gz
+      fi
+      export PATH=$HOME/cmake-$CMAKE_VERSION.$CMAKE_PATCH-Linux-x86_64/bin:$PATH
+      sudo apt-get install -y --force-yes mono-devel
+  else
+      brew install pkg-config mono llvm@6
+  fi
+
+script: |
   mkdir build
   cd build
-  cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} ..
+
+  echo "LLVM_CONFIG_BINARY: ${LLVM_CONFIG_BINARY}"
+  echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
+
+  cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} -DLLVM_CONFIG_BINARY=${LLVM_CONFIG_BINARY} ..
   cmake --build .

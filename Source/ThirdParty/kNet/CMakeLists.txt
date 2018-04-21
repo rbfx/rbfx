@@ -49,7 +49,7 @@ add_library (kNet OBJECT ${kNetSourceFiles} ${kNetHeaderFiles})
 target_include_directories(kNet
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/kNet>
-           $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}/kNet>
+           $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/kNet>
 )
 
 if (UNIX)
@@ -66,5 +66,5 @@ if (WIN32)
 endif ()
 
 # Install headers for building and using the Urho3D library (install dependency for Urho3D/Network/Connection.h and Urho3D/Network/Network.h)
-install (DIRECTORY include/kNet DESTINATION ${DEST_THIRDPARTY_HEADERS}/ FILES_MATCHING PATTERN *.h)
-install (DIRECTORY include/kNet DESTINATION ${DEST_THIRDPARTY_HEADERS}/ FILES_MATCHING PATTERN *.inl)
+install (DIRECTORY include/kNet DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
+install (DIRECTORY include/kNet DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.inl)

@@ -84,6 +84,10 @@ if (URHO3D_SYSTEMUI)
     define_engine_source_files (SystemUI)
 endif ()
 
+if (URHO3D_CSHARP)
+    define_engine_source_files (Script)
+endif ()
+
 # Group source code in VS solution
 group_sources()
 
@@ -106,7 +110,7 @@ target_include_directories(Urho3D PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>        # For parent projects to find auto-generated engine headers
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>        # For parent projects to find engine headers
     $<INSTALL_INTERFACE:${DEST_BASE_INCLUDE_DIR}>
-    $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}>
+    $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}>
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
 )
 
@@ -218,11 +222,28 @@ else ()
     target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC)
 endif ()
 
+# CSharp support
+if (URHO3D_CSHARP)
+    get_target_property(SOURCE_DIR Urho3D SOURCE_DIR)
+    get_filename_component(SOURCE_DIR ${SOURCE_DIR} DIRECTORY)
+    if (BUILD_SHARED_LIBS)
+        set (CSHARP_BUILD_TYPE INTERNAL)
+    else ()
+        set (CSHARP_BUILD_TYPE EXTERNAL)
+        find_package(Mono REQUIRED)
+        target_include_directories(Urho3D PRIVATE ${MONO_INCLUDE_DIRS})
+        target_link_libraries(Urho3D ${MONO_LIBRARIES})
+        target_compile_options(Urho3D PRIVATE ${MONO_CFLAGS})
+    endif ()
+    csharp_bind_target(TARGET Urho3D SOURCE_DIR ${SOURCE_DIR} ${CSHARP_BUILD_TYPE})
+endif ()
+
+# SDK installation
 install(TARGETS Urho3D
     EXPORT Urho3D
-    LIBRARY DESTINATION ${SHARED_LIB_INSTALL_DIR}
-    RUNTIME DESTINATION ${SHARED_LIB_INSTALL_DIR}
-    ARCHIVE DESTINATION lib${LIB_SUFFIX}
+    LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
+    RUNTIME DESTINATION ${DEST_BIN_DIR}
+    ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
 )
 
 # Generate platform specific pkg-config file for the benefit of Urho3D library users via SDK without CMake

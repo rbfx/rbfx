@@ -22,7 +22,7 @@
 
 prefix=@CMAKE_INSTALL_PREFIX@
 exec_prefix=${prefix}
-libdir=${exec_prefix}/@DEST_LIBRARY_DIR@
+libdir=${exec_prefix}/@DEST_ARCHIVE_DIR@
 includedir=${prefix}/include
 
 # Additional Cflags for various build configurations, which can be accessed as normal pkg-config variable using '--variable' option

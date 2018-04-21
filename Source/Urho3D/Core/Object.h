@@ -58,6 +58,9 @@ class Renderer;
 #if URHO3D_TASKS
 class Tasks;
 #endif
+#if URHO3D_CSHARP
+class ScriptSubsystem;
+#endif
 
 /// Type info.
 class URHO3D_API TypeInfo
@@ -246,6 +249,10 @@ public:
     /// Return tasks subsystem.
     Tasks* GetTasks() const;
 #endif
+#if URHO3D_CSHARP
+    ScriptSubsystem* GetScripts() const;
+#endif
+
 protected:
     /// Execution context.
     Context* context_;
@@ -478,5 +485,8 @@ template <> URHO3D_API Graphics* Object::GetSubsystem<Graphics>() const;
 template <> URHO3D_API Renderer* Object::GetSubsystem<Renderer>() const;
 #if URHO3D_TASKS
 template <> URHO3D_API Tasks* Object::GetSubsystem<Tasks>() const;
+#endif
+#if URHO3D_CSHARP
+template <> URHO3D_API ScriptSubsystem* Object::GetSubsystem<ScriptSubsystem>() const;
 #endif
 }

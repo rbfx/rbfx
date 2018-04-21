@@ -29,6 +29,10 @@ endif ()
 
 add_subdirectory(ThirdParty)
 
+if (URHO3D_CSHARP)
+	add_subdirectory(CSharp)
+endif ()
+
 add_subdirectory (Urho3D)
 
 if (NOT CMAKE_CROSS_COMPILING AND URHO3D_TOOLS)
