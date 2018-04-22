@@ -11,13 +11,13 @@ environment:
     - BUILD_SHARED_LIBS: OFF
     - BUILD_SHARED_LIBS: ON
 cache:
-  - "C:/Program Files/Mono"
+  - "%MONO_SETUP%"
 install:
   - ps: |
-     if (-not (test-path "C:\Program Files\Mono")) {
+     if (-not (test-path "$ENV:MONO_SETUP")) {
        Start-FileDownload "https://download.mono-project.com/archive/5.10.1/windows-installer/$ENV:MONO_SETUP";
-       msiexec /quiet /qn /norestart /i $ENV:MONO_SETUP
      }
+     msiexec /quiet /qn /norestart /i $ENV:MONO_SETUP
 before_build:
   - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
   - mkdir "%APPVEYOR_BUILD_FOLDER%\Build"

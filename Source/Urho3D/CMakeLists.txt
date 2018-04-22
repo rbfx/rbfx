@@ -227,21 +227,23 @@ if (URHO3D_CSHARP)
     get_target_property(SOURCE_DIR Urho3D SOURCE_DIR)
     get_filename_component(SOURCE_DIR ${SOURCE_DIR} DIRECTORY)
     find_package(Mono REQUIRED)
+    target_include_directories(Urho3D PRIVATE ${MONO_INCLUDE_DIRS})
+    target_link_libraries(Urho3D ${MONO_LIBRARIES})
+    target_compile_options(Urho3D PRIVATE ${MONO_CFLAGS})
     if (BUILD_SHARED_LIBS)
         set (CSHARP_BUILD_TYPE INTERNAL)
     else ()
         set (CSHARP_BUILD_TYPE EXTERNAL)
-        target_include_directories(Urho3D PRIVATE ${MONO_INCLUDE_DIRS})
-        target_link_libraries(Urho3D ${MONO_LIBRARIES})
-        target_compile_options(Urho3D PRIVATE ${MONO_CFLAGS})
     endif ()
     if (MSVC)
         set (MONO_RUNTIME_SHARED ${MONO_PATH}/bin/mono-2.0-sgen.dll)
-        add_custom_command (TARGET Urho3D POST_BUILD
-            COMMAND ${CMAKE_COMMAND} ARGS -E copy_if_different
-                ${MONO_RUNTIME_SHARED} ${CMAKE_BINARY_DIR}/bin/$<CONFIG>/
-        )
-        install (FILES ${MONO_RUNTIME_SHARED} DESTINATION ${DEST_BIN_DIR}/$<CONFIG>)
+        if (NOT $ENV{APPVEYOR})
+            # TODO: Fails on appveyor for no reason. Repeating command succeeds. WTF?
+            add_custom_command (TARGET Urho3D POST_BUILD
+                COMMAND ${CMAKE_COMMAND} ARGS -E copy_if_different ${MONO_RUNTIME_SHARED} ${CMAKE_BINARY_DIR}/bin/$<CONFIG>/
+            )
+        endif ()
+        install (FILES ${MONO_RUNTIME_SHARED} DESTINATION ${DEST_BIN_DIR})
     endif ()
     csharp_bind_target(TARGET Urho3D SOURCE_DIR ${SOURCE_DIR} ${CSHARP_BUILD_TYPE})
 endif ()
