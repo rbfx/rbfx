@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2018 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,12 +28,10 @@
 namespace Urho3D
 {
 
-/// Walk AST and gather known defined classes. Exclude protected/private members from generation.
-class Urho3DCustomPassLate : public CppApiPass
+class OverrideConstantsPass : public CppApiPass
 {
-    public:
-    explicit Urho3DCustomPassLate() { };
-    void NamespaceStart() override;
+public:
+    explicit OverrideConstantsPass() { };
     bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
 };
 

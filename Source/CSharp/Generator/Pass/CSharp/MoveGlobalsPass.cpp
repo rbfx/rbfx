@@ -79,7 +79,6 @@ bool MoveGlobalsPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     generator->symbols_[classSymbol] = toClass->shared_from_this();
                 }
 
-                entity->symbolName_ = toClass->uniqueName_ + "::" + entity->name_;
                 toClass->Add(entity);
             }
         }

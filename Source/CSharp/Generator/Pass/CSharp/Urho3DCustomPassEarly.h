@@ -30,15 +30,11 @@ namespace Urho3D
 {
 
 /// Walk AST and gather known defined classes. Exclude protected/private members from generation.
-class Urho3DEventsPass : public CppApiPass
+class Urho3DCustomPassEarly : public CppApiPass
 {
     public:
-    explicit Urho3DEventsPass() { };
+    explicit Urho3DCustomPassEarly() { };
     bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
-
-protected:
-
-    std::unordered_map<std::string, std::string> defaultValueRemap_;
 };
 
 }

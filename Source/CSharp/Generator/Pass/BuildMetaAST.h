@@ -36,10 +36,9 @@ class BuildMetaAST : public CppAstPass
 public:
     explicit BuildMetaAST() { };
 
-    void Start() override
+    void NamespaceStart() override
     {
-        symbolChecker_.Load(generator->rules_["symbols"]);
-        stack_.emplace_back(generator->apiRoot_.get());
+        stack_.emplace_back(generator->currentNamespace_->apiRoot_.get());
     }
 
     bool Visit(const cppast::cpp_entity& e, cppast::visitor_info info) override
@@ -64,7 +63,7 @@ public:
         if (!e.name().empty() /* anonymous */)
         {
             auto symbolName = GetUniqueName(e);
-            if (!symbolChecker_.IsIncluded(symbolName))
+            if (!generator->currentNamespace_->symbolChecker_.IsIncluded(symbolName))
                 return info.event != cppast::visitor_info::container_entity_enter;
         }
 
@@ -123,8 +122,12 @@ public:
         return true;
     }
 
+    void NamespaceStop() override
+    {
+        stack_.clear();
+    }
+
 protected:
-    IncludedChecker symbolChecker_;
     std::vector<MetaEntity*> stack_;
 };
 

@@ -23,17 +23,18 @@
 #pragma once
 
 
+#include <unordered_map>
 #include "Pass/CppPass.h"
+#include "Printer/CSharpPrinter.h"
 
 namespace Urho3D
 {
 
-/// Walk AST and gather known defined classes. Exclude protected/private members from generation.
-class Urho3DCustomPassLate : public CppApiPass
+/// Walk AST and fix default parameter values. Insert remapped values or figure out new constant names of renamed entities.
+class FixDefaultValuesPass : public CppApiPass
 {
     public:
-    explicit Urho3DCustomPassLate() { };
-    void NamespaceStart() override;
+    explicit FixDefaultValuesPass() { };
     bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
 };
 

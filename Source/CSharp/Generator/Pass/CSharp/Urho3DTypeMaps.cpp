@@ -31,6 +31,9 @@ namespace Urho3D
 
 bool Urho3DTypeMaps::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
+    if (entity->ast_ == nullptr)
+        return true;
+
     if (entity->kind_ == cppast::cpp_entity_kind::member_variable_t)
         HandleType(entity->Ast<cppast::cpp_member_variable>().type());
     else if (entity->kind_ == cppast::cpp_entity_kind::variable_t)
@@ -64,7 +67,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
     auto typeName = cppast::to_string(realType);
 
     // Typemap already generated
-    if (generator->typeMaps_.find(typeName) != generator->typeMaps_.end())
+    if (generator->GetTypeMap(typeName) != nullptr)
         return;
 
     std::string csType;
@@ -172,7 +175,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
             map.pInvokeToCSTemplate_ = fmt::format("MarshalTools.ToObjectArray<{csType}>({{value}})", FMT_CAPTURE(csType));
         }
         map.isValueType_ = true;
-        generator->typeMaps_[typeName] = map;
+        generator->currentNamespace_->typeMaps_[typeName] = map;
     }
 }
 
