@@ -30,7 +30,6 @@
         "IK/IKConverters.h",
         "UI/FontFace*.h",
         "Graphics/OctreeQuery.h",
-        "IO/FileWatcher.h",       // TODO: out parameters
         "IO/MacFileWatcher.h",
         "IO/MemoryBuffer.h",
         "IO/NamedPipe.h",
@@ -70,9 +69,6 @@
       // C# reflection can be used instead of these
       "Urho3D::*::GetType*Static()",
       "Urho3D::*::GetType*() const",
-      "Urho3D::File::ReadText(Urho3D::String&)",
-      // TODO: Wrap manually returning a string instead of bool
-      "Urho3D::FileWatcher::GetNextChange(Urho3D::String&)",
       "Urho3D::AttributeInfo::enumNames_",
       "Urho3D::ResourceRouter",
       // https://github.com/foonathan/cppast/issues/41
@@ -128,6 +124,7 @@
       "Urho3D::GImpactMeshData",
       "Urho3D::ConvexData",
       "Urho3D::HeightfieldData",
+      "Urho3D::FileWatcher::ThreadFunction()",
     ]
   },
   "typemaps": [
@@ -323,8 +320,6 @@
       "Urho3D::Animatable",
       "Urho3D::Drawable",
       "Urho3D::SoundStream",
-    ],
-    "exclude": [
     ]
   },
   "initialization": {
