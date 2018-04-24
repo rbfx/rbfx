@@ -18,3 +18,5 @@ target_include_directories(nativefiledialog PUBLIC src/include)
 if (WIN32)
     target_link_libraries(nativefiledialog shell32 ole32 uuid)
 endif ()
+
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)

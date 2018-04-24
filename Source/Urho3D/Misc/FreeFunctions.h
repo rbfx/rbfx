@@ -48,38 +48,9 @@ namespace Urho3D {
 
 namespace Urho3D {
 
-	String GetNativeDialogSave(String startDirectory)
-	{
-		startDirectory = GetNativePath(startDirectory);
+	String URHO3D_API GetNativeDialogSave(String startDirectory, const String& fileFilter);
 
-		nfdchar_t* outp = nullptr;
-		nfdchar_t* startp = (nfdchar_t*)startDirectory.CString();
+	String URHO3D_API GetNativeDialogExistingDir(String startDirectory);
 
-		NFD_SaveDialog("", startp, &outp);
-		//NFD_PickFolder(startp, &outp);
-		return GetInternalPath(String((char*)outp));
-	}
-
-	String GetNativeDialogExistingDir(String startDirectory)
-	{
-		startDirectory = GetNativePath(startDirectory);
-
-		nfdchar_t* outp = nullptr;
-		nfdchar_t* startp = (nfdchar_t*)startDirectory.CString();
-
-
-		NFD_PickFolder(startp, &outp);
-		return GetInternalPath(String((char*)outp));
-	}
-
-	String GetNativeDialogExistingFile(String startDirectory, const String& fileFilter)
-	{
-		startDirectory = GetNativePath(startDirectory);
-
-		nfdchar_t* outp = nullptr;
-		nfdchar_t* startp = (nfdchar_t*)startDirectory.CString();
-
-		NFD_OpenDialog(fileFilter.CString(), startp, &outp);
-		return GetInternalPath(String((char*)outp));
-	}
+	String URHO3D_API GetNativeDialogExistingFile(String startDirectory, const String& fileFilter);
 }

@@ -33,6 +33,7 @@
 #include <IconFontCppHeaders/IconsFontAwesome.h>
 #include <nfd.h>
 #include "Assets/AssetConverter.h"
+#include "Urho3D/Misc/FreeFunctions.h"
 
 URHO3D_DEFINE_APPLICATION_MAIN(Editor);
 

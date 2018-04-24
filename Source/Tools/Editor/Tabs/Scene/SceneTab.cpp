@@ -32,6 +32,7 @@
 #include "Widgets.h"
 #include "SceneSettings.h"
 #include <ImGui/imgui_internal.h>
+#include "Urho3D/Misc/FreeFunctions.h"
 
 
 namespace Urho3D
@@ -666,21 +667,72 @@ void SceneTab::RenderNodeContextMenu()
 		{
 			for (auto& selectedNode : GetSelection())
 			{
-				if (!selectedNode.Expired())
+                if (!selectedNode.Expired())
+                {
+                    //prompt user for path to node file.
+                    String filePath = GetNativeDialogExistingFile("", "bin;xml;json");
+                    if (GSS<FileSystem>()->FileExists(filePath))
+                    {
+                       
+                        SharedPtr<Node> loadedNode = SharedPtr<Node>(new Node(context_));
+                        SharedPtr<File> file = SharedPtr<File>(new File(context_, filePath, FILE_READ));
+                        bool loadSuccess = true;
+                        if (GetExtension(filePath) == ".xml")
+                        {
+                            SharedPtr<XMLFile> xmlFile = SharedPtr<XMLFile>(new XMLFile(context_));
+                            loadSuccess &= xmlFile->Load(*file);
+                            loadSuccess &= loadedNode->LoadXML(xmlFile->GetRoot());
+                        }
+                        else if (GetExtension(filePath) == ".json")
+                        {
+                            SharedPtr<JSONFile> xmlFile = SharedPtr<JSONFile>(new JSONFile(context_));
+                            loadSuccess &= xmlFile->Load(*file);
+                            loadSuccess &= loadedNode->LoadJSON(xmlFile->GetRoot());
+                        }
+                        else//binary
+                        {
+                            loadSuccess &= loadedNode->Load(*file);
+                        }
+                        
+                        if(loadSuccess)
+                            selectedNode->AddChild(loadedNode);
 
-					SharedPtr<Node> loadedNode = SharedPtr<Node>(new Node(context_));
-					SharedPtr<File> file = SharedPtr<File>(new File(context_, ""));
-					//loadedNode->Load()
+                    }
 
-
-					//Select(selectedNode->CreateChild(String::EMPTY, alternative ? LOCAL : REPLICATED));
-
-
+                }
 
 
 			}
 		}
+        if (ui::MenuItem("Save As"))
+        {
+            for (auto& selectedNode : GetSelection())
+            {
+                if (!selectedNode.Expired())
+                {
+                    //prompt user for path to node file.
+                    String filePath = GetNativeDialogSave("", "bin;xml;json");
+                    if (!filePath.Empty())
+                    {
 
+                        SharedPtr<File> file = SharedPtr<File>(new File(context_, filePath, FILE_WRITE));
+
+                        if(GetExtension(filePath) == ".bin")
+                            selectedNode->Save(*file);
+
+                        if (GetExtension(filePath) == ".xml")
+                            selectedNode->SaveXML(*file);
+
+                        if (GetExtension(filePath) == ".json")
+                            selectedNode->SaveJSON(*file);
+
+                    }
+
+                }
+
+
+            }
+        }
 
 
 
