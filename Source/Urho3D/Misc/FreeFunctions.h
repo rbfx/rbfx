@@ -10,6 +10,7 @@
 #include "../Scene/Node.h"
 #include "../IO/FileSystem.h"
 #include "../Resource/ResourceCache.h"
+#include "../nativefiledialog/src/include/nfd.h"
 
 namespace Urho3D {
 	/// holds generic static functions that belong in the global namespace.  This class can be thought of as a temprorary holding space for generic functions that need a context.
@@ -37,8 +38,48 @@ namespace Urho3D {
 	void URHO3D_API PrintRayQueryResults(PODVector<RayQueryResult>& results);
 	void URHO3D_API PrintVariantMap(VariantMap& map);
 
-    //print all attributes from serializable into a string.
+	//print all attributes from serializable into a string.
 	String URHO3D_API AttributeInfoString(Serializable& serializable);
 
 
+
+}
+
+
+namespace Urho3D {
+
+	String GetNativeDialogSave(String startDirectory)
+	{
+		startDirectory = GetNativePath(startDirectory);
+
+		nfdchar_t* outp = nullptr;
+		nfdchar_t* startp = (nfdchar_t*)startDirectory.CString();
+
+		NFD_SaveDialog("", startp, &outp);
+		//NFD_PickFolder(startp, &outp);
+		return GetInternalPath(String((char*)outp));
+	}
+
+	String GetNativeDialogExistingDir(String startDirectory)
+	{
+		startDirectory = GetNativePath(startDirectory);
+
+		nfdchar_t* outp = nullptr;
+		nfdchar_t* startp = (nfdchar_t*)startDirectory.CString();
+
+
+		NFD_PickFolder(startp, &outp);
+		return GetInternalPath(String((char*)outp));
+	}
+
+	String GetNativeDialogExistingFile(String startDirectory, const String& fileFilter)
+	{
+		startDirectory = GetNativePath(startDirectory);
+
+		nfdchar_t* outp = nullptr;
+		nfdchar_t* startp = (nfdchar_t*)startDirectory.CString();
+
+		NFD_OpenDialog(fileFilter.CString(), startp, &outp);
+		return GetInternalPath(String((char*)outp));
+	}
 }

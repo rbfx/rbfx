@@ -662,6 +662,27 @@ void SceneTab::RenderNodeContextMenu()
                     Select(selectedNode->CreateChild(String::EMPTY, alternative ? LOCAL : REPLICATED));
             }
         }
+		if (ui::MenuItem(alternative ? "Load Child (Local)" : "Load Child"))
+		{
+			for (auto& selectedNode : GetSelection())
+			{
+				if (!selectedNode.Expired())
+
+					SharedPtr<Node> loadedNode = SharedPtr<Node>(new Node(context_));
+					SharedPtr<File> file = SharedPtr<File>(new File(context_, ""));
+					//loadedNode->Load()
+
+
+					//Select(selectedNode->CreateChild(String::EMPTY, alternative ? LOCAL : REPLICATED));
+
+
+
+
+			}
+		}
+
+
+
 
         if (ui::BeginMenu(alternative ? "Create Component (Local)" : "Create Component"))
         {
