@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2018 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -72,7 +72,7 @@ public:
     /// Initialize with XMLElement that consists of <include> and <exclude> children tags with wildcards as their values.
     void Load(const rapidjson::Value& rules);
     /// Verify string is matched by include rules and not matched by exclude rules.
-    bool IsIncluded(const std::string& value);
+    bool IsIncluded(const std::string& value) const;
 
 protected:
     std::vector<std::regex> includes_;
@@ -167,6 +167,10 @@ std::vector<std::string> split(const std::string& value, const std::string& sepa
 void rtrim(std::string &s);
 std::vector<std::string> SplitName(const std::string& name);
 std::string AddTrailingSlash(const std::string& str);
+bool is_numeric(const std::string& str);
+bool is_hex(const std::string& str);
+bool starts_with(const std::string& str, const char* fragment);
+bool ends_with(const std::string& str, const char* fragment);
 
 }
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2018 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@
 
 #include <string>
 #include <map>
+#include <memory>
 #include <unordered_map>
 #include <cppast/cpp_entity.hpp>
 #include <cppast/libclang_parser.hpp>
@@ -49,6 +50,23 @@ struct TypeMap
     bool isValueType_ = false;
 };
 
+struct NamespaceRules
+{
+    struct ParsePath
+    {
+        std::string path_;
+        IncludedChecker checker_;
+    };
+
+    std::string defaultNamespace_;
+    std::unordered_map<std::string, TypeMap> typeMaps_;
+    std::vector<ParsePath> parsePaths_;
+    IncludedChecker inheritable_;
+    IncludedChecker symbolChecker_;
+    std::map<std::string, std::shared_ptr<cppast::cpp_file>> parsed_;
+    std::shared_ptr<MetaEntity> apiRoot_;
+};
+
 class GeneratorContext
 {
 public:
@@ -57,12 +75,11 @@ public:
         const std::vector<std::string>& options);
 
     bool LoadRules(const std::string& jsonPath);
-    bool ParseFiles(const std::string& sourceDir);
     template<typename T, typename... Args>
     void AddCppPass(Args... args) { cppPasses_.emplace_back(std::move(std::unique_ptr<CppAstPass>(dynamic_cast<CppAstPass*>(new T(args...))))); }
     template<typename T, typename... Args>
     void AddApiPass(Args... args) { apiPasses_.emplace_back(std::move(std::unique_ptr<CppApiPass>(dynamic_cast<CppApiPass*>(new T(args...))))); }
-    void Generate(const std::string& outputDirCpp, const std::string& outputDirCs);
+    void Generate();
     bool IsAcceptableType(const cppast::cpp_type& type);
     const TypeMap* GetTypeMap(const cppast::cpp_type& type, bool strict=false);
     const TypeMap* GetTypeMap(const std::string& typeName);
@@ -78,27 +95,29 @@ public:
         }
         return nullptr;
     }
-    MetaEntity* GetEntityOfConstant(MetaEntity* user, const std::string& constant);
+    bool GetSymbolOfConstant(MetaEntity* user, const std::string& constant, std::string& result,
+                             MetaEntity** constantEntity=nullptr);
     MetaEntity* GetSymbol(const char* symbolName) { return GetSymbol(std::string(symbolName)); }
     MetaEntity* GetSymbol(const std::string& symbolName);
+    bool IsInheritable(const std::string& symbolName) const;
 
     std::string sourceDir_;
     std::string outputDirCpp_;
     std::string outputDirCs_;
-    rapidjson::Document rules_;
+    rapidjson::Document jsonRules_;
+    std::vector<NamespaceRules> rules_;
+    NamespaceRules* currentNamespace_ = nullptr;
     cppast::libclang_compile_config config_;
-    std::map<std::string, std::unique_ptr<cppast::cpp_file>> parsed_;
     std::vector<std::unique_ptr<CppAstPass>> cppPasses_;
     std::vector<std::unique_ptr<CppApiPass>> apiPasses_;
-    std::shared_ptr<MetaEntity> apiRoot_;
     cppast::cpp_entity_index index_;
-    std::string defaultNamespace_ = "Urho3D";
-    std::unordered_map<std::string, std::weak_ptr<MetaEntity>> symbols_;
-    std::unordered_map<std::string, std::weak_ptr<MetaEntity>> enumValues_;
-    std::unordered_map<std::string, TypeMap> typeMaps_;
-    IncludedChecker inheritable_;
+    std::string moduleName_;
     bool isStatic_ = false;
+    std::unordered_map<std::string, std::weak_ptr<MetaEntity>> enumValues_;
+    std::unordered_map<std::string, std::weak_ptr<MetaEntity>> symbols_;
     std::vector<std::string> extraMonoCallInitializers_;
+    std::unordered_map<std::string, std::string> defaultValueRemaps_;
+    std::vector<std::string> forceCompileTimeConstants_;
 };
 
 extern GeneratorContext* generator;

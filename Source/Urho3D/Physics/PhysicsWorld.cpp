@@ -429,23 +429,27 @@ void PhysicsWorld::RaycastSingle(PhysicsRaycastResult& result, const Ray& ray, f
     }
 }
 
-void PhysicsWorld::RaycastSingleSegmented(PhysicsRaycastResult& result, const Ray& ray, float maxDistance, float segmentDistance, unsigned collisionMask)
+void PhysicsWorld::RaycastSingleSegmented(PhysicsRaycastResult& result, const Ray& ray, float maxDistance, float segmentDistance, unsigned collisionMask, float overlapDistance)
 {
     URHO3D_PROFILE(PhysicsRaycastSingleSegmented);
+
+    assert(overlapDistance < segmentDistance);
 
     if (maxDistance >= M_INFINITY)
         URHO3D_LOGWARNING("Infinite maxDistance in physics raycast is not supported");
 
+    const btVector3 direction = ToBtVector3(ray.direction_);
+    const auto count = CeilToInt(maxDistance / segmentDistance);
+
     btVector3 start = ToBtVector3(ray.origin_);
-    btVector3 end;
-    btVector3 direction = ToBtVector3(ray.direction_);
+    // overlap a bit with the previous segment for better precision, to avoid missing hits
+    const btVector3 overlap = direction * overlapDistance;
     float remainingDistance = maxDistance;
-    auto count = RoundToInt(maxDistance / segmentDistance);
 
     for (auto i = 0; i < count; ++i)
     {
-        float distance = Min(remainingDistance, segmentDistance);     // The last segment may be shorter
-        end = start + distance * direction;
+        const float distance = Min(remainingDistance, segmentDistance); // The last segment may be shorter
+        const btVector3 end = start + distance * direction;
 
         btCollisionWorld::ClosestRayResultCallback rayCallback(start, end);
         rayCallback.m_collisionFilterGroup = (short)0xffff;
@@ -465,7 +469,7 @@ void PhysicsWorld::RaycastSingleSegmented(PhysicsRaycastResult& result, const Ra
         }
 
         // Use the end position as the new start position
-        start = end;
+        start = end - overlap;
         remainingDistance -= segmentDistance;
     }
 

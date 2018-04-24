@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2018 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -45,7 +45,7 @@ void GenerateClassWrappers::Start()
     initPrinter_ << "#include \"ClassWrappers.hpp\"";
     initPrinter_ << "";
     initPrinter_ << fmt::format("extern \"C\" void {}RegisterWrapperFactories(Context* context)",
-                                generator->defaultNamespace_);
+                                generator->moduleName_);
     initPrinter_.Indent();
     initPrinter_ << "auto* script = context->GetScripts();";
 }
@@ -66,7 +66,7 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
         return true;
 
     // Class is not supposed to be inherited
-    if (!generator->inheritable_.IsIncluded(entity->uniqueName_))
+    if (!generator->IsInheritable(entity->uniqueName_))
         return true;
 
     const auto& cls = entity->Ast<cppast::cpp_class>();

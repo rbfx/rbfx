@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2018 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -168,12 +168,12 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     printer_ << fmt::format("Debug.Assert(instance != IntPtr.Zero);");
                     printer_ << "NativeInstance = instance;";
                     printer_ << "OwnsNativeInstance = ownsInstance;";
-                    if (generator->inheritable_.IsIncluded(entity->uniqueName_) || IsSubclassOf(entity->Ast<cppast::cpp_class>(), "Urho3D::RefCounted"))
+                    if (generator->IsInheritable(entity->uniqueName_) || IsSubclassOf(entity->Ast<cppast::cpp_class>(), "Urho3D::RefCounted"))
                         printer_ << fmt::format("{}_setup(instance, GCHandle.ToIntPtr(GCHandle.Alloc(this)), GetType().Name);",
                             Sanitize(entity->uniqueName_));
                     printer_ << "InstanceCache.Add(this);";
 
-                    if (generator->inheritable_.IsIncluded(entity->symbolName_))
+                    if (generator->IsInheritable(entity->symbolName_))
                     {
                         for (const auto& child : entity->children_)
                         {
@@ -301,7 +301,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::member_function_t)
     {
-        auto isFinal = !generator->inheritable_.IsIncluded(entity->GetParent()->symbolName_);
+        auto isFinal = !generator->IsInheritable(entity->GetParent()->symbolName_);
         if (isFinal && entity->access_ != cppast::cpp_public)
             return true;
 
@@ -564,7 +564,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         }
         else
         {
-            auto isFinal = !generator->inheritable_.IsIncluded(entity->GetParent()->symbolName_);
+            auto isFinal = !generator->IsInheritable(entity->GetParent()->symbolName_);
             if (isFinal && entity->access_ != cppast::cpp_public)
                 return true;
 
@@ -807,8 +807,15 @@ std::string GenerateCSharpApiPass::ConvertDefaultValueToCS(MetaEntity* user, std
         // null.
         value = "null";
     }
-    else if (auto* constant = generator->GetEntityOfConstant(user, value))
-        value = constant->symbolName_;
+    else if (generator->GetSymbolOfConstant(user, value, value))
+    {
+    }
+    else if (value.find("SDL") == 0)
+    {
+        // TODO: Hack-fix for using SDL enum values in integer constants. Key integer constants should become an enum then this can be removed.
+        if (value.find("SDL") == 0 && user->kind_ == cppast::cpp_entity_kind::variable_t)
+            value = "(int)" + value;
+    }
     else if (value.find("::") != std::string::npos)
     {
         // TODO: enums are not renamed for now

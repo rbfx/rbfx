@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2018 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,17 +27,20 @@
 #include "Pass/BuildMetaAST.h"
 #include "Pass/UnknownTypesPass.h"
 #include "Pass/CSharp/Urho3DTypeMaps.h"
-#include "Pass/CSharp/Urho3DEventsPass.h"
+#include "Pass/CSharp/Urho3DCustomPassEarly.h"
 #include "Pass/CSharp/MoveGlobalsPass.h"
 #include "Pass/CSharp/ConvertToPropertiesPass.h"
 #include "Pass/CSharp/ImplementInterfacesPass.h"
-#include "Pass/CSharp/Urho3DCustomPass.h"
+#include "Pass/CSharp/FixDefaultValuesPass.h"
 #include "Pass/CSharp/GenerateClassWrappers.h"
+#include <Pass/CSharp/OverrideConstantsPass.h>
 #include "Pass/CSharp/GenerateCApiPass.h"
 #include "Pass/CSharp/RenameMembersPass.h"
+#include "Pass/CSharp/Urho3DCustomPass.h"
 #include "Pass/CSharp/GeneratePInvokePass.h"
 #include "Pass/CSharp/GenerateCSharpApiPass.h"
 #include <spdlog/spdlog.h>
+
 
 namespace Urho3D
 {
@@ -119,6 +122,10 @@ int main(int argc, char* argv[])
     Urho3D::CreateDirsRecursive(outputDirCpp);
     Urho3D::CreateDirsRecursive(outputDirCs);
 
+    generator->sourceDir_ = sourceDir;
+    generator->outputDirCpp_ = outputDirCpp;
+    generator->outputDirCs_ = outputDirCs;
+
     // Generate bindings
     generator->LoadCompileConfig(includes, defines, options);
 #if _WIN32
@@ -130,7 +137,6 @@ int main(int argc, char* argv[])
 #endif
 
     generator->LoadRules(rulesFile);
-    generator->ParseFiles(sourceDir);
 
     generator->AddCppPass<BuildMetaAST>();
     generator->AddApiPass<Urho3DTypeMaps>();
@@ -138,14 +144,16 @@ int main(int argc, char* argv[])
     generator->AddApiPass<DiscoverInterfacesPass>();
     generator->AddApiPass<ImplementInterfacesPass>();
     generator->AddApiPass<GenerateClassWrappers>();
-    generator->AddApiPass<Urho3DEventsPass>();
+    generator->AddApiPass<OverrideConstantsPass>();
     generator->AddApiPass<MoveGlobalsPass>();
+    generator->AddApiPass<Urho3DCustomPassEarly>();
     generator->AddApiPass<GenerateCApiPass>();
     generator->AddApiPass<RenameMembersPass>();
-    generator->AddApiPass<Urho3DCustomPass>();
+    generator->AddApiPass<FixDefaultValuesPass>();
+    generator->AddApiPass<Urho3DCustomPassLate>();
     generator->AddApiPass<GeneratePInvokePass>();
     generator->AddApiPass<ConvertToPropertiesPass>();
     generator->AddApiPass<GenerateCSharpApiPass>();
 
-    generator->Generate(outputDirCpp, outputDirCs);
+    generator->Generate();
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2018 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -40,6 +40,7 @@ enum CppEntityHints
     HintIgnoreAstDefaultValue = 2,
     HintInterface = 4,
     HintProperty = 8,
+    HintDefaultValueFinal = 16,
 };
 
 /// Wrapper over cppast::cpp_entity. Overlay-AST is assembled from these entities. This allows freely modifying AST
@@ -105,9 +106,13 @@ struct MetaEntity : public std::enable_shared_from_this<MetaEntity>
             return;
 
         std::shared_ptr<MetaEntity> ref(entity->shared_from_this());
-        ref->Remove();
-        ref->parent_ = std::weak_ptr<MetaEntity>(shared_from_this());
-        children_.emplace_back(ref);
+        entity->Remove();
+        entity->parent_ = std::weak_ptr<MetaEntity>(shared_from_this());
+        if (symbolName_.empty())
+            entity->symbolName_ = entity->name_;
+        else
+            entity->symbolName_ = symbolName_ + "::" + entity->name_;
+        children_.emplace_back(std::move(ref));
         entity->Register();
     }
 
@@ -217,9 +222,11 @@ public:
     virtual ~CppAstPass() = default;
 
     virtual void Start() { }
+    virtual void NamespaceStart() { }
     virtual void StartFile(const std::string& filePath) { }
     virtual bool Visit(const cppast::cpp_entity& e, cppast::visitor_info info) = 0;
     virtual void StopFile(const std::string& filePath) { }
+    virtual void NamespaceStop() { }
     virtual void Stop() { }
 };
 
@@ -230,7 +237,9 @@ public:
     virtual ~CppApiPass() = default;
 
     virtual void Start() { }
+    virtual void NamespaceStart() { }
     virtual bool Visit(MetaEntity* entity, cppast::visitor_info info) = 0;
+    virtual void NamespaceStop() { }
     virtual void Stop() { }
 };
 

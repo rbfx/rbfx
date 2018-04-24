@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2018 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -305,7 +305,7 @@ void IncludedChecker::Load(const rapidjson::Value& rules)
         excludes_.emplace_back(WildcardToRegex(it->GetString()));
 }
 
-bool IncludedChecker::IsIncluded(const std::string& value)
+bool IncludedChecker::IsIncluded(const std::string& value) const
 {
     // Verify item is included
     bool match = false;
@@ -891,6 +891,46 @@ std::string AddTrailingSlash(const std::string& str)
     if (str.back() != '/')
         return str + "/";
     return str;
+}
+
+bool is_numeric(const std::string& str)
+{
+    for (char c : str)
+    {
+        if (!isdigit(c))
+            return false;
+    }
+    return true;
+}
+
+bool starts_with(const std::string& str, const char* fragment)
+{
+    return str.find(fragment) == 0;
+}
+
+bool ends_with(const std::string& str, const char* fragment)
+{
+    return str.rfind(fragment) == str.length() - strlen(fragment);
+}
+
+bool is_hex(const std::string& str)
+{
+    auto it = str.begin();
+    if (starts_with(str, "0x"))
+        it += 2;
+
+    if (it == str.end())
+        return false;
+
+    while (it != str.end())
+    {
+        char c = *it;
+        if (!(c >= '0' && c <= '9' || c >= 'A' && c <= 'F' || c >= 'a' && c <= 'f'))
+            return false;
+        it++;
+    }
+
+    return true;
 }
 
 }

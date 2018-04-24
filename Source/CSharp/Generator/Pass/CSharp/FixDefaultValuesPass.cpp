@@ -21,44 +21,44 @@
 //
 
 #include <fmt/format.h>
+#include <spdlog/spdlog.h>
 #include "GeneratorContext.h"
-#include "Urho3DEventsPass.h"
+#include "FixDefaultValuesPass.h"
 
 
 namespace Urho3D
 {
 
-bool Urho3DEventsPass::Visit(MetaEntity* entity, cppast::visitor_info info)
+bool FixDefaultValuesPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
     if (info.event == info.container_entity_exit)
         return true;
 
-    if (entity->kind_ == cppast::cpp_entity_kind::variable_t)
+    switch (entity->kind_)
     {
-        auto defaultValue = entity->GetDefaultValue();
-        if (defaultValue.empty() && entity->GetParent()->kind_ == cppast::cpp_entity_kind::namespace_t &&
-            Urho3D::GetTypeName(entity->Ast<cppast::cpp_variable>().type()) == "Urho3D::StringHash")
+    case cppast::cpp_entity_kind::constructor_t:
+    case cppast::cpp_entity_kind::function_t:
+    case cppast::cpp_entity_kind::member_function_t:
+    {
+        for (auto& param : entity->children_)
         {
-            // Give default values to event names
-            if (entity->name_.find("E_") == 0)
-            {
-                const auto& siblings = entity->GetParent()->children_;
-                auto it = std::find(siblings.begin(), siblings.end(), entity->shared_from_this());
-                assert(it != siblings.end());
-
-                // Next sibling which is supposed to be namespace containing event parameters. Name of namespace is
-                // event name.
-                it++;
-
-                if (it != siblings.end())
-                {
-                    auto* eventNamespace = it->get();
-                    assert(eventNamespace->kind_ == cppast::cpp_entity_kind::namespace_t);
-                    entity->defaultValue_ = fmt::format("\"{}\"", eventNamespace->name_);
-                    entity->flags_ |= HintReadOnly;
-                }
-            }
+            auto value = param->GetDefaultValue();
+            if (!value.empty())
+                generator->GetSymbolOfConstant(entity, value, param->defaultValue_);
         }
+        break;
+    }
+    case cppast::cpp_entity_kind::variable_t:
+    {
+        auto value = entity->GetDefaultValue();
+        if (!value.empty())
+        {
+            generator->GetSymbolOfConstant(entity, value, entity->defaultValue_);
+        }
+        break;
+    }
+    default:
+        break;
     }
 
     return true;

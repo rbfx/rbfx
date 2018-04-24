@@ -119,7 +119,7 @@ macro (csharp_bind_target)
         list(APPEND GENERATOR_OPTIONS -D${item})
     endforeach()
     foreach(item ${OPTIONS})
-        list(APPEND GENERATOR_OPTIONS -O_${item})
+        list(APPEND GENERATOR_OPTIONS -O${item})
     endforeach()
 
     get_target_property(_TARGET_TYPE ${BIND_TARGET} TYPE)
@@ -184,10 +184,10 @@ macro (csharp_bind_target)
     add_custom_command(OUTPUT ${CSHARP_SOURCE_FILES_GENERATED} ${COMMON_NET_SOURCE_FILES_GENERATED}
         COMMAND $<TARGET_FILE:CSharpGenerator> ${CSHARP_BINDING_GENERATOR_OPTIONS}
         DEPENDS CSharpGenerator)
-    add_custom_target(${CSHARP_LIBRARY_NAME}Regenerate
+    add_custom_target(${BIND_TARGET}CSharpRegenerate
         COMMAND $<TARGET_FILE:CSharpGenerator> ${CSHARP_BINDING_GENERATOR_OPTIONS}
         DEPENDS CSharpGenerator)
-    set_target_properties(${CSHARP_LIBRARY_NAME}Regenerate PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
+    set_target_properties(${BIND_TARGET}CSharpRegenerate PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
 
     file (WRITE ${BINDINGS_OUTPUT_DIR}/CSharp/Config.cs
 "namespace Urho3D.CSharp

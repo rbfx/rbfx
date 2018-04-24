@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2018 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -43,7 +43,7 @@ bool ConvertToPropertiesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
 
     // Virtual getters/setters of inheritable classes can not be turned to properties in order to allow overriding.
     if (entity->Ast<cppast::cpp_member_function>().is_virtual() &&
-        !generator->inheritable_.IsIncluded(entity->GetParent()->symbolName_))
+        !generator->IsInheritable(entity->GetParent()->symbolName_))
         return true;
 
     // If method is part of interface then getters/setters must appear as methods.

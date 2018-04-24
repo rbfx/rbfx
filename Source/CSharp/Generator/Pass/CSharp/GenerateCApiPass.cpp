@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2018 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -50,14 +50,14 @@ void GenerateCApiPass::Start()
     printer_ << "{";
     printer_ << "";
 
-    printer_ << fmt::format("void {}RegisterWrapperFactories(Urho3D::Context* context);", generator->defaultNamespace_);
+    printer_ << fmt::format("void {}RegisterWrapperFactories(Urho3D::Context* context);", generator->moduleName_);
 
     // Declare extra mono call initializers
     for (const auto& initializer : generator->extraMonoCallInitializers_)
         printer_ << fmt::format("void {}();", initializer);
 
     printerInternalCalls_ << fmt::format("URHO3D_EXPORT_API void {}RegisterMonoInternalCalls()",
-        generator->defaultNamespace_);
+        generator->moduleName_);
     printerInternalCalls_.Indent();
 }
 
@@ -163,7 +163,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         // Method for pinning managed class instance to native class. Ensures that managed class is nog GC'ed before
         // native class is freed. It is important only for classes that can be inherited.
-        bool isInheritable = generator->inheritable_.IsIncluded(entity->symbolName_);
+        bool isInheritable = generator->IsInheritable(entity->symbolName_);
         bool isRefCounted = IsSubclassOf(cls, "Urho3D::RefCounted");
         if (isInheritable || isRefCounted)
         {
@@ -240,7 +240,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             return true;
         }
 
-        auto isFinal = !generator->inheritable_.IsIncluded(entity->GetParent()->symbolName_);
+        auto isFinal = !generator->IsInheritable(entity->GetParent()->symbolName_);
         if (isFinal && entity->access_ != cppast::cpp_public)
             return true;
 
@@ -397,7 +397,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         if ((IsConst(var.type()) || entity->flags_ & HintReadOnly) && !entity->GetDefaultValue().empty())
             return true;
 
-        auto isFinal = !generator->inheritable_.IsIncluded(entity->GetParent()->symbolName_);
+        auto isFinal = !generator->IsInheritable(entity->GetParent()->symbolName_);
         if (isFinal && entity->access_ != cppast::cpp_public)
             return true;
 
@@ -491,7 +491,7 @@ void GenerateCApiPass::Stop()
     printer_ << printerInternalCalls_.Get();
     printer_ << "";
 
-    printer_ << fmt::format("URHO3D_EXPORT_API void {}RegisterCSharp(Urho3D::Context* context)", generator->defaultNamespace_);
+    printer_ << fmt::format("URHO3D_EXPORT_API void {}RegisterCSharp(Urho3D::Context* context)", generator->moduleName_);
     printer_.Indent();
     {
         printer_ << "if (context->GetScripts() == nullptr)";
@@ -501,7 +501,7 @@ void GenerateCApiPass::Stop()
         }
         printer_.Dedent("");
 
-        printer_ << fmt::format("{}RegisterWrapperFactories(context);", generator->defaultNamespace_);
+        printer_ << fmt::format("{}RegisterWrapperFactories(context);", generator->moduleName_);
         // Put other wrapper late initialization code here.
     }
     printer_.Dedent();

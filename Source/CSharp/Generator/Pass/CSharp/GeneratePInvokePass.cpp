@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2018 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -253,7 +253,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_ << "";
 
             // Method for pinning managed object to native instance
-            if (generator->inheritable_.IsIncluded(entity->uniqueName_) ||
+            if (generator->IsInheritable(entity->uniqueName_) ||
                 IsSubclassOf(entity->Ast<cppast::cpp_class>(), "Urho3D::RefCounted"))
             {
                 printer_ << dllImport;
@@ -315,7 +315,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
     {
         const auto& var = entity->Ast<cppast::cpp_member_variable>();
 
-        auto isFinal = !generator->inheritable_.IsIncluded(entity->GetParent()->symbolName_);
+        auto isFinal = !generator->IsInheritable(entity->GetParent()->symbolName_);
         if (isFinal && entity->access_ != cppast::cpp_public)
             return true;
 
@@ -356,7 +356,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::member_function_t)
     {
-        auto isFinal = !generator->inheritable_.IsIncluded(entity->GetParent()->symbolName_);
+        auto isFinal = !generator->IsInheritable(entity->GetParent()->symbolName_);
         if (isFinal && entity->access_ != cppast::cpp_public)
             return true;
 

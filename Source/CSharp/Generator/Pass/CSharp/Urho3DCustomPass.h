@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2018 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,25 +23,18 @@
 #pragma once
 
 
-#include <unordered_map>
 #include "Pass/CppPass.h"
-#include "Printer/CSharpPrinter.h"
 
 namespace Urho3D
 {
 
 /// Walk AST and gather known defined classes. Exclude protected/private members from generation.
-class Urho3DCustomPass : public CppApiPass
+class Urho3DCustomPassLate : public CppApiPass
 {
     public:
-    explicit Urho3DCustomPass() { };
-    void Start() override;
+    explicit Urho3DCustomPassLate() { };
+    void NamespaceStart() override;
     bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
-    void Stop() override;
-
-protected:
-
-    std::unordered_map<std::string, std::string> defaultValueRemap_;
 };
 
 }

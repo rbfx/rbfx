@@ -19,6 +19,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
+#include "../Precompiled.h"
+
 #include "../Core/Context.h"
 #include "../Graphics/BillboardSet.h"
 #include "../Graphics/Graphics.h"
@@ -229,7 +232,7 @@ void UIComponent::OnElementResized(StringHash eventType, VariantMap& args)
         return;
     }
 
-    if (texture_->SetSize(width, height, GetSubsystem<Graphics>()->GetRGBAFormat(), TEXTURE_RENDERTARGET))
+    if (texture_->SetSize(width, height, Graphics::GetRGBAFormat(), TEXTURE_RENDERTARGET))
         texture_->GetRenderSurface()->SetUpdateMode(SURFACE_MANUALUPDATE);
     else
         URHO3D_LOGERROR("UIComponent: resizing texture failed.");

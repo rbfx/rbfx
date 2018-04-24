@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2018 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,25 +20,30 @@
 // THE SOFTWARE.
 //
 
-#pragma once
+#include <fmt/format.h>
+#include "GeneratorContext.h"
+#include "Urho3DCustomPassEarly.h"
 
-
-#include <unordered_map>
-#include "Pass/CppPass.h"
 
 namespace Urho3D
 {
 
-/// Walk AST and gather known defined classes. Exclude protected/private members from generation.
-class Urho3DEventsPass : public CppApiPass
+bool Urho3DCustomPassEarly::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
-    public:
-    explicit Urho3DEventsPass() { };
-    bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
+    if (info.event == info.container_entity_exit)
+        return true;
 
-protected:
+    if (entity->kind_ != cppast::cpp_entity_kind::enum_value_t &&
+        entity->kind_ != cppast::cpp_entity_kind::variable_t &&
+        entity->name_.find("SDL_") == 0)
+    {
+        // We only need some enums/constants from SDL. Get rid of anything else.
+        entity->Remove();
+        spdlog::get("console")->info("Ignore: {}", entity->uniqueName_);
+        return true;
+    }
 
-    std::unordered_map<std::string, std::string> defaultValueRemap_;
-};
+    return true;
+}
 
 }
