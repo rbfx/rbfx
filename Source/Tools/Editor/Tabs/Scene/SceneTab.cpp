@@ -60,7 +60,8 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
     SubscribeToEvent(E_EDITORUSERCODERELOADSTART, [&](StringHash, VariantMap&) {
         Pause();
         SceneStateSave();
-        for (auto node : GetScene()->GetChildren(true))
+		PODVector<Node*> nodes = GetScene()->GetChildren(true);
+        for (Node* node : nodes)
         {
             if (!node->HasTag("__EDITOR_OBJECT__"))
                 node->Remove();

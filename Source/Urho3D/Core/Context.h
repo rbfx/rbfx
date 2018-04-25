@@ -88,7 +88,9 @@ public:
     void RemoveFactory(StringHash type);
     /// remove object factory.
     void RemoveFactory(StringHash type, const char* category);
-    /// Register a subsystem.
+	/// remove all factories in the given category
+	void RemoveFactories(const char* category);
+	/// Register a subsystem.
     void RegisterSubsystem(Object* object);
     /// Remove a subsystem.
     void RemoveSubsystem(StringHash objectType);

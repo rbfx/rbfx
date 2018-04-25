@@ -210,6 +210,19 @@ void Context::RemoveFactory(StringHash type, const char* category)
         objectCategories_[category].Remove(type);
 }
 
+void Context::RemoveFactories(const char* category)
+{
+    if (objectCategories_.Contains(category))
+    {
+        Vector<StringHash> typesInCategory = objectCategories_[category];
+        for (StringHash type : typesInCategory) {
+            RemoveFactory(type);
+        }
+        objectCategories_.Erase(category);
+    }
+}
+
+
 void Context::RegisterSubsystem(Object* object)
 {
     if (!object)
