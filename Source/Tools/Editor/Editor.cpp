@@ -260,6 +260,7 @@ void Editor::OnUpdate(VariantMap& args)
         if (reloading)
             SendEvent(E_EDITORUSERCODERELOADSTART);
 
+        //crashes in the send event..
         if (cr_plugin_update(userCodeContext_) != 0)
         {
             URHO3D_LOGERRORF("Processing plugin \"%s\" failed and it was unloaded.", GetFileNameAndExtension(userCodeLibPath_).CString());

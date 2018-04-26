@@ -57,16 +57,7 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
     SubscribeToEvent(E_UPDATE, std::bind(&SceneTab::OnUpdate, this, _2));
     // On plugin code reload all scene state is serialized, plugin library is reloaded and scene state is unserialized.
     // This way scene recreates all plugin-provided components on reload and gets to use new versions of them.
-    SubscribeToEvent(E_EDITORUSERCODERELOADSTART, [&](StringHash, VariantMap&) {
-        Pause();
-        SceneStateSave();
-		PODVector<Node*> nodes = GetScene()->GetChildren(true);
-        for (Node* node : nodes)
-        {
-            if (!node->HasTag("__EDITOR_OBJECT__"))
-                node->Remove();
-        }
-    });
+    SubscribeToEvent(E_EDITORUSERCODERELOADSTART, URHO3D_HANDLER(SceneTab, OnEditorUserCodeReLoadStart));
     SubscribeToEvent(E_EDITORUSERCODERELOADEND, [&](StringHash, VariantMap&) {
         SceneStateRestore(sceneState_);
     });
@@ -859,6 +850,18 @@ void SceneTab::OnComponentRemoved(VariantMap& args)
                 index++;
             }
         }
+    }
+}
+
+void SceneTab::OnEditorUserCodeReLoadStart(StringHash event, VariantMap& data)
+{
+    Pause();
+    SceneStateSave();
+    PODVector<Node*> nodes = GetScene()->GetChildren(true);
+    for (Node* node : nodes)
+    {
+        if (!node->HasTag("__EDITOR_OBJECT__"))
+            node->Remove();
     }
 }
 
