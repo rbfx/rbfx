@@ -65,6 +65,7 @@ struct NamespaceRules
     IncludedChecker symbolChecker_;
     std::map<std::string, std::shared_ptr<cppast::cpp_file>> parsed_;
     std::shared_ptr<MetaEntity> apiRoot_;
+    std::vector<std::string> includes_;
 };
 
 class GeneratorContext

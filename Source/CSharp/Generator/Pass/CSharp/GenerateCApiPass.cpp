@@ -37,10 +37,17 @@ void GenerateCApiPass::Start()
     printer_ << "#include <mono/metadata/object.h>";
     printer_ << "#include <mono/metadata/appdomain.h>";
     printer_ << "#include <mono/metadata/class.h>";
-    printer_ << "#include <Urho3D/Urho3DAll.h>";
     printer_ << "#include \"CSharp.h\"";
     printer_ << "#include \"ClassWrappers.hpp\"";
     printer_ << "#include \"PODTypes.hpp\"";
+    printer_ << "";
+
+    for (const auto& nsRules : generator->rules_)
+    {
+        for (const auto& include : nsRules.includes_)
+            printer_ << fmt::format("#include <{}>", include);
+    }
+
     printer_ << "";
     printer_ << "#undef TRANSPARENT";
     printer_ << "#undef near";
