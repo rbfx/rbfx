@@ -26,8 +26,14 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/threads.h>
+#include <mono/metadata/assembly.h>
+#include <mono/metadata/metadata.h>
+#include <mono/metadata/mono-config.h>
+#include <mono/metadata/mono-debug.h>
+#include <mono/jit/jit.h>
 
 #include "../Core/CoreEvents.h"
+#include "../IO/Log.h"
 #include "../Script/ScriptSubsystem.h"
 
 
@@ -110,6 +116,42 @@ void ScriptSubsystem::RegisterCurrentThread()
     auto* domain = mono_domain_get();
     if (domain != nullptr)
         mono_thread_attach(domain);
+}
+
+void* ScriptSubsystem::LoadAssembly(const String& pathToAssembly)
+{
+    auto* domain = mono_domain_get();
+    if (domain == nullptr)
+    {
+        URHO3D_LOGERROR("Managed domain is not created.");
+        return nullptr;
+    }
+
+    return mono_domain_assembly_open(domain, pathToAssembly.CString());
+}
+
+void* ScriptSubsystem::HostManagedRuntime(ScriptSubsystem::RuntimeSettings& settings)
+{
+    auto* domain = mono_domain_get();
+    if (domain == nullptr)
+    {
+        mono_config_parse(nullptr);
+        const char** options = new const char*[settings.jitOptions_.Size()];
+        int i = 0;
+        for (const auto& opt : settings.jitOptions_)
+        {
+            options[i++] = opt.CString();
+            if (opt.StartsWith("--debugger-agent"))
+                mono_debug_init(MONO_DEBUG_FORMAT_MONO);
+        }
+        mono_jit_parse_options(settings.jitOptions_.Size(), (char**)options);
+
+        domain = mono_jit_init_version(settings.domainName_.CString(), "v4.0.30319");
+    }
+    else
+        URHO3D_LOGWARNING("Existing managed domain was returned instead of creating a new one.");
+
+    return domain;
 }
 
 }
