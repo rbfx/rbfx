@@ -45,11 +45,9 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
     auto mapToPInvoke = [&](MetaEntity* metaParam) {
         const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
-        std::string expr;
+        std::string expr = metaParam->name_;
         if (IsComplexOutputType(param.type()))
-            return "ref " + param.name() + "Out";
-        else
-            expr = EnsureNotKeyword(param.name());
+            return fmt::format("ref {expr}Out", FMT_CAPTURE(expr));
 
         if (!IsOutType(param.type()))
         {
@@ -764,7 +762,7 @@ std::string GenerateCSharpApiPass::FormatCSParameterList(const std::vector<std::
                     csType += "?";
             }
         }
-        result += fmt::format("{} {}", csType, EnsureNotKeyword(param->name_));
+        result += fmt::format("{} {}", csType, param->name_);
 
         if (!defaultValue.empty())
             result += "=" + ConvertDefaultValueToCS(param.get(), defaultValue, cppType, false);

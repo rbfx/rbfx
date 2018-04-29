@@ -31,6 +31,22 @@ namespace Urho3D
 
 bool RenameMembersPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
+    // Reserved keyword renaming
+    switch (entity->kind_)
+    {
+    case cppast::cpp_entity_kind::function_t:
+    case cppast::cpp_entity_kind::member_function_t:
+    case cppast::cpp_entity_kind::constructor_t:
+    {
+        for (auto& param : entity->children_)
+        {
+            if (container::contains(reservedKeywords_, param->name_))
+                param->name_ += "_";
+        }
+    }
+    }
+
+    // CamelCase renaming
     switch (entity->kind_)
     {
     case cppast::cpp_entity_kind::variable_t:
@@ -56,6 +72,7 @@ bool RenameMembersPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     default:
         break;
     }
+
     return true;
 }
 

@@ -168,14 +168,6 @@ bool IsVoid(const cppast::cpp_type* type)
     return type == nullptr || IsVoid(*type);
 }
 
-std::string EnsureNotKeyword(const std::string& value)
-{
-    // TODO: Refactor this
-    if (value == "object" || value == "params")
-        return value + "_";
-    return value;
-}
-
 std::string MapParameterList(std::vector<std::shared_ptr<MetaEntity>>& parameters,
     const std::function<std::string(MetaEntity*)>& callable)
 {
@@ -191,12 +183,13 @@ std::string ParameterList(const CppParameters& params,
     std::vector<std::string> parts;
     for (const auto& param : params)
     {
+        auto* metaParam = static_cast<MetaEntity*>(param.user_data());
         std::string typeString;
         if (typeToString)
             typeString = typeToString(param.type());
         else
             typeString = cppast::to_string(param.type());
-        typeString += " " + EnsureNotKeyword(param.name());
+        typeString += " " + metaParam->name_;
         parts.emplace_back(typeString);
     }
     return str::join(parts, ", ");
@@ -208,7 +201,8 @@ std::string ParameterNameList(const CppParameters& params,
     std::vector<std::string> parts;
     for (const auto& param : params)
     {
-        auto name = EnsureNotKeyword(param.name());
+        auto* metaParam = static_cast<MetaEntity*>(param.user_data());
+        auto name = metaParam->name_;
         if (nameFilter)
             name = nameFilter(param);
         parts.emplace_back(name);
