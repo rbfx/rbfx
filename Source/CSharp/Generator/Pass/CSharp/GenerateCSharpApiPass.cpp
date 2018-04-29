@@ -51,15 +51,25 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         if (!IsOutType(param.type()))
         {
-            if (auto* map = generator->GetTypeMap(param.type(), false))
+            auto defaultValue = metaParam->GetDefaultValue();
+            defaultValue = ConvertDefaultValueToCS(metaParam, defaultValue, param.type(), true);
+            if (!defaultValue.empty())
             {
-                if (map->isValueType_ && map->csType_ != "string")
+                bool isNullable = false;
+                if (auto* map = generator->GetTypeMap(param.type(), false))
                 {
-                    auto defaultValue = metaParam->GetDefaultValue();
-                    defaultValue = ConvertDefaultValueToCS(metaParam, defaultValue, param.type(), true);
-                    if (!defaultValue.empty())
-                        expr += fmt::format(".GetValueOrDefault({})", defaultValue);
+                    if (map->isValueType_ && map->csType_ != "string")
+                        isNullable = true;
                 }
+                else
+                {
+                    auto typeName = cppast::to_string(param.type());
+                    if (typeName == "void*" || typeName == "void const*")
+                        isNullable = true;
+                }
+
+                if (isNullable)
+                    expr += fmt::format(".GetValueOrDefault({})", defaultValue);
             }
         }
 
@@ -676,17 +686,20 @@ std::string GenerateCSharpApiPass::ToCSType(const cppast::cpp_type& type, bool d
         case cppast::cpp_type_kind::pointer_t:
         case cppast::cpp_type_kind::reference_t:
         {
-            const auto& pointee = cppast::remove_cv(
-                t.kind() == cppast::cpp_type_kind::pointer_t ?
-                dynamic_cast<const cppast::cpp_pointer_type&>(t).pointee() :
-                dynamic_cast<const cppast::cpp_reference_type&>(t).referee());
+            const auto& cvPointee = t.kind() == cppast::cpp_type_kind::pointer_t ?
+                                    dynamic_cast<const cppast::cpp_pointer_type&>(t).pointee() :
+                                    dynamic_cast<const cppast::cpp_reference_type&>(t).referee();
+            const auto& pointee = cppast::remove_cv(cvPointee);
 
             if (pointee.kind() == cppast::cpp_type_kind::builtin_t)
             {
                 const auto& builtin = dynamic_cast<const cppast::cpp_builtin_type&>(pointee);
                 if (builtin.builtin_type_kind() == cppast::cpp_builtin_type_kind::cpp_char)
                     return "string";
-                if (t.kind() == cppast::cpp_type_kind::pointer_t)
+                if (builtin.builtin_type_kind() == cppast::cpp_builtin_type_kind::cpp_void ||   // Raw data
+                    builtin.builtin_type_kind() == cppast::cpp_builtin_type_kind::cpp_uchar ||  // Most likely buffers
+                    builtin.builtin_type_kind() == cppast::cpp_builtin_type_kind::cpp_schar ||  //
+                    IsConst(cvPointee))
                     return "IntPtr";
                 isRef = true;
                 return toCSType(pointee);
@@ -753,14 +766,16 @@ std::string GenerateCSharpApiPass::FormatCSParameterList(const std::vector<std::
         auto defaultValue = param->GetDefaultValue();
         if (IsOutType(cppType))
             defaultValue.clear();
-        else
+        else if (!defaultValue.empty())
         {
             if (auto* map = generator->GetTypeMap(cppType, false))
             {
                 // Value types are made nullable in order to allow default values.
-                if (map->isValueType_ && !defaultValue.empty() && map->csType_ != "string")
+                if (map->isValueType_ && map->csType_ != "string")
                     csType += "?";
             }
+            else if (csType == "IntPtr")
+                csType += "?";
         }
         result += fmt::format("{} {}", csType, param->name_);
 
@@ -779,23 +794,19 @@ std::string GenerateCSharpApiPass::ConvertDefaultValueToCS(MetaEntity* user, std
     if (value.empty())
         return value;
 
-    if (value == "nullptr")
-        return "null";
-
     if (auto* map = generator->GetTypeMap(type, false))
     {
-        if (map->csType_ == "string")
-        {
-            // String literals
-            if (value == "String::EMPTY")  // TODO: move to json?
-                value = "\"\"";
-            return value;
-        }
-        else if (map->isValueType_ && !allowComplex)
+        if (map->isValueType_ && !allowComplex)
         {
             // Value type parameters are turned to nullables when they have default values.
             return "null";
         }
+    }
+
+    if (allowComplex)
+    {
+        if (value == "null" && ToCSType(type) == "IntPtr")
+            return "IntPtr.Zero";
     }
 
     if (!allowComplex && IsComplexType(type))

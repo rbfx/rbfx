@@ -624,6 +624,9 @@ std::string CamelCaseIdentifier(const std::string& name)
 
 bool IsOutType(const cppast::cpp_type& type)
 {
+    if (IsConst(type))
+        return false;
+
     if (type.kind() == cppast::cpp_type_kind::reference_t || type.kind() == cppast::cpp_type_kind::pointer_t)
     {
         const auto& pointee = type.kind() == cppast::cpp_type_kind::pointer_t ?
@@ -638,8 +641,15 @@ bool IsOutType(const cppast::cpp_type& type)
         // A pointer to builtin is (almost) definitely output parameter. In some cases (like when pointer to builtin
         // type means a location within array) c++ code should be tweaked to better reflect intent of parameter or c++
         // function should be ignored completely.
-        if (nonCvPointee.kind() == cppast::cpp_type_kind::builtin_t && type.kind() == cppast::cpp_type_kind::reference_t)
+        if (nonCvPointee.kind() == cppast::cpp_type_kind::builtin_t)
+        {
+            auto typeKind = dynamic_cast<const cppast::cpp_builtin_type&>(nonCvPointee).builtin_type_kind();
+            if (typeKind == cppast::cpp_builtin_type_kind::cpp_void ||  // IntPtr type
+                typeKind == cppast::cpp_builtin_type_kind::cpp_schar ||
+                typeKind == cppast::cpp_builtin_type_kind::cpp_uchar)
+                return false;
             return true;
+        }
 
         // Any type mapped to a value type (like std::string mapped to System.String) are output parameters.
         auto* map = generator->GetTypeMap(type);
