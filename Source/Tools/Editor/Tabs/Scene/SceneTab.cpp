@@ -858,11 +858,22 @@ void SceneTab::OnEditorUserCodeReLoadStart(StringHash event, VariantMap& data)
     Pause();
     SceneStateSave();
     PODVector<Node*> nodes = GetScene()->GetChildren(true);
+    //copy vector to temp vector of shared pts just in case we remove a parent node in the scene in the next pass below.
+    Vector<SharedPtr<Node>> nodesSharedPtrs;
     for (Node* node : nodes)
     {
-        if (!node->HasTag("__EDITOR_OBJECT__"))
-            node->Remove();
+        nodesSharedPtrs.Push(SharedPtr<Node>(node));
     }
+
+    //remove what we need from the scene graph..
+    for (SharedPtr<Node> node : nodesSharedPtrs)
+    {
+        if(node.NotNull())
+            if (!node->HasTag("__EDITOR_OBJECT__"))
+                node->Remove();
+    }
+
+    //shared ptrs released so actual nodes that need released will be released at this point.
 }
 
 }
