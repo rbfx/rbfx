@@ -2,7 +2,16 @@
 <project version="0">
 	<window width="1920" height="1080" x="283" y="194" />
 	<resources>
-		<path>../../Data/</path>
+
+		<!-- paths for Urho3D repo specific -->
+		<path>../../../bin/Data/</path>
+		<path>../../../bin/CoreData/</path>
+		<path>../../../bin/EditorData/</path>
+
+		<!-- try to load paths from top level project. -->
+		<path>../../../../bin/Data/</path>
+		<path>../../../../bin/CoreData/</path>
+
 	</resources>
 	<tabs>
 		<tab type="scene" id="52C5ADA6" path="Scenes/SceneLoadExample.xml">
@@ -17,6 +26,7 @@
 			<renderpath path="RenderPaths/Forward.xml" />
 		</tab>
 	</tabs>
+
 	<docks>
 		<dock index="0" label="Hierarchy" x="0" y="20" location="" size_x="255" size_y="529" status="0" active="1" opened="1" prev="-1" next="-1" child0="-1" child1="-1" parent="6" />
 		<dock index="1" label="" x="0" y="20" location="" size_x="1920" size_y="1060" status="0" active="1" opened="0" prev="-1" next="-1" child0="5" child1="2" parent="-1" />

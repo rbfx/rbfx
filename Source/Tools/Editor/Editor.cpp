@@ -59,10 +59,12 @@ void Editor::Setup()
     }
 #endif
 
-    engineResourceAutoloadPaths_ = {"Autoload"};
-    engineResourcePrefixPaths_ = {GetFileSystem()->GetProgramDir(), GetParentPath(GetFileSystem()->GetProgramDir()), 
-        GetParentPath(GetParentPath(GetFileSystem()->GetProgramDir())) };
-    engineResourcePaths_ = {"Cache", "CoreData", "EditorData"};
+    //engineResourceAutoloadPaths_ = {"Autoload"};
+    //engineResourcePrefixPaths_ = {GetFileSystem()->GetProgramDir(), GetParentPath(GetFileSystem()->GetProgramDir()), 
+    //    GetParentPath(GetParentPath(GetFileSystem()->GetProgramDir())) };
+
+
+    //engineResourcePaths_ = { "Data", "CoreData", "EditorData"};
 
     engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
     engineParameters_[EP_HEADLESS] = false;
@@ -71,9 +73,9 @@ void Editor::Setup()
     engineParameters_[EP_WINDOW_WIDTH] = 1920;
     engineParameters_[EP_LOG_LEVEL] = LOG_DEBUG;
     engineParameters_[EP_WINDOW_RESIZABLE] = true;
-    engineParameters_[EP_AUTOLOAD_PATHS] = String::Joined(engineResourceAutoloadPaths_, ";");
-    engineParameters_[EP_RESOURCE_PREFIX_PATHS] = String::Joined(engineResourcePrefixPaths_, ";");
-    engineParameters_[EP_RESOURCE_PATHS] = String::Joined(engineResourcePaths_, ";");
+    //engineParameters_[EP_AUTOLOAD_PATHS] = String::Joined(engineResourceAutoloadPaths_, ";");
+    engineParameters_[EP_RESOURCE_PREFIX_PATHS] =  "..\\..\\..\\Urho3d\\bin;..\\..\\..\\bin";
+    engineParameters_[EP_RESOURCE_PATHS] = String::Joined({ "Data", "CoreData", "EditorData" }, ";");
 
     SetRandomSeed(Time::GetTimeSinceEpoch());
 }
@@ -359,7 +361,7 @@ void Editor::RenderMenuBar()
             if (ui::MenuItem("Open Project"))
             {
                 nfdchar_t* projectFilePath = nullptr;
-                if (NFD_OpenDialog("xml", ".", &projectFilePath) == NFD_OKAY)
+                if (NFD_OpenDialog("xml", "", &projectFilePath) == NFD_OKAY)
                 {
                     projectFilePath_ = projectFilePath;
                     NFD_FreePath(projectFilePath);
@@ -505,7 +507,7 @@ String Editor::GetResourceAbsolutePath(const String& resourceName, const String&
     if (fullPath.Empty())
     {
         nfdchar_t* savePath = nullptr;
-        if (NFD_SaveDialog(patterns, ".", &savePath) == NFD_OKAY)
+        if (NFD_SaveDialog(patterns, "", &savePath) == NFD_OKAY)
         {
             fullPath = savePath;
             NFD_FreePath(savePath);
