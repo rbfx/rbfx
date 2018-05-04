@@ -420,7 +420,7 @@ void Editor::RenderMenuBar()
             if (ui::Button(ICON_FA_FOLDER_OPEN " Add data directory"))
             {
                 nfdchar_t* result = nullptr;
-                if (NFD_PickFolder(".", &result) == NFD_OKAY)
+                if (NFD_PickFolder("", &result) == NFD_OKAY)
                 {
                     GetCache()->AddResourceDir(result);
                     NFD_FreePath(result);
