@@ -357,7 +357,7 @@ void Editor::RenderMenuBar()
             if (ui::MenuItem("Open Project"))
             {
                 nfdchar_t* projectFilePath = nullptr;
-                if (NFD_OpenDialog("xml", ".", &projectFilePath) == NFD_OKAY)
+                if (NFD_OpenDialog("xml", "", &projectFilePath) == NFD_OKAY)
                 {
                     projectFilePath_ = projectFilePath;
                     NFD_FreePath(projectFilePath);
@@ -418,7 +418,7 @@ void Editor::RenderMenuBar()
             if (ui::Button(ICON_FA_FOLDER_OPEN " Add data directory"))
             {
                 nfdchar_t* result = nullptr;
-                if (NFD_PickFolder(".", &result) == NFD_OKAY)
+                if (NFD_PickFolder("", &result) == NFD_OKAY)
                 {
                     GetCache()->AddResourceDir(result);
                     NFD_FreePath(result);
@@ -503,7 +503,7 @@ String Editor::GetResourceAbsolutePath(const String& resourceName, const String&
     if (fullPath.Empty())
     {
         nfdchar_t* savePath = nullptr;
-        if (NFD_SaveDialog(patterns, ".", &savePath) == NFD_OKAY)
+        if (NFD_SaveDialog(patterns, "", &savePath) == NFD_OKAY)
         {
             fullPath = savePath;
             NFD_FreePath(savePath);
