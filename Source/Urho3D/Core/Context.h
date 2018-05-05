@@ -116,9 +116,13 @@ public:
     /// Copy base class attributes to derived class.
     void CopyBaseAttributes(StringHash baseType, StringHash derivedType);
     /// Template version of registering an object factory.
-    template <class T> void RegisterFactory();
+    template <class T = void, class... Rest> void RegisterFactory();
     /// Template version of registering an object factory with category.
-    template <class T> void RegisterFactory(const char* category);
+    template <class T = void, class... Rest> void RegisterFactory(const char* category);
+    /// Template version of unregistering an object factory.
+    template <class T = void, class... Rest> void RemoveFactory();
+    /// Template version of unregistering an object factory with category.
+    template <class T = void, class... Rest> void RemoveFactory(const char* category);
     /// Template version of registering subsystem.
     template <class T> T* RegisterSubsystem();
     /// Template version of removing a subsystem.
@@ -388,11 +392,35 @@ private:
     friend class Engine;
 };
 
-template <class T> void Context::RegisterFactory() { RegisterFactory(new ObjectFactoryImpl<T>(this)); }
+// Helper functions that terminate looping of argument list.
+template <> inline void Context::RegisterFactory() { }
+template <> inline void Context::RegisterFactory(const char* category) { }
+template <> inline void Context::RemoveFactory<>() { }
+template <> inline void Context::RemoveFactory<>(const char* category) { }
 
-template <class T> void Context::RegisterFactory(const char* category)
+template <class T, class... Rest> void Context::RegisterFactory()
+{
+    RegisterFactory(new ObjectFactoryImpl<T>(this));
+    RegisterFactory<Rest...>();
+}
+
+template <class T, class... Rest> void Context::RegisterFactory(const char* category)
 {
     RegisterFactory(new ObjectFactoryImpl<T>(this), category);
+    RegisterFactory<Rest...>(category);
+}
+
+
+template <class T, class... Rest> void Context::RemoveFactory()
+{
+    RemoveFactory(T::GetTypeStatic());
+    RemoveFactory<Rest...>();
+}
+
+template <class T, class... Rest> void Context::RemoveFactory(const char* category)
+{
+    RemoveFactory(T::GetTypeStatic(), category);
+    RemoveFactory<Rest...>(category);
 }
 
 template <class T> T* Context::RegisterSubsystem()
