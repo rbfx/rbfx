@@ -51,7 +51,7 @@ protected:
     /// Current mouse sensitivity.
     float mouseSensitivity_ = 0.1f;
     /// Light which is attached to camera in order to make lit objects visible.
-    SharedPtr<Light> light_;
+    WeakPtr<Light> light_;
 };
 
 };

@@ -59,11 +59,8 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
     SubscribeToEvent(E_EDITORUSERCODERELOADSTART, [&](StringHash, VariantMap&) {
         Pause();
         SceneStateSave();
-        for (auto node : GetScene()->GetChildren(true))
-        {
-            if (!node->HasTag("__EDITOR_OBJECT__"))
-                node->Remove();
-        }
+        GetScene()->RemoveAllChildren();
+        GetScene()->RemoveAllComponents();
     });
     SubscribeToEvent(E_EDITORUSERCODERELOADEND, [&](StringHash, VariantMap&) {
         SceneStateRestore(sceneState_);
@@ -518,7 +515,10 @@ void SceneTab::LoadProject(XMLElement& scene)
         if (auto rotation = camera.GetChild("rotation"))
             cameraNode->SetRotation(rotation.GetVariant().GetQuaternion());
         if (auto light = camera.GetChild("light"))
-            cameraNode->GetComponent<Light>()->SetEnabled(light.GetVariant().GetBool());
+        {
+            if (auto* lightComponent = cameraNode->GetComponent<Light>())
+                lightComponent->SetEnabled(light.GetVariant().GetBool());
+        }
     }
 
     settings_->LoadProject(scene);
@@ -613,6 +613,12 @@ void SceneTab::SceneStateSave()
             node->AddTag("__EDITOR_SELECTED__");
     }
 
+    // Ensure that editor objects are saved.
+    PODVector<Node*> nodes;
+    GetScene()->GetNodesWithTag(nodes, "__EDITOR_OBJECT__");
+    for (auto* node : nodes)
+        node->SetTemporary(false);
+
     sceneState_.GetRoot().Remove();
     XMLElement root = sceneState_.CreateRoot("scene");
     GetScene()->SaveXML(root);
@@ -622,21 +628,24 @@ void SceneTab::SceneStateRestore(XMLFile& source)
 {
     Undo::SetTrackingScoped tracking(undo_, false);
 
-    // Migrate editor objects to a newly loaded scene without destroying them.
-    Vector<SharedPtr<Node>> temporaries;
-    for (auto& node : GetScene()->GetChildrenWithTag("__EDITOR_OBJECT__"))
-        temporaries.Push(SharedPtr<Node>(node));
-
     GetScene()->LoadXML(source.GetRoot());
 
-    for (auto& node : temporaries)
-        GetScene()->AddChild(node);
+    CreateObjects();
+
+    // Ensure that editor objects are not saved in user scene.
+    PODVector<Node*> nodes;
+    GetScene()->GetNodesWithTag(nodes, "__EDITOR_OBJECT__");
+    for (auto* node : nodes)
+        node->SetTemporary(true);
 
     source.GetRoot().Remove();
 
     gizmo_.UnselectAll();
     for (auto node : GetScene()->GetChildrenWithTag("__EDITOR_SELECTED__", true))
+    {
         gizmo_.Select(node);
+        node->RemoveTag("__EDITOR_SELECTED__");
+    }
 }
 
 void SceneTab::RenderNodeContextMenu()
@@ -730,7 +739,7 @@ void SceneTab::OnComponentAdded(VariantMap& args)
     auto* component = dynamic_cast<Component*>(args[P_COMPONENT].GetPtr());
     auto* node = dynamic_cast<Node*>(args[P_NODE].GetPtr());
 
-    if (node->IsTemporary())
+    if (node->IsTemporary() || node->HasTag("__EDITOR_OBJECT__"))
         return;
 
     auto* material = GetCache()->GetResource<Material>("Materials/Editor/DebugIcon" + component->GetTypeName() + ".xml", false);
@@ -739,26 +748,29 @@ void SceneTab::OnComponentAdded(VariantMap& args)
         if (node->GetChildrenWithTag("DebugIcon" + component->GetTypeName()).Size() > 0)
             return;
 
-        Undo::SetTrackingScoped tracking(undo_, false);
-        int count = node->GetChildrenWithTag("DebugIcon").Size();
-        node = node->CreateChild();
-        node->AddTag("DebugIcon");
-        node->AddTag("DebugIcon" + component->GetTypeName());
-        node->AddTag("__EDITOR_OBJECT__");
-        node->SetTemporary(true);
-
-        auto* billboard = node->CreateComponent<BillboardSet>();
-        billboard->SetFaceCameraMode(FaceCameraMode::FC_LOOKAT_Y);
-        billboard->SetNumBillboards(1);
-        billboard->SetMaterial(material);
-        billboard->SetViewMask(0x80000000);
-        if (auto* bb = billboard->GetBillboard(0))
+        auto iconTag = "DebugIcon" + component->GetTypeName();
+        if (node->GetChildrenWithTag(iconTag).Empty())
         {
-            bb->size_ = Vector2::ONE * 0.2f;
-            bb->enabled_ = true;
-            bb->position_ = {0, count * 0.4f, 0};
+            Undo::SetTrackingScoped tracking(undo_, false);
+            int count = node->GetChildrenWithTag("DebugIcon").Size();
+            node = node->CreateChild();
+            node->AddTag("DebugIcon");
+            node->AddTag("DebugIcon" + component->GetTypeName());
+            node->AddTag("__EDITOR_OBJECT__");
+            node->SetTemporary(true);
+
+            auto* billboard = node->CreateComponent<BillboardSet>();
+            billboard->SetFaceCameraMode(FaceCameraMode::FC_LOOKAT_Y);
+            billboard->SetNumBillboards(1);
+            billboard->SetMaterial(material);
+            if (auto* bb = billboard->GetBillboard(0))
+            {
+                bb->size_ = Vector2::ONE * 0.2f;
+                bb->enabled_ = true;
+                bb->position_ = {0, count * 0.4f, 0};
+            }
+            billboard->Commit();
         }
-        billboard->Commit();
     }
 }
 
