@@ -64,16 +64,17 @@ void SceneView::SetSize(const IntRect& rect)
 
 void SceneView::CreateObjects()
 {
-    camera_ = scene_->CreateChild("EditorCamera", LOCAL, M_MAX_UNSIGNED, true);
-    camera_->CreateComponent<Camera>();
-    camera_->AddTag("__EDITOR_OBJECT__");
-    auto debug = scene_->GetComponent<DebugRenderer>();
-    if (debug == nullptr)
+    camera_ = WeakPtr<Node>(scene_->GetChild("EditorCamera", true));
+    if (camera_.Expired())
     {
-        debug = scene_->CreateComponent<DebugRenderer>(LOCAL, M_MAX_UNSIGNED - 1);
-        debug->SetTemporary(true);
+        camera_ = scene_->CreateChild("EditorCamera", LOCAL, M_MAX_UNSIGNED, true);
+        camera_->CreateComponent<Camera>();
+        camera_->AddTag("__EDITOR_OBJECT__");
+        camera_->SetTemporary(true);
     }
+    auto* debug = scene_->GetOrCreateComponent<DebugRenderer>(LOCAL, M_MAX_UNSIGNED - 1);
     debug->SetView(GetCamera());
+    debug->SetTemporary(true);
     viewport_->SetCamera(GetCamera());
 }
 

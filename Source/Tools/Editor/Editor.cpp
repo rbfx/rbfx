@@ -116,6 +116,30 @@ void Editor::Start()
     LoadProject("Etc/DefaultEditorProject.xml");
     // Prevent overwriting example scene.
     DynamicCast<SceneTab>(tabs_.Front())->ClearCachedPaths();
+
+    // Load any native plugins in editor directory.
+    {
+        StringVector files;
+        GetFileSystem()->ScanDir(files, ".", "", SCAN_FILES, false);
+
+#if WIN32
+        const char* start = "EditorPlugin";
+        const char* end = ".dll";
+#elif APPLE
+        const char* start = "libEditorPlugin";
+        const char* end = ".dylib";
+#else
+        const char* start = "libEditorPlugin";
+        const char* end = ".so";
+#endif
+
+        for (const auto& path : files)
+        {
+            auto lastCharacter = path.Length() - strlen(end) - 1;
+            if (path.StartsWith(start) && path.EndsWith(end) && !IsDigit(path[lastCharacter]))
+                LoadNativePlugin(path);
+        }
+    }
 }
 
 void Editor::Stop()
@@ -154,13 +178,6 @@ void Editor::SaveProject(String filePath)
         String relative;
         GetRelativePath(GetPath(filePath), dir, relative);
         resources.CreateChild("path").SetValue(relative);
-    }
-
-    if (!userCodeLibPath_.Empty())
-    {
-        auto plugins = root.CreateChild("plugins");
-        auto plugin = plugins.CreateChild("plugin");
-        plugin.SetValue(userCodeLibPath_);
     }
 
     auto scenes = root.CreateChild("tabs");
@@ -227,10 +244,6 @@ void Editor::LoadProject(String filePath)
                 URHO3D_LOGWARNINGF("Project tried to load missing resource path \"%s\"", resourceDir.CString());
         }
 
-        auto plugins = root.GetChild("plugins");
-        for (auto plugin = plugins.GetChild("plugin"); plugin.NotNull(); plugin = plugin.GetNext("plugin"))
-            LoadNativePlugin(plugin.GetValue());
-
         auto tabs = root.GetChild("tabs");
         tabs_.Clear();
         if (tabs.NotNull())
@@ -256,25 +269,27 @@ void Editor::LoadProject(String filePath)
 void Editor::OnUpdate(VariantMap& args)
 {
 #if URHO3D_PLUGINS
-    if (userCodeContext_.userdata)
+    for (auto& plugin : nativePlugins_)
     {
-        bool reloading = cr_plugin_changed(userCodeContext_);
-        if (reloading)
-            SendEvent(E_EDITORUSERCODERELOADSTART);
-
-        //crashes in the send event..
-        if (cr_plugin_update(userCodeContext_) != 0)
+        if (plugin.context_.userdata)
         {
-            URHO3D_LOGERRORF("Processing plugin \"%s\" failed and it was unloaded.", GetFileNameAndExtension(userCodeLibPath_).CString());
-            cr_plugin_close(userCodeContext_);
-            userCodeContext_.userdata = nullptr;
-        }
+            bool reloading = cr_plugin_changed(plugin.context_);
+            if (reloading)
+                SendEvent(E_EDITORUSERCODERELOADSTART);
 
-        if (reloading)
-        {
-            SendEvent(E_EDITORUSERCODERELOADEND);
-            if (userCodeContext_.userdata != nullptr)
-                URHO3D_LOGINFOF("Loaded plugin \"%s\" version %d.", GetFileNameAndExtension(userCodeLibPath_).CString(), userCodeContext_.version);
+            if (cr_plugin_update(plugin.context_) != 0)
+            {
+                URHO3D_LOGERRORF("Processing plugin \"%s\" failed and it was unloaded.", GetFileNameAndExtension(plugin.path_).CString());
+                cr_plugin_close(plugin.context_);
+                plugin.context_.userdata = nullptr;
+            }
+
+            if (reloading)
+            {
+                SendEvent(E_EDITORUSERCODERELOADEND);
+                if (plugin.context_.userdata != nullptr)
+                    URHO3D_LOGINFOF("Loaded plugin \"%s\" version %d.", GetFileNameAndExtension(plugin.path_).CString(), plugin.context_.version);
+            }
         }
     }
 #endif
@@ -378,23 +393,6 @@ void Editor::RenderMenuBar()
                 CreateNewTab<UITab>();
 
             ui::Separator();
-#if URHO3D_PLUGINS
-            if (ui::MenuItem("Load User Plugin"))
-            {
-#if _WIN32
-                const char* filter = "dll";
-#else
-                const char* filter = "so";
-#endif
-                nfdchar_t* selected = nullptr;
-                if (NFD_OpenDialog(filter, nullptr, &selected) == NFD_OKAY)
-                {
-                    LoadNativePlugin(selected);
-                    NFD_FreePath(selected);
-                }
-            }
-            ui::Separator();
-#endif
 
             if (ui::MenuItem("Exit"))
                 engine_->Exit();
@@ -532,23 +530,21 @@ void Editor::OnConsoleCommand(VariantMap& args)
 bool Editor::LoadNativePlugin(const String& path)
 {
 #if URHO3D_PLUGINS
-    if (userCodeContext_.userdata)
-        cr_plugin_close(userCodeContext_);
-
-    if (cr_plugin_load(userCodeContext_, path.CString()))
+    NativePlugin plugin;
+    if (cr_plugin_load(plugin.context_, path.CString()))
     {
-        userCodeLibPath_ = path;
-        userCodeContext_.userdata = context_;
+        plugin.path_ = path;
+        plugin.context_.userdata = context_;
+        nativePlugins_.Push(plugin);
+        return true;
     }
     else
     {
-        userCodeLibPath_.Clear();
-        userCodeContext_.userdata = nullptr;
         URHO3D_LOGWARNINGF("Failed loading plugin \"%s\".", GetFileNameAndExtension(path).CString());
     }
 #endif
 
-    return userCodeContext_.userdata != nullptr;
+    return false;
 }
 
 bool Editor::IsInternalResourcePath(const String& fullPath) const

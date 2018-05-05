@@ -84,6 +84,14 @@ protected:
     /// Returns true if specified path is internal engine or editor resource path.
     bool IsInternalResourcePath(const String& fullPath) const;
 
+    struct NativePlugin
+    {
+        /// User plugin context.
+        cr_plugin context_{};
+        /// Path of user plugin.
+        String path_;
+    };
+
     /// Pool tracking availability of unique IDs used by editor.
     IDPool idPool_;
     /// List of active scene tabs.
@@ -92,15 +100,12 @@ protected:
     WeakPtr<Tab> activeTab_;
     /// Path to a project file.
     String projectFilePath_;
-    /// User plugin context.
-    cr_plugin userCodeContext_{};
-    /// Path of current user plugin.
-    String userCodeLibPath_;
     /// Converter responsible for watching resource directories and converting assets to required formats.
     SharedPtr<AssetConverter> assetConverter_;
     Vector<String> engineResourcePaths_;
     Vector<String> engineResourcePrefixPaths_;
     Vector<String> engineResourceAutoloadPaths_;
+    Vector<NativePlugin> nativePlugins_;
 };
 
 }
