@@ -56,8 +56,6 @@ std::string Sanitize(const std::string& value);
 /// Returns true if type is void.
 bool IsVoid(const cppast::cpp_type& type);
 bool IsVoid(const cppast::cpp_type* type);
-/// Returns string padded with _ if value is a common keyword in programming languages.
-std::string EnsureNotKeyword(const std::string& value);
 /// Return a base type (discards const/pointers/references).
 const cppast::cpp_type& GetBaseType(const cppast::cpp_type& type);
 /// Return name of underlying type.

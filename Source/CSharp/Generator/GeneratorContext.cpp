@@ -131,6 +131,13 @@ bool GeneratorContext::LoadRules(const std::string& jsonPath)
             parserRules.symbolChecker_.Load(nsRules["symbols"]);
         }
 
+        if (nsRules.HasMember("include"))
+        {
+            const auto& includes = nsRules["include"];
+            for (auto jt = includes.Begin(); jt != includes.End(); jt++)
+                parserRules.includes_.emplace_back(jt->GetString());
+        }
+
         if (nsRules.HasMember("typemaps"))
         {
             auto& typeMaps = nsRules["typemaps"];

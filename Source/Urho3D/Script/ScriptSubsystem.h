@@ -34,6 +34,19 @@ class URHO3D_API ScriptSubsystem : public Object
     URHO3D_OBJECT(ScriptSubsystem, Object);
 
 public:
+    struct RuntimeSettings
+    {
+        /// Name of new jit domain.
+        String domainName_ = "DefaultDomain";
+        /// Path to executable which will be executed. Must have static main method. Can be empty.
+        String defaultExecutable_;
+        /// Jit options.
+        Vector<String> jitOptions_ = {
+            "--debugger-agent=transport=dt_socket,address=127.0.0.1:53631,server=y,suspend=n",
+            "--optimize=float32"
+        };
+    };
+
     explicit ScriptSubsystem(Context* context);
 
     /// Register types of inheritable native objects. They are used in factory which creates managed subclasses of these objects.
@@ -45,6 +58,11 @@ public:
     void QueueReleaseRef(RefCounted* instance);
     /// Registers current thread with .net runtime.
     void RegisterCurrentThread();
+
+    /// Creates a new managed domain and optionally executes an assembly.
+    void* HostManagedRuntime(RuntimeSettings& settings);
+    /// Load managed assembly and return it.
+    void* LoadAssembly(const String& pathToAssembly);
 
     /// Frees handle of managed object.
     void FreeGCHandle(void* gcHandle);

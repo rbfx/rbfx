@@ -152,7 +152,7 @@ macro (csharp_bind_target)
     set_source_files_properties(${CSHARP_SOURCE_FILES_GENERATED} ${COMMON_NET_SOURCE_FILES_GENERATED} PROPERTIES GENERATED TRUE)
 
     # CSharp target (native)
-    file (GLOB COMMON_CSHARP_SOURCE_FILES_MANUAL
+    file (GLOB_RECURSE COMMON_CSHARP_SOURCE_FILES_MANUAL
         ${COMMON_DIR}/Native/*.cpp ${BIND_CSHARP_DIR}/Native/*.cpp)
 
 
@@ -204,11 +204,36 @@ macro (csharp_bind_target)
         set (NET_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>)
     else ()
         set (NET_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+        # Needed for mono on unixes but not on windows.
+        set (FACADES Facades/)
     endif ()
-    add_target_csharp(${BIND_TARGET}Net /target:library /unsafe /reference:System.dll
+    add_target_csharp(${BIND_TARGET}Net /target:library /unsafe
+        /reference:System.dll
+        /reference:${FACADES}System.Runtime.dll
+        /reference:System.Numerics.dll
+        /reference:System.Numerics.Vectors.dll
+        /reference:${CMAKE_BINARY_DIR}/System.Buffers/ref/netstandard1.1/System.Buffers.dll
         /out:${NET_OUTPUT_DIRECTORY}/${BIND_TARGET}Net.dll ${COMMON_NET_SOURCE_FILES_MANUAL}
         ${COMMON_NET_SOURCE_FILES_GENERATED} ${BINDINGS_OUTPUT_DIR}/CSharp/Config.cs
     )
     add_dependencies(${BIND_TARGET}Net ${CSHARP_LIBRARY_NAME})
+    if (MSVC)
+        add_custom_command(TARGET ${BIND_TARGET}Net POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/System.Buffers/ref/netstandard1.1/System.Buffers.dll ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/
+            COMMAND ${CMAKE_COMMAND} -E copy ${MONO_PATH}/lib/mono/4.5/Facades/System.Runtime.dll ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/
+        )
+        install (FILES
+            ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/System.Buffers.dll
+            ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/System.Runtime.dll
+            DESTINATION ${DEST_LIBRARY_DIR}
+        )
+    endif ()
     install (FILES ${NET_OUTPUT_DIRECTORY}/${BIND_TARGET}Net.dll DESTINATION ${DEST_LIBRARY_DIR})
 endmacro ()
+
+# Dependencies for bindings
+file (DOWNLOAD https://www.nuget.org/api/v2/package/System.Buffers/4.4.0 ${CMAKE_BINARY_DIR}/System.Buffers/pkg.zip)
+execute_process(
+    COMMAND ${CMAKE_COMMAND} -E tar "xf" "pkg.zip" --format=zip
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/System.Buffers
+)

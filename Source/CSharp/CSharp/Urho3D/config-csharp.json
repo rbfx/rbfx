@@ -61,6 +61,9 @@
           ]
         }
       },
+      "include": [
+        "Urho3D/Urho3DAll.h"
+      ],
       "symbols": {
         "include": [
           "Urho3D",
@@ -365,5 +368,7 @@
     "Urho3D::M_MIN_UNSIGNED": {"value": "uint.MinValue", "const": true},
     "Urho3D::M_MAX_UNSIGNED": {"value": "uint.MaxValue", "const": true},
     "Urho3D::M_INFINITY": {"value": "float.PositiveInfinity", "const": true},
+    "nullptr": "null",
+    "String::EMPTY": "\"\"",
   }
 }

@@ -465,17 +465,20 @@ std::string GeneratePInvokePass::ToPInvokeType(const cppast::cpp_type& type, boo
         case cppast::cpp_type_kind::pointer_t:
         case cppast::cpp_type_kind::reference_t:
         {
-            const auto& pointee = cppast::remove_cv(
-                t.kind() == cppast::cpp_type_kind::pointer_t ?
-                dynamic_cast<const cppast::cpp_pointer_type&>(t).pointee() :
-                dynamic_cast<const cppast::cpp_reference_type&>(t).referee());
+            const auto& cvPointee = t.kind() == cppast::cpp_type_kind::pointer_t ?
+                                    dynamic_cast<const cppast::cpp_pointer_type&>(t).pointee() :
+                                    dynamic_cast<const cppast::cpp_reference_type&>(t).referee();
+            const auto& pointee = cppast::remove_cv(cvPointee);
 
             if (pointee.kind() == cppast::cpp_type_kind::builtin_t)
             {
                 const auto& builtin = dynamic_cast<const cppast::cpp_builtin_type&>(pointee);
                 if (builtin.builtin_type_kind() == cppast::cpp_builtin_type_kind::cpp_char)
                     return "string";
-                if (t.kind() == cppast::cpp_type_kind::pointer_t)
+                if (builtin.builtin_type_kind() == cppast::cpp_builtin_type_kind::cpp_void ||   // Raw data
+                    builtin.builtin_type_kind() == cppast::cpp_builtin_type_kind::cpp_uchar ||  // Most likely buffers
+                    builtin.builtin_type_kind() == cppast::cpp_builtin_type_kind::cpp_schar ||  //
+                    IsConst(cvPointee))
                     return "IntPtr";
                 auto typeName = toPInvokeType(pointee);
                 if (!disallowReferences)

@@ -168,14 +168,6 @@ bool IsVoid(const cppast::cpp_type* type)
     return type == nullptr || IsVoid(*type);
 }
 
-std::string EnsureNotKeyword(const std::string& value)
-{
-    // TODO: Refactor this
-    if (value == "object" || value == "params")
-        return value + "_";
-    return value;
-}
-
 std::string MapParameterList(std::vector<std::shared_ptr<MetaEntity>>& parameters,
     const std::function<std::string(MetaEntity*)>& callable)
 {
@@ -191,12 +183,13 @@ std::string ParameterList(const CppParameters& params,
     std::vector<std::string> parts;
     for (const auto& param : params)
     {
+        auto* metaParam = static_cast<MetaEntity*>(param.user_data());
         std::string typeString;
         if (typeToString)
             typeString = typeToString(param.type());
         else
             typeString = cppast::to_string(param.type());
-        typeString += " " + EnsureNotKeyword(param.name());
+        typeString += " " + metaParam->name_;
         parts.emplace_back(typeString);
     }
     return str::join(parts, ", ");
@@ -208,7 +201,8 @@ std::string ParameterNameList(const CppParameters& params,
     std::vector<std::string> parts;
     for (const auto& param : params)
     {
-        auto name = EnsureNotKeyword(param.name());
+        auto* metaParam = static_cast<MetaEntity*>(param.user_data());
+        auto name = metaParam->name_;
         if (nameFilter)
             name = nameFilter(param);
         parts.emplace_back(name);
@@ -630,6 +624,9 @@ std::string CamelCaseIdentifier(const std::string& name)
 
 bool IsOutType(const cppast::cpp_type& type)
 {
+    if (IsConst(type))
+        return false;
+
     if (type.kind() == cppast::cpp_type_kind::reference_t || type.kind() == cppast::cpp_type_kind::pointer_t)
     {
         const auto& pointee = type.kind() == cppast::cpp_type_kind::pointer_t ?
@@ -644,8 +641,15 @@ bool IsOutType(const cppast::cpp_type& type)
         // A pointer to builtin is (almost) definitely output parameter. In some cases (like when pointer to builtin
         // type means a location within array) c++ code should be tweaked to better reflect intent of parameter or c++
         // function should be ignored completely.
-        if (nonCvPointee.kind() == cppast::cpp_type_kind::builtin_t && type.kind() == cppast::cpp_type_kind::reference_t)
+        if (nonCvPointee.kind() == cppast::cpp_type_kind::builtin_t)
+        {
+            auto typeKind = dynamic_cast<const cppast::cpp_builtin_type&>(nonCvPointee).builtin_type_kind();
+            if (typeKind == cppast::cpp_builtin_type_kind::cpp_void ||  // IntPtr type
+                typeKind == cppast::cpp_builtin_type_kind::cpp_schar ||
+                typeKind == cppast::cpp_builtin_type_kind::cpp_uchar)
+                return false;
             return true;
+        }
 
         // Any type mapped to a value type (like std::string mapped to System.String) are output parameters.
         auto* map = generator->GetTypeMap(type);
