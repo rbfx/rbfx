@@ -426,10 +426,7 @@ void Editor::RenderMenuBar()
             ui::EndMenu();
         }
 
-        if (!activeTab_.Expired())
-        {
-            SendEvent(E_EDITORTOOLBARBUTTONS);
-        }
+        SendEvent(E_EDITORAPPLICATIONMENU);
 
         ui::EndMainMenuBar();
     }
