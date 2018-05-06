@@ -49,6 +49,7 @@
             "Physics/*.h"
           ],
           "exclude": [
+            "Engine/PluginApplication.h",
             "IK/IKConverters.h",
             "UI/FontFace*.h",
             "Graphics/OctreeQuery.h",
@@ -59,10 +60,15 @@
             "IO/VectorBuffer.h",
             "IO/FileSystem.h"
           ]
+        },
+        "Tools/Editor": {
+          "include": [
+            "EditorEvents.h"
+          ]
         }
       },
       "include": [
-        "Urho3D/Urho3DAll.h"
+        "Urho3D/Urho3DAll.h",
       ],
       "symbols": {
         "include": [
@@ -335,7 +341,6 @@
       "inheritable": {
         "include": [
           "Urho3D::Application",
-          "Urho3D::PluginApplication",
           "Urho3D::Component",
           "Urho3D::LogicComponent",
           "Urho3D::Serializable",

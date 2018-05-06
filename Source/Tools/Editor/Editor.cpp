@@ -114,8 +114,19 @@ void Editor::Start()
     // Prevent overwriting example scene.
     DynamicCast<SceneTab>(tabs_.Front())->ClearCachedPaths();
 
-    // Load any native plugins in editor directory.
+    // Plugin loading
     {
+#if URHO3D_CSHARP
+        ScriptSubsystem::RuntimeSettings settings{};
+        settings.domainName_ = "Editor";
+        settings.jitOptions_ = {
+            "--debugger-agent=transport=dt_socket,address=127.0.0.1:53630,server=y,suspend=n",
+            "--optimize=float32"
+        };
+        GetScripts()->HostManagedRuntime(settings);
+        GetScripts()->RegisterCurrentThread();
+#endif
+
         StringVector files;
         GetFileSystem()->ScanDir(files, ".", "", SCAN_FILES, false);
 
@@ -135,6 +146,10 @@ void Editor::Start()
             auto lastCharacter = path.Length() - strlen(end) - 1;
             if (path.StartsWith(start) && path.EndsWith(end) && !IsDigit(path[lastCharacter]))
                 LoadNativePlugin(path);
+#if URHO3D_CSHARP
+            else if (path.StartsWith("EditorPluginManaged") && path.EndsWith(".dll"))
+                LoadManagedPlugin(path);
+#endif
         }
     }
 }
@@ -533,9 +548,27 @@ bool Editor::LoadNativePlugin(const String& path)
         return true;
     }
     else
+        URHO3D_LOGWARNINGF("Failed loading native plugin \"%s\".", GetFileNameAndExtension(path).CString());
+#endif
+
+    return false;
+}
+
+bool Editor::LoadManagedPlugin(const String& path)
+{
+#if URHO3D_PLUGINS && URHO3D_CSHARP
+    if (auto* assembly = GetScripts()->LoadAssembly(path))
     {
-        URHO3D_LOGWARNINGF("Failed loading plugin \"%s\".", GetFileNameAndExtension(path).CString());
+        auto name = GetFileName(path);
+        auto descBase = ToString("%s.%s:", name.CString(), name.CString());
+        auto object = GetScripts()->CallMethod(assembly, descBase + "PluginMain", nullptr, {
+            GetScripts()->ToManagedObject("Urho3DNet", "Urho3D.Context", context_)});
+        auto objectHandle = GetScripts()->Lock(object.GetVoidPtr(), false);
+        GetScripts()->CallMethod(assembly, descBase + "OnLoad", object.GetVoidPtr());
+        managedPlugins_.Push(objectHandle);
     }
+    else
+        URHO3D_LOGWARNINGF("Failed loading managed plugin \"%s\".", GetFileNameAndExtension(path).CString());
 #endif
 
     return false;
