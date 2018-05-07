@@ -117,7 +117,8 @@ void Editor::Start()
     // Load any native plugins in editor directory.
     {
         StringVector files;
-        GetFileSystem()->ScanDir(files, ".", "", SCAN_FILES, false);
+        GetFileSystem()->ScanDir(files, GetFileSystem()->GetProgramDir(), "", SCAN_FILES, false);
+
 
 #if WIN32
         const char* start = "EditorPlugin";
@@ -134,7 +135,10 @@ void Editor::Start()
         {
             auto lastCharacter = path.Length() - strlen(end) - 1;
             if (path.StartsWith(start) && path.EndsWith(end) && !IsDigit(path[lastCharacter]))
-                LoadNativePlugin(path);
+            {
+                LoadNativePlugin(GetFileSystem()->GetProgramDir() + path);
+            }
+                
         }
     }
 }
