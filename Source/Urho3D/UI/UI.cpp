@@ -123,7 +123,6 @@ UI::UI(Context* context) :
     nonModalBatchSize_(0),
     dragElementsCount_(0),
     dragConfirmedCount_(0),
-    uiScale_(1.0f),
     customSize_(IntVector2::ZERO)
 {
     rootElement_->SetTraversalMode(TM_DEPTH_FIRST);
@@ -383,8 +382,8 @@ void UI::Update(float timeStep)
         {
             TouchState* touch = input->GetTouch(i);
             IntVector2 touchPos = touch->position_;
-            touchPos.x_ = (int)(touchPos.x_ / uiScale_);
-            touchPos.y_ = (int)(touchPos.y_ / uiScale_);
+            touchPos.x_ = (int)(touchPos.x_);
+            touchPos.y_ = (int)(touchPos.y_);
             ProcessHover(touchPos, TOUCHID_MASK(touch->touchID_), 0, nullptr);
         }
 #ifdef URHO3D_SYSTEMUI
@@ -739,35 +738,6 @@ void UI::SetFontOversampling(int oversampling)
     }
 }
 
-void UI::SetScale(float scale)
-{
-    uiScale_ = Max(scale, M_EPSILON);
-    ResizeRootElement();
-}
-
-void UI::SetWidth(float width)
-{
-    IntVector2 size = GetEffectiveRootElementSize(false);
-    SetScale((float)size.x_ / width);
-}
-
-void UI::SetHeight(float height)
-{
-    IntVector2 size = GetEffectiveRootElementSize(false);
-    SetScale((float)size.y_ / height);
-}
-
-void UI::SetCustomSize(const IntVector2& size)
-{
-    customSize_ = IntVector2(Max(0, size.x_), Max(0, size.y_));
-    ResizeRootElement();
-}
-
-void UI::SetCustomSize(int width, int height)
-{
-    customSize_ = IntVector2(Max(0, width), Max(0, height));
-    ResizeRootElement();
-}
 
 IntVector2 UI::GetCursorPosition() const
 {
@@ -945,8 +915,6 @@ void UI::Initialize()
 
     initialized_ = true;
 
-    SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(UI, HandleBeginFrame));
-    SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(UI, HandlePostUpdate));
     SubscribeToEvent(E_RENDERUPDATE, URHO3D_HANDLER(UI, HandleRenderUpdate));
 
     URHO3D_LOGINFO("Initialized user interface");
@@ -1011,11 +979,11 @@ void UI::Render(VertexBuffer* buffer, const PODVector<UIBatch>& batches, unsigne
         scale.y_ = -scale.y_;
 #endif
     }
-
+	float pixelToDevicePixelRatio = GetSubsystem<Graphics>()->GetPixelToDevicePixelRatio();
     Matrix4 projection(Matrix4::IDENTITY);
-    projection.m00_ = scale.x_ * uiScale_;
+    projection.m00_ = scale.x_ / pixelToDevicePixelRatio;
     projection.m03_ = offset.x_;
-    projection.m11_ = scale.y_ * uiScale_;
+    projection.m11_ = scale.y_ / pixelToDevicePixelRatio;
     projection.m13_ = offset.y_;
     projection.m22_ = 1.0f;
     projection.m23_ = 0.0f;
@@ -1084,10 +1052,10 @@ void UI::Render(VertexBuffer* buffer, const PODVector<UIBatch>& batches, unsigne
         graphics_->SetShaderParameter(PSP_ELAPSEDTIME, elapsedTime);
 
         IntRect scissor = batch.scissor_;
-        scissor.left_ = (int)(scissor.left_ * uiScale_);
-        scissor.top_ = (int)(scissor.top_ * uiScale_);
-        scissor.right_ = (int)(scissor.right_ * uiScale_);
-        scissor.bottom_ = (int)(scissor.bottom_ * uiScale_);
+        scissor.left_ = (int)(scissor.left_ / pixelToDevicePixelRatio);
+        scissor.top_ = (int)(scissor.top_ / pixelToDevicePixelRatio);
+        scissor.right_ = (int)(scissor.right_ / pixelToDevicePixelRatio);
+        scissor.bottom_ = (int)(scissor.bottom_ / pixelToDevicePixelRatio);
 
         // Flip scissor vertically if using OpenGL texture rendering
 #ifdef URHO3D_OPENGL
@@ -1264,8 +1232,8 @@ void UI::GetCursorPositionAndVisible(IntVector2& pos, bool& visible)
             pos = cursor_->GetPosition();
     }
 
-    pos.x_ = (int)(pos.x_ / uiScale_);
-    pos.y_ = (int)(pos.y_ / uiScale_);
+    pos.x_ = (int)(pos.x_);
+    pos.y_ = (int)(pos.y_);
 }
 
 void UI::SetCursorShape(CursorShape shape)
@@ -1366,6 +1334,7 @@ void UI::ProcessHover(const IntVector2& windowCursorPos, int buttons, int qualif
             {
                 SendDragOrHoverEvent(E_HOVERBEGIN, element, cursorPos, IntVector2::ZERO, nullptr);
                 // Exit if element is destroyed by the event handling
+				
                 if (!element)
                     return;
             }
@@ -1694,8 +1663,9 @@ void UI::HandleScreenMode(StringHash eventType, VariantMap& eventData)
 
     if (!initialized_)
         Initialize();
-    else
-        ResizeRootElement();
+	else {
+		ResizeRootElement();
+	}
 }
 
 void UI::HandleMouseButtonDown(StringHash eventType, VariantMap& eventData)
@@ -1855,8 +1825,8 @@ void UI::HandleTouchBegin(StringHash eventType, VariantMap& eventData)
     using namespace TouchBegin;
 
     IntVector2 pos(eventData[P_X].GetInt(), eventData[P_Y].GetInt());
-    pos.x_ = int(pos.x_ / uiScale_);
-    pos.y_ = int(pos.y_ / uiScale_);
+    pos.x_ = int(pos.x_);
+    pos.y_ = int(pos.y_);
     usingTouchInput_ = true;
 
     int touchId = TOUCHID_MASK(eventData[P_TOUCHID].GetInt());
@@ -1876,8 +1846,8 @@ void UI::HandleTouchEnd(StringHash eventType, VariantMap& eventData)
     using namespace TouchEnd;
 
     IntVector2 pos(eventData[P_X].GetInt(), eventData[P_Y].GetInt());
-    pos.x_ = int(pos.x_ / uiScale_);
-    pos.y_ = int(pos.y_ / uiScale_);
+    pos.x_ = int(pos.x_ );
+    pos.y_ = int(pos.y_ );
 
     // Get the touch index
     int touchId = TOUCHID_MASK(eventData[P_TOUCHID].GetInt());
@@ -1913,10 +1883,10 @@ void UI::HandleTouchMove(StringHash eventType, VariantMap& eventData)
 
     IntVector2 pos(eventData[P_X].GetInt(), eventData[P_Y].GetInt());
     IntVector2 deltaPos(eventData[P_DX].GetInt(), eventData[P_DY].GetInt());
-    pos.x_ = int(pos.x_ / uiScale_);
-    pos.y_ = int(pos.y_ / uiScale_);
-    deltaPos.x_ = int(deltaPos.x_ / uiScale_);
-    deltaPos.y_ = int(deltaPos.y_ / uiScale_);
+    pos.x_ = int(pos.x_ );
+    pos.y_ = int(pos.y_ );
+    deltaPos.x_ = int(deltaPos.x_);
+    deltaPos.y_ = int(deltaPos.y_);
     usingTouchInput_ = true;
 
     int touchId = TOUCHID_MASK(eventData[P_TOUCHID].GetInt());
@@ -2020,24 +1990,17 @@ void UI::HandleTextInput(StringHash eventType, VariantMap& eventData)
         element->OnTextInput(eventData[P_TEXT].GetString());
 }
 
-void UI::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
+
+void UI::HandleRenderUpdate(StringHash eventType, VariantMap& eventData)
 {
     // If have a cursor, and a drag is not going on, reset the cursor shape. Application logic that wants to apply
     // custom shapes can do it after this, but needs to do it each frame
     if (cursor_ && dragElementsCount_ == 0)
         cursor_->SetShape(CS_NORMAL);
-}
-
-void UI::HandlePostUpdate(StringHash eventType, VariantMap& eventData)
-{
-    using namespace PostUpdate;
-
-    Update(eventData[P_TIMESTEP].GetFloat());
-}
-
-void UI::HandleRenderUpdate(StringHash eventType, VariantMap& eventData)
-{
-    RenderUpdate();
+   
+	Update(eventData[RenderUpdate::P_TIMESTEP].GetFloat());
+    
+	RenderUpdate();
 }
 
 void UI::HandleDropFile(StringHash eventType, VariantMap& eventData)
@@ -2048,8 +2011,8 @@ void UI::HandleDropFile(StringHash eventType, VariantMap& eventData)
     if (input->IsMouseVisible())
     {
         IntVector2 screenPos = input->GetMousePosition();
-        screenPos.x_ = int(screenPos.x_ / uiScale_);
-        screenPos.y_ = int(screenPos.y_ / uiScale_);
+        screenPos.x_ = int(screenPos.x_);
+        screenPos.y_ = int(screenPos.y_);
 
         UIElement* element = GetElementAt(screenPos);
 
@@ -2134,8 +2097,8 @@ IntVector2 UI::SumTouchPositions(UI::DragData* dragData, const IntVector2& oldSe
                 if (!ts)
                     break;
                 IntVector2 pos = ts->position_;
-                dragData->sumPos.x_ += (int)(pos.x_ / uiScale_);
-                dragData->sumPos.y_ += (int)(pos.y_ / uiScale_);
+                dragData->sumPos.x_ += (int)(pos.x_);
+                dragData->sumPos.y_ += (int)(pos.y_);
             }
         }
         sendPos.x_ = dragData->sumPos.x_ / dragData->numDragButtons;
@@ -2146,7 +2109,8 @@ IntVector2 UI::SumTouchPositions(UI::DragData* dragData, const IntVector2& oldSe
 
 void UI::ResizeRootElement()
 {
-    IntVector2 effectiveSize = GetEffectiveRootElementSize();
+    IntVector2 effectiveSize = GetEffectiveRootElementSize(true);
+	URHO3D_LOGINFO("effectiveSize: " + String(effectiveSize));
     rootElement_->SetSize(effectiveSize);
     rootModalElement_->SetSize(effectiveSize);
 }
@@ -2160,8 +2124,9 @@ IntVector2 UI::GetEffectiveRootElementSize(bool applyScale) const
 
     if (applyScale)
     {
-        size.x_ = RoundToInt((float)size.x_ / uiScale_);
-        size.y_ = RoundToInt((float)size.y_ / uiScale_);
+		float pixelToDeviePixelRatio = graphics_->GetPixelToDevicePixelRatio();
+        size.x_ = RoundToInt((float)size.x_ * pixelToDeviePixelRatio);
+        size.y_ = RoundToInt((float)size.y_ * pixelToDeviePixelRatio);
     }
 
     return size;

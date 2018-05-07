@@ -14,7 +14,7 @@ namespace Undo
 Manager::Manager(Context* ctx)
     : Object(ctx)
 {
-    SubscribeToEvent(E_ENDFRAME, [&](StringHash, VariantMap&)
+    SubscribeToEvent(E_POSTUPDATE, [&](StringHash, VariantMap&)
     {
         if (trackingEnabled_ && !currentFrameStates_.Empty())
         {

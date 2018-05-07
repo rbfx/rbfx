@@ -133,7 +133,7 @@ public:
 
 private:
     /// Handle begin frame event.
-    void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
+    void HandleUpdate(StringHash eventType, VariantMap& eventData);
     /// Handle render update frame event.
     void HandleRenderUpdate(StringHash eventType, VariantMap& eventData);
     /// Handle server connection.

@@ -55,7 +55,7 @@ DebugRenderer::DebugRenderer(Context* context) :
 {
     vertexBuffer_ = new VertexBuffer(context_);
 
-    SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(DebugRenderer, HandleEndFrame));
+    SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(DebugRenderer, HandlePostRenderUpdate));
 }
 
 DebugRenderer::~DebugRenderer() = default;
@@ -668,7 +668,7 @@ bool DebugRenderer::HasContent() const
     return !(lines_.Empty() && noDepthLines_.Empty() && triangles_.Empty() && noDepthTriangles_.Empty());
 }
 
-void DebugRenderer::HandleEndFrame(StringHash eventType, VariantMap& eventData)
+void DebugRenderer::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData)
 {
     // When the amount of debug geometry is reduced, release memory
     unsigned linesSize = lines_.Size();

@@ -102,36 +102,6 @@ static long long HiresTick()
 #endif
 }
 
-void Time::BeginFrame(float timeStep)
-{
-    ++frameNumber_;
-    if (!frameNumber_)
-        ++frameNumber_;
-
-    timeStep_ = timeStep;
-
-    {
-        URHO3D_PROFILE(BeginFrame);
-
-        // Frame begin event
-        using namespace BeginFrame;
-
-        VariantMap& eventData = GetEventDataMap();
-        eventData[P_FRAMENUMBER] = frameNumber_;
-        eventData[P_TIMESTEP] = timeStep_;
-        SendEvent(E_BEGINFRAME, eventData);
-    }
-}
-
-void Time::EndFrame()
-{
-    {
-        URHO3D_PROFILE(EndFrame);
-
-        // Frame end event
-        SendEvent(E_ENDFRAME);
-    }
-}
 
 void Time::SetTimerPeriod(unsigned mSec)
 {
@@ -181,24 +151,54 @@ void Time::Sleep(unsigned mSec)
 #endif
 }
 
-float Time::GetFramesPerSecond() const
-{
-    return 1.0f / timeStep_;
-}
+
 
 Timer::Timer()
 {
     Reset();
 }
 
+Timer::Timer(unsigned timeoutDurationMs)
+{
+    Reset();
+    SetTimeoutDuration(timeoutDurationMs);
+}
+
 unsigned Timer::GetMSec(bool reset)
 {
     unsigned currentTime = Tick();
     unsigned elapsedTime = currentTime - startTime_;
-    if (reset)
-        startTime_ = currentTime;
+
+    if (reset) {
+        Reset();
+    }
 
     return elapsedTime;
+}
+
+unsigned Timer::GetStartTime()
+{
+    return startTime_;
+}
+
+void Timer::SetTimeoutDuration(unsigned timeoutDurationMs, bool reset)
+{
+    timeoutDuration_ = timeoutDurationMs;
+    if (reset)
+        Reset();
+}
+
+unsigned Timer::GetTimeoutDuration()
+{
+    return timeoutDuration_;
+}
+
+bool Timer::IsTimedOut()
+{
+    unsigned currentTime = Tick();
+    if (currentTime - startTime_ >= timeoutDuration_ && (timeoutDuration_ != 0))
+        return true;
+    return false;
 }
 
 void Timer::Reset()
@@ -206,29 +206,73 @@ void Timer::Reset()
     startTime_ = Tick();
 }
 
+
 HiresTimer::HiresTimer()
 {
     Reset();
+
+}
+
+HiresTimer::HiresTimer(long long timeoutDurationUs)
+{
+    Reset();
+    SetTimeoutDuration(timeoutDurationUs);
 }
 
 long long HiresTimer::GetUSec(bool reset)
 {
     long long currentTime = HiresTick();
-    long long elapsedTime = currentTime - startTime_;
+
+    long long elapsedTicks = currentTime - startTime_;
 
     // Correct for possible weirdness with changing internal frequency
-    if (elapsedTime < 0)
-        elapsedTime = 0;
+    if (elapsedTicks < 0)
+        elapsedTicks = 0;
 
     if (reset)
-        startTime_ = currentTime;
+        Reset();
 
-    return (elapsedTime * 1000000LL) / frequency;
+    return TicksToUSec(elapsedTicks);
+}
+
+long long HiresTimer::GetStartTime()
+{
+    return startTime_;
+}
+
+void HiresTimer::SetTimeoutDuration(long long timeoutDurationUs, bool reset)
+{
+    timeoutDurationTicks_ = USecToTicks(timeoutDurationUs);
+    if (reset)
+        Reset();
+}
+
+long long HiresTimer::GetTimeoutDuration()
+{
+    return TicksToUSec(timeoutDurationTicks_);
+}
+
+bool HiresTimer::IsTimedOut()
+{
+    long long currentTick = HiresTick();
+    if (currentTick - startTime_ >= timeoutDurationTicks_ && (timeoutDurationTicks_ != 0))
+        return true;
+    return false;
 }
 
 void HiresTimer::Reset()
 {
-    startTime_ = HiresTick();
+	startTime_ = HiresTick();
+}
+
+long long HiresTimer::TicksToUSec( long long ticks)
+{
+    return (ticks * 1000000LL) / frequency;
+}
+
+long long HiresTimer::USecToTicks(long long microseconds)
+{
+    return (microseconds * frequency) / 1000000LL + 1;
 }
 
 }

@@ -33,6 +33,7 @@
 #include <IconFontCppHeaders/IconsFontAwesome.h>
 #include <nfd.h>
 #include "Assets/AssetConverter.h"
+#include "Urho3D/Misc/FreeFunctions.h"
 
 URHO3D_DEFINE_APPLICATION_MAIN(Editor);
 
@@ -58,10 +59,12 @@ void Editor::Setup()
     }
 #endif
 
-    engineResourceAutoloadPaths_ = {"Autoload"};
-    engineResourcePrefixPaths_ = {GetFileSystem()->GetProgramDir(), GetParentPath(GetFileSystem()->GetProgramDir()), 
-        GetParentPath(GetParentPath(GetFileSystem()->GetProgramDir())) };
-    engineResourcePaths_ = {"Cache", "CoreData", "EditorData"};
+    //engineResourceAutoloadPaths_ = {"Autoload"};
+    //engineResourcePrefixPaths_ = {GetFileSystem()->GetProgramDir(), GetParentPath(GetFileSystem()->GetProgramDir()), 
+    //    GetParentPath(GetParentPath(GetFileSystem()->GetProgramDir())) };
+
+
+    //engineResourcePaths_ = { "Data", "CoreData", "EditorData"};
 
     engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
     engineParameters_[EP_HEADLESS] = false;
@@ -70,9 +73,9 @@ void Editor::Setup()
     engineParameters_[EP_WINDOW_WIDTH] = 1920;
     engineParameters_[EP_LOG_LEVEL] = LOG_DEBUG;
     engineParameters_[EP_WINDOW_RESIZABLE] = true;
-    engineParameters_[EP_AUTOLOAD_PATHS] = String::Joined(engineResourceAutoloadPaths_, ";");
-    engineParameters_[EP_RESOURCE_PREFIX_PATHS] = String::Joined(engineResourcePrefixPaths_, ";");
-    engineParameters_[EP_RESOURCE_PATHS] = String::Joined(engineResourcePaths_, ";");
+    //engineParameters_[EP_AUTOLOAD_PATHS] = String::Joined(engineResourceAutoloadPaths_, ";");
+    engineParameters_[EP_RESOURCE_PREFIX_PATHS] =  "..\\..\\..\\Urho3d\\bin;..\\..\\..\\bin";
+    engineParameters_[EP_RESOURCE_PATHS] = String::Joined({ "Data", "CoreData", "EditorData" }, ";");
 
     SetRandomSeed(Time::GetTimeSinceEpoch());
 }
@@ -117,7 +120,8 @@ void Editor::Start()
     // Load any native plugins in editor directory.
     {
         StringVector files;
-        GetFileSystem()->ScanDir(files, ".", "", SCAN_FILES, false);
+        GetFileSystem()->ScanDir(files, GetFileSystem()->GetProgramDir(), "", SCAN_FILES, false);
+
 
 #if WIN32
         const char* start = "EditorPlugin";
@@ -134,7 +138,10 @@ void Editor::Start()
         {
             auto lastCharacter = path.Length() - strlen(end) - 1;
             if (path.StartsWith(start) && path.EndsWith(end) && !IsDigit(path[lastCharacter]))
-                LoadNativePlugin(path);
+            {
+                LoadNativePlugin(GetFileSystem()->GetProgramDir() + path);
+            }
+                
         }
     }
 }

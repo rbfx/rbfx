@@ -71,6 +71,12 @@ public:
     virtual bool LoadJSON(const JSONValue& source);
     /// Save as JSON data. Return true if successful.
     virtual bool SaveJSON(JSONValue& dest) const;
+	/// Copies all current attribute values to dest object. Does not clear all attributes on dest object.
+	virtual bool CopyTo(Serializable& dest) const;
+
+
+
+
 
     /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
     virtual void ApplyAttributes() { }
@@ -130,6 +136,8 @@ public:
     /// Return the network attribute state, if allocated.
     NetworkState* GetNetworkState() const { return networkState_.Get(); }
 
+    /// Prints all attributes to the log file.
+	virtual void PrintAttributes() const;
 protected:
     /// Network attribute state.
     UniquePtr<NetworkState> networkState_;

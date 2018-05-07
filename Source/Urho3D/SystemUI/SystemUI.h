@@ -93,11 +93,17 @@ protected:
     IndexBuffer indexBuffer_;
     SharedPtr<Texture2D> fontTexture_;
     PODVector<float> fontSizes_;
+	//bool updateCoverageFlag_ = false;
 
     void ReallocateFontTexture();
     void UpdateProjectionMatrix();
     void OnRenderDrawLists(ImDrawData* data);
     void OnRawEvent(VariantMap& args);
+
+	void HandleEndRender(StringHash event, VariantMap& data);
+	void HandleEndRenderPostSwap(StringHash event, VariantMap& data);
+	void HandlePostUpdate(StringHash event, VariantMap& data);
+	void HandlePreUpdate(StringHash event, VariantMap& data);
 };
 
 /// Convert Color to ImVec4.

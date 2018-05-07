@@ -389,6 +389,17 @@ String::Iterator String::Insert(const String::Iterator& dest, char c)
     return Begin() + pos;
 }
 
+unsigned int String::Count(char c)
+{
+	unsigned int count = 0;
+	for (unsigned int i = 0; i < Length(); i++) {
+		if (buffer_[i] == c) {
+			count++;
+		}
+	}
+	return count;
+}
+
 void String::Erase(unsigned pos, unsigned length)
 {
     Replace(pos, length, String::EMPTY);

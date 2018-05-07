@@ -32,6 +32,7 @@
 #include "Widgets.h"
 #include "SceneSettings.h"
 #include <ImGui/imgui_internal.h>
+#include "Urho3D/Misc/FreeFunctions.h"
 
 
 namespace Urho3D
@@ -671,6 +672,78 @@ void SceneTab::RenderNodeContextMenu()
                     Select(selectedNode->CreateChild(String::EMPTY, alternative ? LOCAL : REPLICATED));
             }
         }
+		if (ui::MenuItem(alternative ? "Load Child (Local)" : "Load Child"))
+		{
+			for (auto& selectedNode : GetSelection())
+			{
+                if (!selectedNode.Expired())
+                {
+                    //prompt user for path to node file.
+                    String filePath = GetNativeDialogExistingFile("", "bin;xml;json");
+                    if (GSS<FileSystem>()->FileExists(filePath))
+                    {
+                       
+                        SharedPtr<Node> loadedNode = SharedPtr<Node>(new Node(context_));
+                        SharedPtr<File> file = SharedPtr<File>(new File(context_, filePath, FILE_READ));
+                        bool loadSuccess = true;
+                        if (GetExtension(filePath) == ".xml")
+                        {
+                            SharedPtr<XMLFile> xmlFile = SharedPtr<XMLFile>(new XMLFile(context_));
+                            loadSuccess &= xmlFile->Load(*file);
+                            loadSuccess &= loadedNode->LoadXML(xmlFile->GetRoot());
+                        }
+                        else if (GetExtension(filePath) == ".json")
+                        {
+                            SharedPtr<JSONFile> xmlFile = SharedPtr<JSONFile>(new JSONFile(context_));
+                            loadSuccess &= xmlFile->Load(*file);
+                            loadSuccess &= loadedNode->LoadJSON(xmlFile->GetRoot());
+                        }
+                        else//binary
+                        {
+                            loadSuccess &= loadedNode->Load(*file);
+                        }
+                        
+                        if(loadSuccess)
+                            selectedNode->AddChild(loadedNode);
+
+                    }
+
+                }
+
+
+			}
+		}
+        if (ui::MenuItem("Save As"))
+        {
+            for (auto& selectedNode : GetSelection())
+            {
+                if (!selectedNode.Expired())
+                {
+                    //prompt user for path to node file.
+                    String filePath = GetNativeDialogSave("", "bin;xml;json");
+                    if (!filePath.Empty())
+                    {
+
+                        SharedPtr<File> file = SharedPtr<File>(new File(context_, filePath, FILE_WRITE));
+
+                        if(GetExtension(filePath) == ".bin")
+                            selectedNode->Save(*file);
+
+                        if (GetExtension(filePath) == ".xml")
+                            selectedNode->SaveXML(*file);
+
+                        if (GetExtension(filePath) == ".json")
+                            selectedNode->SaveJSON(*file);
+
+                    }
+
+                }
+
+
+            }
+        }
+
+
 
         if (ui::BeginMenu(alternative ? "Create Component (Local)" : "Create Component"))
         {
@@ -798,6 +871,29 @@ void SceneTab::OnComponentRemoved(VariantMap& args)
             }
         }
     }
+}
+
+void SceneTab::OnEditorUserCodeReLoadStart(StringHash event, VariantMap& data)
+{
+    Pause();
+    SceneStateSave();
+    PODVector<Node*> nodes = GetScene()->GetChildren(true);
+    //copy vector to temp vector of shared pts just in case we remove a parent node in the scene in the next pass below.
+    Vector<SharedPtr<Node>> nodesSharedPtrs;
+    for (Node* node : nodes)
+    {
+        nodesSharedPtrs.Push(SharedPtr<Node>(node));
+    }
+
+    //remove what we need from the scene graph..
+    for (SharedPtr<Node> node : nodesSharedPtrs)
+    {
+        if(node.NotNull())
+            if (!node->HasTag("__EDITOR_OBJECT__"))
+                node->Remove();
+    }
+
+    //shared ptrs released so actual nodes that need released will be released at this point.
 }
 
 }

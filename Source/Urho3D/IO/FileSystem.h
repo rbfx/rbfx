@@ -31,12 +31,13 @@ namespace Urho3D
 
 class AsyncExecRequest;
 
-/// Return files.
-static const unsigned SCAN_FILES = 0x1;
-/// Return directories.
-static const unsigned SCAN_DIRS = 0x2;
-/// Return also hidden files.
-static const unsigned SCAN_HIDDEN = 0x4;
+
+enum ScanFlags {
+	SCAN_FILES = 0x1,
+	SCAN_DIRS = 0x2,
+	SCAN_HIDDEN = 0x4
+};
+
 
 /// Subsystem for file and directory operations and access control.
 class URHO3D_API FileSystem : public Object
@@ -99,18 +100,32 @@ public:
     String GetProgramDir() const;
     /// Return the user documents directory.
     String GetUserDocumentsDir() const;
+    /// Set the default Orginization and App names
+    void SetDefaultOrgAndAppCredentials(const String& org, const String& app);
+    /// return default orginization name
+    String GetOrginizationName() const { return lastPrefOrg_; }
+    /// return default application name
+    String GetApplicationName() const { return lastPrefApp_; }
     /// Return the application preferences directory.
     String GetAppPreferencesDir(const String& org, const String& app) const;
+    /// Return the application preferences directory based on default org name and app name
+    String GetAppPreferencesDir() const;
     /// Check if a file or directory exists at the specified path
     bool Exists(const String& pathName) const { return FileExists(pathName) || DirExists(pathName); }
-    /// Copy files from one directory to another.
+    /// Copy a directory. directoryOut must not exist and is subsequently created with the contents of directoryIn
     bool CopyDir(const String& directoryIn, const String& directoryOut);
     /// Create subdirectories. New subdirectories will be made only in a subpath specified by `subdirectory`.
     bool CreateDirs(const String& root, const String& subdirectory);
     /// Create specified subdirectory and any parent directory if it does not exist.
     bool CreateDirsRecursive(const String& directoryIn);
-    /// Remove files in a directory, or remove entire directory recursively.
-    bool RemoveDir(const String& directoryIn, bool recursive);
+    /// Remove a directory, if recursive is set - remove contents first.
+    bool RemoveDir(const String& directoryIn, bool recursive = true);
+	/// Remove the contents of a directory.
+	bool RemoveDirContents(const String& directoryIn, bool recursive = true);
+	/// Check if directory is empty
+	bool DirEmpty(const String& directoryIn);
+
+
     /// Return path of temporary directory. Path always ends with a forward slash.
     String GetTemporaryDir() const;
 
@@ -119,9 +134,13 @@ private:
     void ScanDirInternal
         (Vector<String>& result, String path, const String& startPath, const String& filter, unsigned flags, bool recursive) const;
     /// Handle begin frame event to check for completed async executions.
-    void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
+    void HandleUpdate(StringHash eventType, VariantMap& eventData);
     /// Handle a console command event.
     void HandleConsoleCommand(StringHash eventType, VariantMap& eventData);
+
+
+    String lastPrefOrg_;
+    String lastPrefApp_;
 
     /// Allowed directories.
     HashSet<String> allowedPaths_;
@@ -140,12 +159,16 @@ URHO3D_API void
 URHO3D_API String GetPath(const String& fullPath);
 /// Return the filename from a full path.
 URHO3D_API String GetFileName(const String& fullPath);
-/// Return the extension from a full path, converted to lowercase by default.
+/// Return the leaf directory from a full path.
+URHO3D_API String GetDirName(const String& fullPath);
+/// Return the extension from a full path, converted to lowercase by default. "." is included
 URHO3D_API String GetExtension(const String& fullPath, bool lowercaseExtension = true);
 /// Return the filename and extension from a full path. The case of the extension is preserved by default, so that the file can be opened in case-sensitive operating systems.
 URHO3D_API String GetFileNameAndExtension(const String& fileName, bool lowercaseExtension = false);
 /// Replace the extension of a file name with another.
 URHO3D_API String ReplaceExtension(const String& fullPath, const String& newExtension);
+/// Return a path formed by a vector of individual directory names.
+URHO3D_API String PathFromSplit(const StringVector& dirSplit);
 /// Add a slash at the end of the path if missing and convert to internal format (use slashes.)
 URHO3D_API String AddTrailingSlash(const String& pathName);
 /// Remove the slash from the end of a path if exists and convert to internal format (use slashes.)

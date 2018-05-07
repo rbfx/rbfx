@@ -316,7 +316,7 @@ int Win32_ResizingEventWatcher(void* data, SDL_Event* event)
                     if (graphics->IsInitialized())
                     {
                         graphics->OnWindowResized();
-                        ctx->GetSubsystem<Engine>()->RunFrame();
+                        ctx->GetSubsystem<Engine>()->FreeUpdate();
                     }
                 }
             }
@@ -357,7 +357,6 @@ Input::Input(Context* context) :
     mousePressPosition_(MOUSE_POSITION_OFFSCREEN),
     lastVisibleMousePosition_(MOUSE_POSITION_OFFSCREEN),
     mouseMoveWheel_(0),
-    inputScale_(Vector2::ONE),
     windowID_(0),
     toggleFullscreen_(true),
     mouseVisible_(false),
@@ -461,8 +460,9 @@ void Input::Update()
         const int height = graphics_->GetHeight() - buffer * 2;
 
         // SetMousePosition utilizes backbuffer coordinate system, scale now from window coordinates
-        mpos.x_ = (int)(mpos.x_ * inputScale_.x_);
-        mpos.y_ = (int)(mpos.y_ * inputScale_.y_);
+		float pixelRatio = graphics_->GetPixelToDevicePixelRatio();
+        mpos.x_ = (int)(mpos.x_ * pixelRatio);
+        mpos.y_ = (int)(mpos.y_ * pixelRatio);
 
         bool warp = false;
         if (mpos.x_ < buffer)
@@ -1411,32 +1411,38 @@ IntVector2 Input::GetMousePosition() const
         return ret;
 
     SDL_GetMouseState(&ret.x_, &ret.y_);
-    ret.x_ = (int)(ret.x_ * inputScale_.x_);
-    ret.y_ = (int)(ret.y_ * inputScale_.y_);
+	float pixelRatio = graphics_->GetPixelToDevicePixelRatio();
+    ret.x_ = (int)(ret.x_ * pixelRatio);
+    ret.y_ = (int)(ret.y_ * pixelRatio);
+
+	//URHO3D_LOGINFO("mpos: " + String(ret.x_) + ", " + String(ret.y_));
 
     return ret;
 }
 
 IntVector2 Input::GetMouseMove() const
 {
+	float pixelRatio = graphics_->GetPixelToDevicePixelRatio();
     if (!suppressNextMouseMove_)
-        return mouseMoveScaled_ ? mouseMove_ : IntVector2((int)(mouseMove_.x_ * inputScale_.x_), (int)(mouseMove_.y_ * inputScale_.y_));
+        return mouseMoveScaled_ ? mouseMove_ : IntVector2((int)(mouseMove_.x_ * pixelRatio), (int)(mouseMove_.y_ * pixelRatio));
     else
         return IntVector2::ZERO;
 }
 
 int Input::GetMouseMoveX() const
 {
+	float pixelRatio = graphics_->GetPixelToDevicePixelRatio();
     if (!suppressNextMouseMove_)
-        return mouseMoveScaled_ ? mouseMove_.x_ : (int)(mouseMove_.x_ * inputScale_.x_);
+        return mouseMoveScaled_ ? mouseMove_.x_ : (int)(mouseMove_.x_ * pixelRatio);
     else
         return 0;
 }
 
 int Input::GetMouseMoveY() const
 {
+	float pixelRatio = graphics_->GetPixelToDevicePixelRatio();
     if (!suppressNextMouseMove_)
-        return mouseMoveScaled_ ? mouseMove_.y_ : mouseMove_.y_ * inputScale_.y_;
+        return mouseMoveScaled_ ? mouseMove_.y_ : mouseMove_.y_ * pixelRatio;
     else
         return 0;
 }
@@ -1543,9 +1549,9 @@ void Input::Initialize()
     ResetJoysticks();
     ResetState();
 
-    SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(Input, HandleBeginFrame));
+    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Input, HandleUpdate));
 #ifdef __EMSCRIPTEN__
-    SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Input, HandleEndFrame));
+    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Input, HandleUpdate));
 #endif
 
 #ifdef _WIN32
@@ -1843,8 +1849,8 @@ void Input::SetMousePosition(const IntVector2& position)
 {
     if (!graphics_)
         return;
-
-    SDL_WarpMouseInWindow(graphics_->GetWindow(), (int)(position.x_ / inputScale_.x_), (int)(position.y_ / inputScale_.y_));
+	float pixelRatio = graphics_->GetPixelToDevicePixelRatio();
+    SDL_WarpMouseInWindow(graphics_->GetWindow(), (int)(position.x_ / pixelRatio), (int)(position.y_ / pixelRatio));
 }
 
 void Input::CenterMousePosition()
@@ -1873,7 +1879,7 @@ void Input::UnsuppressMouseMove()
 void Input::HandleSDLEvent(void* sdlEvent)
 {
     SDL_Event& evt = *static_cast<SDL_Event*>(sdlEvent);
-
+	float pixelRatio = graphics_->GetPixelToDevicePixelRatio();
     // While not having input focus, skip key/mouse/touch/joystick events, except for the "click to focus" mechanism
     if (!inputFocus_ && evt.type >= SDL_KEYDOWN && evt.type <= SDL_MULTIGESTURE)
     {
@@ -1949,8 +1955,9 @@ void Input::HandleSDLEvent(void* sdlEvent)
         {
             int x, y;
             SDL_GetMouseState(&x, &y);
-            x = (int)(x * inputScale_.x_);
-            y = (int)(y * inputScale_.y_);
+			
+            x = (int)(x * pixelRatio);
+            y = (int)(y * pixelRatio);
 
             SDL_Event event;
             event.type = SDL_FINGERDOWN;
@@ -1972,8 +1979,8 @@ void Input::HandleSDLEvent(void* sdlEvent)
         {
             int x, y;
             SDL_GetMouseState(&x, &y);
-            x = (int)(x * inputScale_.x_);
-            y = (int)(y * inputScale_.y_);
+            x = (int)(x * pixelRatio);
+            y = (int)(y * pixelRatio);
 
             SDL_Event event;
             event.type = SDL_FINGERUP;
@@ -2013,11 +2020,11 @@ void Input::HandleSDLEvent(void* sdlEvent)
                 using namespace MouseMove;
 
                 VariantMap& eventData = GetEventDataMap();
-                eventData[P_X] = (int)(evt.motion.x * inputScale_.x_);
-                eventData[P_Y] = (int)(evt.motion.y * inputScale_.y_);
+                eventData[P_X] = (int)(evt.motion.x * pixelRatio);
+                eventData[P_Y] = (int)(evt.motion.y * pixelRatio);
                 // The "on-the-fly" motion data needs to be scaled now, though this may reduce accuracy
-                eventData[P_DX] = (int)(evt.motion.xrel * inputScale_.x_);
-                eventData[P_DY] = (int)(evt.motion.yrel * inputScale_.y_);
+                eventData[P_DX] = (int)(evt.motion.xrel * pixelRatio);
+                eventData[P_DY] = (int)(evt.motion.yrel * pixelRatio);
                 eventData[P_BUTTONS] = mouseButtonDown_;
                 eventData[P_QUALIFIERS] = GetQualifiers();
                 SendEvent(E_MOUSEMOVE, eventData);
@@ -2028,8 +2035,8 @@ void Input::HandleSDLEvent(void* sdlEvent)
         {
             int x, y;
             SDL_GetMouseState(&x, &y);
-            x = (int)(x * inputScale_.x_);
-            y = (int)(y * inputScale_.y_);
+            x = (int)(x * pixelRatio);
+            y = (int)(y * pixelRatio);
 
             SDL_Event event;
             event.type = SDL_FINGERMOTION;
@@ -2038,8 +2045,8 @@ void Input::HandleSDLEvent(void* sdlEvent)
             event.tfinger.pressure = 1.0f;
             event.tfinger.x = (float)x / (float)graphics_->GetWidth();
             event.tfinger.y = (float)y / (float)graphics_->GetHeight();
-            event.tfinger.dx = (float)evt.motion.xrel * inputScale_.x_ / (float)graphics_->GetWidth();
-            event.tfinger.dy = (float)evt.motion.yrel * inputScale_.y_ / (float)graphics_->GetHeight();
+            event.tfinger.dx = (float)evt.motion.xrel * pixelRatio / (float)graphics_->GetWidth();
+            event.tfinger.dy = (float)evt.motion.yrel * pixelRatio / (float)graphics_->GetHeight();
             SDL_PushEvent(&event);
         }
         break;
@@ -2427,17 +2434,13 @@ void Input::HandleScreenMode(StringHash eventType, VariantMap& eventData)
     int winWidth, winHeight;
     int gfxWidth = graphics_->GetWidth();
     int gfxHeight = graphics_->GetHeight();
+
     SDL_GetWindowSize(window, &winWidth, &winHeight);
-    if (winWidth > 0 && winHeight > 0 && gfxWidth > 0 && gfxHeight > 0)
-    {
-        inputScale_.x_ = (float)gfxWidth / (float)winWidth;
-        inputScale_.y_ = (float)gfxHeight / (float)winHeight;
-    }
-    else
-        inputScale_ = Vector2::ONE;
+
+
 }
 
-void Input::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
+void Input::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
     // Update input right at the beginning of the frame
     SendEvent(E_INPUTBEGIN);
@@ -2446,7 +2449,7 @@ void Input::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
 }
 
 #ifdef __EMSCRIPTEN__
-void Input::HandleEndFrame(StringHash eventType, VariantMap& eventData)
+void Input::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
     if (suppressNextMouseMove_ && mouseMove_ != IntVector2::ZERO)
         UnsuppressMouseMove();
@@ -2461,7 +2464,7 @@ void Input::HandleScreenJoystickTouch(StringHash eventType, VariantMap& eventDat
 
     // Only interested in events from screen joystick(s)
     TouchState& state = touches_[eventData[P_TOUCHID].GetInt()];
-    IntVector2 position(int(state.position_.x_ / GetSubsystem<UI>()->GetScale()), int(state.position_.y_ / GetSubsystem<UI>()->GetScale()));
+    IntVector2 position(int(state.position_.x_), int(state.position_.y_));
     UIElement* element = eventType == E_TOUCHBEGIN ? GetSubsystem<UI>()->GetElementAt(position) : state.touchedElement_;
     if (!element)
         return;

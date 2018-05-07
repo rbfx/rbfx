@@ -47,6 +47,7 @@
 #ifndef _MSC_VER
 #define _WIN32_IE 0x501
 #endif
+#define CREATDIR_MAX_RETRIES 50
 #include <windows.h>
 #include <shellapi.h>
 #include <direct.h>
@@ -279,13 +280,13 @@ private:
     /// File to run.
     String fileName_;
     /// Command line split in arguments.
-    const Vector<String>& arguments_;
+    const Vector<String> arguments_;
 };
 
 FileSystem::FileSystem(Context* context) :
     Object(context)
 {
-    SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(FileSystem, HandleBeginFrame));
+    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(FileSystem, HandleUpdate));
 
     // Subscribe to console commands
     SetExecuteConsoleCommands(true);
@@ -344,8 +345,24 @@ bool FileSystem::CreateDir(const String& pathName)
     }
 
 #ifdef _WIN32
-    bool success = (CreateDirectoryW(GetWideNativePath(RemoveTrailingSlash(pathName)).CString(), nullptr) == TRUE) ||
-        (GetLastError() == ERROR_ALREADY_EXISTS);
+
+	bool retry = false;
+	int retryCount = 0;
+	bool success;
+	do {
+		success = (CreateDirectoryW(GetWideNativePath(RemoveTrailingSlash(pathName)).CString(), nullptr) == TRUE);
+		DWORD lastError = GetLastError();
+
+		if (lastError == ERROR_ALREADY_EXISTS)
+			success = true;
+
+		retry = (lastError == ERROR_ACCESS_DENIED);//#try_again https://stackoverflow.com/questions/3570618/what-causes-createdirectory-to-return-error-access-denied
+		if (retry)
+			retryCount++;
+	} while (retry && retryCount <= CREATDIR_MAX_RETRIES);
+
+	if(retryCount >= CREATDIR_MAX_RETRIES)
+		URHO3D_LOGERROR("Failed to create directory perhaps not enough retry attempts (Windows): " + pathName);
 #else
     bool success = mkdir(GetNativePath(RemoveTrailingSlash(pathName)).CString(), S_IRWXU) == 0 || errno == EEXIST;
 #endif
@@ -354,6 +371,7 @@ bool FileSystem::CreateDir(const String& pathName)
         URHO3D_LOGDEBUG("Created directory " + pathName);
     else
         URHO3D_LOGERROR("Failed to create directory " + pathName);
+
 
     return success;
 }
@@ -743,10 +761,18 @@ String FileSystem::GetUserDocumentsDir() const
 #endif
 }
 
+void FileSystem::SetDefaultOrgAndAppCredentials(const String& org, const String& app)
+{
+	lastPrefApp_ = app;
+	lastPrefOrg_ = org;
+}
+
 String FileSystem::GetAppPreferencesDir(const String& org, const String& app) const
 {
     String dir;
 #ifndef MINI_URHO
+
+
     char* prefPath = SDL_GetPrefPath(org.CString(), app.CString());
     if (prefPath)
     {
@@ -758,6 +784,11 @@ String FileSystem::GetAppPreferencesDir(const String& org, const String& app) co
         URHO3D_LOGWARNING("Could not get application preferences directory");
 
     return dir;
+}
+
+String FileSystem::GetAppPreferencesDir() const
+{
+	return GetAppPreferencesDir(lastPrefOrg_, lastPrefApp_);
 }
 
 void FileSystem::RegisterPath(const String& pathName)
@@ -905,7 +936,7 @@ void FileSystem::ScanDirInternal(Vector<String>& result, String path, const Stri
 #endif
 }
 
-void FileSystem::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
+void FileSystem::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
     /// Go through the execution queue and post + remove completed requests
     for (List<AsyncExecRequest*>::Iterator i = asyncExecQueue_.Begin(); i != asyncExecQueue_.End();)
@@ -972,6 +1003,15 @@ String GetPath(const String& fullPath)
     return path;
 }
 
+
+String GetDirName(const String& fullPath)
+{
+	StringVector splits = fullPath.Split('/');
+	if(splits.Size())
+		return splits.Back();
+
+	return "";
+}
 String GetFileName(const String& fullPath)
 {
     String path, file, extension;
@@ -1000,6 +1040,17 @@ String ReplaceExtension(const String& fullPath, const String& newExtension)
     return path + file + newExtension;
 }
 
+
+
+String PathFromSplit(const StringVector& dirSplit) {
+	String path;
+	for (int i = 0; i < dirSplit.Size(); i++)
+	{
+		path += dirSplit[i] + "/";
+	}
+	return path;
+}
+
 String AddTrailingSlash(const String& pathName)
 {
     String ret = pathName.Trimmed();
@@ -1026,6 +1077,7 @@ String GetParentPath(const String& path)
     else
         return String();
 }
+
 
 String GetInternalPath(const String& pathName)
 {
@@ -1169,29 +1221,71 @@ bool FileSystem::RemoveDir(const String& directoryIn, bool recursive)
         return remove(GetNativePath(directory).CString()) == 0;
 #endif
     }
+	else
+	{
+		//remove all contents
+		bool removeContentsSuc = RemoveDirContents(directoryIn, recursive);
 
-    // delete all files at this level
-    ScanDir(results, directory, "*", SCAN_FILES | SCAN_HIDDEN, false );
-    for (unsigned i = 0; i < results.Size(); i++)
-    {
-        if (!Delete(directory + results[i]))
-            return false;
-    }
-    results.Clear();
+		//and the directory
+		return RemoveDir(directory, false) && removeContentsSuc;
+	}
+}
 
-    // recurse into subfolders
-    ScanDir(results, directory, "*", SCAN_DIRS, false );
-    for (unsigned i = 0; i < results.Size(); i++)
-    {
-        if (results[i] == "." || results[i] == "..")
-            continue;
+bool FileSystem::RemoveDirContents(const String& directoryIn, bool recursive)
+{
+	String directory = AddTrailingSlash(directoryIn);
 
-        if (!RemoveDir(directory + results[i], true))
-            return false;
-    }
+	if (!DirExists(directory))
+		return false;
 
-    return RemoveDir(directory, false);
+	if (DirEmpty(directory))
+		return true;
 
+	// delete all files at this level
+	Vector<String> results;
+	bool fullSuccess = true;
+	ScanDir(results, directory, "*", SCAN_FILES | SCAN_HIDDEN | SCAN_DIRS, false);
+	for (unsigned i = 0; i < results.Size(); i++)
+	{
+		if (!Delete(directory + results[i]))
+			fullSuccess = false;
+	}
+
+
+	results.Clear();
+
+	if (recursive)
+	{
+		// recurse into subdirs
+		ScanDir(results, directory, "*", SCAN_DIRS, false);
+		for (unsigned i = 0; i < results.Size(); i++)
+		{
+			if (results[i] == "." || results[i] == "..")
+				continue;
+
+			if (!RemoveDirContents(directory + results[i], true))
+				fullSuccess = false;
+		}
+	}
+
+	if (!fullSuccess)
+		URHO3D_LOGWARNING("Unable to fully remove contents of directory: " + directoryIn);
+
+	return fullSuccess;
+}
+
+bool FileSystem::DirEmpty(const String& directoryIn)
+{
+	String directory = AddTrailingSlash(directoryIn);
+
+	if (!DirExists(directory))
+		return false;
+
+
+	Vector<String> results;
+	ScanDir(results, directoryIn, "*", SCAN_FILES, true);
+
+	return (results.Size() == 0);
 }
 
 bool FileSystem::CopyDir(const String& directoryIn, const String& directoryOut)
@@ -1218,7 +1312,6 @@ bool FileSystem::CopyDir(const String& directoryIn, const String& directoryOut)
     }
 
     return true;
-
 }
 
 bool IsAbsoluteParentPath(const String& absParentPath, const String& fullPath)

@@ -50,7 +50,7 @@ extern const char* SUBSYSTEM_CATEGORY;
 
 void UpdateDrawablesWork(const WorkItem* item, unsigned threadIndex)
 {
-    const FrameInfo& frame = *(reinterpret_cast<FrameInfo*>(item->aux_));
+    const RenderFrameInfo& frame = *(reinterpret_cast<RenderFrameInfo*>(item->aux_));
     auto** start = reinterpret_cast<Drawable**>(item->start_);
     auto** end = reinterpret_cast<Drawable**>(item->end_);
 
@@ -361,7 +361,7 @@ void Octree::SetSize(const BoundingBox& box, unsigned numLevels)
     numLevels_ = Max(numLevels, 1U);
 }
 
-void Octree::Update(const FrameInfo& frame)
+void Octree::Update(const RenderFrameInfo& frame)
 {
     if (!Thread::IsMainThread())
     {
@@ -390,7 +390,7 @@ void Octree::Update(const FrameInfo& frame)
             SharedPtr<WorkItem> item = queue->GetFreeItem();
             item->priority_ = M_MAX_UNSIGNED;
             item->workFunction_ = UpdateDrawablesWork;
-            item->aux_ = const_cast<FrameInfo*>(&frame);
+            item->aux_ = const_cast<RenderFrameInfo*>(&frame);
 
             PODVector<Drawable*>::Iterator end = drawableUpdates_.End();
             if (i < numWorkItems - 1 && end - start > drawablesPerItem)
@@ -584,8 +584,8 @@ void Octree::HandleRenderUpdate(StringHash eventType, VariantMap& eventData)
 
     using namespace RenderUpdate;
 
-    FrameInfo frame;
-    frame.frameNumber_ = GetSubsystem<Time>()->GetFrameNumber();
+    RenderFrameInfo frame;
+	frame.frameNumber_ = eventData[P_RENDERTICK].GetInt();
     frame.timeStep_ = eventData[P_TIMESTEP].GetFloat();
     frame.camera_ = nullptr;
 

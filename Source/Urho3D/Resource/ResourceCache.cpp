@@ -84,7 +84,8 @@ ResourceCache::ResourceCache(Context* context) :
 #endif
 
     // Subscribe BeginFrame for handling directory watchers and background loaded resource finalization
-    SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(ResourceCache, HandleBeginFrame));
+	//#todo this seems like it could bog things down?..
+    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(ResourceCache, HandleUpdate));
 }
 
 ResourceCache::~ResourceCache()
@@ -1072,7 +1073,7 @@ void ResourceCache::UpdateResourceGroup(StringHash type)
     }
 }
 
-void ResourceCache::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
+void ResourceCache::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
     for (unsigned i = 0; i < fileWatchers_.Size(); ++i)
     {

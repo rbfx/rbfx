@@ -180,22 +180,27 @@ SharedPtr<Object> Context::CreateObject(StringHash objectType)
         return SharedPtr<Object>();
 }
 
-void Context::RegisterFactory(ObjectFactory* factory)
+bool Context::RegisterFactory(ObjectFactory* factory)
 {
     if (!factory)
-        return;
+        return false;
 
     factories_[factory->GetType()] = factory;
+	return true;
 }
 
-void Context::RegisterFactory(ObjectFactory* factory, const char* category)
+bool Context::RegisterFactory(ObjectFactory* factory, const char* category)
 {
     if (!factory)
-        return;
+        return false;
 
-    RegisterFactory(factory);
-    if (String::CStringLength(category))
-        objectCategories_[category].Push(factory->GetType());
+	if (RegisterFactory(factory))
+	{
+		if (String::CStringLength(category))
+			objectCategories_[category].Push(factory->GetType());
+		return true;
+	}
+	return false;
 }
 
 void Context::RemoveFactory(StringHash type)
@@ -209,6 +214,19 @@ void Context::RemoveFactory(StringHash type, const char* category)
     if (String::CStringLength(category))
         objectCategories_[category].Remove(type);
 }
+
+void Context::RemoveFactories(const char* category)
+{
+    if (objectCategories_.Contains(category))
+    {
+        Vector<StringHash> typesInCategory = objectCategories_[category];
+        for (StringHash type : typesInCategory) {
+            RemoveFactory(type);
+        }
+        objectCategories_.Erase(category);
+    }
+}
+
 
 void Context::RegisterSubsystem(Object* object)
 {

@@ -60,17 +60,15 @@ Network::Network(Context* context) :
     // Register Network library object factories
     RegisterNetworkLibrary(context_);
 
-    SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(Network, HandleBeginFrame));
+    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Network, HandleUpdate));
     SubscribeToEvent(E_RENDERUPDATE, URHO3D_HANDLER(Network, HandleRenderUpdate));
 
     // Blacklist remote events which are not to be allowed to be registered in any case
     blacklistedRemoteEvents_.Insert(E_CONSOLECOMMAND);
     blacklistedRemoteEvents_.Insert(E_LOGMESSAGE);
-    blacklistedRemoteEvents_.Insert(E_BEGINFRAME);
     blacklistedRemoteEvents_.Insert(E_UPDATE);
     blacklistedRemoteEvents_.Insert(E_POSTUPDATE);
     blacklistedRemoteEvents_.Insert(E_RENDERUPDATE);
-    blacklistedRemoteEvents_.Insert(E_ENDFRAME);
     blacklistedRemoteEvents_.Insert(E_MOUSEBUTTONDOWN);
     blacklistedRemoteEvents_.Insert(E_MOUSEBUTTONUP);
     blacklistedRemoteEvents_.Insert(E_MOUSEMOVE);
@@ -537,18 +535,14 @@ void Network::PostUpdate(float timeStep)
     }
 }
 
-void Network::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
+void Network::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
-    using namespace BeginFrame;
-
-    Update(eventData[P_TIMESTEP].GetFloat());
+    Update(eventData[Update::P_TIMESTEP].GetFloat());
 }
 
 void Network::HandleRenderUpdate(StringHash eventType, VariantMap& eventData)
 {
-    using namespace RenderUpdate;
-
-    PostUpdate(eventData[P_TIMESTEP].GetFloat());
+    PostUpdate(eventData[RenderUpdate::P_TIMESTEP].GetFloat());
 }
 
 void Network::OnServerConnected()

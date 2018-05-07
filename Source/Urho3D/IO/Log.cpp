@@ -71,7 +71,7 @@ Log::Log(Context* context) :
 {
     logInstance = this;
 
-    SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Log, HandleEndFrame));
+    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Log, HandleUpdate));
 }
 
 Log::~Log()
@@ -266,7 +266,7 @@ void Log::WriteRaw(const String& message, bool error)
     logInstance->inWrite_ = false;
 }
 
-void Log::HandleEndFrame(StringHash eventType, VariantMap& eventData)
+void Log::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
     // If the MainThreadID is not valid, processing this loop can potentially be endless
     if (!Thread::IsMainThread())

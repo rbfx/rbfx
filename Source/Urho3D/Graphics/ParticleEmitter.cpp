@@ -98,7 +98,7 @@ void ParticleEmitter::OnSetEnabled()
     }
 }
 
-void ParticleEmitter::Update(const FrameInfo& frame)
+void ParticleEmitter::Update(const RenderFrameInfo& frame)
 {
     if (!effect_)
         return;

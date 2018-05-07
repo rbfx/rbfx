@@ -70,7 +70,7 @@ WorkQueue::WorkQueue(Context* context) :
     lastSize_(0),
     maxNonThreadedWorkMs_(5)
 {
-    SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(WorkQueue, HandleBeginFrame));
+    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(WorkQueue, HandleUpdate));
 }
 
 WorkQueue::~WorkQueue()
@@ -408,7 +408,7 @@ void WorkQueue::ReturnToPool(SharedPtr<WorkItem>& item)
     }
 }
 
-void WorkQueue::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
+void WorkQueue::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
     // If no worker threads, complete low-priority work here
     if (threads_.Empty() && !queue_.Empty())

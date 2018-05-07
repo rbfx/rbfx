@@ -126,7 +126,7 @@ private:
     /// Return a work item to the pool.
     void ReturnToPool(SharedPtr<WorkItem>& item);
     /// Handle frame start event. Purge completed work from the main thread queue, and perform work if no threads at all.
-    void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
+    void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Worker threads.
     Vector<SharedPtr<WorkerThread> > threads_;

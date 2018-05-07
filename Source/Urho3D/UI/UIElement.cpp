@@ -625,6 +625,60 @@ void UIElement::SetHeight(int height)
     SetSize(IntVector2(size_.x_, height));
 }
 
+
+void UIElement::SetRight(int right, bool maintainLeft /*= true*/)
+{
+	if (maintainLeft) {
+		int newSizeX = right - position_.x_;//alter size
+		SetSize(newSizeX, size_.y_);
+	}
+	else {
+		int newPosX = position_.x_ + right - (position_.x_ + size_.x_);
+		SetPosition(newPosX, position_.y_);
+	}
+}
+
+void UIElement::SetLeft(int left, bool maintainRight /*= true*/)
+{
+    if (maintainRight) {
+        
+		int newSizeX = size_.x_ + (position_.x_ - left);//resize
+		int newPosX = left;//then shift
+		SetSize(newSizeX, size_.y_);
+		SetPosition(newPosX, position_.y_);
+    }
+	else
+	{
+		SetPosition(left, position_.y_);
+	}
+}
+
+void UIElement::SetTop(int top, bool maintainBottom /*= true*/)
+{
+	if (maintainBottom) {
+
+		int newSizeY = size_.y_ + (position_.y_ - top);//resize
+		int newPosY = top;//then shift
+
+		SetSize(size_.x_, newSizeY);
+		SetPosition(position_.x_, newPosY);
+	}
+	else
+		SetPosition(position_.x_, top);
+}
+
+void UIElement::SetBottom(int bottom, bool maintainTop /*= true*/)
+{
+	if (maintainTop) {
+		int newSizeY = bottom - position_.y_;//alter size
+		SetSize(size_.x_, newSizeY);
+	}
+	else {
+		int newPosY = position_.y_ + bottom - (position_.y_ + size_.y_);//shift element
+		SetPosition(position_.x_, newPosY);
+	}
+}
+
 void UIElement::SetMinSize(const IntVector2& minSize)
 {
     minSize_.x_ = Max(minSize.x_, 0);
@@ -1158,7 +1212,7 @@ void UIElement::UpdateLayout()
         int minWidth = CalculateLayoutParentSize(minSizes, layoutBorder_.left_, layoutBorder_.right_, layoutSpacing_);
         int minHeight = minChildHeight + layoutBorder_.top_ + layoutBorder_.bottom_;
         layoutMinSize_ = IntVector2(minWidth, minHeight);
-        SetSize(width, height);
+        //SetSize(width, height); layouts should update children sizes - not the size of the element itself!
         // Validate the size before resizing child elements, in case of min/max limits
         width = size_.x_;
         height = size_.y_;
@@ -1197,7 +1251,7 @@ void UIElement::UpdateLayout()
         int minHeight = CalculateLayoutParentSize(minSizes, layoutBorder_.top_, layoutBorder_.bottom_, layoutSpacing_);
         int minWidth = minChildWidth + layoutBorder_.left_ + layoutBorder_.right_;
         layoutMinSize_ = IntVector2(minWidth, minHeight);
-        SetSize(width, height);
+        //SetSize(width, height); layouts should update children sizes - not the size of the element itself!
         width = size_.x_;
         height = size_.y_;
 
@@ -1457,8 +1511,10 @@ unsigned UIElement::FindChild(UIElement* element) const
 
 void UIElement::SetParent(UIElement* parent, unsigned index)
 {
-    if (parent)
-        parent->InsertChild(index, this);
+	if (parent)
+		parent->InsertChild(index, this);
+	else if (parent_)
+		parent_->RemoveChild(this);
 }
 
 void UIElement::SetVar(StringHash key, const Variant& value)
@@ -1601,7 +1657,7 @@ const String& UIElement::GetAppliedStyle() const
     return appliedStyle_ == GetTypeName() ? String::EMPTY : appliedStyle_;
 }
 
-XMLFile* UIElement::GetDefaultStyle(bool recursiveUp) const
+XMLFile* UIElement::GetDefaultStyle(bool recursiveUp, bool rootFallback) const
 {
     if (recursiveUp)
     {
@@ -1612,10 +1668,27 @@ XMLFile* UIElement::GetDefaultStyle(bool recursiveUp) const
                 return element->defaultStyle_;
             element = element->parent_;
         }
-        return nullptr;
+        if (rootFallback) {
+            //try getting style from root
+            return GetSubsystem<UI>()->GetRoot()->GetDefaultStyle(false);
+        }
+        else
+            return nullptr;
     }
     else
-        return defaultStyle_;
+    {
+        if (defaultStyle_)
+            return defaultStyle_;
+        else
+        {
+            if (rootFallback) {
+                //try getting style from root
+                return GetSubsystem<UI>()->GetRoot()->GetDefaultStyle(false);
+            }
+            else
+                return false;
+        }
+    }
 }
 
 void UIElement::GetChildren(PODVector<UIElement*>& dest, bool recursive) const

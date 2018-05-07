@@ -81,14 +81,16 @@ public:
     /// Create an object by type hash. Return pointer to it or null if no factory found.
     SharedPtr<Object> CreateObject(StringHash objectType);
     /// Register a factory for an object type.
-    void RegisterFactory(ObjectFactory* factory);
+    bool RegisterFactory(ObjectFactory* factory);
     /// Register a factory for an object type and specify the object category.
-    void RegisterFactory(ObjectFactory* factory, const char* category);
+    bool RegisterFactory(ObjectFactory* factory, const char* category);
     /// Remove object factory.
     void RemoveFactory(StringHash type);
     /// remove object factory.
     void RemoveFactory(StringHash type, const char* category);
-    /// Register a subsystem.
+	/// remove all factories in the given category
+	void RemoveFactories(const char* category);
+	/// Register a subsystem.
     void RegisterSubsystem(Object* object);
     /// Remove a subsystem.
     void RemoveSubsystem(StringHash objectType);
@@ -116,9 +118,9 @@ public:
     /// Copy base class attributes to derived class.
     void CopyBaseAttributes(StringHash baseType, StringHash derivedType);
     /// Template version of registering an object factory.
-    template <class T = void, class... Rest> void RegisterFactory();
+    template <class T = void, class... Rest> bool RegisterFactory();
     /// Template version of registering an object factory with category.
-    template <class T = void, class... Rest> void RegisterFactory(const char* category);
+    template <class T = void, class... Rest> bool RegisterFactory(const char* category);
     /// Template version of unregistering an object factory.
     template <class T = void, class... Rest> void RemoveFactory();
     /// Template version of unregistering an object factory with category.
@@ -393,21 +395,25 @@ private:
 };
 
 // Helper functions that terminate looping of argument list.
-template <> inline void Context::RegisterFactory() { }
-template <> inline void Context::RegisterFactory(const char* category) { }
+template <> inline bool Context::RegisterFactory() { return true; }
+template <> inline bool Context::RegisterFactory(const char* category) { return true; }
 template <> inline void Context::RemoveFactory<>() { }
 template <> inline void Context::RemoveFactory<>(const char* category) { }
 
-template <class T, class... Rest> void Context::RegisterFactory()
+template <class T, class... Rest> bool Context::RegisterFactory()
 {
-    RegisterFactory(new ObjectFactoryImpl<T>(this));
-    RegisterFactory<Rest...>();
+    bool success = true;
+    success &= RegisterFactory(new ObjectFactoryImpl<T>(this));
+    success &= RegisterFactory<Rest...>();
+    return success;
 }
 
-template <class T, class... Rest> void Context::RegisterFactory(const char* category)
+template <class T, class... Rest> bool Context::RegisterFactory(const char* category)
 {
-    RegisterFactory(new ObjectFactoryImpl<T>(this), category);
-    RegisterFactory<Rest...>(category);
+    bool success = true;
+    success &= RegisterFactory(new ObjectFactoryImpl<T>(this), category);
+    success &= RegisterFactory<Rest...>(category);
+    return success;
 }
 
 

@@ -200,7 +200,7 @@ void PBRMaterials::HandleMetallicSliderChanged(StringHash eventType, VariantMap&
 void PBRMaterials::HandleAmbientSliderChanged(StringHash eventType, VariantMap& eventData)
 {
     float newValue = eventData[SliderChanged::P_VALUE].GetFloat();
-    Color col = Color(0.0, 0.0, 0.0, newValue);
+    Color col = Color(0.0f, 0.0f, 0.0f, newValue);
     zone_->SetAmbientColor(col);
     ambientLabel_->SetText("Ambient HDR Scale: " + String(zone_->GetAmbientColor().a_));
 }

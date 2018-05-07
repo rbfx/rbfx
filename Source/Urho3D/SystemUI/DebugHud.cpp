@@ -59,8 +59,7 @@ DebugHud::DebugHud(Context* context) :
     profilerMaxDepth_(M_MAX_UNSIGNED),
     profilerInterval_(1000),
     useRendererStats_(true),
-    mode_(DEBUGHUD_SHOW_NONE),
-    fps_(0)
+    mode_(DEBUGHUD_SHOW_NONE)
 {
     SetExtents();
     SubscribeToEvent(E_UPDATE, std::bind(&DebugHud::RenderUi, this, std::placeholders::_2));
@@ -113,7 +112,7 @@ void DebugHud::CycleMode()
         break;
     case DEBUGHUD_SHOW_ALL:
     default:
-        SetMode(DEBUGHUD_SHOW_NONE);
+        SetMode(DEBUGHUD_SHOW_NONE); 
         break;
     }
 }
@@ -203,12 +202,6 @@ void DebugHud::RenderUi(VariantMap& eventData)
 
         if (mode_ & DEBUGHUD_SHOW_STATS)
         {
-            // Update stats regardless of them being shown.
-            if (fpsTimer_.GetMSec(false) > FPS_UPDATE_INTERVAL_MS)
-            {
-                fps_ = static_cast<unsigned int>(Round(GetTime()->GetFramesPerSecond()));
-                fpsTimer_.Reset();
-            }
 
             String stats;
             unsigned primitives, batches;
@@ -224,7 +217,22 @@ void DebugHud::RenderUi(VariantMap& eventData)
             }
 
             ui::SetCursorPos({posStats_.x_, posStats_.y_});
-            ui::Text("FPS %d", fps_);
+
+			String updateFpsString;
+			if (!GSS<Engine>()->GetUpdateIsLimited())
+				updateFpsString = "Update FPS %f";
+			else
+				updateFpsString = "Update FPS (Limited) %f";
+
+			String renderFpsString;
+			if (!GSS<Engine>()->GetRenderIsLimited())
+				renderFpsString = "Render FPS %f";
+			else
+				renderFpsString = "Render FPS (Limited) %f";
+
+
+            ui::Text(updateFpsString.CString(), (1000.0f / GSS<Engine>()->GetAverageUpdateTimeMs()));
+			ui::Text(renderFpsString.CString(), (1000.0f / GSS<Engine>()->GetAverageRenderTimeMs()));
             ui::Text("Triangles %u", primitives);
             ui::Text("Batches %u", batches);
             ui::Text("Views %u", renderer->GetNumViews());

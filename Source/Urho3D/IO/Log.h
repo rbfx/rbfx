@@ -112,7 +112,7 @@ public:
 
 private:
     /// Handle end of frame. Process the threaded log messages.
-    void HandleEndFrame(StringHash eventType, VariantMap& eventData);
+    void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Mutex for threaded operation.
     Mutex logMutex_;

@@ -170,10 +170,8 @@ void SceneAndUILoad::MoveCamera(float timeStep)
 
 void SceneAndUILoad::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
-    using namespace Update;
-
     // Take the frame time step, which is stored as a float
-    float timeStep = eventData[P_TIMESTEP].GetFloat();
+    float timeStep = eventData[Update::P_TIMESTEP].GetFloat();
 
     // Move the camera, scale movement with time step
     MoveCamera(timeStep);

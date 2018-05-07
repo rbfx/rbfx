@@ -8,6 +8,19 @@
 
 This repository is unofficial/personal fork of [urho3d.github.io](http://urho3d.github.io/).
 
+## Differences
+- This fork routinely merges from https://github.com/rokups/Urho3D.
+- Update rates are fixed and a prioritized as having constant timing.  If you want to you can ignore using P_TIMESTEP in your update logic.
+- Update rates are seperated from render update rates. There are no "Frame" events.  
+  Rendering is viewed as a sampling of the current update state.  Transform Tweening is planned.
+- Tweeks Subsystem.
+- Other smaller changes as well as fixes.
+
+## Further Goals
+- Newton Game Dynamics Integration
+
+
+
 ## License
 
 Licensed under the MIT license, see [LICENSE](https://github.com/urho3d/Urho3D/blob/master/LICENSE) for details.

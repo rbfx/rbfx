@@ -177,7 +177,7 @@ void BillboardSet::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQue
     }
 }
 
-void BillboardSet::UpdateBatches(const FrameInfo& frame)
+void BillboardSet::UpdateBatches(const RenderFrameInfo& frame)
 {
     // If beginning a new frame, assume no sorting first
     if (frame.frameNumber_ != sortFrameNumber_)
@@ -222,7 +222,7 @@ void BillboardSet::UpdateBatches(const FrameInfo& frame)
         node_->GetWorldPosition(), node_->GetWorldRotation(), faceCameraMode_, minAngle_) : node_->GetWorldRotation(), Vector3::ONE);
 }
 
-void BillboardSet::UpdateGeometry(const FrameInfo& frame)
+void BillboardSet::UpdateGeometry(const RenderFrameInfo& frame)
 {
     // If rendering from multiple views and fixed screen size is in use, re-update scale factors before each render
     if (fixedScreenSize_ && viewCameras_.Size() > 1)
@@ -574,7 +574,7 @@ void BillboardSet::UpdateBufferSize()
     indexBuffer_->ClearDataLost();
 }
 
-void BillboardSet::UpdateVertexBuffer(const FrameInfo& frame)
+void BillboardSet::UpdateVertexBuffer(const RenderFrameInfo& frame)
 {
     // If using animation LOD, accumulate time and see if it is time to update
     if (animationLodBias_ > 0.0f && lodDistance_ > 0.0f)
@@ -770,7 +770,7 @@ void BillboardSet::MarkPositionsDirty()
     bufferDirty_ = true;
 }
 
-void BillboardSet::CalculateFixedScreenSize(const FrameInfo& frame)
+void BillboardSet::CalculateFixedScreenSize(const RenderFrameInfo& frame)
 {
     float invViewHeight = 1.0f / frame.viewSize_.y_;
     float halfViewWorldSize = frame.camera_->GetHalfViewSize();

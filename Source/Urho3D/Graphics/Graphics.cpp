@@ -29,6 +29,7 @@
 #include "../Graphics/Camera.h"
 #include "../Graphics/CustomGeometry.h"
 #include "../Graphics/DebugRenderer.h"
+#include "../Graphics/VisualDebugger.h"
 #include "../Graphics/DecalSet.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsImpl.h"
@@ -104,7 +105,7 @@ void Graphics::SetOrientations(const String& orientations)
 
 bool Graphics::ToggleFullscreen()
 {
-    return SetMode(width_, height_, !fullscreen_, borderless_, resizable_, highDPI_, vsync_, tripleBuffer_, multiSample_, monitor_, refreshRate_);
+    return SetMode(width_, height_, !fullscreen_, borderless_, resizable_, pixelToDevicePixelRatio_, vsync_, tripleBuffer_, multiSample_, monitor_, refreshRate_);
 }
 
 void Graphics::SetShaderParameter(StringHash param, const Variant& value)
@@ -175,6 +176,35 @@ IntVector2 Graphics::GetWindowPosition() const
         return position;
     }
     return position_;
+}
+
+int Graphics::GetWidth(bool devicePixels) const
+{
+	if (!devicePixels)
+		return width_ * pixelToDevicePixelRatio_;
+	else
+		return width_;
+}
+
+int Graphics::GetHeight(bool devicePixels) const
+{
+	if (!devicePixels)
+		return height_ * pixelToDevicePixelRatio_;
+	else
+		return height_;
+}
+
+IntVector2 Graphics::GetSize(bool devicePixels) const
+{
+	if(!devicePixels)
+		return IntVector2(width_ * pixelToDevicePixelRatio_, height_ * pixelToDevicePixelRatio_);
+	else
+		return IntVector2(width_, height_);
+}
+
+void Graphics::SetPixelToDevicePixelRatio(float ratio)
+{
+	SetMode(width_, height_, fullscreen_, borderless_, resizable_, ratio, vsync_, tripleBuffer_, multiSample_, monitor_, refreshRate_);
 }
 
 PODVector<IntVector3> Graphics::GetResolutions(int monitor) const
@@ -397,6 +427,8 @@ void Graphics::CreateWindowIcon()
     }
 }
 
+
+
 void RegisterGraphicsLibrary(Context* context)
 {
     Animation::RegisterObject(context);
@@ -425,6 +457,7 @@ void RegisterGraphicsLibrary(Context* context)
     Terrain::RegisterObject(context);
     TerrainPatch::RegisterObject(context);
     DebugRenderer::RegisterObject(context);
+	VisualDebugger::RegisterObject(context);
     Octree::RegisterObject(context);
     Zone::RegisterObject(context);
 }

@@ -112,6 +112,9 @@ protected:
     /// Removes extra editor objects that were used for representing some components.
     void OnComponentRemoved(VariantMap& args);
 
+
+    void OnEditorUserCodeReLoadStart(StringHash event, VariantMap& data);
+
     /// Scene renderer.
     SceneView view_;
     /// Last resource path scene was loaded from or saved to.

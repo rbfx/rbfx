@@ -131,7 +131,7 @@ void Drawable::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryRe
     }
 }
 
-void Drawable::UpdateBatches(const FrameInfo& frame)
+void Drawable::UpdateBatches(const RenderFrameInfo& frame)
 {
     const BoundingBox& worldBoundingBox = GetWorldBoundingBox();
     const Matrix3x4& worldTransform = node_->GetWorldTransform();
@@ -275,7 +275,7 @@ bool Drawable::IsInView(Camera* camera) const
     return renderer && viewFrameNumber_ == renderer->GetFrameInfo().frameNumber_ && (!camera || viewCameras_.Contains(camera));
 }
 
-bool Drawable::IsInView(const FrameInfo& frame, bool anyCamera) const
+bool Drawable::IsInView(const RenderFrameInfo& frame, bool anyCamera) const
 {
     return viewFrameNumber_ == frame.frameNumber_ && (anyCamera || viewCameras_.Contains(frame.camera_));
 }
@@ -293,7 +293,7 @@ void Drawable::SetSortValue(float value)
     sortValue_ = value;
 }
 
-void Drawable::MarkInView(const FrameInfo& frame)
+void Drawable::MarkInView(const RenderFrameInfo& frame)
 {
     if (frame.frameNumber_ != viewFrameNumber_)
     {

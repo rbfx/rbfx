@@ -183,7 +183,7 @@ bool FileWatcher::StartWatching(const String& pathName, bool watchSubDirs)
     return false;
 #endif
 #else
-    URHO3D_LOGDEBUG("FileWatcher feature not enabled");
+    URHO3D_LOGERROR("FileWatcher feature not enabled");
     return false;
 #endif
 }
@@ -259,7 +259,7 @@ void FileWatcher::ThreadFunction()
             {
                 FILE_NOTIFY_INFORMATION* record = (FILE_NOTIFY_INFORMATION*)&buffer[offset];
 
-                if (record->Action == FILE_ACTION_MODIFIED || record->Action == FILE_ACTION_RENAMED_NEW_NAME)
+                if (record->Action == FILE_ACTION_MODIFIED || record->Action == FILE_ACTION_RENAMED_NEW_NAME || record->Action == FILE_ACTION_REMOVED)
                 {
                     String fileName;
                     const wchar_t* src = record->FileName;
@@ -337,8 +337,10 @@ bool FileWatcher::GetNextChange(String& dest)
 
     auto delayMsec = (unsigned)(delay_ * 1000.0f);
 
-    if (changes_.Empty())
+    if (changes_.Empty()) {
+        dest = "";
         return false;
+    }
     else
     {
         for (HashMap<String, Timer>::Iterator i = changes_.Begin(); i != changes_.End(); ++i)
@@ -350,7 +352,7 @@ bool FileWatcher::GetNextChange(String& dest)
                 return true;
             }
         }
-
+        dest = "";
         return false;
     }
 }

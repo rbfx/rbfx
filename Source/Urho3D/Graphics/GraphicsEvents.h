@@ -35,7 +35,7 @@ URHO3D_EVENT(E_SCREENMODE, ScreenMode)
     URHO3D_PARAM(P_FULLSCREEN, Fullscreen);        // bool
     URHO3D_PARAM(P_BORDERLESS, Borderless);        // bool
     URHO3D_PARAM(P_RESIZABLE, Resizable);          // bool
-    URHO3D_PARAM(P_HIGHDPI, HighDPI);              // bool
+    URHO3D_PARAM(P_PIXELRATIO, pixelRatio);              // float
     URHO3D_PARAM(P_MONITOR, Monitor);              // int
     URHO3D_PARAM(P_REFRESHRATE, RefreshRate);      // int
 }
@@ -61,6 +61,7 @@ URHO3D_EVENT(E_BEGINRENDERING, BeginRendering)
 URHO3D_EVENT(E_ENDRENDERING, EndRendering)
 {
 }
+
 
 /// Update of a view started.
 URHO3D_EVENT(E_BEGINVIEWUPDATE, BeginViewUpdate)

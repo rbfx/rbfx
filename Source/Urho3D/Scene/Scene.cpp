@@ -42,8 +42,13 @@
 #include "../Scene/SplinePath.h"
 #include "../Scene/UnknownComponent.h"
 #include "../Scene/ValueAnimation.h"
-
+#include "../Scene/ASyncNodeLoader.h"
+#include "../Scene/ASyncNodeRemover.h"
+#include "../Scene/ASyncNodeSaver.h"
 #include "../DebugNew.h"
+
+
+
 
 namespace Urho3D
 {
@@ -1166,8 +1171,7 @@ void Scene::HandleUpdate(StringHash eventType, VariantMap& eventData)
     if (!updateEnabled_)
         return;
 
-    using namespace Update;
-    Update(eventData[P_TIMESTEP].GetFloat());
+    Update(eventData[Update::P_TIMESTEP].GetFloat());
 }
 
 void Scene::HandleResourceBackgroundLoaded(StringHash eventType, VariantMap& eventData)
@@ -1536,6 +1540,9 @@ void RegisterSceneLibrary(Context* context)
     SmoothedTransform::RegisterObject(context);
     UnknownComponent::RegisterObject(context);
     SplinePath::RegisterObject(context);
+	ASyncNodeLoader::RegisterObject(context);
+	ASyncNodeSaver::RegisterObject(context);
+	ASyncNodeRemover::RegisterObject(context);
 }
 
 }
