@@ -128,7 +128,8 @@ void Editor::Start()
 #endif
 
         StringVector files;
-        GetFileSystem()->ScanDir(files, ".", "", SCAN_FILES, false);
+        GetFileSystem()->ScanDir(files, GetFileSystem()->GetProgramDir(), "", SCAN_FILES, false);
+
 
 #if WIN32
         const char* start = "EditorPlugin";
@@ -145,10 +146,10 @@ void Editor::Start()
         {
             auto lastCharacter = path.Length() - strlen(end) - 1;
             if (path.StartsWith(start) && path.EndsWith(end) && !IsDigit(path[lastCharacter]))
-                LoadNativePlugin(path);
+                LoadNativePlugin(GetFileSystem()->GetProgramDir() + path);
 #if URHO3D_CSHARP
             else if (path.StartsWith("EditorPluginManaged") && path.EndsWith(".dll"))
-                LoadManagedPlugin(path);
+                LoadManagedPlugin(GetFileSystem()->GetProgramDir() + path);
 #endif
         }
     }
