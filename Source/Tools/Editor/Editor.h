@@ -81,6 +81,8 @@ protected:
     void OnConsoleCommand(VariantMap& args);
     /// Load a native user plugin from a specified shared library.
     bool LoadNativePlugin(const String& path);
+    /// Load a managed user plugin from specified managed library.
+    bool LoadManagedPlugin(const String& path);
     /// Returns true if specified path is internal engine or editor resource path.
     bool IsInternalResourcePath(const String& fullPath) const;
 
@@ -106,6 +108,7 @@ protected:
     Vector<String> engineResourcePrefixPaths_;
     Vector<String> engineResourceAutoloadPaths_;
     Vector<NativePlugin> nativePlugins_;
+    PODVector<unsigned> managedPlugins_;
 };
 
 }

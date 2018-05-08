@@ -40,32 +40,7 @@ bool Urho3DCustomPassLate::Visit(MetaEntity* entity, cppast::visitor_info info)
     if (info.event == info.container_entity_exit)
         return true;
 
-    if (entity->kind_ == cppast::cpp_entity_kind::variable_t &&
-        entity->GetParent()->kind_ == cppast::cpp_entity_kind::namespace_t && entity->GetDefaultValue().empty() &&
-        Urho3D::GetTypeName(entity->Ast<cppast::cpp_variable>().type()) == "Urho3D::StringHash")
-    {
-        auto defaultValue = entity->GetDefaultValue();
-        // Give default values to event names
-        if (entity->name_.find("E_") == 0)
-        {
-            const auto& siblings = entity->GetParent()->children_;
-            auto it = std::find(siblings.begin(), siblings.end(), entity->shared_from_this());
-            assert(it != siblings.end());
-
-            // Next sibling which is supposed to be namespace containing event parameters. Name of namespace is
-            // event name.
-            it++;
-
-            if (it != siblings.end())
-            {
-                auto* eventNamespace = it->get();
-                assert(eventNamespace->kind_ == cppast::cpp_entity_kind::namespace_t);
-                entity->defaultValue_ = fmt::format("\"{}\"", eventNamespace->name_);
-                entity->flags_ |= HintReadOnly;
-            }
-        }
-    }
-    else if (entity->kind_ == cppast::cpp_entity_kind::enum_t && entity->name_.empty())
+    if (entity->kind_ == cppast::cpp_entity_kind::enum_t && entity->name_.empty())
     {
         if (entity->children_.empty())
         {

@@ -145,8 +145,8 @@ int main(int argc, char* argv[])
     generator->AddApiPass<ImplementInterfacesPass>();
     generator->AddApiPass<GenerateClassWrappers>();
     generator->AddApiPass<OverrideConstantsPass>();
-    generator->AddApiPass<MoveGlobalsPass>();
     generator->AddApiPass<Urho3DCustomPassEarly>();
+    generator->AddApiPass<MoveGlobalsPass>();
     generator->AddApiPass<GenerateCApiPass>();
     generator->AddApiPass<RenameMembersPass>();
     generator->AddApiPass<FixDefaultValuesPass>();

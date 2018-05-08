@@ -269,7 +269,7 @@ void SceneTab::Select(Node* node)
     if (gizmo_.Select(node))
     {
         using namespace EditorSelectionChanged;
-        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENETAB, this);
+        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
     }
 }
 
@@ -278,7 +278,7 @@ void SceneTab::Unselect(Node* node)
     if (gizmo_.Unselect(node))
     {
         using namespace EditorSelectionChanged;
-        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENETAB, this);
+        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
     }
 }
 
@@ -286,7 +286,7 @@ void SceneTab::ToggleSelection(Node* node)
 {
     gizmo_.ToggleSelection(node);
     using namespace EditorSelectionChanged;
-    SendEvent(E_EDITORSELECTIONCHANGED, P_SCENETAB, this);
+    SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
 }
 
 void SceneTab::UnselectAll()
@@ -294,7 +294,7 @@ void SceneTab::UnselectAll()
     if (gizmo_.UnselectAll())
     {
         using namespace EditorSelectionChanged;
-        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENETAB, this);
+        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
     }
 }
 
@@ -353,6 +353,8 @@ void SceneTab::RenderToolbarButtons()
         else
             Play();
     }
+
+    SendEvent(E_EDITORTOOLBARBUTTONS);
 
     ui::NewLine();
     style.FrameRounding = oldRounding;
