@@ -57,7 +57,7 @@ protected:
 class ManagedEventHandler : public EventHandler
 {
 public:
-    ManagedEventHandler(Object* receiver, void* gcHandle, void(*function)(void*, StringHash, VariantMap*))
+    ManagedEventHandler(Object* receiver, gchandle gcHandle, void(*function)(gchandle, StringHash, VariantMap*))
         : EventHandler(receiver, nullptr)
         , function_(function)
         , gcHandle_(gcHandle)
@@ -66,8 +66,8 @@ public:
 
     ~ManagedEventHandler() override
     {
-        receiver_->GetScripts()->FreeGCHandle(gcHandle_);
-        gcHandle_ = nullptr;
+        mono_gchandle_free(gcHandle_);
+        gcHandle_ = 0;
     }
 
     void Invoke(VariantMap& eventData) override
@@ -77,14 +77,14 @@ public:
 
     EventHandler* Clone() const override
     {
-        return new ManagedEventHandler(receiver_, receiver_->GetScripts()->CloneGCHandle(gcHandle_), function_);
+        return new ManagedEventHandler(receiver_, mono_gchandle_new(mono_gchandle_get_target(gcHandle_), false), function_);
     }
 
 public:
 
 protected:
-    void* gcHandle_ = nullptr;
-    void(*function_)(void*, StringHash, VariantMap*) = nullptr;
+    gchandle gcHandle_ = 0;
+    void(*function_)(gchandle, StringHash, VariantMap*) = nullptr;
 };
 
 }
@@ -100,8 +100,8 @@ void Urho3D_Context_RegisterFactory(Context* context, MonoString* typeName, unsi
         CSharpConverter<MonoString>::FromCSharp<MonoStringHolder>(category));
 }
 
-void Urho3D_Object_SubscribeToEvent(Object* receiver, void* gcHandle, unsigned eventType,
-    void(*function)(void*, StringHash, VariantMap*), Object* sender)
+void Urho3D_Object_SubscribeToEvent(Object* receiver, gchandle gcHandle, unsigned eventType,
+    void(*function)(gchandle, StringHash, VariantMap*), Object* sender)
 {
     // gcHandle is a handle to Action<> which references receiver object. We have to ensure object is alive as long as
     // engine will be sending events to it. On the other hand pinning receiver object is not required as it's lifetime

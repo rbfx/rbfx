@@ -175,7 +175,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         bool isRefCounted = IsSubclassOf(cls, "Urho3D::RefCounted");
         if (isInheritable || isRefCounted)
         {
-            printer_ << fmt::format("void {}_setup({}* instance, void* gcHandle, const char* typeName)", baseName, entity->sourceSymbolName_);
+            printer_ << fmt::format("void {}_setup({}* instance, gchandle gcHandle, const char* typeName)", baseName, entity->sourceSymbolName_);
             printer_.Indent();
             {
                 const auto& cls = entity->Ast<cppast::cpp_class>();
@@ -185,16 +185,16 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     printer_ << "instance->SetDeleter([](RefCounted* instance_, void* gcHandle_) {";
                     printer_.Indent("");
                     {
-                        printer_ << "scriptSubsystem->FreeGCHandle(gcHandle_);";
+                        printer_ << "mono_gchandle_free((uintptr_t)gcHandle_);";
                         printer_ << "delete instance_;";
                     }
-                    printer_.Dedent("}, gcHandle);");
+                    printer_.Dedent("}, (void*)gcHandle);");
                 }
                 if (isInheritable)
                 {
                     if (isRefCounted)
                         // Ensure that different GC handles are stored in wrapepr class and refcounted deleter user data
-                        printer_ << "gcHandle = scriptSubsystem->CloneGCHandle(gcHandle);";
+                        printer_ << "gcHandle = mono_gchandle_new(mono_gchandle_get_target(gcHandle), false);";
                     printer_ << "instance->gcHandle_ = gcHandle;";
                     if (IsSubclassOf(cls, "Urho3D::Object"))
                         printer_ << fmt::format("instance->typeInfo_ = new Urho3D::TypeInfo(typeName, {}::GetTypeInfoStatic());", entity->sourceSymbolName_);

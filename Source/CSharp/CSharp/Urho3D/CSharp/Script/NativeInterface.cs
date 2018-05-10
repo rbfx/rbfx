@@ -79,19 +79,6 @@ namespace Urho3D.CSharp
 
     public static class NativeInterface
     {
-        internal static void FreeGcHandle(IntPtr ptr)
-        {
-            var handle = GCHandle.FromIntPtr(ptr);
-            (handle.Target as IDisposable)?.Dispose(); // Just in case
-            handle.Free();
-        }
-
-        internal static IntPtr CloneGcHandle(IntPtr ptr)
-        {
-            var handle = GCHandle.FromIntPtr(ptr);
-            return GCHandle.ToIntPtr(GCHandle.Alloc(handle.Target));
-        }
-
         internal static IntPtr CreateObject(IntPtr contextPtr, uint managedType)
         {
             var context = Context.__FromPInvoke(contextPtr, true);

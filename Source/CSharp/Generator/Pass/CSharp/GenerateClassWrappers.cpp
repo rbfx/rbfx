@@ -87,7 +87,7 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
     }
 
     printer_.WriteLine("public:", false);
-    printer_ << "void* gcHandle_ = nullptr;";
+    printer_ << "gchandle gcHandle_ = 0;";
     if (IsSubclassOf(entity->Ast<cppast::cpp_class>(), "Urho3D::Object"))
     {
         printer_ << "Urho3D::TypeInfo* typeInfo_ = nullptr;";
@@ -109,11 +109,11 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
     printer_ << fmt::format("virtual ~{}()", entity->name_);
     printer_.Indent();
     {
-        printer_ << "if (gcHandle_ != nullptr)";
+        printer_ << "if (gcHandle_ != 0)";
         printer_.Indent();
         {
-            printer_ << "scriptSubsystem->FreeGCHandle(gcHandle_);";
-            printer_ << "gcHandle_ = nullptr;";
+            printer_ << "mono_gchandle_free(gcHandle_);";
+            printer_ << "gcHandle_ = 0;";
         }
         printer_.Dedent();
         if (IsSubclassOf(entity->Ast<cppast::cpp_class>(), "Urho3D::Object"))
@@ -172,7 +172,7 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
 
                     if (func.is_virtual())
                     {
-                        printer_ << fmt::format("{typeName}(*fn{cFunctionName})(void* gcHandle{pc}{parameterList}) = nullptr;",
+                        printer_ << fmt::format("{typeName}(*fn{cFunctionName})(gchandle gcHandle{pc}{parameterList}) = nullptr;",
                             FMT_CAPTURE(typeName), FMT_CAPTURE(cFunctionName), FMT_CAPTURE(className),
                             FMT_CAPTURE(constModifier), FMT_CAPTURE(pc), FMT_CAPTURE(parameterList));
                         // Virtual method that calls said pointer

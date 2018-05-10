@@ -42,6 +42,8 @@ extern ScriptSubsystem* scriptSubsystem;
 
 }
 
+using gchandle = uintptr_t;
+
 /// Force-cast between incompatible types.
 template<typename T0, typename T1>
 inline T0 force_cast(T1 input)

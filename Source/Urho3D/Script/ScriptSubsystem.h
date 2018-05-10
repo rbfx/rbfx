@@ -67,10 +67,6 @@ public:
     Variant CallMethod(void* assembly, const String& methodDesc, void* object = nullptr,
         const VariantVector& args = Variant::emptyVariantVector);
 
-    /// Frees handle of managed object.
-    void FreeGCHandle(void* gcHandle);
-    /// Clones handle of managed object.
-    void* CloneGCHandle(void* gcHandle);
     /// Creates managed object and returns it's native instance.
     Object* CreateObject(Context* context, unsigned managedType);
     /// Converts instance to managed object.
@@ -93,8 +89,6 @@ protected:
     /// Mutex protecting resources related to queuing ReleaseRef() calls.
     Mutex mutex_;
     /// Managed API function pointers.
-    void(*FreeGCHandle_)(void* gcHandle, void* exception);
-    void*(*CloneGCHandle_)(void* gcHandle, void* exception);
     Object*(*CreateObject_)(Context* context, unsigned managedType, void* exception);
 };
 

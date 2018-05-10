@@ -75,15 +75,7 @@ void ScriptSubsystem::Init()
     auto* image =  mono_assembly_get_image(assembly);
     auto* klass = mono_class_from_name(image, "Urho3D.CSharp", "NativeInterface");
 
-    auto* method = mono_class_get_method_from_name(klass, "FreeGcHandle", 1);
-    FreeGCHandle_ = reinterpret_cast<decltype(FreeGCHandle_)>(mono_method_get_unmanaged_thunk(method)); // TODO: this can be replaced with mono_gchandle_free()
-    mono_free_method(method);
-
-    method = mono_class_get_method_from_name(klass, "CloneGcHandle", 1);
-    CloneGCHandle_ = reinterpret_cast<decltype(CloneGCHandle_)>(mono_method_get_unmanaged_thunk(method));
-    mono_free_method(method);
-
-    method = mono_class_get_method_from_name(klass, "CreateObject", 2);
+    auto* method = mono_class_get_method_from_name(klass, "CreateObject", 2);
     CreateObject_ = reinterpret_cast<decltype(CreateObject_)>(mono_method_get_unmanaged_thunk(method));
     mono_free_method(method);
 }
@@ -107,18 +99,6 @@ void ScriptSubsystem::OnEndFrame(StringHash, VariantMap&)
     for (auto* instance : releaseQueue_)
         instance->ReleaseRef();
     releaseQueue_.Clear();
-}
-
-void ScriptSubsystem::FreeGCHandle(void* gcHandle)
-{
-    MonoException* exception = nullptr;
-    FreeGCHandle_(gcHandle, (void*)&exception);
-}
-
-void* ScriptSubsystem::CloneGCHandle(void* gcHandle)
-{
-    MonoException* exception = nullptr;
-    return CloneGCHandle_(gcHandle, (void*)&exception);
 }
 
 Object* ScriptSubsystem::CreateObject(Context* context, unsigned managedType)
