@@ -28,30 +28,28 @@
 namespace Urho3D
 {
 
-static const StringHash contextKey("PluginApplication");
-
 int PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*),
     void(*destroyer)(PluginApplication*))
 {
     assert(ctx_);
     auto* ctx = static_cast<cr_plugin*>(ctx_);
-    auto context = static_cast<Context*>(ctx->userdata);
-    auto application = dynamic_cast<PluginApplication*>(context->GetGlobalVar(contextKey).GetPtr());
 
     switch (operation)
     {
     case CR_LOAD:
     {
-        application = factory(context);
-        context->SetGlobalVar(contextKey, application);
+        auto* context = static_cast<Context*>(ctx->userdata);
+        auto* application = factory(context);
         application->OnLoad();
+        ctx->userdata = application;
         return 0;
     }
     case CR_UNLOAD:
     case CR_CLOSE:
     {
-        context->SetGlobalVar(contextKey, Variant::EMPTY);
+        auto* application = static_cast<PluginApplication*>(ctx->userdata);
         application->OnUnload();
+        ctx->userdata = application->GetContext();
         destroyer(application);
         return 0;
     }
