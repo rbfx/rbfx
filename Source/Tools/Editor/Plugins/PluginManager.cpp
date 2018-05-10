@@ -34,8 +34,18 @@ void PluginManager::AutoLoadFrom(const String& directory)
 
     for (const auto& path : files)
     {
-        if (IsPluginPath(path))
+        switch (IsPluginPath(path))
+        {
+        case PPT_VALID:
             LoadPlugin(path);
+            break;
+        case PPT_TEMPORARY:
+            GetFileSystem()->Delete(path);
+            break;
+        case PPT_INVALID:
+        default:
+            break;
+        }
     }
 }
 

@@ -109,16 +109,16 @@ void PluginManagerManaged::OnEndFrame()
 #endif
 }
 
-bool PluginManagerManaged::IsPluginPath(const String& path)
+PluginManager::PluginPathType PluginManagerManaged::IsPluginPath(const String& path)
 {
 #if URHO3D_PLUGINS_CSHARP
     const char* start = "epm";
     const char* end = ".dll";
     String fileName = GetFileNameAndExtension(path).ToLower();
-    return fileName.StartsWith(start) && fileName.EndsWith(end);
-#else
-    return false;
+    if (fileName.StartsWith(start) && fileName.EndsWith(end))
+        return PPT_VALID;
 #endif
+    return PPT_INVALID;
 }
 
 }

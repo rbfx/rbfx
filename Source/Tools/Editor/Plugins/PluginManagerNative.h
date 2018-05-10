@@ -50,7 +50,7 @@ protected:
     /// Handles reloading of plugins.
     void OnEndFrame();
     /// Returns true if specified path matches predefined plugin naming rules.
-    bool IsPluginPath(const String& path) override;
+    PluginPathType IsPluginPath(const String& path) override;
 
     /// Map plugin path to reloadable context.
     HashMap<String, cr_plugin> plugins_;

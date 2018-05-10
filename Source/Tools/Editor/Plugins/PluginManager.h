@@ -42,8 +42,19 @@ public:
     void AutoLoadFrom(const String& directory);
 
 protected:
+    /// Enumeration describing plugin file path status.
+    enum PluginPathType
+    {
+        /// Specified path is not a valid plugin.
+        PPT_INVALID,
+        /// Specified path is a valid plugin.
+        PPT_VALID,
+        /// Specified path is a temporary plugin file which should be deleted.
+        PPT_TEMPORARY
+    };
+
     /// Returns true if specified path matches predefined plugin naming rules.
-    virtual bool IsPluginPath(const String& path) = 0;
+    virtual PluginPathType IsPluginPath(const String& path) = 0;
 };
 
 }
