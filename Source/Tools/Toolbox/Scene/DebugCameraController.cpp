@@ -81,7 +81,7 @@ void DebugCameraController::Update(float timeStep)
             input->SetMouseVisible(false);
 
         auto yaw = GetNode()->GetRotation().EulerAngles().x_;
-        if (yaw > -90.f && yaw < 90.f || yaw <= -90.f && delta.y_ > 0 || yaw >= 90.f && delta.y_ < 0)
+        if ((yaw > -90.f && yaw < 90.f) || (yaw <= -90.f && delta.y_ > 0) || (yaw >= 90.f && delta.y_ < 0))
             GetNode()->RotateAround(Vector3::ZERO, Quaternion(mouseSensitivity_ * delta.y_, Vector3::RIGHT), TS_LOCAL);
         GetNode()->RotateAround(GetNode()->GetPosition(), Quaternion(mouseSensitivity_ * delta.x_, Vector3::UP), TS_WORLD);
     }
