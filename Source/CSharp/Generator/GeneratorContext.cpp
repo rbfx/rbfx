@@ -299,7 +299,8 @@ void GeneratorContext::Generate()
 
         for (const auto& pass : cppPasses_)
         {
-            spdlog::get("console")->info("#### Run pass: {}", getNiceName(typeid(*pass.get()).name()));
+            auto& passRef = *pass;
+            spdlog::get("console")->info("#### Run pass: {}", getNiceName(typeid(passRef).name()));
             for (const auto& pair : nsRules.parsed_)
             {
                 pass->StartFile(pair.first);
@@ -385,7 +386,8 @@ void GeneratorContext::Generate()
 
         for (const auto& pass : apiPasses_)
         {
-            spdlog::get("console")->info("#### Run pass: {}", getNiceName(typeid(*pass.get()).name()));
+            auto& passRef = *pass;
+            spdlog::get("console")->info("#### Run pass: {}", getNiceName(typeid(passRef).name()));
             visitOverlayEntity(pass.get(), nsRules.apiRoot_.get());
         }
 

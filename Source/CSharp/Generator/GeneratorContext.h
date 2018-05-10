@@ -90,7 +90,8 @@ public:
         auto& id = typeid(T);
         for (const auto& pass : apiPasses_)
         {
-            auto& passId = typeid(*pass.get());
+            auto& passRef = *pass;
+            auto& passId = typeid(passRef);
             if (id == passId)
                 return (T*)pass.get();
         }
