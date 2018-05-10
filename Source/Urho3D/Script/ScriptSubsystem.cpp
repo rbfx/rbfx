@@ -52,25 +52,23 @@ ScriptSubsystem::ScriptSubsystem(Context* context)
         // This library does not run in context of managed process.
         return;
 
-    Init();
-}
-
-void ScriptSubsystem::Init()
-{
-    auto* domain = mono_domain_get();
     // This global instance is mainly required for queueing ReleaseRef() calls. Not every RefCounted has pointer to
     // Context therefore if multiple contexts exist they may run on different threads. Then there would be no way to
     // know on which main thread ReleaseRef() should be called. Assert below limits application to having single
     // Context.
     assert(scriptSubsystem == nullptr);
-    assert(domain != nullptr);
     scriptSubsystem = this;
 
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(ScriptSubsystem, OnEndFrame));
 
-    auto* assembly = mono_domain_assembly_open(domain, "Urho3DNet.dll");
+    Init(mono_get_root_domain());
+}
+
+void ScriptSubsystem::Init(void* domain)
+{
+    auto* assembly = mono_domain_assembly_open(static_cast<MonoDomain*>(domain), "Urho3DNet.dll");
     if (assembly == nullptr)
-        assembly = static_cast<MonoAssembly*>(LoadAssembly("Urho3DNet.dll"));
+        assembly = static_cast<MonoAssembly*>(LoadAssembly("Urho3DNet.dll", nullptr));
 
     auto* image =  mono_assembly_get_image(assembly);
     auto* klass = mono_class_from_name(image, "Urho3D.CSharp", "NativeInterface");
@@ -114,40 +112,31 @@ void ScriptSubsystem::RegisterCurrentThread()
         mono_thread_attach(domain);
 }
 
-void* ScriptSubsystem::LoadAssembly(const String& pathToAssembly)
+void* ScriptSubsystem::LoadAssembly(const String& pathToAssembly, void* domain)
 {
-    auto* domain = mono_domain_get();
     if (domain == nullptr)
-    {
-        URHO3D_LOGERROR("Managed domain is not created.");
-        return nullptr;
-    }
+        domain = mono_domain_get();
+    assert(domain != nullptr);
 
-    return mono_domain_assembly_open(domain, pathToAssembly.CString());
+    return mono_domain_assembly_open(static_cast<MonoDomain*>(domain), pathToAssembly.CString());
 }
 
 void* ScriptSubsystem::HostManagedRuntime(ScriptSubsystem::RuntimeSettings& settings)
 {
-    auto* domain = mono_domain_get();
-    if (domain == nullptr)
+    mono_config_parse(nullptr);
+    const char** options = new const char*[settings.jitOptions_.Size()];
+    int i = 0;
+    for (const auto& opt : settings.jitOptions_)
     {
-        mono_config_parse(nullptr);
-        const char** options = new const char*[settings.jitOptions_.Size()];
-        int i = 0;
-        for (const auto& opt : settings.jitOptions_)
-        {
-            options[i++] = opt.CString();
-            if (opt.StartsWith("--debugger-agent"))
-                mono_debug_init(MONO_DEBUG_FORMAT_MONO);
-        }
-        mono_jit_parse_options(settings.jitOptions_.Size(), (char**)options);
-
-        domain = mono_jit_init_version(settings.domainName_.CString(), "v4.0.30319");
-
-        Init();
+        options[i++] = opt.CString();
+        if (opt.StartsWith("--debugger-agent"))
+            mono_debug_init(MONO_DEBUG_FORMAT_MONO);
     }
-    else
-        URHO3D_LOGWARNING("Existing managed domain was returned instead of creating a new one.");
+    mono_jit_parse_options(settings.jitOptions_.Size(), (char**)options);
+
+    auto* domain = mono_jit_init_version(settings.domainName_.CString(), "v4.0.30319");
+
+    Init(domain);
 
     return domain;
 }
@@ -308,14 +297,19 @@ void* ScriptSubsystem::ToManagedObject(const char* imageName, const char* classN
     }
 }
 
-unsigned ScriptSubsystem::Lock(void* object, bool pin)
+gchandle ScriptSubsystem::Lock(void* object, bool pin)
 {
     return mono_gchandle_new(static_cast<MonoObject*>(object), pin);
 }
 
-void ScriptSubsystem::Unlock(unsigned int handle)
+void ScriptSubsystem::Unlock(gchandle handle)
 {
     mono_gchandle_free(handle);
+}
+
+void* ScriptSubsystem::GetObject(gchandle handle)
+{
+    return mono_gchandle_get_target(handle);
 }
 
 }

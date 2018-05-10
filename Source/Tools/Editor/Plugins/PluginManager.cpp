@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2018 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,50 +20,23 @@
 // THE SOFTWARE.
 //
 
-#include "../Core/Context.h"
-#include "../Engine/PluginApplication.h"
-#include <cr/cr.h>
+#include <Urho3D/IO/FileSystem.h>
+#include "PluginManager.h"
 
 
 namespace Urho3D
 {
 
-static const StringHash contextKey("PluginApplication");
-
-int PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*),
-    void(*destroyer)(PluginApplication*))
+void PluginManager::AutoLoadFrom(const String& directory)
 {
-    assert(ctx_);
-    auto* ctx = static_cast<cr_plugin*>(ctx_);
-    auto context = static_cast<Context*>(ctx->userdata);
-    auto application = dynamic_cast<PluginApplication*>(context->GetGlobalVar(contextKey).GetPtr());
+    StringVector files;
+    GetFileSystem()->ScanDir(files, directory, "", SCAN_FILES, false);
 
-    switch (operation)
+    for (const auto& path : files)
     {
-    case CR_LOAD:
-    {
-        application = factory(context);
-        context->SetGlobalVar(contextKey, application);
-        application->OnLoad();
-        return 0;
+        if (IsPluginPath(path))
+            LoadPlugin(path);
     }
-    case CR_UNLOAD:
-    case CR_CLOSE:
-    {
-        context->SetGlobalVar(contextKey, Variant::EMPTY);
-        application->OnUnload();
-        destroyer(application);
-        return 0;
-    }
-    case CR_STEP:
-    {
-        return 0;
-    }
-    default:
-		break;
-    }
-	assert(false);
-	return -3;
 }
 
 }

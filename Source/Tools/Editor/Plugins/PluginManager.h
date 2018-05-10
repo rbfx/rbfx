@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2018 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,50 +20,30 @@
 // THE SOFTWARE.
 //
 
-#include "../Core/Context.h"
-#include "../Engine/PluginApplication.h"
-#include <cr/cr.h>
+#pragma once
 
+
+#include <Urho3D/Core/Object.h>
 
 namespace Urho3D
 {
 
-static const StringHash contextKey("PluginApplication");
-
-int PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*),
-    void(*destroyer)(PluginApplication*))
+class PluginManager : public Object
 {
-    assert(ctx_);
-    auto* ctx = static_cast<cr_plugin*>(ctx_);
-    auto context = static_cast<Context*>(ctx->userdata);
-    auto application = dynamic_cast<PluginApplication*>(context->GetGlobalVar(contextKey).GetPtr());
+    URHO3D_OBJECT(PluginManager, Object);
+public:
+    /// Construct.
+    explicit PluginManager(Context* context) : Object(context) { }
+    /// Load a plugin and return true if succeeded.
+    virtual bool LoadPlugin(const String& path) = 0;
+    /// Unload a plugin and return true if succeeded.
+    virtual bool UnloadPlugin(const String& path) = 0;
+    /// Load plugins from specified directory matching predetermined naming rules.
+    void AutoLoadFrom(const String& directory);
 
-    switch (operation)
-    {
-    case CR_LOAD:
-    {
-        application = factory(context);
-        context->SetGlobalVar(contextKey, application);
-        application->OnLoad();
-        return 0;
-    }
-    case CR_UNLOAD:
-    case CR_CLOSE:
-    {
-        context->SetGlobalVar(contextKey, Variant::EMPTY);
-        application->OnUnload();
-        destroyer(application);
-        return 0;
-    }
-    case CR_STEP:
-    {
-        return 0;
-    }
-    default:
-		break;
-    }
-	assert(false);
-	return -3;
-}
+protected:
+    /// Returns true if specified path matches predefined plugin naming rules.
+    virtual bool IsPluginPath(const String& path) = 0;
+};
 
 }

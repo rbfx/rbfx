@@ -24,8 +24,9 @@
 
 
 #include <Urho3D/Urho3DAll.h>
-#include <cr/cr.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
+#include "Plugins/PluginManagerNative.h"
+#include "Plugins/PluginManagerManaged.h"
 #include "Tabs/UI/UITab.h"
 #include "IDPool.h"
 
@@ -79,20 +80,8 @@ public:
 protected:
     /// Process console commands.
     void OnConsoleCommand(VariantMap& args);
-    /// Load a native user plugin from a specified shared library.
-    bool LoadNativePlugin(const String& path);
-    /// Load a managed user plugin from specified managed library.
-    bool LoadManagedPlugin(const String& path);
     /// Returns true if specified path is internal engine or editor resource path.
     bool IsInternalResourcePath(const String& fullPath) const;
-
-    struct NativePlugin
-    {
-        /// User plugin context.
-        cr_plugin context_{};
-        /// Path of user plugin.
-        String path_;
-    };
 
     /// Pool tracking availability of unique IDs used by editor.
     IDPool idPool_;
@@ -107,8 +96,8 @@ protected:
     Vector<String> engineResourcePaths_;
     Vector<String> engineResourcePrefixPaths_;
     Vector<String> engineResourceAutoloadPaths_;
-    Vector<NativePlugin> nativePlugins_;
-    PODVector<unsigned> managedPlugins_;
+    PluginManagerNative pluginsNative_;
+    PluginManagerManaged pluginsManaged_;
 };
 
 }

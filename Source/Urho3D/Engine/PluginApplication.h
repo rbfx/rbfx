@@ -41,8 +41,6 @@ public:
     virtual void OnLoad() = 0;
     /// Called when plugin is being unloaded. Unregister all custom components and unsubscribe from events here.
     virtual void OnUnload() = 0;
-    /// Called on every frame during E_UPDATE.
-    virtual void OnUpdate() { }
 };
 
 /// Main function of the plugin.

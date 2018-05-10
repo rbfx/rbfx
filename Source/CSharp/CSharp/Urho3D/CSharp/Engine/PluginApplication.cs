@@ -11,7 +11,5 @@ namespace Urho3D
         public virtual void OnLoad() { }
         /// Called when plugin is being unloaded. Unregister all custom components and unsubscribe from events here.
         public virtual void OnUnload() { }
-        /// Called on every frame during E_UPDATE.
-        public virtual void OnUpdate() { }
     }
 }
