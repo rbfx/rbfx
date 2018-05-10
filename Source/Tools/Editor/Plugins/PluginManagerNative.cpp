@@ -134,13 +134,19 @@ PluginManager::PluginPathType PluginManagerNative::IsPluginPath(const String& pa
     auto lastCharacterPos = path.Length() - strlen(end) - 1;
     auto lastCharacter = static_cast<unsigned int>(fileName[lastCharacterPos]);
 
-    if (fileName.StartsWith(start) && fileName.EndsWith(end))
+    bool isLib = fileName.EndsWith(end);
+#if WIN32
+    bool isPdb = fileName.EndsWith(".pdb");
+#else
+    bool isPdb = false;
+#endif
+    if (fileName.StartsWith(start))
     {
-        if (IsDigit(lastCharacter))
+        if (IsDigit(lastCharacter) && (isLib || isPdb))
             // Last file name character before extension can not be digit. cr appends a number to file name for versioning of
             // assemblies. We must not load these versions as plugins as it is done internally by cr.
             return PPT_TEMPORARY;
-        else
+        else if (isLib)
             return PPT_VALID;
     }
 #endif
