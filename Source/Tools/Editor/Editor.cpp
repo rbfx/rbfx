@@ -113,11 +113,11 @@ void Editor::Start()
     // Prevent overwriting example scene.
     DynamicCast<SceneTab>(tabs_.Front())->ClearCachedPaths();
 
-#if URHO3D_PLUGINS
     // Plugin loading
-#if URHO3D_CSHARP
+#if URHO3D_PLUGINS_CSHARP
     pluginsManaged_.AutoLoadFrom(GetFileSystem()->GetProgramDir());
 #endif
+#if URHO3D_PLUGINS_NATIVE
     pluginsNative_.AutoLoadFrom(GetFileSystem()->GetProgramDir());
 #endif
 }

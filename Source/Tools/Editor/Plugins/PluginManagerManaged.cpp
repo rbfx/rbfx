@@ -34,7 +34,7 @@ namespace Urho3D
 PluginManagerManaged::PluginManagerManaged(Context* context)
     : PluginManager(context)
 {
-#if URHO3D_PLUGINS && URHO3D_CSHARP
+#if URHO3D_PLUGINS_CSHARP
     // SubscribeToEvent(E_ENDFRAME, std::bind(&PluginManagerManaged::OnEndFrame, this));
 
     ScriptSubsystem::RuntimeSettings settings{};
@@ -44,13 +44,12 @@ PluginManagerManaged::PluginManagerManaged(Context* context)
         "--optimize=float32"
     };
     GetScripts()->HostManagedRuntime(settings);
-
 #endif
 }
 
 bool PluginManagerManaged::LoadPlugin(const String& path)
 {
-#if URHO3D_PLUGINS && URHO3D_CSHARP
+#if URHO3D_PLUGINS_CSHARP
     if (auto* assembly = GetScripts()->LoadAssembly(path, nullptr))
     {
         auto name = GetFileName(path);
@@ -70,6 +69,7 @@ bool PluginManagerManaged::LoadPlugin(const String& path)
 
 bool PluginManagerManaged::UnloadPlugin(const String& path)
 {
+#if URHO3D_PLUGINS_CSHARP
     // TODO: Experimental/untested.
     auto it = plugins_.Find(path);
     if (it == plugins_.End())
@@ -98,21 +98,27 @@ bool PluginManagerManaged::UnloadPlugin(const String& path)
         SendEvent(E_EDITORUSERCODERELOADEND);
         return true;
     }
-
+#endif
     return false;
 }
 
 void PluginManagerManaged::OnEndFrame()
 {
+#if URHO3D_PLUGINS_CSHARP
     // TODO: hot reload
+#endif
 }
 
 bool PluginManagerManaged::IsPluginPath(const String& path)
 {
+#if URHO3D_PLUGINS_CSHARP
     const char* start = "epm";
     const char* end = ".dll";
     String fileName = GetFileNameAndExtension(path).ToLower();
     return fileName.StartsWith(start) && fileName.EndsWith(end);
+#else
+    return false;
+#endif
 }
 
 }

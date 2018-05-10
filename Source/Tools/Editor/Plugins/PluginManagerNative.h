@@ -23,7 +23,11 @@
 #pragma once
 
 
+#if URHO3D_PLUGINS_NATIVE
 #include <cr/cr.h>
+#else
+typedef struct { } cr_plugin;
+#endif
 
 #include "PluginManager.h"
 

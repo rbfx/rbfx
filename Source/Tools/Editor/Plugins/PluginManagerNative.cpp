@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#if URHO3D_PLUGINS
+#if URHO3D_PLUGINS_NATIVE
 #   define CR_HOST
 #endif
 
@@ -37,14 +37,14 @@ namespace Urho3D
 PluginManagerNative::PluginManagerNative(Context* context)
     : PluginManager(context)
 {
-#if URHO3D_PLUGINS
+#if URHO3D_PLUGINS_NATIVE
     SubscribeToEvent(E_ENDFRAME, std::bind(&PluginManagerNative::OnEndFrame, this));
 #endif
 }
 
 bool PluginManagerNative::LoadPlugin(const String& path)
 {
-#if URHO3D_PLUGINS
+#if URHO3D_PLUGINS_NATIVE
     cr_plugin plugin{};
     if (cr_plugin_load(plugin, path.CString()))
     {
@@ -61,6 +61,7 @@ bool PluginManagerNative::LoadPlugin(const String& path)
 
 bool PluginManagerNative::UnloadPlugin(const String& path)
 {
+#if URHO3D_PLUGINS_NATIVE
     auto it = plugins_.Find(path);
     if (it == plugins_.End())
     {
@@ -74,13 +75,15 @@ bool PluginManagerNative::UnloadPlugin(const String& path)
     plugins_.Erase(it);
 
     SendEvent(E_EDITORUSERCODERELOADEND);
-
     return true;
+#else
+    return false;
+#endif
 }
 
 void PluginManagerNative::OnEndFrame()
 {
-#if URHO3D_PLUGINS
+#if URHO3D_PLUGINS_NATIVE
     for (auto it = plugins_.Begin(); it != plugins_.End(); it++)
     {
         cr_plugin& plugin = it->second_;
@@ -116,12 +119,13 @@ void PluginManagerNative::OnEndFrame()
 
 bool PluginManagerNative::IsPluginPath(const String& path)
 {
+#if URHO3D_PLUGINS_NATIVE
 #if WIN32
     const char* start = "epn";
-        const char* end = ".dll";
+    const char* end = ".dll";
 #elif APPLE
     const char* start = "libepn";
-        const char* end = ".dylib";
+    const char* end = ".dylib";
 #else
     const char* start = "libepn";
     const char* end = ".so";
@@ -132,6 +136,9 @@ bool PluginManagerNative::IsPluginPath(const String& path)
     return fileName.StartsWith(start) && fileName.EndsWith(end) && !IsDigit(lastCharacter);
     // Last file name character before extension can not be digit. cr appends a number to file name for versioning of
     // assemblies. We must not load these versions as plugins as it is done internally by cr.
+#else
+    return false;
+#endif
 }
 
 }
