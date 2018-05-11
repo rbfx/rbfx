@@ -110,7 +110,7 @@ void Profiler::BeginBlock(const char* name, const char* file, int line, unsigned
     {
         String uniqueName = ToString("%s at %s:%d", name, file, line);
         desc = ::profiler::registerDescription((::profiler::EasyBlockStatus)status, uniqueName.CString(), name, file,
-                                               line, ::profiler::BLOCK_TYPE_BLOCK, argb, true);
+                                               line, ::profiler::BlockType::Block, argb, true);
     }
     else
         desc = it->second_;
@@ -134,7 +134,7 @@ ProfilerDescriptor::ProfilerDescriptor(const char* name, const char* file, int l
 {
     String uniqueName = ToString("%p", this);
     descriptor_ = (void*) ::profiler::registerDescription((::profiler::EasyBlockStatus)status, uniqueName.CString(),
-        name, file, line, ::profiler::BLOCK_TYPE_BLOCK, argb, true);
+        name, file, line, ::profiler::BlockType::Block, argb, true);
 }
 
 ProfilerBlock::ProfilerBlock(ProfilerDescriptor& descriptor, const char* name)

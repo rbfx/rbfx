@@ -1,6 +1,6 @@
 /**
 Lightweight profiler library for c++
-Copyright(C) 2016-2017  Sergey Yagovtsev, Victor Zarubkin
+Copyright(C) 2016-2018  Sergey Yagovtsev, Victor Zarubkin
 
 Licensed under either of
     * MIT license (LICENSE.MIT or http://opensource.org/licenses/MIT)
@@ -76,7 +76,15 @@ class StackBuffer
 
 public:
 
-    StackBuffer(uint32_t N) : m_buffer(static_cast<T*>(malloc(N * sizeof(T)))), m_size(0), m_capacity(N), m_maxcapacity(N)
+    StackBuffer() = delete;
+    StackBuffer(const StackBuffer&) = delete;
+    StackBuffer(StackBuffer&&) = delete;
+
+    explicit StackBuffer(uint32_t N)
+        : m_buffer(static_cast<T*>(malloc(N * sizeof(T))))
+        , m_size(0)
+        , m_capacity(N)
+        , m_maxcapacity(N)
     {
     }
 
@@ -126,11 +134,6 @@ public:
         destroy_elem(reinterpret_cast<T*>(m_overflow.back().data + 0));
         m_overflow.pop_back();
     }
-
-private:
-
-    StackBuffer(const StackBuffer&) = delete;
-    StackBuffer(StackBuffer&&) = delete;
 
 }; // END of class StackBuffer.
 
