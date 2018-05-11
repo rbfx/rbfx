@@ -67,7 +67,7 @@ namespace profiler
 #endif
 
         explicit inline EASY_CONSTEXPR_FCN ValueId() : m_id(0) {}
-        explicit inline EASY_CONSTEXPR_FCN ValueId(const void* _member) : m_id(reinterpret_cast<vin_t>(_member)) {}
+        explicit inline ValueId(const void* _member) : m_id(reinterpret_cast<vin_t>(_member)) {}
 
         template <class T>
         explicit inline EASY_CONSTEXPR_FCN ValueId(const T& _member) : m_id(reinterpret_cast<vin_t>(&_member)) {}
