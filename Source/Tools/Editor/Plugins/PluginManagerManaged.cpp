@@ -59,6 +59,8 @@ bool PluginManagerManaged::LoadPlugin(const String& path)
         auto objectHandle = GetScripts()->Lock(object.GetVoidPtr(), false);
         GetScripts()->CallMethod(assembly, descBase + "OnLoad", object.GetVoidPtr());
         plugins_[path] = objectHandle;
+
+        URHO3D_LOGINFOF("Loaded plugin \"%s\".", GetFileNameAndExtension(path).CString());
     }
     else
         URHO3D_LOGWARNINGF("Failed loading managed plugin \"%s\".", GetFileNameAndExtension(path).CString());
