@@ -265,12 +265,12 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             // Method for getting type id.
             printer_ << dllImport;
             printer_ << fmt::format("private static extern IntPtr {}_typeid();", baseName);
-            printer_ << fmt::format("internal static IntPtr GetNativeTypeId() {{ return {}_typeid(); }}", baseName);
+            printer_ << fmt::format("internal static {}IntPtr GetNativeTypeId() {{ return {}_typeid(); }}", newTag, baseName);
             printer_ << "";
 
             printer_ << dllImport;
             printer_ << fmt::format("private static extern IntPtr {}_instance_typeid(IntPtr instance);", baseName);
-            printer_ << fmt::format("internal static IntPtr GetNativeTypeId(IntPtr instance) {{ return {}_instance_typeid(instance); }}", baseName);
+            printer_ << fmt::format("internal static {}IntPtr GetNativeTypeId(IntPtr instance) {{ return {}_instance_typeid(instance); }}", newTag, baseName);
             printer_ << "";
         }
         else if (info.event == info.container_entity_exit)
