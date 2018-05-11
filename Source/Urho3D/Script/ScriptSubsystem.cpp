@@ -124,7 +124,7 @@ void* ScriptSubsystem::LoadAssembly(const String& pathToAssembly, void* domain)
 void* ScriptSubsystem::HostManagedRuntime(ScriptSubsystem::RuntimeSettings& settings)
 {
     mono_config_parse(nullptr);
-    const char** options = new const char*[settings.jitOptions_.Size()];
+    const auto** options = new const char*[settings.jitOptions_.Size()];
     int i = 0;
     for (const auto& opt : settings.jitOptions_)
     {

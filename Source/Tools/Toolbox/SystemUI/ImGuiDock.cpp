@@ -76,7 +76,7 @@ struct DockContext
 
         ImVec2 getMinSize() const
         {
-            if (!children[0]) return ImVec2(16, 16 + GetTextLineHeightWithSpacing());
+            if (!children[0]) return {16, 16 + GetTextLineHeightWithSpacing()};
 
             ImVec2 s0 = children[0]->getMinSize();
             ImVec2 s1 = children[1]->getMinSize();
@@ -193,13 +193,13 @@ struct DockContext
         ImU32 id;
         Dock* next_tab;
         Dock* prev_tab;
-        Dock* children[2];
+        Dock* children[2]{};
         Dock* parent;
         bool active;
         ImVec2 pos;
         ImVec2 size;
         Status_ status;
-        char location[16];
+        char location[16]{};
         bool opened;
         bool first;
         int last_frame;
@@ -219,13 +219,13 @@ struct DockContext
     ImGuiCond_ m_next_dock_condition;
 
 
-    ~DockContext() {}
+    ~DockContext() = default;
 
     Dock* getExistingDock(ImU32 id)
     {
-        for (int i = 0; i < m_docks.size(); ++i)
+        for (auto & m_dock : m_docks)
         {
-            if (m_docks[i]->id == id) return m_docks[i];
+            if (m_dock->id == id) return m_dock;
         }
         return nullptr;
     }
@@ -233,12 +233,12 @@ struct DockContext
     Dock& getDock(const char* label, bool opened, const ImVec2& default_size)
     {
         ImU32 id = ImHash(label, 0);
-        for (int i = 0; i < m_docks.size(); ++i)
+        for (auto & m_dock : m_docks)
         {
-            if (m_docks[i]->id == id) return *m_docks[i];
+            if (m_dock->id == id) return *m_dock;
         }
 
-        Dock* new_dock = (Dock*)MemAlloc(sizeof(Dock));
+        auto* new_dock = (Dock*)MemAlloc(sizeof(Dock));
         IM_PLACEMENT_NEW(new_dock) Dock();
         m_docks.push_back(new_dock);
         new_dock->label = ImStrdup(label);
@@ -366,9 +366,9 @@ struct DockContext
 
     Dock* getDockAt(const ImVec2& pos) const
     {
-        for (int i = 0; i < m_docks.size(); ++i)
+        for (auto m_dock : m_docks)
         {
-            Dock& dock = *m_docks[i];
+            Dock& dock = *m_dock;
             if (dock.hasChildren()) continue;
             if (dock.status != Status_Docked) continue;
             if (IsMouseHoveringRect(dock.pos, dock.pos + dock.size, false))
@@ -437,12 +437,12 @@ struct DockContext
 
     Dock* getRootDock()
     {
-        for (int i = 0; i < m_docks.size(); ++i)
+        for (auto & m_dock : m_docks)
         {
-            if (!m_docks[i]->parent &&
-                (m_docks[i]->status == Status_Docked || m_docks[i]->children[0]))
+            if (!m_dock->parent &&
+                (m_dock->status == Status_Docked || m_dock->children[0]))
             {
-                return m_docks[i];
+                return m_dock;
             }
         }
         return nullptr;
@@ -480,7 +480,7 @@ struct DockContext
         Dock* dest_dock = getDockAt(GetIO().MousePos);
 
         Begin("##Overlay",
-            NULL,
+            nullptr,
             ImGuiWindowFlags_Tooltip | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove |
                 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings |
                 ImGuiWindowFlags_AlwaysAutoResize);
@@ -804,7 +804,7 @@ struct DockContext
         }
         else
         {
-            Dock* container = (Dock*)MemAlloc(sizeof(Dock));
+            auto* container = (Dock*)MemAlloc(sizeof(Dock));
             IM_PLACEMENT_NEW(container) Dock();
             m_docks.push_back(container);
             container->children[0] = &dest->getFirstTab();
@@ -931,14 +931,14 @@ struct DockContext
     void cleanDocks()
     {
         restart:
-            for (int i = 0, c = m_docks.size(); i < c; ++i)
+            for (auto & m_dock : m_docks)
             {
-                Dock& dock = *m_docks[i];
+                Dock& dock = *m_dock;
                 if (dock.last_frame == 0 && dock.status != Status_Float && !dock.children[0])
                 {
-                    fillLocation(*m_docks[i]);
-                    doUndock(*m_docks[i]);
-                    m_docks[i]->status = Status_Float;
+                    fillLocation(*m_dock);
+                    doUndock(*m_dock);
+                    m_dock->status = Status_Float;
                     goto restart;
                 }
             }
@@ -1131,19 +1131,19 @@ struct DockContext
     Dock* getDockByIndex(int idx) { return idx < 0 ? nullptr : m_docks[idx]; }
 
 
-    void load(Urho3D::XMLElement element)
+    void load(const Urho3D::XMLElement& element)
     {
-        for (int i = 0; i < m_docks.size(); ++i)
+        for (auto & m_dock : m_docks)
         {
-            m_docks[i]->~Dock();
-            MemFree(m_docks[i]);
+            m_dock->~Dock();
+            MemFree(m_dock);
         }
         m_docks.clear();
 
         auto record = element.GetChild("dock");
         while (record.NotNull())
         {
-            Dock* new_dock = (Dock*)MemAlloc(sizeof(Dock));
+            auto* new_dock = (Dock*)MemAlloc(sizeof(Dock));
             m_docks.push_back(IM_PLACEMENT_NEW(new_dock) Dock());
             record = record.GetNext("dock");
         }
@@ -1213,10 +1213,10 @@ static DockContext g_dock;
 
 void ShutdownDock()
 {
-    for (int i = 0; i < g_dock.m_docks.size(); ++i)
+    for (auto & m_dock : g_dock.m_docks)
     {
-        g_dock.m_docks[i]->~Dock();
-        MemFree(g_dock.m_docks[i]);
+        m_dock->~Dock();
+        MemFree(m_dock);
     }
     g_dock.m_docks.clear();
 }
@@ -1246,13 +1246,13 @@ void EndDock()
 }
 
 
-void SaveDock(Urho3D::XMLElement element)
+void SaveDock(const Urho3D::XMLElement& element)
 {
     g_dock.save(element);
 }
 
 
-void LoadDock(Urho3D::XMLElement element)
+void LoadDock(const Urho3D::XMLElement& element)
 {
     g_dock.load(element);
 }

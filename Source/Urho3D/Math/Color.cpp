@@ -341,10 +341,10 @@ void Color::FromHCM(float h, float c, float m)
 
 unsigned Color::ToUIntArgb() const
 {
-    unsigned r = (unsigned)Clamp(((int)(r_ * 255.0f)), 0, 255);
-    unsigned g = (unsigned)Clamp(((int)(g_ * 255.0f)), 0, 255);
-    unsigned b = (unsigned)Clamp(((int)(b_ * 255.0f)), 0, 255);
-    unsigned a = (unsigned)Clamp(((int)(a_ * 255.0f)), 0, 255);
+    auto r = (unsigned)Clamp(((int)(r_ * 255.0f)), 0, 255);
+    auto g = (unsigned)Clamp(((int)(g_ * 255.0f)), 0, 255);
+    auto b = (unsigned)Clamp(((int)(b_ * 255.0f)), 0, 255);
+    auto a = (unsigned)Clamp(((int)(a_ * 255.0f)), 0, 255);
     return (a << 24) | (r << 16) | (g << 8) | b;
 }
 

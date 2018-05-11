@@ -2465,7 +2465,7 @@ void Graphics::Restore()
                 if ( allver < 101004 ) // Mesa drivers less than this version cause linux display artifacts
                 {                      // so remove this context and let it fall back to GL2
                     SDL_GL_DeleteContext(impl_->context_);
-                    impl_->context_ = NULL;
+                    impl_->context_ = nullptr;
                     URHO3D_LOGINFOF ( "Mesa GL Driver: %s detected, forcing GL2 context creation.  Please use gl2 command line option to avoid this warning.", driverx.CString() );
                 }
             }

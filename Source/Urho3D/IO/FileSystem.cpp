@@ -1121,7 +1121,7 @@ bool FileSystem::CreateDirsRecursive(const String& directoryIn)
     if (!paths.Size())
         return false;
 
-    for (int i = (int) (paths.Size() - 1); i >= 0; i--)
+    for (auto i = (int) (paths.Size() - 1); i >= 0; i--)
     {
         const String& pathName = paths[i];
 

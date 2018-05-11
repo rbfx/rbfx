@@ -93,7 +93,7 @@ protected:
     /// Mutex protecting resources related to queuing ReleaseRef() calls.
     Mutex mutex_;
     /// Managed API function pointers.
-    Object*(*CreateObject_)(Context* context, unsigned managedType, void* exception);
+    Object*(*CreateObject_)(Context* context, unsigned managedType, void* exception){};
 };
 
 }
