@@ -677,7 +677,7 @@ void SceneTab::RenderNodeContextMenu()
         if (ui::BeginMenu(alternative ? "Create Component (Local)" : "Create Component"))
         {
             auto* editor = GetSubsystem<Editor>();
-            auto categories = editor->GetObjectCategories();
+            auto categories = context_->GetObjectCategories().Keys();
             categories.Remove("UI");
 
             for (const String& category : categories)

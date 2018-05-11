@@ -68,8 +68,6 @@ public:
     Tab* GetActiveTab() { return activeTab_; }
     /// Return currently open scene tabs.
     const Vector<SharedPtr<Tab>>& GetSceneViews() const { return tabs_; }
-    /// Return a list of object categories registered with engine.
-    StringVector GetObjectCategories() const;
     /// Return a map of names and type hashes from specified category.
     StringVector GetObjectsByCategory(const String& category);
     /// Get absolute path of `resourceName`. If it is empty, use `defaultResult`. If no resource is found then save file

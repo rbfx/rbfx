@@ -424,11 +424,6 @@ T* Editor::CreateNewTab(XMLElement project)
     return tab;
 }
 
-StringVector Editor::GetObjectCategories() const
-{
-    return context_->GetObjectCategories().Keys();
-}
-
 StringVector Editor::GetObjectsByCategory(const String& category)
 {
     StringVector result;
