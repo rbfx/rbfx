@@ -25,10 +25,9 @@
 
 #include <Urho3D/Urho3DAll.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
-#include "Plugins/PluginManagerNative.h"
-#include "Plugins/PluginManagerManaged.h"
-#include "Tabs/UI/UITab.h"
 #include "IDPool.h"
+#include "Project.h"
+
 
 using namespace std::placeholders;
 
@@ -52,10 +51,6 @@ public:
     /// Tear down editor application.
     void Stop() override;
 
-    /// Save editor configuration.
-    void SaveProject(String filePath);
-    /// Load saved editor configuration.
-    void LoadProject(String filePath);
     /// Renders UI elements.
     void OnUpdate(VariantMap& args);
     /// Renders menu bar at the top of the screen.
@@ -73,13 +68,13 @@ public:
     /// Get absolute path of `resourceName`. If it is empty, use `defaultResult`. If no resource is found then save file
     /// dialog will be invoked for selecting a new path.
     String GetResourceAbsolutePath(const String& resourceName, const String& defaultResult, const char* patterns,
-    const String& dialogTitle);
+        const String& dialogTitle);
+    /// Returns a list of open content tabs/docks/windows. This list does not include utility docks/tabs/windows.
+    const Vector<SharedPtr<Tab>>& GetContentTabs() const { return tabs_; }
 
 protected:
     /// Process console commands.
     void OnConsoleCommand(VariantMap& args);
-    /// Returns true if specified path is internal engine or editor resource path.
-    bool IsInternalResourcePath(const String& fullPath) const;
 
     /// Pool tracking availability of unique IDs used by editor.
     IDPool idPool_;
@@ -87,14 +82,13 @@ protected:
     Vector<SharedPtr<Tab>> tabs_;
     /// Last focused scene tab.
     WeakPtr<Tab> activeTab_;
-    /// Path to a project file.
-    String projectFilePath_;
-    /// Converter responsible for watching resource directories and converting assets to required formats.
-    SharedPtr<AssetConverter> assetConverter_;
-    Vector<String> engineResourcePaths_;
-    Vector<String> engineResourcePrefixPaths_;
-    Vector<String> engineResourceAutoloadPaths_;
+    /// Prefix path of CoreData and EditorData.
+    String coreResourcePrefixPath_;
+    /// Currently loaded project.
+    SharedPtr<Project> project_;
+    /// Native plugin manager.
     PluginManagerNative pluginsNative_;
+    /// Managed plugin manager.
     PluginManagerManaged pluginsManaged_;
 };
 

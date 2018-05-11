@@ -839,6 +839,8 @@ struct DockContext
     }
 
 
+    bool is_first_call = true;
+
     void rootDock(const ImVec2& pos, const ImVec2& size)
     {
         Dock* root = getRootDock();
@@ -848,7 +850,6 @@ struct DockContext
         ImVec2 requested_size = size;
         root->setPosSize(pos, ImMax(min_size, requested_size));
 
-        static bool is_first_call = true;
         if (!is_first_call)
         {
             for (auto it = m_docks.begin(); it != m_docks.end();)
@@ -1133,6 +1134,8 @@ struct DockContext
 
     void load(const Urho3D::XMLElement& element)
     {
+        is_first_call = true;
+
         for (auto & m_dock : m_docks)
         {
             m_dock->~Dock();

@@ -19,16 +19,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#include "Editor.h"
-#include "EditorEvents.h"
-#include "EditorIconCache.h"
-#include "Tabs/Scene/SceneTab.h"
-#include "Tabs/Scene/SceneSettings.h"
+
 #include <Toolbox/IO/ContentUtilities.h>
 #include <Toolbox/SystemUI/ResourceBrowser.h>
 #include <Toolbox/Toolbox.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
 #include <nfd.h>
+
+#include "Editor.h"
+#include "EditorEvents.h"
+#include "EditorIconCache.h"
+#include "Tabs/Scene/SceneTab.h"
+#include "Tabs/Scene/SceneSettings.h"
+#include "Tabs/UI/UITab.h"
 #include "Assets/AssetConverter.h"
 
 URHO3D_DEFINE_APPLICATION_MAIN(Editor);
@@ -57,10 +60,26 @@ void Editor::Setup()
     }
 #endif
 
-    engineResourceAutoloadPaths_ = {"Autoload"};
-    engineResourcePrefixPaths_ = {GetFileSystem()->GetProgramDir(), GetParentPath(GetFileSystem()->GetProgramDir()), 
-        GetParentPath(GetParentPath(GetFileSystem()->GetProgramDir())) };
-    engineResourcePaths_ = {"Cache", "CoreData", "EditorData"};
+    // Discover resource prefix path by looking for CoreData and going up.
+    for (coreResourcePrefixPath_ = GetFileSystem()->GetProgramDir();;
+        coreResourcePrefixPath_ = GetParentPath(coreResourcePrefixPath_))
+    {
+        if (GetFileSystem()->DirExists(coreResourcePrefixPath_ + "CoreData"))
+            break;
+        else
+        {
+#if WIN32
+            if (coreResourcePrefixPath_.Length() <= 3)   // Root path of any drive
+#else
+            if (coreResourcePrefixPath_ == "/")          // Filesystem root
+#endif
+            {
+                URHO3D_LOGERROR("Prefix path not found, unable to continue. Prefix path must contain all of your data "
+                                "directories (including CoreData).");
+                engine_->Exit();
+            }
+        }
+    }
 
     engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
     engineParameters_[EP_HEADLESS] = false;
@@ -69,9 +88,9 @@ void Editor::Setup()
     engineParameters_[EP_WINDOW_WIDTH] = 1920;
     engineParameters_[EP_LOG_LEVEL] = LOG_DEBUG;
     engineParameters_[EP_WINDOW_RESIZABLE] = true;
-    engineParameters_[EP_AUTOLOAD_PATHS] = String::Joined(engineResourceAutoloadPaths_, ";");
-    engineParameters_[EP_RESOURCE_PREFIX_PATHS] = String::Joined(engineResourcePrefixPaths_, ";");
-    engineParameters_[EP_RESOURCE_PATHS] = String::Joined(engineResourcePaths_, ";");
+    engineParameters_[EP_AUTOLOAD_PATHS] = "Autoload";
+    engineParameters_[EP_RESOURCE_PATHS] = "Data;CoreData;EditorData";
+    engineParameters_[EP_RESOURCE_PREFIX_PATHS] = coreResourcePrefixPath_;
 
     SetRandomSeed(Time::GetTimeSinceEpoch());
 }
@@ -97,7 +116,6 @@ void Editor::Start()
     GetCache()->SetAutoReloadResources(true);
 
     SubscribeToEvent(E_UPDATE, std::bind(&Editor::OnUpdate, this, _2));
-    SubscribeToEvent(E_EDITORRESOURCESAVED, std::bind(&Editor::SaveProject, this, ""));
 
     // Creates console but makes sure it's UI is not rendered. Console rendering is done manually in editor.
     auto* console = engine_->CreateConsole();
@@ -106,12 +124,16 @@ void Editor::Start()
     SubscribeToEvent(E_CONSOLECOMMAND, std::bind(&Editor::OnConsoleCommand, this, _2));
     console->RefreshInterpreters();
 
-    assetConverter_ = new AssetConverter(context_);
+    // Prepare editor for loading new project.
+    SubscribeToEvent(E_EDITORPROJECTLOADING, [&](StringHash, VariantMap&) {
+        tabs_.Clear();
+        idPool_.Clear();
+    });
 
     // Load default project on start
-    LoadProject("Etc/DefaultEditorProject.xml");
-    // Prevent overwriting example scene.
-    DynamicCast<SceneTab>(tabs_.Front())->ClearCachedPaths();
+    project_ = new Project(context_);
+    if (!project_->LoadProject(GetCache()->GetResourceFileName("Etc/DefaultEditorProject.xml")))
+        project_.Reset();
 
     // Plugin loading
 #if URHO3D_PLUGINS_CSHARP
@@ -127,130 +149,14 @@ void Editor::Stop()
     ui::ShutdownDock();
 }
 
-void Editor::SaveProject(String filePath)
-{
-    // Saving project data of tabs may trigger saving resources, which in turn triggers saving editor project. Avoid
-    // that loop.
-    UnsubscribeFromEvent(E_EDITORRESOURCESAVED);
-
-    filePath = GetResourceAbsolutePath(filePath, projectFilePath_, "xml", "Save Project As");
-
-    if (filePath.Empty())
-        return;
-
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
-    XMLElement root = xml->CreateRoot("project");
-    root.SetAttribute("version", "0");
-
-    auto window = root.CreateChild("window");
-    window.SetAttribute("width", ToString("%d", GetGraphics()->GetWidth()));
-    window.SetAttribute("height", ToString("%d", GetGraphics()->GetHeight()));
-    window.SetAttribute("x", ToString("%d", GetGraphics()->GetWindowPosition().x_));
-    window.SetAttribute("y", ToString("%d", GetGraphics()->GetWindowPosition().y_));
-
-    auto resources = root.CreateChild("resources");
-    for (const auto& dir : GetCache()->GetResourceDirs())
-    {
-        if (IsInternalResourcePath(dir))
-            continue;
-
-        // Saving relative paths allows moving projects easily.
-        String relative;
-        GetRelativePath(GetPath(filePath), dir, relative);
-        resources.CreateChild("path").SetValue(relative);
-    }
-
-    auto scenes = root.CreateChild("tabs");
-    for (auto& tab: tabs_)
-    {
-        XMLElement tabXml = scenes.CreateChild("tab");
-        tab->SaveProject(tabXml);
-    }
-
-    ui::SaveDock(root.CreateChild("docks"));
-
-    if (!xml->SaveFile(filePath))
-    {
-        projectFilePath_.Clear();
-        URHO3D_LOGERRORF("Saving project to %s failed", filePath.CString());
-    }
-
-    SubscribeToEvent(E_EDITORRESOURCESAVED, std::bind(&Editor::SaveProject, this, ""));
-}
-
-void Editor::LoadProject(String filePath)
-{
-    if (filePath.Empty())
-        return;
-
-    if (!IsAbsolutePath(filePath))
-        filePath = GetCache()->GetResourceFileName(filePath);
-
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
-    if (!xml->LoadFile(filePath))
-        return;
-
-    auto root = xml->GetRoot();
-    if (root.NotNull())
-    {
-        Vector<String> cacheDirectories = GetCache()->GetResourceDirs();
-        for (const auto& dir : cacheDirectories)
-        {
-            if (IsInternalResourcePath(dir))
-                continue;
-
-            assetConverter_->RemoveAssetDirectory(dir);
-            GetCache()->RemoveResourceDir(dir);
-        }
-
-        idPool_.Clear();
-        auto window = root.GetChild("window");
-        if (window.NotNull())
-        {
-            GetGraphics()->SetMode(ToInt(window.GetAttribute("width")), ToInt(window.GetAttribute("height")));
-            GetGraphics()->SetWindowPosition(ToInt(window.GetAttribute("x")), ToInt(window.GetAttribute("y")));
-        }
-
-        auto resources = root.GetChild("resources");
-        for (auto path = resources.GetChild("path"); path.NotNull(); path = path.GetNext("path"))
-        {
-            String resourceDir = GetAbsolutePath(GetPath(filePath) + path.GetValue());
-            if (GetFileSystem()->DirExists(resourceDir))
-            {
-                GetCache()->AddResourceDir(resourceDir);
-                assetConverter_->AddAssetDirectory(resourceDir);
-            }
-            else
-                URHO3D_LOGWARNINGF("Project tried to load missing resource path \"%s\"", resourceDir.CString());
-        }
-
-        auto tabs = root.GetChild("tabs");
-        tabs_.Clear();
-        if (tabs.NotNull())
-        {
-            auto tab = tabs.GetChild("tab");
-            while (tab.NotNull())
-            {
-                if (tab.GetAttribute("type") == "scene")
-                    CreateNewTab<SceneTab>(tab);
-                else if (tab.GetAttribute("type") == "ui")
-                    CreateNewTab<UITab>(tab);
-                tab = tab.GetNext();
-            }
-        }
-
-        ui::LoadDock(root.GetChild("docks"));
-    }
-
-    projectFilePath_ = filePath;
-    assetConverter_->VerifyCacheAsync();
-}
-
 void Editor::OnUpdate(VariantMap& args)
 {
-    ui::RootDock({0, 20}, ui::GetIO().DisplaySize - ImVec2(0, 20));
-
     RenderMenuBar();
+
+    if (project_.Null())
+        return;
+
+    ui::RootDock({0, 20}, ui::GetIO().DisplaySize - ImVec2(0, 20));
 
     ui::SetNextDockPos(nullptr, ui::Slot_Left, ImGuiCond_FirstUseEver);
     if (ui::BeginDock("Hierarchy"))
@@ -316,16 +222,24 @@ void Editor::OnUpdate(VariantMap& args)
 
 void Editor::RenderMenuBar()
 {
-    bool save = false;
     if (ui::BeginMainMenuBar())
     {
         if (ui::BeginMenu("File"))
         {
-            save = ui::MenuItem("Save Project");
-            if (ui::MenuItem("Save Project As"))
+            if (project_.NotNull())
             {
-                save = true;
-                projectFilePath_.Clear();
+                if (ui::MenuItem("Save Project"))
+                    project_->SaveProject();
+
+                if (ui::MenuItem("Save Project As"))
+                {
+                    nfdchar_t* savePath = nullptr;
+                    if (NFD_SaveDialog("xml", "", &savePath) == NFD_OKAY)
+                    {
+                        project_->SaveProject(savePath);
+                        NFD_FreePath(savePath);
+                    }
+                }
             }
 
             if (ui::MenuItem("Open Project"))
@@ -333,64 +247,64 @@ void Editor::RenderMenuBar()
                 nfdchar_t* projectFilePath = nullptr;
                 if (NFD_OpenDialog("xml", "", &projectFilePath) == NFD_OKAY)
                 {
-                    projectFilePath_ = projectFilePath;
+                    project_ = new Project(context_);
+                    if (!project_->LoadProject(projectFilePath))
+                    {
+                        URHO3D_LOGERROR("Loading project failed.");
+                        project_.Reset();
+                    }
                     NFD_FreePath(projectFilePath);
-                    LoadProject(projectFilePath_);
                 }
+            }
+
+            if (project_.NotNull())
+            {
+                ui::Separator();
+
+                if (ui::MenuItem("New Scene"))
+                    CreateNewTab<SceneTab>();
+
+                if (ui::MenuItem("New UI Layout"))
+                    CreateNewTab<UITab>();
             }
 
             ui::Separator();
 
-            if (ui::MenuItem("New Scene"))
-                CreateNewTab<SceneTab>();
-
-            if (ui::MenuItem("New UI Layout"))
-                CreateNewTab<UITab>();
-
-            ui::Separator();
+            if (ui::MenuItem("Close Project"))
+            {
+                context_->RemoveSubsystem<Project>();
+                project_.Reset();
+            }
 
             if (ui::MenuItem("Exit"))
                 engine_->Exit();
 
             ui::EndMenu();
         }
-
-        if (ui::BeginMenu("Settings"))
+        if (project_.NotNull())
         {
-            Vector<String> cacheDirectories = GetCache()->GetResourceDirs();
-            for (const auto& dir : cacheDirectories)
+            if (ui::BeginMenu("Settings"))
             {
-                if (IsInternalResourcePath(dir))
-                    continue;
-
-                if (ui::Button(ICON_FA_TRASH))
+                if (ImGui::CollapsingHeader("Data directories"))
                 {
-                    assetConverter_->RemoveAssetDirectory(dir);
-                    GetCache()->RemoveResourceDir(dir);
+                    // TODO: This is very out of place. To be moved somewhere better fitting.
+                    const auto& cacheDirectories = GetCache()->GetResourceDirs();
+                    auto programDir = GetFileSystem()->GetProgramDir();
+                    for (const auto& dir : cacheDirectories)
+                    {
+                        String relativeDir;
+                        GetRelativePath(programDir, dir, relativeDir);
+                        ui::TextUnformatted(relativeDir.CString());
+                    }
                 }
-
-                ui::SameLine();
-                ui::TextUnformatted(dir.CString());
+                ui::EndMenu();
             }
-            if (ui::Button(ICON_FA_FOLDER_OPEN " Add data directory"))
-            {
-                nfdchar_t* result = nullptr;
-                if (NFD_PickFolder("", &result) == NFD_OKAY)
-                {
-                    GetCache()->AddResourceDir(result);
-                    NFD_FreePath(result);
-                }
-            }
-            ui::EndMenu();
         }
 
         SendEvent(E_EDITORAPPLICATIONMENU);
 
         ui::EndMainMenuBar();
     }
-
-    if (save)
-        SaveProject(projectFilePath_);
 }
 
 template<typename T>
@@ -465,36 +379,8 @@ String Editor::GetResourceAbsolutePath(const String& resourceName, const String&
 void Editor::OnConsoleCommand(VariantMap& args)
 {
     using namespace ConsoleCommand;
-    String command = args[P_COMMAND].GetString();
-    if (command == "revision")
+    if (args[P_COMMAND].GetString() == "revision")
         URHO3D_LOGINFOF("Engine revision: %s", GetRevision());
-    else if (command == "cache.sync")
-        assetConverter_->VerifyCacheAsync();
-    else
-        URHO3D_LOGWARNINGF("Unknown command \"%s\".", command.CString());
-}
-
-bool Editor::IsInternalResourcePath(const String& fullPath) const
-{
-    for (const auto& prefix : engineResourcePrefixPaths_)
-    {
-        for (const auto& path : engineResourcePaths_)
-        {
-            if (fullPath == AddTrailingSlash(prefix + path))
-                return true;
-        }
-    }
-
-    for (const auto& prefix : engineResourcePrefixPaths_)
-    {
-        for (const auto& path : engineResourceAutoloadPaths_)
-        {
-            if (fullPath.StartsWith(AddTrailingSlash(prefix + path)))
-                return true;
-        }
-    }
-
-    return false;
 }
 
 }

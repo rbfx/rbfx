@@ -53,4 +53,9 @@ URHO3D_EVENT(E_EDITORAPPLICATIONMENU, EditorApplicationMenu)
 {
 }
 
+/// Event sent when editor is about to load a new project.
+URHO3D_EVENT(E_EDITORPROJECTLOADING, EditorProjectLoading)
+{
+}
+
 }

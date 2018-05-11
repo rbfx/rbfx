@@ -31,8 +31,8 @@ namespace Urho3D
 AssetConverter::AssetConverter(Context* context)
     : Object(context)
 {
-    GetFileSystem()->CreateDirsRecursive(GetCachePath());
-    SubscribeToEvent(E_UPDATE, std::bind(&AssetConverter::DispatchChangedAssets, this));
+    SubscribeToEvent(E_ENDFRAME, std::bind(&AssetConverter::DispatchChangedAssets, this));
+    SubscribeToEvent(E_CONSOLECOMMAND, std::bind(&AssetConverter::OnConsoleCommand, this, _2));
 }
 
 void AssetConverter::AddAssetDirectory(const String& path)
@@ -42,12 +42,15 @@ void AssetConverter::AddAssetDirectory(const String& path)
     watchers_.Push(watcher);
 }
 
-String AssetConverter::GetCachePath()
+void AssetConverter::SetCachePath(const String& cachePath)
 {
-    auto resourceCacheDir = ((SystemUI*)ui::GetIO().UserData)->GetFileSystem()->GetProgramDir();
-    if (resourceCacheDir.EndsWith("/tools/"))
-        resourceCacheDir = GetParentPath(resourceCacheDir);
-    return resourceCacheDir + "Cache/";
+    GetFileSystem()->CreateDirsRecursive(cachePath);
+    cachePath_ = cachePath;
+}
+
+String AssetConverter::GetCachePath() const
+{
+    return cachePath_;
 }
 
 void AssetConverter::VerifyCacheAsync()
@@ -78,7 +81,7 @@ bool AssetConverter::ConvertAsset(const String& resourceName, const SharedPtr<XM
         return true;
 
     // Ensure that no resources are left over from previous version
-    GetFileSystem()->RemoveDir(GetCachePath() + resourceName, true);
+    GetFileSystem()->RemoveDir(cachePath_ + resourceName, true);
 
     XMLElement converters = rules->GetRoot("converters");
     for (auto converter = converters.GetChild("converter"); converter.NotNull();
@@ -186,7 +189,7 @@ bool AssetConverter::IsCacheOutOfDate(const String& resourceName)
 Vector<String> AssetConverter::GetCacheAssets(const String& resourceName)
 {
     Vector<String> files;
-    String assetCacheDirectory = GetCachePath() + resourceName;
+    String assetCacheDirectory = cachePath_ + resourceName;
     if (GetFileSystem()->DirExists(assetCacheDirectory))
         GetFileSystem()->ScanDir(files, assetCacheDirectory, "", SCAN_FILES, true);
     for (auto& fileName : files)
@@ -198,8 +201,8 @@ void AssetConverter::InsertVariables(const String& resourceName, String& value)
 {
     value.Replace("${resourceName}", resourceName);
     value.Replace("${resourcePath}", GetCache()->GetResourceFileName(resourceName));
-    value.Replace("${resourceCacheDir}", GetCachePath());
-    value.Replace("${resourceCachePath}", GetCachePath() + resourceName);
+    value.Replace("${resourceCacheDir}", cachePath_);
+    value.Replace("${resourceCachePath}", cachePath_ + resourceName);
 }
 
 void AssetConverter::RemoveAssetDirectory(const String& path)
@@ -211,6 +214,13 @@ void AssetConverter::RemoveAssetDirectory(const String& path)
         else
             ++it;
     }
+}
+
+void AssetConverter::OnConsoleCommand(VariantMap& args)
+{
+    using namespace ConsoleCommand;
+    if (args[P_COMMAND].GetString() == "cache.sync")
+        VerifyCacheAsync();
 }
 
 }
