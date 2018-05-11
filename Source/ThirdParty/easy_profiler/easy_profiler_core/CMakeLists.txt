@@ -8,9 +8,9 @@ target_compile_definitions(easy_profiler PRIVATE
 
 )
 target_compile_definitions(easy_profiler
+    PRIVATE -D_BUILD_PROFILER=1
     PUBLIC
         -DBUILD_WITH_EASY_PROFILER=1
-        -DEASY_PROFILER_STATIC=1
         -DEASY_PROFILER_VERSION_MAJOR=${EASY_PROGRAM_VERSION_MAJOR}
         -DEASY_PROFILER_VERSION_MINOR=${EASY_PROGRAM_VERSION_MINOR}
         -DEASY_PROFILER_VERSION_PATCH=${EASY_PROGRAM_VERSION_PATCH}
@@ -30,6 +30,10 @@ target_compile_definitions(easy_profiler
         -DEASY_OPTION_IMPLICIT_THREAD_REGISTRATION=1
 #        -DEASY_PROFILER_API_DISABLED=1
 )
+
+if (NOT BUILD_SHARED_LIBS)
+    target_compile_definitions(easy_profiler PUBLIC -DEASY_PROFILER_STATIC=1)
+endif ()
 
 if (UNIX)
     target_compile_options(easy_profiler PRIVATE -Wall -Wno-long-long -Wno-reorder -Wno-braced-scalar-init -pedantic -O3)

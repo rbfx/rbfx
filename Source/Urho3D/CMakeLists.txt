@@ -209,7 +209,7 @@ if (BUILD_SHARED_LIBS OR EMSCRIPTEN)
     # Also add export flags of third party libraries. They are required because those are OBJECT libraries and Urho3D
     # should not try to import from them as if they were DLLs.
     target_compile_definitions(Urho3D
-        PRIVATE -D_EXPORTS -DLZ4_DLL_EXPORT=1 -DCIVETWEB_DLL_EXPORTS
+        PRIVATE -D_EXPORTS -DLZ4_DLL_EXPORT=1 -DCIVETWEB_DLL_EXPORTS -D_BUILD_PROFILER
         PUBLIC  -D_IMPORTS -DLZ4_DLL_IMPORT=1 -DCIVETWEB_DLL_IMPORTS
     )
 else ()
