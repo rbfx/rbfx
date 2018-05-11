@@ -10,7 +10,6 @@ if (IOS)
     set(BUILD_WITH_CHRONO_HIGH_RESOLUTION_CLOCK ON)
 endif()
 
-set (CMAKE_CXX_STANDARD 11)
 add_subdirectory(easy_profiler_core)
 
 find_package(Qt5Widgets QUIET)

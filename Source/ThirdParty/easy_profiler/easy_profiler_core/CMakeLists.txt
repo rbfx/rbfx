@@ -43,7 +43,7 @@ endif ()
 
 if (MINGW)
     target_compile_definitions(easy_profiler PRIVATE -DSTRSAFE_NO_DEPRECATE)
-    target_compile_options(easy_profiler PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++11>)
+    target_compile_options(easy_profiler PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++${CMAKE_CXX_STANDARD}>)
 endif ()
 
 # If we're on MSVC, we need a /MD version of the easy profiler library to link with Qt
