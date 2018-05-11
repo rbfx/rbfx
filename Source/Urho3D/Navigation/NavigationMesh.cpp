@@ -383,7 +383,7 @@ bool NavigationMesh::Allocate(const BoundingBox& boundingBox, unsigned maxTiles)
 
 bool NavigationMesh::Build()
 {
-    URHO3D_PROFILE(BuildNavigationMesh);
+    URHO3D_PROFILE("BuildNavigationMesh");
 
     // Release existing navigation data and zero the bounding box
     ReleaseNavigationMesh();
@@ -409,7 +409,7 @@ bool NavigationMesh::Build()
     boundingBox_.max_ += padding_;
 
     {
-        URHO3D_PROFILE(BuildNavigationMesh);
+        URHO3D_PROFILE("BuildNavigationMesh");
 
         // Calculate number of tiles
         int gridW = 0, gridH = 0;
@@ -464,7 +464,7 @@ bool NavigationMesh::Build()
 
 bool NavigationMesh::Build(const BoundingBox& boundingBox)
 {
-    URHO3D_PROFILE(BuildPartialNavigationMesh);
+    URHO3D_PROFILE("BuildPartialNavigationMesh");
 
     if (!node_)
         return false;
@@ -498,7 +498,7 @@ bool NavigationMesh::Build(const BoundingBox& boundingBox)
 
 bool NavigationMesh::Build(const IntVector2& from, const IntVector2& to)
 {
-    URHO3D_PROFILE(BuildPartialNavigationMesh);
+    URHO3D_PROFILE("BuildPartialNavigationMesh");
 
     if (!node_)
         return false;
@@ -664,7 +664,7 @@ void NavigationMesh::FindPath(PODVector<Vector3>& dest, const Vector3& start, co
 void NavigationMesh::FindPath(PODVector<NavigationPathPoint>& dest, const Vector3& start, const Vector3& end,
     const Vector3& extents, const dtQueryFilter* filter)
 {
-    URHO3D_PROFILE(FindPath);
+    URHO3D_PROFILE("FindPath");
     dest.Clear();
 
     if (!InitializeQuery())
@@ -952,7 +952,7 @@ PODVector<unsigned char> NavigationMesh::GetNavigationDataAttr() const
 
 void NavigationMesh::CollectGeometries(Vector<NavigationGeometryInfo>& geometryList)
 {
-    URHO3D_PROFILE(CollectNavigationGeometry);
+    URHO3D_PROFILE("CollectNavigationGeometry");
 
     // Get Navigable components from child nodes, not from whole scene. This makes it possible to partition
     // the scene into several navigation meshes
@@ -1301,7 +1301,7 @@ bool NavigationMesh::ReadTile(Deserializer& source, bool silent)
 
 bool NavigationMesh::BuildTile(Vector<NavigationGeometryInfo>& geometryList, int x, int z)
 {
-    URHO3D_PROFILE(BuildNavigationMeshTile);
+    URHO3D_PROFILE("BuildNavigationMeshTile");
 
     // Remove previous tile (if any)
     navMesh_->removeTile(navMesh_->getTileRefAt(x, z, 0), nullptr, nullptr);

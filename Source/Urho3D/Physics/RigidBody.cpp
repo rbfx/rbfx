@@ -951,7 +951,7 @@ void RigidBody::AddBodyToWorld()
     if (!physicsWorld_)
         return;
 
-    URHO3D_PROFILE(AddBodyToWorld);
+    URHO3D_PROFILE("AddBodyToWorld");
 
     if (mass_ < 0.0f)
         mass_ = 0.0f;

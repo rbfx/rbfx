@@ -274,7 +274,7 @@ int CrowdAgent::AddAgentToCrowd(bool force)
 
     if (force || !IsInCrowd())
     {
-        URHO3D_PROFILE(AddAgentToCrowd);
+        URHO3D_PROFILE("AddAgentToCrowd");
 
         agentCrowdId_ = crowdManager_->AddAgent(this, node_->GetWorldPosition());
         if (agentCrowdId_ == -1)

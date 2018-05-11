@@ -336,7 +336,7 @@ bool DynamicNavigationMesh::Allocate(const BoundingBox& boundingBox, unsigned ma
 
 bool DynamicNavigationMesh::Build()
 {
-    URHO3D_PROFILE(BuildNavigationMesh);
+    URHO3D_PROFILE("BuildNavigationMesh");
     // Release existing navigation data and zero the bounding box
     ReleaseNavigationMesh();
 
@@ -361,7 +361,7 @@ bool DynamicNavigationMesh::Build()
     boundingBox_.max_ += padding_;
 
     {
-        URHO3D_PROFILE(BuildNavigationMesh);
+        URHO3D_PROFILE("BuildNavigationMesh");
 
         // Calculate number of tiles
         int gridW = 0, gridH = 0;
@@ -481,7 +481,7 @@ bool DynamicNavigationMesh::Build()
 
 bool DynamicNavigationMesh::Build(const BoundingBox& boundingBox)
 {
-    URHO3D_PROFILE(BuildPartialNavigationMesh);
+    URHO3D_PROFILE("BuildPartialNavigationMesh");
 
     if (!node_)
         return false;
@@ -515,7 +515,7 @@ bool DynamicNavigationMesh::Build(const BoundingBox& boundingBox)
 
 bool DynamicNavigationMesh::Build(const IntVector2& from, const IntVector2& to)
 {
-    URHO3D_PROFILE(BuildPartialNavigationMesh);
+    URHO3D_PROFILE("BuildPartialNavigationMesh");
 
     if (!node_)
         return false;
@@ -819,7 +819,7 @@ bool DynamicNavigationMesh::ReadTiles(Deserializer& source, bool silent)
 
 int DynamicNavigationMesh::BuildTile(Vector<NavigationGeometryInfo>& geometryList, int x, int z, TileCacheData* tiles)
 {
-    URHO3D_PROFILE(BuildNavigationMeshTile);
+    URHO3D_PROFILE("BuildNavigationMeshTile");
 
     tileCache_->removeTile(navMesh_->getTileRefAt(x, z, 0), nullptr, nullptr);
 

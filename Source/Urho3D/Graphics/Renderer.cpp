@@ -646,7 +646,7 @@ unsigned Renderer::GetNumOccluders(bool allViews) const
 
 void Renderer::Update(float timeStep)
 {
-    URHO3D_PROFILE(UpdateViews);
+    URHO3D_PROFILE("UpdateViews");
 
     views_.Clear();
     preparedViews_.Clear();
@@ -694,7 +694,7 @@ void Renderer::Render()
     // Engine does not render when window is closed or device is lost
     assert(graphics_ && graphics_->IsInitialized() && !graphics_->IsDeviceLost());
 
-    URHO3D_PROFILE(RenderViews);
+    URHO3D_PROFILE("RenderViews");
 
     // If the indirection textures have lost content (OpenGL mode only), restore them now
     if (faceSelectCubeMap_ && faceSelectCubeMap_->IsDataLost())
@@ -748,7 +748,7 @@ void Renderer::Render()
 
 void Renderer::DrawDebugGeometry(bool depthTest)
 {
-    URHO3D_PROFILE(RendererDrawDebug);
+    URHO3D_PROFILE("RendererDrawDebug");
 
     /// \todo Because debug geometry is per-scene, if two cameras show views of the same area, occlusion is not shown correctly
     HashSet<Drawable*> processedGeometries;
@@ -1583,7 +1583,7 @@ void Renderer::Initialize()
     if (!graphics || !graphics->IsInitialized() || !cache)
         return;
 
-    URHO3D_PROFILE(InitRenderer);
+    URHO3D_PROFILE("InitRenderer");
 
     graphics_ = graphics;
 
@@ -1638,7 +1638,7 @@ void Renderer::LoadShaders()
 
 void Renderer::LoadPassShaders(Pass* pass, Vector<SharedPtr<ShaderVariation> >& vertexShaders, Vector<SharedPtr<ShaderVariation> >& pixelShaders, const BatchQueue& queue)
 {
-    URHO3D_PROFILE(LoadPassShaders);
+    URHO3D_PROFILE("LoadPassShaders");
 
     // Forget all the old shaders
     vertexShaders.Clear();

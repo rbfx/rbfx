@@ -407,7 +407,7 @@ void Input::Update()
 {
     assert(initialized_);
 
-    URHO3D_PROFILE(UpdateInput);
+    URHO3D_PROFILE("UpdateInput");
 
 #ifndef __EMSCRIPTEN__
     bool mouseMoved = false;

@@ -307,19 +307,19 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData)
         return;
 
 #if URHO3D_PROFILING
-    ProfilerBlockStatus blockStatus = ProfilerBlockStatus::OFF;
+    auto blockStatus = ::profiler::EasyBlockStatus::OFF;
     String eventName;
     if (auto profiler = GetSubsystem<Profiler>())
     {
         if (profiler->GetEventProfilingEnabled())
         {
-            blockStatus = ProfilerBlockStatus::ON;
+            blockStatus = ::profiler::EasyBlockStatus::ON;
             eventName = EventNameRegistrar::GetEventName(eventType);
             if (eventName.Empty())
                 eventName = eventType.ToString();
         }
     }
-    URHO3D_PROFILE_SCOPED(eventName.CString(), PROFILER_COLOR_EVENTS, blockStatus);
+    URHO3D_PROFILE(eventName.CString(), PROFILER_COLOR_EVENTS, blockStatus);
 #endif
 
     // Make a weak pointer to self to check for destruction during event handling

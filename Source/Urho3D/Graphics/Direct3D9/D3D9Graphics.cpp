@@ -302,7 +302,7 @@ Graphics::~Graphics()
 bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, bool resizable, bool highDPI, bool vsync,
     bool tripleBuffer, int multiSample, int monitor, int refreshRate)
 {
-    URHO3D_PROFILE(SetScreenMode);
+    URHO3D_PROFILE("SetScreenMode");
 
     highDPI = false;   // SDL does not support High DPI mode on Windows platform yet, so always disable it for now
 
@@ -543,7 +543,7 @@ void Graphics::Close()
 
 bool Graphics::TakeScreenShot(Image& destImage)
 {
-    URHO3D_PROFILE(TakeScreenShot);
+    URHO3D_PROFILE("TakeScreenShot");
 
     if (!impl_->device_)
         return false;
@@ -696,7 +696,7 @@ bool Graphics::BeginFrame()
     HRESULT hr = impl_->device_->TestCooperativeLevel();
     if (hr != D3D_OK)
     {
-        URHO3D_PROFILE(DeviceLost);
+        URHO3D_PROFILE("DeviceLost");
 
         impl_->deviceLost_ = true;
 
@@ -737,7 +737,7 @@ void Graphics::EndFrame()
         return;
 
     {
-        URHO3D_PROFILE(Present);
+        URHO3D_PROFILE("Present");
 
         SendEvent(E_ENDRENDERING);
 
@@ -751,7 +751,7 @@ void Graphics::EndFrame()
     {
         if (impl_->queryIssued_)
         {
-            URHO3D_PROFILE(FlushGPU);
+            URHO3D_PROFILE("FlushGPU");
 
             while (impl_->frameQuery_->GetData(nullptr, 0, D3DGETDATA_FLUSH) == S_FALSE)
             {
@@ -789,7 +789,7 @@ bool Graphics::ResolveToTexture(Texture2D* destination, const IntRect& viewport)
     if (!destination || !destination->GetRenderSurface())
         return false;
 
-    URHO3D_PROFILE(ResolveToTexture);
+    URHO3D_PROFILE("ResolveToTexture");
 
     IntRect vpCopy = viewport;
     if (vpCopy.right_ <= vpCopy.left_)
@@ -825,7 +825,7 @@ bool Graphics::ResolveToTexture(Texture2D* texture)
     if (!texture || !texture->GetRenderSurface() || !texture->GetGPUObject() || texture->GetMultiSample() < 2)
         return false;
 
-    URHO3D_PROFILE(ResolveToTexture);
+    URHO3D_PROFILE("ResolveToTexture");
 
     // Clear dirty flag already, because if resolve fails it's no use to retry (e.g. on the same frame)
     RenderSurface* surface = texture->GetRenderSurface();
@@ -865,7 +865,7 @@ bool Graphics::ResolveToTexture(TextureCube* texture)
     if (!texture || !texture->GetRenderSurface(FACE_POSITIVE_X) || !texture->GetGPUObject() || texture->GetMultiSample() < 2)
         return false;
 
-    URHO3D_PROFILE(ResolveToTexture);
+    URHO3D_PROFILE("ResolveToTexture");
 
     texture->SetResolveDirty(false);
 
@@ -1126,7 +1126,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
         {
             if (vs->GetCompilerOutput().Empty())
             {
-                URHO3D_PROFILE(CompileVertexShader);
+                URHO3D_PROFILE("CompileVertexShader");
 
                 bool success = vs->Create();
                 if (!success)
@@ -1156,7 +1156,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
         {
             if (ps->GetCompilerOutput().Empty())
             {
-                URHO3D_PROFILE(CompilePixelShader);
+                URHO3D_PROFILE("CompilePixelShader");
 
                 bool success = ps->Create();
                 if (!success)

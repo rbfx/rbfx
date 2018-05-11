@@ -326,7 +326,7 @@ void CustomGeometry::DefineGeometry(unsigned index, PrimitiveType type, unsigned
 
 void CustomGeometry::Commit()
 {
-    URHO3D_PROFILE(CommitCustomGeometry);
+    URHO3D_PROFILE("CommitCustomGeometry");
 
     unsigned totalVertices = 0;
     boundingBox_.Clear();

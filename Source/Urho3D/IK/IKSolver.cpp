@@ -398,7 +398,7 @@ void IKSolver::CalculateJointRotations()
 // ----------------------------------------------------------------------------
 void IKSolver::Solve()
 {
-    URHO3D_PROFILE(IKSolve);
+    URHO3D_PROFILE("IKSolve");
 
     if (treeNeedsRebuild)
         RebuildTree();

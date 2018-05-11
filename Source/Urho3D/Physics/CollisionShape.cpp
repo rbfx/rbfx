@@ -1000,7 +1000,7 @@ btCompoundShape* CollisionShape::GetParentCompoundShape()
 
 void CollisionShape::UpdateShape()
 {
-    URHO3D_PROFILE(UpdateCollisionShape);
+    URHO3D_PROFILE("UpdateCollisionShape");
 
     ReleaseShape();
 

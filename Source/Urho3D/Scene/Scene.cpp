@@ -113,7 +113,7 @@ void Scene::RegisterObject(Context* context)
 
 bool Scene::Load(Deserializer& source)
 {
-    URHO3D_PROFILE(LoadScene);
+    URHO3D_PROFILE("LoadScene");
 
     StopAsyncLoading();
 
@@ -140,7 +140,7 @@ bool Scene::Load(Deserializer& source)
 
 bool Scene::Save(Serializer& dest) const
 {
-    URHO3D_PROFILE(SaveScene);
+    URHO3D_PROFILE("SaveScene");
 
     // Write ID first
     if (!dest.WriteFileID("USCN"))
@@ -164,7 +164,7 @@ bool Scene::Save(Serializer& dest) const
 
 bool Scene::LoadXML(const XMLElement& source)
 {
-    URHO3D_PROFILE(LoadSceneXML);
+    URHO3D_PROFILE("LoadSceneXML");
 
     StopAsyncLoading();
 
@@ -181,7 +181,7 @@ bool Scene::LoadXML(const XMLElement& source)
 
 bool Scene::LoadJSON(const JSONValue& source)
 {
-    URHO3D_PROFILE(LoadSceneJSON);
+    URHO3D_PROFILE("LoadSceneJSON");
 
     StopAsyncLoading();
 
@@ -216,7 +216,7 @@ void Scene::AddReplicationState(NodeReplicationState* state)
 
 bool Scene::LoadXML(Deserializer& source)
 {
-    URHO3D_PROFILE(LoadSceneXML);
+    URHO3D_PROFILE("LoadSceneXML");
 
     StopAsyncLoading();
 
@@ -239,7 +239,7 @@ bool Scene::LoadXML(Deserializer& source)
 
 bool Scene::LoadJSON(Deserializer& source)
 {
-    URHO3D_PROFILE(LoadSceneJSON);
+    URHO3D_PROFILE("LoadSceneJSON");
 
     StopAsyncLoading();
 
@@ -262,7 +262,7 @@ bool Scene::LoadJSON(Deserializer& source)
 
 bool Scene::SaveXML(Serializer& dest, const String& indentation) const
 {
-    URHO3D_PROFILE(SaveSceneXML);
+    URHO3D_PROFILE("SaveSceneXML");
 
     SharedPtr<XMLFile> xml(new XMLFile(context_));
     XMLElement rootElem = xml->CreateRoot("scene");
@@ -284,7 +284,7 @@ bool Scene::SaveXML(Serializer& dest, const String& indentation) const
 
 bool Scene::SaveJSON(Serializer& dest, const String& indentation) const
 {
-    URHO3D_PROFILE(SaveSceneJSON);
+    URHO3D_PROFILE("SaveSceneJSON");
 
     SharedPtr<JSONFile> json(new JSONFile(context_));
     JSONValue rootVal;
@@ -347,7 +347,7 @@ bool Scene::LoadAsync(File* file, LoadMode mode)
         // Preload resources if appropriate, then return to the original position for loading the scene content
         if (mode != LOAD_SCENE)
         {
-            URHO3D_PROFILE(FindResourcesToPreload);
+            URHO3D_PROFILE("FindResourcesToPreload");
 
             unsigned currentPos = file->GetPosition();
             PreloadResources(file, isSceneFile);
@@ -370,7 +370,7 @@ bool Scene::LoadAsync(File* file, LoadMode mode)
     }
     else
     {
-        URHO3D_PROFILE(FindResourcesToPreload);
+        URHO3D_PROFILE("FindResourcesToPreload");
 
         URHO3D_LOGINFO("Preloading resources from " + file->GetName());
         PreloadResources(file, isSceneFile);
@@ -413,7 +413,7 @@ bool Scene::LoadAsyncXML(File* file, LoadMode mode)
         // Preload resources if appropriate
         if (mode != LOAD_SCENE)
         {
-            URHO3D_PROFILE(FindResourcesToPreload);
+            URHO3D_PROFILE("FindResourcesToPreload");
 
             PreloadResourcesXML(rootElement);
         }
@@ -439,7 +439,7 @@ bool Scene::LoadAsyncXML(File* file, LoadMode mode)
     }
     else
     {
-        URHO3D_PROFILE(FindResourcesToPreload);
+        URHO3D_PROFILE("FindResourcesToPreload");
 
         URHO3D_LOGINFO("Preloading resources from " + file->GetName());
         PreloadResourcesXML(xml->GetRoot());
@@ -482,7 +482,7 @@ bool Scene::LoadAsyncJSON(File* file, LoadMode mode)
         // Preload resources if appropriate
         if (mode != LOAD_SCENE)
         {
-            URHO3D_PROFILE(FindResourcesToPreload);
+            URHO3D_PROFILE("FindResourcesToPreload");
 
             PreloadResourcesJSON(rootVal);
         }
@@ -504,7 +504,7 @@ bool Scene::LoadAsyncJSON(File* file, LoadMode mode)
     }
     else
     {
-        URHO3D_PROFILE(FindResourcesToPreload);
+        URHO3D_PROFILE("FindResourcesToPreload");
 
         URHO3D_LOGINFO("Preloading resources from " + file->GetName());
         PreloadResourcesJSON(json->GetRoot());
@@ -527,7 +527,7 @@ void Scene::StopAsyncLoading()
 
 Node* Scene::Instantiate(Deserializer& source, const Vector3& position, const Quaternion& rotation, CreateMode mode)
 {
-    URHO3D_PROFILE(Instantiate);
+    URHO3D_PROFILE("Instantiate");
 
     SceneResolver resolver;
     unsigned nodeID = source.ReadUInt();
@@ -550,7 +550,7 @@ Node* Scene::Instantiate(Deserializer& source, const Vector3& position, const Qu
 
 Node* Scene::InstantiateXML(const XMLElement& source, const Vector3& position, const Quaternion& rotation, CreateMode mode)
 {
-    URHO3D_PROFILE(InstantiateXML);
+    URHO3D_PROFILE("InstantiateXML");
 
     SceneResolver resolver;
     unsigned nodeID = source.GetUInt("id");
@@ -573,7 +573,7 @@ Node* Scene::InstantiateXML(const XMLElement& source, const Vector3& position, c
 
 Node* Scene::InstantiateJSON(const JSONValue& source, const Vector3& position, const Quaternion& rotation, CreateMode mode)
 {
-    URHO3D_PROFILE(InstantiateJSON);
+    URHO3D_PROFILE("InstantiateJSON");
 
     SceneResolver resolver;
     unsigned nodeID = source.Get("id").GetUInt();
@@ -767,7 +767,7 @@ void Scene::Update(float timeStep)
             return;
     }
 
-    URHO3D_PROFILE(UpdateScene);
+    URHO3D_PROFILE("UpdateScene");
 
     timeStep *= timeScale_;
 
@@ -788,7 +788,7 @@ void Scene::Update(float timeStep)
 
     // Update transform smoothing
     {
-        URHO3D_PROFILE(UpdateSmoothing);
+        URHO3D_PROFILE("UpdateSmoothing");
 
         float constant = 1.0f - Clamp(powf(2.0f, -timeStep * smoothingConstant_), 0.0f, 1.0f);
         float squaredSnapThreshold = snapThreshold_ * snapThreshold_;
@@ -825,7 +825,7 @@ void Scene::EndThreadedUpdate()
 
     if (!delayedDirtyComponents_.Empty())
     {
-        URHO3D_PROFILE(EndThreadedUpdate);
+        URHO3D_PROFILE("EndThreadedUpdate");
 
         for (PODVector<Component*>::ConstIterator i = delayedDirtyComponents_.Begin(); i != delayedDirtyComponents_.End(); ++i)
             (*i)->OnMarkedDirty((*i)->GetNode());
@@ -1187,7 +1187,7 @@ void Scene::HandleResourceBackgroundLoaded(StringHash eventType, VariantMap& eve
 
 void Scene::UpdateAsyncLoading()
 {
-    URHO3D_PROFILE(UpdateAsyncLoading);
+    URHO3D_PROFILE("UpdateAsyncLoading");
 
     // If resources left to load, do not load nodes yet
     if (asyncProgress_.loadedResources_ < asyncProgress_.totalResources_)

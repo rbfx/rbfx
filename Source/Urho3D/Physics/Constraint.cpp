@@ -457,7 +457,7 @@ void Constraint::OnMarkedDirty(Node* node)
 
 void Constraint::CreateConstraint()
 {
-    URHO3D_PROFILE(CreateConstraint);
+    URHO3D_PROFILE("CreateConstraint");
 
     cachedWorldScale_ = node_->GetWorldScale();
 

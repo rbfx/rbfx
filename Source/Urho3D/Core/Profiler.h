@@ -27,6 +27,8 @@
 #include "../Core/Timer.h"
 
 #ifdef URHO3D_PROFILING
+#include <easy/profiler.h>
+#include <easy/arbitrary_value.h>
 
 namespace Urho3D
 {
@@ -35,18 +37,6 @@ static const int PROFILER_DEFAULT_PORT = 28077;
 static const unsigned PROFILER_COLOR_DEFAULT = 0xffffecb3;
 static const unsigned PROFILER_COLOR_EVENTS = 0xffff9800;
 static const unsigned PROFILER_COLOR_RESOURCES = 0xff00bcd4;
-
-// Copied from easy_profiler
-enum ProfilerBlockStatus
-{
-    OFF = 0,
-    ON = 1,
-    FORCE_ON = ON | 2,
-    OFF_RECURSIVE = 4,
-    ON_WITHOUT_CHILDREN = ON | OFF_RECURSIVE,
-    FORCE_ON_WITHOUT_CHILDREN = FORCE_ON | OFF_RECURSIVE,
-};
-
 
 /// Hierarchical performance profiler subsystem.
 class URHO3D_API Profiler : public Object
@@ -57,7 +47,7 @@ public:
     /// Construct.
     explicit Profiler(Context* context);
     /// Destruct.
-    virtual ~Profiler();
+    ~Profiler() override;
 
     /// Enables or disables profiler.
     void SetEnabled(bool enabled);
@@ -85,8 +75,7 @@ public:
     void SaveProfilerData(const String& filePath);
     /// Begin non-scoped profiled block. Block has to be terminated with call to EndBlock(). This is slow and is for
     /// integration with scripting lnaguages. Use URHO3D_PROFILE* macros when writing c++ code instead.
-    static void BeginBlock(const char* name, const char* file, int line, unsigned int argb=PROFILER_COLOR_DEFAULT,
-                           ProfilerBlockStatus status=ProfilerBlockStatus::ON);
+    static void BeginBlock(const char* name, const char* file, int line, unsigned int argb=PROFILER_COLOR_DEFAULT);
     /// End block started with BeginBlock().
     static void EndBlock();
     /// Register name of current thread. Threads will be labeled in profiler data.
@@ -100,33 +89,23 @@ private:
 class URHO3D_API ProfilerDescriptor
 {
 public:
-    ProfilerDescriptor(const char* name, const char* file, int line, unsigned int argb=PROFILER_COLOR_DEFAULT,
-                       ProfilerBlockStatus status=ProfilerBlockStatus::ON);
+    ProfilerDescriptor(const char* name, const char* file, int line, unsigned int argb=PROFILER_COLOR_DEFAULT);
 
     void* descriptor_;
 };
 
-class URHO3D_API ProfilerBlock
-{
-public:
-    ProfilerBlock(ProfilerDescriptor& descriptor, const char* name);
-    ~ProfilerBlock();
-};
-
 }
 
-#   define URHO3D_TOKEN_JOIN(x, y) x ## y
-#   define URHO3D_TOKEN_CONCATENATE(x, y) URHO3D_TOKEN_JOIN(x, y)
-#   define URHO3D_PROFILE(name, ...) static Urho3D::ProfilerDescriptor URHO3D_TOKEN_CONCATENATE(__profiler_desc_, __LINE__) (#name, __FILE__, __LINE__, ##__VA_ARGS__);ProfilerBlock URHO3D_TOKEN_CONCATENATE(__profiler_block_, __LINE__) (URHO3D_TOKEN_CONCATENATE(__profiler_desc_, __LINE__), #name)
-#   define URHO3D_PROFILE_SCOPED(name, ...) static Urho3D::ProfilerDescriptor URHO3D_TOKEN_CONCATENATE(__profiler_desc_, __LINE__) (name, __FILE__, __LINE__, ##__VA_ARGS__);ProfilerBlock URHO3D_TOKEN_CONCATENATE(__profiler_block_, __LINE__) (URHO3D_TOKEN_CONCATENATE(__profiler_desc_, __LINE__), name)
-#   define URHO3D_PROFILE_NONSCOPED(name, ...) Urho3D::Profiler::BeginBlock(#name, __FILE__, __LINE__, ##__VA_ARGS__)
-#   define URHO3D_PROFILE_END() Urho3D::Profiler::EndBlock();
-#   define URHO3D_PROFILE_THREAD(name) Urho3D::Profiler::RegisterCurrentThread(#name)
+#   define URHO3D_PROFILE(name, ...)              EASY_BLOCK(name, __VA_ARGS__)
+#   define URHO3D_PROFILE_START(name, ...)        EASY_NONSCOPED_BLOCK(name, __VA_ARGS__)
+#   define URHO3D_PROFILE_END()                   EASY_END_BLOCK
+#   define URHO3D_PROFILE_THREAD(name)            EASY_THREAD(name)
+#   define URHO3D_PROFILE_VALUE(name, value, ...) EASY_VALUE(name, value, __VA_ARGS__)
 #else
-#   define URHO3D_PROFILE(name, ...)
-#   define URHO3D_PROFILE_NONSCOPED(name, ...)
-#   define URHO3D_PROFILE_SCOPED(name, ...)
+#   define URHO3D_PROFILE(...)
+#   define URHO3D_PROFILE_START(...)
 #   define URHO3D_PROFILE_END(...)
-#   define URHO3D_PROFILE_THREAD(name)
+#   define URHO3D_PROFILE_THREAD(...)
+#   define URHO3D_PROFILE_VALUE(...)
 #endif
 

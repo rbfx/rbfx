@@ -97,19 +97,26 @@ bool Profiler::GetEventProfilingEnabled() const
     return enableEventProfiling_;
 }
 
-HashMap<unsigned, ::profiler::BaseBlockDescriptor*> blockDescriptorCache_;
+thread_local HashMap<unsigned, ::profiler::BaseBlockDescriptor*> blockDescriptorCacheMainThread_;
+thread_local HashMap<unsigned, ::profiler::BaseBlockDescriptor*> blockDescriptorCacheThreadLocal_;
 
-void Profiler::BeginBlock(const char* name, const char* file, int line, unsigned int argb, ProfilerBlockStatus status)
+void Profiler::BeginBlock(const char* name, const char* file, int line, unsigned int argb)
 {
+    decltype(blockDescriptorCacheMainThread_)* blockDescriptorCache;
+    if (Thread::IsMainThread())
+        blockDescriptorCache = &blockDescriptorCacheMainThread_;
+    else
+        blockDescriptorCache = &blockDescriptorCacheThreadLocal_;
+
     // Line used as starting hash value for efficiency.
     // This is likely to not play well with hot code reload.
     unsigned hash = StringHash::Calculate(file, (unsigned)line);    // TODO: calculate hash at compile time
-    HashMap<unsigned, ::profiler::BaseBlockDescriptor*>::Iterator it = blockDescriptorCache_.Find(hash);
+    HashMap<unsigned, ::profiler::BaseBlockDescriptor*>::Iterator it = blockDescriptorCache->Find(hash);
     const ::profiler::BaseBlockDescriptor* desc = nullptr;
-    if (it == blockDescriptorCache_.End())
+    if (it == blockDescriptorCache->End())
     {
         String uniqueName = ToString("%s at %s:%d", name, file, line);
-        desc = ::profiler::registerDescription((::profiler::EasyBlockStatus)status, uniqueName.CString(), name, file,
+        desc = ::profiler::registerDescription(::profiler::EasyBlockStatus::ON, uniqueName.CString(), name, file,
                                                line, ::profiler::BlockType::Block, argb, true);
     }
     else
@@ -129,22 +136,11 @@ void Profiler::RegisterCurrentThread(const char* name)
         profilerThreadName = ::profiler::registerThread(name);
 }
 
-ProfilerDescriptor::ProfilerDescriptor(const char* name, const char* file, int line, unsigned int argb,
-                                       ProfilerBlockStatus status)
+ProfilerDescriptor::ProfilerDescriptor(const char* name, const char* file, int line, unsigned int argb)
 {
     String uniqueName = ToString("%p", this);
-    descriptor_ = (void*) ::profiler::registerDescription((::profiler::EasyBlockStatus)status, uniqueName.CString(),
+    descriptor_ = (void*) ::profiler::registerDescription(::profiler::EasyBlockStatus::ON, uniqueName.CString(),
         name, file, line, ::profiler::BlockType::Block, argb, true);
-}
-
-ProfilerBlock::ProfilerBlock(ProfilerDescriptor& descriptor, const char* name)
-{
-    ::profiler::beginNonScopedBlock(static_cast<const profiler::BaseBlockDescriptor*>(descriptor.descriptor_), name);
-}
-
-ProfilerBlock::~ProfilerBlock()
-{
-    ::profiler::endBlock();
 }
 
 }

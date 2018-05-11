@@ -413,7 +413,7 @@ void WorkQueue::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
     // If no worker threads, complete low-priority work here
     if (threads_.Empty() && !queue_.Empty())
     {
-        URHO3D_PROFILE(CompleteWorkNonthreaded);
+        URHO3D_PROFILE("CompleteWorkNonthreaded");
 
         HiresTimer timer;
 

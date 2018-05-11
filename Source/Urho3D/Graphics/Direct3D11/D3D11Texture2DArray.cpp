@@ -76,7 +76,7 @@ void Texture2DArray::Release()
 
 bool Texture2DArray::SetData(unsigned layer, unsigned level, int x, int y, int width, int height, const void* data)
 {
-    URHO3D_PROFILE(SetTextureData);
+    URHO3D_PROFILE("SetTextureData");
 
     if (!object_.ptr_)
     {

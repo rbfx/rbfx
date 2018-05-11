@@ -281,7 +281,7 @@ void Graphics::EndDumpShaders()
 
 void Graphics::PrecacheShaders(Deserializer& source)
 {
-    URHO3D_PROFILE(PrecacheShaders);
+    URHO3D_PROFILE("PrecacheShaders");
 
     ShaderPrecache::LoadShaders(this, source);
 }

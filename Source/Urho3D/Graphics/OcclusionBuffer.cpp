@@ -232,7 +232,7 @@ void OcclusionBuffer::BuildDepthHierarchy()
     if (buffers_.Empty() || !depthHierarchyDirty_)
         return;
 
-    URHO3D_PROFILE(BuildDepthHierarchy);
+    URHO3D_PROFILE("BuildDepthHierarchy");
 
     // Build the first mip level from the pixel-level data
     int width = (width_ + 1) / 2;
@@ -982,7 +982,7 @@ void OcclusionBuffer::DrawTriangle2D(const Vector3* vertices, bool clockwise, un
 
 void OcclusionBuffer::MergeBuffers()
 {
-    URHO3D_PROFILE(MergeBuffers);
+    URHO3D_PROFILE("MergeBuffers");
 
     for (unsigned i = 1; i < buffers_.Size(); ++i)
     {

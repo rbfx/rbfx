@@ -185,7 +185,7 @@ bool Engine::Initialize(const VariantMap& parameters)
     }
 #endif
 
-    URHO3D_PROFILE(InitEngine);
+    URHO3D_PROFILE("InitEngine");
 
     // Set headless mode
     headless_ = GetParameter(parameters, EP_HEADLESS, false).GetBool();
@@ -491,7 +491,7 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
 
 void Engine::RunFrame()
 {
-    URHO3D_PROFILE(RunFrame);
+    URHO3D_PROFILE("RunFrame");
     assert(initialized_);
 
     // If not headless, and the graphics subsystem no longer has a window open, assume we should exit
@@ -507,7 +507,7 @@ void Engine::RunFrame()
     auto* input = GetSubsystem<Input>();
     auto* audio = GetSubsystem<Audio>();
 
-    URHO3D_PROFILE(DoFrame);
+    URHO3D_PROFILE("DoFrame");
     time->BeginFrame(timeStep_);
 
     // If pause when minimized -mode is in use, stop updates and audio as necessary
@@ -704,7 +704,7 @@ void Engine::DumpMemory()
 
 void Engine::Update()
 {
-    URHO3D_PROFILE(Update);
+    URHO3D_PROFILE("Update");
 
     // Logic update event
     using namespace Update;
@@ -728,7 +728,7 @@ void Engine::Render()
     if (headless_)
         return;
 
-    URHO3D_PROFILE(Render);
+    URHO3D_PROFILE("Render");
 
     // If device is lost, BeginFrame will fail and we skip rendering
     auto* graphics = GetSubsystem<Graphics>();
@@ -762,7 +762,7 @@ void Engine::ApplyFrameLimit()
     if (maxFps < 60)
 #endif
     {
-        URHO3D_PROFILE(ApplyFrameLimit);
+        URHO3D_PROFILE("ApplyFrameLimit");
 
         long long targetMax = 1000000LL / maxFps;
 

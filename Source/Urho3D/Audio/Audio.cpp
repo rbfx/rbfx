@@ -326,7 +326,7 @@ void Audio::Release()
 
 void Audio::UpdateInternal(float timeStep)
 {
-    URHO3D_PROFILE(UpdateAudio);
+    URHO3D_PROFILE("UpdateAudio");
 
     // Update in reverse order, because sound sources might remove themselves
     for (unsigned i = soundSources_.Size() - 1; i < soundSources_.Size(); --i)

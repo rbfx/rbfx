@@ -100,7 +100,7 @@ SystemUI::SystemUI(Urho3D::Context* context)
     });
     SubscribeToEvent(E_ENDRENDERING, [&](StringHash, VariantMap&)
     {
-        URHO3D_PROFILE(SystemUiRender);
+        URHO3D_PROFILE("SystemUiRender");
         ImGui::Render();
     });
 }

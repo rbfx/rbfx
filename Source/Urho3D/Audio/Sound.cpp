@@ -83,7 +83,7 @@ void Sound::RegisterObject(Context* context)
 
 bool Sound::BeginLoad(Deserializer& source)
 {
-    URHO3D_PROFILE(LoadSound);
+    URHO3D_PROFILE("LoadSound");
 
     bool success;
     if (GetExtension(source.GetName()) == ".ogg")
