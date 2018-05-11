@@ -26,9 +26,10 @@
 #include "../Core/Thread.h"
 #include "../Core/Timer.h"
 
-#ifdef URHO3D_PROFILING
-#include <easy/profiler.h>
-#include <easy/arbitrary_value.h>
+#if URHO3D_PROFILING
+#   include <easy/profiler.h>
+#   include <easy/arbitrary_value.h>
+#endif
 
 namespace Urho3D
 {
@@ -96,16 +97,19 @@ public:
 
 }
 
+#if URHO3D_PROFILING
 #   define URHO3D_PROFILE(name, ...)              EASY_BLOCK(name, __VA_ARGS__)
 #   define URHO3D_PROFILE_START(name, ...)        EASY_NONSCOPED_BLOCK(name, __VA_ARGS__)
 #   define URHO3D_PROFILE_END()                   EASY_END_BLOCK
 #   define URHO3D_PROFILE_THREAD(name)            EASY_THREAD(name)
 #   define URHO3D_PROFILE_VALUE(name, value, ...) EASY_VALUE(name, value, __VA_ARGS__)
+#   define URHO3D_PROFILE_FUNCTION(...)           EASY_FUNCTION(__VA_ARGS__)
 #else
 #   define URHO3D_PROFILE(...)
 #   define URHO3D_PROFILE_START(...)
 #   define URHO3D_PROFILE_END(...)
 #   define URHO3D_PROFILE_THREAD(...)
 #   define URHO3D_PROFILE_VALUE(...)
+#   define URHO3D_PROFILE_FUNCTION(...)
 #endif
 
