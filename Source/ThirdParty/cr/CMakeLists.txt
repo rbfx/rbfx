@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2017 the Atomic project.
+# Copyright (c) 2017 the Rokas Kupstys.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
