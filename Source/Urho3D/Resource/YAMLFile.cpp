@@ -31,7 +31,7 @@
 #include "../Resource/YAMLFile.h"
 #include "../Resource/ResourceCache.h"
 
-#include <algorithm>
+#include <regex>
 #include <yaml-cpp/yaml.h>
 
 #include "../DebugNew.h"
@@ -73,6 +73,8 @@ void YAMLFile::RegisterObject(Context* context)
     context->RegisterFactory<YAMLFile>();
 }
 
+static std::regex isNumeric("-?[0-9]+(\\.[0-9]+)?");
+
 // Convert rapidjson value to JSON value.
 static void ToJSONValue(JSONValue& jsonValue, const YAML::Node& yamlValue)
 {
@@ -98,11 +100,11 @@ static void ToJSONValue(JSONValue& jsonValue, const YAML::Node& yamlValue)
         {
             // All numbers are treated as doubles
             const auto& scalar = yamlValue.Scalar();
-            if (std::find_if_not(scalar.begin(), scalar.end(), [](char c) { return !isdigit(c) && c != '.'; }) == scalar.end())
-                // What is not a number it must be a string
-                jsonValue = scalar.c_str();
-            else
+
+            if (std::regex_match(scalar, isNumeric))
                 jsonValue = yamlValue.as<double>();
+            else
+                jsonValue = scalar.c_str();
         }
 
         break;
