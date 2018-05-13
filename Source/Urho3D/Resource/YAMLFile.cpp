@@ -251,7 +251,7 @@ bool YAMLFile::Save(Serializer& dest, int indendation) const
 
 bool YAMLFile::FromString(const String& source)
 {
-    ParseYAML(source, root_, false);
+    return ParseYAML(source, root_, false);
 }
 
 bool YAMLFile::ParseYAML(const String& yaml, JSONValue& value, bool reportError)
