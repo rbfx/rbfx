@@ -163,6 +163,43 @@ JSONValue& JSONValue::operator =(const JSONValue& rhs)
     return *this;
 }
 
+bool JSONValue::operator ==(const JSONValue& rhs) const
+{
+    // Value type without number type is checked. JSON does not make a distinction between number types. It is possible
+    // that we serialized number (for example `1`) as unsigned integer. It will not necessarily be unserialized as same
+    // number type. Number value equality check below will make sure numbers match anyway.
+    if (GetValueType() != rhs.GetValueType())
+        return false;
+
+    switch (GetValueType())
+    {
+    case JSON_BOOL:
+        return boolValue_ == rhs.boolValue_;
+
+    case JSON_NUMBER:
+        return numberValue_ == rhs.numberValue_;
+
+    case JSON_STRING:
+        return *stringValue_ == *rhs.stringValue_;
+
+    case JSON_ARRAY:
+        return *arrayValue_ == *rhs.arrayValue_;
+
+    case JSON_OBJECT:
+        return *objectValue_ == *rhs.objectValue_;
+
+    default:
+        break;
+    }
+
+    return false;
+}
+
+bool JSONValue::operator !=(const JSONValue& rhs) const
+{
+    return !operator ==(rhs);
+}
+
 JSONValueType JSONValue::GetValueType() const
 {
     return (JSONValueType)(type_ >> 16u);

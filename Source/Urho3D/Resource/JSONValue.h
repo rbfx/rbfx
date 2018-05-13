@@ -165,6 +165,10 @@ public:
     JSONValue& operator =(const JSONObject& rhs);
     /// Assign from another JSON value.
     JSONValue& operator =(const JSONValue& rhs);
+    /// Value equality operator.
+    bool operator ==(const JSONValue& rhs) const;
+    /// Value inequality operator.
+    bool operator !=(const JSONValue& rhs) const;
 
     /// Return value type.
     JSONValueType GetValueType() const;
