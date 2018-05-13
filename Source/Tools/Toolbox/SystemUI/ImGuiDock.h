@@ -25,6 +25,8 @@
 
 #include <ImGui/imgui.h>
 #include <Urho3D/Resource/XMLElement.h>
+#include <Urho3D/Resource/JSONValue.h>
+
 
 namespace ImGui
 {
@@ -46,8 +48,10 @@ void RootDock(const ImVec2& pos, const ImVec2& size);
 bool BeginDock(const char* label, bool* opened = nullptr, ImGuiWindowFlags extra_flags = 0, const ImVec2& default_size = ImVec2(-1, -1));
 void EndDock();
 void SetDockActive();
-void SaveDock(const Urho3D::XMLElement& element);
+void SaveDock(Urho3D::XMLElement& element);
 void LoadDock(const Urho3D::XMLElement& element);
+void SaveDock(Urho3D::JSONValue& element);
+void LoadDock(const Urho3D::JSONValue& element);
 void SetNextDockPos(const char* targetDockLabel, DockSlot_ pos, ImGuiCond_ condition);
 bool IsDockDocked();
 bool IsDockActive();

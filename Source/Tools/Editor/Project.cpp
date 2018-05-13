@@ -68,23 +68,25 @@ bool Project::LoadProject(const String& filePath)
     if (filePath.Empty())
         return false;
 
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
-    if (!xml->LoadFile(filePath))
+    YAMLFile file(context_);
+    if (!file.LoadFile(filePath))
         return false;
 
-    auto root = xml->GetRoot();
-    if (root.NotNull())
+    const auto& root = file.GetRoot();
+    if (root.IsObject())
     {
         context_->RemoveSubsystem<Project>();
         projectFilePath_ = filePath;
         projectFileDir_ = GetParentPath(filePath);
-        SendEvent(E_EDITORPROJECTLOADING);
 
-        auto window = root.GetChild("window");
-        if (window.NotNull())
+        SendEvent(E_EDITORPROJECTLOADINGSTART);
+
+        const auto& window = root["window"];
+        if (window.IsObject())
         {
-            GetGraphics()->SetMode(ToInt(window.GetAttribute("width")), ToInt(window.GetAttribute("height")));
-            GetGraphics()->SetWindowPosition(ToInt(window.GetAttribute("x")), ToInt(window.GetAttribute("y")));
+            auto size = window["size"].GetVariant().GetIntVector2();
+            GetGraphics()->SetMode(size.x_, size.y_);
+            GetGraphics()->SetWindowPosition(window["position"].GetVariant().GetIntVector2());
         }
 
         // Autodetect resource dirs
@@ -102,21 +104,24 @@ bool Project::LoadProject(const String& filePath)
         }
         assetConverter_.VerifyCacheAsync();
 
-        auto tabs = root.GetChild("tabs");
-        if (tabs.NotNull())
+        const auto& tabs = root["tabs"];
+        if (tabs.IsArray())
         {
-            auto tab = tabs.GetChild("tab");
-            while (tab.NotNull())
+            for (auto i = 0; i < tabs.Size(); i++)
             {
-                if (tab.GetAttribute("type") == "scene")
+                const auto& tab = tabs[i];
+                if (tab["type"] == "scene")
                     GetSubsystem<Editor>()->CreateNewTab<SceneTab>(tab);
-                else if (tab.GetAttribute("type") == "ui")
+                else if (tab["type"] == "ui")
                     GetSubsystem<Editor>()->CreateNewTab<UITab>(tab);
-                tab = tab.GetNext();
             }
         }
 
-        ui::LoadDock(root.GetChild("docks"));
+        ui::LoadDock(root["docks"]);
+
+        // Plugins may load state by subscribing to this event
+        using namespace EditorProjectLoading;
+        SendEvent(E_EDITORPROJECTLOADING, P_VALUE, (void*)&root);
 
         context_->RegisterSubsystem(this);
 
@@ -139,32 +144,40 @@ bool Project::SaveProject(const String& filePath)
         return false;
     }
 
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
-    XMLElement root = xml->CreateRoot("project");
-    root.SetAttribute("version", "0");
+    YAMLFile file(context_);
+    JSONValue& root = file.GetRoot();
+    root["version"] = 0;
 
-    auto window = root.CreateChild("window");
-    window.SetAttribute("width", ToString("%d", GetGraphics()->GetWidth()));
-    window.SetAttribute("height", ToString("%d", GetGraphics()->GetHeight()));
-    window.SetAttribute("x", ToString("%d", GetGraphics()->GetWindowPosition().x_));
-    window.SetAttribute("y", ToString("%d", GetGraphics()->GetWindowPosition().y_));
-
-    auto scenes = root.CreateChild("tabs");
-    for (auto& tab: GetSubsystem<Editor>()->GetContentTabs())
+    JSONValue& window = root["window"];
     {
-        XMLElement tabXml = scenes.CreateChild("tab");
-        tab->SaveProject(tabXml);
+        window["size"].SetVariant(GetGraphics()->GetSize());
+        window["position"].SetVariant(GetGraphics()->GetWindowPosition());
     }
 
-    ui::SaveDock(root.CreateChild("docks"));
+    auto&& openTabs = GetSubsystem<Editor>()->GetContentTabs();
+    auto& fileTabs = root["tabs"];
+    fileTabs.Resize(openTabs.Size());
+    for (auto i = 0; i < openTabs.Size(); i++)
+        openTabs[i]->SaveProject(fileTabs[i]);
 
-    if (!xml->SaveFile(projectFilePath))
+    ui::SaveDock(root["docks"]);
+
+    // Plugins may save state by subscribing to this event
+    using namespace EditorProjectSaving;
+    SendEvent(E_EDITORPROJECTSAVING, P_VALUE, (void*)&root);
+
+    auto success = file.SaveFile(projectFilePath);
+    if (success)
+        projectFilePath_ = projectFilePath;
+    else
     {
         projectFilePath_.Clear();
         URHO3D_LOGERRORF("Saving project to %s failed", projectFilePath.CString());
     }
 
     SubscribeToEvent(E_EDITORRESOURCESAVED, std::bind(&Project::SaveProject, this, ""));
+
+    return success;
 }
 
 String Project::GetCachePath() const

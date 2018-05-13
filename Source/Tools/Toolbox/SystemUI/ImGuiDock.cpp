@@ -1128,6 +1128,31 @@ struct DockContext
         }
     }
 
+    void save(Urho3D::JSONValue& docks)
+    {
+        docks.Resize(m_docks.size());
+
+        for (int i = 0; i < m_docks.size(); ++i)
+        {
+            auto& file = docks[i];
+            Dock& dock = *m_docks[i];
+            file["label"] = dock.label;
+            file["x"] = (int)dock.pos.x;
+            file["y"] = (int)dock.pos.y;
+            file["location"] = dock.location;
+            file["size_x"] = (int)dock.size.x;
+            file["size_y"] = (int)dock.size.y;
+            file["status"] = (int)dock.status;
+            file["active"] = dock.active;
+            file["opened"] = dock.opened;
+            file["prev"] = getDockIndex(dock.prev_tab);
+            file["next"] = getDockIndex(dock.next_tab);
+            file["child0"] = getDockIndex(dock.children[0]);
+            file["child1"] = getDockIndex(dock.children[1]);
+            file["parent"] = getDockIndex(dock.parent);
+        }
+    }
+
 
     Dock* getDockByIndex(int idx) { return idx < 0 ? nullptr : m_docks[idx]; }
 
@@ -1173,6 +1198,46 @@ struct DockContext
             dock.parent = getDockByIndex(Urho3D::ToInt(record.GetAttribute("parent")));
             dock.m_allow_condition &= ~ImGuiCond_FirstUseEver;
             record = record.GetNext("dock");
+        }
+    }
+
+    void load(const Urho3D::JSONValue& element)
+    {
+        is_first_call = true;
+
+        for (auto & m_dock : m_docks)
+        {
+            m_dock->~Dock();
+            MemFree(m_dock);
+        }
+        m_docks.clear();
+
+        for (auto i = 0; i < element.Size(); i++)
+        {
+            auto* new_dock = (Dock*)MemAlloc(sizeof(Dock));
+            m_docks.push_back(IM_PLACEMENT_NEW(new_dock) Dock());
+        }
+
+        for (auto i = 0; i < element.Size(); i++)
+        {
+            auto& record = element[i];
+            Dock& dock = *m_docks[i];
+            dock.label = ImStrdup(record["label"].GetCString());
+            dock.id = ImHash(dock.label, 0);
+            dock.pos.x = record["x"].GetFloat();
+            dock.pos.y = record["y"].GetFloat();
+            dock.size.x = record["size_x"].GetFloat();
+            dock.size.y = record["size_y"].GetFloat();
+            dock.active = record["active"].GetBool();
+            dock.opened = record["opened"].GetBool();
+            strcpy(dock.location, record["location"].GetCString());
+            dock.status = (Status_)record["status"].GetInt();
+            dock.prev_tab = getDockByIndex(record["prev"].GetInt());
+            dock.next_tab = getDockByIndex(record["next"].GetInt());
+            dock.children[0] = getDockByIndex(record["child0"].GetInt());
+            dock.children[1] = getDockByIndex(record["child1"].GetInt());
+            dock.parent = getDockByIndex(record["parent"].GetInt());
+            dock.m_allow_condition &= ~ImGuiCond_FirstUseEver;
         }
     }
 
@@ -1248,14 +1313,24 @@ void EndDock()
     g_dock.end();
 }
 
-
-void SaveDock(const Urho3D::XMLElement& element)
+void SaveDock(Urho3D::XMLElement& element)
 {
     g_dock.save(element);
 }
 
 
 void LoadDock(const Urho3D::XMLElement& element)
+{
+    g_dock.load(element);
+}
+
+void SaveDock(Urho3D::JSONValue& element)
+{
+    g_dock.save(element);
+}
+
+
+void LoadDock(const Urho3D::JSONValue& element)
 {
     g_dock.load(element);
 }

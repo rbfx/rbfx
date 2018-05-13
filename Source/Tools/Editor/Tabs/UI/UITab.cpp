@@ -490,18 +490,18 @@ void UITab::RenderElementContextMenu()
     }
 }
 
-void UITab::SaveProject(XMLElement& tab)
+void UITab::SaveProject(JSONValue& tab)
 {
-    tab.SetAttribute("type", "ui");
-    tab.SetAttribute("id", id_.ToString().CString());
-    tab.SetAttribute("path", path_);
+    tab["type"] = "ui";
+    tab["id"] = id_.ToString();
+    tab["path"] = path_;
     Tab::SaveResource();
 }
 
-void UITab::LoadProject(XMLElement& tab)
+void UITab::LoadProject(const JSONValue& tab)
 {
-    id_ = StringHash(ToUInt(tab.GetAttribute("id"), 16));
-    LoadResource(tab.GetAttribute("path"));
+    id_ = StringHash(ToUInt(tab["id"].GetString(), 16));
+    LoadResource(tab["path"].GetString());
 }
 
 String UITab::GetAppliedStyle(UIElement* element)

@@ -125,14 +125,14 @@ void Editor::Start()
     console->RefreshInterpreters();
 
     // Prepare editor for loading new project.
-    SubscribeToEvent(E_EDITORPROJECTLOADING, [&](StringHash, VariantMap&) {
+    SubscribeToEvent(E_EDITORPROJECTLOADINGSTART, [&](StringHash, VariantMap&) {
         tabs_.Clear();
         idPool_.Clear();
     });
 
     // Load default project on start
     project_ = new Project(context_);
-    if (!project_->LoadProject(GetCache()->GetResourceFileName("Etc/DefaultEditorProject.xml")))
+    if (!project_->LoadProject(GetCache()->GetResourceFileName("Etc/DefaultEditorProject.project")))
         project_.Reset();
 
     // Plugin loading
@@ -229,12 +229,24 @@ void Editor::RenderMenuBar()
             if (project_.NotNull())
             {
                 if (ui::MenuItem("Save Project"))
-                    project_->SaveProject();
+                {
+                    if (project_->GetProjectFilePath().Empty())
+                    {
+                        nfdchar_t* savePath = nullptr;
+                        if (NFD_SaveDialog("project", "", &savePath) == NFD_OKAY)
+                        {
+                            project_->SaveProject(savePath);
+                            NFD_FreePath(savePath);
+                        }
+                    }
+                    else
+                        project_->SaveProject();
+                }
 
                 if (ui::MenuItem("Save Project As"))
                 {
                     nfdchar_t* savePath = nullptr;
-                    if (NFD_SaveDialog("xml", "", &savePath) == NFD_OKAY)
+                    if (NFD_SaveDialog("project", "", &savePath) == NFD_OKAY)
                     {
                         project_->SaveProject(savePath);
                         NFD_FreePath(savePath);
@@ -245,7 +257,7 @@ void Editor::RenderMenuBar()
             if (ui::MenuItem("Open Project"))
             {
                 nfdchar_t* projectFilePath = nullptr;
-                if (NFD_OpenDialog("xml", "", &projectFilePath) == NFD_OKAY)
+                if (NFD_OpenDialog("project", "", &projectFilePath) == NFD_OKAY)
                 {
                     project_ = new Project(context_);
                     if (!project_->LoadProject(projectFilePath))
@@ -255,6 +267,11 @@ void Editor::RenderMenuBar()
                     }
                     NFD_FreePath(projectFilePath);
                 }
+            }
+
+            if (ui::MenuItem("Create Project"))
+            {
+                project_ = new Project(context_);
             }
 
             if (project_.NotNull())
@@ -308,7 +325,7 @@ void Editor::RenderMenuBar()
 }
 
 template<typename T>
-T* Editor::CreateNewTab(XMLElement project)
+T* Editor::CreateNewTab(const JSONValue& project)
 {
     SharedPtr<T> tab;
     StringHash id;
@@ -321,7 +338,7 @@ T* Editor::CreateNewTab(XMLElement project)
     else
         tab = new T(context_, id, tabs_.Back()->GetUniqueTitle(), ui::Slot_Tab);
 
-    if (project.NotNull())
+    if (project.IsObject())
     {
         tab->LoadProject(project);
         if (!idPool_.TakeID(tab->GetID()))

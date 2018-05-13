@@ -503,52 +503,42 @@ void SceneTab::RenderNodeTree(Node* node)
         ui::PopID();
 }
 
-void SceneTab::LoadProject(XMLElement& scene)
+void SceneTab::LoadProject(const JSONValue& scene)
 {
-    id_ = StringHash(ToUInt(scene.GetAttribute("id"), 16));
-    LoadResource(scene.GetAttribute("path"));
+    id_ = StringHash(ToUInt(scene["id"].GetString(), 16));
+    LoadResource(scene["path"].GetString());
 
-    auto camera = scene.GetChild("camera");
-    if (camera.NotNull())
+    const auto& camera = scene["camera"];
+    if (camera.IsObject())
     {
         Node* cameraNode = view_.GetCamera()->GetNode();
-        if (auto position = camera.GetChild("position"))
-            cameraNode->SetPosition(position.GetVariant().GetVector3());
-        if (auto rotation = camera.GetChild("rotation"))
-            cameraNode->SetRotation(rotation.GetVariant().GetQuaternion());
-        if (auto light = camera.GetChild("light"))
-        {
-            if (auto* lightComponent = cameraNode->GetComponent<Light>())
-                lightComponent->SetEnabled(light.GetVariant().GetBool());
-        }
+        cameraNode->SetPosition(camera["position"].GetVariant().GetVector3());
+        cameraNode->SetRotation(camera["rotation"].GetVariant().GetQuaternion());
+        if (auto* lightComponent = cameraNode->GetComponent<Light>())
+            lightComponent->SetEnabled(camera["light"].GetBool());
     }
 
-    settings_->LoadProject(scene);
-    effectSettings_->LoadProject(scene);
+    settings_->LoadProject(scene["settings"]);
+    effectSettings_->LoadProject(scene["effects"]);
 
     undo_.Clear();
 }
 
-void SceneTab::SaveProject(XMLElement& scene)
+void SceneTab::SaveProject(JSONValue& tab)
 {
-    scene.SetAttribute("type", "scene");
-    scene.SetAttribute("id", id_.ToString().CString());
-    scene.SetAttribute("path", path_);
+    tab["type"] = "scene";
+    tab["id"] =  id_.ToString();
+    tab["path"] = path_;
 
-    auto camera = scene.CreateChild("camera");
+    auto& camera = tab["camera"];
     Node* cameraNode = view_.GetCamera()->GetNode();
-    camera.CreateChild("position").SetVariant(cameraNode->GetPosition());
-    camera.CreateChild("rotation").SetVariant(cameraNode->GetRotation());
-    camera.CreateChild("light").SetVariant(cameraNode->GetComponent<Light>()->IsEnabled());
+    camera["position"].SetVariant(cameraNode->GetPosition());
+    camera["rotation"].SetVariant(cameraNode->GetRotation());
+    camera["light"] = cameraNode->GetComponent<Light>()->IsEnabled();
 
-    settings_->SaveProject(scene);
-    effectSettings_->SaveProject(scene);
+    settings_->SaveProject(tab["settings"]);
+    effectSettings_->SaveProject(tab["effects"]);
     Tab::SaveResource();
-}
-
-void SceneTab::ClearCachedPaths()
-{
-    path_.Clear();
 }
 
 void SceneTab::OnActiveUpdate()

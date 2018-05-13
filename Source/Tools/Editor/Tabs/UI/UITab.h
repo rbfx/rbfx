@@ -49,9 +49,9 @@ public:
     /// Update window when it is active.
     void OnActiveUpdate() override;
     /// Save project data to xml.
-    void SaveProject(XMLElement& tab) override;
+    void SaveProject(JSONValue& tab) override;
     /// Load project data from xml.
-    void LoadProject(XMLElement& tab) override;
+    void LoadProject(const JSONValue& tab) override;
     /// Load UI layout from resource path.
     void LoadResource(const String& resourcePath) override;
     /// Save scene to a resource file.

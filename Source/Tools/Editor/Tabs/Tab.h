@@ -56,9 +56,9 @@ public:
     /// Render scene window.
     virtual bool RenderWindow();
     /// Save project data to xml.
-    virtual void SaveProject(XMLElement& tab) { }
+    virtual void SaveProject(JSONValue& tab) { }
     /// Load project data from xml.
-    virtual void LoadProject(XMLElement& tab) { }
+    virtual void LoadProject(const JSONValue& tab) { }
     /// Load a file from resource path.
     virtual void LoadResource(const String& resourcePath) { }
     /// Save tab contents to a resource file.

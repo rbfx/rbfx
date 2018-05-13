@@ -53,9 +53,16 @@ URHO3D_EVENT(E_EDITORAPPLICATIONMENU, EditorApplicationMenu)
 {
 }
 
+/// Event sent when editor is about to save a project.
+URHO3D_EVENT(E_EDITORPROJECTSAVING, EditorProjectSaving)
+{
+    URHO3D_PARAM(P_VALUE, Value);                     // Raw pointer to JSONValue.
+}
+
 /// Event sent when editor is about to load a new project.
 URHO3D_EVENT(E_EDITORPROJECTLOADING, EditorProjectLoading)
 {
+    URHO3D_PARAM(P_VALUE, Value);                     // Raw pointer to JSONValue.
 }
 
 }

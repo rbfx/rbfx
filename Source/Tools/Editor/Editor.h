@@ -58,7 +58,7 @@ public:
     /// Create a new tab of specified type.
     /// \param project is xml element containing serialized project data produced by SceneTab::SaveProject()
     template<typename T>
-    T* CreateNewTab(XMLElement project=XMLElement());
+    T* CreateNewTab(const JSONValue& project = JSONValue::EMPTY);
     /// Return active scene tab.
     Tab* GetActiveTab() { return activeTab_; }
     /// Return currently open scene tabs.

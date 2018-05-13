@@ -50,6 +50,8 @@ public:
     bool SaveProject(const String& projectPath=String::EMPTY);
     /// Returns path to temporary asset cache.
     String GetCachePath() const;
+    /// Returns a path from which project was loaded.
+    const String& GetProjectFilePath() const { return projectFilePath_; }
 
 protected:
     /// Path to a project file.

@@ -56,9 +56,9 @@ public:
     /// Called on every frame when tab is active.
     void OnActiveUpdate() override;
     /// Save project data to xml.
-    void SaveProject(XMLElement& scene) override;
+    void SaveProject(JSONValue& tab) override;
     /// Load project data from xml.
-    void LoadProject(XMLElement& scene) override;
+    void LoadProject(const JSONValue& scene) override;
     /// Load scene from xml or json file.
     void LoadResource(const String& resourcePath) override;
     /// Save scene to a resource file.
@@ -75,8 +75,6 @@ public:
     bool IsSelected(Node* node) const;
     /// Return list of selected nodes.
     const Vector<WeakPtr<Node>>& GetSelection() const;
-    /// Clearing cached paths forces choosing a file name next time scene is saved.
-    void ClearCachedPaths();
     /// Removes component if it was selected in inspector, otherwise removes selected scene nodes.
     void RemoveSelection();
     /// Return scene view.
