@@ -52,13 +52,6 @@ ScriptSubsystem::ScriptSubsystem(Context* context)
         // This library does not run in context of managed process.
         return;
 
-    // This global instance is mainly required for queueing ReleaseRef() calls. Not every RefCounted has pointer to
-    // Context therefore if multiple contexts exist they may run on different threads. Then there would be no way to
-    // know on which main thread ReleaseRef() should be called. Assert below limits application to having single
-    // Context.
-    assert(scriptSubsystem == nullptr);
-    scriptSubsystem = this;
-
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(ScriptSubsystem, OnEndFrame));
 
     Init(mono_get_root_domain());
@@ -66,6 +59,15 @@ ScriptSubsystem::ScriptSubsystem(Context* context)
 
 void ScriptSubsystem::Init(void* domain)
 {
+    // This global instance is mainly required for queueing ReleaseRef() calls. Not every RefCounted has pointer to
+    // Context therefore if multiple contexts exist they may run on different threads. Then there would be no way to
+    // know on which main thread ReleaseRef() should be called. Assert below limits application to having single
+    // Context.
+    if (scriptSubsystem == nullptr)
+        scriptSubsystem = this;
+    else
+        assert(scriptSubsystem == this);
+
     auto* assembly = mono_domain_assembly_open(static_cast<MonoDomain*>(domain), "Urho3DNet.dll");
     if (assembly == nullptr)
         assembly = static_cast<MonoAssembly*>(LoadAssembly("Urho3DNet.dll", nullptr));

@@ -91,44 +91,47 @@ namespace Urho3D.CSharp
                 {
                     if (_target != null && Environment.TickCount - LastAccess > StrongRefExpirationTime)
                         _target = null;
-                    NativeObject result;
-                    return !_targetWeak.TryGetTarget(out result);
+                    return !_targetWeak.TryGetTarget(out _);
                 }
             }
         }
 
-        private static ConcurrentDictionary<IntPtr, CacheEntry> _cache = new ConcurrentDictionary<IntPtr, CacheEntry>();
-        private static IEnumerator<KeyValuePair<IntPtr, CacheEntry>> _expirationEnumerator;
-        private static int _lastCacheEnumeratorResetTime = 0;
-        private static bool _needsReset = true;
+        private static Dictionary<IntPtr, CacheEntry> _cache = new Dictionary<IntPtr, CacheEntry>();
 
         public static T GetOrAdd<T>(IntPtr instance, Func<IntPtr, T> factory) where T: NativeObject
         {
-            var entry = _cache.GetOrAdd(instance, ptr =>
+            lock (_cache)
             {
-                var object_ = factory(ptr);
-                return new CacheEntry(object_);
-            });
-            entry.LastAccess = Environment.TickCount;
-            ExpireCache();
-            return (T)entry.Target;
+                CacheEntry entry;
+                if (!_cache.TryGetValue(instance, out entry))
+                {
+                    entry = new CacheEntry(factory(instance));
+                    _needsReset = true;
+                    _cache[instance] = entry;
+                }
+
+                entry.LastAccess = Environment.TickCount;
+                ExpireCache();
+                return (T)entry.Target;
+            }
         }
 
         public static void Add<T>(T instance) where T: NativeObject
         {
-            ExpireCache();
-            _cache[instance.NativeInstance] = new CacheEntry(instance);
+            lock (_cache)
+            {
+                ExpireCache();
+                _needsReset = true;
+                _cache[instance.NativeInstance] = new CacheEntry(instance);
+            }
         }
 
         public static void Remove(IntPtr instance)
         {
-            ExpireCache();
-            CacheEntry entry;
-            if (!_cache.TryRemove(instance, out entry))
-                return;
-
-            if (entry.Target is Context)
-                NativeInterface.Dispose();
+            lock (_cache)
+            {
+                _cache.Remove(instance);
+            }
         }
 
         /// <summary>
@@ -136,10 +139,17 @@ namespace Urho3D.CSharp
         /// </summary>
         public static void Dispose()
         {
-            foreach (var item in _cache)
-                item.Value.Target?.Dispose();
-            _cache.Clear();
+            lock (_cache)
+            {
+                foreach (var item in _cache)
+                    item.Value.Target?.Dispose();
+                _cache.Clear();
+            }
         }
+
+        private static int _lastCacheEnumeratorResetTime = 0;
+        private static bool _needsReset = true;
+        private static IEnumerator<KeyValuePair<IntPtr, CacheEntry>> _expirationEnumerator;
 
         private static void ExpireCache()
         {
