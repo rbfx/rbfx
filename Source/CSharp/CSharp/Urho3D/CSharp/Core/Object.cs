@@ -33,16 +33,16 @@ namespace Urho3D
                 eventType.Hash, false, __ToPInvoke(sender));
         }
 
-        private static void HandleEventWithType(IntPtr gcHandle, uint type, IntPtr args)
+        private static unsafe void HandleEventWithType(void* gcHandle, uint type, void* args)
         {
-            var callback = (Action<StringHash, VariantMap>) GCHandle.FromIntPtr(gcHandle).Target;
-            callback.Invoke(StringHash.__FromPInvoke(type), VariantMap.__FromPInvoke(args, false));
+            var callback = (Action<StringHash, VariantMap>) GCHandle.FromIntPtr((IntPtr)gcHandle).Target;
+            callback.Invoke(StringHash.__FromPInvoke(type), VariantMap.__FromPInvoke((IntPtr)args, false));
         }
 
-        private static void HandleEventWithoutType(IntPtr gcHandle, uint type, IntPtr args)
+        private static unsafe void HandleEventWithoutType(void* gcHandle, uint type, void* args)
         {
-            var callback = (Action<VariantMap>) GCHandle.FromIntPtr(gcHandle).Target;
-            callback.Invoke(VariantMap.__FromPInvoke(args, false));
+            var callback = (Action<VariantMap>) GCHandle.FromIntPtr((IntPtr)gcHandle).Target;
+            callback.Invoke(VariantMap.__FromPInvoke((IntPtr)args, false));
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

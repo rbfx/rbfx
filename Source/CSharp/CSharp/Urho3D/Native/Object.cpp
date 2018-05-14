@@ -80,7 +80,7 @@ public:
     void Invoke(VariantMap& eventData) override
     {
         MonoObject* exception = nullptr;
-        void* args[3] = {&gcHandle_, &eventType_, &eventData};
+        void* args[3] = {(void*)gcHandle_, &eventType_, &eventData};
         mono_runtime_invoke(function_, nullptr, args, &exception);
     }
 
