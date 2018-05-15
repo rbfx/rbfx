@@ -54,7 +54,7 @@ namespace profiler
     class ValueId EASY_FINAL
     {
         friend ::ThreadStorage;
-        vin_t m_id;
+        const void* m_id;
 
     public:
 
@@ -67,13 +67,13 @@ namespace profiler
 #endif
 
         explicit inline EASY_CONSTEXPR_FCN ValueId() : m_id(0) {}
-        explicit inline ValueId(const void* _member) : m_id(reinterpret_cast<vin_t>(_member)) {}
+        explicit inline EASY_CONSTEXPR_FCN ValueId(const void* _member) : m_id(_member) {}
 
         template <class T>
-        explicit inline EASY_CONSTEXPR_FCN ValueId(const T& _member) : m_id(reinterpret_cast<vin_t>(&_member)) {}
+        explicit inline EASY_CONSTEXPR_FCN ValueId(const T& _member) : m_id(reinterpret_cast<const void*>(&_member)) {}
 
         template <class T, size_t N>
-        explicit inline EASY_CONSTEXPR_FCN ValueId(const T (&_member)[N]) : m_id(reinterpret_cast<vin_t>((void*)_member)) {}
+        explicit inline EASY_CONSTEXPR_FCN ValueId(const T (&_member)[N]) : m_id(reinterpret_cast<const void*>((void*)_member)) {}
 
         ValueId& operator = (const ValueId&) = delete;
         ValueId& operator = (ValueId&&) = delete;
