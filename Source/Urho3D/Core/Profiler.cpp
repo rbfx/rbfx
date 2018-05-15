@@ -24,6 +24,7 @@
 #include "../Core/Profiler.h"
 #include "../Core/StringUtils.h"
 #include "../Core/Context.h"
+#include "../IO/Log.h"
 
 namespace Urho3D
 {
