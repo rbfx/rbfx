@@ -57,6 +57,7 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
     // On plugin code reload all scene state is serialized, plugin library is reloaded and scene state is unserialized.
     // This way scene recreates all plugin-provided components on reload and gets to use new versions of them.
     SubscribeToEvent(E_EDITORUSERCODERELOADSTART, [&](StringHash, VariantMap&) {
+        undo_.SetTrackingEnabled(false);
         Pause();
         SceneStateSave();
         GetScene()->RemoveAllChildren();
@@ -64,6 +65,7 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
     });
     SubscribeToEvent(E_EDITORUSERCODERELOADEND, [&](StringHash, VariantMap&) {
         SceneStateRestore(sceneState_);
+        undo_.SetTrackingEnabled(true);
     });
     SubscribeToEvent(GetScene(), E_COMPONENTADDED, std::bind(&SceneTab::OnComponentAdded, this, _2));
     SubscribeToEvent(GetScene(), E_COMPONENTREMOVED, std::bind(&SceneTab::OnComponentRemoved, this, _2));
@@ -260,8 +262,11 @@ bool SceneTab::SaveResource(const String& resourcePath)
 
 void SceneTab::CreateObjects()
 {
+    auto isTracking = undo_.IsTrackingEnabled();
+    undo_.SetTrackingEnabled(false);
     view_.CreateObjects();
     view_.GetCamera()->GetNode()->GetOrCreateComponent<DebugCameraController>();
+    undo_.SetTrackingEnabled(isTracking);
 }
 
 void SceneTab::Select(Node* node)
@@ -505,6 +510,10 @@ void SceneTab::RenderNodeTree(Node* node)
 
 void SceneTab::LoadProject(const JSONValue& scene)
 {
+    undo_.Clear();
+    auto isTracking = undo_.IsTrackingEnabled();
+    undo_.SetTrackingEnabled(false);
+
     id_ = StringHash(ToUInt(scene["id"].GetString(), 16));
     LoadResource(scene["path"].GetString());
 
@@ -521,7 +530,7 @@ void SceneTab::LoadProject(const JSONValue& scene)
     settings_->LoadProject(scene["settings"]);
     effectSettings_->LoadProject(scene["effects"]);
 
-    undo_.Clear();
+    undo_.SetTrackingEnabled(isTracking);
 }
 
 void SceneTab::SaveProject(JSONValue& tab)

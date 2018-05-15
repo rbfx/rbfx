@@ -617,7 +617,11 @@ public:
     void Connect(Gizmo* gizmo);
 
     template<typename T, typename... Args>
-    void Track(Args... args) { currentFrameStates_.Push(SharedPtr<T>(new T(args...))); };
+    void Track(Args... args)
+    {
+        if (trackingEnabled_)
+            currentFrameStates_.Push(SharedPtr<T>(new T(args...)));
+    };
 
     /// Enables or disables tracking changes.
     void SetTrackingEnabled(bool enabled) { trackingEnabled_ = enabled; }
