@@ -194,6 +194,14 @@ inline unsigned NextPowerOfTwo(unsigned value)
     return ++value;
 }
 
+/// Round up or down to the closest power of two.
+inline unsigned ClosestPowerOfTwo(unsigned value)
+{
+    unsigned next = NextPowerOfTwo(value);
+    unsigned prev = next >> (unsigned)1;
+    return (value - prev) > (next - value) ? next : prev;
+}
+
 /// Return log base two or the MSB position of the given value.
 inline unsigned LogBaseTwo(unsigned value)
 {
