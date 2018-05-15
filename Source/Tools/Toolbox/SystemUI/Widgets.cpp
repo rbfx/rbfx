@@ -28,6 +28,7 @@
 #include <Urho3D/SystemUI/SystemUI.h>
 
 using namespace Urho3D;
+using namespace ui::litterals;
 
 namespace ImGui
 {
@@ -150,21 +151,6 @@ bool CollapsingHeaderSimple(const char* label, ImGuiTreeNodeFlags flags)
     return open;
 }
 
-float ScaleX(float x)
-{
-    return x * ui::GetIO().DisplayFramebufferScale.x;
-}
-
-float ScaleY(float y)
-{
-    return y * ui::GetIO().DisplayFramebufferScale.y;
-}
-
-ImVec2 Scale(ImVec2 value)
-{
-    return value * ui::GetIO().DisplayFramebufferScale;
-}
-
 bool ToolbarButton(const char* label)
 {
     auto& g = *ui::GetCurrentContext();
@@ -209,7 +195,7 @@ bool MaskSelector(unsigned int* mask)
             }
 
             ui::PushID(bitMask);
-            if (ui::Button("", ui::Scale({8, 9})))
+            if (ui::Button("", {8_dpx, 9_dpy}))
             {
                 modified = true;
                 *mask ^= bitMask;
@@ -222,7 +208,7 @@ bool MaskSelector(unsigned int* mask)
         }
         ui::NewLine();
         if (row < 1)
-            ui::SetCursorPos({pos.x, pos.y + ui::ScaleY(9)});
+            ui::SetCursorPos({pos.x, pos.y + 9_dpy});
     }
 
     return modified;
@@ -433,20 +419,6 @@ bool TransformRect(Urho3D::IntRect& inOut, Urho3D::IntRect& delta, TransformSele
 SystemUI* GetSystemUI()
 {
     return static_cast<SystemUI*>(ui::GetIO().UserData);
-}
-
-ImVec2 GetPixelPerfectDPIScale()
-{
-    auto nearestPowerOf2 = [](int num) -> int {
-        int n = 1;
-        while (n < num)
-            n <<= 1;
-        return n;
-    };
-    ImVec2 ppScale = ui::GetIO().DisplayFramebufferScale;   // DPI scale
-    ppScale.x = nearestPowerOf2(RoundToInt(ppScale.x));
-    ppScale.y = nearestPowerOf2(RoundToInt(ppScale.y));
-    return ppScale;
 }
 
 bool EditorToolbarButton(const char* text, const char* tooltip, bool active)

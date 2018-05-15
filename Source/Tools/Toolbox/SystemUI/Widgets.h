@@ -81,12 +81,6 @@ int DoubleClickSelectable(const char* label, bool* p_selected, ImGuiSelectableFl
 int DoubleClickSelectable(const char* label, bool selected = false, ImGuiSelectableFlags flags = 0, const ImVec2& size = ImVec2(0,0));
 /// Same as ImGui::CollapsingHeader(), except does not draw a frame and background.
 bool CollapsingHeaderSimple(const char* label, ImGuiTreeNodeFlags flags=0);
-/// Return value scaled according to DisplayFramebufferScale.
-float ScaleX(float x);
-/// Return value scaled according to DisplayFramebufferScale.
-float ScaleY(float y);
-/// Return value scaled according to DisplayFramebufferScale.
-ImVec2 Scale(ImVec2 value);
 /// A button that perfectly fits in menu bar.
 bool ToolbarButton(const char* label);
 /// Display help tooltip when alt is pressed.
@@ -101,8 +95,6 @@ bool TransformRect(Urho3D::IntRect& inOut, TransformSelectorFlags flags = TSF_NO
 bool TransformRect(Urho3D::IntRect& inOut, Urho3D::IntRect& delta, TransformSelectorFlags flags = TSF_NONE);
 /// Return current SystemUI instance.
 Urho3D::SystemUI* GetSystemUI();
-/// Return a vector for scaling images pixel-perfectly. Scaling is done in increments of power of 2.
-ImVec2 GetPixelPerfectDPIScale();
 /// Create a optionally toggleable toolbar button with a tooltip.
 bool EditorToolbarButton(const char* text, const char* tooltip=nullptr, bool active=false);
 

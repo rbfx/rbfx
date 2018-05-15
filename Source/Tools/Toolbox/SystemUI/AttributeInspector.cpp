@@ -46,6 +46,7 @@
 #include <Urho3D/Graphics/Graphics.h>
 #include <Graphics/SceneView.h>
 
+using namespace ui::litterals;
 
 namespace Urho3D
 {
@@ -763,7 +764,7 @@ bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, 
     };
 
     SharedPtr<Resource> resource;
-    ui::PushItemWidth(ui::ScaleX(-30));
+    ui::PushItemWidth(-30_dpx);
     ui::InputText("", (char*)name.CString(), name.Length(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
     if (handleDragAndDrop(type, resource))
     {
@@ -898,7 +899,7 @@ bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, 
             NextColumn();
             String techName = tech.technique_->GetName();
             if (material->GetNumTechniques() > 1)
-                ui::PushItemWidth(ui::ScaleX(-30));
+                ui::PushItemWidth(-30_dpx);
             ui::InputText("###techniqueName_", (char*)techName.CString(), techName.Length(),
                 ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
             if (material->GetNumTechniques() > 1)
