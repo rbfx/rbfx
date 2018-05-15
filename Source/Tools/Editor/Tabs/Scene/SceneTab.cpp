@@ -261,7 +261,7 @@ bool SceneTab::SaveResource(const String& resourcePath)
 void SceneTab::CreateObjects()
 {
     view_.CreateObjects();
-    view_.GetCamera()->GetNode()->CreateComponent<DebugCameraController>();
+    view_.GetCamera()->GetNode()->GetOrCreateComponent<DebugCameraController>();
 }
 
 void SceneTab::Select(Node* node)
