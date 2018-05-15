@@ -256,6 +256,9 @@ void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
                 else if (filter_.front() && !info.name_.Contains(&filter_.front(), false))
                     hidden = true;
 
+                if (info.type_ == VAR_BUFFER || info.type_ == VAR_VARIANTVECTOR || info.type_ == VAR_VARIANTMAP)
+                    hidden = true;
+
                 // Customize attribute rendering
                 {
                     using namespace AttributeInspectorAttribute;
@@ -727,7 +730,6 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
             break;
         }
         default:
-            ui::TextUnformatted("Unhandled attribute type.");
             break;
         }
     }
