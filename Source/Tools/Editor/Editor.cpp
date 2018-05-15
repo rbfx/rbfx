@@ -42,8 +42,12 @@ namespace Urho3D
 
 Editor::Editor(Context* context)
     : Application(context)
+#if URHO3D_PLUGINS_NATIVE
     , pluginsNative_(context)
+#endif
+#if URHO3D_PLUGINS_CSHARP
     , pluginsManaged_(context)
+#endif
 {
 }
 

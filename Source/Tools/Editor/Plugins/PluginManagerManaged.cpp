@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#if URHO3D_PLUGINS_CSHARP
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
@@ -124,3 +125,5 @@ PluginManager::PluginPathType PluginManagerManaged::IsPluginPath(const String& p
 }
 
 }
+
+#endif

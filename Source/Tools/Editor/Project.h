@@ -27,8 +27,6 @@
 
 #include "Assets/AssetConverter.h"
 #include "IDPool.h"
-#include "Plugins/PluginManagerNative.h"
-#include "Plugins/PluginManagerManaged.h"
 
 
 namespace Urho3D

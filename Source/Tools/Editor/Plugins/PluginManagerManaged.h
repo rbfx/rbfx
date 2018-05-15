@@ -22,6 +22,7 @@
 
 #pragma once
 
+#if URHO3D_PLUGINS_CSHARP
 
 #include "PluginManager.h"
 
@@ -51,3 +52,5 @@ protected:
 };
 
 }
+
+#endif
