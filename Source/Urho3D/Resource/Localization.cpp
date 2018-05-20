@@ -127,7 +127,7 @@ void Localization::SetLanguage(const String& language)
     SetLanguage(index);
 }
 
-String Localization::Get(const String& id)
+String Localization::Get(const String& id, int index)
 {
     if (id.Empty())
         return String::EMPTY;
@@ -136,7 +136,20 @@ String Localization::Get(const String& id)
         URHO3D_LOGWARNING("Localization::Get(id): no loaded languages");
         return id;
     }
-    String result = strings_[StringHash(GetLanguage())][StringHash(id)];
+
+    if (index >= GetNumLanguages())
+    {
+        URHO3D_LOGWARNING("Localization::Get(id): invalid language index");
+        return id;
+    }
+
+    StringHash language;
+    if (index < 0)
+        language = GetLanguage();
+    else
+        language = languages_[index];
+
+    String result = strings_[language][StringHash(id)];
     if (result.Empty())
     {
         URHO3D_LOGWARNING("Localization::Get(\"" + id + "\") not found translation, language=\"" + GetLanguage() + "\"");

@@ -55,8 +55,8 @@ public:
     void SetLanguage(int index);
     /// Set current language.
     void SetLanguage(const String& language);
-    /// Return a string in the current language. Returns String::EMPTY if id is empty. Returns id if translation is not found and logs a warning.
-    String Get(const String& id);
+    /// Return a string in the current language. Returns String::EMPTY if id is empty. Returns id if translation is not found and logs a warning. Optionally specify index of lanuguage.
+    String Get(const String& id, int index=-1);
     /// Clear all loaded strings.
     void Reset();
     /// Load strings from JSONValue.
