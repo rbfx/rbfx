@@ -31,6 +31,7 @@
 #include "Widgets.h"
 #include "UITab.h"
 
+using namespace ui::litterals;
 
 namespace Urho3D
 {
@@ -123,6 +124,49 @@ void UITab::RenderNodeTree(UIElement* element)
         }
 
         ui::TreePop();
+    }
+
+    if (ui::BeginDragDropSource())
+    {
+        ui::SetDragDropVariant("ptr", (void*)element);
+        ui::Text("%s", name.CString());
+        ui::EndDragDropSource();
+    }
+
+    if (ui::BeginDragDropTarget())
+    {
+        // Reparent by drag&drop, insert as first item
+        const Variant& payload = ui::AcceptDragDropVariant("ptr");
+        if (!payload.IsEmpty())
+        {
+            SharedPtr<UIElement> child((UIElement*)payload.GetVoidPtr());
+            if (child.NotNull() && child != element)
+            {
+                child->Remove();    // Needed for reordering under the same parent.
+                element->InsertChild(0, child);
+            }
+        }
+        ui::EndDragDropTarget();
+    }
+
+    ImRect bb{ui::GetItemRectMin(), ui::GetItemRectMax()};
+    bb.Min.y = bb.Max.y;
+    bb.Max.y += 2_dpy;
+    if (ui::BeginDragDropTargetCustom(bb, ui::GetID("reorder")))
+    {
+        // Reparent by drag&drop between elements, insert after current item
+        const Variant& payload = ui::AcceptDragDropVariant("ptr");
+        if (!payload.IsEmpty())
+        {
+            SharedPtr<UIElement> child((UIElement*)payload.GetVoidPtr());
+            if (child.NotNull() && child != element)
+            {
+                child->Remove();    // Needed for reordering under the same parent.
+                auto index = element->GetParent()->FindChild(element) + 1;
+                element->GetParent()->InsertChild(index, child);
+            }
+        }
+        ui::EndDragDropTarget();
     }
 }
 
