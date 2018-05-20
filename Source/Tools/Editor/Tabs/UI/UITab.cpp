@@ -53,8 +53,6 @@ UITab::UITab(Urho3D::Context* context, Urho3D::StringHash id, const Urho3D::Stri
     rootElement_->SetRenderTexture(texture_);
     rootElement_->SetEnabled(true);
 
-    UpdateViewRect();                                                 // Initializes view texture
-
     undo_.Connect(rootElement_);
     undo_.Connect(&inspector_);
 
