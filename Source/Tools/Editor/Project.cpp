@@ -54,11 +54,6 @@ Project::~Project()
     }
 }
 
-bool Project::CreateProject(const String& projectPath)
-{
-    return false;
-}
-
 bool Project::LoadProject(const String& filePath)
 {
     if (!projectFilePath_.Empty())

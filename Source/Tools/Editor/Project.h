@@ -40,8 +40,6 @@ public:
     explicit Project(Context* context);
     /// Destruct.
     ~Project() override;
-    /// Create a new project. Returns true if successful. Overwrites specified path unconditionally.
-    bool CreateProject(const String& projectPath);
     /// Load existing project. Returns true if project was successfully loaded.
     bool LoadProject(const String& projectPath);
     /// Create a new project. Returns true if successful. Overwrites specified path unconditionally.
