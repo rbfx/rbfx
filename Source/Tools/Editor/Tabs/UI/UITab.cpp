@@ -296,7 +296,10 @@ void UITab::LoadResource(const String& resourcePath)
     if (xml->Load(*cache->GetFile(resourcePath)))
     {
         Vector<SharedPtr<UIElement>> children = rootElement_->GetChildren();
-        auto child = rootElement_->CreateChild(xml->GetRoot().GetAttribute("type"));
+        String type = xml->GetRoot().GetAttribute("type");
+        if (type.Empty())
+            type = "UIElement";
+        auto* child = rootElement_->CreateChild(StringHash(type));
         if (child->LoadXML(xml->GetRoot()))
         {
             child->SetStyleAuto();
