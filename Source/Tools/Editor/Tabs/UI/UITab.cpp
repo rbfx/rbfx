@@ -346,10 +346,23 @@ bool UITab::SaveResource(const String& resourcePath)
         // Remove internal UI elements
         auto result = root.SelectPrepared(XPathQuery("//element[@internal=\"true\"]"));
         for (auto el = result.FirstResult(); el.NotNull(); el = el.NextResult())
-            el.GetParent().RemoveChild(el);
+        {
+            // Remove only top level internal elements.
+            bool internalParent = false;
+            auto parent = el.GetParent();
+            do
+            {
+                internalParent = parent.HasAttribute("internal") &&
+                    parent.GetAttribute("internal") == "true";
+                parent = parent.GetParent();
+            } while (!internalParent && parent.NotNull());
+
+            if (!internalParent)
+                el.Remove();
+        }
 
         // Remove style="none"
-        root.SelectPrepared(XPathQuery("//element[@style=\"none\"]"));
+        result = root.SelectPrepared(XPathQuery("//element[@style=\"none\"]"));
         for (auto el = result.FirstResult(); el.NotNull(); el = el.NextResult())
             el.RemoveAttribute("style");
 
