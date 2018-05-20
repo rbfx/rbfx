@@ -33,6 +33,10 @@ void Urho3DCustomPassLate::NamespaceStart()
     // Fix name to property-compatible as this can be turned to a property.
     if (auto* entity = generator->GetSymbol("Urho3D::Menu::ShowPopup"))
         entity->name_ = "GetShowPopup";
+
+    // cppast bug workaround
+    if (auto* entity = generator->GetSymbol("Urho3D::Localization::Get(Urho3D::String const&,int)"))
+        entity->children_[1]->defaultValue_ = "-1";
 }
 
 bool Urho3DCustomPassLate::Visit(MetaEntity* entity, cppast::visitor_info info)
