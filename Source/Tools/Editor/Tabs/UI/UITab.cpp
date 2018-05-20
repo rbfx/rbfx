@@ -73,7 +73,7 @@ void UITab::RenderNodeTree()
 
 void UITab::RenderNodeTree(UIElement* element)
 {
-    WeakPtr<UIElement> elementRef(element);
+    SharedPtr<UIElement> elementRef(element);
     String name = element->GetName();
     String type = element->GetTypeName();
     String tooltip = "Type: " + type;
@@ -95,7 +95,32 @@ void UITab::RenderNodeTree(UIElement* element)
     ui::Image(element->GetTypeName());
     ui::SameLine();
 
-    if (ui::TreeNodeEx(element, flags, "%s", name.CString()))
+    auto treeExpanded = ui::TreeNodeEx(element, flags, "%s", name.CString());
+
+    if (ui::BeginDragDropSource())
+    {
+        ui::SetDragDropVariant("ptr", (void*)element);
+        ui::Text("%s", name.CString());
+        ui::EndDragDropSource();
+    }
+
+    if (ui::BeginDragDropTarget())
+    {
+        // Reparent by drag&drop, insert as first item
+        const Variant& payload = ui::AcceptDragDropVariant("ptr");
+        if (!payload.IsEmpty())
+        {
+            SharedPtr<UIElement> child((UIElement*)payload.GetVoidPtr());
+            if (child.NotNull() && child != element)
+            {
+                child->Remove();    // Needed for reordering under the same parent.
+                element->InsertChild(0, child);
+            }
+        }
+        ui::EndDragDropTarget();
+    }
+
+    if (treeExpanded)
     {
         if (ui::IsItemHovered())
             ui::SetTooltip("%s", tooltip.CString());
@@ -124,29 +149,6 @@ void UITab::RenderNodeTree(UIElement* element)
         }
 
         ui::TreePop();
-    }
-
-    if (ui::BeginDragDropSource())
-    {
-        ui::SetDragDropVariant("ptr", (void*)element);
-        ui::Text("%s", name.CString());
-        ui::EndDragDropSource();
-    }
-
-    if (ui::BeginDragDropTarget())
-    {
-        // Reparent by drag&drop, insert as first item
-        const Variant& payload = ui::AcceptDragDropVariant("ptr");
-        if (!payload.IsEmpty())
-        {
-            SharedPtr<UIElement> child((UIElement*)payload.GetVoidPtr());
-            if (child.NotNull() && child != element)
-            {
-                child->Remove();    // Needed for reordering under the same parent.
-                element->InsertChild(0, child);
-            }
-        }
-        ui::EndDragDropTarget();
     }
 
     ImRect bb{ui::GetItemRectMin(), ui::GetItemRectMax()};
