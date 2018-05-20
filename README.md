@@ -46,7 +46,7 @@ Urho3D bundles the following third-party libraries:
 - easy_profiler 2.0.0 (https://github.com/yse/easy_profiler)
 - nativefiledialog (https://github.com/mlabbe/nativefiledialog)
 - IconFontCppHeaders (https://github.com/juliettef/IconFontCppHeaders)
-- ImGuizmo (https://github.com/CedricGuillemet/ImGuizmo)
+- ImGuizmo 1.61 (https://github.com/CedricGuillemet/ImGuizmo)
 - deboost.context (https://github.com/septag/deboost.context)
 - cr (https://github.com/fungos/cr)
 - crunch (https://github.com/Unity-Technologies/crunch/)
