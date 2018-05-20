@@ -509,7 +509,6 @@ void UITab::SaveProject(JSONValue& tab)
     tab["type"] = "ui";
     tab["id"] = id_.ToString();
     tab["path"] = path_;
-    Tab::SaveResource();
 }
 
 void UITab::LoadProject(const JSONValue& tab)

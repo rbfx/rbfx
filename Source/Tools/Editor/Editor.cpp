@@ -261,12 +261,18 @@ void Editor::RenderMenuBar()
                         nfdchar_t* savePath = nullptr;
                         if (NFD_SaveDialog("project", "", &savePath) == NFD_OKAY)
                         {
+                            for (auto& tab : tabs_)
+                                tab->SaveResource();
                             project_->SaveProject(savePath);
                             NFD_FreePath(savePath);
                         }
                     }
                     else
+                    {
+                        for (auto& tab : tabs_)
+                            tab->SaveResource();
                         project_->SaveProject();
+                    }
                 }
 
                 if (ui::MenuItem("Save Project As"))
@@ -274,6 +280,8 @@ void Editor::RenderMenuBar()
                     nfdchar_t* savePath = nullptr;
                     if (NFD_SaveDialog("project", "", &savePath) == NFD_OKAY)
                     {
+                        for (auto& tab : tabs_)
+                            tab->SaveResource();
                         project_->SaveProject(savePath);
                         NFD_FreePath(savePath);
                     }

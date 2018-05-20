@@ -547,7 +547,6 @@ void SceneTab::SaveProject(JSONValue& tab)
 
     settings_->SaveProject(tab["settings"]);
     effectSettings_->SaveProject(tab["effects"]);
-    Tab::SaveResource();
 }
 
 void SceneTab::OnActiveUpdate()
