@@ -827,8 +827,8 @@ VariantMap Engine::ParseParameters(const Vector<String>& arguments)
     {
         if (arguments[i].Length() > 1 && arguments[i][0] == '-')
         {
-            String argument = arguments[i].Substring(1).ToLower();
-            String value = i + 1 < arguments.Size() ? arguments[i + 1] : String::EMPTY;
+            auto argument = arguments[i].Substring(1).ToLower();
+            const auto& value = i + 1 < arguments.Size() ? arguments[i + 1] : String::EMPTY;
 
             if (argument == "headless")
                 ret[EP_HEADLESS] = true;
