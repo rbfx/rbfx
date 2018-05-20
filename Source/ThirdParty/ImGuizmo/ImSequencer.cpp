@@ -1,7 +1,7 @@
 #include "ImSequencer.h"
 #include "imgui.h"
 #include "imgui_internal.h"
-
+#include <cstdlib>
 
 namespace ImSequencer
 {
@@ -234,7 +234,7 @@ namespace ImSequencer
 			{
 				ImGui::CaptureMouseFromApp();
 				int diffFrame = (cx - movingPos) / framePixelWidth;
-				if (abs(diffFrame) > 0)
+				if (std::abs(diffFrame) > 0)
 				{
 					int *start, *end;
 					sequence->Get(movingEntry, &start, &end, NULL, NULL);
