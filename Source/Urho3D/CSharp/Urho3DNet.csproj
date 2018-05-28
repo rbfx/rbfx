@@ -3,7 +3,7 @@
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <BuildDir Condition="'$(CMAKE_BINARY_DIR)' == ''">..\..\..\..\build</BuildDir>
+    <BuildDir Condition="'$(CMAKE_BINARY_DIR)' == ''">..\..\..\build</BuildDir>
     <BuildDir Condition="'$(CMAKE_BINARY_DIR)' != ''">$(CMAKE_BINARY_DIR)</BuildDir>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
     <ProjectGuid>{38913C81-4703-4652-B17B-823BAA9B6508}</ProjectGuid>
@@ -46,8 +46,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CSharp\**\*.cs" />
-    <Compile Include="$(BuildDir)\Source\Urho3D\Urho3DNet\CSharp\**\*.cs" />
+    <Compile Include="**\*.cs" />
+    <Compile Include="$(BuildDir)\CSharpBindings\Urho3D\CSharp\**\*.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.

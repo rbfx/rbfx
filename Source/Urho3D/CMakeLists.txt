@@ -229,9 +229,7 @@ if (URHO3D_CSHARP)
         endif ()
         install (FILES ${MONO_RUNTIME_SHARED} DESTINATION ${DEST_BIN_DIR})
     endif ()
-    get_target_property(SOURCE_DIR Urho3D SOURCE_DIR)
-    get_filename_component(SOURCE_DIR ${SOURCE_DIR} DIRECTORY)
-    csharp_bind_target(TARGET Urho3D SOURCE_DIR ${SOURCE_DIR})
+    csharp_bind_target(TARGET Urho3D)
 endif ()
 
 # SDK installation

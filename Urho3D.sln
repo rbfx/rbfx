@@ -1,10 +1,12 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Editor", "Source/Tools/EditorN/Editor.csproj", "{8751C68E-1EA4-4F42-A6FA-0664A6988E79}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "102_CSharpProject", "Source\Samples\102_CSharpProject\102_CSharpProject.csproj", "{0A84D2EB-5143-4B84-8287-09901C767178}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{539BD5F3-2831-4E54-BE0D-719C40583192}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Urho3DNet", "Source\CSharp\CSharp\Urho3D\Urho3DNet.csproj", "{38913C81-4703-4652-B17B-823BAA9B6508}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Urho3DNet", "Source\Urho3D\CSharp\Urho3DNet.csproj", "{38913C81-4703-4652-B17B-823BAA9B6508}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -20,10 +22,6 @@ Global
 		{0A84D2EB-5143-4B84-8287-09901C767178}.Debug|Any CPU.Build.0 = Debug|x64
 		{0A84D2EB-5143-4B84-8287-09901C767178}.Release|Any CPU.ActiveCfg = Release|x64
 		{0A84D2EB-5143-4B84-8287-09901C767178}.Release|Any CPU.Build.0 = Release|x64
-		{38913C81-4703-4652-B17B-823BAA9B6508}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{38913C81-4703-4652-B17B-823BAA9B6508}.Debug|Any CPU.Build.0 = Debug|x64
-		{38913C81-4703-4652-B17B-823BAA9B6508}.Release|Any CPU.ActiveCfg = Release|x64
-		{38913C81-4703-4652-B17B-823BAA9B6508}.Release|Any CPU.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{0A84D2EB-5143-4B84-8287-09901C767178} = {539BD5F3-2831-4E54-BE0D-719C40583192}

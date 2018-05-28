@@ -3,7 +3,7 @@
   "namespaces": {
     "SDL": {
       "parse": {
-        "ThirdParty/SDL/include": {
+        "../ThirdParty/SDL/include": {
           "include": [
             "SDL/SDL_scancode.h",
             "SDL/SDL_joystick.h",
@@ -22,7 +22,7 @@
     },
     "Urho3D": {
       "parse": {
-        "Urho3D": {
+        ".": {
           "include": [
             "Math/MathDefs.h",
             "Math/Ray.h",
@@ -61,7 +61,7 @@
             "IO/FileSystem.h"
           ]
         },
-        "Tools/Editor": {
+        "../Tools/Editor": {
           "include": [
             "EditorEvents.h"
           ]

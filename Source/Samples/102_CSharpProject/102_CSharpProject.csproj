@@ -46,7 +46,7 @@
     <Compile Include="Program.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\CSharp\CSharp\Urho3D\Urho3DNet.csproj">
+    <ProjectReference Include="..\..\Urho3D\CSharp\Urho3DNet.csproj">
       <Project>{38913c81-4703-4652-b17b-823baa9b6508}</Project>
       <Name>Urho3DNet</Name>
     </ProjectReference>

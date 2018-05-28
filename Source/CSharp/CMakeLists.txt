@@ -81,11 +81,9 @@ macro (csharp_bind_target)
         return ()
     endif ()
 
-    cmake_parse_arguments(BIND "INTERNAL;EXTERNAL" "TARGET;SOURCE_DIR;CSHARP_DIR" "" ${ARGN})
+    cmake_parse_arguments(BIND "INTERNAL;EXTERNAL" "TARGET" "" ${ARGN})
 
-    if (NOT BIND_SOURCE_DIR)
-        get_target_property(BIND_SOURCE_DIR ${BIND_TARGET} SOURCE_DIR)
-    endif ()
+    get_target_property(BIND_SOURCE_DIR ${BIND_TARGET} SOURCE_DIR)
 
     if (NOT INTERNAL AND NOT EXTERNAL)
         if (BUILD_SHARED_LIBS)
@@ -95,23 +93,17 @@ macro (csharp_bind_target)
         endif ()
     endif ()
 
-    if (NOT BIND_CSHARP_DIR)
-        set (BIND_CSHARP_DIR ${CSHARP_SOURCE_DIR}/CSharp/${BIND_TARGET})
-        if (NOT IS_DIRECTORY ${BIND_CSHARP_DIR})
-            unset (BIND_CSHARP_DIR)
-        endif ()
+    set (BIND_CSHARP_DIR ${BIND_SOURCE_DIR}/CSharp)
+    if (NOT IS_DIRECTORY ${BIND_CSHARP_DIR})
+        unset (BIND_CSHARP_DIR)
     endif ()
 
     if (BIND_CSHARP_DIR)
-        set (RULES ${BIND_CSHARP_DIR}/config-csharp.json)
+        set (RULES ${BIND_CSHARP_DIR}/config.json)
     endif ()
 
     if (NOT EXISTS ${RULES})
-        set (RULES ${BIND_SOURCE_DIR}/config-csharp.json)
-    endif ()
-
-    if (NOT EXISTS ${RULES})
-        message(FATAL_ERROR "config-csharp.json was not found. It must reside in BIND_SOURCE_DIR or BIND_CSHARP_DIR.")
+        message(FATAL_ERROR "config.json was not found. It must reside in BIND_SOURCE_DIR or BIND_CSHARP_DIR.")
     endif ()
 
     # Parse bindings using same compile definitions as built target
@@ -150,8 +142,8 @@ macro (csharp_bind_target)
         list (APPEND GENERATOR_OPTIONS --static)
     endif ()
 
-    set (BINDINGS_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}Net)
-    set (COMMON_DIR ${CSHARP_SOURCE_DIR}/CSharp/Common)
+    set (BINDINGS_OUTPUT_DIR ${CMAKE_BINARY_DIR}/CSharpBindings/${BIND_TARGET})
+    set (COMMON_DIR ${CSHARP_SOURCE_DIR}/Common)
     list (APPEND GENERATOR_OPTIONS ${RULES} ${BIND_SOURCE_DIR} ${BINDINGS_OUTPUT_DIR})
 
     set (CSHARP_BINDING_GENERATOR_OPTIONS ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp_generator_commandline.txt)
