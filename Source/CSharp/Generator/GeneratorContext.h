@@ -59,7 +59,6 @@ struct NamespaceRules
     };
 
     std::string defaultNamespace_;
-    std::unordered_map<std::string, TypeMap> typeMaps_;
     std::vector<ParsePath> parsePaths_;
     IncludedChecker inheritable_;
     IncludedChecker symbolChecker_;
@@ -120,6 +119,7 @@ public:
     std::vector<std::string> extraMonoCallInitializers_;
     std::unordered_map<std::string, std::string> defaultValueRemaps_;
     std::vector<std::string> forceCompileTimeConstants_;
+    std::unordered_map<std::string, TypeMap> typeMaps_;
 };
 
 extern GeneratorContext* generator;

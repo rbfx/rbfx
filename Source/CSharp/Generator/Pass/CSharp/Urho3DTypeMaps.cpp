@@ -175,7 +175,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
             map.pInvokeToCSTemplate_ = fmt::format("MarshalTools.ToObjectArray<{csType}>({{value}})", FMT_CAPTURE(csType));
         }
         map.isValueType_ = true;
-        generator->currentNamespace_->typeMaps_[typeName] = map;
+        generator->typeMaps_[typeName] = map;
     }
 }
 

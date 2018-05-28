@@ -138,73 +138,108 @@ bool GeneratorContext::LoadRules(const std::string& jsonPath)
                 parserRules.includes_.emplace_back(jt->GetString());
         }
 
-        if (nsRules.HasMember("typemaps"))
+        rules_.emplace_back(std::move(parserRules));
+    }
+
+    // typemaps
+    if (jsonRules_.HasMember("typemaps"))
+    {
+        auto& typeMaps = jsonRules_["typemaps"];
+
+        // Typemap const char* strings
         {
-            auto& typeMaps = nsRules["typemaps"];
+            rapidjson::Value stringMap(rapidjson::kObjectType);
+            stringMap.AddMember("type", "char const*", jsonRules_.GetAllocator());
+            stringMap.AddMember("ptype", "string", jsonRules_.GetAllocator());
+            stringMap.AddMember("cstype", "string", jsonRules_.GetAllocator());
+            stringMap.AddMember("cpp_to_c", "{value}", jsonRules_.GetAllocator());
+            stringMap.AddMember("is_value_type", true, jsonRules_.GetAllocator());
+            typeMaps.PushBack(stringMap, jsonRules_.GetAllocator());
+        }
 
-            // Typemap const char* strings
-            {
-                rapidjson::Value stringMap(rapidjson::kObjectType);
-                stringMap.AddMember("type", "char const*", jsonRules_.GetAllocator());
-                stringMap.AddMember("ptype", "string", jsonRules_.GetAllocator());
-                stringMap.AddMember("cstype", "string", jsonRules_.GetAllocator());
-                stringMap.AddMember("cpp_to_c", "{value}", jsonRules_.GetAllocator());
-                stringMap.AddMember("is_value_type", true, jsonRules_.GetAllocator());
-                typeMaps.PushBack(stringMap, jsonRules_.GetAllocator());
-            }
-
+        std::function<void(rapidjson::Value&, const std::string&)> parseTypemaps = [&](
+            rapidjson::Value& typeMaps, const std::string& jsonPath) {
             for (auto jt = typeMaps.Begin(); jt != typeMaps.End(); ++jt)
             {
                 const auto& typeMap = *jt;
-                TypeMap map;
-                map.cppType_ = typeMap["type"].GetString();
-                if (typeMap.HasMember("ctype"))
-                    map.cType_ = typeMap["ctype"].GetString();
-                if (typeMap.HasMember("cstype"))
-                    map.csType_ = typeMap["cstype"].GetString();
-                map.pInvokeType_ = typeMap["ptype"].GetString();
-                map.isValueType_ = typeMap.HasMember("is_value_type") && typeMap["is_value_type"].GetBool();
 
-                if (map.cType_.empty())
-                    map.cType_ = map.cppType_;
-
-                if (map.csType_.empty())
-                    map.csType_ = map.pInvokeType_;
-
-                if (typeMap.HasMember("cpp_to_c"))
-                    map.cppToCTemplate_ = typeMap["cpp_to_c"].GetString();
-
-                if (typeMap.HasMember("c_to_cpp"))
-                    map.cToCppTemplate_ = typeMap["c_to_cpp"].GetString();
-
-                if (typeMap.HasMember("pinvoke_to_cs"))
-                    map.pInvokeToCSTemplate_ = typeMap["pinvoke_to_cs"].GetString();
-
-                if (typeMap.HasMember("cs_to_pinvoke"))
-                    map.csToPInvokeTemplate_ = typeMap["cs_to_pinvoke"].GetString();
-
-                if (typeMap.HasMember("marshal_attribute"))
-                    map.marshalAttribute_ = typeMap["marshal_attribute"].GetString();
-
-                // Doctor string typemaps with some internal details.
-                if (map.csType_ == "string")
+                if (typeMap.GetType() == rapidjson::kStringType)
                 {
-                    std::string useConverter;
-                    if (map.cppType_ == "char const*")
-                        useConverter = "MonoStringHolder";
+                    // String contains a path relative to config json file. This file defines array of shared typemaps
+                    std::string newJsonPath;
+                    auto slashPos = jsonPath.rfind("/");
+                    if (slashPos != std::string::npos)
+                        newJsonPath = jsonPath.substr(0, slashPos + 1) + typeMap.GetString();
                     else
-                        useConverter = map.cppType_;
+                        newJsonPath = typeMap.GetString();
 
-                    map.cType_ = "MonoString*";
-                    map.cppToCTemplate_ = fmt::format("CSharpConverter<MonoString>::ToCSharp({})", map.cppToCTemplate_);
-                    map.cToCppTemplate_ = fmt::format(map.cToCppTemplate_, fmt::arg("value", fmt::format(
-                        "CSharpConverter<MonoString>::FromCSharp<{}>({{value}})", useConverter)));
+                    std::ifstream newFp(newJsonPath);
+                    std::stringstream newBuffer;
+                    newBuffer << newFp.rdbuf();
+                    auto newJson = newBuffer.str();
+                    rapidjson::Document newJsonRules;
+                    newJsonRules.Parse<rapidjson::kParseCommentsFlag | rapidjson::kParseTrailingCommasFlag>(
+                        newJson.c_str(), newJson.length());
+
+                    parseTypemaps(newJsonRules, newJsonPath);
                 }
+                else if (typeMap.GetType() == rapidjson::kObjectType)
+                {
+                    // Object denotes typemaps themselves
+                    TypeMap map;
+                    map.cppType_ = typeMap["type"].GetString();
+                    if (typeMap.HasMember("ctype"))
+                        map.cType_ = typeMap["ctype"].GetString();
+                    if (typeMap.HasMember("cstype"))
+                        map.csType_ = typeMap["cstype"].GetString();
+                    map.pInvokeType_ = typeMap["ptype"].GetString();
+                    map.isValueType_ = typeMap.HasMember("is_value_type") && typeMap["is_value_type"].GetBool();
 
-                parserRules.typeMaps_[map.cppType_] = map;
+                    if (map.cType_.empty())
+                        map.cType_ = map.cppType_;
+
+                    if (map.csType_.empty())
+                        map.csType_ = map.pInvokeType_;
+
+                    if (typeMap.HasMember("cpp_to_c"))
+                        map.cppToCTemplate_ = typeMap["cpp_to_c"].GetString();
+
+                    if (typeMap.HasMember("c_to_cpp"))
+                        map.cToCppTemplate_ = typeMap["c_to_cpp"].GetString();
+
+                    if (typeMap.HasMember("pinvoke_to_cs"))
+                        map.pInvokeToCSTemplate_ = typeMap["pinvoke_to_cs"].GetString();
+
+                    if (typeMap.HasMember("cs_to_pinvoke"))
+                        map.csToPInvokeTemplate_ = typeMap["cs_to_pinvoke"].GetString();
+
+                    if (typeMap.HasMember("marshal_attribute"))
+                        map.marshalAttribute_ = typeMap["marshal_attribute"].GetString();
+
+                    // Doctor string typemaps with some internal details.
+                    if (map.csType_ == "string")
+                    {
+                        std::string useConverter;
+                        if (map.cppType_ == "char const*")
+                            useConverter = "MonoStringHolder";
+                        else
+                            useConverter = map.cppType_;
+
+                        map.cType_ = "MonoString*";
+                        map.cppToCTemplate_ = fmt::format("CSharpConverter<MonoString>::ToCSharp({})",
+                                                          map.cppToCTemplate_);
+                        map.cToCppTemplate_ = fmt::format(map.cToCppTemplate_, fmt::arg("value", fmt::format(
+                            "CSharpConverter<MonoString>::FromCSharp<{}>({{value}})", useConverter)));
+                    }
+
+                    typeMaps_[map.cppType_] = map;
+                }
+                else
+                    assert(false);
             }
-        }
-        rules_.emplace_back(std::move(parserRules));
+        };
+
+        parseTypemaps(typeMaps, jsonPath);
     }
 
     return true;
@@ -485,9 +520,8 @@ const TypeMap* GeneratorContext::GetTypeMap(const cppast::cpp_type& type, bool s
 
 const TypeMap* GeneratorContext::GetTypeMap(const std::string& typeName)
 {
-    assert(currentNamespace_ != nullptr);
-    auto it = currentNamespace_->typeMaps_.find(typeName);
-    if (it != currentNamespace_->typeMaps_.end())
+    auto it = typeMaps_.find(typeName);
+    if (it != typeMaps_.end())
         return &it->second;
 
     return nullptr;
