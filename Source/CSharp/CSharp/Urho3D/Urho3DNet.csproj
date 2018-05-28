@@ -3,6 +3,8 @@
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <BuildDir Condition="'$(CMAKE_BINARY_DIR)' == ''">..\..\..\..\build</BuildDir>
+    <BuildDir Condition="'$(CMAKE_BINARY_DIR)' != ''">$(CMAKE_BINARY_DIR)</BuildDir>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
     <ProjectGuid>{38913C81-4703-4652-B17B-823BAA9B6508}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -11,8 +13,8 @@
     <AssemblyName>Urho3DNet</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <OutputPath>..\..\..\..\build\</OutputPath>
-    <IntermediateOutputPath>..\..\..\..\build\obj\$(Configuration)\$(AssemblyName)</IntermediateOutputPath>
+    <OutputPath>$(BuildDir)\bin\</OutputPath>
+    <IntermediateOutputPath>$(BuildDir)\obj\$(Configuration)\$(AssemblyName)</IntermediateOutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
@@ -35,7 +37,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
-      <HintPath>..\..\..\..\build\System.Buffers\ref\netstandard1.1\System.Buffers.dll</HintPath>
+      <HintPath>$(BuildDir)\System.Buffers\ref\netstandard1.1\System.Buffers.dll</HintPath>
     </Reference>
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
@@ -45,7 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CSharp\**\*.cs" />
-    <Compile Include="..\..\..\..\build\Source\Urho3D\Urho3DNet\CSharp\**\*.cs" />
+    <Compile Include="$(BuildDir)\Source\Urho3D\Urho3DNet\CSharp\**\*.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.

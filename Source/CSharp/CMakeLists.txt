@@ -64,8 +64,15 @@ macro (add_target_csharp TARGET PROJECT_FILE)
     else ()
         set (CSHARP_BUILD_TYPE $<CONFIG>)
     endif ()
+
+    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set (CSHARP_PLATFORM /platform:x64)
+    else ()
+        set (CSHARP_PLATFORM /platform:x86)
+    endif ()
+
     add_custom_target(${TARGET} COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${PROJECT_FILE} ${ARGN}
-        /p:Configuration=${CSHARP_BUILD_TYPE} /consoleloggerparameters:ErrorsOnly)
+        /p:Configuration=${CSHARP_BUILD_TYPE} /p:Platform=${CSHARP_PLATFORM} /consoleloggerparameters:ErrorsOnly)
     set_target_properties(${TARGET} PROPERTIES EXCLUDE_FROM_ALL OFF)
 endmacro ()
 
@@ -73,7 +80,15 @@ macro (csharp_bind_target)
     cmake_parse_arguments(BIND "INTERNAL;EXTERNAL" "TARGET;SOURCE_DIR;CSHARP_DIR" "" ${ARGN})
 
     if (NOT BIND_SOURCE_DIR)
-        get_target_property(BIND_SOURCE_DIR ${BIND_TARGET} BIND_SOURCE_DIR)
+        get_target_property(BIND_SOURCE_DIR ${BIND_TARGET} SOURCE_DIR)
+    endif ()
+
+    if (NOT INTERNAL AND NOT EXTERNAL)
+        if (BUILD_SHARED_LIBS)
+            set (BIND_INTERNAL ON)
+        else ()
+            set (BIND_EXTERNAL ON)
+        endif ()
     endif ()
 
     if (NOT BIND_CSHARP_DIR)
