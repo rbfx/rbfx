@@ -49,6 +49,12 @@ namespace Urho3D.CSharp
             PerformInstanceSetup(instance, ownsInstance);
         }
 
+        // This method may be overriden in a partial class or a subclass in order to inject logic into object
+        // destruction.
+        protected virtual void OnDispose()
+        {
+        }
+
         public bool Equals(NativeObject other)
         {
             if (ReferenceEquals(null, other)) return false;

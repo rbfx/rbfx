@@ -14,6 +14,8 @@ namespace Urho3D
 
     public partial class Context
     {
+        public static Context Instance { get; private set; }
+
         static Context()
         {
             // Register engine API
@@ -37,6 +39,14 @@ namespace Urho3D
                 foreach (var pair in assembly.GetTypesWithAttribute<ObjectFactoryAttribute>())
                     RegisterFactory(pair.Item1, pair.Item2.Category);
             }
+
+            Instance = this;
+        }
+
+        protected override void OnDispose()
+        {
+            Instance = null;
+            InstanceCache.Dispose();
         }
 
         public void RegisterFactory<T>(string category = "") where T : Object

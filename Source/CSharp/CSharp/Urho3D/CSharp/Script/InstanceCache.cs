@@ -141,8 +141,14 @@ namespace Urho3D.CSharp
         {
             lock (_cache)
             {
-                foreach (var item in _cache)
-                    item.Value.Target?.Dispose();
+                var keyCollection = _cache.Keys;
+                var keys = new IntPtr[keyCollection.Count];
+                keyCollection.CopyTo(keys, 0);
+                foreach (var key in keys)
+                {
+                    var entry = _cache[key];
+                    entry.Target?.Dispose();
+                }
                 _cache.Clear();
             }
         }

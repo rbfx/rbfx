@@ -133,10 +133,13 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             {
                 printer_ << "if (Interlocked.Increment(ref DisposedCounter) == 1)";
                 printer_.Indent();
-                printer_ << "InstanceCache.Remove(NativeInstance);";
-                printer_ << baseName + "_destructor(NativeInstance, OwnsNativeInstance);";
+                {
+                    printer_ << "OnDispose();";
+                    printer_ << "InstanceCache.Remove(NativeInstance);";
+                    printer_ << baseName + "_destructor(NativeInstance, OwnsNativeInstance);";
+                    printer_ << "NativeInstance = IntPtr.Zero;";
+                }
                 printer_.Dedent();
-                printer_ << "NativeInstance = IntPtr.Zero;";
             }
             printer_.Dedent();
             printer_ << "";
