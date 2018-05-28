@@ -54,26 +54,64 @@ using namespace Urho3D;
 
 int main(int argc, char* argv[])
 {
-    std::string rulesFile;
-    std::string sourceDir;
-    std::string outputDirCpp;
-    std::string outputDirCs;
-    std::vector<std::string> includes;
-    std::vector<std::string> defines;
-    std::vector<std::string> options;
+    struct CommandLineOptions
+    {
+        std::string rulesFile;
+        std::string sourceDir;
+        std::string outputDirCpp;
+        std::string outputDirCs;
+        std::vector<std::string> includes;
+        std::vector<std::string> defines;
+        std::vector<std::string> options;
+    };
 
     generator = new GeneratorContext();
 
     CLI::App app{"CSharp bindings generator"};
 
-    app.add_flag("--static", generator->isStatic_, "Generate bindings for static library.");
-    app.add_option("-I", includes, "Target include paths.");
-    app.add_option("-D", defines, "Target preprocessor definitions.");
-    app.add_option("-O", options, "Target compiler options.");
+    const size_t maxModules = 16;
+    app.require_subcommand(1, maxModules);
+    CommandLineOptions options[maxModules];
 
-    app.add_option("rules", rulesFile, "Path to rules json file")->required()->check(CLI::ExistingFile);
-    app.add_option("source", sourceDir, "Path to source directory")->required()->check(CLI::ExistingDirectory);
-    app.add_option("output", outputDirCpp, "Path to output directory")->required();
+    for (auto i = 0; i < maxModules; i++)
+    {
+        auto* bindApp = app.add_subcommand(fmt::format("bind{}", i), "Generate module bindings");
+
+        bindApp->add_flag("--static", generator->isStatic_, "Generate bindings for static library.");
+        bindApp->add_option("-I", options[i].includes, "Target include paths.");
+        bindApp->add_option("-D", options[i].defines, "Target preprocessor definitions.");
+        bindApp->add_option("-O", options[i].options, "Target compiler options.");
+
+        bindApp->add_option("rules", options[i].rulesFile, "Path to rules json file")->required()->check(CLI::ExistingFile);
+        bindApp->add_option("source", options[i].sourceDir, "Path to source directory")->required()->check(CLI::ExistingDirectory);
+        bindApp->add_option("output", options[i].outputDirCpp, "Path to output directory")->required();
+
+        bindApp->set_callback([i, &options]() {
+            auto& opt = options[i];
+            auto sourceDir = str::AddTrailingSlash(opt.sourceDir);
+            auto outputDirCs = str::AddTrailingSlash(opt.outputDirCpp) + "CSharp/";
+            auto outputDirCpp = str::AddTrailingSlash(opt.outputDirCpp) + "Native/";
+
+            Urho3D::CreateDirsRecursive(outputDirCpp);
+            Urho3D::CreateDirsRecursive(outputDirCs);
+
+            generator->sourceDir_ = sourceDir;
+            generator->outputDirCpp_ = outputDirCpp;
+            generator->outputDirCs_ = outputDirCs;
+
+            // Generate bindings
+            generator->LoadCompileConfig(opt.includes, opt.defines, opt.options);
+#if _WIN32
+            generator->config_.set_flags(cppast::cpp_standard::cpp_14, {
+                cppast::compile_flag::ms_compatibility | cppast::compile_flag::ms_extensions
+            });
+#else
+            generator->config_.set_flags(cppast::cpp_standard::cpp_11, {cppast::compile_flag::gnu_extensions});
+#endif
+            generator->LoadRules(opt.rulesFile);
+            generator->Generate();
+        });
+    }
 
     std::vector<std::string> cmdLines;
     do
@@ -111,32 +149,8 @@ int main(int argc, char* argv[])
         argc = (int)cmdLines.size();
     } while (false);
 
-    CLI11_PARSE(app, argc, argv);
-
-    sourceDir = str::AddTrailingSlash(sourceDir);
-    outputDirCs = str::AddTrailingSlash(outputDirCpp) + "CSharp/";
-    outputDirCpp = str::AddTrailingSlash(outputDirCpp) + "Native/";
-
     spdlog::set_level(spdlog::level::debug);
     spdlog::stdout_color_mt("console");
-    Urho3D::CreateDirsRecursive(outputDirCpp);
-    Urho3D::CreateDirsRecursive(outputDirCs);
-
-    generator->sourceDir_ = sourceDir;
-    generator->outputDirCpp_ = outputDirCpp;
-    generator->outputDirCs_ = outputDirCs;
-
-    // Generate bindings
-    generator->LoadCompileConfig(includes, defines, options);
-#if _WIN32
-    generator->config_.set_flags(cppast::cpp_standard::cpp_14, {
-        cppast::compile_flag::ms_compatibility | cppast::compile_flag::ms_extensions
-    });
-#else
-    generator->config_.set_flags(cppast::cpp_standard::cpp_11, {cppast::compile_flag::gnu_extensions});
-#endif
-
-    generator->LoadRules(rulesFile);
 
     generator->AddCppPass<BuildMetaAST>();
     generator->AddApiPass<Urho3DTypeMaps>();
@@ -155,5 +169,5 @@ int main(int argc, char* argv[])
     generator->AddApiPass<ConvertToPropertiesPass>();
     generator->AddApiPass<GenerateCSharpApiPass>();
 
-    generator->Generate();
+    CLI11_PARSE(app, argc, argv);
 }

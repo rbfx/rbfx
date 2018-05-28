@@ -26,6 +26,10 @@ set (CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_subdirectory(Generator)
 
+set (CSHARP_BINDING_GENERATOR_OPTIONS ${CMAKE_BINARY_DIR}/CSharpBindings/generator_options.txt CACHE INTERNAL "")
+set (CSHARP_MODULE_INDEX 0 CACHE INTERNAL "")
+file(WRITE ${CSHARP_BINDING_GENERATOR_OPTIONS} "")
+
 macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)
     get_target_property(values ${TARGET} ${PROPERTY})
     if (values)
@@ -119,6 +123,9 @@ macro (csharp_bind_target)
     if (OPTIONS)
         list (REMOVE_DUPLICATES OPTIONS)
     endif ()
+    list(APPEND GENERATOR_OPTIONS bind${CSHARP_MODULE_INDEX})
+    math(EXPR CSHARP_MODULE_INDEX "${CSHARP_MODULE_INDEX} + 1")
+    set (CSHARP_MODULE_INDEX ${CSHARP_MODULE_INDEX} CACHE INTERNAL "")
     foreach(item ${INCLUDES})
         if ("${item}" MATCHES "\\$<INSTALL_INTERFACE:.+")
             continue()
@@ -146,8 +153,6 @@ macro (csharp_bind_target)
     set (COMMON_DIR ${CSHARP_SOURCE_DIR}/Common)
     list (APPEND GENERATOR_OPTIONS ${RULES} ${BIND_SOURCE_DIR} ${BINDINGS_OUTPUT_DIR})
 
-    set (CSHARP_BINDING_GENERATOR_OPTIONS ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp_generator_commandline.txt)
-    file(WRITE ${CSHARP_BINDING_GENERATOR_OPTIONS} "")
     foreach (opt ${GENERATOR_OPTIONS})
         file(APPEND ${CSHARP_BINDING_GENERATOR_OPTIONS} "${opt}\n")
     endforeach ()
@@ -167,7 +172,6 @@ macro (csharp_bind_target)
     # CSharp target (native)
     file (GLOB_RECURSE COMMON_CSHARP_SOURCE_FILES_MANUAL
         ${COMMON_DIR}/Native/*.cpp ${BIND_CSHARP_DIR}/Native/*.cpp)
-
 
     if (BIND_INTERNAL)
         set (CSHARP_LIBRARY_NAME ${BIND_TARGET})

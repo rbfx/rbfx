@@ -177,7 +177,183 @@
     },
   },
   "typemaps": [
-    "typemaps.json"
+    {
+      "type": "Urho3D::StringHash",
+      "ctype": "unsigned",
+      "ptype": "uint",
+      "cstype": "Urho3D.StringHash",
+      "cpp_to_c": "{value}.Value()",
+      "c_to_cpp": "Urho3D::StringHash({value})",
+      "pinvoke_to_cs": "new StringHash({value})",
+      "cs_to_pinvoke": "{value}.Hash",
+      "is_value_type": true
+    },
+    {
+      "type": "Urho3D::String",
+      "ctype": "char const*",
+      "ptype": "string",
+      "cstype": "string",
+      "cpp_to_c": "{value}.CString()",
+      "c_to_cpp": "Urho3D::String({value})",
+      "is_value_type": true,
+      "supports_wchar": true
+    },
+    {
+      "type": "Urho3D::VariantMap",
+      "ctype": "Urho3D::VariantMap*",
+      "ptype": "IntPtr",
+      "cstype": "Urho3D.VariantMap",
+      "cpp_to_c": "CSharpObjConverter::ToCSharp<Urho3D::VariantMap>({value})",
+      "c_to_cpp": "*{value}",
+      "pinvoke_to_cs": "VariantMap.__FromPInvoke({value}, {owns})",
+      "cs_to_pinvoke": "VariantMap.__ToPInvoke({value})"
+    },
+    {
+      "type": "Urho3D::StringVector",
+      "ctype": "Urho3D::StringVector*",
+      "ptype": "IntPtr",
+      "cstype": "Urho3D.StringVector",
+      "cpp_to_c": "CSharpObjConverter::ToCSharp<Urho3D::StringVector>({value})",
+      "c_to_cpp": "*{value}",
+      "pinvoke_to_cs": "StringVector.__FromPInvoke({value}, {owns})",
+      "cs_to_pinvoke": "StringVector.__ToPInvoke({value})"
+    },
+    {
+      "type": "Urho3D::Vector<Urho3D::String>",
+      "ctype": "Urho3D::StringVector*",
+      "ptype": "IntPtr",
+      "cstype": "Urho3D.StringVector",
+      "cpp_to_c": "CSharpObjConverter::ToCSharp<Urho3D::StringVector>({value})",
+      "c_to_cpp": "*{value}",
+      "pinvoke_to_cs": "StringVector.__FromPInvoke({value}, {owns})",
+      "cs_to_pinvoke": "StringVector.__ToPInvoke({value})"
+    },
+    {
+      "type": "Urho3D::Vector2",
+      "ctype": "Urho3D::PODVector2",
+      "cstype": "Urho3D.Vector2",
+      "ptype": "Urho3D.Vector2",
+      "cpp_to_c": "CSharpPODConverter<Urho3D::Vector2>::ToCSharp({value})",
+      "c_to_cpp": "CSharpPODConverter<Urho3D::Vector2>::FromCSharp({value})",
+      "is_value_type": true
+    },
+    {
+      "type": "Urho3D::IntVector2",
+      "ctype": "Urho3D::PODIntVector2",
+      "cstype": "Urho3D.IntVector2",
+      "ptype": "Urho3D.IntVector2",
+      "cpp_to_c": "CSharpPODConverter<Urho3D::IntVector2>::ToCSharp({value})",
+      "c_to_cpp": "CSharpPODConverter<Urho3D::IntVector2>::FromCSharp({value})",
+      "is_value_type": true
+    },
+    {
+      "type": "Urho3D::Vector3",
+      "ctype": "Urho3D::PODVector3",
+      "cstype": "Urho3D.Vector3",
+      "ptype": "Urho3D.Vector3",
+      "cpp_to_c": "CSharpPODConverter<Urho3D::Vector3>::ToCSharp({value})",
+      "c_to_cpp": "CSharpPODConverter<Urho3D::Vector3>::FromCSharp({value})",
+      "is_value_type": true
+    },
+    {
+      "type": "Urho3D::IntVector3",
+      "ctype": "Urho3D::PODIntVector3",
+      "cstype": "Urho3D.IntVector3",
+      "ptype": "Urho3D.IntVector3",
+      "cpp_to_c": "CSharpPODConverter<Urho3D::IntVector3>::ToCSharp({value})",
+      "c_to_cpp": "CSharpPODConverter<Urho3D::IntVector3>::FromCSharp({value})",
+      "is_value_type": true
+    },
+    {
+      "type": "Urho3D::Vector4",
+      "ctype": "Urho3D::PODVector4",
+      "cstype": "Urho3D.Vector4",
+      "ptype": "Urho3D.Vector4",
+      "cpp_to_c": "CSharpPODConverter<Urho3D::Vector4>::ToCSharp({value})",
+      "c_to_cpp": "CSharpPODConverter<Urho3D::Vector4>::FromCSharp({value})",
+      "is_value_type": true
+    },
+    {
+      "type": "Urho3D::Matrix3",
+      "ctype": "Urho3D::PODMatrix3",
+      "cstype": "Urho3D.Matrix3",
+      "ptype": "Urho3D.Matrix3",
+      "cpp_to_c": "CSharpPODConverter<Urho3D::Matrix3>::ToCSharp({value})",
+      "c_to_cpp": "CSharpPODConverter<Urho3D::Matrix3>::FromCSharp({value})",
+      "is_value_type": true
+    },
+    {
+      "type": "Urho3D::Matrix3x4",
+      "ctype": "Urho3D::PODMatrix3x4",
+      "cstype": "Urho3D.Matrix3x4",
+      "ptype": "Urho3D.Matrix3x4",
+      "cpp_to_c": "CSharpPODConverter<Urho3D::Matrix3x4>::ToCSharp({value})",
+      "c_to_cpp": "CSharpPODConverter<Urho3D::Matrix3x4>::FromCSharp({value})",
+      "is_value_type": true
+    },
+    {
+      "type": "Urho3D::Matrix4",
+      "ctype": "Urho3D::PODMatrix4",
+      "cstype": "Urho3D.Matrix4",
+      "ptype": "Urho3D.Matrix4",
+      "cpp_to_c": "CSharpPODConverter<Urho3D::Matrix4>::ToCSharp({value})",
+      "c_to_cpp": "CSharpPODConverter<Urho3D::Matrix4>::FromCSharp({value})",
+      "is_value_type": true
+    },
+    {
+      "type": "Urho3D::Quaternion",
+      "ctype": "Urho3D::PODQuaternion",
+      "cstype": "Urho3D.Quaternion",
+      "ptype": "Urho3D.Quaternion",
+      "cpp_to_c": "CSharpPODConverter<Urho3D::Quaternion>::ToCSharp({value})",
+      "c_to_cpp": "CSharpPODConverter<Urho3D::Quaternion>::FromCSharp({value})",
+      "is_value_type": true
+    },
+    {
+      "type": "Urho3D::Plane",
+      "ctype": "Urho3D::PODPlane",
+      "cstype": "Urho3D.Plane",
+      "ptype": "Urho3D.Plane",
+      "cpp_to_c": "CSharpPODConverter<Urho3D::Plane>::ToCSharp({value})",
+      "c_to_cpp": "CSharpPODConverter<Urho3D::Plane>::FromCSharp({value})",
+      "is_value_type": true
+    },
+    {
+      "type": "Urho3D::Rect",
+      "ctype": "Urho3D::PODRect",
+      "cstype": "Urho3D.Rect",
+      "ptype": "Urho3D.Rect",
+      "cpp_to_c": "CSharpPODConverter<Urho3D::Rect>::ToCSharp({value})",
+      "c_to_cpp": "CSharpPODConverter<Urho3D::Rect>::FromCSharp({value})",
+      "is_value_type": true
+    },
+    {
+      "type": "Urho3D::IntRect",
+      "ctype": "Urho3D::PODIntRect",
+      "cstype": "Urho3D.IntRect",
+      "ptype": "Urho3D.IntRect",
+      "cpp_to_c": "CSharpPODConverter<Urho3D::IntRect>::ToCSharp({value})",
+      "c_to_cpp": "CSharpPODConverter<Urho3D::IntRect>::FromCSharp({value})",
+      "is_value_type": true
+    },
+    {
+      "type": "Urho3D::Color",
+      "ctype": "Urho3D::PODColor",
+      "cstype": "Urho3D.Color",
+      "ptype": "Urho3D.Color",
+      "cpp_to_c": "CSharpPODConverter<Urho3D::Color>::ToCSharp({value})",
+      "c_to_cpp": "CSharpPODConverter<Urho3D::Color>::FromCSharp({value})",
+      "is_value_type": true
+    },
+    {
+      "type": "Urho3D::BoundingBox",
+      "ctype": "Urho3D::PODBoundingBox",
+      "cstype": "Urho3D.BoundingBox",
+      "ptype": "Urho3D.BoundingBox",
+      "cpp_to_c": "CSharpPODConverter<Urho3D::BoundingBox>::ToCSharp({value})",
+      "c_to_cpp": "CSharpPODConverter<Urho3D::BoundingBox>::FromCSharp({value})",
+      "is_value_type": true
+    }
   ],
   "initialization": {
     "mono-calls": [

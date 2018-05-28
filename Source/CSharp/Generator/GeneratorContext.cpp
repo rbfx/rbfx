@@ -43,6 +43,9 @@ GeneratorContext::GeneratorContext()
 void GeneratorContext::LoadCompileConfig(const std::vector<std::string>& includes, std::vector<std::string>& defines,
     const std::vector<std::string>& options)
 {
+    // Clear previous config
+    config_ = cppast::libclang_compile_config{};
+
     for (const auto& item : includes)
         config_.add_include_dir(item);
 
@@ -61,6 +64,9 @@ void GeneratorContext::LoadCompileConfig(const std::vector<std::string>& include
 
 bool GeneratorContext::LoadRules(const std::string& jsonPath)
 {
+    rules_.clear();
+    jsonRules_ = rapidjson::Document{};
+
     std::ifstream fp(jsonPath);
     std::stringstream buffer;
     buffer << fp.rdbuf();
