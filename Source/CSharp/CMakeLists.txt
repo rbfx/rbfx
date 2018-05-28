@@ -77,6 +77,10 @@ macro (add_target_csharp TARGET PROJECT_FILE)
 endmacro ()
 
 macro (csharp_bind_target)
+    if (NOT URHO3D_CSHARP)
+        return ()
+    endif ()
+
     cmake_parse_arguments(BIND "INTERNAL;EXTERNAL" "TARGET;SOURCE_DIR;CSHARP_DIR" "" ${ARGN})
 
     if (NOT BIND_SOURCE_DIR)
