@@ -170,29 +170,16 @@ endmacro ()
 macro (add_sample TARGET)
     if ("${ARGN}" STREQUAL CSHARP)
         if (DESKTOP)    # TODO: Support other platforms
-            file (GLOB SOURCE_FILES *.cs)
-                set (OUTPUT_DIR ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR})
-            if (MSVC)
-                set (URHO3DNET_LIBRARY ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}/$<CONFIG>/Urho3DNet.dll)
-                set (OUTPUT_DIR ${OUTPUT_DIR}/$<CONFIG>)
-            else ()
-                set (URHO3DNET_LIBRARY ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}/Urho3DNet.dll)
-            endif ()
-            set (OUTPUT_FILE ${OUTPUT_DIR}/${TARGET}.exe)
-            # Managed executable must find Urho3DCSharp and Urho3DNet in the same directory, that is why it is put to DEST_BIN_DIR
-            # instead of samples directory.
-            add_target_csharp(102_CSharpProject /target:exe /reference:System.dll
-                /reference:${URHO3DNET_LIBRARY} /out:${OUTPUT_FILE}.tmp
-                ${SOURCE_FILES}
-            )
+            add_target_csharp(102_CSharpProject ${CMAKE_CURRENT_SOURCE_DIR}/102_CSharpProject.csproj)
             add_dependencies(${TARGET} Urho3DNet)
-
             if (MSVC)
                 # On windows managed sample executable will not run when double-clicked. Create a
                 # native executable (bundle) which includes all managed dependencies instead.
                 find_package(Mono REQUIRED)
+                set (OUTPUT_FILE ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}/${TARGET}.exe)
                 add_custom_command (TARGET ${TARGET} POST_BUILD
-                    COMMAND "${MONO_PATH}/bin/mkbundle.bat" ARGS --deps -L "${OUTPUT_DIR}" -L "${MONO_PATH}/lib/mono/4.5" -o "${OUTPUT_FILE}" "${OUTPUT_FILE}.tmp"
+                    COMMAND ${CMAKE_COMMAND} -E rename ${OUTPUT_FILE} ${OUTPUT_FILE}.tmp
+                    COMMAND ${MONO_PATH}/bin/mkbundle.bat ARGS --deps -L "${OUTPUT_DIR}" -L "${MONO_PATH}/lib/mono/4.5" -o "${OUTPUT_FILE}" "${OUTPUT_FILE}.tmp"
                     COMMAND ${CMAKE_COMMAND} -E remove ${OUTPUT_FILE}.tmp
                 )
             endif ()

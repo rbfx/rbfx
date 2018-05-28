@@ -41,29 +41,31 @@ macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)
     endif()
 endmacro()
 
-macro (add_target_csharp TARGET)
+macro (add_target_csharp TARGET PROJECT_FILE)
     if (WIN32)
         find_package(Mono REQUIRED)
-        find_program(CSC csc PATHS ${MONO_PATH}/bin)
+        find_program(MSBUILD msbuild PATHS ${MONO_PATH}/bin)
     else ()
-        find_program(CSC csc)
+        find_program(MSBUILD msbuild)
     endif ()
-    if (NOT CSC)
-        message(FATAL_ERROR "C# compiler could not be found.")
+    if (NOT MSBUILD)
+        message(FATAL_ERROR "MSBuild could not be found.")
     endif ()
     if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
         # Workaround for some cases where csc has issues when invoked by CMake.
         set (TERM_WORKAROUND env TERM=xterm)
     endif ()
-    # Net target (managed)
-    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set (NET_PLATFORM /platform:x64)
-    elseif (DESKTOP)
-        set (NET_PLATFORM /platform:x86)
+    if (${CMAKE_BUILD_TYPE})
+        if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+            set (CSHARP_BUILD_TYPE Debug)
+        else ()
+            set (CSHARP_BUILD_TYPE Release)
+        endif ()
     else ()
-        message(FATAL_ERROR "Unsupported platform")
-    endif()
-    add_custom_target(${TARGET} COMMAND ${TERM_WORKAROUND} ${CSC} ${ARGN} ${NET_PLATFORM})
+        set (CSHARP_BUILD_TYPE $<CONFIG>)
+    endif ()
+    add_custom_target(${TARGET} COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${PROJECT_FILE} ${ARGN}
+        /p:Configuration=${CSHARP_BUILD_TYPE} /consoleloggerparameters:ErrorsOnly)
     set_target_properties(${TARGET} PROPERTIES EXCLUDE_FROM_ALL OFF)
 endmacro ()
 
@@ -207,15 +209,7 @@ macro (csharp_bind_target)
         # Needed for mono on unixes but not on windows.
         set (FACADES Facades/)
     endif ()
-    add_target_csharp(${BIND_TARGET}Net /target:library /unsafe
-        /reference:System.dll
-        /reference:${FACADES}System.Runtime.dll
-        /reference:System.Numerics.dll
-        /reference:System.Numerics.Vectors.dll
-        /reference:${CMAKE_BINARY_DIR}/System.Buffers/ref/netstandard1.1/System.Buffers.dll
-        /out:${NET_OUTPUT_DIRECTORY}/${BIND_TARGET}Net.dll ${COMMON_NET_SOURCE_FILES_MANUAL}
-        ${COMMON_NET_SOURCE_FILES_GENERATED} ${BINDINGS_OUTPUT_DIR}/CSharp/Config.cs
-    )
+    add_target_csharp(${BIND_TARGET}Net ${BIND_CSHARP_DIR}/${BIND_TARGET}Net.csproj)
     add_dependencies(${BIND_TARGET}Net ${CSHARP_LIBRARY_NAME})
     if (MSVC)
         add_custom_command(TARGET ${BIND_TARGET}Net POST_BUILD
