@@ -128,13 +128,10 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             {
                 // RefCounted is not thread-safe therefore extra care has to be taken here.
 
-                // When managed object is releasing a reference and this is last reference we trust that deletion is
-                // free to happen on any thread (like finalizers thread) or that user explicitly invoked object disposal
-                // on appropriate thread.
                 // If managed object is releasing a reference on main thread then we trust this is safe to delete object
                 // as well. Engine still may hold reference to an object but is mostly single-threaded therefore this
                 // should be safe.
-                printer_ << "if (instance->Refs() == 1 || Thread::IsMainThread())";
+                printer_ << "if (Thread::IsMainThread())";
                 printer_.Indent("");
                 {
                     printer_ << "instance->ReleaseRef();";
