@@ -205,8 +205,8 @@
       "cstype": "Urho3D.VariantMap",
       "cpp_to_c": "CSharpObjConverter::ToCSharp<Urho3D::VariantMap>({value})",
       "c_to_cpp": "*{value}",
-      "pinvoke_to_cs": "VariantMap.__FromPInvoke({value}, {owns})",
-      "cs_to_pinvoke": "VariantMap.__ToPInvoke({value})"
+      "pinvoke_to_cs": "VariantMap.GetManagedInstance({value}, {owns})",
+      "cs_to_pinvoke": "VariantMap.GetNativeInstance({value})"
     },
     {
       "type": "Urho3D::StringVector",
@@ -215,8 +215,8 @@
       "cstype": "Urho3D.StringVector",
       "cpp_to_c": "CSharpObjConverter::ToCSharp<Urho3D::StringVector>({value})",
       "c_to_cpp": "*{value}",
-      "pinvoke_to_cs": "StringVector.__FromPInvoke({value}, {owns})",
-      "cs_to_pinvoke": "StringVector.__ToPInvoke({value})"
+      "pinvoke_to_cs": "StringVector.GetManagedInstance({value}, {owns})",
+      "cs_to_pinvoke": "StringVector.GetNativeInstance({value})"
     },
     {
       "type": "Urho3D::Vector<Urho3D::String>",
@@ -225,8 +225,8 @@
       "cstype": "Urho3D.StringVector",
       "cpp_to_c": "CSharpObjConverter::ToCSharp<Urho3D::StringVector>({value})",
       "c_to_cpp": "*{value}",
-      "pinvoke_to_cs": "StringVector.__FromPInvoke({value}, {owns})",
-      "cs_to_pinvoke": "StringVector.__ToPInvoke({value})"
+      "pinvoke_to_cs": "StringVector.GetManagedInstance({value}, {owns})",
+      "cs_to_pinvoke": "StringVector.GetNativeInstance({value})"
     },
     {
       "type": "Urho3D::Vector2",

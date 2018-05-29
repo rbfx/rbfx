@@ -69,7 +69,7 @@ namespace Urho3D
             if (baseType == null)
                 throw new InvalidOperationException("This type can not be registered as factory.");
 
-            Urho3D_Context_RegisterFactory(__ToPInvoke(this), type.Name, StringHash.Calculate("Wrappers::" + baseType.Name), category);
+            Urho3D_Context_RegisterFactory(GetNativeInstance(this), type.Name, StringHash.Calculate("Wrappers::" + baseType.Name), category);
         }
 
         internal IntPtr CreateObject(uint managedType)

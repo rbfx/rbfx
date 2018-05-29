@@ -280,9 +280,9 @@ void* ScriptSubsystem::ToManagedObject(const char* imageName, const char* classN
         mono_method_desc_free(desc);
     }
 
-    // Create a wrapper object by calling __FromPInvoke() converter method.
+    // Create a wrapper object by calling GetManagedInstance() converter method.
     {
-        auto methodDescription = ToString("%s:__FromPInvoke", className);
+        auto methodDescription = ToString("%s:GetManagedInstance", className);
         auto* image = mono_image_loaded(imageName);
         auto* desc = mono_method_desc_new(methodDescription.CString(), true);
         auto* method = mono_method_desc_search_in_image(desc, image);

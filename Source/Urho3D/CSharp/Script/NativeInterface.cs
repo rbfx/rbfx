@@ -87,7 +87,7 @@ namespace Urho3D.CSharp
     {
         internal static IntPtr CreateObject(IntPtr contextPtr, uint managedType)
         {
-            var context = Context.__FromPInvoke(contextPtr, true);
+            var context = Context.GetManagedInstance(contextPtr, true);
             return context.CreateObject(managedType);
         }
 

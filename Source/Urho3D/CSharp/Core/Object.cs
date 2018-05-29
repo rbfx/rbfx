@@ -11,38 +11,38 @@ namespace Urho3D
     {
         public void SubscribeToEvent(StringHash eventType, Action<StringHash, VariantMap> function)
         {
-            Urho3D_Object_SubscribeToEvent(__ToPInvoke(this), GCHandle.ToIntPtr(GCHandle.Alloc(function)),
+            Urho3D_Object_SubscribeToEvent(GetNativeInstance(this), GCHandle.ToIntPtr(GCHandle.Alloc(function)),
                 eventType.Hash, true, IntPtr.Zero);
         }
 
         public void SubscribeToEvent(StringHash eventType, Action<VariantMap> function)
         {
-            Urho3D_Object_SubscribeToEvent(__ToPInvoke(this), GCHandle.ToIntPtr(GCHandle.Alloc(function)),
+            Urho3D_Object_SubscribeToEvent(GetNativeInstance(this), GCHandle.ToIntPtr(GCHandle.Alloc(function)),
                 eventType.Hash, false, IntPtr.Zero);
         }
 
         public void SubscribeToEvent(Object sender, StringHash eventType, Action<StringHash, VariantMap> function)
         {
-            Urho3D_Object_SubscribeToEvent(__ToPInvoke(this), GCHandle.ToIntPtr(GCHandle.Alloc(function)),
-                eventType.Hash, true, __ToPInvoke(sender));
+            Urho3D_Object_SubscribeToEvent(GetNativeInstance(this), GCHandle.ToIntPtr(GCHandle.Alloc(function)),
+                eventType.Hash, true, GetNativeInstance(sender));
         }
 
         public void SubscribeToEvent(Object sender, StringHash eventType, Action<VariantMap> function)
         {
-            Urho3D_Object_SubscribeToEvent(__ToPInvoke(this), GCHandle.ToIntPtr(GCHandle.Alloc(function)),
-                eventType.Hash, false, __ToPInvoke(sender));
+            Urho3D_Object_SubscribeToEvent(GetNativeInstance(this), GCHandle.ToIntPtr(GCHandle.Alloc(function)),
+                eventType.Hash, false, GetNativeInstance(sender));
         }
 
         private static unsafe void HandleEventWithType(void* gcHandle, uint type, void* args)
         {
             var callback = (Action<StringHash, VariantMap>) GCHandle.FromIntPtr((IntPtr)gcHandle).Target;
-            callback.Invoke(StringHash.__FromPInvoke(type), VariantMap.__FromPInvoke((IntPtr)args, false));
+            callback.Invoke(StringHash.GetManagedInstance(type), VariantMap.GetManagedInstance((IntPtr)args, false));
         }
 
         private static unsafe void HandleEventWithoutType(void* gcHandle, uint type, void* args)
         {
             var callback = (Action<VariantMap>) GCHandle.FromIntPtr((IntPtr)gcHandle).Target;
-            callback.Invoke(VariantMap.__FromPInvoke((IntPtr)args, false));
+            callback.Invoke(VariantMap.GetManagedInstance((IntPtr)args, false));
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

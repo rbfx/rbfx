@@ -106,12 +106,12 @@ namespace Urho3D
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void Urho3D_StringVector_destructor(IntPtr instnace);
 
-        internal static StringVector __FromPInvoke(IntPtr source, bool ownsInstnace)
+        internal static StringVector GetManagedInstance(IntPtr source, bool ownsInstnace)
         {
             return InstanceCache.GetOrAdd(source, ptr => new StringVector(ptr, ownsInstnace));
         }
 
-        internal static IntPtr __ToPInvoke(StringVector source)
+        internal static IntPtr GetNativeInstance(StringVector source)
         {
             if (source == null)
             {

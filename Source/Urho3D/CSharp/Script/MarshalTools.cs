@@ -33,7 +33,7 @@ namespace Urho3D.CSharp
         internal static T[] ToObjectArray<T>(IntPtr[] objects) where T : NativeObject
         {
             var type = typeof(T);
-            var tFromPInvoke = type.GetMethod("__FromPInvoke", BindingFlags.NonPublic | BindingFlags.Static);
+            var tFromPInvoke = type.GetMethod("GetManagedInstance", BindingFlags.NonPublic | BindingFlags.Static);
             Debug.Assert(tFromPInvoke != null);
 
             var array = new T[objects.Length];
@@ -46,7 +46,7 @@ namespace Urho3D.CSharp
         internal static TBuiltin[] ToPInvokeArray<TBuiltin, TClass>(TClass[] array)
         {
             var type = typeof(TClass);
-            var tToPInvoke = type.GetMethod("__ToPInvoke", BindingFlags.NonPublic | BindingFlags.Static);
+            var tToPInvoke = type.GetMethod("GetNativeInstance", BindingFlags.NonPublic | BindingFlags.Static);
             Debug.Assert(tToPInvoke != null);
             var result = new TBuiltin[array.Length];
             var i = 0;
@@ -58,7 +58,7 @@ namespace Urho3D.CSharp
         internal static TClass[] ToCSharpArray<TBuiltin, TClass>(TBuiltin[] array)
         {
             var type = typeof(TClass);
-            var tFromPInvoke = type.GetMethod("__FromPInvoke", BindingFlags.NonPublic | BindingFlags.Static);
+            var tFromPInvoke = type.GetMethod("GetManagedInstance", BindingFlags.NonPublic | BindingFlags.Static);
             Debug.Assert(tFromPInvoke != null);
             var result = new TClass[array.Length];
             var i = 0;

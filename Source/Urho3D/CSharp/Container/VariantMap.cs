@@ -69,8 +69,8 @@ namespace Urho3D
                 {
                     var rawKey = Urho3D_HashMap_StringHash_Variant_GetKey(_iterator);
                     var rawVal = Urho3D_HashMap_StringHash_Variant_GetValue(_iterator);
-                    var key = StringHash.__FromPInvoke(rawKey, false);
-                    var value = Variant.__FromPInvoke(rawVal, false);
+                    var key = StringHash.GetManagedInstance(rawKey, false);
+                    var value = Variant.GetManagedInstance(rawVal, false);
                     return new KeyValuePair<StringHash, Variant>(key, value);
                 }
             }
@@ -136,8 +136,8 @@ namespace Urho3D
         public bool IsReadOnly => false;
         public void Add(StringHash key, Variant value)
         {
-            var pInvokeKey = StringHash.__ToPInvoke(key);
-            var pInvokeValue = Variant.__ToPInvoke(value);
+            var pInvokeKey = StringHash.GetNativeInstance(key);
+            var pInvokeValue = Variant.GetNativeInstance(value);
             Urho3D_HashMap_StringHash_Variant_Add(NativeInstance, pInvokeKey, pInvokeValue);
         }
 
@@ -159,7 +159,7 @@ namespace Urho3D
                 value = null;
                 return false;
             }
-            value = Variant.__FromPInvoke(instance, true);
+            value = Variant.GetManagedInstance(instance, true);
             return true;
         }
 
@@ -178,12 +178,12 @@ namespace Urho3D
         public ICollection<StringHash> Keys => this.Select(kv => kv.Key).Distinct().ToList();
         public ICollection<Variant> Values => this.Select(kv => kv.Value).Distinct().ToList();
 
-        internal static VariantMap __FromPInvoke(IntPtr source, bool ownsNativeInstnace)
+        internal static VariantMap GetManagedInstance(IntPtr source, bool ownsNativeInstnace)
         {
             return InstanceCache.GetOrAdd<VariantMap>(source, ptr => new VariantMap(ptr, ownsNativeInstnace));
         }
 
-        internal static IntPtr __ToPInvoke(VariantMap source)
+        internal static IntPtr GetNativeInstance(VariantMap source)
         {
             if (source == null)
             {

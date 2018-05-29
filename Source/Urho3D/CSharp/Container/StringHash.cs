@@ -40,12 +40,12 @@ public struct StringHash
         return string.Format("{:08X}", Hash);
     }
 
-    internal static StringHash __FromPInvoke(uint source, bool ownsNativeInstnace=false)
+    internal static StringHash GetManagedInstance(uint source, bool ownsNativeInstnace=false)
     {
         return new StringHash(source);
     }
 
-    internal static uint __ToPInvoke(StringHash source)
+    internal static uint GetNativeInstance(StringHash source)
     {
         return source.Hash;
     }

@@ -667,7 +667,7 @@ std::string GenerateCSharpApiPass::MapToCS(const cppast::cpp_type& type, const s
     if (const auto* map = generator->GetTypeMap(type, false))
         return fmt::format(map->pInvokeToCSTemplate_.c_str(), fmt::arg("value", expression), FMT_CAPTURE(owns));
     else if (IsComplexType(type))
-        return fmt::format("{}.__FromPInvoke({}, {})", ToCSType(type), expression, owns);
+        return fmt::format("{}.GetManagedInstance({}, {})", ToCSType(type), expression, owns);
 
     return expression;
 }
@@ -753,7 +753,7 @@ std::string GenerateCSharpApiPass::MapToPInvoke(const cppast::cpp_type& type, co
     if (const auto* map = generator->GetTypeMap(type, false))
         return fmt::format(map->csToPInvokeTemplate_.c_str(), fmt::arg("value", expression));
     else if (IsComplexType(type))
-        return fmt::format("{}.__ToPInvoke({})", ToCSType(type, true), expression);
+        return fmt::format("{}.GetNativeInstance({})", ToCSType(type, true), expression);
 
     return expression;
 }
