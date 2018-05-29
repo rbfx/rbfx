@@ -22,7 +22,7 @@
 
 #include <Urho3D/Core/Object.h>
 #include <mono/metadata/debug-helpers.h>
-#include "ClassWrappers.hpp"
+#include "Urho3DClassWrappers.hpp"
 
 
 namespace Urho3D

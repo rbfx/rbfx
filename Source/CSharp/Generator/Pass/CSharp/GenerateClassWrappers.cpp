@@ -42,7 +42,7 @@ void GenerateClassWrappers::Start()
     printer_ << "";
 
     initPrinter_ << "#include <Urho3D/Urho3DAll.h>";
-    initPrinter_ << "#include \"ClassWrappers.hpp\"";
+    initPrinter_ << fmt::format("#include \"{}ClassWrappers.hpp\"", generator->moduleName_);
     initPrinter_ << "";
     initPrinter_ << fmt::format("extern \"C\" void {}RegisterWrapperFactories(Context* context)",
                                 generator->moduleName_);
@@ -255,7 +255,7 @@ void GenerateClassWrappers::Stop()
 
     // Save ClassWrappers.hpp
     {
-        std::ofstream fp(generator->outputDirCpp_ + "ClassWrappers.hpp");
+        std::ofstream fp(fmt::format("{}/{}ClassWrappers.hpp", generator->outputDirCpp_, generator->moduleName_));
         if (!fp.is_open())
         {
             spdlog::get("console")->error("Failed saving ClassWrappers.hpp");
@@ -266,7 +266,7 @@ void GenerateClassWrappers::Stop()
 
     // Save RegisterFactories.cpp
     {
-        std::ofstream fp(generator->outputDirCpp_ + "RegisterFactories.cpp");
+        std::ofstream fp(fmt::format("{}/{}RegisterFactories.cpp", generator->outputDirCpp_, generator->moduleName_));
         if (!fp.is_open())
         {
             spdlog::get("console")->error("Failed saving RegisterFactories.cpp");

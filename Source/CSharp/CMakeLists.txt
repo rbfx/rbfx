@@ -158,10 +158,11 @@ macro (csharp_bind_target)
     endforeach ()
 
     # Generated source files
-    set (CSHARP_SOURCE_FILES_GENERATED
-        ${BINDINGS_OUTPUT_DIR}/Native/CApi.cpp
-        ${BINDINGS_OUTPUT_DIR}/Native/ClassWrappers.hpp
-        ${BINDINGS_OUTPUT_DIR}/Native/RegisterFactories.cpp
+    file (GLOB CSHARP_SOURCE_FILES_GENERATED ${BINDINGS_OUTPUT_DIR}/Native/*.cpp)
+    set (
+        ${BINDINGS_OUTPUT_DIR}/Native/${BIND_TARGET}CApi.cpp
+        ${BINDINGS_OUTPUT_DIR}/Native/${BIND_TARGET}ClassWrappers.hpp
+        ${BINDINGS_OUTPUT_DIR}/Native/${BIND_TARGET}RegisterFactories.cpp
     )
     set (COMMON_NET_SOURCE_FILES_GENERATED
         ${BINDINGS_OUTPUT_DIR}/CSharp/PInvoke.cs
@@ -172,6 +173,7 @@ macro (csharp_bind_target)
     # CSharp target (native)
     file (GLOB_RECURSE COMMON_CSHARP_SOURCE_FILES_MANUAL
         ${COMMON_DIR}/Native/*.cpp ${BIND_CSHARP_DIR}/Native/*.cpp)
+#    list (APPEND COMMON_CSHARP_SOURCE_FILES_MANUAL ${CMAKE_BINARY_DIR}/CSharpBindings/csharp.cpp)
 
     if (BIND_INTERNAL)
         set (CSHARP_LIBRARY_NAME ${BIND_TARGET})
@@ -188,6 +190,7 @@ macro (csharp_bind_target)
     else ()
         message(FATAL_ERROR "Please pass INTERNAL or EXTERNAL to csharp_bind_target()")
     endif ()
+    add_dependencies(${BIND_TARGET} CSharpBindings)
     if (CLANG)
         target_compile_options(${CSHARP_LIBRARY_NAME} PRIVATE -Wno-return-type-c-linkage)
     endif ()
@@ -198,15 +201,6 @@ macro (csharp_bind_target)
     target_include_directories(${CSHARP_LIBRARY_NAME} PRIVATE ${MONO_INCLUDE_DIRS})
     target_link_libraries(${CSHARP_LIBRARY_NAME} ${MONO_LIBRARIES})
     target_compile_options(${CSHARP_LIBRARY_NAME} PRIVATE ${MONO_CFLAGS})
-
-    # Target that generates bindings source
-    add_custom_command(OUTPUT ${CSHARP_SOURCE_FILES_GENERATED} ${COMMON_NET_SOURCE_FILES_GENERATED}
-        COMMAND $<TARGET_FILE:CSharpGenerator> ${CSHARP_BINDING_GENERATOR_OPTIONS}
-        DEPENDS CSharpGenerator)
-    add_custom_target(${BIND_TARGET}CSharpRegenerate
-        COMMAND $<TARGET_FILE:CSharpGenerator> ${CSHARP_BINDING_GENERATOR_OPTIONS}
-        DEPENDS CSharpGenerator)
-    set_target_properties(${BIND_TARGET}CSharpRegenerate PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
 
     file (WRITE ${BINDINGS_OUTPUT_DIR}/CSharp/Config.cs
 "namespace Urho3D.CSharp
@@ -239,6 +233,12 @@ macro (csharp_bind_target)
     endif ()
     install (FILES ${NET_OUTPUT_DIRECTORY}/${BIND_TARGET}Net.dll DESTINATION ${DEST_LIBRARY_DIR})
 endmacro ()
+
+# Target for manually refreshing binding code
+add_custom_target(CSharpBindings
+    COMMAND $<TARGET_FILE:CSharpGenerator> ${CSHARP_BINDING_GENERATOR_OPTIONS}
+    DEPENDS CSharpGenerator)
+set_target_properties(CSharpBindings PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
 
 # Dependencies for bindings
 file (DOWNLOAD https://www.nuget.org/api/v2/package/System.Buffers/4.4.0 ${CMAKE_BINARY_DIR}/System.Buffers/pkg.zip)

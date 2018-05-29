@@ -38,7 +38,7 @@ void GenerateCApiPass::Start()
     printer_ << "#include <mono/metadata/appdomain.h>";
     printer_ << "#include <mono/metadata/class.h>";
     printer_ << "#include \"CSharp.h\"";
-    printer_ << "#include \"ClassWrappers.hpp\"";
+    printer_ << fmt::format("#include \"{}ClassWrappers.hpp\"", generator->moduleName_);
     printer_ << "#include \"PODTypes.hpp\"";
     printer_ << "";
 
@@ -514,8 +514,7 @@ void GenerateCApiPass::Stop()
     printer_ << "";
     printer_ << "}";    // Close extern "C"
 
-
-    std::ofstream fp(generator->outputDirCpp_ + "CApi.cpp");
+    std::ofstream fp(fmt::format("{}/{}CApi.cpp", generator->outputDirCpp_, generator->moduleName_));
     if (!fp.is_open())
     {
         spdlog::get("console")->error("Failed saving CApi.cpp");
