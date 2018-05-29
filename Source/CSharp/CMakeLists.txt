@@ -237,7 +237,8 @@ endmacro ()
 # Target for manually refreshing binding code
 add_custom_target(CSharpBindings
     COMMAND $<TARGET_FILE:CSharpGenerator> ${CSHARP_BINDING_GENERATOR_OPTIONS}
-    DEPENDS CSharpGenerator)
+    DEPENDS CSharpGenerator
+    COMMENT "Generating CSharp bindings")
 set_target_properties(CSharpBindings PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
 
 # Dependencies for bindings

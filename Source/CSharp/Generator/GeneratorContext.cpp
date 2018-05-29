@@ -48,8 +48,9 @@ bool GeneratorContext::AddModule(const std::string& sourceDir, const std::string
     Module& m = modules_.back();
 
     m.sourceDir_ = str::AddTrailingSlash(sourceDir);
-    m.outputDirCs_ = str::AddTrailingSlash(outputDir) + "CSharp/";
-    m.outputDirCpp_ = str::AddTrailingSlash(outputDir) + "Native/";
+    m.outputDir_ = str::AddTrailingSlash(outputDir);
+    m.outputDirCs_ = m.outputDir_ + "CSharp/";
+    m.outputDirCpp_ = m.outputDir_ + "Native/";
 
     Urho3D::CreateDirsRecursive(m.outputDirCpp_);
     Urho3D::CreateDirsRecursive(m.outputDirCs_);
@@ -470,14 +471,14 @@ void GeneratorContext::Generate()
                 pass->NamespaceStop();
         }
 
-        currentNamespace_ = nullptr;
-
-
         for (const auto& pass : cppPasses_)
             pass->Stop();
 
         for (const auto& pass : apiPasses_)
             pass->Stop();
+
+        SetLastModifiedTime(m.outputDir_, 0);   // Touch
+        currentNamespace_ = nullptr;
     }
 }
 
@@ -626,6 +627,28 @@ bool GeneratorContext::IsInheritable(const std::string& symbolName) const
 {
     assert(currentNamespace_ != nullptr);
     return currentNamespace_->inheritable_.IsIncluded(symbolName);
+}
+
+bool GeneratorContext::IsOutOfDate()
+{
+    for (const auto& m : modules_)
+    {
+        auto targetTime = GetLastModifiedTime(m.outputDir_);
+        if (targetTime == 0)
+            return true;
+
+        for (const auto& nsRules : m.rules_)
+        {
+            for (const auto& path : nsRules.sourceFiles_)
+            {
+                auto fileTime = GetLastModifiedTime(path.first + path.second);
+                if (fileTime == 0 || fileTime > targetTime)
+                    return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 }

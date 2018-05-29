@@ -25,8 +25,13 @@
 #include <fmt/format.h>
 #include <tinydir.h>
 #if _WIN32
+#   include <windows.h>
+#   include <sys/utime.h>
 #   include <direct.h>
+#else
+#   include <utime.h>
 #endif
+
 #include "Utilities.h"
 #include "GeneratorContext.h"
 
@@ -800,6 +805,49 @@ void CreateDirsRecursive(const std::string& path)
     }
 }
 
+unsigned GetLastModifiedTime(const std::string& fileName)
+{
+    if (fileName.empty())
+        return 0;
+
+#ifdef _WIN32
+    struct _stat st;
+    if (!_stat(fileName.c_str(), &st))
+        return (unsigned)st.st_mtime;
+    else
+        return 0;
+#else
+    struct stat st{};
+    if (!stat(fileName.c_str(), &st))
+        return (unsigned)st.st_mtime;
+    else
+        return 0;
+#endif
+}
+
+bool SetLastModifiedTime(const std::string& fileName, unsigned newTime)
+{
+    if (fileName.empty())
+        return false;
+
+#ifdef _WIN32
+    struct _stat oldTime;
+    struct _utimbuf newTimes;
+    if (_stat(fileName.c_str(), &oldTime) != 0)
+        return false;
+    newTimes.actime = oldTime.st_atime;
+    newTimes.modtime = newTime;
+    return _utime(fileName.c_str(), newTime == 0 ? nullptr : &newTimes) == 0;
+#else
+    struct stat oldTime{};
+    struct utimbuf newTimes{};
+    if (stat(fileName.c_str(), &oldTime) != 0)
+        return false;
+    newTimes.actime = oldTime.st_atime;
+    newTimes.modtime = newTime;
+    return utime(fileName.c_str(), newTime == 0 ? nullptr : &newTimes) == 0;
+#endif
+}
 }
 
 namespace str

@@ -76,6 +76,7 @@ public:
     bool AddModule(const std::string& sourceDir, const std::string& outputDir, const std::vector<std::string>& includes,
                    const std::vector<std::string>& defines, const std::vector<std::string>& options,
                    const std::string& rulesFile);
+    bool IsOutOfDate();
 
     template<typename T, typename... Args>
     void AddCppPass(Args... args) { cppPasses_.emplace_back(std::move(std::unique_ptr<CppAstPass>(dynamic_cast<CppAstPass*>(new T(args...))))); }
@@ -107,6 +108,7 @@ public:
     struct Module
     {
         std::string sourceDir_;
+        std::string outputDir_;
         std::string outputDirCpp_;
         std::string outputDirCs_;
         std::vector<NamespaceRules> rules_;

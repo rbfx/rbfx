@@ -149,11 +149,6 @@ int main(int argc, char* argv[])
 
     CLI11_PARSE(app, argc, argv);
 
-//    // Check for out of date
-//    for (auto* cmd : app.get_subcommands())
-//    {
-//
-//    }
-
-    generator->Generate();
+    if (generator->IsOutOfDate())
+        generator->Generate();
 }
