@@ -65,6 +65,7 @@ struct NamespaceRules
     std::map<std::string, std::shared_ptr<cppast::cpp_file>> parsed_;
     std::shared_ptr<MetaEntity> apiRoot_;
     std::vector<std::string> includes_;
+    std::vector<std::pair<std::string, std::string>> sourceFiles_;
 };
 
 class GeneratorContext

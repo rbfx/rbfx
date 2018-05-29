@@ -264,6 +264,32 @@ bool GeneratorContext::AddModule(const std::string& sourceDir, const std::string
             parseTypemaps(typeMaps, rulesFile);
         }
     }
+
+    // Gather files that need parsing
+    {
+        for (auto& nsRules : m.rules_)
+        {
+            for (const auto& parsePath : nsRules.parsePaths_)
+            {
+                std::vector<std::pair<std::string, std::string>> sourceFiles;
+                std::vector<std::string> scannedFiles;
+                if (!ScanDirectory(parsePath.path_, scannedFiles,
+                                   ScanDirectoryFlags::IncludeFiles | ScanDirectoryFlags::Recurse, parsePath.path_))
+                {
+                    spdlog::get("console")->error("Failed to scan directory {}", parsePath.path_);
+                    return false;
+                }
+
+                // Remove excluded files
+                for (auto it = scannedFiles.begin(); it != scannedFiles.end(); it++)
+                {
+                    if (parsePath.checker_.IsIncluded(*it))
+                        sourceFiles.emplace_back(std::pair<std::string, std::string>{parsePath.path_, *it});
+                }
+                nsRules.sourceFiles_.insert(nsRules.sourceFiles_.end(), sourceFiles.begin(), sourceFiles.end());
+            }
+        }
+    }
     return true;
 }
 
@@ -290,52 +316,38 @@ void GeneratorContext::Generate()
 
         for (auto& nsRules : m.rules_)
         {
-            nsRules.apiRoot_ = std::shared_ptr<MetaEntity>(new MetaEntity());
-            currentNamespace_ = &nsRules;
-            for (const auto& parsePath : nsRules.parsePaths_)
+            // Parse module headers
             {
-                std::vector<std::string> sourceFiles;
-                if (!ScanDirectory(parsePath.path_, sourceFiles,
-                                   ScanDirectoryFlags::IncludeFiles | ScanDirectoryFlags::Recurse, parsePath.path_))
-                {
-                    spdlog::get("console")->error("Failed to scan directory {}", parsePath.path_);
-                    continue;
-                }
-
                 std::mutex lock;
                 auto workItem = [&]
                 {
                     for (;;)
                     {
-                        std::string filePath;
+                        std::pair<std::string, std::string> filePath;
                         // Initialize
                         {
                             std::unique_lock<std::mutex> scopedLock(lock);
-                            while (!sourceFiles.empty())
+                            if (!nsRules.sourceFiles_.empty())
                             {
-                                filePath = sourceFiles.back();
-                                sourceFiles.pop_back();
-                                if (!parsePath.checker_.IsIncluded(filePath))
-                                    filePath.clear();
-                                else
-                                    break;
+                                filePath = nsRules.sourceFiles_.back();
+                                nsRules.sourceFiles_.pop_back();
                             }
-                            if (sourceFiles.empty() && filePath.empty())
-                                return;
+                            else
+                                break;
                         }
-                        std::string absPath = parsePath.path_ + filePath;
 
-                        spdlog::get("console")->debug("Parse: {}", filePath);
+                        spdlog::get("console")->debug("Parse: {}", filePath.second);
 
                         cppast::stderr_diagnostic_logger logger;
                         // the parser is used to parse the entity
                         // there can be multiple parser implementations
                         cppast::libclang_parser parser(type_safe::ref(logger));
 
-                        auto file = parser.parse(index_, absPath.c_str(), m.config_);
+                        auto absPath = filePath.first + filePath.second;
+                        auto file = parser.parse(index_, absPath, m.config_);
                         if (parser.error())
                         {
-                            spdlog::get("console")->error("Failed parsing {}", filePath);
+                            spdlog::get("console")->error("Failed parsing {}", filePath.second);
                             parser.reset_error();
                         }
                         else
@@ -353,6 +365,9 @@ void GeneratorContext::Generate()
                 for (auto& t : pool)
                     t.join();
             }
+
+            nsRules.apiRoot_ = std::shared_ptr<MetaEntity>(new MetaEntity());
+            currentNamespace_ = &nsRules;
 
             for (const auto& pass : cppPasses_)
                 pass->NamespaceStart();
