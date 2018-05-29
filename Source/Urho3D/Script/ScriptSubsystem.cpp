@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 //
 
-#include <mono/metadata/class.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/image.h>
 #include <mono/metadata/object.h>
