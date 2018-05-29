@@ -629,12 +629,16 @@ bool GeneratorContext::IsInheritable(const std::string& symbolName) const
     return currentNamespace_->inheritable_.IsIncluded(symbolName);
 }
 
-bool GeneratorContext::IsOutOfDate()
+bool GeneratorContext::IsOutOfDate(const std::string& generatorExe)
 {
     for (const auto& m : modules_)
     {
-        auto targetTime = GetLastModifiedTime(m.outputDir_);
-        if (targetTime == 0)
+        auto outputTime = GetLastModifiedTime(m.outputDir_);
+        auto exeTime = GetLastModifiedTime(generatorExe);
+        if (outputTime == 0 || exeTime == 0)
+            return true;
+
+        if (exeTime > outputTime)
             return true;
 
         for (const auto& nsRules : m.rules_)
@@ -642,7 +646,7 @@ bool GeneratorContext::IsOutOfDate()
             for (const auto& path : nsRules.sourceFiles_)
             {
                 auto fileTime = GetLastModifiedTime(path.first + path.second);
-                if (fileTime == 0 || fileTime > targetTime)
+                if (fileTime == 0 || fileTime > outputTime)
                     return true;
             }
         }

@@ -149,6 +149,6 @@ int main(int argc, char* argv[])
 
     CLI11_PARSE(app, argc, argv);
 
-    if (generator->IsOutOfDate())
+    if (generator->IsOutOfDate(argv[0]))
         generator->Generate();
 }
