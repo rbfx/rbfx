@@ -71,10 +71,11 @@ class GeneratorContext
 {
 public:
     explicit GeneratorContext();
-    void LoadCompileConfig(const std::vector<std::string>& includes, std::vector<std::string>& defines,
-        const std::vector<std::string>& options);
 
-    bool LoadRules(const std::string& jsonPath);
+    bool AddModule(const std::string& sourceDir, const std::string& outputDir, const std::vector<std::string>& includes,
+                   const std::vector<std::string>& defines, const std::vector<std::string>& options,
+                   const std::string& rulesFile);
+
     template<typename T, typename... Args>
     void AddCppPass(Args... args) { cppPasses_.emplace_back(std::move(std::unique_ptr<CppAstPass>(dynamic_cast<CppAstPass*>(new T(args...))))); }
     template<typename T, typename... Args>
@@ -102,21 +103,25 @@ public:
     MetaEntity* GetSymbol(const std::string& symbolName);
     bool IsInheritable(const std::string& symbolName) const;
 
-    std::string sourceDir_;
-    std::string outputDirCpp_;
-    std::string outputDirCs_;
-    rapidjson::Document jsonRules_;
-    std::vector<NamespaceRules> rules_;
+    struct Module
+    {
+        std::string sourceDir_;
+        std::string outputDirCpp_;
+        std::string outputDirCs_;
+        std::vector<NamespaceRules> rules_;
+        std::string moduleName_;
+        std::vector<std::string> extraMonoCallInitializers_;
+        cppast::libclang_compile_config config_;
+    };
+    bool isStatic_ = false;
+    std::vector<Module> modules_;
     NamespaceRules* currentNamespace_ = nullptr;
-    cppast::libclang_compile_config config_;
+    Module* currentModule_ = nullptr;
+    cppast::cpp_entity_index index_;
     std::vector<std::unique_ptr<CppAstPass>> cppPasses_;
     std::vector<std::unique_ptr<CppApiPass>> apiPasses_;
-    cppast::cpp_entity_index index_;
-    std::string moduleName_;
-    bool isStatic_ = false;
     std::unordered_map<std::string, std::weak_ptr<MetaEntity>> enumValues_;
     std::unordered_map<std::string, std::weak_ptr<MetaEntity>> symbols_;
-    std::vector<std::string> extraMonoCallInitializers_;
     std::unordered_map<std::string, std::string> defaultValueRemaps_;
     std::vector<std::string> forceCompileTimeConstants_;
     std::unordered_map<std::string, TypeMap> typeMaps_;

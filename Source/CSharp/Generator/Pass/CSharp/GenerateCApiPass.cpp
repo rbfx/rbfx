@@ -38,11 +38,11 @@ void GenerateCApiPass::Start()
     printer_ << "#include <mono/metadata/appdomain.h>";
     printer_ << "#include <mono/metadata/class.h>";
     printer_ << "#include \"CSharp.h\"";
-    printer_ << fmt::format("#include \"{}ClassWrappers.hpp\"", generator->moduleName_);
+    printer_ << fmt::format("#include \"{}ClassWrappers.hpp\"", generator->currentModule_->moduleName_);
     printer_ << "#include \"PODTypes.hpp\"";
     printer_ << "";
 
-    for (const auto& nsRules : generator->rules_)
+    for (const auto& nsRules : generator->currentModule_->rules_)
     {
         for (const auto& include : nsRules.includes_)
             printer_ << fmt::format("#include <{}>", include);
@@ -57,14 +57,15 @@ void GenerateCApiPass::Start()
     printer_ << "{";
     printer_ << "";
 
-    printer_ << fmt::format("void {}RegisterWrapperFactories(Urho3D::Context* context);", generator->moduleName_);
+    printer_ << fmt::format("void {}RegisterWrapperFactories(Urho3D::Context* context);",
+                            generator->currentModule_->moduleName_);
 
     // Declare extra mono call initializers
-    for (const auto& initializer : generator->extraMonoCallInitializers_)
+    for (const auto& initializer : generator->currentModule_->extraMonoCallInitializers_)
         printer_ << fmt::format("void {}();", initializer);
 
     printerInternalCalls_ << fmt::format("URHO3D_EXPORT_API void {}RegisterMonoInternalCalls()",
-        generator->moduleName_);
+        generator->currentModule_->moduleName_);
     printerInternalCalls_.Indent();
 }
 
@@ -489,14 +490,15 @@ void GenerateCApiPass::Stop()
     }
 
     // Call extra initialization functions
-    for (const auto& initializer : generator->extraMonoCallInitializers_)
+    for (const auto& initializer : generator->currentModule_->extraMonoCallInitializers_)
         printerInternalCalls_ << initializer + "();";
 
     printerInternalCalls_.Dedent();
     printer_ << printerInternalCalls_.Get();
     printer_ << "";
 
-    printer_ << fmt::format("URHO3D_EXPORT_API void {}RegisterCSharp(Urho3D::Context* context)", generator->moduleName_);
+    printer_ << fmt::format("URHO3D_EXPORT_API void {}RegisterCSharp(Urho3D::Context* context)",
+                            generator->currentModule_->moduleName_);
     printer_.Indent();
     {
         printer_ << "if (context->GetScripts() == nullptr)";
@@ -506,7 +508,7 @@ void GenerateCApiPass::Stop()
         }
         printer_.Dedent("");
 
-        printer_ << fmt::format("{}RegisterWrapperFactories(context);", generator->moduleName_);
+        printer_ << fmt::format("{}RegisterWrapperFactories(context);", generator->currentModule_->moduleName_);
         // Put other wrapper late initialization code here.
     }
     printer_.Dedent();
@@ -514,7 +516,8 @@ void GenerateCApiPass::Stop()
     printer_ << "";
     printer_ << "}";    // Close extern "C"
 
-    std::ofstream fp(fmt::format("{}/{}CApi.cpp", generator->outputDirCpp_, generator->moduleName_));
+    std::ofstream fp(fmt::format("{}/{}CApi.cpp", generator->currentModule_->outputDirCpp_,
+                                 generator->currentModule_->moduleName_));
     if (!fp.is_open())
     {
         spdlog::get("console")->error("Failed saving CApi.cpp");

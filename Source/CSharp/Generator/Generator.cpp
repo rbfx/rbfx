@@ -59,7 +59,6 @@ int main(int argc, char* argv[])
         std::string rulesFile;
         std::string sourceDir;
         std::string outputDirCpp;
-        std::string outputDirCs;
         std::vector<std::string> includes;
         std::vector<std::string> defines;
         std::vector<std::string> options;
@@ -88,28 +87,7 @@ int main(int argc, char* argv[])
 
         bindApp->set_callback([i, &options]() {
             auto& opt = options[i];
-            auto sourceDir = str::AddTrailingSlash(opt.sourceDir);
-            auto outputDirCs = str::AddTrailingSlash(opt.outputDirCpp) + "CSharp/";
-            auto outputDirCpp = str::AddTrailingSlash(opt.outputDirCpp) + "Native/";
-
-            Urho3D::CreateDirsRecursive(outputDirCpp);
-            Urho3D::CreateDirsRecursive(outputDirCs);
-
-            generator->sourceDir_ = sourceDir;
-            generator->outputDirCpp_ = outputDirCpp;
-            generator->outputDirCs_ = outputDirCs;
-
-            // Generate bindings
-            generator->LoadCompileConfig(opt.includes, opt.defines, opt.options);
-#if _WIN32
-            generator->config_.set_flags(cppast::cpp_standard::cpp_14, {
-                cppast::compile_flag::ms_compatibility | cppast::compile_flag::ms_extensions
-            });
-#else
-            generator->config_.set_flags(cppast::cpp_standard::cpp_11, {cppast::compile_flag::gnu_extensions});
-#endif
-            generator->LoadRules(opt.rulesFile);
-            generator->Generate();
+            generator->AddModule(opt.sourceDir, opt.outputDirCpp, opt.includes, opt.defines, opt.options, opt.rulesFile);
         });
     }
 
@@ -170,4 +148,12 @@ int main(int argc, char* argv[])
     generator->AddApiPass<GenerateCSharpApiPass>();
 
     CLI11_PARSE(app, argc, argv);
+
+//    // Check for out of date
+//    for (auto* cmd : app.get_subcommands())
+//    {
+//
+//    }
+
+    generator->Generate();
 }

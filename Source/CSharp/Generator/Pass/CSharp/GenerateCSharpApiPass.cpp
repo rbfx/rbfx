@@ -37,8 +37,10 @@ void GenerateCSharpApiPass::Start()
     printer_ << "using System;";
     printer_ << "using System.Diagnostics;";
     printer_ << "using System.Runtime.InteropServices;";
+    printer_ << "using Urho3D;";
     printer_ << "using Urho3D.CSharp;";
     printer_ << "";
+    // TODO: generate AssemblyInfo and add [assembly: InternalsVisibleTo("name of assembly here")]
 }
 
 bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
@@ -643,7 +645,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
 void GenerateCSharpApiPass::Stop()
 {
-    auto outputFile = generator->outputDirCs_ + "CSharp.cs";
+    auto outputFile = generator->currentModule_->outputDirCs_ + "CSharp.cs";
     std::ofstream fp(outputFile);
     if (!fp.is_open())
     {
