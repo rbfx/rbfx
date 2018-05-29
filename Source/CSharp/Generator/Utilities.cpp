@@ -497,6 +497,7 @@ std::string PrimitiveToPInvokeType(cppast::cpp_builtin_type_kind kind)
     case cppast::cpp_char32: assert(false);
     case cppast::cpp_nullptr: return "IntPtr";
     }
+    return "";
 }
 
 std::string BuiltinToPInvokeType(const cppast::cpp_type& type)
