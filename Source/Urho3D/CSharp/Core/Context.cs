@@ -20,8 +20,6 @@ namespace Urho3D
         {
             // Exchange APIs
             NativeInterface.Initialize();
-            // Register engine API
-            Urho3DRegisterMonoInternalCalls();
         }
 
         private readonly Dictionary<uint, Type> _factoryTypes = new Dictionary<uint, Type>();
@@ -89,9 +87,6 @@ namespace Urho3D
             [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringUtf8))]string typeName,
             uint baseType,
             [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringUtf8))]string category);
-
-        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void Urho3DRegisterMonoInternalCalls();
 
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void Urho3DRegisterCSharp(IntPtr contextPtr);

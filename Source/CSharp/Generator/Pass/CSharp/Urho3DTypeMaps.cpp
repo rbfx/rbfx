@@ -154,26 +154,17 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
         map.cppType_ = typeName;
 
         map.csType_ = fmt::format("{csType}[]", FMT_CAPTURE(csType));
-        map.cType_ = "MonoArray*";
-        map.pInvokeType_ = fmt::format("{pInvokeType}[]", FMT_CAPTURE(pInvokeType));
+        map.cType_ = "SafeArray";
+        map.pInvokeType_ = "SafeArray";
         map.cppToCTemplate_ = fmt::format(
-            "MonoArrayConverter<Urho3D::{vectorKind}<{cppType}>>::ToCSharp({{value}})", FMT_CAPTURE(cppType),
+            "CSharpConverter<Urho3D::{vectorKind}<{cppType}>>::ToCSharp({{value}})", FMT_CAPTURE(cppType),
             FMT_CAPTURE(vectorKind));
         map.cToCppTemplate_ = fmt::format(
-            "MonoArrayConverter<Urho3D::{vectorKind}<{cppType}>>::FromCSharp({{value}})", FMT_CAPTURE(cppType),
+            "CSharpConverter<Urho3D::{vectorKind}<{cppType}>>::FromCSharp({{value}})", FMT_CAPTURE(cppType),
             FMT_CAPTURE(vectorKind));
-        if (isTypeMapped)
-        {
-            map.csToPInvokeTemplate_ = fmt::format("MarshalTools.ToPInvokeArray<{pInvokeType}, {csType}>({{value}})",
-                FMT_CAPTURE(pInvokeType), FMT_CAPTURE(csType));
-            map.pInvokeToCSTemplate_ = fmt::format("MarshalTools.ToCSharpArray<{pInvokeType}, {csType}>({{value}})",
-                FMT_CAPTURE(pInvokeType), FMT_CAPTURE(csType));
-        }
-        else if (pInvokeType == "IntPtr")
-        {
-            map.csToPInvokeTemplate_ = fmt::format("MarshalTools.ToIntPtrArray<{csType}>({{value}})", FMT_CAPTURE(csType));
-            map.pInvokeToCSTemplate_ = fmt::format("MarshalTools.ToObjectArray<{csType}>({{value}})", FMT_CAPTURE(csType));
-        }
+        map.csToPInvokeTemplate_ = fmt::format("SafeArray.GetNativeInstance<{csType}>({{value}})", FMT_CAPTURE(csType));
+        map.pInvokeToCSTemplate_ = fmt::format("SafeArray.GetManagedInstance<{csType}>({{value}}, {owns})",
+                                               FMT_CAPTURE(csType), fmt::arg("owns", IsComplexType(type) && IsValueType(type) ? "true" : "false"));
         map.isValueType_ = true;
         generator->typeMaps_[typeName] = map;
     }

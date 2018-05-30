@@ -112,7 +112,7 @@ namespace Urho3D.CSharp
 
         internal static IntPtr Lock(Object @object, bool pin = false)
         {
-            var handle = GCHandle.Alloc(@object);
+            var handle = GCHandle.Alloc(@object, pin ? GCHandleType.Pinned : GCHandleType.Normal);
             return GCHandle.ToIntPtr(handle);
         }
 
