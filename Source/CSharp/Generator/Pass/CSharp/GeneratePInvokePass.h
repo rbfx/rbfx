@@ -45,6 +45,8 @@ class GeneratePInvokePass : public CppApiPass
     static std::string ToPInvokeType(const cppast::cpp_type& type, bool disallowReferences=false);
 
 protected:
+    void WriteMarshalAttributeReturn(const cppast::cpp_type& type);
+
     CSharpPrinter printer_;
     DiscoverInterfacesPass* discoverInterfacesPass_ = nullptr;
 };

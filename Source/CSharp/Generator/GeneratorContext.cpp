@@ -226,23 +226,13 @@ bool GeneratorContext::AddModule(const std::string& sourceDir, const std::string
                         if (typeMap.HasMember("cs_to_pinvoke"))
                             map.csToPInvokeTemplate_ = typeMap["cs_to_pinvoke"].GetString();
 
-                        if (typeMap.HasMember("marshal_attribute"))
-                            map.marshalAttribute_ = typeMap["marshal_attribute"].GetString();
+                        if (typeMap.HasMember("marshaller"))
+                            map.customMarshaller_ = typeMap["marshaller"].GetString();
 
                         // Doctor string typemaps with some internal details.
-                        if (map.csType_ == "string")
+                        if (map.csType_ == "string" && map.customMarshaller_.empty())
                         {
-                            std::string useConverter;
-                            if (map.cppType_ == "char const*")
-                                useConverter = "MonoStringHolder";
-                            else
-                                useConverter = map.cppType_;
-
-                            map.cType_ = "MonoString*";
-                            map.cppToCTemplate_ = fmt::format("CSharpConverter<MonoString>::ToCSharp({})",
-                                                              map.cppToCTemplate_);
-                            map.cToCppTemplate_ = fmt::format(map.cToCppTemplate_, fmt::arg("value", fmt::format(
-                                "CSharpConverter<MonoString>::FromCSharp<{}>({{value}})", useConverter)));
+                            map.customMarshaller_ = "StringUtf8";
                         }
 
                         typeMaps_[map.cppType_] = map;

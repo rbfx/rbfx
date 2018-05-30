@@ -591,7 +591,7 @@ void GenerateCApiPass::PrintParameterHandlingCodePre(const std::vector<std::shar
             // Some default values need extra care
             const auto& cppType = param->Ast<cppast::cpp_function_parameter>().type();
             auto* typeMap = generator->GetTypeMap(GetBaseType(cppType));
-            if (typeMap != nullptr && typeMap->csType_ == "string")
+            /*if (typeMap != nullptr && typeMap->csType_ == "string")
             {
                 printer_ << fmt::format("if ({} == nullptr)", param->name_);
                 printer_.Indent();
@@ -600,7 +600,7 @@ void GenerateCApiPass::PrintParameterHandlingCodePre(const std::vector<std::shar
                 }
                 printer_.Dedent();
             }
-            else if (typeMap == nullptr && IsComplexType(cppType) && value != "nullptr")
+            else*/ if (typeMap == nullptr && IsComplexType(cppType) && value != "nullptr")
             {
                 printer_ << fmt::format("if ({} == nullptr)", param->name_);
                 printer_.Indent();

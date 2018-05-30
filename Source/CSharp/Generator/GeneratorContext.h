@@ -46,7 +46,7 @@ struct TypeMap
     std::string cppToCTemplate_ = "{value}";
     std::string csToPInvokeTemplate_ = "{value}";
     std::string pInvokeToCSTemplate_ = "{value}";
-    std::string marshalAttribute_;
+    std::string customMarshaller_;
     bool isValueType_ = false;
 };
 

@@ -177,57 +177,12 @@ struct CSharpObjConverter
 ////////////////////////////////////// String converters ///////////////////////////////////////////////////////////////
 template<typename T> struct CSharpConverter;
 
-template<> struct CSharpConverter<MonoString>
+template<> struct CSharpConverter<Urho3D::String>
 {
-    static inline MonoString* ToCSharp(const char* value) { return mono_string_new(mono_domain_get(), value); }
-    static inline MonoString* ToCSharp(const String& value) { return mono_string_new(mono_domain_get(), value.CString()); }
-    static inline MonoString* ToCSharp(const WString& value)
-    {
-        if (sizeof(wchar_t) == 2)
-            return mono_string_new_utf16(mono_domain_get(), (const mono_unichar2*)value.CString(), value.Length());
-        else
-            return mono_string_new_utf32(mono_domain_get(), (const mono_unichar4*)value.CString(), value.Length());
-    }
-
-    template<typename T> static T FromCSharp(MonoString* value);
+    static inline const char* ToCSharp(const char* value) { return value; }
+    static inline const char* ToCSharp(const String& value) { return value.CString(); }
+    static inline const char* ToCSharp(const String&& value) { return strdup(value.CString()); }
 };
-
-template<> inline String CSharpConverter<MonoString>::FromCSharp<Urho3D::String>(MonoString* value)
-{
-    if (sizeof(wchar_t) == 2)
-        return String((wchar_t*)mono_string_chars(value));
-    else
-    {
-        auto* rawString = mono_string_to_utf8(value);
-        String result(rawString);
-        mono_free(rawString);
-        return result;
-    }
-}
-
-template<> inline Urho3D::WString CSharpConverter<MonoString>::FromCSharp<Urho3D::WString>(MonoString* value)
-{
-    return Urho3D::WString(CSharpConverter<MonoString>::FromCSharp<Urho3D::String>(value));
-}
-
-struct MonoStringHolder
-{
-    char* string;
-
-    explicit MonoStringHolder(char* s) { string = s; }
-    operator char*()                   { return string; }
-
-    ~MonoStringHolder()
-    {
-        mono_free(string);
-        string = nullptr;
-    }
-};
-
-template<> inline MonoStringHolder CSharpConverter<MonoString>::FromCSharp<MonoStringHolder>(MonoString* value)
-{
-    return MonoStringHolder(mono_string_to_utf8(value));
-}
 
 ///////////////////////////////////////// Utilities ////////////////////////////////////////////////////////////////////
 template<typename T>

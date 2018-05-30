@@ -193,10 +193,9 @@
       "ctype": "char const*",
       "ptype": "string",
       "cstype": "string",
-      "cpp_to_c": "{value}.CString()",
+      "cpp_to_c": "CSharpConverter<Urho3D::String>::ToCSharp({value})",
       "c_to_cpp": "Urho3D::String({value})",
       "is_value_type": true,
-      "supports_wchar": true
     },
     {
       "type": "Urho3D::VariantMap",
