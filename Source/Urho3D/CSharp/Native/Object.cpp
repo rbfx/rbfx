@@ -47,7 +47,7 @@ public:
 public:
     SharedPtr<Object> CreateObject() override
     {
-        return SharedPtr<Object>(context_->GetScripts()->CreateObject(context_, managedType_.Value()));
+        return SharedPtr<Object>(ScriptSubsystem::managed_.CreateObject(context_, managedType_.Value()));
     }
 
 protected:
@@ -63,31 +63,25 @@ public:
         , handleWithType_(handleWithType)
         , gcHandle_(gcHandle)
     {
-        auto* image = mono_image_loaded("Urho3DNet");
-        auto* desc = mono_method_desc_new(
-            handleWithType ? "Urho3D.Object:HandleEventWithType" : "Urho3D.Object:HandleEventWithoutType", true);
-        function_ = mono_method_desc_search_in_image(desc, image);
-        mono_method_desc_free(desc);
     }
 
     ~ManagedEventHandler() override
     {
-        mono_gchandle_free(gcHandle_);
-        mono_free_method(function_);
+        ScriptSubsystem::managed_.Unlock(gcHandle_);
         gcHandle_ = 0;
     }
 
     void Invoke(VariantMap& eventData) override
     {
-        MonoObject* exception = nullptr;
-        void* args[3] = {(void*)gcHandle_, &eventType_, &eventData};
-        mono_runtime_invoke(function_, nullptr, args, &exception);
+        if (handleWithType_)
+            ScriptSubsystem::managed_.HandleEventWithType(gcHandle_, eventType_.Value(), &eventData);
+        else
+            ScriptSubsystem::managed_.HandleEventWithoutType(gcHandle_, eventType_.Value(), &eventData);
     }
 
     EventHandler* Clone() const override
     {
-        return new ManagedEventHandler(receiver_, mono_gchandle_new(mono_gchandle_get_target(gcHandle_), false),
-            handleWithType_);
+        return new ManagedEventHandler(receiver_, ScriptSubsystem::managed_.CloneHandle(gcHandle_), handleWithType_);
     }
 
 public:
@@ -95,24 +89,19 @@ public:
 protected:
     gchandle gcHandle_ = 0;
     bool handleWithType_ = false;
-    MonoMethod* function_ = nullptr;
 };
-
-}
 
 extern "C"
 {
 
-void Urho3D_Context_RegisterFactory(Context* context, MonoString* typeName, unsigned baseType,
-                                    MonoString* category)
+URHO3D_EXPORT_API void Urho3D_Context_RegisterFactory(Context* context, const char* typeName, unsigned baseType,
+                                                      const char* category)
 {
-    context->RegisterFactory(new Urho3D::ManagedObjectFactory(context,
-        CSharpConverter<MonoString>::FromCSharp<MonoStringHolder>(typeName), StringHash(baseType)),
-        CSharpConverter<MonoString>::FromCSharp<MonoStringHolder>(category));
+    context->RegisterFactory(new ManagedObjectFactory(context, typeName, StringHash(baseType)), category);
 }
 
-void Urho3D_Object_SubscribeToEvent(Object* receiver, gchandle gcHandle, unsigned eventType, bool handleWithType,
-    Object* sender)
+URHO3D_EXPORT_API void Urho3D_Object_SubscribeToEvent(Object* receiver, gchandle gcHandle, unsigned eventType,
+                                                      bool handleWithType, Object* sender)
 {
     // gcHandle is a handle to Action<> which references receiver object. We have to ensure object is alive as long as
     // engine will be sending events to it. On the other hand pinning receiver object is not required as it's lifetime
@@ -123,10 +112,6 @@ void Urho3D_Object_SubscribeToEvent(Object* receiver, gchandle gcHandle, unsigne
         receiver->SubscribeToEvent(sender, StringHash(eventType), new ManagedEventHandler(receiver, gcHandle, handleWithType));
 }
 
-void RegisterObjectInternalCalls(Context* context)
-{
-    MONO_INTERNAL_CALL(Urho3D.Context, Urho3D_Context_RegisterFactory);
-    MONO_INTERNAL_CALL(Urho3D.Object, Urho3D_Object_SubscribeToEvent);
 }
 
 }

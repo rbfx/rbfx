@@ -18,6 +18,8 @@ namespace Urho3D
 
         static Context()
         {
+            // Exchange APIs
+            NativeInterface.Initialize();
             // Register engine API
             Urho3DRegisterMonoInternalCalls();
         }
@@ -82,9 +84,11 @@ namespace Urho3D
             return managed.NativeInstance;
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void Urho3D_Context_RegisterFactory(IntPtr context, string typeName, uint baseType,
-            string category);
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+        private static extern void Urho3D_Context_RegisterFactory(IntPtr context,
+            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringUtf8))]string typeName,
+            uint baseType,
+            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringUtf8))]string category);
 
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Urho3DRegisterMonoInternalCalls();

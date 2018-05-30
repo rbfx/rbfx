@@ -57,7 +57,7 @@ bool PluginManagerManaged::LoadPlugin(const String& path)
         auto descBase = ToString("%s.%s:", name.CString(), name.CString());
         auto object = GetScripts()->CallMethod(assembly, descBase + "PluginMain", nullptr, {
             GetScripts()->ToManagedObject("Urho3DNet", "Urho3D.Context", reinterpret_cast<RefCounted*>(context_))});
-        auto objectHandle = GetScripts()->Lock(object.GetVoidPtr(), false);
+        auto objectHandle = ScriptSubsystem::managed_.Lock(object.GetVoidPtr(), false);
         GetScripts()->CallMethod(assembly, descBase + "OnLoad", object.GetVoidPtr());
         plugins_[path] = objectHandle;
 
@@ -92,7 +92,7 @@ bool PluginManagerManaged::UnloadPlugin(const String& path)
             GetScripts()->GetObject(handle));
 
         // Unreference plugin object
-        GetScripts()->Unlock(handle);
+        ScriptSubsystem::managed_.Unlock(handle);
 
         // Unload assembly
         //GetScripts()->UnloadAssembly(assembly);

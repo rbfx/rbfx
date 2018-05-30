@@ -33,19 +33,19 @@ namespace Urho3D
                 eventType.Hash, false, GetNativeInstance(sender));
         }
 
-        private static unsafe void HandleEventWithType(void* gcHandle, uint type, void* args)
+        internal static void HandleEventWithType(IntPtr gcHandle, uint type, IntPtr args)
         {
-            var callback = (Action<StringHash, VariantMap>) GCHandle.FromIntPtr((IntPtr)gcHandle).Target;
-            callback.Invoke(StringHash.GetManagedInstance(type), VariantMap.GetManagedInstance((IntPtr)args, false));
+            var callback = (Action<StringHash, VariantMap>) GCHandle.FromIntPtr(gcHandle).Target;
+            callback.Invoke(StringHash.GetManagedInstance(type), VariantMap.GetManagedInstance(args, false));
         }
 
-        private static unsafe void HandleEventWithoutType(void* gcHandle, uint type, void* args)
+        internal static void HandleEventWithoutType(IntPtr gcHandle, uint type, IntPtr args)
         {
-            var callback = (Action<VariantMap>) GCHandle.FromIntPtr((IntPtr)gcHandle).Target;
-            callback.Invoke(VariantMap.GetManagedInstance((IntPtr)args, false));
+            var callback = (Action<VariantMap>) GCHandle.FromIntPtr(gcHandle).Target;
+            callback.Invoke(VariantMap.GetManagedInstance(args, false));
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern void Urho3D_Object_SubscribeToEvent(IntPtr receiver, IntPtr gcHandle, uint eventType,
             bool handleWithType, IntPtr sender);
     }

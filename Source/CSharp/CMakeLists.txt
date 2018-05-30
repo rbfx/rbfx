@@ -173,7 +173,6 @@ macro (csharp_bind_target)
     # CSharp target (native)
     file (GLOB_RECURSE COMMON_CSHARP_SOURCE_FILES_MANUAL
         ${COMMON_DIR}/Native/*.cpp ${BIND_CSHARP_DIR}/Native/*.cpp)
-#    list (APPEND COMMON_CSHARP_SOURCE_FILES_MANUAL ${CMAKE_BINARY_DIR}/CSharpBindings/csharp.cpp)
 
     if (BIND_INTERNAL)
         set (CSHARP_LIBRARY_NAME ${BIND_TARGET})

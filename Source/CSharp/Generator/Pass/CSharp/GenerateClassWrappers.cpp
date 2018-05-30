@@ -112,7 +112,7 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_ << "if (gcHandle_ != 0)";
         printer_.Indent();
         {
-            printer_ << "mono_gchandle_free(gcHandle_);";
+            printer_ << "ScriptSubsystem::managed_.Unlock(gcHandle_);";
             printer_ << "gcHandle_ = 0;";
         }
         printer_.Dedent();

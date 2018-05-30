@@ -32,6 +32,8 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/jit/jit.h>
 
+#include <cstdlib>
+
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../IO/Log.h"
@@ -66,17 +68,6 @@ void ScriptSubsystem::Init(void* domain)
         scriptSubsystem = this;
     else
         assert(scriptSubsystem == this);
-
-    auto* assembly = mono_domain_assembly_open(static_cast<MonoDomain*>(domain), "Urho3DNet.dll");
-    if (assembly == nullptr)
-        assembly = static_cast<MonoAssembly*>(LoadAssembly("Urho3DNet.dll", nullptr));
-
-    auto* image =  mono_assembly_get_image(assembly);
-    auto* klass = mono_class_from_name(image, "Urho3D.CSharp", "NativeInterface");
-
-    auto* method = mono_class_get_method_from_name(klass, "CreateObject", 2);
-    CreateObject_ = reinterpret_cast<decltype(CreateObject_)>(mono_method_get_unmanaged_thunk(method));
-    mono_free_method(method);
 }
 
 const TypeInfo* ScriptSubsystem::GetRegisteredType(StringHash type)
@@ -98,12 +89,6 @@ void ScriptSubsystem::OnEndFrame(StringHash, VariantMap&)
     for (auto* instance : releaseQueue_)
         instance->ReleaseRef();
     releaseQueue_.Clear();
-}
-
-Object* ScriptSubsystem::CreateObject(Context* context, unsigned managedType)
-{
-    MonoException* exception = nullptr;
-    return CreateObject_(context, managedType, (void*)&exception);
 }
 
 void ScriptSubsystem::RegisterCurrentThread()
@@ -298,19 +283,32 @@ void* ScriptSubsystem::ToManagedObject(const char* imageName, const char* classN
     }
 }
 
-gchandle ScriptSubsystem::Lock(void* object, bool pin)
-{
-    return mono_gchandle_new(static_cast<MonoObject*>(object), pin);
-}
-
-void ScriptSubsystem::Unlock(gchandle handle)
-{
-    mono_gchandle_free(handle);
-}
-
 void* ScriptSubsystem::GetObject(gchandle handle)
 {
-    return mono_gchandle_get_target(handle);
+    union
+    {
+        gchandle ph;
+        uint32_t mh;
+    } u{handle};
+    return mono_gchandle_get_target(u.mh);
+}
+
+ManagedRuntime ScriptSubsystem::managed_;
+NativeRuntime ScriptSubsystem::native_;
+
+extern "C"
+{
+
+URHO3D_API NativeRuntime* Urho3D_InitializeCSharp(ManagedRuntime* managed)
+{
+    ScriptSubsystem::managed_ = *managed;
+
+    ScriptSubsystem::native_.AllocateMemory = [](unsigned size) { return malloc(size); };
+    ScriptSubsystem::native_.FreeMemory = &free;
+
+    return &ScriptSubsystem::native_;
+}
+
 }
 
 }

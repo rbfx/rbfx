@@ -183,7 +183,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     printer_ << "instance->SetDeleter([](RefCounted* instance_, void* gcHandle_) {";
                     printer_.Indent("");
                     {
-                        printer_ << "mono_gchandle_free((uintptr_t)gcHandle_);";
+                        printer_ << "ScriptSubsystem::managed_.Unlock((gchandle)gcHandle_);";
                         printer_ << "delete instance_;";
                     }
                     printer_.Dedent("}, (void*)gcHandle);");
@@ -192,7 +192,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 {
                     if (isRefCounted)
                         // Ensure that different GC handles are stored in wrapepr class and refcounted deleter user data
-                        printer_ << "gcHandle = mono_gchandle_new(mono_gchandle_get_target(gcHandle), false);";
+                        printer_ << "gcHandle = ScriptSubsystem::managed_.CloneHandle(gcHandle);";
                     printer_ << "instance->gcHandle_ = gcHandle;";
                     if (IsSubclassOf(cls, "Urho3D::Object"))
                         printer_ << fmt::format("instance->typeInfo_ = new Urho3D::TypeInfo(typeName, {}::GetTypeInfoStatic());", entity->sourceSymbolName_);
