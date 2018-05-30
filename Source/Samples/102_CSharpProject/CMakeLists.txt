@@ -20,7 +20,6 @@
 # THE SOFTWARE.
 #
 
-# Emscripten does not support ucontext/setjmp/longjmp
 if (NOT URHO3D_CSHARP)
     return ()
 endif ()
