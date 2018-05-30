@@ -50,7 +50,7 @@ PluginManagerManaged::PluginManagerManaged(Context* context)
 
 bool PluginManagerManaged::LoadPlugin(const String& path)
 {
-#if URHO3D_PLUGINS_CSHARP
+#if 0 && URHO3D_PLUGINS_CSHARP
     if (auto* assembly = GetScripts()->LoadAssembly(path, nullptr))
     {
         auto name = GetFileName(path);
@@ -72,7 +72,7 @@ bool PluginManagerManaged::LoadPlugin(const String& path)
 
 bool PluginManagerManaged::UnloadPlugin(const String& path)
 {
-#if URHO3D_PLUGINS_CSHARP
+#if 0 && URHO3D_PLUGINS_CSHARP
     // TODO: Experimental/untested.
     auto it = plugins_.Find(path);
     if (it == plugins_.End())

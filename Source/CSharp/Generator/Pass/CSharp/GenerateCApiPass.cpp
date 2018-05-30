@@ -32,11 +32,6 @@ namespace Urho3D
 
 void GenerateCApiPass::Start()
 {
-    printer_ << "#include <mono/metadata/assembly.h>";
-    printer_ << "#include <mono/metadata/loader.h>";
-    printer_ << "#include <mono/metadata/object.h>";
-    printer_ << "#include <mono/metadata/appdomain.h>";
-    printer_ << "#include <mono/metadata/class.h>";
     printer_ << "#include \"CSharp.h\"";
     printer_ << fmt::format("#include \"{}ClassWrappers.hpp\"", generator->currentModule_->moduleName_);
     printer_ << "#include \"PODTypes.hpp\"";

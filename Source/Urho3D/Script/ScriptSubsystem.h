@@ -35,19 +35,18 @@ using gchandle = void*;
 
 struct ManagedRuntime
 {
-    gchandle(*Lock)(void* managedObject, bool pin);
-    void(*Unlock)(gchandle handle);
-    gchandle(*CloneHandle)(gchandle handle);
-    //void*(*GetObject)(gchandle handle);
-    Object*(*CreateObject)(Context* context, unsigned managedType);
-    void(*HandleEventWithType)(gchandle gcHandle, unsigned type, VariantMap* args);
-    void(*HandleEventWithoutType)(gchandle gcHandle, unsigned type, VariantMap* args);
+    gchandle(*Lock)(void* managedObject, bool pin) = nullptr;
+    void(*Unlock)(gchandle handle) = nullptr;
+    gchandle(*CloneHandle)(gchandle handle) = nullptr;
+    Object*(*CreateObject)(Context* context, unsigned managedType) = nullptr;
+    void(*HandleEventWithType)(gchandle gcHandle, unsigned type, VariantMap* args) = nullptr;
+    void(*HandleEventWithoutType)(gchandle gcHandle, unsigned type, VariantMap* args) = nullptr;
 };
 
 struct NativeRuntime
 {
-    void*(*AllocateMemory)(unsigned size);
-    void(*FreeMemory)(void* memory);
+    void*(*AllocateMemory)(unsigned size) = nullptr;
+    void(*FreeMemory)(void* memory) = nullptr;
 };
 
 class URHO3D_API ScriptSubsystem : public Object
@@ -88,17 +87,12 @@ public:
     Variant CallMethod(void* assembly, const String& methodDesc, void* object = nullptr,
         const VariantVector& args = Variant::emptyVariantVector);
 
-    /// Converts instance to managed object.
-    void* ToManagedObject(const char* imageName, const char* className, RefCounted* instance);
-    /// Return object from it's handle.
-    void* GetObject(gchandle handle);
-
     static ManagedRuntime managed_;
     static NativeRuntime native_;
 
 protected:
     /// Initializes object.
-    void Init(void* domain);
+    void Init();
     /// Perform housekeeping tasks.
     void OnEndFrame(StringHash, VariantMap&);
 

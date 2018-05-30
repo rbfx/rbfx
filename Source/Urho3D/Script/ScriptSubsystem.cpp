@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#if URHO3D_WITH_MONO
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/image.h>
 #include <mono/metadata/object.h>
@@ -31,6 +32,7 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/jit/jit.h>
+#endif
 
 #include <cstdlib>
 
@@ -48,17 +50,17 @@ URHO3D_API ScriptSubsystem* scriptSubsystem = nullptr;
 ScriptSubsystem::ScriptSubsystem(Context* context)
     : Object(context)
 {
-    auto* domain = mono_domain_get();
-    if (domain == nullptr)
+
+    if (managed_.CreateObject == nullptr)
         // This library does not run in context of managed process.
         return;
 
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(ScriptSubsystem, OnEndFrame));
 
-    Init(mono_get_root_domain());
+    Init();
 }
 
-void ScriptSubsystem::Init(void* domain)
+void ScriptSubsystem::Init()
 {
     // This global instance is mainly required for queueing ReleaseRef() calls. Not every RefCounted has pointer to
     // Context therefore if multiple contexts exist they may run on different threads. Then there would be no way to
@@ -93,22 +95,21 @@ void ScriptSubsystem::OnEndFrame(StringHash, VariantMap&)
 
 void ScriptSubsystem::RegisterCurrentThread()
 {
+#if URHO3D_WITH_MONO
     auto* domain = mono_domain_get();
     if (domain != nullptr)
         mono_thread_attach(domain);
+#endif
 }
 
 void* ScriptSubsystem::LoadAssembly(const String& pathToAssembly, void* domain)
 {
-    if (domain == nullptr)
-        domain = mono_domain_get();
-    assert(domain != nullptr);
-
-    return mono_domain_assembly_open(static_cast<MonoDomain*>(domain), pathToAssembly.CString());
+    // TODO: Implement through managed_ object
 }
 
 void* ScriptSubsystem::HostManagedRuntime(ScriptSubsystem::RuntimeSettings& settings)
 {
+#if URHO3D_WITH_MONO
     mono_config_parse(nullptr);
     const auto** options = new const char*[settings.jitOptions_.Size()];
     int i = 0;
@@ -122,13 +123,16 @@ void* ScriptSubsystem::HostManagedRuntime(ScriptSubsystem::RuntimeSettings& sett
 
     auto* domain = mono_jit_init_version(settings.domainName_.CString(), "v4.0.30319");
 
-    Init(domain);
+    Init();
 
     return domain;
+#endif
 }
 
 Variant ScriptSubsystem::CallMethod(void* assembly, const String& methodDesc, void* object, const VariantVector& args)
 {
+    // TODO: Implement through managed_ object
+#if 0
     void* monoArgs[20]{};
     auto maxArgs = std::extent<decltype(monoArgs)>::value;
     if (args.Size() > maxArgs)
@@ -240,61 +244,14 @@ Variant ScriptSubsystem::CallMethod(void* assembly, const String& methodDesc, vo
 
     mono_free_method(method);
     mono_method_desc_free(desc);
-
     return result;
+#else
+    return Variant::EMPTY;
+#endif
 }
 
-void* ScriptSubsystem::ToManagedObject(const char* imageName, const char* className, RefCounted* instance)
-{
-    MonoObject* exception = nullptr;
-    void* intPtrInstnace = nullptr;
-    // Make IntPtr.
-    {
-        auto* image = mono_image_loaded("mscorlib");
-        auto* desc = mono_method_desc_new("System.IntPtr:.ctor(void*)", true);
-        auto* method = mono_method_desc_search_in_image(desc, image);
-        auto* cls = mono_class_from_name(image, "System", "IntPtr");
-
-        void* arg[1] = {instance};
-        intPtrInstnace = mono_object_new(mono_domain_get(), cls);
-        mono_runtime_invoke(method, intPtrInstnace, arg, &exception);
-        assert(exception == nullptr);
-
-        mono_free_method(method);
-        mono_method_desc_free(desc);
-    }
-
-    // Create a wrapper object by calling GetManagedInstance() converter method.
-    {
-        auto methodDescription = ToString("%s:GetManagedInstance", className);
-        auto* image = mono_image_loaded(imageName);
-        auto* desc = mono_method_desc_new(methodDescription.CString(), true);
-        auto* method = mono_method_desc_search_in_image(desc, image);
-
-        bool ownsInstance = false;
-        void* args[2] = {intPtrInstnace, &ownsInstance};
-        auto* result = mono_runtime_invoke(method, nullptr, args, &exception);
-        assert(exception == nullptr);
-
-        mono_free_method(method);
-        mono_method_desc_free(desc);
-
-        return result;
-    }
-}
-
-void* ScriptSubsystem::GetObject(gchandle handle)
-{
-    union
-    {
-        gchandle ph;
-        uint32_t mh;
-    } u{handle};
-    return mono_gchandle_get_target(u.mh);
-}
-
-ManagedRuntime ScriptSubsystem::managed_;
-NativeRuntime ScriptSubsystem::native_;
+ManagedRuntime ScriptSubsystem::managed_{};
+NativeRuntime ScriptSubsystem::native_{};
 
 extern "C"
 {
