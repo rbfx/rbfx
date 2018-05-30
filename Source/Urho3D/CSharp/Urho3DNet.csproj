@@ -5,6 +5,8 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <BuildDir Condition="'$(CMAKE_BINARY_DIR)' == ''">..\..\..\build</BuildDir>
     <BuildDir Condition="'$(CMAKE_BINARY_DIR)' != ''">$(CMAKE_BINARY_DIR)</BuildDir>
+    <OutputPath Condition="'$(CMAKE_UNIX_ENV)' == ''">$(BuildDir)\bin\$(Configuration)\</OutputPath>
+    <OutputPath Condition="'$(CMAKE_UNIX_ENV)' == 'ON'">$(BuildDir)\bin\</OutputPath>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
     <ProjectGuid>{38913C81-4703-4652-B17B-823BAA9B6508}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -13,7 +15,6 @@
     <AssemblyName>Urho3DNet</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <OutputPath>$(BuildDir)\bin\</OutputPath>
     <IntermediateOutputPath>$(BuildDir)\obj\$(Configuration)\$(AssemblyName)</IntermediateOutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -27,6 +28,22 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
+    <PlatformTarget>x64</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'RelWithDebInfo|x64' ">
+    <PlatformTarget>x64</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'MinSizeRel|x64' ">
     <PlatformTarget>x64</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
