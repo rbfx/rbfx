@@ -51,6 +51,7 @@ bool GeneratorContext::AddModule(const std::string& sourceDir, const std::string
     m.outputDir_ = str::AddTrailingSlash(outputDir);
     m.outputDirCs_ = m.outputDir_ + "CSharp/";
     m.outputDirCpp_ = m.outputDir_ + "Native/";
+    m.rulesFile_ = rulesFile;
 
     Urho3D::CreateDirsRecursive(m.outputDirCpp_);
     Urho3D::CreateDirsRecursive(m.outputDirCs_);
@@ -635,10 +636,11 @@ bool GeneratorContext::IsOutOfDate(const std::string& generatorExe)
     {
         auto outputTime = GetLastModifiedTime(m.outputDir_);
         auto exeTime = GetLastModifiedTime(generatorExe);
-        if (outputTime == 0 || exeTime == 0)
+        auto rulesTime = GetLastModifiedTime(m.rulesFile_);
+        if (outputTime == 0 || exeTime == 0 || rulesTime == 0)
             return true;
 
-        if (exeTime > outputTime)
+        if (exeTime > outputTime || rulesTime > outputTime)
             return true;
 
         for (const auto& nsRules : m.rules_)

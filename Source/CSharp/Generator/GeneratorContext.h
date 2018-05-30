@@ -115,6 +115,7 @@ public:
         std::string moduleName_;
         std::vector<std::string> extraMonoCallInitializers_;
         cppast::libclang_compile_config config_;
+        std::string rulesFile_;
     };
     bool isStatic_ = false;
     std::vector<Module> modules_;
