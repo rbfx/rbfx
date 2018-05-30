@@ -172,7 +172,7 @@ macro (add_sample TARGET)
         if (DESKTOP)    # TODO: Support other platforms
             add_target_csharp(102_CSharpProject ${CMAKE_CURRENT_SOURCE_DIR}/102_CSharpProject.csproj)
             add_dependencies(${TARGET} Urho3DNet)
-            if (MSVC)
+            if (MSVC AND URHO3D_WITH_MONO)
                 # On windows managed sample executable will not run when double-clicked. Create a
                 # native executable (bundle) which includes all managed dependencies instead.
                 find_package(Mono REQUIRED)

@@ -46,7 +46,7 @@ macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)
 endmacro()
 
 macro (add_target_csharp TARGET PROJECT_FILE)
-    if (WIN32)
+    if (WIN32 AND URHO3D_WITH_MONO)
         find_package(Mono REQUIRED)
         find_program(MSBUILD msbuild PATHS ${MONO_PATH}/bin)
     else ()
@@ -196,10 +196,12 @@ macro (csharp_bind_target)
     target_include_directories(${CSHARP_LIBRARY_NAME} PRIVATE
         ${COMMON_DIR}/Native ${BIND_CSHARP_DIR}/Native ${BINDINGS_OUTPUT_DIR}/Native)
 
-    find_package(Mono REQUIRED)
-    target_include_directories(${CSHARP_LIBRARY_NAME} PRIVATE ${MONO_INCLUDE_DIRS})
-    target_link_libraries(${CSHARP_LIBRARY_NAME} ${MONO_LIBRARIES})
-    target_compile_options(${CSHARP_LIBRARY_NAME} PRIVATE ${MONO_CFLAGS})
+    if (URHO3D_WITH_MONO)
+        find_package(Mono REQUIRED)
+        target_include_directories(${CSHARP_LIBRARY_NAME} PRIVATE ${MONO_INCLUDE_DIRS})
+        target_link_libraries(${CSHARP_LIBRARY_NAME} ${MONO_LIBRARIES})
+        target_compile_options(${CSHARP_LIBRARY_NAME} PRIVATE ${MONO_CFLAGS})
+    endif ()
 
     file (WRITE ${BINDINGS_OUTPUT_DIR}/CSharp/Config.cs
 "namespace Urho3D.CSharp
@@ -219,11 +221,15 @@ macro (csharp_bind_target)
     endif ()
     add_target_csharp(${BIND_TARGET}Net ${BIND_CSHARP_DIR}/${BIND_TARGET}Net.csproj)
     add_dependencies(${BIND_TARGET}Net ${CSHARP_LIBRARY_NAME})
-    if (MSVC)
+    if (WIN32)
         add_custom_command(TARGET ${BIND_TARGET}Net POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/System.Buffers/ref/netstandard1.1/System.Buffers.dll ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/
-            COMMAND ${CMAKE_COMMAND} -E copy ${MONO_PATH}/lib/mono/4.5/Facades/System.Runtime.dll ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/
         )
+        if (URHO3D_WITH_MONO)
+            add_custom_command(TARGET ${BIND_TARGET}Net POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy ${MONO_PATH}/lib/mono/4.5/Facades/System.Runtime.dll ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/
+            )
+        endif ()
         install (FILES
             ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/System.Buffers.dll
             ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/System.Runtime.dll
