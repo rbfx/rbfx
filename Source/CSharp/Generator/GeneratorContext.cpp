@@ -613,6 +613,10 @@ bool GeneratorContext::IsOutOfDate(const std::string& generatorExe)
 {
     for (const auto& m : modules_)
     {
+        if (GetLastModifiedTime(m.outputDirCs_ + "CSharp.cs") == 0)
+            // Missing file, needed for the first time generator runs
+            return true;
+
         auto outputTime = GetLastModifiedTime(m.outputDir_);
         auto exeTime = GetLastModifiedTime(generatorExe);
         auto rulesTime = GetLastModifiedTime(m.rulesFile_);
