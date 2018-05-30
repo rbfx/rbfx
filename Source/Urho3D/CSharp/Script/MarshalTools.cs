@@ -6,6 +6,87 @@ using System.Runtime.InteropServices;
 
 namespace Urho3D.CSharp
 {
+    /// <summary>
+    /// Marshals utf-8 strings. Native code controls lifetime of native string.
+    /// </summary>
+    public class StringUtf8 : ICustomMarshaler
+    {
+        [ThreadStatic]
+        private static StringUtf8 _instance;
+        private IntPtr _scratch = IntPtr.Zero;
+        private int _scratchLength;
+
+        public static ICustomMarshaler GetInstance(string cookie)
+        {
+            return _instance ?? (_instance = new StringUtf8());
+        }
+
+        public void CleanUpManagedData(object managedObj)
+        {
+        }
+
+        public void CleanUpNativeData(IntPtr pNativeData)
+        {
+        }
+
+        public int GetNativeDataSize()
+        {
+            return Marshal.SizeOf<IntPtr>();
+        }
+
+        public IntPtr MarshalManagedToNative(object managedObj)
+        {
+            if (!(managedObj is string))
+                return IntPtr.Zero;
+
+            var s = Encoding.UTF8.GetBytes((string) managedObj);
+
+            if (_scratchLength < s.Length + 1)
+            {
+                _scratchLength = s.Length + 1;
+                _scratch = Marshal.ReAllocHGlobal(_scratch, (IntPtr) _scratchLength);
+            }
+
+            Marshal.Copy(s, 0, _scratch, s.Length);
+            Marshal.WriteByte(_scratch, s.Length, 0);
+            return _scratch;
+        }
+
+        public unsafe object MarshalNativeToManaged(IntPtr pNativeData)
+        {
+            var length = 0;
+            while (Marshal.ReadByte(pNativeData, length) != 0)
+                ++length;
+            return Encoding.UTF8.GetString((byte*) pNativeData, length);
+        }
+    }
+
+    /// <summary>
+    /// Marshals utf-8 strings. Managed code frees native string after obtaining it. Used in cases when native code
+    /// returns by value.
+    /// </summary>
+    public class StringUtf8Copy : StringUtf8
+    {
+        [ThreadStatic]
+        private static StringUtf8Copy _instance;
+
+        public new static ICustomMarshaler GetInstance(string _)
+        {
+            return _instance ?? (_instance = new StringUtf8Copy());
+        }
+
+        public new void CleanUpNativeData(IntPtr pNativeData)
+        {
+        }
+
+        public new object MarshalNativeToManaged(IntPtr pNativeData)
+        {
+            var result = base.MarshalNativeToManaged(pNativeData);
+            NativeInterface.Native.FreeMemory(pNativeData);
+            return result;
+        }
+    }
+
     internal static class MarshalTools
     {
         internal static bool HasOverride(this MethodInfo method)
