@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 
 namespace Urho3D.CSharp
@@ -104,11 +104,11 @@ namespace Urho3D.CSharp
             Managed.HandleEventWithType = Object.HandleEventWithType;
             Managed.HandleEventWithoutType = Object.HandleEventWithoutType;
 
-            Native = Urho3D_InitializeCSharp(ref Managed);
+            Urho3D_InitializeCSharp(ref Managed, ref Native);
         }
 
-        [DllImport(Config.NativeLibraryName)]
-        internal static extern ref NativeRuntime Urho3D_InitializeCSharp(ref ManagedRuntime managed);
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void Urho3D_InitializeCSharp(ref ManagedRuntime managed, ref NativeRuntime native);
 
         internal static IntPtr Lock(Object @object, bool pin = false)
         {
