@@ -17,23 +17,23 @@ namespace Urho3D
 
     public class VariantMap : NativeObject, IDictionary<StringHash, Variant>
     {
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern uint Urho3D_HashMap_StringHash_Variant_GetKey(HashIteratorBase it);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr Urho3D_HashMap_StringHash_Variant_GetValue(HashIteratorBase it);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern void Urho3D_HashMap_StringHash_Variant_Add(IntPtr map, uint key, IntPtr value);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern bool Urho3D_HashMap_StringHash_Variant_Remove(IntPtr map, uint key);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern bool Urho3D_HashMap_StringHash_Variant_First(IntPtr map, out HashIteratorBase it);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern bool Urho3D_HashMap_StringHash_Variant_Next(IntPtr map, ref HashIteratorBase it);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern bool Urho3D_HashMap_StringHash_Variant_Contains(IntPtr map, uint key);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr Urho3D_HashMap_StringHash_Variant_TryGet(IntPtr map, uint key);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern void Urho3D_HashMap_StringHash_Variant_destructor(IntPtr map);
 
         class Enumerator : IEnumerator<KeyValuePair<StringHash, Variant>>

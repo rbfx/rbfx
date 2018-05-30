@@ -94,14 +94,14 @@ protected:
 extern "C"
 {
 
-URHO3D_EXPORT_API void Urho3D_Context_RegisterFactory(Context* context, const char* typeName, unsigned baseType,
-                                                      const char* category)
+EXPORT_API void Urho3D_Context_RegisterFactory(Context* context, const char* typeName, unsigned baseType,
+                                               const char* category)
 {
     context->RegisterFactory(new ManagedObjectFactory(context, typeName, StringHash(baseType)), category);
 }
 
-URHO3D_EXPORT_API void Urho3D_Object_SubscribeToEvent(Object* receiver, gchandle gcHandle, unsigned eventType,
-                                                      bool handleWithType, Object* sender)
+EXPORT_API void Urho3D_Object_SubscribeToEvent(Object* receiver, gchandle gcHandle, unsigned eventType,
+                                               bool handleWithType, Object* sender)
 {
     // gcHandle is a handle to Action<> which references receiver object. We have to ensure object is alive as long as
     // engine will be sending events to it. On the other hand pinning receiver object is not required as it's lifetime

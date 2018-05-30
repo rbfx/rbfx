@@ -51,7 +51,7 @@ void GeneratePInvokePass::Start()
 
 bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
-    const char* dllImport = "[MethodImplAttribute(MethodImplOptions.InternalCall)]";
+    const char* dllImport = "[DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]";
 
     // Generate C API for property getters and seters. Visitor will not visit these notes on it's own.
     if (entity->flags_ & HintProperty)

@@ -76,7 +76,7 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
         return info.event != info.container_entity_enter;
     }
 
-    printer_ << fmt::format("class URHO3D_EXPORT_API {} : public {}", entity->name_, entity->uniqueName_);
+    printer_ << fmt::format("class EXPORT_API {} : public {}", entity->name_, entity->uniqueName_);
     printer_.Indent();
 
     // Urho3D-specific

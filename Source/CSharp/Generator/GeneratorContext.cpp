@@ -98,17 +98,6 @@ bool GeneratorContext::AddModule(const std::string& sourceDir, const std::string
         {
             m.moduleName_ = jsonRules["module"].GetString();
 
-            if (jsonRules.HasMember("initialization"))
-            {
-                const auto& initialization = jsonRules["initialization"];
-                if (initialization.HasMember("mono-calls"))
-                {
-                    const auto& initMonoCalls = initialization["mono-calls"];
-                    for (auto it = initMonoCalls.Begin(); it != initMonoCalls.End(); it++)
-                        m.extraMonoCallInitializers_.emplace_back(it->GetString());
-                }
-            }
-
             if (jsonRules.HasMember("default-values"))
             {
                 const auto& defaults = jsonRules["default-values"];

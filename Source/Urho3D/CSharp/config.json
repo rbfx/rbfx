@@ -355,12 +355,6 @@
       "is_value_type": true
     }
   ],
-  "initialization": {
-    "mono-calls": [
-      "RegisterVectorInternalCalls",
-      "RegisterVariantMapInternalCalls"
-    ]
-  },
   "default-values": {
     "SDLK_DELETE": "127",
     "SDLK_ESCAPE": "27",

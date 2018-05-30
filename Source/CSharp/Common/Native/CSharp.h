@@ -35,6 +35,15 @@
 
 using namespace Urho3D;
 
+#ifndef EXPORT_API
+#   if _WIN32
+#       define EXPORT_API __declspec(dllexport)
+#   else
+#       define EXPORT_API __attribute__ ((visibility("default")))
+#   endif
+#endif
+
+
 namespace Urho3D
 {
 
@@ -232,6 +241,3 @@ std::uintptr_t GetTypeID(const T* instance)
 {
     return reinterpret_cast<std::uintptr_t>(&typeid(*instance));
 }
-
-#define MONO_INTERNAL_CALL(destination, function) \
-    mono_add_internal_call(#destination "::" #function, (void*)&function)
