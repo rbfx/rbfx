@@ -27,11 +27,6 @@
 #include <Urho3D/IO/Log.h>
 #include <string>
 #include <type_traits>
-#include <mono/utils/mono-publib.h>
-#include <mono/metadata/object.h>
-#include <mono/metadata/class.h>
-#include <mono/metadata/appdomain.h>
-#include <mono/metadata/loader.h>
 
 using namespace Urho3D;
 
