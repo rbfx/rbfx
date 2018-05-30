@@ -105,6 +105,7 @@ void ScriptSubsystem::RegisterCurrentThread()
 void* ScriptSubsystem::LoadAssembly(const String& pathToAssembly, void* domain)
 {
     // TODO: Implement through managed_ object
+    return nullptr;
 }
 
 void* ScriptSubsystem::HostManagedRuntime(ScriptSubsystem::RuntimeSettings& settings)
@@ -126,6 +127,8 @@ void* ScriptSubsystem::HostManagedRuntime(ScriptSubsystem::RuntimeSettings& sett
     Init();
 
     return domain;
+#else
+    return nullptr;
 #endif
 }
 
@@ -256,14 +259,14 @@ NativeRuntime ScriptSubsystem::native_{};
 extern "C"
 {
 
-URHO3D_API NativeRuntime* Urho3D_InitializeCSharp(ManagedRuntime* managed)
+URHO3D_API void Urho3D_InitializeCSharp(ManagedRuntime* managed, NativeRuntime* native)
 {
     ScriptSubsystem::managed_ = *managed;
 
     ScriptSubsystem::native_.AllocateMemory = [](unsigned size) { return malloc(size); };
     ScriptSubsystem::native_.FreeMemory = &free;
 
-    return &ScriptSubsystem::native_;
+    *native = ScriptSubsystem::native_;
 }
 
 }
