@@ -21,7 +21,6 @@
 //
 
 #include <Urho3D/Core/Object.h>
-#include <mono/metadata/debug-helpers.h>
 #include "Urho3DClassWrappers.hpp"
 
 

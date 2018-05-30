@@ -86,23 +86,30 @@ namespace Urho3D
 
         #region Interop
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void Urho3D_StringVector_Add(IntPtr instance, string value);
+        private static extern void Urho3D_StringVector_Add(IntPtr instance,
+            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringUtf8))]string value);
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void Urho3D_StringVector_InsertAt(IntPtr instance, int index, string value);
+        private static extern void Urho3D_StringVector_InsertAt(IntPtr instance, int index,
+            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringUtf8))]string value);
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void Urho3D_StringVector_Set(IntPtr instance, int index, string value);
+        private static extern void Urho3D_StringVector_Set(IntPtr instance, int index,
+            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringUtf8))]string value);
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringUtf8))]
         private static extern string Urho3D_StringVector_Get(IntPtr instance, int index);
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern bool Urho3D_StringVector_Remove(IntPtr instance, string value);
+        private static extern bool Urho3D_StringVector_Remove(IntPtr instance,
+            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringUtf8))]string value);
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern bool Urho3D_StringVector_RemoveAt(IntPtr instance, int index);
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern void Urho3D_StringVector_Clear(IntPtr instance);
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern bool Urho3D_StringVector_Contains(IntPtr instance, string value);
+        private static extern bool Urho3D_StringVector_Contains(IntPtr instance,
+            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringUtf8))]string value);
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Urho3D_StringVector_IndexOf(IntPtr instance, string value);
+        private static extern int Urho3D_StringVector_IndexOf(IntPtr instance,
+            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringUtf8))]string value);
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern void Urho3D_StringVector_destructor(IntPtr instnace);
 

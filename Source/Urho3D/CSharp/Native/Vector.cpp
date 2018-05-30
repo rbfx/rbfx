@@ -25,29 +25,29 @@
 extern "C"
 {
 
-EXPORT_API void Urho3D_StringVector_Add(StringVector* instance, MonoString* value)
+EXPORT_API void Urho3D_StringVector_Add(StringVector* instance, const char* value)
 {
-    instance->Push(CSharpConverter<MonoString>::FromCSharp<Urho3D::String>(value));
+    instance->Push(value);
 }
 
-EXPORT_API void Urho3D_StringVector_InsertAt(StringVector* instance, int index, MonoString* value)
+EXPORT_API void Urho3D_StringVector_InsertAt(StringVector* instance, int index, const char* value)
 {
-    instance->Insert(index, CSharpConverter<MonoString>::FromCSharp<Urho3D::String>(value));
+    instance->Insert(index, value);
 }
 
-EXPORT_API void Urho3D_StringVector_Set(StringVector* instance, int index, MonoString* value)
+EXPORT_API void Urho3D_StringVector_Set(StringVector* instance, int index, const char* value)
 {
-    instance->operator[](index) = CSharpConverter<MonoString>::FromCSharp<Urho3D::String>(value);
+    instance->operator[](index) = value;
 }
 
-EXPORT_API MonoString* Urho3D_StringVector_Get(StringVector* instance, int index)
+EXPORT_API const char* Urho3D_StringVector_Get(StringVector* instance, int index)
 {
-    return CSharpConverter<MonoString>::ToCSharp(instance->operator[](index));
+    return instance->operator[](index).CString();
 }
 
-EXPORT_API bool Urho3D_StringVector_Remove(StringVector* instance, MonoString* value)
+EXPORT_API bool Urho3D_StringVector_Remove(StringVector* instance, const char* value)
 {
-    return instance->Remove(CSharpConverter<MonoString>::FromCSharp<Urho3D::String>(value));
+    return instance->Remove(value);
 }
 
 EXPORT_API bool Urho3D_StringVector_RemoveAt(StringVector* instance, int index)
@@ -62,14 +62,14 @@ EXPORT_API void Urho3D_StringVector_Clear(StringVector* instance)
     instance->Clear();
 }
 
-EXPORT_API bool Urho3D_StringVector_Contains(StringVector* instance, MonoString* value)
+EXPORT_API bool Urho3D_StringVector_Contains(StringVector* instance, const char* value)
 {
-    return instance->Contains(CSharpConverter<MonoString>::FromCSharp<Urho3D::String>(value));
+    return instance->Contains(value);
 }
 
-EXPORT_API int Urho3D_StringVector_IndexOf(StringVector* instance, MonoString* value)
+EXPORT_API int Urho3D_StringVector_IndexOf(StringVector* instance, const char* value)
 {
-    auto index = instance->IndexOf(CSharpConverter<MonoString>::FromCSharp<Urho3D::String>(value));
+    auto index = instance->IndexOf(value);
     if (index == instance->Size())
         return -1;
     return index;
