@@ -53,9 +53,6 @@ set (CMAKE_INCLUDE_CURRENT_DIR ON)
 set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set (ENV{CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR})
-if (UNIX)
-    set (ENV{CMAKE_UNIX_ENV} ON)
-endif ()
 
 if (URHO3D_SSE AND NOT MSVC)
     # Build engine and it's dependencies with SSE/SSE2 enabled.
