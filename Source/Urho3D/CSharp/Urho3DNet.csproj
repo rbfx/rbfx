@@ -103,22 +103,7 @@
     <Compile Include="**\*.cs" />
     <Compile Include="$(BuildDir)\CSharpBindings\Urho3D\CSharp\**\*.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\build\Source\Urho3D\Urho3D.vcxproj">
-      <Project>{b9092f31-0540-3033-96e1-ee6eae17ae1d}</Project>
-      <Name>Urho3D</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\build\Source\CSharp\Generator\CSharpGenerator.vcxproj">
-      <Project>{8ECE2FA3-8291-3C44-B2E9-D9EEAECF1EEC}</Project>
-      <Name>CSharpGenerator</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PreBuildEvent>$(OS)
-        $(VSGenerateBindingsCommand)
-    </PreBuildEvent>
-  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
          Other similar extension points exist, see Microsoft.Common.targets.
     <Target Name="BeforeBuild">
