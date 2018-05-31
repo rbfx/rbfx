@@ -5,8 +5,8 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <BuildDir Condition="'$(CMAKE_BINARY_DIR)' == ''">..\..\..\build</BuildDir>
     <BuildDir Condition="'$(CMAKE_BINARY_DIR)' != ''">$(CMAKE_BINARY_DIR)</BuildDir>
-    <OutputPath Condition="'$(VisualStudioVersion)' != ''">$(BuildDir)\bin\$(Configuration)\</OutputPath>
-    <OutputPath Condition="'$(VisualStudioVersion)' == ''">$(BuildDir)\bin\</OutputPath>
+    <OutputPath Condition="'$(OS)' != 'Unix'">$(BuildDir)\bin\$(Configuration)\</OutputPath>
+    <OutputPath Condition="'$(OS)' == 'Unix'">$(BuildDir)\bin\</OutputPath>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProjectGuid>{0A84D2EB-5143-4B84-8287-09901C767178}</ProjectGuid>
     <OutputType>WinExe</OutputType>

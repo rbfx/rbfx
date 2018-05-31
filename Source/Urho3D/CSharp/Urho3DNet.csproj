@@ -5,9 +5,11 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <BuildDir Condition="'$(CMAKE_BINARY_DIR)' == ''">..\..\..\build</BuildDir>
     <BuildDir Condition="'$(CMAKE_BINARY_DIR)' != ''">$(CMAKE_BINARY_DIR)</BuildDir>
-    <OutputPath Condition="'$(VisualStudioVersion)' != ''">$(BuildDir)\bin\$(Configuration)\</OutputPath>
-    <OutputPath Condition="'$(VisualStudioVersion)' == ''">$(BuildDir)\bin\</OutputPath>
+    <OutputPath Condition="'$(OS)' != 'Unix'">$(BuildDir)\bin\$(Configuration)\</OutputPath>
+    <OutputPath Condition="'$(OS)' == 'Unix'">$(BuildDir)\bin\</OutputPath>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <VSGenerateBindingsCommand Condition="'$(OS)' != 'Unix'">$(BuildDir)\bin\$(Configuration)\CSharpGenerator.exe "$(BuildDir)\CSharpBindings\generator_options.txt"</VSGenerateBindingsCommand>
+    <VSGenerateBindingsCommand Condition="'$(OS)' == 'Unix'">true</VSGenerateBindingsCommand>
     <ProjectGuid>{38913C81-4703-4652-B17B-823BAA9B6508}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
@@ -112,9 +114,9 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup Condition="'$(VisualStudioVersion)' != ''">
-    <PreBuildEvent>
-        $(BuildDir)\bin\$(Configuration)\CSharpGenerator.exe "$(BuildDir)\CSharpBindings\generator_options.txt"
+  <PropertyGroup>
+    <PreBuildEvent>$(OS)
+        $(VSGenerateBindingsCommand)
     </PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
