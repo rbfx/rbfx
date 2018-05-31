@@ -47,7 +47,7 @@ endmacro()
 
 macro (add_target_csharp TARGET PROJECT_FILE)
 	if (WIN32 AND NOT URHO3D_WITH_MONO)
-        include_external_msproject(${TARGET} ${PROJECT_FILE} TYPE FAE04EC0-301F-11D3-BF4B-00C04F79EFBC)
+        include_external_msproject(${TARGET} ${PROJECT_FILE} TYPE FAE04EC0-301F-11D3-BF4B-00C04F79EFBC CSharpBindings)
     else ()
         if (WIN32)
             find_package(Mono REQUIRED)
@@ -246,7 +246,6 @@ add_custom_target(CSharpBindings
     COMMAND $<TARGET_FILE:CSharpGenerator> ${CSHARP_BINDING_GENERATOR_OPTIONS}
     DEPENDS CSharpGenerator
     COMMENT "Generating CSharp bindings")
-set_target_properties(CSharpBindings PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
 
 # Dependencies for bindings
 file (DOWNLOAD https://www.nuget.org/api/v2/package/System.Buffers/4.4.0 ${CMAKE_BINARY_DIR}/System.Buffers/pkg.zip)
