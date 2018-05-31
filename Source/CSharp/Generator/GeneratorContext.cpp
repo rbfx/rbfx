@@ -613,7 +613,7 @@ bool GeneratorContext::IsOutOfDate(const std::string& generatorExe)
 {
     for (const auto& m : modules_)
     {
-        if (GetLastModifiedTime(m.outputDirCs_ + "CSharp.cs") == 0)
+        if (GetLastModifiedTime(m.outputDirCpp_ + "Urho3DCApi.cpp") == 0)
             // Missing file, needed for the first time generator runs
             return true;
 

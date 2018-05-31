@@ -213,7 +213,15 @@ macro (csharp_bind_target)
         public const string NativeLibraryName = \"${CSHARP_LIBRARY_NAME}\";
     }
 }\n")
-    file (GLOB_RECURSE COMMON_NET_SOURCE_FILES_MANUAL ${COMMON_DIR}/CSharp/*.cs ${BIND_CSHARP_DIR}/CSharp/*.cs)
+
+    # Ensure that all files of generated C# project exist before build starts. VS scans filesystem
+    # on start and generated files will not be included in the build after they are generated.
+    foreach (file ${COMMON_NET_SOURCE_FILES_GENERATED})
+        if (NOT EXISTS ${file})
+            execute_process (COMMAND ${CMAKE_COMMAND} -E touch ${file})
+        endif ()
+    endforeach ()
+
     if (MSVC)
         set (NET_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>)
     else ()
