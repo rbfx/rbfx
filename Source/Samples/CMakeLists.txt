@@ -38,3 +38,5 @@ foreach (DIR ${DIRS})
         add_subdirectory (${DIR})
     endif ()
 endforeach ()
+
+vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} Samples)

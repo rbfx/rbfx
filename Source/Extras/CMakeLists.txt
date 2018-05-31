@@ -27,9 +27,4 @@ add_subdirectory (OgreBatchConverter)
 
 install(DIRECTORY OgreMaxscriptExport DESTINATION ${DEST_SHARE_DIR})
 
-file(GLOB tool_dirs RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
-foreach (tool ${tool_dirs})
-    if (TARGET ${tool})
-        set_target_properties(${tool} PROPERTIES FOLDER Extras)
-    endif ()
-endforeach ()
+vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} Tools)

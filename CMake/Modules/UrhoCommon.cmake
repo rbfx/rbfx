@@ -214,7 +214,6 @@ macro (add_sample TARGET)
             target_link_libraries(${TARGET} "-s NO_EXIT_RUNTIME=1" "-s WASM=1" "--pre-js ${CMAKE_BINARY_DIR}/Source/pak-loader.js")
         endif ()
     endif ()
-    set_target_properties(${TARGET} PROPERTIES FOLDER Samples)
 endmacro ()
 
 # Macro deploys Qt dlls to folder where target executable is located.
@@ -336,6 +335,20 @@ macro (initialize_submodule SUBMODULE_DIR)
         endif ()
     endif ()
 endmacro ()
+
+function(vs_group_subdirectory_targets DIR FOLDER_NAME)
+    get_property(DIRS DIRECTORY ${DIR} PROPERTY SUBDIRECTORIES)
+    foreach(DIR ${DIRS})
+        get_property(TARGETS DIRECTORY ${DIR} PROPERTY BUILDSYSTEM_TARGETS)
+        foreach(TARGET ${TARGETS})
+            get_target_property(TARGET_TYPE ${TARGET} TYPE)
+            if (NOT ${TARGET_TYPE} STREQUAL "INTERFACE_LIBRARY")
+                set_target_properties(${TARGET} PROPERTIES FOLDER ${FOLDER_NAME})
+            endif ()
+        endforeach()
+        vs_group_subdirectory_targets(${DIR} ${FOLDER_NAME})
+    endforeach()
+endfunction()
 
 # Configure for MingW
 if (CMAKE_CROSSCOMPILING AND MINGW)
