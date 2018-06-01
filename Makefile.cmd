@@ -40,7 +40,8 @@ if NOT "!LLVM_VERSION!" == "" (
     ) else (
         set "LLVM_DIR=!ProgramFiles!\LLVM"
     )
-    set CMAKE_ARGS=!CMAKE_ARGS! -DLLVM_VERSION_EXPLICIT=!LLVM_VERSION! -DLIBCLANG_LIBRARY="!LLVM_DIR!\lib\libclang.lib" -DLIBCLANG_INCLUDE_DIR="!LLVM_DIR!\include" -DLIBCLANG_SYSTEM_INCLUDE_DIR="!LLVM_DIR!\lib\clang\!LLVM_VERSION!\include" -DCLANG_BINARY="!LLVM_DIR!\bin\clang++.exe""
+    set "LLVM_DIR=!LLVM_DIR:\=/!"
+    set CMAKE_ARGS=!CMAKE_ARGS! -DLLVM_VERSION_EXPLICIT=!LLVM_VERSION! -DLIBCLANG_LIBRARY="!LLVM_DIR!/lib/libclang.lib" -DLIBCLANG_INCLUDE_DIR="!LLVM_DIR!/include" -DLIBCLANG_SYSTEM_INCLUDE_DIR="!LLVM_DIR!/lib/clang/!LLVM_VERSION!/include" -DCLANG_BINARY="!LLVM_DIR!/bin/clang++.exe"
     echo Using LLVM !LLVM_VERSION! from !LLVM_DIR!
 )
 
@@ -66,6 +67,7 @@ echo Using !CMAKE_GENRATOR! on !PLATFORM!
 
 :build
 pushd build
+echo cmake.exe -G "!CMAKE_GENRATOR!" !CMAKE_ARGS! ..
 cmake.exe -G "!CMAKE_GENRATOR!" !CMAKE_ARGS! ..
 popd
 
