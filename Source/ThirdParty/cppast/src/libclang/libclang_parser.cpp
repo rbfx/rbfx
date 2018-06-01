@@ -314,6 +314,9 @@ void libclang_compile_config::do_set_flags(cpp_standard standard, compile_flags 
 
 void libclang_compile_config::do_add_include_dir(std::string path)
 {
+    if (path.find(" ") != std::string::npos)
+        path = "\"" + path + "\"";
+
     add_flag("-I" + std::move(path));
 }
 
