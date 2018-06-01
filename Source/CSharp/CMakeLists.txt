@@ -160,8 +160,9 @@ macro (csharp_bind_target)
     endforeach ()
 
     # Generated source files
-    file (GLOB CSHARP_SOURCE_FILES_GENERATED ${BINDINGS_OUTPUT_DIR}/Native/*.cpp)
-    set (
+    file(MAKE_DIRECTORY ${BINDINGS_OUTPUT_DIR}/Native)
+    file(MAKE_DIRECTORY ${BINDINGS_OUTPUT_DIR}/CSharp)
+    set (CSHARP_SOURCE_FILES_GENERATED
         ${BINDINGS_OUTPUT_DIR}/Native/${BIND_TARGET}CApi.cpp
         ${BINDINGS_OUTPUT_DIR}/Native/${BIND_TARGET}ClassWrappers.hpp
         ${BINDINGS_OUTPUT_DIR}/Native/${BIND_TARGET}RegisterFactories.cpp
@@ -171,6 +172,14 @@ macro (csharp_bind_target)
         ${BINDINGS_OUTPUT_DIR}/CSharp/CSharp.cs
     )
     set_source_files_properties(${CSHARP_SOURCE_FILES_GENERATED} ${COMMON_NET_SOURCE_FILES_GENERATED} PROPERTIES GENERATED TRUE)
+
+    # Ensure that all files of generated C# project exist before build starts. VS scans filesystem
+    # on start and generated files will not be included in the build after they are generated.
+    foreach (file ${COMMON_NET_SOURCE_FILES_GENERATED} ${CSHARP_SOURCE_FILES_GENERATED})
+        if (NOT EXISTS ${file})
+            execute_process (COMMAND ${CMAKE_COMMAND} -E touch ${file})
+        endif ()
+    endforeach ()
 
     # CSharp target (native)
     file (GLOB_RECURSE COMMON_CSHARP_SOURCE_FILES_MANUAL
@@ -213,14 +222,6 @@ macro (csharp_bind_target)
         public const string NativeLibraryName = \"${CSHARP_LIBRARY_NAME}\";
     }
 }\n")
-
-    # Ensure that all files of generated C# project exist before build starts. VS scans filesystem
-    # on start and generated files will not be included in the build after they are generated.
-    foreach (file ${COMMON_NET_SOURCE_FILES_GENERATED})
-        if (NOT EXISTS ${file})
-            execute_process (COMMAND ${CMAKE_COMMAND} -E touch ${file})
-        endif ()
-    endforeach ()
 
     if (MSVC)
         set (NET_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>)

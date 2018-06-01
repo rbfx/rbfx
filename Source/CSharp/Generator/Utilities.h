@@ -152,6 +152,7 @@ bool ScanDirectory(const std::string& directoryPath, std::vector<std::string>& r
 void CreateDirsRecursive(const std::string& path);
 unsigned GetLastModifiedTime(const std::string& fileName);
 bool SetLastModifiedTime(const std::string& fileName, unsigned newTime);
+unsigned GetFileSize(const std::string& fileName);
 
 }
 

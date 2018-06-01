@@ -849,6 +849,27 @@ bool SetLastModifiedTime(const std::string& fileName, unsigned newTime)
     return utime(fileName.c_str(), newTime == 0 ? nullptr : &newTimes) == 0;
 #endif
 }
+
+unsigned GetFileSize(const std::string& fileName)
+{
+    if (fileName.empty())
+        return 0;
+
+#ifdef _WIN32
+    struct _stat st;
+    if (!_stat(fileName.c_str(), &st))
+        return (unsigned)st.st_size;
+    else
+        return 0;
+#else
+    struct stat st {};
+    if (!stat(fileName.c_str(), &st))
+        return (unsigned)st.st_size;
+    else
+        return 0;
+#endif
+}
+
 }
 
 namespace str
