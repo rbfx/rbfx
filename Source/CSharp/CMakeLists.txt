@@ -239,10 +239,13 @@ macro (csharp_bind_target)
             add_custom_command(TARGET ${BIND_TARGET}Net POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy ${MONO_PATH}/lib/mono/4.5/Facades/System.Runtime.dll ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/
             )
+            install (FILES
+                ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/System.Runtime.dll
+                DESTINATION ${DEST_LIBRARY_DIR}
+            )
         endif ()
         install (FILES
             ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/System.Buffers.dll
-            ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/System.Runtime.dll
             DESTINATION ${DEST_LIBRARY_DIR}
         )
     endif ()
