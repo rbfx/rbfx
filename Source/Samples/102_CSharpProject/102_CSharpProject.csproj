@@ -3,10 +3,8 @@
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <BuildDir Condition="'$(CMAKE_BINARY_DIR)' == ''">..\..\..\build</BuildDir>
-    <BuildDir Condition="'$(CMAKE_BINARY_DIR)' != ''">$(CMAKE_BINARY_DIR)</BuildDir>
-    <OutputPath Condition="'$(OS)' != 'Unix'">$(BuildDir)\bin\$(Configuration)\</OutputPath>
-    <OutputPath Condition="'$(OS)' == 'Unix'">$(BuildDir)\bin\</OutputPath>
+    <OutputPath Condition="'$(OS)' != 'Unix'">$(SolutionDir)\bin\$(Configuration)\</OutputPath>
+    <OutputPath Condition="'$(OS)' == 'Unix'">$(SolutionDir)\bin\</OutputPath>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProjectGuid>{0A84D2EB-5143-4B84-8287-09901C767178}</ProjectGuid>
     <OutputType>WinExe</OutputType>
@@ -15,7 +13,7 @@
     <AssemblyName>102_CSharpProject</AssemblyName>
     <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <IntermediateOutputPath>$(BuildDir)\obj\$(Configuration)\$(AssemblyName)</IntermediateOutputPath>
+    <IntermediateOutputPath>$(SolutionDir)\obj\$(Configuration)\$(AssemblyName)</IntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <PlatformTarget>x86</PlatformTarget>
