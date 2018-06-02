@@ -77,6 +77,7 @@ macro (add_target_csharp TARGET PROJECT_FILE)
         endif ()
 
         add_custom_target(${TARGET} COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${PROJECT_FILE} ${ARGN}
+            /p:BuildDir="${CMAKE_BINARY_DIR}"
             /p:Configuration=${CSHARP_BUILD_TYPE} /p:Platform=${CSHARP_PLATFORM} /consoleloggerparameters:ErrorsOnly)
         set_target_properties(${TARGET} PROPERTIES EXCLUDE_FROM_ALL OFF)
     endif ()
