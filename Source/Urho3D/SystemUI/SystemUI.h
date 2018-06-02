@@ -39,7 +39,7 @@
 namespace Urho3D
 {
 
-const float SYSTEMUI_DEFAULT_FONT_SIZE = 14.f;
+const float SYSTEMUI_DEFAULT_FONT_SIZE = 14;
 
 class URHO3D_API SystemUI : public Object
 {

@@ -45,6 +45,7 @@
             "Network/*.h",
             "Resource/*.h",
             "UI/*.h",
+            "SystemUI/*.h",
             "Graphics/*.h",
             "Physics/*.h"
           ],
@@ -352,7 +353,25 @@
       "cpp_to_c": "CSharpPODConverter<Urho3D::BoundingBox>::ToCSharp({value})",
       "c_to_cpp": "CSharpPODConverter<Urho3D::BoundingBox>::FromCSharp({value})",
       "is_value_type": true
-    }
+    },
+    {
+      "type": "ImVec2",
+      "ctype": "Urho3D::PODVector2",
+      "cstype": "Urho3D.Vector2",
+      "ptype": "Urho3D.Vector2",
+      "cpp_to_c": "CSharpPODConverter<ImVec2>::ToCSharp({value})",
+      "c_to_cpp": "CSharpPODConverter<ImVec2>::FromCSharp({value})",
+      "is_value_type": true
+    },
+    {
+      "type": "ImVec4",
+      "ctype": "Urho3D::PODVector4",
+      "cstype": "Urho3D.Vector4",
+      "ptype": "Urho3D.Vector4",
+      "cpp_to_c": "CSharpPODConverter<ImVec4>::ToCSharp({value})",
+      "c_to_cpp": "CSharpPODConverter<ImVec4>::FromCSharp({value})",
+      "is_value_type": true
+    },
   ],
   "default-values": {
     "SDLK_DELETE": "127",

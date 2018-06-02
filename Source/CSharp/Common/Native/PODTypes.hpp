@@ -27,6 +27,14 @@ struct PODTypes { };
         typedef T cppType; \
     };
 
+#define ENABLE_POD_TYPE_CONVERTER_EXPLICIT(T, T2) \
+    template<> \
+    struct PODTypes<T> \
+    { \
+        typedef T2 podType; \
+        typedef T cppType; \
+    };
+
 struct PODIntVector2
 {
     /// X coordinate.
@@ -44,6 +52,7 @@ struct PODVector2
     float y_;
 };
 ENABLE_POD_TYPE_CONVERTER(Vector2);
+ENABLE_POD_TYPE_CONVERTER_EXPLICIT(ImVec2, PODVector2)
 
 struct PODIntVector3
 {
@@ -79,6 +88,7 @@ struct PODVector4
     float w_;
 };
 ENABLE_POD_TYPE_CONVERTER(Vector4);
+ENABLE_POD_TYPE_CONVERTER_EXPLICIT(ImVec4, PODVector4)
 
 struct PODQuaternion
 {
