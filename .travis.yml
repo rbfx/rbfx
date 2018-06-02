@@ -32,7 +32,7 @@ notifications:
     on_failure: never
 branches:
   except:
-    - /^(.*[^\w])?appveyor-.+$/
+    - /^(.*[^\w])?(appveyor|no-ci)-.+$/
 matrix:
   fast_finish: true
   include:
