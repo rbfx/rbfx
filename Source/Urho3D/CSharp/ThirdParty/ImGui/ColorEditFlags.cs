@@ -1,4 +1,4 @@
-﻿namespace ImGuiNET
+﻿namespace ImGui
 {
     /// <summary>
     /// Enumeration for ColorEdit3() / ColorEdit4() / ColorPicker3() / ColorPicker4() / ColorButton()

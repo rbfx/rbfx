@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 
-namespace ImGuiNET
+namespace ImGui
 {
     public unsafe class Style
     {

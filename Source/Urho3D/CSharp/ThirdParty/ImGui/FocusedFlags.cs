@@ -1,4 +1,4 @@
-﻿namespace ImGuiNET
+﻿namespace ImGui
 {
     // Flags for ImGui::IsWindowFocused()
     public enum FocusedFlags

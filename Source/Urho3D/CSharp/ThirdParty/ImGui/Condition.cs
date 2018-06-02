@@ -1,4 +1,4 @@
-﻿namespace ImGuiNET
+﻿namespace ImGui
 {
     /// <summary>
     /// Condition flags for ImGui::SetWindow***(), SetNextWindow***(), SetNextTreeNode***() functions.

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ImGuiNET
+namespace ImGui
 {
     [Flags]
     public enum TreeNodeFlags : int

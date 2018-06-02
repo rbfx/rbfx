@@ -1,4 +1,4 @@
-﻿namespace ImGuiNET
+﻿namespace ImGui
 {
     public enum ComboFlags
     {

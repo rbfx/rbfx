@@ -3,9 +3,9 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 
-namespace ImGuiNET
+namespace ImGui
 {
-    public static class ImGui
+    public static class ui
     {
         public static void NewFrame()
         {

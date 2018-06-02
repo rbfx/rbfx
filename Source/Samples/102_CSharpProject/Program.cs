@@ -23,7 +23,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using Urho3D;
-using ImGuiNET;
+using ImGui;
 
 namespace DemoApplication
 {
@@ -101,11 +101,11 @@ namespace DemoApplication
                 var timestep = args[Update.P_TIMESTEP].Float;
                 Debug.Assert(this != null);
 
-                if (ImGui.Begin("Urho3D.NET"))
+                if (ui.Begin("Urho3D.NET"))
                 {
-                    ImGui.Text("Hello world from C#");
+                    ui.Text("Hello world from C#");
                 }
-                ImGui.End();
+                ui.End();
             });
         }
     }

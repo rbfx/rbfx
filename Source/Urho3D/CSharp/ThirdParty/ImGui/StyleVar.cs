@@ -1,4 +1,4 @@
-﻿namespace ImGuiNET
+﻿namespace ImGui
 {
     /// <summary>
     /// Enumeration for PushStyleVar() / PopStyleVar()

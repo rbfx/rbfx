@@ -4,7 +4,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace ImGuiNET
+namespace ImGui
 {
     public unsafe struct DrawList
     {

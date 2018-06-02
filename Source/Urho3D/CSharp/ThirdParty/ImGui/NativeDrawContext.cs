@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 
-namespace ImGuiNET
+namespace ImGui
 {
     // Transient per-window data, reset at the beginning of the frame
     public unsafe struct NativeDrawContext

@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace ImGuiNET
+namespace ImGui
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct Int2

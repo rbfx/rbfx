@@ -1,7 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using System.Numerics;
 
-namespace ImGuiNET
+namespace ImGui
 {
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct NativeStyle

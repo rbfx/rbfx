@@ -1,4 +1,4 @@
-﻿namespace ImGuiNET
+﻿namespace ImGui
 {
     // Flags for ImGui::IsItemHovered(), ImGui::IsWindowHovered()
     public enum HoveredFlags

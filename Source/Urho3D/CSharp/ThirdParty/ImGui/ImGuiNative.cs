@@ -2,7 +2,7 @@
 using System.Numerics;
 using System;
 
-namespace ImGuiNET
+namespace ImGui
 {
     /// <summary>
     /// Contains all of the exported functions from the native (c)imGui module.

@@ -2,7 +2,7 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-namespace ImGuiNET
+namespace ImGui
 {
     public unsafe class IO
     {

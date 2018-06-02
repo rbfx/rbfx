@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace ImGuiNET
+namespace ImGui
 {
     /// <summary>
     /// All draw data to render an ImGui frame

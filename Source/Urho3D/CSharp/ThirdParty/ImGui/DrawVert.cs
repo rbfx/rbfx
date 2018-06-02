@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using System.Runtime.InteropServices;
 
-namespace ImGuiNET
+namespace ImGui
 {
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct DrawVert
