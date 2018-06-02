@@ -74,6 +74,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
     std::string pInvokeType = "IntPtr";
     std::string cppType;
     std::string vectorKind;
+    const TypeMap* typeMap = nullptr;
     bool isTypeMapped = false;
 
     if (typeName.find("PODVector<") == 0)
@@ -107,13 +108,13 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
         // cppast has no info for us. Make a best guess about the type in question.
         cppType = tpl.unexposed_arguments();
         auto primitiveType = PrimitiveToCppType(cppType);
-        if (auto* map = generator->GetTypeMap(cppType))
+        if (typeMap = generator->GetTypeMap(cppType))
         {
             isTypeMapped = true;
-            if (map->isValueType_)  // is this needed?
+            if (typeMap->isValueType_)  // is this needed?
             {
-                csType = map->csType_;
-                pInvokeType = map->pInvokeType_;
+                csType = typeMap->csType_;
+                pInvokeType = typeMap->pInvokeType_;
             }
         }
         else if (primitiveType == cppast::cpp_builtin_type_kind::cpp_void)
@@ -149,22 +150,29 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
 
     if (!csType.empty())
     {
+        if (csType == "string")
+        {
+            spdlog::get("console")->info("TODO: Implement StrArrayMarshaller");
+            // Size of string is not constant therefore they must be handled differently.
+            throw std::exception();
+        }
+
         spdlog::get("console")->info("Auto-typemap: {}", typeName);
         TypeMap map;
         map.cppType_ = typeName;
 
-        map.csType_ = fmt::format("{csType}[]", FMT_CAPTURE(csType));
-        map.cType_ = "SafeArray";
-        map.pInvokeType_ = "SafeArray";
+        map.csType_ = map.pInvokeType_ = fmt::format("{csType}[]", FMT_CAPTURE(csType));
+        map.cType_ = "void*";
         map.cppToCTemplate_ = fmt::format(
             "CSharpConverter<Urho3D::{vectorKind}<{cppType}>>::ToCSharp({{value}})", FMT_CAPTURE(cppType),
             FMT_CAPTURE(vectorKind));
         map.cToCppTemplate_ = fmt::format(
             "CSharpConverter<Urho3D::{vectorKind}<{cppType}>>::FromCSharp({{value}})", FMT_CAPTURE(cppType),
             FMT_CAPTURE(vectorKind));
-        map.csToPInvokeTemplate_ = fmt::format("SafeArray.GetNativeInstance<{csType}>({{value}})", FMT_CAPTURE(csType));
-        map.pInvokeToCSTemplate_ = fmt::format("SafeArray.GetManagedInstance<{csType}>({{value}}, {owns})",
-                                               FMT_CAPTURE(csType), fmt::arg("owns", IsComplexType(type) && IsValueType(type) ? "true" : "false"));
+        if (IsBuiltinPInvokeType(csType) || (typeMap != nullptr && typeMap->isValueType_))
+            map.customMarshaller_ = fmt::format("PodArrayMarshaller<{}>", csType);
+        else
+            map.customMarshaller_ = fmt::format("ObjArrayMarshaller<{}>", csType);
         map.isValueType_ = true;
         generator->typeMaps_[typeName] = map;
     }

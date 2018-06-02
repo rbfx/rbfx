@@ -265,10 +265,87 @@ URHO3D_API void Urho3D_InitializeCSharp(ManagedRuntime* managed, NativeRuntime* 
 
     ScriptSubsystem::native_.AllocateMemory = [](unsigned size) { return malloc(size); };
     ScriptSubsystem::native_.FreeMemory = &free;
+    ScriptSubsystem::native_.InteropAlloc = [](int length) {
+        return MarshalAllocator::Get().Alloc(length);
+    };
+    ScriptSubsystem::native_.InteropFree = [](void* memory) {
+        return MarshalAllocator::Get().Free(memory);
+    };
 
     *native = ScriptSubsystem::native_;
 }
 
 }
 
+MarshalAllocator::AllocatorInfo::AllocatorInfo(int size, int capacity)
+{
+    Allocator = AllocatorInitialize(static_cast<unsigned int>(size), static_cast<unsigned int>(capacity));
+    BlockSize = size;
+}
+
+MarshalAllocator::MarshalAllocator()
+    : allocators_ {
+    AllocatorInfo(128, 8),
+    AllocatorInfo(1024, 8),
+    AllocatorInfo(1024 * 10, 8)
+}
+{
+}
+
+MarshalAllocator::~MarshalAllocator()
+{
+    for (auto& info : allocators_)
+    {
+        AllocatorUninitialize(info.Allocator);
+        info.Allocator = nullptr;
+    }
+}
+
+MarshalAllocator& MarshalAllocator::Get()
+{
+    static thread_local MarshalAllocator instance;
+    return instance;
+}
+
+void* MarshalAllocator::Alloc(int length)
+{
+    // Buffer layout:
+    // byte AllocatorIndex
+    // int BytesCount
+    // byte BUffer[BytesCount]
+    auto needLength = length + sizeof(Header);
+
+    uint8_t index = 0;
+    void* memory = nullptr;
+    for (auto& allocatorInfo : allocators_)
+    {
+        if (needLength <= allocatorInfo.BlockSize)
+        {
+            memory = AllocatorReserve(allocatorInfo.Allocator);
+            break;
+        }
+        index++;
+    }
+
+    if (memory == nullptr)
+    {
+        memory = malloc(static_cast<size_t>(needLength));
+        index = std::numeric_limits<uint8_t>::max();
+    }
+
+    Header* header = static_cast<Header*>(memory);
+    header->index = index;
+    header->length = length;
+
+    return (uint8_t*)memory + sizeof(Header);
+}
+
+void MarshalAllocator::Free(void* memory)
+{
+    Header* header = reinterpret_cast<Header*>((uint8_t*)memory - sizeof(Header));
+    if (header->index == HeapAllocator)
+        free(header);
+    else if (header->index < CustomAllocationType)
+        AllocatorFree(allocators_[header->index].Allocator, header);
+}
 }

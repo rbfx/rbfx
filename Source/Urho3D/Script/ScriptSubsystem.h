@@ -47,6 +47,8 @@ struct NativeRuntime
 {
     void*(*AllocateMemory)(unsigned size) = nullptr;
     void(*FreeMemory)(void* memory) = nullptr;
+    void*(*InteropAlloc)(int) = nullptr;
+    void(*InteropFree)(void*) = nullptr;
 };
 
 class URHO3D_API ScriptSubsystem : public Object
@@ -102,6 +104,53 @@ protected:
     PODVector<RefCounted*> releaseQueue_;
     /// Mutex protecting resources related to queuing ReleaseRef() calls.
     Mutex mutex_;
+};
+
+/// Allocator used for data marshalling between managed and unmanaged worlds. Lifetime of allocated memory is controlled
+/// by custom marshallers used in binding code.
+URHO3D_API class MarshalAllocator
+{
+#pragma pack(1)
+    struct Header
+    {
+        uint8_t index;
+        int32_t length;
+    };
+#pragma pack()
+    static_assert(sizeof(Header) == 5);
+
+    enum AllocationType
+    {
+        /// If `index` parameter in the header is less than this value then it is index of allocator in `allocators_` array.
+        CustomAllocationType = 200,
+        /// If `index` parameter in header is this value then memory is to be freed using OS functions instead of allocator.
+        HeapAllocator = 255,
+    };
+
+    struct AllocatorInfo
+    {
+        AllocatorBlock* Allocator;
+        int BlockSize;
+
+        AllocatorInfo(int size, int capacity);
+    };
+
+protected:
+    /// Construct
+    MarshalAllocator();
+
+public:
+    /// Destruct
+    ~MarshalAllocator();
+    /// Get thread-local instance of this allocator
+    static MarshalAllocator& Get();
+    /// Allocate block of memory.
+    void* Alloc(int length);
+    /// Free block of memory.
+    void Free(void* memory);
+
+protected:
+    AllocatorInfo allocators_[3];
 };
 
 }

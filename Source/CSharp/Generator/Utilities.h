@@ -129,6 +129,8 @@ bool IsStatic(const cppast::cpp_entity& entity);
 std::string PrimitiveToPInvokeType(cppast::cpp_builtin_type_kind kind);
 /// Converts a builtin type to pinvoke-compatible type.
 std::string BuiltinToPInvokeType(const cppast::cpp_type& type);
+/// Returns true if string with type name is bultin C# type.
+bool IsBuiltinPInvokeType(const std::string& type);
 /// Convert string representation of c++ builtin type to type kind. void_t on error.
 cppast::cpp_builtin_type_kind PrimitiveToCppType(const std::string& type);
 /// Convert type to pinvoke-compatible type.

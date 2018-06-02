@@ -500,6 +500,14 @@ std::string PrimitiveToPInvokeType(cppast::cpp_builtin_type_kind kind)
     return "";
 }
 
+bool IsBuiltinPInvokeType(const std::string& type)
+{
+    static std::vector<std::string> types{
+        "void", "bool", "byte", "ushort", "uint", "ulong", "short", "int", "long", "float", "double", "char"
+    };
+    return std::find(types.begin(), types.end(), type) != types.end();
+}
+
 std::string BuiltinToPInvokeType(const cppast::cpp_type& type)
 {
     switch (type.kind())
