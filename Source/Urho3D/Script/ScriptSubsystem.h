@@ -117,7 +117,7 @@ URHO3D_API class MarshalAllocator
         int32_t length;
     };
 #pragma pack()
-    static_assert(sizeof(Header) == 5);
+    static_assert(sizeof(Header) == 5, "Unexpected size of Header");
 
     enum AllocationType
     {
