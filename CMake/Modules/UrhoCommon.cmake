@@ -176,11 +176,12 @@ macro (add_sample TARGET)
                 # On windows managed sample executable will not run when double-clicked. Create a
                 # native executable (bundle) which includes all managed dependencies instead.
                 find_package(Mono REQUIRED)
-                set (OUTPUT_FILE ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}/${TARGET}.exe)
+                set (OUTPUT_DIR ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG})
+                set (OUTPUT_FILE ${OUTPUT_DIR}/${TARGET}.exe)
                 add_custom_command (TARGET ${TARGET} POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E rename ${OUTPUT_FILE} ${OUTPUT_FILE}.tmp
-                    COMMAND ${MONO_PATH}/bin/mkbundle.bat ARGS --deps -L "${OUTPUT_DIR}" -L "${MONO_PATH}/lib/mono/4.5" -o "${OUTPUT_FILE}" "${OUTPUT_FILE}.tmp"
-                    COMMAND ${CMAKE_COMMAND} -E remove ${OUTPUT_FILE}.tmp
+                    COMMAND ${MONO_PATH}/bin/mkbundle.bat ARGS --deps -L "${OUTPUT_DIR}" -L "${MONO_PATH}/lib/mono/4.5" -o "${OUTPUT_FILE}.tmp" "${OUTPUT_FILE}"
+                    COMMAND ${CMAKE_COMMAND} -E remove ${OUTPUT_FILE}
+                    COMMAND ${CMAKE_COMMAND} -E rename ${OUTPUT_FILE}.tmp ${OUTPUT_FILE}
                 )
             endif ()
             install(FILES ${OUTPUT_FILE} DESTINATION ${DEST_SAMPLES_DIR})
