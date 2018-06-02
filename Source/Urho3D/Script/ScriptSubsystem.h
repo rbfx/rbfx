@@ -108,7 +108,7 @@ protected:
 
 /// Allocator used for data marshalling between managed and unmanaged worlds. Lifetime of allocated memory is controlled
 /// by custom marshallers used in binding code.
-URHO3D_API class MarshalAllocator
+class URHO3D_API MarshalAllocator
 {
 #pragma pack(1)
     struct Header
