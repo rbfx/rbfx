@@ -1,0 +1,25 @@
+{
+  "module": "Toolbox",
+  "namespaces": {
+    "Urho3D": {
+      "parse": {
+        "SystemUI": {
+          "include": [
+            "ImGuiDock.h"
+          ]
+        }
+      },
+      "symbols": {
+        "include": [
+          "ImGui",
+          "ImGui::*"
+        ]
+      },
+      "include": [
+        "Toolbox/SystemUI/ImGuiDock.h",
+        "ImGui/imgui.h",
+        "Urho3D/Urho3DAll.h"
+      ]
+    }
+  }
+}

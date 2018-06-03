@@ -25,10 +25,14 @@ if (NOT URHO3D_SYSTEMUI)
 endif ()
 
 file (GLOB_RECURSE SOURCE_FILES *.cpp *.h *.hpp)
-add_library (Toolbox STATIC ${SOURCE_FILES})
+add_library (Toolbox ${SOURCE_FILES})
 target_link_libraries (Toolbox Urho3D)
 target_include_directories(Toolbox
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
 )
-#install(TARGETS Toolbox EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+csharp_bind_target(TARGET Toolbox)
+install(TARGETS Toolbox EXPORT Urho3D
+    ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
+    LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
+)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DESTINATION ${DEST_INCLUDE_DIR} FILES_MATCHING PATTERN *.h)
