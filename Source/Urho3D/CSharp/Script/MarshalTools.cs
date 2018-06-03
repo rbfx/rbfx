@@ -52,33 +52,6 @@ namespace Urho3D.CSharp
         }
     }
 
-    /// <summary>
-    /// Marshals utf-8 strings. Managed code frees native string after obtaining it. Used in cases when native code
-    /// returns by value.
-    /// </summary>
-    public class StringUtf8Copy : StringUtf8
-    {
-        [ThreadStatic]
-        private static StringUtf8Copy _instance;
-
-        public new static ICustomMarshaler GetInstance(string _)
-        {
-            return _instance ?? (_instance = new StringUtf8Copy());
-        }
-
-        public new object MarshalNativeToManaged(IntPtr pNativeData)
-        {
-            try
-            {
-                return base.MarshalNativeToManaged(pNativeData);
-            }
-            finally
-            {
-                NativeInterface.Native.FreeMemory(pNativeData);
-            }
-        }
-    }
-
     public class PodArrayMarshaller<T> : ICustomMarshaler
     {
         private static PodArrayMarshaller<T> _instance = new PodArrayMarshaller<T>();

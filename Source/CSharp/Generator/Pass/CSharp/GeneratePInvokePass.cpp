@@ -527,9 +527,8 @@ void GeneratePInvokePass::WriteMarshalAttributeReturn(const cppast::cpp_type& ty
             const auto& bareType = cppast::remove_cv(type);
             // User-defined types returned by value need copying. Native side ensures data is copied and returned.
             // Managed side ensures this data is freed when it is no longer needed.
-            auto suffix = (!IsEnumType(type) && bareType.kind() == cppast::cpp_type_kind::user_defined_t) ? "Copy" : "";
             printer_ << fmt::format("[return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof({}))]",
-                                    map->customMarshaller_ + suffix);
+                                    map->customMarshaller_);
         }
     }
 }
