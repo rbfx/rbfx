@@ -291,7 +291,7 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
     graphics->SetScissorTest(false);
 }
 
-ImFont* SystemUI::AddFont(const String& fontPath, const unsigned short* ranges, float size, bool merge)
+ImFont* SystemUI::AddFont(const String& fontPath, const unsigned short ranges[], float size, bool merge)
 {
     auto io = ImGui::GetIO();
 
