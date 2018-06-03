@@ -175,6 +175,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
             else
                 map.customMarshaller_ = fmt::format("ObjArrayMarshaller<{}>", csType);
             map.isValueType_ = true;
+            map.isArray_ = true;
             generator->typeMaps_[typeName] = map;
             return;
         }

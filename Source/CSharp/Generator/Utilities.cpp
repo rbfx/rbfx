@@ -1016,3 +1016,18 @@ bool is_hex(const std::string& str)
 }
 
 }
+
+namespace cppast
+{
+
+std::string to_string(const cppast::cpp_expression& expr)
+{
+    if (expr.kind() == cppast::cpp_expression_kind::literal_t)
+        return dynamic_cast<const cppast::cpp_literal_expression&>(expr).value();
+    else if (expr.kind() == cppast::cpp_expression_kind::unexposed_t)
+        return dynamic_cast<const cppast::cpp_unexposed_expression&>(expr).expression().as_string();
+    else
+        assert(false);
+}
+
+}

@@ -25,6 +25,7 @@
 #include <cppast/cpp_namespace.hpp>
 #include <cppast/cpp_template.hpp>
 #include <cppast/cpp_type.hpp>
+#include <cppast/cpp_array_type.hpp>
 #include "GeneratorContext.h"
 #include "GenerateCSharpApiPass.h"
 #include "Pass/CSharp/GeneratePInvokePass.h"
@@ -58,8 +59,10 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             if (!defaultValue.empty())
             {
                 bool isNullable = false;
+                bool isArray = false;
                 if (auto* map = generator->GetTypeMap(param.type(), false))
                 {
+                    isArray = map->isArray_;
                     if (map->isValueType_ && map->csType_ != "string")
                         isNullable = true;
                 }
@@ -71,7 +74,12 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 }
 
                 if (isNullable)
-                    expr += fmt::format(".GetValueOrDefault({})", defaultValue);
+                {
+                    if (isArray)
+                        expr += fmt::format(" ?? {}", defaultValue);
+                    else
+                        expr += fmt::format(".GetValueOrDefault({})", defaultValue);
+                }
             }
         }
 
@@ -666,6 +674,8 @@ std::string GenerateCSharpApiPass::MapToCS(const cppast::cpp_type& type, const s
 
     if (const auto* map = generator->GetTypeMap(type, false))
         return fmt::format(map->pInvokeToCSTemplate_.c_str(), fmt::arg("value", expression), FMT_CAPTURE(owns));
+    else if (type.kind() == cppast::cpp_type_kind::array_t)
+        return expression;
     else if (IsComplexType(type))
         return fmt::format("{}.GetManagedInstance({}, {})", ToCSType(type), expression, owns);
 
@@ -722,6 +732,11 @@ std::string GenerateCSharpApiPass::ToCSType(const cppast::cpp_type& type, bool d
                 return tpl.unexposed_arguments();
             assert(false);
         }
+        case cppast::cpp_type_kind::array_t:
+        {
+            const auto& arr = dynamic_cast<const cppast::cpp_array_type&>(t);
+            return toCSType(arr.value_type()) + "[]";
+        }
         default:
             assert(false);
         }
@@ -752,6 +767,9 @@ std::string GenerateCSharpApiPass::MapToPInvoke(const cppast::cpp_type& type, co
 {
     if (const auto* map = generator->GetTypeMap(type, false))
         return fmt::format(map->csToPInvokeTemplate_.c_str(), fmt::arg("value", expression));
+    else if (type.kind() == cppast::cpp_type_kind::array_t)
+        // Arrays are handled by custom marshaller
+        return expression;
     else if (IsComplexType(type))
         return fmt::format("{}.GetNativeInstance({})", ToCSType(type, true), expression);
 
@@ -773,7 +791,7 @@ std::string GenerateCSharpApiPass::FormatCSParameterList(const std::vector<std::
             if (auto* map = generator->GetTypeMap(cppType, false))
             {
                 // Value types are made nullable in order to allow default values.
-                if (map->isValueType_ && map->csType_ != "string")
+                if (map->isValueType_ && map->csType_ != "string" && !map->isArray_)
                     csType += "?";
             }
             else if (csType == "IntPtr")

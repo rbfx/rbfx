@@ -48,6 +48,7 @@ struct TypeMap
     std::string pInvokeToCSTemplate_ = "{value}";
     std::string customMarshaller_;
     bool isValueType_ = false;
+    bool isArray_ = false;
 };
 
 struct NamespaceRules

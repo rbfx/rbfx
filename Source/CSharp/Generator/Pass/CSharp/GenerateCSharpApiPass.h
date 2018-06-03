@@ -38,9 +38,10 @@ class GenerateCSharpApiPass : public CppApiPass
     bool Visit(MetaEntity* entity, cppast::visitor_info info) override;
     void Stop() override;
 
+    static std::string MapToCS(const cppast::cpp_type& type, const std::string& expression);
+    static std::string ToCSType(const cppast::cpp_type& type,bool disallowReferences=false);
+
 protected:
-    std::string MapToCS(const cppast::cpp_type& type, const std::string& expression);
-    std::string ToCSType(const cppast::cpp_type& type,bool disallowReferences=false);
     std::string MapToPInvoke(const cppast::cpp_type& type, const std::string& expression);
     std::string FormatCSParameterList(const std::vector<std::shared_ptr<MetaEntity>>& parameters);
     std::string ConvertDefaultValueToCS(MetaEntity* user, std::string value, const cppast::cpp_type& type, bool allowComplex);

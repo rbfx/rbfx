@@ -203,3 +203,10 @@ bool contains(const std::vector<Value>& container, const Value& value)
 };
 
 }
+
+namespace cppast
+{
+
+std::string to_string(const cppast::cpp_expression& expr);
+
+}

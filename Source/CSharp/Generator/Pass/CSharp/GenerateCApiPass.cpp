@@ -23,6 +23,7 @@
 #include <fmt/format.h>
 #include <fstream>
 #include <cppast/cpp_template.hpp>
+#include <cppast/cpp_array_type.hpp>
 #include "GenerateCApiPass.h"
 #include "Pass/CSharp/ImplementInterfacesPass.h"
 
@@ -359,8 +360,16 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_.Write(fmt::format("{rtype} value)", FMT_CAPTURE(rtype)));
             printer_.Indent();
 
-            printer_.Write(fmt::format("{namespaceName}::{name} = {value};", FMT_CAPTURE(namespaceName),
-                FMT_CAPTURE(name), FMT_CAPTURE(value)));
+            if (var.type().kind() == cppast::cpp_type_kind::array_t)
+            {
+                const auto& array = dynamic_cast<const cppast::cpp_array_type&>(var.type());
+                auto size = cppast::to_string(array.size().value());
+                printer_ << fmt::format("memcpy(instance->{name}, {value}, sizeof({value}) * {size});",
+                                           FMT_CAPTURE(name), FMT_CAPTURE(value), FMT_CAPTURE(size));
+            }
+            else
+                printer_ << fmt::format("{namespaceName}::{name} = {value};",
+                                        FMT_CAPTURE(namespaceName), FMT_CAPTURE(name), FMT_CAPTURE(value));
 
             printer_.Dedent();
             printer_ << "";
@@ -415,6 +424,13 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             auto value = MapToCpp(var.type(), "value");
             if (entity->access_ != cppast::cpp_public)
                 printer_.Write(fmt::format("instance->__set_{name}({value});", FMT_CAPTURE(name), FMT_CAPTURE(value)));
+            else if (var.type().kind() == cppast::cpp_type_kind::array_t)
+            {
+                const auto& array = dynamic_cast<const cppast::cpp_array_type&>(var.type());
+                auto size = cppast::to_string(array.size().value());
+                printer_ << fmt::format("memcpy(instance->{name}, {value}, sizeof({value}) * {size});",
+                                        FMT_CAPTURE(name), FMT_CAPTURE(value), FMT_CAPTURE(size));
+            }
             else
                 printer_.Write(fmt::format("instance->{name} = {value};", FMT_CAPTURE(name), FMT_CAPTURE(value)));
 
@@ -516,6 +532,8 @@ std::string GenerateCApiPass::MapToC(const cppast::cpp_type& type, const std::st
 
     if (map)
         result = fmt::format(map->cppToCTemplate_.c_str(), fmt::arg("value", result));
+    else if (type.kind() == cppast::cpp_type_kind::array_t)
+        return result;
     else if (IsComplexType(type))
     {
         auto typeName = GetTemplateSubtype(type);
@@ -551,6 +569,11 @@ std::string GenerateCApiPass::ToCType(const cppast::cpp_type& type, bool disallo
             if (tplName == "SharedPtr" || tplName == "WeakPtr")
                 return tpl.unexposed_arguments() + "*";
             assert(false);
+        }
+        case cppast::cpp_type_kind::array_t:
+        {
+            const auto& arr = dynamic_cast<const cppast::cpp_array_type&>(t);
+            return toCType(arr.value_type()) + "*";
         }
         default:
             assert(false);

@@ -29,6 +29,7 @@
 #include <fstream>
 #include <thread>
 #include <chrono>
+#include <cppast/cpp_array_type.hpp>
 #include "GeneratorContext.h"
 #include "Utilities.h"
 
@@ -467,6 +468,22 @@ bool GeneratorContext::IsAcceptableType(const cppast::cpp_type& type)
     // Builtins map directly to c# types
     if (type.kind() == cppast::cpp_type_kind::builtin_t)
         return true;
+
+    // Arrays, support only arrays of pod types.
+    if (type.kind() == cppast::cpp_type_kind::array_t)
+    {
+        const auto& array = dynamic_cast<const cppast::cpp_array_type&>(type);
+        if (!array.size().has_value())
+            // Array size must be known.
+            return false;
+
+        const auto& valueType = cppast::remove_cv(array.value_type());
+        if (valueType.kind() == cppast::cpp_type_kind::builtin_t || IsEnumType(valueType))
+            return true;
+
+        if (valueType.kind() == cppast::cpp_type_kind::pointer_t)
+            return IsAcceptableType(dynamic_cast<const cppast::cpp_pointer_type&>(valueType).pointee());
+    }
 
     // Manually handled types
     if (GetTypeMap(type) != nullptr)

@@ -40,6 +40,9 @@ void Urho3DCustomPassLate::NamespaceStart()
 
     if (auto* entity = generator->GetSymbol("ImGui::BeginDock(char const*,bool*,ImGuiWindowFlags,ImVec2 const&)"))
         entity->children_[3]->defaultValue_ = "new Vector2(-1, -1)";
+
+    if (auto* entity = generator->GetSymbol("Urho3D::SystemUI::AddFont(Urho3D::String const&,PODVector<unsigned short> const&,float,bool)"))
+        entity->children_[1]->defaultValue_ = "new ushort[0]";
 }
 
 bool Urho3DCustomPassLate::Visit(MetaEntity* entity, cppast::visitor_info info)

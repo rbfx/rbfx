@@ -30,6 +30,7 @@
 #include "GeneratorContext.h"
 #include "GeneratePInvokePass.h"
 #include "ImplementInterfacesPass.h"
+#include "GenerateCSharpApiPass.h"
 
 
 namespace Urho3D
@@ -437,11 +438,11 @@ std::string GeneratePInvokePass::ToPInvokeTypeParam(const cppast::cpp_type& type
 {
     std::string result = ToPInvokeType(type);
 
-    if (auto* map = generator->GetTypeMap(type))
+    auto marshaller = GetCustomMarshaller(type);
+    if (!marshaller.empty())
     {
-        if (!map->customMarshaller_.empty())
-            result = fmt::format("[param: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof({}))]",
-                map->customMarshaller_) + result;
+        result = fmt::format("[param: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof({}))]",
+                             marshaller) + result;
     }
 
     return result;
@@ -498,6 +499,11 @@ std::string GeneratePInvokePass::ToPInvokeType(const cppast::cpp_type& type, boo
                 return "IntPtr";
             assert(false);
         }
+        case cppast::cpp_type_kind::array_t:
+        {
+            const auto& arr = dynamic_cast<const cppast::cpp_array_type&>(t);
+            return GenerateCSharpApiPass::ToCSType(arr.value_type()) + "[]";
+        }
         default:
             assert(false);
         }
@@ -520,17 +526,38 @@ std::string GeneratePInvokePass::ToPInvokeType(const cppast::cpp_type& type, boo
 
 void GeneratePInvokePass::WriteMarshalAttributeReturn(const cppast::cpp_type& type)
 {
-    if (auto* map = generator->GetTypeMap(type))
+    std::string marshaller = GetCustomMarshaller(type);
+
+    if (!marshaller.empty())
     {
-        if (!map->customMarshaller_.empty())
-        {
-            const auto& bareType = cppast::remove_cv(type);
-            // User-defined types returned by value need copying. Native side ensures data is copied and returned.
-            // Managed side ensures this data is freed when it is no longer needed.
-            printer_ << fmt::format("[return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof({}))]",
-                                    map->customMarshaller_);
-        }
+        // User-defined types returned by value need copying. Native side ensures data is copied and returned.
+        // Managed side ensures this data is freed when it is no longer needed.
+        printer_ << fmt::format("[return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof({}))]",
+                                marshaller);
     }
+}
+
+std::string GeneratePInvokePass::GetCustomMarshaller(const cppast::cpp_type& type)
+{
+    if (type.kind() == cppast::cpp_type_kind::array_t)
+    {
+        const auto& array = dynamic_cast<const cppast::cpp_array_type&>(type);
+        const auto& value = cppast::remove_cv(array.value_type());
+
+        std::string prefix;
+        if (IsComplexType(value))
+            prefix = "Obj";
+        else
+            prefix = "Pod";
+
+        auto csType = GenerateCSharpApiPass::ToCSType(type);
+        csType = csType.substr(0, csType.length() - 2);  // Remove trailing []
+        return fmt::format("{prefix}ArrayMarshaller<{csType}>", FMT_CAPTURE(prefix), FMT_CAPTURE(csType));
+    }
+    else if (auto* map = generator->GetTypeMap(type))
+        return map->customMarshaller_;
+
+    return "";
 }
 
 }
