@@ -108,6 +108,15 @@ namespace Urho3D
             Z = v.Z;
         }
 
+        /// <summary>
+        /// Convert vector to System.Numerics.Vector3 type.
+        /// </summary>
+        /// <param name="vector">A vector to convert.</param>
+        /// <returns></returns>
+        public static implicit operator System.Numerics.Vector3(Vector3 vector)
+        {
+            return new System.Numerics.Vector3(vector.X, vector.Y, vector.Z);
+        }
 
         /// <summary>
         /// Gets or sets the value at the index of the Vector.

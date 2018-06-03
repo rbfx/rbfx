@@ -66,6 +66,16 @@ namespace Urho3D
         }
 
         /// <summary>
+        /// Convert vector to System.Numerics.Vector2 type.
+        /// </summary>
+        /// <param name="vector">A vector to convert.</param>
+        /// <returns></returns>
+        public static implicit operator System.Numerics.Vector2(Vector2 vector)
+        {
+            return new System.Numerics.Vector2(vector.X, vector.Y);
+        }
+
+        /// <summary>
         /// Gets or sets the value at the index of the Vector.
         /// </summary>
         public float this[int index] {

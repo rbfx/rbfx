@@ -168,6 +168,16 @@ namespace Urho3D
         }
 
         /// <summary>
+        /// Convert vector to System.Numerics.Vector4 type.
+        /// </summary>
+        /// <param name="vector">A vector to convert.</param>
+        /// <returns></returns>
+        public static implicit operator System.Numerics.Vector4(Vector4 vector)
+        {
+            return new System.Numerics.Vector4(vector.X, vector.Y, vector.Z, vector.W);
+        }
+
+        /// <summary>
         /// Gets or sets the value at the index of the Vector.
         /// </summary>
         public float this[int index] {
