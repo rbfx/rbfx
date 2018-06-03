@@ -291,8 +291,14 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
     graphics->SetScissorTest(false);
 }
 
-ImFont* SystemUI::AddFont(const String& fontPath, const unsigned short ranges[], float size, bool merge)
+ImFont* SystemUI::AddFont(const String& fontPath, const PODVector<unsigned short>& ranges, float size, bool merge)
 {
+    if (!ranges.Empty() && ranges.Back() != 0)
+    {
+        URHO3D_LOGWARNING("SystemUI: List of font ranges must be terminated with a zero.");
+        return nullptr;
+    }
+
     auto io = ImGui::GetIO();
 
     fontSizes_.Push(size);
@@ -316,19 +322,14 @@ ImFont* SystemUI::AddFont(const String& fontPath, const unsigned short ranges[],
         cfg.MergeMode = merge;
         cfg.FontDataOwnedByAtlas = false;
         cfg.PixelSnapH = true;
-        if (auto newFont = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(&data.Front(), bytesLen, size, &cfg, ranges))
+        if (auto newFont = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(&data.Front(), bytesLen, size, &cfg,
+            ranges.Empty() ? nullptr : &ranges.Front()))
         {
             ReallocateFontTexture();
             return newFont;
         }
     }
     return nullptr;
-}
-
-ImFont* SystemUI::AddFont(const Urho3D::String& fontPath, const std::initializer_list<unsigned short>& ranges,
-    float size, bool merge)
-{
-    return AddFont(fontPath, ranges.size() ? &*ranges.begin() : nullptr, size, merge);
 }
 
 void SystemUI::ReallocateFontTexture()
