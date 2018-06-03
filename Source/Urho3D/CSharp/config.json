@@ -391,6 +391,13 @@
       "pinvoke_to_cs": "(ImGui.ImGuiWindowFlags){value}",
       "cs_to_pinvoke": "(uint){value}",
       "is_value_type": true
+    },
+    {
+      "type": "ImFont*",
+      "ctype": "ImFont*",
+      "ptype": "IntPtr",
+      "cstype": "IntPtr",
+      "is_value_type": true
     }
   ],
   "default-values": {
