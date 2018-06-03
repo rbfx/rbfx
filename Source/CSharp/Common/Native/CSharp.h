@@ -103,6 +103,7 @@ struct CSharpConverter<PODVector<T>>
     using CppType=PODVector<T>;
     using CType=void*;
 
+    // TODO: This can be optimized by passing &value.Front() memory buffer
     static CType ToCSharp(const CppType& value)
     {
         auto length = value.Size() * sizeof(T);
@@ -150,16 +151,82 @@ struct CSharpConverter<Vector<SharedPtr<T>>>
     }
 };
 
+// Convert Vector<WeakPtr<T>>
+template<typename T>
+struct CSharpConverter<Vector<WeakPtr<T>>>
+{
+    using CppType=Vector<WeakPtr<T>>;
+    using CType=void*;
+
+    static CType ToCSharp(const CppType& value)
+    {
+        int length = (int)value.Size() * sizeof(void*);
+        CType result = MarshalAllocator::Get().Alloc(length);
+
+        auto** array = (T**)result;
+        for (const auto& ptr : value)
+            *array++ = ptr.Get();
+
+        return result;
+    }
+
+    static CppType FromCSharp(CType value)
+    {
+        auto length = *(int32_t*)((uint8_t*)value - 4);
+        auto count = length / sizeof(void*);
+        CppType result{(unsigned)count};
+        auto** array = (T**)value;
+        for (auto& ptr : result)
+            ptr = *array++;
+        return result;
+    }
+};
+
+// Convert Vector<T*>
+template<typename T>
+struct CSharpConverter<Vector<T*>>
+{
+    using CppType=Vector<T*>;
+    using CType=void*;
+
+    // TODO: This can be optimized by passing &value.Front() memory buffer
+    static CType ToCSharp(const CppType& value)
+    {
+        int length = (int)value.Size() * sizeof(void*);
+        CType result = MarshalAllocator::Get().Alloc(length);
+
+        auto** array = (T**)result;
+        for (const auto& ptr : value)
+            *array++ = ptr;
+
+        return result;
+    }
+
+    static CppType FromCSharp(CType value)
+    {
+        auto length = *(int32_t*)((uint8_t*)value - 4);
+        auto count = length / sizeof(void*);
+        CppType result{(unsigned)count};
+        auto** array = (T**)value;
+        for (auto& ptr : result)
+            ptr = *array++;
+        return result;
+    }
+};
+
 ////////////////////////////////////// String converters ///////////////////////////////////////////////////////////////
 
 template<> struct CSharpConverter<Urho3D::String>
 {
+    // TODO: This can be optimized by passing value memory buffer
     static inline const char* ToCSharp(const char* value)
     {
         void* memory = MarshalAllocator::Get().Alloc(strlen(value) + 1);
         strcpy((char*)memory, value);
         return (const char*)memory;
     }
+
+    // TODO: This can be optimized by passing &value.CString() memory buffer
     static inline const char* ToCSharp(const String& value)
     {
         void* memory = MarshalAllocator::Get().Alloc(value.Length() + 1);
