@@ -37,6 +37,9 @@ void Urho3DCustomPassLate::NamespaceStart()
     // cppast bug workaround
     if (auto* entity = generator->GetSymbol("Urho3D::Localization::Get(Urho3D::String const&,int)"))
         entity->children_[1]->defaultValue_ = "-1";
+
+    if (auto* entity = generator->GetSymbol("ImGui::BeginDock(char const*,bool*,ImGuiWindowFlags,ImVec2 const&)"))
+        entity->children_[3]->defaultValue_ = "new Vector2(-1, -1)";
 }
 
 bool Urho3DCustomPassLate::Visit(MetaEntity* entity, cppast::visitor_info info)
