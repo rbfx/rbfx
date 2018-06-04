@@ -965,12 +965,18 @@ struct DockContext
                         dock.m_allow_condition &= ~m_next_dock_condition;
 
                     if (m_next_dock_after == -1)                        // To root dock
+                    {
                         doDock(dock, nullptr, m_next_dock_slot);
+                        dock.size = default_size;
+                    }
                     else
                     {
                         Dock* dest = getExistingDock(m_next_dock_after);
                         if (!dest || dest->status == Status_Docked)
+                        {
                             doDock(dock, dest, m_next_dock_slot);
+                            dock.size = default_size;
+                        }
                     }
 
                 } while (false);
