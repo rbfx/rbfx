@@ -23,6 +23,7 @@
 #pragma once
 
 
+#include "Toolbox.h"
 #include <ImGui/imgui.h>
 #include <Urho3D/Resource/XMLElement.h>
 #include <Urho3D/Resource/JSONValue.h>
@@ -43,18 +44,18 @@ enum DockSlot
     Slot_None
 };
 
-void ShutdownDock();
-void RootDock(const ImVec2& pos, const ImVec2& size);
-bool BeginDock(const char* label, bool* opened = nullptr, ImGuiWindowFlags extra_flags = 0, const ImVec2& default_size = ImVec2(-1, -1));
-void EndDock();
-void SetDockActive();
-void SaveDock(Urho3D::XMLElement& element);
-void LoadDock(const Urho3D::XMLElement& element);
-void SaveDock(Urho3D::JSONValue& element);
-void LoadDock(const Urho3D::JSONValue& element);
-void SetNextDockPos(const char* targetDockLabel, DockSlot_ pos, ImGuiCond_ condition);
-bool IsDockDocked();
-bool IsDockActive();
-bool IsDockTabHovered();
+URHO3D_TOOLBOX_API void ShutdownDock();
+URHO3D_TOOLBOX_API void RootDock(const ImVec2& pos, const ImVec2& size);
+URHO3D_TOOLBOX_API bool BeginDock(const char* label, bool* opened = nullptr, ImGuiWindowFlags extra_flags = 0, const ImVec2& default_size = ImVec2(-1, -1));
+URHO3D_TOOLBOX_API void EndDock();
+URHO3D_TOOLBOX_API void SetDockActive();
+URHO3D_TOOLBOX_API void SaveDock(Urho3D::XMLElement& element);
+URHO3D_TOOLBOX_API void LoadDock(const Urho3D::XMLElement& element);
+URHO3D_TOOLBOX_API void SaveDock(Urho3D::JSONValue& element);
+URHO3D_TOOLBOX_API void LoadDock(const Urho3D::JSONValue& element);
+URHO3D_TOOLBOX_API void SetNextDockPos(const char* targetDockLabel, DockSlot pos, ImGuiCond_ condition);
+URHO3D_TOOLBOX_API bool IsDockDocked();
+URHO3D_TOOLBOX_API bool IsDockActive();
+URHO3D_TOOLBOX_API bool IsDockTabHovered();
 
 }

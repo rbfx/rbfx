@@ -22,7 +22,7 @@
 
 #pragma once
 
-
+#include "Toolbox.h"
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/Graphics/Drawable.h>
 #include <Urho3D/Math/MathDefs.h>
@@ -43,14 +43,14 @@ class Scene;
 namespace Undo
 {
 
-class EditAction : public RefCounted
+class URHO3D_TOOLBOX_API EditAction : public RefCounted
 {
 public:
     virtual void Undo() = 0;
     virtual void Redo() = 0;
 };
 
-class CreateNodeAction : public EditAction
+class URHO3D_TOOLBOX_API CreateNodeAction : public EditAction
 {
 public:
     unsigned nodeID;
@@ -90,7 +90,7 @@ public:
     }
 };
 
-class DeleteNodeAction : public EditAction
+class URHO3D_TOOLBOX_API DeleteNodeAction : public EditAction
 {
 public:
     unsigned nodeID;
@@ -135,7 +135,7 @@ public:
     }
 };
 
-class ReparentNodeAction : public EditAction
+class URHO3D_TOOLBOX_API ReparentNodeAction : public EditAction
 {
 public:
     unsigned nodeID;
@@ -216,7 +216,7 @@ public:
     }
 };
 
-class CreateComponentAction : public EditAction
+class URHO3D_TOOLBOX_API CreateComponentAction : public EditAction
 {
 public:
     unsigned nodeID;
@@ -258,7 +258,7 @@ public:
 
 };
 
-class DeleteComponentAction : public EditAction
+class URHO3D_TOOLBOX_API DeleteComponentAction : public EditAction
 {
 public:
     unsigned nodeID;
@@ -325,7 +325,7 @@ static unsigned GetID(Serializable* serializable)
     return M_MAX_UNSIGNED;
 };
 
-class EditAttributeAction : public EditAction
+class URHO3D_TOOLBOX_API EditAttributeAction : public EditAction
 {
 public:
     unsigned targetID;
@@ -393,7 +393,7 @@ public:
     }
 };
 
-class CreateUIElementAction : public EditAction
+class URHO3D_TOOLBOX_API CreateUIElementAction : public EditAction
 {
 public:
     Variant elementID;
@@ -430,7 +430,7 @@ public:
     }
 };
 
-class DeleteUIElementAction : public EditAction
+class URHO3D_TOOLBOX_API DeleteUIElementAction : public EditAction
 {
 public:
     Variant elementID;
@@ -467,7 +467,7 @@ public:
     }
 };
 
-class ReparentUIElementAction : public EditAction
+class URHO3D_TOOLBOX_API ReparentUIElementAction : public EditAction
 {
 public:
     Variant elementID;
@@ -502,7 +502,7 @@ public:
     }
 };
 
-class ApplyUIElementStyleAction : public EditAction
+class URHO3D_TOOLBOX_API ApplyUIElementStyleAction : public EditAction
 {
 public:
     Variant elementID;
@@ -551,7 +551,7 @@ public:
     }
 };
 
-class EditUIStyleAction : public EditAction
+class URHO3D_TOOLBOX_API EditUIStyleAction : public EditAction
 {
 public:
     XMLFile oldStyle;
@@ -594,7 +594,7 @@ public:
 
 using StateCollection = Vector<SharedPtr<EditAction>>;
 
-class Manager : public Object
+class URHO3D_TOOLBOX_API Manager : public Object
 {
 URHO3D_OBJECT(Manager, Object);
 public:
@@ -639,7 +639,7 @@ protected:
     StateCollection currentFrameStates_;
 };
 
-class SetTrackingScoped
+class URHO3D_TOOLBOX_API SetTrackingScoped
 {
 public:
     /// Set undo manager tracking in this scope. Restore to the old value on scope exit.

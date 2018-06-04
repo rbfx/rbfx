@@ -22,6 +22,44 @@
 
 #pragma once
 
+#ifdef _WIN32
+
+#ifdef _MSC_VER
+#pragma warning(disable: 4251)
+#pragma warning(disable: 4275)
+#endif
+
+#define URHO3D_TOOLBOX_EXPORT_API __declspec(dllexport)
+
+#ifdef URHO3D_TOOLBOX_STATIC
+#  define URHO3D_TOOLBOX_API
+#  define URHO3D_TOOLBOX_NO_EXPORT
+#else
+#  ifndef URHO3D_TOOLBOX_API
+#    ifdef URHO3D_TOOLBOX_EXPORTS
+/* We are building this library */
+#      define URHO3D_TOOLBOX_API URHO3D_TOOLBOX_EXPORT_API
+#    else
+/* We are using this library */
+#      define URHO3D_TOOLBOX_API __declspec(dllimport)
+#    endif
+#  endif
+#endif
+
+#else
+
+#define URHO3D_TOOLBOX_EXPORT_API __attribute__((visibility("default")))
+
+#ifdef URHO3D_TOOLBOX_STATIC
+#ifndef URHO3D_TOOLBOX_API
+#  define URHO3D_TOOLBOX_API
+#endif
+#  define URHO3D_TOOLBOX_NO_EXPORT
+#else
+#  define URHO3D_TOOLBOX_API URHO3D_TOOLBOX_EXPORT_API
+#endif
+
+#endif
 
 namespace Urho3D
 {
@@ -29,6 +67,6 @@ namespace Urho3D
 class Context;
 
 /// Register toolbox types with the engine.
-void RegisterToolboxTypes(Context* context);
+URHO3D_TOOLBOX_API void RegisterToolboxTypes(Context* context);
 
 };

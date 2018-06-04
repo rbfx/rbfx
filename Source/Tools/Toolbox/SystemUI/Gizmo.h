@@ -23,6 +23,7 @@
 #pragma once
 
 
+#include "Toolbox.h"
 #include <Urho3D/Scene/Node.h>
 #include <ImGui/imgui.h>
 
@@ -41,7 +42,7 @@ enum GizmoOperation
     GIZMOOP_MAX
 };
 
-class Gizmo : public Object
+class URHO3D_TOOLBOX_API Gizmo : public Object
 {
     URHO3D_OBJECT(Gizmo, Object);
 public:

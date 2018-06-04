@@ -27,8 +27,13 @@ endif ()
 file (GLOB_RECURSE SOURCE_FILES *.cpp *.h *.hpp)
 add_library (Toolbox ${SOURCE_FILES})
 target_link_libraries (Toolbox Urho3D)
+target_compile_definitions(Toolbox PRIVATE -DURHO3D_TOOLBOX_EXPORTS=1)
+if (NOT BUILD_SHARED_LIBS)
+    target_compile_definitions(Toolbox PUBLIC -DURHO3D_TOOLBOX_STATIC=1)
+endif ()
 target_include_directories(Toolbox
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 csharp_bind_target(TARGET Toolbox OUTPUT_NAME Urho3DNet.Toolbox.dll)
 install(TARGETS Toolbox EXPORT Urho3D

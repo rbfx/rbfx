@@ -23,6 +23,7 @@
 #pragma once
 
 
+#include "Toolbox.h"
 #include <Urho3D/Core/Object.h>
 
 
@@ -36,7 +37,7 @@ class Texture2D;
 class Viewport;
 class Node;
 
-class SceneView
+class URHO3D_TOOLBOX_API SceneView
 {
 public:
     /// Construct.

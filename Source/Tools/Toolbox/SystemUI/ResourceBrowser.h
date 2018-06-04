@@ -23,6 +23,7 @@
 #pragma once
 
 
+#include "Toolbox.h"
 #include <Urho3D/Core/Object.h>
 
 
@@ -30,8 +31,8 @@ namespace Urho3D
 {
 
 /// Create docked resource browser dock window.
-bool ResourceBrowserWindow(String& selected);
+URHO3D_TOOLBOX_API bool ResourceBrowserWindow(String& selected);
 /// Create resource browser ui inside another window.
-bool ResourceBrowserWidget(String& selected);
+URHO3D_TOOLBOX_API bool ResourceBrowserWidget(String& selected);
 
 }

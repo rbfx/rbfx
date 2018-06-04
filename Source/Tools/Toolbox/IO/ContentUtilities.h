@@ -23,6 +23,7 @@
 #pragma once
 
 
+#include "Toolbox.h"
 #include <Urho3D/Container/Str.h>
 #include <Urho3D/Precompiled.h>
 
@@ -64,11 +65,11 @@ enum ContentType
 };
 
 /// Return file type based on extension of file name.
-FileType GetFileType(const String& fileName);
+URHO3D_TOOLBOX_API FileType GetFileType(const String& fileName);
 /// Return icon from icon font based on extension of file name.
-String GetFileIcon(const String& fileName);
+URHO3D_TOOLBOX_API String GetFileIcon(const String& fileName);
 
 /// Return content type by inspecting file contents.
-ContentType GetContentType(const String& resourcePath);
+URHO3D_TOOLBOX_API ContentType GetContentType(const String& resourcePath);
 
 }
