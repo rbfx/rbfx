@@ -146,6 +146,7 @@
           "Urho3D::ConvexData",
           "Urho3D::HeightfieldData",
           "Urho3D::FileWatcher::ThreadFunction()",
+          "Urho3D::AttributeInfo::AttributeInfo(*",  // TODO: Support array of string pointers somehow
           // Provied by C#
           "Urho3D::M_INFINITY",
           "Urho3D::M_MIN_INT",
