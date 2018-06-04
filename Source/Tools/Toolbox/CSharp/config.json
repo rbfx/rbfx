@@ -15,11 +15,6 @@
           "ImGui::*"
         ]
       },
-      "include": [
-        "Toolbox/SystemUI/ImGuiDock.h",
-        "ImGui/imgui.h",
-        "Urho3D/Urho3DAll.h"
-      ]
     }
   }
 }

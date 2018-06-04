@@ -42,6 +42,9 @@ void GenerateCApiPass::Start()
     {
         for (const auto& include : nsRules.includes_)
             printer_ << fmt::format("#include <{}>", include);
+
+        for (const auto& include : nsRules.sourceFiles_)
+            printer_ << fmt::format("#include <{}{}>", include.first, include.second);
     }
 
     printer_ << "";

@@ -68,9 +68,6 @@
           ]
         }
       },
-      "include": [
-        "Urho3D/Urho3DAll.h",
-      ],
       "symbols": {
         "include": [
           "Urho3D",
