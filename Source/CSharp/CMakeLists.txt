@@ -88,7 +88,7 @@ macro (csharp_bind_target)
         return ()
     endif ()
 
-    cmake_parse_arguments(BIND "INTERNAL;EXTERNAL" "TARGET" "" ${ARGN})
+    cmake_parse_arguments(BIND "INTERNAL;EXTERNAL" "TARGET;OUTPUT_NAME" "" ${ARGN})
 
     get_target_property(BIND_SOURCE_DIR ${BIND_TARGET} SOURCE_DIR)
 
@@ -98,6 +98,10 @@ macro (csharp_bind_target)
         else ()
             set (BIND_EXTERNAL ON)
         endif ()
+    endif ()
+
+    if (NOT BIND_OUTPUT_NAME)
+        set (BIND_OUTPUT_NAME ${BIND_TARGET}Net.dll)
     endif ()
 
     set (BIND_CSHARP_DIR ${BIND_SOURCE_DIR}/CSharp)
@@ -233,25 +237,7 @@ macro (csharp_bind_target)
     endif ()
     add_target_csharp(${BIND_TARGET}Net ${BIND_CSHARP_DIR}/${BIND_TARGET}Net.csproj)
     add_dependencies(${BIND_TARGET}Net ${CSHARP_LIBRARY_NAME})
-    if (WIN32)
-        add_custom_command(TARGET ${BIND_TARGET}Net POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/System.Buffers/ref/netstandard1.1/System.Buffers.dll ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/
-        )
-        if (URHO3D_WITH_MONO)
-            add_custom_command(TARGET ${BIND_TARGET}Net POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy ${MONO_PATH}/lib/mono/4.5/Facades/System.Runtime.dll ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/
-            )
-            install (FILES
-                ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/System.Runtime.dll
-                DESTINATION ${DEST_LIBRARY_DIR}
-            )
-        endif ()
-        install (FILES
-            ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/System.Buffers.dll
-            DESTINATION ${DEST_LIBRARY_DIR}
-        )
-    endif ()
-    install (FILES ${NET_OUTPUT_DIRECTORY}/${BIND_TARGET}Net.dll DESTINATION ${DEST_LIBRARY_DIR})
+    install (FILES ${NET_OUTPUT_DIRECTORY}/${BIND_OUTPUT_NAME} DESTINATION ${DEST_LIBRARY_DIR})
 endmacro ()
 
 # Target for manually refreshing binding code
@@ -266,3 +252,20 @@ execute_process(
     COMMAND ${CMAKE_COMMAND} -E tar "xf" "pkg.zip" --format=zip
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/System.Buffers
 )
+
+if (WIN32)
+    add_custom_command(TARGET CSharpBindings POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/System.Buffers/ref/netstandard1.1/System.Buffers.dll ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/)
+    if (URHO3D_WITH_MONO)
+        add_custom_command(TARGET CSharpBindings POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${MONO_PATH}/lib/mono/4.5/Facades/System.Runtime.dll ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/)
+        install (FILES
+            ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/System.Runtime.dll
+            DESTINATION ${DEST_LIBRARY_DIR}
+        )
+    endif ()
+    install (FILES
+        ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR_CONFIG}/System.Buffers.dll
+        DESTINATION ${DEST_LIBRARY_DIR}
+    )
+endif ()

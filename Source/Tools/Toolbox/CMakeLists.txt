@@ -30,7 +30,7 @@ target_link_libraries (Toolbox Urho3D)
 target_include_directories(Toolbox
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
 )
-csharp_bind_target(TARGET Toolbox)
+csharp_bind_target(TARGET Toolbox OUTPUT_NAME Urho3DNet.Toolbox.dll)
 install(TARGETS Toolbox EXPORT Urho3D
     ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
     LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
