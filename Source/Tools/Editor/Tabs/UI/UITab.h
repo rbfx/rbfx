@@ -37,7 +37,7 @@ class UITab : public Tab
     URHO3D_OBJECT(UITab, Tab);
 public:
     /// Construct.
-    explicit UITab(Context* context, StringHash id, const String& afterDockName, ui::DockSlot_ position);
+    explicit UITab(Context* context, StringHash id, const String& afterDockName, ui::DockSlot position);
     /// Render scene hierarchy window.
     void RenderNodeTree() override;
     /// Render inspector window.

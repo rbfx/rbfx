@@ -28,7 +28,7 @@ namespace Urho3D
 {
 
 
-Tab::Tab(Context* context, StringHash id, const String& afterDockName, ui::DockSlot_ position)
+Tab::Tab(Context* context, StringHash id, const String& afterDockName, ui::DockSlot position)
     : Object(context)
     , inspector_(context)
     , placeAfter_(afterDockName)

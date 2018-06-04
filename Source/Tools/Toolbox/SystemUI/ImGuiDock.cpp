@@ -215,7 +215,7 @@ struct DockContext
     EndAction_ m_end_action;
     bool m_is_begin_open = false;
     ImU32 m_next_dock_after = 0;
-    DockSlot_ m_next_dock_slot;
+    DockSlot m_next_dock_slot;
     ImGuiCond_ m_next_dock_condition;
 
 
@@ -381,7 +381,7 @@ struct DockContext
     }
 
 
-    static ImRect getDockedRect(const ImRect& rect, DockSlot_ dock_slot)
+    static ImRect getDockedRect(const ImRect& rect, DockSlot dock_slot)
     {
         ImVec2 half_size = rect.GetSize() * 0.5f;
         switch (dock_slot)
@@ -395,7 +395,7 @@ struct DockContext
     }
 
 
-    static ImRect getSlotRect(ImRect parent_rect, DockSlot_ dock_slot)
+    static ImRect getSlotRect(ImRect parent_rect, DockSlot dock_slot)
     {
         ImVec2 size = parent_rect.Max - parent_rect.Min;
         ImVec2 center = parent_rect.Min + size * 0.5f;
@@ -410,7 +410,7 @@ struct DockContext
     }
 
 
-    static ImRect getSlotRectOnBorder(ImRect parent_rect, DockSlot_ dock_slot)
+    static ImRect getSlotRectOnBorder(ImRect parent_rect, DockSlot dock_slot)
     {
         ImVec2 size = parent_rect.Max - parent_rect.Min;
         ImVec2 center = parent_rect.Min + size * 0.5f;
@@ -458,17 +458,17 @@ struct DockContext
         for (int i = 0; i < (on_border ? 4 : 5); ++i)
         {
             ImRect r =
-                on_border ? getSlotRectOnBorder(rect, (DockSlot_)i) : getSlotRect(rect, (DockSlot_)i);
+                on_border ? getSlotRectOnBorder(rect, (DockSlot)i) : getSlotRect(rect, (DockSlot)i);
             bool hovered = r.Contains(mouse_pos);
             canvas->AddRectFilled(r.Min, r.Max, hovered ? color_hovered : color);
             if (!hovered) continue;
 
             if (!IsMouseDown(0))
             {
-                doDock(dock, dest_dock ? dest_dock : getRootDock(), (DockSlot_)i);
+                doDock(dock, dest_dock ? dest_dock : getRootDock(), (DockSlot)i);
                 return true;
             }
-            ImRect docked_rect = getDockedRect(rect, (DockSlot_)i);
+            ImRect docked_rect = getDockedRect(rect, (DockSlot)i);
             canvas->AddRectFilled(docked_rect.Min, docked_rect.Max, GetColorU32(ImGuiCol_Button));
         }
         return false;
@@ -730,7 +730,7 @@ struct DockContext
     }
 
 
-    static void setDockPosSize(Dock& dest, Dock& dock, DockSlot_ dock_slot, Dock& container)
+    static void setDockPosSize(Dock& dest, Dock& dock, DockSlot dock_slot, Dock& container)
     {
         IM_ASSERT(!dock.prev_tab && !dock.next_tab && !dock.children[0] && !dock.children[1]);
 
@@ -775,7 +775,7 @@ struct DockContext
     }
 
 
-    void doDock(Dock& dock, Dock* dest, DockSlot_ dock_slot)
+    void doDock(Dock& dock, Dock* dest, DockSlot dock_slot)
     {
         IM_ASSERT(!dock.parent);
         if (!dest)
@@ -877,7 +877,7 @@ struct DockContext
     }
 
 
-    static DockSlot_ getSlotFromLocationCode(char code)
+    static DockSlot getSlotFromLocationCode(char code)
     {
         switch (code)
         {
@@ -1247,7 +1247,7 @@ struct DockContext
         }
     }
 
-    void placeNewDockAfter(const char* label, DockSlot_ slot, ImGuiCond_ condition)
+    void placeNewDockAfter(const char* label, DockSlot slot, ImGuiCond_ condition)
     {
         if (label)
             m_next_dock_after = ImHash(label, 0);
@@ -1341,7 +1341,7 @@ void LoadDock(const Urho3D::JSONValue& element)
     g_dock.load(element);
 }
 
-void SetNextDockPos(const char* targetDockLabel, DockSlot_ pos, ImGuiCond_ condition)
+void SetNextDockPos(const char* targetDockLabel, DockSlot pos, ImGuiCond_ condition)
 {
     g_dock.placeNewDockAfter(targetDockLabel, pos, condition);
 }

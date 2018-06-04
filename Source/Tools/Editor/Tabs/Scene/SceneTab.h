@@ -44,7 +44,7 @@ class SceneTab : public Tab
     URHO3D_OBJECT(SceneTab, Tab);
 public:
     /// Construct.
-    explicit SceneTab(Context* context, StringHash id, const String& afterDockName, ui::DockSlot_ position);
+    explicit SceneTab(Context* context, StringHash id, const String& afterDockName, ui::DockSlot position);
     /// Destruct.
     ~SceneTab() override;
     /// Render inspector window.

@@ -37,7 +37,7 @@
 namespace Urho3D
 {
 
-SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName, ui::DockSlot_ position)
+SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName, ui::DockSlot position)
     : Tab(context, id, afterDockName, position)
     , view_(context, {0, 0, 1024, 768})
     , gizmo_(context)

@@ -42,7 +42,7 @@ class Tab : public Object
     URHO3D_OBJECT(Tab, Object);
 public:
     /// Construct.
-    explicit Tab(Context* context, StringHash id, const String& afterDockName, ui::DockSlot_ position);
+    explicit Tab(Context* context, StringHash id, const String& afterDockName, ui::DockSlot position);
     /// Render scene hierarchy window.
     virtual void RenderNodeTree() = 0;
     /// Render inspector window.
@@ -99,7 +99,7 @@ protected:
     /// Name of sibling dock for initial placement.
     String placeAfter_;
     /// Position where this scene view should be docked initially.
-    ui::DockSlot_ placePosition_;
+    ui::DockSlot placePosition_;
     /// Last known mouse position when it was visible.
     IntVector2 lastMousePosition_;
 };

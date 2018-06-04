@@ -31,7 +31,7 @@
 namespace ImGui
 {
 
-enum DockSlot_
+enum DockSlot
 {
     Slot_Left,
     Slot_Right,

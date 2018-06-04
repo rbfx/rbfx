@@ -37,7 +37,7 @@ namespace Urho3D
 {
 
 UITab::UITab(Urho3D::Context* context, Urho3D::StringHash id, const Urho3D::String& afterDockName,
-    ui::DockSlot_ position)
+    ui::DockSlot position)
     : Tab(context, id, afterDockName, position)
     , undo_(context)
 {
