@@ -29,7 +29,9 @@
 namespace Urho3D
 {
 
-/// Create docked resource browser window.
+/// Create docked resource browser dock window.
 bool ResourceBrowserWindow(String& selected);
+/// Create resource browser ui inside another window.
+bool ResourceBrowserWidget(String& selected);
 
 }
