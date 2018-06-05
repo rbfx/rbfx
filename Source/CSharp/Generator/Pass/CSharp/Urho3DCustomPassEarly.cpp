@@ -39,7 +39,6 @@ bool Urho3DCustomPassEarly::Visit(MetaEntity* entity, cppast::visitor_info info)
     {
         // We only need some enums/constants from SDL. Get rid of anything else.
         entity->Remove();
-        spdlog::get("console")->info("Ignore: {}", entity->uniqueName_);
     }
     else if (entity->kind_ == cppast::cpp_entity_kind::variable_t &&
         entity->GetParent()->kind_ == cppast::cpp_entity_kind::namespace_t && entity->GetDefaultValue().empty() &&
