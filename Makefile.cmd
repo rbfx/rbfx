@@ -48,8 +48,10 @@ if NOT "!LLVM_VERSION!" == "" (
 set "CMAKE_GENRATOR=Visual Studio"
 if "!VS!" == "2015" (
     set "CMAKE_GENRATOR=!CMAKE_GENRATOR! 14"
+    call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" !PLATFORM!
 ) else if "!VS!" == "2017" (
     set "CMAKE_GENRATOR=!CMAKE_GENRATOR! 15"
+    call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" !PLATFORM!
 ) else (
     echo Unknown Visual Studio version
     goto quit
