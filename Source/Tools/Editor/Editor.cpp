@@ -24,7 +24,7 @@
 #include <Toolbox/SystemUI/ResourceBrowser.h>
 #include <Toolbox/Toolbox.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
-#include <nfd.h>
+#include <nativefiledialog/nfd.h>
 
 #include "Editor.h"
 #include "EditorEvents.h"
