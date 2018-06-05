@@ -1,6 +1,6 @@
 {
-  "module": "Urho3DNet",
-  "namespace": "Urho3D",
+  "module": "Urho3D",
+  "managed_assembly": "Urho3DNet",
   "namespaces": {
     "SDL": {
       "parse": {

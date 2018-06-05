@@ -102,7 +102,11 @@ bool GeneratorContext::AddModule(const std::string& libraryName, bool isStatic, 
         // Module options
         {
             m.moduleName_ = jsonRules["module"].GetString();
-            m.defaultNamespace_ = jsonRules["namespace"].GetString();
+            m.managedAssembly_ = jsonRules["managed_assembly"].GetString();
+            if (jsonRules.HasMember("namespace"))
+                m.defaultNamespace_ = jsonRules["namespace"].GetString();
+            else
+                m.defaultNamespace_ = m.moduleName_;
 
             if (jsonRules.HasMember("default-values"))
             {
@@ -472,7 +476,7 @@ void GeneratorContext::Generate()
             {
                 if (&m2 != &m && !m.publicKey_.empty())
                     fp << fmt::format("[assembly: InternalsVisibleTo(\"{}, PublicKey={}\")]\n",
-                                      m2.moduleName_, m2.publicKey_);
+                                      m2.managedAssembly_, m2.publicKey_);
             }
             fp << "\n";
 

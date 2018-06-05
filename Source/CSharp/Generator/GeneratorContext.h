@@ -118,6 +118,7 @@ public:
         std::string outputDirCs_;
         std::vector<NamespaceRules> rules_;
         std::string moduleName_;
+        std::string managedAssembly_;
         std::string defaultNamespace_;
         std::vector<std::string> extraMonoCallInitializers_;
         cppast::libclang_compile_config config_;

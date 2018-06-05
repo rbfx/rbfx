@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 //
 
-#include "CSharp.h"
 #include <Urho3D/Core/Object.h>
 #include "Urho3DClassWrappers.hpp"
 

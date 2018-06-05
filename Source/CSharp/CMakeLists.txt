@@ -155,7 +155,17 @@ macro (csharp_bind_target)
     if(_TARGET_TYPE STREQUAL "STATIC_LIBRARY")
         list (APPEND GENERATOR_OPTIONS --static)
     endif ()
-    list (APPEND GENERATOR_OPTIONS --signed-with=${SNK_PUB_KEY})
+    if (SNK_PUB_KEY)
+        list (APPEND GENERATOR_OPTIONS --signed-with=${SNK_PUB_KEY})
+    endif ()
+
+    if (BIND_INTERNAL)
+        set (CSHARP_LIBRARY_NAME ${BIND_TARGET})
+    elseif (BIND_EXTERNAL)
+        set (CSHARP_LIBRARY_NAME ${BIND_TARGET}CSharp)
+    else ()
+        message(FATAL_ERROR "Please pass INTERNAL or EXTERNAL to csharp_bind_target()")
+    endif ()
 
     set (BINDINGS_OUTPUT_DIR ${CMAKE_BINARY_DIR}/CSharpBindings/${BIND_TARGET})
     set (COMMON_DIR ${CSHARP_SOURCE_DIR}/Common)
@@ -188,10 +198,8 @@ macro (csharp_bind_target)
         ${COMMON_DIR}/Native/*.cpp ${BIND_CSHARP_DIR}/Native/*.cpp)
 
     if (BIND_INTERNAL)
-        set (CSHARP_LIBRARY_NAME ${BIND_TARGET})
         target_sources(${BIND_TARGET} PRIVATE ${COMMON_CSHARP_SOURCE_FILES_MANUAL} ${CSHARP_SOURCE_FILES_GENERATED})
     elseif (BIND_EXTERNAL)
-        set (CSHARP_LIBRARY_NAME ${BIND_TARGET}CSharp)
         add_library(${CSHARP_LIBRARY_NAME} SHARED ${COMMON_CSHARP_SOURCE_FILES_MANUAL} ${CSHARP_SOURCE_FILES_GENERATED})
         target_link_libraries(${CSHARP_LIBRARY_NAME} ${BIND_TARGET})
         install(TARGETS ${CSHARP_LIBRARY_NAME}
@@ -199,8 +207,6 @@ macro (csharp_bind_target)
             RUNTIME DESTINATION ${DEST_BIN_DIR}
             ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
         )
-    else ()
-        message(FATAL_ERROR "Please pass INTERNAL or EXTERNAL to csharp_bind_target()")
     endif ()
 
     # Finalize option list
