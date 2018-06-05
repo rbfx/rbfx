@@ -93,6 +93,10 @@ bool Urho3DCustomPassLate::Visit(MetaEntity* entity, cppast::visitor_info info)
         // No longer needed
         entity->Remove();
     }
+    else if (entity->kind_ == cppast::cpp_entity_kind::member_function_t && entity->name_ == "GetType")
+    {
+        entity->name_ = "GetTypeHash";
+    }
 
     return true;
 }
