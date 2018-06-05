@@ -18,7 +18,9 @@ target_include_directories(nativefiledialog
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>
            $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}>
 )
-
+if (BUILD_SHARED_LIBS)
+    target_compile_definitions(nativefiledialog PRIVATE -D_EXPORTS=1)
+endif ()
 if (WIN32)
     target_link_objects(nativefiledialog shell32 ole32 uuid)
 endif ()
