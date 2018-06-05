@@ -89,16 +89,19 @@ bool ResourceBrowserWidget(String& selected)
         }
     }
 
-    switch (ui::DoubleClickSelectable("..", state->selected == ".."))
+    if (!state->path.Empty())
     {
-    case 1:
-        state->selected = "..";
-        break;
-    case 2:
-        state->path = GetParentPath(state->path);
-        break;
-    default:
-        break;
+        switch (ui::DoubleClickSelectable("..", state->selected == ".."))
+        {
+        case 1:
+            state->selected = "..";
+            break;
+        case 2:
+            state->path = GetParentPath(state->path);
+            break;
+        default:
+            break;
+        }
     }
 
     Sort(mergedDirs.Begin(), mergedDirs.End());
