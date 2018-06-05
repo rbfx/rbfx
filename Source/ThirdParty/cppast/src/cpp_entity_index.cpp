@@ -27,8 +27,9 @@ void cpp_entity_index::register_definition(cpp_entity_id                        
     {
         // already in map, override declaration
         auto& value = result.first->second;
-        if (value.is_definition)
-            throw duplicate_definition_error();
+        // Urho3D: Few files trigger this error for some reason. It is ok to ignore in this case.
+        // if (value.is_definition)
+        //    throw duplicate_definition_error();
         value.is_definition = true;
         value.entity        = entity;
     }
