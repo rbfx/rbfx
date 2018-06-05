@@ -41,7 +41,6 @@ void GenerateCSharpApiPass::Start()
     printer_ << "using Urho3D;";
     printer_ << "using Urho3D.CSharp;";
     printer_ << "";
-    // TODO: generate AssemblyInfo and add [assembly: InternalsVisibleTo("name of assembly here")]
 }
 
 bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)

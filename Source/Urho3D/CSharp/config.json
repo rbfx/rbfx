@@ -1,5 +1,6 @@
 {
-  "module": "Urho3D",
+  "module": "Urho3DNet",
+  "namespace": "Urho3D",
   "namespaces": {
     "SDL": {
       "parse": {

@@ -56,6 +56,9 @@ int main(int argc, char* argv[])
 {
     struct CommandLineOptions
     {
+        bool isStatic_;
+        std::string publicKey_;
+        std::string library_;
         std::string rulesFile;
         std::string sourceDir;
         std::string outputDirCpp;
@@ -76,18 +79,21 @@ int main(int argc, char* argv[])
     {
         auto* bindApp = app.add_subcommand(fmt::format("bind{}", i), "Generate module bindings");
 
-        bindApp->add_flag("--static", generator->isStatic_, "Generate bindings for static library.");
+        bindApp->add_flag("--static", options[i].isStatic_, "Generate bindings for static library.");
+        bindApp->add_option("--signed-with", options[i].publicKey_);
         bindApp->add_option("-I", options[i].includes, "Target include paths.");
         bindApp->add_option("-D", options[i].defines, "Target preprocessor definitions.");
         bindApp->add_option("-O", options[i].options, "Target compiler options.");
 
+        bindApp->add_option("library", options[i].library_, "Native librayr name")->required();
         bindApp->add_option("rules", options[i].rulesFile, "Path to rules json file")->required()->check(CLI::ExistingFile);
         bindApp->add_option("source", options[i].sourceDir, "Path to source directory")->required()->check(CLI::ExistingDirectory);
         bindApp->add_option("output", options[i].outputDirCpp, "Path to output directory")->required();
 
         bindApp->set_callback([i, &options]() {
             auto& opt = options[i];
-            generator->AddModule(opt.sourceDir, opt.outputDirCpp, opt.includes, opt.defines, opt.options, opt.rulesFile);
+            generator->AddModule(opt.library_, opt.isStatic_, opt.publicKey_, opt.sourceDir, opt.outputDirCpp,
+                                 opt.includes, opt.defines, opt.options, opt.rulesFile);
         });
     }
 

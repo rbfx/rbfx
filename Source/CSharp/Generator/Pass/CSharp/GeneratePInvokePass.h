@@ -50,6 +50,7 @@ protected:
 
     CSharpPrinter printer_;
     DiscoverInterfacesPass* discoverInterfacesPass_ = nullptr;
+    std::string dllImport_;
 };
 
 }

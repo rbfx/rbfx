@@ -74,7 +74,8 @@ class GeneratorContext
 public:
     explicit GeneratorContext();
 
-    bool AddModule(const std::string& sourceDir, const std::string& outputDir, const std::vector<std::string>& includes,
+    bool AddModule(const std::string& libraryName, bool isStatic, const std::string& publicKey,
+                   const std::string& sourceDir, const std::string& outputDir, const std::vector<std::string>& includes,
                    const std::vector<std::string>& defines, const std::vector<std::string>& options,
                    const std::string& rulesFile);
     bool IsOutOfDate(const std::string& generatorExe);
@@ -108,17 +109,20 @@ public:
 
     struct Module
     {
+        bool isStatic_;
+        std::string libraryName_;
+        std::string publicKey_;
         std::string sourceDir_;
         std::string outputDir_;
         std::string outputDirCpp_;
         std::string outputDirCs_;
         std::vector<NamespaceRules> rules_;
         std::string moduleName_;
+        std::string defaultNamespace_;
         std::vector<std::string> extraMonoCallInitializers_;
         cppast::libclang_compile_config config_;
         std::string rulesFile_;
     };
-    bool isStatic_ = false;
     std::vector<Module> modules_;
     NamespaceRules* currentNamespace_ = nullptr;
     Module* currentModule_ = nullptr;

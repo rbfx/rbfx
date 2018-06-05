@@ -88,7 +88,7 @@ macro (csharp_bind_target)
         return ()
     endif ()
 
-    cmake_parse_arguments(BIND "INTERNAL;EXTERNAL" "TARGET;OUTPUT_NAME" "" ${ARGN})
+    cmake_parse_arguments(BIND "INTERNAL;EXTERNAL" "TARGET;MANAGED_TARGET" "" ${ARGN})
 
     get_target_property(BIND_SOURCE_DIR ${BIND_TARGET} SOURCE_DIR)
 
@@ -100,8 +100,8 @@ macro (csharp_bind_target)
         endif ()
     endif ()
 
-    if (NOT BIND_OUTPUT_NAME)
-        set (BIND_OUTPUT_NAME ${BIND_TARGET}Net.dll)
+    if (NOT BIND_MANAGED_TARGET)
+        set (BIND_MANAGED_TARGET ${BIND_TARGET}Net)
     endif ()
 
     set (BIND_CSHARP_DIR ${BIND_SOURCE_DIR}/CSharp)
@@ -155,14 +155,10 @@ macro (csharp_bind_target)
     if(_TARGET_TYPE STREQUAL "STATIC_LIBRARY")
         list (APPEND GENERATOR_OPTIONS --static)
     endif ()
+    list (APPEND GENERATOR_OPTIONS --signed-with=${SNK_PUB_KEY})
 
     set (BINDINGS_OUTPUT_DIR ${CMAKE_BINARY_DIR}/CSharpBindings/${BIND_TARGET})
     set (COMMON_DIR ${CSHARP_SOURCE_DIR}/Common)
-    list (APPEND GENERATOR_OPTIONS ${RULES} ${BIND_SOURCE_DIR} ${BINDINGS_OUTPUT_DIR})
-
-    foreach (opt ${GENERATOR_OPTIONS})
-        file(APPEND ${CSHARP_BINDING_GENERATOR_OPTIONS} "${opt}\n")
-    endforeach ()
 
     # Generated source files
     file(MAKE_DIRECTORY ${BINDINGS_OUTPUT_DIR}/Native)
@@ -175,6 +171,7 @@ macro (csharp_bind_target)
     set (COMMON_NET_SOURCE_FILES_GENERATED
         ${BINDINGS_OUTPUT_DIR}/CSharp/PInvoke.cs
         ${BINDINGS_OUTPUT_DIR}/CSharp/CSharp.cs
+        ${BINDINGS_OUTPUT_DIR}/CSharp/Config.cs
     )
     set_source_files_properties(${CSHARP_SOURCE_FILES_GENERATED} ${COMMON_NET_SOURCE_FILES_GENERATED} PROPERTIES GENERATED TRUE)
 
@@ -205,6 +202,13 @@ macro (csharp_bind_target)
     else ()
         message(FATAL_ERROR "Please pass INTERNAL or EXTERNAL to csharp_bind_target()")
     endif ()
+
+    # Finalize option list
+    list (APPEND GENERATOR_OPTIONS ${CSHARP_LIBRARY_NAME} ${RULES} ${BIND_SOURCE_DIR} ${BINDINGS_OUTPUT_DIR})
+    foreach (opt ${GENERATOR_OPTIONS})
+        file(APPEND ${CSHARP_BINDING_GENERATOR_OPTIONS} "${opt}\n")
+    endforeach ()
+
     add_dependencies(${BIND_TARGET} CSharpBindings)
     if (CLANG)
         target_compile_options(${CSHARP_LIBRARY_NAME} PRIVATE -Wno-return-type-c-linkage)
@@ -219,15 +223,6 @@ macro (csharp_bind_target)
         target_compile_options(${CSHARP_LIBRARY_NAME} PRIVATE ${MONO_CFLAGS})
     endif ()
 
-    file (WRITE ${BINDINGS_OUTPUT_DIR}/CSharp/Config.cs
-"namespace Urho3D.CSharp
-{
-    internal static partial class Config
-    {
-        public const string NativeLibraryName = \"${CSHARP_LIBRARY_NAME}\";
-    }
-}\n")
-
     if (MSVC)
         set (NET_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>)
     else ()
@@ -235,9 +230,9 @@ macro (csharp_bind_target)
         # Needed for mono on unixes but not on windows.
         set (FACADES Facades/)
     endif ()
-    add_target_csharp(${BIND_TARGET}Net ${BIND_CSHARP_DIR}/${BIND_TARGET}Net.csproj)
-    add_dependencies(${BIND_TARGET}Net ${CSHARP_LIBRARY_NAME})
-    install (FILES ${NET_OUTPUT_DIRECTORY}/${BIND_OUTPUT_NAME} DESTINATION ${DEST_LIBRARY_DIR})
+    add_target_csharp(${BIND_MANAGED_TARGET} ${BIND_CSHARP_DIR}/${BIND_MANAGED_TARGET}.csproj)
+    add_dependencies(${BIND_MANAGED_TARGET} ${CSHARP_LIBRARY_NAME})
+    install (FILES ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll DESTINATION ${DEST_LIBRARY_DIR})
 endmacro ()
 
 # Target for manually refreshing binding code
@@ -269,3 +264,18 @@ if (WIN32)
         DESTINATION ${DEST_LIBRARY_DIR}
     )
 endif ()
+
+find_program(SN sn)
+if (NOT EXISTS ${CMAKE_BINARY_DIR}/CSharp.snk)
+    execute_process(COMMAND ${SN} -k ${CMAKE_BINARY_DIR}/CSharp.snk)
+endif ()
+
+execute_process(
+    COMMAND ${SN} -tp ${CMAKE_BINARY_DIR}/CSharp.snk
+    OUTPUT_VARIABLE SNK_PUB_KEY
+)
+
+string(REGEX MATCH "Public Key:[0-9a-f\n]+\n\n" SNK_PUB_KEY "${SNK_PUB_KEY}")
+string(REPLACE "Public Key:" "" SNK_PUB_KEY "${SNK_PUB_KEY}")
+string(REGEX REPLACE "[\r\n]+" "" SNK_PUB_KEY "${SNK_PUB_KEY}")
+set(SNK_PUB_KEY "${SNK_PUB_KEY}" CACHE STRING "Public key for .NET assemblies" FORCE)

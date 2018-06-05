@@ -41,13 +41,17 @@ GeneratorContext::GeneratorContext()
 {
 }
 
-bool GeneratorContext::AddModule(const std::string& sourceDir, const std::string& outputDir,
+bool GeneratorContext::AddModule(const std::string& libraryName, bool isStatic, const std::string& publicKey,
+                                 const std::string& sourceDir, const std::string& outputDir,
                                  const std::vector<std::string>& includes, const std::vector<std::string>& defines,
                                  const std::vector<std::string>& options, const std::string& rulesFile)
 {
     modules_.resize(modules_.size() + 1);
     Module& m = modules_.back();
 
+    m.libraryName_ = libraryName;
+    m.isStatic_ = isStatic;
+    m.publicKey_ = publicKey;
     m.sourceDir_ = str::AddTrailingSlash(sourceDir);
     m.outputDir_ = str::AddTrailingSlash(outputDir);
     m.outputDirCs_ = m.outputDir_ + "CSharp/";
@@ -98,6 +102,7 @@ bool GeneratorContext::AddModule(const std::string& sourceDir, const std::string
         // Module options
         {
             m.moduleName_ = jsonRules["module"].GetString();
+            m.defaultNamespace_ = jsonRules["namespace"].GetString();
 
             if (jsonRules.HasMember("default-values"))
             {
@@ -457,6 +462,28 @@ void GeneratorContext::Generate()
 
         for (const auto& pass : apiPasses_)
             pass->Stop();
+
+        // Generate config file
+        {
+            std::ofstream fp(m.outputDirCs_ + "/Config.cs", std::ios::out);
+
+            fp << "using System.Runtime.CompilerServices;\n\n";
+            for (auto& m2 : modules_)
+            {
+                if (&m2 != &m && !m.publicKey_.empty())
+                    fp << fmt::format("[assembly: InternalsVisibleTo(\"{}, PublicKey={}\")]\n",
+                                      m2.moduleName_, m2.publicKey_);
+            }
+            fp << "\n";
+
+            fp << fmt::format("namespace {}.CSharp\n", m.defaultNamespace_);
+            fp << "{\n";
+            fp << "    internal static partial class Config\n";
+            fp << "    {\n";
+            fp << fmt::format("        internal const string NativeLibraryName = \"{}\";\n", m.libraryName_);
+            fp << "    }\n";
+            fp << "}\n\n";
+        }
 
         SetLastModifiedTime(m.outputDir_, 0);   // Touch
         currentNamespace_ = nullptr;

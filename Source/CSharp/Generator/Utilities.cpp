@@ -716,7 +716,7 @@ bool IsPointer(const cppast::cpp_type& type)
 
 bool IsExported(const cppast::cpp_class& cls)
 {
-    if (generator->isStatic_)
+    if (generator->currentModule_->isStatic_)
         // Binding static library. All symbols are always visible.
         return true;
 

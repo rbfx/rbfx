@@ -17,6 +17,9 @@
     <FileAlignment>512</FileAlignment>
     <IntermediateOutputPath>$(BuildDir)\obj\$(Configuration)\$(AssemblyName)</IntermediateOutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <SignAssembly>true</SignAssembly>
+    <PublicSign>true</PublicSign>
+    <AssemblyOriginatorKeyFile>$(BuildDir)/CSharp.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <PlatformTarget>x86</PlatformTarget>

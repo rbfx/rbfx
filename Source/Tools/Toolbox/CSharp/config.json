@@ -1,5 +1,6 @@
 {
-  "module": "Toolbox",
+  "module": "Urho3DNet.Toolbox",
+  "namespace": "Urho3D.Toolbox",
   "namespaces": {
     "Urho3D": {
       "parse": {

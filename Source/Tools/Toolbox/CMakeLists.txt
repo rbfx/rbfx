@@ -36,7 +36,7 @@ target_include_directories(Toolbox
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
-csharp_bind_target(TARGET Toolbox OUTPUT_NAME Urho3DNet.Toolbox.dll)
+csharp_bind_target(TARGET Toolbox MANAGED_TARGET Urho3DNet.Toolbox)
 install(TARGETS Toolbox EXPORT Urho3D
     ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
     LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
