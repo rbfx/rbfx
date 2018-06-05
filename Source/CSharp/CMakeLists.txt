@@ -269,13 +269,15 @@ find_program(SN sn)
 if (NOT EXISTS ${CMAKE_BINARY_DIR}/CSharp.snk)
     execute_process(COMMAND ${SN} -k ${CMAKE_BINARY_DIR}/CSharp.snk)
 endif ()
+if (NOT EXISTS ${CMAKE_BINARY_DIR}/CSharp.snk.pub)
+    execute_process(COMMAND ${SN} -p ${CMAKE_BINARY_DIR}/CSharp.snk ${CMAKE_BINARY_DIR}/CSharp.snk.pub)
+endif ()
 
 execute_process(
-    COMMAND ${SN} -tp ${CMAKE_BINARY_DIR}/CSharp.snk
+    COMMAND ${SN} -tp ${CMAKE_BINARY_DIR}/CSharp.snk.pub
     OUTPUT_VARIABLE SNK_PUB_KEY
 )
-
-string(REGEX MATCH "Public Key:[0-9a-f\n]+\n\n" SNK_PUB_KEY "${SNK_PUB_KEY}")
-string(REPLACE "Public Key:" "" SNK_PUB_KEY "${SNK_PUB_KEY}")
-string(REGEX REPLACE "[\r\n]+" "" SNK_PUB_KEY "${SNK_PUB_KEY}")
+string(REGEX MATCH "Public [Kk]ey(.+)?:[0-9a-f\r\n]+\r?\n\r?\n" SNK_PUB_KEY "${SNK_PUB_KEY}")
+string(REGEX REPLACE "Public [Kk]ey(.+)?:" "" SNK_PUB_KEY "${SNK_PUB_KEY}")
+string(REGEX REPLACE "[ \r\n]+" "" SNK_PUB_KEY "${SNK_PUB_KEY}")
 set(SNK_PUB_KEY "${SNK_PUB_KEY}" CACHE STRING "Public key for .NET assemblies" FORCE)
