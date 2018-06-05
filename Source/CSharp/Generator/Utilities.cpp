@@ -345,12 +345,11 @@ const cppast::cpp_entity* GetEntity(const cppast::cpp_type& type)
     if (realType.kind() == cppast::cpp_type_kind::user_defined_t)
     {
         const auto& userType = dynamic_cast<const cppast::cpp_user_defined_type&>(realType);
-        const auto& ref = userType.entity().get(generator->index_);
-        if (!ref.empty())
+        auto it = generator->symbols_.find(cppast::to_string(userType));
+        if (it != generator->symbols_.end())
         {
-            const auto& definition = ref[0].get();
-            if (cppast::is_definition(definition))
-                return &definition;
+            if (!it->second.expired())
+                return it->second.lock()->ast_;
         }
     }
     return nullptr;

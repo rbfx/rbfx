@@ -335,6 +335,7 @@ void GeneratorContext::Generate()
                         cppast::libclang_parser parser(type_safe::ref(logger));
 
                         auto absPath = filePath.first + filePath.second;
+                        cppast::cpp_entity_index index_;
                         auto file = parser.parse(index_, absPath, m.config_);
                         if (parser.error())
                         {
