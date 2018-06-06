@@ -626,11 +626,26 @@ std::string GetTemplateSubtype(const cppast::cpp_type& type)
 
 std::string CamelCaseIdentifier(const std::string& name)
 {
-    auto tokens = str::split(name, "_");
-    for (auto& value : tokens)
+    std::vector<std::string> tokens;
+    size_t wordStart = 0;
+    for (size_t i = 0; i < name.length(); i++)
     {
-        std::transform(value.begin(), value.end(), value.begin(), tolower);
-        value.front() = (char)toupper(value.front());
+        auto current = name[i];
+        auto next = '\0';
+        if (i + 1 < name.length())
+            next = name[i + 1];
+        if (next == '_' || islower(current) && isupper(next) || next == '\0')
+        {
+            tokens.emplace_back(name.substr(wordStart, i + 1 - wordStart));
+            auto& value = tokens.back();
+            std::transform(value.begin(), value.end(), value.begin(), tolower);
+            value.front() = (char)toupper(value.front());
+
+            if (next == '_')
+                wordStart = i + 2;
+            else
+                wordStart = i + 1;
+        }
     }
     return str::join(tokens, "");
 }
