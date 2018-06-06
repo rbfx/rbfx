@@ -198,6 +198,7 @@ bool Gizmo::Manipulate(const Camera* camera, const Vector<WeakPtr<Node>>& nodes)
 
 bool Gizmo::ManipulateSelection(const Camera* camera)
 {
+    ImGuizmo::SetDrawlist();
     return Manipulate(camera, nodeSelection_);
 }
 
