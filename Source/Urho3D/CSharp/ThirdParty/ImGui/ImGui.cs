@@ -833,6 +833,13 @@ namespace ImGui
             return retVal;
         }
 
+        public static unsafe Vector2 GetCursorPos()
+        {
+            Vector2 retVal;
+            ImGuiNative.igGetCursorPos(&retVal);
+            return retVal;
+        }
+
         public static unsafe Vector2 GetCursorScreenPos()
         {
             Vector2 retVal;
@@ -1088,6 +1095,11 @@ namespace ImGui
         public static void SameLine(float localPositionX = 0, float spacingW = -1.0f)
         {
             ImGuiNative.igSameLine(localPositionX, spacingW);
+        }
+
+        public static void NewLine()
+        {
+            ImGuiNative.igNewLine();
         }
 
         public static bool BeginDragDropSource(DragDropFlags flags, int mouseButton)
