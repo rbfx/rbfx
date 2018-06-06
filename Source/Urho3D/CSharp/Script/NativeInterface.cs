@@ -21,6 +21,7 @@
 //
 using System;
 using System.Runtime.InteropServices;
+using System.Security;
 
 namespace Urho3D.CSharp
 {
@@ -126,6 +127,7 @@ namespace Urho3D.CSharp
             Urho3D_InitializeCSharp(ref Managed, ref Native);
         }
 
+        [SuppressUnmanagedCodeSecurity]
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void Urho3D_InitializeCSharp(ref ManagedRuntime managed, ref NativeRuntime native);
 

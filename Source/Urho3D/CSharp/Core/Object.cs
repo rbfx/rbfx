@@ -22,6 +22,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security;
 using Urho3D.CSharp;
 
 namespace Urho3D
@@ -66,6 +67,7 @@ namespace Urho3D
             callback.Invoke(VariantMap.GetManagedInstance(args, false));
         }
 
+        [SuppressUnmanagedCodeSecurity]
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern void Urho3D_Object_SubscribeToEvent(IntPtr receiver, IntPtr gcHandle, uint eventType,
             bool handleWithType, IntPtr sender);

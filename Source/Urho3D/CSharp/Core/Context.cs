@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security;
 using Urho3D.CSharp;
 
 namespace Urho3D
@@ -103,12 +104,14 @@ namespace Urho3D
             return managed.NativeInstance;
         }
 
+        [SuppressUnmanagedCodeSecurity]
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern void Urho3D_Context_RegisterFactory(IntPtr context,
             [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringUtf8))]string typeName,
             uint baseType,
             [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringUtf8))]string category);
 
+        [SuppressUnmanagedCodeSecurity]
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void Urho3DRegisterCSharp(IntPtr contextPtr);
     }
