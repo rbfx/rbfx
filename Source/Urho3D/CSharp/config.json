@@ -157,6 +157,9 @@
           "Urho3D::M_DEGTORAD",
           "Urho3D::M_DEGTORAD_2",
           "Urho3D::M_RADTODEG",
+          "Urho3D::ShaderVariation::GetConstantBufferSizes() const",
+          "Urho3D::Shader::GetVariation(Urho3D::ShaderType,Urho3D::String const&)",
+          "Urho3D::Graphics::GetShader(Urho3D::ShaderType,Urho3D::String const&,Urho3D::String const&) const",
         ]
       },
       "inheritable": {
