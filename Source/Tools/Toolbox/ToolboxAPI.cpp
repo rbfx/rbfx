@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "Toolbox.h"
+#include "ToolboxAPI.h"
 #include "SystemUI/Gizmo.h"
 #include "SystemUI/AttributeInspector.h"
 #include "Scene/DebugCameraController.h"

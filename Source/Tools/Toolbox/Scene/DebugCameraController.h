@@ -22,7 +22,7 @@
 #pragma once
 
 
-#include "Toolbox.h"
+#include "ToolboxAPI.h"
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/Scene/LogicComponent.h>
 #include <Urho3D/Graphics/Light.h>

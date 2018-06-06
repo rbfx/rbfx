@@ -22,7 +22,7 @@
 
 #include <Toolbox/IO/ContentUtilities.h>
 #include <Toolbox/SystemUI/ResourceBrowser.h>
-#include <Toolbox/Toolbox.h>
+#include <Toolbox/ToolboxAPI.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
 #include <nativefiledialog/nfd.h>
 
