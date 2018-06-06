@@ -93,16 +93,17 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
             // Get T from SharedPtr<T>
             map.csType_ = typeName.substr(10, typeName.length() - 11);
             map.cToCppTemplate_ = fmt::format("SharedPtr<{}>({{value}})", map.csType_);
+            map.cppToCTemplate_ = "{value}.Detach()";
         }
         else
         {
             // Get T from WeakPtr<T>
             map.csType_ = typeName.substr(8, typeName.length() - 9);
             map.cToCppTemplate_ = fmt::format("WeakPtr<{}>({{value}})", map.csType_);
+            map.cppToCTemplate_ = "{value}.Get()";
         }
         map.cType_ = map.csType_ + "*";
         str::replace_str(map.csType_, "::", ".");
-        map.cppToCTemplate_ = "{value}.Get()";
         map.pInvokeToCSTemplate_ = fmt::format("{}.GetManagedInstance({{value}}, false)", map.csType_);
         map.csToPInvokeTemplate_ = fmt::format("{}.GetNativeInstance({{value}})", map.csType_);
         generator->typeMaps_[typeName] = map;
