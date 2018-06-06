@@ -45,6 +45,13 @@ public:
         if (entity->ast_ == nullptr || info.event == info.container_entity_exit)
             return true;
 
+        if (IsDeprecated(*entity->ast_))
+        {
+            entity->Remove();
+            spdlog::get("console")->info("Deprecated: {}, type {}", entity->uniqueName_);
+            return true;
+        }
+
         using ParameterList = cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>;
 
         auto checkFunctionParams = [&](const ParameterList& params) {

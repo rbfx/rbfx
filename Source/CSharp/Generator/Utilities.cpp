@@ -728,6 +728,16 @@ bool IsPointer(const cppast::cpp_type& type)
     return false;
 }
 
+bool IsDeprecated(const cppast::cpp_entity& entity)
+{
+    for (const auto& attr : entity.attributes())
+    {
+        if (attr.name() == "__deprecated__")
+            return true;
+    }
+    return false;
+}
+
 bool IsExported(const cppast::cpp_class& cls)
 {
     if (generator->currentModule_->isStatic_)
