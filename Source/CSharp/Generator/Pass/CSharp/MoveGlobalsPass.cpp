@@ -62,7 +62,7 @@ bool MoveGlobalsPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
             if (ns.uniqueName_ == className && entity->ast_ != nullptr)
             {
-                className = GetFileName(*entity->ast_);
+                className = CamelCaseIdentifier(GetFileName(*entity->ast_));
                 classSymbol = ns.uniqueName_ + "::" + className;
 
                 auto* toClass = generator->GetSymbol(classSymbol);
