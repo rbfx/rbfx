@@ -17,6 +17,12 @@ namespace Urho3D
 			Max = new Vector2(maxX, maxY);
 		}
 
+	    public Rect(Vector2 min, Vector2 max)
+	    {
+	        Min = min;
+	        Max = max;
+	    }
+
 	    /// Merge a point.
 	    public void Merge(Vector2 point)
 	    {
