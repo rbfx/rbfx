@@ -727,7 +727,7 @@ std::string GenerateCSharpApiPass::ToCSType(const cppast::cpp_type& type, bool d
         {
             const auto& tpl = dynamic_cast<const cppast::cpp_template_instantiation_type&>(t);
             auto tplName = tpl.primary_template().name();
-            if (tplName == "SharedPtr" || tplName == "WeakPtr")
+            if (container::contains(generator->wrapperTemplates_, tplName))
                 return tpl.unexposed_arguments();
             assert(false);
         }

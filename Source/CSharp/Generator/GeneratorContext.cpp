@@ -39,6 +39,8 @@ namespace Urho3D
 
 GeneratorContext::GeneratorContext()
 {
+    wrapperTemplates_.insert(wrapperTemplates_.end(), valueTemplates_.begin(), valueTemplates_.end());
+    wrapperTemplates_.insert(wrapperTemplates_.end(), complexTemplates_.begin(), complexTemplates_.end());
 }
 
 bool GeneratorContext::AddModule(const std::string& libraryName, bool isStatic, const std::string& publicKey,

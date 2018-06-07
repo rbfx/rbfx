@@ -608,7 +608,7 @@ std::string GetTemplateSubtype(const cppast::cpp_type& type)
     {
         const auto& templateType = dynamic_cast<const cppast::cpp_template_instantiation_type&>(baseType);
         auto templateName = templateType.primary_template().name();
-        if (templateName == "SharedPtr" || templateName == "WeakPtr")
+        if (container::contains(generator->wrapperTemplates_, templateName))
         {
             if (templateType.arguments_exposed())
             {
