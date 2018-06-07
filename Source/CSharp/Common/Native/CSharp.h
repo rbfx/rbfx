@@ -43,7 +43,7 @@ using namespace Urho3D;
 namespace Urho3D
 {
 
-extern ScriptSubsystem* scriptSubsystem;
+URHO3D_API extern ScriptSubsystem* scriptSubsystem;
 
 }
 
