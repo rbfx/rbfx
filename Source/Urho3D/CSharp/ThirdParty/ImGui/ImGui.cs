@@ -763,7 +763,7 @@ namespace ImGui
             return ImGuiNative.igIsWindowFocused(flags);
         }
 
-        public static bool IsWindowHovered(HoveredFlags flags)
+        public static bool IsWindowHovered(HoveredFlags flags=HoveredFlags.Default)
         {
             return ImGuiNative.igIsWindowHovered(flags);
         }
