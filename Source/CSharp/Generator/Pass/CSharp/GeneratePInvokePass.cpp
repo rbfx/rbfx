@@ -309,7 +309,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         // Getter
         DllImport();
-        auto csParam = ToPInvokeTypeParam(var.type());
+        auto csParam = ToPInvokeTypeParam(var.type(), true);
         auto csReturnType = ToPInvokeTypeReturn(var.type());
         WriteMarshalAttributeReturn(var.type());
         printer_ << fmt::format("internal static extern {} get_{}();", csReturnType, entity->cFunctionName_);
@@ -338,7 +338,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
         // Getter
         DllImport();
         auto csReturnType = ToPInvokeTypeReturn(var.type());
-        auto csParam = ToPInvokeTypeParam(var.type());
+        auto csParam = ToPInvokeTypeParam(var.type(), true);
         WriteMarshalAttributeReturn(var.type());
         printer_
             << fmt::format("internal static extern {} get_{}(IntPtr instance);", csReturnType, entity->cFunctionName_);
@@ -359,7 +359,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
         const auto& ctor = entity->Ast<cppast::cpp_constructor>();
         DllImport();
         auto csParams = ParameterList(ctor.parameters(),
-                                      std::bind(&GeneratePInvokePass::ToPInvokeTypeParam, std::placeholders::_1));
+                                      std::bind(&GeneratePInvokePass::ToPInvokeTypeParam, std::placeholders::_1, false));
         printer_ << fmt::format("internal static extern IntPtr {}({});", entity->cFunctionName_, csParams);
         printer_ << "";
     }
@@ -373,7 +373,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         DllImport();
         auto csParams = ParameterList(func.parameters(),
-                                      std::bind(&GeneratePInvokePass::ToPInvokeTypeParam, std::placeholders::_1));
+                                      std::bind(&GeneratePInvokePass::ToPInvokeTypeParam, std::placeholders::_1, false));
         auto rtype = ToPInvokeTypeReturn(func.return_type());
         auto cFunction = entity->cFunctionName_;
         auto className = entity->GetParent()->name_;
@@ -407,7 +407,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         DllImport();
         auto csParams = ParameterList(func.parameters(),
-                                      std::bind(&GeneratePInvokePass::ToPInvokeTypeParam, std::placeholders::_1));
+                                      std::bind(&GeneratePInvokePass::ToPInvokeTypeParam, std::placeholders::_1, false));
         auto rtype = ToPInvokeTypeReturn(func.return_type());
         auto cFunction = entity->cFunctionName_;
 
@@ -438,9 +438,9 @@ std::string GeneratePInvokePass::ToPInvokeTypeReturn(const cppast::cpp_type& typ
     return result;
 }
 
-std::string GeneratePInvokePass::ToPInvokeTypeParam(const cppast::cpp_type& type)
+std::string GeneratePInvokePass::ToPInvokeTypeParam(const cppast::cpp_type& type, bool disallowReferences)
 {
-    std::string result = ToPInvokeType(type);
+    std::string result = ToPInvokeType(type, disallowReferences);
 
     auto marshaller = GetCustomMarshaller(type);
     if (!marshaller.empty())
