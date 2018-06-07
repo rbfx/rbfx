@@ -106,6 +106,9 @@ struct CSharpConverter<PODVector<T>>
     // TODO: This can be optimized by passing &value.Front() memory buffer
     static CType ToCSharp(const CppType& value)
     {
+        if (value.Empty())
+            return nullptr;
+
         auto length = value.Size() * sizeof(T);
         auto* data = MarshalAllocator::Get().Alloc(length);
         memcpy(data, &value.Front(), length);
@@ -114,6 +117,9 @@ struct CSharpConverter<PODVector<T>>
 
     static CppType FromCSharp(CType value)
     {
+        if (value == nullptr)
+            return CppType{};
+
         auto length = *(int32_t*)((uint8_t*)value - 4);
         auto count = length / sizeof(T);
         return CppType((const T*)value, count);
@@ -129,6 +135,9 @@ struct CSharpConverter<Vector<SharedPtr<T>>>
 
     static CType ToCSharp(const CppType& value)
     {
+        if (value.Empty())
+            return nullptr;
+
         int length = (int)value.Size() * sizeof(void*);
         CType result = MarshalAllocator::Get().Alloc(length);
 
@@ -141,6 +150,9 @@ struct CSharpConverter<Vector<SharedPtr<T>>>
 
     static CppType FromCSharp(CType value)
     {
+        if (value == nullptr)
+            return CppType{};
+
         auto length = *(int32_t*)((uint8_t*)value - 4);
         auto count = length / sizeof(void*);
         CppType result{(unsigned)count};
@@ -160,6 +172,9 @@ struct CSharpConverter<Vector<WeakPtr<T>>>
 
     static CType ToCSharp(const CppType& value)
     {
+        if (value.Empty())
+            return nullptr;
+
         int length = (int)value.Size() * sizeof(void*);
         CType result = MarshalAllocator::Get().Alloc(length);
 
@@ -172,6 +187,9 @@ struct CSharpConverter<Vector<WeakPtr<T>>>
 
     static CppType FromCSharp(CType value)
     {
+        if (value == nullptr)
+            return CppType{};
+
         auto length = *(int32_t*)((uint8_t*)value - 4);
         auto count = length / sizeof(void*);
         CppType result{(unsigned)count};
@@ -192,6 +210,9 @@ struct CSharpConverter<Vector<T*>>
     // TODO: This can be optimized by passing &value.Front() memory buffer
     static CType ToCSharp(const CppType& value)
     {
+        if (value.Empty())
+            return nullptr;
+
         int length = (int)value.Size() * sizeof(void*);
         CType result = MarshalAllocator::Get().Alloc(length);
 
@@ -204,6 +225,9 @@ struct CSharpConverter<Vector<T*>>
 
     static CppType FromCSharp(CType value)
     {
+        if (value == nullptr)
+            return CppType{};
+
         auto length = *(int32_t*)((uint8_t*)value - 4);
         auto count = length / sizeof(void*);
         CppType result{(unsigned)count};

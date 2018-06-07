@@ -101,6 +101,9 @@ namespace Urho3D.CSharp
 
         public unsafe IntPtr MarshalManagedToNative(object managedObj)
         {
+            if (managedObj == null)
+                return IntPtr.Zero;
+
             var array = (T[]) managedObj;
             var length = Marshal.SizeOf<T>() * array.Length;
             var result = NativeInterface.Native.InteropAlloc(length);
@@ -119,6 +122,9 @@ namespace Urho3D.CSharp
 
         public unsafe object MarshalNativeToManaged(IntPtr pNativeData)
         {
+            if (pNativeData == IntPtr.Zero)
+                return null;
+
             var length = Marshal.ReadInt32(pNativeData, -4);
             var result = new T[length / Marshal.SizeOf<T>()];
             var resultHandle = GCHandle.Alloc(result, GCHandleType.Pinned);
@@ -162,6 +168,9 @@ namespace Urho3D.CSharp
 
         public IntPtr MarshalManagedToNative(object managedObj)
         {
+            if (managedObj == null)
+                return IntPtr.Zero;
+
             var array = (T[]) managedObj;
             var length = IntPtr.Size * array.Length;
             var result = NativeInterface.Native.InteropAlloc(length);
@@ -178,10 +187,13 @@ namespace Urho3D.CSharp
 
         public object MarshalNativeToManaged(IntPtr pNativeData)
         {
+            if (pNativeData == IntPtr.Zero)
+                return null;
+
             var length = Marshal.ReadInt32(pNativeData, -4);
             var result = new T[length / IntPtr.Size];
             var type = typeof(T);
-            var getManaged = type.GetMethod("GetManagedInstance", BindingFlags.Public | BindingFlags.Static);
+            var getManaged = type.GetMethod("GetManagedInstance", BindingFlags.NonPublic | BindingFlags.Static);
             for (var i = 0; i < result.Length; i++)
             {
                 var instance = Marshal.ReadIntPtr(pNativeData, i * IntPtr.Size);
