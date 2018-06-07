@@ -66,6 +66,36 @@ namespace Urho3D
         }
 
         /// <summary>
+        /// Construct vector frp, System.Numerics.Vector2 type.
+        /// </summary>
+        /// <param name="vector">A source vector.</param>
+        public IntVector2(System.Numerics.Vector2 vector)
+        {
+            X = (int) vector.X;
+            Y = (int) vector.Y;
+        }
+
+        /// <summary>
+        /// Convert vector to System.Numerics.Vector2 type.
+        /// </summary>
+        /// <param name="vector">A vector to convert.</param>
+        /// <returns></returns>
+        public static implicit operator System.Numerics.Vector2(IntVector2 vector)
+        {
+            return new System.Numerics.Vector2(vector.X, vector.Y);
+        }
+
+        /// <summary>
+        /// Convert vector to System.Numerics.Vector2 type.
+        /// </summary>
+        /// <param name="vector">A vector to convert.</param>
+        /// <returns></returns>
+        public static implicit operator IntVector2(System.Numerics.Vector2 vector)
+        {
+            return new IntVector2((int)vector.X, (int)vector.Y);
+        }
+
+        /// <summary>
         /// Gets or sets the value at the index of the Vector.
         /// </summary>
         public int this[int index] {
