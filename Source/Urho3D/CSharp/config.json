@@ -54,7 +54,6 @@
             "Engine/PluginApplication.h",
             "IK/IKConverters.h",
             "UI/FontFace*.h",
-            "Graphics/OctreeQuery.h",
             "IO/MacFileWatcher.h",
             "IO/MemoryBuffer.h",
             "IO/NamedPipe.h",
@@ -160,6 +159,8 @@
           "Urho3D::ShaderVariation::GetConstantBufferSizes() const",
           "Urho3D::Shader::GetVariation(Urho3D::ShaderType,Urho3D::String const&)",
           "Urho3D::Graphics::GetShader(Urho3D::ShaderType,Urho3D::String const&,Urho3D::String const&) const",
+          "Urho3D::OctreeQuery",
+          "Urho3D::RayOctreeQuery::RayOctreeQuery(Urho3D::RayOctreeQuery const&)",
         ]
       },
       "inheritable": {
