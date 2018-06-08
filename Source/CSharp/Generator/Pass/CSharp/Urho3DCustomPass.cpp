@@ -97,7 +97,9 @@ bool Urho3DCustomPassLate::Visit(MetaEntity* entity, cppast::visitor_info info)
     {
         entity->name_ = "GetTypeHash";
     }
-
+    else if ((entity->kind_ == cppast::cpp_entity_kind::enum_value_t && !str::starts_with(entity->name_, "SDL")) ||
+             (entity->kind_ == cppast::cpp_entity_kind::variable_t && !str::starts_with(entity->name_, "E_") && !str::starts_with(entity->name_, "P_")))
+        entity->name_ = SanitizeConstant(entity->parent_.lock()->name_, entity->name_);
     return true;
 }
 

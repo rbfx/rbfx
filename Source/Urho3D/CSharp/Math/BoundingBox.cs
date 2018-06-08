@@ -330,9 +330,9 @@ namespace Urho3D
         {
             if (point.X < Min.X || point.X > Max.X || point.Y < Min.Y || point.Y > Max.Y ||
                 point.Z < Min.Z || point.Z > Max.Z)
-                return Intersection.OUTSIDE;
+                return Intersection.Outside;
             else
-                return Intersection.INSIDE;
+                return Intersection.Inside;
         }
 
         /// Test if another bounding box is inside, outside or intersects.
@@ -340,12 +340,12 @@ namespace Urho3D
         {
             if (box.Max.X < Min.X || box.Min.X > Max.X || box.Max.Y < Min.Y || box.Min.Y > Max.Y ||
                 box.Max.Z < Min.Z || box.Min.Z > Max.Z)
-                return Intersection.OUTSIDE;
+                return Intersection.Outside;
             else if (box.Min.X < Min.X || box.Max.X > Max.X || box.Min.Y < Min.Y || box.Max.Y > Max.Y ||
                      box.Min.Z < Min.Z || box.Max.Z > Max.Z)
-                return Intersection.INTERSECTS;
+                return Intersection.Intersects;
             else
-                return Intersection.INSIDE;
+                return Intersection.Inside;
         }
 
         /// Test if another bounding box is (partially) inside or outside.
@@ -353,9 +353,9 @@ namespace Urho3D
         {
             if (box.Max.X < Min.X || box.Min.X > Max.X || box.Max.Y < Min.Y || box.Min.Y > Max.Y ||
                 box.Max.Z < Min.Z || box.Min.Z > Max.Z)
-                return Intersection.OUTSIDE;
+                return Intersection.Outside;
             else
-                return Intersection.INSIDE;
+                return Intersection.Inside;
         }
 
 //        /// Test if a sphere is inside, outside or intersects.

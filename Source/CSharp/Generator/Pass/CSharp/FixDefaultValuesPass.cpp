@@ -34,6 +34,7 @@ bool FixDefaultValuesPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     if (info.event == info.container_entity_exit)
         return true;
 
+    MetaEntity* defaultValueEntity = nullptr;
     switch (entity->kind_)
     {
     case cppast::cpp_entity_kind::constructor_t:
@@ -44,7 +45,10 @@ bool FixDefaultValuesPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         {
             auto value = param->GetDefaultValue();
             if (!value.empty())
-                generator->GetSymbolOfConstant(entity, value, param->defaultValue_);
+            {
+                if (generator->GetSymbolOfConstant(entity, value, param->defaultValue_, &defaultValueEntity))
+                    param->defaultValueEntity_.reset(defaultValueEntity);
+            }
         }
         break;
     }
@@ -53,7 +57,8 @@ bool FixDefaultValuesPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto value = entity->GetDefaultValue();
         if (!value.empty())
         {
-            generator->GetSymbolOfConstant(entity, value, entity->defaultValue_);
+            if (generator->GetSymbolOfConstant(entity, value, entity->defaultValue_, &defaultValueEntity))
+                entity->defaultValueEntity_.reset(defaultValueEntity);
         }
         break;
     }

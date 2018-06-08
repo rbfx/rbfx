@@ -83,9 +83,6 @@ std::string ParameterList(const CppParameters& params,
 /// Returns a list of parameter names separated by comma.
 std::string ParameterNameList(const CppParameters& params,
     const std::function<std::string(const cppast::cpp_function_parameter&)>& nameFilter = nullptr);
-/// Applies callable to every parameter MetaEntity and returns all results of callables separated by comma.
-std::string MapParameterList(std::vector<std::shared_ptr<MetaEntity>>& parameters,
-    const std::function<std::string(MetaEntity*)>& callable);
 /// Returns true if specified type is an enumeration.
 bool IsEnumType(const cppast::cpp_type& type);
 /// Returns true if a type is non-builtin value type (not a pointer or reference to a struct/class).
@@ -137,12 +134,19 @@ cppast::cpp_builtin_type_kind PrimitiveToCppType(const std::string& type);
 std::string ToPInvokeType(const cppast::cpp_type& type, const std::string& default_);
 /// Return actual type that is wrapped by supported template types. Like a class type if type is shared pointer.
 std::string GetTemplateSubtype(const cppast::cpp_type& type);
+/// Split words at aA or _ points.
+std::vector<std::string> SplitWords(const std::string& name);
 /// Converts identifier to CamelCase.
+std::string CamelCaseIdentifier(std::vector<std::string>& tokens);
 std::string CamelCaseIdentifier(const std::string& name);
 /// Returns true if entity is marked as deprecated.
 bool IsDeprecated(const cppast::cpp_entity& entity);
 /// Returns true if class is exported from dynamic library.
 bool IsExported(const cppast::cpp_class& cls);
+/// Takes full symbol name. Returns full sanitized symbol name.
+std::string SanitizeConstant(const std::string& constant);
+/// Takes name of parent and name of symbol, returns sanitized name of symbol.
+std::string SanitizeConstant(std::string parentName, std::string constantName);
 
 enum ScanDirectoryFlags
 {
@@ -202,6 +206,21 @@ template<typename Value>
 bool contains(const std::vector<Value>& container, const Value& value)
 {
     return std::find(container.begin(), container.end(), value) != container.end();
+};
+
+template<typename Value, typename Param, typename Callable>
+std::vector<Value> map(const Param& iterable, const Callable& callable)
+{
+    std::vector<Value> result;
+    for (const auto& p : iterable)
+        result.emplace_back(callable(p));
+    return result;
+};
+
+template<typename Value, typename Param, typename Callable>
+std::vector<Value> map(const Param&& iterable, const Callable& callable)
+{
+    return map(iterable, callable);
 };
 
 }

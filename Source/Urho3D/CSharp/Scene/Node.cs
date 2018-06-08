@@ -30,7 +30,7 @@ namespace Urho3D
 
 public partial class Node
 {
-    public T CreateComponent<T>(CreateMode mode = CreateMode.REPLICATED, uint id = 0) where T : Component
+    public T CreateComponent<T>(CreateMode mode = CreateMode.Replicated, uint id = 0) where T : Component
     {
         var componentInstance = Urho3D__Node__CreateComponent_Urho3D__StringHash_Urho3D__CreateMode_unsigned_int_(NativeInstance, StringHash.Calculate(typeof(T).Name), mode, id);
         if (componentInstance == IntPtr.Zero)
@@ -49,7 +49,7 @@ public partial class Node
             BindingFlags.NonPublic | BindingFlags.Instance, null, new object[] { ptr, false }, null));
     }
 
-    public T GetOrCreateComponent<T>(Urho3D.CreateMode mode=Urho3D.CreateMode.REPLICATED, uint id=0) where T: Component
+    public T GetOrCreateComponent<T>(Urho3D.CreateMode mode=Urho3D.CreateMode.Replicated, uint id=0) where T: Component
     {
         var componentInstance = Urho3D__Node__GetOrCreateComponent_Urho3D__StringHash_Urho3D__CreateMode_unsigned_int_(NativeInstance, StringHash.Calculate(typeof(T).Name), mode, id);
         if (componentInstance == IntPtr.Zero)

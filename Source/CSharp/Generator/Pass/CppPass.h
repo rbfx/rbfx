@@ -205,6 +205,8 @@ struct MetaEntity : public std::enable_shared_from_this<MetaEntity>
     std::string name_;
     /// Override default value of this entity. This can an expression in target language.
     std::string defaultValue_;
+    /// Entity of default value.
+    std::shared_ptr<MetaEntity> defaultValueEntity_;
     /// Various hints about this entity.
     int flags_ = HintNone;
     /// Name of a function wrapping this entity in a C wrapper.

@@ -48,6 +48,7 @@ protected:
     void PrintParameterHandlingCodePre(const std::vector<std::shared_ptr<MetaEntity>>& parameters);
     void PrintParameterHandlingCodePost(const std::vector<std::shared_ptr<MetaEntity>>& parameters);
     void PrintInstanceDisposedCheck(const std::string& objectName);
+    std::string MapParameterList(const std::vector<std::shared_ptr<MetaEntity>>& parameters);
 
     CSharpPrinter printer_;
     CSharpPrinter interface_;

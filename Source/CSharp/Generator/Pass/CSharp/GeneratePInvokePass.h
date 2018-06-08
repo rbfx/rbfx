@@ -47,6 +47,8 @@ class GeneratePInvokePass : public CppApiPass
 protected:
     void WriteMarshalAttributeReturn(const cppast::cpp_type& type);
     static std::string GetCustomMarshaller(const cppast::cpp_type& type);
+    std::string ToPInvokeParameters(
+        const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& parameters);
     void DllImport();
 
     CSharpPrinter printer_;

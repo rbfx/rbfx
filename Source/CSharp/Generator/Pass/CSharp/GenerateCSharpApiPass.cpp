@@ -45,51 +45,6 @@ void GenerateCSharpApiPass::Start()
 
 bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
-    auto mapToPInvoke = [&](MetaEntity* metaParam) {
-        const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
-        std::string expr = metaParam->name_;
-        if (IsComplexOutputType(param.type()))
-            return fmt::format("ref {expr}Out", FMT_CAPTURE(expr));
-
-        if (!IsOutType(param.type()))
-        {
-            auto defaultValue = metaParam->GetDefaultValue();
-            defaultValue = ConvertDefaultValueToCS(metaParam, defaultValue, param.type(), true);
-            if (!defaultValue.empty())
-            {
-                bool isNullable = false;
-                bool isArray = false;
-                if (auto* map = generator->GetTypeMap(param.type(), false))
-                {
-                    isArray = map->isArray_;
-                    if (map->isValueType_ && map->csType_ != "string")
-                        isNullable = true;
-                }
-                else
-                {
-                    auto typeName = cppast::to_string(param.type());
-                    if (typeName == "void*" || typeName == "void const*")
-                        isNullable = true;
-                }
-
-                if (isNullable)
-                {
-                    if (isArray)
-                        expr += fmt::format(" ?? {}", defaultValue);
-                    else
-                        expr += fmt::format(".GetValueOrDefault({})", defaultValue);
-                }
-            }
-        }
-
-        expr = MapToPInvoke(param.type(), expr);
-
-        if (IsOutType(param.type()))
-            expr = "ref " + expr;
-
-        return expr;
-    };
-
     if (entity->kind_ == cppast::cpp_entity_kind::namespace_t)
     {
         if (entity->children_.empty())
@@ -182,7 +137,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 printer_.Indent();
                 {
                     auto className = entity->name_;
-                    printer_ << fmt::format("Debug.Assert(instance != IntPtr.Zero);");
+                    printer_ << fmt::format("System.Diagnostics.Debug.Assert(instance != IntPtr.Zero);");
                     printer_ << "NativeInstance = instance;";
                     printer_ << "OwnsNativeInstance = ownsInstance;";
                     if (generator->IsInheritable(entity->uniqueName_) || IsSubclassOf(entity->Ast<cppast::cpp_class>(), "Urho3D::RefCounted"))
@@ -201,11 +156,11 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                                 {
                                     auto name = child->name_;
                                     auto pc = func.parameters().empty() ? "" : ", ";
-                                    auto paramTypeList = MapParameterList(child->children_, [&](MetaEntity* metaParam)
+                                    auto paramTypeList = str::join(container::map<std::string>(child->children_, [&](std::shared_ptr<MetaEntity> metaParam)
                                     {
                                         const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
                                         return fmt::format("typeof({})", ToCSType(param.type(), true));
-                                    });
+                                    }), ", ");
 
                                     // Optimization: do not route c++ virtual method calls through .NET if user does not override
                                     // such method in a managed class.
@@ -274,7 +229,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         auto className = cls->name_;
         auto baseCtor = hasBase ? " : base(IntPtr.Zero, true)" : "";
-        auto paramNameList = MapParameterList(entity->children_, mapToPInvoke);
+        auto paramNameList = MapParameterList(entity->children_);
         auto cFunctionName = entity->cFunctionName_;
 
         // If class has a base class we call base constructor that does nothing. Class will be fully constructed here.
@@ -305,9 +260,9 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
                 printer_.Indent();
                 {
-                    auto paramNameList = MapParameterList(entity->children_, [&](MetaEntity* metaParam) {
+                    auto paramNameList = str::join(container::map<std::string>(entity->children_, [](std::shared_ptr<MetaEntity> metaParam) {
                         return metaParam->name_;
-                    });
+                    }), ", ");
                     printer_ << fmt::format("return new {className}({paramNameList});",
                         FMT_CAPTURE(className), FMT_CAPTURE(paramNameList));
                 }
@@ -344,7 +299,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             }
         }
 
-        auto paramNameList = MapParameterList(entity->children_, mapToPInvoke);
+        auto paramNameList = MapParameterList(entity->children_);
 
         // Body
         printer_.Indent();
@@ -371,7 +326,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         if (!isFinal && func.is_virtual())
         {
-            auto paramNameListCs = MapParameterList(entity->children_, [&](MetaEntity* metaParam)
+            auto paramNameListCs = str::join(container::map<std::string>(entity->children_, [&](std::shared_ptr<MetaEntity> metaParam)
             {
                 const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
                 std::string result;
@@ -382,8 +337,8 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 if (IsOutType(param.type()))
                     result = "ref " + result;
                 return result;
-            });
-            auto paramNameList = MapParameterList(entity->children_, [&](MetaEntity* metaParam)
+            }), ", ");
+            auto paramNameList = str::join(container::map<std::string>(entity->children_, [&](std::shared_ptr<MetaEntity> metaParam)
             {
                 const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
                 // Types in lambda declaration are required in case of ref parameters.
@@ -391,7 +346,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 auto name = param.name();
                 // Avoid possible parameter name collision in enclosing scope by appending _.
                 return fmt::format("{type} {name}", FMT_CAPTURE(type), FMT_CAPTURE(name));
-            });
+            }), ", ");
             auto rtype = GeneratePInvokePass::ToPInvokeType(func.return_type());
 
             printer_ << fmt::format("private static {rtype} {cFunction}_virtual(IntPtr gcHandle{pc}{paramNameList})",
@@ -445,7 +400,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             fmt::arg("access", entity->access_ == cppast::cpp_public ? "public" : "protected"), FMT_CAPTURE(rtype),
             fmt::arg("name", entity->name_), FMT_CAPTURE(csParams));
 
-        auto paramNameList = MapParameterList(entity->children_, mapToPInvoke);
+        auto paramNameList = MapParameterList(entity->children_);
 
         // Body
         printer_.Indent();
@@ -777,11 +732,23 @@ std::string GenerateCSharpApiPass::MapToPInvoke(const cppast::cpp_type& type, co
 
 std::string GenerateCSharpApiPass::FormatCSParameterList(const std::vector<std::shared_ptr<MetaEntity>>& parameters)
 {
-    std::string result;
-    for (const auto& param : parameters)
-    {
+    return str::join(container::map<std::string>(parameters, [&](std::shared_ptr<MetaEntity> param) {
         const auto& cppType = param->Ast<cppast::cpp_function_parameter>().type();
-        auto csType = ToCSType(cppType);
+
+        std::string result;
+        if (GetBaseType(cppType).kind() == cppast::cpp_type_kind::builtin_t && param->defaultValueEntity_ &&
+            param->defaultValueEntity_->kind_ == cppast::cpp_entity_kind::enum_value_t)
+        {
+            // When builtin type is used with enum as default value we swap type to that enum. Native API
+            // should be updated to take enums as parameter.
+            result = str::replace_str(param->defaultValueEntity_->parent_.lock()->symbolName_, "::", ".");
+            if (IsOutType(cppType))
+                result = "ref " + result;
+        }
+
+        if (result.empty())
+            result = ToCSType(cppType);
+
         auto defaultValue = param->GetDefaultValue();
         if (IsOutType(cppType))
             defaultValue.clear();
@@ -791,20 +758,18 @@ std::string GenerateCSharpApiPass::FormatCSParameterList(const std::vector<std::
             {
                 // Value types are made nullable in order to allow default values.
                 if (map->isValueType_ && map->csType_ != "string" && !map->isArray_)
-                    csType += "?";
+                    result += "?";
             }
-            else if (csType == "IntPtr")
-                csType += "?";
+            else if (result == "IntPtr")
+                result += "?";
         }
-        result += fmt::format("{} {}", csType, param->name_);
+        result += " " + param->name_;
 
         if (!defaultValue.empty())
             result += "=" + ConvertDefaultValueToCS(param.get(), defaultValue, cppType, false);
 
-        if (param != parameters.back())
-            result += ", ";
-    }
-    return result;
+        return result;
+    }), ", ");
 }
 
 std::string GenerateCSharpApiPass::ConvertDefaultValueToCS(MetaEntity* user, std::string value, const cppast::cpp_type& type,
@@ -846,15 +811,8 @@ std::string GenerateCSharpApiPass::ConvertDefaultValueToCS(MetaEntity* user, std
     }
     else if (value.find("::") != std::string::npos)
     {
-        // TODO: enums are not renamed for now
-        auto* entity = generator->GetSymbol(Urho3D::GetTypeName(type));
-        if (entity == nullptr || entity->kind_ != cppast::cpp_entity_kind::enum_t)
-        {
-            // Possibly a constant from typemapped class
-            auto parts = str::split(value, "::");
-            parts.back() = str::join(str::SplitName(parts.back()), "");
-            value = str::join(parts, "::");
-        }
+        // Transform/sanitize constant names
+        value = SanitizeConstant(value);
     }
 
     str::replace_str(value, "::", ".");
@@ -890,6 +848,55 @@ void GenerateCSharpApiPass::PrintInstanceDisposedCheck(const std::string& object
         printer_ << fmt::format("throw new ObjectDisposedException(\"{}\");", objectName);
     }
     printer_.Dedent("");
+}
+
+std::string GenerateCSharpApiPass::MapParameterList(const std::vector<std::shared_ptr<MetaEntity>>& parameters)
+{
+    return str::join(container::map<std::string>(parameters, [&](std::shared_ptr<MetaEntity> metaParam) {
+        const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
+        std::string expr = metaParam->name_;
+
+        if (IsComplexOutputType(param.type()))
+            return fmt::format("ref {expr}Out", FMT_CAPTURE(expr));
+
+        if (!IsOutType(param.type()))
+        {
+            auto defaultValue = metaParam->GetDefaultValue();
+            defaultValue = ConvertDefaultValueToCS(metaParam.get(), defaultValue, param.type(), true);
+            if (!defaultValue.empty())
+            {
+                bool isNullable = false;
+                bool isArray = false;
+                if (auto* map = generator->GetTypeMap(param.type(), false))
+                {
+                    isArray = map->isArray_;
+                    if (map->isValueType_ && map->csType_ != "string")
+                        isNullable = true;
+                }
+                else
+                {
+                    auto typeName = cppast::to_string(param.type());
+                    if (typeName == "void*" || typeName == "void const*")
+                        isNullable = true;
+                }
+
+                if (isNullable)
+                {
+                    if (isArray)
+                        expr += fmt::format(" ?? {}", defaultValue);
+                    else
+                        expr += fmt::format(".GetValueOrDefault({})", defaultValue);
+                }
+            }
+        }
+
+        expr = MapToPInvoke(param.type(), expr);
+
+        if (IsOutType(param.type()))
+            expr = "ref " + expr;
+
+        return expr;
+    }), ", ");
 }
 
 }

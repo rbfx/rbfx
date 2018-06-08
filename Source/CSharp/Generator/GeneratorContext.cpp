@@ -603,6 +603,9 @@ const TypeMap* GeneratorContext::GetTypeMap(const std::string& typeName)
 bool GeneratorContext::GetSymbolOfConstant(MetaEntity* user, const std::string& constant, std::string& result,
                                            MetaEntity** constantEntity)
 {
+    if (constantEntity)
+        *constantEntity = nullptr;
+
     std::string symbol = constant;
     do
     {

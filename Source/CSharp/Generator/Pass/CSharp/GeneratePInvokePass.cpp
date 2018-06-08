@@ -357,9 +357,9 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
     else if (entity->kind_ == cppast::cpp_entity_kind::constructor_t)
     {
         const auto& ctor = entity->Ast<cppast::cpp_constructor>();
+
+        auto csParams = ToPInvokeParameters(ctor.parameters());
         DllImport();
-        auto csParams = ParameterList(ctor.parameters(),
-                                      std::bind(&GeneratePInvokePass::ToPInvokeTypeParam, std::placeholders::_1, false));
         printer_ << fmt::format("internal static extern IntPtr {}({});", entity->cFunctionName_, csParams);
         printer_ << "";
     }
@@ -371,9 +371,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         const auto& func = entity->Ast<cppast::cpp_member_function>();
 
-        DllImport();
-        auto csParams = ParameterList(func.parameters(),
-                                      std::bind(&GeneratePInvokePass::ToPInvokeTypeParam, std::placeholders::_1, false));
+        auto csParams = ToPInvokeParameters(func.parameters());
         auto rtype = ToPInvokeTypeReturn(func.return_type());
         auto cFunction = entity->cFunctionName_;
         auto className = entity->GetParent()->name_;
@@ -381,6 +379,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto uniqueName = Sanitize(entity->uniqueName_);
         auto pc = func.parameters().empty() ? "" : ", ";
 
+        DllImport();
         WriteMarshalAttributeReturn(func.return_type());
         printer_ << fmt::format("internal static extern {rtype} {cFunction}(IntPtr instance{pc}{csParams});",
                                 FMT_CAPTURE(rtype), FMT_CAPTURE(cFunction), FMT_CAPTURE(pc), FMT_CAPTURE(csParams));
@@ -405,12 +404,11 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
     {
         const auto& func = entity->Ast<cppast::cpp_function>();
 
-        DllImport();
-        auto csParams = ParameterList(func.parameters(),
-                                      std::bind(&GeneratePInvokePass::ToPInvokeTypeParam, std::placeholders::_1, false));
+        auto csParams = ToPInvokeParameters(func.parameters());
         auto rtype = ToPInvokeTypeReturn(func.return_type());
         auto cFunction = entity->cFunctionName_;
 
+        DllImport();
         WriteMarshalAttributeReturn(func.return_type());
         printer_ << fmt::format("internal static extern {rtype} {cFunction}({csParams});", FMT_CAPTURE(rtype),
                                 FMT_CAPTURE(cFunction), FMT_CAPTURE(csParams));
@@ -570,6 +568,27 @@ void GeneratePInvokePass::DllImport()
 {
     printer_ << "[SuppressUnmanagedCodeSecurity]";
     printer_ << dllImport_;
+}
+
+std::string GeneratePInvokePass::ToPInvokeParameters(
+    const cppast::detail::iteratable_intrusive_list<cppast::cpp_function_parameter>& parameters)
+{
+    return str::join(container::map<std::string>(parameters, [](const cppast::cpp_function_parameter& param) {
+        auto* metaParam = static_cast<MetaEntity*>(param.user_data());
+        std::string result;
+        if (GetBaseType(param.type()).kind() == cppast::cpp_type_kind::builtin_t && metaParam->defaultValueEntity_ &&
+            metaParam->defaultValueEntity_->kind_ == cppast::cpp_entity_kind::enum_value_t)
+        {
+            // When builtin type is used with enum as default value we swap type to that enum. Native API
+            // should be updated to take enums as parameter.
+            result = str::replace_str(metaParam->defaultValueEntity_->parent_.lock()->symbolName_, "::", ".");
+            if (IsOutType(param.type()))
+                result = "ref " + result;
+        }
+        if (result.empty())
+            result = ToPInvokeTypeParam(param.type(), false);
+        return fmt::format("{} {}", result, metaParam->name_);
+    }), ", ");
 }
 
 }
