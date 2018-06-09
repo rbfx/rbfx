@@ -110,14 +110,14 @@ protected:
 /// by custom marshallers used in binding code.
 class URHO3D_API MarshalAllocator
 {
-#pragma pack(1)
-    struct Header
+public:
+    struct Block
     {
-        uint8_t index;
-        int32_t length;
+        void* memory_;
+        int32_t itemCount_;
+        int32_t sizeOfItem_;
+        int32_t allocatorIndex_;
     };
-#pragma pack()
-    static_assert(sizeof(Header) == 5, "Unexpected size of Header");
 
     enum AllocationType
     {
@@ -144,12 +144,28 @@ public:
     ~MarshalAllocator();
     /// Get thread-local instance of this allocator
     static MarshalAllocator& Get();
+    /// Allocate memory for array of items.
+    template<typename T>
+    Block* AllocArray(int count)
+    {
+        auto* block = AllocInternal(sizeof(T) * count);
+        block->sizeOfItem_ = sizeof(T);
+        block->itemCount_ = count;
+        return block;
+    }
     /// Allocate block of memory.
-    void* Alloc(int length);
+    Block* Alloc(int length)
+    {
+        return AllocArray<uint8_t>(length);
+    }
+
     /// Free block of memory.
-    void Free(void* memory);
+    void Free(Block* memory);
 
 protected:
+    /// Allocate block of memory.
+    Block* AllocInternal(int length);
+
     AllocatorInfo allocators_[3];
 };
 

@@ -101,7 +101,7 @@ template<typename T>
 struct CSharpConverter<PODVector<T>>
 {
     using CppType=PODVector<T>;
-    using CType=void*;
+    using CType=MarshalAllocator::Block*;
 
     // TODO: This can be optimized by passing &value.Front() memory buffer
     static CType ToCSharp(const CppType& value)
@@ -109,10 +109,9 @@ struct CSharpConverter<PODVector<T>>
         if (value.Empty())
             return nullptr;
 
-        auto length = value.Size() * sizeof(T);
-        auto* data = MarshalAllocator::Get().Alloc(length);
-        memcpy(data, &value.Front(), length);
-        return data;
+        auto* block = MarshalAllocator::Get().AllocArray<T>(value.Size());
+        memcpy(block->memory_, &value.Front(), value.Size() * sizeof(T));
+        return block;
     }
 
     static CppType FromCSharp(CType value)
@@ -120,9 +119,7 @@ struct CSharpConverter<PODVector<T>>
         if (value == nullptr)
             return CppType{};
 
-        auto length = *(int32_t*)((uint8_t*)value - 4);
-        auto count = length / sizeof(T);
-        return CppType((const T*)value, count);
+        return CppType((const T*)value->memory_, value->itemCount_);
     }
 };
 
@@ -131,21 +128,20 @@ template<typename T>
 struct CSharpConverter<Vector<SharedPtr<T>>>
 {
     using CppType=Vector<SharedPtr<T>>;
-    using CType=void*;
+    using CType=MarshalAllocator::Block*;
 
     static CType ToCSharp(const CppType& value)
     {
         if (value.Empty())
             return nullptr;
 
-        int length = (int)value.Size() * sizeof(void*);
-        CType result = MarshalAllocator::Get().Alloc(length);
+        CType block = MarshalAllocator::Get().AllocArray<T*>(value.Size());
 
-        auto** array = (T**)result;
+        auto** array = (T**)block->memory_;
         for (const auto& ptr : value)
             *array++ = ptr.Get();
 
-        return result;
+        return block;
     }
 
     static CppType FromCSharp(CType value)
@@ -153,10 +149,8 @@ struct CSharpConverter<Vector<SharedPtr<T>>>
         if (value == nullptr)
             return CppType{};
 
-        auto length = *(int32_t*)((uint8_t*)value - 4);
-        auto count = length / sizeof(void*);
-        CppType result{(unsigned)count};
-        auto** array = (T**)value;
+        CppType result{(unsigned)value->itemCount_};
+        auto** array = (T**)value->memory_;
         for (auto& ptr : result)
             ptr = *array++;
         return result;
@@ -168,21 +162,20 @@ template<typename T>
 struct CSharpConverter<Vector<WeakPtr<T>>>
 {
     using CppType=Vector<WeakPtr<T>>;
-    using CType=void*;
+    using CType=MarshalAllocator::Block*;
 
     static CType ToCSharp(const CppType& value)
     {
         if (value.Empty())
             return nullptr;
 
-        int length = (int)value.Size() * sizeof(void*);
-        CType result = MarshalAllocator::Get().Alloc(length);
+        CType block = MarshalAllocator::Get().AllocArray<T*>(value.Size());
 
-        auto** array = (T**)result;
+        auto** array = (T**)block->memory_;
         for (const auto& ptr : value)
             *array++ = ptr.Get();
 
-        return result;
+        return block;
     }
 
     static CppType FromCSharp(CType value)
@@ -190,9 +183,7 @@ struct CSharpConverter<Vector<WeakPtr<T>>>
         if (value == nullptr)
             return CppType{};
 
-        auto length = *(int32_t*)((uint8_t*)value - 4);
-        auto count = length / sizeof(void*);
-        CppType result{(unsigned)count};
+        CppType result{(unsigned)value->itemCount_};
         auto** array = (T**)value;
         for (auto& ptr : result)
             ptr = *array++;
@@ -205,7 +196,7 @@ template<typename T>
 struct CSharpConverter<Vector<T*>>
 {
     using CppType=Vector<T*>;
-    using CType=void*;
+    using CType=MarshalAllocator::Block*;
 
     // TODO: This can be optimized by passing &value.Front() memory buffer
     static CType ToCSharp(const CppType& value)
@@ -213,10 +204,9 @@ struct CSharpConverter<Vector<T*>>
         if (value.Empty())
             return nullptr;
 
-        int length = (int)value.Size() * sizeof(void*);
-        CType result = MarshalAllocator::Get().Alloc(length);
+        CType result = MarshalAllocator::Get().AllocArray<T*>(value.Size());
 
-        auto** array = (T**)result;
+        auto** array = (T**)result->memory_;
         for (const auto& ptr : value)
             *array++ = ptr;
 
@@ -228,9 +218,7 @@ struct CSharpConverter<Vector<T*>>
         if (value == nullptr)
             return CppType{};
 
-        auto length = *(int32_t*)((uint8_t*)value - 4);
-        auto count = length / sizeof(void*);
-        CppType result{(unsigned)count};
+        CppType result{(unsigned)value->itemCount_};
         auto** array = (T**)value;
         for (auto& ptr : result)
             ptr = *array++;
@@ -242,20 +230,37 @@ struct CSharpConverter<Vector<T*>>
 
 template<> struct CSharpConverter<Urho3D::String>
 {
-    // TODO: This can be optimized by passing value memory buffer
-    static inline const char* ToCSharp(const char* value)
+    // TODO: This can be optimized by passing &value.CString() memory buffer
+    static inline MarshalAllocator::Block* ToCSharp(const String& value)
     {
-        void* memory = MarshalAllocator::Get().Alloc(strlen(value) + 1);
-        strcpy((char*)memory, value);
-        return (const char*)memory;
+        auto* block = MarshalAllocator::Get().Alloc(value.Length() + 1);
+        strcpy((char*)block->memory_, value.CString());
+        return block;
     }
 
-    // TODO: This can be optimized by passing &value.CString() memory buffer
-    static inline const char* ToCSharp(const String& value)
+    static inline Urho3D::String FromCSharp(MarshalAllocator::Block* value)
     {
-        void* memory = MarshalAllocator::Get().Alloc(value.Length() + 1);
-        strcpy((char*)memory, value.CString());
-        return (const char*)memory;
+        if (value == nullptr)
+            return String::EMPTY;
+        return Urho3D::String((const char*)value->memory_);
+    }
+};
+
+template<> struct CSharpConverter<char const*>
+{
+    // TODO: This can be optimized by passing value memory buffer
+    static inline MarshalAllocator::Block* ToCSharp(const char* value)
+    {
+        auto* block = MarshalAllocator::Get().Alloc(strlen(value) + 1);
+        strcpy((char*)block->memory_, value);
+        return block;
+    }
+
+    static inline const char* FromCSharp(MarshalAllocator::Block* value)
+    {
+        if (value == nullptr)
+            return nullptr;
+        return (const char*)value->memory_;
     }
 };
 

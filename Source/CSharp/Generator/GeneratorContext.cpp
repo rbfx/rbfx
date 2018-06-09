@@ -171,17 +171,6 @@ bool GeneratorContext::AddModule(const std::string& libraryName, bool isStatic, 
         {
             auto& typeMaps = jsonRules["typemaps"];
 
-            // Typemap const char* strings
-            {
-                rapidjson::Value stringMap(rapidjson::kObjectType);
-                stringMap.AddMember("type", "char const*", jsonRules.GetAllocator());
-                stringMap.AddMember("ptype", "string", jsonRules.GetAllocator());
-                stringMap.AddMember("cstype", "string", jsonRules.GetAllocator());
-                stringMap.AddMember("cpp_to_c", "{value}", jsonRules.GetAllocator());
-                stringMap.AddMember("is_value_type", true, jsonRules.GetAllocator());
-                typeMaps.PushBack(stringMap, jsonRules.GetAllocator());
-            }
-
             std::function<void(rapidjson::Value&, const std::string&)> parseTypemaps = [&](
                 rapidjson::Value& typeMaps, const std::string& jsonPath) {
                 for (auto jt = typeMaps.Begin(); jt != typeMaps.End(); ++jt)
@@ -240,12 +229,6 @@ bool GeneratorContext::AddModule(const std::string& libraryName, bool isStatic, 
 
                         if (typeMap.HasMember("marshaller"))
                             map.customMarshaller_ = typeMap["marshaller"].GetString();
-
-                        // Doctor string typemaps with some internal details.
-                        if (map.csType_ == "string" && map.customMarshaller_.empty())
-                        {
-                            map.customMarshaller_ = "StringUtf8";
-                        }
 
                         typeMaps_[map.cppType_] = map;
                     }

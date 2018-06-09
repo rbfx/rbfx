@@ -117,6 +117,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
         // cppast has no info for us. Make a best guess about the type in question.
         cppType = tpl.unexposed_arguments();
         auto primitiveType = PrimitiveToCppType(cppType);
+        bool isPointer = false;
         if (primitiveType == cppast::cpp_builtin_type_kind::cpp_void)
         {
             // Class pointer array
@@ -124,11 +125,13 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
             {
                 // Get T from SharedPtr<T>
                 csType = cppType.substr(10, cppType.length() - 11);
+                isPointer = true;
             }
             else if (str::starts_with(cppType, "WeakPtr<"))
             {
                 // Get T from SharedPtr<T>
                 csType = cppType.substr(8, cppType.length() - 9);
+                isPointer = true;
             }
             else if (str::ends_with(cppType, " *"))
             {
@@ -136,6 +139,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
                 csType = cppType.substr(0, cppType.length() - 2);
                 if (csType.find("const ") == 0)
                     csType = csType.substr(6);
+                isPointer = true;
             }
             else
                 csType = cppType;
@@ -166,13 +170,15 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
             map.cppType_ = typeName;
 
             map.csType_ = map.pInvokeType_ = fmt::format("{csType}[]", FMT_CAPTURE(csType));
-            map.cType_ = "void*";
+            map.cType_ = "MarshalAllocator::Block*";
             map.cppToCTemplate_ = fmt::format("CSharpConverter<Urho3D::{vectorKind}<{cppType}>>::ToCSharp({{value}})",
                                               FMT_CAPTURE(cppType), FMT_CAPTURE(vectorKind));
             map.cToCppTemplate_ = fmt::format("CSharpConverter<Urho3D::{vectorKind}<{cppType}>>::FromCSharp({{value}})",
                                               FMT_CAPTURE(cppType), FMT_CAPTURE(vectorKind));
             if (IsBuiltinPInvokeType(csType) || (typeMap != nullptr && typeMap->isValueType_))
                 map.customMarshaller_ = fmt::format("PodArrayMarshaller<{}>", csType);
+            else if (isPointer)
+                map.customMarshaller_ = fmt::format("ObjPtrArrayMarshaller<{}>", csType);
             else
                 map.customMarshaller_ = fmt::format("ObjArrayMarshaller<{}>", csType);
             map.isValueType_ = true;

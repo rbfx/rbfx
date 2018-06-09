@@ -26,6 +26,16 @@ using System.Runtime.InteropServices;
 
 namespace Urho3D.CSharp
 {
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct Block
+    {
+        public IntPtr Memory;
+        public int ItemCount;
+        public int SizeOfItem;
+        public int AllocatorIndex;
+        public int MemoryLength => ItemCount * SizeOfItem;
+    }
+
     /// <summary>
     /// Marshals utf-8 strings. Native code controls lifetime of native string.
     /// </summary>
@@ -44,36 +54,42 @@ namespace Urho3D.CSharp
 
         public void CleanUpNativeData(IntPtr pNativeData)
         {
+            if (pNativeData == IntPtr.Zero)
+                return;
+
             NativeInterface.Native.InteropFree(pNativeData);
         }
 
         public int GetNativeDataSize()
         {
-            return Marshal.SizeOf<IntPtr>();
+            return -1;
         }
 
-        public IntPtr MarshalManagedToNative(object managedObj)
+        public unsafe IntPtr MarshalManagedToNative(object managedObj)
         {
             if (!(managedObj is string))
                 return IntPtr.Zero;
 
-            var s = Encoding.UTF8.GetBytes((string) managedObj);
-            var pStr = NativeInterface.Native.InteropAlloc(s.Length + 1);
+            var str = Encoding.UTF8.GetBytes((string) managedObj);
+            var block = (Block*)NativeInterface.Native.InteropAlloc(str.Length + 1);
 
-            Marshal.Copy(s, 0, pStr, s.Length);
-            Marshal.WriteByte(pStr, s.Length, 0);
+            Marshal.Copy(str, 0, block->Memory, str.Length);
+            Marshal.WriteByte(block->Memory, str.Length, 0);
 
-            return pStr;
+            return (IntPtr) block;
         }
 
         public unsafe object MarshalNativeToManaged(IntPtr pNativeData)
         {
-            var length = Marshal.ReadInt32(pNativeData, -4);
-            return Encoding.UTF8.GetString((byte*) pNativeData, length - 1);
+            if (pNativeData == IntPtr.Zero)
+                return null;
+
+            var block = (Block*)pNativeData;
+            return Encoding.UTF8.GetString((byte*) block->Memory, block->ItemCount - 1);
         }
     }
 
-    public class PodArrayMarshaller<T> : ICustomMarshaler
+    public class PodArrayMarshaller<T> : ICustomMarshaler where T: struct
     {
         private static PodArrayMarshaller<T> _instance = new PodArrayMarshaller<T>();
 
@@ -105,14 +121,17 @@ namespace Urho3D.CSharp
                 return IntPtr.Zero;
 
             var array = (T[]) managedObj;
+            if (array.Length == 0)
+                return IntPtr.Zero;
+
             var length = Marshal.SizeOf<T>() * array.Length;
-            var result = NativeInterface.Native.InteropAlloc(length);
+            var block = (Block*) NativeInterface.Native.InteropAlloc(length);
 
             var sourceHandle = GCHandle.Alloc(array, GCHandleType.Pinned);
             try
             {
-                Buffer.MemoryCopy((void*) sourceHandle.AddrOfPinnedObject(), (void*) result, length, length);
-                return result;
+                Buffer.MemoryCopy((void*) sourceHandle.AddrOfPinnedObject(), (void*) block->Memory, length, length);
+                return (IntPtr) block;
             }
             finally
             {
@@ -125,18 +144,86 @@ namespace Urho3D.CSharp
             if (pNativeData == IntPtr.Zero)
                 return null;
 
-            var length = Marshal.ReadInt32(pNativeData, -4);
-            var result = new T[length / Marshal.SizeOf<T>()];
+            var block = (Block*)pNativeData;
+            var result = new T[block->ItemCount];
             var resultHandle = GCHandle.Alloc(result, GCHandleType.Pinned);
             try
             {
-                Buffer.MemoryCopy((void*) pNativeData, (void*) resultHandle.AddrOfPinnedObject(), length, length);
+                Buffer.MemoryCopy((void*) block->Memory, (void*) resultHandle.AddrOfPinnedObject(), block->MemoryLength,
+                    block->MemoryLength);
                 return result;
             }
             finally
             {
                 resultHandle.Free();
             }
+        }
+    }
+
+    public class ObjPtrArrayMarshaller<T> : ICustomMarshaler where T: NativeObject
+    {
+        private static ObjPtrArrayMarshaller<T> _instance = new ObjPtrArrayMarshaller<T>();
+
+        public static ICustomMarshaler GetInstance(string cookie)
+        {
+            return _instance;
+        }
+
+        public void CleanUpManagedData(object managedObj)
+        {
+        }
+
+        public void CleanUpNativeData(IntPtr pNativeData)
+        {
+            if (pNativeData == IntPtr.Zero)
+                return;
+
+            NativeInterface.Native.InteropFree(pNativeData);
+        }
+
+        public int GetNativeDataSize()
+        {
+            return -1;
+        }
+
+        public unsafe IntPtr MarshalManagedToNative(object managedObj)
+        {
+            if (managedObj == null)
+                return IntPtr.Zero;
+
+            var array = (T[]) managedObj;
+            if (array.Length == 0)
+                return IntPtr.Zero;
+
+            var length = IntPtr.Size * array.Length;
+            var block = (Block*)NativeInterface.Native.InteropAlloc(length);
+
+            var offset = 0;
+            foreach (var instance in array)
+            {
+                Marshal.WriteIntPtr(block->Memory, offset, instance.NativeInstance);
+                offset += IntPtr.Size;
+            }
+
+            return (IntPtr) block;
+        }
+
+        public unsafe object MarshalNativeToManaged(IntPtr pNativeData)
+        {
+            if (pNativeData == IntPtr.Zero)
+                return new T[0];
+            var block = (Block*) pNativeData;
+
+            var result = new T[block->ItemCount];
+            var type = typeof(T);
+            var getManaged = type.GetMethod("GetManagedInstance", BindingFlags.NonPublic | BindingFlags.Static);
+            for (var i = 0; i < result.Length; i++)
+            {
+                var instance = Marshal.ReadIntPtr(block->Memory, i * IntPtr.Size);
+                result[i] = (T)getManaged.Invoke(null, new object[] {instance, false});
+            }
+
+            return result;
         }
     }
 
@@ -168,35 +255,21 @@ namespace Urho3D.CSharp
 
         public IntPtr MarshalManagedToNative(object managedObj)
         {
-            if (managedObj == null)
-                return IntPtr.Zero;
-
-            var array = (T[]) managedObj;
-            var length = IntPtr.Size * array.Length;
-            var result = NativeInterface.Native.InteropAlloc(length);
-
-            var offset = 0;
-            foreach (var instance in array)
-            {
-                Marshal.WriteIntPtr(result, offset, instance.NativeInstance);
-                offset += IntPtr.Size;
-            }
-
-            return result;
+            throw new NotImplementedException();
         }
 
-        public object MarshalNativeToManaged(IntPtr pNativeData)
+        public unsafe object MarshalNativeToManaged(IntPtr pNativeData)
         {
             if (pNativeData == IntPtr.Zero)
-                return null;
+                return new T[0];
 
-            var length = Marshal.ReadInt32(pNativeData, -4);
-            var result = new T[length / IntPtr.Size];
+            var block = (Block*) pNativeData;
+            var result = new T[block->ItemCount];
             var type = typeof(T);
             var getManaged = type.GetMethod("GetManagedInstance", BindingFlags.NonPublic | BindingFlags.Static);
             for (var i = 0; i < result.Length; i++)
             {
-                var instance = Marshal.ReadIntPtr(pNativeData, i * IntPtr.Size);
+                var instance = block->Memory + i * block->SizeOfItem;
                 result[i] = (T)getManaged.Invoke(null, new object[] {instance, false});
             }
 

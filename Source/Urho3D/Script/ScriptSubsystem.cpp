@@ -266,10 +266,10 @@ URHO3D_API void Urho3D_InitializeCSharp(ManagedRuntime* managed, NativeRuntime* 
     ScriptSubsystem::native_.AllocateMemory = [](unsigned size) { return malloc(size); };
     ScriptSubsystem::native_.FreeMemory = &free;
     ScriptSubsystem::native_.InteropAlloc = [](int length) {
-        return MarshalAllocator::Get().Alloc(length);
+        return (void*)MarshalAllocator::Get().Alloc(length);
     };
     ScriptSubsystem::native_.InteropFree = [](void* memory) {
-        return MarshalAllocator::Get().Free(memory);
+        return MarshalAllocator::Get().Free(static_cast<MarshalAllocator::Block*>(memory));
     };
 
     *native = ScriptSubsystem::native_;
@@ -307,13 +307,9 @@ MarshalAllocator& MarshalAllocator::Get()
     return instance;
 }
 
-void* MarshalAllocator::Alloc(int length)
+MarshalAllocator::Block* MarshalAllocator::AllocInternal(int length)
 {
-    // Buffer layout:
-    // byte AllocatorIndex
-    // int BytesCount
-    // byte BUffer[BytesCount]
-    auto needLength = length + sizeof(Header);
+    auto needLength = sizeof(Block) + length;
 
     uint8_t index = 0;
     void* memory = nullptr;
@@ -333,19 +329,21 @@ void* MarshalAllocator::Alloc(int length)
         index = std::numeric_limits<uint8_t>::max();
     }
 
-    Header* header = static_cast<Header*>(memory);
-    header->index = index;
-    header->length = length;
+    Block* header = static_cast<Block*>(memory);
+    header->allocatorIndex_ = index;
+    header->itemCount_ = length;
+    header->sizeOfItem_ = length;
+    header->memory_ = (uint8_t*)memory + sizeof(Block);
 
-    return (uint8_t*)memory + sizeof(Header);
+    return header;
 }
 
-void MarshalAllocator::Free(void* memory)
+void MarshalAllocator::Free(Block* block)
 {
-    Header* header = reinterpret_cast<Header*>((uint8_t*)memory - sizeof(Header));
-    if (header->index == HeapAllocator)
-        free(header);
-    else if (header->index < CustomAllocationType)
-        AllocatorFree(allocators_[header->index].Allocator, header);
+    if (block->allocatorIndex_ == HeapAllocator)
+        free(block);
+    else if (block->allocatorIndex_ < CustomAllocationType)
+        AllocatorFree(allocators_[block->allocatorIndex_].Allocator, block);
 }
+
 }
