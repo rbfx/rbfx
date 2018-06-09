@@ -232,6 +232,17 @@ public:
         level_(level)
     {
     }
+    /// Construct with ray and query parameters and use builtin storage for results.
+    RayOctreeQuery(const Ray& ray, RayQueryLevel level = RAY_TRIANGLE,
+                         float maxDistance = M_INFINITY, unsigned char drawableFlags = DRAWABLE_ANY, unsigned viewMask = DEFAULT_VIEWMASK) :
+        result_(resultStorage_),
+        ray_(ray),
+        drawableFlags_(drawableFlags),
+        viewMask_(viewMask),
+        maxDistance_(maxDistance),
+        level_(level)
+    {
+    }
 
     /// Prevent copy construction.
     RayOctreeQuery(const RayOctreeQuery& rhs) = delete;
@@ -250,6 +261,9 @@ public:
     float maxDistance_;
     /// Raycast detail level.
     RayQueryLevel level_;
+private:
+    /// Builtin result storage.
+    PODVector<RayQueryResult> resultStorage_;
 };
 
 class URHO3D_API AllContentOctreeQuery : public OctreeQuery
@@ -260,11 +274,20 @@ public:
         OctreeQuery(result, drawableFlags, viewMask)
     {
     }
+    /// Construct.
+    AllContentOctreeQuery(unsigned char drawableFlags, unsigned viewMask)
+        : AllContentOctreeQuery(resultStorage_, drawableFlags, viewMask)
+    {
+    }
 
     /// Intersection test for an octant.
     Intersection TestOctant(const BoundingBox& box, bool inside) override;
     /// Intersection test for drawables.
     void TestDrawables(Drawable** start, Drawable** end, bool inside) override;
+
+private:
+    /// Builtin result storage.
+    PODVector<Drawable*> resultStorage_;
 };
 
 }

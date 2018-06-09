@@ -160,7 +160,8 @@
           "Urho3D::Shader::GetVariation(Urho3D::ShaderType,Urho3D::String const&)",
           "Urho3D::Graphics::GetShader(Urho3D::ShaderType,Urho3D::String const&,Urho3D::String const&) const",
           "Urho3D::OctreeQuery",
-          "Urho3D::RayOctreeQuery::RayOctreeQuery(Urho3D::RayOctreeQuery const&)",
+          "Urho3D::RayOctreeQuery::RayOctreeQuery(PODVector<Urho3D::RayQueryResult>&,Urho3D::Ray const&,Urho3D::RayQueryLevel,float,unsigned char,unsigned int)",
+          "Urho3D::AllContentOctreeQuery::AllContentOctreeQuery(PODVector<Urho3D::Drawable *>&,unsigned char,unsigned int)",
         ]
       },
       "inheritable": {
