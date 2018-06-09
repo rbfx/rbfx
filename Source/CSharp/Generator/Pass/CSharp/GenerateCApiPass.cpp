@@ -103,7 +103,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_ << fmt::format("EXPORT_API std::uintptr_t {}_instance_typeid({}* instance)", baseName, entity->sourceSymbolName_);
         printer_.Indent();
         {
-            printer_ << fmt::format("return GetTypeID(instance);");
+            printer_ << "return GetTypeID(instance);";
         }
         printer_.Dedent();
         printer_ << "";
@@ -163,10 +163,11 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         bool isRefCounted = IsSubclassOf(cls, "Urho3D::RefCounted");
         if (isInheritable || isRefCounted)
         {
-            printer_ << fmt::format("EXPORT_API void {}_setup({}* instance, gchandle gcHandle, const char* typeName)", baseName, entity->sourceSymbolName_);
+            printer_ << fmt::format("EXPORT_API void {}_setup({}* instance, gchandle gcHandle, const char* typeName, int* objSize)", baseName, entity->sourceSymbolName_);
             printer_.Indent();
             {
                 const auto& cls = entity->Ast<cppast::cpp_class>();
+                printer_ << fmt::format("*objSize = sizeof({});", entity->sourceSymbolName_);
                 if (isRefCounted)
                 {
                     printer_ << "assert(!instance->HasDeleter());";

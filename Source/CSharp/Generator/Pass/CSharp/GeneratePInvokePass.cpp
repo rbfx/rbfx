@@ -271,7 +271,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             {
                 DllImport();
                 printer_ << fmt::format("internal static extern void {}_setup(IntPtr instance, IntPtr gcHandle, "
-                                        "string typeName);", baseName);
+                                        "string typeName, ref int objSize);", baseName);
                 printer_ << "";
             }
 

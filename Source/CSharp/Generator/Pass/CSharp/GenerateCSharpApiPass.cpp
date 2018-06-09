@@ -141,7 +141,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     printer_ << "NativeInstance = instance;";
                     printer_ << "OwnsNativeInstance = ownsInstance;";
                     if (generator->IsInheritable(entity->uniqueName_) || IsSubclassOf(entity->Ast<cppast::cpp_class>(), "Urho3D::RefCounted"))
-                        printer_ << fmt::format("{}_setup(instance, GCHandle.ToIntPtr(GCHandle.Alloc(this)), GetType().Name);",
+                        printer_ << fmt::format("{}_setup(instance, GCHandle.ToIntPtr(GCHandle.Alloc(this)), GetType().Name, ref NativeObjectSize);",
                             Sanitize(entity->uniqueName_));
                     printer_ << "InstanceCache.Add(this);";
 

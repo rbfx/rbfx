@@ -36,6 +36,7 @@ namespace Urho3D.CSharp
         protected bool OwnsNativeInstance { get; set; }
         public bool IsDisposed => DisposedCounter == 0;
         protected volatile int DisposedCounter = 0;
+        internal int NativeObjectSize = 0;
 
         internal NativeObject(IntPtr instance, bool ownsInstance=false)
         {
