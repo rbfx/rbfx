@@ -26,6 +26,11 @@ extern "C"
 {
 
 ////////////////////////////////////////////////////// VariantMap //////////////////////////////////////////////////////
+EXPORT_API VariantMap* Urho3D_HashMap_HashMap()
+{
+    return new VariantMap();
+}
+
 EXPORT_API unsigned Urho3D_HashMap_StringHash_Variant_GetKey(Urho3D::VariantMap::Iterator it)
 {
     return it->first_.Value();

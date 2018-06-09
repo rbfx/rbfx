@@ -118,6 +118,11 @@ namespace Urho3D
             }
         }
 
+        public VariantMap()
+        {
+            SetupInstance(Urho3D_HashMap_HashMap(), true);
+        }
+
         internal VariantMap(IntPtr instance, bool ownsInstnace)
         {
             SetupInstance(instance, ownsInstnace);
