@@ -58,7 +58,7 @@ public struct StringHash
 
     public override string ToString()
     {
-        return string.Format("{:08X}", Hash);
+        return $"{Hash:X8}";
     }
 
     internal static StringHash GetManagedInstance(uint source, bool ownsNativeInstnace=false)
