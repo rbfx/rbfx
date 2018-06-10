@@ -82,18 +82,21 @@ public:
         CreateObjects();
 
         // Scene viewport renderpath must be same as material viewport renderpath
-        auto path = effectSource->GetRenderPath();
-        viewport_->SetRenderPath(path);
-        auto light = camera_->GetComponent<Light>();
-        for (auto& command: path->commands_)
+        if (effectSource != nullptr)
         {
-            if (command.pixelShaderName_ == "PBRDeferred")
+            auto path = effectSource->GetRenderPath();
+            viewport_->SetRenderPath(path);
+            auto light = camera_->GetComponent<Light>();
+            for (auto& command: path->commands_)
             {
-                // Lights in PBR scenes need modifications, otherwise obects in material preview look very dark
-                light->SetUsePhysicalValues(true);
-                light->SetBrightness(5000);
-                light->SetShadowCascade(CascadeParameters(10, 20, 30, 40, 10));
-                break;
+                if (command.pixelShaderName_ == "PBRDeferred")
+                {
+                    // Lights in PBR scenes need modifications, otherwise obects in material preview look very dark
+                    light->SetUsePhysicalValues(true);
+                    light->SetBrightness(5000);
+                    light->SetShadowCascade(CascadeParameters(10, 20, 30, 40, 10));
+                    break;
+                }
             }
         }
     }
