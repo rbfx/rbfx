@@ -231,6 +231,7 @@ bool Gizmo::Select(Node* node)
     if (nodeSelection_.Contains(weakNode))
         return false;
     nodeSelection_.Push(weakNode);
+    SendEvent(E_GIZMOSELECTIONCHANGED);
     return true;
 }
 
@@ -240,6 +241,7 @@ bool Gizmo::Unselect(Node* node)
     if (!nodeSelection_.Contains(weakNode))
         return false;
     nodeSelection_.Remove(weakNode);
+    SendEvent(E_GIZMOSELECTIONCHANGED);
     return true;
 }
 
@@ -367,6 +369,7 @@ bool Gizmo::UnselectAll()
     if (nodeSelection_.Empty())
         return false;
     nodeSelection_.Clear();
+    SendEvent(E_GIZMOSELECTIONCHANGED);
     return true;
 }
 

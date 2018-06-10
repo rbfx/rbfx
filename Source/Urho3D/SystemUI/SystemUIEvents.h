@@ -64,4 +64,8 @@ URHO3D_EVENT(E_GIZMONODEMODIFIED, GizmoNodeModified)
     URHO3D_PARAM(P_NEWTRANSFORM, NewTransform);                  // Matrix3x4
 }
 
+URHO3D_EVENT(E_GIZMOSELECTIONCHANGED, GizmoSelectionChanged)
+{
+}
+
 }
