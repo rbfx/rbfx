@@ -91,7 +91,8 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             {
                 // A class will not have any methods. This is likely a dummy class for constant storage or something
                 // similar.
-                printer_ << fmt::format("public static partial class {}", entity->name_);
+                auto staticKeyword = entity->flags_ & HintNoStatic ? "" : "static ";
+                printer_ << fmt::format("public {}partial class {}", staticKeyword, entity->name_);
                 printer_.Indent();
                 return true;
             }

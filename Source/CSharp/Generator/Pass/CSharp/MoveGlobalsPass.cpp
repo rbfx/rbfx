@@ -37,7 +37,7 @@ bool MoveGlobalsPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     if (entity->kind_ == cppast::cpp_entity_kind::namespace_t)
     {
         // Convert non-top-level namespaces to classes if they have any functions or variables.
-        if (!entity->GetParent()->name_.empty())
+        if (!entity->GetParent()->name_.empty() && entity->ast_ != nullptr)
         {
             const auto& ns = entity->Ast<cppast::cpp_namespace>();
             for (const auto& child : ns)

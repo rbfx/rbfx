@@ -22,6 +22,7 @@
 using IconFonts;
 using Urho3D;
 using ImGui;
+using Urho3D.Events;
 
 
 namespace Editor.Tabs
@@ -41,7 +42,7 @@ namespace Editor.Tabs
             _view.Scene.LoadXml(Cache.GetResource<XMLFile>("Scenes/SceneLoadExample.xml").GetRoot());
             CreateObjects();
 
-            SubscribeToEvent(CoreEvents.E_UPDATE, OnUpdate);
+            SubscribeToEvent<Update>(OnUpdate);
         }
 
         private void RenderToolbar()
@@ -170,7 +171,7 @@ namespace Editor.Tabs
         private void OnUpdate(VariantMap args)
         {
             if (_mouseHoversViewport)
-                _view.Camera.GetComponent<DebugCameraController>().Update(args[Update.P_TIMESTEP].Float);
+                _view.Camera.GetComponent<DebugCameraController>().Update(args[Update.TimeStep].Float);
         }
     }
 }

@@ -28,6 +28,24 @@
 namespace Urho3D
 {
 
+inline unsigned SDBMHash(unsigned hash, unsigned char c) { return c + (hash << 6u) + (hash << 16u) - hash; }
+
+unsigned StringHashCalculate(const char* str, unsigned hash=0)
+{
+    if (!str)
+        return hash;
+
+    while (*str)
+    {
+        // Perform the actual hashing as case-insensitive
+        char c = *str;
+        hash = SDBMHash(hash, (unsigned char)tolower(c));
+        ++str;
+    }
+
+    return hash;
+}
+
 bool Urho3DCustomPassEarly::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
     if (info.event == info.container_entity_exit)
@@ -60,8 +78,11 @@ bool Urho3DCustomPassEarly::Visit(MetaEntity* entity, cppast::visitor_info info)
             {
                 auto* eventNamespace = it->get();
                 assert(eventNamespace->kind_ == cppast::cpp_entity_kind::namespace_t);
-                entity->defaultValue_ = fmt::format("\"{}\"", eventNamespace->name_);
-                entity->flags_ |= HintReadOnly;
+
+                eventNamespace->attributes_.emplace_back(
+                    fmt::format("[Event(EventType=0x{:08X})]", StringHashCalculate(eventNamespace->name_.c_str())));
+                // Event name is conveyed through attribute therefore this constant is no longer needed.
+                entity->Remove();
 
                 // Properly name parameter constants by using their values. Actual constant names have all words mashed
                 // into single all-caps word while constant values use CamelCase.
@@ -72,13 +93,29 @@ bool Urho3DCustomPassEarly::Visit(MetaEntity* entity, cppast::visitor_info info)
                 }
 
                 // Constant naming event is always named "Event" and added to same namespace where event parameters are.
-                entity->name_ = "Event";
-                eventNamespace->Add(entity);
                 // In C# namespaces can not have constants therefore they must be turned into (static) classes.
                 eventNamespace->kind_ = cppast::cpp_entity_kind::class_t;
                 eventNamespace->ast_ = nullptr;
-                // Static classes containing events are prepended with E to denote event.
-                eventNamespace->name_ = "E" + eventNamespace->name_;
+                eventNamespace->flags_ |= HintNoStatic;
+
+                // These event classes are moved to ParentNamespace.Events namespace.
+                auto* parentSpaceDest = eventNamespace->GetParent();
+                std::string parentSpaceSymbol(parentSpaceDest->symbolName_ + "::Events");
+                MetaEntity* eventsParentSpace = generator->GetSymbol(parentSpaceSymbol);
+                if (eventsParentSpace == nullptr)
+                {
+                    std::shared_ptr<MetaEntity> eventsParentSpaceStorage(new MetaEntity());
+                    eventsParentSpace = eventsParentSpaceStorage.get();
+                    eventsParentSpace->name_ = "Events";
+                    eventsParentSpace->uniqueName_ = parentSpaceSymbol;
+                    eventsParentSpace->kind_ = cppast::cpp_entity_kind::namespace_t;
+                    parentSpaceDest->Add(eventsParentSpace);
+                    generator->symbols_[parentSpaceSymbol] = eventsParentSpace->shared_from_this();
+                }
+                eventsParentSpace->Add(eventNamespace);
+
+                // Event name is conveyed through attribute therefore this constant is no longer needed.
+                entity->Remove();
             }
         }
     }

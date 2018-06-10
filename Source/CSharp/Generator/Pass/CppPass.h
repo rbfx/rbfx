@@ -41,6 +41,7 @@ enum CppEntityHints
     HintInterface = 4,
     HintProperty = 8,
     HintDefaultValueFinal = 16,
+    HintNoStatic = 32,
 };
 
 /// Wrapper over cppast::cpp_entity. Overlay-AST is assembled from these entities. This allows freely modifying AST
@@ -77,6 +78,7 @@ struct MetaEntity : public std::enable_shared_from_this<MetaEntity>
         defaultValue_ = other.defaultValue_;
         flags_ = other.flags_;
         cFunctionName_ = other.cFunctionName_;
+        attributes_ = other.attributes_;
 
         for (const auto& child : other.children_)
         {
@@ -211,6 +213,8 @@ struct MetaEntity : public std::enable_shared_from_this<MetaEntity>
     int flags_ = HintNone;
     /// Name of a function wrapping this entity in a C wrapper.
     std::string cFunctionName_;
+    /// Custom attributes used when printing out wrapper API.
+    std::vector<std::string> attributes_;
 
 protected:
     void Register();

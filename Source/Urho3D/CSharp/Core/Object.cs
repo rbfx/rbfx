@@ -22,6 +22,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Reflection;
 using System.Security;
 using Urho3D.CSharp;
 
@@ -29,8 +30,56 @@ namespace Urho3D
 {
     internal delegate void EventHandler(IntPtr gcHandle, uint type, IntPtr args);
 
+    public class EventAttribute : System.Attribute
+    {
+        public string EventName
+        {
+            get => EventHash.ToString();
+            set => EventHash = new StringHash(value);
+        }
+
+        public uint EventType
+        {
+            get => EventHash.Hash;
+            set => EventHash = new StringHash(value);
+        }
+
+        public StringHash EventHash { get; set; }
+    }
+
     public partial class Object
     {
+        private StringHash GetEventType<T>()
+        {
+            var type = typeof(T);
+            var attribute = (EventAttribute) System.Attribute.GetCustomAttribute(type, typeof(EventAttribute));
+            if (attribute == null)
+                throw new CustomAttributeFormatException("Specified type does not have [EventAttribute].");
+            if (attribute.EventType == 0)
+                return new StringHash(type.Name);
+            return attribute.EventHash;
+        }
+
+        public void SendEvent<T>()
+        {
+            SendEvent(GetEventType<T>());
+        }
+
+        public void SendEvent<T>(VariantMap args)
+        {
+            SendEvent(GetEventType<T>(), args);
+        }
+
+        public void SubscribeToEvent<T>(Action<StringHash, VariantMap> function)
+        {
+            SubscribeToEvent(GetEventType<T>(), function);
+        }
+
+        public void SubscribeToEvent<T>(Action<VariantMap> function)
+        {
+            SubscribeToEvent(GetEventType<T>(), function);
+        }
+
         public void SubscribeToEvent(StringHash eventType, Action<StringHash, VariantMap> function)
         {
             Urho3D_Object_SubscribeToEvent(GetNativeInstance(this), GCHandle.ToIntPtr(GCHandle.Alloc(function)),

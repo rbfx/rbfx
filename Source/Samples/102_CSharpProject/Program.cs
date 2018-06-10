@@ -24,6 +24,7 @@ using System.Diagnostics;
 using System.IO;
 using Urho3D;
 using ImGui;
+using Urho3D.Events;
 
 namespace DemoApplication
 {
@@ -96,9 +97,9 @@ namespace DemoApplication
             _light.Position = new Vector3(0, 2, -1);
             _light.LookAt(Vector3.Zero);
 
-            SubscribeToEvent(EUpdate.Event, args =>
+            SubscribeToEvent<Update>(args =>
             {
-                var timestep = args[EUpdate.TimeStep].Float;
+                var timestep = args[Update.TimeStep].Float;
                 Debug.Assert(this != null);
 
                 if (ui.Begin("Urho3D.NET"))

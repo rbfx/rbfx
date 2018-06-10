@@ -111,8 +111,14 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 }
             }
 
+            for (const auto& attribute : entity->attributes_)
+                printer_ << attribute;
+
             if (isStatic)
-                printer_ << fmt::format("public static partial class {}", entity->name_);
+            {
+                auto staticKeyword = entity->flags_ & HintNoStatic ? "" : "static ";
+                printer_ << fmt::format("public {}partial class {}", staticKeyword, entity->name_);
+            }
             else
             {
                 printer_ << fmt::format("public unsafe partial class {} : {}", entity->name_, str::join(bases, ", "));
