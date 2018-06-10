@@ -71,7 +71,9 @@
       "symbols": {
         "include": [
           "Urho3D",
-          "Urho3D::*"
+          "Urho3D::*",
+          "ImGui",
+          "ImGui::*"
         ],
         "exclude": [
           "Urho3D::*Impl",

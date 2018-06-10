@@ -113,7 +113,7 @@ namespace ImGui
 
 URHO3D_API bool IsMouseDown(Urho3D::MouseButton button);
 URHO3D_API bool IsMouseDoubleClicked(Urho3D::MouseButton button);
-URHO3D_API bool IsMouseDragging(Urho3D::MouseButton button, float lock_threshold=-1.f);
+URHO3D_API bool IsMouseDragging(Urho3D::MouseButton button, float lock_threshold=-1.0f);
 URHO3D_API bool IsMouseReleased(Urho3D::MouseButton button);
 URHO3D_API bool IsMouseClicked(Urho3D::MouseButton button, bool repeat=false);
 URHO3D_API bool IsItemClicked(Urho3D::MouseButton button);
