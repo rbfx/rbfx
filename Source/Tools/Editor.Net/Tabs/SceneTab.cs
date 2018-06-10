@@ -19,6 +19,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
+using System.Collections.Generic;
+using System.Linq;
+using Editor.Events;
 using IconFonts;
 using Urho3D;
 using ImGui;
@@ -27,16 +31,19 @@ using Urho3D.Events;
 
 namespace Editor.Tabs
 {
-    public class SceneTab : Tab
+    public class SceneTab : Tab, IInspectable, IHierarchyProvider
     {
         private readonly SceneView _view;
         private readonly Gizmo _gizmo;
-        private bool _mouseHoversViewport;
+        private readonly VariantMap _eventArgs = new VariantMap();
+        private bool _wasFocused;
+        private bool _isMouseHoveringViewport;
+        private Component _selectedComponent;
 
         public SceneTab(Context context, string title, Vector2? initialSize = null, string placeNextToDock = null,
             DockSlot slot = DockSlot.SlotNone) : base(context, title, initialSize, placeNextToDock, slot)
         {
-            _windowFlags = WindowFlags.NoScrollbar;
+            WindowFlags = WindowFlags.NoScrollbar;
             _view = new SceneView(Context);
             _gizmo = new Gizmo(Context);
             _view.Scene.LoadXml(Cache.GetResource<XMLFile>("Scenes/SceneLoadExample.xml").GetRoot());
@@ -102,11 +109,10 @@ namespace Editor.Tabs
                 _view.Size = viewSize;
                 var viewPos = ui.GetCursorScreenPos();
                 ui.Image(_view.Texture.NativeInstance, viewSize, Vector2.Zero, Vector2.One, Vector4.One, Vector4.Zero);
+                if (Input.IsMouseVisible)
+                    _isMouseHoveringViewport = ui.IsItemHovered(HoveredFlags.Default);
 
                 _gizmo.SetScreenRect(viewPos, viewSize);
-
-                if (Input.IsMouseVisible)
-                    _mouseHoversViewport = ui.IsItemHovered(HoveredFlags.Default);
 
                 var isClickedLeft = Input.GetMouseButtonClick((int) MouseButton.Left) && ui.IsItemHovered(HoveredFlags.AllowWhenBlockedByPopup);
                 var isClickedRight = Input.GetMouseButtonClick((int) MouseButton.Right) && ui.IsItemHovered(HoveredFlags.AllowWhenBlockedByPopup);
@@ -114,9 +120,9 @@ namespace Editor.Tabs
                 _gizmo.ManipulateSelection(_view.Camera);
 
                 if (ui.IsWindowHovered())
-                    _windowFlags |= WindowFlags.NoMove;
+                    WindowFlags |= WindowFlags.NoMove;
                 else
-                    _windowFlags &= ~WindowFlags.NoMove;
+                    WindowFlags &= ~WindowFlags.NoMove;
 
                 if (!_gizmo.IsActive && (isClickedLeft || isClickedRight) && Input.IsMouseVisible)
                 {
@@ -129,14 +135,14 @@ namespace Editor.Tabs
                     var query = new RayOctreeQuery(cameraRay, RayQueryLevel.Triangle, float.PositiveInfinity, DrawableFlags.Geometry);
                     _view.Scene.GetComponent<Octree>().RaycastSingle(query);
 
-                    if (query.Result == null)
+                    if (query.Result.Length == 0)
                     {
                         // When object geometry was not hit by a ray - query for object bounding box.
                         query = new RayOctreeQuery(cameraRay, RayQueryLevel.Obb, float.PositiveInfinity, DrawableFlags.Geometry);
                         _view.Scene.GetComponent<Octree>().RaycastSingle(query);
                     }
 
-                    if (query.Result != null)
+                    if (query.Result.Length > 0)
                     {
                         var clickNode = query.Result[0].Drawable.Node;
                         // Temporary nodes can not be selected.
@@ -149,6 +155,12 @@ namespace Editor.Tabs
                             if (!appendSelection)
                                 _gizmo.UnselectAll();
                             _gizmo.ToggleSelection(clickNode);
+                            _selectedComponent = null;
+
+                            // Notify inspector
+                            _eventArgs.Clear();
+                            _eventArgs[InspectItem.Inspectable] = Variant.FromObject(this);
+                            SendEvent<InspectItem>(_eventArgs);
 
                             if (isClickedRight)
                                 ui.OpenPopup("Node context menu"/*, true*/);
@@ -170,8 +182,143 @@ namespace Editor.Tabs
 
         private void OnUpdate(VariantMap args)
         {
-            if (_mouseHoversViewport)
+            if (IsDockActive && _isMouseHoveringViewport)
+            {
                 _view.Camera.GetComponent<DebugCameraController>().Update(args[Update.TimeStep].Float);
+                if (!_wasFocused)
+                {
+                    _wasFocused = true;
+                    _eventArgs.Clear();
+                    _eventArgs[InspectHierarchy.HierarchyProvider] = Variant.FromObject(this);
+                    SendEvent<InspectHierarchy>(_eventArgs);
+                }
+            }
+            else
+                _wasFocused = false;
+        }
+
+        public Serializable[] GetInspectableObjects()
+        {
+            if (_gizmo.Selection == null)
+                return new Serializable[0];
+
+            var inspectables = _gizmo.Selection.Cast<Serializable>().ToList();
+            if (_selectedComponent != null)
+                inspectables.Add(_selectedComponent);
+
+            return inspectables.ToArray();
+        }
+
+        private void RenderNodeTree(Node node)
+        {
+            if (node.IsTemporary)
+                return;
+
+            var flags = TreeNodeFlags.OpenOnArrow;
+            if (node.Parent == null)
+                flags |= TreeNodeFlags.DefaultOpen;
+
+            var name = (node.Name.Length == 0 ? node.GetType().Name : node.Name) + $" ({node.Id})";
+            var isSelected = _gizmo.IsSelected(node) || _selectedComponent != null && _selectedComponent.Node == node;
+
+            if (isSelected)
+                flags |= TreeNodeFlags.Selected;
+
+            //ui::Image("Node");
+            //ui::SameLine();
+            var opened = ui.TreeNodeEx(name, flags);
+            if (!opened)
+            {
+                // If TreeNode above is opened, it pushes it's label as an ID to the stack. However if it is not open then no
+                // ID is pushed. This creates a situation where context menu is not properly attached to said tree node due to
+                // missing ID on the stack. To correct this we ensure that ID is always pushed. This allows us to show context
+                // menus even for closed tree nodes.
+                ui.PushID(name);
+            }
+
+            if (ui.IsItemHovered(HoveredFlags.AllowWhenBlockedByPopup))
+            {
+                if (ImGui.SystemUi.IsMouseClicked(MouseButton.Left))
+                {
+                    if (!Input.GetKeyDown(InputEvents.KeyCtrl))
+                        _gizmo.UnselectAll();
+                    _gizmo.ToggleSelection(node);
+                    _selectedComponent = null;
+                }
+                else if (ImGui.SystemUi.IsMouseClicked(MouseButton.Right))
+                {
+                    _gizmo.UnselectAll();
+                    _gizmo.ToggleSelection(node);
+                    _selectedComponent = null;
+                    ui.OpenPopup("Node context menu"/*, true*/);
+                }
+            }
+
+            RenderNodeContextMenu();
+
+            if (opened)
+            {
+                foreach (var component in node.Components)
+                {
+                    if (component.IsTemporary)
+                        continue;
+
+                    ui.PushID(component.NativeInstance.ToInt32());
+
+                    //ui::Image(component->GetTypeName());
+                    //ui::SameLine();
+
+                    var selected = _selectedComponent != null && _selectedComponent.Equals(component);
+                    selected = ui.Selectable(component.GetType().Name, selected);
+
+                    if (ImGui.SystemUi.IsMouseClicked(MouseButton.Right) && ui.IsItemHovered(HoveredFlags.AllowWhenBlockedByPopup))
+                    {
+                        selected = true;
+                        ui.OpenPopup("Component context menu"/*, true*/);
+                    }
+
+                    if (selected)
+                    {
+                        _gizmo.UnselectAll();
+                        _gizmo.ToggleSelection(node);
+                        _selectedComponent = component;
+                    }
+
+                    if (ui.BeginPopup("Component context menu"))
+                    {
+                        if (ui.MenuItem("Remove"))
+                            component.Remove();
+                        ui.EndPopup();
+                    }
+
+                    ui.PopID();
+                }
+
+                // Do not use element->GetChildren() because child may be deleted during this loop.
+                foreach (var child in node.Children)
+                    RenderNodeTree(child);
+
+                ui.TreePop();
+            }
+            else
+                ui.PopID();
+        }
+
+        private void RenderNodeContextMenu()
+        {
+        }
+
+        public void RenderHierarchy()
+        {
+            ui.PushStyleVar(StyleVar.IndentSpacing, 10);
+            try
+            {
+                RenderNodeTree(_view.Scene);
+            }
+            finally
+            {
+                ui.PopStyleVar();
+            }
         }
     }
 }

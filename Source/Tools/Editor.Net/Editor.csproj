@@ -94,10 +94,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EditorEvents.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Project.cs" />
     <Compile Include="SceneView.cs" />
     <Compile Include="Tabs\HierarchyTab.cs" />
+    <Compile Include="Tabs\TabInterfaces.cs" />
     <Compile Include="Tabs\InspectorTab.cs" />
     <Compile Include="Tabs\ConsoleTab.cs" />
     <Compile Include="Tabs\ResourcesTab.cs" />

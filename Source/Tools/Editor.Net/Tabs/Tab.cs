@@ -42,7 +42,10 @@ namespace Editor.Tabs
         public string Title { get; protected set; }
         public System.Numerics.Vector2 InitialSize;
         public Location InitialLocation;
-        protected WindowFlags _windowFlags = WindowFlags.Default;
+        protected WindowFlags WindowFlags = WindowFlags.Default;
+        public bool MouseHoversViewport { get; protected set; }
+        public bool IsDockFocused { get; protected set; }
+        public bool IsDockActive { get; protected set; }
 
         public Tab(Context context, string title, Vector2? initialSize = null, string placeNextToDock = null,
             DockSlot slot = DockSlot.SlotNone) : base(context)
@@ -56,8 +59,13 @@ namespace Editor.Tabs
         public void OnRender()
         {
             ImGuiDock.SetNextDockPos(InitialLocation.NextDockName, InitialLocation.Slot, ImGui.Condition.FirstUseEver);
-            if (ImGuiDock.BeginDock(Title, ref _isOpen, _windowFlags, InitialSize))
+            if (ImGuiDock.BeginDock(Title, ref _isOpen, WindowFlags, InitialSize))
             {
+                if (Input.IsMouseVisible)
+                    MouseHoversViewport = ui.IsItemHovered(HoveredFlags.Default);
+                IsDockFocused = ui.IsWindowFocused(FocusedFlags.ChildWindows);
+                IsDockActive = ImGuiDock.IsDockActive();
+
                 Render();
             }
             ImGuiDock.EndDock();

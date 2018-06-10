@@ -20,34 +20,17 @@
 // THE SOFTWARE.
 //
 
-using Editor.Events;
 using Urho3D;
-using ImGui;
-
 
 namespace Editor.Tabs
 {
-    public class InspectorTab : Tab
+    public interface IInspectable
     {
-        private readonly AttributeInspector _inspector;
-        private IInspectable _inspectable;
-        public InspectorTab(Context context, string title, Vector2? initialSize = null, string placeNextToDock = null,
-            DockSlot slot = DockSlot.SlotNone) : base(context, title, initialSize, placeNextToDock, slot)
-        {
-            _inspector = new AttributeInspector(Context);
+        Serializable[] GetInspectableObjects();
+    }
 
-            SubscribeToEvent<InspectItem>(OnInspect);
-        }
-
-        protected void OnInspect(VariantMap args)
-        {
-            _inspectable = (IInspectable) args[InspectItem.Inspectable].Object;
-        }
-
-        protected override void Render()
-        {
-            if (_inspectable != null)
-                _inspector.RenderAttributes(_inspectable.GetInspectableObjects());
-        }
+    public interface IHierarchyProvider
+    {
+        void RenderHierarchy();
     }
 }
