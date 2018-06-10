@@ -781,30 +781,33 @@ std::string SanitizeConstant(const std::string& constant)
 
 std::string SanitizeConstant(std::string parentName, std::string constantName)
 {
-    auto parentWords = SplitWords(parentName);
     auto constantWords = SplitWords(constantName);
-
-    // If constant name starts with the same word pas constant parent - remove that word.
-    auto firstWord = constantWords.front();
-    std::transform(firstWord.begin(), firstWord.end(), firstWord.begin(), tolower);
-    std::transform(parentName.begin(), parentName.end(), parentName.begin(), tolower);
-    parentName = parentName.substr(0, firstWord.length());
-    if (firstWord == parentName)
-        constantWords.erase(constantWords.begin());
-    else
+    if (constantWords.size() > 1)
     {
-        // If constant starts with a word that consists of first letters of parent name - remove this abbreviation.
-        std::string abbreviation;
-        abbreviation.reserve(parentWords.size());
-        for (const auto& w : parentWords)
-        {
-            abbreviation += tolower(w.front());
-            if (abbreviation.length() >= firstWord.length())
-                break;
-        }
+        auto parentWords = SplitWords(parentName);
 
-        if (abbreviation == firstWord)
+        // If constant name starts with the same word pas constant parent - remove that word.
+        auto firstWord = constantWords.front();
+        std::transform(firstWord.begin(), firstWord.end(), firstWord.begin(), tolower);
+        std::transform(parentName.begin(), parentName.end(), parentName.begin(), tolower);
+        parentName = parentName.substr(0, firstWord.length());
+        if (firstWord == parentName)
             constantWords.erase(constantWords.begin());
+        else
+        {
+            // If constant starts with a word that consists of first letters of parent name - remove this abbreviation.
+            std::string abbreviation;
+            abbreviation.reserve(parentWords.size());
+            for (const auto& w : parentWords)
+            {
+                abbreviation += tolower(w.front());
+                if (abbreviation.length() >= firstWord.length())
+                    break;
+            }
+
+            if (abbreviation == firstWord)
+                constantWords.erase(constantWords.begin());
+        }
     }
     return CamelCaseIdentifier(constantWords);
 }
