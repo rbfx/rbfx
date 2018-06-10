@@ -124,8 +124,11 @@ namespace Urho3D.CSharp
             if (array.Length == 0)
                 return IntPtr.Zero;
 
-            var length = Marshal.SizeOf<T>() * array.Length;
+            var itemSize = Marshal.SizeOf<T>();
+            var length = itemSize * array.Length;
             var block = (Block*) NativeInterface.Native.InteropAlloc(length);
+            block->ItemCount = array.Length;
+            block->SizeOfItem = itemSize;
 
             var sourceHandle = GCHandle.Alloc(array, GCHandleType.Pinned);
             try
@@ -197,6 +200,8 @@ namespace Urho3D.CSharp
 
             var length = IntPtr.Size * array.Length;
             var block = (Block*)NativeInterface.Native.InteropAlloc(length);
+            block->ItemCount = array.Length;
+            block->SizeOfItem = IntPtr.Size;
 
             var offset = 0;
             foreach (var instance in array)
