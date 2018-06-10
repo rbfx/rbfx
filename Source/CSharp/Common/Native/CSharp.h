@@ -106,9 +106,6 @@ struct CSharpConverter<PODVector<T>>
     // TODO: This can be optimized by passing &value.Front() memory buffer
     static CType ToCSharp(const CppType& value)
     {
-        if (value.Empty())
-            return nullptr;
-
         auto* block = MarshalAllocator::Get().AllocArray<T>(value.Size());
         memcpy(block->memory_, &value.Front(), value.Size() * sizeof(T));
         return block;
@@ -132,9 +129,6 @@ struct CSharpConverter<Vector<SharedPtr<T>>>
 
     static CType ToCSharp(const CppType& value)
     {
-        if (value.Empty())
-            return nullptr;
-
         CType block = MarshalAllocator::Get().AllocArray<T*>(value.Size());
 
         auto** array = (T**)block->memory_;
@@ -166,9 +160,6 @@ struct CSharpConverter<Vector<WeakPtr<T>>>
 
     static CType ToCSharp(const CppType& value)
     {
-        if (value.Empty())
-            return nullptr;
-
         CType block = MarshalAllocator::Get().AllocArray<T*>(value.Size());
 
         auto** array = (T**)block->memory_;
@@ -201,9 +192,6 @@ struct CSharpConverter<Vector<T*>>
     // TODO: This can be optimized by passing &value.Front() memory buffer
     static CType ToCSharp(const CppType& value)
     {
-        if (value.Empty())
-            return nullptr;
-
         CType result = MarshalAllocator::Get().AllocArray<T*>(value.Size());
 
         auto** array = (T**)result->memory_;
