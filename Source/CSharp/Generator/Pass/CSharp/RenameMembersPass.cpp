@@ -50,9 +50,6 @@ bool RenameMembersPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     switch (entity->kind_)
     {
     case cppast::cpp_entity_kind::variable_t:
-        if (entity->name_.find("E_") == 0 || entity->name_.find("P_") == 0)
-            // Events and parameters
-            return true;
     case cppast::cpp_entity_kind::member_variable_t:
     case cppast::cpp_entity_kind::member_function_t:
     case cppast::cpp_entity_kind::function_t:

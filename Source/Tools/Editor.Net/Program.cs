@@ -83,7 +83,7 @@ namespace Editor
             _tabs.Add(new ConsoleTab(Context, "Console", new Vector2(screenSize.X * 0.6f, screenSize.Y * 0.15f),
                 "Scene", DockSlot.SlotBottom));
 
-            SubscribeToEvent(CoreEvents.E_UPDATE, OnRender);
+            SubscribeToEvent(EUpdate.Event, OnRender);
         }
 
         private void OnRenderMenubar()

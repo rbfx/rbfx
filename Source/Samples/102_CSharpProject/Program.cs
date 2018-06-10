@@ -96,9 +96,9 @@ namespace DemoApplication
             _light.Position = new Vector3(0, 2, -1);
             _light.LookAt(Vector3.Zero);
 
-            SubscribeToEvent(CoreEvents.E_UPDATE, args =>
+            SubscribeToEvent(EUpdate.Event, args =>
             {
-                var timestep = args[Update.P_TIMESTEP].Float;
+                var timestep = args[EUpdate.TimeStep].Float;
                 Debug.Assert(this != null);
 
                 if (ui.Begin("Urho3D.NET"))

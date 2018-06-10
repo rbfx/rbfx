@@ -62,6 +62,23 @@ bool Urho3DCustomPassEarly::Visit(MetaEntity* entity, cppast::visitor_info info)
                 assert(eventNamespace->kind_ == cppast::cpp_entity_kind::namespace_t);
                 entity->defaultValue_ = fmt::format("\"{}\"", eventNamespace->name_);
                 entity->flags_ |= HintReadOnly;
+
+                // Properly name parameter constants by using their values. Actual constant names have all words mashed
+                // into single all-caps word while constant values use CamelCase.
+                for (auto& child : eventNamespace->children_)
+                {
+                    auto val = child->GetDefaultValue();
+                    child->name_ = val.substr(1, val.length() - 2);   // Get rid of quotes and prepend P.
+                }
+
+                // Constant naming event is always named "Event" and added to same namespace where event parameters are.
+                entity->name_ = "Event";
+                eventNamespace->Add(entity);
+                // In C# namespaces can not have constants therefore they must be turned into (static) classes.
+                eventNamespace->kind_ = cppast::cpp_entity_kind::class_t;
+                eventNamespace->ast_ = nullptr;
+                // Static classes containing events are prepended with E to denote event.
+                eventNamespace->name_ = "E" + eventNamespace->name_;
             }
         }
     }
