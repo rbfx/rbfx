@@ -50,6 +50,7 @@ namespace Editor.Tabs
             CreateObjects();
 
             SubscribeToEvent<Update>(OnUpdate);
+            SubscribeToEvent<GizmoSelectionChanged>(args => { _selectedComponent = null; });
         }
 
         private void RenderToolbar()
@@ -155,7 +156,6 @@ namespace Editor.Tabs
                             if (!appendSelection)
                                 _gizmo.UnselectAll();
                             _gizmo.ToggleSelection(clickNode);
-                            _selectedComponent = null;
 
                             // Notify inspector
                             _eventArgs.Clear();
@@ -163,7 +163,7 @@ namespace Editor.Tabs
                             SendEvent<InspectItem>(_eventArgs);
 
                             if (isClickedRight)
-                                ui.OpenPopup("Node context menu"/*, true*/);
+                                ui.OpenPopup("Node context menu");
                         }
                     }
                     else
@@ -243,14 +243,12 @@ namespace Editor.Tabs
                     if (!Input.GetKeyDown(InputEvents.KeyCtrl))
                         _gizmo.UnselectAll();
                     _gizmo.ToggleSelection(node);
-                    _selectedComponent = null;
                 }
                 else if (ImGui.SystemUi.IsMouseClicked(MouseButton.Right))
                 {
                     _gizmo.UnselectAll();
                     _gizmo.ToggleSelection(node);
-                    _selectedComponent = null;
-                    ui.OpenPopup("Node context menu"/*, true*/);
+                    ui.OpenPopup("Node context menu");
                 }
             }
 
@@ -274,7 +272,7 @@ namespace Editor.Tabs
                     if (ImGui.SystemUi.IsMouseClicked(MouseButton.Right) && ui.IsItemHovered(HoveredFlags.AllowWhenBlockedByPopup))
                     {
                         selected = true;
-                        ui.OpenPopup("Component context menu"/*, true*/);
+                        ui.OpenPopup("Component context menu");
                     }
 
                     if (selected)
