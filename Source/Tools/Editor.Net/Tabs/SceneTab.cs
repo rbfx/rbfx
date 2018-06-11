@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Editor.Events;
@@ -50,6 +51,7 @@ namespace Editor.Tabs
             CreateObjects();
 
             SubscribeToEvent<Update>(OnUpdate);
+            SubscribeToEvent<PostUpdate>(args => RenderNodeContextMenu());
             SubscribeToEvent<GizmoSelectionChanged>(args => { _selectedComponent = null; });
         }
 
@@ -170,6 +172,7 @@ namespace Editor.Tabs
                         _gizmo.UnselectAll();
                 }
 
+                RenderNodeContextMenu();
             }
             ui.EndChild();
         }
@@ -224,8 +227,8 @@ namespace Editor.Tabs
             if (isSelected)
                 flags |= TreeNodeFlags.Selected;
 
-            //ui::Image("Node");
-            //ui::SameLine();
+            //ui.Image("Node");
+            //ui.SameLine();
             var opened = ui.TreeNodeEx(name, flags);
             if (!opened)
             {
@@ -263,10 +266,10 @@ namespace Editor.Tabs
 
                     ui.PushID(component.NativeInstance.ToInt32());
 
-                    //ui::Image(component->GetTypeName());
-                    //ui::SameLine();
+                    //ui.Image(component->GetTypeName());
+                    //ui.SameLine();
 
-                    var selected = _selectedComponent != null && _selectedComponent.Equals(component);
+                    var selected = _selectedComponent != null && _selectedComponent == component;
                     selected = ui.Selectable(component.GetType().Name, selected);
 
                     if (ImGui.SystemUi.IsMouseClicked(MouseButton.Right) && ui.IsItemHovered(HoveredFlags.AllowWhenBlockedByPopup))
@@ -304,6 +307,77 @@ namespace Editor.Tabs
 
         private void RenderNodeContextMenu()
         {
+            if (ui.BeginPopup("Node context menu") /*&& !scenePlaying_*/)
+            {
+                if (Input.GetKeyPress(InputEvents.KeyEscape) || !Input.IsMouseVisible)
+                {
+                    // Close when interacting with scene camera.
+                    ui.CloseCurrentPopup();
+                    ui.EndPopup();
+                    return;
+                }
+
+                var isAlternative = Input.GetKeyDown(InputEvents.KeyShift);
+
+                if (ui.MenuItem(isAlternative ? "Create Child (Local)" : "Create Child"))
+                {
+                    foreach (var selectedNode in _gizmo.Selection)
+                    {
+                        var newNode = selectedNode.CreateChild(null,
+                            isAlternative ? CreateMode.Local : CreateMode.Replicated);
+                        _gizmo.Select(newNode);
+                        _selectedComponent = null;
+                    }
+                }
+
+                if (ui.BeginMenu(isAlternative ? "Create Component (Local)" : "Create Component"))
+                {
+                    //auto* editor = GetSubsystem<Editor>();
+                    var categories = Context.GetObjectCategories();
+
+                    foreach (var category in categories)
+                    {
+                        if (category == "UI")
+                            // Scene nodes can not contain UI elements
+                            continue;
+
+                        if (ui.BeginMenu(category))
+                        {
+                            var components = Context.GetObjectsByCategory(category);
+                            Array.Sort(components, StringComparer.InvariantCulture);
+
+                            foreach (var component in components)
+                            {
+                                //ui.Image(component);
+                                //ui.SameLine();
+                                if (ui.MenuItem(component))
+                                {
+                                    foreach (var node in _gizmo.Selection)
+                                    {
+                                        node.CreateComponent(new StringHash(component),
+                                            isAlternative ? CreateMode.Local : CreateMode.Replicated);
+                                    }
+                                }
+                            }
+                            ui.EndMenu();
+                        }
+                    }
+                    ui.EndMenu();
+                }
+
+                ui.Separator();
+
+                if (ui.MenuItem("Remove"))
+                {
+                    _selectedComponent?.Remove();
+                    _selectedComponent = null;
+                    foreach (var selected in _gizmo.Selection)
+                        selected.Remove();
+                    _gizmo.UnselectAll();
+                }
+
+                ui.EndPopup();
+            }
         }
 
         public void RenderHierarchy()
