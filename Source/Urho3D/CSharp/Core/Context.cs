@@ -104,6 +104,21 @@ namespace Urho3D
             return managed.NativeInstance;
         }
 
+        public string[] GetObjectCategories()
+        {
+            if (NativeInstance == IntPtr.Zero)
+                throw new ObjectDisposedException("Context");
+            return Urho3D__Context__GetObjectCategories(NativeInstance);
+        }
+
+        public string[] GetObjectsByCategory(string category)
+        {
+            if (NativeInstance == IntPtr.Zero)
+                throw new ObjectDisposedException("Context");
+            return Urho3D__Context__GetObjectsByCategory(NativeInstance, category);
+        }
+
+        #region Interop
         [SuppressUnmanagedCodeSecurity]
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern void Urho3D_Context_RegisterFactory(IntPtr context,
@@ -113,6 +128,19 @@ namespace Urho3D
 
         [SuppressUnmanagedCodeSecurity]
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void Urho3DRegisterCSharp(IntPtr contextPtr);
+        private static extern void Urho3DRegisterCSharp(IntPtr contextPtr);
+
+        [SuppressUnmanagedCodeSecurity]
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringUtf8ArrayMarshaller))]
+        private static extern string[] Urho3D__Context__GetObjectCategories(IntPtr context);
+
+        [SuppressUnmanagedCodeSecurity]
+        [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringUtf8ArrayMarshaller))]
+        private static extern string[] Urho3D__Context__GetObjectsByCategory(IntPtr context,
+            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringUtf8))]string category);
+
+        #endregion
     }
 }
