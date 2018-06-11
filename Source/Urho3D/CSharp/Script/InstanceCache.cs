@@ -163,13 +163,17 @@ namespace Urho3D.CSharp
         {
             lock (_cache)
             {
-                var keyCollection = _cache.Keys;
-                var keys = new IntPtr[keyCollection.Count];
-                keyCollection.CopyTo(keys, 0);
-                foreach (var key in keys)
+                var values = new CacheEntry[_cache.Count];
+                _cache.Values.CopyTo(values, 0);
+                foreach (var value in values)
                 {
-                    var entry = _cache[key];
-                    entry.Target?.Dispose();
+                    var target = value.Target;
+                    if (target is RefCounted refCounted)
+                        // Disposing only refcounted instances in order to allow engine to free them before destruction
+                        // of Context instance. Most of these objects are subclasses of Object, which interacts with
+                        // Context on destruction. Non-refcounted objects may linger for a while longer. Managed runtime
+                        // will dispose of them in finalizers.
+                        refCounted.Dispose();
                 }
                 _cache.Clear();
             }

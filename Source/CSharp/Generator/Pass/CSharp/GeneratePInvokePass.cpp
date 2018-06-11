@@ -120,17 +120,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
                                     entity->name_);
             printer_.Indent();
             {
-                if (entity->symbolName_ == "Urho3D::RefCounted")
-                {
-                    // If instance is null then managed side is initiating object construction and will call AddRef
-                    // after SetupInstance().
-                    printer_ << "if (instance != IntPtr.Zero)";
-                    printer_.Indent("");
-                    {
-                        printer_ << "AddRef();";
-                    }
-                    printer_.Dedent("");
-                }
+                // Empty forwarding constructor
             }
             printer_.Dedent();
             printer_ << "";

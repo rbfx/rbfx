@@ -49,6 +49,8 @@ namespace Urho3D
         // This method may be overriden in partial class in order to attach extra logic to object constructor
         internal override void OnSetupInstance()
         {
+            base.OnSetupInstance();
+
             // Set up engine bindings
             Urho3DRegisterCSharp(NativeInstance);
 

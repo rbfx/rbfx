@@ -45,11 +45,9 @@ namespace Urho3D.CSharp
         {
             if (instance != IntPtr.Zero)
             {
-                NativeInstance = instance;
-                OwnsNativeInstance = ownsInstance;
-                OnSetupInstance();
                 // Instance is not added to InstanceCache here because this code will run only when invoked from
                 // T.GetManagedInstance() method. This method takes care of adding instance to InstanceCache.
+                SetupInstance(instance, ownsInstance, false);
             }
         }
 
@@ -77,11 +75,13 @@ namespace Urho3D.CSharp
         /// </summary>
         /// <param name="instance"></param>
         /// <param name="ownsInstance"></param>
-        internal void SetupInstance(IntPtr instance, bool ownsInstance)
+        /// <param name="addToCache"></param>
+        internal virtual void SetupInstance(IntPtr instance, bool ownsInstance, bool addToCache=true)
         {
             OwnsNativeInstance = ownsInstance;
             NativeInstance = instance;
-            InstanceCache.Add(this);
+            if (addToCache)
+                InstanceCache.Add(this);
             OnSetupInstance();
         }
 

@@ -139,7 +139,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
             if (!isStatic)
             {
-                printer_ << "internal new void SetupInstance(IntPtr instance, bool ownsInstance)";
+                printer_ << "internal override void SetupInstance(IntPtr instance, bool ownsInstance, bool addToCache=true)";
                 printer_.Indent();
                 {
                     auto className = entity->name_;
@@ -149,7 +149,12 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     if (generator->IsInheritable(entity->uniqueName_) || IsSubclassOf(entity->Ast<cppast::cpp_class>(), "Urho3D::RefCounted"))
                         printer_ << fmt::format("{}_setup(instance, GCHandle.ToIntPtr(GCHandle.Alloc(this)), GetType().Name, ref NativeObjectSize);",
                             Sanitize(entity->uniqueName_));
-                    printer_ << "InstanceCache.Add(this);";
+                    printer_ << "if (addToCache)";
+                    printer_.Indent();
+                    {
+                        printer_ << "InstanceCache.Add(this);";
+                    }
+                    printer_.Dedent();
 
                     if (generator->IsInheritable(entity->symbolName_))
                     {
@@ -250,8 +255,6 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_ << fmt::format("var instance = {cFunctionName}({paramNameList});",
                 FMT_CAPTURE(cFunctionName), FMT_CAPTURE(paramNameList));
             printer_ << "SetupInstance(instance, true);";
-            if (IsSubclassOf(cls->Ast<cppast::cpp_class>(), "Urho3D::RefCounted"))
-                printer_ << "AddRef();";
             PrintParameterHandlingCodePost(entity->children_);
         }
         printer_.Dedent();

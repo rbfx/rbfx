@@ -166,9 +166,9 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             printer_.Indent();
             {
                 const auto& cls = entity->Ast<cppast::cpp_class>();
-                printer_ << fmt::format("*objSize = sizeof({});", entity->sourceSymbolName_);
                 if (isRefCounted)
                 {
+                    printer_ << "instance->AddRef();";
                     printer_ << "assert(!instance->HasDeleter());";
                     printer_ << "instance->SetDeleter([](RefCounted* instance_, void* gcHandle_) {";
                     printer_.Indent("");
@@ -187,6 +187,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     if (IsSubclassOf(cls, "Urho3D::Object"))
                         printer_ << fmt::format("instance->typeInfo_ = new Urho3D::TypeInfo(typeName, {}::GetTypeInfoStatic());", entity->sourceSymbolName_);
                 }
+                printer_ << fmt::format("*objSize = sizeof({});", entity->sourceSymbolName_);
             }
             printer_.Dedent();
             printer_ << "";
