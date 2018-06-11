@@ -118,6 +118,11 @@ namespace Urho3D
             return Urho3D__Context__GetObjectsByCategory(NativeInstance, category);
         }
 
+        public T GetSubsystem<T>() where T: Object
+        {
+            return (T) GetSubsystem(new StringHash(typeof(T).Name));
+        }
+
         #region Interop
         [SuppressUnmanagedCodeSecurity]
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]

@@ -116,6 +116,11 @@ namespace Urho3D
             callback.Invoke(VariantMap.GetManagedInstance(args, false));
         }
 
+        public T GetSubsystem<T>() where T: Object
+        {
+            return (T) Context.GetSubsystem(new StringHash(typeof(T).Name));
+        }
+
         [SuppressUnmanagedCodeSecurity]
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern void Urho3D_Object_SubscribeToEvent(IntPtr receiver, IntPtr gcHandle, uint eventType,
