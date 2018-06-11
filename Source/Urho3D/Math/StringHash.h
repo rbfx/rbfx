@@ -112,4 +112,6 @@ private:
     unsigned value_;
 };
 
+static_assert(sizeof(StringHash) == sizeof(unsigned), "Unexpected StringHash size.");
+
 }
