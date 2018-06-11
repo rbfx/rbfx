@@ -233,14 +233,11 @@ namespace Urho3D
             return source.NativeInstance;
         }
 
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            if (Interlocked.Increment(ref DisposedCounter) == 1)
-            {
-                InstanceCache.Remove(NativeInstance);
-                if (OwnsNativeInstance)
-                    Urho3D_HashMap_StringHash_Variant_destructor(NativeInstance);
-            }
+            InstanceCache.Remove(NativeInstance);
+            if (OwnsNativeInstance)
+                Urho3D_HashMap_StringHash_Variant_destructor(NativeInstance);
             NativeInstance = IntPtr.Zero;
         }
     }

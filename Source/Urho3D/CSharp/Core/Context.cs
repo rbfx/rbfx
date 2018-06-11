@@ -65,8 +65,12 @@ namespace Urho3D
             Instance = this;
         }
 
-        protected override void OnDispose()
+        internal override void OnDispose(bool disposing)
         {
+            // In order to allow clean exit we first must release all cached instances because they hold references to
+            // native objects and that prevents them being deallocated. If we failed to do that then Context destructor
+            // would run before destroctors of other objects (subsystems, etc). Everything that inherits from
+            // Urho3D.Object accesses Context on destruction and that would cause a crash.
             Instance = null;
             InstanceCache.Dispose();
         }

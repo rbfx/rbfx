@@ -19,8 +19,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
 using System;
-using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace Urho3D.CSharp
 {
@@ -34,8 +35,8 @@ namespace Urho3D.CSharp
     {
         public IntPtr NativeInstance { get; protected set; } = IntPtr.Zero;
         protected bool OwnsNativeInstance { get; set; }
-        public bool IsDisposed => DisposedCounter == 0;
-        protected volatile int DisposedCounter = 0;
+        public bool IsDisposed => _disposedCounter == 0;
+        private int _disposedCounter;
         internal int NativeObjectSize = 0;
 
         internal NativeObject(IntPtr instance, bool ownsInstance=false)
@@ -53,7 +54,8 @@ namespace Urho3D.CSharp
 
         ~NativeObject()
         {
-            Dispose();
+            if (Interlocked.Increment(ref _disposedCounter) == 1)
+                Dispose(false);
         }
 
         // Derived types will put object initialization code here. At the time of writing such code sets up virtual
@@ -71,12 +73,6 @@ namespace Urho3D.CSharp
             PerformInstanceSetup(instance, ownsInstance);
         }
 
-        // This method may be overriden in a partial class or a subclass in order to inject logic into object
-        // destruction.
-        protected virtual void OnDispose()
-        {
-        }
-
         public bool Equals(NativeObject other)
         {
             if (ReferenceEquals(null, other)) return false;
@@ -88,19 +84,44 @@ namespace Urho3D.CSharp
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
+            if (obj.GetType() != GetType()) return false;
             return Equals((NativeObject) obj);
         }
 
         public override int GetHashCode()
         {
-            unchecked
-            {
-                return (NativeInstance.GetHashCode() * 397) ^ DisposedCounter;
-            }
+            return (NativeInstance.GetHashCode() * 397) ^ _disposedCounter;
         }
 
-        public virtual void Dispose()
+        public void Dispose()
+        {
+            if (Interlocked.Increment(ref _disposedCounter) != 1)
+                return;
+
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// This method is used for disposing native resources. Wrapper classes mimic class inheritance of the native
+        /// code therefore these wrapper classes must not call base.Dispose(disposing). Doing so would result in
+        /// calling wrong destructor or releasing reference mutlple times.
+        ///
+        /// However user code inheriting from wrapper classes must always call base.Dispose(disposing). Failure to do
+        /// so will cause a resource leak because native instance will never be deallocated. Subclasses of RefCounted
+        /// or inheritable classes will also prevent deallocation of managed wrapepr object.
+        /// </summary>
+        /// <param name="disposing">Set to true when method is called from Dispose().</param>
+        protected virtual void Dispose(bool disposing)
+        {
+        }
+
+        /// <summary>
+        /// This method may be overriden in a partial class or a subclass in order to inject logic into object
+        /// destruction. It is required because wrapper class already overrides Dispose(bool).
+        /// </summary>
+        /// <param name="disposing">Set to true when method is called from Dispose().</param>
+        internal virtual void OnDispose(bool disposing)
         {
         }
     }
