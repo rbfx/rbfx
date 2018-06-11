@@ -47,13 +47,10 @@ namespace Urho3D
         private readonly Dictionary<uint, Type> _factoryTypes = new Dictionary<uint, Type>();
 
         // This method may be overriden in partial class in order to attach extra logic to object constructor
-        internal override void SetupInstance(IntPtr instance, bool ownsInstance)
+        internal override void OnSetupInstance()
         {
-            // Set up this instance
-            PerformInstanceSetup(instance, ownsInstance);
-
             // Set up engine bindings
-            Urho3DRegisterCSharp(instance);
+            Urho3DRegisterCSharp(NativeInstance);
 
             // Register factories marked with attributes
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())

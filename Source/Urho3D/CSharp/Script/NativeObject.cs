@@ -45,6 +45,9 @@ namespace Urho3D.CSharp
             {
                 NativeInstance = instance;
                 OwnsNativeInstance = ownsInstance;
+                OnSetupInstance();
+                // Instance is not added to InstanceCache here because this code will run only when invoked from
+                // T.GetManagedInstance() method. This method takes care of adding instance to InstanceCache.
             }
         }
 
@@ -58,19 +61,26 @@ namespace Urho3D.CSharp
                 Dispose(false);
         }
 
-        // Derived types will put object initialization code here. At the time of writing such code sets up virtual
-        // method callbacks and nothing more.
-        internal virtual void PerformInstanceSetup(IntPtr instance, bool ownsInstance)
+        /// <summary>
+        /// Partial wrapepr classes should override this method to inject extra logic to wrapper class setup. This
+        /// method is called from a constructor therefore only (object) setup tasks not depending on object state should
+        /// be performed here. It is guaranteed tat NativeInstance will be set before this method is called.
+        /// </summary>
+        internal virtual void OnSetupInstance()
+        {
+        }
+
+        /// <summary>
+        /// Wrapper classes will most likely implement new version of this method.
+        /// </summary>
+        /// <param name="instance"></param>
+        /// <param name="ownsInstance"></param>
+        internal void SetupInstance(IntPtr instance, bool ownsInstance)
         {
             OwnsNativeInstance = ownsInstance;
             NativeInstance = instance;
             InstanceCache.Add(this);
-        }
-
-        // This method may be overriden in partial class in order to attach extra logic to object constructor
-        internal virtual void SetupInstance(IntPtr instance, bool ownsInstance)
-        {
-            PerformInstanceSetup(instance, ownsInstance);
+            OnSetupInstance();
         }
 
         public bool Equals(NativeObject other)
