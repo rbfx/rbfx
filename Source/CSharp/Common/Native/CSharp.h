@@ -214,6 +214,36 @@ struct CSharpConverter<Vector<T*>>
     }
 };
 
+template<>
+struct CSharpConverter<Vector<StringHash>>
+{
+    using CppType=Vector<StringHash>;
+    using CType=MarshalAllocator::Block*;
+
+    // TODO: This can be optimized by passing &value.Front() memory buffer
+    static CType ToCSharp(const CppType& value)
+    {
+        CType result = MarshalAllocator::Get().AllocArray<unsigned>(value.Size());
+
+        auto* array = (unsigned*)result->memory_;
+        for (const auto& hash : value)
+            *array++ = hash.ToHash();
+
+        return result;
+    }
+
+    static CppType FromCSharp(CType value)
+    {
+        if (value == nullptr)
+            return CppType{};
+
+        CppType result{(unsigned)value->itemCount_};
+        auto* array = (unsigned*)value;
+        for (auto& hash : result)
+            hash = StringHash(*array++);
+        return result;
+    }
+};
 ////////////////////////////////////// String converters ///////////////////////////////////////////////////////////////
 
 template<> struct CSharpConverter<Urho3D::String>
