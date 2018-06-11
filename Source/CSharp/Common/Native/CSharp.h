@@ -252,6 +252,52 @@ template<> struct CSharpConverter<char const*>
     }
 };
 
+template<> struct CSharpConverter<Urho3D::Vector<Urho3D::String>>
+{
+    // TODO: This can be optimized by passing &value.CString() memory buffer
+    static inline MarshalAllocator::Block* ToCSharp(const Urho3D::Vector<Urho3D::String>& value)
+    {
+        unsigned memoryLength = 0;
+        for (const auto& str : value)
+            memoryLength += str.Length() + 4;
+
+        auto* block = MarshalAllocator::Get().Alloc(memoryLength);
+        block->sizeOfItem_ = 0;
+        block->itemCount_ = value.Size();
+
+        uint8_t* memory = (uint8_t*)block->memory_;
+        for (const auto& str : value)
+        {
+            *(int32_t*)memory = str.Length();
+            memory += 4;
+            memcpy((void*)memory, str.CString(), str.Length());
+            memory += str.Length();
+        }
+
+        return block;
+    }
+
+    static inline Urho3D::Vector<Urho3D::String> FromCSharp(MarshalAllocator::Block* value)
+    {
+        Urho3D::Vector<Urho3D::String> result;
+        if (value == nullptr)
+            return result;
+
+        assert(value->sizeOfItem_ == 0);
+
+        result.Resize(value->itemCount_);
+        uint8_t* memory = (uint8_t*)value->memory_;
+        for (int i = 0; i < value->itemCount_; ++i)
+        {
+            auto length = *(int32_t*)memory;
+            memory += 4;
+            result[i].Append((const char*)memory, length);
+        }
+
+        return result;
+    }
+};
+
 ///////////////////////////////////////// Utilities ////////////////////////////////////////////////////////////////////
 template<typename T>
 std::uintptr_t GetTypeID()
