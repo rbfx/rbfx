@@ -141,7 +141,6 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 printer_ << "OnDispose(disposing);";
                 printer_ << "InstanceCache.Remove(NativeInstance);";
                 printer_ << baseName + "_destructor(NativeInstance, OwnsNativeInstance);";
-                printer_ << "NativeInstance = IntPtr.Zero;";
             }
             printer_.Dedent();
             printer_ << "";

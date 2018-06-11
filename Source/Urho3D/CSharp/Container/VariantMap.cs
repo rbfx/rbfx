@@ -238,7 +238,6 @@ namespace Urho3D
             InstanceCache.Remove(NativeInstance);
             if (OwnsNativeInstance)
                 Urho3D_HashMap_StringHash_Variant_destructor(NativeInstance);
-            NativeInstance = IntPtr.Zero;
         }
     }
 }

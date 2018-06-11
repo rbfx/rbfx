@@ -90,7 +90,7 @@ namespace Urho3D.CSharp
 
         public override int GetHashCode()
         {
-            return (NativeInstance.GetHashCode() * 397) ^ _disposedCounter;
+            return NativeInstance.GetHashCode() * 397;
         }
 
         public void Dispose()
