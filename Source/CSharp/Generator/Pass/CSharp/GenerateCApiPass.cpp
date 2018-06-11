@@ -352,7 +352,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             std::string expr = fmt::format("{namespaceName}::{name}", FMT_CAPTURE(namespaceName), FMT_CAPTURE(name));
 
             // Variables are non-temporary therefore they do not need copying.
-            printer_ << "return " + MapToC(var.type(), expr) + ";";
+            printer_ << "return " + MapToC(var.type(), DereferenceValueType(var.type(), expr)) + ";";
         }
         printer_.Dedent();
         printer_ << "";
@@ -372,8 +372,12 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                                            FMT_CAPTURE(name), FMT_CAPTURE(value), FMT_CAPTURE(size));
             }
             else
-                printer_ << fmt::format("{namespaceName}::{name} = {value};",
-                                        FMT_CAPTURE(namespaceName), FMT_CAPTURE(name), FMT_CAPTURE(value));
+            {
+                auto destination = DereferenceValueType(var.type(), fmt::format("{namespaceName}::{name}",
+                                                                                FMT_CAPTURE(namespaceName),
+                                                                                FMT_CAPTURE(name)));
+                printer_ << fmt::format("{destination} = {value};", FMT_CAPTURE(destination), FMT_CAPTURE(value));
+            }
 
             printer_.Dedent();
             printer_ << "";
@@ -411,7 +415,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 expr += name;
 
             // Variables are non-temporary therefore they do not need copying.
-            auto mapped = MapToC(var.type(), expr);
+            auto mapped = MapToC(var.type(), DereferenceValueType(var.type(), expr));
             printer_ << fmt::format("return {mapped};", FMT_CAPTURE(mapped));
         }
         printer_.Dedent();
@@ -436,7 +440,10 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                                         FMT_CAPTURE(name), FMT_CAPTURE(value), FMT_CAPTURE(size));
             }
             else
-                printer_.Write(fmt::format("instance->{name} = {value};", FMT_CAPTURE(name), FMT_CAPTURE(value)));
+            {
+                auto destination = DereferenceValueType(var.type(), fmt::format("instance->{name}", FMT_CAPTURE(name)));
+                printer_.Write(fmt::format("{destination} = {value};", FMT_CAPTURE(destination), FMT_CAPTURE(value)));
+            }
 
             printer_.Dedent();
             printer_ << "";
@@ -671,6 +678,25 @@ std::string GenerateCApiPass::GetAutoType(const cppast::cpp_type& type)
         return "auto&&";
     else
         return "auto*";
+}
+
+std::string GenerateCApiPass::DereferenceValueType(const cppast::cpp_type& type, const std::string& expr)
+{
+    const auto& typeNonCv = cppast::remove_cv(type);
+    if (typeNonCv.kind() == cppast::cpp_type_kind::pointer_t)
+    {
+        const auto& pointee = dynamic_cast<const cppast::cpp_pointer_type&>(typeNonCv);
+        bool dereference = pointee.kind() == cppast::cpp_type_kind::builtin_t;
+        if (!dereference)
+        {
+            if (auto* map = generator->GetTypeMap(type, false))
+                dereference = map->isValueType_;
+        }
+
+        if (dereference)
+            return fmt::format("*({expr})", FMT_CAPTURE(expr));
+    }
+    return expr;
 }
 
 }

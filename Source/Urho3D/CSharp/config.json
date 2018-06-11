@@ -80,7 +80,6 @@
           "Urho3D::EventHandler*",
           "Urho3D::ObjectFactory",
           "Urho3D::EventNameRegistrar",
-          "Urho3D::*VariantValue*",
           "Urho3D::String",
           "Urho3D::WString",
           "Urho3D::StringHash",

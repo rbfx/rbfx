@@ -48,6 +48,7 @@ protected:
     void PrintParameterHandlingCodePre(const std::vector<std::shared_ptr<MetaEntity>>& parameters);
     void PrintParameterHandlingCodePost(const std::vector<std::shared_ptr<MetaEntity>>& parameters);
     std::string GetAutoType(const cppast::cpp_type& type);
+    std::string DereferenceValueType(const cppast::cpp_type& type, const std::string& expr);
 
     CSharpPrinter printer_;
     std::vector<std::string> usedNames_;
