@@ -56,6 +56,7 @@ namespace Editor
         public override void Start()
         {
             ToolboxApi.RegisterToolboxTypes(Context);
+            Context.RegisterSubsystem(new IconCache(Context));
 
             Input.SetMouseMode(MouseMode.Absolute);
             Input.SetMouseVisible(true);

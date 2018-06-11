@@ -40,10 +40,12 @@ namespace Editor.Tabs
         private bool _wasFocused;
         private bool _isMouseHoveringViewport;
         private Component _selectedComponent;
+        private readonly IconCache _iconCache;
 
         public SceneTab(Context context, string title, Vector2? initialSize = null, string placeNextToDock = null,
             DockSlot slot = DockSlot.SlotNone) : base(context, title, initialSize, placeNextToDock, slot)
         {
+            _iconCache = GetSubsystem<IconCache>();
             WindowFlags = WindowFlags.NoScrollbar;
             _view = new SceneView(Context);
             _gizmo = new Gizmo(Context);
@@ -53,6 +55,10 @@ namespace Editor.Tabs
             SubscribeToEvent<Update>(OnUpdate);
             SubscribeToEvent<PostUpdate>(args => RenderNodeContextMenu());
             SubscribeToEvent<GizmoSelectionChanged>(args => { _selectedComponent = null; });
+
+            _eventArgs.Clear();
+            _eventArgs[InspectHierarchy.HierarchyProvider] = Variant.FromObject(this);
+            SendEvent<InspectHierarchy>(_eventArgs);
         }
 
         private void RenderToolbar()
@@ -227,8 +233,9 @@ namespace Editor.Tabs
             if (isSelected)
                 flags |= TreeNodeFlags.Selected;
 
-            //ui.Image("Node");
-            //ui.SameLine();
+            _iconCache.RenderIcon("Node");
+            ui.SameLine();
+
             var opened = ui.TreeNodeEx(name, flags);
             if (!opened)
             {
@@ -266,8 +273,8 @@ namespace Editor.Tabs
 
                     ui.PushID(component.NativeInstance.ToInt32());
 
-                    //ui.Image(component->GetTypeName());
-                    //ui.SameLine();
+                    _iconCache.RenderIcon(component.GetType().Name);
+                    ui.SameLine();
 
                     var selected = _selectedComponent != null && _selectedComponent == component;
                     selected = ui.Selectable(component.GetType().Name, selected);
@@ -332,7 +339,6 @@ namespace Editor.Tabs
 
                 if (ui.BeginMenu(isAlternative ? "Create Component (Local)" : "Create Component"))
                 {
-                    //auto* editor = GetSubsystem<Editor>();
                     var categories = Context.GetObjectCategories();
 
                     foreach (var category in categories)
@@ -348,8 +354,9 @@ namespace Editor.Tabs
 
                             foreach (var component in components)
                             {
-                                //ui.Image(component);
-                                //ui.SameLine();
+                                _iconCache.RenderIcon(component);
+                                ui.SameLine();
+
                                 if (ui.MenuItem(component))
                                 {
                                     foreach (var node in _gizmo.Selection)
