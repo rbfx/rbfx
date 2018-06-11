@@ -541,6 +541,9 @@ namespace Urho3D
         public static readonly Color Yellow = new Color(1.0f, 1.0f, 0.0f);
 
         /// Transparent color (black with no alpha).
-        public static readonly Color Transparent = new Color(0.0f, 0.0f, 0.0f, 0.0f);
+        public static readonly Color TransparentBlack = new Color(0.0f, 0.0f, 0.0f, 0.0f);
+
+        /// Transparent color (black with no alpha).
+        public static readonly Color Transparent = TransparentBlack;
     }
 }

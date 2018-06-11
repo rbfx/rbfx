@@ -48,7 +48,6 @@ void GenerateCApiPass::Start()
     }
 
     printer_ << "";
-    printer_ << "#undef TRANSPARENT";
     printer_ << "#undef near";
     printer_ << "#undef far";
     printer_ << "";

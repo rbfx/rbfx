@@ -27,7 +27,6 @@
 #if defined(_WIN32) && !defined(URHO3D_WIN32_CONSOLE)
 #include "../Core/MiniDump.h"
 #include <windows.h>
-#undef TRANSPARENT
 #ifdef _MSC_VER
 #include <crtdbg.h>
 #endif
