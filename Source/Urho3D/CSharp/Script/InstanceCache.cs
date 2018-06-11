@@ -152,6 +152,7 @@ namespace Urho3D.CSharp
             lock (_cache)
             {
                 _cache.Remove(instance);
+                _needsReset = true;
             }
         }
 
