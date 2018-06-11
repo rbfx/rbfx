@@ -20,7 +20,7 @@
           "Urho3D::*"
         ],
         "exclude": [
-          "Urho3D::Undo"
+          "Urho3D::Undo::SetTrackingScoped"
         ]
       },
     }

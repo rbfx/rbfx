@@ -52,12 +52,12 @@ public:
 
 class URHO3D_TOOLBOX_API CreateNodeAction : public EditAction
 {
-public:
     unsigned nodeID;
     unsigned parentID;
     XMLFile nodeData;
     WeakPtr<Scene> editorScene;
 
+public:
     explicit CreateNodeAction(Node* node)
         : nodeData(node->GetContext())
         , editorScene(node->GetScene())
@@ -92,12 +92,12 @@ public:
 
 class URHO3D_TOOLBOX_API DeleteNodeAction : public EditAction
 {
-public:
     unsigned nodeID;
     unsigned parentID;
     XMLFile nodeData;
     WeakPtr<Scene> editorScene;
 
+public:
     explicit DeleteNodeAction(Node* node)
         : nodeData(node->GetContext())
         , editorScene(node->GetScene())
@@ -137,7 +137,6 @@ public:
 
 class URHO3D_TOOLBOX_API ReparentNodeAction : public EditAction
 {
-public:
     unsigned nodeID;
     unsigned oldParentID;
     unsigned newParentID;
@@ -145,6 +144,7 @@ public:
     bool multiple;
     WeakPtr<Scene> editorScene;
 
+public:
     ReparentNodeAction(Node* node, Node* newParent)
         : editorScene(node->GetScene())
     {
@@ -218,12 +218,12 @@ public:
 
 class URHO3D_TOOLBOX_API CreateComponentAction : public EditAction
 {
-public:
     unsigned nodeID;
     unsigned componentID;
     XMLFile componentData;
     WeakPtr<Scene> editorScene;
 
+public:
     explicit CreateComponentAction(Component* component)
         : editorScene(component->GetScene())
         , componentData(component->GetContext())
@@ -260,12 +260,12 @@ public:
 
 class URHO3D_TOOLBOX_API DeleteComponentAction : public EditAction
 {
-public:
     unsigned nodeID;
     unsigned componentID;
     XMLFile componentData;
     WeakPtr<Scene> editorScene;
 
+public:
     DeleteComponentAction(Component* component)
         : componentData(component->GetContext())
         , editorScene(component->GetScene())
@@ -327,7 +327,6 @@ static unsigned GetID(Serializable* serializable)
 
 class URHO3D_TOOLBOX_API EditAttributeAction : public EditAction
 {
-public:
     unsigned targetID;
     String attrName;
     Variant undoValue;
@@ -336,6 +335,7 @@ public:
     WeakPtr<Scene> editorScene;
     WeakPtr<UIElement> root;
 
+public:
     EditAttributeAction(Serializable* target, const String& name, const Variant& oldValue)
     {
         attrName = name;
@@ -395,13 +395,13 @@ public:
 
 class URHO3D_TOOLBOX_API CreateUIElementAction : public EditAction
 {
-public:
     Variant elementID;
     Variant parentID;
     XMLFile elementData;
     SharedPtr<XMLFile> styleFile;
     WeakPtr<UIElement> root;
 
+public:
     explicit CreateUIElementAction(UIElement* element)
         : elementData(element->GetContext())
     {
@@ -432,13 +432,13 @@ public:
 
 class URHO3D_TOOLBOX_API DeleteUIElementAction : public EditAction
 {
-public:
     Variant elementID;
     Variant parentID;
     XMLFile elementData;
     SharedPtr<XMLFile> styleFile;
     WeakPtr<UIElement> root;
 
+public:
     explicit DeleteUIElementAction(UIElement* element)
         : elementData(element->GetContext())
     {
@@ -469,13 +469,13 @@ public:
 
 class URHO3D_TOOLBOX_API ReparentUIElementAction : public EditAction
 {
-public:
     Variant elementID;
     Variant oldParentID;
     unsigned oldChildIndex;
     Variant newParentID;
     WeakPtr<UIElement> root;
 
+public:
     ReparentUIElementAction(UIElement* element, UIElement* newParent)
     : root(element->GetRoot())
     {
@@ -504,7 +504,6 @@ public:
 
 class URHO3D_TOOLBOX_API ApplyUIElementStyleAction : public EditAction
 {
-public:
     Variant elementID;
     Variant parentID;
     XMLFile elementData;
@@ -513,6 +512,7 @@ public:
     String elementNewStyle;
     WeakPtr<UIElement> root;
 
+public:
     ApplyUIElementStyleAction(UIElement* element, const String& newStyle)
         : elementData(element->GetContext())
     {
@@ -553,12 +553,12 @@ public:
 
 class URHO3D_TOOLBOX_API EditUIStyleAction : public EditAction
 {
-public:
     XMLFile oldStyle;
     XMLFile newStyle;
     unsigned elementId;
     WeakPtr<UIElement> root;
 
+public:
     EditUIStyleAction(UIElement* element, XMLElement& styleElement, const Variant& newValue)
         : oldStyle(element->GetContext())
         , newStyle(element->GetContext())
