@@ -62,14 +62,14 @@ protected:
 
     /// A filter value. Attributes whose titles do not contain substring sored in this variable will not be rendered.
     std::array<char, 0x100> filter_{};
-    /// Last serializable whose attribute list was rendered.
-    PODVector<Serializable*> lastSerializables_;
     /// Name of attribute that was modified on last frame.
     const char* modifiedLastFrame_ = nullptr;
     /// Value of attribute before modifying it started.
     Variant originalValue_;
     /// Max width of attribute label.
-    int maxWidth_ = 0;
+    int lastMaxWidth_ = 0;
+    /// Max width of attribute label.
+    int currentMaxWidth_ = 0;
     /// Viewport from which rendering path and postprocess effects should be copied.
     WeakPtr<Viewport> effectSource_;
 };
