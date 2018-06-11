@@ -32,30 +32,23 @@ public partial class Node
 {
     public T CreateComponent<T>(CreateMode mode = CreateMode.Replicated, uint id = 0) where T : Component
     {
-        var componentInstance = Urho3D__Node__CreateComponent_Urho3D__StringHash_Urho3D__CreateMode_unsigned_int_(NativeInstance, StringHash.Calculate(typeof(T).Name), mode, id);
-        if (componentInstance == IntPtr.Zero)
-            return null;
-        return InstanceCache.GetOrAdd(componentInstance, ptr => (T) Activator.CreateInstance(typeof(T),
-            BindingFlags.NonPublic | BindingFlags.Instance,
-            null, new object[] {ptr, false}, null));
+        return GetManagedInstance<T>(
+            Urho3D__Node__CreateComponent_Urho3D__StringHash_Urho3D__CreateMode_unsigned_int_(
+                NativeInstance, StringHash.Calculate(typeof(T).Name), mode, id), false);
     }
 
     public T GetComponent<T>(bool recursive = false) where T: Component
     {
-        var componentInstance = Urho3D__Node__GetComponent_Urho3D__StringHash_bool__const(NativeInstance, StringHash.Calculate(typeof(T).Name), recursive);
-        if (componentInstance == IntPtr.Zero)
-            return null;
-        return InstanceCache.GetOrAdd(componentInstance, ptr => (T)Activator.CreateInstance(typeof(T),
-            BindingFlags.NonPublic | BindingFlags.Instance, null, new object[] { ptr, false }, null));
+        return GetManagedInstance<T>(
+            Urho3D__Node__GetComponent_Urho3D__StringHash_bool__const(
+                NativeInstance, StringHash.Calculate(typeof(T).Name), recursive), false);
     }
 
     public T GetOrCreateComponent<T>(Urho3D.CreateMode mode=Urho3D.CreateMode.Replicated, uint id=0) where T: Component
     {
-        var componentInstance = Urho3D__Node__GetOrCreateComponent_Urho3D__StringHash_Urho3D__CreateMode_unsigned_int_(NativeInstance, StringHash.Calculate(typeof(T).Name), mode, id);
-        if (componentInstance == IntPtr.Zero)
-            return null;
-        return InstanceCache.GetOrAdd(componentInstance, ptr => (T)Activator.CreateInstance(typeof(T),
-            BindingFlags.NonPublic | BindingFlags.Instance, null, new object[] { ptr, false }, null));
+        return GetManagedInstance<T>(
+            Urho3D__Node__GetOrCreateComponent_Urho3D__StringHash_Urho3D__CreateMode_unsigned_int_(
+                NativeInstance, StringHash.Calculate(typeof(T).Name), mode, id), false);
     }
 }
 

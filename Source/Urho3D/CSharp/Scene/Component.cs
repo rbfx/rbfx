@@ -31,11 +31,9 @@ namespace Urho3D
     {
         public T GetComponent<T>() where T : Component
         {
-            var componentInstance = Urho3D__Component__GetComponent_Urho3D__StringHash__const(NativeInstance, StringHash.Calculate(typeof(T).Name));
-            if (componentInstance == IntPtr.Zero)
-                return null;
-            return InstanceCache.GetOrAdd(componentInstance, ptr => (T)Activator.CreateInstance(typeof(T),
-                BindingFlags.NonPublic | BindingFlags.Instance, null, new object[] { ptr, false }, null));
+            return GetManagedInstance<T>(
+                Urho3D__Component__GetComponent_Urho3D__StringHash__const(
+                    NativeInstance, StringHash.Calculate(typeof(T).Name)), false);
         }
     }
 }

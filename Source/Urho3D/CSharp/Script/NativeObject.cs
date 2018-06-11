@@ -21,6 +21,8 @@
 //
 
 using System;
+using System.Diagnostics;
+using System.Reflection;
 using System.Threading;
 
 namespace Urho3D.CSharp
@@ -110,6 +112,19 @@ namespace Urho3D.CSharp
 
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        internal static T GetManagedInstance<T>(IntPtr source, bool owns) where T: NativeObject
+        {
+            if (source == IntPtr.Zero)
+                return null;
+
+            return InstanceCache.GetOrAdd(source, ptr =>
+            {
+                var getManaged = typeof(T).GetMethod("GetManagedInstance", BindingFlags.NonPublic | BindingFlags.Static);
+                Debug.Assert(getManaged != null);
+                return (T) getManaged.Invoke(null, new object[] {source, owns});
+            });
         }
 
         /// <summary>
