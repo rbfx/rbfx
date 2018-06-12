@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) 2018 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -271,7 +271,7 @@ namespace Editor.Tabs
                     if (component.IsTemporary)
                         continue;
 
-                    ui.PushID(component.NativeInstance.ToInt32());
+                    ui.PushID(component.NativeInstance.GetHashCode());
 
                     _iconCache.RenderIcon(component.GetType().Name);
                     ui.SameLine();
