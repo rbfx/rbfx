@@ -259,7 +259,7 @@ NativeRuntime ScriptSubsystem::native_{};
 extern "C"
 {
 
-URHO3D_API void Urho3D_InitializeCSharp(ManagedRuntime* managed, NativeRuntime* native)
+URHO3D_EXPORT_API void Urho3D_InitializeCSharp(ManagedRuntime* managed, NativeRuntime* native)
 {
     ScriptSubsystem::managed_ = *managed;
 
