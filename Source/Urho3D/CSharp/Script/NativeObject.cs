@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) 2018 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -37,8 +37,8 @@ namespace Urho3D.CSharp
     {
         public IntPtr NativeInstance { get; protected set; } = IntPtr.Zero;
         protected bool OwnsNativeInstance { get; set; }
-        public bool IsDisposed => _disposedCounter == 0;
-        private int _disposedCounter;
+        public bool IsDisposed => Interlocked.Read(ref _disposedCounter) > 0;
+        private long _disposedCounter;
         internal int NativeObjectSize = 0;
 
         internal NativeObject(IntPtr instance, bool ownsInstance=false)
