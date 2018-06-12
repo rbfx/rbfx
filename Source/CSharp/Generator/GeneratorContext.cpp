@@ -60,9 +60,6 @@ bool GeneratorContext::AddModule(const std::string& libraryName, bool isStatic, 
     m.outputDirCpp_ = m.outputDir_ + "Native/";
     m.rulesFile_ = rulesFile;
 
-    Urho3D::CreateDirsRecursive(m.outputDirCpp_);
-    Urho3D::CreateDirsRecursive(m.outputDirCs_);
-
     // Load compiler config
     {
         for (const auto& item : includes)
@@ -283,6 +280,9 @@ void GeneratorContext::Generate()
 
     for (auto& m : modules_)
     {
+        Urho3D::CreateDirsRecursive(m.outputDirCpp_);
+        Urho3D::CreateDirsRecursive(m.outputDirCs_);
+
         currentModule_ = &m;
         for (const auto& pass : cppPasses_)
             pass->Start();
@@ -475,7 +475,6 @@ void GeneratorContext::Generate()
             fp << "}\n\n";
         }
 
-        SetLastModifiedTime(m.outputDir_, 0);   // Touch
         currentNamespace_ = nullptr;
     }
 }
@@ -648,16 +647,28 @@ bool GeneratorContext::IsInheritable(const std::string& symbolName) const
 
 bool GeneratorContext::IsOutOfDate(const std::string& generatorExe)
 {
+    auto exeTime = GetLastModifiedTime(generatorExe);
+    if (exeTime == 0)
+        return true;
+
     for (const auto& m : modules_)
     {
-        if (GetFileSize(m.outputDirCpp_ + m.moduleName_ + "CApi.cpp") == 0)
-            // Missing file, needed for the first time generator runs
+        unsigned outputTime = 0;
+        std::vector<std::string> scannedFiles;
+        if (!ScanDirectory(m.outputDir_, scannedFiles,
+            ScanDirectoryFlags::IncludeFiles | ScanDirectoryFlags::Recurse))
             return true;
 
-        auto outputTime = GetLastModifiedTime(m.outputDir_);
-        auto exeTime = GetLastModifiedTime(generatorExe);
+        for (const auto& path : scannedFiles)
+        {
+            if (GetFileSize(path) == 0)
+                return true;
+
+            outputTime = std::max(outputTime, GetLastModifiedTime(path));
+        }
+
         auto rulesTime = GetLastModifiedTime(m.rulesFile_);
-        if (outputTime == 0 || exeTime == 0 || rulesTime == 0)
+        if (outputTime == 0 || rulesTime == 0)
             return true;
 
         if (exeTime > outputTime || rulesTime > outputTime)
