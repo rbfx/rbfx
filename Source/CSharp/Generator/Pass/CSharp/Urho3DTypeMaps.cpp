@@ -104,7 +104,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
         }
         map.cType_ = map.csType_ + "*";
         str::replace_str(map.csType_, "::", ".");
-        map.pInvokeToCSTemplate_ = fmt::format("{}.GetManagedInstance({{value}}, false)", map.csType_);
+        map.pInvokeToCSTemplate_ = fmt::format("{}.GetManagedInstance({{value}})", map.csType_);
         map.csToPInvokeTemplate_ = fmt::format("{}.GetNativeInstance({{value}})", map.csType_);
         generator->typeMaps_[typeName] = map;
         return;

@@ -33,7 +33,7 @@ namespace Urho3D
         public Variant(object value)
         {
             var instance = Urho3D_Variant__Variant_object(GCHandle.ToIntPtr(GCHandle.Alloc(value)));
-            SetupInstance(instance, true);
+            SetupInstance(instance);
         }
 
         public static Variant FromObject(object value)

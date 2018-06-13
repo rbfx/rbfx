@@ -45,6 +45,9 @@ void GenerateCSharpApiPass::Start()
 
 bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
+    if (entity->flags_ & HintNoPublicApi)
+        return false;
+
     if (entity->kind_ == cppast::cpp_entity_kind::namespace_t)
     {
         if (entity->children_.empty())
@@ -139,17 +142,17 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
             if (!isStatic)
             {
-                printer_ << "internal override void SetupInstance(IntPtr instance, bool ownsInstance, bool addToCache=true)";
+                printer_ << "internal override void SetupInstance(IntPtr instance, NativeObjectFlags flags=NativeObjectFlags.None)";
                 printer_.Indent();
                 {
                     auto className = entity->name_;
                     printer_ << fmt::format("System.Diagnostics.Debug.Assert(instance != IntPtr.Zero);");
+                    printer_ << "Flags = flags;";
                     printer_ << "NativeInstance = instance;";
-                    printer_ << "OwnsNativeInstance = ownsInstance;";
                     if (generator->IsInheritable(entity->uniqueName_) || IsSubclassOf(entity->Ast<cppast::cpp_class>(), "Urho3D::RefCounted"))
                         printer_ << fmt::format("{}_setup(instance, GCHandle.ToIntPtr(GCHandle.Alloc(this)), GetType().Name, ref NativeObjectSize);",
                             Sanitize(entity->uniqueName_));
-                    printer_ << "if (addToCache)";
+                    printer_ << "if (!flags.HasFlag(NativeObjectFlags.SkipInstanceCache))";
                     printer_.Indent();
                     {
                         printer_ << "InstanceCache.Add(this);";
@@ -240,7 +243,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         }
 
         auto className = cls->name_;
-        auto baseCtor = hasBase ? " : base(IntPtr.Zero, true)" : "";
+        auto baseCtor = hasBase ? " : base(IntPtr.Zero)" : "";
         auto paramNameList = MapParameterList(entity->children_);
         auto cFunctionName = entity->cFunctionName_;
 
@@ -254,7 +257,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             PrintParameterHandlingCodePre(entity->children_);
             printer_ << fmt::format("var instance = {cFunctionName}({paramNameList});",
                 FMT_CAPTURE(cFunctionName), FMT_CAPTURE(paramNameList));
-            printer_ << "SetupInstance(instance, true);";
+            printer_ << "SetupInstance(instance);";
             PrintParameterHandlingCodePost(entity->children_);
         }
         printer_.Dedent();
@@ -634,14 +637,13 @@ std::string GenerateCSharpApiPass::MapToCS(const cppast::cpp_type& type, const s
 
     bool isComplex = IsComplexType(type);
     bool isValue = IsValueType(type);
-    auto owns = isComplex && isValue ? "true" : "false";
 
     if (const auto* map = generator->GetTypeMap(type, false))
-        return fmt::format(map->pInvokeToCSTemplate_.c_str(), fmt::arg("value", expression), FMT_CAPTURE(owns));
+        return fmt::format(map->pInvokeToCSTemplate_.c_str(), fmt::arg("value", expression));
     else if (type.kind() == cppast::cpp_type_kind::array_t)
         return expression;
-    else if (IsComplexType(type))
-        return fmt::format("{}.GetManagedInstance({}, {})", ToCSType(type), expression, owns);
+    else if (isComplex)
+        return fmt::format("{}.GetManagedInstance({})", ToCSType(type), expression);
 
     return expression;
 }

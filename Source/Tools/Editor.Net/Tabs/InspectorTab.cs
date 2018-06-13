@@ -39,9 +39,9 @@ namespace Editor.Tabs
             SubscribeToEvent<InspectItem>(OnInspect);
         }
 
-        protected void OnInspect(VariantMap args)
+        private void OnInspect(Event args)
         {
-            _inspectable = (IInspectable) args[InspectItem.Inspectable].Object;
+            _inspectable = (IInspectable) args.GetObject(InspectItem.Inspectable);
         }
 
         protected override void Render()

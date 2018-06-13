@@ -61,7 +61,7 @@ public struct StringHash
         return $"{Hash:X8}";
     }
 
-    internal static StringHash GetManagedInstance(uint source, bool ownsNativeInstnace=false)
+    internal static StringHash GetManagedInstance(uint source)
     {
         return new StringHash(source);
     }

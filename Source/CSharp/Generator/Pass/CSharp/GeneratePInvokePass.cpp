@@ -116,7 +116,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
             printer_ << fmt::format("public unsafe partial class {} : INativeObject", entity->name_);
             printer_.Indent();
-            printer_ << fmt::format("internal {}(IntPtr instance, bool ownsInstance) : base(instance, ownsInstance)",
+            printer_ << fmt::format("internal {}(IntPtr instance, NativeObjectFlags flags=NativeObjectFlags.None) : base(instance, flags)",
                                     entity->name_);
             printer_.Indent();
             {
@@ -130,13 +130,18 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             {
                 printer_ << "OnDispose(disposing);";
                 printer_ << "InstanceCache.Remove(NativeInstance);";
-                printer_ << baseName + "_destructor(NativeInstance, OwnsNativeInstance);";
+                printer_ << "if (!NonOwningReference)";
+                printer_.Indent();
+                {
+                    printer_ << baseName + "_destructor(NativeInstance);";
+                }
+                printer_.Dedent();
             }
             printer_.Dedent();
             printer_ << "";
 
             // Helpers for marshalling type between public and pinvoke APIs
-            printer_ << fmt::format("internal {}static {} GetManagedInstance(IntPtr source, bool owns)", newTag,
+            printer_ << fmt::format("internal {}static {} GetManagedInstance(IntPtr source, NativeObjectFlags flags=NativeObjectFlags.None)", newTag,
                                     entity->name_);
             printer_.Indent();
             {
@@ -155,14 +160,14 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     printer_.Indent("");
                     {
                         printer_
-                            << fmt::format("return new {className}(ptr, owns);", fmt::arg("className", entity->name_));
+                            << fmt::format("return new {className}(ptr, flags);", fmt::arg("className", entity->name_));
                     }
                     printer_.Dedent("");
                     printer_ << "else";
                     printer_.Indent("");
                     {
                         printer_ << fmt::format(
-                            "return ({className})Activator.CreateInstance(type, BindingFlags.NonPublic | BindingFlags.Instance, null, new object[]{{ptr, owns}}, null);",
+                            "return ({className})Activator.CreateInstance(type, BindingFlags.NonPublic | BindingFlags.Instance, null, new object[]{{ptr, flags}}, null);",
                             fmt::arg("className", entity->name_));
                     }
                     printer_.Dedent("");
@@ -247,7 +252,7 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             // Destructor always exists even if it is not defined in the c++ class
             DllImport();
             printer_
-                << fmt::format("internal static extern void {}_destructor(IntPtr instance, bool owner);", baseName);
+                << fmt::format("internal static extern void {}_destructor(IntPtr instance);", baseName);
             printer_ << "";
 
             // Method for pinning managed object to native instance

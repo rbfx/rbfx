@@ -20,15 +20,23 @@
 // THE SOFTWARE.
 //
 
+using System;
+using System.Runtime.InteropServices;
+using System.Security;
+using Urho3D.CSharp;
+
 namespace Urho3D
 {
-    public partial class Component
+    public partial class Application
     {
-        public T GetComponent<T>() where T : Component
-        {
-            return GetManagedInstanceGeneric<T>(
-                Urho3D__Component__GetComponent_Urho3D__StringHash__const(
-                    NativeInstance, StringHash.Calculate(typeof(T).Name)));
-        }
+        protected VariantMap EngineParameters =>
+            VariantMap.GetManagedInstance(get_Urho3D__Application_engineParameters_ref(NativeInstance),
+                NativeObjectFlags.NonOwningReference);
+
+        #region Interop
+        [SuppressUnmanagedCodeSecurity]
+        [DllImport(Urho3D.CSharp.Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr get_Urho3D__Application_engineParameters_ref(IntPtr instance);
+        #endregion
     }
 }

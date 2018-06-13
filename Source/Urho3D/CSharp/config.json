@@ -163,6 +163,7 @@
           "Urho3D::OctreeQuery",
           "Urho3D::RayOctreeQuery::RayOctreeQuery(PODVector<Urho3D::RayQueryResult>&,Urho3D::Ray const&,Urho3D::RayQueryLevel,float,unsigned char,unsigned int)",
           "Urho3D::AllContentOctreeQuery::AllContentOctreeQuery(PODVector<Urho3D::Drawable *>&,unsigned char,unsigned int)",
+          "Urho3D::Context::RegisterAttribute(Urho3D::StringHash,Urho3D::AttributeInfo const&)",
         ]
       },
       "inheritable": {
@@ -221,7 +222,7 @@
       "cstype": "Urho3D.VariantMap",
       "cpp_to_c": "CSharpObjConverter::ToCSharp<Urho3D::VariantMap>({value})",
       "c_to_cpp": "*{value}",
-      "pinvoke_to_cs": "VariantMap.GetManagedInstance({value}, {owns})",
+      "pinvoke_to_cs": "VariantMap.GetManagedInstance({value})",
       "cs_to_pinvoke": "VariantMap.GetNativeInstance({value})"
     },
     {
@@ -231,7 +232,7 @@
       "cstype": "Urho3D.StringVector",
       "cpp_to_c": "CSharpObjConverter::ToCSharp<Urho3D::StringVector>({value})",
       "c_to_cpp": "*{value}",
-      "pinvoke_to_cs": "StringVector.GetManagedInstance({value}, {owns})",
+      "pinvoke_to_cs": "StringVector.GetManagedInstance({value})",
       "cs_to_pinvoke": "StringVector.GetNativeInstance({value})"
     },
     {
@@ -241,7 +242,7 @@
       "cstype": "Urho3D.StringVector",
       "cpp_to_c": "CSharpObjConverter::ToCSharp<Urho3D::StringVector>({value})",
       "c_to_cpp": "*{value}",
-      "pinvoke_to_cs": "StringVector.GetManagedInstance({value}, {owns})",
+      "pinvoke_to_cs": "StringVector.GetManagedInstance({value})",
       "cs_to_pinvoke": "StringVector.GetNativeInstance({value})"
     },
     {

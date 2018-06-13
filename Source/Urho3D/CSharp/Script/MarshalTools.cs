@@ -303,7 +303,7 @@ namespace Urho3D.CSharp
             for (var i = 0; i < result.Length; i++)
             {
                 var instance = Marshal.ReadIntPtr(block->Memory, i * IntPtr.Size);
-                result[i] = (T)getManaged.Invoke(null, new object[] {instance, false});
+                result[i] = (T)getManaged.Invoke(null, new object[] {instance, NativeObjectFlags.None});
             }
 
             return result;
@@ -353,7 +353,7 @@ namespace Urho3D.CSharp
             for (var i = 0; i < result.Length; i++)
             {
                 var instance = block->Memory + i * block->SizeOfItem;
-                result[i] = (T)getManaged.Invoke(null, new object[] {instance, false});
+                result[i] = (T)getManaged.Invoke(null, new object[] {instance, NativeObjectFlags.NonOwningReference});
             }
 
             return result;

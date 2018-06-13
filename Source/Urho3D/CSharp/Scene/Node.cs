@@ -32,23 +32,23 @@ public partial class Node
 {
     public T CreateComponent<T>(CreateMode mode = CreateMode.Replicated, uint id = 0) where T : Component
     {
-        return GetManagedInstance<T>(
+        return GetManagedInstanceGeneric<T>(
             Urho3D__Node__CreateComponent_Urho3D__StringHash_Urho3D__CreateMode_unsigned_int_(
-                NativeInstance, StringHash.Calculate(typeof(T).Name), mode, id), false);
+                NativeInstance, StringHash.Calculate(typeof(T).Name), mode, id));
     }
 
     public T GetComponent<T>(bool recursive = false) where T: Component
     {
-        return GetManagedInstance<T>(
+        return GetManagedInstanceGeneric<T>(
             Urho3D__Node__GetComponent_Urho3D__StringHash_bool__const(
-                NativeInstance, StringHash.Calculate(typeof(T).Name), recursive), false);
+                NativeInstance, StringHash.Calculate(typeof(T).Name), recursive));
     }
 
     public T GetOrCreateComponent<T>(Urho3D.CreateMode mode=Urho3D.CreateMode.Replicated, uint id=0) where T: Component
     {
-        return GetManagedInstance<T>(
+        return GetManagedInstanceGeneric<T>(
             Urho3D__Node__GetOrCreateComponent_Urho3D__StringHash_Urho3D__CreateMode_unsigned_int_(
-                NativeInstance, StringHash.Calculate(typeof(T).Name), mode, id), false);
+                NativeInstance, StringHash.Calculate(typeof(T).Name), mode, id));
     }
 }
 

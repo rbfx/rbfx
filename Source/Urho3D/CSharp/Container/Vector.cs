@@ -73,9 +73,9 @@ namespace Urho3D
             }
         }
 
-        internal StringVector(IntPtr instance, bool ownsInstnace)
+        internal StringVector(IntPtr instance)
         {
-            SetupInstance(instance, ownsInstnace);
+            SetupInstance(instance);
         }
 
         public IEnumerator<string> GetEnumerator() => new Enumerator(this);
@@ -145,9 +145,9 @@ namespace Urho3D
         [DllImport(Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern void Urho3D_StringVector_destructor(IntPtr instnace);
 
-        internal static StringVector GetManagedInstance(IntPtr source, bool ownsInstnace)
+        internal static StringVector GetManagedInstance(IntPtr source)
         {
-            return InstanceCache.GetOrAdd(source, ptr => new StringVector(ptr, ownsInstnace));
+            return InstanceCache.GetOrAdd(source, ptr => new StringVector(ptr));
         }
 
         internal static IntPtr GetNativeInstance(StringVector source)
@@ -162,8 +162,7 @@ namespace Urho3D
         protected override void Dispose(bool disposing)
         {
             InstanceCache.Remove(NativeInstance);
-            if (OwnsNativeInstance)
-                Urho3D_StringVector_destructor(NativeInstance);
+            Urho3D_StringVector_destructor(NativeInstance);
         }
 
         #endregion

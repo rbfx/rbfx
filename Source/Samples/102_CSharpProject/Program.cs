@@ -99,7 +99,7 @@ namespace DemoApplication
 
             SubscribeToEvent<Update>(args =>
             {
-                var timestep = args[Update.TimeStep].Float;
+                var timestep = args.GetFloat(Update.TimeStep);
                 Debug.Assert(this != null);
 
                 if (ui.Begin("Urho3D.NET"))

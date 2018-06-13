@@ -42,6 +42,7 @@ enum CppEntityHints
     HintProperty = 8,
     HintDefaultValueFinal = 16,
     HintNoStatic = 32,
+    HintNoPublicApi = 64,
 };
 
 /// Wrapper over cppast::cpp_entity. Overlay-AST is assembled from these entities. This allows freely modifying AST

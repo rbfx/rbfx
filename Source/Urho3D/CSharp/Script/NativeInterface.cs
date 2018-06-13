@@ -74,9 +74,7 @@ namespace Urho3D.CSharp
             [MarshalAs(UnmanagedType.FunctionPtr)]
             public CreateObjectDelegate CreateObject;
             [MarshalAs(UnmanagedType.FunctionPtr)]
-            public HandleEventDelegate HandleEventWithType;
-            [MarshalAs(UnmanagedType.FunctionPtr)]
-            public HandleEventDelegate HandleEventWithoutType;
+            public HandleEventDelegate HandleEvent;
         }
 
         /// <summary>
@@ -121,8 +119,7 @@ namespace Urho3D.CSharp
             Managed.Unlock = Unlock;
             Managed.CloneHandle = CloneHandle;
             Managed.CreateObject = CreateObject;
-            Managed.HandleEventWithType = Object.HandleEventWithType;
-            Managed.HandleEventWithoutType = Object.HandleEventWithoutType;
+            Managed.HandleEvent = Object.HandleEvent;
 
             Urho3D_InitializeCSharp(ref Managed, ref Native);
         }
@@ -149,7 +146,7 @@ namespace Urho3D.CSharp
 
         internal static IntPtr CreateObject(IntPtr contextPtr, uint managedType)
         {
-            var context = Context.GetManagedInstance(contextPtr, true);
+            var context = Context.GetManagedInstance(contextPtr);
             return context.CreateObject(managedType);
         }
 

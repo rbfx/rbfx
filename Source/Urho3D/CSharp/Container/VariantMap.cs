@@ -105,8 +105,8 @@ namespace Urho3D
                 {
                     var rawKey = Urho3D_HashMap_StringHash_Variant_GetKey(_iterator);
                     var rawVal = Urho3D_HashMap_StringHash_Variant_GetValue(_iterator);
-                    var key = StringHash.GetManagedInstance(rawKey, false);
-                    var value = Variant.GetManagedInstance(rawVal, false);
+                    var key = StringHash.GetManagedInstance(rawKey);
+                    var value = Variant.GetManagedInstance(rawVal);
                     return new KeyValuePair<StringHash, Variant>(key, value);
                 }
             }
@@ -120,12 +120,12 @@ namespace Urho3D
 
         public VariantMap()
         {
-            SetupInstance(Urho3D_HashMap_HashMap(), true);
+            SetupInstance(Urho3D_HashMap_HashMap());
         }
 
-        internal VariantMap(IntPtr instance, bool ownsInstnace)
+        internal VariantMap(IntPtr instance, NativeObjectFlags flags=NativeObjectFlags.None)
         {
-            SetupInstance(instance, ownsInstnace);
+            SetupInstance(instance, flags);
         }
 
         public IEnumerator<KeyValuePair<StringHash, Variant>> GetEnumerator()
@@ -200,7 +200,7 @@ namespace Urho3D
                 value = null;
                 return false;
             }
-            value = Variant.GetManagedInstance(instance, true);
+            value = Variant.GetManagedInstance(instance);
             return true;
         }
 
@@ -219,9 +219,9 @@ namespace Urho3D
         public ICollection<StringHash> Keys => this.Select(kv => kv.Key).Distinct().ToList();
         public ICollection<Variant> Values => this.Select(kv => kv.Value).Distinct().ToList();
 
-        internal static VariantMap GetManagedInstance(IntPtr source, bool ownsNativeInstnace)
+        internal static VariantMap GetManagedInstance(IntPtr source, NativeObjectFlags flags=NativeObjectFlags.None)
         {
-            return InstanceCache.GetOrAdd<VariantMap>(source, ptr => new VariantMap(ptr, ownsNativeInstnace));
+            return InstanceCache.GetOrAdd(source, ptr => new VariantMap(ptr, flags));
         }
 
         internal static IntPtr GetNativeInstance(VariantMap source)
@@ -236,7 +236,7 @@ namespace Urho3D
         protected override void Dispose(bool disposing)
         {
             InstanceCache.Remove(NativeInstance);
-            if (OwnsNativeInstance)
+            if (!NonOwningReference)
                 Urho3D_HashMap_StringHash_Variant_destructor(NativeInstance);
         }
     }

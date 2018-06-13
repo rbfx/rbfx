@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include "Urho3DClassWrappers.hpp"
 #include "CSharp.h"
 
 extern "C"
@@ -49,6 +50,12 @@ EXPORT_API MarshalAllocator::Block* Urho3D__Context__GetObjectsByCategory(Contex
     }
     else
         return nullptr;
+}
+
+// Urho3D::Application::engineParameters_
+EXPORT_API Urho3D::VariantMap* get_Urho3D__Application_engineParameters_ref(Wrappers::Application* instance)
+{
+    return &instance->__get_engineParameters_();
 }
 
 }

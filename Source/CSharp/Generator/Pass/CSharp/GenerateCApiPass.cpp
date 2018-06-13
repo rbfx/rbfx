@@ -111,7 +111,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             return true;
 
         // Destructor always exists even if it is not defined in the class
-        printer_ << fmt::format("EXPORT_API void {}_destructor({}* instance, bool owner)", baseName, entity->sourceSymbolName_);
+        printer_ << fmt::format("EXPORT_API void {}_destructor({}* instance)", baseName, entity->sourceSymbolName_);
         printer_.Indent();
         {
             // Using sourceName_ with wrapper classes causes weird build errors.
@@ -140,18 +140,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 printer_.Dedent("");
             }
             else
-            {
-                // Non-RefCounted objects are deleted wherever destruction is invoked. User is trusted to make a
-                // decision on which thread object deletion should happen.
-                // Object is deleted only if managed object owns native instance. There are cases when managed object
-                // gets to interact with objects whose lifetime is managed externally and they are not RefCounted.
-                printer_ << "if (owner)";
-                printer_.Indent("");
-                {
-                    printer_ << "delete instance;";
-                }
-                printer_.Dedent("");
-            }
+                printer_ << "delete instance;";
         }
         printer_.Dedent();
         printer_ << "";
@@ -281,11 +270,11 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         {
             auto virtCFunction = fmt::format("set_fn{cFunction}", FMT_CAPTURE(cFunction));
             printer_ << fmt::format("EXPORT_API void {virtCFunction}({className}* instance, void* fn)",
-                FMT_CAPTURE(virtCFunction), FMT_CAPTURE(className));
+                                    FMT_CAPTURE(virtCFunction), FMT_CAPTURE(className));
             printer_.Indent();
             {
                 printer_ << fmt::format("instance->fn{cFunction} = (decltype(instance->fn{cFunction}))fn;",
-                    FMT_CAPTURE(cFunction));
+                                        FMT_CAPTURE(cFunction));
             }
             printer_.Dedent();
             printer_ << "";

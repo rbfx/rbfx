@@ -37,9 +37,9 @@ namespace Editor.Tabs
             SubscribeToEvent<InspectHierarchy>(OnInspect);
         }
 
-        private void OnInspect(VariantMap args)
+        private void OnInspect(Event args)
         {
-            _hierarchyProvider = (IHierarchyProvider) args[InspectHierarchy.HierarchyProvider].Object;
+            _hierarchyProvider = (IHierarchyProvider) args.GetObject(InspectHierarchy.HierarchyProvider);
         }
 
         protected override void Render()

@@ -36,7 +36,7 @@ namespace Editor.Tabs
     {
         private readonly SceneView _view;
         private readonly Gizmo _gizmo;
-        private readonly VariantMap _eventArgs = new VariantMap();
+        private readonly Dictionary<StringHash, dynamic> _eventArgs = new Dictionary<StringHash, dynamic>();
         private bool _wasFocused;
         private bool _isMouseHoveringViewport;
         private Component _selectedComponent;
@@ -166,8 +166,7 @@ namespace Editor.Tabs
                             _gizmo.ToggleSelection(clickNode);
 
                             // Notify inspector
-                            _eventArgs.Clear();
-                            _eventArgs[InspectItem.Inspectable] = Variant.FromObject(this);
+                            _eventArgs[InspectItem.Inspectable] = this;
                             SendEvent<InspectItem>(_eventArgs);
 
                             if (isClickedRight)
@@ -189,16 +188,15 @@ namespace Editor.Tabs
             _view.Camera.Node.GetOrCreateComponent<DebugCameraController>();
         }
 
-        private void OnUpdate(VariantMap args)
+        private void OnUpdate(Event args)
         {
             if (IsDockActive && _isMouseHoveringViewport)
             {
-                _view.Camera.GetComponent<DebugCameraController>().Update(args[Update.TimeStep].Float);
+                _view.Camera.GetComponent<DebugCameraController>().Update(args.GetFloat(Update.TimeStep));
                 if (!_wasFocused)
                 {
                     _wasFocused = true;
-                    _eventArgs.Clear();
-                    _eventArgs[InspectHierarchy.HierarchyProvider] = Variant.FromObject(this);
+                    _eventArgs[InspectHierarchy.HierarchyProvider] = this;
                     SendEvent<InspectHierarchy>(_eventArgs);
                 }
             }

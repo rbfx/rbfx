@@ -31,9 +31,9 @@ public partial class ResourceCache
 {
     public T GetResource<T>(string name, bool sendEventOnFailure = true) where T : Resource
     {
-        return GetManagedInstance<T>(
+        return GetManagedInstanceGeneric<T>(
             Urho3D__ResourceCache__GetResource_Urho3D__StringHash_Urho3D__String_const__bool_(
-                NativeInstance, StringHash.Calculate(typeof(T).Name), name, sendEventOnFailure), true);
+                NativeInstance, StringHash.Calculate(typeof(T).Name), name, sendEventOnFailure));
     }
 }
 

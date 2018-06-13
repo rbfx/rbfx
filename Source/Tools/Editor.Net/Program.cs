@@ -136,7 +136,7 @@ namespace Editor
             }
         }
 
-        private void OnRender(VariantMap args)
+        private void OnRender(Event args)
         {
             OnRenderMenubar();
 

@@ -27,6 +27,14 @@ using System.Threading;
 
 namespace Urho3D.CSharp
 {
+    [Flags]
+    internal enum NativeObjectFlags
+    {
+        None,
+        SkipInstanceCache,
+        NonOwningReference
+    }
+
     public interface INativeObject : IDisposable
     {
         IntPtr NativeInstance { get; }
@@ -36,18 +44,22 @@ namespace Urho3D.CSharp
     public abstract class NativeObject : INativeObject, IEquatable<NativeObject>
     {
         public IntPtr NativeInstance { get; protected set; } = IntPtr.Zero;
-        protected bool OwnsNativeInstance { get; set; }
         public bool IsDisposed => Interlocked.Read(ref _disposedCounter) > 0;
         private long _disposedCounter;
         internal int NativeObjectSize = 0;
+        internal NativeObjectFlags Flags { get; set; }
+        /// <summary>
+        /// This must be stored as boolean because accessing Flags from finalized is unsafe.
+        /// </summary>
+        internal bool NonOwningReference;
 
-        internal NativeObject(IntPtr instance, bool ownsInstance=false)
+        internal NativeObject(IntPtr instance, NativeObjectFlags flags=NativeObjectFlags.None)
         {
             if (instance != IntPtr.Zero)
             {
                 // Instance is not added to InstanceCache here because this code will run only when invoked from
                 // T.GetManagedInstance() method. This method takes care of adding instance to InstanceCache.
-                SetupInstance(instance, ownsInstance, false);
+                SetupInstance(instance, flags);
             }
         }
 
@@ -68,19 +80,19 @@ namespace Urho3D.CSharp
         /// </summary>
         internal virtual void OnSetupInstance()
         {
+            NonOwningReference = Flags.HasFlag(NativeObjectFlags.NonOwningReference);
         }
 
         /// <summary>
         /// Wrapper classes will most likely implement new version of this method.
         /// </summary>
         /// <param name="instance"></param>
-        /// <param name="ownsInstance"></param>
-        /// <param name="addToCache"></param>
-        internal virtual void SetupInstance(IntPtr instance, bool ownsInstance, bool addToCache=true)
+        /// <param name="flags"></param>
+        internal virtual void SetupInstance(IntPtr instance, NativeObjectFlags flags=NativeObjectFlags.None)
         {
-            OwnsNativeInstance = ownsInstance;
+            Flags = flags;
             NativeInstance = instance;
-            if (addToCache)
+            if (!flags.HasFlag(NativeObjectFlags.SkipInstanceCache))
                 InstanceCache.Add(this);
             OnSetupInstance();
         }
@@ -114,7 +126,7 @@ namespace Urho3D.CSharp
             GC.SuppressFinalize(this);
         }
 
-        internal static T GetManagedInstance<T>(IntPtr source, bool owns) where T: NativeObject
+        internal static T GetManagedInstanceGeneric<T>(IntPtr source, NativeObjectFlags flags=NativeObjectFlags.None) where T: NativeObject
         {
             if (source == IntPtr.Zero)
                 return null;
@@ -123,7 +135,7 @@ namespace Urho3D.CSharp
             {
                 var getManaged = typeof(T).GetMethod("GetManagedInstance", BindingFlags.NonPublic | BindingFlags.Static);
                 Debug.Assert(getManaged != null);
-                return (T) getManaged.Invoke(null, new object[] {source, owns});
+                return (T) getManaged.Invoke(null, new object[] {source, flags});
             });
         }
 

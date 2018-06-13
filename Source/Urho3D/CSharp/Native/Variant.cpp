@@ -28,51 +28,6 @@
 namespace Urho3D
 {
 
-struct GcHandleContainer
-{
-    GcHandleContainer(gchandle handle)
-        : handle_(handle)
-    {
-    }
-
-    GcHandleContainer(const GcHandleContainer& rhs)
-        : handle_(nullptr)
-    {
-        if (rhs.handle_ != nullptr)
-            handle_ = ScriptSubsystem::managed_.CloneHandle(rhs.handle_);
-    }
-
-    GcHandleContainer(GcHandleContainer&& rhs)
-    {
-        handle_ = rhs.handle_;
-        rhs.handle_ = nullptr;
-    }
-
-    ~GcHandleContainer()
-    {
-        ReleaseHandle();
-    }
-
-    GcHandleContainer& operator =(const GcHandleContainer& rhs)
-    {
-        ReleaseHandle();
-        if (rhs.handle_ != nullptr)
-            handle_ = ScriptSubsystem::managed_.CloneHandle(rhs.handle_);
-        return *this;
-    }
-
-    void ReleaseHandle()
-    {
-        if (handle_ != nullptr)
-        {
-            ScriptSubsystem::managed_.Unlock(handle_);
-            handle_ = nullptr;
-        }
-    }
-
-    gchandle handle_;
-};
-
 extern "C"
 {
 
