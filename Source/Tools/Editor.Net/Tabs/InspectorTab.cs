@@ -29,7 +29,6 @@ namespace Editor.Tabs
 {
     public class InspectorTab : Tab
     {
-        private readonly AttributeInspector _inspector;
         private IInspectable _inspectable;
 
         public InspectorTab(Context context, string title, TabLifetime lifetime, Vector2? initialSize = null,
@@ -53,8 +52,7 @@ namespace Editor.Tabs
 
         protected override void Render()
         {
-            if (_inspectable != null)
-                _inspector.RenderAttributes(_inspectable.GetInspectableObjects());
+            _inspectable?.RenderInspector();
         }
     }
 }

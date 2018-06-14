@@ -26,7 +26,7 @@ namespace Editor.Tabs
 {
     public interface IInspectable
     {
-        Serializable[] GetInspectableObjects();
+        void RenderInspector();
     }
 
     public interface IHierarchyProvider

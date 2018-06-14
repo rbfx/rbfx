@@ -41,6 +41,7 @@ namespace Editor.Tabs
         private bool _isMouseHoveringViewport;
         private Component _selectedComponent;
         private readonly IconCache _iconCache;
+        private readonly AttributeInspector _inspector;
 
         public SceneTab(Context context, string title, TabLifetime lifetime, Vector2? initialSize = null, string placeNextToDock = null,
             DockSlot slot = DockSlot.SlotNone) : base(context, title, lifetime, initialSize, placeNextToDock, slot)
@@ -49,6 +50,7 @@ namespace Editor.Tabs
             WindowFlags = WindowFlags.NoScrollbar;
             _view = new SceneView(Context);
             _gizmo = new Gizmo(Context);
+            _inspector = new AttributeInspector(Context);
             _view.Scene.LoadXml(Cache.GetResource<XMLFile>("Scenes/SceneLoadExample.xml").GetRoot());
             CreateObjects();
 
@@ -204,16 +206,11 @@ namespace Editor.Tabs
                 _wasFocused = false;
         }
 
-        public Serializable[] GetInspectableObjects()
+        public void RenderInspector()
         {
-            if (_gizmo.Selection == null)
-                return new Serializable[0];
-
-            var inspectables = _gizmo.Selection.Cast<Serializable>().ToList();
+            _inspector.RenderAttributes(_gizmo.Selection);
             if (_selectedComponent != null)
-                inspectables.Add(_selectedComponent);
-
-            return inspectables.ToArray();
+                _inspector.RenderAttributes(_selectedComponent);
         }
 
         private void RenderNodeTree(Node node)
