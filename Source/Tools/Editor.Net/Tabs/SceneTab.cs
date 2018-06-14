@@ -59,12 +59,30 @@ namespace Editor.Tabs
             SubscribeToEvent<Update>(OnUpdate);
             SubscribeToEvent<PostUpdate>(args => RenderNodeContextMenu());
             SubscribeToEvent<GizmoSelectionChanged>(args => { _selectedComponent = null; });
+            SubscribeToEvent<EditorKeyCombo>(OnKeyCombo);
             _undo.Connect(_view.Scene);
             _undo.Connect(_inspector);
             _undo.Connect(_gizmo);
 
             _eventArgs[InspectHierarchy.HierarchyProvider] = this;
             SendEvent<InspectHierarchy>(_eventArgs);
+        }
+
+        private void OnKeyCombo(Event e)
+        {
+            if (IsDockActive && IsDockFocused)
+            {
+                var combo = (EditorKeyCombo.Kind)e.GetInt32(EditorKeyCombo.KeyCombo);
+                switch (combo)
+                {
+                    case EditorKeyCombo.Kind.Undo:
+                        _undo.Undo();
+                        break;
+                    case EditorKeyCombo.Kind.Redo:
+                        _undo.Redo();
+                        break;
+                }
+            }
         }
 
         private void RenderToolbar()

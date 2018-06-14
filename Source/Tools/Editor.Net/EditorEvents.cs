@@ -41,4 +41,17 @@ namespace Editor.Events
     {
         public static readonly StringHash TabInstance = "TabInstance";
     }
+
+    [Event(EventName = "EditorKeyCombo")]
+    public class EditorKeyCombo
+    {
+        public enum Kind
+        {
+            None,
+            Undo,
+            Redo
+        }
+
+        public static readonly StringHash KeyCombo = "KeyCombo";
+    }
 }

@@ -158,6 +158,33 @@ namespace Editor
                 else
                     ++i;
             }
+
+            SendKeyboardShortcuts();
+        }
+
+        void SendKeyboardShortcuts()
+        {
+            var combo = EditorKeyCombo.Kind.None;
+            if (Input.GetKeyDown(InputEvents.KeyCtrl))
+            {
+                if (Input.GetKeyPress(InputEvents.KeyZ))
+                {
+                    if (Input.GetKeyDown(InputEvents.KeyShift))
+                        combo = EditorKeyCombo.Kind.Redo;
+                    else
+                        combo = EditorKeyCombo.Kind.Undo;
+                }
+                else if (Input.GetKeyPress(InputEvents.KeyY))
+                    combo = EditorKeyCombo.Kind.Redo;
+            }
+
+            if (combo != EditorKeyCombo.Kind.None)
+            {
+                SendEvent<EditorKeyCombo>(new Dictionary<StringHash, dynamic>
+                {
+                    [EditorKeyCombo.KeyCombo] = (int)combo
+                });
+            }
         }
     }
 
