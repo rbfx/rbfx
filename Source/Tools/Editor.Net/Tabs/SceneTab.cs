@@ -41,6 +41,7 @@ namespace Editor.Tabs
         private bool _isMouseHoveringViewport;
         private Component _selectedComponent;
         private readonly IconCache _iconCache;
+        private readonly Undo.Manager _undo;
         private readonly AttributeInspector _inspector;
 
         public SceneTab(Context context, string title, TabLifetime lifetime, Vector2? initialSize = null, string placeNextToDock = null,
@@ -50,6 +51,7 @@ namespace Editor.Tabs
             WindowFlags = WindowFlags.NoScrollbar;
             _view = new SceneView(Context);
             _gizmo = new Gizmo(Context);
+            _undo = new Undo.Manager(Context);
             _inspector = new AttributeInspector(Context);
             _view.Scene.LoadXml(Cache.GetResource<XMLFile>("Scenes/SceneLoadExample.xml").GetRoot());
             CreateObjects();
@@ -57,9 +59,11 @@ namespace Editor.Tabs
             SubscribeToEvent<Update>(OnUpdate);
             SubscribeToEvent<PostUpdate>(args => RenderNodeContextMenu());
             SubscribeToEvent<GizmoSelectionChanged>(args => { _selectedComponent = null; });
+            _undo.Connect(_view.Scene);
+            _undo.Connect(_inspector);
+            _undo.Connect(_gizmo);
 
-            _eventArgs.Clear();
-            _eventArgs[InspectHierarchy.HierarchyProvider] = Variant.FromObject(this);
+            _eventArgs[InspectHierarchy.HierarchyProvider] = this;
             SendEvent<InspectHierarchy>(_eventArgs);
         }
 
@@ -68,12 +72,10 @@ namespace Editor.Tabs
             ui.PushStyleVar(StyleVar.FrameRounding, 0);
 
             if (Widgets.EditorToolbarButton(FontAwesome.Undo, "Undo"))
-            {
-            }
+                _undo.Undo();
 
             if (Widgets.EditorToolbarButton(FontAwesome.Repeat, "Redo"))
-            {
-            }
+                _undo.Redo();
 
             ui.SameLine(0, 3);
 
