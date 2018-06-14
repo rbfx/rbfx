@@ -29,8 +29,9 @@ namespace Editor.Tabs
     {
         private Console _console;
 
-        public ConsoleTab(Context context, string title, Vector2? initialSize = null, string placeNextToDock = null,
-            DockSlot slot = DockSlot.SlotNone) : base(context, title, initialSize, placeNextToDock, slot)
+        public ConsoleTab(Context context, string title, TabLifetime lifetime, Vector2? initialSize = null,
+            string placeNextToDock = null, DockSlot slot = DockSlot.SlotNone) : base(context, title, lifetime,
+            initialSize, placeNextToDock, slot)
         {
             _console = Engine.CreateConsole();
             _console.IsAutoVisibleOnError = false;

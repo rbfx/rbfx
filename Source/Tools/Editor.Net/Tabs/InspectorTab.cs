@@ -31,11 +31,11 @@ namespace Editor.Tabs
     {
         private readonly AttributeInspector _inspector;
         private IInspectable _inspectable;
-        public InspectorTab(Context context, string title, Vector2? initialSize = null, string placeNextToDock = null,
-            DockSlot slot = DockSlot.SlotNone) : base(context, title, initialSize, placeNextToDock, slot)
-        {
-            _inspector = new AttributeInspector(Context);
 
+        public InspectorTab(Context context, string title, TabLifetime lifetime, Vector2? initialSize = null,
+            string placeNextToDock = null, DockSlot slot = DockSlot.SlotNone) : base(context, title, lifetime,
+            initialSize, placeNextToDock, slot)
+        {
             SubscribeToEvent<InspectItem>(OnInspect);
         }
 

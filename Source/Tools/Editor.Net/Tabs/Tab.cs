@@ -25,6 +25,12 @@ using Urho3D;
 
 namespace Editor.Tabs
 {
+    public enum TabLifetime
+    {
+        Temporary,
+        Persistent
+    }
+
     public class Tab : Urho3D.Object
     {
         public struct Location
@@ -46,11 +52,14 @@ namespace Editor.Tabs
         public bool MouseHoversViewport { get; protected set; }
         public bool IsDockFocused { get; protected set; }
         public bool IsDockActive { get; protected set; }
+        public TabLifetime Lifetime { get; protected set; }
 
-        public Tab(Context context, string title, Vector2? initialSize = null, string placeNextToDock = null,
+        public Tab(Context context, string title, TabLifetime lifetime, Vector2? initialSize = null,
+            string placeNextToDock = null,
             DockSlot slot = DockSlot.SlotNone) : base(context)
         {
             Title = title;
+            Lifetime = lifetime;
             InitialSize = initialSize.GetValueOrDefault(new Vector2(-1, -1));
             InitialLocation.NextDockName = placeNextToDock;
             InitialLocation.Slot = slot;

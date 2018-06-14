@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
 using Urho3D;
 using ImGui;
 
@@ -27,8 +28,9 @@ namespace Editor.Tabs
 {
     public class ResourcesTab : Tab
     {
-        public ResourcesTab(Context context, string title, Vector2? initialSize = null, string placeNextToDock = null,
-            DockSlot slot = DockSlot.SlotNone) : base(context, title, initialSize, placeNextToDock, slot)
+        public ResourcesTab(Context context, string title, TabLifetime lifetime, Vector2? initialSize = null,
+            string placeNextToDock = null, DockSlot slot = DockSlot.SlotNone) : base(context, title, lifetime,
+            initialSize, placeNextToDock, slot)
         {
         }
 

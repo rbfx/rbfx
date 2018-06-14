@@ -74,16 +74,16 @@ namespace Editor
             // time implementing this functionality in ImGuiDock proper values were written down and then tweaked until
             // they looked right. Insertion order is also important here when specifying dock placement location.
             var screenSize = Graphics.Size;
-            _tabs.Add(new HierarchyTab(Context, "Hierarchy", new Vector2(screenSize.X * 0.2f, screenSize.Y * 0.5f),
-                null, DockSlot.SlotLeft));
-            _tabs.Add(new SceneTab(Context, "Scene", new Vector2(screenSize.X * 0.6f, screenSize.Y * 0.8f),
-                null, DockSlot.SlotRight));
-            _tabs.Add(new ResourcesTab(Context, "Resources", new Vector2(screenSize.X * 0.2f, screenSize.Y * 0.15f),
-                "Hierarchy", DockSlot.SlotBottom));
-            _tabs.Add(new InspectorTab(Context, "Inspector", new Vector2(screenSize.X * 0.07f, screenSize.Y),
-                "Scene", DockSlot.SlotRight));
-            _tabs.Add(new ConsoleTab(Context, "Console", new Vector2(screenSize.X * 0.6f, screenSize.Y * 0.15f),
-                "Scene", DockSlot.SlotBottom));
+            _tabs.Add(new InspectorTab(Context, "Inspector", TabLifetime.Persistent,
+                new Vector2(screenSize.X * 0.6f, screenSize.Y), null, DockSlot.SlotRight));
+            _tabs.Add(new HierarchyTab(Context, "Hierarchy", TabLifetime.Persistent,
+                new Vector2(screenSize.X * 0.05f, screenSize.Y * 0.5f), null, DockSlot.SlotLeft));
+            _tabs.Add(new ResourcesTab(Context, "Resources", TabLifetime.Persistent,
+                new Vector2(screenSize.X * 0.05f, screenSize.Y * 0.15f), "Hierarchy", DockSlot.SlotBottom));
+            _tabs.Add(new ConsoleTab(Context, "Console", TabLifetime.Persistent,
+                new Vector2(screenSize.X * 0.6f, screenSize.Y * 0.4f), "Inspector", DockSlot.SlotLeft));
+            _tabs.Add(new SceneTab(Context, "Scene", TabLifetime.Temporary,
+                new Vector2(screenSize.X * 0.6f, screenSize.Y * 0.6f), "Console", DockSlot.SlotTop));
 
             SubscribeToEvent<Update>(OnRender);
         }

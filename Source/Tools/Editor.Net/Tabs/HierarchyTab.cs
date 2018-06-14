@@ -31,8 +31,9 @@ namespace Editor.Tabs
     {
         private IHierarchyProvider _hierarchyProvider;
 
-        public HierarchyTab(Context context, string title, Vector2? initialSize = null, string placeNextToDock = null,
-            DockSlot slot = DockSlot.SlotNone) : base(context, title, initialSize, placeNextToDock, slot)
+        public HierarchyTab(Context context, string title, TabLifetime lifetime, Vector2? initialSize = null,
+            string placeNextToDock = null, DockSlot slot = DockSlot.SlotNone) : base(context, title, lifetime,
+            initialSize, placeNextToDock, slot)
         {
             SubscribeToEvent<InspectHierarchy>(OnInspect);
         }

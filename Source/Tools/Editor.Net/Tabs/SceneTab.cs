@@ -42,8 +42,8 @@ namespace Editor.Tabs
         private Component _selectedComponent;
         private readonly IconCache _iconCache;
 
-        public SceneTab(Context context, string title, Vector2? initialSize = null, string placeNextToDock = null,
-            DockSlot slot = DockSlot.SlotNone) : base(context, title, initialSize, placeNextToDock, slot)
+        public SceneTab(Context context, string title, TabLifetime lifetime, Vector2? initialSize = null, string placeNextToDock = null,
+            DockSlot slot = DockSlot.SlotNone) : base(context, title, lifetime, initialSize, placeNextToDock, slot)
         {
             _iconCache = GetSubsystem<IconCache>();
             WindowFlags = WindowFlags.NoScrollbar;
