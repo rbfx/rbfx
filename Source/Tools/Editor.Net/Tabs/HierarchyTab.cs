@@ -36,6 +36,13 @@ namespace Editor.Tabs
             initialSize, placeNextToDock, slot)
         {
             SubscribeToEvent<InspectHierarchy>(OnInspect);
+            SubscribeToEvent<EditorTabClosed>(OnTabClosed);
+        }
+
+        private void OnTabClosed(Event args)
+        {
+            if (args.GetObject(EditorTabClosed.TabInstance) == _hierarchyProvider)
+                _hierarchyProvider = null;
         }
 
         private void OnInspect(Event args)

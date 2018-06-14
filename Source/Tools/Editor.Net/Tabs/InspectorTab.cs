@@ -37,6 +37,13 @@ namespace Editor.Tabs
             initialSize, placeNextToDock, slot)
         {
             SubscribeToEvent<InspectItem>(OnInspect);
+            SubscribeToEvent<EditorTabClosed>(OnTabClosed);
+        }
+
+        private void OnTabClosed(Event args)
+        {
+            if (args.GetObject(EditorTabClosed.TabInstance) == _inspectable)
+                _inspectable = null;
         }
 
         private void OnInspect(Event args)

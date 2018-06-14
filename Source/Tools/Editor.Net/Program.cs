@@ -22,6 +22,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Editor.Events;
 using Editor.Tabs;
 using IconFonts;
 using Urho3D;
@@ -145,8 +146,18 @@ namespace Editor
             var dockSize = new System.Numerics.Vector2(screenSize.X, screenSize.Y - MenubarSize);
             ImGuiDock.RootDock(dockPos, dockSize);
 
-            foreach (var tab in _tabs)
+            for (var i = 0; i < _tabs.Count;)
+            {
+                var tab = _tabs[i];
                 tab.OnRender();
+                if (tab.Lifetime == TabLifetime.Temporary && !tab.IsOpen)
+                {
+                    _tabs.RemoveAt(i);
+                    SendEvent<EditorTabClosed>(new Dictionary<StringHash, dynamic> {[EditorTabClosed.TabInstance] = tab});
+                }
+                else
+                    ++i;
+            }
         }
     }
 

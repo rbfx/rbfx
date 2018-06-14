@@ -35,4 +35,10 @@ namespace Editor.Events
     {
         public static readonly StringHash HierarchyProvider = "HierarchyProvider";
     }
+
+    [Event(EventName = "EditorTabClosed")]
+    public class EditorTabClosed
+    {
+        public static readonly StringHash TabInstance = "TabInstance";
+    }
 }
