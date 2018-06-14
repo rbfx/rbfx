@@ -792,7 +792,16 @@ std::string SanitizeConstant(std::string parentName, std::string constantName)
         std::transform(parentName.begin(), parentName.end(), parentName.begin(), tolower);
         parentName = parentName.substr(0, firstWord.length());
         if (firstWord == parentName)
+        {
+            static std::regex number("[0-9]+");
             constantWords.erase(constantWords.begin());
+            if (constantWords.size() == 1 && std::regex_match(constantWords.front(), number))
+            {
+                // Constant name may end up being a number. Number is not a valid identifier therefore we prepend "Num".
+                constantWords.emplace_back("Num");
+                std::reverse(constantWords.begin(), constantWords.end());
+            }
+        }
         else
         {
             // If constant starts with a word that consists of first letters of parent name - remove this abbreviation.
