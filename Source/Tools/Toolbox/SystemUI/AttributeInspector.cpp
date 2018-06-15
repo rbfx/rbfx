@@ -937,7 +937,7 @@ bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, 
 
                 ui::TextUnformatted("Quality");
                 NextColumn();
-                if (ui::DragInt("###qualityLevel_", (int*)&tech.qualityLevel_))
+                if (ui::DragInt("###qualityLevel_", (int*)&tech.qualityLevel_, 1, QUALITY_LOW, QUALITY_MAX))
                     material->SaveFile(GetCache()->GetResourceFileName(material->GetName()));
 
                 ui::Unindent(attributeIndentLevel);

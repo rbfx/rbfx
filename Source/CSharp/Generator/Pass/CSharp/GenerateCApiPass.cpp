@@ -566,9 +566,11 @@ std::string GenerateCApiPass::ToCType(const cppast::cpp_type& type, bool disallo
         {
             const auto& tpl = dynamic_cast<const cppast::cpp_template_instantiation_type&>(t);
             auto tplName = tpl.primary_template().name();
-            if (tplName == "FlagSet")   // wraps enum so a value type
+            if (container::contains(generator->valueTemplates_, tplName))
+                // FlagSet<T> and alike
                 return tpl.unexposed_arguments();
-            else if (container::contains(generator->wrapperTemplates_, tplName))
+            else if (container::contains(generator->complexTemplates_, tplName))
+                // Smart pointers
                 return tpl.unexposed_arguments() + "*";
             assert(false);
         }
@@ -666,7 +668,7 @@ std::string GenerateCApiPass::GetAutoType(const cppast::cpp_type& type)
     else if (nonCvType.kind() == cppast::cpp_type_kind::builtin_t || IsEnumType(nonCvType))
         return "auto&&";
     else
-        return "auto*";
+        return "auto";
 }
 
 std::string GenerateCApiPass::DereferenceValueType(const cppast::cpp_type& type, const std::string& expr)

@@ -165,6 +165,7 @@
           "Urho3D::AllContentOctreeQuery::AllContentOctreeQuery(PODVector<Urho3D::Drawable *>&,unsigned char,unsigned int)",
           "Urho3D::AttributeInfo",
           "Urho3D::AttributeHandle",
+          "Urho3D::is_flagset",
         ]
       },
       "inheritable": {

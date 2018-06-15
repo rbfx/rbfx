@@ -22,16 +22,21 @@
 
 #pragma once
 
+#include "../Container/FlagSet.h"
 #include "../Core/Object.h"
 #include "../Core/Timer.h"
 
 namespace Urho3D
 {
 
-static const unsigned DEBUGHUD_SHOW_NONE = 0x0;
-static const unsigned DEBUGHUD_SHOW_STATS = 0x1;
-static const unsigned DEBUGHUD_SHOW_MODE = 0x2;
-static const unsigned DEBUGHUD_SHOW_ALL = 0x7;
+enum DebugHudMode : unsigned
+{
+    DEBUGHUD_SHOW_NONE = 0x0,
+    DEBUGHUD_SHOW_STATS = 0x1,
+    DEBUGHUD_SHOW_MODE = 0x2,
+    DEBUGHUD_SHOW_ALL = 0x7,
+};
+URHO3D_FLAGSET(DebugHudMode, DebugHudModeFlags);
 
 /// Displays rendering stats and profiling information.
 class URHO3D_API DebugHud : public Object
@@ -46,19 +51,19 @@ public:
 
     /// Set elements to show.
     /// \param mode is a combination of DEBUGHUD_SHOW_* flags.
-    void SetMode(unsigned mode);
+    void SetMode(DebugHudModeFlags mode);
     /// Cycle through elements
     void CycleMode();
     /// Set whether to show 3D geometry primitive/batch count only. Default false.
     void SetUseRendererStats(bool enable);
     /// Toggle elements.
     /// \param mode is a combination of DEBUGHUD_SHOW_* flags.
-    void Toggle(unsigned mode);
+    void Toggle(DebugHudModeFlags mode);
     /// Toggle all elements.
     void ToggleAll();
     /// Return currently shown elements.
     /// \return a combination of DEBUGHUD_SHOW_* flags.
-    unsigned GetMode() const { return mode_; }
+    DebugHudModeFlags GetMode() const { return mode_; }
     /// Return whether showing 3D geometry primitive/batch count only.
     bool GetUseRendererStats() const { return useRendererStats_; }
     /// Set application-specific stats.
@@ -97,7 +102,7 @@ private:
     /// Show 3D geometry primitive/batch count flag.
     bool useRendererStats_;
     /// Current shown-element mode.
-    unsigned mode_;
+    DebugHudModeFlags mode_;
     /// FPS timer.
     Timer fpsTimer_;
     /// Calculated fps

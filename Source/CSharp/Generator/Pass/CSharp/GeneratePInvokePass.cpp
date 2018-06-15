@@ -487,7 +487,7 @@ std::string GeneratePInvokePass::ToPInvokeType(const cppast::cpp_type& type, boo
         {
             const auto& tpl = dynamic_cast<const cppast::cpp_template_instantiation_type&>(t);
             auto tplName = tpl.primary_template().name();
-            if (tplName != "FlagSet")
+            if (container::contains(generator->valueTemplates_, tplName))
                 return tpl.unexposed_arguments();
             else if (container::contains(generator->wrapperTemplates_, tplName))
                 return "IntPtr";

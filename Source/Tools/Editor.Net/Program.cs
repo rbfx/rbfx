@@ -165,16 +165,16 @@ namespace Editor
         void SendKeyboardShortcuts()
         {
             var combo = EditorKeyCombo.Kind.None;
-            if (Input.GetKeyDown(InputEvents.KeyCtrl))
+            if (Input.GetKeyDown(Key.Ctrl))
             {
-                if (Input.GetKeyPress(InputEvents.KeyZ))
+                if (Input.GetKeyPress(Key.Z))
                 {
-                    if (Input.GetKeyDown(InputEvents.KeyShift))
+                    if (Input.GetKeyDown(Key.Shift))
                         combo = EditorKeyCombo.Kind.Redo;
                     else
                         combo = EditorKeyCombo.Kind.Undo;
                 }
-                else if (Input.GetKeyPress(InputEvents.KeyY))
+                else if (Input.GetKeyPress(Key.Y))
                     combo = EditorKeyCombo.Kind.Redo;
             }
 

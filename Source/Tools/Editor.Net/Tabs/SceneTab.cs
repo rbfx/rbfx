@@ -145,8 +145,8 @@ namespace Editor.Tabs
 
                 _gizmo.SetScreenRect(viewPos, viewSize);
 
-                var isClickedLeft = Input.GetMouseButtonClick((int) MouseButton.Left) && ui.IsItemHovered(HoveredFlags.AllowWhenBlockedByPopup);
-                var isClickedRight = Input.GetMouseButtonClick((int) MouseButton.Right) && ui.IsItemHovered(HoveredFlags.AllowWhenBlockedByPopup);
+                var isClickedLeft = Input.GetMouseButtonClick(MouseButton.Left) && ui.IsItemHovered(HoveredFlags.AllowWhenBlockedByPopup);
+                var isClickedRight = Input.GetMouseButtonClick(MouseButton.Right) && ui.IsItemHovered(HoveredFlags.AllowWhenBlockedByPopup);
 
                 _gizmo.ManipulateSelection(_view.Camera);
 
@@ -182,7 +182,7 @@ namespace Editor.Tabs
 
                         if (clickNode != null)
                         {
-                            var appendSelection = Input.GetKeyDown(InputEvents.KeyCtrl);
+                            var appendSelection = Input.GetKeyDown(Key.Ctrl);
                             if (!appendSelection)
                                 _gizmo.UnselectAll();
                             _gizmo.ToggleSelection(clickNode);
@@ -265,7 +265,7 @@ namespace Editor.Tabs
             {
                 if (ImGui.SystemUi.IsMouseClicked(MouseButton.Left))
                 {
-                    if (!Input.GetKeyDown(InputEvents.KeyCtrl))
+                    if (!Input.GetKeyDown(Key.Ctrl))
                         _gizmo.UnselectAll();
                     _gizmo.ToggleSelection(node);
                 }
@@ -331,7 +331,7 @@ namespace Editor.Tabs
         {
             if (ui.BeginPopup("Node context menu") /*&& !scenePlaying_*/)
             {
-                if (Input.GetKeyPress(InputEvents.KeyEscape) || !Input.IsMouseVisible)
+                if (Input.GetKeyPress(Key.Escape) || !Input.IsMouseVisible)
                 {
                     // Close when interacting with scene camera.
                     ui.CloseCurrentPopup();
@@ -339,7 +339,7 @@ namespace Editor.Tabs
                     return;
                 }
 
-                var isAlternative = Input.GetKeyDown(InputEvents.KeyShift);
+                var isAlternative = Input.GetKeyDown(Key.Shift);
 
                 if (ui.MenuItem(isAlternative ? "Create Child (Local)" : "Create Child"))
                 {
