@@ -47,6 +47,10 @@ void Urho3DCustomPassLate::NamespaceStart()
     if (auto* entity = generator->GetSymbol("Urho3D::Application::engineParameters_"))
         // Wrapped in a class wrapper but not present in managed api.
         entity->flags_ |= HintNoPublicApi;
+
+    if (auto* entity = generator->GetSymbol("Urho3D::MOUSEB_ANY"))
+        // Enum values in C# are signed ints, this enum in cpp is unsigned.
+        entity->defaultValue_ = "-1";
 }
 
 bool Urho3DCustomPassLate::Visit(MetaEntity* entity, cppast::visitor_info info)
