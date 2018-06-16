@@ -24,8 +24,6 @@ file (GLOB_RECURSE SOURCE_FILES
     src/*.cpp
     src/*.h
     include/*.h
-    3rdparty/fcpp/cpp*.c
-    3rdparty/fcpp/*.h
     3rdparty/forsyth-too/*.cpp
     3rdparty/forsyth-too/*.h
     3rdparty/ib-compress/*.cpp
@@ -174,9 +172,33 @@ elseif(UNIX OR MINGW)
     )
 endif ()
 
+file (GLOB FCPP_SOURCE_FILES 
+    3rdparty/fcpp/cpp*.c
+    3rdparty/fcpp/*.h
+)
+add_library(fcpp ${FCPP_SOURCE_FILES})
+if(MSVC)
+    target_compile_options(fcpp PRIVATE
+        /wd4055 # warning C4055: 'type cast': from data pointer 'void *' to function pointer 'void (__cdecl *)(char *,void *)'
+        /wd4244 # warning C4244: '=': conversion from 'const flex_int32_t' to 'YY_CHAR', possible loss of data
+        /wd4701 # warning C4701: potentially uninitialized local variable 'lower' used
+        /wd4706 # warning C4706: assignment within conditional expression
+    )
+elseif(UNIX OR MINGW)
+    target_compile_options(fcpp PRIVATE
+        -Wno-implicit-fallthrough
+    )
+endif()
+target_compile_definitions(fcpp PRIVATE
+    -DNINCLUDE=64
+    -DNWORK=65536
+    -DNBUFF=65536
+    -DOLD_PREPROCESSOR=0
+)
+
 file (GLOB SHADERC_SOURCE_FILES tools/shaderc/*.cpp)
 add_executable(shaderc ${SHADERC_SOURCE_FILES})
-target_link_libraries(shaderc glsl-optimizer glslang bgfx-static ${CMAKE_DL_LIBS})
+target_link_libraries(shaderc glsl-optimizer glslang bgfx-static fcpp ${CMAKE_DL_LIBS})
 if (UNIX)
     target_link_libraries(shaderc pthread)
 endif ()
@@ -189,12 +211,6 @@ target_include_directories(shaderc PRIVATE
     3rdparty/glslang
     3rdparty/glsl-optimizer/include
     3rdparty/glsl-optimizer/src/glsl
-)
-target_compile_definitions(shaderc PRIVATE
-    -DNINCLUDE=64
-    -DNWORK=65536
-    -DNBUFF=65536
-    -DOLD_PREPROCESSOR=0
 )
 set_target_properties(shaderc PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR}")
 if (EXISTS $<TARGET_FILE:shaderc>)
