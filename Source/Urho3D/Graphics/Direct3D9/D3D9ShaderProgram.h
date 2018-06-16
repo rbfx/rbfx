@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../../Container/HashMap.h"
+#include "../../Math/MathDefs.h"
 #include "../../Graphics/ShaderVariation.h"
 
 namespace Urho3D

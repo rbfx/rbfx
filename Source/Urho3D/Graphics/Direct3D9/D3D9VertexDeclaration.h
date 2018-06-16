@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../../Container/RefCounted.h"
+#include "../../Container/Ptr.h"
 #include "../../Container/Vector.h"
 #include "../../Graphics/GraphicsDefs.h"
 
