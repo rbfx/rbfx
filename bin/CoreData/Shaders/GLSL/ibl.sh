@@ -53,8 +53,8 @@
         // so for now, sample without explicit LOD, and from the environment sampler, where the zone texture will be put
         // on mobile hardware
         #ifndef GL_ES
-            vec3 cube = textureLod(sZoneCubeMap, FixCubeLookup(reflectVec), mipSelect).rgb;
-            vec3 cubeD = textureLod(sZoneCubeMap, FixCubeLookup(wsNormal), 9.0).rgb;
+            vec3 cube = textureCubeLod(sZoneCubeMap, FixCubeLookup(reflectVec), mipSelect).rgb;
+            vec3 cubeD = textureCubeLod(sZoneCubeMap, FixCubeLookup(wsNormal), 9.0).rgb;
         #else
             vec3 cube = textureCube(sEnvCubeMap, FixCubeLookup(reflectVec)).rgb;
             vec3 cubeD = textureCube(sEnvCubeMap, FixCubeLookup(wsNormal)).rgb;
@@ -65,11 +65,11 @@
         float darknessCutoff = clamp((cAmbientColor.a - 1.0) * 0.1, 0.0, 0.25);
 
         const float hdrMaxBrightness = 5.0;
-        vec3 hdrCube = pow(cube + darknessCutoff, vec3(max(1.0, cAmbientColor.a)));
-        hdrCube += max(vec3(0.0), hdrCube - vec3(1.0)) * hdrMaxBrightness;
+        vec3 hdrCube = pow(cube + vec3_splat(darknessCutoff), vec3_splat(max(1.0, cAmbientColor.a)));
+        hdrCube += mul(max(vec3_splat(0.0), hdrCube - vec3_splat(1.0)), hdrMaxBrightness);
 
-        vec3 hdrCubeD = pow(cubeD + darknessCutoff, vec3(max(1.0, cAmbientColor.a)));
-        hdrCubeD += max(vec3(0.0), hdrCubeD - vec3(1.0)) * hdrMaxBrightness;
+        vec3 hdrCubeD = pow(cubeD + vec3_splat(darknessCutoff), vec3_splat(max(1.0, cAmbientColor.a)));
+        hdrCubeD += mul(max(vec3_splat(0.0), hdrCubeD - vec3_splat(1.0)), hdrMaxBrightness);
 
         vec3 environmentSpecular = EnvBRDFApprox(specColor, roughness, ndv);
         vec3 environmentDiffuse = EnvBRDFApprox(diffColor, 1.0, ndv);

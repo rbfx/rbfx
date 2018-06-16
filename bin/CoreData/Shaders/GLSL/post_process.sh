@@ -23,7 +23,7 @@ vec4 GaussianBlur(int blurKernelSize, vec2 blurDir, vec2 blurRadius, float sigma
     gaussCoeff.z = gaussCoeff.y * gaussCoeff.y;
 
     vec2 blurVec = blurRadius * blurDir;
-    vec4 avgValue = vec4(0.0);
+    vec4 avgValue = vec4_splat(0.0);
     float gaussCoeffSum = 0.0;
 
     avgValue += texture2D(texSampler, texCoord) * gaussCoeff.x;

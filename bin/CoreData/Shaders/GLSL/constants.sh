@@ -1,4 +1,4 @@
-#define M_PI 3.14159265358979323846
+//#define M_PI 3.14159265358979323846 defined by bgfx already
 #define M_EPSILON 0.0001
 
 #ifdef PBR

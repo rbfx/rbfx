@@ -2,7 +2,7 @@
 #include "varying_scenepass.def.sc"
 #include "urho3d_compatibility.sh"
 #ifdef COMPILEVS
-    $input a_position
+    $input a_position, a_texcoord0, a_color0
     $output vTexCoord, vColor
 #endif
 #ifdef COMPILEPS
