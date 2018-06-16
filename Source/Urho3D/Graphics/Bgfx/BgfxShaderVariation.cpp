@@ -401,7 +401,20 @@ bool ShaderVariation::Compile()
 	args.Join(argsArray, " ");
 
 	FileSystem* fileSystem = owner_->GetSubsystem<FileSystem>();
-	String commandLine = fileSystem->GetProgramDir() + shaderc + " " + args;
+#ifdef _MSC_VER
+#ifdef _DEBUG
+	String dirOffset = "../../Debug/";
+#else
+	String dirOffset = "../../Release/";
+#endif
+#else
+	String dirOffset = "../";
+#endif
+	String commandLine;
+	if(fileSystem->FileExists(fileSystem->GetProgramDir() + shaderc))
+		commandLine = fileSystem->GetProgramDir() + shaderc + " " + args;
+	else
+		commandLine = fileSystem->GetProgramDir() + dirOffset + shaderc + " " + args;
     if(!fileSystem->DirExists(graphics_->GetShaderCacheDir() + shaderPath))
         fileSystem->CreateDir(graphics_->GetShaderCacheDir() + shaderPath);
 	URHO3D_LOGDEBUG("Compiling shader command: " + commandLine);
