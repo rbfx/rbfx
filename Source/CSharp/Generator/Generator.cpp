@@ -25,6 +25,7 @@
 #include <cppast/libclang_parser.hpp>
 #include <CLI11/CLI11.hpp>
 #include "Pass/BuildMetaAST.h"
+#include "Pass/CSharp/FindFlagEnumsPass.h"
 #include "Pass/UnknownTypesPass.h"
 #include "Pass/CSharp/Urho3DTypeMaps.h"
 #include "Pass/CSharp/Urho3DCustomPassEarly.h"
@@ -137,6 +138,7 @@ int main(int argc, char* argv[])
     spdlog::stdout_color_mt("console");
 
     generator->AddCppPass<BuildMetaAST>();
+    generator->AddCppPass<FindFlagEnumsPass>();
     generator->AddApiPass<Urho3DTypeMaps>();
     generator->AddApiPass<UnknownTypesPass>();
     generator->AddApiPass<DiscoverInterfacesPass>();

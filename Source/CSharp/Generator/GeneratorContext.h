@@ -101,8 +101,10 @@ public:
         }
         return nullptr;
     }
-    bool GetSymbolOfConstant(MetaEntity* user, const std::string& constant, std::string& result,
+    bool GetSymbolOfConstant(MetaEntity* user, const std::string& symbol, std::string& result,
                              MetaEntity** constantEntity=nullptr);
+    bool GetSymbolOfConstant(const cppast::cpp_entity& user, const std::string& symbol, std::string& result,
+                             const cppast::cpp_entity** symbolEntity);
     MetaEntity* GetSymbol(const char* symbolName) { return GetSymbol(std::string(symbolName)); }
     MetaEntity* GetSymbol(const std::string& symbolName);
     bool IsInheritable(const std::string& symbolName) const;

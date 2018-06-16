@@ -214,6 +214,8 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
     {
         if (info.event == info.container_entity_enter)
         {
+            for (const auto& attr : entity->attributes_)
+                printer_ << fmt::format("[{}]", attr);
             printer_ << "public enum " + entity->name_;
             printer_.Indent();
         }

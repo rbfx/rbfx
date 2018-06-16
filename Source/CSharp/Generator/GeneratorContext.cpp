@@ -582,17 +582,33 @@ const TypeMap* GeneratorContext::GetTypeMap(const std::string& typeName)
     return nullptr;
 }
 
-bool GeneratorContext::GetSymbolOfConstant(MetaEntity* user, const std::string& constant, std::string& result,
+bool GeneratorContext::GetSymbolOfConstant(MetaEntity* user, const std::string& symbol, std::string& result,
                                            MetaEntity** constantEntity)
 {
-    if (constantEntity)
-        *constantEntity = nullptr;
+    const cppast::cpp_entity* symbolEntity = nullptr;
+    auto success = GetSymbolOfConstant(*user->ast_, symbol, result, &symbolEntity);
+    if (constantEntity != nullptr)
+    {
+        if (symbolEntity != nullptr)
+            *constantEntity = static_cast<MetaEntity*>(symbolEntity->user_data());
+        else
+            *constantEntity = nullptr;
+    }
+    return success;
+}
 
-    std::string symbol = constant;
+bool GeneratorContext::GetSymbolOfConstant(const cppast::cpp_entity& user, const std::string& symbol,
+                                           std::string& result, const cppast::cpp_entity** symbolEntity)
+{
+    if (symbolEntity)
+        *symbolEntity = nullptr;
+
+    MetaEntity* metaEntity = static_cast<MetaEntity*>(user.user_data());
+    auto currentSymbol = symbol;
     do
     {
         // Remaps are a priority
-        auto it = defaultValueRemaps_.find(symbol);
+        auto it = defaultValueRemaps_.find(currentSymbol);
         if (it != defaultValueRemaps_.end())
         {
             result = it->second;
@@ -600,31 +616,31 @@ bool GeneratorContext::GetSymbolOfConstant(MetaEntity* user, const std::string& 
         }
 
         // Existing entities
-        if (MetaEntity* entity = generator->GetSymbol(symbol))
+        if (MetaEntity* entity = generator->GetSymbol(currentSymbol))
         {
             result = entity->symbolName_;
-            if (constantEntity != nullptr)
-                *constantEntity = entity;
+            if (symbolEntity != nullptr)
+                *symbolEntity = entity->ast_;
             return true;
         }
-        symbol.clear();
+        currentSymbol.clear();
 
         // Get next possible symbol
-        while (user != nullptr)
+        while (metaEntity != nullptr)
         {
-            if (user->kind_ != cppast::cpp_entity_kind::class_t || user->kind_ != cppast::cpp_entity_kind::namespace_t)
+            if (metaEntity->kind_ != cppast::cpp_entity_kind::class_t || metaEntity->kind_ != cppast::cpp_entity_kind::namespace_t)
             {
-                symbol = user->symbolName_ + "::" + constant;
-                user = user->GetParent();
-                // Check next symbol
+                currentSymbol = metaEntity->symbolName_ + "::" + symbol;
+                metaEntity = metaEntity->GetParent();
+                // Check next currentSymbol
                 break;
             }
             else
-                // Unable to make symbol, try again with parent node
-                user = user->GetParent();
+                // Unable to make currentSymbol, try again with parent node
+                metaEntity = metaEntity->GetParent();
         }
-        // If making symbol fails loop terminates
-    } while (!symbol.empty());
+        // If making currentSymbol fails loop terminates
+    } while (!currentSymbol.empty());
 
     return false;
 }
