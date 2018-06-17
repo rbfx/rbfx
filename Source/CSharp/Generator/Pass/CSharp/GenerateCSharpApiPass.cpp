@@ -622,7 +622,8 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
 void GenerateCSharpApiPass::Stop()
 {
-    auto outputFile = generator->currentModule_->outputDirCs_ + "CSharp.cs";
+    auto outputFile = fmt::format("{}/{}CSharp.cs", generator->currentModule_->outputDirCs_,
+        generator->currentModule_->moduleName_);
     std::ofstream fp(outputFile);
     if (!fp.is_open())
     {

@@ -410,7 +410,8 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
 void GeneratePInvokePass::Stop()
 {
-    auto outputFile = generator->currentModule_->outputDirCs_ + "PInvoke.cs";
+    auto outputFile = fmt::format("{}/{}PInvoke.cs", generator->currentModule_->outputDirCs_,
+                                  generator->currentModule_->moduleName_);
     std::ofstream fp(outputFile);
     if (!fp.is_open())
     {

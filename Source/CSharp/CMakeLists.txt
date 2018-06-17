@@ -179,8 +179,8 @@ macro (csharp_bind_target)
         ${BINDINGS_OUTPUT_DIR}/Native/${BIND_TARGET}RegisterFactories.cpp
     )
     set (COMMON_NET_SOURCE_FILES_GENERATED
-        ${BINDINGS_OUTPUT_DIR}/CSharp/PInvoke.cs
-        ${BINDINGS_OUTPUT_DIR}/CSharp/CSharp.cs
+        ${BINDINGS_OUTPUT_DIR}/CSharp/${BIND_TARGET}PInvoke.cs
+        ${BINDINGS_OUTPUT_DIR}/CSharp/${BIND_TARGET}CSharp.cs
         ${BINDINGS_OUTPUT_DIR}/CSharp/Config.cs
     )
     set_source_files_properties(${CSHARP_SOURCE_FILES_GENERATED} ${COMMON_NET_SOURCE_FILES_GENERATED} PROPERTIES GENERATED TRUE)
