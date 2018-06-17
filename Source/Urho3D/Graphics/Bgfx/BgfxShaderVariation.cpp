@@ -357,30 +357,32 @@ bool ShaderVariation::Compile()
     argsArray.Push("--varyingdef");
     argsArray.Push(varyingFile);
     argsArray.Push("--platform");
+	if (bgfx::getRendererType() == bgfx::RendererType::OpenGL)
+	{
+		argsArray.Push("--profile 120");
+		if (!graphics_->GetForceGL2())
+		{
+			defines.Push("GL3");
+		}
+	}
 #if defined(WIN32)
     argsArray.Push("windows");
-    argsArray.Push("--profile");
     if (bgfx::getRendererType() == bgfx::RendererType::Direct3D11)
     {
+		argsArray.Push("--profile");
         argsArray.Push(type_ == VS ? "vs_4_0" : "ps_4_0");
     }
-    else if (bgfx::getRendererType() == bgfx::RendererType::Direct3D9)
-        argsArray.Push(type_ == VS ? "vs_3_0" : "ps_3_0");
-    else if (bgfx::getRendererType() == bgfx::RendererType::OpenGL)
-    {
-        argsArray.Push("130");
-        //defines.Push("GL3");
-    }
+	else if (bgfx::getRendererType() == bgfx::RendererType::Direct3D9)
+	{
+		argsArray.Push("--profile");
+		argsArray.Push(type_ == VS ? "vs_3_0" : "ps_3_0");
+	}
 	shaderc = "shaderc.exe";
 #elif defined(__APPLE__)
 	argsArray.Push("osx");
-	argsArray.Push("--profile");
-	argsArray.Push("140");
 	shaderc = "shaderc";
 #else
 	argsArray.Push("linux");
-	argsArray.Push("--profile");
-	argsArray.Push("140");
 	shaderc = "shaderc";
 #endif
 	argsArray.Push("--type");
