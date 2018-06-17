@@ -477,7 +477,7 @@ void Graphics::Clear(unsigned flags, const Color& color, float depth, unsigned s
     unsigned g = (unsigned)Clamp(((int)(color.g_ * 255.0f)), 0, 255);
     unsigned b = (unsigned)Clamp(((int)(color.b_ * 255.0f)), 0, 255);
     unsigned a = (unsigned)Clamp(((int)(color.a_ * 255.0f)), 0, 255);
-	bgfx::setViewClear(impl_->view_, (uint16_t)flags, (r << 24) | (g << 16) | (b << 8) | a, depth, stencil);
+	bgfx::setViewClear(impl_->view_, (uint16_t)flags, (r << 24) | (g << 16) | (b << 8) | a, Clamp(depth, 0.0f, 1.0f), stencil);
 }
 
 bool Graphics::ResolveToTexture(Texture2D* destination, const IntRect& viewport)
@@ -1742,7 +1742,8 @@ void Graphics::CheckFeatureSupport()
     if (caps->limits.maxFBAttachments >= 4)
     deferredSupport_ = true;
     hardwareShadowSupport_ = 0 != (caps->supported & BGFX_CAPS_TEXTURE_COMPARE_LEQUAL);
-    instancingSupport_ = 0 != (caps->supported & BGFX_CAPS_INSTANCING);
+    //instancingSupport_ = 0 != (caps->supported & BGFX_CAPS_INSTANCING);
+	instancingSupport_ = false;
     shadowMapFormat_ = bgfx::TextureFormat::D16;
     hiresShadowMapFormat_ = bgfx::isTextureValid(0, false, 1, bgfx::TextureFormat::D32, BGFX_TEXTURE_RT) ? 
         bgfx::TextureFormat::D32 : bgfx::TextureFormat::D24;
