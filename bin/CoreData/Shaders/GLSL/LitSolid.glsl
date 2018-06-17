@@ -76,7 +76,7 @@ varying vec4 vWorldPos;
 void VS()
 {
     #ifdef NOUV
-    vec2 iTexCoord = float2(0.0, 0.0);
+    vec2 iTexCoord = vec2(0.0, 0.0);
     #endif
     mat4 modelMatrix = iModelMatrix;
     vec3 worldPos = GetWorldPos(modelMatrix);
