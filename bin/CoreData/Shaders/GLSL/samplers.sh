@@ -35,7 +35,7 @@ SAMPLERCUBE(u_EnvCubeMap, 4);
     #define sLightRampMap u_LightRampMap
     #define sLightSpotMap u_LightSpotMap
     #define sDepthBuffer u_DepthBuffer
-    #define sLightBuffer u_sLightBuffer
+    #define sLightBuffer u_LightBuffer
     #ifdef VSM_SHADOW
         SAMPLER2D(u_ShadowMap, 10);
     #else

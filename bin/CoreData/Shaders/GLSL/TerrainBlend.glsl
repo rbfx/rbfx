@@ -4,16 +4,16 @@
 #ifdef COMPILEVS
     $input a_position _NORMAL _TEXCOORD0 _COLOR0 _TEXCOORD1 _ATANGENT _SKINNED _INSTANCED
     #ifdef PERPIXEL
-        $output vTexCoord _VTANGENT, vNormal, vWorldPos _VSHADOWPOS _VSPOTPOS _VCUBEMASKVEC _VCOLOR
+        $output vTexCoord _VTANGENT, vNormal, vWorldPos, vDetailTexCoord _VSHADOWPOS _VSPOTPOS _VCUBEMASKVEC _VCOLOR
     #else
-        $output vTexCoord _VTANGENT, vNormal, vWorldPos, vVertexLight, vScreenPos _VREFLECTIONVEC _VTEXCOORD2 _VCOLOR
+        $output vTexCoord _VTANGENT, vNormal, vWorldPos, vVertexLight, vScreenPos, vDetailTexCoord _VREFLECTIONVEC _VTEXCOORD2 _VCOLOR
     #endif
 #endif
 #ifdef COMPILEPS
     #ifdef PERPIXEL
-        $input vTexCoord _VTANGENT, vNormal, vWorldPos _VSHADOWPOS _VSPOTPOS _VCUBEMASKVEC _VCOLOR
+        $input vTexCoord _VTANGENT, vNormal, vWorldPos, vDetailTexCoord _VSHADOWPOS _VSPOTPOS _VCUBEMASKVEC _VCOLOR
     #else
-        $input vTexCoord _VTANGENT, vNormal, vWorldPos, vVertexLight, vScreenPos _VREFLECTIONVEC _VTEXCOORD2 _VCOLOR
+        $input vTexCoord _VTANGENT, vNormal, vWorldPos, vVertexLight, vScreenPos, vDetailTexCoord _VREFLECTIONVEC _VTEXCOORD2 _VCOLOR
     #endif
 #endif
 
@@ -30,6 +30,10 @@ SAMPLER2D(u_WeightMap0, 0);
 SAMPLER2D(u_DetailMap1, 1);
 SAMPLER2D(u_DetailMap2, 2);
 SAMPLER2D(u_DetailMap3, 3);
+#define sWeightMap0 u_WeightMap0
+#define sDetailMap1 u_DetailMap1
+#define sDetailMap2 u_DetailMap2
+#define sDetailMap3 u_DetailMap3
 
 #else
 
@@ -109,8 +113,12 @@ void VS()
 
         #ifdef SHADOW
             // Shadow projection: transform from world space to shadow space
-            for (int i = 0; i < NUMCASCADES; i++)
-                vShadowPos[i] = GetShadowPos(i, vNormal, projWorldPos);
+            #ifdef BGFX_SHADER
+                GetShadowPos(projWorldPos, vNormal, vShadowPos);
+            #else
+                for (int i = 0; i < NUMCASCADES; i++)
+                    vShadowPos[i] = GetShadowPos(i, vNormal, projWorldPos);
+            #endif
         #endif
 
         #ifdef SPOTLIGHT

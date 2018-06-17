@@ -2,7 +2,7 @@
 #include "varying_water.def.sc"
 #include "urho3d_compatibility.sh"
 #ifdef COMPILEVS
-    $input a_position a_texcoord0 _INSTANCED
+    $input a_position, a_texcoord0, a_normal _INSTANCED
     $output vScreenPos, vReflectUV, vWaterUV, vNormal, vEyeVec
 #endif
 #ifdef COMPILEPS
