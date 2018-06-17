@@ -1554,8 +1554,11 @@ void Graphics::CleanupRenderSurface(RenderSurface* surface)
 {
     if (!surface)
         return;
-
+	
     uint16_t texIdx = surface->GetParentTexture()->GetGPUObjectIdx();
+    if (texIdx == bgfx::kInvalidHandle)
+        return;
+	
     for (unsigned i = 0; i < impl_->frameBuffers_.Size(); ++i)
     {
         bool markForDeletion = false;
@@ -1830,9 +1833,9 @@ void Graphics::PrepareDraw()
     uint32_t stencilFlags = 0;
 
     // Early-out if it's the backbuffer & not to be confused with a depth texture
-    if ((impl_->renderTargetsDirty_) && 
-        (!renderTargets_[0]) && !depthStencil_)
-    {
+	if ((impl_->renderTargetsDirty_) && !depthStencil_ &&
+		(!renderTargets_[0] && !renderTargets_[1] && !renderTargets_[2] && !renderTargets_[3]))
+	{
         bgfx::setViewFrameBuffer(impl_->view_, BGFX_INVALID_HANDLE);
         impl_->renderTargetsDirty_ = false;
     }
@@ -1847,9 +1850,9 @@ void Graphics::PrepareDraw()
         {
             if (renderTargets_[i])
             {
-                attachments[i].handle.idx = renderTargets_[i]->GetParentTexture()->GetGPUObjectIdx();
-                attachments[i].mip = 0;
-                attachments[i].layer = renderTargets_[i]->GetBgfxLayer();
+                attachments[texAttachments].handle.idx = renderTargets_[i]->GetParentTexture()->GetGPUObjectIdx();
+                attachments[texAttachments].mip = 0;
+                attachments[texAttachments].layer = renderTargets_[i]->GetBgfxLayer();
                 ++texAttachments;
             }
         }
