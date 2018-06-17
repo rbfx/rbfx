@@ -53,6 +53,8 @@ public:
 
     /// Return root value.
     JSONValue& GetRoot() { return root_; }
+    /// Set root value.
+    void SetRoot(const JSONValue& value) { root_ = value; }
     /// Return root value.
     const JSONValue& GetRoot() const { return root_; }
 
