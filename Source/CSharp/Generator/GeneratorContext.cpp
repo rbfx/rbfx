@@ -460,7 +460,7 @@ void GeneratorContext::Generate()
             fp << "using System.Runtime.CompilerServices;\n\n";
             for (auto& m2 : modules_)
             {
-                if (&m2 != &m && !m.publicKey_.empty())
+                if (m2.managedAssembly_ != m.managedAssembly_ && !m.publicKey_.empty())
                     fp << fmt::format("[assembly: InternalsVisibleTo(\"{}, PublicKey={}\")]\n",
                                       m2.managedAssembly_, m2.publicKey_);
             }

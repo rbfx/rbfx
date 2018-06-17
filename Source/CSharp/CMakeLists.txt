@@ -46,7 +46,7 @@ macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)
 endmacro()
 
 macro (add_target_csharp TARGET PROJECT_FILE)
-	if (WIN32 AND NOT URHO3D_WITH_MONO)
+    if (WIN32 AND NOT URHO3D_WITH_MONO)
         include_external_msproject(${TARGET} ${PROJECT_FILE} TYPE FAE04EC0-301F-11D3-BF4B-00C04F79EFBC CSharpBindings)
     else ()
         if (WIN32)
@@ -236,9 +236,11 @@ macro (csharp_bind_target)
         # Needed for mono on unixes but not on windows.
         set (FACADES Facades/)
     endif ()
-    add_target_csharp(${BIND_MANAGED_TARGET} ${BIND_CSHARP_DIR}/${BIND_MANAGED_TARGET}.csproj)
-    add_dependencies(${BIND_MANAGED_TARGET} ${CSHARP_LIBRARY_NAME})
-    install (FILES ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll DESTINATION ${DEST_LIBRARY_DIR})
+    if (EXISTS "${BIND_CSHARP_DIR}/${BIND_MANAGED_TARGET}.csproj")
+        add_target_csharp(${BIND_MANAGED_TARGET} ${BIND_CSHARP_DIR}/${BIND_MANAGED_TARGET}.csproj)
+        add_dependencies(${BIND_MANAGED_TARGET} ${CSHARP_LIBRARY_NAME})
+        install (FILES ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll DESTINATION ${DEST_LIBRARY_DIR})
+    endif ()
 endmacro ()
 
 # Target for manually refreshing binding code
