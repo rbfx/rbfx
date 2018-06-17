@@ -628,7 +628,7 @@ void DebugRenderer::Render()
     graphics->SetStencilTest(false);
     graphics->SetShaders(vs, ps);
 #ifdef URHO3D_BGFX
-    bgfx::setViewTransform(graphics->GetImpl()->GetCurrentView(), view_.Data(), (gpuProjection_ * view_).Data());
+    bgfx::setViewTransform(graphics->GetImpl()->GetCurrentView(), view_.Data(), gpuProjection_.Data());
     bgfx::setTransform(Matrix4::IDENTITY.Data());
 #else
     graphics->SetShaderParameter(VSP_MODEL, Matrix3x4::IDENTITY);
