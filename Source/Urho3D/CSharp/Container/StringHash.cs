@@ -40,9 +40,19 @@ public struct StringHash
         Hash = Calculate(value);
     }
 
+    public StringHash(Type type)
+    {
+        Hash = Calculate(type.Name);
+    }
+
     public static implicit operator StringHash(string value)
     {
         return new StringHash(value);
+    }
+
+    public static implicit operator StringHash(Type type)
+    {
+        return new StringHash(type);
     }
 
     public static uint Calculate(string value, uint hash=0)
