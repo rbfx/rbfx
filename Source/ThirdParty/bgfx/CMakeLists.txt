@@ -32,6 +32,9 @@ file (GLOB_RECURSE SOURCE_FILES
 list (REMOVE_ITEM SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/amalgamated.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/amalgamated.mm)
 add_library(bgfx OBJECT ${SOURCE_FILES})
 target_link_objects(bgfx bx bimg)
+target_compile_definitions(bgfx PRIVATE
+    $<$<CONFIG:Debug>:BGFX_CONFIG_DEBUG=1>
+)
 
 if (WIN32)
     target_link_objects (bgfx opengl32 dbghelp psapi)
