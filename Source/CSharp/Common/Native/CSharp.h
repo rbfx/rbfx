@@ -79,10 +79,12 @@ struct CSharpObjConverter
 {
     template<typename T> using RefCountedType = typename std::enable_if<std::is_base_of<Urho3D::RefCounted, T>::value, T>::type;
     template<typename T> using CopyableType = typename std::enable_if<!std::is_base_of<Urho3D::RefCounted, T>::value && std::is_copy_constructible<T>::value, T>::type;
-    template<typename T> using NonRefCountedType = typename std::enable_if<!std::is_base_of<Urho3D::RefCounted, T>::value, T>::type;
 
+    template<typename T> static T* ToCSharp(SharedPtr<T>&& object)               { return object.Detach(); }
     template<typename T> static T* ToCSharp(const SharedPtr<T>& object)          { return object.Get(); }
+    template<typename T> static T* ToCSharp(SharedPtr<T>& object)                { return object.Get(); }
     template<typename T> static T* ToCSharp(const WeakPtr<T>& object)            { return object.Get(); }
+    template<typename T> static T* ToCSharp(WeakPtr<T>& object)                  { return object.Get(); }
     template<typename T> static T* ToCSharp(const RefCountedType<T>* object)     { return const_cast<T*>(object); }
     template<typename T> static T* ToCSharp(CopyableType<T>&& object)            { return new T(std::move(object)); }
     template<typename T> static T* ToCSharp(const CopyableType<T>& object)       { return new T(object); }
