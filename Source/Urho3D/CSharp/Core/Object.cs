@@ -531,7 +531,7 @@ namespace Urho3D
             if (args != null)
             {
                 foreach (var pair in args)
-                    _args[pair.Key] = pair.Value;
+                    _args[pair.Key] = new Variant(pair.Value);
                 args.Clear();
             }
             SendEvent(eventType, _args);
