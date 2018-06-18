@@ -322,6 +322,17 @@ const JSONValue& JSONValue::Get(const String& key) const
     return i->second_;
 }
 
+const JSONValue& JSONValue::Get(int index) const
+{
+    if (GetValueType() != JSON_ARRAY)
+        return EMPTY;
+
+    if (index < 0 || index >= arrayValue_->Size())
+        return EMPTY;
+
+    return arrayValue_->At(index);
+}
+
 bool JSONValue::Erase(const String& key)
 {
     if (GetValueType() != JSON_OBJECT)

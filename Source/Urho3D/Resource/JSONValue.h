@@ -246,6 +246,8 @@ public:
     void Set(const String& key, const JSONValue& value);
     /// Return JSON value with key.
     const JSONValue& Get(const String& key) const;
+    /// Return JSON value with index.
+    const JSONValue& Get(int index) const;
     /// Erase a pair by key.
     bool Erase(const String& key);
     /// Return whether contains a pair with key.
