@@ -47,7 +47,12 @@ namespace Editor.Tabs
                     case ContentType.CtypeUnknown:
                         break;
                     case ContentType.CtypeScene:
-                        GetSubsystem<Editor>().OpenTab<SceneTab>().LoadResource(selectedPath);
+                        var editor = GetSubsystem<Editor>();
+                        var tab = editor.GetOpenTab(selectedPath);
+                        if (tab == null)
+                            editor.OpenTab<SceneTab>().LoadResource(selectedPath);
+                        else
+                            tab.Activate();
                         break;
                     case ContentType.CtypeSceneobject:
                         break;

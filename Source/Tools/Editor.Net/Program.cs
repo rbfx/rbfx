@@ -260,6 +260,16 @@ namespace Editor
             }
         }
 
+        public Tab GetOpenTab(string resourcePath)
+        {
+            foreach (var tab in _tabs)
+            {
+                if (tab.ResourcePath == resourcePath)
+                    return tab;
+            }
+            return null;
+        }
+
         public Tab OpenTab(Type tabType)
         {
             string tabName = null;
