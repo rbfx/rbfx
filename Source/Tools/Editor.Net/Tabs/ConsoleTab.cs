@@ -27,12 +27,13 @@ namespace Editor.Tabs
 {
     public class ConsoleTab : Tab
     {
-        private Console _console;
+        private readonly Console _console;
 
         public ConsoleTab(Context context, string title, TabLifetime lifetime, Vector2? initialSize = null,
             string placeNextToDock = null, DockSlot slot = DockSlot.SlotNone) : base(context, title, lifetime,
             initialSize, placeNextToDock, slot)
         {
+            Uuid = "5ceb97b0-e560-4c74-9abe-4e35de6a8503";
             _console = Engine.CreateConsole();
             _console.IsAutoVisibleOnError = false;
         }

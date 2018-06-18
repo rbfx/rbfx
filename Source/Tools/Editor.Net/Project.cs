@@ -19,33 +19,87 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
+using System.Security.Cryptography;
+using Editor.Events;
+using Editor.Tabs;
 using Urho3D;
+using Urho3D.CSharp;
+using Object = Urho3D.Object;
 
 namespace Editor
 {
     public class Project : Object
     {
-        private readonly string _projectProjectPath;
-        public string CachePath => _projectProjectPath + "/Cache";
-        public string DataPath => _projectProjectPath + "/Data";
+        private readonly string _projectPath;
+        public string CachePath => _projectPath + "/Cache";
+        public string DataPath => _projectPath + "/Data";
+        public string ProjectFile => _projectPath + "/project.yml";
+        public int Version = 1;
+        private Dictionary<string, Type> _resourceDocumentTypes = new Dictionary<string, Type>
+        {
+            ["scene"] = typeof(SceneTab)
+        };
 
         public Project(Context context, string projectPath) : base(context)
         {
-            _projectProjectPath = projectPath;
-            foreach (var path in new[]{_projectProjectPath, CachePath, DataPath})
+            _projectPath = projectPath;
+            foreach (var path in new[]{_projectPath, CachePath, DataPath})
             {
                 if (!Directory.Exists(path))
                     Directory.CreateDirectory(path);
             }
+
+            if (!System.IO.File.Exists(ProjectFile))
+                Save();
         }
 
-        public bool Save(string path = null)
+        public bool Load()
         {
-            if (path == null)
-                path = _projectProjectPath;
+            using (var yamlFile = new YAMLFile(Context))
+            {
+                if (yamlFile.LoadFile(ProjectFile))
+                {
+                    var save = yamlFile.Root;
+                    // Notify alive objects
+                    SendEvent<EditorProjectLoad>(
+                        new Dictionary<StringHash, dynamic> {[EditorProjectLoad.SaveData] = save});
+
+                    // Initialize remaining objects
+                    var resources = save.Get("resources");
+                    for (var i = 0; i < resources.Size(); i++)
+                    {
+                        var resource = resources.Get(i);
+                        var tab = GetSubsystem<Editor>().OpenTab(_resourceDocumentTypes[resource.Get("type").String]);
+                        tab.LoadSave(resource);
+                    }
+
+                    return true;
+                }
+            }
 
             return false;
+        }
+
+        public bool Save()
+        {
+            using (var save = new JSONValue(JSONValueType.Object))
+            {
+                save.Set("version", Version);
+                save.Set("resources", new JSONValue(JSONValueType.Array));
+
+                SendEvent<EditorProjectSave>(new Dictionary<StringHash, dynamic> {[EditorProjectSave.SaveData] = save});
+
+                using (var yamlFile = new YAMLFile(Context))
+                {
+                    yamlFile.Root = save;
+                    return yamlFile.SaveFile(ProjectFile);
+                }
+            }
         }
     }
 }

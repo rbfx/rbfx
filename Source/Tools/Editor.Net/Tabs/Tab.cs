@@ -19,6 +19,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
+using System;
+using System.Linq;
 using ImGui;
 using Urho3D;
 
@@ -45,7 +48,9 @@ namespace Editor.Tabs
             get => _isOpen;
             set => _isOpen = value;
         }
+
         public string Title { get; protected set; }
+        public string UniqueTitle => $"{Title}###{Uuid}";
         public System.Numerics.Vector2 InitialSize;
         public Location InitialLocation;
         protected WindowFlags WindowFlags = WindowFlags.Default;
@@ -53,11 +58,14 @@ namespace Editor.Tabs
         public bool IsDockFocused { get; protected set; }
         public bool IsDockActive { get; protected set; }
         public TabLifetime Lifetime { get; protected set; }
+        public string ResourcePath { get; protected set; }
+        public string ResourceType { get; protected set; }
+        public string Uuid { get; protected set; }
 
         public Tab(Context context, string title, TabLifetime lifetime, Vector2? initialSize = null,
-            string placeNextToDock = null,
-            DockSlot slot = DockSlot.SlotNone) : base(context)
+            string placeNextToDock = null, DockSlot slot = DockSlot.SlotNone) : base(context)
         {
+            Uuid = Guid.NewGuid().ToString().ToLower();
             Title = title;
             Lifetime = lifetime;
             InitialSize = initialSize.GetValueOrDefault(new Vector2(-1, -1));
@@ -65,10 +73,21 @@ namespace Editor.Tabs
             InitialLocation.Slot = slot;
         }
 
+        public virtual void LoadResource(string resourcePath)
+        {
+            ResourcePath = resourcePath;
+            Title = resourcePath;
+        }
+
+        public virtual void LoadSave(JSONValue save)
+        {
+            throw new NotImplementedException();
+        }
+
         public void OnRender()
         {
             ImGuiDock.SetNextDockPos(InitialLocation.NextDockName, InitialLocation.Slot, ImGui.Condition.FirstUseEver);
-            if (ImGuiDock.BeginDock(Title, ref _isOpen, WindowFlags, InitialSize))
+            if (ImGuiDock.BeginDock(UniqueTitle, ref _isOpen, WindowFlags, InitialSize))
             {
                 if (Input.IsMouseVisible)
                     MouseHoversViewport = ui.IsItemHovered(HoveredFlags.Default);

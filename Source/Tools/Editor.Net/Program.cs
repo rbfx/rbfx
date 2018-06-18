@@ -22,6 +22,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using Editor.Events;
 using Editor.Tabs;
 using IconFonts;
@@ -31,13 +33,16 @@ using Urho3D.Events;
 
 namespace Editor
 {
-    internal class Editor : Application
+    public class Editor : Application
     {
         private const int MenubarSize = 20;
         private readonly List<Tab> _tabs = new List<Tab>();
+        private Project _project;
+        private readonly string[] _commandLineArguments;
 
-        public Editor(Context context) : base(context)
+        public Editor(Context context, string[] args) : base(context)
         {
+            _commandLineArguments = args;
         }
 
         public override void Setup()
@@ -58,6 +63,7 @@ namespace Editor
         {
             ToolboxApi.RegisterToolboxTypes(Context);
             Context.RegisterSubsystem(new IconCache(Context));
+            Context.RegisterSubsystem(this);
 
             Input.SetMouseMode(MouseMode.Absolute);
             Input.SetMouseVisible(true);
@@ -75,18 +81,80 @@ namespace Editor
             // time implementing this functionality in ImGuiDock proper values were written down and then tweaked until
             // they looked right. Insertion order is also important here when specifying dock placement location.
             var screenSize = Graphics.Size;
-            _tabs.Add(new InspectorTab(Context, "Inspector", TabLifetime.Persistent,
-                new Vector2(screenSize.X * 0.6f, screenSize.Y), null, DockSlot.SlotRight));
-            _tabs.Add(new HierarchyTab(Context, "Hierarchy", TabLifetime.Persistent,
-                new Vector2(screenSize.X * 0.05f, screenSize.Y * 0.5f), null, DockSlot.SlotLeft));
-            _tabs.Add(new ResourcesTab(Context, "Resources", TabLifetime.Persistent,
-                new Vector2(screenSize.X * 0.05f, screenSize.Y * 0.15f), "Hierarchy", DockSlot.SlotBottom));
-            _tabs.Add(new ConsoleTab(Context, "Console", TabLifetime.Persistent,
-                new Vector2(screenSize.X * 0.6f, screenSize.Y * 0.4f), "Inspector", DockSlot.SlotLeft));
-            _tabs.Add(new SceneTab(Context, "Scene", TabLifetime.Temporary,
-                new Vector2(screenSize.X * 0.6f, screenSize.Y * 0.6f), "Console", DockSlot.SlotTop));
+            var inspector = new InspectorTab(Context, "Inspector", TabLifetime.Persistent,
+                new Vector2(screenSize.X * 0.6f, screenSize.Y), null, DockSlot.SlotRight);
+            var hierarchy = new HierarchyTab(Context, "Hierarchy", TabLifetime.Persistent,
+                new Vector2(screenSize.X * 0.05f, screenSize.Y * 0.5f), null, DockSlot.SlotLeft);
+            _tabs.AddRange(new Tab[]{inspector, hierarchy,
+                new ResourcesTab(Context, "Resources", TabLifetime.Persistent,
+                    new Vector2(screenSize.X * 0.05f, screenSize.Y * 0.15f), hierarchy.UniqueTitle, DockSlot.SlotBottom),
+                new ConsoleTab(Context, "Console", TabLifetime.Persistent,
+                    new Vector2(screenSize.X * 0.6f, screenSize.Y * 0.4f), inspector.UniqueTitle, DockSlot.SlotLeft)
+            });
 
             SubscribeToEvent<Update>(OnRender);
+            SubscribeToEvent<EditorProjectSave>(OnSaveProject);
+            SubscribeToEvent<EditorProjectLoad>(OnLoadProject);
+
+            if (_commandLineArguments.Length == 1)
+                OpenProject(_commandLineArguments[0]);
+        }
+
+        public void CloseProject()
+        {
+            if (_project == null)
+                return;
+
+            // Remove all temporary tabs
+            for (var i = 0; i < _tabs.Count;)
+            {
+                var tab = _tabs[i];
+                if (tab.Lifetime == TabLifetime.Temporary)
+                    _tabs.RemoveAt(i);
+                else
+                    ++i;
+            }
+
+            Context.RemoveSubsystem(_project.GetType());
+            _project.Dispose();
+            _project = null;
+        }
+
+        public void OpenProject(string projectPath)
+        {
+            CloseProject();
+
+            _project = new Project(Context, projectPath);
+            Context.RegisterSubsystem(_project);
+            _project.Load();
+        }
+
+        private void OnSaveProject(Event e)
+        {
+            var save = (JSONValue) e.GetObject(EditorProjectSave.SaveData);
+
+            var uiSettings = new JSONValue();
+            uiSettings.Set("X", Graphics.WindowPosition.X);
+            uiSettings.Set("Y", Graphics.WindowPosition.Y);
+            uiSettings.Set("W", Graphics.Size.X);
+            uiSettings.Set("H", Graphics.Size.Y);
+
+            var dockLayout = new JSONValue();
+            ImGuiDock.SaveDock(dockLayout);
+            uiSettings.Set("docks", dockLayout);
+
+            save.Set("ui", uiSettings);
+        }
+
+        private void OnLoadProject(Event e)
+        {
+            var save = (JSONValue) e.GetObject(EditorProjectSave.SaveData);
+            var uiSettings = save.Get("ui");
+
+            Graphics.SetWindowPosition(uiSettings.Get("X").Int, uiSettings.Get("Y").Int);
+            Graphics.SetMode(uiSettings.Get("W").Int, uiSettings.Get("H").Int);
+
+            ImGuiDock.LoadDock(uiSettings.Get("docks"));
         }
 
         private void OnRenderMenubar()
@@ -95,24 +163,26 @@ namespace Editor
             {
                 if (ui.BeginMenu("File"))
                 {
-                    if (ui.MenuItem($"{FontAwesome.File} New Project"))
+                    if (ui.MenuItem($"{FontAwesome.File} Create/Open Project"))
                     {
                         string projectPath = null;
                         if (FileDialog.PickFolder("", ref projectPath) == FileDialogResult.DialogOk)
                         {
-                            var project = new Project(Context, projectPath);
-                            Context.RegisterSubsystem(project);
+                            OpenProject(projectPath);
                         }
                     }
 
-                    if (ui.MenuItem($"{FontAwesome.File} New Scene"))
+                    if (_project != null)
                     {
+                        if (ui.MenuItem($"{FontAwesome.File} New Scene"))
+                        {
 
-                    }
+                        }
 
-                    if (ui.MenuItem($"{FontAwesome.FloppyO} Save"))
-                    {
-
+                        if (ui.MenuItem($"{FontAwesome.FloppyO} Save"))
+                        {
+                            _project.Save();
+                        }
                     }
 
                     ui.Separator();
@@ -139,7 +209,11 @@ namespace Editor
 
         private void OnRender(Event args)
         {
+            SendKeyboardShortcuts();
             OnRenderMenubar();
+
+            if (_project == null)
+                return;
 
             var screenSize = ui.GetIO().DisplaySize;
             var dockPos  = new System.Numerics.Vector2(0, MenubarSize);
@@ -154,15 +228,14 @@ namespace Editor
                 {
                     _tabs.RemoveAt(i);
                     SendEvent<EditorTabClosed>(new Dictionary<StringHash, dynamic> {[EditorTabClosed.TabInstance] = tab});
+                    tab.Dispose();
                 }
                 else
                     ++i;
             }
-
-            SendKeyboardShortcuts();
         }
 
-        void SendKeyboardShortcuts()
+        private void SendKeyboardShortcuts()
         {
             var combo = EditorKeyCombo.Kind.None;
             if (Input.GetKeyDown(Key.Ctrl))
@@ -186,15 +259,52 @@ namespace Editor
                 });
             }
         }
-    }
 
-    internal class Program
-    {
+        public Tab OpenTab(Type tabType)
+        {
+            string tabName = null;
+            var slot = DockSlot.SlotFloat;
+            for (var i = _tabs.Count - 1; i >= 0; i--)
+            {
+                var openTab = _tabs[i];
+                if (!openTab.IsOpen)
+                    continue;
+
+                if (openTab is SceneTab)
+                {
+                    tabName = openTab.UniqueTitle;
+                    slot = DockSlot.SlotTab;
+                    break;
+                }
+
+                if (openTab is ConsoleTab)
+                {
+                    tabName = openTab.UniqueTitle;
+                    slot = DockSlot.SlotTop;
+                }
+            }
+
+            var screenSize = Graphics.Size;
+            var tab = (Tab) Activator.CreateInstance(tabType, BindingFlags.Public | BindingFlags.Instance, null,
+                new object[]{Context, null, TabLifetime.Temporary,
+                    new Vector2(screenSize.X * 0.6f, screenSize.Y * 0.6f), tabName, slot
+                }, null);
+
+            _tabs.Add(tab);
+
+            return tab;
+        }
+
+        public T OpenTab<T>() where T: Tab
+        {
+            return (T) OpenTab(typeof(T));
+        }
+
         public static void Main(string[] args)
         {
             using (var context = new Context())
             {
-                using (var application = new Editor(context))
+                using (var application = new Editor(context, args))
                 {
                     application.Run();
                 }

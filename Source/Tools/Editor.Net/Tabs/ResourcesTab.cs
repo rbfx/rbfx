@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+using System;
 using Urho3D;
 using ImGui;
 
@@ -32,6 +33,7 @@ namespace Editor.Tabs
             string placeNextToDock = null, DockSlot slot = DockSlot.SlotNone) : base(context, title, lifetime,
             initialSize, placeNextToDock, slot)
         {
+            Uuid = "4fcf9895-e363-441d-a665-2a97f7da64ef";
         }
 
         protected override void Render()
@@ -39,7 +41,39 @@ namespace Editor.Tabs
             string selectedPath = null;
             if (ResourceBrowser.ResourceBrowserWidget(ref selectedPath))
             {
-                // TODO: Open resource
+                var type = ContentUtilities.GetContentType(selectedPath);
+                switch (type)
+                {
+                    case ContentType.CtypeUnknown:
+                        break;
+                    case ContentType.CtypeScene:
+                        GetSubsystem<Editor>().OpenTab<SceneTab>().LoadResource(selectedPath);
+                        break;
+                    case ContentType.CtypeSceneobject:
+                        break;
+                    case ContentType.CtypeUilayout:
+                        break;
+                    case ContentType.CtypeUistyle:
+                        break;
+                    case ContentType.CtypeModel:
+                        break;
+                    case ContentType.CtypeAnimation:
+                        break;
+                    case ContentType.CtypeMaterial:
+                        break;
+                    case ContentType.CtypeParticle:
+                        break;
+                    case ContentType.CtypeRenderpath:
+                        break;
+                    case ContentType.CtypeSound:
+                        break;
+                    case ContentType.CtypeTexture:
+                        break;
+                    case ContentType.CtypeTexturexml:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
             }
         }
     }

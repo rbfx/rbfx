@@ -47,25 +47,90 @@ namespace Editor.Tabs
         public SceneTab(Context context, string title, TabLifetime lifetime, Vector2? initialSize = null, string placeNextToDock = null,
             DockSlot slot = DockSlot.SlotNone) : base(context, title, lifetime, initialSize, placeNextToDock, slot)
         {
+            ResourceType = "scene";
             _iconCache = GetSubsystem<IconCache>();
             WindowFlags = WindowFlags.NoScrollbar;
             _view = new SceneView(Context);
             _gizmo = new Gizmo(Context);
             _undo = new Undo.Manager(Context);
             _inspector = new AttributeInspector(Context);
-            _view.Scene.LoadXml(Cache.GetResource<XMLFile>("Scenes/SceneLoadExample.xml").GetRoot());
-            CreateObjects();
 
             SubscribeToEvent<Update>(OnUpdate);
             SubscribeToEvent<PostUpdate>(args => RenderNodeContextMenu());
             SubscribeToEvent<GizmoSelectionChanged>(args => { _selectedComponent = null; });
             SubscribeToEvent<EditorKeyCombo>(OnKeyCombo);
+            SubscribeToEvent<EditorProjectSave>(OnSaveProject);
             _undo.Connect(_view.Scene);
             _undo.Connect(_inspector);
             _undo.Connect(_gizmo);
 
             _eventArgs[InspectHierarchy.HierarchyProvider] = this;
             SendEvent<InspectHierarchy>(_eventArgs);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                UnsubscribeFromAllEvents();
+                _view.Dispose();
+                _gizmo.Dispose();
+                _undo.Dispose();
+                _inspector.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        private void OnSaveProject(Event e)
+        {
+            var projectSave = (JSONValue) e.GetObject(EditorProjectSave.SaveData);
+            var resources = projectSave.Get("resources");
+
+            var save = new JSONValue();            // This is object passed to LoadSave()
+            save.Set("type", ResourceType);
+            save.Set("path", ResourcePath);
+            save.Set("uuid", Uuid);
+
+            resources.Push(save);
+            projectSave.Set("resources", resources);
+        }
+
+        public override void LoadSave(JSONValue save)
+        {
+            Uuid = save.Get("uuid").String;
+            LoadResource(save.Get("path").String);
+        }
+
+        public override void LoadResource(string resourcePath)
+        {
+            _undo.Clear();
+
+            base.LoadResource(resourcePath);
+
+            using (new UndoTracklingSuspender(_undo))
+            {
+                if (resourcePath.EndsWith(".yml") || resourcePath.EndsWith(".scene"))
+                {
+                    var resource = Cache.GetResource<YAMLFile>(resourcePath);
+                    if (resource != null)
+                        _view.Scene.LoadJson(resource.Root);
+                }
+                else if (resourcePath.EndsWith(".json"))
+                {
+                    var resource = Cache.GetResource<JSONFile>(resourcePath);
+                    if (resource != null)
+                        _view.Scene.LoadJson(resource.Root);
+                }
+                else if (resourcePath.EndsWith(".xml"))
+                {
+                    var resource = Cache.GetResource<XMLFile>(resourcePath);
+                    if (resource != null)
+                        _view.Scene.LoadXml(resource.GetRoot());
+                }
+
+                CreateObjects();
+            }
         }
 
         private void OnKeyCombo(Event e)

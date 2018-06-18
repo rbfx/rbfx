@@ -54,4 +54,16 @@ namespace Editor.Events
 
         public static readonly StringHash KeyCombo = "KeyCombo";
     }
+
+    [Event]
+    public class EditorProjectSave
+    {
+        public static readonly StringHash SaveData = "SaveData";
+    }
+
+    [Event]
+    public class EditorProjectLoad
+    {
+        public static readonly StringHash SaveData = "SaveData";
+    }
 }

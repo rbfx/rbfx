@@ -23,7 +23,7 @@ using Urho3D;
 
 namespace Editor
 {
-    public class SceneView
+    public class SceneView : Object
     {
         /// Rectangle dimensions that are rendered by this view.
         public IntVector2 Size
@@ -49,7 +49,7 @@ namespace Editor
         public Camera Camera => _camera?.GetComponent<Camera>();
 
         /// Construct.
-        public SceneView(Context context, IntVector2? size=null)
+        public SceneView(Context context, IntVector2? size=null) : base(context)
         {
             if (size == null)
                 size = new IntVector2(1920, 1080);
@@ -66,6 +66,18 @@ namespace Editor
             // viewports (like in resource inspector).
             Viewport.RenderPath = Viewport.RenderPath.Clone();
             SetSize(size.Value);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Scene.Dispose();
+                Texture.Dispose();
+                Viewport.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
 
         /// Creates scene camera and other objects required by editor.

@@ -35,6 +35,7 @@ namespace Editor.Tabs
             string placeNextToDock = null, DockSlot slot = DockSlot.SlotNone) : base(context, title, lifetime,
             initialSize, placeNextToDock, slot)
         {
+            Uuid = "af235811-2493-4adf-aa88-e40332b45150";
             SubscribeToEvent<InspectHierarchy>(OnInspect);
             SubscribeToEvent<EditorTabClosed>(OnTabClosed);
         }
