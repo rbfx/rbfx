@@ -1,8 +1,11 @@
-﻿namespace ImGui
+﻿using System;
+
+namespace ImGui
 {
     /// <summary>
     /// Flags for ImGui::Begin()
     /// </summary>
+    [Flags]
     public enum WindowFlags : int
     {
         Default = 0,
