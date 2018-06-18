@@ -79,6 +79,14 @@ public:
         type_(0)
     {
     }
+
+    /// Construct a default value with defined type.
+    explicit JSONValue(JSONValueType valueType, JSONNumberType numberType = JSONNT_NAN) :
+        type_(0)
+    {
+        SetType(valueType, numberType);
+    }
+
     /// Construct with a boolean.
     JSONValue(bool value) :         // NOLINT(google-explicit-constructor)
         type_(0)
