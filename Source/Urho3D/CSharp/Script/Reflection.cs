@@ -21,7 +21,6 @@
 //
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 
 namespace Urho3D.CSharp
@@ -36,6 +35,21 @@ namespace Urho3D.CSharp
                 foreach (var attribute in attributes)
                 {
                     yield return new Tuple<Type, T>(type, (T) attribute);
+                }
+            }
+        }
+
+        public static IEnumerable<Tuple<MethodInfo, T>> GetMethodsWithAttribute<T>(this Assembly assembly)
+        {
+            foreach(var type in assembly.GetTypes())
+            {
+                foreach (var method in type.GetMethods())
+                {
+                    var attributes = method.GetCustomAttributes(typeof(T), true);
+                    foreach (var attribute in attributes)
+                    {
+                        yield return new Tuple<MethodInfo, T>(method, (T) attribute);
+                    }
                 }
             }
         }
