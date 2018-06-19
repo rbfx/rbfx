@@ -33,6 +33,7 @@
 #include "../Resource/ResourceEvents.h"
 #include "../Resource/XMLFile.h"
 #include "../Resource/JSONFile.h"
+#include "../Resource/YAMLFile.h"
 #include "../Scene/Component.h"
 #include "../Scene/ObjectAnimation.h"
 #include "../Scene/ReplicationState.h"
@@ -298,6 +299,30 @@ bool Scene::SaveJSON(Serializer& dest, const String& indentation) const
     json->GetRoot() = rootVal;
 
     if (json->Save(dest, indentation))
+    {
+        FinishSaving(&dest);
+        return true;
+    }
+    else
+        return false;
+}
+
+bool Scene::SaveYAML(Serializer& dest, int indentation) const
+{
+    URHO3D_PROFILE("SaveSceneYAML");
+
+    SharedPtr<YAMLFile> yaml(new YAMLFile(context_));
+    JSONValue rootVal;
+    if (!SaveJSON(rootVal))
+        return false;
+
+    auto* ptr = dynamic_cast<Deserializer*>(&dest);
+    if (ptr)
+        URHO3D_LOGINFO("Saving scene to " + ptr->GetName());
+
+    yaml->GetRoot() = rootVal;
+
+    if (yaml->Save(dest, indentation))
     {
         FinishSaving(&dest);
         return true;

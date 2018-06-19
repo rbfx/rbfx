@@ -28,6 +28,7 @@
 #include "../IO/MemoryBuffer.h"
 #include "../Resource/XMLFile.h"
 #include "../Resource/JSONFile.h"
+#include "../Resource/YAMLFile.h"
 #include "../Scene/Component.h"
 #include "../Scene/ObjectAnimation.h"
 #include "../Scene/ReplicationState.h"
@@ -317,6 +318,17 @@ bool Node::SaveJSON(Serializer& dest, const String& indentation) const
         return false;
 
     return json->Save(dest, indentation);
+}
+
+bool Node::SaveYAML(Serializer& dest, int indentation) const
+{
+    SharedPtr<YAMLFile> yaml(new YAMLFile(context_));
+    JSONValue& rootElem = yaml->GetRoot();
+
+    if (!SaveJSON(rootElem))
+        return false;
+
+    return yaml->Save(dest, indentation);
 }
 
 void Node::SetName(const String& name)
