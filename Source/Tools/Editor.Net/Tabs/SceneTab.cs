@@ -54,6 +54,7 @@ namespace Editor.Tabs
             _gizmo = new Gizmo(Context);
             _undo = new Undo.Manager(Context);
             _inspector = new AttributeInspector(Context);
+            _view.Scene.IsUpdateEnabled = false;
 
             SubscribeToEvent<Update>(OnUpdate);
             SubscribeToEvent<PostUpdate>(args => RenderNodeContextMenu());
