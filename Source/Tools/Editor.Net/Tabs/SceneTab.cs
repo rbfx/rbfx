@@ -93,6 +93,13 @@ namespace Editor.Tabs
             save.Set("path", ResourcePath);
             save.Set("uuid", Uuid);
 
+            var camera = save.Get("camera");
+            var transform = new JSONValue();
+            transform.SetVariant(_view.Camera.Node.Transform);
+            camera.Set("transform", transform);
+            camera.Set("light", _view.Camera.GetComponent<Light>().IsEnabled);
+            save.Set("camera", camera);
+
             resources.Push(save);
             projectSave.Set("resources", resources);
         }
@@ -101,6 +108,11 @@ namespace Editor.Tabs
         {
             Uuid = save.Get("uuid").String;
             LoadResource(save.Get("path").String);
+
+            var camera = save.Get("camera");
+            var tx = camera.Get("transform").Variant.Matrix3x4;
+            _view.Camera.Node.SetTransform(tx);
+            _view.Camera.GetComponent<Light>().IsEnabled = camera.Get("light").GetVariantValue(VariantType.Bool).Bool;
         }
 
         public override void LoadResource(string resourcePath)
