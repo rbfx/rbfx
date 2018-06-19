@@ -58,8 +58,22 @@ namespace Editor
                 Save();
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Cache.RemoveResourceDir(DataPath);
+                Cache.RemoveResourceDir(CachePath);
+            }
+
+            base.Dispose(disposing);
+        }
+
         public bool Load()
         {
+            Cache.AddResourceDir(DataPath);
+            Cache.AddResourceDir(CachePath);
+
             using (var yamlFile = new YAMLFile(Context))
             {
                 if (yamlFile.LoadFile(ProjectFile))
