@@ -795,7 +795,7 @@ std::string GenerateCSharpApiPass::ConvertDefaultValueToCS(MetaEntity* user, std
 
     if (auto* map = generator->GetTypeMap(type, false))
     {
-        if (map->isValueType_ && !allowComplex)
+        if (map->isValueType_ && !allowComplex && map->csType_ != "string")
         {
             // Value type parameters are turned to nullables when they have default values.
             return "null";
