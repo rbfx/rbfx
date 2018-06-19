@@ -158,14 +158,25 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 if (isRefCounted)
                 {
                     printer_ << "instance->AddRef();";
-                    printer_ << "assert(!instance->HasDeleter());";
-                    printer_ << "instance->SetDeleter([](RefCounted* instance_, void* gcHandle_) {";
-                    printer_.Indent("");
+                    printer_ << "if (instance->HasDeleter())";
+                    printer_.Indent();
                     {
-                        printer_ << "ScriptSubsystem::managed_.Unlock((gchandle)gcHandle_);";
-                        printer_ << "delete instance_;";
+                        // This object had a managed class wrapper with existing handle so new one is not needed.
+                        printer_ << "ScriptSubsystem::managed_.Unlock(gcHandle);";
                     }
-                    printer_.Dedent("}, (void*)gcHandle);");
+                    printer_.Dedent();
+                    printer_ << "else";
+                    printer_.Indent();
+                    {
+                        printer_ << "instance->SetDeleter([](RefCounted* instance_, void* gcHandle_) {";
+                        printer_.Indent("");
+                        {
+                            printer_ << "ScriptSubsystem::managed_.Unlock((gchandle)gcHandle_);";
+                            printer_ << "delete instance_;";
+                        }
+                        printer_.Dedent("}, (void*)gcHandle);");
+                    }
+                    printer_.Dedent();
                 }
                 if (isInheritable)
                 {
@@ -475,13 +486,6 @@ void GenerateCApiPass::Stop()
                             generator->currentModule_->moduleName_);
     printer_.Indent();
     {
-        printer_ << "if (context->GetScripts() == nullptr)";
-        printer_.Indent("");
-        {
-            printer_ << "context->RegisterSubsystem(new ScriptSubsystem(context));";
-        }
-        printer_.Dedent("");
-
         printer_ << fmt::format("{}RegisterWrapperFactories(context);", generator->currentModule_->moduleName_);
         // Put other wrapper late initialization code here.
     }

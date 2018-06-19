@@ -80,6 +80,8 @@ public:
     void SetDeleter(void(*deleter)(RefCounted* instance, void* userData), void* userData = nullptr);
     /// Returns true when object has custom deleter set.
     bool HasDeleter() const { return deleter_ != nullptr; }
+    /// Returns deleter user data or null if it was not set.
+    void* GetDeleterUserData() const { return deleterUserData_; }
 
 private:
     /// Prevent copy construction.
