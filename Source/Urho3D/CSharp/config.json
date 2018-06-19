@@ -62,11 +62,6 @@
             "IO/FileSystem.h"
           ]
         },
-        "../Tools/Editor": {
-          "include": [
-            "EditorEvents.h"
-          ]
-        }
       },
       "symbols": {
         "include": [
