@@ -49,7 +49,8 @@ namespace Editor.Events
         {
             None,
             Undo,
-            Redo
+            Redo,
+            Save
         }
 
         public static readonly StringHash KeyCombo = "KeyCombo";

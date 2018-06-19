@@ -55,7 +55,14 @@ namespace Editor
             }
 
             if (!System.IO.File.Exists(ProjectFile))
+                // Initialize new project
                 Save();
+
+            SubscribeToEvent<EditorKeyCombo>(e =>
+            {
+                if ((EditorKeyCombo.Kind) e.GetInt32(EditorKeyCombo.KeyCombo) == EditorKeyCombo.Kind.Save)
+                    Save();
+            });
         }
 
         protected override void Dispose(bool disposing)

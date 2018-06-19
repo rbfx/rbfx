@@ -102,6 +102,8 @@ namespace Editor.Tabs
 
             resources.Push(save);
             projectSave.Set("resources", resources);
+
+            SaveResource();
         }
 
         public override void LoadSave(JSONValue save)
@@ -160,6 +162,19 @@ namespace Editor.Tabs
                         _undo.Redo();
                         break;
                 }
+            }
+        }
+
+        private void SaveResource()
+        {
+            using (var file = new File(Context, Cache.GetResourceFileName(ResourcePath), FileMode.Write))
+            {
+                if (ResourcePath.EndsWith(".yml") || ResourcePath.EndsWith(".scene"))
+                    _view.Scene.SaveYaml(file);
+                if (ResourcePath.EndsWith(".xml"))
+                    _view.Scene.SaveXml(file);
+                else if (ResourcePath.EndsWith(".json"))
+                    _view.Scene.SaveJson(file);
             }
         }
 

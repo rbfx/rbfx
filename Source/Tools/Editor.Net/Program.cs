@@ -249,6 +249,8 @@ namespace Editor
                 }
                 else if (Input.GetKeyPress(Key.Y))
                     combo = EditorKeyCombo.Kind.Redo;
+                else if (Input.GetKeyPress(Key.S))
+                    combo = EditorKeyCombo.Kind.Save;
             }
 
             if (combo != EditorKeyCombo.Kind.None)
