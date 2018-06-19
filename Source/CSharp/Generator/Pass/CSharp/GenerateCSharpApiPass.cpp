@@ -646,12 +646,12 @@ std::string GenerateCSharpApiPass::MapToCS(const cppast::cpp_type& type, const s
     else if (type.kind() == cppast::cpp_type_kind::array_t)
         return expression;
     else if (isComplex)
-        return fmt::format("{}.GetManagedInstance({})", ToCSType(type), expression);
+        return fmt::format("{}.GetManagedInstance({})", ToCSType(type, true, true), expression);
 
     return expression;
 }
 
-std::string GenerateCSharpApiPass::ToCSType(const cppast::cpp_type& type, bool disallowReferences)
+std::string GenerateCSharpApiPass::ToCSType(const cppast::cpp_type& type, bool disallowReferences, bool disallowInterfaces)
 {
     bool isRef = false;
 
@@ -725,6 +725,15 @@ std::string GenerateCSharpApiPass::ToCSType(const cppast::cpp_type& type, bool d
     else
         typeName = toCSType(type);
 
+    if (!disallowInterfaces)
+    {
+        if (auto* sym = generator->GetSymbol(cppast::to_string(GetBaseType(type))))
+        {
+            if (sym->flags_ & HintInterface)
+                typeName = fmt::format("{}::I{}", sym->GetParent()->symbolName_, sym->name_);
+        }
+    }
+
     if (!disallowReferences && isRef)
         typeName = "ref " + typeName;
 
@@ -740,7 +749,7 @@ std::string GenerateCSharpApiPass::MapToPInvoke(const cppast::cpp_type& type, co
         // Arrays are handled by custom marshaller
         return expression;
     else if (IsComplexType(type))
-        return fmt::format("{}.GetNativeInstance({})", ToCSType(type, true), expression);
+        return fmt::format("{}.GetNativeInstance({})", ToCSType(type, true, true), expression);
 
     return expression;
 }
