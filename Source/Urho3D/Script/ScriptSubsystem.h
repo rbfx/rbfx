@@ -72,11 +72,11 @@ public:
 
     /// Register types of inheritable native objects. They are used in factory which creates managed subclasses of these objects.
     template<typename T>
-    void RegisterType() { typeInfos_[T::GetTypeStatic()] = T::GetTypeInfoStatic(); }
+    static void RegisterType() { typeInfos_[T::GetTypeStatic()] = T::GetTypeInfoStatic(); }
     /// Returns type information of registered base native type.
     const TypeInfo* GetRegisteredType(StringHash type);
     /// Schedule ReleaseRef() call to be called on the main thread.
-    void QueueReleaseRef(RefCounted* instance);
+    static void QueueReleaseRef(RefCounted* instance);
     /// Registers current thread with .net runtime.
     void RegisterCurrentThread();
 
@@ -92,17 +92,15 @@ public:
     static NativeRuntime native_;
 
 protected:
-    /// Initializes object.
-    void Init();
     /// Perform housekeeping tasks.
     void OnEndFrame(StringHash, VariantMap&);
 
-    /// Types of inheritable native classes.
-    HashMap<StringHash, const TypeInfo*> typeInfos_;
     /// Queue of objects that should have their ReleaseRef() method called on main thread.
-    PODVector<RefCounted*> releaseQueue_;
+    static PODVector<RefCounted*> releaseQueue_;
     /// Mutex protecting resources related to queuing ReleaseRef() calls.
-    Mutex mutex_;
+    static Mutex mutex_;
+    /// Types of inheritable native classes.
+    static HashMap<StringHash, const TypeInfo*> typeInfos_;
 };
 
 /// Allocator used for data marshalling between managed and unmanaged worlds. Lifetime of allocated memory is controlled

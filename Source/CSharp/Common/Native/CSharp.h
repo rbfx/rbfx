@@ -39,14 +39,6 @@ using namespace Urho3D;
 #   endif
 #endif
 
-
-namespace Urho3D
-{
-
-URHO3D_API extern ScriptSubsystem* scriptSubsystem;
-
-}
-
 /// Force-cast between incompatible types.
 template<typename T0, typename T1>
 inline T0 force_cast(T1 input)

@@ -45,7 +45,12 @@
 namespace Urho3D
 {
 
-URHO3D_API ScriptSubsystem* scriptSubsystem = nullptr;
+/// Queue of objects that should have their ReleaseRef() method called on main thread.
+PODVector<RefCounted*> ScriptSubsystem::releaseQueue_;
+/// Mutex protecting resources related to queuing ReleaseRef() calls.
+Mutex ScriptSubsystem::mutex_;
+/// Types of inheritable native classes.
+HashMap<StringHash, const TypeInfo*> ScriptSubsystem::typeInfos_;
 
 ScriptSubsystem::ScriptSubsystem(Context* context)
     : Object(context)
@@ -56,20 +61,6 @@ ScriptSubsystem::ScriptSubsystem(Context* context)
         return;
 
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(ScriptSubsystem, OnEndFrame));
-
-    Init();
-}
-
-void ScriptSubsystem::Init()
-{
-    // This global instance is mainly required for queueing ReleaseRef() calls. Not every RefCounted has pointer to
-    // Context therefore if multiple contexts exist they may run on different threads. Then there would be no way to
-    // know on which main thread ReleaseRef() should be called. Assert below limits application to having single
-    // Context.
-    if (scriptSubsystem == nullptr)
-        scriptSubsystem = this;
-    else
-        assert(scriptSubsystem == this);
 }
 
 const TypeInfo* ScriptSubsystem::GetRegisteredType(StringHash type)
@@ -123,8 +114,6 @@ void* ScriptSubsystem::HostManagedRuntime(ScriptSubsystem::RuntimeSettings& sett
     mono_jit_parse_options(settings.jitOptions_.Size(), (char**)options);
 
     auto* domain = mono_jit_init_version(settings.domainName_.CString(), "v4.0.30319");
-
-    Init();
 
     return domain;
 #else

@@ -135,7 +135,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     // This is not a last ref and managed object is being disposed most likely by a finalizer. Schedule
                     // reference releasing to be done on main thread. This should be safe in most cases. For example if
                     // engine is holding a reference then it is most likely interacted with on main thread.
-                    printer_ << "Urho3D::scriptSubsystem->QueueReleaseRef(instance);";
+                    printer_ << "Urho3D::ScriptSubsystem::QueueReleaseRef(instance);";
                 }
                 printer_.Dedent("");
             }

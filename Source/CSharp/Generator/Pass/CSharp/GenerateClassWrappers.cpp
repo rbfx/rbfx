@@ -47,7 +47,6 @@ void GenerateClassWrappers::Start()
     initPrinter_ << fmt::format("extern \"C\" void {}RegisterWrapperFactories(Context* context)",
                                 generator->currentModule_->moduleName_);
     initPrinter_.Indent();
-    initPrinter_ << "auto* script = context->GetScripts();";
 }
 
 bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
@@ -83,7 +82,7 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
     if (IsSubclassOf(cls, "Urho3D::Object"))
     {
         printer_ << fmt::format("URHO3D_OBJECT_STATIC(Wrappers::{}, {});", entity->name_, entity->uniqueName_);
-        initPrinter_ << fmt::format("script->RegisterType<Wrappers::{}>();", entity->name_);
+        initPrinter_ << fmt::format("Urho3D::ScriptSubsystem::RegisterType<Wrappers::{}>();", entity->name_);
     }
 
     printer_.WriteLine("public:", false);
