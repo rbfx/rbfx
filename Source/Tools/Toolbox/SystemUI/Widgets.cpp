@@ -124,10 +124,15 @@ int DoubleClickSelectable(const char* label, bool* p_selected, ImGuiSelectableFl
     bool wasSelected = p_selected && *p_selected;
     if (ui::Selectable(label, p_selected, flags | ImGuiSelectableFlags_AllowDoubleClick, size))
     {
-        if (wasSelected && ui::IsMouseDoubleClicked(0))
+        if (wasSelected && ui::IsMouseDoubleClicked(MOUSEB_LEFT))
             return 2;
         else
             return 1;
+    }
+    if (ui::IsItemHovered() && ui::IsMouseClicked(MOUSEB_RIGHT))
+    {
+        *p_selected = true;
+        return 1;
     }
     return 0;
 }
