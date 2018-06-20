@@ -491,7 +491,12 @@ namespace Urho3D
 
     public partial class Object
     {
-        private static VariantMap _args = new VariantMap();
+        private static readonly VariantMap _args = new VariantMap();
+
+        internal override void OnDispose(bool disposing)
+        {
+            UnsubscribeFromAllEvents();
+        }
 
         private StringHash GetEventType<T>()
         {
