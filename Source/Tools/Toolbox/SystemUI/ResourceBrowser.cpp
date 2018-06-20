@@ -34,29 +34,22 @@
 namespace Urho3D
 {
 
-bool ResourceBrowserWindow(String& selected)
+ResourceBrowserResult ResourceBrowserWindow(String& path, String& selected)
 {
-    bool result = false;
+    auto result = RBR_NOOP;
     if (ui::BeginDock("Resources"))
     {
-        result = ResourceBrowserWidget(selected);
+        result = ResourceBrowserWidget(path, selected);
     }
     ui::EndDock();
     return result;
 }
 
-bool ResourceBrowserWidget(String& selected)
+ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected)
 {
-    struct State
-    {
-        String path;
-        String selected;
-    };
-
-    bool result = false;
+    auto result = RBR_NOOP;
     auto systemUI = (SystemUI*)ui::GetIO().UserData;
     auto fs = systemUI->GetFileSystem();
-    auto* state = ui::GetUIState<State>();
 
     Vector<String> mergedDirs;
     Vector<String> mergedFiles;
@@ -64,6 +57,9 @@ bool ResourceBrowserWidget(String& selected)
     String cacheDir;
     for (const auto& dir: systemUI->GetCache()->GetResourceDirs())
     {
+        if (dir.EndsWith("/EditorData/"))
+            continue;
+
         if (dir.EndsWith("/Cache/"))
         {
             cacheDir = dir;
@@ -71,7 +67,7 @@ bool ResourceBrowserWidget(String& selected)
         }
 
         Vector<String> items;
-        fs->ScanDir(items, dir + state->path, "", SCAN_FILES, false);
+        fs->ScanDir(items, dir + path, "", SCAN_FILES, false);
         for (const auto& item: items)
         {
             if (!mergedFiles.Contains(item))
@@ -79,7 +75,7 @@ bool ResourceBrowserWidget(String& selected)
         }
 
         items.Clear();
-        fs->ScanDir(items, dir + state->path, "", SCAN_DIRS, false);
+        fs->ScanDir(items, dir + path, "", SCAN_DIRS, false);
         items.Remove(".");
         items.Remove("..");
         for (const auto& item: items)
@@ -89,48 +85,94 @@ bool ResourceBrowserWidget(String& selected)
         }
     }
 
-    if (!state->path.Empty())
+    auto moveFileDropTarget = [&](const String& item) {
+        if (ui::BeginDragDropTarget())
+        {
+            auto dropped = ui::AcceptDragDropVariant("path");
+            if (dropped.GetType() == VAR_STRING)
+            {
+                auto cache = systemUI->GetCache();
+                auto dragSource = cache->GetResourceFileName(dropped.GetString());
+                auto dropTarget = AddTrailingSlash(item);
+
+                // Find existing drop target
+                const auto& resourceDirs = cache->GetResourceDirs();
+                String mainResourceDir;
+                for (const auto& resourceDir : resourceDirs)
+                {
+                    if (resourceDir.EndsWith("/EditorData/") || resourceDir.EndsWith("/Cache/"))
+                        continue;
+
+                    if (mainResourceDir.Empty())
+                    {
+                        mainResourceDir = resourceDir;
+                    }
+
+                    if (fs->DirExists(resourceDir + dropTarget))
+                    {
+                        dropTarget = resourceDir + dropTarget + GetFileNameAndExtension(dragSource);
+                        break;
+                    }
+                }
+
+                cache->SetAutoReloadResourcesSuspended(true);
+                if (fs->Rename(dragSource, dropTarget))
+                {
+                    using namespace ResourceRenamed;
+                    fs->SendEvent(E_RESOURCERENAMED, P_FROM, dragSource, P_TO, dropTarget);
+                }
+                cache->SetAutoReloadResourcesSuspended(false);
+            }
+            ui::EndDragDropTarget();
+        }
+    };
+
+    if (!path.Empty())
     {
-        switch (ui::DoubleClickSelectable("..", state->selected == ".."))
+        switch (ui::DoubleClickSelectable("..", selected == ".."))
         {
         case 1:
-            state->selected = "..";
+            selected = "..";
             break;
         case 2:
-            state->path = GetParentPath(state->path);
+            path = GetParentPath(path);
             break;
         default:
             break;
         }
+
+        moveFileDropTarget(GetParentPath(path));
     }
 
     Sort(mergedDirs.Begin(), mergedDirs.End());
     for (const auto& item: mergedDirs)
     {
-        switch (ui::DoubleClickSelectable((ICON_FA_FOLDER " " + item).CString(), state->selected == item))
+        switch (ui::DoubleClickSelectable((ICON_FA_FOLDER " " + item).CString(), selected == item))
         {
         case 1:
-            state->selected = item;
+            selected = item;
             break;
         case 2:
-            state->path += AddTrailingSlash(item);
-            state->selected.Clear();
+            path += AddTrailingSlash(item);
+            selected.Clear();
             break;
         default:
             break;
         }
+
+        moveFileDropTarget(path + item);
     }
 
     auto renderAssetEntry = [&](const String& item) {
         auto title = GetFileIcon(item) + " " + GetFileNameAndExtension(item);
-        switch (ui::DoubleClickSelectable(title.CString(), state->selected == item))
+        switch (ui::DoubleClickSelectable(title.CString(), selected == item))
         {
         case 1:
-            state->selected = item;
+            selected = item;
+            result = RBR_ITEM_SELECTED;
             break;
         case 2:
-            selected = state->path + item;
-            result = true;
+            result = RBR_ITEM_OPEN;
             break;
         default:
             break;
@@ -140,11 +182,10 @@ bool ResourceBrowserWidget(String& selected)
         {
             if (ui::BeginDragDropSource())
             {
-                String path = state->path + item;
-                ui::SetDragDropVariant("path", path);
+                ui::SetDragDropVariant("path", path + item);
 
                 // TODO: show actual preview of a resource.
-                ui::Text("%s", path.CString());
+                ui::Text("%s%s", path.CString(), item.CString());
 
                 ui::EndDragDropSource();
             }
@@ -154,12 +195,12 @@ bool ResourceBrowserWidget(String& selected)
     Sort(mergedFiles.Begin(), mergedFiles.End());
     for (const auto& item: mergedFiles)
     {
-        if (fs->DirExists(cacheDir + state->path + item))
+        if (fs->DirExists(cacheDir + path + item))
         {
             // File is converted asset.
             std::function<void(const String&)> renderCacheAssetTree = [&](const String& subPath)
             {
-                String targetPath = cacheDir + state->path + subPath;
+                String targetPath = cacheDir + path + subPath;
 
                 if (fs->DirExists(targetPath))
                 {
@@ -196,6 +237,17 @@ bool ResourceBrowserWidget(String& selected)
             renderAssetEntry(item);
         }
     }
+
+    if (ui::IsWindowHovered())
+    {
+        if (ui::IsMouseClicked(MOUSEB_RIGHT))
+            result = RBR_ITEM_CONTEXT_MENU;
+
+        if ((ui::IsMouseClicked(MOUSEB_LEFT) || ui::IsMouseClicked(MOUSEB_RIGHT)) && !ui::IsAnyItemHovered())
+            // Clicking empty area unselects item.
+            selected.Clear();
+    }
+
     return result;
 }
 

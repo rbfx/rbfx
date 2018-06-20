@@ -21,14 +21,12 @@
 //
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
-using System.Security.Cryptography;
 using Editor.Events;
 using Editor.Tabs;
 using Urho3D;
-using Urho3D.CSharp;
 using Object = Urho3D.Object;
 
 namespace Editor
@@ -48,6 +46,12 @@ namespace Editor
         public Project(Context context, string projectPath) : base(context)
         {
             _projectPath = projectPath;
+            if (!Directory.Exists(DataPath))
+            {
+                var source = new DirectoryInfo(Directory.GetCurrentDirectory() + "/CoreData");
+                source.CopyAll(new DirectoryInfo(DataPath));
+            }
+
             foreach (var path in new[]{_projectPath, CachePath, DataPath})
             {
                 if (!Directory.Exists(path))
@@ -120,6 +124,50 @@ namespace Editor
                     yamlFile.Root = save;
                     return yamlFile.SaveFile(ProjectFile);
                 }
+            }
+        }
+
+        private delegate void SendDeletionEventDelegate(DirectoryInfo dir);
+        public void RemoveResourcePath(string selectedPath)
+        {
+            try
+            {
+                var fullPath = $"{DataPath}/{selectedPath}";
+                if (System.IO.File.Exists(fullPath))
+                {
+                    SendEvent<EditorDeleteResource>(new ConcurrentDictionary<StringHash, dynamic>
+                    {
+                        [EditorDeleteResource.ResourceName] = selectedPath
+                    });
+                    System.IO.File.Delete(fullPath);
+                }
+                else if (Directory.Exists(fullPath))
+                {
+                    void SendEventRecursive(DirectoryInfo dir)
+                    {
+                        foreach (var fileInfo in dir.GetFiles())
+                        {
+                            SendEvent<EditorDeleteResource>(new ConcurrentDictionary<StringHash, dynamic>
+                            {
+                                [EditorDeleteResource.ResourceName] = Cache.SanitateResourceName(fileInfo.FullName)
+                            });
+                        }
+
+                        foreach (var directoryInfo in dir.GetDirectories())
+                        {
+                            SendEventRecursive(directoryInfo);
+                        }
+                    }
+
+                    var dirInfo = new DirectoryInfo(fullPath);
+                    SendEventRecursive(dirInfo);
+                    dirInfo.DeleteAll();
+                }
+            }
+            catch (IOException e)
+            {
+                Log.Write(Log.Error, e.Message);
+                Log.Write(Log.Debug, e.StackTrace);
             }
         }
     }

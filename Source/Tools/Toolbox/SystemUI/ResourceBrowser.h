@@ -30,9 +30,23 @@
 namespace Urho3D
 {
 
+enum ResourceBrowserResult
+{
+    RBR_NOOP,
+    RBR_ITEM_SELECTED,
+    RBR_ITEM_OPEN,
+    RBR_ITEM_CONTEXT_MENU,
+};
+
+URHO3D_EVENT(E_RESOURCERENAMED, ResourceRenamed)
+{
+    URHO3D_PARAM(P_FROM, From);                         // Absolute path to source file
+    URHO3D_PARAM(P_TO, To);                             // Absolute path to destination file
+}
+
 /// Create docked resource browser dock window.
-URHO3D_TOOLBOX_API bool ResourceBrowserWindow(String& selected);
+URHO3D_TOOLBOX_API ResourceBrowserResult ResourceBrowserWindow(String& path, String& selected);
 /// Create resource browser ui inside another window.
-URHO3D_TOOLBOX_API bool ResourceBrowserWidget(String& selected);
+URHO3D_TOOLBOX_API ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected);
 
 }

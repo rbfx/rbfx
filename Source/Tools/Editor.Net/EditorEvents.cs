@@ -67,4 +67,10 @@ namespace Editor.Events
     {
         public static readonly StringHash SaveData = "SaveData";
     }
+
+    [Event]
+    public class EditorDeleteResource
+    {
+        public static readonly string ResourceName = "ResourceName";
+    }
 }

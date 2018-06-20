@@ -95,6 +95,8 @@ protected:
     /// Managed plugin manager.
     PluginManagerManaged pluginsManaged_;
 #endif
+    String resourcePath_;
+    String resourceSelection_;
 };
 
 }

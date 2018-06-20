@@ -56,11 +56,12 @@ namespace Editor.Tabs
             _inspector = new AttributeInspector(Context);
             _view.Scene.IsUpdateEnabled = false;
 
+            CreateObjects();
+
             SubscribeToEvent<Update>(OnUpdate);
             SubscribeToEvent<PostUpdate>(args => RenderNodeContextMenu());
             SubscribeToEvent<GizmoSelectionChanged>(args => { _selectedComponent = null; });
             SubscribeToEvent<EditorKeyCombo>(OnKeyCombo);
-            SubscribeToEvent<EditorProjectSave>(OnSaveProject);
             _undo.Connect(_view.Scene);
             _undo.Connect(_inspector);
             _undo.Connect(_gizmo);
@@ -83,15 +84,14 @@ namespace Editor.Tabs
             base.Dispose(disposing);
         }
 
-        private void OnSaveProject(Event e)
+        protected override void OnSaveProject(Event e)
         {
+            base.OnSaveProject(e);
+
             var projectSave = (JSONValue) e.GetObject(EditorProjectSave.SaveData);
             var resources = projectSave.Get("resources");
 
-            var save = new JSONValue();            // This is object passed to LoadSave()
-            save.Set("type", ResourceType);
-            save.Set("path", ResourcePath);
-            save.Set("uuid", Uuid);
+            var save = resources.Get((int) resources.Size() - 1);
 
             var camera = save.Get("camera");
             var transform = new JSONValue();
@@ -100,7 +100,8 @@ namespace Editor.Tabs
             camera.Set("light", _view.Camera.GetComponent<Light>().IsEnabled);
             save.Set("camera", camera);
 
-            resources.Push(save);
+            resources.Resize(resources.Size() - 1);    // Remove old save
+            resources.Push(save);                      // Append updated version
             projectSave.Set("resources", resources);
 
             SaveResource();
@@ -326,6 +327,8 @@ namespace Editor.Tabs
                 _inspector.RenderAttributes(_selectedComponent);
         }
 
+        private Node _openNodeInHierarchy = null;
+
         private void RenderNodeTree(Node node)
         {
             if (node.IsTemporary)
@@ -344,6 +347,12 @@ namespace Editor.Tabs
             _iconCache.RenderIcon("Node");
             ui.SameLine();
 
+            if (Equals(_openNodeInHierarchy, node))
+            {
+                ui.SetNextTreeNodeOpen(true);
+                _openNodeInHierarchy = null;
+            }
+
             var opened = ui.TreeNodeEx(name, flags);
             if (!opened)
             {
@@ -361,6 +370,8 @@ namespace Editor.Tabs
                     if (!Input.GetKeyDown(Key.Ctrl))
                         _gizmo.UnselectAll();
                     _gizmo.ToggleSelection(node);
+                    _eventArgs[InspectItem.Inspectable] = this;
+                    SendEvent<InspectItem>(_eventArgs);
                 }
                 else if (ImGui.SystemUi.IsMouseClicked(MouseButton.Right))
                 {
@@ -384,7 +395,7 @@ namespace Editor.Tabs
                     _iconCache.RenderIcon(component.GetType().Name);
                     ui.SameLine();
 
-                    var selected = _selectedComponent != null && _selectedComponent == component;
+                    var selected = _selectedComponent != null && _selectedComponent.Equals(component);
                     selected = ui.Selectable(component.GetType().Name, selected);
 
                     if (ImGui.SystemUi.IsMouseClicked(MouseButton.Right) && ui.IsItemHovered(HoveredFlags.AllowWhenBlockedByPopup))
@@ -398,6 +409,8 @@ namespace Editor.Tabs
                         _gizmo.UnselectAll();
                         _gizmo.ToggleSelection(node);
                         _selectedComponent = component;
+                        _eventArgs[InspectItem.Inspectable] = this;
+                        SendEvent<InspectItem>(_eventArgs);
                     }
 
                     if (ui.BeginPopup("Component context menu"))
@@ -471,6 +484,7 @@ namespace Editor.Tabs
                                     {
                                         node.CreateComponent(new StringHash(component),
                                             isAlternative ? CreateMode.Local : CreateMode.Replicated);
+                                        _openNodeInHierarchy = node;
                                     }
                                 }
                             }
@@ -505,6 +519,16 @@ namespace Editor.Tabs
             finally
             {
                 ui.PopStyleVar();
+            }
+        }
+
+        public void SaveAs(string resourcePath)
+        {
+            var project = GetSubsystem<Project>();
+            ResourcePath = Title = resourcePath;
+            using (var file = new File(Context, $"{project.DataPath}/{resourcePath}", FileMode.Write))
+            {
+                _view.Scene.SaveYaml(file);
             }
         }
     }

@@ -55,8 +55,8 @@ namespace Editor
             EngineParameters[EngineDefs.EpResourcePrefixPaths] = $"{currentDir};{currentDir}/..";
             EngineParameters[EngineDefs.EpLogLevel] = Log.Debug;
             EngineParameters[EngineDefs.EpWindowResizable] = true;
-            EngineParameters[EngineDefs.EpAutoloadPaths] = "Autoload";
-            EngineParameters[EngineDefs.EpResourcePaths] = "Data;CoreData;EditorData";
+            EngineParameters[EngineDefs.EpAutoloadPaths] = "";
+            EngineParameters[EngineDefs.EpResourcePaths] = "CoreData;EditorData";
         }
 
         public override void Start()
@@ -124,6 +124,8 @@ namespace Editor
         {
             CloseProject();
 
+            Cache.RemoveResourceDir(Directory.GetCurrentDirectory() + "/CoreData");
+
             _project = new Project(Context, projectPath);
             Context.RegisterSubsystem(_project);
             _project.Load();
@@ -174,11 +176,6 @@ namespace Editor
 
                     if (_project != null)
                     {
-                        if (ui.MenuItem($"{FontAwesome.File} New Scene"))
-                        {
-
-                        }
-
                         if (ui.MenuItem($"{FontAwesome.FloppyO} Save"))
                         {
                             _project.Save();

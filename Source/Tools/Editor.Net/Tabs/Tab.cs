@@ -22,6 +22,7 @@
 
 using System;
 using System.Linq;
+using Editor.Events;
 using ImGui;
 using Urho3D;
 
@@ -72,6 +73,29 @@ namespace Editor.Tabs
             InitialSize = initialSize.GetValueOrDefault(new Vector2(-1, -1));
             InitialLocation.NextDockName = placeNextToDock;
             InitialLocation.Slot = slot;
+
+            SubscribeToEvent<EditorProjectSave>(OnSaveProject);
+            SubscribeToEvent<EditorDeleteResource>(OnResourceDeleted);
+            SubscribeToEvent("ResourceRenamed", OnResourceRenamed);
+        }
+
+        private void OnResourceRenamed(Event e)
+        {
+            if (ResourcePath == null)
+                return;
+
+            var project = GetSubsystem<Project>();
+            var from = e.GetString("From");
+            var to = e.GetString("To");
+
+            if (from == $"{project.DataPath}/{ResourcePath}")
+                ResourcePath = Title = to.Substring(project.DataPath.Length + 1);
+        }
+
+        private void OnResourceDeleted(Event e)
+        {
+            if (Lifetime == TabLifetime.Temporary && e.GetString(EditorDeleteResource.ResourceName) == ResourcePath)
+                _isOpen = false;
         }
 
         public virtual void LoadResource(string resourcePath)
@@ -115,6 +139,20 @@ namespace Editor.Tabs
         public void Activate()
         {
             _activateTab = true;
+        }
+
+        protected virtual void OnSaveProject(Event e)
+        {
+            var projectSave = (JSONValue) e.GetObject(EditorProjectSave.SaveData);
+            var resources = projectSave.Get("resources");
+
+            var save = new JSONValue();            // This is object passed to LoadSave()
+            save.Set("type", ResourceType);
+            save.Set("path", ResourcePath);
+            save.Set("uuid", Uuid);
+
+            resources.Push(save);
+            projectSave.Set("resources", resources);
         }
     }
 }

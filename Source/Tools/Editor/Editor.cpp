@@ -233,11 +233,11 @@ void Editor::OnUpdate(VariantMap& args)
         GetSubsystem<Console>()->RenderContent();
     ui::EndDock();
 
-    String selected;
     if (tabs_.Size())
         ui::SetNextDockPos(tabs_.Back()->GetUniqueTitle().CString(), ui::Slot_Bottom, ImGuiCond_FirstUseEver);
-    if (ResourceBrowserWindow(selected))
+    if (ResourceBrowserWindow(resourcePath_, resourceSelection_) == RBR_ITEM_OPEN)
     {
+        String selected = resourcePath_ + resourceSelection_;
         auto type = GetContentType(selected);
         if (type == CTYPE_SCENE)
             CreateNewTab<SceneTab>()->LoadResource(selected);
