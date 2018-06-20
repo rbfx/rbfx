@@ -116,6 +116,8 @@ ContentType GetContentType(const String& resourcePath)
         return CTYPE_MODEL;
     if (extension == ".ani")
         return CTYPE_ANIMATION;
+    if (extension == ".scene")
+        return CTYPE_SCENE;
     if (audioExtensions_.Contains(extension))
         return CTYPE_SOUND;
     if (imagesExtensions_.Contains(extension))
