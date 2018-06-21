@@ -25,6 +25,7 @@
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Resource/ResourceEvents.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <IconFontCppHeaders/IconsFontAwesome.h>
 #include "Widgets.h"
@@ -92,36 +93,8 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected)
             if (dropped.GetType() == VAR_STRING)
             {
                 auto cache = systemUI->GetCache();
-                auto dragSource = cache->GetResourceFileName(dropped.GetString());
-                auto dropTarget = AddTrailingSlash(item);
-
-                // Find existing drop target
-                const auto& resourceDirs = cache->GetResourceDirs();
-                String mainResourceDir;
-                for (const auto& resourceDir : resourceDirs)
-                {
-                    if (resourceDir.EndsWith("/EditorData/") || resourceDir.EndsWith("/Cache/"))
-                        continue;
-
-                    if (mainResourceDir.Empty())
-                    {
-                        mainResourceDir = resourceDir;
-                    }
-
-                    if (fs->DirExists(resourceDir + dropTarget))
-                    {
-                        dropTarget = resourceDir + dropTarget + GetFileNameAndExtension(dragSource);
-                        break;
-                    }
-                }
-
-                cache->SetAutoReloadResourcesSuspended(true);
-                if (fs->Rename(dragSource, dropTarget))
-                {
-                    using namespace ResourceRenamed;
-                    fs->SendEvent(E_RESOURCERENAMED, P_FROM, dragSource, P_TO, dropTarget);
-                }
-                cache->SetAutoReloadResourcesSuspended(false);
+                cache->RenameResource(dropped.GetString(),
+                                      AddTrailingSlash(item) + GetFileNameAndExtension(dropped.GetString()));
             }
             ui::EndDragDropTarget();
         }

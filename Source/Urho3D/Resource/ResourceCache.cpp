@@ -1080,6 +1080,13 @@ void ResourceCache::HandleBeginFrame(StringHash eventType, VariantMap& eventData
         String fileName;
         while (fileWatchers_[i]->GetNextChange(fileName))
         {
+            auto it = ignoreResourceAutoReload_.Find(fileName);
+            if (it != ignoreResourceAutoReload_.End())
+            {
+                ignoreResourceAutoReload_.Erase(it);
+                continue;
+            }
+
             ReloadResourceWithDependencies(fileName);
 
             // Finally send a general file changed event even if the file was not a tracked resource
@@ -1184,6 +1191,83 @@ String ResourceCache::PrintResources(const String& typeName) const
     }
 
     return output;
+}
+
+bool ResourceCache::RenameResource(String source, String destination)
+{
+    if (!packages_.Empty())
+    {
+        URHO3D_LOGERROR("Renaming resources not supported while packages are in use.");
+        return false;
+    }
+
+    using namespace ResourceRenamed;
+
+    auto* fileSystem = GetSubsystem<FileSystem>();
+
+    SharedPtr<Resource> resource;
+    String sourceAbsolutePath;
+    String destinationAbsolutePath;
+
+    if (IsAbsolutePath(source))
+    {
+        sourceAbsolutePath = source;
+        source = source.Substring(GetPreferredResourceDir(source).Length());
+    }
+    else
+        sourceAbsolutePath = GetResourceFileName(source);
+
+    if (sourceAbsolutePath.Empty())
+    {
+        URHO3D_LOGERRORF("Resource file %s does not exist.", source.CString());
+        return false;
+    }
+
+    resource = FindResource(source);
+    if (resource.Null())
+    {
+        URHO3D_LOGERRORF("Resource file %s does not exist.", source.CString());
+        return false;
+    }
+
+    if (IsAbsolutePath(destination))
+    {
+        destinationAbsolutePath = destination;
+        destination = destination.Substring(GetPreferredResourceDir(destination).Length());
+    }
+    else
+        destinationAbsolutePath = GetPreferredResourceDir(GetPath(sourceAbsolutePath)) + destination;
+
+    String destinationPath = GetPath(destinationAbsolutePath);
+    if (!fileSystem->CreateDirsRecursive(destinationPath))
+    {
+        URHO3D_LOGERRORF("Unable to create directory %s.", destinationPath.CString());
+        return false;
+    }
+
+    if (autoReloadResources_)
+        ignoreResourceAutoReload_.EmplaceBack(destination);
+
+    if (!fileSystem->Rename(sourceAbsolutePath, destinationAbsolutePath))
+    {
+        // Renaming failed therefore reloading event will not be triggered.
+        if (autoReloadResources_)
+            ignoreResourceAutoReload_.Pop();
+        URHO3D_LOGERRORF("Unable to rename resource %s to %s.",
+                         sourceAbsolutePath.CString(), destinationAbsolutePath.CString());
+        return false;
+    }
+
+    // Move resource
+    resourceGroups_[resource->GetType()].resources_.Erase(source);
+    resource->SetName(destination);
+    resourceGroups_[resource->GetType()].resources_[resource->GetNameHash()] = resource;
+    UpdateResourceGroup(resource->GetType());
+
+    using namespace ResourceRenamed;
+    SendEvent(E_RESOURCERENAMED, P_FROM, source, P_TO, destination);
+
+    return true;
 }
 
 }

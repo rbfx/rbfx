@@ -25,6 +25,7 @@ using System.Linq;
 using Editor.Events;
 using ImGui;
 using Urho3D;
+using Urho3D.Events;
 
 
 namespace Editor.Tabs
@@ -76,7 +77,7 @@ namespace Editor.Tabs
 
             SubscribeToEvent<EditorProjectSave>(OnSaveProject);
             SubscribeToEvent<EditorDeleteResource>(OnResourceDeleted);
-            SubscribeToEvent("ResourceRenamed", OnResourceRenamed);
+            SubscribeToEvent<ResourceRenamed>(OnResourceRenamed);
         }
 
         private void OnResourceRenamed(Event e)
@@ -84,12 +85,11 @@ namespace Editor.Tabs
             if (ResourcePath == null)
                 return;
 
-            var project = GetSubsystem<Project>();
-            var from = e.GetString("From");
-            var to = e.GetString("To");
+            var from = e.GetString(ResourceRenamed.From);
+            var to = e.GetString(ResourceRenamed.To);
 
-            if (from == $"{project.DataPath}/{ResourcePath}")
-                ResourcePath = Title = to.Substring(project.DataPath.Length + 1);
+            if (from == ResourcePath)
+                ResourcePath = Title = to;
         }
 
         private void OnResourceDeleted(Event e)

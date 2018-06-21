@@ -218,6 +218,9 @@ public:
     void Scan(Vector<String>& result, const String& pathName, const String& filter, unsigned flags, bool recursive) const;
     /// Returns a formatted string containing the currently loaded resources with optional type name filter.
     String PrintResources(const String& typeName = String::EMPTY) const;
+    /// Renames resource without deleting it from cache. `source` and `destination` may be resource names or absolute
+    /// paths to files in resource directories. If destination is a resource name then source file is renamed within same data directory.
+    bool RenameResource(String source, String destination);
 
 private:
     /// Find a resource.
@@ -261,6 +264,8 @@ private:
     mutable bool isRouting_;
     /// How many milliseconds maximum per frame to spend on finishing background loaded resources.
     int finishBackgroundResourcesMs_;
+    /// List of resources that will not be auto-reloaded if reloading event triggers.
+    Vector<String> ignoreResourceAutoReload_;
 };
 
 template <class T> T* ResourceCache::GetExistingResource(const String& name)
