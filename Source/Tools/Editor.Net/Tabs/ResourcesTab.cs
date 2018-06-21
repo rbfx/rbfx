@@ -26,8 +26,8 @@ using System.Linq;
 using System.Text;
 using IconFonts;
 using Urho3D;
-using ImGui;
 using Urho3D.Events;
+using ImGui;
 
 
 namespace Editor.Tabs
@@ -55,6 +55,16 @@ namespace Editor.Tabs
             Uuid = "4fcf9895-e363-441d-a665-2a97f7da64ef";
             _fileNamePopup.InputLabel = "";
             _fileNamePopup.Buffer = new byte[1024];
+
+            SubscribeToEvent<InspectorLocateResource>(OnLocateResource);
+        }
+
+        private void OnLocateResource(Event e)
+        {
+            var resourceName = e.GetString(InspectorLocateResource.ResourceName);
+            var lastSlash = resourceName.LastIndexOf("/", StringComparison.Ordinal) + 1;
+            _resourcePath = resourceName.Substring(0, lastSlash);
+            _resourceSelection = resourceName.Substring(lastSlash);
         }
 
         protected override void Render()
@@ -163,6 +173,8 @@ namespace Editor.Tabs
                         _fileNamePopup.ConfirmationCallback(name);
                         _fileNamePopup.IsOpen = false;
                     }
+
+                    _fileNamePopup.Buffer[0] = 0;
                 }
                 ui.End();
             }

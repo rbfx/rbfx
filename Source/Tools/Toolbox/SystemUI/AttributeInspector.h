@@ -35,6 +35,11 @@ namespace Urho3D
 
 class Viewport;
 
+URHO3D_EVENT(E_INSPECTORLOCATERESOURCE, InspectorLocateResource)
+{
+    URHO3D_PARAM(P_NAME, ResourceName);                                         // String
+}
+
 class URHO3D_TOOLBOX_API AttributeInspector : public Object
 {
     URHO3D_OBJECT(AttributeInspector, Object);
@@ -46,19 +51,15 @@ public:
     void RenderAttributes(const PODVector<Serializable*>& items);
     /// Render attribute inspector widgets.
     void RenderAttributes(Serializable* item);
-    /// Have resource views copy renderpath from source viewport.
-    void CopyEffectsFrom(Viewport* source);
     /// Automatically creates two columns where first column is as wide as longest label.
     void NextColumn();
 
 protected:
     /// Render value widget of single attribute.
     /// \returns true if value was modified.
-    bool RenderSingleAttribute(const AttributeInfo& info, Variant& value, bool expanded);
+    bool RenderSingleAttribute(const AttributeInfo& info, Variant& value);
     /// Render ui for single resource ref attribute.
-    bool RenderResourceRef(StringHash type, const String& name, String& result, bool expanded);
-    /// Render single attribute label.
-    bool RenderAttributeLabel(const AttributeInfo& info, Color color, bool expandable);
+    bool RenderResourceRef(StringHash type, const String& name, String& result);
 
     /// A filter value. Attributes whose titles do not contain substring sored in this variable will not be rendered.
     std::array<char, 0x100> filter_{};
@@ -70,8 +71,6 @@ protected:
     int lastMaxWidth_ = 0;
     /// Max width of attribute label.
     int currentMaxWidth_ = 0;
-    /// Viewport from which rendering path and postprocess effects should be copied.
-    WeakPtr<Viewport> effectSource_;
 };
 
 class URHO3D_TOOLBOX_API AttributeInspectorWindow : public AttributeInspector

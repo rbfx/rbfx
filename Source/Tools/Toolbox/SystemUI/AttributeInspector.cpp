@@ -51,149 +51,6 @@ using namespace ui::litterals;
 namespace Urho3D
 {
 
-// Should these be exported by the engine?
-static const char* cullModeNames[] =
-{
-    "none",
-    "ccw",
-    "cw",
-    nullptr
-};
-static const char* fillModeNames[] =
-{
-    "solid",
-    "wireframe",
-    "point",
-    nullptr
-};
-#define MAX_FILLMODES (IM_ARRAYSIZE(fillModeNames) - 1)
-
-const float attributeIndentLevel = 15.f;
-
-/// Renders material preview in attribute inspector.
-class MaterialView : public SceneView
-{
-public:
-    explicit MaterialView(Context* context, Material* material, Viewport* effectSource)
-        : SceneView(context, {0, 0, 200, 200})
-        , material_(material)
-    {
-        // Workaround: for some reason this overriden method of our class does not get called by SceneView constructor.
-        CreateObjects();
-
-        // Scene viewport renderpath must be same as material viewport renderpath
-        if (effectSource != nullptr)
-        {
-            auto path = effectSource->GetRenderPath();
-            viewport_->SetRenderPath(path);
-            auto light = camera_->GetComponent<Light>();
-            for (auto& command: path->commands_)
-            {
-                if (command.pixelShaderName_ == "PBRDeferred")
-                {
-                    // Lights in PBR scenes need modifications, otherwise obects in material preview look very dark
-                    light->SetUsePhysicalValues(true);
-                    light->SetBrightness(5000);
-                    light->SetShadowCascade(CascadeParameters(10, 20, 30, 40, 10));
-                    break;
-                }
-            }
-        }
-    }
-
-    void Render()
-    {
-        auto size = static_cast<int>(ui::GetWindowWidth() - ui::GetCursorPosX());
-        SetSize({0, 0, size, size});
-        ui::Image(texture_.Get(), ToImGui(rect_.Size()));
-        Input* input = camera_->GetInput();
-        bool rightMouseButtonDown = input->GetMouseButtonDown(MOUSEB_RIGHT);
-        if (ui::IsItemHovered())
-        {
-            if (rightMouseButtonDown)
-                SetGrab(true);
-            else if (input->GetMouseButtonPress(MOUSEB_LEFT))
-                ToggleModel();
-        }
-
-        if (mouseGrabbed_)
-        {
-            if (rightMouseButtonDown)
-            {
-                if (input->GetKeyPress(KEY_ESCAPE))
-                {
-                    camera_->SetPosition(Vector3::BACK * distance_);
-                    camera_->LookAt(Vector3::ZERO);
-                }
-                else
-                {
-                    IntVector2 delta = input->GetMouseMove();
-                    camera_->RotateAround(Vector3::ZERO,
-                                          Quaternion(delta.x_ * 0.1f, camera_->GetUp()) *
-                                          Quaternion(delta.y_ * 0.1f, camera_->GetRight()), TS_WORLD);
-                }
-            }
-            else
-                SetGrab(false);
-        }
-    }
-
-    void ToggleModel()
-    {
-        auto model = node_->GetOrCreateComponent<StaticModel>();
-
-        model->SetModel(node_->GetCache()->GetResource<Model>(ToString("Models/%s.mdl", figures_[figureIndex_])));
-        model->SetMaterial(material_);
-        auto bb = model->GetBoundingBox();
-        auto scale = 1.f / Max(bb.Size().x_, Max(bb.Size().y_, bb.Size().z_));
-        if (figures_[figureIndex_] == "Box")    // Box is rather big after autodetecting scale, but other figures
-            scale *= 0.7f;                      // are ok. Patch the box then.
-        else if (figures_[figureIndex_] == "TeaPot")    // And teapot is rather small.
-            scale *= 1.2f;
-        node_->SetScale(scale);
-        node_->SetWorldPosition(node_->GetWorldPosition() - model->GetWorldBoundingBox().Center());
-
-        figureIndex_ = ++figureIndex_ % figures_.Size();
-    }
-
-    void SetGrab(bool enable)
-    {
-        if (mouseGrabbed_ == enable)
-            return;
-
-        mouseGrabbed_ = enable;
-        Input* input = camera_->GetInput();
-        if (enable && input->IsMouseVisible())
-            input->SetMouseVisible(false);
-        else if (!enable && !input->IsMouseVisible())
-            input->SetMouseVisible(true);
-    }
-
-protected:
-    void CreateObjects() override
-    {
-        SceneView::CreateObjects();
-        node_ = scene_->CreateChild("Sphere");
-        ToggleModel();
-        camera_->CreateComponent<Light>();
-        camera_->SetPosition(Vector3::BACK * distance_);
-        camera_->LookAt(Vector3::ZERO);
-    }
-
-    /// Material which is being previewed.
-    SharedPtr<Material> material_;
-    /// Node holding figure to which material is applied.
-    WeakPtr<Node> node_;
-    /// Flag indicating if this widget grabbed mouse for rotating material node.
-    bool mouseGrabbed_ = false;
-    /// Index of current figure displaying material.
-    int figureIndex_ = 0;
-    /// A list of figures between which material view can be toggled.
-    PODVector<const char*> figures_{"Sphere", "Box", "Torus", "TeaPot"};
-    /// Distance from camera to figure.
-    float distance_ = 1.5f;
-};
-
 struct AttributeInspectorBuffer
 {
     explicit AttributeInspectorBuffer(const String& defaultValue=String::EMPTY)
@@ -281,20 +138,7 @@ void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
 
                 ui::PushID(info.name_.CString());
 
-                bool expanded = true;
-                bool expandable = false;
-                if (value.GetType() == VAR_RESOURCEREF)
-                {
-                    if (value.GetResourceRef().type_ == Material::GetTypeStatic())
-                        expandable = true;
-                }
-                else if (value.GetType() == VAR_RESOURCEREFLIST)
-                {
-                    if (value.GetResourceRefList().type_ == Material::GetTypeStatic())
-                        expandable = true;
-                }
-
-                expanded = RenderAttributeLabel(info, color, expandable);
+                ui::TextColored(ToImGui(color), "%s", info.name_.CString());
 
                 if (!tooltip.Empty() && ui::IsItemHovered())
                     ui::SetTooltip("%s", tooltip.CString());
@@ -359,7 +203,7 @@ void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
 
                 bool modifiedLastFrame = modifiedLastFrame_ == info.name_.CString();
                 ui::PushItemWidth(-1);
-                modified |= RenderSingleAttribute(info, value, expanded);
+                modified |= RenderSingleAttribute(info, value);
                 ui::PopItemWidth();
                 ui::PopID();
 
@@ -403,7 +247,7 @@ void AttributeInspector::RenderAttributes(Serializable* item)
     RenderAttributes(items);
 }
 
-bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Variant& value, bool expanded)
+bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Variant& value)
 {
     const float floatMin = -14000.f;
     const float floatMax = 14000.f;
@@ -530,7 +374,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         {
             const auto& ref = value.GetResourceRef();
             String result;
-            if (RenderResourceRef(ref.type_, ref.name_, result, expanded))
+            if (RenderResourceRef(ref.type_, ref.name_, result))
             {
                 value = ResourceRef(ref.type_, result);
                 modified = true;
@@ -544,7 +388,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
             {
                 ui::PushID(i);
                 String result;
-                if (RenderResourceRef(refList.type_, refList.names_[i], result, expanded))
+                if (RenderResourceRef(refList.type_, refList.names_[i], result))
                 {
                     ResourceRefList newRefList(refList);
                     newRefList.names_[i] = result;
@@ -559,7 +403,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
                 if (i < refList.names_.Size() - 1)
                 {
                     ui::PushID(i + 1);
-                    expanded = RenderAttributeLabel(info, Color::WHITE, value.GetResourceRefList().type_ == Material::GetTypeStatic());
+                    ui::TextColored(ToImGui(Color::WHITE), "%s", info.name_.CString());
                     NextColumn();
                     ui::PopID();
                 }
@@ -745,237 +589,54 @@ void AttributeInspector::NextColumn()
     ui::SameLine(lastMaxWidth_);
 }
 
-bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, String& result, bool expanded)
+bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, String& result)
 {
-    auto handleDragAndDrop = [&](StringHash resourceType, SharedPtr<Resource>& resource)
-    {
-        bool dropped = false;
-        if (ui::BeginDragDropTarget())
-        {
-            const Variant& payload = ui::AcceptDragDropVariant("path");
-            if (!payload.IsEmpty())
-            {
-                resource = GetCache()->GetResource(resourceType, payload.GetString());
-                dropped = resource.NotNull();
-            }
-            ui::EndDragDropTarget();
-        }
-        ui::SetHelpTooltip("Drag resource here.");
-        return dropped;
-    };
-
     SharedPtr<Resource> resource;
-    ui::PushItemWidth(-30_dpx);
+    auto oldSpacing = ui::GetStyle().ItemSpacing.x;
+    auto returnValue = false;
+    ui::GetStyle().ItemSpacing.x = 2_dpx;
+
+    ui::PushItemWidth(-40_dpx);
     ui::InputText("", (char*)name.CString(), name.Length(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
-    if (handleDragAndDrop(type, resource))
+    ui::PopItemWidth();
+
+    bool dropped = false;
+    if (ui::BeginDragDropTarget())
+    {
+        const Variant& payload = ui::AcceptDragDropVariant("path");
+        if (!payload.IsEmpty())
+        {
+            resource = GetCache()->GetResource(type, payload.GetString());
+            dropped = resource.NotNull();
+        }
+        ui::EndDragDropTarget();
+    }
+    ui::SetHelpTooltip("Drag resource here.");
+
+    if (dropped)
     {
         result = resource->GetName();
-        ui::ExpireUIState<MaterialView>();
-        return true;
+        returnValue = true;
     }
-    ui::PopItemWidth();
+
+    ui::SameLine();
+    if (ui::IconButton(ICON_FA_CROSSHAIRS))
+    {
+        SendEvent(E_INSPECTORLOCATERESOURCE, InspectorLocateResource::P_NAME, name);
+    }
+    ui::SetHelpTooltip("Locate resource");
 
     ui::SameLine();
     if (ui::IconButton(ICON_FA_TRASH))
     {
         result.Clear();
-        return true;
+        returnValue = true;
     }
+    ui::SetHelpTooltip("Stop using resource");
 
-    if (!expanded || name.Empty())
-        return false;
+    ui::GetStyle().ItemSpacing.x = oldSpacing;
 
-    if (type == Material::GetTypeStatic())
-    {
-        auto* material = GetCache()->GetResource<Material>(name);
-        if (material == nullptr)
-            return false;
-
-        auto* state = ui::GetUIState<MaterialView>(context_, material, effectSource_);
-        ui::Indent(attributeIndentLevel);
-
-        state->Render();
-        if (handleDragAndDrop(type, resource))
-        {
-            result = resource->GetName();
-            ui::ExpireUIState<MaterialView>();
-            return true;
-        }
-        ui::SetHelpTooltip("Drag resource here.\nClick to switch object.");
-
-        ui::TextUnformatted("Cull");
-        NextColumn();
-        int valueInt = material->GetCullMode();
-        if (ui::Combo("###cull", &valueInt, cullModeNames, (int)MAX_CULLMODES))
-        {
-            material->SetCullMode(static_cast<CullMode>(valueInt));
-            material->SaveFile(GetCache()->GetResourceFileName(material->GetName()));
-        }
-
-        ui::TextUnformatted("Shadow Cull");
-        NextColumn();
-        valueInt = material->GetShadowCullMode();
-        if (ui::Combo("###shadowCull", &valueInt, cullModeNames, (int)MAX_CULLMODES))
-        {
-            material->SetShadowCullMode(static_cast<CullMode>(valueInt));
-            material->SaveFile(GetCache()->GetResourceFileName(material->GetName()));
-        }
-
-        ui::TextUnformatted("Fill");
-        NextColumn();
-        valueInt = material->GetFillMode();
-        if (ui::Combo("###fill", &valueInt, fillModeNames, (int)MAX_FILLMODES))
-        {
-            material->SetFillMode(static_cast<FillMode>(valueInt));
-            material->SaveFile(GetCache()->GetResourceFileName(material->GetName()));
-        }
-
-        auto bias = material->GetDepthBias();
-        ui::TextUnformatted("Constant Bias");
-        NextColumn();
-        if (ui::DragFloat("###constantBias_", &bias.constantBias_, 0.1f, -1, 1))
-        {
-            material->SetDepthBias(bias);
-            material->SaveFile(GetCache()->GetResourceFileName(material->GetName()));
-        }
-
-        ui::TextUnformatted("Slope Scaled Bias");
-        NextColumn();
-        if (ui::DragFloat("###slopeScaledBias_", &bias.slopeScaledBias_, 1, -16, 16))
-        {
-            material->SetDepthBias(bias);
-            material->SaveFile(GetCache()->GetResourceFileName(material->GetName()));
-        }
-
-        ui::TextUnformatted("Normal Offset");
-        NextColumn();
-        if (ui::DragFloat("###normalOffset_", &bias.normalOffset_, 1, 0))
-        {
-            material->SetDepthBias(bias);
-            material->SaveFile(GetCache()->GetResourceFileName(material->GetName()));
-        }
-
-        ui::TextUnformatted("Alpha To Coverage");
-        NextColumn();
-        bool valueBool = material->GetAlphaToCoverage();
-        if (ui::Checkbox("###alphaToCoverage_", &valueBool))
-        {
-            material->SetAlphaToCoverage(valueBool);
-            material->SaveFile(GetCache()->GetResourceFileName(material->GetName()));
-        }
-
-        ui::TextUnformatted("Line Anti-Alias");
-        NextColumn();
-        valueBool = material->GetLineAntiAlias();
-        if (ui::Checkbox("###lineAntiAlias_", &valueBool))
-        {
-            material->SetLineAntiAlias(valueBool);
-            material->SaveFile(GetCache()->GetResourceFileName(material->GetName()));
-        }
-
-        ui::TextUnformatted("Occlusion");
-        NextColumn();
-        valueBool = material->GetOcclusion();
-        if (ui::Checkbox("###occlusion_", &valueBool))
-        {
-            material->SetOcclusion(valueBool);
-            material->SaveFile(GetCache()->GetResourceFileName(material->GetName()));
-        }
-
-        ui::TextUnformatted("Render Order");
-        NextColumn();
-        valueInt = material->GetRenderOrder();
-        if (ui::DragInt("###renderOrder_", &valueInt, 1, 0, 0xFF))
-        {
-            material->SetRenderOrder(static_cast<unsigned char>(valueInt));
-            material->SaveFile(GetCache()->GetResourceFileName(material->GetName()));
-        }
-
-        for (unsigned i = 0; i < material->GetNumTechniques(); i++)
-        {
-            ui::PushID(i);
-            auto& tech = const_cast<TechniqueEntry&>(material->GetTechniqueEntry(i));
-
-            bool open = ui::CollapsingHeaderSimple(ToString("Technique %d", i).CString());
-            NextColumn();
-            String techName = tech.technique_->GetName();
-            if (material->GetNumTechniques() > 1)
-                ui::PushItemWidth(-30_dpx);
-            ui::InputText("###techniqueName_", (char*)techName.CString(), techName.Length(),
-                ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
-            if (material->GetNumTechniques() > 1)
-                ui::PopItemWidth();
-            if (handleDragAndDrop(Technique::GetTypeStatic(), resource))
-            {
-                material->SetTechnique(i, DynamicCast<Technique>(resource), tech.qualityLevel_, tech.lodDistance_);
-                material->SaveFile(GetCache()->GetResourceFileName(material->GetName()));
-                resource.Reset();
-            }
-
-            if (material->GetNumTechniques() > 1)
-            {
-                ui::SameLine();
-                if (ui::IconButton(ICON_FA_TRASH))
-                {
-                    for (auto j = i + 1; j < material->GetNumTechniques(); j++)
-                        material->SetTechnique(j - 1, material->GetTechnique(j));
-                    material->SetNumTechniques(material->GetNumTechniques() - 1);
-                    material->SaveFile(GetCache()->GetResourceFileName(material->GetName()));
-                    ui::PopID();
-                    break;
-                }
-            }
-
-            if (open)
-            {
-                ui::Indent(attributeIndentLevel);
-
-                ui::TextUnformatted("LOD Distance");
-                NextColumn();
-                if (ui::DragFloat("###lodDistance_", &tech.lodDistance_))
-                    material->SaveFile(GetCache()->GetResourceFileName(material->GetName()));
-
-                ui::TextUnformatted("Quality");
-                NextColumn();
-                if (ui::DragInt("###qualityLevel_", (int*)&tech.qualityLevel_, 1, QUALITY_LOW, QUALITY_MAX))
-                    material->SaveFile(GetCache()->GetResourceFileName(material->GetName()));
-
-                ui::Unindent(attributeIndentLevel);
-            }
-            ui::PopID();
-        }
-
-        const char* newTechnique = "Add new technique";
-        ui::InputText("###newTechnique_", (char*)newTechnique, strlen(newTechnique), ImGuiInputTextFlags_ReadOnly);
-        if (handleDragAndDrop(Technique::GetTypeStatic(), resource))
-        {
-            material->SetNumTechniques(material->GetNumTechniques() + 1);
-            material->SetTechnique(material->GetNumTechniques() - 1, dynamic_cast<Technique*>(resource.Get()));
-            material->SaveFile(GetCache()->GetResourceFileName(material->GetName()));
-        }
-        ui::Unindent(attributeIndentLevel);
-    }
-
-    return false;
-}
-
-void AttributeInspector::CopyEffectsFrom(Viewport* source)
-{
-    effectSource_ = source;
-}
-
-bool AttributeInspector::RenderAttributeLabel(const AttributeInfo& info, Color color, bool expandable)
-{
-    bool expanded = false;
-    if (expandable)
-    {
-        ui::PushStyleColor(ImGuiCol_Text, ToImGui(color));
-        expanded = ui::CollapsingHeaderSimple(info.name_.CString());
-        ui::PopStyleColor();
-    }
-    else
-        ui::TextColored(ToImGui(color), "%s", info.name_.CString());
-    return expanded;
+    return returnValue;
 }
 
 AttributeInspectorWindow::AttributeInspectorWindow(Context* context) : AttributeInspector(context)
