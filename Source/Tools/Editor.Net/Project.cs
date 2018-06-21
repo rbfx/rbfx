@@ -127,7 +127,6 @@ namespace Editor
             }
         }
 
-        private delegate void SendDeletionEventDelegate(DirectoryInfo dir);
         public void RemoveResourcePath(string selectedPath)
         {
             try

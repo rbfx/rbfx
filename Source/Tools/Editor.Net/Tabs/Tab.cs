@@ -143,6 +143,9 @@ namespace Editor.Tabs
 
         protected virtual void OnSaveProject(Event e)
         {
+            if (string.IsNullOrEmpty(ResourceType))
+                return;
+
             var projectSave = (JSONValue) e.GetObject(EditorProjectSave.SaveData);
             var resources = projectSave.Get("resources");
 
