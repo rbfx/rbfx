@@ -123,7 +123,7 @@ namespace Editor.Tabs
                     _fileNamePopup.ConfirmationCallback = selection =>
                     {
                         var editor = GetSubsystem<Editor>();
-                        editor.OpenTab<SceneTab>().SaveAs($"{_resourcePath}{selection}.scene");
+                        editor.OpenTab<SceneTab>().SaveResource($"{_resourcePath}{selection}.scene");
                     };
                 }
 

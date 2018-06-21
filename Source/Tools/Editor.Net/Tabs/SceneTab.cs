@@ -166,15 +166,24 @@ namespace Editor.Tabs
             }
         }
 
-        private void SaveResource()
+        public void SaveResource(string resourcePath=null)
         {
-            using (var file = new File(Context, Cache.GetResourceFileName(ResourcePath), FileMode.Write))
+            if (resourcePath == null)
+                resourcePath = Cache.GetResourceFileName(ResourcePath);
+            else
             {
-                if (ResourcePath.EndsWith(".yml") || ResourcePath.EndsWith(".scene"))
+                var project = GetSubsystem<Project>();
+                ResourcePath = Title = resourcePath;
+                resourcePath = $"{project.DataPath}/{resourcePath}";
+            }
+
+            using (var file = new File(Context, resourcePath, FileMode.Write))
+            {
+                if (resourcePath.EndsWith(".yml") || resourcePath.EndsWith(".scene"))
                     _view.Scene.SaveYaml(file);
-                if (ResourcePath.EndsWith(".xml"))
+                if (resourcePath.EndsWith(".xml"))
                     _view.Scene.SaveXml(file);
-                else if (ResourcePath.EndsWith(".json"))
+                else if (resourcePath.EndsWith(".json"))
                     _view.Scene.SaveJson(file);
             }
         }
@@ -519,16 +528,6 @@ namespace Editor.Tabs
             finally
             {
                 ui.PopStyleVar();
-            }
-        }
-
-        public void SaveAs(string resourcePath)
-        {
-            var project = GetSubsystem<Project>();
-            ResourcePath = Title = resourcePath;
-            using (var file = new File(Context, $"{project.DataPath}/{resourcePath}", FileMode.Write))
-            {
-                _view.Scene.SaveYaml(file);
             }
         }
     }
