@@ -107,7 +107,7 @@ bool Urho3DCustomPassEarly::Visit(MetaEntity* entity, cppast::visitor_info info)
                 // These event classes are moved to ParentNamespace.Events namespace.
                 auto* parentSpaceDest = eventNamespace->GetParent();
                 std::string parentSpaceSymbol(parentSpaceDest->symbolName_ + "::Events");
-                MetaEntity* eventsParentSpace = generator->GetSymbol(parentSpaceSymbol);
+                MetaEntity* eventsParentSpace = generator->GetSymbol(parentSpaceSymbol, true);
                 if (eventsParentSpace == nullptr)
                 {
                     std::shared_ptr<MetaEntity> eventsParentSpaceStorage(new MetaEntity());
@@ -116,7 +116,7 @@ bool Urho3DCustomPassEarly::Visit(MetaEntity* entity, cppast::visitor_info info)
                     eventsParentSpace->uniqueName_ = parentSpaceSymbol;
                     eventsParentSpace->kind_ = cppast::cpp_entity_kind::namespace_t;
                     parentSpaceDest->Add(eventsParentSpace);
-                    generator->symbols_[parentSpaceSymbol] = eventsParentSpace->shared_from_this();
+                    generator->currentModule_->symbols_[parentSpaceSymbol] = eventsParentSpace->shared_from_this();
                 }
                 eventsParentSpace->Add(eventNamespace);
 

@@ -340,12 +340,9 @@ const cppast::cpp_entity* GetEntity(const cppast::cpp_type& type)
     if (realType.kind() == cppast::cpp_type_kind::user_defined_t)
     {
         const auto& userType = dynamic_cast<const cppast::cpp_user_defined_type&>(realType);
-        auto it = generator->symbols_.find(cppast::to_string(userType));
-        if (it != generator->symbols_.end())
-        {
-            if (!it->second.expired())
-                return it->second.lock()->ast_;
-        }
+        auto* sym = generator->GetSymbol(cppast::to_string(userType));
+        if (sym != nullptr)
+            return sym->ast_;
     }
     return nullptr;
 }

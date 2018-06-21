@@ -144,7 +144,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
             else
                 csType = cppType;
 
-            if (!container::contains(generator->symbols_, csType))
+            if (generator->GetSymbol(csType) == nullptr)
                 // Undefined type, required because unknown types pass is yet to run
                 return;
 

@@ -506,7 +506,7 @@ bool GeneratorContext::IsAcceptableType(const cppast::cpp_type& type)
         return true;
 
     if (type.kind() == cppast::cpp_type_kind::template_instantiation_t)
-        return container::contains(symbols_, GetTemplateSubtype(type));
+        return GetSymbol(GetTemplateSubtype(type)) != nullptr;
 
     std::function<bool(const cppast::cpp_type&)> isPInvokable = [&](const cppast::cpp_type& type)
     {
@@ -556,7 +556,7 @@ bool GeneratorContext::IsAcceptableType(const cppast::cpp_type& type)
         return true;
 
     // Known symbols will be classes that are being wrapped
-    return container::contains(symbols_, Urho3D::GetTypeName(type));
+    return GetSymbol(Urho3D::GetTypeName(type)) != nullptr;
 }
 
 const TypeMap* GeneratorContext::GetTypeMap(const cppast::cpp_type& type, bool strict)
@@ -645,14 +645,18 @@ bool GeneratorContext::GetSymbolOfConstant(const cppast::cpp_entity& user, const
     return false;
 }
 
-MetaEntity* GeneratorContext::GetSymbol(const std::string& symbolName)
+MetaEntity* GeneratorContext::GetSymbol(const std::string& symbolName, bool restrictToCurrentModule)
 {
-    auto it = symbols_.find(symbolName);
-    if (it == symbols_.end())
-        return nullptr;
-    if (it->second.expired())
-        return nullptr;
-    return it->second.lock().get();
+    for (auto& m : modules_)
+    {
+        if (restrictToCurrentModule && currentModule_ != &m)
+            continue;
+
+        auto it = m.symbols_.find(symbolName);
+        if (it != m.symbols_.end() && !it->second.expired())
+            return it->second.lock().get();
+    }
+    return nullptr;
 }
 
 bool GeneratorContext::IsInheritable(const std::string& symbolName) const

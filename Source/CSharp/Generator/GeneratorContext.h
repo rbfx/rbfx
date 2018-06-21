@@ -105,8 +105,8 @@ public:
                              MetaEntity** constantEntity=nullptr);
     bool GetSymbolOfConstant(const cppast::cpp_entity& user, const std::string& symbol, std::string& result,
                              const cppast::cpp_entity** symbolEntity);
-    MetaEntity* GetSymbol(const char* symbolName) { return GetSymbol(std::string(symbolName)); }
-    MetaEntity* GetSymbol(const std::string& symbolName);
+    MetaEntity* GetSymbol(const char* symbolName, bool restrictToCurrentModule=false) { return GetSymbol(std::string(symbolName), restrictToCurrentModule); }
+    MetaEntity* GetSymbol(const std::string& symbolName, bool restrictToCurrentModule=false);
     bool IsInheritable(const std::string& symbolName) const;
 
     struct Module
@@ -125,6 +125,7 @@ public:
         std::vector<std::string> extraMonoCallInitializers_;
         cppast::libclang_compile_config config_;
         std::string rulesFile_;
+        std::unordered_map<std::string, std::weak_ptr<MetaEntity>> symbols_;
     };
     std::vector<Module> modules_;
     NamespaceRules* currentNamespace_ = nullptr;
@@ -132,7 +133,6 @@ public:
     std::vector<std::unique_ptr<CppAstPass>> cppPasses_;
     std::vector<std::unique_ptr<CppApiPass>> apiPasses_;
     std::unordered_map<std::string, std::weak_ptr<MetaEntity>> enumValues_;
-    std::unordered_map<std::string, std::weak_ptr<MetaEntity>> symbols_;
     std::unordered_map<std::string, std::string> defaultValueRemaps_;
     std::vector<std::string> forceCompileTimeConstants_;
     std::unordered_map<std::string, TypeMap> typeMaps_;

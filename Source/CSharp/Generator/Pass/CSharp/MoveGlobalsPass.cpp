@@ -76,7 +76,7 @@ bool MoveGlobalsPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     toClass->sourceSymbolName_ = ns.sourceSymbolName_;
                     toClass->kind_ = cppast::cpp_entity_kind::class_t;
                     ns.Add(toClass);
-                    generator->symbols_[classSymbol] = toClass->shared_from_this();
+                    generator->currentModule_->symbols_[classSymbol] = toClass->shared_from_this();
                 }
 
                 toClass->Add(entity);

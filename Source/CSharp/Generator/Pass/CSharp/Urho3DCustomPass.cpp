@@ -91,7 +91,7 @@ bool Urho3DCustomPassLate::Visit(MetaEntity* entity, cppast::visitor_info info)
             toEnum->name_ = toEnum->uniqueName_ = toEnum->symbolName_ = targetEnum;
             toEnum->kind_ = cppast::cpp_entity_kind::enum_t;
             entity->GetParent()->Add(toEnum);
-            generator->symbols_[targetEnum] = toEnum->shared_from_this();
+            generator->currentModule_->symbols_[targetEnum] = toEnum->shared_from_this();
         }
 
         auto children = entity->children_;
