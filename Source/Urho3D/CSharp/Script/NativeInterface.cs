@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 using System;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security;
 
@@ -62,6 +63,15 @@ namespace Urho3D.CSharp
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void HandleEventDelegate(IntPtr gcHandle, uint type, IntPtr args);
 
+        /// <summary>
+        /// Invokes delegate passing it specified number of parameters.
+        /// </summary>
+        /// <param name="methodInfo">GCHandle to MethodInfo.</param>
+        /// <param name="paramCount">Number of items in `parameters` array.</param>
+        /// <param name="parameters">Array of parameters. May be null.</param>
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public unsafe delegate IntPtr InvokeMethodDelegate(IntPtr methodInfo, int paramCount, void** parameters);
+
         [StructLayout(LayoutKind.Sequential)]
         internal struct ManagedRuntime
         {
@@ -75,6 +85,8 @@ namespace Urho3D.CSharp
             public CreateObjectDelegate CreateObject;
             [MarshalAs(UnmanagedType.FunctionPtr)]
             public HandleEventDelegate HandleEvent;
+            [MarshalAs(UnmanagedType.FunctionPtr)]
+            public InvokeMethodDelegate InvokeMethod;
         }
 
         /// <summary>
@@ -110,7 +122,7 @@ namespace Urho3D.CSharp
         internal static ManagedRuntime Managed;
         internal static NativeRuntime Native;
 
-        internal static void Initialize()
+        internal static unsafe void Initialize()
         {
             Managed = new ManagedRuntime();
             Native = new NativeRuntime();
@@ -120,6 +132,7 @@ namespace Urho3D.CSharp
             Managed.CloneHandle = CloneHandle;
             Managed.CreateObject = CreateObject;
             Managed.HandleEvent = Object.HandleEvent;
+            Managed.InvokeMethod = InvokeMethod;
 
             Urho3D_InitializeCSharp(ref Managed, ref Native);
         }
@@ -148,6 +161,22 @@ namespace Urho3D.CSharp
         {
             var context = Context.GetManagedInstance(contextPtr);
             return context.CreateObject(managedType);
+        }
+
+        internal static unsafe IntPtr InvokeMethod(IntPtr methodInfoHandle, int paramCount, void** parameters)
+        {
+            var methodInfo = (MethodInfo)GCHandle.FromIntPtr(methodInfoHandle).Target;
+            object targetObject = null;
+            if (paramCount > 0)
+            {
+                var objectHandle = (IntPtr) parameters[0];
+                if (objectHandle != IntPtr.Zero)
+                    targetObject = GCHandle.FromIntPtr(objectHandle).Target;
+            }
+            var paramsArray = new object[Math.Max(0, paramCount - 1)];
+            for (var i = 1; i < paramCount; i++)
+                paramsArray[i - 1] = (IntPtr)parameters[i];
+            return (IntPtr)methodInfo.Invoke(targetObject, paramsArray);
         }
 
         internal static void Dispose()

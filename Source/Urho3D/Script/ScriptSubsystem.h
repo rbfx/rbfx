@@ -40,6 +40,7 @@ struct ManagedRuntime
     gchandle(*CloneHandle)(gchandle handle) = nullptr;
     Object*(*CreateObject)(Context* context, unsigned managedType) = nullptr;
     void(*HandleEvent)(gchandle gcHandle, unsigned type, VariantMap* args) = nullptr;
+    gchandle(*InvokeMethod)(gchandle callback, int paramCount, void* parameters[]) = nullptr;
 };
 
 struct NativeRuntime
