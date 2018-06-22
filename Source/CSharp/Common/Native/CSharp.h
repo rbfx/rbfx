@@ -313,6 +313,7 @@ template<> struct CSharpConverter<Urho3D::Vector<Urho3D::String>>
             auto length = *(int32_t*)memory;
             memory += 4;
             result[i].Append((const char*)memory, length);
+            memory += length;
         }
 
         return result;
