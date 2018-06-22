@@ -48,13 +48,6 @@ EXPORT_API gchandle Urho3D_Variant__GetObject(Variant* variant)
     return storage->handle_;
 }
 
-EXPORT_API RefCounted* Urho3D_Variant__GetPtrValue(Variant* variant)
-{
-    if (variant == nullptr)
-        return nullptr;
-    return variant->GetPtr();
-}
-
 EXPORT_API VariantType Urho3D_Variant__GetValueType(Variant* variant)
 {
     if (variant == nullptr)
@@ -62,15 +55,7 @@ EXPORT_API VariantType Urho3D_Variant__GetValueType(Variant* variant)
     return variant->GetType();
 }
 
-
-EXPORT_API void Urho3D_Variant__SetPtrValue(Variant* variant, RefCounted* value)
-{
-    if (variant == nullptr)
-        return;
-    *variant = value;
-}
-
-EXPORT_API void Urho3D_Variant__SetGcHandleValue(Variant* variant, gchandle handle)
+EXPORT_API void Urho3D_Variant__SetObject(Variant* variant, gchandle handle)
 {
     if (variant == nullptr)
         return;
