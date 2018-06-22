@@ -61,6 +61,8 @@ namespace Urho3D
                     RegisterFactory(pair.Item1, pair.Item2.Category);
             }
 
+            Serializable.RegisterSerializableAttributes(this);
+
             Instance = this;
         }
 
