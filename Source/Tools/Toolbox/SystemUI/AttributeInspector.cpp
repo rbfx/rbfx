@@ -409,7 +409,10 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
                 }
             }
             if (refList.names_.Empty())
-                ui::NewLine();
+            {
+                ui::SetCursorPosY(ui::GetCursorPosY() + 5_dpy);
+                ui::TextUnformatted("...");
+            }
             break;
         }
 //            case VAR_VARIANTVECTOR:
