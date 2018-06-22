@@ -38,30 +38,25 @@ namespace Editor.Tabs
 
     public class Tab : Urho3D.Object
     {
-        public struct Location
-        {
-            public string NextDockName;
-            public DockSlot Slot;
-        }
-
-        private bool _isOpen = true;
-        public bool IsOpen
-        {
-            get => _isOpen;
-            set => _isOpen = value;
-        }
-
+        public bool IsOpen = true;
         public string Title { get; protected set; }
         public string UniqueTitle => $"{Title}###{Uuid}";
         public System.Numerics.Vector2 InitialSize;
-        public Location InitialLocation;
+        public string InitialNextDockName;
+        public DockSlot InitialSlot;
         protected WindowFlags WindowFlags = WindowFlags.Default;
         private bool _activateTab;
         public bool MouseHoversViewport { get; protected set; }
         public bool IsDockFocused { get; protected set; }
         public bool IsDockActive { get; protected set; }
         public TabLifetime Lifetime { get; protected set; }
-        public string ResourcePath { get; protected set; }
+        private string _resourcePath;
+        public string ResourcePath
+        {
+            get => _resourcePath;
+            protected set => _resourcePath = Title = value;
+        }
+
         public string ResourceType { get; protected set; }
         public string Uuid { get; protected set; }
 
@@ -72,8 +67,8 @@ namespace Editor.Tabs
             Title = title;
             Lifetime = lifetime;
             InitialSize = initialSize.GetValueOrDefault(new Vector2(-1, -1));
-            InitialLocation.NextDockName = placeNextToDock;
-            InitialLocation.Slot = slot;
+            InitialNextDockName = placeNextToDock;
+            InitialSlot = slot;
 
             SubscribeToEvent<EditorProjectSave>(OnSaveProject);
             SubscribeToEvent<EditorDeleteResource>(OnResourceDeleted);
@@ -89,19 +84,18 @@ namespace Editor.Tabs
             var to = e.GetString(ResourceRenamed.To);
 
             if (from == ResourcePath)
-                ResourcePath = Title = to;
+                ResourcePath = to;
         }
 
         private void OnResourceDeleted(Event e)
         {
             if (Lifetime == TabLifetime.Temporary && e.GetString(EditorDeleteResource.ResourceName) == ResourcePath)
-                _isOpen = false;
+                IsOpen = false;
         }
 
         public virtual void LoadResource(string resourcePath)
         {
             ResourcePath = resourcePath;
-            Title = resourcePath;
         }
 
         public virtual void LoadSave(JSONValue save)
@@ -111,8 +105,8 @@ namespace Editor.Tabs
 
         public void OnRender()
         {
-            ImGuiDock.SetNextDockPos(InitialLocation.NextDockName, InitialLocation.Slot, ImGui.Condition.FirstUseEver);
-            var render = ImGuiDock.BeginDock(UniqueTitle, ref _isOpen, WindowFlags, InitialSize);
+            ImGuiDock.SetNextDockPos(InitialNextDockName, InitialSlot, ImGui.Condition.FirstUseEver);
+            var render = ImGuiDock.BeginDock(UniqueTitle, ref IsOpen, WindowFlags, InitialSize);
             if (_activateTab)
             {
                 ImGuiDock.SetDockActive();

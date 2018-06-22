@@ -173,7 +173,7 @@ namespace Editor.Tabs
             else
             {
                 var project = GetSubsystem<Project>();
-                ResourcePath = Title = resourcePath;
+                ResourcePath = resourcePath;
                 resourcePath = $"{project.DataPath}/{resourcePath}";
             }
 
