@@ -32,6 +32,7 @@ namespace Urho3D
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public class AttributeAttribute : Attribute
     {
+        public string Name;
         public object DefaultValue;
         public AttributeMode Mode = AttributeMode.Default;
     }
@@ -75,8 +76,9 @@ namespace Urho3D
 
                             var typeHash = new StringHash(type);
                             Urho3D_Serializable_RegisterAttribute(Context.GetNativeInstance(context), typeHash.Hash,
-                                Variant.GetVariantType(fieldInfo.FieldType), fieldInfo.Name,
+                                Variant.GetVariantType(fieldInfo.FieldType), attribute.Name ?? fieldInfo.Name,
                                 Variant.GetNativeInstance(Variant.FromObject(attribute.DefaultValue)), attribute.Mode,
+                                fieldInfo.FieldType.IsEnum ? fieldInfo.FieldType.GetEnumNames() : null,
                                 Marshal.GetFunctionPointerForDelegate(attributeGetter),
                                 Marshal.GetFunctionPointerForDelegate(attributeSetter));
                         }
@@ -104,8 +106,9 @@ namespace Urho3D
 
                             var typeHash = new StringHash(type);
                             Urho3D_Serializable_RegisterAttribute(Context.GetNativeInstance(context), typeHash.Hash,
-                                Variant.GetVariantType(propertyInfo.PropertyType), propertyInfo.Name,
+                                Variant.GetVariantType(propertyInfo.PropertyType), attribute.Name ?? propertyInfo.Name,
                                 Variant.GetNativeInstance(Variant.FromObject(attribute.DefaultValue)), attribute.Mode,
+                                propertyInfo.PropertyType.IsEnum ? propertyInfo.PropertyType.GetEnumNames() : null,
                                 Marshal.GetFunctionPointerForDelegate(attributeGetter),
                                 Marshal.GetFunctionPointerForDelegate(attributeSetter));
                         }
@@ -120,7 +123,9 @@ namespace Urho3D
         [DllImport(Urho3D.CSharp.Config.NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void Urho3D_Serializable_RegisterAttribute(IntPtr context, uint typeHash, VariantType type,
             [param: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringUtf8))]string name,
-            IntPtr defaultValue, AttributeMode mode, IntPtr getter, IntPtr setter);
+            IntPtr defaultValue, AttributeMode mode,
+            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringUtf8ArrayMarshaller))]string[] enumNames,
+            IntPtr getter, IntPtr setter);
 
         #endregion
     }

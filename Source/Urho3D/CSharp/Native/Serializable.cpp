@@ -32,9 +32,11 @@ extern "C"
 
 EXPORT_API void Urho3D_Serializable_RegisterAttribute(Context* context, unsigned typeHash, VariantType valueType,
                                                       MarshalAllocator::Block* name, Variant* defaultValue,
-                                                      AttributeMode mode, Variant*(*getter)(const Serializable*),
+                                                      AttributeMode mode, MarshalAllocator::Block* enumNames,
+                                                      Variant*(*getter)(const Serializable*),
                                                       void(*setter)(Serializable*, Variant*))
 {
+    auto enumNamesList = CSharpConverter<StringVector>::FromCSharp(enumNames);
     auto accessor = MakeVariantAttributeAccessor<Serializable>(
         [getter](const Serializable& self, Urho3D::Variant& value) {
             auto* result = getter(&self);
@@ -47,7 +49,7 @@ EXPORT_API void Urho3D_Serializable_RegisterAttribute(Context* context, unsigned
         {
             setter(&self, CSharpObjConverter::ToCSharp<Variant>(value));
         });
-    AttributeInfo info(valueType, CSharpConverter<const char*>::FromCSharp(name), accessor, nullptr,
+    AttributeInfo info(valueType, CSharpConverter<const char*>::FromCSharp(name), accessor, enumNamesList,
                        defaultValue == nullptr ? Variant::EMPTY : *defaultValue, mode);
     context->RegisterAttribute(StringHash(typeHash), info);
 }

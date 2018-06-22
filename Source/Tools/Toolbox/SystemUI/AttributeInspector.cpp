@@ -255,18 +255,13 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
     const float power = 3.0f;
 
     bool modified = false;
-    const char** comboValues = nullptr;
     auto comboValuesNum = 0;
-    if (info.enumNames_)
-    {
-        comboValues = info.enumNames_;
-        for (; comboValues[++comboValuesNum];);
-    }
+    for (; info.enumNames_ && info.enumNames_[++comboValuesNum];);
 
-    if (comboValues)
+    if (comboValuesNum > 0)
     {
         int current = value.GetInt();
-        modified |= ui::Combo("", &current, comboValues, comboValuesNum);
+        modified |= ui::Combo("", &current, info.enumNames_, comboValuesNum);
         if (modified)
             value = current;
     }

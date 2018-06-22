@@ -83,6 +83,36 @@ struct AttributeInfo
     {
     }
 
+    /// Construct attribute.
+    AttributeInfo(VariantType type, const char* name, const SharedPtr<AttributeAccessor>& accessor, const Vector<String>& enumNames, const Variant& defaultValue, FlagSet<AttributeMode> mode) :
+        type_(type),
+        name_(name),
+        enumNames_(nullptr),
+        enumNamesStorage_(enumNames),
+        accessor_(accessor),
+        defaultValue_(defaultValue),
+        mode_(mode)
+    {
+        InitializeEnumNamesFromStorage();
+    }
+
+    /// Copy attribute info.
+    AttributeInfo(const AttributeInfo& other)
+    {
+        type_ = other.type_;
+        name_ = other.name_;
+        enumNames_ = other.enumNames_;
+        accessor_ = other.accessor_;
+        defaultValue_ = other.defaultValue_;
+        mode_ = other.mode_;
+        metadata_ = other.metadata_;
+        ptr_ = other.ptr_;
+        enumNamesStorage_ = other.enumNamesStorage_;
+
+        if (!enumNamesStorage_.Empty())
+            InitializeEnumNamesFromStorage();
+    }
+
     /// Get attribute metadata.
     const Variant& GetMetadata(const StringHash& key) const
     {
@@ -112,6 +142,24 @@ struct AttributeInfo
     VariantMap metadata_;
     /// Attribute data pointer if elsewhere than in the Serializable.
     void* ptr_ = nullptr;
+    /// List of enum names. Used when names can not be stored externally.
+    Vector<String> enumNamesStorage_;
+    /// List of enum name pointers. Front of this vector will be assigned to enumNames_ when enumNamesStorage_ is in use.
+    Vector<const char*> enumNamesPointers_;
+
+private:
+    void InitializeEnumNamesFromStorage()
+    {
+        if (enumNamesStorage_.Empty())
+            enumNames_ = nullptr;
+        else
+        {
+            for (const auto& enumName : enumNamesStorage_)
+                enumNamesPointers_.EmplaceBack(enumName.CString());
+            enumNamesPointers_.EmplaceBack(nullptr);
+            enumNames_ = &enumNamesPointers_.Front();
+        }
+    }
 };
 
 /// Attribute handle returned by Context::RegisterAttribute and used to chain attribute setup calls.

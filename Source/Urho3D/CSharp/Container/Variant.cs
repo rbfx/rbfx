@@ -38,6 +38,33 @@ namespace Urho3D
 
         public static Variant FromObject(object value)
         {
+            var valueType = value.GetType();
+            if (valueType.IsEnum)
+            {
+                valueType = valueType.GetEnumUnderlyingType();
+                if (valueType == typeof(int))
+                    return new Variant((int)value);
+                if (valueType == typeof(uint))
+                    return new Variant((uint)value);
+
+                if (valueType == typeof(long))
+                    return new Variant((long)value);
+                if (valueType == typeof(ulong))
+                    return new Variant((ulong)value);
+
+                if (valueType == typeof(short))
+                    return new Variant((short)value);
+                if (valueType == typeof(ushort))
+                    return new Variant((ushort)value);
+
+                if (valueType == typeof(char))
+                    return new Variant((char)value);
+                if (valueType == typeof(byte))
+                    return new Variant((byte)value);
+
+                throw new Exception("Unhandled underlying enum type");
+            }
+
             if (value is int typed1)
                 return new Variant(typed1);
             if (value is bool typed2)
@@ -94,6 +121,9 @@ namespace Urho3D
 
         public static VariantType GetVariantType(Type type)
         {
+            if (type.IsEnum)
+                type = type.GetEnumUnderlyingType();
+
             if (type == typeof(int))
                 return VariantType.Int;
             if (type == typeof(bool))
