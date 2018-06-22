@@ -80,7 +80,7 @@ struct CSharpObjConverter
     template<typename T> static T* ToCSharp(const RefCountedType<T>* object)     { return const_cast<T*>(object); }
     template<typename T> static T* ToCSharp(CopyableType<T>&& object)            { return new T(std::move(object)); }
     template<typename T> static T* ToCSharp(const CopyableType<T>& object)       { return new T(object); }
-    template<typename T> static T* ToCSharp(const CopyableType<T>* object)       { return new T(*object); }
+    template<typename T> static T* ToCSharp(const CopyableType<T>* object)       { return object != nullptr ? new T(*object) : nullptr; }
 };
 
 template<typename T> struct CSharpConverter;
