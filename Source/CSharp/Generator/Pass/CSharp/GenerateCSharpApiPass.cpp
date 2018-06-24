@@ -168,35 +168,40 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
                     if (generator->IsInheritable(entity->symbolName_))
                     {
-                        for (const auto& child : entity->children_)
+                        printer_ << fmt::format("if (GetType().IsSubclassOf(typeof({className})))", FMT_CAPTURE(className));
+                        printer_.Indent();
                         {
-                            if (child->kind_ == cppast::cpp_entity_kind::member_function_t)
+                            for (const auto& child : entity->children_)
                             {
-                                const auto& func = child->Ast<cppast::cpp_member_function>();
-                                if (func.is_virtual())
+                                if (child->kind_ == cppast::cpp_entity_kind::member_function_t)
                                 {
-                                    auto name = child->name_;
-                                    auto pc = func.parameters().empty() ? "" : ", ";
-                                    auto paramTypeList = str::join(container::map<std::string>(child->children_, [&](std::shared_ptr<MetaEntity> metaParam)
+                                    const auto& func = child->Ast<cppast::cpp_member_function>();
+                                    if (func.is_virtual())
                                     {
-                                        const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
-                                        return fmt::format("typeof({})", ToCSType(param.type(), true));
-                                    }), ", ");
+                                        auto name = child->name_;
+                                        auto pc = func.parameters().empty() ? "" : ", ";
+                                        auto paramTypeList = str::join(container::map<std::string>(child->children_, [&](std::shared_ptr<MetaEntity> metaParam)
+                                        {
+                                            const auto& param = metaParam->Ast<cppast::cpp_function_parameter>();
+                                            return fmt::format("typeof({})", ToCSType(param.type(), true));
+                                        }), ", ");
 
-                                    // Optimization: do not route c++ virtual method calls through .NET if user does not override
-                                    // such method in a managed class.
-                                    printer_ << fmt::format("if (GetType().HasOverride(nameof({name}){pc}{paramTypeList}))",
-                                        FMT_CAPTURE(name), FMT_CAPTURE(pc), FMT_CAPTURE(paramTypeList));
-                                    printer_.Indent();
-                                    {
-                                        printer_ << fmt::format("set_fn{cFunction}(instance, "
-                                                "Marshal.GetFunctionPointerForDelegate(({className}{cFunction}Delegate){cFunction}_virtual));",
-                                            FMT_CAPTURE(className), fmt::arg("cFunction", child->cFunctionName_));
+                                        // Optimization: do not route c++ virtual method calls through .NET if user does not override
+                                        // such method in a managed class.
+                                        printer_ << fmt::format("if (GetType().HasOverride(nameof({name}){pc}{paramTypeList}))",
+                                            FMT_CAPTURE(name), FMT_CAPTURE(pc), FMT_CAPTURE(paramTypeList));
+                                        printer_.Indent();
+                                        {
+                                            printer_ << fmt::format("set_fn{cFunction}(instance, "
+                                                    "Marshal.GetFunctionPointerForDelegate(({className}{cFunction}Delegate){cFunction}_virtual));",
+                                                FMT_CAPTURE(className), fmt::arg("cFunction", child->cFunctionName_));
+                                        }
+                                        printer_.Dedent();
                                     }
-                                    printer_.Dedent();
                                 }
                             }
                         }
+                        printer_.Dedent();
                     }
                     printer_ << "OnSetupInstance();";
                 }
