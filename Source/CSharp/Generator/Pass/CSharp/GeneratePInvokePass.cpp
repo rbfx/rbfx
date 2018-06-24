@@ -261,9 +261,14 @@ bool GeneratePInvokePass::Visit(MetaEntity* entity, cppast::visitor_info info)
             {
                 DllImport();
                 printer_ << fmt::format("internal static extern void {}_setup(IntPtr instance, IntPtr gcHandle, "
-                                        "string typeName, ref int objSize);", baseName);
+                                        "string typeName);", baseName);
                 printer_ << "";
             }
+
+            DllImport();
+            printer_ << fmt::format("internal static extern int {}_sizeof();", baseName);
+            printer_ << fmt::format("internal static int GetNativeTypeSize() {{ return {}_sizeof(); }}", baseName);
+            printer_ << "";
 
             // Method for getting type id.
             DllImport();

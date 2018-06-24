@@ -176,12 +176,26 @@ namespace Urho3D.CSharp
             var paramsArray = new object[Math.Max(0, paramCount - 1)];
             for (var i = 1; i < paramCount; i++)
                 paramsArray[i - 1] = (IntPtr)parameters[i];
-            return (IntPtr)methodInfo.Invoke(targetObject, paramsArray);
+            var result = methodInfo.Invoke(targetObject, paramsArray);
+            return (IntPtr?) result ?? IntPtr.Zero;
         }
 
         internal static void Dispose()
         {
             InstanceCache.Dispose();
+        }
+
+        internal static int GetLengthOfAllocatedMemory(IntPtr memory)
+        {
+            return Marshal.ReadInt32(memory - 4) & 0x7FFFFFFF;
+        }
+
+        internal static int StrLen(IntPtr str)
+        {
+            var length = 0;
+            while (Marshal.ReadByte(str, length) != 0)
+                length++;
+            return length;
         }
     }
 }

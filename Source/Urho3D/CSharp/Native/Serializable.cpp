@@ -31,8 +31,8 @@ extern "C"
 {
 
 EXPORT_API void Urho3D_Serializable_RegisterAttribute(Context* context, unsigned typeHash, VariantType valueType,
-                                                      MarshalAllocator::Block* name, Variant* defaultValue,
-                                                      AttributeMode mode, MarshalAllocator::Block* enumNames,
+                                                      const char* name, Variant* defaultValue,
+                                                      AttributeMode mode, const char** enumNames,
                                                       Variant*(*getter)(const Serializable*),
                                                       void(*setter)(Serializable*, Variant*))
 {

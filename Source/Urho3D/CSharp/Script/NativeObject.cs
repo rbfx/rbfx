@@ -46,7 +46,6 @@ namespace Urho3D.CSharp
         public IntPtr NativeInstance { get; protected set; } = IntPtr.Zero;
         public bool IsDisposed => Interlocked.Read(ref _disposedCounter) > 0;
         private long _disposedCounter;
-        internal int NativeObjectSize = 0;
         internal NativeObjectFlags Flags { get; set; }
         /// <summary>
         /// This must be stored as boolean because accessing Flags from finalized is unsafe.

@@ -104,67 +104,36 @@ protected:
     static HashMap<StringHash, const TypeInfo*> typeInfos_;
 };
 
-/// Allocator used for data marshalling between managed and unmanaged worlds. Lifetime of allocated memory is controlled
-/// by custom marshallers used in binding code.
+/// LIFO allocator used for marshalling data between managed and native worlds.
 class URHO3D_API MarshalAllocator
 {
 public:
-    struct Block
-    {
-        void* memory_;
-        int32_t itemCount_;
-        int32_t sizeOfItem_;
-        int32_t allocatorIndex_;
-    };
-
-    enum AllocationType
-    {
-        /// If `index` parameter in the header is less than this value then it is index of allocator in `allocators_` array.
-        CustomAllocationType = 200,
-        /// If `index` parameter in header is this value then memory is to be freed using OS functions instead of allocator.
-        HeapAllocator = 255,
-    };
-
-    struct AllocatorInfo
-    {
-        AllocatorBlock* Allocator;
-        int BlockSize;
-
-        AllocatorInfo(int size, int capacity);
-    };
-
-protected:
-    /// Construct
-    MarshalAllocator();
-
-public:
-    /// Destruct
-    ~MarshalAllocator();
+    MarshalAllocator() : memory_(0x100000) { }
     /// Get thread-local instance of this allocator
     static MarshalAllocator& Get();
-    /// Allocate memory for array of items.
-    template<typename T>
-    Block* AllocArray(int count)
+    /// Allocate a block of memory. Last allocated block must be freed first.
+    void* Alloc(unsigned length);
+    /// Free previously allocated block.
+    void Free(void* ptr);
+    /// Return number of bytes remaining in scratch buffer.
+    unsigned Remaining() const { return memory_.Size() - static_cast<unsigned>(used_); }
+    /// Return length of allocated memory block.
+    static inline unsigned GetMemoryLength(void* memory) { return *((uint8_t*)memory - sizeof(unsigned)) & ALLOCATOR_MALLOC; }
+
+private:
+    enum
     {
-        auto* block = AllocInternal(sizeof(T) * count);
-        block->sizeOfItem_ = sizeof(T);
-        block->itemCount_ = count;
-        return block;
-    }
-    /// Allocate block of memory.
-    Block* Alloc(int length)
-    {
-        return AllocArray<uint8_t>(length);
-    }
+        /// Tag indicating that allocator allocated memory using malloc.
+        ALLOCATOR_MALLOC = 1 << 31
+    };
 
-    /// Free block of memory.
-    void Free(Block* memory);
+    /// Memory used by allocator.
+    PODVector<uint8_t> memory_;
+    /// Current used memory size.
+    int used_ = 0;
+    /// New size of memory block which will be applied next time all items in allocator are freed.
+    unsigned nextSize_ = 0;
 
-protected:
-    /// Allocate block of memory.
-    Block* AllocInternal(int length);
-
-    AllocatorInfo allocators_[3];
 };
 
 struct URHO3D_API GcHandleContainer

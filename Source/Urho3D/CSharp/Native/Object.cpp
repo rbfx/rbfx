@@ -87,12 +87,9 @@ protected:
 
 extern "C" {
 
-EXPORT_API void Urho3D_Context_RegisterFactory(Context* context, MarshalAllocator::Block* typeName, unsigned baseType,
-                                               MarshalAllocator::Block* category)
+EXPORT_API void Urho3D_Context_RegisterFactory(Context* context, const char* typeName, unsigned baseType, const char* category)
 {
-    context->RegisterFactory(new ManagedObjectFactory(context, CSharpConverter<String>::FromCSharp(typeName).CString(),
-                                                      StringHash(baseType)),
-                             CSharpConverter<String>::FromCSharp(category).CString());
+    context->RegisterFactory(new ManagedObjectFactory(context, typeName, StringHash(baseType)), category);
 }
 
 EXPORT_API void Urho3D_Object_SubscribeToEvent(Object* receiver, gchandle gcHandle, unsigned eventType, Object* sender)
@@ -335,35 +332,35 @@ EXPORT_API void Urho3D_Object_Event_SetColor(VariantMap* map, unsigned key, Colo
     map->operator[](StringHash(key)) = value;
 }
 
-EXPORT_API void Urho3D_Object_Event_GetString(const VariantMap* map, unsigned key, MarshalAllocator::Block*& value)
+EXPORT_API void Urho3D_Object_Event_GetString(const VariantMap* map, unsigned key, const char*& value)
 {
     if (auto* variant = map->operator[](StringHash(key)))
         value = CSharpConverter<String>::ToCSharp(variant->GetString());
 }
 
-EXPORT_API void Urho3D_Object_Event_SetString(VariantMap* map, unsigned key, MarshalAllocator::Block* value)
+EXPORT_API void Urho3D_Object_Event_SetString(VariantMap* map, unsigned key, const char* value)
 {
-    map->operator[](StringHash(key)) = CSharpConverter<String>::FromCSharp(value);
+    map->operator[](StringHash(key)) = value;
 }
 
-EXPORT_API void Urho3D_Object_Event_GetStrings(const VariantMap* map, unsigned key, MarshalAllocator::Block*& value)
+EXPORT_API void Urho3D_Object_Event_GetStrings(const VariantMap* map, unsigned key, const char**& value)
 {
     if (auto* variant = map->operator[](StringHash(key)))
         value = CSharpConverter<StringVector>::ToCSharp(variant->GetStringVector());
 }
 
-EXPORT_API void Urho3D_Object_Event_SetStrings(VariantMap* map, unsigned key, MarshalAllocator::Block* value)
+EXPORT_API void Urho3D_Object_Event_SetStrings(VariantMap* map, unsigned key, const char** value)
 {
     map->operator[](StringHash(key)) = CSharpConverter<StringVector>::FromCSharp(value);
 }
 
-EXPORT_API void Urho3D_Object_Event_GetBuffer(const VariantMap* map, unsigned key, MarshalAllocator::Block*& value)
+EXPORT_API void Urho3D_Object_Event_GetBuffer(const VariantMap* map, unsigned key, uint8_t*& value)
 {
     if (auto* variant = map->operator[](StringHash(key)))
         value = CSharpConverter<PODVector<uint8_t>>::ToCSharp(variant->GetBuffer());
 }
 
-EXPORT_API void Urho3D_Object_Event_SetBuffer(VariantMap* map, unsigned key, MarshalAllocator::Block* value)
+EXPORT_API void Urho3D_Object_Event_SetBuffer(VariantMap* map, unsigned key, uint8_t* value)
 {
     map->operator[](StringHash(key)) = CSharpConverter<PODVector<uint8_t>>::FromCSharp(value);
 }

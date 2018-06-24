@@ -73,6 +73,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
     std::string csType;
     std::string pInvokeType = "IntPtr";
     std::string cppType;
+    std::string cType;
     std::string vectorKind;
     const TypeMap* typeMap = nullptr;
 
@@ -121,6 +122,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
         if (primitiveType == cppast::cpp_builtin_type_kind::cpp_void)
         {
             // Class pointer array
+            bool isConst = false;
             if (str::starts_with(cppType, "SharedPtr<"))                    // starts with
             {
                 // Get T from SharedPtr<T>
@@ -138,7 +140,10 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
                 // Get pointer type
                 csType = cppType.substr(0, cppType.length() - 2);
                 if (csType.find("const ") == 0)
+                {
                     csType = csType.substr(6);
+                    isConst = true;
+                }
                 isPointer = true;
             }
             else
@@ -148,11 +153,17 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
                 // Undefined type, required because unknown types pass is yet to run
                 return;
 
+            cType = csType + "*";
+            if (isConst)
+                cType = "const " + cType;
+            if (isPointer)
+                cType += "*";
             str::replace_str(csType, "::", ".");
         }
         else
         {
             // Builtin type
+            cType = cppast::to_string(primitiveType); cType += "*";
             csType = pInvokeType = PrimitiveToPInvokeType(primitiveType);
         }
 
@@ -170,7 +181,7 @@ void Urho3DTypeMaps::HandleType(const cppast::cpp_type& type)
             map.cppType_ = typeName;
 
             map.csType_ = map.pInvokeType_ = fmt::format("{csType}[]", FMT_CAPTURE(csType));
-            map.cType_ = "MarshalAllocator::Block*";
+            map.cType_ = cType;
             map.cppToCTemplate_ = fmt::format("CSharpConverter<Urho3D::{vectorKind}<{cppType}>>::ToCSharp({{value}})",
                                               FMT_CAPTURE(cppType), FMT_CAPTURE(vectorKind));
             map.cToCppTemplate_ = fmt::format("CSharpConverter<Urho3D::{vectorKind}<{cppType}>>::FromCSharp({{value}})",

@@ -255,39 +255,15 @@ URHO3D_EXPORT_API void Urho3D_InitializeCSharp(ManagedRuntime* managed, NativeRu
     ScriptSubsystem::native_.AllocateMemory = [](unsigned size) { return malloc(size); };
     ScriptSubsystem::native_.FreeMemory = &free;
     ScriptSubsystem::native_.InteropAlloc = [](int length) {
-        return (void*)MarshalAllocator::Get().Alloc(length);
+        return MarshalAllocator::Get().Alloc(length);
     };
     ScriptSubsystem::native_.InteropFree = [](void* memory) {
-        return MarshalAllocator::Get().Free(static_cast<MarshalAllocator::Block*>(memory));
+        return MarshalAllocator::Get().Free(memory);
     };
 
     *native = ScriptSubsystem::native_;
 }
 
-}
-
-MarshalAllocator::AllocatorInfo::AllocatorInfo(int size, int capacity)
-{
-    Allocator = AllocatorInitialize(static_cast<unsigned int>(size), static_cast<unsigned int>(capacity));
-    BlockSize = size;
-}
-
-MarshalAllocator::MarshalAllocator()
-    : allocators_ {
-    AllocatorInfo(128, 8),
-    AllocatorInfo(1024, 8),
-    AllocatorInfo(1024 * 10, 8)
-}
-{
-}
-
-MarshalAllocator::~MarshalAllocator()
-{
-    for (auto& info : allocators_)
-    {
-        AllocatorUninitialize(info.Allocator);
-        info.Allocator = nullptr;
-    }
 }
 
 MarshalAllocator& MarshalAllocator::Get()
@@ -296,43 +272,45 @@ MarshalAllocator& MarshalAllocator::Get()
     return instance;
 }
 
-MarshalAllocator::Block* MarshalAllocator::AllocInternal(int length)
+void* MarshalAllocator::Alloc(unsigned length)
 {
-    auto needLength = sizeof(Block) + length;
-
-    uint8_t index = 0;
-    void* memory = nullptr;
-    for (auto& allocatorInfo : allocators_)
+    auto needed = length + sizeof(unsigned);
+    // Align to 16 bytes
+    needed += 16 - (needed % 16);
+    uint8_t* memory = nullptr;
+    if (Remaining() >= needed)
     {
-        if (needLength <= allocatorInfo.BlockSize)
-        {
-            memory = AllocatorReserve(allocatorInfo.Allocator);
-            break;
-        }
-        index++;
+        memory = memory_.Buffer() + used_;
+        used_ += needed;
     }
-
-    if (memory == nullptr)
+    else
     {
-        memory = malloc(static_cast<size_t>(needLength));
-        index = std::numeric_limits<uint8_t>::max();
+        nextSize_ = Max(NextPowerOfTwo(memory_.Size() + needed), nextSize_);
+        memory = static_cast<uint8_t*>(malloc(needed));
+        length |= ALLOCATOR_MALLOC;
     }
-
-    Block* header = static_cast<Block*>(memory);
-    header->allocatorIndex_ = index;
-    header->itemCount_ = length;
-    header->sizeOfItem_ = length;
-    header->memory_ = (uint8_t*)memory + sizeof(Block);
-
-    return header;
+    *(unsigned*)memory = length;
+    return memory + sizeof(unsigned);
 }
 
-void MarshalAllocator::Free(Block* block)
+void MarshalAllocator::Free(void* ptr)
 {
-    if (block->allocatorIndex_ == HeapAllocator)
-        free(block);
-    else if (block->allocatorIndex_ < CustomAllocationType)
-        AllocatorFree(allocators_[block->allocatorIndex_].Allocator, block);
+    auto* memory = static_cast<uint8_t*>(ptr) - sizeof(unsigned);
+    auto length = *(unsigned*)memory;
+    if (length & ALLOCATOR_MALLOC)
+        free(memory);
+    else
+    {
+        length += sizeof(unsigned);
+        length += 16 - (length % 16);
+        used_ -= length;
+        assert(used_ >= 0);
+        if (used_ == 0 && nextSize_ != 0)
+        {
+            memory_.Resize(nextSize_);
+            nextSize_ = 0;
+        }
+    }
 }
 
 }
