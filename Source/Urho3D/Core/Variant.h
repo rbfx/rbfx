@@ -1368,6 +1368,17 @@ public:
         return nullptr;
     }
 
+    /// Return a pointer to a modifiable custom variant value or null on type mismatch.
+    template <class T> const T* GetCustomPtr() const
+    {
+        if (const CustomVariantValue* value = GetCustomVariantValuePtr())
+        {
+            if (value->IsType<T>())
+                return value->GetValuePtr<T>();
+        }
+        return nullptr;
+    }
+
     /// Return name for variant type.
     static String GetTypeName(VariantType type);
     /// Return variant type from type name.
