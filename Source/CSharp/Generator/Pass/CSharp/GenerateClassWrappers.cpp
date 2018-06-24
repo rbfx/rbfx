@@ -37,11 +37,7 @@ void GenerateClassWrappers::Start()
     printer_ << "#include <CSharp.h>";
     printer_ << "";
     printer_ << "";
-    printer_ << "namespace Wrappers";
-    printer_ << "{";
-    printer_ << "";
 
-    initPrinter_ << "#include <Urho3D/Urho3DAll.h>";
     initPrinter_ << fmt::format("#include \"{}ClassWrappers.hpp\"", generator->currentModule_->moduleName_);
     initPrinter_ << "";
     initPrinter_ << fmt::format("extern \"C\" void {}RegisterWrapperFactories(Context* context)",
@@ -65,7 +61,7 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
         return true;
 
     // Class is not supposed to be inherited
-    if (!generator->IsInheritable(entity->uniqueName_))
+    if (!generator->IsInheritable(entity->symbolName_))
         return true;
 
     const auto& cls = entity->Ast<cppast::cpp_class>();
@@ -75,13 +71,23 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
         return info.event != info.container_entity_enter;
     }
 
-    printer_ << fmt::format("class EXPORT_API {} : public {}", entity->name_, entity->uniqueName_);
+    // Find base class header and include it
+    {
+        auto* baseEntity = entity;
+        // Find header and store it. Other passes will need to include it.
+        while (baseEntity->kind_ != cppast::cpp_entity_kind::file_t)
+            baseEntity = baseEntity->GetParent();
+
+        printer_ << fmt::format("#include <{}>", baseEntity->Ast<cppast::cpp_file>().name());
+    }
+    printer_ << "namespace Wrappers {";
+    printer_ << fmt::format("class EXPORT_API {} : public {}", entity->name_, entity->sourceSymbolName_);
     printer_.Indent();
 
     // Urho3D-specific
     if (IsSubclassOf(cls, "Urho3D::Object"))
     {
-        printer_ << fmt::format("URHO3D_OBJECT_STATIC(Wrappers::{}, {});", entity->name_, entity->uniqueName_);
+        printer_ << fmt::format("URHO3D_OBJECT_STATIC(Wrappers::{}, {});", entity->name_, entity->sourceSymbolName_);
         initPrinter_ << fmt::format("Urho3D::ScriptSubsystem::RegisterType<Wrappers::{}>();", entity->name_);
     }
 
@@ -102,7 +108,7 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
         {
             const auto& ctor = e->Ast<cppast::cpp_constructor>();
             printer_ << fmt::format("{}({}) : {}({}) {{ }}", entity->name_, ParameterList(ctor.parameters()),
-                entity->uniqueName_, ParameterNameList(ctor.parameters()));
+                entity->sourceSymbolName_, ParameterNameList(ctor.parameters()));
         }
     }
     printer_ << fmt::format("virtual ~{}()", entity->name_);
@@ -241,7 +247,7 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
     implementWrapperClassMembers(entity);
     implementBaseWrapperClassMembers(entity);
 
-    printer_.Dedent("};");
+    printer_.Dedent("}; }");
     printer_ << "";
     entity->sourceSymbolName_ = "Wrappers::" + entity->name_;    // Wrap a wrapper class
     return true;
@@ -250,7 +256,6 @@ bool GenerateClassWrappers::Visit(MetaEntity* entity, cppast::visitor_info info)
 void GenerateClassWrappers::Stop()
 {
     initPrinter_.Dedent();
-    printer_ << "}";    // namespace Wrappers
 
     // Save ClassWrappers.hpp
     {

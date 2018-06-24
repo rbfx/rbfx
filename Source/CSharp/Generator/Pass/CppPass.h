@@ -113,8 +113,11 @@ struct MetaEntity : public std::enable_shared_from_this<MetaEntity>
         entity->parent_ = std::weak_ptr<MetaEntity>(shared_from_this());
         if (symbolName_.empty())
             entity->symbolName_ = entity->name_;
-        else
+        else if (kind_ != cppast::cpp_entity_kind::file_t)
             entity->symbolName_ = symbolName_ + "::" + entity->name_;
+        else
+            entity->symbolName_ = entity->name_;
+
         children_.emplace_back(std::move(ref));
         entity->Register();
     }

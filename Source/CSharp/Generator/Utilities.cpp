@@ -64,6 +64,9 @@ std::regex WildcardToRegex(const std::string& wildcard)
 
 std::string GetScopeName(const cppast::cpp_entity& e)
 {
+    if (e.kind() == cppast::cpp_entity_kind::file_t)
+        return "";
+
     std::string name = e.name();
     if (name.empty())
         // Give unique symbol to anonymous entities

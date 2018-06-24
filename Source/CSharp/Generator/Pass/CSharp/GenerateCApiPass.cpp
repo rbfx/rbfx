@@ -94,7 +94,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_ << fmt::format("EXPORT_API std::uintptr_t {}_typeid()", baseName);
         printer_.Indent();
         {
-            printer_ << fmt::format("return GetTypeID<{}>();", entity->symbolName_);
+            printer_ << fmt::format("return GetTypeID<{}>();", entity->sourceSymbolName_);
         }
         printer_.Dedent();
         printer_ << "";

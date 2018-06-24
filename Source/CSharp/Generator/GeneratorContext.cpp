@@ -358,8 +358,7 @@ void GeneratorContext::Generate()
                     pass->StartFile(pair.first);
                     cppast::visit(*pair.second, [&](const cppast::cpp_entity& e, cppast::visitor_info info)
                     {
-                        if (e.kind() == cppast::cpp_entity_kind::file_t || cppast::is_templated(e) ||
-                            cppast::is_friended(e))
+                        if (cppast::is_templated(e) || cppast::is_friended(e))
                             // no need to do anything for a file,
                             // templated and friended entities are just proxies, so skip those as well
                             // return true to continue visit for children
