@@ -46,7 +46,7 @@ void Urho3DCustomPassLate::NamespaceStart()
 
     if (auto* entity = generator->GetSymbol("Urho3D::Application::engineParameters_"))
         // Wrapped in a class wrapper but not present in managed api.
-        entity->flags_ |= HintNoPublicApi;
+        entity->flags_ |= HintCSharpApi;
 
     if (auto* entity = generator->GetSymbol("Urho3D::MOUSEB_ANY"))
         // Enum values in C# are signed ints, this enum in cpp is unsigned.

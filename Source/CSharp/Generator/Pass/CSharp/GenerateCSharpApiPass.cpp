@@ -45,11 +45,18 @@ void GenerateCSharpApiPass::Start()
 
 bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 {
-    if (entity->flags_ & HintNoPublicApi)
+    if (entity->flags_ & HintCSharpApi)
         return false;
+
+    const char* entityAccess = "public";
+    if (entity->flags_ & HintCSharpApi)
+        entityAccess = "internal";
 
     if (entity->kind_ == cppast::cpp_entity_kind::namespace_t)
     {
+        if (entity->flags_ & HintNoPublicApi)
+            return false;
+
         if (entity->children_.empty())
             return false;
 
@@ -89,11 +96,11 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                         std::string name;
                         if (baseEntity->flags_ & HintInterface)
                         {
-                            baseInterfaces.emplace_back("I" + base.name());
+                            baseInterfaces.emplace_back("I" + baseEntity->name_);
                             if (!bases.empty())
                                 name = "I";
                         }
-                        name += base.name();
+                        name += baseEntity->name_;
                         bases.emplace_back(name);
                     }
                     else
@@ -120,11 +127,11 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             if (isStatic)
             {
                 auto staticKeyword = entity->flags_ & HintNoStatic ? "" : "static ";
-                printer_ << fmt::format("public {}partial class {}", staticKeyword, entity->name_);
+                printer_ << fmt::format("{} {}partial class {}", entityAccess, staticKeyword, entity->name_);
             }
             else
             {
-                printer_ << fmt::format("public unsafe partial class {} : {}", entity->name_, str::join(bases, ", "));
+                printer_ << fmt::format("{} unsafe partial class {} : {}", entityAccess, entity->name_, str::join(bases, ", "));
 
                 if (entity->flags_ & HintInterface)
                 {
@@ -132,7 +139,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     if (!interfaces.empty())
                         interfaces = " : " + interfaces;
                     interface_.indent_ = 0;
-                    interface_ << fmt::format("public unsafe interface I{}{}", entity->name_, interfaces);
+                    interface_ << fmt::format("{} unsafe interface I{}{}", entityAccess, entity->name_, interfaces);
                     interface_.indent_ = printer_.indent_;
                     interface_.Indent();
                 }
@@ -216,7 +223,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         {
             for (const auto& attr : entity->attributes_)
                 printer_ << fmt::format("[{}]", attr);
-            printer_ << "public enum " + entity->name_;
+            printer_ << fmt::format("{} enum {}", entityAccess, entity->name_);
             printer_.Indent();
         }
         else if (info.event == info.container_entity_exit)
@@ -251,7 +258,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         // If class has a base class we call base constructor that does nothing. Class will be fully constructed here.
         printer_ << fmt::format("{access} {className}({csParams}){baseCtor}", fmt::arg("access",
-            entity->access_ == cppast::cpp_public ? "public" : "protected"), FMT_CAPTURE(className),
+            entity->access_ == cppast::cpp_public ? entityAccess : "protected"), FMT_CAPTURE(className),
             FMT_CAPTURE(baseCtor), fmt::arg("csParams", FormatCSParameterList(entity->children_)));
 
         printer_.Indent();
@@ -299,7 +306,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         auto csParams = FormatCSParameterList(entity->children_);
         printer_ << fmt::format("{access} {virtual}{rtype} {name}({csParams})",
-            fmt::arg("access", entity->access_ == cppast::cpp_public ? "public" : "protected"),
+            fmt::arg("access", entity->access_ == cppast::cpp_public ? entityAccess : "protected"),
             fmt::arg("virtual", /*!isFinal &&*/ func.is_virtual() ? "virtual " : ""), FMT_CAPTURE(rtype),
             fmt::arg("name", entity->name_), FMT_CAPTURE(csParams));
 
@@ -412,7 +419,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto csParams = FormatCSParameterList(entity->children_);
 
         printer_ << fmt::format("{access} static {rtype} {name}({csParams})",
-            fmt::arg("access", entity->access_ == cppast::cpp_public ? "public" : "protected"), FMT_CAPTURE(rtype),
+            fmt::arg("access", entity->access_ == cppast::cpp_public ? entityAccess : "protected"), FMT_CAPTURE(rtype),
             fmt::arg("name", entity->name_), FMT_CAPTURE(csParams));
 
         auto paramNameList = MapParameterList(entity->children_);
@@ -445,7 +452,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto* ns = entity->GetParent();
 
         auto defaultValue = ConvertDefaultValueToCS(entity, entity->GetDefaultValue(), var.type(), true);
-        auto access = entity->access_ == cppast::cpp_public ? "public" : "protected";
+        auto access = entity->access_ == cppast::cpp_public ? entityAccess : "protected";
         auto csType = ToCSType(var.type(), true);
         auto name = entity->name_;
         auto sourceName = entity->sourceName_;
@@ -517,7 +524,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             const auto& getterFunc = getter->Ast<cppast::cpp_member_function>();
             auto csType = ToCSType(getterFunc.return_type(), true);
 
-            auto access = entity->access_ == cppast::cpp_public ? "public" : "protected";
+            auto access = entity->access_ == cppast::cpp_public ? entityAccess : "protected";
             printer_ << fmt::format("{access} {csType} {name}", FMT_CAPTURE(access), FMT_CAPTURE(csType),
                 fmt::arg("name", entity->name_));
             printer_.Indent();
@@ -568,7 +575,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             auto constant = entity->flags_ & HintReadOnly ? "readonly" : isConstant ? "const" : "";
 
             auto line = fmt::format("{access} {constant} {csType} {name}",
-                fmt::arg("access", entity->access_ == cppast::cpp_public ? "public" : "protected"),
+                fmt::arg("access", entity->access_ == cppast::cpp_public ? entityAccess : "protected"),
                 FMT_CAPTURE(constant), FMT_CAPTURE(csType), FMT_CAPTURE(name));
 
             if (isConstant)
