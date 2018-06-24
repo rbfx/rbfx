@@ -84,6 +84,22 @@ unsigned StringHash::Calculate(const char* str, unsigned hash)
     return hash;
 }
 
+unsigned int StringHash::Calculate(void* data, unsigned int length, unsigned int hash)
+{
+    if (!data)
+        return hash;
+
+    auto* bytes = static_cast<unsigned char*>(data);
+    auto* end = bytes + length;
+    while (bytes < end)
+    {
+        hash = SDBMHash(hash, *bytes);
+        ++bytes;
+    }
+
+    return hash;
+}
+
 StringHashRegister* StringHash::GetGlobalStringHashRegister()
 {
 #ifdef URHO3D_HASH_DEBUG

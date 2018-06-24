@@ -101,6 +101,9 @@ public:
     /// Calculate hash value case-insensitively from a C string.
     static unsigned Calculate(const char* str, unsigned hash = 0);
 
+    /// Calculate hash value from binary data.
+    static unsigned Calculate(void* data, unsigned length, unsigned hash = 0);
+
     /// Get global StringHashRegister. Use for debug purposes only. Return nullptr if URHO3D_HASH_DEBUG is off.
     static StringHashRegister* GetGlobalStringHashRegister();
 
