@@ -41,9 +41,8 @@ bool ConvertToPropertiesPass::Visit(MetaEntity* entity, cppast::visitor_info inf
     if (entity->access_ != cppast::cpp_public)
         return true;
 
-    // Virtual getters/setters of inheritable classes can not be turned to properties in order to allow overriding.
-    if (entity->Ast<cppast::cpp_member_function>().is_virtual() &&
-        !generator->IsInheritable(entity->GetParent()->symbolName_))
+    // Virtual getters/setters can not be turned to properties in order to allow overriding.
+    if (entity->Ast<cppast::cpp_member_function>().is_virtual())
         return true;
 
     // If method is part of interface then getters/setters must appear as methods.
