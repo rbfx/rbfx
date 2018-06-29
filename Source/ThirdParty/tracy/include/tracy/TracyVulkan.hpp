@@ -100,7 +100,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::GpuNewContext );
         MemWrite( &item->gpuNewContext.cpuTime, tcpu );
         MemWrite( &item->gpuNewContext.gpuTime, tgpu );
@@ -108,6 +108,11 @@ public:
         MemWrite( &item->gpuNewContext.period, period );
         MemWrite( &item->gpuNewContext.context, m_context );
         MemWrite( &item->gpuNewContext.accuracyBits, uint8_t( 0 ) );
+
+#ifdef TRACY_ON_DEMAND
+        s_profiler.DeferItem( *item );
+#endif
+
         tail.store( magic + 1, std::memory_order_release );
     }
 
@@ -121,6 +126,15 @@ public:
         ZoneScopedC( Color::Red4 );
 
         if( m_tail == m_head ) return;
+
+#ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() )
+        {
+            vkCmdResetQueryPool( cmdbuf, m_query, 0, QueryCount );
+            m_head = m_tail = 0;
+            return;
+        }
+#endif
 
         unsigned int cnt;
         if( m_oldCnt != 0 )
@@ -146,7 +160,7 @@ public:
 
         for( unsigned int idx=0; idx<cnt; idx++ )
         {
-            auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::GpuTime );
             MemWrite( &item->gpuTime.gpuTime, res[idx] );
             MemWrite( &item->gpuTime.queryId, uint16_t( m_tail + idx ) );
@@ -191,7 +205,13 @@ class VkCtxScope
 public:
     tracy_force_inline VkCtxScope( const SourceLocation* srcloc, VkCommandBuffer cmdbuf )
         : m_cmdbuf( cmdbuf )
+#ifdef TRACY_ON_DEMAND
+        , m_active( s_profiler.IsConnected() )
+#endif
     {
+#ifdef TRACY_ON_DEMAND
+        if( !m_active ) return;
+#endif
         auto ctx = s_vkCtx.ptr;
         const auto queryId = ctx->NextQueryId();
         vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, queryId );
@@ -199,7 +219,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::GpuZoneBegin );
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
@@ -211,7 +231,13 @@ public:
 
     tracy_force_inline VkCtxScope( const SourceLocation* srcloc, VkCommandBuffer cmdbuf, int depth )
         : m_cmdbuf( cmdbuf )
+#ifdef TRACY_ON_DEMAND
+        , m_active( s_profiler.IsConnected() )
+#endif
     {
+#ifdef TRACY_ON_DEMAND
+        if( !m_active ) return;
+#endif
         const auto thread = GetThreadHandle();
 
         auto ctx = s_vkCtx.ptr;
@@ -221,7 +247,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::GpuZoneBeginCallstack );
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
@@ -235,6 +261,9 @@ public:
 
     tracy_force_inline ~VkCtxScope()
     {
+#ifdef TRACY_ON_DEMAND
+        if( !m_active ) return;
+#endif
         auto ctx = s_vkCtx.ptr;
         const auto queryId = ctx->NextQueryId();
         vkCmdWriteTimestamp( m_cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, queryId );
@@ -242,7 +271,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::GpuZoneEnd );
         MemWrite( &item->gpuZoneEnd.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneEnd.queryId, uint16_t( queryId ) );
@@ -252,6 +281,10 @@ public:
 
 private:
     VkCommandBuffer m_cmdbuf;
+
+#ifdef TRACY_ON_DEMAND
+    const bool m_active;
+#endif
 };
 
 }

@@ -25,6 +25,7 @@
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/ProcessUtils.h"
+#include "../Core/Profiler.h"
 #include "../Core/Thread.h"
 #include "../Core/Timer.h"
 #include "../IO/File.h"
@@ -172,6 +173,8 @@ void Log::Write(int level, const String& message)
 
     if (logInstance->timeStamp_)
         formattedMessage = "[" + Time::GetTimeStamp() + "] " + formattedMessage;
+
+    URHO3D_PROFILE_MESSAGE(formattedMessage.CString(), formattedMessage.Length());
 
 #if defined(__ANDROID__)
     int androidLevel = ANDROID_LOG_VERBOSE + level;

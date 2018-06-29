@@ -510,13 +510,6 @@ void Context::RegisterSubsystem(WorkQueue* subsystem)
     workQueue_ = subsystem;
     RegisterSubsystem((Object*) subsystem);
 }
-#if URHO3D_PROFILING
-void Context::RegisterSubsystem(Profiler* subsystem)
-{
-    profiler_ = subsystem;
-    RegisterSubsystem((Object*) subsystem);
-}
-#endif
 void Context::RegisterSubsystem(FileSystem* subsystem)
 {
     fileSystem_ = subsystem;

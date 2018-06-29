@@ -73,6 +73,9 @@
 #include <array>
 #include <thread>		// partly for __WINPTHREADS_VERSION if on MinGW-w64 w/ POSIX threading
 
+namespace tracy
+{
+
 // Platform-specific definitions of a numeric thread ID type and an invalid value
 namespace moodycamel { namespace details {
 	template<typename thread_id_t> struct thread_id_converter {
@@ -692,8 +695,8 @@ class ConcurrentQueue
 public:
     struct ExplicitProducer;
 
-	typedef ::moodycamel::ProducerToken producer_token_t;
-	typedef ::moodycamel::ConsumerToken consumer_token_t;
+	typedef moodycamel::ProducerToken producer_token_t;
+	typedef moodycamel::ConsumerToken consumer_token_t;
 	
 	typedef typename Traits::index_t index_t;
 	typedef typename Traits::size_t size_t;
@@ -1713,8 +1716,8 @@ private:
 	///////////////////////////
 	struct ExplicitProducer : public ProducerBase
 	{
-		explicit ExplicitProducer(ConcurrentQueue* parent) :
-			ProducerBase(parent, true),
+		explicit ExplicitProducer(ConcurrentQueue* _parent) :
+			ProducerBase(_parent, true),
 			blockIndex(nullptr),
 			pr_blockIndexSlotsUsed(0),
 			pr_blockIndexSize(EXPLICIT_INITIAL_INDEX_SIZE >> 1),
@@ -1722,7 +1725,7 @@ private:
 			pr_blockIndexEntries(nullptr),
 			pr_blockIndexRaw(nullptr)
 		{
-			size_t poolBasedIndexSize = details::ceil_to_pow_2(parent->initialBlockPoolSize) >> 1;
+			size_t poolBasedIndexSize = details::ceil_to_pow_2(_parent->initialBlockPoolSize) >> 1;
 			if (poolBasedIndexSize > pr_blockIndexSize) {
 				pr_blockIndexSize = poolBasedIndexSize;
 			}
@@ -2397,8 +2400,8 @@ private:
 	
 	struct ImplicitProducer : public ProducerBase
 	{			
-		ImplicitProducer(ConcurrentQueue* parent) :
-			ProducerBase(parent, false),
+		ImplicitProducer(ConcurrentQueue* _parent) :
+			ProducerBase(_parent, false),
 			nextBlockIndexCapacity(IMPLICIT_INITIAL_INDEX_SIZE),
 			blockIndex(nullptr)
 		{
@@ -3550,6 +3553,7 @@ private:
 	template<typename U>
 	static inline void destroy_array(U* p, size_t count)
 	{
+		((void)count);
 		if (p != nullptr) {
 			assert(count > 0);
 			(Traits::free)(p);
@@ -3670,6 +3674,8 @@ inline void swap(typename ConcurrentQueue<T, Traits>::ImplicitProducerKVP& a, ty
 }
 
 }
+
+} /* namespace tracy */
 
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop

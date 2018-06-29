@@ -4,7 +4,7 @@
 #include <limits>
 #include <stdint.h>
 
-#include <LZ4/lz4.h>
+#include "../common/tracy_lz4.hpp"
 
 namespace tracy
 {
@@ -28,6 +28,8 @@ enum ServerQuery : uint8_t
 
 enum { WelcomeMessageProgramNameSize = 64 };
 
+#pragma pack( 1 )
+
 struct WelcomeMessage
 {
     double timerMul;
@@ -36,10 +38,21 @@ struct WelcomeMessage
     uint64_t delay;
     uint64_t resolution;
     uint64_t epoch;
+    uint8_t onDemand;
     char programName[WelcomeMessageProgramNameSize];
 };
 
 enum { WelcomeMessageSize = sizeof( WelcomeMessage ) };
+
+
+struct OnDemandPayloadMessage
+{
+    uint64_t frames;
+};
+
+enum { OnDemandPayloadMessageSize = sizeof( OnDemandPayloadMessage ) };
+
+#pragma pack()
 
 }
 

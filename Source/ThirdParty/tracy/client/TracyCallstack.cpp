@@ -1,20 +1,20 @@
+#include <stdio.h>
 #include "TracyCallstack.hpp"
 
 #ifdef TRACY_HAS_CALLSTACK
 
-#if defined _WIN32 || defined __CYGWIN__
+#if TRACY_HAS_CALLSTACK == 1
 #  include <windows.h>
 #  include <dbghelp.h>
-#elif defined _GNU_SOURCE
+#elif TRACY_HAS_CALLSTACK >= 2
 #  include <dlfcn.h>
 #  include <cxxabi.h>
-#  include <cstdio>
 #endif
 
 namespace tracy
 {
 
-#if defined _WIN32 || defined __CYGWIN__
+#if TRACY_HAS_CALLSTACK == 1
 
 extern "C" t_RtlWalkFrameChain RtlWalkFrameChain = 0;
 
@@ -77,7 +77,7 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr )
     return ret;
 }
 
-#elif defined __ANDROID__
+#elif TRACY_HAS_CALLSTACK == 2
 
 CallstackEntry DecodeCallstackPtr( uint64_t ptr )
 {
@@ -156,7 +156,7 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr )
     return ret;
 }
 
-#elif defined _GNU_SOURCE
+#elif TRACY_HAS_CALLSTACK == 3
 
 CallstackEntry DecodeCallstackPtr( uint64_t ptr )
 {

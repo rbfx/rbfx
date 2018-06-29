@@ -69,11 +69,11 @@ endif ()
 
 if (URHO3D_PHYSICS)
     add_subdirectory (Bullet)
-    add_subdirectory(StanHull)
+    add_subdirectory (StanHull)
 endif ()
 
-if (URHO3D_PROFILING)
-    add_subdirectory (easy_profiler)
+if (URHO3D_TOOLS)
+    add_subdirectory(nativefiledialog)
 endif ()
 
 if (NOT ANDROID AND NOT ARM AND NOT WEB)
@@ -87,11 +87,15 @@ if (NOT ANDROID AND NOT ARM AND NOT WEB)
     endif ()
 endif ()
 
+if (URHO3D_PROFILING)
+    if (NOT TARGET GLEW AND URHO3D_TOOLS)
+        add_subdirectory (GLEW)
+    endif ()
+    add_subdirectory (tracy)
+endif ()
+
 if (URHO3D_TOOLS)
     add_subdirectory(Assimp)
-endif ()
-if (URHO3D_SYSTEMUI)
-    add_subdirectory(nativefiledialog)
 endif ()
 
 if (URHO3D_TASKS)

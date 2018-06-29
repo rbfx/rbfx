@@ -128,9 +128,6 @@ Engine::Engine(Context* context) :
     // Create subsystems which do not depend on engine initialization or startup parameters
     context_->RegisterSubsystem(new Time(context_));
     context_->RegisterSubsystem(new WorkQueue(context_));
-#ifdef URHO3D_PROFILING
-    context_->RegisterSubsystem(new Profiler(context_));
-#endif
     context_->RegisterSubsystem(new FileSystem(context_));
 #ifdef URHO3D_LOGGING
     context_->RegisterSubsystem(new Log(context_));
@@ -174,16 +171,6 @@ bool Engine::Initialize(const VariantMap& parameters)
 {
     if (initialized_)
         return true;
-
-#ifdef URHO3D_PROFILING
-    if (auto* profiler = GetSubsystem<Profiler>())
-    {
-        profiler->SetEnabled(true);
-        profiler->SetEventProfilingEnabled(GetParameter(parameters, EP_EVENT_PROFILER, true).GetBool());
-        if (GetParameter(parameters, EP_PROFILER_LISTEN, false).GetBool())
-            profiler->StartListen((unsigned short)GetParameter(parameters, EP_PROFILER_PORT, PROFILER_DEFAULT_PORT).GetInt());
-    }
-#endif
 
     URHO3D_PROFILE("InitEngine");
 
@@ -491,15 +478,17 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
 
 void Engine::RunFrame()
 {
-    URHO3D_PROFILE("RunFrame");
-    assert(initialized_);
+    {
+        URHO3D_PROFILE("RunFrame");
+        assert(initialized_);
 
-    // If not headless, and the graphics subsystem no longer has a window open, assume we should exit
-    if (!headless_ && !GetSubsystem<Graphics>()->IsInitialized())
-        exiting_ = true;
+        // If not headless, and the graphics subsystem no longer has a window open, assume we should exit
+        if (!headless_ && !GetSubsystem<Graphics>()->IsInitialized())
+            exiting_ = true;
 
-    if (exiting_)
-        return;
+        if (exiting_)
+            return;
+    }
 
     // Note: there is a minimal performance cost to looking up subsystems (uses a hashmap); if they would be looked up several
     // times per frame it would be better to cache the pointers
@@ -507,32 +496,33 @@ void Engine::RunFrame()
     auto* input = GetSubsystem<Input>();
     auto* audio = GetSubsystem<Audio>();
 
-    URHO3D_PROFILE("DoFrame");
-    time->BeginFrame(timeStep_);
-
-    // If pause when minimized -mode is in use, stop updates and audio as necessary
-    if (pauseMinimized_ && input->IsMinimized())
     {
-        if (audio->IsPlaying())
+        URHO3D_PROFILE("DoFrame");
+        time->BeginFrame(timeStep_);
+
+        // If pause when minimized -mode is in use, stop updates and audio as necessary
+        if (pauseMinimized_ && input->IsMinimized())
         {
-            audio->Stop();
-            audioPaused_ = true;
+            if (audio->IsPlaying())
+            {
+                audio->Stop();
+                audioPaused_ = true;
+            }
         }
-    }
-    else
-    {
-        // Only unpause when it was paused by the engine
-        if (audioPaused_)
+        else
         {
-            audio->Play();
-            audioPaused_ = false;
+            // Only unpause when it was paused by the engine
+            if (audioPaused_)
+            {
+                audio->Play();
+                audioPaused_ = false;
+            }
+
+            Update();
         }
 
-        Update();
+        Render();
     }
-
-    Render();
-    URHO3D_PROFILE_END();
     ApplyFrameLimit();
 
     time->EndFrame();
@@ -738,6 +728,7 @@ void Engine::Render()
     GetSubsystem<Renderer>()->Render();
     GetSubsystem<UI>()->Render();
     graphics->EndFrame();
+    URHO3D_PROFILE_FRAME();
 }
 
 void Engine::ApplyFrameLimit()

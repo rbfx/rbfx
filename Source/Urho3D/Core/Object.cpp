@@ -307,14 +307,9 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData)
         return;
 
 #if URHO3D_PROFILING
-    auto blockStatus = ::profiler::EasyBlockStatus::OFF;
+    URHO3D_PROFILE_C("SendEvent", PROFILER_COLOR_EVENTS);
     const auto& eventName = GetEventNameRegister().GetString(eventType);
-    if (auto profiler = GetSubsystem<Profiler>())
-    {
-        if (profiler->GetEventProfilingEnabled())
-            blockStatus = ::profiler::EasyBlockStatus::ON;
-    }
-    URHO3D_PROFILE(eventName.CString(), PROFILER_COLOR_EVENTS, blockStatus);
+    URHO3D_PROFILE_ZONENAME(eventName.CString(), eventName.Length());
 #endif
 
     // Make a weak pointer to self to check for destruction during event handling
@@ -568,12 +563,6 @@ template <> WorkQueue* Object::GetSubsystem<WorkQueue>() const
 {
     return context_->workQueue_;
 }
-#if URHO3D_PROFILING
-template <> Profiler* Object::GetSubsystem<Profiler>() const
-{
-    return context_->profiler_;
-}
-#endif
 template <> FileSystem* Object::GetSubsystem<FileSystem>() const
 {
     return context_->fileSystem_;
@@ -653,12 +642,6 @@ WorkQueue* Object::GetWorkQueue() const
 {
     return context_->workQueue_;
 }
-#if URHO3D_PROFILING
-Profiler* Object::GetProfiler() const
-{
-    return context_->profiler_;
-}
-#endif
 FileSystem* Object::GetFileSystem() const
 {
     return context_->fileSystem_;

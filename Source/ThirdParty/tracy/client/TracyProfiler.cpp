@@ -179,6 +179,10 @@ struct ThreadNameData;
 std::atomic<ThreadNameData*> init_order(104) s_threadNameData( nullptr );
 #endif
 
+#ifdef TRACY_ON_DEMAND
+thread_local LuaZoneState init_order(104) s_luaZoneState { 0, false };
+#endif
+
 Profiler init_order(105) s_profiler;
 
 
@@ -190,6 +194,7 @@ Profiler::Profiler()
     , m_epoch( std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count() )
     , m_shutdown( false )
     , m_sock( nullptr )
+    , m_noExit( false )
     , m_stream( LZ4_createStream() )
     , m_buffer( (char*)tracy_malloc( TargetFrameSize*3 ) )
     , m_bufferOffset( 0 )
@@ -198,6 +203,11 @@ Profiler::Profiler()
     , m_lz4Buf( (char*)tracy_malloc( LZ4Size + sizeof( lz4sz_t ) ) )
     , m_serialQueue( 1024*1024 )
     , m_serialDequeue( 1024*1024 )
+#ifdef TRACY_ON_DEMAND
+    , m_isConnected( false )
+    , m_frameCount( 0 )
+    , m_deferredQueue( 64*1024 )
+#endif
 {
     assert( !s_instance );
     s_instance = this;
@@ -210,6 +220,14 @@ Profiler::Profiler()
 
     CalibrateTimer();
     CalibrateDelay();
+
+#ifndef TRACY_NO_EXIT
+    const char* noExitEnv = getenv( "TRACY_NO_EXIT" );
+    if( noExitEnv && noExitEnv[0] == '1' )
+    {
+        m_noExit = true;
+    }
+#endif
 
     s_thread = (Thread*)tracy_malloc( sizeof( Thread ) );
     new(s_thread) Thread( LaunchWorker, this );
@@ -257,6 +275,12 @@ void Profiler::Worker()
 
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
+#ifdef TRACY_ON_DEMAND
+    uint8_t onDemand = 1;
+#else
+    uint8_t onDemand = 0;
+#endif
+
     WelcomeMessage welcome;
     MemWrite( &welcome.timerMul, m_timerMul );
     MemWrite( &welcome.initBegin, s_initTime.val );
@@ -264,6 +288,7 @@ void Profiler::Worker()
     MemWrite( &welcome.delay, m_delay );
     MemWrite( &welcome.resolution, m_resolution );
     MemWrite( &welcome.epoch, m_epoch );
+    MemWrite( &welcome.onDemand, onDemand );
     memcpy( welcome.programName, procname, pnsz );
     memset( welcome.programName + pnsz, 0, WelcomeMessageProgramNameSize - pnsz );
 
@@ -277,15 +302,36 @@ void Profiler::Worker()
         for(;;)
         {
 #ifndef TRACY_NO_EXIT
-            if( ShouldExit() ) return;
+            if( !m_noExit && ShouldExit() ) return;
 #endif
             m_sock = listen.Accept();
             if( m_sock ) break;
         }
 
-        m_sock->Send( &welcome, sizeof( welcome ) );
-        LZ4_resetStream( m_stream );
+#ifdef TRACY_ON_DEMAND
+        ClearQueues( token );
+        m_isConnected.store( true, std::memory_order_relaxed );
+#endif
 
+        LZ4_resetStream( m_stream );
+        m_sock->Send( &welcome, sizeof( welcome ) );
+
+#ifdef TRACY_ON_DEMAND
+        OnDemandPayloadMessage onDemand;
+        onDemand.frames = m_frameCount.load( std::memory_order_relaxed );
+
+        m_sock->Send( &onDemand, sizeof( onDemand ) );
+
+        m_deferredLock.lock();
+        for( auto& item : m_deferredQueue )
+        {
+            const auto idx = MemRead<uint8_t>( &item.hdr.idx );
+            AppendData( &item, QueueDataSize[idx] );
+        }
+        m_deferredLock.unlock();
+#endif
+
+        int keepAlive = 0;
         for(;;)
         {
             const auto status = Dequeue( token );
@@ -297,8 +343,28 @@ void Profiler::Worker()
             else if( status == QueueEmpty && serialStatus == QueueEmpty )
             {
                 if( ShouldExit() ) break;
-                if( m_bufferOffset != m_bufferStart ) CommitData();
-                std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+                if( m_bufferOffset != m_bufferStart )
+                {
+                    if( !CommitData() ) break;
+                }
+                if( keepAlive == 500 )
+                {
+                    QueueItem ka;
+                    ka.hdr.type = QueueType::KeepAlive;
+                    AppendData( &ka, QueueDataSize[ka.hdr.idx] );
+                    if( !CommitData() ) break;
+
+                    keepAlive = 0;
+                }
+                else
+                {
+                    keepAlive++;
+                    std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+                }
+            }
+            else
+            {
+                keepAlive = 0;
             }
 
             while( m_sock->HasData() )
@@ -307,6 +373,10 @@ void Profiler::Worker()
             }
         }
         if( ShouldExit() ) break;
+
+#ifdef TRACY_ON_DEMAND
+        m_isConnected.store( false, std::memory_order_relaxed );
+#endif
     }
 
     for(;;)
@@ -357,6 +427,58 @@ void Profiler::Worker()
             std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
         }
     }
+}
+
+static void FreeAssociatedMemory( const QueueItem& item )
+{
+    if( item.hdr.idx >= (int)QueueType::Terminate ) return;
+
+    uint64_t ptr;
+    switch( item.hdr.type )
+    {
+    case QueueType::ZoneText:
+    case QueueType::ZoneName:
+        ptr = MemRead<uint64_t>( &item.zoneText.text );
+        tracy_free( (void*)ptr );
+        break;
+    case QueueType::Message:
+        ptr = MemRead<uint64_t>( &item.message.text );
+        tracy_free( (void*)ptr );
+        break;
+    case QueueType::ZoneBeginAllocSrcLoc:
+        ptr = MemRead<uint64_t>( &item.zoneBegin.srcloc );
+        tracy_free( (void*)ptr );
+        break;
+    case QueueType::CallstackMemory:
+        ptr = MemRead<uint64_t>( &item.callstackMemory.ptr );
+        tracy_free( (void*)ptr );
+        break;
+    case QueueType::Callstack:
+        ptr = MemRead<uint64_t>( &item.callstack.ptr );
+        tracy_free( (void*)ptr );
+        break;
+    default:
+        assert( false );
+        break;
+    }
+}
+
+void Profiler::ClearQueues( moodycamel::ConsumerToken& token )
+{
+    for(;;)
+    {
+        const auto sz = s_queue.try_dequeue_bulk( token, m_itemBuf, BulkSize );
+        if( sz == 0 ) break;
+        for( size_t i=0; i<sz; i++ ) FreeAssociatedMemory( m_itemBuf[i] );
+    }
+
+    std::lock_guard<TracyMutex> lock( m_serialLock );
+
+    for( auto& v : m_serialDequeue ) FreeAssociatedMemory( v );
+    m_serialDequeue.clear();
+
+    for( auto& v : m_serialQueue ) FreeAssociatedMemory( v );
+    m_serialQueue.clear();
 }
 
 Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
@@ -414,7 +536,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
 Profiler::DequeueStatus Profiler::DequeueSerial()
 {
     {
-        std::lock_guard<NonRecursiveBenaphore> lock( m_serialLock );
+        std::lock_guard<TracyMutex> lock( m_serialLock );
         m_serialQueue.swap( m_serialDequeue );
     }
 
@@ -775,10 +897,10 @@ void Profiler::CalibrateDelay()
     auto mindiff = std::numeric_limits<int64_t>::max();
     for( int i=0; i<Iterations * 10; i++ )
     {
-        const auto t0 = GetTime();
-        const auto t1 = GetTime();
-        const auto dt = t1 - t0;
-        if( dt > 0 && dt < mindiff ) mindiff = dt;
+        const auto t0i = GetTime();
+        const auto t1i = GetTime();
+        const auto dti = t1i - t0i;
+        if( dti > 0 && dti < mindiff ) mindiff = dti;
     }
 
     m_resolution = mindiff;

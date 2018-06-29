@@ -77,10 +77,6 @@ void Sample::Start()
         // On desktop platform, do not detect touch when we already got a joystick
         SubscribeToEvent(E_TOUCHBEGIN, URHO3D_HANDLER(Sample, HandleTouchBegin));
 
-#if URHO3D_PROFILING
-    GetProfiler()->StartListen();
-#endif
-
     // Create logo
     CreateLogo();
 

@@ -9,7 +9,7 @@
 #include <thread>
 
 #include "TracyFileHeader.hpp"
-#include <LZ4/lz4.h>
+#include "../common/tracy_lz4.hpp"
 #include "../common/TracyForceInline.hpp"
 
 namespace tracy

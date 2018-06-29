@@ -8,7 +8,7 @@
 #include <mutex>
 #include <string.h>
 
-#if __has_include(<execution>)
+#if __has_include(<execution>) && __cplusplus >= 201703L
 #  include <execution>
 #else
 #  include "tracy_pdqsort.h"
@@ -31,7 +31,7 @@ static constexpr int FileVersion( uint8_t h5, uint8_t h6, uint8_t h7 )
     return ( h5 << 16 ) | ( h6 << 8 ) | h7;
 }
 
-static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', 0, 3, 3 };
+static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', 0, 3, 200 };
 enum { FileHeaderMagic = 5 };
 static const int CurrentVersion = FileVersion( FileHeader[FileHeaderMagic], FileHeader[FileHeaderMagic+1], FileHeader[FileHeaderMagic+2] );
 
@@ -238,6 +238,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     f.Read( m_resolution );
     f.Read( m_timerMul );
     f.Read( m_data.lastTime );
+
+    if( fileVer >= FileVersion( 0, 3, 200 ) )
+    {
+        f.Read( m_data.frameOffset );
+    }
 
     uint64_t sz;
     {
@@ -496,7 +501,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             std::sort( std::execution::par_unseq, zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.zone->start < rhs.zone->start; } );
 #endif
         }
-        std::lock_guard<NonRecursiveBenaphore> lock( m_data.lock );
+        std::lock_guard<TracyMutex> lock( m_data.lock );
         m_data.sourceLocationZonesReady = true;
     } );
 #endif
@@ -883,8 +888,14 @@ const char* Worker::GetZoneName( const GpuEvent& ev ) const
 
 const char* Worker::GetZoneName( const GpuEvent& ev, const SourceLocation& srcloc ) const
 {
-    assert( srcloc.name.active );
-    return GetString( srcloc.name );
+    if( srcloc.name.active )
+    {
+        return GetString( srcloc.name );
+    }
+    else
+    {
+        return GetString( srcloc.function );
+    }
 }
 
 std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query ) const
@@ -963,6 +974,7 @@ void Worker::Exec()
         return m_shutdown.load( std::memory_order_relaxed );
     };
 
+    auto lz4buf = std::make_unique<char[]>( LZ4Size );
     for(;;)
     {
         if( m_shutdown.load( std::memory_order_relaxed ) ) return;
@@ -982,6 +994,7 @@ void Worker::Exec()
             m_data.lastTime = m_data.frames.back();
             m_delay = TscTime( welcome.delay );
             m_resolution = TscTime( welcome.resolution );
+            m_onDemand = welcome.onDemand;
 
             char dtmp[64];
             time_t date = welcome.epoch;
@@ -990,6 +1003,13 @@ void Worker::Exec()
             char tmp[1024];
             sprintf( tmp, "%s @ %s", welcome.programName, dtmp );
             m_captureName = tmp;
+
+            if( welcome.onDemand != 0 )
+            {
+                OnDemandPayloadMessage onDemand;
+                if( !m_sock.Read( &onDemand, sizeof( onDemand ), &tv, ShouldExit ) ) goto close;
+                m_data.frameOffset = onDemand.frames;
+            }
         }
 
         m_hasData.store( true, std::memory_order_release );
@@ -1004,13 +1024,12 @@ void Worker::Exec()
             if( m_shutdown.load( std::memory_order_relaxed ) ) return;
 
             auto buf = m_buffer + m_bufferOffset;
-            char lz4buf[LZ4Size];
             lz4sz_t lz4sz;
             if( !m_sock.Read( &lz4sz, sizeof( lz4sz ), &tv, ShouldExit ) ) goto close;
-            if( !m_sock.Read( lz4buf, lz4sz, &tv, ShouldExit ) ) goto close;
+            if( !m_sock.Read( lz4buf.get(), lz4sz, &tv, ShouldExit ) ) goto close;
             bytes += sizeof( lz4sz ) + lz4sz;
 
-            auto sz = LZ4_decompress_safe_continue( m_stream, lz4buf, buf, lz4sz, TargetFrameSize );
+            auto sz = LZ4_decompress_safe_continue( m_stream, lz4buf.get(), buf, lz4sz, TargetFrameSize );
             assert( sz >= 0 );
             decBytes += sz;
 
@@ -1018,7 +1037,7 @@ void Worker::Exec()
             const char* end = buf + sz;
 
             {
-                std::lock_guard<NonRecursiveBenaphore> lock( m_data.lock );
+                std::lock_guard<TracyMutex> lock( m_data.lock );
                 while( ptr < end )
                 {
                     auto ev = (const QueueItem*)ptr;
@@ -1036,7 +1055,7 @@ void Worker::Exec()
             enum { MbpsUpdateTime = 200 };
             if( td > MbpsUpdateTime )
             {
-                std::lock_guard<NonRecursiveBenaphore> lock( m_mbpsData.lock );
+                std::lock_guard<TracyMutex> lock( m_mbpsData.lock );
                 m_mbpsData.mbps.erase( m_mbpsData.mbps.begin() );
                 m_mbpsData.mbps.emplace_back( bytes / ( td * 125.f ) );
                 m_mbpsData.compRatio = float( bytes ) / decBytes;
@@ -1639,6 +1658,8 @@ void Worker::Process( const QueueItem& ev )
     case QueueType::Terminate:
         m_terminate = true;
         break;
+    case QueueType::KeepAlive:
+        break;
     default:
         assert( false );
         break;
@@ -2157,12 +2178,17 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
     MemAllocChanged( time );
 }
 
-void Worker::ProcessMemFree( const QueueMemFree& ev )
+bool Worker::ProcessMemFree( const QueueMemFree& ev )
 {
     const auto time = TscTime( ev.time );
 
     auto it = m_data.memory.active.find( ev.ptr );
-    assert( it != m_data.memory.active.end() );
+    if( it == m_data.memory.active.end() )
+    {
+        assert( m_onDemand );
+        return false;
+    }
+
     m_data.memory.frees.push_back( it->second );
     auto& mem = m_data.memory.data[it->second];
     mem.timeFree = time;
@@ -2171,6 +2197,7 @@ void Worker::ProcessMemFree( const QueueMemFree& ev )
     m_data.memory.active.erase( it );
 
     MemAllocChanged( time );
+    return true;
 }
 
 void Worker::ProcessMemAllocCallstack( const QueueMemAlloc& ev )
@@ -2182,9 +2209,15 @@ void Worker::ProcessMemAllocCallstack( const QueueMemAlloc& ev )
 
 void Worker::ProcessMemFreeCallstack( const QueueMemFree& ev )
 {
-    ProcessMemFree( ev );
-    m_lastMemActionCallstack = m_data.memory.frees.back();
-    m_lastMemActionWasAlloc = false;
+    if( ProcessMemFree( ev ) )
+    {
+        m_lastMemActionCallstack = m_data.memory.frees.back();
+        m_lastMemActionWasAlloc = false;
+    }
+    else
+    {
+        m_lastMemActionCallstack = std::numeric_limits<uint64_t>::max();
+    }
 }
 
 void Worker::ProcessCallstackMemory( const QueueCallstackMemory& ev )
@@ -2192,14 +2225,17 @@ void Worker::ProcessCallstackMemory( const QueueCallstackMemory& ev )
     auto it = m_pendingCallstacks.find( ev.ptr );
     assert( it != m_pendingCallstacks.end() );
 
-    auto& mem = m_data.memory.data[m_lastMemActionCallstack];
-    if( m_lastMemActionWasAlloc )
+    if( m_lastMemActionCallstack != std::numeric_limits<uint64_t>::max() )
     {
-        mem.csAlloc = it->second;
-    }
-    else
-    {
-        mem.csFree = it->second;
+        auto& mem = m_data.memory.data[m_lastMemActionCallstack];
+        if( m_lastMemActionWasAlloc )
+        {
+            mem.csAlloc = it->second;
+        }
+        else
+        {
+            mem.csFree = it->second;
+        }
     }
 
     m_pendingCallstacks.erase( it );
@@ -2301,7 +2337,7 @@ void Worker::ReconstructMemAllocPlot()
 
     PlotData* plot;
     {
-        std::lock_guard<NonRecursiveBenaphore> lock( m_data.lock );
+        std::lock_guard<TracyMutex> lock( m_data.lock );
         plot = m_slab.AllocInit<PlotData>();
     }
 
@@ -2383,7 +2419,7 @@ void Worker::ReconstructMemAllocPlot()
     plot->min = 0;
     plot->max = max;
 
-    std::lock_guard<NonRecursiveBenaphore> lock( m_data.lock );
+    std::lock_guard<TracyMutex> lock( m_data.lock );
     m_data.plots.insert( m_data.plots.begin(), plot );
     m_data.memory.plot = plot;
 }
@@ -2546,6 +2582,7 @@ void Worker::Write( FileWrite& f )
     f.Write( &m_resolution, sizeof( m_resolution ) );
     f.Write( &m_timerMul, sizeof( m_timerMul ) );
     f.Write( &m_data.lastTime, sizeof( m_data.lastTime ) );
+    f.Write( &m_data.frameOffset, sizeof( m_data.frameOffset ) );
 
     uint64_t sz = m_captureName.size();
     f.Write( &sz, sizeof( sz ) );

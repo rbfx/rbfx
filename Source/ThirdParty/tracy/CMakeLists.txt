@@ -26,9 +26,12 @@ file (GLOB_RECURSE COMMON_SOURCE_FILES common/*.cpp common/*.hpp common/*.h)
 file (GLOB_RECURSE CLIENT_SOURCE_FILES client/*.cpp client/*.hpp client/*.h)
 file (GLOB_RECURSE SERVER_SOURCE_FILES server/*.cpp server/*.hpp server/*.h)
 
-add_library (tracy-lib OBJECT ${CLIENT_SOURCE_FILES} ${COMMON_SOURCE_FILES})
-target_link_objects(tracy-lib LZ4)
+add_library (tracy-lib STATIC ${CLIENT_SOURCE_FILES} ${COMMON_SOURCE_FILES})
+target_link_libraries(tracy-lib LZ4)
 target_compile_definitions(tracy-lib PUBLIC -DTRACY_ENABLE=1)
+if (WIN32)
+    target_compile_definitions(tracy-lib PUBLIC -DNOMINMAX=1)
+endif ()
 target_include_directories(tracy-lib
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
@@ -37,16 +40,26 @@ target_include_directories(tracy-lib
 
 if (URHO3D_TOOLS AND URHO3D_SYSTEMUI)
     add_executable (tracy-profiler WIN32 ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES}
-        standalone/src/main.cpp standalone/src/imgui_impl_sdl.cpp
-        $<TARGET_OBJECTS:imgui> $<TARGET_OBJECTS:STB> $<TARGET_OBJECTS:FreeType> $<TARGET_OBJECTS:SDL> $<TARGET_OBJECTS:nativefiledialog> $<TARGET_OBJECTS:LZ4>)
-    target_link_objects(tracy-profiler imgui STB FreeType SDL nativefiledialog LZ4)
-    target_compile_definitions(tracy-profiler PRIVATE -DIMGUI_IMPL_API=)
+        standalone/src/main.cpp standalone/src/imgui_impl_sdl.cpp)
+    target_link_libraries(tracy-profiler Urho3D nativefiledialog)
+    target_compile_definitions(tracy-profiler PUBLIC -DTRACY_FILESELECTOR=1)
     set_target_properties(tracy-profiler PROPERTIES OUTPUT_NAME Profiler)
     if (APPLE)
-        target_link_libraries(tracy-profiler pthread dl -framework OpenGl)
+        target_link_libraries(tracy-profiler pthread dl "-framework OpenGl")
     elseif (UNIX)
         target_link_libraries(tracy-profiler pthread dl GL)
     elseif (WIN32)
-        target_link_libraries(tracy-profiler opengl32.lib)
+        target_link_libraries(tracy-profiler opengl32.lib ws2_32.lib winmm.lib version.lib)
+        target_compile_definitions(tracy-profiler PUBLIC -DNOMINMAX=1 PRIVATE -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -DWIN32_LEAN_AND_MEAN -DNOMINMAX -D_USE_MATH_DEFINES)
+        if (MSVC)
+            target_compile_options(tracy-profiler PRIVATE /permissive-)
+        endif ()
     endif ()
 endif ()
+
+install (TARGETS tracy-lib EXPORT Urho3D
+    LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
+    RUNTIME DESTINATION ${DEST_BIN_DIR}
+    ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
+    )
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)

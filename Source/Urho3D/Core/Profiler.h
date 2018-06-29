@@ -27,89 +27,36 @@
 #include "../Core/Timer.h"
 
 #if URHO3D_PROFILING
-#   include <easy/profiler.h>
-#   include <easy/arbitrary_value.h>
+#   include <tracy/Tracy.hpp>
 #endif
 
 namespace Urho3D
 {
 
-static const int PROFILER_DEFAULT_PORT = 28077;
-static const unsigned PROFILER_COLOR_DEFAULT = 0xffffecb3;
-static const unsigned PROFILER_COLOR_EVENTS = 0xffff9800;
-static const unsigned PROFILER_COLOR_RESOURCES = 0xff00bcd4;
-
-/// Hierarchical performance profiler subsystem.
-class URHO3D_API Profiler : public Object
-{
-    URHO3D_OBJECT(Profiler, Object);
-
-public:
-    /// Construct.
-    explicit Profiler(Context* context);
-    /// Destruct.
-    ~Profiler() override;
-
-    /// Enables or disables profiler.
-    void SetEnabled(bool enabled);
-    /// Returns true if profiler is enabled, false otherwise.
-    bool GetEnabled() const;
-    /// Enables or disables event profiling.
-    void SetEventProfilingEnabled(bool enabled);
-    /// Returns true if event profiling is enabled, false otherwise.
-    bool GetEventProfilingEnabled() const;
-    /// Starts listening for incoming profiler tool connections.
-    void StartListen(unsigned short port=PROFILER_DEFAULT_PORT);
-    /// Stops listening for incoming profiler tool connections.
-    void StopListen();
-    /// Returns true if profiler is currently listening for incoming connections.
-    bool GetListening() const;
-    /// Enables or disables event tracing. This is windows-specific, does nothing on other OS.
-    void SetEventTracingEnabled(bool enable);
-    /// Returns true if event tracing is enabled, false otherwise.
-    bool GetEventTracingEnabled();
-    /// Enables or disables low priority event tracing. This is windows-specific, does nothing on other OS.
-    void SetLowPriorityEventTracing(bool isLowPriority);
-    /// Returns true if low priority event tracing is enabled, false otherwise.
-    bool GetLowPriorityEventTracing();
-    /// Save profiler data to a file.
-    void SaveProfilerData(const String& filePath);
-    /// Begin non-scoped profiled block. Block has to be terminated with call to EndBlock(). This is slow and is for
-    /// integration with scripting lnaguages. Use URHO3D_PROFILE* macros when writing c++ code instead.
-    static void BeginBlock(const char* name, const char* file, int line, unsigned int argb=PROFILER_COLOR_DEFAULT);
-    /// End block started with BeginBlock().
-    static void EndBlock();
-    /// Register name of current thread. Threads will be labeled in profiler data.
-    static void RegisterCurrentThread(const char* name);
-
-private:
-    /// Flag which enables event profiling.
-    bool enableEventProfiling_ = true;
-};
-
-class URHO3D_API ProfilerDescriptor
-{
-public:
-    ProfilerDescriptor(const char* name, const char* file, int line, unsigned int argb=PROFILER_COLOR_DEFAULT);
-
-    void* descriptor_;
-};
+static const unsigned PROFILER_COLOR_EVENTS = 0xb26d19;
+static const unsigned PROFILER_COLOR_RESOURCES = 0x006b82;
 
 }
 
 #if URHO3D_PROFILING
-#   define URHO3D_PROFILE(name, ...)              EASY_BLOCK(name, __VA_ARGS__)
-#   define URHO3D_PROFILE_START(name, ...)        EASY_NONSCOPED_BLOCK(name, __VA_ARGS__)
-#   define URHO3D_PROFILE_END()                   EASY_END_BLOCK
-#   define URHO3D_PROFILE_THREAD(name)            EASY_THREAD(name)
-#   define URHO3D_PROFILE_VALUE(name, value, ...) EASY_VALUE(name, value, __VA_ARGS__)
-#   define URHO3D_PROFILE_FUNCTION(...)           EASY_FUNCTION(__VA_ARGS__)
+#   define URHO3D_PROFILE_C(name, color)          ZoneScopedNC(name, color)
+#   define URHO3D_PROFILE(name)                   ZoneScopedN(name)
+#if _WIN32
+#   define URHO3D_PROFILE_THREAD(name)            tracy::SetThreadName(GetCurrentThread(), name);
+#else
+#   define URHO3D_PROFILE_THREAD(name)            tracy::SetThreadName(pthread_self(), name);
+#endif
+#   define URHO3D_PROFILE_VALUE(name, value)      TracyPlot(name, value)
+#   define URHO3D_PROFILE_FRAME()                 FrameMark
+#   define URHO3D_PROFILE_MESSAGE(txt, len)       TracyMessage(txt, len)
+#   define URHO3D_PROFILE_ZONENAME(txt, len)      ZoneName(txt, len)
 #else
 #   define URHO3D_PROFILE(...)
-#   define URHO3D_PROFILE_START(...)
-#   define URHO3D_PROFILE_END(...)
 #   define URHO3D_PROFILE_THREAD(...)
 #   define URHO3D_PROFILE_VALUE(...)
 #   define URHO3D_PROFILE_FUNCTION(...)
+#   define URHO3D_PROFILE_FRAME()
+#   define URHO3D_PROFILE_MESSAGE(txt, len)
+#   define URHO3D_PROFILE_ZONENAME(txt, len)
 #endif
 

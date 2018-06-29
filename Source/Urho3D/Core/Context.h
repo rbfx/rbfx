@@ -217,10 +217,6 @@ public:
     inline Time* GetTime() const { return time_; }
     /// Return work queue subsystem.
     inline WorkQueue* GetWorkQueue() const { return workQueue_; }
-#if URHO3D_PROFILING
-    /// Return profiler subsystem.
-    inline Profiler* GetProfiler() const { return profiler_; }
-#endif
     /// Return file system subsystem.
     inline FileSystem* GetFileSystem() const { return fileSystem_; }
 #if URHO3D_LOGGING
@@ -264,10 +260,6 @@ public:
     void RegisterSubsystem(Time* subsystem);
     /// Register work queue subsystem and cache it's pointer.
     void RegisterSubsystem(WorkQueue* subsystem);
-#if URHO3D_PROFILING
-    /// Register profiler subsystem and cache it's pointer.
-    void RegisterSubsystem(Profiler* subsystem);
-#endif
     /// Register file system subsystem and cache it's pointer.
     void RegisterSubsystem(FileSystem* subsystem);
 #if URHO3D_LOGGING
@@ -349,10 +341,6 @@ private:
     WeakPtr<Time> time_;
     /// Cached pointer of work queue susbsystem.
     WeakPtr<WorkQueue> workQueue_;
-    /// Cached pointer of profiler susbsystem.
-#if URHO3D_PROFILING
-    WeakPtr<Profiler> profiler_;
-#endif
     /// Cached pointer of file system susbsystem.
     WeakPtr<FileSystem> fileSystem_;
 #if URHO3D_LOGGING

@@ -9,11 +9,11 @@
 #include "concurrentqueue.h"
 #include "TracyCallstack.hpp"
 #include "TracyFastVector.hpp"
-#include <LZ4/lz4.h>
-#include "../common/tracy_benaphore.h"
+#include "../common/tracy_lz4.hpp"
 #include "../common/TracyQueue.hpp"
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
+#include "../common/TracyMutex.hpp"
 #include "../common/TracySystem.hpp"
 
 #if defined _MSC_VER || defined __CYGWIN__
@@ -45,7 +45,7 @@ struct SourceLocation
 
 struct ProducerWrapper
 {
-    moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptr;
+    tracy::moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptr;
 };
 
 extern thread_local ProducerWrapper s_token;
@@ -62,7 +62,15 @@ struct VkCtxWrapper
     VkCtx* ptr;
 };
 
-using Magic = moodycamel::ConcurrentQueueDefaultTraits::index_t;
+#ifdef TRACY_ON_DEMAND
+struct LuaZoneState
+{
+    uint32_t counter;
+    bool active;
+};
+#endif
+
+using Magic = tracy::moodycamel::ConcurrentQueueDefaultTraits::index_t;
 
 #if __ARM_ARCH >= 6
 extern int64_t (*GetTimeImpl)();
@@ -116,12 +124,16 @@ public:
 #endif
     }
 
-    static tracy_force_inline void FrameMark()
+    static tracy_force_inline void SendFrameMark()
     {
+#ifdef TRACY_ON_DEMAND
+        s_profiler.m_frameCount.fetch_add( 1, std::memory_order_relaxed );
+        if( !s_profiler.IsConnected() ) return;
+#endif
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::FrameMarkMsg );
         MemWrite( &item->frameMark.time, GetTime() );
         tail.store( magic + 1, std::memory_order_release );
@@ -129,10 +141,13 @@ public:
 
     static tracy_force_inline void PlotData( const char* name, int64_t val )
     {
+#ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#endif
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
@@ -143,10 +158,13 @@ public:
 
     static tracy_force_inline void PlotData( const char* name, float val )
     {
+#ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#endif
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
@@ -157,10 +175,13 @@ public:
 
     static tracy_force_inline void PlotData( const char* name, double val )
     {
+#ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#endif
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
@@ -171,13 +192,16 @@ public:
 
     static tracy_force_inline void Message( const char* txt, size_t size )
     {
+#ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#endif
         Magic magic;
         auto& token = s_token.ptr;
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::Message );
         MemWrite( &item->message.time, GetTime() );
         MemWrite( &item->message.thread, GetThreadHandle() );
@@ -187,10 +211,13 @@ public:
 
     static tracy_force_inline void Message( const char* txt )
     {
+#ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#endif
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::MessageLiteral );
         MemWrite( &item->message.time, GetTime() );
         MemWrite( &item->message.thread, GetThreadHandle() );
@@ -200,6 +227,9 @@ public:
 
     static tracy_force_inline void MemAlloc( const void* ptr, size_t size )
     {
+#ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#endif
         const auto thread = GetThreadHandle();
 
         s_profiler.m_serialLock.lock();
@@ -209,6 +239,9 @@ public:
 
     static tracy_force_inline void MemFree( const void* ptr )
     {
+#ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#endif
         const auto thread = GetThreadHandle();
 
         s_profiler.m_serialLock.lock();
@@ -219,6 +252,9 @@ public:
     static tracy_force_inline void MemAllocCallstack( const void* ptr, size_t size, int depth )
     {
 #ifdef TRACY_HAS_CALLSTACK
+#  ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#  endif
         const auto thread = GetThreadHandle();
 
         rpmalloc_thread_initialize();
@@ -236,6 +272,9 @@ public:
     static tracy_force_inline void MemFreeCallstack( const void* ptr, int depth )
     {
 #ifdef TRACY_HAS_CALLSTACK
+#  ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#  endif
         const auto thread = GetThreadHandle();
 
         rpmalloc_thread_initialize();
@@ -257,7 +296,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::Callstack );
         MemWrite( &item->callstack.ptr, ptr );
         MemWrite( &item->callstack.thread, thread );
@@ -267,13 +306,29 @@ public:
 
     static bool ShouldExit();
 
+#ifdef TRACY_ON_DEMAND
+    tracy_force_inline bool IsConnected()
+    {
+        return m_isConnected.load( std::memory_order_relaxed );
+    }
+
+    tracy_force_inline void DeferItem( const QueueItem& item )
+    {
+        m_deferredLock.lock();
+        auto dst = m_deferredQueue.push_next();
+        memcpy( dst, &item, sizeof( item ) );
+        m_deferredLock.unlock();
+    }
+#endif
+
 private:
     enum DequeueStatus { Success, ConnectionLost, QueueEmpty };
 
     static void LaunchWorker( void* ptr ) { ((Profiler*)ptr)->Worker(); }
     void Worker();
 
-    DequeueStatus Dequeue( moodycamel::ConsumerToken& token );
+    void ClearQueues( tracy::moodycamel::ConsumerToken& token );
+    DequeueStatus Dequeue( tracy::moodycamel::ConsumerToken& token );
     DequeueStatus DequeueSerial();
     bool AppendData( const void* data, size_t len );
     bool CommitData();
@@ -346,6 +401,7 @@ private:
     uint64_t m_epoch;
     std::atomic<bool> m_shutdown;
     Socket* m_sock;
+    bool m_noExit;
 
     LZ4_stream_t* m_stream;
     char* m_buffer;
@@ -356,7 +412,15 @@ private:
     char* m_lz4Buf;
 
     FastVector<QueueItem> m_serialQueue, m_serialDequeue;
-    NonRecursiveBenaphore m_serialLock;
+    TracyMutex m_serialLock;
+
+#ifdef TRACY_ON_DEMAND
+    std::atomic<bool> m_isConnected;
+    std::atomic<uint64_t> m_frameCount;
+
+    TracyMutex m_deferredLock;
+    FastVector<QueueItem> m_deferredQueue;
+#endif
 };
 
 };

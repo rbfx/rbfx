@@ -209,10 +209,6 @@ public:
     Time* GetTime() const;
     /// Return work queue subsystem.
     WorkQueue* GetWorkQueue() const;
-#if URHO3D_PROFILING
-    /// Return profiler subsystem.
-    Profiler* GetProfiler() const;
-#endif
     /// Return file system subsystem.
     FileSystem* GetFileSystem() const;
 #if URHO3D_LOGGING
@@ -449,9 +445,6 @@ URHO3D_API StringHashRegister& GetEventNameRegister();
 template <> URHO3D_API Engine* Object::GetSubsystem<Engine>() const;
 template <> URHO3D_API Time* Object::GetSubsystem<Time>() const;
 template <> URHO3D_API WorkQueue* Object::GetSubsystem<WorkQueue>() const;
-#if URHO3D_PROFILING
-template <> URHO3D_API Profiler* Object::GetSubsystem<Profiler>() const;
-#endif
 template <> URHO3D_API FileSystem* Object::GetSubsystem<FileSystem>() const;
 #if URHO3D_LOGGING
 template <> URHO3D_API Log* Object::GetSubsystem<Log>() const;
