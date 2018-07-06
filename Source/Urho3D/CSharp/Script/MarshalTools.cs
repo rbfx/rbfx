@@ -30,13 +30,13 @@ namespace Urho3D.CSharp
     /// <summary>
     /// Marshals utf-8 strings. Native code controls lifetime of native string.
     /// </summary>
-    public class StringUtf8 : ICustomMarshaler
+    public struct StringUtf8 : ICustomMarshaler
     {
-        private static StringUtf8 _instance = new StringUtf8();
+        private IntPtr _initialNativeData;
 
         public static ICustomMarshaler GetInstance(string cookie)
         {
-            return _instance;
+            return new StringUtf8();
         }
 
         public void CleanUpManagedData(object managedObj)
@@ -47,6 +47,9 @@ namespace Urho3D.CSharp
         {
             if (pNativeData == IntPtr.Zero)
                 return;
+
+            if (_initialNativeData != IntPtr.Zero && _initialNativeData != pNativeData)
+                NativeInterface.Native.InteropFree(_initialNativeData);
 
             NativeInterface.Native.InteropFree(pNativeData);
         }
@@ -67,6 +70,7 @@ namespace Urho3D.CSharp
             Marshal.Copy(str, 0, memory, str.Length);
             Marshal.WriteByte(memory, str.Length, 0);
 
+            _initialNativeData = memory;
             return memory;
         }
 
@@ -83,13 +87,13 @@ namespace Urho3D.CSharp
     /// <summary>
     /// Marshals array of utf8 strings to char**. Each string is null-terminated and array is terminated with a null ptr.
     /// </summary>
-    public class StringUtf8ArrayMarshaller : ICustomMarshaler
+    public struct StringUtf8ArrayMarshaller : ICustomMarshaler
     {
-        private static StringUtf8ArrayMarshaller _instance = new StringUtf8ArrayMarshaller();
+        private IntPtr _initialNativeData;
 
         public static ICustomMarshaler GetInstance(string cookie)
         {
-            return _instance;
+            return new StringUtf8ArrayMarshaller();
         }
 
         public void CleanUpManagedData(object managedObj)
@@ -100,6 +104,9 @@ namespace Urho3D.CSharp
         {
             if (pNativeData == IntPtr.Zero)
                 return;
+
+            if (_initialNativeData != IntPtr.Zero && _initialNativeData != pNativeData)
+                NativeInterface.Native.InteropFree(_initialNativeData);
 
             NativeInterface.Native.InteropFree(pNativeData);
         }
@@ -140,6 +147,7 @@ namespace Urho3D.CSharp
             // Terminate array of strings
             Marshal.WriteIntPtr(buffer, strings.Length * IntPtr.Size, IntPtr.Zero);
 
+            _initialNativeData = buffer;
             return buffer;
         }
 
@@ -166,13 +174,13 @@ namespace Urho3D.CSharp
         }
     }
 
-    public class PodArrayMarshaller<T> : ICustomMarshaler where T: struct
+    public struct PodArrayMarshaller<T> : ICustomMarshaler where T: struct
     {
-        private static readonly PodArrayMarshaller<T> Instance = new PodArrayMarshaller<T>();
+        private IntPtr _initialNativeData;
 
         public static ICustomMarshaler GetInstance(string cookie)
         {
-            return Instance;
+            return new PodArrayMarshaller<T>();
         }
 
         public void CleanUpManagedData(object managedObj)
@@ -183,6 +191,9 @@ namespace Urho3D.CSharp
         {
             if (pNativeData == IntPtr.Zero)
                 return;
+
+            if (_initialNativeData != IntPtr.Zero && _initialNativeData != pNativeData)
+                NativeInterface.Native.InteropFree(_initialNativeData);
 
             NativeInterface.Native.InteropFree(pNativeData);
         }
@@ -208,6 +219,7 @@ namespace Urho3D.CSharp
             try
             {
                 Buffer.MemoryCopy((void*) sourceHandle.AddrOfPinnedObject(), (void*) memory, length, length);
+                _initialNativeData = memory;
                 return memory;
             }
             finally
@@ -237,13 +249,13 @@ namespace Urho3D.CSharp
         }
     }
 
-    public class ObjPtrArrayMarshaller<T> : ICustomMarshaler where T: NativeObject
+    public struct ObjPtrArrayMarshaller<T> : ICustomMarshaler where T: NativeObject
     {
-        private static ObjPtrArrayMarshaller<T> _instance = new ObjPtrArrayMarshaller<T>();
+        private IntPtr _initialNativeData;
 
         public static ICustomMarshaler GetInstance(string cookie)
         {
-            return _instance;
+            return new ObjPtrArrayMarshaller<T>();
         }
 
         public void CleanUpManagedData(object managedObj)
@@ -254,6 +266,9 @@ namespace Urho3D.CSharp
         {
             if (pNativeData == IntPtr.Zero)
                 return;
+
+            if (_initialNativeData != IntPtr.Zero && _initialNativeData != pNativeData)
+                NativeInterface.Native.InteropFree(_initialNativeData);
 
             NativeInterface.Native.InteropFree(pNativeData);
         }
@@ -278,6 +293,7 @@ namespace Urho3D.CSharp
             for (var i = 0; i < array.Length; i++)
                 Marshal.WriteIntPtr(memory, i * IntPtr.Size, array[i].NativeInstance);
 
+            _initialNativeData = memory;
             return memory;
         }
 
@@ -299,13 +315,13 @@ namespace Urho3D.CSharp
         }
     }
 
-    public class ObjArrayMarshaller<T> : ICustomMarshaler where T: NativeObject
+    public struct ObjArrayMarshaller<T> : ICustomMarshaler where T: NativeObject
     {
-        private static ObjArrayMarshaller<T> _instance = new ObjArrayMarshaller<T>();
+        private IntPtr _initialNativeData;
 
         public static ICustomMarshaler GetInstance(string cookie)
         {
-            return _instance;
+            return new ObjArrayMarshaller<T>();
         }
 
         public void CleanUpManagedData(object managedObj)
@@ -317,6 +333,9 @@ namespace Urho3D.CSharp
             if (pNativeData == IntPtr.Zero)
                 return;
 
+            if (_initialNativeData != IntPtr.Zero && _initialNativeData != pNativeData)
+                NativeInterface.Native.InteropFree(_initialNativeData);
+
             NativeInterface.Native.InteropFree(pNativeData);
         }
 
@@ -327,6 +346,7 @@ namespace Urho3D.CSharp
 
         public IntPtr MarshalManagedToNative(object managedObj)
         {
+            // _initialNativeData = ...;
             throw new NotImplementedException();
         }
 
