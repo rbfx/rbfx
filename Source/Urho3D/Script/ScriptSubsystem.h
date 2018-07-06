@@ -118,7 +118,7 @@ public:
     /// Return number of bytes remaining in scratch buffer.
     unsigned Remaining() const { return memory_.Size() - static_cast<unsigned>(used_); }
     /// Return length of allocated memory block.
-    static inline unsigned GetMemoryLength(void* memory) { return *((uint8_t*)memory - sizeof(unsigned)) & ALLOCATOR_MALLOC; }
+    static inline unsigned GetMemoryLength(void* memory) { return *((uint8_t*)memory - sizeof(unsigned)) & ~ALLOCATOR_MALLOC; }
 
 private:
     enum
