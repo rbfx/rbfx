@@ -21,5 +21,7 @@
 #
 
 file (GLOB_RECURSE SOURCE_FILES src/*.c src/*.h)
-add_library (WebP OBJECT ${SOURCE_FILES})
+add_library (WebP STATIC ${SOURCE_FILES})
 target_include_directories(WebP PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
+
+install (TARGETS WebP EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})

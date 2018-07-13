@@ -21,7 +21,7 @@
 #
 
 file (GLOB_RECURSE SOURCE_FILES *.c *.h)
-add_library (MojoShader OBJECT ${SOURCE_FILES})
+add_library (MojoShader STATIC ${SOURCE_FILES})
 if (MSVC)
     target_compile_definitions (MojoShader PRIVATE -D_CRT_SECURE_NO_WARNINGS=1 -TP)
 endif ()
@@ -29,3 +29,5 @@ target_include_directories(MojoShader
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/MojoShader>
 )
+
+install (TARGETS MojoShader EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})

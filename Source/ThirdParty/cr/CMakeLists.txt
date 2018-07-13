@@ -20,10 +20,10 @@
 # THE SOFTWARE.
 #
 
-file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
-add_library(cr OBJECT ${SOURCE_FILES})
+add_library(cr INTERFACE)
 target_include_directories(cr INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 if (WIN32)
-    target_link_objects(cr dbghelp)
+    target_link_libraries(cr INTERFACE dbghelp)
 endif ()
+install (TARGETS cr EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)

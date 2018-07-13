@@ -30,11 +30,13 @@ endif ()
 file (GLOB_RECURSE SOURCE_FILES *.c *.h)
 list (APPEND SOURCE_FILES ${ASM_FILES})
 
-add_library (LibCpuId OBJECT ${SOURCE_FILES})
+add_library (LibCpuId STATIC ${SOURCE_FILES})
 target_compile_definitions (LibCpuId PRIVATE -DVERSION="0.4.0")
 if (HAVE_STDINT_H)
     target_compile_definitions (LibCpuId PRIVATE -DHAVE_STDINT_H)
 endif ()
+
+install (TARGETS LibCpuId EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
 target_include_directories(LibCpuId
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/LibCpuId>

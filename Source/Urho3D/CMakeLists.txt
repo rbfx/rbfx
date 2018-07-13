@@ -95,16 +95,6 @@ if (APPLE)
     list (APPEND SOURCE_FILES IO/MacFileWatcher.m)
 endif ()
 
-set (THIRD_PARTY_DEPENDENCIES FreeType JO LZ4 PugiXml rapidjson SDL StanHull STB IconFontCppHeaders Civetweb kNet ik Detour DetourCrowd DetourTileCache Recast Box2D WebP Bullet easy_profiler imgui ImGuizmo LibCpuId GLEW MojoShader fcontext cr yaml-cpp)
-foreach (dep ${THIRD_PARTY_DEPENDENCIES})
-    if (TARGET "${dep}")
-        get_target_property(_TARGET_TYPE ${dep} TYPE)
-        if(_TARGET_TYPE STREQUAL "OBJECT_LIBRARY")
-            list(APPEND SOURCE_FILES "$<TARGET_OBJECTS:${dep}>")
-        endif ()
-    endif ()
-endforeach()
-
 add_library(Urho3D ${URHO3D_LIBRARY_TYPE} ${SOURCE_FILES} ${HEADER_FILES})
 target_include_directories(Urho3D PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>        # For parent projects to find auto-generated engine headers
@@ -136,14 +126,10 @@ if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/librevision.h)
 endif ()
 
 # Link dependencies
+set (THIRD_PARTY_DEPENDENCIES FreeType JO LZ4 PugiXml rapidjson SDL StanHull STB IconFontCppHeaders Civetweb kNet ik Detour DetourCrowd DetourTileCache Recast Box2D WebP Bullet easy_profiler imgui ImGuizmo LibCpuId GLEW MojoShader fcontext cr yaml-cpp)
 foreach (dep ${THIRD_PARTY_DEPENDENCIES})
     if (TARGET "${dep}")
-        get_target_property(_TARGET_TYPE ${dep} TYPE)
-        if(_TARGET_TYPE STREQUAL "OBJECT_LIBRARY")
-            target_link_objects(Urho3D "${dep}")
-        else ()
-            target_link_libraries(Urho3D "${dep}")
-        endif ()
+        target_link_libraries(Urho3D ${dep})
     endif ()
 endforeach()
 

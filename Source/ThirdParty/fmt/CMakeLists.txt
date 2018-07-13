@@ -9,10 +9,18 @@ endif ()
 set(FMT_HEADERS container.h format.h format.cc ostream.h ostream.cc printf.h
                 printf.cc string.h time.h)
 if (HAVE_OPEN)
-  set(FMT_HEADERS ${FMT_HEADERS} posix.h)
-  set(FMT_SOURCES ${FMT_SOURCES} posix.cc)
+  set(FMT_HEADERS ${FMT_HEADERS} fmt/posix.h)
+  set(FMT_SOURCES ${FMT_SOURCES} fmt/posix.cc)
 endif ()
 
-add_library(fmt INTERFACE)
+file (GLOB_RECURSE SOURCE_FILES fmt/*.h)
+add_library(fmt STATIC ${SOURCE_FILES} ${FMT_SOURCES} fmt/format.cc fmt/ostream.cc fmt/printf.cc)
+
 target_compile_definitions(fmt INTERFACE FMT_HEADER_ONLY=1 FMT_HAS_GXX_CXX11=1 FMT_USE_RVALUE_REFERENCES=1 FMT_USE_VARIADIC_TEMPLATES=1)
-target_include_directories(fmt INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(fmt INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}>
+)
+
+install (TARGETS fmt EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+install (DIRECTORY fmt DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)

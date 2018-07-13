@@ -21,9 +21,11 @@
 #
 
 file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
-add_library (Recast OBJECT ${SOURCE_FILES})
+add_library (Recast STATIC ${SOURCE_FILES})
 target_include_directories(Recast PRIVATE include)
 target_include_directories(Recast
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/Recast>
 )
+
+install (TARGETS Recast EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})

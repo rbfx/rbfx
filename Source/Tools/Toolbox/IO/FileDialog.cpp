@@ -20,9 +20,6 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
-
 #include <nativefiledialog/nfd.h>
 #include "FileDialog.h"
 

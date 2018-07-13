@@ -12,7 +12,7 @@ elseif (UNIX)
 elseif (WIN32)
     list (APPEND SOURCE_FILES src/nfd_win.cpp)
 endif ()
-add_library(nativefiledialog OBJECT ${SOURCE_FILES})
+add_library(nativefiledialog STATIC ${SOURCE_FILES})
 target_include_directories(nativefiledialog
     PRIVATE src/include/nativefiledialog
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>
@@ -22,7 +22,8 @@ if (BUILD_SHARED_LIBS)
     target_compile_definitions(nativefiledialog PRIVATE -D_EXPORTS=1)
 endif ()
 if (WIN32)
-    target_link_objects(nativefiledialog shell32 ole32 uuid)
+    target_link_libraries(nativefiledialog shell32 ole32 uuid)
 endif ()
 
+install (TARGETS nativefiledialog EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
 install (DIRECTORY src/include/nativefiledialog DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/nativefiledialog FILES_MATCHING PATTERN *.h)

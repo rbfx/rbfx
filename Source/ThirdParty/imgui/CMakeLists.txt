@@ -24,8 +24,8 @@
 # stb_rectpack already included in the engine.
 
 file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
-add_library (imgui OBJECT ${SOURCE_FILES})
-target_link_objects(imgui STB FreeType)
+add_library (imgui STATIC ${SOURCE_FILES})
+target_link_libraries(imgui STB FreeType)
 target_compile_definitions(imgui PUBLIC -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1
     PRIVATE -DIMGUI_DISABLE_STB_RECT_PACK_IMPLEMENTATION -DIMGUI_DISABLE_STB_TRUETYPE_IMPLEMENTATION=1
     PUBLIC  -DIMGUI_DEFINE_MATH_OPERATORS=1)
@@ -36,4 +36,6 @@ target_include_directories(imgui
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(imgui PRIVATE -D_EXPORTS PUBLIC -D_IMPORTS)
 endif ()
+
+install (TARGETS imgui EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)

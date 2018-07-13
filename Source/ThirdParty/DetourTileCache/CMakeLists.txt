@@ -21,9 +21,11 @@
 #
 
 file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
-add_library (DetourTileCache OBJECT ${SOURCE_FILES})
-target_link_objects(DetourTileCache Detour)
+add_library (DetourTileCache STATIC ${SOURCE_FILES})
+target_link_libraries(DetourTileCache Detour)
 target_include_directories(DetourTileCache
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/DetourTileCache>
 )
+
+install (TARGETS DetourTileCache EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})

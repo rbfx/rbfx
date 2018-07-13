@@ -38,7 +38,7 @@ if (NOT WIN32)
     list (REMOVE_ITEM CRNLIB_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/crnlib/lzma_LzFindMt.cpp)
 endif ()
 
-add_library (crnlib OBJECT ${CRNLIB_SOURCE_FILES})
+add_library (crnlib STATIC ${CRNLIB_SOURCE_FILES})
 target_include_directories(crnlib
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/crunch>
@@ -50,7 +50,7 @@ endif ()
 
 if (NOT WIN32 OR MINGW)
     target_compile_options(crnlib PRIVATE -O3 -fomit-frame-pointer -ffast-math -fno-math-errno -g -fno-strict-aliasing -Wall -Wno-unused-value -Wno-unused -march=core2)
-    target_link_objects(crnlib pthread)
+    target_link_libraries(crnlib pthread)
 endif ()
 
 if (MINGW AND NOT URHO3D_64BIT)
@@ -61,8 +61,8 @@ if (URHO3D_TOOLS)
     set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_TOOLS_DIR})
 
     file (GLOB CRUNCH_SOURCE_FILES crunch/*.cpp crunch/*.h)
-    add_executable (crunch ${CRUNCH_SOURCE_FILES} $<TARGET_OBJECTS:crnlib>)
-    target_link_objects(crunch crnlib)
+    add_executable (crunch ${CRUNCH_SOURCE_FILES})
+    target_link_libraries(crunch crnlib)
     set_target_properties(crunch PROPERTIES FOLDER Tools)
     install(TARGETS crunch RUNTIME DESTINATION ${DEST_TOOLS_DIR})
 endif ()

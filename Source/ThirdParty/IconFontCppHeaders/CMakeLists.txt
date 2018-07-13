@@ -20,9 +20,9 @@
 # THE SOFTWARE.
 #
 
-file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
-add_library(IconFontCppHeaders OBJECT ${SOURCE_FILES})
+add_library(IconFontCppHeaders INTERFACE)
 target_include_directories(IconFontCppHeaders
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
+install (TARGETS IconFontCppHeaders EXPORT Urho3D)
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)

@@ -1,6 +1,6 @@
 
 file (GLOB_RECURSE SOURCE_FILES *.h *.cpp)
-add_library(easy_profiler OBJECT ${SOURCE_FILES} resources.rc)
+add_library(easy_profiler STATIC ${SOURCE_FILES} resources.rc)
 target_include_directories(easy_profiler PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
@@ -38,11 +38,11 @@ endif ()
 if (UNIX)
     target_compile_options(easy_profiler PRIVATE -Wall -Wno-long-long -Wno-reorder -Wno-braced-scalar-init -pedantic -O3)
     if (NOT ANDROID)
-        target_link_objects(easy_profiler pthread)
+        target_link_libraries(easy_profiler pthread)
     endif ()
 elseif (WIN32)
     target_compile_definitions(easy_profiler PRIVATE -D_WIN32_WINNT=0x0600 -D_CRT_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS)
-    target_link_objects(easy_profiler ws2_32 psapi)
+    target_link_libraries(easy_profiler ws2_32 psapi)
 endif ()
 
 if (MINGW)
@@ -60,4 +60,8 @@ if (MSVC AND Qt5Widgets_FOUND)
     target_compile_options(easy_profiler_md PUBLIC $<$<CONFIG:Debug>:/MDd> $<$<NOT:$<CONFIG:Debug>>:/MD>)
 endif ()
 
+install (TARGETS easy_profiler EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+if (TARGET easy_profiler_md)
+    install (TARGETS easy_profiler_md EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+endif ()
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)

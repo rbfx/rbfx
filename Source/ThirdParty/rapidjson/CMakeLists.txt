@@ -20,10 +20,10 @@
 # THE SOFTWARE.
 #
 
-file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
-add_library(rapidjson OBJECT ${SOURCE_FILES})
+add_library(rapidjson INTERFACE)
 target_include_directories(rapidjson
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/rapidjson>
 )
+
+install (TARGETS rapidjson EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)

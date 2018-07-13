@@ -21,7 +21,7 @@
 #
 
 file (GLOB_RECURSE SOURCE_FILES *.cpp *.hpp)
-add_library (PugiXml OBJECT ${SOURCE_FILES})
+add_library (PugiXml STATIC ${SOURCE_FILES})
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(PugiXml PRIVATE -D_EXPORTS INTERFACE -D_IMPORTS)
 endif ()
@@ -29,4 +29,6 @@ target_include_directories(PugiXml
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/PugiXml>
 )
+
+install (TARGETS PugiXml EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.hpp)
