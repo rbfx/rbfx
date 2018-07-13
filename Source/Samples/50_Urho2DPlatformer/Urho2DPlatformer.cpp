@@ -52,6 +52,7 @@
 #include <Urho3D/UI/UI.h>
 #include <Urho3D/UI/UIEvents.h>
 #include <Urho3D/Graphics/Zone.h>
+#include <Urho3D/Core/Profiler.h>
 
 #include <Urho3D/DebugNew.h>
 

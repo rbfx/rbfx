@@ -48,6 +48,7 @@
 #include <Urho3D/UI/UIEvents.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Urho2D/PhysicsEvents2D.h>
+#include <Urho3D/Core/Profiler.h>
 
 #include <Urho3D/DebugNew.h>
 
