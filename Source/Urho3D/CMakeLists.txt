@@ -146,19 +146,10 @@ if (URHO3D_TASKS)
 endif ()
 
 if (WIN32)
-    target_link_libraries(Urho3D winmm user32 gdi32 winmm imm32 ole32 oleaut32 version uuid)
     if (URHO3D_MINIDUMPS)
         target_link_libraries (Urho3D dbghelp)
     endif ()
 elseif (APPLE)
-    target_compile_definitions(Urho3D PUBLIC -D_XOPEN_SOURCE=1)
-    target_compile_options(Urho3D PUBLIC -stdlib=libc++)
-    target_link_libraries (Urho3D iconv "-framework AudioToolbox" "-framework CoreAudio" )
-    if (ARM)
-        target_link_libraries (Urho3D "-framework AVFoundation" "-framework CoreGraphics" "-framework CoreMotion" "-framework Foundation" "-framework GameController" "-framework OpenGLES" "-framework QuartzCore" "-framework UIKit")
-    else ()
-        target_link_libraries (Urho3D "-framework Carbon" "-framework Cocoa" "-framework CoreFoundation" "-framework SystemConfiguration" "-framework CoreServices" "-framework CoreVideo" "-framework ForceFeedback" "-framework IOKit" "-framework OpenGL")
-    endif ()
 elseif (ANDROID)
     target_link_libraries (Urho3D dl log android)
 elseif (NOT ANDROID AND NOT ARM AND NOT WEB)
@@ -192,12 +183,6 @@ endif ()
 
 if (BUILD_SHARED_LIBS OR EMSCRIPTEN)
     target_compile_definitions(Urho3D PRIVATE -DURHO3D_EXPORTS)
-    # Also add export flags of third party libraries. They are required because those are OBJECT libraries and Urho3D
-    # should not try to import from them as if they were DLLs.
-    target_compile_definitions(Urho3D
-        PRIVATE -D_EXPORTS -DLZ4_DLL_EXPORT=1 -DCIVETWEB_DLL_EXPORTS -D_BUILD_PROFILER
-        PUBLIC  -D_IMPORTS -DLZ4_DLL_IMPORT=1 -DCIVETWEB_DLL_IMPORTS
-    )
 else ()
     target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC)
 endif ()

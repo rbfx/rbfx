@@ -21,10 +21,10 @@
 #
 
 file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
-add_library (ImGuizmo STATIC ${SOURCE_FILES})
+add_library (ImGuizmo ${THIRDPARTY_LIB_TYPE} ${SOURCE_FILES})
 target_link_libraries(ImGuizmo imgui)
 target_compile_definitions(ImGuizmo PUBLIC -DUSE_IMGUI_API=1)
-if (BUILD_SHARED_LIBS)
+if (URHO3D_THIRDPARTY_SHARED_LIBS)
     target_compile_definitions(ImGuizmo PRIVATE -D_EXPORTS INTERFACE -D_IMPORTS)
 endif ()
 target_include_directories(ImGuizmo
@@ -32,5 +32,9 @@ target_include_directories(ImGuizmo
     PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ImGuizmo>
 )
 
-install (TARGETS ImGuizmo EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+install (TARGETS ImGuizmo EXPORT Urho3D
+    LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
+    RUNTIME DESTINATION ${DEST_BIN_DIR}
+    ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
+)
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)

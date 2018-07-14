@@ -25,5 +25,5 @@ target_include_directories(cr INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE
 if (WIN32)
     target_link_libraries(cr INTERFACE dbghelp)
 endif ()
-install (TARGETS cr EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+install (TARGETS cr EXPORT Urho3D)
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
