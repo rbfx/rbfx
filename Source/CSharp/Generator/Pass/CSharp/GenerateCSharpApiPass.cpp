@@ -149,15 +149,15 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
             if (!isStatic)
             {
-                printer_ << "internal override void SetupInstance(IntPtr instance, NativeObjectFlags flags=NativeObjectFlags.None)";
+                printer_ << "internal override void SetupInstance(IntPtr __self__, NativeObjectFlags flags=NativeObjectFlags.None)";
                 printer_.Indent();
                 {
                     auto className = entity->name_;
-                    printer_ << fmt::format("System.Diagnostics.Debug.Assert(instance != IntPtr.Zero);");
+                    printer_ << fmt::format("System.Diagnostics.Debug.Assert(__self__ != IntPtr.Zero);");
                     printer_ << "Flags = flags;";
-                    printer_ << "NativeInstance = instance;";
+                    printer_ << "NativeInstance = __self__;";
                     if (generator->IsInheritable(entity->uniqueName_) || IsSubclassOf(entity->Ast<cppast::cpp_class>(), "Urho3D::RefCounted"))
-                        printer_ << fmt::format("{}_setup(instance, GCHandle.ToIntPtr(GCHandle.Alloc(this)), GetType().Name);",
+                        printer_ << fmt::format("{}_setup(__self__, GCHandle.ToIntPtr(GCHandle.Alloc(this)), GetType().Name);",
                             Sanitize(entity->uniqueName_));
                     printer_ << "if (!flags.HasFlag(NativeObjectFlags.SkipInstanceCache))";
                     printer_.Indent();
@@ -192,7 +192,7 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                                             FMT_CAPTURE(name), FMT_CAPTURE(pc), FMT_CAPTURE(paramTypeList));
                                         printer_.Indent();
                                         {
-                                            printer_ << fmt::format("set_fn{cFunction}(instance, "
+                                            printer_ << fmt::format("set_fn{cFunction}(__self__, "
                                                     "Marshal.GetFunctionPointerForDelegate(({className}{cFunction}Delegate){cFunction}_virtual));",
                                                 FMT_CAPTURE(className), fmt::arg("cFunction", child->cFunctionName_));
                                         }
@@ -269,9 +269,9 @@ bool GenerateCSharpApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_.Indent();
         {
             PrintParameterHandlingCodePre(entity->children_);
-            printer_ << fmt::format("var instance = {cFunctionName}({paramNameList});",
+            printer_ << fmt::format("var __self__ = {cFunctionName}({paramNameList});",
                 FMT_CAPTURE(cFunctionName), FMT_CAPTURE(paramNameList));
-            printer_ << "SetupInstance(instance);";
+            printer_ << "SetupInstance(__self__);";
             PrintParameterHandlingCodePost(entity->children_);
         }
         printer_.Dedent();

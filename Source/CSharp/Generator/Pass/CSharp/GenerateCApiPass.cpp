@@ -99,10 +99,10 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         printer_.Dedent();
         printer_ << "";
 
-        printer_ << fmt::format("EXPORT_API std::uintptr_t {}_instance_typeid({}* instance)", baseName, entity->sourceSymbolName_);
+        printer_ << fmt::format("EXPORT_API std::uintptr_t {}_instance_typeid({}* __self__)", baseName, entity->sourceSymbolName_);
         printer_.Indent();
         {
-            printer_ << "return GetTypeID(instance);";
+            printer_ << "return GetTypeID(__self__);";
         }
         printer_.Dedent();
         printer_ << "";
@@ -111,7 +111,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             return true;
 
         // Destructor always exists even if it is not defined in the class
-        printer_ << fmt::format("EXPORT_API void {}_destructor({}* instance)", baseName, entity->sourceSymbolName_);
+        printer_ << fmt::format("EXPORT_API void {}_destructor({}* __self__)", baseName, entity->sourceSymbolName_);
         printer_.Indent();
         {
             // Using sourceName_ with wrapper classes causes weird build errors.
@@ -126,7 +126,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                 printer_ << "if (Thread::IsMainThread())";
                 printer_.Indent("");
                 {
-                    printer_ << "instance->ReleaseRef();";
+                    printer_ << "__self__->ReleaseRef();";
                 }
                 printer_.Dedent("");
                 printer_ << "else";
@@ -135,12 +135,12 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     // This is not a last ref and managed object is being disposed most likely by a finalizer. Schedule
                     // reference releasing to be done on main thread. This should be safe in most cases. For example if
                     // engine is holding a reference then it is most likely interacted with on main thread.
-                    printer_ << "Urho3D::ScriptSubsystem::QueueReleaseRef(instance);";
+                    printer_ << "Urho3D::ScriptSubsystem::QueueReleaseRef(__self__);";
                 }
                 printer_.Dedent("");
             }
             else
-                printer_ << "delete instance;";
+                printer_ << "delete __self__;";
         }
         printer_.Dedent();
         printer_ << "";
@@ -151,14 +151,14 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         bool isRefCounted = IsSubclassOf(cls, "Urho3D::RefCounted");
         if (isInheritable || isRefCounted)
         {
-            printer_ << fmt::format("EXPORT_API void {}_setup({}* instance, gchandle gcHandle, const char* typeName)", baseName, entity->sourceSymbolName_);
+            printer_ << fmt::format("EXPORT_API void {}_setup({}* __self__, gchandle gcHandle, const char* typeName)", baseName, entity->sourceSymbolName_);
             printer_.Indent();
             {
                 const auto& cls = entity->Ast<cppast::cpp_class>();
                 if (isRefCounted)
                 {
-                    printer_ << "instance->AddRef();";
-                    printer_ << "if (instance->HasDeleter())";
+                    printer_ << "__self__->AddRef();";
+                    printer_ << "if (__self__->HasDeleter())";
                     printer_.Indent();
                     {
                         // This object had a managed class wrapper with existing handle so new one is not needed.
@@ -168,7 +168,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     printer_ << "else";
                     printer_.Indent();
                     {
-                        printer_ << "instance->SetDeleter([](RefCounted* instance_, void* gcHandle_) {";
+                        printer_ << "__self__->SetDeleter([](RefCounted* instance_, void* gcHandle_) {";
                         printer_.Indent("");
                         {
                             printer_ << "ScriptSubsystem::managed_.Unlock((gchandle)gcHandle_);";
@@ -183,9 +183,9 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     if (isRefCounted)
                         // Ensure that different GC handles are stored in wrapepr class and refcounted deleter user data
                         printer_ << "gcHandle = ScriptSubsystem::managed_.CloneHandle(gcHandle);";
-                    printer_ << "instance->gcHandle_ = gcHandle;";
+                    printer_ << "__self__->gcHandle_ = gcHandle;";
                     if (IsSubclassOf(cls, "Urho3D::Object"))
-                        printer_ << fmt::format("instance->typeInfo_ = new Urho3D::TypeInfo(typeName, {}::GetTypeInfoStatic());", entity->sourceSymbolName_);
+                        printer_ << fmt::format("__self__->typeInfo_ = new Urho3D::TypeInfo(typeName, {}::GetTypeInfoStatic());", entity->sourceSymbolName_);
                 }
             }
             printer_.Dedent();
@@ -251,14 +251,14 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         auto className = entity->GetFirstParentOfKind(cppast::cpp_entity_kind::class_t)->sourceSymbolName_;
 
         printer_ << "// " + entity->uniqueName_;
-        printer_ << fmt::format("EXPORT_API {rtype} {cFunction}({className}* instance{psep}{params})",
+        printer_ << fmt::format("EXPORT_API {rtype} {cFunction}({className}* __self__{psep}{params})",
             fmt::arg("rtype", ToCType(func.return_type(), true)), FMT_CAPTURE(cFunction), FMT_CAPTURE(className),
             fmt::arg("psep", func.parameters().empty() ? "" : ", "),
             fmt::arg("params", ParameterList(func.parameters(), toCType)));
         printer_.Indent();
         {
             PrintParameterHandlingCodePre(entity->children_);
-            std::string call = "instance->";
+            std::string call = "__self__->";
             if (func.is_virtual())
                 // Virtual methods always overriden in wrapper class so accessing them by simple name should not be
                 // an issue.
@@ -287,11 +287,11 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         if (func.is_virtual() && !isFinal)
         {
             auto virtCFunction = fmt::format("set_fn{cFunction}", FMT_CAPTURE(cFunction));
-            printer_ << fmt::format("EXPORT_API void {virtCFunction}({className}* instance, void* fn)",
+            printer_ << fmt::format("EXPORT_API void {virtCFunction}({className}* __self__, void* fn)",
                                     FMT_CAPTURE(virtCFunction), FMT_CAPTURE(className));
             printer_.Indent();
             {
-                printer_ << fmt::format("instance->fn{cFunction} = (decltype(instance->fn{cFunction}))fn;",
+                printer_ << fmt::format("__self__->fn{cFunction} = (decltype(__self__->fn{cFunction}))fn;",
                                         FMT_CAPTURE(cFunction));
             }
             printer_.Dedent();
@@ -375,7 +375,7 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
             {
                 const auto& array = dynamic_cast<const cppast::cpp_array_type&>(var.type());
                 auto size = cppast::to_string(array.size().value());
-                printer_ << fmt::format("memcpy(instance->{name}, {value}, sizeof({value}) * {size});",
+                printer_ << fmt::format("memcpy(__self__->{name}, {value}, sizeof({value}) * {size});",
                                            FMT_CAPTURE(name), FMT_CAPTURE(value), FMT_CAPTURE(size));
             }
             else
@@ -411,11 +411,11 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
 
         // Getter
         printer_ << "// " + entity->uniqueName_;
-        printer_.Write(fmt::format("EXPORT_API {cType} get_{cFunction}({namespaceName}* instance)",
+        printer_.Write(fmt::format("EXPORT_API {cType} get_{cFunction}({namespaceName}* __self__)",
             FMT_CAPTURE(cType), FMT_CAPTURE(cFunction), FMT_CAPTURE(namespaceName)));
         printer_.Indent();
         {
-            std::string expr = "instance->";
+            std::string expr = "__self__->";
             if (entity->access_ != cppast::cpp_public)
                 expr += fmt::format("__get_{}()", name);
             else
@@ -432,23 +432,23 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
         if (!IsConst(var.type()))
         {
             printer_.Write(fmt::format("EXPORT_API void set_{cFunction}(", FMT_CAPTURE(cFunction)));
-            printer_.Write(fmt::format("{namespaceName}* instance, {cType} value)",
+            printer_.Write(fmt::format("{namespaceName}* __self__, {cType} value)",
                 FMT_CAPTURE(namespaceName), FMT_CAPTURE(cType)));
             printer_.Indent();
 
             auto value = MapToCpp(var.type(), "value");
             if (entity->access_ != cppast::cpp_public)
-                printer_.Write(fmt::format("instance->__set_{name}({value});", FMT_CAPTURE(name), FMT_CAPTURE(value)));
+                printer_.Write(fmt::format("__self__->__set_{name}({value});", FMT_CAPTURE(name), FMT_CAPTURE(value)));
             else if (var.type().kind() == cppast::cpp_type_kind::array_t)
             {
                 const auto& array = dynamic_cast<const cppast::cpp_array_type&>(var.type());
                 auto size = cppast::to_string(array.size().value());
-                printer_ << fmt::format("memcpy(instance->{name}, {value}, sizeof({value}) * {size});",
+                printer_ << fmt::format("memcpy(__self__->{name}, {value}, sizeof({value}) * {size});",
                                         FMT_CAPTURE(name), FMT_CAPTURE(value), FMT_CAPTURE(size));
             }
             else
             {
-                auto destination = DereferenceValueType(var.type(), fmt::format("instance->{name}", FMT_CAPTURE(name)));
+                auto destination = DereferenceValueType(var.type(), fmt::format("__self__->{name}", FMT_CAPTURE(name)));
                 printer_.Write(fmt::format("{destination} = {value};", FMT_CAPTURE(destination), FMT_CAPTURE(value)));
             }
 
