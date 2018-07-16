@@ -1363,7 +1363,7 @@ bool Input::GetMouseButtonPress(MouseButtonFlags button) const
 
 bool Input::GetMouseButtonClick(MouseButtonFlags button) const
 {
-    return (mouseButtonClick_ & button) != 0;
+    return mouseButtonClick_ & button;
 }
 
 bool Input::GetQualifierDown(Qualifier qualifier) const
