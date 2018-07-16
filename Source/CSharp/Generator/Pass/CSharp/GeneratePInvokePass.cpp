@@ -446,8 +446,10 @@ std::string GeneratePInvokePass::ToPInvokeTypeParam(const cppast::cpp_type& type
     return result;
 }
 
-std::string GeneratePInvokePass::ToPInvokeType(const cppast::cpp_type& type, bool disallowReferences)
+std::string GeneratePInvokePass::ToPInvokeType(const cppast::cpp_type& usedType, bool disallowReferences)
 {
+    const auto& type = generator->DealiasType(usedType);
+
     std::function<std::string(const cppast::cpp_type&)> toPInvokeType = [&](const cppast::cpp_type& t) -> std::string
     {
         switch (t.kind())

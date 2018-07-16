@@ -163,8 +163,20 @@
           "Urho3D::AllContentOctreeQuery::AllContentOctreeQuery(PODVector<Urho3D::Drawable *>&,unsigned char,unsigned int)",
           "Urho3D::AttributeInfo",
           "Urho3D::AttributeHandle",
-          "Urho3D::is_flagset",
+          "Urho3D::IsFlagSet",
           "Urho3D::Image::GetLevels(PODVector<const Urho3D::Image *>&) const",
+          "Urho3D::JSONValue::Begin() const",
+          "Urho3D::JSONValue::End() const",
+          // Aliases coming from `using`
+          "Urho3D::CollisionGeometryDataCache",
+          "Urho3D::ConstJSONObjectIterator",
+          "Urho3D::JSONArray",
+          "Urho3D::JSONObject",
+          "Urho3D::JSONObjectIterator",
+          "Urho3D::PListValueMap",
+          "Urho3D::PListValueVector",
+          "Urho3D::Renderer::ShadowMapFilter",
+          "Urho3D::VariantVector",
         ]
       },
       "inheritable": {

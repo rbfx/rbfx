@@ -108,6 +108,7 @@ public:
     MetaEntity* GetSymbol(const char* symbolName, bool restrictToCurrentModule=false) { return GetSymbol(std::string(symbolName), restrictToCurrentModule); }
     MetaEntity* GetSymbol(const std::string& symbolName, bool restrictToCurrentModule=false);
     bool IsInheritable(const std::string& symbolName) const;
+    const cppast::cpp_type& DealiasType(const cppast::cpp_type& type);
 
     struct Module
     {
@@ -140,6 +141,7 @@ public:
     std::vector<std::string> complexTemplates_{"SharedPtr", "WeakPtr"};
     /// These templates wrap a type. Generator should unwrap them.
     std::vector<std::string> wrapperTemplates_;
+    std::unordered_map<std::string, const cppast::cpp_type*> typeAliases_;
 };
 
 extern GeneratorContext* generator;

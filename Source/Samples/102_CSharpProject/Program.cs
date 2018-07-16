@@ -33,7 +33,7 @@ namespace DemoApplication
     {
         public RotateObject(Context context) : base(context)
         {
-            UpdateEventMask = UseEvent.Update;
+            UpdateEventMask = UpdateEvent.UseUpdate;
         }
 
         public override void Update(float timeStep)

@@ -663,8 +663,9 @@ std::string GenerateCSharpApiPass::MapToCS(const cppast::cpp_type& type, const s
     return expression;
 }
 
-std::string GenerateCSharpApiPass::ToCSType(const cppast::cpp_type& type, bool disallowReferences, bool disallowInterfaces)
+std::string GenerateCSharpApiPass::ToCSType(const cppast::cpp_type& usedType, bool disallowReferences, bool disallowInterfaces)
 {
+    const cppast::cpp_type& type = generator->DealiasType(usedType);
     bool isRef = false;
 
     std::function<std::string(const cppast::cpp_type&)> toCSType = [&](const cppast::cpp_type& t) -> std::string {

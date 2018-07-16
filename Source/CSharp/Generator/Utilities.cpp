@@ -236,7 +236,7 @@ bool IsEnumType(const cppast::cpp_type& type)
     return false;
 }
 
-bool IsComplexType(const cppast::cpp_type& type)
+bool IsComplexType_P(const cppast::cpp_type& type)
 {
     if (auto* map = generator->GetTypeMap(type))
         return !map->isValueType_;
@@ -260,6 +260,11 @@ bool IsComplexType(const cppast::cpp_type& type)
     default:
         return true;
     }
+}
+
+bool IsComplexType(const cppast::cpp_type& type)
+{
+    return IsComplexType_P(generator->DealiasType(type));
 }
 
 bool IsValueType(const cppast::cpp_type& type)

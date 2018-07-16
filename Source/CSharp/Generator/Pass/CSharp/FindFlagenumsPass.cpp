@@ -21,6 +21,8 @@
 //
 
 #include <cppast/cpp_class_template.hpp>
+#include <cppast/cpp_namespace.hpp>
+#include <cppast/cpp_type_alias.hpp>
 #include "GeneratorContext.h"
 #include "FindFlagEnumsPass.h"
 
@@ -36,7 +38,7 @@ bool FindFlagEnumsPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info 
     if (e.kind() == cppast::cpp_entity_kind::class_template_specialization_t)
     {
         const auto& spec = dynamic_cast<const cppast::cpp_class_template_specialization&>(e);
-        if (spec.name() == "is_flagset")
+        if (spec.name() == "IsFlagSet")
         {
             const auto& enumName = spec.unexposed_arguments().as_string();
             std::string _;
@@ -44,6 +46,31 @@ bool FindFlagEnumsPass::Visit(const cppast::cpp_entity& e, cppast::visitor_info 
             if (generator->GetSymbolOfConstant(e.parent().value(), enumName, _, &enumEntity))
             {
                 ((MetaEntity*)enumEntity->user_data())->attributes_.emplace_back("Flags");
+            }
+        }
+    }
+    else if (e.kind() == cppast::cpp_entity_kind::type_alias_t)
+    {
+        const auto& alias = dynamic_cast<const cppast::cpp_type_alias&>(e);
+        if (auto* entity = (MetaEntity*)e.user_data())
+        {
+            auto sourceType = entity->GetParent()->uniqueName_ + "::" + alias.name();
+            auto targetType = GetTypeName(alias.underlying_type());
+            if (str::starts_with(targetType, "FlagSet<"))
+            {
+                targetType = targetType.substr(8, targetType.length() - 9);
+                std::string _;
+                const cppast::cpp_entity* enumEntity = nullptr;
+                if (generator->GetSymbolOfConstant(e.parent().value(), targetType, _, &enumEntity))
+                {
+                    auto* enumSymbol = (MetaEntity*)enumEntity->user_data();
+                    if (std::find(enumSymbol->attributes_.begin(), enumSymbol->attributes_.end(), "Flags") !=
+                        enumSymbol->attributes_.end())
+                    {
+                        generator->typeAliases_[sourceType] = &alias.underlying_type();
+                        spdlog::get("console")->info("Type Alias: {} -> {}", sourceType, targetType);
+                    }
+                }
             }
         }
     }

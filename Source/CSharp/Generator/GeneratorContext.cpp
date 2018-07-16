@@ -707,4 +707,13 @@ bool GeneratorContext::IsOutOfDate(const std::string& generatorExe)
     return false;
 }
 
+const cppast::cpp_type& GeneratorContext::DealiasType(const cppast::cpp_type& type)
+{
+    auto typeName = GetTypeName(type);
+    auto it = typeAliases_.find(typeName);
+    if (it != typeAliases_.end())
+        return *it->second;
+    return type;
+}
+
 }

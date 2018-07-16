@@ -42,7 +42,7 @@ class GeneratePInvokePass : public CppApiPass
 
     static std::string ToPInvokeTypeReturn(const cppast::cpp_type& type);
     static std::string ToPInvokeTypeParam(const cppast::cpp_type& type, bool disallowReferences=false);
-    static std::string ToPInvokeType(const cppast::cpp_type& type, bool disallowReferences=false);
+    static std::string ToPInvokeType(const cppast::cpp_type& usedType, bool disallowReferences=false);
 
 protected:
     void WriteMarshalAttributeReturn(const cppast::cpp_type& type);

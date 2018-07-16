@@ -39,7 +39,7 @@ class GenerateCSharpApiPass : public CppApiPass
     void Stop() override;
 
     static std::string MapToCS(const cppast::cpp_type& type, const std::string& expression);
-    static std::string ToCSType(const cppast::cpp_type& type, bool disallowReferences=false, bool disallowInterfaces=false);
+    static std::string ToCSType(const cppast::cpp_type& usedType, bool disallowReferences=false, bool disallowInterfaces=false);
 
 protected:
     std::string MapToPInvoke(const cppast::cpp_type& type, const std::string& expression);
