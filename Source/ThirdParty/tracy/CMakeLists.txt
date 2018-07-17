@@ -26,9 +26,14 @@ file (GLOB_RECURSE COMMON_SOURCE_FILES common/*.cpp common/*.hpp common/*.h)
 file (GLOB_RECURSE CLIENT_SOURCE_FILES client/*.cpp client/*.hpp client/*.h)
 file (GLOB_RECURSE SERVER_SOURCE_FILES server/*.cpp server/*.hpp server/*.h)
 
+set (TRACY_OPTIONS 
+    PRIVATE -DNOMINMAX=1 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -DWIN32_LEAN_AND_MEAN -DNOMINMAX -D_USE_MATH_DEFINES 
+    PUBLIC -DTRACY_ENABLE=1
+)
+
 add_library (tracy-lib STATIC ${CLIENT_SOURCE_FILES} ${COMMON_SOURCE_FILES})
 target_link_libraries(tracy-lib LZ4)
-target_compile_definitions(tracy-lib PUBLIC -DTRACY_ENABLE=1)
+target_compile_definitions(tracy-lib ${TRACY_OPTIONS})
 if (WIN32)
     target_compile_definitions(tracy-lib PUBLIC -DNOMINMAX=1)
 endif ()
@@ -50,7 +55,7 @@ if (URHO3D_TOOLS AND URHO3D_SYSTEMUI)
         target_link_libraries(tracy-profiler pthread dl GL)
     elseif (WIN32)
         target_link_libraries(tracy-profiler opengl32.lib ws2_32.lib winmm.lib version.lib)
-        target_compile_definitions(tracy-profiler PUBLIC -DNOMINMAX=1 PRIVATE -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -DWIN32_LEAN_AND_MEAN -DNOMINMAX -D_USE_MATH_DEFINES)
+        target_compile_definitions(tracy-profiler ${TRACY_OPTIONS})
         if (MSVC)
             target_compile_options(tracy-profiler PRIVATE /permissive-)
         endif ()
