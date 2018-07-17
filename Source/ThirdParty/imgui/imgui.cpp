@@ -586,7 +586,9 @@
 #endif
 
 #include "imgui.h"
-#define IMGUI_DEFINE_MATH_OPERATORS
+#ifndef IMGUI_DEFINE_MATH_OPERATORS
+#   define IMGUI_DEFINE_MATH_OPERATORS
+#endif
 #include "imgui_internal.h"
 
 #include <ctype.h>      // toupper, isprint
@@ -701,7 +703,7 @@ static ImFontAtlas      GImDefaultFontAtlas;
 // - or: Changing this variable to be TLS. You may #define GImGui in imconfig.h for further custom hackery. Future development aim to make this context pointer explicit to all calls. Also read https://github.com/ocornut/imgui/issues/586
 #ifndef GImGui
 static ImGuiContext     GImDefaultContext;
-ImGuiContext*           GImGui = &GImDefaultContext;
+ImGuiContext* GImGui = &GImDefaultContext;
 #endif
 
 //-----------------------------------------------------------------------------
