@@ -26,7 +26,6 @@
 #include <Urho3D/Core/Object.h>
 
 #include "Assets/AssetConverter.h"
-#include "IDPool.h"
 
 
 namespace Urho3D

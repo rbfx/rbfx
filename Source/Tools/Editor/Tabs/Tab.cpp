@@ -28,7 +28,7 @@ namespace Urho3D
 {
 
 
-Tab::Tab(Context* context, StringHash id, const String& afterDockName, ui::DockSlot position)
+Tab::Tab(Context* context, const String& id, const String& afterDockName, ui::DockSlot position)
     : Object(context)
     , inspector_(context)
     , placeAfter_(afterDockName)
@@ -83,7 +83,7 @@ bool Tab::RenderWindow()
 void Tab::SetTitle(const String& title)
 {
     title_ = title;
-    uniqueTitle_ = ToString("%s###%s", title.CString(), id_.ToString().CString());
+    uniqueTitle_ = ToString("%s###%s", title.CString(), id_.CString());
 }
 
 IntRect Tab::UpdateViewRect()

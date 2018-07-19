@@ -131,7 +131,6 @@ void Editor::Start()
     // Prepare editor for loading new project.
     SubscribeToEvent(E_EDITORPROJECTLOADINGSTART, [&](StringHash, VariantMap&) {
         tabs_.Clear();
-        idPool_.Clear();
     });
 
     // Process arguments
@@ -362,10 +361,10 @@ template<typename T>
 T* Editor::CreateNewTab(const JSONValue& project)
 {
     SharedPtr<T> tab;
-    StringHash id;
+    String id;
 
     if (project.IsNull())
-        id = idPool_.NewID();           // Make new ID only if scene is not being loaded from a project.
+        id = GenerateUUID();           // Make new ID only if scene is not being loaded from a project.
 
     if (tabs_.Empty())
         tab = new T(context_, id, "Hierarchy", ui::Slot_Right);
@@ -373,15 +372,7 @@ T* Editor::CreateNewTab(const JSONValue& project)
         tab = new T(context_, id, tabs_.Back()->GetUniqueTitle(), ui::Slot_Tab);
 
     if (project.IsObject())
-    {
         tab->LoadProject(project);
-        if (!idPool_.TakeID(tab->GetID()))
-        {
-            URHO3D_LOGERRORF("Scene loading failed because unique id %s is already taken",
-                tab->GetID().ToString().CString());
-            return nullptr;
-        }
-    }
 
     // In order to render scene to a texture we must add a dummy node to scene rendered to a screen, which has material
     // pointing to scene texture. This object must also be visible to main camera.

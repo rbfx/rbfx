@@ -37,7 +37,7 @@
 namespace Urho3D
 {
 
-SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName, ui::DockSlot position)
+SceneTab::SceneTab(Context* context, const String& id, const String& afterDockName, ui::DockSlot position)
     : Tab(context, id, afterDockName, position)
     , view_(context, {0, 0, 1024, 768})
     , gizmo_(context)
@@ -513,7 +513,7 @@ void SceneTab::LoadProject(const JSONValue& scene)
     auto isTracking = undo_.IsTrackingEnabled();
     undo_.SetTrackingEnabled(false);
 
-    id_ = StringHash(ToUInt(scene["id"].GetString(), 16));
+    id_ = scene["id"].GetString();
     LoadResource(scene["path"].GetString());
 
     const auto& camera = scene["camera"];
@@ -535,7 +535,7 @@ void SceneTab::LoadProject(const JSONValue& scene)
 void SceneTab::SaveProject(JSONValue& tab)
 {
     tab["type"] = "scene";
-    tab["id"] =  id_.ToString();
+    tab["id"] =  id_;
     tab["path"] = path_;
 
     auto& camera = tab["camera"];

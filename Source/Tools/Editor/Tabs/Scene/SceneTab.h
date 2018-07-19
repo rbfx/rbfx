@@ -29,7 +29,6 @@
 #include <Toolbox/SystemUI/ImGuiDock.h>
 #include <Toolbox/Graphics/SceneView.h>
 #include <Toolbox/Common/UndoManager.h>
-#include "IDPool.h"
 #include "Tabs/Tab.h"
 
 
@@ -44,7 +43,7 @@ class SceneTab : public Tab
     URHO3D_OBJECT(SceneTab, Tab);
 public:
     /// Construct.
-    explicit SceneTab(Context* context, StringHash id, const String& afterDockName, ui::DockSlot position);
+    explicit SceneTab(Context* context, const String& id, const String& afterDockName, ui::DockSlot position);
     /// Destruct.
     ~SceneTab() override;
     /// Render inspector window.

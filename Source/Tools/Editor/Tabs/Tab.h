@@ -42,7 +42,7 @@ class Tab : public Object
     URHO3D_OBJECT(Tab, Object);
 public:
     /// Construct.
-    explicit Tab(Context* context, StringHash id, const String& afterDockName, ui::DockSlot position);
+    explicit Tab(Context* context, const String& id, const String& afterDockName, ui::DockSlot position);
     /// Render scene hierarchy window.
     virtual void RenderNodeTree() = 0;
     /// Render inspector window.
@@ -76,14 +76,14 @@ public:
     /// Return true if scene view was rendered on this frame.
     bool IsRendered() const { return isRendered_; }
     /// Return unuque object id.
-    StringHash GetID() const { return id_; }
+    String GetID() const { return id_; }
 
 protected:
     ///
     virtual IntRect UpdateViewRect();
 
     /// Unique scene id.
-    StringHash id_;
+    String id_;
     /// Scene title. Should be unique.
     String title_;
     /// Title with id appended to it. Used as unique window name.

@@ -8,7 +8,7 @@ window:
     value: 320 209
 tabs:
   - type: scene
-    id: 22F21B0E
+    id: 9976899a-b756-44f5-b6e7-84a9496ebffc
     path: Scenes/SceneLoadExample.xml
     camera:
       position:
@@ -80,7 +80,7 @@ docks:
     child0: -1
     child1: -1
     parent: 8
-  - label: SceneLoadExample###22F21B0E
+  - label: SceneLoadExample###9976899a-b756-44f5-b6e7-84a9496ebffc
     x: 222
     y: 20
     location: ""

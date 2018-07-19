@@ -25,7 +25,6 @@
 
 #include <Urho3D/Urho3DAll.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
-#include "IDPool.h"
 #include "Project.h"
 #include "Plugins/PluginManagerNative.h"
 #include "Plugins/PluginManagerManaged.h"
@@ -77,8 +76,6 @@ protected:
     /// Process console commands.
     void OnConsoleCommand(VariantMap& args);
 
-    /// Pool tracking availability of unique IDs used by editor.
-    IDPool idPool_;
     /// List of active scene tabs.
     Vector<SharedPtr<Tab>> tabs_;
     /// Last focused scene tab.
