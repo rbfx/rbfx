@@ -79,6 +79,8 @@ URHO3D_API String GetLoginName();
 URHO3D_API String GetHostName();
 /// Return the version of the currently running OS, or (?) if not identified.
 URHO3D_API String GetOSVersion();
+/// Return a random UUID.
+URHO3D_API String GenerateUUID();
 
 /// Class which creates a subprocess and returns it's return code and output.
 class URHO3D_API Process
