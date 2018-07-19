@@ -54,6 +54,8 @@ UITab::UITab(Urho3D::Context* context, Urho3D::StringHash id, const Urho3D::Stri
     rootElement_->SetRenderTexture(texture_);
     rootElement_->SetEnabled(true);
 
+    UpdateViewRect();
+
     undo_.Connect(rootElement_);
     undo_.Connect(&inspector_);
 
@@ -553,13 +555,13 @@ void UITab::RenderElementContextMenu()
 void UITab::SaveProject(JSONValue& tab)
 {
     tab["type"] = "ui";
-    tab["id"] = id_.ToString();
+    tab["id"] = id_;
     tab["path"] = path_;
 }
 
 void UITab::LoadProject(const JSONValue& tab)
 {
-    id_ = StringHash(ToUInt(tab["id"].GetString(), 16));
+    id_ = tab["id"].GetString();
     LoadResource(tab["path"].GetString());
 }
 
