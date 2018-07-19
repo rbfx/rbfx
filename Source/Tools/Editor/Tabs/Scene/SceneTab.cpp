@@ -415,7 +415,7 @@ void SceneTab::RenderNodeTree(Node* node)
     if (node->IsTemporary())
         return;
 
-    String name = ToString("%s (%d)", (node->GetName().Empty() ? node->GetTypeName() : node->GetName()).CString(), node->GetID());
+    String name = node->GetName().Empty() ? ToString("%s %d", node->GetTypeName().CString(), node->GetID()) : node->GetName();
     bool isSelected = IsSelected(node) && selectedComponent_.Expired();
 
     if (isSelected)
