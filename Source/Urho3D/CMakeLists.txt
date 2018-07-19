@@ -119,6 +119,13 @@ if (MINI_URHO)
 endif ()
 target_compile_definitions(Urho3D PRIVATE -DURHO3D_IS_BUILDING)
 
+# Set platform definitions
+foreach(def LINUX ANDROID IOS APPLE MACOS MOBILE DESKTOP)
+    if (${def})
+        target_compile_definitions(Urho3D PUBLIC -D${def}=1)
+    endif ()
+endforeach()
+
 # Define generated source files
 if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/librevision.h)
     execute_process (COMMAND ${CMAKE_COMMAND} -DFILENAME=${CMAKE_CURRENT_BINARY_DIR}/librevision.h -P ${Urho3D_SOURCE_DIR}/CMake/Modules/GetUrhoRevision.cmake
@@ -149,11 +156,13 @@ if (WIN32)
     if (URHO3D_MINIDUMPS)
         target_link_libraries (Urho3D dbghelp)
     endif ()
-elseif (APPLE)
-elseif (ANDROID)
-    target_link_libraries (Urho3D dl log android)
-elseif (NOT ANDROID AND NOT ARM AND NOT WEB)
-    target_link_libraries (Urho3D dl m rt pthread)
+    target_link_libraries (Urho3D rpcrt4)
+else ()
+    if (ANDROID)
+        target_link_libraries (Urho3D dl log android)
+    elseif (DESKTOP)
+        target_link_libraries (Urho3D dl m rt pthread uuid)
+    endif ()
 endif ()
 
 # Disable very annoying warning
