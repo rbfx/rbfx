@@ -55,7 +55,7 @@ public class Urho3D extends SDLActivity {
         });
 
         // All shared shared libraries must always be loaded if available, so exclude it from return result and all list operations below
-        int startIndex = libraryNames.indexOf("Urho3D");
+        int startIndex = libraryNames.indexOf("01_HelloWorld");
 
         // Determine the intention
         Intent intent = getIntent();
