@@ -56,9 +56,9 @@ public:
     /// Renders menu bar at the top of the screen.
     void RenderMenuBar();
     /// Create a new tab of specified type.
-    /// \param project is xml element containing serialized project data produced by SceneTab::SaveProject()
-    template<typename T>
-    T* CreateNewTab(const JSONValue& project = JSONValue::EMPTY);
+    template<typename T> T* CreateTab() { return (T*)CreateTab(T::GetTypeStatic()); }
+    /// Create a new tab of specified type.
+    Tab* CreateTab(StringHash type);
     /// Return active scene tab.
     Tab* GetActiveTab() { return activeTab_; }
     /// Return currently open scene tabs.
@@ -71,10 +71,16 @@ public:
         const String& dialogTitle);
     /// Returns a list of open content tabs/docks/windows. This list does not include utility docks/tabs/windows.
     const Vector<SharedPtr<Tab>>& GetContentTabs() const { return tabs_; }
+    /// Opens project or creates new one.
+    Project* OpenProject(const String& projectPath = String::EMPTY);
+    /// Close current project.
+    void CloseProject();
 
 protected:
     /// Process console commands.
     void OnConsoleCommand(VariantMap& args);
+    /// Load default tab layout.
+    void LoadDefaultLayout();
 
     /// List of active scene tabs.
     Vector<SharedPtr<Tab>> tabs_;
@@ -92,8 +98,6 @@ protected:
     /// Managed plugin manager.
     PluginManagerManaged pluginsManaged_;
 #endif
-    String resourcePath_;
-    String resourceSelection_;
 };
 
 }

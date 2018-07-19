@@ -56,13 +56,31 @@ URHO3D_EVENT(E_EDITORAPPLICATIONMENU, EditorApplicationMenu)
 /// Event sent when editor is about to save a project.
 URHO3D_EVENT(E_EDITORPROJECTSAVING, EditorProjectSaving)
 {
-    URHO3D_PARAM(P_VALUE, Value);                     // Raw pointer to JSONValue.
+    URHO3D_PARAM(P_ROOT, Root);                      // Raw pointer to JSONValue.
 }
 
 /// Event sent when editor is about to load a new project.
 URHO3D_EVENT(E_EDITORPROJECTLOADING, EditorProjectLoading)
 {
-    URHO3D_PARAM(P_VALUE, Value);                     // Raw pointer to JSONValue.
+    URHO3D_PARAM(P_ROOT, Root);                      // Raw pointer to JSONValue.
+}
+
+/// Notify inspector window that this instance would like to render inspector content.
+URHO3D_EVENT(E_EDITORRENDERINSPECTOR, EditorRenderInspector)
+{
+    URHO3D_PARAM(P_INSPECTABLE, Inspectable);         // RefCounted pointer.
+}
+
+/// Notify inspector window that this instance would like to render hierarchy content.
+URHO3D_EVENT(E_EDITORRENDERHIERARCHY, EditorRenderHierarchy)
+{
+    URHO3D_PARAM(P_INSPECTABLE, Inspectable);         // RefCounted pointer.
+}
+
+/// Notify subsystems about closed editor tab.
+URHO3D_EVENT(E_EDITORTABCLOSED, EditorTabClosed)
+{
+    URHO3D_PARAM(P_TAB, Tab);                         // RefCounted pointer.
 }
 
 }

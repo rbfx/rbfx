@@ -38,30 +38,32 @@ namespace Urho3D
 class SceneSettings;
 class SceneEffects;
 
-class SceneTab : public Tab
+class SceneTab : public Tab, public IHierarchyProvider, public IInspectorProvider
 {
     URHO3D_OBJECT(SceneTab, Tab);
 public:
     /// Construct.
-    explicit SceneTab(Context* context, const String& id, const String& afterDockName, ui::DockSlot position);
+    explicit SceneTab(Context* context);
     /// Destruct.
     ~SceneTab() override;
     /// Render inspector window.
     void RenderInspector() override;
     /// Render scene hierarchy window starting from the root node (scene).
-    void RenderNodeTree() override;
+    void RenderHierarchy() override;
     /// Render buttons which customize gizmo behavior.
     void RenderToolbarButtons() override;
     /// Called on every frame when tab is active.
     void OnActiveUpdate() override;
     /// Save project data to xml.
-    void SaveProject(JSONValue& tab) override;
+    void OnSaveProject(JSONValue& tab) override;
     /// Load project data from xml.
-    void LoadProject(const JSONValue& scene) override;
+    void OnLoadProject(const JSONValue& tab) override;
     /// Load scene from xml or json file.
     void LoadResource(const String& resourcePath) override;
     /// Save scene to a resource file.
     bool SaveResource(const String& resourcePath) override;
+    /// Called when tab focused.
+    void OnFocused() override;
     /// Add a node to selection.
     void Select(Node* node);
     /// Remove a node from selection.

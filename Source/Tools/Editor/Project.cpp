@@ -27,6 +27,10 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Toolbox/SystemUI/ImGuiDock.h>
+#include <Tabs/ConsoleTab.h>
+#include <Tabs/ResourceTab.h>
+#include <Tabs/HierarchyTab.h>
+#include <Tabs/InspectorTab.h>
 
 #include "Editor.h"
 #include "EditorEvents.h"
@@ -52,6 +56,9 @@ Project::~Project()
         assetConverter_.RemoveAssetDirectory(directory);
         GetCache()->RemoveResourceDir(directory);
     }
+
+    // Clear dock state
+    ui::LoadDock(JSONValue::EMPTY);
 }
 
 bool Project::LoadProject(const String& filePath)
@@ -102,13 +109,18 @@ bool Project::LoadProject(const String& filePath)
         const auto& tabs = root["tabs"];
         if (tabs.IsArray())
         {
+            auto* editor = GetSubsystem<Editor>();
             for (auto i = 0; i < tabs.Size(); i++)
             {
                 const auto& tab = tabs[i];
-                if (tab["type"] == "scene")
-                    GetSubsystem<Editor>()->CreateNewTab<SceneTab>(tab);
-                else if (tab["type"] == "ui")
-                    GetSubsystem<Editor>()->CreateNewTab<UITab>(tab);
+
+                auto tabType = tab["type"].GetString();
+                auto* runtimeTab = editor->CreateTab(tabType);
+
+                if (runtimeTab == nullptr)
+                    URHO3D_LOGERRORF("Unknown tab type '%s'", tabType.CString());
+                else
+                    runtimeTab->OnLoadProject(tab);
             }
         }
 
@@ -116,7 +128,7 @@ bool Project::LoadProject(const String& filePath)
 
         // Plugins may load state by subscribing to this event
         using namespace EditorProjectLoading;
-        SendEvent(E_EDITORPROJECTLOADING, P_VALUE, (void*)&root);
+        SendEvent(E_EDITORPROJECTLOADING, P_ROOT, (void*)&root);
 
         context_->RegisterSubsystem(this);
 
@@ -149,17 +161,11 @@ bool Project::SaveProject(const String& filePath)
         window["position"].SetVariant(GetGraphics()->GetWindowPosition());
     }
 
-    auto&& openTabs = GetSubsystem<Editor>()->GetContentTabs();
-    auto& fileTabs = root["tabs"];
-    fileTabs.Resize(openTabs.Size());
-    for (auto i = 0; i < openTabs.Size(); i++)
-        openTabs[i]->SaveProject(fileTabs[i]);
-
-    ui::SaveDock(root["docks"]);
-
     // Plugins may save state by subscribing to this event
     using namespace EditorProjectSaving;
-    SendEvent(E_EDITORPROJECTSAVING, P_VALUE, (void*)&root);
+    SendEvent(E_EDITORPROJECTSAVING, P_ROOT, (void*)&root);
+
+    ui::SaveDock(root["docks"]);
 
     auto success = file.SaveFile(projectFilePath);
     if (success)

@@ -32,6 +32,10 @@
 #include "Tabs/Scene/SceneTab.h"
 #include "Tabs/Scene/SceneSettings.h"
 #include "Tabs/UI/UITab.h"
+#include "Tabs/InspectorTab.h"
+#include "Tabs/HierarchyTab.h"
+#include "Tabs/ConsoleTab.h"
+#include "Tabs/ResourceTab.h"
 #include "Assets/AssetConverter.h"
 
 URHO3D_DEFINE_APPLICATION_MAIN(Editor);
@@ -102,6 +106,13 @@ void Editor::Setup()
 void Editor::Start()
 {
     context_->RegisterFactory<EditorIconCache>();
+    context_->RegisterFactory<SceneTab>();
+    context_->RegisterFactory<UITab>();
+    context_->RegisterFactory<ConsoleTab>();
+    context_->RegisterFactory<HierarchyTab>();
+    context_->RegisterFactory<InspectorTab>();
+    context_->RegisterFactory<ResourceTab>();
+
     context_->RegisterSubsystem(new EditorIconCache(context_));
     GetInput()->SetMouseMode(MM_ABSOLUTE);
     GetInput()->SetMouseVisible(true);
@@ -155,9 +166,7 @@ void Editor::Start()
             loadProject = arguments[i];
 
         // Load default project on start
-        project_ = new Project(context_);
-        if (!project_->LoadProject(loadProject))
-            project_.Reset();
+        OpenProject(loadProject);
     }
 
     // Plugin loading
@@ -178,70 +187,40 @@ void Editor::OnUpdate(VariantMap& args)
 {
     RenderMenuBar();
 
-    if (project_.Null())
-        return;
-
     ui::RootDock({0, 20}, ui::GetIO().DisplaySize - ImVec2(0, 20));
 
-    ui::SetNextDockPos(nullptr, ui::Slot_Left, ImGuiCond_FirstUseEver);
-    if (ui::BeginDock("Hierarchy"))
-    {
-        if (!activeTab_.Expired())
-            activeTab_->RenderNodeTree();
-    }
-    ui::EndDock();
-
     bool renderedWasActive = false;
-    for (auto it = tabs_.Begin(); it != tabs_.End();)
+    auto tabsCopy = tabs_;
+    for (auto& tab : tabsCopy)
     {
-        auto& tab = *it;
         if (tab->RenderWindow())
         {
             if (tab->IsRendered())
             {
-                // Only active window may override another active window
-                if (renderedWasActive && tab->IsActive())
-                    activeTab_ = tab;
-                else if (!renderedWasActive)
+                if (activeTab_ != tab)
                 {
-                    renderedWasActive = tab->IsActive();
-                    activeTab_ = tab;
+                    // Only active window may override another active window
+                    if (renderedWasActive && tab->IsActive())
+                    {
+                        activeTab_ = tab;
+                        tab->OnFocused();
+                    }
+                    else if (!renderedWasActive)
+                    {
+                        renderedWasActive = tab->IsActive();
+                        activeTab_ = tab;
+                        tab->OnFocused();
+                    }
                 }
             }
-
-            ++it;
         }
         else
-            it = tabs_.Erase(it);
+            tabs_.Erase(tabs_.Find(tab));
     }
-
 
     if (!activeTab_.Expired())
     {
         activeTab_->OnActiveUpdate();
-        ui::SetNextDockPos(activeTab_->GetUniqueTitle().CString(), ui::Slot_Right, ImGuiCond_FirstUseEver);
-    }
-    if (ui::BeginDock("Inspector"))
-    {
-        if (!activeTab_.Expired())
-            activeTab_->RenderInspector();
-    }
-    ui::EndDock();
-
-    if (ui::BeginDock("Console"))
-        GetSubsystem<Console>()->RenderContent();
-    ui::EndDock();
-
-    if (tabs_.Size())
-        ui::SetNextDockPos(tabs_.Back()->GetUniqueTitle().CString(), ui::Slot_Bottom, ImGuiCond_FirstUseEver);
-    if (ResourceBrowserWindow(resourcePath_, resourceSelection_) == RBR_ITEM_OPEN)
-    {
-        String selected = resourcePath_ + resourceSelection_;
-        auto type = GetContentType(selected);
-        if (type == CTYPE_SCENE)
-            CreateNewTab<SceneTab>()->LoadResource(selected);
-        else if (type == CTYPE_UILAYOUT)
-            CreateNewTab<UITab>()->LoadResource(selected);
     }
 }
 
@@ -292,19 +271,16 @@ void Editor::RenderMenuBar()
                 nfdchar_t* projectFilePath = nullptr;
                 if (NFD_OpenDialog("project", "", &projectFilePath) == NFD_OKAY)
                 {
-                    project_ = new Project(context_);
-                    if (!project_->LoadProject(projectFilePath))
-                    {
+                    if (OpenProject(projectFilePath) == nullptr)
                         URHO3D_LOGERROR("Loading project failed.");
-                        project_.Reset();
-                    }
                     NFD_FreePath(projectFilePath);
                 }
             }
 
             if (ui::MenuItem("Create Project"))
             {
-                project_ = new Project(context_);
+                OpenProject();
+                LoadDefaultLayout();
             }
 
             if (project_.NotNull())
@@ -312,18 +288,20 @@ void Editor::RenderMenuBar()
                 ui::Separator();
 
                 if (ui::MenuItem("New Scene"))
-                    CreateNewTab<SceneTab>();
+                    CreateTab<SceneTab>();
 
                 if (ui::MenuItem("New UI Layout"))
-                    CreateNewTab<UITab>();
+                    CreateTab<UITab>();
             }
 
             ui::Separator();
 
-            if (ui::MenuItem("Close Project"))
+            if (project_.NotNull())
             {
-                context_->RemoveSubsystem<Project>();
-                project_.Reset();
+                if (ui::MenuItem("Close Project"))
+                {
+                    CloseProject();
+                }
             }
 
             if (ui::MenuItem("Exit"))
@@ -357,26 +335,10 @@ void Editor::RenderMenuBar()
     }
 }
 
-template<typename T>
-T* Editor::CreateNewTab(const JSONValue& project)
+Tab* Editor::CreateTab(StringHash type)
 {
-    SharedPtr<T> tab;
-    String id;
-
-    if (project.IsNull())
-        id = GenerateUUID();           // Make new ID only if scene is not being loaded from a project.
-
-    if (tabs_.Empty())
-        tab = new T(context_, id, "Hierarchy", ui::Slot_Right);
-    else
-        tab = new T(context_, id, tabs_.Back()->GetUniqueTitle(), ui::Slot_Tab);
-
-    if (project.IsObject())
-        tab->LoadProject(project);
-
-    // In order to render scene to a texture we must add a dummy node to scene rendered to a screen, which has material
-    // pointing to scene texture. This object must also be visible to main camera.
-    tabs_.Push(DynamicCast<Tab>(tab));
+    auto tab = DynamicCast<Tab>(context_->CreateObject(type));
+    tabs_.Push(tab);
     return tab;
 }
 
@@ -423,6 +385,48 @@ void Editor::OnConsoleCommand(VariantMap& args)
     using namespace ConsoleCommand;
     if (args[P_COMMAND].GetString() == "revision")
         URHO3D_LOGINFOF("Engine revision: %s", GetRevision());
+}
+
+void Editor::LoadDefaultLayout()
+{
+    tabs_.Clear();
+
+    ui::LoadDock(JSONValue::EMPTY);
+
+    // These dock sizes are bullshit. Actually visible sizes do not match these numbers. Instead of spending
+    // time implementing this functionality in ImGuiDock proper values were written down and then tweaked until
+    // they looked right. Insertion order is also important here when specifying dock placement location.
+    auto screenSize = GetGraphics()->GetSize();
+    auto* inspector = new InspectorTab(context_);
+    inspector->Initialize("Inspector", {screenSize.x_ * 0.6f, (float)screenSize.y_}, ui::Slot_Right);
+    auto* hierarchy = new HierarchyTab(context_);
+    hierarchy->Initialize("Hierarchy", {screenSize.x_ * 0.05f, screenSize.y_ * 0.5f}, ui::Slot_Left);
+    auto* resources = new ResourceTab(context_);
+    resources->Initialize("Resources", {screenSize.x_ * 0.05f, screenSize.y_ * 0.15f}, ui::Slot_Bottom, hierarchy->GetUniqueTitle());
+    auto* console = new ConsoleTab(context_);
+    console->Initialize("Console", {screenSize.x_ * 0.6f, screenSize.y_ * 0.4f}, ui::Slot_Left, inspector->GetUniqueTitle());
+
+    tabs_.EmplaceBack(inspector);
+    tabs_.EmplaceBack(hierarchy);
+    tabs_.EmplaceBack(resources);
+    tabs_.EmplaceBack(console);
+}
+
+Project* Editor::OpenProject(const String& projectPath)
+{
+    CloseProject();
+    project_ = new Project(context_);
+    context_->RegisterSubsystem(project_);
+    if (!project_->LoadProject(projectPath))
+        CloseProject();
+    return project_.Get();
+}
+
+void Editor::CloseProject()
+{
+    context_->RemoveSubsystem<Project>();
+    project_.Reset();
+    tabs_.Clear();
 }
 
 }

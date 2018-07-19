@@ -37,17 +37,31 @@
 namespace Urho3D
 {
 
+class IHierarchyProvider
+{
+public:
+    /// Render hierarchy window.
+    virtual void RenderHierarchy() = 0;
+};
+
+class IInspectorProvider
+{
+public:
+    /// Render inspector window.
+    virtual void RenderInspector() = 0;
+};
+
 class Tab : public Object
 {
     URHO3D_OBJECT(Tab, Object);
 public:
     /// Construct.
-    explicit Tab(Context* context, const String& id, const String& afterDockName, ui::DockSlot position);
-    /// Render scene hierarchy window.
-    virtual void RenderNodeTree() = 0;
-    /// Render inspector window.
-    virtual void RenderInspector() = 0;
-    /// Render content of tab window.
+    explicit Tab(Context* context);
+    /// Destruct.
+    ~Tab() override;
+    /// Initialize.
+    void Initialize(const String& title, const Vector2& initSize={-1, -1}, ui::DockSlot initPosition=ui::Slot_Float, const String& afterDockName=String::EMPTY);
+    /// Render content of tab window. Returns false if tab was closed.
     virtual bool RenderWindowContent() = 0;
     /// Render toolbar buttons.
     virtual void RenderToolbarButtons() { }
@@ -56,13 +70,15 @@ public:
     /// Render scene window.
     virtual bool RenderWindow();
     /// Save project data to xml.
-    virtual void SaveProject(JSONValue& tab) { }
+    virtual void OnSaveProject(JSONValue& tab);
     /// Load project data from xml.
-    virtual void LoadProject(const JSONValue& tab) { }
+    virtual void OnLoadProject(const JSONValue& tab);
     /// Load a file from resource path.
     virtual void LoadResource(const String& resourcePath) { }
     /// Save tab contents to a resource file.
     virtual bool SaveResource(const String& resourcePath) { return false; }
+    /// Called when tab focused.
+    virtual void OnFocused() { }
     /// Save tab contents to a previously loaded resource file.
     bool SaveResource() { return SaveResource(String::EMPTY); }
     /// Set scene view tab title.
@@ -75,12 +91,20 @@ public:
     bool IsActive() const { return isActive_; }
     /// Return true if scene view was rendered on this frame.
     bool IsRendered() const { return isRendered_; }
-    /// Return unuque object id.
+    /// Return unique object id.
     String GetID() const { return id_; }
+    /// Set unique object id.
+    void SetID(const String& id) { id_ = id; UpdateUniqueTitle(); }
+    /// Returns true of tab is utility window.
+    bool IsUtility() const { return isUtility_; }
+    /// Position tab automatically to most appropriate place.
+    void AutoPlace();
 
 protected:
     ///
     virtual IntRect UpdateViewRect();
+    /// Updates cached unique title when id or title changed.
+    void UpdateUniqueTitle();
 
     /// Unique scene id.
     String id_;
@@ -92,6 +116,8 @@ protected:
     bool isActive_ = false;
     /// Flag set to true when dock contents were visible. Used for tracking "appearing" effect.
     bool isRendered_ = false;
+    /// Returns true if tab is utility (non-content) window.
+    bool isUtility_ = false;
     /// Current window flags.
     ImGuiWindowFlags windowFlags_ = 0;
     /// Attribute inspector.
@@ -102,6 +128,8 @@ protected:
     ui::DockSlot placePosition_;
     /// Last known mouse position when it was visible.
     IntVector2 lastMousePosition_;
+    /// Initial tab size.
+    Vector2 initialSize_;
 };
 
 }

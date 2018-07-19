@@ -32,14 +32,14 @@
 namespace Urho3D
 {
 
-class UITab : public Tab
+class UITab : public Tab, public IHierarchyProvider, public IInspectorProvider
 {
     URHO3D_OBJECT(UITab, Tab);
 public:
     /// Construct.
-    explicit UITab(Context* context, const String& id, const String& afterDockName, ui::DockSlot position);
+    explicit UITab(Context* context);
     /// Render scene hierarchy window.
-    void RenderNodeTree() override;
+    void RenderHierarchy() override;
     /// Render inspector window.
     void RenderInspector() override;
     /// Render content of tab window.
@@ -49,13 +49,15 @@ public:
     /// Update window when it is active.
     void OnActiveUpdate() override;
     /// Save project data to xml.
-    void SaveProject(JSONValue& tab) override;
+    void OnSaveProject(JSONValue& tab) override;
     /// Load project data from xml.
-    void LoadProject(const JSONValue& tab) override;
+    void OnLoadProject(const JSONValue& tab) override;
     /// Load UI layout from resource path.
     void LoadResource(const String& resourcePath) override;
     /// Save scene to a resource file.
     bool SaveResource(const String& resourcePath) override;
+    /// Called when tab focused.
+    void OnFocused() override;
     /// Return selected UIElement.
     UIElement* GetSelected() const;
 

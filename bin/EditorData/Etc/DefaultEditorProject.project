@@ -7,16 +7,24 @@ window:
     type: IntVector2
     value: 320 209
 tabs:
-  - type: scene
-    id: 9976899a-b756-44f5-b6e7-84a9496ebffc
+  - type: InspectorTab
+    uuid: f43d195d-b1c6-41d8-8f72-c56010973d28
+  - type: HierarchyTab
+    uuid: e26e98d2-0446-4359-8147-fef23438e6d2
+  - type: ResourceTab
+    uuid: 10e19858-c295-4a5d-82c1-6e7db4392943
+  - type: ConsoleTab
+    uuid: 6f722d4f-c701-4d32-91da-edfe9353328f
+  - type: SceneTab
+    uuid: 5ec60dd9-a475-48eb-a798-4657a1ec828b
     path: Scenes/SceneLoadExample.xml
     camera:
       position:
         type: Vector3
-        value: 2.17639 3.10494 2.5771
+        value: 2.91144 2.63625 2.01912
       rotation:
         type: Quaternion
-        value: 0.289383 0.0786236 -0.920605 0.250123
+        value: 0.406134 0.101637 -0.880976 0.220468
       light: true
     settings:
       saveElapsedTime: false
@@ -24,25 +32,11 @@ tabs:
       renderpath: RenderPaths/Forward.xml
       postprocess: ~
 docks:
-  - label: Hierarchy
-    x: 0
+  - label: Inspector###f43d195d-b1c6-41d8-8f72-c56010973d28
+    x: 1590
     y: 20
     location: ""
-    size_x: 222
-    size_y: 530
-    status: 0
-    active: true
-    opened: true
-    prev: -1
-    next: -1
-    child0: -1
-    child1: -1
-    parent: 8
-  - label: Inspector
-    x: 1589
-    y: 20
-    location: ""
-    size_x: 331
+    size_x: 330
     size_y: 1060
     status: 0
     active: true
@@ -52,40 +46,12 @@ docks:
     child0: -1
     child1: -1
     parent: 6
-  - label: Console
-    x: 222
-    y: 830
-    location: ""
-    size_x: 1367
-    size_y: 250
-    status: 0
-    active: true
-    opened: true
-    prev: -1
-    next: -1
-    child0: -1
-    child1: -1
-    parent: 7
-  - label: Resources
+  - label: Hierarchy###e26e98d2-0446-4359-8147-fef23438e6d2
     x: 0
-    y: 550
-    location: ""
-    size_x: 222
-    size_y: 530
-    status: 0
-    active: true
-    opened: true
-    prev: -1
-    next: -1
-    child0: -1
-    child1: -1
-    parent: 8
-  - label: SceneLoadExample###9976899a-b756-44f5-b6e7-84a9496ebffc
-    x: 222
     y: 20
     location: ""
-    size_x: 1367
-    size_y: 810
+    size_x: 274
+    size_y: 662
     status: 0
     active: true
     opened: true
@@ -93,7 +59,7 @@ docks:
     next: -1
     child0: -1
     child1: -1
-    parent: 7
+    parent: 4
   - label: ""
     x: 0
     y: 20
@@ -105,14 +71,84 @@ docks:
     opened: false
     prev: -1
     next: -1
-    child0: 8
+    child0: 4
     child1: 6
     parent: -1
+  - label: Resources###10e19858-c295-4a5d-82c1-6e7db4392943
+    x: 0
+    y: 682
+    location: ""
+    size_x: 274
+    size_y: 398
+    status: 0
+    active: true
+    opened: true
+    prev: -1
+    next: -1
+    child0: -1
+    child1: -1
+    parent: 4
   - label: ""
-    x: 222
+    x: 0
     y: 20
     location: ""
-    size_x: 1698
+    size_x: 274
+    size_y: 1060
+    status: 0
+    active: true
+    opened: false
+    prev: -1
+    next: -1
+    child0: 1
+    child1: 3
+    parent: 2
+  - label: Console###6f722d4f-c701-4d32-91da-edfe9353328f
+    x: 274
+    y: 705
+    location: ""
+    size_x: 1316
+    size_y: 375
+    status: 0
+    active: true
+    opened: true
+    prev: -1
+    next: -1
+    child0: -1
+    child1: -1
+    parent: 8
+  - label: ""
+    x: 274
+    y: 20
+    location: ""
+    size_x: 1646
+    size_y: 1060
+    status: 0
+    active: true
+    opened: false
+    prev: -1
+    next: -1
+    child0: 8
+    child1: 0
+    parent: 2
+  - label: SceneLoadExample###5ec60dd9-a475-48eb-a798-4657a1ec828b
+    x: 274
+    y: 20
+    location: ""
+    size_x: 1316
+    size_y: 685
+    status: 0
+    active: true
+    opened: true
+    prev: -1
+    next: -1
+    child0: -1
+    child1: -1
+    parent: 8
+  - label: ""
+    x: 274
+    y: 20
+    location: ""
+    size_x: 1316
     size_y: 1060
     status: 0
     active: true
@@ -120,33 +156,5 @@ docks:
     prev: -1
     next: -1
     child0: 7
-    child1: 1
-    parent: 5
-  - label: ""
-    x: 222
-    y: 20
-    location: ""
-    size_x: 1367
-    size_y: 1060
-    status: 0
-    active: true
-    opened: false
-    prev: -1
-    next: -1
-    child0: 4
-    child1: 2
+    child1: 5
     parent: 6
-  - label: ""
-    x: 0
-    y: 20
-    location: ""
-    size_x: 222
-    size_y: 1060
-    status: 0
-    active: true
-    opened: false
-    prev: -1
-    next: -1
-    child0: 0
-    child1: 3
-    parent: 5

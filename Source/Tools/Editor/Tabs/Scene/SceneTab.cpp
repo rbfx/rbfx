@@ -37,8 +37,8 @@
 namespace Urho3D
 {
 
-SceneTab::SceneTab(Context* context, const String& id, const String& afterDockName, ui::DockSlot position)
-    : Tab(context, id, afterDockName, position)
+SceneTab::SceneTab(Context* context)
+    : Tab(context)
     , view_(context, {0, 0, 1024, 768})
     , gizmo_(context)
     , undo_(context)
@@ -47,7 +47,7 @@ SceneTab::SceneTab(Context* context, const String& id, const String& afterDockNa
     SetTitle("New Scene");
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 
-    settings_ = new SceneSettings(context);
+    settings_ = new SceneSettings(context_);
     effectSettings_ = new SceneEffects(this);
 
     SubscribeToEvent(this, E_EDITORSELECTIONCHANGED, std::bind(&SceneTab::OnNodeSelectionChanged, this));
@@ -83,6 +83,8 @@ SceneTab::SceneTab(Context* context, const String& id, const String& afterDockNa
 
     CreateObjects();
     undo_.Clear();
+
+    UpdateUniqueTitle();
 }
 
 SceneTab::~SceneTab() = default;
@@ -398,7 +400,7 @@ void SceneTab::RenderInspector()
     }
 }
 
-void SceneTab::RenderNodeTree()
+void SceneTab::RenderHierarchy()
 {
     auto oldSpacing = ui::GetStyle().IndentSpacing;
     ui::GetStyle().IndentSpacing = 10;
@@ -507,16 +509,17 @@ void SceneTab::RenderNodeTree(Node* node)
         ui::PopID();
 }
 
-void SceneTab::LoadProject(const JSONValue& scene)
+void SceneTab::OnLoadProject(const JSONValue& tab)
 {
+    Tab::OnLoadProject(tab);
+
     undo_.Clear();
     auto isTracking = undo_.IsTrackingEnabled();
     undo_.SetTrackingEnabled(false);
 
-    id_ = scene["id"].GetString();
-    LoadResource(scene["path"].GetString());
+    LoadResource(tab["path"].GetString());
 
-    const auto& camera = scene["camera"];
+    const auto& camera = tab["camera"];
     if (camera.IsObject())
     {
         Node* cameraNode = view_.GetCamera()->GetNode();
@@ -526,16 +529,16 @@ void SceneTab::LoadProject(const JSONValue& scene)
             lightComponent->SetEnabled(camera["light"].GetBool());
     }
 
-    settings_->LoadProject(scene["settings"]);
-    effectSettings_->LoadProject(scene["effects"]);
+    settings_->LoadProject(tab["settings"]);
+    effectSettings_->LoadProject(tab["effects"]);
 
     undo_.SetTrackingEnabled(isTracking);
 }
 
-void SceneTab::SaveProject(JSONValue& tab)
+void SceneTab::OnSaveProject(JSONValue& tab)
 {
-    tab["type"] = "scene";
-    tab["id"] =  id_;
+    Tab::OnSaveProject(tab);
+
     tab["path"] = path_;
 
     auto& camera = tab["camera"];
@@ -801,6 +804,12 @@ void SceneTab::OnComponentRemoved(VariantMap& args)
             }
         }
     }
+}
+
+void SceneTab::OnFocused()
+{
+    SendEvent(E_EDITORRENDERINSPECTOR, EditorRenderInspector::P_INSPECTABLE, this);
+    SendEvent(E_EDITORRENDERHIERARCHY, EditorRenderHierarchy::P_INSPECTABLE, this);
 }
 
 }
