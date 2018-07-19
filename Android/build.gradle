@@ -26,7 +26,7 @@ android {
             cmake {
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_TOOLCHAIN=clang',
                           '-DANDROID_PLATFORM=android-21', '-DANDROID=1', '-DANDROID_ARM_MODE=arm',
-                          '-DBUILD_SHARED_LIBS=ON', '-DURHO3D_ENABLE_ALL=ON'
+                          '-DBUILD_SHARED_LIBS=ON', '-DURHO3D_ENABLE_ALL=ON', '-DURHO3D_CSHARP=OFF'
             }
         }
     }
