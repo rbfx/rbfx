@@ -63,16 +63,14 @@ Tab::~Tab()
 
 bool Tab::RenderWindow()
 {
-    bool open = true;
-
     Input* input = GetSubsystem<Input>();
     if (input->IsMouseVisible())
         lastMousePosition_ = input->GetMousePosition();
 
     ui::SetNextDockPos(placeAfter_.Empty() ? nullptr : placeAfter_.CString(), placePosition_, ImGuiCond_FirstUseEver);
-    if (ui::BeginDock(uniqueTitle_.CString(), &open, windowFlags_, ToImGui(initialSize_)))
+    if (ui::BeginDock(uniqueTitle_.CString(), &open_, windowFlags_, ToImGui(initialSize_)))
     {
-        if (open)
+        if (open_)
         {
             IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->InnerRect);
             if (tabRect.IsInside(lastMousePosition_) == INSIDE)
@@ -88,7 +86,7 @@ bool Tab::RenderWindow()
             else
                 isActive_ = false;
 
-            open = RenderWindowContent();
+            open_ = RenderWindowContent();
 
             isRendered_ = true;
         }
@@ -100,7 +98,7 @@ bool Tab::RenderWindow()
     }
     ui::EndDock();
 
-    return open;
+    return open_;
 }
 
 void Tab::SetTitle(const String& title)

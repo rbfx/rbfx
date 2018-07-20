@@ -99,6 +99,10 @@ public:
     bool IsUtility() const { return isUtility_; }
     /// Position tab automatically to most appropriate place.
     void AutoPlace();
+    /// Returns true when tab is open.
+    bool IsOpen() const { return open_; }
+    /// Open/close tab without permanently removing it.
+    void SetOpen(bool open) { open_ = open; }
 
 protected:
     ///
@@ -130,6 +134,8 @@ protected:
     IntVector2 lastMousePosition_;
     /// Initial tab size.
     Vector2 initialSize_;
+    /// Flag indicating that tab is open and renders it's contents.
+    bool open_ = true;
 };
 
 }

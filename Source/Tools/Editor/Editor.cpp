@@ -214,7 +214,8 @@ void Editor::OnUpdate(VariantMap& args)
                 }
             }
         }
-        else
+        else if (!tab->IsUtility())
+            // Content tabs get closed permanently
             tabs_.Erase(tabs_.Find(tab));
     }
 
@@ -311,18 +312,16 @@ void Editor::RenderMenuBar()
         }
         if (project_.NotNull())
         {
-            if (ui::BeginMenu("Settings"))
+            if (ui::BeginMenu("View"))
             {
-                if (ImGui::CollapsingHeader("Data directories"))
+                for (auto& tab : tabs_)
                 {
-                    // TODO: This is very out of place. To be moved somewhere better fitting.
-                    const auto& cacheDirectories = GetCache()->GetResourceDirs();
-                    auto programDir = GetFileSystem()->GetProgramDir();
-                    for (const auto& dir : cacheDirectories)
+                    if (tab->IsUtility())
                     {
-                        String relativeDir;
-                        GetRelativePath(programDir, dir, relativeDir);
-                        ui::TextUnformatted(relativeDir.CString());
+                        // Tabs that can not be closed permanently
+                        auto open = tab->IsOpen();
+                        if (ui::MenuItem(tab->GetUniqueTitle().CString(), nullptr, &open))
+                            tab->SetOpen(open);
                     }
                 }
                 ui::EndMenu();
