@@ -96,8 +96,8 @@ void Editor::Setup()
     engineParameters_[EP_WINDOW_WIDTH] = 1920;
     engineParameters_[EP_LOG_LEVEL] = LOG_DEBUG;
     engineParameters_[EP_WINDOW_RESIZABLE] = true;
-    engineParameters_[EP_AUTOLOAD_PATHS] = "Autoload";
-    engineParameters_[EP_RESOURCE_PATHS] = "Data;CoreData;EditorData";
+    engineParameters_[EP_AUTOLOAD_PATHS] = "";
+    engineParameters_[EP_RESOURCE_PATHS] = "CoreData;EditorData";
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] = coreResourcePrefixPath_;
 
     SetRandomSeed(Time::GetTimeSinceEpoch());
@@ -237,13 +237,13 @@ void Editor::RenderMenuBar()
                 {
                     if (project_->GetProjectFilePath().Empty())
                     {
-                        nfdchar_t* savePath = nullptr;
-                        if (NFD_SaveDialog("project", "", &savePath) == NFD_OKAY)
+                        nfdchar_t* projectDir = nullptr;
+                        if (NFD_PickFolder("", &projectDir) == NFD_OKAY)
                         {
                             for (auto& tab : tabs_)
                                 tab->SaveResource();
-                            project_->SaveProject(savePath);
-                            NFD_FreePath(savePath);
+                            project_->SaveProject();
+                            NFD_FreePath(projectDir);
                         }
                     }
                     else
@@ -253,35 +253,17 @@ void Editor::RenderMenuBar()
                         project_->SaveProject();
                     }
                 }
-
-                if (ui::MenuItem("Save Project As"))
-                {
-                    nfdchar_t* savePath = nullptr;
-                    if (NFD_SaveDialog("project", "", &savePath) == NFD_OKAY)
-                    {
-                        for (auto& tab : tabs_)
-                            tab->SaveResource();
-                        project_->SaveProject(savePath);
-                        NFD_FreePath(savePath);
-                    }
-                }
             }
 
-            if (ui::MenuItem("Open Project"))
+            if (ui::MenuItem("Open/Create Project"))
             {
-                nfdchar_t* projectFilePath = nullptr;
-                if (NFD_OpenDialog("project", "", &projectFilePath) == NFD_OKAY)
+                nfdchar_t* projectDir = nullptr;
+                if (NFD_PickFolder("", &projectDir) == NFD_OKAY)
                 {
-                    if (OpenProject(projectFilePath) == nullptr)
+                    if (OpenProject(projectDir) == nullptr)
                         URHO3D_LOGERROR("Loading project failed.");
-                    NFD_FreePath(projectFilePath);
+                    NFD_FreePath(projectDir);
                 }
-            }
-
-            if (ui::MenuItem("Create Project"))
-            {
-                OpenProject();
-                LoadDefaultLayout();
             }
 
             if (project_.NotNull())

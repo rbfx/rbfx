@@ -72,15 +72,17 @@ public:
     /// Returns a list of open content tabs/docks/windows. This list does not include utility docks/tabs/windows.
     const Vector<SharedPtr<Tab>>& GetContentTabs() const { return tabs_; }
     /// Opens project or creates new one.
-    Project* OpenProject(const String& projectPath = String::EMPTY);
+    Project* OpenProject(const String& projectPath);
     /// Close current project.
     void CloseProject();
+    /// Return path containing data directories of engine.
+    const String& GetCoreResourcePrefixPath() const { return coreResourcePrefixPath_; }
+    /// Load default tab layout.
+    void LoadDefaultLayout();
 
 protected:
     /// Process console commands.
     void OnConsoleCommand(VariantMap& args);
-    /// Load default tab layout.
-    void LoadDefaultLayout();
 
     /// List of active scene tabs.
     Vector<SharedPtr<Tab>> tabs_;

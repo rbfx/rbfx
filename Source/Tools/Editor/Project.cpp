@@ -46,41 +46,104 @@ Project::Project(Context* context)
     : Object(context)
     , assetConverter_(context)
 {
-    SubscribeToEvent(E_EDITORRESOURCESAVED, std::bind(&Project::SaveProject, this, String::EMPTY));
+    SubscribeToEvent(E_EDITORRESOURCESAVED, std::bind(&Project::SaveProject, this));
 }
 
 Project::~Project()
 {
-    for (auto& directory : dataDirectories_)
+    assetConverter_.RemoveAssetDirectory(GetResourcePath());
+    if (auto* cache = GetCache())
     {
-        assetConverter_.RemoveAssetDirectory(directory);
-        GetCache()->RemoveResourceDir(directory);
+        cache->RemoveResourceDir(GetCachePath());
+        cache->RemoveResourceDir(GetResourcePath());
+
+        for (const auto& path : cachedEngineResourcePaths_)
+            GetCache()->AddResourceDir(path);
     }
 
     // Clear dock state
     ui::LoadDock(JSONValue::EMPTY);
 }
 
-bool Project::LoadProject(const String& filePath)
+bool Project::LoadProject(const String& projectPath)
 {
     if (!projectFilePath_.Empty())
         // Project is already loaded.
         return false;
 
-    if (filePath.Empty())
+    if (projectPath.Empty())
         return false;
 
+    projectFileDir_ = AddTrailingSlash(projectPath);
+    projectFilePath_ = projectFileDir_ + "project.yml";
+
+    if (!GetFileSystem()->Exists(GetCachePath()))
+        GetFileSystem()->CreateDirsRecursive(GetCachePath());
+
+    if (!GetFileSystem()->Exists(GetResourcePath()))
+    {
+        // Initialize new project
+        GetFileSystem()->CreateDirsRecursive(GetResourcePath());
+
+        for (const auto& path : GetCache()->GetResourceDirs())
+        {
+            if (path.EndsWith("/EditorData/") || path.Contains("/Autoload/"))
+                continue;
+
+            StringVector names;
+
+            URHO3D_LOGINFOF("Importing resources from '%s'", path.CString());
+
+            // Copy default resources to the project.
+            GetFileSystem()->ScanDir(names, path, "*", SCAN_FILES, false);
+            for (const auto& name : names)
+                GetFileSystem()->Copy(path + name, GetResourcePath() + name);
+
+            GetFileSystem()->ScanDir(names, path, "*", SCAN_DIRS, false);
+            for (const auto& name : names)
+            {
+                if (name == "." || name == "..")
+                    continue;
+                GetFileSystem()->CopyDir(path + name, GetResourcePath() + name);
+            }
+        }
+    }
+
+    // Register asset dirs
+    GetCache()->AddResourceDir(GetCachePath(), 0);
+    GetCache()->AddResourceDir(GetResourcePath(), 1);
+    assetConverter_.SetCachePath(GetCachePath());
+    assetConverter_.AddAssetDirectory(GetResourcePath());
+    assetConverter_.VerifyCacheAsync();
+
+    // Unregister engine dirs
+    auto enginePrefixPath = GetSubsystem<Editor>()->GetCoreResourcePrefixPath();
+    auto pathsCopy = GetCache()->GetResourceDirs();
+    cachedEngineResourcePaths_.Clear();
+    for (const auto& path : pathsCopy)
+    {
+        if (path.StartsWith(enginePrefixPath) && !path.EndsWith("/EditorData/"))
+        {
+            cachedEngineResourcePaths_.EmplaceBack(path);
+            GetCache()->RemoveResourceDir(path);
+        }
+    }
+
+    // Load default layout if no user config exists
+    if (!GetFileSystem()->Exists(projectFilePath_))
+    {
+        GetSubsystem<Editor>()->LoadDefaultLayout();
+        return true;
+    }
+
+    // Load user config
     YAMLFile file(context_);
-    if (!file.LoadFile(filePath))
+    if (!file.LoadFile(projectFilePath_))
         return false;
 
     const auto& root = file.GetRoot();
     if (root.IsObject())
     {
-        context_->RemoveSubsystem<Project>();
-        projectFilePath_ = filePath;
-        projectFileDir_ = GetParentPath(filePath);
-
         SendEvent(E_EDITORPROJECTLOADINGSTART);
 
         const auto& window = root["window"];
@@ -90,21 +153,6 @@ bool Project::LoadProject(const String& filePath)
             GetGraphics()->SetMode(size.x_, size.y_);
             GetGraphics()->SetWindowPosition(window["position"].GetVariant().GetIntVector2());
         }
-
-        // Autodetect resource dirs
-        StringVector directories;
-        GetFileSystem()->ScanDir(directories, projectFileDir_ + "bin/", "", SCAN_DIRS, false);
-        assetConverter_.SetCachePath(GetCachePath());
-        for (auto& dir : directories)
-        {
-            if (dir == "." || dir == ".." || !dir.ToLower().EndsWith("data"))
-                continue;
-            // Convert to absolute path
-            dir = ToString("%sbin/%s/", projectFileDir_.CString(), dir.CString());
-            GetCache()->AddResourceDir(dir);
-            assetConverter_.AddAssetDirectory(dir);
-        }
-        assetConverter_.VerifyCacheAsync();
 
         const auto& tabs = root["tabs"];
         if (tabs.IsArray())
@@ -130,22 +178,19 @@ bool Project::LoadProject(const String& filePath)
         using namespace EditorProjectLoading;
         SendEvent(E_EDITORPROJECTLOADING, P_ROOT, (void*)&root);
 
-        context_->RegisterSubsystem(this);
-
         return true;
     }
 
     return false;
 }
 
-bool Project::SaveProject(const String& filePath)
+bool Project::SaveProject()
 {
     // Saving project data of tabs may trigger saving resources, which in turn triggers saving editor project. Avoid
     // that loop.
     UnsubscribeFromEvent(E_EDITORRESOURCESAVED);
 
-    auto&& projectFilePath = filePath.Empty() ? projectFilePath_ : filePath;
-    if (projectFilePath.Empty())
+    if (projectFilePath_.Empty())
     {
         URHO3D_LOGERROR("Unable to save project. Project path is empty.");
         return false;
@@ -167,16 +212,14 @@ bool Project::SaveProject(const String& filePath)
 
     ui::SaveDock(root["docks"]);
 
-    auto success = file.SaveFile(projectFilePath);
-    if (success)
-        projectFilePath_ = projectFilePath;
-    else
+    auto success = file.SaveFile(projectFilePath_);
+    if (!success)
     {
         projectFilePath_.Clear();
-        URHO3D_LOGERRORF("Saving project to %s failed", projectFilePath.CString());
+        URHO3D_LOGERRORF("Saving project to '%s' failed", projectFilePath_.CString());
     }
 
-    SubscribeToEvent(E_EDITORRESOURCESAVED, std::bind(&Project::SaveProject, this, ""));
+    SubscribeToEvent(E_EDITORRESOURCESAVED, std::bind(&Project::SaveProject, this));
 
     return success;
 }
@@ -185,7 +228,14 @@ String Project::GetCachePath() const
 {
     if (projectFileDir_.Empty())
         return String::EMPTY;
-    return projectFileDir_ + "bin/Cache/";
+    return projectFileDir_ + "Cache/";
+}
+
+String Project::GetResourcePath() const
+{
+    if (projectFileDir_.Empty())
+        return String::EMPTY;
+    return projectFileDir_ + "Resources/";
 }
 
 }

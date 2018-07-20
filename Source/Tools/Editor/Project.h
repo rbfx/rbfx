@@ -42,9 +42,11 @@ public:
     /// Load existing project. Returns true if project was successfully loaded.
     bool LoadProject(const String& projectPath);
     /// Create a new project. Returns true if successful. Overwrites specified path unconditionally.
-    bool SaveProject(const String& projectPath=String::EMPTY);
+    bool SaveProject();
     /// Returns path to temporary asset cache.
     String GetCachePath() const;
+    /// Returns path to permanent asset cache.
+    String GetResourcePath() const;
     /// Returns a path from which project was loaded.
     const String& GetProjectFilePath() const { return projectFilePath_; }
 
@@ -55,8 +57,8 @@ protected:
     String projectFileDir_;
     /// Converter responsible for watching resource directories and converting assets to required formats.
     AssetConverter assetConverter_;
-    /// Registered asset paths.
-    StringVector dataDirectories_;
+    ///
+    StringVector cachedEngineResourcePaths_;
 };
 
 
