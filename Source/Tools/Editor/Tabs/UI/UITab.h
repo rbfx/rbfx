@@ -55,7 +55,7 @@ public:
     /// Load UI layout from resource path.
     void LoadResource(const String& resourcePath) override;
     /// Save scene to a resource file.
-    bool SaveResource(const String& resourcePath) override;
+    bool SaveResource() override;
     /// Called when tab focused.
     void OnFocused() override;
     /// Return selected UIElement.

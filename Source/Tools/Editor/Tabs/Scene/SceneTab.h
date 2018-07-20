@@ -61,7 +61,7 @@ public:
     /// Load scene from xml or json file.
     void LoadResource(const String& resourcePath) override;
     /// Save scene to a resource file.
-    bool SaveResource(const String& resourcePath) override;
+    bool SaveResource() override;
     /// Called when tab focused.
     void OnFocused() override;
     /// Add a node to selection.
@@ -113,8 +113,6 @@ protected:
 
     /// Scene renderer.
     SceneView view_;
-    /// Last resource path scene was loaded from or saved to.
-    String path_;
     /// Gizmo used for manipulating scene elements.
     Gizmo gizmo_;
     /// Current selected component displayed in inspector.

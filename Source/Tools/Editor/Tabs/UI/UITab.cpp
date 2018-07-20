@@ -376,7 +376,7 @@ void UITab::LoadResource(const String& resourcePath)
     undo_.SetTrackingEnabled(true);
 }
 
-bool UITab::SaveResource(const String& resourcePath)
+bool UITab::SaveResource()
 {
     if (rootElement_->GetNumChildren() < 1)
         return false;
@@ -387,7 +387,7 @@ bool UITab::SaveResource(const String& resourcePath)
 
     ResourceCache* cache = GetSubsystem<ResourceCache>();
 
-    String savePath = cache->GetResourceFileName(resourcePath.Empty() ? path_ : resourcePath);
+    String savePath = cache->GetResourceFileName(rootElement_->GetName());
     XMLFile xml(context_);
     XMLElement root = xml.CreateRoot("element");
     if (rootElement_->GetChild(0)->SaveXML(root))
@@ -419,12 +419,7 @@ bool UITab::SaveResource(const String& resourcePath)
         // TODO: remove attributes with default values
 
         File saveFile(context_, savePath, FILE_WRITE);
-        if (xml.Save(saveFile))
-        {
-            if (!resourcePath.Empty())
-                path_ = resourcePath;
-        }
-        else
+        if (!xml.Save(saveFile))
             return false;
     }
     else

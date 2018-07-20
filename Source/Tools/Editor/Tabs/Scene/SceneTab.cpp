@@ -195,7 +195,6 @@ void SceneTab::LoadResource(const String& resourcePath)
         auto* file = GetCache()->GetResource<XMLFile>(resourcePath);
         if (file && GetScene()->LoadXML(file->GetRoot()))
         {
-            path_ = resourcePath;
             CreateObjects();
         }
         else
@@ -206,7 +205,6 @@ void SceneTab::LoadResource(const String& resourcePath)
         auto* file = GetCache()->GetResource<JSONFile>(resourcePath);
         if (file && GetScene()->LoadJSON(file->GetRoot()))
         {
-            path_ = resourcePath;
             CreateObjects();
         }
         else
@@ -215,12 +213,14 @@ void SceneTab::LoadResource(const String& resourcePath)
     else
         URHO3D_LOGERRORF("Unknown scene file format %s", GetExtension(resourcePath).CString());
 
-    SetTitle(GetFileName(path_));
+    SetTitle(GetFileName(resourcePath));
 }
 
-bool SceneTab::SaveResource(const String& resourcePath)
+bool SceneTab::SaveResource()
 {
-    auto fullPath = GetSubsystem<Editor>()->GetResourceAbsolutePath(resourcePath, path_, "xml", "Save Scene As");
+    GetCache()->IgnoreResourceReload(GetScene()->GetName());
+
+    auto fullPath = GetCache()->GetResourceFileName(GetScene()->GetName());
     if (fullPath.Empty())
         return false;
 
@@ -245,18 +245,9 @@ bool SceneTab::SaveResource(const String& resourcePath)
         GetScene()->SetElapsedTime(elapsed);
 
     if (result)
-    {
-        if (!resourcePath.Empty())
-        {
-            path_ = resourcePath;
-            SetTitle(GetFileName(path_));
-        }
-    }
-    else
-        URHO3D_LOGERRORF("Saving scene to %s failed.", resourcePath.CString());
-
-    if (result)
         SendEvent(E_EDITORRESOURCESAVED);
+    else
+        URHO3D_LOGERRORF("Saving scene to %s failed.", GetScene()->GetName().CString());
 
     return result;
 }
@@ -541,7 +532,7 @@ void SceneTab::OnSaveProject(JSONValue& tab)
 {
     Tab::OnSaveProject(tab);
 
-    tab["path"] = path_;
+    tab["path"] = GetScene()->GetName();
 
     auto& camera = tab["camera"];
     Node* cameraNode = view_.GetCamera()->GetNode();
