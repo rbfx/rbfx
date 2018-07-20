@@ -45,6 +45,7 @@ void SetProfilerThreadName(const char* name);
 #   define URHO3D_PROFILE_MESSAGE(txt, len)       TracyMessage(txt, len)
 #   define URHO3D_PROFILE_ZONENAME(txt, len)      ZoneName(txt, len)
 #else
+#   define URHO3D_PROFILE_C(...)
 #   define URHO3D_PROFILE(...)
 #   define URHO3D_PROFILE_THREAD(...)
 #   define URHO3D_PROFILE_VALUE(...)
