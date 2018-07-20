@@ -1201,71 +1201,82 @@ bool ResourceCache::RenameResource(String source, String destination)
         return false;
     }
 
-    using namespace ResourceRenamed;
+    if (!IsAbsolutePath(source) || !IsAbsolutePath(destination))
+    {
+        URHO3D_LOGERROR("Renaming resources requires absolute paths.");
+        return false;
+    }
 
     auto* fileSystem = GetSubsystem<FileSystem>();
 
-    SharedPtr<Resource> resource;
-    String sourceAbsolutePath;
-    String destinationAbsolutePath;
-
-    if (IsAbsolutePath(source))
+    if (!fileSystem->FileExists(source) && !fileSystem->DirExists(source))
     {
-        sourceAbsolutePath = source;
-        source = source.Substring(GetPreferredResourceDir(source).Length());
-    }
-    else
-        sourceAbsolutePath = GetResourceFileName(source);
-
-    if (sourceAbsolutePath.Empty())
-    {
-        URHO3D_LOGERRORF("Resource file %s does not exist.", source.CString());
+        URHO3D_LOGERROR("Source path does not exist.");
         return false;
     }
 
-    resource = FindResource(source);
-    if (resource.Null())
+    if (fileSystem->FileExists(destination) || fileSystem->DirExists(destination))
     {
-        URHO3D_LOGERRORF("Resource file %s does not exist.", source.CString());
+        URHO3D_LOGERROR("Destination path already exists.");
         return false;
     }
-
-    if (IsAbsolutePath(destination))
-    {
-        destinationAbsolutePath = destination;
-        destination = destination.Substring(GetPreferredResourceDir(destination).Length());
-    }
-    else
-        destinationAbsolutePath = GetPreferredResourceDir(GetPath(sourceAbsolutePath)) + destination;
-
-    String destinationPath = GetPath(destinationAbsolutePath);
-    if (!fileSystem->CreateDirsRecursive(destinationPath))
-    {
-        URHO3D_LOGERRORF("Unable to create directory %s.", destinationPath.CString());
-        return false;
-    }
-
-    if (autoReloadResources_)
-        ignoreResourceAutoReload_.EmplaceBack(destination);
-
-    if (!fileSystem->Rename(sourceAbsolutePath, destinationAbsolutePath))
-    {
-        // Renaming failed therefore reloading event will not be triggered.
-        if (autoReloadResources_)
-            ignoreResourceAutoReload_.Pop();
-        URHO3D_LOGERRORF("Unable to rename resource %s to %s.",
-                         sourceAbsolutePath.CString(), destinationAbsolutePath.CString());
-        return false;
-    }
-
-    // Move resource
-    resourceGroups_[resource->GetType()].resources_.Erase(source);
-    resource->SetName(destination);
-    resourceGroups_[resource->GetType()].resources_[resource->GetNameHash()] = resource;
-    UpdateResourceGroup(resource->GetType());
 
     using namespace ResourceRenamed;
-    SendEvent(E_RESOURCERENAMED, P_FROM, source, P_TO, destination);
+
+    // Ensure parent path exists
+    if (!fileSystem->CreateDirsRecursive(GetPath(destination)))
+        return false;
+
+    if (!fileSystem->Rename(source, destination))
+    {
+        URHO3D_LOGERRORF("Renaming '%s' to '%s' failed.", source.CString(), destination.CString());
+        return false;
+    }
+
+    String resourceName;
+    String destinationName;
+    for (const auto& dir : resourceDirs_)
+    {
+        if (source.StartsWith(dir))
+            resourceName = source.Substring(dir.Length());
+        if (destination.StartsWith(dir))
+            destinationName = destination.Substring(dir.Length());
+    }
+
+    if (resourceName.Empty())
+    {
+        URHO3D_LOGERRORF("'%s' does not exist in resource path.", source.CString());
+        return false;
+    }
+
+    // Update loaded resource information
+    for (auto& groupPair : resourceGroups_)
+    {
+        bool movedAny = false;
+        auto resourcesCopy = groupPair.second_.resources_;
+        for (auto& resourcePair : resourcesCopy)
+        {
+            SharedPtr<Resource> resource = resourcePair.second_;
+            if (resource->GetName().StartsWith(resourceName))
+            {
+                if (autoReloadResources_)
+                {
+                    ignoreResourceAutoReload_.EmplaceBack(destinationName);
+                    ignoreResourceAutoReload_.EmplaceBack(resourceName);
+                }
+
+                groupPair.second_.resources_.Erase(resource->GetNameHash());
+                resource->SetName(destinationName);
+                groupPair.second_.resources_[resource->GetNameHash()] = resource;
+                movedAny = true;
+
+                using namespace ResourceRenamed;
+                SendEvent(E_RESOURCERENAMED, P_FROM, resourceName, P_TO, destinationName);
+            }
+        }
+        if (movedAny)
+            UpdateResourceGroup(groupPair.first_);
+    }
 
     return true;
 }
