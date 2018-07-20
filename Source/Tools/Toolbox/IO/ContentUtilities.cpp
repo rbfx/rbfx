@@ -32,7 +32,7 @@ const Vector<String> archiveExtensions_{".rar", ".zip", ".tar", ".gz", ".xz", ".
 const Vector<String> wordExtensions_{".doc", ".docx", ".odt"};
 const Vector<String> codeExtensions_{".c", ".cpp", ".h", ".hpp", ".hxx", ".py", ".py3", ".js", ".cs"};
 const Vector<String> imagesExtensions_{".png", ".jpg", ".jpeg", ".gif", ".ttf", ".dds", ".psd"};
-const Vector<String> textExtensions_{".xml", ".json", ".txt"};
+const Vector<String> textExtensions_{".xml", ".json", ".txt", ".yml", ".scene", ".material", ".ui", ".uistyle", ".node", ".particle"};
 const Vector<String> audioExtensions_{".waw", ".ogg", ".mp3"};
 
 FileType GetFileType(const String& fileName)
@@ -118,6 +118,16 @@ ContentType GetContentType(const String& resourcePath)
         return CTYPE_ANIMATION;
     if (extension == ".scene")
         return CTYPE_SCENE;
+    if (extension == ".ui")
+        return CTYPE_UILAYOUT;
+    if (extension == ".style")
+        return CTYPE_UISTYLE;
+    if (extension == ".material")
+        return CTYPE_MATERIAL;
+    if (extension == ".particle")
+        return CTYPE_PARTICLE;
+    if (extension == ".node")
+        return CTYPE_SCENEOBJECT;
     if (audioExtensions_.Contains(extension))
         return CTYPE_SOUND;
     if (imagesExtensions_.Contains(extension))
