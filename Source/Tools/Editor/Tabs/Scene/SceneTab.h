@@ -29,7 +29,7 @@
 #include <Toolbox/SystemUI/ImGuiDock.h>
 #include <Toolbox/Graphics/SceneView.h>
 #include <Toolbox/Common/UndoManager.h>
-#include "Tabs/Tab.h"
+#include "Tabs/BaseResourceTab.h"
 
 
 namespace Urho3D
@@ -38,9 +38,9 @@ namespace Urho3D
 class SceneSettings;
 class SceneEffects;
 
-class SceneTab : public Tab, public IHierarchyProvider, public IInspectorProvider
+class SceneTab : public BaseResourceTab, public IHierarchyProvider, public IInspectorProvider
 {
-    URHO3D_OBJECT(SceneTab, Tab);
+    URHO3D_OBJECT(SceneTab, BaseResourceTab);
 public:
     /// Construct.
     explicit SceneTab(Context* context);
@@ -59,7 +59,7 @@ public:
     /// Load project data from xml.
     void OnLoadProject(const JSONValue& tab) override;
     /// Load scene from xml or json file.
-    void LoadResource(const String& resourcePath) override;
+    bool LoadResource(const String& resourcePath) override;
     /// Save scene to a resource file.
     bool SaveResource() override;
     /// Called when tab focused.

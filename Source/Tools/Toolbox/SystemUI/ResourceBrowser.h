@@ -24,6 +24,7 @@
 
 
 #include "ToolboxAPI.h"
+#include <Urho3D/Container/FlagSet.h>
 #include <Urho3D/Core/Object.h>
 
 
@@ -38,6 +39,15 @@ enum ResourceBrowserResult
     RBR_ITEM_CONTEXT_MENU,
 };
 
+enum ResourceBrowserFlag
+{
+    RBF_NONE,
+    RBF_SCROLL_TO_CURRENT = 1,
+    RBF_RENAME_CURRENT = 1 << 1,
+    RBF_DELETE_CURRENT = 1 << 2,
+};
+URHO3D_FLAGSET(ResourceBrowserFlag, ResourceBrowserFlags);
+
 URHO3D_EVENT(E_RESOURCEBROWSERRENAME, ResourceBrowserRename)
 {
     URHO3D_PARAM(P_FROM, From);                                     // String
@@ -50,6 +60,6 @@ URHO3D_EVENT(E_RESOURCEBROWSERDELETE, ResourceBrowserDelete)
 }
 
 /// Create resource browser ui inside another window.
-URHO3D_TOOLBOX_API ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, bool scrollToSelected=false);
+URHO3D_TOOLBOX_API ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, ResourceBrowserFlags flags=RBF_NONE);
 
 }

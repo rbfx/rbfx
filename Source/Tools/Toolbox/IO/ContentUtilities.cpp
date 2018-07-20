@@ -93,6 +93,9 @@ ContentType GetContentType(const String& resourcePath)
     {
         auto systemUI = (SystemUI*)ui::GetIO().UserData;
         SharedPtr<XMLFile> xml(systemUI->GetCache()->GetResource<XMLFile>(resourcePath));
+        if (xml.Null())
+            return CTYPE_UNKNOWN;
+
         auto rootElementName = xml->GetRoot().GetName();
         if (rootElementName == "scene")
             return CTYPE_SCENE;

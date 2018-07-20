@@ -266,17 +266,6 @@ void Editor::RenderMenuBar()
                 }
             }
 
-            if (project_.NotNull())
-            {
-                ui::Separator();
-
-                if (ui::MenuItem("New Scene"))
-                    CreateTab<SceneTab>();
-
-                if (ui::MenuItem("New UI Layout"))
-                    CreateTab<UITab>();
-            }
-
             ui::Separator();
 
             if (project_.NotNull())

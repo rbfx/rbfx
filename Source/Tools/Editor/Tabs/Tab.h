@@ -74,9 +74,9 @@ public:
     /// Load project data from xml.
     virtual void OnLoadProject(const JSONValue& tab);
     /// Load a file from resource path.
-    virtual void LoadResource(const String& resourcePath) { }
+    virtual bool LoadResource(const String& resourcePath) { return true; }
     /// Save tab contents to a resource file.
-    virtual bool SaveResource() { return false; }
+    virtual bool SaveResource() { return true; }
     /// Called when tab focused.
     virtual void OnFocused() { }
     /// Set scene view tab title.

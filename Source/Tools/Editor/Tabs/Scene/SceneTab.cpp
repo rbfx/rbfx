@@ -38,7 +38,7 @@ namespace Urho3D
 {
 
 SceneTab::SceneTab(Context* context)
-    : Tab(context)
+    : BaseClassName(context)
     , view_(context, {0, 0, 1024, 768})
     , gizmo_(context)
     , undo_(context)
@@ -172,7 +172,7 @@ bool SceneTab::RenderWindowContent()
     if (ui::BeginPopup(tabContextMenuTitle))
     {
         if (ui::MenuItem("Save"))
-            Tab::SaveResource();
+            SaveResource();
 
         ui::Separator();
 
@@ -185,10 +185,10 @@ bool SceneTab::RenderWindowContent()
     return open;
 }
 
-void SceneTab::LoadResource(const String& resourcePath)
+bool SceneTab::LoadResource(const String& resourcePath)
 {
-    if (resourcePath.Empty())
-        return;
+    if (!BaseClassName::LoadResource(resourcePath))
+        return false;
 
     if (resourcePath.EndsWith(".xml", false))
     {
@@ -210,17 +210,31 @@ void SceneTab::LoadResource(const String& resourcePath)
         else
             URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).CString());
     }
+    else if (resourcePath.EndsWith(".scene", false))
+    {
+        auto* file = GetCache()->GetResource<YAMLFile>(resourcePath);
+        if (file && GetScene()->LoadJSON(file->GetRoot()))
+        {
+            CreateObjects();
+        }
+        else
+            URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).CString());
+    }
     else
         URHO3D_LOGERRORF("Unknown scene file format %s", GetExtension(resourcePath).CString());
 
     SetTitle(GetFileName(resourcePath));
+    return true;
 }
 
 bool SceneTab::SaveResource()
 {
-    GetCache()->IgnoreResourceReload(GetScene()->GetName());
+    if (!BaseClassName::SaveResource())
+        return false;
 
-    auto fullPath = GetCache()->GetResourceFileName(GetScene()->GetName());
+    GetCache()->IgnoreResourceReload(resourceName_);
+
+    auto fullPath = GetCache()->GetResourceFileName(resourceName_);
     if (fullPath.Empty())
         return false;
 
@@ -239,6 +253,8 @@ bool SceneTab::SaveResource()
         result = GetScene()->SaveXML(file);
     else if (fullPath.EndsWith(".json", false))
         result = GetScene()->SaveJSON(file);
+    else if (fullPath.EndsWith(".scene", false))
+        result = GetScene()->SaveYAML(file);
     GetScene()->SetUpdateEnabled(false);
 
     if (!settings_->saveElapsedTime_)
@@ -247,7 +263,7 @@ bool SceneTab::SaveResource()
     if (result)
         SendEvent(E_EDITORRESOURCESAVED);
     else
-        URHO3D_LOGERRORF("Saving scene to %s failed.", GetScene()->GetName().CString());
+        URHO3D_LOGERRORF("Saving scene to %s failed.", resourceName_.CString());
 
     return result;
 }
@@ -307,7 +323,7 @@ void SceneTab::RenderToolbarButtons()
     style.FrameRounding = 0;
 
     if (ui::EditorToolbarButton(ICON_FA_FLOPPY_O, "Save"))
-        Tab::SaveResource();
+        SaveResource();
 
     ui::SameLine(0, 3.f);
 
@@ -504,13 +520,11 @@ void SceneTab::RenderNodeTree(Node* node)
 
 void SceneTab::OnLoadProject(const JSONValue& tab)
 {
-    Tab::OnLoadProject(tab);
-
     undo_.Clear();
     auto isTracking = undo_.IsTrackingEnabled();
     undo_.SetTrackingEnabled(false);
 
-    LoadResource(tab["path"].GetString());
+    BaseClassName::OnLoadProject(tab);
 
     const auto& camera = tab["camera"];
     if (camera.IsObject())
@@ -530,9 +544,7 @@ void SceneTab::OnLoadProject(const JSONValue& tab)
 
 void SceneTab::OnSaveProject(JSONValue& tab)
 {
-    Tab::OnSaveProject(tab);
-
-    tab["path"] = GetScene()->GetName();
+    BaseClassName::OnSaveProject(tab);
 
     auto& camera = tab["camera"];
     Node* cameraNode = view_.GetCamera()->GetNode();
@@ -578,7 +590,7 @@ void SceneTab::RemoveSelection()
 
 IntRect SceneTab::UpdateViewRect()
 {
-    IntRect tabRect = Tab::UpdateViewRect();
+    IntRect tabRect = BaseClassName::UpdateViewRect();
     view_.SetSize(tabRect);
     gizmo_.SetScreenRect(tabRect);
     return tabRect;

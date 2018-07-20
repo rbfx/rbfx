@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 //
 
-#include <Toolbox/SystemUI/ResourceBrowser.h>
 #include <Toolbox/IO/ContentUtilities.h>
 #include "Tabs/Scene/SceneTab.h"
 #include "Tabs/UI/UITab.h"
@@ -50,7 +49,7 @@ ResourceTab::ResourceTab(Context* context)
         auto resourceName = args[InspectorLocateResource::P_NAME].GetString();
         resourcePath_ = GetPath(resourceName);
         resourceSelection_ = GetFileNameAndExtension(resourceName);
-        scrollToSelected_ = true;
+        flags_ |= RBF_SCROLL_TO_CURRENT;
     });
     SubscribeToEvent(E_RESOURCEBROWSERRENAME, [&](StringHash, VariantMap& args) {
         using namespace ResourceBrowserRename;
@@ -76,7 +75,8 @@ ResourceTab::ResourceTab(Context* context)
 
 bool ResourceTab::RenderWindowContent()
 {
-    if (ResourceBrowserWidget(resourcePath_, resourceSelection_, scrollToSelected_) == RBR_ITEM_OPEN)
+    auto action = ResourceBrowserWidget(resourcePath_, resourceSelection_, flags_);
+    if (action == RBR_ITEM_OPEN)
     {
         String selected = resourcePath_ + resourceSelection_;
         auto it = contentToTabType.Find(GetContentType(selected));
@@ -87,9 +87,83 @@ bool ResourceTab::RenderWindowContent()
             tab->LoadResource(selected);
         }
     }
-    scrollToSelected_ = false;
+    else if (action == RBR_ITEM_CONTEXT_MENU)
+        ui::OpenPopup("Resource Context Menu");
+
+    flags_ = RBF_NONE;
+
+    if (ui::BeginPopup("Resource Context Menu"))
+    {
+        if (ui::BeginMenu("Create"))
+        {
+            if (ui::MenuItem("Scene"))
+            {
+                auto path = GetNewResourcePath(resourcePath_ + "New Scene.scene");
+                GetFileSystem()->CreateDirsRecursive(GetPath(path));
+
+                SharedPtr<Scene> scene(new Scene(context_));
+                scene->CreateComponent<Octree>();
+                File file(context_, path, FILE_WRITE);
+                if (file.IsOpen())
+                {
+                    scene->SaveYAML(file);
+                    flags_ |= RBF_RENAME_CURRENT | RBF_SCROLL_TO_CURRENT;
+                    resourceSelection_ = GetFileNameAndExtension(path);
+                }
+                else
+                    URHO3D_LOGERRORF("Failed opening file '%s'.", path.CString());
+            }
+
+            if (ui::MenuItem("UI Layout"))
+            {
+                auto path = GetNewResourcePath(resourcePath_ + "New UI Layout.xml");
+                GetFileSystem()->CreateDirsRecursive(GetPath(path));
+
+                SharedPtr<UIElement> scene(new UIElement(context_));
+                XMLFile layout(context_);
+                auto root = layout.GetOrCreateRoot("element");
+                if (scene->SaveXML(root) && layout.SaveFile(path))
+                {
+                    flags_ |= RBF_RENAME_CURRENT | RBF_SCROLL_TO_CURRENT;
+                    resourceSelection_ = GetFileNameAndExtension(path);
+                }
+                else
+                    URHO3D_LOGERRORF("Failed opening file '%s'.", path.CString());
+            }
+
+            ui::EndMenu();
+        }
+
+        if (ui::MenuItem("Rename", "F2"))
+            flags_ |= RBF_RENAME_CURRENT;
+
+        if (ui::MenuItem("Delete", "Del"))
+            flags_ |= RBF_DELETE_CURRENT;
+
+        ui::EndPopup();
+    }
 
     return true;
+}
+
+String ResourceTab::GetNewResourcePath(const String& name)
+{
+    auto* project = GetSubsystem<Project>();
+    if (!GetFileSystem()->FileExists(project->GetResourcePath() + name))
+        return project->GetResourcePath() + name;
+
+    auto basePath = GetPath(name);
+    auto baseName = GetFileName(name);
+    auto ext = GetExtension(name, false);
+
+    for (auto i = 1; i < M_MAX_INT; i++)
+    {
+        auto newName = project->GetResourcePath() + ToString("%s%s %d%s", basePath.CString(), baseName.CString(), i, ext.CString());
+        if (!GetFileSystem()->FileExists(newName))
+            return newName;
+    }
+
+    std::abort();
 }
 
 }

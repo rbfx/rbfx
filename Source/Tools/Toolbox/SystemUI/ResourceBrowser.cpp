@@ -37,7 +37,7 @@
 namespace Urho3D
 {
 
-ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, bool scrollToSelected)
+ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, ResourceBrowserFlags flags)
 {
     struct State
     {
@@ -55,14 +55,14 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, bool
 
     if (!selected.Empty() && !ui::IsAnyItemActive())
     {
-        if (fs->GetInput()->GetKeyPress(KEY_F2))
+        if (fs->GetInput()->GetKeyPress(KEY_F2) || flags & RBF_RENAME_CURRENT)
         {
             state.isEditing = true;
             state.deletionPending = false;
             state.editStartItem = selected;
             strcpy(state.editBuffer, selected.CString());
         }
-        if (fs->GetInput()->GetKeyPress(KEY_DELETE))
+        if (fs->GetInput()->GetKeyPress(KEY_DELETE) || flags & RBF_DELETE_CURRENT)
         {
             state.isEditing = false;
             state.deletionPending = true;
@@ -134,7 +134,9 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, bool
             if (dropped.GetType() == VAR_STRING)
             {
                 using namespace ResourceBrowserRename;
-                fs->SendEvent(E_RESOURCEBROWSERRENAME, P_FROM, dropped, P_TO, AddTrailingSlash(item) + GetFileNameAndExtension(dropped.GetString()));
+                auto newName = AddTrailingSlash(item) + GetFileNameAndExtension(dropped.GetString());
+                if (dropped != newName)
+                    fs->SendEvent(E_RESOURCEBROWSERRENAME, P_FROM, dropped, P_TO, newName);
             }
             ui::EndDragDropTarget();
         }
@@ -169,7 +171,10 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, bool
             if (ui::InputText("", state.editBuffer, sizeof(state.editBuffer), ImGuiInputTextFlags_EnterReturnsTrue))
             {
                 using namespace ResourceBrowserRename;
-                fs->SendEvent(E_RESOURCEBROWSERRENAME, P_FROM, path + selected, P_TO, path + state.editBuffer);
+                auto oldName = path + selected;
+                auto newName = path + state.editBuffer;
+                if (oldName != newName)
+                    fs->SendEvent(E_RESOURCEBROWSERRENAME, P_FROM, oldName, P_TO, newName);
                 state.isEditing = false;
             }
 
@@ -190,7 +195,7 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, bool
         {
             auto isSelected = selected == item;
 
-            if (scrollToSelected && isSelected)
+            if (flags & RBF_SCROLL_TO_CURRENT && isSelected)
                 ui::SetScrollHere();
 
             switch (ui::DoubleClickSelectable((ICON_FA_FOLDER " " + item).CString(), isSelected))
@@ -227,7 +232,7 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, bool
         auto icon = GetFileIcon(item);
         if (!renameWidget(item, icon))
         {
-            if (scrollToSelected && selected == item)
+            if (flags & RBF_SCROLL_TO_CURRENT && selected == item)
                 ui::SetScrollHere();
             auto title = icon + " " + GetFileNameAndExtension(item);
             switch (ui::DoubleClickSelectable(title.CString(), selected == item))

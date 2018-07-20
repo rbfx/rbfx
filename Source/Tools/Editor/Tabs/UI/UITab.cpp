@@ -37,7 +37,7 @@ namespace Urho3D
 {
 
 UITab::UITab(Context* context)
-    : Tab(context)
+    : BaseResourceTab(context)
     , undo_(context)
 {
     SetTitle("New UI Layout");
@@ -230,7 +230,7 @@ void UITab::RenderToolbarButtons()
     style.FrameRounding = 0;
 
     if (ui::EditorToolbarButton(ICON_FA_FLOPPY_O, "Save"))
-        Tab::SaveResource();
+        SaveResource();
 
     ui::SameLine(0, 3.f);
 
@@ -308,7 +308,7 @@ IntRect UITab::UpdateViewRect()
         rootElement_->SetEnabled(true);
     }
 
-    IntRect rect = Tab::UpdateViewRect();
+    IntRect rect = BaseClassName::UpdateViewRect();
 
     if (rect.Width() != texture_->GetWidth() || rect.Height() != texture_->GetHeight())
     {
@@ -326,58 +326,81 @@ IntRect UITab::UpdateViewRect()
     return rect;
 }
 
-void UITab::LoadResource(const String& resourcePath)
+bool UITab::LoadResource(const String& resourcePath)
 {
+    if (!BaseClassName::LoadResource(resourcePath))
+        return false;
+
     if (GetContentType(resourcePath) != CTYPE_UILAYOUT)
     {
         URHO3D_LOGERRORF("%s is not a UI layout.", resourcePath.CString());
-        return;
+        return false;
     }
 
     undo_.Clear();
     undo_.SetTrackingEnabled(false);
 
     auto cache = GetSubsystem<ResourceCache>();
+    rootElement_->RemoveAllChildren();
 
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
-    if (xml->Load(*cache->GetFile(resourcePath)))
+    UIElement* layoutElement = nullptr;
+    if (resourcePath.EndsWith(".xml"))
     {
-        Vector<SharedPtr<UIElement>> children = rootElement_->GetChildren();
-        String type = xml->GetRoot().GetAttribute("type");
-        if (type.Empty())
-            type = "UIElement";
-        auto* child = rootElement_->CreateChild(StringHash(type));
-        if (child->LoadXML(xml->GetRoot()))
+        SharedPtr<XMLFile> file(cache->GetResource<XMLFile>(resourcePath));
+        if (file.NotNull())
         {
-            child->SetStyleAuto();
-            SetTitle(GetFileName(resourcePath));
-
-            // Must be disabled because it interferes with ui element resizing
-            if (auto window = dynamic_cast<Window*>(child))
-            {
-                window->SetMovable(false);
-                window->SetResizable(false);
-            }
-
-            path_ = resourcePath;
-
-            for (const auto& oldChild : children)
-                oldChild->Remove();
+            String type = file->GetRoot().GetAttribute("type");
+            if (type.Empty())
+                type = "UIElement";
+            auto* child = rootElement_->CreateChild(StringHash(type));
+            if (child->LoadXML(file->GetRoot()))
+                layoutElement = child;
+            else
+                child->Remove();
         }
         else
         {
-            child->Remove();
-            URHO3D_LOGERRORF("Loading UI layout %s failed.", resourcePath.CString());
+            URHO3D_LOGERRORF("Loading file %s failed.", resourcePath.CString());
+            return false;
+        }
+    }
+    else if (resourcePath.EndsWith(".json"))
+    {
+        URHO3D_LOGERROR("Unsupported format.");
+        return false;
+    }
+    else if (resourcePath.EndsWith(".ui"))
+    {
+        URHO3D_LOGERROR("Unsupported format.");
+        return false;
+    }
+
+    if (layoutElement != nullptr)
+    {
+        layoutElement->SetStyleAuto();
+
+        // Must be disabled because it interferes with ui element resizing
+        if (auto window = dynamic_cast<Window*>(layoutElement))
+        {
+            window->SetMovable(false);
+            window->SetResizable(false);
         }
     }
     else
-        URHO3D_LOGERRORF("Loading file %s failed.", resourcePath.CString());
+    {
+        URHO3D_LOGERRORF("Loading UI layout %s failed.", resourcePath.CString());
+        return false;
+    }
 
     undo_.SetTrackingEnabled(true);
+    return true;
 }
 
 bool UITab::SaveResource()
 {
+    if (!BaseClassName::SaveResource())
+        return false;
+
     if (rootElement_->GetNumChildren() < 1)
         return false;
 
@@ -386,53 +409,62 @@ bool UITab::SaveResource()
         return false;
 
     ResourceCache* cache = GetSubsystem<ResourceCache>();
+    String savePath = cache->GetResourceFileName(resourceName_);
 
-    String savePath = cache->GetResourceFileName(rootElement_->GetName());
-    XMLFile xml(context_);
-    XMLElement root = xml.CreateRoot("element");
-    if (rootElement_->GetChild(0)->SaveXML(root))
+    if (resourceName_.EndsWith(".xml"))
     {
-        // Remove internal UI elements
-        auto result = root.SelectPrepared(XPathQuery("//element[@internal=\"true\"]"));
-        for (auto el = result.FirstResult(); el.NotNull(); el = el.NextResult())
+        XMLFile xml(context_);
+        XMLElement root = xml.CreateRoot("element");
+        if (rootElement_->GetChild(0)->SaveXML(root))
         {
-            // Remove only top level internal elements.
-            bool internalParent = false;
-            auto parent = el.GetParent();
-            do
+            // Remove internal UI elements
+            auto result = root.SelectPrepared(XPathQuery("//element[@internal=\"true\"]"));
+            for (auto el = result.FirstResult(); el.NotNull(); el = el.NextResult())
             {
-                internalParent = parent.HasAttribute("internal") &&
-                    parent.GetAttribute("internal") == "true";
-                parent = parent.GetParent();
-            } while (!internalParent && parent.NotNull());
+                // Remove only top level internal elements.
+                bool internalParent = false;
+                auto parent = el.GetParent();
+                do
+                {
+                    internalParent = parent.HasAttribute("internal") && parent.GetAttribute("internal") == "true";
+                    parent = parent.GetParent();
+                } while (!internalParent && parent.NotNull());
 
-            if (!internalParent)
-                el.Remove();
+                if (!internalParent)
+                    el.Remove();
+            }
+
+            // Remove style="none"
+            result = root.SelectPrepared(XPathQuery("//element[@style=\"none\"]"));
+            for (auto el = result.FirstResult(); el.NotNull(); el = el.NextResult())
+                el.RemoveAttribute("style");
+
+            // TODO: remove attributes with values matching style
+            // TODO: remove attributes with default values
+
+            File saveFile(context_, savePath, FILE_WRITE);
+            if (!xml.Save(saveFile))
+                return false;
         }
-
-        // Remove style="none"
-        result = root.SelectPrepared(XPathQuery("//element[@style=\"none\"]"));
-        for (auto el = result.FirstResult(); el.NotNull(); el = el.NextResult())
-            el.RemoveAttribute("style");
-
-        // TODO: remove attributes with values matching style
-        // TODO: remove attributes with default values
-
-        File saveFile(context_, savePath, FILE_WRITE);
-        if (!xml.Save(saveFile))
+        else
             return false;
     }
-    else
+    else if (resourceName_.EndsWith(".json"))
+    {
+        URHO3D_LOGERROR("Unsupported format.");
         return false;
+    }
+    else if (resourceName_.EndsWith(".ui"))
+    {
+        URHO3D_LOGERROR("Unsupported format.");
+        return false;
+    }
 
     // Save style
     savePath = cache->GetResourceFileName(styleFile->GetName());
     File saveFile(context_, savePath, FILE_WRITE);
     if (!styleFile->Save(saveFile))
         return false;
-
-    if (!path_.Empty())
-        SetTitle(GetFileName(path_));
 
     SendEvent(E_EDITORRESOURCESAVED);
 
@@ -550,14 +582,12 @@ void UITab::RenderElementContextMenu()
 
 void UITab::OnSaveProject(JSONValue& tab)
 {
-    Tab::OnSaveProject(tab);
-    tab["path"] = path_;
+    BaseClassName::OnSaveProject(tab);
 }
 
 void UITab::OnLoadProject(const JSONValue& tab)
 {
-    Tab::OnLoadProject(tab);
-    LoadResource(tab["path"].GetString());
+    BaseClassName::OnLoadProject(tab);
 }
 
 String UITab::GetAppliedStyle(UIElement* element)

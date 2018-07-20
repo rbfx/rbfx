@@ -19,31 +19,35 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-
 #pragma once
 
 
-#include <Toolbox/SystemUI/ResourceBrowser.h>
 #include "Tabs/Tab.h"
-
 
 namespace Urho3D
 {
 
-class ResourceTab : public Tab
+class BaseResourceTab
+    : public Tab
 {
-    URHO3D_OBJECT(ResourceTab, Tab)
 public:
-    explicit ResourceTab(Context* context);
-
-    bool RenderWindowContent() override;
+    /// Construct.
+    explicit BaseResourceTab(Context* context);
+    /// Load resource from cache.
+    bool LoadResource(const String& resourcePath) override;
+    /// Save resource o disk.
+    bool SaveResource() override;
+    /// Save project data to xml.
+    virtual void OnSaveProject(JSONValue& tab);
+    /// Load project data from xml.
+    virtual void OnLoadProject(const JSONValue& tab);
 
 protected:
-    String GetNewResourcePath(const String& name);
+    /// Set resource name.
+    void SetResourceName(const String& resourceName);
 
-    String resourcePath_;
-    String resourceSelection_;
-    ResourceBrowserFlags flags_{RBF_NONE};
+    /// Name of loaded resource.
+    String resourceName_;
 };
 
 }

@@ -25,16 +25,16 @@
 
 #include <Urho3D/Urho3DAll.h>
 #include <Toolbox/Common/UndoManager.h>
-#include "Tabs/Tab.h"
+#include "Tabs/BaseResourceTab.h"
 #include "Tabs/UI/RootUIElement.h"
 
 
 namespace Urho3D
 {
 
-class UITab : public Tab, public IHierarchyProvider, public IInspectorProvider
+class UITab : public BaseResourceTab, public IHierarchyProvider, public IInspectorProvider
 {
-    URHO3D_OBJECT(UITab, Tab);
+    URHO3D_OBJECT(UITab, BaseResourceTab);
 public:
     /// Construct.
     explicit UITab(Context* context);
@@ -53,7 +53,7 @@ public:
     /// Load project data from xml.
     void OnLoadProject(const JSONValue& tab) override;
     /// Load UI layout from resource path.
-    void LoadResource(const String& resourcePath) override;
+    bool LoadResource(const String& resourcePath) override;
     /// Save scene to a resource file.
     bool SaveResource() override;
     /// Called when tab focused.
@@ -94,7 +94,6 @@ protected:
 
     WeakPtr<UIElement> selectedElement_;
     Undo::Manager undo_;
-    String path_;
     bool hideResizeHandles_ = false;
     Vector<String> styleNames_;
     String textureSelectorAttribute_;
