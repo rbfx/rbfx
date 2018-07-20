@@ -768,7 +768,7 @@ void SceneTab::OnComponentAdded(VariantMap& args)
             node->SetTemporary(true);
 
             auto* billboard = node->CreateComponent<BillboardSet>();
-            billboard->SetFaceCameraMode(FaceCameraMode::FC_LOOKAT_Y);
+            billboard->SetFaceCameraMode(FaceCameraMode::FC_LOOKAT_XYZ);
             billboard->SetNumBillboards(1);
             billboard->SetMaterial(material);
             if (auto* bb = billboard->GetBillboard(0))
