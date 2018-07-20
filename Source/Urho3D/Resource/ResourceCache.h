@@ -221,6 +221,8 @@ public:
     /// Renames resource without deleting it from cache. `source` and `destination` may be resource names or absolute
     /// paths to files in resource directories. If destination is a resource name then source file is renamed within same data directory.
     bool RenameResource(String source, String destination);
+    /// When resource auto-reloading is enabled ignore reloading resource once.
+    void IgnoreResourceReload(const String& name);
 
 private:
     /// Find a resource.

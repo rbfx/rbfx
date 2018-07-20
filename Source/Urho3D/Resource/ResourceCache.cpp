@@ -1281,4 +1281,9 @@ bool ResourceCache::RenameResource(String source, String destination)
     return true;
 }
 
+void ResourceCache::IgnoreResourceReload(const String& name)
+{
+    ignoreResourceAutoReload_.EmplaceBack(name);
+}
+
 }
