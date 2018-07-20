@@ -425,6 +425,7 @@ void SceneTab::RenderNodeTree(Node* node)
 
     ui::Image("Node");
     ui::SameLine();
+    ui::PushID((void*)node);
     auto opened = ui::TreeNodeEx(name.CString(), flags);
     if (!opened)
     {
@@ -507,6 +508,7 @@ void SceneTab::RenderNodeTree(Node* node)
     }
     else
         ui::PopID();
+    ui::PopID();
 }
 
 void SceneTab::OnLoadProject(const JSONValue& tab)
