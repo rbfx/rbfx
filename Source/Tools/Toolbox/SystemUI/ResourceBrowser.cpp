@@ -35,18 +35,7 @@
 namespace Urho3D
 {
 
-ResourceBrowserResult ResourceBrowserWindow(String& path, String& selected)
-{
-    auto result = RBR_NOOP;
-    if (ui::BeginDock("Resources"))
-    {
-        result = ResourceBrowserWidget(path, selected);
-    }
-    ui::EndDock();
-    return result;
-}
-
-ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected)
+ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, bool scrollToSelected)
 {
     auto result = RBR_NOOP;
     auto systemUI = (SystemUI*)ui::GetIO().UserData;
@@ -120,6 +109,9 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected)
     Sort(mergedDirs.Begin(), mergedDirs.End());
     for (const auto& item: mergedDirs)
     {
+        if (scrollToSelected && selected == item)
+            ui::SetScrollHere();
+
         switch (ui::DoubleClickSelectable((ICON_FA_FOLDER " " + item).CString(), selected == item))
         {
         case 1:
@@ -137,6 +129,8 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected)
     }
 
     auto renderAssetEntry = [&](const String& item) {
+        if (scrollToSelected && selected == item)
+            ui::SetScrollHere();
         auto title = GetFileIcon(item) + " " + GetFileNameAndExtension(item);
         switch (ui::DoubleClickSelectable(title.CString(), selected == item))
         {

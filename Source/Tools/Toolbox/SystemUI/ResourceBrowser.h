@@ -38,9 +38,7 @@ enum ResourceBrowserResult
     RBR_ITEM_CONTEXT_MENU,
 };
 
-/// Create docked resource browser dock window.
-URHO3D_TOOLBOX_API ResourceBrowserResult ResourceBrowserWindow(String& path, String& selected);
 /// Create resource browser ui inside another window.
-URHO3D_TOOLBOX_API ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected);
+URHO3D_TOOLBOX_API ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, bool scrollToSelected=false);
 
 }
