@@ -26,6 +26,7 @@
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/Graphics/Drawable.h>
 #include <Urho3D/Math/MathDefs.h>
+#include <Urho3D/IO/VectorBuffer.h>
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/Scene/Scene.h>
@@ -52,24 +53,22 @@ public:
 
 class URHO3D_TOOLBOX_API CreateNodeAction : public EditAction
 {
-    unsigned nodeID;
     unsigned parentID;
-    XMLFile nodeData;
+    VectorBuffer nodeData;
     WeakPtr<Scene> editorScene;
 
 public:
     explicit CreateNodeAction(Node* node)
-        : nodeData(node->GetContext())
-        , editorScene(node->GetScene())
+        : editorScene(node->GetScene())
     {
-        nodeID = node->GetID();
         parentID = node->GetParent()->GetID();
-        XMLElement rootElem = nodeData.CreateRoot("node");
-        node->SaveXML(rootElem);
+        node->Save(nodeData);
     }
 
     void Undo() override
     {
+        nodeData.Seek(0);
+        auto nodeID = nodeData.ReadUInt();
         Node* parent = editorScene->GetNode(parentID);
         Node* node = editorScene->GetNode(nodeID);
         if (parent != nullptr && node != nullptr)
@@ -83,8 +82,12 @@ public:
         Node* parent = editorScene->GetNode(parentID);
         if (parent != nullptr)
         {
-            Node* node = parent->CreateChild("", nodeID < FIRST_LOCAL_ID ? REPLICATED : LOCAL, nodeID);
-            node->LoadXML(nodeData.GetRoot());
+            nodeData.Seek(0);
+            auto nodeID = nodeData.ReadUInt();
+            nodeData.Seek(0);
+
+            Node* node = parent->CreateChild(String::EMPTY, nodeID < FIRST_LOCAL_ID ? REPLICATED : LOCAL, nodeID);
+            node->Load(nodeData);
             // FocusNode(node);
         }
     }
@@ -92,21 +95,18 @@ public:
 
 class URHO3D_TOOLBOX_API DeleteNodeAction : public EditAction
 {
-    unsigned nodeID;
     unsigned parentID;
-    XMLFile nodeData;
+    unsigned parentIndex;
+    VectorBuffer nodeData;
     WeakPtr<Scene> editorScene;
 
 public:
     explicit DeleteNodeAction(Node* node)
-        : nodeData(node->GetContext())
-        , editorScene(node->GetScene())
+        : editorScene(node->GetScene())
     {
-        nodeID = node->GetID();
         parentID = node->GetParent()->GetID();
-        XMLElement rootElem = nodeData.CreateRoot("node");
-        node->SaveXML(rootElem);
-        rootElem.SetUInt("parentIndex", node->GetParent()->GetChildren().IndexOf(SharedPtr<Node>(node)));
+        parentIndex = node->GetParent()->GetChildren().IndexOf(SharedPtr<Node>(node));
+        node->Save(nodeData);
     }
 
     void Undo() override
@@ -114,18 +114,25 @@ public:
         Node* parent = editorScene->GetNode(parentID);
         if (parent != nullptr)
         {
+            nodeData.Seek(0);
+            auto nodeID = nodeData.ReadUInt();
             SharedPtr<Node> node(new Node(parent->GetContext()));
             node->SetID(nodeID);
-            if (node->LoadXML(nodeData.GetRoot()))
+
+            nodeData.Seek(0);
+            if (node->Load(nodeData))
             {
                 // FocusNode(node);
-                parent->AddChild(node, nodeData.GetRoot().GetUInt("parentIndex"));
+                parent->AddChild(node, parentIndex);
             }
         }
     }
 
     void Redo() override
     {
+        nodeData.Seek(0);
+        auto nodeID = nodeData.ReadUInt();
+
         Node* parent = editorScene->GetNode(parentID);
         Node* node = editorScene->GetNode(nodeID);
         if (parent != nullptr && node != nullptr)
@@ -219,23 +226,21 @@ public:
 class URHO3D_TOOLBOX_API CreateComponentAction : public EditAction
 {
     unsigned nodeID;
-    unsigned componentID;
-    XMLFile componentData;
+    VectorBuffer componentData;
     WeakPtr<Scene> editorScene;
 
 public:
     explicit CreateComponentAction(Component* component)
         : editorScene(component->GetScene())
-        , componentData(component->GetContext())
     {
-        componentID = component->GetID();
         nodeID = component->GetNode()->GetID();
-        XMLElement rootElem = componentData.CreateRoot("component");
-        component->SaveXML(rootElem);
+        component->Save(componentData);
     }
 
     void Undo() override
     {
+        componentData.Seek(sizeof(StringHash));
+        auto componentID = componentData.ReadUInt();
         Node* node = editorScene->GetNode(nodeID);
         Component* component = editorScene->GetComponent(componentID);
         if (node != nullptr && component != nullptr)
@@ -247,10 +252,13 @@ public:
         Node* node = editorScene->GetNode(nodeID);
         if (node != nullptr)
         {
-            Component* component = node->CreateComponent(
-                componentData.GetRoot().GetAttribute("type"),
+            componentData.Seek(0);
+            auto componentType = componentData.ReadStringHash();
+            auto componentID = componentData.ReadUInt();
+
+            Component* component = node->CreateComponent(componentType,
                 componentID < FIRST_LOCAL_ID ? REPLICATED : LOCAL, componentID);
-            component->LoadXML(componentData.GetRoot());
+            component->Load(componentData);
             component->ApplyAttributes();
             // FocusComponent(component);
         }
@@ -261,19 +269,15 @@ public:
 class URHO3D_TOOLBOX_API DeleteComponentAction : public EditAction
 {
     unsigned nodeID;
-    unsigned componentID;
-    XMLFile componentData;
+    VectorBuffer componentData;
     WeakPtr<Scene> editorScene;
 
 public:
     DeleteComponentAction(Component* component)
-        : componentData(component->GetContext())
-        , editorScene(component->GetScene())
+        : editorScene(component->GetScene())
     {
-        componentID = component->GetID();
         nodeID = component->GetNode()->GetID();
-        XMLElement rootElem = componentData.CreateRoot("component");
-        component->SaveXML(rootElem);
+        component->Save(componentData);
     }
 
     void Undo() override
@@ -281,9 +285,12 @@ public:
         Node* node = editorScene->GetNode(nodeID);
         if (node != nullptr)
         {
-            Component* component = node->CreateComponent(
-                componentData.GetRoot().GetAttribute("type"), componentID < FIRST_LOCAL_ID ? REPLICATED : LOCAL, componentID);
-            if (component->LoadXML(componentData.GetRoot()))
+            componentData.Seek(0);
+            auto componentType = componentData.ReadStringHash();
+            unsigned componentID = componentData.ReadUInt();
+            Component* component = node->CreateComponent(componentType, componentID < FIRST_LOCAL_ID ? REPLICATED : LOCAL, componentID);
+
+            if (component->Load(componentData))
             {
                 component->ApplyAttributes();
                 // FocusComponent(component);
@@ -293,6 +300,9 @@ public:
 
     void Redo() override
     {
+        componentData.Seek(sizeof(StringHash));
+        unsigned componentID = componentData.ReadUInt();
+
         Node* node = editorScene->GetNode(nodeID);
         Component* component = editorScene->GetComponent(componentID);
         if (node != nullptr && component != nullptr)
