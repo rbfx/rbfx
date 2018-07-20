@@ -48,10 +48,29 @@ ResourceTab::ResourceTab(Context* context)
 
     SubscribeToEvent(E_INSPECTORLOCATERESOURCE, [&](StringHash, VariantMap& args) {
         auto resourceName = args[InspectorLocateResource::P_NAME].GetString();
-        auto lastSlash = resourceName.FindLast('/') + 1;
-        resourcePath_ = resourceName.Substring(0, lastSlash);
-        resourceSelection_ = resourceName.Substring(lastSlash);
+        resourcePath_ = GetPath(resourceName);
+        resourceSelection_ = GetFileNameAndExtension(resourceName);
         scrollToSelected_ = true;
+    });
+    SubscribeToEvent(E_RESOURCEBROWSERRENAME, [&](StringHash, VariantMap& args) {
+        using namespace ResourceBrowserRename;
+        auto* project = GetSubsystem<Project>();
+        auto sourceName = project->GetResourcePath() + args[P_FROM].GetString();
+        auto destName = project->GetResourcePath() + args[P_TO].GetString();
+
+        if (GetCache()->RenameResource(sourceName, destName))
+            resourceSelection_ = GetFileNameAndExtension(destName);
+        else
+            URHO3D_LOGERRORF("Renaming '%s' to '%s' failed.", sourceName.CString(), destName.CString());
+    });
+    SubscribeToEvent(E_RESOURCEBROWSERDELETE, [&](StringHash, VariantMap& args) {
+        using namespace ResourceBrowserDelete;
+        auto* project = GetSubsystem<Project>();
+        auto fileName = project->GetResourcePath() + args[P_NAME].GetString();
+        if (GetFileSystem()->FileExists(fileName))
+            GetFileSystem()->Delete(fileName);
+        else if (GetFileSystem()->DirExists(fileName))
+            GetFileSystem()->RemoveDir(fileName, true);
     });
 }
 

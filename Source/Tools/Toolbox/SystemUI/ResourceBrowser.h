@@ -38,6 +38,17 @@ enum ResourceBrowserResult
     RBR_ITEM_CONTEXT_MENU,
 };
 
+URHO3D_EVENT(E_RESOURCEBROWSERRENAME, ResourceBrowserRename)
+{
+    URHO3D_PARAM(P_FROM, From);                                     // String
+    URHO3D_PARAM(P_TO, To);                                         // String
+}
+
+URHO3D_EVENT(E_RESOURCEBROWSERDELETE, ResourceBrowserDelete)
+{
+    URHO3D_PARAM(P_NAME, Name);                                     // String
+}
+
 /// Create resource browser ui inside another window.
 URHO3D_TOOLBOX_API ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, bool scrollToSelected=false);
 
