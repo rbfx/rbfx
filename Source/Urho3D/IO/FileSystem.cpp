@@ -1193,7 +1193,7 @@ bool FileSystem::RemoveDir(const String& directoryIn, bool recursive)
 
 bool FileSystem::CopyDir(const String& directoryIn, const String& directoryOut)
 {
-    if (FileExists(directoryOut) || DirExists(directoryOut))
+    if (FileExists(directoryOut))
         return false;
 
     Vector<String> results;
