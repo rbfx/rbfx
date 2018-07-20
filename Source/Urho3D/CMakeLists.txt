@@ -133,7 +133,37 @@ if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/librevision.h)
 endif ()
 
 # Link dependencies
-set (THIRD_PARTY_DEPENDENCIES FreeType JO LZ4 PugiXml rapidjson SDL StanHull STB IconFontCppHeaders Civetweb kNet ik Detour DetourCrowd DetourTileCache Recast Box2D WebP Bullet tracy-lib imgui LibCpuId GLEW MojoShader fcontext cr yaml-cpp)
+set (THIRD_PARTY_DEPENDENCIES 
+    FreeType
+    JO 
+    LZ4 
+    PugiXml 
+    rapidjson 
+    SDL 
+    StanHull 
+    STB 
+    IconFontCppHeaders 
+    Civetweb 
+    kNet 
+    ik 
+    Detour 
+    DetourCrowd 
+    DetourTileCache 
+    Recast 
+    Box2D 
+    WebP 
+    Bullet 
+    tracy-lib 
+    imgui 
+    LibCpuId 
+    GLEW 
+    MojoShader 
+    fcontext 
+    cr 
+    yaml-cpp 
+    nativefiledialog
+    )
+
 foreach (dep ${THIRD_PARTY_DEPENDENCIES})
     if (TARGET "${dep}")
         target_link_libraries(Urho3D ${dep})
