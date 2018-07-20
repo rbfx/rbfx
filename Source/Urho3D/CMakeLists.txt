@@ -161,7 +161,6 @@ set (THIRD_PARTY_DEPENDENCIES
     fcontext 
     cr 
     yaml-cpp 
-    nativefiledialog
     )
 
 foreach (dep ${THIRD_PARTY_DEPENDENCIES})
