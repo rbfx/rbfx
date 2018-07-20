@@ -45,11 +45,19 @@ ResourceTab::ResourceTab(Context* context)
 {
     isUtility_ = true;
     SetTitle("Resources");
+
+    SubscribeToEvent(E_INSPECTORLOCATERESOURCE, [&](StringHash, VariantMap& args) {
+        auto resourceName = args[InspectorLocateResource::P_NAME].GetString();
+        auto lastSlash = resourceName.FindLast('/') + 1;
+        resourcePath_ = resourceName.Substring(0, lastSlash);
+        resourceSelection_ = resourceName.Substring(lastSlash);
+        scrollToSelected_ = true;
+    });
 }
 
 bool ResourceTab::RenderWindowContent()
 {
-    if (ResourceBrowserWidget(resourcePath_, resourceSelection_) == RBR_ITEM_OPEN)
+    if (ResourceBrowserWidget(resourcePath_, resourceSelection_, scrollToSelected_) == RBR_ITEM_OPEN)
     {
         String selected = resourcePath_ + resourceSelection_;
         auto it = contentToTabType.Find(GetContentType(selected));
@@ -60,6 +68,7 @@ bool ResourceTab::RenderWindowContent()
             tab->LoadResource(selected);
         }
     }
+    scrollToSelected_ = false;
 
     return true;
 }

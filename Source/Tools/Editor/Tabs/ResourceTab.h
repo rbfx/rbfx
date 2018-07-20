@@ -40,6 +40,7 @@ public:
 protected:
     String resourcePath_;
     String resourceSelection_;
+    bool scrollToSelected_ = false;
 };
 
 }
