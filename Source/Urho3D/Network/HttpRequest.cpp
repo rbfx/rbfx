@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Core/Profiler.h"
+#include "../Core/Timer.h"
 #include "../IO/Log.h"
 #include "../Network/HttpRequest.h"
 

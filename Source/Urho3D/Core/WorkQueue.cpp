@@ -25,6 +25,8 @@
 #include "../Core/CoreEvents.h"
 #include "../Core/ProcessUtils.h"
 #include "../Core/Profiler.h"
+#include "../Core/Thread.h"
+#include "../Core/Timer.h"
 #include "../Core/WorkQueue.h"
 #include "../IO/Log.h"
 

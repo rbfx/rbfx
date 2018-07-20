@@ -24,6 +24,7 @@
 
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
+#include "../Core/Timer.h"
 
 #include <ctime>
 

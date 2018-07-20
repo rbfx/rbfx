@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Core/Profiler.h"
+#include "../Core/Thread.h"
 #include "../IO/File.h"
 #include "../IO/Log.h"
 #include "../Resource/Resource.h"

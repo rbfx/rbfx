@@ -20,37 +20,24 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
-#if URHO3D_PROFILING
-#   include <tracy/Tracy.hpp>
+#if _WIN32
+#   include <windows.h>
+#else
+#   include "pthread.h"
 #endif
+
+#include "Profiler.h"
 
 namespace Urho3D
 {
 
-static const unsigned PROFILER_COLOR_EVENTS = 0xb26d19;
-static const unsigned PROFILER_COLOR_RESOURCES = 0x006b82;
-
-void SetProfilerThreadName(const char* name);
-
+void SetProfilerThreadName(const char* name)
+{
+#if _WIN32
+    tracy::SetThreadName(GetCurrentThread(), name);
+#else
+    tracy::SetThreadName(pthread_self(), name);
+#endif
 }
 
-#if URHO3D_PROFILING
-#   define URHO3D_PROFILE_C(name, color)          ZoneScopedNC(name, color)
-#   define URHO3D_PROFILE(name)                   ZoneScopedN(name)
-#   define URHO3D_PROFILE_THREAD(name)            SetProfilerThreadName(name)
-#   define URHO3D_PROFILE_VALUE(name, value)      TracyPlot(name, value)
-#   define URHO3D_PROFILE_FRAME()                 FrameMark
-#   define URHO3D_PROFILE_MESSAGE(txt, len)       TracyMessage(txt, len)
-#   define URHO3D_PROFILE_ZONENAME(txt, len)      ZoneName(txt, len)
-#else
-#   define URHO3D_PROFILE(...)
-#   define URHO3D_PROFILE_THREAD(...)
-#   define URHO3D_PROFILE_VALUE(...)
-#   define URHO3D_PROFILE_FUNCTION(...)
-#   define URHO3D_PROFILE_FRAME()
-#   define URHO3D_PROFILE_MESSAGE(txt, len)
-#   define URHO3D_PROFILE_ZONENAME(txt, len)
-#endif
-
+}

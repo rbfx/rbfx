@@ -25,6 +25,7 @@
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
+#include "../Core/Thread.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Material.h"
 #include "../Graphics/Renderer.h"
