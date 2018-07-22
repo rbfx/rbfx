@@ -24,7 +24,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Xml.Serialization;
 
-namespace Urho3D
+namespace Urho3DNet
 {
     /// <summary>
     /// Represents a Quaternion.

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Urho3D
+namespace Urho3DNet
 {
 	[StructLayout(LayoutKind.Sequential)]
 	public struct Plane

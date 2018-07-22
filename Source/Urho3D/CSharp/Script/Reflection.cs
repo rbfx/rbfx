@@ -23,7 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace Urho3D.CSharp
+namespace Urho3DNet.CSharp
 {
     public static class ReflectionExtensions
     {

@@ -24,7 +24,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Xml.Serialization;
 
-namespace Urho3D
+namespace Urho3DNet
 {
     /// <summary>Represents a 2D vector using two single-precision floating-point numbers.</summary>
     /// <remarks>

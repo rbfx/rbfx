@@ -23,7 +23,7 @@ SOFTWARE.
 using System;
 using System.Runtime.InteropServices;
 
-namespace Urho3D
+namespace Urho3DNet
 {
     /// <summary>
     /// Represents a 3x3 matrix containing 3D rotation and scale.

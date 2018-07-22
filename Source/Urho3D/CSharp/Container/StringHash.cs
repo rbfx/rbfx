@@ -23,7 +23,7 @@ using System;
 using System.Text;
 
 
-namespace Urho3D
+namespace Urho3DNet
 {
 
 public struct StringHash

@@ -22,7 +22,7 @@
 
 using System;
 
-namespace Urho3D
+namespace Urho3DNet
 {
     /// RGBA color.
     public struct Color : IEquatable<Color>

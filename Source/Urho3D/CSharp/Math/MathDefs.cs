@@ -9,7 +9,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Urho3D
+namespace Urho3DNet
 {
     /// <summary>
     /// Contains common mathematical functions and constants.
@@ -70,6 +70,16 @@ namespace Urho3D
         /// Defines the base-2 logarithm of E.
         /// </summary>
         public const float Log2E = 1.442695041f;
+
+        /// <summary>
+        /// Defines the epsilon value. It is larger than builtin float.Epsilon.
+        /// </summary>
+        public const float Epsilon = 0.000001f;
+
+        /// <summary>
+        /// Minimal near clippi8ng value.
+        /// </summary>
+        public const float MinNearClip = 0.01f;
 
         /// <summary>
         /// Returns the next power of two that is greater than or equal to the specified number.

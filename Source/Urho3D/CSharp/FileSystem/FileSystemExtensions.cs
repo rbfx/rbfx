@@ -22,7 +22,7 @@
 
 using System.IO;
 
-namespace Urho3D
+namespace Urho3DNet
 {
     public static class FileSystemExtensions
     {

@@ -22,7 +22,7 @@ SOFTWARE.
 
 using System;
 
-namespace Urho3D
+namespace Urho3DNet
 {
     /// <summary>
     /// Represents a 2x2 matrix

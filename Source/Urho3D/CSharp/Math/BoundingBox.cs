@@ -1,8 +1,15 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Urho3D
+namespace Urho3DNet
 {
+    enum Intersection
+    {
+        Outside,
+        Intersects,
+        Inside
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct BoundingBox
     {
@@ -292,10 +299,10 @@ namespace Urho3D
         {
             Vector3 projMin = Min;
             Vector3 projMax = Max;
-            if (projMin.Z < MathDefs.MinNearclip)
-                projMin.Z = MathDefs.MinNearclip;
-            if (projMax.Z < MathDefs.MinNearclip)
-                projMax.Z = MathDefs.MinNearclip;
+            if (projMin.Z < MathDefs.MinNearClip)
+                projMin.Z = MathDefs.MinNearClip;
+            if (projMax.Z < MathDefs.MinNearClip)
+                projMax.Z = MathDefs.MinNearClip;
 
             var vertices = new Vector3[8];
             vertices[0] = projMin;
