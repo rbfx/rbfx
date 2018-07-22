@@ -174,23 +174,6 @@ endmacro ()
 
 macro (add_sample TARGET)
     if ("${ARGN}" STREQUAL CSHARP)
-        if (DESKTOP)    # TODO: Support other platforms
-            add_target_csharp(${TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET}.csproj)
-            add_dependencies(${TARGET} Urho3DNet)
-            if (MSVC AND URHO3D_WITH_MONO)
-                # On windows managed sample executable will not run when double-clicked. Create a
-                # native executable (bundle) which includes all managed dependencies instead.
-                find_package(Mono REQUIRED)
-                set (OUTPUT_DIR ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG})
-                set (OUTPUT_FILE ${OUTPUT_DIR}/${TARGET}.exe)
-                add_custom_command (TARGET ${TARGET} POST_BUILD
-                    COMMAND ${MONO_PATH}/bin/mkbundle.bat ARGS --deps -L "${OUTPUT_DIR}" -L "${MONO_PATH}/lib/mono/4.5" -o "${OUTPUT_FILE}.tmp" "${OUTPUT_FILE}"
-                    COMMAND ${CMAKE_COMMAND} -E remove ${OUTPUT_FILE}
-                    COMMAND ${CMAKE_COMMAND} -E rename ${OUTPUT_FILE}.tmp ${OUTPUT_FILE}
-                )
-            endif ()
-            install(FILES ${OUTPUT_FILE} DESTINATION ${DEST_SAMPLES_DIR})
-        endif ()
     else ()
         file (GLOB SOURCE_FILES *.cpp *.h)
         if (NOT URHO3D_WIN32_CONSOLE)

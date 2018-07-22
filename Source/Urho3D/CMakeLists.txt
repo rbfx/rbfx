@@ -309,27 +309,6 @@ else ()
     target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC)
 endif ()
 
-# CSharp support
-if (URHO3D_CSHARP)
-    if (URHO3D_WITH_MONO)
-        find_package(Mono REQUIRED)
-        target_include_directories(Urho3D PRIVATE ${MONO_INCLUDE_DIRS})
-        target_link_libraries(Urho3D PUBLIC ${MONO_LIBRARIES})
-        target_compile_options(Urho3D PRIVATE ${MONO_CFLAGS})
-        if (MSVC)
-            set (MONO_RUNTIME_SHARED ${MONO_PATH}/bin/mono-2.0-sgen.dll)
-            if (NOT $ENV{APPVEYOR})
-                # TODO: Fails on appveyor for no reason. Repeating command succeeds. WTF?
-                add_custom_command (TARGET Urho3D POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} ARGS -E copy_if_different ${MONO_RUNTIME_SHARED} ${CMAKE_BINARY_DIR}/bin/$<CONFIG>/
-                    )
-            endif ()
-            install (FILES ${MONO_RUNTIME_SHARED} DESTINATION ${DEST_BIN_DIR})
-        endif ()
-    endif ()
-    csharp_bind_target(TARGET Urho3D)
-endif ()
-
 # SDK installation
 install(TARGETS Urho3D
     EXPORT Urho3D

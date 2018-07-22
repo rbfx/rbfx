@@ -50,13 +50,10 @@ Urho3D bundles the following third-party libraries:
 - deboost.context (https://github.com/septag/deboost.context)
 - cr (https://github.com/fungos/cr)
 - crunch (https://github.com/Unity-Technologies/crunch/)
-- cppast (https://github.com/foonathan/cppast)
 - CLI11 v1.5.1 (https://github.com/CLIUtils/CLI11/)
 - fmt 4.1.0 (http://fmtlib.net)
 - spdlog 0.16.3 (https://github.com/gabime/spdlog)
-- tinydir 1.2.3 (https://github.com/cxong/tinydir/)
 - yaml-cpp 0.6.2 (https://github.com/jbeder/yaml-cpp/)
 
 Urho3D optionally uses the following external third-party libraries:
 - Mono (http://www.mono-project.com/download/stable/)
-- LLVM (http://releases.llvm.org/download.html)

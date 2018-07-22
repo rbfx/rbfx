@@ -98,10 +98,6 @@ endif ()
 
 add_subdirectory(CLI11)
 add_subdirectory(fmt)
-if (URHO3D_CSHARP)
-    add_subdirectory(cppast)
-    add_subdirectory(tinydir)
-    add_subdirectory(spdlog)
-endif ()
+add_subdirectory(spdlog)
 
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} ThirdParty)
