@@ -21,10 +21,12 @@
 //
 
 using System;
+using System.Runtime.InteropServices;
 
 namespace Urho3DNet
 {
     /// RGBA color.
+    [StructLayout(LayoutKind.Sequential)]
     public struct Color : IEquatable<Color>
     {
         public Color(Color color)

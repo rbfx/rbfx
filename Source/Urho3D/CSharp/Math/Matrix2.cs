@@ -21,12 +21,14 @@ SOFTWARE.
  */
 
 using System;
+using System.Runtime.InteropServices;
 
 namespace Urho3DNet
 {
     /// <summary>
     /// Represents a 2x2 matrix
     /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
     public struct Matrix2 : IEquatable<Matrix2>
     {
         /// <summary>

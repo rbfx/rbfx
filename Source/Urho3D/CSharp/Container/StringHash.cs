@@ -21,11 +21,13 @@
 //
 using System;
 using System.Text;
+using System.Runtime.InteropServices;
 
 
 namespace Urho3DNet
 {
 
+[StructLayout(LayoutKind.Sequential)]
 public struct StringHash
 {
     public uint Hash { get; }
