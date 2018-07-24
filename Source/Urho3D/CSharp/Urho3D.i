@@ -28,5 +28,10 @@
 %include "Helpers.i"
 %include "Math.i"
 %include "String.i"
-%include "Container.i"
+
+// Container
+%include "Container/RefCounted.i"
+%include "Container/Vector.i"
+%include "Container/HashMap.i"
+
 %include "Core.i"

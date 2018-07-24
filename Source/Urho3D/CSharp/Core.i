@@ -17,18 +17,15 @@
 %csmethodmodifiers Urho3D::Variant::ToString "public new"
 %include "Urho3D/Core/Variant.h"
 
-
 %ignore Urho3D::EventHandler;
 %ignore Urho3D::EventHandlerImpl;
 %ignore Urho3D::EventHandler11Impl;
-%ignore Urho3D::ObjectFactory;
+//%ignore Urho3D::ObjectFactory;
 %ignore Urho3D::Object::GetEventHandler;
 %ignore Urho3D::Object::SubscribeToEvent;
 %rename(GetTypeHash) Urho3D::TypeInfo::GetType;
-%rename(GetTypeHash) Urho3D::Object::GetType;
+%director Urho3D::Object;
 %include "Urho3D/Core/Object.h"
-%feature("director") Urho3D::Object;
-URHO3D_SHARED_PTR(Object)
 
 
 %ignore Urho3D::Context::RegisterFactory;
@@ -37,3 +34,9 @@ URHO3D_SHARED_PTR(Object)
 %ignore Urho3D::Context::GetAttributes;
 %ignore Urho3D::Context::GetNetworkAttributes;
 %include "Urho3D/Core/Context.h"
+
+%include "Urho3D/Engine/EngineDefs.h"
+%include "Urho3D/Engine/Engine.h"
+%director Urho3D::Application;
+%ignore Urho3D::Application::startupErrors_;
+%include "Urho3D/Engine/Application.h"

@@ -23,7 +23,12 @@
 find_package(SWIG REQUIRED)
 include(${SWIG_USE_FILE})
 
-set(CMAKE_SWIG_FLAGS "-v;-namespace;Urho3DNet")
+set(CMAKE_SWIG_FLAGS
+    -v;
+    -namespace Urho3DNet
+    -debug-tmused
+    -debug-tmsearch
+)
 
 set (SWIG_SYSTEM_INCLUDE_DIRS "${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES};${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES};${CMAKE_SYSTEM_INCLUDE_PATH};${CMAKE_EXTRA_GENERATOR_CXX_SYSTEM_INCLUDE_DIRS}")
 string (REPLACE ";" ";-I" SWIG_SYSTEM_INCLUDE_DIRS "${SWIG_SYSTEM_INCLUDE_DIRS}")
@@ -37,3 +42,4 @@ include_directories(../..)
 
 swig_add_module(Urho3DCSharp csharp Urho3D.i)
 swig_link_libraries(Urho3DCSharp Urho3D)
+set_target_properties(Urho3DCSharp PROPERTIES PREFIX ${CMAKE_SHARED_LIBRARY_PREFIX})

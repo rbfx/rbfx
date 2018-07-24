@@ -96,8 +96,8 @@ class String;
     } %}
 %typemap(csvarout, excode=SWIGEXCODE2) const String & %{
     get {
-      var ret = $imcall;$excode
-      return ret;
+      var str = $imcall;$excode
+      unsafe { return global::System.Text.Encoding.UTF8.GetString((byte*)str, global::Urho3DNet.Urho3D.strlen(str)); }
     } %}
 
 %typemap(typecheck) const String & = char *;

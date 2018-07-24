@@ -1,38 +1,41 @@
 
-%ignore Urho3D::RefCounted::SetDeleter;
-%ignore Urho3D::RefCounted::HasDeleter;
-%ignore Urho3D::RefCounted::GetDeleterUserData;
-%include "Urho3D/Container/RefCounted.h"
-%include "Urho3D/Container/Ptr.h"
-
-
-%include "Urho3D/Container/Vector.h"
-// Urho3D::PODVector<StringHash>
+namespace Urho3D { class PODVector; }
 %define URHO3D_PODVECTOR_ARRAY(CTYPE, CSTYPE)
 	%typemap(ctype)  Urho3D::PODVector<CTYPE> "::SafeArray"                          // c layer type
 	%typemap(imtype) Urho3D::PODVector<CTYPE> "global::Urho3DNet.Urho3D.SafeArray"   // pinvoke type
 	%typemap(cstype) Urho3D::PODVector<CTYPE> "CSTYPE[]"                             // c# type
-	%typemap(in)     Urho3D::PODVector<CTYPE> %{                                     // c to cpp
+
+  // c to cpp
+ 	%typemap(in)     Urho3D::PODVector<CTYPE> %{
 	    Urho3D::PODVector<CTYPE> $1_tmp((const CTYPE*)$input.data, $input.length);
 	    $1 = &$1_tmp;
 	%}
-	%typemap(out)    Urho3D::PODVector<CTYPE> %{ $result = ::SafeArray{(void*)&$1->Front(), $1->Size()}; %}                    // cpp to c
 
+	// cpp to c
+	%typemap(out)    Urho3D::PODVector<CTYPE> %{ 
+		$result = ::SafeArray{(void*)&$1->Front(), (int)$1->Size()};
+	%}
+
+	// C# to pinvoke
 	%typemap(csin,   pre=         "    unsafe{fixed (CSTYPE* swig_ptrTo_$csinput = $csinput) {",
 	                 terminator = "    }}") 
-	                 Urho3D::PODVector<CTYPE> "new global::Urho3DNet.Urho3D.SafeArray((global::System.IntPtr)swig_ptrTo_$csinput, $csinput.Length)"
+	                 Urho3D::PODVector<CTYPE> %{
+		new global::Urho3DNet.Urho3D.SafeArray((global::System.IntPtr)swig_ptrTo_$csinput, $csinput.Length)
+    %}
 
+    // pinvoke to C#
 	%typemap(csout, excode=SWIGEXCODE) Urho3D::PODVector<CTYPE> {                    // convert pinvoke to C#
-	    var ret = $imcall;$excode
-	    var res = new CSTYPE[ret.length];
-	    unsafe {
-	    	fixed (CSTYPE* pRes = res) {
-	    		var len = ret.length * global::System.Runtime.InteropServices.Marshal.SizeOf<CSTYPE>();
-		    	global::System.Buffer.MemoryCopy((void*)ret.data, (void*)pRes, len, len);
-		    }
+    var ret = $imcall;$excode
+    var res = new CSTYPE[ret.length];
+    unsafe {
+    	fixed (CSTYPE* pRes = res) {
+    		var len = ret.length * global::System.Runtime.InteropServices.Marshal.SizeOf<CSTYPE>();
+	    	global::System.Buffer.MemoryCopy((void*)ret.data, (void*)pRes, len, len);
 	    }
-	    return res;
-	  }
+    }
+    return res;
+  }
+
 	%apply Urho3D::PODVector<CTYPE> { const Urho3D::PODVector<CTYPE>& }
 %enddef
 
@@ -205,9 +208,9 @@ URHO3D_PODVECTOR_ARRAY(unsigned char, byte);
     void Reserve(unsigned n);
     %newobject GetRange(int index, int count);
     Vector();
-    Vector(const Vector &other);
+    Vector(Vector other);
     %extend {
-      Vector(unsigned capacity) {
+      Vector(int capacity) {
         auto* pv = new Urho3D::Vector< CTYPE >();
         pv->Reserve(capacity);
         return pv;
@@ -272,6 +275,7 @@ URHO3D_PODVECTOR_ARRAY(unsigned char, byte);
         $self->Erase($self->Begin() + index, $self->Begin() + index + count);
       }
     }
+
 %enddef
 
 %csmethodmodifiers Urho3D::Vector::getitemcopy "private"
@@ -281,36 +285,12 @@ URHO3D_PODVECTOR_ARRAY(unsigned char, byte);
 %csmethodmodifiers Urho3D::Vector::capacity "private"
 %csmethodmodifiers Urho3D::Vector::reserve "private"
 
-%define URHO3D_VECTOR_TEMPLATE(NAME, CTYPE)
-namespace Urho3D
-{
-  template<> class Vector< CTYPE >
-  {
-    URHO3D_VECTOR_TEMPLATE_INTERNAL(IList, %arg(CTYPE const&), %arg(CTYPE))
+namespace Urho3D {
+  template<class T> class Vector {
+    URHO3D_VECTOR_TEMPLATE_INTERNAL(IList, T const&, T)
   };
 }
-%template(NAME) Urho3D::Vector< CTYPE >
-%enddef
 
-
-
-URHO3D_VECTOR_TEMPLATE(StringVector, Urho3D::String);
-URHO3D_VECTOR_TEMPLATE(VariantVector, Urho3D::Variant);
-URHO3D_VECTOR_TEMPLATE(StringHashVector, Urho3D::StringHash);
-
-
-
-%ignore Urho3D::HashMap::Insert;
-%ignore Urho3D::HashMap::InsertNode;
-%ignore Urho3D::HashMap::InsertNew;
-%ignore Urho3D::HashMap::KeyValue;
-%ignore Urho3D::HashMap::Iterator;
-%ignore Urho3D::HashMap::ConstIterator;
-%include "Urho3D/Container/HashMap.h"
-
-%define URHO3D_HASHMAP_TEMPLATE(NAME, KEY, VALUE)
-    %ignore Urho3D::HashMap::HashMap(const std::initializer_list<Pair<KEY, VALUE>>&);
-    %template(VariantMap) Urho3D::HashMap<KEY, VALUE>;
-%enddef
-
-URHO3D_HASHMAP_TEMPLATE(VariantMap, Urho3D::StringHash, Urho3D::Variant);
+%template(StringVector)     Urho3D::Vector<Urho3D::String>;
+%template(VariantVector)    Urho3D::Vector<Urho3D::Variant>;
+%template(StringHashVector) Urho3D::Vector<Urho3D::StringHash>;
