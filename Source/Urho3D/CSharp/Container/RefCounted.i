@@ -4,6 +4,7 @@
 %ignore Urho3D::RefCounted::GetDeleterUserData;
 
 %define URHO3D_SMART_PTR(PTR_TYPE, TYPE)
+  %naturalvar PTR_TYPE<TYPE>;
   %feature("smartptr", noblock=1) PTR_TYPE<TYPE>;
   %refobject   TYPE "$this->AddRef();"
   %unrefobject TYPE "$this->ReleaseRef();"
@@ -12,6 +13,7 @@
   %typemap(imtype) PTR_TYPE<TYPE> "global::System.IntPtr"                // pinvoke type
   %typemap(cstype) PTR_TYPE<TYPE> "TYPE"            				     // c# type
   %typemap(in)     PTR_TYPE<TYPE> %{ $1 = PTR_TYPE<TYPE>($input); %}     // c to cpp
+  %typemap(in)     PTR_TYPE<TYPE>*%{ $1 = PTR_TYPE<TYPE>($input); %}     // c to cpp
   %typemap(out)    PTR_TYPE<TYPE> %{ $result = $1.Get(); $1.Get()->AddRef(); %} // cpp to c
   %typemap(out)    TYPE*          %{ $result = $1; $1->AddRef(); %}      // cpp to c
   %typemap(csin)   PTR_TYPE<TYPE> "$csinput.swigCPtr"                    // convert C# to pinvoke
@@ -19,9 +21,9 @@
       var ret = new TYPE($imcall, true);$excode
       return ret;
     }
-  %typemap(csdirectorin)  PTR_TYPE<TYPE> "$iminput"
-  %typemap(csdirectorout) PTR_TYPE<TYPE> "$cscall"
-  %typemap(directorout)   PTR_TYPE<TYPE> "$result = ???($input); // TODO"
+  %typemap(directorin)  PTR_TYPE<TYPE> "$iminput"
+  %typemap(directorout) PTR_TYPE<TYPE> "$cscall"
+  //%apply PTR_TYPE<TYPE> { PTR_TYPE<TYPE>* }
 %enddef
 
 %define URHO3D_REFCOUNTED(TYPE)

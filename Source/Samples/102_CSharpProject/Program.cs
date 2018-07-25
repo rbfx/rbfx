@@ -22,34 +22,34 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using Urho3D;
-using ImGui;
-using Urho3D.Events;
+using Urho3DNet;
+//using ImGui;
+//using Urho3D.Events;
 
 namespace DemoApplication
 {
-    [ObjectFactory]
-    class RotateObject : LogicComponent
-    {
-        public RotateObject(Context context) : base(context)
-        {
-            UpdateEventMask = UpdateEvent.UseUpdate;
-        }
-
-        public override void Update(float timeStep)
-        {
-            var d = new Quaternion(10 * timeStep, 20 * timeStep, 30 * timeStep);
-            Node.Rotate(d);
-        }
-    }
-
+//    [ObjectFactory]
+//    class RotateObject : LogicComponent
+//    {
+//        public RotateObject(Context context) : base(context)
+//        {
+//            UpdateEventMask = UpdateEvent.UseUpdate;
+//        }
+//
+//        public override void Update(float timeStep)
+//        {
+//            var d = new Quaternion(10 * timeStep, 20 * timeStep, 30 * timeStep);
+//            Node.Rotate(d);
+//        }
+//    }
+//
     class DemoApplication : Application
     {
-        private Scene _scene;
-        private Viewport _viewport;
-        private Node _camera;
-        private Node _cube;
-        private Node _light;
+//        private Scene _scene;
+//        private Viewport _viewport;
+//        private Node _camera;
+//        private Node _cube;
+//        private Node _light;
 
         public DemoApplication(Context context) : base(context)
         {
@@ -58,56 +58,56 @@ namespace DemoApplication
         public override void Setup()
         {
             var currentDir = Directory.GetCurrentDirectory();
-            EngineParameters[EngineDefs.EpFullScreen] = false;
-            EngineParameters[EngineDefs.EpWindowWidth] = 1920;
-            EngineParameters[EngineDefs.EpWindowHeight] = 1080;
-            EngineParameters[EngineDefs.EpWindowTitle] = "Hello C#";
-            EngineParameters[EngineDefs.EpResourcePrefixPaths] = $"{currentDir};{currentDir}/..";
+            engineParameters_[Urho3D.EP_FULL_SCREEN] = false;
+            engineParameters_[Urho3D.EP_WINDOW_WIDTH] = 1920;
+            engineParameters_[Urho3D.EP_WINDOW_HEIGHT] = 1080;
+            engineParameters_[Urho3D.EP_WINDOW_TITLE] = "Hello C#";
+            engineParameters_[Urho3D.EP_RESOURCE_PREFIX_PATHS] = $"{currentDir};{currentDir}/..";
         }
 
         public override void Start()
         {
-            Input.SetMouseVisible(true);
-
-            // Viewport
-            _scene = new Scene(Context);
-            _scene.CreateComponent<Octree>();
-
-            _camera = _scene.CreateChild("Camera");
-            _viewport = new Viewport(Context, _scene, _camera.CreateComponent<Camera>());
-            Renderer.SetViewport(0, _viewport);
-
-            // Background
-            Renderer.DefaultZone.FogColor = new Color(0.5f, 0.5f, 0.7f);
-
-            // Scene
-            _camera.Position = new Vector3(0, 2, -2);
-            _camera.LookAt(Vector3.Zero);
-
-            // Cube
-            _cube = _scene.CreateChild("Cube");
-            var model = _cube.CreateComponent<StaticModel>();
-            model.Model = Cache.GetResource<Model>("Models/Box.mdl");
-            model.SetMaterial(0, Cache.GetResource<Material>("Materials/Stone.xml"));
-            _cube.CreateComponent<RotateObject>();
-
-            // Light
-            _light = _scene.CreateChild("Light");
-            _light.CreateComponent<Light>();
-            _light.Position = new Vector3(0, 2, -1);
-            _light.LookAt(Vector3.Zero);
-
-            SubscribeToEvent<Update>(args =>
-            {
-                var timestep = args.GetFloat(Update.TimeStep);
-                Debug.Assert(this != null);
-
-                if (ui.Begin("Urho3D.NET"))
-                {
-                    ui.Text("Hello world from C#");
-                }
-                ui.End();
-            });
+//            Input.SetMouseVisible(true);
+//
+//            // Viewport
+//            _scene = new Scene(Context);
+//            _scene.CreateComponent<Octree>();
+//
+//            _camera = _scene.CreateChild("Camera");
+//            _viewport = new Viewport(Context, _scene, _camera.CreateComponent<Camera>());
+//            Renderer.SetViewport(0, _viewport);
+//
+//            // Background
+//            Renderer.DefaultZone.FogColor = new Color(0.5f, 0.5f, 0.7f);
+//
+//            // Scene
+//            _camera.Position = new Vector3(0, 2, -2);
+//            _camera.LookAt(Vector3.Zero);
+//
+//            // Cube
+//            _cube = _scene.CreateChild("Cube");
+//            var model = _cube.CreateComponent<StaticModel>();
+//            model.Model = Cache.GetResource<Model>("Models/Box.mdl");
+//            model.SetMaterial(0, Cache.GetResource<Material>("Materials/Stone.xml"));
+//            _cube.CreateComponent<RotateObject>();
+//
+//            // Light
+//            _light = _scene.CreateChild("Light");
+//            _light.CreateComponent<Light>();
+//            _light.Position = new Vector3(0, 2, -1);
+//            _light.LookAt(Vector3.Zero);
+//
+//            SubscribeToEvent<Update>(args =>
+//            {
+//                var timestep = args.GetFloat(Update.TimeStep);
+//                Debug.Assert(this != null);
+//
+//                if (ui.Begin("Urho3D.NET"))
+//                {
+//                    ui.Text("Hello world from C#");
+//                }
+//                ui.End();
+//            });
         }
     }
 

@@ -24,7 +24,7 @@ find_package(SWIG REQUIRED)
 include(${SWIG_USE_FILE})
 
 set(CMAKE_SWIG_FLAGS
-    -v;
+    -v
     -namespace Urho3DNet
     -debug-tmused
     -debug-tmsearch

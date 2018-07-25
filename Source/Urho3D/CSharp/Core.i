@@ -33,10 +33,15 @@
 %ignore Urho3D::Context::RegisterAttribute;            // AttributeHandle copy ctor is private
 %ignore Urho3D::Context::GetAttributes;
 %ignore Urho3D::Context::GetNetworkAttributes;
+%ignore Urho3D::Context::GetObjectCategories;
+%ignore Urho3D::Context::GetSubsystems;
+%ignore Urho3D::Context::GetObjectFactories;
+%ignore Urho3D::Context::GetAllAttributes;
 %include "Urho3D/Core/Context.h"
 
 %include "Urho3D/Engine/EngineDefs.h"
 %include "Urho3D/Engine/Engine.h"
+
 %director Urho3D::Application;
 %ignore Urho3D::Application::startupErrors_;
 %include "Urho3D/Engine/Application.h"
