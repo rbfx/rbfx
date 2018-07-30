@@ -115,14 +115,6 @@
         base.Dispose();
       }
     }
-
-  // Not all RefCounted are Object descendants, but most are.
-  // To implement these functions we need access to enclosing class type so we can use it with typeof().
-  %ignore NS::TYPE::GetTypeStatic;
-  %ignore NS::TYPE::GetTypeNameStatic;
-  // TODO: These can be implemented by having each class store a static instance of TypeInfo.
-  %ignore NS::TYPE::GetTypeInfoStatic;
-  %ignore NS::TYPE::GetTypeInfo;
 %enddef
 
 %include "_refcounted.i"

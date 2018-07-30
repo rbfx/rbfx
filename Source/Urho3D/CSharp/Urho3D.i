@@ -22,6 +22,7 @@
 %typemap(csclassmodifiers) SWIGTYPE "public partial class"
 
 %include "cmalloc.i"
+%include "arrays_csharp.i"
 %include "Helpers.i"
 %include "Math.i"
 %include "_constants.i"
@@ -94,6 +95,15 @@ IGNORE_SUBSYSTEM(WorkQueue)
   return GetType().Name;
 }
 
+// Not all RefCounted are Object descendants, but most are.
+// To implement these functions we need access to enclosing class type so we can use it with typeof().
+%ignore GetTypeStatic;
+%ignore GetTypeNameStatic;
+// TODO: These can be implemented by having each class store a static instance of TypeInfo.
+%ignore GetTypeInfoStatic;
+%ignore GetTypeInfo;
+%rename(GetTypeHash) GetType;
+
 %ignore Urho3D::EventHandler;
 %ignore Urho3D::EventHandlerImpl;
 %ignore Urho3D::EventHandler11Impl;
@@ -120,6 +130,7 @@ IGNORE_SUBSYSTEM(WorkQueue)
 %include "Urho3D/Core/Context.h"
 %include "Urho3D/Core/Timer.h"
 %include "Urho3D/Core/Spline.h"
+%include "Urho3D/Core/Mutex.h"
 
 // --------------------------------------- Engine ---------------------------------------
 
@@ -147,3 +158,34 @@ IGNORE_SUBSYSTEM(WorkQueue)
 %include "Urho3D/Input/InputConstants.h"
 %include "Urho3D/Input/Controls.h"
 %include "Urho3D/Input/Input.h"
+
+// --------------------------------------- Audio ---------------------------------------
+%apply void* VOID_INT_PTR { signed char* }
+%apply int FIXED[]  { int *dest }
+%typemap(cstype) int *dest "ref int[]"
+%typemap(imtype) int *dest "global::System.IntPtr"
+%csmethodmodifiers Urho3D::SoundSource::Mix "public unsafe";
+%ignore Urho3D::BufferedSoundStream::AddData(const SharedArrayPtr<signed char>& data, unsigned numBytes);
+%ignore Urho3D::BufferedSoundStream::AddData(const SharedArrayPtr<signed short>& data, unsigned numBytes);
+%ignore Urho3D::Sound::GetData;
+
+namespace Urho3D
+{
+  // Temporary until Component.h is wrapped
+  enum AutoRemoveMode
+  {
+    REMOVE_DISABLED = 0,
+    REMOVE_COMPONENT,
+    REMOVE_NODE
+  };
+}
+
+%include "Urho3D/Audio/AudioDefs.h"
+%include "Urho3D/Audio/Audio.h"
+%include "Urho3D/Audio/BufferedSoundStream.h"
+%include "Urho3D/Audio/OggVorbisSoundStream.h"
+%include "Urho3D/Audio/Sound.h"
+%include "Urho3D/Audio/SoundListener.h"
+%include "Urho3D/Audio/SoundSource3D.h"
+%include "Urho3D/Audio/SoundSource.h"
+%include "Urho3D/Audio/SoundStream.h"

@@ -121,6 +121,8 @@ namespace DemoApplication
                 {
                     application.Run();
                 }
+                // Free any allocated objects that may be holding on to context. Prevents crash at exit.
+                GC.Collect(GC.MaxGeneration);
             }
         }
     }

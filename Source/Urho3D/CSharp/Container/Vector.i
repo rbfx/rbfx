@@ -85,13 +85,12 @@ URHO3D_PODVECTOR_ARRAY(int, int);
 
   // pinvoke to C#
   %typemap(csout, excode=SWIGEXCODE) Urho3D::PODVector<CTYPE*> & {                    // convert pinvoke to C#
-    var $n_name_ret = $imcall;$excode
-    var $n_name_res = new CSTYPE[ret.length];
+    var ret = $imcall;$excode
+    var res = new CSTYPE[ret.length];
     unsafe {
-      fixed (global::System.IntPtr* p$n_name_Ret = $n_name_ret) {
-        for (var i = 0; i < $n_name_ret.length; i++)
-          $n_name_res[i] = new CSTYPE(p$n_name_Ret[i], false);
-      }
+      global::System.IntPtr* p_Ret = &ret.data;
+      for (var i = 0; i < ret.length; i++)
+        res[i] = new CSTYPE(p_Ret[i], false);
     }
     return res;
   }
@@ -123,6 +122,7 @@ URHO3D_PODVECTOR_ARRAY(int, int);
 %enddef
 
 URHO3D_PODVECTOR_PTR_ARRAY(Urho3D::Object, global::Urho3DNet.Object);
+URHO3D_PODVECTOR_PTR_ARRAY(Urho3D::SoundSource, global::Urho3DNet.SoundSource);
 
 
 
