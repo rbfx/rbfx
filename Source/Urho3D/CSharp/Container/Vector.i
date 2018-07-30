@@ -14,7 +14,7 @@ namespace Urho3D { class PODVector; }
 
   // cpp to c
   %typemap(out)    Urho3D::PODVector<CTYPE> & %{ 
-    $result = ::SafeArray{(void*)&$1->Front(), (int)$1->Size()};                     // TODO: broken
+    $result = ::SafeArray{(void*)&$1->Front(), (int)$1->Size()};
   %}
 
   // C# to pinvoke
@@ -62,7 +62,7 @@ URHO3D_PODVECTOR_ARRAY(unsigned char, byte);
 
   // cpp to c
   %typemap(out)    Urho3D::PODVector<CTYPE*> & %{ 
-    $result = ::SafeArray{(void*)&$1->Front(), (int)$1->Size()};                      // TODO: broken
+    $result = ::SafeArray{(void*)&$1->Front(), (int)$1->Size()};
   %}
 
   // C# to pinvoke

@@ -77,5 +77,6 @@ IGNORE_SUBSYSTEM(WorkQueue)
 
 %include "Urho3D/Engine/Engine.h"
 
+%ignore Urho3D::Application::engine_;
 %director Urho3D::Application;
 %include "Urho3D/Engine/Application.h"
