@@ -7,7 +7,7 @@ namespace Urho3D { class PODVector; }
   %typemap(cstype) Urho3D::PODVector<CTYPE> & "CSTYPE[]"                             // c# type
 
   // c to cpp
-   %typemap(in)     Urho3D::PODVector<CTYPE> & %{
+  %typemap(in)     Urho3D::PODVector<CTYPE> & %{
       Urho3D::PODVector<CTYPE> $1_tmp((const CTYPE*)$input.data, $input.length);
       $1 = &$1_tmp;
   %}
@@ -22,7 +22,7 @@ namespace Urho3D { class PODVector; }
                    terminator = "    }}") 
                    Urho3D::PODVector<CTYPE> & %{
     new global::Urho3DNet.Urho3D.SafeArray((global::System.IntPtr)swig_ptrTo_$csinput, $csinput.Length)
-    %}
+  %}
 
     // pinvoke to C#
   %typemap(csout, excode=SWIGEXCODE) Urho3D::PODVector<CTYPE> & {                    // convert pinvoke to C#
@@ -38,15 +38,24 @@ namespace Urho3D { class PODVector; }
   }
 
   %typemap(csvarin, excode=SWIGEXCODE2) Urho3D::PODVector<CTYPE> & %{
-    set $typemap(csin, Urho3D::PODVector<CTYPE> &)
+    set {
+      unsafe {
+        fixed (CSTYPE* swig_ptrTo_$csinput = $csinput) {
+          $imcall;$excode
+        }
+      }
+    }
   %}
   %typemap(csvarout, excode=SWIGEXCODE2) Urho3D::PODVector<CTYPE> & %{
-    get $typemap(csout, Urho3D::PODVector<CTYPE> &)
+    get { $typemap(csout, Urho3D::PODVector<CTYPE> &) }
   %}
 %enddef
 
 URHO3D_PODVECTOR_ARRAY(Urho3D::StringHash, global::Urho3DNet.StringHash);
 URHO3D_PODVECTOR_ARRAY(unsigned char, byte);
+URHO3D_PODVECTOR_ARRAY(float, float);
+URHO3D_PODVECTOR_ARRAY(bool, bool);
+URHO3D_PODVECTOR_ARRAY(int, int);
 
 // ----------------------------------- PODVector<T*> -----------------------------------
 %define URHO3D_PODVECTOR_PTR_ARRAY(CTYPE, CSTYPE)

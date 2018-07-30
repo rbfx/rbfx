@@ -80,6 +80,13 @@ def find_identifier_parent_name(node):
     return name
 
 
+def read_raw_code(node):
+    extent = node.extent
+    with open(extent.start.file.name) as fp:
+        fp.seek(node.extent.start.offset, os.SEEK_SET)
+        return fp.read(node.extent.end_int_data - node.extent.start.offset)
+
+
 class DefineConstantsPass(AstPass):
     def on_begin(self):
         self.fp = open(os.path.join(self.module.args.output, '_constants.i'), 'w+')
@@ -89,15 +96,12 @@ class DefineConstantsPass(AstPass):
 
     def get_constant_value(self, node):
         # Supports only single line constants so far
-        extent = node.extent
-        with open(extent.start.file.name) as fp:
-            fp.seek(node.extent.start.offset, os.SEEK_SET)
-            ln = fp.read(node.extent.end_int_data - node.extent.start.offset)
-            if '=' in ln:
-                ln = re.sub(rf'.*{node.spelling}\s*=\s*(.+);[\n\t\s]*', r'\1', ln)
-            else:
-                ln = ln.rstrip('\s\n;')
-            return ln
+        ln = read_raw_code(node)
+        if '=' in ln:
+            ln = re.sub(rf'.*{node.spelling}\s*=\s*(.+);[\n\t\s]*', r'\1', ln)
+        else:
+            ln = ln.rstrip('\s\n;')
+        return ln
 
     @AstPass.once
     def visit(self, node, action: AstAction):
@@ -116,6 +120,7 @@ class DefineConstantsPass(AstPass):
                     self.fp.write(f'CS_CONSTANT({fqn}, {idiomatic_name}, {value});\n')
                 else:
                     self.fp.write(f'%rename({idiomatic_name}) {fqn};\n')
+
             elif is_builtin_type(node.type):
                 literal = node.find_any_child(kind=CursorKind.INTEGER_LITERAL) or node.find_any_child(kind=CursorKind.FLOATING_LITERAL)
                 idiomatic_name = camel_case(node.spelling)
@@ -135,7 +140,7 @@ class DefineConstantsPass(AstPass):
                 else:
                     self.fp.write(f'%rename({idiomatic_name}) {fqn};\n')
 
-        elif node.kind in (CursorKind.CXX_METHOD, CursorKind.FUNCTION_DECL, CursorKind.FIELD_DECL):
+        elif node.kind in (CursorKind.CXX_METHOD, CursorKind.FUNCTION_DECL, CursorKind.FIELD_DECL, CursorKind.ENUM_CONSTANT_DECL):
             if node.kind in (CursorKind.CXX_METHOD, CursorKind.FUNCTION_DECL):
                 if re.match(r'^operator[^\w]+.*$', node.spelling) is not None:
                     return False
@@ -146,7 +151,11 @@ class DefineConstantsPass(AstPass):
                 name = fqn
             idiomatic_name = camel_case(node.spelling)
             if name != idiomatic_name:
+                if node.kind == CursorKind.ENUM_CONSTANT_DECL:
+                    fqn = name
                 self.fp.write(f'%rename({idiomatic_name}) {fqn};\n')
+
+            return False
 
         return True
 
@@ -191,6 +200,7 @@ class DefineRefCountedPass(AstPass):
                     bases_set = self.parent_classes[super_fqn] = set()
                 # Create tree of base classes
                 bases_set.add(sub_fqn)
+            return False
         return True
 
 
@@ -325,6 +335,67 @@ class DefinePropertiesPass(AstPass):
         return True
 
 
+# class CreateImplicitConstructors(AstPass):
+#
+#     def on_begin(self):
+#         self.fp = open(os.path.join(self.module.args.output, '_ctors.i'), 'w+')
+#
+#     def on_end(self):
+#         self.fp.close()
+#
+#     @AstPass.once
+#     def visit(self, node, action: AstAction):
+#         if node.kind == CursorKind.CONSTRUCTOR:
+#             code = read_raw_code(node)
+#             if not code.startswith('explicit') and len(list(node.find_children(kind=CursorKind.PARM_DECL))) == 1:
+#                 pass
+#
+#         return True
+
+class FindFlagEnums(AstPass):
+    flag_enums = []
+
+    def visit(self, node, action: AstAction):
+        if node.kind == CursorKind.STRUCT_DECL:
+            if node.spelling == 'IsFlagSet':
+                enum = node.children[0].type.spelling
+                self.flag_enums.append(enum)
+            return False
+        return True
+
+
+class CleanEnumValues(AstPass):
+    def on_begin(self):
+        self.fp = open(os.path.join(self.module.args.output, '_enums.i'), 'w+')
+
+    def on_end(self):
+        self.fp.close()
+
+    @AstPass.once
+    def visit(self, node, action: AstAction):
+        if node.kind == CursorKind.ENUM_DECL:
+            if node.type.spelling in FindFlagEnums.flag_enums:
+                self.fp.write(f'%csattributes {node.type.spelling} "[global::System.Flags]";\n')
+
+            if node.type.spelling.startswith('Urho3D::'):
+                for child in node.children:
+                    code = read_raw_code(child)
+                    if ' = SDL' in code:
+                        # Enum uses symbols from SDL. Redefine it with raw enum values.
+                        self.fp.write(f'%csconstvalue("{child.enum_value}") {child.spelling};\n')
+                    elif 'M_MAX_UNSIGNED' in code:
+                        self.fp.write(f'%csconstvalue("uint.MaxValue") {child.spelling};\n')
+                        self.fp.write(f'%typemap(csbase) {node.type.spelling} "uint"\n')
+            return False
+        elif node.kind == CursorKind.TYPE_ALIAS_DECL:
+            underlying_type = node.type.get_canonical()
+            if underlying_type.spelling.startswith('Urho3D::FlagSet<'):
+                enum_name = node.children[1].type.spelling
+                target_name = node.spelling.strip("'")
+                self.fp.write(f'using {target_name} = {enum_name};\n')
+        return True
+
+
 class Urho3DModule(Module):
     exclude_headers = [
         r'/Urho3D/Precompiled.h',
@@ -348,9 +419,12 @@ class Urho3DModule(Module):
         self.exclude_headers = [re.compile(pattern, re.IGNORECASE) for pattern in self.exclude_headers]
 
     def register_passes(self, passes: list):
-        passes += [DefinePropertiesPass, DefineRefCountedPass, DefineConstantsPass]
+        passes += [FindFlagEnums, CleanEnumValues, DefinePropertiesPass, DefineRefCountedPass, DefineConstantsPass]
 
     def gather_files(self):
+        yield os.path.join(self.args.input, '../ThirdParty/SDL/include/SDL/SDL_joystick.h')
+        yield os.path.join(self.args.input, '../ThirdParty/SDL/include/SDL/SDL_gamecontroller.h')
+        yield os.path.join(self.args.input, '../ThirdParty/SDL/include/SDL/SDL_keycode.h')
         for root, dirs, files in os.walk(self.args.input):
             for file in files:
                 if not file.endswith('.h'):

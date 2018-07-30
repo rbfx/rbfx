@@ -26,7 +26,7 @@ namespace Urho3D { class StringHash; }
 %}
 %typemap(csvarout, excode=SWIGEXCODE2) Urho3D::StringHash & %{
   get {
-    var ret = new global::Urho3DNet.StringHash($imcall);$excode
+    var ret = new $typemap(cstype, Urho3D::StringHash)($imcall);$excode
     return ret;
   }
 %}
@@ -87,7 +87,24 @@ namespace Urho3D { class StringHash; }
     var ret = $imcall;$excode
     return global::System.Runtime.InteropServices.Marshal.PtrToStructure<$typemap(cstype, Urho3D::CPP_TYPE)>(ret);
   }
+
   %apply CPP_TYPE { CPP_TYPE& }
+
+  %typemap(csvarin, excode=SWIGEXCODE2) CPP_TYPE & %{
+    set {
+      unsafe {
+        $typemap(cstype, Urho3D::CPP_TYPE)* swig_ptrTo_$csinput_bytes = &value;
+        $imcall;$excode
+      }
+    }
+  %}
+  %typemap(csvarout, excode=SWIGEXCODE2) CPP_TYPE & %{
+    get {
+      var ret = $imcall;$excode
+      return global::System.Runtime.InteropServices.Marshal.PtrToStructure<$typemap(cstype, Urho3D::CPP_TYPE)>(ret);
+    }
+  %}
+
 %enddef
 
 namespace Urho3D

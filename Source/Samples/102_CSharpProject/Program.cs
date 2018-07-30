@@ -67,8 +67,8 @@ namespace DemoApplication
 
         public override void Start()
         {
-//            Input.SetMouseVisible(true);
-//
+            Input.SetMouseVisible(true);
+
 //            // Viewport
 //            _scene = new Scene(Context);
 //            _scene.CreateComponent<Octree>();
