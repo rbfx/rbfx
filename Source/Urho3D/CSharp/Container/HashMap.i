@@ -190,7 +190,7 @@
     bool Empty() const;
     void Clear();
     %extend {
-      T getitem(K key) throw (std::out_of_range) {
+      T getitem(const K& key) throw (std::out_of_range) {
         auto iter = $self->Find(key);
         if (iter != $self->End())
           return iter->second_;
@@ -198,22 +198,22 @@
           throw std::out_of_range("key not found");
       }
 
-      void setitem(K key, T x) {
+      void setitem(const K& key, const T& x) {
         (*$self)[key] = x;
       }
 
-      bool ContainsKey(K key) {
+      bool ContainsKey(const K& key) {
         return $self->Find(key) != $self->End();
       }
 
-      void Add(K key, T val) throw (std::out_of_range) {
+      void Add(const K& key, const T& val) throw (std::out_of_range) {
         auto iter = $self->Find(key);
         if (iter != $self->End())
           throw std::out_of_range("key already exists");
         (*$self)[key] = val;
       }
 
-      bool Remove(K key) {
+      bool Remove(const K& key) {
         auto iter = $self->Find(key);
         if (iter != $self->End()) {
           $self->Erase(iter);

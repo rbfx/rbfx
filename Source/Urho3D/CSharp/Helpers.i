@@ -23,7 +23,7 @@
         }
     }
 
-    public static int strlen(global::System.IntPtr s)
+    internal static int strlen(global::System.IntPtr s)
     {
         int len = 0;
         while (global::System.Runtime.InteropServices.Marshal.ReadByte(s, len) != 0)
@@ -33,3 +33,9 @@
 %}
 
 %free(void);
+
+%define CS_CONSTANT(fqn, name, value)
+    %csconst(1) name;
+    #define name value
+    %ignore fqn;
+%enddef

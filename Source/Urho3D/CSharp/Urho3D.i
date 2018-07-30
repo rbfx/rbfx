@@ -1,4 +1,4 @@
-%module(directors="1", dirprot="1", allprotected="1") Urho3D
+%module(directors="1", dirprot="1", allprotected="1", naturalvar=1) Urho3D
 
 #define URHO3D_STATIC
 #define URHO3D_API
@@ -18,20 +18,17 @@
 %pragma(csharp) imclassclassmodifiers="[System.Security.SuppressUnmanagedCodeSecurity]\ninternal class"
 %typemap(csclassmodifiers) SWIGTYPE "public partial class"
 
-// Bug https://github.com/swig/swig/issues/1291
-%ignore Urho3D::ResourceRef::type_;
-%ignore Urho3D::ResourceRefList::type_;
-// csin typemap pre and terminator strings are not applied to variable properties.
-%ignore Urho3D::ResourceRef;
-
 %include "cmalloc.i"
 %include "Helpers.i"
 %include "Math.i"
+%include "_constants.i"
 %include "String.i"
 
 // Container
 %include "Container/RefCounted.i"
 %include "Container/Vector.i"
 %include "Container/HashMap.i"
+
+%include "_properties.i"
 
 %include "Core.i"

@@ -58,11 +58,11 @@ namespace DemoApplication
         public override void Setup()
         {
             var currentDir = Directory.GetCurrentDirectory();
-            engineParameters_[Urho3D.EP_FULL_SCREEN] = false;
-            engineParameters_[Urho3D.EP_WINDOW_WIDTH] = 1920;
-            engineParameters_[Urho3D.EP_WINDOW_HEIGHT] = 1080;
-            engineParameters_[Urho3D.EP_WINDOW_TITLE] = "Hello C#";
-            engineParameters_[Urho3D.EP_RESOURCE_PREFIX_PATHS] = $"{currentDir};{currentDir}/..";
+            EngineParameters[Urho3D.EpFullScreen] = false;
+            EngineParameters[Urho3D.EpWindowWidth] = 1920;
+            EngineParameters[Urho3D.EpWindowHeight] = 1080;
+            EngineParameters[Urho3D.EpWindowTitle] = "Hello C#";
+            EngineParameters[Urho3D.EpResourcePrefixPaths] = $"{currentDir};{currentDir}/..";
         }
 
         public override void Start()

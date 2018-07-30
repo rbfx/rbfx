@@ -1,46 +1,124 @@
 
 namespace Urho3D { class PODVector; }
+// ----------------------------------- PODVector<builtin> -----------------------------------
 %define URHO3D_PODVECTOR_ARRAY(CTYPE, CSTYPE)
-	%typemap(ctype)  Urho3D::PODVector<CTYPE> "::SafeArray"                          // c layer type
-	%typemap(imtype) Urho3D::PODVector<CTYPE> "global::Urho3DNet.Urho3D.SafeArray"   // pinvoke type
-	%typemap(cstype) Urho3D::PODVector<CTYPE> "CSTYPE[]"                             // c# type
+  %typemap(ctype)  Urho3D::PODVector<CTYPE> & "::SafeArray"                          // c layer type
+  %typemap(imtype) Urho3D::PODVector<CTYPE> & "global::Urho3DNet.Urho3D.SafeArray"   // pinvoke type
+  %typemap(cstype) Urho3D::PODVector<CTYPE> & "CSTYPE[]"                             // c# type
 
   // c to cpp
- 	%typemap(in)     Urho3D::PODVector<CTYPE> %{
-	    Urho3D::PODVector<CTYPE> $1_tmp((const CTYPE*)$input.data, $input.length);
-	    $1 = &$1_tmp;
-	%}
+   %typemap(in)     Urho3D::PODVector<CTYPE> & %{
+      Urho3D::PODVector<CTYPE> $1_tmp((const CTYPE*)$input.data, $input.length);
+      $1 = &$1_tmp;
+  %}
 
-	// cpp to c
-	%typemap(out)    Urho3D::PODVector<CTYPE> %{ 
-		$result = ::SafeArray{(void*)&$1->Front(), (int)$1->Size()};
-	%}
+  // cpp to c
+  %typemap(out)    Urho3D::PODVector<CTYPE> & %{ 
+    $result = ::SafeArray{(void*)&$1->Front(), (int)$1->Size()};                     // TODO: broken
+  %}
 
-	// C# to pinvoke
-	%typemap(csin,   pre=         "    unsafe{fixed (CSTYPE* swig_ptrTo_$csinput = $csinput) {",
-	                 terminator = "    }}") 
-	                 Urho3D::PODVector<CTYPE> %{
-		new global::Urho3DNet.Urho3D.SafeArray((global::System.IntPtr)swig_ptrTo_$csinput, $csinput.Length)
+  // C# to pinvoke
+  %typemap(csin,   pre=         "    unsafe{fixed (CSTYPE* swig_ptrTo_$csinput = $csinput) {",
+                   terminator = "    }}") 
+                   Urho3D::PODVector<CTYPE> & %{
+    new global::Urho3DNet.Urho3D.SafeArray((global::System.IntPtr)swig_ptrTo_$csinput, $csinput.Length)
     %}
 
     // pinvoke to C#
-	%typemap(csout, excode=SWIGEXCODE) Urho3D::PODVector<CTYPE> {                    // convert pinvoke to C#
+  %typemap(csout, excode=SWIGEXCODE) Urho3D::PODVector<CTYPE> & {                    // convert pinvoke to C#
     var ret = $imcall;$excode
     var res = new CSTYPE[ret.length];
     unsafe {
-    	fixed (CSTYPE* pRes = res) {
-    		var len = ret.length * global::System.Runtime.InteropServices.Marshal.SizeOf<CSTYPE>();
-	    	global::System.Buffer.MemoryCopy((void*)ret.data, (void*)pRes, len, len);
-	    }
+      fixed (CSTYPE* pRes = res) {
+        var len = ret.length * global::System.Runtime.InteropServices.Marshal.SizeOf<CSTYPE>();
+        global::System.Buffer.MemoryCopy((void*)ret.data, (void*)pRes, len, len);
+      }
     }
     return res;
   }
 
-	%apply Urho3D::PODVector<CTYPE> { const Urho3D::PODVector<CTYPE>& }
+  %typemap(csvarin, excode=SWIGEXCODE2) Urho3D::PODVector<CTYPE> & %{
+    set $typemap(csin, Urho3D::PODVector<CTYPE> &)
+  %}
+  %typemap(csvarout, excode=SWIGEXCODE2) Urho3D::PODVector<CTYPE> & %{
+    get $typemap(csout, Urho3D::PODVector<CTYPE> &)
+  %}
 %enddef
 
 URHO3D_PODVECTOR_ARRAY(Urho3D::StringHash, global::Urho3DNet.StringHash);
 URHO3D_PODVECTOR_ARRAY(unsigned char, byte);
+
+// ----------------------------------- PODVector<T*> -----------------------------------
+%define URHO3D_PODVECTOR_PTR_ARRAY(CTYPE, CSTYPE)
+  %typemap(ctype)  Urho3D::PODVector<CTYPE*> & "::SafeArray"                          // c layer type
+  %typemap(imtype) Urho3D::PODVector<CTYPE*> & "global::Urho3DNet.Urho3D.SafeArray"   // pinvoke type
+  %typemap(cstype) Urho3D::PODVector<CTYPE*> & "CSTYPE[]"                             // c# type
+
+  // c to cpp
+   %typemap(in)     Urho3D::PODVector<CTYPE*> & %{
+      Urho3D::PODVector<CTYPE*> $1_tmp((CTYPE* const*)$input.data, (unsigned)$input.length);
+      $1 = &$1_tmp;
+  %}
+
+  // cpp to c
+  %typemap(out)    Urho3D::PODVector<CTYPE*> & %{ 
+    $result = ::SafeArray{(void*)&$1->Front(), (int)$1->Size()};                      // TODO: broken
+  %}
+
+  // C# to pinvoke
+  %typemap(csin,   pre=         "
+    var $csinput_ptr_array = new global::System.IntPtr[$csinput.Length];
+    for (var i = 0; i < $csinput.Length; i++)
+      $csinput_ptr_array[i] = CSTYPE.getCPtr($csinput[i]).Handle;
+    unsafe {
+      fixed (CSTYPE* p_$csinput = $csinput) {
+  ", terminator = "    } }") Urho3D::PODVector<CTYPE*> & "new global::Urho3DNet.Urho3D.SafeArray((global::System.IntPtr)p_$csinput, $csinput.Length)"
+
+  // pinvoke to C#
+  %typemap(csout, excode=SWIGEXCODE) Urho3D::PODVector<CTYPE*> & {                    // convert pinvoke to C#
+    var $n_name_ret = $imcall;$excode
+    var $n_name_res = new CSTYPE[ret.length];
+    unsafe {
+      fixed (global::System.IntPtr* p$n_name_Ret = $n_name_ret) {
+        for (var i = 0; i < $n_name_ret.length; i++)
+          $n_name_res[i] = new CSTYPE(p$n_name_Ret[i], false);
+      }
+    }
+    return res;
+  }
+
+  %typemap(csvarin, excode=SWIGEXCODE2) Urho3D::PODVector<CTYPE*> & %{
+    set {
+      var $csinput_ptr_array = new global::System.IntPtr[$csinput.Length];
+      for (var i = 0; i < $csinput.Length; i++)
+        $csinput_ptr_array[i] = CSTYPE.getCPtr($csinput[i]).Handle;
+      unsafe {
+        fixed (global::System.IntPtr* p_$csinput = $csinput_ptr_array) {
+          $imcall;$excode
+        }
+      }
+    }
+  %}
+  %typemap(csvarout, excode=SWIGEXCODE2) Urho3D::PODVector<CTYPE*> & %{
+    get {
+      var ret = $imcall;$excode
+      var res = new CSTYPE[ret.length];
+      unsafe {
+        global::System.IntPtr* pRet = &ret.data;
+        for (var i = 0; i < ret.length; i++)
+          res[i] = new CSTYPE(pRet[i], false);
+      }
+      return res;
+    }
+  %}
+%enddef
+
+URHO3D_PODVECTOR_PTR_ARRAY(Urho3D::Object, global::Urho3DNet.Object);
+
+
+
+
+
 
 
 %define URHO3D_VECTOR_TEMPLATE_INTERNAL(CSINTERFACE, CONST_REFERENCE, CTYPE...)
@@ -196,10 +274,10 @@ URHO3D_PODVECTOR_ARRAY(unsigned char, byte);
   public:
     void Clear();
     %rename(Add) Push;
-    void Push(CTYPE x);
-    bool Contains(CTYPE x);
-    bool Remove(CTYPE x);
-    int IndexOf(CTYPE x);
+    void Push(const CTYPE& x);
+    bool Contains(const CTYPE& x);
+    bool Remove(const CTYPE& x);
+    int IndexOf(const CTYPE& x);
     %rename(size) Size;
     unsigned Size() const;
     %rename(capacity) Capacity;
@@ -220,12 +298,12 @@ URHO3D_PODVECTOR_ARRAY(unsigned char, byte);
           throw std::out_of_range("index");
         return (*$self)[index];
       }
-      CTYPE getitem(int index) throw (std::out_of_range) {
+      const CTYPE& getitem(int index) throw (std::out_of_range) {
         if (index < 0 || (unsigned)index >= $self->Size())
           throw std::out_of_range("index");
         return (*$self)[index];
       }
-      void setitem(int index, CTYPE val) throw (std::out_of_range) {
+      void setitem(int index, const CTYPE& val) throw (std::out_of_range) {
         if (index < 0 || (unsigned)index >= $self->Size())
           throw std::out_of_range("index");
         (*$self)[index] = val;
@@ -246,7 +324,7 @@ URHO3D_PODVECTOR_ARRAY(unsigned char, byte);
         result->Insert(result->End(), $self->Begin() + index, $self->Begin() + index + count);
         return result;
       }
-      void Insert(int index, CTYPE x) throw (std::out_of_range) {
+      void Insert(int index, const CTYPE& x) throw (std::out_of_range) {
         if (index >= 0 && index < (int)$self->Size() + 1)
           $self->Insert($self->Begin() + index, x);
         else
@@ -293,4 +371,3 @@ namespace Urho3D {
 
 %template(StringVector)     Urho3D::Vector<Urho3D::String>;
 %template(VariantVector)    Urho3D::Vector<Urho3D::Variant>;
-%template(StringHashVector) Urho3D::Vector<Urho3D::StringHash>;

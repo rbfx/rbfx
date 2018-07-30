@@ -32,9 +32,9 @@ class String;
 %typemap(directorin) String %{ $input = SWIG_csharp_string_callback($1.CString()); %}
 
 %typemap(csin, pre=         "    var $csinput_bytes = global::System.Text.Encoding.UTF8.GetBytes($csinput);\n"
-                            "    unsafe {fixed (byte* swig_ptrTo_$csinput_bytes = $csinput_bytes) {",
+                            "    unsafe {fixed (byte* p_$csinput_bytes = $csinput_bytes) {",
                terminator = "    }}") 
-               String "(global::System.IntPtr)swig_ptrTo_$csinput_bytes"
+               String "(global::System.IntPtr)p_$csinput_bytes"
 
 %typemap(csout, excode=SWIGEXCODE) String {
     unsafe {
@@ -55,7 +55,13 @@ class String;
 %typemap(cstype) const String & "string"
 
 %typemap(csdirectorin) const String & "$iminput"
-%typemap(csdirectorout) const String & "$cscall"
+%typemap(csdirectorout) const String & "global::System.IntPtr.Zero"
+  /*var res = global::System.Text.Encoding.UTF8.GetBytes($cscall);
+  unsafe {
+    fixed (byte* p_res = res) {
+      return IntPtr.Zero; // TODO: fixme
+    }
+  }*/
 
 %typemap(in, canthrow=1) const String &
 %{ if (!$input) {
@@ -67,9 +73,9 @@ class String;
 %typemap(out) const String & %{ $result = SWIG_csharp_string_callback($1->CString()); %}
 
 %typemap(csin, pre=         "    var $csinput_bytes = global::System.Text.Encoding.UTF8.GetBytes($csinput);\n"
-                            "    unsafe {fixed (byte* swig_ptrTo_$csinput_bytes = $csinput_bytes) {",
+                            "    unsafe {fixed (byte* p_$csinput_bytes = $csinput_bytes) {",
                terminator = "    }}") 
-               const String & "(global::System.IntPtr)swig_ptrTo_$csinput_bytes"
+               const String & "(global::System.IntPtr)p_$csinput_bytes"
 
 %typemap(csout, excode=SWIGEXCODE) const String& {
     unsafe {
@@ -90,15 +96,26 @@ class String;
 
 %typemap(directorin) const String & %{ $input = SWIG_csharp_string_callback($1.CString()); %}
 
-%typemap(csvarin, excode=SWIGEXCODE2) const String & %{
+%typemap(csvarin, excode=SWIGEXCODE2) const String& %{
     set {
-      $imcall;$excode
-    } %}
-%typemap(csvarout, excode=SWIGEXCODE2) const String & %{
+      var $csinput_bytes = global::System.Text.Encoding.UTF8.GetBytes($csinput);
+      unsafe {
+        fixed (byte* p_$csinput_bytes = $csinput_bytes) {
+          $imcall;
+        }
+      }
+      $excode
+    }
+  %}
+
+%typemap(csvarout, excode=SWIGEXCODE2) const String& %{
     get {
-      var str = $imcall;$excode
-      unsafe { return global::System.Text.Encoding.UTF8.GetString((byte*)str, global::Urho3DNet.Urho3D.strlen(str)); }
-    } %}
+      unsafe {
+          var str = $imcall;$excode
+          return global::System.Text.Encoding.UTF8.GetString((byte*)str, global::Urho3DNet.Urho3D.strlen(str));
+      }
+    }
+  %}
 
 %typemap(typecheck) const String & = char *;
 

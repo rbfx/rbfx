@@ -108,3 +108,4 @@ Thumbs.db
 .*
 *.DotSettings
 *.DotSettings.user
+__pycache__

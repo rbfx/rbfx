@@ -22,10 +22,10 @@
             return new Variant(value);
         }
 
-//        public static implicit operator Variant(StringHash value)
-//        {
-//            return new Variant(value);
-//        }
+        public static implicit operator Variant(StringHash value)
+        {
+            return new Variant(value);
+        }
 
         public static implicit operator Variant(bool value)
         {
@@ -82,10 +82,10 @@
             return new Variant(value);
         }
 
-//        public static implicit operator Variant(ResourceRef value)
-//        {
-//            return new Variant(value);
-//        }
+        public static implicit operator Variant(ResourceRef value)
+        {
+            return new Variant(value);
+        }
 
         public static implicit operator Variant(ResourceRefList value)
         {
