@@ -155,8 +155,6 @@ class DefineConstantsPass(AstPass):
                     fqn = name
                 self.fp.write(f'%rename({idiomatic_name}) {fqn};\n')
 
-            return False
-
         return True
 
 
@@ -200,7 +198,7 @@ class DefineRefCountedPass(AstPass):
                     bases_set = self.parent_classes[super_fqn] = set()
                 # Create tree of base classes
                 bases_set.add(sub_fqn)
-            return False
+
         return True
 
 
@@ -216,18 +214,21 @@ class DefinePropertiesPass(AstPass):
         access = 'public'
         getter = None
         setter = None
-        getter_access = ''
-        setter_access = ''
+        getter_access = 'private'
+        setter_access = 'private'
         type = ''
 
         def __init__(self, name):
             self.name = name
 
-    def access_to_str(self, access):
-        return 'public' if access == AccessSpecifier.PUBLIC else 'protected'
+    def access_to_str(self, m):
+        if m.parent.is_abstract_record():
+            return 'public'
+        return 'public' if m.access == AccessSpecifier.PUBLIC else 'protected'
 
     def on_begin(self):
         self.fp = open(os.path.join(self.module.args.output, '_properties.i'), 'w+')
+        self.fp.write('%include "attribute.i"\n')
 
     def on_end(self):
         self.fp.close()
@@ -236,10 +237,10 @@ class DefinePropertiesPass(AstPass):
         sorted_methods = OrderedDict()
 
         for m in methods:
-            if m.is_virtual_method() or m.is_static_method() or m.access == AccessSpecifier.PRIVATE:
+            if m.is_virtual_method() or m.is_pure_virtual_method() or m.is_static_method() or m.access == AccessSpecifier.PRIVATE:
                 continue
 
-            basename = re.sub('^Is|Get|Set', '', m.spelling, flags=re.IGNORECASE)
+            basename = re.sub('^Get|Set', '', m.spelling, flags=re.IGNORECASE)
             if not basename:
                 continue
 
@@ -260,10 +261,13 @@ class DefinePropertiesPass(AstPass):
                         continue
 
                 prop.setter = m
-                prop.setter_access = self.access_to_str(m.access)
+                if m.parent.is_abstract_record():
+                    prop.setter_access = 'public'
                 prop.type = argument_type
-                if prop.access == prop.setter_access:
-                    prop.setter_access = ''
+                # if prop.access == 'protected' and prop.setter_access == 'public':
+                #     prop.access = 'public'
+                # else:
+                #     prop.access = prop.setter_access
 
             elif (m.spelling.startswith('Get') or m.spelling.startswith('Is')) and num_children == 0:
                 if prop.setter:
@@ -272,10 +276,13 @@ class DefinePropertiesPass(AstPass):
                         continue
 
                 prop.getter = m
-                prop.getter_access = self.access_to_str(m.access)
+                if m.parent.is_abstract_record():
+                    prop.getter_access = 'public'
                 prop.type = m.type.get_result()
-                if prop.access == prop.getter_access:
-                    prop.getter_access = ''
+                # if prop.access == 'protected' and prop.getter_access == 'public':
+                #     prop.access = 'public'
+                # else:
+                #     prop.access = prop.getter_access
 
             if prop.getter or prop.setter:
                 sorted_methods[basename] = prop
@@ -296,61 +303,30 @@ class DefinePropertiesPass(AstPass):
                                             m.spelling.startswith('Set') or
                                             m.spelling.startswith('Is'), methods))
             if not len(methods):
-                return False
+                return True
 
             properties = self.sort_getters_and_setters(methods)
             if not len(properties):
-                return False
-
-            cls_fqn = get_fully_qualified_name(node)
-            for basename, prop in properties.items():
-                if prop.getter:
-                    self.fp.write(f'%csmethodmodifiers {get_fully_qualified_name(prop.getter)} "private";\n')
-                if prop.setter:
-                    self.fp.write(f'%csmethodmodifiers {get_fully_qualified_name(prop.setter)} "private";\n')
+                return True
 
             for basename, prop in properties.items():
+                if not prop.getter:
+                    continue
+                # base_type = desugar_type(prop.type)
+                full_type = prop.type.spelling
+                # if 'FlagSet' in base_type.spelling:
+                #     base_type = full_type = base_type.spelling[16:-7]
+
+                prop_setter_spelling = None
                 if prop.setter:
-                    enclosing_method = get_fully_qualified_name(prop.setter)
-                    enclosing_method_return_type = 'void'
-                elif prop.getter:
-                    enclosing_method = get_fully_qualified_name(prop.getter)
-                    enclosing_method_return_type = prop.type.spelling
-                else:
-                    raise Exception()
+                    prop_setter_spelling = prop.setter.spelling
+                self.fp.write(f'%csattribute({node.fully_qualified_name}, '
+                              f'%arg({full_type}), {prop.access}, {prop.name}, '
+                              f'{prop.getter_access}, {prop.getter.spelling}, '
+                              f'{prop.setter_access}, {prop_setter_spelling});\n')
 
-                self.fp.write(f'%typemap(csout) {enclosing_method_return_type} {enclosing_method} %{{\n')
-                self.fp.write(f'  $typemap(csout, {enclosing_method_return_type})\n')
-
-                self.fp.write(f'  {prop.access} $typemap(cstype, {prop.type.spelling}) {prop.name} {{\n')
-                if prop.getter:
-                    self.fp.write(f'    {prop.getter_access} get {{ return '
-                                  f'{self.insert_rename(cls_fqn, prop.getter.spelling)}(); }}\n')
-                elif prop.setter:
-                    self.fp.write(f'    {prop.setter_access} set {{ '
-                                  f'{self.insert_rename(cls_fqn, prop.setter.spelling)}(value); }}\n')
-                self.fp.write('  }\n')
-                self.fp.write('%}\n')
-            return False
         return True
 
-
-# class CreateImplicitConstructors(AstPass):
-#
-#     def on_begin(self):
-#         self.fp = open(os.path.join(self.module.args.output, '_ctors.i'), 'w+')
-#
-#     def on_end(self):
-#         self.fp.close()
-#
-#     @AstPass.once
-#     def visit(self, node, action: AstAction):
-#         if node.kind == CursorKind.CONSTRUCTOR:
-#             code = read_raw_code(node)
-#             if not code.startswith('explicit') and len(list(node.find_children(kind=CursorKind.PARM_DECL))) == 1:
-#                 pass
-#
-#         return True
 
 class FindFlagEnums(AstPass):
     flag_enums = []
@@ -360,7 +336,7 @@ class FindFlagEnums(AstPass):
             if node.spelling == 'IsFlagSet':
                 enum = node.children[0].type.spelling
                 self.flag_enums.append(enum)
-            return False
+
         return True
 
 
@@ -386,13 +362,16 @@ class CleanEnumValues(AstPass):
                     elif 'M_MAX_UNSIGNED' in code:
                         self.fp.write(f'%csconstvalue("uint.MaxValue") {child.spelling};\n')
                         self.fp.write(f'%typemap(csbase) {node.type.spelling} "uint"\n')
-            return False
+
         elif node.kind == CursorKind.TYPE_ALIAS_DECL:
             underlying_type = node.type.get_canonical()
             if underlying_type.spelling.startswith('Urho3D::FlagSet<'):
                 enum_name = node.children[1].type.spelling
                 target_name = node.spelling.strip("'")
                 self.fp.write(f'using {target_name} = {enum_name};\n')
+                self.fp.write(f'%typemap(ctype) {target_name} "size_t";\n')
+                self.fp.write(f'%typemap(out) {target_name} "$result = (size_t)$1.AsInteger();"\n')
+
         return True
 
 

@@ -74,21 +74,24 @@ namespace Urho3D { class StringHash; }
   CSHARP_VALUE_TYPE_HELPER(CPP_TYPE, global::Urho3DNet.CPP_TYPE);
   struct CPP_TYPE;
 
-  %typemap(ctype)  CPP_TYPE "Urho3D::CPP_TYPE*"                    // c layer type
-  %typemap(imtype) CPP_TYPE "global::System.IntPtr"                // pinvoke type
-  %typemap(cstype) CPP_TYPE "global::Urho3DNet.CPP_TYPE"           // c# type
-  %typemap(in)     CPP_TYPE %{ $1 = $input; %}                     // c to cpp
-  %typemap(out)    CPP_TYPE %{ $result = (Urho3D::CPP_TYPE*)SWIG_csharp_##CPP_TYPE##_callback((const void*)&$1); %} // cpp to c
-  %typemap(out)    CPP_TYPE& %{ $result = (Urho3D::CPP_TYPE*)SWIG_csharp_##CPP_TYPE##_callback((const void*)$1); %} // cpp to c
-  %typemap(csin, pre=         "    unsafe {$typemap(cstype, Urho3D::CPP_TYPE)* swig_ptrTo_$csinput_bytes = &$csinput;",
-                 terminator = "    }") 
-                 CPP_TYPE& "(global::System.IntPtr)swig_ptrTo_$csinput_bytes"
+  %typemap(ctype)  CPP_TYPE  "Urho3D::CPP_TYPE*"                    // c layer type
+  %typemap(imtype) CPP_TYPE  "global::System.IntPtr"                // pinvoke type
+  %typemap(cstype) CPP_TYPE  "global::Urho3DNet.CPP_TYPE"           // c# type
+  %typemap(in)     CPP_TYPE  %{ $1 = *$input; /*CPP_TYPE*/ %}                     // c to cpp
+  %typemap(out)    CPP_TYPE  %{ $result = (Urho3D::CPP_TYPE*)SWIG_csharp_##CPP_TYPE##_callback((const void*)&$1); %} // cpp to c
+  %typemap(csin, pre=         "    unsafe {\n"
+                              "      $typemap(cstype, Urho3D::CPP_TYPE)* swig_ptrTo_$csinput_bytes = &$csinput;\n",
+                 terminator = "    }\n") 
+    CPP_TYPE, const CPP_TYPE& "(global::System.IntPtr)swig_ptrTo_$csinput_bytes"
+
   %typemap(csout, excode=SWIGEXCODE) CPP_TYPE {                   // convert pinvoke to C#
     var ret = $imcall;$excode
     return global::System.Runtime.InteropServices.Marshal.PtrToStructure<$typemap(cstype, Urho3D::CPP_TYPE)>(ret);
   }
 
-  %apply CPP_TYPE { CPP_TYPE& }
+  %apply CPP_TYPE { CPP_TYPE & }
+  %typemap(in)     CPP_TYPE& %{ $1 = $input;  /*CPP_TYPE&*/ %}                     // c to cpp
+  %typemap(out)    CPP_TYPE& %{ $result = (Urho3D::CPP_TYPE*)SWIG_csharp_##CPP_TYPE##_callback((const void*) $1); %} // cpp to c
 
   %typemap(csvarin, excode=SWIGEXCODE2) CPP_TYPE & %{
     set {
@@ -104,6 +107,14 @@ namespace Urho3D { class StringHash; }
       return global::System.Runtime.InteropServices.Marshal.PtrToStructure<$typemap(cstype, Urho3D::CPP_TYPE)>(ret);
     }
   %}
+
+  %typemap(cstype) const CPP_TYPE & "global::Urho3DNet.CPP_TYPE"
+  %typemap(cstype) CPP_TYPE & "ref global::Urho3DNet.CPP_TYPE"
+  %typemap(csin, pre=         "    unsafe {\n"
+                              "      fixed ($typemap(cstype, Urho3D::CPP_TYPE)* swig_ptrTo_$csinput_bytes = &$csinput) {\n",
+                 terminator = "      }\n"
+                              "    }\n") 
+                 CPP_TYPE&    "(global::System.IntPtr)swig_ptrTo_$csinput_bytes"
 
 %enddef
 

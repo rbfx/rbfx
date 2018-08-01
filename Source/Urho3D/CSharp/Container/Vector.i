@@ -52,7 +52,17 @@ namespace Urho3D { class PODVector; }
 %enddef
 
 URHO3D_PODVECTOR_ARRAY(Urho3D::StringHash, global::Urho3DNet.StringHash);
+URHO3D_PODVECTOR_ARRAY(Urho3D::Vector2, global::Urho3DNet.Vector2);
+URHO3D_PODVECTOR_ARRAY(Urho3D::Vector3, global::Urho3DNet.Vector3);
+URHO3D_PODVECTOR_ARRAY(Urho3D::Vector4, global::Urho3DNet.Vector4);
+URHO3D_PODVECTOR_ARRAY(Urho3D::IntVector2, global::Urho3DNet.IntVector2);
+URHO3D_PODVECTOR_ARRAY(Urho3D::IntVector3, global::Urho3DNet.IntVector3);
+URHO3D_PODVECTOR_ARRAY(Urho3D::IntVector4, global::Urho3DNet.IntVector4);
+URHO3D_PODVECTOR_ARRAY(Urho3D::Quaternion, global::Urho3DNet.Quaternion);
+URHO3D_PODVECTOR_ARRAY(Urho3D::Rect, global::Urho3DNet.Rect);
+URHO3D_PODVECTOR_ARRAY(Urho3D::IntRect, global::Urho3DNet.IntRect);
 URHO3D_PODVECTOR_ARRAY(unsigned char, byte);
+URHO3D_PODVECTOR_ARRAY(unsigned short, ushort);
 URHO3D_PODVECTOR_ARRAY(float, float);
 URHO3D_PODVECTOR_ARRAY(bool, bool);
 URHO3D_PODVECTOR_ARRAY(int, int);
@@ -123,10 +133,7 @@ URHO3D_PODVECTOR_ARRAY(int, int);
 
 URHO3D_PODVECTOR_PTR_ARRAY(Urho3D::Object, global::Urho3DNet.Object);
 URHO3D_PODVECTOR_PTR_ARRAY(Urho3D::SoundSource, global::Urho3DNet.SoundSource);
-
-
-
-
+URHO3D_PODVECTOR_PTR_ARRAY(Urho3D::CrowdAgent, global::Urho3DNet.CrowdAgent);
 
 
 

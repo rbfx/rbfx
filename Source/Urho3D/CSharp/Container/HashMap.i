@@ -255,3 +255,4 @@ namespace Urho3D {
 }
 
 %template(VariantMap) Urho3D::HashMap<Urho3D::StringHash, Urho3D::Variant>;
+%template(PackageMap) Urho3D::HashMap<Urho3D::String, Urho3D::PackageEntry>;
