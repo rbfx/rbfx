@@ -115,18 +115,24 @@ class String;
    $1 = &$1_str;
  %}
 
-%typemap(csin, pre=         "    var $csinput_bytes = global::System.Text.Encoding.UTF8.GetBytes($csinput);\n"
-                            "    unsafe {\n"
-                            "      global::System.IntPtr ref_$csinput = global::System.IntPtr.Zero;\n"
-                            "      try {\n"
-                            "        fixed (byte* p_$csinput_bytes = $csinput_bytes) {\n"
-                            "          ref_$csinput = new global::System.IntPtr(&p_$csinput_bytes);\n",
-               terminator = "        }\n"
-                            "      } finally {\n"
-                            "        $csinput = global::System.Text.Encoding.UTF8.GetString(*(byte**)ref_$csinput, global::Urho3DNet.Urho3D.strlen(new global::System.IntPtr(*(byte**)ref_$csinput)));\n"
-                            "      }\n"
-                            "    }\n")
+%typemap(csin, pre=         "    var $csinput_bytes = global::System.Text.Encoding.UTF8.GetBytes($csinput);
+                                 unsafe {
+                                   global::System.IntPtr ref_$csinput = global::System.IntPtr.Zero;
+                                   try {
+                                     fixed (byte* p_$csinput_bytes = $csinput_bytes) {
+                                       ref_$csinput = new global::System.IntPtr(&p_$csinput_bytes);
+                            ",
+               terminator = "        }
+                                   } finally {
+                                     $csinput = global::System.Text.Encoding.UTF8.GetString(*(byte**)ref_$csinput, global::Urho3DNet.Urho3D.strlen(new global::System.IntPtr(*(byte**)ref_$csinput)));
+                                   }
+                                 }
+                            ")
                String &     "ref_$csinput"
 
+%typemap(directorin) String& %{
+  char* p_$input = SWIG_csharp_string_callback($1.CString());
+  $input = &p_$input;
+%}
 
 }

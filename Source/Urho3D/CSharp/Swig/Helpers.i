@@ -6,12 +6,26 @@
     {
         void* data;
         int length;
+
+        SafeArray() : data(nullptr), length(0) { }
+        SafeArray(void* d, int len) : data(d), length(len) { }
+        SafeArray(int){}
+        void operator=(int)
+        {
+          data = nullptr;
+          length = 0;
+        }
     };
+    
+    // Helper for returning empty values
+    #define _RET_NULL
+    #define _RET_NULL0 {}
+    #define RET_NULL(...) _RET_NULL##__VA_ARGS__
 %}
 
 %pragma(csharp) modulecode=%{
     [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
-    internal struct SafeArray
+    public struct SafeArray
     {
         public global::System.IntPtr data;
         public int length;
@@ -79,4 +93,44 @@ int strlen(const char* void_ptr_string);
           double AttributeName;
       }
   #endif
+%enddef
+
+%define %inheritable(NS, CTYPE)
+  %director CTYPE;
+  %wrapper %{
+      $moduleDirectorTypes[SwigDirector_##CTYPE::GetTypeStatic()] = SwigDirector_##CTYPE::GetTypeInfoStatic();
+      context->RegisterFactory<SwigDirector_##CTYPE>();%}
+  %typemap(directorbody) NS::CTYPE %{
+  public:
+    using ClassName = SwigDirector_##CTYPE;
+    using BaseClassName = NS::CTYPE;
+    static Urho3D::StringHash GetTypeStatic() { return GetTypeInfoStatic()->GetType(); }
+    static const Urho3D::String& GetTypeNameStatic() { return GetTypeInfoStatic()->GetTypeName(); }
+    static const Urho3D::TypeInfo* GetTypeInfoStatic() { static const Urho3D::TypeInfo typeInfoStatic("SwigDirector_" #CTYPE, BaseClassName::GetTypeInfoStatic()); return &typeInfoStatic; }
+  %}
+%enddef
+
+%define %csexposefunc(DEST, NAME, CRETURN, CPARAMS)
+%DEST %{
+  typedef CRETURN (SWIGSTDCALL* SWIG_CSharp$module##NAME##Callback)(CPARAMS);
+  SWIG_CSharp$module##NAME##Callback SWIG_CSharp$module##NAME = nullptr;
+  #ifdef __cplusplus
+  extern "C"
+  #endif
+  SWIGEXPORT void SWIGSTDCALL SWIGRegister$module##NAME##Callback(SWIG_CSharp$module##NAME##Callback callback) {
+    SWIG_CSharp$module##NAME = callback;
+  }
+%}
+
+%pragma(csharp) imclasscode=%{
+  static protected System.Delegate SWIG_CSharp$module##NAME##DelegateInstance = SWIG_CSharp$module##NAME##Helper.RegisterDelegate();
+  internal partial struct SWIG_CSharp$module##NAME##Helper {
+    [global::System.Runtime.InteropServices.DllImport("$dllimport", EntryPoint="SWIGRegister$module" + #NAME + "Callback")]
+    private static extern void SWIGRegister$module##NAME##Callback(System.Delegate fn);
+    public static System.Delegate RegisterDelegate() {
+        SWIGRegister$module##NAME##Callback(NAME##DelegateInstance);
+        return NAME##DelegateInstance;
+    }
+%}
+%pragma(csharp) imclasscode=
 %enddef

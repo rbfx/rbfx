@@ -623,12 +623,6 @@ template <> Tasks* Object::GetSubsystem<Tasks>() const
     return context_->tasks_;
 }
 #endif
-#if URHO3D_CSHARP
-template <> ScriptSubsystem* Object::GetSubsystem<ScriptSubsystem>() const
-{
-    return context_->scripts_;
-}
-#endif
 Engine* Object::GetEngine() const
 {
     return context_->engine_;
@@ -700,12 +694,6 @@ Renderer* Object::GetRenderer() const
 Tasks* Object::GetTasks() const
 {
     return context_->tasks_;
-}
-#endif
-#if URHO3D_CSHARP
-ScriptSubsystem* Object::GetScripts() const
-{
-    return context_->scripts_;
 }
 #endif
 }

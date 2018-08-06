@@ -3,12 +3,12 @@ using System.Runtime.InteropServices;
 
 namespace Urho3DNet
 {
-    enum Intersection
-    {
-        Outside,
-        Intersects,
-        Inside
-    }
+//    enum Intersection
+//    {
+//        Outside,
+//        Intersects,
+//        Inside
+//    }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct BoundingBox

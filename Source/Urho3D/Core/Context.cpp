@@ -33,9 +33,6 @@
 #if URHO3D_TASKS
 #include "../Core/Tasks.h"
 #endif
-#if URHO3D_CSHARP
-#include "../Script/ScriptSubsystem.h"
-#endif
 #include "../IO/FileSystem.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/Localization.h"
@@ -562,13 +559,6 @@ void Context::RegisterSubsystem(UI* subsystem)
 void Context::RegisterSubsystem(Tasks* subsystem)
 {
     tasks_ = subsystem;
-    RegisterSubsystem((Object*) subsystem);
-}
-#endif
-#if URHO3D_CSHARP
-void Context::RegisterSubsystem(ScriptSubsystem* subsystem)
-{
-    scripts_ = subsystem;
     RegisterSubsystem((Object*) subsystem);
 }
 #endif

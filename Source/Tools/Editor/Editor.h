@@ -27,7 +27,6 @@
 #include <Toolbox/SystemUI/AttributeInspector.h>
 #include "Project.h"
 #include "Plugins/PluginManagerNative.h"
-#include "Plugins/PluginManagerManaged.h"
 
 using namespace std::placeholders;
 
@@ -95,10 +94,6 @@ protected:
 #if URHO3D_PLUGINS_NATIVE
     /// Native plugin manager.
     PluginManagerNative pluginsNative_;
-#endif
-#if URHO3D_PLUGINS_CSHARP
-    /// Managed plugin manager.
-    PluginManagerManaged pluginsManaged_;
 #endif
 };
 

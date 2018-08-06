@@ -36,6 +36,8 @@ def camel_case(identifier):
     identifier = identifier.strip('_')
     return_string = False
     if isinstance(identifier, str):
+        if identifier.isupper() and '_' not in identifier:
+            identifier = identifier.lower()
         name_parts = split_identifier(identifier)
         return_string = True
     elif isinstance(identifier, (list, tuple)):
@@ -88,6 +90,12 @@ def read_raw_code(node):
 
 
 class DefineConstantsPass(AstPass):
+    ignore = [
+        'Urho3D::M_MIN_INT',
+        'Urho3D::M_MAX_INT',
+        'Urho3D::M_MIN_UNSIGNED',
+        'Urho3D::M_MAX_UNSIGNED',
+    ]
     def on_begin(self):
         self.fp = open(os.path.join(self.module.args.output, '_constants.i'), 'w+')
 
@@ -107,9 +115,7 @@ class DefineConstantsPass(AstPass):
     def visit(self, node, action: AstAction):
         if node.kind == CursorKind.VAR_DECL:
             fqn = get_fully_qualified_name(node)
-            if fqn.startswith('Urho3D::IsFlagSet'):
-                return False
-            if fqn.startswith('Urho3D::FlagSet'):
+            if fqn.startswith('Urho3D::IsFlagSet') or fqn.startswith('Urho3D::FlagSet') or fqn in self.ignore:
                 return False
 
             if node.type.spelling in ('const Urho3D::String', 'const char*'):
@@ -167,8 +173,7 @@ class DefineRefCountedPass(AstPass):
         for cls_name in self.parent_classes.keys():
             if self.is_subclass_of(cls_name, 'Urho3D::RefCounted'):
                 assert isinstance(cls_name, str)
-                parent, name = cls_name.rsplit('::', 1)
-                fp.write(f'URHO3D_REFCOUNTED({parent}, {name});\n')
+                fp.write(f'URHO3D_REFCOUNTED({cls_name});\n')
 
         fp.close()
 
@@ -359,9 +364,6 @@ class CleanEnumValues(AstPass):
                     if ' = SDL' in code:
                         # Enum uses symbols from SDL. Redefine it with raw enum values.
                         self.fp.write(f'%csconstvalue("{child.enum_value}") {child.spelling};\n')
-                    elif 'M_MAX_UNSIGNED' in code:
-                        self.fp.write(f'%csconstvalue("uint.MaxValue") {child.spelling};\n')
-                        self.fp.write(f'%typemap(csbase) {node.type.spelling} "uint"\n')
 
         elif node.kind == CursorKind.TYPE_ALIAS_DECL:
             underlying_type = node.type.get_canonical()
@@ -380,7 +382,6 @@ class Urho3DModule(Module):
         r'/Urho3D/Precompiled.h',
         r'/Urho3D/Container/.+$',
         r'/Urho3D/Urho2D/.+$',
-        r'/Urho3D/Math/MathDefs\.h$',
         r'/Urho3D/Graphics/[^/]+/.+\.h$',
     ]
 

@@ -3,15 +3,14 @@
 %ignore Urho3D::RefCounted::HasDeleter;
 %ignore Urho3D::RefCounted::GetDeleterUserData;
 
-%define URHO3D_SMART_PTR(PTR_TYPE, TYPE, CSTYPE)
-  %naturalvar PTR_TYPE<TYPE>;
+%define URHO3D_SMART_PTR(PTR_TYPE, TYPE)
   %feature("smartptr", noblock=1) PTR_TYPE<TYPE>;
   //%refobject   TYPE "$this->AddRef();"
   %unrefobject TYPE "$this->ReleaseRef();"
 
   %typemap(ctype)  PTR_TYPE<TYPE> "TYPE*"                                // c layer type
   %typemap(imtype) PTR_TYPE<TYPE> "global::System.IntPtr"                // pinvoke type
-  %typemap(cstype) PTR_TYPE<TYPE> "CSTYPE"                               // c# type
+  %typemap(cstype) PTR_TYPE<TYPE> "$typemap(cstype, TYPE*)"             // c# type
   %typemap(in)     PTR_TYPE<TYPE> %{ $1 = PTR_TYPE<TYPE>($input); %}     // c to cpp
   %typemap(out)    PTR_TYPE<TYPE> %{
                                      $result = $1.Get();
@@ -55,9 +54,9 @@
 
 %enddef
 
-%define URHO3D_REFCOUNTED(NS, TYPE)
-  URHO3D_SMART_PTR(Urho3D::SharedPtr, NS::TYPE, global::Urho3DNet.TYPE);
-  URHO3D_SMART_PTR(Urho3D::WeakPtr,   NS::TYPE, global::Urho3DNet.TYPE);
+%define URHO3D_REFCOUNTED(TYPE)
+  URHO3D_SMART_PTR(Urho3D::SharedPtr, TYPE);
+  URHO3D_SMART_PTR(Urho3D::WeakPtr,   TYPE);
 %enddef
 
 %include "_refcounted.i"

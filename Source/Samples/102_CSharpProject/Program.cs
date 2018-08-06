@@ -28,28 +28,28 @@ using Urho3DNet;
 
 namespace DemoApplication
 {
-//    [ObjectFactory]
-//    class RotateObject : LogicComponent
-//    {
-//        public RotateObject(Context context) : base(context)
-//        {
-//            UpdateEventMask = UpdateEvent.UseUpdate;
-//        }
-//
-//        public override void Update(float timeStep)
-//        {
-//            var d = new Quaternion(10 * timeStep, 20 * timeStep, 30 * timeStep);
-//            Node.Rotate(d);
-//        }
-//    }
-//
+    [ObjectFactory]
+    class RotateObject : LogicComponent
+    {
+        public RotateObject(Context context) : base(context)
+        {
+            SetUpdateEventMask(UpdateEvent.UseUpdate);
+        }
+
+        public override void Update(float timeStep)
+        {
+            var d = new Quaternion(10 * timeStep, 20 * timeStep, 30 * timeStep);
+            GetNode().Rotate(d);
+        }
+    }
+
     class DemoApplication : Application
     {
-//        private Scene _scene;
-//        private Viewport _viewport;
-//        private Node _camera;
-//        private Node _cube;
-//        private Node _light;
+        private Scene _scene;
+        private Viewport _viewport;
+        private Node _camera;
+        private Node _cube;
+        private Node _light;
 
         public DemoApplication(Context context) : base(context)
         {
@@ -69,34 +69,36 @@ namespace DemoApplication
         {
             GetInput().SetMouseVisible(true);
 
-//            // Viewport
-//            _scene = new Scene(Context);
-//            _scene.CreateComponent<Octree>();
-//
-//            _camera = _scene.CreateChild("Camera");
-//            _viewport = new Viewport(Context, _scene, _camera.CreateComponent<Camera>());
-//            Renderer.SetViewport(0, _viewport);
-//
-//            // Background
-//            Renderer.DefaultZone.FogColor = new Color(0.5f, 0.5f, 0.7f);
-//
-//            // Scene
-//            _camera.Position = new Vector3(0, 2, -2);
-//            _camera.LookAt(Vector3.Zero);
-//
-//            // Cube
-//            _cube = _scene.CreateChild("Cube");
-//            var model = _cube.CreateComponent<StaticModel>();
-//            model.Model = Cache.GetResource<Model>("Models/Box.mdl");
-//            model.SetMaterial(0, Cache.GetResource<Material>("Materials/Stone.xml"));
-//            _cube.CreateComponent<RotateObject>();
-//
-//            // Light
-//            _light = _scene.CreateChild("Light");
-//            _light.CreateComponent<Light>();
-//            _light.Position = new Vector3(0, 2, -1);
-//            _light.LookAt(Vector3.Zero);
-//
+            // Viewport
+            _scene = new Scene(GetContext());
+            _scene.CreateComponent<Octree>();
+
+            _camera = _scene.CreateChild("Camera");
+            _viewport = new Viewport(GetContext());
+            _viewport.SetScene(_scene);
+            _viewport.SetCamera(_camera.CreateComponent<Camera>());
+            GetRenderer().SetViewport(0, _viewport);
+
+            // Background
+            GetRenderer().GetDefaultZone().SetFogColor(new Color(0.5f, 0.5f, 0.7f));
+
+            // Scene
+            _camera.SetPosition(new Vector3(0, 2, -2));
+            _camera.LookAt(Vector3.Zero);
+
+            // Cube
+            _cube = _scene.CreateChild("Cube");
+            var model = _cube.CreateComponent<StaticModel>();
+            model.SetModel(GetCache().GetResource<Model>("Models/Box.mdl"));
+            model.SetMaterial(0, GetCache().GetResource<Material>("Materials/Stone.xml"));
+//            var rotator = _cube.CreateComponent<RotateObject>();
+
+            // Light
+            _light = _scene.CreateChild("Light");
+            _light.CreateComponent<Light>();
+            _light.SetPosition(new Vector3(0, 2, -1));
+            _light.LookAt(Vector3.Zero);
+
 //            SubscribeToEvent<Update>(args =>
 //            {
 //                var timestep = args.GetFloat(Update.TimeStep);
@@ -121,8 +123,6 @@ namespace DemoApplication
                 {
                     application.Run();
                 }
-                // Free any allocated objects that may be holding on to context. Prevents crash at exit.
-                GC.Collect(GC.MaxGeneration);
             }
         }
     }

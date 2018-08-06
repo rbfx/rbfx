@@ -66,9 +66,6 @@
 #if URHO3D_TASKS
 #include "../Core/Tasks.h"
 #endif
-#if URHO3D_CSHARP
-#include "../Script/ScriptSubsystem.h"
-#endif
 #include "../Engine/EngineEvents.h"
 
 #if defined(__EMSCRIPTEN__) && defined(URHO3D_TESTING)
@@ -143,10 +140,6 @@ Engine::Engine(Context* context) :
     context_->RegisterSubsystem(new UI(context_));
 #if URHO3D_TASKS
     context_->RegisterSubsystem(new Tasks(context_));
-#endif
-#if URHO3D_CSHARP
-    if (context_->GetScripts() == nullptr)
-        context_->RegisterSubsystem(new ScriptSubsystem(context_));
 #endif
     // Register object factories for libraries which are not automatically registered along with subsystem creation
     RegisterSceneLibrary(context_);

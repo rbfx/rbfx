@@ -25,7 +25,7 @@ using System.Runtime.InteropServices;
 
 namespace Urho3DNet
 {
-    internal class InstanceCache<T> where T : class
+    internal class InstanceCache<T> : IDisposable where T : class
     {
         /// <summary>
         /// How long (ms) strong reference is kept in CacheEntry after last access.
@@ -134,12 +134,15 @@ namespace Urho3DNet
         {
             lock (_cache)
             {
-                var values = new CacheEntry[_cache.Count];
-                _cache.Values.CopyTo(values, 0);
-                foreach (var value in values)
-                {
-                    ((IDisposable) value.Target).Dispose();
-                }
+//                var values = new CacheEntry[_cache.Count];
+//                _cache.Values.CopyTo(values, 0);
+//                foreach (var value in values)
+//                {
+//                    ((IDisposable) value.Target).Dispose();
+//                }
+                _needsReset = true;
+                _expirationEnumerator = null;
+                _lastCacheEnumeratorResetTime = Environment.TickCount;
                 _cache.Clear();
             }
         }

@@ -84,10 +84,6 @@ if (URHO3D_SYSTEMUI)
     define_engine_source_files (SystemUI)
 endif ()
 
-if (URHO3D_CSHARP)
-    define_engine_source_files (Script)
-endif ()
-
 # Group source code in VS solution
 group_sources()
 
@@ -339,6 +335,6 @@ string (REPLACE ";" "\n" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Urho3D.h ${CMAKE_CURRENT_BINARY_DIR}/Urho3D.h @ONLY)
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3D.h DESTINATION ${DEST_INCLUDE_DIR})
 
-if (URHO3D_CSHARP2)
+if (URHO3D_CSHARP)
     add_subdirectory(CSharp)
 endif ()

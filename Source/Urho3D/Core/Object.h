@@ -242,9 +242,6 @@ public:
     /// Return tasks subsystem.
     Tasks* GetTasks() const;
 #endif
-#if URHO3D_CSHARP
-    ScriptSubsystem* GetScripts() const;
-#endif
 
 protected:
     /// Execution context.
@@ -487,8 +484,5 @@ template <> URHO3D_API Graphics* Object::GetSubsystem<Graphics>() const;
 template <> URHO3D_API Renderer* Object::GetSubsystem<Renderer>() const;
 #if URHO3D_TASKS
 template <> URHO3D_API Tasks* Object::GetSubsystem<Tasks>() const;
-#endif
-#if URHO3D_CSHARP
-template <> URHO3D_API ScriptSubsystem* Object::GetSubsystem<ScriptSubsystem>() const;
 #endif
 }

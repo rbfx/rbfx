@@ -256,3 +256,13 @@ namespace Urho3D {
 
 %template(VariantMap) Urho3D::HashMap<Urho3D::StringHash, Urho3D::Variant>;
 %template(PackageMap) Urho3D::HashMap<Urho3D::String, Urho3D::PackageEntry>;
+%template(JSONObject) Urho3D::HashMap<Urho3D::String, Urho3D::JSONValue>;
+%template(ResourceGroupMap) Urho3D::HashMap<Urho3D::StringHash, Urho3D::ResourceGroup>;
+%template(ResourceMap) Urho3D::HashMap<Urho3D::StringHash, Urho3D::SharedPtr<Urho3D::Resource>>;
+//%template(PListValueMap) Urho3D::HashMap<Urho3D::String, Urho3D::PListValue>;
+%template(ComponentReplicationStateMap) Urho3D::HashMap<unsigned int, Urho3D::ComponentReplicationState>;
+%template(NodeReplicationStateMap) Urho3D::HashMap<unsigned int, Urho3D::NodeReplicationState>;
+%template(ValueAnimationInfoMap) Urho3D::HashMap<Urho3D::String, Urho3D::SharedPtr<Urho3D::ValueAnimationInfo>>;
+//%template(AnimationTrackMap) Urho3D::HashMap<Urho3D::StringHash, Urho3D::AnimationTrack>;
+//%template(MaterialShaderParameterMap) Urho3D::HashMap<Urho3D::StringHash, Urho3D::MaterialShaderParameter>;
+%template(TextureMap) Urho3D::HashMap<Urho3D::TextureUnit, Urho3D::SharedPtr<Urho3D::Texture>>;
