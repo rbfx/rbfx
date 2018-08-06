@@ -875,7 +875,7 @@ UIElement* UI::GetFrontElement() const
     return front;
 }
 
-const Vector<UIElement*> UI::GetDragElements()
+const PODVector<UIElement*>& UI::GetDragElements()
 {
     // Do not return the element until drag begin event has actually been posted
     if (!dragElementsConfirmed_.Empty())

@@ -153,7 +153,7 @@ public:
     /// Return topmost enabled root-level non-modal element.
     UIElement* GetFrontElement() const;
     /// Return currently dragged elements.
-    const Vector<UIElement*> GetDragElements();
+    const PODVector<UIElement*>& GetDragElements();
 
     /// Return the number of currently dragged elements.
     unsigned GetNumDragElements() const { return (unsigned)dragConfirmedCount_; }
@@ -426,7 +426,7 @@ private:
     /// UI elements that are being touched with touch input.
     HashMap<WeakPtr<UIElement>, MouseButtonFlags> touchDragElements_;
     /// Confirmed drag elements cache.
-    Vector<UIElement*> dragElementsConfirmed_;
+    PODVector<UIElement*> dragElementsConfirmed_;
     /// Current scale of UI.
     float uiScale_;
     /// Root element custom size. 0,0 for automatic resizing (default.)
