@@ -64,7 +64,7 @@ void RefCounted::ReleaseRef()
     if (!refCount_->refs_)
     {
         if (deleter_ != nullptr)
-            deleter_(this, deleterUserData_);
+            deleter_(this);
         else
             delete this;
     }
@@ -81,10 +81,9 @@ int RefCounted::WeakRefs() const
     return refCount_->weakRefs_ - 1;
 }
 
-void RefCounted::SetDeleter(void (* deleter)(RefCounted*, void*), void* userData)
+void RefCounted::SetDeleter(std::function<void(RefCounted*)> deleter)
 {
-    deleter_ = deleter;
-    deleterUserData_ = userData;
+    deleter_ = std::move(deleter);
 }
 
 }

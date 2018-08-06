@@ -22,6 +22,9 @@
 
 #pragma once
 
+
+#include <functional>
+
 #ifdef URHO3D_IS_BUILDING
 #include "Urho3D.h"
 #else
@@ -77,11 +80,9 @@ public:
     RefCount* RefCountPtr() { return refCount_; }
 
     /// Set a custom deleter function which will be in charge of deallocating object.
-    void SetDeleter(void(*deleter)(RefCounted* instance, void* userData), void* userData = nullptr);
+    void SetDeleter(std::function<void(RefCounted*)> deleter);
     /// Returns true when object has custom deleter set.
     bool HasDeleter() const { return deleter_ != nullptr; }
-    /// Returns deleter user data or null if it was not set.
-    void* GetDeleterUserData() const { return deleterUserData_; }
 
 private:
     /// Prevent copy construction.
@@ -92,10 +93,8 @@ private:
     /// Pointer to the reference count structure.
     RefCount* refCount_;
 
-    /// Custom pointer that will be passed to deleter when object refcount reaches zero.
-    void* deleterUserData_ = nullptr;
     /// Custom deleter which will be deallocating native object.
-    void(*deleter_)(RefCounted* instance, void* userData) = nullptr;
+    std::function<void(RefCounted*)> deleter_{};
 };
 
 }

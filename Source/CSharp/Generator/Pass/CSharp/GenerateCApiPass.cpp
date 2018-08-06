@@ -168,13 +168,13 @@ bool GenerateCApiPass::Visit(MetaEntity* entity, cppast::visitor_info info)
                     printer_ << "else";
                     printer_.Indent();
                     {
-                        printer_ << "__self__->SetDeleter([](RefCounted* instance_, void* gcHandle_) {";
+                        printer_ << "__self__->SetDeleter([gcHandle](RefCounted* instance_) {";
                         printer_.Indent("");
                         {
-                            printer_ << "ScriptSubsystem::managed_.Unlock((gchandle)gcHandle_);";
+                            printer_ << "ScriptSubsystem::managed_.Unlock(gcHandle);";
                             printer_ << "delete instance_;";
                         }
-                        printer_.Dedent("}, (void*)gcHandle);");
+                        printer_.Dedent("});");
                     }
                     printer_.Dedent();
                 }
