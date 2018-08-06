@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Container/Allocator.h"
 #include "../Container/LinkedList.h"
 #include "../Core/StringHashRegister.h"
 #include "../Core/Variant.h"
@@ -279,6 +280,9 @@ public:
         assert(context_);
     }
 
+    /// Destruct.
+    virtual ~ObjectFactory() = default;
+
     /// Create an object. Implemented in templated subclasses.
     virtual SharedPtr<Object> CreateObject() = 0;
 
@@ -310,10 +314,29 @@ public:
         ObjectFactory(context)
     {
         typeInfo_ = T::GetTypeInfoStatic();
+        allocator_ = AllocatorInitialize(sizeof(T));
+    }
+
+    ~ObjectFactoryImpl() override
+    {
+        AllocatorUninitialize(allocator_);
+        allocator_ = nullptr;
     }
 
     /// Create an object of the specific type.
-    SharedPtr<Object> CreateObject() override { return SharedPtr<Object>(new T(context_)); }
+    SharedPtr<Object> CreateObject() override
+    {
+        auto* newObject = static_cast<T*>(AllocatorReserve(allocator_));
+        new(newObject) T(context_);
+        newObject->SetDeleter([this, newObject](RefCounted* refCounted) {
+            newObject->~T();
+            AllocatorFree(allocator_, newObject);
+        });
+        return SharedPtr<Object>(newObject);
+    }
+
+private:
+    AllocatorBlock* allocator_;
 };
 
 /// Internal helper class for invoking event handler functions.
