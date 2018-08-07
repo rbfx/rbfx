@@ -321,6 +321,7 @@ public:
 %ignore Urho3D::Serializable::OnGetAttribute;
 %ignore Urho3D::Serializable::GetAttributes;
 %ignore Urho3D::Serializable::GetNetworkAttributes;
+%ignore Urho3D::Serializable::networkState_;
 %ignore Urho3D::NetworkState::attributes_;
 %ignore Urho3D::AttributeAnimationInfo;
 %ignore Urho3D::ReplicationState::connection_;

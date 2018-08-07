@@ -1,138 +1,192 @@
 // Based on swig's std_string.i
 
+%runtime %{
+
+    template<typename T> T* addr(T& ref)  { return &ref; }
+    template<typename T> T* addr(T* ptr)  { return ptr;  }
+    template<typename T> T& defef(T& ref) { return ref;  }
+    template<typename T> T& defef(T* ptr) { return *ptr; }
+%}
+
+%pragma(csharp) modulecode=%{
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public struct Urho3DString
+    {
+        public int length;
+        public int capacity;
+        public System.IntPtr buffer;
+
+        public void SetString(string value)
+        {
+            SetString(this, value);
+        }
+
+        [System.Runtime.InteropServices.DllImport("$dllimport", EntryPoint="CSharp_Urho3D_String_Set")]
+        private static extern void SetString([param: System.Runtime.InteropServices.MarshalAs(
+            System.Runtime.InteropServices.UnmanagedType.LPStruct)]Urho3DString str,
+            [param: System.Runtime.InteropServices.MarshalAs(
+                System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]string val);
+    }
+
+    internal static System.IntPtr strdup_string(string str)
+    {
+        var res = System.Text.Encoding.UTF8.GetBytes(str);
+        unsafe {
+            fixed (byte* p_res = res) {
+                return strdup((System.IntPtr)p_res);
+            }
+        }
+    }
+
+    internal static unsafe string ToString(byte* str)
+    {
+        return System.Text.Encoding.UTF8.GetString(str, Urho3DNet.Urho3D.strlen((System.IntPtr)str));
+    }
+
+    internal static unsafe string ToString(System.IntPtr str)
+    {
+        return System.Text.Encoding.UTF8.GetString((byte*)str, Urho3DNet.Urho3D.strlen(str));
+    }
+%}
+
 namespace Urho3D {
 
-%naturalvar String;
-
 class String;
+// Helpers
+%csexposefunc(runtime, CreateString, const char*, const char*) %{
+    [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]
+    private static string CreateString([param: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]string str)
+    {
+        return str;
+    }
+    private static System.Delegate CreateStringDelegateInstance = new System.Func<string, string>(CreateString);
+}%}
+
+%wrapper %{
+    SWIGEXPORT void SWIGSTDCALL CSharp_Urho3D_String_Set(Urho3D::String* str, const char* val) { *str = val; }
+%}
 
 // String
-%typemap(ctype)  String  "char *"
-%typemap(imtype) String  "global::System.IntPtr"
-%typemap(cstype) String  "string"
+%typemap(ctype, out="void*")   String, const String &, String & "char *"
+%typemap(imtype)               String, const String &, String & "System.IntPtr"
+%typemap(cstype)               String, const String &           "string"
+%typemap(cstype, out="string")                         String & "ref string"
 
-%typemap(csdirectorin)  String         "$iminput"
-%typemap(csdirectorout) String         "global::Urho3DNet.Urho3D.strdup_string($cscall)"
+%typemap(typecheck) String, const String &, String & = char *;
 
+// Parameters
 %typemap(in, canthrow=1) String %{
-  if (!$input) {
-    SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "null string", 0);
-    return $null;
-   }
-   $1 = $input;
- %}
-
-%typemap(out) String         %{ $result = SWIG_csharp_string_callback($1.CString()); %}
-
-%typemap(directorout, canthrow=1) String %{
-  if (!$input) {
-    SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "null string", 0);
-    return $null;
-  }
-  $result = $input;
+    if (!$input) {
+        SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "null string", 0);
+        return $null;
+    }
+    $1 = $input;
 %}
+%typemap(in, canthrow=1) const String & %{
+    if (!$input) {
+        SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "null string", 0);
+        return $null;
+    }
+    Urho3D::String $inputRef($input);
+    $1 = &$inputRef;
+%}
+%typemap(in, canthrow=1) String & %{
+    if (!$input) {
+        SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "null string", 0);
+        return $null;
+    }
+    Urho3D::String $inputRef(*(const char**)$input);
+    $1 = &$inputRef;
+%}
+%typemap(argout)       String & "*(const char**)$input = SWIG_CSharpUrho3DCreateString($inputRef.CString());"
+%typemap(argout) const String & ""
+%typemap(csin, pre="
+    var $csinputBytes = System.Text.Encoding.UTF8.GetBytes($csinput);
+    unsafe {
+        fixed (byte* $csinputPtr = $csinputBytes) {
+    ",
+    terminator = "
+        }
+    }
+") String, const String & "(System.IntPtr)$csinputPtr"
+%typemap(csin, pre="
+    var $csinputBytes = System.Text.Encoding.UTF8.GetBytes($csinput);
+    unsafe {
+        fixed (byte* $csinputBytesPtr = $csinputBytes) {
+            System.IntPtr $csinputPtr = new System.IntPtr(&$csinputBytesPtr);
+            try {
+    ",
+    terminator = "
+            } finally {
+                $csinput = $module.ToString($csinputBytesPtr);
+            }
+        }
+    }
+") String & "(System.IntPtr)$csinputPtr"
+%typemap(directorin)   String & "$input = (void*)addr($1);"
+%typemap(directorin)   const String &, String %{ $input = (void*)SWIG_CSharpUrho3DCreateString(addr($1)->CString()); %}
+%typemap(csdirectorin) const String &, String %{ $module.ToString($iminput) %}
+%typemap(csdirectorin, pre="
+    unsafe {
+        var $iminputStr = ($module.Urho3DString*)$iminput;
+        var $iminputRef = $module.ToString((byte*)$iminputStr->buffer);
+", post="
+        $iminputStr->SetString($iminputRef);
+    }
+") String &     "ref $iminputRef"
 
-%typemap(directorin) String %{ $input = SWIG_csharp_string_callback($1.CString()); %}
 
-%typemap(csin, pre=         "    var $csinput_bytes = global::System.Text.Encoding.UTF8.GetBytes($csinput);\n"
-                            "    unsafe {\n      fixed (byte* p_$csinput_bytes = $csinput_bytes) {\n",
-               terminator = "    }\n      }\n") 
-               String "(global::System.IntPtr)p_$csinput_bytes"
-
-%typemap(csout, excode=SWIGEXCODE) String {
+// Returns
+%typemap(out)                      const String &, String &, String %{ $result = (void*)SWIG_CSharpUrho3DCreateString(addr($1)->CString()); %}
+%typemap(csout, excode=SWIGEXCODE) const String &, String &, String  {
     unsafe {
         var str = $imcall;$excode
-        return global::System.Text.Encoding.UTF8.GetString((byte*)str, global::Urho3DNet.Urho3D.strlen(str));
+        return $module.ToString(str);
     }
-  }
-
-%typemap(typecheck) String         = char *;
-
-%typemap(throws, canthrow=1) String %{
-  SWIG_CSharpSetPendingException(SWIG_CSharpApplicationException, $1.CString());
-  return $null;
-%}
-
-%apply String { const String &, String & };
-
-// const String &
-
-%typemap(typecheck) const String & = char *;
-
-%typemap(csvarin, excode=SWIGEXCODE2) const String& %{
-    set {
-      var $csinput_bytes = global::System.Text.Encoding.UTF8.GetBytes($csinput);
-      unsafe {
-        fixed (byte* p_$csinput_bytes = $csinput_bytes) {
-          $imcall;
-        }
-      }
-      $excode
-    }
-  %}
-
-%typemap(csvarout, excode=SWIGEXCODE2) const String& %{
-    get {
-      unsafe {
-          var str = $imcall;$excode
-          return global::System.Text.Encoding.UTF8.GetString((byte*)str, global::Urho3DNet.Urho3D.strlen(str));
-      }
-    }
-  %}
-
-// References
-%typemap(in, canthrow=1) const String & %{
-  if (!$input) {
-    SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "null string", 0);
-    return $null;
-   }
-   $*1_ltype $1_str($input);
-   $1 = &$1_str;
- %}
-%typemap(out) const String & %{ $result = SWIG_csharp_string_callback($1->CString()); %}
-%typemap(directorout, canthrow=1, warning=SWIGWARN_TYPEMAP_THREAD_UNSAFE_MSG) const String & %{
- if (!$input) {
-    SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "null string", 0);
-    return $null;
-   }
-   static thread_local $*1_ltype $1_str($input);
-   free($input);  // strdup'ed in csdirectorout
-   $result = &$1_str;
-%}
-
-
-// Output parameters
-
-%typemap(ctype)  String& "char **"
-%typemap(cstype) String& "ref string"
-
-%typemap(in, canthrow=1) String & %{
-  if (!$input || !*$input) {
-    SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "null string", 0);
-    return $null;
-   }
-   $*1_ltype $1_str(*$input);
-   $1 = &$1_str;
- %}
-
-%typemap(csin, pre=         "    var $csinput_bytes = global::System.Text.Encoding.UTF8.GetBytes($csinput);
-                                 unsafe {
-                                   global::System.IntPtr ref_$csinput = global::System.IntPtr.Zero;
-                                   try {
-                                     fixed (byte* p_$csinput_bytes = $csinput_bytes) {
-                                       ref_$csinput = new global::System.IntPtr(&p_$csinput_bytes);
-                            ",
-               terminator = "        }
-                                   } finally {
-                                     $csinput = global::System.Text.Encoding.UTF8.GetString(*(byte**)ref_$csinput, global::Urho3DNet.Urho3D.strlen(new global::System.IntPtr(*(byte**)ref_$csinput)));
-                                   }
-                                 }
-                            ")
-               String &     "ref_$csinput"
-
-%typemap(directorin) String& %{
-  char* p_$input = SWIG_csharp_string_callback($1.CString());
-  $input = &p_$input;
-%}
-
 }
+%typemap(csdirectorout)           String, const String &, String & %{ Urho3DNet.Urho3D.strdup_string($cscall) %}
+%typemap(directorout, canthrow=1) String %{
+    if (!$input) {
+        SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "null string", 0);
+        return $null;
+    }
+    $result = $input;
+    free((void*)$input); // strdup'ed in csdirectorout
+%}
+%typemap(directorout, canthrow=1) const String &, String & %{
+    if (!$input) {
+        SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "null string", 0);
+        return $null;
+    }
+    static thread_local Urho3D::String $inputStatic($input);
+    $result = &$inputStatic;
+    free((void*)$input); // strdup'ed in csdirectorout
+%}
+
+// Variables
+%typemap(csvarin, excode=SWIGEXCODE2) String &, String * %{
+    set {
+        unsafe {
+            fixed (byte* $csinputPtr = System.Text.Encoding.UTF8.GetBytes($csinput)) {
+                $imcall;
+            }
+        }
+        $excode
+    }
+%}
+
+%typemap(csvarout, excode=SWIGEXCODE2) String &, String * %{
+    get {
+        unsafe {
+            var str = $imcall;$excode
+            return $module.ToString(str);
+        }
+    }
+%}
+
+
+// Ptr types
+%apply       String & {       String * };
+%apply const String & { const String * };
+
+};

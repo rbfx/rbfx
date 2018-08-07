@@ -31,8 +31,10 @@
 // Inheritable classes go here
 %inheritable(Urho3D, Object);
 %inheritable(Urho3D, Application);
-//%inheritable(Urho3D, Component);
-//%inheritable(Urho3D, LogicComponent);
+%inheritable(Urho3D, Serializable);
+%inheritable(Urho3D, Animatable);
+%inheritable(Urho3D, Component);
+%inheritable(Urho3D, LogicComponent);
 
 %wrapper %{  }  // end of RegisterDirectorFactories%}
 
@@ -41,22 +43,3 @@
     return Context.wrap(context, false).CreateObject(type);
   });
 }%}
-
-
-%csexposefunc(runtime, CreateString, const char*, %arg(const char* str)) %{
-    [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]
-    public static string CreateString([param: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]string str) {
-        return str;
-    }
-    private static System.Delegate CreateStringDelegateInstance = new System.Func<string, string>(CreateString);
-}%}
-
-%inline %{
-    const char* test_string()
-    {
-        const char* in = "foobar";
-        const char* out = SWIG_CSharpUrho3DCreateString(in);
-        return out;
-    }
-
-%}

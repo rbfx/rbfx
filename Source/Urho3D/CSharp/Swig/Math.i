@@ -14,13 +14,13 @@
 
   %typemap(ctype)  CPP_TYPE  "Urho3D::CPP_TYPE*"                    // c layer type
   %typemap(imtype) CPP_TYPE  "global::System.IntPtr"                // pinvoke type
-  %typemap(cstype) CPP_TYPE  "global::Urho3DNet.CPP_TYPE"           // c# type
+  %typemap(cstype) CPP_TYPE, const CPP_TYPE &  "global::Urho3DNet.CPP_TYPE"           // c# type
   %typemap(in)     CPP_TYPE  %{ $1 = *$input; /*3*/ %}                    // c to cpp
   %typemap(out)    CPP_TYPE  %{ $result = SWIG_CSharpUrho3DCreate##CPP_TYPE(&$1); /*1*/ %} // cpp to c
   %typemap(csin, pre=         "    unsafe {\n"
                               "      $typemap(cstype, Urho3D::CPP_TYPE)* swig_ptrTo_$csinput_bytes = &$csinput;\n",
                  terminator = "    }\n") 
-                   CPP_TYPE "(global::System.IntPtr)swig_ptrTo_$csinput_bytes"
+                   CPP_TYPE, const CPP_TYPE & "(global::System.IntPtr)swig_ptrTo_$csinput_bytes"
 
   %typemap(csout, excode=SWIGEXCODE) CPP_TYPE {                   // convert pinvoke to C#
     var ret = $imcall;$excode
@@ -50,7 +50,7 @@
   %typemap(csin, pre=         "    unsafe {\n"
                               "      fixed ($typemap(cstype, Urho3D::CPP_TYPE)* swig_ptrTo_$csinput_bytes = &$csinput) {\n",
                  terminator = "      }\n"
-                              "    }\n") 
+                              "    }\n")
                  CPP_TYPE&    "(global::System.IntPtr)swig_ptrTo_$csinput_bytes"
 
   %apply CPP_TYPE& { CPP_TYPE* }

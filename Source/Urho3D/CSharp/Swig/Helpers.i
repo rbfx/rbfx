@@ -36,16 +36,6 @@
             length = l;
         }
     }
-
-    internal static global::System.IntPtr strdup_string(string str)
-    {
-        var res = global::System.Text.Encoding.UTF8.GetBytes(str);
-        unsafe {
-            fixed (byte* p_res = res) {
-                return strdup((global::System.IntPtr)p_res);
-            }
-        }
-    }
 %}
 
 %typemap(ctype)  char* strdup "char*"
