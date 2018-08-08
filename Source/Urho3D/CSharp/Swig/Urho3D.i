@@ -54,47 +54,7 @@
 %ignore Urho3D::UIElement::GetChildrenWithTag(const String& tag, bool recursive = false) const;
 %ignore Urho3D::XMLElement::GetBuffer;
 
-// Defined in C#
-namespace Urho3D {
-  class StringHash;
-}
-
-// StringHash
-%typemap(ctype)  Urho3D::StringHash "unsigned"                                // c layer type
-%typemap(imtype) Urho3D::StringHash "uint"                                    // pinvoke type
-%typemap(cstype) Urho3D::StringHash "global::Urho3DNet.StringHash"            // c# type
-%typemap(in)     Urho3D::StringHash "$1 = Urho3D::StringHash($input);"        // c to cpp
-%typemap(out)    Urho3D::StringHash "$result = $1.Value();"                   // cpp to c
-%typemap(csin)   Urho3D::StringHash "$csinput.Hash"                           // convert C# to pinvoke
-%typemap(csout, excode=SWIGEXCODE) Urho3D::StringHash {                       // convert pinvoke to C#
-    var ret = new $typemap(cstype, Urho3D::StringHash)($imcall);$excode
-    return ret;
-  }
-%typemap(directorin)    Urho3D::StringHash "$input = $1.Value();"
-%typemap(directorout)   Urho3D::StringHash "$result = ($1_ltype)$input;"
-%typemap(csdirectorin)  Urho3D::StringHash "new $typemap(cstype, Urho3D::StringHash)($iminput)"
-%typemap(csdirectorout) Urho3D::StringHash "$cscall.Hash"
-
-%typemap(csvarin, excode=SWIGEXCODE2) Urho3D::StringHash & %{
-  set {
-    $imcall;$excode
-  }
-%}
-%typemap(csvarout, excode=SWIGEXCODE2) Urho3D::StringHash & %{
-  get {
-    var ret = new $typemap(cstype, Urho3D::StringHash)($imcall);$excode
-    return ret;
-  }
-%}
-
-%apply Urho3D::StringHash { Urho3D::StringHash & }
-%typemap(in) Urho3D::StringHash &  %{
-  $*1_ltype $1_tmp($input);
-  $1 = &$1_tmp;
-%}
-%typemap(out) Urho3D::StringHash & %{ $result = $1->Value(); %}               // cpp to c
-
-
+%include "StringHash.i"
 %include "String.i"
 %include "RefCounted.i"
 %include "Vector.i"
