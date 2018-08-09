@@ -21,12 +21,17 @@
 #
 
 file (GLOB_RECURSE SOURCE_FILES *.c)
-add_library (GLEW STATIC ${SOURCE_FILES})
+add_library (GLEW ${THIRDPARTY_LIB_TYPE} ${SOURCE_FILES})
 target_compile_definitions(GLEW PUBLIC -DGLEW_NO_GLU)
 if (URHO3D_THIRDPARTY_SHARED_LIBS)
+
     target_compile_definitions(GLEW PRIVATE -DGLEW_BUILD)
+
 else ()
+
     target_compile_definitions(GLEW PUBLIC  -DGLEW_STATIC)
+
+
 endif ()
 target_include_directories(GLEW
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
