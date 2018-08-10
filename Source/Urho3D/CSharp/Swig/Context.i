@@ -39,7 +39,9 @@
 %wrapper %{  }  // end of RegisterDirectorFactories%}
 
 %csexposefunc(wrapper, CreateObject, void*, %arg(Urho3D::Context* context, unsigned type)) %{
-  private static System.Delegate CreateObjectDelegateInstance = new System.Func<global::System.IntPtr, uint, global::System.Runtime.InteropServices.HandleRef>((context, type) => {
-    return Context.wrap(context, false).CreateObject(type);
-  });
+    private static System.Delegate CreateObjectDelegateInstance = new System.Func<System.IntPtr, uint, System.IntPtr>((context, type) => {
+        var newObject = Context.wrap(context, false).CreateObject(type);
+        System.GC.KeepAlive(newObject.Wrapper);
+        return newObject.Handle;
+    });
 }%}

@@ -1,13 +1,5 @@
 // Based on swig's std_string.i
 
-%runtime %{
-
-    template<typename T> T* addr(T& ref)  { return &ref; }
-    template<typename T> T* addr(T* ptr)  { return ptr;  }
-    template<typename T> T& defef(T& ref) { return ref;  }
-    template<typename T> T& defef(T* ptr) { return *ptr; }
-%}
-
 %pragma(csharp) modulecode=%{
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public struct Urho3DString

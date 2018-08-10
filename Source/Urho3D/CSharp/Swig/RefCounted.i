@@ -60,5 +60,6 @@
 %enddef
 
 %include "_refcounted.i"
+//%interface_custom("%s", "I%s", Urho3D::RefCounted);
 %include "Urho3D/Container/RefCounted.h"
 %include "Urho3D/Container/Ptr.h"

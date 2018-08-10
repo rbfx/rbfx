@@ -94,4 +94,3 @@ namespace Urho3D
 %include "Urho3D/Math/Ray.h"
 %include "Urho3D/Math/Frustum.h"
 %include "Urho3D/Math/Sphere.h"
-%include "Urho3D/Math/Polyhedron.h"

@@ -59,7 +59,8 @@ public:
 public:
     SharedPtr<Object> CreateObject() override
     {
-        return SharedPtr<Object>((Object*)SWIG_CSharpUrho3DCreateObject(context_, managedType_.Value()));
+        auto* result = SWIG_CSharpUrho3DCreateObject(context_, managedType_.Value());
+        return SharedPtr<Object>((Object*)result);
     }
 
 protected:

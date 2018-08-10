@@ -377,6 +377,51 @@ class CleanEnumValues(AstPass):
         return True
 
 
+class DefineEventsPass(AstPass):
+    re_param_name = re.compile(r'URHO3D_PARAM\(([^,]+),\s*([a-z0-9_]+)\);\s*', re.IGNORECASE)
+
+    def on_begin(self):
+        self.fp = open(os.path.join(self.module.args.output, '_events.i'), 'w+')
+        self.fp.write("""%pragma(csharp) moduleimports=%{
+            public static class E
+            {
+        """)
+
+    def on_end(self):
+        self.fp.write("} %}")
+        self.fp.close()
+
+    def visit(self, node, action: AstAction):
+        if node.kind == CursorKind.VAR_DECL and node.type.spelling == 'const Urho3D::StringHash' and node.spelling.startswith('E_'):
+            siblings: list = node.parent.children
+            try:
+                next_node = siblings[siblings.index(node) + 1]
+            except IndexError:
+                return False
+
+            if next_node.kind == CursorKind.NAMESPACE:
+                if next_node.spelling.lower() == node.spelling[2:].replace('_', '').lower():
+                    self.fp.write(f"""
+                    public class {next_node.spelling}Event {{
+                        private StringHash _event = new StringHash("{next_node.spelling}");
+                    """)
+
+                    for param in next_node.children:
+                        param_name = read_raw_code(param)
+                        param_name = self.re_param_name.match(param_name).group(2)
+                        var_name = camel_case(param_name)
+                        self.fp.write(f"""
+                        public StringHash {var_name} = new StringHash("{param_name}");""")
+
+                    self.fp.write(f"""
+                        public {next_node.spelling}Event() {{ }}
+                        public static implicit operator StringHash({next_node.spelling}Event e) {{ return e._event; }}
+                    }}
+                    public static {next_node.spelling}Event {next_node.spelling} = new {next_node.spelling}Event();
+                    """)
+        return True
+
+
 class Urho3DModule(Module):
     exclude_headers = [
         r'/Urho3D/Precompiled.h',
@@ -399,7 +444,7 @@ class Urho3DModule(Module):
         self.exclude_headers = [re.compile(pattern, re.IGNORECASE) for pattern in self.exclude_headers]
 
     def register_passes(self, passes: list):
-        passes += [FindFlagEnums, CleanEnumValues, DefinePropertiesPass, DefineRefCountedPass, DefineConstantsPass]
+        passes += [DefineEventsPass]#, FindFlagEnums, CleanEnumValues, DefinePropertiesPass, DefineRefCountedPass, DefineConstantsPass]
 
     def gather_files(self):
         yield os.path.join(self.args.input, '../ThirdParty/SDL/include/SDL/SDL_joystick.h')

@@ -24,7 +24,6 @@ using System.Diagnostics;
 using System.IO;
 using Urho3DNet;
 //using ImGui;
-//using Urho3D.Events;
 
 namespace DemoApplication
 {
@@ -42,6 +41,7 @@ namespace DemoApplication
             GetNode().Rotate(d);
         }
     }
+
 
     class DemoApplication : Application
     {
@@ -91,7 +91,7 @@ namespace DemoApplication
             var model = _cube.CreateComponent<StaticModel>();
             model.SetModel(GetCache().GetResource<Model>("Models/Box.mdl"));
             model.SetMaterial(0, GetCache().GetResource<Material>("Materials/Stone.xml"));
-//            var rotator = _cube.CreateComponent<RotateObject>();
+            var rotator = _cube.CreateComponent<RotateObject>();
 
             // Light
             _light = _scene.CreateChild("Light");
@@ -99,17 +99,17 @@ namespace DemoApplication
             _light.SetPosition(new Vector3(0, 2, -1));
             _light.LookAt(Vector3.Zero);
 
-//            SubscribeToEvent<Update>(args =>
-//            {
-//                var timestep = args.GetFloat(Update.TimeStep);
-//                Debug.Assert(this != null);
-//
+            SubscribeToEvent(E.Update, args =>
+            {
+                var timestep = args[E.Update.TimeStep];
+                Debug.Assert(this != null);
+
 //                if (ui.Begin("Urho3D.NET"))
 //                {
 //                    ui.Text("Hello world from C#");
 //                }
 //                ui.End();
-//            });
+            });
         }
     }
 

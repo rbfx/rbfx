@@ -1,43 +1,5 @@
 // Various marshalling helpers
 
-%ignore SafeArray;
-%inline %{
-    struct SafeArray
-    {
-        void* data;
-        int length;
-
-        SafeArray() : data(nullptr), length(0) { }
-        SafeArray(void* d, int len) : data(d), length(len) { }
-        SafeArray(int){}
-        void operator=(int)
-        {
-          data = nullptr;
-          length = 0;
-        }
-    };
-    
-    // Helper for returning empty values
-    #define _RET_NULL
-    #define _RET_NULL0 {}
-    #define RET_NULL(...) _RET_NULL##__VA_ARGS__
-%}
-
-%pragma(csharp) modulecode=%{
-    [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public struct SafeArray
-    {
-        public global::System.IntPtr data;
-        public int length;
-
-        public SafeArray(global::System.IntPtr d, int l)
-        {
-            data = d;
-            length = l;
-        }
-    }
-%}
-
 %typemap(ctype)  char* strdup "char*"
 %typemap(imtype) char* strdup "global::System.IntPtr"
 %typemap(cstype) char* strdup "global::System.IntPtr"
@@ -103,7 +65,7 @@ int strlen(const char* void_ptr_string);
 %define %csexposefunc(DEST, NAME, CRETURN, CPARAMS)
 %DEST %{
   typedef CRETURN (SWIGSTDCALL* SWIG_CSharp$module##NAME##Callback)(CPARAMS);
-  SWIG_CSharp$module##NAME##Callback SWIG_CSharp$module##NAME = nullptr;
+  SWIGEXPORT SWIG_CSharp$module##NAME##Callback SWIG_CSharp$module##NAME = nullptr;
   #ifdef __cplusplus
   extern "C"
   #endif
@@ -124,3 +86,14 @@ int strlen(const char* void_ptr_string);
 %}
 %pragma(csharp) imclasscode=
 %enddef
+
+%runtime %{
+    template<typename T> T* addr(T& ref)  { return &ref; }
+    template<typename T> T* addr(T* ptr)  { return ptr;  }
+    template<typename T> T* addr(SwigValueWrapper<T>& ref)  { return &(T&)ref; }
+    template<typename T> T* addr(SwigValueWrapper<T>* ptr)  { return *ptr;  }
+    template<typename T> T& defef(T& ref) { return ref;  }
+    template<typename T> T& defef(T* ptr) { return *ptr; }
+    template<typename T> T& defef(SwigValueWrapper<T>& ref) { return (T&)ref;  }
+    template<typename T> T& defef(SwigValueWrapper<T>* ptr) { return (T&)*ptr; }
+%}
