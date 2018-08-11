@@ -387,10 +387,6 @@ macro (csharp_bind_target)
     set_source_files_properties(Swig/${BIND_TARGET}.i PROPERTIES
         CPLUSPLUS ON
         SWIG_FLAGS "-I${SWIG_SYSTEM_INCLUDE_DIRS}"
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/_constants.i
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/_refcounted.i
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/_properties.i
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/_enums.i
     )
 
     include_directories(${CMAKE_CURRENT_SOURCE_DIR})
@@ -399,16 +395,6 @@ macro (csharp_bind_target)
     swig_add_library(${CSHARP_LIBRARY_NAME} TYPE SHARED LANGUAGE csharp SOURCES Swig/${BIND_TARGET}.i)
     swig_link_libraries(${CSHARP_LIBRARY_NAME} ${BIND_TARGET})
     set_target_properties(${CSHARP_LIBRARY_NAME} PROPERTIES PREFIX ${CMAKE_SHARED_LIBRARY_PREFIX})
-
-    # Pre-generate part of swig interface
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/_constants.i
-               ${CMAKE_CURRENT_BINARY_DIR}/_refcounted.i
-               ${CMAKE_CURRENT_BINARY_DIR}/_properties.i
-               ${CMAKE_CURRENT_BINARY_DIR}/_enums.i
-        COMMAND python3 "${Urho3D_SOURCE_DIR}/Source/Tools/AutoSwig/autoswig.py" "${CSHARP_BINDING_GENERATOR_OPTIONS}"
-        COMMENT Generating rest of swig interface
-    )
 
     # Etc
     #    if (CLANG)

@@ -90,7 +90,7 @@ class String;
     Urho3D::String $inputRef(*(const char**)$input);
     $1 = &$inputRef;
 %}
-%typemap(argout)       String & "*(const char**)$input = SWIG_CSharpUrho3DCreateString($inputRef.CString());"
+%typemap(argout)       String & %{ *(const char**)$input = SWIG_CSharpCreateString($inputRef.CString()); %}
 %typemap(argout) const String & ""
 %typemap(csin, pre="
     var $csinputBytes = System.Text.Encoding.UTF8.GetBytes($csinput);
@@ -116,7 +116,7 @@ class String;
     }
 ") String & "(System.IntPtr)$csinputPtr"
 %typemap(directorin)   String & "$input = (void*)addr($1);"
-%typemap(directorin)   const String &, String %{ $input = (void*)SWIG_CSharpUrho3DCreateString(addr($1)->CString()); %}
+%typemap(directorin)   const String &, String %{ $input = (void*)SWIG_CSharpCreateString(addr($1)->CString()); %}
 %typemap(csdirectorin) const String &, String %{ $module.ToString($iminput) %}
 %typemap(csdirectorin, pre="
     unsafe {
@@ -129,7 +129,7 @@ class String;
 
 
 // Returns
-%typemap(out)                      const String &, String &, String %{ $result = (void*)SWIG_CSharpUrho3DCreateString(addr($1)->CString()); %}
+%typemap(out)                      const String &, String &, String %{ $result = (void*)SWIG_CSharpCreateString(addr($1)->CString()); %}
 %typemap(csout, excode=SWIGEXCODE) const String &, String &, String  {
     unsafe {
         var str = $imcall;$excode

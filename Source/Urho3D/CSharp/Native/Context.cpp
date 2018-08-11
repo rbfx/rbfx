@@ -32,8 +32,8 @@ extern "C"
 {
 
 const Urho3D::TypeInfo* Urho3DGetDirectorTypeInfo(Urho3D::StringHash type);
-typedef void* (SWIGSTDCALL* SWIG_CSharpUrho3DCreateObjectCallback)(Urho3D::Context* context, unsigned type);
-extern SWIG_CSharpUrho3DCreateObjectCallback SWIG_CSharpUrho3DCreateObject;
+typedef void* (SWIGSTDCALL* SWIG_CSharpCreateObjectCallback)(Urho3D::Context* context, unsigned type);
+extern SWIG_CSharpCreateObjectCallback SWIG_CSharpCreateObject;
 
 }
 
@@ -59,7 +59,7 @@ public:
 public:
     SharedPtr<Object> CreateObject() override
     {
-        auto* result = SWIG_CSharpUrho3DCreateObject(context_, managedType_.Value());
+        auto* result = SWIG_CSharpCreateObject(context_, managedType_.Value());
         return SharedPtr<Object>((Object*)result);
     }
 

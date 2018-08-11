@@ -14,6 +14,35 @@ from walkcpp.passes import AstPass, AstAction
 from walkcpp.utils import get_fully_qualified_name, is_builtin_type, desugar_type
 
 
+builtin_to_cs = {
+    TypeKind.VOID: 'void',
+    TypeKind.BOOL: 'bool',
+    TypeKind.CHAR_U: 'byte',
+    TypeKind.UCHAR: 'byte',
+    # TypeKind.CHAR16,
+    # TypeKind.CHAR32,
+    TypeKind.USHORT: 'ushort',
+    TypeKind.UINT: 'uint',
+    TypeKind.ULONG: 'uint',
+    TypeKind.ULONGLONG: 'ulong',
+    # TypeKind.UINT128,
+    TypeKind.CHAR_S: 'char',
+    TypeKind.SCHAR: 'char',
+    # TypeKind.WCHAR,
+    TypeKind.SHORT: 'short',
+    TypeKind.INT: 'int',
+    TypeKind.LONG: 'int',
+    TypeKind.LONGLONG: 'long',
+    # TypeKind.INT128,
+    TypeKind.FLOAT: 'float',
+    TypeKind.DOUBLE: 'double',
+    # TypeKind.LONGDOUBLE,
+    TypeKind.NULLPTR: 'null'
+    # TypeKind.FLOAT128,
+    # TypeKind.HALF,
+}
+
+
 def split_identifier(identifier):
     """Splits string at _ or between lower case and uppercase letters."""
     prev_split = 0
@@ -213,6 +242,10 @@ class DefinePropertiesPass(AstPass):
             'GetType': 'GetVariantType'
         }
     }
+    interfaces = [
+        'Urho3D::Octant',
+        'Urho3D::GPUObject',
+    ]
 
     class Property:
         name = None
@@ -227,8 +260,6 @@ class DefinePropertiesPass(AstPass):
             self.name = name
 
     def access_to_str(self, m):
-        if m.parent.is_abstract_record():
-            return 'public'
         return 'public' if m.access == AccessSpecifier.PUBLIC else 'protected'
 
     def on_begin(self):
@@ -242,7 +273,7 @@ class DefinePropertiesPass(AstPass):
         sorted_methods = OrderedDict()
 
         for m in methods:
-            if m.is_virtual_method() or m.is_pure_virtual_method() or m.is_static_method() or m.access == AccessSpecifier.PRIVATE:
+            if m.is_virtual_method() or m.is_pure_virtual_method() or m.is_static_method() or m.access == AccessSpecifier.PRIVATE or m.parent.is_abstract_record() or get_fully_qualified_name(m.parent) in self.interfaces:
                 continue
 
             basename = re.sub('^Get|Set', '', m.spelling, flags=re.IGNORECASE)
@@ -250,6 +281,9 @@ class DefinePropertiesPass(AstPass):
                 continue
 
             if any([m.spelling == m2.spelling and m != m2 for m2 in methods]):
+                continue
+
+            if not basename.startswith('Is') and len(list(m.parent.find_children(spelling=basename))):
                 continue
 
             try:
@@ -266,13 +300,8 @@ class DefinePropertiesPass(AstPass):
                         continue
 
                 prop.setter = m
-                if m.parent.is_abstract_record():
-                    prop.setter_access = 'public'
+                prop.setter_access = self.access_to_str(m)
                 prop.type = argument_type
-                # if prop.access == 'protected' and prop.setter_access == 'public':
-                #     prop.access = 'public'
-                # else:
-                #     prop.access = prop.setter_access
 
             elif (m.spelling.startswith('Get') or m.spelling.startswith('Is')) and num_children == 0:
                 if prop.setter:
@@ -281,16 +310,25 @@ class DefinePropertiesPass(AstPass):
                         continue
 
                 prop.getter = m
-                if m.parent.is_abstract_record():
-                    prop.getter_access = 'public'
+                prop.getter_access = self.access_to_str(m)
                 prop.type = m.type.get_result()
-                # if prop.access == 'protected' and prop.getter_access == 'public':
-                #     prop.access = 'public'
-                # else:
-                #     prop.access = prop.getter_access
 
             if prop.getter or prop.setter:
                 sorted_methods[basename] = prop
+
+        for k, prop in list(sorted_methods.items()):
+            if prop.getter is None or prop.getter_access == 'private':
+                # No properties without getter
+                del sorted_methods[k]
+            else:
+                if prop.getter_access == prop.access:
+                    prop.getter_access = ''
+                if prop.setter:
+                    if prop.setter_access == prop.access:
+                        prop.setter_access = ''
+                else:
+                    prop.access = prop.getter_access
+                    prop.getter_access = ''
 
         return sorted_methods
 
@@ -318,17 +356,37 @@ class DefinePropertiesPass(AstPass):
                 if not prop.getter:
                     continue
                 # base_type = desugar_type(prop.type)
-                full_type = prop.type.spelling
-                # if 'FlagSet' in base_type.spelling:
-                #     base_type = full_type = base_type.spelling[16:-7]
+                # if base_type.kind in builtin_to_cs:
+                #     base_type = builtin_to_cs[base_type.kind]
+                # else:
+                #     if 'FlagSet' in base_type.spelling:
+                #         base_type = base_type.spelling[16:-7]
+                #     else:
+                #         base_type = prop.type.spelling
+                #     base_type = base_type.replace('Urho3D::', 'Urho3DNet.')
 
-                prop_setter_spelling = None
+                if prop.access == prop.getter.access:
+                    prop.getter.access = ''
+
+                self.fp.write(f"""
+                %csmethodmodifiers {get_fully_qualified_name(prop.getter)} "
+                {prop.access} $typemap(cstype, {prop.type.spelling}) {prop.name} {{
+                    {prop.getter_access} get {{ return __{prop.getter.spelling}(); }}
+                """)
                 if prop.setter:
-                    prop_setter_spelling = prop.setter.spelling
-                self.fp.write(f'%csattribute({node.fully_qualified_name}, '
-                              f'%arg({full_type}), {prop.access}, {prop.name}, '
-                              f'{prop.getter_access}, {prop.getter.spelling}, '
-                              f'{prop.setter_access}, {prop_setter_spelling});\n')
+                    if prop.access == prop.setter.access:
+                        prop.setter.access = ''
+                    self.fp.write(f"""
+                    {prop.setter_access} set {{ __{prop.setter.spelling}(value); }}
+                    """)
+                self.fp.write("""
+                }
+                private"
+                """)
+                self.fp.write(f'%rename(__{prop.getter.spelling}) {get_fully_qualified_name(prop.getter)};\n')
+                if prop.setter:
+                    self.fp.write(f'%rename(__{prop.setter.spelling}) {get_fully_qualified_name(prop.setter)};\n')
+                    self.fp.write(f'%csmethodmodifiers {get_fully_qualified_name(prop.setter)} "private"\n')
 
         return True
 
@@ -444,7 +502,7 @@ class Urho3DModule(Module):
         self.exclude_headers = [re.compile(pattern, re.IGNORECASE) for pattern in self.exclude_headers]
 
     def register_passes(self, passes: list):
-        passes += [DefineEventsPass]#, FindFlagEnums, CleanEnumValues, DefinePropertiesPass, DefineRefCountedPass, DefineConstantsPass]
+        passes += [DefineEventsPass, FindFlagEnums, CleanEnumValues, DefineRefCountedPass, DefineConstantsPass]
 
     def gather_files(self):
         yield os.path.join(self.args.input, '../ThirdParty/SDL/include/SDL/SDL_joystick.h')

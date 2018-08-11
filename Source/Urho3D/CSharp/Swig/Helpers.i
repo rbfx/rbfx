@@ -12,6 +12,11 @@
   }
 %apply char* strdup { const char* void_ptr_string }
 
+%csmethodmodifiers free "internal";
+%csmethodmodifiers malloc "internal";
+%csmethodmodifiers strdup "internal";
+%csmethodmodifiers strlen "internal";
+
 void free(void* ptr);
 void* malloc(int size);
 char* strdup(const char* void_ptr_string);
@@ -64,23 +69,23 @@ int strlen(const char* void_ptr_string);
 
 %define %csexposefunc(DEST, NAME, CRETURN, CPARAMS)
 %DEST %{
-  typedef CRETURN (SWIGSTDCALL* SWIG_CSharp$module##NAME##Callback)(CPARAMS);
-  SWIGEXPORT SWIG_CSharp$module##NAME##Callback SWIG_CSharp$module##NAME = nullptr;
+  typedef CRETURN (SWIGSTDCALL* SWIG_CSharp##NAME##Callback)(CPARAMS);
+  SWIGEXPORT SWIG_CSharp##NAME##Callback SWIG_CSharp##NAME = nullptr;
   #ifdef __cplusplus
   extern "C"
   #endif
-  SWIGEXPORT void SWIGSTDCALL SWIGRegister$module##NAME##Callback(SWIG_CSharp$module##NAME##Callback callback) {
-    SWIG_CSharp$module##NAME = callback;
+  SWIGEXPORT void SWIGSTDCALL SWIGRegister##NAME##Callback(SWIG_CSharp##NAME##Callback callback) {
+    SWIG_CSharp##NAME = callback;
   }
 %}
 
 %pragma(csharp) imclasscode=%{
-  static protected System.Delegate SWIG_CSharp$module##NAME##DelegateInstance = SWIG_CSharp$module##NAME##Helper.RegisterDelegate();
-  internal partial struct SWIG_CSharp$module##NAME##Helper {
-    [global::System.Runtime.InteropServices.DllImport("$dllimport", EntryPoint="SWIGRegister$module" + #NAME + "Callback")]
-    private static extern void SWIGRegister$module##NAME##Callback(System.Delegate fn);
+  static protected System.Delegate SWIG_CSharp##NAME##DelegateInstance = SWIG_CSharp##NAME##Helper.RegisterDelegate();
+  internal partial struct SWIG_CSharp##NAME##Helper {
+    [global::System.Runtime.InteropServices.DllImport("$dllimport", EntryPoint="SWIGRegister" + #NAME + "Callback")]
+    private static extern void SWIGRegister##NAME##Callback(System.Delegate fn);
     public static System.Delegate RegisterDelegate() {
-        SWIGRegister$module##NAME##Callback(NAME##DelegateInstance);
+        SWIGRegister##NAME##Callback(NAME##DelegateInstance);
         return NAME##DelegateInstance;
     }
 %}

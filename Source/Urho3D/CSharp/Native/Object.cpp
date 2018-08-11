@@ -31,11 +31,11 @@
 extern "C"
 {
 
-typedef void* (SWIGSTDCALL* SWIG_CSharpUrho3DCloneGCHandleCallback)(void*);
-extern URHO3D_EXPORT_API SWIG_CSharpUrho3DCloneGCHandleCallback SWIG_CSharpUrho3DCloneGCHandle;
+typedef void* (SWIGSTDCALL* SWIG_CSharpCloneGCHandleCallback)(void*);
+extern URHO3D_EXPORT_API SWIG_CSharpCloneGCHandleCallback SWIG_CSharpCloneGCHandle;
 
-typedef void (SWIGSTDCALL* SWIG_CSharpUrho3DFreeGCHandleCallback)(void*);
-extern URHO3D_EXPORT_API SWIG_CSharpUrho3DFreeGCHandleCallback SWIG_CSharpUrho3DFreeGCHandle;
+typedef void (SWIGSTDCALL* SWIG_CSharpFreeGCHandleCallback)(void*);
+extern URHO3D_EXPORT_API SWIG_CSharpFreeGCHandleCallback SWIG_CSharpFreeGCHandle;
 
 }
 
@@ -56,7 +56,7 @@ public:
 
     ~ManagedEventHandler() override
     {
-        SWIG_CSharpUrho3DFreeGCHandle(callbackHandle_);
+        SWIG_CSharpFreeGCHandle(callbackHandle_);
         callbackHandle_ = 0;
     }
 
@@ -67,7 +67,7 @@ public:
 
     EventHandler* Clone() const override
     {
-        return new ManagedEventHandler(receiver_, callback_, SWIG_CSharpUrho3DCloneGCHandle(callbackHandle_));
+        return new ManagedEventHandler(receiver_, callback_, SWIG_CSharpCloneGCHandle(callbackHandle_));
     }
 
 public:

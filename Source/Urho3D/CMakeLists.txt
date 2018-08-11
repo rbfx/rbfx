@@ -149,7 +149,7 @@ set (THIRD_PARTY_DEPENDENCIES
     Box2D
     WebP
     Bullet
-    imgui
+    ImGui
     LibCpuId
     GLEW
     MojoShader

@@ -8,14 +8,18 @@
     <OutputPath Condition="'$(OS)' != 'Unix'">$(BuildDir)\bin\$(Configuration)\</OutputPath>
     <OutputPath Condition="'$(OS)' == 'Unix'">$(BuildDir)\bin\</OutputPath>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
-    <ProjectGuid>{0A84D2EB-5143-4B84-8287-09901C767178}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
+    <ProjectGuid>{1d4f152a-8277-4b41-8408-1cfdbd907623}</ProjectGuid>
+    <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>102_CSharpProject</RootNamespace>
-    <AssemblyName>102_CSharpProject</AssemblyName>
+    <RootNamespace>ImGui</RootNamespace>
+    <AssemblyName>ImGuiNet</AssemblyName>
     <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <IntermediateOutputPath>$(BuildDir)\obj\$(Configuration)\$(AssemblyName)</IntermediateOutputPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <SignAssembly>false</SignAssembly>
+    <PublicSign>false</PublicSign>
+    <AssemblyOriginatorKeyFile>$(BuildDir)/CSharp.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -86,7 +90,11 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
+    <Reference Include="System.Buffers, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+      <HintPath>$(BuildDir)\System.Buffers\ref\netstandard1.1\System.Buffers.dll</HintPath>
+    </Reference>
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
     <Reference Include="System.Numerics" />
@@ -94,20 +102,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
+    <Compile Include="$(BuildDir)\Source\ThirdParty\imgui\*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\ThirdParty\imgui\ImGui.csproj">
-      <Project>{1d4f152a-8277-4b41-8408-1cfdbd907623}</Project>
-      <Name>ImGui</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\Urho3D\CSharp\Urho3DNet.csproj">
       <Project>{38913c81-4703-4652-b17b-823baa9b6508}</Project>
       <Name>Urho3DNet</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
          Other similar extension points exist, see Microsoft.Common.targets.
     <Target Name="BeforeBuild">
     </Target>

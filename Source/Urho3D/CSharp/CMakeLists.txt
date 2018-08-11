@@ -20,6 +20,22 @@
 # THE SOFTWARE.
 #
 
+
+# Pre-generate part of swig interface
+
+set_source_files_properties(Swig/${BIND_TARGET}.i PROPERTIES
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/_constants.i
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/_refcounted.i
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/_enums.i
+    )
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/_constants.i
+    ${CMAKE_CURRENT_BINARY_DIR}/_refcounted.i
+    ${CMAKE_CURRENT_BINARY_DIR}/_enums.i
+    COMMAND python3 "${Urho3D_SOURCE_DIR}/Source/Tools/AutoSwig/autoswig.py" "${CSHARP_BINDING_GENERATOR_OPTIONS}"
+    COMMENT Generating rest of swig interface
+)
+
 csharp_bind_target(TARGET Urho3D)
 
 ## Target for manually refreshing binding code

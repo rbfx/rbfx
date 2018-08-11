@@ -58,15 +58,57 @@
 %include "String.i"
 %include "_constants.i"
 %include "_events.i"
+%include "_enums.i"
+
+// --------------------------------------- Math ---------------------------------------
 %include "Math.i"
+
+namespace Urho3D
+{
+
+URHO3D_BINARY_COMPATIBLE_TYPE(Color);
+URHO3D_BINARY_COMPATIBLE_TYPE(Rect);
+URHO3D_BINARY_COMPATIBLE_TYPE(IntRect);
+URHO3D_BINARY_COMPATIBLE_TYPE(Vector2);
+URHO3D_BINARY_COMPATIBLE_TYPE(IntVector2);
+URHO3D_BINARY_COMPATIBLE_TYPE(Vector3);
+URHO3D_BINARY_COMPATIBLE_TYPE(IntVector3);
+URHO3D_BINARY_COMPATIBLE_TYPE(Vector4);
+URHO3D_BINARY_COMPATIBLE_TYPE(Matrix3);
+URHO3D_BINARY_COMPATIBLE_TYPE(Matrix3x4);
+URHO3D_BINARY_COMPATIBLE_TYPE(Matrix4);
+URHO3D_BINARY_COMPATIBLE_TYPE(Quaternion);
+URHO3D_BINARY_COMPATIBLE_TYPE(Plane);
+URHO3D_BINARY_COMPATIBLE_TYPE(BoundingBox);
+
+}
+
+
+// These should be implemented in C# anyway.
+%ignore Urho3D::Frustum::planes_;
+%ignore Urho3D::Frustum::vertices_;
+%ignore Urho3D::Polyhedron::Polyhedron(const Vector<PODVector<Vector3> >& faces);
+%ignore Urho3D::Polyhedron::faces_;
+
+%apply float *INOUT        { float& sin, float& cos, float& accumulator };
+%apply unsigned int* INOUT { unsigned int* randomRef, unsigned int* nearestRef }
+
+%ignore Urho3D::M_MIN_INT;
+%ignore Urho3D::M_MAX_INT;
+%ignore Urho3D::M_MIN_UNSIGNED;
+%ignore Urho3D::M_MAX_UNSIGNED;
+
+%include "Urho3D/Math/MathDefs.h"
+%include "Urho3D/Math/Ray.h"
+%include "Urho3D/Math/Frustum.h"
+%include "Urho3D/Math/Sphere.h"
+
+// ---------------------------------------  ---------------------------------------
+
 %include "RefCounted.i"
 %include "Vector.i"
 %include "HashMap.i"
 %include "Urho3D/Math/Polyhedron.h"
-
-%include "attribute.i"
-//%include "_properties.i"
-%include "_enums.i"
 
 // Declare inheritable classes in this file
 %include "Context.i"
@@ -546,3 +588,4 @@ public:
 %include "Urho3D/UI/UIComponent.h"
 %include "Urho3D/UI/Window.h"
 %include "Urho3D/UI/View3D.h"
+
