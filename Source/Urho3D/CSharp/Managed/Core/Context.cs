@@ -23,7 +23,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using Urho3DNet.CSharp;
@@ -84,9 +83,6 @@ namespace Urho3DNet
                     ((IDisposable) memberInfo?.GetValue(null))?.Dispose();
                 }
             }
-
-            // Free any allocated objects that may be holding on to context. Prevents crash at exit.
-            GC.Collect(GC.MaxGeneration);
         }
 
         public void RegisterFactory<T>(string category = "") where T : Object

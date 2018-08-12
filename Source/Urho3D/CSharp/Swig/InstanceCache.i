@@ -9,16 +9,15 @@
     return _instanceCache.GetOrAdd(cPtr, () => {
       var type = $imclassname.SWIGTypeRegistry[$imclassname.$csclazznameSWIGTypeId(cPtr)];
       if (type == typeof($csclassname))
-        return new $csclassname(cPtr, cMemoryOwn, false);
-      return ($csclassname)global::System.Activator.CreateInstance(type, global::System.Reflection.BindingFlags.Instance|global::System.Reflection.BindingFlags.NonPublic|global::System.Reflection.BindingFlags.Public, null, new object[]{cPtr, cMemoryOwn, false}, null);
+        return new $csclassname(cPtr, cMemoryOwn);
+      return ($csclassname)global::System.Activator.CreateInstance(type, global::System.Reflection.BindingFlags.Instance|global::System.Reflection.BindingFlags.NonPublic|global::System.Reflection.BindingFlags.Public, null, new object[]{cPtr, cMemoryOwn}, null);
     });
   }
 
-  internal $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn, bool cache=true) {
+  internal $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn) {
     swigCMemOwn = cMemoryOwn;
     swigCPtr = new global::System.Runtime.InteropServices.HandleRef(this, cPtr);
-    if (cache)
-      _instanceCache.Add(swigCPtr);
+    _instanceCache.AddNew(swigCPtr);
   }
 
   internal static global::System.Runtime.InteropServices.HandleRef getCPtr($csclassname obj) {
@@ -30,20 +29,19 @@
 %typemap(csbody_derived) SWIGTYPE %{
   private global::System.Runtime.InteropServices.HandleRef swigCPtr;
   private static InstanceCache<$csclassname> _instanceCache = new InstanceCache<$csclassname>();
-  internal static new $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
+  internal new static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
   {
     return _instanceCache.GetOrAdd(cPtr, () => {
       var type = $imclassname.SWIGTypeRegistry[$imclassname.$csclazznameSWIGTypeId(cPtr)];
       if (type == typeof($csclassname))
-        return new $csclassname(cPtr, cMemoryOwn, false);
-      return ($csclassname)global::System.Activator.CreateInstance(type, global::System.Reflection.BindingFlags.Instance|global::System.Reflection.BindingFlags.NonPublic|global::System.Reflection.BindingFlags.Public, null, new object[]{cPtr, cMemoryOwn, false}, null);
+        return new $csclassname(cPtr, cMemoryOwn);
+      return ($csclassname)global::System.Activator.CreateInstance(type, global::System.Reflection.BindingFlags.Instance|global::System.Reflection.BindingFlags.NonPublic|global::System.Reflection.BindingFlags.Public, null, new object[]{cPtr, cMemoryOwn}, null);
     });
   }
 
-  internal $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn, bool cache=true) : base($imclassname.$csclazznameSWIGUpcast(cPtr), cMemoryOwn) {
+  internal $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn) : base($imclassname.$csclazznameSWIGUpcast(cPtr), cMemoryOwn) {
     swigCPtr = new global::System.Runtime.InteropServices.HandleRef(this, cPtr);
-    if (cache)
-      _instanceCache.Add(swigCPtr);
+    _instanceCache.AddNew(swigCPtr);
   }
 
   internal static global::System.Runtime.InteropServices.HandleRef getCPtr($csclassname obj) {
@@ -145,13 +143,12 @@
   private static InstanceCache<$csclassname> _instanceCache = new InstanceCache<$csclassname>();
   internal static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
   {
-    return _instanceCache.GetOrAdd(cPtr, () => new $csclassname(cPtr, cMemoryOwn, false));
+    return _instanceCache.GetOrAdd(cPtr, () => new $csclassname(cPtr, cMemoryOwn));
   }
 
-  internal $csclassname(global::System.IntPtr cPtr, bool futureUse, bool cache=true) {
+  internal $csclassname(global::System.IntPtr cPtr, bool futureUse) {
     swigCPtr = new global::System.Runtime.InteropServices.HandleRef(this, cPtr);
-    if (cache)
-      _instanceCache.Add(swigCPtr);
+    _instanceCache.AddNew(swigCPtr);
   }
 
   protected $csclassname() {

@@ -251,8 +251,6 @@ function(vs_group_subdirectory_targets DIR FOLDER_NAME)
     endforeach()
 endfunction()
 
-set(SWIG_EXECUTABLE /home/rk/.local/opt/swig/bin/swig)
-set(SWIG_LIB /home/rk/.local/opt/swig/share/swig/3.0.12)
 find_package(SWIG REQUIRED)
 include(UrhoSWIG)
 
@@ -374,10 +372,9 @@ macro (csharp_bind_target)
 
     # Swig
     set(CMAKE_SWIG_FLAGS
-        -v
         -namespace ${BIND_MANAGED_TARGET}
-        #        -debug-tmused
         -debug-tmsearch
+        -fastdispatch
         -I${CMAKE_CURRENT_BINARY_DIR}
         )
 

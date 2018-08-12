@@ -35,7 +35,7 @@
             SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "null", 0);
             return $null;
         }
-        CPP_TYPE $inputRef(*$input);
+        $*1_ltype $inputRef(*$input);
         $1 = &$inputRef;
     %}
     %typemap(argout)       CPP_TYPE & %{ $input = SWIG_CSharpCreate##CPP_TYPE(&$inputRef); %}

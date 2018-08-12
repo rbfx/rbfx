@@ -282,6 +282,10 @@ public:
 %ignore Urho3D::Scene::CleanupConnection;
 %ignore Urho3D::Node::CleanupConnection;
 %ignore Urho3D::NodeImpl;
+%ignore Urho3D::Animatable::animatedNetworkAttributes_;
+%ignore Urho3D::Animatable::attributeAnimationInfos_;
+%ignore Urho3D::Animatable::IsAnimatedNetworkAttribute;
+%ignore Urho3D::Animatable::GetAttributeAnimationInfo;
 
 %include "Urho3D/Scene/AnimationDefs.h"
 %include "Urho3D/Scene/ValueAnimationInfo.h"

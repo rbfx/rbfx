@@ -79,7 +79,7 @@ class String;
         SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "null string", 0);
         return $null;
     }
-    Urho3D::String $inputRef($input);
+    $*1_ltype $inputRef($input);
     $1 = &$inputRef;
 %}
 %typemap(in, canthrow=1) String & %{
@@ -87,7 +87,7 @@ class String;
         SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "null string", 0);
         return $null;
     }
-    Urho3D::String $inputRef(*(const char**)$input);
+    $*1_ltype $inputRef(*(const char**)$input);
     $1 = &$inputRef;
 %}
 %typemap(argout)       String & %{ *(const char**)$input = SWIG_CSharpCreateString($inputRef.CString()); %}
@@ -150,7 +150,7 @@ class String;
         SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "null string", 0);
         return $null;
     }
-    static thread_local Urho3D::String $inputStatic($input);
+    static thread_local $*1_ltype $inputStatic($input);
     $result = &$inputStatic;
     free((void*)$input); // strdup'ed in csdirectorout
 %}

@@ -19,8 +19,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace Urho3DNet
@@ -99,13 +101,16 @@ namespace Urho3DNet
             }
         }
 
-        public void Add(HandleRef instance)
+        public void AddNew(HandleRef instance)
         {
             lock (_cache)
             {
                 ExpireCache();
-                _needsReset = true;
-                _cache[instance.Handle] = new CacheEntry((T) instance.Wrapper);
+                if (!_cache.ContainsKey(instance.Handle))
+                {
+                    _needsReset = true;
+                    _cache[instance.Handle] = new CacheEntry((T) instance.Wrapper);
+                }
             }
         }
 
@@ -134,16 +139,14 @@ namespace Urho3DNet
         {
             lock (_cache)
             {
-//                var values = new CacheEntry[_cache.Count];
-//                _cache.Values.CopyTo(values, 0);
-//                foreach (var value in values)
-//                {
-//                    ((IDisposable) value.Target).Dispose();
-//                }
                 _needsReset = true;
                 _expirationEnumerator = null;
                 _lastCacheEnumeratorResetTime = Environment.TickCount;
-                _cache.Clear();
+                foreach (var value in _cache.Values.ToArray())
+                {
+                    if (!(value.Target is Context))    // Context must be destroyed at very end.
+                        ((IDisposable) value.Target)?.Dispose();
+                }
             }
         }
 

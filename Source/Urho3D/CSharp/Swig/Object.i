@@ -33,18 +33,6 @@ IGNORE_SUBSYSTEM(WorkQueue)
 %ignore Urho3D::Object::SubscribeToEvent;
 %ignore Urho3D::Object::context_;
 
-// Extend Context with extra code
-%typemap(csconstruct, excode=SWIGEXCODE,directorconnect="\n    SwigDirectorConnect();") Context %{: this($imcall, true) {$excode$directorconnect
-        OnSetupInstance();
-    }
-%}
-
-%typemap(csdestruct_derived, methodname="Dispose", methodmodifiers="public") Urho3D::Context {
-    OnDispose();
-    $typemap(csdestruct_derived, SWIGTYPE)
-}
-
-
 %csexposefunc(runtime, CloneGCHandle, void*, void*) %{
     private static System.IntPtr CloneGCHandle(System.IntPtr handle)
     {

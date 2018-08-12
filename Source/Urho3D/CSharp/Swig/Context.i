@@ -10,6 +10,16 @@
 %ignore Urho3D::Context::GetAllAttributes;
 %ignore Urho3D::Context::GetAttribute;
 
+// Extend Context with extra code
+%typemap(csconstruct, excode=SWIGEXCODE,directorconnect="\n    SwigDirectorConnect();") Urho3D::Context %{: this($imcall, true) {$excode$directorconnect
+    OnSetupInstance();
+  }
+%}
+
+%typemap(csdestruct_derived, methodname="Dispose", methodmodifiers="public") Urho3D::Context {
+    OnDispose();
+    $typemap(csdestruct_derived, SWIGTYPE)
+}
 
 %wrapper %{
   SWIGEXPORT Urho3D::HashMap<Urho3D::StringHash, const Urho3D::TypeInfo*> Urho3DDirectorTypes;
