@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include <IconFontCppHeaders/IconsFontAwesome.h>
 #include <Toolbox/IO/ContentUtilities.h>
 #include "Tabs/Scene/SceneTab.h"
 #include "Tabs/UI/UITab.h"
@@ -96,6 +97,19 @@ bool ResourceTab::RenderWindowContent()
     {
         if (ui::BeginMenu("Create"))
         {
+            if (ui::MenuItem(ICON_FA_FOLDER " Folder"))
+            {
+                String newFolderName("New Folder");
+                String path = GetNewResourcePath(resourcePath_ + newFolderName);
+                if (GetFileSystem()->CreateDir(path))
+                {
+                    flags_ |= RBF_RENAME_CURRENT | RBF_SCROLL_TO_CURRENT;
+                    resourceSelection_ = newFolderName;
+                }
+                else
+                    URHO3D_LOGERRORF("Failed creating folder '%s'.", path.CString());
+            }
+
             if (ui::MenuItem("Scene"))
             {
                 auto path = GetNewResourcePath(resourcePath_ + "New Scene.scene");
