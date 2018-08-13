@@ -22,6 +22,7 @@
 
 #include <IconFontCppHeaders/IconsFontAwesome.h>
 #include <Toolbox/IO/ContentUtilities.h>
+#include <SDL/SDL_clipboard.h>
 #include "Tabs/Scene/SceneTab.h"
 #include "Tabs/UI/UITab.h"
 #include "Editor.h"
@@ -147,6 +148,9 @@ bool ResourceTab::RenderWindowContent()
 
             ui::EndMenu();
         }
+
+        if (ui::MenuItem("Copy Path"))
+            SDL_SetClipboardText((resourcePath_ + resourceSelection_).CString());
 
         if (ui::MenuItem("Rename", "F2"))
             flags_ |= RBF_RENAME_CURRENT;
