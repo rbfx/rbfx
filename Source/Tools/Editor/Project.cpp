@@ -51,7 +51,6 @@ Project::Project(Context* context)
 
 Project::~Project()
 {
-    assetConverter_.RemoveAssetDirectory(GetResourcePath());
     if (auto* cache = GetCache())
     {
         cache->RemoveResourceDir(GetCachePath());

@@ -24,6 +24,8 @@
 
 #include "Editor.h"
 #include "AssetConverter.h"
+#include "ImportFbx.h"
+
 
 namespace Urho3D
 {
@@ -31,8 +33,16 @@ namespace Urho3D
 AssetConverter::AssetConverter(Context* context)
     : Object(context)
 {
+    assetImporters_.Push(SharedPtr<ImportFbx>(new ImportFbx(context_)));
+
     SubscribeToEvent(E_ENDFRAME, std::bind(&AssetConverter::DispatchChangedAssets, this));
     SubscribeToEvent(E_CONSOLECOMMAND, std::bind(&AssetConverter::OnConsoleCommand, this, _2));
+}
+
+AssetConverter::~AssetConverter()
+{
+    for (auto& watcher : watchers_)
+        watcher->StopWatching();
 }
 
 void AssetConverter::AddAssetDirectory(const String& path)
@@ -40,6 +50,21 @@ void AssetConverter::AddAssetDirectory(const String& path)
     SharedPtr<FileWatcher> watcher(new FileWatcher(context_));
     watcher->StartWatching(path, true);
     watchers_.Push(watcher);
+}
+
+void AssetConverter::RemoveAssetDirectory(const String& path)
+{
+    String realPath = AddTrailingSlash(path);
+    for (auto it = watchers_.Begin(); it != watchers_.End();)
+    {
+        if ((*it)->GetPath() == realPath)
+        {
+            (*it)->StopWatching();
+            it = watchers_.Erase(it);
+        }
+        else
+            ++it;
+    }
 }
 
 void AssetConverter::SetCachePath(const String& cachePath)
@@ -55,107 +80,54 @@ String AssetConverter::GetCachePath() const
 
 void AssetConverter::VerifyCacheAsync()
 {
-    auto* rules_ = GetCache()->GetResource<XMLFile>("Settings/AssetConversionRules.xml");
     GetWorkQueue()->AddWorkItem([=]() {
-        SharedPtr<XMLFile> rules(rules_);
         for (const auto& watcher : watchers_)
         {
             Vector<String> files;
             GetFileSystem()->ScanDir(files, watcher->GetPath(), "*", SCAN_FILES, true);
 
             for (const auto& file : files)
-                ConvertAsset(file, rules);
+                ConvertAsset(file);
         }
     });
 }
 
 void AssetConverter::ConvertAssetAsync(const String& resourceName)
 {
-    SharedPtr<XMLFile> rules(GetCache()->GetResource<XMLFile>("Settings/AssetConversionRules.xml"));
-    GetWorkQueue()->AddWorkItem(std::bind(&AssetConverter::ConvertAsset, this, resourceName, rules));
+    GetWorkQueue()->AddWorkItem(std::bind(&AssetConverter::ConvertAsset, this, resourceName));
 }
 
-bool AssetConverter::ConvertAsset(const String& resourceName, const SharedPtr<XMLFile>& rules)
+bool AssetConverter::ConvertAsset(const String& resourceName)
 {
     if (!IsCacheOutOfDate(resourceName))
         return true;
 
     // Ensure that no resources are left over from previous version
     GetFileSystem()->RemoveDir(cachePath_ + resourceName, true);
+    String resourceFileName = GetCache()->GetResourceFileName(resourceName);
+    bool convertedAny = false;
 
-    XMLElement converters = rules->GetRoot("converters");
-    for (auto converter = converters.GetChild("converter"); converter.NotNull();
-         converter = converter.GetNext("converter"))
+    for (auto& importer : assetImporters_)
     {
-        String regex = converter.GetAttribute("regex");
-        if (regex.Empty())
+        if (importer->Accepts(resourceFileName))
         {
-            // Wildcard is converted to regex
-            regex = converter.GetAttribute("wildcard").CString();
-
-            // Escape regex characters except for *
-            const char* special = "\\.^$|()[]{}+?";
-            for (char c = *special; c != 0; c = *(++special))
-                regex.Replace(String(c), ToString("\\%c", c));
-
-            // Replace wildcard characters
-            regex.Replace("**", ".+");
-            regex.Replace("*", "[^/]+");
-        }
-
-        std::regex re(regex.CString());
-        if (!std::regex_match(resourceName.CString(), re))
-            continue;
-
-        for (auto method = converter.GetChild(); method.NotNull(); method = method.GetNext())
-        {
-            if (method.GetName() == "popen")
-            {
-                if (ExecuteConverterPOpen(method, resourceName) != 0)
-                    return false;
-            }
+            if (importer->Convert(resourceFileName))
+                convertedAny = true;
         }
     }
 
     auto convertedAssets = GetCacheAssets(resourceName);
     if (!convertedAssets.Empty())
     {
-        unsigned mtime = GetFileSystem()->GetLastModifiedTime(GetCache()->GetResourceFileName(resourceName));
+        unsigned mtime = GetFileSystem()->GetLastModifiedTime(resourceFileName);
         for (const auto& path : GetCacheAssets(resourceName))
         {
             GetFileSystem()->SetLastModifiedTime(path, mtime);
             URHO3D_LOGINFOF("Imported %s", path.CString());
         }
-        return true;
     }
 
-    return false;
-}
-
-int AssetConverter::ExecuteConverterPOpen(const XMLElement& popen, const String& resourceName)
-{
-    auto* fs = context_->GetSubsystem<FileSystem>();
-    String executable = popen.GetAttribute("executable");
-
-    if (!fs->FileExists(executable))
-    {
-        PrintLine(ToString("Executable \"%s\" not found.", executable.CString()).CString(), true);
-        return -1;
-    }
-
-    Vector<String> args;
-    for (XMLElement arg = popen.GetChild("arg"); arg.NotNull(); arg = arg.GetNext("arg"))
-    {
-        String argument = arg.GetValue();
-        InsertVariables(resourceName, argument);
-        args.Push(argument);
-
-        if (ToBool(arg.GetAttribute("output")))
-            GetFileSystem()->CreateDirsRecursive(GetPath(argument));
-    }
-
-    Process process(executable, args);
-    return process.Run();
+    return convertedAny;
 }
 
 void AssetConverter::DispatchChangedAssets()
@@ -195,25 +167,6 @@ Vector<String> AssetConverter::GetCacheAssets(const String& resourceName)
     for (auto& fileName : files)
         fileName = AddTrailingSlash(assetCacheDirectory) + fileName;
     return files;
-}
-
-void AssetConverter::InsertVariables(const String& resourceName, String& value)
-{
-    value.Replace("${resourceName}", resourceName);
-    value.Replace("${resourcePath}", GetCache()->GetResourceFileName(resourceName));
-    value.Replace("${resourceCacheDir}", cachePath_);
-    value.Replace("${resourceCachePath}", cachePath_ + resourceName);
-}
-
-void AssetConverter::RemoveAssetDirectory(const String& path)
-{
-    for (auto it = watchers_.Begin(); it != watchers_.End();)
-    {
-        if ((*it)->GetPath() == path)
-            it = watchers_.Erase(it);
-        else
-            ++it;
-    }
 }
 
 void AssetConverter::OnConsoleCommand(VariantMap& args)

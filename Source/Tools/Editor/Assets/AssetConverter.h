@@ -27,6 +27,8 @@
 #include <Urho3D/IO/FileWatcher.h>
 #include <Urho3D/Resource/XMLFile.h>
 
+#include "ImportAsset.h"
+
 
 namespace Urho3D
 {
@@ -37,8 +39,10 @@ class AssetConverter : public Object
 {
     URHO3D_OBJECT(AssetConverter, Object);
 public:
-    /// rulesFile is resource name or full path to xml file defining asset conversion rules.
+    /// Construct.
     explicit AssetConverter(Context* context);
+    /// Destruct.
+    ~AssetConverter() override;
 
     /// Set cache path. Converted assets will be placed there.
     void SetCachePath(const String& cachePath);
@@ -55,17 +59,13 @@ public:
 
 protected:
     /// Converts asset. Blocks calling thread.
-    bool ConvertAsset(const String& resourceName, const SharedPtr<XMLFile>& rules);
-    /// Executes external application.
-    int ExecuteConverterPOpen(const XMLElement& popen, const String& resourceName);
+    bool ConvertAsset(const String& resourceName);
     /// Returns true if asset in the cache folder is missing or out of date.
     bool IsCacheOutOfDate(const String& resourceName);
     /// Return a list of converted assets in the cache.
     Vector<String> GetCacheAssets(const String& resourceName);
     /// Watches for changed files and requests asset conversion if needed.
     void DispatchChangedAssets();
-    /// Inserts various variables to values specified in rules file.
-    void InsertVariables(const String& resourceName, String& value);
     /// Handle console commands.
     void OnConsoleCommand(VariantMap& args);
 
@@ -75,6 +75,8 @@ protected:
     Timer checkTimer_;
     /// Absolute path to asset cache.
     String cachePath_;
+    /// Registered asset importers.
+    Vector<SharedPtr<ImportAsset>> assetImporters_;
 };
 
 }
