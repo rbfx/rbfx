@@ -20,8 +20,6 @@
 // THE SOFTWARE.
 //
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>

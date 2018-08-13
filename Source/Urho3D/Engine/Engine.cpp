@@ -27,6 +27,7 @@
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
 #include "../Core/ProcessUtils.h"
+#include "../Core/Thread.h"
 #include "../Core/WorkQueue.h"
 #ifdef URHO3D_SYSTEMUI
 #include "../SystemUI/SystemUI.h"

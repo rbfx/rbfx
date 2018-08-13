@@ -29,6 +29,7 @@
 #include "../Audio/Audio.h"
 #include "../Engine/Engine.h"
 #include "../Core/WorkQueue.h"
+#include "../Core/Thread.h"
 #if URHO3D_TASKS
 #include "../Core/Tasks.h"
 #endif
