@@ -235,6 +235,24 @@ bool Gizmo::Select(Node* node)
     return true;
 }
 
+bool Gizmo::Select(PODVector<Node*> nodes)
+{
+    bool selectedAny = false;
+    for (auto* node : nodes)
+    {
+        WeakPtr<Node> weakNode(node);
+        if (!nodeSelection_.Contains(weakNode))
+        {
+            nodeSelection_.Push(weakNode);
+            selectedAny = true;
+        }
+    }
+    if (selectedAny)
+        SendEvent(E_GIZMOSELECTIONCHANGED);
+
+    return selectedAny;
+}
+
 bool Gizmo::Unselect(Node* node)
 {
     WeakPtr<Node> weakNode(node);

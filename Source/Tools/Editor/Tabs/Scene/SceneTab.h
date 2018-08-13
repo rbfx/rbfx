@@ -66,6 +66,8 @@ public:
     void OnFocused() override;
     /// Add a node to selection.
     void Select(Node* node);
+    /// Add multiple nodes to selection.
+    void Select(PODVector<Node*> nodes);
     /// Remove a node from selection.
     void Unselect(Node* node);
     /// Select if node was not selected or unselect if node was selected.

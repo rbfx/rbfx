@@ -79,6 +79,8 @@ public:
     void RenderUI();
     /// Add a node to selection.
     bool Select(Node* node);
+    /// Add a node to selection.
+    bool Select(PODVector<Node*> nodes);
     /// Remove a node from selection.
     bool Unselect(Node* node);
     /// Select if node was not selected or unselect if node was selected.
