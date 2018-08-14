@@ -37,6 +37,7 @@ void SetProfilerThreadName(const char* name);
 }
 
 #if URHO3D_PROFILING
+#   define URHO3D_PROFILE_FUNCTION()              ZoneScopedN(__FUNCTION__)
 #   define URHO3D_PROFILE_C(name, color)          ZoneScopedNC(name, color)
 #   define URHO3D_PROFILE(name)                   ZoneScopedN(name)
 #   define URHO3D_PROFILE_THREAD(name)            SetProfilerThreadName(name)
@@ -45,6 +46,7 @@ void SetProfilerThreadName(const char* name);
 #   define URHO3D_PROFILE_MESSAGE(txt, len)       TracyMessage(txt, len)
 #   define URHO3D_PROFILE_ZONENAME(txt, len)      ZoneName(txt, len)
 #else
+#   define URHO3D_PROFILE_FUNCTION()
 #   define URHO3D_PROFILE_C(...)
 #   define URHO3D_PROFILE(...)
 #   define URHO3D_PROFILE_THREAD(...)
