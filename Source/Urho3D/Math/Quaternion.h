@@ -110,6 +110,12 @@ public:
         FromEulerAngles(x, y, z);
     }
 
+    /// Construct from Euler angles (in degrees.)
+    explicit Quaternion(Vector3 angles) noexcept
+    {
+        FromEulerAngles(angles.x_, angles.y_, angles.z_);
+    }
+
     /// Construct from the rotation difference between two direction vectors.
     Quaternion(const Vector3& start, const Vector3& end) noexcept
     {
