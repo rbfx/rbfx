@@ -506,7 +506,7 @@ void SceneTab::RenderNodeTree(Node* node)
 
                 if (ui::BeginPopup("Component context menu"))
                 {
-                    if (ui::MenuItem("Remove"))
+                    if (ui::MenuItem("Delete", "Del"))
                         component->Remove();
                     ui::EndPopup();
                 }
@@ -567,21 +567,19 @@ void SceneTab::OnSaveProject(JSONValue& tab)
 
 void SceneTab::OnActiveUpdate()
 {
-    if (ui::IsAnyItemActive() || scenePlaying_)
-        return;
-
-    Input* input = GetSubsystem<Input>();
-
-    if (input->GetKeyDown(KEY_CTRL))
+    // Scene viewport hotkeys
+    if (!ui::IsAnyItemActive() && !scenePlaying_)
     {
-        if (input->GetKeyPress(KEY_Y) || (input->GetKeyDown(KEY_SHIFT) && input->GetKeyPress(KEY_Z)))
-            undo_.Redo();
-        else if (input->GetKeyPress(KEY_Z))
-            undo_.Undo();
-    }
+        Input* input = GetSubsystem<Input>();
 
-    if (input->GetKeyPress(KEY_DELETE))
-        RemoveSelection();
+        if (input->GetKeyDown(KEY_CTRL))
+        {
+            if (input->GetKeyPress(KEY_Y) || (input->GetKeyDown(KEY_SHIFT) && input->GetKeyPress(KEY_Z)))
+                undo_.Redo();
+            else if (input->GetKeyPress(KEY_Z))
+                undo_.Undo();
+        }
+    }
 }
 
 void SceneTab::RemoveSelection()
@@ -616,6 +614,13 @@ void SceneTab::OnUpdate(VariantMap& args)
     {
         if (mouseHoversViewport_)
             component->Update(timeStep);
+    }
+
+    if (!ui::IsAnyItemActive() && !scenePlaying_)
+    {
+        // Global view hotkeys
+        if (GetInput()->GetKeyDown(KEY_DELETE))
+            RemoveSelection();
     }
 }
 
