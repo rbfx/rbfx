@@ -97,5 +97,7 @@ URHO3D_TOOLBOX_API bool TransformRect(Urho3D::IntRect& inOut, Urho3D::IntRect& d
 URHO3D_TOOLBOX_API Urho3D::SystemUI* GetSystemUI();
 /// Create a optionally toggleable toolbar button with a tooltip.
 URHO3D_TOOLBOX_API bool EditorToolbarButton(const char* text, const char* tooltip=nullptr, bool active=false);
+/// Opens a tree node which was rendered already.
+URHO3D_TOOLBOX_API void OpenTreeNode(ImGuiID id);
 
 }

@@ -441,4 +441,14 @@ bool EditorToolbarButton(const char* text, const char* tooltip, bool active)
     return result;
 }
 
+void OpenTreeNode(ImGuiID id)
+{
+    auto& storage = ui::GetCurrentWindow()->DC.StateStorage;
+    if (!storage->GetInt(id))
+    {
+        storage->SetInt(id, true);
+        ui::TreePushRawID(id);
+    }
+}
+
 }

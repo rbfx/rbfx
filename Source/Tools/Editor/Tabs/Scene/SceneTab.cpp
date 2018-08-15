@@ -443,6 +443,34 @@ void SceneTab::RenderNodeTree(Node* node)
     ui::SameLine();
     ui::PushID((void*)node);
     auto opened = ui::TreeNodeEx(name.CString(), flags);
+    auto treeNodeId = ui::GetCurrentWindow()->GetID(name.CString());
+
+    if (ui::BeginDragDropSource())
+    {
+        ui::SetDragDropVariant("ptr", node);
+        ui::Text("%s", name.CString());
+        ui::EndDragDropSource();
+    }
+
+    if (ui::BeginDragDropTarget())
+    {
+        const Variant& payload = ui::AcceptDragDropVariant("ptr");
+        if (!payload.IsEmpty())
+        {
+            SharedPtr<Node> child(dynamic_cast<Node*>(payload.GetPtr()));
+            if (child.NotNull() && child != node)
+            {
+                node->AddChild(child);
+                if (!opened)
+                {
+                    ui::OpenTreeNode(treeNodeId);
+                    opened = true;
+                }
+            }
+        }
+        ui::EndDragDropTarget();
+    }
+
     if (!opened)
     {
         // If TreeNode above is opened, it pushes it's label as an ID to the stack. However if it is not open then no
