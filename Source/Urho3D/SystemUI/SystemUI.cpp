@@ -68,6 +68,8 @@ SystemUI::SystemUI(Urho3D::Context* context)
     io.KeyMap[ImGuiKey_X] = SCANCODE_X;
     io.KeyMap[ImGuiKey_Y] = SCANCODE_Y;
     io.KeyMap[ImGuiKey_Z] = SCANCODE_Z;
+    io.KeyMap[ImGuiKey_PageUp] = SCANCODE_PAGEUP;
+    io.KeyMap[ImGuiKey_PageDown] = SCANCODE_DOWN;
 
     io.RenderDrawListsFn = [](ImDrawData* data) { ((SystemUI*)ImGui::GetIO().UserData)->OnRenderDrawLists(data); };
     io.SetClipboardTextFn = [](void* userData, const char* text) { SDL_SetClipboardText(text); };
