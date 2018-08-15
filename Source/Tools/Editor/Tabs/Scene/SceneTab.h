@@ -131,6 +131,8 @@ protected:
     XMLFile sceneState_;
     /// Flag indicating that mouse is hovering scene viewport.
     bool mouseHoversViewport_ = false;
+    /// Nodes whose entries in hierarchy tree should be opened on next frame.
+    PODVector<Node*> openHierarchyNodes_;
 };
 
 };

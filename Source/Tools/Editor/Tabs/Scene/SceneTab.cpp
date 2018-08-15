@@ -443,7 +443,16 @@ void SceneTab::RenderNodeTree(Node* node)
     ui::SameLine();
     ui::PushID((void*)node);
     auto opened = ui::TreeNodeEx(name.CString(), flags);
-    auto treeNodeId = ui::GetCurrentWindow()->GetID(name.CString());
+    auto it = openHierarchyNodes_.Find(node);
+    if (it != openHierarchyNodes_.End())
+    {
+        if (!opened)
+        {
+            ui::OpenTreeNode(ui::GetCurrentWindow()->GetID(name.CString()));
+            opened = true;
+        }
+        openHierarchyNodes_.Erase(it);
+    }
 
     if (ui::BeginDragDropSource())
     {
@@ -462,10 +471,7 @@ void SceneTab::RenderNodeTree(Node* node)
             {
                 node->AddChild(child);
                 if (!opened)
-                {
-                    ui::OpenTreeNode(treeNodeId);
-                    opened = true;
-                }
+                    openHierarchyNodes_.Push(node);
             }
         }
         ui::EndDragDropTarget();
@@ -722,7 +728,10 @@ void SceneTab::RenderNodeContextMenu()
             for (auto& selectedNode : GetSelection())
             {
                 if (!selectedNode.Expired())
+                {
                     newNodes.Push(selectedNode->CreateChild(String::EMPTY, alternative ? LOCAL : REPLICATED));
+                    openHierarchyNodes_.Push(selectedNode);
+                }
             }
 
             UnselectAll();
@@ -751,8 +760,11 @@ void SceneTab::RenderNodeContextMenu()
                             for (auto& selectedNode : GetSelection())
                             {
                                 if (!selectedNode.Expired())
-                                    selectedNode->CreateComponent(StringHash(component),
-                                        alternative ? LOCAL : REPLICATED);
+                                {
+                                    if (selectedNode->CreateComponent(StringHash(component),
+                                        alternative ? LOCAL : REPLICATED))
+                                        openHierarchyNodes_.Push(selectedNode);
+                                }
                             }
                         }
                     }
