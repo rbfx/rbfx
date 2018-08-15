@@ -631,6 +631,9 @@ public:
     /// Set local transform silently without marking the node & child nodes dirty. Used by animation code.
     void SetTransformSilent(const Vector3& position, const Quaternion& rotation, const Vector3& scale);
 
+    /// Set local transform silently without marking the node & child nodes dirty. Used by animation code.
+    void SetTransformSilent(const Matrix3x4& matrix);
+
 protected:
     /// Handle attribute animation added.
     void OnAttributeAnimationAdded() override;

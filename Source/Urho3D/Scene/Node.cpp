@@ -1903,6 +1903,11 @@ void Node::SetTransformSilent(const Vector3& position, const Quaternion& rotatio
     scale_ = scale;
 }
 
+void Node::SetTransformSilent(const Matrix3x4& matrix)
+{
+    SetTransformSilent(matrix.Translation(), matrix.Rotation(), matrix.Scale());
+}
+
 void Node::OnAttributeAnimationAdded()
 {
     if (attributeAnimationInfos_.Size() == 1)
