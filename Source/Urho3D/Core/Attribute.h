@@ -84,7 +84,7 @@ struct AttributeInfo
     }
 
     /// Construct attribute.
-    AttributeInfo(VariantType type, const char* name, const SharedPtr<AttributeAccessor>& accessor, const Vector<String>& enumNames, const Variant& defaultValue, FlagSet<AttributeMode> mode) :
+    AttributeInfo(VariantType type, const char* name, const SharedPtr<AttributeAccessor>& accessor, const Vector<String>& enumNames, const Variant& defaultValue, AttributeModeFlags mode) :
         type_(type),
         name_(name),
         enumNames_(nullptr),
@@ -124,6 +124,18 @@ struct AttributeInfo
     template <class T> T GetMetadata(const StringHash& key) const
     {
         return GetMetadata(key).Get<T>();
+    }
+
+    /// Instance equality operator.
+    bool operator ==(const AttributeInfo& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const AttributeInfo& rhs) const
+    {
+        return this != &rhs;
     }
 
     /// Attribute type.
@@ -166,11 +178,12 @@ private:
 struct AttributeHandle
 {
     friend class Context;
-private:
+public:
     /// Construct default.
     AttributeHandle() = default;
     /// Construct from another handle.
     AttributeHandle(const AttributeHandle& another) = default;
+private:
     /// Attribute info.
     AttributeInfo* attributeInfo_ = nullptr;
     /// Network attribute info.
