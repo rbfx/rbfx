@@ -108,7 +108,7 @@ target_include_directories(Urho3D PUBLIC
 get_cmake_property(__cmake_variables VARIABLES)
 foreach (var ${__cmake_variables})
     if ("${var}" MATCHES "^URHO3D_")
-        if (${${var}})
+        if ("${${var}}")
             target_compile_definitions(Urho3D PUBLIC -D${var})
         endif ()
     endif ()
