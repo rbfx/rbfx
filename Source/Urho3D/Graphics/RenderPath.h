@@ -70,6 +70,18 @@ struct URHO3D_API RenderTargetInfo
     /// Read from an XML element.
     void Load(const XMLElement& element);
 
+    /// Instance equality operator.
+    bool operator ==(const RenderTargetInfo& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const RenderTargetInfo& rhs) const
+    {
+        return this != &rhs;
+    }
+
     /// Name.
     String name_;
     /// Tag name.
@@ -133,6 +145,18 @@ struct URHO3D_API RenderPathCommand
 
     /// Return depth-stencil output name.
     const String& GetDepthStencilName() const { return depthStencilName_; }
+
+    /// Instance equality operator.
+    bool operator ==(const RenderPathCommand& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const RenderPathCommand& rhs) const
+    {
+        return this != &rhs;
+    }
 
     /// Tag name.
     String tag_;

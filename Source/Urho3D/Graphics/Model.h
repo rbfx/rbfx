@@ -53,6 +53,18 @@ struct VertexBufferMorph
 /// Definition of a model's vertex morph.
 struct ModelMorph
 {
+    /// Instance equality operator.
+    bool operator ==(const ModelMorph& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const ModelMorph& rhs) const
+    {
+        return this != &rhs;
+    }
+
     /// Morph name.
     String name_;
     /// Morph name hash.

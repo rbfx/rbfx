@@ -50,6 +50,18 @@ struct AnimationKeyFrame
     {
     }
 
+    /// Instance equality operator.
+    bool operator ==(const AnimationKeyFrame& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const AnimationKeyFrame& rhs) const
+    {
+        return this != &rhs;
+    }
+
     /// Keyframe time.
     float time_;
     /// Bone position.
@@ -94,6 +106,18 @@ struct URHO3D_API AnimationTrack
     AnimationChannelFlags channelMask_{};
     /// Keyframes.
     Vector<AnimationKeyFrame> keyFrames_;
+
+    /// Instance equality operator.
+    bool operator ==(const AnimationTrack& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const AnimationTrack& rhs) const
+    {
+        return this != &rhs;
+    }
 };
 
 /// %Animation trigger point.
@@ -109,6 +133,18 @@ struct AnimationTriggerPoint
     float time_;
     /// Trigger data.
     Variant data_;
+
+    /// Instance equality operator.
+    bool operator ==(const AnimationTriggerPoint& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const AnimationTriggerPoint& rhs) const
+    {
+        return this != &rhs;
+    }
 };
 
 /// Skeletal animation resource.

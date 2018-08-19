@@ -52,6 +52,18 @@ struct URHO3D_API AnimationControl
     {
     }
 
+    /// Instance equality operator.
+    bool operator ==(const AnimationControl& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const AnimationControl& rhs) const
+    {
+        return this != &rhs;
+    }
+
     /// Animation resource name.
     String name_;
     /// Animation resource name hash.

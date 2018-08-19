@@ -54,6 +54,18 @@ struct Bone
     {
     }
 
+    /// Instance equality operator.
+    bool operator ==(const Bone& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const Bone& rhs) const
+    {
+        return this != &rhs;
+    }
+
     /// Bone name.
     String name_;
     /// Bone name hash.

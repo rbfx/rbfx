@@ -55,6 +55,18 @@ struct AnimationStateTrack
     /// Destruct
     ~AnimationStateTrack();
 
+    /// Instance equality operator.
+    bool operator ==(const AnimationStateTrack& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const AnimationStateTrack& rhs) const
+    {
+        return this != &rhs;
+    }
+
     /// Animation track.
     const AnimationTrack* track_;
     /// Bone pointer.
