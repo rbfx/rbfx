@@ -1,14 +1,10 @@
 %ignore Urho3D::Context::RegisterFactory;
 %ignore Urho3D::Context::GetFactory;
 %ignore Urho3D::Context::GetEventHandler;
-%ignore Urho3D::Context::RegisterAttribute;            // AttributeHandle copy ctor is private
-%ignore Urho3D::Context::GetAttributes;
-%ignore Urho3D::Context::GetNetworkAttributes;
 %ignore Urho3D::Context::GetObjectCategories;
 %ignore Urho3D::Context::GetSubsystems;
 %ignore Urho3D::Context::GetObjectFactories;
-%ignore Urho3D::Context::GetAllAttributes;
-%ignore Urho3D::Context::GetAttribute;
+
 
 // Extend Context with extra code
 %typemap(csconstruct, excode=SWIGEXCODE,directorconnect="\n    SwigDirectorConnect();") Urho3D::Context %{: this($imcall, true) {$excode$directorconnect

@@ -283,16 +283,17 @@ namespace Urho3D {
 %template(NodeArray)             Urho3D::PODVector<Urho3D::Node*>;
 //%template(PassArray)             Urho3D::PODVector<Urho3D::Pass*>;
 %template(ReplicationStateArray) Urho3D::PODVector<Urho3D::ReplicationState*>;
-%template(ReplicationStateArray) Urho3D::PODVector<Urho3D::ReplicationState*>;
 %template(ResourceArray)         Urho3D::PODVector<Urho3D::Resource*>;
 //%template(RigidBodyArray)        Urho3D::PODVector<Urho3D::RigidBody*>;
 %template(UIElementArray)        Urho3D::PODVector<Urho3D::UIElement*>;
-//%template(VertexBufferArray)     Urho3D::PODVector<Urho3D::VertexBuffer*>;
 %template(VAnimEventFrameArray)  Urho3D::PODVector<const Urho3D::VAnimEventFrame*>;
-
+%template(VertexElementArray)    Urho3D::PODVector<Urho3D::VertexElement>;
+%template(VertexBufferArray)     Urho3D::PODVector<Urho3D::VertexBuffer*>;
+%template(IndexBufferArray)     Urho3D::PODVector<Urho3D::IndexBuffer*>;
 
 %template(StringVector)      Urho3D::Vector<Urho3D::String>;
 %template(VariantVector)     Urho3D::Vector<Urho3D::Variant>;
+%template(AttributeInfoVector) Urho3D::Vector<Urho3D::AttributeInfo>;
 %template(JSONArray)         Urho3D::Vector<Urho3D::JSONValue>;
 //%template(PListValueVector)  Urho3D::Vector<Urho3D::PListValue>;
 %template(PackageFileVector) Urho3D::Vector<Urho3D::SharedPtr<Urho3D::PackageFile>>;
@@ -302,5 +303,19 @@ namespace Urho3D {
 %template(Texture2DVector)   Urho3D::Vector<Urho3D::SharedPtr<Urho3D::Texture2D>>;
 %template(ComponentVector2)  Urho3D::Vector<Urho3D::WeakPtr<Urho3D::Component>>;
 //%template(VAnimKeyFrameVector) Urho3D::Vector<Urho3D::VAnimKeyFrame>; // some issue with const
-//%template(GeometryVector) Urho3D::Vector<Urho3D::SharedPtr<Urho3D::Geometry>>;
+%template(GeometryVector)          Urho3D::Vector<Urho3D::SharedPtr<Urho3D::Geometry>>;
+%template(VertexBufferVector)      Urho3D::Vector<Urho3D::SharedPtr<Urho3D::VertexBuffer>>;
+%template(IndexBufferVector)       Urho3D::Vector<Urho3D::SharedPtr<Urho3D::IndexBuffer>>;
 //%template(ConnectionVector) Urho3D::Vector<Urho3D::SharedPtr<Urho3D::Connection>>;
+%template(GeometriesVector)        Urho3D::Vector<Urho3D::Vector<Urho3D::SharedPtr<Urho3D::Geometry>>>;
+%template(RenderPathCommandVector) Urho3D::Vector<Urho3D::RenderPathCommand>;
+%template(RenderTargetInfoVector)  Urho3D::Vector<Urho3D::RenderTargetInfo>;
+%template(BonesVector)             Urho3D::Vector<Urho3D::Bone>;
+%template(AnimationControlVector)  Urho3D::Vector<Urho3D::AnimationControl>;
+%template(ModelMorphVector)        Urho3D::Vector<Urho3D::ModelMorph>;
+%template(AnimationStateVector)    Urho3D::Vector<Urho3D::SharedPtr<Urho3D::AnimationState>>;
+%template(UIntArrayVector)         Urho3D::Vector<Urho3D::PODVector<unsigned int>>;
+%template(Matrix3x4ArrayVector)    Urho3D::Vector<Urho3D::PODVector<Urho3D::Matrix3x4>>;
+%template(AnimationKeyFrameVector) Urho3D::Vector<Urho3D::AnimationKeyFrame>;
+%template(AnimationTrackVector)    Urho3D::Vector<Urho3D::AnimationTrack>;
+%template(AnimationTriggerPointVector) Urho3D::Vector<Urho3D::AnimationTriggerPoint>;

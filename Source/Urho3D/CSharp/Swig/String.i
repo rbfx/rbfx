@@ -182,3 +182,27 @@ class String;
 %apply const String & { const String * };
 
 };
+
+%typemap(ctype)   const char* INPUT[] "char**"
+%typemap(cstype)  const char* INPUT[] "string[]"
+%typemap(imtype,
+    inattributes="[global::System.Runtime.InteropServices.In, global::System.Runtime.InteropServices.Out, global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]",
+    outattributes="[return: global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]") const char* INPUT[] "string[]"
+%typemap(csin)    const char* INPUT[] "$csinput"
+%typemap(csvarin) const char* INPUT[] %{
+    set {
+        $imcall;$excode
+    }
+%}
+%typemap(in)      const char* INPUT[] "$1 = $input;"
+%typemap(out)     const char* INPUT[] "$result = $1;"
+%typemap(csvarout, excode=SWIGEXCODE2) const char* INPUT[] %{
+    get {
+        var res = $imcall;$excode
+        return res;
+    }
+%}
+%typemap(freearg) const char* INPUT[] ""
+%typemap(argout)  const char* INPUT[] ""
+
+%apply const char* INPUT[] { char const ** };

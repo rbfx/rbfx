@@ -6,7 +6,6 @@
 #define static_assert(...)
 
 %include "stl.i"
-%include "arrays_csharp.i"
 %include "typemaps.i"
 
 %{
@@ -170,8 +169,14 @@ namespace SDL
 %ignore Urho3D::VARIANT_VALUE_SIZE;
 %rename(GetVariantType) Urho3D::Variant::GetType;
 %csmethodmodifiers ToString "public new"
+%ignore Urho3D::AttributeInfo::enumNamesStorage_;
+%ignore Urho3D::AttributeInfo::enumNamesPointers_;
+%ignore Urho3D::AttributeInfo::AttributeInfo(VariantType type, const char* name, const SharedPtr<AttributeAccessor>& accessor, const char** enumNames, const Variant& defaultValue, AttributeModeFlags mode);
+
+
 %include "Urho3D/Core/Variant.h"
 %include "Object.i"
+%include "Urho3D/Core/Attribute.h"
 %include "Urho3D/Core/Object.h"
 %include "Urho3D/Core/Context.h"
 %include "Urho3D/Core/Timer.h"
@@ -266,15 +271,10 @@ public:
 %ignore Urho3D::DirtyBits::data_;
 %ignore Urho3D::SceneReplicationState::dirtyNodes_;		// Needs HashSet wrapped
 %ignore Urho3D::NodeReplicationState::dirtyVars_;		// Needs HashSet wrapped
+%ignore Urho3D::Animatable::animatedNetworkAttributes_; // Needs HashSet wrapped
 %ignore Urho3D::AsyncProgress::resources_;
 %ignore Urho3D::ValueAnimation::GetKeyFrames;
-%ignore Urho3D::Serializable::OnSetAttribute;			// Need AttributeInfo
-%ignore Urho3D::Serializable::OnGetAttribute;
-%ignore Urho3D::Serializable::GetAttributes;
-%ignore Urho3D::Serializable::GetNetworkAttributes;
 %ignore Urho3D::Serializable::networkState_;
-%ignore Urho3D::NetworkState::attributes_;
-%ignore Urho3D::AttributeAnimationInfo;
 %ignore Urho3D::ReplicationState::connection_;
 %ignore Urho3D::Node::SetOwner;
 %ignore Urho3D::Node::GetOwner;
@@ -282,10 +282,6 @@ public:
 %ignore Urho3D::Scene::CleanupConnection;
 %ignore Urho3D::Node::CleanupConnection;
 %ignore Urho3D::NodeImpl;
-%ignore Urho3D::Animatable::animatedNetworkAttributes_;
-%ignore Urho3D::Animatable::attributeAnimationInfos_;
-%ignore Urho3D::Animatable::IsAnimatedNetworkAttribute;
-%ignore Urho3D::Animatable::GetAttributeAnimationInfo;
 
 %include "Urho3D/Scene/AnimationDefs.h"
 %include "Urho3D/Scene/ValueAnimationInfo.h"
@@ -339,33 +335,25 @@ public:
 %ignore Urho3D::FrustumOctreeQuery;
 %ignore Urho3D::PointOctreeQuery;
 %ignore Urho3D::SphereOctreeQuery;
-%ignore Urho3D::ModelMorph;
 %ignore Urho3D::ELEMENT_TYPESIZES;
 %ignore Urho3D::SourceBatch;
-%ignore Urho3D::Graphics::SetVertexBuffer;
-%ignore Urho3D::Graphics::SetVertexBuffers;
 %ignore Urho3D::Graphics::SetShaders;
-%ignore Urho3D::Graphics::SetIndexBuffer;
 %ignore Urho3D::Graphics::SetShaderParameter(StringHash param, const float* data, unsigned count);
 %ignore Urho3D::Graphics::GetOrCreateConstantBuffer;
-%ignore Urho3D::Graphics::GetIndexBuffer;
-%ignore Urho3D::Graphics::GetVertexBuffer;
 %ignore Urho3D::Graphics::GetShader;
 %ignore Urho3D::Graphics::GetShaderProgram;
 %ignore Urho3D::Graphics::SetRenderTarget;
 %ignore Urho3D::Graphics::GetRenderTarget;
 %ignore Urho3D::Graphics::SetDepthStencil;
 %ignore Urho3D::Graphics::GetDepthStencil;
-%ignore Urho3D::Graphics::CleanupRenderSurface;
-%ignore Urho3D::Graphics::GetVertexShader;
 %ignore Urho3D::Graphics::GetPixelShader;
+%ignore Urho3D::Graphics::GetVertexShader;
 %ignore Urho3D::Graphics::CleanupShaderPrograms;
 %ignore Urho3D::Graphics::ResolveToTexture;
 %ignore Urho3D::ScratchBuffer;
 %ignore Urho3D::Drawable::DrawOcclusion;
 %ignore Urho3D::Drawable::ProcessRayQuery;
 %ignore Urho3D::Drawable::GetBatches;
-%ignore Urho3D::Drawable::GetLodGeometry;
 %ignore Urho3D::Viewport::GetView;
 %ignore Urho3D::Viewport::SetRenderPath;
 %ignore Urho3D::Viewport::GetRenderPath;
@@ -384,16 +372,11 @@ public:
 %ignore Urho3D::Viewport::Viewport(Context* context, Scene* scene, Camera* camera, const IntRect& rect, RenderPath* renderPath = nullptr);
 %ignore Urho3D::DebugRenderer::AddSkeleton;
 %ignore Urho3D::TechniqueEntry;
-%ignore Urho3D::Texture2D::GetRenderSurface;
 %ignore Urho3D::Renderer::SetShadowMapFilter;
 %ignore Urho3D::Renderer::SetBatchShaders;
-%ignore Urho3D::Renderer::GetLightGeometry;
-%ignore Urho3D::Renderer::GetQuadGeometry;
 %ignore Urho3D::Renderer::GetOcclusionBuffer;
 %ignore Urho3D::Renderer::SetDefaultRenderPath;
 %ignore Urho3D::Renderer::GetDefaultRenderPath;
-%ignore Urho3D::Renderer::QueueRenderSurface;
-%ignore Urho3D::Renderer::QueueViewport;
 %ignore Urho3D::Renderer::SetDefaultTechnique;
 %ignore Urho3D::Renderer::GetDefaultTechnique;
 %ignore Urho3D::Renderer::GetFaceSelectCubeMap;
@@ -407,43 +390,56 @@ public:
 %ignore Urho3D::Renderer::GetDepthStencil;
 %ignore Urho3D::Renderer::SetDepthStencil;
 %ignore Urho3D::IndexBufferDesc;
-%ignore Urho3D::VertexBufferMorph;
 %ignore Urho3D::VertexBufferDesc;
 %ignore Urho3D::Model::SetSkeleton;
 %ignore Urho3D::Model::GetSkeleton;
-%ignore Urho3D::Model::SetGeometry;
-%ignore Urho3D::Model::SetGeometries;
-%ignore Urho3D::Model::GetGeometry;
-%ignore Urho3D::Model::GetGeometries;
 %ignore Urho3D::Model::GetMorph;
 %ignore Urho3D::Model::GetMorphs;
 %ignore Urho3D::Model::SetMorphs;
 %ignore Urho3D::Model::SetGeometryBoneMappings;
 %ignore Urho3D::Model::GetGeometryBoneMappings;
-%ignore Urho3D::Model::SetIndexBuffers;
-%ignore Urho3D::Model::GetIndexBuffers;
-%ignore Urho3D::Model::SetVertexBuffers;
-%ignore Urho3D::Model::GetVertexBuffers;
 %ignore Urho3D::GPUObject::GetGraphics;
+%ignore Urho3D::Terrain::GetHeightData; // SharedArrayPtr<float>
+%ignore Urho3D::Geometry::GetRawData;
+%ignore Urho3D::Geometry::SetRawVertexData;
+%ignore Urho3D::Geometry::SetRawIndexData;
+%ignore Urho3D::Geometry::GetRawDataShared;
+%ignore Urho3D::IndexBuffer::GetShadowDataShared;
+%ignore Urho3D::VertexBuffer::GetShadowDataShared;
+%ignore Urho3D::RenderPathCommand::outputs_;    // Needs Pair<String, CubeMapFace>
+%ignore Urho3D::RenderPathCommand::textureNames_;    // Needs array of strings
+%ignore Urho3D::VertexBufferMorph::morphData_;      // Needs SharedPtrArray
+
+%apply unsigned *OUTPUT { unsigned& minVertex, unsigned& vertexCount };
+%apply unsigned *INOUT  { unsigned& index };
 
 %include "Urho3D/Graphics/GraphicsDefs.h"
 %interface_custom("%s", "I%s", Urho3D::GPUObject);
 %include "Urho3D/Graphics/GPUObject.h"
+%include "Urho3D/Graphics/IndexBuffer.h"
+%include "Urho3D/Graphics/VertexBuffer.h"
+%include "Urho3D/Graphics/Geometry.h"
+//%include "Urho3D/Graphics/CustomGeometry.h"
 %include "Urho3D/Graphics/Drawable.h"
 %include "Urho3D/Graphics/OctreeQuery.h"
 %interface_custom("%s", "I%s", Urho3D::Octant);
 %include "Urho3D/Graphics/Octree.h"
-//%include "Urho3D/Graphics/RenderSurface.h"
+%include "Urho3D/Graphics/RenderPath.h"
+%include "Urho3D/Graphics/Viewport.h"
+%include "Urho3D/Graphics/RenderSurface.h"
 %include "Urho3D/Graphics/Texture.h"
 %include "Urho3D/Graphics/Texture2D.h"
-//%include "Urho3D/Graphics/Texture2DArray.h"
-//%include "Urho3D/Graphics/Texture3D.h"
-//%include "Urho3D/Graphics/TextureCube.h"
+%include "Urho3D/Graphics/Texture2DArray.h"
+%include "Urho3D/Graphics/Texture3D.h"
+%include "Urho3D/Graphics/TextureCube.h"
 //%include "Urho3D/Graphics/Batch.h"
 %include "Urho3D/Graphics/Model.h"
 %include "Urho3D/Graphics/StaticModel.h"
-//%include "Urho3D/Graphics/Skeleton.h"
-//%include "Urho3D/Graphics/AnimatedModel.h"
+%include "Urho3D/Graphics/Skeleton.h"
+%include "Urho3D/Graphics/Animation.h"
+%include "Urho3D/Graphics/AnimationState.h"
+%include "Urho3D/Graphics/AnimationController.h"
+%include "Urho3D/Graphics/AnimatedModel.h"
 //%include "Urho3D/Graphics/BillboardSet.h"
 //%include "Urho3D/Graphics/DecalSet.h"
 %include "Urho3D/Graphics/Light.h"
@@ -451,30 +447,21 @@ public:
 //%include "Urho3D/Graphics/Tangent.h"
 //%include "Urho3D/Graphics/VertexDeclaration.h"
 %include "Urho3D/Graphics/Camera.h"
-%include "Urho3D/Graphics/Viewport.h"
 //%include "Urho3D/Graphics/View.h"
 %include "Urho3D/Graphics/Material.h"
 //%include "Urho3D/Graphics/ParticleEffect.h"
 //%include "Urho3D/Graphics/RibbonTrail.h"
 //%include "Urho3D/Graphics/Technique.h"
-//%include "Urho3D/Graphics/Animation.h"
 //%include "Urho3D/Graphics/ConstantBuffer.h"
 //%include "Urho3D/Graphics/ParticleEmitter.h"
 //%include "Urho3D/Graphics/Shader.h"
-//%include "Urho3D/Graphics/Skybox.h"
-//%include "Urho3D/Graphics/Terrain.h"
-//%include "Urho3D/Graphics/AnimationState.h"
-//%include "Urho3D/Graphics/AnimationController.h"
-//%include "Urho3D/Graphics/CustomGeometry.h"
-//%include "Urho3D/Graphics/Geometry.h"
+%include "Urho3D/Graphics/Skybox.h"
+%include "Urho3D/Graphics/TerrainPatch.h"
+%include "Urho3D/Graphics/Terrain.h"
 //%include "Urho3D/Graphics/OcclusionBuffer.h"
 //%include "Urho3D/Graphics/ShaderPrecache.h"
 //%include "Urho3D/Graphics/StaticModelGroup.h"
-//%include "Urho3D/Graphics/TerrainPatch.h"
 %include "Urho3D/Graphics/DebugRenderer.h"
-//%include "Urho3D/Graphics/IndexBuffer.h"
-//%include "Urho3D/Graphics/VertexBuffer.h"
-//%include "Urho3D/Graphics/RenderPath.h"
 //%include "Urho3D/Graphics/ShaderProgram.h"
 %include "Urho3D/Graphics/Zone.h"
 %include "Urho3D/Graphics/Renderer.h"
@@ -508,28 +495,28 @@ public:
 %include "Urho3D/Navigation/OffMeshConnection.h"
 
 // --------------------------------------- Network ---------------------------------------
-/*
-%ignore Urho3D::Network::MakeHttpRequest;
-%ignore Urho3D::PackageDownload;
-%apply unsigned long { u32, kNet::packet_id_t, kNet::message_id_t }
-
-%include "Urho3D/Network/Connection.h"
-%include "Urho3D/Network/Network.h"
-%include "Urho3D/Network/NetworkPriority.h"
-%include "Urho3D/Network/Protocol.h"
-
-// --------------------------------------- Physics ---------------------------------------
-%ignore Urho3D::TriangleMeshData::meshInterface_;
-%ignore Urho3D::TriangleMeshData::shape_;
-%ignore Urho3D::TriangleMeshData::infoMap_;
-%ignore Urho3D::GImpactMeshData::meshInterface_;
-
-%include "Urho3D/Physics/CollisionShape.h"
-%include "Urho3D/Physics/Constraint.h"
-%include "Urho3D/Physics/PhysicsWorld.h"
-%include "Urho3D/Physics/RaycastVehicle.h"
-%include "Urho3D/Physics/RigidBody.h"
-*/
+//
+//%ignore Urho3D::Network::MakeHttpRequest;
+//%ignore Urho3D::PackageDownload;
+//%apply unsigned long { u32, kNet::packet_id_t, kNet::message_id_t }
+//
+//%include "Urho3D/Network/Connection.h"
+//%include "Urho3D/Network/Network.h"
+//%include "Urho3D/Network/NetworkPriority.h"
+//%include "Urho3D/Network/Protocol.h"
+//
+//// --------------------------------------- Physics ---------------------------------------
+//%ignore Urho3D::TriangleMeshData::meshInterface_;
+//%ignore Urho3D::TriangleMeshData::shape_;
+//%ignore Urho3D::TriangleMeshData::infoMap_;
+//%ignore Urho3D::GImpactMeshData::meshInterface_;
+//
+//%include "Urho3D/Physics/CollisionShape.h"
+//%include "Urho3D/Physics/Constraint.h"
+//%include "Urho3D/Physics/PhysicsWorld.h"
+//%include "Urho3D/Physics/RaycastVehicle.h"
+//%include "Urho3D/Physics/RigidBody.h"
+//
 // --------------------------------------- SystemUI ---------------------------------------
 %apply void* VOID_INT_PTR {
 	ImFont*
@@ -592,4 +579,3 @@ public:
 %include "Urho3D/UI/UIComponent.h"
 %include "Urho3D/UI/Window.h"
 %include "Urho3D/UI/View3D.h"
-
