@@ -25,7 +25,6 @@
 #include "../Math/MathDefs.h"
 #include "../Math/StringHash.h"
 #include "../Container/HashMap.h"
-#include "../Core/StringHashRegister.h"
 #include "../IO/Log.h"
 
 #include <cstdio>
@@ -52,36 +51,12 @@ static StringHashRegister& GetGlobalStringHashRegister()
 
 const StringHash StringHash::ZERO;
 
-StringHash::StringHash(const char* str) noexcept :
-    value_(Calculate(str))
-{
-#ifdef URHO3D_HASH_DEBUG
-    Urho3D::GetGlobalStringHashRegister().RegisterString(*this, str);
-#endif
-}
-
 StringHash::StringHash(const String& str) noexcept :
     value_(Calculate(str.CString()))
 {
 #ifdef URHO3D_HASH_DEBUG
     Urho3D::GetGlobalStringHashRegister().RegisterString(*this, str.CString());
 #endif
-}
-
-unsigned StringHash::Calculate(const char* str, unsigned hash)
-{
-    if (!str)
-        return hash;
-
-    while (*str)
-    {
-        // Perform the actual hashing as case-insensitive
-        char c = *str;
-        hash = SDBMHash(hash, (unsigned char)tolower(c));
-        ++str;
-    }
-
-    return hash;
 }
 
 unsigned int StringHash::Calculate(void* data, unsigned int length, unsigned int hash)

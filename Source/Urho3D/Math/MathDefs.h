@@ -223,7 +223,7 @@ inline unsigned CountSetBits(unsigned value)
 }
 
 /// Update a hash with the given 8-bit value using the SDBM algorithm.
-inline unsigned SDBMHash(unsigned hash, unsigned char c) { return c + (hash << 6u) + (hash << 16u) - hash; }
+inline constexpr unsigned SDBMHash(unsigned hash, unsigned char c) { return c + (hash << 6u) + (hash << 16u) - hash; }
 
 /// Return a random float between 0.0 (inclusive) and 1.0 (exclusive.)
 inline float Random() { return Rand() / 32768.0f; }

@@ -23,11 +23,17 @@
 #pragma once
 
 #include "../Container/Str.h"
+#include "../Math/MathDefs.h"
+#ifdef URHO3D_HASH_DEBUG
+#include "../Core/StringHashRegister.h"
+#endif
 
 namespace Urho3D
 {
 
+#ifndef URHO3D_HASH_DEBUG
 class StringHashRegister;
+#endif
 
 /// 32-bit hash value for a string.
 class URHO3D_API StringHash
@@ -49,7 +55,13 @@ public:
     }
 
     /// Construct from a C string case-insensitively.
-    StringHash(const char* str) noexcept;        // NOLINT(google-explicit-constructor)
+    constexpr StringHash(const char* str) noexcept :      // NOLINT(google-explicit-constructor)
+        value_(Calculate(str))
+    {
+#ifdef URHO3D_HASH_DEBUG
+        Urho3D::GetGlobalStringHashRegister().RegisterString(*this, str);
+#endif
+    }
     /// Construct from a string case-insensitively.
     StringHash(const String& str) noexcept;      // NOLINT(google-explicit-constructor)
 
@@ -97,10 +109,13 @@ public:
 
     /// Return hash value for HashSet & HashMap.
     unsigned ToHash() const { return value_; }
-
+#ifndef URHO3D_HASH_DEBUG
     /// Calculate hash value case-insensitively from a C string.
-    static unsigned Calculate(const char* str, unsigned hash = 0);
-
+    static constexpr unsigned Calculate(const char* str, unsigned hash = 0)
+    {
+        return str == nullptr || *str == 0 ? hash : Calculate(str + 1, SDBMHash(hash, (unsigned char)(((*str) >= 'A' && (*str) <= 'Z') ? (*str) + ('a' - 'A') : (*str))));
+    }
+#endif
     /// Calculate hash value from binary data.
     static unsigned Calculate(void* data, unsigned length, unsigned hash = 0);
 
