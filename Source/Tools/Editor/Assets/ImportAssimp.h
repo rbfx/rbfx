@@ -28,11 +28,11 @@
 namespace Urho3D
 {
 
-class ImportFbx : public ImportAsset
+class ImportAssimp : public ImportAsset
 {
-    URHO3D_OBJECT(ImportFbx, ImportAsset);
+    URHO3D_OBJECT(ImportAssimp, ImportAsset);
 public:
-    explicit ImportFbx(Context* context);
+    explicit ImportAssimp(Context* context);
 
     bool Accepts(const String& path) override;
 

@@ -24,23 +24,24 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include "Project.h"
-#include "ImportFbx.h"
+#include "ImportAssimp.h"
 
 
 namespace Urho3D
 {
 
-ImportFbx::ImportFbx(Context* context)
+ImportAssimp::ImportAssimp(Context* context)
     : ImportAsset(context)
 {
 }
 
-bool ImportFbx::Accepts(const String& path)
+bool ImportAssimp::Accepts(const String& path)
 {
-    return GetExtension(path) == ".fbx";
+    String extension = GetExtension(path);
+    return extension == ".fbx" || extension == ".blend";
 }
 
-bool ImportFbx::Convert(const String& path)
+bool ImportAssimp::Convert(const String& path)
 {
     bool importedAny = false;
     auto* project = GetSubsystem<Project>();
@@ -56,7 +57,7 @@ bool ImportFbx::Convert(const String& path)
     {
         String outputPath = outputDir + resourceFileName + ".mdl";
 
-        StringVector args{"model", path, outputPath, "-na"};
+        StringVector args{"model", path, outputPath, "-na", "-ns"};
         Process process(GetFileSystem()->GetProgramDir() + "AssetImporter", args);
         if (process.Run() == 0 && GetFileSystem()->FileExists(outputPath))
             importedAny = true;
@@ -66,7 +67,7 @@ bool ImportFbx::Convert(const String& path)
     {
         String outputPath = cachePath + resourceName;
 
-        StringVector args{"anim", path, outputPath};
+        StringVector args{"anim", path, outputPath, "-nm", "-nt", "-nc", "-ns"};
         Process process(GetFileSystem()->GetProgramDir() + "AssetImporter", args);
         if (process.Run() == 0 && GetFileSystem()->FileExists(outputPath))
             importedAny = true;
