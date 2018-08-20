@@ -142,6 +142,8 @@ class DefineConstantsPass(AstPass):
 
     @AstPass.once
     def visit(self, node, action: AstAction):
+        if node.c.spelling.endswith('/MathDefs.h'):
+            return False
         if node.kind == CursorKind.VAR_DECL:
             fqn = get_fully_qualified_name(node)
             if fqn.startswith('Urho3D::IsFlagSet') or fqn.startswith('Urho3D::FlagSet') or fqn in self.ignore:

@@ -281,7 +281,7 @@ namespace Urho3D {
 %template(ImageArray)            Urho3D::PODVector<Urho3D::Image*>;
 %template(LightArray)            Urho3D::PODVector<Urho3D::Light*>;
 %template(NodeArray)             Urho3D::PODVector<Urho3D::Node*>;
-//%template(PassArray)             Urho3D::PODVector<Urho3D::Pass*>;
+%template(PassArray)             Urho3D::PODVector<Urho3D::Pass*>;
 %template(ReplicationStateArray) Urho3D::PODVector<Urho3D::ReplicationState*>;
 %template(ResourceArray)         Urho3D::PODVector<Urho3D::Resource*>;
 //%template(RigidBodyArray)        Urho3D::PODVector<Urho3D::RigidBody*>;
@@ -289,13 +289,17 @@ namespace Urho3D {
 %template(VAnimEventFrameArray)  Urho3D::PODVector<const Urho3D::VAnimEventFrame*>;
 %template(VertexElementArray)    Urho3D::PODVector<Urho3D::VertexElement>;
 %template(VertexBufferArray)     Urho3D::PODVector<Urho3D::VertexBuffer*>;
-%template(IndexBufferArray)     Urho3D::PODVector<Urho3D::IndexBuffer*>;
+%template(IndexBufferArray)      Urho3D::PODVector<Urho3D::IndexBuffer*>;
+%template(BillboardArray)        Urho3D::PODVector<Urho3D::Billboard>;
+%template(DecalVertexArray)      Urho3D::PODVector<Urho3D::DecalVertex>;
+%template(CustomGeometryVerticesArray) Urho3D::PODVector<Urho3D::CustomGeometryVertex>;
+%template(RayQueryResultArray)   Urho3D::PODVector<Urho3D::RayQueryResult>;
 
 %template(StringVector)      Urho3D::Vector<Urho3D::String>;
 %template(VariantVector)     Urho3D::Vector<Urho3D::Variant>;
 %template(AttributeInfoVector) Urho3D::Vector<Urho3D::AttributeInfo>;
 %template(JSONArray)         Urho3D::Vector<Urho3D::JSONValue>;
-//%template(PListValueVector)  Urho3D::Vector<Urho3D::PListValue>;
+%template(PListValueVector)  Urho3D::Vector<Urho3D::PListValue>;
 %template(PackageFileVector) Urho3D::Vector<Urho3D::SharedPtr<Urho3D::PackageFile>>;
 %template(ComponentVector)   Urho3D::Vector<Urho3D::SharedPtr<Urho3D::Component>>;
 %template(NodeVector)        Urho3D::Vector<Urho3D::SharedPtr<Urho3D::Node>>;
@@ -319,3 +323,8 @@ namespace Urho3D {
 %template(AnimationKeyFrameVector) Urho3D::Vector<Urho3D::AnimationKeyFrame>;
 %template(AnimationTrackVector)    Urho3D::Vector<Urho3D::AnimationTrack>;
 %template(AnimationTriggerPointVector) Urho3D::Vector<Urho3D::AnimationTriggerPoint>;
+%template(ShaderVariationVector)    Urho3D::Vector<Urho3D::SharedPtr<Urho3D::ShaderVariation>>;
+%template(ColorFrameVector)         Urho3D::Vector<Urho3D::ColorFrame>;
+%template(TextureFrameVector)       Urho3D::Vector<Urho3D::TextureFrame>;
+%template(TechniqueEntryVector)     Urho3D::Vector<Urho3D::TechniqueEntry>;
+%template(CustomGeometryVerticesVector) Urho3D::Vector<Urho3D::PODVector<Urho3D::CustomGeometryVertex>>;

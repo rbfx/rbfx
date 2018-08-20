@@ -251,8 +251,9 @@ function(vs_group_subdirectory_targets DIR FOLDER_NAME)
     endforeach()
 endfunction()
 
-find_package(SWIG REQUIRED)
-include(UrhoSWIG)
+if (URHO3D_CSHARP)    find_package(SWIG REQUIRED)
+    include(UrhoSWIG)
+endif()
 
 macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)
     get_target_property(values ${TARGET} ${PROPERTY})

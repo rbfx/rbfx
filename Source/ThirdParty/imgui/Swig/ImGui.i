@@ -1,7 +1,5 @@
 %module(naturalvar=1) ImGui
 
-#define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
-
 %{
 
 #include <Urho3D/Math/Vector2.h>
