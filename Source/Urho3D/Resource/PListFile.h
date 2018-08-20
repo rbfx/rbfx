@@ -118,6 +118,39 @@ public:
     /// Convert to value vector (internal use only).
     PListValueVector& ConvertToValueVector();
 
+    /// Equality operator.
+    bool operator ==(const PListValue& rhs) const
+    {
+        if (type_ != rhs.type_)
+            return false;
+
+        switch (type_)
+        {
+        case PLVT_NONE:
+            return true;
+        case PLVT_INT:
+            return int_ == rhs.int_;
+        case PLVT_BOOL:
+            return bool_ == rhs.bool_;
+        case PLVT_FLOAT:
+            return float_ == rhs.float_;
+        case PLVT_STRING:
+            return GetString() == rhs.GetString();
+        case PLVT_VALUEMAP:
+            return GetValueMap() == rhs.GetValueMap();
+        case PLVT_VALUEVECTOR:
+            return GetValueVector() == rhs.GetValueVector();
+        }
+
+        return false;
+    }
+
+    /// Inequality operator.
+    bool operator !=(const PListValue& rhs) const
+    {
+        return !operator==(rhs);
+    }
+
 private:
     /// Reset.
     void Reset();

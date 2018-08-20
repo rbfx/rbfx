@@ -62,6 +62,18 @@ struct TechniqueEntry
     /// Destruct.
     ~TechniqueEntry() noexcept = default;
 
+    /// Instance equality operator.
+    bool operator ==(const TechniqueEntry& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const TechniqueEntry& rhs) const
+    {
+        return this != &rhs;
+    }
+
     /// Technique.
     SharedPtr<Technique> technique_;
     /// Original technique, in case the material adds shader compilation defines. The modified clones are requested from it.

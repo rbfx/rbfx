@@ -71,6 +71,18 @@ struct ColorFrame
             return next.color_;
     }
 
+    /// Instance equality operator.
+    bool operator ==(const ColorFrame& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const ColorFrame& rhs) const
+    {
+        return this != &rhs;
+    }
+
     /// Color.
     Color color_;
     /// Time.
@@ -85,6 +97,18 @@ struct TextureFrame
         uv_(0.0f, 0.0f, 1.0f, 1.0f),
         time_(0.0f)
     {
+    }
+
+    /// Equality operator.
+    bool operator ==(const TextureFrame& rhs) const
+    {
+        return uv_ == rhs.uv_ && Equals(time_, rhs.time_);
+    }
+
+    /// Inequality operator.
+    bool operator !=(const TextureFrame& rhs) const
+    {
+        return uv_ != rhs.uv_ && Equals(time_, rhs.time_);
     }
 
     /// UV coordinates.
