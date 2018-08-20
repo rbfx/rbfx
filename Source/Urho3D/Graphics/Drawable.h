@@ -29,7 +29,7 @@
 namespace Urho3D
 {
 
-enum DrawableFlags
+enum DrawableFlag : unsigned char
 {
     DRAWABLE_UNDEFINED = 0x0,
     DRAWABLE_GEOMETRY = 0x1,
@@ -38,6 +38,7 @@ enum DrawableFlags
     DRAWABLE_GEOMETRY2D = 0x8,
     DRAWABLE_ANY = 0xff,
 };
+URHO3D_FLAGSET(DrawableFlag, DrawableFlags);
 
 static const unsigned DEFAULT_VIEWMASK = M_MAX_UNSIGNED;
 static const unsigned DEFAULT_LIGHTMASK = M_MAX_UNSIGNED;
@@ -119,7 +120,7 @@ class URHO3D_API Drawable : public Component
 
 public:
     /// Construct.
-    Drawable(Context* context, unsigned char drawableFlags);
+    Drawable(Context* context, DrawableFlags drawableFlags);
     /// Destruct.
     ~Drawable() override;
     /// Register object attributes. Drawable must be registered first.
@@ -182,7 +183,7 @@ public:
     const BoundingBox& GetWorldBoundingBox();
 
     /// Return drawable flags.
-    unsigned char GetDrawableFlags() const { return drawableFlags_; }
+    DrawableFlags GetDrawableFlags() const { return drawableFlags_; }
 
     /// Return draw distance.
     float GetDrawDistance() const { return drawDistance_; }
@@ -334,7 +335,7 @@ protected:
     /// Draw call source data.
     Vector<SourceBatch> batches_;
     /// Drawable flags.
-    unsigned char drawableFlags_;
+    DrawableFlags drawableFlags_;
     /// Bounding box dirty flag.
     bool worldBoundingBoxDirty_;
     /// Shadowcaster flag.

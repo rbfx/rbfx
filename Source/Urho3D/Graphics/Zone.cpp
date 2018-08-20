@@ -333,7 +333,7 @@ void Zone::ClearDrawablesZone()
         for (PODVector<Drawable*>::Iterator i = result.Begin(); i != result.End(); ++i)
         {
             Drawable* drawable = *i;
-            unsigned drawableFlags = drawable->GetDrawableFlags();
+            DrawableFlags drawableFlags = drawable->GetDrawableFlags();
             if (drawableFlags & DRAWABLE_GEOMETRY)
                 drawable->SetZone(nullptr);
             else if (drawableFlags & DRAWABLE_ZONE)
