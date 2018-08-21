@@ -85,6 +85,21 @@ URHO3D_BINARY_COMPATIBLE_TYPE(BoundingBox);
 %rename(Outside) OUTSIDE;
 %rename(Intersects) INTERSECTS;
 %rename(Inside) INSIDE;
+%ignore Urho3D::M_PI;
+%ignore Urho3D::M_HALF_PI;
+%ignore Urho3D::M_MIN_INT;
+%ignore Urho3D::M_MAX_INT;
+%ignore Urho3D::M_MIN_UNSIGNED;
+%ignore Urho3D::M_MAX_UNSIGNED;
+%ignore Urho3D::M_EPSILON;
+%ignore Urho3D::M_LARGE_EPSILON;
+%ignore Urho3D::M_MIN_NEARCLIP;
+%ignore Urho3D::M_MAX_FOV;
+%ignore Urho3D::M_LARGE_VALUE;
+%ignore Urho3D::M_INFINITY;
+%ignore Urho3D::M_DEGTORAD;
+%ignore Urho3D::M_DEGTORAD_2;
+%ignore Urho3D::M_RADTODEG;
 
 // These should be implemented in C# anyway.
 %ignore Urho3D::Frustum::planes_;
