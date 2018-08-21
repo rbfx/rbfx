@@ -1,6 +1,5 @@
 <Project>
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Configurations>Release;Debug</Configurations>
     <Platforms>x64;x86</Platforms>
@@ -12,8 +11,6 @@
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <OutputPath>$(IntermediateOutputPath)\bin\</OutputPath>
     <BaseOutputPath>$(OutputPath)</BaseOutputPath>
-    <MSBuildProjectExtensionsPath>$(IntermediateOutputPath)</MSBuildProjectExtensionsPath>
+    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
   </PropertyGroup>
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 </Project>

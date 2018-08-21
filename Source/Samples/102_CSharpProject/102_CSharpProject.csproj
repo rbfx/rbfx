@@ -1,8 +1,9 @@
-﻿<Project>
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>102_CSharpProject</AssemblyName>
     <OutputType>WinExe</OutputType>
     <TargetExt>.exe</TargetExt>
+    <TargetFrameworks>netcoreapp2.1;net471</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\ThirdParty\imgui\ImGui.csproj" />
