@@ -98,9 +98,6 @@ class Generator(object):
         # Instantiate passes
         passes = [p(self, module) for p in pass_factories]
 
-        for p in passes:
-            p.on_begin()
-
         def walk_ast(p, node):
             if not p.visit(node, AstAction.ENTER):
                 return
@@ -113,22 +110,14 @@ class Generator(object):
                 p.visit(node, AstAction.LEAVE)
 
         trees = {}
-        for file_path in module.gather_files():
-            try:
-                root_node = trees[file_path]
-            except KeyError:
-                root_node = trees[file_path] = self._build_tree(file_path, compiler_parameters)
-
-            for p in passes:
-                p.on_file_begin()
-
-            for p in passes:
-                walk_ast(p, root_node)
-
-            for p in passes:
-                p.on_file_end()
-
+        files = list(module.gather_files())
         for p in passes:
+            p.on_begin()
+            for file_path in files:
+                root_node = trees[file_path] = self._build_tree(file_path, compiler_parameters)
+                p.on_file_begin()
+                walk_ast(p, root_node)
+                p.on_file_end()
             p.on_end()
 
     @staticmethod

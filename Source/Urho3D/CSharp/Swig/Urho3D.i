@@ -95,10 +95,6 @@ URHO3D_BINARY_COMPATIBLE_TYPE(BoundingBox);
 %apply float *INOUT        { float& sin, float& cos, float& accumulator };
 %apply unsigned int* INOUT { unsigned int* randomRef, unsigned int* nearestRef }
 
-%ignore Urho3D::M_MIN_INT;
-%ignore Urho3D::M_MAX_INT;
-%ignore Urho3D::M_MIN_UNSIGNED;
-%ignore Urho3D::M_MAX_UNSIGNED;
 
 %include "Urho3D/Math/MathDefs.h"
 %include "Urho3D/Math/Ray.h"
