@@ -51,7 +51,8 @@ class String;
     {
         return str;
     }
-    private static System.Delegate CreateStringDelegateInstance = new System.Func<string, string>(CreateString);
+    private delegate string CreateStringDelegate(string str);
+    private static CreateStringDelegate CreateStringDelegateInstance = new CreateStringDelegate(CreateString);
 }%}
 
 %wrapper %{

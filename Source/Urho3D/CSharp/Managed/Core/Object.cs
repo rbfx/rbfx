@@ -31,9 +31,11 @@ namespace Urho3DNet
         private static extern void Urho3D_Object_SubscribeToEvent(HandleRef receiver, HandleRef sender, uint eventType,
             IntPtr callback, IntPtr callbackHandle);
 
+        private delegate void EventCallbackDelegate(uint eventHash, IntPtr argMap);
+
         public void SubscribeToEvent(StringHash e, Object sender, Action<StringHash, VariantMap> eventHandler)
         {
-            var eventCallback = new Action<uint, IntPtr>((eventHash, argMap) =>
+            var eventCallback = new EventCallbackDelegate((eventHash, argMap) =>
                 {
                     eventHandler(new StringHash(eventHash), VariantMap.wrap(argMap, false));
                 });

@@ -346,8 +346,22 @@ macro (csharp_bind_target)
         list(APPEND GENERATOR_OPTIONS -I${item})
     endforeach()
     foreach(item ${DEFINES})
+        string(FIND "${item}" "=" EQUALITY_INDEX)
+        if (EQUALITY_INDEX EQUAL -1)
+            set (item "${item}=1")
+        endif ()
         list(APPEND GENERATOR_OPTIONS -D${item})
     endforeach()
+
+    # Swig
+    set(CMAKE_SWIG_FLAGS
+        -namespace ${BIND_MANAGED_TARGET}
+        -debug-tmsearch
+        -fastdispatch
+        -I${CMAKE_CURRENT_BINARY_DIR}
+        ${GENERATOR_OPTIONS}
+    )
+
     foreach(item ${OPTIONS})
         list(APPEND GENERATOR_OPTIONS -O${item})
     endforeach()
@@ -371,14 +385,6 @@ macro (csharp_bind_target)
         file(APPEND ${CSHARP_BINDING_GENERATOR_OPTIONS} "${opt}\n")
     endforeach ()
 
-    # Swig
-    set(CMAKE_SWIG_FLAGS
-        -namespace ${BIND_MANAGED_TARGET}
-        -debug-tmsearch
-        -fastdispatch
-        -I${CMAKE_CURRENT_BINARY_DIR}
-        )
-
     set (SWIG_SYSTEM_INCLUDE_DIRS "${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES};${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES};${CMAKE_SYSTEM_INCLUDE_PATH};${CMAKE_EXTRA_GENERATOR_CXX_SYSTEM_INCLUDE_DIRS}")
     string (REPLACE ";" ";-I" SWIG_SYSTEM_INCLUDE_DIRS "${SWIG_SYSTEM_INCLUDE_DIRS}")
 
@@ -386,9 +392,6 @@ macro (csharp_bind_target)
         CPLUSPLUS ON
         SWIG_FLAGS "-I${SWIG_SYSTEM_INCLUDE_DIRS}"
     )
-
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-    include_directories(../..)
 
     swig_add_library(${CSHARP_LIBRARY_NAME} TYPE SHARED LANGUAGE csharp SOURCES Swig/${BIND_TARGET}.i)
     swig_link_libraries(${CSHARP_LIBRARY_NAME} ${BIND_TARGET})
@@ -419,7 +422,7 @@ macro (csharp_bind_target)
         install (FILES ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll DESTINATION ${DEST_LIBRARY_DIR})
     endif ()
 
-    file (GLOB_RECURSE EXTRA_NATIVE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/Native *.h *.cpp)
+    file (GLOB_RECURSE EXTRA_NATIVE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/Native/*.h ${CMAKE_CURRENT_SOURCE_DIR}/Native/*.cpp)
     target_sources(${CSHARP_LIBRARY_NAME} PRIVATE ${EXTRA_NATIVE_FILES})
 endmacro ()
 

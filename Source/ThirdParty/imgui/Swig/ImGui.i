@@ -134,7 +134,7 @@
 %imgui_enum(ImGuiStyleVar);
 %imgui_enum(ImGuiWindowFlags);
 
-%include "../../Urho3D/CSharp/Swig/Math.i"
+%include "../../../Urho3D/CSharp/Swig/Math.i"
 
 URHO3D_BINARY_COMPATIBLE_TYPE_EX(Urho3DNet.Vector2, ImVec2);
 URHO3D_BINARY_COMPATIBLE_TYPE_EX(Urho3DNet.Color, ImVec4);

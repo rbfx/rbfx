@@ -8,17 +8,17 @@
         {
             return primitive;
         }
-        private static System.Delegate Create##CPP_TYPE##DelegateInstance = new System.Func<CS_TYPE, CS_TYPE>(Create##CPP_TYPE);
+        private delegate CS_TYPE Create##CPP_TYPE##Delegate(CS_TYPE primitive);
+        private static Create##CPP_TYPE##Delegate Create##CPP_TYPE##DelegateInstance = new Create##CPP_TYPE##Delegate(Create##CPP_TYPE);
     }%}
 
     %ignore CPP_TYPE;
     struct CPP_TYPE;
 
     %typemap(ctype)                CPP_TYPE, const CPP_TYPE &, CPP_TYPE & "CPP_TYPE *"
-    %typemap(imtype,
-        inattributes="[global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.LPStruct)]",
-        outattributes="[return: global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.LPStruct)]")
-                                   CPP_TYPE, const CPP_TYPE &, CPP_TYPE & "CS_TYPE"
+    %typemap(imtype, out="CS_TYPE", outattributes=
+        "[return: global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.LPStruct)]")
+                                   CPP_TYPE, const CPP_TYPE &, CPP_TYPE & "ref CS_TYPE"
     %typemap(cstype)               CPP_TYPE, const CPP_TYPE &             "CS_TYPE"
     %typemap(cstype, out="CS_TYPE")                            CPP_TYPE & "ref CS_TYPE"
 
@@ -40,7 +40,7 @@
     %}
     %typemap(argout)       CPP_TYPE & %{ $input = SWIG_CSharpCreate##CPP_TYPE(&$inputRef); %}
     %typemap(argout)                 const CPP_TYPE & ""
-    %typemap(csin)         CPP_TYPE, const CPP_TYPE &, CPP_TYPE & "$csinput"
+    %typemap(csin)         CPP_TYPE, const CPP_TYPE &, CPP_TYPE & "ref $csinput"
     %typemap(directorin)   CPP_TYPE & "$input = addr($1);"
     %typemap(directorin)   const CPP_TYPE &, CPP_TYPE %{ $input = SWIG_CSharpCreate##CPP_TYPE(addr($1)); %}
     %typemap(csdirectorin) const CPP_TYPE &, CPP_TYPE "$iminput"

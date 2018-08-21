@@ -43,4 +43,5 @@ install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MA
 
 if (URHO3D_CSHARP)
     csharp_bind_target(TARGET ImGui)
+    target_link_libraries(ImGuiCSharp Urho3D)
 endif ()

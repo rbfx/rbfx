@@ -1,0 +1,19 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Configurations>Release;Debug</Configurations>
+    <Platforms>x64;x86</Platforms>
+    <BuildDir Condition=" '$(BuildDir)' == '' And '$(OS)' != 'Unix' ">$(SolutionDir)</BuildDir>
+    <BuildDir Condition=" '$(BuildDir)' == '' And '$(OS)' == 'Unix' ">$(SolutionDir)\build\</BuildDir>
+    <OutDir Condition="'$(OS)' != 'Unix'">$(BuildDir)\bin\$(Configuration)\</OutDir>
+    <OutDir Condition="'$(OS)' == 'Unix'">$(BuildDir)\bin\</OutDir>
+    <BaseIntermediateOutputPath>$(BuildDir)obj\$(Configuration)\$(AssemblyName)\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <OutputPath>$(IntermediateOutputPath)\bin\</OutputPath>
+    <BaseOutputPath>$(OutputPath)</BaseOutputPath>
+    <MSBuildProjectExtensionsPath>$(IntermediateOutputPath)</MSBuildProjectExtensionsPath>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>
