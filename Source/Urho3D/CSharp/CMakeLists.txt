@@ -22,17 +22,23 @@
 
 
 # Pre-generate part of swig interface
+find_program(PYTHON python3.6 NAMES python3.7)
+if (NOT PYTHON)
+    message(FATAL_ERROR "Python not found")
+endif ()
 
-set_source_files_properties(Swig/${BIND_TARGET}.i PROPERTIES
+set_source_files_properties(Swig/Urho3D.i PROPERTIES
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/_constants.i
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/_refcounted.i
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/_events.i
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/_enums.i
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/_refcounted.i
     )
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/_constants.i
-    ${CMAKE_CURRENT_BINARY_DIR}/_refcounted.i
+    ${CMAKE_CURRENT_BINARY_DIR}/_events.i
     ${CMAKE_CURRENT_BINARY_DIR}/_enums.i
-    COMMAND python3 "${Urho3D_SOURCE_DIR}/Source/Tools/AutoSwig/autoswig.py" "${CSHARP_BINDING_GENERATOR_OPTIONS}"
+    ${CMAKE_CURRENT_BINARY_DIR}/_refcounted.i
+    COMMAND ${PYTHON} "${Urho3D_SOURCE_DIR}/Source/Tools/AutoSwig/autoswig.py" "${CMAKE_CURRENT_BINARY_DIR}/generator_options.txt"
     COMMENT Generating rest of swig interface
 )
 

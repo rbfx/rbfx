@@ -2,7 +2,6 @@ sudo: true
 dist: trusty
 language: cpp
 cache:
-  apt: true
   directories:
     - $HOME/cmake-$CMAKE_VERSION.$CMAKE_PATCH-Linux-x86_64/bin
     - $HOME/cmake-$CMAKE_VERSION.$CMAKE_PATCH-Linux-x86_64/share
@@ -15,17 +14,19 @@ env:
 addons:
   apt:
     sources:
-      - llvm-toolchain-trusty-5.0
+      - llvm-toolchain-trusty-6.0
       - ubuntu-toolchain-r-test
+      - deadsnakes
     packages:
       - libasound2-dev
       - libxrandr-dev
       - libgl1-mesa-dev
       - libglu1-mesa-dev
       - g++-5
-      - llvm-5.0
-      - clang-5.0
-      - libclang-5.0-dev
+      - llvm-6.0
+      - clang-6.0
+      - libclang-6.0-dev
+      - python3.6
 notifications:
   email:
     on_success: never
@@ -41,30 +42,22 @@ matrix:
       compiler: gcc
       env:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
-        - LLVM_CONFIG_BINARY=/usr/bin/llvm-config-5.0
     - <<: *Linux-gcc
       env:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
-        - LLVM_CONFIG_BINARY=/usr/bin/llvm-config-5.0
         - BUILD_SHARED_LIBS=ON
     - &Linux-clang
       os: linux
       compiler: clang
-      env:
-        - LLVM_CONFIG_BINARY=/usr/bin/llvm-config-5.0
     - <<: *Linux-clang
       env:
-        - LLVM_CONFIG_BINARY=/usr/bin/llvm-config-5.0
         - BUILD_SHARED_LIBS=ON
     - &MacOS
       os: osx
       osx_image: xcode8.3
       compiler: clang
-      env:
-        - LLVM_CONFIG_BINARY=/usr/local/opt/llvm/bin/llvm-config
     - <<: *MacOS
       env:
-        - LLVM_CONFIG_BINARY=/usr/local/opt/llvm/bin/llvm-config
         - BUILD_SHARED_LIBS=ON
   exclude:
     - &MingW
@@ -107,16 +100,36 @@ install: |
       fi
       export PATH=$HOME/cmake-$CMAKE_VERSION.$CMAKE_PATCH-Linux-x86_64/bin:$PATH
       sudo apt-get install -y --force-yes mono-devel
+      sudo ln -s /usr/lib/x86_64-linux-gnu/libclang-6.0.so.1 /usr/lib/x86_64-linux-gnu/libclang.so
+      PYTHON3=python3.6
   else
-      brew install pkg-config mono llvm
+      brew install mono bison
+      brew upgrade python
+      PYTHON3=python3
   fi
+  # pyclang
+  wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py
+  sudo $PYTHON3 get-pip.py
+  sudo $PYTHON3 -m pip install clang
 
+  # swig
+  wget https://github.com/rokups/swig/archive/Urho3D.zip>/dev/null
+  unzip Urho3D.zip>/dev/null
+  cd swig-Urho3D
+  ./autogen.sh
+  if [[ $TRAVIS_OS_NAME == 'linux' ]];
+      ./configure --prefix=/usr
+  else
+      ./configure --prefix=/usr/local
+  fi
+  make -j$(nproc --all)
+  sudo make install -j$(nproc --all)
+  cd ..
 script: |
   mkdir build
   cd build
 
-  echo "LLVM_CONFIG_BINARY: ${LLVM_CONFIG_BINARY}"
   echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
 
-  cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} -DLLVM_CONFIG_BINARY=${LLVM_CONFIG_BINARY} ..
+  cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} ..
   cmake --build .

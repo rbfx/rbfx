@@ -251,7 +251,8 @@ function(vs_group_subdirectory_targets DIR FOLDER_NAME)
     endforeach()
 endfunction()
 
-if (URHO3D_CSHARP)    find_package(SWIG REQUIRED)
+if (URHO3D_CSHARP)
+    find_package(SWIG REQUIRED)
     include(UrhoSWIG)
 endif()
 
@@ -393,7 +394,7 @@ macro (csharp_bind_target)
         SWIG_FLAGS "-I${SWIG_SYSTEM_INCLUDE_DIRS}"
     )
 
-    swig_add_library(${CSHARP_LIBRARY_NAME} TYPE SHARED LANGUAGE csharp SOURCES Swig/${BIND_TARGET}.i)
+    swig_add_module(${CSHARP_LIBRARY_NAME} csharp Swig/${BIND_TARGET}.i)
     swig_link_libraries(${CSHARP_LIBRARY_NAME} ${BIND_TARGET})
     set_target_properties(${CSHARP_LIBRARY_NAME} PROPERTIES PREFIX ${CMAKE_SHARED_LIBRARY_PREFIX})
 

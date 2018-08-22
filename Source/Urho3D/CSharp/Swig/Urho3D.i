@@ -1,7 +1,11 @@
 %module(directors="1", dirprot="1", allprotected="1", naturalvar=1) Urho3D
 
-#define URHO3D_STATIC
-#define URHO3D_API
+#ifndef URHO3D_STATIC
+#   define URHO3D_STATIC
+#endif
+#ifndef URHO3D_API
+#   define URHO3D_API
+#endif
 #define final
 #define static_assert(...)
 
