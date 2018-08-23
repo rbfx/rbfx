@@ -25,7 +25,7 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Toolbox/IO/ContentUtilities.h>
 #include <Toolbox/SystemUI/Widgets.h>
-#include <IconFontCppHeaders/IconsFontAwesome.h>
+#include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include "EditorEvents.h"
 #include "Editor.h"
 #include "Widgets.h"
@@ -229,14 +229,14 @@ void UITab::RenderToolbarButtons()
     auto oldRounding = style.FrameRounding;
     style.FrameRounding = 0;
 
-    if (ui::EditorToolbarButton(ICON_FA_FLOPPY_O, "Save"))
+    if (ui::EditorToolbarButton(ICON_FA_SAVE, "Save"))
         SaveResource();
 
     ui::SameLine(0, 3.f);
 
     if (ui::EditorToolbarButton(ICON_FA_UNDO, "Undo"))
         undo_.Undo();
-    if (ui::EditorToolbarButton(ICON_FA_REPEAT, "Redo"))
+    if (ui::EditorToolbarButton(ICON_FA_REDO, "Redo"))
         undo_.Redo();
 
     ui::SameLine(0, 3.f);

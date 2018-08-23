@@ -28,7 +28,7 @@
 #include <Urho3D/Resource/ResourceEvents.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Input/Input.h>
-#include <IconFontCppHeaders/IconsFontAwesome.h>
+#include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <Urho3D/IO/Log.h>
 #include "Widgets.h"
 #include "IO/ContentUtilities.h"

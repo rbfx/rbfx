@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include <IconFontCppHeaders/IconsFontAwesome.h>
+#include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <Toolbox/IO/ContentUtilities.h>
 #include <SDL/SDL_clipboard.h>
 #include "Tabs/Scene/SceneTab.h"

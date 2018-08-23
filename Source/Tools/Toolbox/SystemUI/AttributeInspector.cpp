@@ -39,7 +39,7 @@
 #include "ImGuiDock.h"
 #include "Widgets.h"
 
-#include <IconFontCppHeaders/IconsFontAwesome.h>
+#include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <ImGui/imgui_internal.h>
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Graphics/Octree.h>

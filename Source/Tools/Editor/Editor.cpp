@@ -23,7 +23,7 @@
 #include <Toolbox/IO/ContentUtilities.h>
 #include <Toolbox/SystemUI/ResourceBrowser.h>
 #include <Toolbox/ToolboxAPI.h>
-#include <IconFontCppHeaders/IconsFontAwesome.h>
+#include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <nativefiledialog/nfd.h>
 
 #include "Editor.h"
@@ -123,7 +123,7 @@ void Editor::Start()
 
     GetSystemUI()->ApplyStyleDefault(true, 1.0f);
     GetSystemUI()->AddFont("Fonts/DejaVuSansMono.ttf");
-    GetSystemUI()->AddFont("Fonts/fontawesome-webfont.ttf", {ICON_MIN_FA, ICON_MAX_FA, 0}, 0, true);
+    GetSystemUI()->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAR, {ICON_MIN_FA, ICON_MAX_FA, 0}, 0, true);
     ui::GetStyle().WindowRounding = 3;
     // Disable imgui saving ui settings on it's own. These should be serialized to project file.
     ui::GetIO().IniFilename = nullptr;

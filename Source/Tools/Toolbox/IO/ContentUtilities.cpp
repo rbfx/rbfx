@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include <IconFontCppHeaders/IconsFontAwesome.h>
+#include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <Urho3D/Urho3DAll.h>
 #include "ContentUtilities.h"
 
@@ -60,27 +60,27 @@ String GetFileIcon(const String& fileName)
     switch (GetFileType(fileName))
     {
     case FTYPE_ARCHIVE:
-        return ICON_FA_FILE_ARCHIVE_O;
+        return ICON_FA_FILE_ARCHIVE;
     case FTYPE_WORD:
-        return ICON_FA_FILE_WORD_O;
+        return ICON_FA_FILE_WORD;
     case FTYPE_CODE:
-        return ICON_FA_FILE_CODE_O;
+        return ICON_FA_FILE_CODE;
     case FTYPE_IMAGE:
-        return ICON_FA_FILE_IMAGE_O;
+        return ICON_FA_FILE_IMAGE;
     case FTYPE_PDF:
-        return ICON_FA_FILE_PDF_O;
+        return ICON_FA_FILE_PDF;
     case FTYPE_VIDEO:
-        return ICON_FA_FILE_VIDEO_O;
+        return ICON_FA_FILE_VIDEO;
     case FTYPE_POWERPOINT:
-        return ICON_FA_FILE_POWERPOINT_O;
+        return ICON_FA_FILE_POWERPOINT;
     case FTYPE_TEXT:
-        return ICON_FA_FILE_TEXT_O;
+        return ICON_FA_FILE_ALT;
     case FTYPE_FILM:
-        return ICON_FA_FILE_VIDEO_O;
+        return ICON_FA_FILE_VIDEO;
     case FTYPE_AUDIO:
-        return ICON_FA_FILE_AUDIO_O;
+        return ICON_FA_FILE_AUDIO;
     case FTYPE_EXCEL:
-        return ICON_FA_FILE_EXCEL_O;
+        return ICON_FA_FILE_EXCEL;
     default:
         return ICON_FA_FILE;
     }
