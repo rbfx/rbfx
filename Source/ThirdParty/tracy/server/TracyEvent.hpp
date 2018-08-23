@@ -84,7 +84,7 @@ struct ZoneEvent
     StringIdx name;
 
     // This must be last. All above is read/saved as-is.
-    Vector<ZoneEvent*> child;
+    int32_t child;
 };
 
 enum { ZoneEventSize = sizeof( ZoneEvent ) };
@@ -137,7 +137,7 @@ struct GpuEvent
     // All above is read/saved as-is.
 
     uint16_t thread;
-    Vector<GpuEvent*> child;
+    int32_t child;
 };
 
 enum { GpuEventSize = sizeof( GpuEvent ) };
@@ -170,6 +170,27 @@ struct CallstackFrame
 };
 
 enum { CallstackFrameSize = sizeof( CallstackFrame ) };
+
+struct CallstackFrameTree
+{
+    uint64_t frame;
+    uint64_t allocExclusive, allocInclusive;
+    uint32_t countExclusive, countInclusive;
+    std::vector<CallstackFrameTree> children;
+};
+
+enum { CallstackFrameTreeSize = sizeof( CallstackFrameTree ) };
+
+
+struct CrashEvent
+{
+    uint64_t thread = 0;
+    int64_t time = 0;
+    uint64_t message = 0;
+    uint32_t callstack = 0;
+};
+
+enum { CrashEventSize = sizeof( CrashEvent ) };
 
 #pragma pack()
 
@@ -253,6 +274,19 @@ struct MemData
     uint64_t low = std::numeric_limits<uint64_t>::max();
     uint64_t usage = 0;
     PlotData* plot = nullptr;
+};
+
+struct FrameEvent
+{
+    int64_t start;
+    int64_t end;
+};
+
+struct FrameData
+{
+    uint64_t name;
+    Vector<FrameEvent> frames;
+    uint8_t continuous;
 };
 
 struct StringLocation

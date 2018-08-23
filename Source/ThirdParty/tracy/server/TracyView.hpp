@@ -4,21 +4,26 @@
 #include <atomic>
 #include <functional>
 #include <map>
+#include <memory>
 #include <string>
 #include <thread>
 #include <vector>
 
+#include "TracyBuzzAnim.hpp"
+#include "TracyDecayValue.hpp"
 #include "TracyVector.hpp"
 #include "TracyWorker.hpp"
 #include "tracy_flat_hash_map.hpp"
 
 struct ImVec2;
+struct ImFont;
 
 namespace tracy
 {
 
 struct QueueItem;
 class FileRead;
+class TextEditor;
 
 class View
 {
@@ -39,12 +44,17 @@ class View
     };
 
 public:
-    View() : View( "127.0.0.1" ) {}
-    View( const char* addr );
-    View( FileRead& f );
+    using SetTitleCallback = void(*)( const char* );
+
+    View( ImFont* fixedWidth = nullptr, SetTitleCallback stcb = nullptr ) : View( "127.0.0.1", fixedWidth, stcb ) {}
+    View( const char* addr, ImFont* fixedWidth = nullptr, SetTitleCallback stcb = nullptr );
+    View( FileRead& f, ImFont* fixedWidth = nullptr, SetTitleCallback stcb = nullptr );
     ~View();
 
     static bool Draw();
+
+    void NotifyRootWindowSize( float w, float h ) { m_rootWidth = w; m_rootHeight = h; }
+    void SetTextEditorFile( const char* fileName, int line );
 
 private:
     enum class Namespace : uint8_t
@@ -53,6 +63,8 @@ private:
         Mid,
         Short
     };
+
+    void InitTextEditor();
 
     const char* ShortenNamespace( const char* name ) const;
 
@@ -63,7 +75,8 @@ private:
     bool DrawImpl();
     void DrawConnection();
     void DrawFrames();
-    bool DrawZoneFrames();
+    bool DrawZoneFramesHeader();
+    bool DrawZoneFrames( const FrameData& frames );
     void DrawZones();
     int DispatchZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset, int depth, float yMin, float yMax );
     int DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset, int depth, float yMin, float yMax );
@@ -82,9 +95,15 @@ private:
     void DrawMemory();
     void DrawCompare();
     void DrawCallstackWindow();
+    void DrawMemoryAllocWindow();
+    void DrawInfo();
+    void DrawTextEditor();
 
     template<class T>
-    void ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAddress, const char* id = nullptr );
+    void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr );
+
+    std::vector<CallstackFrameTree> GetCallstackFrameTree( const MemData& mem ) const;
+    void DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx );
 
     void DrawInfoWindow();
     void DrawZoneInfoWindow();
@@ -119,6 +138,7 @@ private:
     uint64_t GetZoneThread( const GpuEvent& zone ) const;
     const GpuCtxData* GetZoneCtx( const GpuEvent& zone ) const;
     const ZoneEvent* FindZoneAtTime( uint64_t thread, int64_t time ) const;
+    const char* GetFrameText( const FrameData& fd, int i, uint64_t ftime, uint64_t offset ) const;
 
 #ifndef TRACY_NO_STATISTICS
     void FindZones();
@@ -128,7 +148,10 @@ private:
     std::pair<int8_t*, size_t> GetMemoryPages() const;
     const char* GetPlotName( const PlotData* plot ) const;
 
+    void SmallCallstackButton( const char* name, uint32_t callstack, int& idx );
+
     flat_hash_map<const void*, bool, nohash<const void*>> m_visible;
+    flat_hash_map<uint64_t, bool, nohash<uint64_t>> m_visibleMsgThread;
     flat_hash_map<const void*, bool, nohash<const void*>> m_showFull;
     flat_hash_map<const void*, int, nohash<const void*>> m_gpuDrift;
 
@@ -138,6 +161,16 @@ private:
         if( it == m_visible.end() )
         {
             it = m_visible.emplace( ptr, true ).first;
+        }
+        return it->second;
+    }
+
+    tracy_force_inline bool& VisibleMsgThread( uint64_t thread )
+    {
+        auto it = m_visibleMsgThread.find( thread );
+        if( it == m_visibleMsgThread.end() )
+        {
+            it = m_visibleMsgThread.emplace( thread, true ).first;
         }
         return it->second;
     }
@@ -180,14 +213,21 @@ private:
 
     const ZoneEvent* m_zoneInfoWindow;
     const ZoneEvent* m_zoneHighlight;
+    DecayValue<uint64_t> m_zoneSrcLocHighlight;
     LockHighlight m_lockHighlight;
-    const MessageData* m_msgHighlight;
+    DecayValue<const MessageData*> m_msgHighlight;
+    const MessageData* m_msgToFocus;
     const GpuEvent* m_gpuInfoWindow;
     const GpuEvent* m_gpuHighlight;
     uint64_t m_gpuInfoWindowThread;
     uint32_t m_callstackInfoWindow;
+    int64_t m_memoryAllocInfoWindow;
+    int64_t m_memoryAllocHover;
+    int m_memoryAllocHoverWait;
+    const FrameData* m_frames;
 
     Region m_highlight;
+    Region m_highlightZoom;
 
     uint64_t m_gpuThread;
     int64_t m_gpuStart;
@@ -196,6 +236,7 @@ private:
     bool m_showOptions;
     bool m_showMessages;
     bool m_showStatistics;
+    bool m_showInfo;
     bool m_drawGpuZones;
     bool m_drawZones;
     bool m_drawLocks;
@@ -204,44 +245,65 @@ private:
 
     int m_statSort;
     bool m_statSelf;
+    bool m_showCallstackFrameAddress;
 
     Namespace m_namespace;
     Animation m_zoomAnim;
+    BuzzAnim<int> m_callstackBuzzAnim;
+    BuzzAnim<int> m_callstackTreeBuzzAnim;
+    BuzzAnim<const void*> m_zoneinfoBuzzAnim;
+    BuzzAnim<int> m_findZoneBuzzAnim;
 
     Vector<const ZoneEvent*> m_zoneInfoStack;
     Vector<const GpuEvent*> m_gpuInfoStack;
 
-    struct {
+    std::unique_ptr<TextEditor> m_textEditor;
+    const char* m_textEditorFile;
+    ImFont* m_textEditorFont;
+
+    float m_rootWidth, m_rootHeight;
+    SetTitleCallback m_stcb;
+    bool m_titleSet;
+
+    struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };
+        enum class GroupBy : int { Thread, UserText, Callstack };
+        enum class SortBy : int { Order, Count, Time };
+
+        struct Group
+        {
+            Vector<ZoneEvent*> zones;
+            int64_t time = 0;
+        };
 
         bool show = false;
         std::vector<int32_t> match;
-        std::map<uint64_t, Vector<ZoneEvent*>> threads;
+        std::map<uint64_t, Group> groups;
         size_t processed;
         int selMatch = 0;
-        uint64_t selThread = Unselected;
+        uint64_t selGroup = Unselected;
         char pattern[1024] = {};
         bool logVal = false;
         bool logTime = true;
         bool cumulateTime = false;
-        bool showThreads = true;
-        bool sortByCounts = false;
+        GroupBy groupBy = GroupBy::Thread;
+        SortBy sortBy = SortBy::Order;
         Region highlight;
         int64_t numBins = -1;
         std::unique_ptr<int64_t[]> bins, binTime, selBin;
 
         void Reset()
         {
-            ResetThreads();
+            ResetGroups();
             match.clear();
             selMatch = 0;
-            selThread = Unselected;
+            selGroup = Unselected;
             highlight.active = false;
         }
 
-        void ResetThreads()
+        void ResetGroups()
         {
-            threads.clear();
+            groups.clear();
             processed = 0;
         }
 
@@ -254,6 +316,8 @@ private:
         }
     } m_findZone;
 
+    tracy_force_inline uint64_t GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::GroupBy groupBy ) const;
+
     struct CompVal
     {
         double v0;
@@ -263,6 +327,7 @@ private:
     struct {
         bool show = false;
         std::unique_ptr<Worker> second;
+        std::thread loadThread;
         int badVer = 0;
         char pattern[1024] = {};
         std::vector<int32_t> match[2];

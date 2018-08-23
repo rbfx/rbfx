@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include "ThirdParty/tracy/TracyClient.cpp"
 #if _WIN32
 #   include <windows.h>
 #else

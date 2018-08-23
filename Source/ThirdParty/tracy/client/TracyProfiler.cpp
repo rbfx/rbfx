@@ -3,12 +3,24 @@
 #ifdef _MSC_VER
 #  include <winsock2.h>
 #  include <windows.h>
+#  include <tlhelp32.h>
 #else
 #  include <sys/time.h>
 #endif
 
+#ifdef __CYGWIN__
+#  include <windows.h>
+#endif
+
 #ifdef _GNU_SOURCE
 #  include <errno.h>
+#endif
+
+#ifdef __linux__
+#  include <signal.h>
+#  include <dirent.h>
+#  include <sys/types.h>
+#  include <sys/syscall.h>
 #endif
 
 #include <atomic>
@@ -39,6 +51,21 @@
 #if defined TRACY_HW_TIMER && __ARM_ARCH >= 6
 #  include <signal.h>
 #  include <setjmp.h>
+#endif
+
+#if defined _MSC_VER || defined __CYGWIN__
+#  include <lmcons.h>
+extern "C" typedef LONG (WINAPI *t_RtlGetVersion)( PRTL_OSVERSIONINFOW );
+#else
+#  include <unistd.h>
+#  include <limits.h>
+#endif
+#if defined __APPLE__
+#  include "TargetConditionals.h"
+#endif
+#if defined __linux__
+#  include <sys/sysinfo.h>
+#  include <sys/utsname.h>
 #endif
 
 namespace tracy
@@ -85,7 +112,7 @@ static int SetupHwTimerFailed()
     return sigsetjmp( SigIllEnv, 1 );
 }
 
-static void SetupHwTimerSigIllHandler( int signum )
+static void SetupHwTimerSigIllHandler( int /*signum*/ )
 {
     siglongjmp( SigIllEnv, 1 );
 }
@@ -124,6 +151,7 @@ static int64_t SetupHwTimer()
 
 static const char* GetProcessName()
 {
+    const char* processName = "unknown";
 #if defined _MSC_VER
     static char buf[_MAX_PATH];
     GetModuleFileNameA( nullptr, buf, _MAX_PATH );
@@ -131,17 +159,494 @@ static const char* GetProcessName()
     while( *ptr != '\0' ) ptr++;
     while( ptr > buf && *ptr != '\\' && *ptr != '/' ) ptr--;
     if( ptr > buf ) ptr++;
-    return ptr;
+    processName = ptr;
 #elif defined __ANDROID__
 #  if __ANDROID_API__ >= 21
     auto buf = getprogname();
-    if( buf ) return buf;
+    if( buf ) processName = buf;
 #  endif
 #elif defined _GNU_SOURCE || defined __CYGWIN__
-    return program_invocation_short_name;
+    processName = program_invocation_short_name;
 #endif
-    return "unknown";
+    return processName;
 }
+
+static const char* GetHostInfo()
+{
+    static char buf[1024];
+    auto ptr = buf;
+#if defined _MSC_VER || defined __CYGWIN__
+#  ifdef UNICODE
+    t_RtlGetVersion RtlGetVersion = (t_RtlGetVersion)GetProcAddress( GetModuleHandle( L"ntdll.dll" ), "RtlGetVersion" );
+#  else
+    t_RtlGetVersion RtlGetVersion = (t_RtlGetVersion)GetProcAddress( GetModuleHandle( "ntdll.dll" ), "RtlGetVersion" );
+#  endif
+
+    if( !RtlGetVersion )
+    {
+#  ifndef __CYGWIN__
+        ptr += sprintf( ptr, "OS: Windows\n" );
+#  else
+        ptr += sprintf( ptr, "OS: Windows (Cygwin)\n" );
+#  endif
+    }
+    else
+    {
+        RTL_OSVERSIONINFOW ver = { sizeof( RTL_OSVERSIONINFOW ) };
+        RtlGetVersion( &ver );
+
+#  ifndef __CYGWIN__
+        ptr += sprintf( ptr, "OS: Windows %i.%i.%i\n", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
+#  else
+        ptr += sprintf( ptr, "OS: Windows %i.%i.%i (Cygwin)\n", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
+#  endif
+    }
+#elif defined __linux__
+    struct utsname utsName;
+    uname( &utsName );
+#  if defined __ANDROID__
+    ptr += sprintf( ptr, "OS: Linux %s (Android)\n", utsName.release );
+#  else
+    ptr += sprintf( ptr, "OS: Linux %s\n", utsName.release );
+#  endif
+#elif defined __APPLE__
+#  if defined TARGET_OS_IPHONE
+    ptr += sprintf( ptr, "OS: Darwin (iOS)\n" );
+#  elif defined TARGET_OS_MAC
+    ptr += sprintf( ptr, "OS: Darwin (OSX)\n" );
+#  else
+    ptr += sprintf( ptr, "OS: Darwin (unknown)\n" );
+#  endif
+#elif defined __DragonFly__
+    ptr += sprintf( ptr, "OS: BSD (DragonFly)\n" );
+#elif defined __FreeBSD__
+    ptr += sprintf( ptr, "OS: BSD (FreeBSD)\n" );
+#elif defined __NetBSD__
+    ptr += sprintf( ptr, "OS: BSD (NetBSD)\n" );
+#elif defined __OpenBSD__
+    ptr += sprintf( ptr, "OS: BSD (OpenBSD)\n" );
+#else
+    ptr += sprintf( ptr, "OS: unknown\n" );
+#endif
+
+#if defined _MSC_VER
+    ptr += sprintf( ptr, "Compiler: MSVC %i\n", _MSC_VER );
+#elif defined __clang__
+    ptr += sprintf( ptr, "Compiler: clang %i.%i.%i\n", __clang_major__, __clang_minor__, __clang_patchlevel__ );
+#elif defined __GNUC__
+    ptr += sprintf( ptr, "Compiler: gcc %i.%i\n", __GNUC__, __GNUC_MINOR__ );
+#else
+    ptr += sprintf( ptr, "Compiler: unknown\n" );
+#endif
+
+#if defined _MSC_VER || defined __CYGWIN__
+#  ifndef __CYGWIN__
+    InitWinSock();
+#  endif
+    char hostname[512];
+    gethostname( hostname, 512 );
+
+    DWORD userSz = UNLEN+1;
+    char user[UNLEN+1];
+    GetUserNameA( user, &userSz );
+
+    ptr += sprintf( ptr, "User: %s@%s\n", user, hostname );
+#else
+    char hostname[HOST_NAME_MAX];
+    char user[LOGIN_NAME_MAX];
+
+    gethostname( hostname, HOST_NAME_MAX );
+    getlogin_r( user, LOGIN_NAME_MAX );
+
+    ptr += sprintf( ptr, "User: %s@%s\n", user, hostname );
+#endif
+
+#if defined __i386 || defined _M_IX86
+    ptr += sprintf( ptr, "Arch: x86\n" );
+#elif defined __x86_64__ || defined _M_X64
+    ptr += sprintf( ptr, "Arch: x64\n" );
+#elif defined __aarch64__
+    ptr += sprintf( ptr, "Arch: ARM64\n" );
+#elif defined __ARM_ARCH
+    ptr += sprintf( ptr, "Arch: ARM\n" );
+#else
+    ptr += sprintf( ptr, "Arch: unknown\n" );
+#endif
+
+#if defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
+    uint32_t regs[4];
+    char cpuModel[4*4*3];
+    auto modelPtr = cpuModel;
+    for( uint32_t i=0x80000002; i<0x80000005; ++i )
+    {
+#  if defined _MSC_VER || defined __CYGWIN__
+        __cpuidex( (int*)regs, i, 0 );
+#  else
+        int zero = 0;
+        asm volatile ( "cpuid" : "=a" (regs[0]), "=b" (regs[1]), "=c" (regs[2]), "=d" (regs[3]) : "a" (i), "c" (zero) );
+#  endif
+        memcpy( modelPtr, regs, sizeof( regs ) ); modelPtr += sizeof( regs );
+    }
+
+    ptr += sprintf( ptr, "CPU: %s\n", cpuModel );
+#else
+    ptr += sprintf( ptr, "CPU: unknown\n" );
+#endif
+
+#if defined _MSC_VER || defined __CYGWIN__
+    MEMORYSTATUSEX statex;
+    statex.dwLength = sizeof( statex );
+    GlobalMemoryStatusEx( &statex );
+    ptr += sprintf( ptr, "RAM: %I64u MB\n", statex.ullTotalPhys / 1024 / 1024 );
+#elif defined __linux__
+    struct sysinfo sysInfo;
+    sysinfo( &sysInfo );
+    ptr += sprintf( ptr, "RAM: %lu MB\n", sysInfo.totalram / 1024 / 1024 );
+#else
+    ptr += sprintf( ptr, "RAM: unknown\n" );
+#endif
+
+    return buf;
+}
+
+#ifdef _MSC_VER
+static DWORD s_profilerThreadId = 0;
+static char s_crashText[1024];
+
+LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
+{
+    const auto ec = pExp->ExceptionRecord->ExceptionCode;
+    auto msgPtr = s_crashText;
+    switch( ec )
+    {
+    case EXCEPTION_ACCESS_VIOLATION:
+        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_ACCESS_VIOLATION (0x%x). ", ec );
+        switch( pExp->ExceptionRecord->ExceptionInformation[0] )
+        {
+        case 0:
+            msgPtr += sprintf( msgPtr, "Read violation at address 0x%Iu.", pExp->ExceptionRecord->ExceptionInformation[1] );
+            break;
+        case 1:
+            msgPtr += sprintf( msgPtr, "Write violation at address 0x%Iu.", pExp->ExceptionRecord->ExceptionInformation[1] );
+            break;
+        case 8:
+            msgPtr += sprintf( msgPtr, "DEP violation at address 0x%Iu.", pExp->ExceptionRecord->ExceptionInformation[1] );
+            break;
+        default:
+            break;
+        }
+        break;
+    case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
+        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_ARRAY_BOUNDS_EXCEEDED (0x%x). ", ec );
+        break;
+    case EXCEPTION_DATATYPE_MISALIGNMENT:
+        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_DATATYPE_MISALIGNMENT (0x%x). ", ec );
+        break;
+    case EXCEPTION_FLT_DIVIDE_BY_ZERO:
+        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_FLT_DIVIDE_BY_ZERO (0x%x). ", ec );
+        break;
+    case EXCEPTION_ILLEGAL_INSTRUCTION:
+        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_ILLEGAL_INSTRUCTION (0x%x). ", ec );
+        break;
+    case EXCEPTION_IN_PAGE_ERROR:
+        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_IN_PAGE_ERROR (0x%x). ", ec );
+        break;
+    case EXCEPTION_INT_DIVIDE_BY_ZERO:
+        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_INT_DIVIDE_BY_ZERO (0x%x). ", ec );
+        break;
+    case EXCEPTION_PRIV_INSTRUCTION:
+        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_PRIV_INSTRUCTION (0x%x). ", ec );
+        break;
+    case EXCEPTION_STACK_OVERFLOW:
+        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_STACK_OVERFLOW (0x%x). ", ec );
+        break;
+    default:
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+
+    {
+        const auto thread = GetThreadHandle();
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, QueueType::CrashReport );
+        item->crashReport.time = Profiler::GetTime();
+        item->crashReport.thread = thread;
+        item->crashReport.text = (uint64_t)s_crashText;
+        tail.store( magic + 1, std::memory_order_release );
+
+        s_profiler.SendCallstack( 60, thread, "KiUserExceptionDispatcher" );
+    }
+
+    HANDLE h = CreateToolhelp32Snapshot( TH32CS_SNAPTHREAD, 0 );
+    if( h == INVALID_HANDLE_VALUE ) return EXCEPTION_CONTINUE_SEARCH;
+
+    THREADENTRY32 te = { sizeof( te ) };
+    if( !Thread32First( h, &te ) )
+    {
+        CloseHandle( h );
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+
+    const auto pid = GetCurrentProcessId();
+    const auto tid = GetCurrentThreadId();
+
+    do
+    {
+        if( te.th32OwnerProcessID == pid && te.th32ThreadID != tid && te.th32ThreadID != s_profilerThreadId )
+        {
+            HANDLE th = OpenThread( THREAD_SUSPEND_RESUME, FALSE, te.th32ThreadID );
+            if( th != INVALID_HANDLE_VALUE )
+            {
+                SuspendThread( th );
+                CloseHandle( th );
+            }
+        }
+    }
+    while( Thread32Next( h, &te ) );
+    CloseHandle( h );
+
+    {
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, QueueType::Crash );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
+    std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
+    s_profiler.RequestShutdown();
+    while( !s_profiler.HasShutdownFinished() ) { std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) ); };
+
+    TerminateProcess( GetCurrentProcess(), 1 );
+
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+#endif
+
+#ifdef __linux__
+static long s_profilerTid = 0;
+static char s_crashText[1024];
+static std::atomic<bool> s_alreadyCrashed( false );
+
+static void ThreadFreezer( int signal )
+{
+    for(;;) sleep( 1000 );
+}
+
+static inline void HexPrint( char*& ptr, uint64_t val )
+{
+    if( val == 0 )
+    {
+        *ptr++ = '0';
+        return;
+    }
+
+    static const char HexTable[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+    char buf[16];
+    auto bptr = buf;
+
+    do
+    {
+        *bptr++ = HexTable[val%16];
+        val /= 16;
+    }
+    while( val > 0 );
+
+    do
+    {
+        *ptr++ = *--bptr;
+    }
+    while( bptr != buf );
+}
+
+static void CrashHandler( int signal, siginfo_t* info, void* ucontext )
+{
+    bool expected = false;
+    if( !s_alreadyCrashed.compare_exchange_strong( expected, true ) ) ThreadFreezer( signal );
+
+    auto msgPtr = s_crashText;
+    switch( signal )
+    {
+    case SIGILL:
+        strcpy( msgPtr, "Illegal Instruction.\n" );
+        while( *msgPtr ) msgPtr++;
+        switch( info->si_code )
+        {
+        case ILL_ILLOPC:
+            strcpy( msgPtr, "Illegal opcode.\n" );
+            break;
+        case ILL_ILLOPN:
+            strcpy( msgPtr, "Illegal operand.\n" );
+            break;
+        case ILL_ILLADR:
+            strcpy( msgPtr, "Illegal addressing mode.\n" );
+            break;
+        case ILL_ILLTRP:
+            strcpy( msgPtr, "Illegal trap.\n" );
+            break;
+        case ILL_PRVOPC:
+            strcpy( msgPtr, "Privileged opcode.\n" );
+            break;
+        case ILL_PRVREG:
+            strcpy( msgPtr, "Privileged register.\n" );
+            break;
+        case ILL_COPROC:
+            strcpy( msgPtr, "Coprocessor error.\n" );
+            break;
+        case ILL_BADSTK:
+            strcpy( msgPtr, "Internal stack error.\n" );
+            break;
+        default:
+            break;
+        }
+        break;
+    case SIGFPE:
+        strcpy( msgPtr, "Floating-point exception.\n" );
+        while( *msgPtr ) msgPtr++;
+        switch( info->si_code )
+        {
+        case FPE_INTDIV:
+            strcpy( msgPtr, "Integer divide by zero.\n" );
+            break;
+        case FPE_INTOVF:
+            strcpy( msgPtr, "Integer overflow.\n" );
+            break;
+        case FPE_FLTDIV:
+            strcpy( msgPtr, "Floating-point divide by zero.\n" );
+            break;
+        case FPE_FLTOVF:
+            strcpy( msgPtr, "Floating-point overflow.\n" );
+            break;
+        case FPE_FLTUND:
+            strcpy( msgPtr, "Floating-point underflow.\n" );
+            break;
+        case FPE_FLTRES:
+            strcpy( msgPtr, "Floating-point inexact result.\n" );
+            break;
+        case FPE_FLTINV:
+            strcpy( msgPtr, "Floating-point invalid operation.\n" );
+            break;
+        case FPE_FLTSUB:
+            strcpy( msgPtr, "Subscript out of range.\n" );
+            break;
+        default:
+            break;
+        }
+        break;
+    case SIGSEGV:
+        strcpy( msgPtr, "Invalid memory reference.\n" );
+        while( *msgPtr ) msgPtr++;
+        switch( info->si_code )
+        {
+        case SEGV_MAPERR:
+            strcpy( msgPtr, "Address not mapped to object.\n" );
+            break;
+        case SEGV_ACCERR:
+            strcpy( msgPtr, "Invalid permissions for mapped object.\n" );
+            break;
+        case SEGV_BNDERR:
+            strcpy( msgPtr, "Failed address bound checks.\n" );
+            break;
+        case SEGV_PKUERR:
+            strcpy( msgPtr, "Access was denied by memory protection keys.\n" );
+            break;
+        default:
+            break;
+        }
+        break;
+    case SIGPIPE:
+        strcpy( msgPtr, "Broken pipe.\n" );
+        while( *msgPtr ) msgPtr++;
+        break;
+    case SIGBUS:
+        strcpy( msgPtr, "Bus error.\n" );
+        while( *msgPtr ) msgPtr++;
+        switch( info->si_code )
+        {
+        case BUS_ADRALN:
+            strcpy( msgPtr, "Invalid address alignment.\n" );
+            break;
+        case BUS_ADRERR:
+            strcpy( msgPtr, "Nonexistent physical address.\n" );
+            break;
+        case BUS_OBJERR:
+            strcpy( msgPtr, "Object-specific hardware error.\n" );
+            break;
+        case BUS_MCEERR_AR:
+            strcpy( msgPtr, "Hardware memory error consumed on a machine check; action required.\n" );
+            break;
+        case BUS_MCEERR_AO:
+            strcpy( msgPtr, "Hardware memory error detected in process but not consumed; action optional.\n" );
+            break;
+        default:
+            break;
+        }
+        break;
+    default:
+        abort();
+    }
+    while( *msgPtr ) msgPtr++;
+
+    if( signal != SIGPIPE )
+    {
+        strcpy( msgPtr, "Fault address: 0x" );
+        while( *msgPtr ) msgPtr++;
+        HexPrint( msgPtr, uint64_t( info->si_addr ) );
+        *msgPtr++ = '\n';
+    }
+
+    {
+        const auto thread = GetThreadHandle();
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, QueueType::CrashReport );
+        item->crashReport.time = Profiler::GetTime();
+        item->crashReport.thread = thread;
+        item->crashReport.text = (uint64_t)s_crashText;
+        tail.store( magic + 1, std::memory_order_release );
+
+        s_profiler.SendCallstack( 60, thread, "__kernel_rt_sigreturn" );
+    }
+
+    DIR* dp = opendir( "/proc/self/task" );
+    if( !dp ) abort();
+
+    const auto selfTid = syscall( SYS_gettid );
+
+    struct dirent* ep;
+    while( ( ep = readdir( dp ) ) != nullptr )
+    {
+        if( ep->d_name[0] == '.' ) continue;
+        int tid = atoi( ep->d_name );
+        if( tid != selfTid && tid != s_profilerTid )
+        {
+            syscall( SYS_tkill, tid, SIGPWR );
+        }
+    }
+    closedir( dp );
+
+    {
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, QueueType::Crash );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
+    std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
+    s_profiler.RequestShutdown();
+    while( !s_profiler.HasShutdownFinished() ) { std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) ); };
+
+    abort();
+}
+#endif
+
 
 enum { QueuePrealloc = 256 * 1024 };
 
@@ -176,14 +681,64 @@ VkCtxWrapper init_order(104) s_vkCtx { nullptr };
 
 #ifdef TRACY_COLLECT_THREAD_NAMES
 struct ThreadNameData;
-std::atomic<ThreadNameData*> init_order(104) s_threadNameData( nullptr );
+static std::atomic<ThreadNameData*> init_order(104) s_threadNameDataInstance( nullptr );
+std::atomic<ThreadNameData*>& s_threadNameData = s_threadNameDataInstance;
 #endif
 
 #ifdef TRACY_ON_DEMAND
 thread_local LuaZoneState init_order(104) s_luaZoneState { 0, false };
 #endif
 
-Profiler init_order(105) s_profiler;
+static Profiler init_order(105) s_profilerInstance;
+Profiler& s_profiler = s_profilerInstance;
+
+#ifndef DLL_EXPORT
+#ifdef _MSC_VER
+#  define DLL_EXPORT __declspec(dllexport)
+#else
+#  define DLL_EXPORT __attribute__((visibility("default")))
+#endif
+#endif
+// DLL exports to enable TracyClientDLL.cpp to retrieve the instances of Tracy objects and functions
+
+DLL_EXPORT moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* get_token()
+{
+    return s_token.ptr;
+}
+
+DLL_EXPORT void*(*get_rpmalloc())(size_t size)
+{
+    return rpmalloc;
+}
+
+DLL_EXPORT void(*get_rpfree())(void* ptr)
+{
+    return rpfree;
+}
+
+#if defined TRACY_HW_TIMER && __ARM_ARCH >= 6
+DLL_EXPORT int64_t(*get_GetTimeImpl())()
+{
+    return GetTimeImpl;
+}
+#endif
+
+DLL_EXPORT Profiler& get_profiler()
+{
+    return s_profiler;
+}
+
+#ifdef TRACY_COLLECT_THREAD_NAMES
+DLL_EXPORT std::atomic<ThreadNameData*>& get_threadNameData()
+{
+    return s_threadNameData;
+}
+
+DLL_EXPORT void(*get_rpmalloc_thread_initialize())()
+{
+    return rpmalloc_thread_initialize;
+}
+#endif
 
 
 enum { BulkSize = TargetFrameSize / QueueItemSize };
@@ -193,6 +748,8 @@ Profiler::Profiler()
     , m_mainThread( GetThreadHandle() )
     , m_epoch( std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count() )
     , m_shutdown( false )
+    , m_shutdownManual( false )
+    , m_shutdownFinished( false )
     , m_sock( nullptr )
     , m_noExit( false )
     , m_stream( LZ4_createStream() )
@@ -233,6 +790,26 @@ Profiler::Profiler()
     new(s_thread) Thread( LaunchWorker, this );
     SetThreadName( s_thread->Handle(), "Tracy Profiler" );
 
+#ifdef _MSC_VER
+    s_profilerThreadId = GetThreadId( s_thread->Handle() );
+    AddVectoredExceptionHandler( 1, CrashFilter );
+#endif
+
+#ifdef __linux__
+    struct sigaction threadFreezer = {};
+    threadFreezer.sa_handler = ThreadFreezer;
+    sigaction( SIGPWR, &threadFreezer, nullptr );
+
+    struct sigaction crashHandler = {};
+    crashHandler.sa_sigaction = CrashHandler;
+    crashHandler.sa_flags = SA_SIGINFO;
+    sigaction( SIGILL, &crashHandler, nullptr );
+    sigaction( SIGFPE, &crashHandler, nullptr );
+    sigaction( SIGSEGV, &crashHandler, nullptr );
+    sigaction( SIGPIPE, &crashHandler, nullptr );
+    sigaction( SIGBUS, &crashHandler, nullptr );
+#endif
+
 #ifdef TRACY_HAS_CALLSTACK
     InitCallstack();
 #endif
@@ -268,10 +845,17 @@ bool Profiler::ShouldExit()
 
 void Profiler::Worker()
 {
+#ifdef __linux__
+    s_profilerTid = syscall( SYS_gettid );
+#endif
+
     rpmalloc_thread_initialize();
 
     const auto procname = GetProcessName();
     const auto pnsz = std::min<size_t>( strlen( procname ), WelcomeMessageProgramNameSize - 1 );
+
+    const auto hostinfo = GetHostInfo();
+    const auto hisz = std::min<size_t>( strlen( hostinfo ), WelcomeMessageHostInfoSize - 1 );
 
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
@@ -291,6 +875,8 @@ void Profiler::Worker()
     MemWrite( &welcome.onDemand, onDemand );
     memcpy( welcome.programName, procname, pnsz );
     memset( welcome.programName + pnsz, 0, WelcomeMessageProgramNameSize - pnsz );
+    memcpy( welcome.hostInfo, hostinfo, hisz );
+    memset( welcome.hostInfo + hisz, 0, WelcomeMessageHostInfoSize - hisz );
 
     moodycamel::ConsumerToken token( s_queue );
 
@@ -302,7 +888,11 @@ void Profiler::Worker()
         for(;;)
         {
 #ifndef TRACY_NO_EXIT
-            if( !m_noExit && ShouldExit() ) return;
+            if( !m_noExit && ShouldExit() )
+            {
+                m_shutdownFinished.store( true, std::memory_order_relaxed );
+                return;
+            }
 #endif
             m_sock = listen.Accept();
             if( m_sock ) break;
@@ -401,7 +991,11 @@ void Profiler::Worker()
 
     QueueItem terminate;
     MemWrite( &terminate.hdr.type, QueueType::Terminate );
-    if( !SendData( (const char*)&terminate, 1 ) ) return;
+    if( !SendData( (const char*)&terminate, 1 ) )
+    {
+        m_shutdownFinished.store( true, std::memory_order_relaxed );
+        return;
+    }
     for(;;)
     {
         if( m_sock->HasData() )
@@ -411,6 +1005,7 @@ void Profiler::Worker()
                 if( !HandleServerQuery() )
                 {
                     if( m_bufferOffset != m_bufferStart ) CommitData();
+                    m_shutdownFinished.store( true, std::memory_order_relaxed );
                     return;
                 }
             }
@@ -418,7 +1013,11 @@ void Profiler::Worker()
             while( DequeueSerial() == Success ) {}
             if( m_bufferOffset != m_bufferStart )
             {
-                if( !CommitData() ) return;
+                if( !CommitData() )
+                {
+                    m_shutdownFinished.store( true, std::memory_order_relaxed );
+                    return;
+                }
             }
         }
         else
@@ -536,8 +1135,20 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
 Profiler::DequeueStatus Profiler::DequeueSerial()
 {
     {
-        std::lock_guard<TracyMutex> lock( m_serialLock );
+        bool lockHeld = true;
+        while( !m_serialLock.try_lock() )
+        {
+            if( m_shutdownManual.load( std::memory_order_relaxed ) )
+            {
+                lockHeld = false;
+                break;
+            }
+        }
         m_serialQueue.swap( m_serialDequeue );
+        if( lockHeld )
+        {
+            m_serialLock.unlock();
+        }
     }
 
     const auto sz = m_serialDequeue.size();
@@ -610,7 +1221,7 @@ bool Profiler::SendData( const char* data, size_t len )
 
 void Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
 {
-    assert( type == QueueType::StringData || type == QueueType::ThreadName || type == QueueType::CustomStringData || type == QueueType::PlotName );
+    assert( type == QueueType::StringData || type == QueueType::ThreadName || type == QueueType::CustomStringData || type == QueueType::PlotName || type == QueueType::FrameName );
 
     QueueItem item;
     MemWrite( &item.hdr.type, type );
@@ -629,7 +1240,7 @@ void Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
 
 void Profiler::SendSourceLocation( uint64_t ptr )
 {
-    auto srcloc = (const SourceLocation*)ptr;
+    auto srcloc = (const SourceLocationData*)ptr;
     QueueItem item;
     MemWrite( &item.hdr.type, QueueType::SourceLocation );
     MemWrite( &item.srcloc.name, (uint64_t)srcloc->name );
@@ -679,7 +1290,7 @@ void Profiler::SendCallstackPayload( uint64_t _ptr )
     AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::CallstackPayload] );
     AppendDataUnsafe( &l16, sizeof( l16 ) );
 
-    if( sizeof( uintptr_t ) == sizeof( uint64_t ) )
+    if( compile_time_condition<sizeof( uintptr_t ) == sizeof( uint64_t )>::value )
     {
         AppendDataUnsafe( ptr, sizeof( uint64_t ) * sz );
     }
@@ -756,6 +1367,9 @@ bool Profiler::HandleServerQuery()
     case ServerQueryCallstackFrame:
         SendCallstackFrame( ptr );
         break;
+    case ServerQueryFrameName:
+        SendString( ptr, (const char*)ptr, QueueType::FrameName );
+        break;
     default:
         assert( false );
         break;
@@ -797,7 +1411,7 @@ void Profiler::CalibrateTimer()
 class FakeZone
 {
 public:
-    FakeZone( const SourceLocation* srcloc ) : m_id( (uint64_t)srcloc ) {}
+    FakeZone( const SourceLocationData* srcloc ) : m_id( (uint64_t)srcloc ) {}
     ~FakeZone() {}
 
 private:
@@ -814,7 +1428,7 @@ void Profiler::CalibrateDelay()
     moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptoken = s_queue.get_explicit_producer( ptoken_detail );
     for( int i=0; i<Iterations; i++ )
     {
-        static const tracy::SourceLocation __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
+        static const tracy::SourceLocationData __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
         {
             Magic magic;
             auto& tail = ptoken->get_tail_index();
@@ -850,13 +1464,13 @@ void Profiler::CalibrateDelay()
     const auto f0 = GetTime();
     for( int i=0; i<Iterations; i++ )
     {
-        static const tracy::SourceLocation __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
+        static const tracy::SourceLocationData __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
         FakeZone ___tracy_scoped_zone( &__tracy_source_location );
     }
     const auto t0 = GetTime();
     for( int i=0; i<Iterations; i++ )
     {
-        static const tracy::SourceLocation __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
+        static const tracy::SourceLocationData __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
         {
             Magic magic;
             auto& tail = ptoken->get_tail_index();
@@ -915,6 +1529,43 @@ void Profiler::CalibrateDelay()
         assert( sz > 0 );
         left -= (int)sz;
     }
+}
+
+void Profiler::SendCallstack( int depth, uint64_t thread, const char* skipBefore )
+{
+#ifdef TRACY_HAS_CALLSTACK
+    auto ptr = Callstack( depth );
+    auto data = (uintptr_t*)ptr;
+    const auto sz = *data++;
+    uintptr_t i;
+    for( i=0; i<sz; i++ )
+    {
+        auto frame = DecodeCallstackPtr( uint64_t( data[i] ) );
+        const bool found = strcmp( frame.name, skipBefore ) == 0;
+        tracy_free( (void*)frame.name );
+        tracy_free( (void*)frame.file );
+        if( found )
+        {
+            i++;
+            break;
+        }
+    }
+
+    if( i != sz )
+    {
+        memmove( data, data + i, ( sz - i ) * sizeof( uintptr_t* ) );
+        *--data = sz - i;
+    }
+
+    Magic magic;
+    auto& token = s_token.ptr;
+    auto& tail = token->get_tail_index();
+    auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+    MemWrite( &item->hdr.type, QueueType::Callstack );
+    MemWrite( &item->callstack.ptr, ptr );
+    MemWrite( &item->callstack.thread, thread );
+    tail.store( magic + 1, std::memory_order_release );
+#endif
 }
 
 }

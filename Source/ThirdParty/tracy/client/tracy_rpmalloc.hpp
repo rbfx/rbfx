@@ -13,6 +13,14 @@
 
 #include <stddef.h>
 
+#ifndef DLL_EXPORT
+#ifdef _MSC_VER
+#  define DLL_EXPORT __declspec(dllexport)
+#else
+#  define DLL_EXPORT __attribute__((visibility("default")))
+#endif
+#endif
+
 namespace tracy
 {
 
@@ -121,10 +129,10 @@ rpmalloc_thread_statistics(rpmalloc_thread_statistics_t* stats);
 extern void
 rpmalloc_global_statistics(rpmalloc_global_statistics_t* stats);
 
-extern RPMALLOC_RESTRICT void*
+DLL_EXPORT RPMALLOC_RESTRICT void*
 rpmalloc(size_t size) RPMALLOC_ATTRIBUTE;
 
-extern void
+DLL_EXPORT void
 rpfree(void* ptr);
 
 extern RPMALLOC_RESTRICT void*

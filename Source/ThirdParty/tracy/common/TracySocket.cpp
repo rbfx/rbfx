@@ -12,6 +12,8 @@
 #ifdef _MSC_VER
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
+#  pragma warning(disable:4244)
+#  pragma warning(disable:4267)
 #else
 #  include <sys/socket.h>
 #  include <netdb.h>
@@ -24,6 +26,12 @@
 
 namespace tracy
 {
+
+#ifdef _MSC_VER
+typedef SOCKET socket_t;
+#else
+typedef int socket_t;
+#endif
 
 #ifdef _MSC_VER
 struct __wsinit
@@ -39,10 +47,9 @@ struct __wsinit
     }
 };
 
-static __wsinit InitWinSock()
+void InitWinSock()
 {
     static __wsinit init;
-    return init;
 }
 #endif
 
@@ -86,7 +93,7 @@ bool Socket::Connect( const char* addr, const char* port )
     hints.ai_socktype = SOCK_STREAM;
 
     if( getaddrinfo( addr, port, &hints, &res ) != 0 ) return false;
-    int sock;
+    int sock = 0;
     for( ptr = res; ptr; ptr = ptr->ai_next )
     {
         if( ( sock = socket( ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol ) ) == -1 ) continue;
@@ -174,7 +181,7 @@ int Socket::Recv( void* _buf, int len, const timeval* tv )
 
     fd_set fds;
     FD_ZERO( &fds );
-    FD_SET( m_sock, &fds );
+    FD_SET( static_cast<socket_t>(m_sock), &fds );
 
 #ifndef _WIN32
     timeval _tv = *tv;
@@ -231,7 +238,7 @@ bool Socket::HasData()
 
     fd_set fds;
     FD_ZERO( &fds );
-    FD_SET( m_sock, &fds );
+    FD_SET( static_cast<socket_t>(m_sock), &fds );
 
     return select( m_sock+1, &fds, nullptr, nullptr, &tv ) > 0;
 }
@@ -287,7 +294,7 @@ Socket* ListenSocket::Accept()
 
     fd_set fds;
     FD_ZERO( &fds );
-    FD_SET( m_sock, &fds );
+    FD_SET( static_cast<socket_t>(m_sock), &fds );
 
     select( m_sock+1, &fds, nullptr, nullptr, &tv );
     if( FD_ISSET( m_sock, &fds ) )

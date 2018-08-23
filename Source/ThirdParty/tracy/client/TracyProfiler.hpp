@@ -1,6 +1,7 @@
 #ifndef __TRACYPROFILER_HPP__
 #define __TRACYPROFILER_HPP__
 
+#include <assert.h>
 #include <atomic>
 #include <chrono>
 #include <stdint.h>
@@ -29,12 +30,15 @@
 #  endif
 #endif
 
+#define TracyConcat(x,y) TracyConcatIndirect(x,y)
+#define TracyConcatIndirect(x,y) x##y
+
 namespace tracy
 {
 
 class Socket;
 
-struct SourceLocation
+struct SourceLocationData
 {
     const char* name;
     const char* function;
@@ -77,7 +81,7 @@ extern int64_t (*GetTimeImpl)();
 #endif
 
 class Profiler;
-extern Profiler s_profiler;
+extern Profiler& s_profiler;
 
 class Profiler
 {
@@ -136,6 +140,23 @@ public:
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::FrameMarkMsg );
         MemWrite( &item->frameMark.time, GetTime() );
+        MemWrite( &item->frameMark.name, uint64_t( 0 ) );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
+    static tracy_force_inline void SendFrameMark( const char* name, QueueType type )
+    {
+        assert( type == QueueType::FrameMarkMsg || type == QueueType::FrameMarkMsgStart || type == QueueType::FrameMarkMsgEnd );
+#ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#endif
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, type );
+        MemWrite( &item->frameMark.time, GetTime() );
+        MemWrite( &item->frameMark.name, uint64_t( name ) );
         tail.store( magic + 1, std::memory_order_release );
     }
 
@@ -304,6 +325,8 @@ public:
 #endif
     }
 
+    void SendCallstack( int depth, uint64_t thread, const char* skipBefore );
+
     static bool ShouldExit();
 
 #ifdef TRACY_ON_DEMAND
@@ -320,6 +343,9 @@ public:
         m_deferredLock.unlock();
     }
 #endif
+
+    void RequestShutdown() { m_shutdown.store( true, std::memory_order_relaxed ); m_shutdownManual.store( true, std::memory_order_relaxed ); }
+    bool HasShutdownFinished() const { return m_shutdownFinished.load( std::memory_order_relaxed ); }
 
 private:
     enum DequeueStatus { Success, ConnectionLost, QueueEmpty };
@@ -355,9 +381,10 @@ private:
     static tracy_force_inline void SendCallstackMemory( void* ptr )
     {
 #ifdef TRACY_HAS_CALLSTACK
-        auto item = s_profiler.m_serialQueue.push_next();
+        auto item = s_profiler.m_serialQueue.prepare_next();
         MemWrite( &item->hdr.type, QueueType::CallstackMemory );
         MemWrite( &item->callstackMemory.ptr, (uint64_t)ptr );
+        s_profiler.m_serialQueue.commit_next();
 #endif
     }
 
@@ -365,12 +392,12 @@ private:
     {
         assert( type == QueueType::MemAlloc || type == QueueType::MemAllocCallstack );
 
-        auto item = s_profiler.m_serialQueue.push_next();
+        auto item = s_profiler.m_serialQueue.prepare_next();
         MemWrite( &item->hdr.type, type );
         MemWrite( &item->memAlloc.time, GetTime() );
         MemWrite( &item->memAlloc.thread, thread );
         MemWrite( &item->memAlloc.ptr, (uint64_t)ptr );
-        if( sizeof( size ) == 4 )
+        if( compile_time_condition<sizeof( size ) == 4>::value )
         {
             memcpy( &item->memAlloc.size, &size, 4 );
             memset( &item->memAlloc.size + 4, 0, 2 );
@@ -380,17 +407,19 @@ private:
             assert( sizeof( size ) == 8 );
             memcpy( &item->memAlloc.size, &size, 6 );
         }
+        s_profiler.m_serialQueue.commit_next();
     }
 
     static tracy_force_inline void SendMemFree( QueueType type, const uint64_t thread, const void* ptr )
     {
         assert( type == QueueType::MemFree || type == QueueType::MemFreeCallstack );
 
-        auto item = s_profiler.m_serialQueue.push_next();
+        auto item = s_profiler.m_serialQueue.prepare_next();
         MemWrite( &item->hdr.type, type );
         MemWrite( &item->memFree.time, GetTime() );
         MemWrite( &item->memFree.thread, thread );
         MemWrite( &item->memFree.ptr, (uint64_t)ptr );
+        s_profiler.m_serialQueue.commit_next();
     }
 
     double m_timerMul;
@@ -400,6 +429,8 @@ private:
     uint64_t m_mainThread;
     uint64_t m_epoch;
     std::atomic<bool> m_shutdown;
+    std::atomic<bool> m_shutdownManual;
+    std::atomic<bool> m_shutdownFinished;
     Socket* m_sock;
     bool m_noExit;
 

@@ -16,10 +16,14 @@ enum class QueueType : uint8_t
     Callstack,
     Terminate,
     KeepAlive,
+    Crash,
+    CrashReport,
     ZoneBegin,
     ZoneBeginCallstack,
     ZoneEnd,
     FrameMarkMsg,
+    FrameMarkMsgStart,
+    FrameMarkMsgEnd,
     SourceLocation,
     LockAnnounce,
     LockWait,
@@ -47,6 +51,7 @@ enum class QueueType : uint8_t
     PlotName,
     SourceLocationPayload,
     CallstackPayload,
+    FrameName,
     NUM_TYPES
 };
 
@@ -75,6 +80,7 @@ struct QueueStringTransfer
 struct QueueFrameMark
 {
     int64_t time;
+    uint64_t name;      // ptr
 };
 
 struct QueueSourceLocation
@@ -230,6 +236,13 @@ struct QueueCallstackFrame
     uint32_t line;
 };
 
+struct QueueCrashReport
+{
+    int64_t time;
+    uint64_t thread;
+    uint64_t text;      // ptr
+};
+
 struct QueueHeader
 {
     union
@@ -266,6 +279,7 @@ struct QueueItem
         QueueCallstackMemory callstackMemory;
         QueueCallstack callstack;
         QueueCallstackFrame callstackFrame;
+        QueueCrashReport crashReport;
     };
 };
 
@@ -283,10 +297,14 @@ static const size_t QueueDataSize[] = {
     // above items must be first
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive
+    sizeof( QueueHeader ),                                  // crash
+    sizeof( QueueHeader ) + sizeof( QueueCrashReport ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // callstack
     sizeof( QueueHeader ) + sizeof( QueueZoneEnd ),
-    sizeof( QueueHeader ) + sizeof( QueueFrameMark ),
+    sizeof( QueueHeader ) + sizeof( QueueFrameMark ),       // continuous frames
+    sizeof( QueueHeader ) + sizeof( QueueFrameMark ),       // start
+    sizeof( QueueHeader ) + sizeof( QueueFrameMark ),       // end
     sizeof( QueueHeader ) + sizeof( QueueSourceLocation ),
     sizeof( QueueHeader ) + sizeof( QueueLockAnnounce ),
     sizeof( QueueHeader ) + sizeof( QueueLockWait ),
@@ -315,6 +333,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // plot name
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // allocated source location payload
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // callstack payload
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // frame name
 };
 
 static_assert( QueueItemSize == 32, "Queue item size not 32 bytes" );

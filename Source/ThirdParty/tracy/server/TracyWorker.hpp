@@ -17,6 +17,7 @@
 #include "tracy_flat_hash_map.hpp"
 #include "TracyEvent.hpp"
 #include "TracySlab.hpp"
+#include "TracyStringDiscovery.hpp"
 #include "TracyVarArray.hpp"
 
 namespace tracy
@@ -45,8 +46,31 @@ struct UnsupportedVersion : public std::exception
     int version;
 };
 
+struct LoadProgress
+{
+    enum Stage
+    {
+        Initialization,
+        Locks,
+        Messages,
+        Zones,
+        GpuZones,
+        Plots,
+        Memory,
+        CallStacks
+    };
+
+    LoadProgress() : total( 0 ), progress( 0 ), subTotal( 0 ), subProgress( 0 ) {}
+
+    std::atomic<uint64_t> total;
+    std::atomic<uint64_t> progress;
+    std::atomic<uint64_t> subTotal;
+    std::atomic<uint64_t> subProgress;
+};
+
 class Worker
 {
+public:
 #pragma pack( 1 )
     struct ZoneThreadData
     {
@@ -55,6 +79,7 @@ class Worker
     };
 #pragma pack()
 
+private:
     struct SourceLocationZones
     {
         SourceLocationZones()
@@ -76,10 +101,11 @@ class Worker
         DataBlock() : zonesCnt( 0 ), lastTime( 0 ), frameOffset( 0 ), threadLast( std::numeric_limits<uint64_t>::max(), 0 ) {}
 
         TracyMutex lock;
-        Vector<int64_t> frames;
+        StringDiscovery<FrameData*> frames;
+        FrameData* framesBase;
         Vector<GpuCtxData*> gpuData;
         Vector<MessageData*> messages;
-        Vector<PlotData*> plots;
+        StringDiscovery<PlotData*> plots;
         Vector<ThreadData*> threads;
         MemData memory;
         uint64_t zonesCnt;
@@ -98,6 +124,8 @@ class Worker
 #ifndef TRACY_NO_STATISTICS
         flat_hash_map<int32_t, SourceLocationZones, nohash<int32_t>> sourceLocationZones;
         bool sourceLocationZonesReady;
+#else
+        flat_hash_map<int32_t, uint64_t> sourceLocationZonesCnt;
 #endif
 
         flat_hash_map<VarArray<uint64_t>*, uint32_t, VarArrayHasherPOT<uint64_t>, VarArrayComparator<uint64_t>> callstackMap;
@@ -109,6 +137,11 @@ class Worker
         flat_hash_map<uint64_t, uint16_t, nohash<uint64_t>> threadMap;
         Vector<uint64_t> threadExpand;
         std::pair<uint64_t, uint16_t> threadLast;
+
+        std::vector<Vector<ZoneEvent*>> m_zoneChildren;
+        std::vector<Vector<GpuEvent*>> m_gpuChildren;
+
+        CrashEvent m_crashEvent;
     };
 
     struct MbpsBlock
@@ -123,7 +156,8 @@ class Worker
     enum class NextCallstackType
     {
         Zone,
-        Gpu
+        Gpu,
+        Crash
     };
 
     struct NextCallstack
@@ -143,36 +177,47 @@ public:
 
     const std::string& GetAddr() const { return m_addr; }
     const std::string& GetCaptureName() const { return m_captureName; }
+    const std::string& GetHostInfo() const { return m_hostInfo; }
     int64_t GetDelay() const { return m_delay; }
     int64_t GetResolution() const { return m_resolution; }
 
     TracyMutex& GetDataLock() { return m_data.lock; }
-    size_t GetFrameCount() const { return m_data.frames.size(); }
+    size_t GetFrameCount( const FrameData& fd ) const { return fd.frames.size(); }
+    int64_t GetTimeBegin() const { return GetFrameBegin( *m_data.framesBase, 0 ); }
     int64_t GetLastTime() const { return m_data.lastTime; }
     uint64_t GetZoneCount() const { return m_data.zonesCnt; }
+    uint64_t GetLockCount() const;
+    uint64_t GetPlotCount() const;
+    uint64_t GetSrcLocCount() const { return m_data.sourceLocationPayload.size() + m_data.sourceLocation.size(); }
+    uint64_t GetCallstackPayloadCount() const { return m_data.callstackPayload.size() - 1; }
+    uint64_t GetCallstackFrameCount() const { return m_data.callstackFrameMap.size(); }
     uint64_t GetFrameOffset() const { return m_data.frameOffset; }
+    const FrameData* GetFramesBase() const { return m_data.framesBase; }
+    const Vector<FrameData*>& GetFrames() const { return m_data.frames.Data(); }
 
-    int64_t GetFrameTime( size_t idx ) const;
-    int64_t GetFrameBegin( size_t idx ) const;
-    int64_t GetFrameEnd( size_t idx ) const;
-    std::pair <int, int> GetFrameRange( int64_t from, int64_t to );
+    int64_t GetFrameTime( const FrameData& fd, size_t idx ) const;
+    int64_t GetFrameBegin( const FrameData& fd, size_t idx ) const;
+    int64_t GetFrameEnd( const FrameData& fd, size_t idx ) const;
+    std::pair <int, int> GetFrameRange( const FrameData& fd, int64_t from, int64_t to );
 
     const std::map<uint32_t, LockMap>& GetLockMap() const { return m_data.lockMap; }
     const Vector<MessageData*>& GetMessages() const { return m_data.messages; }
     const Vector<GpuCtxData*>& GetGpuData() const { return m_data.gpuData; }
-    const Vector<PlotData*>& GetPlots() const { return m_data.plots; }
+    const Vector<PlotData*>& GetPlots() const { return m_data.plots.Data(); }
     const Vector<ThreadData*>& GetThreadData() const { return m_data.threads; }
     const MemData& GetMemData() const { return m_data.memory; }
 
     const VarArray<uint64_t>& GetCallstack( uint32_t idx ) const { return *m_data.callstackPayload[idx]; }
     const CallstackFrame* GetCallstackFrame( uint64_t ptr ) const;
 
+    const CrashEvent& GetCrashEvent() const { return m_data.m_crashEvent; }
+
     // Some zones may have incomplete timing data (only start time is available, end hasn't arrived yet).
     // GetZoneEnd() will try to infer the end time by looking at child zones (parent zone can't end
     //     before its children have ended).
     // GetZoneEndDirect() will only return zone's direct timing data, without looking at children.
-    static int64_t GetZoneEnd( const ZoneEvent& ev );
-    static int64_t GetZoneEnd( const GpuEvent& ev );
+    int64_t GetZoneEnd( const ZoneEvent& ev );
+    int64_t GetZoneEnd( const GpuEvent& ev );
     static tracy_force_inline int64_t GetZoneEndDirect( const ZoneEvent& ev ) { return ev.end >= 0 ? ev.end : ev.start; }
     static tracy_force_inline int64_t GetZoneEndDirect( const GpuEvent& ev ) { return ev.gpuEnd >= 0 ? ev.gpuEnd : ev.gpuStart; }
 
@@ -186,6 +231,9 @@ public:
     const char* GetZoneName( const ZoneEvent& ev, const SourceLocation& srcloc ) const;
     const char* GetZoneName( const GpuEvent& ev ) const;
     const char* GetZoneName( const GpuEvent& ev, const SourceLocation& srcloc ) const;
+
+    tracy_force_inline const Vector<ZoneEvent*>& GetZoneChildren( int32_t idx ) const { return m_data.m_zoneChildren[idx]; }
+    tracy_force_inline const Vector<GpuEvent*>& GetGpuChildren( int32_t idx ) const { return m_data.m_gpuChildren[idx]; }
 
     std::vector<int32_t> GetMatchingSourceLocation( const char* query ) const;
 
@@ -212,6 +260,9 @@ public:
     void Shutdown() { m_shutdown.store( true, std::memory_order_relaxed ); }
 
     void Write( FileWrite& f );
+    int GetTraceVersion() const { return m_traceVersion; }
+
+    static const LoadProgress& GetLoadProgress() { return s_loadProgress; }
 
 private:
     void Exec();
@@ -224,6 +275,8 @@ private:
     tracy_force_inline void ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneEnd( const QueueZoneEnd& ev );
     tracy_force_inline void ProcessFrameMark( const QueueFrameMark& ev );
+    tracy_force_inline void ProcessFrameMarkStart( const QueueFrameMark& ev );
+    tracy_force_inline void ProcessFrameMarkEnd( const QueueFrameMark& ev );
     tracy_force_inline void ProcessZoneText( const QueueZoneText& ev );
     tracy_force_inline void ProcessZoneName( const QueueZoneText& ev );
     tracy_force_inline void ProcessLockAnnounce( const QueueLockAnnounce& ev );
@@ -249,6 +302,7 @@ private:
     tracy_force_inline void ProcessCallstackMemory( const QueueCallstackMemory& ev );
     tracy_force_inline void ProcessCallstack( const QueueCallstack& ev );
     tracy_force_inline void ProcessCallstackFrame( const QueueCallstackFrame& ev );
+    tracy_force_inline void ProcessCrashReport( const QueueCrashReport& ev );
 
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );
     tracy_force_inline void ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev );
@@ -285,6 +339,7 @@ private:
 
     void InsertPlot( PlotData* plot, int64_t time, double val );
     void HandlePlotName( uint64_t name, char* str, size_t sz );
+    void HandleFrameName( uint64_t name, char* str, size_t sz );
 
     void HandlePostponedPlots();
 
@@ -292,10 +347,10 @@ private:
     uint16_t CompressThreadReal( uint64_t thread );
     uint16_t CompressThreadNew( uint64_t thread );
 
-    tracy_force_inline void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread );
-    tracy_force_inline void ReadTimelinePre033( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, int fileVer );
-    tracy_force_inline void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec );
-    tracy_force_inline void ReadTimelinePre032( FileRead& f, Vector<GpuEvent*>& vec );
+    tracy_force_inline void ReadTimeline( FileRead& f, ZoneEvent* zone, uint16_t thread );
+    tracy_force_inline void ReadTimelinePre033( FileRead& f, ZoneEvent* zone, uint16_t thread, int fileVer );
+    tracy_force_inline void ReadTimeline( FileRead& f, GpuEvent* zone );
+    tracy_force_inline void ReadTimelinePre032( FileRead& f, GpuEvent* zone );
 
     tracy_force_inline void ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread );
 
@@ -324,7 +379,9 @@ private:
     int64_t m_resolution;
     double m_timerMul;
     std::string m_captureName;
+    std::string m_hostInfo;
     bool m_terminate;
+    bool m_crashed;
     LZ4_streamDecode_t* m_stream;
     char* m_buffer;
     int m_bufferOffset;
@@ -332,10 +389,7 @@ private:
 
     GpuCtxData* m_gpuCtxMap[256];
     flat_hash_map<uint64_t, StringLocation, nohash<uint64_t>> m_pendingCustomStrings;
-    flat_hash_map<uint64_t, PlotData*, nohash<uint64_t>> m_pendingPlots;
     flat_hash_map<uint64_t, uint32_t> m_pendingCallstacks;
-    flat_hash_map<uint64_t, PlotData*, nohash<uint64_t>> m_plotMap;
-    flat_hash_map<const char*, PlotData*, charutil::HasherPOT, charutil::Comparator> m_plotRev;
     flat_hash_map<uint64_t, int32_t, nohash<uint64_t>> m_pendingSourceLocationPayload;
     Vector<uint64_t> m_sourceLocationQueue;
     flat_hash_map<uint64_t, uint32_t, nohash<uint64_t>> m_sourceLocationShrink;
@@ -354,6 +408,10 @@ private:
 
     DataBlock m_data;
     MbpsBlock m_mbpsData;
+
+    int m_traceVersion;
+
+    static LoadProgress s_loadProgress;
 };
 
 }
