@@ -19,14 +19,14 @@
 #pragma once
 
 #if _WIN32
-#   if _EXPORTS
+#   if BOX2D_EXPORTS || Urho3D_EXPORTS
 #       define BOX2D_API __declspec(dllexport)
-#   elif _IMPORTS
+#   elif BOX2D_IMPORTS
 #       define BOX2D_API __declspec(dllimport)
 #	else
 #		define BOX2D_API
 #   endif
-#elif _EXPORTS || _IMPORTS
+#elif BOX2D_EXPORTS || BOX2D_IMPORTS
 #   define BOX2D_API __attribute__((visibility("default")))
 #else
 #   define BOX2D_API

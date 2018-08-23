@@ -27,7 +27,7 @@
 
 #ifndef CIVETWEB_API
 #if defined(_WIN32)
-#if defined(CIVETWEB_DLL_EXPORTS)
+#if defined(CIVETWEB_DLL_EXPORTS) || defined(Urho3D_EXPORTS)
 #define CIVETWEB_API __declspec(dllexport)
 #elif defined(CIVETWEB_DLL_IMPORTS)
 #define CIVETWEB_API __declspec(dllimport)

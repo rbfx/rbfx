@@ -23,7 +23,7 @@
 file (GLOB_RECURSE SOURCE_FILES *.c)
 add_library (GLEW STATIC ${SOURCE_FILES})
 target_compile_definitions(GLEW PUBLIC -DGLEW_NO_GLU)
-if (URHO3D_THIRDPARTY_SHARED_LIBS)
+if (BUILD_SHARED_LIBS)
     target_compile_definitions(GLEW PRIVATE -DGLEW_BUILD)
 else ()
     target_compile_definitions(GLEW PUBLIC  -DGLEW_STATIC)
@@ -36,9 +36,3 @@ target_include_directories(GLEW
 if (WIN32)
     target_link_libraries(GLEW opengl32.lib)
 endif ()
-
-install (TARGETS GLEW EXPORT Urho3D
-    LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
-    RUNTIME DESTINATION ${DEST_BIN_DIR}
-    ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
-)

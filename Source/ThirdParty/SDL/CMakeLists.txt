@@ -1486,7 +1486,7 @@ file (GLOB_RECURSE H_FILES include/*.h)     # Adding the headers into source fil
 list (APPEND SOURCE_FILES ${H_FILES})
 
 # Setup target as STATIC library (as the result we never use EXTRA_LDFLAGS linker flags)
-add_library (SDL ${THIRDPARTY_LIB_TYPE} ${SOURCE_FILES})
+add_library (SDL STATIC ${SOURCE_FILES})
 
 # General includes
 # Urho3D - use 'generated' path suffix for generated config header file, the suffic prevents overwriting the header file with the same name in the source tree in case of non out-of-source build tree is being used
@@ -1495,7 +1495,7 @@ target_include_directories (SDL
            $<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include/SDL>
            $<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>
 )
-if (URHO3D_THIRDPARTY_SHARED_LIBS)
+if (BUILD_SHARED_LIBS)
   target_compile_definitions(SDL PUBLIC -DSDL_EXPORTS)
 endif ()
 if (WIN32)
@@ -1513,10 +1513,5 @@ elseif (APPLE)
 endif ()
 
 # Install headers for building and using the Urho3D library (install dependency for InputEvents.h)
-install (TARGETS SDL EXPORT Urho3D
-    LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
-    RUNTIME DESTINATION ${DEST_BIN_DIR}
-    ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
-)
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)    # Note: the trailing slash is significant
 install (FILES ${SDL2_BINARY_DIR}/include/SDL/generated/SDL_config.h DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/SDL)

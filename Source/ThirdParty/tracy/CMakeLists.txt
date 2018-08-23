@@ -24,30 +24,26 @@ set (CMAKE_CXX_STANDARD 14)
 
 file (GLOB_RECURSE COMMON_SOURCE_FILES common/*.cpp common/*.hpp common/*.h)
 file (GLOB_RECURSE CLIENT_SOURCE_FILES client/*.cpp client/*.hpp client/*.h)
-file (GLOB_RECURSE SERVER_SOURCE_FILES server/*.cpp server/*.hpp server/*.h)
+file (GLOB_RECURSE SERVER_SOURCE_FILES server/*.cpp server/*.hpp server/*.h imguicolortextedit/*.cpp imguicolortextedit/*.h)
 
+list (REMOVE_ITEM COMMON_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/common/TracySystem.cpp)
 set (TRACY_OPTIONS 
     PRIVATE -DNOMINMAX=1 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -DWIN32_LEAN_AND_MEAN -DNOMINMAX -D_USE_MATH_DEFINES 
     PUBLIC -DTRACY_ENABLE=1
 )
 
-add_library (tracy-lib STATIC ${CLIENT_SOURCE_FILES} ${COMMON_SOURCE_FILES})
-target_link_libraries(tracy-lib LZ4)
-target_compile_definitions(tracy-lib ${TRACY_OPTIONS})
-if (WIN32)
-    target_compile_definitions(tracy-lib PUBLIC -DNOMINMAX=1)
+if (BUILD_SHARED_LIBS)
+    add_library (tracy-lib STATIC TracyClientDLL.cpp)
+    target_compile_definitions (tracy-lib PUBLIC ${TRACY_OPTIONS})
+    target_link_libraries (tracy-lib PRIVATE Urho3D)
 endif ()
-target_include_directories(tracy-lib
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    PRIVATE include/tracy
-)
 
 if (URHO3D_TOOLS AND URHO3D_SYSTEMUI)
     add_executable (tracy-profiler WIN32 ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES}
         standalone/src/main.cpp standalone/src/imgui_impl_sdl.cpp)
-    target_link_libraries(tracy-profiler Urho3D nativefiledialog)
-    target_compile_definitions(tracy-profiler PUBLIC -DTRACY_FILESELECTOR=1)
+
+    target_link_libraries(tracy-profiler Urho3D IconFontCppHeaders)
+    target_compile_definitions(tracy-profiler PUBLIC -DTRACY_FILESELECTOR=1 -DTRACY_EXTENDED_FONT=1)
     set_target_properties(tracy-profiler PROPERTIES OUTPUT_NAME Profiler)
     if (APPLE)
         target_link_libraries(tracy-profiler pthread dl "-framework OpenGl")
@@ -58,6 +54,9 @@ if (URHO3D_TOOLS AND URHO3D_SYSTEMUI)
         target_compile_definitions(tracy-profiler ${TRACY_OPTIONS})
         if (MSVC)
             target_compile_options(tracy-profiler PRIVATE /permissive-)
+            if (MSVC AND BUILD_SHARED_LIBS)
+                set_property(TARGET tracy-profiler APPEND_STRING PROPERTY LINK_FLAGS " /WHOLEARCHIVE:tracy-lib")
+            endif ()
         endif ()
     endif ()
 endif ()
@@ -66,5 +65,5 @@ install (TARGETS tracy-lib EXPORT Urho3D
     LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
     RUNTIME DESTINATION ${DEST_BIN_DIR}
     ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
-    )
+)
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)

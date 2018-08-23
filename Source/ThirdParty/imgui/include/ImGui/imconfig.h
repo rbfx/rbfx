@@ -11,14 +11,14 @@
 
 //---- Define attributes of all API symbols declarations, e.g. for DLL under Windows.
 #if _WIN32
-#   if _EXPORTS
+#   if IMGUI_EXPORTS || Urho3D_EXPORTS
 #       define IMGUI_API __declspec(dllexport)
-#   elif _IMPORTS
+#   elif IMGUI_IMPORTS
 #       define IMGUI_API __declspec(dllimport)
 #	else
 #		define IMGUI_API
 #   endif
-#elif _EXPORTS || _IMPORTS
+#elif IMGUI_EXPORTS || IMGUI_IMPORTS
 #   define IMGUI_API __attribute__((visibility("default")))
 #else
 #   define IMGUI_API

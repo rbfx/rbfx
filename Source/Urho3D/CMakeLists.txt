@@ -117,7 +117,7 @@ endforeach()
 if (MINI_URHO)
     target_compile_definitions(Urho3D PUBLIC -DMINI_URHO)
 endif ()
-target_compile_definitions(Urho3D PRIVATE -DURHO3D_IS_BUILDING)
+target_compile_definitions(Urho3D PRIVATE -DURHO3D_IS_BUILDING PUBLIC -DNOMINMAX)
 
 # Set platform definitions
 foreach(def LINUX ANDROID IOS APPLE MACOS MOBILE DESKTOP)
@@ -153,19 +153,35 @@ set (THIRD_PARTY_DEPENDENCIES
     Box2D 
     WebP 
     Bullet 
-    tracy-lib 
     imgui 
     LibCpuId 
     GLEW 
     MojoShader 
     fcontext 
     cr 
-    yaml-cpp 
-    )
+    yaml-cpp
+    nativefiledialog
+)
 
 foreach (dep ${THIRD_PARTY_DEPENDENCIES})
     if (TARGET "${dep}")
-        target_link_libraries(Urho3D ${dep})
+        target_link_libraries(Urho3D PRIVATE ${dep})
+        get_target_property(_TARGET_TYPE ${dep} TYPE)
+        if (MSVC AND ${_TARGET_TYPE} STREQUAL "STATIC_LIBRARY")
+            set_property(TARGET Urho3D APPEND_STRING PROPERTY LINK_FLAGS " /WHOLEARCHIVE:${dep}")
+        endif ()
+        get_target_property(VALUE ${dep} INTERFACE_COMPILE_DEFINITIONS)
+        if (VALUE)
+            target_compile_definitions(Urho3D PUBLIC ${VALUE})
+        endif ()
+        get_target_property(VALUE ${dep} INTERFACE_COMPILE_OPTIONS)
+        if (VALUE)
+            target_compile_options(Urho3D PUBLIC ${VALUE})
+        endif ()
+        get_target_property(VALUE ${dep} INTERFACE_INCLUDE_DIRECTORIES)
+        if (VALUE)
+            target_include_directories(Urho3D PUBLIC ${VALUE})
+        endif ()
     endif ()
 endforeach()
 
@@ -183,14 +199,14 @@ endif ()
 
 if (WIN32)
     if (URHO3D_MINIDUMPS)
-        target_link_libraries (Urho3D dbghelp)
+        target_link_libraries (Urho3D PUBLIC dbghelp)
     endif ()
-    target_link_libraries (Urho3D rpcrt4)
+    target_link_libraries (Urho3D PUBLIC rpcrt4)
 else ()
     if (ANDROID)
-        target_link_libraries (Urho3D dl log android)
+        target_link_libraries (Urho3D PUBLIC dl log android)
     elseif (DESKTOP)
-        target_link_libraries (Urho3D dl m rt pthread uuid)
+        target_link_libraries (Urho3D PUBLIC dl m rt pthread uuid)
     endif ()
 endif ()
 
@@ -199,16 +215,21 @@ if (GNU OR Clang)
     target_compile_options(Urho3D PUBLIC -Wno-invalid-offsetof)
 endif ()
 
+if (URHO3D_PROFILING)
+    target_compile_options(Urho3D PUBLIC -DTRACY_ENABLE=1)
+    target_link_libraries(Urho3D INTERFACE tracy-lib)
+endif ()
+
 # Graphics
 if (URHO3D_OPENGL)
     if (APPLE)
         # Do nothing
     elseif (WIN32)
-        target_link_libraries (Urho3D opengl32)
+        target_link_libraries (Urho3D PUBLIC opengl32)
     elseif (ANDROID OR ARM)
-        target_link_libraries (Urho3D GLESv1_CM GLESv2)
+        target_link_libraries (Urho3D PUBLIC GLESv1_CM GLESv2)
     else ()
-        target_link_libraries (Urho3D GL)
+        target_link_libraries (Urho3D PUBLIC GL)
     endif ()
 else ()
     if (URHO3D_D3D9)
@@ -216,11 +237,11 @@ else ()
     else ()
         find_package(DirectX REQUIRED D3D11)
     endif ()
-    target_link_libraries (Urho3D ${DIRECT3D_LIBRARIES})
+    target_link_libraries (Urho3D PUBLIC ${DIRECT3D_LIBRARIES})
 endif ()
 
 if (BUILD_SHARED_LIBS OR EMSCRIPTEN)
-    target_compile_definitions(Urho3D PRIVATE -DURHO3D_EXPORTS)
+    target_compile_definitions(Urho3D PRIVATE -DURHO3D_EXPORTS INTERFACE -DURHO3D_IMPORTS)
 else ()
     target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC)
 endif ()
@@ -230,7 +251,7 @@ if (URHO3D_CSHARP)
     if (URHO3D_WITH_MONO)
         find_package(Mono REQUIRED)
         target_include_directories(Urho3D PRIVATE ${MONO_INCLUDE_DIRS})
-        target_link_libraries(Urho3D ${MONO_LIBRARIES})
+        target_link_libraries(Urho3D PUBLIC ${MONO_LIBRARIES})
         target_compile_options(Urho3D PRIVATE ${MONO_CFLAGS})
         if (MSVC)
             set (MONO_RUNTIME_SHARED ${MONO_PATH}/bin/mono-2.0-sgen.dll)

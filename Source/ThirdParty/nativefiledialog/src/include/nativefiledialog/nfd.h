@@ -11,7 +11,7 @@
 #define _NFD_H
 
 #if _WIN32
-#   if _EXPORTS
+#   if NFD_EXPORTS || Urho3D_EXPORTS
 #       define NFD_API __declspec(dllexport)
 #   elif _IMPORTS
 #       define NFD_API __declspec(dllimport)
