@@ -89,7 +89,7 @@ endif ()
 
 # Enable features user has chosen
 foreach(FEATURE in ${URHO3D_FEATURES})
-    set (URHO3D_${FEATURE}_DEFAULT ON)
+    set (URHO3D_${FEATURE} ON CACHE BOOL "" FORCE)
 endforeach()
 
 macro (_option NAME DESCRIPTION)
