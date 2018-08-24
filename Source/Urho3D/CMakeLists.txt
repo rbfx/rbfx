@@ -268,6 +268,9 @@ endif ()
 
 if (URHO3D_PROFILING)
     target_compile_options(Urho3D PUBLIC -DTRACY_ENABLE=1)
+    if (TARGET tracy-lib)
+        target_link_libraries(Urho3D INTERFACE tracy-lib)
+    endif ()
 endif ()
 
 # Graphics

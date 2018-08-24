@@ -33,9 +33,14 @@ set (TRACY_OPTIONS
 )
 
 if (BUILD_SHARED_LIBS)
-    add_library (tracy-lib STATIC TracyClientDLL.cpp)
-    target_compile_definitions (tracy-lib PUBLIC ${TRACY_OPTIONS})
-    target_link_libraries (tracy-lib PRIVATE Urho3D)
+    if (WIN32)
+        # A workaround library. Usually each dll or executable that wishes to use profiling functionality would have to compile
+        # TracyClientDLL.cpp as part of it's sources. Putting it into a static library allows us automating the process and it is
+        # now enough to only link to Urho3D target.
+        add_library (tracy-lib STATIC TracyClientDLL.cpp)
+        target_compile_definitions (tracy-lib PUBLIC ${TRACY_OPTIONS})
+        target_link_libraries (tracy-lib PRIVATE Urho3D)
+    endif ()
 else ()
     list (REMOVE_ITEM COMMON_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/common/TracySocket.cpp)
 endif ()
@@ -56,7 +61,7 @@ if (URHO3D_TOOLS AND URHO3D_SYSTEMUI)
         target_compile_definitions(tracy-profiler ${TRACY_OPTIONS})
         if (MSVC)
             target_compile_options(tracy-profiler PRIVATE /permissive-)
-            if (MSVC AND BUILD_SHARED_LIBS)
+            if (TARGET tracy-lib)
                 set_property(TARGET tracy-profiler APPEND_STRING PROPERTY LINK_FLAGS " /WHOLEARCHIVE:tracy-lib")
             endif ()
         endif ()
@@ -68,7 +73,7 @@ if (URHO3D_TOOLS AND URHO3D_SYSTEMUI)
     )
 endif ()
 
-if (BUILD_SHARED_LIBS)
+if (TARGET tracy-lib)
     install (TARGETS tracy-lib EXPORT Urho3D
         LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
         RUNTIME DESTINATION ${DEST_BIN_DIR}
