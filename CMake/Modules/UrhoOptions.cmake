@@ -132,6 +132,7 @@ _option(URHO3D_PACKAGING "Package resources")
 _option(URHO3D_FILEWATCHER "Watch filesystem for resource changes")
 _option(URHO3D_TASKS "Enable coroutine subsystem")
 _option(URHO3D_CSHARP "Enable C# support")
+set (URHO3D_CSHARP OFF) # Disabled until swig branch is merged
 if (MSVC)
     _option(URHO3D_MINIDUMPS "Enable writing minidumps on crash")
 else ()
