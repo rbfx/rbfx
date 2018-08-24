@@ -163,6 +163,10 @@ set (THIRD_PARTY_DEPENDENCIES
     nativefiledialog
 )
 
+if (BUILD_SHARED_LIBS AND NOT MSVC)
+    target_link_libraries(Urho3D PRIVATE -Wl,--whole-archive)
+endif ()
+
 foreach (dep ${THIRD_PARTY_DEPENDENCIES})
     if (TARGET "${dep}")
         # By linking them as private but inheriting definitions/options/dirs we avoid having
@@ -192,6 +196,10 @@ foreach (dep ${THIRD_PARTY_DEPENDENCIES})
         endif ()
     endif ()
 endforeach()
+
+if (BUILD_SHARED_LIBS AND NOT MSVC)
+    target_link_libraries(Urho3D PRIVATE -Wl,--no-whole-archive)
+endif ()
 
 if (NOT BUILD_SHARED_LIBS)
     # Merge static libraries of third party dependencies to final engine static library

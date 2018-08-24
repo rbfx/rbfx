@@ -26,7 +26,7 @@ endif ()
 
 file (GLOB_RECURSE SOURCE_FILES *.cpp *.h *.hpp)
 add_library (Toolbox ${SOURCE_FILES})
-target_link_libraries (Toolbox Urho3D)
+target_link_libraries (Toolbox PUBLIC Urho3D)
 target_compile_definitions(Toolbox PRIVATE -DURHO3D_TOOLBOX_EXPORTS=1)
 if (NOT BUILD_SHARED_LIBS)
     target_compile_definitions(Toolbox PUBLIC -DURHO3D_TOOLBOX_STATIC=1)

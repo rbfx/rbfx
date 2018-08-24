@@ -9,7 +9,7 @@
 #include <map>
 #include <regex>
 
-#include "../imgui/imgui.h"
+#include "ImGui/imgui.h"
 
 namespace tracy
 {

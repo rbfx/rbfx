@@ -225,7 +225,7 @@ macro (csharp_bind_target)
     if (URHO3D_WITH_MONO)
         find_package(Mono REQUIRED)
         target_include_directories(${CSHARP_LIBRARY_NAME} PRIVATE ${MONO_INCLUDE_DIRS})
-        target_link_libraries(${CSHARP_LIBRARY_NAME} ${MONO_LIBRARIES})
+        target_link_libraries(${CSHARP_LIBRARY_NAME} PUBLIC ${MONO_LIBRARIES})
         target_compile_options(${CSHARP_LIBRARY_NAME} PRIVATE ${MONO_CFLAGS})
     endif ()
 
