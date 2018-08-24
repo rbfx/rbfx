@@ -163,7 +163,7 @@ set (THIRD_PARTY_DEPENDENCIES
     nativefiledialog
 )
 
-if (BUILD_SHARED_LIBS AND NOT MSVC)
+if (BUILD_SHARED_LIBS AND NOT MSVC AND NOT APPLE)
     target_link_libraries(Urho3D PRIVATE -Wl,--whole-archive)
 endif ()
 
@@ -172,8 +172,12 @@ foreach (dep ${THIRD_PARTY_DEPENDENCIES})
         # By linking them as private but inheriting definitions/options/dirs we avoid having
         # to export third party lib targets in a monolithic dll build.
         get_target_property(_TARGET_TYPE ${dep} TYPE)
-        if (BUILD_SHARED_LIBS AND MSVC AND ${_TARGET_TYPE} STREQUAL "STATIC_LIBRARY")
-            set_property(TARGET Urho3D APPEND_STRING PROPERTY LINK_FLAGS " /WHOLEARCHIVE:${dep}")
+        if (BUILD_SHARED_LIBS AND ${_TARGET_TYPE} STREQUAL "STATIC_LIBRARY")
+            if (MSVC)
+                set_property(TARGET Urho3D APPEND_STRING PROPERTY LINK_FLAGS " /WHOLEARCHIVE:${dep}")
+            elseif (APPLE)
+                set_property(TARGET Urho3D APPEND PROPERTY LINK_LIBRARIES -force_load ${dep})
+            endif ()
         endif ()
         get_target_property(VALUE ${dep} INTERFACE_COMPILE_DEFINITIONS)
         if (VALUE)
@@ -205,7 +209,7 @@ foreach (dep ${THIRD_PARTY_DEPENDENCIES})
     endif ()
 endforeach()
 
-if (BUILD_SHARED_LIBS AND NOT MSVC)
+if (BUILD_SHARED_LIBS AND NOT MSVC AND NOT APPLE)
     target_link_libraries(Urho3D PRIVATE -Wl,--no-whole-archive)
 endif ()
 
