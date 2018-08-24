@@ -209,7 +209,30 @@ if (NOT BUILD_SHARED_LIBS)
         add_custom_command (TARGET Urho3D PRE_LINK
             COMMAND ${CMAKE_COMMAND} -E remove "$<TARGET_FILE:Urho3D>")
         add_custom_command (TARGET Urho3D POST_BUILD
-            COMMAND lib.exe "/OUT:$<TARGET_FILE:Urho3D>" "$<TARGET_FILE:Urho3D>" ${DEPENDENCY_TARGET_FILES})
+            COMMAND lib.exe "/OUT:$<TARGET_FILE:Urho3D>" "$<TARGET_FILE:Urho3D>" ${DEPENDENCY_TARGET_FILES}
+            COMMENT "Merging all archives into a single static library using lib.exe")
+    elseif (APPLE)
+        # Apple libtool takes archives directly as input
+        add_custom_command (TARGET Urho3D POST_BUILD
+            COMMAND mv $<TARGET_FILE:Urho3D>{,.engine}
+            COMMAND libtool -static $<TARGET_FILE:Urho3D>.engine ${DEPENDENCY_TARGET_FILES} -o $<TARGET_FILE:Urho3D>
+            COMMAND rm $<TARGET_FILE:Urho3D>.engine
+            COMMENT "Merging all archives into a single static library using libtool")
+    else ()
+        # GCC ar does not take archives directly as input like Apple libtool, however, it can be scripted to do so
+        add_custom_command (TARGET Urho3D POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E rename $<TARGET_FILE:Urho3D> $<TARGET_FILE:Urho3D>.engine
+            COMMAND echo CREATE $<TARGET_FILE:Urho3D> >script.ar
+            COMMAND echo ADDLIB $<TARGET_FILE:Urho3D>.engine >>script.ar)
+        foreach (ARCHIVE ${DEPENDENCY_TARGET_FILES})
+            add_custom_command (TARGET Urho3D POST_BUILD COMMAND echo ADDLIB ${ARCHIVE} >>script.ar)
+        endforeach ()
+        add_custom_command (TARGET Urho3D POST_BUILD
+            COMMAND echo SAVE >>script.ar
+            COMMAND echo END >>script.ar
+            COMMAND ${CMAKE_AR} -M <script.ar
+            COMMAND ${CMAKE_COMMAND} -E remove $<TARGET_FILE:Urho3D>.engine script.ar
+            COMMENT "Merging all archives into a single static library using ar")
     endif ()
 endif ()
 
