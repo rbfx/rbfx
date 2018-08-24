@@ -165,9 +165,10 @@ set (THIRD_PARTY_DEPENDENCIES
 
 foreach (dep ${THIRD_PARTY_DEPENDENCIES})
     if (TARGET "${dep}")
-        target_link_libraries(Urho3D PRIVATE ${dep})
+        # By linking them as private but inheriting definitions/options/dirs we avoid having
+        # to export third party lib targets in a monolithic dll build.
         get_target_property(_TARGET_TYPE ${dep} TYPE)
-        if (MSVC AND ${_TARGET_TYPE} STREQUAL "STATIC_LIBRARY")
+        if (BUILD_SHARED_LIBS AND MSVC AND ${_TARGET_TYPE} STREQUAL "STATIC_LIBRARY")
             set_property(TARGET Urho3D APPEND_STRING PROPERTY LINK_FLAGS " /WHOLEARCHIVE:${dep}")
         endif ()
         get_target_property(VALUE ${dep} INTERFACE_COMPILE_DEFINITIONS)
@@ -182,8 +183,27 @@ foreach (dep ${THIRD_PARTY_DEPENDENCIES})
         if (VALUE)
             target_include_directories(Urho3D PUBLIC ${VALUE})
         endif ()
+        if (BUILD_SHARED_LIBS)
+            target_link_libraries(Urho3D PRIVATE ${dep})
+        else ()
+            if (${_TARGET_TYPE} STREQUAL "STATIC_LIBRARY")
+                list (APPEND DEPENDENCY_TARGET_FILES $<TARGET_FILE:${dep}>)
+            endif ()
+        endif ()
     endif ()
 endforeach()
+
+if (NOT BUILD_SHARED_LIBS)
+    # Merge static libraries of third party dependencies to final engine static library
+    if (MSVC)
+        # If merged library is not deleted in this step then sometimes build system will try to merge dependencies
+        # to already merged library inflating it further.
+        add_custom_command (TARGET Urho3D PRE_LINK
+            COMMAND ${CMAKE_COMMAND} -E remove "$<TARGET_FILE:Urho3D>")
+        add_custom_command (TARGET Urho3D POST_BUILD
+            COMMAND lib.exe "/OUT:$<TARGET_FILE:Urho3D>" "$<TARGET_FILE:Urho3D>" ${DEPENDENCY_TARGET_FILES})
+    endif ()
+endif ()
 
 if (URHO3D_SSE AND NOT MSVC)
     target_compile_options (Urho3D PUBLIC -msse -msse2)
@@ -201,7 +221,7 @@ if (WIN32)
     if (URHO3D_MINIDUMPS)
         target_link_libraries (Urho3D PUBLIC dbghelp)
     endif ()
-    target_link_libraries (Urho3D PUBLIC rpcrt4)
+    target_link_libraries (Urho3D PUBLIC rpcrt4 gdi32 winmm imm32 ole32 oleaut32 version uuid)
 else ()
     if (ANDROID)
         target_link_libraries (Urho3D PUBLIC dl log android)
@@ -217,7 +237,6 @@ endif ()
 
 if (URHO3D_PROFILING)
     target_compile_options(Urho3D PUBLIC -DTRACY_ENABLE=1)
-    target_link_libraries(Urho3D INTERFACE tracy-lib)
 endif ()
 
 # Graphics

@@ -66,10 +66,12 @@ if (WIN32)
 endif ()
 
 # Install headers for building and using the Urho3D library (install dependency for Urho3D/Network/Connection.h and Urho3D/Network/Network.h)
-install (TARGETS kNet EXPORT Urho3D
-    LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
-    RUNTIME DESTINATION ${DEST_BIN_DIR}
-    ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
-)
+if (BUILD_SHARED_LIBS)
+    install (TARGETS kNet EXPORT Urho3D
+        LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
+        RUNTIME DESTINATION ${DEST_BIN_DIR}
+        ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
+    )
+endif ()
 install (DIRECTORY include/kNet DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
 install (DIRECTORY include/kNet DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.inl)

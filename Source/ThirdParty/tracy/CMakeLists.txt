@@ -36,6 +36,8 @@ if (BUILD_SHARED_LIBS)
     add_library (tracy-lib STATIC TracyClientDLL.cpp)
     target_compile_definitions (tracy-lib PUBLIC ${TRACY_OPTIONS})
     target_link_libraries (tracy-lib PRIVATE Urho3D)
+else ()
+    list (REMOVE_ITEM COMMON_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/common/TracySocket.cpp)
 endif ()
 
 if (URHO3D_TOOLS AND URHO3D_SYSTEMUI)
@@ -59,11 +61,18 @@ if (URHO3D_TOOLS AND URHO3D_SYSTEMUI)
             endif ()
         endif ()
     endif ()
+    install (TARGETS tracy-profiler
+        LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
+        RUNTIME DESTINATION ${DEST_BIN_DIR}
+        ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
+    )
 endif ()
 
-install (TARGETS tracy-lib EXPORT Urho3D
-    LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
-    RUNTIME DESTINATION ${DEST_BIN_DIR}
-    ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
-)
+if (BUILD_SHARED_LIBS)
+    install (TARGETS tracy-lib EXPORT Urho3D
+        LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
+        RUNTIME DESTINATION ${DEST_BIN_DIR}
+        ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
+    )
+endif ()
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
