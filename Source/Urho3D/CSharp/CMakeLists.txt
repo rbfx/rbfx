@@ -20,6 +20,7 @@
 # THE SOFTWARE.
 #
 
+include (AddFileDependencies)
 
 # Pre-generate part of swig interface
 find_program(PYTHON python3.6 NAMES python3.7)
@@ -27,12 +28,12 @@ if (NOT PYTHON)
     message(FATAL_ERROR "Python not found")
 endif ()
 
-set_source_files_properties(Swig/Urho3D.i PROPERTIES
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/_constants.i
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/_events.i
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/_enums.i
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/_refcounted.i
-    )
+ADD_FILE_DEPENDENCIES(Swig/Urho3D.i
+    ${CMAKE_CURRENT_BINARY_DIR}/_constants.i
+    ${CMAKE_CURRENT_BINARY_DIR}/_events.i
+    ${CMAKE_CURRENT_BINARY_DIR}/_enums.i
+    ${CMAKE_CURRENT_BINARY_DIR}/_refcounted.i
+)
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/_constants.i
     ${CMAKE_CURRENT_BINARY_DIR}/_events.i
