@@ -133,32 +133,32 @@ if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/librevision.h)
 endif ()
 
 # Link dependencies
-set (THIRD_PARTY_DEPENDENCIES 
+set (THIRD_PARTY_DEPENDENCIES
     FreeType
-    JO 
-    LZ4 
-    PugiXml 
-    rapidjson 
-    SDL 
-    StanHull 
-    STB 
-    IconFontCppHeaders 
-    Civetweb 
-    kNet 
-    ik 
-    Detour 
-    DetourCrowd 
-    DetourTileCache 
-    Recast 
-    Box2D 
-    WebP 
-    Bullet 
-    imgui 
-    LibCpuId 
-    GLEW 
-    MojoShader 
-    fcontext 
-    cr 
+    JO
+    LZ4
+    PugiXml
+    rapidjson
+    SDL
+    StanHull
+    STB
+    IconFontCppHeaders
+    Civetweb
+    kNet
+    ik
+    Detour
+    DetourCrowd
+    DetourTileCache
+    Recast
+    Box2D
+    WebP
+    Bullet
+    imgui
+    LibCpuId
+    GLEW
+    MojoShader
+    fcontext
+    cr
     yaml-cpp
     nativefiledialog
 )
@@ -218,17 +218,15 @@ if (NOT BUILD_SHARED_LIBS)
     if (MSVC)
         # If merged library is not deleted in this step then sometimes build system will try to merge dependencies
         # to already merged library inflating it further.
-        add_custom_command (TARGET Urho3D PRE_LINK
-            COMMAND ${CMAKE_COMMAND} -E remove "$<TARGET_FILE:Urho3D>")
         add_custom_command (TARGET Urho3D POST_BUILD
-            COMMAND lib.exe "/OUT:$<TARGET_FILE:Urho3D>" "$<TARGET_FILE:Urho3D>" ${DEPENDENCY_TARGET_FILES}
+            COMMAND lib.exe /OUT:$<TARGET_FILE:Urho3D>.engine $<TARGET_FILE:Urho3D> ${DEPENDENCY_TARGET_FILES}
+            COMMAND ${CMAKE_COMMAND} -E rename $<TARGET_FILE:Urho3D>.engine $<TARGET_FILE:Urho3D>
             COMMENT "Merging all archives into a single static library using lib.exe")
     elseif (APPLE)
         # Apple libtool takes archives directly as input
         add_custom_command (TARGET Urho3D POST_BUILD
-            COMMAND mv $<TARGET_FILE:Urho3D>{,.engine}
-            COMMAND libtool -static $<TARGET_FILE:Urho3D>.engine ${DEPENDENCY_TARGET_FILES} -o $<TARGET_FILE:Urho3D>
-            COMMAND rm $<TARGET_FILE:Urho3D>.engine
+            COMMAND libtool -static $<TARGET_FILE:Urho3D> ${DEPENDENCY_TARGET_FILES} -o $<TARGET_FILE:Urho3D>.engine
+            COMMAND ${CMAKE_COMMAND} -E rename $<TARGET_FILE:Urho3D>.engine $<TARGET_FILE:Urho3D>
             COMMENT "Merging all archives into a single static library using libtool")
     else ()
         # GCC ar does not take archives directly as input like Apple libtool, however, it can be scripted to do so
