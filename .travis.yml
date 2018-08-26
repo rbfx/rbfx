@@ -100,31 +100,26 @@ install: |
       fi
       export PATH=$HOME/cmake-$CMAKE_VERSION.$CMAKE_PATCH-Linux-x86_64/bin:$PATH
       sudo apt-get install -y --force-yes mono-devel
+      # fix for pyclang, otherwise it can not find this lib
       sudo ln -s /usr/lib/x86_64-linux-gnu/libclang-6.0.so.1 /usr/lib/x86_64-linux-gnu/libclang.so
       PYTHON3=python3.6
+      SWIG_DIST=https://github.com/rokups/Urho3D/files/2321716/swig-linux64.zip
   else
-      brew install mono bison
+      brew install mono
       brew upgrade python
       PYTHON3=python3
+      SWIG_DIST=https://github.com/rokups/Urho3D/files/2321529/swig-dist-macos64.zip
   fi
+
+  # swig
+  wget $SWIG_DIST -O swig.zip>/dev/null
+  sudo unzip swig.zip -d /usr
+  swig -swiglib
+
   # pyclang
   wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py
   sudo $PYTHON3 get-pip.py
   sudo $PYTHON3 -m pip install clang
-
-  # swig
-  wget https://github.com/rokups/swig/archive/Urho3D.zip>/dev/null
-  unzip Urho3D.zip>/dev/null
-  cd swig-Urho3D
-  ./autogen.sh
-  if [[ $TRAVIS_OS_NAME == 'linux' ]];
-      ./configure --prefix=/usr
-  else
-      ./configure --prefix=/usr/local
-  fi
-  make -j$(nproc --all)
-  sudo make install -j$(nproc --all)
-  cd ..
 script: |
   mkdir build
   cd build
