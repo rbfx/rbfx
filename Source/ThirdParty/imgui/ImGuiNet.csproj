@@ -9,6 +9,5 @@
   <ItemGroup>
     <ProjectReference Include="../../Urho3D/CSharp/Urho3DNet.csproj" />
   </ItemGroup>
-  <Import Project="$(SolutionDir)/../MSBuild.props" Condition="'$(OS)' != 'Unix'" />
-  <Import Project="$(SolutionDir)/MSBuild.props" Condition="'$(OS)' == 'Unix'" />
+  <Import Project="../../../MSBuild.props" />
 </Project>
