@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>Urho3DNet</AssemblyName>
+    <AssemblyName>ImGuiNet</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>netcoreapp2.1;net471</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(BuildDir)/Source/Urho3D/CSharp/*.cs" />
+    <Compile Include="$(BuildDir)/Source/ThirdParty/imgui/*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
+    <ProjectReference Include="../../Urho3D/CSharp/Urho3DNet.csproj" />
   </ItemGroup>
   <Import Project="$(SolutionDir)/../MSBuild.props" Condition="'$(OS)' != 'Unix'" />
   <Import Project="$(SolutionDir)/MSBuild.props" Condition="'$(OS)' == 'Unix'" />

@@ -20,29 +20,27 @@
 # THE SOFTWARE.
 #
 
-include (AddFileDependencies)
-
 # Pre-generate part of swig interface
 find_program(PYTHON python3.6 NAMES python3.7)
 if (NOT PYTHON)
     message(FATAL_ERROR "Python not found")
 endif ()
 
-ADD_FILE_DEPENDENCIES(Swig/Urho3D.i
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/_constants.i
+           ${CMAKE_CURRENT_BINARY_DIR}/_events.i
+           ${CMAKE_CURRENT_BINARY_DIR}/_enums.i
+           ${CMAKE_CURRENT_BINARY_DIR}/_refcounted.i
+    COMMAND ${PYTHON} "${Urho3D_SOURCE_DIR}/Source/Tools/AutoSwig/autoswig.py" "${CMAKE_CURRENT_BINARY_DIR}/generator_options.txt"
+    COMMENT Generating rest of swig interface
+)
+
+set (SWIG_MODULE_Urho3DCSharp_EXTRA_DEPS
     ${CMAKE_CURRENT_BINARY_DIR}/_constants.i
     ${CMAKE_CURRENT_BINARY_DIR}/_events.i
     ${CMAKE_CURRENT_BINARY_DIR}/_enums.i
     ${CMAKE_CURRENT_BINARY_DIR}/_refcounted.i
 )
-add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/_constants.i
-    ${CMAKE_CURRENT_BINARY_DIR}/_events.i
-    ${CMAKE_CURRENT_BINARY_DIR}/_enums.i
-    ${CMAKE_CURRENT_BINARY_DIR}/_refcounted.i
-    COMMAND ${PYTHON} "${Urho3D_SOURCE_DIR}/Source/Tools/AutoSwig/autoswig.py" "${CMAKE_CURRENT_BINARY_DIR}/generator_options.txt"
-    COMMENT Generating rest of swig interface
-)
-
 csharp_bind_target(TARGET Urho3D)
 
 ## Target for manually refreshing binding code

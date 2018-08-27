@@ -302,9 +302,13 @@ macro (add_target_csharp TARGET PROJECT_FILE)
             set (CSHARP_PLATFORM x86)
         endif ()
 
-        add_custom_target(${TARGET} COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${PROJECT_FILE} ${ARGN}
-            /p:BuildDir="${CMAKE_BINARY_DIR}"
-            /p:Configuration=${CSHARP_BUILD_TYPE} /p:Platform=${CSHARP_PLATFORM} /consoleloggerparameters:ErrorsOnly)
+        set (MSBUILD_COMMON_PARAMETERS /p:BuildDir="${CMAKE_BINARY_DIR}/" /p:SolutionDir="${Urho3D_SOURCE_DIR}/"
+                                       /p:Configuration=${CSHARP_BUILD_TYPE} /p:Platform=${CSHARP_PLATFORM}
+                                       /consoleloggerparameters:ErrorsOnly)
+        add_custom_target(${TARGET}
+            COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${PROJECT_FILE} /t:restore ${MSBUILD_COMMON_PARAMETERS}
+            COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${PROJECT_FILE} ${ARGN} ${MSBUILD_COMMON_PARAMETERS}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
         set_target_properties(${TARGET} PROPERTIES EXCLUDE_FROM_ALL OFF)
     endif ()
 endmacro ()
@@ -416,8 +420,8 @@ macro (csharp_bind_target)
         # Needed for mono on unixes but not on windows.
         set (FACADES Facades/)
     endif ()
-    if (EXISTS "${BIND_MANAGED_TARGET}.csproj")
-        add_target_csharp(${BIND_MANAGED_TARGET} ${BIND_MANAGED_TARGET}.csproj)
+    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${BIND_MANAGED_TARGET}.csproj")
+        add_target_csharp(${BIND_MANAGED_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/${BIND_MANAGED_TARGET}.csproj)
         add_dependencies(${BIND_MANAGED_TARGET} ${CSHARP_LIBRARY_NAME})
         install (FILES ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll DESTINATION ${DEST_LIBRARY_DIR})
     endif ()
