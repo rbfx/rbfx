@@ -8,7 +8,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "102_CSharpProject", "Source
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ThirdParty", "ThirdParty", "{428D38C3-5A21-481C-AB0D-748526134790}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImGui", "Source\ThirdParty\imgui\ImGui.csproj", "{4BAE31E0-8CCC-49E2-8A1A-B7ED655C95BB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImGuiNet", "Source\ThirdParty\imgui\ImGuiNet.csproj", "{4BAE31E0-8CCC-49E2-8A1A-B7ED655C95BB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

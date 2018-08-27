@@ -6,7 +6,7 @@
     <TargetFrameworks>netcoreapp2.1;net471</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\ThirdParty\imgui\ImGui.csproj" />
+    <ProjectReference Include="..\..\ThirdParty\imgui\ImGuiNet.csproj" />
     <ProjectReference Include="..\..\Urho3D\CSharp\Urho3DNet.csproj" />
   </ItemGroup>
   <Import Project="$(SolutionDir)\..\MSBuild.props" Condition="'$(OS)' != 'Unix'" />
