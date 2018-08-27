@@ -271,7 +271,7 @@ if (URHO3D_CSHARP)
         set (TERM_WORKAROUND env TERM=xterm)
     endif ()
     execute_process(COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${Urho3D_SOURCE_DIR}/Urho3D.part.sln /t:restore
-        /p:RestoreConfigFile="${Urho3D_SOURCE_DIR}/nuget.config")
+        /p:RestoreConfigFile="${Urho3D_SOURCE_DIR}/nuget.config" /p:BuildDir="${CMAKE_BINARY_DIR}/")
 endif()
 
 macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)
