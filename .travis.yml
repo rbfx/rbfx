@@ -115,7 +115,7 @@ install: |
       wget $SWIG_DIST -O swig.zip>/dev/null
       sudo unzip swig.zip -d /usr
   else
-      brew install mono
+      brew install mono llvn@6.0.1
       brew upgrade python
       PYTHON3=python3
       # swig

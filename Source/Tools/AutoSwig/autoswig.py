@@ -119,12 +119,8 @@ def read_raw_code(node):
 
 
 class DefineConstantsPass(AstPass):
-    ignore = [
-        'Urho3D::M_MIN_INT',
-        'Urho3D::M_MAX_INT',
-        'Urho3D::M_MIN_UNSIGNED',
-        'Urho3D::M_MAX_UNSIGNED',
-    ]
+    outputs = ['_constants.i']
+
     def on_begin(self):
         self.fp = open(os.path.join(self.module.args.output, '_constants.i'), 'w+')
 
@@ -146,7 +142,7 @@ class DefineConstantsPass(AstPass):
             return False
         if node.kind == CursorKind.VAR_DECL:
             fqn = get_fully_qualified_name(node)
-            if fqn.startswith('Urho3D::IsFlagSet') or fqn.startswith('Urho3D::FlagSet') or fqn in self.ignore:
+            if fqn.startswith('Urho3D::IsFlagSet') or fqn.startswith('Urho3D::FlagSet'):
                 return False
 
             if node.type.spelling in ('const Urho3D::String', 'const char*'):
@@ -196,6 +192,7 @@ class DefineConstantsPass(AstPass):
 
 
 class DefineRefCountedPass(AstPass):
+    outputs = ['_refcounted.i']
     parent_classes = {}
 
     def on_end(self):
@@ -239,6 +236,7 @@ class DefineRefCountedPass(AstPass):
 
 
 class DefinePropertiesPass(AstPass):
+    outputs = ['_properties.i']
     renames = {
         'Urho3D::Variant': {
             'GetType': 'GetVariantType'
@@ -406,6 +404,8 @@ class FindFlagEnums(AstPass):
 
 
 class CleanEnumValues(AstPass):
+    outputs = ['_enums.i']
+
     def on_begin(self):
         self.fp = open(os.path.join(self.module.args.output, '_enums.i'), 'w+')
 
@@ -438,6 +438,7 @@ class CleanEnumValues(AstPass):
 
 
 class DefineEventsPass(AstPass):
+    outputs = ['_events.i']
     re_param_name = re.compile(r'URHO3D_PARAM\(([^,]+),\s*([a-z0-9_]+)\);\s*', re.IGNORECASE)
 
     def on_begin(self):
@@ -482,6 +483,19 @@ class DefineEventsPass(AstPass):
         return True
 
 
+def find_program(name, paths=None):
+    if paths is None:
+        paths = []
+    if isinstance(name, str):
+        name = [name]
+    paths = paths + os.environ['PATH'].split(os.pathsep)
+    for path in paths:
+        for n in name:
+            full_path = os.path.join(path, n)
+            if os.path.isfile(full_path):
+                return full_path
+
+
 class Urho3DModule(Module):
     exclude_headers = [
         r'/Urho3D/Precompiled.h',
@@ -494,10 +508,13 @@ class Urho3DModule(Module):
         super().__init__(args)
         self.name = 'Urho3D'
         self.compiler_parameters += ['-std=c++11']
+        llvm_config = find_program('llvm-config', ['/usr/local/Cellar/llvm/6.0.1'])
         self.compiler_parameters += \
-            filter(lambda s: len(s), subprocess.check_output(['llvm-config', '--cppflags']).decode().strip().split(' '))
+            filter(lambda s: len(s), subprocess.check_output([llvm_config, '--cppflags']).decode().strip().split(' '))
+        if sys.platform == 'linux':
+            self.include_directories += ['/usr/lib/clang/6.0.1/include']
+
         self.include_directories += [
-            '/usr/lib/clang/6.0.1/include',
             os.path.dirname(self.args.input),
             os.path.join(os.path.dirname(self.args.input), 'ThirdParty')
         ]
