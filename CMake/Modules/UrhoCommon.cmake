@@ -305,6 +305,11 @@ macro (add_target_csharp TARGET PROJECT_FILE)
         set (MSBUILD_COMMON_PARAMETERS /p:BuildDir="${CMAKE_BINARY_DIR}/" /p:SolutionDir="${Urho3D_SOURCE_DIR}/"
                                        /p:Configuration=${CSHARP_BUILD_TYPE} /p:Platform=${CSHARP_PLATFORM}
                                        /consoleloggerparameters:ErrorsOnly)
+
+        if (URHO3D_WITH_MONO)
+            set (MSBUILD_COMMON_PARAMETERS ${MSBUILD_COMMON_PARAMETERS} /p:TargetFrameworks=net471)
+        endif ()
+
         add_custom_target(${TARGET}
             COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${PROJECT_FILE} /t:restore ${MSBUILD_COMMON_PARAMETERS}
             COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${PROJECT_FILE} ${ARGN} ${MSBUILD_COMMON_PARAMETERS}

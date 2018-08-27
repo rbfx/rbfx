@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AssemblyName>Urho3DNet</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>netcoreapp2.1;net471</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(BuildDir)/Source/Urho3D/CSharp/*.cs" />

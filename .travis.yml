@@ -11,6 +11,7 @@ env:
     - URHO3D_ENABLE_ALL=ON
     - CMAKE_VERSION=3.4
     - CMAKE_PATCH=3
+    - URHO3D_WITH_MONO=ON
 addons:
   apt:
     sources:
