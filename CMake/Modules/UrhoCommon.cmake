@@ -357,7 +357,6 @@ macro (csharp_bind_target)
     # Swig
     set(CMAKE_SWIG_FLAGS
         -namespace ${BIND_MANAGED_TARGET}
-        -debug-tmsearch
         -fastdispatch
         -I${CMAKE_CURRENT_BINARY_DIR}
         ${GENERATOR_OPTIONS}
