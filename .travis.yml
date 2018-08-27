@@ -56,15 +56,20 @@ matrix:
       os: osx
       osx_image: xcode8.3
       compiler: clang
+      env:
+        - SWIG_EXECUTABLE=/tmp/bin/swig
+        - SWIG_DIR=/tmp/share/swig/4.0.0
     - <<: *MacOS
       env:
+        - SWIG_EXECUTABLE=/tmp/bin/swig
+        - SWIG_DIR=/tmp/share/swig/4.0.0
         - BUILD_SHARED_LIBS=ON
   exclude:
     - &MingW
       env:
-        CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake
-        CMAKE_SYSTEM_PROCESSOR=x86_64
-        URHO3D_RENDERER=D3D9
+        - CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake
+        - CMAKE_SYSTEM_PROCESSOR=x86_64
+        - URHO3D_RENDERER=D3D9
       addons:
         apt:
           packages:
@@ -73,10 +78,10 @@ matrix:
             - binutils-mingw-w64-x86-64
     - <<: *MingW
       env:
-        BUILD_SHARED_LIBS=ON
-        CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake
-        CMAKE_SYSTEM_PROCESSOR=x86_64
-        URHO3D_RENDERER=D3D9
+        - BUILD_SHARED_LIBS=ON
+        - CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake
+        - CMAKE_SYSTEM_PROCESSOR=x86_64
+        - URHO3D_RENDERER=D3D9
 
 before_install: |
   eval "${MATRIX_EVAL}"
@@ -103,18 +108,20 @@ install: |
       # fix for pyclang, otherwise it can not find this lib
       sudo ln -s /usr/lib/x86_64-linux-gnu/libclang-6.0.so.1 /usr/lib/x86_64-linux-gnu/libclang.so
       PYTHON3=python3.6
+
+      # swig
       SWIG_DIST=https://github.com/rokups/Urho3D/files/2321716/swig-linux64.zip
+      wget $SWIG_DIST -O swig.zip>/dev/null
+      sudo unzip swig.zip -d /usr
   else
       brew install mono
       brew upgrade python
       PYTHON3=python3
-      SWIG_DIST=https://github.com/rokups/Urho3D/files/2321529/swig-dist-macos64.zip
+      # swig
+      SWIG_DIST=https://github.com/rokups/Urho3D/files/2322958/swig-macos64.zip
+      wget $SWIG_DIST -O swig.zip>/dev/null
+      unzip swig.zip -d /tmp
   fi
-
-  # swig
-  wget $SWIG_DIST -O swig.zip>/dev/null
-  sudo unzip swig.zip -d /usr
-  swig -swiglib
 
   # pyclang
   wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py
