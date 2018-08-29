@@ -9,9 +9,6 @@
     <OutDir Condition="'$(OS)' != 'Unix'">$(BuildDir)/bin/$(Configuration)/</OutDir>
     <OutDir Condition="'$(OS)' == 'Unix'">$(BuildDir)/bin/</OutDir>
     <BaseIntermediateOutputPath>$(BuildDir)obj/$(Configuration)/$(AssemblyName)/</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
-    <OutputPath>$(IntermediateOutputPath)/bin/</OutputPath>
-    <BaseOutputPath>$(OutputPath)</BaseOutputPath>
-    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
+    <OutputPath>$(BuildDir)/bin/</OutputPath>
   </PropertyGroup>
 </Project>
