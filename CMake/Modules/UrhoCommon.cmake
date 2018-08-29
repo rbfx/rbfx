@@ -258,21 +258,38 @@ if (URHO3D_CSHARP)
     if (WIN32)
         find_package(Mono REQUIRED)
         find_program(MSBUILD xbuild.bat PATHS ${MONO_PATH}/bin)
-    elseif (APPLE)
-        find_program(MSBUILD xbuild)
     else ()
         find_program(MSBUILD msbuild)
+        if (NOT MSBUILD)
+            find_program(MSBUILD xbuild)
+        endif ()
     endif ()
     if (NOT MSBUILD)
         message(FATAL_ERROR "MSBuild could not be found.")
     endif ()
-    if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
-        # Workaround for some cases where csc has issues when invoked by CMake.
-        set (TERM_WORKAROUND env TERM=xterm)
+
+    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set (CSHARP_PLATFORM x64)
+    else ()
+        set (CSHARP_PLATFORM x86)
     endif ()
-    execute_process(COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${Urho3D_SOURCE_DIR}/Urho3D.part.sln /t:restore
-        /p:RestoreConfigFile="${Urho3D_SOURCE_DIR}/nuget.config" /p:BuildDir="${CMAKE_BINARY_DIR}/")
+    set (MSBUILD_COMMON_PARAMETERS /p:BuildDir="${CMAKE_BINARY_DIR}/" /p:SolutionDir="${Urho3D_SOURCE_DIR}/"
+        /p:Configuration=$<CONFIG> /p:Platform=${CSHARP_PLATFORM}
+        /consoleloggerparameters:ErrorsOnly)
+    if (URHO3D_WITH_MONO)
+        set (MSBUILD_COMMON_PARAMETERS ${MSBUILD_COMMON_PARAMETERS} /p:TargetFrameworks=net471)
+    endif ()
+
+    add_custom_target(NugetRestore
+        COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${Urho3D_SOURCE_DIR}/Urho3D.part.sln /t:restore
+        /p:RestoreConfigFile="${Urho3D_SOURCE_DIR}/nuget.config" ${MSBUILD_COMMON_PARAMETERS}
+    )
 endif()
+
+if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
+    # Workaround for some cases where csc has issues when invoked by CMake.
+    set (TERM_WORKAROUND env TERM=xterm)
+endif ()
 
 macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)
     get_target_property(values ${TARGET} ${PROPERTY})
@@ -293,31 +310,12 @@ macro (add_target_csharp TARGET PROJECT_FILE)
     if (WIN32 AND NOT URHO3D_WITH_MONO)
         include_external_msproject(${TARGET} ${PROJECT_FILE} TYPE FAE04EC0-301F-11D3-BF4B-00C04F79EFBC CSharpBindings)
     else ()
-        if (${CMAKE_BUILD_TYPE})
-            set (CSHARP_BUILD_TYPE ${CMAKE_BUILD_TYPE})
-        else ()
-            set (CSHARP_BUILD_TYPE $<CONFIG>)
-        endif ()
-
-        if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-            set (CSHARP_PLATFORM x64)
-        else ()
-            set (CSHARP_PLATFORM x86)
-        endif ()
-
-        set (MSBUILD_COMMON_PARAMETERS /p:BuildDir="${CMAKE_BINARY_DIR}/" /p:SolutionDir="${Urho3D_SOURCE_DIR}/"
-                                       /p:Configuration=${CSHARP_BUILD_TYPE} /p:Platform=${CSHARP_PLATFORM}
-                                       /consoleloggerparameters:ErrorsOnly)
-
-        if (URHO3D_WITH_MONO)
-            set (MSBUILD_COMMON_PARAMETERS ${MSBUILD_COMMON_PARAMETERS} /p:TargetFrameworks=net471)
-        endif ()
-
         add_custom_target(${TARGET}
             COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${PROJECT_FILE} ${ARGN} ${MSBUILD_COMMON_PARAMETERS}
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
         set_target_properties(${TARGET} PROPERTIES EXCLUDE_FROM_ALL OFF)
     endif ()
+    add_dependencies(${TARGET} NugetRestore)
 endmacro ()
 
 macro (csharp_bind_target)
