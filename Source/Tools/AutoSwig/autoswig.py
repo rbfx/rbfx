@@ -5,8 +5,9 @@ import re
 import subprocess
 import sys
 from collections import OrderedDict
+from contextlib import suppress
 
-from clang.cindex import CursorKind, AccessSpecifier, TypeKind
+from clang.cindex import Config, CursorKind, AccessSpecifier, TypeKind
 
 from walkcpp.generator import Generator
 from walkcpp.module import Module
@@ -508,11 +509,12 @@ class Urho3DModule(Module):
         super().__init__(args)
         self.name = 'Urho3D'
         self.compiler_parameters += ['-std=c++11']
-        llvm_config = find_program('llvm-config', ['/usr/local/Cellar/llvm/6.0.1'])
+        llvm_config = find_program('llvm-config', ['/usr/local/opt/llvm/bin'])
         self.compiler_parameters += \
             filter(lambda s: len(s), subprocess.check_output([llvm_config, '--cppflags']).decode().strip().split(' '))
         if sys.platform == 'linux':
-            self.include_directories += ['/usr/lib/clang/6.0.1/include']
+            version = subprocess.check_output([llvm_config, '--version']).decode()
+            self.include_directories += [f'/usr/lib/clang/{version}/include']
 
         self.include_directories += [
             os.path.dirname(self.args.input),
@@ -553,6 +555,9 @@ def main():
     else:
         program_args = sys.argv[1:]
     args = bind.parse_args(program_args)
+
+    with suppress(KeyError):
+        Config.library_file = os.environ['URHO3D_LIBCLANG_PATH']
 
     generator = Generator()
     module = Urho3DModule(args)
