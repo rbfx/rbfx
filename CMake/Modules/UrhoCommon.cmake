@@ -128,6 +128,14 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set (GNU ON)
 endif()
 
+if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
+    set (HOST_LINUX 1)
+elseif ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
+    set (HOST_WIN32 1)
+elseif ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Darwin")
+    set (HOST_MACOS 1)
+endif ()
+
 # Macro for setting symbolic link on platform that supports it
 macro (create_symlink SOURCE DESTINATION)
     # Make absolute paths so they work more reliably on cmake-gui
@@ -252,7 +260,33 @@ function(vs_group_subdirectory_targets DIR FOLDER_NAME)
 endfunction()
 
 if (URHO3D_CSHARP)
-    find_package(SWIG REQUIRED)
+    if (NOT SWIG_EXECUTABLE)
+        # Prebuilt files are mainly for windows/CI. If you run linux or macos you should probably build SWIG yourself.
+        # A SWIG distribution built from code at https://github.com/rokups/swig/tree/Urho3D
+        # You may build it yourself and set SWIG_EXECUTABLE in order to not use prebuilt binaries.
+        file(DOWNLOAD https://github.com/rokups/Urho3D/files/2335501/swig-dist.zip ${CMAKE_BINARY_DIR}/swig-dist.zip)
+        execute_process(COMMAND ${CMAKE_COMMAND} -E tar xzf swig-dist.zip WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+        if (HOST_LINUX)
+            set (SWIG_PLATFORM lin64)
+            set (SWIG_SHARE share/swig)
+        elseif (HOST_WIN32)
+            set (SWIG_PLATFORM win64)
+            set (SWIG_SHARE share)
+        elseif (HOST_MACOS)
+            set (SWIG_PLATFORM mac64)
+            set (SWIG_SHARE share/swig)
+        endif ()
+        set (SWIG_EXECUTABLE ${CMAKE_BINARY_DIR}/swig-dist/${SWIG_PLATFORM}/bin/swig${CMAKE_EXECUTABLE_SUFFIX})
+        # Get SWIG version
+        execute_process(COMMAND ${SWIG_EXECUTABLE} -version OUTPUT_VARIABLE SWIG_VERSION)
+        string(REGEX MATCH "SWIG Version ([0-9\\.]+)" SWIG_VERSION ${SWIG_VERSION})
+        string(REPLACE "SWIG Version " "" SWIG_VERSION "${SWIG_VERSION}")
+        string(STRIP "${SWIG_VERSION}" SWIG_VERSION)
+        # Swig library path is embeded into executable. We extracted swig somewhere else other than prefix path so we
+        # must override library path here.
+        set (SWIG_DIR ${CMAKE_BINARY_DIR}/swig-dist/${SWIG_PLATFORM}/${SWIG_SHARE}/${SWIG_VERSION})
+        message(STATUS "Using prebuilt SWIG binaries for ${SWIG_PLATFORM} platform.")
+    endif ()
     include(UrhoSWIG)
 
     if (WIN32)
@@ -269,8 +303,12 @@ if (URHO3D_CSHARP)
         set (CSHARP_PLATFORM x86)
     endif ()
     set (MSBUILD_COMMON_PARAMETERS /p:BuildDir="${CMAKE_BINARY_DIR}/" /p:SolutionDir="${Urho3D_SOURCE_DIR}/"
-        /p:Configuration=$<CONFIG> /p:Platform=${CSHARP_PLATFORM}
-        /consoleloggerparameters:ErrorsOnly)
+        /p:Platform=${CSHARP_PLATFORM} /consoleloggerparameters:ErrorsOnly)
+    if (MSVC)
+        set (MSBUILD_COMMON_PARAMETERS ${MSBUILD_COMMON_PARAMETERS} /p:Configuration=$<CONFIG>)
+    else ()
+        set (MSBUILD_COMMON_PARAMETERS ${MSBUILD_COMMON_PARAMETERS} /p:Configuration=${CMAKE_BUILD_TYPE})
+    endif ()
     if (URHO3D_WITH_MONO)
         set (MSBUILD_COMMON_PARAMETERS ${MSBUILD_COMMON_PARAMETERS} /p:TargetFrameworks=net471)
     endif ()
