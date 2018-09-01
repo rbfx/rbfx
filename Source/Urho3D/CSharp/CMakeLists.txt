@@ -20,25 +20,7 @@
 # THE SOFTWARE.
 #
 
-# Pre-generate part of swig interface
-find_program(PYTHON python3.6 NAMES python3.7)
-if (NOT PYTHON)
-    message(FATAL_ERROR "Python not found")
-endif ()
-
-add_custom_target(Urho3DCSharp-AutoSwig
-    BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/_constants.i
-               ${CMAKE_CURRENT_BINARY_DIR}/_events.i
-               ${CMAKE_CURRENT_BINARY_DIR}/_enums.i
-               ${CMAKE_CURRENT_BINARY_DIR}/_refcounted.i
-    COMMAND ${PYTHON} "${Urho3D_SOURCE_DIR}/Source/Tools/AutoSwig/autoswig.py" "${CMAKE_CURRENT_BINARY_DIR}/generator_options.txt"
-    COMMENT Generating rest of swig interface
-)
-# A hack that kicks off generation of swig interface files early
-add_dependencies(Urho3DCSharp-AutoSwig LZ4)
-
 csharp_bind_target(TARGET Urho3D)
-add_dependencies(Urho3DCSharp Urho3DCSharp-AutoSwig)
 
 ## Target for manually refreshing binding code
 #add_custom_target(CSharpBindings

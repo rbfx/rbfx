@@ -508,13 +508,17 @@ class Urho3DModule(Module):
     def __init__(self, args):
         super().__init__(args)
         self.name = 'Urho3D'
-        self.compiler_parameters += ['-std=c++11']
-        llvm_config = find_program('llvm-config', ['/usr/local/opt/llvm/bin'])
-        self.compiler_parameters += \
-            filter(lambda s: len(s), subprocess.check_output([llvm_config, '--cppflags']).decode().strip().split(' '))
-        if sys.platform == 'linux':
-            version = subprocess.check_output([llvm_config, '--version']).decode()
-            self.include_directories += [f'/usr/lib/clang/{version}/include']
+        if os.name == 'nt':
+            self.compiler_parameters += ['-cc1', '-x', 'c++', '-fms-extensions', '-std=c++14']
+        else:
+            self.compiler_parameters += ['-std=c++11']
+            llvm_config = find_program('llvm-config', ['/usr/local/opt/llvm/bin'])
+            self.compiler_parameters += \
+                filter(lambda s: len(s), subprocess.check_output([llvm_config, '--cppflags']).decode().strip().split(' '))
+
+            if sys.platform == 'linux':
+                version = subprocess.check_output([llvm_config, '--version']).decode()
+                self.include_directories += [f'/usr/lib/clang/{version}/include']
 
         self.include_directories += [
             os.path.dirname(self.args.input),
@@ -556,8 +560,14 @@ def main():
         program_args = sys.argv[1:]
     args = bind.parse_args(program_args)
 
-    with suppress(KeyError):
-        Config.library_file = os.environ['URHO3D_LIBCLANG_PATH']
+    if os.name == 'nt':
+        try:
+            Config.library_file = os.environ['URHO3D_LIBCLANG_PATH']
+        except KeyError:
+            Config.library_file = r'C:\Program Files\LLVM\bin\libclang.dll'
+    else:
+        with suppress(KeyError):
+            Config.library_file = os.environ['URHO3D_LIBCLANG_PATH']
 
     generator = Generator()
     module = Urho3DModule(args)

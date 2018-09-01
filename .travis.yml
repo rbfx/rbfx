@@ -106,14 +106,7 @@ install: |
       fi
       export PATH=$HOME/cmake-$CMAKE_VERSION.$CMAKE_PATCH-Linux-x86_64/bin:$PATH
       sudo apt-get install -y --force-yes mono-devel
-
-      export URHO3D_LIBCLANG_PATH=/usr/lib/x86_64-linux-gnu/libclang-6.0.so.1
-      PYTHON3=python3.6
   else
-      brew install llvm
-      brew upgrade python
-      PYTHON3=python3
-      export URHO3D_LIBCLANG_PATH=/usr/local/opt/llvm/lib/libclang.dylib
       # mono
       if [[ ! -f /tmp/downloads/Mono.pkg ]];
       then
@@ -121,11 +114,6 @@ install: |
       fi
       sudo installer -pkg /tmp/downloads/Mono.pkg -target /
   fi
-
-  # pyclang
-  wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py
-  sudo $PYTHON3 get-pip.py
-  sudo $PYTHON3 -m pip install clang
 script: |
   mkdir build
   cd build

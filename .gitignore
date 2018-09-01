@@ -109,3 +109,4 @@ Thumbs.db
 *.DotSettings
 *.DotSettings.user
 __pycache__
+*.csproj.user
