@@ -273,7 +273,6 @@ namespace Urho3D {
 
 %template(ObjectArray)           Urho3D::PODVector<Urho3D::Object*>;
 %template(SoundSourceArray)      Urho3D::PODVector<Urho3D::SoundSource*>;
-%template(CrowdAgentArray)       Urho3D::PODVector<Urho3D::CrowdAgent*>;
 //%template(BatchArray)            Urho3D::PODVector<Urho3D::Batch*>;
 //%template(BatchGroupArray)       Urho3D::PODVector<Urho3D::BatchGroup*>;
 %template(ComponentArray)        Urho3D::PODVector<Urho3D::Component*>;

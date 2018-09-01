@@ -182,6 +182,8 @@ endmacro ()
 
 macro (add_sample TARGET)
     if ("${ARGN}" STREQUAL CSHARP)
+        add_target_csharp(${TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET}.csproj Urho3DNet)
+        #install (FILES ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll DESTINATION ${DEST_LIBRARY_DIR})
     else ()
         file (GLOB SOURCE_FILES *.cpp *.h)
         if (NOT URHO3D_WIN32_CONSOLE)
@@ -264,7 +266,7 @@ if (URHO3D_CSHARP)
         # Prebuilt files are mainly for windows/CI. If you run linux or macos you should probably build SWIG yourself.
         # A SWIG distribution built from code at https://github.com/rokups/swig/tree/Urho3D
         # You may build it yourself and set SWIG_EXECUTABLE in order to not use prebuilt binaries.
-        file(DOWNLOAD https://github.com/rokups/Urho3D/files/2335501/swig-dist.zip ${CMAKE_BINARY_DIR}/swig-dist.zip)
+        file(DOWNLOAD https://github.com/rokups/Urho3D/files/2340099/swig-dist.zip ${CMAKE_BINARY_DIR}/swig-dist.zip)
         execute_process(COMMAND ${CMAKE_COMMAND} -E tar xzf swig-dist.zip WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
         if (HOST_LINUX)
             set (SWIG_PLATFORM lin64)
@@ -310,11 +312,17 @@ if (URHO3D_CSHARP)
         set (MSBUILD_COMMON_PARAMETERS ${MSBUILD_COMMON_PARAMETERS} /p:Configuration=${CMAKE_BUILD_TYPE})
     endif ()
     if (URHO3D_WITH_MONO)
-        set (MSBUILD_COMMON_PARAMETERS ${MSBUILD_COMMON_PARAMETERS} /p:TargetFrameworks=net471)
+        set (MSBUILD_COMMON_PARAMETERS ${MSBUILD_COMMON_PARAMETERS} /p:TargetFramework=net471)
     endif ()
 
+    if (MSVC)
+        set (CSHARP_SOLUTION ${CMAKE_BINARY_DIR}/Urho3D.sln)
+    else ()
+        set (CSHARP_SOLUTION ${Urho3D_SOURCE_DIR}/Urho3D.part.sln)
+    endif ()
+    
     add_custom_target(NugetRestore
-        COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${Urho3D_SOURCE_DIR}/Urho3D.part.sln /t:restore
+        COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${CSHARP_SOLUTION} /t:restore
         /p:RestoreConfigFile="${Urho3D_SOURCE_DIR}/nuget.config" ${MSBUILD_COMMON_PARAMETERS}
     )
 endif()
@@ -341,14 +349,16 @@ endmacro()
 
 macro (add_target_csharp TARGET PROJECT_FILE)
     if (WIN32 AND NOT URHO3D_WITH_MONO)
-        include_external_msproject(${TARGET} ${PROJECT_FILE} TYPE FAE04EC0-301F-11D3-BF4B-00C04F79EFBC CSharpBindings)
+        include_external_msproject(${TARGET} ${PROJECT_FILE} TYPE FAE04EC0-301F-11D3-BF4B-00C04F79EFBC NugetRestore ${ARGN})
     else ()
         add_custom_target(${TARGET}
             COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${PROJECT_FILE} ${ARGN} ${MSBUILD_COMMON_PARAMETERS}
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
         set_target_properties(${TARGET} PROPERTIES EXCLUDE_FROM_ALL OFF)
+        if (TARGET NugetRestore)
+            add_dependencies(${TARGET} ${ARGN} NugetRestore)
+        endif ()
     endif ()
-    add_dependencies(${TARGET} NugetRestore)
 endmacro ()
 
 macro (csharp_bind_target)
@@ -437,7 +447,7 @@ macro (csharp_bind_target)
 
     swig_add_module(${CSHARP_LIBRARY_NAME} csharp Swig/${BIND_TARGET}.i)
     swig_link_libraries(${CSHARP_LIBRARY_NAME} ${BIND_TARGET})
-    set_target_properties(${CSHARP_LIBRARY_NAME} PROPERTIES PREFIX ${CMAKE_SHARED_LIBRARY_PREFIX})
+    set_target_properties(${CSHARP_LIBRARY_NAME} PROPERTIES PREFIX "${CMAKE_SHARED_LIBRARY_PREFIX}")
 
     # Etc
     #    if (CLANG)
@@ -459,8 +469,7 @@ macro (csharp_bind_target)
         set (FACADES Facades/)
     endif ()
     if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${BIND_MANAGED_TARGET}.csproj")
-        add_target_csharp(${BIND_MANAGED_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/${BIND_MANAGED_TARGET}.csproj)
-        add_dependencies(${BIND_MANAGED_TARGET} ${CSHARP_LIBRARY_NAME})
+        add_target_csharp(${BIND_MANAGED_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/${BIND_MANAGED_TARGET}.csproj ${CSHARP_LIBRARY_NAME})
         install (FILES ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll DESTINATION ${DEST_LIBRARY_DIR})
     endif ()
 

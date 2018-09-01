@@ -1,13 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
   <PropertyGroup>
     <AssemblyName>ImGuiNet</AssemblyName>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Library</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(BuildDir)/Source/ThirdParty/imgui/*.cs" />
+    <Compile Include="$(BuildDir)Source/ThirdParty/imgui/*.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../Urho3D/CSharp/Urho3DNet.csproj" />
   </ItemGroup>
-  <Import Project="../../../MSBuild.props" />
 </Project>

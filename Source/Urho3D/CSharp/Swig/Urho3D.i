@@ -17,6 +17,7 @@
 #include <SDL/SDL_joystick.h>
 #include <SDL/SDL_gamecontroller.h>
 #include <SDL/SDL_keycode.h>
+#undef GetObject
 %}
 
 %typemap(csvarout) void* VOID_INT_PTR %{
@@ -202,7 +203,7 @@ namespace SDL
 %include "Urho3D/Core/Mutex.h"
 
 // --------------------------------------- Engine ---------------------------------------
-
+%include "Urho3D/Engine/EngineDefs.h"
 %include "Urho3D/Engine/Engine.h"
 
 %ignore Urho3D::Application::engine_;
@@ -276,7 +277,9 @@ public:
 %ignore Urho3D::BackgroundLoader::ThreadFunction;
 
 %include "Urho3D/Resource/Resource.h"
+#if defined(URHO3D_THREADING)
 %include "Urho3D/Resource/BackgroundLoader.h"
+#endif
 %include "Urho3D/Resource/Image.h"
 %include "Urho3D/Resource/JSONValue.h"
 %include "Urho3D/Resource/JSONFile.h"
@@ -339,13 +342,14 @@ public:
 %include "Urho3D/Audio/SoundSource3D.h"
 
 // --------------------------------------- IK ---------------------------------------
+#if defined(URHO3D_IK)
 %{ using Algorithm = Urho3D::IKSolver::Algorithm; %}
 
 %include "Urho3D/IK/IKConstraint.h"
 %include "Urho3D/IK/IKEffector.h"
 %include "Urho3D/IK/IK.h"
 %include "Urho3D/IK/IKSolver.h"
-
+#endif
 // --------------------------------------- Graphics ---------------------------------------
 %ignore Urho3D::FrustumOctreeQuery::TestDrawables;
 %ignore Urho3D::SphereOctreeQuery::TestDrawables;
@@ -460,6 +464,9 @@ public:
 %include "Urho3D/Graphics/Graphics.h"
 
 // --------------------------------------- Navigation ---------------------------------------
+#if defined(URHO3D_NAVIGATION)
+%template(CrowdAgentArray)       Urho3D::PODVector<Urho3D::CrowdAgent*>;
+
 %apply void* VOID_INT_PTR {
 	rcContext*,
 	dtTileCacheContourSet*,
@@ -484,8 +491,9 @@ public:
 %include "Urho3D/Navigation/Navigable.h"
 %include "Urho3D/Navigation/Obstacle.h"
 %include "Urho3D/Navigation/OffMeshConnection.h"
-
+#endif
 // --------------------------------------- Network ---------------------------------------
+#if defined(URHO3D_NETWORKING)
 //
 //%ignore Urho3D::Network::MakeHttpRequest;
 //%ignore Urho3D::PackageDownload;
@@ -496,7 +504,9 @@ public:
 //%include "Urho3D/Network/NetworkPriority.h"
 //%include "Urho3D/Network/Protocol.h"
 //
+#endif
 //// --------------------------------------- Physics ---------------------------------------
+#if defined(URHO3D_PHYSICS)
 //%ignore Urho3D::TriangleMeshData::meshInterface_;
 //%ignore Urho3D::TriangleMeshData::shape_;
 //%ignore Urho3D::TriangleMeshData::infoMap_;
@@ -508,7 +518,9 @@ public:
 //%include "Urho3D/Physics/RaycastVehicle.h"
 //%include "Urho3D/Physics/RigidBody.h"
 //
+#endif
 // --------------------------------------- SystemUI ---------------------------------------
+#if defined(URHO3D_SYSTEMUI)
 %apply void* VOID_INT_PTR {
 	ImFont*
 }
@@ -535,7 +547,7 @@ public:
 %include "Urho3D/SystemUI/DebugHud.h"
 %include "Urho3D/SystemUI/SystemMessageBox.h"
 %include "Urho3D/SystemUI/SystemUI.h"
-
+#endif
 // --------------------------------------- UI ---------------------------------------
 %ignore Urho3D::UIElement::GetBatches;
 %ignore Urho3D::UIElement::GetDebugDrawBatches;

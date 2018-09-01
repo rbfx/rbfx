@@ -1,13 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
   <PropertyGroup>
     <AssemblyName>Urho3DNet</AssemblyName>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Library</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(BuildDir)/Source/Urho3D/CSharp/*.cs" />
+    <Compile Include="$(BuildDir)Source/Urho3D/CSharp/*.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
-  </ItemGroup>
-  <Import Project="../../../MSBuild.props" />
+  <Target Name="TestMessage" AfterTargets="Build" >
+    <!--Use $(Property Name) to reference a property-->
+    <Message Text="NETStandardImplicitPackageVersion = '$(NETStandardImplicitPackageVersion)'" Importance="high"/>
+  </Target>
 </Project>

@@ -24,9 +24,9 @@ int strlen(const char* void_ptr_string);
 
 
 %define CS_CONSTANT(fqn, name, value)
-  %csconst(1) name;
-  #define name value
-  %ignore fqn;
+  %csconst(1) fqn;
+  %csconstvalue(value) fqn;
+  %rename(name) fqn;
 %enddef
 
 %define %csattribute(Class, AttributeType, AttributeAccess, AttributeName, GetAccess, GetMethod, SetAccess, SetMethod)

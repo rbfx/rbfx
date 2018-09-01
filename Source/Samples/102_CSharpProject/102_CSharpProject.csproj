@@ -1,14 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
   <PropertyGroup>
     <AssemblyName>102_CSharpProject</AssemblyName>
     <OutputType>WinExe</OutputType>
-    <TargetExt>.exe</TargetExt>
-    <TargetFrameworks>netcoreapp2.1;net471</TargetFrameworks>
+    <RootNamespace>CSharpProject</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\ThirdParty\imgui\ImGuiNet.csproj" />
-    <ProjectReference Include="..\..\Urho3D\CSharp\Urho3DNet.csproj" />
+    <ProjectReference Include="../../ThirdParty/imgui/ImGuiNet.csproj" />
+    <ProjectReference Include="../../Urho3D/CSharp/Urho3DNet.csproj" />
   </ItemGroup>
-  <Import Project="$(SolutionDir)\..\MSBuild.props" Condition="'$(OS)' != 'Unix'" />
-  <Import Project="$(SolutionDir)\MSBuild.props" Condition="'$(OS)' == 'Unix'" />
 </Project>
