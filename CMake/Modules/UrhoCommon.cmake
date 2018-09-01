@@ -281,7 +281,7 @@ if (URHO3D_CSHARP)
         set (SWIG_EXECUTABLE ${CMAKE_BINARY_DIR}/swig-dist/${SWIG_PLATFORM}/bin/swig${CMAKE_EXECUTABLE_SUFFIX})
         # Get SWIG version
         execute_process(COMMAND ${SWIG_EXECUTABLE} -version OUTPUT_VARIABLE SWIG_VERSION)
-        string(REGEX MATCH "SWIG Version ([0-9\\.]+)" SWIG_VERSION ${SWIG_VERSION})
+        string(REGEX MATCH "SWIG Version ([0-9\\.]+)" SWIG_VERSION "${SWIG_VERSION}")
         string(REPLACE "SWIG Version " "" SWIG_VERSION "${SWIG_VERSION}")
         string(STRIP "${SWIG_VERSION}" SWIG_VERSION)
         # Swig library path is embeded into executable. We extracted swig somewhere else other than prefix path so we
@@ -349,16 +349,14 @@ endmacro()
 
 macro (add_target_csharp TARGET PROJECT_FILE)
     if (WIN32 AND NOT URHO3D_WITH_MONO)
-        include_external_msproject(${TARGET} ${PROJECT_FILE} TYPE FAE04EC0-301F-11D3-BF4B-00C04F79EFBC NugetRestore ${ARGN})
+        include_external_msproject(${TARGET} ${PROJECT_FILE} TYPE FAE04EC0-301F-11D3-BF4B-00C04F79EFBC)
     else ()
         add_custom_target(${TARGET}
-            COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${PROJECT_FILE} ${ARGN} ${MSBUILD_COMMON_PARAMETERS}
+            COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${PROJECT_FILE} ${MSBUILD_COMMON_PARAMETERS}
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
         set_target_properties(${TARGET} PROPERTIES EXCLUDE_FROM_ALL OFF)
-        if (TARGET NugetRestore)
-            add_dependencies(${TARGET} ${ARGN} NugetRestore)
-        endif ()
     endif ()
+    add_dependencies(${TARGET} ${ARGN} NugetRestore)
 endmacro ()
 
 macro (csharp_bind_target)
