@@ -84,7 +84,7 @@ struct URHO3D_API NavBuildData
     PODVector<NavAreaStub> navAreas_;
 };
 
-struct SimpleNavBuildData : public NavBuildData
+struct URHO3D_API SimpleNavBuildData : public NavBuildData
 {
     /// Constructor.
     SimpleNavBuildData();
@@ -99,7 +99,7 @@ struct SimpleNavBuildData : public NavBuildData
     rcPolyMeshDetail* polyMeshDetail_;
 };
 
-struct DynamicNavBuildData : public NavBuildData
+struct URHO3D_API DynamicNavBuildData : public NavBuildData
 {
     /// Constructor.
     explicit DynamicNavBuildData(dtTileCacheAlloc* allocator);

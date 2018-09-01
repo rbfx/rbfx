@@ -35,7 +35,7 @@ class AttributeAnimationInfo;
 class ObjectAnimation;
 
 /// Attribute animation instance.
-class AttributeAnimationInfo : public ValueAnimationInfo
+class URHO3D_API AttributeAnimationInfo : public ValueAnimationInfo
 {
 public:
     /// Construct.

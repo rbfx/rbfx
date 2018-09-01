@@ -35,7 +35,7 @@ class ConstantBuffer;
 class Shader;
 
 /// %Shader parameter definition.
-struct ShaderParameter
+struct URHO3D_API ShaderParameter
 {
     /// Construct with defaults.
     ShaderParameter() = default;

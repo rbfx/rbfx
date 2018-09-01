@@ -37,7 +37,7 @@ class Resource;
 class ResourceCache;
 
 /// Queue item for background loading of a resource.
-struct BackgroundLoadItem
+struct URHO3D_API BackgroundLoadItem
 {
     /// Resource.
     SharedPtr<Resource> resource_;
@@ -50,7 +50,7 @@ struct BackgroundLoadItem
 };
 
 /// Background loader of resources. Owned by the ResourceCache.
-class BackgroundLoader : public RefCounted, public Thread
+class URHO3D_API BackgroundLoader : public RefCounted, public Thread
 {
 public:
     /// Construct.

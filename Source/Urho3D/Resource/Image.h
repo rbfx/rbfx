@@ -48,7 +48,7 @@ enum CompressedFormat
 };
 
 /// Compressed image mip level.
-struct CompressedLevel
+struct URHO3D_API CompressedLevel
 {
     /// Decompress to RGBA. The destination buffer required is width * height * 4 bytes. Return true if successful.
     bool Decompress(unsigned char* dest);

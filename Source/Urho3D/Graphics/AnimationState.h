@@ -48,7 +48,7 @@ enum AnimationBlendMode
 };
 
 /// %Animation instance per-track data.
-struct AnimationStateTrack
+struct URHO3D_API AnimationStateTrack
 {
     /// Construct with defaults.
     AnimationStateTrack();

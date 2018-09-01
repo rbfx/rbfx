@@ -28,16 +28,11 @@
 #  define SWIGSTDCALL
 #endif
 
-extern "C"
-{
-
 typedef void* (SWIGSTDCALL* SWIG_CSharpCloneGCHandleCallback)(void*);
 extern URHO3D_EXPORT_API SWIG_CSharpCloneGCHandleCallback SWIG_CSharpCloneGCHandle;
 
 typedef void (SWIGSTDCALL* SWIG_CSharpFreeGCHandleCallback)(void*);
 extern URHO3D_EXPORT_API SWIG_CSharpFreeGCHandleCallback SWIG_CSharpFreeGCHandle;
-
-}
 
 namespace Urho3D
 {

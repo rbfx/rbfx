@@ -34,7 +34,7 @@ class IndexBuffer;
 class VertexBuffer;
 
 /// %Decal vertex.
-struct DecalVertex
+struct URHO3D_API DecalVertex
 {
     /// Construct with defaults.
     DecalVertex() = default;
@@ -85,7 +85,7 @@ struct DecalVertex
 };
 
 /// One decal in a decal set.
-struct Decal
+struct URHO3D_API Decal
 {
     /// Construct with defaults.
     Decal() :

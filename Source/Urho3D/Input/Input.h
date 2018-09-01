@@ -52,7 +52,7 @@ class XMLFile;
 const IntVector2 MOUSE_POSITION_OFFSCREEN = IntVector2(M_MIN_INT, M_MIN_INT);
 
 /// %Input state for a finger touch.
-struct TouchState
+struct URHO3D_API TouchState
 {
     /// Return last touched UI element, used by scripting integration.
     UIElement* GetTouchedElement();
@@ -72,7 +72,7 @@ struct TouchState
 };
 
 /// %Input state for a joystick.
-struct JoystickState
+struct URHO3D_API JoystickState
 {
     /// Initialize the number of buttons, axes and hats and set them to neutral state.
     void Initialize(unsigned numButtons, unsigned numAxes, unsigned numHats);

@@ -24,6 +24,7 @@
 
 #include "../Graphics/GraphicsDefs.h"
 #include "../Graphics/Light.h"
+#include "../Graphics/Technique.h"
 #include "../Math/Vector4.h"
 #include "../Resource/Resource.h"
 #include "../Scene/ValueAnimationInfo.h"
@@ -34,7 +35,6 @@ namespace Urho3D
 class Material;
 class Pass;
 class Scene;
-class Technique;
 class Texture;
 class Texture2D;
 class TextureCube;
@@ -53,7 +53,7 @@ struct MaterialShaderParameter
 };
 
 /// %Material's technique list entry.
-struct TechniqueEntry
+struct URHO3D_API TechniqueEntry
 {
     /// Construct with defaults.
     TechniqueEntry() noexcept;
@@ -85,7 +85,7 @@ struct TechniqueEntry
 };
 
 /// Material's shader parameter animation instance.
-class ShaderParameterAnimationInfo : public ValueAnimationInfo
+class URHO3D_API ShaderParameterAnimationInfo : public ValueAnimationInfo
 {
 public:
     /// Construct.
