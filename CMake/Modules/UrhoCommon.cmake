@@ -266,7 +266,7 @@ if (URHO3D_CSHARP)
         # Prebuilt files are mainly for windows/CI. If you run linux or macos you should probably build SWIG yourself.
         # A SWIG distribution built from code at https://github.com/rokups/swig/tree/Urho3D
         # You may build it yourself and set SWIG_EXECUTABLE in order to not use prebuilt binaries.
-        file(DOWNLOAD https://github.com/rokups/Urho3D/files/2340099/swig-dist.zip ${CMAKE_BINARY_DIR}/swig-dist.zip)
+        file(DOWNLOAD https://github.com/rokups/Urho3D/files/2343051/swig-dist.zip ${CMAKE_BINARY_DIR}/swig-dist.zip)
         execute_process(COMMAND ${CMAKE_COMMAND} -E tar xzf swig-dist.zip WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
         if (HOST_LINUX)
             set (SWIG_PLATFORM lin64)
