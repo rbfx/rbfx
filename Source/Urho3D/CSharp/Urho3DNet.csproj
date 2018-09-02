@@ -3,11 +3,10 @@
     <AssemblyName>Urho3DNet</AssemblyName>
     <OutputType>Library</OutputType>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="$(BuildDir)Source/Urho3D/CSharp/*.cs" />
-  </ItemGroup>
-  <Target Name="TestMessage" AfterTargets="Build" >
-    <!--Use $(Property Name) to reference a property-->
-    <Message Text="NETStandardImplicitPackageVersion = '$(NETStandardImplicitPackageVersion)'" Importance="high"/>
+  <Target Name="GatherBuildFiles" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <BindingsSourceCode Include="$([System.IO.Directory]::GetFiles(&quot;$(BuildDir)Source/Urho3D/CSharp&quot;, &quot;*.cs&quot;))" />
+      <Compile Include="@(BindingsSourceCode)" />
+    </ItemGroup>
   </Target>
 </Project>

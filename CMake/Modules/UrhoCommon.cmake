@@ -304,15 +304,11 @@ if (URHO3D_CSHARP)
     else ()
         set (CSHARP_PLATFORM x86)
     endif ()
-    set (MSBUILD_COMMON_PARAMETERS /p:BuildDir="${CMAKE_BINARY_DIR}/" /p:SolutionDir="${Urho3D_SOURCE_DIR}/"
-        /p:Platform=${CSHARP_PLATFORM} /consoleloggerparameters:ErrorsOnly)
-    if (MSVC)
-        set (MSBUILD_COMMON_PARAMETERS ${MSBUILD_COMMON_PARAMETERS} /p:Configuration=$<CONFIG>)
-    else ()
-        set (MSBUILD_COMMON_PARAMETERS ${MSBUILD_COMMON_PARAMETERS} /p:Configuration=${CMAKE_BUILD_TYPE})
-    endif ()
+    set (MSBUILD_COMMON_PARAMETERS /p:BuildDir="${CMAKE_BINARY_DIR}/" /p:Platform=${CSHARP_PLATFORM}
+                                   /p:Configuration=$<CONFIG> /consoleloggerparameters:ErrorsOnly)
+
     if (URHO3D_WITH_MONO)
-        set (MSBUILD_COMMON_PARAMETERS ${MSBUILD_COMMON_PARAMETERS} /p:TargetFramework=net471)
+        list (APPEND MSBUILD_COMMON_PARAMETERS /p:TargetFramework=net471)
     endif ()
 
     if (MSVC)
@@ -320,11 +316,8 @@ if (URHO3D_CSHARP)
     else ()
         set (CSHARP_SOLUTION ${Urho3D_SOURCE_DIR}/Urho3D.part.sln)
     endif ()
-    
-    add_custom_target(NugetRestore
-        COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${CSHARP_SOLUTION} /t:restore
-        /p:RestoreConfigFile="${Urho3D_SOURCE_DIR}/nuget.config" ${MSBUILD_COMMON_PARAMETERS}
-    )
+
+    add_custom_target(NugetRestore COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${CSHARP_SOLUTION} /r)
 endif()
 
 if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
