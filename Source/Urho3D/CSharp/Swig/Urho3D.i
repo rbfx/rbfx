@@ -60,9 +60,6 @@
 
 %include "StringHash.i"
 %include "String.i"
-%include "_constants.i"
-%include "_events.i"
-%include "_enums.i"
 
 // --------------------------------------- Math ---------------------------------------
 %include "Math.i"
@@ -86,6 +83,10 @@ URHO3D_BINARY_COMPATIBLE_TYPE(Plane);
 URHO3D_BINARY_COMPATIBLE_TYPE(BoundingBox);
 
 }
+
+%include "_constants.i"
+%include "_events.i"
+%include "_enums.i"
 
 %rename(Outside) OUTSIDE;
 %rename(Intersects) INTERSECTS;

@@ -47,6 +47,11 @@ public struct StringHash
         Hash = Calculate(type.Name);
     }
 
+    public static implicit operator StringHash(uint value)
+    {
+        return new StringHash(value);
+    }
+
     public static implicit operator StringHash(string value)
     {
         return new StringHash(value);

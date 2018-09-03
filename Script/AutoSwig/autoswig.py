@@ -121,11 +121,16 @@ def read_raw_code(node):
 
 class DefineConstantsPass(AstPass):
     outputs = ['_constants.i']
+    cs_code = []
+    rx_deconst = re.compile(r'^const ')
 
     def on_begin(self):
         self.fp = open(os.path.join(self.module.args.output, '_constants.i'), 'w+')
 
     def on_end(self):
+        self.fp.write('%pragma(csharp) modulecode=%{\n')
+        self.fp.writelines(self.cs_code)
+        self.fp.write('%}\n')
         self.fp.close()
 
     def get_constant_value(self, node):
@@ -144,40 +149,51 @@ class DefineConstantsPass(AstPass):
     def visit(self, node, action: AstAction):
         if node.c.spelling.endswith('/MathDefs.h'):
             return False
-        if node.kind == CursorKind.VAR_DECL:
+        if node.kind == CursorKind.VAR_DECL and node.c.semantic_parent.kind == CursorKind.NAMESPACE:
+            value = None
             fqn = get_fully_qualified_name(node)
-            if fqn.startswith('Urho3D::IsFlagSet') or fqn.startswith('Urho3D::FlagSet'):
+            if fqn.startswith('Urho3D::IsFlagSet') or fqn.startswith('Urho3D::FlagSet') or \
+               node.spelling.startswith('E_') or node.spelling.startswith('P_'):
+                return False
+
+            type_name = re.sub(self.rx_deconst, '', node.type.spelling)
+            idiomatic_name = camel_case(node.spelling)
+            if not node.type.is_const_qualified():
+                # Non const variables are simply renamed
+                self.fp.write(f'%rename({idiomatic_name}) {fqn};\n')
                 return False
 
             if node.type.spelling in ('const Urho3D::String', 'const char*'):
                 node_expr = node.find_child(kind=CursorKind.UNEXPOSED_EXPR)
-                idiomatic_name = camel_case(node.spelling)
                 if node_expr:
+                    type_name = 'string'
                     value = self.get_constant_value(node_expr)
-                    if value:
-                        self.fp.write(f'CS_CONSTANT({fqn}, {idiomatic_name}, {value});\n')
-                else:
-                    self.fp.write(f'%rename({idiomatic_name}) {fqn};\n')
 
             elif is_builtin_type(node.type):
                 literal = node.find_any_child(kind=CursorKind.INTEGER_LITERAL) or node.find_any_child(kind=CursorKind.FLOATING_LITERAL)
-                idiomatic_name = camel_case(node.spelling)
                 if literal:
                     value = self.get_constant_value(literal)
                     if value:
-                        if node.type.get_canonical().kind in (TypeKind.CHAR_U,
-                                                              TypeKind.UCHAR,
-                                                              TypeKind.CHAR16,
-                                                              TypeKind.CHAR32,
-                                                              TypeKind.USHORT,
-                                                              TypeKind.UINT,
-                                                              TypeKind.ULONG,
-                                                              TypeKind.ULONGLONG,
-                                                              TypeKind.UINT128) and not value.endswith('U'):
+                        type_kind = node.type.get_canonical().kind
+                        if type_kind in (TypeKind.CHAR16, TypeKind.CHAR32, TypeKind.USHORT, TypeKind.UINT,
+                                         TypeKind.ULONG, TypeKind.ULONGLONG, TypeKind.UINT128) and \
+                           not value.endswith('U'):
                             value += 'U'
-                        self.fp.write(f'CS_CONSTANT({fqn}, {idiomatic_name}, {value});\n')
-                else:
-                    self.fp.write(f'%rename({idiomatic_name}) {fqn};\n')
+                        elif type_kind == TypeKind.FLOAT and not value.endswith('f'):
+                            value += 'f'
+
+                        try:
+                            type_name = builtin_to_cs[type_kind]
+                        except KeyError:
+                            value = None
+
+            self.fp.write(f'%ignore {fqn};\n')
+            if value:
+                # A raw C# constant. Can not use %csconst because swig strings f from float values.
+                self.cs_code.append(f'  public const {type_name} {idiomatic_name} = {value};\n')
+            else:
+                # Convert readonly variable
+                self.fp.write(f'%constant {type_name} {idiomatic_name} = {fqn};\n')
 
         elif node.kind in (CursorKind.CXX_METHOD, CursorKind.FUNCTION_DECL, CursorKind.FIELD_DECL, CursorKind.ENUM_CONSTANT_DECL):
             if node.kind in (CursorKind.CXX_METHOD, CursorKind.FUNCTION_DECL):
@@ -531,7 +547,7 @@ class Urho3DModule(Module):
         self.exclude_headers = [re.compile(pattern, re.IGNORECASE) for pattern in self.exclude_headers]
 
     def register_passes(self, passes: list):
-        passes += [DefineEventsPass, FindFlagEnums, CleanEnumValues, DefineRefCountedPass, DefineConstantsPass]
+        passes += [DefineConstantsPass]
 
     def gather_files(self):
         yield os.path.join(self.args.input, '../ThirdParty/SDL/include/SDL/SDL_joystick.h')
