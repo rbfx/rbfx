@@ -17,14 +17,14 @@ namespace Urho3DNet
             Max = new Vector2(maxX, maxY);
         }
 
-        public Rect(Vector2 min, Vector2 max)
+        public Rect(in Vector2 min, in Vector2 max)
         {
             Min = min;
             Max = max;
         }
 
         /// Merge a point.
-        public void Merge(Vector2 point)
+        public void Merge(in Vector2 point)
         {
             if (point.X < Min.X)
                 Min.X = point.X;
@@ -37,7 +37,7 @@ namespace Urho3DNet
         }
 
         /// Merge a rect.
-        public void Merge(Rect rect)
+        public void Merge(in Rect rect)
         {
             if (rect.Min.X < Min.X)
                 Min.X = rect.Min.X;
@@ -55,7 +55,7 @@ namespace Urho3DNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct IntRect
+    public struct IntRect : IEquatable<IntRect>
     {
         public bool Equals(IntRect other)
         {
@@ -99,7 +99,7 @@ namespace Urho3DNet
 
         public static readonly IntRect Zero = new IntRect(0, 0, 0, 0);
 
-        public IntRect(IntVector2 min, IntVector2 max)
+        public IntRect(in IntVector2 min, in IntVector2 max)
         {
             Left = min.X;
             Top = min.Y;
@@ -111,12 +111,12 @@ namespace Urho3DNet
         public int Height => Bottom - Top;
         public IntVector2 Size => new IntVector2(Width, Height);
 
-        public static bool operator !=(IntRect lhs, IntRect rhs)
+        public static bool operator !=(in IntRect lhs, in IntRect rhs)
         {
             return lhs.Top != rhs.Top || lhs.Right != rhs.Right || lhs.Bottom != rhs.Bottom || lhs.Left != rhs.Left;
         }
 
-        public static bool operator ==(IntRect lhs, IntRect rhs)
+        public static bool operator ==(in IntRect lhs, in IntRect rhs)
         {
             return !(lhs != rhs);
         }

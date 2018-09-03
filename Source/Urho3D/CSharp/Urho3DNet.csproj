@@ -2,6 +2,7 @@
   <PropertyGroup>
     <AssemblyName>Urho3DNet</AssemblyName>
     <OutputType>Library</OutputType>
+    <LangVersion>7.2</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
     <GeneratedCodePath>$(BuildDir)Source/Urho3D/CSharp/</GeneratedCodePath>

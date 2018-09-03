@@ -21,7 +21,7 @@ namespace Urho3DNet
         private float _dummyMax; // This is never used, but exists to pad the Max value to four floats.
 
         /// Copy-construct from another bounding box.
-        public BoundingBox(BoundingBox box)
+        public BoundingBox(in BoundingBox box)
         {
             Min = box.Min;
             Max = box.Max;
@@ -30,7 +30,7 @@ namespace Urho3DNet
         }
 
         ///ruct from a rect, with the Z dimension left zero.
-        public BoundingBox(Rect rect)
+        public BoundingBox(in Rect rect)
         {
             Min = new Vector3(rect.Min, 0.0f);
             Max = new Vector3(rect.Max, 0.0f);
@@ -39,7 +39,7 @@ namespace Urho3DNet
         }
 
         ///ruct from minimum and maximum vectors.
-        public BoundingBox(Vector3 min, Vector3 max)
+        public BoundingBox(in Vector3 min, in Vector3 max)
         {
             Min = min;
             Max = max;
@@ -91,19 +91,19 @@ namespace Urho3DNet
 //        }
 
         /// Define from another bounding box.
-        void Define(BoundingBox box)
+        void Define(in BoundingBox box)
         {
             Define(box.Min, box.Max);
         }
 
         /// Define from a Rect.
-        void Define(Rect rect)
+        void Define(in Rect rect)
         {
             Define(new Vector3(rect.Min, 0.0f), new Vector3(rect.Max, 0.0f));
         }
 
         /// Define from minimum and maximum vectors.
-        void Define(Vector3 min, Vector3 max)
+        void Define(in Vector3 min, in Vector3 max)
         {
             Min = min;
             Max = max;
@@ -117,13 +117,13 @@ namespace Urho3DNet
         }
 
         /// Define from a point.
-        void Define(Vector3 point)
+        void Define(in Vector3 point)
         {
             Min = Max = point;
         }
 
         /// Merge a point.
-        void Merge(Vector3 point)
+        void Merge(in Vector3 point)
         {
             if (point.X < Min.X)
                 Min.X = point.X;
@@ -140,7 +140,7 @@ namespace Urho3DNet
         }
 
         /// Merge another bounding box.
-        void Merge(BoundingBox box)
+        void Merge(in BoundingBox box)
         {
             if (box.Min.X < Min.X)
                 Min.X = box.Min.X;
@@ -223,7 +223,7 @@ namespace Urho3DNet
 //        }
 
         /// Clip with another bounding box. The box can become degenerate (undefined) as a result.
-        void Clip(BoundingBox box)
+        void Clip(in BoundingBox box)
         {
             if (box.Min.X > Min.X)
                 Min.X = box.Min.X;
@@ -245,13 +245,13 @@ namespace Urho3DNet
         }
 
         /// Transform with a 3x3 matrix.
-        void Transform(Matrix3 transform)
+        void Transform(in Matrix3 transform)
         {
             this = Transformed(new Matrix3x4(transform));
         }
 
         /// Transform with a 3x4 matrix.
-        void Transform(Matrix3x4 transform)
+        void Transform(in Matrix3x4 transform)
         {
             this = Transformed(transform);
         }
@@ -275,13 +275,13 @@ namespace Urho3DNet
         Vector3 HalfSize => (Max - Min) * 0.5f;
 
         /// Return transformed by a 3x3 matrix.
-        BoundingBox Transformed(Matrix3 transform)
+        BoundingBox Transformed(in Matrix3 transform)
         {
             return Transformed(new Matrix3x4(transform));
         }
 
         /// Return transformed by a 3x4 matrix.
-        BoundingBox Transformed(Matrix3x4 transform)
+        BoundingBox Transformed(in Matrix3x4 transform)
         {
             Vector3 newCenter = transform * Center;
             Vector3 oldEdge = Size * 0.5f;
@@ -295,7 +295,7 @@ namespace Urho3DNet
         }
 
         /// Return projected by a 4x4 projection matrix.
-        Rect Projected(Matrix4 projection)
+        Rect Projected(in Matrix4 projection)
         {
             Vector3 projMin = Min;
             Vector3 projMax = Max;
@@ -325,7 +325,7 @@ namespace Urho3DNet
         }
 
         /// Return distance to point.
-        float DistanceToPoint(Vector3 point)
+        float DistanceToPoint(in Vector3 point)
         {
             Vector3 offset = Center - point;
             Vector3 absOffset = new Vector3(Math.Abs(offset.X), Math.Abs(offset.Y), Math.Abs(offset.Z));
@@ -333,7 +333,7 @@ namespace Urho3DNet
         }
 
         /// Test if a point is inside.
-        Intersection IsInside(Vector3 point)
+        Intersection IsInside(in Vector3 point)
         {
             if (point.X < Min.X || point.X > Max.X || point.Y < Min.Y || point.Y > Max.Y ||
                 point.Z < Min.Z || point.Z > Max.Z)
@@ -343,7 +343,7 @@ namespace Urho3DNet
         }
 
         /// Test if another bounding box is inside, outside or intersects.
-        Intersection IsInside(BoundingBox box)
+        Intersection IsInside(in BoundingBox box)
         {
             if (box.Max.X < Min.X || box.Min.X > Max.X || box.Max.Y < Min.Y || box.Min.Y > Max.Y ||
                 box.Max.Z < Min.Z || box.Min.Z > Max.Z)
@@ -356,7 +356,7 @@ namespace Urho3DNet
         }
 
         /// Test if another bounding box is (partially) inside or outside.
-        Intersection IsInsideFast(BoundingBox box)
+        Intersection IsInsideFast(in BoundingBox box)
         {
             if (box.Max.X < Min.X || box.Min.X > Max.X || box.Max.Y < Min.Y || box.Min.Y > Max.Y ||
                 box.Max.Z < Min.Z || box.Min.Z > Max.Z)

@@ -70,7 +70,7 @@ namespace Urho3DNet
         /// </summary>
         /// <param name="vector">A vector to convert.</param>
         /// <returns></returns>
-        public static implicit operator System.Numerics.Vector2(Vector2 vector)
+        public static implicit operator System.Numerics.Vector2(in Vector2 vector)
         {
             return new System.Numerics.Vector2(vector.X, vector.Y);
         }
@@ -235,9 +235,9 @@ namespace Urho3DNet
         /// <param name="a">Left operand.</param>
         /// <param name="b">Right operand.</param>
         /// <returns>Result of operation.</returns>
-        public static Vector2 Add(Vector2 a, Vector2 b)
+        public static Vector2 Add(Vector2 a, in Vector2 b)
         {
-            Add(ref a, ref b, out a);
+            Add(a, b, out a);
             return a;
         }
 
@@ -247,7 +247,7 @@ namespace Urho3DNet
         /// <param name="a">Left operand.</param>
         /// <param name="b">Right operand.</param>
         /// <param name="result">Result of operation.</param>
-        public static void Add(ref Vector2 a, ref Vector2 b, out Vector2 result)
+        public static void Add(in Vector2 a, in Vector2 b, out Vector2 result)
         {
             result.X = a.X + b.X;
             result.Y = a.Y + b.Y;
@@ -259,9 +259,9 @@ namespace Urho3DNet
         /// <param name="a">First operand</param>
         /// <param name="b">Second operand</param>
         /// <returns>Result of subtraction</returns>
-        public static Vector2 Subtract(Vector2 a, Vector2 b)
+        public static Vector2 Subtract(Vector2 a, in Vector2 b)
         {
-            Subtract(ref a, ref b, out a);
+            Subtract(a, b, out a);
             return a;
         }
 
@@ -271,7 +271,7 @@ namespace Urho3DNet
         /// <param name="a">First operand</param>
         /// <param name="b">Second operand</param>
         /// <param name="result">Result of subtraction</param>
-        public static void Subtract(ref Vector2 a, ref Vector2 b, out Vector2 result)
+        public static void Subtract(in Vector2 a, in Vector2 b, out Vector2 result)
         {
             result.X = a.X - b.X;
             result.Y = a.Y - b.Y;
@@ -285,7 +285,7 @@ namespace Urho3DNet
         /// <returns>Result of the operation.</returns>
         public static Vector2 Multiply(Vector2 vector, float scale)
         {
-            Multiply(ref vector, scale, out vector);
+            Multiply(vector, scale, out vector);
             return vector;
         }
 
@@ -295,7 +295,7 @@ namespace Urho3DNet
         /// <param name="vector">Left operand.</param>
         /// <param name="scale">Right operand.</param>
         /// <param name="result">Result of the operation.</param>
-        public static void Multiply(ref Vector2 vector, float scale, out Vector2 result)
+        public static void Multiply(in Vector2 vector, float scale, out Vector2 result)
         {
             result.X = vector.X * scale;
             result.Y = vector.Y * scale;
@@ -309,7 +309,7 @@ namespace Urho3DNet
         /// <returns>Result of the operation.</returns>
         public static Vector2 Multiply(Vector2 vector, Vector2 scale)
         {
-            Multiply(ref vector, ref scale, out vector);
+            Multiply(vector, scale, out vector);
             return vector;
         }
 
@@ -319,7 +319,7 @@ namespace Urho3DNet
         /// <param name="vector">Left operand.</param>
         /// <param name="scale">Right operand.</param>
         /// <param name="result">Result of the operation.</param>
-        public static void Multiply(ref Vector2 vector, ref Vector2 scale, out Vector2 result)
+        public static void Multiply(in Vector2 vector, in Vector2 scale, out Vector2 result)
         {
             result.X = vector.X * scale.X;
             result.Y = vector.Y * scale.Y;
@@ -333,7 +333,7 @@ namespace Urho3DNet
         /// <returns>Result of the operation.</returns>
         public static Vector2 Divide(Vector2 vector, float scale)
         {
-            Divide(ref vector, scale, out vector);
+            Divide(vector, scale, out vector);
             return vector;
         }
 
@@ -343,7 +343,7 @@ namespace Urho3DNet
         /// <param name="vector">Left operand.</param>
         /// <param name="scale">Right operand.</param>
         /// <param name="result">Result of the operation.</param>
-        public static void Divide(ref Vector2 vector, float scale, out Vector2 result)
+        public static void Divide(in Vector2 vector, float scale, out Vector2 result)
         {
             result.X = vector.X / scale;
             result.Y = vector.Y / scale;
@@ -355,9 +355,9 @@ namespace Urho3DNet
         /// <param name="vector">Left operand.</param>
         /// <param name="scale">Right operand.</param>
         /// <returns>Result of the operation.</returns>
-        public static Vector2 Divide(Vector2 vector, Vector2 scale)
+        public static Vector2 Divide(Vector2 vector, in Vector2 scale)
         {
-            Divide(ref vector, ref scale, out vector);
+            Divide(vector, scale, out vector);
             return vector;
         }
 
@@ -367,7 +367,7 @@ namespace Urho3DNet
         /// <param name="vector">Left operand.</param>
         /// <param name="scale">Right operand.</param>
         /// <param name="result">Result of the operation.</param>
-        public static void Divide(ref Vector2 vector, ref Vector2 scale, out Vector2 result)
+        public static void Divide(in Vector2 vector, in Vector2 scale, out Vector2 result)
         {
             result.X = vector.X / scale.X;
             result.Y = vector.Y / scale.Y;
@@ -379,7 +379,7 @@ namespace Urho3DNet
         /// <param name="a">First operand</param>
         /// <param name="b">Second operand</param>
         /// <returns>The component-wise minimum</returns>
-        public static Vector2 ComponentMin(Vector2 a, Vector2 b)
+        public static Vector2 ComponentMin(Vector2 a, in Vector2 b)
         {
             a.X = a.X < b.X ? a.X : b.X;
             a.Y = a.Y < b.Y ? a.Y : b.Y;
@@ -392,7 +392,7 @@ namespace Urho3DNet
         /// <param name="a">First operand</param>
         /// <param name="b">Second operand</param>
         /// <param name="result">The component-wise minimum</param>
-        public static void ComponentMin(ref Vector2 a, ref Vector2 b, out Vector2 result)
+        public static void ComponentMin(in Vector2 a, in Vector2 b, out Vector2 result)
         {
             result.X = a.X < b.X ? a.X : b.X;
             result.Y = a.Y < b.Y ? a.Y : b.Y;
@@ -404,7 +404,7 @@ namespace Urho3DNet
         /// <param name="a">First operand</param>
         /// <param name="b">Second operand</param>
         /// <returns>The component-wise maximum</returns>
-        public static Vector2 ComponentMax(Vector2 a, Vector2 b)
+        public static Vector2 ComponentMax(Vector2 a, in Vector2 b)
         {
             a.X = a.X > b.X ? a.X : b.X;
             a.Y = a.Y > b.Y ? a.Y : b.Y;
@@ -417,7 +417,7 @@ namespace Urho3DNet
         /// <param name="a">First operand</param>
         /// <param name="b">Second operand</param>
         /// <param name="result">The component-wise maximum</param>
-        public static void ComponentMax(ref Vector2 a, ref Vector2 b, out Vector2 result)
+        public static void ComponentMax(in Vector2 a, in Vector2 b, out Vector2 result)
         {
             result.X = a.X > b.X ? a.X : b.X;
             result.Y = a.Y > b.Y ? a.Y : b.Y;
@@ -430,7 +430,7 @@ namespace Urho3DNet
         /// <param name="left">Left operand</param>
         /// <param name="right">Right operand</param>
         /// <returns>The minimum Vector2</returns>
-        public static Vector2 MagnitudeMin(Vector2 left, Vector2 right)
+        public static Vector2 MagnitudeMin(in Vector2 left, in Vector2 right)
         {
             return left.LengthSquared < right.LengthSquared ? left : right;
         }
@@ -443,7 +443,7 @@ namespace Urho3DNet
         /// <param name="right">Right operand</param>
         /// <param name="result">The magnitude-wise minimum</param>
         /// <returns>The minimum Vector2</returns>
-        public static void MagnitudeMin(ref Vector2 left, ref Vector2 right, out Vector2 result)
+        public static void MagnitudeMin(in Vector2 left, in Vector2 right, out Vector2 result)
         {
             result = left.LengthSquared < right.LengthSquared ? left : right;
         }
@@ -455,7 +455,7 @@ namespace Urho3DNet
         /// <param name="left">Left operand</param>
         /// <param name="right">Right operand</param>
         /// <returns>The maximum Vector2</returns>
-        public static Vector2 MagnitudeMax(Vector2 left, Vector2 right)
+        public static Vector2 MagnitudeMax(in Vector2 left, in Vector2 right)
         {
             return left.LengthSquared >= right.LengthSquared ? left : right;
         }
@@ -468,7 +468,7 @@ namespace Urho3DNet
         /// <param name="right">Right operand</param>
         /// <param name="result">The magnitude-wise maximum</param>
         /// <returns>The maximum Vector2</returns>
-        public static void MagnitudeMax(ref Vector2 left, ref Vector2 right, out Vector2 result)
+        public static void MagnitudeMax(in Vector2 left, in Vector2 right, out Vector2 result)
         {
             result = left.LengthSquared >= right.LengthSquared ? left : right;
         }
@@ -480,7 +480,7 @@ namespace Urho3DNet
         /// <param name="right">Right operand</param>
         /// <returns>The minimum Vector3</returns>
         [Obsolete("Use MagnitudeMin() instead.")]
-        public static Vector2 Min(Vector2 left, Vector2 right)
+        public static Vector2 Min(in Vector2 left, in Vector2 right)
         {
             return left.LengthSquared < right.LengthSquared ? left : right;
         }
@@ -492,7 +492,7 @@ namespace Urho3DNet
         /// <param name="right">Right operand</param>
         /// <returns>The minimum Vector3</returns>
         [Obsolete("Use MagnitudeMax() instead.")]
-        public static Vector2 Max(Vector2 left, Vector2 right)
+        public static Vector2 Max(in Vector2 left, in Vector2 right)
         {
             return left.LengthSquared >= right.LengthSquared ? left : right;
         }
@@ -504,7 +504,7 @@ namespace Urho3DNet
         /// <param name="min">Minimum vector</param>
         /// <param name="max">Maximum vector</param>
         /// <returns>The clamped vector</returns>
-        public static Vector2 Clamp(Vector2 vec, Vector2 min, Vector2 max)
+        public static Vector2 Clamp(Vector2 vec, in Vector2 min, in Vector2 max)
         {
             vec.X = vec.X < min.X ? min.X : vec.X > max.X ? max.X : vec.X;
             vec.Y = vec.Y < min.Y ? min.Y : vec.Y > max.Y ? max.Y : vec.Y;
@@ -518,7 +518,7 @@ namespace Urho3DNet
         /// <param name="min">Minimum vector</param>
         /// <param name="max">Maximum vector</param>
         /// <param name="result">The clamped vector</param>
-        public static void Clamp(ref Vector2 vec, ref Vector2 min, ref Vector2 max, out Vector2 result)
+        public static void Clamp(in Vector2 vec, in Vector2 min, in Vector2 max, out Vector2 result)
         {
             result.X = vec.X < min.X ? min.X : vec.X > max.X ? max.X : vec.X;
             result.Y = vec.Y < min.Y ? min.Y : vec.Y > max.Y ? max.Y : vec.Y;
@@ -530,10 +530,10 @@ namespace Urho3DNet
         /// <param name="vec1">The first vector</param>
         /// <param name="vec2">The second vector</param>
         /// <returns>The distance</returns>
-        public static float Distance(Vector2 vec1, Vector2 vec2)
+        public static float Distance(in Vector2 vec1, in Vector2 vec2)
         {
             float result;
-            Distance(ref vec1, ref vec2, out result);
+            Distance(vec1, vec2, out result);
             return result;
         }
 
@@ -543,7 +543,7 @@ namespace Urho3DNet
         /// <param name="vec1">The first vector</param>
         /// <param name="vec2">The second vector</param>
         /// <param name="result">The distance</param>
-        public static void Distance(ref Vector2 vec1, ref Vector2 vec2, out float result)
+        public static void Distance(in Vector2 vec1, in Vector2 vec2, out float result)
         {
             result = (float)Math.Sqrt((vec2.X - vec1.X) * (vec2.X - vec1.X) + (vec2.Y - vec1.Y) * (vec2.Y - vec1.Y));
         }
@@ -554,10 +554,10 @@ namespace Urho3DNet
         /// <param name="vec1">The first vector</param>
         /// <param name="vec2">The second vector</param>
         /// <returns>The squared distance</returns>
-        public static float DistanceSquared(Vector2 vec1, Vector2 vec2)
+        public static float DistanceSquared(in Vector2 vec1, in Vector2 vec2)
         {
             float result;
-            DistanceSquared(ref vec1, ref vec2, out result);
+            DistanceSquared(vec1, vec2, out result);
             return result;
         }
 
@@ -567,7 +567,7 @@ namespace Urho3DNet
         /// <param name="vec1">The first vector</param>
         /// <param name="vec2">The second vector</param>
         /// <param name="result">The squared distance</param>
-        public static void DistanceSquared(ref Vector2 vec1, ref Vector2 vec2, out float result)
+        public static void DistanceSquared(in Vector2 vec1, in Vector2 vec2, out float result)
         {
             result = (vec2.X - vec1.X) * (vec2.X - vec1.X) + (vec2.Y - vec1.Y) * (vec2.Y - vec1.Y);
         }
@@ -590,7 +590,7 @@ namespace Urho3DNet
         /// </summary>
         /// <param name="vec">The input vector</param>
         /// <param name="result">The normalized vector</param>
-        public static void Normalize(ref Vector2 vec, out Vector2 result)
+        public static void Normalize(in Vector2 vec, out Vector2 result)
         {
             float scale = 1.0f / vec.Length;
             result.X = vec.X * scale;
@@ -615,7 +615,7 @@ namespace Urho3DNet
         /// </summary>
         /// <param name="vec">The input vector</param>
         /// <param name="result">The normalized vector</param>
-        public static void NormalizeFast(ref Vector2 vec, out Vector2 result)
+        public static void NormalizeFast(in Vector2 vec, out Vector2 result)
         {
             float scale = MathDefs.InverseSqrtFast(vec.X * vec.X + vec.Y * vec.Y);
             result.X = vec.X * scale;
@@ -628,7 +628,7 @@ namespace Urho3DNet
         /// <param name="left">First operand</param>
         /// <param name="right">Second operand</param>
         /// <returns>The dot product of the two inputs</returns>
-        public static float Dot(Vector2 left, Vector2 right)
+        public static float Dot(in Vector2 left, in Vector2 right)
         {
             return left.X * right.X + left.Y * right.Y;
         }
@@ -639,7 +639,7 @@ namespace Urho3DNet
         /// <param name="left">First operand</param>
         /// <param name="right">Second operand</param>
         /// <param name="result">The dot product of the two inputs</param>
-        public static void Dot(ref Vector2 left, ref Vector2 right, out float result)
+        public static void Dot(in Vector2 left, in Vector2 right, out float result)
         {
             result = left.X * right.X + left.Y * right.Y;
         }
@@ -650,7 +650,7 @@ namespace Urho3DNet
         /// <param name="left">First operand</param>
         /// <param name="right">Second operand</param>
         /// <returns>The perpendicular dot product of the two inputs</returns>
-        public static float PerpDot(Vector2 left, Vector2 right)
+        public static float PerpDot(in Vector2 left, in Vector2 right)
         {
             return left.X * right.Y - left.Y * right.X;
         }
@@ -661,7 +661,7 @@ namespace Urho3DNet
         /// <param name="left">First operand</param>
         /// <param name="right">Second operand</param>
         /// <param name="result">The perpendicular dot product of the two inputs</param>
-        public static void PerpDot(ref Vector2 left, ref Vector2 right, out float result)
+        public static void PerpDot(in Vector2 left, in Vector2 right, out float result)
         {
             result = left.X * right.Y - left.Y * right.X;
         }
@@ -673,7 +673,7 @@ namespace Urho3DNet
         /// <param name="b">Second input vector</param>
         /// <param name="blend">The blend factor. a when blend=0, b when blend=1.</param>
         /// <returns>a when blend=0, b when blend=1, and a linear combination otherwise</returns>
-        public static Vector2 Lerp(Vector2 a, Vector2 b, float blend)
+        public static Vector2 Lerp(Vector2 a, in Vector2 b, float blend)
         {
             a.X = blend * (b.X - a.X) + a.X;
             a.Y = blend * (b.Y - a.Y) + a.Y;
@@ -687,7 +687,7 @@ namespace Urho3DNet
         /// <param name="b">Second input vector</param>
         /// <param name="blend">The blend factor. a when blend=0, b when blend=1.</param>
         /// <param name="result">a when blend=0, b when blend=1, and a linear combination otherwise</param>
-        public static void Lerp(ref Vector2 a, ref Vector2 b, float blend, out Vector2 result)
+        public static void Lerp(in Vector2 a, in Vector2 b, float blend, out Vector2 result)
         {
             result.X = blend * (b.X - a.X) + a.X;
             result.Y = blend * (b.Y - a.Y) + a.Y;
@@ -702,7 +702,7 @@ namespace Urho3DNet
         /// <param name="u">First Barycentric Coordinate</param>
         /// <param name="v">Second Barycentric Coordinate</param>
         /// <returns>a when u=v=0, b when u=1,v=0, c when u=0,v=1, and a linear combination of a,b,c otherwise</returns>
-        public static Vector2 BaryCentric(Vector2 a, Vector2 b, Vector2 c, float u, float v)
+        public static Vector2 BaryCentric(in Vector2 a, in Vector2 b, in Vector2 c, float u, float v)
         {
             return a + u * (b - a) + v * (c - a);
         }
@@ -714,19 +714,19 @@ namespace Urho3DNet
         /// <param name="u">First Barycentric Coordinate.</param>
         /// <param name="v">Second Barycentric Coordinate.</param>
         /// <param name="result">Output Vector. a when u=v=0, b when u=1,v=0, c when u=0,v=1, and a linear combination of a,b,c otherwise</param>
-        public static void BaryCentric(ref Vector2 a, ref Vector2 b, ref Vector2 c, float u, float v, out Vector2 result)
+        public static void BaryCentric(in Vector2 a, in Vector2 b, in Vector2 c, float u, float v, out Vector2 result)
         {
             result = a; // copy
 
             Vector2 temp = b; // copy
-            Subtract(ref temp, ref a, out temp);
-            Multiply(ref temp, u, out temp);
-            Add(ref result, ref temp, out result);
+            Subtract(temp, a, out temp);
+            Multiply(temp, u, out temp);
+            Add(result, temp, out result);
 
             temp = c; // copy
-            Subtract(ref temp, ref a, out temp);
-            Multiply(ref temp, v, out temp);
-            Add(ref result, ref temp, out result);
+            Subtract(temp, a, out temp);
+            Multiply(temp, v, out temp);
+            Add(result, temp, out result);
         }
 
         /// <summary>
@@ -735,10 +735,10 @@ namespace Urho3DNet
         /// <param name="vec">The vector to transform.</param>
         /// <param name="quat">The quaternion to rotate the vector by.</param>
         /// <returns>The result of the operation.</returns>
-        public static Vector2 Transform(Vector2 vec, Quaternion quat)
+        public static Vector2 Transform(in Vector2 vec, in Quaternion quat)
         {
             Vector2 result;
-            Transform(ref vec, ref quat, out result);
+            Transform(vec, quat, out result);
             return result;
         }
 
@@ -748,12 +748,12 @@ namespace Urho3DNet
         /// <param name="vec">The vector to transform.</param>
         /// <param name="quat">The quaternion to rotate the vector by.</param>
         /// <param name="result">The result of the operation.</param>
-        public static void Transform(ref Vector2 vec, ref Quaternion quat, out Vector2 result)
+        public static void Transform(in Vector2 vec, in Quaternion quat, out Vector2 result)
         {
             Quaternion v = new Quaternion(vec.X, vec.Y, 0, 0), i, t;
-            Quaternion.Invert(ref quat, out i);
-            Quaternion.Multiply(ref quat, ref v, out t);
-            Quaternion.Multiply(ref t, ref i, out v);
+            Quaternion.Invert(quat, out i);
+            Quaternion.Multiply(quat, v, out t);
+            Quaternion.Multiply(t, i, out v);
 
             result.X = v.X;
             result.Y = v.Y;
@@ -771,7 +771,7 @@ namespace Urho3DNet
         /// <param name="left">Left operand.</param>
         /// <param name="right">Right operand.</param>
         /// <returns>Result of addition.</returns>
-        public static Vector2 operator +(Vector2 left, Vector2 right)
+        public static Vector2 operator +(Vector2 left, in Vector2 right)
         {
             left.X += right.X;
             left.Y += right.Y;
@@ -784,7 +784,7 @@ namespace Urho3DNet
         /// <param name="left">Left operand.</param>
         /// <param name="right">Right operand.</param>
         /// <returns>Result of subtraction.</returns>
-        public static Vector2 operator -(Vector2 left, Vector2 right)
+        public static Vector2 operator -(Vector2 left, in Vector2 right)
         {
             left.X -= right.X;
             left.Y -= right.Y;
@@ -835,7 +835,7 @@ namespace Urho3DNet
         /// <param name="scale">Left operand.</param>
         /// <param name="vec">Right operand.</param>
         /// <returns>Result of multiplication.</returns>
-        public static Vector2 operator *(Vector2 vec, Vector2 scale)
+        public static Vector2 operator *(Vector2 vec, in Vector2 scale)
         {
             vec.X *= scale.X;
             vec.Y *= scale.Y;
@@ -861,7 +861,7 @@ namespace Urho3DNet
         /// <param name="left">Left operand.</param>
         /// <param name="right">Right operand.</param>
         /// <returns>True if both instances are equal; false otherwise.</returns>
-        public static bool operator ==(Vector2 left, Vector2 right)
+        public static bool operator ==(in Vector2 left, in Vector2 right)
         {
             return left.Equals(right);
         }
@@ -872,7 +872,7 @@ namespace Urho3DNet
         /// <param name="left">Left operand.</param>
         /// <param name="right">Right operand.</param>
         /// <returns>True if both instances are not equal; false otherwise.</returns>
-        public static bool operator !=(Vector2 left, Vector2 right)
+        public static bool operator !=(in Vector2 left, in Vector2 right)
         {
             return !left.Equals(right);
         }

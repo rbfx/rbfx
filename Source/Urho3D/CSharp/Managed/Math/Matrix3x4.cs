@@ -63,7 +63,7 @@ namespace Urho3DNet
         /// <param name="row0">Top row of the matrix</param>
         /// <param name="row1">Second row of the matrix</param>
         /// <param name="row2">Bottom row of the matrix</param>
-        public Matrix3x4(Vector4 row0, Vector4 row1, Vector4 row2)
+        public Matrix3x4(in Vector4 row0, in Vector4 row1, in Vector4 row2)
         {
             Row0 = row0;
             Row1 = row1;
@@ -96,7 +96,7 @@ namespace Urho3DNet
         }
 
         /// Copy-construct from a 3x3 matrix and set the extra elements to identity.
-        public Matrix3x4(Matrix3 matrix)
+        public Matrix3x4(in Matrix3 matrix)
         {
             Row0 = new Vector4(matrix.Row0, 0.0f);
             Row1 = new Vector4(matrix.Row1, 0.0f);
@@ -273,7 +273,7 @@ namespace Urho3DNet
         /// <param name="axis">The axis to rotate about.</param>
         /// <param name="angle">Angle in radians to rotate counter-clockwise (looking in the direction of the given axis).</param>
         /// <param name="result">A matrix instance.</param>
-        public static void CreateFromAxisAngle(Vector3 axis, float angle, out Matrix3x4 result)
+        public static void CreateFromAxisAngle(in Vector3 axis, float angle, out Matrix3x4 result)
         {
             axis.Normalize();
             float axisX = axis.X, axisY = axis.Y, axisZ = axis.Z;
@@ -313,7 +313,7 @@ namespace Urho3DNet
         /// <param name="axis">The axis to rotate about.</param>
         /// <param name="angle">Angle in radians to rotate counter-clockwise (looking in the direction of the given axis).</param>
         /// <returns>A matrix instance.</returns>
-        public static Matrix3x4 CreateFromAxisAngle(Vector3 axis, float angle)
+        public static Matrix3x4 CreateFromAxisAngle(in Vector3 axis, float angle)
         {
             Matrix3x4 result;
             CreateFromAxisAngle(axis, angle, out result);
@@ -325,7 +325,7 @@ namespace Urho3DNet
         /// </summary>
         /// <param name="q">The quaternion to rotate by.</param>
         /// <param name="result">A matrix instance.</param>
-        public static void CreateFromQuaternion(ref Quaternion q, out Matrix3x4 result)
+        public static void CreateFromQuaternion(in Quaternion q, out Matrix3x4 result)
         {
             float x = q.X, y = q.Y, z = q.Z, w = q.W,
                 tx = 2 * x, ty = 2 * y, tz = 2 * z,
@@ -357,10 +357,10 @@ namespace Urho3DNet
         /// </summary>
         /// <param name="q">The quaternion to rotate by.</param>
         /// <returns>A matrix instance.</returns>
-        public static Matrix3x4 CreateFromQuaternion(Quaternion q)
+        public static Matrix3x4 CreateFromQuaternion(in Quaternion q)
         {
             Matrix3x4 result;
-            CreateFromQuaternion(ref q, out result);
+            CreateFromQuaternion(q, out result);
             return result;
         }
 
@@ -500,7 +500,7 @@ namespace Urho3DNet
         /// </summary>
         /// <param name="vector">The translation vector.</param>
         /// <param name="result">The resulting Matrix4 instance.</param>
-        public static void CreateTranslation(ref Vector3 vector, out Matrix3x4 result)
+        public static void CreateTranslation(in Vector3 vector, out Matrix3x4 result)
         {
             result.Row0.X = 1;
             result.Row0.Y = 0;
@@ -535,7 +535,7 @@ namespace Urho3DNet
         /// </summary>
         /// <param name="vector">The translation vector.</param>
         /// <returns>The resulting Matrix4 instance.</returns>
-        public static Matrix3x4 CreateTranslation(Vector3 vector)
+        public static Matrix3x4 CreateTranslation(in Vector3 vector)
         {
             Matrix3x4 result;
             CreateTranslation(vector.X, vector.Y, vector.Z, out result);
@@ -593,10 +593,10 @@ namespace Urho3DNet
         /// <param name="left">The left operand of the multiplication.</param>
         /// <param name="right">The right operand of the multiplication.</param>
         /// <returns>A new instance that is the result of the multiplication</returns>
-        public static Matrix3x4 Mult(Matrix3x4 left, Matrix3x4 right)
+        public static Matrix3x4 Mult(in Matrix3x4 left, in Matrix3x4 right)
         {
             Matrix3x4 result;
-            Mult(ref left, ref right, out result);
+            Mult(left, right, out result);
             return result;
         }
 
@@ -606,7 +606,7 @@ namespace Urho3DNet
         /// <param name="left">The left operand of the multiplication.</param>
         /// <param name="right">The right operand of the multiplication.</param>
         /// <param name="result">A new instance that is the result of the multiplication</param>
-        public static void Mult(ref Matrix3x4 left, ref Matrix3x4 right, out Matrix3x4 result)
+        public static void Mult(in Matrix3x4 left, in Matrix3x4 right, out Matrix3x4 result)
         {
             float lM00 = left.Row0.X, lM01 = left.Row0.Y, lM02 = left.Row0.Z, lM03 = left.Row0.W,
                 lM10 = left.Row1.X, lM11 = left.Row1.Y, lM12 = left.Row1.Z, lM13 = left.Row1.W,
@@ -644,10 +644,10 @@ namespace Urho3DNet
         /// <param name="left">The left operand of the multiplication.</param>
         /// <param name="right">The right operand of the multiplication.</param>
         /// <returns>A new instance that is the result of the multiplication</returns>
-        public static Matrix3x4 Mult(Matrix3x4 left, float right)
+        public static Matrix3x4 Mult(in Matrix3x4 left, float right)
         {
             Matrix3x4 result;
-            Mult(ref left, right, out result);
+            Mult(left, right, out result);
             return result;
         }
 
@@ -657,7 +657,7 @@ namespace Urho3DNet
         /// <param name="left">The left operand of the multiplication.</param>
         /// <param name="right">The right operand of the multiplication.</param>
         /// <param name="result">A new instance that is the result of the multiplication</param>
-        public static void Mult(ref Matrix3x4 left, float right, out Matrix3x4 result)
+        public static void Mult(in Matrix3x4 left, float right, out Matrix3x4 result)
         {
             result.Row0 = left.Row0 * right;
             result.Row1 = left.Row1 * right;
@@ -670,10 +670,10 @@ namespace Urho3DNet
         /// <param name="left">The left operand of the addition.</param>
         /// <param name="right">The right operand of the addition.</param>
         /// <returns>A new instance that is the result of the addition.</returns>
-        public static Matrix3x4 Add(Matrix3x4 left, Matrix3x4 right)
+        public static Matrix3x4 Add(in Matrix3x4 left, in Matrix3x4 right)
         {
             Matrix3x4 result;
-            Add(ref left, ref right, out result);
+            Add(left, right, out result);
             return result;
         }
 
@@ -683,7 +683,7 @@ namespace Urho3DNet
         /// <param name="left">The left operand of the addition.</param>
         /// <param name="right">The right operand of the addition.</param>
         /// <param name="result">A new instance that is the result of the addition.</param>
-        public static void Add(ref Matrix3x4 left, ref Matrix3x4 right, out Matrix3x4 result)
+        public static void Add(in Matrix3x4 left, in Matrix3x4 right, out Matrix3x4 result)
         {
             result.Row0 = left.Row0 + right.Row0;
             result.Row1 = left.Row1 + right.Row1;
@@ -696,10 +696,10 @@ namespace Urho3DNet
         /// <param name="left">The left operand of the subraction.</param>
         /// <param name="right">The right operand of the subraction.</param>
         /// <returns>A new instance that is the result of the subraction.</returns>
-        public static Matrix3x4 Subtract(Matrix3x4 left, Matrix3x4 right)
+        public static Matrix3x4 Subtract(in Matrix3x4 left, in Matrix3x4 right)
         {
             Matrix3x4 result;
-            Subtract(ref left, ref right, out result);
+            Subtract(left, right, out result);
             return result;
         }
 
@@ -709,7 +709,7 @@ namespace Urho3DNet
         /// <param name="left">The left operand of the subraction.</param>
         /// <param name="right">The right operand of the subraction.</param>
         /// <param name="result">A new instance that is the result of the subraction.</param>
-        public static void Subtract(ref Matrix3x4 left, ref Matrix3x4 right, out Matrix3x4 result)
+        public static void Subtract(in Matrix3x4 left, in Matrix3x4 right, out Matrix3x4 result)
         {
             result.Row0 = left.Row0 - right.Row0;
             result.Row1 = left.Row1 - right.Row1;
@@ -722,10 +722,10 @@ namespace Urho3DNet
         /// <param name="mat">The matrix to invert</param>
         /// <returns>The inverse of the given matrix if it has one, or the input if it is singular</returns>
         /// <exception cref="InvalidOperationException">Thrown if the Matrix4 is singular.</exception>
-        public static Matrix3x4 Invert(Matrix3x4 mat)
+        public static Matrix3x4 Invert(in Matrix3x4 mat)
         {
             Matrix3x4 result;
-            Invert(ref mat, out result);
+            Invert(mat, out result);
             return result;
         }
 
@@ -735,7 +735,7 @@ namespace Urho3DNet
         /// <param name="mat">The matrix to invert</param>
         /// <param name="result">The inverse of the given matrix if it has one, or the input if it is singular</param>
         /// <exception cref="InvalidOperationException">Thrown if the Matrix4 is singular.</exception>
-        public static void Invert(ref Matrix3x4 mat, out Matrix3x4 result)
+        public static void Invert(in Matrix3x4 mat, out Matrix3x4 result)
         {
             Matrix3 inverseRotation = new Matrix3(mat.Column0, mat.Column1, mat.Column2);
             inverseRotation.Row0 /= inverseRotation.Row0.LengthSquared;
@@ -755,7 +755,7 @@ namespace Urho3DNet
         /// <param name="left">left-hand operand</param>
         /// <param name="right">right-hand operand</param>
         /// <returns>A new Matrix3x4 which holds the result of the multiplication</returns>
-        public static Matrix3x4 operator *(Matrix3x4 left, Matrix3x4 right)
+        public static Matrix3x4 operator *(in Matrix3x4 left, in Matrix3x4 right)
         {
             return Matrix3x4.Mult(left, right);
         }
@@ -766,7 +766,7 @@ namespace Urho3DNet
         /// <param name="left">left-hand operand</param>
         /// <param name="right">right-hand operand</param>
         /// <returns>A new Matrix3x4 which holds the result of the multiplication</returns>
-        public static Matrix3x4 operator *(Matrix3x4 left, float right)
+        public static Matrix3x4 operator *(in Matrix3x4 left, float right)
         {
             return Matrix3x4.Mult(left, right);
         }
@@ -776,7 +776,7 @@ namespace Urho3DNet
         /// <param name="left">left-hand operand</param>
         /// <param name="right">right-hand operand</param>
         /// <returns>A new Matrix3x4 which holds the result of the multiplication</returns>
-        public static Vector3 operator *(Matrix3x4 left, Vector3 right)
+        public static Vector3 operator *(in Matrix3x4 left, in Vector3 right)
         {
             return new Vector3(
                 (left.M00 * right.X + left.M01 * right.Y + left.M02 * right.Z + left.M03),
@@ -791,7 +791,7 @@ namespace Urho3DNet
         /// <param name="left">left-hand operand</param>
         /// <param name="right">right-hand operand</param>
         /// <returns>A new Matrix3x4 which holds the result of the addition</returns>
-        public static Matrix3x4 operator +(Matrix3x4 left, Matrix3x4 right)
+        public static Matrix3x4 operator +(in Matrix3x4 left, in Matrix3x4 right)
         {
             return Matrix3x4.Add(left, right);
         }
@@ -802,7 +802,7 @@ namespace Urho3DNet
         /// <param name="left">left-hand operand</param>
         /// <param name="right">right-hand operand</param>
         /// <returns>A new Matrix3x4 which holds the result of the subtraction</returns>
-        public static Matrix3x4 operator -(Matrix3x4 left, Matrix3x4 right)
+        public static Matrix3x4 operator -(in Matrix3x4 left, in Matrix3x4 right)
         {
             return Matrix3x4.Subtract(left, right);
         }
@@ -813,7 +813,7 @@ namespace Urho3DNet
         /// <param name="left">The first instance.</param>
         /// <param name="right">The second instance.</param>
         /// <returns>True, if left equals right; false otherwise.</returns>
-        public static bool operator ==(Matrix3x4 left, Matrix3x4 right)
+        public static bool operator ==(in Matrix3x4 left, in Matrix3x4 right)
         {
             return left.Equals(right);
         }
@@ -824,7 +824,7 @@ namespace Urho3DNet
         /// <param name="left">The first instance.</param>
         /// <param name="right">The second instance.</param>
         /// <returns>True, if left does not equal right; false otherwise.</returns>
-        public static bool operator !=(Matrix3x4 left, Matrix3x4 right)
+        public static bool operator !=(in Matrix3x4 left, in Matrix3x4 right)
         {
             return !left.Equals(right);
         }

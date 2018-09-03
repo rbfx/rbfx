@@ -29,7 +29,7 @@ namespace Urho3DNet
     [StructLayout(LayoutKind.Sequential)]
     public struct Color : IEquatable<Color>
     {
-        public Color(Color color)
+        public Color(in Color color)
         {
             R = color.R;
             G = color.G;
@@ -38,7 +38,7 @@ namespace Urho3DNet
         }
 
         /// Construct from another color and modify the alpha.
-        public Color(Color color, float a)
+        public Color(in Color color, float a)
         {
             R = color.R;
             G = color.G;
@@ -74,7 +74,7 @@ namespace Urho3DNet
         }
 
         /// Test for equality with another color without epsilon.
-        public static bool operator ==(Color lhs, Color rhs)
+        public static bool operator ==(in Color lhs, in Color rhs)
         {
             return MathDefs.Equals(lhs.R, rhs.R) &&
                    MathDefs.Equals(lhs.G, rhs.G) &&
@@ -83,7 +83,7 @@ namespace Urho3DNet
         }
 
         /// Test for inequality with another color without epsilon.
-        public static bool operator !=(Color lhs, Color rhs)
+        public static bool operator !=(in Color lhs, in Color rhs)
         {
             return !MathDefs.Equals(lhs.R, rhs.R) ||
                    !MathDefs.Equals(lhs.G, rhs.G) ||
@@ -92,16 +92,16 @@ namespace Urho3DNet
         }
 
         /// Multiply with a scalar.
-        public static Color operator *(Color lhs, float rhs) { return new Color(lhs.R * rhs, lhs.G * rhs, lhs.B * rhs, lhs.A * rhs); }
+        public static Color operator *(in Color lhs, float rhs) { return new Color(lhs.R * rhs, lhs.G * rhs, lhs.B * rhs, lhs.A * rhs); }
 
         /// Add a color.
-        public static Color operator +(Color lhs, Color rhs) { return new Color(lhs.R + rhs.R, lhs.G + rhs.G, lhs.B + rhs.B, lhs.A + rhs.A); }
+        public static Color operator +(in Color lhs, in Color rhs) { return new Color(lhs.R + rhs.R, lhs.G + rhs.G, lhs.B + rhs.B, lhs.A + rhs.A); }
 
         /// Return negation.
-        public static Color operator -(Color lhs) { return new Color(-lhs.R, -lhs.G, -lhs.B, -lhs.A); }
+        public static Color operator -(in Color lhs) { return new Color(-lhs.R, -lhs.G, -lhs.B, -lhs.A); }
 
         /// Subtract a color.
-        public static Color operator -(Color lhs, Color rhs) { return new Color(lhs.R - rhs.R, lhs.G - rhs.G, lhs.B - rhs.B, lhs.A - rhs.A); }
+        public static Color operator -(in Color lhs, in Color rhs) { return new Color(lhs.R - rhs.R, lhs.G - rhs.G, lhs.B - rhs.B, lhs.A - rhs.A); }
 
         /// Return color packed to a 32-bit integer, with R component in the lowest 8 bits. Components are clamped to [0, 1] range.
         public uint ToUInt()
@@ -342,7 +342,7 @@ namespace Urho3DNet
         }
 
         /// Return linear interpolation of this color with another color.
-        public Color Lerp(Color rhs, float t)
+        public Color Lerp(in Color rhs, float t)
         {
             float invT = 1.0f - t;
             return new Color(

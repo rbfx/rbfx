@@ -48,7 +48,7 @@ namespace Urho3DNet
         /// </summary>
         /// <param name="v">The vector part</param>
         /// <param name="w">The w part</param>
-        public Quaternion(Vector3 v, float w)
+        public Quaternion(in Vector3 v, float w)
         {
             Xyz = v;
             W = w;
@@ -97,7 +97,7 @@ namespace Urho3DNet
         /// 1. Around X, 2. Around Y, 3. Around Z
         /// </summary>
         /// <param name="eulerAngles">The counterclockwise euler angles as a Vector3</param>
-        public Quaternion(Vector3 eulerAngles)
+        public Quaternion(in Vector3 eulerAngles)
             : this(eulerAngles.X, eulerAngles.Y, eulerAngles.Z)
         { }
 
@@ -241,7 +241,7 @@ namespace Urho3DNet
         /// <param name="left">The first operand</param>
         /// <param name="right">The second operand</param>
         /// <returns>The result of the addition</returns>
-        public static Quaternion Add(Quaternion left, Quaternion right)
+        public static Quaternion Add(in Quaternion left, in Quaternion right)
         {
             return new Quaternion(
                 left.Xyz + right.Xyz,
@@ -254,7 +254,7 @@ namespace Urho3DNet
         /// <param name="left">The first operand</param>
         /// <param name="right">The second operand</param>
         /// <param name="result">The result of the addition</param>
-        public static void Add(ref Quaternion left, ref Quaternion right, out Quaternion result)
+        public static void Add(in Quaternion left, in Quaternion right, out Quaternion result)
         {
             result = new Quaternion(
                 left.Xyz + right.Xyz,
@@ -267,7 +267,7 @@ namespace Urho3DNet
         /// <param name="left">The left instance.</param>
         /// <param name="right">The right instance.</param>
         /// <returns>The result of the operation.</returns>
-        public static Quaternion Sub(Quaternion left, Quaternion right)
+        public static Quaternion Sub(in Quaternion left, in Quaternion right)
         {
             return  new Quaternion(
                 left.Xyz - right.Xyz,
@@ -280,7 +280,7 @@ namespace Urho3DNet
         /// <param name="left">The left instance.</param>
         /// <param name="right">The right instance.</param>
         /// <param name="result">The result of the operation.</param>
-        public static void Sub(ref Quaternion left, ref Quaternion right, out Quaternion result)
+        public static void Sub(in Quaternion left, in Quaternion right, out Quaternion result)
         {
             result = new Quaternion(
                 left.Xyz - right.Xyz,
@@ -293,10 +293,10 @@ namespace Urho3DNet
         /// <param name="left">The first instance.</param>
         /// <param name="right">The second instance.</param>
         /// <returns>A new instance containing the result of the calculation.</returns>
-        public static Quaternion Multiply(Quaternion left, Quaternion right)
+        public static Quaternion Multiply(in Quaternion left, in Quaternion right)
         {
             Quaternion result;
-            Multiply(ref left, ref right, out result);
+            Multiply(left, right, out result);
             return result;
         }
 
@@ -306,7 +306,7 @@ namespace Urho3DNet
         /// <param name="left">The first instance.</param>
         /// <param name="right">The second instance.</param>
         /// <param name="result">A new instance containing the result of the calculation.</param>
-        public static void Multiply(ref Quaternion left, ref Quaternion right, out Quaternion result)
+        public static void Multiply(in Quaternion left, in Quaternion right, out Quaternion result)
         {
             result = new Quaternion(
                 right.W * left.Xyz + left.W * right.Xyz + Vector3.Cross(left.Xyz, right.Xyz),
@@ -319,7 +319,7 @@ namespace Urho3DNet
         /// <param name="quaternion">The instance.</param>
         /// <param name="scale">The scalar.</param>
         /// <param name="result">A new instance containing the result of the calculation.</param>
-        public static void Multiply(ref Quaternion quaternion, float scale, out Quaternion result)
+        public static void Multiply(in Quaternion quaternion, float scale, out Quaternion result)
         {
             result = new Quaternion(quaternion.X * scale, quaternion.Y * scale, quaternion.Z * scale, quaternion.W * scale);
         }
@@ -330,7 +330,7 @@ namespace Urho3DNet
         /// <param name="quaternion">The instance.</param>
         /// <param name="scale">The scalar.</param>
         /// <returns>A new instance containing the result of the calculation.</returns>
-        public static Quaternion Multiply(Quaternion quaternion, float scale)
+        public static Quaternion Multiply(in Quaternion quaternion, float scale)
         {
             return new Quaternion(quaternion.X * scale, quaternion.Y * scale, quaternion.Z * scale, quaternion.W * scale);
         }
@@ -340,7 +340,7 @@ namespace Urho3DNet
         /// </summary>
         /// <param name="q">The quaternion</param>
         /// <returns>The conjugate of the given quaternion</returns>
-        public static Quaternion Conjugate(Quaternion q)
+        public static Quaternion Conjugate(in Quaternion q)
         {
             return new Quaternion(-q.Xyz, q.W);
         }
@@ -350,7 +350,7 @@ namespace Urho3DNet
         /// </summary>
         /// <param name="q">The quaternion</param>
         /// <param name="result">The conjugate of the given quaternion</param>
-        public static void Conjugate(ref Quaternion q, out Quaternion result)
+        public static void Conjugate(in Quaternion q, out Quaternion result)
         {
             result = new Quaternion(-q.Xyz, q.W);
         }
@@ -360,10 +360,10 @@ namespace Urho3DNet
         /// </summary>
         /// <param name="q">The quaternion to invert</param>
         /// <returns>The inverse of the given quaternion</returns>
-        public static Quaternion Invert(Quaternion q)
+        public static Quaternion Invert(in Quaternion q)
         {
             Quaternion result;
-            Invert(ref q, out result);
+            Invert(q, out result);
             return result;
         }
 
@@ -372,7 +372,7 @@ namespace Urho3DNet
         /// </summary>
         /// <param name="q">The quaternion to invert</param>
         /// <param name="result">The inverse of the given quaternion</param>
-        public static void Invert(ref Quaternion q, out Quaternion result)
+        public static void Invert(in Quaternion q, out Quaternion result)
         {
             float lengthSq = q.LengthSquared;
             if (lengthSq != 0.0)
@@ -391,10 +391,10 @@ namespace Urho3DNet
         /// </summary>
         /// <param name="q">The quaternion to normalize</param>
         /// <returns>The normalized quaternion</returns>
-        public static Quaternion Normalize(Quaternion q)
+        public static Quaternion Normalize(in Quaternion q)
         {
             Quaternion result;
-            Normalize(ref q, out result);
+            Normalize(q, out result);
             return result;
         }
 
@@ -403,7 +403,7 @@ namespace Urho3DNet
         /// </summary>
         /// <param name="q">The quaternion to normalize</param>
         /// <param name="result">The normalized quaternion</param>
-        public static void Normalize(ref Quaternion q, out Quaternion result)
+        public static void Normalize(in Quaternion q, out Quaternion result)
         {
             float scale = 1.0f / q.Length;
             result = new Quaternion(q.Xyz * scale, q.W * scale);
@@ -415,7 +415,7 @@ namespace Urho3DNet
         /// <param name="axis">The axis to rotate about</param>
         /// <param name="angle">The rotation angle in radians</param>
         /// <returns>The equivalent quaternion</returns>
-        public static Quaternion FromAxisAngle(Vector3 axis, float angle)
+        public static Quaternion FromAxisAngle(in Vector3 axis, float angle)
         {
             if (axis.LengthSquared == 0.0f)
             {
@@ -453,7 +453,7 @@ namespace Urho3DNet
         /// </summary>
         /// <param name="eulerAngles">The counterclockwise euler angles as a vector</param>
         /// <returns>The equivalent Quaternion</returns>
-        public static Quaternion FromEulerAngles(Vector3 eulerAngles)
+        public static Quaternion FromEulerAngles(in Vector3 eulerAngles)
         {
             return new Quaternion(eulerAngles);
         }
@@ -486,10 +486,10 @@ namespace Urho3DNet
         /// </summary>
         /// <param name="matrix">A rotation matrix</param>
         /// <returns>The equivalent quaternion</returns>
-        public static Quaternion FromMatrix(Matrix3 matrix)
+        public static Quaternion FromMatrix(in Matrix3 matrix)
         {
             Quaternion result;
-            FromMatrix(ref matrix, out result);
+            FromMatrix(matrix, out result);
             return result;
         }
 
@@ -498,7 +498,7 @@ namespace Urho3DNet
         /// </summary>
         /// <param name="matrix">A rotation matrix</param>
         /// <param name="result">The equivalent quaternion</param>
-        public static void FromMatrix(ref Matrix3 matrix, out Quaternion result)
+        public static void FromMatrix(in Matrix3 matrix, out Quaternion result)
         {
             float trace = matrix.Trace;
 
@@ -556,7 +556,7 @@ namespace Urho3DNet
         /// <param name="q2">The second quaternion</param>
         /// <param name="blend">The blend factor</param>
         /// <returns>A smooth blend between the given quaternions</returns>
-        public static Quaternion Slerp(Quaternion q1, Quaternion q2, float blend)
+        public static Quaternion Slerp(in Quaternion q1, Quaternion q2, float blend)
         {
             // if either input is zero, return the other.
             if (q1.LengthSquared == 0.0f)
@@ -622,7 +622,7 @@ namespace Urho3DNet
         /// <param name="left">The first instance.</param>
         /// <param name="right">The second instance.</param>
         /// <returns>The result of the calculation.</returns>
-        public static Quaternion operator +(Quaternion left, Quaternion right)
+        public static Quaternion operator +(Quaternion left, in Quaternion right)
         {
             left.Xyz += right.Xyz;
             left.W += right.W;
@@ -635,7 +635,7 @@ namespace Urho3DNet
         /// <param name="left">The first instance.</param>
         /// <param name="right">The second instance.</param>
         /// <returns>The result of the calculation.</returns>
-        public static Quaternion operator -(Quaternion left, Quaternion right)
+        public static Quaternion operator -(Quaternion left, in Quaternion right)
         {
             left.Xyz -= right.Xyz;
             left.W -= right.W;
@@ -648,9 +648,9 @@ namespace Urho3DNet
         /// <param name="left">The first instance.</param>
         /// <param name="right">The second instance.</param>
         /// <returns>The result of the calculation.</returns>
-        public static Quaternion operator *(Quaternion left, Quaternion right)
+        public static Quaternion operator *(Quaternion left, in Quaternion right)
         {
-            Multiply(ref left, ref right, out left);
+            Multiply(left, right, out left);
             return left;
         }
 
@@ -662,7 +662,7 @@ namespace Urho3DNet
         /// <returns>A new instance containing the result of the calculation.</returns>
         public static Quaternion operator *(Quaternion quaternion, float scale)
         {
-            Multiply(ref quaternion, scale, out quaternion);
+            Multiply(quaternion, scale, out quaternion);
             return quaternion;
         }
 
@@ -672,7 +672,7 @@ namespace Urho3DNet
         /// <param name="quaternion">The instance.</param>
         /// <param name="scale">The scalar.</param>
         /// <returns>A new instance containing the result of the calculation.</returns>
-        public static Quaternion operator *(float scale, Quaternion quaternion)
+        public static Quaternion operator *(float scale, in Quaternion quaternion)
         {
             return new Quaternion(quaternion.X * scale, quaternion.Y * scale, quaternion.Z * scale, quaternion.W * scale);
         }
@@ -683,7 +683,7 @@ namespace Urho3DNet
         /// <param name="left">The first instance.</param>
         /// <param name="right">The second instance.</param>
         /// <returns>True, if left equals right; false otherwise.</returns>
-        public static bool operator ==(Quaternion left, Quaternion right)
+        public static bool operator ==(in Quaternion left, in Quaternion right)
         {
             return left.Equals(right);
         }
@@ -694,7 +694,7 @@ namespace Urho3DNet
         /// <param name="left">The first instance.</param>
         /// <param name="right">The second instance.</param>
         /// <returns>True, if left does not equal right; false otherwise.</returns>
-        public static bool operator !=(Quaternion left, Quaternion right)
+        public static bool operator !=(in Quaternion left, in Quaternion right)
         {
             return !left.Equals(right);
         }
