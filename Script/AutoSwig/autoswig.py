@@ -135,6 +135,9 @@ class DefineConstantsPass(AstPass):
             ln = re.sub(rf'.*{node.spelling}\s*=\s*(.+);[\n\t\s]*', r'\1', ln)
         else:
             ln = ln.rstrip('\s\n;')
+        if ' ' in ln:
+            # Complex expression
+            ln = None
         return ln
 
     @AstPass.once
@@ -151,7 +154,8 @@ class DefineConstantsPass(AstPass):
                 idiomatic_name = camel_case(node.spelling)
                 if node_expr:
                     value = self.get_constant_value(node_expr)
-                    self.fp.write(f'CS_CONSTANT({fqn}, {idiomatic_name}, {value});\n')
+                    if value:
+                        self.fp.write(f'CS_CONSTANT({fqn}, {idiomatic_name}, {value});\n')
                 else:
                     self.fp.write(f'%rename({idiomatic_name}) {fqn};\n')
 
@@ -160,17 +164,18 @@ class DefineConstantsPass(AstPass):
                 idiomatic_name = camel_case(node.spelling)
                 if literal:
                     value = self.get_constant_value(literal)
-                    if node.type.get_canonical().kind in (TypeKind.CHAR_U,
-                                                          TypeKind.UCHAR,
-                                                          TypeKind.CHAR16,
-                                                          TypeKind.CHAR32,
-                                                          TypeKind.USHORT,
-                                                          TypeKind.UINT,
-                                                          TypeKind.ULONG,
-                                                          TypeKind.ULONGLONG,
-                                                          TypeKind.UINT128) and not value.endswith('U'):
-                        value += 'U'
-                    self.fp.write(f'CS_CONSTANT({fqn}, {idiomatic_name}, {value});\n')
+                    if value:
+                        if node.type.get_canonical().kind in (TypeKind.CHAR_U,
+                                                              TypeKind.UCHAR,
+                                                              TypeKind.CHAR16,
+                                                              TypeKind.CHAR32,
+                                                              TypeKind.USHORT,
+                                                              TypeKind.UINT,
+                                                              TypeKind.ULONG,
+                                                              TypeKind.ULONGLONG,
+                                                              TypeKind.UINT128) and not value.endswith('U'):
+                            value += 'U'
+                        self.fp.write(f'CS_CONSTANT({fqn}, {idiomatic_name}, {value});\n')
                 else:
                     self.fp.write(f'%rename({idiomatic_name}) {fqn};\n')
 
@@ -444,13 +449,14 @@ class DefineEventsPass(AstPass):
 
     def on_begin(self):
         self.fp = open(os.path.join(self.module.args.output, '_events.i'), 'w+')
-        self.fp.write("""%pragma(csharp) moduleimports=%{
-            public static class E
-            {
-        """)
+        self.fp.write(
+            '%pragma(csharp) moduleimports=%{\n' +
+            'public static class E\n' +
+            '{\n'
+        )
 
     def on_end(self):
-        self.fp.write("} %}")
+        self.fp.write('}\n%}\n')
         self.fp.close()
 
     def visit(self, node, action: AstAction):
@@ -463,24 +469,22 @@ class DefineEventsPass(AstPass):
 
             if next_node.kind == CursorKind.NAMESPACE:
                 if next_node.spelling.lower() == node.spelling[2:].replace('_', '').lower():
-                    self.fp.write(f"""
-                    public class {next_node.spelling}Event {{
-                        private StringHash _event = new StringHash("{next_node.spelling}");
-                    """)
+                    self.fp.write(
+                        f'    public class {next_node.spelling}Event {{\n' +
+                        f'        private StringHash _event = new StringHash("{next_node.spelling}");\n\n')
 
                     for param in next_node.children:
                         param_name = read_raw_code(param)
                         param_name = self.re_param_name.match(param_name).group(2)
                         var_name = camel_case(param_name)
-                        self.fp.write(f"""
-                        public StringHash {var_name} = new StringHash("{param_name}");""")
+                        self.fp.write(f'        public StringHash {var_name} = new StringHash("{param_name}");\n')
 
-                    self.fp.write(f"""
-                        public {next_node.spelling}Event() {{ }}
-                        public static implicit operator StringHash({next_node.spelling}Event e) {{ return e._event; }}
-                    }}
-                    public static {next_node.spelling}Event {next_node.spelling} = new {next_node.spelling}Event();
-                    """)
+                    self.fp.write(
+                        f'        public {next_node.spelling}Event() {{ }}\n' +
+                        f'        public static implicit operator StringHash({next_node.spelling}Event e) {{ return e._event; }}\n' +
+                        '    }\n' +
+                        f'    public static {next_node.spelling}Event {next_node.spelling} = new {next_node.spelling}Event();\n\n'
+                    )
         return True
 
 
@@ -517,7 +521,7 @@ class Urho3DModule(Module):
                 filter(lambda s: len(s), subprocess.check_output([llvm_config, '--cppflags']).decode().strip().split(' '))
 
             if sys.platform == 'linux':
-                version = subprocess.check_output([llvm_config, '--version']).decode()
+                version = subprocess.check_output([llvm_config, '--version']).decode().strip()
                 self.include_directories += [f'/usr/lib/clang/{version}/include']
 
         self.include_directories += [

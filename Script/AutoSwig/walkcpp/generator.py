@@ -111,7 +111,7 @@ class Generator(object):
                 p.visit(node, AstAction.LEAVE)
 
         trees = {}
-        files = list(module.gather_files())
+        files = sorted(module.gather_files())
 
         # Check if outputs are out of date
         first_output_time = sys.maxsize
