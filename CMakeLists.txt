@@ -72,7 +72,7 @@ include(UrhoPackaging)
 # Install CMake modules and toolchains provided by and for Urho3D
 install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/ DESTINATION ${DEST_SHARE_DIR}/CMake)    # Note: the trailing slash is significant
 # Install CMake build scripts
-file (GLOB CMAKE_SCRIPTS ${CMAKE_SOURCE_DIR}/*${SCRIPT_EXT})
+file (GLOB CMAKE_SCRIPTS ${CMAKE_SOURCE_DIR}/Script/*${SCRIPT_EXT})
 install (PROGRAMS ${CMAKE_SCRIPTS} DESTINATION ${DEST_SHARE_DIR}/Scripts)
 # Install data files
 file (MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
