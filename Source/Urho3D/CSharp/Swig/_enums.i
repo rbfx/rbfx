@@ -1,32 +1,32 @@
-%csattributes Urho3D::AttributeMode "[global::System.Flags]";
+%typemap(csattributes) Urho3D::AttributeMode "[global::System.Flags]";
 using AttributeModeFlags = Urho3D::AttributeMode;
 %typemap(ctype) AttributeModeFlags "size_t";
 %typemap(out) AttributeModeFlags "$result = (size_t)$1.AsInteger();"
-%csattributes Urho3D::AnimationChannel "[global::System.Flags]";
+%typemap(csattributes) Urho3D::AnimationChannel "[global::System.Flags]";
 using AnimationChannelFlags = Urho3D::AnimationChannel;
 %typemap(ctype) AnimationChannelFlags "size_t";
 %typemap(out) AnimationChannelFlags "$result = (size_t)$1.AsInteger();"
-%csattributes Urho3D::ViewOverride "[global::System.Flags]";
+%typemap(csattributes) Urho3D::ViewOverride "[global::System.Flags]";
 using ViewOverrideFlags = Urho3D::ViewOverride;
 %typemap(ctype) ViewOverrideFlags "size_t";
 %typemap(out) ViewOverrideFlags "$result = (size_t)$1.AsInteger();"
-%csattributes Urho3D::DrawableFlag "[global::System.Flags]";
+%typemap(csattributes) Urho3D::DrawableFlag "[global::System.Flags]";
 using DrawableFlags = Urho3D::DrawableFlag;
 %typemap(ctype) DrawableFlags "size_t";
 %typemap(out) DrawableFlags "$result = (size_t)$1.AsInteger();"
-%csattributes Urho3D::ClearTarget "[global::System.Flags]";
+%typemap(csattributes) Urho3D::ClearTarget "[global::System.Flags]";
 using ClearTargetFlags = Urho3D::ClearTarget;
 %typemap(ctype) ClearTargetFlags "size_t";
 %typemap(out) ClearTargetFlags "$result = (size_t)$1.AsInteger();"
-%csattributes Urho3D::VertexMask "[global::System.Flags]";
+%typemap(csattributes) Urho3D::VertexMask "[global::System.Flags]";
 using VertexMaskFlags = Urho3D::VertexMask;
 %typemap(ctype) VertexMaskFlags "size_t";
 %typemap(out) VertexMaskFlags "$result = (size_t)$1.AsInteger();"
-%csattributes Urho3D::BoneCollisionShape "[global::System.Flags]";
+%typemap(csattributes) Urho3D::BoneCollisionShape "[global::System.Flags]";
 using BoneCollisionShapeFlags = Urho3D::BoneCollisionShape;
 %typemap(ctype) BoneCollisionShapeFlags "size_t";
 %typemap(out) BoneCollisionShapeFlags "$result = (size_t)$1.AsInteger();"
-%csattributes Urho3D::MouseButton "[global::System.Flags]";
+%typemap(csattributes) Urho3D::MouseButton "[global::System.Flags]";
 %csconstvalue("1") MOUSEB_LEFT;
 %csconstvalue("2") MOUSEB_MIDDLE;
 %csconstvalue("4") MOUSEB_RIGHT;
@@ -35,7 +35,7 @@ using BoneCollisionShapeFlags = Urho3D::BoneCollisionShape;
 using MouseButtonFlags = Urho3D::MouseButton;
 %typemap(ctype) MouseButtonFlags "size_t";
 %typemap(out) MouseButtonFlags "$result = (size_t)$1.AsInteger();"
-%csattributes Urho3D::Qualifier "[global::System.Flags]";
+%typemap(csattributes) Urho3D::Qualifier "[global::System.Flags]";
 using QualifierFlags = Urho3D::Qualifier;
 %typemap(ctype) QualifierFlags "size_t";
 %typemap(out) QualifierFlags "$result = (size_t)$1.AsInteger();"
@@ -549,19 +549,19 @@ using QualifierFlags = Urho3D::Qualifier;
 %csconstvalue("3") CONTROLLER_AXIS_RIGHTY;
 %csconstvalue("4") CONTROLLER_AXIS_TRIGGERLEFT;
 %csconstvalue("5") CONTROLLER_AXIS_TRIGGERRIGHT;
-%csattributes Urho3D::UpdateEvent "[global::System.Flags]";
+%typemap(csattributes) Urho3D::UpdateEvent "[global::System.Flags]";
 using UpdateEventFlags = Urho3D::UpdateEvent;
 %typemap(ctype) UpdateEventFlags "size_t";
 %typemap(out) UpdateEventFlags "$result = (size_t)$1.AsInteger();"
-%csattributes Urho3D::SmoothingType "[global::System.Flags]";
+%typemap(csattributes) Urho3D::SmoothingType "[global::System.Flags]";
 using SmoothingTypeFlags = Urho3D::SmoothingType;
 %typemap(ctype) SmoothingTypeFlags "size_t";
 %typemap(out) SmoothingTypeFlags "$result = (size_t)$1.AsInteger();"
-%csattributes Urho3D::DebugHudMode "[global::System.Flags]";
+%typemap(csattributes) Urho3D::DebugHudMode "[global::System.Flags]";
 using DebugHudModeFlags = Urho3D::DebugHudMode;
 %typemap(ctype) DebugHudModeFlags "size_t";
 %typemap(out) DebugHudModeFlags "$result = (size_t)$1.AsInteger();"
-%csattributes Urho3D::DragAndDropMode "[global::System.Flags]";
+%typemap(csattributes) Urho3D::DragAndDropMode "[global::System.Flags]";
 using DragAndDropModeFlags = Urho3D::DragAndDropMode;
 %typemap(ctype) DragAndDropModeFlags "size_t";
 %typemap(out) DragAndDropModeFlags "$result = (size_t)$1.AsInteger();"

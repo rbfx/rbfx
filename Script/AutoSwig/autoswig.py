@@ -438,7 +438,7 @@ class CleanEnumValues(AstPass):
     def visit(self, node, action: AstAction):
         if node.kind == CursorKind.ENUM_DECL:
             if node.type.spelling in FindFlagEnums.flag_enums:
-                self.fp.write(f'%csattributes {node.type.spelling} "[global::System.Flags]";\n')
+                self.fp.write(f'%typemap(csattributes) {node.type.spelling} "[global::System.Flags]";\n')
 
             if node.type.spelling.startswith('Urho3D::'):
                 for child in node.children:
