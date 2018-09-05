@@ -8,4 +8,7 @@
     <ProjectReference Include="../../ThirdParty/imgui/ImGuiNet.csproj" />
     <ProjectReference Include="../../Urho3D/CSharp/Urho3DNet.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="*.cs" />
+  </ItemGroup>
 </Project>
