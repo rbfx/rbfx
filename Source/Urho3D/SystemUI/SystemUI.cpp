@@ -50,6 +50,8 @@ SystemUI::SystemUI(Urho3D::Context* context)
     , vertexBuffer_(context)
     , indexBuffer_(context)
 {
+    ImGui::CreateContext();
+
     ImGuiIO& io = ImGui::GetIO();
     io.KeyMap[ImGuiKey_Tab] = SCANCODE_TAB;
     io.KeyMap[ImGuiKey_LeftArrow] = SCANCODE_LEFT;
@@ -71,7 +73,6 @@ SystemUI::SystemUI(Urho3D::Context* context)
     io.KeyMap[ImGuiKey_PageUp] = SCANCODE_PAGEUP;
     io.KeyMap[ImGuiKey_PageDown] = SCANCODE_DOWN;
 
-    io.RenderDrawListsFn = [](ImDrawData* data) { ((SystemUI*)ImGui::GetIO().UserData)->OnRenderDrawLists(data); };
     io.SetClipboardTextFn = [](void* userData, const char* text) { SDL_SetClipboardText(text); };
     io.GetClipboardTextFn = [](void* userData) -> const char* { return SDL_GetClipboardText(); };
 
@@ -79,7 +80,8 @@ SystemUI::SystemUI(Urho3D::Context* context)
 
     SetScale(Vector3::ZERO, false);
 
-    SubscribeToEvent(E_APPLICATIONSTARTED, [&](StringHash, VariantMap&) {
+    SubscribeToEvent(E_APPLICATIONSTARTED, [this](StringHash, VariantMap&) {
+        ImGuiIO& io = ImGui::GetIO();
         if (io.Fonts->Fonts.empty())
         {
             io.Fonts->AddFontDefault();
@@ -103,16 +105,18 @@ SystemUI::SystemUI(Urho3D::Context* context)
         ImGui::NewFrame();
         ImGuizmo::BeginFrame();
     });
-    SubscribeToEvent(E_ENDRENDERING, [&](StringHash, VariantMap&)
+    SubscribeToEvent(E_ENDRENDERING, [this](StringHash, VariantMap&)
     {
         URHO3D_PROFILE("SystemUiRender");
         ImGui::Render();
+        OnRenderDrawLists(ImGui::GetDrawData());
     });
 }
 
 SystemUI::~SystemUI()
 {
-    ImGui::Shutdown();
+    ImGui::EndFrame();
+    ImGui::Shutdown(ImGui::GetCurrentContext());
 }
 
 void SystemUI::UpdateProjectionMatrix()
@@ -430,7 +434,7 @@ bool SystemUI::IsAnyItemActive() const
 
 bool SystemUI::IsAnyItemHovered() const
 {
-    return ui::IsAnyItemHovered() || ui::IsAnyWindowHovered();
+    return ui::IsAnyItemHovered() || ui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
 }
 
 int ToImGui(MouseButton button)

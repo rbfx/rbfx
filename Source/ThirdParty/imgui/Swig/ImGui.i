@@ -1,5 +1,6 @@
 %module(naturalvar=1) ImGui
 
+#define IMGUI_DISABLE_OBSOLETE_FUNCTIONS 1
 %{
 
 #include <Urho3D/Math/Vector2.h>
@@ -16,9 +17,19 @@
 %apply void* VOID_INT_PTR {
     void*,
     ImFont*,
-    ImGuiTextEditCallback   // needs ImGuiTextEditCallbackData
+    ImGuiSizeCallback,
+    ImGuiInputTextCallback,
+    ImGuiSizeConstraintCallbackData*,
+    ImGuiInputTextCallbackData*,
+    ImGuiSizeCallbackData*
 }
 
+%ignore ImGuiSizeConstraintCallbackData;
+%ignore ImGuiInputTextCallbackData;
+%ignore ImGuiSizeCallbackData;
+
+// Speed boost
+%pragma(csharp) imclassclassmodifiers="[System.Security.SuppressUnmanagedCodeSecurity]\ninternal class"
 %typemap(csvarout, excode=SWIGEXCODE2) float INOUT[] "get { var ret = $imcall;$excode return ret; }"
 
 %apply float *OUTPUT   { float& out_r, float& out_g, float& out_b, float& out_u, float& out_v, float& out_w };
@@ -42,6 +53,8 @@
 
 //%apply unsigned int* INOUT { unsigned int* randomRef, unsigned int* nearestRef }
 
+%ignore ImGui::SetAllocatorFunctions;
+%ignore ImGui::SaveIniSettingsToMemory;
 %ignore ImGui::TextV;
 %ignore ImGui::TextColoredV;
 %ignore ImGui::TextDisabledV;
@@ -91,9 +104,7 @@
 %ignore ImFontGlyph;
 %ignore ImGuiIO;
 %ignore ImGuiTextFilter;
-%ignore ImGuiSizeConstraintCallbackData;
 %ignore ImGuiPayload;
-%ignore ImGuiTextEditCallbackData;
 %ignore ImGui::CreateContext;
 %ignore ImGui::DestroyContext;
 %ignore ImGui::GetCurrentContext;
@@ -133,6 +144,12 @@
 %imgui_enum(ImGuiMouseCursor);
 %imgui_enum(ImGuiStyleVar);
 %imgui_enum(ImGuiWindowFlags);
+%imgui_enum(ImFontAtlasFlags);
+%imgui_enum(ImGuiBackendFlags);
+%imgui_enum(ImGuiConfigFlags);
+%imgui_enum(ImGuiDataType);
+%imgui_enum(ImGuiDir);
+%imgui_enum(ImGuiNavInput);
 
 %include "../../../Urho3D/CSharp/Swig/Math.i"
 

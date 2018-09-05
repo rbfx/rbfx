@@ -278,7 +278,7 @@ void UITab::OnActiveUpdate()
         {
             auto pos = input->GetMousePosition();
             auto clicked = GetSubsystem<UI>()->GetElementAt(pos, false);
-            if (!clicked && rootElement_->GetCombinedScreenRect().IsInside(pos) == INSIDE && !ui::IsAnyWindowHovered())
+            if (!clicked && rootElement_->GetCombinedScreenRect().IsInside(pos) == INSIDE && !ui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
                 clicked = rootElement_;
 
             if (clicked)

@@ -157,7 +157,7 @@ bool SceneTab::RenderWindowContent()
                 ToggleSelection(clickNode);
 
                 if (isClickedRight)
-                    ui::OpenPopupEx(ui::GetID("Node context menu"), true);
+                    ui::OpenPopupEx(ui::GetID("Node context menu"));
             }
         }
         else
@@ -501,7 +501,7 @@ void SceneTab::RenderNodeTree(Node* node)
         {
             UnselectAll();
             ToggleSelection(node);
-            ui::OpenPopupEx(ui::GetID("Node context menu"), true);
+            ui::OpenPopupEx(ui::GetID("Node context menu"));
         }
     }
 
@@ -528,7 +528,7 @@ void SceneTab::RenderNodeTree(Node* node)
                 if (ui::IsMouseClicked(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
                 {
                     selected = true;
-                    ui::OpenPopupEx(ui::GetID("Component context menu"), true);
+                    ui::OpenPopupEx(ui::GetID("Component context menu"));
                 }
 
                 if (selected)

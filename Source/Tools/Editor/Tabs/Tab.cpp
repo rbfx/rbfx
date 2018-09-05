@@ -72,7 +72,7 @@ bool Tab::RenderWindow()
     {
         if (open_)
         {
-            IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->InnerRect);
+            IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->InnerClipRect);
             if (tabRect.IsInside(lastMousePosition_) == INSIDE)
             {
                 if (!ui::IsWindowFocused() && ui::IsItemHovered() && input->GetMouseButtonDown(MOUSEB_RIGHT))
@@ -114,7 +114,7 @@ void Tab::UpdateUniqueTitle()
 
 IntRect Tab::UpdateViewRect()
 {
-    IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->InnerRect);
+    IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->InnerClipRect);
     tabRect += IntRect(0, static_cast<int>(ui::GetCursorPosY()), 0, 0);
     return tabRect;
 }

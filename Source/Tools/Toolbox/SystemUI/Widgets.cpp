@@ -352,7 +352,7 @@ bool TransformRect(Urho3D::IntRect& inOut, Urho3D::IntRect& delta, TransformSele
 
         // Prevent interaction when something else blocks inactive transform.
         if (s->resizing_ != RESIZE_NONE || (ui::IsItemHovered(ImGuiHoveredFlags_RectOnly) &&
-            (!ui::IsAnyWindowHovered() || ui::IsWindowHovered())))
+            (!ui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) || ui::IsWindowHovered())))
         {
             // Set mouse cursor if handle is hovered or if we are resizing
             if (resizing != RESIZE_NONE && !s->ownsCursor_)

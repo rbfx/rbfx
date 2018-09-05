@@ -18,6 +18,7 @@ bool        ImGui_ImplSdlGL2_Init(SDL_Window* window);
 void        ImGui_ImplSdlGL2_Shutdown();
 void        ImGui_ImplSdlGL2_NewFrame(SDL_Window* window);
 bool        ImGui_ImplSdlGL2_ProcessEvent(SDL_Event* event);
+void        ImGui_ImplSdl_RenderDrawLists(ImDrawData* draw_data);
 
 // Use if you want to reset your rendering device without losing ImGui state.
 void        ImGui_ImplSdlGL2_InvalidateDeviceObjects();
