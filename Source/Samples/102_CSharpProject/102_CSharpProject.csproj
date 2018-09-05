@@ -3,6 +3,7 @@
     <AssemblyName>102_CSharpProject</AssemblyName>
     <OutputType>WinExe</OutputType>
     <RootNamespace>CSharpProject</RootNamespace>
+    <EnableDefaultCompileItems>False</EnableDefaultCompileItems>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../ThirdParty/imgui/ImGuiNet.csproj" />
