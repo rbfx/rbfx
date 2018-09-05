@@ -6,7 +6,7 @@
   <PropertyGroup Condition="'$(TargetFramework)' == 'net471'">
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
     <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
-    <RuntimeIdentifiers Condition=" '$(OS)' == 'Unix' ">ubuntu.14.04-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition=" '$(OS)' == 'Unix' ">linux-x64</RuntimeIdentifiers>
     <RuntimeIdentifiers Condition=" '$(OS)' == 'Windows_NT' ">win-x64</RuntimeIdentifiers>
     <RuntimeIdentifiers Condition=" '$(OS)' == 'OSX' ">osx.10.10-x64</RuntimeIdentifiers>
   </PropertyGroup>
