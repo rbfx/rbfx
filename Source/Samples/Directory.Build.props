@@ -4,7 +4,7 @@
     <TargetFramework>net471</TargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(BuildDir)' != '' ">
-    <BaseOutputPath>$(BuildDir)bin/</BaseOutputPath>
-    <BaseIntermediateOutputPath>$(BuildDir)obj/</BaseIntermediateOutputPath>
+    <OutDir Condition="'$(OS)' == 'Windows_NT'">$(BaseOutputPath)/$(Configuration)/</OutDir>
+    <OutDir Condition="'$(OS)' != 'Windows_NT'">$(BaseOutputPath)/</OutDir>
   </PropertyGroup>
 </Project>
