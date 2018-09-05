@@ -1,0 +1,10 @@
+<Project ToolsVersion="15.0">
+  <Import Project="../../Directory.Build.props" />
+  <PropertyGroup>
+    <TargetFramework>net471</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(BuildDir)' != '' ">
+    <BaseOutputPath>$(BuildDir)bin/</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(BuildDir)obj/</BaseIntermediateOutputPath>
+  </PropertyGroup>
+</Project>
