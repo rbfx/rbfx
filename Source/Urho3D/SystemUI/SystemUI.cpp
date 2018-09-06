@@ -117,6 +117,7 @@ SystemUI::~SystemUI()
 {
     ImGui::EndFrame();
     ImGui::Shutdown(ImGui::GetCurrentContext());
+    ImGui::DestroyContext();
 }
 
 void SystemUI::UpdateProjectionMatrix()
