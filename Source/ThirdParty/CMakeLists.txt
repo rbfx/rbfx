@@ -93,7 +93,7 @@ if (URHO3D_TOOLS)
 endif ()
 
 if (URHO3D_TASKS)
-    add_subdirectory(fcontext)
+    add_subdirectory(sc)
 endif ()
 
 add_subdirectory(CLI11)

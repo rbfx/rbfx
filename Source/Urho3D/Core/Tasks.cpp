@@ -23,6 +23,7 @@
 #include "../IO/Log.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/Tasks.h"
+#include "Tasks.h"
 
 
 #if URHO3D_TASKS
@@ -30,7 +31,7 @@
 #   define URHO3D_TASKS_USE_EXCEPTIONS
 #endif
 
-#include <fcontext/fcontext.h>
+#include <sc/sc.h>
 
 #if defined(HAVE_VALGRIND)
 #   include <valgrind/valgrind.h>
@@ -44,45 +45,30 @@ namespace Urho3D
 /// Exception which causes task termination. Intentionally does not inherit std::exception to prevent user catching termination request.
 class TerminateTaskException { };
 
-#if !URHO3D_TASKS_NO_TLS
-thread_local Task* currentTask_ = nullptr;
-#endif
-
-void Task::ExecuteTaskWrapper(ContextTransferData transfer)
+void Task::ExecuteTaskWrapper(void* task)
 {
-    auto* task = static_cast<Task*>(transfer.data);
-    task->SetPreviousTaskContext(transfer.context);
-    task->ExecuteTask();
+    sc_yield(nullptr);
+    ((Task*)task)->ExecuteTask();
 }
 
-Task::Task(TaskScheduler* scheduler, const std::function<void()>& taskFunction, unsigned int stackSize)
-    : scheduler_(scheduler)
-    , taskProc_(taskFunction)
+Task::Task(const std::function<void()>& taskFunction, unsigned int stackSize)
+    : function_(taskFunction)
+    , stackSize_(stackSize)
 {
     if (taskFunction)
     {
-        fcontext_stack_t stack = create_fcontext_stack(stackSize);
-        stack_ = stack.sptr;
-        stackSize_ = stack.ssize;
+        stackOwner_ = new unsigned char[stackSize];
+        stack_ = stackOwner_.Get();
         stackId_ = VALGRIND_STACK_REGISTER((uint8_t*)stack_ + stackSize, (uint8_t*)stack_);
-        context_ = make_fcontext(stack_, stackSize_, reinterpret_cast<pfn_fcontext>(&ExecuteTaskWrapper));
+        context_ = sc_context_create(stack_, stackSize_, &ExecuteTaskWrapper);
+        sc_switch((sc_context_t)context_, (void*)this);
     }
 }
 
 Task::~Task()
 {
     if (stack_)
-    {
         VALGRIND_STACK_DEREGISTER(stackId_);
-        fcontext_stack_t stack{stack_, stackSize_};
-        destroy_fcontext_stack(&stack);
-    }
-}
-
-void Task::SetPreviousTaskContext(void* context)
-{
-    if (!scheduler_.Expired())
-        scheduler_->previous_->context_ = context;
 }
 
 void Task::ExecuteTask()
@@ -90,11 +76,12 @@ void Task::ExecuteTask()
     // This method must not contain objects as local variables, because it's stack will not be unwound and their
     // destructors will not be called.
     state_ = TSTATE_EXECUTING;
+    sc_set_data(sc_current_context(), (void*)this);
 #ifdef URHO3D_TASKS_USE_EXCEPTIONS
     try
     {
 #endif
-        taskProc_();
+        function_();
 #ifdef URHO3D_TASKS_USE_EXCEPTIONS
     }
     catch (TerminateTaskException&)
@@ -110,19 +97,13 @@ void Task::ExecuteTask()
 
 void Task::Suspend(float time)
 {
-    if (scheduler_.Expired())
-    {
-        URHO3D_LOGERROR("Manually scheduled tasks can not be suspended.");
-        return;
-    }
-
 #ifdef URHO3D_TASKS_USE_EXCEPTIONS
     if (state_ == TSTATE_TERMINATE)
         throw TerminateTaskException();
 #endif
 
     nextRunTime_ = Time::GetSystemTime() + static_cast<unsigned>(1000.f * time);
-    scheduler_->threadTask_.SwitchTo();
+    sc_yield(nullptr);
 }
 
 bool Task::SwitchTo()
@@ -139,36 +120,22 @@ bool Task::SwitchTo()
         return false;
     }
 
-    if (!scheduler_.Expired())
-    {
-        scheduler_->previous_ = scheduler_->current_;
-        scheduler_->current_ = this;
-#if !URHO3D_TASKS_NO_TLS
-        currentTask_ = this;
-#endif
-    }
-
-    SetPreviousTaskContext(jump_fcontext(context_, this).ctx);
+    sc_switch((sc_context_t)context_, nullptr);
     return true;
 }
 
 TaskScheduler::TaskScheduler(Context* context)
     : Object(context)
-    , threadTask_(this, nullptr)
 {
-    threadTask_.state_ = TSTATE_EXECUTING;
-    threadTask_.scheduler_ = this;
-    current_ = currentTask_ = &threadTask_;
-    previous_ = &threadTask_;
 }
 
 TaskScheduler::~TaskScheduler() = default;
 
 Task* TaskScheduler::Create(const std::function<void()>& taskFunction, unsigned stackSize)
 {
-    SharedPtr<Task> task(new Task(this, taskFunction, stackSize));
+    SharedPtr<Task> task(new Task(taskFunction, stackSize));
     tasks_.Push(task);
-    return task;
+    return task.Get();
 }
 
 void TaskScheduler::ExecuteTasks()
@@ -223,12 +190,16 @@ void TaskScheduler::ExecuteAllTasks()
     }
 }
 
-#if !URHO3D_TASKS_NO_TLS
+bool TaskScheduler::SwitchTo() const
+{
+    sc_switch(sc_main_context(), nullptr);
+    return true;
+}
+
 void SuspendTask(float time)
 {
-    currentTask_->Suspend(time);
+    ((Task*)sc_get_data(sc_current_context()))->Suspend(time);
 }
-#endif
 
 Tasks::Tasks(Context* context) : Object(context)
 {

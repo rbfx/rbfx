@@ -23,6 +23,7 @@
 #pragma once
 
 
+#include "../Container/ArrayPtr.h"
 #include "../Core/Object.h"
 #include "../Core/Timer.h"
 #include "../Core/Thread.h"
@@ -55,7 +56,7 @@ static const unsigned DEFAULT_TASK_SIZE = 1024 * 64;
 class URHO3D_API Task : public RefCounted
 {
     /// Construct a task. It has to be manually scheduled by calling Task::SwitchTo(). Caller is responsible for freeing returned object after task finishes execution.
-    Task(TaskScheduler* scheduler, const std::function<void()>& taskFunction, unsigned stackSize = DEFAULT_TASK_SIZE);
+    Task(const std::function<void()>& taskFunction, unsigned stackSize = DEFAULT_TASK_SIZE);
 public:
     /// Destruct.
     ~Task() override;
@@ -74,20 +75,10 @@ public:
     inline void Terminate() { state_ = TSTATE_TERMINATE; }
 
 protected:
-    /// Structure which holds context of previous fiber and custom user data pointer.
-    struct ContextTransferData
-    {
-        /// Fiber context data.
-        void* context;
-        /// Custom user pointer.
-        void* data;
-    };
     /// Handles task execution. Should not be called by user.
     void ExecuteTask();
     /// Starts execution of a task using fiber API.
-    static void ExecuteTaskWrapper(ContextTransferData transfer);
-    /// Set context of previous task.
-    void SetPreviousTaskContext(void* context);
+    static void ExecuteTaskWrapper(void* task);
 
     /// Fiber context.
     void* context_ = nullptr;
@@ -100,13 +91,13 @@ protected:
     /// Time when task should schedule again.
     unsigned nextRunTime_ = 0;
     /// Procedure that executes the task.
-    std::function<void()> taskProc_;
+    std::function<void()> function_;
     /// Current state of the task.
     TaskState state_ = TSTATE_CREATED;
     /// Thread id on which task was created.
     ThreadID threadID_ = Thread::GetCurrentThreadID();
-    /// Task scheduler which created this task. Null if task is manually scheduled.
-    WeakPtr<TaskScheduler> scheduler_;
+    /// Object that owns allocated stack memory.
+    SharedArrayPtr<unsigned char> stackOwner_;
 
     friend class TaskScheduler;
     friend class Tasks;
@@ -131,27 +122,17 @@ public:
     /// Schedule tasks continuously until all of them exit.
     void ExecuteAllTasks();
     /// Switch to main thread task.
-    inline bool SwitchTo() { return threadTask_.SwitchTo(); }
-    /// Suspend execution of current task. Must be called from within function invoked by callback passed to TaskScheduler::Create() or Tasks::Create().
-    inline void SuspendTask(float time = 0.f) { current_->Suspend(time); }
+    bool SwitchTo() const;
 
 private:
     /// List of tasks for every event tasks are executed on.
     Vector<SharedPtr<Task>> tasks_;
-    /// Thread task which executes scheduler code.
-    Task threadTask_;
-    /// Current task that is being executed.
-    Task* current_ = nullptr;
-    /// Previous task that was executed.
-    Task* previous_ = nullptr;
 
     friend class Task;
 };
 
-#if !URHO3D_TASKS_NO_TLS
 /// Suspend execution of current task. Must be called from within function invoked by callback passed to TaskScheduler::Create() or Tasks::Create().
 URHO3D_API void SuspendTask(float time = 0.f);
-#endif
 
 /// Tasks subsystem. Handles execution of tasks on the main thread.
 class URHO3D_API Tasks : public Object

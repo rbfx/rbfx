@@ -609,7 +609,7 @@
 %rename(StackSize) Urho3D::Task::stackSize_;
 %rename(StackId) Urho3D::Task::stackId_;
 %rename(NextRunTime) Urho3D::Task::nextRunTime_;
-%rename(TaskProc) Urho3D::Task::taskProc_;
+%rename(Function) Urho3D::Task::function_;
 %rename(State) Urho3D::Task::state_;
 %rename(ThreadID) Urho3D::Task::threadID_;
 %rename(Scheduler) Urho3D::Task::scheduler_;

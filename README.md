@@ -47,7 +47,7 @@ Urho3D bundles the following third-party libraries:
 - nativefiledialog (https://github.com/mlabbe/nativefiledialog)
 - IconFontCppHeaders (https://github.com/juliettef/IconFontCppHeaders)
 - ImGuizmo 1.61 (https://github.com/CedricGuillemet/ImGuizmo)
-- deboost.context (https://github.com/septag/deboost.context)
+- sc (https://github.com/rhoot/sc)
 - cr (https://github.com/fungos/cr)
 - crunch (https://github.com/Unity-Technologies/crunch/)
 - CLI11 v1.5.1 (https://github.com/CLIUtils/CLI11/)
