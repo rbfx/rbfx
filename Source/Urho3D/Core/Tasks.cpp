@@ -95,7 +95,7 @@ void Task::ExecuteTask()
     assert(false);
 }
 
-void Task::Suspend(float time)
+void* Task::Suspend(float time, void* data)
 {
 #ifdef URHO3D_TASKS_USE_EXCEPTIONS
     if (state_ == TSTATE_TERMINATE)
@@ -103,25 +103,24 @@ void Task::Suspend(float time)
 #endif
 
     nextRunTime_ = Time::GetSystemTime() + static_cast<unsigned>(1000.f * time);
-    sc_yield(nullptr);
+    return sc_yield(data);
 }
 
-bool Task::SwitchTo()
+void* Task::SwitchTo(void* data)
 {
     if (threadID_ != Thread::GetCurrentThreadID())
     {
         URHO3D_LOGERROR("Task must be scheduled on the same thread where it was created.");
-        return false;
+        return nullptr;
     }
 
     if (state_ == TSTATE_FINISHED)
     {
         URHO3D_LOGERROR("Finished task may not be scheduled again.");
-        return false;
+        return nullptr;
     }
 
-    sc_switch((sc_context_t)context_, nullptr);
-    return true;
+    return sc_switch((sc_context_t)context_, data);
 }
 
 TaskScheduler::TaskScheduler(Context* context)
@@ -196,9 +195,9 @@ bool TaskScheduler::SwitchTo() const
     return true;
 }
 
-void SuspendTask(float time)
+void* SuspendTask(float time, void* data)
 {
-    ((Task*)sc_get_data(sc_current_context()))->Suspend(time);
+    return ((Task*)sc_get_data(sc_current_context()))->Suspend(time, data);
 }
 
 Tasks::Tasks(Context* context) : Object(context)

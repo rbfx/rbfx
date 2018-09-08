@@ -66,10 +66,13 @@ public:
     inline bool IsTerminating() const { return state_ == TSTATE_TERMINATE; };
     /// Return true if task is ready, false if task is still sleeping.
     inline bool IsReady() { return nextRunTime_ <= Time::GetSystemTime(); }
-    /// Suspend execution of current task. Must be called from within function invoked by callback passed to TaskScheduler::Create() or Tasks::Create().
-    void Suspend(float time = 0.f);
-    /// Explicitly switch execution to specified task. Task must be created on the same thread where this function is called. Task can be switched to at any time.
-    bool SwitchTo();
+    /// Suspend execution of current task. Must be called from within function invoked by callback passed to
+    /// TaskScheduler::Create() or Tasks::Create(). This task will resume execution no sooner than after `time` seconds.
+    /// `data` pointer will be returned by Suspend()/SwitchTo() of next executing task.
+    void* Suspend(float time = 0.f, void* data = nullptr);
+    /// Explicitly switch execution to specified task. Task must be created on the same thread where this function is
+    /// called. Task can be switched to at any time. `data` pointer will be returned by Suspend()/SwitchTo() of next executing task.
+    void* SwitchTo(void* data = nullptr);
     /// Request task termination. If exception support is disabled then user must return from the task manually when IsTerminating() returns true.
     /// If exception support is enabled then task will be terminated next time Suspend() method is called. Suspend() will throw an exception that will be caught out-most layer of the task.
     inline void Terminate() { state_ = TSTATE_TERMINATE; }
@@ -131,8 +134,10 @@ private:
     friend class Task;
 };
 
-/// Suspend execution of current task. Must be called from within function invoked by callback passed to TaskScheduler::Create() or Tasks::Create().
-URHO3D_API void SuspendTask(float time = 0.f);
+/// Suspend execution of current task. Must be called from within function invoked by callback passed to
+/// TaskScheduler::Create() or Tasks::Create().
+/// `data` pointer will be returned by Suspend()/SwitchTo() of next executing task.
+URHO3D_API void* SuspendTask(float time = 0.f, void* data = nullptr);
 
 /// Tasks subsystem. Handles execution of tasks on the main thread.
 class URHO3D_API Tasks : public Object
