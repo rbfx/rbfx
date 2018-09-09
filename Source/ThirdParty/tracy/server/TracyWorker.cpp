@@ -201,6 +201,7 @@ Worker::Worker( const char* addr )
     , m_pendingSourceLocation( 0 )
     , m_pendingCallstackFrames( 0 )
     , m_traceVersion( CurrentVersion )
+    , m_handshake( 0 )
 {
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.threadExpand.push_back( 0 );
@@ -224,6 +225,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     , m_crashed( false )
     , m_stream( nullptr )
     , m_buffer( nullptr )
+    , m_handshake( 0 )
 {
     m_data.threadExpand.push_back( 0 );
     m_data.callstackPayload.push_back( nullptr );
@@ -276,6 +278,38 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         char tmp[1024];
         f.Read( tmp, sz );
         m_captureName = std::string( tmp, tmp+sz );
+    }
+
+    if( fileVer >= FileVersion( 0, 3, 205 ) )
+    {
+        f.Read( sz );
+        assert( sz < 1024 );
+        char tmp[1024];
+        f.Read( tmp, sz );
+        m_captureProgram = std::string( tmp, tmp+sz );
+
+        f.Read( m_captureTime );
+    }
+    else
+    {
+        const auto sz = m_captureName.size();
+        char tmp[1024];
+        memcpy( tmp, m_captureName.c_str(), sz );
+        tmp[sz] = '\0';
+        auto ptr = tmp + sz - 1;
+        while( *ptr != '@' )
+        {
+            if( *ptr == '#' ) *ptr = '\0';
+            ptr--;
+        }
+
+        m_captureProgram = std::string( tmp, ptr-1 );
+
+        tm epoch = {};
+        sscanf( ptr+1, "%d-%d-%d %d:%d:%d", &epoch.tm_year, &epoch.tm_mon, &epoch.tm_mday, &epoch.tm_hour, &epoch.tm_min, &epoch.tm_sec );
+        epoch.tm_year -= 1900;
+        epoch.tm_mon--;
+        m_captureTime = (uint64_t)mktime( &epoch );
     }
 
     if( fileVer >= FileVersion( 0, 3, 203 ) )
@@ -921,6 +955,36 @@ uint64_t Worker::GetPlotCount() const
     return cnt;
 }
 
+size_t Worker::GetFullFrameCount( const FrameData& fd ) const
+{
+    const auto sz = fd.frames.size();
+    assert( sz != 0 );
+
+    if( fd.continuous )
+    {
+        if( IsConnected() )
+        {
+            return sz - 1;
+        }
+        else
+        {
+            return sz;
+        }
+    }
+    else
+    {
+        const auto& last = fd.frames.back();
+        if( last.end >= 0 )
+        {
+            return sz;
+        }
+        else
+        {
+            return sz - 1;
+        }
+    }
+}
+
 int64_t Worker::GetFrameTime( const FrameData& fd, size_t idx ) const
 {
     if( fd.continuous )
@@ -1211,139 +1275,158 @@ void Worker::Exec()
         return m_shutdown.load( std::memory_order_relaxed );
     };
 
-    auto lz4buf = std::make_unique<char[]>( LZ4Size );
     for(;;)
     {
         if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-        if( !m_sock.Connect( m_addr.c_str(), "8086" ) ) continue;
+        if( m_sock.Connect( m_addr.c_str(), "8086" ) ) break;
+    }
 
-        std::chrono::time_point<std::chrono::high_resolution_clock> t0;
+    auto lz4buf = std::make_unique<char[]>( LZ4Size );
 
-        uint64_t bytes = 0;
-        uint64_t decBytes = 0;
+    std::chrono::time_point<std::chrono::high_resolution_clock> t0;
 
-        m_data.framesBase = m_data.frames.Retrieve( 0, [this] ( uint64_t name ) {
-            auto fd = m_slab.AllocInit<FrameData>();
-            fd->name = name;
-            fd->continuous = 1;
-            return fd;
-        }, [this] ( uint64_t name ) {
-            assert( name == 0 );
-            char tmp[6] = "Frame";
-            HandleFrameName( name, tmp, 5 );
-        } );
+    uint64_t bytes = 0;
+    uint64_t decBytes = 0;
+
+    m_sock.Send( HandshakeShibboleth, HandshakeShibbolethSize );
+    uint32_t protocolVersion = ProtocolVersion;
+    m_sock.Send( &protocolVersion, sizeof( protocolVersion ) );
+    HandshakeStatus handshake;
+    if( !m_sock.Read( &handshake, sizeof( handshake ), &tv, ShouldExit ) ) goto close;
+    m_handshake.store( handshake, std::memory_order_relaxed );
+    switch( handshake )
+    {
+    case HandshakeWelcome:
+        break;
+    case HandshakeProtocolMismatch:
+    case HandshakeNotAvailable:
+    default:
+        goto close;
+    }
+
+    m_data.framesBase = m_data.frames.Retrieve( 0, [this] ( uint64_t name ) {
+        auto fd = m_slab.AllocInit<FrameData>();
+        fd->name = name;
+        fd->continuous = 1;
+        return fd;
+    }, [this] ( uint64_t name ) {
+        assert( name == 0 );
+        char tmp[6] = "Frame";
+        HandleFrameName( name, tmp, 5 );
+    } );
+
+    {
+        WelcomeMessage welcome;
+        if( !m_sock.Read( &welcome, sizeof( welcome ), &tv, ShouldExit ) ) goto close;
+        m_timerMul = welcome.timerMul;
+        const auto initEnd = TscTime( welcome.initEnd );
+        m_data.framesBase->frames.push_back( FrameEvent{ TscTime( welcome.initBegin ), -1 } );
+        m_data.framesBase->frames.push_back( FrameEvent{ initEnd, -1 } );
+        m_data.lastTime = initEnd;
+        m_delay = TscTime( welcome.delay );
+        m_resolution = TscTime( welcome.resolution );
+        m_onDemand = welcome.onDemand;
+        m_captureProgram = welcome.programName;
+        m_captureTime = welcome.epoch;
+
+        char dtmp[64];
+        time_t date = welcome.epoch;
+        auto lt = localtime( &date );
+        strftime( dtmp, 64, "%F %T", lt );
+        char tmp[1024];
+        sprintf( tmp, "%s @ %s", welcome.programName, dtmp );
+        m_captureName = tmp;
+
+        m_hostInfo = welcome.hostInfo;
+
+        if( welcome.onDemand != 0 )
+        {
+            OnDemandPayloadMessage onDemand;
+            if( !m_sock.Read( &onDemand, sizeof( onDemand ), &tv, ShouldExit ) ) goto close;
+            m_data.frameOffset = onDemand.frames;
+        }
+    }
+
+    m_hasData.store( true, std::memory_order_release );
+
+    LZ4_setStreamDecode( m_stream, nullptr, 0 );
+    m_connected.store( true, std::memory_order_relaxed );
+
+    t0 = std::chrono::high_resolution_clock::now();
+
+    for(;;)
+    {
+        if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+
+        auto buf = m_buffer + m_bufferOffset;
+        lz4sz_t lz4sz;
+        if( !m_sock.Read( &lz4sz, sizeof( lz4sz ), &tv, ShouldExit ) ) goto close;
+        if( !m_sock.Read( lz4buf.get(), lz4sz, &tv, ShouldExit ) ) goto close;
+        bytes += sizeof( lz4sz ) + lz4sz;
+
+        auto sz = LZ4_decompress_safe_continue( m_stream, lz4buf.get(), buf, lz4sz, TargetFrameSize );
+        assert( sz >= 0 );
+        decBytes += sz;
+
+        char* ptr = buf;
+        const char* end = buf + sz;
 
         {
-            WelcomeMessage welcome;
-            if( !m_sock.Read( &welcome, sizeof( welcome ), &tv, ShouldExit ) ) goto close;
-            m_timerMul = welcome.timerMul;
-            const auto initEnd = TscTime( welcome.initEnd );
-            m_data.framesBase->frames.push_back( FrameEvent{ TscTime( welcome.initBegin ), -1 } );
-            m_data.framesBase->frames.push_back( FrameEvent{ initEnd, -1 } );
-            m_data.lastTime = initEnd;
-            m_delay = TscTime( welcome.delay );
-            m_resolution = TscTime( welcome.resolution );
-            m_onDemand = welcome.onDemand;
-
-            char dtmp[64];
-            time_t date = welcome.epoch;
-            auto lt = localtime( &date );
-            strftime( dtmp, 64, "%F %T", lt );
-            char tmp[1024];
-            sprintf( tmp, "%s @ %s", welcome.programName, dtmp );
-            m_captureName = tmp;
-
-            m_hostInfo = welcome.hostInfo;
-
-            if( welcome.onDemand != 0 )
+            std::lock_guard<TracyMutex> lock( m_data.lock );
+            while( ptr < end )
             {
-                OnDemandPayloadMessage onDemand;
-                if( !m_sock.Read( &onDemand, sizeof( onDemand ), &tv, ShouldExit ) ) goto close;
-                m_data.frameOffset = onDemand.frames;
+                auto ev = (const QueueItem*)ptr;
+                DispatchProcess( *ev, ptr );
             }
+
+            m_bufferOffset += sz;
+            if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
+
+            HandlePostponedPlots();
         }
 
-        m_hasData.store( true, std::memory_order_release );
-
-        LZ4_setStreamDecode( m_stream, nullptr, 0 );
-        m_connected.store( true, std::memory_order_relaxed );
-
-        t0 = std::chrono::high_resolution_clock::now();
-
-        for(;;)
+        auto t1 = std::chrono::high_resolution_clock::now();
+        auto td = std::chrono::duration_cast<std::chrono::milliseconds>( t1 - t0 ).count();
+        enum { MbpsUpdateTime = 200 };
+        if( td > MbpsUpdateTime )
         {
-            if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+            std::lock_guard<TracyMutex> lock( m_mbpsData.lock );
+            m_mbpsData.mbps.erase( m_mbpsData.mbps.begin() );
+            m_mbpsData.mbps.emplace_back( bytes / ( td * 125.f ) );
+            m_mbpsData.compRatio = float( bytes ) / decBytes;
+            t0 = t1;
+            bytes = 0;
+            decBytes = 0;
+        }
 
-            auto buf = m_buffer + m_bufferOffset;
-            lz4sz_t lz4sz;
-            if( !m_sock.Read( &lz4sz, sizeof( lz4sz ), &tv, ShouldExit ) ) goto close;
-            if( !m_sock.Read( lz4buf.get(), lz4sz, &tv, ShouldExit ) ) goto close;
-            bytes += sizeof( lz4sz ) + lz4sz;
-
-            auto sz = LZ4_decompress_safe_continue( m_stream, lz4buf.get(), buf, lz4sz, TargetFrameSize );
-            assert( sz >= 0 );
-            decBytes += sz;
-
-            char* ptr = buf;
-            const char* end = buf + sz;
-
+        if( m_terminate )
+        {
+            if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 || m_pendingCallstackFrames != 0 ||
+                !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || !m_pendingCallstacks.empty() )
             {
-                std::lock_guard<TracyMutex> lock( m_data.lock );
-                while( ptr < end )
-                {
-                    auto ev = (const QueueItem*)ptr;
-                    DispatchProcess( *ev, ptr );
-                }
-
-                m_bufferOffset += sz;
-                if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
-
-                HandlePostponedPlots();
+                continue;
             }
-
-            auto t1 = std::chrono::high_resolution_clock::now();
-            auto td = std::chrono::duration_cast<std::chrono::milliseconds>( t1 - t0 ).count();
-            enum { MbpsUpdateTime = 200 };
-            if( td > MbpsUpdateTime )
+            if( !m_crashed )
             {
-                std::lock_guard<TracyMutex> lock( m_mbpsData.lock );
-                m_mbpsData.mbps.erase( m_mbpsData.mbps.begin() );
-                m_mbpsData.mbps.emplace_back( bytes / ( td * 125.f ) );
-                m_mbpsData.compRatio = float( bytes ) / decBytes;
-                t0 = t1;
-                bytes = 0;
-                decBytes = 0;
-            }
-
-            if( m_terminate )
-            {
-                if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 || m_pendingCallstackFrames != 0 ||
-                    !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || !m_pendingCallstacks.empty() )
+                bool done = true;
+                for( auto& v : m_data.threads )
                 {
-                    continue;
-                }
-                if( !m_crashed )
-                {
-                    bool done = true;
-                    for( auto& v : m_data.threads )
+                    if( !v->stack.empty() )
                     {
-                        if( !v->stack.empty() )
-                        {
-                            done = false;
-                            break;
-                        }
+                        done = false;
+                        break;
                     }
-                    if( !done ) continue;
                 }
-                ServerQuery( ServerQueryTerminate, 0 );
-                break;
+                if( !done ) continue;
             }
+            ServerQuery( ServerQueryTerminate, 0 );
+            break;
         }
+    }
 
 close:
-        m_sock.Close();
-        m_connected.store( false, std::memory_order_relaxed );
-    }
+    m_sock.Close();
+    m_connected.store( false, std::memory_order_relaxed );
 }
 
 void Worker::ServerQuery( uint8_t type, uint64_t data )
@@ -2468,6 +2551,7 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
 void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
 {
     const auto time = TscTime( ev.time );
+    NoticeThread( ev.thread );
 
     assert( m_data.memory.active.find( ev.ptr ) == m_data.memory.active.end() );
     assert( m_data.memory.data.empty() || m_data.memory.data.back().timeAlloc <= time );
@@ -2504,14 +2588,15 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
 
 bool Worker::ProcessMemFree( const QueueMemFree& ev )
 {
-    const auto time = TscTime( ev.time );
-
     auto it = m_data.memory.active.find( ev.ptr );
     if( it == m_data.memory.active.end() )
     {
         assert( m_onDemand );
         return false;
     }
+
+    const auto time = TscTime( ev.time );
+    NoticeThread( ev.thread );
 
     m_data.memory.frees.push_back( it->second );
     auto& mem = m_data.memory.data[it->second];
@@ -2977,6 +3062,12 @@ void Worker::Write( FileWrite& f )
     uint64_t sz = m_captureName.size();
     f.Write( &sz, sizeof( sz ) );
     f.Write( m_captureName.c_str(), sz );
+
+    sz = m_captureProgram.size();
+    f.Write( &sz, sizeof( sz ) );
+    f.Write( m_captureProgram.c_str(), sz );
+
+    f.Write( &m_captureTime, sizeof( m_captureTime ) );
 
     sz = m_hostInfo.size();
     f.Write( &sz, sizeof( sz ) );

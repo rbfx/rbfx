@@ -287,24 +287,53 @@ private:
         bool logTime = true;
         bool cumulateTime = false;
         GroupBy groupBy = GroupBy::Thread;
-        SortBy sortBy = SortBy::Order;
+        SortBy sortBy = SortBy::Count;
         Region highlight;
+        int64_t hlOrig_t0, hlOrig_t1;
         int64_t numBins = -1;
         std::unique_ptr<int64_t[]> bins, binTime, selBin;
+        std::vector<int64_t> sorted, selSort;
+        size_t sortedNum = 0, selSortNum, selSortActive;
+        float average, selAverage;
+        float median, selMedian;
+        int64_t total, selTotal;
+        bool drawAvgMed = true;
+        bool drawSelAvgMed = true;
 
         void Reset()
         {
-            ResetGroups();
+            ResetMatch();
             match.clear();
             selMatch = 0;
             selGroup = Unselected;
             highlight.active = false;
         }
 
+        void ResetMatch()
+        {
+            ResetGroups();
+            sorted.clear();
+            sortedNum = 0;
+            average = 0;
+            median = 0;
+            total = 0;
+        }
+
         void ResetGroups()
         {
+            ResetSelection();
             groups.clear();
             processed = 0;
+        }
+
+        void ResetSelection()
+        {
+            selSort.clear();
+            selSortNum = 0;
+            selSortActive = 0;
+            selAverage = 0;
+            selMedian = 0;
+            selTotal = 0;
         }
 
         void ShowZone( int32_t srcloc, const char* name )
@@ -338,9 +367,27 @@ private:
         bool normalize = false;
         int64_t numBins = -1;
         std::unique_ptr<CompVal[]> bins, binTime;
+        std::vector<int64_t> sorted[2];
+        size_t sortedNum[2] = { 0, 0 };
+        float average[2];
+        float median[2];
+        int64_t total[2];
+
+        void ResetSelection()
+        {
+            for( int i=0; i<2; i++ )
+            {
+                sorted[i].clear();
+                sortedNum[i] = 0;
+                average[i] = 0;
+                median[i] = 0;
+                total[i] = 0;
+            }
+        }
 
         void Reset()
         {
+            ResetSelection();
             for( int i=0; i<2; i++ )
             {
                 match[i].clear();
@@ -355,6 +402,20 @@ private:
         uint64_t ptrFind = 0;
         bool restrictTime = false;
     } m_memInfo;
+
+    struct {
+        std::vector<int64_t> data;
+        const FrameData* frameSet = nullptr;
+        size_t frameNum = 0;
+        float average = 0;
+        float median = 0;
+        int64_t total = 0;
+        bool logVal = false;
+        bool logTime = true;
+        int64_t numBins = -1;
+        std::unique_ptr<int64_t[]> bins;
+        bool drawAvgMed = true;
+    } m_frameSortData;
 };
 
 }

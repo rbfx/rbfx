@@ -1,6 +1,6 @@
 #include <assert.h>
 
-#include "IconFontCppHeaders/IconsFontAwesome5.h"
+#include "IconsFontAwesome5.h"
 #include "TracyBadVersion.hpp"
 #include "TracyImGui.hpp"
 

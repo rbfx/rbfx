@@ -56,12 +56,13 @@ namespace tracy
     static void(*rpfree_fpt)(void* ptr) = get_rpfree();
 
     DLL_IMPORT RPMALLOC_RESTRICT void* rpmalloc(size_t size);
-    /*{
+    /*Urho3D change
+    {
         return rpmalloc_fpt(size);
     }*/
 
     DLL_IMPORT void rpfree(void* ptr);
-    /*{
+    /*Urho3D change
         rpfree_fpt(ptr);
     }*/
 

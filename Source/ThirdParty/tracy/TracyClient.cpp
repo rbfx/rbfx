@@ -17,7 +17,7 @@
 
 #include "client/TracyProfiler.cpp"
 #include "client/TracyCallstack.cpp"
-//#include "common/tracy_lz4.cpp"
+#include "common/tracy_lz4.cpp"
 #include "common/TracySocket.cpp"
 #include "client/tracy_rpmalloc.cpp"
 

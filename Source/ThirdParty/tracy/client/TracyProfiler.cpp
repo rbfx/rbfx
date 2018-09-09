@@ -252,11 +252,24 @@ static const char* GetHostInfo()
 
     ptr += sprintf( ptr, "User: %s@%s\n", user, hostname );
 #else
+    // Urho3D change HOST_NAME_MAX -> _POSIX_HOST_NAME_MAX
     char hostname[_POSIX_HOST_NAME_MAX];
     char user[_POSIX_LOGIN_NAME_MAX];
 
     gethostname( hostname, _POSIX_HOST_NAME_MAX );
+#  if defined __ANDROID__
+    const auto login = getlogin();
+    if( login )
+    {
+        strcpy( user, login );
+    }
+    else
+    {
+        memcpy( user, "(?)", 4 );
+    }
+#  else
     getlogin_r( user, _POSIX_LOGIN_NAME_MAX );
+#  endif
 
     ptr += sprintf( ptr, "User: %s@%s\n", user, hostname );
 #endif
@@ -547,16 +560,16 @@ static void CrashHandler( int signal, siginfo_t* info, void* ucontext )
         case SEGV_ACCERR:
             strcpy( msgPtr, "Invalid permissions for mapped object.\n" );
             break;
-#ifdef SEGV_BNDERR
+#  ifdef SEGV_BNDERR
         case SEGV_BNDERR:
             strcpy( msgPtr, "Failed address bound checks.\n" );
             break;
-#endif
-#ifdef SEGV_PKUERR
+#  endif
+#  ifdef SEGV_PKUERR
         case SEGV_PKUERR:
             strcpy( msgPtr, "Access was denied by memory protection keys.\n" );
             break;
-#endif
+#  endif
         default:
             break;
         }
@@ -696,13 +709,12 @@ thread_local LuaZoneState init_order(104) s_luaZoneState { 0, false };
 static Profiler init_order(105) s_profilerInstance;
 Profiler& s_profiler = s_profilerInstance;
 
-#ifndef DLL_EXPORT
 #ifdef _MSC_VER
 #  define DLL_EXPORT __declspec(dllexport)
 #else
 #  define DLL_EXPORT __attribute__((visibility("default")))
 #endif
-#endif
+
 // DLL exports to enable TracyClientDLL.cpp to retrieve the instances of Tracy objects and functions
 
 DLL_EXPORT moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* get_token()
@@ -902,10 +914,46 @@ void Profiler::Worker()
             if( m_sock ) break;
         }
 
+        {
+            timeval tv;
+            tv.tv_sec = 2;
+            tv.tv_usec = 0;
+
+            char shibboleth[HandshakeShibbolethSize];
+            auto res = m_sock->ReadRaw( shibboleth, HandshakeShibbolethSize, &tv );
+            if( !res || memcmp( shibboleth, HandshakeShibboleth, HandshakeShibbolethSize ) != 0 )
+            {
+                m_sock->~Socket();
+                tracy_free( m_sock );
+                continue;
+            }
+
+            uint32_t protocolVersion;
+            res = m_sock->ReadRaw( &protocolVersion, sizeof( protocolVersion ), &tv );
+            if( !res )
+            {
+                m_sock->~Socket();
+                tracy_free( m_sock );
+                continue;
+            }
+
+            if( protocolVersion != ProtocolVersion )
+            {
+                HandshakeStatus status = HandshakeProtocolMismatch;
+                m_sock->Send( &status, sizeof( status ) );
+                m_sock->~Socket();
+                tracy_free( m_sock );
+                continue;
+            }
+        }
+
 #ifdef TRACY_ON_DEMAND
         ClearQueues( token );
         m_isConnected.store( true, std::memory_order_relaxed );
 #endif
+
+        HandshakeStatus handshake = HandshakeWelcome;
+        m_sock->Send( &handshake, sizeof( handshake ) );
 
         LZ4_resetStream( m_stream );
         m_sock->Send( &welcome, sizeof( welcome ) );
@@ -970,6 +1018,69 @@ void Profiler::Worker()
 
 #ifdef TRACY_ON_DEMAND
         m_isConnected.store( false, std::memory_order_relaxed );
+#endif
+
+        m_sock->~Socket();
+        tracy_free( m_sock );
+
+#ifndef TRACY_ON_DEMAND
+        // Client is no longer available here
+        for(;;)
+        {
+            if( ShouldExit() )
+            {
+                m_shutdownFinished.store( true, std::memory_order_relaxed );
+                return;
+            }
+
+            while( s_queue.try_dequeue_bulk( token, m_itemBuf, BulkSize ) > 0 ) {}
+            bool lockHeld = true;
+            while( !m_serialLock.try_lock() )
+            {
+                if( m_shutdownManual.load( std::memory_order_relaxed ) )
+                {
+                    lockHeld = false;
+                    break;
+                }
+            }
+            m_serialQueue.swap( m_serialDequeue );
+            if( lockHeld )
+            {
+                m_serialLock.unlock();
+            }
+            m_serialDequeue.clear();
+
+            m_sock = listen.Accept();
+            if( m_sock )
+            {
+                timeval tv;
+                tv.tv_sec = 1;
+                tv.tv_usec = 0;
+
+                char shibboleth[HandshakeShibbolethSize];
+                auto res = m_sock->ReadRaw( shibboleth, HandshakeShibbolethSize, &tv );
+                if( !res || memcmp( shibboleth, HandshakeShibboleth, HandshakeShibbolethSize ) != 0 )
+                {
+                    m_sock->~Socket();
+                    tracy_free( m_sock );
+                    continue;
+                }
+
+                uint32_t protocolVersion;
+                res = m_sock->ReadRaw( &protocolVersion, sizeof( protocolVersion ), &tv );
+                if( !res )
+                {
+                    m_sock->~Socket();
+                    tracy_free( m_sock );
+                    continue;
+                }
+
+                HandshakeStatus status = HandshakeNotAvailable;
+                m_sock->Send( &status, sizeof( status ) );
+                m_sock->~Socket();
+                tracy_free( m_sock );
+            }
+        }
 #endif
     }
 

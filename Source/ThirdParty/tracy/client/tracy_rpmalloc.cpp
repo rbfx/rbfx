@@ -1902,7 +1902,7 @@ _memory_guard_block(void* block) {
 #endif
 
 // Extern interface
-
+// Urho3D change
 DLL_EXPORT RPMALLOC_RESTRICT void*
 rpmalloc(size_t size) {
 #if ENABLE_VALIDATE_ARGS
@@ -1916,7 +1916,7 @@ rpmalloc(size_t size) {
 	_memory_guard_post_alloc(block, size);
 	return block;
 }
-
+// Urho3D change
 DLL_EXPORT void
 rpfree(void* ptr) {
 	_memory_guard_validate(ptr);

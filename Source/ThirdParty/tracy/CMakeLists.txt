@@ -46,11 +46,11 @@ else ()
 endif ()
 
 if (URHO3D_TOOLS AND URHO3D_SYSTEMUI)
-    add_executable (tracy-profiler WIN32 ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES}
-        standalone/src/main.cpp standalone/src/imgui_impl_sdl.cpp)
-
+    file (GLOB_RECURSE TRACY_PROFILER_SOURCE_FILES profiler/src/*.cpp)
+    add_executable (tracy-profiler WIN32 ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES} ${TRACY_PROFILER_SOURCE_FILES})
+    target_include_directories(tracy-profiler PRIVATE server)
     target_link_libraries(tracy-profiler Urho3D IconFontCppHeaders)
-    target_compile_definitions(tracy-profiler PUBLIC -DTRACY_FILESELECTOR=1 -DTRACY_EXTENDED_FONT=1)
+    target_compile_definitions(tracy-profiler PUBLIC -DTRACY_FILESELECTOR=1 -DTRACY_EXTENDED_FONT=1 -DTRACY_ROOT_WINDOW=1)
     set_target_properties(tracy-profiler PROPERTIES OUTPUT_NAME Profiler)
     if (APPLE)
         target_link_libraries(tracy-profiler pthread dl "-framework OpenGl")

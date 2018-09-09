@@ -177,12 +177,15 @@ public:
 
     const std::string& GetAddr() const { return m_addr; }
     const std::string& GetCaptureName() const { return m_captureName; }
+    const std::string& GetCaptureProgram() const { return m_captureProgram; }
+    uint64_t GetCaptureTime() const { return m_captureTime; }
     const std::string& GetHostInfo() const { return m_hostInfo; }
     int64_t GetDelay() const { return m_delay; }
     int64_t GetResolution() const { return m_resolution; }
 
     TracyMutex& GetDataLock() { return m_data.lock; }
     size_t GetFrameCount( const FrameData& fd ) const { return fd.frames.size(); }
+    size_t GetFullFrameCount( const FrameData& fd ) const;
     int64_t GetTimeBegin() const { return GetFrameBegin( *m_data.framesBase, 0 ); }
     int64_t GetLastTime() const { return m_data.lastTime; }
     uint64_t GetZoneCount() const { return m_data.zonesCnt; }
@@ -261,6 +264,7 @@ public:
 
     void Write( FileWrite& f );
     int GetTraceVersion() const { return m_traceVersion; }
+    uint8_t GetHandshakeStatus() const { return m_handshake.load( std::memory_order_relaxed ); }
 
     static const LoadProgress& GetLoadProgress() { return s_loadProgress; }
 
@@ -379,6 +383,8 @@ private:
     int64_t m_resolution;
     double m_timerMul;
     std::string m_captureName;
+    std::string m_captureProgram;
+    uint64_t m_captureTime;
     std::string m_hostInfo;
     bool m_terminate;
     bool m_crashed;
@@ -410,6 +416,7 @@ private:
     MbpsBlock m_mbpsData;
 
     int m_traceVersion;
+    std::atomic<uint8_t> m_handshake;
 
     static LoadProgress s_loadProgress;
 };
