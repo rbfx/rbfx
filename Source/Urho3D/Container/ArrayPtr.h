@@ -49,6 +49,15 @@ public:
         AddRef();
     }
 
+    /// Move from another shared array pointer.
+    SharedArrayPtr(SharedArrayPtr<T>&& rhs) :
+        ptr_(rhs.ptr_),
+        refCount_(rhs.refCount_)
+    {
+        Swap(ptr_, rhs.ptr_);
+        Swap(refCount_, rhs.refCount_);
+    }
+
     /// Construct from a raw pointer.
     explicit SharedArrayPtr(T* ptr) :
         ptr_(ptr),
