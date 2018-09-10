@@ -46,6 +46,7 @@ URHO3D_FLAGSET(ClipMask, ClipMaskFlags);
 
 void DrawOcclusionBatchWork(const WorkItem* item, unsigned threadIndex)
 {
+    URHO3D_PROFILE("DrawOcclusionBatchWork");
     auto* buffer = reinterpret_cast<OcclusionBuffer*>(item->aux_);
     OcclusionBatch& batch = *reinterpret_cast<OcclusionBatch*>(item->start_);
     buffer->DrawBatch(batch, threadIndex);

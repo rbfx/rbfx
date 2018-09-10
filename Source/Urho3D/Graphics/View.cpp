@@ -159,6 +159,7 @@ public:
 
 void CheckVisibilityWork(const WorkItem* item, unsigned threadIndex)
 {
+    URHO3D_PROFILE("CheckVisibilityWork");
     auto* view = reinterpret_cast<View*>(item->aux_);
     auto** start = reinterpret_cast<Drawable**>(item->start_);
     auto** end = reinterpret_cast<Drawable**>(item->end_);
@@ -228,6 +229,7 @@ void CheckVisibilityWork(const WorkItem* item, unsigned threadIndex)
 
 void ProcessLightWork(const WorkItem* item, unsigned threadIndex)
 {
+    URHO3D_PROFILE("ProcessLightWork");
     auto* view = reinterpret_cast<View*>(item->aux_);
     auto* query = reinterpret_cast<LightQueryResult*>(item->start_);
 
@@ -236,6 +238,7 @@ void ProcessLightWork(const WorkItem* item, unsigned threadIndex)
 
 void UpdateDrawableGeometriesWork(const WorkItem* item, unsigned threadIndex)
 {
+    URHO3D_PROFILE("UpdateDrawableGeometriesWork");
     const FrameInfo& frame = *(reinterpret_cast<FrameInfo*>(item->aux_));
     auto** start = reinterpret_cast<Drawable**>(item->start_);
     auto** end = reinterpret_cast<Drawable**>(item->end_);
@@ -251,6 +254,7 @@ void UpdateDrawableGeometriesWork(const WorkItem* item, unsigned threadIndex)
 
 void SortBatchQueueFrontToBackWork(const WorkItem* item, unsigned threadIndex)
 {
+    URHO3D_PROFILE("SortBatchQueueFrontToBackWork");
     auto* queue = reinterpret_cast<BatchQueue*>(item->start_);
 
     queue->SortFrontToBack();
@@ -258,6 +262,7 @@ void SortBatchQueueFrontToBackWork(const WorkItem* item, unsigned threadIndex)
 
 void SortBatchQueueBackToFrontWork(const WorkItem* item, unsigned threadIndex)
 {
+    URHO3D_PROFILE("SortBatchQueueBackToFrontWork");
     auto* queue = reinterpret_cast<BatchQueue*>(item->start_);
 
     queue->SortBackToFront();
@@ -265,6 +270,7 @@ void SortBatchQueueBackToFrontWork(const WorkItem* item, unsigned threadIndex)
 
 void SortLightQueueWork(const WorkItem* item, unsigned threadIndex)
 {
+    URHO3D_PROFILE("SortLightQueueWork");
     auto* start = reinterpret_cast<LightBatchQueue*>(item->start_);
     start->litBaseBatches_.SortFrontToBack();
     start->litBatches_.SortFrontToBack();
@@ -272,6 +278,7 @@ void SortLightQueueWork(const WorkItem* item, unsigned threadIndex)
 
 void SortShadowQueueWork(const WorkItem* item, unsigned threadIndex)
 {
+    URHO3D_PROFILE("SortShadowQueueWork");
     auto* start = reinterpret_cast<LightBatchQueue*>(item->start_);
     for (unsigned i = 0; i < start->shadowSplits_.Size(); ++i)
         start->shadowSplits_[i].shadowBatches_.SortFrontToBack();

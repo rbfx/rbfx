@@ -47,6 +47,7 @@ public:
     /// Process work items until stopped.
     void ThreadFunction() override
     {
+        URHO3D_PROFILE_THREAD("WorkerThread");
         // Init FPU state first
         InitFPU();
         owner_->ProcessItems(index_);

@@ -50,6 +50,7 @@ extern const char* SUBSYSTEM_CATEGORY;
 
 void UpdateDrawablesWork(const WorkItem* item, unsigned threadIndex)
 {
+    URHO3D_PROFILE("UpdateDrawablesWork");
     const FrameInfo& frame = *(reinterpret_cast<FrameInfo*>(item->aux_));
     auto** start = reinterpret_cast<Drawable**>(item->start_);
     auto** end = reinterpret_cast<Drawable**>(item->end_);
