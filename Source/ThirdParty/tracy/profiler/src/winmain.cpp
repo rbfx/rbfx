@@ -3,6 +3,7 @@
 #  include <stdlib.h>
 #  include <intrin.h>
 #  include <stdint.h>
+#  include <SDL/SDL.h>
 
 namespace tracy
 {

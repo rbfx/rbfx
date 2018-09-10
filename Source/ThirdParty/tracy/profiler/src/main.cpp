@@ -121,7 +121,14 @@ int main( int argc, char** argv )
     configMerge.MergeMode = true;
 
     io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 15.0f * dpiScale, nullptr, rangesBasic );
-    io.Fonts->AddFontFromFileTTF( "EditorData/Fonts/" FONT_ICON_FILE_NAME_FAS, 14.0f * dpiScale, &configMerge, rangesIcons );
+    std::string fontAwesomePath("EditorData/Fonts/" FONT_ICON_FILE_NAME_FAS);
+#if _WIN32
+    if (GetFileAttributes(fontAwesomePath.c_str()) == INVALID_FILE_ATTRIBUTES)
+        fontAwesomePath = "../" + fontAwesomePath;
+#endif
+#ifndef _WIN32
+    io.Fonts->AddFontFromFileTTF(fontAwesomePath.c_str(), 14.0f * dpiScale, &configMerge, rangesIcons );
+#endif
     auto fixedWidth = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, 15.0f * dpiScale );
 
 
