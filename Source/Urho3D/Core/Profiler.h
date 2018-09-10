@@ -51,7 +51,6 @@ void SetProfilerThreadName(const char* name);
 #   define URHO3D_PROFILE(...)
 #   define URHO3D_PROFILE_THREAD(...)
 #   define URHO3D_PROFILE_VALUE(...)
-#   define URHO3D_PROFILE_FUNCTION(...)
 #   define URHO3D_PROFILE_FRAME()
 #   define URHO3D_PROFILE_MESSAGE(txt, len)
 #   define URHO3D_PROFILE_ZONENAME(txt, len)
