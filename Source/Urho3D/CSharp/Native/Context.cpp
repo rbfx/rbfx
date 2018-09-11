@@ -21,6 +21,9 @@
 //
 
 #include <Urho3D/Core/Context.h>
+#include <Urho3D/Core/CoreEvents.h>
+#include <Urho3D/Core/Mutex.h>
+#include <Urho3D/Core/Thread.h>
 
 #if _WIN32
 #  define SWIGSTDCALL __stdcall
@@ -40,6 +43,13 @@ extern SWIG_CSharpCreateObjectCallback SWIG_CSharpCreateObject;
 namespace Urho3D
 {
 
+class ManagedObjectFactoryEventSubscriber : public Object
+{
+    URHO3D_OBJECT(ManagedObjectFactoryEventSubscriber, Object);
+public:
+    ManagedObjectFactoryEventSubscriber(Context* context) : Object(context) { }
+};
+
 class ManagedObjectFactory : public ObjectFactory
 {
 public:
@@ -47,8 +57,10 @@ public:
         : ObjectFactory(context)
         , baseType_(baseType)
         , managedType_(typeName)
+        , eventReceiver_(context)
     {
         typeInfo_ = new TypeInfo(typeName, Urho3DGetDirectorTypeInfo(baseType));
+        eventReceiver_.SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { OnEndFrame(); });
     }
 
     ~ManagedObjectFactory() override
@@ -56,16 +68,56 @@ public:
         delete typeInfo_;
     }
 
-public:
     SharedPtr<Object> CreateObject() override
     {
-        auto* result = SWIG_CSharpCreateObject(context_, managedType_.Value());
-        return SharedPtr<Object>((Object*)result);
+        SharedPtr<Object> result((Object*)SWIG_CSharpCreateObject(context_, managedType_.Value()));
+        auto deleter = result->GetDeleter();
+        result->SetDeleter([this, deleter](RefCounted* instance)
+        {
+            if (Thread::IsMainThread())
+            {
+                // It is safe to delete objects on the main thread
+                if (deleter)
+                    // Objects may have a custom deleter (set by default factory for example).
+                    deleter(instance);
+                else
+                    delete instance;
+            }
+            else
+            {
+                MutexLock lock(mutex_);
+                deletionQueue_.Push({instance, deleter});
+            }
+        });
+        return result;
     }
 
 protected:
+    /// Delete one queued object per frame.
+    void OnEndFrame()
+    {
+        MutexLock lock(mutex_);
+        if (deletionQueue_.Empty())
+            return;
+
+        auto& pair = deletionQueue_.Back();
+        if (pair.second_)
+            pair.second_(pair.first_);
+        else
+            delete pair.first_;
+        deletionQueue_.Pop();
+    }
+
+    /// Hash of base type (SWIG director class).
     StringHash baseType_;
+    /// Hash of managed type. This is different from `baseType_`.
     StringHash managedType_;
+    /// Helper object for receiving E_ENDFRAME event.
+    ManagedObjectFactoryEventSubscriber eventReceiver_;
+    /// Lock for synchronizing `deletionQueue_` access.
+    Mutex mutex_;
+    /// LIFO deletion queue for objects that would otherwise get deleted by GC thread.
+    Vector<Pair<RefCounted*, std::function<void(RefCounted*)>>> deletionQueue_;
 };
 
 extern "C"
