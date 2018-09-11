@@ -26,6 +26,7 @@
 #include <array>
 
 #include "ToolboxAPI.h"
+#include "AutoColumn.h"
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/Core/Context.h>
 
@@ -51,8 +52,6 @@ public:
     void RenderAttributes(const PODVector<Serializable*>& items);
     /// Render attribute inspector widgets.
     void RenderAttributes(Serializable* item);
-    /// Automatically creates two columns where first column is as wide as longest label.
-    void NextColumn();
 
 protected:
     /// Render value widget of single attribute.
@@ -67,10 +66,8 @@ protected:
     const char* modifiedLastFrame_ = nullptr;
     /// Value of attribute before modifying it started.
     Variant originalValue_;
-    /// Max width of attribute label.
-    int lastMaxWidth_ = 0;
-    /// Max width of attribute label.
-    int currentMaxWidth_ = 0;
+    /// Object keeping track of automatic width of first column.
+    AutoColumn autoColumn_;
 };
 
 class URHO3D_TOOLBOX_API AttributeInspectorWindow : public AttributeInspector

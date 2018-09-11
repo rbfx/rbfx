@@ -64,19 +64,15 @@ struct AttributeInspectorBuffer
 
 AttributeInspector::AttributeInspector(Urho3D::Context* context)
     : Object(context)
+    , autoColumn_(context)
 {
     filter_.front() = 0;
-
-    SubscribeToEvent(E_ENDFRAME, [&](StringHash, VariantMap&) {
-        lastMaxWidth_ = currentMaxWidth_;
-        currentMaxWidth_ = 0;
-    });
 }
 
 void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
 {
     ui::TextUnformatted("Filter");
-    NextColumn();
+    autoColumn_.NextColumn();
     ui::PushID("FilterEdit");
     ui::PushItemWidth(-1);
     ui::InputText("", &filter_.front(), filter_.size() - 1);
@@ -199,7 +195,7 @@ void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
                 if (expireBuffers)
                     ui::ExpireUIState<AttributeInspectorBuffer>();
 
-                NextColumn();
+                autoColumn_.NextColumn();
 
                 bool modifiedLastFrame = modifiedLastFrame_ == info.name_.CString();
                 ui::PushItemWidth(-1);
@@ -399,7 +395,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
                 {
                     ui::PushID(i + 1);
                     ui::TextColored(ToImGui(Color::WHITE), "%s", info.name_.CString());
-                    NextColumn();
+                    autoColumn_.NextColumn();
                     ui::PopID();
                 }
             }
@@ -578,13 +574,6 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         }
     }
     return modified;
-}
-
-void AttributeInspector::NextColumn()
-{
-    ui::SameLine();
-    currentMaxWidth_ = Max(currentMaxWidth_, ui::GetCursorPosX());
-    ui::SameLine(lastMaxWidth_);
 }
 
 bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, String& result)
