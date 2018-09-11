@@ -23,6 +23,8 @@
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <Toolbox/IO/ContentUtilities.h>
 #include <SDL/SDL_clipboard.h>
+#include "EditorEvents.h"
+#include "Assets/Inspector/MaterialInspector.h"
 #include "Tabs/Scene/SceneTab.h"
 #include "Tabs/UI/UITab.h"
 #include "Editor.h"
@@ -91,6 +93,31 @@ bool ResourceTab::RenderWindowContent()
     }
     else if (action == RBR_ITEM_CONTEXT_MENU)
         ui::OpenPopup("Resource Context Menu");
+    else if (action == RBR_ITEM_SELECTED)
+    {
+        String selected = resourcePath_ + resourceSelection_;
+        switch (GetContentType(selected))
+        {
+//        case CTYPE_UNKNOWN:break;
+//        case CTYPE_SCENE:break;
+//        case CTYPE_SCENEOBJECT:break;
+//        case CTYPE_UILAYOUT:break;
+//        case CTYPE_UISTYLE:break;
+//        case CTYPE_MODEL:break;
+//        case CTYPE_ANIMATION:break;
+        case CTYPE_MATERIAL:
+            OpenResourceInspector<MaterialInspector, Material>(selected);
+            break;
+//        case CTYPE_PARTICLE:break;
+//        case CTYPE_RENDERPATH:break;
+//        case CTYPE_SOUND:break;
+//        case CTYPE_TEXTURE:break;
+//        case CTYPE_TEXTUREXML:break;
+        default:
+            currentInspector_ = StringHash::ZERO;
+            break;
+        }
+    }
 
     flags_ = RBF_NONE;
 
@@ -182,6 +209,27 @@ String ResourceTab::GetNewResourcePath(const String& name)
     }
 
     std::abort();
+}
+
+template<typename Inspector, typename TResource>
+void ResourceTab::OpenResourceInspector(const String& resourcePath)
+{
+    currentInspector_ = resourcePath;
+    auto it = inspectors_.Find(currentInspector_);
+    ResourceInspector* inspector = nullptr;
+    if (it == inspectors_.End())
+    {
+        inspector = new Inspector(context_, GetCache()->GetResource<TResource>(resourcePath));
+        inspectors_[currentInspector_] = inspector;
+    }
+
+    SendEvent(E_EDITORRENDERINSPECTOR, EditorRenderInspector::P_INSPECTABLE, this);
+}
+
+void ResourceTab::RenderInspector()
+{
+    if (currentInspector_ != StringHash::ZERO)
+        inspectors_[currentInspector_]->Render();
 }
 
 }

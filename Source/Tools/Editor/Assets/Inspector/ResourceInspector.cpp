@@ -20,38 +20,17 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
-
-#include <Toolbox/SystemUI/ResourceBrowser.h>
-#include "Assets/Inspector/ResourceInspector.h"
-#include "Tabs/Tab.h"
+#include "ResourceInspector.h"
 
 
 namespace Urho3D
 {
 
-class ResourceTab : public Tab, public IInspectorProvider
+ResourceInspector::ResourceInspector(Urho3D::Context* context)
+    : Object(context)
+    , undo_(context)
 {
-    URHO3D_OBJECT(ResourceTab, Tab)
-public:
-    explicit ResourceTab(Context* context);
 
-    bool RenderWindowContent() override;
-
-    /// Render inspector window.
-    virtual void RenderInspector();
-
-protected:
-    String GetNewResourcePath(const String& name);
-    template<typename TInspector, typename TResource>
-    void OpenResourceInspector(const String& resourcePath);
-
-    String resourcePath_;
-    String resourceSelection_;
-    ResourceBrowserFlags flags_{RBF_NONE};
-    HashMap<StringHash, SharedPtr<ResourceInspector>> inspectors_;
-    StringHash currentInspector_;
-};
+}
 
 }

@@ -23,35 +23,23 @@
 #pragma once
 
 
-#include <Toolbox/SystemUI/ResourceBrowser.h>
-#include "Assets/Inspector/ResourceInspector.h"
-#include "Tabs/Tab.h"
+#include <Urho3D/Core/Object.h>
+#include <Toolbox/Common/UndoManager.h>
 
 
 namespace Urho3D
 {
 
-class ResourceTab : public Tab, public IInspectorProvider
+class ResourceInspector : public Object
 {
-    URHO3D_OBJECT(ResourceTab, Tab)
+    URHO3D_OBJECT(ResourceInspector, Object);
 public:
-    explicit ResourceTab(Context* context);
-
-    bool RenderWindowContent() override;
-
-    /// Render inspector window.
-    virtual void RenderInspector();
+    explicit ResourceInspector(Context* context);
+    virtual void Render() = 0;
 
 protected:
-    String GetNewResourcePath(const String& name);
-    template<typename TInspector, typename TResource>
-    void OpenResourceInspector(const String& resourcePath);
-
-    String resourcePath_;
-    String resourceSelection_;
-    ResourceBrowserFlags flags_{RBF_NONE};
-    HashMap<StringHash, SharedPtr<ResourceInspector>> inspectors_;
-    StringHash currentInspector_;
+    /// Asset changes tracker.
+    Undo::Manager undo_;
 };
 
 }
