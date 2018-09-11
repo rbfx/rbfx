@@ -42,7 +42,7 @@
       if (size > 0) {
         global::System.IntPtr iter = create_iterator_begin();
         for (int i = 0; i < size; i++) {
-          keys.Add(get_next_key(iter));
+          keys.Add(get_next_key(ref iter));
         }
       }
       return keys;
@@ -230,10 +230,11 @@
         return (void*)$self->Begin().ptr_;
       }
 
-      K get_next_key(void* swigiterator) {
+      K get_next_key(void*& swigiterator) {
         Urho3D::HashMap< K, T >::Iterator iter((Urho3D::HashMap< K, T >::Node*)swigiterator);
         auto&& result = iter->first_;
         iter++;
+        swigiterator = (void*)iter.ptr_;
         return result;
       }
     }
