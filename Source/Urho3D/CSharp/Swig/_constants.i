@@ -600,8 +600,6 @@
 %rename(TstateExecuting) TSTATE_EXECUTING;
 %rename(TstateFinished) TSTATE_FINISHED;
 %rename(TstateTerminate) TSTATE_TERMINATE;
-%ignore Urho3D::DEFAULT_TASK_SIZE;
-%constant unsigned int DefaultTaskSize = Urho3D::DEFAULT_TASK_SIZE;
 %rename(Context) Urho3D::Task::ContextTransferData::context;
 %rename(Data) Urho3D::Task::ContextTransferData::data;
 %rename(Context) Urho3D::Task::context_;
