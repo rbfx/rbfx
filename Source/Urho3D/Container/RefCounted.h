@@ -81,8 +81,8 @@ public:
 
     /// Set a custom deleter function which will be in charge of deallocating object.
     void SetDeleter(std::function<void(RefCounted*)> deleter);
-    /// Returns true when object has custom deleter set.
-    bool HasDeleter() const { return deleter_ != nullptr; }
+    /// Returns custom deleter of this object.
+    std::function<void(RefCounted*)> GetDeleter() const { return deleter_; }
 
 private:
     /// Prevent copy construction.

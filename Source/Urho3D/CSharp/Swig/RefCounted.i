@@ -1,6 +1,6 @@
 
 %ignore Urho3D::RefCounted::SetDeleter;
-%ignore Urho3D::RefCounted::HasDeleter;
+%ignore Urho3D::RefCounted::GetDeleter;
 
 %define URHO3D_REFCOUNTED(TYPE)
     %typemap(csbody) TYPE %{
