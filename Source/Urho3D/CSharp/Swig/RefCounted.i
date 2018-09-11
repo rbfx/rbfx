@@ -9,6 +9,8 @@
       protected bool swigCMemOwn;
       internal static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
       {
+        if (cPtr == global::System.IntPtr.Zero)
+          return null;
         return _instanceCache.GetOrAdd(cPtr, () => {
           var type = $imclassname.SWIGTypeRegistry[$imclassname.$csclazznameSWIGTypeId(cPtr)];
           $csclassname result = null;
@@ -37,6 +39,8 @@
       private static InstanceCache<$csclassname> _instanceCache = new InstanceCache<$csclassname>();
       internal new static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
       {
+        if (cPtr == global::System.IntPtr.Zero)
+          return null;
         return _instanceCache.GetOrAdd(cPtr, () => {
           var type = $imclassname.SWIGTypeRegistry[$imclassname.$csclazznameSWIGTypeId(cPtr)];
           $csclassname result = null;
