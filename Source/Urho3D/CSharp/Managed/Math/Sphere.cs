@@ -30,13 +30,13 @@ namespace Urho3DNet
             Define(box);
         }
 
-//        /// Construct from a frustum.
-//        public Sphere(in Frustum frustum)
-//        {
-//            Center = Vector3.Zero;
-//            Radius = 0;
-//            Define(frustum);
-//        }
+        /// Construct from a frustum.
+        public Sphere(in Frustum frustum)
+        {
+            Center = Vector3.Zero;
+            Radius = 0;
+            Define(frustum);
+        }
 
 //        /// Construct from a polyhedron.
 //        public Sphere(in Polyhedron poly)
@@ -91,11 +91,11 @@ namespace Urho3DNet
             Merge(new Vector3(min.X, max.Y, max.Z));
             Merge(max);
         }
-//        /// Define from a frustum.
-//        public void Define(in Frustum frustum)
-//        {
-//            Define(frustum.vertices_, NUM_FRUSTUM_VERTICES);
-//        }
+        /// Define from a frustum.
+        public void Define(in Frustum frustum)
+        {
+            Define(frustum.vertices_);
+        }
 //        /// Define from a polyhedron.
 //        public void Define(in Polyhedron poly)
 //        {
@@ -145,12 +145,11 @@ namespace Urho3DNet
             Merge(new Vector3(min.X, max.Y, max.Z));
             Merge(max);
         }
-//        /// Merge a frustum.
-//        public void Merge(in Frustum frustum)
-//        {
-//            const Vector3* vertices = frustum.vertices_;
-//            Merge(vertices, NUM_FRUSTUM_VERTICES);
-//        }
+        /// Merge a frustum.
+        public void Merge(in Frustum frustum)
+        {
+            Merge(frustum.vertices_);
+        }
 //        /// Merge a polyhedron.
 //        public void Merge(in Polyhedron poly)
 //        {
