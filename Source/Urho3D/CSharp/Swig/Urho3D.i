@@ -81,6 +81,7 @@ URHO3D_BINARY_COMPATIBLE_TYPE(Matrix4);
 URHO3D_BINARY_COMPATIBLE_TYPE(Quaternion);
 URHO3D_BINARY_COMPATIBLE_TYPE(Plane);
 URHO3D_BINARY_COMPATIBLE_TYPE(BoundingBox);
+URHO3D_BINARY_COMPATIBLE_TYPE(Sphere);
 
 }
 
@@ -127,7 +128,6 @@ URHO3D_BINARY_COMPATIBLE_TYPE(BoundingBox);
 %include "Urho3D/Math/MathDefs.h"
 %include "Urho3D/Math/Ray.h"
 %include "Urho3D/Math/Frustum.h"
-%include "Urho3D/Math/Sphere.h"
 
 // ---------------------------------------  ---------------------------------------
 
