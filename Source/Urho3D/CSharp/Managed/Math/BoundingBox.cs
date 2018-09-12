@@ -56,8 +56,8 @@ namespace Urho3DNet
             _dummyMax = 0;
         }
 
-        ///ruct from an array of vertices.
-        BoundingBox(Vector3[] vertices)
+        /// Construct from an array of vertices.
+        public BoundingBox(Vector3[] vertices)
         {
             Min = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
             Max = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
@@ -66,64 +66,70 @@ namespace Urho3DNet
             Define(vertices);
         }
 
-//        ///ruct from a frustum.
-//        BoundingBox(Frustum frustum)
+        /// Construct from a frustum.
+        public BoundingBox(in Frustum frustum)
+        {
+            Min = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+            Max = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
+            _dummyMin = 0;
+            _dummyMax = 0;
+            Define(frustum);
+        }
+
+//        /// Construct from a polyhedron.
+//        public BoundingBox(Polyhedron poly)
 //        {
 //            Min = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
 //            Max = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
-//            Define(frustum);
-//        }
-//
-//        ///ruct from a polyhedron.
-//        explicit BoundingBox(Polyhedron poly)
-//        {
-//            Min = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
-//            Max = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
+//            _dummyMin = 0;
+//            _dummyMax = 0;
 //            Define(poly);
 //        }
-//
-//        ///ruct from a sphere.
-//        explicit BoundingBox(Sphere sphere)
-//        {
-//            Min = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
-//            Max = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
-//            Define(sphere);
-//        }
+
+        /// Construct from a sphere.
+        public BoundingBox(in Sphere sphere)
+        {
+            Min = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+            Max = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
+            _dummyMin = 0;
+            _dummyMax = 0;
+            Define(sphere);
+        }
 
         /// Define from another bounding box.
-        void Define(in BoundingBox box)
+        public void Define(in BoundingBox box)
         {
             Define(box.Min, box.Max);
         }
 
         /// Define from a Rect.
-        void Define(in Rect rect)
+        public void Define(in Rect rect)
         {
             Define(new Vector3(rect.Min, 0.0f), new Vector3(rect.Max, 0.0f));
         }
 
         /// Define from minimum and maximum vectors.
-        void Define(in Vector3 min, in Vector3 max)
+        public void Define(in Vector3 min, in Vector3 max)
         {
             Min = min;
             Max = max;
         }
 
         /// Define from minimum and maximum floats (all dimensions same.)
-        void Define(float min, float max)
+        public void Define(float min, float max)
         {
             Min = new Vector3(min, min, min);
             Max = new Vector3(max, max, max);
         }
 
         /// Define from a point.
-        void Define(in Vector3 point)
+        public void Define(in Vector3 point)
         {
             Min = Max = point;
         }
 
         /// Merge a point.
-        void Merge(in Vector3 point)
+        public void Merge(in Vector3 point)
         {
             if (point.X < Min.X)
                 Min.X = point.X;
@@ -140,7 +146,7 @@ namespace Urho3DNet
         }
 
         /// Merge another bounding box.
-        void Merge(in BoundingBox box)
+        public void Merge(in BoundingBox box)
         {
             if (box.Min.X < Min.X)
                 Min.X = box.Min.X;
@@ -157,50 +163,50 @@ namespace Urho3DNet
         }
 
         /// Define from an array of vertices.
-        void Define(Vector3[] vertices)
+        public void Define(Vector3[] vertices)
         {
             Clear();
             Merge(vertices);
         }
 
-//        /// Define from a frustum.
-//        void Define(Frustum frustum)
-//        {
-//            Clear();
-//            Define(frustum.vertices_, NUM_FRUSTUM_VERTICES);
-//        }
-//
+        /// Define from a frustum.
+        public void Define(in Frustum frustum)
+        {
+            Clear();
+            Define(frustum.vertices_);
+        }
+
 //        /// Define from a polyhedron.
 //        void Define(Polyhedron poly)
 //        {
 //            Clear();
 //            Merge(poly);
 //        }
-//
-//        /// Define from a sphere.
-//        void Define(Sphere sphere)
-//        {
-//            Vector3 center = sphere.center_;
-//            float radius = sphere.radius_;
-//
-//            Min = center + new Vector3(-radius, -radius, -radius);
-//            Max = center + new Vector3(radius, radius, radius);
-//        }
+
+        /// Define from a sphere.
+        public void Define(in Sphere sphere)
+        {
+            Vector3 center = sphere.Center;
+            float radius = sphere.Radius;
+
+            Min = center + new Vector3(-radius, -radius, -radius);
+            Max = center + new Vector3(radius, radius, radius);
+        }
 
         /// Merge an array of vertices.
-        void Merge(Vector3[] vertices)
+        public void Merge(Vector3[] vertices)
         {
             foreach (var point in vertices)
             {
                 Merge(point);
             }
         }
-//        /// Merge a frustum.
-//        void Merge(Frustum frustum)
-//        {
-//            Merge(frustum.vertices_, NUM_FRUSTUM_VERTICES);
-//        }
-//
+        /// Merge a frustum.
+        public void Merge(Frustum frustum)
+        {
+            Merge(frustum.vertices_);
+        }
+
 //        /// Merge a polyhedron.
 //        void Merge(Polyhedron poly)
 //        {
@@ -211,19 +217,19 @@ namespace Urho3DNet
 //                    Merge(&face[0], face.Size());
 //            }
 //        }
-//
-//        /// Merge a sphere.
-//        void Merge(Sphere sphere)
-//        {
-//            Vector3 center = sphere.center_;
-//            float radius = sphere.radius_;
-//
-//            Merge(center + new Vector3(radius, radius, radius));
-//            Merge(center + new Vector3(-radius, -radius, -radius));
-//        }
+
+        /// Merge a sphere.
+        public void Merge(in Sphere sphere)
+        {
+            Vector3 center = sphere.Center;
+            float radius = sphere.Radius;
+
+            Merge(center + new Vector3(radius, radius, radius));
+            Merge(center + new Vector3(-radius, -radius, -radius));
+        }
 
         /// Clip with another bounding box. The box can become degenerate (undefined) as a result.
-        void Clip(in BoundingBox box)
+        public void Clip(in BoundingBox box)
         {
             if (box.Min.X > Min.X)
                 Min.X = box.Min.X;
@@ -245,43 +251,43 @@ namespace Urho3DNet
         }
 
         /// Transform with a 3x3 matrix.
-        void Transform(in Matrix3 transform)
+        public void Transform(in Matrix3 transform)
         {
             this = Transformed(new Matrix3x4(transform));
         }
 
         /// Transform with a 3x4 matrix.
-        void Transform(in Matrix3x4 transform)
+        public void Transform(in Matrix3x4 transform)
         {
             this = Transformed(transform);
         }
 
         /// Clear to undefined state.
-        void Clear()
+        public void Clear()
         {
             Min = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
             Max = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
         }
 
-        private bool Defined => float.IsPositiveInfinity(Min.X);
+        public bool Defined => float.IsPositiveInfinity(Min.X);
 
         /// Return center.
-        Vector3 Center => (Max + Min) * 0.5f;
+        public Vector3 Center => (Max + Min) * 0.5f;
 
         /// Return size.
-        Vector3 Size => Max - Min;
+        public Vector3 Size => Max - Min;
 
         /// Return half-size.
-        Vector3 HalfSize => (Max - Min) * 0.5f;
+        public Vector3 HalfSize => (Max - Min) * 0.5f;
 
         /// Return transformed by a 3x3 matrix.
-        BoundingBox Transformed(in Matrix3 transform)
+        public BoundingBox Transformed(in Matrix3 transform)
         {
             return Transformed(new Matrix3x4(transform));
         }
 
         /// Return transformed by a 3x4 matrix.
-        BoundingBox Transformed(in Matrix3x4 transform)
+        public BoundingBox Transformed(in Matrix3x4 transform)
         {
             Vector3 newCenter = transform * Center;
             Vector3 oldEdge = Size * 0.5f;
@@ -295,7 +301,7 @@ namespace Urho3DNet
         }
 
         /// Return projected by a 4x4 projection matrix.
-        Rect Projected(in Matrix4 projection)
+        public Rect Projected(in Matrix4 projection)
         {
             Vector3 projMin = Min;
             Vector3 projMax = Max;
@@ -325,7 +331,7 @@ namespace Urho3DNet
         }
 
         /// Return distance to point.
-        float DistanceToPoint(in Vector3 point)
+        public float DistanceToPoint(in Vector3 point)
         {
             Vector3 offset = Center - point;
             Vector3 absOffset = new Vector3(Math.Abs(offset.X), Math.Abs(offset.Y), Math.Abs(offset.Z));
@@ -333,7 +339,7 @@ namespace Urho3DNet
         }
 
         /// Test if a point is inside.
-        Intersection IsInside(in Vector3 point)
+        public Intersection IsInside(in Vector3 point)
         {
             if (point.X < Min.X || point.X > Max.X || point.Y < Min.Y || point.Y > Max.Y ||
                 point.Z < Min.Z || point.Z > Max.Z)
@@ -343,7 +349,7 @@ namespace Urho3DNet
         }
 
         /// Test if another bounding box is inside, outside or intersects.
-        Intersection IsInside(in BoundingBox box)
+        public Intersection IsInside(in BoundingBox box)
         {
             if (box.Max.X < Min.X || box.Min.X > Max.X || box.Max.Y < Min.Y || box.Min.Y > Max.Y ||
                 box.Max.Z < Min.Z || box.Min.Z > Max.Z)
@@ -356,7 +362,7 @@ namespace Urho3DNet
         }
 
         /// Test if another bounding box is (partially) inside or outside.
-        Intersection IsInsideFast(in BoundingBox box)
+        public Intersection IsInsideFast(in BoundingBox box)
         {
             if (box.Max.X < Min.X || box.Min.X > Max.X || box.Max.Y < Min.Y || box.Min.Y > Max.Y ||
                 box.Max.Z < Min.Z || box.Min.Z > Max.Z)
@@ -365,98 +371,98 @@ namespace Urho3DNet
                 return Intersection.Inside;
         }
 
-//        /// Test if a sphere is inside, outside or intersects.
-//        Intersection IsInside(Sphere sphere)
-//        {
-//            float distSquared = 0;
-//            float temp;
-//            const Vector3& center = sphere.center_;
-//
-//            if (center.x_ < min_.x_)
-//            {
-//                temp = center.x_ - min_.x_;
-//                distSquared += temp * temp;
-//            }
-//            else if (center.x_ > max_.x_)
-//            {
-//                temp = center.x_ - max_.x_;
-//                distSquared += temp * temp;
-//            }
-//            if (center.y_ < min_.y_)
-//            {
-//                temp = center.y_ - min_.y_;
-//                distSquared += temp * temp;
-//            }
-//            else if (center.y_ > max_.y_)
-//            {
-//                temp = center.y_ - max_.y_;
-//                distSquared += temp * temp;
-//            }
-//            if (center.z_ < min_.z_)
-//            {
-//                temp = center.z_ - min_.z_;
-//                distSquared += temp * temp;
-//            }
-//            else if (center.z_ > max_.z_)
-//            {
-//                temp = center.z_ - max_.z_;
-//                distSquared += temp * temp;
-//            }
-//
-//            float radius = sphere.radius_;
-//            if (distSquared >= radius * radius)
-//                return OUTSIDE;
-//            else if (center.x_ - radius < min_.x_ || center.x_ + radius > max_.x_ || center.y_ - radius < min_.y_ ||
-//                     center.y_ + radius > max_.y_ || center.z_ - radius < min_.z_ || center.z_ + radius > max_.z_)
-//                return INTERSECTS;
-//            else
-//                return INSIDE;
-//        }
-//
-//        /// Test if a sphere is (partially) inside or outside.
-//        Intersection IsInsideFast(const Sphere& sphere) const
-//        {
-//            float distSquared = 0;
-//            float temp;
-//            const Vector3& center = sphere.center_;
-//
-//            if (center.x_ < min_.x_)
-//            {
-//                temp = center.x_ - min_.x_;
-//                distSquared += temp * temp;
-//            }
-//            else if (center.x_ > max_.x_)
-//            {
-//                temp = center.x_ - max_.x_;
-//                distSquared += temp * temp;
-//            }
-//            if (center.y_ < min_.y_)
-//            {
-//                temp = center.y_ - min_.y_;
-//                distSquared += temp * temp;
-//            }
-//            else if (center.y_ > max_.y_)
-//            {
-//                temp = center.y_ - max_.y_;
-//                distSquared += temp * temp;
-//            }
-//            if (center.z_ < min_.z_)
-//            {
-//                temp = center.z_ - min_.z_;
-//                distSquared += temp * temp;
-//            }
-//            else if (center.z_ > max_.z_)
-//            {
-//                temp = center.z_ - max_.z_;
-//                distSquared += temp * temp;
-//            }
-//
-//            float radius = sphere.radius_;
-//            if (distSquared >= radius * radius)
-//                return OUTSIDE;
-//            else
-//                return INSIDE;
-//        }
+        /// Test if a sphere is inside, outside or intersects.
+        public Intersection IsInside(in Sphere sphere)
+        {
+            float distSquared = 0;
+            float temp;
+            Vector3 center = sphere.Center;
+
+            if (center.X < Min.X)
+            {
+                temp = center.X - Min.X;
+                distSquared += temp * temp;
+            }
+            else if (center.X > Max.X)
+            {
+                temp = center.X - Max.X;
+                distSquared += temp * temp;
+            }
+            if (center.Y < Min.Y)
+            {
+                temp = center.Y - Min.Y;
+                distSquared += temp * temp;
+            }
+            else if (center.Y > Max.Y)
+            {
+                temp = center.Y - Max.Y;
+                distSquared += temp * temp;
+            }
+            if (center.Z < Min.Z)
+            {
+                temp = center.Z - Min.Z;
+                distSquared += temp * temp;
+            }
+            else if (center.Z > Max.Z)
+            {
+                temp = center.Z - Max.Z;
+                distSquared += temp * temp;
+            }
+
+            float radius = sphere.Radius;
+            if (distSquared >= radius * radius)
+                return Intersection.Outside;
+            else if (center.X - radius < Min.X || center.X + radius > Max.X || center.Y - radius < Min.Y ||
+                     center.Y + radius > Max.Y || center.Z - radius < Min.Z || center.Z + radius > Max.Z)
+                return Intersection.Intersects;
+            else
+                return Intersection.Inside;
+        }
+
+        /// Test if a sphere is (partially) inside or outside.
+        public Intersection IsInsideFast(in Sphere sphere)
+        {
+            float distSquared = 0;
+            float temp;
+            Vector3 center = sphere.Center;
+
+            if (center.X < Min.X)
+            {
+                temp = center.X - Min.X;
+                distSquared += temp * temp;
+            }
+            else if (center.X > Max.X)
+            {
+                temp = center.X - Max.X;
+                distSquared += temp * temp;
+            }
+            if (center.Y < Min.Y)
+            {
+                temp = center.Y - Min.Y;
+                distSquared += temp * temp;
+            }
+            else if (center.Y > Max.Y)
+            {
+                temp = center.Y - Max.Y;
+                distSquared += temp * temp;
+            }
+            if (center.Z < Min.Z)
+            {
+                temp = center.Z - Min.Z;
+                distSquared += temp * temp;
+            }
+            else if (center.Z > Max.Z)
+            {
+                temp = center.Z - Max.Z;
+                distSquared += temp * temp;
+            }
+
+            float radius = sphere.Radius;
+            if (distSquared >= radius * radius)
+                return Intersection.Outside;
+            else
+                return Intersection.Inside;
+        }
 
         /// Return as string.
         public override string ToString()
