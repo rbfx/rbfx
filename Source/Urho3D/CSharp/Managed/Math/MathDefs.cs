@@ -261,6 +261,50 @@ namespace Urho3DNet
         }
 
         /// <summary>
+        /// Convert degrees to radians
+        /// </summary>
+        /// <param name="degrees">An angle in degrees</param>
+        /// <returns>The angle expressed in radians</returns>
+        public static float DegreesToRadians2(float degrees)
+        {
+            const float degToRad = (float)System.Math.PI / 360.0f;
+            return degrees * degToRad;
+        }
+
+        /// <summary>
+        /// Convert radians to degrees
+        /// </summary>
+        /// <param name="radians">An angle in radians</param>
+        /// <returns>The angle expressed in degrees</returns>
+        public static float RadiansToDegrees2(float radians)
+        {
+            const float radToDeg = 360.0f / (float)System.Math.PI;
+            return radians * radToDeg;
+        }
+
+        /// <summary>
+        /// Convert degrees to radians
+        /// </summary>
+        /// <param name="degrees">An angle in degrees</param>
+        /// <returns>The angle expressed in radians</returns>
+        public static double DegreesToRadians2(double degrees)
+        {
+            const double degToRad = System.Math.PI / 360.0;
+            return degrees * degToRad;
+        }
+
+        /// <summary>
+        /// Convert radians to degrees
+        /// </summary>
+        /// <param name="radians">An angle in radians</param>
+        /// <returns>The angle expressed in degrees</returns>
+        public static double RadiansToDegrees2(double radians)
+        {
+            const double radToDeg = 360.0 / System.Math.PI;
+            return radians * radToDeg;
+        }
+
+        /// <summary>
         /// Swaps two double values.
         /// </summary>
         /// <param name="a">The first value.</param>
