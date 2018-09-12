@@ -361,6 +361,14 @@ namespace Urho3DNet
         }
 
         /// <summary>
+        /// Converts this instance into its transpose.
+        /// </summary>
+        public Matrix4 Transposed()
+        {
+            return Matrix4.Transpose(this);
+        }
+
+        /// <summary>
         /// Returns a normalised copy of this instance.
         /// </summary>
         public Matrix4 Normalized()

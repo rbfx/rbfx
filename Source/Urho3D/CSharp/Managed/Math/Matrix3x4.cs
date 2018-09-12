@@ -880,5 +880,27 @@ namespace Urho3DNet
                 Row1 == other.Row1 &&
                 Row2 == other.Row2;
         }
+
+        public Matrix4 ToMatrix4()
+        {
+            return new Matrix4(
+                M00,
+                M01,
+                M02,
+                M03,
+                M10,
+                M11,
+                M12,
+                M13,
+                M20,
+                M21,
+                M22,
+                M23,
+                0.0f,
+                0.0f,
+                0.0f,
+                1.0f
+            );
+        }
     }
 }

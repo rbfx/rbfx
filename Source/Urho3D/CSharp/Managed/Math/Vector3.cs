@@ -1441,5 +1441,58 @@ namespace Urho3DNet
                 Y == other.Y &&
                 Z == other.Z;
         }
+
+        /// Calculate dot product.
+        public float DotProduct(in Vector3 rhs) { return X * rhs.X + Y * rhs.Y + Z * rhs.Z; }
+
+        /// Calculate absolute dot product.
+        public float AbsDotProduct(in Vector3 rhs)
+        {
+            return Math.Abs(X * rhs.X) + Math.Abs(Y * rhs.Y) + Math.Abs(Z * rhs.Z);
+        }
+
+        /// Project direction vector onto axis.
+        public float ProjectOntoAxis(in Vector3 axis) { return DotProduct(axis.Normalized()); }
+
+        /// Project position vector onto plane with given origin and normal.
+        public Vector3 ProjectOntoPlane(in Vector3 origin, in Vector3 normal)
+        {
+            Vector3 delta = this - origin;
+            return this - normal.Normalized() * delta.ProjectOntoAxis(normal);
+        }
+
+        /// Project position vector onto line segment.
+        public Vector3 ProjectOntoLine(in Vector3 from, in Vector3 to, bool clamped = false)
+        {
+            Vector3 direction = to - from;
+            float lengthSquared = direction.LengthSquared;
+            float factor = (this - from).DotProduct(direction) / lengthSquared;
+
+            if (clamped)
+                factor = MathDefs.Clamp(factor, 0.0f, 1.0f);
+
+            return from + direction * factor;
+        }
+
+        /// Calculate distance to another position vector.
+        public float DistanceToPoint(in Vector3 point) { return (this - point).Length; }
+
+        /// Calculate distance to the plane with given origin and normal.
+        public float DistanceToPlane(in Vector3 origin, in Vector3 normal) { return (this - origin).ProjectOntoAxis(normal); }
+
+        /// Make vector orthogonal to the axis.
+        public Vector3 Orthogonalize(in Vector3 axis) { return axis.CrossProduct(this).CrossProduct(axis).Normalized(); }
+
+        /// Calculate cross product.
+        public Vector3 CrossProduct(in Vector3 rhs)
+        {
+            return new Vector3(
+                Y * rhs.Z - Z * rhs.Y,
+                Z * rhs.X - X * rhs.Z,
+                X * rhs.Y - Y * rhs.X
+            );
+        }
+        /// Return absolute vector.
+        public Vector3 Abs() { return new Vector3(Math.Abs(X), Math.Abs(Y), Math.Abs(Z)); }
     }
 }
