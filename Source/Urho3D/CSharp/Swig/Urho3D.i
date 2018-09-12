@@ -83,6 +83,7 @@ URHO3D_BINARY_COMPATIBLE_TYPE(Plane);
 URHO3D_BINARY_COMPATIBLE_TYPE(BoundingBox);
 URHO3D_BINARY_COMPATIBLE_TYPE(Sphere);
 URHO3D_BINARY_COMPATIBLE_TYPE(Frustum);
+URHO3D_BINARY_COMPATIBLE_TYPE(Ray);
 
 }
 
@@ -110,8 +111,6 @@ URHO3D_BINARY_COMPATIBLE_TYPE(Frustum);
 %ignore Urho3D::M_RADTODEG;
 
 // These should be implemented in C# anyway.
-%ignore Urho3D::Frustum::planes_;
-%ignore Urho3D::Frustum::vertices_;
 %ignore Urho3D::Polyhedron::Polyhedron(const Vector<PODVector<Vector3> >& faces);
 %ignore Urho3D::Polyhedron::faces_;
 
@@ -127,7 +126,6 @@ URHO3D_BINARY_COMPATIBLE_TYPE(Frustum);
 %typecheck(SWIG_TYPECHECK_CHAR_PTR)           void*& ""
 
 %include "Urho3D/Math/MathDefs.h"
-%include "Urho3D/Math/Ray.h"
 
 // ---------------------------------------  ---------------------------------------
 
