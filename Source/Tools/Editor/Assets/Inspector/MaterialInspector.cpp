@@ -40,31 +40,14 @@ using namespace ImGui::litterals;
 namespace Urho3D
 {
 
-// Should these be exported by the engine?
-static const char* cullModeNames[] =
-{
-    "none",
-    "ccw",
-    "cw",
-    nullptr
-};
-static const char* fillModeNames[] =
-{
-    "solid",
-    "wireframe",
-    "point",
-    nullptr
-};
-
 const float attributeIndentLevel = 15.f;
 const auto MAX_FILLMODES = IM_ARRAYSIZE(fillModeNames) - 1;
 
 MaterialInspector::MaterialInspector(Context* context, Material* material)
     : ResourceInspector(context)
     , view_(context, {0, 0, 200, 200})
-    , material_(material)
+    , inspectable_(new Inspectable::Material(material))
     , attributeInspector_(context)
-    , autoColumn_(context)
 {
     // Workaround: for some reason this overriden method of our class does not get called by SceneView constructor.
     CreateObjects();
@@ -88,247 +71,49 @@ MaterialInspector::MaterialInspector(Context* context, Material* material)
             }
         }
     }
+
+    undo_.Connect(&attributeInspector_);
 }
 
-void MaterialInspector::Render()
+void MaterialInspector::RenderInspector(const char* filter)
 {
-    auto size = static_cast<int>(ui::GetWindowWidth() - ui::GetCursorPosX());
-    view_.SetSize({0, 0, size, size});
-    ui::Image(view_.GetTexture(), ImVec2(view_.GetTexture()->GetWidth(), view_.GetTexture()->GetHeight()));
-    ui::SetHelpTooltip("Drag resource here.\nClick to switch object.");
-    Input* input = view_.GetCamera()->GetInput();
-    bool rightMouseButtonDown = input->GetMouseButtonDown(MOUSEB_RIGHT);
-    if (ui::IsItemHovered())
+    if (RenderAttributes(inspectable_, filter, &attributeInspector_))
     {
-        if (rightMouseButtonDown)
-            SetGrab(true);
-        else if (input->GetMouseButtonPress(MOUSEB_LEFT))
-            ToggleModel();
-    }
-
-    if (mouseGrabbed_)
-    {
-        if (rightMouseButtonDown)
+        auto size = static_cast<int>(ui::GetWindowWidth() - ui::GetCursorPosX());
+        view_.SetSize({0, 0, size, size});
+        ui::Image(view_.GetTexture(), ImVec2(view_.GetTexture()->GetWidth(), view_.GetTexture()->GetHeight()));
+        ui::SetHelpTooltip("Drag resource here.\nClick to switch object.");
+        Input* input = view_.GetCamera()->GetInput();
+        bool rightMouseButtonDown = input->GetMouseButtonDown(MOUSEB_RIGHT);
+        if (ui::IsItemHovered())
         {
-            if (input->GetKeyPress(KEY_ESCAPE))
+            if (rightMouseButtonDown)
+                SetGrab(true);
+            else if (input->GetMouseButtonPress(MOUSEB_LEFT))
+                ToggleModel();
+        }
+
+        if (mouseGrabbed_)
+        {
+            if (rightMouseButtonDown)
             {
-                view_.GetCamera()->GetNode()->SetPosition(Vector3::BACK * distance_);
-                view_.GetCamera()->GetNode()->LookAt(Vector3::ZERO);
+                if (input->GetKeyPress(KEY_ESCAPE))
+                {
+                    view_.GetCamera()->GetNode()->SetPosition(Vector3::BACK * distance_);
+                    view_.GetCamera()->GetNode()->LookAt(Vector3::ZERO);
+                }
+                else
+                {
+                    IntVector2 delta = input->GetMouseMove();
+                    view_.GetCamera()->GetNode()->RotateAround(Vector3::ZERO,
+                                          Quaternion(delta.x_ * 0.1f, view_.GetCamera()->GetNode()->GetUp()) *
+                                          Quaternion(delta.y_ * 0.1f, view_.GetCamera()->GetNode()->GetRight()), TS_WORLD);
+                }
             }
             else
-            {
-                IntVector2 delta = input->GetMouseMove();
-                view_.GetCamera()->GetNode()->RotateAround(Vector3::ZERO,
-                                      Quaternion(delta.x_ * 0.1f, view_.GetCamera()->GetNode()->GetUp()) *
-                                      Quaternion(delta.y_ * 0.1f, view_.GetCamera()->GetNode()->GetRight()), TS_WORLD);
-            }
+                SetGrab(false);
         }
-        else
-            SetGrab(false);
     }
-
-    ui::Indent(attributeIndentLevel);
-
-    ui::TextUnformatted("Cull");
-    autoColumn_.NextColumn();
-    ui::PushItemWidth(-1);
-    int valueInt = material_->GetCullMode();
-    if (ui::Combo("###cull", &valueInt, cullModeNames, (int)MAX_CULLMODES))
-    {
-        material_->SetCullMode(static_cast<CullMode>(valueInt));
-        material_->SaveFile(GetCache()->GetResourceFileName(material_->GetName()));
-    }
-    ui::PopItemWidth();
-
-    ui::TextUnformatted("Shadow Cull");
-    autoColumn_.NextColumn();
-    ui::PushItemWidth(-1);
-    valueInt = material_->GetShadowCullMode();
-    if (ui::Combo("###shadowCull", &valueInt, cullModeNames, (int)MAX_CULLMODES))
-    {
-        material_->SetShadowCullMode(static_cast<CullMode>(valueInt));
-        material_->SaveFile(GetCache()->GetResourceFileName(material_->GetName()));
-    }
-    ui::PopItemWidth();
-
-    ui::TextUnformatted("Fill");
-    autoColumn_.NextColumn();
-    ui::PushItemWidth(-1);
-    valueInt = material_->GetFillMode();
-    if (ui::Combo("###fill", &valueInt, fillModeNames, MAX_FILLMODES))
-    {
-        material_->SetFillMode(static_cast<FillMode>(valueInt));
-        material_->SaveFile(GetCache()->GetResourceFileName(material_->GetName()));
-    }
-    ui::PopItemWidth();
-
-    auto bias = material_->GetDepthBias();
-    ui::TextUnformatted("Constant Bias");
-    autoColumn_.NextColumn();
-    ui::PushItemWidth(-1);
-    if (ui::DragFloat("###constantBias_", &bias.constantBias_, 0.1f, -1, 1))
-    {
-        material_->SetDepthBias(bias);
-        material_->SaveFile(GetCache()->GetResourceFileName(material_->GetName()));
-    }
-    ui::PopItemWidth();
-
-    ui::TextUnformatted("Slope Scaled Bias");
-    autoColumn_.NextColumn();
-    ui::PushItemWidth(-1);
-    if (ui::DragFloat("###slopeScaledBias_", &bias.slopeScaledBias_, 1, -16, 16))
-    {
-        material_->SetDepthBias(bias);
-        material_->SaveFile(GetCache()->GetResourceFileName(material_->GetName()));
-    }
-    ui::PopItemWidth();
-
-    ui::TextUnformatted("Normal Offset");
-    autoColumn_.NextColumn();
-    ui::PushItemWidth(-1);
-    if (ui::DragFloat("###normalOffset_", &bias.normalOffset_, 1, 0))
-    {
-        material_->SetDepthBias(bias);
-        material_->SaveFile(GetCache()->GetResourceFileName(material_->GetName()));
-    }
-    ui::PopItemWidth();
-
-    ui::TextUnformatted("Alpha To Coverage");
-    autoColumn_.NextColumn();
-    ui::PushItemWidth(-1);
-    bool valueBool = material_->GetAlphaToCoverage();
-    if (ui::Checkbox("###alphaToCoverage_", &valueBool))
-    {
-        material_->SetAlphaToCoverage(valueBool);
-        material_->SaveFile(GetCache()->GetResourceFileName(material_->GetName()));
-    }
-    ui::PopItemWidth();
-
-    ui::TextUnformatted("Line Anti-Alias");
-    autoColumn_.NextColumn();
-    ui::PushItemWidth(-1);
-    valueBool = material_->GetLineAntiAlias();
-    if (ui::Checkbox("###lineAntiAlias_", &valueBool))
-    {
-        material_->SetLineAntiAlias(valueBool);
-        material_->SaveFile(GetCache()->GetResourceFileName(material_->GetName()));
-    }
-    ui::PopItemWidth();
-
-    ui::TextUnformatted("Occlusion");
-    autoColumn_.NextColumn();
-    ui::PushItemWidth(-1);
-    valueBool = material_->GetOcclusion();
-    if (ui::Checkbox("###occlusion_", &valueBool))
-    {
-        material_->SetOcclusion(valueBool);
-        material_->SaveFile(GetCache()->GetResourceFileName(material_->GetName()));
-    }
-    ui::PopItemWidth();
-
-    ui::TextUnformatted("Render Order");
-    autoColumn_.NextColumn();
-    ui::PushItemWidth(-1);
-    valueInt = material_->GetRenderOrder();
-    if (ui::DragInt("###renderOrder_", &valueInt, 1, 0, 0xFF))
-    {
-        material_->SetRenderOrder(static_cast<unsigned char>(valueInt));
-        material_->SaveFile(GetCache()->GetResourceFileName(material_->GetName()));
-    }
-    ui::PopItemWidth();
-
-    auto handleDragAndDrop = [&](StringHash resourceType, SharedPtr<Resource>& resource)
-    {
-        bool dropped = false;
-        if (ui::BeginDragDropTarget())
-        {
-            const Variant& payload = ui::AcceptDragDropVariant("path");
-            if (!payload.IsEmpty())
-            {
-                resource = GetCache()->GetResource(resourceType, payload.GetString());
-                dropped = resource.NotNull();
-            }
-            ui::EndDragDropTarget();
-        }
-        ui::SetHelpTooltip("Drag and drop resource here.");
-        return dropped;
-    };
-    SharedPtr<Resource> resource;
-
-    for (unsigned i = 0; i < material_->GetNumTechniques(); i++)
-    {
-        ui::PushID(i);
-        auto& tech = const_cast<TechniqueEntry&>(material_->GetTechniqueEntry(i));
-
-        bool open = ui::CollapsingHeaderSimple(ToString("Technique %d", i).CString());
-        autoColumn_.NextColumn();
-        String techName = tech.technique_->GetName();
-        ui::PushItemWidth(material_->GetNumTechniques() > 1 ? -60_dpx : -30_dpx);
-        ui::InputText("###techniqueName_", (char*)techName.CString(), techName.Length(),
-                      ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
-        ui::PopItemWidth();
-        if (handleDragAndDrop(Technique::GetTypeStatic(), resource))
-        {
-            material_->SetTechnique(i, DynamicCast<Technique>(resource), tech.qualityLevel_, tech.lodDistance_);
-            material_->SaveFile(GetCache()->GetResourceFileName(material_->GetName()));
-            resource.Reset();
-        }
-
-        if (material_->GetNumTechniques() > 1)
-        {
-            ui::SameLine();
-            if (ui::IconButton(ICON_FA_TRASH))
-            {
-                for (auto j = i + 1; j < material_->GetNumTechniques(); j++)
-                    material_->SetTechnique(j - 1, material_->GetTechnique(j));
-                material_->SetNumTechniques(material_->GetNumTechniques() - 1);
-                material_->SaveFile(GetCache()->GetResourceFileName(material_->GetName()));
-                ui::PopID();
-                break;
-            }
-        }
-
-        ui::SameLine();
-        if (ui::IconButton(ICON_FA_CROSSHAIRS))
-        {
-            SendEvent(E_INSPECTORLOCATERESOURCE, InspectorLocateResource::P_NAME, material_->GetTechnique(i)->GetName());
-        }
-        ui::SetHelpTooltip("Locate resource");
-
-        if (open)
-        {
-            ui::Indent(attributeIndentLevel);
-
-            ui::TextUnformatted("LOD Distance");
-            autoColumn_.NextColumn();
-            ui::PushItemWidth(-1);
-            if (ui::DragFloat("###lodDistance_", &tech.lodDistance_))
-                material_->SaveFile(GetCache()->GetResourceFileName(material_->GetName()));
-            ui::PopItemWidth();
-
-            ui::TextUnformatted("Quality");
-            autoColumn_.NextColumn();
-            ui::PushItemWidth(-1);
-            if (ui::DragInt("###qualityLevel_", (int*)&tech.qualityLevel_, 1, QUALITY_LOW, QUALITY_MAX))
-                material_->SaveFile(GetCache()->GetResourceFileName(material_->GetName()));
-            ui::PopItemWidth();
-
-            ui::Unindent(attributeIndentLevel);
-        }
-        ui::PopID();
-    }
-
-    ui::PushItemWidth(-1);
-    const char* newTechnique = "Add new technique";
-    ui::InputText("###newTechnique_", (char*)newTechnique, strlen(newTechnique), ImGuiInputTextFlags_ReadOnly);
-    if (handleDragAndDrop(Technique::GetTypeStatic(), resource))
-    {
-        material_->SetNumTechniques(material_->GetNumTechniques() + 1);
-        material_->SetTechnique(material_->GetNumTechniques() - 1, dynamic_cast<Technique*>(resource.Get()));
-        material_->SaveFile(GetCache()->GetResourceFileName(material_->GetName()));
-    }
-    ui::PopItemWidth();
-    ui::Unindent(attributeIndentLevel);
 }
 
 void MaterialInspector::ToggleModel()
@@ -336,7 +121,7 @@ void MaterialInspector::ToggleModel()
     auto model = node_->GetOrCreateComponent<StaticModel>();
 
     model->SetModel(node_->GetCache()->GetResource<Model>(ToString("Models/%s.mdl", figures_[figureIndex_])));
-    model->SetMaterial(material_);
+    model->SetMaterial(inspectable_->GetMaterial());
     auto bb = model->GetBoundingBox();
     auto scale = 1.f / Max(bb.Size().x_, Max(bb.Size().y_, bb.Size().z_));
     if (strcmp(figures_[figureIndex_], "Box") == 0)    // Box is rather big after autodetecting scale, but other figures
@@ -370,6 +155,131 @@ void MaterialInspector::CreateObjects()
     view_.GetCamera()->GetNode()->CreateComponent<Light>();
     view_.GetCamera()->GetNode()->SetPosition(Vector3::BACK * distance_);
     view_.GetCamera()->GetNode()->LookAt(Vector3::ZERO);
+}
+
+void MaterialInspector::Save()
+{
+    inspectable_->GetMaterial()->SaveFile(GetCache()->GetResourceFileName(inspectable_->GetMaterial()->GetName()));
+}
+
+Inspectable::Material::Material(Urho3D::Material* material)
+    : Serializable(material->GetContext())
+    , material_(material)
+{
+}
+
+void Inspectable::Material::RegisterObject(Context* context)
+{
+    // TODO: Depth Bias
+    // TODO: Techniques
+    // TODO: Textures
+    // TODO: UV transforms
+    // TODO: Shader Parameters
+
+    // Cull Mode
+    {
+        auto getter = [](const Inspectable::Material& inspectable, Variant& value)
+        {
+            if (auto* material = inspectable.GetMaterial())
+                value = material->GetCullMode();
+        };
+        auto setter = [](const Inspectable::Material& inspectable, const Variant& value)
+        {
+            if (auto* material = inspectable.GetMaterial())
+                material->SetCullMode((CullMode) value.GetUInt());
+        };
+        URHO3D_CUSTOM_ENUM_ATTRIBUTE("Cull", getter, setter, cullModeNames, CULL_NONE, AM_DEFAULT);
+    }
+
+    // Shadow Cull Mode
+    {
+        auto getter = [](const Inspectable::Material& inspectable, Variant& value)
+        {
+            if (auto* material = inspectable.GetMaterial())
+                value = material->GetShadowCullMode();
+        };
+        auto setter = [](const Inspectable::Material& inspectable, const Variant& value)
+        {
+            if (auto* material = inspectable.GetMaterial())
+                material->SetShadowCullMode((CullMode) value.GetUInt());
+        };
+        URHO3D_CUSTOM_ENUM_ATTRIBUTE("Shadow Cull", getter, setter, cullModeNames, CULL_NONE, AM_DEFAULT);
+    }
+
+    // Fill Mode
+    {
+        auto getter = [](const Inspectable::Material& inspectable, Variant& value)
+        {
+            if (auto* material = inspectable.GetMaterial())
+                value = material->GetFillMode();
+        };
+        auto setter = [](const Inspectable::Material& inspectable, const Variant& value)
+        {
+            if (auto* material = inspectable.GetMaterial())
+                material->SetFillMode((FillMode) value.GetUInt());
+        };
+        URHO3D_CUSTOM_ENUM_ATTRIBUTE("Fill", getter, setter, fillModeNames, FILL_SOLID, AM_DEFAULT);
+    }
+
+    // Alpha To Coverage
+    {
+        auto getter = [](const Inspectable::Material& inspectable, Variant& value)
+        {
+            if (auto* material = inspectable.GetMaterial())
+                value = material->GetAlphaToCoverage();
+        };
+        auto setter = [](const Inspectable::Material& inspectable, const Variant& value)
+        {
+            if (auto* material = inspectable.GetMaterial())
+                material->SetAlphaToCoverage(value.GetBool());
+        };
+        URHO3D_CUSTOM_ATTRIBUTE("Alpha To Coverage", getter, setter, bool, false, AM_DEFAULT);
+    }
+
+    // Line Anti Alias
+    {
+        auto getter = [](const Inspectable::Material& inspectable, Variant& value)
+        {
+            if (auto* material = inspectable.GetMaterial())
+                value = material->GetLineAntiAlias();
+        };
+        auto setter = [](const Inspectable::Material& inspectable, const Variant& value)
+        {
+            if (auto* material = inspectable.GetMaterial())
+                material->SetLineAntiAlias(value.GetBool());
+        };
+        URHO3D_CUSTOM_ATTRIBUTE("Line Anti Alias", getter, setter, bool, false, AM_DEFAULT);
+    }
+
+    // Render Order
+    {
+        auto getter = [](const Inspectable::Material& inspectable, Variant& value)
+        {
+            if (auto* material = inspectable.GetMaterial())
+                value = material->GetRenderOrder();
+        };
+        auto setter = [](const Inspectable::Material& inspectable, const Variant& value)
+        {
+            if (auto* material = inspectable.GetMaterial())
+                material->SetRenderOrder(static_cast<unsigned char>(value.GetUInt()));
+        };
+        URHO3D_CUSTOM_ATTRIBUTE("Render Order", getter, setter, unsigned, 128, AM_DEFAULT);
+    }
+
+    // Occlusion
+    {
+        auto getter = [](const Inspectable::Material& inspectable, Variant& value)
+        {
+            if (auto* material = inspectable.GetMaterial())
+                value = material->GetOcclusion();
+        };
+        auto setter = [](const Inspectable::Material& inspectable, const Variant& value)
+        {
+            if (auto* material = inspectable.GetMaterial())
+                material->SetOcclusion(value.GetBool());
+        };
+        URHO3D_CUSTOM_ATTRIBUTE("Occlusion", getter, setter, bool, false, AM_DEFAULT);
+    }
 }
 
 }

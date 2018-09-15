@@ -27,6 +27,7 @@
 #include "Assets/Inspector/MaterialInspector.h"
 #include "Tabs/Scene/SceneTab.h"
 #include "Tabs/UI/UITab.h"
+#include "Tabs/InspectorTab.h"
 #include "Editor.h"
 #include "ResourceTab.h"
 
@@ -114,7 +115,6 @@ bool ResourceTab::RenderWindowContent()
 //        case CTYPE_TEXTURE:break;
 //        case CTYPE_TEXTUREXML:break;
         default:
-            currentInspector_ = StringHash::ZERO;
             break;
         }
     }
@@ -214,22 +214,16 @@ String ResourceTab::GetNewResourcePath(const String& name)
 template<typename Inspector, typename TResource>
 void ResourceTab::OpenResourceInspector(const String& resourcePath)
 {
-    currentInspector_ = resourcePath;
-    auto it = inspectors_.Find(currentInspector_);
+    auto it = inspectors_.Find(resourcePath);
     ResourceInspector* inspector = nullptr;
     if (it == inspectors_.End())
     {
         inspector = new Inspector(context_, GetCache()->GetResource<TResource>(resourcePath));
-        inspectors_[currentInspector_] = inspector;
+        inspectors_[resourcePath] = inspector;
     }
 
-    SendEvent(E_EDITORRENDERINSPECTOR, EditorRenderInspector::P_INSPECTABLE, this);
-}
-
-void ResourceTab::RenderInspector()
-{
-    if (currentInspector_ != StringHash::ZERO)
-        inspectors_[currentInspector_]->Render();
+    SendEvent(E_EDITORRENDERINSPECTOR, EditorRenderInspector::P_INSPECTABLE, inspector,
+        EditorRenderInspector::P_CATEGORY, IC_RESOURCE);
 }
 
 }

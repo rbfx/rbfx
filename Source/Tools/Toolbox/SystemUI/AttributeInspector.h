@@ -41,70 +41,17 @@ URHO3D_EVENT(E_INSPECTORLOCATERESOURCE, InspectorLocateResource)
     URHO3D_PARAM(P_NAME, ResourceName);                                         // String
 }
 
+/// A dummy object used as namespace for subscribing to events.
 class URHO3D_TOOLBOX_API AttributeInspector : public Object
 {
     URHO3D_OBJECT(AttributeInspector, Object);
 public:
-    /// Construct.
-    explicit AttributeInspector(Context* context);
-
-    /// Render attribute inspector widgets of multiple items.
-    void RenderAttributes(const PODVector<Serializable*>& items);
-    /// Render attribute inspector widgets.
-    void RenderAttributes(Serializable* item);
-
-protected:
-    /// Render value widget of single attribute.
-    /// \returns true if value was modified.
-    bool RenderSingleAttribute(const AttributeInfo& info, Variant& value);
-    /// Render ui for single resource ref attribute.
-    bool RenderResourceRef(StringHash type, const String& name, String& result);
-
-    /// A filter value. Attributes whose titles do not contain substring sored in this variable will not be rendered.
-    std::array<char, 0x100> filter_{};
-    /// Name of attribute that was modified on last frame.
-    const char* modifiedLastFrame_ = nullptr;
-    /// Value of attribute before modifying it started.
-    Variant originalValue_;
-    /// Object keeping track of automatic width of first column.
-    AutoColumn autoColumn_;
+    explicit AttributeInspector(Context* context) : Object(context) { }
 };
 
-class URHO3D_TOOLBOX_API AttributeInspectorWindow : public AttributeInspector
-{
-    URHO3D_OBJECT(AttributeInspectorWindow, Object);
-public:
-    /// Construct.
-    explicit AttributeInspectorWindow(Context* context);
-
-    /// Enable or disable rendering of attribute inspector window.
-    void SetEnabled(bool enabled);
-    /// Returns true if attribute inspector window is enabled.
-    bool IsEnabled() const;
-    /// Set serializable whose attributes should be rendered.
-    void SetSerializable(Serializable* item);
-    /// Return serializable whose attributes are being rendered.
-    Serializable* GetSerializable() const { return currentSerializable_; }
-
-protected:
-    /// Render attribute inspector UI.
-    virtual void RenderUi();
-
-    /// Enable or disable rendering of attribute inspector window.
-    bool enabled_ = false;
-    /// Current Serializable whose attributes are rendered.
-    WeakPtr<Serializable> currentSerializable_;
-};
-
-class URHO3D_TOOLBOX_API AttributeInspectorDockWindow : public AttributeInspectorWindow
-{
-    URHO3D_OBJECT(AttributeInspectorDockWindow, Object);
-public:
-    /// Construct.
-    explicit AttributeInspectorDockWindow(Context* context);
-
-    /// Render attribute inspector UI.
-    void RenderUi() override;
-};
+/// Render attribute inspector of `item`.
+/// If `filter` is not null then only attributes containing this substring will be rendered.
+/// If `eventNamespace` is not null then this object will be used to send events.
+URHO3D_TOOLBOX_API bool RenderAttributes(Serializable* item, const char* filter=nullptr, Object* eventNamespace=nullptr);
 
 }

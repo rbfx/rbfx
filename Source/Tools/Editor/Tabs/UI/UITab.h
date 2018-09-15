@@ -41,7 +41,7 @@ public:
     /// Render scene hierarchy window.
     void RenderHierarchy() override;
     /// Render inspector window.
-    void RenderInspector() override;
+    void RenderInspector(const char* filter) override;
     /// Render content of tab window.
     bool RenderWindowContent() override;
     /// Render toolbar buttons.

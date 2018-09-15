@@ -24,6 +24,7 @@
 
 #include <Toolbox/Scene/DebugCameraController.h>
 #include <Toolbox/SystemUI/Widgets.h>
+#include <ImGui/imgui_internal.h>
 #include <ImGuizmo/ImGuizmo.h>
 
 #include "SceneTab.h"
@@ -31,7 +32,7 @@
 #include "Editor.h"
 #include "Widgets.h"
 #include "SceneSettings.h"
-#include <ImGui/imgui_internal.h>
+#include "Tabs/InspectorTab.h"
 
 
 namespace Urho3D
@@ -336,10 +337,10 @@ void SceneTab::RenderToolbarButtons()
 
     ui::SameLine(0, 3.f);
 
-    if (ui::EditorToolbarButton(ICON_FA_UNDO, "Undo"))
-        undo_.Undo();
-    if (ui::EditorToolbarButton(ICON_FA_REDO, "Redo"))
-        undo_.Redo();
+//    if (ui::EditorToolbarButton(ICON_FA_UNDO, "Undo"))
+//        undo_.Undo();
+//    if (ui::EditorToolbarButton(ICON_FA_REDO, "Redo"))
+//        undo_.Redo();
 
     ui::SameLine(0, 3.f);
 
@@ -393,7 +394,7 @@ void SceneTab::OnNodeSelectionChanged()
     selectedComponent_ = nullptr;
 }
 
-void SceneTab::RenderInspector()
+void SceneTab::RenderInspector(const char* filter)
 {
     // TODO: inspector for multi-selection.
     if (GetSelection().Size() == 1)
@@ -403,16 +404,15 @@ void SceneTab::RenderInspector()
             return;
 
         PODVector<Serializable*> items;
-        items.Push(node.Get());
+        RenderAttributes(node.Get(), filter, &inspector_);
         if (node == GetScene())
         {
             effectSettings_->Prepare();
-            items.Push(settings_.Get());
-            items.Push(effectSettings_.Get());
+            RenderAttributes(settings_.Get(), filter, &inspector_);
+            RenderAttributes(effectSettings_.Get(), filter, &inspector_);
         }
         for (Component* component : node->GetComponents())
-            items.Push(component);
-        inspector_.RenderAttributes(items);
+            RenderAttributes(component, filter, &inspector_);
     }
 }
 
@@ -601,19 +601,6 @@ void SceneTab::OnSaveProject(JSONValue& tab)
 
 void SceneTab::OnActiveUpdate()
 {
-    // Scene viewport hotkeys
-    if (!ui::IsAnyItemActive() && !scenePlaying_)
-    {
-        Input* input = GetSubsystem<Input>();
-
-        if (input->GetKeyDown(KEY_CTRL))
-        {
-            if (input->GetKeyPress(KEY_Y) || (input->GetKeyDown(KEY_SHIFT) && input->GetKeyPress(KEY_Z)))
-                undo_.Redo();
-            else if (input->GetKeyPress(KEY_Z))
-                undo_.Undo();
-        }
-    }
 }
 
 void SceneTab::RemoveSelection()
@@ -871,7 +858,7 @@ void SceneTab::OnComponentRemoved(VariantMap& args)
 
 void SceneTab::OnFocused()
 {
-    SendEvent(E_EDITORRENDERINSPECTOR, EditorRenderInspector::P_INSPECTABLE, this);
+    SendEvent(E_EDITORRENDERINSPECTOR, EditorRenderInspector::P_INSPECTABLE, this, EditorRenderInspector::P_CATEGORY, IC_SCENE);
     SendEvent(E_EDITORRENDERHIERARCHY, EditorRenderHierarchy::P_INSPECTABLE, this);
 }
 

@@ -47,7 +47,7 @@ public:
     /// Destruct.
     ~SceneTab() override;
     /// Render inspector window.
-    void RenderInspector() override;
+    void RenderInspector(const char* filter) override;
     /// Render scene hierarchy window starting from the root node (scene).
     void RenderHierarchy() override;
     /// Render buttons which customize gizmo behavior.

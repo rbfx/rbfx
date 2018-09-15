@@ -37,6 +37,8 @@
 #include "Tabs/ConsoleTab.h"
 #include "Tabs/ResourceTab.h"
 #include "Assets/AssetConverter.h"
+#include "Assets/Inspector/MaterialInspector.h"
+
 
 URHO3D_DEFINE_APPLICATION_MAIN(Editor);
 
@@ -109,6 +111,8 @@ void Editor::Start()
     context_->RegisterFactory<HierarchyTab>();
     context_->RegisterFactory<InspectorTab>();
     context_->RegisterFactory<ResourceTab>();
+
+    Inspectable::Material::RegisterObject(context_);
 
     context_->RegisterSubsystem(new EditorIconCache(context_));
     GetInput()->SetMouseMode(MM_ABSOLUTE);
@@ -214,6 +218,8 @@ void Editor::OnUpdate(VariantMap& args)
     {
         activeTab_->OnActiveUpdate();
     }
+
+    HandleHotkeys();
 }
 
 void Editor::RenderMenuBar()
@@ -388,6 +394,35 @@ void Editor::CloseProject()
     context_->RemoveSubsystem<Project>();
     project_.Reset();
     tabs_.Clear();
+}
+
+void Editor::HandleHotkeys()
+{
+    if (ui::IsAnyItemActive())
+        return;
+
+    auto* input = GetInput();
+    if (input->GetKeyDown(KEY_CTRL))
+    {
+        if (input->GetKeyPress(KEY_Y) || (input->GetKeyDown(KEY_SHIFT) && input->GetKeyPress(KEY_Z)))
+        {
+            VariantMap args;
+            args[Undo::P_TIME] = M_MAX_UNSIGNED;
+            SendEvent(E_REDO, args);
+            Variant manager;
+            if (args.TryGetValue(Undo::P_MANAGER, manager))
+                ((Undo::Manager*)manager.GetPtr())->Redo();
+        }
+        else if (input->GetKeyPress(KEY_Z))
+        {
+            VariantMap args;
+            args[Undo::P_TIME] = 0;
+            SendEvent(E_UNDO, args);
+            Variant manager;
+            if (args.TryGetValue(Undo::P_MANAGER, manager))
+                ((Undo::Manager*)manager.GetPtr())->Undo();
+        }
+    }
 }
 
 }

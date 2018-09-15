@@ -31,16 +31,13 @@
 namespace Urho3D
 {
 
-class ResourceTab : public Tab, public IInspectorProvider
+class ResourceTab : public Tab
 {
     URHO3D_OBJECT(ResourceTab, Tab)
 public:
     explicit ResourceTab(Context* context);
 
     bool RenderWindowContent() override;
-
-    /// Render inspector window.
-    void RenderInspector() override;
 
 protected:
     String GetNewResourcePath(const String& name);
@@ -51,7 +48,6 @@ protected:
     String resourceSelection_;
     ResourceBrowserFlags flags_{RBF_NONE};
     HashMap<StringHash, SharedPtr<ResourceInspector>> inspectors_;
-    StringHash currentInspector_;
 };
 
 }

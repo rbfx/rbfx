@@ -25,17 +25,17 @@
 
 #include <Urho3D/Core/Object.h>
 #include <Toolbox/Common/UndoManager.h>
+#include <Tabs/Tab.h>
 
 
 namespace Urho3D
 {
 
-class ResourceInspector : public Object
+class ResourceInspector : public Object, public IInspectorProvider
 {
     URHO3D_OBJECT(ResourceInspector, Object);
 public:
     explicit ResourceInspector(Context* context);
-    virtual void Render() = 0;
 
 protected:
     /// Asset changes tracker.

@@ -14,7 +14,7 @@ namespace Undo
 Manager::Manager(Context* ctx)
     : Object(ctx)
 {
-    SubscribeToEvent(E_ENDFRAME, [&](StringHash, VariantMap&)
+    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&)
     {
         if (trackingEnabled_ && !currentFrameStates_.Empty())
         {
@@ -22,6 +22,35 @@ Manager::Manager(Context* ctx)
             stack_.Push(currentFrameStates_);
             index_++;
             currentFrameStates_.Clear();
+        }
+    });
+
+    SubscribeToEvent(E_UNDO, [this](StringHash, VariantMap& args)
+    {
+        if (index_ > 0)
+        {
+            // Pick a state with latest time
+            auto time = stack_[index_ - 1][0]->time_;
+            if (args[P_TIME].GetUInt() < time)
+            {
+                // Find and return undo manager with latest state recording
+                args[P_TIME] = time;
+                args[P_MANAGER] = this;
+            }
+        }
+    });
+
+    SubscribeToEvent(E_REDO, [this](StringHash, VariantMap& args)
+    {
+        if (index_ < stack_.Size())
+        {
+            auto time = stack_[index_][0]->time_;
+            if (args[P_TIME].GetUInt() > time)
+            {
+                // Find and return undo manager with latest state recording
+                args[P_TIME] = time;
+                args[P_MANAGER] = this;
+            }
         }
     });
 }

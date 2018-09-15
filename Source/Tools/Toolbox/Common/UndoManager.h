@@ -41,6 +41,20 @@ class AttributeInspector;
 class Gizmo;
 class Scene;
 
+/// Notify undo managers that state is about to be undone.
+URHO3D_EVENT(E_UNDO, Undo)
+{
+    URHO3D_PARAM(P_TIME, Time);                       // unsigned.
+    URHO3D_PARAM(P_MANAGER, Manager);                 // Undo::Manager pointer.
+}
+
+/// Notify undo managers that state is about to be redone.
+URHO3D_EVENT(E_REDO, Redo)
+{
+    URHO3D_PARAM(P_TIME, Time);                       // unsigned.
+    URHO3D_PARAM(P_MANAGER, Manager);                 // Undo::Manager pointer.
+}
+
 namespace Undo
 {
 
@@ -49,6 +63,9 @@ class URHO3D_TOOLBOX_API EditAction : public RefCounted
 public:
     virtual void Undo() = 0;
     virtual void Redo() = 0;
+
+    /// Time when action was recorded.
+    unsigned time_ = Time::GetSystemTime();
 };
 
 class URHO3D_TOOLBOX_API CreateNodeAction : public EditAction
@@ -344,6 +361,7 @@ class URHO3D_TOOLBOX_API EditAttributeAction : public EditAction
     StringHash targetType;
     WeakPtr<Scene> editorScene;
     WeakPtr<UIElement> root;
+    WeakPtr<Serializable> target;
 
 public:
     EditAttributeAction(Serializable* target, const String& name, const Variant& oldValue)
@@ -352,22 +370,15 @@ public:
         undoValue = oldValue;
         redoValue = target->GetAttribute(attrName);
         targetID = GetID(target);
+        targetType = target->GetType();
+        this->target = target;
 
         if (auto node = dynamic_cast<Node*>(target))
-        {
             editorScene = node->GetScene();
-            targetType = Node::GetTypeStatic();
-        }
         else if (auto component = dynamic_cast<Component*>(target))
-        {
             editorScene = component->GetScene();
-            targetType = Component::GetTypeStatic();
-        }
         else if (auto element = dynamic_cast<UIElement*>(target))
-        {
             root = element->GetRoot();
-            targetType = UIElement::GetTypeStatic();
-        }
     }
 
     Serializable* GetTarget()
@@ -379,7 +390,7 @@ public:
         else if (targetType == UIElement::GetTypeStatic())
             return root->GetChild("UIElementID", targetID, true);
 
-        return nullptr;
+        return target.Get();
     }
 
     void Undo() override
@@ -646,7 +657,7 @@ protected:
     /// Flag indicating that state tracking is suspended. For example when undo manager is restoring states.
     bool trackingEnabled_ = true;
     /// All actions performed on current frame. They will be applied together.
-    StateCollection currentFrameStates_;
+    StateCollection currentFrameStates_{};
 };
 
 class URHO3D_TOOLBOX_API SetTrackingScoped

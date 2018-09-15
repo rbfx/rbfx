@@ -34,7 +34,6 @@ void RegisterToolboxTypes(Context* context)
 {
     context->RegisterFactory<Gizmo>();
     context->RegisterFactory<AttributeInspector>();
-    context->RegisterFactory<AttributeInspectorWindow>();
     context->RegisterFactory<DebugCameraController>();
     context->RegisterFactory<Undo::Manager>();
 }

@@ -31,6 +31,31 @@
 namespace Urho3D
 {
 
+namespace Inspectable
+{
+
+/// A serializable proxy for Urho3D::Material for enabling inspection in attribute inspector.
+class Material : public Serializable
+{
+URHO3D_OBJECT(Material, Serializable);
+public:
+    /// Construct.
+    explicit Material(Urho3D::Material* material);
+    /// Returns attached material.
+    Urho3D::Material* GetMaterial() const { return material_.Get(); }
+    /// Returns attached material.
+    Urho3D::Material* GetMaterial() { return material_.Get(); }
+
+    /// Registers object with the engine.
+    static void RegisterObject(Context* context);
+
+protected:
+    /// Attached material.
+    SharedPtr<Urho3D::Material> material_;
+};
+
+}
+
 /// Renders material preview in attribute inspector.
 class MaterialInspector : public ResourceInspector
 {
@@ -38,20 +63,26 @@ class MaterialInspector : public ResourceInspector
 public:
     explicit MaterialInspector(Context* context, Material* material);
 
-    void Render() override;
+    /// Render inspector window.
+    void RenderInspector(const char* filter) override;
+    /// Change material preview model to next one in the list.
     void ToggleModel();
+    /// Material preview view mouse grabbing.
     void SetGrab(bool enable);
 
 protected:
+    /// Initialize material preview.
     void CreateObjects();
+    /// Save material resource to disk.
+    void Save();
 
     /// Material which is being previewed.
-    SharedPtr<Material> material_;
+    SharedPtr<Inspectable::Material> inspectable_;
     /// Preview scene.
     SceneView view_;
     /// Node holding figure to which material is applied.
     WeakPtr<Node> node_;
-    ///
+    /// Material attribute inspector namespace.
     AttributeInspector attributeInspector_;
     /// Flag indicating if this widget grabbed mouse for rotating material node.
     bool mouseGrabbed_ = false;
@@ -61,8 +92,6 @@ protected:
     PODVector<const char*> figures_{"Sphere", "Box", "Torus", "TeaPot"};
     /// Distance from camera to figure.
     float distance_ = 1.5f;
-    /// Object keeping track of automatic width of first column.
-    AutoColumn autoColumn_;
 
 };
 

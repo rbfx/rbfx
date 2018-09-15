@@ -41,6 +41,7 @@
 
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <ImGui/imgui_internal.h>
+#include <ImGui/imgui_stl.h>
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/Graphics.h>
@@ -51,199 +52,71 @@ using namespace ui::litterals;
 namespace Urho3D
 {
 
-struct AttributeInspectorBuffer
+struct AttributeInspectorState
 {
-    explicit AttributeInspectorBuffer(const String& defaultValue=String::EMPTY)
+    AttributeInspectorState(Context* context)
+        : autoColumn_(context)
     {
-        strncpy(buffer_, defaultValue.CString(), sizeof(buffer_) - 1);
-        buffer_[sizeof(buffer_) - 1] = 0;
     }
-
-    char buffer_[0x1000]{};
+    /// Name of attribute that was modified on last frame.
+    const AttributeInfo* modifiedLastFrame_ = nullptr;
+    /// Value of attribute before modifying it started.
+    Variant originalValue_;
+    /// Object keeping track of automatic width of first column.
+    AutoColumn autoColumn_;
 };
 
-AttributeInspector::AttributeInspector(Urho3D::Context* context)
-    : Object(context)
-    , autoColumn_(context)
+bool RenderResourceRef(Object* eventNamespace, StringHash type, const String& name, String& result)
 {
-    filter_.front() = 0;
-}
+    SharedPtr<Resource> resource;
+    auto oldSpacing = ui::GetStyle().ItemSpacing.x;
+    auto returnValue = false;
+    ui::GetStyle().ItemSpacing.x = 2_dpx;
 
-void AttributeInspector::RenderAttributes(const PODVector<Serializable*>& items)
-{
-    ui::TextUnformatted("Filter");
-    autoColumn_.NextColumn();
-    ui::PushID("FilterEdit");
-    ui::PushItemWidth(-1);
-    ui::InputText("", &filter_.front(), filter_.size() - 1);
-    if (ui::IsItemActive() && ui::IsKeyPressed(ImGuiKey_Escape))
-        filter_.front() = 0;
+    ui::PushItemWidth(-40_dpx);
+    ui::InputText("", (char*)name.CString(), name.Length(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
     ui::PopItemWidth();
-    ui::PopID();
 
-    for (Serializable* item: items)
+    bool dropped = false;
+    if (ui::BeginDragDropTarget())
     {
-        if (item == nullptr)
-            continue;
-
-        if (ui::CollapsingHeader(item->GetTypeName().CString(), ImGuiTreeNodeFlags_DefaultOpen))
+        const Variant& payload = ui::AcceptDragDropVariant("path");
+        if (!payload.IsEmpty())
         {
-            const char* modifiedThisFrame = nullptr;
-            const Vector<AttributeInfo>* attributes = item->GetAttributes();
-            if (attributes == nullptr)
-                continue;
-
-            ui::PushID(item);
-            for (const AttributeInfo& info: *attributes)
-            {
-                bool hidden = false;
-                Color color = Color::WHITE;
-                String tooltip;
-
-                Variant value, oldValue;
-                value = oldValue = item->GetAttribute(info.name_);
-
-                if (value == info.defaultValue_)
-                    color = Color::GRAY;
-
-                if (info.mode_ & AM_NOEDIT)
-                    hidden = true;
-                else if (filter_.front() && !info.name_.Contains(&filter_.front(), false))
-                    hidden = true;
-
-                if (info.type_ == VAR_BUFFER || info.type_ == VAR_VARIANTVECTOR || info.type_ == VAR_VARIANTMAP)
-                    hidden = true;
-
-                // Customize attribute rendering
-                {
-                    using namespace AttributeInspectorAttribute;
-                    VariantMap args;
-                    args[P_SERIALIZABLE] = item;
-                    args[P_ATTRIBUTEINFO] = (void*)&info;
-                    args[P_COLOR] = color;
-                    args[P_HIDDEN] = hidden;
-                    args[P_TOOLTIP] = tooltip;
-                    SendEvent(E_ATTRIBUTEINSPECTOATTRIBUTE, args);
-                    hidden = args[P_HIDDEN].GetBool();
-                    color = args[P_COLOR].GetColor();
-                    tooltip = args[P_TOOLTIP].GetString();
-                }
-
-                if (hidden)
-                    continue;
-
-                ui::PushID(info.name_.CString());
-
-                ui::TextColored(ToImGui(color), "%s", info.name_.CString());
-
-                if (!tooltip.Empty() && ui::IsItemHovered())
-                    ui::SetTooltip("%s", tooltip.CString());
-
-                if (ui::IsItemHovered() && ui::IsMouseClicked(2))
-                    ui::OpenPopup("Attribute Menu");
-
-                bool modified = false;
-                bool expireBuffers = false;
-                if (ui::BeginPopup("Attribute Menu"))
-                {
-                    if (value == info.defaultValue_)
-                    {
-                        ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
-                        ui::MenuItem("Reset to default");
-                        ui::PopStyleColor();
-                    }
-                    else
-                    {
-                        if (ui::MenuItem("Reset to default"))
-                        {
-                            item->SetAttribute(info.name_, info.defaultValue_);
-                            item->ApplyAttributes();
-                            value = info.defaultValue_;     // For current frame to render correctly
-                            expireBuffers = true;
-                            modified = true;
-                        }
-                    }
-
-                    if (value.GetType() == VAR_INT && info.name_.EndsWith(" Mask"))
-                    {
-                        if (ui::MenuItem("Enable All"))
-                        {
-                            value = M_MAX_UNSIGNED;
-                            modified = true;
-                        }
-                        if (ui::MenuItem("Disable All"))
-                        {
-                            value = 0;
-                            modified = true;
-                        }
-                        if (ui::MenuItem("Toggle"))
-                        {
-                            value = value.GetUInt() ^ M_MAX_UNSIGNED;
-                            modified = true;
-                        }
-                    }
-
-                    // Allow customization of attribute menu.
-                    using namespace AttributeInspectorMenu;
-                    SendEvent(E_ATTRIBUTEINSPECTORMENU, P_SERIALIZABLE, item, P_ATTRIBUTEINFO, (void*)&info);
-
-                    ImGui::EndPopup();
-                }
-
-                // Buffers have to be expired outside of popup, because popup has it's own id stack. Careful when pushing
-                // new IDs in code below, buffer expiring will break!
-                if (expireBuffers)
-                    ui::ExpireUIState<AttributeInspectorBuffer>();
-
-                autoColumn_.NextColumn();
-
-                bool modifiedLastFrame = modifiedLastFrame_ == info.name_.CString();
-                ui::PushItemWidth(-1);
-                modified |= RenderSingleAttribute(info, value);
-                ui::PopItemWidth();
-                ui::PopID();
-
-                if (modified)
-                {
-                    assert(modifiedThisFrame == nullptr);
-                    modifiedLastFrame_ = info.name_.CString();
-
-                    // Just started changing value of the attribute. Save old value required for event on modification end.
-                    if (!modifiedLastFrame)
-                        originalValue_ = oldValue;
-
-                    // Update attribute value and do nothing else for now.
-                    item->SetAttribute(info.name_, value);
-                    item->ApplyAttributes();
-                }
-
-                if ((modified || modifiedLastFrame) && !ui::IsAnyItemActive())
-                {
-                    // This attribute was modified on last frame, but not on this frame. Continuous attribute value modification
-                    // has ended and we can fire attribute modification event.
-                    using namespace AttributeInspectorValueModified;
-                    SendEvent(E_ATTRIBUTEINSPECTVALUEMODIFIED, P_SERIALIZABLE, item, P_ATTRIBUTEINFO, (void*)&info,
-                        P_OLDVALUE, originalValue_, P_NEWVALUE, value);
-                }
-            }
-
-            ui::PopID();
+            resource = eventNamespace->GetCache()->GetResource(type, payload.GetString());
+            dropped = resource.NotNull();
         }
+        ui::EndDragDropTarget();
+    }
+    ui::SetHelpTooltip("Drag resource here.");
+
+    if (dropped)
+    {
+        result = resource->GetName();
+        returnValue = true;
     }
 
-    // Just finished modifying attribute.
-    if (modifiedLastFrame_ && !ui::IsAnyItemActive())
-        modifiedLastFrame_ = nullptr;
+    ui::SameLine();
+    if (ui::IconButton(ICON_FA_CROSSHAIRS))
+    {
+        eventNamespace->SendEvent(E_INSPECTORLOCATERESOURCE, InspectorLocateResource::P_NAME, name);
+    }
+    ui::SetHelpTooltip("Locate resource");
+
+    ui::SameLine();
+    if (ui::IconButton(ICON_FA_TRASH))
+    {
+        result.Clear();
+        returnValue = true;
+    }
+    ui::SetHelpTooltip("Stop using resource");
+
+    ui::GetStyle().ItemSpacing.x = oldSpacing;
+
+    return returnValue;
 }
 
-void AttributeInspector::RenderAttributes(Serializable* item)
-{
-    PODVector<Serializable*> items;
-    items.Push(item);
-    RenderAttributes(items);
-}
-
-bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Variant& value)
+bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespace, const AttributeInfo& info, Variant& value)
 {
     const float floatMin = -14000.f;
     const float floatMax = 14000.f;
@@ -342,11 +215,11 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         case VAR_STRING:
         {
             auto& v = const_cast<String&>(value.GetString());
-            auto* state = ui::GetUIState<AttributeInspectorBuffer>(v);
-            bool dirty = v != state->buffer_;
+            auto* buffer = ui::GetUIState<std::string>(v.CString());
+            bool dirty = v.Compare(buffer->c_str()) != 0;
             if (dirty)
                 ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
-            modified |= ui::InputText("", state->buffer_, IM_ARRAYSIZE(state->buffer_), ImGuiInputTextFlags_EnterReturnsTrue);
+            modified |= ui::InputText("", buffer, ImGuiInputTextFlags_EnterReturnsTrue);
             if (dirty)
             {
                 ui::PopStyleColor();
@@ -354,7 +227,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
                     ui::SetTooltip("Press [Enter] to commit changes.");
             }
             if (modified)
-                value = state->buffer_;
+                value = *buffer;
             break;
         }
 //            case VAR_BUFFER:
@@ -365,7 +238,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
         {
             const auto& ref = value.GetResourceRef();
             String result;
-            if (RenderResourceRef(ref.type_, ref.name_, result))
+            if (RenderResourceRef(eventNamespace, ref.type_, ref.name_, result))
             {
                 value = ResourceRef(ref.type_, result);
                 modified = true;
@@ -379,7 +252,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
             {
                 ui::PushID(i);
                 String result;
-                if (RenderResourceRef(refList.type_, refList.names_[i], result))
+                if (RenderResourceRef(eventNamespace, refList.type_, refList.names_[i], result))
                 {
                     ResourceRefList newRefList(refList);
                     newRefList.names_[i] = result;
@@ -395,7 +268,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
                 {
                     ui::PushID(i + 1);
                     ui::TextColored(ToImGui(Color::WHITE), "%s", info.name_.CString());
-                    autoColumn_.NextColumn();
+                    state->autoColumn_.NextColumn();
                     ui::PopID();
                 }
             }
@@ -475,16 +348,16 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
 
             // Insert new item.
             {
-                auto* state = ui::GetUIState<AttributeInspectorBuffer>();
-                if (ui::InputText("", state->buffer_, IM_ARRAYSIZE(state->buffer_), ImGuiInputTextFlags_EnterReturnsTrue))
+                auto* buffer = ui::GetUIState<std::string>();
+                if (ui::InputText("", buffer, ImGuiInputTextFlags_EnterReturnsTrue))
                 {
-                    v.Push(state->buffer_);
-                    *state->buffer_ = 0;
+                    v.Push(*buffer);
+                    buffer->clear();
                     modified = true;
 
                     // Expire buffer of this new item just in case other item already used it.
                     ui::PushID(v.Size());
-                    ui::ExpireUIState<AttributeInspectorBuffer>();
+                    ui::ExpireUIState<std::string>();
                     ui::PopID();
                 }
                 if (ui::IsItemHovered())
@@ -498,29 +371,28 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
                 String& sv = *it;
 
                 ui::PushID(++index);
-                auto* state = ui::GetUIState<AttributeInspectorBuffer>(sv);
+                auto* buffer = ui::GetUIState<std::string>(sv.CString());
                 if (ui::Button(ICON_FA_TRASH))
                 {
                     it = v.Erase(it);
                     modified = true;
-                    ui::ExpireUIState<AttributeInspectorBuffer>();
+                    ui::ExpireUIState<std::string>();
                 }
                 else if (modified)
                 {
                     // After modification of the vector all buffers are expired and recreated because their indexes
                     // changed. Index is used as id in this loop.
-                    ui::ExpireUIState<AttributeInspectorBuffer>();
+                    ui::ExpireUIState<std::string>();
                     ++it;
                 }
                 else
                 {
                     ui::SameLine();
 
-                    bool dirty = sv != state->buffer_;
+                    bool dirty = sv.Compare(buffer->c_str()) != 0;
                     if (dirty)
                         ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
-                    modified |= ui::InputText("", state->buffer_, IM_ARRAYSIZE(state->buffer_),
-                        ImGuiInputTextFlags_EnterReturnsTrue);
+                    modified |= ui::InputText("", buffer, ImGuiInputTextFlags_EnterReturnsTrue);
                     if (dirty)
                     {
                         ui::PopStyleColor();
@@ -528,7 +400,7 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
                             ui::SetTooltip("Press [Enter] to commit changes.");
                     }
                     if (modified)
-                        sv = state->buffer_;
+                        sv = *buffer;
                     ++it;
                 }
                 ui::PopID();
@@ -576,107 +448,172 @@ bool AttributeInspector::RenderSingleAttribute(const AttributeInfo& info, Varian
     return modified;
 }
 
-bool AttributeInspector::RenderResourceRef(StringHash type, const String& name, String& result)
+bool RenderAttributes(Serializable* item, const char* filter, Object* eventNamespace)
 {
-    SharedPtr<Resource> resource;
-    auto oldSpacing = ui::GetStyle().ItemSpacing.x;
-    auto returnValue = false;
-    ui::GetStyle().ItemSpacing.x = 2_dpx;
+//    ui::TextUnformatted("Filter");
+//    autoColumn_.NextColumn();
+//    ui::PushID("FilterEdit");
+//    ui::PushItemWidth(-1);
+//    ui::InputText("", &filter_.front(), filter_.size() - 1);
+//    if (ui::IsItemActive() && ui::IsKeyPressed(ImGuiKey_Escape))
+//        filter_.front() = 0;
+//    ui::PopItemWidth();
+//    ui::PopID();
 
-    ui::PushItemWidth(-40_dpx);
-    ui::InputText("", (char*)name.CString(), name.Length(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
-    ui::PopItemWidth();
+    if (eventNamespace == nullptr)
+        eventNamespace = ui::GetSystemUI();
+    auto* state = ui::GetUIState<AttributeInspectorState>(eventNamespace->GetContext());
 
-    bool dropped = false;
-    if (ui::BeginDragDropTarget())
+    auto isOpen = ui::CollapsingHeader(item->GetTypeName().CString(), ImGuiTreeNodeFlags_DefaultOpen);
+    if (isOpen)
     {
-        const Variant& payload = ui::AcceptDragDropVariant("path");
-        if (!payload.IsEmpty())
+        const char* modifiedThisFrame = nullptr;
+        const Vector<AttributeInfo>* attributes = item->GetAttributes();
+        if (attributes == nullptr)
+            return false;
+
+        ui::PushID(item);
+        for (const AttributeInfo& info: *attributes)
         {
-            resource = GetCache()->GetResource(type, payload.GetString());
-            dropped = resource.NotNull();
+            bool hidden = false;
+            Color color = Color::WHITE;
+            String tooltip;
+
+            Variant value, oldValue;
+            value = oldValue = item->GetAttribute(info.name_);
+
+            if (value == info.defaultValue_)
+                color = Color::GRAY;
+
+            if (info.mode_ & AM_NOEDIT)
+                hidden = true;
+            else if (filter != nullptr && *filter && !info.name_.Contains(filter, false))
+                hidden = true;
+
+            if (info.type_ == VAR_BUFFER || info.type_ == VAR_VARIANTVECTOR || info.type_ == VAR_VARIANTMAP)
+                hidden = true;
+
+            // Customize attribute rendering
+            {
+                using namespace AttributeInspectorAttribute;
+                VariantMap args;
+                args[P_SERIALIZABLE] = item;
+                args[P_ATTRIBUTEINFO] = (void*)&info;
+                args[P_COLOR] = color;
+                args[P_HIDDEN] = hidden;
+                args[P_TOOLTIP] = tooltip;
+                eventNamespace->SendEvent(E_ATTRIBUTEINSPECTOATTRIBUTE, args);
+                hidden = args[P_HIDDEN].GetBool();
+                color = args[P_COLOR].GetColor();
+                tooltip = args[P_TOOLTIP].GetString();
+            }
+
+            if (hidden)
+                continue;
+
+            ui::PushID(info.name_.CString());
+
+            ui::TextColored(ToImGui(color), "%s", info.name_.CString());
+
+            if (!tooltip.Empty() && ui::IsItemHovered())
+                ui::SetTooltip("%s", tooltip.CString());
+
+            if (ui::IsItemHovered() && ui::IsMouseClicked(2))
+                ui::OpenPopup("Attribute Menu");
+
+            bool modified = false;
+            bool expireBuffers = false;
+            if (ui::BeginPopup("Attribute Menu"))
+            {
+                if (value == info.defaultValue_)
+                {
+                    ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+                    ui::MenuItem("Reset to default");
+                    ui::PopStyleColor();
+                }
+                else
+                {
+                    if (ui::MenuItem("Reset to default"))
+                    {
+                        item->SetAttribute(info.name_, info.defaultValue_);
+                        item->ApplyAttributes();
+                        value = info.defaultValue_;     // For current frame to render correctly
+                        expireBuffers = true;
+                        modified = true;
+                    }
+                }
+
+                if (value.GetType() == VAR_INT && info.name_.EndsWith(" Mask"))
+                {
+                    if (ui::MenuItem("Enable All"))
+                    {
+                        value = M_MAX_UNSIGNED;
+                        modified = true;
+                    }
+                    if (ui::MenuItem("Disable All"))
+                    {
+                        value = 0;
+                        modified = true;
+                    }
+                    if (ui::MenuItem("Toggle"))
+                    {
+                        value = value.GetUInt() ^ M_MAX_UNSIGNED;
+                        modified = true;
+                    }
+                }
+
+                // Allow customization of attribute menu.
+                using namespace AttributeInspectorMenu;
+                eventNamespace->SendEvent(E_ATTRIBUTEINSPECTORMENU, P_SERIALIZABLE, item, P_ATTRIBUTEINFO, (void*)&info);
+
+                ImGui::EndPopup();
+            }
+
+            // Buffers have to be expired outside of popup, because popup has it's own id stack. Careful when pushing
+            // new IDs in code below, buffer expiring will break!
+            if (expireBuffers)
+                ui::ExpireUIState<std::string>();
+
+            state->autoColumn_.NextColumn();
+
+            bool modifiedLastFrame = state->modifiedLastFrame_ && *state->modifiedLastFrame_ == info;
+            ui::PushItemWidth(-1);
+            modified |= RenderSingleAttribute(state, eventNamespace, info, value);
+            ui::PopItemWidth();
+            ui::PopID();
+
+            if (modified)
+            {
+                assert(modifiedThisFrame == nullptr);
+                state->modifiedLastFrame_ = &info;
+
+                // Just started changing value of the attribute. Save old value required for event on modification end.
+                if (!modifiedLastFrame)
+                    state->originalValue_ = oldValue;
+
+                // Update attribute value and do nothing else for now.
+                item->SetAttribute(info.name_, value);
+                item->ApplyAttributes();
+            }
+
+            if ((modified || modifiedLastFrame) && !ui::IsAnyItemActive())
+            {
+                // This attribute was modified on last frame, but not on this frame. Continuous attribute value modification
+                // has ended and we can fire attribute modification event.
+                using namespace AttributeInspectorValueModified;
+                eventNamespace->SendEvent(E_ATTRIBUTEINSPECTVALUEMODIFIED, P_SERIALIZABLE, item, P_ATTRIBUTEINFO,
+                    (void*)&info, P_OLDVALUE, state->originalValue_, P_NEWVALUE, value);
+            }
         }
-        ui::EndDragDropTarget();
-    }
-    ui::SetHelpTooltip("Drag resource here.");
 
-    if (dropped)
-    {
-        result = resource->GetName();
-        returnValue = true;
+        ui::PopID();
     }
 
-    ui::SameLine();
-    if (ui::IconButton(ICON_FA_CROSSHAIRS))
-    {
-        SendEvent(E_INSPECTORLOCATERESOURCE, InspectorLocateResource::P_NAME, name);
-    }
-    ui::SetHelpTooltip("Locate resource");
+    // Just finished modifying attribute.
+    if (state->modifiedLastFrame_ && !ui::IsAnyItemActive())
+        state->modifiedLastFrame_ = nullptr;
 
-    ui::SameLine();
-    if (ui::IconButton(ICON_FA_TRASH))
-    {
-        result.Clear();
-        returnValue = true;
-    }
-    ui::SetHelpTooltip("Stop using resource");
-
-    ui::GetStyle().ItemSpacing.x = oldSpacing;
-
-    return returnValue;
-}
-
-AttributeInspectorWindow::AttributeInspectorWindow(Context* context) : AttributeInspector(context)
-{
-
-}
-
-void AttributeInspectorWindow::SetEnabled(bool enabled)
-{
-    if (enabled && !IsEnabled())
-        SubscribeToEvent(E_UPDATE, std::bind(&AttributeInspectorWindow::RenderUi, this));
-    else if (!enabled && IsEnabled())
-        UnsubscribeFromEvent(E_UPDATE);
-}
-
-void AttributeInspectorWindow::SetSerializable(Serializable* item)
-{
-    currentSerializable_ = item;
-}
-
-void AttributeInspectorWindow::RenderUi()
-{
-    if (ui::Begin("Inspector"))
-    {
-        if (currentSerializable_.NotNull())
-        {
-            RenderAttributes(currentSerializable_);
-        }
-    }
-    ui::End();
-}
-
-bool AttributeInspectorWindow::IsEnabled() const
-{
-    return HasSubscribedToEvent(E_UPDATE);
-}
-
-AttributeInspectorDockWindow::AttributeInspectorDockWindow(Context* context)
-    : AttributeInspectorWindow(context)
-{
-
-}
-
-void AttributeInspectorDockWindow::RenderUi()
-{
-    if (ui::BeginDock("Inspector"))
-    {
-        if (currentSerializable_.NotNull())
-        {
-            RenderAttributes(currentSerializable_);
-        }
-    }
-    ui::EndDock();
+    return isOpen;
 }
 
 }

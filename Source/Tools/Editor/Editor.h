@@ -82,6 +82,8 @@ public:
 protected:
     /// Process console commands.
     void OnConsoleCommand(VariantMap& args);
+    /// Process any global hotkeys.
+    void HandleHotkeys();
 
     /// List of active scene tabs.
     Vector<SharedPtr<Tab>> tabs_;

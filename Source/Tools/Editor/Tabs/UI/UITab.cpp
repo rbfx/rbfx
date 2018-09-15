@@ -30,6 +30,7 @@
 #include "Editor.h"
 #include "Widgets.h"
 #include "UITab.h"
+#include "Tabs/InspectorTab.h"
 
 using namespace ui::litterals;
 
@@ -163,10 +164,10 @@ void UITab::RenderNodeTree(UIElement* element)
     }
 }
 
-void UITab::RenderInspector()
+void UITab::RenderInspector(const char* filter)
 {
     if (auto selected = GetSelected())
-        inspector_.RenderAttributes(selected);
+        RenderAttributes(selected, filter, &inspector_);
 }
 
 bool UITab::RenderWindowContent()
@@ -234,10 +235,10 @@ void UITab::RenderToolbarButtons()
 
     ui::SameLine(0, 3.f);
 
-    if (ui::EditorToolbarButton(ICON_FA_UNDO, "Undo"))
-        undo_.Undo();
-    if (ui::EditorToolbarButton(ICON_FA_REDO, "Redo"))
-        undo_.Redo();
+//    if (ui::EditorToolbarButton(ICON_FA_UNDO, "Undo"))
+//        undo_.Undo();
+//    if (ui::EditorToolbarButton(ICON_FA_REDO, "Redo"))
+//        undo_.Redo();
 
     ui::SameLine(0, 3.f);
 
@@ -253,14 +254,6 @@ void UITab::OnActiveUpdate()
     Input* input = GetSubsystem<Input>();
     if (!ui::IsAnyItemActive())
     {
-        if (input->GetKeyDown(KEY_CTRL))
-        {
-            if (input->GetKeyPress(KEY_Y) || (input->GetKeyDown(KEY_SHIFT) && input->GetKeyPress(KEY_Z)))
-                undo_.Redo();
-            else if (input->GetKeyPress(KEY_Z))
-                undo_.Undo();
-        }
-
         if (auto selected = GetSelected())
         {
             if (input->GetKeyPress(KEY_DELETE))
@@ -840,7 +833,7 @@ void UITab::AttributeCustomize(VariantMap& args)
 
 void UITab::OnFocused()
 {
-    SendEvent(E_EDITORRENDERINSPECTOR, EditorRenderInspector::P_INSPECTABLE, this);
+    SendEvent(E_EDITORRENDERINSPECTOR, EditorRenderInspector::P_INSPECTABLE, this, EditorRenderInspector::P_CATEGORY, IC_SCENE);
     SendEvent(E_EDITORRENDERHIERARCHY, EditorRenderHierarchy::P_INSPECTABLE, this);
 }
 

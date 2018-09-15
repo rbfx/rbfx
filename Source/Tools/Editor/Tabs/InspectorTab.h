@@ -29,6 +29,16 @@
 namespace Urho3D
 {
 
+enum InspectorCategory
+{
+    /// Core category. Main elements of the scene are rendered here. Usually owned by main tab (scene/ui/etc).
+    IC_SCENE,
+    /// Secondary category for displaying resources.
+    IC_RESOURCE,
+    /// Max number of inspector categories.
+    IC_MAX,
+};
+
 class InspectorTab : public Tab
 {
     URHO3D_OBJECT(InspectorTab, Tab)
@@ -38,8 +48,12 @@ public:
     bool RenderWindowContent() override;
 
 protected:
-    WeakPtr<Tab> instance_;
-    IInspectorProvider* inspectorProvider_ = nullptr;
+    std::string filter_;
+    struct
+    {
+        WeakPtr<RefCounted> instance_;
+        IInspectorProvider* inspectorProvider_ = nullptr;
+    } inspectables_[IC_MAX];
 };
 
 }

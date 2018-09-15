@@ -22,6 +22,9 @@
 
 #include "EditorEvents.h"
 #include "InspectorTab.h"
+#include <ImGui/imgui_stl.h>
+#include <Urho3D/IO/Log.h>
+
 
 namespace Urho3D
 {
@@ -32,15 +35,26 @@ InspectorTab::InspectorTab(Context* context)
     SetTitle("Inspector");
     isUtility_ = true;
     SubscribeToEvent(E_EDITORRENDERINSPECTOR, [&](StringHash, VariantMap& args) {
-        instance_ = dynamic_cast<Tab*>(args[EditorRenderInspector::P_INSPECTABLE].GetPtr());
-        inspectorProvider_ = dynamic_cast<IInspectorProvider*>(instance_.Get());
+        auto category = args[EditorRenderInspector::P_CATEGORY].GetUInt();
+        RefCounted* instance = args[EditorRenderInspector::P_INSPECTABLE].GetPtr();
+        inspectables_[category].instance_ = instance;
+        inspectables_[category].inspectorProvider_ = dynamic_cast<IInspectorProvider*>(instance);
     });
 }
 
 bool InspectorTab::RenderWindowContent()
 {
-    if (!instance_.Expired())
-        inspectorProvider_->RenderInspector();
+    ui::PushItemWidth(-1);
+    ui::InputText("###Filter", &filter_);
+    ui::PopItemWidth();
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Filter attributes by name.");
+
+    for (auto i = 0; i < IC_MAX; i++)
+    {
+        if (!inspectables_[i].instance_.Expired())
+            inspectables_[i].inspectorProvider_->RenderInspector(filter_.c_str());
+    }
     return true;
 }
 

@@ -48,7 +48,7 @@ class IInspectorProvider
 {
 public:
     /// Render inspector window.
-    virtual void RenderInspector() = 0;
+    virtual void RenderInspector(const char* filter) = 0;
 };
 
 class Tab : public Object
