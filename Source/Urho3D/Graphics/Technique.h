@@ -30,6 +30,40 @@ namespace Urho3D
 
 class ShaderVariation;
 
+static const char* blendModeNames[] =
+{
+    "replace",
+    "add",
+    "multiply",
+    "alpha",
+    "addalpha",
+    "premulalpha",
+    "invdestalpha",
+    "subtract",
+    "subtractalpha",
+    nullptr
+};
+
+static const char* compareModeNames[] =
+{
+    "always",
+    "equal",
+    "notequal",
+    "less",
+    "lessequal",
+    "greater",
+    "greaterequal",
+    nullptr
+};
+
+static const char* lightingModeNames[] =
+{
+    "unlit",
+    "pervertex",
+    "perpixel",
+    nullptr
+};
+
 /// Lighting mode of a pass.
 enum PassLightingMode
 {

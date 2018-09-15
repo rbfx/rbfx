@@ -25,6 +25,7 @@
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Material.h"
 #include "../Graphics/RenderPath.h"
+#include "../Graphics/Technique.h"
 #include "../IO/Log.h"
 #include "../Resource/XMLFile.h"
 
@@ -56,8 +57,6 @@ static const char* sortModeNames[] =
     "backtofront",
     nullptr
 };
-
-extern const char* blendModeNames[];
 
 TextureUnit ParseTextureUnitName(String name);
 

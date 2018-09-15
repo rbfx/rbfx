@@ -24,6 +24,7 @@
 
 #include "../Core/Context.h"
 #include "../Graphics/Material.h"
+#include "../Graphics/Technique.h"
 #include "../Graphics/Texture2D.h"
 #include "../Resource/ResourceCache.h"
 #include "../Scene/Scene.h"
@@ -37,7 +38,6 @@ namespace Urho3D
 {
 
 extern const char* URHO2D_CATEGORY;
-extern const char* blendModeNames[];
 
 StaticSprite2D::StaticSprite2D(Context* context) :
     Drawable2D(context),

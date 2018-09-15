@@ -43,6 +43,50 @@ class JSONFile;
 
 static const unsigned char DEFAULT_RENDER_ORDER = 128;
 
+static const char* textureUnitNames[] =
+{
+    "diffuse",
+    "normal",
+    "specular",
+    "emissive",
+    "environment",
+#ifdef DESKTOP_GRAPHICS
+    "volume",
+    "custom1",
+    "custom2",
+    "lightramp",
+    "lightshape",
+    "shadowmap",
+    "faceselect",
+    "indirection",
+    "depth",
+    "light",
+    "zone",
+    nullptr
+#else
+    "lightramp",
+    "lightshape",
+    "shadowmap",
+    nullptr
+#endif
+};
+
+static const char* cullModeNames[] =
+{
+    "none",
+    "ccw",
+    "cw",
+    nullptr
+};
+
+static const char* fillModeNames[] =
+{
+    "solid",
+    "wireframe",
+    "point",
+    nullptr
+};
+
 /// %Material's shader parameter definition.
 struct MaterialShaderParameter
 {

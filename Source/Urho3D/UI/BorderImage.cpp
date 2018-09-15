@@ -24,6 +24,7 @@
 
 #include "../Core/Context.h"
 #include "../Graphics/Texture2D.h"
+#include "../Graphics/Technique.h"
 #include "../Resource/ResourceCache.h"
 #include "../UI/BorderImage.h"
 
@@ -32,7 +33,6 @@
 namespace Urho3D
 {
 
-extern const char* blendModeNames[];
 extern const char* UI_CATEGORY;
 
 BorderImage::BorderImage(Context* context) :

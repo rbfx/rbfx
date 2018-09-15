@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
+#include "../Graphics/Technique.h"
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
 #include "../Scene/Scene.h"
@@ -42,7 +43,6 @@ namespace Urho3D
 {
 
 extern const char* URHO2D_CATEGORY;
-extern const char* blendModeNames[];
 
 const char* loopModeNames[] =
 {

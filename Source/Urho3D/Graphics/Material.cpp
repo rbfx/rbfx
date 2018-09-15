@@ -51,50 +51,6 @@ namespace Urho3D
 
 extern const char* wrapModeNames[];
 
-static const char* textureUnitNames[] =
-{
-    "diffuse",
-    "normal",
-    "specular",
-    "emissive",
-    "environment",
-#ifdef DESKTOP_GRAPHICS
-    "volume",
-    "custom1",
-    "custom2",
-    "lightramp",
-    "lightshape",
-    "shadowmap",
-    "faceselect",
-    "indirection",
-    "depth",
-    "light",
-    "zone",
-    nullptr
-#else
-    "lightramp",
-    "lightshape",
-    "shadowmap",
-    nullptr
-#endif
-};
-
-const char* cullModeNames[] =
-{
-    "none",
-    "ccw",
-    "cw",
-    nullptr
-};
-
-static const char* fillModeNames[] =
-{
-    "solid",
-    "wireframe",
-    "point",
-    nullptr
-};
-
 TextureUnit ParseTextureUnitName(String name)
 {
     name = name.ToLower().Trimmed();

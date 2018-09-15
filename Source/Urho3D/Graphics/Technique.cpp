@@ -27,6 +27,7 @@
 #include "../Core/Profiler.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Technique.h"
+#include "../Graphics/Material.h"
 #include "../Graphics/ShaderVariation.h"
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
@@ -36,42 +37,6 @@
 
 namespace Urho3D
 {
-
-extern const char* cullModeNames[];
-
-const char* blendModeNames[] =
-{
-    "replace",
-    "add",
-    "multiply",
-    "alpha",
-    "addalpha",
-    "premulalpha",
-    "invdestalpha",
-    "subtract",
-    "subtractalpha",
-    nullptr
-};
-
-static const char* compareModeNames[] =
-{
-    "always",
-    "equal",
-    "notequal",
-    "less",
-    "lessequal",
-    "greater",
-    "greaterequal",
-    nullptr
-};
-
-static const char* lightingModeNames[] =
-{
-    "unlit",
-    "pervertex",
-    "perpixel",
-    nullptr
-};
 
 Pass::Pass(const String& name) :
     blendMode_(BLEND_REPLACE),
