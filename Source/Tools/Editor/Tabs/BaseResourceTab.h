@@ -38,9 +38,9 @@ public:
     /// Save resource o disk.
     bool SaveResource() override;
     /// Save project data to xml.
-    virtual void OnSaveProject(JSONValue& tab);
+    void OnSaveProject(JSONValue& tab) override;
     /// Load project data from xml.
-    virtual void OnLoadProject(const JSONValue& tab);
+    void OnLoadProject(const JSONValue& tab) override;
 
 protected:
     /// Set resource name.

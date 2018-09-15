@@ -38,7 +38,7 @@ class MaterialInspector : public ResourceInspector
 public:
     explicit MaterialInspector(Context* context, Material* material);
 
-    virtual void Render();
+    void Render() override;
     void ToggleModel();
     void SetGrab(bool enable);
 

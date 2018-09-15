@@ -40,7 +40,7 @@ public:
     bool RenderWindowContent() override;
 
     /// Render inspector window.
-    virtual void RenderInspector();
+    void RenderInspector() override;
 
 protected:
     String GetNewResourcePath(const String& name);
