@@ -237,10 +237,14 @@ bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespac
         case VAR_RESOURCEREF:
         {
             const auto& ref = value.GetResourceRef();
+            auto refType = ref.type_;
+            if (refType == StringHash::ZERO)
+                refType = info.defaultValue_.GetResourceRef().type_;
+
             String result;
-            if (RenderResourceRef(eventNamespace, ref.type_, ref.name_, result))
+            if (RenderResourceRef(eventNamespace, refType, ref.name_, result))
             {
-                value = ResourceRef(ref.type_, result);
+                value = ResourceRef(refType, result);
                 modified = true;
             }
             break;
@@ -252,7 +256,12 @@ bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespac
             {
                 ui::PushID(i);
                 String result;
-                if (RenderResourceRef(eventNamespace, refList.type_, refList.names_[i], result))
+
+                auto refType = refList.type_;
+                if (refType == StringHash::ZERO)
+                    refType = info.defaultValue_.GetResourceRef().type_;
+
+                if (RenderResourceRef(eventNamespace, refType, refList.names_[i], result))
                 {
                     ResourceRefList newRefList(refList);
                     newRefList.names_[i] = result;
