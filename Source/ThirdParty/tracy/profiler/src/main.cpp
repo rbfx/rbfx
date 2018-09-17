@@ -1,8 +1,9 @@
 #include <assert.h>
 #include <inttypes.h>
 #include <imgui.h>
+#include <GLEW/glew.h>
 #include "imgui_impl_sdl.h"
-#include "imgui_impl_opengl2.h"
+#include "imgui_impl_opengl3.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -29,6 +30,7 @@
 #include "ImGui/imgui_freetype.h"
 #include "Arimo.hpp"
 #include "Cousine.hpp"
+#include "FontAwesomeSolid.hpp"
 
 static void OpenWebpage( const char* url )
 {
@@ -78,13 +80,15 @@ int main( int argc, char** argv )
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
     SDL_DisplayMode current;
     SDL_GetCurrentDisplayMode(0, &current);
     window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
     if( !window ) return 1;
     SDL_GLContext glcontext = SDL_GL_CreateContext(window);
+
+    glewInit();
 
     float dpiScale = 1.f;
 #ifdef _WIN32
@@ -106,7 +110,7 @@ int main( int argc, char** argv )
     io.IniFilename = iniFileName.c_str();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     ImGui_ImplSDL2_InitForOpenGL( window, glcontext );
-    ImGui_ImplOpenGL2_Init();
+    ImGui_ImplOpenGL3_Init();
 
     static const ImWchar rangesBasic[] = {
         0x0020, 0x00FF, // Basic Latin + Latin Supplement
@@ -121,14 +125,7 @@ int main( int argc, char** argv )
     configMerge.MergeMode = true;
 
     io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 15.0f * dpiScale, nullptr, rangesBasic );
-    std::string fontAwesomePath("EditorData/Fonts/" FONT_ICON_FILE_NAME_FAS);
-#if _WIN32
-    if (GetFileAttributes(fontAwesomePath.c_str()) == INVALID_FILE_ATTRIBUTES)
-        fontAwesomePath = "../" + fontAwesomePath;
-#endif
-#ifndef _WIN32
-    io.Fonts->AddFontFromFileTTF(fontAwesomePath.c_str(), 14.0f * dpiScale, &configMerge, rangesIcons );
-#endif
+    io.Fonts->AddFontFromMemoryCompressedTTF(tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, 14.0f * dpiScale, &configMerge, rangesIcons);
     auto fixedWidth = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, 15.0f * dpiScale );
 
 
@@ -167,7 +164,7 @@ int main( int argc, char** argv )
         int display_w, display_h;
         SDL_GetWindowSize (window, &display_w, &display_h);
 
-        ImGui_ImplOpenGL2_NewFrame();
+        ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame(window);
         ImGui::NewFrame();
 
@@ -318,12 +315,12 @@ int main( int argc, char** argv )
         glViewport(0, 0, display_w, display_h);
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);
-        ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(window);
     }
 
     // Cleanup
-    ImGui_ImplOpenGL2_Shutdown();
+    ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
     SDL_GL_DeleteContext(glcontext);

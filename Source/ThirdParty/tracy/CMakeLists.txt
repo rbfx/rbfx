@@ -28,7 +28,7 @@ file (GLOB_RECURSE SERVER_SOURCE_FILES server/*.cpp server/*.hpp server/*.h imgu
 
 list (REMOVE_ITEM COMMON_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/common/TracySystem.cpp)
 set (TRACY_OPTIONS 
-    PRIVATE -DNOMINMAX=1 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -DWIN32_LEAN_AND_MEAN -DNOMINMAX -D_USE_MATH_DEFINES 
+    PRIVATE -DNOMINMAX=1 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -DWIN32_LEAN_AND_MEAN -DNOMINMAX -D_USE_MATH_DEFINES  -DTRACY_COLLECT_THREAD_NAMES=1
     PUBLIC -DTRACY_ENABLE=1
 )
 
@@ -50,7 +50,7 @@ if (URHO3D_TOOLS AND URHO3D_SYSTEMUI)
     add_executable (tracy-profiler WIN32 ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES} ${TRACY_PROFILER_SOURCE_FILES})
     target_include_directories(tracy-profiler PRIVATE server)
     target_link_libraries(tracy-profiler Urho3D IconFontCppHeaders)
-    target_compile_definitions(tracy-profiler PUBLIC -DTRACY_FILESELECTOR=1 -DTRACY_EXTENDED_FONT=1 -DTRACY_ROOT_WINDOW=1)
+    target_compile_definitions(tracy-profiler PUBLIC ${TRACY_OPTIONS} -DTRACY_FILESELECTOR=1 -DTRACY_EXTENDED_FONT=1 -DTRACY_ROOT_WINDOW=1 -DIMGUI_IMPL_OPENGL_LOADER_GLEW=1)
     set_target_properties(tracy-profiler PROPERTIES OUTPUT_NAME Profiler)
     if (APPLE)
         target_link_libraries(tracy-profiler pthread dl "-framework OpenGl")
@@ -58,12 +58,8 @@ if (URHO3D_TOOLS AND URHO3D_SYSTEMUI)
         target_link_libraries(tracy-profiler pthread dl GL)
     elseif (WIN32)
         target_link_libraries(tracy-profiler opengl32.lib ws2_32.lib winmm.lib version.lib)
-        target_compile_definitions(tracy-profiler ${TRACY_OPTIONS})
         if (MSVC)
             target_compile_options(tracy-profiler PRIVATE /permissive-)
-            if (TARGET tracy-lib)
-                set_property(TARGET tracy-profiler APPEND_STRING PROPERTY LINK_FLAGS " /WHOLEARCHIVE:tracy-lib")
-            endif ()
         endif ()
     endif ()
     install (TARGETS tracy-profiler
