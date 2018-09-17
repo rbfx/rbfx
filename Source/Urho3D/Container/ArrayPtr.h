@@ -54,8 +54,10 @@ public:
         ptr_(rhs.ptr_),
         refCount_(rhs.refCount_)
     {
-        Swap(ptr_, rhs.ptr_);
-        Swap(refCount_, rhs.refCount_);
+        ptr_ = rhs.ptr_;
+        refCount_ = rhs.refCount_;
+        rhs.ptr_ = nullptr;
+        rhs.refCount_ = nullptr;
     }
 
     /// Construct from a raw pointer.
