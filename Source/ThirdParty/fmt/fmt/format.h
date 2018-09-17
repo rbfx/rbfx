@@ -86,7 +86,7 @@ typedef __int64          intmax_t;
 #if !defined(FMT_HEADER_ONLY) && defined(_WIN32)
 # if defined(FMT_EXPORT) || defined(Urho3D_EXPORTS)
 #  define FMT_API __declspec(dllexport)
-# elif defined(FMT_SHARED)
+# elif defined(FMT_SHARED) || defined(URHO3D_IMPORTS)
 #  define FMT_API __declspec(dllimport)
 # endif
 #endif

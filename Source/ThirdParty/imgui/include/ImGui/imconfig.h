@@ -21,7 +21,7 @@
 #if _WIN32
 #   if IMGUI_EXPORTS || Urho3D_EXPORTS
 #       define IMGUI_API __declspec(dllexport)
-#   elif IMGUI_IMPORTS
+#   elif IMGUI_IMPORTS || URHO3D_IMPORTS
 #       define IMGUI_API __declspec(dllimport)
 #	else
 #		define IMGUI_API

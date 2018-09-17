@@ -34,7 +34,7 @@
 #   if PUGIXML_EXPORTS || Urho3D_EXPORTS
 #       define PUGIXML_API __declspec(dllexport)
 #       define PUGIXML_CLASS __declspec(dllexport)
-#   elif PUGIXML_IMPORTS
+#   elif PUGIXML_IMPORTS || URHO3D_IMPORTS
 #       define PUGIXML_API __declspec(dllimport)
 #       define PUGIXML_CLASS __declspec(dllimport)
 #   endif
