@@ -1286,4 +1286,9 @@ void ResourceCache::IgnoreResourceReload(const String& name)
     ignoreResourceAutoReload_.EmplaceBack(name);
 }
 
+void ResourceCache::IgnoreResourceReload(const Resource* resource)
+{
+    IgnoreResourceReload(resource->GetName());
+}
+
 }

@@ -223,6 +223,8 @@ public:
     bool RenameResource(String source, String destination);
     /// When resource auto-reloading is enabled ignore reloading resource once.
     void IgnoreResourceReload(const String& name);
+    /// When resource auto-reloading is enabled ignore reloading resource once.
+    void IgnoreResourceReload(const Resource* resource);
 
 private:
     /// Find a resource.
