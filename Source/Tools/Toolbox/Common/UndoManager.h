@@ -364,11 +364,11 @@ class URHO3D_TOOLBOX_API EditAttributeAction : public EditAction
     WeakPtr<Serializable> target;
 
 public:
-    EditAttributeAction(Serializable* target, const String& name, const Variant& oldValue)
+    EditAttributeAction(Serializable* target, const String& name, const Variant& oldValue, const Variant& newValue)
     {
         attrName = name;
         undoValue = oldValue;
-        redoValue = target->GetAttribute(attrName);
+        redoValue = newValue;
         targetID = GetID(target);
         targetType = target->GetType();
         this->target = target;

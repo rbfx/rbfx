@@ -129,7 +129,16 @@ void Manager::Connect(AttributeInspector* inspector)
         using namespace AttributeInspectorValueModified;
         auto item = dynamic_cast<Serializable*>(args[P_SERIALIZABLE].GetPtr());
         const auto& name = reinterpret_cast<AttributeInfo*>(args[P_ATTRIBUTEINFO].GetVoidPtr())->name_;
-        Track<EditAttributeAction>(item, name, args[P_OLDVALUE]);
+        const auto& oldValue = args[P_OLDVALUE];
+        const auto& newValue = item->GetAttribute(name);
+        if (oldValue != newValue)
+        {
+            // Dummy attributes are used for rendering custom inspector widgets that do not map to Variant values.
+            // These dummy values are not modified, however inspector event is still useful for tapping into their
+            // modifications. State tracking for these dummy values is not needed and would introduce extra ctrl+z
+            // presses that do nothing.
+            Track<EditAttributeAction>(item, name, oldValue, newValue);
+        }
     });
 }
 
@@ -169,9 +178,9 @@ void Manager::Connect(Gizmo* gizmo)
         const auto& oldTransform = args[P_OLDTRANSFORM].GetMatrix3x4();
         const auto& newTransform = args[P_NEWTRANSFORM].GetMatrix3x4();
 
-        Track<EditAttributeAction>(node, "Position", oldTransform.Translation());
-        Track<EditAttributeAction>(node, "Rotation", oldTransform.Rotation());
-        Track<EditAttributeAction>(node, "Scale", oldTransform.Scale());
+        Track<EditAttributeAction>(node, "Position", oldTransform.Translation(), newTransform.Translation());
+        Track<EditAttributeAction>(node, "Rotation", oldTransform.Rotation(), newTransform.Rotation());
+        Track<EditAttributeAction>(node, "Scale", oldTransform.Scale(), newTransform.Scale());
     });
 }
 

@@ -214,8 +214,8 @@ bool UITab::RenderWindowContent()
         if (s->resizeActive_ && !ui::IsItemActive())
         {
             s->resizeActive_ = false;
-            undo_.Track<Undo::EditAttributeAction>(selected, "Position", s->resizeStartPos_);
-            undo_.Track<Undo::EditAttributeAction>(selected, "Size", s->resizeStartSize_);
+            undo_.Track<Undo::EditAttributeAction>(selected, "Position", s->resizeStartPos_, selected->GetPosition());
+            undo_.Track<Undo::EditAttributeAction>(selected, "Size", s->resizeStartSize_, selected->GetSize());
         }
     }
 
@@ -685,7 +685,8 @@ void UITab::RenderRectSelector()
         else if (s->isResizing_)
         {
             s->isResizing_ = false;
-            undo_.Track<Undo::EditAttributeAction>(selected, textureSelectorAttribute_, s->startRect_);
+            undo_.Track<Undo::EditAttributeAction>(selected, textureSelectorAttribute_, s->startRect_,
+                selected->GetAttribute(textureSelectorAttribute_));
         }
     }
     ui::End();
@@ -764,7 +765,7 @@ void UITab::AttributeMenu(VariantMap& args)
                 {
                     item->SetAttribute(info->name_, styleVariant);
                     item->ApplyAttributes();
-                    undo_.Track<Undo::EditAttributeAction>(item, info->name_, value);
+                    undo_.Track<Undo::EditAttributeAction>(item, info->name_, value, item->GetAttribute(info->name_));
                 }
             }
 
