@@ -155,7 +155,6 @@ set (THIRD_PARTY_DEPENDENCIES
     MojoShader
     sc
     cr
-    yaml-cpp
     nativefiledialog
 )
 

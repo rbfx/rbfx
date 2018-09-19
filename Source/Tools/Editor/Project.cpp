@@ -74,7 +74,7 @@ bool Project::LoadProject(const String& projectPath)
         return false;
 
     projectFileDir_ = AddTrailingSlash(projectPath);
-    projectFilePath_ = projectFileDir_ + "project.yml";
+    projectFilePath_ = projectFileDir_ + ".user.json";
 
     if (!GetFileSystem()->Exists(GetCachePath()))
         GetFileSystem()->CreateDirsRecursive(GetCachePath());
@@ -136,7 +136,7 @@ bool Project::LoadProject(const String& projectPath)
     }
 
     // Load user config
-    YAMLFile file(context_);
+    JSONFile file(context_);
     if (!file.LoadFile(projectFilePath_))
         return false;
 
@@ -195,7 +195,7 @@ bool Project::SaveProject()
         return false;
     }
 
-    YAMLFile file(context_);
+    JSONFile file(context_);
     JSONValue& root = file.GetRoot();
     root["version"] = 0;
 

@@ -289,7 +289,6 @@ public:
 %include "Urho3D/Resource/Image.h"
 %include "Urho3D/Resource/JSONValue.h"
 %include "Urho3D/Resource/JSONFile.h"
-%include "Urho3D/Resource/YAMLFile.h"
 %include "Urho3D/Resource/Localization.h"
 %include "Urho3D/Resource/PListFile.h"
 %include "Urho3D/Resource/XMLElement.h"

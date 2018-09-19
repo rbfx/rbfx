@@ -111,8 +111,6 @@ public:
     bool SaveXML(Serializer& dest, const String& indentation = "\t") const;
     /// Save to a JSON file. Return true if successful.
     bool SaveJSON(Serializer& dest, const String& indentation = "\t") const;
-    /// Save to a YAML file. Return true if successful.
-    bool SaveYAML(Serializer& dest, int indentation = 2) const;
     /// Set name of the scene node. Names are not required to be unique.
     void SetName(const String& name);
 

@@ -140,7 +140,7 @@ bool ResourceTab::RenderWindowContent()
 
             if (ui::MenuItem("Scene"))
             {
-                auto path = GetNewResourcePath(resourcePath_ + "New Scene.scene");
+                auto path = GetNewResourcePath(resourcePath_ + "New Scene.xml");
                 GetFileSystem()->CreateDirsRecursive(GetPath(path));
 
                 SharedPtr<Scene> scene(new Scene(context_));
@@ -148,7 +148,7 @@ bool ResourceTab::RenderWindowContent()
                 File file(context_, path, FILE_WRITE);
                 if (file.IsOpen())
                 {
-                    scene->SaveYAML(file);
+                    scene->SaveXML(file);
                     flags_ |= RBF_RENAME_CURRENT | RBF_SCROLL_TO_CURRENT;
                     resourceSelection_ = GetFileNameAndExtension(path);
                 }

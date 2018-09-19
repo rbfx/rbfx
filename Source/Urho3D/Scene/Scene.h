@@ -119,8 +119,6 @@ public:
     bool SaveXML(Serializer& dest, const String& indentation = "\t") const;
     /// Save to a JSON file. Return true if successful.
     bool SaveJSON(Serializer& dest, const String& indentation = "\t") const;
-    /// Save to a YAML file. Return true if successful.
-    bool SaveYAML(Serializer& dest, int indentation = 2) const;
     /// Load from a binary file asynchronously. Return true if started successfully. The LOAD_RESOURCES_ONLY mode can also be used to preload resources from object prefab files.
     bool LoadAsync(File* file, LoadMode mode = LOAD_SCENE_AND_RESOURCES);
     /// Load from an XML file asynchronously. Return true if started successfully. The LOAD_RESOURCES_ONLY mode can also be used to preload resources from object prefab files.

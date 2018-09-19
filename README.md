@@ -53,7 +53,6 @@ Urho3D bundles the following third-party libraries:
 - CLI11 v1.5.1 (https://github.com/CLIUtils/CLI11/)
 - fmt 4.1.0 (http://fmtlib.net)
 - spdlog 0.16.3 (https://github.com/gabime/spdlog)
-- yaml-cpp 0.6.2 (https://github.com/jbeder/yaml-cpp/)
 
 Urho3D optionally uses the following external third-party libraries:
 - Mono (http://www.mono-project.com/download/stable/)

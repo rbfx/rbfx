@@ -211,16 +211,6 @@ bool SceneTab::LoadResource(const String& resourcePath)
         else
             URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).CString());
     }
-    else if (resourcePath.EndsWith(".scene", false))
-    {
-        auto* file = GetCache()->GetResource<YAMLFile>(resourcePath);
-        if (file && GetScene()->LoadJSON(file->GetRoot()))
-        {
-            CreateObjects();
-        }
-        else
-            URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).CString());
-    }
     else
         URHO3D_LOGERRORF("Unknown scene file format %s", GetExtension(resourcePath).CString());
 
@@ -254,8 +244,6 @@ bool SceneTab::SaveResource()
         result = GetScene()->SaveXML(file);
     else if (fullPath.EndsWith(".json", false))
         result = GetScene()->SaveJSON(file);
-    else if (fullPath.EndsWith(".scene", false))
-        result = GetScene()->SaveYAML(file);
     GetScene()->SetUpdateEnabled(false);
 
     if (!settings_->saveElapsedTime_)

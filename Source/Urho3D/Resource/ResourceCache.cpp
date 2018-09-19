@@ -37,7 +37,6 @@
 #include "../Resource/ResourceCache.h"
 #include "../Resource/ResourceEvents.h"
 #include "../Resource/XMLFile.h"
-#include "../Resource/YAMLFile.h"
 
 #include "../DebugNew.h"
 
@@ -1147,7 +1146,6 @@ void RegisterResourceLibrary(Context* context)
     JSONFile::RegisterObject(context);
     PListFile::RegisterObject(context);
     XMLFile::RegisterObject(context);
-    YAMLFile::RegisterObject(context);
 }
 
 void ResourceCache::Scan(Vector<String>& result, const String& pathName, const String& filter, unsigned flags, bool recursive) const
