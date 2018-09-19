@@ -84,7 +84,7 @@ URHO3D_TOOLBOX_API bool CollapsingHeaderSimple(const char* label, ImGuiTreeNodeF
 /// A button that perfectly fits in menu bar.
 URHO3D_TOOLBOX_API bool ToolbarButton(const char* label);
 /// Display help tooltip when alt is pressed.
-URHO3D_TOOLBOX_API void SetHelpTooltip(const char* text);
+URHO3D_TOOLBOX_API void SetHelpTooltip(const char* text, Urho3D::Key requireKey = Urho3D::KEY_ALT);
 /// A square button whose width and height are equal to the height of previous item.
 URHO3D_TOOLBOX_API bool IconButton(const char* label);
 /// Draw a mask selector widget.

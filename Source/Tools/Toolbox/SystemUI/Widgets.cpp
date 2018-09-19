@@ -163,9 +163,10 @@ bool ToolbarButton(const char* label)
     return ui::ButtonEx(label, {dimension, dimension}, ImGuiButtonFlags_PressedOnClick);
 }
 
-void SetHelpTooltip(const char* text)
+void SetHelpTooltip(const char* text, Key requireKey)
 {
-    if (ui::IsItemHovered() && ui::IsKeyDown(SDL_SCANCODE_LALT))
+    unsigned scancode = requireKey & (~SDLK_SCANCODE_MASK);
+    if (ui::IsItemHovered() && (requireKey == KEY_UNKNOWN || ui::IsKeyDown(scancode)))
         ui::SetTooltip("%s", text);
 }
 
