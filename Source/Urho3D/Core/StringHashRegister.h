@@ -24,12 +24,13 @@
 
 #include "../Container/HashMap.h"
 #include "../Container/Ptr.h"
-#include "../Math/StringHash.h"
+#include "../Container/Str.h"
 
 namespace Urho3D
 {
 
 class Mutex;
+class StringHash;
 
 /// Helper class used for StringHash reversing.
 class URHO3D_API StringHashRegister

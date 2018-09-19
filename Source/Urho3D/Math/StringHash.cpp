@@ -59,6 +59,19 @@ StringHash::StringHash(const String& str) noexcept :
 #endif
 }
 
+#ifdef URHO3D_HASH_DEBUG
+unsigned StringHash::Calculate(const char* str, unsigned hash)
+{
+    if (!str)
+        return hash;
+
+    while (*str)
+        hash = SDBMHash(hash, (char)tolower(*str++));
+
+    return hash;
+}
+#endif
+
 unsigned int StringHash::Calculate(void* data, unsigned int length, unsigned int hash)
 {
     if (!data)
