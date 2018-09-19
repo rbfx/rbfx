@@ -52,6 +52,8 @@ public:
 protected:
     /// Attached material.
     SharedPtr<Urho3D::Material> material_;
+    ///
+    int dummy_ = 0;
 };
 
 }
@@ -75,6 +77,10 @@ protected:
     void CreateObjects();
     /// Save material resource to disk.
     void Save();
+    ///
+    void RenderPreview();
+    ///
+    void RenderCustomWidgets(VariantMap& args);
 
     /// Material which is being previewed.
     SharedPtr<Inspectable::Material> inspectable_;

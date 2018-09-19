@@ -41,6 +41,75 @@ URHO3D_EVENT(E_INSPECTORLOCATERESOURCE, InspectorLocateResource)
     URHO3D_PARAM(P_NAME, ResourceName);                                         // String
 }
 
+URHO3D_EVENT(E_INSPECTORRENDERSTART, InspectorRenderStart)
+{
+}
+
+URHO3D_EVENT(E_INSPECTORRENDEREND, InspectorRenderEnd)
+{
+}
+
+URHO3D_EVENT(E_INSPECTORRENDERATTRIBUTE, InspectorRenderAttribute)
+{
+    URHO3D_PARAM(P_STATE, State);                                               // void*
+    URHO3D_PARAM(P_ATTRIBUTEINFO, AttributeInfo);                               // void*
+    URHO3D_PARAM(P_SERIALIZABLE, Serializable);                                 // RefCounted*
+    URHO3D_PARAM(P_HANDLED, Handled);                                           // bool
+    URHO3D_PARAM(P_MODIFIED, Modified);                                         // bool
+}
+
+/// Automate tracking of initial values that are modified by ImGui widget.
+template<typename TValue>
+struct ModifiedStateTracker
+{
+    bool TrackModification(bool modified, std::function<TValue()> getInitial)
+    {
+        if (modified)
+        {
+            if (!lastFrameModified_)
+            {
+                initial_ = getInitial();
+                lastFrameModified_ = true;
+            }
+            return false;
+        }
+        else if (!ui::IsAnyItemActive() && lastFrameModified_)
+        {
+            lastFrameModified_ = false;
+            return true;
+        }
+
+        return false;
+    }
+
+    bool TrackModification(bool modified, const TValue& initialValue)
+    {
+        std::function<TValue()> fn = [&]() { return initialValue; };
+        return TrackModification(modified, fn);
+    }
+
+    const TValue& GetInitialValue() { return initial_; }
+
+protected:
+    /// Initial value.
+    TValue initial_{};
+    /// Flag indicating if value was modified on previous frame.
+    bool lastFrameModified_ = false;
+};
+
+struct URHO3D_TOOLBOX_API AttributeInspectorState
+{
+    AttributeInspectorState(Context* context)
+        : autoColumn_(context)
+    {
+    }
+
+    /// Object keeping track of automatic width of first column.
+    AutoColumn autoColumn_;
+
+    void NextColumn();
+};
+
 /// A dummy object used as namespace for subscribing to events.
 class URHO3D_TOOLBOX_API AttributeInspector : public Object
 {

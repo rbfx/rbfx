@@ -52,20 +52,6 @@ using namespace ui::litterals;
 namespace Urho3D
 {
 
-struct AttributeInspectorState
-{
-    AttributeInspectorState(Context* context)
-        : autoColumn_(context)
-    {
-    }
-    /// Name of attribute that was modified on last frame.
-    const AttributeInfo* modifiedLastFrame_ = nullptr;
-    /// Value of attribute before modifying it started.
-    Variant originalValue_;
-    /// Object keeping track of automatic width of first column.
-    AutoColumn autoColumn_;
-};
-
 bool RenderResourceRef(Object* eventNamespace, StringHash type, const String& name, String& result)
 {
     SharedPtr<Resource> resource;
@@ -114,6 +100,11 @@ bool RenderResourceRef(Object* eventNamespace, StringHash type, const String& na
     ui::GetStyle().ItemSpacing.x = oldSpacing;
 
     return returnValue;
+}
+
+void AttributeInspectorState::NextColumn()
+{
+    autoColumn_.NextColumn();
 }
 
 bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespace, const AttributeInfo& info, Variant& value)
@@ -459,16 +450,6 @@ bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespac
 
 bool RenderAttributes(Serializable* item, const char* filter, Object* eventNamespace)
 {
-//    ui::TextUnformatted("Filter");
-//    autoColumn_.NextColumn();
-//    ui::PushID("FilterEdit");
-//    ui::PushItemWidth(-1);
-//    ui::InputText("", &filter_.front(), filter_.size() - 1);
-//    if (ui::IsItemActive() && ui::IsKeyPressed(ImGuiKey_Escape))
-//        filter_.front() = 0;
-//    ui::PopItemWidth();
-//    ui::PopID();
-
     if (eventNamespace == nullptr)
         eventNamespace = ui::GetSystemUI();
     auto* state = ui::GetUIState<AttributeInspectorState>(eventNamespace->GetContext());
@@ -482,16 +463,18 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
             return false;
 
         ui::PushID(item);
+
+        eventNamespace->SendEvent(E_INSPECTORRENDERSTART);
+
         for (const AttributeInfo& info: *attributes)
         {
             bool hidden = false;
             Color color = Color::WHITE;
             String tooltip;
 
-            Variant value, oldValue;
-            value = oldValue = item->GetAttribute(info.name_);
+            Variant value = item->GetAttribute(info.name_);
 
-            if (value == info.defaultValue_)
+            if (info.defaultValue_.GetType() != VAR_NONE && value == info.defaultValue_)
                 color = Color::GRAY;
 
             if (info.mode_ & AM_NOEDIT)
@@ -527,28 +510,31 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
             if (!tooltip.Empty() && ui::IsItemHovered())
                 ui::SetTooltip("%s", tooltip.CString());
 
-            if (ui::IsItemHovered() && ui::IsMouseClicked(2))
+            if (ui::IsItemHovered() && ui::IsMouseClicked(MOUSEB_RIGHT))
                 ui::OpenPopup("Attribute Menu");
 
             bool modified = false;
             bool expireBuffers = false;
             if (ui::BeginPopup("Attribute Menu"))
             {
-                if (value == info.defaultValue_)
+                if (info.defaultValue_.GetType() != VAR_NONE)
                 {
-                    ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
-                    ui::MenuItem("Reset to default");
-                    ui::PopStyleColor();
-                }
-                else
-                {
-                    if (ui::MenuItem("Reset to default"))
+                    if (value == info.defaultValue_)
                     {
-                        item->SetAttribute(info.name_, info.defaultValue_);
-                        item->ApplyAttributes();
-                        value = info.defaultValue_;     // For current frame to render correctly
-                        expireBuffers = true;
-                        modified = true;
+                        ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+                        ui::MenuItem("Reset to default");
+                        ui::PopStyleColor();
+                    }
+                    else
+                    {
+                        if (ui::MenuItem("Reset to default"))
+                        {
+                            item->SetAttribute(info.name_, info.defaultValue_);
+                            item->ApplyAttributes();
+                            value = info.defaultValue_;     // For current frame to render correctly
+                            expireBuffers = true;
+                            modified = true;
+                        }
                     }
                 }
 
@@ -585,42 +571,59 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
 
             state->autoColumn_.NextColumn();
 
-            bool modifiedLastFrame = state->modifiedLastFrame_ && *state->modifiedLastFrame_ == info;
             ui::PushItemWidth(-1);
-            modified |= RenderSingleAttribute(state, eventNamespace, info, value);
-            ui::PopItemWidth();
-            ui::PopID();
 
-            if (modified)
+            // Value widget rendering
+            bool nonVariantValue{};
             {
-                assert(modifiedThisFrame == nullptr);
-                state->modifiedLastFrame_ = &info;
-
-                // Just started changing value of the attribute. Save old value required for event on modification end.
-                if (!modifiedLastFrame)
-                    state->originalValue_ = oldValue;
-
-                // Update attribute value and do nothing else for now.
-                item->SetAttribute(info.name_, value);
-                item->ApplyAttributes();
+                using namespace InspectorRenderAttribute;
+                VariantMap args{ };
+                args[P_STATE] = (void*)state;
+                args[P_ATTRIBUTEINFO] = (void*) &info;
+                args[P_SERIALIZABLE] = item;
+                args[P_HANDLED] = false;
+                args[P_MODIFIED] = false;
+                // Rendering of custom widgets for values that do not map to Variant.
+                eventNamespace->SendEvent(E_INSPECTORRENDERATTRIBUTE, args);
+                nonVariantValue = args[P_HANDLED].GetBool();
+                if (nonVariantValue)
+                    modified |= args[P_MODIFIED].GetBool();
+                else
+                    // Rendering of default widgets for Variant values.
+                    modified |= RenderSingleAttribute(state, eventNamespace, info, value);
             }
 
-            if ((modified || modifiedLastFrame) && !ui::IsAnyItemActive())
+            // Normal attributes
+            auto* modification = ui::GetUIState<ModifiedStateTracker<Variant>>();
+            if (modification->TrackModification(modified, [item, &info]() {
+                auto previousValue = item->GetAttribute(info.name_);
+                if (previousValue.GetType() == VAR_NONE)
+                    return info.defaultValue_;
+                return previousValue;
+            }))
             {
                 // This attribute was modified on last frame, but not on this frame. Continuous attribute value modification
                 // has ended and we can fire attribute modification event.
                 using namespace AttributeInspectorValueModified;
                 eventNamespace->SendEvent(E_ATTRIBUTEINSPECTVALUEMODIFIED, P_SERIALIZABLE, item, P_ATTRIBUTEINFO,
-                    (void*)&info, P_OLDVALUE, state->originalValue_, P_NEWVALUE, value);
+                                          (void*)&info, P_OLDVALUE, modification->GetInitialValue(), P_NEWVALUE, value);
             }
+
+            if (!nonVariantValue && modified)
+            {
+                // Update attribute value and do nothing else for now.
+                item->SetAttribute(info.name_, value);
+                item->ApplyAttributes();
+            }
+
+            ui::PopItemWidth();
+            ui::PopID();
         }
+
+        eventNamespace->SendEvent(E_INSPECTORRENDEREND);
 
         ui::PopID();
     }
-
-    // Just finished modifying attribute.
-    if (state->modifiedLastFrame_ && !ui::IsAnyItemActive())
-        state->modifiedLastFrame_ = nullptr;
 
     return isOpen;
 }
