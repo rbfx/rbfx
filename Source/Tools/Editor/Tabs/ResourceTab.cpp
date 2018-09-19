@@ -156,6 +156,23 @@ bool ResourceTab::RenderWindowContent()
                     URHO3D_LOGERRORF("Failed opening file '%s'.", path.CString());
             }
 
+            if (ui::MenuItem("Material"))
+            {
+                auto path = GetNewResourcePath(resourcePath_ + "New Material.xml");
+                GetFileSystem()->CreateDirsRecursive(GetPath(path));
+
+                SharedPtr<Material> material(new Material(context_));
+                File file(context_, path, FILE_WRITE);
+                if (file.IsOpen())
+                {
+                    material->Save(file);
+                    flags_ |= RBF_RENAME_CURRENT | RBF_SCROLL_TO_CURRENT;
+                    resourceSelection_ = GetFileNameAndExtension(path);
+                }
+                else
+                    URHO3D_LOGERRORF("Failed opening file '%s'.", path.CString());
+            }
+
             if (ui::MenuItem("UI Layout"))
             {
                 auto path = GetNewResourcePath(resourcePath_ + "New UI Layout.xml");
