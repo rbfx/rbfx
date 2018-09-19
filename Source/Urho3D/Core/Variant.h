@@ -542,6 +542,9 @@ public:
         FromString(type, value);
     }
 
+    /// Construct from type.
+    Variant(VariantType type);
+
     /// Copy-construct from another variant.
     Variant(const Variant& value)
     {
