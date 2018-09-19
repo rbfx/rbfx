@@ -53,7 +53,6 @@ public:
         ui::SameLine(lastMaxWidth_);
     }
 
-protected:
     /// Max width of attribute label.
     int lastMaxWidth_ = 0;
     /// Max width of attribute label.

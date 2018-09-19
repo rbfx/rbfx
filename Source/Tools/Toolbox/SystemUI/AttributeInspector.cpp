@@ -52,6 +52,63 @@ using namespace ui::litterals;
 namespace Urho3D
 {
 
+VariantType supportedVariantTypes[] = {
+    VAR_NONE,
+    VAR_INT,
+    VAR_BOOL,
+    VAR_FLOAT,
+    VAR_VECTOR2,
+    VAR_VECTOR3,
+    VAR_VECTOR4,
+    VAR_QUATERNION,
+    VAR_COLOR,
+    VAR_STRING,
+    //VAR_BUFFER,
+    //VAR_RESOURCEREF,
+    //VAR_RESOURCEREFLIST,
+    //VAR_VARIANTVECTOR,
+    //VAR_VARIANTMAP,
+    VAR_INTRECT,
+    VAR_INTVECTOR2,
+    VAR_MATRIX3,
+    VAR_MATRIX3X4,
+    VAR_MATRIX4,
+    VAR_DOUBLE,
+    //VAR_STRINGVECTOR,
+    VAR_RECT,
+    VAR_INTVECTOR3,
+    VAR_INT64,
+};
+const int MAX_SUPPORTED_VAR_TYPES = SDL_arraysize(supportedVariantTypes);
+
+const char* supportedVariantNames[] = {
+    "None",
+    "Int",
+    "Bool",
+    "Float",
+    "Vector2",
+    "Vector3",
+    "Vector4",
+    "Quaternion",
+    "Color",
+    "String",
+    //"Buffer",
+    //"ResourceRef",
+    //"ResourceRefList",
+    //"VariantVector",
+    //"VariantMap",
+    "IntRect",
+    "IntVector2",
+    "Matrix3",
+    "Matrix3x4",
+    "Matrix4",
+    "Double",
+    //"StringVector",
+    "Rect",
+    "IntVector3",
+    "Int64",
+};
+
 bool RenderResourceRef(Object* eventNamespace, StringHash type, const String& name, String& result)
 {
     SharedPtr<Resource> resource;
@@ -107,7 +164,7 @@ void AttributeInspectorState::NextColumn()
     autoColumn_.NextColumn();
 }
 
-bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespace, const AttributeInfo& info, Variant& value)
+bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespace, const AttributeInfo* info, Variant& value)
 {
     const float floatMin = -14000.f;
     const float floatMax = 14000.f;
@@ -116,25 +173,28 @@ bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespac
 
     bool modified = false;
     auto comboValuesNum = 0;
-    for (; info.enumNames_ && info.enumNames_[++comboValuesNum];);
+    if (info != nullptr)
+    {
+        for (; info->enumNames_ && info->enumNames_[++comboValuesNum];);
+    }
 
     if (comboValuesNum > 0)
     {
         int current = value.GetInt();
-        modified |= ui::Combo("", &current, info.enumNames_, comboValuesNum);
+        modified |= ui::Combo("", &current, info->enumNames_, comboValuesNum);
         if (modified)
             value = current;
     }
     else
     {
-        switch (info.type_)
+        switch (info ? info->type_ : value.GetType())
         {
         case VAR_NONE:
             ui::TextUnformatted("None");
             break;
         case VAR_INT:
         {
-            if (info.name_.EndsWith(" Mask"))
+            if (info && info->name_.EndsWith(" Mask"))
             {
                 auto v = value.GetUInt();
                 modified |= ui::MaskSelector(&v);
@@ -229,8 +289,9 @@ bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespac
         {
             const auto& ref = value.GetResourceRef();
             auto refType = ref.type_;
-            if (refType == StringHash::ZERO)
-                refType = info.defaultValue_.GetResourceRef().type_;
+
+            if (refType == StringHash::ZERO && info)
+                refType = info->defaultValue_.GetResourceRef().type_;
 
             String result;
             if (RenderResourceRef(eventNamespace, refType, ref.name_, result))
@@ -249,8 +310,8 @@ bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespac
                 String result;
 
                 auto refType = refList.type_;
-                if (refType == StringHash::ZERO)
-                    refType = info.defaultValue_.GetResourceRef().type_;
+                if (refType == StringHash::ZERO && info)
+                    refType = info->defaultValue_.GetResourceRef().type_;
 
                 if (RenderResourceRef(eventNamespace, refType, refList.names_[i], result))
                 {
@@ -267,7 +328,7 @@ bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespac
                 if (i < refList.names_.Size() - 1)
                 {
                     ui::PushID(i + 1);
-                    ui::TextColored(ToImGui(Color::WHITE), "%s", info.name_.CString());
+                    //ui::TextColored(ToImGui(Color::WHITE), "%s", info.name_.CString());
                     state->autoColumn_.NextColumn();
                     ui::PopID();
                 }
@@ -280,7 +341,71 @@ bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespac
             break;
         }
 //            case VAR_VARIANTVECTOR:
-//            case VAR_VARIANTMAP:
+        case VAR_VARIANTMAP:
+        {
+            ui::PushID(VAR_VARIANTMAP);
+            struct VariantMapState
+            {
+                bool insertingNew = false;
+                std::string fieldName;
+                int variantTypeIndex = 0;
+            };
+
+            auto* mapState = ui::GetUIState<VariantMapState>();
+            auto* map = value.GetVariantMapPtr();
+            if (ui::Button(ICON_FA_PLUS))
+                mapState->insertingNew = true;
+
+            ui::Indent(15_dpx);
+            for (auto it = map->Begin(); it != map->End(); it++)
+            {
+                const String& name = StringHash::GetGlobalStringHashRegister()->GetString(it->first_);
+                ui::TextUnformatted(name.CString());
+                state->NextColumn();
+                ui::PushID(name.CString());
+                ui::PushItemWidth(-22_dpx); // Space for trashcan button. TODO: trashcan goes out of screen a little for matrices.
+                modified |= RenderSingleAttribute(state, eventNamespace, nullptr, it->second_);
+                ui::PopItemWidth();
+                ui::SameLine();
+                if (ui::Button(ICON_FA_TRASH))
+                {
+                    it = map->Erase(it);
+                    modified |= true;
+                    ui::PopID();
+                    break;
+                }
+                ui::PopID();
+            }
+
+            if (mapState->insertingNew)
+            {
+                auto firstColumnWidth = ui::GetContentRegionMax().x - (ui::GetContentRegionMax().x - state->autoColumn_.currentMaxWidth_) - ui::GetCursorPosX();
+                //auto secondColumn = ui::GetContentRegionMax().x - firstColumnWidth - 15_dpx;
+                ui::PushItemWidth(firstColumnWidth);
+                ui::InputText("###Key", &mapState->fieldName);
+                ui::PopItemWidth();
+                state->NextColumn();
+                ui::PushItemWidth(-22_dpx); // Space for OK button
+                ui::Combo("###Type", &mapState->variantTypeIndex, supportedVariantNames, MAX_SUPPORTED_VAR_TYPES);
+                ui::PopItemWidth();
+                ui::SameLine();
+                if (ui::Button(ICON_FA_CHECK))
+                {
+                    if (map->Find(mapState->fieldName.c_str()) == map->End())   // TODO: Show warning about duplicate name
+                    {
+                        map->Insert({mapState->fieldName.c_str(), Variant{supportedVariantTypes[mapState->variantTypeIndex]}});
+                        mapState->fieldName.clear();
+                        mapState->variantTypeIndex = 0;
+                        mapState->insertingNew = false;
+                        modified = true;
+                    }
+                }
+            }
+
+            ui::Unindent(15_dpx);
+            ui::PopID();
+            break;
+        }
         case VAR_INTRECT:
         {
             auto& v = value.GetIntRect();
@@ -296,10 +421,11 @@ bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespac
             break;
         }
         case VAR_PTR:
-            ui::Text("%p (Void Pointer)", value.GetPtr());
+            ui::Text("%p (Void Pointer)", static_cast<void*>(value.GetPtr()));
             break;
         case VAR_MATRIX3:
         {
+            ui::NewLine();
             auto& v = value.GetMatrix3();
             modified |= ui::DragFloat3("###m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
             ui::SetHelpTooltip("m0");
@@ -311,6 +437,7 @@ bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespac
         }
         case VAR_MATRIX3X4:
         {
+            ui::NewLine();
             auto& v = value.GetMatrix3x4();
             modified |= ui::DragFloat4("###m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
             ui::SetHelpTooltip("m0");
@@ -322,6 +449,7 @@ bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespac
         }
         case VAR_MATRIX4:
         {
+            ui::NewLine();
             auto& v = value.GetMatrix4();
             modified |= ui::DragFloat4("###m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
             ui::SetHelpTooltip("m0");
@@ -482,7 +610,7 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
             else if (filter != nullptr && *filter && !info.name_.Contains(filter, false))
                 hidden = true;
 
-            if (info.type_ == VAR_BUFFER || info.type_ == VAR_VARIANTVECTOR || info.type_ == VAR_VARIANTMAP)
+            if (info.type_ == VAR_BUFFER || info.type_ == VAR_VARIANTVECTOR)
                 hidden = true;
 
             // Customize attribute rendering
@@ -590,7 +718,7 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
                     modified |= args[P_MODIFIED].GetBool();
                 else
                     // Rendering of default widgets for Variant values.
-                    modified |= RenderSingleAttribute(state, eventNamespace, info, value);
+                    modified |= RenderSingleAttribute(state, eventNamespace, &info, value);
             }
 
             // Normal attributes
