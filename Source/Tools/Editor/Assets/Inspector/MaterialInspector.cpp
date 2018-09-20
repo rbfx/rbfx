@@ -33,172 +33,15 @@
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Toolbox/SystemUI/Widgets.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <ImGui/imgui_stl.h>
 #include <Urho3D/IO/Log.h>
 #include "MaterialInspector.h"
+#include "MaterialInspectorUndo.h"
 
 using namespace ImGui::litterals;
 
 namespace Urho3D
 {
-
-namespace Undo
-{
-
-/// Tracks modifications to depth bias in material.
-class DepthBiasAction
-    : public EditAction
-{
-    Context* context_;
-    String material_;
-    BiasParameters oldParameters_;
-    BiasParameters newParameters_;
-
-public:
-    DepthBiasAction(Material* material, const BiasParameters& oldValue, const BiasParameters& newValue)
-        : context_(material->GetContext())
-        , material_(material->GetName())
-    {
-        oldParameters_ = oldValue;
-        newParameters_ = newValue;
-    }
-
-    void Undo() override
-    {
-        if (auto* material = context_->GetCache()->GetResource<Material>(material_))
-            material->SetDepthBias(oldParameters_);
-    }
-
-    void Redo() override
-    {
-        if (auto* material = context_->GetCache()->GetResource<Material>(material_))
-            material->SetDepthBias(newParameters_);
-    }
-};
-
-/// Tracks addition, removal and modification of techniques in material
-class TechniqueChangedAction
-    : public EditAction
-{
-public:
-    struct TechniqueInfo
-    {
-        String techniqueName_;
-        MaterialQuality qualityLevel_;
-        float lodDistance_;
-    };
-
-    TechniqueChangedAction(const Material* material, unsigned index, const TechniqueEntry* oldEntry,
-        const TechniqueEntry* newEntry)
-        : context_(material->GetContext())
-        , materialName_(material->GetName())
-        , index_(index)
-    {
-        if (oldEntry != nullptr)
-        {
-            oldValue_.techniqueName_ = oldEntry->original_->GetName();
-            oldValue_.qualityLevel_ = oldEntry->qualityLevel_;
-            oldValue_.lodDistance_ = oldEntry->lodDistance_;
-        }
-        if (newEntry != nullptr)
-        {
-            newValue_.techniqueName_ = newEntry->original_->GetName();
-            newValue_.qualityLevel_ = newEntry->qualityLevel_;
-            newValue_.lodDistance_ = newEntry->lodDistance_;
-        }
-    }
-
-    void RemoveTechnique()
-    {
-        if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
-        {
-            // Shift techniques back
-            for (auto i = index_ + 1; i < material->GetNumTechniques(); i++)
-            {
-                const auto& entry = material->GetTechniqueEntry(i);
-                material->SetTechnique(i - 1, entry.original_.Get(), entry.qualityLevel_, entry.lodDistance_);
-            }
-            // Remove last one
-            material->SetNumTechniques(material->GetNumTechniques() - 1);
-        }
-    }
-
-    void AddTechnique(const TechniqueInfo& info)
-    {
-        if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
-        {
-            if (auto* technique = context_->GetCache()->GetResource<Technique>(info.techniqueName_))
-            {
-                auto index = material->GetNumTechniques();
-                material->SetNumTechniques(index + 1);
-
-                // Shift techniques front
-                for (auto i = index_ + 1; i < material->GetNumTechniques(); i++)
-                {
-                    const auto& entry = material->GetTechniqueEntry(i - 1);
-                    material->SetTechnique(i, entry.original_.Get(), entry.qualityLevel_, entry.lodDistance_);
-                }
-                // Insert new technique
-                material->SetTechnique(index_, technique, info.qualityLevel_, info.lodDistance_);
-            }
-        }
-    }
-
-    void SetTechnique(const TechniqueInfo& info)
-    {
-        if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
-        {
-            if (auto* technique = context_->GetCache()->GetResource<Technique>(info.techniqueName_))
-                material->SetTechnique(static_cast<unsigned int>(index_), technique, info.qualityLevel_, info.lodDistance_);
-        }
-    }
-
-    void Undo() override
-    {
-        if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
-        {
-            if (oldValue_.techniqueName_.Empty() && !newValue_.techniqueName_.Empty())
-                // Was added
-                RemoveTechnique();
-            else if (!oldValue_.techniqueName_.Empty() && newValue_.techniqueName_.Empty())
-                // Was removed
-                AddTechnique(oldValue_);
-            else
-                // Was modified
-                SetTechnique(oldValue_);
-
-            context_->GetCache()->IgnoreResourceReload(material);
-            material->SaveFile(context_->GetCache()->GetResourceFileName(material->GetName()));
-        }
-    }
-
-    void Redo() override
-    {
-        if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
-        {
-            if (oldValue_.techniqueName_.Empty() && !newValue_.techniqueName_.Empty())
-                // Was added
-                AddTechnique(newValue_);
-            else if (!oldValue_.techniqueName_.Empty() && newValue_.techniqueName_.Empty())
-                // Was removed
-                RemoveTechnique();
-            else
-                // Was modified
-                SetTechnique(newValue_);
-
-            context_->GetCache()->IgnoreResourceReload(material);
-            material->SaveFile(context_->GetCache()->GetResourceFileName(material->GetName()));
-        }
-    }
-
-private:
-    Context* context_;
-    String materialName_;
-    TechniqueInfo oldValue_;
-    TechniqueInfo newValue_;
-    unsigned index_;
-};
-
-}
 
 MaterialInspector::MaterialInspector(Context* context, Material* material)
     : ResourceInspector(context)
@@ -391,7 +234,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             auto modification = ui::GetUIState<ModifiedStateTracker<TechniqueEntry>>();
 
             String techName = tech.technique_->GetName();
-            ui::PushItemWidth(material->GetNumTechniques() > 1 ? -60_dpx : -30_dpx);
+            ui::PushItemWidth(material->GetNumTechniques() > 1 ? -44_dpx : -22_dpx);
             ui::InputText("###techniqueName_", const_cast<char*>(techName.CString()), techName.Length(),
                           ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
             ui::PopItemWidth();
@@ -413,7 +256,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             }
             ui::SetHelpTooltip("Drag resource here.");
 
-            ui::SameLine();
+            ui::SameLine(VAR_NONE);
             if (ui::IconButton(ICON_FA_CROSSHAIRS))
             {
                 SendEvent(E_INSPECTORLOCATERESOURCE, InspectorLocateResource::P_NAME, material->GetTechnique(i)->GetName());
@@ -422,7 +265,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
 
             if (material->GetNumTechniques() > 1)
             {
-                ui::SameLine();
+                ui::SameLine(VAR_NONE);
                 if (ui::IconButton(ICON_FA_TRASH))
                 {
                     for (auto j = i + 1; j < material->GetNumTechniques(); j++)
@@ -448,10 +291,13 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
 
             // ---------------------------------------------------------------------------------------------------------
 
+            static const char* qualityNames[] = {
+                "Low", "Medium", "High", "Ultra", "Max"
+            };
+
             ui::TextUnformatted("Quality");
             state->NextColumn();
-            modifiedField |= ui::DragInt("###Quality", reinterpret_cast<int*>(&tech.qualityLevel_), 1, QUALITY_LOW, QUALITY_MAX);
-            ui::SetHelpTooltip("0 - low, 1 - medium, 2 - high, 15 - max, [3, 14] - custom.");
+            modifiedField |= ui::Combo("###Quality", reinterpret_cast<int*>(&tech.qualityLevel_), qualityNames, SDL_arraysize(qualityNames));
 
             if (modification->TrackModification(modifiedField, [material, i]() { return material->GetTechniqueEntry(i); }))
                 undo_.Track<Undo::TechniqueChangedAction>(material, i, &modification->GetInitialValue(), &tech);
@@ -462,7 +308,8 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             modified |= modifiedField;
         }
 
-        ui::InputText("###Add Technique", const_cast<char*>("Add New Technique"), sizeof("Add New Technique"),
+        const char addNewTechnique[]{"Add New Technique"};
+        ui::InputText("###Add Technique", const_cast<char*>(addNewTechnique), sizeof(addNewTechnique),
             ImGuiInputTextFlags_ReadOnly);
         if (ui::BeginDragDropTarget())
         {
@@ -482,6 +329,107 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             ui::EndDragDropTarget();
         }
         ui::SetHelpTooltip("Drag and drop technique resource here.");
+
+        args[P_HANDLED] = true;
+        args[P_MODIFIED] = modified;
+    }
+    else if (info.name_ == "Shader Parameters")
+    {
+        struct ShaderParameterState
+        {
+            std::string fieldName_;
+            int variantTypeIndex_ = 0;
+            bool insertingNew_ = false;
+        };
+
+        auto* paramState = ui::GetUIState<ShaderParameterState>();
+        if (ui::Button(ICON_FA_PLUS))
+            paramState->insertingNew_ = true;
+        ui::SetHelpTooltip("Add new shader parameter.");
+
+        ui::IndentScope indentScope(15_dpx);
+        bool modified = false;
+
+        const auto& parameters = material->GetShaderParameters();
+        for (const auto& pair : parameters)
+        {
+            const String& parameterName = pair.second_.name_;
+            ui::IdScope id(parameterName.CString());
+            auto* modification = ui::GetUIState<ModifiedStateTracker<Variant>>();
+
+            ui::TextUnformatted(parameterName.CString());
+            state->NextColumn();
+            Variant value = pair.second_.value_;
+
+            UI_ITEMWIDTH(-22_dpx)
+            {
+                bool modifiedNow = RenderSingleAttribute(state, value);
+                if (modification->TrackModification(modifiedNow, [material, &parameterName]() { return material->GetShaderParameter(parameterName); }))
+                {
+                    undo_.Track<Undo::ShaderParameterChangedAction>(material, parameterName, modification->GetInitialValue(), value);
+                    modified = true;
+                }
+                if (modifiedNow)
+                    material->SetShaderParameter(parameterName, value);
+            }
+
+            ui::SameLine(value.GetType());
+            if (ui::Button(ICON_FA_TRASH))
+            {
+                undo_.Track<Undo::ShaderParameterChangedAction>(material, parameterName, pair.second_.value_, Variant{});
+                material->RemoveShaderParameter(parameterName);
+                modified = true;
+                break;
+            }
+        }
+
+
+        if (paramState->insertingNew_)
+        {
+            static const VariantType shaderParameterVariantTypes[] = {
+                VAR_FLOAT,
+                VAR_VECTOR2,
+                VAR_VECTOR3,
+                VAR_VECTOR4,
+                VAR_COLOR,
+                VAR_RECT,
+            };
+
+            static const char* shaderParameterVariantNames[] = {
+                "Float",
+                "Vector2",
+                "Vector3",
+                "Vector4",
+                "Color",
+                "Rect",
+            };
+
+            auto firstColumnWidth = ui::GetContentRegionMax().x - (ui::GetContentRegionMax().x - state->autoColumn_.currentMaxWidth_) - ui::GetCursorPosX();
+            //auto secondColumn = ui::GetContentRegionMax().x - firstColumnWidth - 15_dpx;
+            UI_ITEMWIDTH(firstColumnWidth)
+                ui::InputText("###Name", &paramState->fieldName_);
+            ui::SetHelpTooltip("Shader parameter name.");
+
+            state->NextColumn();
+            UI_ITEMWIDTH(-22_dpx) // Space for OK button
+                ui::Combo("###Type", &paramState->variantTypeIndex_, shaderParameterVariantNames, SDL_arraysize(shaderParameterVariantTypes));
+            ui::SetHelpTooltip("Shader parameter type.");
+
+            ui::SameLine(0, 2_dpx);
+            if (ui::Button(ICON_FA_CHECK))
+            {
+                if (material->GetShaderParameter(paramState->fieldName_.c_str()).GetType() == VAR_NONE)   // TODO: Show warning about duplicate name
+                {
+                    Variant value{shaderParameterVariantTypes[paramState->variantTypeIndex_]};
+                    undo_.Track<Undo::ShaderParameterChangedAction>(material, paramState->fieldName_.c_str(), Variant{}, value);
+                    material->SetShaderParameter(paramState->fieldName_.c_str(), value);
+                    modified = true;
+                    paramState->fieldName_.clear();
+                    paramState->variantTypeIndex_ = 0;
+                    paramState->insertingNew_ = false;
+                }
+            }
+        }
 
         args[P_HANDLED] = true;
         args[P_MODIFIED] = modified;
