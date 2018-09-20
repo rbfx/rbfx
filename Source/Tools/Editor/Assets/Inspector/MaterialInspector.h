@@ -52,8 +52,6 @@ public:
 protected:
     /// Attached material.
     SharedPtr<Urho3D::Material> material_;
-    ///
-    int dummy_ = 0;
 };
 
 }
@@ -93,12 +91,11 @@ protected:
     /// Flag indicating if this widget grabbed mouse for rotating material node.
     bool mouseGrabbed_ = false;
     /// Index of current figure displaying material.
-    int figureIndex_ = 0;
+    unsigned figureIndex_ = 0;
     /// A list of figures between which material view can be toggled.
     PODVector<const char*> figures_{"Sphere", "Box", "Torus", "TeaPot"};
     /// Distance from camera to figure.
     float distance_ = 1.5f;
-
 };
 
 }
