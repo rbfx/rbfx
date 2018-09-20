@@ -43,6 +43,88 @@ enum TransformSelectorFlags
 
 URHO3D_TO_FLAGS_ENUM(TransformSelectorFlags);
 
+/// Helper for running `for` loop just once.
+struct ScopeHelper
+{
+    explicit operator bool()
+    {
+        check_ ^= true;
+        return check_;
+    }
+
+    bool check_ = false;
+};
+
+/// Keeps Track of ui indentation
+struct IndentScope : ScopeHelper
+{
+    explicit IndentScope(float len)
+    {
+        len_ = len;
+        ImGui::Indent(len);
+    }
+
+    ~IndentScope()
+    {
+        ImGui::Unindent(len_);
+    }
+
+    float len_ = 0.f;
+};
+
+/// Keeps Track of ui item width
+struct ItemWidthScope : ScopeHelper
+{
+    explicit ItemWidthScope(float len)
+    {
+        ImGui::PushItemWidth(len);
+    }
+
+    ~ItemWidthScope()
+    {
+        ImGui::PopItemWidth();
+    }
+};
+
+/// Keeps Track of ui stype vars
+struct StyleVarScope : ScopeHelper
+{
+    explicit StyleVarScope(ImGuiStyleVar var, float value)
+    {
+        ImGui::PushStyleVar(var, value);
+    }
+
+    explicit StyleVarScope(ImGuiStyleVar var, const ImVec2& value)
+    {
+        ImGui::PushStyleVar(var, value);
+    }
+
+    ~StyleVarScope()
+    {
+        ImGui::PopStyleVar();
+    }
+};
+
+/// Keeps track of id scopes
+struct IdScope : ScopeHelper
+{
+    template<typename T>
+    explicit IdScope(T id)
+    {
+        ImGui::PushID(id);
+    }
+
+    ~IdScope()
+    {
+        ImGui::PopID();
+    }
+};
+
+#define UI_INDENT(len) for (ImGui::IndentScope ___indenter_bf655352_0811_4629_b929_051958ca8855##__LINE__(len); static_cast<bool>(___indenter_bf655352_0811_4629_b929_051958ca8855##__LINE__);)
+#define UI_ITEMWIDTH(width) for (ImGui::ItemWidthScope ___widthscope_4c0ffd93_e615_43c9_a58e_da6db01d5bb8##__LINE__(width); static_cast<bool>(___widthscope_4c0ffd93_e615_43c9_a58e_da6db01d5bb8##__LINE__);)
+#define UI_STYLEVAR(var, ...) for (ImGui::StyleVarScope ___stylevarscope_0652d51d_6ff6_4deb_a1ba_841bbc684e3a##__LINE__(var, __VA_ARGS__); static_cast<bool>(___stylevarscope_0652d51d_6ff6_4deb_a1ba_841bbc684e3a##__LINE__);)
+#define UI_ID(id) for (ImGui::IdScope ___idscope_bef482cf_157b_47e9_b8da_0f3d82a7ab3e##__LINE__(id); static_cast<bool>(___idscope_bef482cf_157b_47e9_b8da_0f3d82a7ab3e##__LINE__);)
+
 /// Set custom user pointer storing UI state at given position of id stack. Optionally pass deleter function which is
 /// responsible for freeing state object when it is no longer used.
 URHO3D_TOOLBOX_API void SetUIStateP(void* state, void(* deleter)(void*) = nullptr);
