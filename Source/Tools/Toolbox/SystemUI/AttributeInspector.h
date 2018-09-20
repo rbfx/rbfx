@@ -27,8 +27,9 @@
 
 #include "ToolboxAPI.h"
 #include "AutoColumn.h"
-#include <Urho3D/Core/Object.h>
 #include <Urho3D/Core/Context.h>
+#include <Urho3D/Core/Object.h>
+#include <Urho3D/Core/Variant.h>
 
 
 namespace Urho3D
@@ -122,5 +123,13 @@ public:
 /// If `filter` is not null then only attributes containing this substring will be rendered.
 /// If `eventNamespace` is not null then this object will be used to send events.
 URHO3D_TOOLBOX_API bool RenderAttributes(Serializable* item, const char* filter=nullptr, Object* eventNamespace=nullptr);
+URHO3D_TOOLBOX_API bool RenderSingleAttribute(AttributeInspectorState* state, Variant& value);
+
+}
+
+namespace ImGui
+{
+
+URHO3D_TOOLBOX_API void SameLine(Urho3D::VariantType type);
 
 }

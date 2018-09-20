@@ -112,49 +112,47 @@ const char* supportedVariantNames[] = {
 bool RenderResourceRef(Object* eventNamespace, StringHash type, const String& name, String& result)
 {
     SharedPtr<Resource> resource;
-    auto oldSpacing = ui::GetStyle().ItemSpacing.x;
     auto returnValue = false;
-    ui::GetStyle().ItemSpacing.x = 2_dpx;
 
-    ui::PushItemWidth(-40_dpx);
-    ui::InputText("", (char*)name.CString(), name.Length(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
-    ui::PopItemWidth();
+    UI_ITEMWIDTH(eventNamespace != nullptr ? -44_dpx : -22_dpx)
+        ui::InputText("", const_cast<char*>(name.CString()), name.Length(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
 
-    bool dropped = false;
-    if (ui::BeginDragDropTarget())
+    if (eventNamespace != nullptr)
     {
-        const Variant& payload = ui::AcceptDragDropVariant("path");
-        if (!payload.IsEmpty())
+        bool dropped = false;
+        if (ui::BeginDragDropTarget())
         {
-            resource = eventNamespace->GetCache()->GetResource(type, payload.GetString());
-            dropped = resource.NotNull();
+            const Variant& payload = ui::AcceptDragDropVariant("path");
+            if (!payload.IsEmpty())
+            {
+                resource = eventNamespace->GetCache()->GetResource(type, payload.GetString());
+                dropped = resource.NotNull();
+            }
+            ui::EndDragDropTarget();
         }
-        ui::EndDragDropTarget();
-    }
-    ui::SetHelpTooltip("Drag resource here.");
+        ui::SetHelpTooltip("Drag resource here.");
 
-    if (dropped)
-    {
-        result = resource->GetName();
-        returnValue = true;
+        if (dropped)
+        {
+            result = resource->GetName();
+            returnValue = true;
+        }
+
+        ui::SameLine(VAR_RESOURCEREF);
+        if (ui::IconButton(ICON_FA_CROSSHAIRS))
+        {
+            eventNamespace->SendEvent(E_INSPECTORLOCATERESOURCE, InspectorLocateResource::P_NAME, name);
+        }
+        ui::SetHelpTooltip("Locate resource.");
     }
 
-    ui::SameLine();
-    if (ui::IconButton(ICON_FA_CROSSHAIRS))
-    {
-        eventNamespace->SendEvent(E_INSPECTORLOCATERESOURCE, InspectorLocateResource::P_NAME, name);
-    }
-    ui::SetHelpTooltip("Locate resource");
-
-    ui::SameLine();
+    ui::SameLine(VAR_RESOURCEREF);
     if (ui::IconButton(ICON_FA_TRASH))
     {
         result.Clear();
         returnValue = true;
     }
-    ui::SetHelpTooltip("Stop using resource");
-
-    ui::GetStyle().ItemSpacing.x = oldSpacing;
+    ui::SetHelpTooltip("Stop using resource.");
 
     return returnValue;
 }
@@ -343,27 +341,28 @@ bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespac
 //            case VAR_VARIANTVECTOR:
         case VAR_VARIANTMAP:
         {
-            ui::PushID(VAR_VARIANTMAP);
             struct VariantMapState
             {
-                bool insertingNew = false;
                 std::string fieldName;
                 int variantTypeIndex = 0;
+                bool insertingNew = false;
             };
+
+            ui::IdScope idScope(VAR_VARIANTMAP);
+            ui::IndentScope indentScope(15_dpx);
 
             auto* mapState = ui::GetUIState<VariantMapState>();
             auto* map = value.GetVariantMapPtr();
             if (ui::Button(ICON_FA_PLUS))
                 mapState->insertingNew = true;
 
-            ui::Indent(15_dpx);
             for (auto it = map->Begin(); it != map->End(); it++)
             {
                 const String& name = StringHash::GetGlobalStringHashRegister()->GetString(it->first_);
                 ui::TextUnformatted(name.CString());
                 state->NextColumn();
-                ui::PushID(name.CString());
-                ui::PushItemWidth(-22_dpx); // Space for trashcan button. TODO: trashcan goes out of screen a little for matrices.
+                ui::IdScope entryIdScope(name.CString());
+                ui::PushItemWidth(-20_dpx); // Space for trashcan button. TODO: trashcan goes out of screen a little for matrices.
                 modified |= RenderSingleAttribute(state, eventNamespace, nullptr, it->second_);
                 ui::PopItemWidth();
                 ui::SameLine();
@@ -371,23 +370,19 @@ bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespac
                 {
                     it = map->Erase(it);
                     modified |= true;
-                    ui::PopID();
                     break;
                 }
-                ui::PopID();
             }
 
             if (mapState->insertingNew)
             {
                 auto firstColumnWidth = ui::GetContentRegionMax().x - (ui::GetContentRegionMax().x - state->autoColumn_.currentMaxWidth_) - ui::GetCursorPosX();
                 //auto secondColumn = ui::GetContentRegionMax().x - firstColumnWidth - 15_dpx;
-                ui::PushItemWidth(firstColumnWidth);
-                ui::InputText("###Key", &mapState->fieldName);
-                ui::PopItemWidth();
+                UI_ITEMWIDTH(firstColumnWidth)
+                    ui::InputText("###Key", &mapState->fieldName);
                 state->NextColumn();
-                ui::PushItemWidth(-22_dpx); // Space for OK button
-                ui::Combo("###Type", &mapState->variantTypeIndex, supportedVariantNames, MAX_SUPPORTED_VAR_TYPES);
-                ui::PopItemWidth();
+                UI_ITEMWIDTH(-20_dpx) // Space for OK button
+                    ui::Combo("###Type", &mapState->variantTypeIndex, supportedVariantNames, MAX_SUPPORTED_VAR_TYPES);
                 ui::SameLine();
                 if (ui::Button(ICON_FA_CHECK))
                 {
@@ -401,9 +396,6 @@ bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespac
                     }
                 }
             }
-
-            ui::Unindent(15_dpx);
-            ui::PopID();
             break;
         }
         case VAR_INTRECT:
@@ -756,4 +748,38 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
     return isOpen;
 }
 
+bool RenderSingleAttribute(AttributeInspectorState* state, Variant& value)
+{
+    return RenderSingleAttribute(state, nullptr, nullptr, value);
+}
+
+}
+
+void ImGui::SameLine(Urho3D::VariantType type)
+{
+    using namespace Urho3D;
+
+    float spacingFix;
+    switch (type)
+    {
+    case VAR_VECTOR2:
+    case VAR_VECTOR3:
+    case VAR_VECTOR4:
+    case VAR_QUATERNION:
+    case VAR_COLOR:
+    case VAR_INTRECT:
+    case VAR_INTVECTOR2:
+    case VAR_MATRIX3:
+    case VAR_MATRIX3X4:
+    case VAR_MATRIX4:
+    case VAR_RECT:
+    case VAR_INTVECTOR3:
+        spacingFix = 0;
+        break;
+    default:
+        spacingFix = 2_dpx;
+        break;
+    }
+
+    ui::SameLine(0, spacingFix);
 }
