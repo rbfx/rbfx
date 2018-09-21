@@ -402,7 +402,8 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             };
 
             ui::NextColumn();
-            ui::InputText("###Name", &paramState->fieldName_);
+            UI_ITEMWIDTH(-1)
+                ui::InputText("###Name", &paramState->fieldName_);
             ui::SetHelpTooltip("Shader parameter name.");
 
             ui::NextColumn();
@@ -410,7 +411,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
                 ui::Combo("###Type", &paramState->variantTypeIndex_, shaderParameterVariantNames, SDL_arraysize(shaderParameterVariantTypes));
             ui::SetHelpTooltip("Shader parameter type.");
 
-            ui::SameLine(0, 2_dpx);
+            ui::SameLine(0, 4_dpx);
             if (ui::Button(ICON_FA_CHECK))
             {
                 if (!paramState->fieldName_.empty() && material->GetShaderParameter(paramState->fieldName_.c_str()).GetType() == VAR_NONE)   // TODO: Show warning about duplicate name

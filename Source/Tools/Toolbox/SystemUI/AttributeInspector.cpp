@@ -344,14 +344,17 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             for (auto it = map->Begin(); it != map->End(); it++)
             {
                 const String& name = StringHash::GetGlobalStringHashRegister()->GetString(it->first_);
+
+                // Column-friendly indent
                 ui::NewLine();
                 ui::SameLine(20_dpx);
+
                 ui::TextUnformatted(name.CString());
                 ui::NextColumn();
                 ui::IdScope entryIdScope(name.CString());
-                UI_ITEMWIDTH(-20_dpx) // Space for trashcan button. TODO: trashcan goes out of screen a little for matrices.
+                UI_ITEMWIDTH(-22_dpx) // Space for trashcan button. TODO: trashcan goes out of screen a little for matrices.
                     modified |= RenderSingleAttribute(eventNamespace, nullptr, it->second_);
-                ui::SameLine();
+                ui::SameLine(it->second_.GetType());
                 if (ui::Button(ICON_FA_TRASH))
                 {
                     it = map->Erase(it);
@@ -366,11 +369,12 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             if (mapState->insertingNew)
             {
                 ui::NextColumn();
-                ui::InputText("###Key", &mapState->fieldName);
+                UI_ITEMWIDTH(-1)
+                    ui::InputText("###Key", &mapState->fieldName);
                 ui::NextColumn();
-                UI_ITEMWIDTH(-20_dpx) // Space for OK button
+                UI_ITEMWIDTH(-22_dpx) // Space for OK button
                     ui::Combo("###Type", &mapState->variantTypeIndex, supportedVariantNames, MAX_SUPPORTED_VAR_TYPES);
-                ui::SameLine();
+                ui::SameLine(0, 4_dpx);
                 if (ui::Button(ICON_FA_CHECK))
                 {
                     if (map->Find(mapState->fieldName.c_str()) == map->End())   // TODO: Show warning about duplicate name
