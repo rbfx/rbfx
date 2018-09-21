@@ -19,6 +19,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 #include <CLI11/CLI11.hpp>
 
@@ -40,6 +43,7 @@
 #include "Tabs/ResourceTab.h"
 #include "Assets/AssetConverter.h"
 #include "Assets/Inspector/MaterialInspector.h"
+
 
 
 URHO3D_DEFINE_APPLICATION_MAIN(Editor);
