@@ -51,6 +51,8 @@ Project::Project(Context* context)
 
 Project::~Project()
 {
+    ui::GetIO().IniFilename = nullptr;
+
     if (auto* cache = GetCache())
     {
         cache->RemoveResourceDir(GetCachePath());
@@ -127,6 +129,9 @@ bool Project::LoadProject(const String& projectPath)
             GetCache()->RemoveResourceDir(path);
         }
     }
+
+    uiConfigPath_ = projectPath + "/.ui.ini";
+    ui::GetIO().IniFilename = uiConfigPath_.CString();
 
     // Load default layout if no user config exists
     if (!GetFileSystem()->Exists(projectFilePath_))

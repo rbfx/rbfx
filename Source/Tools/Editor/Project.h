@@ -57,8 +57,10 @@ protected:
     String projectFileDir_;
     /// Converter responsible for watching resource directories and converting assets to required formats.
     AssetConverter assetConverter_;
-    ///
+    /// Copy of engine resource paths that get unregistered when project is loaded.
     StringVector cachedEngineResourcePaths_;
+    /// Path to imgui settings ini file.
+    String uiConfigPath_;
 };
 
 
