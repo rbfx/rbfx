@@ -53,7 +53,6 @@ namespace Urho3D
 {
 
 VariantType supportedVariantTypes[] = {
-    VAR_NONE,
     VAR_INT,
     VAR_BOOL,
     VAR_FLOAT,
@@ -82,7 +81,6 @@ VariantType supportedVariantTypes[] = {
 const int MAX_SUPPORTED_VAR_TYPES = SDL_arraysize(supportedVariantTypes);
 
 const char* supportedVariantNames[] = {
-    "None",
     "Int",
     "Bool",
     "Float",
@@ -157,12 +155,7 @@ bool RenderResourceRef(Object* eventNamespace, StringHash type, const String& na
     return returnValue;
 }
 
-void AttributeInspectorState::NextColumn()
-{
-    autoColumn_.NextColumn();
-}
-
-bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespace, const AttributeInfo* info, Variant& value)
+bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Variant& value)
 {
     const float floatMin = -14000.f;
     const float floatMax = 14000.f;
@@ -304,32 +297,24 @@ bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespac
             auto& refList = value.GetResourceRefList();
             for (auto i = 0; i < refList.names_.Size(); i++)
             {
-                ui::PushID(i);
-                String result;
-
-                auto refType = refList.type_;
-                if (refType == StringHash::ZERO && info)
-                    refType = info->defaultValue_.GetResourceRef().type_;
-
-                if (RenderResourceRef(eventNamespace, refType, refList.names_[i], result))
+                UI_ID(i)
                 {
-                    ResourceRefList newRefList(refList);
-                    newRefList.names_[i] = result;
-                    value = newRefList;
-                    modified = true;
-                    ui::PopID();
-                    break;
-                }
-                ui::PopID();
+                    String result;
 
-                // Render labels for multiple resources
-                if (i < refList.names_.Size() - 1)
-                {
-                    ui::PushID(i + 1);
-                    //ui::TextColored(ToImGui(Color::WHITE), "%s", info.name_.CString());
-                    state->autoColumn_.NextColumn();
-                    ui::PopID();
+                    auto refType = refList.type_;
+                    if (refType == StringHash::ZERO && info)
+                        refType = info->defaultValue_.GetResourceRef().type_;
+
+                    modified |= RenderResourceRef(eventNamespace, refType, refList.names_[i], result);
+                    if (modified)
+                    {
+                        ResourceRefList newRefList(refList);
+                        newRefList.names_[i] = result;
+                        value = newRefList;
+                        break;
+                    }
                 }
+
             }
             if (refList.names_.Empty())
             {
@@ -349,22 +334,23 @@ bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespac
             };
 
             ui::IdScope idScope(VAR_VARIANTMAP);
-            ui::IndentScope indentScope(15_dpx);
 
             auto* mapState = ui::GetUIState<VariantMapState>();
             auto* map = value.GetVariantMapPtr();
             if (ui::Button(ICON_FA_PLUS))
                 mapState->insertingNew = true;
+            ui::NextColumn();
 
             for (auto it = map->Begin(); it != map->End(); it++)
             {
                 const String& name = StringHash::GetGlobalStringHashRegister()->GetString(it->first_);
+                ui::NewLine();
+                ui::SameLine(20_dpx);
                 ui::TextUnformatted(name.CString());
-                state->NextColumn();
+                ui::NextColumn();
                 ui::IdScope entryIdScope(name.CString());
-                ui::PushItemWidth(-20_dpx); // Space for trashcan button. TODO: trashcan goes out of screen a little for matrices.
-                modified |= RenderSingleAttribute(state, eventNamespace, nullptr, it->second_);
-                ui::PopItemWidth();
+                UI_ITEMWIDTH(-20_dpx) // Space for trashcan button. TODO: trashcan goes out of screen a little for matrices.
+                    modified |= RenderSingleAttribute(eventNamespace, nullptr, it->second_);
                 ui::SameLine();
                 if (ui::Button(ICON_FA_TRASH))
                 {
@@ -372,15 +358,16 @@ bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespac
                     modified |= true;
                     break;
                 }
+
+                if (it->first_ != map->Back().first_)
+                    ui::NextColumn();
             }
 
             if (mapState->insertingNew)
             {
-                auto firstColumnWidth = ui::GetContentRegionMax().x - (ui::GetContentRegionMax().x - state->autoColumn_.currentMaxWidth_) - ui::GetCursorPosX();
-                //auto secondColumn = ui::GetContentRegionMax().x - firstColumnWidth - 15_dpx;
-                UI_ITEMWIDTH(firstColumnWidth)
-                    ui::InputText("###Key", &mapState->fieldName);
-                state->NextColumn();
+                ui::NextColumn();
+                ui::InputText("###Key", &mapState->fieldName);
+                ui::NextColumn();
                 UI_ITEMWIDTH(-20_dpx) // Space for OK button
                     ui::Combo("###Type", &mapState->variantTypeIndex, supportedVariantNames, MAX_SUPPORTED_VAR_TYPES);
                 ui::SameLine();
@@ -476,9 +463,8 @@ bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespac
                     modified = true;
 
                     // Expire buffer of this new item just in case other item already used it.
-                    ui::PushID(v.Size());
-                    ui::ExpireUIState<std::string>();
-                    ui::PopID();
+                    UI_ID(v.Size())
+                        ui::ExpireUIState<std::string>();
                 }
                 if (ui::IsItemHovered())
                     ui::SetTooltip("Press [Enter] to insert new item.");
@@ -490,7 +476,7 @@ bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespac
             {
                 String& sv = *it;
 
-                ui::PushID(++index);
+                ui::IdScope idScope(++index);
                 auto* buffer = ui::GetUIState<std::string>(sv.CString());
                 if (ui::Button(ICON_FA_TRASH))
                 {
@@ -523,7 +509,6 @@ bool RenderSingleAttribute(AttributeInspectorState* state, Object* eventNamespac
                         sv = *buffer;
                     ++it;
                 }
-                ui::PopID();
             }
 
             if (modified)
@@ -572,19 +557,26 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
 {
     if (eventNamespace == nullptr)
         eventNamespace = ui::GetSystemUI();
-    auto* state = ui::GetUIState<AttributeInspectorState>(eventNamespace->GetContext());
 
     auto isOpen = ui::CollapsingHeader(item->GetTypeName().CString(), ImGuiTreeNodeFlags_DefaultOpen);
     if (isOpen)
     {
-        const char* modifiedThisFrame = nullptr;
         const Vector<AttributeInfo>* attributes = item->GetAttributes();
         if (attributes == nullptr)
             return false;
 
         ui::PushID(item);
-
         eventNamespace->SendEvent(E_INSPECTORRENDERSTART);
+
+        UI_UPIDSCOPE(1)
+        {
+            // Show coolumns after custom widgets at inspector start, but have them in a global context. Columns of all
+            // components will be resized simultaneously.
+            // [/!\ WARNING /!\]
+            // Adding new ID scopes here will break code in custom inspector widgets if that code uses ui::Columns() calls.
+            // [/!\ WARNING /!\]
+            ui::Columns(2);
+        }
 
         for (const AttributeInfo& info: *attributes)
         {
@@ -689,7 +681,7 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
             if (expireBuffers)
                 ui::ExpireUIState<std::string>();
 
-            state->autoColumn_.NextColumn();
+            ui::NextColumn();
 
             ui::PushItemWidth(-1);
 
@@ -698,7 +690,6 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
             {
                 using namespace InspectorRenderAttribute;
                 VariantMap args{ };
-                args[P_STATE] = (void*)state;
                 args[P_ATTRIBUTEINFO] = (void*) &info;
                 args[P_SERIALIZABLE] = item;
                 args[P_HANDLED] = false;
@@ -710,7 +701,7 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
                     modified |= args[P_MODIFIED].GetBool();
                 else
                     // Rendering of default widgets for Variant values.
-                    modified |= RenderSingleAttribute(state, eventNamespace, &info, value);
+                    modified |= RenderSingleAttribute(eventNamespace, &info, value);
             }
 
             // Normal attributes
@@ -738,19 +729,20 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
 
             ui::PopItemWidth();
             ui::PopID();
+
+            ui::NextColumn();
         }
-
+        ui::Columns();
         eventNamespace->SendEvent(E_INSPECTORRENDEREND);
-
         ui::PopID();
     }
 
     return isOpen;
 }
 
-bool RenderSingleAttribute(AttributeInspectorState* state, Variant& value)
+bool RenderSingleAttribute(Variant& value)
 {
-    return RenderSingleAttribute(state, nullptr, nullptr, value);
+    return RenderSingleAttribute(nullptr, nullptr, value);
 }
 
 }

@@ -26,10 +26,10 @@
 #include <array>
 
 #include "ToolboxAPI.h"
-#include "AutoColumn.h"
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/Core/Variant.h>
+#include <Urho3D/SystemUI/SystemUI.h>
 
 
 namespace Urho3D
@@ -52,7 +52,6 @@ URHO3D_EVENT(E_INSPECTORRENDEREND, InspectorRenderEnd)
 
 URHO3D_EVENT(E_INSPECTORRENDERATTRIBUTE, InspectorRenderAttribute)
 {
-    URHO3D_PARAM(P_STATE, State);                                               // void*
     URHO3D_PARAM(P_ATTRIBUTEINFO, AttributeInfo);                               // void*
     URHO3D_PARAM(P_SERIALIZABLE, Serializable);                                 // RefCounted*
     URHO3D_PARAM(P_HANDLED, Handled);                                           // bool
@@ -98,19 +97,6 @@ protected:
     bool lastFrameModified_ = false;
 };
 
-struct URHO3D_TOOLBOX_API AttributeInspectorState
-{
-    AttributeInspectorState(Context* context)
-        : autoColumn_(context)
-    {
-    }
-
-    /// Object keeping track of automatic width of first column.
-    AutoColumn autoColumn_;
-
-    void NextColumn();
-};
-
 /// A dummy object used as namespace for subscribing to events.
 class URHO3D_TOOLBOX_API AttributeInspector : public Object
 {
@@ -123,7 +109,7 @@ public:
 /// If `filter` is not null then only attributes containing this substring will be rendered.
 /// If `eventNamespace` is not null then this object will be used to send events.
 URHO3D_TOOLBOX_API bool RenderAttributes(Serializable* item, const char* filter=nullptr, Object* eventNamespace=nullptr);
-URHO3D_TOOLBOX_API bool RenderSingleAttribute(AttributeInspectorState* state, Variant& value);
+URHO3D_TOOLBOX_API bool RenderSingleAttribute(Variant& value);
 
 }
 

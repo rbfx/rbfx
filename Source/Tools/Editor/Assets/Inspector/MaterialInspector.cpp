@@ -185,43 +185,11 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
     using namespace InspectorRenderAttribute;
     AttributeInfo& info = *reinterpret_cast<AttributeInfo*>(args[P_ATTRIBUTEINFO].GetVoidPtr());
     Material* material = (dynamic_cast<Inspectable::Material*>(args[P_SERIALIZABLE].GetPtr()))->GetMaterial();
-    auto* state = reinterpret_cast<AttributeInspectorState*>(args[P_STATE].GetVoidPtr());
 
-    if (info.name_ == "Depth Bias")
+    if (info.name_ == "Techniques")
     {
-        ui::NewLine();
-        ui::IndentScope indentScope(15_dpx);
-
-        BiasParameters bias = material->GetDepthBias();
-
-        ui::TextUnformatted("Constant Bias");
-        state->NextColumn();
-        bool modified = ui::DragFloat("###Constant Bias", &bias.constantBias_, 0.01f, -1, 1);
-
-        ui::TextUnformatted("Slope Scaled Bias");
-        state->NextColumn();
-        modified |= ui::DragFloat("###Slope Scaled Bias", &bias.slopeScaledBias_, 0.01f, -16, 16);
-
-        ui::TextUnformatted("Normal Offset");
-        state->NextColumn();
-        modified |= ui::DragFloat("###Normal Offset", &bias.normalOffset_, 0.01f, 0, M_INFINITY);
-
-        // Track undo
-        auto* modification = ui::GetUIState<ModifiedStateTracker<BiasParameters>>();
-        if (modification->TrackModification(modified, [material]() { return material->GetDepthBias(); }))
-            undo_.Track<Undo::DepthBiasAction>(material, modification->GetInitialValue(), bias);
-
-        // Always accept modified values
-        if (modified)
-            material->SetDepthBias(bias);
-
-        args[P_HANDLED] = true;
-    }
-    else if (info.name_ == "Techniques")
-    {
-        ui::NewLine();
-
-        ui::IndentScope indentScope(15_dpx);
+        ui::NextColumn();
+        auto secondColWidth = ui::GetColumnWidth(1) - ui::GetStyle().ItemSpacing.x * 2;
 
         bool modified = false;
         for (unsigned i = 0; i < material->GetNumTechniques(); i++)
@@ -229,15 +197,16 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             if (i > 0)
                 ui::Separator();
 
-            ui::IdScope techniqueIdScope(i);
-            auto tech = material->GetTechniqueEntry(i);
-            auto modification = ui::GetUIState<ModifiedStateTracker<TechniqueEntry>>();
+            ui::IdScope idScope(i);
 
+            auto tech = material->GetTechniqueEntry(i);
+            auto* modification = ui::GetUIState<ModifiedStateTracker<TechniqueEntry>>();
+
+            ui::Columns();
             String techName = tech.technique_->GetName();
-            ui::PushItemWidth(material->GetNumTechniques() > 1 ? -44_dpx : -22_dpx);
-            ui::InputText("###techniqueName_", const_cast<char*>(techName.CString()), techName.Length(),
-                          ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
-            ui::PopItemWidth();
+            UI_ITEMWIDTH(material->GetNumTechniques() > 1 ? -44_dpx : -22_dpx)
+                ui::InputText("###techniqueName_", const_cast<char*>(techName.CString()), techName.Length(),
+                              ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
 
             if (ui::BeginDragDropTarget())
             {
@@ -283,11 +252,21 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
                 }
             }
 
+            UI_UPIDSCOPE(3)            // Technique, attribute and serializable scopes
+                ui::Columns(2);
+
+            bool modifiedField = false;
+            auto secondColWidth = ui::GetColumnWidth(1) - ui::GetStyle().ItemSpacing.x * 2;
+
             // ---------------------------------------------------------------------------------------------------------
 
+            ui::NewLine();
+            ui::SameLine(20_dpx);
             ui::TextUnformatted("LOD Distance");
-            state->NextColumn();
-            bool modifiedField = ui::DragFloat("###LOD Distance", &tech.lodDistance_);
+            ui::NextColumn();
+            UI_ITEMWIDTH(secondColWidth)
+                modifiedField |= ui::DragFloat("###LOD Distance", &tech.lodDistance_);
+            ui::NextColumn();
 
             // ---------------------------------------------------------------------------------------------------------
 
@@ -295,9 +274,13 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
                 "Low", "Medium", "High", "Ultra", "Max"
             };
 
+            ui::NewLine();
+            ui::SameLine(20_dpx);
             ui::TextUnformatted("Quality");
-            state->NextColumn();
-            modifiedField |= ui::Combo("###Quality", reinterpret_cast<int*>(&tech.qualityLevel_), qualityNames, SDL_arraysize(qualityNames));
+            ui::NextColumn();
+            UI_ITEMWIDTH(secondColWidth)
+                modifiedField |= ui::Combo("###Quality", reinterpret_cast<int*>(&tech.qualityLevel_), qualityNames, SDL_arraysize(qualityNames));
+            ui::NextColumn();
 
             if (modification->TrackModification(modifiedField, [material, i]() { return material->GetTechniqueEntry(i); }))
                 undo_.Track<Undo::TechniqueChangedAction>(material, i, &modification->GetInitialValue(), &tech);
@@ -308,9 +291,13 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             modified |= modifiedField;
         }
 
+        ui::Columns();
         const char addNewTechnique[]{"Add New Technique"};
-        ui::InputText("###Add Technique", const_cast<char*>(addNewTechnique), sizeof(addNewTechnique),
-            ImGuiInputTextFlags_ReadOnly);
+        UI_ITEMWIDTH(-1)
+        {
+            ui::InputText("###Add Technique", const_cast<char*>(addNewTechnique), sizeof(addNewTechnique),
+                          ImGuiInputTextFlags_ReadOnly);
+        }
         if (ui::BeginDragDropTarget())
         {
             const Variant& payload = ui::AcceptDragDropVariant("path");
@@ -330,6 +317,12 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
         }
         ui::SetHelpTooltip("Drag and drop technique resource here.");
 
+        UI_UPIDSCOPE(2)            // Attribute and serializable scopes
+        {
+            ui::Columns(2);
+            ui::NextColumn();      // Custom widget must end rendering in second column
+        }
+
         args[P_HANDLED] = true;
         args[P_MODIFIED] = modified;
     }
@@ -346,8 +339,8 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
         if (ui::Button(ICON_FA_PLUS))
             paramState->insertingNew_ = true;
         ui::SetHelpTooltip("Add new shader parameter.");
+        ui::NextColumn();
 
-        ui::IndentScope indentScope(15_dpx);
         bool modified = false;
 
         const auto& parameters = material->GetShaderParameters();
@@ -357,13 +350,15 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             ui::IdScope id(parameterName.CString());
             auto* modification = ui::GetUIState<ModifiedStateTracker<Variant>>();
 
+            ui::NewLine();
+            ui::SameLine(20_dpx);
             ui::TextUnformatted(parameterName.CString());
-            state->NextColumn();
+            ui::NextColumn();
             Variant value = pair.second_.value_;
 
             UI_ITEMWIDTH(-22_dpx)
             {
-                bool modifiedNow = RenderSingleAttribute(state, value);
+                bool modifiedNow = RenderSingleAttribute(value);
                 if (modification->TrackModification(modifiedNow, [material, &parameterName]() { return material->GetShaderParameter(parameterName); }))
                 {
                     undo_.Track<Undo::ShaderParameterChangedAction>(material, parameterName, modification->GetInitialValue(), value);
@@ -381,8 +376,10 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
                 modified = true;
                 break;
             }
-        }
 
+            if (parameters.Back().first_ != pair.first_)
+                ui::NextColumn();
+        }
 
         if (paramState->insertingNew_)
         {
@@ -404,13 +401,11 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
                 "Rect",
             };
 
-            auto firstColumnWidth = ui::GetContentRegionMax().x - (ui::GetContentRegionMax().x - state->autoColumn_.currentMaxWidth_) - ui::GetCursorPosX();
-            //auto secondColumn = ui::GetContentRegionMax().x - firstColumnWidth - 15_dpx;
-            UI_ITEMWIDTH(firstColumnWidth)
-                ui::InputText("###Name", &paramState->fieldName_);
+            ui::NextColumn();
+            ui::InputText("###Name", &paramState->fieldName_);
             ui::SetHelpTooltip("Shader parameter name.");
 
-            state->NextColumn();
+            ui::NextColumn();
             UI_ITEMWIDTH(-22_dpx) // Space for OK button
                 ui::Combo("###Type", &paramState->variantTypeIndex_, shaderParameterVariantNames, SDL_arraysize(shaderParameterVariantTypes));
             ui::SetHelpTooltip("Shader parameter type.");
@@ -418,7 +413,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             ui::SameLine(0, 2_dpx);
             if (ui::Button(ICON_FA_CHECK))
             {
-                if (material->GetShaderParameter(paramState->fieldName_.c_str()).GetType() == VAR_NONE)   // TODO: Show warning about duplicate name
+                if (!paramState->fieldName_.empty() && material->GetShaderParameter(paramState->fieldName_.c_str()).GetType() == VAR_NONE)   // TODO: Show warning about duplicate name
                 {
                     Variant value{shaderParameterVariantTypes[paramState->variantTypeIndex_]};
                     undo_.Track<Undo::ShaderParameterChangedAction>(material, paramState->fieldName_.c_str(), Variant{}, value);
@@ -493,8 +488,54 @@ void Inspectable::Material::RegisterObject(Context* context)
         URHO3D_CUSTOM_ATTRIBUTE("Occlusion", getter, setter, bool, false, AM_EDIT);
     }
 
+    // Occlusion
+    {
+        auto getter = [](const Inspectable::Material& inspectable, Variant& value)        { value = inspectable.GetMaterial()->GetOcclusion(); };
+        auto setter = [](const Inspectable::Material& inspectable, const Variant& value)  { inspectable.GetMaterial()->SetOcclusion(value.GetBool()); };
+        URHO3D_CUSTOM_ATTRIBUTE("Occlusion", getter, setter, bool, false, AM_EDIT);
+    }
+
+    // Occlusion
+    {
+        auto getter = [](const Inspectable::Material& inspectable, Variant& value)        { value = inspectable.GetMaterial()->GetOcclusion(); };
+        auto setter = [](const Inspectable::Material& inspectable, const Variant& value)  { inspectable.GetMaterial()->SetOcclusion(value.GetBool()); };
+        URHO3D_CUSTOM_ATTRIBUTE("Occlusion", getter, setter, bool, false, AM_EDIT);
+    }
+
+    // Constant Bias
+    {
+        auto getter = [](const Inspectable::Material& inspectable, Variant& value)        { value = inspectable.GetMaterial()->GetDepthBias().constantBias_; };
+        auto setter = [](const Inspectable::Material& inspectable, const Variant& value)  {
+            auto bias = inspectable.GetMaterial()->GetDepthBias();
+            bias.constantBias_ = value.GetFloat();
+            inspectable.GetMaterial()->SetDepthBias(bias);
+        };
+        URHO3D_CUSTOM_ATTRIBUTE("Constant Bias", getter, setter, float, 0.0f, AM_EDIT);
+    }
+
+    // Slope Scaled Bias
+    {
+        auto getter = [](const Inspectable::Material& inspectable, Variant& value)        { value = inspectable.GetMaterial()->GetDepthBias().slopeScaledBias_; };
+        auto setter = [](const Inspectable::Material& inspectable, const Variant& value)  {
+            auto bias = inspectable.GetMaterial()->GetDepthBias();
+            bias.slopeScaledBias_ = value.GetFloat();
+            inspectable.GetMaterial()->SetDepthBias(bias);
+        };
+        URHO3D_CUSTOM_ATTRIBUTE("Slope Scaled Bias", getter, setter, float, 0.0f, AM_EDIT);
+    }
+
+    // Normal Offset
+    {
+        auto getter = [](const Inspectable::Material& inspectable, Variant& value)        { value = inspectable.GetMaterial()->GetDepthBias().normalOffset_; };
+        auto setter = [](const Inspectable::Material& inspectable, const Variant& value)  {
+            auto bias = inspectable.GetMaterial()->GetDepthBias();
+            bias.normalOffset_ = value.GetFloat();
+            inspectable.GetMaterial()->SetDepthBias(bias);
+        };
+        URHO3D_CUSTOM_ATTRIBUTE("Normal Offset", getter, setter, float, 0.0f, AM_EDIT);
+    }
+
     // Dummy attributes used for rendering custom widgets in inspector.
-    URHO3D_CUSTOM_ATTRIBUTE("Depth Bias", [](const Inspectable::Material&, Variant&){}, [](const Inspectable::Material&, const Variant&){}, unsigned, Variant{}, AM_EDIT);
     URHO3D_CUSTOM_ATTRIBUTE("Techniques", [](const Inspectable::Material&, Variant&){}, [](const Inspectable::Material&, const Variant&){}, unsigned, Variant{}, AM_EDIT);
     URHO3D_CUSTOM_ATTRIBUTE("Shader Parameters", [](const Inspectable::Material&, Variant&){}, [](const Inspectable::Material&, const Variant&){}, unsigned, Variant{}, AM_EDIT);
 

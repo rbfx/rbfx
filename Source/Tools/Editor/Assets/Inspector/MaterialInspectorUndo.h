@@ -35,21 +35,6 @@ namespace Urho3D
 namespace Undo
 {
 
-/// Tracks modifications to depth bias in material.
-class DepthBiasAction
-    : public EditAction
-{
-    Context* context_;
-    String material_;
-    BiasParameters oldParameters_;
-    BiasParameters newParameters_;
-
-public:
-    DepthBiasAction(Material* material, const BiasParameters& oldValue, const BiasParameters& newValue);
-    void Undo() override;
-    void Redo() override;
-};
-
 /// Tracks addition, removal and modification of techniques in material
 class TechniqueChangedAction
         : public EditAction

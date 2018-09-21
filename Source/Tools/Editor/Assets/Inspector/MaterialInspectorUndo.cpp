@@ -28,26 +28,6 @@ namespace Urho3D
 namespace Undo
 {
 
-DepthBiasAction::DepthBiasAction(Material* material, const BiasParameters& oldValue, const BiasParameters& newValue)
-    : context_(material->GetContext())
-    , material_(material->GetName())
-{
-    oldParameters_ = oldValue;
-    newParameters_ = newValue;
-}
-
-void DepthBiasAction::Undo()
-{
-    if (auto* material = context_->GetCache()->GetResource<Material>(material_))
-        material->SetDepthBias(oldParameters_);
-}
-
-void DepthBiasAction::Redo()
-{
-    if (auto* material = context_->GetCache()->GetResource<Material>(material_))
-        material->SetDepthBias(newParameters_);
-}
-
 TechniqueChangedAction::TechniqueChangedAction(const Material* material, unsigned index, const TechniqueEntry* oldEntry, const TechniqueEntry* newEntry)
     : context_(material->GetContext())
     , materialName_(material->GetName())
