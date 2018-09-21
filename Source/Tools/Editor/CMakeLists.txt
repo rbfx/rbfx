@@ -25,6 +25,10 @@ if (NOT URHO3D_SYSTEMUI)
 endif ()
 
 file (GLOB_RECURSE SOURCE_FILES *.cpp *.h *.hpp)
-add_executable (Editor WIN32 ${SOURCE_FILES})
+
+if (NOT URHO3D_WIN32_CONSOLE)
+	set (TARGET_TYPE WIN32)
+endif ()
+add_executable (Editor ${TARGET_TYPE} ${SOURCE_FILES})
 target_link_libraries (Editor Toolbox Urho3D)
 install(TARGETS Editor RUNTIME DESTINATION ${DEST_TOOLS_DIR})
