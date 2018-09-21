@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include <limits>
+
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Core/CoreEvents.h>
@@ -157,8 +159,10 @@ bool RenderResourceRef(Object* eventNamespace, StringHash type, const String& na
 
 bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Variant& value)
 {
-    const float floatMin = -14000.f;
-    const float floatMax = 14000.f;
+    const float floatMin = -std::numeric_limits<float>::infinity();
+    const float floatMax = std::numeric_limits<float>::infinity();
+    const double doubleMin = -std::numeric_limits<double>::infinity();
+    const double doubleMax = std::numeric_limits<double>::infinity();
     const float floatStep = 0.01f;
     const float power = 3.0f;
 
@@ -446,11 +450,10 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         }
         case VAR_DOUBLE:
         {
-            // TODO: replace this with custom control that properly handles double types.
-            auto v = static_cast<float>(value.GetDouble());
-            modified |= ui::DragFloat("", &v, floatStep, floatMin, floatMax, "%.3f", power);
+            auto v = value.GetDouble();
+            modified |= ui::DragScalar("", ImGuiDataType_Double, &v, floatStep, &doubleMin, &doubleMax, "%.3f", power);
             if (modified)
-                value = (double)v;
+                value = v;
             break;
         }
         case VAR_STRINGVECTOR:
@@ -541,13 +544,12 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         }
         case VAR_INT64:
         {
-            // TODO: replace this with custom control that properly handles int types.
-            auto v = static_cast<int>(value.GetInt64());
-            if (value.GetInt64() > M_MAX_INT || value.GetInt64() < M_MIN_INT)
-                URHO3D_LOGWARNINGF("AttributeInspector truncated 64bit integer value.");
-            modified |= ui::DragInt("", &v, 1, M_MIN_INT, M_MAX_INT, "%d");
+            auto minVal = std::numeric_limits<long long int>::min();
+            auto maxVal = std::numeric_limits<long long int>::max();
+            auto v = value.GetInt64();
+            modified |= ui::DragScalar("", ImGuiDataType_S64, &v, 1, &minVal, &maxVal);
             if (modified)
-                value = (long long)v;
+                value = v;
             break;
         }
         default:
@@ -773,7 +775,7 @@ void ImGui::SameLine(Urho3D::VariantType type)
         spacingFix = 0;
         break;
     default:
-        spacingFix = 2_dpx;
+        spacingFix = 4_dpx;
         break;
     }
 
