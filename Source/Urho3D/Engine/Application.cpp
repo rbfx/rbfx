@@ -22,16 +22,17 @@
 
 #include "../Precompiled.h"
 
+#include "../Core/Profiler.h"
 #include "../Engine/Application.h"
 #include "../Engine/EngineEvents.h"
 #include "../IO/IOEvents.h"
 #include "../IO/Log.h"
-#include "../Core/Profiler.h"
 
 #if defined(IOS) || defined(TVOS)
 #include "../Graphics/Graphics.h"
 #include <SDL/SDL.h>
 #endif
+#include <CLI11/CLI11.hpp>
 
 #include "../DebugNew.h"
 
@@ -49,12 +50,13 @@ void RunFrame(void* data)
 }
 #endif
 
+/// Command line parser.
+static CLI::App commandLine_{};
+
 Application::Application(Context* context) :
     Object(context),
     exitCode_(EXIT_SUCCESS)
 {
-    engineParameters_ = Engine::ParseParameters(GetArguments());
-
     // Create the Engine, but do not initialize it yet. Subsystems except Graphics & Renderer are registered at this point
     engine_ = new Engine(context);
 
@@ -70,7 +72,31 @@ int Application::Run()
     try
     {
 #endif
+        // Register engine command line arguments
+        Engine::DefineParameters(commandLine_, engineParameters_);
+
+        // Register application command line arguments or set up engine parameters
         Setup();
+
+        // Parse command line parameters
+        {
+            const StringVector& rawArguments = GetArguments();
+            std::vector<std::string> cliArgs;
+            cliArgs.reserve(rawArguments.Size());
+            // CLI11 detail - arguments must be in reversed order.
+            for (auto i = static_cast<int>(rawArguments.Size() - 1); i >= 0; i--)
+                cliArgs.emplace_back(rawArguments[static_cast<unsigned>(i)].CString());
+
+            try {
+                commandLine_.parse(cliArgs);
+            } catch(const CLI::ParseError &e) {
+                exitCode_ = commandLine_.exit(e);
+            }
+        }
+
+        if (commandLine_.count("--help") > 0)
+            return 0;
+
         if (exitCode_)
             return exitCode_;
 
@@ -141,6 +167,11 @@ void Application::HandleLogMessage(StringHash eventType, VariantMap& eventData)
 
         startupErrors_ += error + "\n";
     }
+}
+
+CLI::App&Application::GetCommandLineParser()
+{
+    return commandLine_;
 }
 
 

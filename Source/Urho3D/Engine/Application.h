@@ -57,6 +57,8 @@ public:
 protected:
     /// Handle log message.
     void HandleLogMessage(StringHash eventType, VariantMap& eventData);
+    /// Return command line for registering custom parameters.
+    CLI::App& GetCommandLineParser();
 
     /// Urho3D engine.
     SharedPtr<Engine> engine_;

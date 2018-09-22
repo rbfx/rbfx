@@ -25,6 +25,13 @@
 #include "../Core/Object.h"
 #include "../Core/Timer.h"
 
+namespace CLI
+{
+
+struct App;
+
+}
+
 namespace Urho3D
 {
 
@@ -113,7 +120,7 @@ public:
     void ApplyFrameLimit();
 
     /// Parse the engine startup parameters map from command line arguments.
-    static VariantMap ParseParameters(const Vector<String>& arguments);
+    static void DefineParameters(CLI::App& commandLine, VariantMap& engineParameters);
     /// Return whether startup parameters contains a specific parameter.
     static bool HasParameter(const VariantMap& parameters, const String& parameter);
     /// Get an engine startup parameter, with default value if missing.

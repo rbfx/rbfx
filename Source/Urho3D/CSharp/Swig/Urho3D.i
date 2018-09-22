@@ -209,10 +209,13 @@ namespace SDL
 %include "Urho3D/Core/Mutex.h"
 
 // --------------------------------------- Engine ---------------------------------------
+%ignore Urho3D::Engine::DefineParameters;
+
 %include "Urho3D/Engine/EngineDefs.h"
 %include "Urho3D/Engine/Engine.h"
 
 %ignore Urho3D::Application::engine_;
+%ignore Urho3D::Application::GetCommandLineParser;
 %include "Urho3D/Engine/Application.h"
 
 
