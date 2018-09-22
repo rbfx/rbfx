@@ -103,7 +103,7 @@ endmacro ()
 
 # Enable by default for developers preset
 if (URHO3D_DEVELOPER)
-    foreach (OPT in PROFILING TOOLS EXTRAS LOGGING SYSTEMUI FILEWATCHER)
+    foreach (OPT in PROFILING TOOLS EXTRAS LOGGING SYSTEMUI FILEWATCHER HASH_DEBUG)
         if (NOT DEFINED URHO3D_${OPT}_DEFAULT)
             set (URHO3D_${OPT}_DEFAULT ${URHO3D_DEVELOPER})
         endif ()
@@ -131,6 +131,7 @@ _option(URHO3D_SYSTEMUI "Build SystemUI subsystem")
 _option(URHO3D_PACKAGING "Package resources")
 _option(URHO3D_FILEWATCHER "Watch filesystem for resource changes")
 _option(URHO3D_TASKS "Enable coroutine subsystem")
+_option(URHO3D_HASH_DEBUG "Enable StringHash name debugging")
 if (BUILD_SHARED_LIBS)
     _option(URHO3D_CSHARP "Enable C# support")
 else ()
@@ -188,7 +189,6 @@ if (ANDROID OR WEB OR IOS)
         set (URHO3D_PROFILING OFF)       # No way to make use of profiler data because of lack of networking
         set (URHO3D_TOOLS OFF)           # Useless
         set (URHO3D_EXTRAS OFF)          # Useless
-        set (URHO3D_SSE OFF)             # Unsupported
         set (EMSCRIPTEN_MEMORY_LIMIT 128 CACHE NUMBER "Memory limit in megabytes. Set to 0 for dynamic growth.")
         option (EMSCRIPTEN_MEMORY_GROWTH "Allow memory growth. Disables some optimizations." OFF)
     endif ()
@@ -197,6 +197,11 @@ else ()
         set (URHO3D_SYSTEMUI ON)
         set (URHO3D_FILEWATCHER ON)
         set (URHO3D_LOGGING ON)
+        if (NOT DEFINED URHO3D_HASH_DEBUG)
+            set (URHO3D_HASH_DEBUG ON)
+        else ()
+            message (WARNING "Editor uses URHO3D_HASH_DEBUG feature, but it was disabled. Editor will still build but some features will break.")
+        endif ()
     endif ()
 endif ()
 
