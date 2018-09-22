@@ -343,7 +343,9 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             auto* map = value.GetVariantMapPtr();
             if (ui::Button(ICON_FA_PLUS))
                 mapState->insertingNew = true;
-            ui::NextColumn();
+
+            if (!map->Empty())
+                ui::NextColumn();
 
             for (auto it = map->Begin(); it != map->End(); it++)
             {
