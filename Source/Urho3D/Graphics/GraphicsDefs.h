@@ -236,6 +236,16 @@ enum TextureFilterMode
     MAX_FILTERMODES
 };
 
+static const char* textureFilterModeNames[] = {
+    "NEAREST",
+    "BILINEAR",
+    "TRILINEAR",
+    "ANISOTROPIC",
+    "NEAREST_ANISOTROPIC",
+    "DEFAULT",
+    nullptr,
+};
+
 /// Texture addressing mode.
 enum TextureAddressMode
 {
