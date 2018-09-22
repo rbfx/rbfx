@@ -86,11 +86,7 @@ bool ResourceTab::RenderWindowContent()
         String selected = resourcePath_ + resourceSelection_;
         auto it = contentToTabType.Find(GetContentType(selected));
         if (it != contentToTabType.End())
-        {
-            auto* tab = GetSubsystem<Editor>()->CreateTab(it->second_);
-            tab->AutoPlace();
-            tab->LoadResource(selected);
-        }
+            GetSubsystem<Editor>()->CreateOrGetTab(it->second_, selected);
     }
     else if (action == RBR_ITEM_CONTEXT_MENU)
         ui::OpenPopup("Resource Context Menu");

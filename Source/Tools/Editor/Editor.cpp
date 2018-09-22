@@ -292,6 +292,24 @@ Tab* Editor::CreateTab(StringHash type)
     return tab;
 }
 
+Tab* Editor::CreateOrGetTab(StringHash type, const String& resourceName)
+{
+    for (auto& tab : tabs_)
+    {
+        auto resourceTab = DynamicCast<BaseResourceTab>(tab);
+        if (resourceTab.NotNull())
+        {
+            if (resourceTab->GetResourceName() == resourceName)
+                return tab.Get();
+        }
+    }
+
+    auto* tab = CreateTab(type);
+    tab->AutoPlace();
+    tab->LoadResource(resourceName);
+    return tab;
+}
+
 StringVector Editor::GetObjectsByCategory(const String& category)
 {
     StringVector result;

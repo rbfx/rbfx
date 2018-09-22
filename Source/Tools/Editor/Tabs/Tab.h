@@ -67,7 +67,7 @@ public:
     virtual void RenderToolbarButtons() { }
     /// Update window when it is active.
     virtual void OnActiveUpdate() { }
-    /// Render scene window.
+    /// Render tab content.
     virtual bool RenderWindow();
     /// Save project data to xml.
     virtual void OnSaveProject(JSONValue& tab);

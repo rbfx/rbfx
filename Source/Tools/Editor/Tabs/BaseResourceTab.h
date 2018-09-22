@@ -41,6 +41,8 @@ public:
     void OnSaveProject(JSONValue& tab) override;
     /// Load project data from xml.
     void OnLoadProject(const JSONValue& tab) override;
+    /// Returns name of opened resource.
+    String GetResourceName() const { return resourceName_; }
 
 protected:
     /// Set resource name.
