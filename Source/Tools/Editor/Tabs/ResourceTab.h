@@ -31,22 +31,31 @@
 namespace Urho3D
 {
 
+/// Resource browser tab.
 class ResourceTab : public Tab
 {
     URHO3D_OBJECT(ResourceTab, Tab)
 public:
+    /// Construct.
     explicit ResourceTab(Context* context);
 
+    /// Render content of tab window. Returns false if tab was closed.
     bool RenderWindowContent() override;
 
 protected:
+    /// Constructs a name for newly created resource based on specified template name.
     String GetNewResourcePath(const String& name);
+    /// Sends a notification to inspector tab to show inspector of specified resource.
     template<typename TInspector, typename TResource>
     void OpenResourceInspector(const String& resourcePath);
 
+    /// Current open resource path.
     String resourcePath_;
+    /// Current selected resource file name.
     String resourceSelection_;
+    /// Resource browser flags.
     ResourceBrowserFlags flags_{RBF_NONE};
+    /// List of resource inspectors. They must persist as long as resource is not deleted.
     HashMap<StringHash, SharedPtr<ResourceInspector>> inspectors_;
 };
 
