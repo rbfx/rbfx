@@ -347,17 +347,22 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             if (!map->Empty())
                 ui::NextColumn();
 
+            unsigned index = 0;
             for (auto it = map->Begin(); it != map->End(); it++)
             {
-                const String& name = StringHash::GetGlobalStringHashRegister()->GetString(it->first_);
-
                 // Column-friendly indent
                 ui::NewLine();
                 ui::SameLine(20_dpx);
 
-                ui::TextUnformatted(name.CString());
+#if URHO3D_HASH_DEBUG
+                const String& name = StringHash::GetGlobalStringHashRegister()->GetString(it->first_);
+                ui::TextUnformatted((name.Empty() ? it->first_.ToString() : name).CString());
+#else
+                ui::TextUnformatted(it->first_.ToString().CString());
+#endif
+
                 ui::NextColumn();
-                ui::IdScope entryIdScope(name.CString());
+                ui::IdScope entryIdScope(index++);
                 UI_ITEMWIDTH(-22_dpx) // Space for trashcan button. TODO: trashcan goes out of screen a little for matrices.
                     modified |= RenderSingleAttribute(eventNamespace, nullptr, it->second_);
                 ui::SameLine(it->second_.GetType());
