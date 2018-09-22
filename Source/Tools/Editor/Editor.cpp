@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include <CLI11/CLI11.hpp>
+
 #include <Toolbox/IO/ContentUtilities.h>
 #include <Toolbox/SystemUI/ResourceBrowser.h>
 #include <Toolbox/ToolboxAPI.h>
@@ -45,6 +47,8 @@ URHO3D_DEFINE_APPLICATION_MAIN(Editor);
 
 namespace Urho3D
 {
+
+static std::string defaultProjectPath;
 
 Editor::Editor(Context* context)
     : Application(context)
@@ -100,6 +104,11 @@ void Editor::Setup()
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] = coreResourcePrefixPath_;
 
     SetRandomSeed(Time::GetTimeSinceEpoch());
+
+    // Define custom command line parameters here
+    auto& commandLine = GetCommandLineParser();
+    commandLine.add_option("project", defaultProjectPath, "Project to open or create on startup.")
+            ->set_custom_option("dir");
 }
 
 void Editor::Start()
@@ -145,26 +154,14 @@ void Editor::Start()
         tabs_.Clear();
     });
 
-    // Process arguments
-    const auto& arguments = GetArguments();
-    {
-        unsigned i = 0;
-        for (; i < arguments.Size(); ++i)
+    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&){
+        if (!defaultProjectPath.empty())
         {
-            if (arguments[i].Length() > 1 && arguments[i][0] == '-')
-            {
-                auto argument = arguments[i].Substring(1).ToLower();
-                const auto& value = i + 1 < arguments.Size() ? arguments[i + 1] : String::EMPTY;
-
-                // TODO: Any editor arguments
-            }
-            else
-                break;
+            OpenProject(defaultProjectPath.c_str());
+            defaultProjectPath.clear();
         }
-
-        if (i < arguments.Size())
-            OpenProject(arguments[i]);
-    }
+        UnsubscribeFromEvent(E_ENDFRAME);
+    });
 
     // Plugin loading
 #if URHO3D_PLUGINS_NATIVE
