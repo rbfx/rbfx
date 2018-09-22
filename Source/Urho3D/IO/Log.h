@@ -30,20 +30,25 @@
 namespace Urho3D
 {
 
-/// Fictional message level to indicate a stored raw message.
-static const int LOG_RAW = -1;
-/// Trace message level.
-static const int LOG_TRACE = 0;
-/// Debug message level. By default only shown in debug mode.
-static const int LOG_DEBUG = 1;
-/// Informative message level.
-static const int LOG_INFO = 2;
-/// Warning message level.
-static const int LOG_WARNING = 3;
-/// Error message level.
-static const int LOG_ERROR = 4;
-/// Disable all log messages.
-static const int LOG_NONE = 5;
+enum LogLevel
+{
+    /// Fictional message level to indicate a stored raw message.
+    LOG_RAW = -1,
+    /// Trace message level.
+    LOG_TRACE = 0,
+    /// Debug message level. By default only shown in debug mode.
+    LOG_DEBUG = 1,
+    /// Informative message level.
+    LOG_INFO = 2,
+    /// Warning message level.
+    LOG_WARNING = 3,
+    /// Error message level.
+    LOG_ERROR = 4,
+    /// Disable all log messages.
+    LOG_NONE = 5,
+    /// Number of log levels
+    MAX_LOGLEVELS,
+};
 
 class File;
 
@@ -54,7 +59,7 @@ struct StoredLogMessage
     StoredLogMessage() = default;
 
     /// Construct with parameters.
-    StoredLogMessage(const String& message, int level, bool error) :
+    StoredLogMessage(const String& message, LogLevel level, bool error) :
         message_(message),
         level_(level),
         error_(error)
@@ -64,7 +69,7 @@ struct StoredLogMessage
     /// Message text.
     String message_;
     /// Message level. -1 for raw messages.
-    int level_{};
+    LogLevel level_{};
     /// Error flag for raw messages.
     bool error_{};
 };
@@ -85,14 +90,14 @@ public:
     /// Close the log file.
     void Close();
     /// Set logging level.
-    void SetLevel(int level);
+    void SetLevel(LogLevel level);
     /// Set whether to timestamp log messages.
     void SetTimeStamp(bool enable);
     /// Set quiet mode ie. only print error entries to standard error stream (which is normally redirected to console also). Output to log file is not affected by this mode.
     void SetQuiet(bool quiet);
 
     /// Return logging level.
-    int GetLevel() const { return level_; }
+    LogLevel GetLevel() const { return level_; }
 
     /// Return whether log messages are timestamped.
     bool GetTimeStamp() const { return timeStamp_; }
@@ -104,7 +109,7 @@ public:
     bool IsQuiet() const { return quiet_; }
 
     /// Write to the log. If logging level is higher than the level of the message, the message is ignored.
-    static void Write(int level, const String& message);
+    static void Write(LogLevel level, const String& message);
     /// Write raw output to the log.
     static void WriteRaw(const String& message, bool error = false);
     /// Return instance of opened log file.
@@ -123,7 +128,7 @@ private:
     /// Last log message.
     String lastMessage_;
     /// Logging level.
-    int level_;
+    LogLevel level_;
     /// Timestamp log messages flag.
     bool timeStamp_;
     /// In write flag to prevent recursion.

@@ -115,7 +115,7 @@ void Log::Close()
 #endif
 }
 
-void Log::SetLevel(int level)
+void Log::SetLevel(LogLevel level)
 {
     if (level < LOG_TRACE || level > LOG_NONE)
     {
@@ -136,7 +136,7 @@ void Log::SetQuiet(bool quiet)
     quiet_ = quiet;
 }
 
-void Log::Write(int level, const String& message)
+void Log::Write(LogLevel level, const String& message)
 {
     // Special case for LOG_RAW level
     if (level == LOG_RAW)
@@ -177,7 +177,7 @@ void Log::Write(int level, const String& message)
     URHO3D_PROFILE_MESSAGE(formattedMessage.CString(), formattedMessage.Length());
 
 #if defined(__ANDROID__)
-    int androidLevel = ANDROID_LOG_VERBOSE + level;
+    int androidLevel = ANDROID_LOG_VERBOSE + level;int
     __android_log_print(androidLevel, "Urho3D", "%s", message.CString());
 #elif defined(IOS) || defined(TVOS)
     SDL_IOS_LogMessage(message.CString());

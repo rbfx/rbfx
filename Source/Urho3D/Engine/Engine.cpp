@@ -199,7 +199,7 @@ bool Engine::Initialize(const VariantMap& parameters)
     if (log)
     {
         if (HasParameter(parameters, EP_LOG_LEVEL))
-            log->SetLevel(GetParameter(parameters, EP_LOG_LEVEL).GetInt());
+            log->SetLevel(static_cast<LogLevel>(GetParameter(parameters, EP_LOG_LEVEL).GetInt()));
         log->SetQuiet(GetParameter(parameters, EP_LOG_QUIET, false).GetBool());
         log->Open(GetParameter(parameters, EP_LOG_NAME, "Urho3D.log").GetString());
     }
