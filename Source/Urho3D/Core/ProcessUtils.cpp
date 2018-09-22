@@ -810,7 +810,7 @@ String GenerateUUID()
 
 Process::Process(const String& command, const Vector<String>& args)
 {
-    command_ = "\"" + GetNativePath((IsAbsolutePath(command) ? "" : "./") + command).Replaced("\"", "\\\"") + "\" ";
+    command_ = "\"" + GetNativePath(command).Replaced("\"", "\\\"") + "\" ";
     for (const auto& arg: args)
     {
         command_ += "\"";
