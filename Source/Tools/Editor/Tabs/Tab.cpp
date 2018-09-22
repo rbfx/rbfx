@@ -75,7 +75,7 @@ bool Tab::RenderWindow()
             IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->InnerClipRect);
             if (tabRect.IsInside(lastMousePosition_) == INSIDE)
             {
-                if (!ui::IsWindowFocused() && ui::IsItemHovered() && input->GetMouseButtonDown(MOUSEB_RIGHT))
+                if (!ui::IsWindowFocused() && ui::IsWindowHovered() && input->GetMouseButtonDown(MOUSEB_RIGHT))
                     ui::SetWindowFocus();
 
                 if (ui::IsDockActive())

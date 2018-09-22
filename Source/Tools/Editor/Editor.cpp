@@ -181,7 +181,6 @@ void Editor::OnUpdate(VariantMap& args)
 
     ui::RootDock({0, 20}, ui::GetIO().DisplaySize - ImVec2(0, 20));
 
-    bool renderedWasActive = false;
     auto tabsCopy = tabs_;
     for (auto& tab : tabsCopy)
     {
@@ -192,14 +191,8 @@ void Editor::OnUpdate(VariantMap& args)
                 if (activeTab_ != tab)
                 {
                     // Only active window may override another active window
-                    if (renderedWasActive && tab->IsActive())
+                    if (tab->IsActive())
                     {
-                        activeTab_ = tab;
-                        tab->OnFocused();
-                    }
-                    else if (!renderedWasActive)
-                    {
-                        renderedWasActive = tab->IsActive();
                         activeTab_ = tab;
                         tab->OnFocused();
                     }
