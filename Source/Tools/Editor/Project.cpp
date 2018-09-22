@@ -68,7 +68,7 @@ Project::~Project()
 
 bool Project::LoadProject(const String& projectPath)
 {
-    if (!projectFilePath_.Empty())
+    if (!projectFileDir_.Empty())
         // Project is already loaded.
         return false;
 
@@ -76,7 +76,6 @@ bool Project::LoadProject(const String& projectPath)
         return false;
 
     projectFileDir_ = AddTrailingSlash(projectPath);
-    projectFilePath_ = projectFileDir_ + ".user.json";
 
     if (!GetFileSystem()->Exists(GetCachePath()))
         GetFileSystem()->CreateDirsRecursive(GetCachePath());
@@ -132,60 +131,76 @@ bool Project::LoadProject(const String& projectPath)
 
     uiConfigPath_ = projectPath + "/.ui.ini";
     ui::GetIO().IniFilename = uiConfigPath_.CString();
+    String userSessionPath(projectFileDir_ + ".user.json");
 
-    // Load default layout if no user config exists
-    if (!GetFileSystem()->Exists(projectFilePath_))
+    if (GetFileSystem()->Exists(userSessionPath))
     {
-        GetSubsystem<Editor>()->LoadDefaultLayout();
-        return true;
-    }
+        // Load user session
+        JSONFile file(context_);
+        if (!file.LoadFile(userSessionPath))
+            return false;
 
-    // Load user config
-    JSONFile file(context_);
-    if (!file.LoadFile(projectFilePath_))
-        return false;
-
-    const auto& root = file.GetRoot();
-    if (root.IsObject())
-    {
-        SendEvent(E_EDITORPROJECTLOADINGSTART);
-
-        const auto& window = root["window"];
-        if (window.IsObject())
+        const auto& root = file.GetRoot();
+        if (root.IsObject())
         {
-            auto size = window["size"].GetVariant().GetIntVector2();
-            GetGraphics()->SetMode(size.x_, size.y_);
-            GetGraphics()->SetWindowPosition(window["position"].GetVariant().GetIntVector2());
-        }
+            SendEvent(E_EDITORPROJECTLOADINGSTART);
 
-        const auto& tabs = root["tabs"];
-        if (tabs.IsArray())
-        {
-            auto* editor = GetSubsystem<Editor>();
-            for (auto i = 0; i < tabs.Size(); i++)
+            const auto& window = root["window"];
+            if (window.IsObject())
             {
-                const auto& tab = tabs[i];
-
-                auto tabType = tab["type"].GetString();
-                auto* runtimeTab = editor->CreateTab(tabType);
-
-                if (runtimeTab == nullptr)
-                    URHO3D_LOGERRORF("Unknown tab type '%s'", tabType.CString());
-                else
-                    runtimeTab->OnLoadProject(tab);
+                auto size = window["size"].GetVariant().GetIntVector2();
+                GetGraphics()->SetMode(size.x_, size.y_);
+                GetGraphics()->SetWindowPosition(window["position"].GetVariant().GetIntVector2());
             }
+
+            const auto& tabs = root["tabs"];
+            if (tabs.IsArray())
+            {
+                auto* editor = GetSubsystem<Editor>();
+                for (auto i = 0; i < tabs.Size(); i++)
+                {
+                    const auto& tab = tabs[i];
+
+                    auto tabType = tab["type"].GetString();
+                    auto* runtimeTab = editor->CreateTab(tabType);
+
+                    if (runtimeTab == nullptr)
+                        URHO3D_LOGERRORF("Unknown tab type '%s'", tabType.CString());
+                    else
+                        runtimeTab->OnLoadProject(tab);
+                }
+            }
+
+            ui::LoadDock(root["docks"]);
+
+            // Plugins may load state by subscribing to this event
+            using namespace EditorProjectLoading;
+            SendEvent(E_EDITORPROJECTLOADING, P_ROOT, (void*)&root);
         }
-
-        ui::LoadDock(root["docks"]);
-
-        // Plugins may load state by subscribing to this event
-        using namespace EditorProjectLoading;
-        SendEvent(E_EDITORPROJECTLOADING, P_ROOT, (void*)&root);
-
-        return true;
+    }
+    else
+    {
+        // Load default layout if no user session exists
+        GetSubsystem<Editor>()->LoadDefaultLayout();
     }
 
-    return false;
+    // StringHashNames.json
+    {
+        String hashNamesPath(projectFileDir_ + "StringHashNames.json");
+
+        JSONFile file(context_);
+        if (!file.LoadFile(hashNamesPath))
+            return false;
+
+        for (const auto& value : file.GetRoot().GetArray())
+        {
+            // Seed global string hash to name map.
+            StringHash hash(value.GetString());
+            (void)(hash);
+        }
+    }
+
+    return true;
 }
 
 bool Project::SaveProject()
@@ -194,38 +209,63 @@ bool Project::SaveProject()
     // that loop.
     UnsubscribeFromEvent(E_EDITORRESOURCESAVED);
 
-    if (projectFilePath_.Empty())
+    if (projectFileDir_.Empty())
     {
         URHO3D_LOGERROR("Unable to save project. Project path is empty.");
         return false;
     }
 
-    JSONFile file(context_);
-    JSONValue& root = file.GetRoot();
-    root["version"] = 0;
-
-    JSONValue& window = root["window"];
+    // .user.json
     {
-        window["size"].SetVariant(GetGraphics()->GetSize());
-        window["position"].SetVariant(GetGraphics()->GetWindowPosition());
+        JSONFile file(context_);
+        JSONValue& root = file.GetRoot();
+        root["version"] = 0;
+
+        JSONValue& window = root["window"];
+        {
+            window["size"].SetVariant(GetGraphics()->GetSize());
+            window["position"].SetVariant(GetGraphics()->GetWindowPosition());
+        }
+
+        // Plugins may save state by subscribing to this event
+        using namespace EditorProjectSaving;
+        SendEvent(E_EDITORPROJECTSAVING, P_ROOT, (void*)&root);
+
+        ui::SaveDock(root["docks"]);
+
+        String filePath(projectFileDir_ + ".user.json");
+        if (!file.SaveFile(filePath))
+        {
+            projectFileDir_.Clear();
+            URHO3D_LOGERRORF("Saving project to '%s' failed", filePath.CString());
+            return false;
+        }
     }
 
-    // Plugins may save state by subscribing to this event
-    using namespace EditorProjectSaving;
-    SendEvent(E_EDITORPROJECTSAVING, P_ROOT, (void*)&root);
-
-    ui::SaveDock(root["docks"]);
-
-    auto success = file.SaveFile(projectFilePath_);
-    if (!success)
+#if URHO3D_HASH_DEBUG
+    // StringHashNames.json
     {
-        projectFilePath_.Clear();
-        URHO3D_LOGERRORF("Saving project to '%s' failed", projectFilePath_.CString());
+        auto hashNames = StringHash::GetGlobalStringHashRegister()->GetInternalMap().Values();
+        Sort(hashNames.Begin(), hashNames.End());
+        JSONFile file(context_);
+        JSONArray names;
+        for (const auto& string : hashNames)
+            names.Push(string);
+        file.GetRoot() = names;
+
+        String filePath(projectFileDir_ + "StringHashNames.json");
+        if (!file.SaveFile(filePath))
+        {
+            projectFileDir_.Clear();
+            URHO3D_LOGERRORF("Saving StringHash names to '%s' failed", filePath.CString());
+            return false;
+        }
     }
+#endif
 
     SubscribeToEvent(E_EDITORRESOURCESAVED, std::bind(&Project::SaveProject, this));
 
-    return success;
+    return true;
 }
 
 String Project::GetCachePath() const

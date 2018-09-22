@@ -47,13 +47,9 @@ public:
     String GetCachePath() const;
     /// Returns path to permanent asset cache.
     String GetResourcePath() const;
-    /// Returns a path from which project was loaded.
-    const String& GetProjectFilePath() const { return projectFilePath_; }
 
 protected:
-    /// Path to a project file.
-    String projectFilePath_;
-    /// Directory containing project file.
+    /// Directory containing project.
     String projectFileDir_;
     /// Converter responsible for watching resource directories and converting assets to required formats.
     AssetConverter assetConverter_;

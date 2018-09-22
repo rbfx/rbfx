@@ -229,23 +229,9 @@ void Editor::RenderMenuBar()
             {
                 if (ui::MenuItem("Save Project"))
                 {
-                    if (project_->GetProjectFilePath().Empty())
-                    {
-                        nfdchar_t* projectDir = nullptr;
-                        if (NFD_PickFolder("", &projectDir) == NFD_OKAY)
-                        {
-                            for (auto& tab : tabs_)
-                                tab->SaveResource();
-                            project_->SaveProject();
-                            NFD_FreePath(projectDir);
-                        }
-                    }
-                    else
-                    {
-                        for (auto& tab : tabs_)
-                            tab->SaveResource();
-                        project_->SaveProject();
-                    }
+                    for (auto& tab : tabs_)
+                        tab->SaveResource();
+                    project_->SaveProject();
                 }
             }
 
