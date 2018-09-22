@@ -37,7 +37,7 @@ include(UrhoCommon)
 
 # Enable common build options
 if (NOT DEFINED CMAKE_CXX_STANDARD)
-    set (CMAKE_CXX_STANDARD 11)
+    set (CMAKE_CXX_STANDARD 14)
 endif ()
 
 # Workarounds
