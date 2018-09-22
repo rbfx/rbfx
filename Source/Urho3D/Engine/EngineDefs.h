@@ -33,7 +33,6 @@ namespace Urho3D
 static const String EP_AUTOLOAD_PATHS = "AutoloadPaths";
 static const String EP_BORDERLESS = "Borderless";
 static const String EP_DUMP_SHADERS = "DumpShaders";
-static const String EP_EVENT_PROFILER = "EventProfiler";
 static const String EP_EXTERNAL_WINDOW = "ExternalWindow";
 static const String EP_FLUSH_GPU = "FlushGPU";
 static const String EP_FORCE_GL2 = "ForceGL2";
@@ -77,6 +76,4 @@ static const String EP_WINDOW_RESIZABLE = "WindowResizable";
 static const String EP_WINDOW_TITLE = "WindowTitle";
 static const String EP_WINDOW_WIDTH = "WindowWidth";
 static const String EP_WORKER_THREADS = "WorkerThreads";
-static const String EP_PROFILER_LISTEN = "ProfilerListen";
-static const String EP_PROFILER_PORT = "ProfilerPort";
 }
