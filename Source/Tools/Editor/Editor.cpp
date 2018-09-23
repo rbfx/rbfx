@@ -163,6 +163,11 @@ void Editor::Start()
         UnsubscribeFromEvent(E_ENDFRAME);
     });
 
+    SubscribeToEvent(E_EDITORSCENEEFFECTSCHANGED, [this](StringHash, VariantMap& args) {
+        using namespace EditorSceneEffectsChanged;
+        lastEffectSource_ = dynamic_cast<RenderPath*>(args[P_RENDERPATH].GetPtr());
+    });
+
     // Plugin loading
 #if URHO3D_PLUGINS_NATIVE
     pluginsNative_.AutoLoadFrom(GetFileSystem()->GetProgramDir());

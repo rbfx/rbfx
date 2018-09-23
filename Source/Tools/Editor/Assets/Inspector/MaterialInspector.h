@@ -69,6 +69,8 @@ public:
     void ToggleModel();
     /// Material preview view mouse grabbing.
     void SetGrab(bool enable);
+    /// Copy effects from specified render path.
+    void SetEffectSource(RenderPath* renderPath);
 
 protected:
     /// Initialize material preview.

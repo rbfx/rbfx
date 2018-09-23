@@ -203,7 +203,7 @@ void SceneEffects::Prepare(bool force)
                 path->SetEnabled(tag, value.GetBool());
                 rebuild_ = true;
                 using namespace EditorSceneEffectsChanged;
-                SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_SCENE, tab_->GetScene());
+                SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_RENDERPATH, path);
             };
             effectEnabled = tab_->GetSceneView()->GetViewport()->GetRenderPath()->IsEnabled(tag);
             URHO3D_CUSTOM_ATTRIBUTE(title.CString(), getter, setter, bool, false, AM_EDIT);
@@ -242,7 +242,7 @@ void SceneEffects::Prepare(bool force)
                 }
                 rebuild_ = true;
                 using namespace EditorSceneEffectsChanged;
-                SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_SCENE, tab_->GetScene());
+                SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_RENDERPATH, path);
             };
 
             // When one effect has multiple tags we assume that only one of those tags is supposed to be active during
@@ -290,7 +290,7 @@ void SceneEffects::Prepare(bool force)
                     auto path = tab_->GetSceneView()->GetViewport()->GetRenderPath();
                     path->SetShaderParameter(name, value.GetFloat());
                     using namespace EditorSceneEffectsChanged;
-                    SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_SCENE, tab_->GetScene());
+                    SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_RENDERPATH, path);
                 };
                 URHO3D_CUSTOM_ATTRIBUTE(name.CString(), getter, setter, float, 0.f, AM_EDIT);
                 SetAttribute(name, tab_->GetSceneView()->GetViewport()->GetRenderPath()->GetShaderParameter(name).GetFloat());
@@ -306,7 +306,7 @@ void SceneEffects::Prepare(bool force)
                     auto path = tab_->GetSceneView()->GetViewport()->GetRenderPath();
                     path->SetShaderParameter(name, value.GetVector2());
                     using namespace EditorSceneEffectsChanged;
-                    SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_SCENE, tab_->GetScene());
+                    SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_RENDERPATH, path);
                 };
                 URHO3D_CUSTOM_ATTRIBUTE(name.CString(), getter, setter, Vector2, Vector2::ZERO, AM_EDIT);
                 SetAttribute(name, tab_->GetSceneView()->GetViewport()->GetRenderPath()->GetShaderParameter(name).GetVector2());
@@ -322,7 +322,7 @@ void SceneEffects::Prepare(bool force)
                     auto path = tab_->GetSceneView()->GetViewport()->GetRenderPath();
                     path->SetShaderParameter(name, value.GetVector3());
                     using namespace EditorSceneEffectsChanged;
-                    SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_SCENE, tab_->GetScene());
+                    SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_RENDERPATH, path);
                 };
                 URHO3D_CUSTOM_ATTRIBUTE(name.CString(), getter, setter, Vector3, Vector3::ZERO, AM_EDIT);
                 SetAttribute(name, tab_->GetSceneView()->GetViewport()->GetRenderPath()->GetShaderParameter(name).GetVector3());
@@ -338,7 +338,7 @@ void SceneEffects::Prepare(bool force)
                     auto path = tab_->GetSceneView()->GetViewport()->GetRenderPath();
                     path->SetShaderParameter(name, value.GetVector4());
                     using namespace EditorSceneEffectsChanged;
-                    SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_SCENE, tab_->GetScene());
+                    SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_RENDERPATH, path);
                 };
                 URHO3D_CUSTOM_ATTRIBUTE(name.CString(), getter, setter, Vector4, Vector4::ZERO, AM_EDIT);
                 SetAttribute(name, tab_->GetSceneView()->GetViewport()->GetRenderPath()->GetShaderParameter(name).GetVector4());
@@ -432,7 +432,7 @@ void SceneEffects::LoadProject(const JSONValue& effects)
     }
 
     using namespace EditorSceneEffectsChanged;
-    SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_SCENE, tab_->GetScene());
+    SendEvent(E_EDITORSCENEEFFECTSCHANGED, P_RENDERPATH, path);
 
     rebuild_ = true;
 }

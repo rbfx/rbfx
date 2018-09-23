@@ -80,6 +80,8 @@ public:
     const String& GetCoreResourcePrefixPath() const { return coreResourcePrefixPath_; }
     /// Load default tab layout.
     void LoadDefaultLayout();
+    /// Return render path of last active scene.
+    RenderPath* GetLastEffectSource() const { return lastEffectSource_; };
 
 protected:
     /// Process console commands.
@@ -99,6 +101,8 @@ protected:
     /// Native plugin manager.
     PluginManagerNative pluginsNative_;
 #endif
+    /// Render path of last active scene.
+    SharedPtr<RenderPath> lastEffectSource_;
 };
 
 }

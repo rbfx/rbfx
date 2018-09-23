@@ -22,6 +22,7 @@
 
 #include <Urho3D/Graphics/Viewport.h>
 #include <Urho3D/Graphics/RenderPath.h>
+#include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/Graphics/Light.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Model.h>
@@ -35,8 +36,10 @@
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <ImGui/imgui_stl.h>
 #include <Urho3D/IO/Log.h>
+#include "EditorEvents.h"
 #include "MaterialInspector.h"
 #include "MaterialInspectorUndo.h"
+#include "Editor.h"
 
 using namespace ImGui::litterals;
 
@@ -53,25 +56,11 @@ MaterialInspector::MaterialInspector(Context* context, Material* material)
     CreateObjects();
 
     // Scene viewport renderpath must be same as material viewport renderpath
-    Viewport* effectSource = nullptr;
-    if (effectSource != nullptr)
-    {
-        // TODO: Load material previouw effects configuration from active scene viewport
-        auto path = effectSource->GetRenderPath();
-        view_.GetViewport()->SetRenderPath(path);
-        auto light = view_.GetCamera()->GetComponent<Light>();
-        for (auto& command: path->commands_)
-        {
-            if (command.pixelShaderName_ == "PBRDeferred")
-            {
-                // Lights in PBR scenes need modifications, otherwise obects in material preview look very dark
-                light->SetUsePhysicalValues(true);
-                light->SetBrightness(5000);
-                light->SetShadowCascade(CascadeParameters(10, 20, 30, 40, 10));
-                break;
-            }
-        }
-    }
+    SubscribeToEvent(E_EDITORSCENEEFFECTSCHANGED, [this](StringHash, VariantMap& args) {
+        using namespace EditorSceneEffectsChanged;
+        RenderPath* effectSource = dynamic_cast<RenderPath*>(args[P_RENDERPATH].GetPtr());
+        SetEffectSource(effectSource);
+    });
 
     auto autoSave = [this](StringHash, VariantMap&) {
         // Auto-save material on modification
@@ -82,6 +71,8 @@ MaterialInspector::MaterialInspector(Context* context, Material* material)
     SubscribeToEvent(&attributeInspector_, E_ATTRIBUTEINSPECTVALUEMODIFIED, autoSave);
     SubscribeToEvent(&attributeInspector_, E_INSPECTORRENDERSTART, [this](StringHash, VariantMap&) { RenderPreview(); });
     SubscribeToEvent(&attributeInspector_, E_INSPECTORRENDERATTRIBUTE, [this](StringHash, VariantMap& args) { RenderCustomWidgets(args); });
+
+    SetEffectSource(GetSubsystem<Editor>()->GetLastEffectSource());
 
     undo_.Connect(&attributeInspector_);
 }
@@ -430,6 +421,27 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
         args[P_HANDLED] = true;
         args[P_MODIFIED] = modified;
     }
+}
+
+void MaterialInspector::SetEffectSource(RenderPath* renderPath)
+{
+    view_.GetViewport()->SetRenderPath(renderPath);
+    auto* light = view_.GetCamera()->GetComponent<Light>();
+    for (auto& command: renderPath->commands_)
+    {
+        if (command.pixelShaderName_.StartsWith("PBR"))
+        {
+            // Lights in PBR scenes need modifications, otherwise obects in material preview look very dark
+            light->SetUsePhysicalValues(true);
+            light->SetBrightness(5000);
+            light->SetShadowCascade(CascadeParameters(10, 20, 30, 40, 10));
+            return;
+        }
+    }
+
+    light->SetUsePhysicalValues(false);
+    light->SetBrightness(DEFAULT_BRIGHTNESS);
+    light->SetShadowCascade(CascadeParameters(DEFAULT_SHADOWSPLIT, 0.0f, 0.0f, 0.0f, DEFAULT_SHADOWFADESTART));
 }
 
 Inspectable::Material::Material(Urho3D::Material* material)

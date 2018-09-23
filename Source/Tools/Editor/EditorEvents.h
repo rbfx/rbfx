@@ -45,7 +45,7 @@ URHO3D_EVENT(E_EDITORSELECTIONCHANGED, EditorSelectionChanged)
 /// Event sent when scene has it's rendering settings modified.
 URHO3D_EVENT(E_EDITORSCENEEFFECTSCHANGED, EditorSceneEffectsChanged)
 {
-    URHO3D_PARAM(P_SCENE, Scene);                     // Scene pointer.
+    URHO3D_PARAM(P_RENDERPATH, RenderPath);           // RenderPath pointer.
 }
 
 /// Event sent when rendering top menu bar of editor.

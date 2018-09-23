@@ -52,8 +52,6 @@ SceneTab::SceneTab(Context* context)
     effectSettings_ = new SceneEffects(this);
 
     SubscribeToEvent(this, E_EDITORSELECTIONCHANGED, std::bind(&SceneTab::OnNodeSelectionChanged, this));
-//    SubscribeToEvent(effectSettings_, E_EDITORSCENEEFFECTSCHANGED, std::bind(&AttributeInspector::CopyEffectsFrom,
-//        &inspector_, view_.GetViewport()));
     SubscribeToEvent(E_UPDATE, std::bind(&SceneTab::OnUpdate, this, _2));
     // On plugin code reload all scene state is serialized, plugin library is reloaded and scene state is unserialized.
     // This way scene recreates all plugin-provided components on reload and gets to use new versions of them.
@@ -854,6 +852,7 @@ void SceneTab::OnFocused()
 {
     SendEvent(E_EDITORRENDERINSPECTOR, EditorRenderInspector::P_INSPECTABLE, this, EditorRenderInspector::P_CATEGORY, IC_SCENE);
     SendEvent(E_EDITORRENDERHIERARCHY, EditorRenderHierarchy::P_INSPECTABLE, this);
+    SendEvent(E_EDITORSCENEEFFECTSCHANGED, EditorSceneEffectsChanged::P_RENDERPATH, GetSceneView()->GetViewport()->GetRenderPath());
 }
 
 }
