@@ -187,16 +187,18 @@ bool Project::LoadProject(const String& projectPath)
     // StringHashNames.json
     {
         String hashNamesPath(projectFileDir_ + "StringHashNames.json");
-
-        JSONFile file(context_);
-        if (!file.LoadFile(hashNamesPath))
-            return false;
-
-        for (const auto& value : file.GetRoot().GetArray())
+        if (GetFileSystem()->Exists(hashNamesPath))
         {
-            // Seed global string hash to name map.
-            StringHash hash(value.GetString());
-            (void)(hash);
+            JSONFile file(context_);
+            if (!file.LoadFile(hashNamesPath))
+                return false;
+
+            for (const auto& value : file.GetRoot().GetArray())
+            {
+                // Seed global string hash to name map.
+                StringHash hash(value.GetString());
+                (void) (hash);
+            }
         }
     }
 
