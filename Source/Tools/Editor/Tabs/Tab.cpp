@@ -77,17 +77,10 @@ bool Tab::RenderWindow()
             {
                 if (!ui::IsWindowFocused() && ui::IsWindowHovered() && input->GetMouseButtonDown(MOUSEB_RIGHT))
                     ui::SetWindowFocus();
-
-                if (ui::IsDockActive())
-                    isActive_ = ui::IsWindowFocused();
-                else
-                    isActive_ = false;
             }
-            else
-                isActive_ = false;
 
+            isActive_ = ui::IsWindowFocused() && ui::IsDockActive();
             open_ = RenderWindowContent();
-
             isRendered_ = true;
         }
     }
@@ -96,6 +89,16 @@ bool Tab::RenderWindow()
         isActive_ = false;
         isRendered_ = false;
     }
+
+    if (activateTab_)
+    {
+        ui::SetDockActive();
+        ui::SetWindowFocus();
+        open_ = true;
+        isActive_ = true;
+        activateTab_ = false;
+    }
+
     ui::EndDock();
 
     return open_;

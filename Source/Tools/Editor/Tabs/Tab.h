@@ -101,6 +101,8 @@ public:
     bool IsOpen() const { return open_; }
     /// Open/close tab without permanently removing it.
     void SetOpen(bool open) { open_ = open; }
+    /// Make tab active.
+    void Activate() { activateTab_ = true; }
 
 protected:
     ///
@@ -134,6 +136,8 @@ protected:
     Vector2 initialSize_;
     /// Flag indicating that tab is open and renders it's contents.
     bool open_ = true;
+    /// Flag indicating tab should reactivate itself next time it is rendered.
+    bool activateTab_ = false;
 };
 
 }

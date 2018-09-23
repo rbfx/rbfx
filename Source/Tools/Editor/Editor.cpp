@@ -285,7 +285,7 @@ Tab* Editor::CreateTab(StringHash type)
     return tab;
 }
 
-Tab* Editor::CreateOrGetTab(StringHash type, const String& resourceName)
+Tab* Editor::GetOrCreateTab(StringHash type, const String& resourceName)
 {
     for (auto& tab : tabs_)
     {
