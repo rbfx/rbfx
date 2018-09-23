@@ -38,6 +38,8 @@
 namespace Urho3D
 {
 
+static const IntVector2 cameraPreviewSize{320, 200};
+
 SceneTab::SceneTab(Context* context)
     : BaseClassName(context)
     , view_(context, {0, 0, 1024, 768})
@@ -51,6 +53,16 @@ SceneTab::SceneTab(Context* context)
     settings_ = new SceneSettings(context_);
     effectSettings_ = new SceneEffects(this);
 
+    // Camera preview objects
+    cameraPreviewViewport_ = new Viewport(context_);
+    cameraPreviewViewport_->SetScene(view_.GetScene());
+    cameraPreviewViewport_->SetRect(IntRect{{0, 0}, cameraPreviewSize});
+    cameraPreviewtexture_ = new Texture2D(context_);
+    cameraPreviewtexture_->SetSize(cameraPreviewSize.x_, cameraPreviewSize.y_, Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
+    cameraPreviewtexture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
+    cameraPreviewtexture_->GetRenderSurface()->SetViewport(0, cameraPreviewViewport_);
+
+    // Events
     SubscribeToEvent(this, E_EDITORSELECTIONCHANGED, std::bind(&SceneTab::OnNodeSelectionChanged, this));
     SubscribeToEvent(E_UPDATE, std::bind(&SceneTab::OnUpdate, this, _2));
     // On plugin code reload all scene state is serialized, plugin library is reloaded and scene state is unserialized.
@@ -68,6 +80,10 @@ SceneTab::SceneTab(Context* context)
     });
     SubscribeToEvent(GetScene(), E_COMPONENTADDED, std::bind(&SceneTab::OnComponentAdded, this, _2));
     SubscribeToEvent(GetScene(), E_COMPONENTREMOVED, std::bind(&SceneTab::OnComponentRemoved, this, _2));
+
+    SubscribeToEvent(E_EDITORSCENEEFFECTSCHANGED, [&](StringHash, VariantMap& args) {
+        cameraPreviewViewport_->SetRenderPath(dynamic_cast<RenderPath*>(args[EditorSceneEffectsChanged::P_RENDERPATH].GetPtr()));
+    });
 
     undo_.Connect(GetScene());
     undo_.Connect(&inspector_);
@@ -106,14 +122,23 @@ bool SceneTab::RenderWindowContent()
     IntRect tabRect = UpdateViewRect();
 
     ui::SetCursorScreenPos(ToImGui(tabRect.Min()));
+    ui::BeginChild("Gizmo frame", ToImGui(tabRect.Size()));
     ui::Image(view_.GetTexture(), ToImGui(tabRect.Size()));
+    gizmo_.ManipulateSelection(view_.GetCamera());
+
     if (GetInput()->IsMouseVisible())
         mouseHoversViewport_ = ui::IsItemHovered();
 
     bool isClickedLeft = GetInput()->GetMouseButtonClick(MOUSEB_LEFT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
     bool isClickedRight = GetInput()->GetMouseButtonClick(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
-    gizmo_.ManipulateSelection(view_.GetCamera());
+    // Render camera preview
+    if (cameraPreviewViewport_->GetCamera() != nullptr)
+    {
+        ui::SetCursorScreenPos(ToImGui(tabRect.Max() - cameraPreviewSize - IntVector2{10, 10}));
+        ui::Image(cameraPreviewtexture_.Get(), ToImGui(cameraPreviewSize));
+    }
+    ui::EndChild();
 
     // Prevent dragging window when scene view is clicked.
     if (ui::IsWindowHovered())
@@ -377,6 +402,7 @@ bool SceneTab::IsSelected(Node* node) const
 void SceneTab::OnNodeSelectionChanged()
 {
     using namespace EditorSelectionChanged;
+    UpdateCameraPreview();
     selectedComponent_ = nullptr;
 }
 
@@ -769,6 +795,7 @@ void SceneTab::Play()
     {
         SceneStateRestore(sceneState_);
         undo_.SetTrackingEnabled(true);
+        UpdateCameraPreview();
     }
 }
 
@@ -820,6 +847,8 @@ void SceneTab::OnComponentAdded(VariantMap& args)
             billboard->Commit();
         }
     }
+
+    UpdateCameraPreview();
 }
 
 void SceneTab::OnComponentRemoved(VariantMap& args)
@@ -846,6 +875,8 @@ void SceneTab::OnComponentRemoved(VariantMap& args)
             }
         }
     }
+
+    UpdateCameraPreview();
 }
 
 void SceneTab::OnFocused()
@@ -853,6 +884,27 @@ void SceneTab::OnFocused()
     SendEvent(E_EDITORRENDERINSPECTOR, EditorRenderInspector::P_INSPECTABLE, this, EditorRenderInspector::P_CATEGORY, IC_SCENE);
     SendEvent(E_EDITORRENDERHIERARCHY, EditorRenderHierarchy::P_INSPECTABLE, this);
     SendEvent(E_EDITORSCENEEFFECTSCHANGED, EditorSceneEffectsChanged::P_RENDERPATH, GetSceneView()->GetViewport()->GetRenderPath());
+}
+
+void SceneTab::UpdateCameraPreview()
+{
+    if (Camera* currentCamera = cameraPreviewViewport_->GetCamera())
+        currentCamera->SetViewOverrideFlags(currentCamera->GetViewOverrideFlags() & ~VO_DISABLE_DEBUG);
+
+    cameraPreviewViewport_->SetCamera(nullptr);
+
+    if (GetSelection().Size())
+    {
+        if (Node* node = GetSelection().At(0))
+        {
+            if (Camera* camera = node->GetComponent<Camera>())
+            {
+                camera->SetViewOverrideFlags(camera->GetViewOverrideFlags() | VO_DISABLE_DEBUG);
+                cameraPreviewViewport_->SetCamera(camera);
+                cameraPreviewViewport_->SetRenderPath(GetSceneView()->GetViewport()->GetRenderPath());
+            }
+        }
+    }
 }
 
 }

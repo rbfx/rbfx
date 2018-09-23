@@ -112,6 +112,8 @@ protected:
     void OnComponentAdded(VariantMap& args);
     /// Removes extra editor objects that were used for representing some components.
     void OnComponentRemoved(VariantMap& args);
+    /// Add or remove camera preview.
+    void UpdateCameraPreview();
 
     /// Scene renderer.
     SceneView view_;
@@ -133,6 +135,10 @@ protected:
     bool mouseHoversViewport_ = false;
     /// Nodes whose entries in hierarchy tree should be opened on next frame.
     PODVector<Node*> openHierarchyNodes_;
+    /// Selected camera preview texture.
+    SharedPtr<Texture2D> cameraPreviewtexture_;
+    /// Selected camera preview viewport.
+    SharedPtr<Viewport> cameraPreviewViewport_;
 };
 
 };
