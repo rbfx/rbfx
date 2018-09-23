@@ -653,6 +653,13 @@ void SceneTab::SceneStateSave()
     XMLElement root = sceneState_.CreateRoot("scene");
     GetScene()->SaveXML(root);
 
+    // Prevent marker tags from showing up in UI
+    for (auto& node : GetSelection())
+    {
+        if (node)
+            node->RemoveTag("__EDITOR_SELECTED__");
+    }
+
     // Now that editor objects are saved make sure UI does not expose them
     for (auto* node : nodes)
         node->SetTemporary(true);
@@ -773,7 +780,6 @@ void SceneTab::Pause()
     {
         undo_.SetTrackingEnabled(false);
         SceneStateSave();
-        gizmo_.UnselectAll();
     }
 }
 
