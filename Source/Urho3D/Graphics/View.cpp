@@ -629,6 +629,10 @@ void View::Render()
     if (drawDebug_ && octree_ && camera_)
     {
         auto* debug = octree_->GetComponent<DebugRenderer>();
+
+        if (camera_->GetViewOverrideFlags() & VO_DISABLE_DEBUG)
+            debug = nullptr;
+
         if (debug && debug->IsEnabledEffective() && debug->HasContent())
         {
             // If used resolve from backbuffer, blit first to the backbuffer to ensure correct depth buffer on OpenGL

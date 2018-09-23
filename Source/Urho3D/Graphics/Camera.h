@@ -41,6 +41,7 @@ enum ViewOverride : unsigned
     VO_LOW_MATERIAL_QUALITY = 0x1,
     VO_DISABLE_SHADOWS = 0x2,
     VO_DISABLE_OCCLUSION = 0x4,
+    VO_DISABLE_DEBUG = 0x8,
 };
 URHO3D_FLAGSET(ViewOverride, ViewOverrideFlags);
 
