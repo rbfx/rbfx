@@ -350,14 +350,25 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             unsigned index = 0;
             for (auto it = map->Begin(); it != map->End(); it++)
             {
-                // Column-friendly indent
-                ui::NewLine();
-                ui::SameLine(20_dpx);
+                if (it->second_.GetType() == VAR_RESOURCEREFLIST || it->second_.GetType() == VAR_VARIANTMAP || it->second_.GetType() == VAR_VARIANTVECTOR)
+                    // TODO: Support nested collections.
+                    continue;
 
 #if URHO3D_HASH_DEBUG
                 const String& name = StringHash::GetGlobalStringHashRegister()->GetString(it->first_);
+
+                if (name.StartsWith("__") && name.EndsWith("__"))
+                    // Engine-internal variables are not exposed.
+                    continue;
+
+                // Column-friendly indent
+                ui::NewLine();
+                ui::SameLine(20_dpx);
                 ui::TextUnformatted((name.Empty() ? it->first_.ToString() : name).CString());
 #else
+                // Column-friendly indent
+                ui::NewLine();
+                ui::SameLine(20_dpx);
                 ui::TextUnformatted(it->first_.ToString().CString());
 #endif
 
