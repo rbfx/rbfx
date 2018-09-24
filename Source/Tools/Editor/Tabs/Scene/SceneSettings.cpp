@@ -40,6 +40,12 @@ void SceneSettings::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Save Elapsed Time", bool, saveSceneSettings_, false, AM_EDIT | AM_FILE);
 }
 
+// TODO: SceneEffects class sucks on the level over 9000 and should probably be replaced with something that subclasses
+// a Component which then is added to a scene. This component could use standard-ish attributes that would give
+// automatic serialization for free. Problem with this approach is that RenderPath (configured by this class) is a
+// per-viewport thing and one scene could have multiple viewports and scene should not really have more than one
+// component of certain type. However we still need to to adjust editor viewport renderpath/filters somehow. So old and
+// working class that extremely sucks is here.
 SceneEffects::SceneEffects(SceneTab* tab)
     : Serializable(tab->GetContext())
     , tab_(tab)
