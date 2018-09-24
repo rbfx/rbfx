@@ -222,7 +222,10 @@ bool SceneTab::LoadResource(const String& resourcePath)
             CreateObjects();
         }
         else
+        {
             URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).CString());
+            return false;
+        }
     }
     else if (resourcePath.EndsWith(".json", false))
     {
@@ -232,10 +235,16 @@ bool SceneTab::LoadResource(const String& resourcePath)
             CreateObjects();
         }
         else
+        {
             URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).CString());
+            return false;
+        }
     }
     else
+    {
         URHO3D_LOGERRORF("Unknown scene file format %s", GetExtension(resourcePath).CString());
+        return false;
+    }
 
     SetTitle(GetFileName(resourcePath));
 
