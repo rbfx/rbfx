@@ -370,7 +370,7 @@ bool Serializable::LoadXML(const XMLElement& source)
                 Variant varValue;
 
                 // If enums specified, do enum lookup and int assignment. Otherwise assign the variant directly
-                if (attr.enumNames_)
+                if (attr.enumNames_ && attr.type_ == VAR_INT)
                 {
                     String value = attrElem.GetAttribute("value");
                     bool enumFound = false;
@@ -458,7 +458,7 @@ bool Serializable::LoadJSON(const JSONValue& source)
                 Variant varValue;
 
                 // If enums specified, do enum lookup ad int assignment. Otherwise assign variant directly
-                if (attr.enumNames_)
+                if (attr.enumNames_ && attr.type_ == VAR_INT)
                 {
                     const String& valueStr = value.GetString();
                     bool enumFound = false;
@@ -534,7 +534,7 @@ bool Serializable::SaveXML(XMLElement& dest) const
         XMLElement attrElem = dest.CreateChild("attribute");
         attrElem.SetAttribute("name", attr.name_);
         // If enums specified, set as an enum string. Otherwise set directly as a Variant
-        if (attr.enumNames_)
+        if (attr.enumNames_ && attr.type_ == VAR_INT)
         {
             int enumValue = value.GetInt();
             attrElem.SetAttribute("value", attr.enumNames_[enumValue]);
@@ -570,7 +570,7 @@ bool Serializable::SaveJSON(JSONValue& dest) const
 
         JSONValue attrVal;
         // If enums specified, set as an enum string. Otherwise set directly as a Variant
-        if (attr.enumNames_)
+        if (attr.enumNames_ && attr.type_ == VAR_INT)
         {
             int enumValue = value.GetInt();
             attrVal = attr.enumNames_[enumValue];

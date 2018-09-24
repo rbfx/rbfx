@@ -173,12 +173,24 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         for (; info->enumNames_ && info->enumNames_[++comboValuesNum];);
     }
 
-    if (comboValuesNum > 0)
+    if (comboValuesNum > 0 && info != nullptr)
     {
-        int current = value.GetInt();
+        int current = 0;
+        if (info->type_ == VAR_INT)
+            current = value.GetInt();
+        else if (info->type_ == VAR_STRING)
+            current = GetStringListIndex(value.GetString().CString(), info->enumNames_, 0);
+        else
+            assert(false);
+
         modified |= ui::Combo("", &current, info->enumNames_, comboValuesNum);
         if (modified)
-            value = current;
+        {
+            if (info->type_ == VAR_INT)
+                value = current;
+            else if (info->type_ == VAR_STRING)
+                value = info->enumNames_[current];
+        }
     }
     else
     {
@@ -604,6 +616,9 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
 
         for (const AttributeInfo& info: *attributes)
         {
+            if (info.mode_ & AM_NOEDIT)
+                continue;
+
             bool hidden = false;
             Color color = Color::WHITE;
             String tooltip;
