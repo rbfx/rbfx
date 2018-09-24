@@ -66,6 +66,8 @@ namespace Urho3D
 
 class Context;
 
+static const unsigned FIRST_INTERNAL_ID = ~0U >> 1;
+
 /// Register toolbox types with the engine.
 URHO3D_TOOLBOX_API void RegisterToolboxTypes(Context* context);
 

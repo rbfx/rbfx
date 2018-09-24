@@ -39,6 +39,7 @@ namespace Urho3D
 {
 
 static const IntVector2 cameraPreviewSize{320, 200};
+static PODVector<StringHash> hiddenComponents{SceneSettings::GetTypeStatic()};
 
 SceneTab::SceneTab(Context* context)
     : BaseClassName(context)
@@ -50,7 +51,6 @@ SceneTab::SceneTab(Context* context)
     SetTitle("New Scene");
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 
-    settings_ = new SceneSettings(context_);
     effectSettings_ = new SceneEffects(this);
 
     // Camera preview objects
@@ -238,6 +238,10 @@ bool SceneTab::LoadResource(const String& resourcePath)
         URHO3D_LOGERRORF("Unknown scene file format %s", GetExtension(resourcePath).CString());
 
     SetTitle(GetFileName(resourcePath));
+
+    // Components for custom scene settings
+    GetScene()->GetOrCreateComponent<SceneSettings>(LOCAL, FIRST_INTERNAL_ID);
+
     return true;
 }
 
@@ -256,7 +260,8 @@ bool SceneTab::SaveResource()
     bool result = false;
 
     float elapsed = 0;
-    if (!settings_->saveElapsedTime_)
+    auto* settings = GetScene()->GetComponent<SceneSettings>();
+    if (!settings->GetSaveElapsedTime())
     {
         elapsed = GetScene()->GetElapsedTime();
         GetScene()->SetElapsedTime(0);
@@ -269,7 +274,7 @@ bool SceneTab::SaveResource()
         result = GetScene()->SaveJSON(file);
     GetScene()->SetUpdateEnabled(false);
 
-    if (!settings_->saveElapsedTime_)
+    if (!settings->GetSaveElapsedTime())
         GetScene()->SetElapsedTime(elapsed);
 
     if (result)
@@ -420,11 +425,18 @@ void SceneTab::RenderInspector(const char* filter)
         if (node == GetScene())
         {
             effectSettings_->Prepare();
-            RenderAttributes(settings_.Get(), filter, &inspector_);
+            // Special components are rendered first.
+            RenderAttributes(node->GetComponent<SceneSettings>(), filter, &inspector_);
             RenderAttributes(effectSettings_.Get(), filter, &inspector_);
         }
+
         for (Component* component : node->GetComponents())
+        {
+            if (component->IsTemporary() || hiddenComponents.Contains(component->GetType()))
+                continue;
+
             RenderAttributes(component, filter, &inspector_);
+        }
     }
 }
 
@@ -526,7 +538,7 @@ void SceneTab::RenderNodeTree(Node* node)
             Vector<SharedPtr<Component>> components = node->GetComponents();
             for (const auto& component: components)
             {
-                if (component->IsTemporary())
+                if (component->IsTemporary() || hiddenComponents.Contains(component->GetType()))
                     continue;
 
                 ui::PushID(component);
@@ -591,7 +603,6 @@ void SceneTab::OnLoadProject(const JSONValue& tab)
             lightComponent->SetEnabled(camera["light"].GetBool());
     }
 
-    settings_->LoadProject(tab["settings"]);
     effectSettings_->LoadProject(tab["effects"]);
 
     undo_.SetTrackingEnabled(isTracking);
@@ -607,7 +618,6 @@ void SceneTab::OnSaveProject(JSONValue& tab)
     camera["rotation"].SetVariant(cameraNode->GetRotation());
     camera["light"] = cameraNode->GetComponent<Light>()->IsEnabled();
 
-    settings_->SaveProject(tab["settings"]);
     effectSettings_->SaveProject(tab["effects"]);
 }
 

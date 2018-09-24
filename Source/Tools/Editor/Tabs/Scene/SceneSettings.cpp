@@ -30,24 +30,14 @@ namespace Urho3D
 {
 
 SceneSettings::SceneSettings(Context* context)
-    : Serializable(context)
+    : Component(context)
 {
-}
-
-void SceneSettings::SaveProject(JSONValue& settings)
-{
-    settings["saveElapsedTime"] = saveElapsedTime_;
-}
-
-void SceneSettings::LoadProject(const JSONValue& settings)
-{
-    saveElapsedTime_ = settings["saveElapsedTime"].GetBool();
 }
 
 void SceneSettings::RegisterObject(Context* context)
 {
     context->RegisterFactory<SceneSettings>();
-    URHO3D_ATTRIBUTE("Save Elapsed Time", bool, saveElapsedTime_, false, AM_EDIT);
+    URHO3D_ATTRIBUTE("Save Elapsed Time", bool, saveSceneSettings_, false, AM_EDIT | AM_FILE);
 }
 
 SceneEffects::SceneEffects(SceneTab* tab)

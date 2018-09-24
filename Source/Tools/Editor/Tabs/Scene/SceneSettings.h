@@ -23,6 +23,7 @@
 #pragma once
 
 
+#include <Urho3D/Scene/Component.h>
 #include <Urho3D/Scene/Serializable.h>
 #include <Urho3D/Resource/XMLElement.h>
 
@@ -33,21 +34,22 @@ namespace Urho3D
 class SceneTab;
 
 /// Class handling common scene settings
-class SceneSettings : public Serializable
+class SceneSettings : public Component
 {
-URHO3D_OBJECT(SceneSettings, Serializable);
+    URHO3D_OBJECT(SceneSettings, Component);
 public:
     /// Construct
     explicit SceneSettings(Context* context);
-    /// Save settings into project file.
-    void SaveProject(JSONValue& settings);
-    /// Load settings from a project file.
-    void LoadProject(const JSONValue& settings);
     /// Register object with engine.
     static void RegisterObject(Context* context);
 
-    /// Flag which determines if "Elapsed Time" attribute of a scene should be saved.
-    bool saveElapsedTime_ = false;
+    /// Returns true when elapsed scene time should be saved.
+    bool GetSaveElapsedTime() const { return saveSceneSettings_; }
+    /// Change saving of elapsed scene time.
+    void SetSaveElapsedTime(bool value) { saveSceneSettings_ = value; }
+
+protected:
+    bool saveSceneSettings_ = false;
 };
 
 /// Class handling scene postprocess effect settings

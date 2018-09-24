@@ -67,7 +67,7 @@ void SceneView::CreateObjects()
     camera_ = WeakPtr<Node>(scene_->GetChild("EditorCamera", true));
     if (camera_.Expired())
     {
-        camera_ = scene_->CreateChild("EditorCamera", LOCAL, M_MAX_UNSIGNED, true);
+        camera_ = scene_->CreateChild("EditorCamera", LOCAL, FIRST_INTERNAL_ID, true);
         camera_->CreateComponent<Camera>();
         camera_->AddTag("__EDITOR_OBJECT__");
         camera_->SetTemporary(true);
@@ -75,7 +75,7 @@ void SceneView::CreateObjects()
     auto* debug = scene_->GetComponent<DebugRenderer>();
     if (debug == nullptr)
     {
-        debug = scene_->CreateComponent<DebugRenderer>(LOCAL, M_MAX_UNSIGNED - 1);
+        debug = scene_->CreateComponent<DebugRenderer>(LOCAL, FIRST_INTERNAL_ID);
         debug->SetTemporary(true);
     }
     debug->SetView(GetCamera());
