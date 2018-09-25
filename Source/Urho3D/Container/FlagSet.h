@@ -231,6 +231,9 @@ public:
     /// Return underlying integer (non-constant).
     Integer& AsInteger() { return value_; }
 
+    /// Return hash value.
+    unsigned ToHash() const { return MakeHash(value_); }
+
 protected:
     /// Value
     Integer value_ = 0;
