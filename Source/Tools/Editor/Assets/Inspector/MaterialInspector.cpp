@@ -425,6 +425,9 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
 
 void MaterialInspector::SetEffectSource(RenderPath* renderPath)
 {
+    if (renderPath == nullptr)
+        return;
+
     view_.GetViewport()->SetRenderPath(renderPath);
     auto* light = view_.GetCamera()->GetComponent<Light>();
     for (auto& command: renderPath->commands_)
