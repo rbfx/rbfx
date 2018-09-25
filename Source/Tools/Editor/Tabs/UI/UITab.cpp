@@ -183,7 +183,7 @@ bool UITab::RenderWindowContent()
         // Render element selection rect, resize handles, and handle element transformations.
         IntRect delta;
         IntRect screenRect(selected->GetScreenPosition() + tabRect.Min(), selected->GetScreenPosition() + selected->GetSize() + tabRect.Min());
-        auto flags = ui::TSF_NONE;
+        ui::TransformSelectorFlags flags = ui::TSF_NONE;
         if (hideResizeHandles_)
             flags |= ui::TSF_HIDEHANDLES;
         if (selected->GetMinSize().x_ == selected->GetMaxSize().x_)

@@ -230,8 +230,12 @@ enum TransformResizeType
     RESIZE_MOVE = 15,
 };
 
+}
 /// Flag manipuation operators.
-URHO3D_TO_FLAGS_ENUM(TransformResizeType);
+URHO3D_FLAGSET_EX(ImGui, TransformResizeType, TransformResizeTypeFlags);
+
+namespace ImGui
+{
 /// Hashing function which enables use of enum type as a HashMap key.
 inline unsigned MakeHash(const TransformResizeType& value) { return value; }
 
@@ -246,9 +250,9 @@ bool TransformRect(Urho3D::IntRect& inOut, Urho3D::IntRect& delta, TransformSele
     struct State
     {
         /// A flag indicating type of resize action currently in progress
-        TransformResizeType resizing_ = RESIZE_NONE;
+        TransformResizeTypeFlags resizing_ = RESIZE_NONE;
         /// A cache of system cursors
-        HashMap<TransformResizeType, SDL_Cursor*> cursors_;
+        HashMap<TransformResizeTypeFlags, SDL_Cursor*> cursors_;
         /// Default cursor shape
         SDL_Cursor* cursorArrow_;
         /// Flag indicating that this selector set cursor handle
@@ -305,7 +309,7 @@ bool TransformRect(Urho3D::IntRect& inOut, Urho3D::IntRect& delta, TransformSele
     ui::ItemSize(ToImGui(inOut));
     if (ui::ItemAdd(ToImGui(extendedRect), id))
     {
-        TransformResizeType resizing = RESIZE_NONE;
+        TransformResizeTypeFlags resizing = RESIZE_NONE;
         if (renderHandle(inOut.Min() + size / 2, handleSize))
             resizing = RESIZE_MOVE;
 

@@ -23,13 +23,14 @@
 #include "ImGuiDock.h"
 #define IMGUI_DEFINE_PLACEMENT_NEW
 #include <ImGui/imgui_internal.h>
+#include <Urho3D/Container/FlagSet.h>
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Core/Utils.h>
 
+URHO3D_FLAGSET_GLOBAL(ImGuiCond_, ImGuiCondFlags);
+
 namespace ImGui
 {
-
-URHO3D_TO_FLAGS_ENUM(ImGuiCond_);
 
 struct DockContext
 {
@@ -203,7 +204,7 @@ struct DockContext
         bool opened;
         bool first;
         int last_frame;
-        ImGuiCond_ m_allow_condition = ImGuiCond_Always | ImGuiCond_Once | ImGuiCond_FirstUseEver | ImGuiCond_Appearing;
+        ImGuiCondFlags m_allow_condition = ImGuiCond_Always | ImGuiCond_Once | ImGuiCond_FirstUseEver | ImGuiCond_Appearing;
         bool m_tab_hovered = false;
     };
 
@@ -216,7 +217,7 @@ struct DockContext
     bool m_is_begin_open = false;
     ImU32 m_next_dock_after = 0;
     DockSlot m_next_dock_slot;
-    ImGuiCond_ m_next_dock_condition;
+    ImGuiCondFlags m_next_dock_condition;
 
 
     ~DockContext() = default;

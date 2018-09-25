@@ -33,7 +33,7 @@
 namespace ImGui
 {
 
-enum TransformSelectorFlags
+enum TransformSelector
 {
     TSF_NONE = 0,
     TSF_NOHORIZONTAL = 1,
@@ -41,8 +41,12 @@ enum TransformSelectorFlags
     TSF_HIDEHANDLES = 4,
 };
 
-URHO3D_TO_FLAGS_ENUM(TransformSelectorFlags);
+}
 
+URHO3D_FLAGSET_EX(ImGui, TransformSelector, TransformSelectorFlags);
+
+namespace ImGui
+{
 /// Helper for running `for` loop just once.
 struct ScopeHelper
 {

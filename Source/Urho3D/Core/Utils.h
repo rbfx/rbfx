@@ -22,16 +22,6 @@
 
 #pragma once
 
-/// Implement operators for using enum members as flags
-#define URHO3D_TO_FLAGS_ENUM(t) \
-    inline t operator|(t a, t b) { return static_cast<t>(static_cast<size_t>(a) | static_cast<size_t>(b)); }\
-    inline t operator|=(t& a, t b) { a = static_cast<t>(static_cast<size_t>(a) | static_cast<size_t>(b)); return a; }\
-    inline t operator&(t a, t b) { return static_cast<t>(static_cast<size_t>(a) & static_cast<size_t>(b)); }\
-    inline t operator&=(t& a, t b) { a = static_cast<t>(static_cast<size_t>(a) & static_cast<size_t>(b)); return a; }\
-    inline t operator^(t a, t b) { return static_cast<t>(static_cast<size_t>(a) ^ static_cast<size_t>(b)); }\
-    inline t operator^=(t& a, t b) { a = static_cast<t>(static_cast<size_t>(a) ^ static_cast<size_t>(b)); return a; }\
-    inline t operator~(t a) { return static_cast<t>(~static_cast<size_t>(a)); }
-
 #if __cplusplus >= 201703L
 #   define URHO3D_FALLTHROUGH [[fallthrough]]
 #else
