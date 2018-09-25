@@ -469,6 +469,7 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation);
 // clang-format off
 #include <windows.h>
 #include <dbghelp.h>
+#include <sys/stat.h>
 // clang-format on
 
 #pragma comment(lib, "dbghelp.lib")
@@ -477,6 +478,14 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation);
 #define CR_INT "%ld"
 
 using so_handle = HMODULE;
+
+static size_t cr_file_size(const std::string &path) {
+    struct _stat stats {};
+    if (_stat(path.c_str(), &stats) == -1) {
+        return 0;
+    }
+    return static_cast<size_t>(stats.st_size);
+}
 
 static std::wstring cr_utf8_to_wstring(const std::string &str) {
     int wlen = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, 0, 0);
@@ -1295,6 +1304,10 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
         const bool close = false;
         cr_plugin_unload(ctx, rollback, close);
         if (!rollback) {
+            while (!cr_file_size(file)) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+
             cr_copy(file, new_file);
 
 #if defined(_MSC_VER)
