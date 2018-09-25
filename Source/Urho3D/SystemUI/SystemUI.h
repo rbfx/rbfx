@@ -86,6 +86,7 @@ protected:
     IndexBuffer indexBuffer_;
     SharedPtr<Texture2D> fontTexture_;
     PODVector<float> fontSizes_;
+    ImGuiContext* imContext_;
 
     void ReallocateFontTexture();
     void UpdateProjectionMatrix();

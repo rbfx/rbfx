@@ -50,7 +50,7 @@ SystemUI::SystemUI(Urho3D::Context* context)
     , vertexBuffer_(context)
     , indexBuffer_(context)
 {
-    ImGui::CreateContext();
+    imContext_ = ImGui::CreateContext();
 
     ImGuiIO& io = ImGui::GetIO();
     io.KeyMap[ImGuiKey_Tab] = SCANCODE_TAB;
@@ -116,8 +116,8 @@ SystemUI::SystemUI(Urho3D::Context* context)
 SystemUI::~SystemUI()
 {
     ImGui::EndFrame();
-    ImGui::Shutdown(ImGui::GetCurrentContext());
-    ImGui::DestroyContext();
+    ImGui::Shutdown(imContext_);
+    ImGui::DestroyContext(imContext_);
 }
 
 void SystemUI::UpdateProjectionMatrix()
