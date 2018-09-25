@@ -192,12 +192,19 @@ macro (add_sample TARGET)
         if (ANDROID)
             add_library(${TARGET} SHARED ${SOURCE_FILES})
         else ()
-            add_executable (${TARGET} ${TARGET_TYPE} ${SOURCE_FILES})
+            if ("${ARGN}" STREQUAL "SHARED")
+                add_library (${TARGET} SHARED ${SOURCE_FILES})
+            else ()
+                add_executable (${TARGET} ${TARGET_TYPE} ${SOURCE_FILES})
+            endif ()
         endif ()
         target_link_libraries (${TARGET} Urho3D)
         target_include_directories(${TARGET} PRIVATE ..)
         if (NOT ANDROID)
-            install(TARGETS ${TARGET} RUNTIME DESTINATION ${DEST_SAMPLES_DIR})
+            install(TARGETS ${TARGET}
+                RUNTIME DESTINATION ${DEST_SAMPLES_DIR}
+                LIBRARY DESTINATION ${DEST_SAMPLES_DIR}
+            )
         endif ()
 
         if (EMSCRIPTEN)

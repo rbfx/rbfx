@@ -27,6 +27,7 @@
 #include <Toolbox/ToolboxAPI.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <nativefiledialog/nfd.h>
+#include <Toolbox/SystemUI/Widgets.h>
 
 #include "Editor.h"
 #include "EditorEvents.h"
@@ -52,9 +53,6 @@ static std::string defaultProjectPath;
 
 Editor::Editor(Context* context)
     : Application(context)
-#if URHO3D_PLUGINS_NATIVE
-    , pluginsNative_(context)
-#endif
 {
 }
 
@@ -167,11 +165,6 @@ void Editor::Start()
         using namespace EditorSceneEffectsChanged;
         lastEffectSource_ = dynamic_cast<RenderPath*>(args[P_RENDERPATH].GetPtr());
     });
-
-    // Plugin loading
-#if URHO3D_PLUGINS_NATIVE
-    pluginsNative_.AutoLoadFrom(GetFileSystem()->GetProgramDir());
-#endif
 }
 
 void Editor::Stop()
@@ -275,6 +268,16 @@ void Editor::RenderMenuBar()
                 }
                 ui::EndMenu();
             }
+
+            if (ui::BeginMenu("Project"))
+            {
+                if (ui::BeginMenu("Plugins"))
+                {
+                    RenderProjectPluginsMenu();
+                    ui::EndMenu();
+                }
+                ui::EndMenu();
+            }
         }
 
         SendEvent(E_EDITORAPPLICATIONMENU);
@@ -287,7 +290,7 @@ Tab* Editor::CreateTab(StringHash type)
 {
     auto tab = DynamicCast<Tab>(context_->CreateObject(type));
     tabs_.Push(tab);
-    return tab;
+    return tab.Get();
 }
 
 Tab* Editor::GetOrCreateTab(StringHash type, const String& resourceName)
@@ -421,6 +424,63 @@ void Editor::HandleHotkeys()
             if (args.TryGetValue(Undo::P_MANAGER, manager))
                 ((Undo::Manager*)manager.GetPtr())->Undo();
         }
+    }
+}
+
+void Editor::RenderProjectPluginsMenu()
+{
+    unsigned possiblePluginCount = 0;
+    StringVector files;
+    GetFileSystem()->ScanDir(files, GetFileSystem()->GetProgramDir(), "*.*", SCAN_FILES, false);
+    for (auto it = files.Begin(); it != files.End(); ++it)
+    {
+        if (!it->EndsWith(".so")
+            // TODO: .net/windows && !it->EndsWith(".dll")
+            // TODO: MacOS && !it->EndsWith("dylib")
+        )
+            continue;
+
+        unsigned dotIndex = it->FindLast('.');
+        if (dotIndex == 0 || dotIndex == String::NPOS)
+            continue;
+
+        String baseName = GetFileName(*it);
+        if (IsDigit(static_cast<unsigned int>(baseName.Back())))
+            // Native plugins will rename main file and append version after base name.
+            continue;
+
+        if (baseName.EndsWith("CSharp"))
+            // Libraries for C# interop
+            continue;
+
+#if __linux__ || __APPLE__
+        if (baseName.StartsWith("lib"))
+            baseName = baseName.Substring(3);
+#endif
+
+        if (baseName == "Urho3D" || baseName == "Toolbox")
+            // Internal engine libraries
+            continue;
+
+        ++possiblePluginCount;
+
+        PluginManager* plugins = project_->GetPlugins();
+        Plugin* plugin = plugins->GetPlugin(*it);
+        bool loaded = plugin != nullptr;
+        if (ui::Checkbox(it->CString(), &loaded))
+        {
+            if (loaded)
+                plugins->Load(*it);
+            else
+                plugins->Unload(plugin);
+        }
+    }
+
+    if (possiblePluginCount == 0)
+    {
+        ui::TextUnformatted("No available files.");
+        ui::SetHelpTooltip("Plugins are shared libraries that have a class inheriting from PluginApplication and "
+                           "define a plugin entry point. Look at Samples/103_GamePlugin for more information.");
     }
 }
 

@@ -26,7 +26,6 @@
 #include <Urho3D/Urho3DAll.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
 #include "Project.h"
-#include "Plugins/PluginManagerNative.h"
 
 using namespace std::placeholders;
 
@@ -88,6 +87,8 @@ protected:
     void OnConsoleCommand(VariantMap& args);
     /// Process any global hotkeys.
     void HandleHotkeys();
+    /// Renders a project plugins submenu.
+    void RenderProjectPluginsMenu();
 
     /// List of active scene tabs.
     Vector<SharedPtr<Tab>> tabs_;
@@ -97,10 +98,6 @@ protected:
     String coreResourcePrefixPath_;
     /// Currently loaded project.
     SharedPtr<Project> project_;
-#if URHO3D_PLUGINS_NATIVE
-    /// Native plugin manager.
-    PluginManagerNative pluginsNative_;
-#endif
     /// Render path of last active scene.
     SharedPtr<RenderPath> lastEffectSource_;
 };

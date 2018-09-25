@@ -22,13 +22,14 @@
 
 #pragma once
 
+#include "../Core/Context.h"
 #include "../Core/Object.h"
 
 
 namespace Urho3D
 {
 
-/// Base class for clearing plugins for Editor.
+/// Base class for creating plugins for Editor.
 class URHO3D_API PluginApplication : public Object
 {
     URHO3D_OBJECT(PluginApplication, Object);
@@ -36,12 +37,35 @@ public:
     /// Construct.
     explicit PluginApplication(Context* context) : Object(context) { }
     /// Destruct.
-    ~PluginApplication() override = default;
+    ~PluginApplication() override;
     /// Called when plugin is being loaded. Register all custom components and subscribe to events here.
-    virtual void OnLoad() = 0;
+    virtual void Start() { }
     /// Called when plugin is being unloaded. Unregister all custom components and unsubscribe from events here.
-    virtual void OnUnload() = 0;
+    virtual void Stop() { }
+
+protected:
+    /// Register a factory for an object type.
+    template<typename T> void RegisterFactory();
+    /// Register a factory for an object type and specify the object category.
+    template<typename T> void RegisterFactory(const char* category);
+
+    /// Types registered with the engine. They will be unloaded when plugin is reloaded.
+    PODVector<Pair<StringHash, const char*>> registeredTypes_;
 };
+
+template<typename T>
+void PluginApplication::RegisterFactory()
+{
+    context_->RegisterFactory<T>();
+    registeredTypes_.Push({T::GetTypeStatic(), nullptr});
+}
+
+template<typename T>
+void PluginApplication::RegisterFactory(const char* category)
+{
+    context_->RegisterFactory<T>(category);
+    registeredTypes_.Push({T::GetTypeStatic(), category});
+}
 
 /// Main function of the plugin.
 int URHO3D_API PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*),
@@ -54,9 +78,9 @@ int URHO3D_API PluginMain(void* ctx_, size_t operation, PluginApplication*(*fact
     extern "C" URHO3D_EXPORT_API int cr_main(void* ctx, size_t operation) \
     {                                                                     \
         return Urho3D::PluginMain(ctx, operation,                         \
-            [](Context* context) -> PluginApplication* {                  \
+            [](Urho3D::Context* context) -> Urho3D::PluginApplication* {  \
                 return new Class(context);                                \
-            }, [](PluginApplication* plugin) {                            \
+            }, [](Urho3D::PluginApplication* plugin) {                    \
                 delete plugin;                                            \
             });                                                           \
     }

@@ -20,33 +20,227 @@
 // THE SOFTWARE.
 //
 
+#if URHO3D_PLUGINS
+
+#define CR_HOST
+
+#include <Urho3D/Core/CoreEvents.h>
+#include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/IO/Log.h>
 #include "PluginManager.h"
+#include "EditorEventsPrivate.h"
 
 
 namespace Urho3D
 {
 
-void PluginManager::AutoLoadFrom(const String& directory)
+Plugin::Plugin(Context* context)
+    : Object(context)
 {
-    StringVector files;
-    GetFileSystem()->ScanDir(files, directory, "", SCAN_FILES, false);
+}
 
-    for (const auto& path : files)
+PluginManager::PluginManager(Context* context)
+    : Object(context)
+{
+    CleanUp();
+    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { OnEndFrame(); });
+}
+
+PluginType PluginManager::GetPluginType(const String& path)
+{
+    File file(context_);
+    if (!file.Open(path, FILE_READ))
+        return PLUGIN_INVALID;
+
+    // This function implements a naive check for plugin validity. Proper check would parse executable headers and look
+    // for relevant exported function names.
+
+#if __linux__
+    // ELF magic
+    if (path.EndsWith(".so"))
     {
-        switch (IsPluginPath(path))
+        if (file.ReadUInt() == 0x464C457F)
         {
-        case PPT_VALID:
-            LoadPlugin(path);
-            break;
-        case PPT_TEMPORARY:
-            GetFileSystem()->Delete(path);
-            break;
-        case PPT_INVALID:
-        default:
-            break;
+            file.Seek(0);
+            String buf{ };
+            buf.Resize(file.GetSize());
+            file.Read(&buf[0], file.GetSize());
+            auto pos = buf.Find("cr_main");
+            // Function names are preceeded with 0 in elf files.
+            if (pos != String::NPOS && buf[pos - 1] == 0)
+                return PLUGIN_NATIVE;
+        }
+    }
+#endif
+    file.Seek(0);
+    if (path.EndsWith(".dll"))
+    {
+        if (file.ReadShort() == 0x5A4D)
+        {
+#if _WIN32
+            // But only on windows we check if PE file is a native plugin
+            file.Seek(0);
+            String buf{};
+            buf.Resize(file.GetSize());
+            file.Read(&buf[0], file.GetSize());
+            auto pos = buf.Find("cr_main");
+            // Function names are preceeded with 2 byte hint which is preceeded with 0 in PE files.
+            if (pos != String::NPOS && buf[pos - 3] == 0)
+                return PLUGIN_NATIVE;
+#endif
+            // PE files are handled on all platforms because managed executables are PE files.
+            file.Seek(0x3C);
+            auto e_lfanew = file.ReadUInt();
+#if URHO3D_64BIT
+            const auto netMetadataRvaOffset = 0xF8;
+#else
+            const auto netMetadataRvaOffset = 0xE8;
+#endif
+            file.Seek(e_lfanew + netMetadataRvaOffset);  // Seek to .net metadata directory rva
+
+            if (file.ReadUInt() != 0)
+                return PLUGIN_MANAGED;
+        }
+    }
+
+    if (path.EndsWith(".dylib"))
+    {
+        // TODO: MachO file support.
+    }
+
+    return PLUGIN_INVALID;
+}
+
+Plugin* PluginManager::Load(const String& path)
+{
+    if (Plugin* loaded = GetPlugin(path))
+        return loaded;
+
+    CleanUp();
+
+    SharedPtr<Plugin> plugin(new Plugin(context_));
+    plugin->type_ = GetPluginType(path);
+
+    if (plugin->type_ == PLUGIN_NATIVE)
+    {
+        if (cr_plugin_load(plugin->nativeContext_, path.CString()))
+        {
+            plugin->nativeContext_.userdata = context_;
+            plugin->fileName_ = path;
+            plugins_.Push(plugin);
+            return plugin.Get();
+        }
+        else
+            URHO3D_LOGWARNINGF("Failed loading native plugin \"%s\".", GetFileNameAndExtension(path).CString());
+    }
+    else if (plugin->type_ == PLUGIN_MANAGED)
+    {
+        // TODO
+    }
+
+    return nullptr;
+}
+
+bool PluginManager::Unload(Plugin* plugin)
+{
+    if (plugin == nullptr)
+        return false;
+
+    auto it = plugins_.Find(SharedPtr<Plugin>(plugin));
+    if (it == plugins_.End())
+    {
+        URHO3D_LOGERRORF("Plugin %s was never loaded.", plugin->fileName_.CString());
+        return false;
+    }
+
+    SendEvent(E_EDITORUSERCODERELOADSTART);
+    cr_plugin_close(plugin->nativeContext_);
+    SendEvent(E_EDITORUSERCODERELOADEND);
+    URHO3D_LOGINFOF("Plugin %s was unloaded.", plugin->fileName_.CString());
+    plugins_.Erase(it);
+
+    CleanUp();
+
+    return true;
+}
+
+void PluginManager::OnEndFrame()
+{
+#if URHO3D_PLUGINS
+    for (auto it = plugins_.Begin(); it != plugins_.End(); it++)
+    {
+        Plugin* plugin = it->Get();
+        if (plugin->type_ == PLUGIN_NATIVE && plugin->nativeContext_.userdata)
+        {
+            bool reloading = cr_plugin_changed(plugin->nativeContext_);
+            if (reloading)
+                SendEvent(E_EDITORUSERCODERELOADSTART);
+
+            if (cr_plugin_update(plugin->nativeContext_) != 0)
+            {
+                URHO3D_LOGERRORF("Processing plugin \"%s\" failed and it was unloaded.",
+                    GetFileNameAndExtension(plugin->fileName_).CString());
+                cr_plugin_close(plugin->nativeContext_);
+                plugin->nativeContext_.userdata = nullptr;
+                continue;
+            }
+
+            if (reloading)
+            {
+                SendEvent(E_EDITORUSERCODERELOADEND);
+                if (plugin->nativeContext_.userdata != nullptr)
+                {
+                    URHO3D_LOGINFOF("Loaded plugin \"%s\" version %d.",
+                        GetFileNameAndExtension(plugin->fileName_).CString(), plugin->nativeContext_.version);
+                }
+            }
+        }
+    }
+#endif
+}
+
+void PluginManager::CleanUp(String directory)
+{
+    if (directory.Empty())
+        directory = GetFileSystem()->GetProgramDir();
+
+    if (!GetFileSystem()->DirExists(directory))
+        return;
+
+    StringVector files;
+    GetFileSystem()->ScanDir(files, directory, "*.*", SCAN_FILES, false);
+
+    for (const String& file : files)
+    {
+        bool possiblyPlugin = false;
+#if __linux__
+        possiblyPlugin |= file.EndsWith(".so");
+#endif
+#if __APPLE__
+        possiblyPlugin |= file.EndsWith(".dylib");
+#endif
+        possiblyPlugin |= file.EndsWith(".dll");
+
+        if (possiblyPlugin)
+        {
+            String name = GetFileName(file);
+            if (IsDigit(static_cast<unsigned int>(name.Back())))
+                GetFileSystem()->Delete(ToString("%s/%s", directory.CString(), file.CString()));
         }
     }
 }
 
+Plugin* PluginManager::GetPlugin(const String& fileName)
+{
+    for (auto it = plugins_.Begin(); it != plugins_.End(); it++)
+    {
+        if (it->Get()->fileName_ == fileName)
+            return it->Get();
+    }
+    return nullptr;
 }
+
+}
+
+#endif

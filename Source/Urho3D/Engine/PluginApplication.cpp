@@ -28,6 +28,19 @@
 namespace Urho3D
 {
 
+PluginApplication::~PluginApplication()
+{
+    for (const auto& pair : registeredTypes_)
+    {
+        if (pair.second_ != nullptr)
+            context_->RemoveFactory(pair.first_, pair.second_);
+        else
+            context_->RemoveFactory(pair.first_);
+        context_->RemoveAllAttributes(pair.first_);
+        context_->RemoveSubsystem(pair.first_);
+    }
+}
+
 int PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*),
     void(*destroyer)(PluginApplication*))
 {
@@ -40,7 +53,7 @@ int PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Contex
     {
         auto* context = static_cast<Context*>(ctx->userdata);
         auto* application = factory(context);
-        application->OnLoad();
+        application->Start();
         ctx->userdata = application;
         return 0;
     }
@@ -48,7 +61,7 @@ int PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Contex
     case CR_CLOSE:
     {
         auto* application = static_cast<PluginApplication*>(ctx->userdata);
-        application->OnUnload();
+        application->Stop();
         ctx->userdata = application->GetContext();
         destroyer(application);
         return 0;

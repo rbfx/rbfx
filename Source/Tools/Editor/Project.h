@@ -24,7 +24,9 @@
 
 
 #include <Urho3D/Core/Object.h>
-
+#if URHO3D_PLUGINS
+#   include "Plugins/PluginManager.h"
+#endif
 #include "Assets/AssetConverter.h"
 
 
@@ -47,6 +49,8 @@ public:
     String GetCachePath() const;
     /// Returns path to permanent asset cache.
     String GetResourcePath() const;
+    /// Returns plugin manager.
+    PluginManager* GetPlugins() { return &plugins_; }
 
 protected:
     /// Directory containing project.
@@ -57,6 +61,10 @@ protected:
     StringVector cachedEngineResourcePaths_;
     /// Path to imgui settings ini file.
     String uiConfigPath_;
+#if URHO3D_PLUGINS
+    /// Native plugin manager.
+    PluginManager plugins_;
+#endif
 };
 
 

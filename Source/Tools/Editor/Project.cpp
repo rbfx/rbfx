@@ -45,6 +45,9 @@ namespace Urho3D
 Project::Project(Context* context)
     : Object(context)
     , assetConverter_(context)
+#if URHO3D_PLUGINS
+    , plugins_(context)
+#endif
 {
     SubscribeToEvent(E_EDITORRESOURCESAVED, std::bind(&Project::SaveProject, this));
 }
@@ -184,13 +187,39 @@ bool Project::LoadProject(const String& projectPath)
         GetSubsystem<Editor>()->LoadDefaultLayout();
     }
 
-    // StringHashNames.json
+    // Project.json
     {
-        String hashNamesPath(projectFileDir_ + "StringHashNames.json");
-        if (GetFileSystem()->Exists(hashNamesPath))
+        String filePath(projectFileDir_ + "Project.json");
+        if (GetFileSystem()->Exists(filePath))
         {
             JSONFile file(context_);
-            if (!file.LoadFile(hashNamesPath))
+            if (!file.LoadFile(filePath))
+                return false;
+
+            const auto& root = file.GetRoot().GetObject();
+            if (root.Contains("plugins"))
+            {
+                const auto& plugins = root["plugins"]->GetArray();
+                for (const auto& plugin : plugins)
+                    plugins_.Load(plugin.GetString());
+            }
+
+            for (const auto& value : file.GetRoot().GetArray())
+            {
+                // Seed global string hash to name map.
+                StringHash hash(value.GetString());
+                (void) (hash);
+            }
+        }
+    }
+
+    // StringHashNames.json
+    {
+        String filePath(projectFileDir_ + "StringHashNames.json");
+        if (GetFileSystem()->Exists(filePath))
+        {
+            JSONFile file(context_);
+            if (!file.LoadFile(filePath))
                 return false;
 
             for (const auto& value : file.GetRoot().GetArray())
@@ -236,6 +265,33 @@ bool Project::SaveProject()
         ui::SaveDock(root["docks"]);
 
         String filePath(projectFileDir_ + ".user.json");
+        if (!file.SaveFile(filePath))
+        {
+            projectFileDir_.Clear();
+            URHO3D_LOGERRORF("Saving project to '%s' failed", filePath.CString());
+            return false;
+        }
+    }
+
+    // Project.json
+    {
+        JSONFile file(context_);
+        JSONValue& root = file.GetRoot();
+
+        root["version"] = 0;
+
+        // Plugins
+        {
+            JSONArray plugins{};
+            for (const auto& plugin : plugins_.GetPlugins())
+                plugins.Push(plugin->GetFileName());
+            Sort(plugins.Begin(), plugins.End(), [](JSONValue& a, JSONValue& b) {
+                return a.GetString().Compare(b.GetString());
+            });
+            root["plugins"] = plugins;
+        }
+
+        String filePath(projectFileDir_ + "Project.json");
         if (!file.SaveFile(filePath))
         {
             projectFileDir_.Clear();
