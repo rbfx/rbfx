@@ -85,6 +85,9 @@ void SceneView::CreateObjects()
 
 Camera* SceneView::GetCamera() const
 {
+    if (camera_.Null())
+        return nullptr;
+
     return camera_->GetComponent<Camera>();
 }
 

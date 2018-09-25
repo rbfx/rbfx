@@ -385,10 +385,13 @@ void SceneTab::RenderToolbarButtons()
 
     ui::SameLine(0, 3.f);
 
-    if (auto* light = view_.GetCamera()->GetNode()->GetComponent<Light>())
+    if (auto* camera = view_.GetCamera())
     {
-        if (ui::EditorToolbarButton(ICON_FA_LIGHTBULB, "Camera Headlight", light->IsEnabled()))
-            light->SetEnabled(!light->IsEnabled());
+        if (auto* light = camera->GetNode()->GetComponent<Light>())
+        {
+            if (ui::EditorToolbarButton(ICON_FA_LIGHTBULB, "Camera Headlight", light->IsEnabled()))
+                light->SetEnabled(!light->IsEnabled());
+        }
     }
 
     ui::SameLine(0, 3.f);
