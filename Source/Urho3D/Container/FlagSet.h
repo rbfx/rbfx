@@ -44,6 +44,16 @@ template <typename T> struct IsFlagSet
     URHO3D_ENABLE_FLAGSET(enumName); \
     using flagsetName = FlagSet<enumName>
 
+/// Enable enum for using in FlagSet and declare FlagSet specialization for enums in custom namespaces. Shall be called within global namespace.
+#define URHO3D_FLAGSET_EX(nameSpace, enumName, flagsetName)                             \
+    namespace Urho3D { URHO3D_ENABLE_FLAGSET(nameSpace::enumName); }                    \
+    namespace nameSpace { using flagsetName = Urho3D::FlagSet<nameSpace::enumName>; }   \
+
+/// Enable enum for using in FlagSet and declare FlagSet specialization for enums in global namespace. Shall be called within global namespace.
+#define URHO3D_FLAGSET_GLOBAL(enumName, flagsetName)                                    \
+    namespace Urho3D { URHO3D_ENABLE_FLAGSET(::enumName); }                             \
+    using flagsetName = Urho3D::FlagSet<::enumName>;                                    \
+
 /// A set of flags defined by an Enum.
 template <class E, class = typename std::enable_if<IsFlagSet<E>::value_>::type>
 class FlagSet
