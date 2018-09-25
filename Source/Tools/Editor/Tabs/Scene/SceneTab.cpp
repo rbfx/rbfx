@@ -774,9 +774,12 @@ void SceneTab::RenderNodeContextMenu()
 
             for (const String& category : categories)
             {
+                auto components = editor->GetObjectsByCategory(category);
+                if (components.Empty())
+                    continue;
+
                 if (ui::BeginMenu(category.CString()))
                 {
-                    auto components = editor->GetObjectsByCategory(category);
                     Sort(components.Begin(), components.End());
 
                     for (const String& component : components)
