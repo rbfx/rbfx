@@ -135,7 +135,11 @@ bool SceneTab::RenderWindowContent()
     // Render camera preview
     if (cameraPreviewViewport_->GetCamera() != nullptr)
     {
+        float borderSize = ui::GetStyle().FrameBorderSize;
         ui::SetCursorScreenPos(ToImGui(tabRect.Max() - cameraPreviewSize - IntVector2{10, 10}));
+        ui::RenderFrameBorder(ui::GetCursorScreenPos() - ImVec2{borderSize, borderSize},
+            ui::GetCursorScreenPos() + ToImGui(cameraPreviewSize) + ImVec2{borderSize, borderSize});
+
         ui::Image(cameraPreviewtexture_.Get(), ToImGui(cameraPreviewSize));
     }
     ui::EndChild();
