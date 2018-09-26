@@ -57,6 +57,7 @@ SceneTab::SceneTab(Context* context)
     cameraPreviewViewport_ = new Viewport(context_);
     cameraPreviewViewport_->SetScene(view_.GetScene());
     cameraPreviewViewport_->SetRect(IntRect{{0, 0}, cameraPreviewSize});
+    cameraPreviewViewport_->SetDrawDebug(false);
     cameraPreviewtexture_ = new Texture2D(context_);
     cameraPreviewtexture_->SetSize(cameraPreviewSize.x_, cameraPreviewSize.y_, Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
     cameraPreviewtexture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
@@ -917,9 +918,6 @@ void SceneTab::OnFocused()
 
 void SceneTab::UpdateCameraPreview()
 {
-    if (Camera* currentCamera = cameraPreviewViewport_->GetCamera())
-        currentCamera->SetViewOverrideFlags(currentCamera->GetViewOverrideFlags() & ~VO_DISABLE_DEBUG);
-
     cameraPreviewViewport_->SetCamera(nullptr);
 
     if (GetSelection().Size())
@@ -928,7 +926,6 @@ void SceneTab::UpdateCameraPreview()
         {
             if (Camera* camera = node->GetComponent<Camera>())
             {
-                camera->SetViewOverrideFlags(camera->GetViewOverrideFlags() | VO_DISABLE_DEBUG);
                 cameraPreviewViewport_->SetCamera(camera);
                 cameraPreviewViewport_->SetRenderPath(GetSceneView()->GetViewport()->GetRenderPath());
             }
