@@ -64,7 +64,7 @@ ShaderProgram::ShaderProgram(Graphics* graphics, ShaderVariation* vertexShader, 
     pixelShader_(pixelShader)
 {
     for (auto& parameterSource : parameterSources_)
-        parameterSource = (const void*)M_MAX_UNSIGNED;
+        parameterSource = (const void*)(uintptr_t)M_MAX_UNSIGNED;
 }
 
 ShaderProgram::~ShaderProgram()
@@ -347,7 +347,7 @@ bool ShaderProgram::NeedParameterUpdate(ShaderParameterGroup group, const void* 
     if (globalFrameNumber != frameNumber_)
     {
         for (auto& parameterSource : parameterSources_)
-            parameterSource = (const void*)M_MAX_UNSIGNED;
+            parameterSource = (const void*)(uintptr_t)M_MAX_UNSIGNED;
         frameNumber_ = globalFrameNumber;
     }
 
@@ -389,11 +389,11 @@ void ShaderProgram::ClearParameterSource(ShaderParameterGroup group)
     bool useIndividual = !constantBuffers_[group].Get() || !constantBuffers_[group + MAX_SHADER_PARAMETER_GROUPS].Get();
 
     if (useBuffer)
-        globalParameterSources[group] = (const void*)M_MAX_UNSIGNED;
+        globalParameterSources[group] = (const void*)(uintptr_t)M_MAX_UNSIGNED;
     if (useIndividual)
-        parameterSources_[group] = (const void*)M_MAX_UNSIGNED;
+        parameterSources_[group] = (const void*)(uintptr_t)M_MAX_UNSIGNED;
 #else
-    parameterSources_[group] = (const void*)M_MAX_UNSIGNED;
+    parameterSources_[group] = (const void*)(uintptr_t)M_MAX_UNSIGNED;
 #endif
 }
 
@@ -405,13 +405,13 @@ void ShaderProgram::ClearParameterSources()
 
 #ifndef GL_ES_VERSION_2_0
     for (auto& globalParameterSource : globalParameterSources)
-        globalParameterSource = (const void*)M_MAX_UNSIGNED;
+        globalParameterSource = (const void*)(uintptr_t)M_MAX_UNSIGNED;
 #endif
 }
 
 void ShaderProgram::ClearGlobalParameterSource(ShaderParameterGroup group)
 {
-    globalParameterSources[group] = (const void*)M_MAX_UNSIGNED;
+    globalParameterSources[group] = (const void*)(uintptr_t)M_MAX_UNSIGNED;
 }
 
 }

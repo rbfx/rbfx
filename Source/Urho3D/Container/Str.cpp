@@ -1167,7 +1167,7 @@ String& String::AppendWithFormatArgs(const char* formatString, va_list args)
             {
                 char buf[CONVERSION_BUFFER_LENGTH];
                 int arg = va_arg(args, int);
-                int arglen = ::sprintf(buf, "%p", reinterpret_cast<void*>(arg));
+                int arglen = ::sprintf(buf, "%p", reinterpret_cast<void*>((uintptr_t)arg));
                 Append(buf, (unsigned)arglen);
                 break;
             }
