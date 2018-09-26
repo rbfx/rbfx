@@ -556,13 +556,9 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         case VAR_RECT:
         {
             auto& v = value.GetRect();
-            modified |= ui::DragFloat2("###min xy", const_cast<float*>(&v.min_.x_), floatStep, floatMin,
+            modified |= ui::DragFloat4("###minmax", const_cast<float*>(&v.min_.x_), floatStep, floatMin,
                                        floatMax, "%.3f", power);
-            ui::SetHelpTooltip("min xy");
-            ui::SameLine();
-            modified |= ui::DragFloat2("###max xy", const_cast<float*>(&v.max_.x_), floatStep, floatMin,
-                                       floatMax, "%.3f", power);
-            ui::SetHelpTooltip("max xy");
+            ui::SetHelpTooltip("min xy, max xy");
             break;
         }
         case VAR_INTVECTOR3:
