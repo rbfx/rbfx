@@ -42,6 +42,7 @@
 #include "Tabs/HierarchyTab.h"
 #include "Tabs/ConsoleTab.h"
 #include "Tabs/ResourceTab.h"
+#include "Tabs/PreviewTab.h"
 #include "Assets/AssetConverter.h"
 #include "Assets/Inspector/MaterialInspector.h"
 
@@ -122,6 +123,7 @@ void Editor::Start()
     context_->RegisterFactory<HierarchyTab>();
     context_->RegisterFactory<InspectorTab>();
     context_->RegisterFactory<ResourceTab>();
+    context_->RegisterFactory<PreviewTab>();
 
     Inspectable::Material::RegisterObject(context_);
 
@@ -366,18 +368,21 @@ void Editor::LoadDefaultLayout()
     // they looked right. Insertion order is also important here when specifying dock placement location.
     auto screenSize = GetGraphics()->GetSize();
     auto* inspector = new InspectorTab(context_);
-    inspector->Initialize("Inspector", {screenSize.x_ * 0.6f, (float)screenSize.y_}, ui::Slot_Right);
+    inspector->Initialize("Inspector", {screenSize.x_ * 0.6f, (float)screenSize.y_ * 0.9f}, ui::Slot_Right);
     auto* hierarchy = new HierarchyTab(context_);
     hierarchy->Initialize("Hierarchy", {screenSize.x_ * 0.05f, screenSize.y_ * 0.5f}, ui::Slot_Left);
     auto* resources = new ResourceTab(context_);
     resources->Initialize("Resources", {screenSize.x_ * 0.05f, screenSize.y_ * 0.15f}, ui::Slot_Bottom, hierarchy->GetUniqueTitle());
     auto* console = new ConsoleTab(context_);
     console->Initialize("Console", {screenSize.x_ * 0.6f, screenSize.y_ * 0.4f}, ui::Slot_Left, inspector->GetUniqueTitle());
+    auto* preview = new PreviewTab(context_);
+    preview->Initialize("Game", {screenSize.x_ * 0.6f, (float)screenSize.y_ * 0.1f}, ui::Slot_Bottom, inspector->GetUniqueTitle());
 
     tabs_.EmplaceBack(inspector);
     tabs_.EmplaceBack(hierarchy);
     tabs_.EmplaceBack(resources);
     tabs_.EmplaceBack(console);
+    tabs_.EmplaceBack(preview);
 }
 
 Project* Editor::OpenProject(const String& projectPath)

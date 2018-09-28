@@ -33,6 +33,7 @@
 #include "Widgets.h"
 #include "SceneSettings.h"
 #include "Tabs/InspectorTab.h"
+#include "Tabs/PreviewTab.h"
 #include "Assets/Inspector/MaterialInspector.h"
 
 
@@ -931,6 +932,9 @@ void SceneTab::OnFocused()
         if (auto* inspectorProvider = dynamic_cast<MaterialInspector*>(inspector->GetInspector(IC_RESOURCE)))
             inspectorProvider->SetEffectSource(GetSceneView()->GetViewport()->GetRenderPath());
     }
+
+    if (PreviewTab* preview = GetSubsystem<Editor>()->GetTab<PreviewTab>())
+        preview->SetPreviewScene(GetScene());
 }
 
 void SceneTab::UpdateCameraPreview()

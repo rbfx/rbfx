@@ -33,11 +33,13 @@
 #include "../Resource/ResourceEvents.h"
 #include "../Resource/XMLFile.h"
 #include "../Resource/JSONFile.h"
+#include "../Scene/CameraViewport.h"
 #include "../Scene/Component.h"
 #include "../Scene/ObjectAnimation.h"
 #include "../Scene/ReplicationState.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
+#include "../Scene/SceneMetadata.h"
 #include "../Scene/SmoothedTransform.h"
 #include "../Scene/SplinePath.h"
 #include "../Scene/UnknownComponent.h"
@@ -1536,6 +1538,8 @@ void RegisterSceneLibrary(Context* context)
     SmoothedTransform::RegisterObject(context);
     UnknownComponent::RegisterObject(context);
     SplinePath::RegisterObject(context);
+    SceneMetadata::RegisterObject(context);
+    CameraViewport::RegisterObject(context);
 }
 
 }
