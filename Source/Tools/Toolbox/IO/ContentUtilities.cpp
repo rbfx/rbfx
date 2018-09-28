@@ -20,8 +20,11 @@
 // THE SOFTWARE.
 //
 
+#include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Resource/XMLFile.h>
+#include <Urho3D/SystemUI/SystemUI.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
-#include <Urho3D/Urho3DAll.h>
 #include "ContentUtilities.h"
 
 
