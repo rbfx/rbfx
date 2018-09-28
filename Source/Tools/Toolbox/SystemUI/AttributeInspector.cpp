@@ -368,11 +368,6 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
 
 #if URHO3D_HASH_DEBUG
                 const String& name = StringHash::GetGlobalStringHashRegister()->GetString(it->first_);
-
-                if (name.StartsWith("__") && name.EndsWith("__"))
-                    // Engine-internal variables are not exposed.
-                    continue;
-
                 // Column-friendly indent
                 ui::NewLine();
                 ui::SameLine(20_dpx);
