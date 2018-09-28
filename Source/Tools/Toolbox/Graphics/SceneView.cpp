@@ -68,7 +68,7 @@ void SceneView::CreateObjects()
     if (camera_.Expired())
     {
         camera_ = scene_->CreateChild("EditorCamera", LOCAL, FIRST_INTERNAL_ID, true);
-        camera_->CreateComponent<Camera>();
+        camera_->CreateComponent<Camera>()->SetFarClip(160000);
         camera_->AddTag("__EDITOR_OBJECT__");
         camera_->SetTemporary(true);
     }
