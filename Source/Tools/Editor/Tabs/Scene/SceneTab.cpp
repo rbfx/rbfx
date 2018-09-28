@@ -273,23 +273,15 @@ bool SceneTab::SaveResource()
     File file(context_, fullPath, FILE_WRITE);
     bool result = false;
 
-    float elapsed = 0;
-    auto* settings = GetScene()->GetComponent<SceneSettings>();
-    if (!settings->GetSaveElapsedTime())
-    {
-        elapsed = GetScene()->GetElapsedTime();
-        GetScene()->SetElapsedTime(0);
-    }
-
+    float elapsed = GetScene()->GetElapsedTime();
+    GetScene()->SetElapsedTime(0);
     GetScene()->SetUpdateEnabled(true);
     if (fullPath.EndsWith(".xml", false))
         result = GetScene()->SaveXML(file);
     else if (fullPath.EndsWith(".json", false))
         result = GetScene()->SaveJSON(file);
     GetScene()->SetUpdateEnabled(false);
-
-    if (!settings->GetSaveElapsedTime())
-        GetScene()->SetElapsedTime(elapsed);
+    GetScene()->SetElapsedTime(elapsed);
 
     if (result)
         SendEvent(E_EDITORRESOURCESAVED);
