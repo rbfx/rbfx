@@ -86,8 +86,6 @@ public:
     const String& GetCoreResourcePrefixPath() const { return coreResourcePrefixPath_; }
     /// Load default tab layout.
     void LoadDefaultLayout();
-    /// Return render path of last active scene.
-    RenderPath* GetLastEffectSource() const { return lastEffectSource_; };
 
 protected:
     /// Process console commands.
@@ -105,8 +103,6 @@ protected:
     String coreResourcePrefixPath_;
     /// Currently loaded project.
     SharedPtr<Project> project_;
-    /// Render path of last active scene.
-    SharedPtr<RenderPath> lastEffectSource_;
 };
 
 }

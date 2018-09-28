@@ -44,8 +44,10 @@ class InspectorTab : public Tab
     URHO3D_OBJECT(InspectorTab, Tab)
 public:
     explicit InspectorTab(Context* context);
-
+    ///
     bool RenderWindowContent() override;
+    ///
+    IInspectorProvider* GetInspector(InspectorCategory category);
 
 protected:
     std::string filter_;

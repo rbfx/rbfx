@@ -31,7 +31,12 @@
 namespace Urho3D
 {
 
-class SceneTab;
+URHO3D_EVENT(E_SCENESETTINGMODIFIED, SceneSettingModified)
+{
+    URHO3D_PARAM(P_SCENE, Scene);                           // Scene pointer
+    URHO3D_PARAM(P_NAME, Name);                             // String
+    URHO3D_PARAM(P_VALUE, Value);                           // Variant
+}
 
 /// Class handling common scene settings
 class SceneSettings : public Component
@@ -43,60 +48,15 @@ public:
     /// Register object with engine.
     static void RegisterObject(Context* context);
 
-    /// Returns true when elapsed scene time should be saved.
-    bool GetSaveElapsedTime() const { return saveSceneSettings_; }
-    /// Change saving of elapsed scene time.
-    void SetSaveElapsedTime(bool value) { saveSceneSettings_ = value; }
+    /// Returns configured editor viewport renderpath.
+    ResourceRef GetEditorViewportRenderPath() const { return editorViewportRenderPath_; }
+
+    /// Handle attribute write access.
+    void OnSetAttribute(const AttributeInfo& attr, const Variant& src) override;
 
 protected:
-    bool saveSceneSettings_ = false;
-};
-
-/// Class handling scene postprocess effect settings
-class SceneEffects : public Serializable
-{
-    URHO3D_OBJECT(SceneEffects, Serializable);
-public:
-    /// Construct
-    explicit SceneEffects(SceneTab* tab);
-    /// This method should be called before rendering attributes. It handles rebuilding of attribute cache.
-    void Prepare(bool force=false);
-    /// Save settings into project file.
-    void SaveProject(JSONValue& effects);
-    /// Load settings from a project file.
-    void LoadProject(const JSONValue& effects);
-    /// Returns custom list of attributes that are different per instance.
-    const Vector<AttributeInfo>* GetAttributes() const override;
-
-protected:
-    /// Method mimicking Context attribute registration, required for using engine attribute macros for registering
-    /// custom per-object attributes.
-    template <class T> AttributeInfo& RegisterAttribute(const AttributeInfo& attr);
-
-    /// Flag which signals that attributes should be rebuilt.
-    bool rebuild_ = true;
-    /// Pointer to tab which owns this object.
-    WeakPtr<SceneTab> tab_;
-
-    struct PostProcess
-    {
-        /// List of postprocess tags present in the file.
-        StringVector tags_;
-        /// Fake enum name array for attribute when there are more than one tag.
-        PODVector<const char*> tagEnumNames_;
-        /// Variable names mapped to number of floats variable contains.
-        HashMap<String, int> variables_;
-    };
-    /// Cached effect data so we do not read disk on every frame.
-    HashMap<String, PostProcess> effects_;
-    /// Cached list of renderpaths.
-    StringVector renderPaths_;
-    /// Fake enum name array of renderpaths.
-    PODVector<const char*> renderPathsEnumNames_;
-    /// Index of current renderpath
-    int currentRenderPath_ = -1;
-    /// List of attributes available at the moment.
-    Vector<AttributeInfo> attributes_;
+    /// Flag indicating that editor scene viewport should use PBR renderpath.
+    ResourceRef editorViewportRenderPath_;
 };
 
 }

@@ -58,5 +58,12 @@ bool InspectorTab::RenderWindowContent()
     return true;
 }
 
+IInspectorProvider* InspectorTab::GetInspector(InspectorCategory category)
+{
+    if (!inspectables_[category].instance_.Expired())
+        return inspectables_[category].inspectorProvider_;
+    return nullptr;
+}
+
 
 }

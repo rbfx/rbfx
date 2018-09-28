@@ -33,13 +33,13 @@
 #include "Widgets.h"
 #include "SceneSettings.h"
 #include "Tabs/InspectorTab.h"
+#include "Assets/Inspector/MaterialInspector.h"
 
 
 namespace Urho3D
 {
 
 static const IntVector2 cameraPreviewSize{320, 200};
-static PODVector<StringHash> hiddenComponents{SceneSettings::GetTypeStatic()};
 
 SceneTab::SceneTab(Context* context)
     : BaseClassName(context)
@@ -50,8 +50,6 @@ SceneTab::SceneTab(Context* context)
 {
     SetTitle("New Scene");
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
-
-    effectSettings_ = new SceneEffects(this);
 
     // Camera preview objects
     cameraPreviewViewport_ = new Viewport(context_);
@@ -82,8 +80,38 @@ SceneTab::SceneTab(Context* context)
     SubscribeToEvent(GetScene(), E_COMPONENTADDED, std::bind(&SceneTab::OnComponentAdded, this, _2));
     SubscribeToEvent(GetScene(), E_COMPONENTREMOVED, std::bind(&SceneTab::OnComponentRemoved, this, _2));
 
-    SubscribeToEvent(E_EDITORSCENEEFFECTSCHANGED, [&](StringHash, VariantMap& args) {
-        cameraPreviewViewport_->SetRenderPath(dynamic_cast<RenderPath*>(args[EditorSceneEffectsChanged::P_RENDERPATH].GetPtr()));
+    SubscribeToEvent(E_SCENESETTINGMODIFIED, [this](StringHash, VariantMap& args) {
+        using namespace SceneSettingModified;
+        // TODO: Stinks.
+        if (args[P_NAME].GetString() == "Editor Viewport RenderPath")
+        {
+            const ResourceRef& renderPathResource = args[P_VALUE].GetResourceRef();
+            if (renderPathResource.type_ == XMLFile::GetTypeStatic())
+            {
+                if (XMLFile* renderPathFile = GetCache()->GetResource<XMLFile>(renderPathResource.name_))
+                {
+                    auto setRenderPathToViewport = [this, renderPathFile](Viewport* viewport)
+                    {
+                        if (!viewport->SetRenderPath(renderPathFile))
+                            return;
+
+                        RenderPath* path = viewport->GetRenderPath();
+                        for (auto& command: path->commands_)
+                        {
+                            if (command.pixelShaderName_.StartsWith("PBR"))
+                            {
+                                XMLFile* gammaCorrection = GetCache()->GetResource<XMLFile>(
+                                    "PostProcess/GammaCorrection.xml");
+                                path->Append(gammaCorrection);
+                                return;
+                            }
+                        }
+                    };
+                    setRenderPathToViewport(GetSceneView()->GetViewport());
+                    setRenderPathToViewport(cameraPreviewViewport_);
+                }
+            }
+        }
     });
 
     undo_.Connect(GetScene());
@@ -114,10 +142,7 @@ bool SceneTab::RenderWindowContent()
 
     // Focus window when appearing
     if (!isRendered_)
-    {
         ui::SetWindowFocus();
-        effectSettings_->Prepare(true);
-    }
 
     RenderToolbarButtons();
     IntRect tabRect = UpdateViewRect();
@@ -431,17 +456,10 @@ void SceneTab::RenderInspector(const char* filter)
 
         PODVector<Serializable*> items;
         RenderAttributes(node.Get(), filter, &inspector_);
-        if (node == GetScene())
-        {
-            effectSettings_->Prepare();
-            // Special components are rendered first.
-            RenderAttributes(node->GetComponent<SceneSettings>(), filter, &inspector_);
-            RenderAttributes(effectSettings_.Get(), filter, &inspector_);
-        }
 
         for (Component* component : node->GetComponents())
         {
-            if (component->IsTemporary() || hiddenComponents.Contains(component->GetType()))
+            if (component->IsTemporary())
                 continue;
 
             RenderAttributes(component, filter, &inspector_);
@@ -550,7 +568,7 @@ void SceneTab::RenderNodeTree(Node* node)
             Vector<SharedPtr<Component>> components = node->GetComponents();
             for (const auto& component: components)
             {
-                if (component->IsTemporary() || hiddenComponents.Contains(component->GetType()))
+                if (component->IsTemporary())
                     continue;
 
                 ui::PushID(component);
@@ -615,8 +633,6 @@ void SceneTab::OnLoadProject(const JSONValue& tab)
             lightComponent->SetEnabled(camera["light"].GetBool());
     }
 
-    effectSettings_->LoadProject(tab["effects"]);
-
     undo_.SetTrackingEnabled(isTracking);
 }
 
@@ -629,8 +645,6 @@ void SceneTab::OnSaveProject(JSONValue& tab)
     camera["position"].SetVariant(cameraNode->GetPosition());
     camera["rotation"].SetVariant(cameraNode->GetRotation());
     camera["light"] = cameraNode->GetComponent<Light>()->IsEnabled();
-
-    effectSettings_->SaveProject(tab["effects"]);
 }
 
 void SceneTab::OnActiveUpdate()
@@ -911,7 +925,12 @@ void SceneTab::OnFocused()
 {
     SendEvent(E_EDITORRENDERINSPECTOR, EditorRenderInspector::P_INSPECTABLE, this, EditorRenderInspector::P_CATEGORY, IC_SCENE);
     SendEvent(E_EDITORRENDERHIERARCHY, EditorRenderHierarchy::P_INSPECTABLE, this);
-    SendEvent(E_EDITORSCENEEFFECTSCHANGED, EditorSceneEffectsChanged::P_RENDERPATH, GetSceneView()->GetViewport()->GetRenderPath());
+
+    if (InspectorTab* inspector = GetSubsystem<Editor>()->GetTab<InspectorTab>())
+    {
+        if (auto* inspectorProvider = dynamic_cast<MaterialInspector*>(inspector->GetInspector(IC_RESOURCE)))
+            inspectorProvider->SetEffectSource(GetSceneView()->GetViewport()->GetRenderPath());
+    }
 }
 
 void SceneTab::UpdateCameraPreview()

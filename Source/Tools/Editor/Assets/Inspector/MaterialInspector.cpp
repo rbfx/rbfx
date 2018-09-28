@@ -55,13 +55,6 @@ MaterialInspector::MaterialInspector(Context* context, Material* material)
     // Workaround: for some reason this overriden method of our class does not get called by SceneView constructor.
     CreateObjects();
 
-    // Scene viewport renderpath must be same as material viewport renderpath
-    SubscribeToEvent(E_EDITORSCENEEFFECTSCHANGED, [this](StringHash, VariantMap& args) {
-        using namespace EditorSceneEffectsChanged;
-        RenderPath* effectSource = dynamic_cast<RenderPath*>(args[P_RENDERPATH].GetPtr());
-        SetEffectSource(effectSource);
-    });
-
     auto autoSave = [this](StringHash, VariantMap&) {
         // Auto-save material on modification
         auto* material = inspectable_->GetMaterial();
@@ -71,8 +64,6 @@ MaterialInspector::MaterialInspector(Context* context, Material* material)
     SubscribeToEvent(&attributeInspector_, E_ATTRIBUTEINSPECTVALUEMODIFIED, autoSave);
     SubscribeToEvent(&attributeInspector_, E_INSPECTORRENDERSTART, [this](StringHash, VariantMap&) { RenderPreview(); });
     SubscribeToEvent(&attributeInspector_, E_INSPECTORRENDERATTRIBUTE, [this](StringHash, VariantMap& args) { RenderCustomWidgets(args); });
-
-    SetEffectSource(GetSubsystem<Editor>()->GetLastEffectSource());
 
     undo_.Connect(&attributeInspector_);
 }

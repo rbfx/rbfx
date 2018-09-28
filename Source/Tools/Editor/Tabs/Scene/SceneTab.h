@@ -121,8 +121,6 @@ protected:
     Gizmo gizmo_;
     /// Current selected component displayed in inspector.
     WeakPtr<Component> selectedComponent_;
-    /// Serializable which handles scene postprocess effect settings.
-    SharedPtr<SceneEffects> effectSettings_;
     /// State change tracker.
     Undo::Manager undo_;
     /// Flag controlling scene updates in the viewport.
