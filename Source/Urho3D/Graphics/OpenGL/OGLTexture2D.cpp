@@ -234,7 +234,8 @@ bool Texture2D::SetData(Image* image, bool useAlpha)
         // If image was previously compressed, reset number of requested levels to avoid error if level count is too high for new size
         if (IsCompressed() && requestedLevels_ > 1)
             requestedLevels_ = 0;
-        SetSize(levelWidth, levelHeight, format);
+        if (width_ != levelWidth || height_ != levelHeight || format != format_)
+            SetSize(levelWidth, levelHeight, format, usage_);
         if (!object_.name_)
             return false;
 
@@ -275,7 +276,8 @@ bool Texture2D::SetData(Image* image, bool useAlpha)
         height /= (1u << mipsToSkip);
 
         SetNumLevels(Max((levels - mipsToSkip), 1U));
-        SetSize(width, height, format);
+        if (width_ != width || height_ != height || format != format_)
+            SetSize(width, height, format, usage_);
 
         for (unsigned i = 0; i < levels_ && i < levels - mipsToSkip; ++i)
         {
