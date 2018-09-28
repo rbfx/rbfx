@@ -213,6 +213,7 @@ bool Project::LoadProject(const String& projectPath)
         }
     }
 
+#if URHO3D_HASH_DEBUG
     // StringHashNames.json
     {
         String filePath(projectFileDir_ + "StringHashNames.json");
@@ -230,6 +231,7 @@ bool Project::LoadProject(const String& projectPath)
             }
         }
     }
+#endif
 
     return true;
 }
