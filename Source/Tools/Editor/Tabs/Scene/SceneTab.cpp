@@ -868,6 +868,7 @@ void SceneTab::OnComponentAdded(VariantMap& args)
             billboard->SetFaceCameraMode(FaceCameraMode::FC_LOOKAT_XYZ);
             billboard->SetNumBillboards(1);
             billboard->SetMaterial(material);
+            billboard->SetViewMask(EDITOR_VIEW_LAYER);
             if (auto* bb = billboard->GetBillboard(0))
             {
                 bb->size_ = Vector2::ONE * 0.2f;
@@ -926,6 +927,7 @@ void SceneTab::UpdateCameraPreview()
         {
             if (Camera* camera = node->GetComponent<Camera>())
             {
+                camera->SetViewMask(camera->GetViewMask() & ~EDITOR_VIEW_LAYER);
                 cameraPreviewViewport_->SetCamera(camera);
                 cameraPreviewViewport_->SetRenderPath(GetSceneView()->GetViewport()->GetRenderPath());
             }

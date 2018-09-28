@@ -38,6 +38,7 @@ void DebugCameraController::Start()
     light_->SetTemporary(true);
     light_->SetColor(Color::WHITE);
     light_->SetLightType(LIGHT_DIRECTIONAL);
+    light_->SetViewMask(1U << 31);
 }
 
 void DebugCameraController::Stop()

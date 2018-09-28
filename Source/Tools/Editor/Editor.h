@@ -36,6 +36,8 @@ class Tab;
 class SceneTab;
 class AssetConverter;
 
+static const unsigned EDITOR_VIEW_LAYER = 1U << 31;
+
 class Editor : public Application
 {
     URHO3D_OBJECT(Editor, Application);
