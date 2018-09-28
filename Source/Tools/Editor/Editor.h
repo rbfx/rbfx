@@ -61,6 +61,11 @@ public:
     Tab* CreateTab(StringHash type);
     /// Get tab that has resource opened or create new one and open said resource.
     Tab* GetOrCreateTab(StringHash type, const String& resourceName);
+    /// Return tab of specified type.
+    Tab* GetTab(StringHash type);
+    /// Return tab of specified type.
+    template<typename T>
+    T* GetTab() { return static_cast<T*>(GetTab(T::GetTypeStatic())); }
     /// Return active scene tab.
     Tab* GetActiveTab() { return activeTab_; }
     /// Return currently open scene tabs.

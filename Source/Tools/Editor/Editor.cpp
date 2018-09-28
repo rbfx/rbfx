@@ -488,4 +488,14 @@ void Editor::RenderProjectPluginsMenu()
     }
 }
 
+Tab* Editor::GetTab(StringHash type)
+{
+    for (auto& tab : tabs_)
+    {
+        if (tab->GetType() == type)
+            return tab.Get();
+    }
+    return nullptr;
+}
+
 }
