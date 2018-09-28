@@ -474,6 +474,9 @@ void SceneTab::RenderNodeTree(Node* node)
     if (node->IsTemporary())
         return;
 
+    if (node == scrollTo_.Get())
+        ui::SetScrollHere();
+
     String name = node->GetName().Empty() ? ToString("%s %d", node->GetTypeName().CString(), node->GetID()) : node->GetName();
     bool isSelected = IsSelected(node) && selectedComponent_.Expired();
 
@@ -764,6 +767,8 @@ void SceneTab::RenderNodeContextMenu()
                 {
                     newNodes.Push(selectedNode->CreateChild(String::EMPTY, alternative ? LOCAL : REPLICATED));
                     openHierarchyNodes_.Push(selectedNode);
+                    openHierarchyNodes_.Push(newNodes.Back());
+                    scrollTo_ = newNodes.Back();
                 }
             }
 

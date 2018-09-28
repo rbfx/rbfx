@@ -133,6 +133,8 @@ protected:
     bool mouseHoversViewport_ = false;
     /// Nodes whose entries in hierarchy tree should be opened on next frame.
     PODVector<Node*> openHierarchyNodes_;
+    /// Node to scroll to on next frame.
+    WeakPtr<Node> scrollTo_;
     /// Selected camera preview texture.
     SharedPtr<Texture2D> cameraPreviewtexture_;
     /// Selected camera preview viewport.
