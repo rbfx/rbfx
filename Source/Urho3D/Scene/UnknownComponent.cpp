@@ -45,6 +45,16 @@ static String GenerateNameFromType(StringHash typeHash)
 
     String test;
 
+#if URHO3D_HASH_DEBUG
+    StringHashRegister* registry = StringHash::GetGlobalStringHashRegister();
+    if (registry->Contains(typeHash))
+    {
+        test = registry->GetString(typeHash);
+        unknownTypeToName[typeHash] = test;
+        return test;
+    }
+#endif
+
     // Begin brute-force search
     unsigned numLetters = letters.Length();
     unsigned combinations = numLetters;
