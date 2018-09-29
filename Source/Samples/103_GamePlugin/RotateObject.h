@@ -20,38 +20,39 @@
 // THE SOFTWARE.
 //
 
+#pragma once
+
+
 #include <Urho3D/Scene/LogicComponent.h>
-#include <Urho3D/Core/Timer.h>
-#include <Urho3D/Scene/Node.h>
-#include "FPSCameraController.h"
-#include "RotateObject.h"
-#include "GamePlugin.h"
-
-
-URHO3D_DEFINE_PLUGIN_MAIN(Urho3D::GamePlugin);
-
 
 namespace Urho3D
 {
 
-GamePlugin::GamePlugin(Context* context)
-    : PluginApplication(context)
+/// A custom component provided by the plugin.
+class RotateObject
+    : public LogicComponent
 {
-}
+    URHO3D_OBJECT(RotateObject, LogicComponent
+    );
+public:
+    RotateObject(Context* context)
+        : LogicComponent(context)
+    {
+        SetUpdateEventMask(USE_UPDATE);
+    }
 
-void GamePlugin::Start()
-{
-    // Register custom components/subsystems/events when plugin is loaded.
-    RegisterFactory<RotateObject>("User Components");
-    RegisterFactory<FPSCameraController>("User Components");
-    RotateObject::RegisterObject(context_);
-}
+    void Update(float timeStep) override
+    {
+        if (animate_)
+            GetNode()->Rotate(Quaternion(10 * timeStep, 20 * timeStep, 30 * timeStep));
+    }
 
-void GamePlugin::Stop()
-{
-    // Finalize plugin, ensure that no objects provided by the plugin are alive. Some of that work is automated by
-    // parent class. Objects that had factories registered through PluginApplication::RegisterFactory<> have their
-    // attributes automatically unregistered, factories/subsystems removed.
-}
+    static void RegisterObject(Context* context)
+    {
+        URHO3D_ATTRIBUTE("Animate", bool, animate_, true, AM_EDIT);
+    }
+
+    bool animate_ = true;
+};
 
 }
