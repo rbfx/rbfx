@@ -421,7 +421,6 @@ void SceneTab::RenderToolbarButtons()
 
     if (ui::EditorToolbarButton(scenePlaying_ ? ICON_FA_PAUSE : ICON_FA_PLAY, scenePlaying_ ? "Pause" : "Play"))
     {
-        scenePlaying_ ^= true;
         if (scenePlaying_)
             Pause();
         else
@@ -831,20 +830,22 @@ void SceneTab::RenderNodeContextMenu()
     }
 }
 
-void SceneTab::Play()
+void SceneTab::Pause()
 {
-    if (!scenePlaying_)
+    if (scenePlaying_)
     {
+        scenePlaying_ = false;
         SceneStateRestore(sceneState_);
         undo_.SetTrackingEnabled(true);
         UpdateCameraPreview();
     }
 }
 
-void SceneTab::Pause()
+void SceneTab::Play()
 {
-    if (scenePlaying_)
+    if (!scenePlaying_)
     {
+        scenePlaying_ = true;
         undo_.SetTrackingEnabled(false);
         SceneStateSave();
     }
