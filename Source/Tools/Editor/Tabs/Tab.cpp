@@ -67,6 +67,7 @@ bool Tab::RenderWindow()
     if (input->IsMouseVisible())
         lastMousePosition_ = input->GetMousePosition();
 
+    bool wasRendered = isRendered_;
     ui::SetNextDockPos(placeAfter_.Empty() ? nullptr : placeAfter_.CString(), placePosition_, ImGuiCond_FirstUseEver);
     if (ui::BeginDock(uniqueTitle_.CString(), &open_, windowFlags_, ToImGui(initialSize_)))
     {
@@ -78,6 +79,9 @@ bool Tab::RenderWindow()
                 if (!ui::IsWindowFocused() && ui::IsWindowHovered() && input->GetMouseButtonDown(MOUSEB_RIGHT))
                     ui::SetWindowFocus();
             }
+
+            if (!wasRendered)
+                ui::SetWindowFocus();
 
             isActive_ = ui::IsWindowFocused() && ui::IsDockActive();
             open_ = RenderWindowContent();
