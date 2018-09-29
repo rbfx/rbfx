@@ -23,9 +23,13 @@
 #include "../Precompiled.h"
 
 #include "../IO/VectorBuffer.h"
+#include "VectorBuffer.h"
+
 
 namespace Urho3D
 {
+
+static String vectorBufferName{"VectorBuffer"};
 
 VectorBuffer::VectorBuffer() = default;
 
@@ -163,6 +167,11 @@ void VectorBuffer::Resize(unsigned size)
     size_ = size;
     if (position_ > size_)
         position_ = size_;
+}
+
+const String& VectorBuffer::GetName() const
+{
+    return vectorBufferName;
 }
 
 }

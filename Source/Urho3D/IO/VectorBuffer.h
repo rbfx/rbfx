@@ -40,6 +40,9 @@ public:
     /// Construct from a stream.
     VectorBuffer(Deserializer& source, unsigned size);
 
+    /// Returns name of this object.
+    const String& GetName() const override;
+
     /// Read bytes from the buffer. Return number of bytes actually read.
     unsigned Read(void* dest, unsigned size) override;
     /// Set position from the beginning of the buffer. Return actual new position.
