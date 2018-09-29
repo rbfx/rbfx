@@ -303,6 +303,9 @@ bool Serializer::WriteVariantData(const Variant& value)
     case VAR_STRINGVECTOR:
         return WriteStringVector(value.GetStringVector());
 
+    case VAR_RECT:
+        return WriteRect(value.GetRect());
+
     case VAR_VARIANTMAP:
         return WriteVariantMap(value.GetVariantMap());
 
