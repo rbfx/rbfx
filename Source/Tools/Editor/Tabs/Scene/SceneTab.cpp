@@ -655,11 +655,13 @@ void SceneTab::RemoveSelection()
 {
     if (!selectedComponent_.Expired())
         selectedComponent_->Remove();
-
-    for (auto& selected : GetSelection())
+    else
     {
-        if (!selected.Expired())
-            selected->Remove();
+        for (auto& selected : GetSelection())
+        {
+            if (!selected.Expired())
+                selected->Remove();
+        }
     }
     UnselectAll();
 }
