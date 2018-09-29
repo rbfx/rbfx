@@ -676,28 +676,31 @@ void SceneTab::OnUpdate(VariantMap& args)
 {
     float timeStep = args[Update::P_TIMESTEP].GetFloat();
 
-    if (scenePlaying_)
-        GetScene()->Update(timeStep);
-
     if (auto component = view_.GetCamera()->GetComponent<DebugCameraController>())
     {
         if (mouseHoversViewport_)
             component->Update(timeStep);
     }
 
-    if (!ui::IsAnyItemActive() && !scenePlaying_)
+    if (scenePlaying_)
     {
-        // Global view hotkeys
-        if (GetInput()->GetKeyDown(KEY_DELETE))
-            RemoveSelection();
+        GetScene()->Update(timeStep);
+        if (GetInput()->GetKeyPress(KEY_ESCAPE))
+        {
+            if (Time::GetSystemTime() - lastEscPressTime_ > 300)
+                lastEscPressTime_ = Time::GetSystemTime();
+            else
+                Pause();
+        }
     }
-
-    if (GetInput()->GetKeyPress(KEY_ESCAPE))
+    else if (ui::IsWindowFocused())
     {
-        if (Time::GetSystemTime() - lastEscPressTime_ > 300)
-            lastEscPressTime_ = Time::GetSystemTime();
-        else
-            Pause();
+        if (!ui::IsAnyItemActive() && !scenePlaying_)
+        {
+            // Global view hotkeys
+            if (GetInput()->GetKeyDown(KEY_DELETE))
+                RemoveSelection();
+        }
     }
 }
 
