@@ -23,36 +23,52 @@
 #pragma once
 
 
-#include "Tabs/Tab.h"
-#include "Container/CachedInterfacePtr.h"
+#include <Urho3D/Container/Ptr.h>
 
 
 namespace Urho3D
 {
 
-enum InspectorCategory
+/// Machinery for avoid dynamic_cast<> on every frame.
+template<typename T>
+struct CachedInterfacePtr
 {
-    /// Secondary category for displaying resources.
-    IC_RESOURCE,
-    /// Max number of inspector categories.
-    IC_MAX,
-};
+    void Update(RefCounted* instance)
+    {
+        if (instance == nullptr)
+        {
+            lastInstance_ = interfaceInstance_ = nullptr;
+            interface_ = nullptr;
+            return;
+        }
 
-class InspectorTab : public Tab
-{
-    URHO3D_OBJECT(InspectorTab, Tab)
-public:
-    explicit InspectorTab(Context* context);
-    ///
-    bool RenderWindowContent() override;
-    ///
-    IInspectorProvider* GetInspector(InspectorCategory category);
+        if (lastInstance_ == instance)
+            return;
+
+        lastInstance_ = instance;
+
+        if (interfaceInstance_ != instance)
+        {
+            if (T* interface = dynamic_cast<T*>(instance))
+            {
+                interfaceInstance_ = instance;
+                interface_ = interface;
+            }
+        }
+    }
+
+    operator bool()
+    {
+        return !interfaceInstance_.Expired() && interface_ != nullptr;
+    }
+
+    T* operator ->() { return interface_; }
+    T* operator &() { return interface_; }
 
 protected:
-    std::string filter_;
-
-    CachedInterfacePtr<IInspectorProvider> tabInspector_;
-    CachedInterfacePtr<IInspectorProvider> inspectables_[IC_MAX];
+    WeakPtr<RefCounted> lastInstance_;
+    WeakPtr<RefCounted> interfaceInstance_;
+    T* interface_;
 };
 
 }

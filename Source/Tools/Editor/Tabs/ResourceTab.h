@@ -55,8 +55,6 @@ protected:
     String resourceSelection_;
     /// Resource browser flags.
     ResourceBrowserFlags flags_{RBF_NONE};
-    /// List of resource inspectors. They must persist as long as resource is not deleted.
-    HashMap<StringHash, SharedPtr<ResourceInspector>> inspectors_;
 };
 
 }

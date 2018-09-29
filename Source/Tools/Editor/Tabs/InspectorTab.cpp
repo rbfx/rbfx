@@ -20,10 +20,12 @@
 // THE SOFTWARE.
 //
 
+#include <Urho3D/IO/Log.h>
+#include <ImGui/imgui.h>
+#include <ImGui/imgui_stl.h>
 #include "EditorEvents.h"
 #include "InspectorTab.h"
-#include <ImGui/imgui_stl.h>
-#include <Urho3D/IO/Log.h>
+#include "Editor.h"
 
 
 namespace Urho3D
@@ -37,8 +39,7 @@ InspectorTab::InspectorTab(Context* context)
     SubscribeToEvent(E_EDITORRENDERINSPECTOR, [&](StringHash, VariantMap& args) {
         auto category = args[EditorRenderInspector::P_CATEGORY].GetUInt();
         RefCounted* instance = args[EditorRenderInspector::P_INSPECTABLE].GetPtr();
-        inspectables_[category].instance_ = instance;
-        inspectables_[category].inspectorProvider_ = dynamic_cast<IInspectorProvider*>(instance);
+        inspectables_[category].Update(instance);
     });
 }
 
@@ -50,18 +51,27 @@ bool InspectorTab::RenderWindowContent()
     if (ui::IsItemHovered())
         ui::SetTooltip("Filter attributes by name.");
 
+    // Handle tab switching/closing
+    if (Tab* tab = GetSubsystem<Editor>()->GetActiveTab())
+        tabInspector_.Update(tab);
+
+    // Render main tab inspectors
+    if (tabInspector_)
+        tabInspector_->RenderInspector(filter_.c_str());
+
+    // Secondary inspectables
     for (auto i = 0; i < IC_MAX; i++)
     {
-        if (!inspectables_[i].instance_.Expired())
-            inspectables_[i].inspectorProvider_->RenderInspector(filter_.c_str());
+        if (inspectables_[i])
+            inspectables_[i]->RenderInspector(filter_.c_str());
     }
     return true;
 }
 
 IInspectorProvider* InspectorTab::GetInspector(InspectorCategory category)
 {
-    if (!inspectables_[category].instance_.Expired())
-        return inspectables_[category].inspectorProvider_;
+    if (inspectables_[category])
+        return &inspectables_[category];
     return nullptr;
 }
 

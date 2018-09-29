@@ -834,8 +834,6 @@ void UITab::AttributeCustomize(VariantMap& args)
 
 void UITab::OnFocused()
 {
-    SendEvent(E_EDITORRENDERINSPECTOR, EditorRenderInspector::P_INSPECTABLE, this, EditorRenderInspector::P_CATEGORY, IC_SCENE);
-    SendEvent(E_EDITORRENDERHIERARCHY, EditorRenderHierarchy::P_INSPECTABLE, this);
 }
 
 }

@@ -22,6 +22,7 @@
 
 #include "EditorEvents.h"
 #include "HierarchyTab.h"
+#include "Editor.h"
 
 namespace Urho3D
 {
@@ -31,16 +32,18 @@ HierarchyTab::HierarchyTab(Context* context)
 {
     SetTitle("Hierarchy");
     isUtility_ = true;
-    SubscribeToEvent(E_EDITORRENDERHIERARCHY, [&](StringHash, VariantMap& args) {
-        instance_ = (Tab*)args[EditorRenderHierarchy::P_INSPECTABLE].GetPtr();
-        hierarchyProvider_ = dynamic_cast<IHierarchyProvider*>(instance_.Get());
-    });
 }
 
 bool HierarchyTab::RenderWindowContent()
 {
-    if (!instance_.Expired())
-        hierarchyProvider_->RenderHierarchy();
+    // Handle tab switching/closing
+    if (Tab* tab = GetSubsystem<Editor>()->GetActiveTab())
+        inspector_.Update(tab);
+
+    // Render main tab inspectors
+    if (inspector_)
+        inspector_->RenderHierarchy();
+
     return true;
 }
 

@@ -935,9 +935,6 @@ void SceneTab::OnComponentRemoved(VariantMap& args)
 
 void SceneTab::OnFocused()
 {
-    SendEvent(E_EDITORRENDERINSPECTOR, EditorRenderInspector::P_INSPECTABLE, this, EditorRenderInspector::P_CATEGORY, IC_SCENE);
-    SendEvent(E_EDITORRENDERHIERARCHY, EditorRenderHierarchy::P_INSPECTABLE, this);
-
     if (InspectorTab* inspector = GetSubsystem<Editor>()->GetTab<InspectorTab>())
     {
         if (auto* inspectorProvider = dynamic_cast<MaterialInspector*>(inspector->GetInspector(IC_RESOURCE)))

@@ -236,13 +236,7 @@ String ResourceTab::GetNewResourcePath(const String& name)
 template<typename Inspector, typename TResource>
 void ResourceTab::OpenResourceInspector(const String& resourcePath)
 {
-    auto it = inspectors_.Find(resourcePath);
-    ResourceInspector* inspector = nullptr;
-    if (it == inspectors_.End())
-        inspectors_[resourcePath] = inspector = new Inspector(context_, GetCache()->GetResource<TResource>(resourcePath));
-    else
-        inspector = inspectors_[resourcePath].Get();
-
+    ResourceInspector* inspector = new Inspector(context_, GetCache()->GetResource<TResource>(resourcePath));
     SendEvent(E_EDITORRENDERINSPECTOR, EditorRenderInspector::P_INSPECTABLE, inspector,
         EditorRenderInspector::P_CATEGORY, IC_RESOURCE);
 }

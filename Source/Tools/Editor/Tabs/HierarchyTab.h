@@ -24,6 +24,7 @@
 
 
 #include "Tabs/Tab.h"
+#include "Container/CachedInterfacePtr.h"
 
 
 namespace Urho3D
@@ -33,13 +34,13 @@ class HierarchyTab : public Tab
 {
     URHO3D_OBJECT(HierarchyTab, Tab)
 public:
+    ///
     explicit HierarchyTab(Context* context);
-
+    ///
     bool RenderWindowContent() override;
 
 protected:
-    WeakPtr<Tab> instance_;
-    IHierarchyProvider* hierarchyProvider_ = nullptr;
+    CachedInterfacePtr<IHierarchyProvider> inspector_;
 };
 
 }

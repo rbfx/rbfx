@@ -66,12 +66,6 @@ URHO3D_EVENT(E_EDITORRENDERINSPECTOR, EditorRenderInspector)
     URHO3D_PARAM(P_INSPECTABLE, Inspectable);         // RefCounted pointer.
 }
 
-/// Notify inspector window that this instance would like to render hierarchy content.
-URHO3D_EVENT(E_EDITORRENDERHIERARCHY, EditorRenderHierarchy)
-{
-    URHO3D_PARAM(P_INSPECTABLE, Inspectable);         // RefCounted pointer.
-}
-
 /// Notify subsystems about closed editor tab.
 URHO3D_EVENT(E_EDITORTABCLOSED, EditorTabClosed)
 {
