@@ -240,9 +240,9 @@ void CameraViewport::SetRenderPath(const ResourceRef& renderPathResource)
     if (viewport_.Null())
         return;
 
-    if (renderPathResource.type_ != XMLFile::GetTypeStatic())
+    if (!renderPathResource.name_.Empty() && renderPathResource.type_ != XMLFile::GetTypeStatic())
     {
-        URHO3D_LOGWARNING("Incorrect RenderPath file type.");
+        URHO3D_LOGWARNINGF("Incorrect RenderPath file '%s' type.", renderPathResource.name_.CString());
         return;
     }
 
