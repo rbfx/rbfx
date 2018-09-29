@@ -47,8 +47,6 @@ SceneTab::SceneTab(Context* context)
     , view_(context, {0, 0, 1024, 768})
     , gizmo_(context)
     , undo_(context)
-    , sceneState_(context)
-    , sceneReloadState_(context)
 {
     SetTitle("New Scene");
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
@@ -703,7 +701,7 @@ void SceneTab::OnUpdate(VariantMap& args)
     }
 }
 
-void SceneTab::SceneStateSave(XMLFile& destination)
+void SceneTab::SceneStateSave(VectorBuffer& destination)
 {
     Undo::SetTrackingScoped tracking(undo_, false);
 
@@ -719,9 +717,8 @@ void SceneTab::SceneStateSave(XMLFile& destination)
     for (auto* node : nodes)
         node->SetTemporary(false);
 
-    destination.GetRoot().Remove();
-    XMLElement root = destination.CreateRoot("scene");
-    GetScene()->SaveXML(root);
+    destination.Clear();
+    GetScene()->Save(destination);
 
     // Prevent marker tags from showing up in UI
     for (auto& node : GetSelection())
@@ -735,11 +732,12 @@ void SceneTab::SceneStateSave(XMLFile& destination)
         node->SetTemporary(true);
 }
 
-void SceneTab::SceneStateRestore(XMLFile& source)
+void SceneTab::SceneStateRestore(VectorBuffer& source)
 {
     Undo::SetTrackingScoped tracking(undo_, false);
 
-    GetScene()->LoadXML(source.GetRoot());
+    source.Seek(0);
+    GetScene()->Load(source);
 
     CreateObjects();
 
@@ -749,7 +747,7 @@ void SceneTab::SceneStateRestore(XMLFile& source)
     for (auto* node : nodes)
         node->SetTemporary(true);
 
-    source.GetRoot().Remove();
+    source.Clear();
 
     gizmo_.UnselectAll();
     for (auto node : GetScene()->GetChildrenWithTag("__EDITOR_SELECTED__", true))
