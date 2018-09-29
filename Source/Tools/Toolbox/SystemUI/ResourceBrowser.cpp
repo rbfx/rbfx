@@ -53,7 +53,7 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
     auto fs = systemUI->GetFileSystem();
     auto& state = *ui::GetUIState<State>();
 
-    if (!selected.Empty() && !ui::IsAnyItemActive())
+    if (!selected.Empty() && !ui::IsAnyItemActive() && ui::IsWindowFocused())
     {
         if (fs->GetInput()->GetKeyPress(KEY_F2) || flags & RBF_RENAME_CURRENT)
         {
