@@ -693,6 +693,14 @@ void SceneTab::OnUpdate(VariantMap& args)
         if (GetInput()->GetKeyDown(KEY_DELETE))
             RemoveSelection();
     }
+
+    if (GetInput()->GetKeyPress(KEY_ESCAPE))
+    {
+        if (Time::GetSystemTime() - lastEscPressTime_ > 300)
+            lastEscPressTime_ = Time::GetSystemTime();
+        else
+            Pause();
+    }
 }
 
 void SceneTab::SceneStateSave(XMLFile& destination)
@@ -840,6 +848,8 @@ void SceneTab::Pause()
         SceneStateRestore(sceneState_);
         undo_.SetTrackingEnabled(true);
         UpdateCameraPreview();
+        GetInput()->SetMouseVisible(true);
+        GetInput()->SetMouseMode(MM_FREE);
     }
 }
 

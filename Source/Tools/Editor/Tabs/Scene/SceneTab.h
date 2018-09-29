@@ -139,6 +139,8 @@ protected:
     SharedPtr<Texture2D> cameraPreviewtexture_;
     /// Selected camera preview viewport.
     SharedPtr<Viewport> cameraPreviewViewport_;
+    /// Time since ESC was last pressed. Used for double-press ESC to exit scene simulation.
+    unsigned lastEscPressTime_ = 0;
 };
 
 };
