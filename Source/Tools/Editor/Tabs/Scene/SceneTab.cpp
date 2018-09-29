@@ -48,6 +48,7 @@ SceneTab::SceneTab(Context* context)
     , gizmo_(context)
     , undo_(context)
     , sceneState_(context)
+    , sceneReloadState_(context)
 {
     SetTitle("New Scene");
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
@@ -69,13 +70,12 @@ SceneTab::SceneTab(Context* context)
     // This way scene recreates all plugin-provided components on reload and gets to use new versions of them.
     SubscribeToEvent(E_EDITORUSERCODERELOADSTART, [&](StringHash, VariantMap&) {
         undo_.SetTrackingEnabled(false);
-        Pause();
-        SceneStateSave();
+        SceneStateSave(sceneReloadState_);
         GetScene()->RemoveAllChildren();
         GetScene()->RemoveAllComponents();
     });
     SubscribeToEvent(E_EDITORUSERCODERELOADEND, [&](StringHash, VariantMap&) {
-        SceneStateRestore(sceneState_);
+        SceneStateRestore(sceneReloadState_);
         undo_.SetTrackingEnabled(true);
     });
     SubscribeToEvent(GetScene(), E_COMPONENTADDED, std::bind(&SceneTab::OnComponentAdded, this, _2));
@@ -695,7 +695,7 @@ void SceneTab::OnUpdate(VariantMap& args)
     }
 }
 
-void SceneTab::SceneStateSave()
+void SceneTab::SceneStateSave(XMLFile& destination)
 {
     Undo::SetTrackingScoped tracking(undo_, false);
 
@@ -711,8 +711,8 @@ void SceneTab::SceneStateSave()
     for (auto* node : nodes)
         node->SetTemporary(false);
 
-    sceneState_.GetRoot().Remove();
-    XMLElement root = sceneState_.CreateRoot("scene");
+    destination.GetRoot().Remove();
+    XMLElement root = destination.CreateRoot("scene");
     GetScene()->SaveXML(root);
 
     // Prevent marker tags from showing up in UI
@@ -849,7 +849,7 @@ void SceneTab::Play()
     {
         scenePlaying_ = true;
         undo_.SetTrackingEnabled(false);
-        SceneStateSave();
+        SceneStateSave(sceneState_);
     }
 }
 

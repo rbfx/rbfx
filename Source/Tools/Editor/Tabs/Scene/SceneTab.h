@@ -101,7 +101,7 @@ protected:
     /// Update objects with current tab view rect size.
     IntRect UpdateViewRect() override;
     /// Serialize scene to xml file.
-    void SceneStateSave();
+    void SceneStateSave(XMLFile& destination);
     /// Unserialize scene from xml file.
     void SceneStateRestore(XMLFile& source);
     /// Manually updates scene.
@@ -127,6 +127,8 @@ protected:
     bool scenePlaying_ = false;
     /// Temporary storage of scene data used in play/pause functionality.
     XMLFile sceneState_;
+    /// Temporary storage of scene data used when plugins are being reloaded.
+    XMLFile sceneReloadState_;
     /// Flag indicating that mouse is hovering scene viewport.
     bool mouseHoversViewport_ = false;
     /// Nodes whose entries in hierarchy tree should be opened on next frame.
