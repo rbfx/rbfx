@@ -23,11 +23,20 @@
 #pragma once
 
 
-#include "Tabs/Tab.h"
+#include <Urho3D/Core/Object.h>
+#include <Urho3D/Scene/Scene.h>
+#include "Tabs/Scene/SceneTab.h"
 
 
 namespace Urho3D
 {
+
+enum SceneSimulationStatus
+{
+    SCENE_SIMULATION_STOPPED,
+    SCENE_SIMULATION_RUNNING,
+    SCENE_SIMULATION_PAUSED,
+};
 
 class PreviewTab : public Tab
 {
@@ -36,10 +45,28 @@ public:
     explicit PreviewTab(Context* context);
 
     bool RenderWindowContent() override;
-    ///
-    void SetPreviewScene(Scene* scene);
     /// Set color of view texture to black.
     void Clear();
+
+    /// Render play/pause/restore/step/store buttons.
+    void RenderButtons();
+
+    /// Start playing a scene. If scene is already playing this does nothing.
+    void Play();
+    /// Pause playing a scene. If scene is stopped or paused this does nothing.
+    void Pause();
+    /// Toggle between play/pause states.
+    void Toggle();
+    /// Simulate single frame. If scene is not paused this does nothing.
+    void Step(float timeStep);
+    /// Stop scene simulation. If scene is already stopped this does nothing.
+    void Stop();
+    /// Take a snapshot of current scene state and use it as "master" state. Stopping simulation will revert to this new state. Clears all scene undo actions!
+    void Snapshot();
+    /// Returns true when scene is playing or paysed.
+    bool IsScenePlaying() const { return simulationStatus_ != SCENE_SIMULATION_STOPPED; }
+    /// Returns current scene simulation status.
+    SceneSimulationStatus GetSceneSimulationStatus() const { return simulationStatus_; }
 
 protected:
     ///
@@ -53,8 +80,20 @@ protected:
     IntRect viewRect_{};
     /// Texture used to display preview.
     SharedPtr<Texture2D> view_{};
-    /// Scene that is being previewed.
-    WeakPtr<Scene> scene_{};
-};
+
+    /// Scene which can be simulated.
+    WeakPtr<SceneTab> sceneTab_;
+    /// Flag controlling scene updates in the viewport.
+    SceneSimulationStatus simulationStatus_ = SCENE_SIMULATION_STOPPED;
+    /// Temporary storage of scene data used in play/pause functionality.
+    VectorBuffer sceneState_;
+    /// Temporary storage of scene data used when plugins are being reloaded.
+    VectorBuffer sceneReloadState_;
+    /// Time since ESC was last pressed. Used for double-press ESC to exit scene simulation.
+    unsigned lastEscPressTime_ = 0;
+    ///
+    bool sceneMouseVisible_ = true;
+    ///
+    MouseMode sceneMouseMode_ = MM_FREE;};
 
 }

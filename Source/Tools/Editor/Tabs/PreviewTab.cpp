@@ -31,7 +31,12 @@
 #include <Urho3D/Math/Color.h>
 #include <Urho3D/Scene/CameraViewport.h>
 #include <Urho3D/Scene/SceneMetadata.h>
+#include <Urho3D/Core/Timer.h>
+#include <Toolbox/SystemUI/Widgets.h>
+#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include "EditorEventsPrivate.h"
 #include "EditorEvents.h"
+#include "Editor.h"
 #include "PreviewTab.h"
 
 namespace Urho3D
@@ -57,14 +62,14 @@ PreviewTab::PreviewTab(Context* context)
     // Reload viewports when renderpath or postprocess was modified.
     SubscribeToEvent(E_RELOADFINISHED, [this](StringHash, VariantMap& args) {
         using namespace ReloadFinished;
-        if (scene_.Null())
+        if (sceneTab_.Expired())
             return;
 
         if (auto* resource = dynamic_cast<Resource*>(GetEventSender()))
         {
             if (resource->GetName().StartsWith("RenderPaths/") || resource->GetName().StartsWith("PostProcess/"))
             {
-                if (auto* metadata = scene_->GetOrCreateComponent<SceneMetadata>())
+                if (auto* metadata = sceneTab_->GetScene()->GetOrCreateComponent<SceneMetadata>())
                 {
                     auto& viewportComponents = metadata->GetCameraViewportComponents();
                     for (auto& component : viewportComponents)
@@ -73,6 +78,25 @@ PreviewTab::PreviewTab(Context* context)
                 }
             }
         }
+    });
+
+    // On plugin code reload all scene state is serialized, plugin library is reloaded and scene state is unserialized.
+    // This way scene recreates all plugin-provided components on reload and gets to use new versions of them.
+    SubscribeToEvent(E_EDITORUSERCODERELOADSTART, [&](StringHash, VariantMap&) {
+        if (sceneTab_.Expired())
+            return;
+
+        sceneTab_->GetUndo().SetTrackingEnabled(false);
+        sceneTab_->SceneStateSave(sceneReloadState_);
+        sceneTab_->GetScene()->RemoveAllChildren();
+        sceneTab_->GetScene()->RemoveAllComponents();
+    });
+    SubscribeToEvent(E_EDITORUSERCODERELOADEND, [&](StringHash, VariantMap&) {
+        if (sceneTab_.Expired())
+            return;
+
+        sceneTab_->SceneStateRestore(sceneReloadState_);
+        sceneTab_->GetUndo().SetTrackingEnabled(true);
     });
 }
 
@@ -92,19 +116,13 @@ IntRect PreviewTab::UpdateViewRect()
 
 bool PreviewTab::RenderWindowContent()
 {
-    if (scene_.Null())
+    if (sceneTab_.Expired())
         return true;
 
     IntRect rect = UpdateViewRect();
     ui::Image(view_.Get(), ImVec2{static_cast<float>(rect.Width()), static_cast<float>(rect.Height())});
 
     return true;
-}
-
-void PreviewTab::SetPreviewScene(Scene* scene)
-{
-    scene_ = scene;
-    UpdateViewports();
 }
 
 void PreviewTab::Clear()
@@ -121,13 +139,13 @@ void PreviewTab::Clear()
 void PreviewTab::UpdateViewports()
 {
     Clear();
-    if (scene_.Expired())
+    if (sceneTab_.Expired())
         return;
 
     if (RenderSurface* surface = view_->GetRenderSurface())
     {
         surface->SetNumViewports(0);        // New scenes need all viewports cleared
-        if (auto* metadata = scene_->GetComponent<SceneMetadata>())
+        if (auto* metadata = sceneTab_->GetScene()->GetComponent<SceneMetadata>())
         {
             unsigned index = 0;
             const auto& viewportComponents = metadata->GetCameraViewportComponents();
@@ -145,14 +163,156 @@ void PreviewTab::UpdateViewports()
 
 void PreviewTab::OnComponentUpdated(Component* component)
 {
-    if (component == nullptr)
+    if (component == nullptr || sceneTab_.Expired())
         return;
 
-    if (component->GetScene() != scene_)
+    if (component->GetScene() != sceneTab_->GetScene())
         return;
 
     if (component->IsInstanceOf<CameraViewport>())
         UpdateViewports();
+}
+
+void PreviewTab::RenderButtons()
+{
+    if (Tab* activeTab = GetSubsystem<Editor>()->GetActiveTab())
+    {
+        if (SceneTab* tab = activeTab->Cast<SceneTab>())
+        {
+            if (!IsScenePlaying() && sceneTab_ != tab)
+            {
+                // Switch to another scene only if there was no previous scene that was played. Only one scene can be played
+                // at a time.
+                sceneTab_ = tab;
+                UpdateViewports();
+            }
+        }
+    }
+
+    if (sceneTab_.Expired())
+        return;
+
+    switch (simulationStatus_)
+    {
+    case SCENE_SIMULATION_RUNNING:
+        sceneTab_->GetScene()->Update(GetTime()->GetTimeStep());
+    case SCENE_SIMULATION_PAUSED:
+    {
+        if (GetInput()->GetKeyPress(KEY_ESCAPE))
+        {
+            if (Time::GetSystemTime() - lastEscPressTime_ > 300)
+                lastEscPressTime_ = Time::GetSystemTime();
+            else
+                Pause();
+        }
+    }
+    default:
+        break;
+    }
+
+    if (ui::EditorToolbarButton(ICON_FA_UNDO_ALT, "Restore"))
+        Stop();
+
+    bool isSimulationRunning = simulationStatus_ == SCENE_SIMULATION_RUNNING;
+    if (ui::EditorToolbarButton(isSimulationRunning ? ICON_FA_PAUSE : ICON_FA_PLAY,
+                                isSimulationRunning ? "Pause" : "Play"))
+        Toggle();
+
+    if (ui::EditorToolbarButton(ICON_FA_STEP_FORWARD, "Simulate one frame"))
+        Step(1.f / 60.f);
+
+    if (ui::EditorToolbarButton(ICON_FA_SAVE, "Save current state as master state.\n" ICON_FA_EXCLAMATION_TRIANGLE " Clears scene undo state!"))
+    Snapshot();
+}
+
+void PreviewTab::Play()
+{
+    if (sceneTab_.Expired())
+        return;
+
+    switch (simulationStatus_)
+    {
+    case SCENE_SIMULATION_STOPPED:
+    {
+        // Scene was not running. Allow scene to set up input parameters.
+        sceneTab_->GetUndo().SetTrackingEnabled(false);
+        sceneTab_->SceneStateSave(sceneState_);
+        simulationStatus_ = SCENE_SIMULATION_RUNNING;
+        break;
+    }
+    case SCENE_SIMULATION_PAUSED:
+    {
+        // Scene was paused. When resuming restore saved scene input parameters.
+        GetInput()->SetMouseVisible(sceneMouseVisible_);
+        GetInput()->SetMouseMode(sceneMouseMode_);
+        simulationStatus_ = SCENE_SIMULATION_RUNNING;
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+void PreviewTab::Pause()
+{
+    if (simulationStatus_ == SCENE_SIMULATION_RUNNING)
+    {
+        sceneMouseVisible_ = GetInput()->IsMouseVisible();
+        sceneMouseMode_ = GetInput()->GetMouseMode();
+        simulationStatus_ = SCENE_SIMULATION_PAUSED;
+        GetInput()->SetMouseVisible(true);
+        GetInput()->SetMouseMode(MM_ABSOLUTE);
+    }
+
+}
+
+void PreviewTab::Toggle()
+{
+    if (sceneTab_.Expired())
+        return;
+
+    if (simulationStatus_ == SCENE_SIMULATION_RUNNING)
+        Pause();
+    else
+        Play();
+}
+
+void PreviewTab::Step(float timeStep)
+{
+    if (sceneTab_.Expired())
+        return;
+
+    if (simulationStatus_ == SCENE_SIMULATION_PAUSED)
+    {
+        sceneTab_->GetScene()->Update(timeStep);
+        GetInput()->SetMouseVisible(true);
+        GetInput()->SetMouseMode(MM_ABSOLUTE);
+    }
+}
+
+void PreviewTab::Stop()
+{
+    if (sceneTab_.Expired())
+        return;
+
+    if (IsScenePlaying())
+    {
+        simulationStatus_ = SCENE_SIMULATION_STOPPED;
+        sceneTab_->SceneStateRestore(sceneState_);
+        sceneTab_->GetUndo().SetTrackingEnabled(true);
+        GetInput()->SetMouseVisible(true);
+        GetInput()->SetMouseMode(MM_ABSOLUTE);
+    }
+}
+
+void PreviewTab::Snapshot()
+{
+    if (sceneTab_.Expired())
+        return;
+
+    sceneTab_->GetUndo().Clear();
+    sceneState_.Clear();
+    sceneTab_->SceneStateSave(sceneState_);
 }
 
 }

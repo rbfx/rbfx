@@ -64,18 +64,6 @@ SceneTab::SceneTab(Context* context)
     // Events
     SubscribeToEvent(this, E_EDITORSELECTIONCHANGED, std::bind(&SceneTab::OnNodeSelectionChanged, this));
     SubscribeToEvent(E_UPDATE, std::bind(&SceneTab::OnUpdate, this, _2));
-    // On plugin code reload all scene state is serialized, plugin library is reloaded and scene state is unserialized.
-    // This way scene recreates all plugin-provided components on reload and gets to use new versions of them.
-    SubscribeToEvent(E_EDITORUSERCODERELOADSTART, [&](StringHash, VariantMap&) {
-        undo_.SetTrackingEnabled(false);
-        SceneStateSave(sceneReloadState_);
-        GetScene()->RemoveAllChildren();
-        GetScene()->RemoveAllComponents();
-    });
-    SubscribeToEvent(E_EDITORUSERCODERELOADEND, [&](StringHash, VariantMap&) {
-        SceneStateRestore(sceneReloadState_);
-        undo_.SetTrackingEnabled(true);
-    });
     SubscribeToEvent(GetScene(), E_COMPONENTADDED, std::bind(&SceneTab::OnComponentAdded, this, _2));
     SubscribeToEvent(GetScene(), E_COMPONENTREMOVED, std::bind(&SceneTab::OnComponentRemoved, this, _2));
 
@@ -209,7 +197,7 @@ bool SceneTab::RenderWindowContent()
                     UnselectAll();
                 ToggleSelection(clickNode);
 
-                if (isClickedRight)
+                if (isClickedRight && undo_.IsTrackingEnabled())
                     ui::OpenPopupEx(ui::GetID("Node context menu"));
             }
         }
@@ -417,14 +405,6 @@ void SceneTab::RenderToolbarButtons()
 
     ui::SameLine(0, 3.f);
 
-    if (ui::EditorToolbarButton(scenePlaying_ ? ICON_FA_PAUSE : ICON_FA_PLAY, scenePlaying_ ? "Pause" : "Play"))
-    {
-        if (scenePlaying_)
-            Pause();
-        else
-            Play();
-    }
-
     SendEvent(E_EDITORTOOLBARBUTTONS);
 
     ui::NewLine();
@@ -549,7 +529,7 @@ void SceneTab::RenderNodeTree(Node* node)
                 UnselectAll();
             ToggleSelection(node);
         }
-        else if (ui::IsMouseClicked(MOUSEB_RIGHT) && !scenePlaying_)
+        else if (ui::IsMouseClicked(MOUSEB_RIGHT) && undo_.IsTrackingEnabled())
         {
             UnselectAll();
             ToggleSelection(node);
@@ -682,20 +662,9 @@ void SceneTab::OnUpdate(VariantMap& args)
             component->Update(timeStep);
     }
 
-    if (scenePlaying_)
+    if (ui::IsWindowFocused())
     {
-        GetScene()->Update(timeStep);
-        if (GetInput()->GetKeyPress(KEY_ESCAPE))
-        {
-            if (Time::GetSystemTime() - lastEscPressTime_ > 300)
-                lastEscPressTime_ = Time::GetSystemTime();
-            else
-                Pause();
-        }
-    }
-    else if (ui::IsWindowFocused())
-    {
-        if (!ui::IsAnyItemActive() && !scenePlaying_)
+        if (!ui::IsAnyItemActive() && undo_.IsTrackingEnabled())
         {
             // Global view hotkeys
             if (GetInput()->GetKeyDown(KEY_DELETE))
@@ -767,11 +736,13 @@ void SceneTab::SceneStateRestore(VectorBuffer& source)
         gizmo_.Select(node);
         node->RemoveTag("__EDITOR_SELECTED__");
     }
+
+    UpdateCameraPreview();
 }
 
 void SceneTab::RenderNodeContextMenu()
 {
-    if (ui::BeginPopup("Node context menu") && !scenePlaying_)
+    if (undo_.IsTrackingEnabled() && ui::BeginPopup("Node context menu"))
     {
         Input* input = GetSubsystem<Input>();
         if (input->GetKeyPress(KEY_ESCAPE) || !input->IsMouseVisible())
@@ -847,29 +818,6 @@ void SceneTab::RenderNodeContextMenu()
             RemoveSelection();
 
         ui::EndPopup();
-    }
-}
-
-void SceneTab::Pause()
-{
-    if (scenePlaying_)
-    {
-        scenePlaying_ = false;
-        SceneStateRestore(sceneState_);
-        undo_.SetTrackingEnabled(true);
-        UpdateCameraPreview();
-        GetInput()->SetMouseVisible(true);
-        GetInput()->SetMouseMode(MM_FREE);
-    }
-}
-
-void SceneTab::Play()
-{
-    if (!scenePlaying_)
-    {
-        scenePlaying_ = true;
-        undo_.SetTrackingEnabled(false);
-        SceneStateSave(sceneState_);
     }
 }
 
@@ -952,9 +900,6 @@ void SceneTab::OnFocused()
         if (auto* inspectorProvider = dynamic_cast<MaterialInspector*>(inspector->GetInspector(IC_RESOURCE)))
             inspectorProvider->SetEffectSource(GetSceneView()->GetViewport()->GetRenderPath());
     }
-
-    if (PreviewTab* preview = GetSubsystem<Editor>()->GetTab<PreviewTab>())
-        preview->SetPreviewScene(GetScene());
 }
 
 void SceneTab::UpdateCameraPreview()

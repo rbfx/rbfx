@@ -131,7 +131,6 @@ void Editor::Start()
     GetInput()->SetMouseMode(MM_ABSOLUTE);
     GetInput()->SetMouseVisible(true);
     RegisterToolboxTypes(context_);
-    context_->RegisterFactory<Editor>();
     context_->RegisterSubsystem(this);
     SceneSettings::RegisterObject(context_);
 
@@ -282,6 +281,17 @@ void Editor::RenderMenuBar()
         }
 
         SendEvent(E_EDITORAPPLICATIONMENU);
+
+        // Scene simulation buttons.
+        if (project_.NotNull())
+        {
+            // Copied from ToolbarButton()
+            auto& g = *ui::GetCurrentContext();
+            float dimension = g.FontBaseSize + g.Style.FramePadding.y * 2.0f;
+            ui::SetCursorScreenPos({ui::GetIO().DisplaySize.x / 2 - dimension * 4 / 2, ui::GetCursorScreenPos().y});
+            if (auto* previewTab = GetTab<PreviewTab>())
+                previewTab->RenderButtons();
+        }
 
         ui::EndMainMenuBar();
     }

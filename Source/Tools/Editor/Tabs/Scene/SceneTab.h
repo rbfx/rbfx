@@ -84,10 +84,12 @@ public:
     SceneView* GetSceneView() { return &view_; }
     /// Return scene displayed in the tab viewport.
     Scene* GetScene() { return view_.GetScene(); }
-    /// Start scene simulation.
-    void Play();
-    /// Stop scene simulation.
-    void Pause();
+    /// Returns undo state manager.
+    Undo::Manager& GetUndo() { return undo_; }
+    /// Serialize scene to binary buffer.
+    void SceneStateSave(VectorBuffer& destination);
+    /// Unserialize scene from binary buffer.
+    void SceneStateRestore(VectorBuffer& source);
 
 protected:
     /// Render scene hierarchy window starting from specified node.
@@ -100,10 +102,6 @@ protected:
     bool RenderWindowContent() override;
     /// Update objects with current tab view rect size.
     IntRect UpdateViewRect() override;
-    /// Serialize scene to xml file.
-    void SceneStateSave(VectorBuffer& destination);
-    /// Unserialize scene from xml file.
-    void SceneStateRestore(VectorBuffer& source);
     /// Manually updates scene.
     void OnUpdate(VariantMap& args);
     /// Render context menu of a scene node.
@@ -123,12 +121,6 @@ protected:
     WeakPtr<Component> selectedComponent_;
     /// State change tracker.
     Undo::Manager undo_;
-    /// Flag controlling scene updates in the viewport.
-    bool scenePlaying_ = false;
-    /// Temporary storage of scene data used in play/pause functionality.
-    VectorBuffer sceneState_;
-    /// Temporary storage of scene data used when plugins are being reloaded.
-    VectorBuffer sceneReloadState_;
     /// Flag indicating that mouse is hovering scene viewport.
     bool mouseHoversViewport_ = false;
     /// Nodes whose entries in hierarchy tree should be opened on next frame.
@@ -139,8 +131,6 @@ protected:
     SharedPtr<Texture2D> cameraPreviewtexture_;
     /// Selected camera preview viewport.
     SharedPtr<Viewport> cameraPreviewViewport_;
-    /// Time since ESC was last pressed. Used for double-press ESC to exit scene simulation.
-    unsigned lastEscPressTime_ = 0;
 };
 
 };
