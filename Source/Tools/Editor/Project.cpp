@@ -134,8 +134,58 @@ bool Project::LoadProject(const String& projectPath)
 
     uiConfigPath_ = projectPath + "/.ui.ini";
     ui::GetIO().IniFilename = uiConfigPath_.CString();
-    String userSessionPath(projectFileDir_ + ".user.json");
 
+#if URHO3D_HASH_DEBUG
+    // StringHashNames.json
+    {
+        String filePath(projectFileDir_ + "StringHashNames.json");
+        if (GetFileSystem()->Exists(filePath))
+        {
+            JSONFile file(context_);
+            if (!file.LoadFile(filePath))
+                return false;
+
+            for (const auto& value : file.GetRoot().GetArray())
+            {
+                // Seed global string hash to name map.
+                StringHash hash(value.GetString());
+                (void) (hash);
+            }
+        }
+    }
+#endif
+
+    // Project.json
+    {
+        String filePath(projectFileDir_ + "Project.json");
+        if (GetFileSystem()->Exists(filePath))
+        {
+            JSONFile file(context_);
+            if (!file.LoadFile(filePath))
+                return false;
+
+            const auto& root = file.GetRoot().GetObject();
+            if (root.Contains("plugins"))
+            {
+                const auto& plugins = root["plugins"]->GetArray();
+                for (const auto& plugin : plugins)
+                    plugins_.Load(plugin.GetString());
+                // Tick plugins once to ensure plugins are loaded before loading any possibly open scenes. This makes
+                // plugins register themselves with the engine so that loaded scenes can properly load components
+                // provided by plugins. Not doing this would cause scenes to load these components as UnknownComponent.
+                plugins_.OnEndFrame();
+            }
+
+            for (const auto& value : file.GetRoot().GetArray())
+            {
+                // Seed global string hash to name map.
+                StringHash hash(value.GetString());
+                (void) (hash);
+            }
+        }
+    }
+
+    String userSessionPath(projectFileDir_ + ".user.json");
     if (GetFileSystem()->Exists(userSessionPath))
     {
         // Load user session
@@ -186,52 +236,6 @@ bool Project::LoadProject(const String& projectPath)
         // Load default layout if no user session exists
         GetSubsystem<Editor>()->LoadDefaultLayout();
     }
-
-    // Project.json
-    {
-        String filePath(projectFileDir_ + "Project.json");
-        if (GetFileSystem()->Exists(filePath))
-        {
-            JSONFile file(context_);
-            if (!file.LoadFile(filePath))
-                return false;
-
-            const auto& root = file.GetRoot().GetObject();
-            if (root.Contains("plugins"))
-            {
-                const auto& plugins = root["plugins"]->GetArray();
-                for (const auto& plugin : plugins)
-                    plugins_.Load(plugin.GetString());
-            }
-
-            for (const auto& value : file.GetRoot().GetArray())
-            {
-                // Seed global string hash to name map.
-                StringHash hash(value.GetString());
-                (void) (hash);
-            }
-        }
-    }
-
-#if URHO3D_HASH_DEBUG
-    // StringHashNames.json
-    {
-        String filePath(projectFileDir_ + "StringHashNames.json");
-        if (GetFileSystem()->Exists(filePath))
-        {
-            JSONFile file(context_);
-            if (!file.LoadFile(filePath))
-                return false;
-
-            for (const auto& value : file.GetRoot().GetArray())
-            {
-                // Seed global string hash to name map.
-                StringHash hash(value.GetString());
-                (void) (hash);
-            }
-        }
-    }
-#endif
 
     return true;
 }

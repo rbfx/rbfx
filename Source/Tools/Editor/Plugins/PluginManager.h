@@ -78,10 +78,10 @@ public:
     Plugin* GetPlugin(const String& fileName);
     /// Returns a vector containing all loaded plugins.
     const Vector<SharedPtr<Plugin>>& GetPlugins() const { return plugins_; }
-
-protected:
     /// Tick native plugins.
     void OnEndFrame();
+
+protected:
     /// Checks specified file and recognizes it's plugin type.
     PluginType GetPluginType(const String& path);
     /// Delete temporary files from binary directory.
