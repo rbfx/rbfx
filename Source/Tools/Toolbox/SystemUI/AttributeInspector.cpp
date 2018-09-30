@@ -288,10 +288,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
                 value = *buffer;
             break;
         }
-//            case VAR_BUFFER:
-        case VAR_VOIDPTR:
-            ui::Text("%p", value.GetVoidPtr());
-            break;
+//        case VAR_BUFFER:
         case VAR_RESOURCEREF:
         {
             const auto& ref = value.GetResourceRef();
@@ -362,7 +359,9 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             unsigned index = 0;
             for (auto it = map->Begin(); it != map->End(); it++)
             {
-                if (it->second_.GetType() == VAR_RESOURCEREFLIST || it->second_.GetType() == VAR_VARIANTMAP || it->second_.GetType() == VAR_VARIANTVECTOR)
+                VariantType type = it->second_.GetType();
+                if (type == VAR_RESOURCEREFLIST || type == VAR_VARIANTMAP || type == VAR_VARIANTVECTOR ||
+                    type == VAR_BUFFER || type == VAR_VOIDPTR || type == VAR_PTR)
                     // TODO: Support nested collections.
                     continue;
 
@@ -432,9 +431,6 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             ui::SetHelpTooltip("xy");
             break;
         }
-        case VAR_PTR:
-            ui::Text("%p (Void Pointer)", static_cast<void*>(value.GetPtr()));
-            break;
         case VAR_MATRIX3:
         {
             ui::NewLine();
@@ -624,7 +620,7 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
             else if (filter != nullptr && *filter && !info.name_.Contains(filter, false))
                 hidden = true;
 
-            if (info.type_ == VAR_BUFFER || info.type_ == VAR_VARIANTVECTOR)
+            if (info.type_ == VAR_BUFFER || info.type_ == VAR_VARIANTVECTOR || info.type_ == VAR_VOIDPTR || info.type_ == VAR_PTR)
                 hidden = true;
 
             // Customize attribute rendering
