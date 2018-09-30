@@ -73,15 +73,13 @@ bool Tab::RenderWindow()
     {
         if (open_)
         {
-            IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->InnerClipRect);
-            if (tabRect.IsInside(lastMousePosition_) == INSIDE)
+            if (!ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
             {
-                if (!ui::IsWindowFocused() && ui::IsWindowHovered() && input->GetMouseButtonDown(MOUSEB_RIGHT))
+                IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->InnerClipRect);
+                if (!wasRendered ||                                                                                     // Just activated
+                    (tabRect.IsInside(lastMousePosition_) == INSIDE && ui::IsAnyMouseDown()))                           // Interacting
                     ui::SetWindowFocus();
             }
-
-            if (!wasRendered)
-                ui::SetWindowFocus();
 
             isActive_ = ui::IsWindowFocused() && ui::IsDockActive();
             open_ = RenderWindowContent();
