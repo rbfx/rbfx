@@ -702,6 +702,15 @@ void SceneTab::OnUpdate(VariantMap& args)
                 RemoveSelection();
         }
     }
+
+    // Render editor camera rotation guide
+    if (auto* debug = GetScene()->GetComponent<DebugRenderer>())
+    {
+        Vector3 guideRoot = GetSceneView()->GetCamera()->ScreenToWorldPoint({0.95, 0.1, 1});
+        debug->AddLine(guideRoot, guideRoot + Vector3::RIGHT * 0.05f, Color::RED, false);
+        debug->AddLine(guideRoot, guideRoot + Vector3::UP * 0.05f, Color::GREEN, false);
+        debug->AddLine(guideRoot, guideRoot + Vector3::FORWARD * 0.05f, Color::BLUE, false);
+    }
 }
 
 void SceneTab::SceneStateSave(VectorBuffer& destination)
