@@ -39,16 +39,19 @@ public:
     /// Destruct.
     ~PluginApplication() override;
     /// Called when plugin is being loaded. Register all custom components and subscribe to events here.
+    virtual void Load() { }
+    /// Called when application is started. May be called multiple times but no earlier than before next Stop() call.
     virtual void Start() { }
-    /// Called when plugin is being unloaded. Unregister all custom components and unsubscribe from events here.
+    /// Called when application is stopped.
     virtual void Stop() { }
-
-protected:
+    /// Called when plugin is being unloaded. Unregister all custom components and unsubscribe from events here.
+    virtual void Unload() { }
     /// Register a factory for an object type.
     template<typename T> void RegisterFactory();
     /// Register a factory for an object type and specify the object category.
     template<typename T> void RegisterFactory(const char* category);
 
+protected:
     /// Types registered with the engine. They will be unloaded when plugin is reloaded.
     PODVector<Pair<StringHash, const char*>> registeredTypes_;
 };

@@ -24,6 +24,7 @@
 
 
 #include <Urho3D/Core/Context.h>
+#include <Urho3D/Engine/PluginApplication.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/Scene/LogicComponent.h>
@@ -45,19 +46,14 @@ public:
     void Update(float timeStep) override
     {
         Input* input = GetInput();
-
-        if (input->IsMouseVisible())
+        if (input->ShouldIgnoreInput())
         {
-            // TODO: This sucks, however it is needed for component to be useful in the editor at this stage.
-            // Once there is a way to run some code on scene initialization this will be removed.
-            input->SetMouseVisible(false);
-            input->SetMouseMode(MM_WRAP);
+            // This component takes into account the fact that it will execute in context of editor where scene may
+            // temporarily relieve controls back to the editor.
+            return;
         }
 
         IntVector2 delta = input->GetMouseMove();
-
-        if (input->IsMouseVisible() && delta != IntVector2::ZERO)
-            input->SetMouseVisible(false);
 
         auto yaw = GetNode()->GetRotation().EulerAngles().x_;
         if ((yaw > -90.f && yaw < 90.f) || (yaw <= -90.f && delta.y_ > 0) || (yaw >= 90.f && delta.y_ < 0))
@@ -73,6 +69,11 @@ public:
             GetNode()->Translate(Vector3::LEFT * timeStep);
         if (input->GetKeyDown(KEY_D))
             GetNode()->Translate(Vector3::RIGHT * timeStep);
+    }
+
+    static void RegisterObject(Context* context, PluginApplication* plugin)
+    {
+        plugin->RegisterFactory<FPSCameraController>("User Components");
     }
 };
 

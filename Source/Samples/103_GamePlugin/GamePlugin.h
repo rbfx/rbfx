@@ -36,9 +36,13 @@ public:
     explicit GamePlugin(Context* context);
 
     /// Initialize plugin.
+    void Load() override;
+    /// Start game.
     void Start() override;
-    /// Deinitialize plugin.
+    /// Stop game.
     void Stop() override;
+    /// Deinitialize plugin.
+    void Unload() override;
 };
 
 

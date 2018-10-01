@@ -25,9 +25,11 @@
 #define CR_HOST
 
 #include <Urho3D/Core/CoreEvents.h>
+#include <Urho3D/Engine/PluginApplication.h>
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
+#include <EditorEvents.h>
 #include "PluginManager.h"
 #include "EditorEventsPrivate.h"
 
@@ -45,6 +47,20 @@ PluginManager::PluginManager(Context* context)
 {
     CleanUp();
     SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { OnEndFrame(); });
+    SubscribeToEvent(E_SIMULATIONSTART, [this](StringHash, VariantMap&) {
+        for (auto& plugin : plugins_)
+        {
+            if (plugin->nativeContext_.userdata != nullptr && plugin->nativeContext_.userdata != context_)
+                reinterpret_cast<PluginApplication*>(plugin->nativeContext_.userdata)->Start();
+        }
+    });
+    SubscribeToEvent(E_SIMULATIONSTOP, [this](StringHash, VariantMap&) {
+        for (auto& plugin : plugins_)
+        {
+            if (plugin->nativeContext_.userdata != nullptr && plugin->nativeContext_.userdata != context_)
+                reinterpret_cast<PluginApplication*>(plugin->nativeContext_.userdata)->Stop();
+        }
+    });
 }
 
 PluginType PluginManager::GetPluginType(const String& path)

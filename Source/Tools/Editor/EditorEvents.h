@@ -72,4 +72,14 @@ URHO3D_EVENT(E_EDITORTABCLOSED, EditorTabClosed)
     URHO3D_PARAM(P_TAB, Tab);                         // RefCounted pointer.
 }
 
+/// Sent when scene is played. Not sent when scene is resumed from paused state.
+URHO3D_EVENT(E_SIMULATIONSTART, SimulationStart)
+{
+}
+
+/// Sent when scene is stopped. Not sent when scene is paused.
+URHO3D_EVENT(E_SIMULATIONSTOP, SimulationStop)
+{
+}
+
 }

@@ -238,6 +238,7 @@ void PreviewTab::Play()
         sceneTab_->GetUndo().SetTrackingEnabled(false);
         sceneTab_->SceneStateSave(sceneState_);
         simulationStatus_ = SCENE_SIMULATION_RUNNING;
+        SendEvent(E_SIMULATIONSTART);
         break;
     }
     case SCENE_SIMULATION_PAUSED:
@@ -297,6 +298,7 @@ void PreviewTab::Stop()
 
     if (IsScenePlaying())
     {
+        SendEvent(E_SIMULATIONSTOP);
         simulationStatus_ = SCENE_SIMULATION_STOPPED;
         sceneTab_->SceneStateRestore(sceneState_);
         sceneTab_->GetUndo().SetTrackingEnabled(true);

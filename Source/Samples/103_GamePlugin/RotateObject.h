@@ -23,7 +23,9 @@
 #pragma once
 
 
+#include <Urho3D/Engine/PluginApplication.h>
 #include <Urho3D/Scene/LogicComponent.h>
+#include <Urho3D/Scene/Node.h>
 
 namespace Urho3D
 {
@@ -47,8 +49,9 @@ public:
             GetNode()->Rotate(Quaternion(10 * timeStep, 20 * timeStep, 30 * timeStep));
     }
 
-    static void RegisterObject(Context* context)
+    static void RegisterObject(Context* context, PluginApplication* plugin)
     {
+        plugin->RegisterFactory<RotateObject>("User Components");
         URHO3D_ATTRIBUTE("Animate", bool, animate_, true, AM_EDIT);
     }
 

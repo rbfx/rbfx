@@ -53,7 +53,7 @@ int PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Contex
     {
         auto* context = static_cast<Context*>(ctx->userdata);
         auto* application = factory(context);
-        application->Start();
+        application->Load();
         ctx->userdata = application;
         return 0;
     }
@@ -61,7 +61,7 @@ int PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Contex
     case CR_CLOSE:
     {
         auto* application = static_cast<PluginApplication*>(ctx->userdata);
-        application->Stop();
+        application->Unload();
         ctx->userdata = application->GetContext();
         destroyer(application);
         return 0;

@@ -39,19 +39,31 @@ GamePlugin::GamePlugin(Context* context)
 {
 }
 
-void GamePlugin::Start()
+void GamePlugin::Load()
 {
     // Register custom components/subsystems/events when plugin is loaded.
-    RegisterFactory<RotateObject>("User Components");
-    RegisterFactory<FPSCameraController>("User Components");
-    RotateObject::RegisterObject(context_);
+    RotateObject::RegisterObject(context_, this);
+    FPSCameraController::RegisterObject(context_, this);
 }
 
-void GamePlugin::Stop()
+void GamePlugin::Unload()
 {
     // Finalize plugin, ensure that no objects provided by the plugin are alive. Some of that work is automated by
     // parent class. Objects that had factories registered through PluginApplication::RegisterFactory<> have their
     // attributes automatically unregistered, factories/subsystems removed.
+}
+
+void GamePlugin::Start()
+{
+    // Set up any game state here. Configure input. Create objects. Add UI. Game application assumes control of the
+    // input.
+    GetInput()->SetMouseVisible(false);
+    GetInput()->SetMouseMode(MM_WRAP);
+}
+
+void GamePlugin::Stop()
+{
+    // Tear down any game state here. Unregister events. Remove objects. Editor takes back the control.
 }
 
 }
