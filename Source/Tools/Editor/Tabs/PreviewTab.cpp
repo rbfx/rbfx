@@ -121,6 +121,9 @@ bool PreviewTab::RenderWindowContent()
 
     IntRect rect = UpdateViewRect();
     ui::Image(view_.Get(), ImVec2{static_cast<float>(rect.Width()), static_cast<float>(rect.Height())});
+    if (!inputGrabbed_ && simulationStatus_ == SCENE_SIMULATION_RUNNING && ui::IsItemHovered() &&
+        ui::IsAnyMouseDown() && GetInput()->IsMouseVisible())
+        GrabInput();
 
     return true;
 }
@@ -203,14 +206,14 @@ void PreviewTab::RenderButtons()
             if (Time::GetSystemTime() - lastEscPressTime_ > 300)
                 lastEscPressTime_ = Time::GetSystemTime();
             else
-                Pause();
+                ReleaseInput();
         }
     }
     default:
         break;
     }
 
-    if (ui::EditorToolbarButton(ICON_FA_UNDO_ALT, "Restore"))
+    if (ui::EditorToolbarButton(ICON_FA_FAST_BACKWARD, "Restore"))
         Stop();
 
     bool isSimulationRunning = simulationStatus_ == SCENE_SIMULATION_RUNNING;
@@ -239,13 +242,13 @@ void PreviewTab::Play()
         sceneTab_->SceneStateSave(sceneState_);
         simulationStatus_ = SCENE_SIMULATION_RUNNING;
         SendEvent(E_SIMULATIONSTART);
+        inputGrabbed_ = true;
+        ReleaseInput();
         break;
     }
     case SCENE_SIMULATION_PAUSED:
     {
         // Scene was paused. When resuming restore saved scene input parameters.
-        GetInput()->SetMouseVisible(sceneMouseVisible_);
-        GetInput()->SetMouseMode(sceneMouseMode_);
         simulationStatus_ = SCENE_SIMULATION_RUNNING;
         break;
     }
@@ -257,14 +260,7 @@ void PreviewTab::Play()
 void PreviewTab::Pause()
 {
     if (simulationStatus_ == SCENE_SIMULATION_RUNNING)
-    {
-        sceneMouseVisible_ = GetInput()->IsMouseVisible();
-        sceneMouseMode_ = GetInput()->GetMouseMode();
         simulationStatus_ = SCENE_SIMULATION_PAUSED;
-        GetInput()->SetMouseVisible(true);
-        GetInput()->SetMouseMode(MM_ABSOLUTE);
-    }
-
 }
 
 void PreviewTab::Toggle()
@@ -283,12 +279,13 @@ void PreviewTab::Step(float timeStep)
     if (sceneTab_.Expired())
         return;
 
-    if (simulationStatus_ == SCENE_SIMULATION_PAUSED)
-    {
-        sceneTab_->GetScene()->Update(timeStep);
-        GetInput()->SetMouseVisible(true);
-        GetInput()->SetMouseMode(MM_ABSOLUTE);
-    }
+    if (simulationStatus_ == SCENE_SIMULATION_STOPPED)
+        Play();
+
+    if (simulationStatus_ == SCENE_SIMULATION_RUNNING)
+        Pause();
+
+    sceneTab_->GetScene()->Update(timeStep);
 }
 
 void PreviewTab::Stop()
@@ -302,8 +299,6 @@ void PreviewTab::Stop()
         simulationStatus_ = SCENE_SIMULATION_STOPPED;
         sceneTab_->SceneStateRestore(sceneState_);
         sceneTab_->GetUndo().SetTrackingEnabled(true);
-        GetInput()->SetMouseVisible(true);
-        GetInput()->SetMouseMode(MM_ABSOLUTE);
     }
 }
 
@@ -315,6 +310,30 @@ void PreviewTab::Snapshot()
     sceneTab_->GetUndo().Clear();
     sceneState_.Clear();
     sceneTab_->SceneStateSave(sceneState_);
+}
+
+void PreviewTab::GrabInput()
+{
+    if (inputGrabbed_)
+        return;
+
+    inputGrabbed_ = true;
+    GetInput()->SetMouseVisible(sceneMouseVisible_);
+    GetInput()->SetMouseMode(sceneMouseMode_);
+    GetInput()->SetShouldIgnoreInput(false);
+}
+
+void PreviewTab::ReleaseInput()
+{
+    if (!inputGrabbed_)
+        return;
+
+    inputGrabbed_ = false;
+    sceneMouseVisible_ = GetInput()->IsMouseVisible();
+    sceneMouseMode_ = GetInput()->GetMouseMode();
+    GetInput()->SetMouseVisible(true);
+    GetInput()->SetMouseMode(MM_ABSOLUTE);
+    GetInput()->SetShouldIgnoreInput(true);
 }
 
 }

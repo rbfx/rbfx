@@ -71,10 +71,14 @@ public:
 protected:
     ///
     IntRect UpdateViewRect() override;
-    ///
+    /// Goes through scene, finds CameraViewport components and creates required viewports in the editor.
     void UpdateViewports();
-    ///
+    /// Handle addition or removal of CameraViewport component.
     void OnComponentUpdated(Component* component);
+    /// Preview tab grabs input. Scene simulation assumes full control of the input.
+    void GrabInput();
+    /// Release input to the editor. Game components should not interfere with the input when Input::ShouldIgnoreInput() returns true.
+    void ReleaseInput();
 
     /// Last view rectangle.
     IntRect viewRect_{};
@@ -91,9 +95,12 @@ protected:
     VectorBuffer sceneReloadState_;
     /// Time since ESC was last pressed. Used for double-press ESC to exit scene simulation.
     unsigned lastEscPressTime_ = 0;
-    ///
+    /// Flag indicating game view assumed control of the input.
+    bool inputGrabbed_ = false;
+    /// Mouse visibility expected by the played scene. Will be set when input is grabbed.
     bool sceneMouseVisible_ = true;
-    ///
-    MouseMode sceneMouseMode_ = MM_FREE;};
+    /// Mouse mode expected by the played scene. Will be set when input is grabbed.
+    MouseMode sceneMouseMode_ = MM_FREE;
+};
 
 }

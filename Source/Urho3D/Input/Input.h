@@ -300,6 +300,11 @@ public:
     /// Return whether application window is minimized.
     bool IsMinimized() const;
 
+    /// Return whether user should ignore input events.
+    bool ShouldIgnoreInput() const { return shouldIgnoreInput_; }
+    /// Set a flag indicating that user should ignore input.
+    void SetShouldIgnoreInput(bool ignore) { shouldIgnoreInput_ = ignore; }
+
 private:
     /// Initialize when screen mode initially set.
     void Initialize();
@@ -445,6 +450,8 @@ private:
     /// Flag indicating current pointer-lock status.
     bool emscriptenPointerLock_;
 #endif
+    /// Whether user should suspend input handling.
+    bool shouldIgnoreInput_ = false;
 };
 
 }
