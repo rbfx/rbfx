@@ -100,6 +100,19 @@ SceneTab::SceneTab(Context* context)
             }
         }
     });
+    SubscribeToEvent(&inspector_, E_INSPECTORRENDERSTART, [this](StringHash, VariantMap& args) {
+        Serializable* serializable = static_cast<Serializable*>(args[InspectorRenderStart::P_SERIALIZABLE].GetPtr());
+        if (serializable->GetType() == Node::GetTypeStatic())
+        {
+            UI_UPIDSCOPE(1)
+                ui::Columns(2);
+            Node* node = static_cast<Node*>(serializable);
+            ui::TextUnformatted("ID");
+            ui::NextColumn();
+            ui::Text("%u (%s)", node->GetID(), node->IsReplicated() ? "Replicated" : "Local");
+            ui::NextColumn();
+        }
+    });
 
     undo_.Connect(GetScene());
     undo_.Connect(&inspector_);

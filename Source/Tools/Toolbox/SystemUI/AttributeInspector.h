@@ -44,6 +44,7 @@ URHO3D_EVENT(E_INSPECTORLOCATERESOURCE, InspectorLocateResource)
 
 URHO3D_EVENT(E_INSPECTORRENDERSTART, InspectorRenderStart)
 {
+    URHO3D_PARAM(P_SERIALIZABLE, Serializable);                                 // Serializable*
 }
 
 URHO3D_EVENT(E_INSPECTORRENDEREND, InspectorRenderEnd)

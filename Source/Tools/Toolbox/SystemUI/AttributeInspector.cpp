@@ -589,7 +589,7 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
             return false;
 
         ui::PushID(item);
-        eventNamespace->SendEvent(E_INSPECTORRENDERSTART);
+        eventNamespace->SendEvent(E_INSPECTORRENDERSTART, InspectorRenderStart::P_SERIALIZABLE, item);
 
         UI_UPIDSCOPE(1)
         {
