@@ -132,6 +132,14 @@ bool SceneTab::RenderWindowContent()
         ui::SetWindowFocus();
 
     RenderToolbarButtons();
+
+    if (!ui::IsDockDocked())
+    {
+        // Without this workaround undocked scene tabs have extra empty line under toolbar buttons.
+        ui::SameLine();
+        ui::SetCursorPosY(ui::GetCursorPosY() + ui::GetStyle().ItemSpacing.y);
+    }
+
     IntRect tabRect = UpdateViewRect();
 
     ui::SetCursorScreenPos(ToImGui(tabRect.Min()));
