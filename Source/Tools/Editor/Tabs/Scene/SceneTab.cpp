@@ -156,7 +156,6 @@ bool SceneTab::RenderWindowContent()
     IntRect tabRect = UpdateViewRect();
 
     ui::SetCursorScreenPos(ToImGui(tabRect.Min()));
-    ui::BeginChild("Gizmo frame", ToImGui(tabRect.Size()));
     ui::Image(view_.GetTexture(), ToImGui(tabRect.Size()));
     gizmo_.ManipulateSelection(view_.GetCamera());
 
@@ -176,7 +175,6 @@ bool SceneTab::RenderWindowContent()
 
         ui::Image(cameraPreviewtexture_.Get(), ToImGui(cameraPreviewSize));
     }
-    ui::EndChild();
 
     // Prevent dragging window when scene view is clicked.
     if (ui::IsWindowHovered())

@@ -85,7 +85,9 @@ bool Tab::RenderWindow()
             }
 
             isActive_ = ui::IsWindowFocused() && ui::IsDockActive();
-            open_ = RenderWindowContent();
+            if (ui::BeginChild("Tab Content", {0, 0}, false, windowFlags_))
+                open_ = RenderWindowContent();
+            ui::EndChild();
             isRendered_ = true;
         }
     }
