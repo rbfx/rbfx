@@ -51,11 +51,13 @@ public:
     /// Returns type of the plugin.
     PluginType GetPluginType() const { return type_; }
     /// Returns file name of plugin.
-    String GetFileName() const { return fileName_; }
+    String GetName() const { return name_; }
 
 protected:
+    /// Base plugin file name.
+    String name_;
     /// Path to plugin dynamic library file.
-    String fileName_;
+    String path_;
     /// Type of plugin (invalid/native/managed).
     PluginType type_ = PLUGIN_INVALID;
     /// Context of native plugin. Not initialized for managed plugins.
@@ -71,21 +73,25 @@ public:
     /// Construct.
     explicit PluginManager(Context* context);
     /// Load a plugin and return true if succeeded.
-    virtual Plugin* Load(const String& path);
+    virtual Plugin* Load(const String& name);
     /// Unload a plugin and return true if succeeded.
     virtual bool Unload(Plugin* plugin);
     /// Returns a loaded plugin with specified name.
-    Plugin* GetPlugin(const String& fileName);
+    Plugin* GetPlugin(const String& name);
     /// Returns a vector containing all loaded plugins.
     const Vector<SharedPtr<Plugin>>& GetPlugins() const { return plugins_; }
     /// Tick native plugins.
     void OnEndFrame();
+    /// Converts relative or absolute plugin path to universal plugin name. Returns empty string on failure.
+    static String PathToName(const String& path);
 
 protected:
     /// Checks specified file and recognizes it's plugin type.
     PluginType GetPluginType(const String& path);
     /// Delete temporary files from binary directory.
     void CleanUp(String directory = String::EMPTY);
+    /// Converts name to a full plugin file path. Returns empty string on error.
+    String NameToPath(const String& name) const;
 
     /// Loaded plugins.
     Vector<SharedPtr<Plugin>> plugins_;

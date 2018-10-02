@@ -37,6 +37,16 @@
 namespace Urho3D
 {
 
+#if __linux__
+static const char* platformDynamicLibrarySuffix = ".so";
+#elif _WIN32
+static const char* platformDynamicLibrarySuffix = ".dll";
+#elif __APPLE__
+static const char* platformDynamicLibrarySuffix = ".dylib";
+#else
+#   error Unsupported platform.
+#endif
+
 Plugin::Plugin(Context* context)
     : Object(context)
 {
@@ -128,27 +138,32 @@ PluginType PluginManager::GetPluginType(const String& path)
     return PLUGIN_INVALID;
 }
 
-Plugin* PluginManager::Load(const String& path)
+Plugin* PluginManager::Load(const String& name)
 {
-    if (Plugin* loaded = GetPlugin(path))
+    if (Plugin* loaded = GetPlugin(name))
         return loaded;
 
     CleanUp();
 
+    String pluginPath = NameToPath(name);
+    if (pluginPath.Empty())
+        return nullptr;
+
     SharedPtr<Plugin> plugin(new Plugin(context_));
-    plugin->type_ = GetPluginType(path);
+    plugin->type_ = GetPluginType(pluginPath);
 
     if (plugin->type_ == PLUGIN_NATIVE)
     {
-        if (cr_plugin_load(plugin->nativeContext_, path.CString()))
+        if (cr_plugin_load(plugin->nativeContext_, pluginPath.CString()))
         {
             plugin->nativeContext_.userdata = context_;
-            plugin->fileName_ = path;
+            plugin->name_ = name;
+            plugin->path_ = pluginPath;
             plugins_.Push(plugin);
             return plugin.Get();
         }
         else
-            URHO3D_LOGWARNINGF("Failed loading native plugin \"%s\".", GetFileNameAndExtension(path).CString());
+            URHO3D_LOGWARNINGF("Failed loading native plugin \"%s\".", name);
     }
     else if (plugin->type_ == PLUGIN_MANAGED)
     {
@@ -166,14 +181,14 @@ bool PluginManager::Unload(Plugin* plugin)
     auto it = plugins_.Find(SharedPtr<Plugin>(plugin));
     if (it == plugins_.End())
     {
-        URHO3D_LOGERRORF("Plugin %s was never loaded.", plugin->fileName_.CString());
+        URHO3D_LOGERRORF("Plugin %s was never loaded.", plugin->name_.CString());
         return false;
     }
 
     SendEvent(E_EDITORUSERCODERELOADSTART);
     cr_plugin_close(plugin->nativeContext_);
     SendEvent(E_EDITORUSERCODERELOADEND);
-    URHO3D_LOGINFOF("Plugin %s was unloaded.", plugin->fileName_.CString());
+    URHO3D_LOGINFOF("Plugin %s was unloaded.", plugin->name_.CString());
     plugins_.Erase(it);
 
     CleanUp();
@@ -196,7 +211,7 @@ void PluginManager::OnEndFrame()
             if (cr_plugin_update(plugin->nativeContext_) != 0)
             {
                 URHO3D_LOGERRORF("Processing plugin \"%s\" failed and it was unloaded.",
-                    GetFileNameAndExtension(plugin->fileName_).CString());
+                    GetFileNameAndExtension(plugin->name_).CString());
                 cr_plugin_close(plugin->nativeContext_);
                 plugin->nativeContext_.userdata = nullptr;
                 continue;
@@ -208,7 +223,7 @@ void PluginManager::OnEndFrame()
                 if (plugin->nativeContext_.userdata != nullptr)
                 {
                     URHO3D_LOGINFOF("Loaded plugin \"%s\" version %d.",
-                        GetFileNameAndExtension(plugin->fileName_).CString(), plugin->nativeContext_.version);
+                        GetFileNameAndExtension(plugin->name_).CString(), plugin->nativeContext_.version);
                 }
             }
         }
@@ -247,14 +262,45 @@ void PluginManager::CleanUp(String directory)
     }
 }
 
-Plugin* PluginManager::GetPlugin(const String& fileName)
+Plugin* PluginManager::GetPlugin(const String& name)
 {
     for (auto it = plugins_.Begin(); it != plugins_.End(); it++)
     {
-        if (it->Get()->fileName_ == fileName)
+        if (it->Get()->name_ == name)
             return it->Get();
     }
     return nullptr;
+}
+
+String PluginManager::NameToPath(const String& name) const
+{
+    FileSystem* fs = GetFileSystem();
+    String result;
+
+#if __linux__ || __APPLE__
+    result = ToString("%s/lib%s%s", fs->GetProgramDir().CString(), name.CString(), platformDynamicLibrarySuffix);
+    if (fs->FileExists(result))
+        return result;
+#endif
+    result = ToString("%s/%s%s", fs->GetProgramDir().CString(), name.CString(), platformDynamicLibrarySuffix);
+    if (fs->FileExists(result))
+        return result;
+
+    return String::EMPTY;
+}
+
+String PluginManager::PathToName(const String& path)
+{
+    if (path.EndsWith(platformDynamicLibrarySuffix))
+    {
+        String name = GetFileName(path);
+#if __linux__ || __APPLE__
+        if (name.StartsWith("lib"))
+            name = name.Substring(3);
+        return name;
+#endif
+    }
+    return String::EMPTY;
 }
 
 }

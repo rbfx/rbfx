@@ -290,7 +290,7 @@ bool Project::SaveProject()
         {
             JSONArray plugins{};
             for (const auto& plugin : plugins_.GetPlugins())
-                plugins.Push(plugin->GetFileName());
+                plugins.Push(plugin->GetName());
             Sort(plugins.Begin(), plugins.End(), [](JSONValue& a, JSONValue& b) {
                 return a.GetString().Compare(b.GetString());
             });

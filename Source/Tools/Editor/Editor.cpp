@@ -448,17 +448,11 @@ void Editor::RenderProjectPluginsMenu()
     GetFileSystem()->ScanDir(files, GetFileSystem()->GetProgramDir(), "*.*", SCAN_FILES, false);
     for (auto it = files.Begin(); it != files.End(); ++it)
     {
-        if (!it->EndsWith(".so")
-            // TODO: .net/windows && !it->EndsWith(".dll")
-            // TODO: MacOS && !it->EndsWith("dylib")
-        )
+        String baseName = PluginManager::PathToName(*it);
+        if (baseName.Empty())
+            // Definitely not plugin file.
             continue;
 
-        unsigned dotIndex = it->FindLast('.');
-        if (dotIndex == 0 || dotIndex == String::NPOS)
-            continue;
-
-        String baseName = GetFileName(*it);
         if (IsDigit(static_cast<unsigned int>(baseName.Back())))
             // Native plugins will rename main file and append version after base name.
             continue;
@@ -467,11 +461,6 @@ void Editor::RenderProjectPluginsMenu()
             // Libraries for C# interop
             continue;
 
-#if __linux__ || __APPLE__
-        if (baseName.StartsWith("lib"))
-            baseName = baseName.Substring(3);
-#endif
-
         if (baseName == "Urho3D" || baseName == "Toolbox")
             // Internal engine libraries
             continue;
@@ -479,12 +468,12 @@ void Editor::RenderProjectPluginsMenu()
         ++possiblePluginCount;
 
         PluginManager* plugins = project_->GetPlugins();
-        Plugin* plugin = plugins->GetPlugin(*it);
+        Plugin* plugin = plugins->GetPlugin(baseName);
         bool loaded = plugin != nullptr;
-        if (ui::Checkbox(it->CString(), &loaded))
+        if (ui::Checkbox(baseName.CString(), &loaded))
         {
             if (loaded)
-                plugins->Load(*it);
+                plugins->Load(baseName);
             else
                 plugins->Unload(plugin);
         }
