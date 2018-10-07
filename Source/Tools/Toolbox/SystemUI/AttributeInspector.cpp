@@ -667,8 +667,6 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
                     {
                         if (ui::MenuItem("Reset to default"))
                         {
-                            item->SetAttribute(info.name_, info.defaultValue_);
-                            item->ApplyAttributes();
                             value = info.defaultValue_;     // For current frame to render correctly
                             expireBuffers = true;
                             modified = true;
