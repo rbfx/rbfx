@@ -172,12 +172,36 @@ void SystemUI::OnRawEvent(VariantMap& args)
     case SDL_MOUSEBUTTONUP:
     URHO3D_FALLTHROUGH
     case SDL_MOUSEBUTTONDOWN:
-        io.MouseDown[evt->button.button - 1] = evt->type == SDL_MOUSEBUTTONDOWN;
+    {
+        int imguiButton;
+        switch (evt->button.button)
+        {
+        case SDL_BUTTON_LEFT:
+            imguiButton = 0;
+            break;
+        case SDL_BUTTON_MIDDLE:
+            imguiButton = 2;
+            break;
+        case SDL_BUTTON_RIGHT:
+            imguiButton = 1;
+            break;
+        case SDL_BUTTON_X1:
+            imguiButton = 3;
+            break;
+        case SDL_BUTTON_X2:
+            imguiButton = 4;
+            break;
+        default:
+            imguiButton = -1;
+        }
+        if (imguiButton >= 0)
+            io.MouseDown[imguiButton] = evt->type == SDL_MOUSEBUTTONDOWN;
+    }
+    URHO3D_FALLTHROUGH
     case SDL_MOUSEMOTION:
         io.MousePos.x = evt->motion.x / uiZoom_;
         io.MousePos.y = evt->motion.y / uiZoom_;
         break;
-    URHO3D_FALLTHROUGH
     case SDL_FINGERUP:
         io.MouseDown[0] = false;
         io.MousePos.x = -1;
@@ -445,9 +469,9 @@ int ToImGui(MouseButton button)
     case MOUSEB_LEFT:
         return 0;
     case MOUSEB_MIDDLE:
-        return 1;
-    case MOUSEB_RIGHT:
         return 2;
+    case MOUSEB_RIGHT:
+        return 1;
     case MOUSEB_X1:
         return 3;
     case MOUSEB_X2:
