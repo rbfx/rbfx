@@ -97,6 +97,10 @@ public:
     void ScanDir(Vector<String>& result, const String& pathName, const String& filter, unsigned flags, bool recursive) const;
     /// Return the program's directory.
     String GetProgramDir() const;
+#if DESKTOP
+    /// Return the program's executable file path.
+    String GetProgramFileName() const;
+#endif
     /// Return the user documents directory.
     String GetUserDocumentsDir() const;
     /// Return the application preferences directory.

@@ -698,29 +698,39 @@ String FileSystem::GetProgramDir() const
     return APK;
 #elif defined(IOS) || defined(TVOS)
     return AddTrailingSlash(SDL_IOS_GetResourceDir());
-#elif defined(_WIN32)
+#elif DESKTOP
+    return GetPath(GetProgramFileName());
+#else
+    return GetCurrentDir();
+#endif
+}
+#if DESKTOP
+String FileSystem::GetProgramFileName() const
+{
+#if defined(_WIN32)
     wchar_t exeName[MAX_PATH];
     exeName[0] = 0;
     GetModuleFileNameW(nullptr, exeName, MAX_PATH);
-    return GetPath(String(exeName));
+    return String(exeName);
 #elif defined(__APPLE__)
     char exeName[MAX_PATH];
     memset(exeName, 0, MAX_PATH);
     unsigned size = MAX_PATH;
     _NSGetExecutablePath(exeName, &size);
-    return GetPath(String(exeName));
+    return String(exeName);
 #elif defined(__linux__)
     char exeName[MAX_PATH];
     memset(exeName, 0, MAX_PATH);
     pid_t pid = getpid();
     String link = "/proc/" + String(pid) + "/exe";
     readlink(link.CString(), exeName, MAX_PATH);
-    return GetPath(String(exeName));
+    return String(exeName);
 #else
-    return GetCurrentDir();
+#   error Not a desktop platform.
 #endif
+    return String();
 }
-
+#endif
 String FileSystem::GetUserDocumentsDir() const
 {
 #if defined(__ANDROID__)
