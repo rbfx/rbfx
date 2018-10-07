@@ -163,7 +163,7 @@ Plugin* PluginManager::Load(const String& name)
             return plugin.Get();
         }
         else
-            URHO3D_LOGWARNINGF("Failed loading native plugin \"%s\".", name);
+            URHO3D_LOGWARNINGF("Failed loading native plugin \"%s\".", name.CString());
     }
     else if (plugin->type_ == PLUGIN_MANAGED)
     {
