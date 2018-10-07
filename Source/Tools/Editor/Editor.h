@@ -62,10 +62,10 @@ public:
     /// Get tab that has resource opened or create new one and open said resource.
     Tab* GetOrCreateTab(StringHash type, const String& resourceName);
     /// Return tab of specified type.
-    Tab* GetTab(StringHash type);
+    Tab* GetTab(StringHash type, const String& resourceName=String::EMPTY);
     /// Return tab of specified type.
     template<typename T>
-    T* GetTab() { return static_cast<T*>(GetTab(T::GetTypeStatic())); }
+    T* GetTab(const String& resourceName=String::EMPTY) { return static_cast<T*>(GetTab(T::GetTypeStatic(), resourceName)); }
     /// Return active scene tab.
     Tab* GetActiveTab() { return activeTab_; }
     /// Return currently open scene tabs.
@@ -79,13 +79,15 @@ public:
     /// Returns a list of open content tabs/docks/windows. This list does not include utility docks/tabs/windows.
     const Vector<SharedPtr<Tab>>& GetContentTabs() const { return tabs_; }
     /// Opens project or creates new one.
-    Project* OpenProject(const String& projectPath);
+    void OpenProject(const String& projectPath);
     /// Close current project.
     void CloseProject();
     /// Return path containing data directories of engine.
     const String& GetCoreResourcePrefixPath() const { return coreResourcePrefixPath_; }
     /// Load default tab layout.
     void LoadDefaultLayout();
+    /// Returns ID of root dockspace.
+    ImGuiID GetDockspaceID() const { return dockspaceId_; }
 
 protected:
     /// Process console commands.
@@ -94,6 +96,8 @@ protected:
     void HandleHotkeys();
     /// Renders a project plugins submenu.
     void RenderProjectPluginsMenu();
+    ///
+    void SetupSystemUI();
 
     /// List of active scene tabs.
     Vector<SharedPtr<Tab>> tabs_;
@@ -103,6 +107,12 @@ protected:
     String coreResourcePrefixPath_;
     /// Currently loaded project.
     SharedPtr<Project> project_;
+    /// ID of dockspace root.
+    ImGuiID dockspaceId_;
+    /// Path to a project that editor should open on the end of the frame.
+    String pendingOpenProject_;
+    /// Flag indicating that editor should create and load default layout.
+    bool loadDefaultLayout_ = false;
 };
 
 }

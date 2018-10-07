@@ -47,15 +47,6 @@ Tab::Tab(Context* context)
     });
 }
 
-void Tab::Initialize(const String& title, const Vector2& initSize, ui::DockSlot initPosition, const String& afterDockName)
-{
-    initialSize_ = initSize;
-    placePosition_ = initPosition;
-    placeAfter_ = afterDockName;
-    title_ = title;
-    SetID(GenerateUUID());
-}
-
 Tab::~Tab()
 {
     SendEvent(E_EDITORTABCLOSED, EditorTabClosed::P_TAB, this);
@@ -67,10 +58,61 @@ bool Tab::RenderWindow()
     if (input->IsMouseVisible())
         lastMousePosition_ = input->GetMousePosition();
 
-    bool wasRendered = isRendered_;
-    ui::SetNextDockPos(placeAfter_.Empty() ? nullptr : placeAfter_.CString(), placePosition_, ImGuiCond_FirstUseEver);
-    if (ui::BeginDock(uniqueTitle_.CString(), &open_, windowFlags_, ToImGui(initialSize_)))
+    if (autoPlace_)
     {
+        autoPlace_ = false;
+
+        // Find empty dockspace
+        std::function<ImGuiDockNode*(ImGuiDockNode*)> returnTargetDockspace = [&](ImGuiDockNode* dock) -> ImGuiDockNode* {
+            if (dock == nullptr)
+                return nullptr;
+            if (dock->IsCentralNode)
+                return dock;
+            else if (auto* node = returnTargetDockspace(dock->ChildNodes[0]))
+                return node;
+            else if (auto* node = returnTargetDockspace(dock->ChildNodes[1]))
+                return node;
+            return nullptr;
+        };
+
+        ImGuiID targetID = 0;
+        ImGuiDockNode* dockspaceRoot = ui::DockBuilderGetNode(GetSubsystem<Editor>()->GetDockspaceID());
+        ImGuiDockNode* currentRoot = returnTargetDockspace(dockspaceRoot);
+        if (currentRoot->Windows.empty())
+        {
+            // Free space exists, dock new window there.
+            targetID = currentRoot->ID;
+        }
+        else
+        {
+            // Find biggest window and dock to it as a tab.
+            auto tabs = GetSubsystem<Editor>()->GetContentTabs();
+            float maxSize = 0;
+            for (auto& tab : tabs)
+            {
+                if (tab->GetUniqueTitle() == uniqueTitle_)
+                    continue;
+
+                if (auto* window = ui::FindWindowByName(tab->GetUniqueTitle().CString()))
+                {
+                    float thisWindowSize = window->Size.x * window->Size.y;
+                    if (thisWindowSize > maxSize)
+                    {
+                        maxSize = thisWindowSize;
+                        targetID = window->DockId;
+                    }
+                }
+            }
+        }
+
+        if (targetID)
+            ui::SetNextWindowDockId(targetID, ImGuiCond_Once);
+    }
+    bool wasRendered = isRendered_;
+    OnBeforeBegin();
+    if (ui::Begin(uniqueTitle_.CString(), &open_, windowFlags_))
+    {
+        OnAfterBegin();
         if (open_)
         {
             if (!ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
@@ -79,17 +121,18 @@ bool Tab::RenderWindow()
                     ui::SetWindowFocus();
                 else if (input->IsMouseVisible() && ui::IsAnyMouseDown())
                 {
-                    if (ui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) || ui::IsDockTabHovered())                  // Interacting
+                    if (ui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))                                            // Interacting
                         ui::SetWindowFocus();
                 }
             }
 
-            isActive_ = ui::IsWindowFocused() && ui::IsDockActive();
+            isActive_ = ui::IsWindowFocused() /*&& ui::IsDockActive()*/;
             if (ui::BeginChild("Tab Content", {0, 0}, false, windowFlags_))
                 open_ = RenderWindowContent();
             ui::EndChild();
             isRendered_ = true;
         }
+        OnBeforeEnd();
     }
     else
     {
@@ -99,14 +142,14 @@ bool Tab::RenderWindow()
 
     if (activateTab_)
     {
-        ui::SetDockActive();
         ui::SetWindowFocus();
         open_ = true;
         isActive_ = true;
         activateTab_ = false;
     }
 
-    ui::EndDock();
+    ui::End();
+    OnAfterEnd();
 
     return open_;
 }
@@ -125,7 +168,8 @@ void Tab::UpdateUniqueTitle()
 IntRect Tab::UpdateViewRect()
 {
     IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->InnerClipRect);
-    tabRect += IntRect(0, static_cast<int>(ui::GetCursorPosY()), 0, 0);
+    auto offset = static_cast<int>(ui::GetCursorPosY());
+    tabRect += IntRect(0, offset, 0, offset);
     return tabRect;
 }
 
@@ -142,52 +186,7 @@ void Tab::OnLoadProject(const JSONValue& tab)
 
 void Tab::AutoPlace()
 {
-    String afterTabName;
-    auto placement = ui::Slot_None;
-    auto tabs = GetSubsystem<Editor>()->GetContentTabs();
-
-    // Need a separate loop because we prefer consile (as per default layout) but it may come after hierarchy in tabs list.
-    for (const auto& openTab : tabs)
-    {
-        if (openTab == this)
-            continue;
-
-        if (openTab->GetTitle() == "Console")
-        {
-            if (afterTabName.Empty())
-            {
-                // Place after hierarchy if no content tab exist
-                afterTabName = openTab->GetUniqueTitle();
-                placement = ui::Slot_Top;
-            }
-        }
-    }
-
-    for (const auto& openTab : tabs)
-    {
-        if (openTab == this)
-            continue;
-
-        if (openTab->GetTitle() == "Hierarchy")
-        {
-            if (afterTabName.Empty())
-            {
-                // Place after hierarchy if no content tab exist
-                afterTabName = openTab->GetUniqueTitle();
-                placement = ui::Slot_Right;
-            }
-        }
-        else if (!openTab->IsUtility())
-        {
-            // Place after content tab
-            afterTabName = openTab->GetUniqueTitle();
-            placement = ui::Slot_Tab;
-        }
-    }
-
-    initialSize_ = {-1, GetGraphics()->GetHeight() * 0.9f};
-    placeAfter_ = afterTabName;
-    placePosition_ = placement;
+    autoPlace_ = true;
 }
 
 }

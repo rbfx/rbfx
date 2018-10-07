@@ -30,7 +30,6 @@
 #include <ImGui/imgui.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
 #include <Urho3D/SystemUI/SystemUI.h>
-#include <Toolbox/SystemUI/ImGuiDock.h>
 #include <Urho3D/Scene/Node.h>
 
 
@@ -59,8 +58,6 @@ public:
     explicit Tab(Context* context);
     /// Destruct.
     ~Tab() override;
-    /// Initialize.
-    void Initialize(const String& title, const Vector2& initSize={-1, -1}, ui::DockSlot initPosition=ui::Slot_Float, const String& afterDockName=String::EMPTY);
     /// Render content of tab window. Returns false if tab was closed.
     virtual bool RenderWindowContent() = 0;
     /// Render toolbar buttons.
@@ -69,9 +66,17 @@ public:
     virtual void OnActiveUpdate() { }
     /// Render tab content.
     virtual bool RenderWindow();
-    /// Save project data to xml.
+    /// Called right before ui::Begin() of tab.
+    virtual void OnBeforeBegin() { }
+    /// Called right after ui::Begin() of tab.
+    virtual void OnAfterBegin() { }
+    /// Called right before ui::End() of tab
+    virtual void OnBeforeEnd() { }
+    /// Called right after ui::End() of tab
+    virtual void OnAfterEnd() { }
+    /// Save project data to json.
     virtual void OnSaveProject(JSONValue& tab);
-    /// Load project data from xml.
+    /// Load project data from json.
     virtual void OnLoadProject(const JSONValue& tab);
     /// Load a file from resource path.
     virtual bool LoadResource(const String& resourcePath) { return true; }
@@ -126,18 +131,14 @@ protected:
     ImGuiWindowFlags windowFlags_ = 0;
     /// Attribute inspector.
     AttributeInspector inspector_;
-    /// Name of sibling dock for initial placement.
-    String placeAfter_;
-    /// Position where this scene view should be docked initially.
-    ui::DockSlot placePosition_;
     /// Last known mouse position when it was visible.
     IntVector2 lastMousePosition_;
-    /// Initial tab size.
-    Vector2 initialSize_;
     /// Flag indicating that tab is open and renders it's contents.
     bool open_ = true;
     /// Flag indicating tab should reactivate itself next time it is rendered.
     bool activateTab_ = false;
+    /// Flag indicating that tab should auto-dock itself into most appropriate place.
+    bool autoPlace_ = false;
 };
 
 }

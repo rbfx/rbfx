@@ -134,12 +134,7 @@ void Editor::Start()
     context_->RegisterSubsystem(this);
     SceneSettings::RegisterObject(context_);
 
-    GetSystemUI()->ApplyStyleDefault(true, 1.0f);
-    GetSystemUI()->AddFont("Fonts/DejaVuSansMono.ttf");
-    GetSystemUI()->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, {ICON_MIN_FA, ICON_MAX_FA, 0}, 0, true);
-    ui::GetStyle().WindowRounding = 3;
-    // Disable imgui saving ui settings on it's own. These should be serialized to project file.
-    ui::GetIO().IniFilename = nullptr;
+    SetupSystemUI();
 
     GetCache()->SetAutoReloadResources(true);
 
@@ -157,27 +152,59 @@ void Editor::Start()
         tabs_.Clear();
     });
 
-    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&){
-        if (!defaultProjectPath.empty())
+    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) {
+        // Opening a new project must be done at the point when SystemUI is not in use. End of the frame is a good
+        // candidate. This subsystem will be recreated.
+        if (!pendingOpenProject_.Empty())
         {
-            OpenProject(defaultProjectPath.c_str());
-            defaultProjectPath.clear();
+            CloseProject();
+            // Reset SystemUI so that imgui loads it's config proper.
+            context_->RemoveSubsystem<SystemUI>();
+            context_->RegisterSubsystem(new SystemUI(context_));
+            SetupSystemUI();
+
+            project_ = new Project(context_);
+            context_->RegisterSubsystem(project_);
+            bool loaded = project_->LoadProject(pendingOpenProject_);
+            // SystemUI has to be started after loading project, because project sets custom settings file path. Starting
+            // subsystem reads this file and loads settings.
+            GetSystemUI()->Start();
+            if (loaded)
+                loadDefaultLayout_ = project_->IsNewProject();
+            else
+                CloseProject();
+            pendingOpenProject_.Clear();
         }
-        UnsubscribeFromEvent(E_ENDFRAME);
     });
+
+    if (!defaultProjectPath.empty())
+        pendingOpenProject_ = defaultProjectPath.c_str();
 }
 
 void Editor::Stop()
 {
     CloseProject();
-    ui::ShutdownDock();
 }
 
 void Editor::OnUpdate(VariantMap& args)
 {
+    ImGuiWindowFlags flags = ImGuiWindowFlags_MenuBar;
+    flags |= ImGuiWindowFlags_NoDocking;
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(viewport->Pos);
+    ImGui::SetNextWindowSize(viewport->Size);
+    ImGui::SetNextWindowViewport(viewport->ID);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+    flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::Begin("DockSpace", nullptr, flags);
+    ImGui::PopStyleVar();
+
     RenderMenuBar();
 
-    ui::RootDock({0, 20}, ui::GetIO().DisplaySize - ImVec2(0, 20));
+    dockspaceId_ = ui::GetID("Root");
+    ui::DockSpace(dockspaceId_);
 
     auto tabsCopy = tabs_;
     for (auto& tab : tabsCopy)
@@ -207,7 +234,16 @@ void Editor::OnUpdate(VariantMap& args)
         activeTab_->OnActiveUpdate();
     }
 
+    if (loadDefaultLayout_ && project_.NotNull())
+    {
+        loadDefaultLayout_ = false;
+        LoadDefaultLayout();
+    }
+
     HandleHotkeys();
+
+    ui::End();
+    ImGui::PopStyleVar();
 }
 
 void Editor::RenderMenuBar()
@@ -231,8 +267,7 @@ void Editor::RenderMenuBar()
                 nfdchar_t* projectDir = nullptr;
                 if (NFD_PickFolder("", &projectDir) == NFD_OKAY)
                 {
-                    if (OpenProject(projectDir) == nullptr)
-                        URHO3D_LOGERROR("Loading project failed.");
+                    OpenProject(projectDir);
                     NFD_FreePath(projectDir);
                 }
             }
@@ -306,19 +341,12 @@ Tab* Editor::CreateTab(StringHash type)
 
 Tab* Editor::GetOrCreateTab(StringHash type, const String& resourceName)
 {
-    for (auto& tab : tabs_)
+    Tab* tab = GetTab(type, resourceName);
+    if (tab == nullptr)
     {
-        auto resourceTab = DynamicCast<BaseResourceTab>(tab);
-        if (resourceTab.NotNull())
-        {
-            if (resourceTab->GetResourceName() == resourceName)
-                return tab.Get();
-        }
+        tab = CreateTab(type);
+        tab->LoadResource(resourceName);
     }
-
-    auto* tab = CreateTab(type);
-    tab->AutoPlace();
-    tab->LoadResource(resourceName);
     return tab;
 }
 
@@ -371,38 +399,38 @@ void Editor::LoadDefaultLayout()
 {
     tabs_.Clear();
 
-    ui::LoadDock(JSONValue::EMPTY);
-
-    // These dock sizes are bullshit. Actually visible sizes do not match these numbers. Instead of spending
-    // time implementing this functionality in ImGuiDock proper values were written down and then tweaked until
-    // they looked right. Insertion order is also important here when specifying dock placement location.
-    auto screenSize = GetGraphics()->GetSize();
     auto* inspector = new InspectorTab(context_);
-    inspector->Initialize("Inspector", {screenSize.x_ * 0.6f, (float)screenSize.y_ * 0.9f}, ui::Slot_Right);
     auto* hierarchy = new HierarchyTab(context_);
-    hierarchy->Initialize("Hierarchy", {screenSize.x_ * 0.05f, screenSize.y_ * 0.5f}, ui::Slot_Left);
     auto* resources = new ResourceTab(context_);
-    resources->Initialize("Resources", {screenSize.x_ * 0.05f, screenSize.y_ * 0.15f}, ui::Slot_Bottom, hierarchy->GetUniqueTitle());
     auto* console = new ConsoleTab(context_);
-    console->Initialize("Console", {screenSize.x_ * 0.6f, screenSize.y_ * 0.4f}, ui::Slot_Left, inspector->GetUniqueTitle());
     auto* preview = new PreviewTab(context_);
-    preview->Initialize("Game", {screenSize.x_ * 0.6f, (float)screenSize.y_ * 0.1f}, ui::Slot_Bottom, inspector->GetUniqueTitle());
 
     tabs_.EmplaceBack(inspector);
     tabs_.EmplaceBack(hierarchy);
     tabs_.EmplaceBack(resources);
     tabs_.EmplaceBack(console);
     tabs_.EmplaceBack(preview);
+
+    ImGui::DockBuilderRemoveNode(dockspaceId_);
+    ImGui::DockBuilderAddNode(dockspaceId_, ui::GetMainViewport()->Size);
+
+    ImGuiID dock_main_id = dockspaceId_;
+    ImGuiID dockHierarchy = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.20f, NULL, &dock_main_id);
+    ImGuiID dockResources = ImGui::DockBuilderSplitNode(dockHierarchy, ImGuiDir_Down, 0.40f, NULL, &dockHierarchy);
+    ImGuiID dockInspector = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.30f, NULL, &dock_main_id);
+    ImGuiID dockLog = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.30f, NULL, &dock_main_id);
+
+    ImGui::DockBuilderDockWindow(hierarchy->GetUniqueTitle().CString(), dockHierarchy);
+    ImGui::DockBuilderDockWindow(resources->GetUniqueTitle().CString(), dockResources);
+    ImGui::DockBuilderDockWindow(console->GetUniqueTitle().CString(), dockLog);
+    ImGui::DockBuilderDockWindow(preview->GetUniqueTitle().CString(), dock_main_id);
+    ImGui::DockBuilderDockWindow(inspector->GetUniqueTitle().CString(), dockInspector);
+    ImGui::DockBuilderFinish(dockspaceId_);
 }
 
-Project* Editor::OpenProject(const String& projectPath)
+void Editor::OpenProject(const String& projectPath)
 {
-    CloseProject();
-    project_ = new Project(context_);
-    context_->RegisterSubsystem(project_);
-    if (!project_->LoadProject(projectPath))
-        CloseProject();
-    return project_.Get();
+    pendingOpenProject_ = projectPath;
 }
 
 void Editor::CloseProject()
@@ -487,14 +515,39 @@ void Editor::RenderProjectPluginsMenu()
     }
 }
 
-Tab* Editor::GetTab(StringHash type)
+Tab* Editor::GetTab(StringHash type, const String& resourceName)
 {
     for (auto& tab : tabs_)
     {
         if (tab->GetType() == type)
-            return tab.Get();
+        {
+            if (resourceName.Empty())
+                return tab.Get();
+            else
+            {
+                auto resourceTab = DynamicCast<BaseResourceTab>(tab);
+                if (resourceTab.NotNull())
+                {
+                    if (resourceTab->GetResourceName() == resourceName)
+                        return tab.Get();
+                }
+            }
+        }
     }
     return nullptr;
+}
+
+void Editor::SetupSystemUI()
+{
+    GetSystemUI()->ApplyStyleDefault(true, 1.0f);
+    GetSystemUI()->AddFont("Fonts/DejaVuSansMono.ttf");
+    GetSystemUI()->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, {ICON_MIN_FA, ICON_MAX_FA, 0}, 0, true);
+    ui::GetStyle().WindowRounding = 3;
+    // Disable imgui saving ui settings on it's own. These should be serialized to project file.
+    ui::GetIO().IniFilename = nullptr;
+    ui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_NavEnableKeyboard;
+    ui::GetIO().BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
+    ui::GetIO().ConfigResizeWindowsFromEdges = true;
 }
 
 }

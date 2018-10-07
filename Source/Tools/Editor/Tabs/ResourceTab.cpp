@@ -86,7 +86,17 @@ bool ResourceTab::RenderWindowContent()
         String selected = resourcePath_ + resourceSelection_;
         auto it = contentToTabType.Find(GetContentType(selected));
         if (it != contentToTabType.End())
-            GetSubsystem<Editor>()->GetOrCreateTab(it->second_, selected)->Activate();
+        {
+            if (auto* tab = GetSubsystem<Editor>()->GetTab(it->second_, selected))
+                tab->Activate();
+            else
+            {
+                tab = GetSubsystem<Editor>()->CreateTab(it->second_);
+                tab->LoadResource(selected);
+                tab->AutoPlace();
+                tab->Activate();
+            }
+        }
         else
         {
             String resourcePath = GetSubsystem<Project>()->GetResourcePath() + selected;

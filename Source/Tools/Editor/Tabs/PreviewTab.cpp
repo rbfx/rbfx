@@ -139,6 +139,17 @@ void PreviewTab::Clear()
     }
 }
 
+void PreviewTab::OnBeforeBegin()
+{
+    // Allow viewport texture to cover entire window
+    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
+}
+
+void PreviewTab::OnAfterEnd()
+{
+    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
+}
+
 void PreviewTab::UpdateViewports()
 {
     Clear();

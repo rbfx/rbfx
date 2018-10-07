@@ -21,7 +21,6 @@
 //
 
 #include "ResourceBrowser.h"
-#include "ImGuiDock.h"
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -196,7 +195,7 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
             auto isSelected = selected == item;
 
             if (flags & RBF_SCROLL_TO_CURRENT && isSelected)
-                ui::SetScrollHere();
+                ui::SetScrollHereY();
 
             switch (ui::DoubleClickSelectable((ICON_FA_FOLDER " " + item).CString(), isSelected))
             {
@@ -233,7 +232,7 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
         if (!renameWidget(item, icon))
         {
             if (flags & RBF_SCROLL_TO_CURRENT && selected == item)
-                ui::SetScrollHere();
+                ui::SetScrollHereY();
             auto title = icon + " " + GetFileNameAndExtension(item);
             switch (ui::DoubleClickSelectable(title.CString(), selected == item))
             {

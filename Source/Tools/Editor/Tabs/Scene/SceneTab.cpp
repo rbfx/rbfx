@@ -40,6 +40,8 @@
 namespace Urho3D
 {
 
+using namespace ui::litterals;
+
 static const IntVector2 cameraPreviewSize{320, 200};
 
 SceneTab::SceneTab(Context* context)
@@ -146,13 +148,6 @@ bool SceneTab::RenderWindowContent()
 
     RenderToolbarButtons();
 
-    if (!ui::IsDockDocked())
-    {
-        // Without this workaround undocked scene tabs have extra empty line under toolbar buttons.
-        ui::SameLine();
-        ui::SetCursorPosY(ui::GetCursorPosY() + ui::GetStyle().ItemSpacing.y);
-    }
-
     IntRect tabRect = UpdateViewRect();
 
     ui::SetCursorScreenPos(ToImGui(tabRect.Min()));
@@ -226,10 +221,20 @@ bool SceneTab::RenderWindowContent()
 
     RenderNodeContextMenu();
 
-    const auto tabContextMenuTitle = "SceneTab context menu";
-    if (ui::IsDockTabHovered() && GetInput()->GetMouseButtonPress(MOUSEB_RIGHT))
-        ui::OpenPopup(tabContextMenuTitle);
-    if (ui::BeginPopup(tabContextMenuTitle))
+    return open;
+}
+
+void SceneTab::OnBeforeBegin()
+{
+    // Allow viewport texture to cover entire window
+    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
+}
+
+void SceneTab::OnAfterBegin()
+{
+    // Inner part of window should have a proper padding, context menu and other controls might depend on it.
+    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {4_dpx, 4_dpy});
+    if (ui::BeginPopupContextItem("SceneTab context menu"))
     {
         if (ui::MenuItem("Save"))
             SaveResource();
@@ -237,12 +242,20 @@ bool SceneTab::RenderWindowContent()
         ui::Separator();
 
         if (ui::MenuItem("Close"))
-            open = false;
+            open_ = false;
 
         ui::EndPopup();
     }
+}
 
-    return open;
+void SceneTab::OnBeforeEnd()
+{
+    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
+}
+
+void SceneTab::OnAfterEnd()
+{
+    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
 }
 
 bool SceneTab::LoadResource(const String& resourcePath)
@@ -381,19 +394,12 @@ const Vector<WeakPtr<Node>>& SceneTab::GetSelection() const
 
 void SceneTab::RenderToolbarButtons()
 {
-    auto& style = ui::GetStyle();
-    auto oldRounding = style.FrameRounding;
-    style.FrameRounding = 0;
+    ui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
+
+    ui::SetCursorPos({4_dpx, 4_dpy});
 
     if (ui::EditorToolbarButton(ICON_FA_SAVE, "Save"))
         SaveResource();
-
-    ui::SameLine(0, 3.f);
-
-//    if (ui::EditorToolbarButton(ICON_FA_UNDO, "Undo"))
-//        undo_.Undo();
-//    if (ui::EditorToolbarButton(ICON_FA_REDO, "Redo"))
-//        undo_.Redo();
 
     ui::SameLine(0, 3.f);
 
@@ -427,7 +433,7 @@ void SceneTab::RenderToolbarButtons()
     SendEvent(E_EDITORTOOLBARBUTTONS);
 
     ui::NewLine();
-    style.FrameRounding = oldRounding;
+    ui::PopStyleVar();
 }
 
 bool SceneTab::IsSelected(Node* node) const
@@ -482,7 +488,7 @@ void SceneTab::RenderNodeTree(Node* node)
         return;
 
     if (node == scrollTo_.Get())
-        ui::SetScrollHere();
+        ui::SetScrollHereY();
 
     String name = node->GetName().Empty() ? ToString("%s %d", node->GetTypeName().CString(), node->GetID()) : node->GetName();
     bool isSelected = IsSelected(node) && selectedComponent_.Expired();

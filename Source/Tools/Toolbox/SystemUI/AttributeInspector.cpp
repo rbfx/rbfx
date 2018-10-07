@@ -38,7 +38,6 @@
 #include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/Graphics/RenderPath.h>
 #include "AttributeInspector.h"
-#include "ImGuiDock.h"
 #include "Widgets.h"
 
 #include <IconFontCppHeaders/IconsFontAwesome5.h>

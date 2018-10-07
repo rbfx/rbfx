@@ -71,6 +71,10 @@ public:
 protected:
     ///
     IntRect UpdateViewRect() override;
+    ///
+    void OnBeforeBegin() override;
+    ///
+    void OnAfterEnd() override;
     /// Goes through scene, finds CameraViewport components and creates required viewports in the editor.
     void UpdateViewports();
     /// Handle addition or removal of CameraViewport component.

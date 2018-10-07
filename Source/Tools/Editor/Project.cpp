@@ -26,7 +26,6 @@
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/SystemUI.h>
-#include <Toolbox/SystemUI/ImGuiDock.h>
 #include <Tabs/ConsoleTab.h>
 #include <Tabs/ResourceTab.h>
 #include <Tabs/HierarchyTab.h>
@@ -64,9 +63,6 @@ Project::~Project()
         for (const auto& path : cachedEngineResourcePaths_)
             GetCache()->AddResourceDir(path);
     }
-
-    // Clear dock state
-    ui::LoadDock(JSONValue::EMPTY);
 }
 
 bool Project::LoadProject(const String& projectPath)
@@ -132,7 +128,7 @@ bool Project::LoadProject(const String& projectPath)
         }
     }
 
-    uiConfigPath_ = projectPath + "/.ui.ini";
+    uiConfigPath_ = projectFileDir_ + ".ui.ini";
     ui::GetIO().IniFilename = uiConfigPath_.CString();
 
 #if URHO3D_HASH_DEBUG
@@ -224,18 +220,13 @@ bool Project::LoadProject(const String& projectPath)
                 }
             }
 
-            ui::LoadDock(root["docks"]);
-
             // Plugins may load state by subscribing to this event
             using namespace EditorProjectLoading;
             SendEvent(E_EDITORPROJECTLOADING, P_ROOT, (void*)&root);
         }
     }
     else
-    {
-        // Load default layout if no user session exists
-        GetSubsystem<Editor>()->LoadDefaultLayout();
-    }
+        isNewProject_ = true;
 
     return true;
 }
@@ -268,7 +259,7 @@ bool Project::SaveProject()
         using namespace EditorProjectSaving;
         SendEvent(E_EDITORPROJECTSAVING, P_ROOT, (void*)&root);
 
-        ui::SaveDock(root["docks"]);
+        ui::SaveIniSettingsToDisk(uiConfigPath_.CString());
 
         String filePath(projectFileDir_ + ".user.json");
         if (!file.SaveFile(filePath))

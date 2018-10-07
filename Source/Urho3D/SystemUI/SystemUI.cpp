@@ -72,6 +72,7 @@ SystemUI::SystemUI(Urho3D::Context* context)
     io.KeyMap[ImGuiKey_Z] = SCANCODE_Z;
     io.KeyMap[ImGuiKey_PageUp] = SCANCODE_PAGEUP;
     io.KeyMap[ImGuiKey_PageDown] = SCANCODE_DOWN;
+    io.KeyMap[ImGuiKey_Space] = SCANCODE_SPACE;
 
     io.SetClipboardTextFn = [](void* userData, const char* text) { SDL_SetClipboardText(text); };
     io.GetClipboardTextFn = [](void* userData) -> const char* { return SDL_GetClipboardText(); };
@@ -81,25 +82,14 @@ SystemUI::SystemUI(Urho3D::Context* context)
     SetScale(Vector3::ZERO, false);
 
     SubscribeToEvent(E_APPLICATIONSTARTED, [this](StringHash, VariantMap&) {
-        ImGuiIO& io = ImGui::GetIO();
-        if (io.Fonts->Fonts.empty())
-        {
-            io.Fonts->AddFontDefault();
-            ReallocateFontTexture();
-        }
-        UpdateProjectionMatrix();
-        // Initializes ImGui. ImGui::Render() can not be called unless imgui is initialized. This call avoids initialization
-        // check on every frame in E_ENDRENDERING.
-        ImGui::NewFrame();
-        ImGui::EndFrame();
+        Start();
         UnsubscribeFromEvent(E_APPLICATIONSTARTED);
     });
 
     // Subscribe to events
     SubscribeToEvent(E_SDLRAWINPUT, std::bind(&SystemUI::OnRawEvent, this, _2));
     SubscribeToEvent(E_SCREENMODE, std::bind(&SystemUI::UpdateProjectionMatrix, this));
-    SubscribeToEvent(E_INPUTEND, [&](StringHash, VariantMap&)
-    {
+    SubscribeToEvent(E_INPUTEND, [&](StringHash, VariantMap&) {
         float timeStep = GetTime()->GetTimeStep();
         ImGui::GetIO().DeltaTime = timeStep > 0.0f ? timeStep : 1.0f / 60.0f;
         ImGui::NewFrame();
@@ -460,6 +450,21 @@ bool SystemUI::IsAnyItemActive() const
 bool SystemUI::IsAnyItemHovered() const
 {
     return ui::IsAnyItemHovered() || ui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
+}
+
+void SystemUI::Start()
+{
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.Fonts->Fonts.empty())
+    {
+        io.Fonts->AddFontDefault();
+        ReallocateFontTexture();
+    }
+    UpdateProjectionMatrix();
+    // Initializes ImGui. ImGui::Render() can not be called unless imgui is initialized. This call avoids initialization
+    // check on every frame in E_ENDRENDERING.
+    ImGui::NewFrame();
+    ImGui::EndFrame();
 }
 
 int ToImGui(MouseButton button)

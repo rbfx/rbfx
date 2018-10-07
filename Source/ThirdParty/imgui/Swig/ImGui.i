@@ -72,6 +72,7 @@
 %ignore ImGui::ListBox(const char* label, int* current_item, bool (*items_getter)(void* data, int idx, const char** out_text), void* data, int items_count, int height_in_items = -1);
 %ignore ImGuiTextBuffer;
 %ignore ImGuiStorage;
+%ignore ImGuiViewport;
 %ignore ImGui::SetStateStorage;
 %ignore ImGui::GetStateStorage;
 

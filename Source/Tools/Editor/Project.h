@@ -51,6 +51,8 @@ public:
     String GetResourcePath() const;
     /// Returns plugin manager.
     PluginManager* GetPlugins() { return &plugins_; }
+    ///
+    bool IsNewProject() const { return isNewProject_; }
 
 protected:
     /// Directory containing project.
@@ -65,6 +67,8 @@ protected:
     /// Native plugin manager.
     PluginManager plugins_;
 #endif
+    /// Flag indicating that project was just created.
+    bool isNewProject_ = false;
 };
 
 

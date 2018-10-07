@@ -176,7 +176,7 @@ void Console::RenderContent()
 
     if (scrollToEnd_)
     {
-        ui::SetScrollHere();
+        ui::SetScrollHereY();
         scrollToEnd_ = false;
     }
 

@@ -237,7 +237,7 @@ bool    ImGui_ImplSdlGL2_Init(SDL_Window* window)
     SDL_SysWMinfo wmInfo;
     SDL_VERSION(&wmInfo.version);
     SDL_GetWindowWMInfo(window, &wmInfo);
-    io.ImeWindowHandle = wmInfo.info.win.window;
+    ImGui::GetPlatformIO().MainViewport->PlatformHandle = wmInfo.info.win.window;
 #else
     (void)window;
 #endif

@@ -26,7 +26,6 @@
 #include <Urho3D/Urho3DAll.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
 #include <Toolbox/SystemUI/Gizmo.h>
-#include <Toolbox/SystemUI/ImGuiDock.h>
 #include <Toolbox/Graphics/SceneView.h>
 #include <Toolbox/Common/UndoManager.h>
 #include "Tabs/BaseResourceTab.h"
@@ -100,6 +99,14 @@ protected:
     void CreateObjects();
     /// Render content of the tab window.
     bool RenderWindowContent() override;
+    /// Called right before ui::Begin() of tab.
+    void OnBeforeBegin() override;
+    /// Called right after ui::Begin() of tab.
+    void OnAfterBegin() override;
+    /// Called right before ui::End() of tab
+    void OnBeforeEnd() override;
+    /// Called right after ui::End() of tab
+    void OnAfterEnd() override;
     /// Update objects with current tab view rect size.
     IntRect UpdateViewRect() override;
     /// Manually updates scene.

@@ -77,6 +77,8 @@ public:
     bool IsAnyItemHovered() const;
     /// Return font scale.
     float GetFontScale() const { return fontScale_; }
+    /// Prepares font textures, updates projection matrix and does other things that are required to start this subsystem.
+    void Start();
 
 protected:
     float uiZoom_ = 1.f;
