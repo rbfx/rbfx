@@ -478,8 +478,8 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
 
 void Engine::RunFrame()
 {
+    URHO3D_PROFILE("RunFrame");
     {
-        URHO3D_PROFILE("RunFrame");
         assert(initialized_);
 
         // If not headless, and the graphics subsystem no longer has a window open, assume we should exit
@@ -526,6 +526,8 @@ void Engine::RunFrame()
     ApplyFrameLimit();
 
     time->EndFrame();
+
+    URHO3D_PROFILE_FRAME();
 }
 
 Console* Engine::CreateConsole()
@@ -728,7 +730,6 @@ void Engine::Render()
     GetSubsystem<Renderer>()->Render();
     GetSubsystem<UI>()->Render();
     graphics->EndFrame();
-    URHO3D_PROFILE_FRAME();
 }
 
 void Engine::ApplyFrameLimit()
