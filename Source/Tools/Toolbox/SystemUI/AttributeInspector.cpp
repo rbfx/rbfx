@@ -108,12 +108,17 @@ const char* supportedVariantNames[] = {
     "Int64",
 };
 
+static const float buttonWidth()
+{
+    return 26_dpx;  // TODO: this should not exist
+}
+
 bool RenderResourceRef(Object* eventNamespace, StringHash type, const String& name, String& result)
 {
     SharedPtr<Resource> resource;
     auto returnValue = false;
 
-    UI_ITEMWIDTH(eventNamespace != nullptr ? -44_dpx : -22_dpx)
+    UI_ITEMWIDTH((eventNamespace != nullptr ? 2 : 1) * (-buttonWidth()))
         ui::InputText("", const_cast<char*>(name.CString()), name.Length(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
 
     if (eventNamespace != nullptr)
@@ -379,7 +384,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
 
                 ui::NextColumn();
                 ui::IdScope entryIdScope(index++);
-                UI_ITEMWIDTH(-22_dpx) // Space for trashcan button. TODO: trashcan goes out of screen a little for matrices.
+                UI_ITEMWIDTH(-buttonWidth()) // Space for trashcan button. TODO: trashcan goes out of screen a little for matrices.
                     modified |= RenderSingleAttribute(eventNamespace, nullptr, it->second_);
                 ui::SameLine(it->second_.GetType());
                 if (ui::Button(ICON_FA_TRASH))
@@ -399,7 +404,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
                 UI_ITEMWIDTH(-1)
                     ui::InputText("###Key", &mapState->fieldName);
                 ui::NextColumn();
-                UI_ITEMWIDTH(-22_dpx) // Space for OK button
+                UI_ITEMWIDTH(-buttonWidth()) // Space for OK button
                     ui::Combo("###Type", &mapState->variantTypeIndex, supportedVariantNames, MAX_SUPPORTED_VAR_TYPES);
                 ui::SameLine(0, 4_dpx);
                 if (ui::Button(ICON_FA_CHECK))
