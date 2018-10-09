@@ -419,17 +419,6 @@ void SceneTab::RenderToolbarButtons()
 
     ui::SameLine(0, 3.f);
 
-    if (auto* camera = view_.GetCamera())
-    {
-        if (auto* light = camera->GetNode()->GetComponent<Light>())
-        {
-            if (ui::EditorToolbarButton(ICON_FA_LIGHTBULB, "Camera Headlight", light->IsEnabled()))
-                light->SetEnabled(!light->IsEnabled());
-        }
-    }
-
-    ui::SameLine(0, 3.f);
-
     SendEvent(E_EDITORTOOLBARBUTTONS);
 
     ui::NewLine();
@@ -632,8 +621,6 @@ void SceneTab::OnLoadProject(const JSONValue& tab)
         Node* cameraNode = view_.GetCamera()->GetNode();
         cameraNode->SetPosition(camera["position"].GetVariant().GetVector3());
         cameraNode->SetRotation(camera["rotation"].GetVariant().GetQuaternion());
-        if (auto* lightComponent = cameraNode->GetComponent<Light>())
-            lightComponent->SetEnabled(camera["light"].GetBool());
     }
 
     undo_.SetTrackingEnabled(isTracking);
@@ -647,7 +634,6 @@ void SceneTab::OnSaveProject(JSONValue& tab)
     Node* cameraNode = view_.GetCamera()->GetNode();
     camera["position"].SetVariant(cameraNode->GetPosition());
     camera["rotation"].SetVariant(cameraNode->GetRotation());
-    camera["light"] = cameraNode->GetComponent<Light>()->IsEnabled();
 }
 
 void SceneTab::OnActiveUpdate()

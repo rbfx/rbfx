@@ -33,21 +33,10 @@ DebugCameraController::DebugCameraController(Context* context)
 
 void DebugCameraController::Start()
 {
-    // Add a head-light so we can view even unlit objects.
-    light_ = GetNode()->GetOrCreateComponent<Light>(LOCAL);
-    light_->SetTemporary(true);
-    light_->SetColor(Color::WHITE);
-    light_->SetLightType(LIGHT_DIRECTIONAL);
-    light_->SetViewMask(1U << 31);
 }
 
 void DebugCameraController::Stop()
 {
-    if (!light_.Expired())
-    {
-        light_->Remove();
-        light_ = nullptr;
-    }
 }
 
 void DebugCameraController::Update(float timeStep)
