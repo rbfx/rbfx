@@ -229,7 +229,7 @@ void PreviewTab::RenderButtons()
 
     bool isSimulationRunning = simulationStatus_ == SCENE_SIMULATION_RUNNING;
     if (ui::EditorToolbarButton(isSimulationRunning ? ICON_FA_PAUSE : ICON_FA_PLAY,
-                                isSimulationRunning ? "Pause" : "Play"))
+                                isSimulationRunning ? "Pause" : "Play", simulationStatus_ != SCENE_SIMULATION_STOPPED))
         Toggle();
 
     if (ui::EditorToolbarButton(ICON_FA_STEP_FORWARD, "Simulate one frame"))
