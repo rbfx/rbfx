@@ -71,6 +71,8 @@ SceneTab::SceneTab(Context* context)
 
     SubscribeToEvent(E_SCENESETTINGMODIFIED, [this](StringHash, VariantMap& args) {
         using namespace SceneSettingModified;
+        if (GetScene()->GetComponent<SceneSettings>() != GetEventSender())
+            return;
         // TODO: Stinks.
         if (args[P_NAME].GetString() == "Editor Viewport RenderPath")
         {
