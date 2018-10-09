@@ -313,6 +313,21 @@ void Editor::RenderMenuBar()
                 }
                 ui::EndMenu();
             }
+
+            if (ui::BeginMenu("Tools"))
+            {
+#if URHO3D_PROFILING
+                if (ui::MenuItem("Profiler"))
+                {
+                    GetFileSystem()->SystemSpawn(GetFileSystem()->GetProgramDir() + "Profiler"
+#if _WIN32
+                        ".exe"
+#endif
+                        , {});
+                }
+#endif
+                ui::EndMenu();
+            }
         }
 
         SendEvent(E_EDITORAPPLICATIONMENU);
