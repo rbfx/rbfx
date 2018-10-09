@@ -59,6 +59,8 @@ public:
     int SystemCommand(const String& commandLine, bool redirectStdOutToLog = false);
     /// Run a specific program, block until it exits and return the exit code. Will fail if any allowed paths are defined.
     int SystemRun(const String& fileName, const Vector<String>& arguments);
+    /// Run a specific program, do not block until it exits. Will fail if any allowed paths are defined.
+    int SystemSpawn(const String& fileName, const Vector<String>& arguments);
     /// Run a program using the command interpreter asynchronously. Return a request ID or M_MAX_UNSIGNED if failed. The exit code will be posted together with the request ID in an AsyncExecFinished event. Will fail if any allowed paths are defined.
     unsigned SystemCommandAsync(const String& commandLine);
     /// Run a specific program asynchronously. Return a request ID or M_MAX_UNSIGNED if failed. The exit code will be posted together with the request ID in an AsyncExecFinished event. Will fail if any allowed paths are defined.

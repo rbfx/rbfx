@@ -141,7 +141,14 @@ int DoSystemCommand(const String& commandLine, bool redirectToLog, Context* cont
 #endif
 }
 
-int DoSystemRun(const String& fileName, const Vector<String>& arguments)
+enum SystemRunFlag
+{
+    SR_DEFAULT,
+    SR_WAIT_FOR_EXIT,
+};
+URHO3D_FLAGSET(SystemRunFlag, SystemRunFlags);
+
+int DoSystemRun(const String& fileName, const Vector<String>& arguments, SystemRunFlags flags)
 {
 #ifdef TVOS
     return -1;
@@ -163,12 +170,19 @@ int DoSystemRun(const String& fileName, const Vector<String>& arguments)
     memset(&processInfo, 0, sizeof processInfo);
 
     WString commandLineW(commandLine);
-    if (!CreateProcessW(nullptr, (wchar_t*)commandLineW.CString(), nullptr, nullptr, 0, CREATE_NO_WINDOW, nullptr, nullptr, &startupInfo, &processInfo))
+    DWORD processFlags = 0;
+    if (flags & SR_WAIT_FOR_EXIT)
+        // If we are waiting for process result we are likely reading stdout, in that case we probably do not want to see a console window.
+        processFlags = CREATE_NO_WINDOW;
+    if (!CreateProcessW(nullptr, (wchar_t*)commandLineW.CString(), nullptr, nullptr, 0, processFlags, nullptr, nullptr, &startupInfo, &processInfo))
         return -1;
 
-    WaitForSingleObject(processInfo.hProcess, INFINITE);
-    DWORD exitCode;
-    GetExitCodeProcess(processInfo.hProcess, &exitCode);
+    DWORD exitCode = 0;
+    if (flags & SR_WAIT_FOR_EXIT)
+    {
+        WaitForSingleObject(processInfo.hProcess, INFINITE);
+        GetExitCodeProcess(processInfo.hProcess, &exitCode);
+    }
 
     CloseHandle(processInfo.hProcess);
     CloseHandle(processInfo.hThread);
@@ -189,8 +203,9 @@ int DoSystemRun(const String& fileName, const Vector<String>& arguments)
     }
     else if (pid > 0)
     {
-        int exitCode;
-        wait(&exitCode);
+        int exitCode = 0;
+        if (flags & SR_WAIT_FOR_EXIT)
+            wait(&exitCode);
         return exitCode;
     }
     else
@@ -271,7 +286,7 @@ public:
     /// The function to run in the thread.
     void ThreadFunction() override
     {
-        exitCode_ = DoSystemRun(fileName_, arguments_);
+        exitCode_ = DoSystemRun(fileName_, arguments_, SR_WAIT_FOR_EXIT);
         completed_ = true;
     }
 
@@ -381,7 +396,18 @@ int FileSystem::SystemCommand(const String& commandLine, bool redirectStdOutToLo
 int FileSystem::SystemRun(const String& fileName, const Vector<String>& arguments)
 {
     if (allowedPaths_.Empty())
-        return DoSystemRun(fileName, arguments);
+        return DoSystemRun(fileName, arguments, SR_WAIT_FOR_EXIT);
+    else
+    {
+        URHO3D_LOGERROR("Executing an external command is not allowed");
+        return -1;
+    }
+}
+
+int FileSystem::SystemSpawn(const String& fileName, const Vector<String>& arguments)
+{
+    if (allowedPaths_.Empty())
+        return DoSystemRun(fileName, arguments, SR_DEFAULT);
     else
     {
         URHO3D_LOGERROR("Executing an external command is not allowed");
