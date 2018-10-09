@@ -36,6 +36,7 @@
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <ImGui/imgui_stl.h>
 #include <Urho3D/IO/Log.h>
+#include "Tabs/Scene/SceneTab.h"
 #include "EditorEvents.h"
 #include "MaterialInspector.h"
 #include "MaterialInspectorUndo.h"
@@ -64,6 +65,9 @@ MaterialInspector::MaterialInspector(Context* context, Material* material)
     SubscribeToEvent(&attributeInspector_, E_ATTRIBUTEINSPECTVALUEMODIFIED, autoSave);
     SubscribeToEvent(&attributeInspector_, E_INSPECTORRENDERSTART, [this](StringHash, VariantMap&) { RenderPreview(); });
     SubscribeToEvent(&attributeInspector_, E_INSPECTORRENDERATTRIBUTE, [this](StringHash, VariantMap& args) { RenderCustomWidgets(args); });
+
+    if (SceneTab* sceneTab = GetSubsystem<Editor>()->GetLastSceneTab())
+        SetEffectSource(sceneTab->GetSceneView()->GetViewport()->GetRenderPath());
 
     undo_.Connect(&attributeInspector_);
 }

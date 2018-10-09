@@ -88,6 +88,8 @@ public:
     void LoadDefaultLayout();
     /// Returns ID of root dockspace.
     ImGuiID GetDockspaceID() const { return dockspaceId_; }
+    /// Returns pointer to last active scene tab. Returns null if no scene was opened or if last opened scene was closed.
+    SceneTab* GetLastSceneTab() const { return lastActiveScene_.Get(); }
 
 protected:
     /// Process console commands.
@@ -113,6 +115,8 @@ protected:
     String pendingOpenProject_;
     /// Flag indicating that editor should create and load default layout.
     bool loadDefaultLayout_ = false;
+    /// Last actice scene tab.
+    WeakPtr<SceneTab> lastActiveScene_;
 };
 
 }

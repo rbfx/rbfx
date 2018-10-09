@@ -219,6 +219,8 @@ void Editor::OnUpdate(VariantMap& args)
                     if (tab->IsActive())
                     {
                         activeTab_ = tab;
+                        if (SceneTab* sceneTab = tab->Cast<SceneTab>())
+                            lastActiveScene_ = sceneTab;
                         tab->OnFocused();
                     }
                 }
