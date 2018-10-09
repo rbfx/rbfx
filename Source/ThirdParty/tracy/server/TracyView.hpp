@@ -93,6 +93,7 @@ private:
     void DrawFindZone();
     void DrawStatistics();
     void DrawMemory();
+    void DrawAllocList();
     void DrawCompare();
     void DrawCallstackWindow();
     void DrawMemoryAllocWindow();
@@ -253,6 +254,7 @@ private:
     BuzzAnim<int> m_callstackTreeBuzzAnim;
     BuzzAnim<const void*> m_zoneinfoBuzzAnim;
     BuzzAnim<int> m_findZoneBuzzAnim;
+    BuzzAnim<uint32_t> m_optionsLockBuzzAnim;
 
     Vector<const ZoneEvent*> m_zoneInfoStack;
     Vector<const GpuEvent*> m_gpuInfoStack;
@@ -401,6 +403,8 @@ private:
         char pattern[1024] = {};
         uint64_t ptrFind = 0;
         bool restrictTime = false;
+        bool showAllocList = false;
+        std::vector<size_t> allocList;
     } m_memInfo;
 
     struct {

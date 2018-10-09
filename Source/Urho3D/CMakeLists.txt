@@ -273,10 +273,10 @@ if (GNU OR Clang)
 endif ()
 
 if (URHO3D_PROFILING)
-    target_compile_options(Urho3D PUBLIC -DTRACY_ENABLE=1)
-    if (TARGET tracy-lib)
-        target_link_libraries(Urho3D INTERFACE tracy-lib)
+    if (TARGET tracy-dll)
+        target_link_libraries(Urho3D INTERFACE tracy-dll)
     endif ()
+    target_link_libraries(Urho3D PUBLIC tracy-settings)
 endif ()
 
 # Graphics

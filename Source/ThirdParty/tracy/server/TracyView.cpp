@@ -680,7 +680,27 @@ bool View::DrawImpl()
         ImGui::EndCombo();
     }
     ImGui::SameLine();
-    ImGui::Text( "Time span: %-10s View span: %-10s Zones: %-13s Queue delay: %s  Timer resolution: %s", TimeToString( m_worker.GetLastTime() - m_worker.GetTimeBegin() ), TimeToString( m_zvEnd - m_zvStart ), RealToString( m_worker.GetZoneCount(), true ), TimeToString( m_worker.GetDelay() ), TimeToString( m_worker.GetResolution() ) );
+    ImGui::Spacing();
+    ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    ImGui::Text( ICON_FA_EYE " %-10s", TimeToString( m_zvEnd - m_zvStart ) );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "View span" );
+        ImGui::EndTooltip();
+    }
+    ImGui::SameLine();
+    ImGui::Text( ICON_FA_DATABASE " %-10s", TimeToString( m_worker.GetLastTime() - m_worker.GetTimeBegin() ) );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "Time span" );
+        ImGui::EndTooltip();
+    }
+#else
+    ImGui::Text( "View span: %-10s Time span: %-10s ", TimeToString( m_zvEnd - m_zvStart ), TimeToString( m_worker.GetLastTime() - m_worker.GetTimeBegin() ) );
+#endif
     DrawFrames();
     DrawZones();
     ImGui::End();
@@ -695,6 +715,7 @@ bool View::DrawImpl()
     if( m_findZone.show ) DrawFindZone();
     if( m_showStatistics ) DrawStatistics();
     if( m_memInfo.show ) DrawMemory();
+    if( m_memInfo.showAllocList ) DrawAllocList();
     if( m_compare.show ) DrawCompare();
     if( m_callstackInfoWindow != 0 ) DrawCallstackWindow();
     if( m_memoryAllocInfoWindow >= 0 ) DrawMemoryAllocWindow();
@@ -723,6 +744,7 @@ bool View::DrawImpl()
     m_callstackTreeBuzzAnim.Update( io.DeltaTime );
     m_zoneinfoBuzzAnim.Update( io.DeltaTime );
     m_findZoneBuzzAnim.Update( io.DeltaTime );
+    m_optionsLockBuzzAnim.Update( io.DeltaTime );
 
     return keepOpen;
 }
@@ -1268,6 +1290,18 @@ static void DrawZigZag( ImDrawList* draw, const ImVec2& wpos, double start, doub
     }
 }
 
+static uint32_t GetColorMuted( uint32_t color, bool active )
+{
+    if( active )
+    {
+        return 0xFF000000 | color;
+    }
+    else
+    {
+        return 0x66000000 | color;
+    }
+}
+
 bool View::DrawZoneFrames( const FrameData& frames )
 {
     const auto wpos = ImGui::GetCursorScreenPos();
@@ -1291,7 +1325,13 @@ bool View::DrawZoneFrames( const FrameData& frames )
 
     int64_t prev = -1;
     int64_t prevEnd = -1;
+    int64_t endPos = -1;
     bool tooltipDisplayed = false;
+    const auto activeFrameSet = m_frames == &frames;
+
+    const auto inactiveColor = GetColorMuted( 0x888888, activeFrameSet );
+    const auto activeColor = GetColorMuted( 0xFFFFFF, activeFrameSet );
+    const auto redColor = GetColorMuted( 0x4444FF, activeFrameSet );
 
     for( int i = zrange.first; i < zrange.second; i++ )
     {
@@ -1322,7 +1362,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
             {
                 if( ( fbegin - prevEnd ) * pxns >= MinFrameSize )
                 {
-                    DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( prevEnd - m_zvStart ) * pxns, ty / 4, 0xFF888888 );
+                    DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( prevEnd - m_zvStart ) * pxns, ty / 4, inactiveColor );
                     prev = -1;
                 }
                 else
@@ -1343,30 +1383,31 @@ bool View::DrawZoneFrames( const FrameData& frames )
         {
             if( frames.continuous )
             {
-                DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( fbegin - m_zvStart ) * pxns, ty / 4, 0xFF888888 );
+                DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( fbegin - m_zvStart ) * pxns, ty / 4, inactiveColor );
             }
             else
             {
-                DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( prevEnd - m_zvStart ) * pxns, ty / 4, 0xFF888888 );
+                DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( prevEnd - m_zvStart ) * pxns, ty / 4, inactiveColor );
             }
             prev = -1;
         }
 
-        if( m_frames == &frames )
+        if( activeFrameSet )
         {
-            if( fbegin >= m_zvStart )
+            if( fbegin >= m_zvStart && endPos != fbegin )
             {
                 draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, wh ), 0x22FFFFFF );
             }
-            if( !frames.continuous && fend <= m_zvEnd )
+            if( fend <= m_zvEnd )
             {
                 draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, wh ), 0x22FFFFFF );
             }
+            endPos = fend;
         }
 
         auto buf = GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() );
         auto tx = ImGui::CalcTextSize( buf ).x;
-        uint32_t color = ( frames.name == 0 && i == 0 ) ? 0xFF4444FF : 0xFFFFFFFF;
+        uint32_t color = ( frames.name == 0 && i == 0 ) ? redColor : activeColor;
 
         if( fsz - 5 <= tx )
         {
@@ -1397,14 +1438,8 @@ bool View::DrawZoneFrames( const FrameData& frames )
 
     if( prev != -1 )
     {
-        DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( m_worker.GetFrameBegin( frames, zrange.second-1 ) - m_zvStart ) * pxns, ty / 4, 0xFF888888 );
+        DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( m_worker.GetFrameBegin( frames, zrange.second-1 ) - m_zvStart ) * pxns, ty / 4, inactiveColor );
         prev = -1;
-    }
-
-    const auto fend = m_worker.GetFrameEnd( frames, zrange.second-1 );
-    if( fend == m_zvEnd )
-    {
-        draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, wh ), 0x22FFFFFF );
     }
 
     if( hover && !tooltipDisplayed )
@@ -1592,8 +1627,17 @@ void View::DrawZones()
                     const auto px = ( (*it)->time - m_zvStart ) * pxns;
                     if( dist > 1 )
                     {
-                        draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), 0xFFDDDDDD );
-                        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), 0xFFDDDDDD );
+                        unsigned int color = 0xFFDDDDDD;
+                        if( m_msgHighlight && m_msgHighlight->thread == v->id )
+                        {
+                            const auto hTime = m_msgHighlight->time;
+                            if( (*it)->time <= hTime && ( next == v->messages.end() || (*next)->time > hTime ) )
+                            {
+                                color = 0xFF4444FF;
+                            }
+                        }
+                        draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), color );
+                        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), color );
                     }
                     else
                     {
@@ -1820,6 +1864,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
 
     const auto zitend = std::lower_bound( it, vec.end(), m_zvEnd + resolution, [] ( const auto& l, const auto& r ) { return l->start < r; } );
     if( it == zitend ) return depth;
+    if( (*it)->end < 0 && m_worker.GetZoneEnd( **it ) < m_zvStart ) return depth;
 
     const auto w = ImGui::GetWindowContentRegionWidth() - 1;
     const auto ty = ImGui::GetFontSize();
@@ -2991,8 +3036,9 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         assert( false );
                         break;
                     }
-                    ImGui::Text( "Thread list:" );
+                    ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
                     ImGui::Separator();
+                    ImGui::TextDisabled( "Thread list:" );
                     ImGui::Indent( ty );
                     for( const auto& t : v.second.threadList )
                     {
@@ -4260,11 +4306,34 @@ void View::DrawOptions()
             {
                 if( l.second.valid )
                 {
+                    auto& sl = m_worker.GetSourceLocation( l.second.srcloc );
+                    auto fileName = m_worker.GetString( sl.file );
+
                     char buf[1024];
                     sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second.srcloc ).function ) );
                     ImGui::Checkbox( buf, &Visible( &l.second ) );
-                    ImGui::SameLine();
-                    ImGui::TextDisabled( "%s events", RealToString( l.second.timeline.size(), true ) );
+                    if( m_optionsLockBuzzAnim.Match( l.second.srcloc ) )
+                    {
+                        const auto time = m_optionsLockBuzzAnim.Time();
+                        const auto indentVal = sin( time * 60.f ) * 10.f * time;
+                        ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
+                    }
+                    else
+                    {
+                        ImGui::SameLine();
+                    }
+                    ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second.timeline.size(), true ), fileName, sl.line );
+                    if( ImGui::IsItemClicked( 1 ) )
+                    {
+                        if( FileExists( fileName ) )
+                        {
+                            SetTextEditorFile( fileName, sl.line );
+                        }
+                        else
+                        {
+                            m_optionsLockBuzzAnim.Enable( l.second.srcloc, 0.5f );
+                        }
+                    }
                 }
             }
             ImGui::TreePop();
@@ -6346,6 +6415,15 @@ void View::DrawMemoryAllocWindow()
     const auto tidFree = m_worker.DecompressThread( ev.threadFree );
     int idx = 0;
 
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to allocation" ) )
+#else
+    if( ImGui::Button( "Zoom to allocation" ) )
+#endif
+    {
+        ZoomToRange( ev.timeAlloc, ev.timeFree >= 0 ? ev.timeFree : m_worker.GetLastTime() );
+    }
+
     char buf[64];
     sprintf( buf, "0x%" PRIx64, ev.ptr );
     TextFocused( "Address:", buf );
@@ -6919,6 +6997,7 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
     {
         ImGui::BeginTooltip();
         ImGui::Text( "Click on address to display memory allocation info window." );
+        ImGui::Text( "Middle click to zoom to allocation range." );
         ImGui::EndTooltip();
     }
     ImGui::NextColumn();
@@ -6993,6 +7072,10 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
             {
                 m_memoryAllocInfoWindow = arrIdx;
             }
+        }
+        if( ImGui::IsItemClicked( 2 ) )
+        {
+            ZoomToRange( v->timeAlloc, v->timeFree >= 0 ? v->timeFree : m_worker.GetLastTime() );
         }
         if( ImGui::IsItemHovered() )
         {
@@ -7186,12 +7269,14 @@ std::vector<CallstackFrameTree> View::GetCallstackFrameTree( const MemData& mem 
         auto treePtr = GetFrameTreeItem( root, base );
         treePtr->countInclusive += path.second.cnt;
         treePtr->allocInclusive += path.second.mem;
+        treePtr->callstacks.emplace( path.first );
 
         for( int i = int( cs.size() ) - 2; i >= 0; i-- )
         {
             treePtr = GetFrameTreeItem( treePtr->children, cs[i] );
             treePtr->countInclusive += path.second.cnt;
             treePtr->allocInclusive += path.second.mem;
+            treePtr->callstacks.emplace( path.first );
         }
 
         treePtr->countExclusive += path.second.cnt;
@@ -7490,7 +7575,7 @@ void View::DrawMemory()
 #endif
     {
         ImGui::TextDisabled( "Press ctrl key to display allocation info tooltip." );
-        ImGui::TextDisabled( "Right click on file name to open source file." );
+        ImGui::TextDisabled( "Right click on function name to display allocations list. Right click on file name to open source file." );
 
         auto& mem = m_worker.GetMemData();
         auto tree = GetCallstackFrameTree( mem );
@@ -7533,6 +7618,21 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
                 expand = ImGui::TreeNode( m_worker.GetString( frame->name ) );
             }
             ImGui::PopID();
+        }
+
+        if( ImGui::IsItemClicked( 1 ) )
+        {
+            auto& mem = m_worker.GetMemData().data;
+            const auto sz = mem.size();
+            m_memInfo.showAllocList = true;
+            m_memInfo.allocList.clear();
+            for( size_t i=0; i<sz; i++ )
+            {
+                if( v.callstacks.find( mem[i].csAlloc ) != v.callstacks.end() )
+                {
+                    m_memInfo.allocList.emplace_back( i );
+                }
+            }
         }
 
         if( io.KeyCtrl && ImGui::IsItemHovered() )
@@ -7623,6 +7723,24 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
             ImGui::TreePop();
         }
     }
+}
+
+void View::DrawAllocList()
+{
+    std::vector<const MemEvent*> data;
+    auto basePtr = m_worker.GetMemData().data.data();
+    data.reserve( m_memInfo.allocList.size() );
+    for( auto& idx : m_memInfo.allocList )
+    {
+        data.emplace_back( basePtr + idx );
+    }
+
+    ImGui::Begin( "Allocations list", &m_memInfo.showAllocList );
+    TextFocused( "Number of allocations:", RealToString( m_memInfo.allocList.size(), true ) );
+    ListMemData<decltype( data.begin() )>( data.begin(), data.end(), [this]( auto& v ) {
+        ImGui::Text( "0x%" PRIx64, (*v)->ptr );
+    }, "##allocations" );
+    ImGui::End();
 }
 
 std::pair<int8_t*, size_t> View::GetMemoryPages() const
