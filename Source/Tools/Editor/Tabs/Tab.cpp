@@ -109,30 +109,47 @@ bool Tab::RenderWindow()
             ui::SetNextWindowDockId(targetID, ImGuiCond_Once);
     }
     bool wasRendered = isRendered_;
-    OnBeforeBegin();
-    if (ui::Begin(uniqueTitle_.CString(), &open_, windowFlags_))
+    if (open_)
     {
-        OnAfterBegin();
-        if (open_)
+        OnBeforeBegin();
+        if (ui::Begin(uniqueTitle_.CString(), &open_, windowFlags_))
         {
-            if (!ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
+            OnAfterBegin();
+            if (open_)
             {
-                if (!wasRendered)                                                                                       // Just activated
-                    ui::SetWindowFocus();
-                else if (input->IsMouseVisible() && ui::IsAnyMouseDown())
+                if (!ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
                 {
-                    if (ui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))                                            // Interacting
+                    if (!wasRendered)                                                                                       // Just activated
                         ui::SetWindowFocus();
+                    else if (input->IsMouseVisible() && ui::IsAnyMouseDown())
+                    {
+                        if (ui::IsWindowHovered(
+                            ImGuiHoveredFlags_ChildWindows))                                            // Interacting
+                            ui::SetWindowFocus();
+                    }
                 }
-            }
 
-            isActive_ = ui::IsWindowFocused() /*&& ui::IsDockActive()*/;
-            if (ui::BeginChild("Tab Content", {0, 0}, false, windowFlags_))
-                open_ = RenderWindowContent();
-            ui::EndChild();
-            isRendered_ = true;
+                isActive_ = ui::IsWindowFocused() /*&& ui::IsDockActive()*/;
+                if (ui::BeginChild("Tab Content", {0, 0}, false, windowFlags_))
+                    open_ = RenderWindowContent();
+                ui::EndChild();
+                isRendered_ = true;
+            }
+            else
+            {
+                isActive_ = false;
+                isRendered_ = false;
+            }
+            OnBeforeEnd();
         }
-        OnBeforeEnd();
+        else
+        {
+            isActive_ = false;
+            isRendered_ = false;
+        }
+
+        ui::End();
+        OnAfterEnd();
     }
     else
     {
@@ -147,9 +164,6 @@ bool Tab::RenderWindow()
         isActive_ = true;
         activateTab_ = false;
     }
-
-    ui::End();
-    OnAfterEnd();
 
     return open_;
 }
