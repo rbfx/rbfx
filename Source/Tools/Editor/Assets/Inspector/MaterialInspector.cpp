@@ -170,7 +170,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
 {
     using namespace InspectorRenderAttribute;
     AttributeInfo& info = *reinterpret_cast<AttributeInfo*>(args[P_ATTRIBUTEINFO].GetVoidPtr());
-    Material* material = (dynamic_cast<Inspectable::Material*>(args[P_SERIALIZABLE].GetPtr()))->GetMaterial();
+    Material* material = (static_cast<Inspectable::Material*>(args[P_SERIALIZABLE].GetPtr()))->GetMaterial();
 
     if (info.name_ == "Techniques")
     {
@@ -566,8 +566,8 @@ void Inspectable::Material::RegisterObject(Context* context)
         auto setter = [textureUnit](const Inspectable::Material& inspectable, const Variant& value)
         {
             const auto& ref = value.GetResourceRef();
-            auto* texture = dynamic_cast<Texture*>(inspectable.GetCache()->GetResource(ref.type_, ref.name_));
-            inspectable.GetMaterial()->SetTexture(textureUnit, texture);
+            if (auto* texture = inspectable.GetCache()->GetResource(ref.type_, ref.name_)->Cast<Texture>())
+                inspectable.GetMaterial()->SetTexture(textureUnit, texture);
         };
         URHO3D_CUSTOM_ATTRIBUTE(finalName.CString(), getter, setter, ResourceRef, ResourceRef{Texture2D::GetTypeStatic()}, AM_EDIT);
     }

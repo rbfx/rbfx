@@ -373,7 +373,7 @@ bool UITab::LoadResource(const String& resourcePath)
         layoutElement->SetStyleAuto();
 
         // Must be disabled because it interferes with ui element resizing
-        if (auto window = dynamic_cast<Window*>(layoutElement))
+        if (auto* window = layoutElement->Cast<Window>())
         {
             window->SetMovable(false);
             window->SetResizable(false);
@@ -599,7 +599,7 @@ String UITab::GetAppliedStyle(UIElement* element)
 
 void UITab::RenderRectSelector()
 {
-    auto* selected = dynamic_cast<BorderImage*>(GetSelected());
+    auto* selected = GetSelected()->Cast<BorderImage>();
 
     if (textureSelectorAttribute_.Empty() || selected == nullptr)
         return;
@@ -748,7 +748,7 @@ void UITab::AttributeMenu(VariantMap& args)
 
     if (auto selected = GetSelected())
     {
-        auto* item = dynamic_cast<Serializable*>(args[P_SERIALIZABLE].GetPtr());
+        auto* item = static_cast<Serializable*>(args[P_SERIALIZABLE].GetPtr());
         auto* info = static_cast<AttributeInfo*>(args[P_ATTRIBUTEINFO].GetVoidPtr());
 
         Variant value = item->GetAttribute(info->name_);
@@ -793,7 +793,7 @@ void UITab::AttributeMenu(VariantMap& args)
             }
         }
 
-        if (info->type_ == VAR_INTRECT && dynamic_cast<BorderImage*>(selected) != nullptr)
+        if (info->type_ == VAR_INTRECT && selected->IsInstanceOf<BorderImage>())
         {
             if (ui::MenuItem("Select in UI Texture"))
                 textureSelectorAttribute_ = info->name_;
@@ -808,7 +808,7 @@ void UITab::AttributeCustomize(VariantMap& args)
 
     using namespace AttributeInspectorAttribute;
 
-    auto* item = dynamic_cast<Serializable*>(args[P_SERIALIZABLE].GetPtr());
+    auto* item = static_cast<Serializable*>(args[P_SERIALIZABLE].GetPtr());
     auto* info = static_cast<AttributeInfo*>(args[P_ATTRIBUTEINFO].GetVoidPtr());
 
     Variant value = item->GetAttribute(info->name_);

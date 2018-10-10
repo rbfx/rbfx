@@ -837,8 +837,8 @@ void SceneTab::RenderNodeContextMenu()
 void SceneTab::OnComponentAdded(VariantMap& args)
 {
     using namespace ComponentAdded;
-    auto* component = dynamic_cast<Component*>(args[P_COMPONENT].GetPtr());
-    auto* node = dynamic_cast<Node*>(args[P_NODE].GetPtr());
+    auto* component = static_cast<Component*>(args[P_COMPONENT].GetPtr());
+    auto* node = static_cast<Node*>(args[P_NODE].GetPtr());
 
     if (node->IsTemporary() || node->HasTag("__EDITOR_OBJECT__"))
         return;
@@ -881,8 +881,8 @@ void SceneTab::OnComponentAdded(VariantMap& args)
 void SceneTab::OnComponentRemoved(VariantMap& args)
 {
     using namespace ComponentRemoved;
-    auto* component = dynamic_cast<Component*>(args[P_COMPONENT].GetPtr());
-    auto* node = dynamic_cast<Node*>(args[P_NODE].GetPtr());
+    auto* component = static_cast<Component*>(args[P_COMPONENT].GetPtr());
+    auto* node = static_cast<Node*>(args[P_NODE].GetPtr());
 
     if (!node->IsTemporary())
     {

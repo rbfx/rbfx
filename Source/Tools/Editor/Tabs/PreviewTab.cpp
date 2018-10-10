@@ -65,7 +65,7 @@ PreviewTab::PreviewTab(Context* context)
         if (sceneTab_.Expired())
             return;
 
-        if (auto* resource = dynamic_cast<Resource*>(GetEventSender()))
+        if (auto* resource = GetEventSender()->Cast<Resource>())
         {
             if (resource->GetName().StartsWith("RenderPaths/") || resource->GetName().StartsWith("PostProcess/"))
             {
