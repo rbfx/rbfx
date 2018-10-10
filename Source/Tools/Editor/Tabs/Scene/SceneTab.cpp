@@ -165,12 +165,16 @@ bool SceneTab::RenderWindowContent()
     // Render camera preview
     if (cameraPreviewViewport_->GetCamera() != nullptr)
     {
-        float borderSize = ui::GetStyle().FrameBorderSize;
+        float border = 1;
+        ui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, border);
+        ui::PushStyleColor(ImGuiCol_Border, ui::GetColorU32(ImGuiCol_Border, 255.f));                                   // Make a border opaque, otherwise it is barely visible.
         ui::SetCursorScreenPos(ToImGui(tabRect.Max() - cameraPreviewSize - IntVector2{10, 10}));
-        ui::RenderFrameBorder(ui::GetCursorScreenPos() - ImVec2{borderSize, borderSize},
-            ui::GetCursorScreenPos() + ToImGui(cameraPreviewSize) + ImVec2{borderSize, borderSize});
 
         ui::Image(cameraPreviewtexture_.Get(), ToImGui(cameraPreviewSize));
+        ui::RenderFrameBorder(ui::GetItemRectMin() - ImVec2{border, border}, ui::GetItemRectMax() + ImVec2{border, border});
+
+        ui::PopStyleColor();
+        ui::PopStyleVar();
     }
 
     // Prevent dragging window when scene view is clicked.

@@ -182,8 +182,7 @@ void Tab::UpdateUniqueTitle()
 IntRect Tab::UpdateViewRect()
 {
     IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->InnerClipRect);
-    auto offset = static_cast<int>(ui::GetCursorPosY());
-    tabRect += IntRect(0, offset, 0, offset);
+    tabRect.top_ += static_cast<int>(ui::GetCursorPosY());
     return tabRect;
 }
 
