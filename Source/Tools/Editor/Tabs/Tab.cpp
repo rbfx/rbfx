@@ -197,9 +197,5 @@ void Tab::OnLoadProject(const JSONValue& tab)
     SetID(tab["uuid"].GetString());
 }
 
-void Tab::AutoPlace()
-{
-    autoPlace_ = true;
-}
 
 }
