@@ -29,6 +29,7 @@
 #include <Toolbox/Graphics/SceneView.h>
 #include <Toolbox/Common/UndoManager.h>
 #include "Tabs/BaseResourceTab.h"
+#include "Tabs/Scene/SceneClipboard.h"
 
 
 namespace Urho3D
@@ -65,16 +66,24 @@ public:
     void OnFocused() override;
     /// Add a node to selection.
     void Select(Node* node);
+    /// Add a component to selection.
+    void Select(Component* component);
     /// Add multiple nodes to selection.
     void Select(PODVector<Node*> nodes);
     /// Remove a node from selection.
     void Unselect(Node* node);
+    /// Remove a component from selection.
+    void Unselect(Component* component);
     /// Select if node was not selected or unselect if node was selected.
     void ToggleSelection(Node* node);
+    /// Select if component was not selected or unselect if component was selected.
+    void ToggleSelection(Component* component);
     /// Unselect all nodes.
     void UnselectAll();
-    /// Return true if node is selected by gizmo.
+    /// Return true if node is selected.
     bool IsSelected(Node* node) const;
+    /// Return true if component is selected.
+    bool IsSelected(Component* component) const;
     /// Return list of selected nodes.
     const Vector<WeakPtr<Node>>& GetSelection() const;
     /// Removes component if it was selected in inspector, otherwise removes selected scene nodes.
@@ -119,13 +128,17 @@ protected:
     void OnComponentRemoved(VariantMap& args);
     /// Add or remove camera preview.
     void UpdateCameraPreview();
+    ///
+    void CopySelection();
+    ///
+    void PasteToSelection();
 
     /// Scene renderer.
     SceneView view_;
     /// Gizmo used for manipulating scene elements.
     Gizmo gizmo_;
     /// Current selected component displayed in inspector.
-    WeakPtr<Component> selectedComponent_;
+    HashSet<WeakPtr<Component>> selectedComponents_;
     /// State change tracker.
     Undo::Manager undo_;
     /// Flag indicating that mouse is hovering scene viewport.
@@ -138,6 +151,10 @@ protected:
     SharedPtr<Texture2D> cameraPreviewtexture_;
     /// Selected camera preview viewport.
     SharedPtr<Viewport> cameraPreviewViewport_;
+    ///
+    SceneClipboard clipboard_;
+    ///
+    ImVec2 windowPadding_;
 };
 
 };

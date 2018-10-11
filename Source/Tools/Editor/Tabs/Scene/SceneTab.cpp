@@ -49,6 +49,7 @@ SceneTab::SceneTab(Context* context)
     , view_(context, {0, 0, 1024, 768})
     , gizmo_(context)
     , undo_(context)
+    , clipboard_(context)
 {
     SetTitle("New Scene");
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
@@ -139,7 +140,6 @@ SceneTab::~SceneTab() = default;
 
 bool SceneTab::RenderWindowContent()
 {
-    auto& style = ui::GetStyle();
     if (GetInput()->IsMouseVisible())
         lastMousePosition_ = GetInput()->GetMousePosition();
     bool open = true;
@@ -212,13 +212,24 @@ bool SceneTab::RenderWindowContent()
 
             if (!clickNode.Expired())
             {
-                bool appendSelection = GetInput()->GetKeyDown(KEY_CTRL);
-                if (!appendSelection)
-                    UnselectAll();
-                ToggleSelection(clickNode);
-
-                if (isClickedRight && undo_.IsTrackingEnabled())
-                    ui::OpenPopupEx(ui::GetID("Node context menu"));
+                if (isClickedLeft)
+                {
+                    if (!GetInput()->GetKeyDown(KEY_CTRL))
+                    {
+                        UnselectAll();
+                    }
+                    ToggleSelection(clickNode);
+                }
+                else if (isClickedRight)
+                {
+                    if (!IsSelected(clickNode))
+                    {
+                        UnselectAll();
+                        ToggleSelection(clickNode);
+                    }
+                    if (undo_.IsTrackingEnabled())
+                        ui::OpenPopupEx(ui::GetID("Node context menu"));
+                }
             }
         }
         else
@@ -233,13 +244,14 @@ bool SceneTab::RenderWindowContent()
 void SceneTab::OnBeforeBegin()
 {
     // Allow viewport texture to cover entire window
+    windowPadding_ = ui::GetStyle().WindowPadding;
     ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
 }
 
 void SceneTab::OnAfterBegin()
 {
     // Inner part of window should have a proper padding, context menu and other controls might depend on it.
-    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {4_dpx, 4_dpy});
+    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, windowPadding_);
     if (ui::BeginPopupContextItem("SceneTab context menu"))
     {
         if (ui::MenuItem("Save"))
@@ -352,6 +364,9 @@ void SceneTab::CreateObjects()
 
 void SceneTab::Select(Node* node)
 {
+    if (node == nullptr)
+        return;
+
     if (gizmo_.Select(node))
     {
         using namespace EditorSelectionChanged;
@@ -359,8 +374,21 @@ void SceneTab::Select(Node* node)
     }
 }
 
+void SceneTab::Select(Component* component)
+{
+    if (component == nullptr)
+        return;
+
+    selectedComponents_.Insert(WeakPtr<Component>(component));
+    using namespace EditorSelectionChanged;
+    SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
+}
+
 void SceneTab::Select(PODVector<Node*> nodes)
 {
+    if (nodes.Empty())
+        return;
+
     if (gizmo_.Select(nodes))
     {
         using namespace EditorSelectionChanged;
@@ -370,7 +398,22 @@ void SceneTab::Select(PODVector<Node*> nodes)
 
 void SceneTab::Unselect(Node* node)
 {
+    if (node == nullptr)
+        return;
+
     if (gizmo_.Unselect(node))
+    {
+        using namespace EditorSelectionChanged;
+        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
+    }
+}
+
+void SceneTab::Unselect(Component* component)
+{
+    if (component == nullptr)
+        return;
+
+    if (selectedComponents_.Erase(WeakPtr<Component>(component)))
     {
         using namespace EditorSelectionChanged;
         SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
@@ -379,14 +422,34 @@ void SceneTab::Unselect(Node* node)
 
 void SceneTab::ToggleSelection(Node* node)
 {
+    if (node == nullptr)
+        return;
+
     gizmo_.ToggleSelection(node);
+    using namespace EditorSelectionChanged;
+    SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
+}
+
+void SceneTab::ToggleSelection(Component* component)
+{
+    if (component == nullptr)
+        return;
+
+    WeakPtr<Component> componentPtr(component);
+    if (selectedComponents_.Contains(componentPtr))
+        selectedComponents_.Erase(componentPtr);
+    else
+        selectedComponents_.Insert(componentPtr);
+
     using namespace EditorSelectionChanged;
     SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
 }
 
 void SceneTab::UnselectAll()
 {
-    if (gizmo_.UnselectAll())
+    bool hadComponents = !selectedComponents_.Empty();
+    selectedComponents_.Clear();
+    if (gizmo_.UnselectAll() || hadComponents)
     {
         using namespace EditorSelectionChanged;
         SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
@@ -433,35 +496,40 @@ void SceneTab::RenderToolbarButtons()
 
 bool SceneTab::IsSelected(Node* node) const
 {
+    if (node == nullptr)
+        return false;
+
     return gizmo_.IsSelected(node);
+}
+
+bool SceneTab::IsSelected(Component* component) const
+{
+    if (component == nullptr)
+        return false;
+
+    return selectedComponents_.Contains(WeakPtr<Component>(component));
 }
 
 void SceneTab::OnNodeSelectionChanged()
 {
     using namespace EditorSelectionChanged;
     UpdateCameraPreview();
-    selectedComponent_ = nullptr;
 }
 
 void SceneTab::RenderInspector(const char* filter)
 {
-    // TODO: inspector for multi-selection.
-    if (GetSelection().Size() == 1)
+    for (auto& node : GetSelection())
     {
-        auto node = GetSelection().Front();
         if (node.Expired())
-            return;
-
-        PODVector<Serializable*> items;
+            continue;
         RenderAttributes(node.Get(), filter, &inspector_);
+    }
 
-        for (Component* component : node->GetComponents())
-        {
-            if (component->IsTemporary())
-                continue;
-
-            RenderAttributes(component, filter, &inspector_);
-        }
+    for (auto& component : selectedComponents_)
+    {
+        if (component.Expired())
+            continue;
+        RenderAttributes(component.Get(), filter, &inspector_);
     }
 }
 
@@ -486,7 +554,7 @@ void SceneTab::RenderNodeTree(Node* node)
         ui::SetScrollHereY();
 
     String name = node->GetName().Empty() ? ToString("%s %d", node->GetTypeName().CString(), node->GetID()) : node->GetName();
-    bool isSelected = IsSelected(node) && selectedComponent_.Expired();
+    bool isSelected = IsSelected(node);
 
     if (isSelected)
         flags |= ImGuiTreeNodeFlags_Selected;
@@ -551,8 +619,11 @@ void SceneTab::RenderNodeTree(Node* node)
         }
         else if (ui::IsMouseClicked(MOUSEB_RIGHT) && undo_.IsTrackingEnabled())
         {
-            UnselectAll();
-            ToggleSelection(node);
+            if (!IsSelected(node))
+            {
+                UnselectAll();
+                ToggleSelection(node);
+            }
             ui::OpenPopupEx(ui::GetID("Node context menu"));
         }
     }
@@ -574,28 +645,30 @@ void SceneTab::RenderNodeTree(Node* node)
                 ui::Image(component->GetTypeName());
                 ui::SameLine();
 
-                bool selected = selectedComponent_ == component;
-                selected = ui::Selectable(component->GetTypeName().CString(), selected);
+                bool selected = selectedComponents_.Contains(component);
+                ui::Selectable(component->GetTypeName().CString(), selected);
 
-                if (ui::IsMouseClicked(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
+                if (ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
                 {
-                    selected = true;
-                    ui::OpenPopupEx(ui::GetID("Component context menu"));
+                    if (ui::IsMouseClicked(MOUSEB_LEFT))
+                    {
+                        if (!GetInput()->GetKeyDown(KEY_CTRL))
+                            UnselectAll();
+                        Select(component);
+                    }
+                    else if (ui::IsMouseClicked(MOUSEB_RIGHT))
+                    {
+                        if (!IsSelected(component))
+                        {
+                            UnselectAll();
+                            Select(component);
+                        }
+                        ui::OpenPopupEx(ui::GetID("Node context menu"));
+                    }
                 }
 
-                if (selected)
-                {
-                    UnselectAll();
-                    ToggleSelection(node);
-                    selectedComponent_ = component;
-                }
 
-                if (ui::BeginPopup("Component context menu"))
-                {
-                    if (ui::MenuItem("Delete", "Del"))
-                        component->Remove();
-                    ui::EndPopup();
-                }
+                RenderNodeContextMenu();
 
                 ui::PopID();
             }
@@ -644,20 +717,37 @@ void SceneTab::OnSaveProject(JSONValue& tab)
 
 void SceneTab::OnActiveUpdate()
 {
+    if (!ui::IsAnyItemActive() && undo_.IsTrackingEnabled())
+    {
+        // Global view hotkeys
+        if (GetInput()->GetKeyPress(KEY_DELETE))
+            RemoveSelection();
+        else if (GetInput()->GetKeyDown(KEY_CTRL))
+        {
+            if (GetInput()->GetKeyPress(KEY_C))
+                CopySelection();
+            else if (GetInput()->GetKeyPress(KEY_V))
+                PasteToSelection();
+        }
+        else if (GetInput()->GetKeyPress(KEY_ESCAPE))
+            UnselectAll();
+    }
 }
 
 void SceneTab::RemoveSelection()
 {
-    if (!selectedComponent_.Expired())
-        selectedComponent_->Remove();
-    else
+    for (auto& component : selectedComponents_)
     {
-        for (auto& selected : GetSelection())
-        {
-            if (!selected.Expired())
-                selected->Remove();
-        }
+        if (!component.Expired())
+            component->Remove();
     }
+
+    for (auto& selected : GetSelection())
+    {
+        if (!selected.Expired())
+            selected->Remove();
+    }
+
     UnselectAll();
 }
 
@@ -677,16 +767,6 @@ void SceneTab::OnUpdate(VariantMap& args)
     {
         if (mouseHoversViewport_)
             component->Update(timeStep);
-    }
-
-    if (ui::IsWindowFocused())
-    {
-        if (!ui::IsAnyItemActive() && undo_.IsTrackingEnabled())
-        {
-            // Global view hotkeys
-            if (GetInput()->GetKeyDown(KEY_DELETE))
-                RemoveSelection();
-        }
     }
 
     // Render editor camera rotation guide
@@ -747,7 +827,8 @@ void SceneTab::SceneStateRestore(VectorBuffer& source)
 
     source.Clear();
 
-    gizmo_.UnselectAll();
+    UnselectAll();
+
     for (auto node : GetScene()->GetChildrenWithTag("__EDITOR_SELECTED__", true))
     {
         gizmo_.Select(node);
@@ -759,7 +840,7 @@ void SceneTab::SceneStateRestore(VectorBuffer& source)
 
 void SceneTab::RenderNodeContextMenu()
 {
-    if (undo_.IsTrackingEnabled() && ui::BeginPopup("Node context menu"))
+    if (undo_.IsTrackingEnabled() && (!GetSelection().Empty() || !selectedComponents_.Empty()) && ui::BeginPopup("Node context menu"))
     {
         Input* input = GetSubsystem<Input>();
         if (input->GetKeyPress(KEY_ESCAPE) || !input->IsMouseVisible())
@@ -770,68 +851,76 @@ void SceneTab::RenderNodeContextMenu()
             return;
         }
 
-        bool alternative = input->GetKeyDown(KEY_SHIFT);
-
-        if (ui::MenuItem(alternative ? "Create Child (Local)" : "Create Child"))
+        if (!GetSelection().Empty())
         {
-            PODVector<Node*> newNodes;
-            for (auto& selectedNode : GetSelection())
+            bool alternative = input->GetKeyDown(KEY_SHIFT);
+
+            if (ui::MenuItem(alternative ? "Create Child (Local)" : "Create Child"))
             {
-                if (!selectedNode.Expired())
+                PODVector<Node*> newNodes;
+                for (auto& selectedNode : GetSelection())
                 {
-                    newNodes.Push(selectedNode->CreateChild(String::EMPTY, alternative ? LOCAL : REPLICATED));
-                    openHierarchyNodes_.Push(selectedNode);
-                    openHierarchyNodes_.Push(newNodes.Back());
-                    scrollTo_ = newNodes.Back();
+                    if (!selectedNode.Expired())
+                    {
+                        newNodes.Push(selectedNode->CreateChild(String::EMPTY, alternative ? LOCAL : REPLICATED));
+                        openHierarchyNodes_.Push(selectedNode);
+                        openHierarchyNodes_.Push(newNodes.Back());
+                        scrollTo_ = newNodes.Back();
+                    }
                 }
+
+                UnselectAll();
+                Select(newNodes);
             }
 
-            UnselectAll();
-            Select(newNodes);
-        }
-
-        if (ui::BeginMenu(alternative ? "Create Component (Local)" : "Create Component"))
-        {
-            auto* editor = GetSubsystem<Editor>();
-            auto categories = context_->GetObjectCategories().Keys();
-            categories.Remove("UI");
-
-            for (const String& category : categories)
+            if (ui::BeginMenu(alternative ? "Create Component (Local)" : "Create Component"))
             {
-                auto components = editor->GetObjectsByCategory(category);
-                if (components.Empty())
-                    continue;
+                auto* editor = GetSubsystem<Editor>();
+                auto categories = context_->GetObjectCategories().Keys();
+                categories.Remove("UI");
 
-                if (ui::BeginMenu(category.CString()))
+                for (const String& category : categories)
                 {
-                    Sort(components.Begin(), components.End());
+                    auto components = editor->GetObjectsByCategory(category);
+                    if (components.Empty())
+                        continue;
 
-                    for (const String& component : components)
+                    if (ui::BeginMenu(category.CString()))
                     {
-                        ui::Image(component);
-                        ui::SameLine();
-                        if (ui::MenuItem(component.CString()))
+                        Sort(components.Begin(), components.End());
+
+                        for (const String& component : components)
                         {
-                            for (auto& selectedNode : GetSelection())
+                            ui::Image(component);
+                            ui::SameLine();
+                            if (ui::MenuItem(component.CString()))
                             {
-                                if (!selectedNode.Expired())
+                                for (auto& selectedNode : GetSelection())
                                 {
-                                    if (selectedNode->CreateComponent(StringHash(component),
-                                        alternative ? LOCAL : REPLICATED))
-                                        openHierarchyNodes_.Push(selectedNode);
+                                    if (!selectedNode.Expired())
+                                    {
+                                        if (selectedNode->CreateComponent(StringHash(component),
+                                                                          alternative ? LOCAL : REPLICATED))
+                                            openHierarchyNodes_.Push(selectedNode);
+                                    }
                                 }
                             }
                         }
+                        ui::EndMenu();
                     }
-                    ui::EndMenu();
                 }
+                ui::EndMenu();
             }
-            ui::EndMenu();
+            ui::Separator();
         }
 
-        ui::Separator();
+        if (ui::MenuItem(ICON_FA_COPY " Copy", "Ctrl+C"))
+            CopySelection();
 
-        if (ui::MenuItem("Remove"))
+        if (ui::MenuItem(ICON_FA_PASTE " Paste", "Ctrl+V"))
+            PasteToSelection();
+
+        if (ui::MenuItem(ICON_FA_TRASH " Delete", "Del"))
             RemoveSelection();
 
         ui::EndPopup();
@@ -935,6 +1024,31 @@ void SceneTab::UpdateCameraPreview()
             }
         }
     }
+}
+
+void SceneTab::CopySelection()
+{
+    clipboard_.Clear();
+    clipboard_.Copy(GetSelection());
+    clipboard_.Copy(selectedComponents_);
+}
+
+void SceneTab::PasteToSelection()
+{
+    const auto& selection = GetSelection();
+    PasteResult result;
+    if (!selection.Empty())
+        result = clipboard_.Paste(selection);
+    else
+        result = clipboard_.Paste(GetScene());
+
+    UnselectAll();
+
+    for (Node* node : result.nodes_)
+        Select(node);
+
+    for (Component* component : result.components_)
+        selectedComponents_.Insert(WeakPtr<Component>(component));
 }
 
 }
