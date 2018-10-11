@@ -311,25 +311,27 @@ public:
         ObjectFactory(context)
     {
         typeInfo_ = T::GetTypeInfoStatic();
-        allocator_ = AllocatorInitialize(sizeof(T));
+        // Allocator code is disabled because it is not thread-safe. First we need thread-safe allocator.
+        // allocator_ = AllocatorInitialize(sizeof(T));
     }
 
     ~ObjectFactoryImpl() override
     {
-        AllocatorUninitialize(allocator_);
-        allocator_ = nullptr;
+        // AllocatorUninitialize(allocator_);
+        // allocator_ = nullptr;
     }
 
     /// Create an object of the specific type.
     SharedPtr<Object> CreateObject() override
     {
-        auto* newObject = static_cast<T*>(AllocatorReserve(allocator_));
-        new(newObject) T(context_);
-        newObject->SetDeleter([this, newObject](RefCounted* refCounted) {
-            newObject->~T();
-            AllocatorFree(allocator_, newObject);
-        });
-        return SharedPtr<Object>(newObject);
+        // auto* newObject = static_cast<T*>(AllocatorReserve(allocator_));
+        // new(newObject) T(context_);
+        // newObject->SetDeleter([this, newObject](RefCounted* refCounted) {
+        //     newObject->~T();
+        //     AllocatorFree(allocator_, newObject);
+        // });
+        // return SharedPtr<Object>(newObject);
+        return SharedPtr<Object>(new T(context_));
     }
 
 private:
