@@ -114,7 +114,13 @@ SceneTab::SceneTab(Context* context)
             Node* node = static_cast<Node*>(serializable);
             ui::TextUnformatted("ID");
             ui::NextColumn();
-            ui::Text("%u (%s)", node->GetID(), node->IsReplicated() ? "Replicated" : "Local");
+            ui::Text("%u", node->GetID());
+            if (node->IsReplicated())
+            {
+                ui::SameLine();
+                ui::TextUnformatted(ICON_FA_WIFI);
+                ui::SetHelpTooltip("Replicated over the network.", KEY_UNKNOWN);
+            }
             ui::NextColumn();
         }
     });
