@@ -789,10 +789,18 @@ void SceneTab::SceneStateSave(VectorBuffer& destination)
 {
     Undo::SetTrackingScoped tracking(undo_, false);
 
+    // Preserve current selection
+    savedNodeSelection_.Clear();
+    savedComponentSelection_.Clear();
     for (auto& node : GetSelection())
     {
         if (node)
-            node->AddTag("__EDITOR_SELECTED__");
+            savedNodeSelection_.Push(node->GetID());
+    }
+    for (auto& component : selectedComponents_)
+    {
+        if (component)
+            savedComponentSelection_.Push(component->GetID());
     }
 
     // Ensure that editor objects are saved.
@@ -803,13 +811,6 @@ void SceneTab::SceneStateSave(VectorBuffer& destination)
 
     destination.Clear();
     GetScene()->Save(destination);
-
-    // Prevent marker tags from showing up in UI
-    for (auto& node : GetSelection())
-    {
-        if (node)
-            node->RemoveTag("__EDITOR_SELECTED__");
-    }
 
     // Now that editor objects are saved make sure UI does not expose them
     for (auto* node : nodes)
@@ -833,13 +834,15 @@ void SceneTab::SceneStateRestore(VectorBuffer& source)
 
     source.Clear();
 
+    // Restore previous selection
     UnselectAll();
+    for (unsigned id : savedNodeSelection_)
+        Select(GetScene()->GetNode(id));
 
-    for (auto node : GetScene()->GetChildrenWithTag("__EDITOR_SELECTED__", true))
-    {
-        gizmo_.Select(node);
-        node->RemoveTag("__EDITOR_SELECTED__");
-    }
+    for (unsigned id : savedComponentSelection_)
+        Select(GetScene()->GetComponent(id));
+    savedNodeSelection_.Clear();
+    savedComponentSelection_.Clear();
 
     UpdateCameraPreview();
 }

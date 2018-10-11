@@ -151,10 +151,14 @@ protected:
     SharedPtr<Texture2D> cameraPreviewtexture_;
     /// Selected camera preview viewport.
     SharedPtr<Viewport> cameraPreviewViewport_;
-    ///
+    /// Utility for copying and pasting scene nodes.
     SceneClipboard clipboard_;
-    ///
+    /// Original window padding that was overwritten before creating window. This padding will be restored right after window started.
     ImVec2 windowPadding_;
+    /// List of node IDs that are saved when scene state is saved. Node selection will be restored using these.
+    PODVector<unsigned> savedNodeSelection_;
+    /// List of component IDs that are saved when scene state is saved. Component selection will be restored using these.
+    PODVector<unsigned> savedComponentSelection_;
 };
 
 };
