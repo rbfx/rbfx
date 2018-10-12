@@ -204,7 +204,11 @@ void PreviewTab::RenderButtons()
     }
 
     if (sceneTab_.Expired())
+    {
+        if (simulationStatus_ != SCENE_SIMULATION_STOPPED)
+            simulationStatus_ = SCENE_SIMULATION_STOPPED;
         return;
+    }
 
     switch (simulationStatus_)
     {
