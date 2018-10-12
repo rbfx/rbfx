@@ -550,9 +550,10 @@ Tab* Editor::GetTab(StringHash type, const String& resourceName)
 
 void Editor::SetupSystemUI()
 {
+    static ImWchar fontAwesomeIconRanges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
     GetSystemUI()->ApplyStyleDefault(true, 1.0f);
-    GetSystemUI()->AddFont("Fonts/NotoSans-Regular.ttf", {}, 16.f);
-    GetSystemUI()->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, {ICON_MIN_FA, ICON_MAX_FA, 0}, 0, true);
+    GetSystemUI()->AddFont("Fonts/NotoSans-Regular.ttf", nullptr, 16.f);
+    GetSystemUI()->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 0, true);
     ui::GetStyle().WindowRounding = 3;
     // Disable imgui saving ui settings on it's own. These should be serialized to project file.
     ui::GetIO().IniFilename = nullptr;
