@@ -33,6 +33,7 @@ static ResourceRef defaultRenderPath{XMLFile::GetTypeStatic(), "RenderPaths/Forw
 
 SceneSettings::SceneSettings(Context* context)
     : Component(context)
+    , editorViewportRenderPath_(defaultRenderPath)
 {
 }
 
