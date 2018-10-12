@@ -72,14 +72,10 @@ void SceneView::CreateObjects()
         camera_->AddTag("__EDITOR_OBJECT__");
         camera_->SetTemporary(true);
     }
-    auto* debug = scene_->GetComponent<DebugRenderer>();
-    if (debug == nullptr)
-    {
-        debug = scene_->CreateComponent<DebugRenderer>(LOCAL, FIRST_INTERNAL_ID);
-        debug->SetTemporary(true);
-    }
+    auto* debug = scene_->GetOrCreateComponent<DebugRenderer>(LOCAL, FIRST_INTERNAL_ID);
     debug->SetView(GetCamera());
     debug->SetTemporary(true);
+    debug->SetLineAntiAlias(true);
     viewport_->SetCamera(GetCamera());
 }
 
