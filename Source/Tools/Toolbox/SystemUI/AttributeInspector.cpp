@@ -205,7 +205,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             break;
         case VAR_INT:
         {
-            if (info && info->name_.EndsWith(" Mask"))
+            if (info && (info->name_.EndsWith(" Mask") || info->name_.EndsWith(" Bits")))
             {
                 auto v = value.GetUInt();
                 modified |= ui::MaskSelector(&v);
