@@ -554,6 +554,8 @@ void Editor::SetupSystemUI()
     GetSystemUI()->ApplyStyleDefault(true, 1.0f);
     GetSystemUI()->AddFont("Fonts/NotoSans-Regular.ttf", nullptr, 16.f);
     GetSystemUI()->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 0, true);
+    monoFont_ = GetSystemUI()->AddFont("Fonts/NotoMono-Regular.ttf", nullptr, 14.f);
+    GetSystemUI()->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 0, true);
     ui::GetStyle().WindowRounding = 3;
     // Disable imgui saving ui settings on it's own. These should be serialized to project file.
     ui::GetIO().IniFilename = nullptr;

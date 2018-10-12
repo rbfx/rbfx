@@ -90,6 +90,8 @@ public:
     ImGuiID GetDockspaceID() const { return dockspaceId_; }
     /// Returns pointer to last active scene tab. Returns null if no scene was opened or if last opened scene was closed.
     SceneTab* GetLastSceneTab() const { return lastActiveScene_.Get(); }
+    ///
+    ImFont* GetMonoSpaceFont() const { return monoFont_; }
 
 protected:
     /// Process console commands.
@@ -117,6 +119,8 @@ protected:
     bool loadDefaultLayout_ = false;
     /// Last actice scene tab.
     WeakPtr<SceneTab> lastActiveScene_;
+    ///
+    ImFont* monoFont_ = nullptr;
 };
 
 }

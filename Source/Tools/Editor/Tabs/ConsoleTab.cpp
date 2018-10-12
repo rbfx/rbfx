@@ -22,6 +22,7 @@
 
 #include <Urho3D/SystemUI/Console.h>
 #include "ConsoleTab.h"
+#include "Editor.h"
 
 namespace Urho3D
 {
@@ -35,7 +36,12 @@ ConsoleTab::ConsoleTab(Context* context)
 
 bool ConsoleTab::RenderWindowContent()
 {
+    auto font = GetSubsystem<Editor>()->GetMonoSpaceFont();
+    if (font)
+        ui::PushFont(font);
     GetSubsystem<Console>()->RenderContent();
+    if (font)
+        ui::PopFont();
     return true;
 }
 
