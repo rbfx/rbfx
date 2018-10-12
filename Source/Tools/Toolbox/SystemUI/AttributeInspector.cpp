@@ -582,6 +582,9 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
 
 bool RenderAttributes(Serializable* item, const char* filter, Object* eventNamespace)
 {
+    if (item->GetNumAttributes() == 0)
+        return false;
+
     if (eventNamespace == nullptr)
         eventNamespace = ui::GetSystemUI();
 
