@@ -129,9 +129,7 @@ bool Tab::RenderWindow()
                 }
 
                 isActive_ = ui::IsWindowFocused();
-                if (ui::BeginChild("Tab Content", {0, 0}, false, windowFlags_))
-                    open_ = RenderWindowContent();
-                ui::EndChild();
+                open_ = RenderWindowContent();
                 isRendered_ = true;
             }
             else
@@ -181,7 +179,6 @@ void Tab::UpdateUniqueTitle()
 IntRect Tab::UpdateViewRect()
 {
     IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->InnerClipRect);
-    tabRect.top_ += static_cast<int>(ui::GetCursorPosY());
     return tabRect;
 }
 

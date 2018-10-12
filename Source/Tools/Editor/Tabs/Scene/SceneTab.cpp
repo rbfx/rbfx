@@ -158,8 +158,12 @@ bool SceneTab::RenderWindowContent()
     RenderToolbarButtons();
 
     IntRect tabRect = UpdateViewRect();
+    // Correct content rect to not overlap buttons. Ideally this should be in Tab.cpp but for some reason it creates
+    // unused space at the bottom of PreviewTab.
+    tabRect.top_ += static_cast<int>(ui::GetCursorPosY());
 
     ui::SetCursorScreenPos(ToImGui(tabRect.Min()));
+    ui::BeginChild("Scene view");
     ui::Image(view_.GetTexture(), ToImGui(tabRect.Size()));
     gizmo_.ManipulateSelection(view_.GetCamera());
 
@@ -262,6 +266,8 @@ bool SceneTab::RenderWindowContent()
     }
 
     RenderNodeContextMenu();
+
+    ui::EndChild(); // Scene view
 
     return open;
 }
@@ -490,7 +496,7 @@ void SceneTab::RenderToolbarButtons()
 {
     ui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
 
-    ui::SetCursorPos({4_dpx, 4_dpy});
+    ui::SetCursorPos(ui::GetCursorPos() + ImVec2{4_dpx, 4_dpy});
 
     if (ui::EditorToolbarButton(ICON_FA_SAVE, "Save"))
         SaveResource();
@@ -515,7 +521,9 @@ void SceneTab::RenderToolbarButtons()
 
     SendEvent(E_EDITORTOOLBARBUTTONS);
 
-    ui::NewLine();
+    ui::SameLine(0, 3.f);
+    ui::SetCursorPosY(ui::GetCursorPosY() + 4_dpx);
+
     ui::PopStyleVar();
 }
 
