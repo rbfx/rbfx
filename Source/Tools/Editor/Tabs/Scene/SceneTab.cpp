@@ -723,21 +723,6 @@ void SceneTab::OnSaveProject(JSONValue& tab)
 
 void SceneTab::OnActiveUpdate()
 {
-    if (!ui::IsAnyItemActive() && undo_.IsTrackingEnabled())
-    {
-        // Global view hotkeys
-        if (GetInput()->GetKeyPress(KEY_DELETE))
-            RemoveSelection();
-        else if (GetInput()->GetKeyDown(KEY_CTRL))
-        {
-            if (GetInput()->GetKeyPress(KEY_C))
-                CopySelection();
-            else if (GetInput()->GetKeyPress(KEY_V))
-                PasteToSelection();
-        }
-        else if (GetInput()->GetKeyPress(KEY_ESCAPE))
-            UnselectAll();
-    }
 }
 
 void SceneTab::RemoveSelection()
@@ -773,6 +758,29 @@ void SceneTab::OnUpdate(VariantMap& args)
     {
         if (mouseHoversViewport_)
             component->Update(timeStep);
+    }
+
+    if (Tab* tab = GetSubsystem<Editor>()->GetActiveTab())
+    {
+        StringHash activeTabType = tab->GetType();
+        if (activeTabType == GetType() || activeTabType == HierarchyTab::GetTypeStatic())
+        {
+            if (!ui::IsAnyItemActive() && undo_.IsTrackingEnabled())
+            {
+                // Global view hotkeys
+                if (GetInput()->GetKeyPress(KEY_DELETE))
+                    RemoveSelection();
+                else if (GetInput()->GetKeyDown(KEY_CTRL))
+                {
+                    if (GetInput()->GetKeyPress(KEY_C))
+                        CopySelection();
+                    else if (GetInput()->GetKeyPress(KEY_V))
+                        PasteToSelection();
+                }
+                else if (GetInput()->GetKeyPress(KEY_ESCAPE))
+                    UnselectAll();
+            }
+        }
     }
 
     // Render editor camera rotation guide
