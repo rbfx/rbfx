@@ -119,17 +119,16 @@ bool Tab::RenderWindow()
             {
                 if (!ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
                 {
-                    if (!wasRendered)                                                                                       // Just activated
+                    if (!wasRendered)                                                                                   // Just activated
                         ui::SetWindowFocus();
                     else if (input->IsMouseVisible() && ui::IsAnyMouseDown())
                     {
-                        if (ui::IsWindowHovered(
-                            ImGuiHoveredFlags_ChildWindows))                                            // Interacting
+                        if (ui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))                                        // Interacting
                             ui::SetWindowFocus();
                     }
                 }
 
-                isActive_ = ui::IsWindowFocused() /*&& ui::IsDockActive()*/;
+                isActive_ = ui::IsWindowFocused();
                 if (ui::BeginChild("Tab Content", {0, 0}, false, windowFlags_))
                     open_ = RenderWindowContent();
                 ui::EndChild();

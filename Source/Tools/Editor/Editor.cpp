@@ -211,19 +211,13 @@ void Editor::OnUpdate(VariantMap& args)
     {
         if (tab->RenderWindow())
         {
-            if (tab->IsRendered())
+            // Only active window may override another active window
+            if (activeTab_ != tab && tab->IsActive())
             {
-                if (activeTab_ != tab)
-                {
-                    // Only active window may override another active window
-                    if (tab->IsActive())
-                    {
-                        activeTab_ = tab;
-                        if (SceneTab* sceneTab = tab->Cast<SceneTab>())
-                            lastActiveScene_ = sceneTab;
-                        tab->OnFocused();
-                    }
-                }
+                activeTab_ = tab;
+                if (SceneTab* sceneTab = tab->Cast<SceneTab>())
+                    lastActiveScene_ = sceneTab;
+                tab->OnFocused();
             }
         }
         else if (!tab->IsUtility())
