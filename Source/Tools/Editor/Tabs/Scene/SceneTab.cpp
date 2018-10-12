@@ -32,6 +32,7 @@
 #include "Editor.h"
 #include "Widgets.h"
 #include "SceneSettings.h"
+#include "Tabs/HierarchyTab.h"
 #include "Tabs/InspectorTab.h"
 #include "Tabs/PreviewTab.h"
 #include "Assets/Inspector/MaterialInspector.h"
@@ -209,33 +210,51 @@ bool SceneTab::RenderWindowContent()
             GetScene()->GetComponent<Octree>()->RaycastSingle(query2);
         }
 
-        if (results.Size())
+        if (results.Size() && results[0].drawable_->GetNode() != nullptr)
         {
+            StringHash componentType;
             WeakPtr<Node> clickNode(results[0].drawable_->GetNode());
-            // Temporary nodes can not be selected.
+
+            if (clickNode->HasTag("DebugIcon"))
+                componentType = clickNode->GetVar("ComponentType").GetStringHash();
+
             while (!clickNode.Expired() && clickNode->HasTag("__EDITOR_OBJECT__"))
                 clickNode = clickNode->GetParent();
 
-            if (!clickNode.Expired())
+            if (isClickedLeft)
             {
-                if (isClickedLeft)
+                if (!GetInput()->GetKeyDown(KEY_CTRL))
+                    UnselectAll();
+
+                if (clickNode == GetScene())
                 {
-                    if (!GetInput()->GetKeyDown(KEY_CTRL))
+                    if (componentType != StringHash::ZERO)
+                        ToggleSelection(clickNode->GetComponent(componentType));
+                }
+                else
+                    ToggleSelection(clickNode);
+            }
+            else if (isClickedRight)
+            {
+                if (clickNode == GetScene())
+                {
+                    if (componentType != StringHash::ZERO)
                     {
-                        UnselectAll();
+                        Component* component = clickNode->GetComponent(componentType);
+                        if (!IsSelected(component))
+                        {
+                            UnselectAll();
+                            ToggleSelection(component);
+                        }
                     }
+                }
+                else if (!IsSelected(clickNode))
+                {
+                    UnselectAll();
                     ToggleSelection(clickNode);
                 }
-                else if (isClickedRight)
-                {
-                    if (!IsSelected(clickNode))
-                    {
-                        UnselectAll();
-                        ToggleSelection(clickNode);
-                    }
-                    if (undo_.IsTrackingEnabled())
-                        ui::OpenPopupEx(ui::GetID("Node context menu"));
-                }
+                if (undo_.IsTrackingEnabled())
+                    ui::OpenPopupEx(ui::GetID("Node context menu"));
             }
         }
         else
@@ -524,18 +543,31 @@ void SceneTab::OnNodeSelectionChanged()
 
 void SceneTab::RenderInspector(const char* filter)
 {
+    const auto& selection = GetSelection();
+    bool singleNodeMode = selection.Size() == 1 && selectedComponents_.Empty();
     for (auto& node : GetSelection())
     {
         if (node.Expired())
             continue;
         RenderAttributes(node.Get(), filter, &inspector_);
+        if (singleNodeMode)
+        {
+            for (auto& component : node->GetComponents())
+            {
+                if (!component->IsTemporary())
+                    RenderAttributes(component.Get(), filter, &inspector_);
+            }
+        }
     }
 
-    for (auto& component : selectedComponents_)
+    if (!singleNodeMode)
     {
-        if (component.Expired())
-            continue;
-        RenderAttributes(component.Get(), filter, &inspector_);
+        for (auto& component : selectedComponents_)
+        {
+            if (component.Expired())
+                continue;
+            RenderAttributes(component.Get(), filter, &inspector_);
+        }
     }
 }
 
@@ -968,6 +1000,7 @@ void SceneTab::OnComponentAdded(VariantMap& args)
             node->AddTag("DebugIcon");
             node->AddTag("DebugIcon" + component->GetTypeName());
             node->AddTag("__EDITOR_OBJECT__");
+            node->SetVar("ComponentType", component->GetType());
             node->SetTemporary(true);
 
             auto* billboard = node->CreateComponent<BillboardSet>();
