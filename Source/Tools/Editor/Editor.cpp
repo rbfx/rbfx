@@ -134,8 +134,6 @@ void Editor::Start()
     context_->RegisterSubsystem(this);
     SceneSettings::RegisterObject(context_);
 
-    SetupSystemUI();
-
     GetCache()->SetAutoReloadResources(true);
 
     SubscribeToEvent(E_UPDATE, std::bind(&Editor::OnUpdate, this, _2));
@@ -179,6 +177,8 @@ void Editor::Start()
 
     if (!defaultProjectPath.empty())
         pendingOpenProject_ = defaultProjectPath.c_str();
+    else
+        SetupSystemUI();
 }
 
 void Editor::Stop()
