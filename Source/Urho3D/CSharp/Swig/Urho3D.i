@@ -82,7 +82,7 @@ URHO3D_BINARY_COMPATIBLE_TYPE(Quaternion);
 URHO3D_BINARY_COMPATIBLE_TYPE(Plane);
 URHO3D_BINARY_COMPATIBLE_TYPE(BoundingBox);
 URHO3D_BINARY_COMPATIBLE_TYPE(Sphere);
-URHO3D_BINARY_COMPATIBLE_TYPE(Frustum);
+//URHO3D_BINARY_COMPATIBLE_TYPE(Frustum);
 URHO3D_BINARY_COMPATIBLE_TYPE(Ray);
 
 }
@@ -133,6 +133,7 @@ URHO3D_BINARY_COMPATIBLE_TYPE(Ray);
 %include "Vector.i"
 %include "HashMap.i"
 %include "Urho3D/Math/Polyhedron.h"
+%include "Urho3D/Math/Frustum.h"
 
 // Declare inheritable classes in this file
 %include "Context.i"

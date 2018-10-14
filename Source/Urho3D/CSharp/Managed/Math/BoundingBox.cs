@@ -67,14 +67,14 @@ namespace Urho3DNet
         }
 
         /// Construct from a frustum.
-        public BoundingBox(in Frustum frustum)
-        {
-            Min = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
-            Max = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
-            _dummyMin = 0;
-            _dummyMax = 0;
-            Define(frustum);
-        }
+//        public BoundingBox(in Frustum frustum)
+//        {
+//            Min = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+//            Max = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
+//            _dummyMin = 0;
+//            _dummyMax = 0;
+//            Define(frustum);
+//        }
 
 //        /// Construct from a polyhedron.
 //        public BoundingBox(Polyhedron poly)
@@ -170,11 +170,11 @@ namespace Urho3DNet
         }
 
         /// Define from a frustum.
-        public void Define(in Frustum frustum)
-        {
-            Clear();
-            Define(frustum.Vertices);
-        }
+//        public void Define(in Frustum frustum)
+//        {
+//            Clear();
+//            Define(frustum.Vertices);
+//        }
 
 //        /// Define from a polyhedron.
 //        void Define(Polyhedron poly)
@@ -202,10 +202,10 @@ namespace Urho3DNet
             }
         }
         /// Merge a frustum.
-        public void Merge(Frustum frustum)
-        {
-            Merge(frustum.Vertices);
-        }
+//        public void Merge(Frustum frustum)
+//        {
+//            Merge(frustum.Vertices);
+//        }
 
 //        /// Merge a polyhedron.
 //        void Merge(Polyhedron poly)

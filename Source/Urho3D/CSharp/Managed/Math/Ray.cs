@@ -158,32 +158,32 @@ namespace Urho3DNet
             return dist;
         }
         /// Return hit distance to a frustum, or infinity if no hit. If solidInside parameter is true (default) rays originating from inside return zero distance, otherwise the distance to the closest plane.
-        float HitDistance(in Frustum frustum, bool solidInside = true)
-        {
-            float maxOutside = 0.0f;
-            float minInside = float.PositiveInfinity;
-            bool allInside = true;
-
-            foreach (var plane in frustum.Planes)
-            {
-                float distance = HitDistance(plane);
-
-                if (plane.Distance(Origin) < 0.0f)
-                {
-                    maxOutside = Math.Max(maxOutside, distance);
-                    allInside = false;
-                }
-                else
-                    minInside = Math.Min(minInside, distance);
-            }
-
-            if (allInside)
-                return solidInside ? 0.0f : minInside;
-            else if (maxOutside <= minInside)
-                return maxOutside;
-            else
-                return float.PositiveInfinity;
-        }
+//        float HitDistance(in Frustum frustum, bool solidInside = true)
+//        {
+//            float maxOutside = 0.0f;
+//            float minInside = float.PositiveInfinity;
+//            bool allInside = true;
+//
+//            foreach (var plane in frustum.Planes)
+//            {
+//                float distance = HitDistance(plane);
+//
+//                if (plane.Distance(Origin) < 0.0f)
+//                {
+//                    maxOutside = Math.Max(maxOutside, distance);
+//                    allInside = false;
+//                }
+//                else
+//                    minInside = Math.Min(minInside, distance);
+//            }
+//
+//            if (allInside)
+//                return solidInside ? 0.0f : minInside;
+//            else if (maxOutside <= minInside)
+//                return maxOutside;
+//            else
+//                return float.PositiveInfinity;
+//        }
         /// Return hit distance to a sphere, or infinity if no hit.
         float HitDistance(in Sphere sphere)
         {
