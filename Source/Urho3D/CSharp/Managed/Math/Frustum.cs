@@ -24,8 +24,8 @@ namespace Urho3DNet
         /// Define with projection parameters and a transform matrix.
         public void Define(float fov, float aspectRatio, float zoom, float nearZ, float farZ, in Matrix3x4? transform = null)
         {
-            planes_ = new Plane[NumPlanes];
-            vertices_ = new Vector3[NumVertices];
+            Planes = new Plane[NumPlanes];
+            Vertices = new Vector3[NumVertices];
 
             nearZ = Math.Max(nearZ, 0.0f);
             farZ = Math.Max(farZ, nearZ);
@@ -44,65 +44,65 @@ namespace Urho3DNet
         /// Define with near and far dimension vectors and a transform matrix.
         public void Define(in Vector3 near, in Vector3 far, in Matrix3x4? transformation = null)
         {
-            planes_ = new Plane[NumPlanes];
-            vertices_ = new Vector3[NumVertices];
+            Planes = new Plane[NumPlanes];
+            Vertices = new Vector3[NumVertices];
 
             var transform = transformation.GetValueOrDefault(Matrix3x4.Identity);
 
-            vertices_[0] = transform * near;
-            vertices_[1] = transform * new Vector3(near.X, -near.Y, near.Z);
-            vertices_[2] = transform * new Vector3(-near.X, -near.Y, near.Z);
-            vertices_[3] = transform * new Vector3(-near.X, near.Y, near.Z);
-            vertices_[4] = transform * far;
-            vertices_[5] = transform * new Vector3(far.X, -far.Y, far.Z);
-            vertices_[6] = transform * new Vector3(-far.X, -far.Y, far.Z);
-            vertices_[7] = transform * new Vector3(-far.X, far.Y, far.Z);
+            Vertices[0] = transform * near;
+            Vertices[1] = transform * new Vector3(near.X, -near.Y, near.Z);
+            Vertices[2] = transform * new Vector3(-near.X, -near.Y, near.Z);
+            Vertices[3] = transform * new Vector3(-near.X, near.Y, near.Z);
+            Vertices[4] = transform * far;
+            Vertices[5] = transform * new Vector3(far.X, -far.Y, far.Z);
+            Vertices[6] = transform * new Vector3(-far.X, -far.Y, far.Z);
+            Vertices[7] = transform * new Vector3(-far.X, far.Y, far.Z);
 
             UpdatePlanes();
         }
         /// Define with a bounding box and a transform matrix.
         public void Define(in BoundingBox box, in Matrix3x4? transformation = null)
         {
-            planes_ = new Plane[NumPlanes];
-            vertices_ = new Vector3[NumVertices];
+            Planes = new Plane[NumPlanes];
+            Vertices = new Vector3[NumVertices];
 
             var transform = transformation.GetValueOrDefault(Matrix3x4.Identity);
             
-            vertices_[0] = transform * new Vector3(box.Max.X, box.Max.Y, box.Min.Z);
-            vertices_[1] = transform * new Vector3(box.Max.X, box.Min.Y, box.Min.Z);
-            vertices_[2] = transform * new Vector3(box.Min.X, box.Min.Y, box.Min.Z);
-            vertices_[3] = transform * new Vector3(box.Min.X, box.Max.Y, box.Min.Z);
-            vertices_[4] = transform * new Vector3(box.Max.X, box.Max.Y, box.Max.Z);
-            vertices_[5] = transform * new Vector3(box.Max.X, box.Min.Y, box.Max.Z);
-            vertices_[6] = transform * new Vector3(box.Min.X, box.Min.Y, box.Max.Z);
-            vertices_[7] = transform * new Vector3(box.Min.X, box.Max.Y, box.Max.Z);
+            Vertices[0] = transform * new Vector3(box.Max.X, box.Max.Y, box.Min.Z);
+            Vertices[1] = transform * new Vector3(box.Max.X, box.Min.Y, box.Min.Z);
+            Vertices[2] = transform * new Vector3(box.Min.X, box.Min.Y, box.Min.Z);
+            Vertices[3] = transform * new Vector3(box.Min.X, box.Max.Y, box.Min.Z);
+            Vertices[4] = transform * new Vector3(box.Max.X, box.Max.Y, box.Max.Z);
+            Vertices[5] = transform * new Vector3(box.Max.X, box.Min.Y, box.Max.Z);
+            Vertices[6] = transform * new Vector3(box.Min.X, box.Min.Y, box.Max.Z);
+            Vertices[7] = transform * new Vector3(box.Min.X, box.Max.Y, box.Max.Z);
 
             UpdatePlanes();
         }
         /// Define from a projection or view-projection matrix.
         public void Define(in Matrix4 projection)
         {
-            planes_ = new Plane[NumPlanes];
-            vertices_ = new Vector3[NumVertices];
+            Planes = new Plane[NumPlanes];
+            Vertices = new Vector3[NumVertices];
 
             Matrix4 projInverse = projection.Inverted();
 
-            vertices_[0] = projInverse * new Vector3(1.0f, 1.0f, 0.0f);
-            vertices_[1] = projInverse * new Vector3(1.0f, -1.0f, 0.0f);
-            vertices_[2] = projInverse * new Vector3(-1.0f, -1.0f, 0.0f);
-            vertices_[3] = projInverse * new Vector3(-1.0f, 1.0f, 0.0f);
-            vertices_[4] = projInverse * new Vector3(1.0f, 1.0f, 1.0f);
-            vertices_[5] = projInverse * new Vector3(1.0f, -1.0f, 1.0f);
-            vertices_[6] = projInverse * new Vector3(-1.0f, -1.0f, 1.0f);
-            vertices_[7] = projInverse * new Vector3(-1.0f, 1.0f, 1.0f);
+            Vertices[0] = projInverse * new Vector3(1.0f, 1.0f, 0.0f);
+            Vertices[1] = projInverse * new Vector3(1.0f, -1.0f, 0.0f);
+            Vertices[2] = projInverse * new Vector3(-1.0f, -1.0f, 0.0f);
+            Vertices[3] = projInverse * new Vector3(-1.0f, 1.0f, 0.0f);
+            Vertices[4] = projInverse * new Vector3(1.0f, 1.0f, 1.0f);
+            Vertices[5] = projInverse * new Vector3(1.0f, -1.0f, 1.0f);
+            Vertices[6] = projInverse * new Vector3(-1.0f, -1.0f, 1.0f);
+            Vertices[7] = projInverse * new Vector3(-1.0f, 1.0f, 1.0f);
 
             UpdatePlanes();
         }
         /// Define with orthographic projection parameters and a transform matrix.
         public void DefineOrtho(float orthoSize, float aspectRatio, float zoom, float nearZ, float farZ, in Matrix3x4? transformation = null)
         {
-            planes_ = new Plane[NumPlanes];
-            vertices_ = new Vector3[NumVertices];
+            Planes = new Plane[NumPlanes];
+            Vertices = new Vector3[NumVertices];
 
             var transform = transformation.GetValueOrDefault(Matrix3x4.Identity);
 
@@ -121,8 +121,8 @@ namespace Urho3DNet
         /// Define a split (limited) frustum from a projection matrix, with near & far distances specified.
         public void DefineSplit(in Matrix4 projection, float near, float far)
         {
-            planes_ = new Plane[NumPlanes];
-            vertices_ = new Vector3[NumVertices];
+            Planes = new Plane[NumPlanes];
+            Vertices = new Vector3[NumVertices];
 
             Matrix4 projInverse = projection.Inverted();
 
@@ -132,30 +132,30 @@ namespace Urho3DNet
             float nearZ = nearTemp.Z / nearTemp.W;
             float farZ = farTemp.Z / farTemp.W;
 
-            vertices_[0] = projInverse * new Vector3(1.0f, 1.0f, nearZ);
-            vertices_[1] = projInverse * new Vector3(1.0f, -1.0f, nearZ);
-            vertices_[2] = projInverse * new Vector3(-1.0f, -1.0f, nearZ);
-            vertices_[3] = projInverse * new Vector3(-1.0f, 1.0f, nearZ);
-            vertices_[4] = projInverse * new Vector3(1.0f, 1.0f, farZ);
-            vertices_[5] = projInverse * new Vector3(1.0f, -1.0f, farZ);
-            vertices_[6] = projInverse * new Vector3(-1.0f, -1.0f, farZ);
-            vertices_[7] = projInverse * new Vector3(-1.0f, 1.0f, farZ);
+            Vertices[0] = projInverse * new Vector3(1.0f, 1.0f, nearZ);
+            Vertices[1] = projInverse * new Vector3(1.0f, -1.0f, nearZ);
+            Vertices[2] = projInverse * new Vector3(-1.0f, -1.0f, nearZ);
+            Vertices[3] = projInverse * new Vector3(-1.0f, 1.0f, nearZ);
+            Vertices[4] = projInverse * new Vector3(1.0f, 1.0f, farZ);
+            Vertices[5] = projInverse * new Vector3(1.0f, -1.0f, farZ);
+            Vertices[6] = projInverse * new Vector3(-1.0f, -1.0f, farZ);
+            Vertices[7] = projInverse * new Vector3(-1.0f, 1.0f, farZ);
 
             UpdatePlanes();
         }
         /// Transform by a 3x3 matrix.
         public void Transform(in Matrix3 transform)
         {
-            for (var i = 0; i < vertices_.Length; i++)
-                vertices_[i] = transform * vertices_[i];
+            for (var i = 0; i < Vertices.Length; i++)
+                Vertices[i] = transform * Vertices[i];
 
             UpdatePlanes();
         }
         /// Transform by a 3x4 matrix.
         public void Transform(in Matrix3x4 transform)
         {
-            for (var i = 0; i < vertices_.Length; i++)
-                vertices_[i] = transform * vertices_[i];
+            for (var i = 0; i < Vertices.Length; i++)
+                Vertices[i] = transform * Vertices[i];
 
             UpdatePlanes();
         }
@@ -163,7 +163,7 @@ namespace Urho3DNet
         /// Test if a point is inside or outside.
         public Intersection IsInside(in Vector3 point)
         {
-            foreach (var plane in planes_)
+            foreach (var plane in Planes)
             {
                 if (plane.Distance(point) < 0.0f)
                     return Intersection.Outside;
@@ -176,7 +176,7 @@ namespace Urho3DNet
         public Intersection IsInside(in Sphere sphere)
         {
             bool allInside = true;
-            foreach (var plane in planes_)
+            foreach (var plane in Planes)
             {
                 float dist = plane.Distance(sphere.Center);
                 if (dist < -sphere.Radius)
@@ -191,7 +191,7 @@ namespace Urho3DNet
         /// Test if a sphere if (partially) inside or outside.
         public Intersection IsInsideFast(in Sphere sphere)
         {
-            foreach (var plane in planes_)
+            foreach (var plane in Planes)
             {
                 if (plane.Distance(sphere.Center) < -sphere.Radius)
                     return Intersection.Outside;
@@ -207,7 +207,7 @@ namespace Urho3DNet
             Vector3 edge = center - box.Min;
             bool allInside = true;
 
-            foreach (var plane in planes_)
+            foreach (var plane in Planes)
             {
                 float dist = plane.Normal.DotProduct(center) + plane.D;
                 float absDist = plane.AbsNormal.DotProduct(edge);
@@ -227,7 +227,7 @@ namespace Urho3DNet
             Vector3 center = box.Center;
             Vector3 edge = center - box.Min;
 
-            foreach (var plane in planes_)
+            foreach (var plane in Planes)
             {
                 float dist = plane.Normal.DotProduct(center) + plane.D;
                 float absDist = plane.AbsNormal.DotProduct(edge);
@@ -243,7 +243,7 @@ namespace Urho3DNet
         public float Distance(in Vector3 point)
         {
             float distance = 0.0f;
-            foreach (var plane in planes_)
+            foreach (var plane in Planes)
                 distance = Math.Max(-plane.Distance(point), distance);
 
             return distance;
@@ -254,7 +254,7 @@ namespace Urho3DNet
         {
             Frustum transformed = new Frustum();
             for (var i = 0; i < NumVertices; ++i)
-                transformed.vertices_[i] = transform * vertices_[i];
+                transformed.Vertices[i] = transform * Vertices[i];
 
             transformed.UpdatePlanes();
             return transformed;
@@ -264,7 +264,7 @@ namespace Urho3DNet
         {
             Frustum transformed = new Frustum();
             for (var i = 0; i < NumVertices; ++i)
-                transformed.vertices_[i] = transform * vertices_[i];
+                transformed.Vertices[i] = transform * Vertices[i];
 
             transformed.UpdatePlanes();
             return transformed;
@@ -303,45 +303,45 @@ namespace Urho3DNet
         {
             Rect rect = new Rect();
 
-            ProjectAndMergeEdge(vertices_[0], vertices_[4], ref rect, projection);
-            ProjectAndMergeEdge(vertices_[1], vertices_[5], ref rect, projection);
-            ProjectAndMergeEdge(vertices_[2], vertices_[6], ref rect, projection);
-            ProjectAndMergeEdge(vertices_[3], vertices_[7], ref rect, projection);
-            ProjectAndMergeEdge(vertices_[4], vertices_[5], ref rect, projection);
-            ProjectAndMergeEdge(vertices_[5], vertices_[6], ref rect, projection);
-            ProjectAndMergeEdge(vertices_[6], vertices_[7], ref rect, projection);
-            ProjectAndMergeEdge(vertices_[7], vertices_[4], ref rect, projection);
+            ProjectAndMergeEdge(Vertices[0], Vertices[4], ref rect, projection);
+            ProjectAndMergeEdge(Vertices[1], Vertices[5], ref rect, projection);
+            ProjectAndMergeEdge(Vertices[2], Vertices[6], ref rect, projection);
+            ProjectAndMergeEdge(Vertices[3], Vertices[7], ref rect, projection);
+            ProjectAndMergeEdge(Vertices[4], Vertices[5], ref rect, projection);
+            ProjectAndMergeEdge(Vertices[5], Vertices[6], ref rect, projection);
+            ProjectAndMergeEdge(Vertices[6], Vertices[7], ref rect, projection);
+            ProjectAndMergeEdge(Vertices[7], Vertices[4], ref rect, projection);
 
             return rect;
         }
         /// Update the planes. Called internally.
         public void UpdatePlanes()
         {
-            planes_[(int) FrustumPlane.Near].Define(vertices_[2], vertices_[1], vertices_[0]);
-            planes_[(int) FrustumPlane.Left].Define(vertices_[3], vertices_[7], vertices_[6]);
-            planes_[(int) FrustumPlane.Right].Define(vertices_[1], vertices_[5], vertices_[4]);
-            planes_[(int) FrustumPlane.Up].Define(vertices_[0], vertices_[4], vertices_[7]);
-            planes_[(int) FrustumPlane.Down].Define(vertices_[6], vertices_[5], vertices_[1]);
-            planes_[(int) FrustumPlane.Far].Define(vertices_[5], vertices_[6], vertices_[7]);
+            Planes[(int) FrustumPlane.Near].Define(Vertices[2], Vertices[1], Vertices[0]);
+            Planes[(int) FrustumPlane.Left].Define(Vertices[3], Vertices[7], Vertices[6]);
+            Planes[(int) FrustumPlane.Right].Define(Vertices[1], Vertices[5], Vertices[4]);
+            Planes[(int) FrustumPlane.Up].Define(Vertices[0], Vertices[4], Vertices[7]);
+            Planes[(int) FrustumPlane.Down].Define(Vertices[6], Vertices[5], Vertices[1]);
+            Planes[(int) FrustumPlane.Far].Define(Vertices[5], Vertices[6], Vertices[7]);
 
             // Check if we ended up with inverted planes (reflected transform) and flip in that case
-            if (planes_[(int) FrustumPlane.Near].Distance(vertices_[5]) < 0.0f)
+            if (Planes[(int) FrustumPlane.Near].Distance(Vertices[5]) < 0.0f)
             {
-                for (int i = 0; i < planes_.Length; i++)
+                for (int i = 0; i < Planes.Length; i++)
                 {
-                    var plane = planes_[i];
+                    var plane = Planes[i];
                     plane.Normal = -plane.Normal;
                     plane.D = -plane.D;
-                    planes_[i] = plane;
+                    Planes[i] = plane;
                 }
             }
         }
 
         /// Frustum planes.
-        [MarshalAs(UnmanagedType.LPArray, SizeConst = NumPlanes)]
-        public Plane[] planes_;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = NumPlanes)]
+        public Plane[] Planes;
         /// Frustum vertices.
-        [MarshalAs(UnmanagedType.LPArray, SizeConst = NumVertices)]
-        public Vector3[] vertices_;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = NumVertices)]
+        public Vector3[] Vertices;
     }
 }

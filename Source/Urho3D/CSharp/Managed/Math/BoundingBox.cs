@@ -173,7 +173,7 @@ namespace Urho3DNet
         public void Define(in Frustum frustum)
         {
             Clear();
-            Define(frustum.vertices_);
+            Define(frustum.Vertices);
         }
 
 //        /// Define from a polyhedron.
@@ -204,7 +204,7 @@ namespace Urho3DNet
         /// Merge a frustum.
         public void Merge(Frustum frustum)
         {
-            Merge(frustum.vertices_);
+            Merge(frustum.Vertices);
         }
 
 //        /// Merge a polyhedron.

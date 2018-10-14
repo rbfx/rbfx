@@ -94,7 +94,7 @@ namespace Urho3DNet
         /// Define from a frustum.
         public void Define(in Frustum frustum)
         {
-            Define(frustum.vertices_);
+            Define(frustum.Vertices);
         }
 //        /// Define from a polyhedron.
 //        public void Define(in Polyhedron poly)
@@ -148,7 +148,7 @@ namespace Urho3DNet
         /// Merge a frustum.
         public void Merge(in Frustum frustum)
         {
-            Merge(frustum.vertices_);
+            Merge(frustum.Vertices);
         }
 //        /// Merge a polyhedron.
 //        public void Merge(in Polyhedron poly)

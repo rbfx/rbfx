@@ -164,7 +164,7 @@ namespace Urho3DNet
             float minInside = float.PositiveInfinity;
             bool allInside = true;
 
-            foreach (var plane in frustum.planes_)
+            foreach (var plane in frustum.Planes)
             {
                 float distance = HitDistance(plane);
 
