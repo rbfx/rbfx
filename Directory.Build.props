@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net471</TargetFramework>
     <NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' == 'netstandard2.0' ">2.0.0</NetStandardImplicitPackageVersion>
+    <LangVersion>7.2</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetFramework)' == 'net471'">
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>

@@ -4,6 +4,7 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>CSharpProject</RootNamespace>
     <EnableDefaultCompileItems>False</EnableDefaultCompileItems>
+    <LangVersion>7.2</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../ThirdParty/imgui/ImGuiNet.csproj" />

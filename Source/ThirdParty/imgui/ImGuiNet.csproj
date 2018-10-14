@@ -2,6 +2,7 @@
   <PropertyGroup>
     <AssemblyName>ImGuiNet</AssemblyName>
     <OutputType>Library</OutputType>
+    <LangVersion>7.2</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
     <GeneratedCodePath>$(BuildDir)Source/ThirdParty/imgui</GeneratedCodePath>
