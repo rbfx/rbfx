@@ -52,7 +52,6 @@ class String;
         return str;
     }
     private delegate string CreateStringDelegate(string str);
-    private static CreateStringDelegate CreateStringDelegateInstance = new CreateStringDelegate(CreateString);
 }%}
 
 %wrapper %{

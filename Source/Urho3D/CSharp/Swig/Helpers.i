@@ -82,9 +82,11 @@ int strlen(const char* void_ptr_string);
 %pragma(csharp) imclasscode=%{
   static protected System.Delegate SWIG_CSharp##NAME##DelegateInstance = SWIG_CSharp##NAME##Helper.RegisterDelegate();
   internal partial struct SWIG_CSharp##NAME##Helper {
+    private static NAME##Delegate NAME##DelegateInstance;
     [global::System.Runtime.InteropServices.DllImport("$dllimport", EntryPoint="SWIGRegister" + #NAME + "Callback")]
     private static extern void SWIGRegister##NAME##Callback(System.Delegate fn);
     public static System.Delegate RegisterDelegate() {
+        NAME##DelegateInstance = new NAME##Delegate(NAME);
         SWIGRegister##NAME##Callback(NAME##DelegateInstance);
         return NAME##DelegateInstance;
     }

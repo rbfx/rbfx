@@ -4,12 +4,11 @@
 %define URHO3D_BINARY_COMPATIBLE_TYPE_EX(CS_TYPE, CPP_TYPE)
     %csexposefunc(wrapper, Create##CPP_TYPE, CPP_TYPE*, CPP_TYPE*) %{
         [return: global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.LPStruct)]
-        private static CS_TYPE Create##CPP_TYPE(ref CS_TYPE primitive)
+        private static CS_TYPE Create##CPP_TYPE(in CS_TYPE primitive)
         {
             return primitive;
         }
-        private delegate CS_TYPE Create##CPP_TYPE##Delegate(ref CS_TYPE primitive);
-        private static Create##CPP_TYPE##Delegate Create##CPP_TYPE##DelegateInstance = new Create##CPP_TYPE##Delegate(Create##CPP_TYPE);
+        private delegate CS_TYPE Create##CPP_TYPE##Delegate(in CS_TYPE primitive);
     }%}
 
     %ignore CPP_TYPE;

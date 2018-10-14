@@ -52,5 +52,4 @@
         System.GC.KeepAlive(newObject.Wrapper);
         return newObject.Handle;
     }
-    private static CreateObjectDelegate CreateObjectDelegateInstance = new CreateObjectDelegate(CreateObject);
 }%}
