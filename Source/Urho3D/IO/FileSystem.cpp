@@ -83,6 +83,8 @@ const char* SDL_IOS_GetDocumentsDir();
 namespace Urho3D
 {
 
+String specifiedExecutableFile;
+
 int DoSystemCommand(const String& commandLine, bool redirectToLog, Context* context)
 {
 #if defined(TVOS) || defined(IOS)
@@ -733,6 +735,9 @@ String FileSystem::GetProgramDir() const
 #if DESKTOP
 String FileSystem::GetProgramFileName() const
 {
+    if (!specifiedExecutableFile.Empty())
+        return specifiedExecutableFile;
+
 #if defined(_WIN32)
     wchar_t exeName[MAX_PATH];
     exeName[0] = 0;
@@ -752,9 +757,8 @@ String FileSystem::GetProgramFileName() const
     readlink(link.CString(), exeName, MAX_PATH);
     return String(exeName);
 #else
-#   error Not a desktop platform.
-#endif
     return String();
+#endif
 }
 #endif
 String FileSystem::GetUserDocumentsDir() const

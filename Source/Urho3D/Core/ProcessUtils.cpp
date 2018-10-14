@@ -118,6 +118,7 @@ static bool consoleOpened = false;
 static String currentLine;
 static Vector<String> arguments;
 static String miniDumpDir;
+extern String specifiedExecutableFile;
 
 #if defined(IOS)
 static void GetCPUData(host_basic_info_data_t* data)
@@ -283,10 +284,7 @@ const Vector<String>& ParseArguments(const String& cmdLine, bool skipFirstArgume
             {
                 inCmd = false;
                 cmdEnd = i;
-                // Do not store the first argument (executable name)
-                if (!skipFirstArgument)
-                    arguments.Push(cmdLine.Substring(cmdStart, cmdEnd - cmdStart));
-                skipFirstArgument = false;
+                arguments.Push(cmdLine.Substring(cmdStart, cmdEnd - cmdStart));
             }
         }
         else
@@ -308,6 +306,12 @@ const Vector<String>& ParseArguments(const String& cmdLine, bool skipFirstArgume
     // Strip double quotes from the arguments
     for (unsigned i = 0; i < arguments.Size(); ++i)
         arguments[i].Replace("\"", "");
+
+    specifiedExecutableFile = arguments[0];
+
+    // Do not store the first argument (executable name)
+    if (skipFirstArgument && !arguments.Empty())
+        arguments.Erase(arguments.Begin());
 
     return arguments;
 }
