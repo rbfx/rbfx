@@ -23,6 +23,8 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(BuildDir)' != '' ">
     <BaseOutputPath>$(BuildDir)bin/</BaseOutputPath>
+    <OutDir>$(BaseOutputPath)</OutDir>
+    <OutputPath>$(BaseOutputPath)</OutputPath>
     <BaseIntermediateOutputPath>$(BuildDir)obj/</BaseIntermediateOutputPath>
   </PropertyGroup>
 </Project>
