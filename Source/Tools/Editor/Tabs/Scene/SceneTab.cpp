@@ -722,8 +722,21 @@ void SceneTab::RenderNodeTree(Node* node)
             // Do not use element->GetChildren() because child may be deleted during this loop.
             PODVector<Node*> children;
             node->GetChildren(children);
-            for (Node* child: children)
+            for (Node* child : children) 
+            {
+                // ensure the tree is expanded to the currently selected node if there is one node selected.
+                if (GetSelection().Size() == 1)
+                {
+                    for (auto selectedNode : GetSelection()) 
+                    {
+                        if(selectedNode->IsChildOf(child))
+                            ui::SetNextTreeNodeOpen(true);
+                    }
+                }
+
+                //recursive call.
                 RenderNodeTree(child);
+            }
         }
         ui::TreePop();
     }
