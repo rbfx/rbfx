@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
+  <PropertyGroup>
+    <AssemblyName>104_CSharpPlugin</AssemblyName>
+    <RootNamespace>CSharpPlugin</RootNamespace>
+    <EnableDefaultCompileItems>False</EnableDefaultCompileItems>
+    <LangVersion>7.2</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../ThirdParty/imgui/ImGuiNet.csproj" />
+    <ProjectReference Include="../../Urho3D/CSharp/Urho3DNet.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="*.cs" />
+  </ItemGroup>
+</Project>

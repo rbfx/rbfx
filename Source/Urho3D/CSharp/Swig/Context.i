@@ -41,6 +41,7 @@
 %inheritable(Urho3D, Animatable);
 %inheritable(Urho3D, Component);
 %inheritable(Urho3D, LogicComponent);
+%inheritable(Urho3D, PluginApplication);
 
 %wrapper %{  }  // end of RegisterDirectorFactories%}
 

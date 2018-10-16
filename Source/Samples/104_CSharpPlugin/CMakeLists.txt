@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018 Rokas Kupstys
+# Copyright (c) 2008-2018 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,26 +20,8 @@
 # THE SOFTWARE.
 #
 
-if (NOT URHO3D_SYSTEMUI)
+if (NOT URHO3D_CSHARP)
     return ()
 endif ()
 
-file (GLOB_RECURSE SOURCE_FILES *.cpp *.h *.hpp)
-
-if (URHO3D_CSHARP AND URHO3D_PLUGINS)
-    # Use C# executable to host .net runtime and load editor.
-    add_library (Editor SHARED ${SOURCE_FILES})
-    add_target_csharp(EditorHost ${CMAKE_CURRENT_SOURCE_DIR}/EditorHost/EditorHost.csproj Urho3DNet)
-    configure_file(EditorHost/AssemblyInfo.cs.in ${CMAKE_CURRENT_BINARY_DIR}/AssemblyInfo.cs @ONLY)
-else ()
-    # No C# or pugins support, editor can be a true native executable.
-    if (NOT URHO3D_WIN32_CONSOLE)
-        set (TARGET_TYPE WIN32)
-    endif ()
-    add_executable (Editor ${TARGET_TYPE} ${SOURCE_FILES})
-endif ()
-target_link_libraries (Editor Toolbox Urho3D)
-install(TARGETS Editor
-    RUNTIME DESTINATION ${DEST_TOOLS_DIR}
-    LIBRARY DESTINATION ${DEST_TOOLS_DIR}
-)
+add_sample (104_CSharpPlugin CSHARP)

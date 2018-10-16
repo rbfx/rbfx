@@ -62,6 +62,8 @@ protected:
     PluginType type_ = PLUGIN_INVALID;
     /// Context of native plugin. Not initialized for managed plugins.
     cr_plugin nativeContext_{};
+    /// Flag indicating that plugin should unload on the end of the frame.
+    bool unloading_ = false;
 
     friend class PluginManager;
 };
@@ -75,7 +77,7 @@ public:
     /// Load a plugin and return true if succeeded.
     virtual Plugin* Load(const String& name);
     /// Unload a plugin and return true if succeeded.
-    virtual bool Unload(Plugin* plugin);
+    virtual void Unload(Plugin* plugin);
     /// Returns a loaded plugin with specified name.
     Plugin* GetPlugin(const String& name);
     /// Returns a vector containing all loaded plugins.

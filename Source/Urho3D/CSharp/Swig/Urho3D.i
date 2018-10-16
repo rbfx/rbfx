@@ -217,7 +217,9 @@ namespace SDL
 
 %ignore Urho3D::Application::engine_;
 %ignore Urho3D::Application::GetCommandLineParser;
+%ignore Urho3D::PluginMain;
 %include "Urho3D/Engine/Application.h"
+%include "Urho3D/Engine/PluginApplication.h"
 
 
 // --------------------------------------- Input ---------------------------------------

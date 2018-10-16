@@ -496,11 +496,11 @@ void Editor::RenderProjectPluginsMenu()
             // Native plugins will rename main file and append version after base name.
             continue;
 
-        if (baseName.EndsWith("CSharp"))
+        if (baseName.EndsWith("CSharp") || baseName.EndsWith("Net"))
             // Libraries for C# interop
             continue;
 
-        if (baseName == "Urho3D" || baseName == "Toolbox")
+        if (baseName == "Urho3D" || baseName == "Toolbox" || baseName == "Editor")
             // Internal engine libraries
             continue;
 
