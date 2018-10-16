@@ -298,7 +298,7 @@ if (URHO3D_CSHARP)
     endif ()
     include(UrhoSWIG)
 
-    if (WIN32)
+    if (NOT WIN32 OR URHO3D_WITH_MONO)
         find_package(Mono REQUIRED)
     endif ()
     find_program(MSBUILD msbuild PATHS /Library/Frameworks/Mono.framework/Versions/Current/bin ${MONO_PATH}/bin)
@@ -325,6 +325,27 @@ if (URHO3D_CSHARP)
     endif ()
 
     add_custom_target(NugetRestore COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${CSHARP_SOLUTION} /t:restore)
+
+    # Strong name signatures
+    find_program(SN sn PATHS PATHS /Library/Frameworks/Mono.framework/Versions/Current/bin ${MONO_PATH}/bin)
+    if (NOT SN)
+        message(FATAL_ERROR "sn coild not be found.")
+    endif ()
+    if (NOT EXISTS ${CMAKE_BINARY_DIR}/CSharp.snk)
+        execute_process(COMMAND ${SN} -k ${CMAKE_BINARY_DIR}/CSharp.snk)
+    endif ()
+    if (NOT EXISTS ${CMAKE_BINARY_DIR}/CSharp.snk.pub)
+        execute_process(COMMAND ${SN} -p ${CMAKE_BINARY_DIR}/CSharp.snk ${CMAKE_BINARY_DIR}/CSharp.snk.pub)
+    endif ()
+
+    execute_process(
+        COMMAND ${SN} -tp ${CMAKE_BINARY_DIR}/CSharp.snk.pub
+        OUTPUT_VARIABLE SNK_PUB_KEY
+    )
+    string(REGEX MATCH "Public [Kk]ey(.+)?:[0-9a-f\r\n]+\r?\n\r?\n" SNK_PUB_KEY "${SNK_PUB_KEY}")
+    string(REGEX REPLACE "Public [Kk]ey(.+)?:" "" SNK_PUB_KEY "${SNK_PUB_KEY}")
+    string(REGEX REPLACE "[ \r\n]+" "" SNK_PUB_KEY "${SNK_PUB_KEY}")
+    set(SNK_PUB_KEY "${SNK_PUB_KEY}" CACHE STRING "Public key for .NET assemblies" FORCE)
 endif()
 
 if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")

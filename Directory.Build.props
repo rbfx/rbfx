@@ -28,4 +28,8 @@
     <OutputPath>$(BaseOutputPath)</OutputPath>
     <BaseIntermediateOutputPath>$(BuildDir)obj/</BaseIntermediateOutputPath>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(BuildDir)/CSharp.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
 </Project>
