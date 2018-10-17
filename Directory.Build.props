@@ -3,6 +3,7 @@
     <TargetFramework>net471</TargetFramework>
     <NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' == 'netstandard2.0' ">2.0.0</NetStandardImplicitPackageVersion>
     <LangVersion>7.2</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetFramework)' == 'net471'">
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
@@ -10,20 +11,22 @@
     <RuntimeIdentifiers Condition=" '$(OS)' == 'Unix' ">linux-x64</RuntimeIdentifiers>
     <RuntimeIdentifiers Condition=" '$(OS)' == 'Windows_NT' ">win-x64</RuntimeIdentifiers>
     <RuntimeIdentifiers Condition=" '$(OS)' == 'OSX' ">osx.10.10-x64</RuntimeIdentifiers>
+    <BaseOutputPath>bin/</BaseOutputPath>
+    <BaseIntermediateOutputPath>obj/</BaseIntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup>
     <PlatformTarget Condition=" '$(PlatformTarget)' == '' ">x64</PlatformTarget>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
   </PropertyGroup>
-  <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(BuildDir)' == '' And '$(SolutionDir)' != '' ">
+  <PropertyGroup Condition=" '$(BuildDir)' == '' ">
     <BuildDir Condition=" '$(OS)' != 'Unix' ">$(SolutionDir)/</BuildDir>
     <BuildDir Condition=" '$(OS)' == 'Unix' ">$(SolutionDir)build/</BuildDir>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
+    <BaseOutputPath>$(BaseOutputPath)$(Configuration)/</BaseOutputPath>
+  </PropertyGroup>
   <PropertyGroup Condition=" '$(BuildDir)' != '' ">
-    <BaseOutputPath>$(BuildDir)bin/</BaseOutputPath>
+    <BaseOutputPath>$(BuildDir)$(BaseOutputPath)/</BaseOutputPath>
     <OutDir>$(BaseOutputPath)</OutDir>
     <OutputPath>$(BaseOutputPath)</OutputPath>
     <BaseIntermediateOutputPath>$(BuildDir)obj/</BaseIntermediateOutputPath>
