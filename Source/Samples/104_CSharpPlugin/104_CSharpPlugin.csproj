@@ -2,14 +2,13 @@
   <PropertyGroup>
     <AssemblyName>104_CSharpPlugin</AssemblyName>
     <RootNamespace>CSharpPlugin</RootNamespace>
-    <EnableDefaultCompileItems>False</EnableDefaultCompileItems>
     <LangVersion>7.2</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../ThirdParty/imgui/ImGuiNet.csproj" />
-    <ProjectReference Include="../../Urho3D/CSharp/Urho3DNet.csproj" />
+    <Compile Include="**/*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="*.cs" />
+    <ProjectReference Include="../../ThirdParty/imgui/ImGuiNet.csproj" />
+    <ProjectReference Include="../../Urho3D/CSharp/Urho3DNet.csproj" />
   </ItemGroup>
 </Project>

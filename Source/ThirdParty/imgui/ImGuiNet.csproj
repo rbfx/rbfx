@@ -8,6 +8,9 @@
     <GeneratedCodePath>$(BuildDir)Source/ThirdParty/imgui</GeneratedCodePath>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="**/*.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <BindingsSourceCode Include="$(GeneratedCodePath)/*.cs" />
     <Compile Include="@(BindingsSourceCode)" />
   </ItemGroup>
