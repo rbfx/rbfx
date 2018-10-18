@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) 2018 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -209,7 +209,7 @@ namespace EditorHost
 
         #region Interop
 
-        [DllImport("Editor", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("libEditor", CallingConvention = CallingConvention.Cdecl)]
         private static extern void SetManagedRuntimeInterface(in DomainManagerInterface @interface);
 
         private readonly DomainManagerInterface.LoadPluginDelegate _loadPluginDelegateRef;
@@ -291,7 +291,7 @@ namespace EditorHost
             new Program().Run(args);
         }
 
-        [DllImport("Editor", CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr StartMainThread(int argc, [MarshalAs(UnmanagedType.LPUTF8Str)]string[] argv);
+        [DllImport("libEditor", CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr StartMainThread(int argc, [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)]string[] argv);
     }
 }
