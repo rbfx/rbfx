@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (37_UIDrag)
+add_sample (TARGET 37_UIDrag)

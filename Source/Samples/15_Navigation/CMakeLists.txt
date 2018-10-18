@@ -24,4 +24,4 @@ if (NOT URHO3D_NAVIGATION)
     return ()
 endif ()
 
-add_sample (15_Navigation)
+add_sample (TARGET 15_Navigation)

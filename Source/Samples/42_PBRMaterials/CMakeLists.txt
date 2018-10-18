@@ -25,4 +25,4 @@ if (EMSCRIPTEN)
     return ()
 endif ()
 
-add_sample (42_PBRMaterials)
+add_sample (TARGET 42_PBRMaterials)

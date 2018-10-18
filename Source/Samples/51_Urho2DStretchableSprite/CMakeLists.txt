@@ -24,4 +24,4 @@ if (NOT URHO3D_URHO2D)
     return ()
 endif ()
 
-add_sample (51_Urho2DStretchableSprite)
+add_sample (TARGET 51_Urho2DStretchableSprite)

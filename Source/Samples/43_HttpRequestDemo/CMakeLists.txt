@@ -24,4 +24,4 @@ if (NOT URHO3D_NETWORK)
     return ()
 endif ()
 
-add_sample (43_HttpRequestDemo)
+add_sample (TARGET 43_HttpRequestDemo)

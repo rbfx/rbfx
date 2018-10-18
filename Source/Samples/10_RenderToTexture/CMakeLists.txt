@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (10_RenderToTexture)
+add_sample (TARGET 10_RenderToTexture)

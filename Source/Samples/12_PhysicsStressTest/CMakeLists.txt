@@ -24,4 +24,4 @@ if (NOT URHO3D_PHYSICS)
     return ()
 endif ()
 
-add_sample (12_PhysicsStressTest)
+add_sample (TARGET 12_PhysicsStressTest)

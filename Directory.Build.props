@@ -12,6 +12,8 @@
     <RuntimeIdentifiers Condition=" '$(OS)' == 'Unix' ">linux-x64</RuntimeIdentifiers>
     <RuntimeIdentifiers Condition=" '$(OS)' == 'Windows_NT' ">win-x64</RuntimeIdentifiers>
     <RuntimeIdentifiers Condition=" '$(OS)' == 'OSX' ">osx.10.10-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+  <PropertyGroup>
     <BaseOutputPath>bin/</BaseOutputPath>
     <BaseIntermediateOutputPath>obj/</BaseIntermediateOutputPath>
   </PropertyGroup>
@@ -28,9 +30,9 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(BuildDir)' != '' ">
     <BaseOutputPath>$(BuildDir)$(BaseOutputPath)/</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(BuildDir)$(BaseIntermediateOutputPath)/</BaseIntermediateOutputPath>
     <OutDir>$(BaseOutputPath)</OutDir>
     <OutputPath>$(BaseOutputPath)</OutputPath>
-    <BaseIntermediateOutputPath>$(BuildDir)obj/</BaseIntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>

@@ -25,4 +25,4 @@ if (NOT URHO3D_TASKS)
     return ()
 endif ()
 
-add_sample (101_Tasks)
+add_sample (TARGET 101_Tasks)

@@ -24,4 +24,4 @@ if (NOT URHO3D_PHYSICS)
     return ()
 endif ()
 
-add_sample (13_Ragdolls)
+add_sample (TARGET 13_Ragdolls)

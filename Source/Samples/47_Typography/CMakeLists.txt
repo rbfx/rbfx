@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (47_Typography)
+add_sample (TARGET 47_Typography)

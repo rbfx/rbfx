@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (30_LightAnimation)
+add_sample (TARGET 30_LightAnimation)

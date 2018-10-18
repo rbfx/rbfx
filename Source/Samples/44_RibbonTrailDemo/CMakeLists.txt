@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (44_RibbonTrailDemo)
+add_sample (TARGET 44_RibbonTrailDemo)

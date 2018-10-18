@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (08_Decals)
+add_sample (TARGET 08_Decals)

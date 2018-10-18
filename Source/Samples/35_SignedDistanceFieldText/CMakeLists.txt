@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (35_SignedDistanceFieldText)
+add_sample (TARGET 35_SignedDistanceFieldText)

@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (07_Billboards)
+add_sample (TARGET 07_Billboards)

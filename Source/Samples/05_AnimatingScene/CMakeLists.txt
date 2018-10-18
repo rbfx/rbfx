@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (05_AnimatingScene)
+add_sample (TARGET 05_AnimatingScene)

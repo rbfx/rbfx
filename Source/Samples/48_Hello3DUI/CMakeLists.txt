@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (48_Hello3DUI)
+add_sample (TARGET 48_Hello3DUI)

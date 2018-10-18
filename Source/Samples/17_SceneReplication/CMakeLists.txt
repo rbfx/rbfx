@@ -24,4 +24,4 @@ if (NOT URHO3D_NETWORK OR NOT URHO3D_PHYSICS)
     return ()
 endif ()
 
-add_sample (17_SceneReplication)
+add_sample (TARGET 17_SceneReplication)

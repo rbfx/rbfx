@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (06_SkeletalAnimation)
+add_sample (TARGET 06_SkeletalAnimation)

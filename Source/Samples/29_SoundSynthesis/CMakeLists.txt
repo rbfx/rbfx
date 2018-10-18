@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (29_SoundSynthesis)
+add_sample (TARGET 29_SoundSynthesis)

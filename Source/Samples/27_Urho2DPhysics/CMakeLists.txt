@@ -24,4 +24,4 @@ if (NOT URHO3D_URHO2D)
     return ()
 endif ()
 
-add_sample (27_Urho2DPhysics)
+add_sample (TARGET 27_Urho2DPhysics)

@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (09_MultipleViewports)
+add_sample (TARGET 09_MultipleViewports)

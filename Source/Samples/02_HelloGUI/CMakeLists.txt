@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (02_HelloGUI)
+add_sample (TARGET 02_HelloGUI)

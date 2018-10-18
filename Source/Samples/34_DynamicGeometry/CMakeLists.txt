@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (34_DynamicGeometry)
+add_sample (TARGET 34_DynamicGeometry)

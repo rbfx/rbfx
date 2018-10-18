@@ -24,4 +24,4 @@ if (NOT URHO3D_URHO2D)
     return ()
 endif ()
 
-add_sample (33_Urho2DSpriterAnimation)
+add_sample (TARGET 33_Urho2DSpriterAnimation)

@@ -24,4 +24,4 @@ if (NOT URHO3D_SYSTEMUI)
     return ()
 endif ()
 
-add_sample (100_HelloSystemUI)
+add_sample (TARGET 100_HelloSystemUI)

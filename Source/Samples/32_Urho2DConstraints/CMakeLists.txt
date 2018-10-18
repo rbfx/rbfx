@@ -24,4 +24,4 @@ if (NOT URHO3D_URHO2D)
     return ()
 endif ()
 
-add_sample (32_Urho2DConstraints)
+add_sample (TARGET 32_Urho2DConstraints)

@@ -24,4 +24,4 @@ if (NOT URHO3D_NETWORK)
     return ()
 endif ()
 
-add_sample (16_Chat)
+add_sample (TARGET 16_Chat)

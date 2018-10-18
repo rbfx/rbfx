@@ -24,4 +24,4 @@ if (NOT URHO3D_URHO2D)
     return ()
 endif ()
 
-add_sample (36_Urho2DTileMap)
+add_sample (TARGET 36_Urho2DTileMap)

@@ -24,4 +24,4 @@ if (NOT URHO3D_CSHARP)
     return ()
 endif ()
 
-add_sample (102_CSharpProject CSHARP)
+add_sample (TARGET 102_CSharpProject LANG CSHARP)

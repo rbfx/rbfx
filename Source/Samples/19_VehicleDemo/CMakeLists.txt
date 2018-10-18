@@ -24,4 +24,4 @@ if (NOT URHO3D_PHYSICS)
     return ()
 endif ()
 
-add_sample (19_VehicleDemo)
+add_sample (TARGET 19_VehicleDemo)

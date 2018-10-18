@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (40_Localization)
+add_sample (TARGET 40_Localization)

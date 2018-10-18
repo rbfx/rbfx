@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (01_HelloWorld)
+add_sample (TARGET 01_HelloWorld)

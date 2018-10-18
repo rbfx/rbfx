@@ -24,4 +24,4 @@ if (NOT URHO3D_TOOLS)
     return ()
 endif ()
 
-add_sample (103_GamePlugin SHARED)
+add_sample (TARGET 103_GamePlugin TYPE SHARED)

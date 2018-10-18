@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (04_StaticScene)
+add_sample (TARGET 04_StaticScene)

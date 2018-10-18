@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (38_SceneAndUILoad)
+add_sample (TARGET 38_SceneAndUILoad)

@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (31_MaterialAnimation)
+add_sample (TARGET 31_MaterialAnimation)

@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (23_Water)
+add_sample (TARGET 23_Water)

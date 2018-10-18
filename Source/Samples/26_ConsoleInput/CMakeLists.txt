@@ -24,4 +24,4 @@ if (NOT URHO3D_SYSTEMUI)
     return ()
 endif ()
 
-add_sample (26_ConsoleInput)
+add_sample (TARGET 26_ConsoleInput)

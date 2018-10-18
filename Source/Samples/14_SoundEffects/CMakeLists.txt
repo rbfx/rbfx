@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (14_SoundEffects)
+add_sample (TARGET 14_SoundEffects)

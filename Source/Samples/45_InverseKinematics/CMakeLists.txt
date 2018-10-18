@@ -24,4 +24,4 @@ if (NOT URHO3D_IK OR NOT URHO3D_PHYSICS)
     return ()
 endif ()
 
-add_sample (45_InverseKinematics)
+add_sample (TARGET 45_InverseKinematics)

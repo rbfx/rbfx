@@ -20,4 +20,4 @@
 # THE SOFTWARE.
 #
 
-add_sample (20_HugeObjectCount)
+add_sample (TARGET 20_HugeObjectCount)
