@@ -9,7 +9,9 @@
     if (cPtr == global::System.IntPtr.Zero)
       return null;
     return _instanceCache.GetOrAdd(cPtr, () => {
-      var type = $imclassname.SWIGTypeRegistry[$imclassname.$csclazznameSWIGTypeId(cPtr)];
+      global::System.Type type;
+      if (!$imclassname.SWIGTypeRegistry.TryGetValue($imclassname.$csclazznameSWIGTypeId(cPtr), out type))
+        type = typeof($csclassname);
       if (type == typeof($csclassname))
         return new $csclassname(cPtr, cMemoryOwn);
       return ($csclassname)global::System.Activator.CreateInstance(type, global::System.Reflection.BindingFlags.Instance|global::System.Reflection.BindingFlags.NonPublic|global::System.Reflection.BindingFlags.Public, null, new object[]{cPtr, cMemoryOwn}, null);
@@ -36,7 +38,9 @@
     if (cPtr == global::System.IntPtr.Zero)
       return null;
     return _instanceCache.GetOrAdd(cPtr, () => {
-      var type = $imclassname.SWIGTypeRegistry[$imclassname.$csclazznameSWIGTypeId(cPtr)];
+      global::System.Type type;
+      if (!$imclassname.SWIGTypeRegistry.TryGetValue($imclassname.$csclazznameSWIGTypeId(cPtr), out type))
+        type = typeof($csclassname);
       if (type == typeof($csclassname))
         return new $csclassname(cPtr, cMemoryOwn);
       return ($csclassname)global::System.Activator.CreateInstance(type, global::System.Reflection.BindingFlags.Instance|global::System.Reflection.BindingFlags.NonPublic|global::System.Reflection.BindingFlags.Public, null, new object[]{cPtr, cMemoryOwn}, null);

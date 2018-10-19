@@ -12,7 +12,9 @@
         if (cPtr == global::System.IntPtr.Zero)
           return null;
         return _instanceCache.GetOrAdd(cPtr, () => {
-          var type = $imclassname.SWIGTypeRegistry[$imclassname.$csclazznameSWIGTypeId(cPtr)];
+          global::System.Type type;
+          if (!$imclassname.SWIGTypeRegistry.TryGetValue($imclassname.$csclazznameSWIGTypeId(cPtr), out type))
+            type = typeof($csclassname);
           $csclassname result = null;
           if (type == typeof($csclassname))
             result = new $csclassname(cPtr, cMemoryOwn);
@@ -42,7 +44,9 @@
         if (cPtr == global::System.IntPtr.Zero)
           return null;
         return _instanceCache.GetOrAdd(cPtr, () => {
-          var type = $imclassname.SWIGTypeRegistry[$imclassname.$csclazznameSWIGTypeId(cPtr)];
+          global::System.Type type;
+          if (!$imclassname.SWIGTypeRegistry.TryGetValue($imclassname.$csclazznameSWIGTypeId(cPtr), out type))
+            type = typeof($csclassname);
           $csclassname result = null;
           if (type == typeof($csclassname))
             result = new $csclassname(cPtr, cMemoryOwn);
