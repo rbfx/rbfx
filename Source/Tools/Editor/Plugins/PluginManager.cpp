@@ -185,6 +185,8 @@ PluginType PluginManager::GetPluginType(const String& path)
 
             if (file.ReadUInt() != 0)
                 return PLUGIN_MANAGED;
+            else
+                return PLUGIN_NATIVE;
         }
     }
 
@@ -382,16 +384,19 @@ String PluginManager::NameToPath(const String& name) const
 
 String PluginManager::PathToName(const String& path)
 {
+#if !_WIN32
     if (path.EndsWith(platformDynamicLibrarySuffix))
     {
         String name = GetFileName(path);
 #if __linux__ || __APPLE__
         if (name.StartsWith("lib"))
             name = name.Substring(3);
-        return name;
 #endif
+        return name;
     }
-    else if (path.EndsWith(".dll"))
+    else
+#endif
+    if (path.EndsWith(".dll"))
         return GetFileName(path);
     return String::EMPTY;
 }
