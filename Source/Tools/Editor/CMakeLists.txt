@@ -31,7 +31,6 @@ if (URHO3D_CSHARP AND URHO3D_PLUGINS)
     set (CMAKE_SHARED_LIBRARY_PREFIX lib)
     add_library (Editor SHARED ${SOURCE_FILES})
     add_target_csharp(EditorHost ${CMAKE_CURRENT_SOURCE_DIR}/EditorHost/EditorHost.csproj Urho3DNet)
-    configure_file(EditorHost/AssemblyInfo.cs.in ${CMAKE_CURRENT_BINARY_DIR}/AssemblyInfo.cs @ONLY)
 else ()
     # No C# or pugins support, editor can be a true native executable.
     if (NOT URHO3D_WIN32_CONSOLE)

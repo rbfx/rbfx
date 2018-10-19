@@ -1,4 +1,0 @@
-using System.Reflection;
-using System.Runtime.CompilerServices;
-
-[assembly: AssemblyKeyFileAttribute("@CMAKE_BINARY_DIR@/CSharp.snk")]
