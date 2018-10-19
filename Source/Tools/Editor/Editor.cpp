@@ -312,9 +312,9 @@ void Editor::RenderMenuBar()
                 ui::EndMenu();
             }
 
+#if URHO3D_PROFILING
             if (ui::BeginMenu("Tools"))
             {
-#if URHO3D_PROFILING
                 if (ui::MenuItem("Profiler"))
                 {
                     GetFileSystem()->SystemSpawn(GetFileSystem()->GetProgramDir() + "Profiler"
@@ -323,9 +323,9 @@ void Editor::RenderMenuBar()
 #endif
                         , {});
                 }
-#endif
                 ui::EndMenu();
             }
+#endif
         }
 
         SendEvent(E_EDITORAPPLICATIONMENU);
