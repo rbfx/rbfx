@@ -86,7 +86,8 @@ namespace EditorHost
 
             AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += (sender, args) =>
             {
-                return Assembly.ReflectionOnlyLoadFrom(Path.Combine(Path.GetDirectoryName(args.RequestingAssembly.Location),
+                return Assembly.ReflectionOnlyLoadFrom(
+                    Path.Combine(Path.GetDirectoryName(args.RequestingAssembly.Location),
                     args.Name.Substring(0, args.Name.IndexOf(',')) + ".dll"));
             };
         }
@@ -224,11 +225,8 @@ namespace EditorHost
             try
             {
                 var assembly = Assembly.ReflectionOnlyLoadFrom(path);
-                foreach (var type in assembly.GetTypes())
-                {
-                    if (type.BaseType.FullName == pluginBaseName)
-                        return true;
-                }
+                var types = assembly.GetTypes();
+                return types.Any(type => type.BaseType?.FullName == pluginBaseName);
             }
             catch (Exception _)
             {

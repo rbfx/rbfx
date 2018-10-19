@@ -166,7 +166,7 @@ PluginType PluginManager::GetPluginType(const String& path)
         if (!file.Open(path, FILE_READ))
             return PLUGIN_INVALID;
 
-        if (file.ReadShort() == 0x5A4D)
+        if (file.ReadShort() == IMAGE_DOS_SIGNATURE)
         {
             String buf{};
             buf.Resize(file.GetSize());
@@ -193,14 +193,13 @@ PluginType PluginManager::GetPluginType(const String& path)
             {
                 // Verify that plugin has exported function named cr_main.
                 // Find section that contains EAT.
-                const auto& sections = reinterpret_cast<const IMAGE_SECTION_HEADER*>(&nt[1]);
+                const auto* section = IMAGE_FIRST_SECTION(nt);
                 uint32_t eatModifier = 0;
-                for (auto i = 0; i < nt->FileHeader.NumberOfSections; i++)
+                for (auto i = 0; i < nt->FileHeader.NumberOfSections; i++, section++)
                 {
-                    const auto& section = sections[i];
-                    if (eatDir.VirtualAddress >= section.VirtualAddress && eatDir.VirtualAddress < (section.VirtualAddress + section.SizeOfRawData))
+                    if (eatDir.VirtualAddress >= section->VirtualAddress && eatDir.VirtualAddress < (section->VirtualAddress + section->SizeOfRawData))
                     {
-                        eatModifier = section.VirtualAddress - section.PointerToRawData;
+                        eatModifier = section->VirtualAddress - section->PointerToRawData;
                         break;
                     }
                 }

@@ -158,7 +158,6 @@ typedef struct _IMAGE_OPTIONAL_HEADER {
     uint32_t    SizeOfUninitializedData;
     uint32_t    AddressOfEntryPoint;
     uint32_t    BaseOfCode;
-    uint32_t    BaseOfData;
 
     //
     // NT additional fields.
@@ -208,8 +207,15 @@ typedef struct _IMAGE_ROM_OPTIONAL_HEADER {
 #define IMAGE_SIZEOF_STD_OPTIONAL_HEADER      28
 #define IMAGE_SIZEOF_NT_OPTIONAL_HEADER      224
 
-#define IMAGE_NT_OPTIONAL_HDR_MAGIC        0x10b
+#define IMAGE_NT_OPTIONAL_HDR32_MAGIC      0x10b
+#define IMAGE_NT_OPTIONAL_HDR64_MAGIC      0x20b
 #define IMAGE_ROM_OPTIONAL_HDR_MAGIC       0x107
+
+#if _WIN64 || URHO3D_64BIT
+#define IMAGE_NT_OPTIONAL_HDR_MAGIC         IMAGE_NT_OPTIONAL_HDR64_MAGIC
+#else
+#define IMAGE_NT_OPTIONAL_HDR_MAGIC         IMAGE_NT_OPTIONAL_HDR32_MAGIC
+#endif
 
 typedef struct _IMAGE_NT_HEADERS {
     uint32_t Signature;
@@ -222,8 +228,9 @@ typedef struct _IMAGE_ROM_HEADERS {
     IMAGE_ROM_OPTIONAL_HEADER OptionalHeader;
 } IMAGE_ROM_HEADERS, *PIMAGE_ROM_HEADERS;
 
+#define FIELD_OFFSET(type, field)    ((std::uintptr_t)&(((type *)0)->field))
 #define IMAGE_FIRST_SECTION( ntheader ) ((PIMAGE_SECTION_HEADER)        \
-    ((uint32_t)ntheader +                                                  \
+    ((std::uintptr_t)ntheader +                                                  \
      FIELD_OFFSET( IMAGE_NT_HEADERS, OptionalHeader ) +                 \
      ((PIMAGE_NT_HEADERS)(ntheader))->FileHeader.SizeOfOptionalHeader   \
     ))
@@ -252,6 +259,10 @@ typedef struct _IMAGE_ROM_HEADERS {
 #define IMAGE_DIRECTORY_ENTRY_GLOBALPTR      8   // Machine Value (MIPS GP)
 #define IMAGE_DIRECTORY_ENTRY_TLS            9   // TLS Directory
 #define IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG   10   // Load Configuration Directory
+#define IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT  11   // Bound Import Directory in headers
+#define IMAGE_DIRECTORY_ENTRY_IAT           12   // Import Address Table
+#define IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT  13   // Delay Load Import Descriptors
+#define IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR 14  // COM Runtime descriptor
 
 //
 // Section header format.
@@ -584,9 +595,9 @@ typedef struct _IMAGE_EXPORT_DIRECTORY {
     uint32_t   Base;
     uint32_t   NumberOfFunctions;
     uint32_t   NumberOfNames;
-    uint32_t   *AddressOfFunctions;
-    uint32_t   *AddressOfNames;
-    uint32_t   *AddressOfNameOrdinals;
+    uint32_t   AddressOfFunctions;
+    uint32_t   AddressOfNames;
+    uint32_t   AddressOfNameOrdinals;
 } IMAGE_EXPORT_DIRECTORY, *PIMAGE_EXPORT_DIRECTORY;
 
 //
