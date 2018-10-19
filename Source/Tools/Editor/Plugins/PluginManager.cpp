@@ -149,6 +149,7 @@ PluginManager::PluginManager(Context* context)
 
 PluginType PluginManager::GetPluginType(const String& path)
 {
+#if URHO3D_PLUGINS
     // This function implements a naive check for plugin validity. Proper check would parse executable headers and look
     // for relevant exported function names.
     Context* context = reinterpret_cast<SystemUI*>(ui::GetIO().UserData)->GetContext();
@@ -246,9 +247,11 @@ PluginType PluginManager::GetPluginType(const String& path)
             const auto& netDir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
             if (netDir.VirtualAddress != 0)
             {
+#if URHO3D_CSHARP
                 // Verify that plugin has a class that inherits from PluginApplication.
                 if (managedInterface_.IsPlugin(managedInterface_.handle, path.CString()))
                     return PLUGIN_MANAGED;
+#endif
             }
             else if (eatDir.VirtualAddress > 0)
             {
@@ -280,7 +283,7 @@ PluginType PluginManager::GetPluginType(const String& path)
     {
         // TODO: MachO file support.
     }
-
+#endif
     return PLUGIN_INVALID;
 }
 
@@ -355,6 +358,7 @@ void PluginManager::OnEndFrame()
             SendEvent(E_EDITORUSERCODERELOADSTART);
             // Actual unload
             plugin->Unload();
+#if URHO3D_CSHARP
             if (plugin->type_ == PLUGIN_MANAGED)
             {
                 // Now load back all managed plugins except this one.
@@ -365,7 +369,7 @@ void PluginManager::OnEndFrame()
                     managedInterface_.LoadPlugin(managedInterface_.handle, plug->path_.CString());
                 }
             }
-
+#endif
             SendEvent(E_EDITORUSERCODERELOADEND);
             URHO3D_LOGINFOF("Plugin %s was unloaded.", plugin->name_.CString());
             it = plugins_.Erase(it);
