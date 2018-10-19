@@ -21,7 +21,12 @@
 //
 
 #include <regex>
-
+#include <Urho3D/Core/CoreEvents.h>
+#include <Urho3D/Core/WorkQueue.h>
+#include <Urho3D/Engine/EngineEvents.h>
+#include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/Resource/ResourceCache.h>
 #include "Editor.h"
 #include "AssetConverter.h"
 #include "ImportAssimp.h"
