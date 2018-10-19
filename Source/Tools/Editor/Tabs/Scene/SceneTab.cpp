@@ -1109,7 +1109,12 @@ void SceneTab::PasteToSelection()
     const auto& selection = GetSelection();
     PasteResult result;
     if (!selection.Empty())
-        result = clipboard_.Paste(selection);
+    {
+        if (selection.Size() == 1 && (selection[0]->GetParent() != nullptr))
+            result = clipboard_.Paste(selection[0]->GetParent());
+        else
+            result = clipboard_.Paste(selection);
+    }
     else
         result = clipboard_.Paste(GetScene());
 
