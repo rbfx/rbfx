@@ -37,6 +37,20 @@
 #if !_WIN32
 #   include "Plugins/PE.h"
 #endif
+#if __linux__
+#   include <elf.h>
+#   if URHO3D_64BIT
+using Elf_Ehdr = Elf64_Ehdr;
+using Elf_Phdr = Elf64_Phdr;
+using Elf_Shdr = Elf64_Shdr;
+using Elf_Sym = Elf64_Sym;
+#   else
+using Elf_Ehdr = Elf32_Ehdr;
+using Elf_Phdr = Elf32_Phdr;
+using Elf_Shdr = Elf32_Shdr;
+using Elf_Sym = Elf32_Sym;
+#   endif
+#endif
 
 namespace Urho3D
 {
@@ -146,17 +160,64 @@ PluginType PluginManager::GetPluginType(const String& path)
         if (!file.Open(path, FILE_READ))
             return PLUGIN_INVALID;
 
-        if (file.ReadUInt() == 0x464C457F)
+        String buf{};
+        buf.Resize(file.GetSize());
+        file.Seek(0);
+        file.Read(&buf[0], file.GetSize());
+        file.Close();
+
+        // Elf header parsing code based on elfdump by Owen Klan.
+        const auto base = reinterpret_cast<const char*>(buf.CString());
+        const auto hdr = reinterpret_cast<const Elf_Ehdr*>(base);
+        if (strncmp(reinterpret_cast<const char*>(hdr->e_ident), ELFMAG, SELFMAG) != 0)
+            // Not elf.
+            return PLUGIN_INVALID;
+
+        if (hdr->e_type != ET_DYN)
+            return PLUGIN_INVALID;
+
+        // Find symbol name table
+        const char* symNameTable = nullptr;
         {
-            file.Seek(0);
-            String buf{ };
-            buf.Resize(file.GetSize());
-            file.Read(&buf[0], file.GetSize());
-            auto pos = buf.Find("cr_main");
-            // Function names are preceeded with 0 in elf files.
-            // TODO: Proper analysis of elf file format.
-            if (pos != String::NPOS && buf[pos - 1] == 0)
-                return PLUGIN_NATIVE;
+            const Elf_Shdr* ptr = reinterpret_cast<const Elf_Shdr*>(base + hdr->e_shoff);
+
+            for (int i = 0; i < hdr->e_shstrndx; i++)
+                ptr++;
+
+            const char* nameTable = base + ptr->sh_offset;
+
+            ptr = reinterpret_cast<const Elf_Shdr*>(base + hdr->e_shoff);
+            for (auto i = 0; i < hdr->e_shnum; i++)
+            {
+                if (strncmp((nameTable + ptr->sh_name), ".strtab", 7) == 0)
+                {
+                    symNameTable = base + ptr->sh_offset;
+                    break;
+                }
+                else
+                    ptr++;
+            }
+        }
+
+        if (symNameTable == nullptr)
+            return PLUGIN_INVALID;
+
+        // Find cr_main symbol
+        {
+            const Elf_Shdr* sectab = reinterpret_cast<const Elf_Shdr*>(base + hdr->e_shoff);
+            const Elf_Shdr* ptr = sectab;
+            while (ptr->sh_type != SHT_SYMTAB)
+                ptr++;
+            const Elf_Shdr* sym_tab = reinterpret_cast<const Elf_Shdr*>(base + ptr->sh_offset);
+            const Elf_Sym* symbol = reinterpret_cast<const Elf_Sym*>(sym_tab);
+            auto num = ptr->sh_size / ptr->sh_entsize;
+            for (auto i = 0; i < num; i++)
+            {
+                const char* name = symNameTable + symbol->st_name;
+                if (strncmp(name, "cr_main", 7) == 0)
+                    return PLUGIN_NATIVE;
+                symbol++;
+            }
         }
     }
 #endif
