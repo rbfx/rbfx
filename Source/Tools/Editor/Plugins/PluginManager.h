@@ -91,10 +91,10 @@ public:
     void OnEndFrame();
     /// Converts relative or absolute plugin path to universal plugin name. Returns empty string on failure.
     static String PathToName(const String& path);
+    /// Checks specified file and recognizes it's plugin type.
+    static PluginType GetPluginType(const String& path);
 
 protected:
-    /// Checks specified file and recognizes it's plugin type.
-    PluginType GetPluginType(const String& path);
     /// Delete temporary files from binary directory.
     void CleanUp(String directory = String::EMPTY);
     /// Converts name to a full plugin file path. Returns empty string on error.

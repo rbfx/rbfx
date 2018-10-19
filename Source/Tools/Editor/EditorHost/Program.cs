@@ -46,12 +46,15 @@ namespace EditorHost
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate bool GetReloadingDelegate(IntPtr handle);
 
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate bool IsPluginDelegate(IntPtr handle, string path);
+
         public IntPtr handle;
 
-        [MarshalAs(UnmanagedType.FunctionPtr)]
-        public LoadPluginDelegate loadPlugin;
-        public SetReloadingDelegate setReloading;
-        public GetReloadingDelegate getReloading;
+        [MarshalAs(UnmanagedType.FunctionPtr)] public LoadPluginDelegate loadPlugin;
+        [MarshalAs(UnmanagedType.FunctionPtr)] public SetReloadingDelegate setReloading;
+        [MarshalAs(UnmanagedType.FunctionPtr)] public GetReloadingDelegate getReloading;
+        [MarshalAs(UnmanagedType.FunctionPtr)] public IsPluginDelegate isPlugin;
     }
 
     /// This class runs in a context of reloadable appdomain.
@@ -69,15 +72,23 @@ namespace EditorHost
             _loadPluginDelegateRef = NLoadPlugin;
             _setReloadingDelegateRef = NSetReloading;
             _getReloadingDelegateRef = NGetReloading;
+            _isPluginDelegateRef = NIsPlugin;
             _interface = new DomainManagerInterface
             {
                 handle = GCHandle.ToIntPtr(GCHandle.Alloc(this)),
                 loadPlugin = _loadPluginDelegateRef,
                 setReloading = _setReloadingDelegateRef,
                 getReloading = _getReloadingDelegateRef,
+                isPlugin = _isPluginDelegateRef,
             };
             SetManagedRuntimeInterface(_interface);
             Urho3DPINVOKE.DelegateRegistry.RefreshDelegatePointers();
+
+            AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += (sender, args) =>
+            {
+                return Assembly.ReflectionOnlyLoadFrom(Path.Combine(Path.GetDirectoryName(args.RequestingAssembly.Location),
+                    args.Name.Substring(0, args.Name.IndexOf(',')) + ".dll"));
+            };
         }
 
         public void Dispose()
@@ -207,6 +218,25 @@ namespace EditorHost
             return true;
         }
 
+        public bool IsPlugin(string path)
+        {
+            var pluginBaseName = typeof(PluginApplication).FullName;
+            try
+            {
+                var assembly = Assembly.ReflectionOnlyLoadFrom(path);
+                foreach (var type in assembly.GetTypes())
+                {
+                    if (type.BaseType.FullName == pluginBaseName)
+                        return true;
+                }
+            }
+            catch (Exception _)
+            {
+                return false;
+            }
+            return false;
+        }
+
         #region Interop
 
         [DllImport("libEditor", CallingConvention = CallingConvention.Cdecl)]
@@ -228,6 +258,12 @@ namespace EditorHost
         private static bool NGetReloading(IntPtr handle)
         {
             return ((DomainManager) GCHandle.FromIntPtr(handle).Target).Reloading;
+        }
+
+        private readonly DomainManagerInterface.IsPluginDelegate _isPluginDelegateRef;
+        private static bool NIsPlugin(IntPtr handle, [MarshalAs(UnmanagedType.LPUTF8Str)]string path)
+        {
+            return ((DomainManager)GCHandle.FromIntPtr(handle).Target).IsPlugin(path);
         }
 
         #endregion

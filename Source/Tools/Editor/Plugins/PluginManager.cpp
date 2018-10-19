@@ -33,9 +33,10 @@
 #include <Urho3D/IO/Log.h>
 #include <EditorEvents.h>
 #include "Editor.h"
-#include "PluginManager.h"
-#include "EditorEventsPrivate.h"
-
+#include "Plugins/PluginManager.h"
+#if !_WIN32
+#   include "Plugins/PE.h"
+#endif
 
 namespace Urho3D
 {
@@ -58,6 +59,7 @@ struct DomainManagerInterface
     bool(*LoadPlugin)(void* handle, const char* path);
     void(*SetReloading)(void* handle, bool reloading);
     bool(*GetReloading)(void* handle);
+    bool(*IsPlugin)(void* handle, const char* path);
 };
 
 static std::atomic_bool managedInterfaceSet{false};
@@ -133,17 +135,17 @@ PluginManager::PluginManager(Context* context)
 
 PluginType PluginManager::GetPluginType(const String& path)
 {
-    File file(context_);
-    if (!file.Open(path, FILE_READ))
-        return PLUGIN_INVALID;
-
     // This function implements a naive check for plugin validity. Proper check would parse executable headers and look
     // for relevant exported function names.
-
+    Context* context = reinterpret_cast<SystemUI*>(ui::GetIO().UserData)->GetContext();
 #if __linux__
     // ELF magic
     if (path.EndsWith(".so"))
     {
+        File file(context);
+        if (!file.Open(path, FILE_READ))
+            return PLUGIN_INVALID;
+
         if (file.ReadUInt() == 0x464C457F)
         {
             file.Seek(0);
@@ -152,41 +154,65 @@ PluginType PluginManager::GetPluginType(const String& path)
             file.Read(&buf[0], file.GetSize());
             auto pos = buf.Find("cr_main");
             // Function names are preceeded with 0 in elf files.
+            // TODO: Proper analysis of elf file format.
             if (pos != String::NPOS && buf[pos - 1] == 0)
                 return PLUGIN_NATIVE;
         }
     }
 #endif
-    file.Seek(0);
     if (path.EndsWith(".dll"))
     {
+        File file(context);
+        if (!file.Open(path, FILE_READ))
+            return PLUGIN_INVALID;
+
         if (file.ReadShort() == 0x5A4D)
         {
-#if _WIN32
-            // But only on windows we check if PE file is a native plugin
-            file.Seek(0);
             String buf{};
             buf.Resize(file.GetSize());
+            file.Seek(0);
             file.Read(&buf[0], file.GetSize());
-            auto pos = buf.Find("cr_main");
-            // Function names are preceeded with 2 byte hint which is preceeded with 0 in PE files.
-            if (pos != String::NPOS && buf[pos - 3] == 0)
-                return PLUGIN_NATIVE;
-#endif
-            // PE files are handled on all platforms because managed executables are PE files.
-            file.Seek(0x3C);
-            auto e_lfanew = file.ReadUInt();
-#if URHO3D_64BIT
-            const auto netMetadataRvaOffset = 0xF8;
-#else
-            const auto netMetadataRvaOffset = 0xE8;
-#endif
-            file.Seek(e_lfanew + netMetadataRvaOffset);  // Seek to .net metadata directory rva
+            file.Close();
 
-            if (file.ReadUInt() != 0)
-                return PLUGIN_MANAGED;
-            else
-                return PLUGIN_NATIVE;
+            const auto base = reinterpret_cast<const char*>(buf.CString());
+            const auto dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(base);
+            const auto nt = reinterpret_cast<const IMAGE_NT_HEADERS*>(base + dos->e_lfanew);
+
+            if (nt->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR_MAGIC)
+                return PLUGIN_INVALID;
+
+            const auto& eatDir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
+            const auto& netDir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
+            if (netDir.VirtualAddress != 0)
+            {
+                // Verify that plugin has a class that inherits from PluginApplication.
+                if (managedInterface_.IsPlugin(managedInterface_.handle, path.CString()))
+                    return PLUGIN_MANAGED;
+            }
+            else if (eatDir.VirtualAddress > 0)
+            {
+                // Verify that plugin has exported function named cr_main.
+                // Find section that contains EAT.
+                const auto& sections = reinterpret_cast<const IMAGE_SECTION_HEADER*>(&nt[1]);
+                uint32_t eatModifier = 0;
+                for (auto i = 0; i < nt->FileHeader.NumberOfSections; i++)
+                {
+                    const auto& section = sections[i];
+                    if (eatDir.VirtualAddress >= section.VirtualAddress && eatDir.VirtualAddress < (section.VirtualAddress + section.SizeOfRawData))
+                    {
+                        eatModifier = section.VirtualAddress - section.PointerToRawData;
+                        break;
+                    }
+                }
+
+                const auto eat = reinterpret_cast<const IMAGE_EXPORT_DIRECTORY*>(base + eatDir.VirtualAddress - eatModifier);
+                const auto names = reinterpret_cast<const uint32_t*>(base + eat->AddressOfNames - eatModifier);
+                for (auto i = 0; i < eat->NumberOfFunctions; i++)
+                {
+                    if (strcmp(base + names[i] - eatModifier, "cr_main") == 0)
+                        return PLUGIN_NATIVE;
+                }
+            }
         }
     }
 
