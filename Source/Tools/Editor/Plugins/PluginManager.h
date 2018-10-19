@@ -54,6 +54,9 @@ public:
     String GetName() const { return name_; }
 
 protected:
+    /// Unload plugin.
+    bool Unload();
+
     /// Base plugin file name.
     String name_;
     /// Path to plugin dynamic library file.
@@ -74,6 +77,8 @@ class PluginManager : public Object
 public:
     /// Construct.
     explicit PluginManager(Context* context);
+    /// Unload all plugins an destruct.
+    ~PluginManager();
     /// Load a plugin and return true if succeeded.
     virtual Plugin* Load(const String& name);
     /// Unload a plugin and return true if succeeded.

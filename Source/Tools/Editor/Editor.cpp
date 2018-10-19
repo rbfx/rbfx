@@ -184,6 +184,7 @@ void Editor::Start()
 void Editor::Stop()
 {
     CloseProject();
+    context_->RemoveSubsystem<WorkQueue>(); // Prevents deadlock when unloading plugin AppDomain in managed host.
 }
 
 void Editor::OnUpdate(VariantMap& args)

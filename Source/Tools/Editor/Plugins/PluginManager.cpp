@@ -24,6 +24,7 @@
 
 #define CR_HOST
 
+#include <atomic>
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/Thread.h>
 #include <Urho3D/Engine/PluginApplication.h>
@@ -59,45 +60,20 @@ struct DomainManagerInterface
     bool(*GetReloading)(void* handle);
 };
 
-static Mutex managedInterfaceLock;
+static std::atomic_bool managedInterfaceSet{false};
 static DomainManagerInterface managedInterface_;
 
-/// A native thread that will run editor when it is started from a .net loader executable.
-class EditorMainThread : public Thread
-{
-public:
-    EditorMainThread()
-    {
-        context_ = new Urho3D::Context();
-    }
+///
+extern "C" URHO3D_EXPORT_API void ParseArgumentsC(int argc, char** argv) { ParseArguments(argc, argv); }
 
-    void ThreadFunction() override
-    {
-        Thread::SetMainThread();
-        Urho3D::SharedPtr<Editor> application(new Editor(context_));
-        int exitCode = application->Run();
-        application = nullptr;
-        context_ = nullptr;
-        exit(exitCode);
-    }
-
-    Urho3D::SharedPtr<Urho3D::Context> context_;
-};
-
-/// Kick off editor main thread. Should be called only once.
-extern "C" URHO3D_EXPORT_API Context* StartMainThread(int argc, char** argv)
-{
-    Urho3D::ParseArguments(argc, argv);
-    static EditorMainThread mainThread;
-    mainThread.Run();
-    return mainThread.context_;
-}
+///
+extern "C" URHO3D_EXPORT_API Application* CreateEditorApplication(Context* context) { return new Editor(context); }
 
 /// Update a pointer to a struct that facilitates interop between native code and a .net runtime manager object. Will be called every time .net code is reloaded.
 extern "C" URHO3D_EXPORT_API void SetManagedRuntimeInterface(DomainManagerInterface* managedInterface)
 {
-    MutexLock lock(managedInterfaceLock);
     managedInterface_ = *managedInterface;
+    managedInterfaceSet = true;
 }
 
 #endif
@@ -105,6 +81,33 @@ extern "C" URHO3D_EXPORT_API void SetManagedRuntimeInterface(DomainManagerInterf
 Plugin::Plugin(Context* context)
     : Object(context)
 {
+}
+
+bool Plugin::Unload()
+{
+    if (type_ == PLUGIN_NATIVE)
+    {
+        cr_plugin_close(nativeContext_);
+        nativeContext_.userdata = nullptr;
+        return true;
+    }
+#if URHO3D_CSHARP
+    else if (type_ == PLUGIN_MANAGED)
+    {
+        // Managed plugin unloading requires to tear down entire AppDomain and recreate it. Instruct main .net thread to
+        // do that and wait.
+        managedInterfaceSet = false;
+        managedInterface_.SetReloading(managedInterface_.handle, true);
+        managedInterface_.handle = nullptr;
+
+        // Wait for AppDomain reload.
+        while (!managedInterfaceSet)
+            Time::Sleep(0);
+
+        return true;
+    }
+#endif
+    return false;
 }
 
 PluginManager::PluginManager(Context* context)
@@ -249,15 +252,6 @@ void PluginManager::Unload(Plugin* plugin)
         return;
     }
 
-#if URHO3D_WITH_MONO
-    // Managed plugin unloading/reloading is not supported due to https://github.com/mono/mono/issues/11170
-    if (plugin->type_ == PLUGIN_MANAGED)
-    {
-        URHO3D_LOGERROR("Unloading of managed plugins is not supported due to mono bug 11170.");
-        return;
-    }
-#endif
-
     plugin->unloading_ = true;
 }
 
@@ -271,30 +265,10 @@ void PluginManager::OnEndFrame()
         if (plugin->unloading_)
         {
             SendEvent(E_EDITORUSERCODERELOADSTART);
-            if (plugin->type_ == PLUGIN_NATIVE)
+            // Actual unload
+            plugin->Unload();
+            if (plugin->type_ == PLUGIN_MANAGED)
             {
-                cr_plugin_close(plugin->nativeContext_);
-                plugin->nativeContext_.userdata = nullptr;
-            }
-#if URHO3D_CSHARP
-            else if (plugin->type_ == PLUGIN_MANAGED)
-            {
-                // Managed plugin unloading requires to tear down entire AppDomain and recreate it. Instruct main .net thread to
-                // do that and wait.
-                managedInterfaceLock.Acquire();
-                managedInterface_.SetReloading(managedInterface_.handle, true);
-                managedInterface_.handle = nullptr;
-                managedInterfaceLock.Release();
-
-                // Wait for AppDomain reload.
-                for (;;)
-                {
-                    MutexLock lock(managedInterfaceLock);
-                    if (managedInterface_.handle != nullptr)
-                        break;                          // Reloading is done.
-                    Time::Sleep(30);
-                }
-
                 // Now load back all managed plugins except this one.
                 for (auto& plug : plugins_)
                 {
@@ -303,7 +277,7 @@ void PluginManager::OnEndFrame()
                     managedInterface_.LoadPlugin(managedInterface_.handle, plug->path_.CString());
                 }
             }
-#endif
+
             SendEvent(E_EDITORUSERCODERELOADEND);
             URHO3D_LOGINFOF("Plugin %s was unloaded.", plugin->name_.CString());
             it = plugins_.Erase(it);
@@ -420,6 +394,12 @@ String PluginManager::PathToName(const String& path)
     else if (path.EndsWith(".dll"))
         return GetFileName(path);
     return String::EMPTY;
+}
+
+PluginManager::~PluginManager()
+{
+    for (auto& plugin : plugins_)
+        plugin->Unload();
 }
 
 }
