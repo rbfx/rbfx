@@ -10,6 +10,7 @@
   <ItemGroup>
     <BindingsSourceCode Include="$(GeneratedCodePath)/*.cs" />
     <Compile Include="Managed/**/*.cs" />
+    <Compile Include="$(GeneratedCodePath)/Managed/**/*.cs" />
     <Compile Include="@(BindingsSourceCode)" />
   </ItemGroup>
   <Target Name="GatherBuildFiles" BeforeTargets="CoreCompile" Condition="'@(BindingsSourceCode)' == ''">

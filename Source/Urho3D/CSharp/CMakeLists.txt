@@ -21,4 +21,4 @@
 #
 
 csharp_bind_target(TARGET Urho3D)
-configure_file(Managed/AssemblyInfo.cs.in ${CMAKE_CURRENT_BINARY_DIR}/AssemblyInfo.cs @ONLY)
+configure_file(Managed/AssemblyInfo.cs.in ${CMAKE_CURRENT_BINARY_DIR}/Managed/AssemblyInfo.cs @ONLY)

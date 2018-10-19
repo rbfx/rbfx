@@ -23,7 +23,7 @@ using System;
 using Urho3DNet;
 using ImGuiNet;
 
-namespace CSharpEditorPlugin
+namespace CSharpPlugin
 {
     // Class can have any name, but it must inherit from PluginApplication.
     public class SamplePlugin : PluginApplication
