@@ -1129,6 +1129,18 @@ public static class E
     }
     public static ResourceRenamedEvent ResourceRenamed = new ResourceRenamedEvent();
 
+    public class CameraViewportResizedEvent {
+        private StringHash _event = new StringHash("CameraViewportResized");
+
+        public StringHash Camera = new StringHash("Camera");
+        public StringHash Viewport = new StringHash("Viewport");
+        public StringHash SizeNorm = new StringHash("SizeNorm");
+        public StringHash Size = new StringHash("Size");
+        public CameraViewportResizedEvent() { }
+        public static implicit operator StringHash(CameraViewportResizedEvent e) { return e._event; }
+    }
+    public static CameraViewportResizedEvent CameraViewportResized = new CameraViewportResizedEvent();
+
     public class SceneUpdateEvent {
         private StringHash _event = new StringHash("SceneUpdate");
 
