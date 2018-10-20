@@ -113,26 +113,6 @@ class Generator(object):
         trees = {}
         files = sorted(module.gather_files())
 
-        # Check if outputs are out of date
-        first_output_time = sys.maxsize
-        for pass_factory in pass_factories:
-            outputs = getattr(pass_factory, 'outputs', [])
-            for output in outputs:
-                full_output_path = os.path.join(module.args.output, output)
-                try:
-                    first_output_time = min(first_output_time, int(os.stat(full_output_path).st_mtime))
-                except FileNotFoundError:
-                    first_output_time = 0
-                    break
-
-        if first_output_time > 0:
-            for file_path in files:
-                if os.stat(file_path).st_mtime > first_output_time:
-                    break
-            else:
-                # All files are up to date
-                return
-
         for p in passes:
             p.on_begin()
             for file_path in files:
