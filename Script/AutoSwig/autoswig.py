@@ -547,7 +547,7 @@ class Urho3DModule(Module):
         self.exclude_headers = [re.compile(pattern, re.IGNORECASE) for pattern in self.exclude_headers]
 
     def register_passes(self, passes: list):
-        passes += [DefineConstantsPass]
+        passes += [DefineConstantsPass, DefineRefCountedPass, FindFlagEnums, CleanEnumValues, DefineEventsPass]
 
     def gather_files(self):
         yield os.path.join(self.args.input, '../ThirdParty/SDL/include/SDL/SDL_joystick.h')
