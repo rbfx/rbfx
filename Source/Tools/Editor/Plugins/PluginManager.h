@@ -25,6 +25,7 @@
 
 #if URHO3D_PLUGINS
 
+#include <atomic>
 #include <cr/cr.h>
 #include <Urho3D/Core/Object.h>
 
@@ -40,6 +41,22 @@ enum PluginType
     PLUGIN_NATIVE,
     /// A managed plugin.
     PLUGIN_MANAGED,
+};
+
+enum class ReloadStatus
+{
+    None,
+    ReloadRequest,
+    Reloading,
+};
+
+struct DomainManagerInterface
+{
+    void* handle;
+    bool(*LoadPlugin)(void* handle, const char* path);
+    void(*SetReloadStatus)(void* handle, ReloadStatus status);
+    ReloadStatus(*GetReloadStatus)(void* handle);
+    bool(*IsPlugin)(void* handle, const char* path);
 };
 
 class Plugin : public Object
@@ -102,6 +119,8 @@ protected:
 
     /// Loaded plugins.
     Vector<SharedPtr<Plugin>> plugins_;
+
+    friend class Plugin;
 };
 
 }

@@ -220,7 +220,9 @@ namespace SDL
 %ignore Urho3D::PluginMain;
 %include "Urho3D/Engine/Application.h"
 %include "Urho3D/Engine/PluginApplication.h"
-
+#if URHO3D_CSHARP
+%include "Urho3D/Script/Script.h"
+#endif
 
 // --------------------------------------- Input ---------------------------------------
 %typemap(csbase) Urho3D::MouseButton "uint"

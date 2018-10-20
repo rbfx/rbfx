@@ -28,72 +28,31 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
 using File = System.IO.File;
 using Urho3DNet;
 
 namespace EditorHost
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct DomainManagerInterface
-    {
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate bool LoadPluginDelegate(IntPtr handle, string path);
-
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void SetReloadingDelegate(IntPtr handle, bool reloading);
-
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate bool GetReloadingDelegate(IntPtr handle);
-
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate bool IsPluginDelegate(IntPtr handle, string path);
-
-        public IntPtr handle;
-
-        [MarshalAs(UnmanagedType.FunctionPtr)] public LoadPluginDelegate loadPlugin;
-        [MarshalAs(UnmanagedType.FunctionPtr)] public SetReloadingDelegate setReloading;
-        [MarshalAs(UnmanagedType.FunctionPtr)] public GetReloadingDelegate getReloading;
-        [MarshalAs(UnmanagedType.FunctionPtr)] public IsPluginDelegate isPlugin;
-    }
-
     /// This class runs in a context of reloadable appdomain.
     internal class DomainManager : MarshalByRefObject, IDisposable
     {
-        private DomainManagerInterface _interface;
         private Context _context;
-        private List<PluginApplication> _plugins = new List<PluginApplication>();
+        private readonly List<PluginApplication> _plugins = new List<PluginApplication>();
+        private readonly int _version;
 
-        public bool Reloading { get; protected set; }
-
-        public DomainManager(IntPtr contextPtr)
+        public DomainManager(int version, IntPtr contextPtr)
         {
+            _version = version;
             _context = Context.wrap(contextPtr, true);
-            _loadPluginDelegateRef = NLoadPlugin;
-            _setReloadingDelegateRef = NSetReloading;
-            _getReloadingDelegateRef = NGetReloading;
-            _isPluginDelegateRef = NIsPlugin;
-            _interface = new DomainManagerInterface
-            {
-                handle = GCHandle.ToIntPtr(GCHandle.Alloc(this)),
-                loadPlugin = _loadPluginDelegateRef,
-                setReloading = _setReloadingDelegateRef,
-                getReloading = _getReloadingDelegateRef,
-                isPlugin = _isPluginDelegateRef,
-            };
-            SetManagedRuntimeInterface(_interface);
-            Urho3DPINVOKE.DelegateRegistry.RefreshDelegatePointers();
 
-            AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += (sender, args) =>
-            {
-                return Assembly.ReflectionOnlyLoadFrom(
-                    Path.Combine(Path.GetDirectoryName(args.RequestingAssembly.Location),
-                    args.Name.Substring(0, args.Name.IndexOf(',')) + ".dll"));
-            };
+            Urho3DPINVOKE.DelegateRegistry.RefreshDelegatePointers();
         }
 
         public void Dispose()
         {
+            _context.Dispose();
+            _context = null;
+
             foreach (var plugin in _plugins)
             {
                 plugin.Unload();
@@ -101,10 +60,6 @@ namespace EditorHost
             }
 
             _plugins.Clear();
-
-            GCHandle.FromIntPtr(_interface.handle).Free();
-            _interface.handle = IntPtr.Zero;
-            _context = null;
             GC.Collect(GC.MaxGeneration);
             GC.WaitForPendingFinalizers();
         }
@@ -114,12 +69,8 @@ namespace EditorHost
         {
             var fileDir = Path.GetDirectoryName(path);
             var fileName = Path.GetFileNameWithoutExtension(path);
-            for (int i = 0; ; i++)
-            {
-                path = $"{fileDir}{Path.DirectorySeparatorChar}{fileName}{i}.dll";
-                if (!File.Exists(path))
-                    return path;
-            }
+            path = $"{fileDir}{Path.DirectorySeparatorChar}{fileName}{_version}.dll";
+            return path;
         }
 
         private string VersionFile(string path)
@@ -218,8 +169,45 @@ namespace EditorHost
 
             return true;
         }
+    }
 
-        public bool IsPlugin(string path)
+    internal class Program
+    {
+        public static readonly string ProgramFile = new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath;
+        public static readonly string ProgramDirectory = Path.GetDirectoryName(ProgramFile);
+        private Context _context;
+        private int Version { get; set; } = -1;
+        private DomainManager _manager;
+        private AppDomain _pluginDomain;
+
+        public Program()
+        {
+
+            AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += (sender, args) => Assembly.ReflectionOnlyLoadFrom(
+                Path.Combine(ProgramDirectory, args.Name.Substring(0, args.Name.IndexOf(',')) + ".dll"));
+        }
+
+        private void LoadRuntime()
+        {
+            Version++;
+            var managerType = typeof(DomainManager);
+            Debug.Assert(_pluginDomain == null && _manager == null && managerType.FullName != null);
+            var domainName = AppDomain.CurrentDomain.FriendlyName.Replace(".", $"{Version}.");
+            _pluginDomain = AppDomain.CreateDomain(domainName);
+            _manager = _pluginDomain.CreateInstanceAndUnwrap(managerType.Assembly.FullName,
+                managerType.FullName, false, BindingFlags.Default, null,
+                new object[]{Version, Context.getCPtr(_context).Handle}, null, null) as DomainManager;
+        }
+
+        private void UnloadRuntime()
+        {
+            _manager.Dispose();
+            _manager = null;
+            AppDomain.Unload(_pluginDomain);    // TODO: This may fail.
+            _pluginDomain = null;
+        }
+
+        private static bool IsPlugin(string path)
         {
             var pluginBaseName = typeof(PluginApplication).FullName;
             try
@@ -228,119 +216,61 @@ namespace EditorHost
                 var types = assembly.GetTypes();
                 return types.Any(type => type.BaseType?.FullName == pluginBaseName);
             }
-            catch (Exception _)
+            catch (Exception)
             {
                 return false;
             }
-            return false;
         }
 
-        #region Interop
-
-        [DllImport("libEditor", CallingConvention = CallingConvention.Cdecl)]
-        private static extern void SetManagedRuntimeInterface(in DomainManagerInterface @interface);
-
-        private readonly DomainManagerInterface.LoadPluginDelegate _loadPluginDelegateRef;
-        private static bool NLoadPlugin(IntPtr handle, [MarshalAs(UnmanagedType.LPUTF8Str)]string path)
+        /// Keeps delegate pointer alive.
+        private CommandHandlerDelegate _commandHandlerRef;
+        private IntPtr CommandHandler(ScriptRuntimeCommand command, IntPtr args)
         {
-            return ((DomainManager) GCHandle.FromIntPtr(handle).Target).LoadPlugin(path);
-        }
-
-        private readonly DomainManagerInterface.SetReloadingDelegate _setReloadingDelegateRef;
-        private static void NSetReloading(IntPtr handle, bool reloading)
-        {
-            ((DomainManager) GCHandle.FromIntPtr(handle).Target).Reloading = reloading;
-        }
-
-        private readonly DomainManagerInterface.GetReloadingDelegate _getReloadingDelegateRef;
-        private static bool NGetReloading(IntPtr handle)
-        {
-            return ((DomainManager) GCHandle.FromIntPtr(handle).Target).Reloading;
-        }
-
-        private readonly DomainManagerInterface.IsPluginDelegate _isPluginDelegateRef;
-        private static bool NIsPlugin(IntPtr handle, [MarshalAs(UnmanagedType.LPUTF8Str)]string path)
-        {
-            return ((DomainManager)GCHandle.FromIntPtr(handle).Target).IsPlugin(path);
-        }
-
-        #endregion
-    }
-
-    internal class Program
-    {
-        private HandleRef _contextPtr;
-        private int Version { get; set; }
-        private Thread _mainThread;
-
-        private AppDomain CreateDomain()
-        {
-            var domain = AppDomain.CreateDomain(AppDomain.CurrentDomain.FriendlyName.Replace(".", $"{++Version}."));
-            return domain;
-        }
-
-        private void CreateMainThread(string[] args)
-        {
-            var argc = args.Length + 1;                 // args + executable path
-            var argv = new string[args.Length + 2];     // args + executable path + null
-            var threadStarted = false;
-
-            // As per C spec first argv item must be a program name and item after the last one must be a null pointer.
-            argv[0] = new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath;
-            args.CopyTo(argv, 1);
-
-            _mainThread = new Thread(() =>
+            switch (command)
             {
-                ParseArgumentsC(argc, argv);
-                using (var context = new Context())
+                case ScriptRuntimeCommand.LoadRuntime:
+                    LoadRuntime();
+                    break;
+                case ScriptRuntimeCommand.UnloadRuntime:
+                    UnloadRuntime();
+                    break;
+                case ScriptRuntimeCommand.LoadAssembly:
                 {
-                    _contextPtr = Context.getCPtr(context);
-                    using (var editor = Application.wrap(CreateEditorApplication(_contextPtr.Handle), true))
-                    {
-                        threadStarted = true;
-                        Environment.ExitCode = editor.Run();
-                    }
+                    var path = Marshal.PtrToStringAnsi(Marshal.ReadIntPtr(args, 0));    // TODO: utf-8
+                    if (_manager.LoadPlugin(path))
+                        return Urho3D.ScriptCommandSuccess;
+                    break;
                 }
-            });
-            _mainThread.Start();
-            while (!threadStarted)
-                Thread.Sleep(60);
+                case ScriptRuntimeCommand.VerifyAssembly:
+                {
+                    var path = Marshal.PtrToStringAnsi(Marshal.ReadIntPtr(args, 0));    // TODO: utf-8
+                    if (IsPlugin(path))
+                        return Urho3D.ScriptCommandSuccess;
+                    break;
+                }
+            }
+            return Urho3D.ScriptCommandFailed;
         }
 
         private void Run(string[] args)
         {
-            var managerType = typeof(DomainManager);
-            if (managerType.FullName is null)
-                throw new ArgumentException("DomainManager.FullName is null");
+            var argc = args.Length + 1;                 // args + executable path
+            var argv = new string[args.Length + 2];     // args + executable path + null
+            argv[0] = ProgramFile;
+            args.CopyTo(argv, 1);
+            ParseArgumentsC(argc, argv);
 
-            CreateMainThread(args);
-
-            while (_mainThread.IsAlive)
+            using (_context = new Context())
             {
-                var executionDomain = CreateDomain();
-                var manager = executionDomain.CreateInstanceAndUnwrap(managerType.Assembly.FullName,
-                    managerType.FullName, false, BindingFlags.Default, null,
-                    new object[]{_contextPtr.Handle}, null, null) as DomainManager;
+                _commandHandlerRef = CommandHandler;
+                _context.RegisterSubsystem(new Script(_context));
+                _context.GetSubsystem<Script>().RegisterCommandHandler(
+                    (int) ScriptRuntimeCommand.LoadRuntime, (int) ScriptRuntimeCommand.VerifyAssembly,
+                    Marshal.GetFunctionPointerForDelegate(_commandHandlerRef));
 
-                if (manager is null)
-                    throw new NullReferenceException($"Failed creating {managerType.FullName}.");
-
-                while (!manager.Reloading && _mainThread.IsAlive)
-                    Thread.Sleep(100);
-
-                manager.Dispose();
-
-                for (;;)
+                using (var editor = Application.wrap(CreateEditorApplication(Context.getCPtr(_context).Handle), true))
                 {
-                    try
-                    {
-                        AppDomain.Unload(executionDomain);
-                        break;
-                    }
-                    catch (CannotUnloadAppDomainException)
-                    {
-                        Thread.Sleep(1000);
-                    }
+                    Environment.ExitCode = editor.Run();
                 }
             }
         }

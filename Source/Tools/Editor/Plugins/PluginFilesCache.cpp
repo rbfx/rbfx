@@ -48,7 +48,7 @@ const StringVector& PluginFilesCache::GetPluginNames()
             // Native plugins will rename main file and append version after base name.
             if (baseName.Empty() || IsDigit(static_cast<unsigned int>(baseName.Back())))
                 continue;
-            nameToPath[baseName] = *it;
+            nameToPath[baseName] = GetFileSystem()->GetProgramDir() + "/" + *it;
         }
 
         // Remove deleted plugins.

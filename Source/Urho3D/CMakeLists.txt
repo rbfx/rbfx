@@ -84,6 +84,10 @@ if (URHO3D_SYSTEMUI)
     define_engine_source_files (SystemUI)
 endif ()
 
+if (URHO3D_CSHARP)
+    define_engine_source_files (Script)
+endif ()
+
 # Group source code in VS solution
 group_sources()
 
