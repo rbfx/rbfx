@@ -55,6 +55,10 @@ using Elf_Sym = Elf32_Sym;
 namespace Urho3D
 {
 
+URHO3D_EVENT(E_ENDFRAMEPRIVATE, EndFramePrivate)
+{
+}
+
 #if __linux__
 static const char* platformDynamicLibrarySuffix = ".so";
 #elif _WIN32
@@ -130,7 +134,7 @@ PluginManager::PluginManager(Context* context)
     : Object(context)
 {
     CleanUp();
-    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { OnEndFrame(); });
+    SubscribeToEvent(E_ENDFRAMEPRIVATE, [this](StringHash, VariantMap&) { OnEndFrame(); });
     SubscribeToEvent(E_SIMULATIONSTART, [this](StringHash, VariantMap&) {
         for (auto& plugin : plugins_)
         {
