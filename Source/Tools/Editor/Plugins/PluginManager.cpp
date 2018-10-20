@@ -75,13 +75,8 @@ static const char* platformDynamicLibrarySuffix = ".dylib";
 #endif
 
 #if URHO3D_CSHARP && URHO3D_PLUGINS
-
-///
 extern "C" URHO3D_EXPORT_API void ParseArgumentsC(int argc, char** argv) { ParseArguments(argc, argv); }
-
-///
 extern "C" URHO3D_EXPORT_API Application* CreateEditorApplication(Context* context) { return new Editor(context); }
-
 #endif
 
 Plugin::Plugin(Context* context)
@@ -300,6 +295,7 @@ Plugin* PluginManager::Load(const String& name)
             plugin->nativeContext_.userdata = context_;
             plugin->name_ = name;
             plugin->path_ = pluginPath;
+            plugin->mtime_ = GetFileSystem()->GetLastModifiedTime(pluginPath);
             plugins_.Push(plugin);
             return plugin.Get();
         }
@@ -313,6 +309,7 @@ Plugin* PluginManager::Load(const String& name)
         {
             plugin->name_ = name;
             plugin->path_ = pluginPath;
+            plugin->mtime_ = GetFileSystem()->GetLastModifiedTime(pluginPath);
             plugins_.Push(plugin);
             return plugin.Get();
         }
@@ -340,10 +337,31 @@ void PluginManager::Unload(Plugin* plugin)
 void PluginManager::OnEndFrame()
 {
 #if URHO3D_PLUGINS
-    // Flag used to ensire that reload event was sent only once
-
 #if URHO3D_CSHARP
     Script* script = GetSubsystem<Script>();
+    // C# plugin auto-reloading.
+    bool reloadManagedRuntime = false;
+    for (auto it = plugins_.Begin(); it != plugins_.End() && !reloadManagedRuntime; it++)
+    {
+        Plugin* plugin = it->Get();
+        reloadManagedRuntime = plugin->type_ == PLUGIN_MANAGED &&
+                               plugin->mtime_ < GetFileSystem()->GetLastModifiedTime(plugin->path_);
+    }
+
+    if (reloadManagedRuntime)
+    {
+        script->UnloadRuntime();
+        script->LoadRuntime();
+        for (auto& plugin : plugins_)
+        {
+            if (plugin->type_ == PLUGIN_MANAGED)
+            {
+                plugin->mtime_ = GetFileSystem()->GetLastModifiedTime(plugin->path_);
+                script->LoadAssembly(plugin->path_);
+            }
+        }
+        URHO3D_LOGINFO("Managed plugins were reloaded.");
+    }
 #endif
 
     bool eventSent = false;

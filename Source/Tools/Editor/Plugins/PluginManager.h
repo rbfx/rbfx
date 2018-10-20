@@ -28,6 +28,7 @@
 #include <atomic>
 #include <cr/cr.h>
 #include <Urho3D/Core/Object.h>
+#include <Urho3D/IO/FileWatcher.h>
 
 namespace Urho3D
 {
@@ -84,6 +85,8 @@ protected:
     cr_plugin nativeContext_{};
     /// Flag indicating that plugin should unload on the end of the frame.
     bool unloading_ = false;
+    /// Last modification time.
+    unsigned mtime_;
 
     friend class PluginManager;
 };
