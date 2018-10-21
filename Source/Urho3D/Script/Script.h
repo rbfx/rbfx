@@ -27,6 +27,7 @@
 #include "../Container/HashSet.h"
 #include "../Container/Vector.h"
 #include "../Core/Object.h"
+#include "../Engine/PluginApplication.h"
 
 
 namespace Urho3D
@@ -58,7 +59,7 @@ public:
     /// Do not use.
     void RegisterCommandHandler(int first, int last, void* handler);
     /// Loads specified assembly into script runtime.
-    bool LoadAssembly(const String& path) { return Command(ScriptRuntimeCommand::LoadAssembly, path.CString()) == ScriptCommandSuccess; }
+    PluginApplication* LoadAssembly(const String& path) { return reinterpret_cast<PluginApplication*>(Command(ScriptRuntimeCommand::LoadAssembly, path.CString())); }
     /// Checks if specified assembly is loadable by script runtime.
     bool VerifyAssembly(const String& path) { return Command(ScriptRuntimeCommand::VerifyAssembly, path.CString()) == ScriptCommandSuccess; }
     ///
