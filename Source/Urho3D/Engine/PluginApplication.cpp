@@ -41,7 +41,7 @@ PluginApplication::~PluginApplication()
     }
 }
 
-int PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*),
+int PluginApplication::PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*),
     void(*destroyer)(PluginApplication*))
 {
     assert(ctx_);
@@ -53,6 +53,7 @@ int PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Contex
     {
         auto* context = static_cast<Context*>(ctx->userdata);
         auto* application = factory(context);
+        application->type_ = PLUGIN_NATIVE;
         application->Load();
         ctx->userdata = application;
         return 0;

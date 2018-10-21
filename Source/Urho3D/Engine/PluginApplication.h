@@ -29,6 +29,17 @@
 namespace Urho3D
 {
 
+/// Enumeration describing plugin file path status.
+enum PluginType
+{
+    /// Not a valid plugin.
+    PLUGIN_INVALID,
+    /// A native plugin.
+    PLUGIN_NATIVE,
+    /// A managed plugin.
+    PLUGIN_MANAGED,
+};
+
 /// Base class for creating plugins for Editor.
 class URHO3D_API PluginApplication : public Object
 {
@@ -50,10 +61,14 @@ public:
     template<typename T> void RegisterFactory();
     /// Register a factory for an object type and specify the object category.
     template<typename T> void RegisterFactory(const char* category);
+    /// Main function of native plugin.
+    static int PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*), void(*destroyer)(PluginApplication*));
 
 protected:
     /// Types registered with the engine. They will be unloaded when plugin is reloaded.
     PODVector<Pair<StringHash, const char*>> registeredTypes_;
+    /// Plugin type is set to PLUGIN_NATIVE in PluginMain(). Managed plugins however do not call this main function hence the default value.
+    PluginType type_ = PLUGIN_MANAGED;
 };
 
 template<typename T>
@@ -70,17 +85,13 @@ void PluginApplication::RegisterFactory(const char* category)
     registeredTypes_.Push({T::GetTypeStatic(), category});
 }
 
-/// Main function of the plugin.
-int URHO3D_API PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*),
-    void(*destroyer)(PluginApplication*));
-
 }
 
 /// Macro for defining entry point of editor plugin.
 #define URHO3D_DEFINE_PLUGIN_MAIN(Class)                                  \
     extern "C" URHO3D_EXPORT_API int cr_main(void* ctx, size_t operation) \
     {                                                                     \
-        return Urho3D::PluginMain(ctx, operation,                         \
+        return Urho3D::PluginApplication::PluginMain(ctx, operation,      \
             [](Urho3D::Context* context) -> Urho3D::PluginApplication* {  \
                 return new Class(context);                                \
             }, [](Urho3D::PluginApplication* plugin) {                    \
