@@ -160,7 +160,7 @@ bool ToolbarButton(const char* label)
 {
     auto& g = *ui::GetCurrentContext();
     float dimension = g.FontBaseSize + g.Style.FramePadding.y * 2.0f;
-    return ui::ButtonEx(label, {dimension, dimension}, ImGuiButtonFlags_PressedOnClick);
+    return ui::ButtonEx(label, {0, dimension}, ImGuiButtonFlags_PressedOnClick);
 }
 
 void SetHelpTooltip(const char* text, Key requireKey)
