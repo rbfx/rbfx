@@ -164,8 +164,13 @@ bool Project::LoadProject(const String& projectPath)
             if (root.Contains("plugins"))
             {
                 const auto& plugins = root["plugins"]->GetArray();
-                for (const auto& plugin : plugins)
-                    plugins_.Load(plugin.GetString());
+                for (const auto& pluginInfoValue : plugins)
+                {
+                    const JSONObject& pluginInfo = pluginInfoValue.GetObject();
+                    Plugin* plugin = plugins_.Load(pluginInfo["name"]->GetString());
+                    if (pluginInfo["private"]->GetBool())
+                        plugin->SetFlags(plugin->GetFlags() | PLUGIN_PRIVATE);
+                }
                 // Tick plugins once to ensure plugins are loaded before loading any possibly open scenes. This makes
                 // plugins register themselves with the engine so that loaded scenes can properly load components
                 // provided by plugins. Not doing this would cause scenes to load these components as UnknownComponent.
@@ -281,9 +286,14 @@ bool Project::SaveProject()
         {
             JSONArray plugins{};
             for (const auto& plugin : plugins_.GetPlugins())
-                plugins.Push(plugin->GetName());
+            {
+                plugins.Push(JSONObject{{"name",    plugin->GetName()},
+                                        {"private", plugin->GetFlags() & PLUGIN_PRIVATE ? true : false}});
+            }
             Sort(plugins.Begin(), plugins.End(), [](JSONValue& a, JSONValue& b) {
-                return a.GetString().Compare(b.GetString());
+                const String& nameA = a.GetObject()["name"]->GetString();
+                const String& nameB = b.GetObject()["name"]->GetString();
+                return nameA.Compare(nameB);
             });
             root["plugins"] = plugins;
         }

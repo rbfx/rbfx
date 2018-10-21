@@ -33,32 +33,12 @@
 namespace Urho3D
 {
 
-/// Enumeration describing plugin file path status.
-enum PluginType
+enum PluginFlag
 {
-    /// Not a valid plugin.
-    PLUGIN_INVALID,
-    /// A native plugin.
-    PLUGIN_NATIVE,
-    /// A managed plugin.
-    PLUGIN_MANAGED,
+    PLUGIN_DEFAULT = 0,
+    PLUGIN_PRIVATE = 1,
 };
-
-enum class ReloadStatus
-{
-    None,
-    ReloadRequest,
-    Reloading,
-};
-
-struct DomainManagerInterface
-{
-    void* handle;
-    bool(*LoadPlugin)(void* handle, const char* path);
-    void(*SetReloadStatus)(void* handle, ReloadStatus status);
-    ReloadStatus(*GetReloadStatus)(void* handle);
-    bool(*IsPlugin)(void* handle, const char* path);
-};
+URHO3D_FLAGSET(PluginFlag, PluginFlags);
 
 class Plugin : public Object
 {
@@ -70,6 +50,10 @@ public:
     PluginType GetPluginType() const { return type_; }
     /// Returns file name of plugin.
     String GetName() const { return name_; }
+    ///
+    PluginFlags GetFlags() const { return flags_; }
+    ///
+    void SetFlags(PluginFlags flags) { flags_ = flags; }
 
 protected:
     /// Unload plugin.
@@ -87,6 +71,8 @@ protected:
     bool unloading_ = false;
     /// Last modification time.
     unsigned mtime_;
+    ///
+    PluginFlags flags_ = PLUGIN_DEFAULT;
 
     friend class PluginManager;
 };

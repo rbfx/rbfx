@@ -304,11 +304,7 @@ void Editor::RenderMenuBar()
 
             if (ui::BeginMenu("Project"))
             {
-                if (ui::BeginMenu("Plugins"))
-                {
-                    RenderProjectPluginsMenu();
-                    ui::EndMenu();
-                }
+                RenderProjectMenu();
                 ui::EndMenu();
             }
 
@@ -482,7 +478,7 @@ void Editor::HandleHotkeys()
     }
 }
 
-void Editor::RenderProjectPluginsMenu()
+void Editor::RenderProjectMenu()
 {
     const StringVector& pluginNames = pluginFiles_.GetPluginNames();
     if (pluginNames.Size() == 0)
@@ -498,13 +494,33 @@ void Editor::RenderProjectPluginsMenu()
             PluginManager* plugins = project_->GetPlugins();
             Plugin* plugin = plugins->GetPlugin(baseName);
             bool loaded = plugin != nullptr;
-            if (ui::Checkbox(baseName.CString(), &loaded))
+            bool editorOnly = plugin && plugin->GetFlags() & PLUGIN_PRIVATE;
+
+            ui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
+            if (ui::EditorToolbarButton(ICON_FA_BATTERY_EMPTY, "Inactive", !loaded) && loaded)
+                plugins->Unload(plugin);
+
+            if (ui::EditorToolbarButton(ICON_FA_BATTERY_HALF, "Editor-only", loaded && editorOnly))
             {
-                if (loaded)
+                if (!loaded)
+                {
                     plugins->Load(baseName);
-                else
-                    plugins->Unload(plugin);
+                    plugin = plugins->GetPlugin(baseName);
+                }
+                plugin->SetFlags(plugin->GetFlags() | PLUGIN_PRIVATE);
             }
+            if (ui::EditorToolbarButton(ICON_FA_BATTERY_FULL, "Editor and Game", loaded && !editorOnly))
+            {
+                if (!loaded)
+                {
+                    plugins->Load(baseName);
+                    plugin = plugins->GetPlugin(baseName);
+                }
+                plugin->SetFlags(plugin->GetFlags() & ~PLUGIN_PRIVATE);
+            }
+            ui::PopStyleVar();
+            ui::SameLine();
+            ui::TextUnformatted(baseName.CString());
         }
     }
 }

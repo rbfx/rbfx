@@ -100,7 +100,7 @@ protected:
     /// Process any global hotkeys.
     void HandleHotkeys();
     /// Renders a project plugins submenu.
-    void RenderProjectPluginsMenu();
+    void RenderProjectMenu();
     ///
     void SetupSystemUI();
 
