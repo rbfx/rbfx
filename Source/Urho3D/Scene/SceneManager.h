@@ -30,13 +30,15 @@
 namespace Urho3D
 {
 
+class RenderSurface;
+
 /// Listens on various engine events and gathers useful information about scene. This component is used by internal tools.
-class URHO3D_API SceneMetadata : public Component
+class URHO3D_API SceneManager : public Component
 {
-    URHO3D_OBJECT(SceneMetadata, Component);
+    URHO3D_OBJECT(SceneManager, Component);
 public:
     /// Construct.
-    explicit SceneMetadata(Context* context);
+    explicit SceneManager(Context* context);
     /// Store component.
     void RegisterComponent(Component* component);
     /// Remove stored component.
@@ -44,7 +46,11 @@ public:
 
     /// Returns a list of existing CameraViewport components.
     const Vector<WeakPtr<CameraViewport>>& GetCameraViewportComponents() const { return viewportComponents_; }
-    
+    /// Active scene which owns this component and render it to the main screen.
+    void SetSceneActive();
+    /// Active scene which owns this component and render it to specified surface.
+    void SetSceneActive(RenderSurface* surface);
+
     /// Register object with the engine.
     static void RegisterObject(Context* context);
 

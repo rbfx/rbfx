@@ -21,36 +21,66 @@
 //
 
 #include "../Core/Context.h"
+#include "../Graphics/Renderer.h"
+#include "../Graphics/RenderSurface.h"
 #include "../Scene/Component.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
-#include "../Scene/SceneMetadata.h"
+#include "SceneManager.h"
 
 
 namespace Urho3D
 {
 
-SceneMetadata::SceneMetadata(Context* context)
+SceneManager::SceneManager(Context* context)
     : Component(context)
 {
     SetTemporary(true);
 }
 
-void SceneMetadata::RegisterComponent(Component* component)
+void SceneManager::RegisterComponent(Component* component)
 {
     if (auto* viewportComponent = component->Cast<CameraViewport>())
         viewportComponents_.Push(WeakPtr<CameraViewport>(viewportComponent));
 }
 
-void SceneMetadata::UnregisterComponent(Component* component)
+void SceneManager::UnregisterComponent(Component* component)
 {
     if (auto* viewportComponent = component->Cast<CameraViewport>())
         viewportComponents_.Remove(WeakPtr<CameraViewport>(viewportComponent));
 }
 
-void SceneMetadata::RegisterObject(Context* context)
+void SceneManager::RegisterObject(Context* context)
 {
-    context->RegisterFactory<SceneMetadata>();
+    context->RegisterFactory<SceneManager>();
+}
+
+void SceneManager::SetSceneActive()
+{
+    unsigned index = 0;
+    const auto& viewportComponents = GetCameraViewportComponents();
+    GetRenderer()->SetNumViewports(viewportComponents.Size());
+    for (const auto& cameraViewport : viewportComponents)
+    {
+        // Trigger resizing of underlying viewport
+        cameraViewport->SetNormalizedRect(cameraViewport->GetNormalizedRect());
+        cameraViewport->GetViewport()->SetDrawDebug(false);
+        GetRenderer()->SetViewport(index++, cameraViewport->GetViewport());
+    }
+}
+
+void SceneManager::SetSceneActive(RenderSurface* surface)
+{
+    unsigned index = 0;
+    const auto& viewportComponents = GetCameraViewportComponents();
+    surface->SetNumViewports(viewportComponents.Size());
+    for (const auto& cameraViewport : viewportComponents)
+    {
+        // Trigger resizing of underlying viewport
+        cameraViewport->SetNormalizedRect(cameraViewport->GetNormalizedRect());
+        cameraViewport->GetViewport()->SetDrawDebug(false);
+        surface->SetViewport(index++, cameraViewport->GetViewport());
+    }
 }
 
 }

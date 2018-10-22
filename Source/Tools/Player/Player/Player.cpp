@@ -38,7 +38,7 @@
 #endif
 #if __linux__
 #   include <dlfcn.h>
-#include <Urho3D/Scene/SceneMetadata.h>
+#include <Urho3D/Scene/SceneManager.h>
 
 
 #endif
@@ -147,21 +147,9 @@ void Player::Start()
         SharedPtr<XMLFile> sceneFile(GetCache()->GetResource<XMLFile>(projectRoot["default-scene"].GetString()));
         scene_->LoadXML(sceneFile->GetRoot());
 
-        // TODO: Can this be automatized by component?
         GetRenderer()->SetNumViewports(0);        // New scenes need all viewports cleared
-        if (auto* metadata = scene_->GetComponent<SceneMetadata>())
-        {
-            unsigned index = 0;
-            const auto& viewportComponents = metadata->GetCameraViewportComponents();
-            GetRenderer()->SetNumViewports(viewportComponents.Size());
-            for (const auto& cameraViewport : viewportComponents)
-            {
-                // Trigger resizing of underlying viewport
-                cameraViewport->SetNormalizedRect(cameraViewport->GetNormalizedRect());
-                cameraViewport->GetViewport()->SetDrawDebug(false);
-                GetRenderer()->SetViewport(index++, cameraViewport->GetViewport());
-            }
-        }
+        if (auto* manager = scene_->GetComponent<SceneManager>())
+            manager->SetSceneActive();
         else
             ErrorExit("Invalid scene.");
     }

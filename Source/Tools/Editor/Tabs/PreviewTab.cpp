@@ -30,7 +30,7 @@
 #include <Urho3D/Scene/SceneEvents.h>
 #include <Urho3D/Math/Color.h>
 #include <Urho3D/Scene/CameraViewport.h>
-#include <Urho3D/Scene/SceneMetadata.h>
+#include <Urho3D/Scene/SceneManager.h>
 #include <Urho3D/Core/Timer.h>
 #include <Toolbox/SystemUI/Widgets.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
@@ -69,9 +69,9 @@ PreviewTab::PreviewTab(Context* context)
         {
             if (resource->GetName().StartsWith("RenderPaths/") || resource->GetName().StartsWith("PostProcess/"))
             {
-                if (auto* metadata = sceneTab_->GetScene()->GetOrCreateComponent<SceneMetadata>())
+                if (auto* manager = sceneTab_->GetScene()->GetOrCreateComponent<SceneManager>())
                 {
-                    auto& viewportComponents = metadata->GetCameraViewportComponents();
+                    auto& viewportComponents = manager->GetCameraViewportComponents();
                     for (auto& component : viewportComponents)
                         component->RebuildRenderPath();
                     Clear();
@@ -158,20 +158,8 @@ void PreviewTab::UpdateViewports()
 
     if (RenderSurface* surface = view_->GetRenderSurface())
     {
-        surface->SetNumViewports(0);        // New scenes need all viewports cleared
-        if (auto* metadata = sceneTab_->GetScene()->GetComponent<SceneMetadata>())
-        {
-            unsigned index = 0;
-            const auto& viewportComponents = metadata->GetCameraViewportComponents();
-            surface->SetNumViewports(viewportComponents.Size());
-            for (const auto& cameraViewport : viewportComponents)
-            {
-                // Trigger resizing of underlying viewport
-                cameraViewport->SetNormalizedRect(cameraViewport->GetNormalizedRect());
-                cameraViewport->GetViewport()->SetDrawDebug(false);
-                surface->SetViewport(index++, cameraViewport->GetViewport());
-            }
-        }
+        if (auto* manager = sceneTab_->GetScene()->GetComponent<SceneManager>())
+            manager->SetSceneActive(surface);
     }
 }
 
