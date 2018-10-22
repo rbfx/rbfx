@@ -161,6 +161,7 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
     auto renameWidget = [&](const String& item, const String& icon) {
         if (selected == item && state.isEditing)
         {
+            ui::IdScope idScope("Rename");
             ui::TextUnformatted(icon.CString());
             ui::SameLine();
 
