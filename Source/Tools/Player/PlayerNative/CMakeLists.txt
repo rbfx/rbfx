@@ -20,10 +20,11 @@
 # THE SOFTWARE.
 #
 
-if (NOT URHO3D_PLUGINS)
-    return ()
-endif ()
-
-add_subdirectory(Common)
-
-add_subdirectory(PlayerNative)
+file (GLOB SOURCE_FILES *.cpp *.h)
+add_executable (PlayerNative ${SOURCE_FILES})
+target_link_libraries(PlayerNative Urho3D PlayerCommon cr)
+install(TARGETS PlayerNative
+    LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
+    RUNTIME DESTINATION ${DEST_BIN_DIR}
+    ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
+)
