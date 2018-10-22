@@ -330,9 +330,9 @@ if (URHO3D_CSHARP)
         set (CSHARP_SOLUTION ${Urho3D_SOURCE_DIR}/Urho3D.part.sln)
     endif ()
 
-    execute_process(COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${CSHARP_SOLUTION} /t:restore)
     if (NOT MSVC)
-        add_custom_target(NugetRestore COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${CSHARP_SOLUTION} /t:restore)
+        execute_process(COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${CSHARP_SOLUTION} /t:restore /m /consoleloggerparameters:ErrorsOnly)
+        add_custom_target(NugetRestore COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${CSHARP_SOLUTION} /t:restore /m /consoleloggerparameters:ErrorsOnly)
         set_property(TARGET NugetRestore PROPERTY EXCLUDE_FROM_ALL ON)
     endif ()
 
