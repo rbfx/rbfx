@@ -9,19 +9,6 @@
   <ItemGroup>
     <Compile Include="*.cs" />
   </ItemGroup>
-  <PropertyGroup>
-    <GeneratedCodePath>$(BuildDir)Source/Tools/Editor/</GeneratedCodePath>
-  </PropertyGroup>
-  <ItemGroup>
-    <ExtraSourceCode Include="$(GeneratedCodePath)/*.cs" />
-    <Compile Include="@(ExtraSourceCode)" />
-  </ItemGroup>
-  <Target Name="GatherBuildFiles" BeforeTargets="CoreCompile" Condition="'@(ExtraSourceCode)' == ''">
-    <ItemGroup>
-      <ExtraSourceCode Include="$([System.IO.Directory]::GetFiles(&quot;$(GeneratedCodePath)&quot;, &quot;*.cs&quot;))" />
-      <Compile Include="@(ExtraSourceCode)" />
-    </ItemGroup>
-  </Target>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Urho3D\CSharp\Urho3DNet.csproj" />
   </ItemGroup>
