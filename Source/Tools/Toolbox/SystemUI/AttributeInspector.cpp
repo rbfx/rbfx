@@ -437,7 +437,6 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         }
         case VAR_MATRIX3:
         {
-            ui::NewLine();
             auto& v = value.GetMatrix3();
             modified |= ui::DragFloat3("###m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
             ui::SetHelpTooltip("m0");
@@ -449,7 +448,6 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         }
         case VAR_MATRIX3X4:
         {
-            ui::NewLine();
             auto& v = value.GetMatrix3x4();
             modified |= ui::DragFloat4("###m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
             ui::SetHelpTooltip("m0");
@@ -461,7 +459,6 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         }
         case VAR_MATRIX4:
         {
-            ui::NewLine();
             auto& v = value.GetMatrix4();
             modified |= ui::DragFloat4("###m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
             ui::SetHelpTooltip("m0");
