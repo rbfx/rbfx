@@ -33,12 +33,11 @@ using namespace ui::litterals;
 namespace ImGui
 {
 
-const unsigned UISTATE_EXPIRATION_MS = 30000;
-
 struct UIStateWrapper
 {
     void Set(void* state, void(*deleter)(void*)=nullptr)
     {
+        lastUse_ = ui::GetCurrentContext()->FrameCount;
         state_ = state;
         deleter_ = deleter;
     }
@@ -51,16 +50,15 @@ struct UIStateWrapper
         deleter_ = nullptr;
     }
 
-    void* Get(bool keepAlive=true)
+    void* Get()
     {
-        if (keepAlive)
-            timer_.Reset();
+        lastUse_ = ui::GetCurrentContext()->FrameCount;
         return state_;
     }
 
     bool IsExpired()
     {
-        return timer_.GetMSec(false) >= UISTATE_EXPIRATION_MS;
+        return (ui::GetCurrentContext()->FrameCount - lastUse_) > 1;
     }
 
 protected:
@@ -68,11 +66,12 @@ protected:
     void* state_ = nullptr;
     /// Function that handles deleting state object when it becomes unused.
     void(*deleter_)(void* state) = nullptr;
-    /// Timer which determines when state expires.
-    Timer timer_;
+    /// Frame when value was last used.
+    int lastUse_ = 0;
 };
 
-HashMap<ImGuiID, UIStateWrapper> uiState_;
+static HashMap<ImGuiID, UIStateWrapper> uiState_;
+static int uiStateLastGcFrame_ = 0;
 
 void SetUIStateP(void* state, void(*deleter)(void*))
 {
@@ -88,12 +87,10 @@ void* GetUIStateP()
     if (it != uiState_.End())
         result = it->second_.Get();
 
-    // Every 30s check all saved states and remove expired ones.
-    static Timer gcTimer;
-    if (gcTimer.GetMSec(false) > UISTATE_EXPIRATION_MS)
+    int currentFrame = ui::GetCurrentContext()->FrameCount;
+    if (uiStateLastGcFrame_ != currentFrame)
     {
-        gcTimer.Reset();
-
+        uiStateLastGcFrame_ = currentFrame;
         for (auto jt = uiState_.Begin(); jt != uiState_.End();)
         {
             if (jt->second_.IsExpired())
