@@ -58,7 +58,6 @@ static std::string defaultProjectPath;
 
 Editor::Editor(Context* context)
     : Application(context)
-    , pluginFiles_(context)
 {
 }
 
@@ -482,7 +481,8 @@ void Editor::RenderProjectMenu()
 {
     if (ui::BeginMenu("Plugins"))
     {
-        const StringVector& pluginNames = pluginFiles_.GetPluginNames();
+        ui::PushID("Plugins");
+        const StringVector& pluginNames = GetPluginNames(context_);
         if (pluginNames.Size() == 0)
         {
             ui::TextUnformatted("No available files.");
@@ -525,6 +525,7 @@ void Editor::RenderProjectMenu()
                 ui::TextUnformatted(baseName.CString());
             }
         }
+        ui::PopID();    // Plugins
         ui::EndMenu();
     }
 

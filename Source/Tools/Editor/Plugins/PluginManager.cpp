@@ -31,9 +31,12 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Script/Script.h>
-#include <EditorEvents.h>
+#include <Toolbox/SystemUI/Widgets.h>
+#include "EditorEvents.h"
 #include "Editor.h"
 #include "Plugins/PluginManager.h"
+#include "PluginManager.h"
+
 
 namespace Urho3D
 {
@@ -364,6 +367,37 @@ PluginManager::~PluginManager()
     // Managed plugins can not be unloaded one at a time. Entire plugin AppDomain must be dropped.
     GetSubsystem<Script>()->UnloadRuntime();
 #endif
+}
+
+const StringVector& GetPluginNames(Context* context)
+{
+#if URHO3D_PLUGINS
+    StringVector* pluginNames = ui::GetUIState<StringVector>();
+
+    if (pluginNames->Empty())
+    {
+        FileSystem* fs = context->GetFileSystem();
+
+        StringVector files;
+        HashMap<String, String> nameToPath;
+        fs->ScanDir(files, fs->GetProgramDir(), "*.*", SCAN_FILES, false);
+        // Remove definitely not plugins.
+        for (auto it = files.Begin(); it != files.End(); ++it)
+        {
+            String baseName = PluginManager::PathToName(*it);
+            // Native plugins will rename main file and append version after base name.
+            if (baseName.Empty() || IsDigit(static_cast<unsigned int>(baseName.Back())))
+                continue;
+
+            String fullPath = fs->GetProgramDir() + "/" + *it;
+            if (GetPluginType(context, fullPath) == PLUGIN_INVALID)
+                continue;
+
+            pluginNames->Push(baseName);
+        }
+    }
+#endif
+    return *pluginNames;
 }
 
 }

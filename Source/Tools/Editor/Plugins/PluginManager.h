@@ -111,5 +111,8 @@ protected:
     friend class Plugin;
 };
 
+/// Returns list of sorted plugin names that exist in editor directory.
+const StringVector& GetPluginNames(Context* context);
+
 }
 #endif
