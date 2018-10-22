@@ -22,6 +22,8 @@
 
 file (GLOB SOURCE_FILES *.cpp *.h)
 if (URHO3D_CSHARP)
+    # Use C# executable to host .net runtime and load editor.
+    set (CMAKE_SHARED_LIBRARY_PREFIX lib)
     add_library (Player SHARED ${SOURCE_FILES})
 else ()
     add_executable (Player ${SOURCE_FILES})

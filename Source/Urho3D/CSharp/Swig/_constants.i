@@ -600,8 +600,8 @@
 %rename(TstateExecuting) TSTATE_EXECUTING;
 %rename(TstateFinished) TSTATE_FINISHED;
 %rename(TstateTerminate) TSTATE_TERMINATE;
-%ignore Urho3D::DEFAULT_TASK_SIZE;
-%constant unsigned int DefaultTaskSize = Urho3D::DEFAULT_TASK_SIZE;
+//%ignore Urho3D::DEFAULT_TASK_SIZE;
+//%constant unsigned int DefaultTaskSize = Urho3D::DEFAULT_TASK_SIZE;   // TODO: Fix in AutoSwig
 %rename(Context) Urho3D::Task::context_;
 %rename(Stack) Urho3D::Task::stack_;
 %rename(StackSize) Urho3D::Task::stackSize_;

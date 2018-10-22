@@ -21,6 +21,9 @@
 //
 #define CR_HOST
 #include <cr/cr.h>
+#if _WIN32
+#   undef GetObject
+#endif
 #include <../Common/PluginUtils.h>
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Core/StringUtils.h>
@@ -30,6 +33,7 @@
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLFile.h>
+#include <Urho3D/Scene/SceneManager.h>
 #if URHO3D_CSHARP
 #   include <Urho3D/Script/Script.h>
 #endif
@@ -38,9 +42,6 @@
 #endif
 #if __linux__
 #   include <dlfcn.h>
-#include <Urho3D/Scene/SceneManager.h>
-
-
 #endif
 #include "Player.h"
 
@@ -98,13 +99,15 @@ void Player::Start()
             continue;
 
         String pluginName = plugins[i]["name"].GetString();
+        String pluginFileName;
+        bool loaded = false;
+#if !_WIN32
         // Native plugins on unixes
 #if __linux__
-        String pluginFileName = "lib" + pluginName + ".so";
+        pluginFileName = "lib" + pluginName + ".so";
 #elif APPLE
-        String pluginFileName = "lib" + pluginName + ".dylib";
+        pluginFileName = "lib" + pluginName + ".dylib";
 #endif
-        bool loaded = false;
         if (GetFileSystem()->Exists(pluginFileName))
             loaded = LoadAssembly(pluginFileName);
         else
@@ -113,7 +116,7 @@ void Player::Start()
             if (GetFileSystem()->Exists(pluginFileName))
                 loaded = LoadAssembly(pluginFileName);
         }
-
+#endif
         // Native plugins on windows or managed plugins on all platforms
         if (!loaded)
         {
