@@ -22,6 +22,7 @@
 #define CR_HOST
 #include <cr/cr.h>
 #include <../Common/PluginUtils.h>
+#include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/Graphics/Renderer.h>
@@ -44,7 +45,14 @@
 #include "Player.h"
 
 
+#if URHO3D_CSHARP
+// Shared library build for execution by managed runtime.
+extern "C" URHO3D_EXPORT_API void ParseArgumentsC(int argc, char** argv) { Urho3D::ParseArguments(argc, argv); }
+extern "C" URHO3D_EXPORT_API Urho3D::Application* CreateApplication(Urho3D::Context* context) { return new Urho3D::Player(context); }
+#else
+// Native executable build for direct execution.
 URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::Player);
+#endif
 
 namespace Urho3D
 {

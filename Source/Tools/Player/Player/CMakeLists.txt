@@ -21,9 +21,13 @@
 #
 
 file (GLOB SOURCE_FILES *.cpp *.h)
-add_executable (PlayerNative ${SOURCE_FILES})
-target_link_libraries(PlayerNative Urho3D PlayerCommon cr)
-install(TARGETS PlayerNative
+if (URHO3D_CSHARP)
+    add_library (Player SHARED ${SOURCE_FILES})
+else ()
+    add_executable (Player ${SOURCE_FILES})
+endif ()
+target_link_libraries(Player Urho3D PlayerCommon cr)
+install(TARGETS Player
     LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
     RUNTIME DESTINATION ${DEST_BIN_DIR}
     ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}

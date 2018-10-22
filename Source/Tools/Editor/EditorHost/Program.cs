@@ -127,7 +127,7 @@ namespace EditorHost
 
         public IntPtr LoadPlugin(string path)
         {
-            if (!File.Exists(path) && !path.EndsWith(".dll"))
+            if (!File.Exists(path) || !path.EndsWith(".dll"))
                 return IntPtr.Zero;
 
             path = VersionFile(path);
@@ -182,7 +182,6 @@ namespace EditorHost
 
         public Program()
         {
-
             AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += (sender, args) => Assembly.ReflectionOnlyLoadFrom(
                 Path.Combine(ProgramDirectory, args.Name.Substring(0, args.Name.IndexOf(',')) + ".dll"));
         }

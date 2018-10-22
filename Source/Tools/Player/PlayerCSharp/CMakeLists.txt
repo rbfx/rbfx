@@ -20,13 +20,4 @@
 # THE SOFTWARE.
 #
 
-if (NOT URHO3D_PLUGINS)
-    return ()
-endif ()
-
-add_subdirectory(Common)
-
-if (URHO3D_CSHARP)
-    add_subdirectory(PlayerCSharp)
-endif ()
-add_subdirectory(Player)
+add_target_csharp(PlayerCSharp ${CMAKE_CURRENT_SOURCE_DIR}/PlayerCSharp.csproj Urho3DNet)
