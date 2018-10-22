@@ -42,7 +42,7 @@
 
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <ImGui/imgui_internal.h>
-#include <ImGui/imgui_stl.h>
+#include <ImGui/imgui_stdlib.h>
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/Graphics.h>

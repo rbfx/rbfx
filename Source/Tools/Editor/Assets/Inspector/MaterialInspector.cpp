@@ -34,7 +34,7 @@
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Toolbox/SystemUI/Widgets.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
-#include <ImGui/imgui_stl.h>
+#include <ImGui/imgui_stdlib.h>
 #include <Urho3D/IO/Log.h>
 #include "Tabs/Scene/SceneTab.h"
 #include "EditorEvents.h"

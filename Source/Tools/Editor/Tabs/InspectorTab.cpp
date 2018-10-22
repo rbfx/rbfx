@@ -22,7 +22,7 @@
 
 #include <Urho3D/IO/Log.h>
 #include <ImGui/imgui.h>
-#include <ImGui/imgui_stl.h>
+#include <ImGui/imgui_stdlib.h>
 #include "EditorEvents.h"
 #include "InspectorTab.h"
 #include "Editor.h"

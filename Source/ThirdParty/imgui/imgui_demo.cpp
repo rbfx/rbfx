@@ -225,6 +225,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
     static bool no_collapse = false;
     static bool no_close = false;
     static bool no_nav = false;
+    static bool no_background = false;
     static bool no_bring_to_front = false;
     static bool no_docking = false;
 
@@ -236,6 +237,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
     if (no_resize)          window_flags |= ImGuiWindowFlags_NoResize;
     if (no_collapse)        window_flags |= ImGuiWindowFlags_NoCollapse;
     if (no_nav)             window_flags |= ImGuiWindowFlags_NoNav;
+    if (no_background)      window_flags |= ImGuiWindowFlags_NoBackground;
     if (no_bring_to_front)  window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
     if (no_docking)         window_flags |= ImGuiWindowFlags_NoDocking;
     if (no_close)           p_open = NULL; // Don't pass our bool* to Begin
@@ -338,8 +340,10 @@ void ImGui::ShowDemoWindow(bool* p_open)
 
             ImGui::CheckboxFlags("io.ConfigFlags: ViewportsEnable", (unsigned int *)&io.ConfigFlags, ImGuiConfigFlags_ViewportsEnable);
             ImGui::SameLine(); ShowHelpMarker("Toggling this at runtime is normally unsupported (it will offset your windows).");
-            ImGui::CheckboxFlags("io.ConfigFlags: ViewportsNoTaskBarIcons", (unsigned int *)&io.ConfigFlags, ImGuiConfigFlags_ViewportsNoTaskBarIcons);
+            ImGui::CheckboxFlags("io.ConfigFlags: ViewportsNoTaskBarIcon", (unsigned int *)&io.ConfigFlags, ImGuiConfigFlags_ViewportsNoTaskBarIcon);
             ImGui::SameLine(); ShowHelpMarker("Toggling this at runtime is normally unsupported (most platform back-ends won't refresh the task bar icon state right away).");
+            ImGui::CheckboxFlags("io.ConfigFlags: ViewportsDecoration", (unsigned int *)&io.ConfigFlags, ImGuiConfigFlags_ViewportsDecoration);
+            ImGui::SameLine(); ShowHelpMarker("Toggling this at runtime is normally unsupported (most platform back-ends won't refresh the decoration right away).");
             ImGui::CheckboxFlags("io.ConfigFlags: ViewportsNoMerge", (unsigned int *)&io.ConfigFlags, ImGuiConfigFlags_ViewportsNoMerge);
             ImGui::SameLine(); ShowHelpMarker("All floating windows will always create their own viewport and platform window.");
 
@@ -401,6 +405,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
         ImGui::Checkbox("No collapse", &no_collapse);
         ImGui::Checkbox("No close", &no_close); ImGui::SameLine(150);
         ImGui::Checkbox("No nav", &no_nav); ImGui::SameLine(300);
+        ImGui::Checkbox("No background", &no_background);
         ImGui::Checkbox("No bring to front", &no_bring_to_front);
         ImGui::Checkbox("No docking", &no_docking);
     }
@@ -488,7 +493,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
                 static char str0[128] = "Hello, world!";
                 static int i0 = 123;
                 ImGui::InputText("input text", str0, IM_ARRAYSIZE(str0));
-                ImGui::SameLine(); ShowHelpMarker("USER:\nHold SHIFT or use mouse to select text.\n" "CTRL+Left/Right to word jump.\n" "CTRL+A or double-click to select all.\n" "CTRL+X,CTRL+C,CTRL+V clipboard.\n" "CTRL+Z,CTRL+Y undo/redo.\n" "ESCAPE to revert.\n\nPROGRAMMER:\nYou can use the ImGuiInputTextFlags_CallbackResize facility if you need to wire InputText() to a dynamic string type. See misc/stl/imgui_stl.h for an example (this is not demonstrated in imgui_demo.cpp).");
+                ImGui::SameLine(); ShowHelpMarker("USER:\nHold SHIFT or use mouse to select text.\n" "CTRL+Left/Right to word jump.\n" "CTRL+A or double-click to select all.\n" "CTRL+X,CTRL+C,CTRL+V clipboard.\n" "CTRL+Z,CTRL+Y undo/redo.\n" "ESCAPE to revert.\n\nPROGRAMMER:\nYou can use the ImGuiInputTextFlags_CallbackResize facility if you need to wire InputText() to a dynamic string type. See misc/cpp/imgui_stdlib.h for an example (this is not demonstrated in imgui_demo.cpp).");
 
                 ImGui::InputInt("input int", &i0);
                 ImGui::SameLine(); ShowHelpMarker("You can apply arithmetic operators +,*,/ on numerical values.\n  e.g. [ 100 ], input \'*2\', result becomes [ 200 ]\nUse +- to subtract.\n");
@@ -935,7 +940,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
                 "label:\n"
                 "\tlock cmpxchg8b eax\n";
 
-            ShowHelpMarker("You can use the ImGuiInputTextFlags_CallbackResize facility if you need to wire InputTextMultiline() to a dynamic string type. See misc/stl/imgui_stl.h for an example. (This is not demonstrated in imgui_demo.cpp)");
+            ShowHelpMarker("You can use the ImGuiInputTextFlags_CallbackResize facility if you need to wire InputTextMultiline() to a dynamic string type. See misc/cpp/imgui_stdlib.h for an example. (This is not demonstrated in imgui_demo.cpp)");
             ImGui::Checkbox("Read-only", &read_only);
             ImGuiInputTextFlags flags = ImGuiInputTextFlags_AllowTabInput | (read_only ? ImGuiInputTextFlags_ReadOnly : 0);
             ImGui::InputTextMultiline("##source", text, IM_ARRAYSIZE(text), ImVec2(-1.0f, ImGui::GetTextLineHeight() * 16), flags);
@@ -1719,23 +1724,25 @@ void ImGui::ShowDemoWindow(bool* p_open)
             if (ImGui::TreeNode("Basic"))
             {
                 ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
-                ImGui::BeginTabBar("MyTabBar", tab_bar_flags);
-                if (ImGui::BeginTabItem("Avocado"))
+                if (ImGui::BeginTabBar("MyTabBar", tab_bar_flags))
                 {
-                    ImGui::Text("This is the Avocado tab!\nblah blah blah blah blah");
-                    ImGui::EndTabItem();
+                    if (ImGui::BeginTabItem("Avocado"))
+                    {
+                        ImGui::Text("This is the Avocado tab!\nblah blah blah blah blah");
+                        ImGui::EndTabItem();
+                    }
+                    if (ImGui::BeginTabItem("Broccoli"))
+                    {
+                        ImGui::Text("This is the Broccoli tab!\nblah blah blah blah blah");
+                        ImGui::EndTabItem();
+                    }
+                    if (ImGui::BeginTabItem("Cucumber"))
+                    {
+                        ImGui::Text("This is the Cucumber tab!\nblah blah blah blah blah");
+                        ImGui::EndTabItem();
+                    }
+                    ImGui::EndTabBar();
                 }
-                if (ImGui::BeginTabItem("Broccoli"))
-                {
-                    ImGui::Text("This is the Broccoli tab!\nblah blah blah blah blah");
-                    ImGui::EndTabItem();
-                }
-                if (ImGui::BeginTabItem("Cucumber"))
-                {
-                    ImGui::Text("This is the Cucumber tab!\nblah blah blah blah blah");
-                    ImGui::EndTabItem();
-                }
-                ImGui::EndTabBar();
                 ImGui::Separator();
                 ImGui::TreePop();
             }
@@ -1764,16 +1771,18 @@ void ImGui::ShowDemoWindow(bool* p_open)
                 }
 
                 // Passing a bool* to BeginTabItem() is similar to passing one to Begin(): the underlying bool will be set to false when the tab is closed.
-                ImGui::BeginTabBar("MyTabBar", tab_bar_flags);
-                for (int n = 0; n < IM_ARRAYSIZE(opened); n++)
-                    if (opened[n] && ImGui::BeginTabItem(names[n], &opened[n]))
-                    {
-                        ImGui::Text("This is the %s tab!", names[n]);
-                        if (n & 1)
-                            ImGui::Text("I am an odd tab.");
-                        ImGui::EndTabItem();
-                    }
-                ImGui::EndTabBar();
+                if (ImGui::BeginTabBar("MyTabBar", tab_bar_flags))
+                {
+                    for (int n = 0; n < IM_ARRAYSIZE(opened); n++)
+                        if (opened[n] && ImGui::BeginTabItem(names[n], &opened[n]))
+                        {
+                            ImGui::Text("This is the %s tab!", names[n]);
+                            if (n & 1)
+                                ImGui::Text("I am an odd tab.");
+                            ImGui::EndTabItem();
+                        }
+                    ImGui::EndTabBar();
+                }
                 ImGui::Separator();
                 ImGui::TreePop();
             }
@@ -1985,6 +1994,21 @@ void ImGui::ShowDemoWindow(bool* p_open)
 
     if (ImGui::CollapsingHeader("Popups & Modal windows"))
     {
+        // Popups are windows with a few special properties:
+        // - They block normal mouse hovering detection outside them. (*)
+        // - Unless modal, they can be closed by clicking anywhere outside them, or by pressing ESCAPE.
+        // - Their visibility state (~bool) is held internally by imgui instead of being held by the programmer as we are used to with regular Begin() calls.
+        // (*) One can use IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) to bypass it and detect hovering even when normally blocked by a popup.
+        // Those three properties are intimately connected. The library needs to hold their visibility state because it can close popups at any time.
+        
+        // Typical use for regular windows:
+        //   bool my_tool_is_active = false; if (ImGui::Button("Open")) my_tool_is_active = true; [...] if (my_tool_is_active) Begin("My Tool", &my_tool_is_active) { [...] } End();
+        // Typical use for popups:
+        //   if (ImGui::Button("Open")) ImGui::OpenPopup("MyPopup"); if (ImGui::BeginPopup("MyPopup") { [...] EndPopup(); }
+
+        // With popups we have to go through a library call (here OpenPopup) to manipulate the visibility state.
+        // This may be a bit confusing at first but it should quickly make sense. Follow on the examples below. 
+
         if (ImGui::TreeNode("Popups"))
         {
             ImGui::TextWrapped("When a popup is active, it inhibits interacting with windows that are behind the popup. Clicking outside the popup closes it.");
@@ -1996,10 +2020,10 @@ void ImGui::ShowDemoWindow(bool* p_open)
             // Simple selection popup
             // (If you want to show the current selection inside the Button itself, you may want to build a string using the "###" operator to preserve a constant ID with a variable label)
             if (ImGui::Button("Select.."))
-                ImGui::OpenPopup("select");
+                ImGui::OpenPopup("my_select_popup");
             ImGui::SameLine();
             ImGui::TextUnformatted(selected_fish == -1 ? "<None>" : names[selected_fish]);
-            if (ImGui::BeginPopup("select"))
+            if (ImGui::BeginPopup("my_select_popup"))
             {
                 ImGui::Text("Aquarium");
                 ImGui::Separator();
@@ -2011,8 +2035,8 @@ void ImGui::ShowDemoWindow(bool* p_open)
 
             // Showing a menu with toggles
             if (ImGui::Button("Toggle.."))
-                ImGui::OpenPopup("toggle");
-            if (ImGui::BeginPopup("toggle"))
+                ImGui::OpenPopup("my_toggle_popup");
+            if (ImGui::BeginPopup("my_toggle_popup"))
             {
                 for (int i = 0; i < IM_ARRAYSIZE(names); i++)
                     ImGui::MenuItem(names[i], "", &toggles[i]);
@@ -2043,9 +2067,10 @@ void ImGui::ShowDemoWindow(bool* p_open)
                 ImGui::EndPopup();
             }
 
-            if (ImGui::Button("Popup Menu.."))
-                ImGui::OpenPopup("FilePopup");
-            if (ImGui::BeginPopup("FilePopup"))
+            // Call the more complete ShowExampleMenuFile which we use in various places of this demo
+            if (ImGui::Button("File Menu.."))
+                ImGui::OpenPopup("my_file_popup");
+            if (ImGui::BeginPopup("my_file_popup"))
             {
                 ShowExampleMenuFile();
                 ImGui::EndPopup();
@@ -2057,7 +2082,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
         if (ImGui::TreeNode("Context menus"))
         {
             // BeginPopupContextItem() is a helper to provide common/simple popup behavior of essentially doing:
-            //    if (IsItemHovered() && IsMouseClicked(0))
+            //    if (IsItemHovered() && IsMouseReleased(0))
             //       OpenPopup(id);
             //    return BeginPopup(id);
             // For more advanced uses you may want to replicate and cuztomize this code. This the comments inside BeginPopupContextItem() implementation.
@@ -2073,10 +2098,18 @@ void ImGui::ShowDemoWindow(bool* p_open)
                 ImGui::EndPopup();
             }
 
+            // We can also use OpenPopupOnItemClick() which is the same as BeginPopupContextItem() but without the Begin call.
+            // So here we will make it that clicking on the text field with the right mouse button (1) will toggle the visibility of the popup above.
+            ImGui::Text("(You can also right-click me to the same popup as above.)");
+            ImGui::OpenPopupOnItemClick("item context menu", 1);
+
+            // When used after an item that has an ID (here the Button), we can skip providing an ID to BeginPopupContextItem(). 
+            // BeginPopupContextItem() will use the last item ID as the popup ID.
+            // In addition here, we want to include your editable label inside the button label. We use the ### operator to override the ID (read FAQ about ID for details)
             static char name[32] = "Label1";
             char buf[64]; sprintf(buf, "Button: %s###Button", name); // ### operator override ID ignoring the preceding label
             ImGui::Button(buf);
-            if (ImGui::BeginPopupContextItem()) // When used after an item that has an ID (here the Button), we can skip providing an ID to BeginPopupContextItem().
+            if (ImGui::BeginPopupContextItem())
             {
                 ImGui::Text("Edit name:");
                 ImGui::InputText("##edit", name, IM_ARRAYSIZE(name));
@@ -3733,8 +3766,8 @@ void ShowExampleAppDockSpace(bool* p_open)
         window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
     }
 
-    // When using ImGuiDockNodeFlags_RenderWindowBg or ImGuiDockNodeFlags_InvisibleDockspace, DockSpace() will render our background and handle the pass-thru hole, so we ask Begin() to not render a background.
-    if (opt_flags & ImGuiDockNodeFlags_RenderWindowBg)
+    // When using ImGuiDockNodeFlags_PassthruDockspace, DockSpace() will render our background and handle the pass-thru hole, so we ask Begin() to not render a background.
+    if (opt_flags & ImGuiDockNodeFlags_PassthruDockspace)
         ImGui::SetNextWindowBgAlpha(0.0f);
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
@@ -3766,10 +3799,7 @@ void ShowExampleAppDockSpace(bool* p_open)
 
             if (ImGui::MenuItem("Flag: NoSplit",                "", (opt_flags & ImGuiDockNodeFlags_NoSplit) != 0))                opt_flags ^= ImGuiDockNodeFlags_NoSplit;
             if (ImGui::MenuItem("Flag: NoDockingInCentralNode", "", (opt_flags & ImGuiDockNodeFlags_NoDockingInCentralNode) != 0)) opt_flags ^= ImGuiDockNodeFlags_NoDockingInCentralNode;
-            if (ImGui::MenuItem("Flag: PassthruInEmptyNodes",   "", (opt_flags & ImGuiDockNodeFlags_PassthruInEmptyNodes) != 0))   opt_flags ^= ImGuiDockNodeFlags_PassthruInEmptyNodes;
-            if (ImGui::MenuItem("Flag: RenderWindowBg",         "", (opt_flags & ImGuiDockNodeFlags_RenderWindowBg) != 0))         opt_flags ^= ImGuiDockNodeFlags_RenderWindowBg;
-            if (ImGui::MenuItem("Flag: PassthruDockspace (all 3 above)", "", (opt_flags & ImGuiDockNodeFlags_PassthruDockspace) == ImGuiDockNodeFlags_PassthruDockspace))
-                opt_flags = (opt_flags & ~ImGuiDockNodeFlags_PassthruDockspace) | ((opt_flags & ImGuiDockNodeFlags_PassthruDockspace) == ImGuiDockNodeFlags_PassthruDockspace) ? 0 : ImGuiDockNodeFlags_PassthruDockspace;
+            if (ImGui::MenuItem("Flag: PassthruDockspace",      "", (opt_flags & ImGuiDockNodeFlags_PassthruDockspace) != 0))      opt_flags ^= ImGuiDockNodeFlags_PassthruDockspace;
             ImGui::Separator();
             if (ImGui::MenuItem("Close DockSpace", NULL, false, p_open != NULL))
                 *p_open = false;
@@ -3953,41 +3983,42 @@ void ShowExampleAppDocuments(bool* p_open)
     if (opt_target == Target_Tab)
     {
         ImGuiTabBarFlags tab_bar_flags = (opt_fitting_flags) | (opt_reorderable ? ImGuiTabBarFlags_Reorderable : 0);
-        ImGui::BeginTabBar("##tabs", tab_bar_flags);
-
-        if (opt_reorderable)
-            NotifyOfDocumentsClosedElsewhere(app);
-
-        // [DEBUG] Stress tests
-        //if ((ImGui::GetFrameCount() % 30) == 0) docs[1].Open ^= 1;            // [DEBUG] Automatically show/hide a tab. Test various interactions e.g. dragging with this on.
-        //if (ImGui::GetIO().KeyCtrl) ImGui::SetTabItemSelected(docs[1].Name);  // [DEBUG] Test SetTabItemSelected(), probably not very useful as-is anyway..
-
-        // Submit Tabs
-        for (int doc_n = 0; doc_n < app.Documents.Size; doc_n++)
+        if (ImGui::BeginTabBar("##tabs", tab_bar_flags))
         {
-            MyDocument* doc = &app.Documents[doc_n];
-            if (!doc->Open)
-                continue;
+            if (opt_reorderable)
+                NotifyOfDocumentsClosedElsewhere(app);
 
-            ImGuiTabItemFlags tab_flags = (doc->Dirty ? ImGuiTabItemFlags_UnsavedDocument : 0);
-            bool visible = ImGui::BeginTabItem(doc->Name, &doc->Open, tab_flags);
+            // [DEBUG] Stress tests
+            //if ((ImGui::GetFrameCount() % 30) == 0) docs[1].Open ^= 1;            // [DEBUG] Automatically show/hide a tab. Test various interactions e.g. dragging with this on.
+            //if (ImGui::GetIO().KeyCtrl) ImGui::SetTabItemSelected(docs[1].Name);  // [DEBUG] Test SetTabItemSelected(), probably not very useful as-is anyway..
 
-            // Cancel attempt to close when unsaved add to save queue so we can display a popup.
-            if (!doc->Open && doc->Dirty)
+            // Submit Tabs
+            for (int doc_n = 0; doc_n < app.Documents.Size; doc_n++)
             {
-                doc->Open = true;
-                doc->DoQueueClose();
+                MyDocument* doc = &app.Documents[doc_n];
+                if (!doc->Open)
+                    continue;
+
+                ImGuiTabItemFlags tab_flags = (doc->Dirty ? ImGuiTabItemFlags_UnsavedDocument : 0);
+                bool visible = ImGui::BeginTabItem(doc->Name, &doc->Open, tab_flags);
+
+                // Cancel attempt to close when unsaved add to save queue so we can display a popup.
+                if (!doc->Open && doc->Dirty)
+                {
+                    doc->Open = true;
+                    doc->DoQueueClose();
+                }
+
+                MyDocument::DisplayContextMenu(doc);
+                if (visible)
+                {
+                    MyDocument::DisplayContents(doc);
+                    ImGui::EndTabItem();
+                }
             }
 
-            MyDocument::DisplayContextMenu(doc);
-            if (visible)
-            {
-                MyDocument::DisplayContents(doc);
-                ImGui::EndTabItem();
-            }
+            ImGui::EndTabBar();
         }
-
-        ImGui::EndTabBar();
     }
     else if (opt_target == Target_Window)
     {
