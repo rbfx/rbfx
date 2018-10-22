@@ -39,6 +39,9 @@ else ()
     add_executable (Editor ${TARGET_TYPE} ${SOURCE_FILES})
 endif ()
 target_link_libraries (Editor Toolbox Urho3D)
+if (URHO3D_PLUGINS)
+    target_link_libraries (Editor PlayerCommon)
+endif ()
 install(TARGETS Editor
     RUNTIME DESTINATION ${DEST_TOOLS_DIR}
     LIBRARY DESTINATION ${DEST_TOOLS_DIR}

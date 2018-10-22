@@ -29,6 +29,7 @@
 #include <cr/cr.h>
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/IO/FileWatcher.h>
+#include <Player/Common/PluginUtils.h>
 
 namespace Urho3D
 {
@@ -97,8 +98,6 @@ public:
     void OnEndFrame();
     /// Converts relative or absolute plugin path to universal plugin name. Returns empty string on failure.
     static String PathToName(const String& path);
-    /// Checks specified file and recognizes it's plugin type.
-    static PluginType GetPluginType(const String& path);
 
 protected:
     /// Delete temporary files from binary directory.

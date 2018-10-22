@@ -22,6 +22,7 @@
 
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/IO/FileSystem.h>
+#include <Player/Common/PluginUtils.h>
 #include "Plugins/PluginManager.h"
 #include "PluginFilesCache.h"
 
@@ -36,6 +37,7 @@ PluginFilesCache::PluginFilesCache(Context* context)
 
 const StringVector& PluginFilesCache::GetPluginNames()
 {
+#if URHO3D_PLUGINS
     if (updateTimer_.GetMSec(false) > 2000)
     {
         StringVector files;
@@ -74,7 +76,7 @@ const StringVector& PluginFilesCache::GetPluginNames()
                 // File was not changed.
                 continue;
 
-            if (PluginManager::GetPluginType(pluginPath) == PLUGIN_INVALID)
+            if (GetPluginType(context_, pluginPath) == PLUGIN_INVALID)
                 names_.Remove(pluginName);
             else
             {
@@ -87,7 +89,7 @@ const StringVector& PluginFilesCache::GetPluginNames()
 
         updateTimer_.Reset();
     }
-
+#endif
     return names_;
 }
 

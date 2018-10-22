@@ -20,24 +20,9 @@
 # THE SOFTWARE.
 #
 
-# Urho3D tools
-set (CMAKE_INSTALL_RPATH ".:..")
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_TOOLS_DIR})
-
-if (URHO3D_PACKAGING OR         # When packing resources
-    URHO3D_PACKAGING_TOOL OR    # When crosscompiling and tool is required
-    URHO3D_TOOLS)
-    add_subdirectory (PackageTool)
-endif ()
-if (URHO3D_TOOLS AND DESKTOP)
-    add_subdirectory (Toolbox)
-    add_subdirectory (AssetImporter)
-    add_subdirectory (AssetViewer)
-    add_subdirectory (OgreImporter)
-    add_subdirectory (RampGenerator)
-    add_subdirectory (SpritePacker)
-    add_subdirectory (Editor)
-    add_subdirectory (Player)
+if (NOT URHO3D_PLUGINS)
+    return ()
 endif ()
 
-vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} Tools)
+add_subdirectory(Common)
+
