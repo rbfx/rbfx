@@ -330,7 +330,11 @@ if (URHO3D_CSHARP)
         set (CSHARP_SOLUTION ${Urho3D_SOURCE_DIR}/Urho3D.part.sln)
     endif ()
 
-    add_custom_target(NugetRestore COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${CSHARP_SOLUTION} /t:restore)
+    execute_process(COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${CSHARP_SOLUTION} /t:restore)
+    if (NOT MSVC)
+        add_custom_target(NugetRestore COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${CSHARP_SOLUTION} /t:restore)
+        set_property(TARGET NugetRestore PROPERTY EXCLUDE_FROM_ALL ON)
+    endif ()
 
     # Strong name signatures
     find_program(SN sn PATHS PATHS /Library/Frameworks/Mono.framework/Versions/Current/bin ${MONO_PATH}/bin)
@@ -376,12 +380,12 @@ endmacro()
 
 macro (add_target_csharp TARGET PROJECT_FILE)
     if (WIN32 AND NOT URHO3D_WITH_MONO)
-        include_external_msproject(${TARGET} ${PROJECT_FILE} TYPE FAE04EC0-301F-11D3-BF4B-00C04F79EFBC ${ARGN} NugetRestore)
+        include_external_msproject(${TARGET} ${PROJECT_FILE} TYPE FAE04EC0-301F-11D3-BF4B-00C04F79EFBC ${ARGN})
     else ()
         add_custom_target(${TARGET}
             COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${PROJECT_FILE} ${MSBUILD_COMMON_PARAMETERS}
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            DEPENDS ${ARGN} NugetRestore
+            DEPENDS ${ARGN}
         )
         set_target_properties(${TARGET} PROPERTIES EXCLUDE_FROM_ALL OFF)
     endif ()
