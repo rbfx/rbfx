@@ -55,6 +55,7 @@ echo Using !CMAKE_GENRATOR! on !PLATFORM!
 pushd build
 echo cmake.exe -G "!CMAKE_GENRATOR!" !CMAKE_ARGS! ..
 cmake.exe -G "!CMAKE_GENRATOR!" !CMAKE_ARGS! ..
+msbuild Urho3D.sln /r
 popd
 
 :quit
