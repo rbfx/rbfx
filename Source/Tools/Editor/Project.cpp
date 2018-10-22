@@ -49,6 +49,16 @@ Project::Project(Context* context)
 #endif
 {
     SubscribeToEvent(E_EDITORRESOURCESAVED, std::bind(&Project::SaveProject, this));
+    SubscribeToEvent(E_RESOURCERENAMED, [this](StringHash, VariantMap& args) {
+        using namespace ResourceRenamed;
+        if (args[P_FROM].GetString() == defaultScene_)
+            defaultScene_ = args[P_TO].GetString();
+    });
+    SubscribeToEvent(E_RESOURCEBROWSERDELETE, [this](StringHash, VariantMap& args) {
+        using namespace ResourceBrowserDelete;
+        if (args[P_NAME].GetString() == defaultScene_)
+            defaultScene_ = String::EMPTY;
+    });
 }
 
 Project::~Project()
@@ -177,12 +187,8 @@ bool Project::LoadProject(const String& projectPath)
                 plugins_.OnEndFrame();
             }
 
-            for (const auto& value : file.GetRoot().GetArray())
-            {
-                // Seed global string hash to name map.
-                StringHash hash(value.GetString());
-                (void) (hash);
-            }
+            if (root.Contains("default-scene"))
+                defaultScene_ = root["default-scene"]->GetString();
         }
     }
 
@@ -297,6 +303,8 @@ bool Project::SaveProject()
             });
             root["plugins"] = plugins;
         }
+
+        root["default-scene"] = defaultScene_;
 
         String filePath(projectFileDir_ + "Project.json");
         if (!file.SaveFile(filePath))

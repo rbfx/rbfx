@@ -480,48 +480,85 @@ void Editor::HandleHotkeys()
 
 void Editor::RenderProjectMenu()
 {
-    const StringVector& pluginNames = pluginFiles_.GetPluginNames();
-    if (pluginNames.Size() == 0)
+    if (ui::BeginMenu("Plugins"))
     {
-        ui::TextUnformatted("No available files.");
-        ui::SetHelpTooltip("Plugins are shared libraries that have a class inheriting from PluginApplication and "
-            "define a plugin entry point. Look at Samples/103_GamePlugin for more information.");
-    }
-    else
-    {
-        for (const String& baseName : pluginNames)
+        const StringVector& pluginNames = pluginFiles_.GetPluginNames();
+        if (pluginNames.Size() == 0)
         {
-            PluginManager* plugins = project_->GetPlugins();
-            Plugin* plugin = plugins->GetPlugin(baseName);
-            bool loaded = plugin != nullptr;
-            bool editorOnly = plugin && plugin->GetFlags() & PLUGIN_PRIVATE;
-
-            ui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
-            if (ui::EditorToolbarButton(ICON_FA_BATTERY_EMPTY, "Inactive", !loaded) && loaded)
-                plugins->Unload(plugin);
-
-            if (ui::EditorToolbarButton(ICON_FA_BATTERY_HALF, "Editor-only", loaded && editorOnly))
-            {
-                if (!loaded)
-                {
-                    plugins->Load(baseName);
-                    plugin = plugins->GetPlugin(baseName);
-                }
-                plugin->SetFlags(plugin->GetFlags() | PLUGIN_PRIVATE);
-            }
-            if (ui::EditorToolbarButton(ICON_FA_BATTERY_FULL, "Editor and Game", loaded && !editorOnly))
-            {
-                if (!loaded)
-                {
-                    plugins->Load(baseName);
-                    plugin = plugins->GetPlugin(baseName);
-                }
-                plugin->SetFlags(plugin->GetFlags() & ~PLUGIN_PRIVATE);
-            }
-            ui::PopStyleVar();
-            ui::SameLine();
-            ui::TextUnformatted(baseName.CString());
+            ui::TextUnformatted("No available files.");
+            ui::SetHelpTooltip("Plugins are shared libraries that have a class inheriting from PluginApplication and "
+                               "define a plugin entry point. Look at Samples/103_GamePlugin for more information.");
         }
+        else
+        {
+            for (const String& baseName : pluginNames)
+            {
+                PluginManager* plugins = project_->GetPlugins();
+                Plugin* plugin = plugins->GetPlugin(baseName);
+                bool loaded = plugin != nullptr;
+                bool editorOnly = plugin && plugin->GetFlags() & PLUGIN_PRIVATE;
+
+                ui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
+                if (ui::EditorToolbarButton(ICON_FA_BATTERY_EMPTY, "Inactive", !loaded) && loaded)
+                    plugins->Unload(plugin);
+
+                if (ui::EditorToolbarButton(ICON_FA_BATTERY_HALF, "Editor-only", loaded && editorOnly))
+                {
+                    if (!loaded)
+                    {
+                        plugins->Load(baseName);
+                        plugin = plugins->GetPlugin(baseName);
+                    }
+                    plugin->SetFlags(plugin->GetFlags() | PLUGIN_PRIVATE);
+                }
+                if (ui::EditorToolbarButton(ICON_FA_BATTERY_FULL, "Editor and Game", loaded && !editorOnly))
+                {
+                    if (!loaded)
+                    {
+                        plugins->Load(baseName);
+                        plugin = plugins->GetPlugin(baseName);
+                    }
+                    plugin->SetFlags(plugin->GetFlags() & ~PLUGIN_PRIVATE);
+                }
+                ui::PopStyleVar();
+                ui::SameLine();
+                ui::TextUnformatted(baseName.CString());
+            }
+        }
+        ui::EndMenu();
+    }
+
+    if (ui::BeginMenu("Main Scene"))
+    {
+        ui::PushID("Main Scene");
+        StringVector* sceneNames = ui::GetUIState<StringVector>();
+        if (sceneNames->Empty())
+        {
+            GetFileSystem()->ScanDir(*sceneNames, project_->GetResourcePath(), "*.xml", SCAN_FILES, true);
+            for (auto it = sceneNames->Begin(); it != sceneNames->End();)
+            {
+                if (GetContentType(*it) == CTYPE_SCENE)
+                    ++it;
+                else
+                    it = sceneNames->Erase(it);
+            }
+        }
+
+        for (const String& resourceName : *sceneNames)
+        {
+            bool isDefaultScene = resourceName == project_->GetDefaultSceneName();
+            if (ui::Checkbox(resourceName.CString(), &isDefaultScene))
+            {
+                if (isDefaultScene)
+                    project_->SetDefaultSceneName(resourceName);
+            }
+        }
+
+        if (sceneNames->Empty())
+            ui::TextUnformatted("Create a new scene first.");
+
+        ui::PopID();    // Main Scene
+        ui::EndMenu();
     }
 }
 
