@@ -30,6 +30,8 @@
 #include <Tabs/ResourceTab.h>
 #include <Tabs/HierarchyTab.h>
 #include <Tabs/InspectorTab.h>
+#include <Toolbox/SystemUI/Widgets.h>
+#include <ThirdParty/tracy/server/IconsFontAwesome5.h>
 
 #include "Editor.h"
 #include "EditorEvents.h"
@@ -192,6 +194,20 @@ bool Project::LoadProject(const String& projectPath)
         }
     }
 
+    // Settings.json
+    {
+        String filePath(projectFileDir_ + "Settings.json");
+        if (GetFileSystem()->Exists(filePath))
+        {
+            JSONFile file(context_);
+            if (!file.LoadFile(filePath))
+                return false;
+
+            for (auto& pair : file.GetRoot().GetObject())
+                engineParameters_[pair.first_] = pair.second_.GetVariant();
+        }
+    }
+
     String userSessionPath(projectFileDir_ + ".user.json");
     if (GetFileSystem()->Exists(userSessionPath))
     {
@@ -307,6 +323,23 @@ bool Project::SaveProject()
         root["default-scene"] = defaultScene_;
 
         String filePath(projectFileDir_ + "Project.json");
+        if (!file.SaveFile(filePath))
+        {
+            projectFileDir_.Clear();
+            URHO3D_LOGERRORF("Saving project to '%s' failed", filePath.CString());
+            return false;
+        }
+    }
+
+    // Settings.json
+    {
+        JSONFile file(context_);
+        JSONValue& root = file.GetRoot();
+
+        for (const auto& pair : engineParameters_)
+            root[pair.first_].SetVariant(pair.second_, context_);
+
+        String filePath(projectFileDir_ + "Settings.json");
         if (!file.SaveFile(filePath))
         {
             projectFileDir_.Clear();

@@ -57,6 +57,8 @@ public:
     const String& GetDefaultSceneName() const { return defaultScene_; }
     /// Set resource name of scene that will be executed first by the player.
     void SetDefaultSceneName(const String& defaultScene) { defaultScene_ = defaultScene; }
+    /// Returns a map of default engine settings that will be applied on the start of player application.
+    HashMap<String, Variant>& GetDefaultEngineSettings() { return engineParameters_; }
 
 protected:
     /// Directory containing project.
@@ -75,6 +77,8 @@ protected:
     bool isNewProject_ = false;
     /// Resource name of scene that will be started by player first.
     String defaultScene_;
+    ///
+    HashMap<String, Variant> engineParameters_;
 };
 
 

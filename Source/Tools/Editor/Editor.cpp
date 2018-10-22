@@ -24,13 +24,14 @@
 #endif
 
 #include <CLI11/CLI11.hpp>
-
+#include <ImGui/imgui.h>
+#include <ImGui/imgui_stdlib.h>
 #include <Toolbox/IO/ContentUtilities.h>
 #include <Toolbox/SystemUI/ResourceBrowser.h>
 #include <Toolbox/ToolboxAPI.h>
+#include <Toolbox/SystemUI/Widgets.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <nativefiledialog/nfd.h>
-#include <Toolbox/SystemUI/Widgets.h>
 
 #include "Editor.h"
 #include "EditorEvents.h"
@@ -46,7 +47,7 @@
 #include "Assets/AssetConverter.h"
 #include "Assets/Inspector/MaterialInspector.h"
 
-
+using namespace ui::litterals;
 
 URHO3D_DEFINE_APPLICATION_MAIN(Editor);
 
@@ -559,6 +560,78 @@ void Editor::RenderProjectMenu()
             ui::TextUnformatted("Create a new scene first.");
 
         ui::PopID();    // Main Scene
+        ui::EndMenu();
+    }
+
+    ui::Separator();
+
+    if (ui::BeginMenu("Settings"))
+    {
+        static const VariantType variantTypes[] = {
+            VAR_BOOL,
+            VAR_INT,
+            VAR_INT64,
+            VAR_FLOAT,
+            VAR_DOUBLE,
+            VAR_COLOR,
+            VAR_STRING,
+        };
+
+        static const char* variantNames[] = {
+            "Bool",
+            "Int",
+            "Int64",
+            "Float",
+            "Double",
+            "Color",
+            "String",
+        };
+
+        struct NewEntryState
+        {
+            std::string fieldName;
+            int variantTypeIndex = 0;
+            bool insertingNew = false;
+        };
+
+        auto* state = ui::GetUIState<NewEntryState>();
+        auto& settings = project_->GetDefaultEngineSettings();
+        for (auto it = settings.Begin(); it != settings.End();)
+        {
+            const String& settingName = it->first_;
+            ui::IdScope idScope(settingName.CString());
+            Variant& value = it->second_;
+            float startPos = ui::GetCursorPosX();
+            ui::TextUnformatted(settingName.CString());
+            ui::SameLine();
+            ui::SetCursorPosX(startPos = startPos + 180_dpx + ui::GetStyle().ItemSpacing.x);
+            UI_ITEMWIDTH(100_dpx)
+                RenderSingleAttribute(value);
+            ui::SameLine();
+            ui::SetCursorPosX(startPos + 100_dpx + ui::GetStyle().ItemSpacing.x);
+            if (ui::Button(ICON_FA_TRASH))
+                it = settings.Erase(it);
+            else
+                ++it;
+        }
+
+        UI_ITEMWIDTH(180_dpx)
+            ui::InputText("###Key", &state->fieldName);
+        ui::SameLine();
+        UI_ITEMWIDTH(100_dpx)
+            ui::Combo("###Type", &state->variantTypeIndex, variantNames, SDL_arraysize(variantTypes));
+        ui::SameLine();
+        if (ui::Button(ICON_FA_CHECK))
+        {
+            if (settings.Find(state->fieldName.c_str()) == settings.End())   // TODO: Show warning about duplicate name
+            {
+                settings.Insert({state->fieldName.c_str(), Variant{variantTypes[state->variantTypeIndex]}});
+                state->fieldName.clear();
+                state->variantTypeIndex = 0;
+                state->insertingNew = false;
+            }
+        }
+
         ui::EndMenu();
     }
 }

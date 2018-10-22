@@ -65,11 +65,16 @@ Player::Player(Context* context)
 
 void Player::Setup()
 {
-    engineParameters_[EP_RESOURCE_PREFIX_PATHS] = GetFileSystem()->GetCurrentDir();
+    FileSystem* fs = GetFileSystem();
+    engineParameters_[EP_RESOURCE_PREFIX_PATHS] = fs->GetProgramDir() + ";" + fs->GetCurrentDir();
     engineParameters_[EP_RESOURCE_PATHS] = "Cache;Resources";
-    engineParameters_[EP_FULL_SCREEN] = false;
 
-    // TODO: Load any engineParameters_ from a file.
+    JSONFile file(context_);
+    if (!file.LoadFile("Settings.json"))
+        return;
+
+    for (auto& pair : file.GetRoot().GetObject())
+        engineParameters_[pair.first_] = pair.second_.GetVariant();
 }
 
 void Player::Start()
