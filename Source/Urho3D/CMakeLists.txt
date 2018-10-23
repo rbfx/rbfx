@@ -215,6 +215,7 @@ endif ()
 
 if (NOT BUILD_SHARED_LIBS)
     # Merge static libraries of third party dependencies to final engine static library
+    add_custom_command (TARGET Urho3D PRE_BUILD COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:Urho3D>)
     if (MSVC)
         # If merged library is not deleted in this step then sometimes build system will try to merge dependencies
         # to already merged library inflating it further.
