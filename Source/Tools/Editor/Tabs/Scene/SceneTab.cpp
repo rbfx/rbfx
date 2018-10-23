@@ -984,6 +984,22 @@ void SceneTab::RenderNodeContextMenu()
             ui::Separator();
         }
 
+
+        if (GetSelection().Size() == 1)
+        {
+
+            if (GetSelection()[0]->GetNumChildren(false))
+            {
+                if (ui::MenuItem(ICON_FA_ADJUST " Remove Children Position Offset"))
+                {
+                    NormalizeNodeChildrenPosition(GetSelection()[0]);
+                }
+            }
+
+            ui::Separator();
+        }
+       
+
         if (ui::MenuItem(ICON_FA_COPY " Copy", "Ctrl+C"))
             CopySelection();
 
@@ -1120,6 +1136,37 @@ void SceneTab::PasteToSelection()
 
     for (Component* component : result.components_)
         selectedComponents_.Insert(WeakPtr<Component>(component));
+}
+
+void SceneTab::NormalizeNodeChildrenPosition(Node* node)
+{
+    BoundingBox worldBounds;
+    worldBounds.max_ = -Vector3(M_LARGE_VALUE, M_LARGE_VALUE, M_LARGE_VALUE);
+    worldBounds.min_ = Vector3(M_LARGE_VALUE, M_LARGE_VALUE, M_LARGE_VALUE);
+
+
+    for (Node* child : node->GetChildren())
+    {
+        worldBounds.Merge(child->GetWorldPosition());
+
+
+        //bonus: use bounding box of sub components like static model.
+        StaticModel* staticModel = child->GetComponent<StaticModel>();
+        if (staticModel)
+        {
+            BoundingBox staticModelBounds = staticModel->GetBoundingBox();
+            staticModelBounds.min_ += child->GetWorldPosition();
+            staticModelBounds.max_ += child->GetWorldPosition();
+            worldBounds.Merge(staticModelBounds);
+        }
+    }
+
+    for (Node* child : node->GetChildren())
+    {
+        child->Translate((node->GetWorldPosition() - worldBounds.Center()), TS_WORLD);
+    }
+
+
 }
 
 }

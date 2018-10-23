@@ -132,6 +132,8 @@ protected:
     void CopySelection();
     ///
     void PasteToSelection();
+    /// normalize immediate children of a node to the parent node center
+    void NormalizeNodeChildrenPosition(Node* node);
 
     /// Scene renderer.
     SceneView view_;
