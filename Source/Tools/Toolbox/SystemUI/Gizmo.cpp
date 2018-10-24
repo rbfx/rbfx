@@ -68,6 +68,8 @@ bool Gizmo::Manipulate(const Camera* camera, const Vector<WeakPtr<Node>>& nodes)
     if (nodes.Empty())
         return false;
 
+    ImGuizmo::SetOrthographic(camera->IsOrthographic());
+
     if (!IsActive())
     {
         if (nodes.Size() > 1)
