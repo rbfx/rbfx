@@ -127,13 +127,15 @@ protected:
     /// Removes extra editor objects that were used for representing some components.
     void OnComponentRemoved(VariantMap& args);
     /// Add or remove camera preview.
-    void UpdateCameraPreview();
+    void UpdateCameras();
     ///
     void CopySelection();
     ///
     void PasteToSelection();
     ///
     void ResizeMainViewport(const IntRect& rect);
+    ///
+    void RenderDebugInfo();
 
     /// Rectangle dimensions that are rendered by this view.
     IntRect rect_;

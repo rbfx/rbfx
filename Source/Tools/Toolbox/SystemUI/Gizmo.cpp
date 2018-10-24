@@ -43,7 +43,6 @@ namespace Urho3D
 
 Gizmo::Gizmo(Context* context) : Object(context)
 {
-    SubscribeToEvent(E_POSTRENDERUPDATE, [&](StringHash, VariantMap&) { RenderDebugInfo(); });
 }
 
 Gizmo::~Gizmo()
@@ -269,38 +268,6 @@ bool Gizmo::Unselect(Node* node)
     nodeSelection_.Remove(weakNode);
     SendEvent(E_GIZMOSELECTIONCHANGED);
     return true;
-}
-
-void Gizmo::RenderDebugInfo()
-{
-    DebugRenderer* debug = nullptr;
-    for (auto it = nodeSelection_.Begin(); it != nodeSelection_.End();)
-    {
-        WeakPtr<Node> node = *it;
-        if (node.Expired())
-            it = nodeSelection_.Erase(it);
-        else
-        {
-            if (debug == nullptr)
-            {
-                if (auto scene = node->GetScene())
-                    debug = scene->GetComponent<DebugRenderer>();
-            }
-            if (debug != nullptr)
-            {
-                for (auto& component: node->GetComponents())
-                {
-                    if (auto light = dynamic_cast<Light*>(component.Get()))
-                        light->DrawDebugGeometry(debug, true);
-                    else if (auto drawable = dynamic_cast<Drawable*>(component.Get()))
-                        debug->AddBoundingBox(drawable->GetWorldBoundingBox(), Color::WHITE);
-                    else
-                        component->DrawDebugGeometry(debug, true);
-                }
-            }
-            ++it;
-        }
-    }
 }
 
 void Gizmo::HandleAutoSelection()

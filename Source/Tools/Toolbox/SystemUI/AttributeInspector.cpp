@@ -597,10 +597,11 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
 
         UI_UPIDSCOPE(1)
         {
-            // Show coolumns after custom widgets at inspector start, but have them in a global context. Columns of all
-            // components will be resized simultaneously.
+            // Show columns after custom widgets at inspector start, but have them in a global
+            // context. Columns of all components will be resized simultaneously.
             // [/!\ WARNING /!\]
-            // Adding new ID scopes here will break code in custom inspector widgets if that code uses ui::Columns() calls.
+            // Adding new ID scopes here will break code in custom inspector widgets if that code
+            // uses ui::Columns() calls.
             // [/!\ WARNING /!\]
             ui::Columns(2);
         }

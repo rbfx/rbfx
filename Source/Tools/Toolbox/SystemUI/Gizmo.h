@@ -99,8 +99,6 @@ public:
     void SetScreenRect(const IntRect& rect);
 
 protected:
-    /// Renders debug info of selected nodes if scene has debug renderer component.
-    void RenderDebugInfo();
     /// Process mouse clicks and auto-select nodes.
     void HandleAutoSelection();
 
