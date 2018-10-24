@@ -93,8 +93,10 @@ void PluginApplication::RegisterFactory(const char* category)
     {                                                                     \
         return Urho3D::PluginApplication::PluginMain(ctx, operation,      \
             [](Urho3D::Context* context) -> Urho3D::PluginApplication* {  \
-                return new Class(context);                                \
+                auto* instance = new Class(context);                      \
+                instance->AddRef();                                       \
+                return instance;                                          \
             }, [](Urho3D::PluginApplication* plugin) {                    \
-                delete plugin;                                            \
+                plugin->ReleaseRef();                                     \
             });                                                           \
     }
