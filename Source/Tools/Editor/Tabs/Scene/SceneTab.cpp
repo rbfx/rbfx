@@ -31,7 +31,7 @@
 #include "EditorEvents.h"
 #include "Editor.h"
 #include "Widgets.h"
-#include "SceneSettings.h"
+#include "EditorSceneSettings.h"
 #include "Tabs/HierarchyTab.h"
 #include "Tabs/InspectorTab.h"
 #include "Tabs/PreviewTab.h"
@@ -47,7 +47,7 @@ static const IntVector2 cameraPreviewSize{320, 200};
 
 SceneTab::SceneTab(Context* context)
     : BaseClassName(context)
-    , view_(context, {0, 0, 1024, 768})
+    , rect_({0, 0, 1024, 768})
     , gizmo_(context)
     , undo_(context)
     , clipboard_(context)
@@ -55,9 +55,24 @@ SceneTab::SceneTab(Context* context)
     SetTitle("New Scene");
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 
+    // Scene
+    scene_ = SharedPtr<Scene>(new Scene(context));
+    scene_->CreateComponent<Octree>();
+    scene_->CreateComponent<EditorSceneSettings>()->CreateEditorObjects();
+
+    // Main viewport
+    viewport_ = new Viewport(context_);
+    viewport_->SetScene(scene_);
+    viewport_->SetRect(rect_);
+    texture_ = new Texture2D(context_);
+    texture_->SetSize(rect_.Width(), rect_.Height(), Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
+    texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
+    texture_->GetRenderSurface()->SetViewport(0, viewport_);
+    viewport_->SetCamera(GetCamera());
+
     // Camera preview objects
     cameraPreviewViewport_ = new Viewport(context_);
-    cameraPreviewViewport_->SetScene(view_.GetScene());
+    cameraPreviewViewport_->SetScene(scene_);
     cameraPreviewViewport_->SetRect(IntRect{{0, 0}, cameraPreviewSize});
     cameraPreviewViewport_->SetDrawDebug(false);
     cameraPreviewtexture_ = new Texture2D(context_);
@@ -73,7 +88,7 @@ SceneTab::SceneTab(Context* context)
 
     SubscribeToEvent(E_SCENESETTINGMODIFIED, [this](StringHash, VariantMap& args) {
         using namespace SceneSettingModified;
-        if (GetScene()->GetComponent<SceneSettings>() != GetEventSender())
+        if (GetScene()->GetComponent<EditorSceneSettings>() != GetEventSender())
             return;
         // TODO: Stinks.
         if (args[P_NAME].GetString() == "Editor Viewport RenderPath")
@@ -100,7 +115,7 @@ SceneTab::SceneTab(Context* context)
                             }
                         }
                     };
-                    setRenderPathToViewport(GetSceneView()->GetViewport());
+                    setRenderPathToViewport(GetViewport());
                     setRenderPathToViewport(cameraPreviewViewport_);
                 }
             }
@@ -137,7 +152,6 @@ SceneTab::SceneTab(Context* context)
     // Scene is updated manually.
     GetScene()->SetUpdateEnabled(false);
 
-    CreateObjects();
     undo_.Clear();
 
     UpdateUniqueTitle();
@@ -164,8 +178,8 @@ bool SceneTab::RenderWindowContent()
 
     ui::SetCursorScreenPos(ToImGui(tabRect.Min()));
     ui::BeginChild("Scene view");
-    ui::Image(view_.GetTexture(), ToImGui(tabRect.Size()));
-    gizmo_.ManipulateSelection(view_.GetCamera());
+    ui::Image(texture_, ToImGui(tabRect.Size()));
+    gizmo_.ManipulateSelection(GetCamera());
 
     if (GetInput()->IsMouseVisible())
         mouseHoversViewport_ = ui::IsItemHovered();
@@ -200,7 +214,7 @@ bool SceneTab::RenderWindowContent()
         IntVector2 pos = GetInput()->GetMousePosition();
         pos -= tabRect.Min();
 
-        Ray cameraRay = view_.GetCamera()->GetScreenRay((float)pos.x_ / tabRect.Width(), (float)pos.y_ / tabRect.Height());
+        Ray cameraRay = GetCamera()->GetScreenRay((float)pos.x_ / tabRect.Width(), (float)pos.y_ / tabRect.Height());
         // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
         PODVector<RayQueryResult> results;
 
@@ -317,7 +331,6 @@ bool SceneTab::LoadResource(const String& resourcePath)
         auto* file = GetCache()->GetResource<XMLFile>(resourcePath);
         if (file && GetScene()->LoadXML(file->GetRoot()))
         {
-            CreateObjects();
         }
         else
         {
@@ -330,7 +343,6 @@ bool SceneTab::LoadResource(const String& resourcePath)
         auto* file = GetCache()->GetResource<JSONFile>(resourcePath);
         if (file && GetScene()->LoadJSON(file->GetRoot()))
         {
-            CreateObjects();
         }
         else
         {
@@ -347,7 +359,7 @@ bool SceneTab::LoadResource(const String& resourcePath)
     SetTitle(GetFileName(resourcePath));
 
     // Components for custom scene settings
-    GetScene()->GetOrCreateComponent<SceneSettings>(LOCAL, FIRST_INTERNAL_ID);
+    GetScene()->GetOrCreateComponent<EditorSceneSettings>(LOCAL, FIRST_INTERNAL_ID + 4)->CreateEditorObjects();
 
     return true;
 }
@@ -382,15 +394,6 @@ bool SceneTab::SaveResource()
         URHO3D_LOGERRORF("Saving scene to %s failed.", resourceName_.CString());
 
     return result;
-}
-
-void SceneTab::CreateObjects()
-{
-    auto isTracking = undo_.IsTrackingEnabled();
-    undo_.SetTrackingEnabled(false);
-    view_.CreateObjects();
-    view_.GetCamera()->GetNode()->GetOrCreateComponent<DebugCameraController>();
-    undo_.SetTrackingEnabled(isTracking);
 }
 
 void SceneTab::Select(Node* node)
@@ -519,6 +522,15 @@ void SceneTab::RenderToolbarButtons()
 
     ui::SameLine(0, 3.f);
 
+    if (EditorSceneSettings* settings = scene_->GetComponent<EditorSceneSettings>())
+    {
+        if (ui::EditorToolbarButton("3D", "3D mode in editor viewport.", !settings->GetCamera2D()))
+            settings->SetCamera2D(false);
+        if (ui::EditorToolbarButton("2D", "2D mode in editor viewport.", settings->GetCamera2D()))
+            settings->SetCamera2D(true);
+    }
+    ui::SameLine(0, 3.f);
+
     SendEvent(E_EDITORTOOLBARBUTTONS);
 
     ui::SameLine(0, 3.f);
@@ -593,7 +605,7 @@ void SceneTab::RenderNodeTree(Node* node)
     if (node->GetParent() == nullptr)
         flags |= ImGuiTreeNodeFlags_DefaultOpen;
 
-    if (node->IsTemporary())
+    if (node->IsTemporary() || node->HasTag("__EDITOR_OBJECT__"))
         return;
 
     if (node == scrollTo_.Get())
@@ -753,25 +765,12 @@ void SceneTab::OnLoadProject(const JSONValue& tab)
 
     BaseClassName::OnLoadProject(tab);
 
-    const auto& camera = tab["camera"];
-    if (camera.IsObject())
-    {
-        Node* cameraNode = view_.GetCamera()->GetNode();
-        cameraNode->SetPosition(camera["position"].GetVariant().GetVector3());
-        cameraNode->SetRotation(camera["rotation"].GetVariant().GetQuaternion());
-    }
-
     undo_.SetTrackingEnabled(isTracking);
 }
 
 void SceneTab::OnSaveProject(JSONValue& tab)
 {
     BaseClassName::OnSaveProject(tab);
-
-    auto& camera = tab["camera"];
-    Node* cameraNode = view_.GetCamera()->GetNode();
-    camera["position"].SetVariant(cameraNode->GetPosition());
-    camera["rotation"].SetVariant(cameraNode->GetRotation());
 }
 
 void SceneTab::OnActiveUpdate()
@@ -798,7 +797,7 @@ void SceneTab::RemoveSelection()
 IntRect SceneTab::UpdateViewRect()
 {
     IntRect tabRect = BaseClassName::UpdateViewRect();
-    view_.SetSize(tabRect);
+    ResizeMainViewport(tabRect);
     gizmo_.SetScreenRect(tabRect);
     return tabRect;
 }
@@ -807,10 +806,17 @@ void SceneTab::OnUpdate(VariantMap& args)
 {
     float timeStep = args[Update::P_TIMESTEP].GetFloat();
 
-    if (auto component = view_.GetCamera()->GetComponent<DebugCameraController>())
+
+    bool isMode3D_ = !scene_->GetComponent<EditorSceneSettings>()->GetCamera2D();
+    StringHash cameraControllerType = isMode3D_ ? DebugCameraController::GetTypeStatic() : DebugCameraController2D::GetTypeStatic();
+    if (Camera* camera = GetCamera())
     {
-        if (mouseHoversViewport_)
-            component->Update(timeStep);
+        LogicComponent* component = static_cast<LogicComponent*>(camera->GetComponent(cameraControllerType));
+        if (component != nullptr)
+        {
+            if (mouseHoversViewport_)
+                component->Update(timeStep);
+        }
     }
 
     if (Tab* tab = GetSubsystem<Editor>()->GetActiveTab())
@@ -837,12 +843,15 @@ void SceneTab::OnUpdate(VariantMap& args)
     }
 
     // Render editor camera rotation guide
-    if (auto* debug = GetScene()->GetComponent<DebugRenderer>())
+    if (isMode3D_)
     {
-        Vector3 guideRoot = GetSceneView()->GetCamera()->ScreenToWorldPoint({0.95, 0.1, 1});
-        debug->AddLine(guideRoot, guideRoot + Vector3::RIGHT * 0.05f, Color::RED, false);
-        debug->AddLine(guideRoot, guideRoot + Vector3::UP * 0.05f, Color::GREEN, false);
-        debug->AddLine(guideRoot, guideRoot + Vector3::FORWARD * 0.05f, Color::BLUE, false);
+        if (auto* debug = GetScene()->GetComponent<DebugRenderer>())
+        {
+            Vector3 guideRoot = GetCamera()->ScreenToWorldPoint({0.95, 0.1, 1});
+            debug->AddLine(guideRoot, guideRoot + Vector3::RIGHT * 0.05f, Color::RED, false);
+            debug->AddLine(guideRoot, guideRoot + Vector3::UP * 0.05f, Color::GREEN, false);
+            debug->AddLine(guideRoot, guideRoot + Vector3::FORWARD * 0.05f, Color::BLUE, false);
+        }
     }
 }
 
@@ -886,6 +895,9 @@ void SceneTab::SceneStateRestore(VectorBuffer& source)
 
     if (editorObjectsState.GetSize() > 0)
     {
+        if (Node* objects = GetScene()->GetChild("EditorObjects"))
+            objects->Remove();
+
         // Make sure camera is not reset upon stopping scene simulation.
         editorObjectsState.Seek(0);
         auto nodeID = editorObjectsState.ReadUInt();
@@ -893,7 +905,6 @@ void SceneTab::SceneStateRestore(VectorBuffer& source)
         editorObjectsState.Seek(0);
         editorObjects->Load(editorObjectsState);
     }
-    CreateObjects();
 
     // Restore previous selection
     UnselectAll();
@@ -906,6 +917,7 @@ void SceneTab::SceneStateRestore(VectorBuffer& source)
     savedComponentSelection_.Clear();
 
     UpdateCameraPreview();
+    viewport_->SetCamera(GetCamera());
 }
 
 void SceneTab::RenderNodeContextMenu()
@@ -1003,7 +1015,7 @@ void SceneTab::OnComponentAdded(VariantMap& args)
     auto* component = static_cast<Component*>(args[P_COMPONENT].GetPtr());
     auto* node = static_cast<Node*>(args[P_NODE].GetPtr());
 
-    if (node->IsTemporary() || node->HasTag("__EDITOR_OBJECT__"))
+    if (node->IsTemporary() || node->HasTag("__EDITOR_OBJECT__") || node->GetID() >= FIRST_INTERNAL_ID)
         return;
 
     auto* material = GetCache()->GetResource<Material>("Materials/Editor/DebugIcon" + component->GetTypeName() + ".xml", false);
@@ -1075,7 +1087,7 @@ void SceneTab::OnFocused()
     if (InspectorTab* inspector = GetSubsystem<Editor>()->GetTab<InspectorTab>())
     {
         if (auto* inspectorProvider = dynamic_cast<MaterialInspector*>(inspector->GetInspector(IC_RESOURCE)))
-            inspectorProvider->SetEffectSource(GetSceneView()->GetViewport()->GetRenderPath());
+            inspectorProvider->SetEffectSource(GetViewport()->GetRenderPath());
     }
 }
 
@@ -1091,7 +1103,7 @@ void SceneTab::UpdateCameraPreview()
             {
                 camera->SetViewMask(camera->GetViewMask() & ~EDITOR_VIEW_LAYER);
                 cameraPreviewViewport_->SetCamera(camera);
-                cameraPreviewViewport_->SetRenderPath(GetSceneView()->GetViewport()->GetRenderPath());
+                cameraPreviewViewport_->SetRenderPath(GetViewport()->GetRenderPath());
             }
         }
     }
@@ -1120,6 +1132,26 @@ void SceneTab::PasteToSelection()
 
     for (Component* component : result.components_)
         selectedComponents_.Insert(WeakPtr<Component>(component));
+}
+
+void SceneTab::ResizeMainViewport(const IntRect& rect)
+{
+    if (rect_ == rect)
+        return;
+
+    rect_ = rect;
+    viewport_->SetRect(IntRect(IntVector2::ZERO, rect.Size()));
+    texture_->SetSize(rect.Width(), rect.Height(), Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
+    texture_->GetRenderSurface()->SetViewport(0, viewport_);
+    texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
+    viewport_->SetCamera(GetCamera());
+}
+
+Camera* SceneTab::GetCamera()
+{
+    if (Node* node = scene_->GetChild("__EditorCamera__", true))
+        return node->GetComponent<Camera>();
+    return nullptr;
 }
 
 }

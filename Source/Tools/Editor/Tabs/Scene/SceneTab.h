@@ -35,7 +35,7 @@
 namespace Urho3D
 {
 
-class SceneSettings;
+class EditorSceneSettings;
 class SceneEffects;
 
 class SceneTab : public BaseResourceTab, public IHierarchyProvider, public IInspectorProvider
@@ -88,24 +88,24 @@ public:
     const Vector<WeakPtr<Node>>& GetSelection() const;
     /// Removes component if it was selected in inspector, otherwise removes selected scene nodes.
     void RemoveSelection();
-    /// Return scene view.
-    SceneView* GetSceneView() { return &view_; }
     /// Return scene displayed in the tab viewport.
-    Scene* GetScene() { return view_.GetScene(); }
+    Scene* GetScene() { return scene_; }
+    ///
+    Viewport* GetViewport() { return viewport_; }
     /// Returns undo state manager.
     Undo::Manager& GetUndo() { return undo_; }
     /// Serialize scene to binary buffer.
     void SceneStateSave(VectorBuffer& destination);
     /// Unserialize scene from binary buffer.
     void SceneStateRestore(VectorBuffer& source);
+    ///
+    Camera* GetCamera();
 
 protected:
     /// Render scene hierarchy window starting from specified node.
     void RenderNodeTree(Node* node);
     /// Called when node selection changes.
     void OnNodeSelectionChanged();
-    /// Creates scene camera and other objects required by editor.
-    void CreateObjects();
     /// Render content of the tab window.
     bool RenderWindowContent() override;
     /// Called right before ui::Begin() of tab.
@@ -132,9 +132,17 @@ protected:
     void CopySelection();
     ///
     void PasteToSelection();
+    ///
+    void ResizeMainViewport(const IntRect& rect);
 
-    /// Scene renderer.
-    SceneView view_;
+    /// Rectangle dimensions that are rendered by this view.
+    IntRect rect_;
+    /// Scene which is rendered by this view.
+    SharedPtr<Scene> scene_;
+    /// Texture to which scene is rendered.
+    SharedPtr<Texture2D> texture_;
+    /// Viewport which defines rendering area.
+    SharedPtr<Viewport> viewport_;
     /// Gizmo used for manipulating scene elements.
     Gizmo gizmo_;
     /// Current selected component displayed in inspector.
