@@ -445,8 +445,8 @@ void Editor::OpenProject(const String& projectPath)
 void Editor::CloseProject()
 {
     context_->RemoveSubsystem<Project>();
-    project_.Reset();
     tabs_.Clear();
+    project_.Reset();
 }
 
 void Editor::HandleHotkeys()
