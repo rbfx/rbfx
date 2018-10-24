@@ -864,36 +864,36 @@ void SceneTab::SceneStateSave(VectorBuffer& destination)
             savedComponentSelection_.Push(component->GetID());
     }
 
-    // Ensure that editor objects are saved.
-    PODVector<Node*> nodes;
-    GetScene()->GetNodesWithTag(nodes, "__EDITOR_OBJECT__");
-    for (auto* node : nodes)
-        node->SetTemporary(false);
-
     destination.Clear();
     GetScene()->Save(destination);
-
-    // Now that editor objects are saved make sure UI does not expose them
-    for (auto* node : nodes)
-        node->SetTemporary(true);
 }
 
 void SceneTab::SceneStateRestore(VectorBuffer& source)
 {
     Undo::SetTrackingScoped tracking(undo_, false);
 
+    VectorBuffer editorObjectsState;
+    if (Node* editorObjects = GetScene()->GetChild("EditorObjects"))
+    {
+        // Preserve state of editor camera.
+        editorObjects->SetTemporary(false);
+        editorObjects->Save(editorObjectsState);
+    }
+
     source.Seek(0);
     GetScene()->Load(source);
-
-    CreateObjects();
-
-    // Ensure that editor objects are not saved in user scene.
-    PODVector<Node*> nodes;
-    GetScene()->GetNodesWithTag(nodes, "__EDITOR_OBJECT__");
-    for (auto* node : nodes)
-        node->SetTemporary(true);
-
     source.Clear();
+
+    if (editorObjectsState.GetSize() > 0)
+    {
+        // Make sure camera is not reset upon stopping scene simulation.
+        editorObjectsState.Seek(0);
+        auto nodeID = editorObjectsState.ReadUInt();
+        Node* editorObjects = GetScene()->CreateChild("EditorObjects", LOCAL, nodeID, true);
+        editorObjectsState.Seek(0);
+        editorObjects->Load(editorObjectsState);
+    }
+    CreateObjects();
 
     // Restore previous selection
     UnselectAll();

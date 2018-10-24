@@ -44,8 +44,8 @@ SceneView::SceneView(Context* context, const IntRect& rect)
     viewport_->SetRect(IntRect(IntVector2::ZERO, rect_.Size()));
     CreateObjects();
     texture_ = SharedPtr<Texture2D>(new Texture2D(context));
-    // Make sure viewport is not using default renderpath. That would cause issues when renderpath is shared with other
-    // viewports (like in resource inspector).
+    // Make sure viewport is not using default renderpath. That would cause issues when renderpath
+    // is shared with other viewports (like in resource inspector).
     viewport_->SetRenderPath(viewport_->GetRenderPath()->Clone());
     SetSize(rect);
 }
@@ -64,13 +64,18 @@ void SceneView::SetSize(const IntRect& rect)
 
 void SceneView::CreateObjects()
 {
-    camera_ = WeakPtr<Node>(scene_->GetChild("EditorCamera", true));
-    if (camera_.Expired())
+    Node* parent = scene_->GetChild("EditorObjects");
+    if (parent == nullptr)
     {
-        camera_ = scene_->CreateChild("EditorCamera", LOCAL, FIRST_INTERNAL_ID, true);
-        camera_->CreateComponent<Camera>()->SetFarClip(160000);
-        camera_->AddTag("__EDITOR_OBJECT__");
-        camera_->SetTemporary(true);
+        parent = scene_->CreateChild("EditorObjects", LOCAL, FIRST_INTERNAL_ID, true);
+        parent->AddTag("__EDITOR_OBJECT__");
+    }
+    Node* camera = parent->GetChild("EditorCamera");
+    if (camera == nullptr)
+    {
+        camera = parent->CreateChild("EditorCamera", LOCAL, FIRST_INTERNAL_ID);
+        camera->CreateComponent<Camera>()->SetFarClip(160000);
+        camera->AddTag("__EDITOR_OBJECT__");
     }
     auto* debug = scene_->GetOrCreateComponent<DebugRenderer>(LOCAL, FIRST_INTERNAL_ID);
     debug->SetView(GetCamera());
@@ -81,10 +86,7 @@ void SceneView::CreateObjects()
 
 Camera* SceneView::GetCamera() const
 {
-    if (camera_.Null())
-        return nullptr;
-
-    return camera_->GetComponent<Camera>();
+    return scene_->GetChild("EditorObjects")->GetChild("EditorCamera")->GetComponent<Camera>();
 }
 
 }
