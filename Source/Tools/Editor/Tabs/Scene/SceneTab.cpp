@@ -1004,6 +1004,85 @@ void SceneTab::RenderNodeContextMenu()
         if (ui::MenuItem(ICON_FA_TRASH " Delete", "Del"))
             RemoveSelection();
 
+        ui::Separator();
+
+        if (ui::BeginMenu("Debug Info"))
+        {
+            enum class DebugInfoMode
+            {
+                AUTOMATIC,
+                ALWAYS,
+                NEVER,
+                MISMATCH,
+                NONE,
+            } debugMode = DebugInfoMode::NONE;
+
+            for (auto& node : GetSelection())
+            {
+                if (node.Null())
+                    continue;
+
+                DebugInfoMode nodeMode;
+                if (node->HasTag("DebugInfoNever"))
+                    nodeMode = DebugInfoMode::NEVER;
+                else if (node->HasTag("DebugInfoAlways"))
+                    nodeMode = DebugInfoMode::ALWAYS;
+                else
+                    nodeMode = DebugInfoMode::AUTOMATIC;
+
+                if (debugMode == DebugInfoMode::NONE)
+                    debugMode = nodeMode;
+                else if (debugMode != nodeMode)
+                {
+                    debugMode = DebugInfoMode::MISMATCH;
+                    break;
+                }
+            }
+
+            bool setDebugMode = false;
+            if (ui::MenuItem("Automatic", nullptr, debugMode == DebugInfoMode::AUTOMATIC))
+            {
+                debugMode = DebugInfoMode::AUTOMATIC;
+                setDebugMode = true;
+            }
+            if (ui::MenuItem("Always", nullptr, debugMode == DebugInfoMode::ALWAYS))
+            {
+                debugMode = DebugInfoMode::ALWAYS;
+                setDebugMode = true;
+            }
+            if (ui::MenuItem("Never", nullptr, debugMode == DebugInfoMode::NEVER))
+            {
+                debugMode = DebugInfoMode::NEVER;
+                setDebugMode = true;
+            }
+
+            if (setDebugMode)
+            {
+                for (auto& node : GetSelection())
+                {
+                    if (node.Null())
+                        continue;
+
+                    if (debugMode == DebugInfoMode::AUTOMATIC)
+                    {
+                        node->RemoveTag("DebugInfoAlways");
+                        node->RemoveTag("DebugInfoNever");
+                    }
+                    if (debugMode == DebugInfoMode::ALWAYS)
+                    {
+                        node->AddTag("DebugInfoAlways");
+                        node->RemoveTag("DebugInfoNever");
+                    }
+                    if (debugMode == DebugInfoMode::NEVER)
+                    {
+                        node->RemoveTag("DebugInfoAlways");
+                        node->AddTag("DebugInfoNever");
+                    }
+                }
+            }
+            ui::EndMenu();
+        }
+
         ui::EndPopup();
     }
 }
@@ -1167,13 +1246,25 @@ void SceneTab::RenderDebugInfo()
             component->DrawDebugGeometry(debug, true);
     };
 
-    for (auto& node : GetSelection())
+    const auto& selection = GetSelection();
+    for (auto& node : selection)
     {
-        if (node)
+        if (node && !node->HasTag("DebugInfoNever"))
         {
             for (auto& component: node->GetComponents())
                 renderDebugInfo(component);
         }
+    }
+
+    PODVector<Node*> debugNodes;
+    scene_->GetNodesWithTag(debugNodes, "DebugInfoAlways");
+    for (Node* node : debugNodes)
+    {
+        if (selection.Contains(WeakPtr<Node>(node)))
+            continue;
+
+        for (auto& component: node->GetComponents())
+            renderDebugInfo(component);
     }
 
     for (auto& component : selectedComponents_)
