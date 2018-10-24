@@ -95,28 +95,42 @@ void Manager::Connect(Scene* scene)
     {
         if (!trackingEnabled_)
             return;
-        Track<CreateNodeAction>(dynamic_cast<Node*>(args[NodeAdded::P_NODE].GetPtr()));
+        auto* node = dynamic_cast<Node*>(args[NodeAdded::P_NODE].GetPtr());
+        if (node->HasTag("__EDITOR_OBJECT__"))
+            return;
+        Track<CreateNodeAction>(node);
     });
 
     SubscribeToEvent(scene, E_NODEREMOVED, [&](StringHash, VariantMap& args)
     {
         if (!trackingEnabled_)
             return;
-        Track<DeleteNodeAction>(dynamic_cast<Node*>(args[NodeRemoved::P_NODE].GetPtr()));
+        auto* node = dynamic_cast<Node*>(args[NodeRemoved::P_NODE].GetPtr());
+        if (node->HasTag("__EDITOR_OBJECT__"))
+            return;
+        Track<DeleteNodeAction>(node);
     });
 
     SubscribeToEvent(scene, E_COMPONENTADDED, [&](StringHash, VariantMap& args)
     {
         if (!trackingEnabled_)
             return;
-        Track<CreateComponentAction>(dynamic_cast<Component*>(args[ComponentAdded::P_COMPONENT].GetPtr()));
+        auto* node = dynamic_cast<Node*>(args[ComponentAdded::P_NODE].GetPtr());
+        auto* component = dynamic_cast<Component*>(args[ComponentAdded::P_COMPONENT].GetPtr());
+        if (node->HasTag("__EDITOR_OBJECT__"))
+            return;
+        Track<CreateComponentAction>(component);
     });
 
     SubscribeToEvent(scene, E_COMPONENTREMOVED, [&](StringHash, VariantMap& args)
     {
         if (!trackingEnabled_)
             return;
-        Track<DeleteComponentAction>(dynamic_cast<Component*>(args[ComponentAdded::P_COMPONENT].GetPtr()));
+        auto* node = dynamic_cast<Node*>(args[ComponentRemoved::P_NODE].GetPtr());
+        auto* component = dynamic_cast<Component*>(args[ComponentRemoved::P_COMPONENT].GetPtr());
+        if (node->HasTag("__EDITOR_OBJECT__"))
+            return;
+        Track<DeleteComponentAction>(component);
     });
 }
 
@@ -128,6 +142,12 @@ void Manager::Connect(AttributeInspector* inspector)
             return;
         using namespace AttributeInspectorValueModified;
         auto item = dynamic_cast<Serializable*>(args[P_SERIALIZABLE].GetPtr());
+        if (Node* node = dynamic_cast<Node*>(item))
+        {
+            if (node->HasTag("__EDITOR_OBJECT__"))
+                return;
+        }
+
         const auto& name = reinterpret_cast<AttributeInfo*>(args[P_ATTRIBUTEINFO].GetVoidPtr())->name_;
         const auto& oldValue = args[P_OLDVALUE];
         const auto& newValue = item->GetAttribute(name);
@@ -175,6 +195,8 @@ void Manager::Connect(Gizmo* gizmo)
             return;
         using namespace GizmoNodeModified;
         auto node = dynamic_cast<Node*>(args[P_NODE].GetPtr());
+        if (node->HasTag("__EDITOR_OBJECT__"))
+            return;
         const auto& oldTransform = args[P_OLDTRANSFORM].GetMatrix3x4();
         const auto& newTransform = args[P_NEWTRANSFORM].GetMatrix3x4();
 
