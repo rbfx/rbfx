@@ -123,7 +123,7 @@ void CameraViewport::OnSceneSet(Scene* scene)
 
 IntVector2 CameraViewport::GetScreenSize() const
 {
-    const Variant& screenSize = context_->GetGlobalVar("__GameScreenSize__");
+    const Variant& screenSize = GetGraphics()->GetRenderTargetDimensions();
     if (screenSize.IsEmpty())
         return GetGraphics()->GetSize();
     return screenSize.GetIntVector2();

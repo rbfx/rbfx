@@ -106,7 +106,6 @@ IntRect PreviewTab::UpdateViewRect()
     if (viewRect_ != tabRect)
     {
         viewRect_ = tabRect;
-        context_->SetGlobalVar("__GameScreenSize__", viewRect_.Size());
         view_->SetSize(tabRect.Width(), tabRect.Height(), Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
         view_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
         UpdateViewports();
