@@ -22,7 +22,7 @@
 
 #if URHO3D_PLUGINS
 
-#define CR_HOST
+#define CR_HOST CR_DISABLE
 
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/Thread.h>
