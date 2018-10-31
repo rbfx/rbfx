@@ -26,6 +26,8 @@
 #include <Toolbox/IO/ContentUtilities.h>
 #include <Toolbox/SystemUI/Widgets.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <ImGui/imgui.h>
+#include <ImGui/imgui_internal.h>
 #include "EditorEvents.h"
 #include "Editor.h"
 #include "Widgets.h"
@@ -44,7 +46,19 @@ UITab::UITab(Context* context)
     SetTitle("New UI Layout");
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 
+    texture_ = new Texture2D(context_);
+    texture_->SetFilterMode(FILTER_BILINEAR);
+    texture_->SetAddressMode(COORD_U, ADDRESS_CLAMP);
+    texture_->SetAddressMode(COORD_V, ADDRESS_CLAMP);
+    texture_->SetNumLevels(1);
+
     rootElement_ = new RootUIElement(context_);
+    rootElement_->SetTraversalMode(TM_BREADTH_FIRST);
+    rootElement_->SetEnabled(true);
+
+    offScreenUI_ = new UI(context_);
+    offScreenUI_->SetRoot(rootElement_);
+    offScreenUI_->SetRenderTarget(texture_);
 
     undo_.Connect(rootElement_);
     undo_.Connect(&inspector_);
@@ -176,7 +190,9 @@ bool UITab::RenderWindowContent()
     IntRect tabRect = UpdateViewRect();
 
     ui::SetCursorScreenPos(ToImGui(tabRect.Min()));
-    ui::Image(texture_, ToImGui(tabRect.Size()));
+    ImVec2 contentSize = ToImGui(tabRect.Size());
+    ui::BeginChild("UI view", contentSize, false, windowFlags_);
+    ui::Image(texture_, contentSize);
 
     if (auto selected = GetSelected())
     {
@@ -220,15 +236,14 @@ bool UITab::RenderWindowContent()
     }
 
     RenderRectSelector();
+    ui::EndChild();
 
     return true;
 }
 
 void UITab::RenderToolbarButtons()
 {
-    auto& style = ui::GetStyle();
-    auto oldRounding = style.FrameRounding;
-    style.FrameRounding = 0;
+    ui::StyleVarScope frameRoundingMod(ImGuiStyleVar_FrameRounding, 0);
 
     if (ui::EditorToolbarButton(ICON_FA_SAVE, "Save"))
         SaveResource();
@@ -239,14 +254,15 @@ void UITab::RenderToolbarButtons()
 //        undo_.Undo();
 //    if (ui::EditorToolbarButton(ICON_FA_REDO, "Redo"))
 //        undo_.Redo();
-
-    ui::SameLine(0, 3.f);
+//
+//    ui::SameLine(0, 3.f);
 
     ui::Checkbox("Show Internal", &showInternal_);
     ui::SameLine();
     ui::Checkbox("Hide Resize Handles", &hideResizeHandles_);
 
-    style.FrameRounding = oldRounding;
+    ui::SameLine(0, 3.f);
+    ui::SetCursorPosY(ui::GetCursorPosY() + 4_dpx);
 }
 
 void UITab::OnActiveUpdate()
@@ -269,8 +285,8 @@ void UITab::OnActiveUpdate()
     {
         if (input->GetMouseButtonPress(MOUSEB_LEFT) || input->GetMouseButtonPress(MOUSEB_RIGHT))
         {
-            auto pos = input->GetMousePosition();
-            auto clicked = GetSubsystem<UI>()->GetElementAt(pos, false);
+            IntVector2 pos = rootElement_->ScreenToElement(input->GetMousePosition());
+            UIElement* clicked = offScreenUI_->GetElementAt(pos, false);
             if (!clicked && rootElement_->GetCombinedScreenRect().IsInside(pos) == INSIDE && !ui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
                 clicked = rootElement_;
 
@@ -289,31 +305,15 @@ void UITab::OnActiveUpdate()
 
 IntRect UITab::UpdateViewRect()
 {
-    if (texture_.Null())
-    {
-        // TODO: Stinks. These need to be initialized after at least one SystemUI frame has rendered. However project may be loaded from command line and that would call initializing code too early.
-        texture_ = new Texture2D(context_);
-        texture_->SetFilterMode(FILTER_BILINEAR);
-        texture_->SetAddressMode(COORD_U, ADDRESS_CLAMP);
-        texture_->SetAddressMode(COORD_V, ADDRESS_CLAMP);
-        texture_->SetNumLevels(1);
-        rootElement_->SetRenderTexture(texture_);
-        rootElement_->SetEnabled(true);
-    }
-
     IntRect rect = BaseClassName::UpdateViewRect();
+    // Correct content rect to not overlap buttons. Ideally this should be in Tab.cpp but for some reason it creates
+    // unused space at the bottom of PreviewTab.
+    rect.top_ += static_cast<int>(ui::GetCursorPosY());
 
     if (rect.Width() != texture_->GetWidth() || rect.Height() != texture_->GetHeight())
     {
-        if (texture_->SetSize(rect.Width(), rect.Height(), GetSubsystem<Graphics>()->GetRGBAFormat(),
-                              TEXTURE_RENDERTARGET))
-        {
-            rootElement_->SetSize(rect.Width(), rect.Height());
-            rootElement_->SetOffset(rect.Min());
-            texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
-        }
-        else
-            URHO3D_LOGERROR("UITab: resizing texture failed.");
+        rootElement_->SetOffset(rect.Min());
+        offScreenUI_->SetCustomSize(rect.Width(), rect.Height());
     }
 
     return rect;
@@ -599,7 +599,7 @@ String UITab::GetAppliedStyle(UIElement* element)
 
 void UITab::RenderRectSelector()
 {
-    auto* selected = GetSelected()->Cast<BorderImage>();
+    auto* selected = GetSelected() ? GetSelected()->Cast<BorderImage>() : nullptr;
 
     if (textureSelectorAttribute_.Empty() || selected == nullptr)
         return;

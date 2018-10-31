@@ -63,9 +63,6 @@ void Hello3DUI::Start()
     // Execute base class startup
     Sample::Start();
 
-    // Enable OS cursor
-    GetSubsystem<Input>()->SetMouseVisible(true);
-
     // Load XML file containing default UI style sheet
     auto* cache = GetSubsystem<ResourceCache>();
     auto* style = cache->GetResource<XMLFile>("UI/DefaultStyle.xml");

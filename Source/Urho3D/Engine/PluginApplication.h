@@ -62,7 +62,7 @@ public:
     /// Register a factory for an object type and specify the object category.
     template<typename T> void RegisterFactory(const char* category);
     /// Main function of native plugin.
-    static int PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*), void(*destroyer)(PluginApplication*));
+    static int PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*));
 
 protected:
     /// Types registered with the engine. They will be unloaded when plugin is reloaded.
@@ -93,8 +93,8 @@ void PluginApplication::RegisterFactory(const char* category)
     {                                                                     \
         return Urho3D::PluginApplication::PluginMain(ctx, operation,      \
             [](Urho3D::Context* context) -> Urho3D::PluginApplication* {  \
-                return new Class(context);                                \
-            }, [](Urho3D::PluginApplication* plugin) {                    \
-                delete plugin;                                            \
+                auto* instance = new Class(context);                      \
+                instance->AddRef();                                       \
+                return instance;                                          \
             });                                                           \
     }

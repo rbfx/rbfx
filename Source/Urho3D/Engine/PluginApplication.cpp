@@ -22,6 +22,7 @@
 
 #include "../Core/Context.h"
 #include "../Engine/PluginApplication.h"
+#include "../IO/Log.h"
 #include <cr/cr.h>
 
 
@@ -41,8 +42,7 @@ PluginApplication::~PluginApplication()
     }
 }
 
-int PluginApplication::PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*),
-    void(*destroyer)(PluginApplication*))
+int PluginApplication::PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*))
 {
     assert(ctx_);
     auto* ctx = static_cast<cr_plugin*>(ctx_);
@@ -64,7 +64,14 @@ int PluginApplication::PluginMain(void* ctx_, size_t operation, PluginApplicatio
         auto* application = static_cast<PluginApplication*>(ctx->userdata);
         application->Unload();
         ctx->userdata = application->GetContext();
-        destroyer(application);
+        if (application->Refs() != 1)
+        {
+            URHO3D_LOGERRORF("Plugin application '%s' has more than one reference remaining. "
+                             "This may lead to memory leaks or crashes.",
+                             application->GetTypeName().CString());
+            assert(false);
+        }
+        application->ReleaseRef();
         return 0;
     }
     case CR_STEP:

@@ -37,7 +37,7 @@
 #include "EditorEvents.h"
 #include "EditorIconCache.h"
 #include "Tabs/Scene/SceneTab.h"
-#include "Tabs/Scene/SceneSettings.h"
+#include "Tabs/Scene/EditorSceneSettings.h"
 #include "Tabs/UI/UITab.h"
 #include "Tabs/InspectorTab.h"
 #include "Tabs/HierarchyTab.h"
@@ -133,7 +133,7 @@ void Editor::Start()
     GetInput()->SetMouseVisible(true);
     RegisterToolboxTypes(context_);
     context_->RegisterSubsystem(this);
-    SceneSettings::RegisterObject(context_);
+    EditorSceneSettings::RegisterObject(context_);
 
     GetCache()->SetAutoReloadResources(true);
 
@@ -445,8 +445,8 @@ void Editor::OpenProject(const String& projectPath)
 void Editor::CloseProject()
 {
     context_->RemoveSubsystem<Project>();
-    project_.Reset();
     tabs_.Clear();
+    project_.Reset();
 }
 
 void Editor::HandleHotkeys()

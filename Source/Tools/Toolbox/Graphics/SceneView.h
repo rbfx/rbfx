@@ -64,8 +64,6 @@ protected:
     SharedPtr<Texture2D> texture_;
     /// Viewport which defines rendering area.
     SharedPtr<Viewport> viewport_;
-    /// Camera which renders to a texture.
-    WeakPtr<Node> camera_;
 };
 
 }

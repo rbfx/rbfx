@@ -646,9 +646,6 @@ public:
     /// Return effective minimum size, also considering layout. Used internally.
     IntVector2 GetEffectiveMinSize() const;
 
-    /// Set texture to which element will be rendered.
-    void SetRenderTexture(Texture2D* texture);
-
 protected:
     /// Handle attribute animation added.
     void OnAttributeAnimationAdded() override;

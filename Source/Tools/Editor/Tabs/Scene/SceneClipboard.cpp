@@ -29,8 +29,9 @@
 namespace Urho3D
 {
 
-SceneClipboard::SceneClipboard(Context* context)
+SceneClipboard::SceneClipboard(Context* context, Undo::Manager& undo)
     : Object(context)
+    , undo_(undo)
 {
 }
 
@@ -80,6 +81,8 @@ PasteResult SceneClipboard::Paste(Node* node)
         if (newNode->Load(nodeData))
         {
             newNode->ApplyAttributes();
+            if (!newNode->GetName().Empty())
+                undo_.Track<Undo::EditAttributeAction>(newNode, "Name", String::EMPTY, newNode->GetName());
             result.nodes_.Push(newNode);
         }
         else

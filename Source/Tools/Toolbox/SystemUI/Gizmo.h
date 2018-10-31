@@ -89,8 +89,6 @@ public:
     bool UnselectAll();
     /// Return true if node is selected by gizmo.
     bool IsSelected(Node* node) const;
-    /// Enable auto-selection and gizmo rendering on scene to which specified camera belongs.
-    void EnableAutoMode(Camera* camera);
     /// Return list of selected nodes.
     const Vector<WeakPtr<Node>>& GetSelection() const { return nodeSelection_; }
     /// Set screen rect to which gizmo rendering will be limited. Use when putting gizmo in a window.
@@ -99,10 +97,6 @@ public:
     void SetScreenRect(const IntRect& rect);
 
 protected:
-    /// Renders debug info of selected nodes if scene has debug renderer component.
-    void RenderDebugInfo();
-    /// Process mouse clicks and auto-select nodes.
-    void HandleAutoSelection();
 
     /// Current gizmo operation. Translation, rotation or scaling.
     GizmoOperation operation_ = GIZMOOP_TRANSLATE;

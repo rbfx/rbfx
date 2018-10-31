@@ -63,63 +63,80 @@ PluginType GetPluginType(Context* context, const String& path)
         if (!file.Open(path, FILE_READ))
             return PLUGIN_INVALID;
 
-        String buf{};
-        buf.Resize(file.GetSize());
+        if (file.GetSize() == 0)
+            return PLUGIN_INVALID;
+
         file.Seek(0);
-        file.Read(&buf[0], file.GetSize());
-        file.Close();
 
         // Elf header parsing code based on elfdump by Owen Klan.
-        const auto base = reinterpret_cast<const char*>(buf.CString());
-        const auto hdr = reinterpret_cast<const Elf_Ehdr*>(base);
-        if (strncmp(reinterpret_cast<const char*>(hdr->e_ident), ELFMAG, SELFMAG) != 0)
+        Elf_Ehdr hdr;
+        if (file.Read(&hdr, sizeof(hdr)) != sizeof(hdr))
+            return PLUGIN_INVALID;
+
+        if (strncmp(reinterpret_cast<const char*>(hdr.e_ident), ELFMAG, SELFMAG) != 0)
             // Not elf.
             return PLUGIN_INVALID;
 
-        if (hdr->e_type != ET_DYN)
+        if (hdr.e_type != ET_DYN)
             return PLUGIN_INVALID;
 
         // Find symbol name table
-        const char* symNameTable = nullptr;
+        unsigned symNameTableOffset = 0;
         {
-            const Elf_Shdr* ptr = reinterpret_cast<const Elf_Shdr*>(base + hdr->e_shoff);
+            file.Seek(hdr.e_shoff + sizeof(Elf_Shdr) * hdr.e_shstrndx);
+            Elf_Shdr shdr;
+            if (file.Read(&shdr, sizeof(shdr)) != sizeof(shdr))
+                return PLUGIN_INVALID;
 
-            for (int i = 0; i < hdr->e_shstrndx; i++)
-                ptr++;
+            auto nameTableOffset = shdr.sh_offset;
+            auto shoff = hdr.e_shoff;
 
-            const char* nameTable = base + ptr->sh_offset;
-
-            ptr = reinterpret_cast<const Elf_Shdr*>(base + hdr->e_shoff);
-            for (auto i = 0; i < hdr->e_shnum; i++)
+            for (auto i = 0; i < hdr.e_shnum; i++)
             {
-                if (strncmp((nameTable + ptr->sh_name), ".strtab", 7) == 0)
+                file.Seek(shoff);
+                if (file.Read(&shdr, sizeof(shdr)) != sizeof(shdr))
+                    return PLUGIN_INVALID;
+
+                file.Seek(nameTableOffset + shdr.sh_name);
+
+                if (file.ReadString() == ".strtab")
                 {
-                    symNameTable = base + ptr->sh_offset;
+                    symNameTableOffset = shdr.sh_offset;
                     break;
                 }
                 else
-                    ptr++;
+                    shoff += sizeof(shdr);
             }
         }
 
-        if (symNameTable == nullptr)
+        if (symNameTableOffset == 0)
             return PLUGIN_INVALID;
 
         // Find cr_main symbol
         {
-            const Elf_Shdr* sectab = reinterpret_cast<const Elf_Shdr*>(base + hdr->e_shoff);
-            const Elf_Shdr* ptr = sectab;
-            while (ptr->sh_type != SHT_SYMTAB)
-                ptr++;
-            const Elf_Shdr* sym_tab = reinterpret_cast<const Elf_Shdr*>(base + ptr->sh_offset);
-            const Elf_Sym* symbol = reinterpret_cast<const Elf_Sym*>(sym_tab);
-            auto num = ptr->sh_size / ptr->sh_entsize;
+            auto shoff = hdr.e_shoff;
+            Elf_Shdr sectab;
+            do
+            {
+                file.Seek(shoff);
+                if (file.Read(&sectab, sizeof(sectab)) != sizeof(sectab))
+                    return PLUGIN_INVALID;
+                shoff += sizeof(sectab);
+            } while (sectab.sh_type != SHT_SYMTAB);
+
+            shoff = sectab.sh_offset;
+            auto num = sectab.sh_size / sectab.sh_entsize;
             for (auto i = 0; i < num; i++)
             {
-                const char* name = symNameTable + symbol->st_name;
-                if (strncmp(name, "cr_main", 7) == 0)
+                Elf_Sym symbol;
+                file.Seek(shoff);
+                if (file.Read(&symbol, sizeof(symbol)) != sizeof(symbol))
+                    return PLUGIN_INVALID;
+                shoff += sizeof(symbol);
+
+                file.Seek(symNameTableOffset + symbol.st_name);
+                if (file.ReadString() == "cr_main")
                     return PLUGIN_NATIVE;
-                symbol++;
             }
         }
     }
@@ -132,21 +149,23 @@ PluginType GetPluginType(Context* context, const String& path)
 
         if (file.ReadShort() == IMAGE_DOS_SIGNATURE)
         {
-            String buf{};
-            buf.Resize(file.GetSize());
+
+            IMAGE_DOS_HEADER dos;
             file.Seek(0);
-            file.Read(&buf[0], file.GetSize());
-            file.Close();
-
-            const auto base = reinterpret_cast<const char*>(buf.CString());
-            const auto dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(base);
-            const auto nt = reinterpret_cast<const IMAGE_NT_HEADERS*>(base + dos->e_lfanew);
-
-            if (nt->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR_MAGIC)
+            if (file.Read(&dos, sizeof(dos)) != sizeof(dos))
                 return PLUGIN_INVALID;
 
-            const auto& eatDir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
-            const auto& netDir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
+            file.Seek(dos.e_lfanew);
+            IMAGE_NT_HEADERS nt;
+            if (file.Read(&nt, sizeof(nt)) != sizeof(nt))
+                return PLUGIN_INVALID;
+
+
+            if (nt.OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR_MAGIC)
+                return PLUGIN_INVALID;
+
+            const auto& eatDir = nt.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
+            const auto& netDir = nt.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
             if (netDir.VirtualAddress != 0)
             {
 #if URHO3D_CSHARP
@@ -159,22 +178,38 @@ PluginType GetPluginType(Context* context, const String& path)
             {
                 // Verify that plugin has exported function named cr_main.
                 // Find section that contains EAT.
-                const auto* section = IMAGE_FIRST_SECTION(nt);
+
+                unsigned firstSectionOffset = dos.e_lfanew + FIELD_OFFSET(IMAGE_NT_HEADERS, OptionalHeader) + nt.FileHeader.SizeOfOptionalHeader;
                 uint32_t eatModifier = 0;
-                for (auto i = 0; i < nt->FileHeader.NumberOfSections; i++, section++)
+                for (auto i = 0; i < nt.FileHeader.NumberOfSections; i++)
                 {
-                    if (eatDir.VirtualAddress >= section->VirtualAddress && eatDir.VirtualAddress < (section->VirtualAddress + section->SizeOfRawData))
+                    file.Seek(firstSectionOffset + i * sizeof(IMAGE_SECTION_HEADER));
+                    IMAGE_SECTION_HEADER section;
+                    if (file.Read(&section, sizeof(section)) != sizeof(section))
+                        return PLUGIN_INVALID;
+
+                    if (eatDir.VirtualAddress >= section.VirtualAddress && eatDir.VirtualAddress < (section.VirtualAddress + section.SizeOfRawData))
                     {
-                        eatModifier = section->VirtualAddress - section->PointerToRawData;
+                        eatModifier = section.VirtualAddress - section.PointerToRawData;
                         break;
                     }
                 }
 
-                const auto eat = reinterpret_cast<const IMAGE_EXPORT_DIRECTORY*>(base + eatDir.VirtualAddress - eatModifier);
-                const auto names = reinterpret_cast<const uint32_t*>(base + eat->AddressOfNames - eatModifier);
-                for (auto i = 0; i < eat->NumberOfFunctions; i++)
+                IMAGE_EXPORT_DIRECTORY eat;
+                file.Seek(eatDir.VirtualAddress - eatModifier);
+                if (file.Read(&eat, sizeof(eat)) != sizeof(eat))
+                    return PLUGIN_INVALID;
+
+                unsigned namesOffset = eat.AddressOfNames - eatModifier;
+                for (auto i = 0; i < eat.NumberOfFunctions; i++)
                 {
-                    if (strcmp(base + names[i] - eatModifier, "cr_main") == 0)
+                    file.Seek(namesOffset + i * sizeof(uint32_t));
+                    unsigned nameOffset = 0;
+                    if (file.Read(&nameOffset, sizeof(nameOffset)) != sizeof(nameOffset))
+                        return PLUGIN_INVALID;
+
+                    file.Seek(nameOffset - eatModifier);
+                    if (file.ReadText() == "cr_main")
                         return PLUGIN_NATIVE;
                 }
             }

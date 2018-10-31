@@ -67,7 +67,7 @@ MaterialInspector::MaterialInspector(Context* context, Material* material)
     SubscribeToEvent(&attributeInspector_, E_INSPECTORRENDERATTRIBUTE, [this](StringHash, VariantMap& args) { RenderCustomWidgets(args); });
 
     if (SceneTab* sceneTab = GetSubsystem<Editor>()->GetLastSceneTab())
-        SetEffectSource(sceneTab->GetSceneView()->GetViewport()->GetRenderPath());
+        SetEffectSource(sceneTab->GetViewport()->GetRenderPath());
 
     undo_.Connect(&attributeInspector_);
 }

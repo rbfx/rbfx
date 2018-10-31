@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#define CR_HOST
+#define CR_HOST CR_DISABLE
 #include <cr/cr.h>
 #if _WIN32
 #   undef GetObject

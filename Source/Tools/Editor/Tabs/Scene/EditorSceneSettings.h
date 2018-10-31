@@ -39,12 +39,12 @@ URHO3D_EVENT(E_SCENESETTINGMODIFIED, SceneSettingModified)
 }
 
 /// Class handling common scene settings
-class SceneSettings : public Component
+class EditorSceneSettings : public Component
 {
-    URHO3D_OBJECT(SceneSettings, Component);
+    URHO3D_OBJECT(EditorSceneSettings, Component);
 public:
     /// Construct
-    explicit SceneSettings(Context* context);
+    explicit EditorSceneSettings(Context* context);
     /// Register object with engine.
     static void RegisterObject(Context* context);
 
@@ -53,10 +53,35 @@ public:
 
     /// Handle attribute write access.
     void OnSetAttribute(const AttributeInfo& attr, const Variant& src) override;
+    ///
+    Vector3 GetCameraPosition() const;
+    ///
+    void SetCameraPosition(const Vector3& position);
+    ///
+    float GetCameraOrthoSize() const;
+    ///
+    void SetCameraOrthoSize(float size);
+    ///
+    float GetCameraZoom() const;
+    ///
+    void SetCameraZoom(float zoom);
+    ///
+    bool GetCamera2D() const;
+    ///
+    void SetCamera2D(bool is2D);
+    ///
+    void CreateEditorObjects();
 
 protected:
+    ///
+    Node* GetCameraNode();
+    ///
+    Node* GetCameraNode() const;
+
     /// Flag indicating that editor scene viewport should use PBR renderpath.
     ResourceRef editorViewportRenderPath_;
+    ///
+    bool is2D_ = false;
 };
 
 }
