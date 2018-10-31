@@ -25,6 +25,7 @@
 
 #include <Urho3D/Container/HashSet.h>
 #include <Urho3D/Core/Object.h>
+#include <Toolbox/Common/UndoManager.h>
 
 
 namespace Urho3D
@@ -53,7 +54,7 @@ class SceneClipboard : public Object
     URHO3D_OBJECT(SceneClipboard, Object);
 public:
     ///
-    explicit SceneClipboard(Context* context);
+    explicit SceneClipboard(Context* context, Undo::Manager& undo);
     ///
     void Clear();
     ///
@@ -79,6 +80,8 @@ protected:
     Vector<VectorBuffer> nodes_;
     ///
     Vector<VectorBuffer> components_;
+    ///
+    Undo::Manager& undo_;
 };
 
 

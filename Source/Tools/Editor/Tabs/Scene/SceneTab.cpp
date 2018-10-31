@@ -51,7 +51,7 @@ SceneTab::SceneTab(Context* context)
     , rect_({0, 0, 1024, 768})
     , gizmo_(context)
     , undo_(context)
-    , clipboard_(context)
+    , clipboard_(context, undo_)
 {
     SetTitle("New Scene");
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
