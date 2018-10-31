@@ -206,6 +206,16 @@ bool Gizmo::Manipulate(const Camera* camera, const Vector<WeakPtr<Node>>& nodes)
 bool Gizmo::ManipulateSelection(const Camera* camera)
 {
     ImGuizmo::SetDrawlist();
+
+    // Remove expired selections
+    for (auto it = nodeSelection_.Begin(); it != nodeSelection_.End();)
+    {
+        if (it->Expired())
+            it = nodeSelection_.Erase(it);
+        else
+            ++it;
+    }
+
     return Manipulate(camera, nodeSelection_);
 }
 
