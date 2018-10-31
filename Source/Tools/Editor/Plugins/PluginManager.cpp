@@ -250,16 +250,11 @@ void PluginManager::OnEndFrame()
                     GetFileNameAndExtension(plugin->name_).CString());
                 cr_plugin_close(plugin->nativeContext_);
                 plugin->nativeContext_.userdata = nullptr;
-                continue;
             }
-
-            if (reloading)
+            else if (reloading && plugin->nativeContext_.userdata != nullptr)
             {
-                if (plugin->nativeContext_.userdata != nullptr)
-                {
-                    URHO3D_LOGINFOF("Loaded plugin \"%s\" version %d.",
-                        GetFileNameAndExtension(plugin->name_).CString(), plugin->nativeContext_.version);
-                }
+                URHO3D_LOGINFOF("Loaded plugin \"%s\" version %d.", GetFileNameAndExtension(plugin->name_).CString(),
+                    plugin->nativeContext_.version);
             }
 
             it++;
