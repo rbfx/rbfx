@@ -149,21 +149,23 @@ PluginType GetPluginType(Context* context, const String& path)
 
         if (file.ReadShort() == IMAGE_DOS_SIGNATURE)
         {
-            String buf{};
-            buf.Resize(file.GetSize());
+
+            IMAGE_DOS_HEADER dos;
             file.Seek(0);
-            file.Read(&buf[0], file.GetSize());
-            file.Close();
-
-            const auto base = reinterpret_cast<const char*>(buf.CString());
-            const auto dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(base);
-            const auto nt = reinterpret_cast<const IMAGE_NT_HEADERS*>(base + dos->e_lfanew);
-
-            if (nt->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR_MAGIC)
+            if (file.Read(&dos, sizeof(dos)) != sizeof(dos))
                 return PLUGIN_INVALID;
 
-            const auto& eatDir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
-            const auto& netDir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
+            file.Seek(dos.e_lfanew);
+            IMAGE_NT_HEADERS nt;
+            if (file.Read(&nt, sizeof(nt)) != sizeof(nt))
+                return PLUGIN_INVALID;
+
+
+            if (nt.OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR_MAGIC)
+                return PLUGIN_INVALID;
+
+            const auto& eatDir = nt.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
+            const auto& netDir = nt.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
             if (netDir.VirtualAddress != 0)
             {
 #if URHO3D_CSHARP
@@ -176,22 +178,38 @@ PluginType GetPluginType(Context* context, const String& path)
             {
                 // Verify that plugin has exported function named cr_main.
                 // Find section that contains EAT.
-                const auto* section = IMAGE_FIRST_SECTION(nt);
+
+                unsigned firstSectionOffset = dos.e_lfanew + FIELD_OFFSET(IMAGE_NT_HEADERS, OptionalHeader) + nt.FileHeader.SizeOfOptionalHeader;
                 uint32_t eatModifier = 0;
-                for (auto i = 0; i < nt->FileHeader.NumberOfSections; i++, section++)
+                for (auto i = 0; i < nt.FileHeader.NumberOfSections; i++)
                 {
-                    if (eatDir.VirtualAddress >= section->VirtualAddress && eatDir.VirtualAddress < (section->VirtualAddress + section->SizeOfRawData))
+                    file.Seek(firstSectionOffset + i * sizeof(IMAGE_SECTION_HEADER));
+                    IMAGE_SECTION_HEADER section;
+                    if (file.Read(&section, sizeof(section)) != sizeof(section))
+                        return PLUGIN_INVALID;
+
+                    if (eatDir.VirtualAddress >= section.VirtualAddress && eatDir.VirtualAddress < (section.VirtualAddress + section.SizeOfRawData))
                     {
-                        eatModifier = section->VirtualAddress - section->PointerToRawData;
+                        eatModifier = section.VirtualAddress - section.PointerToRawData;
                         break;
                     }
                 }
 
-                const auto eat = reinterpret_cast<const IMAGE_EXPORT_DIRECTORY*>(base + eatDir.VirtualAddress - eatModifier);
-                const auto names = reinterpret_cast<const uint32_t*>(base + eat->AddressOfNames - eatModifier);
-                for (auto i = 0; i < eat->NumberOfFunctions; i++)
+                IMAGE_EXPORT_DIRECTORY eat;
+                file.Seek(eatDir.VirtualAddress - eatModifier);
+                if (file.Read(&eat, sizeof(eat)) != sizeof(eat))
+                    return PLUGIN_INVALID;
+
+                unsigned namesOffset = eat.AddressOfNames - eatModifier;
+                for (auto i = 0; i < eat.NumberOfFunctions; i++)
                 {
-                    if (strcmp(base + names[i] - eatModifier, "cr_main") == 0)
+                    file.Seek(namesOffset + i * sizeof(uint32_t));
+                    unsigned nameOffset = 0;
+                    if (file.Read(&nameOffset, sizeof(nameOffset)) != sizeof(nameOffset))
+                        return PLUGIN_INVALID;
+
+                    file.Seek(nameOffset - eatModifier);
+                    if (file.ReadText() == "cr_main")
                         return PLUGIN_NATIVE;
                 }
             }
