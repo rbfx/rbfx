@@ -2102,6 +2102,18 @@ void UI::ResizeRootElement()
     IntVector2 effectiveSize = GetEffectiveRootElementSize();
     rootElement_->SetSize(effectiveSize);
     rootModalElement_->SetSize(effectiveSize);
+
+    if (texture_.NotNull())
+    {
+        unsigned format = texture_->GetFormat();
+        if (format == 0)
+            format = Graphics::GetRGBAFormat();
+        if (texture_->SetSize(effectiveSize.x_, effectiveSize.y_, format, TEXTURE_RENDERTARGET,
+                              texture_->GetMultiSample(), texture_->GetAutoResolve()))
+            texture_->GetRenderSurface()->SetUpdateMode(SURFACE_MANUALUPDATE);
+        else
+            URHO3D_LOGERROR("Resizing of UI render target texture failed.");
+    }
 }
 
 IntVector2 UI::GetEffectiveRootElementSize(bool applyScale) const
