@@ -85,6 +85,8 @@ protected:
     ///
     void AttributeCustomize(VariantMap& args);
 
+    ///
+    SharedPtr<UI> offScreenUI_;
     /// Root element which contains edited UI.
     SharedPtr<RootUIElement> rootElement_;
     /// Texture that UIElement will be rendered into.
