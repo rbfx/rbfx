@@ -840,7 +840,7 @@ void SceneTab::OnUpdate(VariantMap& args)
                         if (GetInput()->GetKeyDown(KEY_SHIFT))
                             PasteIntoSelection();
                         else
-                            PasteNextToSelection();
+                            PasteIntuitive();
                     }
                 }
                 else if (GetInput()->GetKeyPress(KEY_ESCAPE))
@@ -1009,7 +1009,7 @@ void SceneTab::RenderNodeContextMenu()
             CopySelection();
 
         if (ui::MenuItem(ICON_FA_PASTE " Paste", "Ctrl+V"))
-            PasteNextToSelection();
+            PasteIntuitive();
 
         if (ui::MenuItem(ICON_FA_PASTE " Paste Into", "Ctrl+Shift+V"))
             PasteIntoSelection();
@@ -1204,9 +1204,17 @@ void SceneTab::UpdateCameras()
 
 void SceneTab::CopySelection()
 {
-    clipboard_.Clear();
-    clipboard_.Copy(GetSelection());
-    clipboard_.Copy(selectedComponents_);
+    const auto& selection = GetSelection();
+    if (!selection.Empty())
+    {
+        clipboard_.Clear();
+        clipboard_.Copy(GetSelection());
+    }
+    else if (!selectedComponents_.Empty())
+    {
+        clipboard_.Clear();
+        clipboard_.Copy(selectedComponents_);
+    }
 }
 
 void SceneTab::PasteNextToSelection()
@@ -1254,6 +1262,14 @@ void SceneTab::PasteIntoSelection()
 
     for (Component* component : result.components_)
         selectedComponents_.Insert(WeakPtr<Component>(component));
+}
+
+void SceneTab::PasteIntuitive()
+{
+    if (clipboard_.HasNodes())
+        PasteNextToSelection();
+    else if (clipboard_.HasComponents())
+        PasteIntoSelection();
 }
 
 void SceneTab::ResizeMainViewport(const IntRect& rect)

@@ -75,6 +75,11 @@ public:
     PasteResult Paste(const PODVector<Node*>& nodes);
     ///
     PasteResult Paste(const Vector<WeakPtr<Node>>& nodes);
+    ///
+    bool HasNodes() const { return !nodes_.Empty(); }
+    ///
+    bool HasComponents() const { return !components_.Empty(); }
+
 protected:
     ///
     Vector<VectorBuffer> nodes_;
