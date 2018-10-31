@@ -171,15 +171,11 @@ bool SceneTab::RenderWindowContent()
         ui::SetWindowFocus();
 
     RenderToolbarButtons();
-
     IntRect tabRect = UpdateViewRect();
-    // Correct content rect to not overlap buttons. Ideally this should be in Tab.cpp but for some reason it creates
-    // unused space at the bottom of PreviewTab.
-    tabRect.top_ += static_cast<int>(ui::GetCursorPosY());
-
     ui::SetCursorScreenPos(ToImGui(tabRect.Min()));
-    ui::BeginChild("Scene view");
-    ui::Image(texture_, ToImGui(tabRect.Size()));
+    ImVec2 contentSize = ToImGui(tabRect.Size());
+    ui::BeginChild("Scene view", contentSize, false, windowFlags_);
+    ui::Image(texture_, contentSize);
     gizmo_.ManipulateSelection(GetCamera());
 
     if (GetInput()->IsMouseVisible())
@@ -797,6 +793,9 @@ void SceneTab::RemoveSelection()
 IntRect SceneTab::UpdateViewRect()
 {
     IntRect tabRect = BaseClassName::UpdateViewRect();
+    // Correct content rect to not overlap buttons. Ideally this should be in Tab.cpp but for some reason it creates
+    // unused space at the bottom of PreviewTab.
+    tabRect.top_ += static_cast<int>(ui::GetCursorPosY());
     ResizeMainViewport(tabRect);
     gizmo_.SetScreenRect(tabRect);
     return tabRect;
@@ -847,10 +846,13 @@ void SceneTab::OnUpdate(VariantMap& args)
     {
         if (auto* debug = GetScene()->GetComponent<DebugRenderer>())
         {
-            Vector3 guideRoot = GetCamera()->ScreenToWorldPoint({0.95, 0.1, 1});
-            debug->AddLine(guideRoot, guideRoot + Vector3::RIGHT * 0.05f, Color::RED, false);
-            debug->AddLine(guideRoot, guideRoot + Vector3::UP * 0.05f, Color::GREEN, false);
-            debug->AddLine(guideRoot, guideRoot + Vector3::FORWARD * 0.05f, Color::BLUE, false);
+            if (Camera* camera = GetCamera())
+            {
+                Vector3 guideRoot = GetCamera()->ScreenToWorldPoint({0.95, 0.1, 1});
+                debug->AddLine(guideRoot, guideRoot + Vector3::RIGHT * 0.05f, Color::RED, false);
+                debug->AddLine(guideRoot, guideRoot + Vector3::UP * 0.05f, Color::GREEN, false);
+                debug->AddLine(guideRoot, guideRoot + Vector3::FORWARD * 0.05f, Color::BLUE, false);
+            }
         }
     }
 }
