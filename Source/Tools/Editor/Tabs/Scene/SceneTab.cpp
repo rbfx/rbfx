@@ -735,8 +735,11 @@ void SceneTab::RenderNodeTree(Node* node)
                 // ensure the tree is expanded to the currently selected node if there is one node selected.
                 if (GetSelection().Size() == 1)
                 {
-                    for (auto selectedNode : GetSelection()) 
+                    for (auto& selectedNode : GetSelection())
                     {
+                        if (selectedNode.Expired())
+                            continue;
+
                         if(selectedNode->IsChildOf(child))
                             ui::SetNextTreeNodeOpen(true);
                     }
@@ -833,7 +836,12 @@ void SceneTab::OnUpdate(VariantMap& args)
                     if (GetInput()->GetKeyPress(KEY_C))
                         CopySelection();
                     else if (GetInput()->GetKeyPress(KEY_V))
-                        PasteToSelection();
+                    {
+                        if (GetInput()->GetKeyDown(KEY_SHIFT))
+                            PasteIntoSelection();
+                        else
+                            PasteNextToSelection();
+                    }
                 }
                 else if (GetInput()->GetKeyPress(KEY_ESCAPE))
                     UnselectAll();
@@ -1001,7 +1009,10 @@ void SceneTab::RenderNodeContextMenu()
             CopySelection();
 
         if (ui::MenuItem(ICON_FA_PASTE " Paste", "Ctrl+V"))
-            PasteToSelection();
+            PasteNextToSelection();
+
+        if (ui::MenuItem(ICON_FA_PASTE " Paste Into", "Ctrl+Shift+V"))
+            PasteIntoSelection();
 
         if (ui::MenuItem(ICON_FA_TRASH " Delete", "Del"))
             RemoveSelection();
@@ -1198,14 +1209,43 @@ void SceneTab::CopySelection()
     clipboard_.Copy(selectedComponents_);
 }
 
-void SceneTab::PasteToSelection()
+void SceneTab::PasteNextToSelection()
 {
     const auto& selection = GetSelection();
     PasteResult result;
+    Node* target = nullptr;
     if (!selection.Empty())
-        result = clipboard_.Paste(selection);
-    else
+    {
+        target = nullptr;
+        unsigned i = 0;
+        while (target == nullptr && i < selection.Size())   // Selected node may be null
+            target = selection[i++].Get();
+        if (target != nullptr)
+            target = target->GetParent();
+    }
+
+    if (target == nullptr)
+        target = GetScene();
+
+    result = clipboard_.Paste(target);
+
+    UnselectAll();
+
+    for (Node* node : result.nodes_)
+        Select(node);
+
+    for (Component* component : result.components_)
+        selectedComponents_.Insert(WeakPtr<Component>(component));
+}
+
+void SceneTab::PasteIntoSelection()
+{
+    const auto& selection = GetSelection();
+    PasteResult result;
+    if (selection.Empty())
         result = clipboard_.Paste(GetScene());
+    else
+        result = clipboard_.Paste(selection);
 
     UnselectAll();
 
