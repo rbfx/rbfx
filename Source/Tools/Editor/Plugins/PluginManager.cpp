@@ -176,18 +176,21 @@ void PluginManager::Unload(Plugin* plugin)
 void PluginManager::OnEndFrame()
 {
 #if URHO3D_PLUGINS
+    // TODO: Timeout probably should be configured, larger projects will have a pretty long linking time.
+    const unsigned pluginLinkingTimeout = 10000;
+    Timer wait;
 #if URHO3D_CSHARP
     Script* script = GetSubsystem<Script>();
     // C# plugin auto-reloading.
-    bool reloadManagedRuntime = false;
-    for (auto it = plugins_.Begin(); it != plugins_.End() && !reloadManagedRuntime; it++)
+    PODVector<Plugin*> reloadingPlugins;
+    for (auto it = plugins_.Begin(); it != plugins_.End(); it++)
     {
         Plugin* plugin = it->Get();
-        reloadManagedRuntime = plugin->type_ == PLUGIN_MANAGED &&
-                               plugin->mtime_ < GetFileSystem()->GetLastModifiedTime(plugin->path_);
+        if (plugin->type_ == PLUGIN_MANAGED && plugin->mtime_ < GetFileSystem()->GetLastModifiedTime(plugin->path_))
+            reloadingPlugins.Push(plugin);
     }
 
-    if (reloadManagedRuntime)
+    if (!reloadingPlugins.Empty())
     {
         script->UnloadRuntime();
         script->LoadRuntime();
@@ -195,6 +198,13 @@ void PluginManager::OnEndFrame()
         {
             if (plugin->type_ == PLUGIN_MANAGED)
             {
+                if (reloadingPlugins.Contains(plugin.Get()))
+                {
+                    // This plugin was modified and triggered a reload. Good idea before loading it would be waiting for
+                    // build to be done (should it still be in progress).
+                    while (GetPluginType(context_, plugin->path_) != plugin->type_ && wait.GetMSec(false) < pluginLinkingTimeout)
+                        Time::Sleep(0);
+                }
                 plugin->mtime_ = GetFileSystem()->GetLastModifiedTime(plugin->path_);
                 script->LoadAssembly(plugin->path_);
             }
@@ -242,6 +252,10 @@ void PluginManager::OnEndFrame()
                     SendEvent(E_EDITORUSERCODERELOADSTART);
                     eventSent = true;
                 }
+
+                // Plugin change is detected the moment compiler starts linking file. We should wait until linker is done.
+                while (GetPluginType(context_, plugin->path_) != plugin->type_ && wait.GetMSec(false) < pluginLinkingTimeout)
+                    Time::Sleep(0);
             }
 
             if (cr_plugin_update(plugin->nativeContext_) != 0)
