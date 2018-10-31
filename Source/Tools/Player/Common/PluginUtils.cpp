@@ -63,63 +63,80 @@ PluginType GetPluginType(Context* context, const String& path)
         if (!file.Open(path, FILE_READ))
             return PLUGIN_INVALID;
 
-        String buf{};
-        buf.Resize(file.GetSize());
+        if (file.GetSize() == 0)
+            return PLUGIN_INVALID;
+
         file.Seek(0);
-        file.Read(&buf[0], file.GetSize());
-        file.Close();
 
         // Elf header parsing code based on elfdump by Owen Klan.
-        const auto base = reinterpret_cast<const char*>(buf.CString());
-        const auto hdr = reinterpret_cast<const Elf_Ehdr*>(base);
-        if (strncmp(reinterpret_cast<const char*>(hdr->e_ident), ELFMAG, SELFMAG) != 0)
+        Elf_Ehdr hdr;
+        if (file.Read(&hdr, sizeof(hdr)) != sizeof(hdr))
+            return PLUGIN_INVALID;
+
+        if (strncmp(reinterpret_cast<const char*>(hdr.e_ident), ELFMAG, SELFMAG) != 0)
             // Not elf.
             return PLUGIN_INVALID;
 
-        if (hdr->e_type != ET_DYN)
+        if (hdr.e_type != ET_DYN)
             return PLUGIN_INVALID;
 
         // Find symbol name table
-        const char* symNameTable = nullptr;
+        unsigned symNameTableOffset = 0;
         {
-            const Elf_Shdr* ptr = reinterpret_cast<const Elf_Shdr*>(base + hdr->e_shoff);
+            file.Seek(hdr.e_shoff + sizeof(Elf_Shdr) * hdr.e_shstrndx);
+            Elf_Shdr shdr;
+            if (file.Read(&shdr, sizeof(shdr)) != sizeof(shdr))
+                return PLUGIN_INVALID;
 
-            for (int i = 0; i < hdr->e_shstrndx; i++)
-                ptr++;
+            auto nameTableOffset = shdr.sh_offset;
+            auto shoff = hdr.e_shoff;
 
-            const char* nameTable = base + ptr->sh_offset;
-
-            ptr = reinterpret_cast<const Elf_Shdr*>(base + hdr->e_shoff);
-            for (auto i = 0; i < hdr->e_shnum; i++)
+            for (auto i = 0; i < hdr.e_shnum; i++)
             {
-                if (strncmp((nameTable + ptr->sh_name), ".strtab", 7) == 0)
+                file.Seek(shoff);
+                if (file.Read(&shdr, sizeof(shdr)) != sizeof(shdr))
+                    return PLUGIN_INVALID;
+
+                file.Seek(nameTableOffset + shdr.sh_name);
+
+                if (file.ReadString() == ".strtab")
                 {
-                    symNameTable = base + ptr->sh_offset;
+                    symNameTableOffset = shdr.sh_offset;
                     break;
                 }
                 else
-                    ptr++;
+                    shoff += sizeof(shdr);
             }
         }
 
-        if (symNameTable == nullptr)
+        if (symNameTableOffset == 0)
             return PLUGIN_INVALID;
 
         // Find cr_main symbol
         {
-            const Elf_Shdr* sectab = reinterpret_cast<const Elf_Shdr*>(base + hdr->e_shoff);
-            const Elf_Shdr* ptr = sectab;
-            while (ptr->sh_type != SHT_SYMTAB)
-                ptr++;
-            const Elf_Shdr* sym_tab = reinterpret_cast<const Elf_Shdr*>(base + ptr->sh_offset);
-            const Elf_Sym* symbol = reinterpret_cast<const Elf_Sym*>(sym_tab);
-            auto num = ptr->sh_size / ptr->sh_entsize;
+            auto shoff = hdr.e_shoff;
+            Elf_Shdr sectab;
+            do
+            {
+                file.Seek(shoff);
+                if (file.Read(&sectab, sizeof(sectab)) != sizeof(sectab))
+                    return PLUGIN_INVALID;
+                shoff += sizeof(sectab);
+            } while (sectab.sh_type != SHT_SYMTAB);
+
+            shoff = sectab.sh_offset;
+            auto num = sectab.sh_size / sectab.sh_entsize;
             for (auto i = 0; i < num; i++)
             {
-                const char* name = symNameTable + symbol->st_name;
-                if (strncmp(name, "cr_main", 7) == 0)
+                Elf_Sym symbol;
+                file.Seek(shoff);
+                if (file.Read(&symbol, sizeof(symbol)) != sizeof(symbol))
+                    return PLUGIN_INVALID;
+                shoff += sizeof(symbol);
+
+                file.Seek(symNameTableOffset + symbol.st_name);
+                if (file.ReadString() == "cr_main")
                     return PLUGIN_NATIVE;
-                symbol++;
             }
         }
     }
