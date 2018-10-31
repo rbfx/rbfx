@@ -120,8 +120,6 @@ Plugin* PluginManager::Load(const String& name)
     if (Plugin* loaded = GetPlugin(name))
         return loaded;
 
-    CleanUp();
-
     String pluginPath = NameToPath(name);
     if (pluginPath.Empty())
         return nullptr;
