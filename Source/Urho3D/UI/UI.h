@@ -79,7 +79,7 @@ public:
     /// Update the UI for rendering. Called by HandleRenderUpdate().
     void RenderUpdate();
     /// Render the UI batches. Returns true if call rendered anything. Rendering succeeds only once per frame.
-    bool Render();
+    void Render();
     /// Debug draw a UI element.
     void DebugDraw(UIElement* element);
     /// Load a UI layout from an XML file. Optionally specify another XML file for element style. Return the root element.
@@ -223,6 +223,9 @@ public:
 
     /// Set texture to which entire UI will be rendered.
     void SetRenderTarget(Texture2D* texture);
+
+    /// Returns true if thus UI is already rendered in this frame.
+    bool IsRendered() const { return uiRendered_; }
 
     /// Data structure used to represent the drag data associated to a UIElement.
     struct DragData

@@ -461,32 +461,14 @@ void UI::RenderUpdate()
     }
 }
 
-bool UI::Render()
+void UI::Render()
 {
-    // Perform the default backbuffer render only if not rendered yet, or additional renders through RenderUI command
-    if (uiRendered_)
-        return false;
-
     URHO3D_PROFILE("RenderUI");
 
-    if (texture_.NotNull())
-    {
-        if (RenderSurface* surface = texture_->GetRenderSurface())
-        {
-            // If the OS cursor is visible, apply its shape now if changed
-            bool osCursorVisible = GetSubsystem<Input>()->IsMouseVisible();
-            if (cursor_ && osCursorVisible)
-                cursor_->ApplyOSCursorShape();
-
-            // Perform the default backbuffer render only if not rendered yet, or additional renders through RenderUI command
-            graphics_->ResetRenderTargets();
-
-            graphics_->SetDepthStencil(surface->GetLinkedDepthStencil());
-            graphics_->SetRenderTarget(0, surface);
-            graphics_->SetViewport(IntRect(0, 0, surface->GetWidth(), surface->GetHeight()));
-            graphics_->Clear(Urho3D::CLEAR_COLOR);
-        }
-    }
+    // If the OS cursor is visible, apply its shape now if changed
+    bool osCursorVisible = GetSubsystem<Input>()->IsMouseVisible();
+    if (cursor_ && osCursorVisible)
+        cursor_->ApplyOSCursorShape();
 
     SetVertexData(vertexBuffer_, vertexData_);
     SetVertexData(debugVertexBuffer_, debugVertexData_);
@@ -503,7 +485,6 @@ bool UI::Render()
     debugVertexData_.Clear();
 
     uiRendered_ = true;
-    return true;
 }
 
 void UI::DebugDraw(UIElement* element)
@@ -2019,8 +2000,15 @@ void UI::HandleEndAllViewsRender(StringHash eventType, VariantMap& eventData)
 {
     if (texture_.NotNull())
     {
-        if (Render())
+        if (RenderSurface* surface = texture_->GetRenderSurface())
+        {
             graphics_->ResetRenderTargets();
+            graphics_->SetDepthStencil(surface->GetLinkedDepthStencil());
+            graphics_->SetRenderTarget(0, surface);
+            graphics_->SetViewport(IntRect(0, 0, surface->GetWidth(), surface->GetHeight()));
+            graphics_->Clear(Urho3D::CLEAR_COLOR);
+            Render();
+        }
     }
 }
 
