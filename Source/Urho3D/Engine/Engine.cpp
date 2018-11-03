@@ -730,8 +730,8 @@ void Engine::Render()
         return;
 
     GetSubsystem<Renderer>()->Render();
-    GetSubsystem<UI>()->Render();
-    graphics->ResetRenderTargets();
+    if (GetSubsystem<UI>()->Render())
+        graphics->ResetRenderTargets();
     graphics->EndFrame();
 }
 

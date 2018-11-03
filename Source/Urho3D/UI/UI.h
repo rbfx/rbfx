@@ -78,8 +78,8 @@ public:
     void Update(float timeStep);
     /// Update the UI for rendering. Called by HandleRenderUpdate().
     void RenderUpdate();
-    /// Render the UI batches.
-    void Render();
+    /// Render the UI batches. Returns true if call rendered anything. Rendering succeeds only once per frame.
+    bool Render();
     /// Debug draw a UI element.
     void DebugDraw(UIElement* element);
     /// Load a UI layout from an XML file. Optionally specify another XML file for element style. Return the root element.
