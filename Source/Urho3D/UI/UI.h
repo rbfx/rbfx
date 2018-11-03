@@ -132,12 +132,12 @@ public:
     /// Return root UI element.
     UIElement* GetRoot() const { return rootElement_; }
     /// Sets new root UI element.
-    void SetRoot(UIElement* root) { rootElement_ = root; }
+    void SetRoot(UIElement* root);
 
     /// Return root modal element.
     UIElement* GetRootModalElement() const { return rootModalElement_; }
     /// Sets new root UI element for modals.
-    void SetRootModalElement(UIElement* rootModal) { rootModalElement_ = rootModal; }
+    void SetRootModalElement(UIElement* rootModal);
 
     /// Return cursor.
     Cursor* GetCursor() const { return cursor_; }

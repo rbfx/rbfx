@@ -2132,6 +2132,19 @@ void UI::SetRenderTarget(Texture2D* texture)
     }
 }
 
+void UI::SetRoot(UIElement* root)
+{
+    rootElement_ = root;
+    customSize_ = root->GetSize();
+    ResizeRootElement();
+}
+
+void UI::SetRootModalElement(UIElement* rootModal)
+{
+    rootModalElement_ = rootModal;
+    ResizeRootElement();
+}
+
 void RegisterUILibrary(Context* context)
 {
     Font::RegisterObject(context);
