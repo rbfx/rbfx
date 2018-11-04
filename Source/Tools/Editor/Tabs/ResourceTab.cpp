@@ -91,10 +91,12 @@ bool ResourceTab::RenderWindowContent()
                 tab->Activate();
             else
             {
-                tab = GetSubsystem<Editor>()->CreateTab(it->second_);
-                tab->LoadResource(selected);
-                tab->AutoPlace();
-                tab->Activate();
+                if ((tab = GetSubsystem<Editor>()->CreateTab(it->second_)))
+                {
+                    tab->LoadResource(selected);
+                    tab->AutoPlace();
+                    tab->Activate();
+                }
             }
         }
         else

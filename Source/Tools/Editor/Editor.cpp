@@ -217,8 +217,6 @@ void Editor::OnUpdate(VariantMap& args)
             if (activeTab_ != tab && tab->IsActive())
             {
                 activeTab_ = tab;
-                if (SceneTab* sceneTab = tab->Cast<SceneTab>())
-                    lastActiveScene_ = sceneTab;
                 tab->OnFocused();
             }
         }
@@ -343,8 +341,21 @@ void Editor::RenderMenuBar()
 
 Tab* Editor::CreateTab(StringHash type)
 {
+    if (type == SceneTab::GetTypeStatic())
+    {
+        if (!sceneTab_.Expired())
+        {
+            URHO3D_LOGWARNING("Only one scene may be opened at a time. Please close current scene before opening new one.");
+            return nullptr;
+        }
+    }
+
     auto tab = DynamicCast<Tab>(context_->CreateObject(type));
     tabs_.Push(tab);
+
+    if (type == SceneTab::GetTypeStatic())
+        sceneTab_ = tab->Cast<SceneTab>();
+
     return tab.Get();
 }
 
@@ -374,27 +385,6 @@ StringVector Editor::GetObjectsByCategory(const String& category)
         }
     }
     return result;
-}
-
-String Editor::GetResourceAbsolutePath(const String& resourceName, const String& defaultResult, const char* patterns,
-    const String& dialogTitle)
-{
-    String resourcePath = resourceName.Empty() ? defaultResult : resourceName;
-    String fullPath;
-    if (!resourcePath.Empty())
-        fullPath = GetCache()->GetResourceFileName(resourcePath);
-
-    if (fullPath.Empty())
-    {
-        nfdchar_t* savePath = nullptr;
-        if (NFD_SaveDialog(patterns, "", &savePath) == NFD_OKAY)
-        {
-            fullPath = savePath;
-            NFD_FreePath(savePath);
-        }
-    }
-
-    return fullPath;
 }
 
 void Editor::OnConsoleCommand(VariantMap& args)

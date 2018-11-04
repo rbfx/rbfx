@@ -72,10 +72,7 @@ public:
     const Vector<SharedPtr<Tab>>& GetSceneViews() const { return tabs_; }
     /// Return a map of names and type hashes from specified category.
     StringVector GetObjectsByCategory(const String& category);
-    /// Get absolute path of `resourceName`. If it is empty, use `defaultResult`. If no resource is found then save file
-    /// dialog will be invoked for selecting a new path.
-    String GetResourceAbsolutePath(const String& resourceName, const String& defaultResult, const char* patterns,
-        const String& dialogTitle);
+
     /// Returns a list of open content tabs/docks/windows. This list does not include utility docks/tabs/windows.
     const Vector<SharedPtr<Tab>>& GetContentTabs() const { return tabs_; }
     /// Opens project or creates new one.
@@ -89,7 +86,7 @@ public:
     /// Returns ID of root dockspace.
     ImGuiID GetDockspaceID() const { return dockspaceId_; }
     /// Returns pointer to last active scene tab. Returns null if no scene was opened or if last opened scene was closed.
-    SceneTab* GetLastSceneTab() const { return lastActiveScene_.Get(); }
+    SceneTab* GetSceneTab() const { return sceneTab_.Get(); }
     ///
     ImFont* GetMonoSpaceFont() const { return monoFont_; }
 
@@ -107,6 +104,8 @@ protected:
     Vector<SharedPtr<Tab>> tabs_;
     /// Last focused scene tab.
     WeakPtr<Tab> activeTab_;
+    /// Current scene tab.
+    WeakPtr<SceneTab> sceneTab_;
     /// Prefix path of CoreData and EditorData.
     String coreResourcePrefixPath_;
     /// Currently loaded project.
@@ -117,8 +116,6 @@ protected:
     String pendingOpenProject_;
     /// Flag indicating that editor should create and load default layout.
     bool loadDefaultLayout_ = false;
-    /// Last actice scene tab.
-    WeakPtr<SceneTab> lastActiveScene_;
     ///
     ImFont* monoFont_ = nullptr;
 };
