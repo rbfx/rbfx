@@ -64,11 +64,13 @@ public:
         engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
         engineParameters_[EP_WINDOW_RESIZABLE] = true;
 
-        ui::GetIO().IniFilename = nullptr;    // Disable saving of settings.
+        
     }
 
     void Start() override
     {
+        ui::GetIO().IniFilename = nullptr;    // Disable saving of settings.
+
         GetInput()->SetMouseVisible(true);
         GetInput()->SetMouseMode(MM_ABSOLUTE);
 
