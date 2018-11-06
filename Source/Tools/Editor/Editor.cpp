@@ -470,6 +470,7 @@ void Editor::HandleHotkeys()
 
 void Editor::RenderProjectMenu()
 {
+#if URHO3D_PLUGINS
     if (ui::BeginMenu("Plugins"))
     {
         ui::PushID("Plugins");
@@ -519,7 +520,7 @@ void Editor::RenderProjectMenu()
         ui::PopID();    // Plugins
         ui::EndMenu();
     }
-
+#endif
     if (ui::BeginMenu("Main Scene"))
     {
         ui::PushID("Main Scene");

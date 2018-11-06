@@ -173,6 +173,7 @@ bool Project::LoadProject(const String& projectPath)
                 return false;
 
             const auto& root = file.GetRoot().GetObject();
+#if URHO3D_PLUGINS
             if (root.Contains("plugins"))
             {
                 const auto& plugins = root["plugins"]->GetArray();
@@ -188,7 +189,7 @@ bool Project::LoadProject(const String& projectPath)
                 // provided by plugins. Not doing this would cause scenes to load these components as UnknownComponent.
                 plugins_.OnEndFrame();
             }
-
+#endif
             if (root.Contains("default-scene"))
                 defaultScene_ = root["default-scene"]->GetString();
         }
@@ -305,6 +306,7 @@ bool Project::SaveProject()
         root["version"] = 0;
 
         // Plugins
+#if URHO3D_PLUGINS
         {
             JSONArray plugins{};
             for (const auto& plugin : plugins_.GetPlugins())
@@ -319,7 +321,7 @@ bool Project::SaveProject()
             });
             root["plugins"] = plugins;
         }
-
+#endif
         root["default-scene"] = defaultScene_;
 
         String filePath(projectFileDir_ + "Project.json");

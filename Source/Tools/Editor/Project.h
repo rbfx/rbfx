@@ -49,8 +49,10 @@ public:
     String GetCachePath() const;
     /// Returns path to permanent asset cache.
     String GetResourcePath() const;
+#if URHO3D_PLUGINS
     /// Returns plugin manager.
     PluginManager* GetPlugins() { return &plugins_; }
+#endif
     /// Returns true in very first session of new project.
     bool IsNewProject() const { return isNewProject_; }
     /// Return resource name of scene that will be executed first by the player.
