@@ -278,7 +278,7 @@ const Vector<String>& ParseArguments(const String& cmdLine, bool skipFirstArgume
     {
         if (cmdLine[i] == '\"')
             inQuote = !inQuote;
-        if (cmdLine[i] == ' ' && !inQuote)
+        if ((cmdLine[i] == ' ' || (i == cmdLine.Length()-1)) && !inQuote)
         {
             if (inCmd)
             {
