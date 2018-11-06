@@ -48,6 +48,10 @@ elseif (APPLE OR "${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
     set (APPLE ON)
 endif ()
 
+if (APPLE AND NOT IOS)
+    set (MACOS ON)
+endif ()
+
 if (WIN32 OR LINUX OR MACOS)
     set (DESKTOP ON)
 endif ()
@@ -169,6 +173,7 @@ if (ANDROID OR WEB OR IOS)
     set (URHO3D_SSE OFF)
     set (URHO3D_TOOLS OFF)
     set (URHO3D_TASKS OFF)
+    set (URHO3D_PLUGINS OFF)
     if (WEB)
         set (URHO3D_NETWORK OFF)         # Not supported by kNet
         set (URHO3D_PROFILING OFF)       # No way to make use of profiler data because of lack of networking
@@ -190,6 +195,9 @@ else ()
     endif ()
 endif ()
 
+if (APPLE)
+    set (URHO3D_PLUGINS OFF)
+endif ()
 
 # Unset any default config variables so they do not pollute namespace
 get_cmake_property(__cmake_variables VARIABLES)
