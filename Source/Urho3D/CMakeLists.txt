@@ -247,8 +247,18 @@ if (NOT BUILD_SHARED_LIBS)
     endif ()
 endif ()
 
-if (URHO3D_SSE AND NOT MSVC)
-    target_compile_options (Urho3D PUBLIC -msse -msse2)
+if (URHO3D_SSE)
+    if (MSVC)
+        if (NOT URHO3D_64BIT AND ("${URHO3D_SSE}" STREQUAL "SSE" OR "${URHO3D_SSE}" STREQUAL "SSE2"))
+            # 64bit instruction set has sse2 included and thus it is always enabled.
+            # Specifying this parameter to msvc creates a warning.
+        else ()
+            target_compile_options (Urho3D PUBLIC /arch:${URHO3D_SSE})
+        endif ()
+    else ()
+        target_compile_options (Urho3D PUBLIC -m${URHO3D_SSE})
+    endif ()
+    target_compile_definitions (Urho3D PUBLIC -DURHO3D_SSE)
 endif ()
 
 if (URHO3D_TASKS)
@@ -331,7 +341,7 @@ install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h DESTINATION ${DEST_INCLUD
 
 # Generate import/export header with engine configuration defines
 get_property(URHO3D_ENGINE_CONFIG TARGET Urho3D PROPERTY INTERFACE_COMPILE_DEFINITIONS)
-list (REMOVE_ITEM URHO3D_ENGINE_CONFIG URHO3D_64BIT URHO3D_SSE URHO3D_IS_BUILDING)
+list (REMOVE_ITEM URHO3D_ENGINE_CONFIG URHO3D_64BIT URHO3D_IS_BUILDING)
 list (REMOVE_DUPLICATES URHO3D_ENGINE_CONFIG)
 list (APPEND URHO3D_ENGINE_CONFIG "")   # For last item to be processed correctly.
 # Give defines without value a value "1".
