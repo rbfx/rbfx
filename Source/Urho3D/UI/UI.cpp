@@ -309,6 +309,11 @@ void UI::Clear()
     rootModalElement_->RemoveAllChildren();
     if (cursor_)
         rootElement_->AddChild(cursor_);
+
+    batches_.Clear();
+    vertexData_.Clear();
+    debugDrawBatches_.Clear();
+    debugVertexData_.Clear();
 }
 
 void UI::Update(float timeStep)
