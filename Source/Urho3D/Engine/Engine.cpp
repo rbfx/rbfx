@@ -731,15 +731,13 @@ void Engine::Render()
 
     GetSubsystem<Renderer>()->Render();
 
-    // Render UI after scene is rendered, but only do so if user has not rendered it manually anywhere (for example
-    // using renderpath or to a texture).
+    // Render UI after scene is rendered, but only do so if user has not rendered it manually
+    // anywhere (for example using renderpath or to a texture).
+    graphics->ResetRenderTargets();
     if (UI* ui = GetSubsystem<UI>())
     {
-        if (!ui->IsRendered())
-        {
-            graphics->ResetRenderTargets();
+        if (!ui->IsRendered() && ui->GetRenderTarget() == nullptr)
             ui->Render();
-        }
     }
 
     graphics->EndFrame();
