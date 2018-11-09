@@ -229,6 +229,11 @@ public:
     /// Returns true if thus UI is already rendered in this frame.
     bool IsRendered() const { return uiRendered_; }
 
+    /// Set to true when UI is rendered as part of SystemUI. This will allow input to function properly.
+    void SetRenderInSystemUI(bool isSystemUIElement) { partOfSystemUI_ = isSystemUIElement; }
+    /// Return true when UI is set to render as part of SystemUI.
+    bool GetRenderInSystemUI() const { return partOfSystemUI_; }
+
     /// Data structure used to represent the drag data associated to a UIElement.
     struct DragData
     {
@@ -332,6 +337,8 @@ private:
     void ResizeRootElement();
     /// Return effective size of the root element, according to UI scale and resolution / custom size.
     IntVector2 GetEffectiveRootElementSize(bool applyScale = true) const;
+    /// Return true when subsystem should not process any mouse/keyboard input.
+    bool ShouldIgnoreInput() const;
 
     /// Graphics subsystem.
     WeakPtr<Graphics> graphics_;
@@ -427,6 +434,8 @@ private:
     WeakPtr<Texture2D> texture_;
     /// Color which will be used to clear target texture.
     Color clearColor_ = Color::TRANSPARENT_BLACK;
+    /// Flag indicating that UI should process input when mouse cursor hovers SystemUI elements.
+    bool partOfSystemUI_ = false;
 };
 
 /// Register UI library objects.

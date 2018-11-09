@@ -373,7 +373,7 @@ void UI::Update(float timeStep)
 
 #ifdef URHO3D_SYSTEMUI
     // System ui is always takes precedence
-    if (!GetSubsystem<SystemUI>()->IsAnyItemHovered())
+    if (!ShouldIgnoreInput())
     {
 #endif
         // Mouse hover
@@ -871,8 +871,11 @@ void UI::Update(float timeStep, UIElement* element)
 
 #ifdef URHO3D_SYSTEMUI
     // Unfocus active element if system ui has focus
-    if (GetFocusElement() == element && GetSubsystem<SystemUI>()->IsAnyItemActive())
-        SetFocusElement(nullptr);
+    if (ShouldIgnoreInput())
+    {
+        if (GetFocusElement() == element && GetSubsystem<SystemUI>()->IsAnyItemActive())
+            SetFocusElement(nullptr);
+    }
 #endif
 
     element->Update(timeStep);
@@ -1628,7 +1631,7 @@ void UI::HandleMouseButtonDown(StringHash eventType, VariantMap& eventData)
 
 #ifdef URHO3D_SYSTEMUI
     // SystemUI is rendered on top of game UI
-    if (GetSubsystem<SystemUI>()->IsAnyItemHovered())
+    if (ShouldIgnoreInput())
         return;
 #endif
 
@@ -1698,7 +1701,7 @@ void UI::HandleMouseMove(StringHash eventType, VariantMap& eventData)
 
 #ifdef URHO3D_SYSTEMUI
     // SystemUI is rendered on top of game UI
-    if (GetSubsystem<SystemUI>()->IsAnyItemHovered())
+    if (ShouldIgnoreInput())
         return;
 #endif
 
@@ -1717,7 +1720,7 @@ void UI::HandleMouseWheel(StringHash eventType, VariantMap& eventData)
 
 #ifdef URHO3D_SYSTEMUI
     // SystemUI is rendered on top of game UI
-    if (GetSubsystem<SystemUI>()->IsAnyItemHovered())
+    if (ShouldIgnoreInput())
         return;
 #endif
 
@@ -1767,7 +1770,7 @@ void UI::HandleTouchBegin(StringHash eventType, VariantMap& eventData)
 
 #ifdef URHO3D_SYSTEMUI
     // SystemUI is rendered on top of game UI
-    if (GetSubsystem<SystemUI>()->IsAnyItemHovered())
+    if (ShouldIgnoreInput())
         return;
 #endif
 
@@ -1824,7 +1827,7 @@ void UI::HandleTouchMove(StringHash eventType, VariantMap& eventData)
 {
 #ifdef URHO3D_SYSTEMUI
     // SystemUI is rendered on top of game UI
-    if (GetSubsystem<SystemUI>()->IsAnyItemHovered())
+    if (ShouldIgnoreInput())
         return;
 #endif
 
@@ -1846,8 +1849,7 @@ void UI::HandleTouchMove(StringHash eventType, VariantMap& eventData)
 void UI::HandleKeyDown(StringHash eventType, VariantMap& eventData)
 {
 #ifdef URHO3D_SYSTEMUI
-    // SystemUI takes precendence before game UI
-    if (GetSubsystem<SystemUI>()->IsAnyItemActive())
+    if (ShouldIgnoreInput())
         return;
 #endif
 
@@ -1927,8 +1929,7 @@ void UI::HandleKeyDown(StringHash eventType, VariantMap& eventData)
 void UI::HandleTextInput(StringHash eventType, VariantMap& eventData)
 {
 #ifdef URHO3D_SYSTEMUI
-    // SystemUI takes precendence before game UI
-    if (GetSubsystem<SystemUI>()->IsAnyItemActive())
+    if (ShouldIgnoreInput())
         return;
 #endif
 
@@ -2099,14 +2100,17 @@ void UI::ResizeRootElement()
 
     if (texture_.NotNull())
     {
-        unsigned format = texture_->GetFormat();
-        if (format == 0)
-            format = Graphics::GetRGBAFormat();
-        if (texture_->SetSize(effectiveSize.x_, effectiveSize.y_, format, TEXTURE_RENDERTARGET,
-                              texture_->GetMultiSample(), texture_->GetAutoResolve()))
-            texture_->GetRenderSurface()->SetUpdateMode(SURFACE_MANUALUPDATE);
-        else
-            URHO3D_LOGERROR("Resizing of UI render target texture failed.");
+        if (texture_->GetWidth() != effectiveSize.x_ || texture_->GetHeight() != effectiveSize.y_)
+        {
+            unsigned format = texture_->GetFormat();
+            if (format == 0)
+                format = Graphics::GetRGBAFormat();
+            if (texture_->SetSize(effectiveSize.x_, effectiveSize.y_, format, TEXTURE_RENDERTARGET,
+                                  texture_->GetMultiSample(), texture_->GetAutoResolve()))
+                texture_->GetRenderSurface()->SetUpdateMode(SURFACE_MANUALUPDATE);
+            else
+                URHO3D_LOGERROR("Resizing of UI render target texture failed.");
+        }
     }
 }
 
@@ -2150,6 +2154,25 @@ void UI::SetRootModalElement(UIElement* rootModal)
 {
     rootModalElement_ = rootModal;
     ResizeRootElement();
+}
+
+bool UI::ShouldIgnoreInput() const
+{
+    // In in the editor and game view is not focused.
+    if (GetSubsystem<Input>()->ShouldIgnoreInput())
+        return true;
+#if URHO3D_SYSTEMUI
+    // Any systemUI element is hovered except when rendering into texture. Chances are this texture will be displayed
+    // as ui::Image() and hovering mouse.
+    if (GetSubsystem<SystemUI>()->IsAnyItemHovered())
+        return !partOfSystemUI_;
+
+    // Any interaction with systemUI widgets
+    if (GetSubsystem<SystemUI>()->IsAnyItemActive())
+        return true;
+#endif
+
+    return false;
 }
 
 void RegisterUILibrary(Context* context)
