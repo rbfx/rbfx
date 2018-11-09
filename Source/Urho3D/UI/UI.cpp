@@ -2006,7 +2006,8 @@ void UI::HandleEndAllViewsRender(StringHash eventType, VariantMap& eventData)
             graphics_->SetDepthStencil(surface->GetLinkedDepthStencil());
             graphics_->SetRenderTarget(0, surface);
             graphics_->SetViewport(IntRect(0, 0, surface->GetWidth(), surface->GetHeight()));
-            graphics_->Clear(Urho3D::CLEAR_COLOR);
+            if (clearColor_.a_ > 0)
+                graphics_->Clear(CLEAR_COLOR, clearColor_);
             Render();
         }
     }
@@ -2120,8 +2121,9 @@ IntVector2 UI::GetEffectiveRootElementSize(bool applyScale) const
     return size;
 }
 
-void UI::SetRenderTarget(Texture2D* texture)
+void UI::SetRenderTarget(Texture2D* texture, Color clearColor)
 {
+    clearColor_ = clearColor;
     texture_ = texture;
     if (texture == nullptr)
         UnsubscribeFromEvent(E_ENDALLVIEWSRENDER);

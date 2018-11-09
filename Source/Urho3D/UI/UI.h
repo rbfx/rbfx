@@ -222,7 +222,9 @@ public:
     const IntVector2& GetCustomSize() const { return customSize_; }
 
     /// Set texture to which entire UI will be rendered.
-    void SetRenderTarget(Texture2D* texture);
+    void SetRenderTarget(Texture2D* texture, Color clearColor = Color::TRANSPARENT_BLACK);
+    /// Returns texture to which this UI is rendered.
+    Texture2D* GetRenderTarget() const { return texture_; }
 
     /// Returns true if thus UI is already rendered in this frame.
     bool IsRendered() const { return uiRendered_; }
@@ -423,7 +425,8 @@ private:
     IntVector2 customSize_;
     /// Texture that UI will be rendered into.
     WeakPtr<Texture2D> texture_;
-
+    /// Color which will be used to clear target texture.
+    Color clearColor_ = Color::TRANSPARENT_BLACK;
 };
 
 /// Register UI library objects.
