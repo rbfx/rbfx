@@ -83,6 +83,8 @@ protected:
     void GrabInput();
     /// Release input to the editor. Game components should not interfere with the input when Input::ShouldIgnoreInput() returns true.
     void ReleaseInput();
+    ///
+    void RenderUI();
 
     /// Last view rectangle.
     IntRect viewRect_{};

@@ -30,6 +30,7 @@
 #include <Toolbox/Common/UndoManager.h>
 #include "Tabs/BaseResourceTab.h"
 #include "Tabs/Scene/SceneClipboard.h"
+#include "Tabs/UI/RootUIElement.h"
 
 
 namespace Urho3D
@@ -173,6 +174,12 @@ protected:
     PODVector<unsigned> savedNodeSelection_;
     /// List of component IDs that are saved when scene state is saved. Component selection will be restored using these.
     PODVector<unsigned> savedComponentSelection_;
+    ///
+    SharedPtr<UI> offScreenUI_;
+    /// Root element which contains edited UI.
+    SharedPtr<RootUIElement> rootElement_;
+    ///
+    SharedPtr<XMLFile> defaultStyle_;
 };
 
 };

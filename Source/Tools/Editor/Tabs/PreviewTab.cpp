@@ -98,6 +98,9 @@ PreviewTab::PreviewTab(Context* context)
         sceneTab_->SceneStateRestore(sceneReloadState_);
         sceneTab_->GetUndo().SetTrackingEnabled(true);
     });
+    SubscribeToEvent(E_ENDALLVIEWSRENDER, [this](StringHash, VariantMap&) {
+        RenderUI();
+    });
 }
 
 IntRect PreviewTab::UpdateViewRect()
@@ -108,6 +111,7 @@ IntRect PreviewTab::UpdateViewRect()
         viewRect_ = tabRect;
         view_->SetSize(tabRect.Width(), tabRect.Height(), Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
         view_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
+        static_cast<RootUIElement*>(GetUI()->GetRoot())->SetOffset(tabRect.Min());
         UpdateViewports();
     }
     return tabRect;
@@ -200,7 +204,11 @@ void PreviewTab::RenderButtons()
     switch (simulationStatus_)
     {
     case SCENE_SIMULATION_RUNNING:
-        sceneTab_->GetScene()->Update(GetTime()->GetTimeStep());
+    {
+        float timeStep = GetTime()->GetTimeStep();
+        sceneTab_->GetScene()->Update(timeStep);
+        GetUI()->Update(timeStep);
+    }
     case SCENE_SIMULATION_PAUSED:
     {
         if (GetInput()->GetKeyPress(KEY_ESCAPE))
@@ -242,6 +250,7 @@ void PreviewTab::Play()
         // Scene was not running. Allow scene to set up input parameters.
         sceneTab_->GetUndo().SetTrackingEnabled(false);
         sceneTab_->SceneStateSave(sceneState_);
+        GetUI()->SetBlockEvents(false);
         simulationStatus_ = SCENE_SIMULATION_RUNNING;
         SendEvent(E_SIMULATIONSTART);
         inputGrabbed_ = true;
@@ -252,6 +261,7 @@ void PreviewTab::Play()
     {
         // Scene was paused. When resuming restore saved scene input parameters.
         simulationStatus_ = SCENE_SIMULATION_RUNNING;
+        GetUI()->SetBlockEvents(false);
         break;
     }
     default:
@@ -263,6 +273,7 @@ void PreviewTab::Pause()
 {
     if (simulationStatus_ == SCENE_SIMULATION_RUNNING)
         simulationStatus_ = SCENE_SIMULATION_PAUSED;
+    GetUI()->SetBlockEvents(true);
 }
 
 void PreviewTab::Toggle()
@@ -288,6 +299,7 @@ void PreviewTab::Step(float timeStep)
         Pause();
 
     sceneTab_->GetScene()->Update(timeStep);
+    GetUI()->Update(timeStep);
 }
 
 void PreviewTab::Stop()
@@ -301,6 +313,7 @@ void PreviewTab::Stop()
         simulationStatus_ = SCENE_SIMULATION_STOPPED;
         sceneTab_->SceneStateRestore(sceneState_);
         sceneTab_->GetUndo().SetTrackingEnabled(true);
+        GetUI()->SetBlockEvents(true);
     }
 }
 
@@ -336,6 +349,21 @@ void PreviewTab::ReleaseInput()
     GetInput()->SetMouseVisible(true);
     GetInput()->SetMouseMode(MM_ABSOLUTE);
     GetInput()->SetShouldIgnoreInput(true);
+}
+
+void PreviewTab::RenderUI()
+{
+    Graphics* graphics = GetGraphics();
+
+    if (RenderSurface* surface = view_->GetRenderSurface())
+    {
+        GetUI()->SetCustomSize(surface->GetWidth(), surface->GetHeight());
+        graphics->ResetRenderTargets();
+        graphics->SetDepthStencil(surface->GetLinkedDepthStencil());
+        graphics->SetRenderTarget(0, surface);
+        graphics->SetViewport(IntRect(0, 0, surface->GetWidth(), surface->GetHeight()));
+        GetUI()->Render();
+    }
 }
 
 }

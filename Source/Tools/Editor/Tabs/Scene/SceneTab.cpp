@@ -70,6 +70,16 @@ SceneTab::SceneTab(Context* context)
     texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
     texture_->GetRenderSurface()->SetViewport(0, viewport_);
 
+    rootElement_ = new RootUIElement(context_);
+    rootElement_->SetTraversalMode(TM_BREADTH_FIRST);
+    rootElement_->SetEnabled(true);
+
+    offScreenUI_ = new UI(context_);
+    offScreenUI_->SetRoot(rootElement_);
+    offScreenUI_->SetRenderInSystemUI(true);
+    offScreenUI_->SetBlockEvents(true);
+    context_->RegisterSubsystem(offScreenUI_);
+
     // Camera preview objects
     cameraPreviewViewport_ = new Viewport(context_);
     cameraPreviewViewport_->SetScene(scene_);
@@ -158,7 +168,10 @@ SceneTab::SceneTab(Context* context)
     UpdateUniqueTitle();
 }
 
-SceneTab::~SceneTab() = default;
+SceneTab::~SceneTab()
+{
+    context_->RegisterSubsystem(new UI(context_));
+}
 
 bool SceneTab::RenderWindowContent()
 {
@@ -885,6 +898,8 @@ void SceneTab::SceneStateSave(VectorBuffer& destination)
 
     destination.Clear();
     GetScene()->Save(destination);
+    GetUI()->SaveLayout(destination, rootElement_);
+    defaultStyle_ = rootElement_->GetDefaultStyle();
 }
 
 void SceneTab::SceneStateRestore(VectorBuffer& source)
@@ -901,6 +916,9 @@ void SceneTab::SceneStateRestore(VectorBuffer& source)
 
     source.Seek(0);
     GetScene()->Load(source);
+    GetUI()->Clear();
+    GetUI()->LoadLayout(source, defaultStyle_);
+    defaultStyle_ = nullptr;
     source.Clear();
 
     if (editorObjectsState.GetSize() > 0)
@@ -1279,9 +1297,12 @@ void SceneTab::ResizeMainViewport(const IntRect& rect)
 
     rect_ = rect;
     viewport_->SetRect(IntRect(IntVector2::ZERO, rect.Size()));
-    texture_->SetSize(rect.Width(), rect.Height(), Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
-    texture_->GetRenderSurface()->SetViewport(0, viewport_);
-    texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
+    if (rect.Width() != texture_->GetWidth() || rect.Height() != texture_->GetHeight())
+    {
+        texture_->SetSize(rect.Width(), rect.Height(), Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
+        texture_->GetRenderSurface()->SetViewport(0, viewport_);
+        texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
+    }
 }
 
 Camera* SceneTab::GetCamera()
