@@ -21,6 +21,8 @@
 //
 
 #include <Urho3D/Graphics/DebugRenderer.h>
+#include <Urho3D/Scene/SceneEvents.h>
+#include <Urho3D/Scene/SceneManager.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <Toolbox/Scene/DebugCameraController.h>
@@ -53,17 +55,12 @@ SceneTab::SceneTab(Context* context)
     , undo_(context)
     , clipboard_(context, undo_)
 {
-    SetTitle("New Scene");
+    SetTitle("Scene");
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
-
-    // Scene
-    scene_ = SharedPtr<Scene>(new Scene(context));
-    scene_->CreateComponent<Octree>();
-    scene_->CreateComponent<EditorSceneSettings>()->CreateEditorObjects();
+    isUtility_ = true;
 
     // Main viewport
     viewport_ = new Viewport(context_);
-    viewport_->SetScene(scene_);
     viewport_->SetRect(rect_);
     texture_ = new Texture2D(context_);
     texture_->SetSize(rect_.Width(), rect_.Height(), Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
@@ -82,7 +79,6 @@ SceneTab::SceneTab(Context* context)
 
     // Camera preview objects
     cameraPreviewViewport_ = new Viewport(context_);
-    cameraPreviewViewport_->SetScene(scene_);
     cameraPreviewViewport_->SetRect(IntRect{{0, 0}, cameraPreviewSize});
     cameraPreviewViewport_->SetDrawDebug(false);
     cameraPreviewtexture_ = new Texture2D(context_);
@@ -93,13 +89,9 @@ SceneTab::SceneTab(Context* context)
     // Events
     SubscribeToEvent(this, E_EDITORSELECTIONCHANGED, std::bind(&SceneTab::OnNodeSelectionChanged, this));
     SubscribeToEvent(E_UPDATE, std::bind(&SceneTab::OnUpdate, this, _2));
-    SubscribeToEvent(GetScene(), E_COMPONENTADDED, std::bind(&SceneTab::OnComponentAdded, this, _2));
-    SubscribeToEvent(GetScene(), E_COMPONENTREMOVED, std::bind(&SceneTab::OnComponentRemoved, this, _2));
     SubscribeToEvent(E_POSTRENDERUPDATE, [&](StringHash, VariantMap&) { RenderDebugInfo(); });
     SubscribeToEvent(E_SCENESETTINGMODIFIED, [this](StringHash, VariantMap& args) {
         using namespace SceneSettingModified;
-        if (GetScene()->GetComponent<EditorSceneSettings>() != GetEventSender())
-            return;
         // TODO: Stinks.
         if (args[P_NAME].GetString() == "Editor Viewport RenderPath")
         {
@@ -151,17 +143,32 @@ SceneTab::SceneTab(Context* context)
         }
     });
     SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { UpdateCameras(); });
+    SubscribeToEvent(E_SCENEACTIVATED, [this](StringHash, VariantMap& args) {
+        using namespace SceneActivated;
+        if (Scene* scene = static_cast<Scene*>(args[P_NEWSCENE].GetPtr()))
+        {
+            if (scene->IsUpdateEnabled())
+            {
+                scene->SetUpdateEnabled(false);    // Scene is updated manually.
+                scene->GetOrCreateComponent<EditorSceneSettings>(LOCAL);
+                SubscribeToEvent(scene, E_COMPONENTADDED, [this](StringHash, VariantMap& args) { OnComponentAdded(args); });
+                SubscribeToEvent(scene, E_COMPONENTREMOVED, [this](StringHash, VariantMap& args) { OnComponentRemoved(args); });
+                undo_.Connect(scene);
+            }
 
-    undo_.Connect(GetScene());
+            cameraPreviewViewport_->SetScene(scene);
+            viewport_->SetScene(scene);
+            selectedComponents_.Clear();
+            gizmo_.UnselectAll();
+        }
+    });
+
     undo_.Connect(&inspector_);
     undo_.Connect(&gizmo_);
 
     SubscribeToEvent(GetScene(), E_ASYNCLOADFINISHED, [&](StringHash, VariantMap&) {
         undo_.Clear();
     });
-
-    // Scene is updated manually.
-    GetScene()->SetUpdateEnabled(false);
 
     undo_.Clear();
 
@@ -175,6 +182,9 @@ SceneTab::~SceneTab()
 
 bool SceneTab::RenderWindowContent()
 {
+    if (GetScene() == nullptr)
+        return true;
+
     if (GetInput()->IsMouseVisible())
         lastMousePosition_ = GetInput()->GetMousePosition();
     bool open = true;
@@ -333,44 +343,51 @@ void SceneTab::OnAfterEnd()
 
 bool SceneTab::LoadResource(const String& resourcePath)
 {
+    if (resourcePath == GetResourceName())
+        // Already loaded.
+        return true;
+
     if (!BaseClassName::LoadResource(resourcePath))
         return false;
+
+    SceneManager* manager = GetSubsystem<SceneManager>();
+    Scene* scene = manager->GetOrCreateScene(GetFileName(resourcePath));
 
     if (resourcePath.EndsWith(".xml", false))
     {
         auto* file = GetCache()->GetResource<XMLFile>(resourcePath);
-        if (file && GetScene()->LoadXML(file->GetRoot()))
+        if (file && scene->LoadXML(file->GetRoot()))
         {
         }
         else
         {
             URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).CString());
+            manager->UnloadScene(scene);
             return false;
         }
     }
     else if (resourcePath.EndsWith(".json", false))
     {
         auto* file = GetCache()->GetResource<JSONFile>(resourcePath);
-        if (file && GetScene()->LoadJSON(file->GetRoot()))
+        if (file && scene->LoadJSON(file->GetRoot()))
         {
         }
         else
         {
             URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).CString());
+            manager->UnloadScene(scene);
             return false;
         }
     }
     else
     {
         URHO3D_LOGERRORF("Unknown scene file format %s", GetExtension(resourcePath).CString());
+        manager->UnloadScene(scene);
         return false;
     }
 
-    SetTitle(GetFileName(resourcePath));
-
-    // Components for custom scene settings
-    GetScene()->GetOrCreateComponent<EditorSceneSettings>(LOCAL, FIRST_INTERNAL_ID + 4)->CreateEditorObjects();
-
+    manager->SetActiveScene(scene);
+    manager->UnloadAllButActiveScene();
     return true;
 }
 
@@ -379,7 +396,7 @@ bool SceneTab::SaveResource()
     if (!BaseClassName::SaveResource())
         return false;
 
-    GetCache()->IgnoreResourceReload(resourceName_);
+    GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourceName_, true);
 
     auto fullPath = GetCache()->GetResourceFileName(resourceName_);
     if (fullPath.Empty())
@@ -532,7 +549,7 @@ void SceneTab::RenderToolbarButtons()
 
     ui::SameLine(0, 3.f);
 
-    if (EditorSceneSettings* settings = scene_->GetComponent<EditorSceneSettings>())
+    if (EditorSceneSettings* settings = GetScene()->GetComponent<EditorSceneSettings>())
     {
         if (ui::EditorToolbarButton("3D", "3D mode in editor viewport.", !settings->GetCamera2D()))
             settings->SetCamera2D(false);
@@ -602,14 +619,16 @@ void SceneTab::RenderInspector(const char* filter)
 
 void SceneTab::RenderHierarchy()
 {
-    auto oldSpacing = ui::GetStyle().IndentSpacing;
-    ui::GetStyle().IndentSpacing = 10;
+    ui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 10);
     RenderNodeTree(GetScene());
-    ui::GetStyle().IndentSpacing = oldSpacing;
+    ui::PopStyleVar();
 }
 
 void SceneTab::RenderNodeTree(Node* node)
 {
+    if (node == nullptr)
+        return;
+
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
     if (node->GetParent() == nullptr)
         flags |= ImGuiTreeNodeFlags_DefaultOpen;
@@ -806,6 +825,11 @@ void SceneTab::RemoveSelection()
     UnselectAll();
 }
 
+Scene* SceneTab::GetScene()
+{
+    return GetSubsystem<SceneManager>()->GetActiveScene();
+}
+
 IntRect SceneTab::UpdateViewRect()
 {
     IntRect tabRect = BaseClassName::UpdateViewRect();
@@ -819,10 +843,12 @@ IntRect SceneTab::UpdateViewRect()
 
 void SceneTab::OnUpdate(VariantMap& args)
 {
+    Scene* scene = GetScene();
+    if (scene == nullptr)
+        return;
+
     float timeStep = args[Update::P_TIMESTEP].GetFloat();
-
-
-    bool isMode3D_ = !scene_->GetComponent<EditorSceneSettings>()->GetCamera2D();
+    bool isMode3D_ = !scene->GetComponent<EditorSceneSettings>()->GetCamera2D();
     StringHash cameraControllerType = isMode3D_ ? DebugCameraController::GetTypeStatic() : DebugCameraController2D::GetTypeStatic();
     if (Camera* camera = GetCamera())
     {
@@ -878,7 +904,7 @@ void SceneTab::OnUpdate(VariantMap& args)
     }
 }
 
-void SceneTab::SceneStateSave(VectorBuffer& destination)
+void SceneTab::SaveState(SceneState& destination)
 {
     Undo::SetTrackingScoped tracking(undo_, false);
 
@@ -896,13 +922,10 @@ void SceneTab::SceneStateSave(VectorBuffer& destination)
             savedComponentSelection_.Push(component->GetID());
     }
 
-    destination.Clear();
-    GetScene()->Save(destination);
-    GetUI()->SaveLayout(destination, rootElement_);
-    defaultStyle_ = rootElement_->GetDefaultStyle();
+    destination.Save(GetScene(), rootElement_);
 }
 
-void SceneTab::SceneStateRestore(VectorBuffer& source)
+void SceneTab::RestoreState(SceneState& source)
 {
     Undo::SetTrackingScoped tracking(undo_, false);
 
@@ -914,12 +937,8 @@ void SceneTab::SceneStateRestore(VectorBuffer& source)
         editorObjects->Save(editorObjectsState);
     }
 
-    source.Seek(0);
-    GetScene()->Load(source);
-    GetUI()->Clear();
-    GetUI()->LoadLayout(source, defaultStyle_);
-    defaultStyle_ = nullptr;
-    source.Clear();
+    source.Load(rootElement_);
+    GetSubsystem<SceneManager>()->UnloadAllButActiveScene();
 
     if (editorObjectsState.GetSize() > 0)
     {
@@ -943,8 +962,6 @@ void SceneTab::SceneStateRestore(VectorBuffer& source)
         Select(GetScene()->GetComponent(id));
     savedNodeSelection_.Clear();
     savedComponentSelection_.Clear();
-
-    scene_->GetComponent<EditorSceneSettings>()->CreateEditorObjects();
 }
 
 void SceneTab::RenderNodeContextMenu()
@@ -1214,10 +1231,12 @@ void SceneTab::UpdateCameras()
         }
     }
 
-    Camera* camera = GetCamera();
-    viewport_->SetCamera(camera);
-    if (auto* debug = GetScene()->GetComponent<DebugRenderer>())
-        debug->SetView(camera);
+    if (Camera* camera = GetCamera())
+    {
+        viewport_->SetCamera(camera);
+        if (auto* debug = GetScene()->GetComponent<DebugRenderer>())
+            debug->SetView(camera);
+    }
 }
 
 void SceneTab::CopySelection()
@@ -1307,14 +1326,23 @@ void SceneTab::ResizeMainViewport(const IntRect& rect)
 
 Camera* SceneTab::GetCamera()
 {
-    if (Node* node = scene_->GetChild("__EditorCamera__", true))
-        return node->GetComponent<Camera>();
+    if (Scene* scene = GetScene())
+    {
+        if (Node* node = scene->GetChild("__EditorCamera__", true))
+            return node->GetComponent<Camera>();
+    }
     return nullptr;
 }
 
 void SceneTab::RenderDebugInfo()
 {
-    DebugRenderer* debug = scene_->GetComponent<DebugRenderer>();
+    Scene* scene = GetScene();
+    if (scene == nullptr)
+        return;
+
+    DebugRenderer* debug = scene->GetComponent<DebugRenderer>();
+    if (debug == nullptr)
+        return;
 
     auto renderDebugInfo = [debug](Component* component) {
         if (auto* light = component->Cast<Light>())
@@ -1336,7 +1364,7 @@ void SceneTab::RenderDebugInfo()
     }
 
     PODVector<Node*> debugNodes;
-    scene_->GetNodesWithTag(debugNodes, "DebugInfoAlways");
+    scene->GetNodesWithTag(debugNodes, "DebugInfoAlways");
     for (Node* node : debugNodes)
     {
         if (selection.Contains(WeakPtr<Node>(node)))

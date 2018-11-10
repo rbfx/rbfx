@@ -69,14 +69,14 @@ void BaseResourceTab::OnSaveProject(JSONValue& tab)
 void BaseResourceTab::OnLoadProject(const JSONValue& tab)
 {
     Tab::OnLoadProject(tab);
-    SetResourceName(tab["path"].GetString());
-    LoadResource(resourceName_);
+    LoadResource(tab["path"].GetString());
 }
 
 void BaseResourceTab::SetResourceName(const String& resourceName)
 {
     resourceName_ = resourceName;
-    SetTitle(GetFileName(resourceName_));
+    if (!isUtility_)
+        SetTitle(GetFileName(resourceName_));
 }
 
 }

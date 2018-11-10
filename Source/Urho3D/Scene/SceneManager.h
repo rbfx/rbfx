@@ -24,39 +24,56 @@
 
 
 #include "../Core/Object.h"
-#include "../Scene/CameraViewport.h"
 
 
 namespace Urho3D
 {
 
 class RenderSurface;
+class Scene;
 
-/// Listens on various engine events and gathers useful information about scene. This component is used by internal tools.
-class URHO3D_API SceneManager : public Component
+class URHO3D_API SceneManager : public Object
 {
-    URHO3D_OBJECT(SceneManager, Component);
-public:
+    URHO3D_OBJECT(SceneManager, Object)
+    public:
     /// Construct.
     explicit SceneManager(Context* context);
-    /// Store component.
-    void RegisterComponent(Component* component);
-    /// Remove stored component.
-    void UnregisterComponent(Component* component);
-
-    /// Returns a list of existing CameraViewport components.
-    const Vector<WeakPtr<CameraViewport>>& GetCameraViewportComponents() const { return viewportComponents_; }
-    /// Active scene which owns this component and render it to the main screen.
-    void SetSceneActive();
-    /// Active scene which owns this component and render it to specified surface.
-    void SetSceneActive(RenderSurface* surface);
-
     /// Register object with the engine.
     static void RegisterObject(Context* context);
 
+    /// Creates and returns empty scene. Returns null if scene already exists.
+    Scene* CreateScene(const String& name=String::EMPTY);
+    /// Returns a previously created scene or null if no scene with specified name was created.
+    Scene* GetScene(const String& name);
+    /// Returns a previously created scene if it exits or creates a new one.
+    Scene* GetOrCreateScene(const String& name);
+    /// Unload scene from memory.
+    void UnloadScene(Scene* scene);
+    /// Unload scene from memory.
+    void UnloadScene(const String& name);
+    /// Unloads all scenes from memory except active one.
+    void UnloadAllButActiveScene();
+    /// Set specified scene as active. It will start rendering to viewports set up by scene components.
+    void SetActiveScene(Scene* scene);
+    /// Set specified scene as active. It will start rendering to viewports set up by scene components.
+    void SetActiveScene(const String& name);
+    /// Get current active scene. Returns null pointer if no scene is active.
+    Scene* GetActiveScene() const { return activeScene_; }
+    /// Set surface to which active scene should render. If surface is null then scene will render to main window.
+    void SetRenderSurface(RenderSurface* surface);
+
 protected:
-    /// A list of components.
-    Vector<WeakPtr<CameraViewport>> viewportComponents_;
+    /// Creates and sets up viewports for scene rendering.
+    void UpdateViewports();
+
+    /// Current loaded scenes.
+    Vector<SharedPtr<Scene>> scenes_;
+    /// Current active scene.
+    WeakPtr<Scene> activeScene_;
+    /// Surface for rendering active scene into.
+    WeakPtr<RenderSurface> renderSurface_;
+    ///
+    bool missingMetadataWarned_ = false;
 };
 
 }

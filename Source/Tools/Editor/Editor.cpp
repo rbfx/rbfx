@@ -128,6 +128,7 @@ void Editor::Start()
 
     Inspectable::Material::RegisterObject(context_);
 
+    context_->RegisterSubsystem(new SceneManager(context_));
     context_->RegisterSubsystem(new EditorIconCache(context_));
     GetInput()->SetMouseMode(MM_ABSOLUTE);
     GetInput()->SetMouseVisible(true);
@@ -341,15 +342,6 @@ void Editor::RenderMenuBar()
 
 Tab* Editor::CreateTab(StringHash type)
 {
-    if (type == SceneTab::GetTypeStatic())
-    {
-        if (!sceneTab_.Expired())
-        {
-            URHO3D_LOGWARNING("Only one scene may be opened at a time. Please close current scene before opening new one.");
-            return nullptr;
-        }
-    }
-
     auto tab = DynamicCast<Tab>(context_->CreateObject(type));
     tabs_.Push(tab);
 
@@ -403,11 +395,13 @@ void Editor::LoadDefaultLayout()
     auto* resources = new ResourceTab(context_);
     auto* console = new ConsoleTab(context_);
     auto* preview = new PreviewTab(context_);
+    auto* scene = new SceneTab(context_);
 
     tabs_.EmplaceBack(inspector);
     tabs_.EmplaceBack(hierarchy);
     tabs_.EmplaceBack(resources);
     tabs_.EmplaceBack(console);
+    tabs_.EmplaceBack(scene);
     tabs_.EmplaceBack(preview);
 
     ImGui::DockBuilderRemoveNode(dockspaceId_);
@@ -422,6 +416,7 @@ void Editor::LoadDefaultLayout()
     ImGui::DockBuilderDockWindow(hierarchy->GetUniqueTitle().CString(), dockHierarchy);
     ImGui::DockBuilderDockWindow(resources->GetUniqueTitle().CString(), dockResources);
     ImGui::DockBuilderDockWindow(console->GetUniqueTitle().CString(), dockLog);
+    ImGui::DockBuilderDockWindow(scene->GetUniqueTitle().CString(), dock_main_id);
     ImGui::DockBuilderDockWindow(preview->GetUniqueTitle().CString(), dock_main_id);
     ImGui::DockBuilderDockWindow(inspector->GetUniqueTitle().CString(), dockInspector);
     ImGui::DockBuilderFinish(dockspaceId_);

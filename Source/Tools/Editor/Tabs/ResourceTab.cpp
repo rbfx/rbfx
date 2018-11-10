@@ -87,10 +87,23 @@ bool ResourceTab::RenderWindowContent()
         auto it = contentToTabType.Find(GetContentType(selected));
         if (it != contentToTabType.End())
         {
-            if (auto* tab = GetSubsystem<Editor>()->GetTab(it->second_, selected))
-                tab->Activate();
+            if (auto* tab = GetSubsystem<Editor>()->GetTab(it->second_))
+            {
+                if (tab->IsUtility())
+                {
+                    // Tabs that can be opened once.
+                    tab->LoadResource(selected);
+                    tab->Activate();
+                }
+                else if ((tab = GetSubsystem<Editor>()->GetTab(it->second_, selected)))
+                {
+                    // Tabs that can be opened multiple times.
+                    tab->Activate();
+                }
+            }
             else
             {
+                // Tabs that can be opened multiple times.
                 if ((tab = GetSubsystem<Editor>()->CreateTab(it->second_)))
                 {
                     tab->LoadResource(selected);
@@ -101,6 +114,7 @@ bool ResourceTab::RenderWindowContent()
         }
         else
         {
+            // Unknown resources are opened with associated application.
             String resourcePath = GetSubsystem<Project>()->GetResourcePath() + selected;
             if (!GetFileSystem()->Exists(resourcePath))
                 resourcePath = GetSubsystem<Project>()->GetCachePath() + selected;

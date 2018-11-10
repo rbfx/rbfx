@@ -109,6 +109,36 @@ void EditorSceneSettings::SetCameraZoom(float zoom)
     }
 }
 
+void EditorSceneSettings::OnSceneSet(Scene* scene)
+{
+    if (scene == nullptr)
+        return;
+
+    Node* parent = scene->GetChild("EditorObjects");
+    if (parent == nullptr)
+    {
+        parent = scene->CreateChild("EditorObjects", LOCAL);
+        parent->AddTag("__EDITOR_OBJECT__");
+    }
+
+    Node* camera = parent->GetChild("EditorCamera");
+    if (camera == nullptr)
+    {
+        camera = parent->CreateChild("__EditorCamera__", LOCAL);
+        camera->AddTag("__EDITOR_OBJECT__");
+    }
+
+    Camera* cameraComponent = camera->GetOrCreateComponent<Camera>();
+    cameraComponent->SetFarClip(160000);
+
+    auto* debug = scene->GetOrCreateComponent<DebugRenderer>(LOCAL);
+    debug->SetView(cameraComponent);
+    debug->SetTemporary(true);
+    debug->SetLineAntiAlias(true);
+
+    SetCamera2D(is2D_);
+}
+
 Node* EditorSceneSettings::GetCameraNode()
 {
     return GetScene()->GetChild("__EditorCamera__", true);
@@ -117,33 +147,6 @@ Node* EditorSceneSettings::GetCameraNode()
 Node* EditorSceneSettings::GetCameraNode() const
 {
     return GetScene()->GetChild("__EditorCamera__", true);
-}
-
-void EditorSceneSettings::CreateEditorObjects()
-{
-    Node* parent = GetScene()->GetChild("EditorObjects");
-    if (parent == nullptr)
-    {
-        parent = GetScene()->CreateChild("EditorObjects", LOCAL, FIRST_INTERNAL_ID);
-        parent->AddTag("__EDITOR_OBJECT__");
-    }
-
-    Node* camera = parent->GetChild("EditorCamera");
-    if (camera == nullptr)
-    {
-        camera = parent->CreateChild("__EditorCamera__", LOCAL, FIRST_INTERNAL_ID + 1);
-        camera->AddTag("__EDITOR_OBJECT__");
-    }
-
-    Camera* cameraComponent = camera->GetOrCreateComponent<Camera>();
-    cameraComponent->SetFarClip(160000);
-
-    auto* debug = GetScene()->GetOrCreateComponent<DebugRenderer>(LOCAL, FIRST_INTERNAL_ID + 2);
-    debug->SetView(cameraComponent);
-    debug->SetTemporary(true);
-    debug->SetLineAntiAlias(true);
-
-    SetCamera2D(is2D_);
 }
 
 bool EditorSceneSettings::GetCamera2D() const

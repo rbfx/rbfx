@@ -34,6 +34,7 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/SceneManager.h>
+#include <Urho3D/Scene/SceneMetadata.h>
 #if URHO3D_CSHARP
 #   include <Urho3D/Script/Script.h>
 #endif
@@ -86,6 +87,8 @@ void Player::Start()
     if (Script* script = GetSubsystem<Script>())    // Graceful failure when managed runtime support is present but not in use.
         script->LoadRuntime();
 #endif
+
+    context_->RegisterSubsystem(new SceneManager(context_));
 
     SharedPtr<JSONFile> projectFile(GetCache()->GetResource<JSONFile>("Project.json"));
     if (projectFile.Null())
@@ -151,15 +154,14 @@ void Player::Start()
 
     // Load main scene.
     {
-        scene_ = SharedPtr<Scene>(context_->CreateObject<Scene>());
-        SharedPtr<XMLFile> sceneFile(GetCache()->GetResource<XMLFile>(projectRoot["default-scene"].GetString()));
-        scene_->LoadXML(sceneFile->GetRoot());
+        SceneManager* manager = GetSubsystem<SceneManager>();
+        Scene* scene = manager->CreateScene();
 
-        GetRenderer()->SetNumViewports(0);        // New scenes need all viewports cleared
-        if (auto* manager = scene_->GetComponent<SceneManager>())
-            manager->SetSceneActive();
+        SharedPtr<XMLFile> sceneFile(GetCache()->GetResource<XMLFile>(projectRoot["default-scene"].GetString()));
+        if (scene->LoadXML(sceneFile->GetRoot()))
+            manager->SetActiveScene(scene);
         else
-            ErrorExit("Invalid scene.");
+            ErrorExit("Invalid scene file.");
     }
 }
 

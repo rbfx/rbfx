@@ -67,17 +67,17 @@ void SceneView::CreateObjects()
     Node* parent = scene_->GetChild("EditorObjects");
     if (parent == nullptr)
     {
-        parent = scene_->CreateChild("EditorObjects", LOCAL, FIRST_INTERNAL_ID, true);
+        parent = scene_->CreateChild("EditorObjects", LOCAL, 0, true);
         parent->AddTag("__EDITOR_OBJECT__");
     }
     Node* camera = parent->GetChild("EditorCamera");
     if (camera == nullptr)
     {
-        camera = parent->CreateChild("EditorCamera", LOCAL, FIRST_INTERNAL_ID);
+        camera = parent->CreateChild("EditorCamera", LOCAL);
         camera->CreateComponent<Camera>()->SetFarClip(160000);
         camera->AddTag("__EDITOR_OBJECT__");
     }
-    auto* debug = scene_->GetOrCreateComponent<DebugRenderer>(LOCAL, FIRST_INTERNAL_ID);
+    auto* debug = scene_->GetOrCreateComponent<DebugRenderer>(LOCAL);
     debug->SetView(GetCamera());
     debug->SetTemporary(true);
     debug->SetLineAntiAlias(true);

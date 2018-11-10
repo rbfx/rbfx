@@ -39,6 +39,41 @@ namespace Urho3D
 class EditorSceneSettings;
 class SceneEffects;
 
+struct SceneState
+{
+    void Save(Scene* scene, UIElement* root)
+    {
+        sceneState_.Clear();
+        uiState_.Clear();
+        startScene_ = scene;
+        scene->Save(sceneState_);
+        root->GetUI()->SaveLayout(uiState_, root);
+        defaultStyle_ = root->GetDefaultStyle();
+    }
+
+    void Load(UIElement* root)
+    {
+        sceneState_.Seek(0);
+        startScene_->Load(sceneState_);
+        startScene_->GetUI()->Clear();
+        root->SetDefaultStyle(defaultStyle_);
+        root->LoadXML(uiState_);
+        defaultStyle_ = nullptr;
+        sceneState_.Clear();
+        uiState_.Clear();
+        startScene_->GetSubsystem<SceneManager>()->SetActiveScene(startScene_);
+    }
+
+    ///
+    WeakPtr<Scene> startScene_;
+    ///
+    VectorBuffer sceneState_;
+    ///
+    VectorBuffer uiState_;
+    ///
+    SharedPtr<XMLFile> defaultStyle_;
+};
+
 class SceneTab : public BaseResourceTab, public IHierarchyProvider, public IInspectorProvider
 {
     URHO3D_OBJECT(SceneTab, BaseResourceTab);
@@ -90,15 +125,15 @@ public:
     /// Removes component if it was selected in inspector, otherwise removes selected scene nodes.
     void RemoveSelection();
     /// Return scene displayed in the tab viewport.
-    Scene* GetScene() { return scene_; }
+    Scene* GetScene();
     ///
     Viewport* GetViewport() { return viewport_; }
     /// Returns undo state manager.
     Undo::Manager& GetUndo() { return undo_; }
     /// Serialize scene to binary buffer.
-    void SceneStateSave(VectorBuffer& destination);
+    void SaveState(SceneState& destination);
     /// Unserialize scene from binary buffer.
-    void SceneStateRestore(VectorBuffer& source);
+    void RestoreState(SceneState& source);
     ///
     Camera* GetCamera();
 
@@ -144,8 +179,6 @@ protected:
 
     /// Rectangle dimensions that are rendered by this view.
     IntRect rect_;
-    /// Scene which is rendered by this view.
-    SharedPtr<Scene> scene_;
     /// Texture to which scene is rendered.
     SharedPtr<Texture2D> texture_;
     /// Viewport which defines rendering area.

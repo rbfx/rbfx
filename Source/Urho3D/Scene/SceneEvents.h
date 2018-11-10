@@ -212,4 +212,11 @@ URHO3D_EVENT(E_INTERCEPTNETWORKUPDATE, InterceptNetworkUpdate)
     URHO3D_PARAM(P_VALUE, Value);                  // Variant
 }
 
+/// Scene manager has activated a new scene.
+URHO3D_EVENT(E_SCENEACTIVATED, SceneActivated)
+{
+    URHO3D_PARAM(P_OLDSCENE, OldScene);            // Scene pointer
+    URHO3D_PARAM(P_NEWSCENE, NewScene);            // Scene pointer
+}
+
 }

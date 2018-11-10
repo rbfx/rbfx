@@ -69,10 +69,10 @@ public:
     bool GetCamera2D() const;
     ///
     void SetCamera2D(bool is2D);
-    ///
-    void CreateEditorObjects();
 
 protected:
+    ///
+    void OnSceneSet(Scene* scene) override;
     ///
     Node* GetCameraNode();
     ///

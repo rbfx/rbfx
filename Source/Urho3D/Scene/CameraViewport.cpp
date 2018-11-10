@@ -33,7 +33,7 @@
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 
-#include "SceneManager.h"
+#include "SceneMetadata.h"
 #include "CameraViewport.h"
 
 
@@ -107,14 +107,14 @@ void CameraViewport::OnSceneSet(Scene* scene)
 {
     if (scene)
     {
-        if (SceneManager* manager = scene->GetOrCreateComponent<SceneManager>())
+        if (SceneMetadata* manager = scene->GetOrCreateComponent<SceneMetadata>())
             manager->RegisterComponent(this);
     }
     else
     {
         if (Scene* oldScene = GetScene())
         {
-            if (SceneManager* manager = oldScene->GetComponent<SceneManager>())
+            if (SceneMetadata* manager = oldScene->GetComponent<SceneMetadata>())
                 manager->UnregisterComponent(this);
         }
     }

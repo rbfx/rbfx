@@ -91,14 +91,12 @@ protected:
     /// Texture used to display preview.
     SharedPtr<Texture2D> view_{};
 
-    /// Scene which can be simulated.
-    WeakPtr<SceneTab> sceneTab_;
     /// Flag controlling scene updates in the viewport.
     SceneSimulationStatus simulationStatus_ = SCENE_SIMULATION_STOPPED;
     /// Temporary storage of scene data used in play/pause functionality.
-    VectorBuffer sceneState_;
+    SceneState sceneState_;
     /// Temporary storage of scene data used when plugins are being reloaded.
-    VectorBuffer sceneReloadState_;
+    SceneState sceneReloadState_;
     /// Time since ESC was last pressed. Used for double-press ESC to exit scene simulation.
     unsigned lastEscPressTime_ = 0;
     /// Flag indicating game view assumed control of the input.

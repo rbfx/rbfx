@@ -25,6 +25,7 @@
 #include "EditorEvents.h"
 #include "Editor.h"
 #include "Tab.h"
+#include "PreviewTab.h"
 
 
 namespace Urho3D
@@ -191,6 +192,18 @@ void Tab::OnSaveProject(JSONValue& tab)
 void Tab::OnLoadProject(const JSONValue& tab)
 {
     SetID(tab["uuid"].GetString());
+}
+
+bool Tab::LoadResource(const String& resourcePath)
+{
+    // Resource loading is only allowed when scene is not playing.
+    return GetSubsystem<Editor>()->GetTab<PreviewTab>()->GetSceneSimulationStatus() == SCENE_SIMULATION_STOPPED;
+}
+
+bool Tab::SaveResource()
+{
+    // Resource loading is only allowed when scene is not playing.
+    return GetSubsystem<Editor>()->GetTab<PreviewTab>()->GetSceneSimulationStatus() == SCENE_SIMULATION_STOPPED;
 }
 
 

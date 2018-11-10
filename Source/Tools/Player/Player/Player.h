@@ -49,8 +49,6 @@ protected:
 
     ///
     Vector<SharedPtr<PluginApplication>> plugins_;
-    ///
-    SharedPtr<Scene> scene_;
 };
 
 }
