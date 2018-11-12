@@ -110,6 +110,8 @@ public:
     void Activate() { activateTab_ = true; }
     /// Returns true when loaded resource was modified.
     virtual bool IsModified() const { return false; }
+    /// Closes current tab and unloads it's contents from memory.
+    virtual void Close() { open_ = false; }
 
 protected:
     ///

@@ -1393,4 +1393,13 @@ void SceneTab::RenderDebugInfo()
     }
 }
 
+void SceneTab::Close()
+{
+    BaseClassName::Close();
+
+    SceneManager* manager = GetSubsystem<SceneManager>();
+    manager->SetActiveScene(nullptr);
+    manager->UnloadAllButActiveScene();
+}
+
 }

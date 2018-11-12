@@ -34,6 +34,8 @@ class BaseResourceTab
 public:
     /// Construct.
     explicit BaseResourceTab(Context* context);
+    /// Render tab content.
+    bool RenderWindow() override;
     /// Load resource from cache.
     bool LoadResource(const String& resourcePath) override;
     /// Save resource o disk.
@@ -46,6 +48,8 @@ public:
     String GetResourceName() const { return resourceName_; }
     /// Returns true when loaded resource was modified.
     bool IsModified() const override;
+    /// Closes current tab and unloads it's contents from memory.
+    void Close() override;
 
 protected:
     /// Set resource name.
@@ -57,6 +61,8 @@ protected:
     int lastUndoIndex_ = 0;
     /// State change tracker.
     Undo::Manager undo_;
+    /// Resource that user would like to open on top of current loaded resource. Used for displaying warning.
+    String pendingLoadResource_;
 };
 
 }

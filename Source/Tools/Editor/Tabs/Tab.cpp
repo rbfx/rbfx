@@ -119,37 +119,30 @@ bool Tab::RenderWindow()
         else
             windowFlags_ &= ~ImGuiWindowFlags_UnsavedDocument;
 
-        if (ui::Begin(uniqueTitle_.CString(), &open_, windowFlags_))
+        ui::Begin(uniqueTitle_.CString(), &open_, windowFlags_);
         {
             OnAfterBegin();
-            if (open_)
+            if (!ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
             {
-                if (!ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
+                if (!wasRendered)                                                                                   // Just activated
+                    ui::SetWindowFocus();
+                else if (input->IsMouseVisible() && ui::IsAnyMouseDown())
                 {
-                    if (!wasRendered)                                                                                   // Just activated
+                    if (ui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))                                        // Interacting
                         ui::SetWindowFocus();
-                    else if (input->IsMouseVisible() && ui::IsAnyMouseDown())
-                    {
-                        if (ui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))                                        // Interacting
-                            ui::SetWindowFocus();
-                    }
                 }
-
-                isActive_ = ui::IsWindowFocused();
-                open_ = RenderWindowContent();
-                isRendered_ = true;
             }
+
+            isActive_ = ui::IsWindowFocused();
+            bool shouldBeOpen = RenderWindowContent();
+            if (open_)
+                open_ = shouldBeOpen;
             else
             {
-                isActive_ = false;
-                isRendered_ = false;
+                // Tab is possibly closing, lets not override that condition.
             }
+            isRendered_ = true;
             OnBeforeEnd();
-        }
-        else
-        {
-            isActive_ = false;
-            isRendered_ = false;
         }
 
         ui::End();

@@ -125,7 +125,7 @@ public:
     void RemoveSelection();
     /// Return scene displayed in the tab viewport.
     Scene* GetScene();
-    ///
+    /// Returns editor viewport.
     Viewport* GetViewport() { return viewport_; }
     /// Returns undo state manager.
     Undo::Manager& GetUndo() { return undo_; }
@@ -133,8 +133,10 @@ public:
     void SaveState(SceneState& destination);
     /// Unserialize scene from binary buffer.
     void RestoreState(SceneState& source);
-    ///
+    /// Returns editor viewport camera.
     Camera* GetCamera();
+    /// Closes current tab and unloads it's contents from memory.
+    void Close() override;
 
 protected:
     /// Render scene hierarchy window starting from specified node.

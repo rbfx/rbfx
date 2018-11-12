@@ -19,7 +19,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#include <Urho3D/Urho3DAll.h>
+#include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Resource/ResourceEvents.h>
+#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <Toolbox/SystemUI/Widgets.h>
 #include "BaseResourceTab.h"
 
 namespace Urho3D
@@ -45,6 +49,12 @@ bool BaseResourceTab::LoadResource(const Urho3D::String& resourcePath)
 
     if (resourcePath.Empty())
         return false;
+
+    if (IsModified())
+    {
+        pendingLoadResource_ = resourcePath;
+        return false;
+    }
 
     SetResourceName(resourcePath);
     undo_.Clear();
@@ -87,6 +97,84 @@ void BaseResourceTab::SetResourceName(const String& resourceName)
 bool BaseResourceTab::IsModified() const
 {
     return lastUndoIndex_ != undo_.Index();
+}
+
+bool BaseResourceTab::RenderWindow()
+{
+    bool wasOpen = open_;
+    BaseClassName::RenderWindow();
+
+    if (wasOpen && !ui::IsPopupOpen("Save?"))
+    {
+        if ((!open_ && IsModified()) || !pendingLoadResource_.Empty())
+        {
+            ui::OpenPopup("Save?");
+            open_ = true;
+        }
+    }
+
+    bool noCancel = true;
+    if (ui::BeginPopupModal("Save?", &noCancel, ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_Popup))
+    {
+        // Warn when closing a tab that was modified.
+        if (!pendingLoadResource_.Empty())
+        {
+            ui::Text(
+                "Resource '%s' was modified. Would you like to save it before opening '%s'?",
+                GetFileNameAndExtension(resourceName_).CString(),
+                GetFileNameAndExtension(pendingLoadResource_).CString());
+
+            if (ui::Button(ICON_FA_SAVE " Save & Open"))
+            {
+                SaveResource();
+                LoadResource(pendingLoadResource_);
+                pendingLoadResource_.Clear();
+                ui::CloseCurrentPopup();
+            }
+        }
+        else
+        {
+            ui::Text("Resource '%s' was modified. Would you like to save it before closing?",
+                GetFileNameAndExtension(resourceName_).CString());
+
+            bool save = ui::Button(ICON_FA_SAVE " Save & Close");
+            ui::SameLine();
+            bool close = ui::Button(ICON_FA_EXCLAMATION_TRIANGLE " Close without saving");
+            ui::SetHelpTooltip("Can not be undone!", KEY_UNKNOWN);
+
+            if (save)
+                SaveResource();
+
+            if (save || close)
+            {
+                open_ = false;
+                ui::CloseCurrentPopup();
+            }
+        }
+        ui::SameLine();
+        if (ui::Button(ICON_FA_TIMES " Cancel"))
+        {
+            pendingLoadResource_.Clear();
+            ui::CloseCurrentPopup();
+        }
+        ui::EndPopup();
+    }
+    else if (!pendingLoadResource_.Empty())
+    {
+        // Click outside of popup.
+        pendingLoadResource_.Clear();
+    }
+
+    if (wasOpen && !open_)
+        Close();
+
+    return open_;
+}
+
+void BaseResourceTab::Close()
+{
+    undo_.Clear();
+    lastUndoIndex_ = 0;
 }
 
 }
