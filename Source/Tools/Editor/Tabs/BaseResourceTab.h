@@ -21,7 +21,7 @@
 //
 #pragma once
 
-
+#include <Toolbox/Common/UndoManager.h>
 #include "Tabs/Tab.h"
 
 namespace Urho3D
@@ -30,6 +30,7 @@ namespace Urho3D
 class BaseResourceTab
     : public Tab
 {
+    URHO3D_OBJECT(BaseResourceTab, Tab);
 public:
     /// Construct.
     explicit BaseResourceTab(Context* context);
@@ -43,6 +44,8 @@ public:
     void OnLoadProject(const JSONValue& tab) override;
     /// Returns name of opened resource.
     String GetResourceName() const { return resourceName_; }
+    /// Returns true when loaded resource was modified.
+    bool IsModified() const override;
 
 protected:
     /// Set resource name.
@@ -50,6 +53,10 @@ protected:
 
     /// Name of loaded resource.
     String resourceName_;
+    /// Comparing undo stack size allows determining if open resource was modified during last frame.
+    int lastUndoIndex_ = 0;
+    /// State change tracker.
+    Undo::Manager undo_;
 };
 
 }

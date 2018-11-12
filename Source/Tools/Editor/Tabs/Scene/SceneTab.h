@@ -27,7 +27,6 @@
 #include <Toolbox/SystemUI/AttributeInspector.h>
 #include <Toolbox/SystemUI/Gizmo.h>
 #include <Toolbox/Graphics/SceneView.h>
-#include <Toolbox/Common/UndoManager.h>
 #include "Tabs/BaseResourceTab.h"
 #include "Tabs/Scene/SceneClipboard.h"
 #include "Tabs/UI/RootUIElement.h"
@@ -187,8 +186,6 @@ protected:
     Gizmo gizmo_;
     /// Current selected component displayed in inspector.
     HashSet<WeakPtr<Component>> selectedComponents_;
-    /// State change tracker.
-    Undo::Manager undo_;
     /// Flag indicating that mouse is hovering scene viewport.
     bool mouseHoversViewport_ = false;
     /// Nodes whose entries in hierarchy tree should be opened on next frame.

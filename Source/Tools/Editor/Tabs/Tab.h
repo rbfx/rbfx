@@ -108,6 +108,8 @@ public:
     void SetOpen(bool open) { open_ = open; }
     /// Make tab active.
     void Activate() { activateTab_ = true; }
+    /// Returns true when loaded resource was modified.
+    virtual bool IsModified() const { return false; }
 
 protected:
     ///

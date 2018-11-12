@@ -27,6 +27,7 @@ namespace Urho3D
 
 BaseResourceTab::BaseResourceTab(Context* context)
     : Tab(context)
+    , undo_(context)
 {
     SubscribeToEvent(E_RESOURCERENAMED, [&](StringHash, VariantMap& args) {
         using namespace ResourceRenamed;
@@ -46,6 +47,8 @@ bool BaseResourceTab::LoadResource(const Urho3D::String& resourcePath)
         return false;
 
     SetResourceName(resourcePath);
+    undo_.Clear();
+    lastUndoIndex_ = undo_.Index();
     return true;
 }
 
@@ -56,6 +59,8 @@ bool Urho3D::BaseResourceTab::SaveResource()
 
     if (resourceName_.Empty())
         return false;
+
+    lastUndoIndex_ = undo_.Index();
 
     return true;
 }
@@ -77,6 +82,11 @@ void BaseResourceTab::SetResourceName(const String& resourceName)
     resourceName_ = resourceName;
     if (!isUtility_)
         SetTitle(GetFileName(resourceName_));
+}
+
+bool BaseResourceTab::IsModified() const
+{
+    return lastUndoIndex_ != undo_.Index();
 }
 
 }

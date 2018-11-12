@@ -113,6 +113,12 @@ bool Tab::RenderWindow()
     if (open_)
     {
         OnBeforeBegin();
+
+        if (IsModified())
+            windowFlags_ |= ImGuiWindowFlags_UnsavedDocument;
+        else
+            windowFlags_ &= ~ImGuiWindowFlags_UnsavedDocument;
+
         if (ui::Begin(uniqueTitle_.CString(), &open_, windowFlags_))
         {
             OnAfterBegin();

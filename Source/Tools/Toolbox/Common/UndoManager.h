@@ -648,6 +648,8 @@ public:
     void SetTrackingEnabled(bool enabled) { trackingEnabled_ = enabled; }
     /// Return true if manager is tracking undoable changes.
     bool IsTrackingEnabled() const { return trackingEnabled_; }
+    ///
+    int32_t Index() const { return index_; }
 
 protected:
     /// State stack

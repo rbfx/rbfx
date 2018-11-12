@@ -62,7 +62,6 @@ SceneTab::SceneTab(Context* context)
     : BaseClassName(context)
     , rect_({0, 0, 1024, 768})
     , gizmo_(context)
-    , undo_(context)
     , clipboard_(context, undo_)
 {
     SetTitle("Scene");
