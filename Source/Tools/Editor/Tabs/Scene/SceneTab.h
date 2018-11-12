@@ -23,7 +23,7 @@
 #pragma once
 
 
-#include <Urho3D/Urho3DAll.h>
+#include <Urho3D/Scene/SceneManager.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
 #include <Toolbox/SystemUI/Gizmo.h>
 #include <Toolbox/Graphics/SceneView.h>

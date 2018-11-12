@@ -21,6 +21,8 @@
 // THE SOFTWARE.
 //
 
+#include <Urho3D/Graphics/Camera.h>
+#include <Urho3D/Graphics/DebugRenderer.h>
 #include <Toolbox/Scene/DebugCameraController.h>
 #include "EditorSceneSettings.h"
 #include "SceneTab.h"

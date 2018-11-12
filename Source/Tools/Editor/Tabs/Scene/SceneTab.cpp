@@ -20,7 +20,17 @@
 // THE SOFTWARE.
 //
 
+#include <Urho3D/Core/CoreEvents.h>
+#include <Urho3D/Graphics/BillboardSet.h>
+#include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/DebugRenderer.h>
+#include <Urho3D/Graphics/Graphics.h>
+#include <Urho3D/Graphics/Material.h>
+#include <Urho3D/Graphics/Octree.h>
+#include <Urho3D/Graphics/RenderPath.h>
+#include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/SceneEvents.h>
 #include <Urho3D/Scene/SceneManager.h>
 

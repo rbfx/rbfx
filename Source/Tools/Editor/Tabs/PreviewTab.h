@@ -23,6 +23,7 @@
 #pragma once
 
 
+#include <Urho3D/Input/Input.h>
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/Scene/Scene.h>
 #include "Tabs/Scene/SceneTab.h"

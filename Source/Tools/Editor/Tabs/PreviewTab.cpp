@@ -20,18 +20,20 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/SystemUI/Console.h>
+#include <Urho3D/Core/Timer.h>
 #include <Urho3D/Graphics/Graphics.h>
+#include <Urho3D/Graphics/GraphicsEvents.h>
 #include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/Graphics/Texture2D.h>
 #include <Urho3D/Math/Rect.h>
+#include <Urho3D/Math/Color.h>
+#include <Urho3D/Input/Input.h>
 #include <Urho3D/Resource/ResourceEvents.h>
+#include <Urho3D/Scene/CameraViewport.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/SceneEvents.h>
-#include <Urho3D/Math/Color.h>
-#include <Urho3D/Scene/CameraViewport.h>
 #include <Urho3D/Scene/SceneMetadata.h>
-#include <Urho3D/Core/Timer.h>
+#include <Urho3D/SystemUI/Console.h>
 #include <Toolbox/SystemUI/Widgets.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include "EditorEventsPrivate.h"
