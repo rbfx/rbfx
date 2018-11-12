@@ -249,8 +249,13 @@ void Editor::OnUpdate(VariantMap& args)
     ImGui::PopStyleVar();
 
     // Dialog for a warning when application is being closed with unsaved resources.
-    if (exiting_ && !ui::IsPopupOpen("Save All?"))
-        ui::OpenPopup("Save All?");
+    if (exiting_)
+    {
+        if (!hasModified)
+            engine_->Exit();
+        else if (!ui::IsPopupOpen("Save All?"))
+            ui::OpenPopup("Save All?");
+    }
 
     if (ui::BeginPopupModal("Save All?", &exiting_, ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_Popup))
     {
