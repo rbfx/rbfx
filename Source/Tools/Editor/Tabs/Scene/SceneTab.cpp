@@ -161,10 +161,13 @@ SceneTab::SceneTab(Context* context)
             {
                 scene->SetUpdateEnabled(false);    // Scene is updated manually.
                 scene->GetOrCreateComponent<EditorSceneSettings>(LOCAL);
-                SubscribeToEvent(scene, E_COMPONENTADDED, [this](StringHash, VariantMap& args) { OnComponentAdded(args); });
-                SubscribeToEvent(scene, E_COMPONENTREMOVED, [this](StringHash, VariantMap& args) { OnComponentRemoved(args); });
-                undo_.Connect(scene);
             }
+
+            SubscribeToEvent(scene, E_COMPONENTADDED, [this](StringHash, VariantMap& args) { OnComponentAdded(args); });
+            SubscribeToEvent(scene, E_COMPONENTREMOVED, [this](StringHash, VariantMap& args) { OnComponentRemoved(args); });
+
+            undo_.Clear();
+            undo_.Connect(scene);
 
             cameraPreviewViewport_->SetScene(scene);
             viewport_->SetScene(scene);
