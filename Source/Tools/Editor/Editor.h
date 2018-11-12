@@ -118,6 +118,8 @@ protected:
     bool loadDefaultLayout_ = false;
     ///
     ImFont* monoFont_ = nullptr;
+    ///
+    bool exiting_ = false;
 };
 
 }

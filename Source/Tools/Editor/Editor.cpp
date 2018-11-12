@@ -137,6 +137,7 @@ void Editor::Start()
     EditorSceneSettings::RegisterObject(context_);
 
     GetCache()->SetAutoReloadResources(true);
+    engine_->SetAutoExit(false);
 
     SubscribeToEvent(E_UPDATE, std::bind(&Editor::OnUpdate, this, _2));
 
@@ -176,6 +177,9 @@ void Editor::Start()
             pendingOpenProject_.Clear();
         }
     });
+    SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap&) {
+        exiting_ = true;
+    });
 
     if (!defaultProjectPath.empty())
         pendingOpenProject_ = defaultProjectPath.c_str();
@@ -210,6 +214,7 @@ void Editor::OnUpdate(VariantMap& args)
     ui::DockSpace(dockspaceId_);
 
     auto tabsCopy = tabs_;
+    bool hasModified = false;
     for (auto& tab : tabsCopy)
     {
         if (tab->RenderWindow())
@@ -220,6 +225,7 @@ void Editor::OnUpdate(VariantMap& args)
                 activeTab_ = tab;
                 tab->OnFocused();
             }
+            hasModified |= tab->IsModified();
         }
         else if (!tab->IsUtility())
             // Content tabs get closed permanently
@@ -241,6 +247,41 @@ void Editor::OnUpdate(VariantMap& args)
 
     ui::End();
     ImGui::PopStyleVar();
+
+    // Dialog for a warning when application is being closed with unsaved resources.
+    if (exiting_ && !ui::IsPopupOpen("Save All?"))
+        ui::OpenPopup("Save All?");
+
+    if (ui::BeginPopupModal("Save All?", &exiting_, ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_Popup))
+    {
+        ui::TextUnformatted("You have unsaved resources. Save them before exiting?");
+
+        if (ui::Button(ICON_FA_SAVE " Save & Close"))
+        {
+            for (auto& tab : tabs_)
+            {
+                if (tab->IsModified())
+                    tab->SaveResource();
+            }
+            engine_->Exit();
+        }
+
+        ui::SameLine();
+
+        if (ui::Button(ICON_FA_EXCLAMATION_TRIANGLE " Close without saving"))
+            engine_->Exit();
+        ui::SetHelpTooltip(ICON_FA_EXCLAMATION_TRIANGLE " All unsaved changes will be lost!", KEY_UNKNOWN);
+
+        ui::SameLine();
+
+        if (ui::Button(ICON_FA_TIMES " Cancel"))
+        {
+            exiting_ = false;
+            ui::CloseCurrentPopup();
+        }
+
+        ui::EndPopup();
+    }
 }
 
 void Editor::RenderMenuBar()
