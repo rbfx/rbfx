@@ -707,6 +707,9 @@ void Renderer::Render()
     bool hasBackbufferViews = false;
     for (unsigned i = 0; i < views_.Size(); ++i)
     {
+        if (!views_[i])
+            continue;
+
         if (!views_[i]->GetRenderTarget())
         {
             hasBackbufferViews = true;
