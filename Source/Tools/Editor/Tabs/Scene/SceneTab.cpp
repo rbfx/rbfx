@@ -345,6 +345,7 @@ void SceneTab::OnAfterBegin()
 
 void SceneTab::OnBeforeEnd()
 {
+    BaseClassName::OnBeforeEnd();
     ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
 }
 
@@ -365,36 +366,30 @@ bool SceneTab::LoadResource(const String& resourcePath)
     SceneManager* manager = GetSubsystem<SceneManager>();
     Scene* scene = manager->GetOrCreateScene(GetFileName(resourcePath));
 
+    bool loaded = false;
     if (resourcePath.EndsWith(".xml", false))
     {
         auto* file = GetCache()->GetResource<XMLFile>(resourcePath);
-        if (file && scene->LoadXML(file->GetRoot()))
-        {
-        }
-        else
-        {
-            URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).CString());
-            manager->UnloadScene(scene);
-            return false;
-        }
+        loaded = file && scene->LoadXML(file->GetRoot());
     }
     else if (resourcePath.EndsWith(".json", false))
     {
         auto* file = GetCache()->GetResource<JSONFile>(resourcePath);
-        if (file && scene->LoadJSON(file->GetRoot()))
-        {
-        }
-        else
-        {
-            URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).CString());
-            manager->UnloadScene(scene);
-            return false;
-        }
+        loaded = file && scene->LoadJSON(file->GetRoot());
     }
     else
     {
         URHO3D_LOGERRORF("Unknown scene file format %s", GetExtension(resourcePath).CString());
         manager->UnloadScene(scene);
+        GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
+        return false;
+    }
+
+    if (!loaded)
+    {
+        URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).CString());
+        manager->UnloadScene(scene);
+        GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
         return false;
     }
 

@@ -41,7 +41,6 @@ namespace Urho3D
 
 UITab::UITab(Context* context)
     : BaseResourceTab(context)
-    , undo_(context)
 {
     SetTitle("New UI Layout");
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
@@ -354,17 +353,14 @@ bool UITab::LoadResource(const String& resourcePath)
         else
         {
             URHO3D_LOGERRORF("Loading file %s failed.", resourcePath.CString());
+            cache->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
             return false;
         }
     }
-    else if (resourcePath.EndsWith(".json"))
+    else
     {
         URHO3D_LOGERROR("Unsupported format.");
-        return false;
-    }
-    else if (resourcePath.EndsWith(".ui"))
-    {
-        URHO3D_LOGERROR("Unsupported format.");
+        cache->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
         return false;
     }
 
@@ -382,6 +378,7 @@ bool UITab::LoadResource(const String& resourcePath)
     else
     {
         URHO3D_LOGERRORF("Loading UI layout %s failed.", resourcePath.CString());
+        cache->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
         return false;
     }
 
@@ -403,6 +400,7 @@ bool UITab::SaveResource()
 
     ResourceCache* cache = GetSubsystem<ResourceCache>();
     String savePath = cache->GetResourceFileName(resourceName_);
+    cache->ReleaseResource(XMLFile::GetTypeStatic(), resourceName_);
 
     if (resourceName_.EndsWith(".xml"))
     {
@@ -442,12 +440,7 @@ bool UITab::SaveResource()
         else
             return false;
     }
-    else if (resourceName_.EndsWith(".json"))
-    {
-        URHO3D_LOGERROR("Unsupported format.");
-        return false;
-    }
-    else if (resourceName_.EndsWith(".ui"))
+    else
     {
         URHO3D_LOGERROR("Unsupported format.");
         return false;

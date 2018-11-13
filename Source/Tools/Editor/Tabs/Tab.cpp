@@ -110,6 +110,7 @@ bool Tab::RenderWindow()
             ui::SetNextWindowDockId(targetID, ImGuiCond_Once);
     }
     bool wasRendered = isRendered_;
+    wasOpen_ = open_;
     if (open_)
     {
         OnBeforeBegin();

@@ -95,7 +95,6 @@ protected:
     bool showInternal_ = false;
 
     WeakPtr<UIElement> selectedElement_;
-    Undo::Manager undo_;
     bool hideResizeHandles_ = false;
     Vector<String> styleNames_;
     String textureSelectorAttribute_;

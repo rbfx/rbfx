@@ -143,6 +143,8 @@ protected:
     bool activateTab_ = false;
     /// Flag indicating that tab should auto-dock itself into most appropriate place.
     bool autoPlace_ = false;
+    ///
+    bool wasOpen_ = false;
 };
 
 }

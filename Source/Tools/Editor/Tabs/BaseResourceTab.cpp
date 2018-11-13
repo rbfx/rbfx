@@ -99,12 +99,17 @@ bool BaseResourceTab::IsModified() const
     return lastUndoIndex_ != undo_.Index();
 }
 
-bool BaseResourceTab::RenderWindow()
+void BaseResourceTab::Close()
 {
-    bool wasOpen = open_;
-    BaseClassName::RenderWindow();
+    undo_.Clear();
+    lastUndoIndex_ = 0;
+}
 
-    if (wasOpen && !ui::IsPopupOpen("Save?"))
+void BaseResourceTab::OnBeforeEnd()
+{
+    Tab::OnBeforeEnd();
+
+    if (wasOpen_ && !ui::IsPopupOpen("Save?"))
     {
         if ((!open_ && IsModified()) || !pendingLoadResource_.Empty())
         {
@@ -165,16 +170,8 @@ bool BaseResourceTab::RenderWindow()
         pendingLoadResource_.Clear();
     }
 
-    if (wasOpen && !open_)
+    if (wasOpen_ && !open_)
         Close();
-
-    return open_;
-}
-
-void BaseResourceTab::Close()
-{
-    undo_.Clear();
-    lastUndoIndex_ = 0;
 }
 
 }

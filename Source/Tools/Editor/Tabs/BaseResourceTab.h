@@ -34,8 +34,6 @@ class BaseResourceTab
 public:
     /// Construct.
     explicit BaseResourceTab(Context* context);
-    /// Render tab content.
-    bool RenderWindow() override;
     /// Load resource from cache.
     bool LoadResource(const String& resourcePath) override;
     /// Save resource o disk.
@@ -50,6 +48,8 @@ public:
     bool IsModified() const override;
     /// Closes current tab and unloads it's contents from memory.
     void Close() override;
+    ///
+    void OnBeforeEnd() override;
 
 protected:
     /// Set resource name.
