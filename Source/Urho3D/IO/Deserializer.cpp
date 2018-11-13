@@ -360,6 +360,9 @@ Variant Deserializer::ReadVariant(VariantType type)
     case VAR_STRINGVECTOR:
         return Variant(ReadStringVector());
 
+    case VAR_RECT:
+        return Variant(ReadRect());
+
     case VAR_VARIANTMAP:
         return Variant(ReadVariantMap());
 
