@@ -95,21 +95,25 @@ bool ResourceTab::RenderWindowContent()
                     tab->LoadResource(selected);
                     tab->Activate();
                 }
-                else if ((tab = GetSubsystem<Editor>()->GetTab(it->second_, selected)))
+                else
                 {
                     // Tabs that can be opened multiple times.
-                    tab->Activate();
+                    if ((tab = GetSubsystem<Editor>()->GetTab(it->second_, selected)))
+                        tab->Activate();
+                    else if ((tab = GetSubsystem<Editor>()->CreateTab(it->second_)))
+                    {
+                        tab->LoadResource(selected);
+                        tab->AutoPlace();
+                        tab->Activate();
+                    }
                 }
             }
-            else
+            else if ((tab = GetSubsystem<Editor>()->CreateTab(it->second_)))
             {
                 // Tabs that can be opened multiple times.
-                if ((tab = GetSubsystem<Editor>()->CreateTab(it->second_)))
-                {
-                    tab->LoadResource(selected);
-                    tab->AutoPlace();
-                    tab->Activate();
-                }
+                tab->LoadResource(selected);
+                tab->AutoPlace();
+                tab->Activate();
             }
         }
         else
