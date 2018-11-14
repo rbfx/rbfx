@@ -21,6 +21,7 @@
 //
 
 #include "../Core/Context.h"
+#include "../Graphics/Graphics.h"
 #include "../Graphics/Octree.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/RenderSurface.h"
@@ -161,7 +162,11 @@ void SceneManager::UpdateViewports()
     for (const auto& cameraViewport : viewportComponents)
     {
         // Trigger resizing of underlying viewport
-        cameraViewport->SetNormalizedRect(cameraViewport->GetNormalizedRect());
+        if (renderSurface_.Expired())
+            cameraViewport->SetScreenRect({0, 0, GetGraphics()->GetWidth(), GetGraphics()->GetHeight()});
+        else
+            cameraViewport->SetScreenRect({0, 0, renderSurface_->GetWidth(), renderSurface_->GetHeight()});
+        cameraViewport->UpdateViewport();
         cameraViewport->GetViewport()->SetDrawDebug(false); // TODO: make this configurable maybe?
         if (renderSurface_.Expired())
             GetRenderer()->SetViewport(index++, cameraViewport->GetViewport());

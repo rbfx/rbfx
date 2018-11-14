@@ -47,15 +47,16 @@ CameraViewport::CameraViewport(Context* context)
     , viewport_(new Viewport(context))
     , rect_(fullScreenViewport)
     , renderPath_(defaultRenderPath)
+    , screenRect_{0, 0, GetGraphics()->GetWidth(), GetGraphics()->GetHeight()}
 {
 }
 
 void CameraViewport::SetNormalizedRect(const Rect& rect)
 {
     rect_ = rect;
-    IntVector2 screenRect = GetScreenSize();
-    IntRect viewportRect(static_cast<int>(rect.Left() * screenRect.x_), static_cast<int>(rect.Top() * screenRect.y_),
-        static_cast<int>(rect.Right() * screenRect.x_), static_cast<int>(rect.Bottom() * screenRect.y_));
+    IntRect screenRect = GetScreenRect();
+    IntRect viewportRect(static_cast<int>(rect.Left() * screenRect.Left()), static_cast<int>(rect.Top() * screenRect.Top()),
+        static_cast<int>(rect.Right() * screenRect.Right()), static_cast<int>(rect.Bottom() * screenRect.Bottom()));
     viewport_->SetRect(viewportRect);
 
     using namespace CameraViewportResized;
@@ -121,12 +122,9 @@ void CameraViewport::OnSceneSet(Scene* scene)
     viewport_->SetScene(scene);
 }
 
-IntVector2 CameraViewport::GetScreenSize() const
+IntRect CameraViewport::GetScreenRect() const
 {
-    const Variant& screenSize = GetGraphics()->GetRenderTargetDimensions();
-    if (screenSize.IsEmpty())
-        return GetGraphics()->GetSize();
-    return screenSize.GetIntVector2();
+    return screenRect_;
 }
 
 const Vector<AttributeInfo>* CameraViewport::GetAttributes() const
@@ -276,6 +274,11 @@ void CameraViewport::SetRenderPath(const ResourceRef& renderPathResource)
         URHO3D_LOGERRORF("Loading renderpath from %s failed. File is missing or you have no permissions to read it.",
                          renderPathFileName.CString());
     }
+}
+
+void CameraViewport::UpdateViewport()
+{
+    SetNormalizedRect(GetNormalizedRect());
 }
 
 }

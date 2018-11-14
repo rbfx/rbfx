@@ -51,6 +51,8 @@ public:
     Rect GetNormalizedRect() const { return rect_; }
     /// Sets normalized viewport rect.
     void SetNormalizedRect(const Rect& rect);
+    ///
+    void UpdateViewport();
     /// Set renderpath from resource.
     void SetRenderPath(const ResourceRef& renderPathFile);
     /// Returns last renderpath that was set to this component. If viewport is modified directly - modification will not be reflected by return value of this method.
@@ -68,11 +70,15 @@ public:
     /// Returns custom list of attributes that are different per instance.
     const Vector<AttributeInfo>* GetAttributes() const override;
 
+    ///
+    void SetScreenRect(const IntRect& rect) { screenRect_ = rect; }
+    ///
+    IntRect GetScreenRect() const;
+
     /// Register object with the engine.
     static void RegisterObject(Context* context);
 
 protected:
-    IntVector2 GetScreenSize() const;
     /// Method mimicking Context attribute registration, required for using engine attribute macros for registering
     /// custom per-object attributes.
     template<typename T> AttributeInfo& RegisterAttribute(const AttributeInfo& attr);
@@ -81,6 +87,8 @@ protected:
 
     /// Normalized viewport rectangle.
     Rect rect_;
+    ///
+    IntRect screenRect_;
     /// Viewport used for rendering.
     SharedPtr<Viewport> viewport_;
     /// Current selected renderpath.
