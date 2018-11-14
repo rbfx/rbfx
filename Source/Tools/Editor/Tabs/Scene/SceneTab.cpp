@@ -164,6 +164,7 @@ SceneTab::SceneTab(Context* context)
 
             SubscribeToEvent(scene, E_COMPONENTADDED, [this](StringHash, VariantMap& args) { OnComponentAdded(args); });
             SubscribeToEvent(scene, E_COMPONENTREMOVED, [this](StringHash, VariantMap& args) { OnComponentRemoved(args); });
+            SubscribeToEvent(scene, E_TEMPORARYCHANGED, [this](StringHash, VariantMap& args) { OnTemporaryChanged(args); });
 
             undo_.Clear();
             undo_.Connect(scene);
@@ -1146,7 +1147,33 @@ void SceneTab::OnComponentAdded(VariantMap& args)
 {
     using namespace ComponentAdded;
     auto* component = static_cast<Component*>(args[P_COMPONENT].GetPtr());
-    auto* node = static_cast<Node*>(args[P_NODE].GetPtr());
+}
+
+void SceneTab::OnComponentRemoved(VariantMap& args)
+{
+    using namespace ComponentRemoved;
+    auto* component = static_cast<Component*>(args[P_COMPONENT].GetPtr());
+    AddComponentIcon(component);
+}
+
+void SceneTab::OnTemporaryChanged(VariantMap& args)
+{
+    using namespace TemporaryChanged;
+    if (Component* component = dynamic_cast<Component*>(args[P_SERIALIZABLE].GetPtr()))
+    {
+        if (component->IsTemporary())
+            RemoveComponentIcon(component);
+        else
+            AddComponentIcon(component);
+    }
+}
+
+void SceneTab::AddComponentIcon(Component* component)
+{
+    if (component == nullptr || component->IsTemporary())
+        return;
+
+    Node* node = component->GetNode();
 
     if (node->IsTemporary() || node->HasTag("__EDITOR_OBJECT__") ||
         (node->GetName().StartsWith("__") && node->GetName().EndsWith("__")))
@@ -1186,28 +1213,28 @@ void SceneTab::OnComponentAdded(VariantMap& args)
     }
 }
 
-void SceneTab::OnComponentRemoved(VariantMap& args)
+void SceneTab::RemoveComponentIcon(Component* component)
 {
-    using namespace ComponentRemoved;
-    auto* component = static_cast<Component*>(args[P_COMPONENT].GetPtr());
-    auto* node = static_cast<Node*>(args[P_NODE].GetPtr());
+    if (component == nullptr || component->IsTemporary())
+        return;
 
-    if (!node->IsTemporary())
+    Node* node = component->GetNode();
+    if (node->IsTemporary())
+        return;
+
+    Undo::SetTrackingScoped tracking(undo_, false);
+
+    for (auto* icon : node->GetChildrenWithTag("DebugIcon" + component->GetTypeName()))
+        icon->Remove();
+
+    int index = 0;
+    for (auto* icon : node->GetChildrenWithTag("DebugIcon"))
     {
-        Undo::SetTrackingScoped tracking(undo_, false);
-
-        for (auto* icon : node->GetChildrenWithTag("DebugIcon" + component->GetTypeName()))
-            icon->Remove();
-
-        int index = 0;
-        for (auto* icon : node->GetChildrenWithTag("DebugIcon"))
+        if (auto* billboard = icon->GetComponent<BillboardSet>())
         {
-            if (auto* billboard = icon->GetComponent<BillboardSet>())
-            {
-                billboard->GetBillboard(0)->position_ = {0, index * 0.4f, 0};
-                billboard->Commit();
-                index++;
-            }
+            billboard->GetBillboard(0)->position_ = {0, index * 0.4f, 0};
+            billboard->Commit();
+            index++;
         }
     }
 }

@@ -163,6 +163,12 @@ protected:
     void OnComponentAdded(VariantMap& args);
     /// Removes extra editor objects that were used for representing some components.
     void OnComponentRemoved(VariantMap& args);
+    ///
+    void OnTemporaryChanged(VariantMap& args);
+    ///
+    void AddComponentIcon(Component* component);
+    ///
+    void RemoveComponentIcon(Component* component);
     /// Add or remove camera preview.
     void UpdateCameras();
     ///
