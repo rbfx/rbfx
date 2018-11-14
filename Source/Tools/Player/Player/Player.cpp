@@ -172,6 +172,9 @@ void Player::Stop()
 
     for (auto& plugin : plugins_)
         plugin->Unload();
+
+    if (SceneManager* manager = GetSubsystem<SceneManager>())
+        manager->UnloadAll();
 }
 
 bool Player::LoadAssembly(const String& path)
