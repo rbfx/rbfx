@@ -44,9 +44,9 @@ void EditorSceneSettings::RegisterObject(Context* context)
 {
     context->RegisterFactory<EditorSceneSettings>();
     URHO3D_ATTRIBUTE("Viewport RenderPath", ResourceRef, editorViewportRenderPath_, defaultRenderPath, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Camera Position", GetCameraPosition, SetCameraPosition, Vector3, Vector3::ZERO, AM_EDIT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Camera Orthographic Size", GetCameraOrthoSize, SetCameraOrthoSize, float, 0, AM_EDIT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Camera Zoom", GetCameraZoom, SetCameraZoom, float, 0, AM_EDIT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Camera Position", GetCameraPosition, SetCameraPosition, Vector3, Vector3::ZERO, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Camera Orthographic Size", GetCameraOrthoSize, SetCameraOrthoSize, float, 0, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Camera Zoom", GetCameraZoom, SetCameraZoom, float, 0, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Camera View 2D", GetCamera2D, SetCamera2D, bool, false, AM_FILE | AM_NOEDIT);
 }
 
