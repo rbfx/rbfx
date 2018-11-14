@@ -91,6 +91,14 @@ void SceneManager::UnloadScene(const String& name)
         UpdateViewports();
 }
 
+void SceneManager::UnloadAll()
+{
+    SetActiveScene(nullptr);
+    auto scenesCopy = scenes_;
+    for (auto& scene : scenesCopy)
+        UnloadScene(scene);
+}
+
 void SceneManager::UnloadAllButActiveScene()
 {
     auto scenesCopy = scenes_;

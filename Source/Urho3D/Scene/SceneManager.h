@@ -51,6 +51,8 @@ class URHO3D_API SceneManager : public Object
     void UnloadScene(Scene* scene);
     /// Unload scene from memory.
     void UnloadScene(const String& name);
+    /// Unloads all scenes from memory.
+    void UnloadAll();
     /// Unloads all scenes from memory except active one.
     void UnloadAllButActiveScene();
     /// Set specified scene as active. It will start rendering to viewports set up by scene components.
