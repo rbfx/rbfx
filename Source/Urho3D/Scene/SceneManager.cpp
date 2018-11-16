@@ -121,6 +121,10 @@ void SceneManager::SetActiveScene(Scene* scene)
     VariantMap& eventData = GetEventDataMap();
     eventData[P_OLDSCENE] = activeScene_.Get();
     eventData[P_NEWSCENE] = scene;
+
+    if (!activeScene_.Expired())
+        activeScene_->SetUpdateEnabled(false);
+
     activeScene_ = scene;
     missingMetadataWarned_ = false;
     SendEvent(E_SCENEACTIVATED, eventData);
