@@ -71,6 +71,12 @@ public:
     virtual bool LoadJSON(const JSONValue& source);
     /// Save as JSON data. Return true if successful.
     virtual bool SaveJSON(JSONValue& dest) const;
+    /// Load from binary resource.
+    virtual bool Load(const String& resourceName);
+    /// Load from XML resource.
+    virtual bool LoadXML(const String& resourceName);
+    /// Load from JSON resource.
+    virtual bool LoadJSON(const String& resourceName);
 
     /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
     virtual void ApplyAttributes() { }

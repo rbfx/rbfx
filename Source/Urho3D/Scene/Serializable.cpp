@@ -27,7 +27,10 @@
 #include "../IO/Log.h"
 #include "../IO/Serializer.h"
 #include "../Resource/XMLElement.h"
+#include "../Resource/XMLFile.h"
+#include "../Resource/JSONFile.h"
 #include "../Resource/JSONValue.h"
+#include "../Resource/ResourceCache.h"
 #include "../Scene/ReplicationState.h"
 #include "../Scene/SceneEvents.h"
 #include "../Scene/Serializable.h"
@@ -583,6 +586,30 @@ bool Serializable::SaveJSON(JSONValue& dest) const
     dest.Set("attributes", attributesValue);
 
     return true;
+}
+
+bool Serializable::Load(const String& resourceName)
+{
+    SharedPtr<File> file(GetSubsystem<ResourceCache>()->GetFile(resourceName, false));
+    if (file.NotNull())
+        return Load(*file);
+    return false;
+}
+
+bool Serializable::LoadXML(const String& resourceName)
+{
+    SharedPtr<XMLFile> file(GetSubsystem<ResourceCache>()->GetResource<XMLFile>(resourceName, false));
+    if (file.NotNull())
+        return LoadXML(file->GetRoot());
+    return false;
+}
+
+bool Serializable::LoadJSON(const String& resourceName)
+{
+    SharedPtr<JSONFile> file(GetSubsystem<ResourceCache>()->GetResource<JSONFile>(resourceName, false));
+    if (file.NotNull())
+        return LoadJSON(file->GetRoot());
+    return false;
 }
 
 bool Serializable::SetAttribute(unsigned index, const Variant& value)
