@@ -103,6 +103,7 @@ void BaseResourceTab::Close()
 {
     undo_.Clear();
     lastUndoIndex_ = 0;
+    GetCache()->ReleaseResource(GetResourceType(), GetResourceName(), true);
 }
 
 void BaseResourceTab::OnBeforeEnd()

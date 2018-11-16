@@ -34,6 +34,8 @@ class BaseResourceTab
 public:
     /// Construct.
     explicit BaseResourceTab(Context* context);
+    /// Returns type of resource that this tab can handle.
+    virtual StringHash GetResourceType() = 0;
     /// Load resource from cache.
     bool LoadResource(const String& resourcePath) override;
     /// Save resource o disk.

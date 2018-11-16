@@ -56,6 +56,8 @@ public:
     bool LoadResource(const String& resourcePath) override;
     /// Save scene to a resource file.
     bool SaveResource() override;
+    ///
+    StringHash GetResourceType() override { return XMLFile::GetTypeStatic(); };
     /// Called when tab focused.
     void OnFocused() override;
     /// Return selected UIElement.
