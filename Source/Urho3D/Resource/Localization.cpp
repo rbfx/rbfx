@@ -167,6 +167,7 @@ void Localization::Reset()
 
 void Localization::LoadJSON(const JSONValue& source)
 {
+    String defaultLanguage;
     for (JSONObject::ConstIterator i = source.Begin(); i != source.End(); ++i)
     {
         String id = i->first_;
@@ -198,10 +199,18 @@ void Localization::LoadJSON(const JSONValue& source)
             }
             strings_[StringHash(lang)][StringHash(id)] = string;
             if (!languages_.Contains(lang))
+            {
                 languages_.Push(lang);
+                if (defaultLanguage.Empty())
+                    defaultLanguage = lang;
+            }
             if (languageIndex_ == -1)
                 languageIndex_ = 0;
         }
+
+        // Default language is not translated. Use IDs as strings.
+        if (!strings_[StringHash(defaultLanguage)].Contains(StringHash(id)))
+            strings_[StringHash(defaultLanguage)][StringHash(id)] = id;
     }
 }
 
