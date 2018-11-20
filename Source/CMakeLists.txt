@@ -42,4 +42,6 @@ if (URHO3D_SAMPLES)
     add_subdirectory (Samples)
 endif ()
 
+add_subdirectory (Player)
+
 install(EXPORT Urho3D DESTINATION ${DEST_SHARE_DIR}/CMake)

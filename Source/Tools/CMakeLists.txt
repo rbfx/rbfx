@@ -37,7 +37,6 @@ if (URHO3D_TOOLS AND DESKTOP)
     add_subdirectory (RampGenerator)
     add_subdirectory (SpritePacker)
     add_subdirectory (Editor)
-    add_subdirectory (Player)
 endif ()
 
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} Tools)
