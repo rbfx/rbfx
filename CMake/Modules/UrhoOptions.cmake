@@ -173,7 +173,6 @@ if (ANDROID OR WEB OR IOS)
     set (URHO3D_SSE OFF)
     set (URHO3D_TOOLS OFF)
     set (URHO3D_TASKS OFF)
-    set (URHO3D_PLUGINS OFF)
     if (WEB)
         set (URHO3D_NETWORK OFF)         # Not supported by kNet
         set (URHO3D_PROFILING OFF)       # No way to make use of profiler data because of lack of networking
