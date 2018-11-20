@@ -34,8 +34,7 @@ namespace Urho3D
 {
 
 #ifdef __ANDROID__
-extern const char* APK;
-
+static const char* APK = "/apk/";
 // Macro for checking if a given pathname is inside APK's assets directory
 #define URHO3D_IS_ASSET(p) p.StartsWith(APK)
 // Macro for truncating the APK prefix string from the asset pathname and at the same time patching the directory name components (see custom_rules.xml)
@@ -44,6 +43,8 @@ extern const char* APK;
 #else
 #define URHO3D_ASSET(p) p.Substring(5).CString()
 #endif
+#else
+static const char* APK = "";
 #endif
 
 /// File open mode.

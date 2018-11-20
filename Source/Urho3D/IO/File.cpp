@@ -60,7 +60,6 @@ static const char* openMode[] =
 #endif
 
 #ifdef __ANDROID__
-const char* APK = "/apk/";
 static const unsigned READ_BUFFER_SIZE = 32768;
 #endif
 static const unsigned SKIP_BUFFER_SIZE = 1024;
