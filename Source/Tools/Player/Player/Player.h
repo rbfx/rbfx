@@ -45,7 +45,7 @@ public:
 
 protected:
     ///
-    bool LoadAssembly(const String& path);
+    bool LoadAssembly(const String& path, PluginType assumeType=PLUGIN_INVALID);
 
     ///
     Vector<SharedPtr<PluginApplication>> plugins_;

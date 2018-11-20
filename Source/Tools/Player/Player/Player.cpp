@@ -66,12 +66,17 @@ Player::Player(Context* context)
 
 void Player::Setup()
 {
+#if ANDROID
+    // TODO: Add obb dir
+    engineParameters_[EP_RESOURCE_PREFIX_PATHS] = APK;
+#else
     FileSystem* fs = GetFileSystem();
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] = fs->GetProgramDir() + ";" + fs->GetCurrentDir();
+#endif
     engineParameters_[EP_RESOURCE_PATHS] = "Cache;Resources";
 
     JSONFile file(context_);
-    if (!file.LoadFile("Settings.json"))
+    if (!file.LoadFile(ToString("%s%s", APK, "Settings.json")))
         return;
 
     for (auto& pair : file.GetRoot().GetObject())
@@ -90,11 +95,15 @@ void Player::Start()
 
     context_->RegisterSubsystem(new SceneManager(context_));
 
-    SharedPtr<JSONFile> projectFile(GetCache()->GetResource<JSONFile>("Project.json"));
+    SharedPtr<JSONFile> projectFile(GetCache()->GetResource<JSONFile>("Project.json", false));
     if (projectFile.Null())
     {
-        ErrorExit("Project.json missing.");
-        return;
+        projectFile = new JSONFile(context_);
+        if (!projectFile->LoadFile(ToString("%s%s", APK, "Project.json")))
+        {
+            ErrorExit("Project.json missing.");
+            return;
+        }
     }
 
     // Load plugins.
@@ -116,6 +125,12 @@ void Player::Start()
 #elif APPLE
         pluginFileName = "lib" + pluginName + ".dylib";
 #endif
+
+#if MOBILE
+        // On mobile libraries are loaded already so it is ok to not check for existence, TODO: iOS
+        loaded = LoadAssembly(pluginFileName, PLUGIN_NATIVE);
+#else
+        // On desktop we can access file system as usual
         if (GetFileSystem()->Exists(pluginFileName))
             loaded = LoadAssembly(pluginFileName);
         else
@@ -125,19 +140,28 @@ void Player::Start()
                 loaded = LoadAssembly(pluginFileName);
         }
 #endif
+#endif
+
+#if _WIN32 || URHO3D_CSHARP
         // Native plugins on windows or managed plugins on all platforms
         if (!loaded)
         {
             pluginFileName = pluginName + ".dll";
+#if ANDROID
+            pluginFileName = String(APK) + "assets/.net/" + pluginFileName;
+#endif
             if (GetFileSystem()->Exists(pluginFileName))
                 loaded = LoadAssembly(pluginFileName);
+#if DESKTOP
             else
             {
                 pluginFileName = GetFileSystem()->GetProgramDir() + pluginFileName;
                 if (GetFileSystem()->Exists(pluginFileName))
                     loaded = LoadAssembly(pluginFileName);
             }
+#endif
         }
+#endif
 
         if (!loaded)
         {
@@ -177,10 +201,12 @@ void Player::Stop()
         manager->UnloadAll();
 }
 
-bool Player::LoadAssembly(const String& path)
+bool Player::LoadAssembly(const String& path, PluginType assumeType)
 {
-    PluginType type = GetPluginType(context_, path);
-    if (type == PLUGIN_NATIVE)
+    if (assumeType == PLUGIN_INVALID)
+        assumeType = GetPluginType(context_, path);
+
+    if (assumeType == PLUGIN_NATIVE)
     {
         cr_plugin dummy{};
         dummy.userdata = reinterpret_cast<void*>(context_);
@@ -199,7 +225,7 @@ bool Player::LoadAssembly(const String& path)
         }
     }
 #if URHO3D_CSHARP
-    else if (type == PLUGIN_MANAGED)
+    else if (assumeType == PLUGIN_MANAGED)
     {
         if (Script* script = GetSubsystem<Script>())
         {
