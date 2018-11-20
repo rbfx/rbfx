@@ -178,7 +178,11 @@ void Editor::Start()
         }
     });
     SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap&) {
-        exiting_ = true;
+        auto* preview = GetTab<PreviewTab>();
+        if (preview->GetSceneSimulationStatus() == SCENE_SIMULATION_STOPPED)
+            exiting_ = true;
+        else
+            preview->Stop();
     });
 
     if (!defaultProjectPath.empty())
