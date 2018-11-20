@@ -69,6 +69,10 @@ public:
     bool GetCamera2D() const;
     ///
     void SetCamera2D(bool is2D);
+    ///
+    Quaternion GetCameraRotation() const;
+    ///
+    void SetCameraRotation(const Quaternion& rotation);
 
 protected:
     ///

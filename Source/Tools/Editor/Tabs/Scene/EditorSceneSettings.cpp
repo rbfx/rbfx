@@ -45,8 +45,9 @@ void EditorSceneSettings::RegisterObject(Context* context)
     context->RegisterFactory<EditorSceneSettings>();
     URHO3D_ATTRIBUTE("Viewport RenderPath", ResourceRef, editorViewportRenderPath_, defaultRenderPath, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Camera Position", GetCameraPosition, SetCameraPosition, Vector3, Vector3::ZERO, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Camera Orthographic Size", GetCameraOrthoSize, SetCameraOrthoSize, float, 0, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Camera Zoom", GetCameraZoom, SetCameraZoom, float, 0, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Camera Orthographic Size", GetCameraOrthoSize, SetCameraOrthoSize, float, DEFAULT_ORTHOSIZE, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Camera Zoom", GetCameraZoom, SetCameraZoom, float, 1.f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Camera Rotation", GetCameraRotation, SetCameraRotation, Quaternion, Quaternion::IDENTITY, AM_FILE | AM_NOEDIT);
     URHO3D_ACCESSOR_ATTRIBUTE("Camera View 2D", GetCamera2D, SetCamera2D, bool, false, AM_FILE | AM_NOEDIT);
 }
 
@@ -69,7 +70,6 @@ void EditorSceneSettings::SetCameraPosition(const Vector3& position)
     if (Node* node = GetCameraNode())
     {
         node->SetPosition(position);
-        node->LookAt({position.x_, position.y_, 0});
     }
 }
 
@@ -116,21 +116,22 @@ void EditorSceneSettings::OnSceneSet(Scene* scene)
     if (scene == nullptr)
         return;
 
-    Node* parent = scene->GetChild("EditorObjects");
+    Node* parent = scene->GetChild("__EditorObjects__");
     if (parent == nullptr)
     {
-        parent = scene->CreateChild("EditorObjects", LOCAL);
+        parent = scene->CreateChild("__EditorObjects__", LOCAL);
         parent->AddTag("__EDITOR_OBJECT__");
+        parent->SetTemporary(true);
     }
 
-    Node* camera = parent->GetChild("EditorCamera");
+    Node* camera = parent->GetChild("__EditorCamera__");
     if (camera == nullptr)
     {
         camera = parent->CreateChild("__EditorCamera__", LOCAL);
         camera->AddTag("__EDITOR_OBJECT__");
     }
 
-    Camera* cameraComponent = camera->GetOrCreateComponent<Camera>();
+    auto* cameraComponent = camera->GetOrCreateComponent<Camera>();
     cameraComponent->SetFarClip(160000);
 
     auto* debug = scene->GetOrCreateComponent<DebugRenderer>(LOCAL);
@@ -167,7 +168,6 @@ void EditorSceneSettings::SetCamera2D(bool is2D)
             camera->RemoveComponent<DebugCameraController>();
             camera->GetOrCreateComponent<DebugCameraController2D>();
             Vector3 pos = camera->GetWorldPosition();
-            pos.z_ = Abs(pos.z_);
             camera->SetWorldPosition(pos);
             camera->LookAt(pos + Vector3::FORWARD);
             camera->GetComponent<Camera>()->SetOrthographic(true);
@@ -181,6 +181,19 @@ void EditorSceneSettings::SetCamera2D(bool is2D)
     }
 
     is2D_ = is2D;
+}
+
+Quaternion EditorSceneSettings::GetCameraRotation() const
+{
+    if (Node* camera = GetCameraNode())
+        return camera->GetRotation();
+    return Quaternion::IDENTITY;
+}
+
+void EditorSceneSettings::SetCameraRotation(const Quaternion& rotation)
+{
+    if (Node* camera = GetCameraNode())
+        camera->SetRotation(rotation);
 }
 
 }
