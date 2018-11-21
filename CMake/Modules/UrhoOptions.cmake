@@ -59,11 +59,7 @@ endif ()
 option(URHO3D_ENABLE_ALL "Enables all optional subsystems by default" OFF)
 
 # Determine library type
-string(TOUPPER "${BUILD_SHARED_LIBS}" BUILD_SHARED_LIBS)
-if ("${BUILD_SHARED_LIBS}" STREQUAL "MODULE")
-    set (BUILD_SHARED_LIBS OFF)
-    set (URHO3D_LIBRARY_TYPE MODULE)
-elseif (BUILD_SHARED_LIBS)
+if (BUILD_SHARED_LIBS)
     set (URHO3D_LIBRARY_TYPE SHARED)
 else ()
     set (URHO3D_LIBRARY_TYPE STATIC)
