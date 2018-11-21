@@ -333,12 +333,14 @@ install(TARGETS Urho3D
     ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
 )
 
-# Generate include header with all engine headers
-list (REMOVE_ITEM HEADER_FILES Urho3D.h DebugNew.h Precompiled.h)
-string (REPLACE ";" ">\n#include <Urho3D/" HEADER_FILES "${HEADER_FILES}")
-set (HEADER_FILES "#include <Urho3D/${HEADER_FILES}>")
-configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Urho3DAll.h.in ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h @ONLY)
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h DESTINATION ${DEST_INCLUDE_DIR})
+if (URHO3D_MONOLITHIC_HEADER)
+    # Generate include header with all engine headers
+    list (REMOVE_ITEM HEADER_FILES Urho3D.h DebugNew.h Precompiled.h)
+    string (REPLACE ";" ">\n#include <Urho3D/" HEADER_FILES "${HEADER_FILES}")
+    set (HEADER_FILES "#include <Urho3D/${HEADER_FILES}>")
+    configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Urho3DAll.h.in ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h @ONLY)
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h DESTINATION ${DEST_INCLUDE_DIR})
+endif ()
 
 # Generate import/export header with engine configuration defines
 get_property(URHO3D_ENGINE_CONFIG TARGET Urho3D PROPERTY INTERFACE_COMPILE_DEFINITIONS)
