@@ -541,18 +541,18 @@ void SceneTab::RenderToolbarButtons()
 
     ui::SameLine(0, 3.f);
 
-    if (ui::EditorToolbarButton(ICON_FA_ARROWS_ALT, "Translate", gizmo_.GetOperation() == GIZMOOP_TRANSLATE))
+    if (ui::EditorToolbarButton(ICON_FA_ARROWS_ALT "###Translate", "Translate", gizmo_.GetOperation() == GIZMOOP_TRANSLATE))
         gizmo_.SetOperation(GIZMOOP_TRANSLATE);
-    if (ui::EditorToolbarButton(ICON_FA_SYNC, "Rotate", gizmo_.GetOperation() == GIZMOOP_ROTATE))
+    if (ui::EditorToolbarButton(ICON_FA_SYNC "###Rotate", "Rotate", gizmo_.GetOperation() == GIZMOOP_ROTATE))
         gizmo_.SetOperation(GIZMOOP_ROTATE);
-    if (ui::EditorToolbarButton(ICON_FA_EXPAND_ARROWS_ALT, "Scale", gizmo_.GetOperation() == GIZMOOP_SCALE))
+    if (ui::EditorToolbarButton(ICON_FA_EXPAND_ARROWS_ALT "###Scale", "Scale", gizmo_.GetOperation() == GIZMOOP_SCALE))
         gizmo_.SetOperation(GIZMOOP_SCALE);
 
     ui::SameLine(0, 3.f);
 
-    if (ui::EditorToolbarButton(ICON_FA_ARROWS_ALT, "World", gizmo_.GetTransformSpace() == TS_WORLD))
+    if (ui::EditorToolbarButton(ICON_FA_ARROWS_ALT "###World", "World", gizmo_.GetTransformSpace() == TS_WORLD))
         gizmo_.SetTransformSpace(TS_WORLD);
-    if (ui::EditorToolbarButton(ICON_FA_EXPAND_ARROWS_ALT, "Local", gizmo_.GetTransformSpace() == TS_LOCAL))
+    if (ui::EditorToolbarButton(ICON_FA_EXPAND_ARROWS_ALT "###Local", "Local", gizmo_.GetTransformSpace() == TS_LOCAL))
         gizmo_.SetTransformSpace(TS_LOCAL);
 
     ui::SameLine(0, 3.f);
