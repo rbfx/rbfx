@@ -213,40 +213,6 @@ if (BUILD_SHARED_LIBS AND NOT MSVC AND NOT APPLE)
     target_link_libraries(Urho3D PRIVATE -Wl,--no-whole-archive)
 endif ()
 
-if (NOT BUILD_SHARED_LIBS)
-    # Merge static libraries of third party dependencies to final engine static library
-    add_custom_command (TARGET Urho3D PRE_BUILD COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:Urho3D>)
-    if (MSVC)
-        # If merged library is not deleted in this step then sometimes build system will try to merge dependencies
-        # to already merged library inflating it further.
-        add_custom_command (TARGET Urho3D POST_BUILD
-            COMMAND lib.exe /OUT:$<TARGET_FILE:Urho3D>.engine $<TARGET_FILE:Urho3D> ${DEPENDENCY_TARGET_FILES}
-            COMMAND ${CMAKE_COMMAND} -E rename $<TARGET_FILE:Urho3D>.engine $<TARGET_FILE:Urho3D>
-            COMMENT "Merging all archives into a single static library using lib.exe")
-    elseif (APPLE)
-        # Apple libtool takes archives directly as input
-        add_custom_command (TARGET Urho3D POST_BUILD
-            COMMAND libtool -static $<TARGET_FILE:Urho3D> ${DEPENDENCY_TARGET_FILES} -o $<TARGET_FILE:Urho3D>.engine
-            COMMAND ${CMAKE_COMMAND} -E rename $<TARGET_FILE:Urho3D>.engine $<TARGET_FILE:Urho3D>
-            COMMENT "Merging all archives into a single static library using libtool")
-    else ()
-        # GCC ar does not take archives directly as input like Apple libtool, however, it can be scripted to do so
-        add_custom_command (TARGET Urho3D POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E rename $<TARGET_FILE:Urho3D> $<TARGET_FILE:Urho3D>.engine
-            COMMAND echo CREATE $<TARGET_FILE:Urho3D> >script.ar
-            COMMAND echo ADDLIB $<TARGET_FILE:Urho3D>.engine >>script.ar)
-        foreach (ARCHIVE ${DEPENDENCY_TARGET_FILES})
-            add_custom_command (TARGET Urho3D POST_BUILD COMMAND echo ADDLIB ${ARCHIVE} >>script.ar)
-        endforeach ()
-        add_custom_command (TARGET Urho3D POST_BUILD
-            COMMAND echo SAVE >>script.ar
-            COMMAND echo END >>script.ar
-            COMMAND ${CMAKE_AR} -M <script.ar
-            COMMAND ${CMAKE_COMMAND} -E remove $<TARGET_FILE:Urho3D>.engine script.ar
-            COMMENT "Merging all archives into a single static library using ar")
-    endif ()
-endif ()
-
 if (URHO3D_SSE)
     if (MSVC)
         if (NOT URHO3D_64BIT AND ("${URHO3D_SSE}" STREQUAL "SSE" OR "${URHO3D_SSE}" STREQUAL "SSE2"))
@@ -325,6 +291,44 @@ else ()
     target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC)
 endif ()
 
+if (URHO3D_CSHARP)
+    add_subdirectory(CSharp)
+endif ()
+
+if (NOT BUILD_SHARED_LIBS)
+    # Merge static libraries of third party dependencies to final engine static library
+    add_custom_command (TARGET Urho3D PRE_BUILD COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:Urho3D>)
+    if (MSVC)
+        # If merged library is not deleted in this step then sometimes build system will try to merge dependencies
+        # to already merged library inflating it further.
+        add_custom_command (TARGET Urho3D POST_BUILD
+            COMMAND lib.exe /OUT:$<TARGET_FILE:Urho3D>.engine $<TARGET_FILE:Urho3D> ${DEPENDENCY_TARGET_FILES}
+            COMMAND ${CMAKE_COMMAND} -E rename $<TARGET_FILE:Urho3D>.engine $<TARGET_FILE:Urho3D>
+            COMMENT "Merging all archives into a single static library using lib.exe")
+    elseif (APPLE)
+        # Apple libtool takes archives directly as input
+        add_custom_command (TARGET Urho3D POST_BUILD
+            COMMAND libtool -static $<TARGET_FILE:Urho3D> ${DEPENDENCY_TARGET_FILES} -o $<TARGET_FILE:Urho3D>.engine
+            COMMAND ${CMAKE_COMMAND} -E rename $<TARGET_FILE:Urho3D>.engine $<TARGET_FILE:Urho3D>
+            COMMENT "Merging all archives into a single static library using libtool")
+    else ()
+        # GCC ar does not take archives directly as input like Apple libtool, however, it can be scripted to do so
+        add_custom_command (TARGET Urho3D POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E rename $<TARGET_FILE:Urho3D> $<TARGET_FILE:Urho3D>.engine
+            COMMAND echo CREATE $<TARGET_FILE:Urho3D> >script.ar
+            COMMAND echo ADDLIB $<TARGET_FILE:Urho3D>.engine >>script.ar)
+        foreach (ARCHIVE ${DEPENDENCY_TARGET_FILES})
+            add_custom_command (TARGET Urho3D POST_BUILD COMMAND echo ADDLIB ${ARCHIVE} >>script.ar)
+        endforeach ()
+        add_custom_command (TARGET Urho3D POST_BUILD
+            COMMAND echo SAVE >>script.ar
+            COMMAND echo END >>script.ar
+            COMMAND ${CMAKE_AR} -M <script.ar
+            COMMAND ${CMAKE_COMMAND} -E remove $<TARGET_FILE:Urho3D>.engine script.ar
+            COMMENT "Merging all archives into a single static library using ar")
+    endif ()
+endif ()
+
 # SDK installation
 install(TARGETS Urho3D
     EXPORT Urho3D
@@ -356,7 +360,3 @@ list (INSERT URHO3D_ENGINE_CONFIG 0 "Engine configuration")
 string (REPLACE ";" "\n" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Urho3D.h ${CMAKE_CURRENT_BINARY_DIR}/Urho3D.h @ONLY)
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3D.h DESTINATION ${DEST_INCLUDE_DIR})
-
-if (URHO3D_CSHARP)
-    add_subdirectory(CSharp)
-endif ()
