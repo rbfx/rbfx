@@ -88,6 +88,10 @@ void PluginApplication::RegisterFactory(const char* category)
 }
 
 /// Macro for defining entry point of editor plugin.
+#ifdef URHO3D_STATIC
+// In static builds user must manually initialize his plugins by creating plugin instance.
+#define URHO3D_DEFINE_PLUGIN_MAIN(Class)
+#else
 #define URHO3D_DEFINE_PLUGIN_MAIN(Class)                                  \
     extern "C" URHO3D_EXPORT_API int cr_main(void* ctx, size_t operation) \
     {                                                                     \
@@ -98,3 +102,4 @@ void PluginApplication::RegisterFactory(const char* category)
                 return instance;                                          \
             });                                                           \
     }
+#endif
