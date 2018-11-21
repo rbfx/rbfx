@@ -33,6 +33,7 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/SceneEvents.h>
 #include <Urho3D/Scene/SceneManager.h>
+#include <Urho3D/SystemUI/DebugHud.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <Toolbox/Scene/DebugCameraController.h>
@@ -566,6 +567,14 @@ void SceneTab::RenderToolbarButtons()
     }
     ui::SameLine(0, 3.f);
 
+    if (auto* hud = GetSubsystem<DebugHud>())
+    {
+        if (ui::EditorToolbarButton(ICON_FA_BUG, "Display debug hud.", hud->GetMode() == DEBUGHUD_SHOW_ALL))
+            hud->SetMode(hud->GetMode() == DEBUGHUD_SHOW_ALL ? DEBUGHUD_SHOW_NONE : DEBUGHUD_SHOW_ALL);
+    }
+
+    ui::SameLine(0, 3.f);
+
     SendEvent(E_EDITORTOOLBARBUTTONS);
 
     ui::SameLine(0, 3.f);
@@ -846,6 +855,10 @@ IntRect SceneTab::UpdateViewRect()
     tabRect.top_ += static_cast<int>(ui::GetCursorPosY());
     ResizeMainViewport(tabRect);
     gizmo_.SetScreenRect(tabRect);
+
+    if (auto* hud = GetSubsystem<DebugHud>())
+        hud->SetExtents(tabRect.Min(), tabRect.Size());
+
     return tabRect;
 }
 
