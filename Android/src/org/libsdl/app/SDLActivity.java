@@ -149,6 +149,14 @@ public class SDLActivity extends Activity {
                     libraryNames.add(name);
                 }
 
+                // Urho3D: Load engine first and player last
+                int index = libraryNames.indexOf("Urho3D");
+                libraryNames.add(0, libraryNames.remove(index));
+                index = libraryNames.indexOf("Player");
+                if (index >= 0) {
+                    libraryNames.add(libraryNames.remove(index));
+                }
+
                 // Load shared libraries
                 try {
                     if (onLoadLibrary(libraryNames)) {
@@ -409,6 +417,9 @@ public class SDLActivity extends Activity {
     public static void handleNativeExit() {
         SDLActivity.mSDLThread = null;
         mSingleton.finish();
+
+        // Urho3D: Ensure that process is killed and static state is unloaded.
+        android.os.Process.killProcess(android.os.Process.myPid());
     }
 
 
