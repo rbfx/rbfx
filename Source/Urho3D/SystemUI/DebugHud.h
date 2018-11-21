@@ -88,10 +88,6 @@ public:
 private:
     /// Render system ui.
     void RenderUi(VariantMap& eventData);
-    /// Update positions debug hud elements. Called on intializaton or when window size changes.
-    void RecalculateWindowPositions();
-    /// Snap position to the extents of debug hud rendering rect set by SetExtents().
-    Vector2 WithinExtents(Vector2 pos);
 
     /// Hashmap containing application specific stats.
     HashMap<String, String> appStats_;
@@ -109,10 +105,6 @@ private:
     unsigned fps_;
     /// DebugHud extents that data will be rendered in.
     IntRect extents_;
-    /// Cached position (bottom-left corner) of mode information.
-    Vector2 posMode_;
-    /// Cached position (top-left corner) of stats.
-    Vector2 posStats_;
 };
 
 }
