@@ -20,83 +20,89 @@
 # THE SOFTWARE.
 #
 
-add_subdirectory(FreeType)
 add_subdirectory(LZ4)
 add_subdirectory(PugiXml)
 add_subdirectory(rapidjson)
-add_subdirectory(SDL)
 add_subdirectory(STB)
 add_subdirectory(IconFontCppHeaders)
 add_subdirectory(cr)
-if (DESKTOP AND NOT APPLE)
-    add_subdirectory(crunch)
-endif ()
-
-if (URHO3D_SYSTEMUI)
-    add_subdirectory(imgui)
-endif ()
-
-if (URHO3D_NETWORK)
-    add_subdirectory (Civetweb)
-    add_subdirectory (kNet)
-endif ()
-
-if (URHO3D_IK)
-    add_subdirectory (ik)
-endif ()
-
-if (URHO3D_NAVIGATION)
-    add_subdirectory (Detour)
-    add_subdirectory (DetourCrowd)
-    add_subdirectory (DetourTileCache)
-    add_subdirectory (Recast)
-endif ()
-
-if (URHO3D_URHO2D)
-    add_subdirectory (Box2D)
-endif ()
-
-if (URHO3D_WEBP)
-    add_subdirectory (WebP)
-endif ()
-
-if (URHO3D_PHYSICS)
-    add_subdirectory (Bullet)
-    add_subdirectory (StanHull)
-endif ()
-
-if (URHO3D_TOOLS)
-    add_subdirectory(nativefiledialog)
-endif ()
-
-if (NOT ANDROID AND NOT ARM AND NOT WEB)
-    if (URHO3D_OPENGL)
-        add_subdirectory (GLEW)
-    elseif (URHO3D_D3D9)
-        add_subdirectory (MojoShader)
-    endif ()
-    if (WIN32 OR APPLE)
-        add_subdirectory (LibCpuId)
-    endif ()
-endif ()
-
-if (URHO3D_PROFILING)
-    if (NOT TARGET GLEW AND URHO3D_TOOLS)
-        add_subdirectory (GLEW)
-    endif ()
-    add_subdirectory (tracy)
-endif ()
-
-if (URHO3D_TOOLS)
-    add_subdirectory(Assimp)
-endif ()
-
-if (URHO3D_TASKS)
-    add_subdirectory(sc)
-endif ()
-
 add_subdirectory(CLI11)
 add_subdirectory(fmt)
 add_subdirectory(spdlog)
+add_subdirectory(SDL)
+
+if (MINI_URHO)
+    if (URHO3D_OPENGL)
+        add_subdirectory (GLEW)
+    endif ()
+else ()
+    add_subdirectory(FreeType)
+    if (DESKTOP AND NOT APPLE)
+        add_subdirectory(crunch)
+    endif ()
+
+    if (URHO3D_SYSTEMUI)
+        add_subdirectory(imgui)
+    endif ()
+
+    if (URHO3D_NETWORK)
+        add_subdirectory (Civetweb)
+        add_subdirectory (kNet)
+    endif ()
+
+    if (URHO3D_IK)
+        add_subdirectory (ik)
+    endif ()
+
+    if (URHO3D_NAVIGATION)
+        add_subdirectory (Detour)
+        add_subdirectory (DetourCrowd)
+        add_subdirectory (DetourTileCache)
+        add_subdirectory (Recast)
+    endif ()
+
+    if (URHO3D_URHO2D)
+        add_subdirectory (Box2D)
+    endif ()
+
+    if (URHO3D_WEBP)
+        add_subdirectory (WebP)
+    endif ()
+
+    if (URHO3D_PHYSICS)
+        add_subdirectory (Bullet)
+        add_subdirectory (StanHull)
+    endif ()
+
+    if (URHO3D_TOOLS)
+        add_subdirectory(nativefiledialog)
+    endif ()
+
+    if (NOT ANDROID AND NOT ARM AND NOT WEB)
+        if (URHO3D_OPENGL)
+            add_subdirectory (GLEW)
+        elseif (URHO3D_D3D9)
+            add_subdirectory (MojoShader)
+        endif ()
+        if (WIN32 OR APPLE)
+            add_subdirectory (LibCpuId)
+        endif ()
+    endif ()
+
+    if (URHO3D_PROFILING)
+        if (NOT TARGET GLEW AND URHO3D_TOOLS)
+            add_subdirectory (GLEW)
+        endif ()
+        add_subdirectory (tracy)
+    endif ()
+
+    if (URHO3D_TOOLS)
+        add_subdirectory(Assimp)
+    endif ()
+
+    if (URHO3D_TASKS)
+        add_subdirectory(sc)
+    endif ()
+endif ()
 
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} ThirdParty)

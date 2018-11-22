@@ -21,7 +21,7 @@
 #
 
 # Emscripten build does not copy the PBR resources, and would not support the shaders
-if (EMSCRIPTEN)
+if (WEB)
     return ()
 endif ()
 

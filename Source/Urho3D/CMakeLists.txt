@@ -42,22 +42,27 @@ macro (define_engine_source_files)
         )
         list (APPEND HEADER_FILES ${_files})
         # Install them
-        install (FILES ${_files} DESTINATION ${DEST_INCLUDE_DIR}/${path})
+        if (NOT MINI_URHO)
+            install (FILES ${_files} DESTINATION ${DEST_INCLUDE_DIR}/${path})
+        endif ()
         # Get source files
         file (${_action} _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${path}/*.cpp)
         list (APPEND SOURCE_FILES ${_files})
     endforeach ()
 endmacro()
 
-define_engine_source_files (NORECURSE . Graphics)
-define_engine_source_files (Audio Container Core Engine Input IO Math Resource Scene UI)
+define_engine_source_files (Container Core Engine IO Math)
 
-if (URHO3D_OPENGL)
-    define_engine_source_files (Graphics/OpenGL)
-elseif (URHO3D_D3D11)
-    define_engine_source_files (Graphics/Direct3D11)
-elseif (URHO3D_D3D9)
-    define_engine_source_files (Graphics/Direct3D9)
+if (NOT MINI_URHO)
+    define_engine_source_files (Audio Input Resource Scene UI)
+    define_engine_source_files (NORECURSE . Graphics)
+    if (URHO3D_OPENGL)
+        define_engine_source_files (Graphics/OpenGL)
+    elseif (URHO3D_D3D11)
+        define_engine_source_files (Graphics/Direct3D11)
+    elseif (URHO3D_D3D9)
+        define_engine_source_files (Graphics/Direct3D9)
+    endif ()
 endif ()
 
 if (URHO3D_IK)
@@ -93,6 +98,11 @@ group_sources()
 
 if (APPLE)
     list (APPEND SOURCE_FILES IO/MacFileWatcher.m)
+endif ()
+
+if (MINI_URHO)
+    # Avoid building freetype
+    list (REMOVE_ITEM SOURCE_FILES UI/FontFaceFreeType.cpp)
 endif ()
 
 add_library(Urho3D ${URHO3D_LIBRARY_TYPE} ${SOURCE_FILES} ${HEADER_FILES})
@@ -285,7 +295,13 @@ else ()
     target_link_libraries (Urho3D PUBLIC ${DIRECT3D_LIBRARIES})
 endif ()
 
-if (BUILD_SHARED_LIBS OR EMSCRIPTEN)
+if (WEB)
+    # Switching to WASM may be possible after https://github.com/kripken/emscripten-fastcomp/pull/195 lands and
+    # https://github.com/kripken/emscripten/issues/5436 is fixed.
+    target_link_libraries(Urho3D PRIVATE "-s EXTRA_EXPORTED_RUNTIME_METHODS=['Pointer_stringify']" PUBLIC "-s WASM=0")
+endif ()
+
+if (BUILD_SHARED_LIBS)
     target_compile_definitions(Urho3D PRIVATE -DURHO3D_EXPORTS INTERFACE -DURHO3D_IMPORTS)
 else ()
     target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC)
@@ -293,6 +309,11 @@ endif ()
 
 if (URHO3D_CSHARP)
     add_subdirectory(CSharp)
+endif ()
+
+################################################### SDK preparation ####################################################
+if (MINI_URHO)
+    return ()
 endif ()
 
 if (NOT BUILD_SHARED_LIBS)

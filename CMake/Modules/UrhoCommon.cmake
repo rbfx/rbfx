@@ -99,7 +99,7 @@ if (MINGW)
 endif ()
 
 # Configure for web
-if (EMSCRIPTEN)
+if (WEB)
     # Emscripten-specific setup
     if (EMSCRIPTEN_EMCC_VERSION VERSION_LESS 1.31.3)
         message(FATAL_ERROR "Unsupported compiler version")
@@ -224,7 +224,7 @@ macro (add_sample)
                 add_executable (${SAMPLE_TARGET} ${TARGET_TYPE} ${SOURCE_FILES})
             endif ()
         endif ()
-        target_link_libraries (${SAMPLE_TARGET} Urho3D)
+        target_link_libraries (${SAMPLE_TARGET} PUBLIC Urho3D)
         target_include_directories(${SAMPLE_TARGET} PRIVATE ..)
         if (NOT ANDROID)
             install(TARGETS ${SAMPLE_TARGET}
@@ -233,17 +233,10 @@ macro (add_sample)
             )
         endif ()
 
-        if (EMSCRIPTEN)
-            add_dependencies(${SAMPLE_TARGET} pkg_resources_web)
-            set_target_properties (${SAMPLE_TARGET} PROPERTIES SUFFIX .html)
-            if (EMSCRIPTEN_MEMORY_LIMIT)
-                math(EXPR EMSCRIPTEN_TOTAL_MEMORY "${EMSCRIPTEN_MEMORY_LIMIT} * 1024 * 1024")
-                target_link_libraries(${SAMPLE_TARGET} "-s TOTAL_MEMORY=${EMSCRIPTEN_TOTAL_MEMORY}")
-            endif ()
-            if (EMSCRIPTEN_MEMORY_GROWTH)
-                target_link_libraries(${SAMPLE_TARGET} "-s ALLOW_MEMORY_GROWTH=1")
-            endif ()
-            target_link_libraries(${SAMPLE_TARGET} "-s NO_EXIT_RUNTIME=1" "-s WASM=1" "--pre-js ${CMAKE_BINARY_DIR}/Source/pak-loader.js")
+        if (WEB)
+            web_executable(${SAMPLE_TARGET})
+            web_link_resources(${SAMPLE_TARGET} Resources.js)
+            target_link_libraries(${SAMPLE_TARGET} PRIVATE "--shell-file ${CMAKE_SOURCE_DIR}/bin/application.html")
         endif ()
     endif ()
 endmacro ()
@@ -528,6 +521,70 @@ macro (csharp_bind_target)
     file (GLOB_RECURSE EXTRA_NATIVE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/Native/*.h ${CMAKE_CURRENT_SOURCE_DIR}/Native/*.cpp)
     target_sources(${CSHARP_LIBRARY_NAME} PRIVATE ${EXTRA_NATIVE_FILES})
 endmacro ()
+
+function (create_pak SOURCE_DIR OUTPUT_FILE)
+    get_filename_component(NAME "${OUTPUT_FILE}" NAME)
+    add_custom_command(
+        OUTPUT "${OUTPUT_FILE}"
+        COMMAND "${PACKAGE_TOOL}" "${SOURCE_DIR}" "${OUTPUT_FILE}" -q -c
+        COMMENT "Packaging ${NAME}"
+    )
+endfunction ()
+
+macro(web_executable TARGET)
+    if (WEB)
+        set_target_properties (${TARGET} PROPERTIES SUFFIX .html)
+        if (EMSCRIPTEN_MEMORY_LIMIT)
+            math(EXPR EMSCRIPTEN_TOTAL_MEMORY "${EMSCRIPTEN_MEMORY_LIMIT} * 1024 * 1024")
+            target_link_libraries(${TARGET} PRIVATE "-s TOTAL_MEMORY=${EMSCRIPTEN_TOTAL_MEMORY}")
+        endif ()
+        if (EMSCRIPTEN_MEMORY_GROWTH)
+            target_link_libraries(${TARGET} PRIVATE "-s ALLOW_MEMORY_GROWTH=1")
+        endif ()
+        target_link_libraries(${TARGET} PRIVATE "-s NO_EXIT_RUNTIME=1" "-s MAIN_MODULE=1" "-s FORCE_FILESYSTEM=1")
+    endif ()
+endmacro()
+
+function (package_resources_web)
+    if (NOT WEB)
+        return ()
+    endif ()
+
+    cmake_parse_arguments(PAK "" "RELATIVE_DIR;OUTPUT" "FILES" ${ARGN})
+    if (NOT "${PAK_RELATIVE_DIR}" MATCHES "/$")
+        set (PAK_RELATIVE_DIR "${PAK_RELATIVE_DIR}/")
+    endif ()
+    string(LENGTH "${PAK_RELATIVE_DIR}" PAK_RELATIVE_DIR_LEN)
+
+    foreach (file ${PAK_FILES})
+        string(SUBSTRING "${file}" ${PAK_RELATIVE_DIR_LEN} 999999 rel_file)
+        set (PRELOAD_FILES ${PRELOAD_FILES} ${file}@${rel_file})
+    endforeach ()
+
+    if (CMAKE_BUILD_TYPE STREQUAL Debug AND EMSCRIPTEN_EMCC_VERSION VERSION_GREATER 1.32.2)
+        set (SEPARATE_METADATA --separate-metadata)
+    endif ()
+    get_filename_component(LOADER_DIR "${PAK_OUTPUT}" DIRECTORY)
+    add_custom_target("${PAK_OUTPUT}"
+        COMMAND ${EMPACKAGER} ${PAK_RELATIVE_DIR}${PAK_OUTPUT}.data --preload ${PRELOAD_FILES} --js-output=${PAK_RELATIVE_DIR}${PAK_OUTPUT} --use-preload-cache ${SEPARATE_METADATA}
+        DEPENDS ${PAK_FILES}
+        COMMENT "Packaging ${PAK_OUTPUT}"
+    )
+    if (CMAKE_CROSSCOMPILING)
+        add_dependencies("${PAK_OUTPUT}" Urho3D-Native)
+    else ()
+        add_dependencies("${PAK_OUTPUT}" PackageTool)
+    endif ()
+endfunction ()
+
+function (web_link_resources TARGET RESOURCES)
+    if (NOT WEB)
+        return ()
+    endif ()
+    file (WRITE "${CMAKE_CURRENT_BINARY_DIR}/${RESOURCES}.load.js" "var Module;if(typeof Module==='undefined')Module=eval('(function(){try{return Module||{}}catch(e){return{}}})()');var s=document.createElement('script');s.src='${RESOURCES}';document.body.appendChild(s);Module['preRun'].push(function(){Module['addRunDependency']('${RESOURCES}.loader')});s.onload=function(){Module['removeRunDependency']('${RESOURCES}.loader')};")
+    target_link_libraries(${SAMPLE_TARGET} PRIVATE "--pre-js ${CMAKE_CURRENT_BINARY_DIR}/${RESOURCES}.load.js")
+    add_dependencies(${SAMPLE_TARGET} ${RESOURCES})
+endfunction ()
 
 # Configure for MingW
 if (CMAKE_CROSSCOMPILING AND MINGW)

@@ -38,7 +38,7 @@ foreach(key ${ENVIRONMENT})
 endforeach()
 
 # Set platform variables
-if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
+if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
     set (LINUX ON)
 endif ()
 
@@ -52,7 +52,7 @@ if (APPLE AND NOT IOS)
     set (MACOS ON)
 endif ()
 
-if (WIN32 OR LINUX OR MACOS)
+if (WIN32 OR LINUX OR MACOS AND NOT WEB)
     set (DESKTOP ON)
 endif ()
 
@@ -193,6 +193,19 @@ endif ()
 
 if (APPLE)
     set (URHO3D_PLUGINS OFF)
+endif ()
+
+if (WEB)
+    if (BUILD_SHARED_LIBS)
+        message(FATAL_ERROR "Web builds are supported only with static linking.")
+    endif ()
+    if (NOT DEFINED URHO3D_PACKAGING)
+        set (URHO3D_PACKAGING ON)
+    endif ()
+    if (URHO3D_CSHARP)
+        message(WARNING "Web builds do not support C#.")
+        set (URHO3D_CSHARP OFF)
+    endif ()
 endif ()
 
 # Unset any default config variables so they do not pollute namespace

@@ -20,6 +20,10 @@
 # THE SOFTWARE.
 #
 
+if (NOT URHO3D_EXTRAS)
+    return ()
+endif ()
+
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_TOOLS_DIR})
 
 # Urho3D extras

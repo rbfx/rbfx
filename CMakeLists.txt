@@ -69,31 +69,6 @@ add_subdirectory(Source)
 
 include(UrhoPackaging)
 
-# Install CMake modules and toolchains provided by and for Urho3D
-install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/ DESTINATION ${DEST_SHARE_DIR}/CMake)    # Note: the trailing slash is significant
-# Install CMake build scripts
-file (GLOB CMAKE_SCRIPTS ${CMAKE_SOURCE_DIR}/Script/*${SCRIPT_EXT})
-install (PROGRAMS ${CMAKE_SCRIPTS} DESTINATION ${DEST_SHARE_DIR}/Scripts)
-# Install data files
-file (MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-if (NOT ANDROID)
-    foreach (RES_DIR ${RESOURCE_DIRS})
-        get_filename_component (NAME ${RES_DIR} NAME)
-        install (DIRECTORY ${RES_DIR} DESTINATION ${DEST_RESOURCE_DIR})
-        if (NOT EXISTS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${NAME})
-            create_symlink(${RES_DIR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${NAME})
-        endif ()
-    endforeach ()
-    foreach (RES_DIR ${AUTOLOAD_DIRS})
-        get_filename_component (NAME ${RES_DIR} NAME)
-        install (DIRECTORY ${RES_DIR} DESTINATION ${DEST_RESOURCE_DIR}/Autoload)
-        if (NOT EXISTS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Autoload/${NAME})
-            create_symlink(${RES_DIR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Autoload/${NAME})
-        endif ()
-    endforeach ()
-endif ()
-install (DIRECTORY ${CMAKE_BINARY_DIR}/bin/Cache DESTINATION ${DEST_RESOURCE_DIR})
-
 # Print current build configuration
 message(STATUS "Urho3D Configuration:")
 if (URHO3D_STATIC_RUNTIME)
@@ -140,3 +115,33 @@ if (CLANG_TIDY)
     )
     set_target_properties(tidy PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
 endif()
+
+################################################### SDK preparation ####################################################
+if (MINI_URHO)
+    return ()
+endif ()
+
+# Install CMake modules and toolchains provided by and for Urho3D
+install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/ DESTINATION ${DEST_SHARE_DIR}/CMake)    # Note: the trailing slash is significant
+# Install CMake build scripts
+file (GLOB CMAKE_SCRIPTS ${CMAKE_SOURCE_DIR}/Script/*${SCRIPT_EXT})
+install (PROGRAMS ${CMAKE_SCRIPTS} DESTINATION ${DEST_SHARE_DIR}/Scripts)
+# Install data files
+file (MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+if (NOT ANDROID)
+    file (MAKE_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Autoload)
+    foreach (RES_DIR ${RESOURCE_DIRS})
+        get_filename_component (NAME ${RES_DIR} NAME)
+        install (DIRECTORY ${RES_DIR} DESTINATION ${DEST_RESOURCE_DIR})
+        if (NOT EXISTS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${NAME})
+            create_symlink(${RES_DIR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${NAME})
+        endif ()
+    endforeach ()
+    foreach (RES_DIR ${AUTOLOAD_DIRS})
+        get_filename_component (NAME ${RES_DIR} NAME)
+        install (DIRECTORY ${RES_DIR} DESTINATION ${DEST_RESOURCE_DIR}/Autoload)
+        if (NOT EXISTS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Autoload/${NAME})
+            create_symlink(${RES_DIR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Autoload/${NAME})
+        endif ()
+    endforeach ()
+endif ()

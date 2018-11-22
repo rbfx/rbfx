@@ -28,20 +28,10 @@ if (MSVC)
 endif ()
 
 add_subdirectory(ThirdParty)
-
 add_subdirectory (Urho3D)
-
-if (NOT CMAKE_CROSS_COMPILING AND URHO3D_TOOLS)
-    add_subdirectory (Tools)
-    if (URHO3D_EXTRAS)
-        add_subdirectory (Extras)
-    endif ()
-endif ()
-
-if (URHO3D_SAMPLES)
-    add_subdirectory (Samples)
-endif ()
-
+add_subdirectory (Tools)
+add_subdirectory (Extras)
+add_subdirectory (Samples)
 add_subdirectory (Player)
 
 install(EXPORT Urho3D DESTINATION ${DEST_SHARE_DIR}/CMake)

@@ -25,4 +25,4 @@ if (NOT URHO3D_URHO2D)
 endif ()
 
 add_sample (TARGET 50_Urho2DPlatformer)
-target_link_libraries(50_Urho2DPlatformer Utilities2D)
+target_link_libraries(50_Urho2DPlatformer PRIVATE Utilities2D)
