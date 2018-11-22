@@ -155,6 +155,34 @@ void Run(const Vector<String>& arguments)
             }
         }
 
+        // Ensure entries are sorted
+        Sort(fileNames.Begin(), fileNames.End());
+
+        // Check if up to date
+        if (fileSystem_->Exists(packageName))
+        {
+            unsigned packageTime = fileSystem_->GetLastModifiedTime(packageName);
+            SharedPtr<PackageFile> packageFile(new PackageFile(context_, packageName));
+            if (packageFile->GetNumFiles() == fileNames.Size())
+            {
+                bool filesOutOfDate = false;
+                for (const String& fileName : fileNames)
+                {
+                    if (fileSystem_->GetLastModifiedTime(fileName) > packageTime)
+                    {
+                        filesOutOfDate = true;
+                        break;
+                    }
+                }
+
+                if (!filesOutOfDate)
+                {
+                    PrintLine("Package " + packageName + " is up to date.");
+                    return;
+                }
+            }
+        }
+
         for (unsigned i = 0; i < fileNames.Size(); ++i)
             ProcessFile(fileNames[i], dirName);
 
