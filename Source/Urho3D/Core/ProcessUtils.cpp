@@ -58,16 +58,16 @@ extern "C" unsigned SDL_TVOS_GetActiveProcessorCount();
 #include <ntdef.h>
 #include <Rpc.h>
 #endif
-#elif defined(__linux__) && !defined(__ANDROID__)
-#include <pwd.h>
-#include <sys/sysinfo.h>
-#include <sys/utsname.h>
-#include <uuid/uuid.h>
 #elif defined(__APPLE__)
 #include <sys/sysctl.h>
 #include <SystemConfiguration/SystemConfiguration.h> // For the detection functions inside GetLoginName().
 #elif defined(__ANDROID__)
 #include <jni.h>
+#else
+#include <pwd.h>
+#include <sys/sysinfo.h>
+#include <sys/utsname.h>
+#include <uuid/uuid.h>
 #endif
 #ifndef _WIN32
 #include <unistd.h>
@@ -806,7 +806,7 @@ String GenerateUUID()
     uuid_t uuid{};
     char str[37]{};
 
-    uuid_generate_random(uuid);
+    uuid_generate(uuid);
     uuid_unparse(uuid, str);
     return String(str);
 #endif
