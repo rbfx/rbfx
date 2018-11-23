@@ -52,7 +52,7 @@ if (APPLE AND NOT IOS)
     set (MACOS ON)
 endif ()
 
-if (WIN32 OR LINUX OR MACOS AND NOT WEB)
+if ((WIN32 OR LINUX OR MACOS) AND NOT WEB AND NOT MOBILE)
     set (DESKTOP ON)
 endif ()
 
