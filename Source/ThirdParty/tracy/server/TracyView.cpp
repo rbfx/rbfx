@@ -305,6 +305,7 @@ View::View( const char* addr, ImFont* fixedWidth, SetTitleCallback stcb )
     , m_drawLocks( true )
     , m_drawPlots( true )
     , m_onlyContendedLocks( true )
+    , m_goToFrame( false )
     , m_statSort( 0 )
     , m_statSelf( false )
     , m_showCallstackFrameAddress( false )
@@ -323,7 +324,7 @@ View::View( FileRead& f, ImFont* fixedWidth, SetTitleCallback stcb )
     : m_worker( f )
     , m_staticView( true )
     , m_frameScale( 0 )
-    , m_pause( false )
+    , m_pause( true )
     , m_frameStart( 0 )
     , m_zvStart( 0 )
     , m_zvEnd( 0 )
@@ -351,6 +352,7 @@ View::View( FileRead& f, ImFont* fixedWidth, SetTitleCallback stcb )
     , m_drawLocks( true )
     , m_drawPlots( true )
     , m_onlyContendedLocks( true )
+    , m_goToFrame( false )
     , m_statSort( 0 )
     , m_statSelf( false )
     , m_showCallstackFrameAddress( false )
@@ -363,6 +365,7 @@ View::View( FileRead& f, ImFont* fixedWidth, SetTitleCallback stcb )
     s_instance = this;
 
     InitTextEditor();
+    SetViewToLastFrames();
 }
 
 View::~View()
@@ -523,8 +526,9 @@ bool View::DrawImpl()
         TextCentered( ICON_FA_WIFI );
 #endif
         ImGui::Text( "Waiting for connection..." );
+        bool wasCancelled = ImGui::Button( "Cancel" );
         ImGui::End();
-        return true;
+        return !wasCancelled;
     }
 
     if( !m_frames ) m_frames = m_worker.GetFramesBase();
@@ -680,6 +684,18 @@ bool View::DrawImpl()
         ImGui::EndCombo();
     }
     ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    m_goToFrame |= ImGui::Button( ICON_FA_CROSSHAIRS );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "Go to frame" );
+        ImGui::EndTooltip();
+    }
+#else
+    m_goToFrame |= ImGui::Button( "Go to" );
+#endif
+    ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
@@ -721,6 +737,7 @@ bool View::DrawImpl()
     if( m_memoryAllocInfoWindow >= 0 ) DrawMemoryAllocWindow();
     if( m_showInfo ) DrawInfo();
     if( m_textEditorFile ) DrawTextEditor();
+    if( m_goToFrame ) DrawGoToFrame();
 
     const auto& io = ImGui::GetIO();
     if( m_zoomAnim.active )
@@ -893,15 +910,7 @@ void View::DrawFrames()
     if( !m_pause )
     {
         m_frameStart = ( total < onScreen * group ) ? 0 : total - onScreen * group;
-        m_zvStart = m_worker.GetFrameBegin( *m_frames, std::max( 0, total - 4 ) );
-        if( total == 1 )
-        {
-            m_zvEnd = m_worker.GetLastTime();
-        }
-        else
-        {
-            m_zvEnd = m_worker.GetFrameBegin( *m_frames, total - 1 );
-        }
+        SetViewToLastFrames();
     }
 
     if( hover )
@@ -1438,17 +1447,33 @@ bool View::DrawZoneFrames( const FrameData& frames )
 
     if( prev != -1 )
     {
-        DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( m_worker.GetFrameBegin( frames, zrange.second-1 ) - m_zvStart ) * pxns, ty / 4, inactiveColor );
+        if( frames.continuous )
+        {
+            DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( m_worker.GetFrameBegin( frames, zrange.second-1 ) - m_zvStart ) * pxns, ty / 4, inactiveColor );
+        }
+        else
+        {
+            const auto begin = ( prev - m_zvStart ) * pxns;
+            const auto end = ( m_worker.GetFrameBegin( frames, zrange.second-1 ) - m_zvStart ) * pxns;
+            DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), begin, std::max( begin + MinFrameSize, end ), ty / 4, inactiveColor );
+        }
         prev = -1;
     }
 
-    if( hover && !tooltipDisplayed )
+    if( hover )
     {
-        ImGui::BeginTooltip();
-        ImGui::TextDisabled( "Frame set:" );
-        ImGui::SameLine();
-        ImGui::Text( "%s", frames.name == 0 ? "Frames" : m_worker.GetString( frames.name ) );
-        ImGui::EndTooltip();
+        if( !tooltipDisplayed )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextDisabled( "Frame set:" );
+            ImGui::SameLine();
+            ImGui::Text( "%s", frames.name == 0 ? "Frames" : m_worker.GetString( frames.name ) );
+            ImGui::EndTooltip();
+        }
+        if( ImGui::IsMouseClicked( 0 ) )
+        {
+            m_frames = &frames;
+        }
     }
 
     return hover;
@@ -6981,6 +7006,24 @@ void View::DrawTextEditor()
     if( !show ) m_textEditorFile = nullptr;
 }
 
+void View::DrawGoToFrame()
+{
+    static int frameNum = 1;
+
+    const bool mainFrameSet = m_frames->name == 0;
+    const auto numFrames = mainFrameSet ? m_frames->frames.size() - 1 : m_frames->frames.size();
+    const auto frameOffset = mainFrameSet ? 0 : 1;
+
+    ImGui::Begin( "Go to frame", &m_goToFrame, ImGuiWindowFlags_AlwaysAutoResize );
+    ImGui::InputInt( "Frame", &frameNum );
+    frameNum = std::min( std::max( frameNum, 1 ), int( numFrames ) );
+    if( ImGui::Button( "Go to" ) )
+    {
+        ZoomToRange( m_worker.GetFrameBegin( *m_frames, frameNum - frameOffset ), m_worker.GetFrameEnd( *m_frames, frameNum - frameOffset ) );
+    }
+    ImGui::End();
+}
+
 template<class T>
 void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id )
 {
@@ -7832,9 +7875,16 @@ const char* View::GetPlotName( const PlotData* plot ) const
 
 uint32_t View::GetZoneColor( const ZoneEvent& ev )
 {
-    const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
-    const auto color = srcloc.color;
-    return color != 0 ? ( color | 0xFF000000 ) : 0xFFCC5555;
+    if( m_findZone.show && !m_findZone.match.empty() && m_findZone.match[m_findZone.selMatch] == ev.srcloc )
+    {
+        return 0xFF229999;
+    }
+    else
+    {
+        const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
+        const auto color = srcloc.color;
+        return color != 0 ? ( color | 0xFF000000 ) : 0xFFCC5555;
+    }
 }
 
 uint32_t View::GetZoneColor( const GpuEvent& ev )
@@ -7894,7 +7944,7 @@ uint32_t View::GetZoneHighlight( const GpuEvent& ev )
 
 float View::GetZoneThickness( const ZoneEvent& ev )
 {
-    if( m_zoneInfoWindow == &ev || m_zoneHighlight == &ev )
+    if( m_zoneInfoWindow == &ev || m_zoneHighlight == &ev || ( m_findZone.show && !m_findZone.match.empty() && m_findZone.match[m_findZone.selMatch] == ev.srcloc ) )
     {
         return 3.f;
     }
@@ -8355,6 +8405,21 @@ void View::SmallCallstackButton( const char* name, uint32_t callstack, int& idx 
     if( ImGui::IsItemHovered() )
     {
         CallstackTooltip( callstack );
+    }
+}
+
+void View::SetViewToLastFrames()
+{
+    const int total = m_worker.GetFrameCount( *m_frames );
+
+    m_zvStart = m_worker.GetFrameBegin( *m_frames, std::max( 0, total - 4 ) );
+    if( total == 1 )
+    {
+        m_zvEnd = m_worker.GetLastTime();
+    }
+    else
+    {
+        m_zvEnd = m_worker.GetFrameBegin( *m_frames, total - 1 );
     }
 }
 

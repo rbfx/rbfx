@@ -99,6 +99,7 @@ private:
     void DrawMemoryAllocWindow();
     void DrawInfo();
     void DrawTextEditor();
+    void DrawGoToFrame();
 
     template<class T>
     void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr );
@@ -150,6 +151,7 @@ private:
     const char* GetPlotName( const PlotData* plot ) const;
 
     void SmallCallstackButton( const char* name, uint32_t callstack, int& idx );
+    void SetViewToLastFrames();
 
     flat_hash_map<const void*, bool, nohash<const void*>> m_visible;
     flat_hash_map<uint64_t, bool, nohash<uint64_t>> m_visibleMsgThread;
@@ -243,6 +245,7 @@ private:
     bool m_drawLocks;
     bool m_drawPlots;
     bool m_onlyContendedLocks;
+    bool m_goToFrame;
 
     int m_statSort;
     bool m_statSelf;
