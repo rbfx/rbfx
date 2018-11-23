@@ -107,6 +107,8 @@ protected:
 
     /// Loaded plugins.
     Vector<SharedPtr<Plugin>> plugins_;
+    /// Plugin update check timer.
+    Timer updateCheckTimer_;
 
     friend class Plugin;
 };

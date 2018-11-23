@@ -258,7 +258,12 @@ void PluginManager::OnEndFrame()
                     Time::Sleep(0);
             }
 
-            if (cr_plugin_update(plugin->nativeContext_) != 0)
+            bool checkUpdatedFile = reloading || updateCheckTimer_.GetMSec(false) >= 1000;
+            if (checkUpdatedFile)
+                updateCheckTimer_.Reset();
+
+            auto status = cr_plugin_update(plugin->nativeContext_, checkUpdatedFile);
+            if (status != 0)
             {
                 URHO3D_LOGERRORF("Processing plugin \"%s\" failed and it was unloaded.",
                     GetFileNameAndExtension(plugin->name_).CString());
