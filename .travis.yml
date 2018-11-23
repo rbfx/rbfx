@@ -12,7 +12,6 @@ env:
     - URHO3D_ENABLE_ALL=ON
     - CMAKE_VERSION=3.4
     - CMAKE_PATCH=3
-    - URHO3D_WITH_MONO=ON
 addons:
   apt:
     sources:
@@ -48,12 +47,14 @@ matrix:
       env:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
         - BUILD_SHARED_LIBS=ON
+        - URHO3D_WITH_MONO=ON
     - &Linux-clang
       os: linux
       compiler: clang
     - <<: *Linux-clang
       env:
         - BUILD_SHARED_LIBS=ON
+        - URHO3D_WITH_MONO=ON
     - &MacOS
       os: osx
       osx_image: xcode8.3
@@ -61,6 +62,7 @@ matrix:
     - <<: *MacOS
       env:
         - BUILD_SHARED_LIBS=ON
+        - URHO3D_WITH_MONO=ON
   exclude:
     - &MingW
       env:
@@ -105,8 +107,12 @@ install: |
           tar xf /tmp/downloads/cmake.tar.gz -C $HOME && rm /tmp/downloads/cmake.tar.gz
       fi
       export PATH=$HOME/cmake-$CMAKE_VERSION.$CMAKE_PATCH-Linux-x86_64/bin:$PATH
-      sudo apt-get install -y --force-yes mono-devel
-  else
+      if [[ "$URHO3D_WITH_MONO" != "" ]];
+      then
+          sudo apt-get install -y --force-yes mono-devel
+      fi
+  elif [[ "$URHO3D_WITH_MONO" != "" ]];
+  then
       # mono
       if [[ ! -f /tmp/downloads/Mono.pkg ]];
       then
