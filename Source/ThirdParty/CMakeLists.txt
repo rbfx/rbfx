@@ -47,7 +47,7 @@ else ()
 
     if (URHO3D_NETWORK)
         add_subdirectory (Civetweb)
-        add_subdirectory (kNet)
+        add_subdirectory (SLikeNet)
     endif ()
 
     if (URHO3D_IK)

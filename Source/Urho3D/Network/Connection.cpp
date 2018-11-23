@@ -38,8 +38,8 @@
 #include "../Scene/SceneEvents.h"
 #include "../Scene/SmoothedTransform.h"
 
-#include <SLikeNet/peerinterface.h>
-#include <SLikeNet/statistics.h>
+#include <slikenet/peerinterface.h>
+#include <slikenet/statistics.h>
 
 #ifdef SendMessage
 #undef SendMessage

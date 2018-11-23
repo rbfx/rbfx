@@ -154,7 +154,7 @@ set (THIRD_PARTY_DEPENDENCIES
     STB
     IconFontCppHeaders
     Civetweb
-    kNet
+    SLikeNet
     ik
     Detour
     DetourCrowd
