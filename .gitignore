@@ -24,7 +24,6 @@ generated/
 /Source/Urho3D/Urho3D.pc.msvc
 /Source/Urho3D/Urho3DAll.h
 /Source/Urho3D/librevision.h
-Android/build
 
 # Compiled shaders
 *.vs?
@@ -67,7 +66,9 @@ Android/build
 /*.workspace
 
 # Android project settings
-/Android/local.properties
+/android/local.properties
+/android/build
+/android/build
 
 # Android output directories
 gradle*
@@ -88,6 +89,7 @@ CTestTestfile.cmake
 !/Source/ThirdParty/Assimp/cmake-modules/*cmake
 /Docs/**/*.cmake
 /build
+/build-*
 
 # Precompiled header files
 *.gch/
