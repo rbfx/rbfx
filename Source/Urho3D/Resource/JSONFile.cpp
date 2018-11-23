@@ -252,4 +252,17 @@ bool JSONFile::ParseJSON(const String& json, JSONValue& value, bool reportError)
     return true;
 }
 
+String JSONFile::ToString(const String& indendation) const
+{
+    rapidjson::Document document;
+    ToRapidjsonValue(document, root_, document.GetAllocator());
+
+    StringBuffer buffer;
+    PrettyWriter<StringBuffer> writer(buffer);
+    writer.SetIndent(!indendation.Empty() ? indendation.Front() : '\0', indendation.Length());
+
+    document.Accept(writer);
+    return buffer.GetString();
+}
+
 }

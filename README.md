@@ -18,7 +18,7 @@ Licensed under the MIT license, see [LICENSE](https://github.com/urho3d/Urho3D/b
 
 ## Dependencies
 
-Urho3D bundles the following third-party libraries:
+Urho3D uses the following third-party libraries:
 - Box2D 2.3.2 WIP (http://box2d.org)
 - Bullet 2.86.1 (http://www.bulletphysics.org)
 - Civetweb 1.7 (https://github.com/civetweb/civetweb)
@@ -32,7 +32,7 @@ Urho3D bundles the following third-party libraries:
 - Open Asset Import Library 4.1.0 (http://assimp.sourceforge.net)
 - pugixml 1.7 (http://pugixml.org)
 - rapidjson 1.1.0 (https://github.com/miloyip/rapidjson)
-- Recast/Detour (https://github.com/memononen/recastnavigation)
+- Recast/Detour (https://github.com/recastnavigation/recastnavigation)
 - SDL 2.0.7 (https://www.libsdl.org)
 - StanHull (https://codesuppository.blogspot.com/2006/03/john-ratcliffs-code-suppository-blog.html)
 - stb_image 2.18 (https://nothings.org)

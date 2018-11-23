@@ -24,6 +24,6 @@ file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
 add_library (DetourTileCache STATIC ${SOURCE_FILES})
 target_link_libraries(DetourTileCache Detour)
 target_include_directories(DetourTileCache
-    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/DetourTileCache>
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include>
+    PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include/DetourTileCache>
 )

@@ -66,7 +66,7 @@ unsigned StringHash::Calculate(const char* str, unsigned hash)
         return hash;
 
     while (*str)
-        hash = SDBMHash(hash, (char)tolower(*str++));
+        hash = SDBMHash(hash, (unsigned char)*str++);
 
     return hash;
 }
@@ -80,10 +80,7 @@ unsigned int StringHash::Calculate(void* data, unsigned int length, unsigned int
     auto* bytes = static_cast<unsigned char*>(data);
     auto* end = bytes + length;
     while (bytes < end)
-    {
-        hash = SDBMHash(hash, *bytes);
-        ++bytes;
-    }
+        hash = SDBMHash(hash, (unsigned char)*bytes++);
 
     return hash;
 }

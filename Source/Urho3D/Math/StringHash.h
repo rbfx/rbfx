@@ -54,7 +54,7 @@ public:
     {
     }
 
-    /// Construct from a C string case-insensitively.
+    /// Construct from a C string.
 #ifndef URHO3D_HASH_DEBUG
     constexpr
 #endif
@@ -65,7 +65,7 @@ public:
         GetGlobalStringHashRegister()->RegisterString(*this, str);
 #endif
     }
-    /// Construct from a string case-insensitively.
+    /// Construct from a string.
     StringHash(const String& str) noexcept;      // NOLINT(google-explicit-constructor)
 
     /// Assign from another hash.
@@ -113,13 +113,13 @@ public:
     /// Return hash value for HashSet & HashMap.
     unsigned ToHash() const { return value_; }
 #ifndef URHO3D_HASH_DEBUG
-    /// Calculate hash value case-insensitively from a C string.
+    /// Calculate hash value from a C string.
     static constexpr unsigned Calculate(const char* str, unsigned hash = 0)
     {
-        return str == nullptr || *str == 0 ? hash : Calculate(str + 1, SDBMHash(hash, (unsigned char)(((*str) >= 'A' && (*str) <= 'Z') ? (*str) + ('a' - 'A') : (*str))));
+        return str == nullptr || *str == 0 ? hash : Calculate(str + 1, SDBMHash(hash, (unsigned char)*str));
     }
 #else
-    /// Calculate hash value case-insensitively from a C string.
+    /// Calculate hash value from a C string.
     static unsigned Calculate(const char* str, unsigned hash = 0);
 #endif
     /// Calculate hash value from binary data.

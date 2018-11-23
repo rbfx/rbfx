@@ -12,7 +12,9 @@
 /lib*/
 generated/
 /Source/Urho3D/tolua++-prefix/
-/build
+build/
+build-*/
+/captures/
 
 # Output files
 /Source/**/*.a
@@ -68,7 +70,6 @@ generated/
 # Android project settings
 /android/local.properties
 /android/build
-/android/build
 
 # Android output directories
 gradle*
@@ -88,8 +89,6 @@ CTestTestfile.cmake
 !/Source/ThirdParty/SDL/include/*cmake
 !/Source/ThirdParty/Assimp/cmake-modules/*cmake
 /Docs/**/*.cmake
-/build
-/build-*
 
 # Precompiled header files
 *.gch/

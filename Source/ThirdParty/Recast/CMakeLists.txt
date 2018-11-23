@@ -22,8 +22,8 @@
 
 file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
 add_library (Recast STATIC ${SOURCE_FILES})
-target_include_directories(Recast PRIVATE include)
+target_include_directories(Recast PRIVATE Include)
 target_include_directories(Recast
-    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/Recast>
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include>
+    PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include/Recast>
 )
