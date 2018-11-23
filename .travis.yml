@@ -72,6 +72,12 @@ matrix:
       env:
         - BUILD_SHARED_LIBS=ON
         - URHO3D_WITH_MONO=ON
+    - <<: *Linux-gcc
+      env:
+        - BUILD_SHARED_LIBS=OFF
+        - CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/Emscripten.cmake
+        - EMSCRIPTEN=1
+        - EMSCRIPTEN_WASM=0
   exclude:
     - &MingW
       env:
@@ -129,6 +135,22 @@ install: |
       fi
       sudo installer -pkg /tmp/downloads/Mono.pkg -target /
   fi
+
+before_script: |
+  if [[ "$EMSCRIPTEN" != "" ]];
+  then
+      if [[ ! $EMSCRIPTEN_WASM ]]; then
+          export BINARYEN=binaryen-master-64bit;
+      fi
+      git clone --depth 1 https://github.com/urho3d/emscripten-sdk.git
+      emscripten-sdk/emsdk activate --build=Release sdk-master-64bit $BINARYEN
+      source emscripten-sdk/emsdk_env.sh
+      for compiler in $EMSCRIPTEN/{emcc,em++};
+      do
+          touch -d "2017-01-01 00:00:00 +0800" $compiler;
+      done
+  fi
+
 script: |
   mkdir build
   cd build
