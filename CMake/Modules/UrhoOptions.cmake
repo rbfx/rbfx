@@ -206,6 +206,10 @@ if (WEB)
         message(WARNING "Web builds do not support C#.")
         set (URHO3D_CSHARP OFF)
     endif ()
+    set (URHO3D_TOOLS OFF)
+    set (URHO3D_EXTRAS OFF)
+    set (URHO3D_THREADING OFF)
+    set (URHO3D_NETWORK OFF)
 endif ()
 
 # Unset any default config variables so they do not pollute namespace
