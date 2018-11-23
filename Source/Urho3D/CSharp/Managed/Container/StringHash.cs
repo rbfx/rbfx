@@ -65,7 +65,7 @@ public struct StringHash
     public static uint Calculate(string value, uint hash=0)
     {
         // Perform the actual hashing as case-insensitive
-        var bytes = Encoding.UTF8.GetBytes(value.ToLower());
+        var bytes = Encoding.UTF8.GetBytes(value);
         foreach (var b in bytes)
             hash = SDBMHash(hash, b);
         return hash;
