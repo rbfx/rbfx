@@ -1,4 +1,3 @@
-/*
 # cr.h
 
 A single file header-only live reload solution for C, written in C++:
@@ -1779,4 +1778,3 @@ extern "C" void cr_plugin_close(cr_plugin &ctx) {
 ```
 
 </details>
-*/
