@@ -149,6 +149,7 @@ before_script: |
       do
           touch -d "2017-01-01 00:00:00 +0800" $compiler;
       done
+      export EXTRA_BUILD_FLAGS='--target 11_Physics'
   fi
 
 script: |
@@ -158,4 +159,5 @@ script: |
   echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
 
   cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} ..
-  cmake --build .
+
+  cmake --build . $EXTRA_BUILD_FLAGS
