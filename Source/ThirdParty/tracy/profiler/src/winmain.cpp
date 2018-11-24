@@ -3,6 +3,8 @@
 #  include <stdlib.h>
 #  include <intrin.h>
 #  include <stdint.h>
+// Urho3D: This include is required for main function to be properly recognized.
+#  include <SDL/SDL.h>
 
 namespace tracy
 {
