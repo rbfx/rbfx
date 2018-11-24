@@ -47,9 +47,9 @@ if (URHO3D_PACKAGING)
             CMAKE_COMMAND ${ALTERNATE_COMMAND}
             CMAKE_ARGS -DURHO3D_ENABLE_ALL=OFF -DURHO3D_FEATURES=PACKAGING_TOOL -DMINI_URHO=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/native PackageTool
         )
-        set (PACKAGE_TOOL ${CMAKE_BINARY_DIR}/native/bin/PackageTool)
+        set (PACKAGE_TOOL "${CMAKE_BINARY_DIR}/native/bin/PackageTool" CACHE STRING "" FORCE)
     elseif (TARGET PackageTool)
-        set (PACKAGE_TOOL $<TARGET_FILE:PackageTool>)
+        set (PACKAGE_TOOL "$<TARGET_FILE:PackageTool>" CACHE STRING "" FORCE)
     else ()
         message(FATAL_ERROR "CMake misconfiguration")
     endif ()
