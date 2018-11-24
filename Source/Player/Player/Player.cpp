@@ -71,10 +71,7 @@ Player::Player(Context* context)
 
 void Player::Setup()
 {
-#if ANDROID
-    // TODO: Add obb dir
-    engineParameters_[EP_RESOURCE_PREFIX_PATHS] = APK;
-#else
+#if DESKTOP
     FileSystem* fs = GetFileSystem();
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] = fs->GetProgramDir() + ";" + fs->GetCurrentDir();
 #endif
