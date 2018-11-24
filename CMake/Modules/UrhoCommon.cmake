@@ -522,11 +522,24 @@ macro (csharp_bind_target)
     target_sources(${CSHARP_LIBRARY_NAME} PRIVATE ${EXTRA_NATIVE_FILES})
 endmacro ()
 
-function (create_pak SOURCE_DIR OUTPUT_FILE)
-    get_filename_component(NAME "${OUTPUT_FILE}" NAME)
+function (create_pak PAK_DIR PAK_FILE)
+    cmake_parse_arguments(PARSE_ARGV 2 PAK "NO_COMPRESS" "" "DEPENDS")
+
+    get_filename_component(NAME "${PAK_FILE}" NAME)
+    if (CMAKE_CROSSCOMPILING)
+        set (DEPENDENCY Urho3D-Native)
+    else ()
+        set (DEPENDENCY PackageTool)
+    endif ()
+
+    if (NOT PAK_NO_COMPRESS)
+        set (PAK_FLAGS "${PAK_FLAGS} -c")
+    endif ()
+
     add_custom_command(
-        OUTPUT "${OUTPUT_FILE}"
-        COMMAND "${PACKAGE_TOOL}" "${SOURCE_DIR}" "${OUTPUT_FILE}" -q -c
+        OUTPUT "${PAK_FILE}"
+        COMMAND "${PACKAGE_TOOL}" "${PAK_DIR}" "${PAK_FILE}" -q ${PAK_FLAGS}
+        DEPENDS ${DEPENDENCY} ${PAK_DEPENDS}
         COMMENT "Packaging ${NAME}"
     )
 endfunction ()
