@@ -25,13 +25,21 @@ if (URHO3D_CSHARP OR ANDROID OR IOS)
     # Use C# executable to host .net runtime and load editor.
     set (CMAKE_SHARED_LIBRARY_PREFIX lib)
     add_library (Player SHARED ${SOURCE_FILES})
-else ()
+elseif (BUILD_SHARED_LIBS)
+    # Dynamic builds may use player as executable. It will load user code.
     if (NOT URHO3D_WIN32_CONSOLE)
         set (TARGET_TYPE WIN32)
     endif ()
     add_executable (Player ${TARGET_TYPE} ${SOURCE_FILES})
+else ()
+    # Static builds should consume player library and provide implementation of `InitializeUserPlugins` function that
+    # loads other statically linked plugins.
+    add_library(Player STATIC ${SOURCE_FILES})
 endif ()
-target_link_libraries(Player Urho3D PlayerCommon cr)
+target_link_libraries(Player Urho3D PlayerCommon)
+if (TARGET cr)
+    target_link_libraries(Player cr)
+endif ()
 install(TARGETS Player
     LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
     RUNTIME DESTINATION ${DEST_BIN_DIR}

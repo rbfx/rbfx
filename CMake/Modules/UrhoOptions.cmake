@@ -191,10 +191,6 @@ else ()
     endif ()
 endif ()
 
-if (APPLE)
-    set (URHO3D_PLUGINS OFF)
-endif ()
-
 if (WEB)
     if (BUILD_SHARED_LIBS)
         message(FATAL_ERROR "Web builds are supported only with static linking.")
@@ -210,6 +206,10 @@ if (WEB)
     set (URHO3D_EXTRAS OFF)
     set (URHO3D_THREADING OFF)
     set (URHO3D_NETWORK OFF)
+endif ()
+
+if (WEB OR NOT BUILD_SHARED_LIBS)
+    set (URHO3D_PLUGINS OFF)
 endif ()
 
 # Unset any default config variables so they do not pollute namespace

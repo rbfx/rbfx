@@ -19,8 +19,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#define CR_HOST CR_DISABLE
-#include <cr/cr.h>
+#if URHO3D_PLUGINS
+#   define CR_HOST CR_DISABLE
+#   include <cr/cr.h>
+#endif
 #if _WIN32
 #   undef GetObject
 #endif
@@ -41,9 +43,6 @@
 #if URHO3D_SYSTEMUI
 #   include <Urho3D/SystemUI/SystemUI.h>
 #endif
-#if __linux__
-#   include <dlfcn.h>
-#endif
 #include "Player.h"
 
 
@@ -54,6 +53,12 @@ extern "C" URHO3D_EXPORT_API Urho3D::Application* CreateApplication(Urho3D::Cont
 #else
 // Native executable build for direct execution.
 URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::Player);
+#endif
+
+#if URHO3D_STATIC
+// In static builds user should link player library to his target and provide implementation of this function. Function
+// should initialize other statically linked plugins and return vector with their instances.
+extern Urho3D::Vector<Urho3D::SharedPtr<Urho3D::PluginApplication>> InitializeUserPlugins(Urho3D::Context* context);
 #endif
 
 namespace Urho3D
@@ -105,11 +110,11 @@ void Player::Start()
             return;
         }
     }
-
     // Load plugins.
     bool failure = false;
     const JSONValue& projectRoot = projectFile->GetRoot();
     const JSONValue& plugins = projectRoot["plugins"];
+#if URHO3D_PLUGINS || URHO3D_CSHARP
     for (auto i = 0; i < plugins.Size(); i++)
     {
         if (plugins[i]["private"].GetBool())
@@ -126,6 +131,7 @@ void Player::Start()
         pluginFileName = "lib" + pluginName + ".dylib";
 #endif
 
+#if URHO3D_PLUGINS
 #if MOBILE
         // On mobile libraries are loaded already so it is ok to not check for existence, TODO: iOS
         loaded = LoadAssembly(pluginFileName, PLUGIN_NATIVE);
@@ -139,8 +145,9 @@ void Player::Start()
             if (GetFileSystem()->Exists(pluginFileName))
                 loaded = LoadAssembly(pluginFileName);
         }
-#endif
-#endif
+#endif  // MOBILE
+#endif  // URHO3D_PLUGINS
+#endif  // !_WIN32
 
 #if _WIN32 || URHO3D_CSHARP
         // Native plugins on windows or managed plugins on all platforms
@@ -169,6 +176,10 @@ void Player::Start()
             failure = true;
         }
     }
+#else   // URHO3D_PLUGINS
+    plugins_ = InitializeUserPlugins(context_);
+    failure = plugins_.Empty();
+#endif  // URHO3D_PLUGINS
 
     if (failure)
         ErrorExit("Loading of required plugins failed.");
@@ -201,6 +212,7 @@ void Player::Stop()
         manager->UnloadAll();
 }
 
+#if URHO3D_PLUGINS
 bool Player::LoadAssembly(const String& path, PluginType assumeType)
 {
     if (assumeType == PLUGIN_INVALID)
@@ -239,5 +251,5 @@ bool Player::LoadAssembly(const String& path, PluginType assumeType)
 #endif
     return false;
 }
-
+#endif
 }

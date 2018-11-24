@@ -44,8 +44,10 @@ public:
     void Stop() override;
 
 protected:
+#if URHO3D_PLUGINS
     ///
     bool LoadAssembly(const String& path, PluginType assumeType=PLUGIN_INVALID);
+#endif
 
     ///
     Vector<SharedPtr<PluginApplication>> plugins_;

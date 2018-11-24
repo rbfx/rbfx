@@ -23,8 +23,9 @@
 #include "../Core/Context.h"
 #include "../Engine/PluginApplication.h"
 #include "../IO/Log.h"
-#include <cr/cr.h>
-
+#if !defined(URHO3D_STATIC) && defined(URHO3D_PLUGINS)
+#   include <cr/cr.h>
+#endif
 
 namespace Urho3D
 {
@@ -42,6 +43,7 @@ PluginApplication::~PluginApplication()
     }
 }
 
+#if !defined(URHO3D_STATIC) && defined(URHO3D_PLUGINS)
 int PluginApplication::PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*))
 {
     assert(ctx_);
@@ -84,5 +86,6 @@ int PluginApplication::PluginMain(void* ctx_, size_t operation, PluginApplicatio
 	assert(false);
 	return -3;
 }
+#endif
 
 }

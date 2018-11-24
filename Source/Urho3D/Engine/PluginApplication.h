@@ -88,7 +88,7 @@ void PluginApplication::RegisterFactory(const char* category)
 }
 
 /// Macro for defining entry point of editor plugin.
-#ifdef URHO3D_STATIC
+#if defined(URHO3D_STATIC) || !defined(URHO3D_PLUGINS)
 // In static builds user must manually initialize his plugins by creating plugin instance.
 #define URHO3D_DEFINE_PLUGIN_MAIN(Class)
 #else

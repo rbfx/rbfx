@@ -20,10 +20,6 @@
 # THE SOFTWARE.
 #
 
-if (NOT URHO3D_PLUGINS)
-    return ()
-endif ()
-
 add_subdirectory(Common)
 
 if (URHO3D_CSHARP)
