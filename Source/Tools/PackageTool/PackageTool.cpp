@@ -59,8 +59,7 @@ unsigned blockSize_ = COMPRESSED_BLOCK_SIZE;
 
 String ignoreExtensions_[] = {
     ".bak",
-    ".rule",
-    ""
+    ".rule"
 };
 
 int main(int argc, char** argv);
@@ -137,7 +136,7 @@ void Run(const Vector<String>& arguments)
 
         // Get the file list recursively
         Vector<String> fileNames;
-        fileSystem_->ScanDir(fileNames, dirName, "*.*", SCAN_FILES, true);
+        fileSystem_->ScanDir(fileNames, dirName, "*", SCAN_FILES, true);
         if (!fileNames.Size())
             ErrorExit("No files found");
 
@@ -237,8 +236,6 @@ void ProcessFile(const String& fileName, const String& rootDir)
     File file(context_);
     if (!file.Open(fullPath))
         ErrorExit("Could not open file " + fileName);
-    if (!file.GetSize())
-        return;
 
     FileEntry newEntry;
     newEntry.name_ = fileName;
