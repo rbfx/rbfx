@@ -50,15 +50,9 @@
 // Shared library build for execution by managed runtime.
 extern "C" URHO3D_EXPORT_API void ParseArgumentsC(int argc, char** argv) { Urho3D::ParseArguments(argc, argv); }
 extern "C" URHO3D_EXPORT_API Urho3D::Application* CreateApplication(Urho3D::Context* context) { return new Urho3D::Player(context); }
-#else
+#elif !defined(URHO3D_STATIC)
 // Native executable build for direct execution.
 URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::Player);
-#endif
-
-#if URHO3D_STATIC
-// In static builds user should link player library to his target and provide implementation of this function. Function
-// should initialize other statically linked plugins and return vector with their instances.
-extern Urho3D::Vector<Urho3D::SharedPtr<Urho3D::PluginApplication>> InitializeUserPlugins(Urho3D::Context* context);
 #endif
 
 namespace Urho3D
@@ -107,10 +101,50 @@ void Player::Start()
             return;
         }
     }
+
+    const JSONValue& projectRoot = projectFile->GetRoot();
+    if (!projectRoot.Contains("plugins"))
+    {
+        ErrorExit("Project.json does not have 'plugins' section.");
+        return;
+    }
+
+    const JSONValue& plugins = projectRoot["plugins"];
+    if (!LoadPlugins(plugins))
+        ErrorExit("Loading of required plugins failed.");
+
+    for (auto& plugin : plugins_)
+        plugin->Start();
+
+    // Load main scene.
+    {
+        SceneManager* manager = GetSubsystem<SceneManager>();
+        Scene* scene = manager->CreateScene();
+
+        SharedPtr<XMLFile> sceneFile(GetCache()->GetResource<XMLFile>(projectRoot["default-scene"].GetString()));
+        if (scene->LoadXML(sceneFile->GetRoot()))
+            manager->SetActiveScene(scene);
+        else
+            ErrorExit("Invalid scene file.");
+    }
+}
+
+void Player::Stop()
+{
+    for (auto& plugin : plugins_)
+        plugin->Stop();
+
+    for (auto& plugin : plugins_)
+        plugin->Unload();
+
+    if (SceneManager* manager = GetSubsystem<SceneManager>())
+        manager->UnloadAll();
+}
+
+bool Player::LoadPlugins(const JSONValue& plugins)
+{
     // Load plugins.
     bool failure = false;
-    const JSONValue& projectRoot = projectFile->GetRoot();
-    const JSONValue& plugins = projectRoot["plugins"];
 #if URHO3D_PLUGINS || URHO3D_CSHARP
     for (auto i = 0; i < plugins.Size(); i++)
     {
@@ -170,43 +204,11 @@ void Player::Start()
         if (!loaded)
         {
             URHO3D_LOGERRORF("Loading of '%s' assembly failed.", pluginName.CString());
-            failure = true;
+            return false;
         }
     }
-#else   // URHO3D_PLUGINS
-    plugins_ = InitializeUserPlugins(context_);
-    failure = plugins_.Empty();
 #endif  // URHO3D_PLUGINS
-
-    if (failure)
-        ErrorExit("Loading of required plugins failed.");
-
-    for (auto& plugin : plugins_)
-        plugin->Start();
-
-    // Load main scene.
-    {
-        SceneManager* manager = GetSubsystem<SceneManager>();
-        Scene* scene = manager->CreateScene();
-
-        SharedPtr<XMLFile> sceneFile(GetCache()->GetResource<XMLFile>(projectRoot["default-scene"].GetString()));
-        if (scene->LoadXML(sceneFile->GetRoot()))
-            manager->SetActiveScene(scene);
-        else
-            ErrorExit("Invalid scene file.");
-    }
-}
-
-void Player::Stop()
-{
-    for (auto& plugin : plugins_)
-        plugin->Stop();
-
-    for (auto& plugin : plugins_)
-        plugin->Unload();
-
-    if (SceneManager* manager = GetSubsystem<SceneManager>())
-        manager->UnloadAll();
+    return true;
 }
 
 #if URHO3D_PLUGINS

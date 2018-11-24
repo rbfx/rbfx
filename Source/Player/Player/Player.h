@@ -44,6 +44,8 @@ public:
     void Stop() override;
 
 protected:
+    ///
+    virtual bool LoadPlugins(const JSONValue& plugins);
 #if URHO3D_PLUGINS
     ///
     bool LoadAssembly(const String& path, PluginType assumeType=PLUGIN_INVALID);
