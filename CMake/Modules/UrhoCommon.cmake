@@ -533,7 +533,7 @@ function (create_pak PAK_DIR PAK_FILE)
     endif ()
 
     if (NOT PAK_NO_COMPRESS)
-        set (PAK_FLAGS "${PAK_FLAGS} -c")
+        list (APPEND PAK_FLAGS -c)
     endif ()
 
     add_custom_command(
