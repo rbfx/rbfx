@@ -141,6 +141,7 @@ else ()
     set (URHO3D_MINIDUMPS OFF)
 endif ()
 if (URHO3D_CSHARP)
+    set (URHO3D_MONOLITHIC_HEADER ON)   # Used by wrapper code
     if (WIN32)
         option(URHO3D_WITH_MONO "Use Mono runtime" OFF)
     else ()
