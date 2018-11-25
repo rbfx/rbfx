@@ -26,6 +26,7 @@
 #include <limits>
 #include "../Container/HashSet.h"
 #include "../Container/Vector.h"
+#include "../Core/Mutex.h"
 #include "../Core/Object.h"
 #include "../Engine/PluginApplication.h"
 
@@ -66,6 +67,8 @@ public:
     void LoadRuntime() { Command(ScriptRuntimeCommand::LoadRuntime); }
     ///
     void UnloadRuntime() { Command(ScriptRuntimeCommand::UnloadRuntime); }
+    /// Script runtime may release references from GC thread. It may be unsafe to run destructors from non-main thread therefore this method queues them to run at the end of next frame on the main thread.
+    bool QueueReleaseRef(RefCounted* object);
 
 protected:
     ///
@@ -104,6 +107,10 @@ protected:
     }
     ///
     Vector<Pair<ScriptCommandRange, ScriptRuntimeCommandHandler>> commandHandlers_;
+    ///
+    Mutex destructionQueueLock_;
+    ///
+    PODVector<RefCounted*> destructionQueue_;
 };
 
 

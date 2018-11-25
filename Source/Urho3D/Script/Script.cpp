@@ -20,7 +20,9 @@
 // THE SOFTWARE.
 //
 
-#include "Script.h"
+#include "../Core/CoreEvents.h"
+#include "../Core/Profiler.h"
+#include "../Script/Script.h"
 
 
 namespace Urho3D
@@ -29,11 +31,32 @@ namespace Urho3D
 Script::Script(Context* context)
     : Object(context)
 {
+    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) {
+        if (destructionQueue_.Empty())
+            return;
+
+        URHO3D_PROFILE("ReleaseFinalizedObjects");
+        MutexLock lock(destructionQueueLock_);
+        URHO3D_PROFILE_VALUE("Queued finalizers count", (int64_t)destructionQueue_.Size());
+        for (RefCounted* object : destructionQueue_)
+            object->ReleaseRef();
+        destructionQueue_.Clear();
+    });
 }
 
 void Script::RegisterCommandHandler(int first, int last, void* handler)
 {
     commandHandlers_.Push({ScriptCommandRange{first, last}, reinterpret_cast<ScriptRuntimeCommandHandler>(handler)});
+}
+
+bool Script::QueueReleaseRef(RefCounted* object)
+{
+    if (object == nullptr)
+        return false;
+
+    MutexLock lock(destructionQueueLock_);
+    destructionQueue_.Push(object);
+    return true;
 }
 
 }

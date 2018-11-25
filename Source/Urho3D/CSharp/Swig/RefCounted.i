@@ -114,6 +114,19 @@
         $*1_ltype $1Ref($input);
         $1 = &$1Ref;
     %}
+
+    %typemap(csfinalize) TYPE %{
+      ~$csclassname() {
+        lock (this) {
+          if (swigCMemOwn) {
+            if (Urho3DNet.Context.Instance.GetSubsystem<Urho3DNet.Script>().QueueReleaseRef(this as RefCounted)) {
+              swigCMemOwn = false;
+            }
+          }
+          Dispose();
+        }
+      }
+    %}
 %enddef
 
 %include "_refcounted.i"
