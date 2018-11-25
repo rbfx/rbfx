@@ -58,12 +58,6 @@ endif ()
 
 option(URHO3D_ENABLE_ALL "Enables all optional subsystems by default" OFF)
 
-# Determine library type
-if (BUILD_SHARED_LIBS)
-    set (URHO3D_LIBRARY_TYPE SHARED)
-else ()
-    set (URHO3D_LIBRARY_TYPE STATIC)
-endif ()
 
 # Threads are still experimental on emscripten.
 if (NOT EMSCRIPTEN OR URHO3D_ENABLE_ALL)
