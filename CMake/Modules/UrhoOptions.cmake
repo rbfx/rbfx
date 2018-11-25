@@ -39,25 +39,24 @@ endforeach()
 
 # Set platform variables
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
-    set (LINUX ON)
+    set (LINUX ON CACHE BOOL "" FORCE)
 endif ()
 
 if (ANDROID OR IOS)
-    set (MOBILE ON)
+    set (MOBILE ON CACHE BOOL "" FORCE)
 elseif (APPLE OR "${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
-    set (APPLE ON)
+    set (APPLE ON CACHE BOOL "" FORCE)
 endif ()
 
 if (APPLE AND NOT IOS)
-    set (MACOS ON)
+    set (MACOS ON CACHE BOOL "" FORCE)
 endif ()
 
 if ((WIN32 OR LINUX OR MACOS) AND NOT WEB AND NOT MOBILE)
-    set (DESKTOP ON)
+    set (DESKTOP ON CACHE BOOL "" FORCE)
 endif ()
 
 option(URHO3D_ENABLE_ALL "Enables all optional subsystems by default" OFF)
-
 
 # Threads are still experimental on emscripten.
 if (NOT EMSCRIPTEN OR URHO3D_ENABLE_ALL)
