@@ -132,10 +132,10 @@ void UITab::RenderNodeTree(UIElement* element)
 
         if (ui::IsItemHovered())
         {
-            if (ui::IsMouseClicked(0) || ui::IsMouseClicked(2))
+            if (ui::IsMouseClicked(MOUSEB_LEFT) || ui::IsMouseClicked(MOUSEB_RIGHT))
             {
                 SelectItem(element);
-                if (ui::IsMouseClicked(2))
+                if (ui::IsMouseClicked(MOUSEB_RIGHT))
                     ui::OpenPopup("Element Context Menu");
             }
         }
