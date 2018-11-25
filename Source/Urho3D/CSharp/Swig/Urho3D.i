@@ -129,6 +129,17 @@ URHO3D_BINARY_COMPATIBLE_TYPE(Ray);
 
 // ---------------------------------------  ---------------------------------------
 
+%ignore Urho3D::textureFilterModeNames;
+%ignore Urho3D::textureUnitNames;
+%ignore Urho3D::cullModeNames;
+%ignore Urho3D::fillModeNames;
+%ignore Urho3D::blendModeNames;
+%ignore Urho3D::compareModeNames;
+%ignore Urho3D::lightingModeNames;
+
+%ignore Urho3D::Frustum::planes_;
+%ignore Urho3D::Frustum::vertices_;
+
 %include "RefCounted.i"
 %include "Vector.i"
 %include "HashMap.i"
@@ -217,7 +228,7 @@ namespace SDL
 
 %ignore Urho3D::Application::engine_;
 %ignore Urho3D::Application::GetCommandLineParser;
-%ignore Urho3D::PluginMain;
+%ignore Urho3D::PluginApplication::PluginMain;
 %include "Urho3D/Engine/Application.h"
 %include "Urho3D/Engine/PluginApplication.h"
 #if URHO3D_CSHARP
@@ -555,6 +566,7 @@ public:
 %ignore ImGui::pdpx;
 %ignore ImGui::pdpy;
 %ignore ImGui::pdp;
+%apply unsigned short INPUT[] { ImWchar* };
 
 %include "Urho3D/SystemUI/Console.h"
 %include "Urho3D/SystemUI/DebugHud.h"

@@ -64,7 +64,7 @@ public:
     /// Main function of native plugin.
     static int PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*));
 
-protected:
+private:
     /// Types registered with the engine. They will be unloaded when plugin is reloaded.
     PODVector<Pair<StringHash, const char*>> registeredTypes_;
     /// Plugin type is set to PLUGIN_NATIVE in PluginMain(). Managed plugins however do not call this main function hence the default value.
