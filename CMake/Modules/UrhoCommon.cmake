@@ -289,31 +289,10 @@ endfunction()
 
 if (URHO3D_CSHARP)
     if (NOT SWIG_EXECUTABLE)
-        # Prebuilt files are mainly for windows/CI. If you run linux or macos you should probably build SWIG yourself.
-        # A SWIG distribution built from code at https://github.com/rokups/swig/tree/Urho3D
-        # You may build it yourself and set SWIG_EXECUTABLE in order to not use prebuilt binaries.
-        file(DOWNLOAD https://github.com/rokups/Urho3D/files/2343051/swig-dist.zip ${CMAKE_BINARY_DIR}/swig-dist.zip)
-        execute_process(COMMAND ${CMAKE_COMMAND} -E tar xzf swig-dist.zip WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-        if (HOST_LINUX)
-            set (SWIG_PLATFORM lin64)
-            set (SWIG_SHARE share/swig)
-        elseif (HOST_WIN32)
-            set (SWIG_PLATFORM win64)
-            set (SWIG_SHARE share)
-        elseif (HOST_MACOS)
-            set (SWIG_PLATFORM mac64)
-            set (SWIG_SHARE share/swig)
-        endif ()
-        set (SWIG_EXECUTABLE ${CMAKE_BINARY_DIR}/swig-dist/${SWIG_PLATFORM}/bin/swig${CMAKE_EXECUTABLE_SUFFIX})
-        # Get SWIG version
-        execute_process(COMMAND ${SWIG_EXECUTABLE} -version OUTPUT_VARIABLE SWIG_VERSION)
-        string(REGEX MATCH "SWIG Version ([0-9\\.]+)" SWIG_VERSION "${SWIG_VERSION}")
-        string(REPLACE "SWIG Version " "" SWIG_VERSION "${SWIG_VERSION}")
-        string(STRIP "${SWIG_VERSION}" SWIG_VERSION)
-        # Swig library path is embeded into executable. We extracted swig somewhere else other than prefix path so we
-        # must override library path here.
-        set (SWIG_DIR ${CMAKE_BINARY_DIR}/swig-dist/${SWIG_PLATFORM}/${SWIG_SHARE}/${SWIG_VERSION})
-        message(STATUS "Using prebuilt SWIG binaries for ${SWIG_PLATFORM} platform.")
+        set (SWIG_EXECUTABLE ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/swig${CMAKE_EXECUTABLE_SUFFIX})
+    endif ()
+    if (NOT SWIG_LIB)
+        set (SWIG_DIR ${Urho3D_SOURCE_DIR}/Source/ThirdParty/swig/Lib)
     endif ()
     include(UrhoSWIG)
 

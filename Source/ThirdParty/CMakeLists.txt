@@ -106,6 +106,10 @@ else ()
     if (URHO3D_TASKS)
         add_subdirectory(sc)
     endif ()
+
+    if (URHO3D_CSHARP)
+        add_subdirectory(swig)
+    endif ()
 endif ()
 
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} ThirdParty)
