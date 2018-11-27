@@ -44,8 +44,6 @@ namespace EditorHost
         {
             _version = version;
             _context = Context.wrap(contextPtr, true);
-
-            Urho3DPINVOKE.DelegateRegistry.RefreshDelegatePointers();
         }
 
         public void Dispose()

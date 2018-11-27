@@ -51,7 +51,7 @@ class String;
     {
         return str;
     }
-    private delegate string CreateStringDelegate(string str);
+    internal delegate string CreateStringDelegate(string str);
 }%}
 
 %wrapper %{

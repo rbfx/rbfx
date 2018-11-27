@@ -46,7 +46,7 @@
 %wrapper %{  }  // end of RegisterDirectorFactories%}
 
 %csexposefunc(wrapper, CreateObject, void*, %arg(Urho3D::Context* context, unsigned type)) %{
-    private delegate System.IntPtr CreateObjectDelegate(System.IntPtr context, uint type);
+    internal delegate System.IntPtr CreateObjectDelegate(System.IntPtr context, uint type);
     private static System.IntPtr CreateObject(System.IntPtr context, uint type)
     {
         var newObject = Context.wrap(context, false).CreateObject(type);

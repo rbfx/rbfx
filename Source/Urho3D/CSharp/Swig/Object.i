@@ -42,7 +42,7 @@ IGNORE_SUBSYSTEM(Tasks)
             System.Runtime.InteropServices.GCHandle.Alloc(
                 System.Runtime.InteropServices.GCHandle.FromIntPtr(handle).Target));
     }
-    private delegate System.IntPtr CloneGCHandleDelegate(System.IntPtr handle);
+    internal delegate System.IntPtr CloneGCHandleDelegate(System.IntPtr handle);
 }%}
 
 %csexposefunc(runtime, FreeGCHandle, void, void*) %{
@@ -50,6 +50,6 @@ IGNORE_SUBSYSTEM(Tasks)
     {
         System.Runtime.InteropServices.GCHandle.FromIntPtr(handle).Free();
     }
-    private delegate void FreeGCHandleDelegate(System.IntPtr handle);
+    internal delegate void FreeGCHandleDelegate(System.IntPtr handle);
 }%}
 

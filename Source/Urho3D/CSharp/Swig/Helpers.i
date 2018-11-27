@@ -67,37 +67,6 @@ int strlen(const char* void_ptr_string);
   %}
 %enddef
 
-%pragma(csharp) imclasscode=%{
-    internal static class DelegateRegistry
-    {
-        private class DelegateReference
-        {
-            public System.Delegate reference;
-            public System.Func<System.Delegate> registerer;
-
-            public void Refresh()
-            {
-                reference = registerer();
-            }
-        }
-        private static System.Collections.Generic.List<DelegateReference> _delegateReferences = new System.Collections.Generic.List<DelegateReference>();
-
-        internal static bool RegisterDelegate(System.Func<System.Delegate> registerer)
-        {
-            var record = new DelegateReference {registerer = registerer};
-            record.Refresh();
-            _delegateReferences.Add(record);
-            return true;
-        }
-
-        internal static void RefreshDelegatePointers()
-        {
-            for (int i = 0; i < _delegateReferences.Count; i++)
-                _delegateReferences[i].Refresh();
-        }
-    }
-%}
-
 %define %csexposefunc(DEST, NAME, CRETURN, CPARAMS)
 %DEST %{
   typedef CRETURN (SWIGSTDCALL* SWIG_CSharp##NAME##Callback)(CPARAMS);
@@ -111,13 +80,12 @@ int strlen(const char* void_ptr_string);
 %}
 
 %pragma(csharp) imclasscode=%{
-  static private bool SWIG_CSharp##NAME##DelegateRegistered = DelegateRegistry.RegisterDelegate(SWIG_CSharp##NAME##Helper.RegisterDelegate);
+  private static SWIG_CSharp##NAME##Helper.NAME##Delegate SWIG_CSharp##NAME##DelegateInstance = SWIG_CSharp##NAME##Helper.Register();
   internal partial struct SWIG_CSharp##NAME##Helper {
-    private static NAME##Delegate NAME##DelegateInstance;
     [global::System.Runtime.InteropServices.DllImport("$dllimport", EntryPoint="SWIGRegister" + #NAME + "Callback")]
     private static extern void SWIGRegister##NAME##Callback(System.Delegate fn);
-    public static System.Delegate RegisterDelegate() {
-        NAME##DelegateInstance = new NAME##Delegate(NAME);
+    internal static NAME##Delegate Register() {
+        var NAME##DelegateInstance = new NAME##Delegate(NAME);
         SWIGRegister##NAME##Callback(NAME##DelegateInstance);
         return NAME##DelegateInstance;
     }

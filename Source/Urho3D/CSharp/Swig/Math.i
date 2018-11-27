@@ -8,7 +8,7 @@
         {
             return primitive;
         }
-        private delegate CS_TYPE Create##CPP_TYPE##Delegate(in CS_TYPE primitive);
+        internal delegate CS_TYPE Create##CPP_TYPE##Delegate(in CS_TYPE primitive);
     }%}
 
     %ignore CPP_TYPE;
