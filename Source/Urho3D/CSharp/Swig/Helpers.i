@@ -69,24 +69,24 @@ int strlen(const char* void_ptr_string);
 
 %define %csexposefunc(DEST, NAME, CRETURN, CPARAMS)
 %DEST %{
-  typedef CRETURN (SWIGSTDCALL* SWIG_CSharp##NAME##Callback)(CPARAMS);
-  SWIGEXPORT SWIG_CSharp##NAME##Callback SWIG_CSharp##NAME = nullptr;
+  typedef CRETURN (SWIGSTDCALL* Urho3D_CSharp##NAME##Callback)(CPARAMS);
+  SWIGEXPORT Urho3D_CSharp##NAME##Callback Urho3D_CSharp##NAME = nullptr;
   #ifdef __cplusplus
   extern "C"
   #endif
-  SWIGEXPORT void SWIGSTDCALL SWIGRegister##NAME##Callback(SWIG_CSharp##NAME##Callback callback) {
-    SWIG_CSharp##NAME = callback;
+  SWIGEXPORT void SWIGSTDCALL Urho3DRegister##NAME##Callback(Urho3D_CSharp##NAME##Callback callback) {
+    Urho3D_CSharp##NAME = callback;
   }
 %}
 
 %pragma(csharp) imclasscode=%{
-  private static SWIG_CSharp##NAME##Helper.NAME##Delegate SWIG_CSharp##NAME##DelegateInstance = SWIG_CSharp##NAME##Helper.Register();
-  internal partial struct SWIG_CSharp##NAME##Helper {
-    [global::System.Runtime.InteropServices.DllImport("$dllimport", EntryPoint="SWIGRegister" + #NAME + "Callback")]
-    private static extern void SWIGRegister##NAME##Callback(System.Delegate fn);
+  private static Urho3D_CSharp##NAME##Helper.NAME##Delegate Urho3D_CSharp##NAME##DelegateInstance = Urho3D_CSharp##NAME##Helper.Register();
+  internal partial struct Urho3D_CSharp##NAME##Helper {
+    [global::System.Runtime.InteropServices.DllImport("$dllimport", EntryPoint="Urho3DRegister" + #NAME + "Callback")]
+    private static extern void Urho3DRegister##NAME##Callback(System.Delegate fn);
     internal static NAME##Delegate Register() {
         var NAME##DelegateInstance = new NAME##Delegate(NAME);
-        SWIGRegister##NAME##Callback(NAME##DelegateInstance);
+        Urho3DRegister##NAME##Callback(NAME##DelegateInstance);
         return NAME##DelegateInstance;
     }
 %}

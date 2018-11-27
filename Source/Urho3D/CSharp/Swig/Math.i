@@ -37,17 +37,17 @@
         $*1_ltype $inputRef(*$input);
         $1 = &$inputRef;
     %}
-    %typemap(argout)       CPP_TYPE & %{ $input = SWIG_CSharpCreate##CPP_TYPE(&$inputRef); %}
+    %typemap(argout)       CPP_TYPE & %{ $input = Urho3D_CSharpCreate##CPP_TYPE(&$inputRef); %}
     %typemap(argout)                 const CPP_TYPE & ""
     %typemap(csin)         CPP_TYPE, const CPP_TYPE &, CPP_TYPE & "ref $csinput"
     %typemap(directorin)   CPP_TYPE & "$input = addr($1);"
-    %typemap(directorin)   const CPP_TYPE &, CPP_TYPE %{ $input = SWIG_CSharpCreate##CPP_TYPE(addr($1)); %}
+    %typemap(directorin)   const CPP_TYPE &, CPP_TYPE %{ $input = Urho3D_CSharpCreate##CPP_TYPE(addr($1)); %}
     %typemap(csdirectorin) const CPP_TYPE &, CPP_TYPE "$iminput"
     %typemap(csdirectorin) CPP_TYPE &                 "ref $iminput"
 
 
     // Returns
-    %typemap(out)                      const CPP_TYPE &, CPP_TYPE &, CPP_TYPE %{ $result = SWIG_CSharpCreate##CPP_TYPE(addr($1)); %}
+    %typemap(out)                      const CPP_TYPE &, CPP_TYPE &, CPP_TYPE %{ $result = Urho3D_CSharpCreate##CPP_TYPE(addr($1)); %}
     %typemap(csout, excode=SWIGEXCODE) const CPP_TYPE &, CPP_TYPE &, CPP_TYPE  {
         unsafe {
             var res = $imcall;$excode

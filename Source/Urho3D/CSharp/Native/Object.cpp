@@ -28,11 +28,11 @@
 #  define SWIGSTDCALL
 #endif
 
-typedef void* (SWIGSTDCALL* SWIG_CSharpCloneGCHandleCallback)(void*);
-extern URHO3D_EXPORT_API SWIG_CSharpCloneGCHandleCallback SWIG_CSharpCloneGCHandle;
+typedef void* (SWIGSTDCALL* Urho3D_CSharpCloneGCHandleCallback)(void*);
+extern URHO3D_EXPORT_API Urho3D_CSharpCloneGCHandleCallback Urho3D_CSharpCloneGCHandle;
 
-typedef void (SWIGSTDCALL* SWIG_CSharpFreeGCHandleCallback)(void*);
-extern URHO3D_EXPORT_API SWIG_CSharpFreeGCHandleCallback SWIG_CSharpFreeGCHandle;
+typedef void (SWIGSTDCALL* Urho3D_CSharpFreeGCHandleCallback)(void*);
+extern URHO3D_EXPORT_API Urho3D_CSharpFreeGCHandleCallback Urho3D_CSharpFreeGCHandle;
 
 namespace Urho3D
 {
@@ -51,7 +51,7 @@ public:
 
     ~ManagedEventHandler() override
     {
-        SWIG_CSharpFreeGCHandle(callbackHandle_);
+        Urho3D_CSharpFreeGCHandle(callbackHandle_);
         callbackHandle_ = 0;
     }
 
@@ -62,7 +62,7 @@ public:
 
     EventHandler* Clone() const override
     {
-        return new ManagedEventHandler(receiver_, callback_, SWIG_CSharpCloneGCHandle(callbackHandle_));
+        return new ManagedEventHandler(receiver_, callback_, Urho3D_CSharpCloneGCHandle(callbackHandle_));
     }
 
 public:
