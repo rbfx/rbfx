@@ -219,6 +219,7 @@ namespace SDL
 
 %include "Urho3D/Core/Variant.h"
 %include "Object.i"
+%director Urho3D::AttributeAccessor;
 %include "Urho3D/Core/Attribute.h"
 %include "Urho3D/Core/Object.h"
 %include "Urho3D/Core/Context.h"

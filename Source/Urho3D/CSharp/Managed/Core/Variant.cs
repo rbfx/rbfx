@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+using System;
+
 namespace Urho3DNet
 {
     public partial class Variant
@@ -167,6 +169,65 @@ namespace Urho3DNet
         public static implicit operator Variant(global::Urho3DNet.Matrix4 value)
         {
             return new Variant(value);
+        }
+
+        public static VariantType GetVariantType(Type type)
+        {
+            if (type == typeof(sbyte) || type == typeof(short) || type == typeof(int))
+                return VariantType.VarInt;
+            if (type == typeof(bool))
+                return VariantType.VarBool;
+            if (type == typeof(float))
+                return VariantType.VarFloat;
+            if (type == typeof(Vector2))
+                return VariantType.VarVector2;
+            if (type == typeof(Vector3))
+                return VariantType.VarVector3;
+            if (type == typeof(Vector4))
+                return VariantType.VarVector4;
+            if (type == typeof(Quaternion))
+                return VariantType.VarQuaternion;
+            if (type == typeof(Color))
+                return VariantType.VarColor;
+            if (type == typeof(string))
+                return VariantType.VarString;
+            if (type == typeof(UCharArray))
+                return VariantType.VarBuffer;
+            if (type == typeof(IntPtr))
+                return VariantType.VarVoidptr;
+            if (type == typeof(ResourceRef))
+                return VariantType.VarResourceref;
+            if (type == typeof(ResourceRefList))
+                return VariantType.VarResourcereflist;
+            if (type == typeof(VariantVector))
+                return VariantType.VarVariantvector;
+            if (type == typeof(VariantMap))
+                return VariantType.VarVariantmap;
+            if (type == typeof(IntRect))
+                return VariantType.VarIntrect;
+            if (type == typeof(IntRect))
+                return VariantType.VarIntrect;
+            if (type == typeof(IntVector2))
+                return VariantType.VarIntvector2;
+            if (type == typeof(RefCounted))
+                return VariantType.VarPtr;
+            if (type == typeof(Matrix3))
+                return VariantType.VarMatrix3;
+            if (type == typeof(Matrix3x4))
+                return VariantType.VarMatrix3x4;
+            if (type == typeof(Matrix4))
+                return VariantType.VarMatrix4;
+            if (type == typeof(double))
+                return VariantType.VarDouble;
+            if (type == typeof(StringVector))
+                return VariantType.VarStringvector;
+            if (type == typeof(Rect))
+                return VariantType.VarRect;
+            if (type == typeof(IntVector3))
+                return VariantType.VarIntvector3;
+            if (type == typeof(long))
+                return VariantType.VarInt64;
+            return VariantType.VarNone;
         }
     }
 }

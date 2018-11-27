@@ -60,6 +60,8 @@ class Serializable;
 class URHO3D_API AttributeAccessor : public RefCounted
 {
 public:
+    /// Construct.
+    AttributeAccessor() = default;
     /// Get the attribute.
     virtual void Get(const Serializable* ptr, Variant& dest) const = 0;
     /// Set the attribute.

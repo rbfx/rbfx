@@ -7,10 +7,12 @@
 
 
 // Extend Context with extra code
-%typemap(csconstruct, excode=SWIGEXCODE,directorconnect="\n    SwigDirectorConnect();") Urho3D::Context %{: this($imcall, true) {$excode$directorconnect
+%define %addOnSetupInstance(Class)
+%typemap(csconstruct, excode=SWIGEXCODE,directorconnect="\n    ConnectSwigDirector();") Class %{: this($imcall, true) {$excode$directorconnect
     OnSetupInstance();
   }
 %}
+%enddef
 
 %typemap(csdestruct_derived, methodname="Dispose", methodmodifiers="public") Urho3D::Context {
     OnDispose();
@@ -37,11 +39,13 @@
 // Inheritable classes go here
 %inheritable(Urho3D, Object);
 %inheritable(Urho3D, Application);
-%inheritable(Urho3D, Serializable);
-%inheritable(Urho3D, Animatable);
-%inheritable(Urho3D, Component);
-%inheritable(Urho3D, LogicComponent);
+%inheritable(Urho3D, Serializable);         %addOnSetupInstance(Urho3D::Serializable);
+%inheritable(Urho3D, Animatable);           %addOnSetupInstance(Urho3D::Animatable);
+%inheritable(Urho3D, Component);            %addOnSetupInstance(Urho3D::Component);
+%inheritable(Urho3D, LogicComponent);       %addOnSetupInstance(Urho3D::LogicComponent);
 %inheritable(Urho3D, PluginApplication);
+
+%addOnSetupInstance(Urho3D::Context)
 
 %wrapper %{  }  // end of RegisterDirectorFactories%}
 
