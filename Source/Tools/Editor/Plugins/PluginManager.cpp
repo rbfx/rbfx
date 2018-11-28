@@ -179,6 +179,7 @@ void PluginManager::OnEndFrame()
     // TODO: Timeout probably should be configured, larger projects will have a pretty long linking time.
     const unsigned pluginLinkingTimeout = 10000;
     Timer wait;
+    bool eventSent = false;
 #if URHO3D_CSHARP
     Script* script = GetSubsystem<Script>();
     // C# plugin auto-reloading.
@@ -192,6 +193,11 @@ void PluginManager::OnEndFrame()
 
     if (!reloadingPlugins.Empty())
     {
+        if (!eventSent)
+        {
+            SendEvent(E_EDITORUSERCODERELOADSTART);
+            eventSent = true;
+        }
         script->UnloadRuntime();
         script->LoadRuntime();
         for (auto& plugin : plugins_)
@@ -213,7 +219,6 @@ void PluginManager::OnEndFrame()
     }
 #endif
 
-    bool eventSent = false;
     for (auto it = plugins_.Begin(); it != plugins_.End();)
     {
         Plugin* plugin = it->Get();
