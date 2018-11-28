@@ -64,9 +64,13 @@ public:
     /// Main function of native plugin.
     static int PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*));
 
+protected:
+    /// Record type factory that will be unregistered on plugin unload.
+    void RecordPluginFactory(StringHash type, const char* category);
+
 private:
     /// Types registered with the engine. They will be unloaded when plugin is reloaded.
-    PODVector<Pair<StringHash, const char*>> registeredTypes_;
+    Vector<Pair<StringHash, String>> registeredTypes_;
     /// Plugin type is set to PLUGIN_NATIVE in PluginMain(). Managed plugins however do not call this main function hence the default value.
     PluginType type_ = PLUGIN_MANAGED;
 };
@@ -75,14 +79,14 @@ template<typename T>
 void PluginApplication::RegisterFactory()
 {
     context_->RegisterFactory<T>();
-    registeredTypes_.Push({T::GetTypeStatic(), nullptr});
+    RecordPluginFactory(T::GetTypeStatic(), nullptr);
 }
 
 template<typename T>
 void PluginApplication::RegisterFactory(const char* category)
 {
     context_->RegisterFactory<T>(category);
-    registeredTypes_.Push({T::GetTypeStatic(), category});
+    RecordPluginFactory(T::GetTypeStatic(), category);
 }
 
 }
