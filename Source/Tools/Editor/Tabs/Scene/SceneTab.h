@@ -45,7 +45,7 @@ struct SceneState
         sceneState_.Clear();
         uiState_.Clear();
         startScene_ = scene;
-        scene->Save(sceneState_);
+        scene->SaveXML(sceneState_);
         root->GetUI()->SaveLayout(uiState_, root);
         defaultStyle_ = root->GetDefaultStyle();
     }
@@ -53,7 +53,7 @@ struct SceneState
     void Load(UIElement* root)
     {
         sceneState_.Seek(0);
-        startScene_->Load(sceneState_);
+        startScene_->LoadXML(sceneState_);
         startScene_->GetUI()->Clear();
         root->SetDefaultStyle(defaultStyle_);
         root->LoadXML(uiState_);
