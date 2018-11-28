@@ -115,6 +115,7 @@ URHO3D_REFCOUNTED(Urho3D::LogicComponent);
 URHO3D_REFCOUNTED(Urho3D::Node);
 URHO3D_REFCOUNTED(Urho3D::ObjectAnimation);
 URHO3D_REFCOUNTED(Urho3D::Scene);
+URHO3D_REFCOUNTED(Urho3D::SceneManager);
 URHO3D_REFCOUNTED(Urho3D::SceneMetadata);
 URHO3D_REFCOUNTED(Urho3D::Serializable);
 URHO3D_REFCOUNTED(Urho3D::SmoothedTransform);

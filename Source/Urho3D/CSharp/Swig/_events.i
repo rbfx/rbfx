@@ -937,6 +937,53 @@ public static class E
     }
     public static RemoteEventDataEvent RemoteEventData = new RemoteEventDataEvent();
 
+    public class NetworkBannedEvent {
+        private StringHash _event = new StringHash("NetworkBanned");
+
+        public NetworkBannedEvent() { }
+        public static implicit operator StringHash(NetworkBannedEvent e) { return e._event; }
+    }
+    public static NetworkBannedEvent NetworkBanned = new NetworkBannedEvent();
+
+    public class NetworkInvalidPasswordEvent {
+        private StringHash _event = new StringHash("NetworkInvalidPassword");
+
+        public NetworkInvalidPasswordEvent() { }
+        public static implicit operator StringHash(NetworkInvalidPasswordEvent e) { return e._event; }
+    }
+    public static NetworkInvalidPasswordEvent NetworkInvalidPassword = new NetworkInvalidPasswordEvent();
+
+    public class NetworkHostDiscoveredEvent {
+        private StringHash _event = new StringHash("NetworkHostDiscovered");
+
+        public StringHash Address = new StringHash("Address");
+        public StringHash Port = new StringHash("Port");
+        public StringHash Beacon = new StringHash("Beacon");
+        public NetworkHostDiscoveredEvent() { }
+        public static implicit operator StringHash(NetworkHostDiscoveredEvent e) { return e._event; }
+    }
+    public static NetworkHostDiscoveredEvent NetworkHostDiscovered = new NetworkHostDiscoveredEvent();
+
+    public class NetworkNatPunchtroughSucceededEvent {
+        private StringHash _event = new StringHash("NetworkNatPunchtroughSucceeded");
+
+        public StringHash Address = new StringHash("Address");
+        public StringHash Port = new StringHash("Port");
+        public NetworkNatPunchtroughSucceededEvent() { }
+        public static implicit operator StringHash(NetworkNatPunchtroughSucceededEvent e) { return e._event; }
+    }
+    public static NetworkNatPunchtroughSucceededEvent NetworkNatPunchtroughSucceeded = new NetworkNatPunchtroughSucceededEvent();
+
+    public class NetworkNatPunchtroughFailedEvent {
+        private StringHash _event = new StringHash("NetworkNatPunchtroughFailed");
+
+        public StringHash Address = new StringHash("Address");
+        public StringHash Port = new StringHash("Port");
+        public NetworkNatPunchtroughFailedEvent() { }
+        public static implicit operator StringHash(NetworkNatPunchtroughFailedEvent e) { return e._event; }
+    }
+    public static NetworkNatPunchtroughFailedEvent NetworkNatPunchtroughFailed = new NetworkNatPunchtroughFailedEvent();
+
     public class PhysicsPreStepEvent {
         private StringHash _event = new StringHash("PhysicsPreStep");
 
@@ -1385,6 +1432,16 @@ public static class E
     }
     public static InterceptNetworkUpdateEvent InterceptNetworkUpdate = new InterceptNetworkUpdateEvent();
 
+    public class SceneActivatedEvent {
+        private StringHash _event = new StringHash("SceneActivated");
+
+        public StringHash OldScene = new StringHash("OldScene");
+        public StringHash NewScene = new StringHash("NewScene");
+        public SceneActivatedEvent() { }
+        public static implicit operator StringHash(SceneActivatedEvent e) { return e._event; }
+    }
+    public static SceneActivatedEvent SceneActivated = new SceneActivatedEvent();
+
     public class ConsoleClosedEvent {
         private StringHash _event = new StringHash("ConsoleClosed");
 
@@ -1819,7 +1876,7 @@ public static class E
 
         public StringHash FileName = new StringHash("FileName");
         public StringHash Filter = new StringHash("Filter");
-        public StringHash Ok = new StringHash("Ok");
+        public StringHash Ok = new StringHash("OK");
         public FileSelectedEvent() { }
         public static implicit operator StringHash(FileSelectedEvent e) { return e._event; }
     }
@@ -1828,7 +1885,7 @@ public static class E
     public class MessageACKEvent {
         private StringHash _event = new StringHash("MessageACK");
 
-        public StringHash Ok = new StringHash("Ok");
+        public StringHash Ok = new StringHash("OK");
         public MessageACKEvent() { }
         public static implicit operator StringHash(MessageACKEvent e) { return e._event; }
     }
