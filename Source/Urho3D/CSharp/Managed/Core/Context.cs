@@ -62,8 +62,6 @@ namespace Urho3DNet
                     RegisterFactory(pair.Item1, pair.Item2.Category);
             }
 
-            // Serializable.RegisterSerializableAttributes(this);
-
             Instance = this;
         }
 
@@ -93,7 +91,7 @@ namespace Urho3DNet
         public void RegisterFactory(Type type, string category="")
         {
             if (!type.IsSubclassOf(typeof(Object)))
-                throw new ArgumentException("Type must be sublass of Object.");
+                throw new ArgumentException("Type must be subclass of Object.");
 
             _factoryTypes[StringHash.Calculate(type.Name)] = type;
 
