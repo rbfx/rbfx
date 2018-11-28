@@ -53,6 +53,12 @@
 %include "InstanceCache.i"
 %include "Helpers.i"
 
+// --------------------------------------- Operators ---------------------------------------
+%rename(Equals) operator==;
+%rename(Set) operator=;
+%rename(At) operator[];
+%ignore operator!=;
+
 // String typemap returns 0 if null string is passed. This fails to initialize SafeArray.
 %ignore Urho3D::Node::GetChildrenWithTag(const String& tag, bool recursive = false) const;
 %ignore Urho3D::UIElement::GetChildrenWithTag(const String& tag, bool recursive = false) const;
