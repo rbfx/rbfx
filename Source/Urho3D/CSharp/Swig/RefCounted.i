@@ -36,7 +36,7 @@
       }
     %}
 
-    %typemap(csbody_derived) TYPE %{
+    %typemap(csbody_derived, directorsetup="\n    SetupSwigDirector();") TYPE %{
       private global::System.Runtime.InteropServices.HandleRef swigCPtr;
       private static InstanceCache<$csclassname> _instanceCache = new InstanceCache<$csclassname>();
       internal new static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
@@ -58,7 +58,7 @@
       }
 
       internal $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn) : base($imclassname.$csclazznameSWIGUpcast(cPtr), cMemoryOwn) {
-        swigCPtr = new global::System.Runtime.InteropServices.HandleRef(this, cPtr);
+        swigCPtr = new global::System.Runtime.InteropServices.HandleRef(this, cPtr);$directorsetup
         _instanceCache.AddNew(swigCPtr);
       }
 
