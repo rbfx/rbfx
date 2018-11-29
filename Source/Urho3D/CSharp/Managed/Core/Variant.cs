@@ -229,17 +229,5 @@ namespace Urho3DNet
                 return VariantType.VarInt64;
             return VariantType.VarNone;
         }
-
-        public static bool operator ==(Variant a, Variant b)
-        {
-            if (!ReferenceEquals(a, null))
-                return !ReferenceEquals(b, null) && a.Equals(b);     // Equality checked when both not null.
-            return b == null;                                        // true when both are null
-        }
-
-        public static bool operator !=(Variant a, Variant b)
-        {
-            return !(a == b);
-        }
     }
 }
