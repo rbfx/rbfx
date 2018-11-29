@@ -18,6 +18,7 @@
 #include <SDL/SDL_gamecontroller.h>
 #include <SDL/SDL_keycode.h>
 #undef GetObject
+#undef SendMessage
 %}
 
 %typemap(csvarout) void* VOID_INT_PTR %{
@@ -518,19 +519,32 @@ public:
 %include "Urho3D/Navigation/Obstacle.h"
 %include "Urho3D/Navigation/OffMeshConnection.h"
 #endif
+
 // --------------------------------------- Network ---------------------------------------
-#if defined(URHO3D_NETWORKING)
-//
-//%ignore Urho3D::Network::MakeHttpRequest;
-//%ignore Urho3D::PackageDownload;
-//%apply unsigned long { u32, kNet::packet_id_t, kNet::message_id_t }
-//
-//%include "Urho3D/Network/Connection.h"
-//%include "Urho3D/Network/Network.h"
-//%include "Urho3D/Network/NetworkPriority.h"
-//%include "Urho3D/Network/Protocol.h"
-//
+#if defined(URHO3D_NETWORK)
+%ignore Urho3D::Network::MakeHttpRequest;
+%ignore Urho3D::PackageDownload;
+%ignore Urho3D::PackageUpload;
+
+%template(ConnectionVector) Urho3D::Vector<Urho3D::SharedPtr<Urho3D::Connection>>;
+
+// These methods use forward-declared types from SLikeNet.
+%ignore Urho3D::Connection::Connection;
+%ignore Urho3D::Connection::GetAddressOrGUID;
+%ignore Urho3D::Connection::SetAddressOrGUID;
+%ignore Urho3D::Network::HandleMessage;
+%ignore Urho3D::Network::NewConnectionEstablished;
+%ignore Urho3D::Network::ClientDisconnected;
+%ignore Urho3D::Network::GetConnection;
+%ignore Urho3D::Network::OnServerConnect;
+%ignore Urho3D::Network::HandleIncomingPacket;
+
+%include "Urho3D/Network/Connection.h"
+%include "Urho3D/Network/Network.h"
+%include "Urho3D/Network/NetworkPriority.h"
+%include "Urho3D/Network/Protocol.h"
 #endif
+
 //// --------------------------------------- Physics ---------------------------------------
 #if defined(URHO3D_PHYSICS)
 //%ignore Urho3D::TriangleMeshData::meshInterface_;
