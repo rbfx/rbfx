@@ -176,11 +176,10 @@ class DefineConstantsPass(AstPass):
                     if value:
                         type_kind = node.type.get_canonical().kind
                         if type_kind in (TypeKind.CHAR16, TypeKind.CHAR32, TypeKind.USHORT, TypeKind.UINT,
-                                         TypeKind.ULONG, TypeKind.ULONGLONG, TypeKind.UINT128) and \
-                           not value.endswith('U'):
-                            value += 'U'
-                        elif type_kind == TypeKind.FLOAT and not value.endswith('f'):
-                            value += 'f'
+                                         TypeKind.ULONG, TypeKind.ULONGLONG, TypeKind.UINT128)
+                            value = value.rstrip('Uu') + 'U'
+                        elif type_kind == TypeKind.FLOAT:
+                            value = value.rstrip('Ff') + 'f'
 
                         try:
                             type_name = builtin_to_cs[type_kind]
