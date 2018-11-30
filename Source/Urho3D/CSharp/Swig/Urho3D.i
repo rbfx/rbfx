@@ -207,7 +207,7 @@ namespace SDL
 %ignore Urho3D::Variant::GetBufferPtr;
 %ignore Urho3D::VARIANT_VALUE_SIZE;
 %rename(GetVariantType) Urho3D::Variant::GetType;
-%csmethodmodifiers ToString "public new"
+%csmethodmodifiers ToString() "public override"
 %ignore Urho3D::AttributeInfo::enumNamesStorage_;
 %ignore Urho3D::AttributeInfo::enumNamesPointers_;
 %ignore Urho3D::AttributeInfo::enumNames_;
