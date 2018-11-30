@@ -382,6 +382,10 @@ public:
 %ignore Urho3D::PointOctreeQuery::TestDrawables;
 %ignore Urho3D::BoxOctreeQuery::TestDrawables;
 %ignore Urho3D::OctreeQuery::TestDrawables;
+%ignore Urho3D::UpdateDrawablesWork;
+%ignore Urho3D::ProcessLightWork;
+%ignore Urho3D::CheckVisibilityWork;
+%ignore Urho3D::CheckDrawableVisibilityWork;
 %ignore Urho3D::ELEMENT_TYPESIZES;
 %ignore Urho3D::ScratchBuffer;
 %ignore Urho3D::Drawable::GetBatches;
