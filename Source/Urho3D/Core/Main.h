@@ -28,6 +28,7 @@
 #include "../Core/MiniDump.h"
 #include <windows.h>
 #undef GetObject
+#undef SendMessage
 #ifdef _MSC_VER
 #include <crtdbg.h>
 #endif

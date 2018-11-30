@@ -17,8 +17,6 @@
 #include <SDL/SDL_joystick.h>
 #include <SDL/SDL_gamecontroller.h>
 #include <SDL/SDL_keycode.h>
-#undef GetObject
-#undef SendMessage
 %}
 
 %typemap(csvarout) void* VOID_INT_PTR %{
