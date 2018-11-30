@@ -44,6 +44,7 @@
 %inheritable(Urho3D, Component);            %addOnSetupInstance(Urho3D::Component);
 %inheritable(Urho3D, LogicComponent);       %addOnSetupInstance(Urho3D::LogicComponent);
 %inheritable(Urho3D, PluginApplication);    %addOnSetupInstance(Urho3D::PluginApplication);
+%inheritable(Urho3D, Drawable);
 
 %addOnSetupInstance(Urho3D::Context)
 

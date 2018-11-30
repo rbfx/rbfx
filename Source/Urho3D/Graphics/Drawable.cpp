@@ -85,10 +85,6 @@ Drawable::Drawable(Context* context, DrawableFlags drawableFlags) :
     maxLights_(0),
     firstLight_(nullptr)
 {
-    if (drawableFlags == DRAWABLE_UNDEFINED)
-    {
-        URHO3D_LOGERROR("Drawable with undefined drawableFlags");
-    }
 }
 
 Drawable::~Drawable()
