@@ -210,8 +210,7 @@ namespace SDL
 %csmethodmodifiers ToString "public new"
 %ignore Urho3D::AttributeInfo::enumNamesStorage_;
 %ignore Urho3D::AttributeInfo::enumNamesPointers_;
-%ignore Urho3D::AttributeInfo::AttributeInfo(VariantType type, const char* name, const SharedPtr<AttributeAccessor>& accessor, const char** enumNames, const Variant& defaultValue, AttributeModeFlags mode);
-
+%ignore Urho3D::AttributeInfo::enumNames_;
 
 %include "Urho3D/Core/Variant.h"
 %include "Object.i"

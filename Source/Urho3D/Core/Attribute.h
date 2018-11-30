@@ -73,7 +73,7 @@ struct AttributeInfo
 {
     /// Construct empty.
     AttributeInfo() = default;
-
+#ifndef SWIG
     /// Construct attribute.
     AttributeInfo(VariantType type, const char* name, const SharedPtr<AttributeAccessor>& accessor, const char** enumNames, const Variant& defaultValue, AttributeModeFlags mode) :
         type_(type),
@@ -84,7 +84,7 @@ struct AttributeInfo
         mode_(mode)
     {
     }
-
+#endif
     /// Construct attribute.
     AttributeInfo(VariantType type, const char* name, const SharedPtr<AttributeAccessor>& accessor, const Vector<String>& enumNames, const Variant& defaultValue, AttributeModeFlags mode) :
         type_(type),

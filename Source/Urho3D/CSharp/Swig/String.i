@@ -204,5 +204,3 @@ class String;
 %}
 %typemap(freearg) const char* INPUT[] ""
 %typemap(argout)  const char* INPUT[] ""
-
-%apply const char* INPUT[] { char const ** };
