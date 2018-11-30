@@ -42,6 +42,20 @@ struct Vertex2D
     unsigned color_;
     /// UV.
     Vector2 uv_;
+
+    /// Equality comparison operator.
+    bool operator==(const Vertex2D& other) const
+    {
+        if (this == &other)
+            return true;
+        return position_ == other.position_ && color_ == other.color_ && uv_ == other.uv_;
+    }
+
+    /// Inequality comparison operator.
+    bool operator!=(const Vertex2D& other) const
+    {
+        return !(*this == other);
+    }
 };
 
 /// 2D source batch.
@@ -60,6 +74,21 @@ struct SourceBatch2D
     SharedPtr<Material> material_;
     /// Vertices.
     Vector<Vertex2D> vertices_;
+
+    /// Equality comparison operator.
+    bool operator==(const SourceBatch2D& other) const
+    {
+        if (this == &other)
+            return true;
+        return owner_ == other.owner_ && distance_ == other.distance_ && drawOrder_ == other.drawOrder_ &&
+            material_ == other.material_ && vertices_ == other.vertices_;
+    }
+
+    /// Inequality comparison operator.
+    bool operator!=(const SourceBatch2D& other) const
+    {
+        return !(*this == other);
+    }
 };
 
 /// Pixel size (equal 0.01f).

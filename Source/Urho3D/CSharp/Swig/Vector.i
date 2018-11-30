@@ -293,6 +293,8 @@ namespace Urho3D {
 %template(DecalVertexArray)      Urho3D::PODVector<Urho3D::DecalVertex>;
 %template(CustomGeometryVerticesArray) Urho3D::PODVector<Urho3D::CustomGeometryVertex>;
 %template(RayQueryResultArray)   Urho3D::PODVector<Urho3D::RayQueryResult>;
+%template(SourceBatchVector)     Urho3D::Vector<Urho3D::SourceBatch>;
+%template(CameraArray)           Urho3D::PODVector<Urho3D::Camera*>;
 
 %template(StringVector)      Urho3D::Vector<Urho3D::String>;
 %template(VariantVector)     Urho3D::Vector<Urho3D::Variant>;

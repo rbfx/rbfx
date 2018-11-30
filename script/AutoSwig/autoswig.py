@@ -520,7 +520,6 @@ class Urho3DModule(Module):
     exclude_headers = [
         r'/Urho3D/Precompiled.h',
         r'/Urho3D/Container/.+$',
-        r'/Urho3D/Urho2D/.+$',
         r'/Urho3D/Graphics/[^/]+/.+\.h$',
     ]
 

@@ -350,6 +350,7 @@ public:
 
 // --------------------------------------- Audio ---------------------------------------
 %apply int FIXED[]  { int *dest }
+%apply int* OUTPUT  { int& x, int& y }
 %typemap(cstype) int *dest "ref int[]"
 %typemap(imtype) int *dest "global::System.IntPtr"
 %csmethodmodifiers Urho3D::SoundSource::Mix "public unsafe";
@@ -384,7 +385,6 @@ public:
 %ignore Urho3D::BoxOctreeQuery::TestDrawables;
 %ignore Urho3D::OctreeQuery::TestDrawables;
 %ignore Urho3D::ELEMENT_TYPESIZES;
-%ignore Urho3D::SourceBatch;
 %ignore Urho3D::ScratchBuffer;
 %ignore Urho3D::Drawable::GetBatches;
 %ignore Urho3D::Light::SetLightQueue;
@@ -622,3 +622,84 @@ public:
 %include "Urho3D/UI/UIComponent.h"
 %include "Urho3D/UI/Window.h"
 %include "Urho3D/UI/View3D.h"
+
+// --------------------------------------- Urho2D ---------------------------------------
+#if URHO3D_URHO2D
+%template(Sprite2DMap) Urho3D::HashMap<Urho3D::String, Urho3D::SharedPtr<Urho3D::Sprite2D>>;
+%template(PhysicsRaycastResult2DArray) Urho3D::PODVector<Urho3D::PhysicsRaycastResult2D>;
+%template(RigitBody2DArray) Urho3D::PODVector<Urho3D::RigidBody2D*>;
+%template(MaterialVector) Urho3D::Vector<Urho3D::SharedPtr<Urho3D::Material>>;
+%template(TileMapObject2DVector) Urho3D::Vector<Urho3D::SharedPtr<Urho3D::TileMapObject2D>>;
+
+%ignore Urho3D::AnimationSet2D::GetSpriterData;
+%ignore Urho3D::PhysicsWorld2D::DrawTransform;
+
+// SWIG applies `override new` modifier by mistake.
+%csmethodmodifiers Urho3D::Drawable2D::OnSceneSet "protected override";
+%csmethodmodifiers Urho3D::Drawable2D::OnMarkedDirty "protected override";
+
+%apply float { float32 };
+%apply int { int32 };
+%apply void* VOID_INT_PTR {
+	b2Body*,
+	b2Contact*,
+	b2Fixture*,
+	b2Joint*,
+	b2Manifold*,
+	b2World*
+}
+
+// b2Draw implementation
+%ignore Urho3D::PhysicsWorld2D::DrawPolygon;
+%ignore Urho3D::PhysicsWorld2D::DrawSolidPolygon;
+%ignore Urho3D::PhysicsWorld2D::DrawCircle;
+%ignore Urho3D::PhysicsWorld2D::DrawSolidCircle;
+%ignore Urho3D::PhysicsWorld2D::DrawSegment;
+%ignore Urho3D::PhysicsWorld2D::DrawTransform;
+%ignore Urho3D::PhysicsWorld2D::DrawPoint;
+
+%ignore Urho3D::ViewBatchInfo2D;
+%ignore Urho3D::SourceBatch2D;
+%ignore Urho3D::Vertex2D;
+%ignore Urho3D::Drawable2D::GetSourceBatches;
+%ignore Urho3D::TileMap2D::SetTmxFile;
+%ignore Urho3D::TileMapLayer2D::Initialize;
+%ignore Urho3D::TileMapLayer2D::GetTmxLayer;
+%ignore Urho3D::Drawable2D::sourceBatches_;
+
+%include "Urho3D/Urho2D/Drawable2D.h"
+%include "Urho3D/Urho2D/StaticSprite2D.h"
+%include "Urho3D/Urho2D/AnimatedSprite2D.h"
+%include "Urho3D/Urho2D/TileMapDefs2D.h"
+%include "Urho3D/Urho2D/AnimationSet2D.h"
+%include "Urho3D/Urho2D/ParticleEffect2D.h"
+%include "Urho3D/Urho2D/Renderer2D.h"
+%include "Urho3D/Urho2D/SpriteSheet2D.h"
+%include "Urho3D/Urho2D/TileMapLayer2D.h"
+%include "Urho3D/Urho2D/ParticleEmitter2D.h"
+%include "Urho3D/Urho2D/Sprite2D.h"
+%include "Urho3D/Urho2D/StretchableSprite2D.h"
+%include "Urho3D/Urho2D/TileMap2D.h"
+
+%include "Urho3D/Urho2D/CollisionShape2D.h"
+%include "Urho3D/Urho2D/CollisionPolygon2D.h"
+%include "Urho3D/Urho2D/CollisionEdge2D.h"
+%include "Urho3D/Urho2D/CollisionChain2D.h"
+%include "Urho3D/Urho2D/CollisionCircle2D.h"
+%include "Urho3D/Urho2D/CollisionBox2D.h"
+%include "Urho3D/Urho2D/Constraint2D.h"
+%include "Urho3D/Urho2D/ConstraintFriction2D.h"
+%include "Urho3D/Urho2D/ConstraintPulley2D.h"
+%include "Urho3D/Urho2D/ConstraintGear2D.h"
+%include "Urho3D/Urho2D/ConstraintRevolute2D.h"
+%include "Urho3D/Urho2D/ConstraintMotor2D.h"
+%include "Urho3D/Urho2D/ConstraintRope2D.h"
+%include "Urho3D/Urho2D/ConstraintMouse2D.h"
+%include "Urho3D/Urho2D/ConstraintWeld2D.h"
+%include "Urho3D/Urho2D/ConstraintDistance2D.h"
+%include "Urho3D/Urho2D/ConstraintPrismatic2D.h"
+%include "Urho3D/Urho2D/ConstraintWheel2D.h"
+%include "Urho3D/Urho2D/RigidBody2D.h"
+%include "Urho3D/Urho2D/PhysicsWorld2D.h"
+
+#endif

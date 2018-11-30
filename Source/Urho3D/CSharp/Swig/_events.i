@@ -2011,5 +2011,117 @@ public static class E
     }
     public static UIDropFileEvent UIDropFile = new UIDropFileEvent();
 
+    public class PhysicsUpdateContact2DEvent {
+        private StringHash _event = new StringHash("PhysicsUpdateContact2D");
+
+        public StringHash World = new StringHash("World");
+        public StringHash BodyA = new StringHash("BodyA");
+        public StringHash BodyB = new StringHash("BodyB");
+        public StringHash NodeA = new StringHash("NodeA");
+        public StringHash NodeB = new StringHash("NodeB");
+        public StringHash Contacts = new StringHash("Contacts");
+        public StringHash ShapeA = new StringHash("ShapeA");
+        public StringHash ShapeB = new StringHash("ShapeB");
+        public StringHash Enabled = new StringHash("Enabled");
+        public PhysicsUpdateContact2DEvent() { }
+        public static implicit operator StringHash(PhysicsUpdateContact2DEvent e) { return e._event; }
+    }
+    public static PhysicsUpdateContact2DEvent PhysicsUpdateContact2D = new PhysicsUpdateContact2DEvent();
+
+    public class PhysicsBeginContact2DEvent {
+        private StringHash _event = new StringHash("PhysicsBeginContact2D");
+
+        public StringHash World = new StringHash("World");
+        public StringHash BodyA = new StringHash("BodyA");
+        public StringHash BodyB = new StringHash("BodyB");
+        public StringHash NodeA = new StringHash("NodeA");
+        public StringHash NodeB = new StringHash("NodeB");
+        public StringHash Contacts = new StringHash("Contacts");
+        public StringHash ShapeA = new StringHash("ShapeA");
+        public StringHash ShapeB = new StringHash("ShapeB");
+        public PhysicsBeginContact2DEvent() { }
+        public static implicit operator StringHash(PhysicsBeginContact2DEvent e) { return e._event; }
+    }
+    public static PhysicsBeginContact2DEvent PhysicsBeginContact2D = new PhysicsBeginContact2DEvent();
+
+    public class PhysicsEndContact2DEvent {
+        private StringHash _event = new StringHash("PhysicsEndContact2D");
+
+        public StringHash World = new StringHash("World");
+        public StringHash BodyA = new StringHash("BodyA");
+        public StringHash BodyB = new StringHash("BodyB");
+        public StringHash NodeA = new StringHash("NodeA");
+        public StringHash NodeB = new StringHash("NodeB");
+        public StringHash Contacts = new StringHash("Contacts");
+        public StringHash ShapeA = new StringHash("ShapeA");
+        public StringHash ShapeB = new StringHash("ShapeB");
+        public PhysicsEndContact2DEvent() { }
+        public static implicit operator StringHash(PhysicsEndContact2DEvent e) { return e._event; }
+    }
+    public static PhysicsEndContact2DEvent PhysicsEndContact2D = new PhysicsEndContact2DEvent();
+
+    public class NodeUpdateContact2DEvent {
+        private StringHash _event = new StringHash("NodeUpdateContact2D");
+
+        public StringHash Body = new StringHash("Body");
+        public StringHash OtherNode = new StringHash("OtherNode");
+        public StringHash OtherBody = new StringHash("OtherBody");
+        public StringHash Contacts = new StringHash("Contacts");
+        public StringHash Shape = new StringHash("Shape");
+        public StringHash OtherShape = new StringHash("OtherShape");
+        public StringHash Enabled = new StringHash("Enabled");
+        public NodeUpdateContact2DEvent() { }
+        public static implicit operator StringHash(NodeUpdateContact2DEvent e) { return e._event; }
+    }
+    public static NodeUpdateContact2DEvent NodeUpdateContact2D = new NodeUpdateContact2DEvent();
+
+    public class NodeBeginContact2DEvent {
+        private StringHash _event = new StringHash("NodeBeginContact2D");
+
+        public StringHash Body = new StringHash("Body");
+        public StringHash OtherNode = new StringHash("OtherNode");
+        public StringHash OtherBody = new StringHash("OtherBody");
+        public StringHash Contacts = new StringHash("Contacts");
+        public StringHash Shape = new StringHash("Shape");
+        public StringHash OtherShape = new StringHash("OtherShape");
+        public NodeBeginContact2DEvent() { }
+        public static implicit operator StringHash(NodeBeginContact2DEvent e) { return e._event; }
+    }
+    public static NodeBeginContact2DEvent NodeBeginContact2D = new NodeBeginContact2DEvent();
+
+    public class NodeEndContact2DEvent {
+        private StringHash _event = new StringHash("NodeEndContact2D");
+
+        public StringHash Body = new StringHash("Body");
+        public StringHash OtherNode = new StringHash("OtherNode");
+        public StringHash OtherBody = new StringHash("OtherBody");
+        public StringHash Contacts = new StringHash("Contacts");
+        public StringHash Shape = new StringHash("Shape");
+        public StringHash OtherShape = new StringHash("OtherShape");
+        public NodeEndContact2DEvent() { }
+        public static implicit operator StringHash(NodeEndContact2DEvent e) { return e._event; }
+    }
+    public static NodeEndContact2DEvent NodeEndContact2D = new NodeEndContact2DEvent();
+
+    public class ParticlesEndEvent {
+        private StringHash _event = new StringHash("ParticlesEnd");
+
+        public StringHash Node = new StringHash("Node");
+        public StringHash Effect = new StringHash("Effect");
+        public ParticlesEndEvent() { }
+        public static implicit operator StringHash(ParticlesEndEvent e) { return e._event; }
+    }
+    public static ParticlesEndEvent ParticlesEnd = new ParticlesEndEvent();
+
+    public class ParticlesDurationEvent {
+        private StringHash _event = new StringHash("ParticlesDuration");
+
+        public StringHash Node = new StringHash("Node");
+        public StringHash Effect = new StringHash("Effect");
+        public ParticlesDurationEvent() { }
+        public static implicit operator StringHash(ParticlesDurationEvent e) { return e._event; }
+    }
+    public static ParticlesDurationEvent ParticlesDuration = new ParticlesDurationEvent();
+
 }
 %}

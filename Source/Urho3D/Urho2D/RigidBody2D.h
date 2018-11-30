@@ -36,10 +36,14 @@ class PhysicsWorld2D;
 /// Rigid body type.
 enum BodyType2D
 {
-    BT_STATIC = b2_staticBody,
-    BT_KINEMATIC = b2_kinematicBody,
-    BT_DYNAMIC = b2_dynamicBody
+    BT_STATIC,
+    BT_KINEMATIC,
+    BT_DYNAMIC,
 };
+
+static_assert((unsigned)BT_STATIC == (unsigned)b2_staticBody, "Box2D flag missmatch");
+static_assert((unsigned)BT_KINEMATIC == (unsigned)b2_kinematicBody, "Box2D flag missmatch");
+static_assert((unsigned)BT_DYNAMIC == (unsigned)b2_dynamicBody, "Box2D flag missmatch");
 
 /// 2D rigid body component.
 class URHO3D_API RigidBody2D : public Component

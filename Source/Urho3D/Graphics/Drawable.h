@@ -107,6 +107,22 @@ struct URHO3D_API SourceBatch
     void* instancingData_{};
     /// %Geometry type.
     GeometryType geometryType_{GEOM_STATIC};
+
+    /// Equality comparison operator.
+    bool operator==(const SourceBatch& other) const
+    {
+        if (this == &other)
+            return true;
+        return distance_ == other.distance_ && geometry_ == other.geometry_ && material_ == other.material_ &&
+            worldTransform_ == other.worldTransform_ && numWorldTransforms_ == other.numWorldTransforms_ &&
+            instancingData_ == other.instancingData_ && geometryType_ == other.geometryType_;
+    }
+
+    /// Inequality comparison operator.
+    bool operator!=(const SourceBatch& other) const
+    {
+        return !(*this == other);
+    }
 };
 
 /// Base class for visible components.
