@@ -21,6 +21,7 @@
 //
 
 #include <Urho3D/Urho3DAll.h>
+#include <CLI11/CLI11.hpp>
 #include <Toolbox/SystemUI/Gizmo.h>
 #include <ctime>
 #include <cstdio>
@@ -46,6 +47,7 @@ public:
     float lookSensitivity_ = 1.0f;
     Gizmo gizmo_;
     bool showHelp_ = false;
+    std::string assetFile_;
 
     explicit AssetViewer(Context* context)
         : Application(context), gizmo_(context)
@@ -64,7 +66,7 @@ public:
         engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
         engineParameters_[EP_WINDOW_RESIZABLE] = true;
 
-        
+        GetCommandLineParser().add_option("asset", assetFile_, "Asset file to be opened on application startup.");
     }
 
     void Start() override
@@ -95,8 +97,8 @@ public:
         SubscribeToEvent(E_UPDATE, std::bind(&AssetViewer::OnUpdate, this, _2));
         SubscribeToEvent(E_DROPFILE, std::bind(&AssetViewer::OnFileDrop, this, _2));
 
-        for (const auto& arg: GetArguments())
-            LoadFile(arg);
+        if (!assetFile_.empty())
+            LoadFile(assetFile_.c_str());
     }
 
     void OnUpdate(VariantMap& args)
