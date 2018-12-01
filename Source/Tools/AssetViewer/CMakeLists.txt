@@ -24,8 +24,12 @@ if (NOT URHO3D_SYSTEMUI)
     return ()
 endif ()
 
+if (NOT URHO3D_WIN32_CONSOLE)
+    set (TARGET_TYPE WIN32)
+endif ()
+
 file (GLOB SOURCE_FILES *.cpp *.h)
-add_executable (AssetViewer WIN32 ${SOURCE_FILES})
+add_executable (AssetViewer ${TARGET_TYPE} ${SOURCE_FILES})
 target_link_libraries(AssetViewer Toolbox Urho3D)
 add_dependencies(AssetViewer AssetImporter)
 install(TARGETS AssetViewer RUNTIME DESTINATION ${DEST_TOOLS_DIR})
