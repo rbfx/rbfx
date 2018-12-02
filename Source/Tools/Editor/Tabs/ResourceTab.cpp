@@ -20,9 +20,16 @@
 // THE SOFTWARE.
 //
 
+#include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Graphics/Material.h>
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/Graphics/Octree.h>
+
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <Toolbox/IO/ContentUtilities.h>
 #include <SDL/SDL_clipboard.h>
+
 #include "EditorEvents.h"
 #include "Assets/Inspector/MaterialInspector.h"
 #include "Tabs/Scene/SceneTab.h"

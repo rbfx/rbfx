@@ -23,7 +23,6 @@
 #pragma once
 
 
-#include <Urho3D/Urho3DAll.h>
 #include <Toolbox/Common/UndoManager.h>
 #include "Tabs/BaseResourceTab.h"
 #include "Tabs/UI/RootUIElement.h"

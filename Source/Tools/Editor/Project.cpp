@@ -23,8 +23,10 @@
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Graphics/Graphics.h>
+#include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Resource/ResourceEvents.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Tabs/ConsoleTab.h>
 #include <Tabs/ResourceTab.h>

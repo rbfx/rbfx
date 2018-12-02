@@ -23,6 +23,17 @@
 #include <windows.h>
 #endif
 
+#include <Urho3D/Engine/EngineDefs.h>
+#include <Urho3D/Engine/EngineEvents.h>
+#include <Urho3D/Core/CoreEvents.h>
+#include <Urho3D/Core/WorkQueue.h>
+#include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/SystemUI/SystemUI.h>
+#include <Urho3D/SystemUI/Console.h>
+#include <Urho3D/LibraryInfo.h>
+
 #include <CLI11/CLI11.hpp>
 #include <ImGui/imgui.h>
 #include <ImGui/imgui_stdlib.h>
@@ -49,7 +60,7 @@
 
 using namespace ui::litterals;
 
-URHO3D_DEFINE_APPLICATION_MAIN(Editor);
+URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::Editor);
 
 
 namespace Urho3D
