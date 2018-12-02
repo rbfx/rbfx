@@ -49,15 +49,15 @@ struct CachedInterfacePtr
 
         if (interfaceInstance_ != instance)
         {
-            if (T* interface = dynamic_cast<T*>(instance))
+            if (T* interfacePtr = dynamic_cast<T*>(instance))
             {
                 interfaceInstance_ = instance;
-                interface_ = interface;
+                interface_ = interfacePtr;
             }
         }
     }
 
-    operator bool()
+    operator bool() const
     {
         return !interfaceInstance_.Expired() && interface_ != nullptr;
     }
