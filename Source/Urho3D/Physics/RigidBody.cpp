@@ -1,1049 +1,1191 @@
-//
-// Copyright (c) 2008-2018 the Urho3D project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
-
-#include "../Precompiled.h"
-
-#include "../Core/Context.h"
-#include "../Core/Profiler.h"
-#include "../IO/Log.h"
-#include "../IO/MemoryBuffer.h"
-#include "../Physics/CollisionShape.h"
-#include "../Physics/Constraint.h"
-#include "../Physics/PhysicsUtils.h"
 #include "../Physics/PhysicsWorld.h"
+#include "../Physics/CollisionShape.h"
 #include "../Physics/RigidBody.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/ResourceEvents.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
-#include "../Scene/SmoothedTransform.h"
+#include "../Core/Context.h"
+#include "../Graphics/Model.h"
+#include "IO/Log.h"
+#include "Scene/Scene.h"
+#include "Scene/Node.h"
+#include "dMatrix.h"
+#include "Newton.h"
+#include "NewtonDebugDrawing.h"
+#include "UrhoNewtonConversions.h"
+#include "Scene/SceneEvents.h"
+#include "Engine/Engine.h"
+#include "Core/Profiler.h"
+#include "Core/Object.h"
+#include "dQuaternion.h"
+#include "Constraint.h"
+#include "Resource/ResourceCache.h"
+#include "Graphics/DebugRenderer.h"
 
-#include <Bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
-#include <Bullet/BulletDynamics/Dynamics/btRigidBody.h>
-#include <Bullet/BulletCollision/CollisionShapes/btCompoundShape.h>
 
-namespace Urho3D
-{
+namespace Urho3D {
 
-static const float DEFAULT_MASS = 0.0f;
-static const float DEFAULT_FRICTION = 0.5f;
-static const float DEFAULT_RESTITUTION = 0.0f;
-static const float DEFAULT_ROLLING_FRICTION = 0.0f;
-static const unsigned DEFAULT_COLLISION_LAYER = 0x1;
-static const unsigned DEFAULT_COLLISION_MASK = M_MAX_UNSIGNED;
 
-static const char* collisionEventModeNames[] =
-{
-    "Never",
-    "When Active",
-    "Always",
-    nullptr
-};
 
-extern const char* PHYSICS_CATEGORY;
 
-RigidBody::RigidBody(Context* context) :
-    Component(context),
-    gravityOverride_(Vector3::ZERO),
-    centerOfMass_(Vector3::ZERO),
-    mass_(DEFAULT_MASS),
-    collisionLayer_(DEFAULT_COLLISION_LAYER),
-    collisionMask_(DEFAULT_COLLISION_MASK),
-    collisionEventMode_(COLLISION_ACTIVE),
-    lastPosition_(Vector3::ZERO),
-    lastRotation_(Quaternion::IDENTITY),
-    kinematic_(false),
-    trigger_(false),
-    useGravity_(true),
-    readdBody_(false),
-    inWorld_(false),
-    enableMassUpdate_(true),
-    hasSimulated_(false)
-{
-    compoundShape_ = new btCompoundShape();
-    shiftedCompoundShape_ = new btCompoundShape();
-}
 
-RigidBody::~RigidBody()
-{
-    ReleaseBody();
 
-    if (physicsWorld_)
-        physicsWorld_->RemoveRigidBody(this);
-}
-
-void RigidBody::RegisterObject(Context* context)
-{
-    context->RegisterFactory<RigidBody>(PHYSICS_CATEGORY);
-
-    URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Physics Rotation", GetRotation, SetRotation, Quaternion, Quaternion::IDENTITY, AM_FILE | AM_NOEDIT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Physics Position", GetPosition, SetPosition, Vector3, Vector3::ZERO, AM_FILE | AM_NOEDIT);
-    URHO3D_ATTRIBUTE_EX("Mass", float, mass_, MarkBodyDirty, DEFAULT_MASS, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Friction", GetFriction, SetFriction, float, DEFAULT_FRICTION, AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Anisotropic Friction", GetAnisotropicFriction, SetAnisotropicFriction, Vector3, Vector3::ONE,
-        AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Rolling Friction", GetRollingFriction, SetRollingFriction, float, DEFAULT_ROLLING_FRICTION, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Restitution", GetRestitution, SetRestitution, float, DEFAULT_RESTITUTION, AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Linear Velocity", GetLinearVelocity, SetLinearVelocity, Vector3, Vector3::ZERO,
-        AM_DEFAULT | AM_LATESTDATA);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Angular Velocity", GetAngularVelocity, SetAngularVelocity, Vector3, Vector3::ZERO, AM_FILE);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Linear Factor", GetLinearFactor, SetLinearFactor, Vector3, Vector3::ONE, AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Angular Factor", GetAngularFactor, SetAngularFactor, Vector3, Vector3::ONE, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Linear Damping", GetLinearDamping, SetLinearDamping, float, 0.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Angular Damping", GetAngularDamping, SetAngularDamping, float, 0.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Linear Rest Threshold", GetLinearRestThreshold, SetLinearRestThreshold, float, 0.8f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Angular Rest Threshold", GetAngularRestThreshold, SetAngularRestThreshold, float, 1.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Collision Layer", int, collisionLayer_, MarkBodyDirty, DEFAULT_COLLISION_LAYER, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Collision Mask", int, collisionMask_, MarkBodyDirty, DEFAULT_COLLISION_MASK, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Contact Threshold", GetContactProcessingThreshold, SetContactProcessingThreshold, float, BT_LARGE_FLOAT,
-        AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("CCD Radius", GetCcdRadius, SetCcdRadius, float, 0.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("CCD Motion Threshold", GetCcdMotionThreshold, SetCcdMotionThreshold, float, 0.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Network Angular Velocity", GetNetAngularVelocityAttr, SetNetAngularVelocityAttr, PODVector<unsigned char>,
-        Variant::emptyBuffer, AM_NET | AM_LATESTDATA | AM_NOEDIT);
-    URHO3D_ENUM_ATTRIBUTE_EX("Collision Event Mode", collisionEventMode_, MarkBodyDirty, collisionEventModeNames, COLLISION_ACTIVE, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Use Gravity", GetUseGravity, SetUseGravity, bool, true, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Is Kinematic", bool, kinematic_, MarkBodyDirty, false, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Is Trigger", bool, trigger_, MarkBodyDirty, false, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Gravity Override", GetGravityOverride, SetGravityOverride, Vector3, Vector3::ZERO, AM_DEFAULT);
-}
-
-void RigidBody::ApplyAttributes()
-{
-    if (readdBody_)
-        AddBodyToWorld();
-}
-
-void RigidBody::OnSetEnabled()
-{
-    bool enabled = IsEnabledEffective();
-
-    if (enabled && !inWorld_)
-        AddBodyToWorld();
-    else if (!enabled && inWorld_)
-        RemoveBodyFromWorld();
-}
-
-void RigidBody::getWorldTransform(btTransform& worldTrans) const
-{
-    // We may be in a pathological state where a RigidBody exists without a scene node when this callback is fired,
-    // so check to be sure
-    if (node_)
+    RigidBody::RigidBody(Context* context) : Component(context)
     {
-        lastPosition_ = node_->GetWorldPosition();
-        lastRotation_ = node_->GetWorldRotation();
-        worldTrans.setOrigin(ToBtVector3(lastPosition_ + lastRotation_ * centerOfMass_));
-        worldTrans.setRotation(ToBtQuaternion(lastRotation_));
+        SubscribeToEvent(E_NODEADDED, URHO3D_HANDLER(RigidBody, HandleNodeAdded));
+        SubscribeToEvent(E_NODEREMOVED, URHO3D_HANDLER(RigidBody, HandleNodeRemoved));
     }
 
-    hasSimulated_ = true;
-}
-
-void RigidBody::setWorldTransform(const btTransform& worldTrans)
-{
-    Quaternion newWorldRotation = ToQuaternion(worldTrans.getRotation());
-    Vector3 newWorldPosition = ToVector3(worldTrans.getOrigin()) - newWorldRotation * centerOfMass_;
-    RigidBody* parentRigidBody = nullptr;
-
-    // It is possible that the RigidBody component has been kept alive via a shared pointer,
-    // while its scene node has already been destroyed
-    if (node_)
+    RigidBody::~RigidBody()
     {
-        // If the rigid body is parented to another rigid body, can not set the transform immediately.
-        // In that case store it to PhysicsWorld for delayed assignment
-        Node* parent = node_->GetParent();
-        if (parent != GetScene() && parent)
-            parentRigidBody = parent->GetComponent<RigidBody>();
+        if (nextAngularVelocityNeeded_ || nextImpulseNeeded_ || nextLinearVelocityNeeded_ || nextSleepStateNeeded_)
+            URHO3D_LOGWARNING("Rigid Body Scheduled update did not get a chance to apply!  Consider saving the updates as attributes.");
 
-        if (!parentRigidBody)
-            ApplyWorldTransform(newWorldPosition, newWorldRotation);
+        
+    }
+
+    void RigidBody::RegisterObject(Context* context)
+    {
+        context->RegisterFactory<RigidBody>(DEF_PHYSICS_CATEGORY.CString());
+
+        URHO3D_COPY_BASE_ATTRIBUTES(Component);
+
+        
+        URHO3D_ACCESSOR_ATTRIBUTE("MassScale", GetMassScale, SetMassScale, float, 1.0f, AM_DEFAULT);
+        URHO3D_ACCESSOR_ATTRIBUTE("Linear Velocity", GetLinearVelocity, SetLinearVelocityHard, Vector3, Vector3::ZERO, AM_DEFAULT);
+        URHO3D_ACCESSOR_ATTRIBUTE("Angular Velocity", GetAngularVelocity, SetAngularVelocity, Vector3, Vector3::ZERO, AM_DEFAULT);
+        URHO3D_ACCESSOR_ATTRIBUTE("Continuous Collision", GetContinuousCollision, SetContinuousCollision, bool, false, AM_DEFAULT);
+        URHO3D_ACCESSOR_ATTRIBUTE("Linear Damping", GetLinearDamping, SetLinearDamping, float, 0.0f, AM_DEFAULT);
+        URHO3D_ACCESSOR_ATTRIBUTE("Angular Damping", GetAngularDamping, SetAngularDamping, float, 0.0f, AM_DEFAULT);
+        URHO3D_ACCESSOR_ATTRIBUTE("Interpolation Factor", GetInterpolationFactor, SetInterpolationFactor, float, 1.0f, AM_DEFAULT);
+        URHO3D_ACCESSOR_ATTRIBUTE("Trigger Mode", GetTriggerMode, SetTriggerMode, bool, false, AM_DEFAULT);
+        URHO3D_ACCESSOR_ATTRIBUTE("Collision Layer", GetCollisionLayer, SetCollisionLayer, unsigned, DEFAULT_COLLISION_LAYER, AM_DEFAULT);
+        URHO3D_ACCESSOR_ATTRIBUTE("Collision Mask", GetCollisionLayerMask, SetCollisionLayerMask, unsigned, DEFAULT_COLLISION_MASK, AM_DEFAULT);
+        URHO3D_ACCESSOR_ATTRIBUTE("No Collide Override", GetNoCollideOverride, SetNoCollideOverride, bool, false, AM_DEFAULT);
+        URHO3D_ACCESSOR_ATTRIBUTE("Respond To Node Transform Change", GetRespondToNodeTransformChanges, SetRespondToNodeTransformChanges, bool, true, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("Collision Body Exceptions", VariantMap, collisionExceptions_, VariantMap(), AM_DEFAULT | AM_NOEDIT);
+        URHO3D_ATTRIBUTE("Generate Contacts", bool, generateContacts_, true, AM_DEFAULT);
+
+
+        URHO3D_ATTRIBUTE("Net Force", Vector3, netForce_, Vector3::ZERO, AM_DEFAULT | AM_NOEDIT);
+        URHO3D_ATTRIBUTE("Net Torque", Vector3, netTorque_, Vector3::ZERO, AM_DEFAULT | AM_NOEDIT);
+        URHO3D_ATTRIBUTE("Is Scene Root Body", bool, sceneRootBodyMode_, false, AM_DEFAULT | AM_NOEDIT);
+
+       
+
+    }
+
+
+    void RigidBody::SetMassScale(float massDensityScale)
+    {
+        if (massScale_ != massDensityScale) {
+            massScale_ = massDensityScale;
+            MarkDirty(true);
+        }
+    }
+   
+
+    Urho3D::Matrix3x4 RigidBody::GetPhysicsTransform(bool scaledPhysicsWorldFrame)
+    {
+        if(scaledPhysicsWorldFrame)
+            return Matrix3x4(physicsWorld_->SceneToPhysics_Domain(targetNodePos_), targetNodeRotation_, 1.0f);
         else
-        {
-            DelayedWorldTransform delayed;
-            delayed.rigidBody_ = this;
-            delayed.parentRigidBody_ = parentRigidBody;
-            delayed.worldPosition_ = newWorldPosition;
-            delayed.worldRotation_ = newWorldRotation;
-            physicsWorld_->AddDelayedWorldTransform(delayed);
-        }
-
-        MarkNetworkUpdate();
+            return Matrix3x4(targetNodePos_, targetNodeRotation_, 1.0f);
     }
 
-    hasSimulated_ = true;
-}
-
-void RigidBody::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
-{
-    if (debug && physicsWorld_ && body_ && IsEnabledEffective())
+    Urho3D::Vector3 RigidBody::GetPhysicsPosition(bool scaledPhysicsWorldFrame /*= false*/)
     {
-        physicsWorld_->SetDebugRenderer(debug);
-        physicsWorld_->SetDebugDepthTest(depthTest);
-
-        btDiscreteDynamicsWorld* world = physicsWorld_->GetWorld();
-        world->debugDrawObject(body_->getWorldTransform(), shiftedCompoundShape_.Get(), IsActive() ? btVector3(1.0f, 1.0f, 1.0f) :
-            btVector3(0.0f, 1.0f, 0.0f));
-
-        physicsWorld_->SetDebugRenderer(nullptr);
-    }
-}
-
-void RigidBody::SetMass(float mass)
-{
-    mass = Max(mass, 0.0f);
-
-    if (mass != mass_)
-    {
-        mass_ = mass;
-        AddBodyToWorld();
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetPosition(const Vector3& position)
-{
-    if (body_)
-    {
-        btTransform& worldTrans = body_->getWorldTransform();
-        worldTrans.setOrigin(ToBtVector3(position + ToQuaternion(worldTrans.getRotation()) * centerOfMass_));
-
-        // When forcing the physics position, set also interpolated position so that there is no jitter
-        // When not inside the simulation loop, this may lead to erratic movement of parented rigidbodies
-        // so skip in that case. Exception made before first simulation tick so that interpolation position
-        // of e.g. instantiated prefabs will be correct from the start
-        if (!hasSimulated_ || physicsWorld_->IsSimulating())
-        {
-            btTransform interpTrans = body_->getInterpolationWorldTransform();
-            interpTrans.setOrigin(worldTrans.getOrigin());
-            body_->setInterpolationWorldTransform(interpTrans);
-        }
-
-        Activate();
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetRotation(const Quaternion& rotation)
-{
-    if (body_)
-    {
-        Vector3 oldPosition = GetPosition();
-        btTransform& worldTrans = body_->getWorldTransform();
-        worldTrans.setRotation(ToBtQuaternion(rotation));
-        if (!centerOfMass_.Equals(Vector3::ZERO))
-            worldTrans.setOrigin(ToBtVector3(oldPosition + rotation * centerOfMass_));
-
-        if (!hasSimulated_ || physicsWorld_->IsSimulating())
-        {
-            btTransform interpTrans = body_->getInterpolationWorldTransform();
-            interpTrans.setRotation(worldTrans.getRotation());
-            if (!centerOfMass_.Equals(Vector3::ZERO))
-                interpTrans.setOrigin(worldTrans.getOrigin());
-            body_->setInterpolationWorldTransform(interpTrans);
-        }
-
-        body_->updateInertiaTensor();
-
-        Activate();
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetTransform(const Vector3& position, const Quaternion& rotation)
-{
-    if (body_)
-    {
-        btTransform& worldTrans = body_->getWorldTransform();
-        worldTrans.setRotation(ToBtQuaternion(rotation));
-        worldTrans.setOrigin(ToBtVector3(position + rotation * centerOfMass_));
-
-        if (!hasSimulated_ || physicsWorld_->IsSimulating())
-        {
-            btTransform interpTrans = body_->getInterpolationWorldTransform();
-            interpTrans.setOrigin(worldTrans.getOrigin());
-            interpTrans.setRotation(worldTrans.getRotation());
-            body_->setInterpolationWorldTransform(interpTrans);
-        }
-
-        body_->updateInertiaTensor();
-
-        Activate();
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetLinearVelocity(const Vector3& velocity)
-{
-    if (body_)
-    {
-        body_->setLinearVelocity(ToBtVector3(velocity));
-        if (velocity != Vector3::ZERO)
-            Activate();
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetLinearFactor(const Vector3& factor)
-{
-    if (body_)
-    {
-        body_->setLinearFactor(ToBtVector3(factor));
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetLinearRestThreshold(float threshold)
-{
-    if (body_)
-    {
-        body_->setSleepingThresholds(threshold, body_->getAngularSleepingThreshold());
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetLinearDamping(float damping)
-{
-    if (body_)
-    {
-        body_->setDamping(damping, body_->getAngularDamping());
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetAngularVelocity(const Vector3& velocity)
-{
-    if (body_)
-    {
-        body_->setAngularVelocity(ToBtVector3(velocity));
-        if (velocity != Vector3::ZERO)
-            Activate();
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetAngularFactor(const Vector3& factor)
-{
-    if (body_)
-    {
-        body_->setAngularFactor(ToBtVector3(factor));
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetAngularRestThreshold(float threshold)
-{
-    if (body_)
-    {
-        body_->setSleepingThresholds(body_->getLinearSleepingThreshold(), threshold);
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetAngularDamping(float damping)
-{
-    if (body_)
-    {
-        body_->setDamping(body_->getLinearDamping(), damping);
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetFriction(float friction)
-{
-    if (body_)
-    {
-        body_->setFriction(friction);
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetAnisotropicFriction(const Vector3& friction)
-{
-    if (body_)
-    {
-        body_->setAnisotropicFriction(ToBtVector3(friction));
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetRollingFriction(float friction)
-{
-    if (body_)
-    {
-        body_->setRollingFriction(friction);
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetRestitution(float restitution)
-{
-    if (body_)
-    {
-        body_->setRestitution(restitution);
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetContactProcessingThreshold(float threshold)
-{
-    if (body_)
-    {
-        body_->setContactProcessingThreshold(threshold);
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetCcdRadius(float radius)
-{
-    radius = Max(radius, 0.0f);
-    if (body_)
-    {
-        body_->setCcdSweptSphereRadius(radius);
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetCcdMotionThreshold(float threshold)
-{
-    threshold = Max(threshold, 0.0f);
-    if (body_)
-    {
-        body_->setCcdMotionThreshold(threshold);
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetUseGravity(bool enable)
-{
-    if (enable != useGravity_)
-    {
-        useGravity_ = enable;
-        UpdateGravity();
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetGravityOverride(const Vector3& gravity)
-{
-    if (gravity != gravityOverride_)
-    {
-        gravityOverride_ = gravity;
-        UpdateGravity();
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetKinematic(bool enable)
-{
-    if (enable != kinematic_)
-    {
-        kinematic_ = enable;
-        AddBodyToWorld();
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetTrigger(bool enable)
-{
-    if (enable != trigger_)
-    {
-        trigger_ = enable;
-        AddBodyToWorld();
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetCollisionLayer(unsigned layer)
-{
-    if (layer != collisionLayer_)
-    {
-        collisionLayer_ = layer;
-        AddBodyToWorld();
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetCollisionMask(unsigned mask)
-{
-    if (mask != collisionMask_)
-    {
-        collisionMask_ = mask;
-        AddBodyToWorld();
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetCollisionLayerAndMask(unsigned layer, unsigned mask)
-{
-    if (layer != collisionLayer_ || mask != collisionMask_)
-    {
-        collisionLayer_ = layer;
-        collisionMask_ = mask;
-        AddBodyToWorld();
-        MarkNetworkUpdate();
-    }
-}
-
-void RigidBody::SetCollisionEventMode(CollisionEventMode mode)
-{
-    collisionEventMode_ = mode;
-    MarkNetworkUpdate();
-}
-
-void RigidBody::ApplyForce(const Vector3& force)
-{
-    if (body_ && force != Vector3::ZERO)
-    {
-        Activate();
-        body_->applyCentralForce(ToBtVector3(force));
-    }
-}
-
-void RigidBody::ApplyForce(const Vector3& force, const Vector3& position)
-{
-    if (body_ && force != Vector3::ZERO)
-    {
-        Activate();
-        body_->applyForce(ToBtVector3(force), ToBtVector3(position - centerOfMass_));
-    }
-}
-
-void RigidBody::ApplyTorque(const Vector3& torque)
-{
-    if (body_ && torque != Vector3::ZERO)
-    {
-        Activate();
-        body_->applyTorque(ToBtVector3(torque));
-    }
-}
-
-void RigidBody::ApplyImpulse(const Vector3& impulse)
-{
-    if (body_ && impulse != Vector3::ZERO)
-    {
-        Activate();
-        body_->applyCentralImpulse(ToBtVector3(impulse));
-    }
-}
-
-void RigidBody::ApplyImpulse(const Vector3& impulse, const Vector3& position)
-{
-    if (body_ && impulse != Vector3::ZERO)
-    {
-        Activate();
-        body_->applyImpulse(ToBtVector3(impulse), ToBtVector3(position - centerOfMass_));
-    }
-}
-
-void RigidBody::ApplyTorqueImpulse(const Vector3& torque)
-{
-    if (body_ && torque != Vector3::ZERO)
-    {
-        Activate();
-        body_->applyTorqueImpulse(ToBtVector3(torque));
-    }
-}
-
-void RigidBody::ResetForces()
-{
-    if (body_)
-        body_->clearForces();
-}
-
-void RigidBody::Activate()
-{
-    if (body_ && mass_ > 0.0f)
-        body_->activate(true);
-}
-
-void RigidBody::ReAddBodyToWorld()
-{
-    if (body_ && inWorld_)
-        AddBodyToWorld();
-}
-
-void RigidBody::DisableMassUpdate()
-{
-    enableMassUpdate_ = false;
-}
-
-void RigidBody::EnableMassUpdate()
-{
-    if (!enableMassUpdate_)
-    {
-        enableMassUpdate_ = true;
-        UpdateMass();
-    }
-}
-
-Vector3 RigidBody::GetPosition() const
-{
-    if (body_)
-    {
-        const btTransform& transform = body_->getWorldTransform();
-        return ToVector3(transform.getOrigin()) - ToQuaternion(transform.getRotation()) * centerOfMass_;
-    }
-    else
-        return Vector3::ZERO;
-}
-
-Quaternion RigidBody::GetRotation() const
-{
-    return body_ ? ToQuaternion(body_->getWorldTransform().getRotation()) : Quaternion::IDENTITY;
-}
-
-Vector3 RigidBody::GetLinearVelocity() const
-{
-    return body_ ? ToVector3(body_->getLinearVelocity()) : Vector3::ZERO;
-}
-
-Vector3 RigidBody::GetLinearFactor() const
-{
-    return body_ ? ToVector3(body_->getLinearFactor()) : Vector3::ZERO;
-}
-
-Vector3 RigidBody::GetVelocityAtPoint(const Vector3& position) const
-{
-    return body_ ? ToVector3(body_->getVelocityInLocalPoint(ToBtVector3(position - centerOfMass_))) : Vector3::ZERO;
-}
-
-float RigidBody::GetLinearRestThreshold() const
-{
-    return body_ ? body_->getLinearSleepingThreshold() : 0.0f;
-}
-
-float RigidBody::GetLinearDamping() const
-{
-    return body_ ? body_->getLinearDamping() : 0.0f;
-}
-
-Vector3 RigidBody::GetAngularVelocity() const
-{
-    return body_ ? ToVector3(body_->getAngularVelocity()) : Vector3::ZERO;
-}
-
-Vector3 RigidBody::GetAngularFactor() const
-{
-    return body_ ? ToVector3(body_->getAngularFactor()) : Vector3::ZERO;
-}
-
-float RigidBody::GetAngularRestThreshold() const
-{
-    return body_ ? body_->getAngularSleepingThreshold() : 0.0f;
-}
-
-float RigidBody::GetAngularDamping() const
-{
-    return body_ ? body_->getAngularDamping() : 0.0f;
-}
-
-float RigidBody::GetFriction() const
-{
-    return body_ ? body_->getFriction() : 0.0f;
-}
-
-Vector3 RigidBody::GetAnisotropicFriction() const
-{
-    return body_ ? ToVector3(body_->getAnisotropicFriction()) : Vector3::ZERO;
-}
-
-float RigidBody::GetRollingFriction() const
-{
-    return body_ ? body_->getRollingFriction() : 0.0f;
-}
-
-float RigidBody::GetRestitution() const
-{
-    return body_ ? body_->getRestitution() : 0.0f;
-}
-
-float RigidBody::GetContactProcessingThreshold() const
-{
-    return body_ ? body_->getContactProcessingThreshold() : 0.0f;
-}
-
-float RigidBody::GetCcdRadius() const
-{
-    return body_ ? body_->getCcdSweptSphereRadius() : 0.0f;
-}
-
-float RigidBody::GetCcdMotionThreshold() const
-{
-    return body_ ? body_->getCcdMotionThreshold() : 0.0f;
-}
-
-bool RigidBody::IsActive() const
-{
-    return body_ ? body_->isActive() : false;
-}
-
-void RigidBody::GetCollidingBodies(PODVector<RigidBody*>& result) const
-{
-    if (physicsWorld_)
-        physicsWorld_->GetCollidingBodies(result, this);
-    else
-        result.Clear();
-}
-
-void RigidBody::ApplyWorldTransform(const Vector3& newWorldPosition, const Quaternion& newWorldRotation)
-{
-    // In case of holding an extra reference to the RigidBody, this could be called in a situation
-    // where node is already null
-    if (!node_ || !physicsWorld_)
-        return;
-
-    physicsWorld_->SetApplyingTransforms(true);
-
-    // Apply transform to the SmoothedTransform component instead of node transform if available
-    if (smoothedTransform_)
-    {
-        smoothedTransform_->SetTargetWorldPosition(newWorldPosition);
-        smoothedTransform_->SetTargetWorldRotation(newWorldRotation);
-        lastPosition_ = newWorldPosition;
-        lastRotation_ = newWorldRotation;
-    }
-    else
-    {
-        node_->SetWorldPosition(newWorldPosition);
-        node_->SetWorldRotation(newWorldRotation);
-        lastPosition_ = node_->GetWorldPosition();
-        lastRotation_ = node_->GetWorldRotation();
-    }
-
-    physicsWorld_->SetApplyingTransforms(false);
-}
-
-void RigidBody::UpdateMass()
-{
-    if (!body_ || !enableMassUpdate_)
-        return;
-
-    btTransform principal;
-    principal.setRotation(btQuaternion::getIdentity());
-    principal.setOrigin(btVector3(0.0f, 0.0f, 0.0f));
-
-    // Calculate center of mass shift from all the collision shapes
-    auto numShapes = (unsigned)compoundShape_->getNumChildShapes();
-    if (numShapes)
-    {
-        PODVector<float> masses(numShapes);
-        for (unsigned i = 0; i < numShapes; ++i)
-        {
-            // The actual mass does not matter, divide evenly between child shapes
-            masses[i] = 1.0f;
-        }
-
-        btVector3 inertia(0.0f, 0.0f, 0.0f);
-        compoundShape_->calculatePrincipalAxisTransform(&masses[0], principal, inertia);
-    }
-
-    // Add child shapes to shifted compound shape with adjusted offset
-    while (shiftedCompoundShape_->getNumChildShapes())
-        shiftedCompoundShape_->removeChildShapeByIndex(shiftedCompoundShape_->getNumChildShapes() - 1);
-    for (unsigned i = 0; i < numShapes; ++i)
-    {
-        btTransform adjusted = compoundShape_->getChildTransform(i);
-        adjusted.setOrigin(adjusted.getOrigin() - principal.getOrigin());
-        shiftedCompoundShape_->addChildShape(adjusted, compoundShape_->getChildShape(i));
-    }
-
-    // If shifted compound shape has only one child with no offset/rotation, use the child shape
-    // directly as the rigid body collision shape for better collision detection performance
-    bool useCompound = !numShapes || numShapes > 1;
-    if (!useCompound)
-    {
-        const btTransform& childTransform = shiftedCompoundShape_->getChildTransform(0);
-        if (!ToVector3(childTransform.getOrigin()).Equals(Vector3::ZERO) ||
-            !ToQuaternion(childTransform.getRotation()).Equals(Quaternion::IDENTITY))
-            useCompound = true;
-    }
-
-    btCollisionShape* oldCollisionShape = body_->getCollisionShape();
-    body_->setCollisionShape(useCompound ? shiftedCompoundShape_.Get() : shiftedCompoundShape_->getChildShape(0));
-
-    // If we have one shape and this is a triangle mesh, we use a custom material callback in order to adjust internal edges
-    if (!useCompound && body_->getCollisionShape()->getShapeType() == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE &&
-        physicsWorld_->GetInternalEdge())
-        body_->setCollisionFlags(body_->getCollisionFlags() | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
-    else
-        body_->setCollisionFlags(body_->getCollisionFlags() & ~btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
-
-    // Reapply rigid body position with new center of mass shift
-    Vector3 oldPosition = GetPosition();
-    centerOfMass_ = ToVector3(principal.getOrigin());
-    SetPosition(oldPosition);
-
-    // Calculate final inertia
-    btVector3 localInertia(0.0f, 0.0f, 0.0f);
-    if (mass_ > 0.0f)
-        shiftedCompoundShape_->calculateLocalInertia(mass_, localInertia);
-    body_->setMassProps(mass_, localInertia);
-    body_->updateInertiaTensor();
-
-    // Reapply constraint positions for new center of mass shift
-    if (node_)
-    {
-        for (PODVector<Constraint*>::Iterator i = constraints_.Begin(); i != constraints_.End(); ++i)
-            (*i)->ApplyFrames();
-    }
-
-    // Readd body to world to reset Bullet collision cache if collision shape was changed (issue #2064)
-    if (inWorld_ && body_->getCollisionShape() != oldCollisionShape && physicsWorld_)
-    {
-        btDiscreteDynamicsWorld* world = physicsWorld_->GetWorld();
-        world->removeRigidBody(body_.Get());
-        world->addRigidBody(body_.Get(), (short)collisionLayer_, (short)collisionMask_);
-    }
-}
-
-void RigidBody::UpdateGravity()
-{
-    if (physicsWorld_ && body_)
-    {
-        btDiscreteDynamicsWorld* world = physicsWorld_->GetWorld();
-
-        int flags = body_->getFlags();
-        if (useGravity_ && gravityOverride_ == Vector3::ZERO)
-            flags &= ~BT_DISABLE_WORLD_GRAVITY;
+        if (scaledPhysicsWorldFrame)
+            return physicsWorld_->SceneToPhysics_Domain(targetNodePos_);
         else
-            flags |= BT_DISABLE_WORLD_GRAVITY;
-        body_->setFlags(flags);
+            return targetNodePos_;
+    }
 
-        if (useGravity_)
+
+
+
+
+    void RigidBody::SetLinearVelocity(const Vector3& worldVelocity, bool useForces)
+    {
+        if (newtonBody_)
         {
-            // If override vector is zero, use world's gravity
-            if (gravityOverride_ == Vector3::ZERO)
-                body_->setGravity(world->getGravity());
+            Activate();
+            if (useForces)
+            {
+                dVector curWorldVel;
+                NewtonBodyGetVelocity(newtonBody_, &curWorldVel[0]);
+
+                dVector worldVel = UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(worldVelocity)) - curWorldVel;
+                dVector bodyWorldPos;
+                NewtonBodyGetPosition(newtonBody_, &bodyWorldPos[0]);
+                NewtonBodyAddImpulse(newtonBody_, &worldVel[0], &bodyWorldPos[0], GSS<Engine>()->GetUpdateTimeGoalMs()*GetScene()->GetTimeScale()*0.001f);
+
+            }
             else
-                body_->setGravity(ToBtVector3(gravityOverride_));
+                NewtonBodySetVelocity(newtonBody_, &UrhoToNewton(nextLinearVelocity_)[0]);
         }
         else
-            body_->setGravity(btVector3(0.0f, 0.0f, 0.0f));
-    }
-}
-
-void RigidBody::SetNetAngularVelocityAttr(const PODVector<unsigned char>& value)
-{
-    float maxVelocity = physicsWorld_ ? physicsWorld_->GetMaxNetworkAngularVelocity() : DEFAULT_MAX_NETWORK_ANGULAR_VELOCITY;
-    MemoryBuffer buf(value);
-    SetAngularVelocity(buf.ReadPackedVector3(maxVelocity));
-}
-
-const PODVector<unsigned char>& RigidBody::GetNetAngularVelocityAttr() const
-{
-    float maxVelocity = physicsWorld_ ? physicsWorld_->GetMaxNetworkAngularVelocity() : DEFAULT_MAX_NETWORK_ANGULAR_VELOCITY;
-    attrBuffer_.Clear();
-    attrBuffer_.WritePackedVector3(GetAngularVelocity(), maxVelocity);
-    return attrBuffer_.GetBuffer();
-}
-
-void RigidBody::AddConstraint(Constraint* constraint)
-{
-    constraints_.Push(constraint);
-}
-
-void RigidBody::RemoveConstraint(Constraint* constraint)
-{
-    constraints_.Remove(constraint);
-    // A constraint being removed should possibly cause the object to eg. start falling, so activate
-    Activate();
-}
-
-void RigidBody::ReleaseBody()
-{
-    if (body_)
-    {
-        // Release all constraints which refer to this body
-        // Make a copy for iteration
-        PODVector<Constraint*> constraints = constraints_;
-        for (PODVector<Constraint*>::Iterator i = constraints.Begin(); i != constraints.End(); ++i)
-            (*i)->ReleaseConstraint();
-
-        RemoveBodyFromWorld();
-
-        body_.Reset();
-    }
-}
-
-void RigidBody::OnMarkedDirty(Node* node)
-{
-    // If node transform changes, apply it back to the physics transform. However, do not do this when a SmoothedTransform
-    // is in use, because in that case the node transform will be constantly updated into smoothed, possibly non-physical
-    // states; rather follow the SmoothedTransform target transform directly
-    // Also, for kinematic objects Bullet asks the position from us, so we do not need to apply ourselves
-    // (exception: initial setting of transform)
-    if ((!kinematic_ || !hasSimulated_) && (!physicsWorld_ || !physicsWorld_->IsApplyingTransforms()) && !smoothedTransform_)
-    {
-        // Physics operations are not safe from worker threads
-        Scene* scene = GetScene();
-        if (scene && scene->IsThreadedUpdate())
         {
-            scene->DelayedMarkedDirty(this);
+            nextLinearVelocity_ = physicsWorld_->SceneToPhysics_Domain(worldVelocity);
+            nextLinearVelocityUseForces_ = useForces;
+            nextLinearVelocityNeeded_ = true;
+        }
+    }
+
+
+    void RigidBody::SetLinearVelocityHard(const Vector3& worldVelocity)
+    {
+        SetLinearVelocity(worldVelocity, false);
+    }
+
+    void RigidBody::SetAngularVelocity(const Vector3& angularVelocity)
+    {
+        if (newtonBody_)
+        {
+            Activate();
+            NewtonBodySetOmega(newtonBody_, &UrhoToNewton(nextAngularVelocity_)[0]);
+        }
+        else
+        {
+            nextAngularVelocity_ = physicsWorld_->SceneToPhysics_Domain(angularVelocity);
+            nextAngularVelocityNeeded_ = true;
+        }
+    }
+
+    void RigidBody::SetLinearDamping(float dampingFactor)
+    {
+        dampingFactor = Urho3D::Clamp<float>(dampingFactor, 0.0f, dampingFactor);
+
+        if (linearDampening_ != dampingFactor) {
+            linearDampening_ = dampingFactor;
+        }
+    }
+
+    void RigidBody::SetAngularDamping(float angularDamping)
+    {
+        angularDamping = Urho3D::Clamp(angularDamping, 0.0f, angularDamping);
+
+        if (angularDamping != angularDamping) {
+            angularDampening_ = angularDamping;
+        }
+    }
+
+    void RigidBody::SetInternalLinearDamping(float damping)
+    {
+        if (linearDampeningInternal_ != damping) {
+            linearDampeningInternal_ = damping;
+
+            if (newtonBody_)
+            {
+                NewtonBodySetLinearDamping(newtonBody_, linearDampeningInternal_);
+            }
+            else
+            {
+                MarkDirty();
+            }
+        }
+    }
+
+    void RigidBody::SetInternalAngularDamping(float angularDamping)
+    {
+        angularDampeningInternal_ = Vector3(angularDamping, angularDamping, angularDamping);
+        if (newtonBody_)
+        {
+            NewtonBodySetAngularDamping(newtonBody_, &UrhoToNewton(angularDampeningInternal_)[0]);
+        }
+        else
+        {
+            MarkDirty();
+        }
+    }
+
+
+
+
+    void RigidBody::SetInterpolationFactor(float factor /*= 0.0f*/)
+    {
+        interpolationFactor_ = Clamp(factor, M_EPSILON, 1.0f);
+    }
+
+
+
+    void RigidBody::SetContinuousCollision(bool sweptCollision)
+    {
+        if (continuousCollision_ != sweptCollision) {
+            continuousCollision_ = sweptCollision;
+            if (newtonBody_) {
+                NewtonBodySetContinuousCollisionMode(newtonBody_, sweptCollision);
+            }
+        }
+    }
+
+
+    void RigidBody::SetAutoSleep(bool enableAutoSleep)
+    {
+        if (autoSleep_ != enableAutoSleep)
+        {
+            autoSleep_ = enableAutoSleep;
+            if (newtonBody_)
+            {
+                NewtonBodySetAutoSleep(newtonBody_, autoSleep_);
+            }
+        }
+    }
+
+    void RigidBody::Activate()
+    {
+        if (newtonBody_)
+        {
+            NewtonBodySetSleepState(newtonBody_, false);
+        }
+        else
+        {
+            nextSleepStateNeeded_ = true;
+            nextSleepState_ = false;
+        }
+    }
+
+    void RigidBody::DeActivate()
+    {
+        if (newtonBody_)
+        {
+            NewtonBodySetSleepState(newtonBody_, true);
+        }
+        else
+        {
+            nextSleepStateNeeded_ = true;
+            nextSleepState_ = true;
+        }
+    }
+
+    void RigidBody::SetIsSceneRootBody(bool enable)
+    {
+        if (sceneRootBodyMode_ != enable) {
+            sceneRootBodyMode_ = enable;
+            MarkDirty(true);
+        }
+    }
+
+    void RigidBody::DrawDebugGeometry(DebugRenderer* debug, bool depthTest, bool showAABB /*= true*/, bool showCollisionMesh /*= true*/, bool showCenterOfMass /*= true*/, bool showContactForces /*= true*/)
+    {
+        Component::DrawDebugGeometry(debug, depthTest);
+        if (newtonBody_) {
+            if (showAABB)
+            {
+                    dMatrix matrix;
+                    dVector p0(0.0f);
+                    dVector p1(0.0f);
+
+                    NewtonBodyGetMatrix(newtonBody_, &matrix[0][0]);
+                    NewtonCollisionCalculateAABB(GetEffectiveNewtonCollision(), &matrix[0][0], &p0[0], &p1[0]);
+
+
+                    Vector3 min = physicsWorld_->PhysicsToScene_Domain(NewtonToUrhoVec3(p0));
+                    Vector3 max = physicsWorld_->PhysicsToScene_Domain(NewtonToUrhoVec3(p1));
+                    BoundingBox box(min, max);
+                    debug->AddBoundingBox(box, Color::YELLOW, depthTest, false);
+
+            }
+            if (showCollisionMesh) NewtonDebug_BodyDrawCollision(physicsWorld_, newtonBody_, debug, depthTest);
+            if (showCenterOfMass) {
+
+
+                dMatrix matrix;
+                dVector com(0.0f);
+                dVector p0(0.0f);
+                dVector p1(0.0f);
+
+                NewtonCollision* collision = GetEffectiveNewtonCollision();
+                NewtonBodyGetCentreOfMass(newtonBody_, &com[0]);
+                NewtonBodyGetMatrix(newtonBody_, &matrix[0][0]);
+                NewtonCollisionCalculateAABB(collision, &matrix[0][0], &p0[0], &p1[0]);
+
+                Vector3 aabbMin = NewtonToUrhoVec3(p0);
+                Vector3 aabbMax = NewtonToUrhoVec3(p1);
+                float aabbSize = (aabbMax - aabbMin).Length()*0.1f;
+
+                dVector o(matrix.TransformVector(com));
+
+                dVector x(o + matrix.RotateVector(dVector(1.0f, 0.0f, 0.0f, 0.0f))*aabbSize);
+                debug->AddLine(physicsWorld_->PhysicsToScene_Domain(Vector3((o.m_x), (o.m_y), (o.m_z))), physicsWorld_->PhysicsToScene_Domain(Vector3((x.m_x), (x.m_y), (x.m_z))), Color::RED, depthTest);
+
+
+                dVector y(o + matrix.RotateVector(dVector(0.0f, 1.0f, 0.0f, 0.0f))*aabbSize);
+                debug->AddLine(physicsWorld_->PhysicsToScene_Domain(Vector3((o.m_x), (o.m_y), (o.m_z))), physicsWorld_->PhysicsToScene_Domain(Vector3((y.m_x), (y.m_y), (y.m_z))), Color::GREEN, depthTest);
+
+
+                dVector z(o + matrix.RotateVector(dVector(0.0f, 0.0f, 1.0f, 0.0f))*aabbSize);
+                debug->AddLine(physicsWorld_->PhysicsToScene_Domain(Vector3((o.m_x), (o.m_y), (o.m_z))), physicsWorld_->PhysicsToScene_Domain(Vector3((z.m_x), (z.m_y), (z.m_z))), Color::BLUE, depthTest);
+
+
+
+            }
+            if (showContactForces)
+            {
+
+                dFloat mass;
+                dFloat Ixx;
+                dFloat Iyy;
+                dFloat Izz;
+                NewtonBodyGetMass(newtonBody_, &mass, &Ixx, &Iyy, &Izz);
+
+                //draw normal forces in term of acceleration.
+                //this mean that two bodies with same shape but different mass will display the same force
+                if (mass > 0.0f) {
+                    float scaleFactor = 0.1f / mass;
+                    for (NewtonJoint* joint = NewtonBodyGetFirstContactJoint(newtonBody_); joint; joint = NewtonBodyGetNextContactJoint(newtonBody_, joint)) {
+                        if (NewtonJointIsActive(joint)) {
+                            for (void* contact = NewtonContactJointGetFirstContact(joint); contact; contact = NewtonContactJointGetNextContact(joint, contact)) {
+                                dVector point(0.0f);
+                                dVector normal(0.0f);
+                                dVector tangentDir0(0.0f);
+                                dVector tangentDir1(0.0f);
+                                dVector contactForce(0.0f);
+                                NewtonMaterial* const material = NewtonContactGetMaterial(contact);
+
+                                NewtonMaterialGetContactForce(material, newtonBody_, &contactForce.m_x);
+                                NewtonMaterialGetContactPositionAndNormal(material, newtonBody_, &point.m_x, &normal.m_x);
+                                dVector normalforce(normal.Scale(contactForce.DotProduct3(normal)));
+                                dVector p0(point);
+                                dVector p1(point + normalforce.Scale(scaleFactor));
+
+                                debug->AddLine(physicsWorld_->PhysicsToScene_Domain(Vector3((p0.m_x), (p0.m_y), (p0.m_z))), physicsWorld_->PhysicsToScene_Domain(Vector3((p1.m_x), (p1.m_y), (p1.m_z))), Color::GRAY, depthTest);
+
+
+
+                                // these are the components of the tangents forces at the contact point, the can be display at the contact position point.
+                                NewtonMaterialGetContactTangentDirections(material, newtonBody_, &tangentDir0[0], &tangentDir1[0]);
+                                dVector tangentForce1(tangentDir0.Scale((contactForce.DotProduct3(tangentDir0)) * scaleFactor));
+                                dVector tangentForce2(tangentDir1.Scale((contactForce.DotProduct3(tangentDir1)) * scaleFactor));
+
+                                p1 = point + tangentForce1.Scale(scaleFactor);
+                                debug->AddLine(physicsWorld_->PhysicsToScene_Domain(Vector3((p0.m_x), (p0.m_y), (p0.m_z))), physicsWorld_->PhysicsToScene_Domain(Vector3((p1.m_x), (p1.m_y), (p1.m_z))), Color::GRAY, depthTest);
+
+
+                                p1 = point + tangentForce2.Scale(scaleFactor);
+                                debug->AddLine(physicsWorld_->PhysicsToScene_Domain(Vector3((p0.m_x), (p0.m_y), (p0.m_z))), physicsWorld_->PhysicsToScene_Domain(Vector3((p1.m_x), (p1.m_y), (p1.m_z))), Color::GRAY, depthTest);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    void RigidBody::MarkDirty(bool dirty)
+    {
+        needsRebuilt_ = dirty;
+
+    }
+
+    void RigidBody::MarkInternalTransformDirty(bool dirty)
+    {
+        transformDirty_ = dirty;
+    }
+
+    bool RigidBody::GetInternalTransformDirty()
+    {
+        return transformDirty_;
+    }
+
+
+    void RigidBody::OnSetEnabled()
+    {
+        if (IsEnabledEffective()) {
+            MarkDirty(true);//rebuild
+        }
+        else
+        {
+            freeBody();
+        }
+    }
+
+    Urho3D::RigidBodyContactEntry* RigidBody::GetCreateContactEntry(RigidBody* otherBody)
+    {
+        //look through existing
+        RigidBodyContactEntry* entry = contactEntries_[otherBody->GetID()];
+
+        if (!entry)
+        {
+
+
+            //find a good one to grab from the physics world pool - if none available - grow the pool.
+            int startingIdx = physicsWorld_->contactEntryPoolCurIdx_;
+            while (!physicsWorld_->contactEntryPool_[physicsWorld_->contactEntryPoolCurIdx_]->expired_) {
+
+                physicsWorld_->contactEntryPoolCurIdx_++;
+
+                if (physicsWorld_->contactEntryPoolCurIdx_ > physicsWorld_->contactEntryPool_.Size() - 1) {
+                    physicsWorld_->contactEntryPoolCurIdx_ = 0;
+                }
+                if (physicsWorld_->contactEntryPoolCurIdx_ == startingIdx)
+                {
+
+                    //grow the pool
+                    int prevSize = physicsWorld_->contactEntryPool_.Size();
+                    for (int i = 0; i < physicsWorld_->contactEntryPoolSize_; i++) {
+                        physicsWorld_->contactEntryPool_.Insert(physicsWorld_->contactEntryPool_.Size(), context_->CreateObject<RigidBodyContactEntry>());
+                    }
+                    URHO3D_LOGINFO("PhysicsWorld Contact Entry Pool Grow To: " + String(physicsWorld_->contactEntryPool_.Size()));
+
+                    physicsWorld_->contactEntryPoolCurIdx_ = prevSize;
+
+                }
+
+               
+                
+            }
+            entry = physicsWorld_->contactEntryPool_[physicsWorld_->contactEntryPoolCurIdx_];
+
+
+            //contactEntries_.InsertNew(otherBody->GetID(), newEntry);
+            contactEntries_.Insert(Pair<unsigned int, RigidBodyContactEntry*>(otherBody->GetID(), entry));
+
+        }
+
+        return entry;
+    }
+
+
+    void RigidBody::CleanContactEntries()
+    {
+        Vector<unsigned int> keys = contactEntries_.Keys();
+        for (int i = 0; i < keys.Size(); i++) {
+
+            if (contactEntries_[keys[i]]->expired_)
+                contactEntries_.Erase(keys[i]);
+        }
+    }
+
+    void RigidBody::calculateSceneDepth()
+    {
+        sceneDepth_ = 0;
+        Node* curNode = node_;
+        while (curNode != GetScene())
+        {
+            curNode = curNode->GetParent();
+            sceneDepth_++;
+        }
+    }
+
+    void RigidBody::freeBody()
+    {
+        if (newtonBody_ != nullptr) {
+            physicsWorld_->addToFreeQueue(newtonBody_);
+            NewtonBodySetUserData(newtonBody_, nullptr);
+            newtonBody_ = nullptr;
+        }
+
+
+        //also free the compound collision if there is one
+        if (effectiveCollision_)
+        {
+            physicsWorld_->addToFreeQueue(effectiveCollision_);
+            effectiveCollision_ = nullptr;
+        }
+    }
+
+
+    //this function looks scary - But it covers alot of ground.
+    void RigidBody::reBuildBody()
+    {
+        URHO3D_PROFILE_FUNCTION();
+
+        freeBody();
+        dMatrix finalInertia;
+        dVector finalCenterOfMass;
+        dMatrix identity = dGetIdentityMatrix();
+        newtonBody_ = NewtonCreateDynamicBody(physicsWorld_->GetNewtonWorld(), nullptr, &identity[0][0]);
+
+        for (int densityPass = 1; densityPass >= 0; densityPass--)
+        {
+
+            if (!IsEnabledEffective())
+                return;
+
+
+            //evaluate child nodes (+this node) and see if there are more collision shapes - if so create a compound collision.
+            PODVector<CollisionShape*> childCollisionShapes;
+
+            GetAloneCollisionShapes(childCollisionShapes, node_, true);
+
+
+            PODVector<CollisionShape*> filteredList;
+
+            //update member list of shapes.
+            collisionShapes_ = childCollisionShapes;
+
+
+            //filter out shapes that are not enabled.
+            for (CollisionShape* col : childCollisionShapes)
+            {
+                if (col->IsEnabledEffective() && col->GetNewtonCollision())
+                    filteredList += col;
+            }
+            childCollisionShapes = filteredList;
+
+
+            if (childCollisionShapes.Size())
+            {
+
+
+
+                NewtonCollision* resolvedCollision = nullptr;
+
+                if (effectiveCollision_) {
+                    NewtonDestroyCollision(effectiveCollision_);
+                    effectiveCollision_ = nullptr;
+                }
+
+
+                ///determine early on if a compound is going to be needed.
+                bool compoundNeeded = false;
+                float smallestDensity = M_LARGE_VALUE;
+                for (CollisionShape* col : childCollisionShapes)
+                {
+                    if (col->IsCompound())
+                        compoundNeeded = true;
+
+
+                    if (col->GetDensity() < smallestDensity)
+                        smallestDensity = col->GetDensity();
+                }
+                compoundNeeded |= (childCollisionShapes.Size() > 1);
+
+
+
+
+                if (compoundNeeded) {
+                    if (sceneRootBodyMode_)
+                        effectiveCollision_ = NewtonCreateSceneCollision(physicsWorld_->GetNewtonWorld(), 0);//internally the same as a regular compond with some flags enabled..
+                    else
+                        effectiveCollision_ = NewtonCreateCompoundCollision(physicsWorld_->GetNewtonWorld(), 0);
+
+                    NewtonCompoundCollisionBeginAddRemove(effectiveCollision_);
+                }
+                float accumMass = 0.0f;
+
+                CollisionShape* firstCollisionShape = nullptr;
+                for (CollisionShape* colComp : childCollisionShapes)
+                {
+                    if (firstCollisionShape == nullptr)
+                        firstCollisionShape = colComp;
+
+                    //for each sub collision in the colComp
+                    const NewtonCollision* rootCollision = colComp->GetNewtonCollision();
+
+                    void* curSubNode = NewtonCompoundCollisionGetFirstNode((NewtonCollision*)rootCollision);
+                    NewtonCollision* curSubCollision = nullptr;
+                    if (curSubNode)
+                        curSubCollision = NewtonCompoundCollisionGetCollisionFromNode((NewtonCollision*)rootCollision, curSubNode);
+                    else
+                        curSubCollision = (NewtonCollision*)rootCollision;
+
+                    while (curSubCollision)
+                    {
+                        NewtonCollision* curCollisionInstance = NewtonCollisionCreateInstance(curSubCollision);
+                        curSubNode = NewtonCompoundCollisionGetNextNode((NewtonCollision*)rootCollision, curSubNode);//advance
+                        if (curSubNode)
+                            curSubCollision = NewtonCompoundCollisionGetCollisionFromNode((NewtonCollision*)rootCollision, curSubNode);
+                        else
+                            curSubCollision = nullptr;
+
+
+                        Quaternion colPhysworldRot = colComp->GetWorldRotation();
+                        Quaternion thisNodeWorldRot = node_->GetWorldRotation();
+                        Quaternion colRotLocalToThisNode = thisNodeWorldRot.Inverse() * colPhysworldRot;
+
+                        //compute the relative vector from root node to collision
+                        Vector3 relativePos = (node_->GetRotation().Inverse()*(colComp->GetWorldPosition() - node_->GetWorldPosition()));
+
+                        //form final local matrix with physics world scaling applied.
+                        Matrix3x4 nodeWorldNoScale(node_->GetWorldTransform().Translation(), node_->GetWorldTransform().Rotation(), 1.0f);
+                        Matrix3x4 colWorldNoScale(colComp->GetWorldTransform().Translation(), colComp->GetWorldTransform().Rotation(), 1.0f);
+
+
+                        Matrix3x4 finalLocal = nodeWorldNoScale.Inverse() * colWorldNoScale;
+
+                        dMatrix localTransform = UrhoToNewton(Matrix3x4(physicsWorld_->SceneToPhysics_Domain(finalLocal.Translation()), colRotLocalToThisNode, 1.0f));
+
+
+                        //now determine scale to apply around the center of each sub shape.
+                        Vector3 scale = Vector3::ONE;
+                        if (colComp->GetInheritNodeScale())
+                        {
+                            scale = colComp->GetRotationOffset().Inverse() * colComp->GetNode()->GetWorldScale();
+                        }
+                        Vector3 shapeScale = colComp->GetScaleFactor();
+
+                        scale = scale * shapeScale;
+                        scale = physicsWorld_->SceneToPhysics_Domain(scale);
+
+                        dVector existingLocalScale;
+                        NewtonCollisionGetScale(curCollisionInstance, &existingLocalScale.m_x, &existingLocalScale.m_y, &existingLocalScale.m_z);
+
+
+                        float densityScaleFactor = 1.0f;
+                        //if we are in the first pass - scale the sub collision by the density.  so when we calculate the intertia matrix it will reflect the density of subshapes.
+                        //on the 2nd (final pass - scale as normal).
+                        if (densityPass)
+                            densityScaleFactor = colComp->GetDensity()/smallestDensity;
+
+                        NewtonCollisionSetScale(curCollisionInstance, densityScaleFactor*scale.x_*existingLocalScale.m_x, densityScaleFactor*scale.y_*existingLocalScale.m_y, densityScaleFactor*scale.z_*existingLocalScale.m_z);
+
+
+
+
+                        //take into account existing local matrix of the newton collision shape.
+                        dMatrix existingLocalMatrix;
+                        NewtonCollisionGetMatrix(curCollisionInstance, &existingLocalMatrix[0][0]);
+
+                        Vector3 subLocalPos = NewtonToUrhoVec3(existingLocalMatrix.m_posit);
+                        subLocalPos = (subLocalPos * Vector3(scale.x_*existingLocalScale.m_x, scale.y_*existingLocalScale.m_y, scale.z_*existingLocalScale.m_z));
+                        subLocalPos = colComp->GetRotationOffset() * subLocalPos;
+                        existingLocalMatrix.m_posit = UrhoToNewton(subLocalPos);
+
+
+                        localTransform = existingLocalMatrix * localTransform;
+                        NewtonCollisionSetMatrix(curCollisionInstance, &localTransform[0][0]);//set the collision matrix with translation and rotation data only.
+
+
+                        //calculate volume
+                        float vol = NewtonConvexCollisionCalculateVolume(curCollisionInstance);
+                        accumMass += vol * colComp->GetDensity();
+
+
+                        //end adding current shape.
+                        if (compoundNeeded) {
+
+                            if (sceneRootBodyMode_)
+                                NewtonSceneCollisionAddSubCollision(effectiveCollision_, curCollisionInstance);
+                            else
+                                NewtonCompoundCollisionAddSubCollision(effectiveCollision_, curCollisionInstance);
+
+                            NewtonDestroyCollision(curCollisionInstance);//free the temp collision that was used to build the compound.
+                        }
+                        else
+                            resolvedCollision = curCollisionInstance;
+
+
+                    }
+                }
+                if (compoundNeeded) {
+
+                    NewtonCompoundCollisionEndAddRemove(effectiveCollision_);
+
+                    resolvedCollision = effectiveCollision_;
+                }
+
+                effectiveCollision_ = resolvedCollision;
+
+
+                //create the body at node transform (with physics world scale applied)
+                Matrix3x4 worldTransform;
+
+                worldTransform.SetTranslation(physicsWorld_->SceneToPhysics_Domain(node_->GetWorldPosition()));
+                worldTransform.SetRotation((node_->GetWorldRotation()).RotationMatrix());
+
+                
+                //NewtonBody* body = NewtonCreateDynamicBody(physicsWorld_->GetNewtonWorld(), resolvedCollision, &UrhoToNewton(worldTransform)[0][0]);
+
+                NewtonBodySetCollision(newtonBody_, resolvedCollision);
+                NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(worldTransform)[0][0]);
+
+
+                targetNodeRotation_ = node_->GetWorldRotation();
+                targetNodePos_ = node_->GetWorldPosition();
+                SnapInterpolation();
+
+
+
+
+                mass_ = accumMass * massScale_;
+                if (sceneRootBodyMode_)
+                    mass_ = 0;
+
+                if (densityPass) {
+                    NewtonBodySetMassProperties(newtonBody_, mass_, resolvedCollision);
+
+                    //save the inertia matrix for 2nd pass.
+                
+                    NewtonBodyGetInertiaMatrix(newtonBody_, &finalInertia[0][0]);
+                    
+                    NewtonBodyGetCentreOfMass(newtonBody_, &finalCenterOfMass[0]);
+                }
+
+
+                
+
+               
+
+            }
+        }
+
+
+        Matrix4 inertiaMatrixUrho = NewtonToUrhoMat4(finalInertia);
+       // URHO3D_LOGINFO("Inertia Matrix:");
+        //URHO3D_LOGINFO(String(inertiaMatrixUrho));
+
+
+        //test if the inertia matrix is symetric.
+        //URHO3D_LOGINFO("Final Mass: " + String(mass_));
+
+
+
+        NewtonBodySetFullMassMatrix(newtonBody_, mass_, &finalInertia[0][0]);
+        NewtonBodySetCentreOfMass(newtonBody_, &finalCenterOfMass[0]);
+
+
+        NewtonBodySetMaterialGroupID(newtonBody_, 0);
+
+        NewtonBodySetUserData(newtonBody_, (void*)this);
+
+        NewtonBodySetContinuousCollisionMode(newtonBody_, continuousCollision_);
+
+        //ensure newton damping is 0 because we apply our own as a force.
+        NewtonBodySetLinearDamping(newtonBody_, linearDampeningInternal_);
+        NewtonBodySetAngularDamping(newtonBody_, &UrhoToNewton(angularDampeningInternal_)[0]);
+
+        //set auto sleep mode.
+        NewtonBodySetAutoSleep(newtonBody_, autoSleep_);
+
+
+        //assign callbacks
+        NewtonBodySetForceAndTorqueCallback(newtonBody_, Newton_ApplyForceAndTorqueCallback);
+        NewtonBodySetTransformCallback(newtonBody_, Newton_SetTransformCallback);
+        NewtonBodySetDestructorCallback(newtonBody_, Newton_DestroyBodyCallback);
+    }
+
+
+
+
+    void RigidBody::bakeForceAndTorque()
+    {
+
+    }
+
+    void RigidBody::updateInterpolatedTransform()
+    {
+        
+        interpolatedNodePos_ += (targetNodePos_ - interpolatedNodePos_)*interpolationFactor_;
+        interpolatedNodeRotation_ = interpolatedNodeRotation_.Nlerp(targetNodeRotation_, interpolationFactor_, true);
+    }
+
+
+    bool RigidBody::InterpolationWithinRestTolerance()
+    {
+        bool inTolerance = true;
+        inTolerance &= ( (targetNodePos_ - interpolatedNodePos_).Length() < M_EPSILON );
+        inTolerance &= ( (targetNodeRotation_ - interpolatedNodeRotation_).Angle() < M_EPSILON);
+
+        return inTolerance;
+    }
+
+    void RigidBody::SnapInterpolation()
+    {
+        interpolatedNodePos_ = targetNodePos_;
+        interpolatedNodeRotation_ = targetNodeRotation_;
+    }
+
+    void RigidBody::OnNodeSet(Node* node)
+    {
+        if (node)
+        {
+
+            //Auto-create a physics world on the scene if it does not yet exist.
+            physicsWorld_ = WeakPtr<PhysicsWorld>(GetScene()->GetOrCreateComponent<PhysicsWorld>());
+
+            physicsWorld_->addRigidBody(this);
+
+            node->AddListener(this);
+
+            SubscribeToEvent(node, E_NODETRANSFORMCHANGE, URHO3D_HANDLER(RigidBody, HandleNodeTransformChange));
+
+            calculateSceneDepth();
+            physicsWorld_->markRigidBodiesNeedSorted();
+
+            prevNode_ = node;
+        }
+        else
+        {
+
+            if (physicsWorld_)
+                physicsWorld_->removeRigidBody(this);
+
+            //#todo ?
+            ////remove any connected constraints.
+            //for (Constraint* constraint : connectedConstraints_) {
+            //    constraint->Remove();
+            //}
+
+
+
+            freeBody();
+            UnsubscribeFromEvent(E_NODETRANSFORMCHANGE);
+
+            prevNode_ = nullptr;
+        }
+
+    }
+
+    void RigidBody::OnSceneSet(Scene* scene)
+    {
+
+    }
+    void RigidBody::HandleNodeAdded(StringHash event, VariantMap& eventData)
+    {
+        Node* node = static_cast<Node*>(eventData[NodeAdded::P_NODE].GetPtr());
+        Node* newParent = static_cast<Node*>(eventData[NodeRemoved::P_PARENT].GetPtr());
+
+        if (node == node_)
+        {
+            RebuildPhysicsNodeTree(node);
+            calculateSceneDepth();
+            physicsWorld_->markRigidBodiesNeedSorted();
+        }
+    }
+
+    void RigidBody::HandleNodeRemoved(StringHash event, VariantMap& eventData)
+    {
+        Node* node = static_cast<Node*>(eventData[NodeRemoved::P_NODE].GetPtr());
+        if (node == node_)
+        {
+            Node* oldParent = static_cast<Node*>(eventData[NodeRemoved::P_PARENT].GetPtr());
+
+
+
+            if (oldParent)
+            {
+                RebuildPhysicsNodeTree(oldParent);
+            }
+            else
+            {
+                URHO3D_LOGINFO("should not happen");
+            }
+        }
+    }
+
+
+   
+
+    void RigidBody::HandleNodeTransformChange(StringHash event, VariantMap& eventData)
+    {
+        if (!respondToNodeTransformChange_)
             return;
+
+        RigidBody* parentRigidBody = node_->GetParentComponent<RigidBody>(true);
+        if (newtonBody_ && !parentRigidBody) {
+            //the node's transform has explictly been changed.  set the rigid body transform to the same transform.
+            Matrix3x4 mat(eventData[NodeTransformChange::P_NEW_POSITION].GetVector3(),
+                eventData[NodeTransformChange::P_NEW_ORIENTATION].GetQuaternion(),
+                Vector3::ONE);
+
+
+            MarkDirty(true);
+
         }
-
-        // Check if transform has changed from the last one set in ApplyWorldTransform()
-        Vector3 newPosition = node_->GetWorldPosition();
-        Quaternion newRotation = node_->GetWorldRotation();
-
-        if (!newRotation.Equals(lastRotation_))
+        else
         {
-            lastRotation_ = newRotation;
-            SetRotation(newRotation);
-        }
-        if (!newPosition.Equals(lastPosition_))
-        {
-            lastPosition_ = newPosition;
-            SetPosition(newPosition);
+            //handle case where node is child of other rigid body (part of compound).
+            PODVector<RigidBody*> parentRigBodies;
+            GetRootRigidBodies(parentRigBodies, node_, false);
+            parentRigBodies.Back()->MarkDirty();
+
         }
     }
-}
 
-void RigidBody::OnNodeSet(Node* node)
-{
-    if (node)
-        node->AddListener(this);
-}
 
-void RigidBody::OnSceneSet(Scene* scene)
-{
-    if (scene)
+
+    void RigidBody::applyDefferedActions()
     {
-        if (scene == node_)
-            URHO3D_LOGWARNING(GetTypeName() + " should not be created to the root scene node");
-
-        physicsWorld_ = scene->GetOrCreateComponent<PhysicsWorld>();
-        physicsWorld_->AddRigidBody(this);
-
-        AddBodyToWorld();
-    }
-    else
-    {
-        ReleaseBody();
-
-        if (physicsWorld_)
-            physicsWorld_->RemoveRigidBody(this);
-    }
-}
-
-void RigidBody::AddBodyToWorld()
-{
-    if (!physicsWorld_)
-        return;
-
-    URHO3D_PROFILE("AddBodyToWorld");
-
-    if (mass_ < 0.0f)
-        mass_ = 0.0f;
-
-    if (body_)
-        RemoveBodyFromWorld();
-    else
-    {
-        // Correct inertia will be calculated below
-        btVector3 localInertia(0.0f, 0.0f, 0.0f);
-        body_ = new btRigidBody(mass_, this, shiftedCompoundShape_.Get(), localInertia);
-        body_->setUserPointer(this);
-
-        // Check for existence of the SmoothedTransform component, which should be created by now in network client mode.
-        // If it exists, subscribe to its change events
-        smoothedTransform_ = GetComponent<SmoothedTransform>();
-        if (smoothedTransform_)
-        {
-            SubscribeToEvent(smoothedTransform_, E_TARGETPOSITION, URHO3D_HANDLER(RigidBody, HandleTargetPosition));
-            SubscribeToEvent(smoothedTransform_, E_TARGETROTATION, URHO3D_HANDLER(RigidBody, HandleTargetRotation));
-        }
-
-        // Check if CollisionShapes already exist in the node and add them to the compound shape.
-        // Do not update mass yet, but do it once all shapes have been added
-        PODVector<CollisionShape*> shapes;
-        node_->GetComponents<CollisionShape>(shapes);
-        for (PODVector<CollisionShape*>::Iterator i = shapes.Begin(); i != shapes.End(); ++i)
-            (*i)->NotifyRigidBody(false);
-
-        // Check if this node contains Constraint components that were waiting for the rigid body to be created, and signal them
-        // to create themselves now
-        PODVector<Constraint*> constraints;
-        node_->GetComponents<Constraint>(constraints);
-        for (PODVector<Constraint*>::Iterator i = constraints.Begin(); i != constraints.End(); ++i)
-            (*i)->CreateConstraint();
-    }
-
-    UpdateMass();
-    UpdateGravity();
-
-    int flags = body_->getCollisionFlags();
-    if (trigger_)
-        flags |= btCollisionObject::CF_NO_CONTACT_RESPONSE;
-    else
-        flags &= ~btCollisionObject::CF_NO_CONTACT_RESPONSE;
-    if (kinematic_)
-        flags |= btCollisionObject::CF_KINEMATIC_OBJECT;
-    else
-        flags &= ~btCollisionObject::CF_KINEMATIC_OBJECT;
-    body_->setCollisionFlags(flags);
-    body_->forceActivationState(kinematic_ ? DISABLE_DEACTIVATION : ISLAND_SLEEPING);
-
-    if (!IsEnabledEffective())
-        return;
-
-    btDiscreteDynamicsWorld* world = physicsWorld_->GetWorld();
-    world->addRigidBody(body_.Get(), (short)collisionLayer_, (short)collisionMask_);
-    inWorld_ = true;
-    readdBody_ = false;
-    hasSimulated_ = false;
-
-    if (mass_ > 0.0f)
+        //wake the body so it responds.
         Activate();
-    else
-    {
-        SetLinearVelocity(Vector3::ZERO);
-        SetAngularVelocity(Vector3::ZERO);
+
+        if (nextLinearVelocityNeeded_)
+        {
+            if (newtonBody_)
+            {
+                if (nextLinearVelocityUseForces_) {
+                    dVector curWorldVel;
+                    NewtonBodyGetVelocity(newtonBody_, &curWorldVel[0]);
+
+                    dVector worldVel = UrhoToNewton(nextLinearVelocity_) - curWorldVel;
+                    dVector bodyWorldPos;
+                    NewtonBodyGetPosition(newtonBody_, &bodyWorldPos[0]);
+                    NewtonBodyAddImpulse(newtonBody_, &worldVel[0], &bodyWorldPos[0], GSS<Engine>()->GetUpdateTimeGoalMs()*0.001f);
+                }
+                else
+                    NewtonBodySetVelocity(newtonBody_, &UrhoToNewton(nextLinearVelocity_)[0]);
+            }
+            nextLinearVelocityNeeded_ = false;
+        }
+        if (nextAngularVelocityNeeded_)
+        {
+            if (newtonBody_)
+            {
+                NewtonBodySetOmega(newtonBody_, &UrhoToNewton(nextAngularVelocity_)[0]);
+            }
+            nextAngularVelocityNeeded_ = false;
+        }
+        if (nextImpulseNeeded_)
+        {
+            if (newtonBody_) {
+                NewtonBodyAddImpulse(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(nextImpulseWorldVelocity_))[0], &UrhoToNewton(node_->LocalToWorld(nextImpulseLocalPos_))[0], GSS<Engine>()->GetUpdateTimeGoalMs()*0.001f);
+            }
+            nextImpulseNeeded_ = false;
+        }
+
+
+        if (nextSleepStateNeeded_) {
+
+            if (newtonBody_)
+            {
+                NewtonBodySetSleepState(newtonBody_, nextSleepState_);
+            }
+            nextSleepStateNeeded_ = false;
+        }
+
+
     }
-}
 
-void RigidBody::RemoveBodyFromWorld()
-{
-    if (physicsWorld_ && body_ && inWorld_)
+    void RigidBody::OnNodeSetEnabled(Node* node)
     {
-        btDiscreteDynamicsWorld* world = physicsWorld_->GetWorld();
-        world->removeRigidBody(body_.Get());
-        inWorld_ = false;
+        if (node == node_)
+        {
+            if (IsEnabledEffective()) {
+                MarkDirty(true);//rebuild
+            }
+            else
+            {
+                freeBody();
+            }
+        }
     }
-}
 
-void RigidBody::HandleTargetPosition(StringHash eventType, VariantMap& eventData)
-{
-    // Copy the smoothing target position to the rigid body
-    if (!physicsWorld_ || !physicsWorld_->IsApplyingTransforms())
-        SetPosition(static_cast<SmoothedTransform*>(GetEventSender())->GetTargetWorldPosition());
-}
+    void RigidBody::AddWorldForce(const Vector3& force)
+    {
+        AddWorldForce(force, Vector3::ZERO);
+    }
 
-void RigidBody::HandleTargetRotation(StringHash eventType, VariantMap& eventData)
+    void RigidBody::AddWorldForce(const Vector3& force, const Vector3& localPosition)
+    {
+        //float physScale = physicsWorld_->GetPhysicsScale();
+        netForce_ += force ; //forceScaled = force*(physScale^3)
+        bakeForceAndTorque();
+    }
+
+    void RigidBody::AddWorldTorque(const Vector3& torque)
+    {
+        //float physScale = physicsWorld_->GetPhysicsScale();
+        netTorque_ += torque; //torqueScaled = torque*(physScale^5).
+        bakeForceAndTorque();
+    }
+
+    void RigidBody::AddLocalForce(const Vector3& force)
+    {
+        AddWorldForce(node_->GetWorldRotation() * force);
+    }
+
+    void RigidBody::AddLocalForce(const Vector3& force, const Vector3& localPosition)
+    {
+        AddWorldForce(node_->GetWorldRotation() * force, localPosition);
+    }
+
+    void RigidBody::AddLocalTorque(const Vector3& torque)
+    {
+        AddWorldTorque(node_->GetWorldRotation() * torque);
+    }
+
+    void RigidBody::ResetForces()
+    {
+        netForce_ = Vector3(0, 0, 0);
+        netTorque_ = Vector3(0, 0, 0);
+        bakeForceAndTorque();
+    }
+
+    void RigidBody::AddImpulse(const Vector3& localPosition, const Vector3& targetVelocity)
+    {
+
+
+        if (newtonBody_) {
+            Activate();
+            NewtonBodyAddImpulse(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(targetVelocity))[0], &UrhoToNewton(node_->LocalToWorld(localPosition))[0], GSS<Engine>()->GetUpdateTimeGoalMs()*0.001f);
+        }
+        else
+        {
+            //schedule the impulse
+            nextImpulseNeeded_ = true;
+            nextImpulseLocalPos_ = localPosition;
+            nextImpulseWorldVelocity_ = targetVelocity;
+        }
+        
+    }
+
+    Vector3 RigidBody::GetNetForce()
+    {
+        return physicsWorld_->PhysicsToScene_Domain(netForce_);
+    }
+
+
+    Urho3D::Vector3 RigidBody::GetNetTorque()
+    {
+        return physicsWorld_->PhysicsToScene_Domain(netTorque_);
+    }
+
+    NewtonCollision* RigidBody::GetEffectiveNewtonCollision() const
+    {
+        if (effectiveCollision_)
+            return effectiveCollision_;
+
+        return nullptr;
+    }
+
+    Urho3D::Vector3 RigidBody::GetLinearVelocity(TransformSpace space /*= TS_WORLD*/) const
 {
-    // Copy the smoothing target rotation to the rigid body
-    if (!physicsWorld_ || !physicsWorld_->IsApplyingTransforms())
-        SetRotation(static_cast<SmoothedTransform*>(GetEventSender())->GetTargetWorldRotation());
-}
+        if (newtonBody_) {
+
+            dVector dVel;
+            NewtonBodyGetVelocity(newtonBody_, &dVel[0]);
+            Vector3 vel = physicsWorld_->PhysicsToScene_Domain(NewtonToUrhoVec3(dVel));
+
+            if (space == TS_WORLD)
+            {
+                return vel;
+            }
+            else if (space == TS_LOCAL)
+            {
+                return node_->WorldToLocal(vel);
+            }
+            else if (space == TS_PARENT)
+            {
+                return node_->GetParent()->WorldToLocal(vel);
+            }
+
+            return vel;
+        }
+        else
+            return Vector3::ZERO;
+    }
+
+    Urho3D::Vector3 RigidBody::GetAngularVelocity(TransformSpace space /*= TS_WORLD*/) const
+    {
+        if (newtonBody_) {
+            dVector dAngularVel;
+            NewtonBodyGetOmega(newtonBody_, &dAngularVel[0]);
+            Vector3 angularVel = physicsWorld_->PhysicsToScene_Domain(NewtonToUrhoVec3(dAngularVel));
+            if (space == TS_WORLD)
+            {
+                return angularVel;
+            }
+            else if(space == TS_LOCAL)
+            {
+                return node_->WorldToLocal(angularVel);
+            }
+            else if (space == TS_PARENT)
+            {
+                return node_->GetParent()->WorldToLocal(angularVel);
+            }
+            return angularVel;
+        }
+        else
+            return Vector3::ZERO;
+    }
+
+
+    Vector3 RigidBody::GetAcceleration()
+    {
+        if (newtonBody_) {
+            dVector dAcc;
+            NewtonBodyGetAcceleration(newtonBody_, &dAcc[0]);
+            Vector3 acc = physicsWorld_->PhysicsToScene_Domain(NewtonToUrhoVec3(dAcc));
+            return acc;
+        }
+        else
+            return Vector3::ZERO;
+    }
+
+    Vector3 RigidBody::GetCenterOfMassPosition()
+    {
+        dVector dPos;
+        NewtonBodyGetPosition(newtonBody_, &dPos[0]);
+        Vector3 pos = physicsWorld_->PhysicsToScene_Domain(NewtonToUrhoVec3(dPos));
+        return pos;
+    }
+
+    Quaternion RigidBody::GetCenterOfMassRotation()
+    {
+        dQuaternion quat;
+        NewtonBodyGetRotation(newtonBody_, &quat.m_q0);
+        return NewtonToUrhoQuat(quat);
+    }
+
+    void RigidBody::GetConnectedContraints(PODVector<Constraint*>& contraints)
+    {
+        contraints.Clear();
+        for (auto i = connectedConstraints_.Begin(); i != connectedConstraints_.End(); ++i)
+        {
+            contraints += *i;
+        }
+    }
+
+    Urho3D::PODVector<Constraint*> RigidBody::GetConnectedContraints()
+    {
+        PODVector<Constraint*> contraints;
+        GetConnectedContraints(contraints);
+        return contraints;
+    }
+
+
+
+    void RigidBody::ApplyTransform(float timestep)
+{
+        if (!newtonBody_)
+            return;
+
+        dVector pos;
+        dQuaternion quat;
+        NewtonBodyGetPosition(newtonBody_, &pos[0]);
+        NewtonBodyGetRotation(newtonBody_, &quat.m_q0);
+
+        bool enableTEvents = node_->GetEnableTransformEvents();
+        if(enableTEvents)
+            node_->SetEnableTransformEvents(false);
+
+
+
+        targetNodePos_ = physicsWorld_->PhysicsToScene_Domain(NewtonToUrhoVec3(pos));
+        targetNodeRotation_ = NewtonToUrhoQuat(quat);
+
+
+        updateInterpolatedTransform();
+
+        node_->SetWorldTransform(interpolatedNodePos_, interpolatedNodeRotation_);
+        node_->SetEnableTransformEvents(enableTEvents);
+    }
+
+
+    void RigidBody::GetForceAndTorque(Vector3& force, Vector3& torque)
+    {
+        URHO3D_PROFILE("GetForceAndTorque");
+
+        //basic velocity damping forces
+        Vector3 velocity = GetLinearVelocity(TS_WORLD);
+        Vector3 linearDampingForce = -velocity.Normalized()*(velocity.LengthSquared())*linearDampening_ * mass_;
+
+        if (linearDampingForce.Length() <= M_EPSILON)
+            linearDampingForce = Vector3::ZERO;
+
+
+        //basic angular damping forces
+        Vector3 angularVelocity = GetAngularVelocity(TS_WORLD);
+        Vector3 angularDampingTorque = -angularVelocity.Normalized()*(angularVelocity.LengthSquared())*angularDampening_ * mass_;
+
+        if (angularVelocity.Length() <= M_EPSILON)
+            angularDampingTorque = Vector3::ZERO;
+
+
+        force = linearDampingForce + netForce_;
+        torque = angularDampingTorque + netTorque_;
+
+        
+    }
 
 }

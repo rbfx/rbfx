@@ -21,7 +21,7 @@ else ()
 endif ()
 
 
-option("NEWTON_BUILD_SANDBOX_DEMOS" "generates demos projects" ON)
+option("NEWTON_BUILD_SANDBOX_DEMOS" "generates demos projects" OFF)
 option("NEWTON_BUILD_PROFILER" "build profiler" OFF)
 option("NEWTON_DOUBLE_PRECISION" "Generate double precision" OFF)
 option("NEWTON_STATIC_RUNTIME_LIBRARIES" "use windows static libraries" ON)
