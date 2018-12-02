@@ -1,0 +1,21 @@
+
+%token CONSTANT
+%token PRIVATE 
+%token INT 
+
+%expect 1
+
+%%
+class_member 
+	: PRIVATE  INT 
+	| modifier INT  CONSTANT 
+	;	
+
+modifier
+	: PRIVATE
+	;
+	
+	
+	
+	 
+			   

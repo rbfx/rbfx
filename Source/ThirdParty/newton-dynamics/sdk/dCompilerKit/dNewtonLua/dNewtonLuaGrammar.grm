@@ -1,0 +1,250 @@
+/* Copyright (c) <2003-2016> <Newton Game Dynamics>
+* 
+* This software is provided 'as-is', without any express or implied
+* warranty. In no event will the authors be held liable for any damages
+* arising from the use of this software.
+* 
+* Permission is granted to anyone to use this software for any purpose,
+* including commercial applications, and to alter it and redistribute it
+* freely
+*/
+
+/*
+ *------------------------------------------------------------------
+ *
+ * This grammar only have one shift reduce conflict, which is the standard dangling else in if-then-else of almost all high level programming languages.
+ * I resolve it in favor of shift as it is is the custom tradition for languages like C, C++, java and c#
+ *
+ *------------------------------------------------------------------
+ */
+
+ 
+%{
+// Newton Tool embedded Lua script Language
+// based of https://www.lua.org/manual/5.3/manual.html#9
+//
+
+#include "dNewtonLuaStdafx.h"
+#include "dNewtonLuaLex.h"
+#include "dNewtonLuaParcer.h"
+#include "dNewtonLuaCompiler.h"
+%}
+
+%union 
+{
+	class dUserVariable: public dDefualtUserVariable
+	{
+		public:
+		dUserVariable () 
+			:dDefualtUserVariable ()
+			,m_tokenList()
+			,m_nodeList()
+		{
+		}
+
+		dUserVariable (dCILInstr* const instruction) 
+			:dDefualtUserVariable ()
+			,m_tokenList()
+			,m_nodeList()
+		{
+			m_nodeList.Append (instruction->GetNode());
+		}
+		
+		dUserVariable (const dUserVariable& src) 
+			:dDefualtUserVariable (src)
+			,m_tokenList()
+			,m_nodeList()
+		{
+			src.m_tokenList.TranferDataToTarget (m_tokenList);
+			src.m_nodeList.TranferDataToTarget (m_nodeList);
+		}
+
+		dUserVariable& operator= (const dUserVariable& src)
+		{
+			dDefualtUserVariable& me = *this;
+			me = src;
+
+			src.m_nodeList.TranferDataToTarget (m_nodeList);
+			src.m_tokenList.TranferDataToTarget (m_tokenList);
+			return *this;
+		}
+		
+		dUserVariable (dToken token, const char* const text, int scannerLine, int scannerIndex)
+			:dDefualtUserVariable (token, text, scannerLine, scannerIndex)
+			,m_tokenList()
+			,m_nodeList()
+		{
+		}
+
+		mutable dList<dString> m_tokenList;
+		mutable dList<dCIL::dListNode*> m_nodeList;
+	};
+}
+
+
+
+%token            _AND
+%token            _BREAK
+%token            _DO
+%token            _ELSE
+%token            _ELSEIF
+%token            _END
+%token            _FALSE
+%token            _FOR
+%token            _FUNCTION
+%token            _GOTO
+%token            _IF
+%token            _IN
+%token            _LOCAL
+%token            _NIL
+%token            _NOT
+%token            _OR
+%token            _REPEAT
+%token            _RETURN
+%token            _THEN
+%token            _TRUE
+%token            _UNTIL
+%token            _WHILE
+%token            _LEFT_SHIFT
+%token            _RIGHT_SHIFT
+%token            _INTEGER_DIVIDE
+%token            _IDENTICAL
+%token            _DIFFERENT
+%token            _LEFT_EQUAL
+%token            _GREATHER_EQUAL
+%token            _DOUBLE_COLUMN
+%token            _DOUBLE_DOT
+%token            _TRIPLE_DOT
+%token            _INTEGER
+%token            _FLOAT
+%token            _LABEL
+%token            _STRING
+
+
+%right _ELSE _ELSEIF
+%right _IF
+%right '='
+%left _OR 
+%left _AND 
+%left _IDENTICAL _DIFFERENT _LEFT_EQUAL _GREATHER_EQUAL '>' '<'
+%left '|'
+%left '~'
+%left '&'
+%left _LEFT_SHIFT _RIGHT_SHIFT
+%left _DOUBLE_DOT
+%left '+' '-'
+%left '*' '/' '%' _INTEGER_DIVIDE
+%right _NOT '#'
+%left '^'
+
+%start chunk
+
+%%
+expression
+	: expression '+' expression	
+	| expression '-' expression	
+	| expression '*' expression		
+	| expression '/' expression	
+	| expression '%' expression	
+	| expression '^' expression	
+	| expression '>' expression		
+	| expression '<' expression	
+	| expression '|' expression 
+	| expression '~' expression	
+	| expression '&' expression	
+	| expression _IDENTICAL expression 
+	| expression _DIFFERENT expression 
+	| expression _OR expression	
+	| expression _AND expression
+	| expression _LEFT_EQUAL expression
+	| expression _GREATHER_EQUAL expression
+	| expression _LEFT_SHIFT expression
+	| expression _RIGHT_SHIFT expression
+	| expression _DOUBLE_DOT expression
+	| expression _INTEGER_DIVIDE expression
+	| '+' expression %prec '^'
+	| '-' expression %prec '^'
+	| '#' expression %prec '^'
+	| '~' expression %prec '^'
+	| '(' expression ')'
+	| functionCall
+	| _NIL
+	| _TRUE
+	| _FALSE
+	| _FLOAT
+	| _LABEL
+	| _STRING
+	| _INTEGER
+	;
+
+expressionList
+	: expression
+	| expressionList ',' expression
+	;
+
+namelist
+	: _LABEL
+	| namelist ',' _LABEL
+	;
+
+variable
+	: _LABEL
+//	| prefixexp BRACKET_L exp BRACKET_R
+//	| prefixexp DOT NAME
+	;
+
+variableList
+	: variable
+	| variableList ',' variable
+	;
+
+assigment
+	: variableList '=' expressionList
+	;
+
+local
+	: _LOCAL namelist
+	| _LOCAL namelist '=' expressionList
+	;
+
+ifBlock	
+	: _IF expression _THEN block _END
+	| _IF expression _THEN block _ELSE block _END
+	| _IF expression _THEN block _ELSEIF expression _THEN block _ELSE block _END
+	;
+
+forBlock
+	: _FOR _LABEL '=' expression ',' expression _DO block _END 
+	| _FOR _LABEL '=' expression ',' expression ',' expression _DO block _END 
+	;
+
+statement 
+	: ';' 
+	| local
+	| assigment
+	| ifBlock	
+	;
+
+statementList
+	: statement 
+	| statementList statement 
+	;
+
+returnStatement
+	 : _RETURN
+	 | _RETURN ';'
+	 | _RETURN expressionList
+	 | _RETURN expressionList ';'
+	 ;
+
+block	
+	: statementList 
+	| statementList returnStatement 
+	;
+
+chunk	
+	: block
+	;
+
+%%
+

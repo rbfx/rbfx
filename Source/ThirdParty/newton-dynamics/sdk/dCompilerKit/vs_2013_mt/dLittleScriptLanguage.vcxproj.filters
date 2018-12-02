@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Lexical">
+      <UniqueIdentifier>{26fbc202-0367-4e96-9db3-317f527a547b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Grammar">
+      <UniqueIdentifier>{e89b6143-5460-4b61-9810-36cd0ce9fd15}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\dLittleScriptLanguage\dLittleScriptLexical.cpp">
+      <Filter>Lexical</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dLittleScriptLanguage\dLittleScriptParser.cpp">
+      <Filter>Grammar</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dLittleScriptLanguage\dLittleScriptCompiler.cpp" />
+    <ClCompile Include="..\dLittleScriptLanguage\dLSCstdafx.cpp" />
+    <ClCompile Include="..\dLittleScriptLanguage\dScriptClass.cpp" />
+    <ClCompile Include="..\dLittleScriptLanguage\dScriptPackage.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\dLittleScriptLanguage\dLittleScriptLexical.h">
+      <Filter>Lexical</Filter>
+    </ClInclude>
+    <ClInclude Include="..\dLittleScriptLanguage\dLittleScriptParser.h">
+      <Filter>Grammar</Filter>
+    </ClInclude>
+    <ClInclude Include="..\dLittleScriptLanguage\dLittleScriptCompiler.h" />
+    <ClInclude Include="..\dLittleScriptLanguage\dLSCstdafx.h" />
+    <ClInclude Include="..\dLittleScriptLanguage\dScriptClass.h" />
+    <ClInclude Include="..\dLittleScriptLanguage\dScriptPackage.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\dLittleScriptLanguage\dLittleScriptLexical.lex">
+      <Filter>Lexical</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\dLittleScriptLanguage\dLittleScriptParser.grm">
+      <Filter>Grammar</Filter>
+    </CustomBuild>
+  </ItemGroup>
+</Project>

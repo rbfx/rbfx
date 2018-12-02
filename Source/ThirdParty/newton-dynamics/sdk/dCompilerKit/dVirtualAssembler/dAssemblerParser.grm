@@ -1,0 +1,276 @@
+/* Copyright (c) <2003-2016> <Newton Game Dynamics>
+* 
+* This software is provided 'as-is', without any express or implied
+* warranty. In no event will the authors be held liable for any damages
+* arising from the use of this software.
+* 
+* Permission is granted to anyone to use this software for any purpose,
+* including commercial applications, and to alter it and redistribute it
+* freely
+*/
+
+%{
+#include "dAssemblerCompiler.h"
+#include "dAssemblerLexical.h"
+
+// Newton virtual machine assembler grammar
+// based loosely on a subset and a hybrid between the MIPS R3000 and the Intel 386 instructions set 
+%}
+
+
+%union 
+{
+	class dUserVariable: public dDefualtUserVariable
+	{
+		public:
+		dUserVariable () 
+			:dDefualtUserVariable ()
+		{
+		}
+		
+//		dUserVariable (dToken token, const char* const text, int scannerLine, int scannerIndex)
+		dUserVariable (dToken token, const char* const text, int scannerLine = 0, int scannerIndex = 0)
+			:dDefualtUserVariable (token, text, scannerLine, scannerIndex)
+			,m_semanticValue(0)
+		{
+		}
+
+		int m_semanticValue;
+	};
+}
+
+
+	
+%token IMPORT IMPORT_FILENAME LITERAL PRIVATE
+
+%token BEGIN END
+
+%token INT
+%token INTEGER 
+%token REGISTER
+
+%token MOVE 
+%token LOADB LOADW LOADD 
+%token STOREB STOREW STORED
+%token SLL SRL
+%token AND OR XOR NOT
+%token ADDI ADD SUB MUL DIV ABS NEG
+%token BEQ BNE BLT BLE BGT BGE
+%token CALL CALLR RET SYSCALL JUMP JUMPR
+%token ENTER EXIT PUSH POP
+%token LOCALLABEL		  
+	
+
+%start module
+
+%%
+module		: segmentList
+			|
+			;
+				
+				
+segmentList	: segment 
+			| segmentList segment 
+			;
+			
+			
+segment		: import
+			| dataDeclaration	
+			| functionDeclaration
+			;
+			
+			
+import		: IMPORT '<' IMPORT_FILENAME '>'
+			; 			
+		
+
+constantExpression : INTEGER {$$ = ((dAssemblerCompiler*)this)->EmitIntegerConst ($1);}
+				   ;
+			
+dataDeclaration	: dataType literal							{((dAssemblerCompiler*)this)->EmitUnInitilizedDataDeclaration ($1, $2);}		
+				| dataType literal '=' constantExpression	{((dAssemblerCompiler*)this)->EmitInitilizedDataDeclaration ($1, $2, $4);}
+				;
+				
+dataType		: INT {$$ = ((dAssemblerCompiler*)this)->EmitDataType ($1);}
+				;				
+
+literal			: LITERAL {$$ = ((dAssemblerCompiler*)this)->EmitSymbol ($1);}
+				;	
+
+register : REGISTER
+			{
+				dAssemblerCompiler* const me = (dAssemblerCompiler*) this;
+				$$ = me->TypeCheckRegister ($1);
+			}
+		 ;
+
+
+visibility	: PRIVATE
+			|
+			;
+
+functionDeclaration	: beginFunction instructionList END 
+						{
+							dAssemblerCompiler* const me = (dAssemblerCompiler*) this;
+							me->EmitEndFunction ();
+						}
+					;
+
+beginFunction : BEGIN literal visibility 
+				{ 
+					dAssemblerCompiler* const me = (dAssemblerCompiler*) this;
+					me->EmitBeginFunction ($2, $3);
+				}
+			  ;
+
+
+instructionList	: instruction
+				| instructionList instruction
+				;
+
+instruction : localLabel
+			| instructionType0
+			| instructionType1
+			| instructionType2
+			| instructionType3
+			| instructionType4
+			;
+			
+ 
+		 
+localLabel : LOCALLABEL
+			{ 
+				dAssemblerCompiler* const me = (dAssemblerCompiler*) this;
+				me->EmitLocalLabel ($1);
+			}
+		  ;			
+		 
+		 
+// type 0 instructions		 		 
+opcodeType0 : RET {$$ = $1; $$.m_semanticValue = dVirtualMachine::ret;}
+		    ;
+
+
+instructionType0 : opcodeType0
+			       {
+			     		dAssemblerCompiler* const me = (dAssemblerCompiler*) this;
+						me->EmitInstructionType0 ($1);
+				   }
+				 ;
+
+		 
+// type 1 instructions		 
+opcodeType1 : CALL {$$ = $1; $$.m_semanticValue = dVirtualMachine::call;}
+		    ;
+		    
+opcodeType1_jump : JUMP {$$ = $1; $$.m_semanticValue = dVirtualMachine::jump;}
+				 ;
+		    
+		    
+instructionType1 : opcodeType1 immidiate
+			       {
+			     		dAssemblerCompiler* const me = (dAssemblerCompiler*) this;
+						me->EmitInstructionType1 ($1, $2);
+				   }
+			     | opcodeType1 literal
+			       {
+			     		dAssemblerCompiler* const me = (dAssemblerCompiler*) this;
+						me->EmitInstructionType1_saveGlobalAdress ($1, $2);
+				   }
+				   
+				| opcodeType1_jump immidiate
+			       {
+			     		dAssemblerCompiler* const me = (dAssemblerCompiler*) this;
+						me->EmitInstructionType1 ($1, $2);
+				   }
+			     | opcodeType1_jump literal
+			       {
+			     		dAssemblerCompiler* const me = (dAssemblerCompiler*) this;
+						me->EmitInstructionType1_saveLocalAdress ($1, $2);
+				   }				   
+			     ;
+		    
+
+// type 2 instructions
+registerMask : register	 {$$ = $1; $$.m_semanticValue = 1 << $1.m_semanticValue;}  
+			 | registerMask ',' register {$$ = $1; $$.m_semanticValue = $1.m_semanticValue | (1 << $3.m_semanticValue);}
+			 ;	
+		 
+pushAndPop : PUSH {$$ = $1; $$.m_semanticValue = dVirtualMachine::push;}
+		   | POP {$$ = $1; $$.m_semanticValue = dVirtualMachine::pop;}
+		   ;
+			
+opcodeType2 : JUMPR {$$ = $1; $$.m_semanticValue = dVirtualMachine::jumpr;}
+			| CALLR {$$ = $1; $$.m_semanticValue = dVirtualMachine::callr;}
+			;
+			
+instructionType2 : pushAndPop registerMask
+					{
+						dAssemblerCompiler* const me = (dAssemblerCompiler*) this;
+						me->EmitPushAndPop ($1, $2);
+					}
+				 | opcodeType2 register
+					{
+						dAssemblerCompiler* const me = (dAssemblerCompiler*) this;
+						me->EmitInstructionType2 ($1, $2);
+					}
+				 ;
+			
+// type 3 instruction			
+opcodeType4	:MOVE {$$ = $1; $$.m_semanticValue = dVirtualMachine::mov;}
+			|ADD {$$ = $1; $$.m_semanticValue = dVirtualMachine::add;}
+			|SUB {$$ = $1; $$.m_semanticValue = dVirtualMachine::sub;}
+			|MUL {$$ = $1; $$.m_semanticValue = dVirtualMachine::mul;}
+			|DIV {$$ = $1; $$.m_semanticValue = dVirtualMachine::div;}
+			|ABS {$$ = $1; $$.m_semanticValue = dVirtualMachine::abs;}
+			|NEG {$$ = $1; $$.m_semanticValue = dVirtualMachine::neg;}
+			|AND {$$ = $1; $$.m_semanticValue = dVirtualMachine::and;}
+			|OR  {$$ = $1; $$.m_semanticValue = dVirtualMachine::or;}
+			|XOR {$$ = $1; $$.m_semanticValue = dVirtualMachine::xor;}
+			|NOT {$$ = $1; $$.m_semanticValue = dVirtualMachine::not;}
+			|SLL {$$ = $1; $$.m_semanticValue = dVirtualMachine::sll;}
+			|SRL {$$ = $1; $$.m_semanticValue = dVirtualMachine::srl;}
+			;
+
+instructionType3 : opcodeType4 register ',' register
+					{ 
+						dAssemblerCompiler* const me = (dAssemblerCompiler*) this;
+						me->EmitInstructionType3 ($1, $2, $4);
+					}
+				 ;
+
+// type 4 instruction
+opcodeAddi : ADDI {$$ = $1; $$.m_semanticValue = dVirtualMachine::addi;}			  
+		   ;
+
+opcodeType4 : BEQ {$$ = $1; $$.m_semanticValue = dVirtualMachine::beq;}
+			| BNE {$$ = $1; $$.m_semanticValue = dVirtualMachine::bne;}
+			| BLT {$$ = $1; $$.m_semanticValue = dVirtualMachine::blt;}
+			| BLE {$$ = $1; $$.m_semanticValue = dVirtualMachine::ble;}
+			| BGT {$$ = $1; $$.m_semanticValue = dVirtualMachine::bgt;}
+			| BGE {$$ = $1; $$.m_semanticValue = dVirtualMachine::bge;}
+			;
+
+instructionType4 : opcodeAddi register ',' constantExpression 
+					{ 
+						dAssemblerCompiler* const me = (dAssemblerCompiler*) this;
+						dUserVariable register0 (REGISTER, "r0");
+						me->EmitInstructionType4 ($1, $2, register0, $4);
+					}
+				| opcodeAddi register ',' register ',' constantExpression  
+					{ 
+						dAssemblerCompiler* const me = (dAssemblerCompiler*) this;
+						me->EmitInstructionType4 ($1, $2, $4, $6);
+					}
+					
+				| opcodeType4  register ',' register ',' literal 	
+					{									 
+						dAssemblerCompiler* const me = (dAssemblerCompiler*) this;
+						me->EmitInstructionType4_saveLocalAdress ($1, $2, $4, $6);
+					}
+				;
+				
+
+
+%%
+

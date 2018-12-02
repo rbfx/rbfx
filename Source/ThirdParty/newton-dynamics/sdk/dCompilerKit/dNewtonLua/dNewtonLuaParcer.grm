@@ -1,0 +1,301 @@
+/* Copyright (c) <2003-2016> <Newton Game Dynamics>
+* 
+* This software is provided 'as-is', without any express or implied
+* warranty. In no event will the authors be held liable for any damages
+* arising from the use of this software.
+* 
+* Permission is granted to anyone to use this software for any purpose,
+* including commercial applications, and to alter it and redistribute it
+* freely
+*/
+
+/*
+ *------------------------------------------------------------------
+ *
+ * This grammar only have one shift reduce conflict, which is the standard dangling else in if-then-else of almost all high level programming languages.
+ * I resolve it in favor of shift as it is is the custom tradition for languages like C, C++, java and c#
+ *
+ *------------------------------------------------------------------
+ */
+
+  
+%{
+// Newton Tool embedded Lua script Language
+// based of https://www.lua.org/manual/5.3/manual.html#9
+//
+
+#include "dNewtonLuaStdafx.h"
+#include "dNewtonLuaLex.h"
+#include "dNewtonLuaParcer.h"
+#include "dNewtonLuaCompiler.h"
+%}
+
+
+%union 
+{
+	class dUserVariable: public dDefualtUserVariable
+	{
+		public:
+		dUserVariable () 
+			:dDefualtUserVariable ()
+			,m_tokenList()
+			,m_nodeList()
+		{
+		}
+
+		dUserVariable (dCILInstr* const instruction) 
+			:dDefualtUserVariable ()
+			,m_tokenList()
+			,m_nodeList()
+		{
+			m_nodeList.Append (instruction->GetNode());
+		}
+		
+		dUserVariable (const dUserVariable& src) 
+			:dDefualtUserVariable (src)
+			,m_tokenList()
+			,m_nodeList()
+		{
+			src.m_tokenList.TranferDataToTarget (m_tokenList);
+			src.m_nodeList.TranferDataToTarget (m_nodeList);
+		}
+
+		dUserVariable& operator= (const dUserVariable& src)
+		{
+			dDefualtUserVariable& me = *this;
+			me = src;
+
+			src.m_nodeList.TranferDataToTarget (m_nodeList);
+			src.m_tokenList.TranferDataToTarget (m_tokenList);
+			return *this;
+		}
+		
+		dUserVariable (dToken token, const char* const text, int scannerLine, int scannerIndex)
+			:dDefualtUserVariable (token, text, scannerLine, scannerIndex)
+			,m_tokenList()
+			,m_nodeList()
+		{
+		}
+
+		mutable dList<dString> m_tokenList;
+		mutable dList<dCIL::dListNode*> m_nodeList;
+	};
+}
+
+
+%token _AND
+%token _BREAK
+%token _DO
+%token _ELSE
+%token _ELSEIF
+%token _END
+%token _FALSE
+%token _FOR
+%token _FUNCTION
+%token _GOTO
+%token _IF
+%token _IN
+%token _LOCAL
+%token _NIL
+%token _NOT
+%token _OR
+%token _REPEAT
+%token _RETURN
+%token _THEN
+%token _TRUE
+%token _UNTIL
+%token _WHILE
+%token _LEFT_SHIFT
+%token _RIGHT_SHIFT
+%token _INTEGER_DIVIDE
+%token _IDENTICAL
+%token _DIFFERENT
+%token _LEFT_EQUAL
+%token _GREATHER_EQUAL
+%token _DOUBLE_COLUMN
+%token _DOUBLE_DOT
+%token _TRIPLE_DOT
+%token _INTEGER
+%token _FLOAT
+%token _LABEL
+%token _STRING
+
+
+%right _ELSE _ELSEIF
+%right _IF
+%right '='
+%left _OR 
+%left _AND 
+%left _IDENTICAL _DIFFERENT _LEFT_EQUAL _GREATHER_EQUAL '>' '<'
+%left '|'
+%left '~'
+%left '&'
+%left _LEFT_SHIFT _RIGHT_SHIFT
+%left _DOUBLE_DOT
+%left '+' '-'
+%left '*' '/' '%' _INTEGER_DIVIDE
+%right _NOT '#'
+%left '^'
+
+
+%{
+	#define MyModule ((dNewtonLuaCompiler*) this)
+%}
+
+%start chunk
+
+%%
+
+expression
+	: expression '+' expression	{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+	| expression '-' expression	{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+	| expression '*' expression	{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}	
+	| expression '/' expression	{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+	| expression '%' expression	{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+	| expression '^' expression	{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+	| expression '>' expression	{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}	
+	| expression '<' expression	{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression '|' expression {$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression '~' expression	{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression '&' expression	{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+	| expression _IDENTICAL expression {$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression _DIFFERENT expression {$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+	| expression _OR expression	{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression _AND expression	{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+	| expression _LEFT_EQUAL expression {$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression _GREATHER_EQUAL expression {$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression _LEFT_SHIFT expression	{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression _RIGHT_SHIFT expression {$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression _DOUBLE_DOT expression	{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression _INTEGER_DIVIDE expression	{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}	
+//	| '+' expression %prec '^' {dAssert(0);}
+//	| '-' expression %prec '^'{dAssert(0);}
+//	| '#' expression %prec '^'{dAssert(0);}	
+//	| '~' expression %prec '^'{dAssert(0);}
+	| '(' expression ')' {$$ = $2;}
+	| functionCall {$$ = $1;}
+	| _NIL {dAssert(0);}
+	| _TRUE	{dAssert(0);}
+	| _FALSE {dAssert(0);}
+	| _FLOAT {dAssert(0);}
+	| _STRING {$$ = MyModule->EmitLoadString($1);}
+	| _LABEL {$$ = MyModule->EmitLoadVariable($1);}
+	| _INTEGER {$$ = MyModule->EmitLoadConstant($1);}
+	;
+
+expressionList
+	: expression {$$ = $1;}
+	| expressionList ',' expression {$$ = $1; $$.m_nodeList.Append ($3.m_nodeList.GetFirst()->GetInfo());}
+	;
+
+namelist
+	: _LABEL {$$ = $1; $$.m_tokenList.Append ($1.GetString());}
+	| namelist ',' _LABEL {$$ = $1; $$.m_tokenList.Append ($3.GetString());}
+	;
+
+variable
+	: _LABEL {$$ = $1; $$.m_tokenList.Append ($1.GetString());}
+//	| prefixexp BRACKET_L exp BRACKET_R {dAssert(0);}
+//	| prefixexp DOT NAME {dAssert(0);}
+	;
+
+variableList
+	: variable {$$ = $1;}
+	| variableList ',' variable {$$ = $1; $$.m_tokenList.Append ($3.m_tokenList.GetFirst()->GetInfo());}
+	;
+
+assignment
+	: variableList '=' expressionList {$$ = MyModule->EmitAssigmentStatement($1, $3);}
+	;
+
+localDeclaration
+	: _LOCAL namelist {$$ = MyModule->EmitLocalVariableDeclaration($2);}
+	;
+
+local
+	: localDeclaration {$$ = $1;} 
+	| localDeclaration '=' expressionList {$$ = MyModule->EmitAssigmentStatement($1, $3);}
+	;
+
+ifBlock
+	: _IF expression _THEN block _END {$$ = MyModule->EmitIf($2, $4, dUserVariable());}
+	| _IF expression _THEN block _ELSE block _END {$$ = MyModule->EmitIf($2, $4, $6);}
+	| _IF expression _THEN block _ELSEIF expression _THEN block _ELSE block _END {dAssert(0);}
+	;
+
+
+forBlockBeginLabel
+	: {$$ = MyModule->EmitLabel();}
+	;
+
+forIterator
+	: _LABEL '=' expression {$1.m_tokenList.Append ($1.GetString()); $$ = MyModule->EmitAssigmentStatement($1, $3);}
+	;
+
+forBlock
+	: _FOR forIterator ',' forBlockBeginLabel expression _DO block _END {$$ = MyModule->EmitFor($2, $4, $5, dUserVariable(), $7);}
+	| _FOR forIterator ',' forBlockBeginLabel expression ',' expression _DO block _END {$$ = MyModule->EmitFor($2, $4, $5, $7, $9);}
+	;
+
+functionCallName
+	: _LABEL	{$$ = $1; $$.m_tokenList.Append ($1.GetString());}
+	| functionCallName '.' _LABEL	{$$ = $1; $$.m_tokenList.Append ($3.GetString());} 
+	;
+
+functionCall
+	: functionCallName '(' ')' {$$ = MyModule->EmitFunctionCall ($1, dUserVariable());}
+	| functionCallName '(' expressionList ')' {$$ = MyModule->EmitFunctionCall ($1, $3);}
+	;
+
+functionDeclare
+	: _FUNCTION variable '(' ')' {$$ = MyModule->EmitFunctionDeclaration ($2, dUserVariable());}
+	| _FUNCTION variable '(' variableList ')' {$$ = MyModule->EmitFunctionDeclaration ($2, $4);}
+	;
+
+functionDefinition
+	: functionDeclare block _END {MyModule->CloseFunctionDeclaration();} 
+	;
+
+
+statement 
+	: ';' 
+	| local 
+	| ifBlock 
+	| forBlock 
+	| assignment 
+	| functionCall 
+	| functionDefinition 
+	;
+
+statementList
+	: statement 
+	| statementList statement 
+	;
+
+returnStatement
+	: _RETURN {$$ = MyModule->EmitReturn(dUserVariable());} 
+	| _RETURN ';' {$$ = MyModule->EmitReturn(dUserVariable());} 
+	| _RETURN expressionList {$$ = MyModule->EmitReturn($2);} 
+	| _RETURN expressionList ';' {$$ = MyModule->EmitReturn($2);} 
+	;	
+
+blockEndStatement
+	: returnStatement {$$ = $1;}
+	; 
+
+blockStart
+	: {$$ = MyModule->EmitBlockBeginning();}
+	;
+
+block
+	: blockStart statementList {$$ = $1;}
+	| blockStart blockEndStatement {$$ = $1;}
+	| blockStart statementList blockEndStatement {$$ = $1;}
+	;
+
+chunk	
+	: block {MyModule->CloseFunctionDeclaration();} 
+	;
+
+%%
+
