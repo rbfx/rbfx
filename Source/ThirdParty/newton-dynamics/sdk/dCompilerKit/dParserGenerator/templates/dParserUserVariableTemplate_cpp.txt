@@ -1,0 +1,25 @@
+	class dUserVariable: public dDefualtUserVariable
+	{
+		public:
+		dUserVariable () 
+			:dDefualtUserVariable ()
+		{
+		}
+
+		dUserVariable (const dUserVariable& copy) 
+			:dDefualtUserVariable(copy)
+		{
+		}
+
+		dUserVariable& operator= (const dUserVariable& src)
+		{
+			dDefualtUserVariable& me = *this;
+			me = src;
+			return *this;
+		}
+		dUserVariable (dToken token, const char* const data, int scannerLine, int scannerIndex)
+			:dDefualtUserVariable  (token, data, scannerLine, scannerIndex)
+		{
+		}
+	};
+

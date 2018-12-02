@@ -1,0 +1,414 @@
+%{
+#include <stdafx.h>
+#include "main.h"
+#include "Lexical.h"
+
+//#define YYDEBUG 1
+//#define YYERROR_VERBOSE
+//#define YYSTYPE LexicalData
+
+//static	int tab;
+//static void GenerateTabs (char* const tabs)
+//{
+//	tabs[0] = 0;
+//	for (int i = 0; i < tab; i ++) {
+//		strcat (tabs, "\t");   
+//	}
+//}
+//extern char yytext[];
+//int yyerror(char *s)
+//{
+//	fflush(stdout);
+//	printf("\n%*s\n%*s\n", column, "^", column, s);
+//	return 0;
+//}
+%}
+
+
+%token _INT
+%token _CHAR
+%token _VOID
+%token _CONST
+%token _SHORT
+%token _UNSIGNED
+%token _FLOAT
+%token _DOUBLE
+%token _STRUCT
+%token _UNION
+%token _TYPEDEF
+%token _IFDEF
+%token _IFNDEF
+%token _ELSE
+%token _ENDIF
+%token _DEFINE
+%token _INCLUDE
+%token _NUMERIC_CONSTANT
+%token _LITERAL_IDENTIFIER
+%token _QUOTED_CONSTANT
+
+
+%left '='
+%left '+' '-'
+%left '*' '/'
+%left _NEG
+
+%start NewtonHeader
+
+%%
+
+NewtonHeader 
+	: _IFNDEF _LITERAL_IDENTIFIER CDeclareAndClassDeclare _ENDIF
+	;
+
+	
+CDeclareAndClassDeclare	
+	: StatementList IfDefStatement
+	;
+	
+StatementList
+	: Statement
+	| StatementList Statement	
+	;
+
+Statement
+	: HeaderInfo
+{
+//PrintHeader ($1.m_literal);
+}	
+	| DefineConstant  	  
+{
+	PrintDefine ($1.m_literal);
+}	
+	| TypeDefStructures	  
+{
+	PrintStrutureDefine ($1.m_literal);
+}	
+	| StructuresDeclaration			  
+{
+	PrintDataStrutures ($1.m_literal);
+}	
+	| FunctionCallBackDeclaration		
+{
+	PrintFunctionCallbacks ($1.m_literal);		
+}	  
+	| ClassMethod 
+{
+	PrintClassMethod ($1.m_literal);
+}		
+	| IfDefStatement	
+	| Include
+	;
+
+HeaderInfo
+	:_DEFINE _LITERAL_IDENTIFIER
+	;
+
+DefineConstant 
+	: _DEFINE literalIndentifer _NUMERIC_CONSTANT 
+{
+	sprintf ($$.m_literal, "#define %s\t%s\n", $2.m_literal, $3.m_literal);
+}
+	| _DEFINE _LITERAL_IDENTIFIER _QUOTED_CONSTANT 
+	;	
+	
+Include
+	: _INCLUDE _QUOTED_CONSTANT 
+	| _INCLUDE '<' _LITERAL_IDENTIFIER '>'
+	;	
+
+IfDefStatement
+	: IfDef _LITERAL_IDENTIFIER EmptyDefine _ENDIF
+	| IfDef _LITERAL_IDENTIFIER IfDefStatement _ENDIF
+	| IfDef _LITERAL_IDENTIFIER EmptyDefine _ELSE IfDefStatement _ENDIF
+	| IfDef _LITERAL_IDENTIFIER EmptyDefine _ELSE EmptyDefine _ENDIF
+	| IfDef _LITERAL_IDENTIFIER _LITERAL_IDENTIFIER _QUOTED_CONSTANT '{' _ENDIF
+	| IfDef _LITERAL_IDENTIFIER '}' _ENDIF
+	;
+
+EmptyDefine
+	: _DEFINE _LITERAL_IDENTIFIER 
+	| _DEFINE _FLOAT _FLOAT
+	| _DEFINE _FLOAT _DOUBLE
+	| _DEFINE _LITERAL_IDENTIFIER _LITERAL_IDENTIFIER '(' _LITERAL_IDENTIFIER ')' 
+	;
+
+IfDef
+	: _IFDEF
+	| _IFNDEF
+	;	
+
+
+TypeDefStructures
+	: _TYPEDEF _STRUCT literalIndentifer '{' '}' literalIndentifer ';'	 
+{
+	sprintf ($$.m_literal, "typedef struct i%s{} i%s;\n", $3.m_literal, $6.m_literal);
+}
+	;
+
+
+literalIndentifer
+	: _LITERAL_IDENTIFIER
+{$$ = $1;}
+	;
+	
+
+StructuresDeclaration
+	: StructuresDeclarationInit DataInstanceList StructuresDeclarationEnd
+{
+	sprintf ($$.m_literal, "%s%s%s\n", $1.m_literal, $2.m_literal, $3.m_literal);
+}
+	;
+	
+StructuresDeclarationInit
+	: _STRUCT _LITERAL_IDENTIFIER '{' 
+{
+	char tabs[256];
+	GenerateTabs (tabs);
+	sprintf ($$.m_literal, "%sstruct i%s {\n", tabs, $2.m_literal);
+	tab ++;
+}
+	| _UNION '{'
+{
+	char tabs[256];
+	GenerateTabs (tabs);
+	sprintf ($$.m_literal, "%sunion {\n", tabs);
+	tab ++;
+}
+	;		  	
+	
+DataInstanceList
+	: DataInstance
+{$$ = $1;}
+	| DataInstanceList DataInstance
+{
+	sprintf ($$.m_literal, "%s%s", $1.m_literal, $2.m_literal);
+}
+	;
+
+DataInstance	
+	: DataType literalIndentifer ';'
+{
+	char tabs[256];
+	GenerateTabs (tabs);
+	sprintf ($$.m_literal, "%s%s %s;\n", tabs, $1.m_literal, $2.m_literal);
+}
+	| DataType literalIndentifer '[' _NUMERIC_CONSTANT ']' ';'  
+{
+	char tabs[256];
+	GenerateTabs (tabs);
+	sprintf ($$.m_literal, "%s%s %s[%s];\n", tabs, $1.m_literal, $2.m_literal, $4.m_literal);
+}
+	| DataType literalIndentifer '[' _NUMERIC_CONSTANT ']' '[' _NUMERIC_CONSTANT ']' ';'  
+{		
+	char tabs[256];
+	GenerateTabs (tabs);
+	sprintf ($$.m_literal, "%s%s %s[%s][%s];\n", tabs, $1.m_literal, $2.m_literal, $4.m_literal, $7.m_literal);		
+}
+	| StructuresDeclaration
+{
+	sprintf ($$.m_literal, "%s", $1.m_literal);
+}
+	;
+	
+DataType
+	: DataInstanceType
+{$$ = $1;}
+	| DataInstanceType '*'
+{
+	sprintf ($$.m_literal, "%s*", $1.m_literal);
+}
+	| DataInstanceType '*' VOID
+{
+	//sprintf ($$.m_literal, "%s*", $1.m_literal);
+	sprintf ($$.m_literal, "%s* const", $1.m_literal);
+}
+	| DataInstanceType '*' '*'
+{
+	sprintf ($$.m_literal, "%s**", $1.m_literal);
+}
+		
+	| DataInstanceType '*' '*' VOID
+{
+	sprintf ($$.m_literal, "%s** const", $1.m_literal);
+	//sprintf ($$.m_literal, "%s**", $1.m_literal);
+}
+	;	
+	
+DataInstanceType
+	: _INT 
+{
+	sprintf ($$.m_literal, "int");
+}
+	| _CHAR 
+{
+	sprintf ($$.m_literal, "char");			
+}
+	| VOID 
+{
+	sprintf ($$.m_literal, "void");
+}
+	| _FLOAT
+{
+	sprintf ($$.m_literal, "float");
+}
+	| _UNSIGNED
+{
+	sprintf ($$.m_literal, "unsigned");
+}
+	| _SHORT	_INT		 
+{
+	sprintf ($$.m_literal, "short int");
+}
+	| _UNSIGNED _SHORT			 
+{
+	sprintf ($$.m_literal, "unsigned short");
+}
+	| VOID VOID			 		
+{
+	sprintf ($$.m_literal, "const void");
+}
+	| VOID _INT
+{
+	sprintf ($$.m_literal, "const int");
+}
+	| VOID _FLOAT
+{
+	sprintf ($$.m_literal, "const float");
+}
+	| literalIndentifer
+{
+	sprintf ($$.m_literal, "struct i%s", $1.m_literal);
+}
+	| VOID literalIndentifer
+{
+	sprintf ($$.m_literal, "%s struct i%s", $1.m_literal, $2.m_literal);
+}
+	;	
+	
+	
+StructuresDeclarationEnd	
+	: '}' ';'	
+{
+	char tabs[256];
+	tab --;
+	GenerateTabs (tabs);
+	sprintf ($$.m_literal, "%s};\n", tabs);
+}
+	;	
+	
+
+
+FunctionCallBackDeclaration
+	: FunctionCallBackDeclarationName '(' FunctionCallBackDeclarationParamsList ')' ';'
+{
+	sprintf ($$.m_literal, "%s (%s);\n", $1.m_literal, $3.m_literal);
+}
+	| FunctionCallBackDeclarationName '(' ')' ';'
+{
+	sprintf ($$.m_literal, "%s ();\n", $1.m_literal);
+}
+	;
+
+FunctionCallBackDeclarationName
+	: _TYPEDEF DataType '(' '*' literalIndentifer ')' 
+{
+	SaveCallback ($5.m_literal);
+	sprintf ($$.m_literal, "typedef %s (*i%s)", $2.m_literal, $5.m_literal);
+}
+	;
+
+FunctionCallBackDeclarationParamsList
+	: FunctionCallBackDeclarationParam
+{ $$ = $1; }
+	| FunctionCallBackDeclarationParamsList FunctionCallBackDeclarationParam	
+{
+	sprintf ($$.m_literal, "%s%s", $1.m_literal, $2.m_literal);
+}
+	;
+
+FunctionCallBackDeclarationParam	
+	: DataType literalIndentifer
+{
+	sprintf ($$.m_literal, "%s %s", $1.m_literal, $2.m_literal);
+}
+	| DataType literalIndentifer ','
+{
+	sprintf ($$.m_literal, "%s %s, ", $1.m_literal, $2.m_literal);
+}
+	;
+
+
+ClassMethodName
+	: literalIndentifer
+{
+	if (!strncmp ($1.m_literal, "Newton", 6)) {
+		sprintf ($$.m_literal, "%s", $1.m_literal + 6);
+	} else {
+		$$ = $1;
+	}	
+}
+	;
+
+ClassMethod
+	: literalIndentifer DataType ClassMethodName '(' ')' ';'
+{
+	const char* callback = IsCallback ($2.m_literal);
+	if (callback) {
+		sprintf ($$.m_literal, "-(i%s) %s;\n", callback, $3.m_literal);
+	} else {
+		sprintf ($$.m_literal, "-(%s) %s;\n", $2.m_literal, $3.m_literal);
+	}
+}
+	| literalIndentifer DataType ClassMethodName '(' functionArgumentList ')' ';'
+{
+	const char* callback = IsCallback ($2.m_literal);
+	if (callback) {
+		sprintf ($$.m_literal, "-(i%s) %s%s;\n", callback, $3.m_literal, $5.m_literal);
+	} else {
+		sprintf ($$.m_literal, "-(%s) %s%s;\n", $2.m_literal, $3.m_literal, $5.m_literal);
+	}
+}
+	;	
+
+functionArgumentList
+	: functionArgument
+{ $$ = $1; }
+	| functionArgumentList functionArgument
+{
+	sprintf ($$.m_literal, "%s%s", $1.m_literal, $2.m_literal);
+}
+	;
+
+functionArgument
+	: DataType literalIndentifer
+{
+	const char* callback = IsCallback ($1.m_literal);
+	if (callback) {
+		sprintf ($$.m_literal, ": (i%s) %s", callback, $2.m_literal);
+	} else {
+		sprintf ($$.m_literal, ": (%s) %s", $1.m_literal, $2.m_literal);
+	}
+}	
+	| DataType literalIndentifer ','	
+ {
+	const char* callback = IsCallback ($1.m_literal);
+	if (callback) {
+		sprintf ($$.m_literal, ": (i%s) %s", callback, $2.m_literal);
+	} else {
+		sprintf ($$.m_literal, ": (%s) %s", $1.m_literal, $2.m_literal);
+	}
+ }	
+	| DataType literalIndentifer '['']'
+ {
+	sprintf ($$.m_literal, ": (%s*) %s", $1.m_literal, $2.m_literal);
+ }	
+	| DataType literalIndentifer '['']' ','
+ {
+	sprintf ($$.m_literal, ": (%s*) %s", $1.m_literal, $2.m_literal);
+ }	
+	;
+
+%%
+
+
+

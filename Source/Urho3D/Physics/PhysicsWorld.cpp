@@ -1,1084 +1,1046 @@
-//
-// Copyright (c) 2008-2018 the Urho3D project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
-
-#include "../Precompiled.h"
-
-#include "../Core/Context.h"
-#include "../Core/Mutex.h"
-#include "../Core/Profiler.h"
-#include "../Graphics/DebugRenderer.h"
+#include "PhysicsWorld.h"
+#include "IO/Log.h"
+#include "CollisionShape.h"
+#include "CollisionShapesDerived.h"
+#include "RigidBody.h"
+#include "dMatrix.h"
+#include "Core/Context.h"
+#include "Core/CoreEvents.h"
+#include "Core/Object.h"
+#include "UrhoNewtonConversions.h"
+#include "Scene/Component.h"
+#include "Scene/Scene.h"
+#include "Scene/Node.h"
 #include "../Graphics/Model.h"
-#include "../IO/Log.h"
-#include "../Math/Ray.h"
-#include "../Physics/CollisionShape.h"
-#include "../Physics/Constraint.h"
-#include "../Physics/PhysicsEvents.h"
-#include "../Physics/PhysicsUtils.h"
-#include "../Physics/PhysicsWorld.h"
-#include "../Physics/RaycastVehicle.h"
-#include "../Physics/RigidBody.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
+#include "Math/Sphere.h"
+#include "Container/Vector.h"
 
-#include <Bullet/BulletCollision/BroadphaseCollision/btDbvtBroadphase.h>
-#include <Bullet/BulletCollision/CollisionDispatch/btDefaultCollisionConfiguration.h>
-#include <Bullet/BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
-#include <Bullet/BulletCollision/CollisionShapes/btBoxShape.h>
-#include <Bullet/BulletCollision/CollisionShapes/btSphereShape.h>
-#include <Bullet/BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
-#include <Bullet/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h>
-#include <Bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
+#include "Newton.h"
+#include "NewtonMeshObject.h"
+#include "Core/Thread.h"
+#include "Constraint.h"
+#include "FixedDistanceConstraint.h"
+#include "Core/Profiler.h"
+#include "PhysicsEvents.h"
+#include "BallAndSocketConstraint.h"
+#include "NewtonKinematicsJoint.h"
+#include "NewtonDebugDrawing.h"
+#include "dgMatrix.h"
+#include "dCustomJoint.h"
+#include "Graphics/DebugRenderer.h"
+#include "FullyFixedConstraint.h"
+#include "HingeConstraint.h"
+#include "Scene/SceneEvents.h"
+#include "SliderConstraint.h"
+#include "6DOFConstraint.h"
+#include "../dVehicle/dVehicleManager.h"
+#include "PhysicsVehicle.h"
+#include "VehicleTire.h"
+#include "Engine/Engine.h"
 
-extern ContactAddedCallback gContactAddedCallback;
+namespace Urho3D {
 
-namespace Urho3D
-{
 
-const char* PHYSICS_CATEGORY = "Physics";
-extern const char* SUBSYSTEM_CATEGORY;
+    static const Vector3 DEFAULT_GRAVITY = Vector3(0.0f, -9.81f, 0.0f);
 
-static const int MAX_SOLVER_ITERATIONS = 256;
-static const Vector3 DEFAULT_GRAVITY = Vector3(0.0f, -9.81f, 0.0f);
-
-PhysicsWorldConfig PhysicsWorld::config;
-
-static bool CompareRaycastResults(const PhysicsRaycastResult& lhs, const PhysicsRaycastResult& rhs)
-{
-    return lhs.distance_ < rhs.distance_;
-}
-
-void InternalPreTickCallback(btDynamicsWorld* world, btScalar timeStep)
-{
-    static_cast<PhysicsWorld*>(world->getWorldUserInfo())->PreStep(timeStep);
-}
-
-void InternalTickCallback(btDynamicsWorld* world, btScalar timeStep)
-{
-    static_cast<PhysicsWorld*>(world->getWorldUserInfo())->PostStep(timeStep);
-}
-
-static bool CustomMaterialCombinerCallback(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0,
-    int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1)
-{
-    // Ensure that shape type of colObj1Wrap is either btScaledBvhTriangleMeshShape or btBvhTriangleMeshShape
-    // because btAdjustInternalEdgeContacts doesn't check types properly. Bug in the Bullet?
-    const int shapeType = colObj1Wrap->getCollisionObject()->getCollisionShape()->getShapeType();
-    if (shapeType == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE || shapeType == TRIANGLE_SHAPE_PROXYTYPE
-        || shapeType == MULTIMATERIAL_TRIANGLE_MESH_PROXYTYPE)
+    PhysicsWorld::PhysicsWorld(Context* context) : Component(context)
     {
-        btAdjustInternalEdgeContacts(cp, colObj1Wrap, colObj0Wrap, partId1, index1);
-    }
+        SubscribeToEvent(E_SCENESUBSYSTEMUPDATE, URHO3D_HANDLER(PhysicsWorld, HandleSceneUpdate));
 
-    cp.m_combinedFriction = colObj0Wrap->getCollisionObject()->getFriction() * colObj1Wrap->getCollisionObject()->getFriction();
-    cp.m_combinedRestitution =
-        colObj0Wrap->getCollisionObject()->getRestitution() * colObj1Wrap->getCollisionObject()->getRestitution();
 
-    return true;
-}
-
-void RemoveCachedGeometryImpl(CollisionGeometryDataCache& cache, Model* model)
-{
-    for (auto i = cache.Begin(); i != cache.End();)
-    {
-        auto current = i++;
-        if (current->first_.first_ == model)
-            cache.Erase(current);
-    }
-}
-
-void CleanupGeometryCacheImpl(CollisionGeometryDataCache& cache)
-{
-    for (auto i = cache.Begin(); i != cache.End();)
-    {
-        auto current = i++;
-        if (current->second_.Refs() == 1)
-            cache.Erase(current);
-    }
-}
-
-/// Callback for physics world queries.
-struct PhysicsQueryCallback : public btCollisionWorld::ContactResultCallback
-{
-    /// Construct.
-    PhysicsQueryCallback(PODVector<RigidBody*>& result, unsigned collisionMask) :
-        result_(result),
-        collisionMask_(collisionMask)
-    {
-    }
-
-    /// Add a contact result.
-    btScalar addSingleResult(btManifoldPoint&, const btCollisionObjectWrapper* colObj0Wrap, int, int,
-        const btCollisionObjectWrapper* colObj1Wrap, int, int) override
-    {
-        auto* body = reinterpret_cast<RigidBody*>(colObj0Wrap->getCollisionObject()->getUserPointer());
-        if (body && !result_.Contains(body) && (body->GetCollisionLayer() & collisionMask_))
-            result_.Push(body);
-        body = reinterpret_cast<RigidBody*>(colObj1Wrap->getCollisionObject()->getUserPointer());
-        if (body && !result_.Contains(body) && (body->GetCollisionLayer() & collisionMask_))
-            result_.Push(body);
-        return 0.0f;
-    }
-
-    /// Found rigid bodies.
-    PODVector<RigidBody*>& result_;
-    /// Collision mask for the query.
-    unsigned collisionMask_;
-};
-
-PhysicsWorld::PhysicsWorld(Context* context) :
-    Component(context),
-    fps_(DEFAULT_FPS),
-    debugMode_(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawConstraints | btIDebugDraw::DBG_DrawConstraintLimits)
-{
-    gContactAddedCallback = CustomMaterialCombinerCallback;
-
-    if (PhysicsWorld::config.collisionConfig_)
-        collisionConfiguration_ = PhysicsWorld::config.collisionConfig_;
-    else
-        collisionConfiguration_ = new btDefaultCollisionConfiguration();
-
-    collisionDispatcher_ = new btCollisionDispatcher(collisionConfiguration_);
-    btGImpactCollisionAlgorithm::registerAlgorithm(static_cast<btCollisionDispatcher*>(collisionDispatcher_.Get()));
-
-    broadphase_ = new btDbvtBroadphase();
-    solver_ = new btSequentialImpulseConstraintSolver();
-    world_ = new btDiscreteDynamicsWorld(collisionDispatcher_.Get(), broadphase_.Get(), solver_.Get(), collisionConfiguration_);
-
-    world_->setGravity(ToBtVector3(DEFAULT_GRAVITY));
-    world_->getDispatchInfo().m_useContinuous = true;
-    world_->getSolverInfo().m_splitImpulse = false; // Disable by default for performance
-    world_->setDebugDrawer(this);
-    world_->setInternalTickCallback(InternalPreTickCallback, static_cast<void*>(this), true);
-    world_->setInternalTickCallback(InternalTickCallback, static_cast<void*>(this), false);
-    world_->setSynchronizeAllMotionStates(true);
-}
-
-PhysicsWorld::~PhysicsWorld()
-{
-    if (scene_)
-    {
-        // Force all remaining constraints, rigid bodies and collision shapes to release themselves
-        for (PODVector<Constraint*>::Iterator i = constraints_.Begin(); i != constraints_.End(); ++i)
-            (*i)->ReleaseConstraint();
-
-        for (PODVector<RigidBody*>::Iterator i = rigidBodies_.Begin(); i != rigidBodies_.End(); ++i)
-            (*i)->ReleaseBody();
-
-        for (PODVector<CollisionShape*>::Iterator i = collisionShapes_.Begin(); i != collisionShapes_.End(); ++i)
-            (*i)->ReleaseShape();
-    }
-
-    world_.Reset();
-    solver_.Reset();
-    broadphase_.Reset();
-    collisionDispatcher_.Reset();
-
-    // Delete configuration only if it was the default created by PhysicsWorld
-    if (!PhysicsWorld::config.collisionConfig_)
-        delete collisionConfiguration_;
-    collisionConfiguration_ = nullptr;
-}
-
-void PhysicsWorld::RegisterObject(Context* context)
-{
-    context->RegisterFactory<PhysicsWorld>(SUBSYSTEM_CATEGORY);
-
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Gravity", GetGravity, SetGravity, Vector3, DEFAULT_GRAVITY, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Physics FPS", int, fps_, DEFAULT_FPS, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Max Substeps", int, maxSubSteps_, 0, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Solver Iterations", GetNumIterations, SetNumIterations, int, 10, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Net Max Angular Vel.", float, maxNetworkAngularVelocity_, DEFAULT_MAX_NETWORK_ANGULAR_VELOCITY, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Interpolation", bool, interpolation_, true, AM_FILE);
-    URHO3D_ATTRIBUTE("Internal Edge Utility", bool, internalEdge_, true, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Split Impulse", GetSplitImpulse, SetSplitImpulse, bool, false, AM_DEFAULT);
-}
-
-bool PhysicsWorld::isVisible(const btVector3& aabbMin, const btVector3& aabbMax)
-{
-    if (debugRenderer_)
-        return debugRenderer_->IsInside(BoundingBox(ToVector3(aabbMin), ToVector3(aabbMax)));
-    else
-        return false;
-}
-
-void PhysicsWorld::drawLine(const btVector3& from, const btVector3& to, const btVector3& color)
-{
-    if (debugRenderer_)
-        debugRenderer_->AddLine(ToVector3(from), ToVector3(to), Color(color.x(), color.y(), color.z()), debugDepthTest_);
-}
-
-void PhysicsWorld::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
-{
-    if (debug)
-    {
-        URHO3D_PROFILE("PhysicsDrawDebug");
-
-        debugRenderer_ = debug;
-        debugDepthTest_ = depthTest;
-        world_->debugDrawWorld();
-        debugRenderer_ = nullptr;
-    }
-}
-
-void PhysicsWorld::reportErrorWarning(const char* warningString)
-{
-    URHO3D_LOGWARNING("Physics: " + String(warningString));
-}
-
-void PhysicsWorld::drawContactPoint(const btVector3& pointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime,
-    const btVector3& color)
-{
-}
-
-void PhysicsWorld::draw3dText(const btVector3& location, const char* textString)
-{
-}
-
-void PhysicsWorld::Update(float timeStep)
-{
-    URHO3D_PROFILE("UpdatePhysics");
-
-    float internalTimeStep = 1.0f / fps_;
-    int maxSubSteps = (int)(timeStep * fps_) + 1;
-    if (maxSubSteps_ < 0)
-    {
-        internalTimeStep = timeStep;
-        maxSubSteps = 1;
-    }
-    else if (maxSubSteps_ > 0)
-        maxSubSteps = Min(maxSubSteps, maxSubSteps_);
-
-    delayedWorldTransforms_.Clear();
-    simulating_ = true;
-
-    if (interpolation_)
-        world_->stepSimulation(timeStep, maxSubSteps, internalTimeStep);
-    else
-    {
-        timeAcc_ += timeStep;
-        while (timeAcc_ >= internalTimeStep && maxSubSteps > 0)
+        contactEntryPool_.Clear();
+        for (int i = 0; i < contactEntryPoolSize_; i++)
         {
-            world_->stepSimulation(internalTimeStep, 0, internalTimeStep);
-            timeAcc_ -= internalTimeStep;
-            --maxSubSteps;
+            contactEntryPool_.Insert(0, context->CreateObject<RigidBodyContactEntry>());
+        }
+
+
+
+    }
+
+    PhysicsWorld::~PhysicsWorld()
+    {
+    }
+
+    void PhysicsWorld::RegisterObject(Context* context)
+    {
+        context->RegisterFactory<PhysicsWorld>(DEF_PHYSICS_CATEGORY.CString());
+        URHO3D_COPY_BASE_ATTRIBUTES(Component);
+        URHO3D_ACCESSOR_ATTRIBUTE("Gravity", GetGravity, SetGravity, Vector3, DEFAULT_GRAVITY, AM_DEFAULT);
+        URHO3D_ACCESSOR_ATTRIBUTE("Physics Scale", GetPhysicsScale, SetPhysicsScale, float, 1.0f, AM_DEFAULT);
+    }
+
+
+
+
+    void PhysicsWorld::SerializeNewtonWorld(String fileName)
+    {
+        NewtonSerializeToFile(newtonWorld_, fileName.CString(), nullptr, nullptr);
+    }
+
+
+
+    
+    String PhysicsWorld::GetSolverPluginName()
+    {
+        void* plugin = NewtonCurrentPlugin(newtonWorld_);
+        return String(NewtonGetPluginString(newtonWorld_, plugin));
+    }
+
+
+
+    
+    void PhysicsWorld::RayCast(PODVector<PhysicsRayCastIntersection>& intersections, const Ray& ray, float maxDistance, unsigned maxIntersections, unsigned collisionMask /*= M_MAX_UNSIGNED*/)
+    {
+        RayCast( intersections, ray.origin_, ray.origin_ + ray.direction_*maxDistance, maxIntersections, collisionMask);
+    }
+
+    void PhysicsWorld::RayCast(PODVector<PhysicsRayCastIntersection>& intersections, const Vector3& pointOrigin, const Vector3& pointDestination, unsigned maxIntersections /*= M_MAX_UNSIGNED*/, unsigned collisionMask /*= M_MAX_UNSIGNED*/)
+    {
+        PhysicsRayCastUserData data;
+
+        Vector3 origin = SceneToPhysics_Domain(pointOrigin);
+        Vector3 destination = SceneToPhysics_Domain(pointDestination);
+
+        NewtonWorldRayCast(newtonWorld_, &UrhoToNewton(origin)[0], &UrhoToNewton(destination)[0], Newton_WorldRayCastFilterCallback, &data, NULL, 0);
+
+        //sort the intersections by distance. we do this because the order that you get is based off bounding box intersection and that is not nessecarily the same of surface intersection order.
+        if (data.intersections.Size() > 1)
+            Sort(data.intersections.Begin(), data.intersections.End(), PhysicsRayCastIntersectionCompare);
+
+
+        int intersectCount = 0;
+        for (PhysicsRayCastIntersection& intersection : data.intersections)
+        {
+
+            unsigned collisionLayerAsBit = CollisionLayerAsBit(intersection.rigBody->GetCollisionLayer());
+
+
+            if ((intersectCount <= maxIntersections)
+                && (collisionLayerAsBit & collisionMask)) {
+
+
+                intersection.rayIntersectWorldPosition = PhysicsToScene_Domain(intersection.rayIntersectWorldPosition);
+                intersection.rayOriginWorld = pointOrigin;
+                intersection.rayDistance = (intersection.rayIntersectWorldPosition - pointOrigin).Length();
+
+                intersections += intersection;
+                intersectCount++;
+
+            }
+        }
+
+    }
+
+
+    void PhysicsWorld::SetGravity(const Vector3& force)
+    {
+        gravity_ = force;
+    }
+
+
+    Urho3D::Vector3 PhysicsWorld::GetGravity() const
+{
+        return gravity_;
+    }
+
+
+    void PhysicsWorld::SetIterationCount(int numIterations /*= 8*/)
+    {
+        iterationCount_ = numIterations;
+        applyNewtonWorldSettings();
+    }
+
+
+    int PhysicsWorld::GetIterationCount() const
+    {
+        return iterationCount_;
+    }
+
+    void PhysicsWorld::SetSubstepFactor(int factor)
+    {
+        subStepFactor = factor;
+        applyNewtonWorldSettings();
+    }
+
+    int PhysicsWorld::GetSubstepFactor() const
+    {
+        return subStepFactor;
+    }
+
+    void PhysicsWorld::SetThreadCount(int numThreads)
+    {
+        newtonThreadCount_ = numThreads;
+        applyNewtonWorldSettings();
+    }
+
+    int PhysicsWorld::GetThreadCount() const
+    {
+        return newtonThreadCount_;
+    }
+
+    void PhysicsWorld::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
+    {
+        URHO3D_PROFILE_FUNCTION();
+        if (debug)
+        {
+            //draw debug geometry on constraints.
+            for (Constraint* constraint : constraintList)
+            {
+                constraint->DrawDebugGeometry(debug, depthTest);
+            }
+
+            //draw debug geometry for contacts
+            for (int i = 0; i < contactEntryPool_.Size(); i++)
+            {
+               if(!contactEntryPool_[i]->expired_)
+                   contactEntryPool_[i]->DrawDebugGeometry(debug, depthTest);
+            }
+
+
+            //draw debug geometry on rigid bodies.
+            for (RigidBody* body : rigidBodyComponentList) {
+                body->DrawDebugGeometry(debug, depthTest);
+            }
+
+            //draw debug geometry on static scene.
+            if (sceneBody_)
+                sceneBody_->DrawDebugGeometry(debug, depthTest);
+
+            //draw debug geometry on vehicles
+            for (PhysicsVehicle* vehicle : vehicleList) {
+                vehicle->DrawDebugGeometry(debug, depthTest);
+            }
         }
     }
 
-    simulating_ = false;
-
-    // Apply delayed (parented) world transforms now
-    while (!delayedWorldTransforms_.Empty())
+    void PhysicsWorld::OnSceneSet(Scene* scene)
     {
-        for (HashMap<RigidBody*, DelayedWorldTransform>::Iterator i = delayedWorldTransforms_.Begin();
-             i != delayedWorldTransforms_.End();)
-        {
-            const DelayedWorldTransform& transform = i->second_;
+        if (scene) {
+            //create the newton world
+            if (newtonWorld_ == nullptr) {
+                newtonWorld_ = NewtonCreate();
+                NewtonWorldSetUserData(newtonWorld_, (void*)this);
+                applyNewtonWorldSettings();
 
-            // If parent's transform has already been assigned, can proceed
-            if (!delayedWorldTransforms_.Contains(transform.parentRigidBody_))
-            {
-                transform.rigidBody_->ApplyWorldTransform(transform.worldPosition_, transform.worldRotation_);
-                i = delayedWorldTransforms_.Erase(i);
+
+                NewtonMaterialSetCollisionCallback(newtonWorld_, 0, 0, Newton_AABBOverlapCallback, Newton_ProcessContactsCallback);
+                //NewtonMaterialSetCompoundCollisionCallback(newtonWorld_, 0, 0, Newton_AABBCompoundOverlapCallback);
+
+
+
+                //make the vehicle manager
+                vehicleManager_ = new dVehicleManager(newtonWorld_);
+
             }
+        }
+        else
+        {
+            //wait for update to finish if in async mode so we can safely clean up.
+            NewtonWaitForUpdateToFinish(newtonWorld_);
+
+            freeWorld();
+        }
+    }
+
+    void PhysicsWorld::addCollisionShape(CollisionShape* collision)
+    {
+        collisionComponentList.Insert(0, WeakPtr<CollisionShape>(collision));
+    }
+
+    void PhysicsWorld::removeCollisionShape(CollisionShape* collision)
+    {
+        collisionComponentList.Remove(WeakPtr<CollisionShape>(collision));
+    }
+
+    void PhysicsWorld::addRigidBody(RigidBody* body)
+    {
+        rigidBodyComponentList.Insert(0, WeakPtr<RigidBody>(body));
+    }
+
+    void PhysicsWorld::removeRigidBody(RigidBody* body)
+    {
+        rigidBodyComponentList.Remove(WeakPtr<RigidBody>(body));
+    }
+
+    void PhysicsWorld::addConstraint(Constraint* constraint)
+    {
+        constraintList.Insert(0, WeakPtr<Constraint>(constraint));
+    }
+
+    void PhysicsWorld::removeConstraint(Constraint* constraint)
+    {
+        constraintList.Remove(WeakPtr<Constraint>(constraint));
+    }
+
+
+    void PhysicsWorld::addVehicle(PhysicsVehicle* vehicle)
+    {
+        vehicleList.Insert(0, WeakPtr<PhysicsVehicle>(vehicle));
+    }
+
+    void PhysicsWorld::removeVehicle(PhysicsVehicle* vehicle)
+    {
+        vehicleList.Remove(WeakPtr<PhysicsVehicle>(vehicle));
+    }
+
+    void PhysicsWorld::freeWorld()
+    {
+
+        //free any joints
+        for (Constraint* constraint : constraintList)
+        {
+            constraint->freeInternal();
+        }
+        constraintList.Clear();
+
+        //free any collision shapes currently in the list
+        for (CollisionShape* col : collisionComponentList)
+        {
+            col->freeInternalCollision();
+        }
+        collisionComponentList.Clear();
+
+
+
+        //free internal bodies for all rigid bodies.
+        for (RigidBody* rgBody : rigidBodyComponentList)
+        {
+            rgBody->freeBody();
+        }
+        rigidBodyComponentList.Clear();
+
+
+        vehicleList.Clear();
+
+        //free meshes in mesh cache
+        newtonMeshCache_.Clear();
+
+        //free the actual memory
+        freePhysicsInternals();
+
+
+
+        //destroy newton world.
+        if (newtonWorld_ != nullptr) {
+            NewtonDestroy(newtonWorld_);
+            newtonWorld_ = nullptr;
+        }
+
+
+    }
+
+
+
+
+    void PhysicsWorld::addToFreeQueue(NewtonBody* newtonBody)
+    {
+        freeBodyQueue_ += newtonBody;
+    }
+
+    void PhysicsWorld::addToFreeQueue(dCustomJoint* newtonConstraint)
+    {
+        freeConstraintQueue_ += newtonConstraint;
+    }
+
+    void PhysicsWorld::addToFreeQueue(NewtonCollision* newtonCollision)
+    {
+        freeCollisionQueue_ += newtonCollision;
+    }
+
+    void PhysicsWorld::applyNewtonWorldSettings()
+    {
+        NewtonSetSolverIterations(newtonWorld_, iterationCount_);
+        NewtonSetNumberOfSubsteps(newtonWorld_, 1);
+        NewtonSetThreadsCount(newtonWorld_, newtonThreadCount_);
+        NewtonSelectBroadphaseAlgorithm(newtonWorld_, 1);//persistent broadphase.
+
+        
+    }
+
+    void PhysicsWorld::formContacts(bool rootrate)
+{
+        URHO3D_PROFILE_FUNCTION();
+
+        for (RigidBody* rigBody : rigidBodyComponentList)
+        {
+            if (!rigBody->generateContacts_)
+                continue;
+
+            NewtonBody* newtonBody = rigBody->GetNewtonBody();
+            if(!newtonBody)
+                continue;
+
+
+            NewtonJoint* curJoint = NewtonBodyGetFirstContactJoint(newtonBody);
+            while (curJoint) {
+
+
+                NewtonBody* body0 = NewtonJointGetBody0(curJoint);
+                NewtonBody* body1 = NewtonJointGetBody1(curJoint);
+
+                RigidBody* rigBody0 = (RigidBody*)NewtonBodyGetUserData(body0);
+                RigidBody* rigBody1 = (RigidBody*)NewtonBodyGetUserData(body1);
+
+                if (!rigBody0 || !rigBody1)
+                {
+                    curJoint = NewtonBodyGetNextContactJoint(newtonBody, curJoint);
+                    continue;
+                }
+
+                if (!rigBody0->generateContacts_ || !rigBody1->generateContacts_) {
+                    curJoint = NewtonBodyGetNextContactJoint(newtonBody, curJoint);
+                    continue;
+                }
+
+
+
+                SharedPtr<RigidBodyContactEntry> contactEntry = nullptr;
+                contactEntry = rigBody0->GetCreateContactEntry(rigBody1);
+                
+
+
+                if (contactEntry->expired_) {
+                    contactEntry->body0 = rigBody0;
+                    contactEntry->body1 = rigBody1;
+
+                    contactEntry->expired_ = false;
+                    contactEntry->numContacts = 0;
+                }
+
+                if(NewtonJointIsActive(curJoint))
+                    contactEntry->wakeFlag_ = NewtonJointIsActive(curJoint);
+
+                if(NewtonContactJointGetContactCount(curJoint) > contactEntry->numContacts)
+                    contactEntry->numContacts = NewtonContactJointGetContactCount(curJoint);
+
+
+
+
+                //rigBody0->CleanContactEntries();
+
+
+
+
+                if (contactEntry->numContacts > DEF_PHYSICS_MAX_CONTACT_POINTS)
+                {
+                    URHO3D_LOGWARNING("Contact Entry Contact Count Greater Than DEF_PHYSICS_MAX_CONTACT_POINTS, consider increasing the limit.");
+                }
+
+
+                int contactIdx = 0;
+                for (void* contact = NewtonContactJointGetFirstContact(curJoint); contact; contact = NewtonContactJointGetNextContact(curJoint, contact))
+                {
+                    
+                    NewtonMaterial* const material = NewtonContactGetMaterial(contact);
+
+                    NewtonCollision* shape0 = NewtonMaterialGetBodyCollidingShape(material, body0);
+                    NewtonCollision* shape1 = NewtonMaterialGetBodyCollidingShape(material, body1);
+
+
+                    CollisionShape* colShape0 = static_cast<CollisionShape*>(NewtonCollisionGetUserData(shape0));
+                    CollisionShape* colShape1 = static_cast<CollisionShape*>(NewtonCollisionGetUserData(shape1));
+
+
+
+
+                    //get contact geometric info for the contact struct
+                    dVector pos, force, norm, tan0, tan1;
+                    NewtonMaterialGetContactPositionAndNormal(material, body0, &pos[0], &norm[0]);
+                    NewtonMaterialGetContactTangentDirections(material, body0, &tan0[0], &tan1[0]);
+                    NewtonMaterialGetContactForce(material, body0, &force[0]);
+
+
+                    contactEntry->contactNormals[contactIdx] = PhysicsToScene_Domain(NewtonToUrhoVec3(norm));
+                    contactEntry->contactPositions[contactIdx] = PhysicsToScene_Domain(NewtonToUrhoVec3(pos));
+                    contactEntry->contactTangent0[contactIdx] = PhysicsToScene_Domain(NewtonToUrhoVec3(tan0));
+                    contactEntry->contactTangent1[contactIdx] = PhysicsToScene_Domain(NewtonToUrhoVec3(tan1));
+                    contactEntry->contactForces[contactIdx] = PhysicsToScene_Domain(NewtonToUrhoVec3(force));
+
+
+                    contactEntry->shapes0[contactIdx] = colShape0;
+                    contactEntry->shapes1[contactIdx] = colShape1;
+
+                    //#todo debugging
+                    GSS<VisualDebugger>()->AddCross(contactEntry->contactPositions[contactIdx], 0.1f, Color::BLUE, true);
+
+                    contactIdx++;
+                }
+                
+                curJoint = NewtonBodyGetNextContactJoint(newtonBody, curJoint);
+            }
+
+        }
+
+
+
+
+
+
+
+
+
+    }
+
+    void PhysicsWorld::ParseContacts()
+    {
+        PODVector<unsigned int> removeKeys;
+        VariantMap eventData;
+        eventData[PhysicsCollisionStart::P_WORLD] = this;
+
+
+        for (RigidBody* rigBody : rigidBodyComponentList)
+        {
+            if (!rigBody->generateContacts_)
+                continue;
+
+            for (HashMap<unsigned int, RigidBodyContactEntry*>::ConstIterator i = rigBody->contactEntries_.Begin(); i != rigBody->contactEntries_.End(); i++)
+            {
+                RigidBodyContactEntry* entry = i->second_;
+
+                if (entry->expired_)
+                    continue;
+
+                eventData[PhysicsCollisionStart::P_BODYA] = entry->body0;
+                eventData[PhysicsCollisionStart::P_BODYB] = entry->body1;
+
+                eventData[PhysicsCollisionStart::P_CONTACT_DATA] = entry;
+
+                if (!entry->body0.Refs() || !entry->body1.Refs())//check expired
+                {
+                    entry->expired_ = true;
+                }
+                else if (entry->wakeFlag_ && !entry->wakeFlagPrev_)//begin contact
+                {
+                    if (entry->body0->collisionEventMode_ &&entry->body1->collisionEventMode_) {
+                        SendEvent(E_PHYSICSCOLLISIONSTART, eventData);
+                    }
+
+                    if (entry->body0->collisionEventMode_) {
+                        if (!entry->body0.Refs() || !entry->body1.Refs()) break; //it is possible someone deleted a body in the previous event.
+
+                        eventData[NodeCollisionStart::P_OTHERNODE] = entry->body1->GetNode();
+                        eventData[NodeCollisionStart::P_OTHERBODY] = entry->body1;
+                        entry->body0->GetNode()->SendEvent(E_NODECOLLISIONSTART, eventData);
+                    }
+
+
+                    if (entry->body1->collisionEventMode_) {
+                        if (!entry->body0.Refs() || !entry->body1.Refs()) break;
+
+                        eventData[NodeCollisionStart::P_OTHERNODE] = entry->body0->GetNode();
+                        eventData[NodeCollisionStart::P_OTHERBODY] = entry->body0;
+                        entry->body1->GetNode()->SendEvent(E_NODECOLLISIONSTART, eventData);
+                    }
+
+
+                    if (entry->body0->collisionEventMode_ &&entry->body1->collisionEventMode_) {
+                        if (!entry->body0.Refs() || !entry->body1.Refs()) break;
+
+                        //also send the E_NODECOLLISION event
+                        SendEvent(E_PHYSICSCOLLISION, eventData);
+                    }
+
+                    if (entry->body0->collisionEventMode_) {
+
+                        if (!entry->body0.Refs() || !entry->body1.Refs()) break;
+
+                        eventData[NodeCollisionStart::P_OTHERNODE] = entry->body1->GetNode();
+                        eventData[NodeCollisionStart::P_OTHERBODY] = entry->body1;
+                        entry->body0->GetNode()->SendEvent(E_NODECOLLISION, eventData);
+                    }
+
+
+                    if (entry->body1->collisionEventMode_) {
+                        if (!entry->body0.Refs() || !entry->body1.Refs()) break;
+
+                        eventData[NodeCollisionStart::P_OTHERNODE] = entry->body0->GetNode();
+                        eventData[NodeCollisionStart::P_OTHERBODY] = entry->body0;
+                        entry->body1->GetNode()->SendEvent(E_NODECOLLISION, eventData);
+                    }
+
+
+                }
+                else if (!entry->wakeFlag_ && entry->wakeFlagPrev_)//end contact
+                {
+                    if (entry->body0->collisionEventMode_ &&entry->body1->collisionEventMode_) {
+                        SendEvent(E_PHYSICSCOLLISIONEND, eventData);
+                    }
+
+
+                    if (entry->body0->collisionEventMode_) {
+
+                        if (!entry->body0.Refs() || !entry->body1.Refs()) break;
+                        eventData[NodeCollisionStart::P_OTHERNODE] = entry->body1->GetNode();
+                        eventData[NodeCollisionStart::P_OTHERBODY] = entry->body1;
+                        entry->body0->GetNode()->SendEvent(E_NODECOLLISIONEND, eventData);
+                    }
+
+                    if (entry->body1->collisionEventMode_) {
+                        if (!entry->body0.Refs() || !entry->body1.Refs()) break;
+                        eventData[NodeCollisionStart::P_OTHERNODE] = entry->body0->GetNode();
+                        eventData[NodeCollisionStart::P_OTHERBODY] = entry->body0;
+                        entry->body1->GetNode()->SendEvent(E_NODECOLLISIONEND, eventData);
+                    }
+                }
+                else if (entry->wakeFlag_ && entry->wakeFlagPrev_)//continued contact
+                {
+                    if (entry->body0->collisionEventMode_ &&entry->body1->collisionEventMode_) {
+                        SendEvent(E_PHYSICSCOLLISION, eventData);
+                    }
+
+
+
+                    if (entry->body0->collisionEventMode_) {
+                        if (!entry->body0.Refs() || !entry->body1.Refs()) break;
+
+                        eventData[NodeCollisionStart::P_OTHERNODE] = entry->body1->GetNode();
+                        eventData[NodeCollisionStart::P_OTHERBODY] = entry->body1;
+                        entry->body0->GetNode()->SendEvent(E_NODECOLLISION, eventData);
+                    }
+
+                    if (entry->body1->collisionEventMode_) {
+
+                        if (!entry->body0.Refs() || !entry->body1.Refs()) break;
+
+                        eventData[NodeCollisionStart::P_OTHERNODE] = entry->body0->GetNode();
+                        eventData[NodeCollisionStart::P_OTHERBODY] = entry->body0;
+                        entry->body1->GetNode()->SendEvent(E_NODECOLLISION, eventData);
+                    }
+                }
+                else if (!entry->wakeFlag_ && !entry->wakeFlagPrev_)//no contact for one update. (mark for removal from the map)
+                {
+                    entry->expired_ = true;
+                }
+
+                //move on..
+                entry->wakeFlagPrev_ = entry->wakeFlag_;
+                entry->wakeFlag_ = false;
+            }
+
+            if(rigBody->contactEntries_.Size() > 10)
+                rigBody->CleanContactEntries();
+        }
+
+
+    }
+
+
+
+
+    void PhysicsWorld::HandleSceneUpdate(StringHash eventType, VariantMap& eventData)
+    {
+       sceneUpdated_ = true;
+
+       Update(GSS<Engine>()->GetUpdateTimeGoalMs() / 1000.0f / float(subStepFactor), true);
+       for(int i = 0; i < subStepFactor-1; i++)
+            Update(GSS<Engine>()->GetUpdateTimeGoalMs() / 1000.0f / float(subStepFactor), false);
+    }
+
+
+
+    void PhysicsWorld::Update(float timestep, bool isRootUpdate)
+    {
+
+        URHO3D_PROFILE_FUNCTION();
+        float timeStep = timestep*GetScene()->GetTimeScale();
+        bool rootRate = isRootUpdate;
+
+        if (rootRate) {
+
+            //Resolve the root rigid body component if it needs created:
+            if (!sceneBody_) {
+                sceneBody_ = GetScene()->GetOrCreateComponent<RigidBody>();
+                sceneBody_->SetIsSceneRootBody(true);
+            }
+        }
+
+
+
+        if (simulationStarted_) {
+            URHO3D_PROFILE("Wait For ASync Update To finish.");
+            
+            NewtonWaitForUpdateToFinish(newtonWorld_);
+        }
+        VariantMap sendEventData;
+        sendEventData[PhysicsPostStep::P_WORLD] = this;
+        sendEventData[PhysicsPostStep::P_TIMESTEP] = timeStep;
+        if (rootRate) {
+
+            if (simulationStarted_) {
+
+                //send post physics event.
+                SendEvent(E_PHYSICSPOSTSTEP, sendEventData);
+                {
+                    URHO3D_PROFILE("Apply Node Transforms");
+
+                    {
+                        URHO3D_PROFILE("Rigid Body Order Pre Sort");
+                        //sort the rigidBodyComponentList by scene depth.
+                        if (rigidBodyListNeedsSorted) {
+                            Sort(rigidBodyComponentList.Begin(), rigidBodyComponentList.End(), RigidBodySceneDepthCompare);
+                            rigidBodyListNeedsSorted = false;
+                        }
+                    }
+
+                    //apply the transform of all rigid body components to their respective nodes.
+                    for (RigidBody* rigBody : rigidBodyComponentList)
+                    {
+                        if (rigBody->GetInternalTransformDirty()) {
+                            rigBody->ApplyTransform(timeStep);
+
+
+                            if (rigBody->InterpolationWithinRestTolerance())
+                                rigBody->MarkInternalTransformDirty(false);
+                        }
+                    }
+
+                    //tell vehicles to update the nodes for the tires.
+                    for (PhysicsVehicle* vehicle : vehicleList)
+                    {
+                        vehicle->applyTransforms();
+                    }
+                }
+            }
+
+
+
+
+
+
+        }
+
+        formContacts(rootRate);
+        
+        if (rootRate) {
+            ParseContacts();
+
+            freePhysicsInternals();
+
+            //rebuild stuff.
+            rebuildDirtyPhysicsComponents();
+        }
+
+
+        SendEvent(E_PHYSICSPRESTEP, sendEventData);
+        {
+            URHO3D_PROFILE("NewtonUpdate");
+            //use target time step to give newton constant time steps. 
+
+
+            NewtonUpdateAsync(newtonWorld_, timeStep);
+            simulationStarted_ = true;
+        }
+    }
+
+    void PhysicsWorld::rebuildDirtyPhysicsComponents()
+    {
+        URHO3D_PROFILE_FUNCTION();
+
+
+
+        //rebuild dirty collision shapes
+        for (CollisionShape* colShape : collisionComponentList)
+        {
+            if (colShape->GetDirty()) {
+                colShape->updateBuild();
+                colShape->MarkDirty(false);
+            }
+        }
+        
+
+        //then rebuild rigid bodies if they need rebuilt (dirty) from root nodes up.
+        for (RigidBody* rigBody : rigidBodyComponentList)
+        {
+            if (!rigBody->GetDirty())
+                continue;
+
+
+            //cross check if any vehicles are using the body - if so mark the vehicle dirty to because it will need rebuilt.
+            for (PhysicsVehicle* vehicle : vehicleList)
+            {
+                if (vehicle->rigidBody_ == rigBody) {
+                    vehicle->MarkDirty();
+                }
+            }
+
+
+            rigBody->reBuildBody();
+            rigBody->MarkDirty(false);
+        }
+
+
+        //rebuild contraints if they need rebuilt (dirty)
+        for (Constraint* constraint : constraintList)
+        {
+            if (constraint->needsRebuilt_)
+                constraint->reEvalConstraint();
+        }
+
+        //apply deferred actions (like impulses/velocity sets etc.) that were waiting for a real body to be built.
+        for (RigidBody* rigBody : rigidBodyComponentList)
+        {
+            rigBody->applyDefferedActions();
+        }
+
+
+        //rebuild vehicles if they need rebuilt
+        for (PhysicsVehicle* vehicle : vehicleList)
+        {
+            if (vehicle->isDirty_) {
+                vehicle->reBuild();
+            }
+        }
+    }
+
+
+
+
+
+    Urho3D::StringHash PhysicsWorld::NewtonMeshKey(String modelResourceName, int modelLodLevel, String otherData)
+    {
+        return modelResourceName + String(modelLodLevel) + otherData;
+    }
+
+    NewtonMeshObject* PhysicsWorld::GetCreateNewtonMesh(StringHash urhoNewtonMeshKey)
+    {
+        if (newtonMeshCache_.Contains(urhoNewtonMeshKey)) {
+            return newtonMeshCache_[urhoNewtonMeshKey];
+        }
+        else
+        {
+            NewtonMesh* mesh = NewtonMeshCreate(newtonWorld_);
+            SharedPtr<NewtonMeshObject> meshObj = context_->CreateObject<NewtonMeshObject>();
+            meshObj->mesh = mesh;
+            newtonMeshCache_[urhoNewtonMeshKey] = meshObj;
+            return meshObj;
+        }
+    }
+
+    NewtonMeshObject* PhysicsWorld::GetNewtonMesh(StringHash urhoNewtonMeshKey)
+    {
+        if (newtonMeshCache_.Contains(urhoNewtonMeshKey)) {
+            return newtonMeshCache_[urhoNewtonMeshKey];
+        }
+        return nullptr;
+    }
+
+    void PhysicsWorld::freePhysicsInternals()
+    {
+        for (dCustomJoint* constraint : freeConstraintQueue_)
+        {
+            delete constraint;
+        }
+        freeConstraintQueue_.Clear();
+
+
+        for (NewtonCollision* col : freeCollisionQueue_)
+        {
+            NewtonDestroyCollision(col);
+        }
+        freeCollisionQueue_.Clear();
+
+
+        for (NewtonBody* body : freeBodyQueue_)
+        {
+            NewtonDestroyBody(body);
+        }
+        freeBodyQueue_.Clear();
+
+
+
+
+    }
+ 
+
+    String NewtonThreadProfilerString(int threadIndex)
+    {
+        return (String("Newton_Thread") + String(threadIndex));
+    }
+
+    
+
+    //add rigid bodies to the list as the function recurses from node to root. the last rigidbody in rigidBodies is the most root. optionally include the scene as root.
+    void GetRootRigidBodies(PODVector<RigidBody*>& rigidBodies, Node* node, bool includeScene)
+    {
+        RigidBody* body = node->GetComponent<RigidBody>();
+
+
+        if (body)
+            rigidBodies += body;
+
+        //recurse on parent
+        if(node->GetParent() && ((node->GetScene() != node->GetParent()) || includeScene))
+            GetRootRigidBodies(rigidBodies, node->GetParent(), includeScene);
+    }
+
+
+    URHO3D_API RigidBody*  GetRigidBody(Node* node, bool includeScene)
+    {
+        Node* curNode = node;
+
+        while (curNode) {
+            if (curNode == curNode->GetScene() && !includeScene)
+            {
+                return nullptr;
+            }
+
+            RigidBody* body = curNode->GetComponent<RigidBody>();
+
+            if (body)
+                return body;
+
+            curNode = curNode->GetParent();
+        }
+
+        return nullptr;
+    }
+
+    //returns first occuring child rigid bodies.
+    void URHO3D_API GetNextChildRigidBodies(PODVector<RigidBody*>& rigidBodies, Node* node)
+    {
+
+        PODVector<Node*> immediateChildren;
+        node->GetChildren(immediateChildren, false);
+
+        for (Node* child : immediateChildren) {
+            if (child->HasComponent<RigidBody>())
+                rigidBodies += child->GetComponent<RigidBody>();
             else
-                ++i;
-        }
-    }
-}
-
-void PhysicsWorld::UpdateCollisions()
-{
-    world_->performDiscreteCollisionDetection();
-}
-
-void PhysicsWorld::SetFps(int fps)
-{
-    fps_ = (unsigned)Clamp(fps, 1, 1000);
-
-    MarkNetworkUpdate();
-}
-
-void PhysicsWorld::SetGravity(const Vector3& gravity)
-{
-    world_->setGravity(ToBtVector3(gravity));
-
-    MarkNetworkUpdate();
-}
-
-void PhysicsWorld::SetMaxSubSteps(int num)
-{
-    maxSubSteps_ = num;
-    MarkNetworkUpdate();
-}
-
-void PhysicsWorld::SetNumIterations(int num)
-{
-    num = Clamp(num, 1, MAX_SOLVER_ITERATIONS);
-    world_->getSolverInfo().m_numIterations = num;
-
-    MarkNetworkUpdate();
-}
-
-void PhysicsWorld::SetUpdateEnabled(bool enable)
-{
-    updateEnabled_ = enable;
-}
-
-void PhysicsWorld::SetInterpolation(bool enable)
-{
-    interpolation_ = enable;
-}
-
-void PhysicsWorld::SetInternalEdge(bool enable)
-{
-    internalEdge_ = enable;
-
-    MarkNetworkUpdate();
-}
-
-void PhysicsWorld::SetSplitImpulse(bool enable)
-{
-    world_->getSolverInfo().m_splitImpulse = enable;
-
-    MarkNetworkUpdate();
-}
-
-void PhysicsWorld::SetMaxNetworkAngularVelocity(float velocity)
-{
-    maxNetworkAngularVelocity_ = Clamp(velocity, 1.0f, 32767.0f);
-
-    MarkNetworkUpdate();
-}
-
-void PhysicsWorld::Raycast(PODVector<PhysicsRaycastResult>& result, const Ray& ray, float maxDistance, unsigned collisionMask)
-{
-    URHO3D_PROFILE("PhysicsRaycast");
-
-    if (maxDistance >= M_INFINITY)
-        URHO3D_LOGWARNING("Infinite maxDistance in physics raycast is not supported");
-
-    btCollisionWorld::AllHitsRayResultCallback
-        rayCallback(ToBtVector3(ray.origin_), ToBtVector3(ray.origin_ + maxDistance * ray.direction_));
-    rayCallback.m_collisionFilterGroup = (short)0xffff;
-    rayCallback.m_collisionFilterMask = (short)collisionMask;
-
-    world_->rayTest(rayCallback.m_rayFromWorld, rayCallback.m_rayToWorld, rayCallback);
-
-    for (int i = 0; i < rayCallback.m_collisionObjects.size(); ++i)
-    {
-        PhysicsRaycastResult newResult;
-        newResult.body_ = static_cast<RigidBody*>(rayCallback.m_collisionObjects[i]->getUserPointer());
-        newResult.position_ = ToVector3(rayCallback.m_hitPointWorld[i]);
-        newResult.normal_ = ToVector3(rayCallback.m_hitNormalWorld[i]);
-        newResult.distance_ = (newResult.position_ - ray.origin_).Length();
-        newResult.hitFraction_ = rayCallback.m_closestHitFraction;
-        result.Push(newResult);
-    }
-
-    Sort(result.Begin(), result.End(), CompareRaycastResults);
-}
-
-void PhysicsWorld::RaycastSingle(PhysicsRaycastResult& result, const Ray& ray, float maxDistance, unsigned collisionMask)
-{
-    URHO3D_PROFILE("PhysicsRaycastSingle");
-
-    if (maxDistance >= M_INFINITY)
-        URHO3D_LOGWARNING("Infinite maxDistance in physics raycast is not supported");
-
-    btCollisionWorld::ClosestRayResultCallback
-        rayCallback(ToBtVector3(ray.origin_), ToBtVector3(ray.origin_ + maxDistance * ray.direction_));
-    rayCallback.m_collisionFilterGroup = (short)0xffff;
-    rayCallback.m_collisionFilterMask = (short)collisionMask;
-
-    world_->rayTest(rayCallback.m_rayFromWorld, rayCallback.m_rayToWorld, rayCallback);
-
-    if (rayCallback.hasHit())
-    {
-        result.position_ = ToVector3(rayCallback.m_hitPointWorld);
-        result.normal_ = ToVector3(rayCallback.m_hitNormalWorld);
-        result.distance_ = (result.position_ - ray.origin_).Length();
-        result.hitFraction_ = rayCallback.m_closestHitFraction;
-        result.body_ = static_cast<RigidBody*>(rayCallback.m_collisionObject->getUserPointer());
-    }
-    else
-    {
-        result.position_ = Vector3::ZERO;
-        result.normal_ = Vector3::ZERO;
-        result.distance_ = M_INFINITY;
-        result.hitFraction_ = 0.0f;
-        result.body_ = nullptr;
-    }
-}
-
-void PhysicsWorld::RaycastSingleSegmented(PhysicsRaycastResult& result, const Ray& ray, float maxDistance, float segmentDistance, unsigned collisionMask, float overlapDistance)
-{
-    URHO3D_PROFILE("PhysicsRaycastSingleSegmented");
-
-    assert(overlapDistance < segmentDistance);
-
-    if (maxDistance >= M_INFINITY)
-        URHO3D_LOGWARNING("Infinite maxDistance in physics raycast is not supported");
-
-    const btVector3 direction = ToBtVector3(ray.direction_);
-    const auto count = CeilToInt(maxDistance / segmentDistance);
-
-    btVector3 start = ToBtVector3(ray.origin_);
-    // overlap a bit with the previous segment for better precision, to avoid missing hits
-    const btVector3 overlap = direction * overlapDistance;
-    float remainingDistance = maxDistance;
-
-    for (auto i = 0; i < count; ++i)
-    {
-        const float distance = Min(remainingDistance, segmentDistance); // The last segment may be shorter
-        const btVector3 end = start + distance * direction;
-
-        btCollisionWorld::ClosestRayResultCallback rayCallback(start, end);
-        rayCallback.m_collisionFilterGroup = (short)0xffff;
-        rayCallback.m_collisionFilterMask = (short)collisionMask;
-
-        world_->rayTest(rayCallback.m_rayFromWorld, rayCallback.m_rayToWorld, rayCallback);
-
-        if (rayCallback.hasHit())
-        {
-            result.position_ = ToVector3(rayCallback.m_hitPointWorld);
-            result.normal_ = ToVector3(rayCallback.m_hitNormalWorld);
-            result.distance_ = (result.position_ - ray.origin_).Length();
-            result.hitFraction_ = rayCallback.m_closestHitFraction;
-            result.body_ = static_cast<RigidBody*>(rayCallback.m_collisionObject->getUserPointer());
-            // No need to cast the rest of the segments
-            return;
+                GetNextChildRigidBodies(rigidBodies, child);
         }
 
-        // Use the end position as the new start position
-        start = end - overlap;
-        remainingDistance -= segmentDistance;
     }
 
-    // Didn't hit anything
-    result.position_ = Vector3::ZERO;
-    result.normal_ = Vector3::ZERO;
-    result.distance_ = M_INFINITY;
-    result.hitFraction_ = 0.0f;
-    result.body_ = nullptr;
-}
-
-void PhysicsWorld::SphereCast(PhysicsRaycastResult& result, const Ray& ray, float radius, float maxDistance, unsigned collisionMask)
-{
-    URHO3D_PROFILE("PhysicsSphereCast");
-
-    if (maxDistance >= M_INFINITY)
-        URHO3D_LOGWARNING("Infinite maxDistance in physics sphere cast is not supported");
-
-    btSphereShape shape(radius);
-    Vector3 endPos = ray.origin_ + maxDistance * ray.direction_;
-
-    btCollisionWorld::ClosestConvexResultCallback
-        convexCallback(ToBtVector3(ray.origin_), ToBtVector3(endPos));
-    convexCallback.m_collisionFilterGroup = (short)0xffff;
-    convexCallback.m_collisionFilterMask = (short)collisionMask;
-
-    world_->convexSweepTest(&shape, btTransform(btQuaternion::getIdentity(), convexCallback.m_convexFromWorld),
-        btTransform(btQuaternion::getIdentity(), convexCallback.m_convexToWorld), convexCallback);
-
-    if (convexCallback.hasHit())
+    //recurses up the scene tree starting a node and continuing up every branch adding collision shapes to the array until a rigid body is encountered in which case the algorithm stops traversing that branch.
+    void GetAloneCollisionShapes(PODVector<CollisionShape*>& colShapes, Node* startingNode, bool includeStartingNodeShapes)
     {
-        result.body_ = static_cast<RigidBody*>(convexCallback.m_hitCollisionObject->getUserPointer());
-        result.position_ = ToVector3(convexCallback.m_hitPointWorld);
-        result.normal_ = ToVector3(convexCallback.m_hitNormalWorld);
-        result.distance_ = convexCallback.m_closestHitFraction * (endPos - ray.origin_).Length();
-        result.hitFraction_ = convexCallback.m_closestHitFraction;
-    }
-    else
-    {
-        result.body_ = nullptr;
-        result.position_ = Vector3::ZERO;
-        result.normal_ = Vector3::ZERO;
-        result.distance_ = M_INFINITY;
-        result.hitFraction_ = 0.0f;
-    }
-}
 
-void PhysicsWorld::ConvexCast(PhysicsRaycastResult& result, CollisionShape* shape, const Vector3& startPos,
-    const Quaternion& startRot, const Vector3& endPos, const Quaternion& endRot, unsigned collisionMask)
-{
-    if (!shape || !shape->GetCollisionShape())
-    {
-        URHO3D_LOGERROR("Null collision shape for convex cast");
-        result.body_ = nullptr;
-        result.position_ = Vector3::ZERO;
-        result.normal_ = Vector3::ZERO;
-        result.distance_ = M_INFINITY;
-        result.hitFraction_ = 0.0f;
-        return;
-    }
-
-    // If shape is attached in a rigidbody, set its collision group temporarily to 0 to make sure it is not returned in the sweep result
-    auto* bodyComp = shape->GetComponent<RigidBody>();
-    btRigidBody* body = bodyComp ? bodyComp->GetBody() : nullptr;
-    btBroadphaseProxy* proxy = body ? body->getBroadphaseProxy() : nullptr;
-    short group = 0;
-    if (proxy)
-    {
-        group = proxy->m_collisionFilterGroup;
-        proxy->m_collisionFilterGroup = 0;
-    }
-
-    // Take the shape's offset position & rotation into account
-    Node* shapeNode = shape->GetNode();
-    Matrix3x4 startTransform(startPos, startRot, shapeNode ? shapeNode->GetWorldScale() : Vector3::ONE);
-    Matrix3x4 endTransform(endPos, endRot, shapeNode ? shapeNode->GetWorldScale() : Vector3::ONE);
-    Vector3 effectiveStartPos = startTransform * shape->GetPosition();
-    Vector3 effectiveEndPos = endTransform * shape->GetPosition();
-    Quaternion effectiveStartRot = startRot * shape->GetRotation();
-    Quaternion effectiveEndRot = endRot * shape->GetRotation();
-
-    ConvexCast(result, shape->GetCollisionShape(), effectiveStartPos, effectiveStartRot, effectiveEndPos, effectiveEndRot, collisionMask);
-
-    // Restore the collision group
-    if (proxy)
-        proxy->m_collisionFilterGroup = group;
-}
-
-void PhysicsWorld::ConvexCast(PhysicsRaycastResult& result, btCollisionShape* shape, const Vector3& startPos,
-    const Quaternion& startRot, const Vector3& endPos, const Quaternion& endRot, unsigned collisionMask)
-{
-    if (!shape)
-    {
-        URHO3D_LOGERROR("Null collision shape for convex cast");
-        result.body_ = nullptr;
-        result.position_ = Vector3::ZERO;
-        result.normal_ = Vector3::ZERO;
-        result.distance_ = M_INFINITY;
-        result.hitFraction_ = 0.0f;
-        return;
-    }
-
-    if (!shape->isConvex())
-    {
-        URHO3D_LOGERROR("Can not use non-convex collision shape for convex cast");
-        result.body_ = nullptr;
-        result.position_ = Vector3::ZERO;
-        result.normal_ = Vector3::ZERO;
-        result.distance_ = M_INFINITY;
-        result.hitFraction_ = 0.0f;
-        return;
-    }
-
-    URHO3D_PROFILE("PhysicsConvexCast");
-
-    btCollisionWorld::ClosestConvexResultCallback convexCallback(ToBtVector3(startPos), ToBtVector3(endPos));
-    convexCallback.m_collisionFilterGroup = (short)0xffff;
-    convexCallback.m_collisionFilterMask = (short)collisionMask;
-
-    world_->convexSweepTest(static_cast<btConvexShape*>(shape), btTransform(ToBtQuaternion(startRot),
-            convexCallback.m_convexFromWorld), btTransform(ToBtQuaternion(endRot), convexCallback.m_convexToWorld),
-        convexCallback);
-
-    if (convexCallback.hasHit())
-    {
-        result.body_ = static_cast<RigidBody*>(convexCallback.m_hitCollisionObject->getUserPointer());
-        result.position_ = ToVector3(convexCallback.m_hitPointWorld);
-        result.normal_ = ToVector3(convexCallback.m_hitNormalWorld);
-        result.distance_ = convexCallback.m_closestHitFraction * (endPos - startPos).Length();
-        result.hitFraction_ = convexCallback.m_closestHitFraction;
-    }
-    else
-    {
-        result.body_ = nullptr;
-        result.position_ = Vector3::ZERO;
-        result.normal_ = Vector3::ZERO;
-        result.distance_ = M_INFINITY;
-        result.hitFraction_ = 0.0f;
-    }
-}
-
-void PhysicsWorld::RemoveCachedGeometry(Model* model)
-{
-    RemoveCachedGeometryImpl(triMeshCache_, model);
-    RemoveCachedGeometryImpl(convexCache_, model);
-    RemoveCachedGeometryImpl(gimpactTrimeshCache_, model);
-}
-
-void PhysicsWorld::GetRigidBodies(PODVector<RigidBody*>& result, const Sphere& sphere, unsigned collisionMask)
-{
-    URHO3D_PROFILE("PhysicsSphereQuery");
-
-    result.Clear();
-
-    btSphereShape sphereShape(sphere.radius_);
-    UniquePtr<btRigidBody> tempRigidBody(new btRigidBody(1.0f, nullptr, &sphereShape));
-    tempRigidBody->setWorldTransform(btTransform(btQuaternion::getIdentity(), ToBtVector3(sphere.center_)));
-    // Need to activate the temporary rigid body to get reliable results from static, sleeping objects
-    tempRigidBody->activate();
-    world_->addRigidBody(tempRigidBody.Get());
-
-    PhysicsQueryCallback callback(result, collisionMask);
-    world_->contactTest(tempRigidBody.Get(), callback);
-
-    world_->removeRigidBody(tempRigidBody.Get());
-}
-
-void PhysicsWorld::GetRigidBodies(PODVector<RigidBody*>& result, const BoundingBox& box, unsigned collisionMask)
-{
-    URHO3D_PROFILE("PhysicsBoxQuery");
-
-    result.Clear();
-
-    btBoxShape boxShape(ToBtVector3(box.HalfSize()));
-    UniquePtr<btRigidBody> tempRigidBody(new btRigidBody(1.0f, nullptr, &boxShape));
-    tempRigidBody->setWorldTransform(btTransform(btQuaternion::getIdentity(), ToBtVector3(box.Center())));
-    tempRigidBody->activate();
-    world_->addRigidBody(tempRigidBody.Get());
-
-    PhysicsQueryCallback callback(result, collisionMask);
-    world_->contactTest(tempRigidBody.Get(), callback);
-
-    world_->removeRigidBody(tempRigidBody.Get());
-}
-
-void PhysicsWorld::GetRigidBodies(PODVector<RigidBody*>& result, const RigidBody* body)
-{
-    URHO3D_PROFILE("PhysicsBodyQuery");
-
-    result.Clear();
-
-    if (!body || !body->GetBody())
-        return;
-
-    PhysicsQueryCallback callback(result, body->GetCollisionMask());
-    world_->contactTest(body->GetBody(), callback);
-
-    // Remove the body itself from the returned list
-    for (unsigned i = 0; i < result.Size(); i++)
-    {
-        if (result[i] == body)
+        if (includeStartingNodeShapes)
         {
-            result.Erase(i);
-            break;
+            startingNode->GetDerivedComponents<CollisionShape>(colShapes, false, false);
         }
-    }
-}
 
-void PhysicsWorld::GetCollidingBodies(PODVector<RigidBody*>& result, const RigidBody* body)
-{
-    URHO3D_PROFILE("GetCollidingBodies");
 
-    result.Clear();
 
-    for (HashMap<Pair<WeakPtr<RigidBody>, WeakPtr<RigidBody> >, ManifoldPair>::Iterator i = currentCollisions_.Begin();
-         i != currentCollisions_.End(); ++i)
-    {
-        if (i->first_.first_ == body)
-        {
-            if (i->first_.second_)
-                result.Push(i->first_.second_);
-        }
-        else if (i->first_.second_ == body)
-        {
-            if (i->first_.first_)
-                result.Push(i->first_.first_);
-        }
-    }
-}
+        PODVector<Node*> immediateChildren;
+        startingNode->GetChildren(immediateChildren, false);
 
-Vector3 PhysicsWorld::GetGravity() const
-{
-    return ToVector3(world_->getGravity());
-}
-
-int PhysicsWorld::GetNumIterations() const
-{
-    return world_->getSolverInfo().m_numIterations;
-}
-
-bool PhysicsWorld::GetSplitImpulse() const
-{
-    return world_->getSolverInfo().m_splitImpulse != 0;
-}
-
-void PhysicsWorld::AddRigidBody(RigidBody* body)
-{
-    rigidBodies_.Push(body);
-}
-
-void PhysicsWorld::RemoveRigidBody(RigidBody* body)
-{
-    rigidBodies_.Remove(body);
-    // Remove possible dangling pointer from the delayedWorldTransforms structure
-    delayedWorldTransforms_.Erase(body);
-}
-
-void PhysicsWorld::AddCollisionShape(CollisionShape* shape)
-{
-    collisionShapes_.Push(shape);
-}
-
-void PhysicsWorld::RemoveCollisionShape(CollisionShape* shape)
-{
-    collisionShapes_.Remove(shape);
-}
-
-void PhysicsWorld::AddConstraint(Constraint* constraint)
-{
-    constraints_.Push(constraint);
-}
-
-void PhysicsWorld::RemoveConstraint(Constraint* constraint)
-{
-    constraints_.Remove(constraint);
-}
-
-void PhysicsWorld::AddDelayedWorldTransform(const DelayedWorldTransform& transform)
-{
-    delayedWorldTransforms_[transform.rigidBody_] = transform;
-}
-
-void PhysicsWorld::DrawDebugGeometry(bool depthTest)
-{
-    auto* debug = GetComponent<DebugRenderer>();
-    DrawDebugGeometry(debug, depthTest);
-}
-
-void PhysicsWorld::SetDebugRenderer(DebugRenderer* debug)
-{
-    debugRenderer_ = debug;
-}
-
-void PhysicsWorld::SetDebugDepthTest(bool enable)
-{
-    debugDepthTest_ = enable;
-}
-
-void PhysicsWorld::CleanupGeometryCache()
-{
-    // Remove cached shapes whose only reference is the cache itself
-    CleanupGeometryCacheImpl(triMeshCache_);
-    CleanupGeometryCacheImpl(convexCache_);
-    CleanupGeometryCacheImpl(gimpactTrimeshCache_);
-}
-
-void PhysicsWorld::OnSceneSet(Scene* scene)
-{
-    // Subscribe to the scene subsystem update, which will trigger the physics simulation step
-    if (scene)
-    {
-        scene_ = GetScene();
-        SubscribeToEvent(scene_, E_SCENESUBSYSTEMUPDATE, URHO3D_HANDLER(PhysicsWorld, HandleSceneSubsystemUpdate));
-    }
-    else
-        UnsubscribeFromEvent(E_SCENESUBSYSTEMUPDATE);
-}
-
-void PhysicsWorld::HandleSceneSubsystemUpdate(StringHash eventType, VariantMap& eventData)
-{
-    if (!updateEnabled_)
-        return;
-
-    using namespace SceneSubsystemUpdate;
-    Update(eventData[P_TIMESTEP].GetFloat());
-}
-
-void PhysicsWorld::PreStep(float timeStep)
-{
-    // Send pre-step event
-    using namespace PhysicsPreStep;
-
-    VariantMap& eventData = GetEventDataMap();
-    eventData[P_WORLD] = this;
-    eventData[P_TIMESTEP] = timeStep;
-    SendEvent(E_PHYSICSPRESTEP, eventData);
-
-    // Start profiling block for the actual simulation step
-    // URHO3D_PROFILE("PhysicsStepSimulation");
-}
-
-void PhysicsWorld::PostStep(float timeStep)
-{
-    // URHO3D_PROFILE_END();
-
-    SendCollisionEvents();
-
-    // Send post-step event
-    using namespace PhysicsPostStep;
-
-    VariantMap& eventData = GetEventDataMap();
-    eventData[P_WORLD] = this;
-    eventData[P_TIMESTEP] = timeStep;
-    SendEvent(E_PHYSICSPOSTSTEP, eventData);
-}
-
-void PhysicsWorld::SendCollisionEvents()
-{
-    URHO3D_PROFILE("SendCollisionEvents");
-
-    currentCollisions_.Clear();
-    physicsCollisionData_.Clear();
-    nodeCollisionData_.Clear();
-
-    int numManifolds = collisionDispatcher_->getNumManifolds();
-
-    if (numManifolds)
-    {
-        physicsCollisionData_[PhysicsCollision::P_WORLD] = this;
-
-        for (int i = 0; i < numManifolds; ++i)
-        {
-            btPersistentManifold* contactManifold = collisionDispatcher_->getManifoldByIndexInternal(i);
-            // First check that there are actual contacts, as the manifold exists also when objects are close but not touching
-            if (!contactManifold->getNumContacts())
+        for (Node* child : immediateChildren) {
+            if (child->HasComponent<RigidBody>())
                 continue;
-
-            const btCollisionObject* objectA = contactManifold->getBody0();
-            const btCollisionObject* objectB = contactManifold->getBody1();
-
-            auto* bodyA = static_cast<RigidBody*>(objectA->getUserPointer());
-            auto* bodyB = static_cast<RigidBody*>(objectB->getUserPointer());
-            // If it's not a rigidbody, maybe a ghost object
-            if (!bodyA || !bodyB)
-                continue;
-
-            // Skip collision event signaling if both objects are static, or if collision event mode does not match
-            if (bodyA->GetMass() == 0.0f && bodyB->GetMass() == 0.0f)
-                continue;
-            if (bodyA->GetCollisionEventMode() == COLLISION_NEVER || bodyB->GetCollisionEventMode() == COLLISION_NEVER)
-                continue;
-            if (bodyA->GetCollisionEventMode() == COLLISION_ACTIVE && bodyB->GetCollisionEventMode() == COLLISION_ACTIVE &&
-                !bodyA->IsActive() && !bodyB->IsActive())
-                continue;
-
-            WeakPtr<RigidBody> bodyWeakA(bodyA);
-            WeakPtr<RigidBody> bodyWeakB(bodyB);
-
-            // First only store the collision pair as weak pointers and the manifold pointer, so user code can safely destroy
-            // objects during collision event handling
-            Pair<WeakPtr<RigidBody>, WeakPtr<RigidBody> > bodyPair;
-            if (bodyA < bodyB)
-            {
-                bodyPair = MakePair(bodyWeakA, bodyWeakB);
-                currentCollisions_[bodyPair].manifold_ = contactManifold;
-            }
             else
             {
-                bodyPair = MakePair(bodyWeakB, bodyWeakA);
-                currentCollisions_[bodyPair].flippedManifold_ = contactManifold;
-            }
-        }
+                child->GetDerivedComponents<CollisionShape>(colShapes, false, false);
+                GetAloneCollisionShapes(colShapes, child, false);
 
-        for (HashMap<Pair<WeakPtr<RigidBody>, WeakPtr<RigidBody> >, ManifoldPair>::Iterator i = currentCollisions_.Begin();
-             i != currentCollisions_.End(); ++i)
-        {
-            RigidBody* bodyA = i->first_.first_;
-            RigidBody* bodyB = i->first_.second_;
-            if (!bodyA || !bodyB)
-                continue;
-
-            Node* nodeA = bodyA->GetNode();
-            Node* nodeB = bodyB->GetNode();
-            WeakPtr<Node> nodeWeakA(nodeA);
-            WeakPtr<Node> nodeWeakB(nodeB);
-
-            bool trigger = bodyA->IsTrigger() || bodyB->IsTrigger();
-            bool newCollision = !previousCollisions_.Contains(i->first_);
-
-            physicsCollisionData_[PhysicsCollision::P_NODEA] = nodeA;
-            physicsCollisionData_[PhysicsCollision::P_NODEB] = nodeB;
-            physicsCollisionData_[PhysicsCollision::P_BODYA] = bodyA;
-            physicsCollisionData_[PhysicsCollision::P_BODYB] = bodyB;
-            physicsCollisionData_[PhysicsCollision::P_TRIGGER] = trigger;
-
-            contacts_.Clear();
-
-            // "Pointers not flipped"-manifold, send unmodified normals
-            btPersistentManifold* contactManifold = i->second_.manifold_;
-            if (contactManifold)
-            {
-                for (int j = 0; j < contactManifold->getNumContacts(); ++j)
-                {
-                    btManifoldPoint& point = contactManifold->getContactPoint(j);
-                    contacts_.WriteVector3(ToVector3(point.m_positionWorldOnB));
-                    contacts_.WriteVector3(ToVector3(point.m_normalWorldOnB));
-                    contacts_.WriteFloat(point.m_distance1);
-                    contacts_.WriteFloat(point.m_appliedImpulse);
-                }
-            }
-            // "Pointers flipped"-manifold, flip normals also
-            contactManifold = i->second_.flippedManifold_;
-            if (contactManifold)
-            {
-                for (int j = 0; j < contactManifold->getNumContacts(); ++j)
-                {
-                    btManifoldPoint& point = contactManifold->getContactPoint(j);
-                    contacts_.WriteVector3(ToVector3(point.m_positionWorldOnB));
-                    contacts_.WriteVector3(-ToVector3(point.m_normalWorldOnB));
-                    contacts_.WriteFloat(point.m_distance1);
-                    contacts_.WriteFloat(point.m_appliedImpulse);
-                }
             }
 
-            physicsCollisionData_[PhysicsCollision::P_CONTACTS] = contacts_.GetBuffer();
-
-            // Send separate collision start event if collision is new
-            if (newCollision)
-            {
-                SendEvent(E_PHYSICSCOLLISIONSTART, physicsCollisionData_);
-                // Skip rest of processing if either of the nodes or bodies is removed as a response to the event
-                if (!nodeWeakA || !nodeWeakB || !i->first_.first_ || !i->first_.second_)
-                    continue;
-            }
-
-            // Then send the ongoing collision event
-            SendEvent(E_PHYSICSCOLLISION, physicsCollisionData_);
-            if (!nodeWeakA || !nodeWeakB || !i->first_.first_ || !i->first_.second_)
-                continue;
-
-            nodeCollisionData_[NodeCollision::P_BODY] = bodyA;
-            nodeCollisionData_[NodeCollision::P_OTHERNODE] = nodeB;
-            nodeCollisionData_[NodeCollision::P_OTHERBODY] = bodyB;
-            nodeCollisionData_[NodeCollision::P_TRIGGER] = trigger;
-            nodeCollisionData_[NodeCollision::P_CONTACTS] = contacts_.GetBuffer();
-
-            if (newCollision)
-            {
-                nodeA->SendEvent(E_NODECOLLISIONSTART, nodeCollisionData_);
-                if (!nodeWeakA || !nodeWeakB || !i->first_.first_ || !i->first_.second_)
-                    continue;
-            }
-
-            nodeA->SendEvent(E_NODECOLLISION, nodeCollisionData_);
-            if (!nodeWeakA || !nodeWeakB || !i->first_.first_ || !i->first_.second_)
-                continue;
-
-            // Flip perspective to body B
-            contacts_.Clear();
-            contactManifold = i->second_.manifold_;
-            if (contactManifold)
-            {
-                for (int j = 0; j < contactManifold->getNumContacts(); ++j)
-                {
-                    btManifoldPoint& point = contactManifold->getContactPoint(j);
-                    contacts_.WriteVector3(ToVector3(point.m_positionWorldOnB));
-                    contacts_.WriteVector3(-ToVector3(point.m_normalWorldOnB));
-                    contacts_.WriteFloat(point.m_distance1);
-                    contacts_.WriteFloat(point.m_appliedImpulse);
-                }
-            }
-            contactManifold = i->second_.flippedManifold_;
-            if (contactManifold)
-            {
-                for (int j = 0; j < contactManifold->getNumContacts(); ++j)
-                {
-                    btManifoldPoint& point = contactManifold->getContactPoint(j);
-                    contacts_.WriteVector3(ToVector3(point.m_positionWorldOnB));
-                    contacts_.WriteVector3(ToVector3(point.m_normalWorldOnB));
-                    contacts_.WriteFloat(point.m_distance1);
-                    contacts_.WriteFloat(point.m_appliedImpulse);
-                }
-            }
-
-            nodeCollisionData_[NodeCollision::P_BODY] = bodyB;
-            nodeCollisionData_[NodeCollision::P_OTHERNODE] = nodeA;
-            nodeCollisionData_[NodeCollision::P_OTHERBODY] = bodyA;
-            nodeCollisionData_[NodeCollision::P_CONTACTS] = contacts_.GetBuffer();
-
-            if (newCollision)
-            {
-                nodeB->SendEvent(E_NODECOLLISIONSTART, nodeCollisionData_);
-                if (!nodeWeakA || !nodeWeakB || !i->first_.first_ || !i->first_.second_)
-                    continue;
-            }
-
-            nodeB->SendEvent(E_NODECOLLISION, nodeCollisionData_);
         }
     }
 
-    // Send collision end events as applicable
+
+
+
+
+
+
+
+
+    void RebuildPhysicsNodeTree(Node* node)
     {
-        physicsCollisionData_[PhysicsCollisionEnd::P_WORLD] = this;
+        //trigger a rebuild on the root of the new tree.
+        PODVector<RigidBody*> rigBodies;
+        GetRootRigidBodies(rigBodies, node, false);
+        if (rigBodies.Size()) {
+            RigidBody* mostRootRigBody = rigBodies.Back();
+            if (mostRootRigBody)
+                mostRootRigBody->MarkDirty(true);
+        }
+    }
 
-        for (HashMap<Pair<WeakPtr<RigidBody>, WeakPtr<RigidBody> >, ManifoldPair>::Iterator
-                 i = previousCollisions_.Begin(); i != previousCollisions_.End(); ++i)
+
+    unsigned CollisionLayerAsBit(unsigned layer)
+    {
+        if (layer == 0)
+            return M_MAX_UNSIGNED;
+
+        return (0x1 << layer - 1);
+    }
+
+    void RegisterPhysicsLibrary(Context* context)
+    {
+        PhysicsWorld::RegisterObject(context);
+
+        CollisionShape::RegisterObject(context);
+        CollisionShape_Box::RegisterObject(context);
+        CollisionShape_Sphere::RegisterObject(context);
+        CollisionShape_Cylinder::RegisterObject(context);
+        CollisionShape_ChamferCylinder::RegisterObject(context);
+        CollisionShape_Capsule::RegisterObject(context);
+        CollisionShape_Cone::RegisterObject(context);
+        CollisionShape_Geometry::RegisterObject(context);
+        CollisionShape_ConvexHull::RegisterObject(context);
+        CollisionShape_ConvexHullCompound::RegisterObject(context);
+        CollisionShape_ConvexDecompositionCompound::RegisterObject(context);
+        CollisionShape_TreeCollision::RegisterObject(context);
+        CollisionShape_HeightmapTerrain::RegisterObject(context);
+
+        RigidBody::RegisterObject(context);
+        NewtonMeshObject::RegisterObject(context);
+        Constraint::RegisterObject(context);
+        FixedDistanceConstraint::RegisterObject(context);
+        BallAndSocketConstraint::RegisterObject(context);
+        SixDof_Constraint::RegisterObject(context);
+        HingeConstraint::RegisterObject(context);
+        SliderConstraint::RegisterObject(context);
+        FullyFixedConstraint::RegisterObject(context);
+        KinematicsControllerConstraint::RegisterObject(context);
+        RigidBodyContactEntry::RegisterObject(context);
+
+        PhysicsVehicle::RegisterObject(context);
+        VehicleTire::RegisterObject(context);
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    RigidBodyContactEntry::RigidBodyContactEntry(Context* context) : Object(context)
+    {
+
+    }
+
+    RigidBodyContactEntry::~RigidBodyContactEntry()
+    {
+
+    }
+
+    void RigidBodyContactEntry::RegisterObject(Context* context)
+    {
+        context->RegisterFactory<RigidBodyContactEntry>();
+    }
+
+    void RigidBodyContactEntry::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
+    {
+        //draw contact points
+        if (wakeFlag_)
         {
-            if (!currentCollisions_.Contains(i->first_))
+            for (int i = 0; i < numContacts; i++)
             {
-                RigidBody* bodyA = i->first_.first_;
-                RigidBody* bodyB = i->first_.second_;
-                if (!bodyA || !bodyB)
-                    continue;
-
-                bool trigger = bodyA->IsTrigger() || bodyB->IsTrigger();
-
-                // Skip collision event signaling if both objects are static, or if collision event mode does not match
-                if (bodyA->GetMass() == 0.0f && bodyB->GetMass() == 0.0f)
-                    continue;
-                if (bodyA->GetCollisionEventMode() == COLLISION_NEVER || bodyB->GetCollisionEventMode() == COLLISION_NEVER)
-                    continue;
-                if (bodyA->GetCollisionEventMode() == COLLISION_ACTIVE && bodyB->GetCollisionEventMode() == COLLISION_ACTIVE &&
-                    !bodyA->IsActive() && !bodyB->IsActive())
-                    continue;
-
-                Node* nodeA = bodyA->GetNode();
-                Node* nodeB = bodyB->GetNode();
-                WeakPtr<Node> nodeWeakA(nodeA);
-                WeakPtr<Node> nodeWeakB(nodeB);
-
-                physicsCollisionData_[PhysicsCollisionEnd::P_BODYA] = bodyA;
-                physicsCollisionData_[PhysicsCollisionEnd::P_BODYB] = bodyB;
-                physicsCollisionData_[PhysicsCollisionEnd::P_NODEA] = nodeA;
-                physicsCollisionData_[PhysicsCollisionEnd::P_NODEB] = nodeB;
-                physicsCollisionData_[PhysicsCollisionEnd::P_TRIGGER] = trigger;
-
-                SendEvent(E_PHYSICSCOLLISIONEND, physicsCollisionData_);
-                // Skip rest of processing if either of the nodes or bodies is removed as a response to the event
-                if (!nodeWeakA || !nodeWeakB || !i->first_.first_ || !i->first_.second_)
-                    continue;
-
-                nodeCollisionData_[NodeCollisionEnd::P_BODY] = bodyA;
-                nodeCollisionData_[NodeCollisionEnd::P_OTHERNODE] = nodeB;
-                nodeCollisionData_[NodeCollisionEnd::P_OTHERBODY] = bodyB;
-                nodeCollisionData_[NodeCollisionEnd::P_TRIGGER] = trigger;
-
-                nodeA->SendEvent(E_NODECOLLISIONEND, nodeCollisionData_);
-                if (!nodeWeakA || !nodeWeakB || !i->first_.first_ || !i->first_.second_)
-                    continue;
-
-                nodeCollisionData_[NodeCollisionEnd::P_BODY] = bodyB;
-                nodeCollisionData_[NodeCollisionEnd::P_OTHERNODE] = nodeA;
-                nodeCollisionData_[NodeCollisionEnd::P_OTHERBODY] = bodyA;
-
-                nodeB->SendEvent(E_NODECOLLISIONEND, nodeCollisionData_);
+                debug->AddLine(contactPositions[i], (contactPositions[i] + contactNormals[i]), Color::GREEN, depthTest);
             }
         }
     }
 
-    previousCollisions_ = currentCollisions_;
-}
 
-void RegisterPhysicsLibrary(Context* context)
-{
-    CollisionShape::RegisterObject(context);
-    RigidBody::RegisterObject(context);
-    Constraint::RegisterObject(context);
-    PhysicsWorld::RegisterObject(context);
-    RaycastVehicle::RegisterObject(context);
-}
 
 }

@@ -1,0 +1,528 @@
+/* Copyright (c) <2003-2016> <Newton Game Dynamics>
+* 
+* This software is provided 'as-is', without any express or implied
+* warranty. In no event will the authors be held liable for any damages
+* arising from the use of this software.
+* 
+* Permission is granted to anyone to use this software for any purpose,
+* including commercial applications, and to alter it and redistribute it
+* freely
+*/
+
+/*
+ *------------------------------------------------------------------
+ *
+ * This grammar only have one shift reduce conflict, which is the standard dangling else in if-then-else of almost all high level programming languages.
+ * I resolve it in favor of shift as it is is the custom tradition for languages like C, C++, java and c#
+ *
+ *------------------------------------------------------------------
+ */
+
+  
+%{
+// Newton Little Scripting Language specification 1.0.0
+// loosely based on a subset of Java and C sharp
+
+#include "dLSCstdafx.h"
+#include "dLittleScriptParser.h"
+#include "dLittleScriptLexical.h"
+#include "dLittleScriptCompiler.h"
+%}
+
+
+%union 
+{
+	class dUserVariable: public dDefualtUserVariable
+	{
+		public:
+		dUserVariable () 
+			:dDefualtUserVariable ()
+			//,m_node(NULL)
+		{
+		}
+		
+		dUserVariable (dToken token, const char* const text, int scannerLine, int scannerIndex)
+			:dDefualtUserVariable (token, text, scannerLine, scannerIndex)
+			//,m_node(NULL)
+		{
+		}
+		//class dDAG* m_node;
+	};
+}
+
+/*
+%token ABSTRACT
+%token BYVALUE
+%token CAST CATCH CONST 
+%token EXTENDS
+%token  FINALLY  FUTURE
+%token GENERIC GOTO
+%token IMPLEMENTS  INNER INSTANCEOF  
+
+%token NATIVE JNULL
+%token OPERATOR OUTER
+%token PROTECTED 
+%token REST 
+%token SUPER SYNCHRONIZED
+%token THROW THROWS TRANSIENT TRY
+%token VAR  VOLATILE
+%token LITERAL BOOLLIT
+*/
+
+// language supported Keywords
+%token _BYTE
+%token _INT
+%token _SHORT
+%token _LONG
+%token _BOOLEAN 
+%token _FLOAT
+%token _DOUBLE
+%token _CONST 
+%token _VOID
+%token _CLASS
+%token _IMPORT
+%token _FINAL
+%token _PUBLIC
+%token _PRIVATE
+%token _STATIC
+%token _NATIVE
+%token _PACKAGE
+%token _INTERFACE
+%token _IDENTIFIER
+%token _OP_DIM
+
+
+%token _IF
+%token _ELSE
+%token _SWITCH
+%token _CASE
+%token _DEFAULT
+%token _BREAK
+%token _CONTINUE
+%token _DO
+%token _FOR
+%token _WHILE
+%token _RETURN
+%token _IDENTICAL
+%token _DIFFERENT
+%token _LESS_EQUAL 
+%token _GREATHER_EQUAL
+%token _SHIFT_RIGHT 
+%token _SHIFT_LEFT
+%token _LOGIC_OR 
+%token _LOGIC_AND 
+
+%token _NEW
+%token _THIS
+%token _FLOAT_CONST
+%token _INTEGER_CONST
+
+
+%token _OP_INC _OP_DEC
+%token _ASS_MUL _ASS_DIV _ASS_MOD _ASS_ADD _ASS_SUB
+%token _ASS_SHL _ASS_SHR _ASS_AND _ASS_XOR _ASS_OR
+
+
+
+%right _ELSE
+%right _IF
+%right '=' _ASS_MUL _ASS_DIV _ASS_MOD _ASS_ADD _ASS_SUB _ASS_SHL _ASS_SHR _ASS_AND _ASS_XOR _ASS_OR
+%right '?' ':'
+%left _LOGIC_OR 
+%left _LOGIC_AND 
+%left '|'
+%left '^'
+%left '&'
+%left _IDENTICAL _DIFFERENT
+%left _LESS_EQUAL _GREATHER_EQUAL '<' '>' 
+%left _SHIFT_RIGHT _SHIFT_LEFT
+%left '+' '-'
+%left '*' '/' '%'
+%right _NEW
+%right _THIS
+%right '~'
+%right '!' 
+%right _OP_INC _OP_DEC
+
+
+%{
+	#define MyModule ((dScriptCompiler*) this)
+%}
+
+%start ScriptFile
+
+%%
+
+
+ScriptFile
+	: ProgramFile
+	;
+
+	
+ProgramFile
+	:                                   
+	|                                   ClassDeclarationList
+//	|                  ImportStatements
+//	|                  ImportStatements ClassDeclarationList
+//	| PackageStatement
+//	| PackageStatement                  ClassDeclarationList	
+//	| PackageStatement ImportStatements
+//	| PackageStatement ImportStatements ClassDeclarationList
+	;
+	
+	
+	
+PrimitiveType
+	; _VOID															{$$ = $1;} 
+	| _BOOLEAN														{$$ = $1;} 
+	| _BYTE															{$$ = $1;}
+	| _SHORT														{$$ = $1;}
+	| _INT															{$$ = $1;} 
+	| _LONG															{$$ = $1;}
+	| _FLOAT														{$$ = $1;}
+	| _DOUBLE														{$$ = $1;}
+	;
+	
+	
+Modifier
+	: _PUBLIC													{$$ = $1;} 
+	| _STATIC													{$$ = $1;} 
+	| _NATIVE													{$$ = $1;} 
+	| _FINAL													{$$ = $1;} 	
+//	| ABSTRACT													{$$ = $1;} 
+//	| PROTECTED													{$$ = $1;} 
+//	| TRANSIENT													{$$ = $1;} 
+//	| VOLATILE													{$$ = $1;} 
+//	| SYNCHRONIZED												{$$ = $1;} 	
+	;
+	
+QualifiedName
+	: _IDENTIFIER													{$$ = $1;} 
+	| QualifiedName '.' _IDENTIFIER									{$$ = $1; $$.m_data = $1.m_data + $2.m_data + $3.m_data;} 
+	;
+
+TypeName
+	: PrimitiveType													{$$ = $1;} 
+	| QualifiedName													{$$ = $1;} 
+	;
+
+ArrayOperator
+	: _OP_DIM														{$$ = MyModule->NewDimensionNode(dUserVariable());} 
+	| ArrayOperator _OP_DIM											{$$ = MyModule->ConcatenateDimensionNode($1, MyModule->NewDimensionNode(dUserVariable()));} 
+	;
+
+TypeSpecifier
+	: TypeName														{$$ = MyModule->EmitTypeNode ($1);}
+	| TypeName ArrayOperator										{$$ = MyModule->EmitTypeNode ($1, $2);} 
+	;
+
+
+Modifiers
+	: Modifier														{$$ = $1;} 
+	| Modifiers Modifier											{$$ = $1; $$.m_data = $1.m_data + ' ' + $2.m_data;} 
+	;
+
+
+ExpressionList
+	: Expression													{$$ = $1;} 
+	| ExpressionList ',' Expression									{$$ = MyModule->ConcatenateExpressions($1, $3);} 
+	;	
+
+FunctionCall
+	: QualifiedName '(' ')'											{$$ = MyModule->NewExpressionFunctionCall ($1.m_data, dUserVariable());}
+	| QualifiedName '(' ExpressionList ')'							{$$ = MyModule->NewExpressionFunctionCall ($1.m_data, $3);}
+	; 	
+
+DimemsionExpr
+	: '[' Expression ']'											{$$ = MyModule->NewDimensionNode($2);} 
+	;
+	
+DimemsionExprList
+	: DimemsionExpr													{$$ = $1;}
+	| DimemsionExprList DimemsionExpr								{dAssert(0);}
+	;
+
+ExpressionNew
+	: _NEW TypeName DimemsionExprList								{$$ = MyModule->NewExpressionOperatorNew ($2.m_data, $3);}
+	| _NEW TypeName													{dAssert (0);}
+	| _NEW TypeName ArrayOperator									{dAssert (0);}
+	| _NEW TypeName '(' ArgumentList ')'							{dAssert (0);}	
+	| _NEW TypeName '('              ')'							{dAssert (0);}
+	;
+
+
+Expression
+	: Expression '=' Expression											{$$ = MyModule->NewExpresionNodeAssigment ($1, $3);} 
+/*
+	| Expression _ASS_ADD Expression									{$$ = MyModule->NewExpresionNodeAssigment ($1, $2, $3);} 
+	| Expression _ASS_SUB Expression									{$$ = MyModule->NewExpresionNodeAssigment ($1, $2, $3);} 
+	| Expression _ASS_MUL Expression									{$$ = MyModule->NewExpresionNodeAssigment ($1, $2, $3);} 
+	| Expression _ASS_DIV Expression									{$$ = MyModule->NewExpresionNodeAssigment ($1, $2, $3);} 
+	| Expression _ASS_MOD Expression									{$$ = MyModule->NewExpresionNodeAssigment ($1, $2, $3);} 
+	| Expression _ASS_SHL Expression									{$$ = MyModule->NewExpresionNodeAssigment ($1, $2, $3);} 
+	| Expression _ASS_SHR Expression									{$$ = MyModule->NewExpresionNodeAssigment ($1, $2, $3);} 
+	| Expression _ASS_AND Expression									{$$ = MyModule->NewExpresionNodeAssigment ($1, $2, $3);} 
+	| Expression _ASS_XOR Expression									{$$ = MyModule->NewExpresionNodeAssigment ($1, $2, $3);} 
+	| Expression _ASS_OR Expression										{$$ = MyModule->NewExpresionNodeAssigment ($1, $2, $3);} 
+*/
+	| Expression '+' Expression											{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);} 
+	| Expression '-' Expression											{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);} 
+	| Expression '*' Expression											{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);} 
+	| Expression '/' Expression											{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);} 
+	| Expression '%' Expression											{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);}
+	| Expression '>' Expression											{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);} 
+	| Expression '<' Expression											{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);} 
+	| Expression _IDENTICAL Expression									{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);}
+	| Expression _DIFFERENT Expression									{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);}
+	| Expression _LESS_EQUAL Expression									{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);}
+	| Expression _GREATHER_EQUAL Expression								{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);}
+	| Expression _LOGIC_OR Expression									{$$ = MyModule->NewExpressionNodeLogiOperator ($1, $2, $3);}
+	| Expression _LOGIC_AND Expression									{$$ = MyModule->NewExpressionNodeLogiOperator ($1, $2, $3);}
+	| '+' Expression %prec '~'											{$$ = $2;}
+	| '-' Expression %prec '~'											{dUserVariable tmp; tmp.m_token = _INTEGER_CONST; tmp.m_data = "0"; tmp = MyModule->NewExpressionNodeConstant (tmp); $$ = MyModule->NewExpressionNodeBinaryOperator (tmp, $1, $2);}
+	| Expression _OP_INC												{$$ = MyModule->NewExpresionNodePrefixPostfixOperator ($1, false, true);}
+	| Expression _OP_DEC												{$$ = MyModule->NewExpresionNodePrefixPostfixOperator ($1, false, false);}
+	| _OP_INC Expression 												{$$ = MyModule->NewExpresionNodePrefixPostfixOperator ($2, true, true);}
+	| _OP_DEC Expression 												{$$ = MyModule->NewExpresionNodePrefixPostfixOperator ($2, true, false);}
+	| '(' Expression ')'												{$$ = $2;}
+	| FunctionCall		 												{$$ = $1;}
+	| ExpressionNew														{$$ = $1;}
+	| TypeSpecifier _IDENTIFIER											{$$ = MyModule->NewVariableToCurrentBlock ("", $1, $2.m_data);}
+	| Modifiers TypeSpecifier _IDENTIFIER								{$$ = MyModule->NewVariableToCurrentBlock ($1.m_data, $2, $3.m_data);}
+	| QualifiedName DimemsionExprList									{$$ = MyModule->NewExpressionNodeVariable ($1.m_data, "", $2);}
+	| QualifiedName														{$$ = MyModule->NewExpressionNodeVariable ($1.m_data, "");}
+	| _FLOAT_CONST														{$$ = MyModule->NewExpressionNodeConstant($1);} 
+	| _INTEGER_CONST													{$$ = MyModule->NewExpressionNodeConstant($1);} 
+	| _THIS																{$$ = MyModule->NewExpressionNodeOperatorThisConstant($1);} 
+	;
+
+ClassVariableExpression
+	: ClassVariableExpression '=' ClassVariableExpression				{$$ = MyModule->NewExpresionNodeAssigment ($1, $3);} 
+/*
+	| ClassVariableExpression '+' ClassVariableExpression				{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);} 
+	| ClassVariableExpression '-' ClassVariableExpression				{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);} 
+	| ClassVariableExpression '*' ClassVariableExpression				{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);} 
+	| ClassVariableExpression '/' ClassVariableExpression				{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);} 
+	| ClassVariableExpression '%' ClassVariableExpression				{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);}
+	| ClassVariableExpression '>' ClassVariableExpression				{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);} 
+	| ClassVariableExpression '<' ClassVariableExpression				{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);} 
+*/
+	| ClassVariableExpression _IDENTICAL ClassVariableExpression		{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);}
+/*
+	| ClassVariableExpression _DIFFERENT ClassVariableExpression		{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);}
+	| ClassVariableExpression _LESS_EQUAL ClassVariableExpression		{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);}
+	| ClassVariableExpression _GREATHER_EQUAL ClassVariableExpression	{$$ = MyModule->NewExpressionNodeBinaryOperator ($1, $2, $3);}
+	| ClassVariableExpression _LOGIC_OR ClassVariableExpression			{$$ = MyModule->NewExpressionNodeLogiOperator ($1, $2, $3);}
+	| ClassVariableExpression _LOGIC_AND ClassVariableExpression		{$$ = MyModule->NewExpressionNodeLogiOperator ($1, $2, $3);}
+	| '+' ClassVariableExpression %prec '~'								{$$ = $2;}
+	| '-' ClassVariableExpression %prec '~'								{dUserVariable tmp; tmp.m_token = _INTEGER_CONST; tmp.m_data = "0"; tmp = MyModule->NewExpressionNodeConstant (tmp); $$ = MyModule->NewExpressionNodeBinaryOperator (tmp, $1, $2);}
+*/
+	| '(' ClassVariableExpression ')'									{$$ = $2;}
+	| TypeSpecifier _IDENTIFIER											{$$ = MyModule->AddClassVariable ("", $1, $2.m_data);}
+	| Modifiers TypeSpecifier _IDENTIFIER								{$$ = MyModule->AddClassVariable ($1.m_data, $2, $3.m_data);}
+	| QualifiedName DimemsionExprList									{$$ = MyModule->NewExpressionNodeVariable ($1.m_data, "", $2);}
+	| QualifiedName														{$$ = MyModule->NewExpressionNodeVariable ($1.m_data, "");}
+	| _FLOAT_CONST														{$$ = MyModule->NewExpressionNodeConstant($1);} 
+	| _INTEGER_CONST													{$$ = MyModule->NewExpressionNodeConstant($1);} 
+	;
+	
+BeginScope
+	:																{$$ = MyModule->BeginScopeBlock ();} 
+	;
+	
+ScopeStatement
+	: BeginScope Statement											{MyModule->AddStatementToCurrentBlock($2); $$ = MyModule->EndScopeBlock ();}	
+	;
+
+BeginDo
+	: _DO															{$$ = MyModule->BeginScopeBlock ();} 
+	;
+
+DoStatement
+	: BeginDo ScopeStatement _WHILE '(' Expression ')' ';'			{MyModule->AddStatementToCurrentBlock(MyModule->NewDoStatement($5, $2)); $$ = MyModule->EndScopeBlock ();}
+	;
+
+BeginFor
+	: _FOR															{$$ = MyModule->BeginScopeBlock ();} 
+	;
+	
+ForStatement
+	: BeginFor '(' ExpressionList ';' Expression ';' ExpressionList ')' ScopeStatement	{MyModule->AddStatementToCurrentBlock(MyModule->NewForStatement($3, $5, $7, $9)); $$ = MyModule->EndScopeBlock ();}
+	| BeginFor '(' ExpressionList ';' Expression ';'                ')' ScopeStatement	{MyModule->AddStatementToCurrentBlock(MyModule->NewForStatement($3, $5, dUserVariable(), $8)); $$ = MyModule->EndScopeBlock ();}
+	| BeginFor '('				  ';' Expression ';' ExpressionList ')' ScopeStatement	{MyModule->AddStatementToCurrentBlock(MyModule->NewForStatement(dUserVariable(), $4, $6, $8)); $$ = MyModule->EndScopeBlock ();}
+	| BeginFor '('                ';' Expression ';'                ')' ScopeStatement	{MyModule->AddStatementToCurrentBlock(MyModule->NewForStatement(dUserVariable(), $4, dUserVariable(), $7)); $$ = MyModule->EndScopeBlock ();}
+	| BeginFor '(' ExpressionList ';'			 ';' ExpressionList ')' ScopeStatement	{MyModule->AddStatementToCurrentBlock(MyModule->NewForStatement($3, dUserVariable(), $6, $7)); $$ = MyModule->EndScopeBlock ();}
+	| BeginFor '(' ExpressionList ';'			 ';'                ')' ScopeStatement	{MyModule->AddStatementToCurrentBlock(MyModule->NewForStatement($3, dUserVariable(), dUserVariable(), $7)); $$ = MyModule->EndScopeBlock ();}
+	| BeginFor '('                ';'			 ';' ExpressionList ')' ScopeStatement	{MyModule->AddStatementToCurrentBlock(MyModule->NewForStatement($3, dUserVariable(), $5, $7)); $$ = MyModule->EndScopeBlock ();}
+//	| BeginFor '('                ';'			 ';'                ')' ScopeStatement	{MyModule->AddStatementToCurrentBlock(MyModule->NewForStatement(dUserVariable(), dUserVariable(), dUserVariable(), $6)); $$ = MyModule->EndScopeBlock ();}
+	;  
+	
+BeginWhile
+	: _WHILE														{$$ = MyModule->BeginScopeBlock ();} 
+	;
+
+WhileStatement
+	: BeginWhile '(' Expression ')' ScopeStatement					{MyModule->AddStatementToCurrentBlock(MyModule->NewWhileStatement($3, $5)); $$ = MyModule->EndScopeBlock ();}
+	;
+	
+ReturnStatement
+	: _RETURN ';'													{$$ = MyModule->NewReturnStatement(dUserVariable());}
+	| _RETURN ExpressionList ';'									{$$ = MyModule->NewReturnStatement($2);}
+	;
+	
+Case
+	: _CASE _INTEGER_CONST ':' ScopeStatement						{$$ = MyModule->NewCaseStatement ($2.m_data, $4);}
+	| _DEFAULT ':' ScopeStatement									{$$ = MyModule->NewCaseStatement ("default", $3);}
+	;
+	
+	
+CaseList 
+	: Case															{$$ = $1;}
+	| CaseList Case													{$$ = MyModule->ConcatenateCaseBlocks ($1, $2);}
+	;
+	
+SwitchStatement
+	: _SWITCH '(' Expression ')' '{' CaseList '}'					{$$ = MyModule->NewSwitchStatement($3, $6);}
+	;
+
+FlowInterruptStatement
+	: _BREAK ';'													{$$ = MyModule->NewBreakStatement();}
+	| _CONTINUE ';'													{$$ = MyModule->NewContinueStatement();}
+	;
+
+ConditionalStatement
+	: _IF '(' Expression ')' ScopeStatement							{$$ = MyModule->NewIFStatement($3, $5, dUserVariable());}
+	| _IF '(' Expression ')' ScopeStatement _ELSE ScopeStatement	{$$ = MyModule->NewIFStatement($3, $5, $7);}
+	;
+	
+Statement
+	: ';'						
+	| Block															{$$ = $1;}
+	| ExpressionList ';'											{$$ = $1;}
+	| DoStatement													{$$ = $1;}		
+	| ForStatement													{$$ = $1;}
+	| WhileStatement												{$$ = $1;}
+	| ReturnStatement												{$$ = $1;}
+	| SwitchStatement												{$$ = $1;}
+	| ConditionalStatement											{$$ = $1;}
+	| FlowInterruptStatement										{$$ = $1;}
+	;	
+
+
+StatementList
+	: Statement														{$$ = MyModule->AddStatementToCurrentBlock($1);}	
+	| StatementList Statement										{$$ = MyModule->AddStatementToCurrentBlock($2);}
+	;
+
+
+BlockBegin
+	: '{'															{$$ = MyModule->BeginScopeBlock ();} 
+	;
+
+Block
+	: BlockBegin '}'												{$$ = MyModule->EndScopeBlock ();} 
+	| BlockBegin StatementList '}'									{$$ = MyModule->EndScopeBlock ();}
+	;
+
+
+FunctionBody
+	: Block															{$$ = $1;}
+	| ';'															{dAssert (0);}
+	;
+
+
+FunctionParameterList
+	: FunctionParameter												{$$ = MyModule->FunctionAddParameterNode ($1);}	
+	| FunctionParameterList ',' FunctionParameter					{$$ = MyModule->FunctionAddParameterNode ($3);}	
+	;
+
+FunctionParameter
+	: TypeSpecifier _IDENTIFIER										{$$ = MyModule->NewParameterNode ($1, $2.m_data);}
+	;
+
+
+FunctionProtoTypeParameters
+	: '(' ')'														{$$ = dUserVariable();}
+	| '(' FunctionParameterList ')'									{$$ = $2;}
+	; 
+
+FunctionName
+	:		    TypeSpecifier _IDENTIFIER							{$$ = MyModule->AddClassFunction ($1, $2.m_data, "");}	 
+	| Modifiers TypeSpecifier _IDENTIFIER							{$$ = MyModule->AddClassFunction ($2, $3.m_data, $1.m_data);}	 
+	;	
+
+
+ClassFunctionDeclaration
+	: FunctionName FunctionProtoTypeParameters FunctionBody			{$$ = MyModule->FunctionAddBodyBlock($3);}
+    | FunctionName FunctionProtoTypeParameters _CONST FunctionBody	{$$ = MyModule->FunctionAddBodyBlock($3);}
+	;
+	
+ConstructorName
+	:			_IDENTIFIER											{$$ = MyModule->AddClassContructor ($1.m_data, "");}
+	| Modifiers _IDENTIFIER											{$$ = MyModule->AddClassContructor ($2.m_data, $1.m_data);}
+	;
+
+ClassConstructorDeclaration
+	: ConstructorName FunctionProtoTypeParameters FunctionBody		{$$ = MyModule->FunctionAddBodyBlock($3);}
+	;
+
+
+ClassVariableExpressionList
+	: ClassVariableExpression											{$$ = MyModule->AddClassVariableInitilization ($1);}
+	| ClassVariableExpressionList ',' ClassVariableExpression			{$$ = MyModule->AddClassVariableInitilization (MyModule->ConcatenateVariables ($1, $3));}
+	;
+
+ClassVariableDeclaration 
+	: ClassVariableExpressionList ';'									
+	;
+
+
+ClassFieldDeclaration
+	: ';'
+	| ClassConstructorDeclaration
+	| ClassFunctionDeclaration
+	| ClassVariableDeclaration 
+//	| StaticInitializer
+//	| NonStaticInitializer
+//	| ClassDeclaration
+	;
+
+ClassFieldDeclarationList
+	: ClassFieldDeclaration
+	| ClassFieldDeclarationList ClassFieldDeclaration 
+	;
+
+ClassWord
+	: _CLASS													
+//	| _INTERFACE												
+	;	
+
+ClassHeader
+	:           ClassWord _IDENTIFIER							{$$ = MyModule->CreateClass ("private", $1.m_data, $2.m_data, "", "");} 
+	| Modifiers ClassWord _IDENTIFIER							{$$ = MyModule->CreateClass ($1.m_data, $2.m_data, $3.m_data, "", "");} 
+//	| Modifiers ClassWord _IDENTIFIER Extends Interfaces
+//	| Modifiers ClassWord _IDENTIFIER Extends
+//	| Modifiers ClassWord _IDENTIFIER		  Interfaces
+//	|           ClassWord _IDENTIFIER Extends Interfaces
+//	|           ClassWord _IDENTIFIER Extends
+//	|           ClassWord _IDENTIFIER         Interfaces
+	;
+
+
+ClassDeclaration
+	: ';'
+	| ClassHeader '{' '}'											
+	| ClassHeader '{' ClassFieldDeclarationList '}'							
+	;
+
+ClassDeclarationList
+	: ClassDeclaration
+	| ClassDeclarationList ClassDeclaration
+	;	
+
+%%
+
+
+
+
+

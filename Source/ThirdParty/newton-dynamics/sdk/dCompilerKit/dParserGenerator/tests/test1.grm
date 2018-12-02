@@ -1,0 +1,56 @@
+
+/* Copyright (c) <2003-2016> <Newton Game Dynamics>
+* 
+* This software is provided 'as-is', without any express or implied
+* warranty. In no event will the authors be held liable for any damages
+* arising from the use of this software.
+* 
+* Permission is granted to anyone to use this software for any purpose,
+* including commercial applications, and to alter it and redistribute it
+* freely
+*/
+
+
+// very simple sample SLR(1) grammar 
+
+%union 
+{
+	class dUserVariable: public string
+	{
+		dUserVariable () 
+			:string("")
+		{
+		}
+		
+		dUserVariable (Token token, const char* const text)
+			:m_token(token), m_data (text) 
+		{
+		}
+		Token m_token;
+	};
+}
+
+%token id
+%start E1
+
+%%
+
+
+E1	: E				{printf ("%s\n", $1.m_data.c_str());}
+	;
+
+E	: E '+' T		{$$.m_data = $1.m_data + " + " + $3.m_data;}
+	| T				{$$ = $1;}
+	;
+	
+T	: T '*'	F		{$$.m_data = $1.m_data + " * " + $3.m_data;}
+	| F				{$$ = $1;}
+	;
+	
+F	: '(' E ')'		{$$ = $2;}
+	| id			{$$ = $1;}
+	;
+%%
+
+
+

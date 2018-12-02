@@ -1,312 +1,406 @@
-//
-// Copyright (c) 2008-2018 the Urho3D project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
-
 #pragma once
-
-#include "../IO/VectorBuffer.h"
 #include "../Scene/Component.h"
+#include "Newton.h"
+#include "dVector.h"
+#include "../Scene/Node.h"
 
-#include <Bullet/LinearMath/btMotionState.h>
 
-class btCompoundShape;
-class btRigidBody;
+class NewtonBody;
 
 namespace Urho3D
 {
 
-class CollisionShape;
-class Constraint;
-class PhysicsWorld;
-class SmoothedTransform;
+    class Constraint;
+    class Component;
+    class PhysicsWorld;
+    class CollisionShape;
+    class RigidBodyContactEntry;
 
-/// Rigid body collision event signaling mode.
-enum CollisionEventMode
-{
-    COLLISION_NEVER = 0,
-    COLLISION_ACTIVE,
-    COLLISION_ALWAYS
-};
+    /// Rigid body collision event signaling mode.
+    enum RigidBodyCollisionEventMode
+    {
+        COLLISION_NEVER = 0,
+        //COLLISION_ACTIVE,
+        COLLISION_ALWAYS
+    };
+    static const unsigned DEFAULT_COLLISION_LAYER = 0;
+    static const unsigned DEFAULT_COLLISION_MASK = M_MAX_UNSIGNED;//default collide with all layers.
 
-/// Physics rigid body component.
-class URHO3D_API RigidBody : public Component, public btMotionState
-{
-    URHO3D_OBJECT(RigidBody, Component);
 
-public:
-    /// Construct.
-    explicit RigidBody(Context* context);
-    /// Destruct. Free the rigid body and geometries.
-    ~RigidBody() override;
-    /// Register object factory.
-    static void RegisterObject(Context* context);
+    struct RigidBodyCollisionExceptionEntry
+    {
+        unsigned rigidBodyComponentId_ = M_MAX_UNSIGNED;
+        bool enableCollisions_ = false;
+    };
 
-    /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
-    void ApplyAttributes() override;
-    /// Handle enabled/disabled state change.
-    void OnSetEnabled() override;
-    /// Return initial world transform to Bullet.
-    void getWorldTransform(btTransform& worldTrans) const override;
-    /// Update world transform from Bullet.
-    void setWorldTransform(const btTransform& worldTrans) override;
-    /// Visualize the component as debug geometry.
-    void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
-    /// Set mass. Zero mass makes the body static.
-    void SetMass(float mass);
-    /// Set rigid body position in world space.
-    void SetPosition(const Vector3& position);
-    /// Set rigid body rotation in world space.
-    void SetRotation(const Quaternion& rotation);
-    /// Set rigid body position and rotation in world space as an atomic operation.
-    void SetTransform(const Vector3& position, const Quaternion& rotation);
-    /// Set linear velocity.
-    void SetLinearVelocity(const Vector3& velocity);
-    /// Set linear degrees of freedom. Use 1 to enable an axis or 0 to disable. Default is all axes enabled (1, 1, 1).
-    void SetLinearFactor(const Vector3& factor);
-    /// Set linear velocity deactivation threshold.
-    void SetLinearRestThreshold(float threshold);
-    /// Set linear velocity damping factor.
-    void SetLinearDamping(float damping);
-    /// Set angular velocity.
-    void SetAngularVelocity(const Vector3& velocity);
-    /// Set angular degrees of freedom. Use 1 to enable an axis or 0 to disable. Default is all axes enabled (1, 1, 1).
-    void SetAngularFactor(const Vector3& factor);
-    /// Set angular velocity deactivation threshold.
-    void SetAngularRestThreshold(float threshold);
-    /// Set angular velocity damping factor.
-    void SetAngularDamping(float damping);
-    /// Set friction coefficient.
-    void SetFriction(float friction);
-    /// Set anisotropic friction.
-    void SetAnisotropicFriction(const Vector3& friction);
-    /// Set rolling friction coefficient.
-    void SetRollingFriction(float friction);
-    /// Set restitution coefficient.
-    void SetRestitution(float restitution);
-    /// Set contact processing threshold.
-    void SetContactProcessingThreshold(float threshold);
-    /// Set continuous collision detection swept sphere radius.
-    void SetCcdRadius(float radius);
-    /// Set continuous collision detection motion-per-simulation-step threshold. 0 disables, which is the default.
-    void SetCcdMotionThreshold(float threshold);
-    /// Set whether gravity is applied to rigid body.
-    void SetUseGravity(bool enable);
-    /// Set gravity override. If zero, uses physics world's gravity.
-    void SetGravityOverride(const Vector3& gravity);
-    /// Set rigid body kinematic mode. In kinematic mode forces are not applied to the rigid body.
-    void SetKinematic(bool enable);
-    /// Set rigid body trigger mode. In trigger mode collisions are reported but do not apply forces.
-    void SetTrigger(bool enable);
-    /// Set collision layer.
-    void SetCollisionLayer(unsigned layer);
-    /// Set collision mask.
-    void SetCollisionMask(unsigned mask);
-    /// Set collision group and mask.
-    void SetCollisionLayerAndMask(unsigned layer, unsigned mask);
-    /// Set collision event signaling mode. Default is to signal when rigid bodies are active.
-    void SetCollisionEventMode(CollisionEventMode mode);
-    /// Apply force to center of mass.
-    void ApplyForce(const Vector3& force);
-    /// Apply force at local position.
-    void ApplyForce(const Vector3& force, const Vector3& position);
-    /// Apply torque.
-    void ApplyTorque(const Vector3& torque);
-    /// Apply impulse to center of mass.
-    void ApplyImpulse(const Vector3& impulse);
-    /// Apply impulse at local position.
-    void ApplyImpulse(const Vector3& impulse, const Vector3& position);
-    /// Apply torque impulse.
-    void ApplyTorqueImpulse(const Vector3& torque);
-    /// Reset accumulated forces.
-    void ResetForces();
-    /// Activate rigid body if it was resting.
-    void Activate();
-    /// Readd rigid body to the physics world to clean up internal state like stale contacts.
-    void ReAddBodyToWorld();
-    /// Disable mass update. Call this to optimize performance when adding or editing multiple collision shapes in the same node.
-    void DisableMassUpdate();
-    /// Re-enable mass update and recalculate the mass/inertia by calling UpdateMass(). Call when collision shape changes are finished.
-    void EnableMassUpdate();
 
-    /// Return physics world.
-    PhysicsWorld* GetPhysicsWorld() const { return physicsWorld_; }
+    class URHO3D_API RigidBody : public Component
+    {
+        URHO3D_OBJECT(RigidBody, Component);
+    public:
 
-    /// Return Bullet rigid body.
-    btRigidBody* GetBody() const { return body_.Get(); }
+        friend class CollisionShape;
+        friend class Constraint;
+        friend class PhysicsWorld;
 
-    /// Return Bullet compound collision shape.
-    btCompoundShape* GetCompoundShape() const { return compoundShape_.Get(); }
+        /// Construct.
+        RigidBody(Context* context);
+        /// Destruct. Free the rigid body and geometries.
+        ~RigidBody() override;
+        /// Register object factory.
+        static void RegisterObject(Context* context);
 
-    /// Return mass.
-    float GetMass() const { return mass_; }
+        ///Set a scaler on the mass of the rigid body - (scalar is applied to collision shape densities)
+        void SetMassScale(float massDensityScale);
 
-    /// Return rigid body position in world space.
-    Vector3 GetPosition() const;
-    /// Return rigid body rotation in world space.
-    Quaternion GetRotation() const;
-    /// Return linear velocity.
-    Vector3 GetLinearVelocity() const;
-    /// Return linear degrees of freedom.
-    Vector3 GetLinearFactor() const;
-    /// Return linear velocity at local point.
-    Vector3 GetVelocityAtPoint(const Vector3& position) const;
-    /// Return linear velocity deactivation threshold.
-    float GetLinearRestThreshold() const;
-    /// Return linear velocity damping factor.
-    float GetLinearDamping() const;
-    /// Return angular velocity.
-    Vector3 GetAngularVelocity() const;
-    /// Return angular degrees of freedom.
-    Vector3 GetAngularFactor() const;
-    /// Return angular velocity deactivation threshold.
-    float GetAngularRestThreshold() const;
-    /// Return angular velocity damping factor.
-    float GetAngularDamping() const;
-    /// Return friction coefficient.
-    float GetFriction() const;
-    /// Return anisotropic friction.
-    Vector3 GetAnisotropicFriction() const;
-    /// Return rolling friction coefficient.
-    float GetRollingFriction() const;
-    /// Return restitution coefficient.
-    float GetRestitution() const;
-    /// Return contact processing threshold.
-    float GetContactProcessingThreshold() const;
-    /// Return continuous collision detection swept sphere radius.
-    float GetCcdRadius() const;
-    /// Return continuous collision detection motion-per-simulation-step threshold.
-    float GetCcdMotionThreshold() const;
 
-    /// Return whether rigid body uses gravity.
-    bool GetUseGravity() const { return useGravity_; }
 
-    /// Return gravity override. If zero (default), uses the physics world's gravity.
-    const Vector3& GetGravityOverride() const { return gravityOverride_; }
+        PhysicsWorld* GetPhysicsWorld() const { return physicsWorld_; }
 
-    /// Return center of mass offset.
-    const Vector3& GetCenterOfMass() const { return centerOfMass_; }
+        /// returns the body transform in scene space or physics world space (they will be the same if PhysicsScale is 1.0f)
+        Matrix3x4 GetPhysicsTransform(bool scaledPhysicsWorldFrame = false);
 
-    /// Return kinematic mode flag.
-    bool IsKinematic() const { return kinematic_; }
+        Vector3 GetPhysicsPosition(bool scaledPhysicsWorldFrame = false);
 
-    /// Return whether this RigidBody is acting as a trigger.
-    bool IsTrigger() const { return trigger_; }
+        Quaternion GetPhysicsRotation() { return targetNodeRotation_; }
 
-    /// Return whether rigid body is active (not sleeping.)
-    bool IsActive() const;
+        ///Get the mass scale of the rigid body
+        float GetMassScale() const { return massScale_; }
 
-    /// Return collision layer.
-    unsigned GetCollisionLayer() const { return collisionLayer_; }
+        /// get the mass of the rigid body
+        float GetEffectiveMass() { return mass_; }
 
-    /// Return collision mask.
-    unsigned GetCollisionMask() const { return collisionMask_; }
+        /// set the collision layer
+        void SetCollisionLayer(unsigned layer);
+        unsigned GetCollisionLayer() const { return collisionLayer_; }
 
-    /// Return collision event signaling mode.
-    CollisionEventMode GetCollisionEventMode() const { return collisionEventMode_; }
+        /// set the collision mask that specifies what other layers you can collide with
+        void SetCollisionLayerMask(unsigned mask);
+        void SetCollidableLayer(unsigned layer);
+        void UnSetCollidableLayer(unsigned layer);
 
-    /// Return colliding rigid bodies from the last simulation step. Only returns collisions that were sent as events (depends on collision event mode) and excludes e.g. static-static collisions.
-    void GetCollidingBodies(PODVector<RigidBody*>& result) const;
+        unsigned GetCollisionLayerMask() const { return collisionLayerMask_; }
 
-    /// Apply new world transform after a simulation step. Called internally.
-    void ApplyWorldTransform(const Vector3& newWorldPosition, const Quaternion& newWorldRotation);
-    /// Update mass and inertia to the Bullet rigid body. Readd body to world if necessary: if was in world and the Bullet collision shape to use changed.
-    void UpdateMass();
-    /// Update gravity parameters to the Bullet rigid body.
-    void UpdateGravity();
-    /// Set network angular velocity attribute.
-    void SetNetAngularVelocityAttr(const PODVector<unsigned char>& value);
-    /// Return network angular velocity attribute.
-    const PODVector<unsigned char>& GetNetAngularVelocityAttr() const;
-    /// Add a constraint that refers to this rigid body.
-    void AddConstraint(Constraint* constraint);
-    /// Remove a constraint that refers to this rigid body.
-    void RemoveConstraint(Constraint* constraint);
-    /// Remove the rigid body.
-    void ReleaseBody();
 
-protected:
-    /// Handle node being assigned.
-    void OnNodeSet(Node* node) override;
-    /// Handle scene being assigned.
-    void OnSceneSet(Scene* scene) override;
-    /// Handle node transform being dirtied.
-    void OnMarkedDirty(Node* node) override;
+        /// Set a collision exception with another body.  This will override any collision layers/masks.
+        void SetCollisionOverride(RigidBody* otherBody, bool enableCollisions);
+        void SetCollisionOverride(unsigned otherBodyId, bool enableCollisions);
+        void RemoveCollisionOverride(RigidBody* otherBody);
+        void RemoveCollisionOverride(unsigned otherBodyId);
+        void GetCollisionExceptions(PODVector<RigidBodyCollisionExceptionEntry>& exceptions);
+        void ClearCollisionExceptions() { collisionExceptions_.Clear(); }
 
-private:
-    /// Create the rigid body, or re-add to the physics world with changed flags. Calls UpdateMass().
-    void AddBodyToWorld();
-    /// Remove the rigid body from the physics world.
-    void RemoveBodyFromWorld();
-    /// Handle SmoothedTransform target position update.
-    void HandleTargetPosition(StringHash eventType, VariantMap& eventData);
-    /// Handle SmoothedTransform target rotation update.
-    void HandleTargetRotation(StringHash eventType, VariantMap& eventData);
-    /// Mark body dirty.
-    void MarkBodyDirty() { readdBody_ = true; }
+        /// make this body not collide with anything.
+        void SetNoCollideOverride(bool noCollide);
+        bool GetNoCollideOverride() const { return noCollideOverride_; }
 
-    /// Bullet rigid body.
-    UniquePtr<btRigidBody> body_;
-    /// Bullet compound collision shape.
-    UniquePtr<btCompoundShape> compoundShape_;
-    /// Compound collision shape with center of mass offset applied.
-    UniquePtr<btCompoundShape> shiftedCompoundShape_;
-    /// Physics world.
-    WeakPtr<PhysicsWorld> physicsWorld_;
-    /// Smoothed transform, if has one.
-    WeakPtr<SmoothedTransform> smoothedTransform_;
-    /// Constraints that refer to this rigid body.
-    PODVector<Constraint*> constraints_;
-    /// Gravity override vector.
-    Vector3 gravityOverride_;
-    /// Center of mass offset.
-    Vector3 centerOfMass_;
-    /// Mass.
-    float mass_;
-    /// Attribute buffer for network replication.
-    mutable VectorBuffer attrBuffer_;
-    /// Collision layer.
-    unsigned collisionLayer_;
-    /// Collision mask.
-    unsigned collisionMask_;
-    /// Collision event signaling mode.
-    CollisionEventMode collisionEventMode_;
-    /// Last interpolated position from the simulation.
-    mutable Vector3 lastPosition_;
-    /// Last interpolated rotation from the simulation.
-    mutable Quaternion lastRotation_;
-    /// Kinematic flag.
-    bool kinematic_;
-    /// Trigger flag.
-    bool trigger_;
-    /// Use gravity flag.
-    bool useGravity_;
-    /// Readd body to world flag.
-    bool readdBody_;
-    /// Body exists in world flag.
-    bool inWorld_;
-    /// Mass update enable flag.
-    bool enableMassUpdate_;
-    /// Internal flag whether has simulated at least once.
-    mutable bool hasSimulated_;
-};
+        ///returns true if this body can collide with the specified body given current collision layers/masks and exceptions.
+        bool CanCollideWith(RigidBody* otherBody);
+
+
+        ///set collision event mode
+        void SetCollisionEventMode(RigidBodyCollisionEventMode mode) {
+            if (collisionEventMode_ != mode) {
+                collisionEventMode_ = mode;
+            }
+        }
+
+
+        ///trigger mode will not collide with anything but will still generate contacts and send collision events.
+        void SetTriggerMode(bool enable) {
+            if (triggerMode_ != enable) {
+                triggerMode_ = enable;
+            }
+        }
+        bool GetTriggerMode() const { return triggerMode_; }
+
+
+        void SetGenerateContacts(bool enable)
+        {
+            generateContacts_ = enable;
+        }
+        bool GetGenerateContacts() const { return generateContacts_; }
+
+
+        ///enable or disable changes of the rigid body transform when the parent node changes. default is enabled.
+        void SetRespondToNodeTransformChanges(bool enable) { respondToNodeTransformChange_ = enable; }
+        bool GetRespondToNodeTransformChanges() const {
+            return respondToNodeTransformChange_;
+        }
+
+
+        /// Set linear velocity in world cordinates. if useForces is false the velocity will be set exactly with no regard to using forces to achieve the desired velocity.
+        void SetLinearVelocity(const Vector3& worldVelocity, bool useForces = true);
+
+        void SetLinearVelocityHard(const Vector3& worldVelocity);
+
+
+        /// Set the Angular velocity in world cordinates
+        void SetAngularVelocity(const Vector3& angularVelocity);
+
+
+        /// Set linear damping factor (0.0 to 1.0) default is 0
+        void SetLinearDamping(float dampingFactor);
+
+        float GetLinearDamping() const { return linearDampening_; }
+
+        /// Set Angular Damping factor (0.0 to 1.0) for angle component. default is 0
+        void SetAngularDamping(float angularDamping);
+
+        float GetAngularDamping() const { return angularDampening_; }
+
+        /// Set the internal linear damping - this is used internally by the newton solver to bring bodies to sleep more effectively.
+        /// Be Aware that this parameter will show different behalvior with different solver iteration rates. (0.0 to 1.0) default is zero
+        void SetInternalLinearDamping(float damping);
+
+        /// Set the internal angular damping - this is used internally by the newton solver to bring bodies to sleep more effectively.
+        /// Be Aware that this parameter will show different behalvior with different solver iteration rates. (0.0 to 1.0) default is zero
+        void SetInternalAngularDamping(float angularDamping);
+
+        /// Set the interpolation duration for applying transform to the scene node. 1.0f is no interpolation, 0.0f is inifinitely slow interpolation.
+        void SetInterpolationFactor(float factor = 0.0f);
+
+        float GetInterpolationFactor() const { return interpolationFactor_; }
+
+        /// returns true if the interpolation is within tolerance of target rigidbody value.
+        bool InterpolationWithinRestTolerance();
+
+        /// snap current interpolated values directly to target values.
+        void SnapInterpolation();
+
+
+
+        /// Set continuous collision so that the body will not pass through walls.
+        void SetContinuousCollision(bool sweptCollision);
+
+        bool GetContinuousCollision() const { return continuousCollision_; }
+
+        void SetAutoSleep(bool enableAutoSleep);
+
+        bool GetAutoSleep() const { return autoSleep_; }
+
+        /// force the body to be awake
+        void Activate();
+        /// force the body to sleep
+        void DeActivate();
+
+
+        /// Add a force to the body in world cordinates on the body's center of mass.
+        void AddWorldForce(const Vector3& force);
+        /// Add a force to the body in world cordinates localPosition from the body's center of mass.
+        void AddWorldForce(const Vector3& force, const Vector3& localPosition);
+        /// Add a torque to the body in world space
+        void AddWorldTorque(const Vector3& torque);
+
+        /// Add a force to the body in local cordinates on the body's center of mass.
+        void AddLocalForce(const Vector3& force);
+        /// Add a force to the body in local cordinates localPosition from the body's center of mass.
+        void AddLocalForce(const Vector3& force, const Vector3& localPosition);
+        /// Add a torque to the body in local space
+        void AddLocalTorque(const Vector3& torque);
+
+        /// Reset accumulated forces.
+        void ResetForces();
+
+        /// apply an impulse to the body at the localPosition to aquire the target velocity next physics update.
+        void AddImpulse(const Vector3& localPosition, const Vector3& targetWorldVelocity);
+
+
+
+
+        /// Return the net force acting on the body.
+        Vector3 GetNetForce();
+
+        /// Return the net torque acting on the body.
+        Vector3 GetNetTorque();
+
+        ///Get the currently used newton body.
+        NewtonBody* GetNewtonBody() const { return newtonBody_; }
+        /// Return the currently used newton collision
+        NewtonCollision* GetEffectiveNewtonCollision() const;
+
+
+        Vector3 GetLinearVelocity(TransformSpace space = TS_WORLD) const;
+
+
+        Vector3 GetAngularVelocity(TransformSpace space = TS_WORLD) const;
+
+
+        Vector3 GetAcceleration();
+
+
+
+        /// Return the world position of the center of mass.
+        Vector3 GetCenterOfMassPosition();
+        /// Return the world orientation of the center of mass.
+        Quaternion GetCenterOfMassRotation();
+
+        /// Get Immediately connected contraints to this rigid body.
+        void GetConnectedContraints(PODVector<Constraint*>& contraints);
+        PODVector<Constraint*> GetConnectedContraints();
+
+        PODVector<CollisionShape*> GetCollisionShapes() const { return collisionShapes_; }
+
+        ///Apply the current newton body transform to the node.
+        void ApplyTransform(float timestep);
+
+        ///Return the net force and torque for newton.
+        void GetForceAndTorque(Vector3& force, Vector3& torque);
+
+        int GetSceneDepth() { return sceneDepth_; }
+
+        /// Draw Debug geometry
+        void DrawDebugGeometry(DebugRenderer* debug, bool depthTest, bool showAABB = true, bool showCollisionMesh = true, bool showCenterOfMass = true, bool showContactForces = true);
+
+        /// mark the rigid body as dirty causing the newton rigid body to be rebuilt by the physics world
+        void MarkDirty(bool dirty = true);
+
+        bool GetDirty() const { return needsRebuilt_; }
+
+
+        /// mark the internal newton transform as dirty indicating the transform needs to be copied to the node.
+        void MarkInternalTransformDirty(bool dirty = true);
+
+        bool GetInternalTransformDirty();
+
+
+
+        virtual void OnSetEnabled() override;
+
+    protected:
+
+
+        /// Internal newton body
+        NewtonBody * newtonBody_ = nullptr;
+        /// compound collision if needed.
+        NewtonCollision* effectiveCollision_ = nullptr;
+        /// Physics world.
+        WeakPtr<PhysicsWorld> physicsWorld_;
+        /// all currently used collision shape components.
+        PODVector<CollisionShape*> collisionShapes_;
+
+
+        HashMap<unsigned int, RigidBodyContactEntry*> contactEntries_;
+        RigidBodyContactEntry* GetCreateContactEntry(RigidBody* otherBody);
+        void CleanContactEntries();
+
+
+        bool sceneRootBodyMode_ = false;
+        ///Continuous Collision
+        bool continuousCollision_ = false;
+        /// flag indicating debug geometry for the collision should be shown in the debug renderer
+        bool drawPhysicsDebugCollisionGeometry_ = true;
+
+
+        RigidBodyCollisionEventMode collisionEventMode_ = COLLISION_ALWAYS;
+
+
+        Node* prevNode_ = nullptr;
+
+        ///Net Force in local cordinates
+        Vector3 netForce_;
+        ///Net Torque in local cordinates
+        Vector3 netTorque_;
+        ///angular dampending
+        float angularDampening_ = 0.0f;
+        ///linera dampening
+        float linearDampening_ = 0.0f;
+        ///angular dampending
+        Vector3 angularDampeningInternal_;
+        ///linera dampening
+        float linearDampeningInternal_ = 0.0f;
+
+        ///currently connected constraints.
+        HashSet<Constraint*> connectedConstraints_;
+
+
+
+        dVector netForceNewton_;
+        dVector netTorqueNewton_;
+
+        ///effective mass
+        float mass_ = 0.0f;
+        ///mass scale
+        float massScale_ = 1.0f;
+
+        bool autoSleep_ = true;
+
+        unsigned collisionLayer_ = DEFAULT_COLLISION_LAYER;
+        unsigned collisionLayerMask_ = DEFAULT_COLLISION_MASK;
+
+        //HashMap<unsigned, RigidBodyCollisionExceptionEntry> collisionExceptions_;
+        VariantMap collisionExceptions_;
+
+        bool noCollideOverride_ = false;
+
+        bool triggerMode_ = false;
+
+        bool generateContacts_ = true;
+
+        ///dirty flag
+        bool needsRebuilt_ = true;
+        /// flag indicating the newton body has changed transforms and needs to update the node.
+        bool transformDirty_ = true;
+
+        /// how many node levels deep the node is on. 0 would mean the node is the scene.
+        int sceneDepth_ = 1;
+        void calculateSceneDepth();
+
+
+        void freeBody();
+
+        /// rebuilds the internal body based on the current status of collision shapes on this node and child nodes. (be sure to update the children first!)
+        void reBuildBody();
+
+        ///precomputes force and torque for quick pass to newton callback
+        void bakeForceAndTorque();
+
+        virtual void OnNodeSet(Node* node) override;
+
+        virtual void OnSceneSet(Scene* scene) override;
+
+
+        void HandleNodeAdded(StringHash event, VariantMap& eventData);
+        void HandleNodeRemoved(StringHash event, VariantMap& eventData);
+        void HandleNodeTransformChange(StringHash event, VariantMap& eventData);
+
+        bool respondToNodeTransformChange_ = true;
+
+
+        //variables for deferered singular actions on the newtonbody in case it has not been created yet.
+        void applyDefferedActions();
+        bool nextLinearVelocityNeeded_ = false;
+        Vector3 nextLinearVelocity_;
+        bool nextLinearVelocityUseForces_ = true;
+        bool nextAngularVelocityNeeded_ = false;
+        Vector3 nextAngularVelocity_;
+        bool nextImpulseNeeded_ = false;
+        Vector3 nextImpulseWorldVelocity_;
+        Vector3 nextImpulseLocalPos_;
+        bool nextSleepStateNeeded_ = false;
+        bool nextSleepState_ = false;
+
+
+        //interpolation
+        void updateInterpolatedTransform();
+        Vector3 targetNodePos_;
+        Quaternion targetNodeRotation_;
+        Vector3 interpolatedNodePos_;
+        Quaternion interpolatedNodeRotation_;
+        float interpolationFactor_ = 1.0f;
+
+
+        virtual void OnNodeSetEnabled(Node* node) override;
+
+        /// Setting this to true will make the rigid body act as a root scene body with Inifite mass.
+        void SetIsSceneRootBody(bool enable);
+        bool GetIsSceneRootBody() const { return sceneRootBodyMode_; }
+    };
+
+
+    inline bool RigidBodySceneDepthCompare(WeakPtr<RigidBody>& body1, WeakPtr<RigidBody>& body2) {
+        return (body1->GetSceneDepth() < body2->GetSceneDepth());
+    }
 
 }
