@@ -136,31 +136,29 @@ void LogicComponent::UpdateEventSubscription()
     }
 
 #if defined(URHO3D_PHYSICS) || defined(URHO3D_URHO2D)
-    Component* world = GetFixedUpdateSource();
-    if (!world)
-        return;
+
 
     bool needFixedUpdate = enabled && (updateEventMask_ & USE_FIXEDUPDATE);
     if (needFixedUpdate && !(currentEventMask_ & USE_FIXEDUPDATE))
     {
-        SubscribeToEvent(world, E_PHYSICSPRESTEP, URHO3D_HANDLER(LogicComponent, HandlePhysicsPreStep));
+        SubscribeToEvent( E_PHYSICSPRESTEP, URHO3D_HANDLER(LogicComponent, HandlePhysicsPreStep));
         currentEventMask_ |= USE_FIXEDUPDATE;
     }
     else if (!needFixedUpdate && (currentEventMask_ & USE_FIXEDUPDATE))
     {
-        UnsubscribeFromEvent(world, E_PHYSICSPRESTEP);
+        UnsubscribeFromEvent( E_PHYSICSPRESTEP);
         currentEventMask_ &= ~USE_FIXEDUPDATE;
     }
 
     bool needFixedPostUpdate = enabled && (updateEventMask_ & USE_FIXEDPOSTUPDATE);
     if (needFixedPostUpdate && !(currentEventMask_ & USE_FIXEDPOSTUPDATE))
     {
-        SubscribeToEvent(world, E_PHYSICSPOSTSTEP, URHO3D_HANDLER(LogicComponent, HandlePhysicsPostStep));
+        SubscribeToEvent( E_PHYSICSPOSTSTEP, URHO3D_HANDLER(LogicComponent, HandlePhysicsPostStep));
         currentEventMask_ |= USE_FIXEDPOSTUPDATE;
     }
     else if (!needFixedPostUpdate && (currentEventMask_ & USE_FIXEDPOSTUPDATE))
     {
-        UnsubscribeFromEvent(world, E_PHYSICSPOSTSTEP);
+        UnsubscribeFromEvent( E_PHYSICSPOSTSTEP);
         currentEventMask_ &= ~USE_FIXEDPOSTUPDATE;
     }
 #endif
