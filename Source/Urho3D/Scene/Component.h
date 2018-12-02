@@ -59,11 +59,11 @@ public:
     virtual void OnSetEnabled() { }
 
     /// Save as binary data. Return true if successful.
-    bool Save(Serializer& dest) const override;
+    virtual bool Save(Serializer& dest) const override;
     /// Save as XML data. Return true if successful.
-    bool SaveXML(XMLElement& dest) const override;
+	virtual bool SaveXML(XMLElement& dest) const override;
     /// Save as JSON data. Return true if successful.
-    bool SaveJSON(JSONValue& dest) const override;
+	virtual bool SaveJSON(JSONValue& dest) const override;
     /// Mark for attribute check on the next network update.
     void MarkNetworkUpdate() override;
     /// Return the depended on nodes to order network updates.
@@ -127,8 +127,6 @@ protected:
     void SetNode(Node* node);
     /// Handle scene attribute animation update event.
     void HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& eventData);
-    /// Return a component from the scene root that sends out fixed update events (either PhysicsWorld or PhysicsWorld2D). Return null if neither exists.
-    Component* GetFixedUpdateSource();
     /// Perform autoremove. Called by subclasses. Caller should keep a weak pointer to itself to check whether was actually removed, and return immediately without further member operations in that case.
     void DoAutoRemove(AutoRemoveMode mode);
 

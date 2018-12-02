@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) 2008-2018 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -114,6 +114,11 @@ bool Node::Load(Deserializer& source)
 
 bool Node::Save(Serializer& dest) const
 {
+    return Save(dest, true);
+}
+
+bool Node::Save(Serializer& dest, bool recursive) const
+{
     // Write node ID
     if (!dest.WriteUInt(id_))
         return false;
@@ -140,14 +145,16 @@ bool Node::Save(Serializer& dest) const
 
     // Write child nodes
     dest.WriteVLE(GetNumPersistentChildren());
-    for (unsigned i = 0; i < children_.Size(); ++i)
-    {
-        Node* node = children_[i];
-        if (node->IsTemporary())
-            continue;
+    if (recursive) {
+        for (unsigned i = 0; i < children_.Size(); ++i)
+        {
+            Node* node = children_[i];
+            if (node->IsTemporary())
+                continue;
 
-        if (!node->Save(dest))
-            return false;
+            if (!node->Save(dest))
+                return false;
+        }
     }
 
     return true;
@@ -437,55 +444,51 @@ void Node::RemoveAllTags()
     MarkNetworkUpdate();
 }
 
+void Node::SetEnableTransformEvents(bool enable /*= true*/)
+{
+    sendTransformEvents_ = enable;
+}
+
 void Node::SetPosition(const Vector3& position)
 {
-    position_ = position;
-    MarkDirty();
-
-    MarkNetworkUpdate();
+     SetTransform(position, rotation_, scale_);
 }
+
 
 void Node::SetRotation(const Quaternion& rotation)
 {
-    rotation_ = rotation;
-    MarkDirty();
-
-    MarkNetworkUpdate();
+     SetTransform(position_, rotation, scale_);
 }
+
 
 void Node::SetDirection(const Vector3& direction)
 {
-    SetRotation(Quaternion(Vector3::FORWARD, direction));
+     SetRotation(Quaternion(Vector3::FORWARD, direction));
 }
+
 
 void Node::SetScale(float scale)
 {
-    SetScale(Vector3(scale, scale, scale));
+     SetScale(Vector3(scale, scale, scale));
 }
 
-void Node::SetScale(const Vector3& scale)
+void Node::SetScale(Vector3 scale)
 {
-    scale_ = scale;
     // Prevent exact zero scale e.g. from momentary edits as this may cause division by zero
     // when decomposing the world transform matrix
-    if (scale_.x_ == 0.0f)
-        scale_.x_ = M_EPSILON;
-    if (scale_.y_ == 0.0f)
-        scale_.y_ = M_EPSILON;
-    if (scale_.z_ == 0.0f)
-        scale_.z_ = M_EPSILON;
+    if (scale.x_ == 0.0f)
+        scale.x_ = M_EPSILON;
+    if (scale.y_ == 0.0f)
+        scale.y_ = M_EPSILON;
+    if (scale.z_ == 0.0f)
+        scale.z_ = M_EPSILON;
 
-    MarkDirty();
-    MarkNetworkUpdate();
+    SetTransform(position_, rotation_, scale);
 }
 
 void Node::SetTransform(const Vector3& position, const Quaternion& rotation)
 {
-    position_ = position;
-    rotation_ = rotation;
-    MarkDirty();
-
-    MarkNetworkUpdate();
+    SetTransform(position, rotation, scale_);
 }
 
 void Node::SetTransform(const Vector3& position, const Quaternion& rotation, float scale)
@@ -495,11 +498,41 @@ void Node::SetTransform(const Vector3& position, const Quaternion& rotation, flo
 
 void Node::SetTransform(const Vector3& position, const Quaternion& rotation, const Vector3& scale)
 {
+
+    Vector3 oldPosition = position_;
+    Quaternion oldRotation = rotation_;
+    Vector3 oldScale = scale_;
+    Matrix3x4 oldTransform = GetTransform();
+
     position_ = position;
     rotation_ = rotation;
     scale_ = scale;
-    MarkDirty();
 
+    if (sendTransformEvents_) {
+        //send node transform change event
+        VariantMap& eventMap = GetEventDataMap();
+        eventMap[NodeTransformChange::P_NEW_POSITION] = position;
+        eventMap[NodeTransformChange::P_NEW_SCALE] = scale;
+        eventMap[NodeTransformChange::P_NEW_ORIENTATION] = rotation;
+        eventMap[NodeTransformChange::P_NEW_TRANSFORM] = GetTransform();
+        eventMap[NodeTransformChange::P_OLD_POSITION] = oldPosition;
+        eventMap[NodeTransformChange::P_OLD_SCALE] = oldScale;
+        eventMap[NodeTransformChange::P_OLD_ORIENTATION] = oldRotation;
+        eventMap[NodeTransformChange::P_OLD_TRANSFORM] = oldTransform;
+
+
+        SendEvent(E_NODETRANSFORMCHANGE, eventMap);
+
+        //set the transform values again in case the handler altered the new transform.
+        position_ = eventMap[NodeTransformChange::P_NEW_POSITION].GetVector3();
+        rotation_ = eventMap[NodeTransformChange::P_NEW_ORIENTATION].GetQuaternion();
+        scale_ = eventMap[NodeTransformChange::P_NEW_SCALE].GetVector3();
+    }
+
+
+
+
+    MarkDirty();
     MarkNetworkUpdate();
 }
 
@@ -510,12 +543,12 @@ void Node::SetTransform(const Matrix3x4& matrix)
 
 void Node::SetWorldPosition(const Vector3& position)
 {
-    SetPosition((parent_ == scene_ || !parent_) ? position : parent_->GetWorldTransform().Inverse() * position);
+    SetWorldTransform(position, GetWorldRotation());
 }
 
 void Node::SetWorldRotation(const Quaternion& rotation)
 {
-    SetRotation((parent_ == scene_ || !parent_) ? rotation : parent_->GetWorldRotation().Inverse() * rotation);
+    SetWorldTransform(GetWorldPosition(), rotation);
 }
 
 void Node::SetWorldDirection(const Vector3& direction)
@@ -524,35 +557,28 @@ void Node::SetWorldDirection(const Vector3& direction)
     SetRotation(Quaternion(Vector3::FORWARD, localDirection));
 }
 
-void Node::SetWorldScale(float scale)
-{
-    SetWorldScale(Vector3(scale, scale, scale));
-}
 
-void Node::SetWorldScale(const Vector3& scale)
-{
-    SetScale((parent_ == scene_ || !parent_) ? scale : scale / parent_->GetWorldScale());
-}
 
 void Node::SetWorldTransform(const Vector3& position, const Quaternion& rotation)
 {
-    SetWorldPosition(position);
-    SetWorldRotation(rotation);
+    Vector3 localPosition;
+    Quaternion localRotation;
+
+    if (parent_ == scene_ || !parent_) {
+        localPosition = position;
+        localRotation = rotation;
+    }
+    else
+    {
+        localPosition = parent_->GetWorldTransform().Inverse() * position;
+        localRotation = parent_->GetWorldRotation().Inverse() * rotation;
+    }
+
+
+    SetTransform(localPosition, localRotation);
+
 }
 
-void Node::SetWorldTransform(const Vector3& position, const Quaternion& rotation, float scale)
-{
-    SetWorldPosition(position);
-    SetWorldRotation(rotation);
-    SetWorldScale(scale);
-}
-
-void Node::SetWorldTransform(const Vector3& position, const Quaternion& rotation, const Vector3& scale)
-{
-    SetWorldPosition(position);
-    SetWorldRotation(rotation);
-    SetWorldScale(scale);
-}
 
 void Node::Translate(const Vector3& delta, TransformSpace space)
 {
@@ -560,21 +586,17 @@ void Node::Translate(const Vector3& delta, TransformSpace space)
     {
     case TS_LOCAL:
         // Note: local space translation disregards local scale for scale-independent movement speed
-        position_ += rotation_ * delta;
+        SetPosition(position_ + rotation_ * delta);
         break;
-
     case TS_PARENT:
-        position_ += delta;
+        SetPosition(position_ + delta);
         break;
 
     case TS_WORLD:
-        position_ += (parent_ == scene_ || !parent_) ? delta : parent_->GetWorldTransform().Inverse() * Vector4(delta, 0.0f);
+        SetWorldPosition(GetWorldPosition() + delta);
         break;
     }
 
-    MarkDirty();
-
-    MarkNetworkUpdate();
 }
 
 void Node::Rotate(const Quaternion& delta, TransformSpace space)
@@ -582,27 +604,23 @@ void Node::Rotate(const Quaternion& delta, TransformSpace space)
     switch (space)
     {
     case TS_LOCAL:
-        rotation_ = (rotation_ * delta).Normalized();
+        SetRotation((rotation_*delta).Normalized());
         break;
 
     case TS_PARENT:
-        rotation_ = (delta * rotation_).Normalized();
+        SetRotation((delta * rotation_).Normalized());
         break;
 
     case TS_WORLD:
         if (parent_ == scene_ || !parent_)
-            rotation_ = (delta * rotation_).Normalized();
+            SetRotation((delta * rotation_).Normalized());
         else
         {
             Quaternion worldRotation = GetWorldRotation();
-            rotation_ = rotation_ * worldRotation.Inverse() * delta * worldRotation;
+            SetRotation(rotation_ * worldRotation.Inverse() * delta * worldRotation);
         }
         break;
     }
-
-    MarkDirty();
-
-    MarkNetworkUpdate();
 }
 
 void Node::RotateAround(const Vector3& point, const Quaternion& delta, TransformSpace space)
@@ -614,53 +632,51 @@ void Node::RotateAround(const Vector3& point, const Quaternion& delta, Transform
     {
     case TS_LOCAL:
         parentSpacePoint = GetTransform() * point;
-        rotation_ = (rotation_ * delta).Normalized();
+        SetRotation((rotation_*delta).Normalized());
+
         break;
 
     case TS_PARENT:
         parentSpacePoint = point;
-        rotation_ = (delta * rotation_).Normalized();
+        SetRotation((delta * rotation_).Normalized());
         break;
 
     case TS_WORLD:
         if (parent_ == scene_ || !parent_)
         {
             parentSpacePoint = point;
-            rotation_ = (delta * rotation_).Normalized();
+            SetRotation((delta * rotation_).Normalized());
         }
         else
         {
             parentSpacePoint = parent_->GetWorldTransform().Inverse() * point;
             Quaternion worldRotation = GetWorldRotation();
-            rotation_ = rotation_ * worldRotation.Inverse() * delta * worldRotation;
+            SetRotation(rotation_ * worldRotation.Inverse() * delta * worldRotation);
         }
         break;
     }
 
     Vector3 oldRelativePos = oldRotation.Inverse() * (position_ - parentSpacePoint);
-    position_ = rotation_ * oldRelativePos + parentSpacePoint;
+    SetPosition(rotation_ * oldRelativePos + parentSpacePoint);
 
-    MarkDirty();
-
-    MarkNetworkUpdate();
 }
 
 void Node::Yaw(float angle, TransformSpace space)
 {
-    Rotate(Quaternion(angle, Vector3::UP), space);
+     Rotate(Quaternion(angle, Vector3::UP), space);
 }
 
 void Node::Pitch(float angle, TransformSpace space)
 {
-    Rotate(Quaternion(angle, Vector3::RIGHT), space);
+     Rotate(Quaternion(angle, Vector3::RIGHT), space);
 }
 
 void Node::Roll(float angle, TransformSpace space)
 {
-    Rotate(Quaternion(angle, Vector3::FORWARD), space);
+     Rotate(Quaternion(angle, Vector3::FORWARD), space);
 }
 
-bool Node::LookAt(const Vector3& target, const Vector3& up, TransformSpace space)
+void Node::LookAt(const Vector3& target, const Vector3& up, TransformSpace space)
 {
     Vector3 worldSpaceTarget;
 
@@ -682,14 +698,14 @@ bool Node::LookAt(const Vector3& target, const Vector3& up, TransformSpace space
     Vector3 lookDir = worldSpaceTarget - GetWorldPosition();
     // Check if target is very close, in that case can not reliably calculate lookat direction
     if (lookDir.Equals(Vector3::ZERO))
-        return false;
+        return;
+
     Quaternion newRotation;
     // Do nothing if setting look rotation failed
     if (!newRotation.FromLookRotation(lookDir, up))
-        return false;
+        return;
 
     SetWorldRotation(newRotation);
-    return true;
 }
 
 void Node::Scale(float scale)
@@ -699,10 +715,7 @@ void Node::Scale(float scale)
 
 void Node::Scale(const Vector3& scale)
 {
-    scale_ *= scale;
-    MarkDirty();
-
-    MarkNetworkUpdate();
+    SetScale(scale_ * scale);
 }
 
 void Node::SetEnabled(bool enable)
@@ -809,8 +822,12 @@ void Node::AddChild(Node* node, unsigned index)
     if (oldParent)
     {
         // If old parent is in different scene, perform the full removal
-        if (oldParent->GetScene() != scene_)
+        if (oldParent->GetScene() != scene_) {
+
             oldParent->RemoveChild(node);
+
+
+        }
         else
         {
             if (scene_)
@@ -845,14 +862,13 @@ void Node::AddChild(Node* node, unsigned index)
     // Send change event
     if (scene_)
     {
-        using namespace NodeAdded;
-
         VariantMap& eventData = GetEventDataMap();
-        eventData[P_SCENE] = scene_;
-        eventData[P_PARENT] = this;
-        eventData[P_NODE] = node;
-
+        eventData[NodeAdded::P_SCENE] = scene_;
+        eventData[NodeAdded::P_PARENT] = this;
+        eventData[NodeAdded::P_NODE] = node;
         scene_->SendEvent(E_NODEADDED, eventData);
+
+
     }
 }
 
@@ -1172,6 +1188,8 @@ void Node::RemoveListener(Component* component)
     }
 }
 
+
+
 Vector3 Node::GetSignedWorldScale() const
 {
     if (dirty_)
@@ -1190,6 +1208,16 @@ Vector3 Node::LocalToWorld(const Vector4& vector) const
     return GetWorldTransform() * vector;
 }
 
+Urho3D::Matrix3x4 Node::LocalToWorld(const Matrix3x4& transform) const
+{
+    return GetWorldTransform() * transform;
+}
+
+Urho3D::Quaternion Node::LocalToWorld(const Quaternion& rotation) const
+{
+    return GetWorldRotation() * rotation;
+}
+
 Vector2 Node::LocalToWorld2D(const Vector2& vector) const
 {
     Vector3 result = LocalToWorld(Vector3(vector));
@@ -1204,6 +1232,16 @@ Vector3 Node::WorldToLocal(const Vector3& position) const
 Vector3 Node::WorldToLocal(const Vector4& vector) const
 {
     return GetWorldTransform().Inverse() * vector;
+}
+
+Matrix3x4 Node::WorldToLocal(const Matrix3x4& transform) const
+{
+    return GetWorldTransform().Inverse() * transform;
+}
+
+Urho3D::Quaternion Node::WorldToLocal(const Quaternion& rotation) const
+{
+    return GetWorldRotation().Inverse() * rotation;
 }
 
 Vector2 Node::WorldToLocal2D(const Vector2& vector) const
@@ -1232,7 +1270,7 @@ void Node::GetChildren(PODVector<Node*>& dest, bool recursive) const
 
     if (!recursive)
     {
-        for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+        for (PODVector<SharedPtr<Node>>::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
             dest.Push(*i);
     }
     else
@@ -1261,6 +1299,9 @@ void Node::GetChildrenWithComponent(PODVector<Node*>& dest, StringHash type, boo
     else
         GetChildrenWithComponentRecursive(dest, type);
 }
+
+
+
 
 PODVector<Node*> Node::GetChildrenWithComponent(StringHash type, bool recursive) const
 {
@@ -1404,6 +1445,27 @@ Component* Node::GetComponent(StringHash type, bool recursive) const
         for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
         {
             Component* component = (*i)->GetComponent(type, true);
+            if (component)
+                return component;
+        }
+    }
+
+    return nullptr;
+}
+
+Component* Node::GetDerivedComponent(StringHash type, bool recursive) const
+{
+    for (Vector<SharedPtr<Component> >::ConstIterator i = components_.Begin(); i != components_.End(); ++i)
+    {
+        if ((*i)->GetType() == type)
+            return *i;
+    }
+
+    if (recursive)
+    {
+        for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+        {
+            Component* component = (*i)->GetDerivedComponent(type, true);
             if (component)
                 return component;
         }
@@ -2073,9 +2135,9 @@ Component* Node::SafeCreateComponent(const String& typeName, StringHash type, Cr
         // Else create as UnknownComponent
         SharedPtr<UnknownComponent> newComponent(new UnknownComponent(context_));
         if (typeName.Empty() || typeName.StartsWith("Unknown", false))
-            newComponent->SetType(type);
+            newComponent->SetStoredType(type);
         else
-            newComponent->SetTypeName(typeName);
+            newComponent->SetStoredTypeName(typeName);
 
         AddComponent(newComponent, id, mode);
         return newComponent;
@@ -2091,6 +2153,7 @@ void Node::UpdateWorldTransform() const
     {
         worldTransform_ = transform;
         worldRotation_ = rotation_;
+        
     }
     else
     {
@@ -2143,7 +2206,7 @@ void Node::GetChildrenRecursive(PODVector<Node*>& dest) const
 
 void Node::GetChildrenWithComponentRecursive(PODVector<Node*>& dest, StringHash type) const
 {
-    for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (PODVector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
     {
         Node* node = *i;
         if (node->HasComponent(type))
@@ -2152,6 +2215,7 @@ void Node::GetChildrenWithComponentRecursive(PODVector<Node*>& dest, StringHash 
             node->GetChildrenWithComponentRecursive(dest, type);
     }
 }
+
 
 void Node::GetComponentsRecursive(PODVector<Component*>& dest, StringHash type) const
 {

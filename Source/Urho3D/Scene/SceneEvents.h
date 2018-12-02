@@ -110,6 +110,24 @@ URHO3D_EVENT(E_ASYNCLOADFINISHED, AsyncLoadFinished)
     URHO3D_PARAM(P_SCENE, Scene);                  // Scene pointer
 };
 
+
+/// A node's local transform has been changed.  Note avoid changing the node's transform inside the handler of this event to avoid infinite recursion Or use Node::SetEnableTransformEvents(false) temporarily.
+/// Sent from the node.
+URHO3D_EVENT(E_NODETRANSFORMCHANGE, NodeTransformChange)
+{
+    URHO3D_PARAM(P_OLD_POSITION, OldPosition);        // Vector3
+    URHO3D_PARAM(P_OLD_ORIENTATION, OldOrientation);  // Quaternion
+    URHO3D_PARAM(P_OLD_SCALE, OldScale);              // Vector3
+    URHO3D_PARAM(P_OLD_TRANSFORM, OldTransform);      // Vector3
+
+    URHO3D_PARAM(P_NEW_POSITION, NewPosition);        // Vector3
+    URHO3D_PARAM(P_NEW_ORIENTATION, NewOrientation);  // Quaternion
+    URHO3D_PARAM(P_NEW_SCALE, NewScale);              // Vector3
+    URHO3D_PARAM(P_NEW_TRANSFORM, NewTransform);      // Vector3
+
+    URHO3D_PARAM(P_NODE, Node);                    // Node pointer
+}
+
 /// A child node has been added to a parent node.
 URHO3D_EVENT(E_NODEADDED, NodeAdded)
 {
