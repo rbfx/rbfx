@@ -20,13 +20,14 @@
 // THE SOFTWARE.
 //
 
+#if URHO3D_PROFILING
 #include "ThirdParty/tracy/TracyClient.cpp"
 #if _WIN32
 #   include <windows.h>
 #else
 #   include "pthread.h"
 #endif
-
+#endif
 #include "Profiler.h"
 
 namespace Urho3D
