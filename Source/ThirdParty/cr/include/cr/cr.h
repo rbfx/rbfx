@@ -445,6 +445,7 @@ struct cr_plugin {
 #include <algorithm>
 #include <cassert> // assert
 #include <chrono>  // duration for sleep
+#include <cstring> // memcpy
 #include <string>
 #include <thread> // this_thread::sleep_for
 
@@ -546,9 +547,9 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation);
 #include <windows.h>
 #include <dbghelp.h>
 // clang-format on
-
+#ifdef _MSC_VER
 #pragma comment(lib, "dbghelp.lib")
-
+#endif
 using so_handle = HMODULE;
 
 static std::wstring cr_utf8_to_wstring(const std::string &str) {
