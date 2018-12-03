@@ -2552,8 +2552,10 @@ void View::SetupShadowCameras(LightQueryResult& query)
             query.shadowCameras_[0] = shadowCamera;
             Node* cameraNode = shadowCamera->GetNode();
             Node* lightNode = light->GetNode();
-
+            bool transformEventsEnabled = cameraNode->GetEnableTransformEvents();
+            cameraNode->SetEnableTransformEvents(false);
             cameraNode->SetTransform(lightNode->GetWorldPosition(), lightNode->GetWorldRotation());
+            cameraNode->SetEnableTransformEvents(transformEventsEnabled);
             shadowCamera->SetNearClip(light->GetShadowNearFarRatio() * light->GetRange());
             shadowCamera->SetFarClip(light->GetRange());
             shadowCamera->SetFov(light->GetFov());
@@ -2582,8 +2584,11 @@ void View::SetupShadowCameras(LightQueryResult& query)
                 Node* cameraNode = shadowCamera->GetNode();
 
                 // When making a shadowed point light, align the splits along X, Y and Z axes regardless of light rotation
-                cameraNode->SetPosition(light->GetNode()->GetWorldPosition());
-                cameraNode->SetDirection(*directions[i]);
+                bool transformEvents = cameraNode->GetEnableTransformEvents();
+                cameraNode->SetEnableTransformEvents(!transformEvents);
+                    cameraNode->SetPosition(light->GetNode()->GetWorldPosition());
+                    cameraNode->SetDirection(*directions[i]);
+                cameraNode->SetEnableTransformEvents(transformEvents);
                 shadowCamera->SetNearClip(light->GetShadowNearFarRatio() * light->GetRange());
                 shadowCamera->SetFarClip(light->GetRange());
                 shadowCamera->SetFov(90.0f);
@@ -2607,8 +2612,9 @@ void View::SetupDirLightShadowCamera(Camera* shadowCamera, Light* light, float n
 
     // Calculate initial position & rotation
     Vector3 pos = cullCamera_->GetNode()->GetWorldPosition() - extrusionDistance * lightNode->GetWorldDirection();
+    shadowCameraNode->SetEnableTransformEvents(false);//temp disable transform events since we might be outside of main thread.
     shadowCameraNode->SetTransform(pos, lightNode->GetWorldRotation());
-
+    shadowCameraNode->SetEnableTransformEvents(true);
     // Calculate main camera shadowed frustum in light's view space
     farSplit = Min(farSplit, cullCamera_->GetFarClip());
     // Use the scene Z bounds to limit frustum size if applicable
@@ -2752,6 +2758,7 @@ void View::QuantizeDirLightShadowCamera(Camera* shadowCamera, Light* light, cons
     // Center shadow camera to the view space bounding box
     Quaternion rot(shadowCameraNode->GetWorldRotation());
     Vector3 adjust(center.x_, center.y_, 0.0f);
+    shadowCameraNode->SetEnableTransformEvents(false);  //temp disable transform events since we might be outside of main thread.
     shadowCameraNode->Translate(rot * adjust, TS_WORLD);
 
     // If the shadow map viewport is known, snap to whole texels
@@ -2764,6 +2771,8 @@ void View::QuantizeDirLightShadowCamera(Camera* shadowCamera, Light* light, cons
         Vector3 snap(-fmodf(viewPos.x_, texelSize.x_), -fmodf(viewPos.y_, texelSize.y_), 0.0f);
         shadowCameraNode->Translate(rot * snap, TS_WORLD);
     }
+
+    shadowCameraNode->SetEnableTransformEvents(true);
 }
 
 void View::FindZone(Drawable* drawable)
