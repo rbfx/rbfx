@@ -198,14 +198,14 @@ SLNet::RakString SocketLayer::GetSubNetForSocketAndIp(__UDPSOCKET__ inSock, SLNe
 		sockaddr_in *pAddress;
 		pAddress = (sockaddr_in *) & (InterfaceList[i].iiAddress);
 		char ip[65];
-		inet_ntop(pAddress->sin_family, &pAddress->sin_addr, ip, 65);
+		inet_ntop(pAddress->sin_family, &pAddress->sin_addr, ip, (size_t)65);
 		ipString = ip;
 
 		if (inIpString==ipString)
 		{
 			pAddress = (sockaddr_in *) & (InterfaceList[i].iiNetmask);
 			char netmaskIP[65];
-			inet_ntop(pAddress->sin_family, &pAddress->sin_addr, netmaskIP, 65);
+			inet_ntop(pAddress->sin_family, &pAddress->sin_addr, netmaskIP, (size_t)65);
 			netMaskString=netmaskIP;
 			return netMaskString;
 		}

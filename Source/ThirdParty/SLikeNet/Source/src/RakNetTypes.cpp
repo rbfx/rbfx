@@ -290,7 +290,7 @@ void SystemAddress::ToString_Old(bool writePort, char *dest, char portDelineator
 	in_addr in;
 	in.s_addr = address.addr4.sin_addr.s_addr;
 	char buf[1024];
-	inet_ntop(AF_INET, &in, buf, 1024);
+	inet_ntop(AF_INET, &in, buf, (size_t)1024);
 #pragma warning(push)
 #pragma warning(disable:4996)
 	strcpy(dest, buf);

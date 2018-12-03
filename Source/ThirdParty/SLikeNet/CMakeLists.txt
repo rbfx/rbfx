@@ -74,4 +74,8 @@ target_include_directories(SLikeNet
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Source/include>
 )
 
+if (WIN32)
+    target_link_libraries(SLikeNet PUBLIC iphlpapi)
+endif ()
+
 install (DIRECTORY Source/include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)

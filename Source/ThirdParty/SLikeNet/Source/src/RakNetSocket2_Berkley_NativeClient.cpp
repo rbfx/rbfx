@@ -102,7 +102,7 @@ void DomainNameToIP_Berkley_IPV4( const char *domainName, char ip[65] )
 
 	struct sockaddr_in  *sockaddr_ipv4 = (struct sockaddr_in *) addressinfo->ai_addr;
 
-	inet_ntop(AF_INET, &sockaddr_ipv4->sin_addr, ip, 65);
+	inet_ntop(AF_INET, &sockaddr_ipv4->sin_addr, ip, (size_t)65);
 }
 
 
