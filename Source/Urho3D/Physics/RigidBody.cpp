@@ -115,8 +115,7 @@ namespace Urho3D {
                 dVector worldVel = UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(worldVelocity)) - curWorldVel;
                 dVector bodyWorldPos;
                 NewtonBodyGetPosition(newtonBody_, &bodyWorldPos[0]);
-                NewtonBodyAddImpulse(newtonBody_, &worldVel[0], &bodyWorldPos[0], GSS<Engine>()->GetUpdateTimeGoalMs()*GetScene()->GetTimeScale()*0.001f);
-
+                NewtonBodyAddImpulse(newtonBody_, &worldVel[0], &bodyWorldPos[0], physicsWorld_->timeStepLast_*GetScene()->GetTimeScale()*0.001f);
             }
             else
                 NewtonBodySetVelocity(newtonBody_, &UrhoToNewton(nextLinearVelocity_)[0]);
@@ -266,8 +265,8 @@ namespace Urho3D {
     void RigidBody::DrawDebugGeometry(DebugRenderer* debug, bool depthTest, bool showAABB /*= true*/, bool showCollisionMesh /*= true*/, bool showCenterOfMass /*= true*/, bool showContactForces /*= true*/)
     {
         Component::DrawDebugGeometry(debug, depthTest);
-        if (newtonBody_) {
-            if (showAABB)
+        if (newtonBody_ && GetEffectiveNewtonCollision()) {
+            if (showAABB )
             {
                     dMatrix matrix;
                     dVector p0(0.0f);
@@ -910,7 +909,7 @@ namespace Urho3D {
                     dVector worldVel = UrhoToNewton(nextLinearVelocity_) - curWorldVel;
                     dVector bodyWorldPos;
                     NewtonBodyGetPosition(newtonBody_, &bodyWorldPos[0]);
-                    NewtonBodyAddImpulse(newtonBody_, &worldVel[0], &bodyWorldPos[0], GSS<Engine>()->GetUpdateTimeGoalMs()*0.001f);
+                    NewtonBodyAddImpulse(newtonBody_, &worldVel[0], &bodyWorldPos[0], physicsWorld_->timeStepLast_*0.001f);
                 }
                 else
                     NewtonBodySetVelocity(newtonBody_, &UrhoToNewton(nextLinearVelocity_)[0]);
@@ -928,7 +927,8 @@ namespace Urho3D {
         if (nextImpulseNeeded_)
         {
             if (newtonBody_) {
-                NewtonBodyAddImpulse(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(nextImpulseWorldVelocity_))[0], &UrhoToNewton(node_->LocalToWorld(nextImpulseLocalPos_))[0], GSS<Engine>()->GetUpdateTimeGoalMs()*0.001f);
+                NewtonBodyAddImpulse(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(nextImpulseWorldVelocity_))[0],
+                    &UrhoToNewton(node_->LocalToWorld(nextImpulseLocalPos_))[0], physicsWorld_->timeStepLast_*0.001f);
             }
             nextImpulseNeeded_ = false;
         }
@@ -1007,7 +1007,8 @@ namespace Urho3D {
 
         if (newtonBody_) {
             Activate();
-            NewtonBodyAddImpulse(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(targetVelocity))[0], &UrhoToNewton(node_->LocalToWorld(localPosition))[0], GSS<Engine>()->GetUpdateTimeGoalMs()*0.001f);
+            NewtonBodyAddImpulse(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(targetVelocity))[0],
+                &UrhoToNewton(node_->LocalToWorld(localPosition))[0], physicsWorld_->timeStepLast_*0.001f);
         }
         else
         {

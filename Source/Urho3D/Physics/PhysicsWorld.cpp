@@ -37,6 +37,7 @@
 #include "PhysicsVehicle.h"
 #include "VehicleTire.h"
 #include "Engine/Engine.h"
+#include "Math/Ray.h"
 
 namespace Urho3D {
 
@@ -462,7 +463,7 @@ namespace Urho3D {
                     contactEntry->shapes1[contactIdx] = colShape1;
 
                     //#todo debugging
-                    GSS<VisualDebugger>()->AddCross(contactEntry->contactPositions[contactIdx], 0.1f, Color::BLUE, true);
+                    //GSS<VisualDebugger>()->AddCross(contactEntry->contactPositions[contactIdx], 0.1f, Color::BLUE, true);
 
                     contactIdx++;
                 }
@@ -632,9 +633,34 @@ namespace Urho3D {
     {
        sceneUpdated_ = true;
 
-       Update(GSS<Engine>()->GetUpdateTimeGoalMs() / 1000.0f / float(subStepFactor), true);
+       float timeStep = eventData[SceneSubsystemUpdate::P_TIMESTEP].GetFloat();
+       if (timeStep <= 0.0001f) {
+
+          /* URHO3D_LOGWARNING("PhysicsWorld::HandleSceneUpdate TimeStep Fluxuation " + String(timeStep) + " , " + String(timeStepLast_));
+           timeStepLast_ = timeStep;*/
+           return;
+       }
+
+       timeStepLast_ = timeStep;
+
+
+       // Send pre-step event
+       eventData = GetEventDataMap();
+       eventData[PhysicsPreStep::P_WORLD] = this;
+       eventData[PhysicsPreStep::P_TIMESTEP] = timeStep;
+       SendEvent(E_PHYSICSPRESTEP, eventData);
+
+       //do the update.
+       Update(timeStep / float(subStepFactor), true);
        for(int i = 0; i < subStepFactor-1; i++)
-            Update(GSS<Engine>()->GetUpdateTimeGoalMs() / 1000.0f / float(subStepFactor), false);
+            Update(timeStep  / float(subStepFactor), false);
+
+
+       // Send post-step event
+       eventData = GetEventDataMap();
+       eventData[PhysicsPostStep::P_WORLD] = this;
+       eventData[PhysicsPostStep::P_TIMESTEP] = timeStep;
+       SendEvent(E_PHYSICSPOSTSTEP, eventData);
     }
 
 

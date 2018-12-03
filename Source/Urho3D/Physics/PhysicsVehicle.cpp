@@ -13,7 +13,6 @@
 #include "Graphics/StaticModel.h"
 #include "VehicleTire.h"
 #include "NewtonDebugDrawing.h"
-#include "Graphics/VisualDebugger.h"
 #include "Graphics/DebugRenderer.h"
 #include "IO/Log.h"
 

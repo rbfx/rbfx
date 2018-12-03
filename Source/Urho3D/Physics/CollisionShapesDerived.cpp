@@ -22,10 +22,10 @@
 #include "Graphics/StaticModel.h"
 #include "Scene/SceneEvents.h"
 #include "CollisionShape.h"
-#include "Graphics/HeightmapTerrain.h"
+#include "Graphics/Terrain.h"
 #include "Container/ArrayPtr.h"
 #include "Resource/ResourceCache.h"
-#include "Graphics/HeightmapTerrainPatch.h"
+#include "Graphics/TerrainPatch.h"
 #include "Math/StringHash.h"
 
 
@@ -124,7 +124,7 @@ namespace Urho3D {
 
     void CollisionShape_Geometry::SetModelByResourceRef(const ResourceRef& ref)
     {
-        auto* cache = GSS<ResourceCache>();
+        auto* cache = GetSubsystem<ResourceCache>();
         SetModel(cache->GetResource<Model>(ref.name_));
     }
 
@@ -516,7 +516,7 @@ namespace Urho3D {
 
 
         //find a terrain component
-        HeightmapTerrain* terrainComponent = node_->GetComponent<HeightmapTerrain>();
+        Terrain* terrainComponent = node_->GetComponent<Terrain>();
         if (terrainComponent)
         {
 
