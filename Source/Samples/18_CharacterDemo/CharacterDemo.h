@@ -114,6 +114,8 @@ private:
     void SubscribeToEvents();
     /// Handle application update. Set controls to character.
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
+    /// Handle application post render update. draws debug geometry.
+    void HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData);
     /// Handle application post-update. Update camera position after character has moved.
     void HandlePostUpdate(StringHash eventType, VariantMap& eventData);
 
@@ -123,4 +125,6 @@ private:
     WeakPtr<Character> character_;
     /// First person camera flag.
     bool firstPerson_;
+    /// draw debug geometry flag.
+    bool drawDebug_ = false;
 };

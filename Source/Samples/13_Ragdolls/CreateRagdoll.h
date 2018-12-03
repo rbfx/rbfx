@@ -44,7 +44,7 @@ private:
     /// Handle scene node's physics collision.
     void HandleNodeCollision(StringHash eventType, VariantMap& eventData);
     /// Make a bone physical by adding RigidBody and CollisionShape components.
-    void CreateRagdollBone(const String& boneName, ShapeType type, const Vector3& size, const Vector3& position, const Quaternion& rotation);
+    void CreateRagdollBone(const String& boneName, StringHash collisionShapeType, const Vector3& size, const Vector3& position, const Quaternion& rotation);
     /// Join two bones with a Constraint component.
-    void CreateRagdollConstraint(const String& boneName, const String& parentName, ConstraintType type, const Vector3& axis, const Vector3& parentAxis, const Vector2& highLimit, const Vector2& lowLimit, bool disableCollision = true);
+    void CreateRagdollConstraint(const String& boneName, const String& parentName, StringHash constraintType, const Quaternion& orientation, const Vector2& angleLimits, const Vector2& twistLimits, bool disableCollision = true);
 };

@@ -47,6 +47,7 @@
 #include "Ragdolls.h"
 
 #include <Urho3D/DebugNew.h>
+#include "Urho3D/Physics/CollisionShapesDerived.h"
 
 URHO3D_DEFINE_APPLICATION_MAIN(Ragdolls)
 
@@ -123,13 +124,14 @@ void Ragdolls::CreateScene()
 
         // Make the floor physical by adding RigidBody and CollisionShape components
         auto* body = floorNode->CreateComponent<RigidBody>();
+        body->SetMassScale(0.0f);
         // We will be spawning spherical objects in this sample. The ground also needs non-zero rolling friction so that
         // the spheres will eventually come to rest
-        body->SetRollingFriction(0.15f);
-        auto* shape = floorNode->CreateComponent<CollisionShape>();
+        //body->SetRollingFriction(0.15f);
+        auto* shape = floorNode->CreateComponent<CollisionShape_Box>();
         // Set a box shape of size 1 x 1 x 1 for collision. The shape will be scaled with the scene node scale, so the
         // rendering and physics representation sizes should match (the box model is also 1 x 1 x 1.)
-        shape->SetBox(Vector3::ONE);
+        //shape->SetBox(Vector3::ONE);
     }
 
     // Create animated models
@@ -153,11 +155,17 @@ void Ragdolls::CreateScene()
             auto* body = modelNode->CreateComponent<RigidBody>();
             // The Trigger mode makes the rigid body only detect collisions, but impart no forces on the
             // colliding objects
-            body->SetTrigger(true);
-            auto* shape = modelNode->CreateComponent<CollisionShape>();
+            body->SetTriggerMode(true);
+            body->SetMassScale(0.0f);
+            auto* shape = modelNode->CreateComponent<CollisionShape_Capsule>();
             // Create the capsule shape with an offset so that it is correctly aligned with the model, which
             // has its origin at the feet
-            shape->SetCapsule(0.7f, 2.0f, Vector3(0.0f, 1.0f, 0.0f));
+            shape->SetPositionOffset(Vector3(0.0f, 1.0f, 0.0f));
+            shape->SetRotationOffset(Quaternion(0, 0, 90));
+            shape->SetLength(1.4f);
+            shape->SetRadius1(0.4f);
+            shape->SetRadius2(0.4f);
+            
 
             // Create a custom component that reacts to collisions and creates the ragdoll
             modelNode->CreateComponent<CreateRagdoll>();
@@ -245,12 +253,13 @@ void Ragdolls::MoveCamera(float timeStep)
     // Check for loading / saving the scene
     if (input->GetKeyPress(KEY_F5))
     {
-        File saveFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/Ragdolls.xml", FILE_WRITE);
+        
+        File saveFile(context_, GetSubsystem<ResourceCache>()->GetResourceDir("Data") + "/Scenes/Ragdolls.xml", FILE_WRITE);
         scene_->SaveXML(saveFile);
     }
     if (input->GetKeyPress(KEY_F7))
     {
-        File loadFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/Ragdolls.xml", FILE_READ);
+        File loadFile(context_, GetSubsystem<ResourceCache>()->GetResourceDir("Data") + "/Scenes/Ragdolls.xml", FILE_READ);
         scene_->LoadXML(loadFile);
     }
 
@@ -273,10 +282,11 @@ void Ragdolls::SpawnObject()
     boxObject->SetCastShadows(true);
 
     auto* body = boxNode->CreateComponent<RigidBody>();
-    body->SetMass(1.0f);
-    body->SetRollingFriction(0.15f);
-    auto* shape = boxNode->CreateComponent<CollisionShape>();
-    shape->SetSphere(1.0f);
+    body->SetMassScale(1.0f);
+
+    //body->SetRollingFriction(0.15f);
+    auto* shape = boxNode->CreateComponent<CollisionShape_Sphere>();
+    shape->SetRadius(0.5f);
 
     const float OBJECT_VELOCITY = 10.0f;
 
@@ -310,5 +320,5 @@ void Ragdolls::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventDat
 {
     // If draw debug mode is enabled, draw physics debug geometry. Use depth test to make the result easier to interpret
     if (drawDebug_)
-        scene_->GetComponent<PhysicsWorld>()->DrawDebugGeometry(true);
+        scene_->GetComponent<PhysicsWorld>()->DrawDebugGeometry(scene_->GetComponent<DebugRenderer>(), true);
 }

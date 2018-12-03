@@ -62,6 +62,9 @@ void PhysicsStressTest::Start()
     // Execute base class startup
     Sample::Start();
 
+
+   // GetSubsystem<Engine>()->SetMaxFps(60);
+
     // Create the scene content
     CreateScene();
 

@@ -115,7 +115,7 @@ namespace Urho3D {
                 dVector worldVel = UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(worldVelocity)) - curWorldVel;
                 dVector bodyWorldPos;
                 NewtonBodyGetPosition(newtonBody_, &bodyWorldPos[0]);
-                NewtonBodyAddImpulse(newtonBody_, &worldVel[0], &bodyWorldPos[0], physicsWorld_->timeStepLast_*GetScene()->GetTimeScale()*0.001f);
+                NewtonBodyAddImpulse(newtonBody_, &worldVel[0], &bodyWorldPos[0], physicsWorld_->timeStepTarget_*GetScene()->GetTimeScale());
             }
             else
                 NewtonBodySetVelocity(newtonBody_, &UrhoToNewton(nextLinearVelocity_)[0]);
@@ -909,7 +909,7 @@ namespace Urho3D {
                     dVector worldVel = UrhoToNewton(nextLinearVelocity_) - curWorldVel;
                     dVector bodyWorldPos;
                     NewtonBodyGetPosition(newtonBody_, &bodyWorldPos[0]);
-                    NewtonBodyAddImpulse(newtonBody_, &worldVel[0], &bodyWorldPos[0], physicsWorld_->timeStepLast_*0.001f);
+                    NewtonBodyAddImpulse(newtonBody_, &worldVel[0], &bodyWorldPos[0], physicsWorld_->timeStepTarget_);
                 }
                 else
                     NewtonBodySetVelocity(newtonBody_, &UrhoToNewton(nextLinearVelocity_)[0]);
@@ -928,7 +928,7 @@ namespace Urho3D {
         {
             if (newtonBody_) {
                 NewtonBodyAddImpulse(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(nextImpulseWorldVelocity_))[0],
-                    &UrhoToNewton(node_->LocalToWorld(nextImpulseLocalPos_))[0], physicsWorld_->timeStepLast_*0.001f);
+                    &UrhoToNewton(node_->LocalToWorld(nextImpulseLocalPos_))[0], physicsWorld_->timeStepTarget_);
             }
             nextImpulseNeeded_ = false;
         }
@@ -1008,7 +1008,7 @@ namespace Urho3D {
         if (newtonBody_) {
             Activate();
             NewtonBodyAddImpulse(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(targetVelocity))[0],
-                &UrhoToNewton(node_->LocalToWorld(localPosition))[0], physicsWorld_->timeStepLast_*0.001f);
+                &UrhoToNewton(node_->LocalToWorld(localPosition))[0], physicsWorld_->timeStepTarget_);
         }
         else
         {

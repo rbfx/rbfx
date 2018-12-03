@@ -29,6 +29,7 @@ namespace Urho3D
 
 class Node;
 class Scene;
+class HingeConstraint;
 
 }
 
@@ -75,21 +76,86 @@ protected:
 private:
     /// Construct the scene content.
     void CreateScene();
+
+    void SpawnSceneCompoundTest(const Vector3& worldPos, bool oneBody);
+    void CreatePyramids(Vector3 position);
+
+
+    void CreateTowerOfLiar(Vector3 position);
     /// Construct an instruction text to the UI.
     void CreateInstructions();
     /// Set up a viewport for displaying the scene.
     void SetupViewport();
     /// Subscribe to application-wide logic update and post-render update events.
     void SubscribeToEvents();
+
+
+
+
+
     /// Read input and moves the camera.
     void MoveCamera(float timeStep);
+
+
+
+
+
     /// Spawn a physics object from the camera position.
     void SpawnObject();
+    void SpawnConvexHull(const Vector3& worldPos);
+    void SpawnCompound(const Vector3& worldPos);
+    void SpawnDecompCompound(const Vector3& worldPos);
+    void SpawnNSquaredJointedObject(Vector3 worldPosition);
+    void SpawnGlueJointedObject(Vector3 worldPosition);
+    void SpawnLinearJointedObject(float size, Vector3 worldPosition);
+    void SpawnMaterialsTest(Vector3 worldPosition);
+    void SpawnBallSocketTest(Vector3 worldPosition);
+    void SpawnHingeActuatorTest(Vector3 worldPosition);
+    void SpawnCollisionExceptionsTest(Vector3 worldPosition);
+    void SpawnSliderTest(Vector3 worldPosition);
+    void FireSmallBall();
+    void SpawnCompoundedRectTest(Vector3 worldPosition);
+    void SpawnCompoundedRectTest2(Vector3 worldPosition);
+    void SpawnVehicle(Vector3 worldPosition);
+    void SpawnTrialBike(Vector3 worldPosition);
+
     /// Handle the logic update event.
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
     /// Handle the post-render update event.
     void HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Flag for drawing debug geometry.
-    bool drawDebug_;
+    bool drawDebug_ = false;
+    void DecomposePhysicsTree();
+    void RecomposePhysicsTree();
+    void  TransportNode();
+
+
+
+    void HandleMouseButtonUp(StringHash eventType, VariantMap& eventData);
+    void HandleMouseButtonDown(StringHash eventType, VariantMap& eventData);
+
+
+    void HandleCollisionStart(StringHash eventType, VariantMap& eventData);
+
+
+
+    Node* pickPullNode = nullptr;
+    Quaternion pickPullCameraStartOrientation;
+    Vector3 pickPullStartPositionWorld;
+    Vector3 pickPullEndPositionWorld;
+    HingeConstraint* hingeActuatorTest = nullptr;
+    float timeAccum = 0.0f;
+
+    void CreatePickTargetNodeOnPhysics();
+    void ReleasePickTargetOnPhysics();
+    void UpdatePickPull();
+    RayQueryResult GetCameraPickNode();
+
+    //temp variable to tracking world position across updates.
+    PODVector<float> worldPosHistory_;
+    PODVector<float> worldPosHistory2_;
+
+    void CreateScenery(Vector3 worldPosition);
+    void RemovePickNode(bool removeRigidBodyOnly = false);
 };

@@ -55,8 +55,8 @@ namespace Urho3D {
             contactEntryPool_.Insert(0, context->CreateObject<RigidBodyContactEntry>());
         }
 
-
-
+        //set timestep target to max fps
+        timeStepTarget_ = 1.0f / GetSubsystem<Engine>()->GetMaxFps();
     }
 
     PhysicsWorld::~PhysicsWorld()
@@ -490,8 +490,12 @@ namespace Urho3D {
         eventData[PhysicsCollisionStart::P_WORLD] = this;
 
 
-        for (RigidBody* rigBody : rigidBodyComponentList)
+        for (int i = 0; i < rigidBodyComponentList.Size(); i++)
         {
+            RigidBody* rigBody = rigidBodyComponentList[i];
+            if(!rigBody->newtonBody_ || !rigBody->effectiveCollision_)
+                continue;
+
             if (!rigBody->generateContacts_)
                 continue;
 
@@ -619,7 +623,7 @@ namespace Urho3D {
                 entry->wakeFlag_ = false;
             }
 
-            if(rigBody->contactEntries_.Size() > 10)
+            if(rigBody->Refs() && rigBody->contactEntries_.Size() > 10)
                 rigBody->CleanContactEntries();
         }
 
@@ -634,14 +638,17 @@ namespace Urho3D {
        sceneUpdated_ = true;
 
        float timeStep = eventData[SceneSubsystemUpdate::P_TIMESTEP].GetFloat();
-       if (timeStep <= 0.0001f) {
 
-          /* URHO3D_LOGWARNING("PhysicsWorld::HandleSceneUpdate TimeStep Fluxuation " + String(timeStep) + " , " + String(timeStepLast_));
-           timeStepLast_ = timeStep;*/
+       if (timeStep <= 0.0001f) {
            return;
        }
 
-       timeStepLast_ = timeStep;
+       //move the timestep target slowely towards the time step we actually get.  We dont want any sudden changes given to newton. (in fact ideally it is constant)
+       if(timeStepTarget_ < timeStep)
+           timeStepTarget_ += (timeStep - timeStepTarget_) * (1.0f / 32.0f);
+       else if(timeStepTarget_ > timeStep)
+           timeStepTarget_ += (timeStep - timeStepTarget_) * (1.0f / 32.0f);
+
 
 
        // Send pre-step event
@@ -651,9 +658,9 @@ namespace Urho3D {
        SendEvent(E_PHYSICSPRESTEP, eventData);
 
        //do the update.
-       Update(timeStep / float(subStepFactor), true);
+       Update(timeStepTarget_ / float(subStepFactor), true);
        for(int i = 0; i < subStepFactor-1; i++)
-            Update(timeStep  / float(subStepFactor), false);
+            Update(timeStepTarget_ / float(subStepFactor), false);
 
 
        // Send post-step event
@@ -688,15 +695,11 @@ namespace Urho3D {
             
             NewtonWaitForUpdateToFinish(newtonWorld_);
         }
-        VariantMap sendEventData;
-        sendEventData[PhysicsPostStep::P_WORLD] = this;
-        sendEventData[PhysicsPostStep::P_TIMESTEP] = timeStep;
+        
         if (rootRate) {
 
             if (simulationStarted_) {
 
-                //send post physics event.
-                SendEvent(E_PHYSICSPOSTSTEP, sendEventData);
                 {
                     URHO3D_PROFILE("Apply Node Transforms");
 
@@ -739,16 +742,16 @@ namespace Urho3D {
         formContacts(rootRate);
         
         if (rootRate) {
-            ParseContacts();
 
             freePhysicsInternals();
 
             //rebuild stuff.
             rebuildDirtyPhysicsComponents();
+
+            ParseContacts();
+
         }
 
-
-        SendEvent(E_PHYSICSPRESTEP, sendEventData);
         {
             URHO3D_PROFILE("NewtonUpdate");
             //use target time step to give newton constant time steps. 
