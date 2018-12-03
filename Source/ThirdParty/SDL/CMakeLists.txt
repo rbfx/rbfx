@@ -1239,9 +1239,6 @@ elseif(WINDOWS)
     set(HAVE_SDL_FILESYSTEM TRUE)
   endif()
 
-  # Libraries for Win32 native and MinGW
-  list(APPEND EXTRA_LIBS user32 gdi32 winmm imm32 ole32 oleaut32 version uuid)
-
   # TODO: in configure.in the check for timers is set on
   # cygwin | mingw32* - does this include mingw32CE?
   if(SDL_TIMERS)
@@ -1499,7 +1496,7 @@ if (BUILD_SHARED_LIBS)
   target_compile_definitions(SDL PRIVATE -DSDL_EXPORTS)
 endif ()
 if (WIN32)
-  target_link_libraries (SDL user32 gdi32 ole32 oleaut32 imm32 version winmm uuid)
+  target_link_libraries (SDL user32 gdi32 imm32 version winmm)
 elseif (ANDROID)
   target_link_libraries (SDL dl log android)
 elseif (APPLE)
