@@ -39,6 +39,7 @@
 
 #include "../DebugNew.h"
 
+
 namespace Urho3D
 {
 
@@ -54,8 +55,6 @@ DebugRenderer::DebugRenderer(Context* context) :
     lineAntiAlias_(false)
 {
     vertexBuffer_ = new VertexBuffer(context_);
-
-    SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(DebugRenderer, HandleEndFrame));
 }
 
 DebugRenderer::~DebugRenderer() = default;
@@ -520,8 +519,26 @@ void DebugRenderer::AddQuad(const Vector3& center, float width, float height, co
     AddLine(v3, v0, uintColor, depthTest);
 }
 
+void DebugRenderer::AddFrame(const Matrix3x4& worldTransform, float scale, Color colorX, Color colorY, Color colorZ, bool depthTest)
+{
+    Vector3 origin = Vector3::ZERO;
+    Vector3 x = Vector3(1.0f, 0, 0) * scale;
+    Vector3 y = Vector3(0, 1.0f, 0) * scale;
+    Vector3 z = Vector3(0, 0, 1.0f) * scale;
+
+    origin = worldTransform * origin;
+    x = worldTransform * x;
+    y = worldTransform * y;
+    z = worldTransform * z;
+
+    AddLine(origin, x, colorX, depthTest);
+    AddLine(origin, y, colorY, depthTest);
+    AddLine(origin, z, colorZ, depthTest);
+}
+
 void DebugRenderer::Render()
 {
+
     if (!HasContent())
         return;
 
@@ -671,20 +688,14 @@ void DebugRenderer::Render()
     }
 
     graphics->SetLineAntiAlias(false);
-}
 
-bool DebugRenderer::IsInside(const BoundingBox& box) const
-{
-    return frustum_.IsInsideFast(box) == INSIDE;
-}
 
-bool DebugRenderer::HasContent() const
-{
-    return !(lines_.Empty() && noDepthLines_.Empty() && triangles_.Empty() && noDepthTriangles_.Empty());
-}
 
-void DebugRenderer::HandleEndFrame(StringHash eventType, VariantMap& eventData)
-{
+
+
+
+    //clear
+
     // When the amount of debug geometry is reduced, release memory
     unsigned linesSize = lines_.Size();
     unsigned noDepthLinesSize = noDepthLines_.Size();
@@ -704,6 +715,18 @@ void DebugRenderer::HandleEndFrame(StringHash eventType, VariantMap& eventData)
         triangles_.Reserve(trianglesSize);
     if (noDepthTriangles_.Capacity() > noDepthTrianglesSize * 2)
         noDepthTriangles_.Reserve(noDepthTrianglesSize);
+    
 }
+
+bool DebugRenderer::IsInside(const BoundingBox& box) const
+{
+    return frustum_.IsInsideFast(box) == INSIDE;
+}
+
+bool DebugRenderer::HasContent() const
+{
+    return !(lines_.Empty() && noDepthLines_.Empty() && triangles_.Empty() && noDepthTriangles_.Empty());
+}
+
 
 }

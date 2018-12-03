@@ -153,6 +153,8 @@ public:
     void AddCross(const Vector3& center, float size, const Color& color, bool depthTest = true);
     /// Add a quad on the XZ plane.
     void AddQuad(const Vector3& center, float width, float height, const Color& color, bool depthTest = true);
+    /// Add an XYZ frame at the given worldTransform with optional uniform scale.
+    void AddFrame(const Matrix3x4& worldTransform, float scale = 1.0f, Color colorX = Color::RED, Color colorY = Color::GREEN, Color colorZ = Color::BLUE, bool depthTest = true);
 
     /// Update vertex buffer and render all debug lines. The viewport and rendertarget should be set before.
     void Render();
@@ -175,8 +177,6 @@ public:
     bool HasContent() const;
 
 private:
-    /// Handle end of frame. Clear debug geometry.
-    void HandleEndFrame(StringHash eventType, VariantMap& eventData);
 
     /// Lines rendered with depth test.
     PODVector<DebugLine> lines_;
