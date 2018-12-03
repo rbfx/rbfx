@@ -47,6 +47,7 @@
 #include "PhysicsStressTest.h"
 
 #include <Urho3D/DebugNew.h>
+#include "Urho3D/Physics/CollisionShapesDerived.h"
 
 URHO3D_DEFINE_APPLICATION_MAIN(PhysicsStressTest)
 
@@ -120,9 +121,9 @@ void PhysicsStressTest::CreateScene()
         floorObject->SetMaterial(cache->GetResource<Material>("Materials/StoneTiled.xml"));
 
         // Make the floor physical by adding RigidBody and CollisionShape components
-        /*RigidBody* body = */floorNode->CreateComponent<RigidBody>();
-        auto* shape = floorNode->CreateComponent<CollisionShape>();
-        shape->SetBox(Vector3::ONE);
+        RigidBody* body = floorNode->CreateComponent<RigidBody>();
+        auto* shape = floorNode->CreateComponent<CollisionShape_Box>();
+        body->SetMassScale(0.0f);
     }
 
     {
@@ -139,10 +140,11 @@ void PhysicsStressTest::CreateScene()
             mushroomObject->SetMaterial(cache->GetResource<Material>("Materials/Mushroom.xml"));
             mushroomObject->SetCastShadows(true);
 
-            /*RigidBody* body = */mushroomNode->CreateComponent<RigidBody>();
-            auto* shape = mushroomNode->CreateComponent<CollisionShape>();
+            RigidBody* body = mushroomNode->CreateComponent<RigidBody>();
+            body->SetMassScale(0.0f);
+            auto* shape = mushroomNode->CreateComponent<CollisionShape_TreeCollision>();
             // By default the highest LOD level will be used, the LOD level can be passed as an optional parameter
-            shape->SetTriangleMesh(mushroomObject->GetModel());
+            shape->SetModel(mushroomObject->GetModel());
         }
     }
 
@@ -160,12 +162,12 @@ void PhysicsStressTest::CreateScene()
 
             // Give the RigidBody mass to make it movable and also adjust friction
             auto* body = boxNode->CreateComponent<RigidBody>();
-            body->SetMass(1.0f);
-            body->SetFriction(1.0f);
+            body->SetMassScale(1.0f);
+           // body->SetLinearDamping(0.01f);
+            //body->SetFriction(1.0f);
             // Disable collision event signaling to reduce CPU load of the physics simulation
             body->SetCollisionEventMode(COLLISION_NEVER);
-            auto* shape = boxNode->CreateComponent<CollisionShape>();
-            shape->SetBox(Vector3::ONE);
+            auto* shape = boxNode->CreateComponent<CollisionShape_Box>();
         }
     }
 
@@ -260,12 +262,12 @@ void PhysicsStressTest::MoveCamera(float timeStep)
     // Check for loading / saving the scene
     if (input->GetKeyPress(KEY_F5))
     {
-        File saveFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/PhysicsStressTest.xml", FILE_WRITE);
+        File saveFile(context_, GetSubsystem<ResourceCache>()->GetResourceDir("Data") + "/Scenes/PhysicsStressTest.xml", FILE_WRITE);
         scene_->SaveXML(saveFile);
     }
     if (input->GetKeyPress(KEY_F7))
     {
-        File loadFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/PhysicsStressTest.xml", FILE_READ);
+        File loadFile(context_, GetSubsystem<ResourceCache>()->GetResourceDir("Data") + "/Scenes/PhysicsStressTest.xml", FILE_READ);
         scene_->LoadXML(loadFile);
     }
 
@@ -290,10 +292,10 @@ void PhysicsStressTest::SpawnObject()
 
     // Create physics components, use a smaller mass also
     auto* body = boxNode->CreateComponent<RigidBody>();
-    body->SetMass(0.25f);
-    body->SetFriction(0.75f);
-    auto* shape = boxNode->CreateComponent<CollisionShape>();
-    shape->SetBox(Vector3::ONE);
+    body->SetMassScale(0.25f);
+    //body->SetFriction(0.75f);
+    auto* shape = boxNode->CreateComponent<CollisionShape_Box>();
+
 
     const float OBJECT_VELOCITY = 10.0f;
 
@@ -317,5 +319,5 @@ void PhysicsStressTest::HandlePostRenderUpdate(StringHash eventType, VariantMap&
 {
     // If draw debug mode is enabled, draw physics debug geometry. Use depth test to make the result easier to interpret
     if (drawDebug_)
-        scene_->GetComponent<PhysicsWorld>()->DrawDebugGeometry(true);
+        scene_->GetComponent<PhysicsWorld>()->DrawDebugGeometry(scene_->GetComponent<DebugRenderer>(), true);
 }
