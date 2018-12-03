@@ -14,7 +14,7 @@
 #include <stddef.h>
 
 #ifndef DLL_EXPORT
-#ifdef _MSC_VER
+#ifdef _WIN32
 #  define DLL_EXPORT __declspec(dllexport)
 #else
 #  define DLL_EXPORT __attribute__((visibility("default")))

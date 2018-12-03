@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <assert.h>
 #include <chrono>
-#include <inttypes.h>
+#include <cinttypes> // Urho3D: Needed for PRIi64
 #include <limits>
 #include <math.h>
 #include <mutex>

@@ -246,7 +246,7 @@ if (URHO3D_TASKS)
 endif ()
 
 if (WIN32)
-    if (URHO3D_MINIDUMPS)
+    if (URHO3D_MINIDUMPS OR URHO3D_PROFILING)
         target_link_libraries (Urho3D PUBLIC dbghelp)
     endif ()
     target_link_libraries (Urho3D PUBLIC rpcrt4)

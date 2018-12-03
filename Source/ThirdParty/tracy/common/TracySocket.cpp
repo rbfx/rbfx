@@ -9,11 +9,13 @@
 #include "TracyAlloc.hpp"
 #include "TracySocket.hpp"
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
+#if _MSC_VER
 #  pragma warning(disable:4244)
 #  pragma warning(disable:4267)
+#endif
 #else
 #  include <sys/socket.h>
 #  include <netdb.h>
@@ -27,13 +29,13 @@
 namespace tracy
 {
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 typedef SOCKET socket_t;
 #else
 typedef int socket_t;
 #endif
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 struct __wsinit
 {
     __wsinit()
@@ -59,7 +61,7 @@ Socket::Socket()
     , m_bufPtr( nullptr )
     , m_bufLeft( 0 )
 {
-#ifdef _MSC_VER
+#ifdef _WIN32
     InitWinSock();
 #endif
 }
@@ -103,7 +105,7 @@ bool Socket::Connect( const char* addr, const char* port )
 #endif
         if( connect( sock, ptr->ai_addr, ptr->ai_addrlen ) == -1 )
         {
-#ifdef _MSC_VER
+#ifdef _WIN32
             closesocket( sock );
 #else
             close( sock );
@@ -122,7 +124,7 @@ bool Socket::Connect( const char* addr, const char* port )
 void Socket::Close()
 {
     assert( m_sock != -1 );
-#ifdef _MSC_VER
+#ifdef _WIN32
     closesocket( m_sock );
 #else
     close( m_sock );
@@ -187,7 +189,7 @@ int Socket::Recv( void* _buf, int len, const timeval* tv )
     timeval _tv = *tv;
     select( m_sock+1, &fds, nullptr, nullptr, &_tv );
 #else
-    select( m_sock+1, &fds, nullptr, nullptr, tv );
+    select( m_sock+1, &fds, nullptr, nullptr, (const PTIMEVAL)tv );
 #endif
     if( FD_ISSET( m_sock, &fds ) )
     {
@@ -260,7 +262,7 @@ bool Socket::HasData()
 ListenSocket::ListenSocket()
     : m_sock( -1 )
 {
-#ifdef _MSC_VER
+#ifdef _WIN32
     InitWinSock();
 #endif
 }
@@ -284,12 +286,12 @@ bool ListenSocket::Listen( const char* port, int backlog )
     if( getaddrinfo( nullptr, port, &hints, &res ) != 0 ) return false;
 
     m_sock = socket( res->ai_family, res->ai_socktype, res->ai_protocol );
-#if defined _MSC_VER || defined __CYGWIN__
+#if defined _WIN32 || defined __CYGWIN__
     unsigned long val = 0;
     setsockopt( m_sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof( val ) );
 #else
     int val = 1;
-    setsockopt( m_sock, SOL_SOCKET, SO_REUSEADDR, &val, sizeof( val ) );
+    setsockopt( m_sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&val, sizeof( val ) );
 #endif
     if( bind( m_sock, res->ai_addr, res->ai_addrlen ) == -1 ) return false;
     if( listen( m_sock, backlog ) == -1 ) return false;
@@ -337,7 +339,7 @@ Socket* ListenSocket::Accept()
 void ListenSocket::Close()
 {
     assert( m_sock != -1 );
-#ifdef _MSC_VER
+#ifdef _WIN32
     closesocket( m_sock );
 #else
     close( m_sock );

@@ -1,4 +1,4 @@
-#ifdef _MSC_VER
+#ifdef _WIN32
 #  include <winsock2.h>
 #else
 #  include <sys/time.h>
