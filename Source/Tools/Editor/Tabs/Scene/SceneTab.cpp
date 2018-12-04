@@ -367,6 +367,7 @@ bool SceneTab::LoadResource(const String& resourcePath)
 
     SceneManager* manager = GetSubsystem<SceneManager>();
     Scene* scene = manager->GetOrCreateScene(GetFileName(resourcePath));
+    manager->SetActiveScene(scene);
 
     bool loaded = false;
     if (resourcePath.EndsWith(".xml", false))
@@ -395,7 +396,6 @@ bool SceneTab::LoadResource(const String& resourcePath)
         return false;
     }
 
-    manager->SetActiveScene(scene);
     manager->UnloadAllButActiveScene();
     return true;
 }
@@ -1160,13 +1160,14 @@ void SceneTab::OnComponentAdded(VariantMap& args)
 {
     using namespace ComponentAdded;
     auto* component = static_cast<Component*>(args[P_COMPONENT].GetPtr());
+    AddComponentIcon(component);
 }
 
 void SceneTab::OnComponentRemoved(VariantMap& args)
 {
     using namespace ComponentRemoved;
     auto* component = static_cast<Component*>(args[P_COMPONENT].GetPtr());
-    AddComponentIcon(component);
+    RemoveComponentIcon(component);
 }
 
 void SceneTab::OnTemporaryChanged(VariantMap& args)
