@@ -100,7 +100,10 @@ void CameraViewport::OnNodeSet(Node* node)
         });
 
         if (Camera* camera = node->GetComponent<Camera>())
+        {
             viewport_->SetCamera(camera);
+            camera->SetViewMask(camera->GetViewMask() & ~(1U << 31));   // Do not render last layer.
+        }
     }
 }
 
