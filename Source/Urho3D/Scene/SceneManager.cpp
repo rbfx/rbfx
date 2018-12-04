@@ -173,6 +173,9 @@ void SceneManager::UpdateViewports()
 
     for (const auto& cameraViewport : viewportComponents)
     {
+        if (cameraViewport.Expired())
+            continue;
+
         // Trigger resizing of underlying viewport
         if (renderSurface_.Expired())
             cameraViewport->SetScreenRect({0, 0, GetGraphics()->GetWidth(), GetGraphics()->GetHeight()});
