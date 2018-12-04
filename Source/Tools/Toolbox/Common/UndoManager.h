@@ -135,13 +135,9 @@ public:
             auto nodeID = nodeData.ReadUInt();
             SharedPtr<Node> node(new Node(parent->GetContext()));
             node->SetID(nodeID);
-
+            parent->AddChild(node, parentIndex);
             nodeData.Seek(0);
-            if (node->Load(nodeData))
-            {
-                // FocusNode(node);
-                parent->AddChild(node, parentIndex);
-            }
+            node->Load(nodeData);
         }
     }
 
