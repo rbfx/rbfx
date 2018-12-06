@@ -359,6 +359,8 @@ bool SceneTab::LoadResource(const String& resourcePath)
     if (!BaseClassName::LoadResource(resourcePath))
         return false;
 
+    Undo::SetTrackingScoped noTrack(undo_, false);
+
     SceneManager* manager = GetSubsystem<SceneManager>();
     Scene* scene = manager->GetOrCreateScene(GetFileName(resourcePath));
     manager->SetActiveScene(scene);
@@ -393,6 +395,10 @@ bool SceneTab::LoadResource(const String& resourcePath)
     manager->UnloadAllButActiveScene();
     scene->SetUpdateEnabled(false);    // Scene is updated manually.
     scene->GetOrCreateComponent<EditorSceneSettings>(LOCAL);
+
+    undo_.Clear();
+    lastUndoIndex_ = undo_.Index();
+
     return true;
 }
 

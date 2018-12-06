@@ -57,8 +57,7 @@ bool BaseResourceTab::LoadResource(const Urho3D::String& resourcePath)
     }
 
     SetResourceName(resourcePath);
-    undo_.Clear();
-    lastUndoIndex_ = undo_.Index();
+
     return true;
 }
 

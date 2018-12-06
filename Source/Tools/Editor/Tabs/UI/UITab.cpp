@@ -333,8 +333,7 @@ bool UITab::LoadResource(const String& resourcePath)
         return false;
     }
 
-    undo_.Clear();
-    undo_.SetTrackingEnabled(false);
+    Undo::SetTrackingScoped noTrack(undo_, false);
 
     auto cache = GetSubsystem<ResourceCache>();
     rootElement_->RemoveAllChildren();
@@ -386,7 +385,9 @@ bool UITab::LoadResource(const String& resourcePath)
         return false;
     }
 
-    undo_.SetTrackingEnabled(true);
+    undo_.Clear();
+    lastUndoIndex_ = undo_.Index();
+
     return true;
 }
 
