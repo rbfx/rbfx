@@ -157,12 +157,6 @@ SceneTab::SceneTab(Context* context)
         using namespace SceneActivated;
         if (Scene* scene = static_cast<Scene*>(args[P_NEWSCENE].GetPtr()))
         {
-            if (scene->IsUpdateEnabled())
-            {
-                scene->SetUpdateEnabled(false);    // Scene is updated manually.
-                scene->GetOrCreateComponent<EditorSceneSettings>(LOCAL);
-            }
-
             SubscribeToEvent(scene, E_COMPONENTADDED, [this](StringHash, VariantMap& args) { OnComponentAdded(args); });
             SubscribeToEvent(scene, E_COMPONENTREMOVED, [this](StringHash, VariantMap& args) { OnComponentRemoved(args); });
             SubscribeToEvent(scene, E_TEMPORARYCHANGED, [this](StringHash, VariantMap& args) { OnTemporaryChanged(args); });
@@ -397,6 +391,8 @@ bool SceneTab::LoadResource(const String& resourcePath)
     }
 
     manager->UnloadAllButActiveScene();
+    scene->SetUpdateEnabled(false);    // Scene is updated manually.
+    scene->GetOrCreateComponent<EditorSceneSettings>(LOCAL);
     return true;
 }
 
