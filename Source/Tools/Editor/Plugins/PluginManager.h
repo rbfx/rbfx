@@ -96,6 +96,8 @@ public:
     const Vector<SharedPtr<Plugin>>& GetPlugins() const { return plugins_; }
     /// Tick native plugins.
     void OnEndFrame();
+    /// Returns list of sorted plugin names that exist in editor directory.
+    const StringVector& GetPluginNames();
     /// Converts relative or absolute plugin path to universal plugin name. Returns empty string on failure.
     static String PathToName(const String& path);
 
@@ -105,16 +107,23 @@ protected:
     /// Converts name to a full plugin file path. Returns empty string on error.
     String NameToPath(const String& name) const;
 
+    struct DynamicLibraryInfo
+    {
+        /// Last modification time.
+        unsigned mtime_ = 0;
+        /// Type of plugin.
+        PluginType pluginType_ = PLUGIN_INVALID;
+    };
+
     /// Loaded plugins.
     Vector<SharedPtr<Plugin>> plugins_;
     /// Plugin update check timer.
     Timer updateCheckTimer_;
+    /// Cached plugin information.
+    HashMap<String, DynamicLibraryInfo> pluginInfoCache_;
 
     friend class Plugin;
 };
-
-/// Returns list of sorted plugin names that exist in editor directory.
-const StringVector& GetPluginNames(Context* context);
 
 }
 #endif

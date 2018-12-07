@@ -386,28 +386,45 @@ PluginManager::~PluginManager()
 #endif
 }
 
-const StringVector& GetPluginNames(Context* context)
+const StringVector& PluginManager::GetPluginNames()
 {
 #if URHO3D_PLUGINS
     StringVector* pluginNames = ui::GetUIState<StringVector>();
 
     if (pluginNames->Empty())
     {
-        FileSystem* fs = context->GetFileSystem();
+        FileSystem* fs = GetFileSystem();
 
         StringVector files;
         HashMap<String, String> nameToPath;
         fs->ScanDir(files, fs->GetProgramDir(), "*.*", SCAN_FILES, false);
-        // Remove definitely not plugins.
-        for (auto it = files.Begin(); it != files.End(); ++it)
+
+        // Remove deleted plugin files.
+        for (const String& key : pluginInfoCache_.Keys())
         {
-            String baseName = PluginManager::PathToName(*it);
+            if (!files.Contains(key))
+                pluginInfoCache_.Erase(key);
+        }
+
+        // Remove definitely not plugins.
+        for (const String& file : files)
+        {
+            String baseName = PluginManager::PathToName(file);
             // Native plugins will rename main file and append version after base name.
             if (baseName.Empty() || IsDigit(static_cast<unsigned int>(baseName.Back())))
                 continue;
 
-            String fullPath = fs->GetProgramDir() + "/" + *it;
-            if (GetPluginType(context, fullPath) == PLUGIN_INVALID)
+            String fullPath = fs->GetProgramDir() + "/" + file;
+            DynamicLibraryInfo& info = pluginInfoCache_[file];
+            unsigned currentModificationTime = fs->GetLastModifiedTime(fullPath);
+            if (info.mtime_ != currentModificationTime)
+            {
+                // Parse file only if it is outdated or was not parsed already.
+                info.mtime_ = currentModificationTime;
+                info.pluginType_ = GetPluginType(context_, fullPath);
+            }
+
+            if (info.pluginType_ == PLUGIN_INVALID)
                 continue;
 
             pluginNames->Push(baseName);

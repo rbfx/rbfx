@@ -532,7 +532,7 @@ void Editor::RenderProjectMenu()
     if (ui::BeginMenu("Plugins"))
     {
         ui::PushID("Plugins");
-        const StringVector& pluginNames = GetPluginNames(context_);
+        const StringVector& pluginNames = project_->GetPlugins()->GetPluginNames();
         if (pluginNames.Size() == 0)
         {
             ui::TextUnformatted("No available files.");
