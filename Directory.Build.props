@@ -33,6 +33,7 @@
     <BaseIntermediateOutputPath>$(BuildDir)$(BaseIntermediateOutputPath)/</BaseIntermediateOutputPath>
     <OutDir>$(BaseOutputPath)</OutDir>
     <OutputPath>$(BaseOutputPath)</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
