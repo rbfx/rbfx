@@ -488,10 +488,6 @@ dMatrix dMatrix::operator* (const dMatrix &B) const
 							 A[3][0] * B[0][3] + A[3][1] * B[1][3] + A[3][2] * B[2][3] + A[3][3] * B[3][3]));
 }
 
-
-
-
-
 dVector dMatrix::TransformPlane (const dVector &localPlane) const
 {
 	dVector tmp (RotateVector (localPlane));  
@@ -532,7 +528,7 @@ bool dMatrix::SanityCheck() const
 
 dMatrix dMatrix::Inverse4x4 () const
 {
-	const dFloat tol = 1.0e-4f;
+	const dFloat tol = dFloat (1.0e-6f);
 	dMatrix tmp (*this);
 	dMatrix inv (dGetIdentityMatrix());
 	for (int i = 0; i < 4; i ++) {
@@ -633,14 +629,14 @@ static inline void ROT(dMatrix &a, int i, int j, int k, int l, dFloat s, dFloat 
 // Jacobian method for computing the eigenvectors of a symmetric matrix
 dMatrix dMatrix::JacobiDiagonalization (dVector &eigenValues, const dMatrix& initialMatrix) const
 {
+
+	dMatrix mat(*this);
+	dMatrix eigenVectors(initialMatrix);
 	dFloat thresh;
 	dFloat b[3];
 	dFloat z[3];
 	dFloat d[3];
-	dFloat EPSILON = 1.0e-5f;
-
-	dMatrix mat (*this);
-	dMatrix eigenVectors (initialMatrix);
+	const dFloat EPSILON = 1.0e-5f;
 	
 	b[0] = mat[0][0]; 
 	b[1] = mat[1][1];
@@ -658,8 +654,8 @@ dMatrix dMatrix::JacobiDiagonalization (dVector &eigenValues, const dMatrix& ini
 	for (int i = 0; i < 50; i++) {
 		dFloat sm = dAbs(mat[0][1]) + dAbs(mat[0][2]) + dAbs(mat[1][2]);
 
-		if (sm < EPSILON * 1e-5) {
-			dAssert (dAbs((eigenVectors.m_front.DotProduct3(eigenVectors.m_front)) - 1.0f) <EPSILON);
+		if (sm < (EPSILON * 1.0e-4f)) {
+			dAssert (dAbs((eigenVectors.m_front.DotProduct3(eigenVectors.m_front)) - 1.0f) < EPSILON);
 			dAssert (dAbs((eigenVectors.m_up.DotProduct3(eigenVectors.m_up)) - 1.0f) < EPSILON);
 			dAssert (dAbs((eigenVectors.m_right.DotProduct3(eigenVectors.m_right)) - 1.0f) < EPSILON);
 			eigenValues = dVector (d[0], d[1], d[2], dFloat (0.0f));

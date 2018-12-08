@@ -31,17 +31,9 @@
 	#define NEWTON_API
 #else 
 	#ifdef _NEWTON_BUILD_DLL
-		#ifdef _WIN32
-			#define NEWTON_API __declspec (dllexport)
-		#else
-			#define NEWTON_API __attribute__ ((visibility("default")))
-		#endif
+		#define NEWTON_API __declspec (dllexport)
 	#else
-		#ifdef _WIN32
-			#define NEWTON_API __declspec (dllimport)
-		#else
-			#define NEWTON_API
-		#endif
+		#define NEWTON_API __declspec (dllimport)
 	#endif
 #endif
 
@@ -315,6 +307,18 @@ extern "C" {
 		dFloat m_penetration;
 		int m_unused[3];
 	} NewtonUserContactPoint;
+
+
+	typedef struct NewtonImmediateModeConstraint
+	{
+		dFloat m_jacobian01[8][6];
+		dFloat m_jacobian10[8][6];
+		dFloat m_minFriction[8];
+		dFloat m_maxFriction[8];
+		dFloat m_jointAccel[8];
+		dFloat m_jointStiffness[8];
+	} NewtonConstraintDescriptor;
+
 
 	// data structure for interfacing with NewtonMesh
 	typedef struct NewtonMeshDoubleData
@@ -1028,6 +1032,9 @@ extern "C" {
 	NEWTON_API void NewtonInverseDynamicsDestroy (NewtonInverseDynamics* const inverseDynamics);
 	
 	NEWTON_API void* NewtonInverseDynamicsGetRoot(NewtonInverseDynamics* const inverseDynamics);
+	NEWTON_API void* NewtonInverseDynamicsGetNextChildNode(NewtonInverseDynamics* const inverseDynamics, void* const node);
+	NEWTON_API void* NewtonInverseDynamicsGetFirstChildNode(NewtonInverseDynamics* const inverseDynamics, void* const parentNode);
+
 	NEWTON_API NewtonBody* NewtonInverseDynamicsGetBody(NewtonInverseDynamics* const inverseDynamics, void* const node);
 	NEWTON_API NewtonJoint* NewtonInverseDynamicsGetJoint(NewtonInverseDynamics* const inverseDynamics, void* const node);
 
@@ -1186,6 +1193,8 @@ extern "C" {
 	NEWTON_API int NewtonUserJoinRowsCount (const NewtonJoint* const joint);
 	NEWTON_API void NewtonUserJointGetGeneralRow (const NewtonJoint* const joint, int index, dFloat* const jacobian0, dFloat* const jacobian1);
 	NEWTON_API dFloat NewtonUserJointGetRowForce (const NewtonJoint* const joint, int row);
+
+	NEWTON_API int NewtonUserJointSubmitImmediateModeConstraint (const NewtonJoint* const joint, NewtonImmediateModeConstraint* const descriptor, dFloat timestep);
 
 	// **********************************************************************************************
 	//

@@ -662,7 +662,6 @@ void dCustomInverseDynamicsEffector::SubmitConstraints(dFloat timestep, int thre
 		NewtonUserJointSetRowMaximumFriction(m_joint, m_linearFriction);
 	}
 
-
 	if (m_isSixdof) {
 		dQuaternion rotation(matrix0.Inverse() * m_targetMatrix);
 		if (dAbs(rotation.m_q0) < 0.99998f) {
@@ -858,7 +857,7 @@ void dCustomInverseDynamics::Debug(dDebugDisplay* const debugDisplay) const
 
 	// vis limits
 	const int subdiv = 16;
-	const float radius = 0.25f;
+	const dFloat radius = debugDisplay->m_debugScale;
 	dVector arch[subdiv + 1];
 
 	dFloat angleStep = (m_maxTwistAngle - m_minTwistAngle) / subdiv;

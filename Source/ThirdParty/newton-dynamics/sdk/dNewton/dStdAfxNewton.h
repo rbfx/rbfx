@@ -28,17 +28,9 @@
 	#define CNEWTON_API
 #else 
 	#ifdef _CNEWTON_BUILD_DLL
-		#ifdef _WIN32
-			#define CNEWTON_API __declspec (dllexport)
-		#else
-			#define CNEWTON_API __attribute__ ((visibility("default")))
-		#endif
+		#define CNEWTON_API __declspec (dllexport)
 	#else
-		#ifdef _WIN32
-			#define CNEWTON_API __declspec (dllimport)
-		#else
-			#define CNEWTON_API
-		#endif
+		#define CNEWTON_API __declspec (dllimport)
 	#endif
 #endif
 

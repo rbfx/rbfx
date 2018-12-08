@@ -1042,8 +1042,6 @@ void dgWorld::CompoundContacts (dgBroadPhase::dgPair* const pair, dgCollisionPar
 	proxy.m_contactJoint->m_separationDistance = dgFloat32 (0.0f);
 }
 
-
-
 void dgWorld::SceneChildContacts (dgBroadPhase::dgPair* const pair, dgCollisionParamProxy& proxy) const
 {
 	dgAssert (pair->m_contact->GetBody1()->GetCollision()->IsType(dgCollision::dgCollisionScene_RTTI));
@@ -1115,7 +1113,7 @@ void dgWorld::CalculateContacts (dgBroadPhase::dgPair* const pair, dgInt32 threa
 	const dgContactMaterial* const material = contact->m_material;
 	dgCollisionParamProxy proxy(contact, pair->m_contactBuffer, threadIndex, ccdMode, intersectionTestOnly);
 
-	pair->m_flipContacts = false;
+	//pair->m_flipContacts = false;
 	proxy.m_timestep = pair->m_timestep;
 	proxy.m_maxContacts = DG_MAX_CONTATCS;
 	proxy.m_skinThickness = material->m_skinThickness;
@@ -1124,22 +1122,27 @@ void dgWorld::CalculateContacts (dgBroadPhase::dgPair* const pair, dgInt32 threa
 		SceneContacts(pair, proxy);
 	} else if (body0->m_collision->IsType (dgCollision::dgCollisionScene_RTTI)) {
 		contact->SwapBodies();
-		pair->m_flipContacts = -1;
+		dgAssert(contact->m_body1->GetInvMass().m_w == dgFloat32(0.0f));
 		SceneContacts (pair, proxy);
 	} else if (body0->m_collision->IsType (dgCollision::dgCollisionCompound_RTTI)) {
 		CompoundContacts (pair, proxy);
 	} else if (body1->m_collision->IsType (dgCollision::dgCollisionCompound_RTTI)) {
+		dgFloat32 invMass = body1->GetInvMass().m_w;
 		contact->SwapBodies();
-		pair->m_flipContacts = -1;
 		CompoundContacts (pair, proxy);
+		if (!invMass) {
+			contact->SwapBodies();
+		}
 	} else if (body0->m_collision->IsType (dgCollision::dgCollisionConvexShape_RTTI)) {
 		ConvexContacts (pair, proxy);
 	} else if (body1->m_collision->IsType (dgCollision::dgCollisionConvexShape_RTTI)) {
+		dgFloat32 invMass = body1->GetInvMass().m_w;
 		contact->SwapBodies();
-		pair->m_flipContacts = -1;
 		ConvexContacts (pair, proxy);
+		if (!invMass) {
+			contact->SwapBodies();
+		}
 	}
-
 	pair->m_timestep = proxy.m_timestep;
 }
 
@@ -1266,8 +1269,9 @@ dgInt32 dgWorld::CollideContinue (
 		if (count > maxContacts) {
 			count = PruneContacts (count, contacts, contactJoint.GetPruningTolerance(), maxContacts);
 		}
-		//dgFloat32 swapContactScale = (contactJoint.GetBody0() != &collideBodyA) ? dgFloat32 (-1.0f) : dgFloat32 (1.0f);
+/*
 		if (pair.m_flipContacts) {
+			dgAssert (0);
  			for (dgInt32 i = 0; i < count; i++) {
 				dgVector step ((collideBodyA.m_veloc - collideBodyB.m_veloc).Scale (pair.m_timestep));
 				points[i].m_x = contacts[i].m_point.m_x + step.m_x;
@@ -1285,18 +1289,29 @@ dgInt32 dgWorld::CollideContinue (
 				points[i].m_x = contacts[i].m_point.m_x; 
 				points[i].m_y = contacts[i].m_point.m_y; 
 				points[i].m_z = contacts[i].m_point.m_z; 
-					normals[i].m_x = contacts[i].m_normal.m_x;  
-					normals[i].m_y = contacts[i].m_normal.m_y;  
-					normals[i].m_z = contacts[i].m_normal.m_z;  
+				normals[i].m_x = contacts[i].m_normal.m_x;  
+				normals[i].m_y = contacts[i].m_normal.m_y;  
+				normals[i].m_z = contacts[i].m_normal.m_z;  
 				penetration[i] = contacts[i].m_penetration; 
 				attibuteA[i] = contacts[i].m_shapeId0;
 				attibuteB[i] = contacts[i].m_shapeId1;
 			}
 		} 
+*/
+		for (dgInt32 i = 0; i < count; i++) {
+			points[i].m_x = contacts[i].m_point.m_x;
+			points[i].m_y = contacts[i].m_point.m_y;
+			points[i].m_z = contacts[i].m_point.m_z;
+			normals[i].m_x = contacts[i].m_normal.m_x;
+			normals[i].m_y = contacts[i].m_normal.m_y;
+			normals[i].m_z = contacts[i].m_normal.m_z;
+			penetration[i] = contacts[i].m_penetration;
+			attibuteA[i] = contacts[i].m_shapeId0;
+			attibuteB[i] = contacts[i].m_shapeId1;
+		}
 	} 
 	return count;
 }
-
 
 dgInt32 dgWorld::Collide (
 	const dgCollisionInstance* const collisionSrcA, const dgMatrix& matrixA, 
@@ -1492,33 +1507,33 @@ dgInt32 dgWorld::CalculateConvexToConvexContacts(dgCollisionParamProxy& proxy) c
 			{
 				case m_sphereCollision:
 				{
-					dgVector diff(instance0.GetGlobalMatrix().m_posit - instance1.GetGlobalMatrix().m_posit);
+					dgVector diff(instance1.GetGlobalMatrix().m_posit - instance0.GetGlobalMatrix().m_posit);
 					dgFloat32 mag2 = diff.DotProduct(diff).GetScalar();
 					if (mag2 < dgFloat32(1.0e-6f)) {
-						dgMatrix tmp(instance0.GetGlobalMatrix());
+						dgMatrix tmp(instance1.GetGlobalMatrix());
 						tmp.m_posit.m_x += dgFloat32(1.0e-3f);
-						instance0.SetGlobalMatrix(tmp);
+						instance1.SetGlobalMatrix(tmp);
 					}
 					break;
 				}
 				case m_capsuleCollision:
 				{
-					dgMatrix diff(instance0.GetGlobalMatrix() * instance1.GetGlobalMatrix().Inverse());
+					dgMatrix diff(instance1.GetGlobalMatrix() * instance0.GetGlobalMatrix().Inverse());
 					if (dgAbs(diff[0][0]) > dgFloat32(0.9999f)) {
 						if (dgAbs(diff.m_posit.m_x) < dgFloat32(1.0e-3f)) {
-							diff.m_posit.m_y = dgFloat32(1.0e-3f);
-							instance0.SetGlobalMatrix(diff * instance1.GetGlobalMatrix());
+							diff.m_posit.m_y += dgFloat32(1.0e-3f);
+							instance1.SetGlobalMatrix(diff * instance0.GetGlobalMatrix());
 						}
 					}
 					break;
 				}
 				case m_chamferCylinderCollision:
 				{
-					dgMatrix diff(instance0.GetGlobalMatrix() * instance1.GetGlobalMatrix().Inverse());
+					dgMatrix diff(instance1.GetGlobalMatrix() * instance0.GetGlobalMatrix().Inverse());
 					if (dgAbs(diff[0][0]) > dgFloat32(0.9999f)) {
 						if (dgAbs(diff.m_posit.m_x) < dgFloat32(1.0e-3f)) {
-							diff.m_posit.m_x = dgFloat32(1.0e-3f);
-							instance0.SetGlobalMatrix(diff * instance1.GetGlobalMatrix());
+							diff.m_posit.m_x += dgFloat32(1.0e-3f);
+							instance1.SetGlobalMatrix(diff * instance0.GetGlobalMatrix());
 						}
 					}
 					break;
@@ -1670,8 +1685,6 @@ dgInt32 dgWorld::CalculateConvexToNonConvexContacts(dgCollisionParamProxy& proxy
 		instance1.m_material.m_userData = NULL;
 		proxy.m_instance0 = collision0;
 		proxy.m_instance1 = collision1;
-
-		
 	} else {
 		count = CalculateUserContacts(proxy);
 

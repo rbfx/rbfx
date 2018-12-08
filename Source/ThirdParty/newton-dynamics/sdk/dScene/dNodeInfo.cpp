@@ -32,15 +32,12 @@ dTree<const dNodeInfo*, dCRCTYPE>& dNodeInfo::GetSingletonDictionary()
 	return dictionary;
 }
 
-
 dNodeInfo::dRegisterSingleton::dRegisterSingleton (const char* const className, const dNodeInfo* const singleton)
 {
 	dCRCTYPE crc = dCRC64 (className);
 	dTree<const dNodeInfo*, dCRCTYPE>& dictionary = dNodeInfo::GetSingletonDictionary();
 	dictionary.Insert (singleton, crc);
 }
-
-
 
 dNodeInfo::dNodeInfo() 
 	:dClassInfo()

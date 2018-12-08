@@ -25,16 +25,21 @@ if (UNIX)
 	endif(NEWTON_BUILD_SHARED_LIBS)
 
         target_include_directories(
-                            ${projectName} PUBLIC
-                            # Headers used from source/build location:
-                            "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+                     ${projectName} PUBLIC
+                     # Headers used from source/build location:
+                     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
         )
-endif(UNIX)
+endif (UNIX)
 
 if (MSVC)
-	   add_library(${projectName} STATIC ${CPP_SOURCE})
-       set_target_properties(${projectName} PROPERTIES COMPILE_FLAGS "/YudAnimationStdAfx.h")
-       set_source_files_properties(dAnimationStdAfx.cpp PROPERTIES COMPILE_FLAGS "/YcdAnimationStdAfx.h")
+	if(NOT NEWTON_BUILD_SHARED_LIBS)
+	    add_definitions(-D_NEWTON_STATIC_LIB)
+	    add_definitions(-D_CUSTOM_JOINTS_STATIC_LIB)
+	endif(NOT NEWTON_BUILD_SHARED_LIBS)
+
+    add_library(${projectName} STATIC ${CPP_SOURCE})
+    set_target_properties(${projectName} PROPERTIES COMPILE_FLAGS "/YudAnimationStdAfx.h")
+    set_source_files_properties(dAnimationStdAfx.cpp PROPERTIES COMPILE_FLAGS "/YcdAnimationStdAfx.h")
 endif(MSVC)
 
 target_include_directories(${projectName} PUBLIC 

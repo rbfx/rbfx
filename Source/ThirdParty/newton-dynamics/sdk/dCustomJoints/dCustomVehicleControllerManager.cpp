@@ -17,13 +17,6 @@
 #include "dCustomDoubleHinge.h"
 #include "dCustomVehicleControllerManager.h"
 
-//#define D_PLOT_ENGINE_CURVE
-
-
-#ifdef D_PLOT_ENGINE_CURVE 
-static FILE* file_xxx;
-#endif
-
 IMPLEMENT_CUSTOM_JOINT(dAxelJoint);
 IMPLEMENT_CUSTOM_JOINT(dWheelJoint);
 IMPLEMENT_CUSTOM_JOINT(dEngineJoint);
@@ -124,7 +117,7 @@ dEngineMountJoint::dEngineMountJoint(const dMatrix& pinAndPivotFrame, NewtonBody
 {
 	dMatrix engineMatrix;
 	dMatrix chassisMatrix;
-
+	
 	EnableLimits(false);
 	NewtonBodyGetMatrix(engineBody, &engineMatrix[0][0]);
 	NewtonBodyGetMatrix(chassisBody, &chassisMatrix[0][0]);
@@ -753,26 +746,6 @@ void dEngineController::InitEngineTorqueCurve()
 	m_info.m_rpmAtRedLine /= m_info.m_crownGearRatio;
 
 	m_info.SetTorqueRPMTable();
-}
-
-void dEngineController::PlotEngineCurve() const
-{
-#ifdef D_PLOT_ENGINE_CURVE 
-	dFloat rpm0 = m_torqueRPMCurve.m_nodes[0].m_param;
-	dFloat rpm1 = m_torqueRPMCurve.m_nodes[m_torqueRPMCurve.m_count - 1].m_param;
-	int steps = 40;
-	dFloat omegaStep = (rpm1 - rpm0) / steps;
-	dTrace(("rpm\ttorque\tpower\n"));
-	for (int i = 0; i < steps; i++) {
-		dFloat r = rpm0 + omegaStep * i;
-		dFloat torque = m_torqueRPMCurve.GetValue(r);
-		dFloat power = r * torque;
-		const dFloat horsePowerToWatts = 735.5f;
-		const dFloat rpmToRadiansPerSecunds = 0.105f;
-		const dFloat poundFootToNewtonMeters = 1.356f;
-		dTrace(("%6.2f\t%6.2f\t%6.2f\n", r / 0.105f, torque / 1.356f, power / 735.5f));
-	}
-#endif
 }
 
 dFloat dEngineController::GetGearRatio () const

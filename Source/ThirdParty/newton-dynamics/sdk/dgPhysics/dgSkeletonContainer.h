@@ -42,7 +42,6 @@ class dgSkeletonContainer
 	~dgSkeletonContainer();
 
 	dgWorld* GetWorld() const; 
-//	dgInt32 GetId () const {return m_id;}
 	dgInt32 GetJointCount () const {return m_nodeCount - 1;}
 	dgNode* AddChild (dgBilateralConstraint* const joint, dgNode* const parent);
 	void RemoveLoopJoint(dgBilateralConstraint* const joint);  
@@ -91,7 +90,6 @@ class dgSkeletonContainer
 	dgSkeletonList::dgListNode* m_listNode;
 	dgArray<dgConstraint*> m_loopingJoints;
 	dgArray<dgInt8> m_auxiliaryMemoryBuffer;
-//	dgInt32 m_id;
 	dgInt32 m_lru;
 	dgInt16 m_nodeCount;
 	dgInt16 m_loopCount;
@@ -99,10 +97,10 @@ class dgSkeletonContainer
 	dgInt16 m_rowCount;
 	dgInt16 m_loopRowCount;
 	dgInt16 m_auxiliaryRowCount;
-//	static dgInt32 m_uniqueID;
 	static dgInt32 m_lruMarker;
 
 	friend class dgWorld;
+	friend class dgParallelBodySolver;
 	friend class dgWorldDynamicUpdate;
 };
 

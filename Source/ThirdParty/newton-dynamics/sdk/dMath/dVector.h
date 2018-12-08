@@ -294,7 +294,6 @@ class dSpatialVector
 		return tmp;
 	}
 
-	//inline dSpatialVector CompProduct(const dSpatialVector& A) const
 	inline dSpatialVector operator* (const dSpatialVector& A) const
 	{
 		dSpatialVector tmp;
@@ -324,7 +323,6 @@ class dSpatialVector
 
 	dFloat m_d[6];
 };
-
 
 #endif
 

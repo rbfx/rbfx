@@ -191,6 +191,8 @@ class dComplementaritySolver
 		int m_count;
 		int m_dof;
 
+		int xxxxx;
+
 		friend class dBodyState;
 		friend class dComplementaritySolver;
 	};
@@ -285,8 +287,6 @@ class dComplementaritySolver
 		friend class dBilateralJoint;
 		friend class dComplementaritySolver;
 	};
-
-
 
 	public:
 	dComplementaritySolver() {};

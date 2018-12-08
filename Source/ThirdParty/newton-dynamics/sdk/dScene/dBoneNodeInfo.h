@@ -23,14 +23,27 @@
 #include "dSceneNodeInfo.h"
 
 
-class dBoneNodeInfo: public dSceneNodeInfo
+class dBoneNodeInfo: public dNodeInfo
 {
 	public:
-	D_DEFINE_CLASS_NODE(dBoneNodeInfo,dSceneNodeInfo,DSCENE_API)
+	D_DEFINE_CLASS_NODE(dBoneNodeInfo, dNodeInfo, DSCENE_API)
+
+	enum dBoneType	
+	{
+		m_root,
+		m_limb,
+		m_effector,
+	};
 
 	dBoneNodeInfo();
 	dBoneNodeInfo(dScene* const world) {}
 	virtual ~dBoneNodeInfo(void);
+
+	dFloat GetLength() const;
+	void SetLength(dFloat length);
+
+	void SetType(dBoneType);
+	dBoneType GetType() const;
 
 //	virtual dMatrix GetTransform () const;
 //	virtual void SetTransform (const dMatrix& matrix);
@@ -45,6 +58,7 @@ class dBoneNodeInfo: public dSceneNodeInfo
 
 	protected:
 	dFloat m_lengh;
+	dBoneType m_type;
 //	void DrawOOBBGizmo (dScene* const world, dScene::dTreeNode* myNode) const;
 	
 	virtual void Serialize (TiXmlElement* const rootNode) const; 

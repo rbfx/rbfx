@@ -13,43 +13,13 @@
 #include "dStdafxVehicle.h"
 #include "dVehicleNode.h"
 
-dVehicleNode::dVehicleNode(dVehicleNode* const parent, bool isLoop)
-	:dContainersAlloc()
-	,m_userData(NULL)
-	,m_world(NULL)
-	,m_parent(parent)
-	,m_body()
-	,m_solverIndex(-1)
-	,m_isLoop(isLoop)
+dVehicleNode::dVehicleNode(dVehicleNode* const parent)
+	:dAnimationAcyclicJoint(parent)
 {
-	if (parent) {
-		parent->m_children.Append(this);
-	}
 }
 
 dVehicleNode::~dVehicleNode()
 {
-	for (dList<dVehicleNode*>::dListNode* child = m_children.GetFirst(); child; child = child->GetNext()) {
-		delete child->GetInfo();
-	}
-}
-
-void* dVehicleNode::GetUserData()
-{
-	return m_userData;
-}
-
-void dVehicleNode::SetUserData(void* const userData)
-{
-	m_userData = userData;
-}
-
-
-void dVehicleNode::Debug(dCustomJoint::dDebugDisplay* const debugContext) const
-{
-	for (dList<dVehicleNode*>::dListNode* child = m_children.GetFirst(); child; child = child->GetNext()) {
-		child->GetInfo()->Debug(debugContext);
-	}
 }
 
 void dVehicleNode::CalculateAABB(const NewtonCollision* const collision, const dMatrix& matrix, dVector& minP, dVector& maxP) const
@@ -77,40 +47,28 @@ void dVehicleNode::CalculateNodeAABB(const dMatrix& matrix, dVector& minP, dVect
 	maxP = matrix.m_posit;
 }
 
-void dVehicleNode::ApplyExternalForce()
-{
-	for (dList<dVehicleNode*>::dListNode* child = m_children.GetFirst(); child; child = child->GetNext()) {
-		child->GetInfo()->ApplyExternalForce();
-	}
-}
 
 void dVehicleNode::RigidBodyToStates()
 {
-	for (dList<dVehicleNode*>::dListNode* child = m_children.GetFirst(); child; child = child->GetNext()) {
-		child->GetInfo()->RigidBodyToStates();
+	for (dList<dAnimationAcyclicJoint*>::dListNode* child = m_children.GetFirst(); child; child = child->GetNext()) {
+		dVehicleNode* const node = (dVehicleNode*)child->GetInfo();
+		node->RigidBodyToStates();
 	}
 }
 
 void dVehicleNode::StatesToRigidBody(dFloat timestep)
 {
-	for (dList<dVehicleNode*>::dListNode* child = m_children.GetFirst(); child; child = child->GetNext()) {
-		child->GetInfo()->StatesToRigidBody(timestep);
+	for (dList<dAnimationAcyclicJoint*>::dListNode* child = m_children.GetFirst(); child; child = child->GetNext()) {
+		dVehicleNode* const node = (dVehicleNode*)child->GetInfo();
+		node->StatesToRigidBody(timestep);
 	}
 }
 
 void dVehicleNode::Integrate(dFloat timestep)
 {
-	m_body.IntegrateForce(timestep, m_body.GetForce(), m_body.GetTorque());
-	for (dList<dVehicleNode*>::dListNode* child = m_children.GetFirst(); child; child = child->GetNext()) {
-		child->GetInfo()->Integrate(timestep);
+	m_proxyBody.IntegrateForce(timestep, m_proxyBody.GetForce(), m_proxyBody.GetTorque());
+	for (dList<dAnimationAcyclicJoint*>::dListNode* child = m_children.GetFirst(); child; child = child->GetNext()) {
+		dVehicleNode* const node = (dVehicleNode*)child->GetInfo();
+		node->Integrate(timestep);
 	}
-}
-
-int dVehicleNode::GetKinematicLoops(dKinematicLoopJoint** const jointArray)
-{
-	int count = 0;
-	for (dList<dVehicleNode*>::dListNode* child = m_children.GetFirst(); child; child = child->GetNext()) {
-		count += child->GetInfo()->GetKinematicLoops(&jointArray[count]);
-	}
-	return count;
 }

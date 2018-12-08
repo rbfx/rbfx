@@ -177,6 +177,8 @@ class dVehicleChassis: public dCustomControllerBase
 
 	DVEHICLE_API void Finalize();
 
+	void ApplyExternalForces(dFloat timestep);
+
 	protected:
 	DVEHICLE_API virtual void PreUpdate(dFloat timestep, int threadIndex);
 	DVEHICLE_API virtual void PostUpdate(dFloat timestep, int threadIndex);
@@ -185,11 +187,9 @@ class dVehicleChassis: public dCustomControllerBase
 	void Init(NewtonBody* const body, const dMatrix& localFrame, NewtonApplyForceAndTorque forceAndTorque, dFloat gravityMag);
 	void Init(NewtonCollision* const chassisShape, dFloat mass, const dMatrix& localFrame, NewtonApplyForceAndTorque forceAndTorque, dFloat gravityMag);
 	void Cleanup();
-
-	void ApplyExternalForces(dFloat timestep);
+	
 	void CalculateTireContacts(dFloat timestep);
 	void CalculateSuspensionForces(dFloat timestep);
-	int GetKinematicLoops(dKinematicLoopJoint** const jointArray);
 
 	static int OnAABBOverlap(const NewtonBody * const body, void* const me);
 	

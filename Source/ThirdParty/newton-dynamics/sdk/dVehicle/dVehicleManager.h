@@ -25,14 +25,9 @@ class dVehicleManager: public dCustomControllerManager<dVehicleChassis>
 	DVEHICLE_API virtual ~dVehicleManager();
 	
 	DVEHICLE_API virtual void UpdateDriverInput(dVehicleChassis* const vehicle, dFloat timestep) {}
-/*
-	DVEHICLE_API virtual dVehicleChassis* CreateVehicle(NewtonBody* const body, const dMatrix& vehicleFrame, NewtonApplyForceAndTorque forceAndTorque, dFloat gravityMag);
-	DVEHICLE_API virtual dVehicleChassis* CreateVehicle(NewtonCollision* const chassisShape, const dMatrix& vehicleFrame, dFloat mass, NewtonApplyForceAndTorque forceAndTorque, dFloat gravityMag);
-	DVEHICLE_API virtual int OnTireAabbOverlap(const NewtonMaterial* const material, const dWheelJoint* const tire, const NewtonBody* const otherBody) const;
-	//	DVEHICLE_API virtual int OnTireAabbOverlap(const NewtonJoint* const contactJoint, dFloat timestep, int threadIndex) const;
 
-	DVEHICLE_API int GetTireMaterial() const;
-*/
+//	DVEHICLE_API virtual dVehicleChassis* CreateVehicle(NewtonBody* const body, const dMatrix& vehicleFrame, NewtonApplyForceAndTorque forceAndTorque, dFloat gravityMag);
+//	DVEHICLE_API virtual dVehicleChassis* CreateVehicle(NewtonCollision* const chassisShape, const dMatrix& vehicleFrame, dFloat mass, NewtonApplyForceAndTorque forceAndTorque, dFloat gravityMag);
 
 	DVEHICLE_API virtual dVehicleChassis* CreateSingleBodyVehicle(NewtonBody* const body, const dMatrix& vehicleFrame, NewtonApplyForceAndTorque forceAndTorque, dFloat gravityMag);
 	DVEHICLE_API virtual dVehicleChassis* CreateSingleBodyVehicle(NewtonCollision* const chassisShape, const dMatrix& vehicleFrame, dFloat mass, NewtonApplyForceAndTorque forceAndTorque, dFloat gravityMag);
@@ -41,19 +36,6 @@ class dVehicleManager: public dCustomControllerManager<dVehicleChassis>
 	protected:
 
 	DVEHICLE_API virtual void OnDebug(dCustomJoint::dDebugDisplay* const debugContext);
-
-/*
-	void OnTireContactsProcess(const NewtonJoint* const contactJoint, dWheelJoint* const tire, const NewtonBody* const otherBody, dFloat timestep);
-	int OnContactGeneration(const dWheelJoint* const tire, const NewtonBody* const otherBody, const NewtonCollision* const othercollision, NewtonUserContactPoint* const contactBuffer, int maxCount, int threadIndex) const;
-
-	static int OnTireAabbOverlap(const NewtonJoint* const contactJoint, dFloat timestep, int threadIndex);
-	static void OnTireContactsProcess(const NewtonJoint* const contactJoint, dFloat timestep, int threadIndex);
-	static int OnContactGeneration(const NewtonMaterial* const material, const NewtonBody* const body0, const NewtonCollision* const collision0, const NewtonBody* const body1, const NewtonCollision* const collision1, NewtonUserContactPoint* const contactBuffer, int maxCount, int threadIndex);
-
-	const void* m_tireShapeTemplateData;
-	NewtonCollision* m_tireShapeTemplate;
-	int m_tireMaterial;
-*/
 	friend class dVehicleChassis;
 };
 

@@ -63,6 +63,7 @@ dgCollisionInstance::dgCollisionInstance()
 	,m_collisionMode(1)
 	,m_refCount(1)
 	,m_scaleType(m_unit)
+	,m_isExternal(true)
 {
 }
 
@@ -82,6 +83,7 @@ dgCollisionInstance::dgCollisionInstance(const dgWorld* const world, const dgCol
 	,m_collisionMode(1)
 	,m_refCount(1)
 	,m_scaleType(m_unit)
+	,m_isExternal(true)
 {
 	m_material.m_userId = shapeID;
 	m_childShape->AddRef();
@@ -103,6 +105,7 @@ dgCollisionInstance::dgCollisionInstance(const dgCollisionInstance& instance)
 	,m_collisionMode(instance.m_collisionMode)
 	,m_refCount(1)
 	,m_scaleType(instance.m_scaleType)
+	,m_isExternal(true)
 {
 	if (m_childShape->IsType (dgCollision::dgCollisionCompound_RTTI)) {
 		if (m_childShape->IsType (dgCollision::dgCollisionCompoundBreakable_RTTI)) {
@@ -146,6 +149,7 @@ dgCollisionInstance::dgCollisionInstance(const dgWorld* const constWorld, dgDese
 	,m_collisionMode(1)
 	,m_refCount(1)
 	,m_scaleType(m_unit)
+	,m_isExternal(true)
 {
 	dgInt32 saved;
 	dgInt32 signature;
@@ -296,7 +300,7 @@ dgCollisionInstance::dgCollisionInstance(const dgWorld* const constWorld, dgDese
 
 dgCollisionInstance::~dgCollisionInstance()
 {
-	if (m_world->m_onCollisionInstanceDestruction) {
+	if (m_world->m_onCollisionInstanceDestruction && m_isExternal) {
 		m_world->m_onCollisionInstanceDestruction (m_world, this);
 	}
 	dgWorld* const world = (dgWorld*)m_world;

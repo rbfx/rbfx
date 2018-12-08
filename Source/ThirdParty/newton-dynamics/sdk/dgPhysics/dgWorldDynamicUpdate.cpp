@@ -218,14 +218,25 @@ void dgWorldDynamicUpdate::BuildClusters(dgFloat32 timestep)
 
 	// form all disjoints sets
 	for (dgInt32 i = 0; i < jointCount; i ++) {
-		dgConstraint* const contact = baseJointArray[i].m_joint;
-		dgAssert(contact->GetBody0()->m_invMass.m_w > dgFloat32(0.0f));
-		if (contact->GetBody1()->m_invMass.m_w > dgFloat32 (0.0f)) {
-			world->UnionSet(contact);
-		} else {
-			dgBody* const root = world->FindRootAndSplit(contact->GetBody0());
+		const dgConstraint* const joint = baseJointArray[i].m_joint;
+		dgBody* const body0 = joint->GetBody0();
+		dgBody* const body1 = joint->GetBody1(); 
+		const dgFloat32 invMass0 = body0->m_invMass.m_w;
+		const dgFloat32 invMass1 = body1->m_invMass.m_w;
+
+		if ((invMass0 > dgFloat32 (0.0f)) && (invMass1 > dgFloat32 (0.0f))) {
+			dgAssert (body0->IsRTTIType(dgBody::m_dynamicBodyRTTI | dgBody::m_dynamicBodyAsymatric));
+			dgAssert (body1->IsRTTIType(dgBody::m_dynamicBodyRTTI | dgBody::m_dynamicBodyAsymatric));
+			world->UnionSet(joint);
+		} else if (invMass1 == dgFloat32 (0.0f)) {
+			//dgBody* const root = world->FindRootAndSplit(joint->GetBody0());
+			dgBody* const root = world->FindRootAndSplit(body0);
 			root->m_disjointInfo.m_jointCount += 1;
-			root->m_disjointInfo.m_rowCount += contact->m_maxDOF;
+			root->m_disjointInfo.m_rowCount += joint->m_maxDOF;
+		} else {
+			dgBody* const root = world->FindRootAndSplit(body1);
+			root->m_disjointInfo.m_jointCount += 1;
+			root->m_disjointInfo.m_rowCount += joint->m_maxDOF;
 		}
 	}
 
@@ -238,7 +249,7 @@ void dgWorldDynamicUpdate::BuildClusters(dgFloat32 timestep)
 	dgArray<dgBodyCluster>& clusterMemory = world->m_clusterMemory;
 	for (dgBodyMasterList::dgListNode* node = masterList.GetLast(); node && (node->GetInfo().GetBody()->GetInvMass().m_w != dgFloat32(0.0f)); node = node->GetPrev()) {
 		dgBody* const body = node->GetInfo().GetBody();
-		if (body->IsRTTIType(dgBody::m_dynamicBodyRTTI)) {
+		if (body->IsRTTIType(dgBody::m_dynamicBodyRTTI | dgBody::m_dynamicBodyAsymatric)) {
 			dgBody* root = body;
 			bool state = true;
 			do {
@@ -281,7 +292,9 @@ void dgWorldDynamicUpdate::BuildClusters(dgFloat32 timestep)
 	for (dgInt32 i = jointCount - 1; i >= 0; i --) {
 		dgJointInfo* const jointInfo = &augmentedJointArray[i];
 		dgConstraint* const constraint = jointInfo->m_joint;
-		dgBody* const root = world->FindRoot (constraint->GetBody0());
+		dgBody* const body = (constraint->GetBody0()->GetInvMass().m_w != dgFloat32 (0.0f)) ? constraint->GetBody0() : constraint->GetBody1();
+		dgAssert (body->GetInvMass().m_w);
+		dgBody* const root = world->FindRoot (body);
 		if (root->m_resting) {
 			augmentedJointCount --;
 			augmentedJointArray[i] = augmentedJointArray[augmentedJointCount];
@@ -344,15 +357,17 @@ void dgWorldDynamicUpdate::BuildClusters(dgFloat32 timestep)
 				dgBody* const body0 = joint->m_body0;
 				dgBody* const body1 = joint->m_body1;
 
-				dgAssert(body0->GetInvMass().m_w != dgFloat32(0.0f));
-				if (body0->m_disjointInfo.m_rank >= 0) {
-					body0->m_disjointInfo.m_rank = -1;
-					body0->m_index = bodyIndex;
-					bodyArray[bodyIndex].m_body = body0;
-					bodyIndex++;
-					dgAssert(bodyIndex <= cluster.m_bodyCount);
+				dgInt32 m0 = 0;
+				if (body0->GetInvMass().m_w != dgFloat32(0.0f)) {
+					if (body0->m_disjointInfo.m_rank >= 0) {
+						body0->m_disjointInfo.m_rank = -1;
+						body0->m_index = bodyIndex;
+						bodyArray[bodyIndex].m_body = body0;
+						bodyIndex++;
+						dgAssert(bodyIndex <= cluster.m_bodyCount);
+					}
+					m0 = body0->m_index;
 				}
-				dgInt32 m0 = body0->m_index;
 
 				dgInt32 m1 = 0;
 				if (body1->GetInvMass().m_w != dgFloat32(0.0f)) {

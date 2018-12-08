@@ -34,7 +34,7 @@ else(NEWTON_BUILD_SHARED_LIBS)
     add_library(${projectName} STATIC ${CPP_SOURCE})
 endif(NEWTON_BUILD_SHARED_LIBS)
 
-target_link_libraries (${projectName} newton dContainers dMath dCustomJoints)
+target_link_libraries (${projectName} newton dContainers dMath dCustomJoints dAnimation)
 
 if(UNIX)
     target_include_directories(

@@ -298,7 +298,7 @@ DG_INLINE bool dgCholeskyFactorizationAddRow(dgInt32 size, dgInt32 n, T* const m
 
 		if (n == j) {
 			T diag = rowN[n] - s;
-			if (diag < T(dgFloat32(1.0e-6f))) {
+			if (diag < T(1.0e-6f)) {
 				return false;
 			}
 
@@ -570,7 +570,7 @@ void dgEigenValues(const dgInt32 size, const T* const choleskyMatrix, T* const e
 // high(i) = infinity.
 // this the same as enforcing the constraint: x(i) * r(i) = 0
 template <class T>
-void dgGaussSeidelLcpSor(const dgInt32 size, const T* const matrix, T* const x, const T* const b, const T* const low, const T* const high, T tol2, dgInt32 maxIterCount, dgInt16* const clipped, dgFloat32 sor)
+void dgGaussSeidelLcpSor(const dgInt32 size, const T* const matrix, T* const x, const T* const b, const T* const low, const T* const high, T tol2, dgInt32 maxIterCount, dgInt16* const clipped, T sor)
 {
 	const T* const me = matrix;
 	T* const invDiag1 = dgAlloca(T, size);
@@ -694,7 +694,7 @@ DG_INLINE void dgHouseholderReflection(dgInt32 size, dgInt32 row, dgInt32 colum,
 	if (row < colum) {
 		for (dgInt32 i = row; i <= colum; i++) {
 			T* const rowI = &choleskyMatrix[size * i];
-			T mag2(dgFloat32(0.0f));
+			T mag2(0.0f);
 			for (dgInt32 j = i + 1; j <= colum; j++) {
 				mag2 += rowI[j] * rowI[j];
 				reflection[j] = rowI[j];
@@ -703,7 +703,7 @@ DG_INLINE void dgHouseholderReflection(dgInt32 size, dgInt32 row, dgInt32 colum,
 				reflection[i] = rowI[i] + dgSign(rowI[i]) * T(sqrt(mag2 + rowI[i] * rowI[i]));
 
 				const T vMag2(mag2 + reflection[i] * reflection[i]);
-				const T den(dgFloat32(2.0f) / vMag2);
+				const T den = T(2.0f) / vMag2;
 				for (dgInt32 j = i; j < size; j++) {
 					T acc(0.0f);
 					T* const rowJ = &choleskyMatrix[size * j];
@@ -724,7 +724,7 @@ DG_INLINE void dgHouseholderReflection(dgInt32 size, dgInt32 row, dgInt32 colum,
 				rowI[i] -= tmp[i] * reflection[i] * den;
 			}
 
-			if (rowI[i] < T(dgFloat32(0.0f))) {
+			if (rowI[i] < T(0.0f)) {
 				for (dgInt32 k = i; k < size; k++) {
 					choleskyMatrix[size * k + i] = -choleskyMatrix[size * k + i];
 				}
@@ -732,7 +732,7 @@ DG_INLINE void dgHouseholderReflection(dgInt32 size, dgInt32 row, dgInt32 colum,
 		}
 
 		for (dgInt32 i = row; i < size; i++) {
-			choleskyMatrix[size * i + i] = dgMax(choleskyMatrix[size * i + i], T(dgFloat32(1.0e-6f)));
+			choleskyMatrix[size * i + i] = dgMax(choleskyMatrix[size * i + i], T(1.0e-6f));
 		}
 	}
 }
@@ -888,9 +888,9 @@ void dgSolveDantzigLcpLow(dgInt32 size, T* const symmetricMatrixPSD, T* const x,
 	dgInt32 stride = index * size;
 
 	for (dgInt32 i = 0; i < size; i++) {
-		r0[i] = dgFloat32(0.0f);
-		delta_x[i] = dgFloat32(0.0f);
-		delta_r[i] = dgFloat32(0.0f);
+		r0[i] = T(0.0f);
+		delta_x[i] = T(0.0f);
+		delta_r[i] = T(0.0f);
 	}
 	
 	for (dgInt32 i = index; i < size; i++) {
@@ -913,7 +913,7 @@ void dgSolveDantzigLcpLow(dgInt32 size, T* const symmetricMatrixPSD, T* const x,
 
 				dgAssert(delta_r[index] != T(0.0f));
 				dgAssert(dgAbs(delta_x[index]) == T(1.0f));
-				delta_r[index] = (delta_r[index] == T(dgFloat32 (0.0f))) ? T(dgFloat32 (1.0e-12f)) : delta_r[index];
+				delta_r[index] = (delta_r[index] == T(0.0f)) ? T(1.0e-12f) : delta_r[index];
 
 				T s = -r0[index] / delta_r[index];
 				dgAssert(dgAbs(s) >= T(0.0f));
@@ -1041,7 +1041,7 @@ bool dgSolveDantzigLCP(dgInt32 size, T* const symetricMatrix, T* const x, T* con
 	for (dgInt32 i = 0; i < size; i ++) {
 		T* const row = &choleskyMatrix[i * size];
 		for (dgInt32 j = i + 1; j < size; j ++) {
-			row[j] = T(dgFloat32 (0.0f));
+			row[j] = T(0.0f);
 		}
 	}
 	return dgSolveDantzigLCP(size, symetricMatrix, choleskyMatrix, x, b, low, high);
@@ -1110,7 +1110,7 @@ bool dgSolvePartitionDantzigLCP(dgInt32 size, T* const symmetricMatrixPSD , T* c
 		dgSolveCholesky(size, unboundedSize, symmetricMatrixPSD , x);
 		dgInt32 base = unboundedSize * size;
 		for (dgInt32 i = unboundedSize; i < size; i++) {
-			b[i] = dgDotProduct(unboundedSize, &symmetricMatrixPSD[base], x) - b[i];
+			b[i] -= dgDotProduct(unboundedSize, &symmetricMatrixPSD[base], x);
 			base += size;
 		}
 
@@ -1147,7 +1147,7 @@ bool dgSolvePartitionDantzigLCP(dgInt32 size, T* const symmetricMatrixPSD , T* c
 				a11[j * boundedSize + i] = elem;
 			}
 			u[i] = T(0.0f);
-			c[i] = -b[i + unboundedSize];
+			c[i] = b[i + unboundedSize];
 			l[i] = low[i + unboundedSize];
 			h[i] = high[i + unboundedSize];
 		}

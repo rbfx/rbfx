@@ -34,11 +34,11 @@ class dVehicleVirtualTire: public dVehicleTireInterface
 	DVEHICLE_API virtual void SetBrakeTorque(dFloat brakeTorque);
 
 	protected:
-	void ApplyExternalForce();
+	void ApplyExternalForce(dFloat timestep);
 	void Integrate(dFloat timestep);
-	dComplementaritySolver::dBilateralJoint* GetJoint();
+	dComplementaritySolver::dBilateralJoint* GetProxyJoint();
 	dMatrix GetHardpointMatrix (dFloat param) const;
-	int GetKinematicLoops(dKinematicLoopJoint** const jointArray);
+	int GetKinematicLoops(dAnimationKinematicLoopJoint** const jointArray);
 	void CalculateNodeAABB(const dMatrix& matrix, dVector& minP, dVector& maxP) const;
 	void CalculateContacts(const dVehicleChassis::dCollectCollidingBodies& bodyArray, dFloat timestep);
 
@@ -47,14 +47,13 @@ class dVehicleVirtualTire: public dVehicleTireInterface
 
 	dMatrix m_matrix;
 	dMatrix m_bindingRotation;
-	dTireJoint m_joint;
+	dTireJoint m_proxyJoint;
 	dVehicleNode m_dynamicContactBodyNode;
 	dTireContact m_contactsJoints[3];
 	NewtonCollision* m_tireShape;
 	dFloat m_omega;
 	dFloat m_speed;
 	dFloat m_position;
-	dFloat m_tireLoad;
 	dFloat m_tireAngle;
 	dFloat m_brakeTorque;
 	dFloat m_steeringAngle;

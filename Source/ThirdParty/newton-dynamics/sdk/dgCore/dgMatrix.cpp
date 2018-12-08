@@ -221,7 +221,7 @@ void dgMatrix::TransformBBox (const dgVector& p0local, const dgVector& p1local, 
 
 dgMatrix dgMatrix::Inverse4x4 () const
 {
-	const dgFloat32 tol = 1.0e-4f;
+	const dgFloat32 tol = dgFloat32(1.0e-6f);
 	dgMatrix tmp (*this);
 	dgMatrix inv (dgGetIdentityMatrix());
 	for (dgInt32 i = 0; i < 4; i ++) {

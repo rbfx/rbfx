@@ -43,38 +43,8 @@ class dDifferentialMount: public dComplementaritySolver::dBilateralJoint
 	bool m_slipeOn;
 };
 
-class dEngineJoint: public dComplementaritySolver::dBilateralJoint
-{
-	public:
-	dEngineJoint();
 
-	void SetTorqueAndRpm (dFloat torque, dFloat rpm);
-	void JacobianDerivative(dComplementaritySolver::dParamInfo* const constraintParams);
-	void UpdateSolverForces(const dComplementaritySolver::dJacobianPair* const jacobians) const { dAssert(0); }
-
-	dFloat m_targetRpm;
-	dFloat m_targetTorque;
-};
-
-class dKinematicLoopJoint : public dComplementaritySolver::dBilateralJoint
-{
-	public:
-	dKinematicLoopJoint();
-	~dKinematicLoopJoint(){}
-	bool IsActive() const { return m_isActive; }
-	dVehicleNode* GetOwner0() const{return m_owner0;}
-	dVehicleNode* GetOwner1() const{return m_owner1;}
-	void SetOwners(dVehicleNode* const owner0, dVehicleNode* const owner1);
-
-	virtual int GetMaxDof() const = 0;
-
-	dVehicleNode* m_owner0;
-	dVehicleNode* m_owner1;
-	bool m_isActive;
-};
-
-
-class dTireContact: public dKinematicLoopJoint
+class dTireContact: public dAnimationKinematicLoopJoint
 {
 	public:
 	class dTireModel
@@ -123,16 +93,62 @@ class dTireContact: public dKinematicLoopJoint
 	friend class dVehicleVirtualTire;
 };
 
-
-class dDifferentialJoint: public dKinematicLoopJoint
+class dEngineBlockJoint : public dComplementaritySolver::dBilateralJoint
 {
 	public:
-	dDifferentialJoint ();
+	dEngineBlockJoint();
 
 	private:
-	int GetMaxDof() const { return 1;}
 	void JacobianDerivative(dComplementaritySolver::dParamInfo* const constraintParams);
 	void UpdateSolverForces(const dComplementaritySolver::dJacobianPair* const jacobians) const { dAssert(0); }
+};
+
+class dEngineCrankJoint: public dAnimationKinematicLoopJoint
+{
+	public:
+	dEngineCrankJoint();
+
+	void SetTorqueAndRpm(dFloat torque, dFloat rpm);
+	private:
+	int GetMaxDof() const { return 1; }
+	void JacobianDerivative(dComplementaritySolver::dParamInfo* const constraintParams);
+	void UpdateSolverForces(const dComplementaritySolver::dJacobianPair* const jacobians) const { dAssert(0); }
+
+	dFloat m_targetRpm;
+	dFloat m_targetTorque;
+};
+
+class dGearBoxJoint: public dAnimationKinematicLoopJoint
+{
+	public:
+	dGearBoxJoint();
+
+	void SetGearRatio(dFloat ratio);
+	void SetClutchTorque(dFloat toqrue);
+
+	private:
+	int GetMaxDof() const { return 1; }
+	void JacobianDerivative(dComplementaritySolver::dParamInfo* const constraintParams);
+	void UpdateSolverForces(const dComplementaritySolver::dJacobianPair* const jacobians) const { dAssert(0); }
+
+	dFloat m_gearRatio;
+	dFloat m_crowndGear;
+	dFloat m_clutchTorque;
+};
+
+class dTireAxleJoint: public dAnimationKinematicLoopJoint
+{
+	public:
+	dTireAxleJoint();
+
+	private:
+	int GetMaxDof() const { return 1; }
+	void JacobianDerivative(dComplementaritySolver::dParamInfo* const constraintParams);
+	void UpdateSolverForces(const dComplementaritySolver::dJacobianPair* const jacobians) const { dAssert(0); }
+
+	dFloat m_diffSign;
+
+	friend class dVehicleVirtualDifferential;
 };
 
 

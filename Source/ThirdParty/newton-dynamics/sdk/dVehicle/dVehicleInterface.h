@@ -27,6 +27,14 @@ class dVehicleDifferentialInterface: public dVehicleNode
 class dVehicleEngineInterface: public dVehicleNode
 {
 	public:
+	enum dGearRatioIndex
+	{
+		m_reverseGear = 0,
+		m_neutralGear = 1,
+		m_firstGear = 2,
+		m_gears_count = 10,
+	};
+
 	class dEngineInfo
 	{
 		public:
@@ -35,14 +43,26 @@ class dVehicleEngineInterface: public dVehicleNode
 			memset (this, 0, sizeof (dEngineInfo));
 
 			m_mass = 50.0f;
-			m_armatureRadius = 0.2f;
-			m_idleTorque = 100.0f;				// IDLE_TORQUE
+			m_armatureRadius = 0.125f;
+			m_idleTorque = 200.0f;				// IDLE_TORQUE
 			m_rpmAtIdleTorque = 450.0f;			// IDLE_TORQUE_RPM
 			m_peakTorque = 500.0f;				// PEAK_TORQUE
 			m_rpmAtPeakTorque = 3000.0f;		// PEAK_TORQUE_RPM
 			m_peakHorsePower = 400.0f;			// PEAK_HP
 			m_rpmAtPeakHorsePower = 5200.0f;	// PEAK_HP_RPM
 			m_rpmAtRedLine = 6000.0f;			// REDLINE_TORQUE_RPM
+
+			m_gearsCount = 8;
+			m_crownGear = 4.0f;
+			m_clutchTorque = 1000.0f;
+			m_gearRatios[dVehicleEngineInterface::m_reverseGear] = -2.90f;	// reverse
+			m_gearRatios[dVehicleEngineInterface::m_neutralGear] = 0.0f;    // neutral
+			m_gearRatios[dVehicleEngineInterface::m_firstGear + 0] = 2.66f; // GEAR_1
+			m_gearRatios[dVehicleEngineInterface::m_firstGear + 1] = 1.78f;	// GEAR_2
+			m_gearRatios[dVehicleEngineInterface::m_firstGear + 2] = 1.30f;	// GEAR_3
+			m_gearRatios[dVehicleEngineInterface::m_firstGear + 3] = 1.00f;	// GEAR_4
+			m_gearRatios[dVehicleEngineInterface::m_firstGear + 4] = 0.74f;	// GEAR_5
+			m_gearRatios[dVehicleEngineInterface::m_firstGear + 5] = 0.50f;	// GEAR_6
 		}
 
 		dFloat m_mass;
@@ -55,6 +75,12 @@ class dVehicleEngineInterface: public dVehicleNode
 		dFloat m_peakHorsePower;
 		dFloat m_rpmAtPeakHorsePower;
 		dFloat m_rpmAtRedLine;
+
+		dFloat m_crownGear;
+		dFloat m_clutchTorque;
+		dFloat m_gearRatios[m_gears_count];
+		int m_gearsCount;
+
 	};
 
 	DVEHICLE_API dVehicleEngineInterface(dVehicleNode* const parent, const dEngineInfo& info, dVehicleDifferentialInterface* const differential);
@@ -63,6 +89,9 @@ class dVehicleEngineInterface: public dVehicleNode
 	virtual dFloat GetRpm () const {return 0.0f;}
 	virtual dFloat GetRedLineRpm () const {return 1.0f;}
 	virtual void SetThrottle (dFloat throttle) {}
+
+	virtual void SetGear (int gear) {}
+	virtual void SetClutch (dFloat clutch) {}
 
 	const dEngineInfo& GetInfo() const { return m_info; }
 	DVEHICLE_API void SetInfo(const dEngineInfo& info) { m_info = info; }
@@ -98,7 +127,7 @@ class dVehicleTireInterface: public dVehicleNode
 			m_pivotOffset = 0.01f;
 			m_steerRate = 0.5f * dPi;
 			m_frictionCoefficient = 0.8f;
-			m_maxSteeringAngle = 25.0f * dDegreeToRad;
+			m_maxSteeringAngle = 40.0f * dDegreeToRad;
 
 			m_suspensionLength = 0.3f;
 			m_dampingRatio = 15.0f * vehicleMass;

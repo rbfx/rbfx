@@ -22,16 +22,14 @@
 #ifndef _DG_PARALLEL_SOLVER_H_
 #define _DG_PARALLEL_SOLVER_H_
 
-
 #include "dgPhysicsStdafx.h"
 
 class dgBodyInfo;
 class dgJointInfo;
 class dgBodyCluster;
-
+class dgSkeletonContainer;
 
 #define DG_WORK_GROUP_SIZE		8 
-
 
 DG_MSC_VECTOR_ALIGMENT
 class dgWorkGroupFloat
@@ -52,7 +50,6 @@ class dgWorkGroupFloat
 		,m_high(v)
 	{
 	}
-
 
 	DG_INLINE dgWorkGroupFloat(const dgVector& low, const dgVector& high)
 		:m_low(low)
@@ -84,7 +81,6 @@ class dgWorkGroupFloat
 		#endif
 		ptr[i] = value;
 	}
-
 
 	DG_INLINE dgFloat32& operator[] (dgInt32 i)
 	{
@@ -199,7 +195,6 @@ class dgSolverSoaJacobianPair
 	dgWorkGroupVector6 m_jacobianM1;
 } DG_GCC_VECTOR_ALIGMENT;
 
-
 DG_MSC_VECTOR_ALIGMENT
 class dgSolverSoaElement
 {
@@ -215,7 +210,6 @@ class dgSolverSoaElement
 	dgWorkGroupFloat m_lowerBoundFrictionCoefficent;
 	dgWorkGroupFloat m_upperBoundFrictionCoefficent;
 } DG_GCC_VECTOR_ALIGMENT;
-
 
 class dgParallelBodySolver
 {
@@ -257,6 +251,7 @@ class dgParallelBodySolver
 	void CalculateBodiesAcceleration();
 	
 	void InitBodyArray(dgInt32 threadID);
+	void InitSkeletons(dgInt32 threadID);
 	void InitJacobianMatrix(dgInt32 threadID);
 	void InitInternalForces(dgInt32 threadID);
 	void CalculateBodyForce(dgInt32 threadID);
@@ -268,7 +263,8 @@ class dgParallelBodySolver
 	void UpdateKinematicFeedback(dgInt32 threadID);
 	void CalculateJointsAcceleration(dgInt32 threadID);
 	void CalculateBodiesAcceleration(dgInt32 threadID);
-
+	
+	static void InitSkeletonsKernel(void* const context, void* const, dgInt32 threadID);
 	static void InitBodyArrayKernel(void* const context, void* const, dgInt32 threadID);
 	static void InitJacobianMatrixKernel(void* const context, void* const, dgInt32 threadID);
 	static void CalculateBodyForceKernel(void* const context, void* const, dgInt32 threadID);
@@ -305,10 +301,12 @@ class dgParallelBodySolver
 	dgFloat32 m_firstPassCoef;
 	dgFloat32 m_accelNorm[DG_MAX_THREADS_HIVE_COUNT];
 	dgInt32 m_hasJointFeeback[DG_MAX_THREADS_HIVE_COUNT];
+	dgSkeletonContainer* m_skeletonArray[256];
 
 	dgInt32 m_jointCount;
 	dgInt32 m_jacobianMatrixRowAtomicIndex;
 	dgInt32 m_solverPasses;
+	dgInt32 m_skeletonCount;
 	dgInt32 m_threadCounts;
 	dgInt32 m_soaRowsCount;
 	dgInt32* m_soaRowStart;
@@ -334,6 +332,7 @@ DG_INLINE dgParallelBodySolver::dgParallelBodySolver(dgMemoryAllocator* const al
 	,m_jointCount(0)
 	,m_jacobianMatrixRowAtomicIndex(0)
 	,m_solverPasses(0)
+	,m_skeletonCount(0)
 	,m_threadCounts(0)
 	,m_soaRowsCount(0)
 	,m_soaRowStart(NULL)
@@ -341,7 +340,6 @@ DG_INLINE dgParallelBodySolver::dgParallelBodySolver(dgMemoryAllocator* const al
 	,m_massMatrix(allocator)
 {
 }
-
 
 #endif
 

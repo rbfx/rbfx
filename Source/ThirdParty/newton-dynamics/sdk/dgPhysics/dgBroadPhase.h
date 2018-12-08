@@ -459,7 +459,6 @@ class dgBroadPhase
 		dgFloat32 m_timestep;
 		dgInt32 m_contactCount : 16;
 		dgInt32 m_cacheIsValid : 1;
-		dgInt32 m_flipContacts : 1;
 	};
 
 	dgBroadPhase(dgWorld* const world);

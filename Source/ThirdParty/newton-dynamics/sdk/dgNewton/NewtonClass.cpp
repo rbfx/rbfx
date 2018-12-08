@@ -195,6 +195,7 @@ void NewtonUserJoint::SetAsInverseDynamicsRow()
 		dgFloat32 accel;
 		if (m_rowIsIk & (1 << index)) {
 			accel = GetInverseDynamicAcceleration(index);
+//dgTrace (("%f\n", accel));
 		} else {
 			accel = GetAcceleration();
 		}
@@ -288,6 +289,50 @@ void NewtonUserJoint::SetUpdateFeedbackFunction (NewtonUserBilateralCallback get
 {
 	dgUserConstraint::SetUpdateFeedbackFunction ((ConstraintsForceFeeback) getFeedback);
 }
+
+dgInt32 NewtonUserJoint::SubmitImmediateModeConstraint(NewtonImmediateModeConstraint* const descriptor, dFloat timestep)
+{
+	m_rows = 0;
+	dgContraintDescritor constraintParams;
+	constraintParams.m_world = m_body0->GetWorld();
+	constraintParams.m_threadIndex = 0;
+	constraintParams.m_timestep = timestep;
+	constraintParams.m_invTimestep = dgFloat32 (1.0f) / timestep;
+	for (dgInt32 i = 0; i < sizeof (descriptor->m_minFriction)/ sizeof (descriptor->m_minFriction[0]); i++) {
+		constraintParams.m_forceBounds[i].m_low = DG_MIN_BOUND;
+		constraintParams.m_forceBounds[i].m_upper = DG_MAX_BOUND;
+		constraintParams.m_forceBounds[i].m_jointForce = NULL;
+		constraintParams.m_forceBounds[i].m_normalIndex = DG_INDEPENDENT_ROW;
+	}
+
+	m_param = &constraintParams;
+	m_jacobianFnt ((NewtonJoint*)this, timestep, 0);
+
+	for (dgInt32 i = 0; i < m_rows; i ++) {
+		descriptor->m_jacobian01[i][0] = constraintParams.m_jacobian[i].m_jacobianM0.m_linear[0];
+		descriptor->m_jacobian01[i][1] = constraintParams.m_jacobian[i].m_jacobianM0.m_linear[1];
+		descriptor->m_jacobian01[i][2] = constraintParams.m_jacobian[i].m_jacobianM0.m_linear[2];
+		descriptor->m_jacobian01[i][3] = constraintParams.m_jacobian[i].m_jacobianM0.m_angular[0];
+		descriptor->m_jacobian01[i][4] = constraintParams.m_jacobian[i].m_jacobianM0.m_angular[1];
+		descriptor->m_jacobian01[i][5] = constraintParams.m_jacobian[i].m_jacobianM0.m_angular[2];
+																	
+		descriptor->m_jacobian10[i][0] = constraintParams.m_jacobian[i].m_jacobianM1.m_linear[0];
+		descriptor->m_jacobian10[i][1] = constraintParams.m_jacobian[i].m_jacobianM1.m_linear[1];
+		descriptor->m_jacobian10[i][2] = constraintParams.m_jacobian[i].m_jacobianM1.m_linear[2];
+		descriptor->m_jacobian10[i][3] = constraintParams.m_jacobian[i].m_jacobianM1.m_angular[0];
+		descriptor->m_jacobian10[i][4] = constraintParams.m_jacobian[i].m_jacobianM1.m_angular[1];
+		descriptor->m_jacobian10[i][5] = constraintParams.m_jacobian[i].m_jacobianM1.m_angular[2];
+
+		descriptor->m_minFriction[i] = constraintParams.m_forceBounds[i].m_low;
+		descriptor->m_maxFriction[i] = constraintParams.m_forceBounds[i].m_upper;
+
+		descriptor->m_jointAccel[i] = constraintParams.m_jointAccel[i];
+		descriptor->m_jointStiffness[i] = constraintParams.m_jointStiffness[i];
+	}
+
+	return m_rows;
+}
+
 
 
 NewtonUserJointInverseDynamicsEffector::NewtonUserJointInverseDynamicsEffector(dgInverseDynamics* const invDynSolver, dgInverseDynamics::dgNode* const invDynNode, NewtonUserBilateralCallback callback)

@@ -964,6 +964,7 @@ void dgWorld::UpdateTransforms(void* const context, void* const nodePtr, dgInt32
 
 void dgWorld::RunStep ()
 {
+/*
 	static int zzzz;
 	if (zzzz == 50) {
 		DG_START_RECORDING("../../../../sdk/dProfiler/xxxx.tt");
@@ -972,6 +973,7 @@ void dgWorld::RunStep ()
 		DG_STOP_RECORDING();
 	}
 	zzzz++;
+*/
 
 	DG_TRACKTIME(__FUNCTION__);
 	dgUnsigned64 timeAcc = dgGetTimeInMicrosenconds();

@@ -56,14 +56,10 @@ class dSceneRender;
 	}																\
 	D_DEFINE_CLASS_NODE_ESSENCIALS(className,baseClass,exportType)		
 
-
-
-
 #define D_IMPLEMENT_CLASS_NODE(className)						\
 	dInitRtti(className);										\
 	className className::m_singletonClass;						\
 	static className::dRegisterSingleton m_registerSingletonAgent (#className, &className::m_singletonClass);
-
 
 #define SerialiseBase(baseClass,rootNode)								\
 	TiXmlElement* const baseClassNode = new TiXmlElement (#baseClass);	\

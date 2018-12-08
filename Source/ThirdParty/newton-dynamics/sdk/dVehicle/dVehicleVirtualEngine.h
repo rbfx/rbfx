@@ -25,13 +25,13 @@ class dVehicleVirtualEngine: public dVehicleEngineInterface
 		dEngineTorqueNode() {}
 		dEngineTorqueNode(dFloat rpm, dFloat torque)
 			:m_rpm(rpm)
-			, m_torque(torque)
+			,m_torque(torque)
 		{
 		}
+
 		dFloat m_rpm;
 		dFloat m_torque;
 	};
-
 
 	class dEngineMetricInfo: public dEngineInfo
 	{
@@ -42,7 +42,7 @@ class dVehicleVirtualEngine: public dVehicleEngineInterface
 
 		dFloat GetTorque (dFloat rpm) const;
 
-		dEngineTorqueNode m_torqueCurve[6];
+		dEngineTorqueNode m_torqueCurve[5];
 	};
 	public:
 
@@ -53,17 +53,26 @@ class dVehicleVirtualEngine: public dVehicleEngineInterface
 	virtual dFloat GetRpm() const;
 	virtual dFloat GetRedLineRpm() const;
 
-	void ApplyExternalForce();
+	void ApplyExternalForce(dFloat timestep);
 	void InitEngineTorqueCurve();
 	void Integrate(dFloat timestep);
+
+	void SetGear (int gear);
+	void SetClutch (dFloat clutch);
 	void SetThrottle (dFloat throttle);
+
 	void SetInfo(const dEngineInfo& info);
 	
-	dComplementaritySolver::dBilateralJoint* GetJoint();
+	dComplementaritySolver::dBilateralJoint* GetProxyJoint();
+	int GetKinematicLoops(dAnimationKinematicLoopJoint** const jointArray);
+
 	void Debug(dCustomJoint::dDebugDisplay* const debugContext) const;
+	
 
 	dEngineMetricInfo m_metricInfo;
-	dEngineJoint m_joint;
+	dEngineBlockJoint m_blockJoint;
+	dEngineCrankJoint m_crankJoint;
+	dGearBoxJoint m_gearBox;
 	dFloat m_omega;
 	friend class dVehicleChassis;
 };

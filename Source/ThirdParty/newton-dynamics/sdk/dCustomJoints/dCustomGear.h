@@ -58,7 +58,6 @@ class dCustomGearAndSlide: public dCustomGear
 	DECLARE_CUSTOM_JOINT(dCustomGearAndSlide, dCustomGear)
 };
 
-
 class dCustomDifferentialGear: public dCustomGear
 {
 	public:

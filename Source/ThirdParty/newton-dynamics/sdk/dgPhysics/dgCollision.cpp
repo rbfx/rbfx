@@ -91,7 +91,7 @@ dgUnsigned32 dgCollision::Quantize(dgFloat32 value)
 	return dgUnsigned32 (value * 1024.0f);
 }
 
-dgUnsigned32 dgCollision::Quantize(void *buffer, int size)
+dgUnsigned32 dgCollision::Quantize(const void* const buffer, int size)
 {
 	dgUnsigned32 crc = dgCRC (buffer, size);
 	return crc;

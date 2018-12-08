@@ -440,11 +440,6 @@ void dSceneGraph::DeleteRootNode()
 }
 
 
-
-
-
-
-
 void dSceneGraph::Serialize (TiXmlElement* const rootNode) const
 {
 	// save scenes nodes

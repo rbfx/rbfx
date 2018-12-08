@@ -2340,7 +2340,7 @@ void dgMeshEffect::BuildFromIndexList(const dgMeshVertexFormat* const format)
 
 	bool pendingFaces = true;
 	dgInt32 layerBase = 0;
-	dgInt32 layerCount = 0;
+//	dgInt32 layerCount = 0;
 	dgInt32 attributeCount = 0;
 
 	dgInt32 normalStride = dgInt32(format->m_normal.m_strideInBytes / sizeof (dgFloat32));
@@ -2355,7 +2355,8 @@ void dgMeshEffect::BuildFromIndexList(const dgMeshVertexFormat* const format)
 	while (pendingFaces) {
 		dgInt32 acc = 0;
 		pendingFaces = false;
-		dgInt32 vertexBank = layerCount * vertexCount;
+		//dgInt32 vertexBank = layerCount * vertexCount;
+		dgInt32 vertexBank = layerIndex * vertexCount;
 		for (dgInt32 j = 0; j < format->m_faceCount; j++) {
 			dgInt32 indexCount = format->m_faceIndexCount[j];
 			if (indexCount > 0) {
@@ -2463,7 +2464,7 @@ void dgMeshEffect::BuildFromIndexList(const dgMeshVertexFormat* const format)
 		}
 
 		if (pendingFaces) {
-			dgAssert (0);
+			//dgAssert (0);
 			layerIndex++;
 			layerBase += vertexCount;
 			for (dgInt32 i = 0; i < vertexCount; i++) {
@@ -2472,7 +2473,7 @@ void dgMeshEffect::BuildFromIndexList(const dgMeshVertexFormat* const format)
 			}
 		}
 	}
-	dgAssert (m_points.m_vertex.m_count == vertexCount);
+	dgAssert (m_points.m_vertex.m_count == vertexCount * (layerIndex + 1));
 	dgAssert (m_attrib.m_pointChannel.m_count == attributeCount);
 	EndFace();
 	PackAttibuteData();
@@ -2511,8 +2512,6 @@ dgInt32 dgMeshEffect::GetTotalIndexCount() const
 
 void dgMeshEffect::GetFaces (dgInt32* const facesIndex, dgInt32* const materials, void** const faceNodeList) const
 {
-dgAssert(0);
-/*
 	Iterator iter (*this);
 
 	dgInt32 faces = 0;
@@ -2540,10 +2539,10 @@ dgAssert(0);
 		} while (ptr != edge);
 
 		facesIndex[faces] = faceCount;
-		materials[faces] = dgFastInt(m_attrib[dgInt32 (edge->m_userData)].m_material);
+		//materials[faces] = dgFastInt(m_attrib[dgInt32 (edge->m_userData)].m_material);
+		materials[faces] = m_attrib.m_materialChannel.m_count ? m_attrib.m_materialChannel[dgInt32(edge->m_userData)] : 0;
 		faces ++;
 	}
-*/
 }
 
 void* dgMeshEffect::GetFirstVertex () const
@@ -2932,9 +2931,6 @@ bool dgMeshEffect::HasVertexColorChannel() const
 	return m_attrib.m_colorChannel.m_count != 0;
 }
 
-
-
-
 void dgMeshEffect::GetVertexChannel64(dgInt32 strideInByte, dgFloat64* const bufferOut) const
 {
 	dgInt32 stride = strideInByte / sizeof (dgFloat64);
@@ -2953,9 +2949,10 @@ void dgMeshEffect::GetVertexChannel(dgInt32 strideInByte, dgFloat32* const buffe
 	for (dgInt32 i = 0; i < m_attrib.m_pointChannel.m_count; i++) {
 		const dgInt32 j = i * stride;
 		const dgInt32 index = m_attrib.m_pointChannel[i];
-		bufferOut[j + 0] = dgFloat32(m_points.m_vertex[index].m_x);
-		bufferOut[j + 1] = dgFloat32(m_points.m_vertex[index].m_y);
-		bufferOut[j + 2] = dgFloat32(m_points.m_vertex[index].m_z);
+		const dgBigVector& p = m_points.m_vertex[index];
+		bufferOut[j + 0] = dgFloat32(p.m_x);
+		bufferOut[j + 1] = dgFloat32(p.m_y);
+		bufferOut[j + 2] = dgFloat32(p.m_z);
 	}
 }
 

@@ -28,17 +28,9 @@
 	#define DVEHICLE_API
 #else 
 	#ifdef _DVEHICLE_BUILD_DLL
-		#ifdef _WIN32
-			#define DVEHICLE_API __declspec (dllexport)
-		#else
-			#define DVEHICLE_API __attribute__ ((visibility("default")))
-		#endif
+		#define DVEHICLE_API __declspec (dllexport)
 	#else
-		#ifdef _WIN32
-			#define DVEHICLE_API __declspec (dllimport)
-		#else
-			#define DVEHICLE_API
-		#endif
+		#define DVEHICLE_API __declspec (dllimport)
 	#endif
 #endif
 
@@ -75,4 +67,7 @@
 #include <dCustomJoint.h>
 #include <dCustomControllerManager.h>
 
-
+#include <dAnimationStdAfx.h>
+#include <dAnimationAcyclicJoint.h>
+#include <dAnimationAcyclicSolver.h>
+#include <dAnimationKinematicLoopJoint.h>

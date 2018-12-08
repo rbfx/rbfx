@@ -27,6 +27,8 @@ dCustomSliderActuator::dCustomSliderActuator (const dMatrix& pinAndPivotFrame, N
 	,m_targetPosit(0.0f)
 	,m_linearRate(0.0f)
 	,m_maxForce(D_CUSTOM_LARGE_VALUE)
+	,m_minForce(-D_CUSTOM_LARGE_VALUE)
+	,m_force(0.0f)
 {
 	m_friction = 0.0f;
 	dAssert(m_options.m_value == 0);
@@ -36,7 +38,9 @@ dCustomSliderActuator::dCustomSliderActuator (const dMatrix& pinAndPivotFrame, d
 	:dCustomSlider(pinAndPivotFrame, child, parent)
 	,m_targetPosit(0.0f)
 	,m_linearRate(speed)
-    ,m_maxForce(D_CUSTOM_LARGE_VALUE)
+	,m_maxForce(D_CUSTOM_LARGE_VALUE)
+	,m_minForce(-D_CUSTOM_LARGE_VALUE)
+	,m_force(0.0f)
 {
 	m_friction = 0.0f;
 	dAssert(m_options.m_value == 0);
@@ -56,6 +60,8 @@ void dCustomSliderActuator::Serialize(NewtonSerializeCallback callback, void* co
 	callback(userData, &m_targetPosit, sizeof(dFloat));
 	callback(userData, &m_linearRate, sizeof(dFloat));
 	callback(userData, &m_maxForce, sizeof(dFloat));
+	callback(userData, &m_minForce, sizeof(dFloat));
+	callback(userData, &m_force, sizeof(dFloat));
 }
 
 void dCustomSliderActuator::Deserialize (NewtonDeserializeCallback callback, void* const userData)
@@ -63,6 +69,8 @@ void dCustomSliderActuator::Deserialize (NewtonDeserializeCallback callback, voi
 	callback(userData, &m_targetPosit, sizeof(dFloat));
 	callback(userData, &m_linearRate, sizeof(dFloat));
 	callback(userData, &m_maxForce, sizeof(dFloat));
+	callback(userData, &m_minForce, sizeof(dFloat));
+	callback(userData, &m_force, sizeof(dFloat));
 }
 
 dFloat dCustomSliderActuator::GetTargetPosit() const
@@ -110,16 +118,30 @@ dFloat dCustomSliderActuator::GetActuatorPosit() const
 	return GetJointPosit();
 }
 
-dFloat dCustomSliderActuator::GetMaxForcePower() const
+dFloat dCustomSliderActuator::GetForce() const
+{
+	return m_force;
+}
+
+dFloat dCustomSliderActuator::GetMaxForce() const
 {
     return m_maxForce;
 }
 
-void dCustomSliderActuator::SetMaxForcePower(dFloat force)
+dFloat dCustomSliderActuator::GetMinForce() const
+{
+	return m_minForce;
+}
+
+void dCustomSliderActuator::SetMaxForce(dFloat force)
 {
     m_maxForce = dAbs (force);
 }
 
+void dCustomSliderActuator::SetMinForce(dFloat force)
+{
+	m_minForce = -dAbs(force);
+}
 
 void dCustomSliderActuator::SubmitAngularRow(const dMatrix& matrix0, const dMatrix& matrix1, dFloat timestep)
 {
@@ -143,10 +165,14 @@ void dCustomSliderActuator::SubmitAngularRow(const dMatrix& matrix0, const dMatr
 		currentSpeed = 0.3f * (targetPosit - posit) * invTimeStep;
 	}
 
+	//update on the active dof.
+	m_force = NewtonUserJointGetRowForce(m_joint, 5);
+//dTrace(("%f\n", m_force));
+
 	NewtonUserJointAddLinearRow(m_joint, &matrix0.m_posit[0], &matrix1.m_posit[0], &matrix1.m_front[0]);
 	dFloat accel = NewtonUserJointCalculateRowZeroAccelaration(m_joint) + currentSpeed * invTimeStep;
 	NewtonUserJointSetRowAcceleration(m_joint, accel);
-	NewtonUserJointSetRowMinimumFriction(m_joint, -m_maxForce);
+	NewtonUserJointSetRowMinimumFriction(m_joint, m_minForce);
 	NewtonUserJointSetRowMaximumFriction(m_joint, m_maxForce);
 	NewtonUserJointSetRowStiffness(m_joint, m_stiffness);
 }

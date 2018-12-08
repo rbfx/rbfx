@@ -63,6 +63,20 @@ void dVehicleEngineControl::Update(dFloat timestep)
 	}
 }
 
+void dVehicleEngineControl::SetGear (int gear)
+{
+	if (m_engine) {
+		m_engine->SetGear(gear);
+	}
+}
+
+void dVehicleEngineControl::SetClutch (dFloat clutch)
+{
+	if (m_engine) {
+		m_engine->SetClutch(clutch);
+	}
+}
+
 // ****************************************************************************
 //
 // ****************************************************************************

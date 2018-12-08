@@ -117,7 +117,6 @@ dComplementaritySolver::dBodyState::dBodyState()
 {
 }
 
-
 const dVector& dComplementaritySolver::dBodyState::GetOmega() const
 {
 	return m_omega;
@@ -146,7 +145,7 @@ dFloat dComplementaritySolver::dBodyState::GetInvMass () const
 void dComplementaritySolver::dBodyState::SetMass (dFloat mass)
 {
 	m_mass = mass;
-	m_invMass = 1.0f / mass;
+	m_invMass = mass > (1.0e-3f) ?  1.0f / mass : 0.0f;
 }
 
 void dComplementaritySolver::dBodyState::SetInertia (dFloat Ixx, dFloat Iyy, dFloat Izz)
@@ -154,9 +153,9 @@ void dComplementaritySolver::dBodyState::SetInertia (dFloat Ixx, dFloat Iyy, dFl
 	m_localInertia[0] = Ixx;
 	m_localInertia[1] =	Iyy;
 	m_localInertia[2] =	Izz;
-	m_localInvInertia[0] = 1.0f / Ixx;
-	m_localInvInertia[1] = 1.0f / Iyy;
-	m_localInvInertia[2] = 1.0f / Izz;
+	m_localInvInertia[0] = Ixx ? 1.0f / Ixx : 0.0f;
+	m_localInvInertia[1] = Iyy ? 1.0f / Iyy : 0.0f;
+	m_localInvInertia[2] = Izz ? 1.0f / Izz : 0.0f;
 }
 
 void dComplementaritySolver::dBodyState::GetInertia (dFloat& Ixx, dFloat& Iyy, dFloat& Izz) const
@@ -309,6 +308,10 @@ void dComplementaritySolver::dBodyState::ApplyNetForceAndTorque (dFloat invTimes
 
 void dComplementaritySolver::dBilateralJoint::Init(dBodyState* const state0, dBodyState* const state1)
 {
+	static int xxxxxxx;
+	xxxxx = xxxxxxx;
+	xxxxxxx++;
+
 	m_start = 0;
 	m_count = 0;
 	memset (m_rowIsMotor, 0, sizeof (m_rowIsMotor));
@@ -574,12 +577,12 @@ void dComplementaritySolver::dFrictionLessContactJoint::SetContacts (int count, 
 
 void dComplementaritySolver::dFrictionLessContactJoint::JacobianDerivative (dParamInfo* const constraintParams)
 {
+	dVector pinOmega(0.0f);
 	for (int i = 0; i < m_count; i ++) {
-		dAssert(0);
-/*
+
 		dPointDerivativeParam pointData;
 		InitPointParam (pointData, m_contacts[i].m_point);
-		CalculatePointDerivative (constraintParams, m_contacts[i].m_normal, pointData);
+		CalculatePointDerivative (constraintParams, m_contacts[i].m_normal, pinOmega, pointData);
 
 		dVector velocError (pointData.m_veloc1 - pointData.m_veloc0);
 
@@ -593,9 +596,9 @@ void dComplementaritySolver::dFrictionLessContactJoint::JacobianDerivative (dPar
 			relVelocErr *= (m_restitution + dFloat (1.0f));
 		}
 
-		constraintParams->m_jointLowFriction[i] = dFloat (0.0f);
+		constraintParams->m_normalIndex[i] = 0;
+		constraintParams->m_jointLowFrictionCoef[i] = dFloat (0.0f);
 		constraintParams->m_jointAccel[i] = dMax (dFloat (-4.0f), relVelocErr + penetrationVeloc) * constraintParams->m_timestepInv;
-*/
 	}
 }
 
@@ -676,9 +679,9 @@ int dComplementaritySolver::BuildJacobianMatrix (int jointCount, dBilateralJoint
 
 			col->m_diagDamp = 1.0f;
 			col->m_coordenateAccel = constraintParams.m_jointAccel[i];
-dAssert (0);
-//			col->m_jointLowFriction = constraintParams.m_jointLowFriction[i];
-//			col->m_jointHighFriction = constraintParams.m_jointHighFriction[i];
+			col->m_normalIndex = constraintParams.m_normalIndex[i];
+			col->m_jointLowFriction = constraintParams.m_jointLowFrictionCoef[i];
+			col->m_jointHighFriction = constraintParams.m_jointHighFrictionCoef[i];
 
 			col->m_deltaAccel = extenalAcceleration;
 			col->m_coordenateAccel += extenalAcceleration;
@@ -706,7 +709,7 @@ void dComplementaritySolver::CalculateReactionsForces (int bodyCount, dBodyState
 	dJacobian internalForces [COMPLEMENTARITY_STACK_ENTRIES];
 
 	int stateIndex = 0;
-	dVector zero(dFloat (0.0f), dFloat (0.0f), dFloat (0.0f), dFloat (0.0f));
+	dVector zero(dFloat (0.0f));
 	for (int i = 0; i < bodyCount; i ++) {
 		dBodyState* const state = bodyArray[i];
 		stateVeloc[stateIndex].m_linear = state->m_veloc;

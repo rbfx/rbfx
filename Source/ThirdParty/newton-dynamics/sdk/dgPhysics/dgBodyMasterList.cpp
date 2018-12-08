@@ -147,7 +147,7 @@ void dgBodyMasterList::AddBody (dgBody* const body)
 	node->GetInfo().SetAllocator (body->GetWorld()->GetAllocator());
 	node->GetInfo().SetBody(body);
 
-	if (GetFirst() != node) {
+	if ((body->m_invMass.m_w == dgFloat32 (0.0f)) && (GetFirst() != node)) {
 		InsertAfter (GetFirst(), node);
 	}
 }

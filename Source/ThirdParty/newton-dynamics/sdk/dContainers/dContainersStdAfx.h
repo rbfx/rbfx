@@ -27,20 +27,11 @@
 #include <dMatrix.h>
 
 
-
 #ifdef _DCONTAINERS_DLL
 	#ifdef _DCONTAINERS_EXPORT
-		#ifdef _WIN32
-			#define DCONTAINERS_API __declspec (dllexport)
-		#else
-			#define DCONTAINERS_API __attribute__ ((visibility("default")))
-		#endif
+		#define DCONTAINERS_API __declspec (dllexport)
 	#else
-		#ifdef _WIN32
-			#define DCONTAINERS_API __declspec (dllimport)
-		#else
-			#define DCONTAINERS_API
-		#endif
+		#define DCONTAINERS_API __declspec (dllimport)
 	#endif
 #else
 	#define DCONTAINERS_API

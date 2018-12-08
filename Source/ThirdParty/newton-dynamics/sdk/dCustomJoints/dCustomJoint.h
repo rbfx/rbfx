@@ -73,9 +73,9 @@ typedef void (*dJointUserDestructorCallback) (const dCustomJoint* const me);
 	DECLARE_CUSTOM_JOINT_BASE(className,baseClass)	\
 	static CUSTOM_JOINTS_API SerializeMetaData_##className m_metaData_##className;
 
-#define DECLARE_CUSTOM_JOINT_EXPORT_IMPORT(exportImport,className,baseClass)	\
-	DECLARE_CUSTOM_JOINT_BASE(className,baseClass)								\
-	static exportImport SerializeMetaData_##className m_metaData_##className;
+//#define DECLARE_CUSTOM_JOINT_EXPORT_IMPORT(exportImport,className,baseClass)	\
+//	DECLARE_CUSTOM_JOINT_BASE(className,baseClass)								\
+//	static exportImport SerializeMetaData_##className m_metaData_##className;
 
 #define IMPLEMENT_CUSTOM_JOINT(className)																					\
 	className::SerializeMetaData_##className className::m_metaData_##className(#className);									\

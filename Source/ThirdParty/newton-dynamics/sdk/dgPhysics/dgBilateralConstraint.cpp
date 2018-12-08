@@ -284,10 +284,7 @@ void dgBilateralConstraint::CalculateAngularDerivative (dgInt32 index, dgContrai
 	dgAssert (dir.m_w == dgFloat32 (0.0f));
 
 	dgJacobian &jacobian0 = desc.m_jacobian[index].m_jacobianM0; 
-	jacobian0.m_linear[0] = dgFloat32 (0.0f);
-	jacobian0.m_linear[1] = dgFloat32 (0.0f);
-	jacobian0.m_linear[2] = dgFloat32 (0.0f);
-	jacobian0.m_linear[3] = dgFloat32 (0.0f);
+	jacobian0.m_linear = dgVector::m_zero;
 	jacobian0.m_angular[0] = dir.m_x;
 	jacobian0.m_angular[1] = dir.m_y;
 	jacobian0.m_angular[2] = dir.m_z;
@@ -295,10 +292,7 @@ void dgBilateralConstraint::CalculateAngularDerivative (dgInt32 index, dgContrai
 
 	dgJacobian &jacobian1 = desc.m_jacobian[index].m_jacobianM1; 
 	dgAssert (m_body1);
-	jacobian1.m_linear[0] = dgFloat32 (0.0f);
-	jacobian1.m_linear[1] = dgFloat32 (0.0f);
-	jacobian1.m_linear[2] = dgFloat32 (0.0f);
-	jacobian1.m_linear[3] = dgFloat32 (0.0f);
+	jacobian1.m_linear = dgVector::m_zero;
 	jacobian1.m_angular[0] = -dir.m_x;
 	jacobian1.m_angular[1] = -dir.m_y;
 	jacobian1.m_angular[2] = -dir.m_z;

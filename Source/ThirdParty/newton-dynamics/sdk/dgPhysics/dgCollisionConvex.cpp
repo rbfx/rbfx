@@ -283,7 +283,8 @@ dgMatrix dgCollisionConvex::CalculateInertiaAndCenterOfMass (const dgMatrix& m_a
 		dgAssert (localScale.m_w == dgFloat32 (0.0f));
 		dgVector origin (matrix.TransformVector (m_centerOfMass * localScale));
 
-		dgFloat32 originMag2 = origin.DotProduct(origin & dgVector::m_triplexMask).GetScalar();
+		origin.m_w = dgFloat32 (0.0f);
+		dgFloat32 originMag2 = origin.DotProduct(origin).GetScalar();
 		dgMatrix Covariance(origin, origin);
 		dgMatrix parallel(dgGetIdentityMatrix());
 		for (dgInt32 i = 0; i < 3; i++) {

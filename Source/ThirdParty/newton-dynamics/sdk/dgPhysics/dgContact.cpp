@@ -125,6 +125,7 @@ void dgContact::AppendToContactList()
 {
 	dgAssert (m_body0);
 	dgAssert (!m_contactNode);
+	dgAssert(m_body0->m_invMass.m_w > dgFloat32 (0.0f));
 	dgContactList* const contactList = m_body0->m_world;
 	m_contactNode = contactList->Addtop(this);
 }

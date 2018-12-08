@@ -60,6 +60,7 @@ class dCustomHinge: public dCustomJoint
 	dFloat m_damper;
 	dFloat m_motorSpeed;
 	dFloat m_springDamperRelaxation;
+	bool m_limitReached;
 	DECLARE_CUSTOM_JOINT(dCustomHinge, dCustomJoint)
 };
 

@@ -492,8 +492,6 @@ class dEngineController: public dVehicleController
 	CUSTOM_JOINTS_API void SetDifferentialLock(bool mode);
 	CUSTOM_JOINTS_API void SetClutchParam(dFloat cluthParam);
 
-	CUSTOM_JOINTS_API void PlotEngineCurve() const;
-
 	protected:
 	virtual void Update(dFloat timestep);
 

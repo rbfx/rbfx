@@ -66,8 +66,6 @@ class dScene: public dSceneGraph, public dRefCounter
 		void SetTextureInfo (dTextureNodeInfo& textureInfo, const NewtonMesh* const mesh, const NewtonBody* const body, int MaterialID) {}
 	};
 
-
-
 	DSCENE_API dScene(NewtonWorld* const newton);
 	DSCENE_API dScene(const dScene& me);
 	DSCENE_API virtual ~dScene(void);
@@ -167,6 +165,7 @@ class dScene: public dSceneGraph, public dRefCounter
 	DSCENE_API virtual void DeleteDuplicateMaterials();
 	DSCENE_API virtual void DeleteDuplicateGeometries();
 
+	DSCENE_API void RegisterClasses();
 	
 	protected:
 	DSCENE_API virtual dTreeNode* GetCacheNode (const char* const cacheName);

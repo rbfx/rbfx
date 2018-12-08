@@ -23,16 +23,16 @@ class dVehicleVirtualDifferential: public dVehicleDifferentialInterface
 	DVEHICLE_API dVehicleVirtualDifferential(dVehicleNode* const parent, dVehicleTireInterface* const leftTire, dVehicleTireInterface* const rightTire);
 	DVEHICLE_API virtual ~dVehicleVirtualDifferential();
 	
-
 	protected:
-	void ApplyExternalForce();
+	void ApplyExternalForce(dFloat timestep);
 	void Integrate(dFloat timestep);
-	dComplementaritySolver::dBilateralJoint* GetJoint();
+	dComplementaritySolver::dBilateralJoint* GetProxyJoint();
+	int GetKinematicLoops(dAnimationKinematicLoopJoint** const jointArray);
 	void Debug(dCustomJoint::dDebugDisplay* const debugContext) const;
 
 	dDifferentialMount m_differential;
-	dDifferentialJoint m_leftDifferential;
-	dDifferentialJoint m_rightDifferential;
+	dTireAxleJoint m_leftAxle;
+	dTireAxleJoint m_rightAxle;
 	dVehicleTireInterface* m_leftTire;
 	dVehicleTireInterface* m_rightTire;
 	dFloat m_diffOmega;

@@ -63,49 +63,12 @@ void dVehicleChassis::Init(NewtonBody* const body, const dMatrix& localFrame, Ne
 	NewtonBodySetAngularDamping(m_body, &drag[0]);
 
 /*
-	m_speed = 0.0f;
-	m_sideSlip = 0.0f;
-	m_prevSideSlip = 0.0f;
-	m_finalized = false;
-	m_gravityMag = dAbs(gravityMag);
-	m_weightDistribution = 0.5f;
 	m_aerodynamicsDownForce0 = 0.0f;
 	m_aerodynamicsDownForce1 = 0.0f;
 	m_aerodynamicsDownSpeedCutOff = 0.0f;
 	m_aerodynamicsDownForceCoefficient = 0.0f;
-
-
-	m_forceAndTorqueCallback = forceAndTorque;
-
-	dCustomVehicleControllerManager* const manager = (dCustomVehicleControllerManager*)GetManager();
-	NewtonWorld* const world = manager->GetWorld();
-
-
-	// set the standard force and torque call back
-	NewtonBodySetForceAndTorqueCallback(body, m_forceAndTorqueCallback);
-
-	m_contactFilter = new dTireFrictionModel(this);
-
-
-	m_collisionAggregate = NewtonCollisionAggregateCreate(world);
-	NewtonCollisionAggregateSetSelfCollision(m_collisionAggregate, 0);
-	NewtonCollisionAggregateAddBody(m_collisionAggregate, m_body);
-
-	m_bodyList.Append(m_body);
-
 	SetAerodynamicsDownforceCoefficient(0.5f, 0.4f, 1.0f);
-
-#ifdef D_PLOT_ENGINE_CURVE 
-	file_xxx = fopen("vehiceLog.csv", "wb");
-	fprintf(file_xxx, "eng_rpm, eng_torque, eng_nominalTorque,\n");
-#endif
 */
-
-//	m_engine = NULL;
-//	m_brakesControl = NULL;
-//	m_engineControl = NULL;
-//	m_steeringControl = NULL;
-//	m_handBrakesControl = NULL;
 }
 
 void dVehicleChassis::Cleanup()
@@ -189,9 +152,10 @@ void dVehicleChassis::Finalize()
 	dVector maxP;
 	m_vehicle->CalculateNodeAABB(dGetIdentityMatrix(), minP, maxP);
 
-	const dList<dVehicleNode*>& children = m_vehicle->GetChildren();
-	for (dList<dVehicleNode*>::dListNode* tireNode = children.GetFirst(); tireNode; tireNode = tireNode->GetNext()) {
-		dVehicleVirtualTire* const tire = (dVehicleVirtualTire*)tireNode->GetInfo()->GetAsTire();
+	const dList<dAnimationAcyclicJoint*>& children = m_vehicle->GetChildren();
+	for (dList<dAnimationAcyclicJoint*>::dListNode* tireNode = children.GetFirst(); tireNode; tireNode = tireNode->GetNext()) {
+		dVehicleNode* const node = (dVehicleNode*)tireNode->GetInfo();
+		dVehicleVirtualTire* const tire = (dVehicleVirtualTire*)node->GetAsTire();
 		if (tire) {
 			dVector tireMinP;
 			dVector tireMaxP;
@@ -213,7 +177,6 @@ void dVehicleChassis::Finalize()
 
 void dVehicleChassis::ApplyExternalForces(dFloat timestep)
 {
-	m_vehicle->ApplyExternalForce();
 	CalculateSuspensionForces(timestep);
 	CalculateTireContacts(timestep);
 }
@@ -244,7 +207,7 @@ int dVehicleChassis::OnAABBOverlap(const NewtonBody * const body, void* const co
 
 void dVehicleChassis::CalculateTireContacts(dFloat timestep)
 {
-	dComplementaritySolver::dBodyState* const chassisBody = m_vehicle->GetBody();
+	dComplementaritySolver::dBodyState* const chassisBody = m_vehicle->GetProxyBody();
 	const dMatrix& matrix = chassisBody->GetMatrix();
 	dVector origin(matrix.TransformVector(m_obbOrigin));
 	dVector size(matrix.m_front.Abs().Scale(m_obbSize.m_x) + matrix.m_up.Abs().Scale(m_obbSize.m_y) + matrix.m_right.Abs().Scale(m_obbSize.m_z));
@@ -256,18 +219,14 @@ void dVehicleChassis::CalculateTireContacts(dFloat timestep)
 	NewtonWorld* const world = NewtonBodyGetWorld(GetBody());
 	NewtonWorldForEachBodyInAABBDo(world, &p0.m_x, &p1.m_x, OnAABBOverlap, &bodyList);
 
-	const dList<dVehicleNode*>& children = m_vehicle->GetChildren();
-	for (dList<dVehicleNode*>::dListNode* tireNode = children.GetFirst(); tireNode; tireNode = tireNode->GetNext()) {
-		dVehicleVirtualTire* const tire = (dVehicleVirtualTire*)tireNode->GetInfo()->GetAsTire();
+	const dList<dAnimationAcyclicJoint*>& children = m_vehicle->GetChildren();
+	for (dList<dAnimationAcyclicJoint*>::dListNode* tireNode = children.GetFirst(); tireNode; tireNode = tireNode->GetNext()) {
+		dVehicleNode* const node = (dVehicleNode*)tireNode->GetInfo();
+		dVehicleVirtualTire* const tire = (dVehicleVirtualTire*)node->GetAsTire();
 		if (tire) {
 			tire->CalculateContacts(bodyList, timestep);
 		}
 	}
-}
-
-int dVehicleChassis::GetKinematicLoops(dKinematicLoopJoint** const jointArray)
-{
-	return m_vehicle->GetKinematicLoops(jointArray);
 }
 
 void dVehicleChassis::PostUpdate(dFloat timestep, int threadIndex)
@@ -318,6 +277,8 @@ void dVehicleChassis::ApplyDriverInputs(const dDriverInput& driveInputs, dFloat 
 
 if (m_engineControl) {
 m_engineControl->SetParam(driveInputs.m_throttle);
+m_engineControl->SetClutch(driveInputs.m_clutchPedal);
+m_engineControl->SetGear(dVehicleEngineInterface::m_firstGear);
 }
 
 
@@ -503,7 +464,7 @@ void dVehicleChassis::CalculateSuspensionForces(dFloat timestep)
 	dFloat massMatrix[maxSize * maxSize];
 	dFloat accel[maxSize];
 	
-	dComplementaritySolver::dBodyState* const chassisBody = m_vehicle->GetBody();
+	dComplementaritySolver::dBodyState* const chassisBody = m_vehicle->GetProxyBody();
 
 	const dMatrix& chassisMatrix = chassisBody->GetMatrix(); 
 	const dMatrix& chassisInvInertia = chassisBody->GetInvInertia();
@@ -511,9 +472,10 @@ void dVehicleChassis::CalculateSuspensionForces(dFloat timestep)
 	dFloat chassisInvMass = chassisBody->GetInvMass();
 
 	int tireCount = 0;
-	const dList<dVehicleNode*>& children = m_vehicle->GetChildren();
-	for (dList<dVehicleNode*>::dListNode* tireNode = children.GetFirst(); tireNode; tireNode = tireNode->GetNext()) {
-		dVehicleVirtualTire* const tire = (dVehicleVirtualTire*) tireNode->GetInfo()->GetAsTire();
+	const dList<dAnimationAcyclicJoint*>& children = m_vehicle->GetChildren();
+	for (dList<dAnimationAcyclicJoint*>::dListNode* tireNode = children.GetFirst(); tireNode; tireNode = tireNode->GetNext()) {
+		dVehicleNode* const node = (dVehicleNode*)tireNode->GetInfo();
+		dVehicleVirtualTire* const tire = (dVehicleVirtualTire*)node->GetAsTire();
 		if (tire) {
 			const dVehicleVirtualTire::dTireInfo& info = tire->m_info;
 			tires[tireCount] = tire;
@@ -534,7 +496,7 @@ void dVehicleChassis::CalculateSuspensionForces(dFloat timestep)
 					break;
 			}
 */
-			dComplementaritySolver::dBodyState* const tireBody = tire->GetBody();
+			dComplementaritySolver::dBodyState* const tireBody = tire->GetProxyBody();
 
 			const dFloat invMass = tireBody->GetInvMass();
 			const dFloat kv = info.m_dampingRatio * invMass;
@@ -580,11 +542,9 @@ void dVehicleChassis::CalculateSuspensionForces(dFloat timestep)
 	dVector chassisTorque(0.0f);
 	for (int i = 0; i < tireCount; i++) {
 		dVehicleVirtualTire* const tire = tires[i];
-		dComplementaritySolver::dBodyState* const tireBody = tire->GetBody();
+		dComplementaritySolver::dBodyState* const tireBody = tire->GetProxyBody();
 
-		tires[i]->m_tireLoad = dMax(dFloat(1.0f), accel[i]);
 		dVector tireForce(m_jt[i].m_jacobian_J01.m_linear.Scale(accel[i]));
-
 		tireBody->SetForce(tireBody->GetForce() + tireForce);
 		chassisForce += m_jt[i].m_jacobian_J10.m_linear.Scale(accel[i]);
 		chassisTorque += m_jt[i].m_jacobian_J10.m_angular.Scale(accel[i]);

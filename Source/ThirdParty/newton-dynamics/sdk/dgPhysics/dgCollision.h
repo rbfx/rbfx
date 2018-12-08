@@ -245,7 +245,7 @@ class dgCollision
 	
 	DG_CLASS_ALLOCATOR(allocator)
 	static dgUnsigned32 Quantize (dgFloat32 value);
-	static dgUnsigned32 Quantize( void* buffer, int size);
+	static dgUnsigned32 Quantize(const void* const buffer, int size);
 
 	// these function should be be virtual
 	dgInt32 IsType (dgRTTI type) const; 

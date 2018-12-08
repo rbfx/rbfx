@@ -1223,8 +1223,9 @@ void dgBroadPhase::AddPair (dgBody* const body0, dgBody* const body1, const dgFl
 				const dgContactMaterial* const material = &materialList->Find (key)->GetInfo();
 
 				if (material->m_flags & dgContactMaterial::m_collisionEnable) {
-					const dgInt32 kinematicBodyEquilibrium = (((body0->IsRTTIType(dgBody::m_kinematicBodyRTTI) ? true : false) & body0->IsCollidable()) | ((body1->IsRTTIType(dgBody::m_kinematicBodyRTTI) ? true : false) & body1->IsCollidable())) ? 0 : 1;
-					if (!(body0->m_equilibrium & body1->m_equilibrium & kinematicBodyEquilibrium)) {
+					//const dgInt32 kinematicBodyEquilibrium = (((body0->IsRTTIType(dgBody::m_kinematicBodyRTTI) ? true : false) & body0->IsCollidable()) | ((body1->IsRTTIType(dgBody::m_kinematicBodyRTTI) ? true : false) & body1->IsCollidable())) ? 0 : 1;
+					//if (!(body0->m_equilibrium & body1->m_equilibrium & kinematicBodyEquilibrium)) {
+					if (body0->IsCollidable() & body1->IsCollidable() & !(body0->m_equilibrium & body1->m_equilibrium)) {
 						const dgInt32 isSofBody0 = body0->m_collision->IsType(dgCollision::dgCollisionLumpedMass_RTTI);
 						const dgInt32 isSofBody1 = body1->m_collision->IsType(dgCollision::dgCollisionLumpedMass_RTTI);
 
@@ -1236,8 +1237,13 @@ void dgBroadPhase::AddPair (dgBody* const body0, dgBody* const body1, const dgFl
 							dgScopeSpinPause lock(&m_contacJointLock);
 							contact = new (m_world->m_allocator) dgContact(m_world, material);
 							dgAssert(contact);
-							contact->m_body0 = body0;
-							contact->m_body1 = body1;
+							if (body0->m_invMass.m_w > dgFloat32(0.0f)) {
+								contact->m_body0 = body0;
+								contact->m_body1 = body1;
+							} else {
+								contact->m_body0 = body1;
+								contact->m_body1 = body0;
+							}
 							contact->AppendToContactList();
 							contact->m_contactActive = 0;
 							contact->m_positAcc = dgVector(dgFloat32(10.0f));

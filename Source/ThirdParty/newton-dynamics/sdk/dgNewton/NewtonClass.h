@@ -74,6 +74,8 @@ class NewtonUserJoint: public dgUserConstraint
 	void SetSpringDamperAcceleration (dgFloat32 rowStiffness, dgFloat32 springK, dgFloat32 springD);
 	void SetUpdateFeedbackFunction (NewtonUserBilateralCallback getFeedback);
 
+	dgInt32 SubmitImmediateModeConstraint(NewtonImmediateModeConstraint* const descriptor, dFloat timestep);
+
 	protected:
 	NewtonUserJoint(NewtonUserBilateralCallback callback, dgBody* const body);
 
