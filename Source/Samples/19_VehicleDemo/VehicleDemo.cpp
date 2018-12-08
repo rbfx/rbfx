@@ -48,6 +48,9 @@
 #include "VehicleDemo.h"
 
 #include <Urho3D/DebugNew.h>
+#include "Urho3D/Physics/CollisionShapesDerived.h"
+#include "Urho3D/Graphics/DebugRenderer.h"
+#include "Urho3D/Physics/SliderConstraint.h"
 
 const float CAMERA_DISTANCE = 10.0f;
 
@@ -64,6 +67,8 @@ void VehicleDemo::Start()
 {
     // Execute base class startup
     Sample::Start();
+
+    GetSubsystem<Engine>()->SetMaxFps(60);
 
     // Create static scene content
     CreateScene();
@@ -89,7 +94,9 @@ void VehicleDemo::CreateScene()
 
     // Create scene subsystem components
     scene_->CreateComponent<Octree>();
-    scene_->CreateComponent<PhysicsWorld>();
+    scene_->CreateComponent<DebugRenderer>();
+    PhysicsWorld* physicsWorld = scene_->CreateComponent<PhysicsWorld>();
+
 
     // Create camera and define viewport. We will be doing load / save, so it's convenient to create the camera outside the scene,
     // so that it won't be destroyed and recreated, and we don't have to redefine the viewport on load
@@ -130,17 +137,17 @@ void VehicleDemo::CreateScene()
     // terrain patches and other objects behind it
     terrain->SetOccluder(true);
 
-    auto* body = terrainNode->CreateComponent<RigidBody>();
-    body->SetCollisionLayer(2); // Use layer bitmask 2 for static geometry
-    auto* shape = terrainNode->CreateComponent<CollisionShape>();
-    shape->SetTerrain();
+    //auto* body = terrainNode->CreateComponent<RigidBody>();
+    //body->SetCollisionLayer(2); // Use layer bitmask 2 for static geometry
+    auto* shape = terrainNode->CreateComponent<CollisionShape_HeightmapTerrain>();
+
 
     // Create 1000 mushrooms in the terrain. Always face outward along the terrain normal
-    const unsigned NUM_MUSHROOMS = 1000;
+    const unsigned NUM_MUSHROOMS = 10;
     for (unsigned i = 0; i < NUM_MUSHROOMS; ++i)
     {
         Node* objectNode = scene_->CreateChild("Mushroom");
-        Vector3 position(Random(2000.0f) - 1000.0f, 0.0f, Random(2000.0f) - 1000.0f);
+        Vector3 position(Random(200.0f) - 100.0f, 0.0f, Random(200.0f) - 100.0f);
         position.y_ = terrain->GetHeight(position) - 0.1f;
         objectNode->SetPosition(position);
         // Create a rotation quaternion from up vector to terrain normal
@@ -152,16 +159,17 @@ void VehicleDemo::CreateScene()
         object->SetCastShadows(true);
 
         auto* body = objectNode->CreateComponent<RigidBody>();
+        body->SetMassScale(0.0f);
         body->SetCollisionLayer(2);
-        auto* shape = objectNode->CreateComponent<CollisionShape>();
-        shape->SetTriangleMesh(object->GetModel(), 0);
+        auto* shape = objectNode->CreateComponent<CollisionShape_TreeCollision>();
+        shape->SetModel(object->GetModel());
     }
 }
 
 void VehicleDemo::CreateVehicle()
 {
     Node* vehicleNode = scene_->CreateChild("Vehicle");
-    vehicleNode->SetPosition(Vector3(0.0f, 5.0f, 0.0f));
+    vehicleNode->SetPosition(Vector3(10.0f, 5.0f, 10.0f));
 
     // Create the vehicle logic component
     vehicle_ = vehicleNode->CreateComponent<Vehicle>();
@@ -178,6 +186,7 @@ void VehicleDemo::CreateInstructions()
     auto* instructionText = ui->GetRoot()->CreateChild<Text>();
     instructionText->SetText(
         "Use WASD keys to drive, mouse/touch to rotate camera\n"
+        "TAB to change suspension parameters\n"
         "F5 to save scene, F7 to load"
     );
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
@@ -198,6 +207,11 @@ void VehicleDemo::SubscribeToEvents()
     // Subscribe to PostUpdate event for updating the camera position after physics simulation
     SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(VehicleDemo, HandlePostUpdate));
 
+    // Subscribe HandlePostRenderUpdate() function for processing the post-render update event, during which we request
+    // debug geometry
+    SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(VehicleDemo, HandlePostRenderUpdate));
+
+
     // Unsubscribe the SceneUpdate event from base class as the camera node is being controlled in HandlePostUpdate() in this sample
     UnsubscribeFromEvent(E_SCENEUPDATE);
 }
@@ -207,6 +221,18 @@ void VehicleDemo::HandleUpdate(StringHash eventType, VariantMap& eventData)
     using namespace Update;
 
     auto* input = GetSubsystem<Input>();
+
+    // Toggle physics debug geometry with space
+    if (input->GetKeyPress(KEY_SPACE))
+        drawDebug_ = !drawDebug_;
+
+    if (input->GetKeyPress(KEY_TAB))
+    {
+        input->SetMouseMode(MM_ABSOLUTE);
+        GetSubsystem<Input>()->SetMouseVisible(!GetSubsystem<Input>()->IsMouseVisible());
+        GetSubsystem<Input>()->SetMouseGrabbed(!GetSubsystem<Input>()->IsMouseGrabbed());
+        
+    }
 
     if (vehicle_)
     {
@@ -266,6 +292,8 @@ void VehicleDemo::HandleUpdate(StringHash eventType, VariantMap& eventData)
         }
         else
             vehicle_->controls_.Set(CTRL_FORWARD | CTRL_BACK | CTRL_LEFT | CTRL_RIGHT, false);
+
+
     }
 }
 
@@ -288,11 +316,19 @@ void VehicleDemo::HandlePostUpdate(StringHash eventType, VariantMap& eventData)
     // and move it closer to the vehicle if something in between
     Ray cameraRay(cameraStartPos, cameraTargetPos - cameraStartPos);
     float cameraRayLength = (cameraTargetPos - cameraStartPos).Length();
-    PhysicsRaycastResult result;
-    scene_->GetComponent<PhysicsWorld>()->RaycastSingle(result, cameraRay, cameraRayLength, 2);
-    if (result.body_)
-        cameraTargetPos = cameraStartPos + cameraRay.direction_ * (result.distance_ - 0.5f);
+    //PhysicsRaycastResult result;
+    //scene_->GetComponent<PhysicsWorld>()->RaycastSingle(result, cameraRay, cameraRayLength, 2);
+    //if (result.body_)
+    //    cameraTargetPos = cameraStartPos + cameraRay.direction_ * (result.distance_ - 0.5f);
 
     cameraNode_->SetPosition(cameraTargetPos);
     cameraNode_->SetRotation(dir);
+}
+
+void VehicleDemo::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData)
+{
+    // If draw debug mode is enabled, draw physics debug geometry. Use depth test to make the result easier to interpret
+    if (drawDebug_) {
+        scene_->GetComponent<PhysicsWorld>()->DrawDebugGeometry(scene_->GetComponent<DebugRenderer>(), false);
+    }
 }

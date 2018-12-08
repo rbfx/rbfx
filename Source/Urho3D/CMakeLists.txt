@@ -162,7 +162,22 @@ set (THIRD_PARTY_DEPENDENCIES
     Recast
     Box2D
     WebP
-    Bullet
+    
+    dAnimation
+    dContainers
+    dCustomJoints
+    dgCore
+    dgNewtonAvx
+    dgNewtonAvx2
+    dgNewtonSse4.2
+    dgPhysics
+    dNewton
+    dMath
+    dVehicle
+    newton
+    dScene
+    tinyxml
+    
     ImGui
     LibCpuId
     GLEW

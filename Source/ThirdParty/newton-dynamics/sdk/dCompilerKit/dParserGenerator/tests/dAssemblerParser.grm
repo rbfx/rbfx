@@ -1,0 +1,235 @@
+
+
+
+/* Copyright (c) <2003-2016> <Newton Game Dynamics>
+* 
+* This software is provided 'as-is', without any express or implied
+* warranty. In no event will the authors be held liable for any damages
+* arising from the use of this software.
+* 
+* Permission is granted to anyone to use this software for any purpose,
+* including commercial applications, and to alter it and redistribute it
+* freely
+*/
+
+%{
+#include <dVirtualMachine.h>
+#include "dAssemblerLexical.h"
+#include "dAssemblerCompiler.h"
+//
+// Newton virtual machine assembler grammar
+// based loosely on a subset and a hybrid between the MIPS R3000 and the Intel 386 instructions set 
+//
+%}
+
+
+%union 
+{
+	class dUserVariable
+	{
+		public:
+		dUserVariable () 
+			:m_token (dToken (0)), m_data("")
+		{
+		}
+		
+		
+		dUserVariable (dToken token, const char* const text)
+			:m_token(token), m_data (text) 
+		{
+		}
+		dToken m_token;
+		string m_data;
+	};
+}
+
+
+	
+%token IMPORT LITERAL PRIVATE
+
+%token BEGIN END
+
+%token INT
+
+%token INTEGER 
+
+%token REGISTER
+
+
+%token MOVE 
+%token LOADB LOADW LOADD 
+%token STOREB STOREW STORED
+%token SLL SRL
+%token AND OR XOR NOT
+%token ADDI ADD SUB MUL DIV ABS NEG
+%token BEQ BNE BLT BLE BGT BGET
+%token CALL CALLR RET SYSCALL JUMP JUMPR
+%token ENTER EXIT PUSH POP
+%token JUMPLABEL		  
+
+
+
+%start module
+
+
+%%
+module		: segmentList
+			|
+			;
+				
+				
+segmentList	: segment 
+			| segmentList segment 
+			;
+			
+			
+segment		: import
+			| dataDeclaration	
+			| functionDeclaration
+			;
+			
+			
+import		: IMPORT '<' fileName '>'
+			; 			
+			
+fileName	: literal
+			| fileName '.' literal
+			;
+			
+dataDeclaration	: dataType literal							
+				| dataType literal '=' constantExpression	
+				;
+				
+constantExpression : INTEGER 
+				   ;	
+				   
+dataType		: INT 
+				;				
+
+literal			: LITERAL 
+				;	
+
+
+				   
+functionDeclaration	: BEGIN literal visibility instructionList END
+					;
+					
+visibility	: PRIVATE
+			|
+			;
+
+			
+register : REGISTER
+		 ;
+
+instructionList	: instruction
+				| instructionList instruction
+				;
+
+instruction	: move
+			| load
+			| store
+			| shift
+			| logical
+			| constAdd
+			| arithemetic
+			| conditional
+			| callJumpRet
+			| stack
+			| jumpLabel
+			;
+			
+jumpLabel : JUMPLABEL
+		  ;			
+			
+move : MOVE register ',' register
+	 ;			
+			
+load : loadOpcode register ',' literal
+	 ;			
+	 
+store : storeOpcode register ',' literal
+	  ;			
+	 
+	 
+shift : shiftOpcode register ',' register
+	  ;			
+			
+logical : logicalOpcode register ',' register
+	    ;			
+
+arithemetic : arithmeticOpcode register ',' register
+			;
+			
+constAdd : ADDI register ',' constantExpression 
+		 | ADDI register ',' literal 
+		 | ADDI register ',' register ',' constantExpression 
+		 | ADDI register ',' register ',' literal 
+		 ;
+			
+	        		
+conditional : conditionalOpcode register ',' register ',' literal
+			| conditionalOpcode register ',' register ',' constantExpression
+			;
+			
+callJumpRet : CALL literal
+			| CALL register ',' literal
+			| CALLR register
+			| CALLR register ',' register
+			| RET 
+			| RET register
+			| SYSCALL register ',' register ',' literal
+			| JUMP register
+			| JUMPR literal
+			;
+			
+stack : ENTER register ',' register ',' constantExpression
+	  | EXIT register ',' register
+	  | PUSH register
+	  | PUSH constantExpression
+	  | PUSH register ',' constantExpression
+	  | POP register
+	  | POP constantExpression	  
+	  | POP register ',' constantExpression	  
+	  ;
+			
+				 
+loadOpcode : LOADB
+		   | LOADW
+		   | LOADD		   
+		   ;
+		   
+storeOpcode : STOREB
+			| STOREW
+			| STORED			
+		    ;
+		   
+			 
+shiftOpcode : SLL			 
+		    | SRL
+		    ;
+		     
+logicalOpcode : AND
+			  | OR	
+			  | XOR
+			  | NOT
+			  ;
+			
+arithmeticOpcode : ADD
+				 | SUB	
+				 | MUL
+				 | DIV
+				 | ABS
+				 | NEG
+				 ;
+
+conditionalOpcode : BEQ
+				  | BNE
+				  | BLT
+				  | BLE
+				  | BGT
+				  | BGET
+				  ;
+
+%%
+

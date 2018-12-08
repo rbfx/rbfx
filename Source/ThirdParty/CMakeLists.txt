@@ -73,8 +73,7 @@ else ()
     endif ()
 
     if (URHO3D_PHYSICS)
-        add_subdirectory (Bullet)
-        add_subdirectory (StanHull)
+        add_subdirectory (newton-dynamics)
     endif ()
 
     if (URHO3D_TOOLS)

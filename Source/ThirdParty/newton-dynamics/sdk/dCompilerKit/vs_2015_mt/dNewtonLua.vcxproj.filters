@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\dNewtonLua\dNewtonLua.cpp" />
+    <ClCompile Include="..\dNewtonLua\dNewtonLuaStdafx.cpp" />
+    <ClCompile Include="..\dNewtonLua\dNewtonLuaLex.cpp">
+      <Filter>Lexical</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dNewtonLua\dNewtonLuaParcer.cpp">
+      <Filter>grammar</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dNewtonLua\dNewtonLuaCompiler.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\dNewtonLua\dNewtonLuaStdafx.h" />
+    <ClInclude Include="..\dNewtonLua\dNewtonLuaLex.h">
+      <Filter>Lexical</Filter>
+    </ClInclude>
+    <ClInclude Include="..\dNewtonLua\dNewtonLuaParcer.h">
+      <Filter>grammar</Filter>
+    </ClInclude>
+    <ClInclude Include="..\dNewtonLua\dNewtonLuaCompiler.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Lexical">
+      <UniqueIdentifier>{eabe869d-b24a-4eb9-ad29-7b015025e816}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="grammar">
+      <UniqueIdentifier>{80966b79-d5fc-4241-9c09-da72e0ae43ef}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\dNewtonLua\dNewtonLuaLex.lex">
+      <Filter>Lexical</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\dNewtonLua\dNewtonLuaParcer.grm">
+      <Filter>grammar</Filter>
+    </CustomBuild>
+  </ItemGroup>
+</Project>

@@ -48,6 +48,10 @@
 #include "Touch.h"
 
 #include <Urho3D/DebugNew.h>
+#include "Urho3D/Physics/CollisionShapesDerived.h"
+#include "Urho3D/Graphics/DebugRenderer.h"
+#include "Urho3D/Physics/6DOFConstraint.h"
+
 
 URHO3D_DEFINE_APPLICATION_MAIN(CharacterDemo)
 
@@ -67,6 +71,8 @@ void CharacterDemo::Start()
     Sample::Start();
     if (touchEnabled_)
         touch_ = new Touch(context_, TOUCH_SENSITIVITY);
+
+
 
     // Create static scene content
     CreateScene();
@@ -92,6 +98,7 @@ void CharacterDemo::CreateScene()
 
     // Create scene subsystem components
     scene_->CreateComponent<Octree>();
+    scene_->CreateComponent<DebugRenderer>();
     scene_->CreateComponent<PhysicsWorld>();
 
     // Create camera and define viewport. We will be doing load / save, so it's convenient to create the camera outside the scene,
@@ -129,11 +136,11 @@ void CharacterDemo::CreateScene()
     object->SetMaterial(cache->GetResource<Material>("Materials/Stone.xml"));
 
     auto* body = floorNode->CreateComponent<RigidBody>();
+    body->SetMassScale(0.0f);
     // Use collision layer bit 2 to mark world scenery. This is what we will raycast against to prevent camera from going
     // inside geometry
     body->SetCollisionLayer(2);
-    auto* shape = floorNode->CreateComponent<CollisionShape>();
-    shape->SetBox(Vector3::ONE);
+    auto* shape = floorNode->CreateComponent<CollisionShape_Box>();
 
     // Create mushrooms of varying sizes
     const unsigned NUM_MUSHROOMS = 60;
@@ -150,8 +157,8 @@ void CharacterDemo::CreateScene()
 
         auto* body = objectNode->CreateComponent<RigidBody>();
         body->SetCollisionLayer(2);
-        auto* shape = objectNode->CreateComponent<CollisionShape>();
-        shape->SetTriangleMesh(object->GetModel(), 0);
+        auto* shape = objectNode->CreateComponent<CollisionShape_TreeCollision>();
+        shape->SetModel(object->GetModel());
     }
 
     // Create movable boxes. Let them fall from the sky at first
@@ -171,10 +178,7 @@ void CharacterDemo::CreateScene()
 
         auto* body = objectNode->CreateComponent<RigidBody>();
         body->SetCollisionLayer(2);
-        // Bigger boxes will be heavier and harder to move
-        body->SetMass(scale * 2.0f);
-        auto* shape = objectNode->CreateComponent<CollisionShape>();
-        shape->SetBox(Vector3::ONE);
+        auto* shape = objectNode->CreateComponent<CollisionShape_Box>();
     }
 }
 
@@ -183,7 +187,7 @@ void CharacterDemo::CreateCharacter()
     auto* cache = GetSubsystem<ResourceCache>();
 
     Node* objectNode = scene_->CreateChild("Jack");
-    objectNode->SetPosition(Vector3(0.0f, 1.0f, 0.0f));
+    objectNode->SetPosition(Vector3(0.0f, 10.0f, 0.0f));
 
     // spin node
     Node* adjustNode = objectNode->CreateChild("AdjNode");
@@ -202,23 +206,39 @@ void CharacterDemo::CreateCharacter()
     // Create rigidbody, and set non-zero mass so that the body becomes dynamic
     auto* body = objectNode->CreateComponent<RigidBody>();
     body->SetCollisionLayer(1);
-    body->SetMass(1.0f);
+    body->SetMassScale(1.0f);
+    body->SetAutoSleep(false);
+
+    // disable response to node transform changes. we need this because we will be constantly rotating the object node to face camera direction and do not want the rigid body to rotate as well.
+    body->SetRespondToNodeTransformChanges(false);
 
     // Set zero angular factor so that physics doesn't turn the character on its own.
     // Instead we will control the character yaw manually
-    body->SetAngularFactor(Vector3::ZERO);
+    //body->SetAngularFactor(Vector3::ZERO);
 
     // Set the rigidbody to signal collision also when in rest, so that we get ground collisions properly
     body->SetCollisionEventMode(COLLISION_ALWAYS);
 
     // Set a capsule shape for collision
-    auto* shape = objectNode->CreateComponent<CollisionShape>();
-    shape->SetCapsule(0.7f, 1.8f, Vector3(0.0f, 0.9f, 0.0f));
+    auto* shape = objectNode->CreateComponent<CollisionShape_Capsule>();
+    shape->SetRotationOffset(Quaternion(0, 0, 90));
+    shape->SetPositionOffset(Vector3(0, 0.9, 0));
+    shape->SetElasticity(0.0f);
+
+    //create 6dof constraint to limit angles
+    SixDof_Constraint* constraint = objectNode->CreateComponent<SixDof_Constraint>();
+    constraint->SetPitchLimits(0, 0);
+    constraint->SetYawLimits(0, 0);
+    constraint->SetRollLimits(0, 0);
+
+
 
     // Create the character logic component, which takes care of steering the rigidbody
     // Remember it so that we can set the controls. Use a WeakPtr because the scene hierarchy already owns it
     // and keeps it alive as long as it's not removed from the hierarchy
     character_ = objectNode->CreateComponent<Character>();
+    character_->SetCameraNode(cameraNode_);
+
 }
 
 void CharacterDemo::CreateInstructions()
@@ -250,6 +270,9 @@ void CharacterDemo::SubscribeToEvents()
 
     // Subscribe to PostUpdate event for updating the camera position after physics simulation
     SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(CharacterDemo, HandlePostUpdate));
+
+    // Subscribe to PostRenderUpdate event for drawing debug geometry.
+    SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(CharacterDemo, HandlePostRenderUpdate));
 
     // Unsubscribe the SceneUpdate event from base class as the camera node is being controlled in HandlePostUpdate() in this sample
     UnsubscribeFromEvent(E_SCENEUPDATE);
@@ -308,8 +331,10 @@ void CharacterDemo::HandleUpdate(StringHash eventType, VariantMap& eventData)
             }
             // Limit pitch
             character_->controls_.pitch_ = Clamp(character_->controls_.pitch_, -80.0f, 80.0f);
+
             // Set rotation already here so that it's updated every rendering frame instead of every physics frame
             character_->GetNode()->SetRotation(Quaternion(character_->controls_.yaw_, Vector3::UP));
+           
 
             // Switch between 1st and 3rd person
             if (input->GetKeyPress(KEY_F))
@@ -332,10 +357,24 @@ void CharacterDemo::HandleUpdate(StringHash eventType, VariantMap& eventData)
                 // After loading we have to reacquire the weak pointer to the Character component, as it has been recreated
                 // Simply find the character's scene node by name as there's only one of them
                 Node* characterNode = scene_->GetChild("Jack", true);
-                if (characterNode)
+                if (characterNode) {
                     character_ = characterNode->GetComponent<Character>();
+                    character_->SetCameraNode(cameraNode_);
+                }
+            }
+            if (input->GetKeyPress(KEY_F8))
+            {
+                drawDebug_ = !drawDebug_;
             }
         }
+    }
+}
+
+void CharacterDemo::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData)
+{
+    // If draw debug mode is enabled, draw physics debug geometry. Use depth test to make the result easier to interpret
+    if (drawDebug_) {
+        scene_->GetComponent<PhysicsWorld>()->DrawDebugGeometry(scene_->GetComponent<DebugRenderer>(), false);
     }
 }
 
@@ -371,10 +410,14 @@ void CharacterDemo::HandlePostUpdate(StringHash eventType, VariantMap& eventData
         // Collide camera ray with static physics objects (layer bitmask 2) to ensure we see the character properly
         Vector3 rayDir = dir * Vector3::BACK;
         float rayDistance = touch_ ? touch_->cameraDistance_ : CAMERA_INITIAL_DIST;
-        PhysicsRaycastResult result;
-        scene_->GetComponent<PhysicsWorld>()->RaycastSingle(result, Ray(aimPoint, rayDir), rayDistance, 2);
-        if (result.body_)
-            rayDistance = Min(rayDistance, result.distance_);
+
+        PODVector<PhysicsRayCastIntersection> intersections;
+
+        scene_->GetComponent<PhysicsWorld>()->RayCast(intersections, Ray(aimPoint, rayDir), rayDistance, 1, 2);
+
+        if(intersections.Size())
+
+        rayDistance = Min(rayDistance, intersections[0].rayDistance);
         rayDistance = Clamp(rayDistance, CAMERA_MIN_DIST, CAMERA_MAX_DIST);
 
         cameraNode_->SetPosition(aimPoint + rayDir * rayDistance);

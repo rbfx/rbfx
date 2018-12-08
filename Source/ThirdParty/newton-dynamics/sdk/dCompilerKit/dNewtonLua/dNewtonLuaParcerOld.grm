@@ -1,0 +1,278 @@
+/* Copyright (c) <2003-2016> <Newton Game Dynamics>
+* 
+* This software is provided 'as-is', without any express or implied
+* warranty. In no event will the authors be held liable for any damages
+* arising from the use of this software.
+* 
+* Permission is granted to anyone to use this software for any purpose,
+* including commercial applications, and to alter it and redistribute it
+* freely
+*/
+
+/*
+ *------------------------------------------------------------------
+ *
+ * This grammar only have one shift reduce conflict, which is the standard dangling else in if-then-else of almost all high level programming languages.
+ * I resolve it in favor of shift as it is is the custom tradition for languages like C, C++, java and c#
+ *
+ *------------------------------------------------------------------
+ */
+
+ 
+%{
+// Newton Tool embedded Lua script Language
+// based of https://www.lua.org/manual/5.3/manual.html#9
+//
+
+#include "dNewtonLuaStdafx.h"
+#include "dNewtonLuaLex.h"
+#include "dNewtonLuaParcer.h"
+#include "dNewtonLuaCompiler.h"
+%}
+
+
+%union 
+{
+	class dUserVariable: public dDefualtUserVariable
+	{
+		public:
+		dUserVariable () 
+			:dDefualtUserVariable ()
+			,m_node(NULL)
+		{
+		}
+		
+		dUserVariable (dToken token, const char* const text, int scannerLine, int scannerIndex)
+			:dDefualtUserVariable (token, text, scannerLine, scannerIndex)
+			,m_node(NULL)
+		{
+		}
+		dCIL::dListNode* m_node;
+	};
+}
+
+%token            _AND
+%token            _BREAK
+%token            _DO
+%token            _ELSE
+%token            _ELSEIF
+%token            _END
+%token            _FALSE
+%token            _FOR
+%token            _FUNCTION
+%token            _GOTO
+%token            _IF
+%token            _IN
+%token            _LOCAL
+%token            _NIL
+%token            _NOT
+%token            _OR
+%token            _REPEAT
+%token            _RETURN
+%token            _THEN
+%token            _TRUE
+%token            _UNTIL
+%token            _WHILE
+%token            _LEFT_SHIFT
+%token            _RIGHT_SHIFT
+%token            _INTEGER_DIVIDE
+%token            _IDENTICAL
+%token            _DIFFERENT
+%token            _LEFT_EQUAL
+%token            _GREATHER_EQUAL
+%token            _DOUBLE_COLUMN
+%token            _DOUBLE_DOT
+%token            _TRIPLE_DOT
+%token            _INTEGER
+%token            _FLOAT
+%token            _LABEL
+%token            _STRING
+
+
+%right _ELSE _ELSEIF
+%right _IF
+%right '='
+%left _OR 
+%left _AND 
+%left _IDENTICAL _DIFFERENT _LEFT_EQUAL _GREATHER_EQUAL '>' '<'
+%left '|'
+%left '~'
+%left '&'
+%left _LEFT_SHIFT _RIGHT_SHIFT
+%left _DOUBLE_DOT
+%left '+' '-'
+%left '*' '/' '%' _INTEGER_DIVIDE
+%right _NOT '#'
+%left '^'
+
+
+%{
+	#define MyModule ((dNewtonLuaCompiler*) this)
+%}
+
+%start chunk
+
+%%
+chunk
+	: block
+	;
+
+block
+	: statementList
+ 	| returnStatement
+	| statementList returnStatement
+	;
+
+returnStatement
+	 : _RETURN																{$$ = MyModule->EmitReturn(dUserVariable());} 
+	 | _RETURN ';'															{$$ = MyModule->EmitReturn(dUserVariable());} 
+	 | _RETURN expressionList												{$$ = MyModule->EmitReturn($2);} 
+	 | _RETURN expressionList ';'											{$$ = MyModule->EmitReturn($2);} 
+	 ;
+
+statementList
+	: statement 
+	| statementList statement 
+	;
+	 
+statement 
+	: ';' 
+	| assigment
+//	| local 
+//	| ifStatement
+//	| functionCall
+//	| functionDefinition
+	;
+
+functionCall
+	: prefixExpression args													{$$ = MyModule->EmitFunctionCall($1, $2);}
+//	| prefixExpression ':' _LABEL args 
+	;
+
+
+prefixExpression
+	: variable																{$$ = $1;}
+//	| functionCall
+//	| '(' expression ')'
+	;
+
+args 
+	: '(' ')'																{$$ = dUserVariable();}		
+	| '(' expressionList ')'												{$$ = $2;}
+//	| tableconstructor 
+//	| LiteralString 
+	;
+
+functionDefinition
+	: functionStatemenBegin '(' ')' blockEnd								{MyModule->CloseFunctionDeclaration();} 
+	| functionStatemenBegin '(' functionEmitParameters ')' blockEnd			{MyModule->CloseFunctionDeclaration();} 
+	;
+
+functionStatemenBegin
+	: _FUNCTION functionName												{$$ = MyModule->EmitFunctionDeclaration($2);} 
+	;
+
+functionName
+	: _LABEL																{$$ = $1;}
+	| _LABEL '.' _LABEL														{dAssert (0); $$ = $1;} 
+	;
+
+functionEmitParameters
+	: parameterList															{$$ = MyModule->EmitParametersToLocalVariables($1);} 
+	;
+
+parameterList
+	: _LABEL																{$$ = MyModule->EmitFunctionParameter(dUserVariable(), $1);} 
+	| parameterList ',' _LABEL												{$$ = MyModule->EmitFunctionParameter($1, $3);} 
+	;
+
+ifStatement
+	: if _THEN blockEnd														{dAssert(0);}
+	| ifelse _ELSE blockEnd													{$$ = $1;}
+	| ifelse _ELSEIF expression _THEN block _ELSE blockEnd					{dAssert(0);}
+	;
+
+if	
+	: _IF expression 														{$$ = MyModule->EmitIf($2);}
+	;
+
+ifelse
+	: if _THEN block														{$$ = MyModule->EmitIfElse($1);}	
+	;
+	
+blockEnd
+	: block _END															{$$ = $1;}
+	;
+
+assigment
+	: variableList '=' expressionList										{$$ = MyModule->EmitAssigmentStatement($1, $3);}
+	;
+
+local
+	: localDecalaration														{dAssert(0);}
+	| localDecalaration '=' expressionList									{$$ = MyModule->EmitAssigmentStatement($1, $3);}
+	;
+
+localDecalaration
+	: _LOCAL nameList														{$$ = MyModule->EmitLocalVariableDeclaration($2);}
+	;
+
+variable
+	: _LABEL																{$$ = $1;}
+//	| prefixExpression '[' exp ']' 
+	| variable '.' _LABEL
+	;
+
+nameList
+	: _LABEL																{$$ = $1;}	
+	| _LABEL ',' _LABEL														{$$ = MyModule->LinkExpresion($1, $3);}
+
+variableList
+	: variable																{dAssert(0);}
+	| variableList ',' variable												{dAssert(0);}		
+	; 
+
+expressionList
+	: expression															{$$ = $1;}
+	| expressionList ',' expression											{$$ = MyModule->LinkExpresion($1, $3);}
+	;
+
+expression
+	: expression _OR expression												{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression AND expression												{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression '>' expression												{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}	
+//	| expression '<' expression												{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression _LEFT_EQUAL expression										{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression _GREATHER_EQUAL expression									{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+	| expression _IDENTICAL expression										{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression _DIFFERENT expression										{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression '|' expression												{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression '~' expression												{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression '&' expression												{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression _LEFT_SHIFT expression										{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression _RIGHT_SHIFT expression									{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression _DOUBLE_DOT expression										{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+	| expression '+' expression												{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+	| expression '-' expression												{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+	| expression '*' expression												{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}	
+	| expression '/' expression												{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+	| expression _INTEGER_DIVIDE expression									{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}	
+//	| expression '%' expression												{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| expression '^' expression												{$$ = MyModule->EmitBinaryExpression($1, $2, $3);}
+//	| '+' expression %prec '^'												{dAssert(0);}
+//	| '-' expression %prec '^'												{dAssert(0);}
+//	| '#' expression %prec '^'												{dAssert(0);}	
+//	| '~' expression %prec '^'												{dAssert(0);}
+	| '(' expression ')'													{dAssert(0);}
+	| functionCall															{$$ = $1;}
+	| _NIL																	{dAssert(0);}
+	| _TRUE																	{dAssert(0);}
+	| _FALSE																{dAssert(0);}
+	| _FLOAT																{dAssert(0);}
+	| _LABEL																{$$ = MyModule->EmitLoadVariable($1);}
+	| _STRING																{dAssert(0);}
+	| _INTEGER																{$$ = MyModule->EmitLoadConstant($1);}
+	;
+
+%%
+

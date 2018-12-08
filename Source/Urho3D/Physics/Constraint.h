@@ -1,208 +1,208 @@
-//
-// Copyright (c) 2008-2018 the Urho3D project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
-
 #pragma once
-
-#include "../Math/Vector3.h"
 #include "../Scene/Component.h"
 
-class btTypedConstraint;
 
-namespace Urho3D
-{
+class dCustomJoint;
+class NewtonBody;
+namespace Urho3D {
 
-/// Supported constraint types.
-enum ConstraintType
-{
-    CONSTRAINT_POINT = 0,
-    CONSTRAINT_HINGE,
-    CONSTRAINT_SLIDER,
-    CONSTRAINT_CONETWIST
-};
+    class Context;
+    class RigidBody;
+    class PhysicsWorld;
 
-class PhysicsWorld;
-class RigidBody;
+    enum CONSTRAINT_SOLVE_MODE {
+        SOLVE_MODE_JOINT_DEFAULT = 0,     //Usually the best option - uses whatever solver mode newton has for the internal joint.
+        SOLVE_MODE_EXACT = 1,             //Always use exact solving.
+        SOLVE_MODE_ITERATIVE = 2,         //iterative solving use for a joint that forms a loop.
+        SOLVE_MODE_KINEMATIC_LOOP = 3     //use this to specify a joint that is a connecting joint in a loop of joints. Only one joint should neeed to be in this solve mode.
+    };
+    ///Base class for newton constraints.
+    class URHO3D_API Constraint : public Component
+    {
+        URHO3D_OBJECT(Constraint, Component);
 
-/// Physics constraint component. Connects two rigid bodies together, or one rigid body to a static point.
-class URHO3D_API Constraint : public Component
-{
-    URHO3D_OBJECT(Constraint, Component);
 
-    friend class RigidBody;
+    public:
 
-public:
-    /// Construct.
-    explicit Constraint(Context* context);
-    /// Destruct.
-    ~Constraint() override;
-    /// Register object factory.
-    static void RegisterObject(Context* context);
+        friend class PhysicsWorld;
+        friend class RigidBody;
 
-    /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
-    void ApplyAttributes() override;
-    /// Handle enabled/disabled state change.
-    void OnSetEnabled() override;
-    /// Return the depended on nodes to order network updates.
-    void GetDependencyNodes(PODVector<Node*>& dest) override;
-    /// Visualize the component as debug geometry.
-    void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
-    /// Set constraint type and recreate the constraint.
-    void SetConstraintType(ConstraintType type);
-    /// Set other body to connect to. Set to null to connect to the static world.
-    void SetOtherBody(RigidBody* body);
-    /// Set constraint position relative to own body.
-    void SetPosition(const Vector3& position);
-    /// Set constraint rotation relative to own body.
-    void SetRotation(const Quaternion& rotation);
-    /// Set constraint rotation relative to own body by specifying the axis.
-    void SetAxis(const Vector3& axis);
-    /// Set constraint position relative to the other body. If connected to the static world, is a world space position.
-    void SetOtherPosition(const Vector3& position);
-    /// Set constraint rotation relative to the other body. If connected to the static world, is a world space rotation.
-    void SetOtherRotation(const Quaternion& rotation);
-    /// Set constraint rotation relative to the other body by specifying the axis.
-    void SetOtherAxis(const Vector3& axis);
-    /// Set constraint world space position. Resets both own and other body relative position, ie. zeroes the constraint error.
-    void SetWorldPosition(const Vector3& position);
-    /// Set high limit. Interpretation is constraint type specific.
-    void SetHighLimit(const Vector2& limit);
-    /// Set low limit. Interpretation is constraint type specific.
-    void SetLowLimit(const Vector2& limit);
-    /// Set constraint error reduction parameter. Zero = leave to default.
-    void SetERP(float erp);
-    /// Set constraint force mixing parameter. Zero = leave to default.
-    void SetCFM(float cfm);
-    /// Set whether to disable collisions between connected bodies.
-    void SetDisableCollision(bool disable);
+        /// Construct.
+        Constraint(Context* context);
+        /// Destruct. Free the rigid body and geometries.
+        ~Constraint() override;
 
-    /// Return physics world.
-    PhysicsWorld* GetPhysicsWorld() const { return physicsWorld_; }
+        static void RegisterObject(Context* context);
 
-    /// Return Bullet constraint.
-    btTypedConstraint* GetConstraint() const { return constraint_.Get(); }
+        /// Visualize the component as debug geometry.
+        virtual void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
-    /// Return constraint type.
-    ConstraintType GetConstraintType() const { return constraintType_; }
+        void MarkDirty(bool dirty = true) { needsRebuilt_ = dirty; }
 
-    /// Return rigid body in own scene node.
-    RigidBody* GetOwnBody() const { return ownBody_; }
+        /// Set whether to disable collisions between connected bodies.
+        void SetDisableCollision(bool disable);
 
-    /// Return the other rigid body. May be null if connected to the static world.
-    RigidBody* GetOtherBody() const { return otherBody_; }
+        /// Set other body to connect to. Set to null to connect to the static world.
+        virtual void SetOtherBody(RigidBody* body);
 
-    /// Return constraint position relative to own body.
-    const Vector3& GetPosition() const { return position_; }
+        void SetOtherBodyById(unsigned bodyId);
 
-    /// Return constraint rotation relative to own body.
-    const Quaternion& GetRotation() const { return rotation_; }
+        /// force wake the connected bodies
+        void WakeBodies();
 
-    /// Return constraint position relative to other body.
-    const Vector3& GetOtherPosition() const { return otherPosition_; }
+        ///set the world position of both frames on both bodies. make sure you set other body before calling this function
+        void SetWorldPosition(const Vector3& position);
+        ///set the world rotation of both frames on both bodies. make sure you set other body before calling this function
+        void SetWorldRotation(const Quaternion& rotation);
 
-    /// Return constraint rotation relative to other body.
-    const Quaternion& GetOtherRotation() const { return otherRotation_; }
+        
+        /// Set constraint position in local cordinates to rigidbody.
+        void SetOwnPosition(const Vector3& position);
+        /// set the rotational frame to use on own rigidbody 
+        void SetOwnRotation(const Quaternion& rotation);
 
-    /// Return constraint world position, calculated from own body.
-    Vector3 GetWorldPosition() const;
+        void SetOwnWorldPosition(const Vector3& worldPosition);
 
-    /// Return high limit.
-    const Vector2& GetHighLimit() const { return highLimit_; }
+        void SetOwnWorldRotation(const Quaternion& worldRotation);
 
-    /// Return low limit.
-    const Vector2& GetLowLimit() const { return lowLimit_; }
 
-    /// Return constraint error reduction parameter.
-    float GetERP() const { return erp_; }
+        Vector3 GetOwnPosition() const { return position_; }
 
-    /// Return constraint force mixing parameter.
-    float GetCFM() const { return cfm_; }
+        Quaternion GetOwnRotation() const { return rotation_; }
 
-    /// Return whether collisions between connected bodies are disabled.
-    bool GetDisableCollision() const { return disableCollision_; }
 
-    /// Release the constraint.
-    void ReleaseConstraint();
-    /// Apply constraint frames.
-    void ApplyFrames();
 
-protected:
-    /// Handle node being assigned.
-    void OnNodeSet(Node* node) override;
-    /// Handle scene being assigned.
-    void OnSceneSet(Scene* scene) override;
-    /// Handle node transform being dirtied.
-    void OnMarkedDirty(Node* node) override;
+        /// Set constraint position in local cordinates relative to the other body. If connected to the static world, is a world space position.
+        virtual void SetOtherPosition(const Vector3& position);
+        /// set the rotational frame to use on other body. If connected to the static world, is a world space position.
+        virtual void SetOtherRotation(const Quaternion& rotation);
 
-private:
-    /// Create the constraint.
-    void CreateConstraint();
-    /// Apply high and low constraint limits.
-    void ApplyLimits();
-    /// Adjust other body position.
-    void AdjustOtherBodyPosition();
-    /// Mark constraint dirty.
-    void MarkConstraintDirty() { recreateConstraint_ = true; }
-    /// Mark frames dirty.
-    void MarkFramesDirty() { framesDirty_ = true; }
+        /// Set constraint position in local cordinates relative to the other body. If connected to the static world, is a world space position.
+        virtual void SetOtherWorldPosition(const Vector3& position);
+        /// set the rotational frame to use on other body. If connected to the static world, is a world space position.
+        virtual void SetOtherWorldRotation(const Quaternion& rotation);
 
-    /// Physics world.
-    WeakPtr<PhysicsWorld> physicsWorld_;
-    /// Own rigid body.
-    WeakPtr<RigidBody> ownBody_;
-    /// Other rigid body.
-    WeakPtr<RigidBody> otherBody_;
-    /// Bullet constraint.
-    UniquePtr<btTypedConstraint> constraint_;
-    /// Constraint type.
-    ConstraintType constraintType_;
-    /// Constraint position.
-    Vector3 position_;
-    /// Constraint rotation.
-    Quaternion rotation_;
-    /// Constraint other body position.
-    Vector3 otherPosition_;
-    /// Constraint other body axis.
-    Quaternion otherRotation_;
-    /// Cached world scale for determining if the constraint position needs update.
-    Vector3 cachedWorldScale_;
-    /// High limit.
-    Vector2 highLimit_;
-    /// Low limit.
-    Vector2 lowLimit_;
-    /// Error reduction parameter.
-    float erp_;
-    /// Constraint force mixing parameter.
-    float cfm_;
-    /// Other body node ID for pending constraint recreation.
-    unsigned otherBodyNodeID_;
-    /// Disable collision between connected bodies flag.
-    bool disableCollision_;
-    /// Recreate constraint flag.
-    bool recreateConstraint_;
-    /// Coordinate frames dirty flag.
-    bool framesDirty_;
-    /// Constraint creation retry flag if attributes initially set without scene.
-    bool retryCreation_;
-};
 
+        void SetSolveMode(CONSTRAINT_SOLVE_MODE mode) {
+            if (solveMode_ != mode) {
+                solveMode_ = mode;
+                applyAllJointParams();
+            }
+        }
+        void SetSolveMode(int mode) {
+            SetSolveMode(CONSTRAINT_SOLVE_MODE(mode));
+        }
+
+        CONSTRAINT_SOLVE_MODE GetSolveMode() const { return solveMode_; }
+
+
+        void SetStiffness(float stiffness) {
+            if (stiffness_ != stiffness) {
+                stiffness_ = stiffness;
+                applyAllJointParams();
+            }
+        }
+        float GetStiffness() const { return stiffness_; }
+
+
+        /// Return physics world.
+        PhysicsWorld* GetPhysicsWorld() const { return physicsWorld_; }
+
+        /// Return rigid body in own scene node.
+        RigidBody* GetOwnBody() const { return ownBody_; }
+
+        NewtonBody* GetOwnNewtonBody() const;
+
+        /// Return the other rigid body. May be null if connected to the static world.
+        RigidBody* GetOtherBody() const { return otherBody_; }
+
+        NewtonBody* GetOtherNewtonBody() const;
+
+        unsigned GetOtherBodyId() const { return otherBodyId_; }
+
+
+        Vector3 GetOtherPosition() const;
+
+        Quaternion GetOtherRotation() const;
+
+
+        Matrix3x4 GetOwnWorldFrame() const;
+
+
+        Matrix3x4 GetOtherWorldFrame() const;
+
+        dCustomJoint* GetNewtonJoint() const {
+            return  newtonJoint_;
+        }
+
+        virtual void OnSetEnabled() override;
+
+    protected:
+        /// Physics world.
+        WeakPtr<PhysicsWorld> physicsWorld_;
+        /// Own rigid body.
+        WeakPtr<RigidBody> ownBody_;
+        unsigned ownBodyId_ = 0;
+        /// Other rigid body.
+        WeakPtr<RigidBody> otherBody_;
+        unsigned otherBodyId_ = 0;
+        /// Internal newtonJoint.
+        dCustomJoint* newtonJoint_ = nullptr;
+        /// Flag indicating the two bodies should collide with each other.
+        bool enableBodyCollision_ = false;
+        /// Constraint other body position.
+        Vector3 otherPosition_;
+        Quaternion otherRotation_;
+
+
+        float stiffness_ = 0.7f;
+
+        CONSTRAINT_SOLVE_MODE solveMode_ = SOLVE_MODE_JOINT_DEFAULT;
+
+        /// Constraint position.
+        Vector3 position_;
+        Quaternion rotation_;
+
+        ///dirty flag.
+        bool needsRebuilt_ = true;
+
+        bool otherFrameWorldExplicitlySet = false;
+
+        bool reEvalOtherBodyFrame_ = false;
+        Vector3 pendingOtherBodyFramePos_;
+
+
+
+
+        /// Upper level re-evaulation.
+        void reEvalConstraint();
+        
+        /// build the newton constraint.
+        virtual void buildConstraint();
+
+        /// update params on the already build constraint
+        virtual bool applyAllJointParams();
+        
+        /// frees and deletes the internal joint.
+        void freeInternal();
+
+        void AddJointReferenceToBody(RigidBody* rigBody);
+        void RemoveJointReferenceFromBody(RigidBody* rigBody);
+
+
+
+        virtual void OnNodeSet(Node* node) override;
+        virtual void OnNodeSetEnabled(Node* node) override;
+
+        ///return the world frame on own body in newton world cordinates. (  use in buildConstraint method  )
+        Matrix3x4 GetOwnNewtonWorldFrame();
+        ///return the world frame on other body in newton world cordinates.(  use in buildConstraint method  )
+        Matrix3x4 GetOtherNewtonWorldFrame();
+        ///return the world pin direction for own body frame in newton world cordinates. (use in buildConstraint method)
+        Vector3 GetOwnNewtonWorldPin();
+        ///return the world pin direction for other body frame in newton world cordinates. (use in buildConstraint method)
+        Vector3 GetOtherNewtonWorldPin();
+    };
 }
+

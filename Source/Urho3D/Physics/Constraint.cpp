@@ -1,595 +1,500 @@
-//
-// Copyright (c) 2008-2018 the Urho3D project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+#include "Constraint.h"
+#include "RigidBody.h"
+#include "PhysicsWorld.h"
+#include "Core/Context.h"
+#include "Scene/Component.h"
+#include "Graphics/DebugRenderer.h"
 
-#include "../Precompiled.h"
+#include "Scene/Scene.h"
+#include "dCustomFixDistance.h"
+#include "Newton.h"
+#include "NewtonDebugDrawing.h"
+#include "IO/Log.h"
+namespace Urho3D {
 
-#include "../Core/Context.h"
-#include "../Core/Profiler.h"
-#include "../Graphics/DebugRenderer.h"
-#include "../IO/Log.h"
-#include "../Physics/Constraint.h"
-#include "../Physics/PhysicsUtils.h"
-#include "../Physics/PhysicsWorld.h"
-#include "../Physics/RigidBody.h"
-#include "../Scene/Scene.h"
 
-#include <Bullet/BulletDynamics/ConstraintSolver/btConeTwistConstraint.h>
-#include <Bullet/BulletDynamics/ConstraintSolver/btHingeConstraint.h>
-#include <Bullet/BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h>
-#include <Bullet/BulletDynamics/ConstraintSolver/btSliderConstraint.h>
-#include <Bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
-
-namespace Urho3D
-{
-
-static const char* typeNames[] =
-{
-    "Point",
-    "Hinge",
-    "Slider",
-    "ConeTwist",
-    nullptr
-};
-
-extern const char* PHYSICS_CATEGORY;
-
-Constraint::Constraint(Context* context) :
-    Component(context),
-    constraintType_(CONSTRAINT_POINT),
-    position_(Vector3::ZERO),
-    rotation_(Quaternion::IDENTITY),
-    otherPosition_(Vector3::ZERO),
-    otherRotation_(Quaternion::IDENTITY),
-    highLimit_(Vector2::ZERO),
-    lowLimit_(Vector2::ZERO),
-    erp_(0.0f),
-    cfm_(0.0f),
-    otherBodyNodeID_(0),
-    disableCollision_(false),
-    recreateConstraint_(true),
-    framesDirty_(false),
-    retryCreation_(false)
-{
-}
-
-Constraint::~Constraint()
-{
-    ReleaseConstraint();
-
-    if (physicsWorld_)
-        physicsWorld_->RemoveConstraint(this);
-}
-
-void Constraint::RegisterObject(Context* context)
-{
-    context->RegisterFactory<Constraint>(PHYSICS_CATEGORY);
-
-    URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
-    URHO3D_ENUM_ATTRIBUTE_EX("Constraint Type", constraintType_, MarkConstraintDirty, typeNames, CONSTRAINT_POINT, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Position", Vector3, position_, AdjustOtherBodyPosition, Vector3::ZERO, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Rotation", Quaternion, rotation_, MarkFramesDirty, Quaternion::IDENTITY, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Other Body Position", Vector3, otherPosition_, MarkFramesDirty, Vector3::ZERO, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Other Body Rotation", Quaternion, otherRotation_, MarkFramesDirty, Quaternion::IDENTITY, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Other Body NodeID", unsigned, otherBodyNodeID_, MarkConstraintDirty, 0, AM_DEFAULT | AM_NODEID);
-    URHO3D_ACCESSOR_ATTRIBUTE("High Limit", GetHighLimit, SetHighLimit, Vector2, Vector2::ZERO, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Low Limit", GetLowLimit, SetLowLimit, Vector2, Vector2::ZERO, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("ERP Parameter", GetERP, SetERP, float, 0.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("CFM Parameter", GetCFM, SetCFM, float, 0.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Disable Collision", bool, disableCollision_, MarkConstraintDirty, false, AM_DEFAULT);
-}
-
-void Constraint::ApplyAttributes()
-{
-    if (recreateConstraint_)
+    const char* solveModeNames[] =
     {
-        if (otherBody_)
-            otherBody_->RemoveConstraint(this);
+        "SOLVE_MODE_JOINT_DEFAULT",
+        "SOLVE_MODE_EXACT",
+        "SOLVE_MODE_ITERATIVE",
+        "SOLVE_MODE_KINEMATIC_LOOP",
+        nullptr
+    };
 
-        otherBody_.Reset();
 
-        Scene* scene = GetScene();
-        if (scene && otherBodyNodeID_)
-        {
-            Node* otherNode = scene->GetNode(otherBodyNodeID_);
-            if (otherNode)
-                otherBody_ = otherNode->GetComponent<RigidBody>();
+    Constraint::Constraint(Context* context) : Component(context)
+    {
+
+    }
+
+    Constraint::~Constraint()
+    {
+    }
+
+    void Constraint::RegisterObject(Context* context)
+    {
+        context->RegisterFactory<Constraint>(DEF_PHYSICS_CATEGORY.CString());
+        URHO3D_COPY_BASE_ATTRIBUTES(Component);
+
+        URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Solver Iterations", GetSolveMode, SetSolveMode, CONSTRAINT_SOLVE_MODE, solveModeNames, SOLVE_MODE_JOINT_DEFAULT, AM_DEFAULT);
+        URHO3D_ACCESSOR_ATTRIBUTE("Stiffness", GetStiffness, SetStiffness, float, 0.7f, AM_DEFAULT);
+        URHO3D_ACCESSOR_ATTRIBUTE("Other Body ID", GetOtherBodyId, SetOtherBodyById, unsigned, 0, AM_DEFAULT | AM_COMPONENTID);
+
+
+        //URHO3D_ACCESSOR_ATTRIBUTE("Other Body Frame Position", GetOtherPosition, SetOtherPosition, Vector3, Vector3::ZERO, AM_DEFAULT);
+        //URHO3D_ACCESSOR_ATTRIBUTE("Other Body Frame Rotation", GetOtherRotation, SetOtherRotation, Quaternion, Quaternion::IDENTITY, AM_DEFAULT);
+        //URHO3D_ACCESSOR_ATTRIBUTE("Body Frame Position", GetOwnPosition, SetOwnPosition, Vector3, Vector3::ZERO, AM_DEFAULT);
+        //URHO3D_ACCESSOR_ATTRIBUTE("Body Frame Rotation", GetOwnRotation, SetOwnRotation, Quaternion, Quaternion::IDENTITY, AM_DEFAULT);
+
+        URHO3D_ATTRIBUTE("Other Body Frame Position", Vector3, otherPosition_, Vector3::ZERO, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("Other Body Frame Rotation", Quaternion, otherRotation_, Quaternion::IDENTITY, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("Body Frame Position", Vector3, position_, Vector3::ZERO, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("Body Frame Rotation", Quaternion, rotation_, Quaternion::IDENTITY, AM_DEFAULT);
+
+
+    }
+
+    void Constraint::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
+    {
+        //draw 2 part line from one frame to the other. Black touching own body and graw touching other body.
+        if (ownBody_) {
+           
+                Vector3 midPoint = (GetOtherWorldFrame().Translation() + GetOwnWorldFrame().Translation())*0.5f;
+                debug->AddLine(GetOwnWorldFrame().Translation(), midPoint, Color::BLACK, depthTest);
+                debug->AddLine(midPoint, GetOtherWorldFrame().Translation(), Color::GRAY, depthTest);
         }
 
-        CreateConstraint();
-    }
-    else if (framesDirty_)
-    {
-        ApplyFrames();
-        framesDirty_ = false;
-    }
-}
 
-void Constraint::OnSetEnabled()
-{
-    if (constraint_)
-        constraint_->setEnabled(IsEnabledEffective());
-}
+        //draw the frames.
+        const float axisLengths = 0.5f;
 
-void Constraint::GetDependencyNodes(PODVector<Node*>& dest)
-{
-    if (otherBody_ && otherBody_->GetNode())
-        dest.Push(otherBody_->GetNode());
-}
 
-void Constraint::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
-{
-    if (debug && physicsWorld_ && constraint_)
-    {
-        physicsWorld_->SetDebugRenderer(debug);
-        physicsWorld_->SetDebugDepthTest(depthTest);
-        physicsWorld_->GetWorld()->debugDrawConstraint(constraint_.Get());
-        physicsWorld_->SetDebugRenderer(nullptr);
-    }
-}
+        float hueOffset = 0.05f;
 
-void Constraint::SetConstraintType(ConstraintType type)
-{
-    if (type != constraintType_ || !constraint_)
-    {
-        constraintType_ = type;
-        CreateConstraint();
-        MarkNetworkUpdate();
-    }
-}
+        Color xAxisC;
+        float shiftedColor = Color::RED.Hue() + hueOffset;
+        if (shiftedColor > 1.0f)
+            shiftedColor -= 1.0f;
 
-void Constraint::SetOtherBody(RigidBody* body)
-{
-    if (otherBody_ != body)
-    {
-        if (otherBody_)
-            otherBody_->RemoveConstraint(this);
+        xAxisC.FromHSL(shiftedColor, Color::RED.SaturationHSL(), Color::RED.Lightness());
 
-        otherBody_ = body;
+        Color yAxisC;
+        shiftedColor = Color::GREEN.Hue() + hueOffset;
+        if (shiftedColor > 1.0f)
+            shiftedColor -= 1.0f;
 
-        // Update the connected body attribute
-        Node* otherNode = otherBody_ ? otherBody_->GetNode() : nullptr;
-        otherBodyNodeID_ = otherNode ? otherNode->GetID() : 0;
+        yAxisC.FromHSL(shiftedColor, Color::GREEN.SaturationHSL(), Color::GREEN.Lightness());
 
-        CreateConstraint();
-        MarkNetworkUpdate();
-    }
-}
+        Color zAxisC;
+        shiftedColor = Color::BLUE.Hue() + hueOffset;
+        if (shiftedColor > 1.0f)
+            shiftedColor -= 1.0f;
 
-void Constraint::SetPosition(const Vector3& position)
-{
-    if (position != position_)
-    {
-        position_ = position;
-        ApplyFrames();
-        MarkNetworkUpdate();
-    }
-}
+        zAxisC.FromHSL(shiftedColor, Color::BLUE.SaturationHSL(), Color::BLUE.Lightness());
 
-void Constraint::SetRotation(const Quaternion& rotation)
-{
-    if (rotation != rotation_)
-    {
-        rotation_ = rotation;
-        ApplyFrames();
-        MarkNetworkUpdate();
-    }
-}
 
-void Constraint::SetAxis(const Vector3& axis)
-{
-    switch (constraintType_)
-    {
-    case CONSTRAINT_POINT:
-    case CONSTRAINT_HINGE:
-        rotation_ = Quaternion(Vector3::FORWARD, axis);
-        break;
 
-    case CONSTRAINT_SLIDER:
-    case CONSTRAINT_CONETWIST:
-        rotation_ = Quaternion(Vector3::RIGHT, axis);
-        break;
+        Color xAxisDark = xAxisC.Lerp(Color::BLACK, 0.5f);
+        Color yAxisDark = yAxisC.Lerp(Color::BLACK, 0.5f);
+        Color zAxisDark = zAxisC.Lerp(Color::BLACK, 0.5f);
 
-    default:
-        break;
-    }
 
-    ApplyFrames();
-    MarkNetworkUpdate();
-}
 
-void Constraint::SetOtherPosition(const Vector3& position)
-{
-    if (position != otherPosition_)
-    {
-        otherPosition_ = position;
-        ApplyFrames();
-        MarkNetworkUpdate();
-    }
-}
+        debug->AddFrame(GetOwnWorldFrame(), axisLengths, xAxisC, yAxisC, zAxisC, depthTest);
+        debug->AddFrame(GetOtherWorldFrame(), axisLengths, xAxisDark, yAxisDark, zAxisDark, depthTest);
 
-void Constraint::SetOtherRotation(const Quaternion& rotation)
-{
-    if (rotation != otherRotation_)
-    {
-        otherRotation_ = rotation;
-        ApplyFrames();
-        MarkNetworkUpdate();
-    }
-}
 
-void Constraint::SetOtherAxis(const Vector3& axis)
-{
-    switch (constraintType_)
-    {
-    case CONSTRAINT_POINT:
-    case CONSTRAINT_HINGE:
-        otherRotation_ = Quaternion(Vector3::FORWARD, axis);
-        break;
-
-    case CONSTRAINT_SLIDER:
-    case CONSTRAINT_CONETWIST:
-        otherRotation_ = Quaternion(Vector3::RIGHT, axis);
-        break;
-
-    default:
-        break;
-    }
-
-    ApplyFrames();
-    MarkNetworkUpdate();
-}
-
-void Constraint::SetWorldPosition(const Vector3& position)
-{
-    if (constraint_)
-    {
-        btTransform ownBodyInverse = constraint_->getRigidBodyA().getWorldTransform().inverse();
-        btTransform otherBodyInverse = constraint_->getRigidBodyB().getWorldTransform().inverse();
-        btVector3 worldPos = ToBtVector3(position);
-        position_ = (ToVector3(ownBodyInverse * worldPos) + ownBody_->GetCenterOfMass()) / cachedWorldScale_;
-        otherPosition_ = ToVector3(otherBodyInverse * worldPos);
-        if (otherBody_)
+        //draw the special joint stuff given to us by newton
+        UrhoNewtonDebugDisplay debugDisplay(debug, depthTest);
+        debugDisplay.SetDrawScale(1.0f/physicsWorld_->GetPhysicsScale());
+        if (newtonJoint_)
         {
-            otherPosition_ += otherBody_->GetCenterOfMass();
-            otherPosition_ /= otherBody_->GetNode()->GetWorldScale();
+            newtonJoint_->Debug(&debugDisplay);//#todo this sometimes covers up the 2 frames above - maybe alter inside newton instead?
         }
-        ApplyFrames();
-        MarkNetworkUpdate();
-    }
-    else
-        URHO3D_LOGWARNING("Constraint not created, world position could not be stored");
-}
 
-void Constraint::SetHighLimit(const Vector2& limit)
-{
-    if (limit != highLimit_)
+    }
+
+    void Constraint::SetDisableCollision(bool disable)
     {
-        highLimit_ = limit;
-        ApplyLimits();
-        MarkNetworkUpdate();
+        enableBodyCollision_ = !disable;
+        MarkDirty();
     }
-}
 
-void Constraint::SetLowLimit(const Vector2& limit)
-{
-    if (limit != lowLimit_)
+    void Constraint::SetOtherBody(RigidBody* body)
     {
-        lowLimit_ = limit;
-        ApplyLimits();
-        MarkNetworkUpdate();
+        if (otherBody_ != body && body != ownBody_) {
+
+            if (otherBody_ != nullptr)
+                RemoveJointReferenceFromBody(otherBody_);//remove reference from old body
+
+
+            otherBody_ = body;
+            if (body != nullptr) {
+                AddJointReferenceToBody(body);
+                body->GetNode()->AddListener(this);
+
+                //convert previously set world transform to local.
+                if (otherFrameWorldExplicitlySet) {
+                    SetOtherWorldPosition(otherPosition_);
+                    SetOtherWorldRotation(otherRotation_);
+                }
+                else
+                {
+                    SetOtherWorldPosition(GetOwnWorldFrame().Translation());
+                    SetOtherWorldRotation(GetOwnWorldFrame().Rotation());
+                }
+            }
+
+            if (body == nullptr)
+                otherBodyId_ = 0;
+            else
+                otherBodyId_ = body->GetID();
+
+
+            MarkDirty();
+        }
     }
-}
 
-void Constraint::SetERP(float erp)
-{
-    erp = Max(erp, 0.0f);
 
-    if (erp != erp_)
+    void Constraint::SetOtherBodyById(unsigned bodyId)
     {
-        erp_ = erp;
-        ApplyLimits();
-        MarkNetworkUpdate();
+        otherBodyId_ = bodyId;
+        //resolve to body later.
+        MarkDirty();
     }
-}
 
-void Constraint::SetCFM(float cfm)
-{
-    cfm = Max(cfm, 0.0f);
-
-    if (cfm != cfm_)
-    {
-        cfm_ = cfm;
-        ApplyLimits();
-        MarkNetworkUpdate();
-    }
-}
-
-void Constraint::SetDisableCollision(bool disable)
-{
-    if (disable != disableCollision_)
-    {
-        disableCollision_ = disable;
-        CreateConstraint();
-        MarkNetworkUpdate();
-    }
-}
-
-Vector3 Constraint::GetWorldPosition() const
-{
-    if (constraint_)
-    {
-        btTransform ownBody = constraint_->getRigidBodyA().getWorldTransform();
-        return ToVector3(ownBody * ToBtVector3(position_ * cachedWorldScale_ - ownBody_->GetCenterOfMass()));
-    }
-    else
-        return Vector3::ZERO;
-}
-
-void Constraint::ReleaseConstraint()
-{
-    if (constraint_)
+    void Constraint::WakeBodies()
     {
         if (ownBody_)
-            ownBody_->RemoveConstraint(this);
+        {
+            ownBody_->Activate();
+        }
         if (otherBody_)
-            otherBody_->RemoveConstraint(this);
-
-        if (physicsWorld_)
-            physicsWorld_->GetWorld()->removeConstraint(constraint_.Get());
-
-        constraint_.Reset();
-    }
-}
-
-void Constraint::ApplyFrames()
-{
-    if (!constraint_ || !node_ || (otherBody_ && !otherBody_->GetNode()))
-        return;
-
-    cachedWorldScale_ = node_->GetWorldScale();
-
-    Vector3 ownBodyScaledPosition = position_ * cachedWorldScale_ - ownBody_->GetCenterOfMass();
-    Vector3 otherBodyScaledPosition =
-        otherBody_ ? otherPosition_ * otherBody_->GetNode()->GetWorldScale() - otherBody_->GetCenterOfMass() : otherPosition_;
-
-    switch (constraint_->getConstraintType())
-    {
-    case POINT2POINT_CONSTRAINT_TYPE:
         {
-            auto* pointConstraint = static_cast<btPoint2PointConstraint*>(constraint_.Get());
-            pointConstraint->setPivotA(ToBtVector3(ownBodyScaledPosition));
-            pointConstraint->setPivotB(ToBtVector3(otherBodyScaledPosition));
+            otherBody_->Activate();
         }
-        break;
-
-    case HINGE_CONSTRAINT_TYPE:
-        {
-            auto* hingeConstraint = static_cast<btHingeConstraint*>(constraint_.Get());
-            btTransform ownFrame(ToBtQuaternion(rotation_), ToBtVector3(ownBodyScaledPosition));
-            btTransform otherFrame(ToBtQuaternion(otherRotation_), ToBtVector3(otherBodyScaledPosition));
-            hingeConstraint->setFrames(ownFrame, otherFrame);
-        }
-        break;
-
-    case SLIDER_CONSTRAINT_TYPE:
-        {
-            auto* sliderConstraint = static_cast<btSliderConstraint*>(constraint_.Get());
-            btTransform ownFrame(ToBtQuaternion(rotation_), ToBtVector3(ownBodyScaledPosition));
-            btTransform otherFrame(ToBtQuaternion(otherRotation_), ToBtVector3(otherBodyScaledPosition));
-            sliderConstraint->setFrames(ownFrame, otherFrame);
-        }
-        break;
-
-    case CONETWIST_CONSTRAINT_TYPE:
-        {
-            auto* coneTwistConstraint = static_cast<btConeTwistConstraint*>(constraint_.Get());
-            btTransform ownFrame(ToBtQuaternion(rotation_), ToBtVector3(ownBodyScaledPosition));
-            btTransform otherFrame(ToBtQuaternion(otherRotation_), ToBtVector3(otherBodyScaledPosition));
-            coneTwistConstraint->setFrames(ownFrame, otherFrame);
-        }
-        break;
-
-    default:
-        break;
-    }
-}
-
-void Constraint::OnNodeSet(Node* node)
-{
-    if (node)
-    {
-        node->AddListener(this);
-        cachedWorldScale_ = node->GetWorldScale();
-    }
-}
-
-void Constraint::OnSceneSet(Scene* scene)
-{
-    if (scene)
-    {
-        if (scene == node_)
-            URHO3D_LOGWARNING(GetTypeName() + " should not be created to the root scene node");
-
-        physicsWorld_ = scene->GetOrCreateComponent<PhysicsWorld>();
-        physicsWorld_->AddConstraint(this);
-
-        // Create constraint now if necessary (attributes modified before adding to scene)
-        if (retryCreation_)
-            CreateConstraint();
-    }
-    else
-    {
-        ReleaseConstraint();
-
-        if (physicsWorld_)
-            physicsWorld_->RemoveConstraint(this);
-
-        // Recreate when moved to a scene again
-        retryCreation_ = true;
-    }
-}
-
-void Constraint::OnMarkedDirty(Node* node)
-{
-    /// \todo This does not catch the connected body node's scale changing
-    if (HasWorldScaleChanged(cachedWorldScale_, node->GetWorldScale()))
-        ApplyFrames();
-}
-
-void Constraint::CreateConstraint()
-{
-    URHO3D_PROFILE("CreateConstraint");
-
-    cachedWorldScale_ = node_->GetWorldScale();
-
-    ReleaseConstraint();
-
-    ownBody_ = GetComponent<RigidBody>();
-    btRigidBody* ownBody = ownBody_ ? ownBody_->GetBody() : nullptr;
-    btRigidBody* otherBody = otherBody_ ? otherBody_->GetBody() : nullptr;
-
-    // If no physics world available now mark for retry later
-    if (!physicsWorld_ || !ownBody)
-    {
-        retryCreation_ = true;
-        return;
     }
 
-    if (!otherBody)
-        otherBody = &btTypedConstraint::getFixedBody();
-
-    Vector3 ownBodyScaledPosition = position_ * cachedWorldScale_ - ownBody_->GetCenterOfMass();
-    Vector3 otherBodyScaledPosition = otherBody_ ? otherPosition_ * otherBody_->GetNode()->GetWorldScale() -
-                                                   otherBody_->GetCenterOfMass() : otherPosition_;
-
-    switch (constraintType_)
+    void Constraint::SetWorldPosition(const Vector3& position)
     {
-    case CONSTRAINT_POINT:
-        {
-            constraint_ = new btPoint2PointConstraint(*ownBody, *otherBody, ToBtVector3(ownBodyScaledPosition),
-                ToBtVector3(otherBodyScaledPosition));
-        }
-        break;
-
-    case CONSTRAINT_HINGE:
-        {
-            btTransform ownFrame(ToBtQuaternion(rotation_), ToBtVector3(ownBodyScaledPosition));
-            btTransform otherFrame(ToBtQuaternion(otherRotation_), ToBtVector3(otherBodyScaledPosition));
-            constraint_ = new btHingeConstraint(*ownBody, *otherBody, ownFrame, otherFrame);
-        }
-        break;
-
-    case CONSTRAINT_SLIDER:
-        {
-            btTransform ownFrame(ToBtQuaternion(rotation_), ToBtVector3(ownBodyScaledPosition));
-            btTransform otherFrame(ToBtQuaternion(otherRotation_), ToBtVector3(otherBodyScaledPosition));
-            constraint_ = new btSliderConstraint(*ownBody, *otherBody, ownFrame, otherFrame, false);
-        }
-        break;
-
-    case CONSTRAINT_CONETWIST:
-        {
-            btTransform ownFrame(ToBtQuaternion(rotation_), ToBtVector3(ownBodyScaledPosition));
-            btTransform otherFrame(ToBtQuaternion(otherRotation_), ToBtVector3(otherBodyScaledPosition));
-            constraint_ = new btConeTwistConstraint(*ownBody, *otherBody, ownFrame, otherFrame);
-        }
-        break;
-
-    default:
-        break;
+        SetOwnWorldPosition(position);
+        SetOtherWorldPosition(position);
     }
 
-    if (constraint_)
+    void Constraint::SetWorldRotation(const Quaternion& rotation)
     {
-        constraint_->setUserConstraintPtr(this);
-        constraint_->setEnabled(IsEnabledEffective());
-        ownBody_->AddConstraint(this);
+        SetOwnWorldRotation(rotation);
+        SetOtherWorldRotation(rotation);
+    }
+
+    void Constraint::SetOwnPosition(const Vector3& position)
+    {
+        position_ = position;
+        MarkDirty();
+    }
+
+
+    void Constraint::SetOwnRotation(const Quaternion& rotation)
+    {
+        rotation_ = rotation;
+        MarkDirty();
+    }
+
+
+    void Constraint::SetOwnWorldPosition(const Vector3& worldPosition)
+    {
+       // Matrix3x4 worldTransform(ownBody_->GetNode()->GetWorldPosition(), ownBody_->GetNode()->GetWorldRotation(), 1.0f);
+        position_ = ownBody_->GetNode()->GetWorldTransform().Inverse() *  worldPosition;
+        MarkDirty();
+    }
+
+    void Constraint::SetOwnWorldRotation(const Quaternion& worldRotation)
+    {
+        Quaternion worldRot = ownBody_->GetNode()->GetWorldRotation();
+        rotation_ = worldRot.Inverse() * worldRotation;
+        MarkDirty();
+    } 
+
+    void Constraint::SetOtherPosition(const Vector3& position)
+    {
+        otherPosition_ = position;
+
+
+        MarkDirty();
+    }
+
+
+    void Constraint::SetOtherRotation(const Quaternion& rotation)
+    {
+        otherRotation_ = rotation;
+
+
+        MarkDirty();
+    }
+
+
+    void Constraint::SetOtherWorldPosition(const Vector3& position)
+    {
+
         if (otherBody_)
-            otherBody_->AddConstraint(this);
+        {
+            otherPosition_ = otherBody_->GetNode()->GetWorldTransform().Inverse() * position;
+        }
+        else
+            otherPosition_ = position;
 
-        ApplyLimits();
-
-        physicsWorld_->GetWorld()->addConstraint(constraint_.Get(), disableCollision_);
+        otherFrameWorldExplicitlySet = true;
+        MarkDirty();
     }
 
-    recreateConstraint_ = false;
-    framesDirty_ = false;
-    retryCreation_ = false;
-}
-
-void Constraint::ApplyLimits()
-{
-    if (!constraint_)
-        return;
-
-    switch (constraint_->getConstraintType())
+    void Constraint::SetOtherWorldRotation(const Quaternion& rotation)
     {
-    case HINGE_CONSTRAINT_TYPE:
+        if (otherBody_)
         {
-            auto* hingeConstraint = static_cast<btHingeConstraint*>(constraint_.Get());
-            hingeConstraint->setLimit(lowLimit_.x_ * M_DEGTORAD, highLimit_.x_ * M_DEGTORAD);
+              Quaternion worldRot = otherBody_->GetNode()->GetWorldRotation();
+              otherRotation_ = worldRot.Inverse() * rotation;
         }
-        break;
+        else
+            otherRotation_ = rotation;
 
-    case SLIDER_CONSTRAINT_TYPE:
-        {
-            auto* sliderConstraint = static_cast<btSliderConstraint*>(constraint_.Get());
-            sliderConstraint->setUpperLinLimit(highLimit_.x_);
-            sliderConstraint->setUpperAngLimit(highLimit_.y_ * M_DEGTORAD);
-            sliderConstraint->setLowerLinLimit(lowLimit_.x_);
-            sliderConstraint->setLowerAngLimit(lowLimit_.y_ * M_DEGTORAD);
-        }
-        break;
-
-    case CONETWIST_CONSTRAINT_TYPE:
-        {
-            auto* coneTwistConstraint = static_cast<btConeTwistConstraint*>(constraint_.Get());
-            coneTwistConstraint->setLimit(highLimit_.y_ * M_DEGTORAD, highLimit_.y_ * M_DEGTORAD, highLimit_.x_ * M_DEGTORAD);
-        }
-        break;
-
-    default:
-        break;
+        otherFrameWorldExplicitlySet = true;
+        MarkDirty();
     }
 
-    if (erp_ != 0.0f)
-        constraint_->setParam(BT_CONSTRAINT_STOP_ERP, erp_);
-    if (cfm_ != 0.0f)
-        constraint_->setParam(BT_CONSTRAINT_STOP_CFM, cfm_);
-}
-
-void Constraint::AdjustOtherBodyPosition()
-{
-    // Convenience for editing static constraints: if not connected to another body, adjust world position to match local
-    // (when deserializing, the proper other body position will be read after own position, so this calculation is safely
-    // overridden and does not accumulate constraint error
-    if (constraint_ && !otherBody_)
+    NewtonBody* Constraint::GetOwnNewtonBody() const
     {
-        btTransform ownBody = constraint_->getRigidBodyA().getWorldTransform();
-        btVector3 worldPos = ownBody * ToBtVector3(position_ * cachedWorldScale_ - ownBody_->GetCenterOfMass());
-        otherPosition_ = ToVector3(worldPos);
+        return ownBody_->GetNewtonBody();
     }
 
-    MarkFramesDirty();
-}
+    NewtonBody* Constraint::GetOtherNewtonBody() const
+    {
+        if (otherBody_)
+            return otherBody_->GetNewtonBody();
+        else
+            return nullptr;
+    }
+
+    Urho3D::Vector3 Constraint::GetOtherPosition() const
+    {
+
+       return otherPosition_;
+
+    }
+
+    Urho3D::Quaternion Constraint::GetOtherRotation() const
+    {
+        return otherRotation_;
+    }
+
+    Urho3D::Matrix3x4 Constraint::GetOwnWorldFrame() const
+    {
+
+        //return a frame with no scale at the position and rotation in node space
+        Matrix3x4 worldFrame = ownBody_->GetNode()->GetWorldTransform() * Matrix3x4(position_, rotation_, 1.0f);
+
+        //the frame could have uniform scale - reconstruct with no scale
+        Matrix3x4 worldFrameNoScale = Matrix3x4(worldFrame.Translation(), worldFrame.Rotation(), 1.0f);
+
+
+        return worldFrameNoScale;
+
+    }
+
+    Urho3D::Matrix3x4 Constraint::GetOtherWorldFrame() const
+    {
+        if (otherBody_) {
+
+            //return a frame with no scale at the position and rotation in node space.
+            Matrix3x4 worldFrame = otherBody_->GetNode()->GetWorldTransform() * Matrix3x4(otherPosition_, otherRotation_, 1.0f);
+
+            //the frame could have uniform scale - reconstruct with no scale
+            Matrix3x4 worldFrameNoScale = Matrix3x4(worldFrame.Translation(), worldFrame.Rotation(), 1.0f);
+
+
+            return worldFrameNoScale;
+        }
+        else
+        {
+            return Matrix3x4(otherPosition_, otherRotation_, 1.0f);
+        }
+    }
+
+    void Constraint::OnSetEnabled()
+    {
+        MarkDirty();
+    }
+
+    void Constraint::reEvalConstraint()
+    {
+        //resolve other body id to component
+        otherBody_ = static_cast<RigidBody*>(GetScene()->GetComponent(otherBodyId_));
+
+
+        if (!IsEnabledEffective()) {
+            freeInternal();
+        }
+        else if (ownBody_ && ownBody_->GetNode() && ownBody_->GetNewtonBody()) {
+            freeInternal();
+
+            bool goodToBuild = true;
+            if (otherBody_)
+            {
+                if (otherBody_->GetEffectiveMass() <= 0.0f && ownBody_->GetEffectiveMass() <= 0.0f)
+                    goodToBuild = false;
+
+            }
+            else
+            {
+                if (ownBody_->GetEffectiveMass() <= 0.0f)
+                    goodToBuild = false;
+            }
+
+            if (goodToBuild) {
+                buildConstraint();
+                applyAllJointParams();
+
+            }
+            else
+            {
+                URHO3D_LOGWARNING("Contraint must connect to at least 1 Rigid Body with mass greater than 0.");
+            }
+
+            if (newtonJoint_ != nullptr) {
+
+            }
+        }
+        else//we dont have own body so free the joint..
+        {
+            freeInternal();
+        }
+
+
+
+
+
+
+        MarkDirty(false);
+    }
+
+    void Constraint::buildConstraint()
+    {
+        /// ovverride in derived classes.
+    }
+
+
+    bool Constraint::applyAllJointParams()
+    {
+        WakeBodies();
+
+        if (newtonJoint_ == nullptr)
+            return false;
+
+        /// extend in derived classes.
+        NewtonJointSetCollisionState((NewtonJoint*)newtonJoint_, enableBodyCollision_);
+        newtonJoint_->SetStiffness(stiffness_);
+
+        if(solveMode_ != SOLVE_MODE_JOINT_DEFAULT)
+            newtonJoint_->SetSolverModel(solveMode_);
+
+        return true;
+    }
+
+    void Constraint::freeInternal()
+    {
+
+        if (newtonJoint_ != nullptr) {
+            physicsWorld_->addToFreeQueue(newtonJoint_);
+            newtonJoint_ = nullptr;
+        }
+    }
+
+
+
+    void Constraint::AddJointReferenceToBody(RigidBody* rigBody)
+    {
+
+        if (!rigBody->connectedConstraints_.Contains(this))
+            rigBody->connectedConstraints_.Insert(this);
+
+    }
+
+
+    void Constraint::RemoveJointReferenceFromBody(RigidBody* rigBody)
+    {
+
+        if (rigBody->connectedConstraints_.Contains(this))
+            rigBody->connectedConstraints_.Erase(this);
+
+    }
+
+    void Constraint::OnNodeSet(Node* node)
+    {
+        if (node)
+        {
+            //auto create physics world similar to rigid body.
+            physicsWorld_ = node->GetScene()->GetOrCreateComponent<PhysicsWorld>();
+
+            RigidBody* rigBody = node->GetComponent<RigidBody>();
+            if (rigBody) {
+                ownBody_ = rigBody;
+                ownBodyId_ = ownBody_->GetID();
+            }
+           
+            if(physicsWorld_)
+                physicsWorld_->addConstraint(this);
+
+            AddJointReferenceToBody(ownBody_);
+
+            node->AddListener(this);
+        }
+        else
+        {
+            if(!ownBody_.Expired())
+                RemoveJointReferenceFromBody(ownBody_);
+
+            ownBody_ = nullptr;
+            if (physicsWorld_)
+                physicsWorld_->removeConstraint(this);
+
+            freeInternal();
+
+        }
+    }
+
+    void Constraint::OnNodeSetEnabled(Node* node)
+    {
+        MarkDirty();
+    }
+
+
+
+    Urho3D::Matrix3x4 Constraint::GetOwnNewtonWorldFrame()
+    {
+        Matrix3x4 newtonWorldFrame = physicsWorld_->GetPhysicsWorldFrame()*GetOwnWorldFrame();
+
+        //newtonWorldFrame has scaling from the the physics world frame transformation. - reconstruct without scale because joints expect frame with no scaling.
+        return Matrix3x4(newtonWorldFrame.Translation(), newtonWorldFrame.Rotation(), 1.0f);
+    }
+
+    Urho3D::Matrix3x4 Constraint::GetOtherNewtonWorldFrame()
+    {
+        Matrix3x4 newtonWorldFrame = physicsWorld_->GetPhysicsWorldFrame()*GetOtherWorldFrame();
+
+        //newtonWorldFrame has scaling from the the physics world frame transformation. - reconstruct without scale because joints expect frame with no scaling.
+        return Matrix3x4(newtonWorldFrame.Translation(), newtonWorldFrame.Rotation(), 1.0f);
+    }
+
+    Urho3D::Vector3 Constraint::GetOwnNewtonWorldPin()
+    {
+        Matrix3x4 newtonWorldFrame = GetOwnNewtonWorldFrame();
+        return newtonWorldFrame * Vector3::RIGHT;
+    }
+
+    Urho3D::Vector3 Constraint::GetOtherNewtonWorldPin()
+    {
+        Matrix3x4 newtonWorldFrame = GetOtherNewtonWorldFrame();
+        return newtonWorldFrame * Vector3::RIGHT;
+    }
 
 }

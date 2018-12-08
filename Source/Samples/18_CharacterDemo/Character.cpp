@@ -30,6 +30,7 @@
 #include <Urho3D/Scene/SceneEvents.h>
 
 #include "Character.h"
+#include "Urho3D/IO/Log.h"
 
 Character::Character(Context* context) :
     LogicComponent(context),
@@ -62,9 +63,13 @@ void Character::Start()
 
 void Character::FixedUpdate(float timeStep)
 {
+    if (cameraNode_ == nullptr)
+        return;
+
     /// \todo Could cache the components for faster access instead of finding them each frame
     auto* body = GetComponent<RigidBody>();
     auto* animCtrl = node_->GetComponent<AnimationController>(true);
+
 
     // Update the in air timer. Reset if grounded
     if (!onGround_)
@@ -75,11 +80,12 @@ void Character::FixedUpdate(float timeStep)
     bool softGrounded = inAirTimer_ < INAIR_THRESHOLD_TIME;
 
     // Update movement & animation
-    const Quaternion& rot = node_->GetRotation();
+    const Quaternion& rot = cameraNode_->GetWorldRotation();
     Vector3 moveDir = Vector3::ZERO;
     const Vector3& velocity = body->GetLinearVelocity();
     // Velocity on the XZ plane
     Vector3 planeVelocity(velocity.x_, 0.0f, velocity.z_);
+    Vector3 verticalVelocity(0.0f, velocity.y_, 0.0f);
 
     if (controls_.IsDown(CTRL_FORWARD))
         moveDir += Vector3::FORWARD;
@@ -94,21 +100,28 @@ void Character::FixedUpdate(float timeStep)
     if (moveDir.LengthSquared() > 0.0f)
         moveDir.Normalize();
 
-    // If in air, allow control, but slower than when on ground
-    body->ApplyImpulse(rot * moveDir * (softGrounded ? MOVE_FORCE : INAIR_MOVE_FORCE));
 
+
+
+    Vector3 forwardVectorWorld = (rot * moveDir);
+    forwardVectorWorld.y_ = 0;
+    forwardVectorWorld.Normalize();
+
+    body->SetLinearVelocity(forwardVectorWorld * (softGrounded ? MOVE_SPEED : INAIR_MOVE_SPEED) + Vector3(0,velocity.y_,0));
+
+    bool justJumped = false;
     if (softGrounded)
     {
         // When on ground, apply a braking force to limit maximum ground velocity
         Vector3 brakeForce = -planeVelocity * BRAKE_FORCE;
-        body->ApplyImpulse(brakeForce);
 
         // Jump. Must release jump control between jumps
         if (controls_.IsDown(CTRL_JUMP))
         {
             if (okToJump_)
             {
-                body->ApplyImpulse(Vector3::UP * JUMP_FORCE);
+                body->SetLinearVelocity(velocity + Vector3::UP * JUMP_FORCE*2.0f);
+
                 okToJump_ = false;
                 animCtrl->PlayExclusive("Models/Mutant/Mutant_Jump1.ani", 0, false, 0.2f);
             }
@@ -119,7 +132,7 @@ void Character::FixedUpdate(float timeStep)
 
     if ( !onGround_ )
     {
-        animCtrl->PlayExclusive("Models/Mutant/Mutant_Jump1.ani", 0, false, 0.2f);
+       animCtrl->PlayExclusive("Models/Mutant/Mutant_Jump1.ani", 0, false, 0.2f);
     }
     else
     {
@@ -137,19 +150,23 @@ void Character::FixedUpdate(float timeStep)
     onGround_ = false;
 }
 
+void Character::SetCameraNode(Node* cameraNode)
+{
+    cameraNode_ = cameraNode;
+}
+
 void Character::HandleNodeCollision(StringHash eventType, VariantMap& eventData)
 {
     // Check collision contacts and see if character is standing on ground (look for a contact that has near vertical normal)
     using namespace NodeCollision;
 
-    MemoryBuffer contacts(eventData[P_CONTACTS].GetBuffer());
+    RigidBodyContactEntry* contactData = static_cast<RigidBodyContactEntry*>((eventData[NodeCollision::P_CONTACT_DATA].GetPtr()));
 
-    while (!contacts.IsEof())
+    for(int i = 0; i < contactData->numContacts; i++)
     {
-        Vector3 contactPosition = contacts.ReadVector3();
-        Vector3 contactNormal = contacts.ReadVector3();
-        /*float contactDistance = */contacts.ReadFloat();
-        /*float contactImpulse = */contacts.ReadFloat();
+        Vector3 contactPosition  = contactData->contactPositions[i];
+        Vector3 contactNormal = contactData->contactNormals[i];
+
 
         // If contact is below node center and pointing up, assume it's a ground contact
         if (contactPosition.y_ < (node_->GetPosition().y_ + 1.0f))

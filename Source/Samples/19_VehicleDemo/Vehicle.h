@@ -31,6 +31,7 @@ namespace Urho3D
 class Constraint;
 class Node;
 class RigidBody;
+class HingeConstraint;
 
 }
 
@@ -42,9 +43,9 @@ const unsigned CTRL_LEFT = 4;
 const unsigned CTRL_RIGHT = 8;
 
 const float YAW_SENSITIVITY = 0.1f;
-const float ENGINE_POWER = 10.0f;
-const float DOWN_FORCE = 10.0f;
-const float MAX_WHEEL_ANGLE = 22.5f;
+const float ENGINE_POWER = 2.0f;
+const float MAX_SPEED = 70.0f;
+const float MAX_WHEEL_ANGLE = 30.5f;
 
 /// Vehicle component, responsible for physical movement according to controls.
 class Vehicle : public LogicComponent
@@ -71,7 +72,7 @@ public:
 
 private:
     /// Initialize a wheel and remember its scene node and ID.
-    void InitWheel(const String& name, const Vector3& offset, WeakPtr<Node>& wheelNode, unsigned& wheelNodeID);
+    void InitWheel(const String& name, const Vector3& offset, WeakPtr<Node>& wheelNode, unsigned& wheelNodeID, bool isSteering);
     /// Acquire wheel components from wheel scene nodes.
     void GetWheelComponents();
 
@@ -84,10 +85,19 @@ private:
     /// Wheel scene rear-right node.
     WeakPtr<Node> rearRight_;
 
-    /// Steering front-left axle constraint.
+    WeakPtr<HingeConstraint> frontLeftSteeringAxis_;
+    WeakPtr<HingeConstraint> frontRightSteeringAxis_;
+
+    ///  front-left axle constraint.
     WeakPtr<Constraint> frontLeftAxis_;
-    /// Steering front-right axle constraint.
+    ///  front-right axle constraint.
     WeakPtr<Constraint> frontRightAxis_;
+    ///  rear-left axle constraint.
+    WeakPtr<Constraint> rearLeftAxis_;
+    ///  rear-right axle constraint.
+    WeakPtr<Constraint> rearRightAxis_;
+
+
 
     /// Hull and wheel hull rigid bodies.
     WeakPtr<RigidBody> hullBody_;
