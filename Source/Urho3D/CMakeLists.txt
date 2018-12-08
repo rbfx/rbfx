@@ -225,7 +225,7 @@ endif ()
 
 if (URHO3D_SSE)
     if (MSVC)
-        if (NOT URHO3D_64BIT AND ("${URHO3D_SSE}" STREQUAL "SSE" OR "${URHO3D_SSE}" STREQUAL "SSE2"))
+        if (URHO3D_64BIT AND "${URHO3D_SSE}" MATCHES "SSE2?")
             # 64bit instruction set has sse2 included and thus it is always enabled.
             # Specifying this parameter to msvc creates a warning.
         else ()
