@@ -312,7 +312,7 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
     graphics->SetScissorTest(false);
 }
 
-ImFont* SystemUI::AddFont(const String& fontPath, ImWchar* ranges, float size, bool merge)
+ImFont* SystemUI::AddFont(const String& fontPath, const ImWchar* ranges, float size, bool merge)
 {
     float previousSize = fontSizes_.Empty() ? SYSTEMUI_DEFAULT_FONT_SIZE : fontSizes_.Back();
     fontSizes_.Push(size);
