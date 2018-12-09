@@ -34,6 +34,7 @@ namespace Urho3D
 InspectorTab::InspectorTab(Context* context)
     : Tab(context)
 {
+    SetID("6e62fa62-811c-4bf2-9b85-bffaf7be239f");
     SetTitle("Inspector");
     isUtility_ = true;
     SubscribeToEvent(E_EDITORRENDERINSPECTOR, [&](StringHash, VariantMap& args) {

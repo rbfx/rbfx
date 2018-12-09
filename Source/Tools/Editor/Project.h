@@ -76,7 +76,7 @@ protected:
     PluginManager plugins_;
 #endif
     /// Flag indicating that project was just created.
-    bool isNewProject_ = false;
+    bool isNewProject_ = true;
     /// Resource name of scene that will be started by player first.
     String defaultScene_;
     ///

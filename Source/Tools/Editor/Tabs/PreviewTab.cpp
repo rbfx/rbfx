@@ -47,6 +47,7 @@ namespace Urho3D
 PreviewTab::PreviewTab(Context* context)
     : Tab(context)
 {
+    SetID("d75264a1-4179-4350-8e9f-ec4e4a15a7fa");
     SetTitle("Game");
     isUtility_ = true;
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;

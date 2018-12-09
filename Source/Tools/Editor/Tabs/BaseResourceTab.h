@@ -40,10 +40,10 @@ public:
     bool LoadResource(const String& resourcePath) override;
     /// Save resource o disk.
     bool SaveResource() override;
-    /// Save project data to xml.
-    void OnSaveProject(JSONValue& tab) override;
-    /// Load project data from xml.
-    void OnLoadProject(const JSONValue& tab) override;
+    /// Save ui settings.
+    void OnSaveUISettings(ImGuiTextBuffer* buf) override;
+    /// Load ui settings.
+    void OnLoadUISettings(const char* name, const char* line) override;
     /// Returns name of opened resource.
     String GetResourceName() const { return resourceName_; }
     /// Returns true when loaded resource was modified.

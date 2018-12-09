@@ -74,10 +74,10 @@ public:
     virtual void OnBeforeEnd() { }
     /// Called right after ui::End() of tab
     virtual void OnAfterEnd() { }
-    /// Save project data to json.
-    virtual void OnSaveProject(JSONValue& tab);
-    /// Load project data from json.
-    virtual void OnLoadProject(const JSONValue& tab);
+    /// Save ui settings.
+    virtual void OnSaveUISettings(ImGuiTextBuffer* buf);
+    /// Load ui settings.
+    virtual void OnLoadUISettings(const char* name, const char* line);
     /// Load a file from resource path.
     virtual bool LoadResource(const String& resourcePath);
     /// Save tab contents to a resource file.
@@ -90,6 +90,8 @@ public:
     String GetTitle() const { return title_; }
     /// Returns title which uniquely identifies scene tab in imgui.
     String GetUniqueTitle() const { return uniqueTitle_;}
+    /// Returns title which uniquely identifies scene tab in imgui.
+    String GetUniqueName() const { return uniqueName_;}
     /// Return true if scene tab is active and focused.
     bool IsActive() const { return isActive_; }
     /// Return true if scene view was rendered on this frame.
@@ -97,7 +99,7 @@ public:
     /// Return unique object id.
     String GetID() const { return id_; }
     /// Set unique object id.
-    void SetID(const String& id) { id_ = id; UpdateUniqueTitle(); }
+    void SetID(const String& id);
     /// Returns true of tab is utility window.
     bool IsUtility() const { return isUtility_; }
     /// Position tab automatically to most appropriate place.
@@ -125,6 +127,8 @@ protected:
     String title_;
     /// Title with id appended to it. Used as unique window name.
     String uniqueTitle_;
+    /// TYpe name with id appended to it.
+    String uniqueName_;
     /// Scene dock is active and window is focused.
     bool isActive_ = false;
     /// Flag set to true when dock contents were visible. Used for tracking "appearing" effect.

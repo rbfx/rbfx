@@ -89,10 +89,6 @@ public:
     void RenderToolbarButtons() override;
     /// Called on every frame when tab is active.
     void OnActiveUpdate() override;
-    /// Save project data to xml.
-    void OnSaveProject(JSONValue& tab) override;
-    /// Load project data from xml.
-    void OnLoadProject(const JSONValue& tab) override;
     /// Load scene from xml or json file.
     bool LoadResource(const String& resourcePath) override;
     /// Save scene to a resource file.

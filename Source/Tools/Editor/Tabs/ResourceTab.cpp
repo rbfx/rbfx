@@ -54,8 +54,9 @@ unsigned MakeHash(ContentType value)
 ResourceTab::ResourceTab(Context* context)
     : Tab(context)
 {
-    isUtility_ = true;
+    SetID("29d1a5dc-6b8d-4a27-bfb2-a84417f33ee2");
     SetTitle("Resources");
+    isUtility_ = true;
 
     SubscribeToEvent(E_INSPECTORLOCATERESOURCE, [&](StringHash, VariantMap& args) {
         auto resourceName = args[InspectorLocateResource::P_NAME].GetString();
@@ -105,7 +106,7 @@ bool ResourceTab::RenderWindowContent()
                 else
                 {
                     // Tabs that can be opened multiple times.
-                    if ((tab = GetSubsystem<Editor>()->GetTab(it->second_, selected)))
+                    if ((tab = GetSubsystem<Editor>()->GetTabByResource(selected)))
                         tab->Activate();
                     else if ((tab = GetSubsystem<Editor>()->CreateTab(it->second_)))
                     {

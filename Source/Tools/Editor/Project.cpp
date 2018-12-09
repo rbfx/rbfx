@@ -156,6 +156,63 @@ bool Project::LoadProject(const String& projectPath)
     uiConfigPath_ = projectFileDir_ + ".ui.ini";
     ui::GetIO().IniFilename = uiConfigPath_.CString();
 
+    ImGuiSettingsHandler handler;
+    handler.TypeName = "Project";
+    handler.TypeHash = ImHash(handler.TypeName, 0, 0);
+    handler.ReadOpenFn = [](ImGuiContext* context, ImGuiSettingsHandler* handler, const char* name) -> void* {
+        if (strcmp(name, "Window") == 0)
+            return (void*)1;
+        return (void*)name;
+    };
+    handler.ReadLineFn = [](ImGuiContext*, ImGuiSettingsHandler*, void* entry, const char* line) {
+        SystemUI* systemUI = ui::GetSystemUI();
+        auto* editor = systemUI->GetSubsystem<Editor>();
+
+        if (entry == (void*)1)
+        {
+            auto* project = systemUI->GetSubsystem<Project>();
+            project->isNewProject_ = false;
+            editor->CreateDefaultTabs();
+
+            int x, y, w, h;
+            if (sscanf(line, "Rect=%d,%d,%d,%d", &x, &y, &w, &h) == 4)
+            {
+                w = Max(w, 100);            // Foot-shooting prevention
+                h = Max(h, 100);
+                systemUI->GetGraphics()->SetWindowPosition(x, y);
+                systemUI->GetGraphics()->SetMode(w, h);
+            }
+            else
+                return;
+        }
+        else
+        {
+            const char* name = static_cast<const char*>(entry);
+
+            Tab* tab = editor->GetTabByName(name);
+            if (tab == nullptr)
+            {
+                StringVector parts = String(name).Split('#');
+                tab = editor->CreateTab(parts.Front());
+            }
+            tab->OnLoadUISettings(name, line);
+        }
+    };
+    handler.WriteAllFn = [](ImGuiContext* imgui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf) {
+        buf->appendf("[Project][Window]\n");
+        auto* systemUI = ui::GetSystemUI();
+        auto* editor = systemUI->GetSubsystem<Editor>();
+        auto* project = systemUI->GetSubsystem<Project>();
+        IntVector2 wSize = systemUI->GetGraphics()->GetSize();
+        IntVector2 wPos = systemUI->GetGraphics()->GetWindowPosition();
+        buf->appendf("Rect=%d,%d,%d,%d\n", wPos.x_, wPos.y_, wSize.x_, wSize.y_);
+
+        // Save tabs
+        for (auto& tab : editor->GetContentTabs())
+            tab->OnSaveUISettings(buf);
+    };
+    ui::GetCurrentContext()->SettingsHandlers.push_back(handler);
+
 #if URHO3D_HASH_DEBUG
     // StringHashNames.json
     {
@@ -205,6 +262,9 @@ bool Project::LoadProject(const String& projectPath)
 #endif
             if (root.Contains("default-scene"))
                 defaultScene_ = root["default-scene"]->GetString();
+
+            using namespace EditorProjectLoading;
+            SendEvent(E_EDITORPROJECTLOADING, P_ROOT, (void*)&root);
         }
     }
 
@@ -222,53 +282,6 @@ bool Project::LoadProject(const String& projectPath)
         }
     }
 
-    String userSessionPath(projectFileDir_ + ".user.json");
-    if (GetFileSystem()->Exists(userSessionPath))
-    {
-        // Load user session
-        JSONFile file(context_);
-        if (!file.LoadFile(userSessionPath))
-            return false;
-
-        const auto& root = file.GetRoot();
-        if (root.IsObject())
-        {
-            SendEvent(E_EDITORPROJECTLOADINGSTART);
-
-            const auto& window = root["window"];
-            if (window.IsObject())
-            {
-                auto size = window["size"].GetVariant().GetIntVector2();
-                GetGraphics()->SetMode(size.x_, size.y_);
-                GetGraphics()->SetWindowPosition(window["position"].GetVariant().GetIntVector2());
-            }
-
-            const auto& tabs = root["tabs"];
-            if (tabs.IsArray())
-            {
-                auto* editor = GetSubsystem<Editor>();
-                for (auto i = 0; i < tabs.Size(); i++)
-                {
-                    const auto& tab = tabs[i];
-
-                    auto tabType = tab["type"].GetString();
-                    auto* runtimeTab = editor->CreateTab(tabType);
-
-                    if (runtimeTab == nullptr)
-                        URHO3D_LOGERRORF("Unknown tab type '%s'", tabType.CString());
-                    else
-                        runtimeTab->OnLoadProject(tab);
-                }
-            }
-
-            // Plugins may load state by subscribing to this event
-            using namespace EditorProjectLoading;
-            SendEvent(E_EDITORPROJECTLOADING, P_ROOT, (void*)&root);
-        }
-    }
-    else
-        isNewProject_ = true;
-
     return true;
 }
 
@@ -282,33 +295,6 @@ bool Project::SaveProject()
     {
         URHO3D_LOGERROR("Unable to save project. Project path is empty.");
         return false;
-    }
-
-    // .user.json
-    {
-        JSONFile file(context_);
-        JSONValue& root = file.GetRoot();
-        root["version"] = 0;
-
-        JSONValue& window = root["window"];
-        {
-            window["size"].SetVariant(GetGraphics()->GetSize());
-            window["position"].SetVariant(GetGraphics()->GetWindowPosition());
-        }
-
-        // Plugins may save state by subscribing to this event
-        using namespace EditorProjectSaving;
-        SendEvent(E_EDITORPROJECTSAVING, P_ROOT, (void*)&root);
-
-        ui::SaveIniSettingsToDisk(uiConfigPath_.CString());
-
-        String filePath(projectFileDir_ + ".user.json");
-        if (!file.SaveFile(filePath))
-        {
-            projectFileDir_.Clear();
-            URHO3D_LOGERRORF("Saving project to '%s' failed", filePath.CString());
-            return false;
-        }
     }
 
     // Project.json
@@ -344,6 +330,9 @@ bool Project::SaveProject()
             URHO3D_LOGERRORF("Saving project to '%s' failed", filePath.CString());
             return false;
         }
+
+        using namespace EditorProjectSaving;
+        SendEvent(E_EDITORPROJECTSAVING, P_ROOT, (void*)&root);
     }
 
     // Settings.json
@@ -383,6 +372,8 @@ bool Project::SaveProject()
         }
     }
 #endif
+
+    ui::SaveIniSettingsToDisk(uiConfigPath_.CString());
 
     SubscribeToEvent(E_EDITORRESOURCESAVED, std::bind(&Project::SaveProject, this));
 

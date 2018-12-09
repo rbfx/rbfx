@@ -44,9 +44,4 @@ URHO3D_EVENT(E_EDITORUSERCODERELOADEND, EditorUserCodeReloadEnd)
 {
 }
 
-/// Event sent when editor is about to load a new project.
-URHO3D_EVENT(E_EDITORPROJECTLOADINGSTART, EditorProjectLoadingStart)
-{
-}
-
 }

@@ -65,6 +65,7 @@ SceneTab::SceneTab(Context* context)
     , gizmo_(context)
     , clipboard_(context, undo_)
 {
+    SetID("be1c7280-08e4-4b9f-b6ec-6d32bd9e3293");
     SetTitle("Scene");
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
     isUtility_ = true;
@@ -805,22 +806,6 @@ void SceneTab::RenderNodeTree(Node* node)
     else
         ui::PopID();
     ui::PopID();
-}
-
-void SceneTab::OnLoadProject(const JSONValue& tab)
-{
-    undo_.Clear();
-    auto isTracking = undo_.IsTrackingEnabled();
-    undo_.SetTrackingEnabled(false);
-
-    BaseClassName::OnLoadProject(tab);
-
-    undo_.SetTrackingEnabled(isTracking);
-}
-
-void SceneTab::OnSaveProject(JSONValue& tab)
-{
-    BaseClassName::OnSaveProject(tab);
 }
 
 void SceneTab::OnActiveUpdate()

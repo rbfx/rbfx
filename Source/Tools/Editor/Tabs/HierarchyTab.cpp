@@ -30,8 +30,9 @@ namespace Urho3D
 HierarchyTab::HierarchyTab(Context* context)
     : Tab(context)
 {
-    SetTitle("Hierarchy");
+    SetID("2d753fe8-e3c1-4ccc-afae-ec4f3beb70e4");
     isUtility_ = true;
+    SetTitle("Hierarchy");
 }
 
 bool HierarchyTab::RenderWindowContent()

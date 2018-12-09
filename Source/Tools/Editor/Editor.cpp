@@ -159,11 +159,6 @@ void Editor::Start()
     SubscribeToEvent(E_CONSOLECOMMAND, std::bind(&Editor::OnConsoleCommand, this, _2));
     console->RefreshInterpreters();
 
-    // Prepare editor for loading new project.
-    SubscribeToEvent(E_EDITORPROJECTLOADINGSTART, [&](StringHash, VariantMap&) {
-        tabs_.Clear();
-    });
-
     SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) {
         // Opening a new project must be done at the point when SystemUI is not in use. End of the frame is a good
         // candidate. This subsystem will be recreated.
@@ -211,7 +206,7 @@ void Editor::Start()
 
 void Editor::Stop()
 {
-    SceneManager* manager = GetSubsystem<SceneManager>();
+    auto* manager = GetSubsystem<SceneManager>();
     manager->UnloadAll();
     CloseProject();
     context_->RemoveSubsystem<WorkQueue>(); // Prevents deadlock when unloading plugin AppDomain in managed host.
@@ -421,17 +416,6 @@ Tab* Editor::CreateTab(StringHash type)
     return tab.Get();
 }
 
-Tab* Editor::GetOrCreateTab(StringHash type, const String& resourceName)
-{
-    Tab* tab = GetTab(type, resourceName);
-    if (tab == nullptr)
-    {
-        tab = CreateTab(type);
-        tab->LoadResource(resourceName);
-    }
-    return tab;
-}
-
 StringVector Editor::GetObjectsByCategory(const String& category)
 {
     StringVector result;
@@ -456,32 +440,36 @@ void Editor::OnConsoleCommand(VariantMap& args)
         URHO3D_LOGINFOF("Engine revision: %s", GetRevision());
 }
 
-void Editor::LoadDefaultLayout()
+void Editor::CreateDefaultTabs()
 {
     tabs_.Clear();
+    tabs_.EmplaceBack(new InspectorTab(context_));
+    tabs_.EmplaceBack(new HierarchyTab(context_));
+    tabs_.EmplaceBack(new ResourceTab(context_));
+    tabs_.EmplaceBack(new ConsoleTab(context_));
+    tabs_.EmplaceBack(new PreviewTab(context_));
+    tabs_.EmplaceBack(new SceneTab(context_));
+}
 
-    auto* inspector = new InspectorTab(context_);
-    auto* hierarchy = new HierarchyTab(context_);
-    auto* resources = new ResourceTab(context_);
-    auto* console = new ConsoleTab(context_);
-    auto* preview = new PreviewTab(context_);
-    auto* scene = new SceneTab(context_);
+void Editor::LoadDefaultLayout()
+{
+    CreateDefaultTabs();
 
-    tabs_.EmplaceBack(inspector);
-    tabs_.EmplaceBack(hierarchy);
-    tabs_.EmplaceBack(resources);
-    tabs_.EmplaceBack(console);
-    tabs_.EmplaceBack(scene);
-    tabs_.EmplaceBack(preview);
+    auto* inspector = GetTab<InspectorTab>();
+    auto* hierarchy = GetTab<HierarchyTab>();
+    auto* resources = GetTab<ResourceTab>();
+    auto* console = GetTab<ConsoleTab>();
+    auto* preview = GetTab<PreviewTab>();
+    auto* scene = GetTab<SceneTab>();
 
     ImGui::DockBuilderRemoveNode(dockspaceId_);
     ImGui::DockBuilderAddNode(dockspaceId_, ui::GetMainViewport()->Size);
 
     ImGuiID dock_main_id = dockspaceId_;
-    ImGuiID dockHierarchy = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.20f, NULL, &dock_main_id);
-    ImGuiID dockResources = ImGui::DockBuilderSplitNode(dockHierarchy, ImGuiDir_Down, 0.40f, NULL, &dockHierarchy);
-    ImGuiID dockInspector = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.30f, NULL, &dock_main_id);
-    ImGuiID dockLog = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.30f, NULL, &dock_main_id);
+    ImGuiID dockHierarchy = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.20f, nullptr, &dock_main_id);
+    ImGuiID dockResources = ImGui::DockBuilderSplitNode(dockHierarchy, ImGuiDir_Down, 0.40f, nullptr, &dockHierarchy);
+    ImGuiID dockInspector = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.30f, nullptr, &dock_main_id);
+    ImGuiID dockLog = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.30f, nullptr, &dock_main_id);
 
     ImGui::DockBuilderDockWindow(hierarchy->GetUniqueTitle().CString(), dockHierarchy);
     ImGui::DockBuilderDockWindow(resources->GetUniqueTitle().CString(), dockResources);
@@ -589,7 +577,7 @@ void Editor::RenderProjectMenu()
     if (ui::BeginMenu("Main Scene"))
     {
         ui::PushID("Main Scene");
-        StringVector* sceneNames = ui::GetUIState<StringVector>();
+        auto* sceneNames = ui::GetUIState<StringVector>();
         if (sceneNames->Empty())
         {
             GetFileSystem()->ScanDir(*sceneNames, project_->GetResourcePath(), "*.xml", SCAN_FILES, true);
@@ -692,24 +680,33 @@ void Editor::RenderProjectMenu()
     }
 }
 
-Tab* Editor::GetTab(StringHash type, const String& resourceName)
+Tab* Editor::GetTabByName(const String& uniqueName)
+{
+    for (auto& tab : tabs_)
+    {
+        if (tab->GetUniqueName() == uniqueName)
+            return tab.Get();
+    }
+    return nullptr;
+}
+
+Tab* Editor::GetTabByResource(const String& resourceName)
+{
+    for (auto& tab : tabs_)
+    {
+        auto resource = DynamicCast<BaseResourceTab>(tab);
+        if (resource.NotNull() && resource->GetResourceName() == resourceName)
+            return resource.Get();
+    }
+    return nullptr;
+}
+
+Tab* Editor::GetTab(StringHash type)
 {
     for (auto& tab : tabs_)
     {
         if (tab->GetType() == type)
-        {
-            if (resourceName.Empty())
-                return tab.Get();
-            else
-            {
-                auto resourceTab = DynamicCast<BaseResourceTab>(tab);
-                if (resourceTab.NotNull())
-                {
-                    if (resourceTab->GetResourceName() == resourceName)
-                        return tab.Get();
-                }
-            }
-        }
+            return tab.Get();
     }
     return nullptr;
 }

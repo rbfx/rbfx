@@ -30,6 +30,7 @@ namespace Urho3D
 ConsoleTab::ConsoleTab(Context* context)
     : Tab(context)
 {
+    SetID("2c1b8e59-3e21-4a14-bc20-d35af0ba5031");
     SetTitle("Console");
     isUtility_ = true;
 }

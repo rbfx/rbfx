@@ -59,20 +59,21 @@ public:
     template<typename T> T* CreateTab() { return (T*)CreateTab(T::GetTypeStatic()); }
     /// Create a new tab of specified type.
     Tab* CreateTab(StringHash type);
-    /// Get tab that has resource opened or create new one and open said resource.
-    Tab* GetOrCreateTab(StringHash type, const String& resourceName);
-    /// Return tab of specified type.
-    Tab* GetTab(StringHash type, const String& resourceName=String::EMPTY);
-    /// Return tab of specified type.
-    template<typename T>
-    T* GetTab(const String& resourceName=String::EMPTY) { return static_cast<T*>(GetTab(T::GetTypeStatic(), resourceName)); }
+    ///
+    Tab* GetTabByName(const String& uniqueName);
+    ///
+    Tab* GetTabByResource(const String& resourceName);
+    /// Returns first tab of specified type.
+    Tab* GetTab(StringHash type);
+    /// Returns first tab of specified type.
+    template<typename T> T* GetTab() { return (T*)GetTab(T::GetTypeStatic()); }
+
     /// Return active scene tab.
     Tab* GetActiveTab() { return activeTab_; }
     /// Return currently open scene tabs.
     const Vector<SharedPtr<Tab>>& GetSceneViews() const { return tabs_; }
     /// Return a map of names and type hashes from specified category.
     StringVector GetObjectsByCategory(const String& category);
-
     /// Returns a list of open content tabs/docks/windows. This list does not include utility docks/tabs/windows.
     const Vector<SharedPtr<Tab>>& GetContentTabs() const { return tabs_; }
     /// Opens project or creates new one.
@@ -81,6 +82,8 @@ public:
     void CloseProject();
     /// Return path containing data directories of engine.
     const String& GetCoreResourcePrefixPath() const { return coreResourcePrefixPath_; }
+    /// Create tabs that are open by default and persist through entire lifetime of editor.
+    void CreateDefaultTabs();
     /// Load default tab layout.
     void LoadDefaultLayout();
     /// Returns ID of root dockspace.

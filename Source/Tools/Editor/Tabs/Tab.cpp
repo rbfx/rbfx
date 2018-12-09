@@ -36,16 +36,6 @@ Tab::Tab(Context* context)
     : Object(context)
     , inspector_(context)
 {
-    SetID(GenerateUUID());
-
-    SubscribeToEvent(E_EDITORPROJECTSAVING, [&](StringHash, VariantMap& args) {
-        using namespace EditorProjectSaving;
-        JSONValue& root = *(JSONValue*)args[P_ROOT].GetVoidPtr();
-        auto& tabs = root["tabs"];
-        JSONValue tab;
-        OnSaveProject(tab);
-        tabs.Push(tab);
-    });
 }
 
 Tab::~Tab()
@@ -183,27 +173,37 @@ IntRect Tab::UpdateViewRect()
     return tabRect;
 }
 
-void Tab::OnSaveProject(JSONValue& tab)
+void Tab::OnSaveUISettings(ImGuiTextBuffer* buf)
 {
-    tab["type"] = GetTypeName();
-    tab["uuid"] = GetID();
+    buf->appendf("\n[Project][%s###%s]\n", GetTypeName().CString(), GetID().CString());
 }
 
-void Tab::OnLoadProject(const JSONValue& tab)
+void Tab::OnLoadUISettings(const char* name, const char* line)
 {
-    SetID(tab["uuid"].GetString());
+    SetID(String(name).Split('#')[1]);
 }
 
 bool Tab::LoadResource(const String& resourcePath)
 {
     // Resource loading is only allowed when scene is not playing.
-    return GetSubsystem<Editor>()->GetTab<PreviewTab>()->GetSceneSimulationStatus() == SCENE_SIMULATION_STOPPED;
+    if (auto* tab = GetSubsystem<Editor>()->GetTab<PreviewTab>())
+        return tab->GetSceneSimulationStatus() == SCENE_SIMULATION_STOPPED;
+    return true;
 }
 
 bool Tab::SaveResource()
 {
     // Resource loading is only allowed when scene is not playing.
-    return GetSubsystem<Editor>()->GetTab<PreviewTab>()->GetSceneSimulationStatus() == SCENE_SIMULATION_STOPPED;
+    if (auto* tab = GetSubsystem<Editor>()->GetTab<PreviewTab>())
+        return tab->GetSceneSimulationStatus() == SCENE_SIMULATION_STOPPED;
+    return true;
+}
+
+void Tab::SetID(const String& id)
+{
+    id_ = id;
+    uniqueName_ = GetTypeName() + "###" + id;
+    UpdateUniqueTitle();
 }
 
 

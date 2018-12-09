@@ -46,6 +46,7 @@ namespace Urho3D
 UITab::UITab(Context* context)
     : BaseResourceTab(context)
 {
+    SetID(GenerateUUID());
     SetTitle("New UI Layout");
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 
@@ -569,16 +570,6 @@ void UITab::RenderElementContextMenu()
         }
         ui::EndPopup();
     }
-}
-
-void UITab::OnSaveProject(JSONValue& tab)
-{
-    BaseClassName::OnSaveProject(tab);
-}
-
-void UITab::OnLoadProject(const JSONValue& tab)
-{
-    BaseClassName::OnLoadProject(tab);
 }
 
 String UITab::GetAppliedStyle(UIElement* element)

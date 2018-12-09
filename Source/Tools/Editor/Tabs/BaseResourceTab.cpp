@@ -74,16 +74,18 @@ bool Urho3D::BaseResourceTab::SaveResource()
     return true;
 }
 
-void BaseResourceTab::OnSaveProject(JSONValue& tab)
+void BaseResourceTab::OnSaveUISettings(ImGuiTextBuffer* buf)
 {
-    Tab::OnSaveProject(tab);
-    tab["path"] = resourceName_;
+    Tab::OnSaveUISettings(buf);
+    if (!resourceName_.Empty())
+        buf->appendf("Path=%s\n", resourceName_.CString());
 }
 
-void BaseResourceTab::OnLoadProject(const JSONValue& tab)
+void BaseResourceTab::OnLoadUISettings(const char* name, const char* line)
 {
-    Tab::OnLoadProject(tab);
-    LoadResource(tab["path"].GetString());
+    Tab::OnLoadUISettings(name, line);
+    if (strstr(line, "Path=") == line) // starts with
+        LoadResource(line + 5);
 }
 
 void BaseResourceTab::SetResourceName(const String& resourceName)

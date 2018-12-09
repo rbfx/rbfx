@@ -47,10 +47,6 @@ public:
     void RenderToolbarButtons() override;
     /// Update window when it is active.
     void OnActiveUpdate() override;
-    /// Save project data to xml.
-    void OnSaveProject(JSONValue& tab) override;
-    /// Load project data from xml.
-    void OnLoadProject(const JSONValue& tab) override;
     /// Load UI layout from resource path.
     bool LoadResource(const String& resourcePath) override;
     /// Save scene to a resource file.
