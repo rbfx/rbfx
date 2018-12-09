@@ -19,23 +19,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#include "Urho3D/Input/InputEvents.h"
-#include "Urho3D/Input/Input.h"
-#include "Urho3D/Core/CoreEvents.h"
-#include "Urho3D/Core/Context.h"
-#include "Urho3D/Core/Profiler.h"
-#include "Urho3D/Core/Utils.h"
-#include "Urho3D/Engine/EngineEvents.h"
-#include "Urho3D/Graphics/GraphicsEvents.h"
-#include "Urho3D/Graphics/Graphics.h"
-#include "Urho3D/Resource/ResourceCache.h"
-#include "SystemUI.h"
-#include "Console.h"
+#include "../Core/Context.h"
+#include "../Core/CoreEvents.h"
+#include "../Core/Profiler.h"
+#include "../Core/Utils.h"
+#include "../Engine/EngineEvents.h"
+#include "../Graphics/Graphics.h"
+#include "../Graphics/GraphicsEvents.h"
+#include "../Input/Input.h"
+#include "../Input/InputEvents.h"
+#include "../IO/Log.h"
+#include "../Resource/ResourceCache.h"
+#include "../SystemUI/SystemUI.h"
+#include "../SystemUI/Console.h"
 #include <SDL/SDL.h>
 #include <ImGuizmo/ImGuizmo.h>
 #include <ImGui/imgui_internal.h>
 #include <ImGui/imgui_freetype.h>
-#include <IO/Log.h>
 
 
 using namespace std::placeholders;
