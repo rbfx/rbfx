@@ -201,7 +201,10 @@ void Editor::Start()
     });
 
     if (!defaultProjectPath.empty())
+    {
+        ui::GetIO().IniFilename = nullptr;  // Avoid creating imgui.ini in some cases
         pendingOpenProject_ = defaultProjectPath.c_str();
+    }
     else
         SetupSystemUI();
 }
