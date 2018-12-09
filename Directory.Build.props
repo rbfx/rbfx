@@ -20,6 +20,7 @@
   <PropertyGroup>
     <PlatformTarget Condition=" '$(PlatformTarget)' == '' ">x64</PlatformTarget>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+	<EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(BuildDir)' == '' ">
     <BuildDir Condition=" '$(OS)' != 'Unix' ">$(SolutionDir)/</BuildDir>
