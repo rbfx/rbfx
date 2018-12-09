@@ -191,7 +191,11 @@ void Editor::Start()
     SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap&) {
         auto* preview = GetTab<PreviewTab>();
         if (preview->GetSceneSimulationStatus() == SCENE_SIMULATION_STOPPED)
+        {
             exiting_ = true;
+            if (project_.NotNull())
+                project_->SaveProject();
+        }
         else
             preview->Stop();
     });

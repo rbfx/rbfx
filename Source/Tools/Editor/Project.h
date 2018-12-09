@@ -81,6 +81,8 @@ protected:
     String defaultScene_;
     ///
     HashMap<String, Variant> engineParameters_;
+    ///
+    Timer saveProjectTimer_;
 };
 
 

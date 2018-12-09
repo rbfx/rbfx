@@ -21,6 +21,7 @@
 //
 
 #include <Urho3D/Resource/XMLFile.h>
+#include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/IO/FileSystem.h>
@@ -62,6 +63,16 @@ Project::Project(Context* context)
         using namespace ResourceBrowserDelete;
         if (args[P_NAME].GetString() == defaultScene_)
             defaultScene_ = String::EMPTY;
+    });
+
+    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) {
+        // Save project every minute.
+        // TODO: Make save time configurable.
+        if (saveProjectTimer_.GetMSec(false) >= 60000)
+        {
+            SaveProject();
+            saveProjectTimer_.Reset();
+        }
     });
 }
 
