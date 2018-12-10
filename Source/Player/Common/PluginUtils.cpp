@@ -53,7 +53,7 @@ template<typename T>
 static bool IsValidPtr(const PODVector<unsigned char>& data, T* p)
 {
     return reinterpret_cast<std::uintptr_t>(p) >= reinterpret_cast<std::uintptr_t>(data.Buffer()) &&
-           reinterpret_cast<std::uintptr_t>(p) + sizeof(T) < reinterpret_cast<std::uintptr_t>(data.Buffer() + data.Size());
+           reinterpret_cast<std::uintptr_t>(p) + sizeof(T) <= reinterpret_cast<std::uintptr_t>(data.Buffer() + data.Size());
 }
 
 static bool IsValidPtr(const PODVector<unsigned char>& data, const char* p, unsigned len)
@@ -78,49 +78,47 @@ PluginType GetPluginType(Context* context, const String& path)
         if (!file.Open(path, FILE_READ))
             return PLUGIN_INVALID;
 
-        if (file.GetSize() == 0)
+        data.Resize(file.GetSize());
+        if (file.Read(data.Buffer(), data.Size()) != data.Size())
             return PLUGIN_INVALID;
-
-        file.Seek(0);
 
         // Elf header parsing code based on elfdump by Owen Klan.
-        Elf_Ehdr hdr;
-        if (file.Read(&hdr, sizeof(hdr)) != sizeof(hdr))
-            return PLUGIN_INVALID;
-
-        if (strncmp(reinterpret_cast<const char*>(hdr.e_ident), ELFMAG, SELFMAG) != 0)
+        Elf_Ehdr* hdr = reinterpret_cast<Elf_Ehdr*>(data.Buffer());
+        if (!IsValidPtr(data, hdr) || strncmp(reinterpret_cast<const char*>(hdr->e_ident), ELFMAG, SELFMAG) != 0)
             // Not elf.
             return PLUGIN_INVALID;
 
-        if (hdr.e_type != ET_DYN)
+        if (hdr->e_type != ET_DYN)
             return PLUGIN_INVALID;
 
         // Find symbol name table
         unsigned symNameTableOffset = 0;
         {
-            file.Seek(hdr.e_shoff + sizeof(Elf_Shdr) * hdr.e_shstrndx);
-            Elf_Shdr shdr;
-            if (file.Read(&shdr, sizeof(shdr)) != sizeof(shdr))
+            Elf_Shdr* shdr = reinterpret_cast<Elf_Shdr*>(data.Buffer() + hdr->e_shoff + sizeof(Elf_Shdr) * hdr->e_shstrndx);
+            if (!IsValidPtr(data, shdr))
                 return PLUGIN_INVALID;
 
-            auto nameTableOffset = shdr.sh_offset;
-            auto shoff = hdr.e_shoff;
+            auto nameTableOffset = shdr->sh_offset;
+            shdr = reinterpret_cast<Elf_Shdr*>(data.Buffer() + hdr->e_shoff);
 
-            for (auto i = 0; i < hdr.e_shnum; i++)
+            for (auto i = 0; i < hdr->e_shnum; i++)
             {
-                file.Seek(shoff);
-                if (file.Read(&shdr, sizeof(shdr)) != sizeof(shdr))
+                if (!IsValidPtr(data, shdr))
                     return PLUGIN_INVALID;
 
-                file.Seek(nameTableOffset + shdr.sh_name);
+                const char* tabNamePtr = reinterpret_cast<const char*>(data.Buffer() + nameTableOffset + shdr->sh_name);
+                const char strTabName[] = ".strtab";
 
-                if (file.ReadString() == ".strtab")
+                if (!IsValidPtr(data, tabNamePtr, sizeof(strTabName)))
+                    return PLUGIN_INVALID;
+
+                if (strncmp(tabNamePtr, strTabName, sizeof(strTabName)) == 0)
                 {
-                    symNameTableOffset = shdr.sh_offset;
+                    symNameTableOffset = shdr->sh_offset;
                     break;
                 }
                 else
-                    shoff += sizeof(shdr);
+                    ++shdr;
             }
         }
 
@@ -129,30 +127,31 @@ PluginType GetPluginType(Context* context, const String& path)
 
         // Find cr_main symbol
         {
-            auto shoff = hdr.e_shoff;
-            Elf_Shdr sectab;
+            auto shoff = hdr->e_shoff;
+            Elf_Shdr* sectab = nullptr;
             do
             {
-                file.Seek(shoff);
-                if (file.Read(&sectab, sizeof(sectab)) != sizeof(sectab))
+                sectab = reinterpret_cast<Elf_Shdr*>(data.Buffer() + shoff);
+                if (!IsValidPtr(data, sectab))
                     return PLUGIN_INVALID;
-                shoff += sizeof(sectab);
-            } while (sectab.sh_type != SHT_SYMTAB);
+                shoff += sizeof(Elf_Shdr);
+            } while (sectab->sh_type != SHT_SYMTAB);
 
-            shoff = sectab.sh_offset;
-            auto num = sectab.sh_size / sectab.sh_entsize;
+            shoff = sectab->sh_offset;
+            auto num = sectab->sh_size / sectab->sh_entsize;
             String funcName;
             for (auto i = 0; i < num; i++)
             {
-                Elf_Sym symbol;
-                file.Seek(shoff);
-                if (file.Read(&symbol, sizeof(symbol)) != sizeof(symbol))
+                Elf_Sym* symbol = reinterpret_cast<Elf_Sym*>(data.Buffer() + shoff);
+                if (!IsValidPtr(data, symbol))
                     return PLUGIN_INVALID;
-                shoff += sizeof(symbol);
+                shoff += sizeof(Elf_Sym);
 
-                file.Seek(symNameTableOffset + symbol.st_name);
-                file.ReadString(funcName);
-                if (funcName == "cr_main")
+                const char* funcNamePtr = reinterpret_cast<const char*>(data.Buffer() + symNameTableOffset + symbol->st_name);
+                if (!IsValidPtr(data, funcNamePtr, sizeof(pluginEntryPoint)))
+                    return PLUGIN_INVALID;
+
+                if (strncmp(funcNamePtr, pluginEntryPoint, sizeof(pluginEntryPoint)) == 0)
                     return PLUGIN_NATIVE;
             }
         }
