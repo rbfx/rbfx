@@ -27,8 +27,9 @@ using System.Runtime.InteropServices;
 namespace Urho3DNet
 {
 
+[Serializable]
 [StructLayout(LayoutKind.Sequential)]
-public struct StringHash
+public struct StringHash : IEquatable<StringHash>
 {
     public uint Hash { get; }
 
@@ -86,6 +87,11 @@ public struct StringHash
     internal static uint GetNativeInstance(StringHash source)
     {
         return source.Hash;
+    }
+
+    public bool Equals(StringHash other)
+    {
+            return Hash == other.Hash;
     }
 }
 
