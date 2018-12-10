@@ -49,12 +49,27 @@ using Elf_Sym = Elf32_Sym;
 namespace Urho3D
 {
 
+template<typename T>
+static bool IsValidPtr(const PODVector<unsigned char>& data, T* p)
+{
+    return reinterpret_cast<std::uintptr_t>(p) >= reinterpret_cast<std::uintptr_t>(data.Buffer()) &&
+           reinterpret_cast<std::uintptr_t>(p) + sizeof(T) < reinterpret_cast<std::uintptr_t>(data.Buffer() + data.Size());
+}
+
+static bool IsValidPtr(const PODVector<unsigned char>& data, const char* p, unsigned len)
+{
+    return reinterpret_cast<std::uintptr_t>(p) >= reinterpret_cast<std::uintptr_t>(data.Buffer()) &&
+           reinterpret_cast<std::uintptr_t>(p) + len < reinterpret_cast<std::uintptr_t>(data.Buffer() + data.Size());
+}
 
 PluginType GetPluginType(Context* context, const String& path)
 {
 #if URHO3D_PLUGINS
     // This function implements a naive check for plugin validity. Proper check would parse executable headers and look
     // for relevant exported function names.
+    PODVector<unsigned char> data;
+    const char pluginEntryPoint[] = "cr_main";
+
 #if __linux__
     // ELF magic
     if (path.EndsWith(".so"))
@@ -126,6 +141,7 @@ PluginType GetPluginType(Context* context, const String& path)
 
             shoff = sectab.sh_offset;
             auto num = sectab.sh_size / sectab.sh_entsize;
+            String funcName;
             for (auto i = 0; i < num; i++)
             {
                 Elf_Sym symbol;
@@ -135,7 +151,8 @@ PluginType GetPluginType(Context* context, const String& path)
                 shoff += sizeof(symbol);
 
                 file.Seek(symNameTableOffset + symbol.st_name);
-                if (file.ReadString() == "cr_main")
+                file.ReadString(funcName);
+                if (funcName == "cr_main")
                     return PLUGIN_NATIVE;
             }
         }
@@ -147,71 +164,66 @@ PluginType GetPluginType(Context* context, const String& path)
         if (!file.Open(path, FILE_READ))
             return PLUGIN_INVALID;
 
-        if (file.ReadShort() == IMAGE_DOS_SIGNATURE)
+        data.Resize(file.GetSize());
+        if (file.Read(data.Buffer(), data.Size()) != data.Size())
+            return PLUGIN_INVALID;
+
+        PIMAGE_DOS_HEADER dos = reinterpret_cast<PIMAGE_DOS_HEADER>(data.Buffer());
+
+        if (!IsValidPtr(data, dos) || dos->e_magic != IMAGE_DOS_SIGNATURE)
+            return PLUGIN_INVALID;
+
+        PIMAGE_NT_HEADERS nt = reinterpret_cast<PIMAGE_NT_HEADERS>(data.Buffer() + dos->e_lfanew);
+        if (!IsValidPtr(data, dos) || nt->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR_MAGIC)
+            return PLUGIN_INVALID;
+
+        const auto& eatDir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
+        const auto& netDir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
+        if (netDir.VirtualAddress != 0)
         {
-
-            IMAGE_DOS_HEADER dos;
-            file.Seek(0);
-            if (file.Read(&dos, sizeof(dos)) != sizeof(dos))
-                return PLUGIN_INVALID;
-
-            file.Seek(dos.e_lfanew);
-            IMAGE_NT_HEADERS nt;
-            if (file.Read(&nt, sizeof(nt)) != sizeof(nt))
-                return PLUGIN_INVALID;
-
-
-            if (nt.OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR_MAGIC)
-                return PLUGIN_INVALID;
-
-            const auto& eatDir = nt.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
-            const auto& netDir = nt.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
-            if (netDir.VirtualAddress != 0)
-            {
 #if URHO3D_CSHARP
-                // Verify that plugin has a class that inherits from PluginApplication.
-                if (context->GetSubsystem<Script>()->VerifyAssembly(path))
-                    return PLUGIN_MANAGED;
+            // Verify that plugin has a class that inherits from PluginApplication.
+            if (context->GetSubsystem<Script>()->VerifyAssembly(path))
+                return PLUGIN_MANAGED;
 #endif
-            }
-            else if (eatDir.VirtualAddress > 0)
+        }
+        else if (eatDir.VirtualAddress > 0)
+        {
+            // Verify that plugin has exported function named cr_main.
+            // Find section that contains EAT.
+
+            unsigned firstSectionOffset = dos->e_lfanew + FIELD_OFFSET(IMAGE_NT_HEADERS, OptionalHeader) + nt->FileHeader.SizeOfOptionalHeader;
+            uint32_t eatModifier = 0;
+            for (auto i = 0; i < nt->FileHeader.NumberOfSections; i++)
             {
-                // Verify that plugin has exported function named cr_main.
-                // Find section that contains EAT.
-
-                unsigned firstSectionOffset = dos.e_lfanew + FIELD_OFFSET(IMAGE_NT_HEADERS, OptionalHeader) + nt.FileHeader.SizeOfOptionalHeader;
-                uint32_t eatModifier = 0;
-                for (auto i = 0; i < nt.FileHeader.NumberOfSections; i++)
-                {
-                    file.Seek(firstSectionOffset + i * sizeof(IMAGE_SECTION_HEADER));
-                    IMAGE_SECTION_HEADER section;
-                    if (file.Read(&section, sizeof(section)) != sizeof(section))
-                        return PLUGIN_INVALID;
-
-                    if (eatDir.VirtualAddress >= section.VirtualAddress && eatDir.VirtualAddress < (section.VirtualAddress + section.SizeOfRawData))
-                    {
-                        eatModifier = section.VirtualAddress - section.PointerToRawData;
-                        break;
-                    }
-                }
-
-                IMAGE_EXPORT_DIRECTORY eat;
-                file.Seek(eatDir.VirtualAddress - eatModifier);
-                if (file.Read(&eat, sizeof(eat)) != sizeof(eat))
+                PIMAGE_SECTION_HEADER section = reinterpret_cast<PIMAGE_SECTION_HEADER>(data.Buffer() + firstSectionOffset + i * sizeof(IMAGE_SECTION_HEADER));
+                if (!IsValidPtr(data, section))
                     return PLUGIN_INVALID;
 
-                unsigned namesOffset = eat.AddressOfNames - eatModifier;
-                for (auto i = 0; i < eat.NumberOfFunctions; i++)
+                if (eatDir.VirtualAddress >= section->VirtualAddress && eatDir.VirtualAddress < (section->VirtualAddress + section->SizeOfRawData))
                 {
-                    file.Seek(namesOffset + i * sizeof(uint32_t));
-                    unsigned nameOffset = 0;
-                    if (file.Read(&nameOffset, sizeof(nameOffset)) != sizeof(nameOffset))
-                        return PLUGIN_INVALID;
-
-                    file.Seek(nameOffset - eatModifier);
-                    if (file.ReadText() == "cr_main")
-                        return PLUGIN_NATIVE;
+                    eatModifier = section->VirtualAddress - section->PointerToRawData;
+                    break;
                 }
+            }
+
+            PIMAGE_EXPORT_DIRECTORY eat = reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>(data.Buffer() + eatDir.VirtualAddress - eatModifier);
+            if (!IsValidPtr(data, eat))
+                return PLUGIN_INVALID;
+
+            unsigned namesOffset = eat->AddressOfNames - eatModifier;
+            for (auto i = 0; i < eat->NumberOfFunctions; i++)
+            {
+                uint32_t* nameOffset = reinterpret_cast<unsigned*>(data.Buffer() + namesOffset + i * sizeof(uint32_t));
+                if (!IsValidPtr(data, nameOffset))
+                    return PLUGIN_INVALID;
+
+                const char* funcNamePtr = reinterpret_cast<const char*>(data.Buffer() + *nameOffset - eatModifier);
+                if (!IsValidPtr(data, funcNamePtr, sizeof(pluginEntryPoint)))
+                    return PLUGIN_INVALID;
+
+                if (strncmp(funcNamePtr, pluginEntryPoint, sizeof(pluginEntryPoint)) == 0)
+                    return PLUGIN_NATIVE;
             }
         }
     }
