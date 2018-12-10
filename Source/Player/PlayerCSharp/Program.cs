@@ -141,6 +141,7 @@ namespace Player
             }
         }
 
+        [STAThread]
         public static void Main(string[] args)
         {
             new Program().Run(args);
