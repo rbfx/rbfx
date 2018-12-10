@@ -3,7 +3,6 @@
 // Types that are binary-compatible
 %define URHO3D_BINARY_COMPATIBLE_TYPE_EX(CS_TYPE, CPP_TYPE)
     %csexposefunc(wrapper, Create##CPP_TYPE, CPP_TYPE*, CPP_TYPE*) %{
-        [return: global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.LPStruct)]
         private static CS_TYPE Create##CPP_TYPE(in CS_TYPE primitive)
         {
             return primitive;
@@ -15,8 +14,7 @@
     struct CPP_TYPE;
 
     %typemap(ctype)                CPP_TYPE, const CPP_TYPE &, CPP_TYPE & "CPP_TYPE *"
-    %typemap(imtype, out="CS_TYPE", outattributes=
-        "[return: global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.LPStruct)]")
+    %typemap(imtype, out="CS_TYPE")
                                    CPP_TYPE, const CPP_TYPE &, CPP_TYPE & "ref CS_TYPE"
     %typemap(cstype)               CPP_TYPE, const CPP_TYPE &             "CS_TYPE"
     %typemap(cstype, out="CS_TYPE")                            CPP_TYPE & "ref CS_TYPE"
