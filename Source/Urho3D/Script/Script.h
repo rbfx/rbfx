@@ -35,13 +35,13 @@ namespace Urho3D
 {
 
 /// Script runtime command handler callback type.
-typedef void*(*ScriptRuntimeCommandHandler)(int command, void** args);
+typedef std::uintptr_t(*ScriptRuntimeCommandHandler)(int command, void** args);
 ///
 using ScriptCommandRange = Pair<int, int>;
 /// Value indicating failure.
-static void* ScriptCommandFailed = reinterpret_cast<void*>(~0U);
+static const std::uintptr_t ScriptCommandFailed = ~0U;
 /// Value indicating success.
-static void* ScriptCommandSuccess = nullptr;
+static const std::uintptr_t ScriptCommandSuccess = 0;
 
 /// List of runtime commands. Warning! When reordering enum items inspect all calls to RegisterCommandHandler!
 enum ScriptRuntimeCommand: int
@@ -73,13 +73,13 @@ public:
 protected:
     ///
     template<typename... Args>
-    void* Command(unsigned command, const Args&... args)
+    std::uintptr_t Command(unsigned command, const Args&... args)
     {
         unsigned index = 0;
         PODVector<void*> runtimeArgs;
         runtimeArgs.Resize(sizeof...(args));
         ConvertArguments(runtimeArgs, index, std::forward<const Args&>(args)...);
-        void* result = ScriptCommandFailed;
+        std::uintptr_t result = ScriptCommandFailed;
         for (auto handler : commandHandlers_)
         {
             if (!IsInRange(handler.first_, command))

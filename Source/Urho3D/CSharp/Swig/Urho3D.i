@@ -42,6 +42,8 @@
 	unsigned char*
 }
 
+%apply void* { std::uintptr_t };
+
 // Speed boost
 %pragma(csharp) imclassclassmodifiers="[System.Security.SuppressUnmanagedCodeSecurity]\ninternal class"
 %typemap(csclassmodifiers) SWIGTYPE "public partial class"
