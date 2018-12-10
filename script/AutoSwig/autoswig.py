@@ -176,7 +176,7 @@ class DefineConstantsPass(AstPass):
                     if value:
                         type_kind = node.type.get_canonical().kind
                         if type_kind in (TypeKind.CHAR16, TypeKind.CHAR32, TypeKind.USHORT, TypeKind.UINT,
-                                         TypeKind.ULONG, TypeKind.ULONGLONG, TypeKind.UINT128)
+                                         TypeKind.ULONG, TypeKind.ULONGLONG, TypeKind.UINT128):
                             value = value.rstrip('Uu') + 'U'
                         elif type_kind == TypeKind.FLOAT:
                             value = value.rstrip('Ff') + 'f'
