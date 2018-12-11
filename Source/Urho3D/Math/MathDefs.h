@@ -113,6 +113,19 @@ inline T Clamp(T value, T min, T max)
         return value;
 }
 
+/// Wrap a number within a range. min and max are included as valid values.
+/// values are wrapped to include the min and max. eg: for (value == 5, min == 1, max == 4) result would be 1. For value == 0, result would be 4.
+int Wrap(int value, int min, int max);
+
+/// Wrap a number within a range. min and max are included as valid values.
+float Wrap(float value, float min, float max);
+
+/// Wrap a number within a range. min and max are included as valid values.
+double Wrap(double value, double min, double max);
+
+
+
+
 /// Smoothly damp between values.
 template <class T>
 inline T SmoothStep(T lhs, T rhs, T t)
