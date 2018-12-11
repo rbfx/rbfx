@@ -68,7 +68,6 @@ void VehicleDemo::Start()
     // Execute base class startup
     Sample::Start();
 
-    GetSubsystem<Engine>()->SetMaxFps(60);
 
     // Create static scene content
     CreateScene();
