@@ -353,14 +353,14 @@ void SceneTab::OnAfterEnd()
 
 bool SceneTab::LoadResource(const String& resourcePath)
 {
+    Undo::SetTrackingScoped noTrack(undo_, false);
+
     if (resourcePath == GetResourceName())
         // Already loaded.
         return true;
 
     if (!BaseClassName::LoadResource(resourcePath))
         return false;
-
-    Undo::SetTrackingScoped noTrack(undo_, false);
 
     SceneManager* manager = GetSubsystem<SceneManager>();
     Scene* scene = manager->GetOrCreateScene(GetFileName(resourcePath));
@@ -1418,6 +1418,8 @@ void SceneTab::RenderDebugInfo()
 
 void SceneTab::Close()
 {
+    Undo::SetTrackingScoped noTrack(undo_, false);
+
     BaseClassName::Close();
 
     SceneManager* manager = GetSubsystem<SceneManager>();
