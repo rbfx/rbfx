@@ -39,6 +39,11 @@ namespace Urho3D {
         }
     }
 
+    void SixDofConstraint::SetPitchLimits(const Vector3& limits)
+    {
+        SetPitchLimits(limits.x_, limits.y_);
+    }
+
     void SixDofConstraint::SetYawLimits(float minLimit, float maxLimit)
     {
         if (yawLimits_ != Vector2(minLimit, maxLimit)) {
@@ -53,6 +58,11 @@ namespace Urho3D {
         }
     }
 
+    void SixDofConstraint::SetYawLimits(const Vector3& limits)
+    {
+        SetYawLimits(limits.x_, limits.y_);
+    }
+
     void SixDofConstraint::SetRollLimits(float minLimit, float maxLimit)
     {
         if (rollLimits_ != Vector2(minLimit, maxLimit)) {
@@ -65,6 +75,11 @@ namespace Urho3D {
             else
                 MarkDirty();
         }
+    }
+
+    void SixDofConstraint::SetRollLimits(const Vector3& limits)
+    {
+        SetRollLimits(limits.x_, limits.y_);
     }
 
     void SixDofConstraint::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)

@@ -27,13 +27,13 @@ namespace Urho3D {
         //void SetSpaceLimits();
 
         void SetPitchLimits(float minLimit, float maxLimit);
+        void SetPitchLimits(const Vector3& limits);
         
         void SetYawLimits(float minLimit, float maxLimit);
+        void SetYawLimits(const Vector3& limits);
 
         void SetRollLimits(float minLimit, float maxLimit);
-
-
-
+        void SetRollLimits(const Vector3& limits);
 
 
        
