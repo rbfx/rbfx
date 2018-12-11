@@ -54,6 +54,8 @@ Scene* SceneManager::CreateScene(const String& name)
     }
     SharedPtr<Scene> scene(context_->CreateObject<Scene>());
     scene->SetName(name);
+    scene->GetOrCreateComponent<Octree>();
+    scene->GetOrCreateComponent<SceneMetadata>(LOCAL);
     scenes_.Push(scene);
     return scene.Get();
 }
@@ -111,12 +113,6 @@ void SceneManager::UnloadAllButActiveScene()
 
 void SceneManager::SetActiveScene(Scene* scene)
 {
-    if (scene != nullptr)
-    {
-        scene->GetOrCreateComponent<Octree>();
-        scene->GetOrCreateComponent<SceneMetadata>(LOCAL);
-    }
-
     using namespace SceneActivated;
     VariantMap& eventData = GetEventDataMap();
     eventData[P_OLDSCENE] = activeScene_.Get();
