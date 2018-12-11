@@ -7,25 +7,25 @@
 namespace Urho3D {
 
 
-    SixDof_Constraint::SixDof_Constraint(Context* context) : Constraint(context)
+    SixDofConstraint::SixDofConstraint(Context* context) : Constraint(context)
     {
 
     }
 
-    SixDof_Constraint::~SixDof_Constraint()
+    SixDofConstraint::~SixDofConstraint()
     {
 
     }
 
-    void SixDof_Constraint::RegisterObject(Context* context)
+    void SixDofConstraint::RegisterObject(Context* context)
     {
-        context->RegisterFactory<SixDof_Constraint>(DEF_PHYSICS_CATEGORY.CString());
+        context->RegisterFactory<SixDofConstraint>(DEF_PHYSICS_CATEGORY.CString());
 
 
         URHO3D_COPY_BASE_ATTRIBUTES(Constraint);
     }
 
-    void SixDof_Constraint::SetPitchLimits(float minLimit, float maxLimit)
+    void SixDofConstraint::SetPitchLimits(float minLimit, float maxLimit)
     {
         if (pitchLimits_ != Vector2(minLimit, maxLimit)) {
             pitchLimits_.x_ = minLimit;
@@ -39,7 +39,7 @@ namespace Urho3D {
         }
     }
 
-    void SixDof_Constraint::SetYawLimits(float minLimit, float maxLimit)
+    void SixDofConstraint::SetYawLimits(float minLimit, float maxLimit)
     {
         if (yawLimits_ != Vector2(minLimit, maxLimit)) {
             yawLimits_.x_ = minLimit;
@@ -53,7 +53,7 @@ namespace Urho3D {
         }
     }
 
-    void SixDof_Constraint::SetRollLimits(float minLimit, float maxLimit)
+    void SixDofConstraint::SetRollLimits(float minLimit, float maxLimit)
     {
         if (rollLimits_ != Vector2(minLimit, maxLimit)) {
             rollLimits_.x_ = minLimit;
@@ -67,12 +67,12 @@ namespace Urho3D {
         }
     }
 
-    void SixDof_Constraint::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
+    void SixDofConstraint::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
     {
         Constraint::DrawDebugGeometry(debug, depthTest);
     }
 
-    void SixDof_Constraint::buildConstraint()
+    void SixDofConstraint::buildConstraint()
     {
         newtonJoint_ = new dCustom6dof(UrhoToNewton(GetOwnNewtonWorldFrame()), UrhoToNewton(GetOtherNewtonWorldFrame()), GetOwnNewtonBody(), GetOtherNewtonBody());
 
@@ -81,7 +81,7 @@ namespace Urho3D {
 
     }
 
-    bool SixDof_Constraint::applyAllJointParams()
+    bool SixDofConstraint::applyAllJointParams()
     {
         if (!Constraint::applyAllJointParams())
             return false;

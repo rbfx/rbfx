@@ -1020,7 +1020,7 @@ namespace Urho3D {
         Constraint::RegisterObject(context);
         FixedDistanceConstraint::RegisterObject(context);
         BallAndSocketConstraint::RegisterObject(context);
-        SixDof_Constraint::RegisterObject(context);
+        SixDofConstraint::RegisterObject(context);
         HingeConstraint::RegisterObject(context);
         SliderConstraint::RegisterObject(context);
         FullyFixedConstraint::RegisterObject(context);

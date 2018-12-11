@@ -1,9 +1,5 @@
 #pragma once
 
-#pragma once
-
-
-
 #include "Constraint.h"
 
 
@@ -13,14 +9,14 @@ namespace Urho3D {
 
 
 
-    class URHO3D_API SixDof_Constraint : public Constraint
+    class URHO3D_API SixDofConstraint : public Constraint
     {
-        URHO3D_OBJECT(SixDof_Constraint, Constraint);
+        URHO3D_OBJECT(SixDofConstraint, Constraint);
 
     public:
 
-        SixDof_Constraint(Context* context);
-        ~SixDof_Constraint();
+        SixDofConstraint(Context* context);
+        ~SixDofConstraint();
 
 
 
