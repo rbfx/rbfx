@@ -23,10 +23,14 @@
 
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/DebugRenderer.h>
+#include <Urho3D/Graphics/RenderPath.h>
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/Resource/ResourceCache.h>
 #include <Toolbox/Scene/DebugCameraController.h>
-#include "EditorSceneSettings.h"
 #include "SceneTab.h"
 #include "EditorEvents.h"
+#include "Editor.h"
+#include "EditorSceneSettings.h"
 
 
 namespace Urho3D
@@ -43,19 +47,12 @@ EditorSceneSettings::EditorSceneSettings(Context* context)
 void EditorSceneSettings::RegisterObject(Context* context)
 {
     context->RegisterFactory<EditorSceneSettings>();
-    URHO3D_ATTRIBUTE("Viewport RenderPath", ResourceRef, editorViewportRenderPath_, defaultRenderPath, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Viewport RenderPath", GetEditorViewportRenderPath, SetEditorViewportRenderPath, ResourceRef, defaultRenderPath, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Camera Position", GetCameraPosition, SetCameraPosition, Vector3, Vector3::ZERO, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Camera Orthographic Size", GetCameraOrthoSize, SetCameraOrthoSize, float, DEFAULT_ORTHOSIZE, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Camera Zoom", GetCameraZoom, SetCameraZoom, float, 1.f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Camera Rotation", GetCameraRotation, SetCameraRotation, Quaternion, Quaternion::IDENTITY, AM_FILE | AM_NOEDIT);
     URHO3D_ACCESSOR_ATTRIBUTE("Camera View 2D", GetCamera2D, SetCamera2D, bool, false, AM_FILE | AM_NOEDIT);
-}
-
-void EditorSceneSettings::OnSetAttribute(const AttributeInfo& attr, const Variant& src)
-{
-    Serializable::OnSetAttribute(attr, src);
-    using namespace SceneSettingModified;
-    SendEvent(E_SCENESETTINGMODIFIED, P_SCENE, GetScene(), P_NAME, attr.name_, P_VALUE, src);
 }
 
 Vector3 EditorSceneSettings::GetCameraPosition() const
@@ -115,6 +112,10 @@ void EditorSceneSettings::OnSceneSet(Scene* scene)
 {
     if (scene == nullptr)
         return;
+
+    // When default viewport is used SetEditorViewportRenderPath() will not be called. This causes scene viewport to use
+    // viewport renderpath of previous opened scene.
+    SetEditorViewportRenderPath(editorViewportRenderPath_);
 
     Node* parent = scene->GetChild("__EditorObjects__");
     if (parent == nullptr)
@@ -194,6 +195,38 @@ void EditorSceneSettings::SetCameraRotation(const Quaternion& rotation)
 {
     if (Node* camera = GetCameraNode())
         camera->SetRotation(rotation);
+}
+
+void EditorSceneSettings::SetEditorViewportRenderPath(const ResourceRef& renderPath)
+{
+    if (renderPath.type_ != XMLFile::GetTypeStatic())
+    {
+        URHO3D_LOGERROR("ResourceRef is not XMLFile.");
+        return;
+    }
+
+    if (XMLFile* renderPathFile = GetCache()->GetResource<XMLFile>(renderPath.name_))
+    {
+        if (auto* tab = GetSubsystem<Editor>()->GetTab<SceneTab>())
+        {
+            if (!tab->GetViewport()->SetRenderPath(renderPathFile))
+                return;
+
+            editorViewportRenderPath_ = renderPath;
+
+            RenderPath* path = tab->GetViewport()->GetRenderPath();
+            for (auto& command: path->commands_)
+            {
+                if (command.pixelShaderName_.StartsWith("PBR"))
+                {
+                    XMLFile* gammaCorrection = GetCache()->GetResource<XMLFile>(
+                        "PostProcess/GammaCorrection.xml");
+                    path->Append(gammaCorrection);
+                    return;
+                }
+            }
+        }
+    }
 }
 
 }
