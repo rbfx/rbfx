@@ -414,7 +414,7 @@ const StringVector& PluginManager::GetPluginNames()
             if (baseName.Empty() || IsDigit(static_cast<unsigned int>(baseName.Back())))
                 continue;
 
-            String fullPath = fs->GetProgramDir() + "/" + file;
+            String fullPath = fs->GetProgramDir() + file;
             DynamicLibraryInfo& info = pluginInfoCache_[file];
             unsigned currentModificationTime = fs->GetLastModifiedTime(fullPath);
             if (info.mtime_ != currentModificationTime)
