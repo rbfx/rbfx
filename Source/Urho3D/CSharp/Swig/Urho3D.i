@@ -533,6 +533,7 @@ public:
 
 // These methods use forward-declared types from SLikeNet.
 %ignore Urho3D::Connection::Connection;
+%ignore Urho3D::Connection::Initialize;
 %ignore Urho3D::Connection::GetAddressOrGUID;
 %ignore Urho3D::Connection::SetAddressOrGUID;
 %ignore Urho3D::Network::HandleMessage;
