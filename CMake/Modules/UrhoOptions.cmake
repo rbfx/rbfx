@@ -81,7 +81,7 @@ else ()
 endif ()
 
 # Enable features user has chosen
-foreach(FEATURE in ${URHO3D_FEATURES})
+foreach(FEATURE ${URHO3D_FEATURES})
     set (URHO3D_${FEATURE} ON CACHE BOOL "" FORCE)
 endforeach()
 
@@ -96,7 +96,7 @@ endmacro ()
 
 # Enable by default for developers preset
 if (URHO3D_DEVELOPER)
-    foreach (OPT in PROFILING TOOLS EXTRAS LOGGING SYSTEMUI FILEWATCHER HASH_DEBUG)
+    foreach (OPT PROFILING TOOLS EXTRAS LOGGING SYSTEMUI FILEWATCHER HASH_DEBUG)
         if (NOT DEFINED URHO3D_${OPT}_DEFAULT)
             set (URHO3D_${OPT}_DEFAULT ${URHO3D_DEVELOPER})
         endif ()
