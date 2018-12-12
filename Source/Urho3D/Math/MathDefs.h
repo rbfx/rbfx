@@ -33,6 +33,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <limits>
+#include <type_traits>
 
 namespace Urho3D
 {
@@ -151,8 +152,13 @@ template <class T> inline T Ln(T x) { return log(x); }
 /// Return square root of X.
 template <class T> inline T Sqrt(T x) { return sqrt(x); }
 
-/// Return floating-point remainder of X/Y.
-template <class T> inline T Mod(T x, T y) { return fmod(x, y); }
+/// Return remainder of X/Y.
+template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+inline T Mod(T x, T y) { return fmod(x, y); }
+
+/// Return remainder of X/Y.
+template<typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
+inline T Mod(T x, T y) { return x % y; }
 
 /// Return fractional part of passed value in range [0, 1).
 template <class T> inline T Fract(T value) { return value - floor(value); }
@@ -284,6 +290,13 @@ inline float HalfToFloat(unsigned short value)
     float out;
     *((unsigned*)&out) = t1;
     return out;
+}
+
+/// Wrap a value fitting it in the range defined by [min, max)
+template<typename T> inline T Wrap(T value, T min, T max)
+{
+    T range = max - min;
+    return min + Mod(value, range);
 }
 
 /// Calculate both sine and cosine, with angle in degrees.
