@@ -56,6 +56,7 @@ To create an object using a factory, call Context's \ref Context::CreateObject "
 SharedPtr<Object> newComponent = context_->CreateObject(type));
 \endcode
 
+Calls to \ref Context::CreateObject are thread-safe. However factory registration and removal is not thread-safe and user must ensure that no thread calls \ref Context::CreateObject during factory registration or removal.
 
 \page Subsystems Subsystems
 
