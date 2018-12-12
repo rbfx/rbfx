@@ -177,10 +177,16 @@ namespace EditorHost
         private int Version { get; set; } = -1;
         private DomainManager _manager;
         private AppDomain _pluginDomain;
+        private static int _pluginCheckCounter;
 
         public Program()
         {
-            AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += (sender, args) => Assembly.ReflectionOnlyLoadFrom(
+            InstallAssemblyLoader(AppDomain.CurrentDomain);
+        }
+
+        private static void InstallAssemblyLoader(AppDomain domain)
+        {
+            domain.ReflectionOnlyAssemblyResolve += (sender, args) => Assembly.ReflectionOnlyLoadFrom(
                 Path.Combine(ProgramDirectory, args.Name.Substring(0, args.Name.IndexOf(',')) + ".dll"));
         }
 
@@ -204,16 +210,37 @@ namespace EditorHost
             _pluginDomain = null;
         }
 
+        private class PluginChecker : MarshalByRefObject
+        {
+            public bool IsPlugin(string path)
+            {
+                try
+                {
+                    var pluginBaseName = typeof(PluginApplication).FullName;
+                    var assembly = Assembly.ReflectionOnlyLoadFrom(path);
+                    var types = assembly.GetTypes();
+                    return types.Any(type => type.BaseType?.FullName == pluginBaseName);
+                }
+                catch (Exception e)
+                {
+                    return false;
+                }
+            }
+        }
+
         private static bool IsPlugin(string path)
         {
-            var pluginBaseName = typeof(PluginApplication).FullName;
             try
             {
-                var assembly = Assembly.ReflectionOnlyLoadFrom(path);
-                var types = assembly.GetTypes();
-                return types.Any(type => type.BaseType?.FullName == pluginBaseName);
+                var checkerType = typeof(PluginChecker);
+                var tmpDomain = AppDomain.CreateDomain($"CheckPlugin{_pluginCheckCounter++}");
+                InstallAssemblyLoader(tmpDomain);
+                var checker = (PluginChecker)tmpDomain.CreateInstanceAndUnwrap(checkerType.Assembly.FullName, checkerType.FullName);
+                var result = checker.IsPlugin(path);
+                AppDomain.Unload(tmpDomain);
+                return result;
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 return false;
             }
