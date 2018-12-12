@@ -61,7 +61,7 @@ bool Sprite2D::BeginLoad(Deserializer& source)
         loadTexture_ = texture_;
     else
     {
-        loadTexture_ = new Texture2D(context_);
+        loadTexture_ = context_->CreateObject<Texture2D>();
         loadTexture_->SetName(GetName());
     }
     // In case we're async loading, only call BeginLoad() for the texture (load image but do not upload to GPU)

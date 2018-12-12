@@ -46,11 +46,11 @@ DropDownList::DropDownList(Context* context) :
 {
     focusMode_ = FM_FOCUSABLE_DEFOCUSABLE;
 
-    auto* window = new Window(context_);
+    auto window(context_->CreateObject<Window>());
     window->SetInternal(true);
     SetPopup(window);
 
-    listView_ = new ListView(context_);
+    listView_ = context_->CreateObject<ListView>();
     listView_->SetInternal(true);
     listView_->SetScrollBarsVisible(false, false);
     popup_->SetLayout(LM_VERTICAL);

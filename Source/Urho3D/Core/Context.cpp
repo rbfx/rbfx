@@ -183,6 +183,14 @@ void Context::RegisterFactory(ObjectFactory* factory)
     if (!factory)
         return;
 
+    auto it = factories_.Find(factory->GetType());
+    if (it != factories_.End())
+    {
+        URHO3D_LOGERRORF("Failed to register '%s' because type '%s' is already registered with same type hash.",
+            factory->GetTypeName().CString(), it->second_->GetTypeName().CString());
+        assert(false);
+        return;
+    }
     factories_[factory->GetType()] = factory;
 }
 

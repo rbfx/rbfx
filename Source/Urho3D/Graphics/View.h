@@ -120,6 +120,9 @@ public:
     /// Destruct.
     ~View() override = default;
 
+    /// Register object with the engine.
+    static void RegisterObject(Context* context);
+
     /// Define with rendertarget and viewport. Return true if successful.
     bool Define(RenderSurface* renderTarget, Viewport* viewport);
     /// Update and cull objects and construct rendering batches.

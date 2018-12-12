@@ -93,8 +93,8 @@ const char* UI_CATEGORY = "UI";
 
 UI::UI(Context* context) :
     Object(context),
-    rootElement_(new UIElement(context)),
-    rootModalElement_(new UIElement(context)),
+    rootElement_(context->CreateObject<UIElement>()),
+    rootModalElement_(context->CreateObject<UIElement>()),
     doubleClickInterval_(DEFAULT_DOUBLECLICK_INTERVAL),
     dragBeginInterval_(DEFAULT_DRAGBEGIN_INTERVAL),
     defaultToolTipDelay_(DEFAULT_TOOLTIP_DELAY),
@@ -508,7 +508,7 @@ void UI::DebugDraw(UIElement* element)
 
 SharedPtr<UIElement> UI::LoadLayout(Deserializer& source, XMLFile* styleFile)
 {
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     if (!xml->Load(source))
         return SharedPtr<UIElement>();
     else
@@ -852,8 +852,8 @@ void UI::Initialize()
     // Set initial root element size
     ResizeRootElement();
 
-    vertexBuffer_ = new VertexBuffer(context_);
-    debugVertexBuffer_ = new VertexBuffer(context_);
+    vertexBuffer_ = context_->CreateObject<VertexBuffer>();
+    debugVertexBuffer_ = context_->CreateObject<VertexBuffer>();
 
     initialized_ = true;
 

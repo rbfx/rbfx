@@ -47,10 +47,10 @@ extern const char* GEOMETRY_CATEGORY;
 
 TerrainPatch::TerrainPatch(Context* context) :
     Drawable(context, DRAWABLE_GEOMETRY),
-    geometry_(new Geometry(context)),
-    maxLodGeometry_(new Geometry(context)),
-    occlusionGeometry_(new Geometry(context)),
-    vertexBuffer_(new VertexBuffer(context)),
+    geometry_(context->CreateObject<Geometry>()),
+    maxLodGeometry_(context->CreateObject<Geometry>()),
+    occlusionGeometry_(context->CreateObject<Geometry>()),
+    vertexBuffer_(context->CreateObject<VertexBuffer>()),
     coordinates_(IntVector2::ZERO),
     lodLevel_(0)
 {

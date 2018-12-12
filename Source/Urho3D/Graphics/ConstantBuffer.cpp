@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Core/Context.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/ConstantBuffer.h"
 #include "../IO/Log.h"
@@ -40,6 +41,11 @@ ConstantBuffer::ConstantBuffer(Context* context) :
 ConstantBuffer::~ConstantBuffer()
 {
     Release();
+}
+
+void ConstantBuffer::RegisterObject(Context* context)
+{
+    context->RegisterFactory<ConstantBuffer>();
 }
 
 void ConstantBuffer::SetParameter(unsigned offset, unsigned size, const void* data)

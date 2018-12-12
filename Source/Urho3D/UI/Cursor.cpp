@@ -150,7 +150,7 @@ void Cursor::DefineShape(const String& shape, Image* image, const IntRect& image
     info.texture_ = cache->GetResource<Texture2D>(image->GetName(), false);
     if (!info.texture_)
     {
-        auto* texture = new Texture2D(context_);
+        auto texture(context_->CreateObject<Texture2D>());
         texture->SetData(SharedPtr<Image>(image));
         info.texture_ = texture;
     }

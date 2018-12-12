@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Core/Context.h"
 #include "../Core/WorkQueue.h"
 #include "../Core/Profiler.h"
 #include "../Graphics/Camera.h"
@@ -58,6 +59,11 @@ OcclusionBuffer::OcclusionBuffer(Context* context) :
 }
 
 OcclusionBuffer::~OcclusionBuffer() = default;
+
+void OcclusionBuffer::RegisterObject(Context* context)
+{
+    context->RegisterFactory<OcclusionBuffer>();
+}
 
 bool OcclusionBuffer::SetSize(int width, int height, bool threaded)
 {

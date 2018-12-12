@@ -239,6 +239,7 @@ void* SuspendTask(Task* nextTask, float time, void* data)
 
 Tasks::Tasks(Context* context) : Object(context)
 {
+    RegisterTasksLibrary(context);
 }
 
 SharedPtr<Task> Tasks::Create(const std::function<void()>& taskFunction, unsigned stackSize)
@@ -271,7 +272,7 @@ void Tasks::Add(StringHash eventType, Task* task)
     TaskScheduler* scheduler = nullptr;
     if (it == taskSchedulers_.End())
     {
-        taskSchedulers_[eventType] = scheduler = new TaskScheduler(context_);
+        taskSchedulers_[eventType] = scheduler = context_->CreateObject<TaskScheduler>();
         SubscribeToEvent(eventType, [&](StringHash eventType_, VariantMap&) { ExecuteTasks(eventType_); });
     }
     else
@@ -296,6 +297,12 @@ unsigned Tasks::GetActiveTaskCount() const
     for (const auto& scheduler: taskSchedulers_)
         activeTasks += scheduler.second_->GetActiveTaskCount();
     return activeTasks;
+}
+
+void RegisterTasksLibrary(Context* context)
+{
+    context->RegisterFactory<Task>();
+    context->RegisterFactory<TaskScheduler>();
 }
 
 }

@@ -395,7 +395,7 @@ bool TmxFile2D::BeginLoad(Deserializer& source)
     if (GetName().Empty())
         SetName(source.GetName());
 
-    loadXMLFile_ = new XMLFile(context_);
+    loadXMLFile_ = context_->CreateObject<XMLFile>();
     if (!loadXMLFile_->Load(source))
     {
         URHO3D_LOGERROR("Load XML failed " + source.GetName());
@@ -598,7 +598,7 @@ SharedPtr<XMLFile> TmxFile2D::LoadTSXFile(const String& source)
 {
     String tsxFilePath = GetParentPath(GetName()) + source;
     SharedPtr<File> tsxFile = GetSubsystem<ResourceCache>()->GetFile(tsxFilePath);
-    SharedPtr<XMLFile> tsxXMLFile(new XMLFile(context_));
+    SharedPtr<XMLFile> tsxXMLFile(context_->CreateObject<XMLFile>());
     if (!tsxFile || !tsxXMLFile->Load(*tsxFile))
     {
         URHO3D_LOGERROR("Load TSX file failed " + tsxFilePath);
@@ -682,7 +682,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
             {
                 for (int x = margin; x + tileWidth <= imageWidth - margin; x += tileWidth + spacing)
                 {
-                    SharedPtr<Sprite2D> sprite(new Sprite2D(context_));
+                    SharedPtr<Sprite2D> sprite(context_->CreateObject<Sprite2D>());
                     sprite->SetTexture(texture);
                     sprite->SetRectangle(IntRect(x, y, x + tileWidth, y + tileHeight));
                     sprite->SetHotSpot(hotSpot);
@@ -757,7 +757,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
             }
         }
 
-        SharedPtr<Texture2D> texture(new Texture2D(context_));
+        SharedPtr<Texture2D> texture(context_->CreateObject<Texture2D>());
         texture->SetMipsToSkip(QUALITY_LOW, 0);
         texture->SetNumLevels(1);
         texture->SetSize(allocator.GetWidth(), allocator.GetHeight(), Graphics::GetRGBAFormat());
@@ -777,7 +777,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
                     image->GetData() + y * image->GetWidth() * 4, (size_t)image->GetWidth() * 4);
             }
 
-            SharedPtr<Sprite2D> sprite(new Sprite2D(context_));
+            SharedPtr<Sprite2D> sprite(context_->CreateObject<Sprite2D>());
             sprite->SetTexture(texture);
             sprite->SetRectangle(IntRect(info.x, info.y, info.x + info.imageWidth, info.y +  + info.imageHeight));
             sprite->SetHotSpot(Vector2::ZERO);

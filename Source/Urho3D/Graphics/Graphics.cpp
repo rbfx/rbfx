@@ -27,12 +27,15 @@
 #include "../Graphics/Animation.h"
 #include "../Graphics/AnimationController.h"
 #include "../Graphics/Camera.h"
+#include "../Graphics/Geometry.h"
 #include "../Graphics/CustomGeometry.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../Graphics/DecalSet.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsImpl.h"
+#include "../Graphics/IndexBuffer.h"
 #include "../Graphics/Material.h"
+#include "../Graphics/OcclusionBuffer.h"
 #include "../Graphics/Octree.h"
 #include "../Graphics/ParticleEffect.h"
 #include "../Graphics/ParticleEmitter.h"
@@ -50,6 +53,9 @@
 #include "../Graphics/Texture2DArray.h"
 #include "../Graphics/Texture3D.h"
 #include "../Graphics/TextureCube.h"
+#include "../Graphics/VertexBuffer.h"
+#include "../Graphics/View.h"
+#include "../Graphics/Viewport.h"
 #include "../Graphics/Zone.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
@@ -428,6 +434,13 @@ void RegisterGraphicsLibrary(Context* context)
     DebugRenderer::RegisterObject(context);
     Octree::RegisterObject(context);
     Zone::RegisterObject(context);
+    VertexBuffer::RegisterObject(context);
+    IndexBuffer::RegisterObject(context);
+    Geometry::RegisterObject(context);
+    ConstantBuffer::RegisterObject(context);
+    View::RegisterObject(context);
+    Viewport::RegisterObject(context);
+    OcclusionBuffer::RegisterObject(context);
 }
 
 

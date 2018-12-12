@@ -349,7 +349,7 @@ void SystemUI::ReallocateFontTexture()
 
     if (fontTexture_.Null())
     {
-        fontTexture_ = new Texture2D(context_);
+        fontTexture_ = context_->CreateObject<Texture2D>();
         fontTexture_->SetNumLevels(1);
         fontTexture_->SetFilterMode(FILTER_BILINEAR);
     }

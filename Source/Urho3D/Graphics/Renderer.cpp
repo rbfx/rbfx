@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Core/CoreEvents.h"
+#include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/DebugRenderer.h"
@@ -267,7 +268,7 @@ inline PODVector<VertexElement> CreateInstancingBufferElements(unsigned numExtra
 
 Renderer::Renderer(Context* context) :
     Object(context),
-    defaultZone_(new Zone(context))
+    defaultZone_(context->CreateObject<Zone>())
 {
     SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(Renderer, HandleScreenMode));
 
@@ -940,7 +941,7 @@ Texture2D* Renderer::GetShadowMap(Light* light, Camera* camera, unsigned viewWid
     if (!shadowMapFormat)
         return nullptr;
 
-    SharedPtr<Texture2D> newShadowMap(new Texture2D(context_));
+    SharedPtr<Texture2D> newShadowMap(context_->CreateObject<Texture2D>());
     int retries = 3;
     unsigned dummyColorFormat = graphics_->GetDummyColorFormat();
 
@@ -974,7 +975,7 @@ Texture2D* Renderer::GetShadowMap(Light* light, Camera* camera, unsigned viewWid
                 // If no dummy color rendertarget for this size exists yet, create one now
                 if (!colorShadowMaps_.Contains(searchKey))
                 {
-                    colorShadowMaps_[searchKey] = new Texture2D(context_);
+                    colorShadowMaps_[searchKey] = context_->CreateObject<Texture2D>();
                     colorShadowMaps_[searchKey]->SetNumLevels(1);
                     colorShadowMaps_[searchKey]->SetSize(width, height, dummyColorFormat, TEXTURE_RENDERTARGET);
                 }
@@ -1043,7 +1044,7 @@ Texture* Renderer::GetScreenBuffer(int width, int height, unsigned format, int m
 
         if (!cubemap)
         {
-            SharedPtr<Texture2D> newTex2D(new Texture2D(context_));
+            SharedPtr<Texture2D> newTex2D(context_->CreateObject<Texture2D>());
             /// \todo Mipmaps disabled for now. Allow to request mipmapped buffer?
             newTex2D->SetNumLevels(1);
             newTex2D->SetSize(width, height, format, depthStencil ? TEXTURE_DEPTHSTENCIL : TEXTURE_RENDERTARGET, multiSample, autoResolve);
@@ -1066,7 +1067,7 @@ Texture* Renderer::GetScreenBuffer(int width, int height, unsigned format, int m
         }
         else
         {
-            SharedPtr<TextureCube> newTexCube(new TextureCube(context_));
+            SharedPtr<TextureCube> newTexCube(context_->CreateObject<TextureCube>());
             newTexCube->SetNumLevels(1);
             newTexCube->SetSize(width, format, TEXTURE_RENDERTARGET, multiSample);
 
@@ -1108,7 +1109,7 @@ OcclusionBuffer* Renderer::GetOcclusionBuffer(Camera* camera)
     assert(numOcclusionBuffers_ <= occlusionBuffers_.Size());
     if (numOcclusionBuffers_ == occlusionBuffers_.Size())
     {
-        SharedPtr<OcclusionBuffer> newBuffer(new OcclusionBuffer(context_));
+        SharedPtr<OcclusionBuffer> newBuffer(context_->CreateObject<OcclusionBuffer>());
         occlusionBuffers_.Push(newBuffer);
     }
 
@@ -1130,7 +1131,7 @@ Camera* Renderer::GetShadowCamera()
     assert(numShadowCameras_ <= shadowCameraNodes_.Size());
     if (numShadowCameras_ == shadowCameraNodes_.Size())
     {
-        SharedPtr<Node> newNode(new Node(context_));
+        SharedPtr<Node> newNode(context_->CreateObject<Node>());
         newNode->CreateComponent<Camera>();
         shadowCameraNodes_.Push(newNode);
     }
@@ -1597,7 +1598,7 @@ void Renderer::Initialize()
 
     defaultLightRamp_ = cache->GetResource<Texture2D>("Textures/Ramp.png");
     defaultLightSpot_ = cache->GetResource<Texture2D>("Textures/Spot.png");
-    defaultMaterial_ = new Material(context_);
+    defaultMaterial_ = context_->CreateObject<Material>();
 
     defaultRenderPath_ = new RenderPath();
     defaultRenderPath_->Load(cache->GetResource<XMLFile>("RenderPaths/Forward.xml"));
@@ -1768,47 +1769,47 @@ void Renderer::ReloadTextures()
 
 void Renderer::CreateGeometries()
 {
-    SharedPtr<VertexBuffer> dlvb(new VertexBuffer(context_));
+    SharedPtr<VertexBuffer> dlvb(context_->CreateObject<VertexBuffer>());
     dlvb->SetShadowed(true);
     dlvb->SetSize(4, MASK_POSITION);
     dlvb->SetData(dirLightVertexData);
 
-    SharedPtr<IndexBuffer> dlib(new IndexBuffer(context_));
+    SharedPtr<IndexBuffer> dlib(context_->CreateObject<IndexBuffer>());
     dlib->SetShadowed(true);
     dlib->SetSize(6, false);
     dlib->SetData(dirLightIndexData);
 
-    dirLightGeometry_ = new Geometry(context_);
+    dirLightGeometry_ = context_->CreateObject<Geometry>();
     dirLightGeometry_->SetVertexBuffer(0, dlvb);
     dirLightGeometry_->SetIndexBuffer(dlib);
     dirLightGeometry_->SetDrawRange(TRIANGLE_LIST, 0, dlib->GetIndexCount());
 
-    SharedPtr<VertexBuffer> slvb(new VertexBuffer(context_));
+    SharedPtr<VertexBuffer> slvb(context_->CreateObject<VertexBuffer>());
     slvb->SetShadowed(true);
     slvb->SetSize(8, MASK_POSITION);
     slvb->SetData(spotLightVertexData);
 
-    SharedPtr<IndexBuffer> slib(new IndexBuffer(context_));
+    SharedPtr<IndexBuffer> slib(context_->CreateObject<IndexBuffer>());
     slib->SetShadowed(true);
     slib->SetSize(36, false);
     slib->SetData(spotLightIndexData);
 
-    spotLightGeometry_ = new Geometry(context_);
+    spotLightGeometry_ = context_->CreateObject<Geometry>();
     spotLightGeometry_->SetVertexBuffer(0, slvb);
     spotLightGeometry_->SetIndexBuffer(slib);
     spotLightGeometry_->SetDrawRange(TRIANGLE_LIST, 0, slib->GetIndexCount());
 
-    SharedPtr<VertexBuffer> plvb(new VertexBuffer(context_));
+    SharedPtr<VertexBuffer> plvb(context_->CreateObject<VertexBuffer>());
     plvb->SetShadowed(true);
     plvb->SetSize(24, MASK_POSITION);
     plvb->SetData(pointLightVertexData);
 
-    SharedPtr<IndexBuffer> plib(new IndexBuffer(context_));
+    SharedPtr<IndexBuffer> plib(context_->CreateObject<IndexBuffer>());
     plib->SetShadowed(true);
     plib->SetSize(132, false);
     plib->SetData(pointLightIndexData);
 
-    pointLightGeometry_ = new Geometry(context_);
+    pointLightGeometry_ = context_->CreateObject<Geometry>();
     pointLightGeometry_->SetVertexBuffer(0, plvb);
     pointLightGeometry_->SetIndexBuffer(plib);
     pointLightGeometry_->SetDrawRange(TRIANGLE_LIST, 0, plib->GetIndexCount());
@@ -1816,12 +1817,12 @@ void Renderer::CreateGeometries()
 #if !defined(URHO3D_OPENGL) || !defined(GL_ES_VERSION_2_0)
     if (graphics_->GetShadowMapFormat())
     {
-        faceSelectCubeMap_ = new TextureCube(context_);
+        faceSelectCubeMap_ = context_->CreateObject<TextureCube>();
         faceSelectCubeMap_->SetNumLevels(1);
         faceSelectCubeMap_->SetSize(1, graphics_->GetRGBAFormat());
         faceSelectCubeMap_->SetFilterMode(FILTER_NEAREST);
 
-        indirectionCubeMap_ = new TextureCube(context_);
+        indirectionCubeMap_ = context_->CreateObject<TextureCube>();
         indirectionCubeMap_->SetNumLevels(1);
         indirectionCubeMap_->SetSize(256, graphics_->GetRGBAFormat());
         indirectionCubeMap_->SetFilterMode(FILTER_BILINEAR);
@@ -1889,7 +1890,7 @@ void Renderer::CreateInstancingBuffer()
         return;
     }
 
-    instancingBuffer_ = new VertexBuffer(context_);
+    instancingBuffer_ = context_->CreateObject<VertexBuffer>();
     const PODVector<VertexElement> instancingBufferElements = CreateInstancingBufferElements(numExtraInstancingBufferElements_);
     if (!instancingBuffer_->SetSize(INSTANCING_BUFFER_DEFAULT_SIZE, instancingBufferElements, true))
     {

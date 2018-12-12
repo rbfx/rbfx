@@ -227,7 +227,7 @@ bool Technique::BeginLoad(Deserializer& source)
 
     SetMemoryUse(sizeof(Technique));
 
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     if (!xml->Load(source))
         return false;
 
@@ -340,7 +340,7 @@ void Technique::ReleaseShaders()
 
 SharedPtr<Technique> Technique::Clone(const String& cloneName) const
 {
-    SharedPtr<Technique> ret(new Technique(context_));
+    SharedPtr<Technique> ret(context_->CreateObject<Technique>());
     ret->SetIsDesktop(isDesktop_);
     ret->SetName(cloneName);
 

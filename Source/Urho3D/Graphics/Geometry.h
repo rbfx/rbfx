@@ -45,6 +45,9 @@ public:
     /// Destruct.
     ~Geometry() override;
 
+    /// Register object with the engine.
+    static void RegisterObject(Context* context);
+
     /// Set number of vertex buffers.
     bool SetNumVertexBuffers(unsigned num);
     /// Set a vertex buffer by index.

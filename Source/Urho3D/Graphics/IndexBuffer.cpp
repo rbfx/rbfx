@@ -24,6 +24,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Core/Context.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/IndexBuffer.h"
 #include "../IO/Log.h"
@@ -54,6 +55,13 @@ IndexBuffer::IndexBuffer(Context* context, bool forceHeadless) :
 IndexBuffer::~IndexBuffer()
 {
     Release();
+}
+
+extern const char* GEOMETRY_CATEGORY;
+
+void IndexBuffer::RegisterObject(Context* context)
+{
+    context->RegisterFactory<IndexBuffer>(GEOMETRY_CATEGORY);
 }
 
 void IndexBuffer::SetShadowed(bool enable)

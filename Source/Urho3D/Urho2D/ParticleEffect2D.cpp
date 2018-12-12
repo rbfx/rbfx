@@ -473,7 +473,7 @@ void ParticleEffect2D::SetRotationEndVariance(float rotationEndVariance)
 
 SharedPtr<ParticleEffect2D> ParticleEffect2D::Clone(const String& cloneName) const
 {
-    SharedPtr<ParticleEffect2D> ret(new ParticleEffect2D(context_));
+    SharedPtr<ParticleEffect2D> ret(context_->CreateObject<ParticleEffect2D>());
 
     ret->SetName(cloneName);
     ret->sprite_ = sprite_;

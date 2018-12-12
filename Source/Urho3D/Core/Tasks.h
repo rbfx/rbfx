@@ -178,5 +178,7 @@ private:
     HashMap<StringHash, SharedPtr<TaskScheduler> > taskSchedulers_;
 };
 
+void RegisterTasksLibrary(Context* context);
+
 };
 #endif

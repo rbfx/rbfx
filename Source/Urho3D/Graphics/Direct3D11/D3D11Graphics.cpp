@@ -1897,7 +1897,7 @@ ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType type, unsigned in
         return i->second_.Get();
     else
     {
-        SharedPtr<ConstantBuffer> newConstantBuffer(new ConstantBuffer(context_));
+        SharedPtr<ConstantBuffer> newConstantBuffer(context_->CreateObject<ConstantBuffer>());
         newConstantBuffer->SetSize(size);
         impl_->allConstantBuffers_[key] = newConstantBuffer;
         return newConstantBuffer.Get();

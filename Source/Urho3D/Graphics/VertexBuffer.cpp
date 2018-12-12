@@ -24,6 +24,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Core/Context.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/VertexBuffer.h"
 #include "../Math/MathDefs.h"
@@ -32,6 +33,8 @@
 
 namespace Urho3D
 {
+
+extern const char* GEOMETRY_CATEGORY;
 
 VertexBuffer::VertexBuffer(Context* context, bool forceHeadless) :
     Object(context),
@@ -47,6 +50,11 @@ VertexBuffer::VertexBuffer(Context* context, bool forceHeadless) :
 VertexBuffer::~VertexBuffer()
 {
     Release();
+}
+
+void VertexBuffer::RegisterObject(Context* context)
+{
+    context->RegisterFactory<VertexBuffer>(GEOMETRY_CATEGORY);
 }
 
 void VertexBuffer::SetShadowed(bool enable)

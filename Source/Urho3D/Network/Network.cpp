@@ -317,7 +317,8 @@ void Network::HandleMessage(const SLNet::AddressOrGUID& source, int packetID, in
 void Network::NewConnectionEstablished(const SLNet::AddressOrGUID& connection)
 {
     // Create a new client connection corresponding to this MessageConnection
-    SharedPtr<Connection> newConnection(new Connection(context_, true, connection, rakPeer_));
+    SharedPtr<Connection> newConnection(context_->CreateObject<Connection>());
+    newConnection->Initialize(true, connection, rakPeer_);
     newConnection->ConfigureNetworkSimulator(simulatedLatency_, simulatedPacketLoss_);
     clientConnections_[connection] = newConnection;
     URHO3D_LOGINFO("Client " + newConnection->ToString() + " connected");
@@ -399,7 +400,8 @@ bool Network::Connect(const String& address, unsigned short port, Scene* scene, 
     }
     else
     {
-        serverConnection_ = new Connection(context_, false, rakPeerClient_->GetMyBoundAddress(), rakPeerClient_);
+        serverConnection_ = context_->CreateObject<Connection>();
+        serverConnection_->Initialize(false, rakPeerClient_->GetMyBoundAddress(), rakPeerClient_);
         serverConnection_->SetScene(scene);
         serverConnection_->SetIdentity(identity);
         serverConnection_->SetConnectPending(true);
@@ -1032,6 +1034,7 @@ void Network::ConfigureNetworkSimulator()
 void RegisterNetworkLibrary(Context* context)
 {
     NetworkPriority::RegisterObject(context);
+    Connection::RegisterObject(context);
 }
 
 }

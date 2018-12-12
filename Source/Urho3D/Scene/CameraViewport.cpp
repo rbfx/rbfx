@@ -44,7 +44,7 @@ static ResourceRef defaultRenderPath{XMLFile::GetTypeStatic(), "RenderPaths/Forw
 
 CameraViewport::CameraViewport(Context* context)
     : Component(context)
-    , viewport_(new Viewport(context))
+    , viewport_(context->CreateObject<Viewport>())
     , rect_(fullScreenViewport)
     , renderPath_(defaultRenderPath)
     , screenRect_{0, 0, GetGraphics()->GetWidth(), GetGraphics()->GetHeight()}
