@@ -125,6 +125,10 @@ if (MINI_URHO)
     return ()
 endif ()
 
+if (URHO3D_DOCS)
+    add_subdirectory(Docs)
+endif ()
+
 # Install CMake modules and toolchains provided by and for Urho3D
 install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/ DESTINATION ${DEST_SHARE_DIR}/CMake)    # Note: the trailing slash is significant
 # Install CMake build scripts
