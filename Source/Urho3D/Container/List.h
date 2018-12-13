@@ -432,7 +432,10 @@ private:
     void InsertNode(Node* dest, const T& value)
     {
         if (URHO3D_UNLIKELY(allocator_ == nullptr))
+        {
             Initialize();
+            dest = Tail();
+        }
 
         if (!dest)
             return;
