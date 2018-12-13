@@ -14,7 +14,7 @@ Licensed under the MIT license, see [LICENSE](https://github.com/urho3d/Urho3D/b
 
 ## Screenshots
 
-![editor](https://user-images.githubusercontent.com/19151258/39086563-0c1fef1e-459c-11e8-86a8-9304e8af82d1.png)
+![editor](https://user-images.githubusercontent.com/19151258/49943614-09376980-fef1-11e8-88fe-8c26fcf30a59.jpg)
 
 ## Dependencies
 
