@@ -70,6 +70,12 @@ if (DOXYGEN_FOUND)
         configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/generated/Doxyfile)
     endif ()
 
+    if (WIN32)
+        set (NULL_DEVICE NUL)
+    else ()
+        set (NULL_DEVICE /dev/null)
+    endif ()
+
     # In quiet mode, redirect standard output stream of Doxygen to a null device
     set (REDIRECT_STDOUT 1>${NULL_DEVICE})
     # If URHO3D_DOCS build option is set then add the custom 'doc' target into the default 'all' target, i.e. a normal build would not only build the software but also the documentation
