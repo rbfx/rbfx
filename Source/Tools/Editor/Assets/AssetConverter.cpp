@@ -85,11 +85,15 @@ String AssetConverter::GetCachePath() const
 
 void AssetConverter::VerifyCacheAsync()
 {
-    GetWorkQueue()->AddWorkItem([=]() {
-        for (const auto& watcher : watchers_)
+    StringVector paths;
+    for (const auto& watcher : watchers_)
+        paths.Push(watcher->GetPath());
+
+    GetWorkQueue()->AddWorkItem([this, paths]() {
+        for (const auto& path : paths)
         {
             Vector<String> files;
-            GetFileSystem()->ScanDir(files, watcher->GetPath(), "*", SCAN_FILES, true);
+            GetFileSystem()->ScanDir(files, path, "*", SCAN_FILES, true);
 
             for (const auto& file : files)
                 ConvertAsset(file);
@@ -99,7 +103,7 @@ void AssetConverter::VerifyCacheAsync()
 
 void AssetConverter::ConvertAssetAsync(const String& resourceName)
 {
-    GetWorkQueue()->AddWorkItem(std::bind(&AssetConverter::ConvertAsset, this, resourceName));
+    GetWorkQueue()->AddWorkItem([this, resourceName]() { ConvertAsset(resourceName); });
 }
 
 bool AssetConverter::ConvertAsset(const String& resourceName)
