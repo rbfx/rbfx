@@ -23,8 +23,8 @@
 # Set project name
 project (Urho3D-Docs)
 
-if (URHO3D_DOCS_QUIET)
-    set (URHO3D_DOCS 1)
+if (NOT URHO3D_DOCS)
+    return ()
 endif ()
 
 # Macro for enabling IDE-specific integration with Urho3D documentation (See comments in Doxyfile for more detail instructions)
@@ -39,11 +39,7 @@ endmacro ()
 # There could be bug in CMake find_package() command, it currently does not honor NO_CMAKE_FIND_ROOT_PATH option for a non-rooted search as per CMake's documentation
 # As a workaround, we unset CMAKE_FIND_ROOT_PATH (even when we are cross-compiling) but in this scope ONLY in order to always do a non-rooted search for Doxygen package
 unset (CMAKE_FIND_ROOT_PATH)
-# Find Doxygen and DOT packages
-if (URHO3D_DOCS)
-    set (REQUIRED REQUIRED)
-endif ()
-find_package (Doxygen ${REQUIRED})
+find_package (Doxygen REQUIRED)
 
 if (DOXYGEN_FOUND)
     # It is not an error when DOT is not found, instead just switching off the Doxygen's HAVE_DOT option
@@ -75,9 +71,7 @@ if (DOXYGEN_FOUND)
     endif ()
 
     # In quiet mode, redirect standard output stream of Doxygen to a null device
-    if (URHO3D_DOCS_QUIET)
-        set (REDIRECT_STDOUT 1>${NULL_DEVICE})
-    endif ()
+    set (REDIRECT_STDOUT 1>${NULL_DEVICE})
     # If URHO3D_DOCS build option is set then add the custom 'doc' target into the default 'all' target, i.e. a normal build would not only build the software but also the documentation
     if (URHO3D_DOCS)
         set (ALL ALL)
