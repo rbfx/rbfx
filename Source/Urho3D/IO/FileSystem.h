@@ -57,6 +57,8 @@ public:
     void SetExecuteConsoleCommands(bool enable);
     /// Run a program using the command interpreter, block until it exits and return the exit code. Will fail if any allowed paths are defined.
     int SystemCommand(const String& commandLine, bool redirectStdOutToLog = false);
+    /// Run a specific program, block until it exits and return the exit code. Will fail if any allowed paths are defined. Returns STDOUT output of subprocess.
+    int SystemRun(const String& fileName, const Vector<String>& arguments, String& output);
     /// Run a specific program, block until it exits and return the exit code. Will fail if any allowed paths are defined.
     int SystemRun(const String& fileName, const Vector<String>& arguments);
     /// Run a specific program, do not block until it exits. Will fail if any allowed paths are defined.
