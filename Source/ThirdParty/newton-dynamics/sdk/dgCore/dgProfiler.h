@@ -28,6 +28,13 @@
 
 #ifdef _DG_USE_PROFILER
 
+void ttDeleteTrack();
+void ttStopRecording();
+void ttCloseRecord(int recordIndex);
+int ttOpenRecord(const char* const name);
+void ttSetTrackName(const char* const threadName);
+void ttStartRecording(const char* const fileName);
+
 inline void dProfilerSetTrackName(const char* const name)
 {
 	ttSetTrackName(name);
@@ -73,8 +80,8 @@ class dgProfile
 
 #define DG_DELETE_TRACK() dProfilerDeleteTrack()
 #define DG_SET_TRACK_NAME(trackName) dProfilerSetTrackName(trackName)
-#define DG_TRACKTIME(name) dgProfile _profile##name(name);
 
+#define DG_TRACKTIME(name) dgProfile _profile##name(name);
 #define DG_TRACKTIME_NAMED(name) dgProfile _profile(name);
 
 #else

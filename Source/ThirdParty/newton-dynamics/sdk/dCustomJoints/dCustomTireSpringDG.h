@@ -87,7 +87,7 @@ public:
 	CUSTOM_JOINTS_API void SetTireSteer(dFloat val);
 	CUSTOM_JOINTS_API void SetTireAttachmentLength(dFloat val);
 	CUSTOM_JOINTS_API void SetTireOmegaCorrection(dFloat val);
-	CUSTOM_JOINTS_API void SetTireSuspenssion(dFloat tvSpringK, dFloat tvSpringD, dFloat tvSpringMassEffective, dFloat tvMinLimit, dFloat tvMaxLimit);
+	CUSTOM_JOINTS_API void SetTireSuspenssion(dFloat tvSpringK, dFloat tvSpringD, dFloat tvMinLimit, dFloat tvMaxLimit);
 	//
 	CUSTOM_JOINTS_API dFloat GetTireTorque();
 	CUSTOM_JOINTS_API dFloat GetTireIxx();
@@ -114,7 +114,6 @@ public:
 	CUSTOM_JOINTS_API dFloat GetAccel();
 	CUSTOM_JOINTS_API dFloat GetSpringK();
 	CUSTOM_JOINTS_API dFloat GetSpringD();
-	CUSTOM_JOINTS_API dFloat GetSpringMassEffective();
 	//
 	CUSTOM_JOINTS_API dVector GetCenterInTire();
 	CUSTOM_JOINTS_API dVector GetCenterInChassis();
@@ -159,7 +158,6 @@ protected:
 	dFloat mAccel;
 	dFloat mSpringK;
 	dFloat mSpringD;
-	dFloat mSpringMassEffective;
 	dVector mCenterInTire;
 	dVector mCenterInChassis;
 	dMatrix mChassisPivotMatrix;

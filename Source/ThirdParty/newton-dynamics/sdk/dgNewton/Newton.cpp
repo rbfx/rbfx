@@ -5497,11 +5497,18 @@ dFloat NewtonContactJointGetClosestDistance(const NewtonJoint* const contactJoin
 	return joint->GetClosestDistance();
 }
 
-void NewtonContactJointResetSelfJointsCollision(const NewtonJoint* const contactJoint)
+void NewtonContactJointResetSelftJointCollision(const NewtonJoint* const contactJoint)
 {
 	TRACE_FUNCTION(__FUNCTION__);
 	dgContact* const joint = (dgContact *)contactJoint;
-	joint->ResetSkeleton();
+	joint->ResetSkeletonSelftCollision();
+}
+
+void NewtonContactJointResetIntraJointCollision(const NewtonJoint* const contactJoint)
+{
+	TRACE_FUNCTION(__FUNCTION__);
+	dgContact* const joint = (dgContact *)contactJoint;
+	joint->ResetSkeletonIntraCollision();
 }
 
 /*!

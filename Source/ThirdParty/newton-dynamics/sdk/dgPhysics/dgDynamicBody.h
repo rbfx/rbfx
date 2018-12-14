@@ -250,7 +250,7 @@ DG_INLINE const dgVector& dgDynamicBody::GetDampCoeffcient (dgFloat32 timestep)
 {
 	if (dgAbs(m_cachedTimeStep - timestep) > dgFloat32(1.0e-6f)) {
 		m_cachedTimeStep = timestep;
-		const dgFloat32 tau = dgFloat32(1.0f) / (dgFloat32(60.0f) * timestep);
+		const dgFloat32 tau = dgFloat32(60.0f) * timestep;
 		m_cachedDampCoef.m_x = dgPow(dgFloat32(1.0f) - m_dampCoef.m_x, tau);
 		m_cachedDampCoef.m_y = dgPow(dgFloat32(1.0f) - m_dampCoef.m_y, tau);
 		m_cachedDampCoef.m_z = dgPow(dgFloat32(1.0f) - m_dampCoef.m_z, tau);

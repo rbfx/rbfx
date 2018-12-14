@@ -186,7 +186,8 @@ DG_MSC_VECTOR_ALIGMENT
 class dgContact: public dgConstraint, public dgList<dgContactMaterial>
 {
 	public:
-	void ResetSkeleton();
+	void ResetSkeletonSelftCollision();
+	void ResetSkeletonIntraCollision();
 	dgFloat32 GetTimeOfImpact() const;
 	dgFloat32 GetClosestDistance() const;
 	void SetTimeOfImpact(dgFloat32 timetoImpact);
@@ -208,8 +209,10 @@ class dgContact: public dgConstraint, public dgList<dgContactMaterial>
 	virtual dgUnsigned32 JacobianDerivative (dgContraintDescritor& params); 
 	virtual void JointAccelerations (dgJointAccelerationDecriptor* const params); 
 	virtual bool IsDeformable() const ;
-	virtual bool IsSkeleton() const;
 	virtual void SetDestructorCallback (OnConstraintDestroy destructor);
+
+	bool IsSkeletonIntraCollision() const;
+	bool IsSkeletonSelftCollision() const;
 
 	void JacobianContactDerivative (dgContraintDescritor& params, const dgContactMaterial& contact, dgInt32 normalIndex, dgInt32& frictionIndex); 
 	void CalculatePointDerivative (dgInt32 index, dgContraintDescritor& desc, const dgVector& dir, const dgPointParam& param) const;
@@ -228,7 +231,8 @@ class dgContact: public dgConstraint, public dgList<dgContactMaterial>
 	dgFloat32 m_contactPruningTolereance;
 	dgUnsigned32 m_broadphaseLru;
 	dgUnsigned32 m_isNewContact				: 1;
-	dgUnsigned32 m_skeletonSelfCollision	: 1;
+	dgUnsigned32 m_skeletonIntraCollision	: 1;
+	dgUnsigned32 m_skeletonSelftCollision	: 1;
 
     friend class dgBody;
 	friend class dgWorld;
@@ -320,16 +324,26 @@ DG_INLINE void dgContact::SetPruningTolerance(dgFloat32 tolerance)
 	m_contactPruningTolereance = dgAbs (tolerance);
 }
 
-
-DG_INLINE void dgContact::ResetSkeleton()
+DG_INLINE void dgContact::ResetSkeletonIntraCollision()
 {
-	m_skeletonSelfCollision = 0;
+	m_skeletonIntraCollision = 0;
 }
 
-DG_INLINE bool dgContact::IsSkeleton() const
+DG_INLINE bool dgContact::IsSkeletonIntraCollision() const
 {
-	return m_skeletonSelfCollision;
+	return m_skeletonIntraCollision;
 }
+
+DG_INLINE void dgContact::ResetSkeletonSelftCollision()
+{
+	m_skeletonSelftCollision = 0;
+}
+
+DG_INLINE bool dgContact::IsSkeletonSelftCollision() const
+{
+	return m_skeletonSelftCollision;
+}
+
 
 #endif 
 

@@ -37,7 +37,6 @@ void dCustomVehicleControllerDG::Init(NewtonBody* const body, const dMatrix& loc
   //dCustomVehicleControllerManagerDG* const manager = (dCustomVehicleControllerManagerDG*)GetManager();
   //NewtonWorld* const world = manager->GetWorld();
   //
-
 }
 
 void dCustomVehicleControllerDG::Init(NewtonCollision* const chassisShape, dFloat mass, const dMatrix& localFrame, NewtonApplyForceAndTorque forceAndTorque, dFloat gravityMag)
@@ -99,7 +98,6 @@ dCustomTireSpringDG::dCustomTireSpringDG(const dMatrix& pinAndPivotFrame, Newton
 	mMaxSuspenssion(0.0f),
     mSpringK(150.0f),
     mSpringD(5.0f),
-    mSpringMassEffective(0.25f),
 	mAccel(0.0f),
 	mAttachMass(0.0f),
     mCenterInTire(dVector(0.0f,0.0f,0.0f)),
@@ -114,7 +112,6 @@ dCustomTireSpringDG::dCustomTireSpringDG(const dMatrix& pinAndPivotFrame, Newton
 	mRefFrameLocalMatrix = m_localMatrix0;
 	NewtonBodyGetMass(parent, &mAttachMass, &mIxx, &mIyy, &mIzz);
 }
-
 
 dCustomTireSpringDG::dCustomTireSpringDG(const dMatrix& pinAndPivotFrameChild, const dMatrix& pinAndPivotFrameParent, NewtonBody* const child, NewtonBody* const parent)
 	:dCustomJoint(6, child, parent),
@@ -137,7 +134,6 @@ dCustomTireSpringDG::dCustomTireSpringDG(const dMatrix& pinAndPivotFrameChild, c
 	mMaxSuspenssion(0.0f),
 	mSpringK(150.0f),
 	mSpringD(5.0f),
-	mSpringMassEffective(0.5f),
 	mAccel(0.0f),
 	mAttachMass(0.0f),
 	mCenterInTire(dVector(0.0f, 0.0f, 0.0f)),
@@ -169,11 +165,10 @@ void dCustomTireSpringDG::SetTireOmegaCorrection(dFloat val)
 	mTireOmegaCorrection = val;
 }
 
-void dCustomTireSpringDG::SetTireSuspenssion(dFloat tvSpringK, dFloat tvSpringD, dFloat tvSpringMassEffective, dFloat tvMinLimit, dFloat tvMaxLimit)
+void dCustomTireSpringDG::SetTireSuspenssion(dFloat tvSpringK, dFloat tvSpringD, dFloat tvMinLimit, dFloat tvMaxLimit)
 {
 	mSpringK = tvSpringK;
 	mSpringD = tvSpringD;
-	mSpringMassEffective = tvSpringMassEffective;
 	mMinSuspenssion = tvMinLimit;
 	mMaxSuspenssion = tvMaxLimit;
 }
@@ -268,12 +263,6 @@ dFloat dCustomTireSpringDG::GetSpringD()
 	return mSpringD;
 }
 
-dFloat dCustomTireSpringDG::GetSpringMassEffective()
-{
-	return mSpringMassEffective;
-}
-
-//
 
 dVector dCustomTireSpringDG::GetCenterInTire()
 {
@@ -310,11 +299,6 @@ void dCustomTireSpringDG::SetSpringD(dFloat val)
 	mSpringD = val;
 }
 
-void dCustomTireSpringDG::SetSpringMassEffective(dFloat val)
-{
-	mSpringMassEffective = val;
-}
-//
 void dCustomTireSpringDG::SetCenterInTire(dVector val)
 {
 	mCenterInTire = val;
@@ -449,7 +433,6 @@ void dCustomTireSpringDG::Deserialize(NewtonDeserializeCallback callback, void* 
 	callback(userData, &mMaxSuspenssion, sizeof(dFloat));
 	callback(userData, &mSpringK, sizeof(dFloat));
 	callback(userData, &mSpringD, sizeof(dFloat));
-	callback(userData, &mSpringMassEffective, sizeof(dFloat));
 	callback(userData, &mAccel, sizeof(dFloat));
 	callback(userData, &mAttachMass, sizeof(dFloat));
 	callback(userData, &mCenterInTire, sizeof(dVector));
@@ -480,7 +463,6 @@ void dCustomTireSpringDG::Serialize(NewtonSerializeCallback callback, void* cons
 	callback(userData, &mMaxSuspenssion, sizeof(dFloat));
 	callback(userData, &mSpringK, sizeof(dFloat));
 	callback(userData, &mSpringD, sizeof(dFloat));
-	callback(userData, &mSpringMassEffective, sizeof(dFloat));
 	callback(userData, &mAccel, sizeof(dFloat));
 	callback(userData, &mAttachMass, sizeof(dFloat));
 	callback(userData, &mCenterInTire, sizeof(dVector));

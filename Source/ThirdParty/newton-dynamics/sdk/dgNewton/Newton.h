@@ -989,7 +989,8 @@ extern "C" {
 	NEWTON_API void NewtonContactJointRemoveContact(const NewtonJoint* const contactJoint, void* const contact); 
 
 	NEWTON_API dFloat NewtonContactJointGetClosestDistance(const NewtonJoint* const contactJoint);
-	NEWTON_API void NewtonContactJointResetSelfJointsCollision(const NewtonJoint* const contactJoint);
+	NEWTON_API void NewtonContactJointResetSelftJointCollision(const NewtonJoint* const contactJoint);
+	NEWTON_API void NewtonContactJointResetIntraJointCollision(const NewtonJoint* const contactJoint);
 
 	NEWTON_API NewtonMaterial* NewtonContactGetMaterial (const void* const contact);
 

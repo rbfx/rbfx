@@ -77,7 +77,8 @@ dgContact::dgContact(dgWorld* const world, const dgContactMaterial* const materi
 	,m_contactPruningTolereance(world->GetContactMergeTolerance())
 	,m_broadphaseLru(0)
 	,m_isNewContact(1)
-	,m_skeletonSelfCollision(1)
+	,m_skeletonSelftCollision(1)
+	,m_skeletonIntraCollision(1)
 {
 	dgAssert ((((dgUnsigned64) this) & 15) == 0);
 	m_maxDOF = 0;
@@ -98,7 +99,8 @@ dgContact::dgContact(dgContact* const clone)
 	,m_contactPruningTolereance(clone->m_contactPruningTolereance)
 	,m_broadphaseLru(clone->m_broadphaseLru)
 	,m_isNewContact(clone->m_isNewContact)
-	,m_skeletonSelfCollision(clone->m_skeletonSelfCollision)
+	,m_skeletonSelftCollision(clone->m_skeletonSelftCollision)
+	,m_skeletonIntraCollision(clone->m_skeletonIntraCollision)
 {
 	dgAssert((((dgUnsigned64) this) & 15) == 0);
 	m_body0 = clone->m_body0;

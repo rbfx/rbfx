@@ -505,14 +505,14 @@ void dVehicleChassis::CalculateSuspensionForces(dFloat timestep)
 
 			const dMatrix& tireMatrix = tireBody->GetMatrix(); 
 			const dMatrix& tireInvInertia = tireBody->GetInvInertia();
-			dFloat tireMass = tireBody->GetInvMass();
+			dFloat tireInvMass = tireBody->GetInvMass();
 
 			m_jt[tireCount].m_jacobian_J01.m_linear = chassisMatrix.m_up.Scale(-1.0f);
 			m_jt[tireCount].m_jacobian_J01.m_angular = dVector(0.0f);
 			m_jt[tireCount].m_jacobian_J10.m_linear = chassisMatrix.m_up;
 			m_jt[tireCount].m_jacobian_J10.m_angular = (tireMatrix.m_posit - chassisOrigin).CrossProduct(chassisMatrix.m_up);
 
-			m_jInvMass[tireCount].m_jacobian_J01.m_linear = m_jt[tireCount].m_jacobian_J01.m_linear.Scale(tireMass);
+			m_jInvMass[tireCount].m_jacobian_J01.m_linear = m_jt[tireCount].m_jacobian_J01.m_linear.Scale(tireInvMass);
 			m_jInvMass[tireCount].m_jacobian_J01.m_angular = tireInvInertia.RotateVector(m_jt[tireCount].m_jacobian_J01.m_angular);
 			m_jInvMass[tireCount].m_jacobian_J10.m_linear = m_jt[tireCount].m_jacobian_J10.m_linear.Scale(chassisInvMass);
 			m_jInvMass[tireCount].m_jacobian_J10.m_angular = chassisInvInertia.RotateVector(m_jt[tireCount].m_jacobian_J10.m_angular);

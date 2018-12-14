@@ -178,7 +178,6 @@ void dgWorldDynamicUpdate::ResolveClusterForces(dgBodyCluster* const cluster, dg
 			}
 		} 
 
-
 		if (!(isAutoSleep & stackSleeping)) {
 			// cluster is not sleeping, need to integrate cluster velocity
 			const dgUnsigned32 lru = world->GetBroadPhase()->m_lru;

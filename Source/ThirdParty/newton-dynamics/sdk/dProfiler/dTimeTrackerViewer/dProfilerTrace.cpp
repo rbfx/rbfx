@@ -438,7 +438,7 @@ dProfilerTrace::dProfilerTrace(FILE* const file)
 	m_rootNode.m_minTime = float (minTime);
 	m_rootNode.m_maxTime = float (maxTime);
 
-	m_rootNode.m_scale = 300.0f;
+	m_rootNode.m_scale = 4000.0f;
 	//m_rootNode.m_scale = 1.0f;
 	m_rootNode.m_origin = m_rootNode.m_minTime;
 

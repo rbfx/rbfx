@@ -127,8 +127,23 @@ void dgWorldDynamicUpdate::UpdateDynamics(dgFloat32 timestep)
 			count++;
 		}
 		if (count) {
-			CalculateReactionForcesParallel(&m_clusterData[index], count, timestep);
-			index += count;
+			dgBodyInfo* const bodyArrayPtr = &world->m_bodiesMemory[0];
+			for (dgInt32 i = count - 1; i >= 0; i --) {
+				const dgBodyCluster* const cluster = &m_clusterData[i];
+				for (dgInt32 j = 1; j < cluster->m_bodyCount; j ++) {
+					const dgBodyInfo* const bodyInfo = &bodyArrayPtr[cluster->m_bodyStart + j];
+					dgSkeletonContainer* const skeleton = bodyInfo->m_body->GetSkeleton();
+					if (skeleton) {
+						dgSwap(m_clusterData[count - 1], m_clusterData[i]);
+						count --;
+						break;
+					}
+				}
+			} 
+			if (count) {
+				CalculateReactionForcesParallel(&m_clusterData[index], count, timestep);
+				index += count;
+			}
 		}
 	}
 
@@ -182,7 +197,6 @@ dgInt32 dgWorldDynamicUpdate::CompareClusterInfos(const dgBodyCluster* const clu
 	return CompareKey(clusterA->m_jointCount, clusterA->m_bodyStart, clusterB->m_jointCount, clusterB->m_bodyStart);
 }
 
-
 void dgWorldDynamicUpdate::BuildClusters(dgFloat32 timestep)
 {
 	DG_TRACKTIME(__FUNCTION__);
@@ -225,11 +239,10 @@ void dgWorldDynamicUpdate::BuildClusters(dgFloat32 timestep)
 		const dgFloat32 invMass1 = body1->m_invMass.m_w;
 
 		if ((invMass0 > dgFloat32 (0.0f)) && (invMass1 > dgFloat32 (0.0f))) {
-			dgAssert (body0->IsRTTIType(dgBody::m_dynamicBodyRTTI | dgBody::m_dynamicBodyAsymatric));
-			dgAssert (body1->IsRTTIType(dgBody::m_dynamicBodyRTTI | dgBody::m_dynamicBodyAsymatric));
+			//dgAssert (body0->IsRTTIType(dgBody::m_dynamicBodyRTTI | dgBody::m_dynamicBodyAsymatric));
+			//dgAssert (body1->IsRTTIType(dgBody::m_dynamicBodyRTTI | dgBody::m_dynamicBodyAsymatric));
 			world->UnionSet(joint);
 		} else if (invMass1 == dgFloat32 (0.0f)) {
-			//dgBody* const root = world->FindRootAndSplit(joint->GetBody0());
 			dgBody* const root = world->FindRootAndSplit(body0);
 			root->m_disjointInfo.m_jointCount += 1;
 			root->m_disjointInfo.m_rowCount += joint->m_maxDOF;
@@ -497,7 +510,6 @@ dgInt32 dgWorldDynamicUpdate::SortClusters(const dgBodyCluster* const cluster, d
 			dgJointInfo* const jointInfo = queue.m_pool[index];
 			dgConstraint* const constraint = jointInfo->m_joint;
 			if (!constraint->m_graphTagged) {
-				//dgAssert (dgInt32 (constraint->m_index) < cluster->m_jointCount);
 				constraint->m_index = infoIndex;
 				constraintArray[infoIndex] = *jointInfo;
 				constraint->m_graphTagged = 1;
@@ -612,9 +624,11 @@ dgInt32 dgWorldDynamicUpdate::GetJacobianDerivatives(dgContraintDescritor& const
 		dgSkeletonContainer* const skeleton0 = body0->GetSkeleton();
 		dgSkeletonContainer* const skeleton1 = body1->GetSkeleton();
 		if (skeleton0 && (skeleton0 == skeleton1)) {
-			contactJoint->m_isInSkeletonLoop = true;
-			skeleton0->AddSelfCollisionJoint(contactJoint);
-		} else if (contactJoint->IsSkeleton()) {
+			if (contactJoint->IsSkeletonSelftCollision()) {
+				contactJoint->m_isInSkeletonLoop = true;
+				skeleton0->AddSelfCollisionJoint(contactJoint);
+			}
+		} else if (contactJoint->IsSkeletonIntraCollision()) {
 			if (skeleton0 && !skeleton1) {
 				contactJoint->m_isInSkeletonLoop = true;
 				skeleton0->AddSelfCollisionJoint(contactJoint);

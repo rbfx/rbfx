@@ -672,7 +672,6 @@ DG_INLINE void dgSkeletonContainer::CalculateLoopMassMatrixCoefficients(dgFloat3
 	}
 }
 
-
 void dgSkeletonContainer::InitLoopMassMatrix(const dgJointInfo* const jointInfoArray)
 {
 	const dgInt32 primaryCount = m_rowCount - m_auxiliaryRowCount;
@@ -822,7 +821,10 @@ void dgSkeletonContainer::InitLoopMassMatrix(const dgJointInfo* const jointInfoA
 //		//m_massMatrix11[stride] *= dgFloat32 (1.0001f);
 //		stride += (m_auxiliaryRowCount + 1);
 //	}
-	dgCholeskyApplyRegularizer(m_auxiliaryRowCount, m_massMatrix11, diagDamp);
+	if (m_auxiliaryRowCount < 256) {	
+		// the matrix is too big for factorization take you, do no both doing it
+		dgCholeskyApplyRegularizer(m_auxiliaryRowCount, m_massMatrix11, diagDamp);
+	}
 }
 
 bool dgSkeletonContainer::SanityCheck(const dgForcePair* const force, const dgForcePair* const accel) const

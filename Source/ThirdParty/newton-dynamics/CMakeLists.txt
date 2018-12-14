@@ -23,6 +23,7 @@ endif ()
 
 option("NEWTON_BUILD_SANDBOX_DEMOS" "generates demos projects" ON)
 option("NEWTON_BUILD_PROFILER" "build profiler" OFF)
+option("NEWTON_BUILD_MULTI_THREADED" "multi threaded" ON)
 option("NEWTON_DOUBLE_PRECISION" "Generate double precision" OFF)
 option("NEWTON_STATIC_RUNTIME_LIBRARIES" "use windows static libraries" ON)
 option("NEWTON_WITH_SSE_PLUGIN" "adding asse parallel solver" OFF)
@@ -50,6 +51,10 @@ project(NewtonSDK)
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 if (NEWTON_DOUBLE_PRECISION)
 	add_definitions(-D_NEWTON_USE_DOUBLE)
+endif ()
+
+if (NOT NEWTON_BUILD_MULTI_THREADED)
+	add_definitions(-DDG_USE_THREAD_EMULATION)
 endif ()
 
 #If no build type set, Release as default

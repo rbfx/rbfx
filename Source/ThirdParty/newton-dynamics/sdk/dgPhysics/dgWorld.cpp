@@ -565,7 +565,6 @@ void dgWorld::ExecuteUserJob (dgWorkerThreadTaskCallback userJobKernel, void* co
 	QueueJob (userJobKernel, this, userJobKernelContext, functionName);
 }
 
-
 void dgWorld::SetUserData (void* const userData)
 {
 	m_userData = userData;
@@ -966,17 +965,20 @@ void dgWorld::RunStep ()
 {
 /*
 	static int zzzz;
-	if (zzzz == 50) {
+	if (zzzz == 100) {
 		DG_START_RECORDING("../../../../sdk/dProfiler/xxxx.tt");
 	}
-	if (zzzz == 500) {
+	if (zzzz == 400) {
 		DG_STOP_RECORDING();
 	}
 	zzzz++;
 */
 
 	DG_TRACKTIME(__FUNCTION__);
+	
+	BeginSection();
 	dgUnsigned64 timeAcc = dgGetTimeInMicrosenconds();
+
 	dgFloat32 step = m_savetimestep / m_numberOfSubsteps;
 	for (dgUnsigned32 i = 0; i < m_numberOfSubsteps; i ++) {
 		dgInterlockedExchange(&m_delayDelateLock, 1);
@@ -1003,18 +1005,17 @@ void dgWorld::RunStep ()
 		m_postUpdateCallback (this, m_savetimestep);
 	}
 
-	m_lastExecutionTime = (dgGetTimeInMicrosenconds() - timeAcc) * dgFloat32 (1.0e-6f);
-
 	if (!m_concurrentUpdate) {
 		m_mutex.Release();
 	}
+	m_lastExecutionTime = (dgGetTimeInMicrosenconds() - timeAcc) * dgFloat32 (1.0e-6f);
+	EndSection();
 }
 
 void dgWorld::TickCallback (dgInt32 threadID)
 {
 	RunStep ();
 }
-
 
 void dgWorld::Update (dgFloat32 timestep)
 {
@@ -1155,7 +1156,6 @@ void dgWorld::DestroyInverseDynamics(dgInverseDynamics* const inverseDynamics)
 	delete inverseDynamics;
 }
 
-
 void dgDeadJoints::DestroyJoint(dgConstraint* const joint)
 {
 	dgSpinLock (&m_lock);
@@ -1170,7 +1170,6 @@ void dgDeadJoints::DestroyJoint(dgConstraint* const joint)
 
 	dgSpinUnlock(&m_lock);
 }
-
 
 void dgDeadJoints::DestroyJoints(dgWorld& world)
 {
@@ -1554,7 +1553,6 @@ void dgWorld::OnBodySerializeToFile(dgBody& body, void* const userData, dgSerial
 	serializeCallback(serializeHandle, bodyIndentification, size);
 }
 
-
 void dgWorld::SetJointSerializationCallbacks(OnJointSerializationCallback serializeJoint, OnJointDeserializationCallback deserializeJoint)
 {
 	m_serializedJointCallback = serializeJoint;
@@ -1603,7 +1601,6 @@ void dgWorld::SerializeScene(void* const userData, OnBodySerialize bodyCallback,
 		dgAssert(count <= GetBodiesCount());
 	}
 
-
 	dgSortIndirect(array, count, SerializeToFileSort);
 	SerializeBodyArray(userData, bodyCallback ? bodyCallback : OnBodySerializeToFile, array, count, serializeCallback, serializeHandle);
 	SerializeJointArray(count, OnSerializeToFile, serializeHandle);
@@ -1615,7 +1612,6 @@ void dgWorld::SerializeScene(void* const userData, OnBodySerialize bodyCallback,
 
 	delete[] array;
 }
-
 
 void dgWorld::DeserializeScene(void* const userData, OnBodyDeserialize bodyCallback, dgDeserialize deserializeCallback, void* const serializeHandle)
 {
@@ -1714,7 +1710,6 @@ void dgWorld::DeserializeBodyArray (void* const userData, OnBodyDeserialize body
 	}
 }
 
-
 void dgWorld::DeserializeJointArray (const dgTree<dgBody*, dgInt32>&bodyMap, dgDeserialize serializeCallback, void* const userData)
 {
 	dgInt32 count = 0;
@@ -1739,7 +1734,6 @@ void dgWorld::DeserializeJointArray (const dgTree<dgBody*, dgInt32>&bodyMap, dgD
 
 	dgDeserializeMarker(serializeCallback, userData);
 }
-
 
 void dgWorld::SerializeBodyArray(void* const userData, OnBodySerialize bodyCallback, dgBody** const array, dgInt32 count, dgSerialize serializeCallback, void* const fileHandle) const
 {

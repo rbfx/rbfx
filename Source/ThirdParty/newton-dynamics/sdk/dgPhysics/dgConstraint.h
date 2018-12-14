@@ -224,8 +224,8 @@ class dgConstraint
 	dgUnsigned32 m_enableCollision		: 1;
 	dgUnsigned32 m_contactActive		: 1;
 	dgUnsigned32 m_isBilateral			: 1;
-	dgUnsigned32 m_isInSkeleton			: 1;
 	dgUnsigned32 m_graphTagged			: 1;
+	dgUnsigned32 m_isInSkeleton			: 1;
 	dgUnsigned32 m_isInSkeletonLoop		: 1;
 	
 	friend class dgWorld;
@@ -257,8 +257,8 @@ DG_INLINE dgConstraint::dgConstraint()
 	,m_enableCollision(false)
 	,m_contactActive(false)
 	,m_isBilateral(false)
-	,m_isInSkeleton(false)
 	,m_graphTagged(false)
+	,m_isInSkeleton(false)
 	,m_isInSkeletonLoop(false)
 {
 	dgAssert ((((dgUnsigned64) this) & 15) == 0);
