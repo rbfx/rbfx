@@ -88,8 +88,6 @@ public:
     void LoadDefaultLayout();
     /// Returns ID of root dockspace.
     ImGuiID GetDockspaceID() const { return dockspaceId_; }
-    /// Returns pointer to last active scene tab. Returns null if no scene was opened or if last opened scene was closed.
-    SceneTab* GetSceneTab() const { return sceneTab_.Get(); }
     ///
     ImFont* GetMonoSpaceFont() const { return monoFont_; }
 
@@ -107,8 +105,6 @@ protected:
     Vector<SharedPtr<Tab>> tabs_;
     /// Last focused scene tab.
     WeakPtr<Tab> activeTab_;
-    /// Current scene tab.
-    WeakPtr<SceneTab> sceneTab_;
     /// Prefix path of CoreData and EditorData.
     String coreResourcePrefixPath_;
     /// Currently loaded project.

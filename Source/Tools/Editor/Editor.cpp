@@ -407,12 +407,8 @@ void Editor::RenderMenuBar()
 
 Tab* Editor::CreateTab(StringHash type)
 {
-    auto tab = DynamicCast<Tab>(context_->CreateObject(type));
+    SharedPtr<Tab> tab(DynamicCast<Tab>(context_->CreateObject(type)));
     tabs_.Push(tab);
-
-    if (type == SceneTab::GetTypeStatic())
-        sceneTab_ = tab->Cast<SceneTab>();
-
     return tab.Get();
 }
 
