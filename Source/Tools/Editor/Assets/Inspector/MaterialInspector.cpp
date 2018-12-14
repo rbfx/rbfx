@@ -48,14 +48,10 @@ namespace Urho3D
 {
 
 MaterialInspector::MaterialInspector(Context* context, Material* material)
-    : ResourceInspector(context)
+    : PreviewInspector(context)
     , inspectable_(new Inspectable::Material(material))
-    , view_(context, {0, 0, 200, 200})
     , attributeInspector_(context)
 {
-    // Workaround: for some reason this overriden method of our class does not get called by SceneView constructor.
-    CreateObjects();
-
     auto autoSave = [this](StringHash, VariantMap&) {
         // Auto-save material on modification
         auto* material = inspectable_->GetMaterial();
@@ -66,10 +62,9 @@ MaterialInspector::MaterialInspector(Context* context, Material* material)
     SubscribeToEvent(&attributeInspector_, E_INSPECTORRENDERSTART, [this](StringHash, VariantMap&) { RenderPreview(); });
     SubscribeToEvent(&attributeInspector_, E_INSPECTORRENDERATTRIBUTE, [this](StringHash, VariantMap& args) { RenderCustomWidgets(args); });
 
-    if (SceneTab* sceneTab = GetSubsystem<Editor>()->GetTab<SceneTab>())
-        SetEffectSource(sceneTab->GetViewport()->GetRenderPath());
-
     undo_.Connect(&attributeInspector_);
+
+    ToggleModel();
 }
 
 void MaterialInspector::RenderInspector(const char* filter)
@@ -79,43 +74,20 @@ void MaterialInspector::RenderInspector(const char* filter)
 
 void MaterialInspector::ToggleModel()
 {
-    auto model = node_->GetOrCreateComponent<StaticModel>();
+    const char* currentModel = figures_[figureIndex_];
+    SetModel(ToString("Models/%s.mdl", currentModel));
+    figureIndex_ = ++figureIndex_ % figures_.Size();
 
-    model->SetModel(node_->GetCache()->GetResource<Model>(ToString("Models/%s.mdl", figures_[figureIndex_])));
+    StaticModel* model = node_->GetComponent<StaticModel>();
     model->SetMaterial(inspectable_->GetMaterial());
+
     auto bb = model->GetBoundingBox();
     auto scale = 1.f / Max(bb.Size().x_, Max(bb.Size().y_, bb.Size().z_));
-    if (strcmp(figures_[figureIndex_], "Box") == 0)            // Box is rather big after autodetecting scale, but other
-        scale *= 0.7f;                                         // figures are ok. Patch the box then.
-    else if (strcmp(figures_[figureIndex_], "TeaPot") == 0)    // And teapot is rather small.
+    if (strcmp(currentModel, "Box") == 0)            // Box is rather big after autodetecting scale, but other
+        scale *= 0.7f;                               // figures are ok. Patch the box then.
+    else if (strcmp(currentModel, "TeaPot") == 0)    // And teapot is rather small.
         scale *= 1.2f;
     node_->SetScale(scale);
-    node_->SetWorldPosition(node_->GetWorldPosition() - model->GetWorldBoundingBox().Center());
-
-    figureIndex_ = ++figureIndex_ % figures_.Size();
-}
-
-void MaterialInspector::SetGrab(bool enable)
-{
-    if (mouseGrabbed_ == enable)
-        return;
-
-    mouseGrabbed_ = enable;
-    Input* input = view_.GetCamera()->GetInput();
-    if (enable && input->IsMouseVisible())
-        input->SetMouseVisible(false);
-    else if (!enable && !input->IsMouseVisible())
-        input->SetMouseVisible(true);
-}
-
-void MaterialInspector::CreateObjects()
-{
-    view_.CreateObjects();
-    node_ = view_.GetScene()->CreateChild("Sphere");
-    ToggleModel();
-    view_.GetCamera()->GetNode()->CreateComponent<Light>();
-    view_.GetCamera()->GetNode()->SetPosition(Vector3::BACK * distance_);
-    view_.GetCamera()->GetNode()->LookAt(Vector3::ZERO);
 }
 
 void MaterialInspector::Save()
@@ -125,45 +97,20 @@ void MaterialInspector::Save()
 
 void MaterialInspector::RenderPreview()
 {
-    auto size = static_cast<int>(ui::GetWindowWidth() - ui::GetCursorPosX());
-    view_.SetSize({0, 0, size, size});
-    ui::Image(view_.GetTexture(), ImVec2(view_.GetTexture()->GetWidth(), view_.GetTexture()->GetHeight()));
+    PreviewInspector::RenderPreview();
     ui::SetHelpTooltip("Click to switch object.");
-    Input* input = view_.GetCamera()->GetInput();
-    bool rightMouseButtonDown = input->GetMouseButtonDown(MOUSEB_RIGHT);
-    if (ui::IsItemHovered())
-    {
-        if (rightMouseButtonDown)
-            SetGrab(true);
-        else if (input->GetMouseButtonPress(MOUSEB_LEFT))
-            ToggleModel();
-    }
+    if (ui::IsItemHovered() && ui::IsMouseClicked(MOUSEB_LEFT))
+        ToggleModel();
+    else
+        HandleInput();
 
-    if (mouseGrabbed_)
+    if (Material* material = inspectable_->GetMaterial())
     {
-        if (rightMouseButtonDown)
-        {
-            if (input->GetKeyPress(KEY_ESCAPE))
-            {
-                view_.GetCamera()->GetNode()->SetPosition(Vector3::BACK * distance_);
-                view_.GetCamera()->GetNode()->LookAt(Vector3::ZERO);
-            }
-            else
-            {
-                IntVector2 delta = input->GetMouseMove();
-                view_.GetCamera()->GetNode()->RotateAround(Vector3::ZERO,
-                    Quaternion(delta.x_ * 0.1f, view_.GetCamera()->GetNode()->GetUp()) *
-                    Quaternion(delta.y_ * 0.1f, view_.GetCamera()->GetNode()->GetRight()), TS_WORLD);
-            }
-        }
-        else
-            SetGrab(false);
+        const char* resourceName = material->GetName().CString();
+        ui::SetCursorPosX((ui::GetContentRegionMax().x - ui::CalcTextSize(resourceName).x) / 2);
+        ui::TextUnformatted(resourceName);
+        ui::Separator();
     }
-
-    const char* resourceName = inspectable_->GetMaterial()->GetName().CString();
-    ui::SetCursorPosX((ui::GetContentRegionMax().x - ui::CalcTextSize(resourceName).x) / 2);
-    ui::TextUnformatted(resourceName);
-    ui::Separator();
 }
 
 void MaterialInspector::RenderCustomWidgets(VariantMap& args)
@@ -242,7 +189,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
                 ui::Columns(2);
 
             bool modifiedField = false;
-            auto secondColWidth = ui::GetColumnWidth(1) - ui::GetStyle().ItemSpacing.x * 2;
+            secondColWidth = ui::GetColumnWidth(1) - ui::GetStyle().ItemSpacing.x * 2;
 
             // ---------------------------------------------------------------------------------------------------------
 
@@ -416,30 +363,6 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
         args[P_HANDLED] = true;
         args[P_MODIFIED] = modified;
     }
-}
-
-void MaterialInspector::SetEffectSource(RenderPath* renderPath)
-{
-    if (renderPath == nullptr)
-        return;
-
-    view_.GetViewport()->SetRenderPath(renderPath);
-    auto* light = view_.GetCamera()->GetComponent<Light>();
-    for (auto& command: renderPath->commands_)
-    {
-        if (command.pixelShaderName_.StartsWith("PBR"))
-        {
-            // Lights in PBR scenes need modifications, otherwise obects in material preview look very dark
-            light->SetUsePhysicalValues(true);
-            light->SetBrightness(5000);
-            light->SetShadowCascade(CascadeParameters(10, 20, 30, 40, 10));
-            return;
-        }
-    }
-
-    light->SetUsePhysicalValues(false);
-    light->SetBrightness(DEFAULT_BRIGHTNESS);
-    light->SetShadowCascade(CascadeParameters(DEFAULT_SHADOWSPLIT, 0.0f, 0.0f, 0.0f, DEFAULT_SHADOWFADESTART));
 }
 
 Inspectable::Material::Material(Urho3D::Material* material)

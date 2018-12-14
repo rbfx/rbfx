@@ -25,7 +25,7 @@
 
 #include <Toolbox/Graphics/SceneView.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
-#include "ResourceInspector.h"
+#include "PreviewInspector.h"
 
 
 namespace Urho3D
@@ -57,9 +57,9 @@ protected:
 }
 
 /// Renders material preview in attribute inspector.
-class MaterialInspector : public ResourceInspector
+class MaterialInspector : public PreviewInspector
 {
-    URHO3D_OBJECT(MaterialInspector, ResourceInspector);
+    URHO3D_OBJECT(MaterialInspector, PreviewInspector);
 public:
     explicit MaterialInspector(Context* context, Material* material);
 
@@ -67,37 +67,23 @@ public:
     void RenderInspector(const char* filter) override;
     /// Change material preview model to next one in the list.
     void ToggleModel();
-    /// Material preview view mouse grabbing.
-    void SetGrab(bool enable);
-    /// Copy effects from specified render path.
-    void SetEffectSource(RenderPath* renderPath);
 
 protected:
-    /// Initialize material preview.
-    void CreateObjects();
     /// Save material resource to disk.
     void Save();
     ///
-    void RenderPreview();
+    void RenderPreview() override;
     ///
     void RenderCustomWidgets(VariantMap& args);
 
     /// Material which is being previewed.
     SharedPtr<Inspectable::Material> inspectable_;
-    /// Preview scene.
-    SceneView view_;
-    /// Node holding figure to which material is applied.
-    WeakPtr<Node> node_;
     /// Material attribute inspector namespace.
     AttributeInspector attributeInspector_;
-    /// Flag indicating if this widget grabbed mouse for rotating material node.
-    bool mouseGrabbed_ = false;
     /// Index of current figure displaying material.
     unsigned figureIndex_ = 0;
     /// A list of figures between which material view can be toggled.
     PODVector<const char*> figures_{"Sphere", "Box", "Torus", "TeaPot"};
-    /// Distance from camera to figure.
-    float distance_ = 1.5f;
 };
 
 }

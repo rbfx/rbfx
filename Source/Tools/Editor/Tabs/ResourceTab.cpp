@@ -23,6 +23,7 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Graphics/Material.h>
+#include <Urho3D/Graphics/Model.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Graphics/Octree.h>
 
@@ -32,6 +33,7 @@
 
 #include "EditorEvents.h"
 #include "Assets/Inspector/MaterialInspector.h"
+#include "Assets/Inspector/ModelInspector.h"
 #include "Tabs/Scene/SceneTab.h"
 #include "Tabs/UI/UITab.h"
 #include "Tabs/InspectorTab.h"
@@ -147,7 +149,9 @@ bool ResourceTab::RenderWindowContent()
 //        case CTYPE_SCENEOBJECT:break;
 //        case CTYPE_UILAYOUT:break;
 //        case CTYPE_UISTYLE:break;
-//        case CTYPE_MODEL:break;
+       case CTYPE_MODEL:
+           OpenResourceInspector<ModelInspector, Model>(selected);
+           break;
 //        case CTYPE_ANIMATION:break;
         case CTYPE_MATERIAL:
             OpenResourceInspector<MaterialInspector, Material>(selected);
