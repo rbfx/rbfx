@@ -276,31 +276,23 @@ const Vector<String>& ParseArguments(const String& cmdLine, bool skipFirstArgume
 
     for (unsigned i = 0; i < cmdLine.Length(); ++i)
     {
-        if (cmdLine[i] == '\"')
+        char c = cmdLine[i];
+        if (cmdLine[i] == '"' && (i == 0 || cmdLine[i - 1] != '\\'))
             inQuote = !inQuote;
-        if ((cmdLine[i] == ' ' || (i == cmdLine.Length()-1)) && !inQuote)
+        else if (!inQuote)
         {
-            if (inCmd)
+            bool atEnd = i == cmdLine.Length() - 1;
+            if (cmdLine[i] == ' ' || atEnd)
             {
-                inCmd = false;
                 cmdEnd = i;
-                arguments.Push(cmdLine.Substring(cmdStart, cmdEnd - cmdStart));
+                if (atEnd)
+                    ++cmdEnd;
+                String argument = cmdLine.Substring(cmdStart, cmdEnd - cmdStart);
+                if (!argument.Empty())  // May be empty when multiple spaces follow one another.
+                    arguments.Push(argument);
+                cmdStart = i + 1;
             }
         }
-        else
-        {
-            if (!inCmd)
-            {
-                inCmd = true;
-                cmdStart = i;
-            }
-        }
-    }
-    if (inCmd)
-    {
-        cmdEnd = cmdLine.Length();
-        if (!skipFirstArgument)
-            arguments.Push(cmdLine.Substring(cmdStart, cmdEnd - cmdStart));
     }
 
     // Strip double quotes from the arguments
