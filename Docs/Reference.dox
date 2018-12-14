@@ -2710,112 +2710,6 @@ The Database subsystem is built into the Urho3D library only when one of these t
 
 Currently the implementation just supports immediate SQL statement execution. Prepared statements and transaction management will be added later when the need arises. The subsystem has a simple database connection pooling capability. This internal database connection pool should not be confused with ODBC connection pool option when ODBC DB API is being used. The internal pooling is enabled by default, except when ODBC DB API is being used and when ODBC driver manager 3.0 or later is being detected in the host system, in which case the ODBC connection pool option should be used instead to manage the database connection pooling.
 
-\section Establish_DbConnection Establishing database connection
-
-A new database connection is established by calling \ref Database::Connect "Connect()" and passing it with a so-called database connection string. The database connection string does not only identify which database to connect to, but also other relevant database connection settings like: database user id, user password, host, and port number, etc. The format of the database connection string is controlled by the underlying DB API. In general the connection string is really the only thing that need to be changed when switching the underlying DB API and when switching the databases to connect to.
-
-When the connection is successfully established, a valid DbConnection object is returned. After done with the database connection, an application should disconnect the database connection by calling the \ref Database::Disconnect "Disconnect()". This is a good practise. When the Urho3D game engine exits, the destructor of the database subsystem automatically disconnects all the still active database connections.
-
-\subsection ODBC_ConnString ODBC connection string
-
-The exact format of the ODBC connection string depends on the ODBC driver for a specific database vendor. Consult the accompanying documentation of the specific ODBC driver on how to construct the database connection string. Both DSN and DSN-less connection string are supported. For the purpose of illustration, this subsection will just explain how to connect to a MySQL/MariaDB database as an example. The MySQL/MariaDB database server is assumed to be running on a localhost on a default port with database name called 'test', and user id & password are "testuser" & "testpassword".
-
-\subsubsection DSN_ConnString DSN connection string
-
-Use the GUI tool provided by host system to define the ODBC data source. It can be user DSN or system DSN. On Linux host system, simply add the new data source entry in the '~/.odbc.ini' or '/etc/odbc.ini', respectively. Create the file if it does not exist yet. The data source entry must at least contains the following information.
-\verbatim
-# These settings assume the host system uses unixODBC as ODBC driver manager
-# Settings for iODBC driver manager would be slightly different
-[testDSN]
-Driver=MariaDB      # This is the name of the ODBC driver installed in the /etc/odbcinst.ini
-Description=MariaDB test database
-Server=localhost
-Port=
-User=testuser
-Password=testpassword
-Database=test
-Option=3
-Socket=
-\endverbatim
-
-To connect to this data source, use the following connection string:
-\verbatim
-DSN=testDSN
-\endverbatim
-
-\subsubsection DSN_less_ConnString DSN-less connection string
-
-To connect to the same database above without pre-configuring it as an ODBC data source, use the connection string like this:
-\verbatim
-Driver=MariaDB;Database=test;User=testuser;Password=testpassword;Option=3
-\endverbatim
-
-\subsection SQLite_ConnString SQLite connection string
-
-The SQLite database is a single disk file. The SQLite connection string is simply a path to the location of that single disk file. Both absolute and relative paths work. When the path is valid but the disk file does not exist yet then SQLite database engine will automatically create the disk file and hence create a new empty database in the process. The drawback with this approach is, there is no way to pass additional database connection settings. In order to do that, SQLite DB API also supports connection string using RFC 3986 URI format. Consult SQLite documentation on [URI format](https://www.sqlite.org/uri.html) for more detail. For illustration purposes, this subsection will assume the SQLite disk file is called 'test.db' located in home directory and current working directory is home directory.
-
-\subsubsection Path_ConnString Path connection string
-
-With the above assumption, the following example connection strings work equally.
-
-Relative path:
-\verbatim
-test.db
-\endverbatim
-
-Or absolute path:
-\verbatim
-/home/testuser/test.db
-\endverbatim
-
-\subsubsection URI_ConnString URI connection string
-
-In this format the additional database connection setting can be passed as query parameters. As an example, to connect to the same database as above but in read-only and shared-cache mode then the connection string can be rewritten as:
-\verbatim
-file:./test.db?mode=ro&cache=shared
-\endverbatim
-
-Or:
-\verbatim
-file:///home/testuser/test.db?mode=ro&cache=shared
-\endverbatim
-
-\section Immediate_Execution Immediate SQL statement execution
-
-Use the \ref DbConnection::Execute() "Execute()" to execute an SQL statement in immediate mode. In immediate mode, the SQL statement is opened, prepared, executed, and finalized in one go. It is a convenient method to perform adhoc query but it may not be good for system performance when a same query is being performed repeatedly. The method returns a DbResult object regardless of whether the query type is DML (Data Manipulation Language) or DDL (Data Definition Language). The %DbResult object only contains the resultset when the SQL statement being executed is a select query. Use the \ref DbResult::GetNumColumns() "GetNumColumns()" and \ref DbResult::GetNumRows() "GetNumRows()" to find out the size of the resultset. Use the \ref DbResult::GetColumns() "GetColumns()" and \ref DbResult::GetRows() "GetRows()" to get the actual column headers data and rows data, respectively. For DML statement, use the \ref DbResult::GetNumAffectedRows() "GetNumAffectedRows()" to find out the number of affected rows.
-
-The number of rows in the %DbResult object may be less than the actual number of rows being fetched from the database. This is because the fetched rows could be instructed to be filtered out by \ref DB_Cursor "E_DBCURSOR" event handler. The whole rows fetching process could also be aborted upon request of E_DBCURSOR event handler.
-
-\section Prepare_Bind_Execution SQL execution using prepared statements and dynamic parameter bindings
-
-Not yet supported at this moment.
-
-\section Transaction_Management Transaction Management
-
-Not yet supported at this moment. Currently all statements are auto-committed unless the database is connected as read-only (in which case DML and DDL statements would cause an error to be logged).
-
-\section DB_Cursor Database cursor event
-
-When executing an SQL statement there is an option to enable the sending of database cursor event. This event is sent on each row in the resultset as it is being fetched. i.e. the events could be sent multiple times before the Execute() method returns. %Application can subscribe to this event to influence how the resultset is being populated in the %DbResult object.
-
-The E_DBCURSOR has input and output parameters.
-
-Output parameters:
-\verbatim
-P_SQL        SQL query string currently being executed (String)
-P_NUMCOLS    Number of columns in the resultset (unsigned)
-P_COLHEADERS Column headers in the resultset (StringVector)
-P_COLVALUES  Row data as it is being fetched (VariantVector)
-\endverbatim
-
-%Input parameters:
-\verbatim
-P_FILTER     Set to true to filter out this row from the DbResult object
-P_ABORT      Set to true to abort further fetching process
-\endverbatim
-
-The P_FILTER could be used for any additional client-side filtering logic that is otherwise difficult to be carried out at the database server-side using WHERE or HAVING clause. The P_ABORT when used does not affect rows that are already populated into %DbResult object.
-
 \page Multithreading Multithreading
 
 Urho3D uses a task-based multithreading model. The WorkQueue subsystem can be supplied with tasks described by the WorkItem structure, by calling \ref WorkQueue::AddWorkItem "AddWorkItem()". These will be executed in background worker threads. The function \ref WorkQueue::Complete "Complete()" will complete all currently pending tasks, and execute them also in the main thread to make them finish faster.
@@ -2990,6 +2884,36 @@ In your update function, move the controlled node using \ref SplinePath::Move "M
 \code
     path->Move(eventData[P_TIMESTEP].GetFloat());
 \endcode
+
+\page CSharp CSharp Scripting
+
+\section CSharp_About About C# Support
+
+C# support is provided by customized SWIG wrapper interface generator.
+
+* Extensive API coverage estimated at 90%+
+* Support for inheriting native classes and overriding their virtual methods
+* Support for ref parameters
+* Support for native containers (`HashMap<T>`, `Vector<T>`, `PODVector<T>``)
+* Transparently unwrapping `SharedPtr<T>` and `WeakPtr<T>`
+* Serialization and deserialization of managed components
+* Member variable and method renaming to match C# conventions
+* Support for registering C# fields as attributes
+* Managed editor plugins with hot code reload
+
+\subsection CSharp_Requirements Requirements
+
+* .NET framework (4.7.1) (Windows)
+* Mono (latest) (Linux/MacOS/Android/iOS)
+* `-DBUILD_SHARED_LIBS=ON` build parameter.
+* `-DURHO3D_CSHARP=ON` build parameter.
+
+\subsection CSharp_IDE IDE support
+
+On Windows it is advised to use Visual Studio. C# projects will be automatically
+embedded into generated solution. C# code can be edited and debugged, including
+hot-reloadable plugins running in the editor. To debug these plugins set
+`EditorHost` as your startup application and start debugger.
 
 \page Tools Tools
 
