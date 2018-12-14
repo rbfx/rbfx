@@ -58,8 +58,8 @@ bool ImportAssimp::Convert(const String& path)
         String outputPath = outputDir + resourceFileName + ".mdl";
 
         StringVector args{"model", path, outputPath, "-na", "-ns"};
-        Process process(GetFileSystem()->GetProgramDir() + "AssetImporter", args);
-        if (process.Run() == 0 && GetFileSystem()->FileExists(outputPath))
+        unsigned result = GetFileSystem()->SystemRun(GetFileSystem()->GetProgramDir() + "AssetImporter", args);
+        if (result == 0 && GetFileSystem()->FileExists(outputPath))
             importedAny = true;
     }
 
@@ -68,8 +68,8 @@ bool ImportAssimp::Convert(const String& path)
         String outputPath = cachePath + resourceName;
 
         StringVector args{"anim", path, outputPath, "-nm", "-nt", "-nc", "-ns"};
-        Process process(GetFileSystem()->GetProgramDir() + "AssetImporter", args);
-        if (process.Run() == 0 && GetFileSystem()->FileExists(outputPath))
+        unsigned result = GetFileSystem()->SystemRun(GetFileSystem()->GetProgramDir() + "AssetImporter", args);
+        if (result == 0 && GetFileSystem()->FileExists(outputPath))
             importedAny = true;
     }
 
