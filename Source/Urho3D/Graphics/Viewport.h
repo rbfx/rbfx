@@ -52,6 +52,9 @@ public:
     /// Destruct.
     ~Viewport() override;
 
+    /// Register object with the engine.
+    static void RegisterObject(Context* context);
+
     /// Set scene.
     void SetScene(Scene* scene);
     /// Set viewport camera.

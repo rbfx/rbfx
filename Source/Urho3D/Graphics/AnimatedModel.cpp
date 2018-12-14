@@ -1113,7 +1113,7 @@ void AnimatedModel::CloneGeometries()
         VertexBuffer* original = originalVertexBuffers[i];
         if (model_->GetMorphRangeCount(i))
         {
-            SharedPtr<VertexBuffer> clone(new VertexBuffer(context_));
+            SharedPtr<VertexBuffer> clone(context_->CreateObject<VertexBuffer>());
             clone->SetShadowed(true);
             clone->SetSize(original->GetVertexCount(), morphElementMask_ & original->GetElementMask(), true);
             void* dest = clone->Lock(0, original->GetVertexCount());
@@ -1135,7 +1135,7 @@ void AnimatedModel::CloneGeometries()
         for (unsigned j = 0; j < geometries_[i].Size(); ++j)
         {
             SharedPtr<Geometry> original = geometries_[i][j];
-            SharedPtr<Geometry> clone(new Geometry(context_));
+            SharedPtr<Geometry> clone(context_->CreateObject<Geometry>());
 
             // Add an additional vertex stream into the clone, which supplies only the morphable vertex data, while the static
             // data comes from the original vertex buffer(s)

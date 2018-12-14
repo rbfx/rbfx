@@ -59,6 +59,7 @@
 #include <unistd.h>
 #include <utime.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 #define MAX_PATH 256
 #endif
 
@@ -147,10 +148,11 @@ enum SystemRunFlag
 {
     SR_DEFAULT,
     SR_WAIT_FOR_EXIT,
+    SR_READ_OUTPUT = 1 << 1 | SR_WAIT_FOR_EXIT,
 };
 URHO3D_FLAGSET(SystemRunFlag, SystemRunFlags);
 
-int DoSystemRun(const String& fileName, const Vector<String>& arguments, SystemRunFlags flags)
+int DoSystemRun(const String& fileName, const Vector<String>& arguments, SystemRunFlags flags, String& output)
 {
 #ifdef TVOS
     return -1;
@@ -166,17 +168,42 @@ int DoSystemRun(const String& fileName, const Vector<String>& arguments, SystemR
     for (unsigned i = 0; i < arguments.Size(); ++i)
         commandLine += " " + arguments[i];
 
-    STARTUPINFOW startupInfo;
-    PROCESS_INFORMATION processInfo;
-    memset(&startupInfo, 0, sizeof startupInfo);
-    memset(&processInfo, 0, sizeof processInfo);
+    STARTUPINFOW startupInfo{};
+    PROCESS_INFORMATION processInfo{};
+    startupInfo.cb = sizeof(startupInfo);
 
     WString commandLineW(commandLine);
     DWORD processFlags = 0;
     if (flags & SR_WAIT_FOR_EXIT)
         // If we are waiting for process result we are likely reading stdout, in that case we probably do not want to see a console window.
         processFlags = CREATE_NO_WINDOW;
-    if (!CreateProcessW(nullptr, (wchar_t*)commandLineW.CString(), nullptr, nullptr, 0, processFlags, nullptr, nullptr, &startupInfo, &processInfo))
+
+    HANDLE pipeRead = 0, pipeWrite = 0;
+    if (flags & SR_READ_OUTPUT)
+    {
+        SECURITY_ATTRIBUTES attr;
+        attr.nLength = sizeof(SECURITY_ATTRIBUTES);
+        attr.bInheritHandle = FALSE;
+        attr.lpSecurityDescriptor = NULL;
+        if (!CreatePipe(&pipeRead, &pipeWrite, &attr, 0))
+            return -1;
+
+        if (!SetHandleInformation(pipeRead, HANDLE_FLAG_INHERIT, 0))
+            return -1;
+
+        if (!SetHandleInformation(pipeWrite, HANDLE_FLAG_INHERIT, 1))
+            return -1;
+
+        DWORD mode = PIPE_NOWAIT;
+        if (!SetNamedPipeHandleState(pipeRead, &mode, nullptr, nullptr))
+            return -1;
+
+        startupInfo.hStdOutput = pipeWrite;
+        startupInfo.hStdError = pipeWrite;
+        startupInfo.dwFlags |= STARTF_USESTDHANDLES;
+    }
+
+    if (!CreateProcessW(nullptr, (wchar_t*)commandLineW.CString(), nullptr, nullptr, TRUE, processFlags, nullptr, nullptr, &startupInfo, &processInfo))
         return -1;
 
     DWORD exitCode = 0;
@@ -186,14 +213,54 @@ int DoSystemRun(const String& fileName, const Vector<String>& arguments, SystemR
         GetExitCodeProcess(processInfo.hProcess, &exitCode);
     }
 
+    if (flags & SR_READ_OUTPUT)
+    {
+        char buf[1024];
+        for (;;)
+        {
+            DWORD bytesRead = 0;
+            if (!ReadFile(pipeRead, buf, sizeof(buf), &bytesRead, nullptr) || !bytesRead)
+                break;
+            auto err = GetLastError();
+
+            unsigned start = output.Length();
+            output.Resize(start + bytesRead);
+            memcpy(&output[start], buf, bytesRead);
+        }
+
+        CloseHandle(pipeWrite);
+        CloseHandle(pipeRead);
+    }
+
     CloseHandle(processInfo.hProcess);
     CloseHandle(processInfo.hThread);
 
     return exitCode;
 #else
+
+    int desc[2];
+    if (flags & SR_READ_OUTPUT)
+    {
+        if (pipe(desc) == -1)
+            return -1;
+        fcntl(desc[0], F_SETFL, O_NONBLOCK);
+        fcntl(desc[1], F_SETFL, O_NONBLOCK);
+    }
+
     pid_t pid = fork();
     if (!pid)
     {
+        if (flags & SR_READ_OUTPUT)
+        {
+            // Replace stdout with pipe fd
+            close(STDOUT_FILENO);
+            dup(desc[1]);
+            close(STDERR_FILENO);
+            dup(desc[1]);
+            close(desc[0]);
+            close(desc[1]);
+        }
+
         PODVector<const char*> argPtrs;
         argPtrs.Push(fixedFileName.CString());
         for (unsigned i = 0; i < arguments.Size(); ++i)
@@ -208,6 +275,23 @@ int DoSystemRun(const String& fileName, const Vector<String>& arguments, SystemR
         int exitCode = 0;
         if (flags & SR_WAIT_FOR_EXIT)
             wait(&exitCode);
+
+        if (flags & SR_READ_OUTPUT)
+        {
+            char buf[1024];
+            for (;;)
+            {
+                ssize_t bytesRead = read(desc[0], buf, sizeof(buf));
+                if (bytesRead <= 0)
+                    break;
+
+                unsigned start = output.Length();
+                output.Resize(start + bytesRead);
+                memcpy(&output[start], buf, bytesRead);
+            }
+            close(desc[0]);
+            close(desc[1]);
+        }
         return exitCode;
     }
     else
@@ -288,7 +372,8 @@ public:
     /// The function to run in the thread.
     void ThreadFunction() override
     {
-        exitCode_ = DoSystemRun(fileName_, arguments_, SR_WAIT_FOR_EXIT);
+        String output;
+        exitCode_ = DoSystemRun(fileName_, arguments_, SR_WAIT_FOR_EXIT, output);
         completed_ = true;
     }
 
@@ -395,10 +480,10 @@ int FileSystem::SystemCommand(const String& commandLine, bool redirectStdOutToLo
     }
 }
 
-int FileSystem::SystemRun(const String& fileName, const Vector<String>& arguments)
+int FileSystem::SystemRun(const String& fileName, const Vector<String>& arguments, String& output)
 {
     if (allowedPaths_.Empty())
-        return DoSystemRun(fileName, arguments, SR_WAIT_FOR_EXIT);
+        return DoSystemRun(fileName, arguments, SR_READ_OUTPUT, output);
     else
     {
         URHO3D_LOGERROR("Executing an external command is not allowed");
@@ -406,10 +491,17 @@ int FileSystem::SystemRun(const String& fileName, const Vector<String>& argument
     }
 }
 
+int FileSystem::SystemRun(const String& fileName, const Vector<String>& arguments)
+{
+    String output;
+    return SystemRun(fileName, arguments, output);
+}
+
 int FileSystem::SystemSpawn(const String& fileName, const Vector<String>& arguments)
 {
+    String output;
     if (allowedPaths_.Empty())
-        return DoSystemRun(fileName, arguments, SR_DEFAULT);
+        return DoSystemRun(fileName, arguments, SR_DEFAULT, output);
     else
     {
         URHO3D_LOGERROR("Executing an external command is not allowed");

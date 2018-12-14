@@ -72,7 +72,7 @@ bool Texture2D::BeginLoad(Deserializer& source)
     }
 
     // Load the image data for EndLoad()
-    loadImage_ = new Image(context_);
+    loadImage_ = context_->CreateObject<Image>();
     if (!loadImage_->Load(source))
     {
         loadImage_.Reset();

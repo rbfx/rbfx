@@ -22,11 +22,13 @@
 
 #include "../Precompiled.h"
 
+#include "../Core/Context.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/RenderPath.h"
 #include "../Graphics/View.h"
+#include "../Graphics/Viewport.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
 #include "../Scene/Scene.h"
@@ -65,6 +67,11 @@ Viewport::Viewport(Context* context, Scene* scene, Camera* camera, const IntRect
 }
 
 Viewport::~Viewport() = default;
+
+void Viewport::RegisterObject(Context* context)
+{
+    context->RegisterFactory<Viewport>();
+}
 
 void Viewport::SetScene(Scene* scene)
 {
@@ -213,7 +220,7 @@ Vector3 Viewport::ScreenToWorldPoint(int x, int y, float depth) const
 
 void Viewport::AllocateView()
 {
-    view_ = new View(context_);
+    view_ = context_->CreateObject<View>();
 }
 
 }

@@ -138,18 +138,16 @@ Engine::Engine(Context* context) :
 #endif
     context_->RegisterSubsystem(new Input(context_));
     context_->RegisterSubsystem(new Audio(context_));
+    // Register UI library object factories before creation of subsystem. This is not done inside subsystem because
+    // there may exist multiple instances of UI.
+    RegisterUILibrary(context_);
     context_->RegisterSubsystem(new UI(context_));
 #if URHO3D_TASKS
     context_->RegisterSubsystem(new Tasks(context_));
 #endif
+
     // Register object factories for libraries which are not automatically registered along with subsystem creation
-    RegisterUILibrary(context_);
-
     RegisterSceneLibrary(context_);
-
-#ifdef URHO3D_TASKS
-    context_->RegisterFactory<Task>();
-#endif
 
 #ifdef URHO3D_IK
     RegisterIKLibrary(context_);

@@ -223,7 +223,7 @@ bool Scene::LoadXML(Deserializer& source)
 
     StopAsyncLoading();
 
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     if (!xml->Load(source))
         return false;
 
@@ -246,7 +246,7 @@ bool Scene::LoadJSON(Deserializer& source)
 
     StopAsyncLoading();
 
-    SharedPtr<JSONFile> json(new JSONFile(context_));
+    SharedPtr<JSONFile> json(context_->CreateObject<JSONFile>());
     if (!json->Load(source))
         return false;
 
@@ -267,7 +267,7 @@ bool Scene::SaveXML(Serializer& dest, const String& indentation) const
 {
     URHO3D_PROFILE("SaveSceneXML");
 
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement rootElem = xml->CreateRoot("scene");
     if (!SaveXML(rootElem))
         return false;
@@ -289,7 +289,7 @@ bool Scene::SaveJSON(Serializer& dest, const String& indentation) const
 {
     URHO3D_PROFILE("SaveSceneJSON");
 
-    SharedPtr<JSONFile> json(new JSONFile(context_));
+    SharedPtr<JSONFile> json(context_->CreateObject<JSONFile>());
     JSONValue rootVal;
     if (!SaveJSON(rootVal))
         return false;
@@ -392,7 +392,7 @@ bool Scene::LoadAsyncXML(File* file, LoadMode mode)
 
     StopAsyncLoading();
 
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     if (!xml->Load(*file))
         return false;
 
@@ -461,7 +461,7 @@ bool Scene::LoadAsyncJSON(File* file, LoadMode mode)
 
     StopAsyncLoading();
 
-    SharedPtr<JSONFile> json(new JSONFile(context_));
+    SharedPtr<JSONFile> json(context_->CreateObject<JSONFile>());
     if (!json->Load(*file))
         return false;
 
@@ -599,7 +599,7 @@ Node* Scene::InstantiateJSON(const JSONValue& source, const Vector3& position, c
 
 Node* Scene::InstantiateXML(Deserializer& source, const Vector3& position, const Quaternion& rotation, CreateMode mode)
 {
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     if (!xml->Load(source))
         return nullptr;
 
@@ -608,7 +608,7 @@ Node* Scene::InstantiateXML(Deserializer& source, const Vector3& position, const
 
 Node* Scene::InstantiateJSON(Deserializer& source, const Vector3& position, const Quaternion& rotation, CreateMode mode)
 {
-    SharedPtr<JSONFile> json(new JSONFile(context_));
+    SharedPtr<JSONFile> json(context_->CreateObject<JSONFile>());
     if (!json->Load(source))
         return nullptr;
 

@@ -287,8 +287,8 @@ static const char* GetHostInfo()
     ptr += sprintf( ptr, "User: %s@%s\n", user, hostname );
 #else
     // Urho3D change HOST_NAME_MAX -> _POSIX_HOST_NAME_MAX
-    char hostname[_POSIX_HOST_NAME_MAX];
-    char user[_POSIX_LOGIN_NAME_MAX];
+    char hostname[_POSIX_HOST_NAME_MAX]{};
+    char user[_POSIX_LOGIN_NAME_MAX]{};
 
     gethostname( hostname, _POSIX_HOST_NAME_MAX );
 #  if defined __ANDROID__

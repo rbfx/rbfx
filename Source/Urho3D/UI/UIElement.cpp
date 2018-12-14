@@ -180,7 +180,7 @@ bool UIElement::LoadXML(const XMLElement& source, XMLFile* styleFile)
     if (!defaultStyleFileName.Empty())
         defaultStyleFileName_ = defaultStyleFileName;
 
-    SharedPtr<XMLFile> savedStyleFile(new XMLFile(context_));
+    SharedPtr<XMLFile> savedStyleFile(context_->CreateObject<XMLFile>());
     if (styleFile == nullptr)
     {
         if (!defaultStyleFileName.Empty())
@@ -496,13 +496,13 @@ IntVector2 UIElement::ElementToScreen(const IntVector2& position)
 
 bool UIElement::LoadXML(Deserializer& source)
 {
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     return xml->Load(source) && LoadXML(xml->GetRoot());
 }
 
 bool UIElement::SaveXML(Serializer& dest, const String& indentation) const
 {
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement rootElem = xml->CreateRoot("element");
     return SaveXML(rootElem) && xml->Save(dest, indentation);
 }

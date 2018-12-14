@@ -276,31 +276,23 @@ const Vector<String>& ParseArguments(const String& cmdLine, bool skipFirstArgume
 
     for (unsigned i = 0; i < cmdLine.Length(); ++i)
     {
-        if (cmdLine[i] == '\"')
+        char c = cmdLine[i];
+        if (cmdLine[i] == '"' && (i == 0 || cmdLine[i - 1] != '\\'))
             inQuote = !inQuote;
-        if ((cmdLine[i] == ' ' || (i == cmdLine.Length()-1)) && !inQuote)
+        else if (!inQuote)
         {
-            if (inCmd)
+            bool atEnd = i == cmdLine.Length() - 1;
+            if (cmdLine[i] == ' ' || atEnd)
             {
-                inCmd = false;
                 cmdEnd = i;
-                arguments.Push(cmdLine.Substring(cmdStart, cmdEnd - cmdStart));
+                if (atEnd)
+                    ++cmdEnd;
+                String argument = cmdLine.Substring(cmdStart, cmdEnd - cmdStart);
+                if (!argument.Empty())  // May be empty when multiple spaces follow one another.
+                    arguments.Push(argument);
+                cmdStart = i + 1;
             }
         }
-        else
-        {
-            if (!inCmd)
-            {
-                inCmd = true;
-                cmdStart = i;
-            }
-        }
-    }
-    if (inCmd)
-    {
-        cmdEnd = cmdLine.Length();
-        if (!skipFirstArgument)
-            arguments.Push(cmdLine.Substring(cmdStart, cmdEnd - cmdStart));
     }
 
     // Strip double quotes from the arguments
@@ -810,42 +802,6 @@ String GenerateUUID()
     uuid_unparse(uuid, str);
     return String(str);
 #endif
-}
-
-Process::Process(const String& command, const Vector<String>& args)
-{
-    command_ = "\"" + GetNativePath(command).Replaced("\"", "\\\"") + "\" ";
-    for (const auto& arg: args)
-    {
-        command_ += "\"";
-        command_ += arg.Replaced("\"", "\\\"");
-        command_ += "\" ";
-    }
-}
-
-int Process::Run()
-{
-    char buffer[1024];
-    String command;
-    if (!subprocessDir_.Empty())
-    {
-        command = "cd \"";
-        command += GetNativePath(AddTrailingSlash(subprocessDir_)).Replaced("\"", "\\\"");
-        command += "\"";
-#if _WIN32
-        command += "&";
-#else
-        command += ";";
-#endif
-        command += command_;
-    }
-
-    String output;
-    FILE* stream = popen(command.Empty() ? command_.CString() : command.CString(), "r");
-    while (fgets(buffer, sizeof(buffer), stream) != nullptr)
-        output.Append(buffer);
-
-    return pclose(stream);
 }
 
 }

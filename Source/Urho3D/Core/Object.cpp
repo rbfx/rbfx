@@ -315,7 +315,6 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData)
     // Make a weak pointer to self to check for destruction during event handling
     WeakPtr<Object> self(this);
     Context* context = context_;
-    HashSet<Object*> processed;
 
     context->BeginSendEvent(this, eventType);
 
@@ -343,60 +342,36 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData)
                 context->EndSendEvent();
                 return;
             }
-
-            processed.Insert(receiver);
         }
 
         group->EndSendEvent();
     }
 
     // Then the non-specific receivers
-    group = context->GetEventReceivers(eventType);
-    if (group)
+    SharedPtr<EventReceiverGroup> groupNonSpec(context->GetEventReceivers(eventType));
+    if (groupNonSpec)
     {
-        group->BeginSendEvent();
+        groupNonSpec->BeginSendEvent();
 
-        if (processed.Empty())
+        const unsigned numReceivers = groupNonSpec->receivers_.Size();
+        for (unsigned i = 0; i < numReceivers; ++i)
         {
-            const unsigned numReceivers = group->receivers_.Size();
-            for (unsigned i = 0; i < numReceivers; ++i)
-            {
-                Object* receiver = group->receivers_[i];
-                if (!receiver)
-                    continue;
-
-                receiver->OnEvent(this, eventType, eventData);
-
-                if (self.Expired())
-                {
-                    group->EndSendEvent();
-                    context->EndSendEvent();
-                    return;
-                }
-            }
-        }
-        else
-        {
+            Object* receiver = groupNonSpec->receivers_[i];
             // If there were specific receivers, check that the event is not sent doubly to them
-            const unsigned numReceivers = group->receivers_.Size();
-            for (unsigned i = 0; i < numReceivers; ++i)
+            if (!receiver || (group && group->receivers_.Contains(receiver)))
+                continue;
+
+            receiver->OnEvent(this, eventType, eventData);
+
+            if (self.Expired())
             {
-                Object* receiver = group->receivers_[i];
-                if (!receiver || processed.Contains(receiver))
-                    continue;
-
-                receiver->OnEvent(this, eventType, eventData);
-
-                if (self.Expired())
-                {
-                    group->EndSendEvent();
-                    context->EndSendEvent();
-                    return;
-                }
+                groupNonSpec->EndSendEvent();
+                context->EndSendEvent();
+                return;
             }
         }
 
-        group->EndSendEvent();
+        groupNonSpec->EndSendEvent();
     }
 
     context->EndSendEvent();

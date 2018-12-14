@@ -410,7 +410,7 @@ bool Image::BeginLoad(Deserializer& source)
             if (faceIndex < imageChainCount - 1)
             {
                 // Build the image chain
-                SharedPtr<Image> nextImage(new Image(context_));
+                SharedPtr<Image> nextImage(context_->CreateObject<Image>());
                 currentImage->nextSibling_ = nextImage;
                 currentImage = nextImage;
             }
@@ -1585,7 +1585,7 @@ SharedPtr<Image> Image::GetNextLevel() const
     if (depthOut < 1)
         depthOut = 1;
 
-    SharedPtr<Image> mipImage(new Image(context_));
+    SharedPtr<Image> mipImage(context_->CreateObject<Image>());
 
     if (depth_ > 1)
         mipImage->SetSize(widthOut, heightOut, depthOut, components_);
@@ -1879,7 +1879,7 @@ SharedPtr<Image> Image::ConvertToRGBA() const
     if (components_ == 4)
         return SharedPtr<Image>(const_cast<Image*>(this));
 
-    SharedPtr<Image> ret(new Image(context_));
+    SharedPtr<Image> ret(context_->CreateObject<Image>());
     ret->SetSize(width_, height_, depth_, 4);
 
     const unsigned char* src = data_;
@@ -2086,7 +2086,7 @@ Image* Image::GetSubimage(const IntRect& rect) const
         int width = rect.Width();
         int height = rect.Height();
 
-        auto* image = new Image(context_);
+        auto image = context_->CreateObject<Image>();
         image->SetSize(width, height, components_);
 
         unsigned char* dest = image->GetData();
@@ -2155,7 +2155,7 @@ Image* Image::GetSubimage(const IntRect& rect) const
             return nullptr;
         }
 
-        auto* image = new Image(context_);
+        auto image = context_->CreateObject<Image>();
         image->width_ = paddedRect.Width();
         image->height_ = paddedRect.Height();
         image->depth_ = 1;

@@ -43,6 +43,9 @@ public:
     /// Destruct.
     ~ConstantBuffer() override;
 
+    /// Register object with the engine.
+    static void RegisterObject(Context* context);
+
     /// Recreate the GPU resource and restore data if applicable.
     void OnDeviceReset() override;
     /// Release the buffer.

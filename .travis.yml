@@ -10,6 +10,7 @@ env:
   global:
     - MAKEFLAGS=-j4
     - URHO3D_ENABLE_ALL=ON
+    - URHO3D_DOCS=OFF
     - CMAKE_VERSION=3.4
     - CMAKE_PATCH=3
 addons:

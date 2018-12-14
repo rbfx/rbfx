@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../IO/File.h"
 #include "../IO/FileSystem.h"
@@ -46,6 +47,8 @@
 #endif
 
 #include "../DebugNew.h"
+#include "Connection.h"
+
 
 #include <cstdio>
 
@@ -67,20 +70,17 @@ PackageUpload::PackageUpload() :
 {
 }
 
-Connection::Connection(Context* context, bool isClient, const SLNet::AddressOrGUID& address, SLNet::RakPeerInterface* peer) :
+Connection::Connection(Context* context) :
     Object(context),
     timeStamp_(0),
-    peer_(peer),
+    peer_(nullptr),
     sendMode_(OPSM_NONE),
-    isClient_(isClient),
+    isClient_(false),
     connectPending_(false),
     sceneLoaded_(false),
     logStatistics_(false),
     address_(nullptr)
 {
-    sceneState_.connection_ = this;
-    port_ = address.systemAddress.GetPort();
-    SetAddressOrGUID(address);
 }
 
 Connection::~Connection()
@@ -90,6 +90,21 @@ Connection::~Connection()
 
     delete address_;
     address_ = nullptr;
+}
+
+void Connection::Initialize(bool isClient, const SLNet::AddressOrGUID& address, SLNet::RakPeerInterface* peer)
+{
+    assert(peer_ == nullptr);
+    peer_ = peer;
+    isClient_ = isClient;
+    sceneState_.connection_ = this;
+    port_ = address.systemAddress.GetPort();
+    SetAddressOrGUID(address);
+}
+
+void Connection::RegisterObject(Context* context)
+{
+    context->RegisterFactory<Connection>();
 }
 
 void Connection::SendMessage(int msgID, bool reliable, bool inOrder, const VectorBuffer& msg, unsigned contentID)

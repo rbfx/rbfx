@@ -1718,7 +1718,7 @@ void Graphics::SetDepthStencil(RenderSurface* depthStencil)
                 depthStencil = i->second_->GetRenderSurface();
             else
             {
-                SharedPtr<Texture2D> newDepthTexture(new Texture2D(context_));
+                SharedPtr<Texture2D> newDepthTexture(context_->CreateObject<Texture2D>());
                 newDepthTexture->SetSize(width, height, GetDepthStencilFormat(), TEXTURE_DEPTHSTENCIL);
                 impl_->depthTextures_[searchKey] = newDepthTexture;
                 depthStencil = newDepthTexture->GetRenderSurface();
@@ -2354,7 +2354,7 @@ ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType /*type*/,  unsign
     HashMap<unsigned, SharedPtr<ConstantBuffer> >::Iterator i = impl_->allConstantBuffers_.Find(key);
     if (i == impl_->allConstantBuffers_.End())
     {
-        i = impl_->allConstantBuffers_.Insert(MakePair(key, SharedPtr<ConstantBuffer>(new ConstantBuffer(context_))));
+        i = impl_->allConstantBuffers_.Insert(MakePair(key, SharedPtr<ConstantBuffer>(context_->CreateObject<ConstantBuffer>())));
         i->second_->SetSize(size);
     }
     return i->second_.Get();

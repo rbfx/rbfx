@@ -31,13 +31,6 @@
 namespace Urho3D
 {
 
-URHO3D_EVENT(E_SCENESETTINGMODIFIED, SceneSettingModified)
-{
-    URHO3D_PARAM(P_SCENE, Scene);                           // Scene pointer
-    URHO3D_PARAM(P_NAME, Name);                             // String
-    URHO3D_PARAM(P_VALUE, Value);                           // Variant
-}
-
 /// Class handling common scene settings
 class EditorSceneSettings : public Component
 {
@@ -50,9 +43,9 @@ public:
 
     /// Returns configured editor viewport renderpath.
     ResourceRef GetEditorViewportRenderPath() const { return editorViewportRenderPath_; }
+    /// Sets current editor scene view renderpath.
+    void SetEditorViewportRenderPath(const ResourceRef& renderPath);
 
-    /// Handle attribute write access.
-    void OnSetAttribute(const AttributeInfo& attr, const Variant& src) override;
     ///
     Vector3 GetCameraPosition() const;
     ///

@@ -54,52 +54,52 @@ FileSelector::FileSelector(Context* context) :
     directoryMode_(false),
     ignoreEvents_(false)
 {
-    window_ = new Window(context_);
+    window_ = context_->CreateObject<Window>();
     window_->SetLayout(LM_VERTICAL);
 
-    titleLayout = new UIElement(context_);
+    titleLayout = context_->CreateObject<UIElement>();
     titleLayout->SetLayout(LM_HORIZONTAL);
     window_->AddChild(titleLayout);
 
-    titleText_ = new Text(context_);
+    titleText_ = context_->CreateObject<Text>();
     titleLayout->AddChild(titleText_);
 
-    closeButton_ = new Button(context_);
+    closeButton_ = context_->CreateObject<Button>();
     titleLayout->AddChild(closeButton_);
 
-    pathEdit_ = new LineEdit(context_);
+    pathEdit_ = context_->CreateObject<LineEdit>();
     window_->AddChild(pathEdit_);
 
-    fileList_ = new ListView(context_);
+    fileList_ = context_->CreateObject<ListView>();
     window_->AddChild(fileList_);
 
-    fileNameLayout_ = new UIElement(context_);
+    fileNameLayout_ = context_->CreateObject<UIElement>();
     fileNameLayout_->SetLayout(LM_HORIZONTAL);
 
-    fileNameEdit_ = new LineEdit(context_);
+    fileNameEdit_ = context_->CreateObject<LineEdit>();
     fileNameLayout_->AddChild(fileNameEdit_);
 
-    filterList_ = new DropDownList(context_);
+    filterList_ = context_->CreateObject<DropDownList>();
     fileNameLayout_->AddChild(filterList_);
 
     window_->AddChild(fileNameLayout_);
 
-    separatorLayout_ = new UIElement(context_);
+    separatorLayout_ = context_->CreateObject<UIElement>();
     window_->AddChild(separatorLayout_);
 
-    buttonLayout_ = new UIElement(context_);
+    buttonLayout_ = context_->CreateObject<UIElement>();
     buttonLayout_->SetLayout(LM_HORIZONTAL);
 
-    buttonLayout_->AddChild(new UIElement(context_)); // Add spacer
+    buttonLayout_->AddChild(context_->CreateObject<UIElement>()); // Add spacer
 
-    cancelButton_ = new Button(context_);
-    cancelButtonText_ = new Text(context_);
+    cancelButton_ = context_->CreateObject<Button>();
+    cancelButtonText_ = context_->CreateObject<Text>();
     cancelButtonText_->SetAlignment(HA_CENTER, VA_CENTER);
     cancelButton_->AddChild(cancelButtonText_);
     buttonLayout_->AddChild(cancelButton_);
 
-    okButton_ = new Button(context_);
-    okButtonText_ = new Text(context_);
+    okButton_ = context_->CreateObject<Button>();
+    okButtonText_ = context_->CreateObject<Text>();
     okButtonText_->SetAlignment(HA_CENTER, VA_CENTER);
     okButton_->AddChild(okButtonText_);
     buttonLayout_->AddChild(okButton_);
@@ -223,7 +223,7 @@ void FileSelector::SetFilters(const Vector<String>& filters, unsigned defaultInd
     filterList_->RemoveAllItems();
     for (unsigned i = 0; i < filters_.Size(); ++i)
     {
-        auto* filterText = new Text(context_);
+        auto filterText = context_->CreateObject<Text>();
         filterList_->AddItem(filterText);
         filterText->SetText(filters_[i]);
         filterText->SetStyle("FileSelectorFilterText");
@@ -329,7 +329,7 @@ void FileSelector::RefreshFiles()
         else
             displayName = fileEntries_[i].name_;
 
-        auto* entryText = new Text(context_);
+        auto entryText = context_->CreateObject<Text>();
         fileList_->AddItem(entryText);
         entryText->SetText(displayName);
         entryText->SetStyle("FileSelectorListText");

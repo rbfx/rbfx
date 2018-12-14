@@ -252,53 +252,52 @@ public:
     void LoadFbx(const String& file_path)
     {
         auto fs = GetSubsystem<FileSystem>();
-        String temp = fs->GetTemporaryDir();
-        temp += "AssetViewer/";
-        if (!fs->DirExists(temp))
-        {
-            fs->CreateDir(temp);
-            fs->CreateDir(temp + "/mdl");
-            fs->CreateDir(temp + "/ani");
-        }
-        auto animation_path = temp + "/ani";
-        auto model_file = temp + "/mdl/out.mdl";
-        auto material_list_file = temp + "/mdl/out.txt";
+        auto temp = fs->GetTemporaryDir() + "AssetViewer/";
+        auto model_path = temp + "mdl/";
+        auto animation_path = temp + "ani/";
+        fs->CreateDir(temp);
+        fs->CreateDir(model_path);
+        fs->CreateDir(animation_path);
+        auto model_file = model_path + "out.mdl";
+        auto material_list_file = model_path + "out.txt";
         fs->Delete(model_file);
 
-        Process proc(fs->GetProgramDir() + "AssetImporter", {"model", file_path, model_file.CString(), "-na", "-l"});
-        if (proc.Run() == 0)
+        unsigned result = fs->SystemRun(fs->GetProgramDir() + "AssetImporter", {"model", file_path, model_file.CString(), "-na", "-l"});
+        if (result != 0)
         {
-            if (fs->FileExists(model_file))
-            {
-                Vector<String> materials;
-                File fp(context_, material_list_file);
-                if (fp.IsOpen())
-                {
-                    while (!fp.IsEof())
-                        materials.Push(temp + "/mdl/" + fp.ReadLine());
-                }
-                LoadModel(model_file, materials);
-            }
-
-            Vector<String> animations;
-            fs->ScanDir(animations, animation_path, "*.ani", SCAN_FILES, false);
-            for (const auto& filename : animations)
-                fs->Delete(animation_path + "/" + filename);
-
-            proc = Process(fs->GetProgramDir() + "AssetImporter",
-                {"anim", file_path, animation_path + "/out_" + ToString("%ld", time(nullptr))});
-            if (proc.Run() == 0)
-            {
-                fs->ScanDir(animations, animation_path, "*.ani", SCAN_FILES, false);
-
-                if (animations.Size())
-                    LoadAnimation(animation_path + "/" + animations[0]);
-            }
-            else
-                URHO3D_LOGERROR("Importing animations failed.");
-        }
-        else
             URHO3D_LOGERROR("Importing model failed.");
+            return;
+        }
+
+        if (fs->FileExists(model_file))
+        {
+            Vector<String> materials;
+            File fp(context_, material_list_file);
+            if (fp.IsOpen())
+            {
+                while (!fp.IsEof())
+                    materials.Push(model_path + fp.ReadLine());
+            }
+            LoadModel(model_file, materials);
+        }
+
+        Vector<String> animations;
+        fs->ScanDir(animations, animation_path, "*.ani", SCAN_FILES, false);
+        for (const auto& filename : animations)
+            fs->Delete(animation_path + filename);
+
+        result = fs->SystemRun(fs->GetProgramDir() + "AssetImporter",
+            {"anim", file_path, animation_path + "out_" + ToString("%ld", time(nullptr))});
+        if (result != 0)
+        {
+            URHO3D_LOGERROR("Importing animations failed.");
+            return;
+        }
+
+        fs->ScanDir(animations, animation_path, "*.ani", SCAN_FILES, false);
+
+        if (animations.Size())
+            LoadAnimation(animation_path + "/" + animations[0]);
     }
 };
 

@@ -556,7 +556,7 @@ void SoundSource::PlayLockless(const SharedPtr<SoundStream>& stream)
         unsigned sampleSize = stream->GetSampleSize();
         unsigned streamBufferSize = sampleSize * stream->GetIntFrequency() * STREAM_BUFFER_LENGTH / 1000;
 
-        streamBuffer_ = new Sound(context_);
+        streamBuffer_ = context_->CreateObject<Sound>();
         streamBuffer_->SetSize(streamBufferSize);
         streamBuffer_->SetFormat(stream->GetIntFrequency(), stream->IsSixteenBit(), stream->IsStereo());
         streamBuffer_->SetLooped(true);

@@ -24,6 +24,7 @@
 
 #include "../Container/HashBase.h"
 #include "../Container/Sort.h"
+#include "../Core/Macros.h"
 
 #include <cassert>
 #include <initializer_list>
@@ -174,17 +175,13 @@ public:
     /// Construct empty.
     HashSet()
     {
-        // Reserve the tail node
-        allocator_ = AllocatorInitialize((unsigned)sizeof(Node));
-        head_ = tail_ = ReserveNode();
     }
 
     /// Construct from another hash set.
     HashSet(const HashSet<T>& set)
     {
         // Reserve the tail node + initial capacity according to the set's size
-        allocator_ = AllocatorInitialize((unsigned)sizeof(Node), set.Size() + 1);
-        head_ = tail_ = ReserveNode();
+        Initialize(set.Size() + 1);
         *this = set;
     }
 
@@ -286,6 +283,9 @@ public:
     /// Insert a key. Return an iterator to it.
     Iterator Insert(const T& key)
     {
+        if (URHO3D_UNLIKELY(allocator_ == nullptr))
+            Initialize();
+
         // If no pointers yet, allocate with minimum bucket count
         if (!ptrs_)
         {
@@ -632,6 +632,13 @@ private:
             node->down_ = Ptrs()[hashKey];
             Ptrs()[hashKey] = node;
         }
+    }
+
+    /// Reserve the tail node.
+    void Initialize(unsigned initialCapacity = 1)
+    {
+        allocator_ = AllocatorInitialize((unsigned)sizeof(Node), initialCapacity);
+        head_ = tail_ = ReserveNode();
     }
 
     /// Compare two nodes.

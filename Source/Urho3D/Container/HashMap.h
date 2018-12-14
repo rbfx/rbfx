@@ -26,6 +26,7 @@
 #include "../Container/Pair.h"
 #include "../Container/Sort.h"
 #include "../Container/Vector.h"
+#include "../Core/Macros.h"
 
 #include <cassert>
 #include <initializer_list>
@@ -217,17 +218,12 @@ public:
     /// Construct empty.
     HashMap()
     {
-        // Reserve the tail node
-        allocator_ = AllocatorInitialize((unsigned)sizeof(Node));
-        head_ = tail_ = ReserveNode();
     }
 
     /// Construct from another hash map.
     HashMap(const HashMap<T, U>& map)
     {
-        // Reserve the tail node + initial capacity according to the map's size
-        allocator_ = AllocatorInitialize((unsigned)sizeof(Node), map.Size() + 1);
-        head_ = tail_ = ReserveNode();
+        Initialize(map.Size() + 1);
         *this = map;
     }
 
@@ -671,6 +667,9 @@ private:
     /// Insert a key and value and return either the new or existing node.
     Node* InsertNode(const T& key, const U& value, bool findExisting = true)
     {
+        if (URHO3D_UNLIKELY(allocator_ == nullptr))
+            Initialize();
+
         // If no pointers yet, allocate with minimum bucket count
         if (!ptrs_)
         {
@@ -784,6 +783,13 @@ private:
             node->down_ = Ptrs()[hashKey];
             Ptrs()[hashKey] = node;
         }
+    }
+
+    /// Reserve the tail node.
+    void Initialize(unsigned capacity = 1)
+    {
+        allocator_ = AllocatorInitialize((unsigned)sizeof(Node), capacity);
+        head_ = tail_ = ReserveNode();
     }
 
     /// Compare two nodes.

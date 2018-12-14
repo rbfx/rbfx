@@ -96,6 +96,9 @@ public:
     /// Destruct.
     ~OcclusionBuffer() override;
 
+    /// Register object with the engine.
+    static void RegisterObject(Context* context);
+
     /// Set occlusion buffer size and whether to reserve multiple buffers for threading optimization.
     bool SetSize(int width, int height, bool threaded);
     /// Set camera view to render from.

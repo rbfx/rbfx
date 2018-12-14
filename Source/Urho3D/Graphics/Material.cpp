@@ -105,7 +105,7 @@ StringHash ParseTextureTypeXml(ResourceCache* cache, const String& filename)
     SharedPtr<File> texXmlFile = cache->GetFile(filename, false);
     if (texXmlFile.NotNull())
     {
-        SharedPtr<XMLFile> texXml(new XMLFile(cache->GetContext()));
+        SharedPtr<XMLFile> texXml(cache->GetContext()->CreateObject<XMLFile>());
         if (texXml->Load(*texXmlFile))
             type = ParseTextureTypeName(texXml->GetRoot().GetName());
     }
@@ -229,7 +229,7 @@ bool Material::EndLoad()
 bool Material::BeginLoadXML(Deserializer& source)
 {
     ResetToDefaults();
-    loadXMLFile_ = new XMLFile(context_);
+    loadXMLFile_ = context_->CreateObject<XMLFile>();
     if (loadXMLFile_->Load(source))
     {
         // If async loading, scan the XML content beforehand for technique & texture resources
@@ -288,7 +288,7 @@ bool Material::BeginLoadJSON(Deserializer& source)
     loadXMLFile_.Reset();
 
     // Attempt to load from JSON file instead
-    loadJSONFile_ = new JSONFile(context_);
+    loadJSONFile_ = context_->CreateObject<JSONFile>();
     if (loadJSONFile_->Load(source))
     {
         // If async loading, scan the XML content beforehand for technique & texture resources
@@ -344,7 +344,7 @@ bool Material::BeginLoadJSON(Deserializer& source)
 
 bool Material::Save(Serializer& dest) const
 {
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement materialElem = xml->CreateRoot("material");
 
     Save(materialElem);
@@ -441,7 +441,7 @@ bool Material::Load(const XMLElement& source)
     while (parameterAnimationElem)
     {
         String name = parameterAnimationElem.GetAttribute("name");
-        SharedPtr<ValueAnimation> animation(new ValueAnimation(context_));
+        SharedPtr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
         if (!animation->LoadXML(parameterAnimationElem))
         {
             URHO3D_LOGERROR("Could not load parameter animation");
@@ -604,7 +604,7 @@ bool Material::Load(const JSONValue& source)
         String name = it->first_;
         JSONValue paramAnimVal = it->second_;
 
-        SharedPtr<ValueAnimation> animation(new ValueAnimation(context_));
+        SharedPtr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
         if (!animation->LoadJSON(paramAnimVal))
         {
             URHO3D_LOGERROR("Could not load parameter animation");
@@ -1102,7 +1102,7 @@ void Material::ReleaseShaders()
 
 SharedPtr<Material> Material::Clone(const String& cloneName) const
 {
-    SharedPtr<Material> ret(new Material(context_));
+    SharedPtr<Material> ret(context_->CreateObject<Material>());
 
     ret->SetName(cloneName);
     ret->techniques_ = techniques_;

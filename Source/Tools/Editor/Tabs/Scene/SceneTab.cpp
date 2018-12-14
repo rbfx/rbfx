@@ -33,6 +33,7 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/SceneEvents.h>
 #include <Urho3D/Scene/SceneManager.h>
+#include <Urho3D/Scene/SceneMetadata.h>
 #include <Urho3D/SystemUI/DebugHud.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
@@ -101,39 +102,6 @@ SceneTab::SceneTab(Context* context)
     SubscribeToEvent(this, E_EDITORSELECTIONCHANGED, std::bind(&SceneTab::OnNodeSelectionChanged, this));
     SubscribeToEvent(E_UPDATE, std::bind(&SceneTab::OnUpdate, this, _2));
     SubscribeToEvent(E_POSTRENDERUPDATE, [&](StringHash, VariantMap&) { RenderDebugInfo(); });
-    SubscribeToEvent(E_SCENESETTINGMODIFIED, [this](StringHash, VariantMap& args) {
-        using namespace SceneSettingModified;
-        // TODO: Stinks.
-        if (args[P_NAME].GetString() == "Editor Viewport RenderPath")
-        {
-            const ResourceRef& renderPathResource = args[P_VALUE].GetResourceRef();
-            if (renderPathResource.type_ == XMLFile::GetTypeStatic())
-            {
-                if (XMLFile* renderPathFile = GetCache()->GetResource<XMLFile>(renderPathResource.name_))
-                {
-                    auto setRenderPathToViewport = [this, renderPathFile](Viewport* viewport)
-                    {
-                        if (!viewport->SetRenderPath(renderPathFile))
-                            return;
-
-                        RenderPath* path = viewport->GetRenderPath();
-                        for (auto& command: path->commands_)
-                        {
-                            if (command.pixelShaderName_.StartsWith("PBR"))
-                            {
-                                XMLFile* gammaCorrection = GetCache()->GetResource<XMLFile>(
-                                    "PostProcess/GammaCorrection.xml");
-                                path->Append(gammaCorrection);
-                                return;
-                            }
-                        }
-                    };
-                    setRenderPathToViewport(GetViewport());
-                    setRenderPathToViewport(cameraPreviewViewport_);
-                }
-            }
-        }
-    });
     SubscribeToEvent(&inspector_, E_INSPECTORRENDERSTART, [this](StringHash, VariantMap& args) {
         Serializable* serializable = static_cast<Serializable*>(args[InspectorRenderStart::P_SERIALIZABLE].GetPtr());
         if (serializable->GetType() == Node::GetTypeStatic())
@@ -353,14 +321,14 @@ void SceneTab::OnAfterEnd()
 
 bool SceneTab::LoadResource(const String& resourcePath)
 {
+    Undo::SetTrackingScoped noTrack(undo_, false);
+
     if (resourcePath == GetResourceName())
         // Already loaded.
         return true;
 
     if (!BaseClassName::LoadResource(resourcePath))
         return false;
-
-    Undo::SetTrackingScoped noTrack(undo_, false);
 
     SceneManager* manager = GetSubsystem<SceneManager>();
     Scene* scene = manager->GetOrCreateScene(GetFileName(resourcePath));
@@ -395,6 +363,8 @@ bool SceneTab::LoadResource(const String& resourcePath)
 
     manager->UnloadAllButActiveScene();
     scene->SetUpdateEnabled(false);    // Scene is updated manually.
+    scene->GetOrCreateComponent<Octree>();
+    scene->GetOrCreateComponent<SceneMetadata>(LOCAL);
     scene->GetOrCreateComponent<EditorSceneSettings>(LOCAL);
 
     undo_.Clear();
@@ -1418,6 +1388,8 @@ void SceneTab::RenderDebugInfo()
 
 void SceneTab::Close()
 {
+    Undo::SetTrackingScoped noTrack(undo_, false);
+
     BaseClassName::Close();
 
     SceneManager* manager = GetSubsystem<SceneManager>();

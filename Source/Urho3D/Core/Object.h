@@ -24,6 +24,8 @@
 
 #include "../Container/Allocator.h"
 #include "../Container/LinkedList.h"
+#include "../Core/Mutex.h"
+#include "../Core/Profiler.h"
 #include "../Core/StringHashRegister.h"
 #include "../Core/Variant.h"
 #include <functional>
@@ -311,31 +313,39 @@ public:
         ObjectFactory(context)
     {
         typeInfo_ = T::GetTypeInfoStatic();
-        // Allocator code is disabled because it is not thread-safe. First we need thread-safe allocator.
-        // allocator_ = AllocatorInitialize(sizeof(T));
+        allocator_ = AllocatorInitialize(sizeof(T));
     }
 
     ~ObjectFactoryImpl() override
     {
-        // AllocatorUninitialize(allocator_);
-        // allocator_ = nullptr;
+        MutexLock lock(mutex_);
+        AllocatorUninitialize(allocator_);
+        allocator_ = nullptr;
     }
 
     /// Create an object of the specific type.
     SharedPtr<Object> CreateObject() override
     {
-        // auto* newObject = static_cast<T*>(AllocatorReserve(allocator_));
-        // new(newObject) T(context_);
-        // newObject->SetDeleter([this, newObject](RefCounted* refCounted) {
-        //     newObject->~T();
-        //     AllocatorFree(allocator_, newObject);
-        // });
-        // return SharedPtr<Object>(newObject);
-        return SharedPtr<Object>(new T(context_));
+        URHO3D_PROFILE("CreateObject");
+        mutex_.Acquire();
+        auto* newObject = static_cast<T*>(AllocatorReserve(allocator_));
+        mutex_.Release();
+
+        new(newObject) T(context_);
+        newObject->SetDeleter([this, newObject](RefCounted* refCounted) {
+            URHO3D_PROFILE("FactoryDeleter");
+            newObject->~T();
+            MutexLock lock(mutex_);
+            AllocatorFree(allocator_, newObject);
+        });
+        return SharedPtr<Object>(newObject);
     }
 
 private:
+    /// Object allocator.
     AllocatorBlock* allocator_;
+    /// Allocator mutex.
+    Mutex mutex_;
 };
 
 /// Internal helper class for invoking event handler functions.

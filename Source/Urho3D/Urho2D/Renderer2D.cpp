@@ -59,13 +59,13 @@ ViewBatchInfo2D::ViewBatchInfo2D() :
 
 Renderer2D::Renderer2D(Context* context) :
     Drawable(context, DRAWABLE_GEOMETRY),
-    material_(new Material(context)),
-    indexBuffer_(new IndexBuffer(context_)),
+    material_(context->CreateObject<Material>()),
+    indexBuffer_(context_->CreateObject<IndexBuffer>()),
     viewMask_(DEFAULT_VIEWMASK)
 {
     material_->SetName("Urho2D");
 
-    auto* tech = new Technique(context_);
+    auto tech = context_->CreateObject<Technique>();
     Pass* pass = tech->CreatePass("alpha");
     pass->SetVertexShader("Urho2D");
     pass->SetPixelShader("Urho2D");
@@ -285,7 +285,7 @@ SharedPtr<Material> Renderer2D::CreateMaterial(Texture2D* texture, BlendMode ble
     HashMap<int, SharedPtr<Technique> >::Iterator techIt = cachedTechniques_.Find((int)blendMode);
     if (techIt == cachedTechniques_.End())
     {
-        SharedPtr<Technique> tech(new Technique(context_));
+        SharedPtr<Technique> tech(context_->CreateObject<Technique>());
         Pass* pass = tech->CreatePass("alpha");
         pass->SetVertexShader("Urho2D");
         pass->SetPixelShader("Urho2D");
@@ -366,7 +366,7 @@ void Renderer2D::HandleBeginViewUpdate(StringHash eventType, VariantMap& eventDa
 
     // Create vertex buffer
     if (!viewBatchInfo.vertexBuffer_)
-        viewBatchInfo.vertexBuffer_ = new VertexBuffer(context_);
+        viewBatchInfo.vertexBuffer_ = context_->CreateObject<VertexBuffer>();
 
     UpdateViewBatchInfo(viewBatchInfo, camera);
 
@@ -505,7 +505,7 @@ void Renderer2D::AddViewBatch(ViewBatchInfo2D& viewBatchInfo, Material* material
     // Allocate new geometry if necessary
     if (viewBatchInfo.geometries_.Size() <= viewBatchInfo.batchCount_)
     {
-        SharedPtr<Geometry> geometry(new Geometry(context_));
+        SharedPtr<Geometry> geometry(context_->CreateObject<Geometry>());
         geometry->SetIndexBuffer(indexBuffer_);
         geometry->SetVertexBuffer(0, viewBatchInfo.vertexBuffer_);
 

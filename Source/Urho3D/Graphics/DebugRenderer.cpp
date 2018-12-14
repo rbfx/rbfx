@@ -54,7 +54,7 @@ DebugRenderer::DebugRenderer(Context* context) :
     Component(context),
     lineAntiAlias_(false)
 {
-    vertexBuffer_ = new VertexBuffer(context_);
+    vertexBuffer_ = context_->CreateObject<VertexBuffer>();
 }
 
 DebugRenderer::~DebugRenderer() = default;

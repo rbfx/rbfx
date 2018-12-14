@@ -102,7 +102,7 @@ bool TextureCube::BeginLoad(Deserializer& source)
     String texPath, texName, texExt;
     SplitPath(GetName(), texPath, texName, texExt);
 
-    loadParameters_ = (new XMLFile(context_));
+    loadParameters_ = (context_->CreateObject<XMLFile>());
     if (!loadParameters_->Load(source))
     {
         loadParameters_.Reset();
@@ -321,7 +321,7 @@ SharedPtr<Image> TextureCube::GetImage(CubeMapFace face) const
         return SharedPtr<Image>();
     }
 
-    auto* rawImage = new Image(context_);
+    auto rawImage = context_->CreateObject<Image>();
     if (format_ == Graphics::GetRGBAFormat())
         rawImage->SetSize(width_, height_, 4);
     else if (format_ == Graphics::GetRGBFormat())

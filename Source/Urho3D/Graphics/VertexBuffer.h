@@ -43,6 +43,9 @@ public:
     /// Destruct.
     ~VertexBuffer() override;
 
+    /// Register object with the engine.
+    static void RegisterObject(Context* context);
+
     /// Mark the buffer destroyed on graphics context destruction. May be a no-op depending on the API.
     void OnDeviceLost() override;
     /// Recreate the buffer and restore data if applicable. May be a no-op depending on the API.

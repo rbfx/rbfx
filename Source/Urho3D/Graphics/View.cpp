@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../Core/WorkQueue.h"
 #include "../Graphics/Camera.h"
@@ -51,6 +52,8 @@
 #include "../UI/UI.h"
 
 #include "../DebugNew.h"
+#include "View.h"
+
 
 namespace Urho3D
 {
@@ -295,6 +298,11 @@ View::View(Context* context) :
     unsigned numThreads = GetSubsystem<WorkQueue>()->GetNumThreads() + 1; // Worker threads + main thread
     tempDrawables_.Resize(numThreads);
     sceneResults_.Resize(numThreads);
+}
+
+void View::RegisterObject(Context* context)
+{
+    context->RegisterFactory<View>();
 }
 
 bool View::Define(RenderSurface* renderTarget, Viewport* viewport)

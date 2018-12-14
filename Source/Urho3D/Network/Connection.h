@@ -110,10 +110,15 @@ class URHO3D_API Connection : public Object
     URHO3D_OBJECT(Connection, Object);
 
 public:
-    /// Construct with context and kNet message connection pointers.
-    Connection(Context* context, bool isClient, const SLNet::AddressOrGUID& address, SLNet::RakPeerInterface* peer);
+    /// Construct.
+    Connection(Context* context);
     /// Destruct.
     ~Connection() override;
+    /// Initialize object state. Should be called immediately after constructor.
+    void Initialize(bool isClient, const SLNet::AddressOrGUID& address, SLNet::RakPeerInterface* peer);
+
+    /// Register object with the engine.
+    static void RegisterObject(Context* context);
 
     /// Send a message.
     void SendMessage(int msgID, bool reliable, bool inOrder, const VectorBuffer& msg, unsigned contentID = 0);

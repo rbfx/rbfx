@@ -52,7 +52,7 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
 {
     Context* context = font_->GetContext();
 
-    SharedPtr<XMLFile> xmlReader(new XMLFile(context));
+    SharedPtr<XMLFile> xmlReader(context->CreateObject<XMLFile>());
     MemoryBuffer memoryBuffer(fontData, fontDataSize);
     if (!xmlReader->Load(memoryBuffer))
     {
@@ -101,7 +101,7 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
 
         // Load texture manually to allow controlling the alpha channel mode
         SharedPtr<File> fontFile = resourceCache->GetFile(textureFile);
-        SharedPtr<Image> fontImage(new Image(context));
+        SharedPtr<Image> fontImage(context->CreateObject<Image>());
         if (!fontFile || !fontImage->Load(*fontFile))
         {
             URHO3D_LOGERROR("Failed to load font image file");
@@ -223,7 +223,7 @@ bool FontFaceBitmap::Load(FontFace* fontFace, bool usedGlyphs)
     Vector<SharedPtr<Image> > newImages(numPages);
     for (unsigned i = 0; i < numPages; ++i)
     {
-        SharedPtr<Image> image(new Image(font_->GetContext()));
+        SharedPtr<Image> image(font_->GetContext()->CreateObject<Image>());
 
         int width = maxTextureSize;
         int height = maxTextureSize;
@@ -266,7 +266,7 @@ bool FontFaceBitmap::Save(Serializer& dest, int pointSize, const String& indenta
 {
     Context* context = font_->GetContext();
 
-    SharedPtr<XMLFile> xml(new XMLFile(context));
+    SharedPtr<XMLFile> xml(context->CreateObject<XMLFile>());
     XMLElement rootElem = xml->CreateRoot("font");
 
     // Information
@@ -355,7 +355,7 @@ unsigned FontFaceBitmap::ConvertFormatToNumComponents(unsigned format)
 
 SharedPtr<Image> FontFaceBitmap::SaveFaceTexture(Texture2D* texture)
 {
-    SharedPtr<Image> image(new Image(font_->GetContext()));
+    SharedPtr<Image> image(font_->GetContext()->CreateObject<Image>());
     image->SetSize(texture->GetWidth(), texture->GetHeight(), ConvertFormatToNumComponents(texture->GetFormat()));
     if (!texture->GetData(0, image->GetData()))
     {

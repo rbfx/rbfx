@@ -79,7 +79,7 @@ inline void GrowUpdateRegion(IntRect& updateRegion, int x, int y)
 
 Terrain::Terrain(Context* context) :
     Component(context),
-    indexBuffer_(new IndexBuffer(context)),
+    indexBuffer_(context->CreateObject<IndexBuffer>()),
     spacing_(DEFAULT_SPACING),
     lastSpacing_(Vector3::ZERO),
     patchWorldOrigin_(Vector2::ZERO),

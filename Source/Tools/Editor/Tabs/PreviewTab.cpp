@@ -99,7 +99,7 @@ PreviewTab::PreviewTab(Context* context)
     });
     SubscribeToEvent(E_EDITORUSERCODERELOADEND, [&](StringHash, VariantMap&) {
         SceneTab* tab = GetSubsystem<Editor>()->GetTab<SceneTab>();
-        if (tab == nullptr)
+        if (tab == nullptr || tab->GetScene() == nullptr)
             return;
 
         tab->RestoreState(sceneReloadState_);

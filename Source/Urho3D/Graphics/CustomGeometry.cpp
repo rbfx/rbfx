@@ -46,7 +46,7 @@ extern const char* GEOMETRY_CATEGORY;
 
 CustomGeometry::CustomGeometry(Context* context) :
     Drawable(context, DRAWABLE_GEOMETRY),
-    vertexBuffer_(new VertexBuffer(context)),
+    vertexBuffer_(context->CreateObject<VertexBuffer>()),
     elementMask_(MASK_POSITION),
     geometryIndex_(0),
     materialsAttr_(Material::GetTypeStatic()),
@@ -223,7 +223,7 @@ void CustomGeometry::SetNumGeometries(unsigned num)
     for (unsigned i = 0; i < geometries_.Size(); ++i)
     {
         if (!geometries_[i])
-            geometries_[i] = new Geometry(context_);
+            geometries_[i] = context_->CreateObject<Geometry>();
 
         batches_[i].geometry_ = geometries_[i];
     }

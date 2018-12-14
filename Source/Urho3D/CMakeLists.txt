@@ -255,7 +255,7 @@ endif ()
 if (URHO3D_TASKS)
     include(CheckIncludeFile)
     check_include_file("valgrind/valgrind.h" HAVE_VALGRIND)
-    if (HAVE_VALGRIND EQUAL 1)
+    if (HAVE_VALGRIND)
         target_compile_definitions(Urho3D PRIVATE -DHAVE_VALGRIND=${HAVE_VALGRIND})
     endif ()
 endif ()
@@ -326,6 +326,26 @@ if (URHO3D_CSHARP)
     add_subdirectory(CSharp)
 endif ()
 
+# Check existence of various header files and their functions required by some of the third-party libraries and Urho3D library
+# Set the CMake variables in this scope but only add the compiler defines in the respective library's scope
+include (CheckIncludeFile)
+foreach (HEADER stdint.h inttypes.h malloc.h)
+    string (TOUPPER HAVE_${HEADER} HAVE_HEADER)
+    string (REPLACE . _ HAVE_HEADER ${HAVE_HEADER})
+    check_include_file (${HEADER} ${HAVE_HEADER})
+endforeach ()
+include (CheckFunctionExists)
+foreach (FUNCT __sincosf malloc_usable_size)
+    string (TOUPPER HAVE_${FUNCT} HAVE_FUNCT)
+    check_function_exists (${FUNCT} ${HAVE_FUNCT})
+endforeach ()
+include (CheckLibraryExists)
+check_library_exists (m sincosf "" HAVE_SINCOSF)
+if (MINGW)
+    include (CheckStructHasMember)
+    check_struct_has_member (RTL_OSVERSIONINFOW dwOSVersionInfoSize minwindef.h\;winnt.h HAVE_RTL_OSVERSIONINFOW)
+endif ()
+
 ################################################### SDK preparation ####################################################
 if (MINI_URHO)
     return ()
@@ -385,6 +405,12 @@ endif ()
 # Generate import/export header with engine configuration defines
 get_property(URHO3D_ENGINE_CONFIG TARGET Urho3D PROPERTY INTERFACE_COMPILE_DEFINITIONS)
 list (REMOVE_ITEM URHO3D_ENGINE_CONFIG URHO3D_64BIT URHO3D_IS_BUILDING)
+# TODO: Maybe these should be directly in header?
+foreach(HAVE HAVE___SINCOSF HAVE_MALLOC_USABLE_SIZE HAVE_STDINT_H HAVE_INTTYPES_H HAVE_MALLOC_H HAVE_SINCOSF HAVE_RTL_OSVERSIONINFOW)
+    if (${${HAVE}})
+        list (APPEND URHO3D_ENGINE_CONFIG ${HAVE})
+    endif ()
+endforeach()
 list (REMOVE_DUPLICATES URHO3D_ENGINE_CONFIG)
 list (APPEND URHO3D_ENGINE_CONFIG "")   # For last item to be processed correctly.
 # Give defines without value a value "1".
