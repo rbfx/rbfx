@@ -159,7 +159,7 @@ void Vehicle::InitWheel(const String& name, const Vector3& offset, WeakPtr<Node>
 
     wheelShape->SetRotationOffset(Quaternion(0, 0, 90));
     wheelShape->SetInheritNodeScale(false);
-    wheelShape->SetScaleFactor(Vector3(0.5f, 0.8, 0.8f));
+    wheelShape->SetScaleFactor(Vector3(0.8f, 0.8, 0.8f));
 
 
 

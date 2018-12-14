@@ -137,7 +137,13 @@ namespace Urho3D {
             return Matrix3x4();
 
         }
-        return node_->GetWorldTransform() * GetOffsetMatrix();
+
+        if(GetInheritNodeScale())
+            return node_->GetWorldTransform() * GetOffsetMatrix();
+        else
+        {
+            return Matrix3x4(node_->GetWorldTransform().Translation(), node_->GetWorldTransform().Rotation(), 1.0f) * GetOffsetMatrix();
+        }
     }
 
 
