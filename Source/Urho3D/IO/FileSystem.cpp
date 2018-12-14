@@ -255,6 +255,8 @@ int DoSystemRun(const String& fileName, const Vector<String>& arguments, SystemR
             // Replace stdout with pipe fd
             close(STDOUT_FILENO);
             dup(desc[1]);
+            close(STDERR_FILENO);
+            dup(desc[1]);
             close(desc[0]);
             close(desc[1]);
         }
