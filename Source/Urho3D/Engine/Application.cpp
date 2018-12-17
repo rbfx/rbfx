@@ -24,6 +24,7 @@
 
 #include "../Core/Profiler.h"
 #include "../Engine/Application.h"
+#include "../Engine/EngineDefs.h"
 #include "../Engine/EngineEvents.h"
 #include "../IO/IOEvents.h"
 #include "../IO/Log.h"
@@ -144,13 +145,29 @@ void Application::ErrorExit(const String& message)
     engine_->Exit(); // Close the rendering window
     exitCode_ = EXIT_FAILURE;
 
-    if (!message.Length())
+    std::function<void(const String&)> showError;
+    if (engineParameters_[EP_HEADLESS].GetBool())
     {
-        ErrorDialog(GetTypeName(), startupErrors_.Length() ? startupErrors_ :
-            "Application has been terminated due to unexpected error.");
+        showError = [this](const String& message)
+        {
+            URHO3D_LOGERROR(message.CString());
+        };
     }
     else
-        ErrorDialog(GetTypeName(), message);
+    {
+        showError = [this](const String& message)
+        {
+            ErrorDialog(GetTypeName(), message);
+        };
+    }
+
+    if (!message.Length())
+    {
+        showError(startupErrors_.Length() ?
+            startupErrors_ : String("Application has been terminated due to unexpected error."));
+    }
+    else
+        showError(message);
 }
 
 void Application::HandleLogMessage(StringHash eventType, VariantMap& eventData)
