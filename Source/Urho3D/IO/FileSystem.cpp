@@ -274,7 +274,7 @@ int DoSystemRun(const String& fileName, const Vector<String>& arguments, SystemR
     {
         int exitCode = 0;
         if (flags & SR_WAIT_FOR_EXIT)
-            wait(&exitCode);
+            waitpid(pid, &exitCode, 0);
 
         if (flags & SR_READ_OUTPUT)
         {
