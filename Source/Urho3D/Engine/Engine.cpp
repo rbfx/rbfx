@@ -72,7 +72,7 @@
 #include <emscripten/emscripten.h>
 #endif
 
-#include <CLI11/CLI11.hpp>
+#include <Urho3D/Core/CommandLine.h>
 
 #include "../DebugNew.h"
 

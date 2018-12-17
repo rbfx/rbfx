@@ -119,6 +119,8 @@ protected:
     ImFont* monoFont_ = nullptr;
     ///
     bool exiting_ = false;
+    ///
+    String defaultProjectPath_;
 };
 
 }

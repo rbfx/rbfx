@@ -33,8 +33,8 @@
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/SystemUI/Console.h>
 #include <Urho3D/LibraryInfo.h>
+#include <Urho3D/Core/CommandLine.h>
 
-#include <CLI11/CLI11.hpp>
 #include <ImGui/imgui.h>
 #include <ImGui/imgui_stdlib.h>
 #include <Toolbox/IO/ContentUtilities.h>
@@ -65,8 +65,6 @@ URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::Editor);
 
 namespace Urho3D
 {
-
-static std::string defaultProjectPath;
 
 Editor::Editor(Context* context)
     : Application(context)
@@ -122,7 +120,7 @@ void Editor::Setup()
 
     // Define custom command line parameters here
     auto& commandLine = GetCommandLineParser();
-    commandLine.add_option("project", defaultProjectPath, "Project to open or create on startup.")
+    commandLine.add_option("project", defaultProjectPath_, "Project to open or create on startup.")
             ->set_custom_option("dir");
 }
 
@@ -195,10 +193,10 @@ void Editor::Start()
             preview->Stop();
     });
 
-    if (!defaultProjectPath.empty())
+    if (!defaultProjectPath_.Empty())
     {
         ui::GetIO().IniFilename = nullptr;  // Avoid creating imgui.ini in some cases
-        pendingOpenProject_ = defaultProjectPath.c_str();
+        pendingOpenProject_ = defaultProjectPath_.CString();
     }
     else
         SetupSystemUI();
