@@ -827,7 +827,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
     };
 
     auto addFlag = [&](const char* name, const String& param, bool value, const char* description) {
-        CLI::callback_t fun = [&](CLI::results_t) {
+        CLI::callback_t fun = [&engineParameters, param, value](CLI::results_t) {
             engineParameters[param] = value;
             return true;
         };
@@ -835,7 +835,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
     };
 
     auto addOptionPrependString = [&](const char* name, const String& param, const String& value, const char* description) {
-        CLI::callback_t fun = [&](CLI::results_t) {
+        CLI::callback_t fun = [&engineParameters, param, value](CLI::results_t) {
             engineParameters[param] = value + engineParameters[param].GetString();
             return true;
         };
@@ -843,7 +843,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
     };
 
     auto addOptionSetString = [&](const char* name, const String& param, const String& value, const char* description) {
-        CLI::callback_t fun = [&](CLI::results_t) {
+        CLI::callback_t fun = [&engineParameters, param, value](CLI::results_t) {
             engineParameters[param] = value;
             return true;
         };
@@ -851,7 +851,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
     };
 
     auto addOptionString = [&](const char* name, const String& param, const char* description) {
-        CLI::callback_t fun = [&](CLI::results_t res) {
+        CLI::callback_t fun = [&engineParameters, param](CLI::results_t res) {
             engineParameters[param] = res[0].c_str();
             return true;
         };
@@ -861,7 +861,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
     };
 
     auto addOptionInt = [&](const char* name, const String& param, const char* description) {
-        CLI::callback_t fun = [&](CLI::results_t res) {
+        CLI::callback_t fun = [&engineParameters, param](CLI::results_t res) {
             int value = 0;
             if (CLI::detail::lexical_cast(res[0], value))
             {
