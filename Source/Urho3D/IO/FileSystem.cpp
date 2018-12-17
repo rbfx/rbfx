@@ -830,6 +830,11 @@ String FileSystem::GetProgramFileName() const
     if (!specifiedExecutableFile.Empty())
         return specifiedExecutableFile;
 
+    return GetInterpreterFileName();
+}
+
+String FileSystem::GetInterpreterFileName() const
+{
 #if defined(_WIN32)
     wchar_t exeName[MAX_PATH];
     exeName[0] = 0;
