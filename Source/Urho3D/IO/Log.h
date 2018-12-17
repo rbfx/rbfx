@@ -98,7 +98,7 @@ public:
     /// Set logging level.
     void SetLevel(LogLevel level);
     /// Set whether to timestamp log messages.
-    void SetTimeStamp(bool enable);
+    void SetTimeStampFormat(const String& format) { timeStampFormat_ = format; }
     /// Set quiet mode ie. only print error entries to standard error stream (which is normally redirected to console also). Output to log file is not affected by this mode.
     void SetQuiet(bool quiet);
 
@@ -106,7 +106,7 @@ public:
     LogLevel GetLevel() const { return level_; }
 
     /// Return whether log messages are timestamped.
-    bool GetTimeStamp() const { return timeStamp_; }
+    const String& GetTimeStampFormat() const { return timeStampFormat_; }
 
     /// Return last log message.
     String GetLastMessage() const { return lastMessage_; }
@@ -133,10 +133,10 @@ private:
     SharedPtr<File> logFile_;
     /// Last log message.
     String lastMessage_;
+    /// Format of timestamp that will be prepended to log messages.
+    String timeStampFormat_;
     /// Logging level.
     LogLevel level_;
-    /// Timestamp log messages flag.
-    bool timeStamp_;
     /// In write flag to prevent recursion.
     bool inWrite_;
     /// Quiet mode flag.

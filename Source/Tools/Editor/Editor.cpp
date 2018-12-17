@@ -167,6 +167,7 @@ void Editor::InitializeEditor()
     context_->RegisterSubsystem(new EditorIconCache(context_));
     GetInput()->SetMouseMode(MM_ABSOLUTE);
     GetInput()->SetMouseVisible(true);
+    GetLog()->SetTimeStampFormat("%H:%M:%S");
 
     GetCache()->SetAutoReloadResources(true);
     engine_->SetAutoExit(false);

@@ -66,7 +66,7 @@ Log::Log(Context* context) :
 #else
     level_(LOG_INFO),
 #endif
-    timeStamp_(true),
+    timeStampFormat_(DEFAULT_DATE_TIME_FORMAT),
     inWrite_(false),
     quiet_(false)
 {
@@ -130,11 +130,6 @@ void Log::SetLevel(LogLevel level)
     level_ = level;
 }
 
-void Log::SetTimeStamp(bool enable)
-{
-    timeStamp_ = enable;
-}
-
 void Log::SetQuiet(bool quiet)
 {
     quiet_ = quiet;
@@ -175,8 +170,8 @@ void Log::Write(LogLevel level, const String& message)
     formattedMessage += message;
     logInstance->lastMessage_ = message;
 
-    if (logInstance->timeStamp_)
-        formattedMessage = "[" + Time::GetTimeStamp() + "] " + formattedMessage;
+    if (!logInstance->timeStampFormat_.Empty())
+        formattedMessage = "[" + Time::GetTimeStamp(logInstance->timeStampFormat_) + "] " + formattedMessage;
 
     URHO3D_PROFILE_MESSAGE(formattedMessage.CString(), formattedMessage.Length());
 
