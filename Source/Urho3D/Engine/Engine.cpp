@@ -915,6 +915,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
         engineParameters[EP_LOG_LEVEL] = logLevel;
         return true;
     })->set_custom_option(createOptions("string in {%s}", logLevelPrefixes).CString());
+    addOptionString("--log-file", EP_LOG_NAME, "Log output file");
     addOptionInt("-x,--height", EP_WINDOW_WIDTH, "Window width");
     addOptionInt("-y,--width", EP_WINDOW_WIDTH, "Window height");
     addOptionInt("--monitor", EP_MONITOR, "Create window on the specified monitor");
