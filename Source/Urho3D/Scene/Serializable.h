@@ -77,6 +77,8 @@ public:
     virtual bool LoadXML(const String& resourceName);
     /// Load from JSON resource.
     virtual bool LoadJSON(const String& resourceName);
+    /// Load from resource of automatically detected type.
+    virtual bool LoadFile(const String& resourceName);
 
     /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
     virtual void ApplyAttributes() { }

@@ -24,6 +24,7 @@
 
 #include "../Core/Context.h"
 #include "../IO/Deserializer.h"
+#include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../IO/Serializer.h"
 #include "../Resource/XMLElement.h"
@@ -609,6 +610,29 @@ bool Serializable::LoadJSON(const String& resourceName)
     SharedPtr<JSONFile> file(GetSubsystem<ResourceCache>()->GetResource<JSONFile>(resourceName, false));
     if (file.NotNull())
         return LoadJSON(file->GetRoot());
+    return false;
+}
+
+bool Serializable::LoadFile(const String& resourceName)
+{
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    String extension = GetExtension(resourceName);
+
+    // If resource exists - load it immediately.
+    if (cache->Exists(resourceName))
+    {
+        if (extension == ".xml")
+            return LoadXML(resourceName);
+        if (extension == ".json")
+            return LoadJSON(resourceName);
+        return Load(resourceName);
+    }
+
+    // When requested file does not exist - try binary version.
+    String testResourceName = ReplaceExtension(resourceName, ".bin");
+    if (cache->Exists(resourceName))
+        return Load(testResourceName);
+
     return false;
 }
 
