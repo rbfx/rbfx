@@ -85,6 +85,10 @@ void Log::Open(const String& fileName)
 #if !defined(__ANDROID__) && !defined(IOS) && !defined(TVOS)
     if (fileName.Empty())
         return;
+
+    if (fileName == NULL_DEVICE)
+        return;
+
     if (logFile_ && logFile_->IsOpen())
     {
         if (logFile_->GetName() == fileName)
