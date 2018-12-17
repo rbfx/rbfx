@@ -51,7 +51,7 @@ const char* logLevelPrefixes[] =
     "TRACE",
     "DEBUG",
     "INFO",
-    "WARNING",
+    "WARN",
     "ERROR",
     nullptr
 };
@@ -171,7 +171,7 @@ void Log::Write(LogLevel level, const String& message)
 
     String formattedMessage = logLevelPrefixes[level];
     formattedMessage += ": ";
-    formattedMessage += String(' ', 9 - formattedMessage.Length());
+    formattedMessage += String(' ', 7 - formattedMessage.Length());
     formattedMessage += message;
     logInstance->lastMessage_ = message;
 
