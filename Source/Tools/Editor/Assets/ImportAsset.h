@@ -24,6 +24,7 @@
 
 
 #include <Urho3D/Core/Object.h>
+#include <Toolbox/IO/ContentUtilities.h>
 
 
 namespace Urho3D
@@ -33,10 +34,15 @@ class ImportAsset : public Object
 {
     URHO3D_OBJECT(ImportAsset, Object);
 public:
+    /// Construct.
     explicit ImportAsset(Context* context);
 
-    virtual bool Accepts(const String& path) = 0;
-    virtual bool Convert(const String& path) = 0;
+    /// Returns true if path points to a resource that can be converted by this converter.
+    virtual bool Accepts(const String& path, ContentType type) = 0;
+    /// A conversion function. Default implementation starts editor as subprocess to convert the asset.
+    virtual bool Convert(const String& path);
+    /// A function that does conversion. If it can be executed in a worker thread you may override Convert() and call RunConvert() from it directly.
+    virtual bool RunConverter(const String& path) = 0;
 };
 
 }

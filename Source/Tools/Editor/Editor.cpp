@@ -56,6 +56,8 @@
 #include "Tabs/ResourceTab.h"
 #include "Tabs/PreviewTab.h"
 #include "Assets/AssetConverter.h"
+#include "Assets/CookScene.h"
+#include "Assets/ImportAssimp.h"
 #include "Assets/Inspector/MaterialInspector.h"
 
 using namespace ui::litterals;
@@ -120,12 +122,20 @@ void Editor::Setup()
 
     // Define custom command line parameters here
     auto& commandLine = GetCommandLineParser();
-    commandLine.add_option("project", defaultProjectPath_, "Project to open or create on startup.")
-            ->set_custom_option("dir");
+    CLI::Option* optProject = commandLine.add_option("project", defaultProjectPath_,
+        "Project to open or create on startup.");
+    optProject->set_custom_option("dir");
+
+    CLI::Option* optConvInput = commandLine.add_option("--converter-input", converterInput_,
+        "Input resource resource name.");
+    CLI::Option* optConverter = commandLine.add_option("--converter", converterName_,
+        "Run a specified converter and exit immediately.");
+    optConverter->requires(optProject, optConvInput);
 }
 
 void Editor::Start()
 {
+    // Register factories
     context_->RegisterFactory<EditorIconCache>();
     context_->RegisterFactory<SceneTab>();
     context_->RegisterFactory<UITab>();
@@ -134,16 +144,29 @@ void Editor::Start()
     context_->RegisterFactory<InspectorTab>();
     context_->RegisterFactory<ResourceTab>();
     context_->RegisterFactory<PreviewTab>();
+    // Register converter factories
+    context_->RegisterFactory<ImportAssimp>();
+    context_->RegisterFactory<CookScene>();
+    // Register other types
+    RegisterToolboxTypes(context_);
+    EditorSceneSettings::RegisterObject(context_);
+    // Register subsystems
+    context_->RegisterSubsystem(this);
 
     Inspectable::Material::RegisterObject(context_);
 
+    if (!converterName_.Empty())
+        InitializeConverter();
+    else
+        InitializeEditor();
+}
+
+void Editor::InitializeEditor()
+{
     context_->RegisterSubsystem(new SceneManager(context_));
     context_->RegisterSubsystem(new EditorIconCache(context_));
     GetInput()->SetMouseMode(MM_ABSOLUTE);
     GetInput()->SetMouseVisible(true);
-    RegisterToolboxTypes(context_);
-    context_->RegisterSubsystem(this);
-    EditorSceneSettings::RegisterObject(context_);
 
     GetCache()->SetAutoReloadResources(true);
     engine_->SetAutoExit(false);
@@ -192,7 +215,6 @@ void Editor::Start()
         else
             preview->Stop();
     });
-
     if (!defaultProjectPath_.Empty())
     {
         ui::GetIO().IniFilename = nullptr;  // Avoid creating imgui.ini in some cases
@@ -202,10 +224,37 @@ void Editor::Start()
         SetupSystemUI();
 }
 
+void Editor::InitializeConverter()
+{
+    project_ = new Project(context_);
+    context_->RegisterSubsystem(project_);
+    if (!project_->LoadProject(defaultProjectPath_))
+    {
+        URHO3D_LOGERRORF("Loading project '%s' failed.", pendingOpenProject_.CString());
+        exitCode_ = EXIT_FAILURE;
+        engine_->Exit();
+        return;
+    }
+
+    SharedPtr<ImportAsset> converter = DynamicCast<ImportAsset>(context_->CreateObject(converterName_));
+    if (converter.Null())
+    {
+        URHO3D_LOGERRORF("Converter '%s' does not exist.", converterName_.CString());
+        exitCode_ = EXIT_FAILURE;
+        engine_->Exit();
+        return;
+    }
+
+    if (!converter->RunConverter(converterInput_))
+        exitCode_ = EXIT_FAILURE;
+
+    engine_->Exit();
+}
+
 void Editor::Stop()
 {
-    auto* manager = GetSubsystem<SceneManager>();
-    manager->UnloadAll();
+    if (auto* manager = GetSubsystem<SceneManager>())
+        manager->UnloadAll();
     CloseProject();
     context_->RemoveSubsystem<WorkQueue>(); // Prevents deadlock when unloading plugin AppDomain in managed host.
 }

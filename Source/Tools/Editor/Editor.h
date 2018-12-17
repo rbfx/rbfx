@@ -51,6 +51,11 @@ public:
     /// Tear down editor application.
     void Stop() override;
 
+    ///
+    void InitializeEditor();
+    ///
+    void InitializeConverter();
+
     /// Renders UI elements.
     void OnUpdate(VariantMap& args);
     /// Renders menu bar at the top of the screen.
@@ -121,6 +126,12 @@ protected:
     bool exiting_ = false;
     ///
     String defaultProjectPath_;
+    ///
+    String converterName_;
+    ///
+    String converterInput_;
+    ///
+    String converterOutput_;
 };
 
 }

@@ -78,7 +78,8 @@ Project::Project(Context* context)
 
 Project::~Project()
 {
-    ui::GetIO().IniFilename = nullptr;
+    if (GetSystemUI())
+        ui::GetIO().IniFilename = nullptr;
 
     if (auto* cache = GetCache())
     {
@@ -136,9 +137,12 @@ bool Project::LoadProject(const String& projectPath)
     // Register asset dirs
     GetCache()->AddResourceDir(GetCachePath(), 0);
     GetCache()->AddResourceDir(GetResourcePath(), 1);
-    assetConverter_.SetCachePath(GetCachePath());
-    assetConverter_.AddAssetDirectory(GetResourcePath());
-    assetConverter_.VerifyCacheAsync();
+    if (!GetEngine()->IsHeadless())
+    {
+        assetConverter_.SetCachePath(GetCachePath());
+        assetConverter_.AddAssetDirectory(GetResourcePath());
+        assetConverter_.VerifyCacheAsync();
+    }
 
     // Unregister engine dirs
     auto enginePrefixPath = GetSubsystem<Editor>()->GetCoreResourcePrefixPath();
@@ -153,65 +157,73 @@ bool Project::LoadProject(const String& projectPath)
         }
     }
 
-    uiConfigPath_ = projectFileDir_ + ".ui.ini";
-    ui::GetIO().IniFilename = uiConfigPath_.CString();
+    if (GetSystemUI())
+    {
+        uiConfigPath_ = projectFileDir_ + ".ui.ini";
+        ui::GetIO().IniFilename = uiConfigPath_.CString();
 
-    ImGuiSettingsHandler handler;
-    handler.TypeName = "Project";
-    handler.TypeHash = ImHash(handler.TypeName, 0, 0);
-    handler.ReadOpenFn = [](ImGuiContext* context, ImGuiSettingsHandler* handler, const char* name) -> void* {
-        if (strcmp(name, "Window") == 0)
-            return (void*)1;
-        return (void*)name;
-    };
-    handler.ReadLineFn = [](ImGuiContext*, ImGuiSettingsHandler*, void* entry, const char* line) {
-        SystemUI* systemUI = ui::GetSystemUI();
-        auto* editor = systemUI->GetSubsystem<Editor>();
-
-        if (entry == (void*)1)
+        ImGuiSettingsHandler handler;
+        handler.TypeName = "Project";
+        handler.TypeHash = ImHash(handler.TypeName, 0, 0);
+        handler.ReadOpenFn = [](ImGuiContext* context, ImGuiSettingsHandler* handler, const char* name) -> void*
         {
-            auto* project = systemUI->GetSubsystem<Project>();
-            project->isNewProject_ = false;
-            editor->CreateDefaultTabs();
+            if (strcmp(name, "Window") == 0)
+                return (void*) 1;
+            return (void*) name;
+        };
+        handler.ReadLineFn = [](ImGuiContext*, ImGuiSettingsHandler*, void* entry, const char* line)
+        {
+            SystemUI* systemUI = ui::GetSystemUI();
+            auto* editor = systemUI->GetSubsystem<Editor>();
 
-            int x, y, w, h;
-            if (sscanf(line, "Rect=%d,%d,%d,%d", &x, &y, &w, &h) == 4)
+            if (entry == (void*) 1)
             {
-                w = Max(w, 100);            // Foot-shooting prevention
-                h = Max(h, 100);
-                systemUI->GetGraphics()->SetWindowPosition(x, y);
-                systemUI->GetGraphics()->SetMode(w, h);
+                auto* project = systemUI->GetSubsystem<Project>();
+                project->isNewProject_ = false;
+                editor->CreateDefaultTabs();
+
+                int x, y, w, h;
+                if (sscanf(line, "Rect=%d,%d,%d,%d", &x, &y, &w, &h) == 4)
+                {
+                    w = Max(w, 100);            // Foot-shooting prevention
+                    h = Max(h, 100);
+                    systemUI->GetGraphics()->SetWindowPosition(x, y);
+                    systemUI->GetGraphics()->SetMode(w, h);
+                }
+                else
+                    return;
             }
             else
-                return;
-        }
-        else
-        {
-            const char* name = static_cast<const char*>(entry);
-
-            Tab* tab = editor->GetTabByName(name);
-            if (tab == nullptr)
             {
-                StringVector parts = String(name).Split('#');
-                tab = editor->CreateTab(parts.Front());
-            }
-            tab->OnLoadUISettings(name, line);
-        }
-    };
-    handler.WriteAllFn = [](ImGuiContext* imgui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf) {
-        buf->appendf("[Project][Window]\n");
-        auto* systemUI = ui::GetSystemUI();
-        auto* editor = systemUI->GetSubsystem<Editor>();
-        auto* project = systemUI->GetSubsystem<Project>();
-        IntVector2 wSize = systemUI->GetGraphics()->GetSize();
-        IntVector2 wPos = systemUI->GetGraphics()->GetWindowPosition();
-        buf->appendf("Rect=%d,%d,%d,%d\n", wPos.x_, wPos.y_, wSize.x_, wSize.y_);
+                const char* name = static_cast<const char*>(entry);
 
-        // Save tabs
-        for (auto& tab : editor->GetContentTabs())
-            tab->OnSaveUISettings(buf);
-    };
-    ui::GetCurrentContext()->SettingsHandlers.push_back(handler);
+                Tab* tab = editor->GetTabByName(name);
+                if (tab == nullptr)
+                {
+                    StringVector parts = String(name).Split('#');
+                    tab = editor->CreateTab(parts.Front());
+                }
+                tab->OnLoadUISettings(name, line);
+            }
+        };
+        handler.WriteAllFn = [](ImGuiContext* imgui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf)
+        {
+            buf->appendf("[Project][Window]\n");
+            auto* systemUI = ui::GetSystemUI();
+            auto* editor = systemUI->GetSubsystem<Editor>();
+            auto* project = systemUI->GetSubsystem<Project>();
+            IntVector2
+            wSize = systemUI->GetGraphics()->GetSize();
+            IntVector2
+            wPos = systemUI->GetGraphics()->GetWindowPosition();
+            buf->appendf("Rect=%d,%d,%d,%d\n", wPos.x_, wPos.y_, wSize.x_, wSize.y_);
+
+            // Save tabs
+            for (auto& tab : editor->GetContentTabs())
+                tab->OnSaveUISettings(buf);
+        };
+        ui::GetCurrentContext()->SettingsHandlers.push_back(handler);
+    }
 
 #if URHO3D_HASH_DEBUG
     // StringHashNames.json
@@ -287,6 +299,12 @@ bool Project::LoadProject(const String& projectPath)
 
 bool Project::SaveProject()
 {
+    if (GetEngine()->IsHeadless())
+    {
+        URHO3D_LOGERROR("Headless instance is supposed to use project as read-only.");
+        return false;
+    }
+
     // Saving project data of tabs may trigger saving resources, which in turn triggers saving editor project. Avoid
     // that loop.
     UnsubscribeFromEvent(E_EDITORRESOURCESAVED);

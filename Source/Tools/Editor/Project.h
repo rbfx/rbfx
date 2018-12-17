@@ -45,6 +45,8 @@ public:
     bool LoadProject(const String& projectPath);
     /// Create a new project. Returns true if successful. Overwrites specified path unconditionally.
     bool SaveProject();
+    /// Return project directory.
+    String GetProjectPath() const { return projectFileDir_; }
     /// Returns path to temporary asset cache.
     String GetCachePath() const;
     /// Returns path to permanent asset cache.

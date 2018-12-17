@@ -28,15 +28,13 @@
 namespace Urho3D
 {
 
-class ImportAssimp : public ImportAsset
+class CookScene : public ImportAsset
 {
-    URHO3D_OBJECT(ImportAssimp, ImportAsset);
+    URHO3D_OBJECT(CookScene, ImportAsset);
 public:
-    explicit ImportAssimp(Context* context);
+    explicit CookScene(Context* context);
 
     bool Accepts(const String& path, ContentType type) override;
-
-    bool Convert(const String& path) override;
 
     bool RunConverter(const String& path) override;
 };
