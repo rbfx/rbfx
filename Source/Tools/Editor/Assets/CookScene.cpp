@@ -26,6 +26,7 @@
 #include <Toolbox/IO/ContentUtilities.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/IO/File.h>
+#include "Tabs/Scene/EditorSceneSettings.h"
 #include "Project.h"
 #include "CookScene.h"
 
@@ -53,6 +54,11 @@ bool CookScene::RunConverter(const String& path)
     {
         if (scene.LoadXML(file))
         {
+            // Remove components that should not be shipped in the final product
+            if (auto* component = scene.GetComponent<EditorSceneSettings>())
+                component->Remove();
+
+            // Cook scene
             auto* project = GetSubsystem<Project>();
             assert(path.StartsWith(project->GetResourcePath()));
             auto resourceName = path.Substring(project->GetResourcePath().Length());
