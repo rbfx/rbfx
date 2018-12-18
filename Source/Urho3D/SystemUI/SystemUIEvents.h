@@ -29,9 +29,12 @@
 namespace Urho3D
 {
 
+URHO3D_EVENT(E_ENDRENDERINGSYSTEMUI, EndRenderingSystemUI)
+{
+}
+
 URHO3D_EVENT(E_CONSOLECLOSED, ConsoleClosed)
 {
-
 }
 
 URHO3D_EVENT(E_ATTRIBUTEINSPECTORMENU, AttributeInspectorMenu)
