@@ -111,6 +111,40 @@ PreviewTab::PreviewTab(Context* context)
     SubscribeToEvent(E_SCENEACTIVATED, [this](StringHash, VariantMap&) {
         UpdateViewports();
     });
+    SubscribeToEvent(E_ENDRENDERINGSYSTEMUI, [this](StringHash, VariantMap&) {
+        if (simulationStatus_ == SCENE_SIMULATION_STOPPED)
+            dim_ = Max(dim_ - GetTime()->GetTimeStep() * 10, 0.f);
+        else
+            dim_ = Min(dim_ + GetTime()->GetTimeStep() * 6, 1.f);
+
+        if (dim_ > M_EPSILON)
+        {
+            // Dim other windows except for preview.
+            ImGuiContext& g = *ui::GetCurrentContext();
+            const String& sceneTabName = GetSubsystem<Editor>()->GetTab<SceneTab>()->GetUniqueTitle();
+            for (int i = 0; i < g.Windows.Size; i++)
+            {
+                ImGuiWindow* window = g.Windows[i];
+                if (window->ParentWindow != nullptr && window->DockNode != nullptr)
+                {
+                    // Ignore any non-leaf windows
+                    if (window->DockNode->ChildNodes[0] || window->DockNode->ChildNodes[1])
+                        continue;
+                    if (!window->DockTabIsVisible)
+                        continue;
+                    // Editor scene viewport is not dimmed.
+                    if (strcmp(window->Name, sceneTabName.CString()) == 0)
+                        continue;
+                    // Game preview viewport is not dimmed.
+                    if (strcmp(window->Name, GetUniqueTitle().CString()) == 0)
+                        continue;
+                    ImDrawList* drawLists = ui::GetOverlayDrawList(window->Viewport);
+                    const ImU32 color = ui::GetColorU32(ImGuiCol_ModalWindowDimBg, dim_);
+                    drawLists->AddRectFilled(window->Pos, window->Pos + window->Size, color);
+                }
+            }
+        }
+    });
 }
 
 IntRect PreviewTab::UpdateViewRect()
