@@ -30,7 +30,6 @@ namespace Urho3D
 SceneMetadata::SceneMetadata(Context* context)
     : Component(context)
 {
-    SetTemporary(true);
 }
 
 void SceneMetadata::RegisterComponent(Component* component)
