@@ -2,11 +2,9 @@
 
 #ifdef _WIN32
 #  include <winsock2.h>
-#  include <lmcons.h>   // Urho3D: required for UNLEN
-#ifndef __CYGWIN__
+#  include <lmcons.h>   // required for UNLEN
 #  include <windows.h>
 #  include <tlhelp32.h>
-#endif
 #else
 #  include <sys/time.h>
 #endif
@@ -55,7 +53,9 @@
 #if defined _WIN32 || defined __CYGWIN__
 #  include <lmcons.h>
 extern "C" typedef LONG (WINAPI *t_RtlGetVersion)( PRTL_OSVERSIONINFOW );
-#  define TRACY_USE_INIT_ONCE
+#  if _WIN32_WINNT >= _WIN32_WINNT_VISTA
+#    define TRACY_USE_INIT_ONCE
+#  endif
 #else
 #  include <unistd.h>
 #  include <limits.h>
@@ -93,7 +93,7 @@ struct RPMallocInit
     {
 #if defined TRACY_USE_INIT_ONCE
         InitOnceExecuteOnce(&InitOnce, InitOnceCallback, nullptr, nullptr);
-        //We must call rpmalloc_thread_initialize() explicitly here since the InitOnceCallback might 
+        //We must call rpmalloc_thread_initialize() explicitly here since the InitOnceCallback might
         //not be called on this thread if another thread has executed it earlier.
         rpmalloc_thread_initialize();
 #else
@@ -209,7 +209,7 @@ static const char* GetHostInfo()
 {
     static char buf[1024];
     auto ptr = buf;
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
 #  ifdef UNICODE
     t_RtlGetVersion RtlGetVersion = (t_RtlGetVersion)GetProcAddress( GetModuleHandle( L"ntdll.dll" ), "RtlGetVersion" );
 #  else
@@ -286,7 +286,6 @@ static const char* GetHostInfo()
 
     ptr += sprintf( ptr, "User: %s@%s\n", user, hostname );
 #else
-    // Urho3D change HOST_NAME_MAX -> _POSIX_HOST_NAME_MAX
     char hostname[_POSIX_HOST_NAME_MAX]{};
     char user[_POSIX_LOGIN_NAME_MAX]{};
 
@@ -326,7 +325,7 @@ static const char* GetHostInfo()
     auto modelPtr = cpuModel;
     for( uint32_t i=0x80000002; i<0x80000005; ++i )
     {
-#  if defined _WIN32 || defined __CYGWIN__
+#  if defined _WIN32
         __cpuidex( (int*)regs, i, 0 );
 #  else
         int zero = 0;
@@ -340,7 +339,7 @@ static const char* GetHostInfo()
     ptr += sprintf( ptr, "CPU: unknown\n" );
 #endif
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     MEMORYSTATUSEX statex;
     statex.dwLength = sizeof( statex );
     GlobalMemoryStatusEx( &statex );
@@ -838,10 +837,18 @@ Profiler::Profiler()
 
     s_thread = (Thread*)tracy_malloc( sizeof( Thread ) );
     new(s_thread) Thread( LaunchWorker, this );
-    SetThreadName(reinterpret_cast<std::thread::native_handle_type>(s_thread->Handle()), "Tracy Profiler" );
+    SetThreadName(static_cast<std::thread::native_handle_type>(s_thread->Handle()), "Tracy Profiler" );
 
 #ifdef _WIN32
+# if defined __MINGW32__
+#  if defined PTW32_VERSION
+    s_profilerThreadId = pthread_getw32threadid_np( s_thread->Handle() );
+#  elif defined __WINPTHREADS_VERSION
+    s_profilerThreadId = GetThreadId( (HANDLE)pthread_gethandle( s_thread->Handle() ) );
+#  endif
+#else
     s_profilerThreadId = GetThreadId( s_thread->Handle() );
+#endif
     AddVectoredExceptionHandler( 1, CrashFilter );
 #endif
 
