@@ -110,7 +110,7 @@ class URHO3D_API Connection : public Object
     URHO3D_OBJECT(Connection, Object);
 
 public:
-    /// Construct.
+    /// Construct with context, RakNet connection address and Raknet peer pointer.
     Connection(Context* context);
     /// Destruct.
     ~Connection() override;
