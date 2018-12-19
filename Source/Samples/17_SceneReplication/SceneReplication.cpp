@@ -280,13 +280,13 @@ Node* SceneReplication::CreateControllableObject()
     ballObject->SetModel(cache->GetResource<Model>("Models/Sphere.mdl"));
     ballObject->SetMaterial(cache->GetResource<Material>("Materials/StoneSmall.xml"));
 
-    // Create the physics components
-    auto* body = ballNode->CreateComponent<RigidBody>();
+    // Create the physics components, since the RigidBody is only going to be simulated on the server side make it local to server.
+    auto* body = ballNode->CreateComponent<RigidBody>(LOCAL);
     body->SetMassScale(1.0f);
     // use motion damping so that the ball can not accelerate limitlessly
     body->SetLinearDamping(0.5f);
     body->SetAngularDamping(0.5f);
-    auto* shape = ballNode->CreateComponent<CollisionShape_Sphere>();
+    auto* shape = ballNode->CreateComponent<CollisionShape_Sphere>(LOCAL);
     shape->SetFriction(1.0f);
 
     // Create a random colored point light at the ball so that can see better where is going
@@ -397,7 +397,7 @@ void SceneReplication::HandlePhysicsPreStep(StringHash eventType, VariantMap& ev
             // Torque is relative to the forward vector
             Quaternion rotation(0.0f, controls.yaw_, 0.0f);
 
-            const float MOVE_TORQUE = 3.0f;
+            const float MOVE_TORQUE = 0.1f;
 
             body->ResetForces();
 
@@ -405,13 +405,13 @@ void SceneReplication::HandlePhysicsPreStep(StringHash eventType, VariantMap& ev
             // independent from rendering framerate. We could also apply forces (which would enable in-air control),
             // but want to emphasize that it's a ball which should only control its motion by rolling along the ground
             if (controls.buttons_ & CTRL_FORWARD)
-                body->AddLocalTorque(rotation * Vector3::RIGHT * MOVE_TORQUE);
+                body->AddWorldTorque(rotation * Vector3::RIGHT * MOVE_TORQUE);
             if (controls.buttons_ & CTRL_BACK)
-                body->AddLocalTorque(rotation * Vector3::LEFT * MOVE_TORQUE);
+                body->AddWorldTorque(rotation * Vector3::LEFT * MOVE_TORQUE);
             if (controls.buttons_ & CTRL_LEFT)
-                body->AddLocalTorque(rotation * Vector3::FORWARD * MOVE_TORQUE);
+                body->AddWorldTorque(rotation * Vector3::FORWARD * MOVE_TORQUE);
             if (controls.buttons_ & CTRL_RIGHT)
-                body->AddLocalTorque(rotation * Vector3::BACK * MOVE_TORQUE);
+                body->AddWorldTorque(rotation * Vector3::BACK * MOVE_TORQUE);
         }
     }
 }
