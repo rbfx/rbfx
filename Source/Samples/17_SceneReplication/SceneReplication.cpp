@@ -53,6 +53,7 @@
 #include "SceneReplication.h"
 
 #include <Urho3D/DebugNew.h>
+#include "Urho3D/Physics/CollisionShapesDerived.h"
 
 // UDP port we will use
 static const unsigned short SERVER_PORT = 2345;
@@ -136,9 +137,9 @@ void SceneReplication::CreateScene()
             floorObject->SetMaterial(cache->GetResource<Material>("Materials/Stone.xml"));
 
             auto* body = floorNode->CreateComponent<RigidBody>();
-            body->SetFriction(1.0f);
-            auto* shape = floorNode->CreateComponent<CollisionShape>();
-            shape->SetBox(Vector3::ONE);
+            auto* shape = floorNode->CreateComponent<CollisionShape_Box>();
+            shape->SetFriction(1.0f);
+            body->SetMassScale(0.0f);
         }
     }
 
@@ -281,13 +282,12 @@ Node* SceneReplication::CreateControllableObject()
 
     // Create the physics components
     auto* body = ballNode->CreateComponent<RigidBody>();
-    body->SetMass(1.0f);
-    body->SetFriction(1.0f);
-    // In addition to friction, use motion damping so that the ball can not accelerate limitlessly
+    body->SetMassScale(1.0f);
+    // use motion damping so that the ball can not accelerate limitlessly
     body->SetLinearDamping(0.5f);
     body->SetAngularDamping(0.5f);
-    auto* shape = ballNode->CreateComponent<CollisionShape>();
-    shape->SetSphere(1.0f);
+    auto* shape = ballNode->CreateComponent<CollisionShape_Sphere>();
+    shape->SetFriction(1.0f);
 
     // Create a random colored point light at the ball so that can see better where is going
     auto* light = ballNode->CreateComponent<Light>();
@@ -399,17 +399,19 @@ void SceneReplication::HandlePhysicsPreStep(StringHash eventType, VariantMap& ev
 
             const float MOVE_TORQUE = 3.0f;
 
+            body->ResetForces();
+
             // Movement torque is applied before each simulation step, which happen at 60 FPS. This makes the simulation
             // independent from rendering framerate. We could also apply forces (which would enable in-air control),
             // but want to emphasize that it's a ball which should only control its motion by rolling along the ground
             if (controls.buttons_ & CTRL_FORWARD)
-                body->ApplyTorque(rotation * Vector3::RIGHT * MOVE_TORQUE);
+                body->AddLocalTorque(rotation * Vector3::RIGHT * MOVE_TORQUE);
             if (controls.buttons_ & CTRL_BACK)
-                body->ApplyTorque(rotation * Vector3::LEFT * MOVE_TORQUE);
+                body->AddLocalTorque(rotation * Vector3::LEFT * MOVE_TORQUE);
             if (controls.buttons_ & CTRL_LEFT)
-                body->ApplyTorque(rotation * Vector3::FORWARD * MOVE_TORQUE);
+                body->AddLocalTorque(rotation * Vector3::FORWARD * MOVE_TORQUE);
             if (controls.buttons_ & CTRL_RIGHT)
-                body->ApplyTorque(rotation * Vector3::BACK * MOVE_TORQUE);
+                body->AddLocalTorque(rotation * Vector3::BACK * MOVE_TORQUE);
         }
     }
 }
