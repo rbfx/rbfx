@@ -23,22 +23,24 @@
 #pragma once
 
 
-#include "ImportAsset.h"
+#include <Toolbox/Graphics/SceneView.h>
+#include "PreviewInspector.h"
+#include "ResourceInspector.h"
+
 
 namespace Urho3D
 {
 
-class ImportAssimp : public ImportAsset
+/// Renders a model preview in attribute inspector.
+class ModelInspector : public PreviewInspector
 {
-    URHO3D_OBJECT(ImportAssimp, ImportAsset);
+    URHO3D_OBJECT(ModelInspector, PreviewInspector);
 public:
-    explicit ImportAssimp(Context* context);
+    /// Construct.
+    explicit ModelInspector(Context* context, Model* model);
 
-    bool Accepts(const String& path, ContentType type) override;
-
-    bool Convert(const String& path) override;
-
-    bool RunConverter(const String& path) override;
+    /// Render inspector window.
+    void RenderInspector(const char* filter) override;
 };
 
 }

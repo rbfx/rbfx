@@ -27,9 +27,11 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Resource/ResourceCache.h>
+#include <Toolbox/IO/ContentUtilities.h>
 #include "Editor.h"
 #include "AssetConverter.h"
 #include "ImportAssimp.h"
+#include "CookScene.h"
 
 
 namespace Urho3D
@@ -39,6 +41,7 @@ AssetConverter::AssetConverter(Context* context)
     : Object(context)
 {
     assetImporters_.Push(SharedPtr<ImportAssimp>(new ImportAssimp(context_)));
+    assetImporters_.Push(SharedPtr<CookScene>(new CookScene(context_)));
 
     SubscribeToEvent(E_ENDFRAME, std::bind(&AssetConverter::DispatchChangedAssets, this));
     SubscribeToEvent(E_CONSOLECOMMAND, std::bind(&AssetConverter::OnConsoleCommand, this, _2));
@@ -85,28 +88,23 @@ String AssetConverter::GetCachePath() const
 
 void AssetConverter::VerifyCacheAsync()
 {
-    StringVector paths;
     for (const auto& watcher : watchers_)
-        paths.Push(watcher->GetPath());
+    {
+        Vector<String> files;
+        GetFileSystem()->ScanDir(files, watcher->GetPath(), "*", SCAN_FILES, true);
 
-    GetWorkQueue()->AddWorkItem([this, paths]() {
-        for (const auto& path : paths)
-        {
-            Vector<String> files;
-            GetFileSystem()->ScanDir(files, path, "*", SCAN_FILES, true);
-
-            for (const auto& file : files)
-                ConvertAsset(file);
-        }
-    });
+        for (const auto& file : files)
+            ConvertAssetAsync(file);
+    }
 }
 
 void AssetConverter::ConvertAssetAsync(const String& resourceName)
 {
-    GetWorkQueue()->AddWorkItem([this, resourceName]() { ConvertAsset(resourceName); });
+    ContentType type = GetContentType(resourceName);
+    GetWorkQueue()->AddWorkItem([this, resourceName, type]() { ConvertAsset(resourceName, type); });
 }
 
-bool AssetConverter::ConvertAsset(const String& resourceName)
+bool AssetConverter::ConvertAsset(const String& resourceName, ContentType type)
 {
     if (!IsCacheOutOfDate(resourceName))
         return true;
@@ -118,7 +116,7 @@ bool AssetConverter::ConvertAsset(const String& resourceName)
 
     for (auto& importer : assetImporters_)
     {
-        if (importer->Accepts(resourceFileName))
+        if (importer->Accepts(resourceFileName, type))
         {
             if (importer->Convert(resourceFileName))
                 convertedAny = true;

@@ -23,26 +23,48 @@
 #pragma once
 
 
-#include <Urho3D/Core/Object.h>
-#include <Toolbox/IO/ContentUtilities.h>
+#include <Toolbox/Graphics/SceneView.h>
+#include "ResourceInspector.h"
 
 
 namespace Urho3D
 {
 
-class ImportAsset : public Object
+class Model;
+
+/// Renders a model preview in attribute inspector.
+class PreviewInspector : public ResourceInspector
 {
-    URHO3D_OBJECT(ImportAsset, Object);
+    URHO3D_OBJECT(PreviewInspector, ResourceInspector);
 public:
     /// Construct.
-    explicit ImportAsset(Context* context);
+    explicit PreviewInspector(Context* context);
 
-    /// Returns true if path points to a resource that can be converted by this converter.
-    virtual bool Accepts(const String& path, ContentType type) = 0;
-    /// A conversion function. Default implementation starts editor as subprocess to convert the asset.
-    virtual bool Convert(const String& path);
-    /// A function that does conversion. If it can be executed in a worker thread you may override Convert() and call RunConvert() from it directly.
-    virtual bool RunConverter(const String& path) = 0;
+    /// Model preview view mouse grabbing.
+    void SetGrab(bool enable);
+    /// Copy effects from specified render path.
+    void SetEffectSource(RenderPath* renderPath);
+    /// Set preview model by passing a resource name.
+    void SetModel(const String& resourceName);
+    /// Set preview model by passing model resourcei nstance.
+    void SetModel(Model* model);
+
+protected:
+    /// Initialize preview.
+    void CreateObjects();
+    /// Render model preview.
+    virtual void RenderPreview();
+    /// Handle input of preview viewport.
+    virtual void HandleInput();
+
+    /// Preview scene.
+    SceneView view_;
+    /// Node holding figure to which material is applied.
+    WeakPtr<Node> node_;
+    /// Flag indicating if this widget grabbed mouse for rotating material node.
+    bool mouseGrabbed_ = false;
+    /// Distance from camera to figure.
+    float distance_ = 1.5f;
 };
 
 }

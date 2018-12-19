@@ -104,6 +104,9 @@ public:
 #if DESKTOP
     /// Return the program's executable file path.
     String GetProgramFileName() const;
+    /// Return executable path of interpreter program (for example path to mono executable on unixes for C# application).
+    /// If application is executed directly (no interpreter) this will return same result as GetProgramFileName().
+    String GetInterpreterFileName() const;
 #endif
     /// Return the user documents directory.
     String GetUserDocumentsDir() const;

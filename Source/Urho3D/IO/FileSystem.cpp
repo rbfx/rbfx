@@ -274,7 +274,7 @@ int DoSystemRun(const String& fileName, const Vector<String>& arguments, SystemR
     {
         int exitCode = 0;
         if (flags & SR_WAIT_FOR_EXIT)
-            wait(&exitCode);
+            waitpid(pid, &exitCode, 0);
 
         if (flags & SR_READ_OUTPUT)
         {
@@ -830,6 +830,11 @@ String FileSystem::GetProgramFileName() const
     if (!specifiedExecutableFile.Empty())
         return specifiedExecutableFile;
 
+    return GetInterpreterFileName();
+}
+
+String FileSystem::GetInterpreterFileName() const
+{
 #if defined(_WIN32)
     wchar_t exeName[MAX_PATH];
     exeName[0] = 0;

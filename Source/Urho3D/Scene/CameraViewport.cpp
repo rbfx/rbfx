@@ -47,8 +47,10 @@ CameraViewport::CameraViewport(Context* context)
     , viewport_(context->CreateObject<Viewport>())
     , rect_(fullScreenViewport)
     , renderPath_(defaultRenderPath)
-    , screenRect_{0, 0, GetGraphics()->GetWidth(), GetGraphics()->GetHeight()}
+    , screenRect_{0, 0, 1920, 1080}
 {
+    if (GetGraphics())
+        screenRect_ = {0, 0, GetGraphics()->GetWidth(), GetGraphics()->GetHeight()};
 }
 
 void CameraViewport::SetNormalizedRect(const Rect& rect)
@@ -192,11 +194,16 @@ void CameraViewport::RebuildAttributes()
         for (auto& effect : effects_)
         {
             auto getter = [this, &effect](const CameraViewport&, Variant& value) {
-                value = viewport_->GetRenderPath()->IsEnabled(effect.first_);
+                if (RenderPath* renderPath = viewport_->GetRenderPath())
+                    value = renderPath->IsEnabled(effect.first_);
+                else
+                    value = false;
             };
 
             auto setter = [this, &effect](const CameraViewport&, const Variant& value) {
                 RenderPath* path = viewport_->GetRenderPath();
+                if (!path)
+                    return;
                 if (!path->IsAdded(effect.first_))
                     path->Append(GetCache()->GetResource<XMLFile>(effect.second_));
                 path->SetEnabled(effect.first_, value.GetBool());
@@ -238,7 +245,7 @@ RenderPath* CameraViewport::RebuildRenderPath()
 
 void CameraViewport::SetRenderPath(const ResourceRef& renderPathResource)
 {
-    if (viewport_.Null())
+    if (viewport_.Null() || !GetGraphics())
         return;
 
     if (!renderPathResource.name_.Empty() && renderPathResource.type_ != XMLFile::GetTypeStatic())

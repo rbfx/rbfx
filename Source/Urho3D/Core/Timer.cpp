@@ -169,13 +169,13 @@ unsigned Time::GetTimeSinceEpoch()
     return (unsigned)time(nullptr);
 }
 
-String Time::GetTimeStamp()
+String Time::GetTimeStamp(const String& format)
 {
     char dateTime[20];
     time_t sysTime;
     time(&sysTime);
     tm* timeInfo = localtime(&sysTime);
-    strftime(dateTime, sizeof(dateTime), "%Y-%m-%d %H:%M:%S", timeInfo);
+    strftime(dateTime, sizeof(dateTime), format.Empty() ? DEFAULT_DATE_TIME_FORMAT : format.CString(), timeInfo);
     return dateTime;
 }
 

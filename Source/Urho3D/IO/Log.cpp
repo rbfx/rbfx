@@ -51,7 +51,7 @@ const char* logLevelPrefixes[] =
     "TRACE",
     "DEBUG",
     "INFO",
-    "WARNING",
+    "WARN",
     "ERROR",
     nullptr
 };
@@ -66,7 +66,7 @@ Log::Log(Context* context) :
 #else
     level_(LOG_INFO),
 #endif
-    timeStamp_(true),
+    timeStampFormat_(DEFAULT_DATE_TIME_FORMAT),
     inWrite_(false),
     quiet_(false)
 {
@@ -85,6 +85,10 @@ void Log::Open(const String& fileName)
 #if !defined(__ANDROID__) && !defined(IOS) && !defined(TVOS)
     if (fileName.Empty())
         return;
+
+    if (fileName == NULL_DEVICE)
+        return;
+
     if (logFile_ && logFile_->IsOpen())
     {
         if (logFile_->GetName() == fileName)
@@ -126,11 +130,6 @@ void Log::SetLevel(LogLevel level)
     level_ = level;
 }
 
-void Log::SetTimeStamp(bool enable)
-{
-    timeStamp_ = enable;
-}
-
 void Log::SetQuiet(bool quiet)
 {
     quiet_ = quiet;
@@ -167,12 +166,12 @@ void Log::Write(LogLevel level, const String& message)
 
     String formattedMessage = logLevelPrefixes[level];
     formattedMessage += ": ";
-    formattedMessage += String(' ', 9 - formattedMessage.Length());
+    formattedMessage += String(' ', 7 - formattedMessage.Length());
     formattedMessage += message;
     logInstance->lastMessage_ = message;
 
-    if (logInstance->timeStamp_)
-        formattedMessage = "[" + Time::GetTimeStamp() + "] " + formattedMessage;
+    if (!logInstance->timeStampFormat_.Empty())
+        formattedMessage = "[" + Time::GetTimeStamp(logInstance->timeStampFormat_) + "] " + formattedMessage;
 
     URHO3D_PROFILE_MESSAGE(formattedMessage.CString(), formattedMessage.Length());
 

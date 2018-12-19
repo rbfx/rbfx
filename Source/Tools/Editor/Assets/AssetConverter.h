@@ -59,7 +59,7 @@ public:
 
 protected:
     /// Converts asset. Blocks calling thread.
-    bool ConvertAsset(const String& resourceName);
+    bool ConvertAsset(const String& resourceName, ContentType type);
     /// Returns true if asset in the cache folder is missing or out of date.
     bool IsCacheOutOfDate(const String& resourceName);
     /// Return a list of converted assets in the cache.
@@ -77,6 +77,8 @@ protected:
     String cachePath_;
     /// Registered asset importers.
     Vector<SharedPtr<ImportAsset>> assetImporters_;
+    /// Queue of file paths that should be evaluated and converted if necessary.
+    StringVector conversionQueue_;
 };
 
 }

@@ -23,22 +23,43 @@
 #pragma once
 
 
-#include "ImportAsset.h"
+#include <sstream>
 
-namespace Urho3D
+#include "../Container/Str.h"
+#include "../Container/Vector.h"
+
+namespace CLI
 {
 
-class ImportAssimp : public ImportAsset
+template <typename T, typename R>
+std::istringstream &operator>>(std::istringstream &in, Urho3D::String& val)
 {
-    URHO3D_OBJECT(ImportAssimp, ImportAsset);
-public:
-    explicit ImportAssimp(Context* context);
+    std::string tmp;
+    in >> tmp;
+    val = tmp;
+    return in;
+}
 
-    bool Accepts(const String& path, ContentType type) override;
+template <typename T, typename R>
+std::stringstream &operator<<(std::stringstream &in, Urho3D::String& val)
+{
+    in << val.CString();
+    return in;
+}
 
-    bool Convert(const String& path) override;
+}
 
-    bool RunConverter(const String& path) override;
-};
+#include <CLI11/CLI11.hpp>
+
+
+namespace CLI
+{
+
+namespace detail
+{
+
+template <> constexpr const char *type_name<Urho3D::String>() { return "TEXT"; }
+
+}
 
 }

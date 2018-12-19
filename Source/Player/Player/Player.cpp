@@ -121,8 +121,7 @@ void Player::Start()
         SceneManager* manager = GetSubsystem<SceneManager>();
         Scene* scene = manager->CreateScene();
 
-        SharedPtr<XMLFile> sceneFile(GetCache()->GetResource<XMLFile>(projectRoot["default-scene"].GetString()));
-        if (scene->LoadXML(sceneFile->GetRoot()))
+        if (scene->LoadFile(projectRoot["default-scene"].GetString()))
             manager->SetActiveScene(scene);
         else
             ErrorExit("Invalid scene file.");

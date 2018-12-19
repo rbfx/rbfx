@@ -13,9 +13,6 @@ Although all required third-party libraries are included as source code, there a
 - For Windows, the June 2010 DirectX SDK needs to be installed. This is not necessary if building on Visual Studio 2012 or newer, which install the Windows SDK with the necessary DirectX files.
 
 - For Linux, install one or more of the development packages from each software component category below. Building as 32-bit on a 64-bit system requires installing also the 32-bit versions of the development libraries.
-  + %Database server (optional). Disabled by default even when the development package is installed, use URHO3D_DATABASE_ODBC=1 to enable. The two packages below are mutually exclusive. The ODBC driver manager is the recommended package.
-    - libiodbc2-dev (Debian-based) or libiodbc-devel (RedHat-based) for iODBC driver manager.
-    - unixodbc-dev (Debian-based) or unixODBC-devel (RedHat-based) for ODBC driver manager.
   + Display server (essential). One or more of these can be installed at the same time. When multiple display servers are available, X11 takes precedence (overridable using SDL_VIDEODRIVER environment variable during application runtime).
     - libdirectfb-dev (Debian-based only) for Direct Frame Buffer (DirectFB). Disabled by default even when installed, use VIDEO_DIRECTFB=1 to enable.
     - libegl1-mesa-dev and mir-client-platform-mesa-dev (Ubuntu only) for Mir. Only Mir version 0.24.0 or above is supported. Disabled by default even when installed, use VIDEO_MIR=1 to enable.
@@ -100,35 +97,20 @@ A number of build options can be defined when invoking the build scripts or when
 
 |Build Option         |Value|Description          |
 |---------------------|-----|---------------------|
-|RPI                  |0|Configure project using Raspberry Pi cross-compiler toolchain (cmake_generic.sh only), cmake-gui users need to specify RPI toolchain file for cross-compiling explicitly|
-|WIN32                |0|Configure project using MinGW (32-bit or 64-bit) cross-compiler toolchain (cmake_generic.sh only), cmake-gui users need to specify MinGW toolchain file for cross-compiling explicitly|
-|WEB                  |0|Configure project using Emscripten cross-compiler toolchain (cmake_generic.bat and cmake_generic.sh only), cmake-gui users need to specify Emscripten toolchain file for cross-compiling explicitly|
-|IOS                  |0|Configure project for targeting iOS platform (cmake_generic.sh and cmake-gui only)|
-|TVOS                 |0|Configure project for targeting tvOS platform (cmake_generic.sh and cmake-gui only)|
 |URHO3D_64BIT         |*|Enable 64-bit build, the default is set based on the native ABI of the chosen compiler toolchain|
-|URHO3D_ANGELSCRIPT   |1|Enable AngelScript scripting support|
-|URHO3D_LUA           |1|Enable Lua scripting support|
-|URHO3D_LUAJIT        |0|Enable Lua scripting support using LuaJIT (check LuaJIT's CMakeLists.txt for more options)|
-|URHO3D_LUAJIT_AMALG  |0|Enable LuaJIT amalgamated build (LuaJIT only)|
-|URHO3D_SAFE_LUA      |0|Enable Lua C++ wrapper safety checks (Lua/LuaJIT only)|
-|URHO3D_LUA_RAW_SCRIPT_LOADER  |0|Prefer loading raw script files from the file system before falling back on Urho3D resource cache. Useful for debugging (e.g. breakpoints), but less performant (Lua/LuaJIT only)|
 |URHO3D_IK            |1|Enable inverse kinematics support|
 |URHO3D_NETWORK       |1|Enable Networking support|
 |URHO3D_PHYSICS       |1|Enable Physics support|
 |URHO3D_NAVIGATION    |1|Enable Navigation support|
 |URHO3D_URHO2D        |1|Enable 2D rendering & physics support|
 |URHO3D_PLAYER        |1|Build Urho3D script player|
+|URHO3D_PLUGINSR        |1|Build Urho3D script player|
 |URHO3D_SAMPLES       |1|Build sample applications|
 |URHO3D_TOOLS         |1|Build tools (native, RPI, and ARM on Linux only)|
 |URHO3D_EXTRAS        |0|Build extras (native, RPI, and ARM on Linux only)|
 |URHO3D_DOCS          |0|Generate documentation as part of normal build (the 'doc' builtin target can be used to generate documentation regardless of this option's value)|
-|URHO3D_DOCS_QUIET    |0|Generate documentation as part of normal build, suppress generation process from sending anything to stdout|
 |URHO3D_PCH           |1|Enable PCH support|
-|URHO3D_DATABASE_ODBC |0|Enable %Database support with ODBC, requires vendor-specific ODBC driver|
-|URHO3D_DATABASE_SQLITE|0|Enable %Database support with SQLite embedded|
 |URHO3D_WEBP          |1|Enable WebP image support|
-|URHO3D_MMX           |0|Enable MMX instruction set (32-bit Linux platform only); the MMX is effectively enabled when 3DNow! or SSE is enabled; should only be used for older CPU with MMX support|
-|URHO3D_3DNOW         |0|Enable 3DNow! instruction set (Linux platform only); should only be used for older CPU with (legacy) 3DNow! support|
 |URHO3D_SSE           |*|Enable SIMD instruction set (32-bit Web and Intel platforms only, including Android on Intel Atom); default to true on Intel and false on Web platform; the effective SSE level could be higher, see also URHO3D_DEPLOYMENT_TARGET and CMAKE_OSX_DEPLOYMENT_TARGET build options|
 |URHO3D_MINIDUMPS     |1|Enable minidumps on crash (VS only)|
 |URHO3D_FILEWATCHER   |1|Enable filewatcher support|
@@ -144,31 +126,14 @@ A number of build options can be defined when invoking the build scripts or when
 |URHO3D_STATIC_RUNTIME|0|Use static C/C++ runtime libraries and eliminate the need for runtime DLLs installation (VS only)|
 |URHO3D_WIN32_CONSOLE |0|Use console main() instead of WinMain() as entry point when setting up Windows executable targets (Windows platform only)|
 |URHO3D_MACOSX_BUNDLE |0|Use MACOSX_BUNDLE when setting up macOS executable targets (macOS platform only)|
-|URHO3D_LIB_TYPE      |STATIC|Specify Urho3D library type, possible values are STATIC (default), SHARED, and MODULE; the last value is available for Emscripten only|
-|URHO3D_SCP_TO_TARGET |-|Use scp to transfer executables to target system (RPI and generic ARM cross-compiling build only), SSH digital key must be setup first for this to work, typical value has a pattern of usr@tgt:remote-loc|
-|URHO3D_UPDATE_SOURCE_TREE|0|Enable commands to copy back some of the generated build artifacts from build tree to source tree to facilitate devs to push them as part of a commit (for library devs with push right only)|
-|URHO3D_USE_LIB64_RPM |0|Enable 64-bit RPM CPack generator using /usr/lib64 and disable all other generators (Debian-based host only, which uses /usr/lib by default)|
-|URHO3D_USE_LIB_DEB   |0|Enable 64-bit DEB CPack generator using /usr/lib and disable all other generators (Redhat-based host only, which uses /usr/lib64 by default)|
-|URHO3D_HOME          |-|Path to Urho3D build tree or SDK installation location (downstream project only)|
-|URHO3D_DEPLOYMENT_TARGET|native|Specify the minimum CPU type on which the target binaries are to be deployed (non-ARM platform only), see GCC/Clang's -march option for possible values; Use 'generic' for targeting a wide range of generic processors|
 |CMAKE_BUILD_TYPE     |Release|Specify CMake build configuration (single-configuration generator only), possible values are Release (default), RelWithDebInfo, and Debug|
 |CMAKE_INSTALL_PREFIX |*|Install path prefix, prepended onto install directories; default to 'c:/Program Files/Urho3D' on Windows host and '/usr/local' on all other non-Windows hosts|
 |CMAKE_OSX_DEPLOYMENT_TARGET|-|Specify macOS deployment target (macOS platform only); default to current running macOS if not specified, the minimum supported target is 10.9|
 |IPHONEOS_DEPLOYMENT_TARGET|-|Specify iOS deployment target (iOS platform only); default to latest installed iOS SDK if not specified, the minimum supported target is 3.0 due to constraint from SDL library|
 |APPLETVOS_DEPLOYMENT_TARGET|-|Specify AppleTV OS deployment target (tvOS platform only); default to latest installed tvOS SDK if not specified, the minimum supported target is 9.0|
-|MINGW_PREFIX         |-|Prefix path to MinGW cross-compiler tools (MinGW cross-compiling build only)|
-|MINGW_SYSROOT        |-|Path to MinGW system root (MinGW only); should only be used when the system root could not be auto-detected|
 |DIRECTX_INC_SEARCH_PATHS|-|Additional search paths to find DirectX headers (MinGW only)|
 |DIRECTX_LIB_SEARCH_PATHS|-|Additional search paths to find DirectX libraries (MinGW only)|
 |DIRECT3D_DLL_REDIST_SEARCH_PATHS|-|Additional search paths to find DirectX runtime DLL (MinGW only); should only be used for older MinGW version that still uses 'd3dcompiler_43.dll' or 'd3dcompiler_42.dll'.|
-|RPI_PREFIX           |-|Prefix path to Raspberry Pi cross-compiler tools (RPI cross-compiling build only)|
-|RPI_SYSROOT          |-|Path to Raspberry Pi system root (RPI cross-compiling build only)|
-|RPI_ABI              |*|Specify target ABI (RPI platform only), possible values are armeabi-v6 (default for RPI 1), armeabi-v7a (default for RPI 2), armeabi-v7a with NEON, and armeabi-v7a with VFPV4|
-|ARM_PREFIX           |-|Prefix path to ARM cross-compiler tools (ARM on Linux cross-compiling build only)|
-|ARM_SYSROOT          |-|Path to ARM system root (ARM on Linux cross-compiling build only)|
-|ARM_ABI_FLAGS        |-|Specify ABI compiler flags (ARM on Linux platform only); e.g. Orange-Pi Mini 2 could use '-mcpu=cortex-a7 -mfpu=neon-vfpv4'|
-|EMSCRIPTEN_ROOT_PATH |-|Root path to Emscripten cross-compiler tools (Emscripten only)|
-|EMSCRIPTEN_SYSROOT   |-|Path to Emscripten system root (Emscripten only)|
 |EMSCRIPTEN_WASM      |1|Enable Binaryen support to generate output to WASM (WebAssembly) format (Emscripten only)|
 |EMSCRIPTEN_AUTO_SHELL|1|Auto adding a default HTML shell-file when it is not explicitly specified (Emscripten only)|
 |EMSCRIPTEN_ALLOW_MEMORY_GROWTH|*|Enable memory growing based on application demand when targeting asm.js, it is not set by default due to performance penalty (Emscripten with STATIC or SHARED library type only)|
@@ -243,18 +208,11 @@ The Gradle build script has been setup to automatically pass the matching Gradle
 |Gradle Property|Description    |
 |---------------|---------------|
 |ANDROID_ABI|A comma-separated list of ABIs for split build configuration; when not specified defaults to universal build|
-|URHO3D_ANGELSCRIPT|Pass-through as CMake build option|
-|URHO3D_DATABASE_SQLITE|Pass-through as CMake build option|
 |URHO3D_FILEWATCHER|Pass-through as CMake build option|
 |URHO3D_IK|Pass-through as CMake build option|
-|URHO3D_LIB_TYPE|Pass-through as CMake build option|
-|URHO3D_LUA|Pass-through as CMake build option|
-|URHO3D_LUAJIT|Pass-through as CMake build option|
-|URHO3D_LUAJIT_AMALG|Pass-through as CMake build option|
 |URHO3D_LOGGING|Pass-through as CMake build option|
 |URHO3D_NAVIGATION|Pass-through as CMake build option|
 |URHO3D_NETWORK|Pass-through as CMake build option|
-|URHO3D_PCH|Pass-through as CMake build option|
 |URHO3D_PLAYER|Pass-through as CMake build option|
 |URHO3D_PHYSICS|Pass-through as CMake build option|
 |URHO3D_PROFILING|Pass-through as CMake build option|
@@ -384,66 +342,7 @@ OpenGL does not depend on a separate shader compiler DLL.
 \tableofcontents
 
 \section Running_Description Description
-The Urho3D player application in the bin directory contains all the engine runtime functionality. However, it does not contain any inbuilt logic, and therefore must be supplied with the name of the application script file it should run:
-
-\verbatim
-Urho3DPlayer <scriptfilename> [options]
-\endverbatim
-
-The scripting language supported by default is AngelScript (http://www.angelcode.com/angelscript); the script files have .as extension and need to be placed under either the bin/Data or bin/CoreData subdirectories so that Urho3DPlayer can find them. An application script is required to have the function void Start(), which will be executed before starting the engine main loop. It is this function's responsibility to initialize the application and to hook up to any necessary \ref Events "events", such as the update that happens every frame.
-
-Lua language support can optionally be built in, see \ref Build_Options.
-
-If Urho3DPlayer is given no command line arguments at all, it will read the command line from the file bin/Data/CommandLine.txt. This is primarily intended for mobile platforms, where the command line can not be entered. By default the NinjaSnowWar example will be run.
-
-\section Running_Commandline Command line options
-
-The engine can be configured using the following command line options.
-
-\verbatim
--x <res>     Horizontal resolution
--y <res>     Vertical resolution
--m <level>   Enable hardware multisampling
--v           Enable vertical sync
--t           Enable triple buffering
--w           Start in windowed mode
--s           Enable resizing when in windowed mode
--q           Enable quiet mode which does not log to standard output stream
--b <length>  Sound buffer length in milliseconds
--r <freq>    Sound mixing frequency in Hz
--pp <paths>  Resource prefix path(s), separated by semicolons, default to executable path
-             The resource prefix paths can also be defined using URHO3D_PREFIX_PATH env-var
-             When both are defined, the paths set by -pp takes higher precedence
--p <paths>   Resource path(s) to use, separated by semicolons, default to 'Data;CoreData'
--pf <files>  Resource package file to use, separated by semicolons, default to none
--ap <paths>  Resource autoload path(s), separated by semicolons, default to 'AutoLoad'
--log <level> Change the log level, valid 'level' values: 'debug', 'info', 'warning', 'error'
--ds <file>   Dump used shader variations to a file for precaching
--mq <level>  Material quality level, default 2 (high)
--tq <level>  Texture quality level, default 2 (high)
--tf <level>  Texture filter mode, default 2 (trilinear)
--af <level>  Texture anisotropy level, default 4. Also sets anisotropic filter mode
--gl2         Force OpenGL 2 use even if OpenGL 3 is available
--flushgpu    Flush GPU command queue each frame. Effective only on Direct3D
--borderless  Borderless window mode
--lowdpi      Force low DPI mode on Retina display
--headless    Headless mode. No application window will be created
--landscape   Use landscape orientations (iOS only, default)
--portrait    Use portrait orientations (iOS only)
--monitor <num> Monitor number to use
--hz <freq>   Monitor refresh rate to use
--prepass     Use light pre-pass rendering
--deferred    Use deferred rendering
--renderpath <name> Use the named renderpath (must enter full resource name)
--lqshadows   Use low-quality (1-sample) shadow filtering
--noshadows   Disable shadow rendering
--nolimit     Disable frame limiter
--nothreads   Disable worker threads
--nosound     Disable sound output
--noip        Disable sound mixing interpolation
--touch       Touch emulation on desktop platform
-\endverbatim
-
+The Urho3D player application in the bin directory contains all the engine runtime functionality. However, it does not contain any inbuilt logic. Instead, player application executes a project created with editor. Player will execute project located in current working directory. Project may be in raw development form or it may be fully packed into paks.
 
 \page Misc_HowTos Miscellaneous how-to's
 
@@ -530,12 +429,6 @@ F5          Toggle event profiling display
 If a joystick is connected, it can also be used for controlling the player character.
 
 NinjaSnowWar also supports client/server multiplayer. To start the server, run the command NinjaSnowWar.bat -server (-headless option can optionally given so that the server will not open a graphics window.) To connect to a server, specify the option -address followed by the server address (for example -address 127.0.0.1). Optionally set client username with the option -username, followed by the desired name. Use -nobgm option to switch music off.
-
-\section Examples_Editor Editor
-
-The second larger example is a scene and %UI layout editor application written in script. To start, run Editor.bat or Editor.sh, or use the command Urho3DPlayer Scripts/Editor.as
-
-For details on how to use the editor, see \ref EditorInstructions.
 
 \section Examples_Samples Sample applications
 
@@ -777,29 +670,6 @@ The %Context provides the following functionality (described in detail on their 
 - Registering and accessing \ref Subsystems "subsystems"
 - Creation and reflection facilities per object type: \ref ObjectTypes "object factories" and \ref Serialization "serializable attributes".
 - Sending \ref Events "events" between objects
-
-\section Structure_ThirdParty Third-party libraries
-
-The third-party libraries used by Urho3D and their purposes are:
-
-- AngelScript: scripting language implementation
-- Bullet: physics simulation implementation
-- Civetweb: HTTP requests, use could be expanded to also provide an embedded web server
-- FreeType: font rendering
-- GLEW: OpenGL extensions handling
-- kNet: UDP networking
-- libcpuid: CPU properties detection
-- Lua, LuaJIT, tolua+: Lua scripting implementation and bindings
-- LZ4: data compression for package files
-- MojoShader: HLSL shader reflection after compiling
-- Open Asset Import Library: reading various 3D file formats
-- pugixml: parsing XML files
-- Recast/Detour: navigation mesh and pathfinding implementation
-- SDL: window and OpenGL context creation, input and sound output
-- StanHull: convex hull generation from triangle meshes, used for physics collision shapes
-- stb_image: image loading
-- stb_vorbis: Ogg Vorbis decoding
-
 
 \page Conventions Conventions
 

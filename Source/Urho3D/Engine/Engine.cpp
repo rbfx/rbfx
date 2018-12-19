@@ -71,7 +71,7 @@
 #include <emscripten/emscripten.h>
 #endif
 
-#include <CLI11/CLI11.hpp>
+#include <Urho3D/Core/CommandLine.h>
 
 #include "../DebugNew.h"
 
@@ -826,7 +826,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
     };
 
     auto addFlag = [&](const char* name, const String& param, bool value, const char* description) {
-        CLI::callback_t fun = [&](CLI::results_t) {
+        CLI::callback_t fun = [&engineParameters, param, value](CLI::results_t) {
             engineParameters[param] = value;
             return true;
         };
@@ -834,7 +834,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
     };
 
     auto addOptionPrependString = [&](const char* name, const String& param, const String& value, const char* description) {
-        CLI::callback_t fun = [&](CLI::results_t) {
+        CLI::callback_t fun = [&engineParameters, param, value](CLI::results_t) {
             engineParameters[param] = value + engineParameters[param].GetString();
             return true;
         };
@@ -842,7 +842,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
     };
 
     auto addOptionSetString = [&](const char* name, const String& param, const String& value, const char* description) {
-        CLI::callback_t fun = [&](CLI::results_t) {
+        CLI::callback_t fun = [&engineParameters, param, value](CLI::results_t) {
             engineParameters[param] = value;
             return true;
         };
@@ -850,7 +850,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
     };
 
     auto addOptionString = [&](const char* name, const String& param, const char* description) {
-        CLI::callback_t fun = [&](CLI::results_t res) {
+        CLI::callback_t fun = [&engineParameters, param](CLI::results_t res) {
             engineParameters[param] = res[0].c_str();
             return true;
         };
@@ -860,7 +860,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
     };
 
     auto addOptionInt = [&](const char* name, const String& param, const char* description) {
-        CLI::callback_t fun = [&](CLI::results_t res) {
+        CLI::callback_t fun = [&engineParameters, param](CLI::results_t res) {
             int value = 0;
             if (CLI::detail::lexical_cast(res[0], value))
             {
@@ -914,6 +914,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
         engineParameters[EP_LOG_LEVEL] = logLevel;
         return true;
     })->set_custom_option(createOptions("string in {%s}", logLevelPrefixes).CString());
+    addOptionString("--log-file", EP_LOG_NAME, "Log output file");
     addOptionInt("-x,--height", EP_WINDOW_WIDTH, "Window width");
     addOptionInt("-y,--width", EP_WINDOW_WIDTH, "Window height");
     addOptionInt("--monitor", EP_MONITOR, "Create window on the specified monitor");

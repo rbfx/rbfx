@@ -88,7 +88,10 @@ SystemUI::SystemUI(Urho3D::Context* context)
 
     // Subscribe to events
     SubscribeToEvent(E_SDLRAWINPUT, std::bind(&SystemUI::OnRawEvent, this, _2));
-    SubscribeToEvent(E_SCREENMODE, std::bind(&SystemUI::UpdateProjectionMatrix, this));
+    SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap&) {
+        UpdateProjectionMatrix();
+        ReallocateFontTexture();
+    });
     SubscribeToEvent(E_INPUTEND, [&](StringHash, VariantMap&) {
         float timeStep = GetTime()->GetTimeStep();
         ImGui::GetIO().DeltaTime = timeStep > 0.0f ? timeStep : 1.0f / 60.0f;

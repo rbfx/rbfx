@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include <CLI11/CLI11.hpp>
+#include <Urho3D/Core/CommandLine.h>
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Engine/Application.h>
 #include <Urho3D/Engine/EngineDefs.h>
@@ -64,7 +64,7 @@ public:
     float lookSensitivity_ = 1.0f;
     Gizmo gizmo_;
     bool showHelp_ = false;
-    std::string assetFile_;
+    String assetFile_;
 
     explicit AssetViewer(Context* context)
         : Application(context), gizmo_(context)
@@ -114,8 +114,8 @@ public:
         SubscribeToEvent(E_UPDATE, std::bind(&AssetViewer::OnUpdate, this, _2));
         SubscribeToEvent(E_DROPFILE, std::bind(&AssetViewer::OnFileDrop, this, _2));
 
-        if (!assetFile_.empty())
-            LoadFile(assetFile_.c_str());
+        if (!assetFile_.Empty())
+            LoadFile(assetFile_.CString());
     }
 
     void OnUpdate(VariantMap& args)
