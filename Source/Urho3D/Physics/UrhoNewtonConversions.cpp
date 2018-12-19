@@ -9,6 +9,7 @@
 #include "Newton.h"
 #include "Math/Sphere.h"
 #include "Math/BoundingBox.h"
+#include "dgQuaternion.h"
 
 
 
@@ -68,7 +69,10 @@ namespace Urho3D {
     {
         return Quaternion(quat.m_q0, quat.m_q1, quat.m_q2, quat.m_q3);
     }
-
+    Quaternion NewtonToUrhoQuat(const dgQuaternion& quat)
+    {
+        return Quaternion(quat.m_q0, quat.m_q1, quat.m_q2, quat.m_q3);
+    }
 
 
 

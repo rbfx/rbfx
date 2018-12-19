@@ -385,13 +385,4 @@ namespace Urho3D {
         }
     }
 
-
-    void CollisionShape::HandleNodeTransformChange(StringHash event, VariantMap& eventData)
-    {
-        RigidBody* rigBody = GetRigidBody();
-
-        if (rigBody && rigBody->respondToNodeTransformChange_)
-            rigBody->MarkDirty(true);
-    }
-
 }

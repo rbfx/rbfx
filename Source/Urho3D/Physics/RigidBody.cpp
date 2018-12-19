@@ -18,6 +18,7 @@
 #include "Constraint.h"
 #include "Resource/ResourceCache.h"
 #include "Graphics/DebugRenderer.h"
+#include "dgQuaternion.h"
 
 
 namespace Urho3D {
@@ -59,7 +60,6 @@ namespace Urho3D {
         URHO3D_ACCESSOR_ATTRIBUTE("Collision Layer", GetCollisionLayer, SetCollisionLayer, unsigned, DEFAULT_COLLISION_LAYER, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Collision Mask", GetCollisionLayerMask, SetCollisionLayerMask, unsigned, DEFAULT_COLLISION_MASK, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("No Collide Override", GetNoCollideOverride, SetNoCollideOverride, bool, false, AM_DEFAULT);
-        URHO3D_ACCESSOR_ATTRIBUTE("Respond To Node Transform Change", GetRespondToNodeTransformChanges, SetRespondToNodeTransformChanges, bool, true, AM_DEFAULT);
         URHO3D_ATTRIBUTE("Collision Body Exceptions", VariantMap, collisionExceptions_, VariantMap(), AM_DEFAULT | AM_NOEDIT);
         URHO3D_ATTRIBUTE("Generate Contacts", bool, generateContacts_, true, AM_DEFAULT);
 
@@ -81,6 +81,64 @@ namespace Urho3D {
         }
     }
    
+
+    void RigidBody::SetWorldTransform(const Matrix3x4& transform)
+    {
+        if (newtonBody_)
+        {
+            Activate();
+
+            Matrix3x4 scaleLessTransform(transform.Translation(), transform.Rotation(), 1.0f);
+            NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(scaleLessTransform))[0][0]);
+        }
+        else
+        {
+
+            nextTransformNeeded_ = true;
+            nextTransform_ = transform;
+        }
+    }
+
+    void RigidBody::SetWorldPosition(const Vector3& position)
+    {
+        if (newtonBody_)
+        {
+            Activate();
+
+
+            dgQuaternion orientation;
+            NewtonBodyGetRotation(newtonBody_, &orientation[0]);
+
+            Matrix3x4 transform(position, NewtonToUrhoQuat(orientation), 1.0f);
+            NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(transform))[0][0]);
+        }
+        else
+        {
+
+            nextPositionNeeded_ = true;
+            nextPosition_ = position;
+        }
+    }
+
+    void RigidBody::SetWorldRotation(const Quaternion& quaternion)
+    {
+        if (newtonBody_)
+        {
+            Activate();
+
+            dVector pos;
+            NewtonBodyGetPosition(newtonBody_, &pos[0]);
+
+            Matrix3x4 transform(NewtonToUrhoVec3(pos), quaternion, 1.0f);
+            NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(transform))[0][0]);
+        }
+        else
+        {
+
+            nextOrientationNeeded_ = true;
+            nextOrientation_ = quaternion;
+        }
+    }
 
     Urho3D::Matrix3x4 RigidBody::GetPhysicsTransform(bool scaledPhysicsWorldFrame)
     {
@@ -871,6 +929,43 @@ namespace Urho3D {
     {
         //wake the body so it responds.
         Activate();
+
+
+        if (nextPositionNeeded_ && !nextTransformNeeded_)
+        {
+            if (newtonBody_)
+            {
+                dgQuaternion orientation;
+                NewtonBodyGetRotation(newtonBody_, &orientation[0]);
+
+                Matrix3x4 transform(nextPosition_, NewtonToUrhoQuat(orientation), 1.0f);
+                NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(transform))[0][0]);
+            }
+        }
+
+        if (nextOrientationNeeded_ && !nextTransformNeeded_)
+        {
+            if (newtonBody_)
+            {
+                dVector pos;
+                NewtonBodyGetPosition(newtonBody_, &pos[0]);
+
+                Matrix3x4 transform(NewtonToUrhoVec3(pos), nextOrientation_, 1.0f);
+                NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(transform))[0][0]);
+
+            }
+        }
+
+        if (nextTransformNeeded_)
+        {
+
+            if (newtonBody_)
+            {
+                Matrix3x4 scaleLessTransform(nextTransform_.Translation(), nextTransform_.Rotation(), 1.0f);
+                NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(scaleLessTransform))[0][0]);
+            }
+
+        }
 
         if (nextLinearVelocityNeeded_)
         {

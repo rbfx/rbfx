@@ -4,6 +4,7 @@
 class dMatrix;
 class dVector;
 class dQuaternion;
+class dgQuaternion;
 
 class NewtonCollision;
 class NewtonWorld;
@@ -31,7 +32,7 @@ namespace Urho3D {
     Vector4 NewtonToUrhoVec4(const dVector& vec);
     Matrix4 NewtonToUrhoMat4(const dMatrix& mat);
     Quaternion NewtonToUrhoQuat(const dQuaternion& quat);
-
+    Quaternion NewtonToUrhoQuat(const dgQuaternion& quat);
 
 
 

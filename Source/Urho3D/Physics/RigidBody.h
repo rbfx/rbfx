@@ -58,6 +58,17 @@ namespace Urho3D
 
         PhysicsWorld* GetPhysicsWorld() const { return physicsWorld_; }
 
+        /// Instantly Set the world transform of the body in scene space
+        void SetWorldTransform(const Matrix3x4& transform);
+
+        void SetWorldPosition(const Vector3& position);
+
+        void SetWorldRotation(const Quaternion& quaternion);
+
+        
+
+
+
         /// returns the body transform in scene space or physics world space (they will be the same if PhysicsScale is 1.0f)
         Matrix3x4 GetPhysicsTransform(bool scaledPhysicsWorldFrame = false);
 
@@ -123,11 +134,7 @@ namespace Urho3D
         bool GetGenerateContacts() const { return generateContacts_; }
 
 
-        ///enable or disable changes of the rigid body transform when the parent node changes. default is enabled.
-        void SetRespondToNodeTransformChanges(bool enable) { respondToNodeTransformChange_ = enable; }
-        bool GetRespondToNodeTransformChanges() const {
-            return respondToNodeTransformChange_;
-        }
+
 
 
         /// Set linear velocity in world cordinates. if useForces is false the velocity will be set exactly with no regard to using forces to achieve the desired velocity.
@@ -364,11 +371,19 @@ namespace Urho3D
         void HandleNodeAdded(StringHash event, VariantMap& eventData);
         void HandleNodeRemoved(StringHash event, VariantMap& eventData);
 
-        bool respondToNodeTransformChange_ = true;
-
 
         //variables for deferered singular actions on the newtonbody in case it has not been created yet.
         void applyDefferedActions();
+
+        bool nextTransformNeeded_ = false;
+        Matrix3x4 nextTransform_;
+
+        bool nextPositionNeeded_ = false;
+        Vector3 nextPosition_;
+
+        bool nextOrientationNeeded_ = false;
+        Quaternion nextOrientation_;
+
         bool nextLinearVelocityNeeded_ = false;
         Vector3 nextLinearVelocity_;
         bool nextLinearVelocityUseForces_ = true;
