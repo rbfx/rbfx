@@ -33,9 +33,6 @@
 #include "Scene/SceneEvents.h"
 #include "SliderConstraint.h"
 #include "6DOFConstraint.h"
-#include "../dVehicle/dVehicleManager.h"
-#include "PhysicsVehicle.h"
-#include "VehicleTire.h"
 #include "Engine/Engine.h"
 #include "Math/Ray.h"
 
@@ -208,10 +205,7 @@ namespace Urho3D {
             if (sceneBody_)
                 sceneBody_->DrawDebugGeometry(debug, depthTest);
 
-            //draw debug geometry on vehicles
-            for (PhysicsVehicle* vehicle : vehicleList) {
-                vehicle->DrawDebugGeometry(debug, depthTest);
-            }
+
         }
     }
 
@@ -230,8 +224,6 @@ namespace Urho3D {
 
 
 
-                //make the vehicle manager
-                vehicleManager_ = new dVehicleManager(newtonWorld_);
 
             }
         }
@@ -275,15 +267,6 @@ namespace Urho3D {
     }
 
 
-    void PhysicsWorld::addVehicle(PhysicsVehicle* vehicle)
-    {
-        vehicleList.Insert(0, WeakPtr<PhysicsVehicle>(vehicle));
-    }
-
-    void PhysicsWorld::removeVehicle(PhysicsVehicle* vehicle)
-    {
-        vehicleList.Remove(WeakPtr<PhysicsVehicle>(vehicle));
-    }
 
     void PhysicsWorld::freeWorld()
     {
@@ -312,7 +295,6 @@ namespace Urho3D {
         rigidBodyComponentList.Clear();
 
 
-        vehicleList.Clear();
 
         //free meshes in mesh cache
         newtonMeshCache_.Clear();
@@ -658,9 +640,9 @@ namespace Urho3D {
        SendEvent(E_PHYSICSPRESTEP, eventData);
 
        //do the update.
-       Update(timeStepTarget_ / float(subStepFactor), true);
-       for(int i = 0; i < subStepFactor-1; i++)
-            Update(timeStepTarget_ / float(subStepFactor), false);
+       //Update(timeStepTarget_ / float(subStepFactor), true);
+       //for(int i = 0; i < subStepFactor-1; i++)
+       //     Update(timeStepTarget_ / float(subStepFactor), false);
 
 
        // Send post-step event
@@ -724,11 +706,6 @@ namespace Urho3D {
                         }
                     }
 
-                    //tell vehicles to update the nodes for the tires.
-                    for (PhysicsVehicle* vehicle : vehicleList)
-                    {
-                        vehicle->applyTransforms();
-                    }
                 }
             }
 
@@ -785,14 +762,6 @@ namespace Urho3D {
                 continue;
 
 
-            //cross check if any vehicles are using the body - if so mark the vehicle dirty to because it will need rebuilt.
-            for (PhysicsVehicle* vehicle : vehicleList)
-            {
-                if (vehicle->rigidBody_ == rigBody) {
-                    vehicle->MarkDirty();
-                }
-            }
-
 
             rigBody->reBuildBody();
             rigBody->MarkDirty(false);
@@ -813,13 +782,6 @@ namespace Urho3D {
         }
 
 
-        //rebuild vehicles if they need rebuilt
-        for (PhysicsVehicle* vehicle : vehicleList)
-        {
-            if (vehicle->isDirty_) {
-                vehicle->reBuild();
-            }
-        }
     }
 
 
@@ -1026,9 +988,6 @@ namespace Urho3D {
         FullyFixedConstraint::RegisterObject(context);
         KinematicsControllerConstraint::RegisterObject(context);
         RigidBodyContactEntry::RegisterObject(context);
-
-        PhysicsVehicle::RegisterObject(context);
-        VehicleTire::RegisterObject(context);
 
     }
 

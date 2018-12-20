@@ -116,7 +116,6 @@ private:
     void FireSmallBall();
     void SpawnCompoundedRectTest(Vector3 worldPosition);
     void SpawnCompoundedRectTest2(Vector3 worldPosition);
-    void SpawnVehicle(Vector3 worldPosition);
     void SpawnTrialBike(Vector3 worldPosition);
 
     /// Handle the logic update event.

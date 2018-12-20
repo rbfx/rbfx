@@ -54,7 +54,11 @@
 #include "Urho3D/Physics/NewtonKinematicsJoint.h"
 #include "Urho3D/Physics/FullyFixedConstraint.h"
 #include "Urho3D/Physics/HingeConstraint.h"
-#include "Urho3D/Physics/PhysicsVehicle.h"
+#include "Urho3D/Physics/SliderConstraint.h"
+#include "Urho3D/Physics/PhysicsEvents.h"
+#include "Urho3D/UI/Text3D.h"
+
+#include "Urho3D/Graphics/Terrain.h"
 
 
 
@@ -139,7 +143,7 @@ void Physics::CreateScene()
 
 
 
-    CreateScenery(Vector3(0,0,0));
+    //CreateScenery(Vector3(0,0,0));
 
 
     //SpawnMaterialsTest(Vector3(0,-25,100));
@@ -1057,52 +1061,7 @@ void Physics::SpawnCompoundedRectTest2(Vector3 worldPosition)
 
 }
 
-void Physics::SpawnVehicle(Vector3 worldPosition)
-{
-    Node* vehicleNode = SpawnSamplePhysicsBox(scene_, worldPosition, Vector3(5, 2, 2));
-    vehicleNode->SetName("VehicleRootNode");
-    vehicleNode->SetWorldPosition(worldPosition);
-    vehicleNode->GetComponent<RigidBody>()->SetMassScale(50);
 
-
-
-    PhysicsVehicle* vehicle = vehicleNode->CreateComponent<PhysicsVehicle>();
-
-
-
-    for (int i = 0; i < 4; i++) {
-
-        Vector3 offset;
-        if (i == 0)
-            offset = Vector3(-2, -1, 2);
-        if(i == 1)
-            offset = Vector3(2, -1, 2);
-        if(i == 2)
-            offset = Vector3(-2, -1, -2);
-        if(i == 3)
-            offset = Vector3(2, -1, -2);
-
-        Node* tireNode = vehicleNode->CreateChild("TireNode");
-        tireNode->SetWorldTransform(worldPosition + offset, Quaternion(0, 90, 0));
-
-        VehicleTire* tire = tireNode->CreateComponent<VehicleTire>();
-
-
-        Node* rotatedNode = tireNode->CreateChild("Tire: " + String(i) + " Child");
-
-
-        rotatedNode->Rotate(Quaternion(90, 0, 90));
-        rotatedNode->SetScale(Vector3(1, 0.5, 1));
-        StaticModel* mdl = rotatedNode->CreateComponent<StaticModel>();
-        mdl->SetModel(GetSubsystem<ResourceCache>()->GetResource<Model>("Models/Cylinder.mdl"));
-        mdl->SetMaterial(GetSubsystem<ResourceCache>()->GetResource<Material>("Materials/Stone.xml"));
-
-    }
-
-
-
-
-}
 
 void Physics::SpawnTrialBike(Vector3 worldPosition)
 {
@@ -1227,7 +1186,7 @@ void Physics::HandleUpdate(StringHash eventType, VariantMap& eventData)
     if (hingeActuatorTest) {
         float angle = Sin(timeAccum*10.0f)*45.0f;
 
-        ui::Value("Angle: ", angle);
+        //ui::Value("Angle: ", angle);
         URHO3D_LOGINFO(String(angle));
         hingeActuatorTest->SetActuatorTargetAngle(angle);
 

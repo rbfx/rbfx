@@ -338,6 +338,8 @@ namespace Urho3D {
             physicsWorld_->addCollisionShape(this);
             node->AddListener(this);
 
+            //rebuild stuff.
+            physicsWorld_->rebuildDirtyPhysicsComponents();
         }
         else
         {

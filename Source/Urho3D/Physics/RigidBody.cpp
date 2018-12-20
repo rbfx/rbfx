@@ -859,6 +859,11 @@ namespace Urho3D {
             physicsWorld_->markRigidBodiesNeedSorted();
 
             prevNode_ = node;
+
+
+            //rebuild stuff.
+            physicsWorld_->rebuildDirtyPhysicsComponents();
+
         }
         else
         {

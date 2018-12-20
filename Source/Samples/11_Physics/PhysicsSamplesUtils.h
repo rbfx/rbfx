@@ -1,6 +1,10 @@
 #pragma once
+#include "Urho3D/Scene/Node.h"
+#include "Urho3D/Math/Vector3.h"
 
-#include "Urho3D/Urho3DAll.h"
+class Urho3D::Node;
+class Urho3D::Vector3;
+using namespace Urho3D;
 
 Node* SpawnSamplePhysicsCylinder(Node* parentNode, const Vector3& worldPosition, float radius = 0.5f, float height = 1.0f);
 Node* SpawnSamplePhysicsChamferCylinder(Node* parentNode, const Vector3& worldPosition, float radius = 0.5f, float height = 1.0f);

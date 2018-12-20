@@ -173,7 +173,6 @@ set (THIRD_PARTY_DEPENDENCIES
     dgPhysics
     dNewton
     dMath
-    dVehicle
     newton
     dScene
     tinyxml
