@@ -67,7 +67,7 @@ namespace EditorHost
         {
             var fileDir = Path.GetDirectoryName(path);
             var fileName = Path.GetFileNameWithoutExtension(path);
-            path = $"{fileDir}{Path.DirectorySeparatorChar}{fileName}{_version}.dll";
+            path = $"{fileDir}{Path.DirectorySeparatorChar}{fileName}-{Process.GetCurrentProcess().Id}-{_version}.dll";
             return path;
         }
 
@@ -78,7 +78,7 @@ namespace EditorHost
 
             var pdbPath = Path.ChangeExtension(path, "pdb");
             var versionedPath = GetNewPluginPath(path);
-            var versionedPdbPath = Path.ChangeExtension(versionedPath, "pdb");
+            var versionedPdbPath = Path.ChangeExtension(Path.GetFileName(versionedPath), "pdb");
             Debug.Assert(versionedPath != null, $"{nameof(versionedPath)} != null");
             File.Copy(path, versionedPath, true);
 

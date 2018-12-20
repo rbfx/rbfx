@@ -448,11 +448,14 @@ struct cr_plugin {
 #include <cstring> // memcpy
 #include <string>
 #include <thread> // this_thread::sleep_for
+#include <sys/types.h>
 
 #if defined(CR_WINDOWS)
+#include <process.h>
 #define CR_PATH_SEPARATOR '\\'
 #define CR_PATH_SEPARATOR_INVALID '/'
 #else
+#include <unistd.h>
 #define CR_PATH_SEPARATOR '/'
 #define CR_PATH_SEPARATOR_INVALID '\\'
 #endif
@@ -490,7 +493,8 @@ static std::string cr_version_path(const std::string &basepath,
     std::string folder, fname, ext;
     cr_split_path(basepath, folder, fname, ext);
     std::string ver = std::to_string(version);
-    return folder + fname.substr(0, fname.size() - ver.size()) + ver + ext;
+    std::string pid = std::to_string(getpid());
+    return folder + fname.substr(0, fname.size() - ver.size()) + "-" + pid + "-" + ver + ext;
 }
 
 namespace cr_plugin_section_type {
@@ -1489,6 +1493,8 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
 
 #if defined(_MSC_VER)
             auto new_pdb = cr_replace_extension(new_file, ".pdb");
+            auto slash_index = new_pdb.find_last_of("/\\");
+            new_pdb = new_pdb.substr(slash_index + 1);
 
             if (!cr_pdb_process(new_file, new_pdb)) {
                 fprintf(stderr, "Couldn't process PDB, debugging may be "
