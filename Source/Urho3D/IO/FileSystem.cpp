@@ -60,6 +60,7 @@
 #include <utime.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#include <spawn.h>
 #define MAX_PATH 256
 #endif
 
@@ -247,30 +248,24 @@ int DoSystemRun(const String& fileName, const Vector<String>& arguments, SystemR
         fcntl(desc[1], F_SETFL, O_NONBLOCK);
     }
 
-    pid_t pid = fork();
-    if (!pid)
-    {
-        if (flags & SR_READ_OUTPUT)
-        {
-            // Replace stdout with pipe fd
-            close(STDOUT_FILENO);
-            dup(desc[1]);
-            close(STDERR_FILENO);
-            dup(desc[1]);
-            close(desc[0]);
-            close(desc[1]);
-        }
+    PODVector<const char*> argPtrs;
+    argPtrs.Push(fixedFileName.CString());
+    for (unsigned i = 0; i < arguments.Size(); ++i)
+        argPtrs.Push(arguments[i].CString());
+    argPtrs.Push(nullptr);
 
-        PODVector<const char*> argPtrs;
-        argPtrs.Push(fixedFileName.CString());
-        for (unsigned i = 0; i < arguments.Size(); ++i)
-            argPtrs.Push(arguments[i].CString());
-        argPtrs.Push(nullptr);
+    pid_t pid = 0;
+    posix_spawn_file_actions_t actions{};
 
-        execvp(argPtrs[0], (char**)&argPtrs[0]);
-        return -1; // Return -1 if we could not spawn the process
-    }
-    else if (pid > 0)
+    posix_spawn_file_actions_init(&actions);
+    posix_spawn_file_actions_addclose(&actions, STDOUT_FILENO);
+    posix_spawn_file_actions_adddup2(&actions, desc[1], STDOUT_FILENO);
+    posix_spawn_file_actions_addclose(&actions, STDERR_FILENO);
+    posix_spawn_file_actions_adddup2(&actions, desc[1], STDERR_FILENO);
+    posix_spawnp(&pid, fixedFileName.CString(), &actions, 0, (char**)&argPtrs[0], 0);
+    posix_spawn_file_actions_destroy(&actions);
+
+    if (pid > 0)
     {
         int exitCode = 0;
         if (flags & SR_WAIT_FOR_EXIT)
