@@ -139,7 +139,8 @@ namespace Urho3D
         void GetRigidBodies(PODVector<RigidBody*>& result, const RigidBody* body);
 
 
-
+        /// Force the physics world to rebuild - usefull if you want to update the build if the scene is not being updated.
+        void ForceRebuild() { freePhysicsInternals(); rebuildDirtyPhysicsComponents(); }
 
 
         

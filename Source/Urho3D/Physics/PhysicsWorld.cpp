@@ -224,6 +224,10 @@ namespace Urho3D {
 
 
 
+                sceneBody_ = GetScene()->GetOrCreateComponent<RigidBody>();
+                sceneBody_->SetIsSceneRootBody(true);
+
+
 
             }
         }
@@ -663,11 +667,7 @@ namespace Urho3D {
 
         if (rootRate) {
 
-            //Resolve the root rigid body component if it needs created:
-            if (!sceneBody_) {
-                sceneBody_ = GetScene()->GetOrCreateComponent<RigidBody>();
-                sceneBody_->SetIsSceneRootBody(true);
-            }
+
         }
 
 
