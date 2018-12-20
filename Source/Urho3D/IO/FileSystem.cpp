@@ -167,7 +167,7 @@ int DoSystemRun(const String& fileName, const Vector<String>& arguments, SystemR
 
     String commandLine = "\"" + fixedFileName + "\"";
     for (unsigned i = 0; i < arguments.Size(); ++i)
-        commandLine += " " + arguments[i];
+        commandLine += " \"" + arguments[i] + "\"";
 
     STARTUPINFOW startupInfo{};
     PROCESS_INFORMATION processInfo{};
