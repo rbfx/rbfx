@@ -91,7 +91,6 @@ PluginManager::PluginManager(Context* context)
     : Object(context)
 {
 #if URHO3D_PLUGINS
-    CleanUp();
     SubscribeToEvent(E_ENDFRAMEPRIVATE, [this](StringHash, VariantMap&) { OnEndFrame(); });
     SubscribeToEvent(E_SIMULATIONSTART, [this](StringHash, VariantMap&) {
         for (auto& plugin : plugins_)
@@ -294,27 +293,33 @@ void PluginManager::OnEndFrame()
 #endif
 }
 
-void PluginManager::CleanUp(String directory)
+void PluginManager::CleanUp(Context* context, String directory)
 {
+    if (context->GetEngine()->IsHeadless())
+        // Headless worker.
+        return;
+
+    FileSystem* fs = context->GetFileSystem();
+
 #if URHO3D_PLUGINS
     if (directory.Empty())
-        directory = GetFileSystem()->GetProgramDir();
+        directory = fs->GetProgramDir();
 
-    if (!GetFileSystem()->DirExists(directory))
+    if (!fs->DirExists(directory))
         return;
 
     StringVector files;
-    GetFileSystem()->ScanDir(files, directory, "*.*", SCAN_FILES, false);
+    fs->ScanDir(files, directory, "*.*", SCAN_FILES, false);
 
     for (const String& fileName : files)
     {
         String filePath = directory + fileName;
         String baseName = GetFileName(fileName);
-        if (IsDigit(static_cast<unsigned int>(baseName.Back())) && GetPluginType(context_, filePath) != PLUGIN_INVALID)
+        if (IsDigit(static_cast<unsigned int>(baseName.Back())) && GetPluginType(context, filePath) != PLUGIN_INVALID)
         {
-            GetFileSystem()->Delete(filePath);
+            fs->Delete(filePath);
             if (filePath.EndsWith(".dll"))
-                GetFileSystem()->Delete(ReplaceExtension(filePath, ".pdb"));
+                fs->Delete(ReplaceExtension(filePath, ".pdb"));
         }
     }
 #endif

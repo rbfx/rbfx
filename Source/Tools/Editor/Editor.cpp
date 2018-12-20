@@ -224,6 +224,11 @@ void Editor::InitializeEditor()
     }
     else
         SetupSystemUI();
+
+#if URHO3D_PLUGINS
+    // Clean old renamed plugin files.
+    PluginManager::CleanUp(context_);
+#endif
 }
 
 void Editor::InitializeConverter()
@@ -259,6 +264,11 @@ void Editor::Stop()
         manager->UnloadAll();
     CloseProject();
     context_->RemoveSubsystem<WorkQueue>(); // Prevents deadlock when unloading plugin AppDomain in managed host.
+
+#if URHO3D_PLUGINS
+    // Clean old renamed plugin files.
+    PluginManager::CleanUp(context_);
+#endif
 }
 
 void Editor::OnUpdate(VariantMap& args)
