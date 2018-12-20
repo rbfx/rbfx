@@ -644,9 +644,9 @@ namespace Urho3D {
        SendEvent(E_PHYSICSPRESTEP, eventData);
 
        //do the update.
-       //Update(timeStepTarget_ / float(subStepFactor), true);
-       //for(int i = 0; i < subStepFactor-1; i++)
-       //     Update(timeStepTarget_ / float(subStepFactor), false);
+       Update(timeStepTarget_ / float(subStepFactor), true);
+       for(int i = 0; i < subStepFactor-1; i++)
+            Update(timeStepTarget_ / float(subStepFactor), false);
 
 
        // Send post-step event
