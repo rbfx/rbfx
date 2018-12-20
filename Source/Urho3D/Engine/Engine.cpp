@@ -137,8 +137,6 @@ Engine::Engine(Context* context) :
 #ifdef URHO3D_NETWORK
     context_->RegisterSubsystem(new Network(context_));
 #endif
-    context_->RegisterSubsystem(new Input(context_));
-    context_->RegisterSubsystem(new Audio(context_));
     // Register UI library object factories before creation of subsystem. This is not done inside subsystem because
     // there may exist multiple instances of UI.
     RegisterUILibrary(context_);
@@ -174,10 +172,22 @@ bool Engine::Initialize(const VariantMap& parameters)
 
     URHO3D_PROFILE("InitEngine");
 
+    // Start logging
+    auto* log = GetSubsystem<Log>();
+    if (log)
+    {
+        if (HasParameter(parameters, EP_LOG_LEVEL))
+            log->SetLevel(static_cast<LogLevel>(GetParameter(parameters, EP_LOG_LEVEL).GetInt()));
+        log->SetQuiet(GetParameter(parameters, EP_LOG_QUIET, false).GetBool());
+        log->Open(GetParameter(parameters, EP_LOG_NAME, "Urho3D.log").GetString());
+    }
+
     // Set headless mode
     headless_ = GetParameter(parameters, EP_HEADLESS, false).GetBool();
 
     // Register the rest of the subsystems
+    context_->RegisterSubsystem(new Input(context_));
+    context_->RegisterSubsystem(new Audio(context_));
     if (!headless_)
     {
         context_->RegisterSubsystem(new Graphics(context_));
@@ -195,16 +205,6 @@ bool Engine::Initialize(const VariantMap& parameters)
     // 2D graphics library is dependent on 3D graphics library
     RegisterUrho2DLibrary(context_);
 #endif
-
-    // Start logging
-    auto* log = GetSubsystem<Log>();
-    if (log)
-    {
-        if (HasParameter(parameters, EP_LOG_LEVEL))
-            log->SetLevel(static_cast<LogLevel>(GetParameter(parameters, EP_LOG_LEVEL).GetInt()));
-        log->SetQuiet(GetParameter(parameters, EP_LOG_QUIET, false).GetBool());
-        log->Open(GetParameter(parameters, EP_LOG_NAME, "Urho3D.log").GetString());
-    }
 
     // Set maximally accurate low res timer
     GetSubsystem<Time>()->SetTimerPeriod(1);
