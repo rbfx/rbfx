@@ -8365,7 +8365,7 @@ static ImVec2 ImGui::NavCalcPreferredRefPos()
     ImGuiContext& g = *GImGui;
     if (g.NavDisableHighlight || !g.NavDisableMouseHover || !g.NavWindow)
     {
-        IM_ASSERT(ImGui::IsMousePosValid()); // This will probably trigger at some point, please share your repro!
+        // IM_ASSERT(ImGui::IsMousePosValid()); // This will probably trigger at some point, please share your repro!
         return ImFloor(g.IO.MousePos);
     }
 
