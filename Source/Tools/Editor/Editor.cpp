@@ -329,41 +329,62 @@ void Editor::OnUpdate(VariantMap& args)
     // Dialog for a warning when application is being closed with unsaved resources.
     if (exiting_)
     {
-        if (!hasModified)
-            engine_->Exit();
-        else if (!ui::IsPopupOpen("Save All?"))
-            ui::OpenPopup("Save All?");
-    }
-
-    if (ui::BeginPopupModal("Save All?", &exiting_, ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_Popup))
-    {
-        ui::TextUnformatted("You have unsaved resources. Save them before exiting?");
-
-        if (ui::Button(ICON_FA_SAVE " Save & Close"))
+        if (!GetWorkQueue()->IsCompleted(0))
         {
-            for (auto& tab : tabs_)
+            ui::OpenPopup("Completing Tasks");
+
+            if (ui::BeginPopupModal("Completing Tasks", nullptr, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoResize |
+                                                                 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_Popup))
             {
-                if (tab->IsModified())
-                    tab->SaveResource();
+                ui::TextUnformatted("Some tasks are in progress and are being completed. Please wait.");
+                static float totalIncomplete = GetWorkQueue()->GetNumIncomplete(0);
+                ui::ProgressBar(100.f / totalIncomplete * Min(totalIncomplete - (float)GetWorkQueue()->GetNumIncomplete(0), totalIncomplete));
+                ui::EndPopup();
             }
-            engine_->Exit();
         }
-
-        ui::SameLine();
-
-        if (ui::Button(ICON_FA_EXCLAMATION_TRIANGLE " Close without saving"))
-            engine_->Exit();
-        ui::SetHelpTooltip(ICON_FA_EXCLAMATION_TRIANGLE " All unsaved changes will be lost!", KEY_UNKNOWN);
-
-        ui::SameLine();
-
-        if (ui::Button(ICON_FA_TIMES " Cancel"))
+        else if (hasModified)
         {
-            exiting_ = false;
-            ui::CloseCurrentPopup();
-        }
+            ui::OpenPopup("Save All?");
 
-        ui::EndPopup();
+            if (ui::BeginPopupModal("Save All?", nullptr, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoResize |
+                                                          ImGuiWindowFlags_NoMove | ImGuiWindowFlags_Popup))
+            {
+                ui::TextUnformatted("You have unsaved resources. Save them before exiting?");
+
+                if (ui::Button(ICON_FA_SAVE " Save & Close"))
+                {
+                    for (auto& tab : tabs_)
+                    {
+                        if (tab->IsModified())
+                            tab->SaveResource();
+                    }
+                    ui::CloseCurrentPopup();
+                }
+
+                ui::SameLine();
+
+                if (ui::Button(ICON_FA_EXCLAMATION_TRIANGLE " Close without saving"))
+                {
+                    engine_->Exit();
+                }
+                ui::SetHelpTooltip(ICON_FA_EXCLAMATION_TRIANGLE " All unsaved changes will be lost!", KEY_UNKNOWN);
+
+                ui::SameLine();
+
+                if (ui::Button(ICON_FA_TIMES " Cancel"))
+                {
+                    exiting_ = false;
+                    ui::CloseCurrentPopup();
+                }
+
+                ui::EndPopup();
+            }
+        }
+        else
+        {
+            GetWorkQueue()->Complete(0);
+            engine_->Exit();
+        }
     }
 }
 
