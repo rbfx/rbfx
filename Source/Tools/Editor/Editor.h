@@ -95,6 +95,8 @@ public:
     ImGuiID GetDockspaceID() const { return dockspaceId_; }
     ///
     ImFont* GetMonoSpaceFont() const { return monoFont_; }
+    ///
+    void UpdateWindowTitle(const String& resourcePath=String::EMPTY);
 
 protected:
     /// Process console commands.

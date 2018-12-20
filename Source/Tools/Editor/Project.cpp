@@ -89,6 +89,8 @@ Project::~Project()
         for (const auto& path : cachedEngineResourcePaths_)
             GetCache()->AddResourceDir(path);
     }
+
+    GetSubsystem<Editor>()->UpdateWindowTitle();
 }
 
 bool Project::LoadProject(const String& projectPath)
@@ -142,6 +144,7 @@ bool Project::LoadProject(const String& projectPath)
         assetConverter_.SetCachePath(GetCachePath());
         assetConverter_.AddAssetDirectory(GetResourcePath());
         assetConverter_.VerifyCacheAsync();
+        GetSubsystem<Editor>()->UpdateWindowTitle();
     }
 
     // Unregister engine dirs

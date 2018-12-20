@@ -27,6 +27,7 @@
 #include <Urho3D/Engine/EngineEvents.h>
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/WorkQueue.h>
+#include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -862,6 +863,26 @@ void Editor::SetupSystemUI()
     colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(0.44f, 0.44f, 0.44f, 0.35f);
 
 
+}
+
+void Editor::UpdateWindowTitle(const String& resourcePath)
+{
+    if (GetEngine()->IsHeadless())
+        return;
+
+    Project* project = GetSubsystem<Project>();
+    String title;
+    if (project == nullptr)
+        title = "Editor";
+    else
+    {
+        String projectName = GetFileName(RemoveTrailingSlash(project->GetProjectPath()));
+        title = ToString("Editor | %s", projectName.CString());
+        if (!resourcePath.Empty())
+            title += ToString(" | %s", GetFileName(resourcePath).CString());
+    }
+
+    GetGraphics()->SetWindowTitle(title);
 }
 
 }

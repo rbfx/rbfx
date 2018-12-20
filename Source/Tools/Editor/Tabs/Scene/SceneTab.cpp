@@ -370,6 +370,8 @@ bool SceneTab::LoadResource(const String& resourcePath)
     undo_.Clear();
     lastUndoIndex_ = undo_.Index();
 
+    GetSubsystem<Editor>()->UpdateWindowTitle(resourcePath);
+
     return true;
 }
 
@@ -1395,6 +1397,8 @@ void SceneTab::Close()
     SceneManager* manager = GetSubsystem<SceneManager>();
     manager->SetActiveScene(nullptr);
     manager->UnloadAllButActiveScene();
+
+    GetSubsystem<Editor>()->UpdateWindowTitle();
 }
 
 }
