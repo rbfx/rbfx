@@ -494,7 +494,7 @@ static std::string cr_version_path(const std::string &basepath,
     cr_split_path(basepath, folder, fname, ext);
     std::string ver = std::to_string(version);
     std::string pid = std::to_string(getpid());
-    return folder + fname.substr(0, fname.size() - ver.size()) + "-" + pid + "-" + ver + ext;
+    return folder + fname.substr(0, fname.size()) + "-" + pid + "-" + ver + ext;
 }
 
 namespace cr_plugin_section_type {
