@@ -708,11 +708,111 @@ void Editor::RenderProjectMenu()
             "String",
         };
 
+        static const char* predefinedNames[] = {
+            "Select Option Name",
+            "Enter Custom",
+            EP_AUTOLOAD_PATHS.CString(),
+            EP_BORDERLESS.CString(),
+            EP_DUMP_SHADERS.CString(),
+            EP_FLUSH_GPU.CString(),
+            EP_FORCE_GL2.CString(),
+            EP_FRAME_LIMITER.CString(),
+            EP_FULL_SCREEN.CString(),
+            EP_HEADLESS.CString(),
+            EP_HIGH_DPI.CString(),
+            EP_LOG_LEVEL.CString(),
+            EP_LOG_NAME.CString(),
+            EP_LOG_QUIET.CString(),
+            EP_LOW_QUALITY_SHADOWS.CString(),
+            EP_MATERIAL_QUALITY.CString(),
+            EP_MONITOR.CString(),
+            EP_MULTI_SAMPLE.CString(),
+            EP_ORIENTATIONS.CString(),
+            EP_PACKAGE_CACHE_DIR.CString(),
+            EP_RENDER_PATH.CString(),
+            EP_REFRESH_RATE.CString(),
+            EP_RESOURCE_PACKAGES.CString(),
+            EP_RESOURCE_PATHS.CString(),
+            EP_RESOURCE_PREFIX_PATHS.CString(),
+            EP_SHADER_CACHE_DIR.CString(),
+            EP_SHADOWS.CString(),
+            EP_SOUND.CString(),
+            EP_SOUND_BUFFER.CString(),
+            EP_SOUND_INTERPOLATION.CString(),
+            EP_SOUND_MIX_RATE.CString(),
+            EP_SOUND_STEREO.CString(),
+            EP_TEXTURE_ANISOTROPY.CString(),
+            EP_TEXTURE_FILTER_MODE.CString(),
+            EP_TEXTURE_QUALITY.CString(),
+            EP_TOUCH_EMULATION.CString(),
+            EP_TRIPLE_BUFFER.CString(),
+            EP_VSYNC.CString(),
+            EP_WINDOW_HEIGHT.CString(),
+            EP_WINDOW_ICON.CString(),
+            EP_WINDOW_POSITION_X.CString(),
+            EP_WINDOW_POSITION_Y.CString(),
+            EP_WINDOW_RESIZABLE.CString(),
+            EP_WINDOW_TITLE.CString(),
+            EP_WINDOW_WIDTH.CString(),
+            EP_WORKER_THREADS.CString(),
+        };
+
+        static VariantType predefinedTypes[] = {
+            VAR_NONE,
+            VAR_NONE,
+            VAR_STRING,
+            VAR_BOOL,
+            VAR_BOOL,
+            VAR_BOOL,
+            VAR_BOOL,
+            VAR_BOOL,
+            VAR_BOOL,
+            VAR_BOOL,
+            VAR_BOOL,
+            VAR_INT,
+            VAR_STRING,
+            VAR_BOOL,
+            VAR_BOOL,
+            VAR_INT,
+            VAR_INT,
+            VAR_INT,
+            VAR_STRING,
+            VAR_STRING,
+            VAR_STRING,
+            VAR_INT,
+            VAR_STRING,
+            VAR_STRING,
+            VAR_STRING,
+            VAR_STRING,
+            VAR_BOOL,
+            VAR_BOOL,
+            VAR_INT,
+            VAR_BOOL,
+            VAR_INT,
+            VAR_BOOL,
+            VAR_INT,
+            VAR_INT,
+            VAR_INT,
+            VAR_BOOL,
+            VAR_BOOL,
+            VAR_BOOL,
+            VAR_INT,
+            VAR_STRING,
+            VAR_INT,
+            VAR_INT,
+            VAR_BOOL,
+            VAR_STRING,
+            VAR_INT,
+            VAR_INT,
+        };
+
+        static_assert(SDL_arraysize(predefinedNames) == SDL_arraysize(predefinedNames), "Sizes must match.");
+
         struct NewEntryState
         {
-            std::string fieldName;
-            int variantTypeIndex = 0;
-            bool insertingNew = false;
+            std::string customName;
+            int customType = 0;
+            int predefinedItem = 0;
         };
 
         auto* state = ui::GetUIState<NewEntryState>();
@@ -736,23 +836,33 @@ void Editor::RenderProjectMenu()
                 ++it;
         }
 
-        UI_ITEMWIDTH(180_dpx)
-            ui::InputText("###Key", &state->fieldName);
+        UI_ITEMWIDTH(-30_dpx)
+            ui::Combo("###Selector", &state->predefinedItem, predefinedNames, SDL_arraysize(predefinedNames));
+
         ui::SameLine();
-        UI_ITEMWIDTH(100_dpx)
-            ui::Combo("###Type", &state->variantTypeIndex, variantNames, SDL_arraysize(variantTypes));
-        ui::SameLine();
-        if (ui::Button(ICON_FA_CHECK))
+        if (ui::Button(ICON_FA_CHECK) && state->predefinedItem > 0)
         {
-            if (settings.Find(state->fieldName.c_str()) == settings.End())   // TODO: Show warning about duplicate name
+            if (settings.Find(state->customName.c_str()) == settings.End())   // TODO: Show warning about duplicate name
             {
-                settings.Insert({state->fieldName.c_str(), Variant{variantTypes[state->variantTypeIndex]}});
-                state->fieldName.clear();
-                state->variantTypeIndex = 0;
-                state->insertingNew = false;
+                if (state->predefinedItem == 1)
+                    settings.Insert({state->customName.c_str(), Variant{variantTypes[state->customType]}});
+                else
+                    settings.Insert({predefinedNames[state->predefinedItem], Variant{predefinedTypes[state->predefinedItem]}});
+                state->customName.clear();
+                state->customType = 0;
             }
         }
 
+        if (state->predefinedItem == 1)
+        {
+            UI_ITEMWIDTH(180_dpx)
+                ui::InputText("###Key", &state->customName);
+
+            // Custom entry type selector
+            ui::SameLine();
+            UI_ITEMWIDTH(100_dpx)
+                ui::Combo("###Type", &state->customType, variantNames, SDL_arraysize(variantTypes));
+        }
         ui::EndMenu();
     }
 }
