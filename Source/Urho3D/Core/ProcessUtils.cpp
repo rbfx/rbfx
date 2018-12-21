@@ -801,4 +801,13 @@ String GenerateUUID()
 #endif
 }
 
+URHO3D_API unsigned GetCurrentProcessID()
+{
+#if _WIN32
+    return ::GetCurrentProcessId();
+#else
+    return getpid();
+#endif
+}
+
 }
