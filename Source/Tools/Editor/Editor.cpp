@@ -840,18 +840,33 @@ void Editor::RenderProjectMenu()
             ui::Combo("###Selector", &state->predefinedItem, predefinedNames, SDL_arraysize(predefinedNames));
 
         ui::SameLine();
-        if (ui::Button(ICON_FA_CHECK) && state->predefinedItem > 0)
+
+        const char* cantSubmitHelpText = nullptr;
+        if (state->predefinedItem == 0)
+            cantSubmitHelpText = "Parameter is not selected.";
+        else if (state->predefinedItem == 1)
         {
-            if (settings.Find(state->customName.c_str()) == settings.End())   // TODO: Show warning about duplicate name
-            {
-                if (state->predefinedItem == 1)
-                    settings.Insert({state->customName.c_str(), Variant{variantTypes[state->customType]}});
-                else
-                    settings.Insert({predefinedNames[state->predefinedItem], Variant{predefinedTypes[state->predefinedItem]}});
-                state->customName.clear();
-                state->customType = 0;
-            }
+            if (state->customName.empty())
+                cantSubmitHelpText = "Custom name can not be empty.";
+            else if (settings.Find(state->customName.c_str()) != settings.End())
+                cantSubmitHelpText = "Parameter with same name is already added.";
         }
+        else if (state->predefinedItem > 1 && settings.Find(predefinedNames[state->predefinedItem]) != settings.End())
+            cantSubmitHelpText = "Parameter with same name is already added.";
+
+        ui::PushStyleColor(ImGuiCol_Button, ui::GetStyle().Colors[cantSubmitHelpText == nullptr ? ImGuiCol_Button : ImGuiCol_TextDisabled]);
+        if (ui::Button(ICON_FA_CHECK) && cantSubmitHelpText == nullptr)
+        {
+            if (state->predefinedItem == 1)
+                settings.Insert({state->customName.c_str(), Variant{variantTypes[state->customType]}});
+            else
+                settings.Insert({predefinedNames[state->predefinedItem], Variant{predefinedTypes[state->predefinedItem]}});
+            state->customName.clear();
+            state->customType = 0;
+        }
+        ui::PopStyleColor();
+        if (cantSubmitHelpText)
+            ui::SetHelpTooltip(cantSubmitHelpText, KEY_UNKNOWN);
 
         if (state->predefinedItem == 1)
         {
