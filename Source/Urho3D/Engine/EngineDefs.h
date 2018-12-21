@@ -47,6 +47,7 @@ static const String EP_LOW_QUALITY_SHADOWS = "LowQualityShadows";
 static const String EP_MATERIAL_QUALITY = "MaterialQuality";
 static const String EP_MONITOR = "Monitor";
 static const String EP_MULTI_SAMPLE = "MultiSample";
+static const String EP_ORGANIZATION_NAME = "OrganizationName";
 static const String EP_ORIENTATIONS = "Orientations";
 static const String EP_PACKAGE_CACHE_DIR = "PackageCacheDir";
 static const String EP_RENDER_PATH = "RenderPath";
@@ -76,4 +77,5 @@ static const String EP_WINDOW_RESIZABLE = "WindowResizable";
 static const String EP_WINDOW_TITLE = "WindowTitle";
 static const String EP_WINDOW_WIDTH = "WindowWidth";
 static const String EP_WORKER_THREADS = "WorkerThreads";
+
 }

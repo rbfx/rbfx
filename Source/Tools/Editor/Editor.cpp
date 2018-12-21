@@ -727,6 +727,7 @@ void Editor::RenderProjectMenu()
             EP_MATERIAL_QUALITY.CString(),
             EP_MONITOR.CString(),
             EP_MULTI_SAMPLE.CString(),
+            EP_ORGANIZATION_NAME.CString(),
             EP_ORIENTATIONS.CString(),
             EP_PACKAGE_CACHE_DIR.CString(),
             EP_RENDER_PATH.CString(),
@@ -758,52 +759,53 @@ void Editor::RenderProjectMenu()
         };
 
         static VariantType predefinedTypes[] = {
-            VAR_NONE,
-            VAR_NONE,
-            VAR_STRING,
-            VAR_BOOL,
-            VAR_BOOL,
-            VAR_BOOL,
-            VAR_BOOL,
-            VAR_BOOL,
-            VAR_BOOL,
-            VAR_BOOL,
-            VAR_BOOL,
-            VAR_INT,
-            VAR_STRING,
-            VAR_BOOL,
-            VAR_BOOL,
-            VAR_INT,
-            VAR_INT,
-            VAR_INT,
-            VAR_STRING,
-            VAR_STRING,
-            VAR_STRING,
-            VAR_INT,
-            VAR_STRING,
-            VAR_STRING,
-            VAR_STRING,
-            VAR_STRING,
-            VAR_BOOL,
-            VAR_BOOL,
-            VAR_INT,
-            VAR_BOOL,
-            VAR_INT,
-            VAR_BOOL,
-            VAR_INT,
-            VAR_INT,
-            VAR_INT,
-            VAR_BOOL,
-            VAR_BOOL,
-            VAR_BOOL,
-            VAR_INT,
-            VAR_STRING,
-            VAR_INT,
-            VAR_INT,
-            VAR_BOOL,
-            VAR_STRING,
-            VAR_INT,
-            VAR_INT,
+            VAR_NONE,   // Select Option Name
+            VAR_NONE,   // Enter Custom
+            VAR_STRING, // EP_AUTOLOAD_PATHS
+            VAR_BOOL,   // EP_BORDERLESS
+            VAR_BOOL,   // EP_DUMP_SHADERS       
+            VAR_BOOL,   // EP_FLUSH_GPU
+            VAR_BOOL,   // EP_FORCE_GL2
+            VAR_BOOL,   // EP_FRAME_LIMITER
+            VAR_BOOL,   // EP_FULL_SCREEN
+            VAR_BOOL,   // EP_HEADLESS
+            VAR_BOOL,   // EP_HIGH_DPI
+            VAR_INT,    // EP_LOG_LEVEL
+            VAR_STRING, // EP_LOG_NAME
+            VAR_BOOL,   // EP_LOG_QUIET
+            VAR_BOOL,   // EP_LOW_QUALITY_SHADOWS
+            VAR_INT,    // EP_MATERIAL_QUALITY
+            VAR_INT,    // EP_MONITOR
+            VAR_INT,    // EP_MULTI_SAMPLE
+            VAR_STRING, // EP_ORGANIZATION_NAME
+            VAR_STRING, // EP_ORIENTATIONS
+            VAR_STRING, // EP_PACKAGE_CACHE_DIR
+            VAR_STRING, // EP_RENDER_PATH
+            VAR_INT,    // EP_REFRESH_RATE
+            VAR_STRING, // EP_RESOURCE_PACKAGES
+            VAR_STRING, // EP_RESOURCE_PATHS
+            VAR_STRING, // EP_RESOURCE_PREFIX_PATHS
+            VAR_STRING, // EP_SHADER_CACHE_DIR
+            VAR_BOOL,   // EP_SHADOWS
+            VAR_BOOL,   // EP_SOUND
+            VAR_INT,    // EP_SOUND_BUFFER
+            VAR_BOOL,   // EP_SOUND_INTERPOLATION
+            VAR_INT,    // EP_SOUND_MIX_RATE
+            VAR_BOOL,   // EP_SOUND_STEREO
+            VAR_INT,    // EP_TEXTURE_ANISOTROPY
+            VAR_INT,    // EP_TEXTURE_FILTER_MODE
+            VAR_INT,    // EP_TEXTURE_QUALITY
+            VAR_BOOL,   // EP_TOUCH_EMULATION
+            VAR_BOOL,   // EP_TRIPLE_BUFFER
+            VAR_BOOL,   // EP_VSYNC
+            VAR_INT,    // EP_WINDOW_HEIGHT
+            VAR_STRING, // EP_WINDOW_ICON
+            VAR_INT,    // EP_WINDOW_POSITION_X
+            VAR_INT,    // EP_WINDOW_POSITION_Y
+            VAR_BOOL,   // EP_WINDOW_RESIZABLE
+            VAR_STRING, // EP_WINDOW_TITLE
+            VAR_INT,    // EP_WINDOW_WIDTH
+            VAR_INT,    // EP_WORKER_THREADS
         };
 
         static_assert(SDL_arraysize(predefinedNames) == SDL_arraysize(predefinedNames), "Sizes must match.");
