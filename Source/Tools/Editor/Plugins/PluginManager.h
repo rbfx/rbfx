@@ -106,6 +106,8 @@ public:
 protected:
     /// Converts name to a full plugin file path. Returns empty string on error.
     String NameToPath(const String& name) const;
+    /// Returns path to folder where temporary copies of plugin files are stored.
+    String GetTemporaryPluginPath() const;
 
     struct DynamicLibraryInfo
     {

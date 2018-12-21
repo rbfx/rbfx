@@ -65,9 +65,10 @@ namespace EditorHost
         /// Returns a versioned path.
         private string GetNewPluginPath(string path)
         {
-            var fileDir = Path.GetDirectoryName(path);
+            // Mimics PluginManager::GetTemporaryPluginPath().
+            var tempPath = _context.GetFileSystem().GetTemporaryDir() + $"Urho3D-Editor-Plugins-{Process.GetCurrentProcess().Id}";
             var fileName = Path.GetFileNameWithoutExtension(path);
-            path = $"{fileDir}{Path.DirectorySeparatorChar}{fileName}-{Process.GetCurrentProcess().Id}-{_version}.dll";
+            path = $"{tempPath}/{fileName}{_version}.dll";
             return path;
         }
 
@@ -78,13 +79,15 @@ namespace EditorHost
 
             var pdbPath = Path.ChangeExtension(path, "pdb");
             var versionedPath = GetNewPluginPath(path);
-            var versionedPdbPath = Path.ChangeExtension(Path.GetFileName(versionedPath), "pdb");
+            Directory.CreateDirectory(Path.GetDirectoryName(versionedPath));
             Debug.Assert(versionedPath != null, $"{nameof(versionedPath)} != null");
             File.Copy(path, versionedPath, true);
 
             if (File.Exists(pdbPath))
             {
+                var versionedPdbPath = Path.ChangeExtension(versionedPath, "pdb");
                 File.Copy(pdbPath, versionedPdbPath, true);
+                versionedPdbPath = Path.GetFileName(versionedPdbPath);  // Do not include full path when patching dll
 
                 // Update .pdb path in a newly copied file
                 var pathBytes = Encoding.ASCII.GetBytes(Path.GetFileName(pdbPath)); // Does this work with i18n paths?
