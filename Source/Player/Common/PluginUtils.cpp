@@ -44,22 +44,92 @@ using Elf_Shdr = Elf32_Shdr;
 using Elf_Sym = Elf32_Sym;
 #   endif
 #endif
+#if __APPLE__
+struct mach_header
+{
+    uint32_t magic;
+    uint32_t cputype;
+    uint32_t cpusubtype;
+    uint32_t filetype;
+    uint32_t ncmds;
+    uint32_t sizeofcmds;
+    uint32_t flags;
+#if URHO3D_64BIT
+    uint32_t reserved;
+#endif
+};
 
+
+#if URHO3D_64BIT
+const unsigned MACHO_MAGIC = 0xFEEDFACF;
+#else
+const unsigned MACHO_MAGIC = 0xFEEDFACE;
+#endif
+
+struct nlist
+{
+    int32_t n_strx;
+    uint8_t n_type;
+    uint8_t n_sect;
+    int16_t n_desc;
+#if URHO3D_64BIT
+    uint64_t n_value;
+#else
+    uint32_t n_value;
+#endif
+};
+
+struct load_command
+{
+    uint32_t cmd;
+    uint32_t cmdsize;
+};
+struct symtab_command : load_command
+{
+    uint32_t symoff;
+    uint32_t nsyms;
+    uint32_t stroff;
+    uint32_t strsize;
+};
+
+struct dysymtab_command : load_command
+{
+    uint32_t ilocalsym;
+    uint32_t nlocalsym;
+    uint32_t iextdefsym;
+    uint32_t nextdefsym;
+    uint32_t iundefsym;
+    uint32_t nundefsym;
+    uint32_t tocoff;
+    uint32_t ntoc;
+    uint32_t modtaboff;
+    uint32_t nmodtab;
+    uint32_t extrefsymoff;
+    uint32_t nextrefsyms;
+    uint32_t indirectsymoff;
+    uint32_t nindirectsyms;
+    uint32_t extreloff;
+    uint32_t nextrel;
+    uint32_t locreloff;
+    uint32_t nlocrel;
+};
+#endif
 
 namespace Urho3D
 {
 
 template<typename T>
-static bool IsValidPtr(const PODVector<unsigned char>& data, T* p)
+static bool IsValidPtr(const PODVector<unsigned char>& data, const T* p)
 {
     return reinterpret_cast<std::uintptr_t>(p) >= reinterpret_cast<std::uintptr_t>(data.Buffer()) &&
            reinterpret_cast<std::uintptr_t>(p) + sizeof(T) <= reinterpret_cast<std::uintptr_t>(data.Buffer() + data.Size());
 }
 
-static bool IsValidPtr(const PODVector<unsigned char>& data, const char* p, unsigned len)
+template<typename T>
+static bool IsValidPtr(const PODVector<unsigned char>& data, const T* p, unsigned len)
 {
     return reinterpret_cast<std::uintptr_t>(p) >= reinterpret_cast<std::uintptr_t>(data.Buffer()) &&
-           reinterpret_cast<std::uintptr_t>(p) + len < reinterpret_cast<std::uintptr_t>(data.Buffer() + data.Size());
+           reinterpret_cast<std::uintptr_t>(p) + len <= reinterpret_cast<std::uintptr_t>(data.Buffer() + data.Size());
 }
 
 PluginType GetPluginType(Context* context, const String& path)
@@ -226,11 +296,70 @@ PluginType GetPluginType(Context* context, const String& path)
             }
         }
     }
-
+#if __APPLE__
     if (path.EndsWith(".dylib"))
     {
-        // TODO: MachO file support.
+        File file(context);
+        if (!file.Open(path, FILE_READ))
+            return PLUGIN_INVALID;
+
+        data.Resize(file.GetSize());
+        if (file.Read(data.Buffer(), data.Size()) != data.Size())
+            return PLUGIN_INVALID;
+
+        mach_header* hdr = reinterpret_cast<mach_header*>(data.Buffer());
+
+        if (!IsValidPtr(data, hdr) || hdr->magic != MACHO_MAGIC || hdr->filetype != 6 /*dylib*/)
+            return PLUGIN_INVALID;
+
+        symtab_command* symtab = nullptr;
+        dysymtab_command* dysymtab = nullptr;
+        unsigned offset = sizeof(mach_header);
+        for (unsigned i = 0; i < hdr->ncmds; i++)
+        {
+            load_command* cmd = reinterpret_cast<load_command*>(data.Buffer() + offset);
+            if (!IsValidPtr(data, cmd))
+                return PLUGIN_INVALID;
+
+            if (cmd->cmd == 0x2)            // SYMTAB
+            {
+                symtab = reinterpret_cast<symtab_command*>(cmd);
+                if (!IsValidPtr(data, symtab))
+                    return PLUGIN_INVALID;
+            }
+            else if (cmd->cmd == 0xB)   // DYSYMTAB
+            {
+                dysymtab = reinterpret_cast<dysymtab_command*>(cmd);
+                if (!IsValidPtr(data, dysymtab))
+                    return PLUGIN_INVALID;
+            }
+
+            if (symtab && dysymtab)
+                break;
+
+            offset += cmd->cmdsize;
+        }
+
+        if (!symtab || !dysymtab)
+            return PLUGIN_INVALID;
+
+        const char* strtab = reinterpret_cast<const char*>(data.Buffer() + symtab->stroff);
+        const nlist* lists = reinterpret_cast<nlist*>(data.Buffer() + symtab->symoff);
+
+        if (!IsValidPtr(data, lists, sizeof(nlist) * symtab->nsyms))
+            return PLUGIN_INVALID;
+
+        if (!IsValidPtr(data, strtab, symtab->strsize))
+            return PLUGIN_INVALID;
+
+        for (unsigned i = dysymtab->ilocalsym; i < dysymtab->ilocalsym + dysymtab->nlocalsym; i++)
+        {
+            const char* name = strtab + lists[i].n_strx;
+            if (strncmp(name, pluginEntryPoint, sizeof(pluginEntryPoint)) == 0)
+                return PLUGIN_NATIVE;
+        }
     }
+#endif
 #endif
     return PLUGIN_INVALID;
 }
