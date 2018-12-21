@@ -172,6 +172,8 @@ URHO3D_BINARY_COMPATIBLE_TYPE(Ray);
 %ignore Urho3D::ShaderProgram::OnDeviceLost;
 %ignore Urho3D::ShaderProgram::OnDeviceReset;
 %ignore Urho3D::ShaderProgram::Release;
+%ignore Urho3D::ShaderProgram::vsConstantBuffers_;   // Array
+%ignore Urho3D::ShaderProgram::psConstantBuffers_;   // Array
 
 // --------------------------------------- SDL ---------------------------------------
 namespace SDL
