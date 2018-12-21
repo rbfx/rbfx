@@ -227,6 +227,8 @@ PluginType GetPluginType(Context* context, const String& path)
         }
     }
 #endif
+
+#if _WIN32 || URHO3D_CSHARP
     if (path.EndsWith(".dll"))
     {
         File file(context);
@@ -256,6 +258,7 @@ PluginType GetPluginType(Context* context, const String& path)
                 return PLUGIN_MANAGED;
 #endif
         }
+#if _WIN32
         else if (eatDir.VirtualAddress > 0)
         {
             // Verify that plugin has exported function named cr_main.
@@ -295,7 +298,9 @@ PluginType GetPluginType(Context* context, const String& path)
                     return PLUGIN_NATIVE;
             }
         }
+#endif  // _WIN32
     }
+#endif  // _WIN32
 #if __APPLE__
     if (path.EndsWith(".dylib"))
     {
