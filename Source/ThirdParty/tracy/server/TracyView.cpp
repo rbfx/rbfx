@@ -267,6 +267,21 @@ static void TextFocused( const char* label, const char* value )
     ImGui::Text( "%s", value );
 }
 
+static void SetButtonHighlightColor()
+{
+    ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.35f, 0.6f, 0.6f ) );
+    ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.35f, 0.8f, 0.8f ) );
+    ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.35f, 0.7f, 0.7f ) );
+}
+
+static void ToggleButton( const char* label, bool& toggle )
+{
+    const auto active = toggle;
+    if( active ) SetButtonHighlightColor();
+    if( ImGui::Button( label ) ) toggle = !toggle;
+    if( active ) ImGui::PopStyleColor( 3 );
+}
+
 enum { MinVisSize = 3 };
 enum { MinFrameSize = 5 };
 
@@ -310,6 +325,7 @@ View::View( const char* addr, ImFont* fixedWidth, SetTitleCallback stcb )
     , m_statSort( 0 )
     , m_statSelf( false )
     , m_showCallstackFrameAddress( false )
+    , m_showUnknownFrames( true )
     , m_namespace( Namespace::Full )
     , m_textEditorFont( fixedWidth )
     , m_stcb( stcb )
@@ -358,6 +374,7 @@ View::View( FileRead& f, ImFont* fixedWidth, SetTitleCallback stcb )
     , m_statSort( 0 )
     , m_statSelf( false )
     , m_showCallstackFrameAddress( false )
+    , m_showUnknownFrames( true )
     , m_namespace( Namespace::Full )
     , m_textEditorFont( fixedWidth )
     , m_stcb( stcb )
@@ -614,45 +631,45 @@ bool View::DrawImpl()
     }
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_COG " Options" ) ) m_showOptions = true;
+    ToggleButton( ICON_FA_COG " Options", m_showOptions );
 #else
-    if( ImGui::Button( "Options" ) ) m_showOptions = true;
+    ToggleButton( "Options", m_showOptions );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_TAGS " Messages" ) ) m_showMessages = true;
+    ToggleButton( ICON_FA_TAGS " Messages", m_showMessages );
 #else
-    if( ImGui::Button( "Messages" ) ) m_showMessages = true;
+    ToggleButton( "Messages", m_showMessages );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_SEARCH " Find zone" ) ) m_findZone.show = true;
+    ToggleButton( ICON_FA_SEARCH " Find zone", m_findZone.show );
 #else
-    if( ImGui::Button( "Find zone" ) ) m_findZone.show = true;
+    ToggleButton( "Find zone", m_findZone.show );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_SORT_AMOUNT_UP " Statistics" ) ) m_showStatistics = true;
+    ToggleButton( ICON_FA_SORT_AMOUNT_UP " Statistics", m_showStatistics );
 #else
-    if( ImGui::Button( "Statistics" ) ) m_showStatistics = true;
+    ToggleButton( "Statistics", m_showStatistics );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_MEMORY " Memory" ) ) m_memInfo.show = true;
+    ToggleButton( ICON_FA_MEMORY " Memory", m_memInfo.show );
 #else
-    if( ImGui::Button( "Memory" ) ) m_memInfo.show = true;
+    ToggleButton( "Memory", m_memInfo.show );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_BALANCE_SCALE " Compare" ) ) m_compare.show = true;
+    ToggleButton( ICON_FA_BALANCE_SCALE " Compare", m_compare.show );
 #else
-    if( ImGui::Button( "Compare" ) ) m_compare.show = true;
+    ToggleButton( "Compare", m_compare.show );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_FINGERPRINT " Info" ) ) m_showInfo = true;
+    ToggleButton( ICON_FA_FINGERPRINT " Info", m_showInfo );
 #else
-    if( ImGui::Button( "Info" ) ) m_showInfo = true;
+    ToggleButton( "Info", m_showInfo );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
@@ -699,7 +716,7 @@ bool View::DrawImpl()
     }
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    m_goToFrame |= ImGui::Button( ICON_FA_CROSSHAIRS );
+    ToggleButton( ICON_FA_CROSSHAIRS, m_goToFrame );
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
@@ -707,7 +724,7 @@ bool View::DrawImpl()
         ImGui::EndTooltip();
     }
 #else
-    m_goToFrame |= ImGui::Button( "Go to" );
+    ToggleButton( "Go to", m_goToFrame );
 #endif
     ImGui::SameLine();
     ImGui::Spacing();
@@ -3551,12 +3568,15 @@ void View::DrawInfoWindow()
 }
 
 template<typename T>
-void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, BuzzAnim<const void*>& anim, View& view, std::function<void(T)> showZone )
+void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, BuzzAnim<const void*>& anim, View& view, bool& showUnknownFrames, std::function<void(T)> showZone )
 {
     bool expand = ImGui::TreeNode( "Zone trace" );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( trace.size(), true ) );
     if( !expand ) return;
+
+    ImGui::SameLine();
+    if( ImGui::SmallButton( showUnknownFrames ? "Hide unknown frames" : "Show unknown frames" ) ) showUnknownFrames = !showUnknownFrames;
 
     if( !trace.empty() )
     {
@@ -3567,7 +3587,10 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
             auto curr = trace[i];
             if( prev->callstack == 0 || curr->callstack == 0 )
             {
-                ImGui::TextDisabled( "[unknown frames]" );
+                if( showUnknownFrames )
+                {
+                    ImGui::TextDisabled( "[unknown frames]" );
+                }
             }
             else if( prev->callstack != curr->callstack )
             {
@@ -3638,7 +3661,10 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
     auto last = trace.empty() ? zone : trace.back();
     if( last->callstack == 0 )
     {
-        ImGui::TextDisabled( "[unknown frames]" );
+        if( showUnknownFrames )
+        {
+            ImGui::TextDisabled( "[unknown frames]" );
+        }
     }
     else
     {
@@ -3732,9 +3758,7 @@ void View::DrawZoneInfoWindow()
         bool hilite = m_callstackInfoWindow == ev.callstack;
         if( hilite )
         {
-            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+            SetButtonHighlightColor();
         }
 #ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
@@ -3756,9 +3780,7 @@ void View::DrawZoneInfoWindow()
         bool hilite = m_textEditorFile == fileName;
         if( hilite )
         {
-            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+            SetButtonHighlightColor();
         }
 #ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_FILE_ALT " Source" ) )
@@ -3942,7 +3964,7 @@ void View::DrawZoneInfoWindow()
          parent = GetZoneParent( *parent );
     }
     int idx = 0;
-    DrawZoneTrace<const ZoneEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, [&idx, this] ( const ZoneEvent* v ) {
+    DrawZoneTrace<const ZoneEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, m_showUnknownFrames, [&idx, this] ( const ZoneEvent* v ) {
         const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
         const auto txt = m_worker.GetZoneName( *v, srcloc );
         ImGui::PushID( idx++ );
@@ -4093,9 +4115,7 @@ void View::DrawGpuInfoWindow()
         bool hilite = m_callstackInfoWindow == ev.callstack;
         if( hilite )
         {
-            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+            SetButtonHighlightColor();
         }
 #ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
@@ -4117,9 +4137,7 @@ void View::DrawGpuInfoWindow()
         bool hilite = m_textEditorFile == fileName;
         if( hilite )
         {
-            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+            SetButtonHighlightColor();
         }
 #ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_FILE_ALT " Source" ) )
@@ -4193,7 +4211,7 @@ void View::DrawGpuInfoWindow()
         parent = GetZoneParent( *parent );
     }
     int idx = 0;
-    DrawZoneTrace<const GpuEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, [&idx, this] ( const GpuEvent* v ) {
+    DrawZoneTrace<const GpuEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, m_showUnknownFrames, [&idx, this] ( const GpuEvent* v ) {
         const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
         const auto txt = m_worker.GetZoneName( *v, srcloc );
         ImGui::PushID( idx++ );
@@ -4703,13 +4721,16 @@ void View::DrawFindZone()
         return;
     }
 
-    ImGui::InputText( "", m_findZone.pattern, 1024 );
-    ImGui::SameLine();
+    bool findClicked = false;
+
+    ImGui::PushItemWidth( -0.01f );
+    findClicked |= ImGui::InputText( "", m_findZone.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
+    ImGui::PopItemWidth();
 
 #ifdef TRACY_EXTENDED_FONT
-    const bool findClicked = ImGui::Button( ICON_FA_SEARCH " Find" );
+    findClicked |= ImGui::Button( ICON_FA_SEARCH " Find" );
 #else
-    const bool findClicked = ImGui::Button( "Find" );
+    findClicked |= ImGui::Button( "Find" );
 #endif
     ImGui::SameLine();
 
@@ -4721,6 +4742,9 @@ void View::DrawFindZone()
     {
         m_findZone.Reset();
     }
+    ImGui::SameLine();
+
+    ImGui::Checkbox( "Ignore case", &m_findZone.ignoreCase );
 
     if( findClicked )
     {
@@ -5702,13 +5726,16 @@ void View::DrawCompare()
         return;
     }
 
-    ImGui::InputText( "", m_compare.pattern, 1024 );
-    ImGui::SameLine();
+    bool findClicked = false;
+
+    ImGui::PushItemWidth( -0.01f );
+    findClicked |= ImGui::InputText( "", m_compare.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
+    ImGui::PopItemWidth();
 
 #ifdef TRACY_EXTENDED_FONT
-    const bool findClicked = ImGui::Button( ICON_FA_SEARCH " Find" );
+    findClicked |= ImGui::Button( ICON_FA_SEARCH " Find" );
 #else
-    const bool findClicked = ImGui::Button( "Find" );
+    findClicked |= ImGui::Button( "Find" );
 #endif
     ImGui::SameLine();
 
@@ -5720,6 +5747,9 @@ void View::DrawCompare()
     {
         m_compare.Reset();
     }
+    ImGui::SameLine();
+
+    ImGui::Checkbox( "Ignore case", &m_compare.ignoreCase );
 
     if( findClicked )
     {
@@ -7036,9 +7066,7 @@ void View::DrawInfo()
             bool hilite = m_callstackInfoWindow == crash.callstack;
             if( hilite )
             {
-                ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
-                ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
-                ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+                SetButtonHighlightColor();
             }
 #ifdef TRACY_EXTENDED_FONT
             if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
@@ -7126,6 +7154,54 @@ void View::DrawLockInfoWindow()
         }
     }
 
+    bool waitState = false;
+    bool holdState = false;
+    int64_t waitStartTime = 0;
+    int64_t holdStartTime = 0;
+    int64_t waitTotalTime = 0;
+    int64_t holdTotalTime = 0;
+    uint32_t maxWaitingThreads = 0;
+    for( auto& v : lock.timeline )
+    {
+        if( holdState )
+        {
+            if( v->lockCount == 0 )
+            {
+                holdTotalTime += v->time - holdStartTime;
+                holdState = false;
+            }
+        }
+        else
+        {
+            if( v->lockCount != 0 )
+            {
+                holdStartTime = v->time;
+                holdState = true;
+            }
+        }
+        if( waitState )
+        {
+            if( v->waitList == 0 )
+            {
+                waitTotalTime += v->time - waitStartTime;
+                waitState = false;
+            }
+            else
+            {
+                maxWaitingThreads = std::max<uint32_t>( maxWaitingThreads, TracyCountBits( v->waitList ) );
+            }
+        }
+        else
+        {
+            if( v->waitList != 0 )
+            {
+                waitStartTime = v->time;
+                waitState = true;
+                maxWaitingThreads = std::max<uint32_t>( maxWaitingThreads, TracyCountBits( v->waitList ) );
+            }
+        }
+    }
+
     bool visible = true;
     ImGui::Begin( "Lock info", &visible, ImGuiWindowFlags_AlwaysAutoResize );
     ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, m_worker.GetString( srcloc.function ) );
@@ -7153,6 +7229,7 @@ void View::DrawLockInfoWindow()
         }
     }
     ImGui::Separator();
+
     switch( lock.type )
     {
     case LockType::Lockable:
@@ -7166,10 +7243,25 @@ void View::DrawLockInfoWindow()
         break;
     }
     TextFocused( "Lock events:", RealToString( lock.timeline.size(), true ) );
-    TextFocused( "Announce time:", TimeToString( timeAnnounce - m_worker.GetTimeBegin() ) );
-    TextFocused( "Terminate time:", TimeToString( timeTerminate - m_worker.GetTimeBegin() ) );
-    TextFocused( "Lifetime:", TimeToString( timeTerminate - timeAnnounce ) );
     ImGui::Separator();
+
+    const auto announce = timeAnnounce - m_worker.GetTimeBegin();
+    const auto terminate = timeTerminate - m_worker.GetTimeBegin();
+    const auto lifetime = timeTerminate - timeAnnounce;
+    TextFocused( "Announce time:", TimeToString( announce ) );
+    TextFocused( "Terminate time:", TimeToString( terminate ) );
+    TextFocused( "Lifetime:", TimeToString( lifetime ) );
+    ImGui::Separator();
+
+    TextFocused( "Lock hold time:", TimeToString( holdTotalTime ) );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%.2f%%)", holdTotalTime / float( lifetime ) * 100.f );
+    TextFocused( "Lock wait time:", TimeToString( waitTotalTime ) );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%.2f%%)", waitTotalTime / float( lifetime ) * 100.f );
+    TextFocused( "Max waiting threads:", RealToString( maxWaitingThreads, true ) );
+    ImGui::Separator();
+
     const auto threadList = ImGui::TreeNode( "Thread list" );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%zu)", lock.threadList.size() );
@@ -8491,7 +8583,7 @@ const ZoneEvent* View::FindZoneAtTime( uint64_t thread, int64_t time ) const
 #ifndef TRACY_NO_STATISTICS
 void View::FindZones()
 {
-    m_findZone.match = m_worker.GetMatchingSourceLocation( m_findZone.pattern );
+    m_findZone.match = m_worker.GetMatchingSourceLocation( m_findZone.pattern, m_findZone.ignoreCase );
     if( m_findZone.match.empty() ) return;
 
     auto it = m_findZone.match.begin();
@@ -8510,7 +8602,7 @@ void View::FindZones()
 
 void View::FindZonesCompare()
 {
-    m_compare.match[0] = m_worker.GetMatchingSourceLocation( m_compare.pattern );
+    m_compare.match[0] = m_worker.GetMatchingSourceLocation( m_compare.pattern, m_compare.ignoreCase );
     if( !m_compare.match[0].empty() )
     {
         auto it = m_compare.match[0].begin();
@@ -8527,7 +8619,7 @@ void View::FindZonesCompare()
         }
     }
 
-    m_compare.match[1] = m_compare.second->GetMatchingSourceLocation( m_compare.pattern );
+    m_compare.match[1] = m_compare.second->GetMatchingSourceLocation( m_compare.pattern, m_compare.ignoreCase );
     if( !m_compare.match[1].empty() )
     {
         auto it = m_compare.match[1].begin();
@@ -8551,9 +8643,7 @@ void View::SmallCallstackButton( const char* name, uint32_t callstack, int& idx 
     bool hilite = m_callstackInfoWindow == callstack;
     if( hilite )
     {
-        ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
-        ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
-        ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+        SetButtonHighlightColor();
     }
     ImGui::PushID( idx++ );
     if( ImGui::SmallButton( name ) )

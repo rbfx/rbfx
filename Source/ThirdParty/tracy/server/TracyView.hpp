@@ -254,6 +254,7 @@ private:
     int m_statSort;
     bool m_statSelf;
     bool m_showCallstackFrameAddress;
+    bool m_showUnknownFrames;
 
     Namespace m_namespace;
     Animation m_zoomAnim;
@@ -287,6 +288,7 @@ private:
         };
 
         bool show = false;
+        bool ignoreCase = false;
         std::vector<int32_t> match;
         std::map<uint64_t, Group> groups;
         size_t processed;
@@ -365,6 +367,7 @@ private:
 
     struct {
         bool show = false;
+        bool ignoreCase = false;
         std::unique_ptr<Worker> second;
         std::thread loadThread;
         int badVer = 0;

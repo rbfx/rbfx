@@ -938,7 +938,19 @@ void Profiler::Worker()
     moodycamel::ConsumerToken token( s_queue );
 
     ListenSocket listen;
-    listen.Listen( "8086", 8 );
+    if( !listen.Listen( "8086", 8 ) )
+    {
+        for(;;)
+        {
+            if( ShouldExit() )
+            {
+                m_shutdownFinished.store( true, std::memory_order_relaxed );
+                return;
+            }
+
+            ClearQueues( token );
+        }
+    }
 
     for(;;)
     {
@@ -1074,22 +1086,7 @@ void Profiler::Worker()
                 return;
             }
 
-            while( s_queue.try_dequeue_bulk( token, m_itemBuf, BulkSize ) > 0 ) {}
-            bool lockHeld = true;
-            while( !m_serialLock.try_lock() )
-            {
-                if( m_shutdownManual.load( std::memory_order_relaxed ) )
-                {
-                    lockHeld = false;
-                    break;
-                }
-            }
-            m_serialQueue.swap( m_serialDequeue );
-            if( lockHeld )
-            {
-                m_serialLock.unlock();
-            }
-            m_serialDequeue.clear();
+            ClearQueues( token );
 
             m_sock = listen.Accept();
             if( m_sock )
@@ -1227,13 +1224,26 @@ void Profiler::ClearQueues( moodycamel::ConsumerToken& token )
         for( size_t i=0; i<sz; i++ ) FreeAssociatedMemory( m_itemBuf[i] );
     }
 
-    std::lock_guard<TracyMutex> lock( m_serialLock );
+    {
+        bool lockHeld = true;
+        while( !m_serialLock.try_lock() )
+        {
+            if( m_shutdownManual.load( std::memory_order_relaxed ) )
+            {
+                lockHeld = false;
+                break;
+            }
+        }
+        for( auto& v : m_serialQueue ) FreeAssociatedMemory( v );
+        m_serialQueue.clear();
+        if( lockHeld )
+        {
+            m_serialLock.unlock();
+        }
+    }
 
     for( auto& v : m_serialDequeue ) FreeAssociatedMemory( v );
     m_serialDequeue.clear();
-
-    for( auto& v : m_serialQueue ) FreeAssociatedMemory( v );
-    m_serialQueue.clear();
 }
 
 Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
