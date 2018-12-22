@@ -66,6 +66,8 @@
 
 #if defined(__APPLE__)
 #include <mach-o/dyld.h>
+#include <crt_externs.h>
+#define environ (*_NSGetEnviron())
 #endif
 
 extern "C"
@@ -155,7 +157,7 @@ URHO3D_FLAGSET(SystemRunFlag, SystemRunFlags);
 
 int DoSystemRun(const String& fileName, const Vector<String>& arguments, SystemRunFlags flags, String& output)
 {
-#ifdef TVOS
+#if defined(TVOS) || (defined(__ANDROID__) && __ANDROID_API__ < 28)
     return -1;
 #else
     String fixedFileName = GetNativePath(fileName);
