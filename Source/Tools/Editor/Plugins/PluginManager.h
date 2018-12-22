@@ -100,8 +100,6 @@ public:
     const StringVector& GetPluginNames();
     /// Converts relative or absolute plugin path to universal plugin name. Returns empty string on failure.
     static String PathToName(const String& path);
-    /// Delete temporary files from binary directory.
-    static void CleanUp(Context* context, String directory = String::EMPTY);
 
 protected:
     /// Converts name to a full plugin file path. Returns empty string on error.

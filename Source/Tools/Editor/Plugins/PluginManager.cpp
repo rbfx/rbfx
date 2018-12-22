@@ -298,38 +298,6 @@ void PluginManager::OnEndFrame()
 #endif
 }
 
-void PluginManager::CleanUp(Context* context, String directory)
-{
-    if (context->GetEngine()->IsHeadless())
-        // Headless worker.
-        return;
-
-    FileSystem* fs = context->GetFileSystem();
-
-#if URHO3D_PLUGINS
-    if (directory.Empty())
-        directory = fs->GetProgramDir();
-
-    if (!fs->DirExists(directory))
-        return;
-
-    StringVector files;
-    fs->ScanDir(files, directory, "*.*", SCAN_FILES, false);
-
-    for (const String& fileName : files)
-    {
-        String filePath = directory + fileName;
-        String baseName = GetFileName(fileName);
-        if (IsDigit(static_cast<unsigned int>(baseName.Back())) && GetPluginType(context, filePath) != PLUGIN_INVALID)
-        {
-            fs->Delete(filePath);
-            if (filePath.EndsWith(".dll"))
-                fs->Delete(ReplaceExtension(filePath, ".pdb"));
-        }
-    }
-#endif
-}
-
 Plugin* PluginManager::GetPlugin(const String& name)
 {
     for (auto it = plugins_.Begin(); it != plugins_.End(); it++)
