@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 #if URHO3D_PLUGINS
+#   define CR_ROLLBACK 0
 #   define CR_HOST CR_DISABLE
 #   include <cr/cr.h>
 #endif

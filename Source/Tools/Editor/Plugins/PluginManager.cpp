@@ -22,6 +22,7 @@
 
 #if URHO3D_PLUGINS
 
+#define CR_ROLLBACK 0
 #define CR_HOST CR_DISABLE
 
 #include <Urho3D/Core/CoreEvents.h>

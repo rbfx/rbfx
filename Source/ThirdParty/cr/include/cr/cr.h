@@ -226,6 +226,15 @@ Usage
 
 `static bool CR_STATE bInitialized = false;`
 
+#### `CR_ROLLBACK` macro
+
+Used to enable or disable crash handling and automatic plugin rollback. Rollback functionality is enabled by default
+except for MingW.
+
+Usage
+
+`#define CR_ROLLBACK 0`
+
 #### Overridable macros
 
 You can define these macros before including cr.h in host (CR_HOST) to customize cr.h
@@ -236,7 +245,8 @@ You can define these macros before including cr.h in host (CR_HOST) to customize
 - `CR_REALLOC`: override libc's realloc. default: #define CR_REALLOC(ptr, size) ::realloc(ptr, size)
 - `CR_MALLOC`: override libc's malloc. default: #define CR_MALLOC(size) ::malloc(size)
 - `CR_FREE`: override libc's free. default: #define CR_FREE(ptr) ::free(ptr)
-- `CR_DEBUG`: outputs debug messages in CR_LOG and CR_TRACE 
+- `CR_DEBUG`: outputs debug messages in CR_ERROR, CR_LOG and CR_TRACE
+- `CR_ERROR`: logs debug messages to stderr. default (CR_DEBUG only): #define CR_ERROR(...) fprintf(stderr, __VA_ARGS__)
 - `CR_LOG`: logs debug messages. default (CR_DEBUG only): #define CR_LOG(...) fprintf(stdout, __VA_ARGS__)
 - `CR_TRACE`: prints function calls. default (CR_DEBUG only): #define CR_TRACE(...) fprintf(stdout, "CR_TRACE: %s\n", __FUNCTION__)
 
@@ -453,6 +463,14 @@ struct cr_plugin {
 
 #else // #ifndef CR_HOST
 
+#ifdef __MINGW32__
+#define CR_ROLLBACK 0
+#else
+#ifndef CR_ROLLBACK
+#define CR_ROLLBACK 1
+#endif  // #ifndef CR_ROLLBACK
+#endif  // #ifdef __MINGW32__
+
 // Overridable macros
 #ifndef CR_LOG
 #   ifdef CR_DEBUG
@@ -460,6 +478,15 @@ struct cr_plugin {
 #       define CR_LOG(...)     fprintf(stdout, __VA_ARGS__)
 #   else
 #       define CR_LOG(...)     
+#   endif
+#endif
+
+#ifndef CR_ERROR
+#   ifdef CR_DEBUG
+#       include <stdio.h>
+#       define CR_ERROR(...)     fprintf(stderr, __VA_ARGS__)
+#   else
+#       define CR_ERROR(...)
 #   endif
 #endif
 
@@ -618,7 +645,7 @@ static bool cr_plugin_changed(cr_plugin &ctx);
 static bool cr_plugin_rollback(cr_plugin &ctx);
 static int cr_plugin_main(cr_plugin &ctx, cr_op operation);
 
-static void cr_set_temporary_path(cr_plugin& ctx, const std::string &path) {
+static void cr_set_temporary_path(cr_plugin &ctx, const std::string &path) {
     auto pimpl = (cr_internal *)ctx.p;
     pimpl->temppath = path;
 }
@@ -677,7 +704,7 @@ static bool cr_exists(const std::string &path) {
 static bool cr_copy(const std::string &from, const std::string &to) {
     std::wstring wfrom = cr_utf8_to_wstring(from);
     std::wstring wto = cr_utf8_to_wstring(to);
-    return CopyFileW(wfrom.c_str(), wto.c_str(), false) != FALSE;
+    return CopyFileW(wfrom.c_str(), wto.c_str(), false) != false;
 }
 
 static void cr_del(const std::string& path) {   
@@ -1025,7 +1052,7 @@ static void cr_so_unload(cr_plugin &ctx) {
 static so_handle cr_so_load(const std::string &filename) {
     auto new_dll = LoadLibrary(filename.c_str());
     if (!new_dll) {
-        fprintf(stderr, "Couldn't load plugin: %d\n", GetLastError());
+        CR_ERROR("Couldn't load plugin: %d\n", GetLastError());
     }
     return new_dll;
 }
@@ -1034,7 +1061,7 @@ static cr_plugin_main_func cr_so_symbol(so_handle handle) {
     CR_ASSERT(handle);
     auto new_main = (cr_plugin_main_func)GetProcAddress(handle, CR_MAIN_FUNC);
     if (!new_main) {
-        fprintf(stderr, "Couldn't find plugin entry point: %d\n",
+        CR_ERROR("Couldn't find plugin entry point: %d\n",
                 GetLastError());
     }
     return new_main;
@@ -1073,13 +1100,13 @@ static int cr_seh_filter(cr_plugin &ctx, unsigned long seh) {
 
 static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
     auto p = (cr_internal *)ctx.p;
-#ifndef __MINGW32__
+#if CR_ROLLBACK
     __try {
 #endif
         if (p->main) {
             return p->main(&ctx, operation);
         }
-#ifndef __MINGW32__
+#if CR_ROLLBACK
     } __except (cr_seh_filter(ctx, GetExceptionCode())) {
         return -1;
     }
@@ -1474,7 +1501,7 @@ static void cr_so_unload(cr_plugin &ctx) {
 
     const int r = dlclose(p->handle);
     if (r) {
-        fprintf(stderr, "Error closing plugin: %d\n", r);
+        CR_ERROR("Error closing plugin: %d\n", r);
     }
 
     p->handle = nullptr;
@@ -1485,7 +1512,7 @@ static so_handle cr_so_load(const std::string &new_file) {
     dlerror();
     auto new_dll = dlopen(new_file.c_str(), RTLD_NOW);
     if (!new_dll) {
-        fprintf(stderr, "Couldn't load plugin: %s\n", dlerror());
+        CR_ERROR("Couldn't load plugin: %s\n", dlerror());
     }
     return new_dll;
 }
@@ -1495,7 +1522,7 @@ static cr_plugin_main_func cr_so_symbol(so_handle handle) {
     dlerror();
     auto new_main = (cr_plugin_main_func)dlsym(handle, CR_MAIN_FUNC);
     if (!new_main) {
-        fprintf(stderr, "Couldn't find plugin entry point: %s\n", dlerror());
+        CR_ERROR("Couldn't find plugin entry point: %s\n", dlerror());
     }
     return new_main;
 }
@@ -1511,6 +1538,7 @@ static void cr_signal_handler(int sig, siginfo_t *si, void *uap) {
 
 static void cr_plat_init() {
     CR_TRACE
+#if CR_ROLLBACK
     struct sigaction sa;
     sa.sa_flags = SA_SIGINFO | SA_RESTART | SA_NODEFER;
     sigemptyset(&sa.sa_mask);
@@ -1520,17 +1548,18 @@ static void cr_plat_init() {
 #endif
 
     if (sigaction(SIGILL, &sa, nullptr) == -1) {
-        fprintf(stderr, "Failed to setup SIGILL handler\n");
+        CR_ERROR("Failed to setup SIGILL handler\n");
     }
     if (sigaction(SIGBUS, &sa, nullptr) == -1) {
-        fprintf(stderr, "Failed to setup SIGBUS handler\n");
+        CR_ERROR("Failed to setup SIGBUS handler\n");
     }
     if (sigaction(SIGSEGV, &sa, nullptr) == -1) {
-        fprintf(stderr, "Failed to setup SIGSEGV handler\n");
+        CR_ERROR("Failed to setup SIGSEGV handler\n");
     }
     if (sigaction(SIGABRT, &sa, nullptr) == -1) {
-        fprintf(stderr, "Failed to setup SIGABRT handler\n");
+        CR_ERROR("Failed to setup SIGABRT handler\n");
     }
+#endif
 }
 
 static cr_failure cr_signal_to_failure(int sig) {
@@ -1550,17 +1579,18 @@ static cr_failure cr_signal_to_failure(int sig) {
 }
 
 static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
+#if CR_ROLLBACK
     if (int sig = sigsetjmp(env, 1)) {
         ctx.version = ctx.version > 0 ? ctx.version - 1 : 0;
         ctx.failure = cr_signal_to_failure(sig);
         CR_LOG("1 FAILURE: %d (CR: %d)\n", sig, ctx.failure);
         return -1;
-    } else {
-        auto p = (cr_internal *)ctx.p;
-        CR_ASSERT(p);
-        if (p->main) {
-            return p->main(&ctx, operation);
-        }
+    }
+#endif
+    auto p = (cr_internal *)ctx.p;
+    CR_ASSERT(p);
+    if (p->main) {
+        return p->main(&ctx, operation);
     }
 
     return -1;
@@ -1625,7 +1655,7 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
         ctx.version++;
         CR_LOG("loaded: %s (version: %d)\n", new_file.c_str(), ctx.version);
     } else {
-        fprintf(stderr, "Error loading plugin.\n");
+        CR_ERROR("Error loading plugin.\n");
         return false;
     }
     return true;

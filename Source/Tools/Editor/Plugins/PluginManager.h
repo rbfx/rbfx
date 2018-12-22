@@ -26,10 +26,17 @@
 #if URHO3D_PLUGINS
 
 #include <atomic>
-#include <cr/cr.h>
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/IO/FileWatcher.h>
+#include <Urho3D/IO/Log.h>
 #include <Player/Common/PluginUtils.h>
+#if !defined(NDEBUG) && defined(URHO3D_LOGGING)
+#   define CR_DEBUG 1
+#   define CR_ERROR(format, ...) Urho3D::Log::Write(Urho3D::LOG_ERROR, Urho3D::ToString(format, ##__VA_ARGS__))
+#   define CR_LOG(format, ...)   Urho3D::Log::Write(Urho3D::LOG_DEBUG, Urho3D::ToString(format, ##__VA_ARGS__))
+#   define CR_TRACE
+#endif
+#include <cr/cr.h>
 
 namespace Urho3D
 {
