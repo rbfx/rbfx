@@ -268,8 +268,7 @@ bool SceneTab::RenderWindowContent()
                     UnselectAll();
                     ToggleSelection(clickNode);
                 }
-                if (undo_.IsTrackingEnabled())
-                    ui::OpenPopupEx(ui::GetID("Node context menu"));
+                ui::OpenPopupEx(ui::GetID("Node context menu"));
             }
         }
         else
@@ -695,7 +694,7 @@ void SceneTab::RenderNodeTree(Node* node)
                 UnselectAll();
             ToggleSelection(node);
         }
-        else if (ui::IsMouseClicked(MOUSEB_RIGHT) && undo_.IsTrackingEnabled())
+        else if (ui::IsMouseClicked(MOUSEB_RIGHT))
         {
             if (!IsSelected(node))
             {
@@ -845,7 +844,7 @@ void SceneTab::OnUpdate(VariantMap& args)
         StringHash activeTabType = tab->GetType();
         if (activeTabType == GetType() || activeTabType == HierarchyTab::GetTypeStatic())
         {
-            if (!ui::IsAnyItemActive() && undo_.IsTrackingEnabled())
+            if (!ui::IsAnyItemActive())
             {
                 // Global view hotkeys
                 if (GetInput()->GetKeyPress(KEY_DELETE))
@@ -946,7 +945,7 @@ void SceneTab::RestoreState(SceneState& source)
 
 void SceneTab::RenderNodeContextMenu()
 {
-    if (undo_.IsTrackingEnabled() && (!GetSelection().Empty() || !selectedComponents_.Empty()) && ui::BeginPopup("Node context menu"))
+    if ((!GetSelection().Empty() || !selectedComponents_.Empty()) && ui::BeginPopup("Node context menu"))
     {
         Input* input = GetSubsystem<Input>();
         if (input->GetKeyPress(KEY_ESCAPE) || !input->IsMouseVisible())
