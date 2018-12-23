@@ -156,11 +156,16 @@ endif ()
 
 if (WIN32)
     set(URHO3D_RENDERER D3D11 CACHE STRING "Select renderer: D3D9 | D3D11 | OpenGL")
+elseif (IOS OR ANDROID)
+    set(URHO3D_RENDERER GLES2 CACHE STRING "Select renderer: GLES2 | GLES3")
 else ()
     set(URHO3D_RENDERER OpenGL)
 endif ()
 string(TOUPPER "${URHO3D_RENDERER}" URHO3D_RENDERER)
 set (URHO3D_${URHO3D_RENDERER} ON)
+if (URHO3D_GLES2 OR URHO3D_GLES3)
+    set (URHO3D_OPENGL ON)
+endif ()
 
 # Implicit configuration
 if (ANDROID OR WEB OR IOS)

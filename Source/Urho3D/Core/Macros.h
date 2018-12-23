@@ -30,3 +30,5 @@
 #   define URHO3D_LIKELY(cond)   (cond)
 #   define URHO3D_UNLIKELY(cond) (cond)
 #endif
+
+#define URHO3D_ARRAYSIZE(array) (sizeof(array) / sizeof(array[0]))

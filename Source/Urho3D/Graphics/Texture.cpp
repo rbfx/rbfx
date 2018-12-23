@@ -150,7 +150,7 @@ int Texture::GetLevelDepth(unsigned level) const
 unsigned Texture::GetDataSize(int width, int height) const
 {
     if (IsCompressed())
-        return GetRowDataSize(width) * ((height + 3) >> 2u);
+        return GetRowDataSize(width) * ((height + 3u) >> 2u);
     else
         return GetRowDataSize(width) * height;
 }

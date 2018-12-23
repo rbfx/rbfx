@@ -48,7 +48,9 @@
 #include "../../DebugNew.h"
 
 #ifdef GL_ES_VERSION_2_0
+#ifndef GL_DEPTH_COMPONENT24
 #define GL_DEPTH_COMPONENT24 GL_DEPTH_COMPONENT24_OES
+#endif
 #define glClearDepth glClearDepthf
 #endif
 
@@ -228,12 +230,7 @@ Graphics::Graphics(Context* context) :
     hiresShadowMapFormat_(GL_DEPTH_COMPONENT24),
     shaderPath_("Shaders/GLSL/"),
     shaderExtension_(".glsl"),
-    orientations_("LandscapeLeft LandscapeRight"),
-#ifndef GL_ES_VERSION_2_0
-    apiName_("GL2")
-#else
-    apiName_("GLES2")
-#endif
+    orientations_("LandscapeLeft LandscapeRight")
 {
     SetTextureUnitMappings();
     ResetCachedState();
@@ -371,18 +368,30 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+            apiName_ = "GL3";
         }
         else
         {
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, 0);
+            apiName_ = "GL2";
         }
 #else
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+#if defined(GL_ES_VERSION_3_0)
+        if (!forceGL2_)
+        {
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+            apiName_ = "GLES3";
+        }
+        else
+#endif
+        {
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+            apiName_ = "GLES2";
+        }
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 #endif
-
         if (multiSample > 1)
         {
             SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
@@ -2106,6 +2115,12 @@ unsigned Graphics::GetFormat(CompressedFormat format) const
     case CF_ETC1:
         return etcTextureSupport_ ? GL_ETC1_RGB8_OES : 0;
 
+    case CF_ETC2_RGB:
+        return etc2TextureSupport_ ? GL_ETC2_RGB8_OES : 0;
+
+    case CF_ETC2_RGBA:
+        return etc2TextureSupport_ ? GL_ETC2_RGBA8_OES : 0;
+
     case CF_PVRTC_RGB_2BPP:
         return pvrtcTextureSupport_ ? COMPRESSED_RGB_PVRTC_2BPPV1_IMG : 0;
 
@@ -2474,17 +2489,20 @@ void Graphics::Restore()
         }
 #endif
 
-#ifndef GL_ES_VERSION_2_0
         // If we're trying to use OpenGL 3, but context creation fails, retry with 2
         if (!forceGL2_ && !impl_->context_)
         {
             forceGL2_ = true;
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#ifndef GL_ES_VERSION_2_0
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, 0);
+            apiName_ = "GL2";
+#else
+            apiName_ = "GLES2";
+#endif
             impl_->context_ = SDL_GL_CreateContext(window_);
         }
-#endif
 
 #if defined(IOS) || defined(TVOS)
         glGetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)&impl_->systemFBO_);
@@ -2542,6 +2560,17 @@ void Graphics::Restore()
         // In case of trouble or for wanting maximum compatibility, simply remove the glEnable below.
         if (gl3Support || GLEW_ARB_seamless_cube_map)
             glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+#elif defined(GL_ES_VERSION_3_0)
+        if (forceGL2_)
+        {
+            apiName_ = "GLES2";
+            gl3Support = false;
+        }
+        else
+        {
+            apiName_ = "GLES3";
+            gl3Support = true;
+        }
 #endif
 
         // Set up texture data read/write alignment. It is important that this is done before uploading any texture data
@@ -2825,6 +2854,7 @@ void Graphics::CheckFeatureSupport()
 #else
     dxtTextureSupport_ = CheckExtension("EXT_texture_compression_dxt1");
     etcTextureSupport_ = CheckExtension("OES_compressed_ETC1_RGB8_texture");
+    etc2TextureSupport_ = gl3Support || CheckExtension("OES_compressed_ETC2_RGBA8_texture");
     pvrtcTextureSupport_ = CheckExtension("IMG_texture_compression_pvrtc");
 #endif
 
@@ -2833,7 +2863,7 @@ void Graphics::CheckFeatureSupport()
         glesDepthStencilFormat = GL_DEPTH_COMPONENT24_OES;
     if (CheckExtension("GL_OES_packed_depth_stencil"))
         glesDepthStencilFormat = GL_DEPTH24_STENCIL8_OES;
-    #ifdef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
     if (!CheckExtension("WEBGL_depth_texture"))
 #else
     if (!CheckExtension("GL_OES_depth_texture"))
