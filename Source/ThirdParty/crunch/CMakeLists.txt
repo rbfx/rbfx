@@ -20,6 +20,20 @@
 # THE SOFTWARE.
 #
 
+add_library(crn_decomp INTERFACE)
+target_include_directories(crn_decomp INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+install (TARGETS crn_decomp EXPORT Urho3D)
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
+
+if (NOT URHO3D_TOOLS)
+    return ()
+endif ()
+
+if (APPLE)
+    message(WARNING "TODO: crunch does not build on MacOS")
+    return ()
+endif ()
+
 file (GLOB CRNLIB_SOURCE_FILES crnlib/*.cpp crnlib/*.h include/crunch/*.h include/crunch/*.hpp)
 foreach (path ${CRNLIB_SOURCE_FILES})
     if (WIN32)
@@ -57,12 +71,10 @@ if (MINGW AND NOT URHO3D_64BIT)
     target_compile_options(crnlib PRIVATE -fpermissive)
 endif ()
 
-if (URHO3D_TOOLS)
-    set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_TOOLS_DIR})
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_TOOLS_DIR})
 
-    file (GLOB CRUNCH_SOURCE_FILES crunch/*.cpp crunch/*.h)
-    add_executable (crunch ${CRUNCH_SOURCE_FILES})
-    target_link_libraries(crunch crnlib)
-    set_target_properties(crunch PROPERTIES FOLDER Tools)
-    install(TARGETS crunch RUNTIME DESTINATION ${DEST_TOOLS_DIR})
-endif ()
+file (GLOB CRUNCH_SOURCE_FILES crunch/*.cpp crunch/*.h)
+add_executable (crunch ${CRUNCH_SOURCE_FILES})
+target_link_libraries(crunch crnlib)
+set_target_properties(crunch PROPERTIES FOLDER Tools)
+install(TARGETS crunch RUNTIME DESTINATION ${DEST_TOOLS_DIR})
