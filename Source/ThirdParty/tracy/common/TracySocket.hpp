@@ -8,7 +8,7 @@ struct timeval;
 namespace tracy
 {
 
-#ifdef _WIN32
+#if defined _MSC_VER || defined __MINGW32__
 void InitWinSock();
 #endif
 

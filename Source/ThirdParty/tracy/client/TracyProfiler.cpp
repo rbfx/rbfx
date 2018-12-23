@@ -2,7 +2,6 @@
 
 #ifdef _WIN32
 #  include <winsock2.h>
-#  include <lmcons.h>   // required for UNLEN
 #  include <windows.h>
 #  include <tlhelp32.h>
 #else
@@ -50,7 +49,7 @@
 #  include <setjmp.h>
 #endif
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
 #  include <lmcons.h>
 extern "C" typedef LONG (WINAPI *t_RtlGetVersion)( PRTL_OSVERSIONINFOW );
 #  if _WIN32_WINNT >= _WIN32_WINNT_VISTA
@@ -186,7 +185,7 @@ static int64_t SetupHwTimer()
 static const char* GetProcessName()
 {
     const char* processName = "unknown";
-#if defined _WIN32
+#if defined _MSC_VER || defined __MINGW32__
     static char buf[_MAX_PATH];
     GetModuleFileNameA( nullptr, buf, _MAX_PATH );
     const char* ptr = buf;
@@ -355,7 +354,7 @@ static const char* GetHostInfo()
     return buf;
 }
 
-#ifdef _WIN32
+#if defined _MSC_VER || defined __MINGW32__
 static DWORD s_profilerThreadId = 0;
 static char s_crashText[1024];
 
@@ -714,7 +713,7 @@ static thread_local RPMallocThreadInit init_order(106) s_rpmalloc_thread_init;
 static thread_local moodycamel::ProducerToken init_order(107) s_token_detail( s_queue );
 thread_local ProducerWrapper init_order(108) s_token { s_queue.get_explicit_producer( s_token_detail ) };
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 // 1. Initialize these static variables before all other variables.
 #  pragma warning( disable : 4075 )
 #  pragma init_seg( ".CRT$XCB" )
@@ -742,7 +741,7 @@ thread_local LuaZoneState init_order(104) s_luaZoneState { 0, false };
 static Profiler init_order(105) s_profilerInstance;
 Profiler& s_profiler = s_profilerInstance;
 
-#ifdef _WIN32
+#if defined _MSC_VER || defined __MINGW32__
 #  define DLL_EXPORT __declspec(dllexport)
 #else
 #  define DLL_EXPORT __attribute__((visibility("default")))
@@ -818,7 +817,7 @@ Profiler::Profiler()
     assert( !s_instance );
     s_instance = this;
 
-#ifdef _WIN32
+#ifdef _MSC_VER
     // 3. But these variables need to be initialized in main thread within the .CRT$XCB section. Do it here.
     s_token_detail = moodycamel::ProducerToken( s_queue );
     s_token = ProducerWrapper { s_queue.get_explicit_producer( s_token_detail ) };
@@ -839,16 +838,14 @@ Profiler::Profiler()
     new(s_thread) Thread( LaunchWorker, this );
     SetThreadName(static_cast<std::thread::native_handle_type>(s_thread->Handle()), "Tracy Profiler" );
 
-#ifdef _WIN32
-# if defined __MINGW32__
-#  if defined PTW32_VERSION
+#if defined PTW32_VERSION
     s_profilerThreadId = pthread_getw32threadid_np( s_thread->Handle() );
-#  elif defined __WINPTHREADS_VERSION
+#elif defined __WINPTHREADS_VERSION
     s_profilerThreadId = GetThreadId( (HANDLE)pthread_gethandle( s_thread->Handle() ) );
-#  endif
-#else
+#elif defined _MSC_VER
     s_profilerThreadId = GetThreadId( s_thread->Handle() );
 #endif
+#if defined _MSC_VER || defined __MINGW32__
     AddVectoredExceptionHandler( 1, CrashFilter );
 #endif
 
