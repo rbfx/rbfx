@@ -241,7 +241,7 @@ void dgThreadHive::dgWorkerThread::ConcurrentWork(dgInt32 threadId)
 {
 	while (dgInterlockedTest(&m_concurrentWork, 1)) {
 		if (dgInterlockedExchange(&m_pendingWork, 0)) {
-			DG_TRACKTIME(__FUNCTION__);
+			//DG_TRACKTIME(__FUNCTION__);
 			RunNextJobInQueue(threadId);
 			m_jobsCount = 0;
 			dgAtomicExchangeAndAdd(&m_hive->m_syncLock, -1);

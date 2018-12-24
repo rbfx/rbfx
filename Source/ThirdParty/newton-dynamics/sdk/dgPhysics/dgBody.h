@@ -275,6 +275,7 @@ class dgBody
 			dgUnsigned32 m_sleeping					: 1;
 			dgUnsigned32 m_autoSleep				: 1;
 			dgUnsigned32 m_inCallback				: 1;
+			dgUnsigned32 m_jointSet					: 1;
 			dgUnsigned32 m_collidable				: 1;
 			dgUnsigned32 m_equilibrium				: 1;
 			dgUnsigned32 m_spawnnedFromCallback		: 1;
@@ -634,7 +635,7 @@ DG_INLINE dgInt32 dgBody::GetSerializedID() const
 DG_INLINE void dgBody::InitJointSet ()
 {
 	m_index = -1;
-	m_resting = 1;
+	m_jointSet = 1;
 	m_disjointInfo.Init (this);
 }
 

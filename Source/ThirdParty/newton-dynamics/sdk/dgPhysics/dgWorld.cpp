@@ -965,10 +965,10 @@ void dgWorld::RunStep ()
 {
 /*
 	static int zzzz;
-	if (zzzz == 100) {
+	if (zzzz == 500) {
 		DG_START_RECORDING("../../../../sdk/dProfiler/xxxx.tt");
 	}
-	if (zzzz == 400) {
+	if (zzzz == 800) {
 		DG_STOP_RECORDING();
 	}
 	zzzz++;

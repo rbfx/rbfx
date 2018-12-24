@@ -202,7 +202,7 @@ namespace Urho3D
         /// number of iterations newton will internally use per substep
         int iterationCount_ = 4;
         /// number of substeps per scene subsystem update. (1,2,4,8)
-        int subStepFactor = 2;
+        int subSteps_ = 2;
 
         float timeStepTarget_;
 

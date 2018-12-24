@@ -34,11 +34,10 @@
 
 #define DG_CCD_EXTRA_CONTACT_COUNT			(8 * 3)
 //#define DG_PARALLEL_JOINT_COUNT_CUT_OFF	(256)
-#define DG_PARALLEL_JOINT_COUNT_CUT_OFF	(128)
-//#define DG_PARALLEL_JOINT_COUNT_CUT_OFF	(1)
+//#define DG_PARALLEL_JOINT_COUNT_CUT_OFF	(128)
+#define DG_PARALLEL_JOINT_COUNT_CUT_OFF	(1)
 
 dgVector dgWorldDynamicUpdate::m_velocTol (dgFloat32 (1.0e-8f));
-
 
 class dgWorldDynamicUpdateSyncDescriptor
 {
@@ -238,6 +237,10 @@ void dgWorldDynamicUpdate::BuildClusters(dgFloat32 timestep)
 		const dgFloat32 invMass0 = body0->m_invMass.m_w;
 		const dgFloat32 invMass1 = body1->m_invMass.m_w;
 
+		dgInt32 resting = body0->m_equilibrium & body1->m_equilibrium;
+		body0->m_resting = resting | (invMass0 == dgFloat32(0.0f));
+		body1->m_resting = resting | (invMass1 == dgFloat32(0.0f));
+
 		if ((invMass0 > dgFloat32 (0.0f)) && (invMass1 > dgFloat32 (0.0f))) {
 			//dgAssert (body0->IsRTTIType(dgBody::m_dynamicBodyRTTI | dgBody::m_dynamicBodyAsymatric));
 			//dgAssert (body1->IsRTTIType(dgBody::m_dynamicBodyRTTI | dgBody::m_dynamicBodyAsymatric));
@@ -264,14 +267,14 @@ void dgWorldDynamicUpdate::BuildClusters(dgFloat32 timestep)
 		dgBody* const body = node->GetInfo().GetBody();
 		if (body->IsRTTIType(dgBody::m_dynamicBodyRTTI | dgBody::m_dynamicBodyAsymatric)) {
 			dgBody* root = body;
-			bool state = true;
+			dgInt32 state = 1;
 			do {
 				state &= (root->m_equilibrium & root->m_autoSleep);
 				root = root->m_disjointInfo.m_parent;
 			} while (root->m_disjointInfo.m_parent != root);
-			root->m_resting &= state;
+			root->m_jointSet &= state;
 
-			if (!root->m_resting && !root->m_disjointInfo.m_jointCount) {
+			if (!root->m_jointSet && !root->m_disjointInfo.m_jointCount) {
 				dgJointInfo& jointInfo = jointArray[augmentedJointCount];
 
 				dgAssert (root == body);
@@ -308,7 +311,7 @@ void dgWorldDynamicUpdate::BuildClusters(dgFloat32 timestep)
 		dgBody* const body = (constraint->GetBody0()->GetInvMass().m_w != dgFloat32 (0.0f)) ? constraint->GetBody0() : constraint->GetBody1();
 		dgAssert (body->GetInvMass().m_w);
 		dgBody* const root = world->FindRoot (body);
-		if (root->m_resting) {
+		if (root->m_jointSet) {
 			augmentedJointCount --;
 			augmentedJointArray[i] = augmentedJointArray[augmentedJointCount];
 		} else {
@@ -455,10 +458,6 @@ dgInt32 dgWorldDynamicUpdate::SortClusters(const dgBodyCluster* const cluster, d
 
 		const dgFloat32 invMass0 = body0->GetInvMass().m_w;
 		const dgFloat32 invMass1 = body1->GetInvMass().m_w;
-
-		dgInt32 resting = body0->m_equilibrium & body1->m_equilibrium;
-		body0->m_resting &= resting | (invMass0 == dgFloat32 (0.0f));
-		body1->m_resting &= resting | (invMass1 == dgFloat32 (0.0f));
 
 		if ((invMass0 == dgFloat32 (0.0f)) || (invMass1 == dgFloat32 (0.0f))) {
 			queue.Insert(&tmpInfoList[i]);

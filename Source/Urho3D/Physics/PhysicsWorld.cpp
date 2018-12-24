@@ -157,13 +157,13 @@ namespace Urho3D {
 
     void PhysicsWorld::SetSubstepFactor(int factor)
     {
-        subStepFactor = factor;
+        subSteps_ = factor;
         applyNewtonWorldSettings();
     }
 
     int PhysicsWorld::GetSubstepFactor() const
     {
-        return subStepFactor;
+        return subSteps_;
     }
 
     void PhysicsWorld::SetThreadCount(int numThreads)
@@ -223,9 +223,6 @@ namespace Urho3D {
                 //NewtonMaterialSetCompoundCollisionCallback(newtonWorld_, 0, 0, Newton_AABBCompoundOverlapCallback);
 
 
-
-                sceneBody_ = GetScene()->GetOrCreateComponent<RigidBody>();
-                sceneBody_->SetIsSceneRootBody(true);
 
 
 
@@ -644,9 +641,9 @@ namespace Urho3D {
        SendEvent(E_PHYSICSPRESTEP, eventData);
 
        //do the update.
-       Update(timeStepTarget_ / float(subStepFactor), true);
-       for(int i = 0; i < subStepFactor-1; i++)
-            Update(timeStepTarget_ / float(subStepFactor), false);
+       Update(timeStepTarget_ / float(subSteps_), true);
+       for(int i = 0; i < subSteps_-1; i++)
+            Update(timeStepTarget_ / float(subSteps_), false);
 
 
        // Send post-step event
@@ -667,7 +664,10 @@ namespace Urho3D {
 
         if (rootRate) {
 
-
+            if (!sceneBody_) {
+                sceneBody_ = GetScene()->GetOrCreateComponent<RigidBody>();
+                sceneBody_->SetIsSceneRootBody(true);
+            }
         }
 
 

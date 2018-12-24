@@ -50,7 +50,6 @@ dgWorldPlugin* GetPlugin(dgWorld* const world, dgMemoryAllocator* const allocato
 	}
 
 	static dgWorldBase module(world, allocator);
-
 	union {
 		char m_vendor[256];
 		int m_reg[3];

@@ -64,8 +64,8 @@ class dgSoaFloat
 	}
 
 	DG_INLINE dgSoaFloat(const dgVector& low, const dgVector& high)
-		:m_low(_mm_set_ps(dgFloat32(low[0]), dgFloat32(low[1]), dgFloat32(low[2]), dgFloat32(low[3])))
-		,m_high(_mm_set_ps(dgFloat32(high[0]), dgFloat32(high[1]), dgFloat32(high[2]), dgFloat32(high[3])))
+		:m_low(_mm_set_ps(dgFloat32(low[3]), dgFloat32(low[2]), dgFloat32(low[1]), dgFloat32(low[0])))
+		,m_high(_mm_set_ps(dgFloat32(high[3]), dgFloat32(high[2]), dgFloat32(high[1]), dgFloat32(high[0])))
 	{
 	}
 
@@ -221,7 +221,6 @@ class dgSolver: public dgParallelBodySolver
 	void InitBodyArray();
 	void CalculateForces();
 	void InitJacobianMatrix();
-	void CalculateBodyForce();
 	void UpdateForceFeedback();
 	void CalculateJointsForce();
 	void IntegrateBodiesVelocity();
@@ -230,9 +229,7 @@ class dgSolver: public dgParallelBodySolver
 	void CalculateBodiesAcceleration();
 	
 	void InitBodyArray(dgInt32 threadID);
-	void InitInternalForces(dgInt32 threadID);
 	void InitJacobianMatrix(dgInt32 threadID);
-	void CalculateBodyForce(dgInt32 threadID);
 	void UpdateForceFeedback(dgInt32 threadID);
 	void TransposeMassMatrix(dgInt32 threadID);
 	void CalculateJointsForce(dgInt32 threadID);
@@ -243,9 +240,7 @@ class dgSolver: public dgParallelBodySolver
 	void CalculateBodiesAcceleration(dgInt32 threadID);
 
 	static void InitBodyArrayKernel(void* const context, void* const, dgInt32 threadID);
-	static void InitInternalForcesKernel(void* const context, void* const, dgInt32 threadID);
 	static void InitJacobianMatrixKernel(void* const context, void* const, dgInt32 threadID);
-	static void CalculateBodyForceKernel(void* const context, void* const, dgInt32 threadID);
 	static void UpdateForceFeedbackKernel(void* const context, void* const, dgInt32 threadID);
 	static void TransposeMassMatrixKernel(void* const context, void* const, dgInt32 threadID);
 	static void CalculateJointsForceKernel(void* const context, void* const, dgInt32 threadID);
@@ -260,8 +255,8 @@ class dgSolver: public dgParallelBodySolver
 
 	DG_INLINE void SortWorkGroup(dgInt32 base) const;
 	DG_INLINE void TransposeRow (dgSoaMatrixElement* const row, const dgJointInfo* const jointInfoArray, dgInt32 index);
-	DG_INLINE void BuildJacobianMatrix(dgJointInfo* const jointInfo, dgLeftHandSide* const leftHandSide, dgRightHandSide* const righHandSide);
 	DG_INLINE float CalculateJointForce(const dgJointInfo* const jointInfo, dgSoaMatrixElement* const massMatrix, const dgSoaFloat* const internalForces) const;
+	DG_INLINE void BuildJacobianMatrix(dgJointInfo* const jointInfo, dgLeftHandSide* const leftHandSide, dgRightHandSide* const righHandSide, dgJacobian* const internalForces);
 
 	dgSoaFloat m_soaOne;
 	dgSoaFloat m_soaZero;

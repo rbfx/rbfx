@@ -214,6 +214,8 @@ class dgJacobianMemory
 class dgWorldDynamicUpdate
 {
 	public:
+	class dgParallelClusterArray;
+
 	dgWorldDynamicUpdate(dgMemoryAllocator* const allocator);
 	~dgWorldDynamicUpdate() {}
 	void UpdateDynamics (dgFloat32 timestep);
@@ -234,6 +236,7 @@ class dgWorldDynamicUpdate
 	dgInt32 SortClusters(const dgBodyCluster* const cluster, dgFloat32 timestep, dgInt32 threadID) const;
 	
 	static dgInt32 CompareBodyJacobianPair(const dgBodyJacobianPair* const infoA, const dgBodyJacobianPair* const infoB, void* notUsed);
+	static void IntegrateClustersParallelKernel (void* const context, void* const worldContext, dgInt32 threadID);
 	static void CalculateClusterReactionForcesKernel (void* const context, void* const worldContext, dgInt32 threadID);
 
 	void BuildJacobianMatrix (dgBodyCluster* const cluster, dgInt32 threadID, dgFloat32 timestep) const;
@@ -241,6 +244,8 @@ class dgWorldDynamicUpdate
 	void IntegrateReactionsForces(const dgBodyCluster* const cluster, dgInt32 threadID, dgFloat32 timestep) const;
 	void BuildJacobianMatrix (const dgBodyInfo* const bodyInfo, dgJointInfo* const jointInfo, dgJacobian* const internalForces, dgLeftHandSide* const matrixRow, dgRightHandSide* const rightHandSide, dgFloat32 forceImpulseScale) const;
 	void CalculateClusterReactionForces(const dgBodyCluster* const cluster, dgInt32 threadID, dgFloat32 timestep) const;
+
+	void IntegrateInslandParallel(dgParallelClusterArray* const clusters, dgInt32 threadID);
 	void CalculateReactionForcesParallel(const dgBodyCluster* const clusters, dgInt32 clustersCount, dgFloat32 timestep);
 		
 	dgFloat32 CalculateJointForce(const dgJointInfo* const jointInfo, const dgBodyInfo* const bodyArray, dgJacobian* const internalForces, const dgLeftHandSide* const matrixRow, dgRightHandSide* const rightHandSide) const;
@@ -262,7 +267,6 @@ class dgWorldDynamicUpdate
 	
 	dgParallelBodySolver m_parallelSolver;
 	static dgVector m_velocTol;
-	
 
 	friend class dgWorld;
 	friend class dgJacobianMemory;

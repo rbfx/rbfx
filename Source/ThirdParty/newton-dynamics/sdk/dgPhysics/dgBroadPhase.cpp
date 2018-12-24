@@ -1223,11 +1223,16 @@ void dgBroadPhase::AddPair (dgBody* const body0, dgBody* const body1, const dgFl
 				const dgContactMaterial* const material = &materialList->Find (key)->GetInfo();
 
 				if (material->m_flags & dgContactMaterial::m_collisionEnable) {
-					//const dgInt32 kinematicBodyEquilibrium = (((body0->IsRTTIType(dgBody::m_kinematicBodyRTTI) ? true : false) & body0->IsCollidable()) | ((body1->IsRTTIType(dgBody::m_kinematicBodyRTTI) ? true : false) & body1->IsCollidable())) ? 0 : 1;
-					//if (!(body0->m_equilibrium & body1->m_equilibrium & kinematicBodyEquilibrium)) {
-					const dgInt32 bothKinematic = body0->IsRTTIType(dgBody::m_kinematicBodyRTTI) & body1->IsRTTIType(dgBody::m_kinematicBodyRTTI);
-					const dgInt32 collisionTest = !bothKinematic && (body0->IsCollidable() & body1->IsCollidable() & !(body0->m_equilibrium & body1->m_equilibrium));
-					//if (body0->IsCollidable() & body1->IsCollidable() & !(body0->m_equilibrium & body1->m_equilibrium)) {
+
+					dgInt32 isBody0Kinematic = body0->IsRTTIType(dgBody::m_kinematicBodyRTTI);
+					dgInt32 isBody1Kinematic = body1->IsRTTIType(dgBody::m_kinematicBodyRTTI);
+					//const dgInt32 kinematicTest = !(((isBody0Kinematic && body0->IsCollidable()) || (isBody1Kinematic && body1->IsCollidable())));
+					//const dgInt32 kinematicTest0 = !(isBody0Kinematic && isBody1Kinematic);
+					//const dgInt32 kinematicTest1 = kinematicTest0 && !((isBody0Kinematic && body0->IsCollidable()) || (isBody0Kinematic && body1->IsCollidable()));
+					//const dgInt32 collisionTest = kinematicTest1 && !(body0->m_equilibrium & body1->m_equilibrium);
+
+					const dgInt32 kinematicTest = !((isBody0Kinematic && isBody1Kinematic) || ((isBody0Kinematic && body0->IsCollidable()) || (isBody0Kinematic && body1->IsCollidable())));
+					const dgInt32 collisionTest = kinematicTest && !(body0->m_equilibrium & body1->m_equilibrium);
 					if (collisionTest) {
 						const dgInt32 isSofBody0 = body0->m_collision->IsType(dgCollision::dgCollisionLumpedMass_RTTI);
 						const dgInt32 isSofBody1 = body1->m_collision->IsType(dgCollision::dgCollisionLumpedMass_RTTI);
@@ -1788,7 +1793,7 @@ void dgBroadPhase::UpdateContacts(dgFloat32 timestep)
 	m_world->SynchronizationBarrier();
 
 	AttachNewContacts(lastNode);
-	dgAssert(SanityCheck());
+//	dgAssert(SanityCheck());
 
 	dgContactList::dgListNode* contactListNode = contactList->GetFirst();
 	for (dgInt32 i = 0; i < threadsCount; i++) {
