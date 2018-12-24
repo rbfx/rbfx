@@ -106,6 +106,8 @@ protected:
     bool sceneMouseVisible_ = true;
     /// Mouse mode expected by the played scene. Will be set when input is grabbed.
     MouseMode sceneMouseMode_ = MM_FREE;
+    /// Ratio for dimming non-scene windows when scene is being played.
+    float dim_ = 0.0f;
 };
 
 }

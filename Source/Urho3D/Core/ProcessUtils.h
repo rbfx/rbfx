@@ -81,5 +81,7 @@ URHO3D_API String GetHostName();
 URHO3D_API String GetOSVersion();
 /// Return a random UUID.
 URHO3D_API String GenerateUUID();
+/// Return current process ID.
+URHO3D_API unsigned GetCurrentProcessID();
 
 }

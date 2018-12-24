@@ -64,6 +64,8 @@ private:
         Short
     };
 
+    enum { InvalidId = 0xFFFFFFFF };
+
     void InitTextEditor();
 
     const char* ShortenNamespace( const char* name ) const;
@@ -73,7 +75,7 @@ private:
     void DrawTextContrast( ImDrawList* draw, const ImVec2& pos, uint32_t color, const char* text );
 
     bool DrawImpl();
-    void DrawConnection();
+    bool DrawConnection();
     void DrawFrames();
     bool DrawZoneFramesHeader();
     bool DrawZoneFrames( const FrameData& frames );
@@ -100,6 +102,7 @@ private:
     void DrawInfo();
     void DrawTextEditor();
     void DrawGoToFrame();
+    void DrawLockInfoWindow();
 
     template<class T>
     void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr );
@@ -228,6 +231,7 @@ private:
     int64_t m_memoryAllocHover;
     int m_memoryAllocHoverWait;
     const FrameData* m_frames;
+    uint32_t m_lockInfoWindow;
 
     Region m_highlight;
     Region m_highlightZoom;
@@ -250,6 +254,7 @@ private:
     int m_statSort;
     bool m_statSelf;
     bool m_showCallstackFrameAddress;
+    bool m_showUnknownFrames;
 
     Namespace m_namespace;
     Animation m_zoomAnim;
@@ -258,6 +263,7 @@ private:
     BuzzAnim<const void*> m_zoneinfoBuzzAnim;
     BuzzAnim<int> m_findZoneBuzzAnim;
     BuzzAnim<uint32_t> m_optionsLockBuzzAnim;
+    BuzzAnim<uint32_t> m_lockInfoAnim;
 
     Vector<const ZoneEvent*> m_zoneInfoStack;
     Vector<const GpuEvent*> m_gpuInfoStack;
@@ -282,6 +288,7 @@ private:
         };
 
         bool show = false;
+        bool ignoreCase = false;
         std::vector<int32_t> match;
         std::map<uint64_t, Group> groups;
         size_t processed;
@@ -360,6 +367,7 @@ private:
 
     struct {
         bool show = false;
+        bool ignoreCase = false;
         std::unique_ptr<Worker> second;
         std::thread loadThread;
         int badVer = 0;

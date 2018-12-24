@@ -105,7 +105,7 @@ if (MINI_URHO)
     list (REMOVE_ITEM SOURCE_FILES UI/FontFaceFreeType.cpp)
 endif ()
 
-add_library(Urho3D ${SOURCE_FILES} ${HEADER_FILES})
+add_library(Urho3D ${SOURCE_FILES} ${HEADER_FILES} $<$<CXX_COMPILER_ID:MSVC>:${Urho3D_SOURCE_DIR}/script/Urho3D.natvis>)
 target_include_directories(Urho3D PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>        # For parent projects to find auto-generated engine headers
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>        # For parent projects to find engine headers
@@ -296,7 +296,11 @@ if (URHO3D_OPENGL)
     elseif (WIN32)
         target_link_libraries (Urho3D PUBLIC opengl32)
     elseif (ANDROID OR ARM)
-        target_link_libraries (Urho3D PUBLIC GLESv1_CM GLESv2)
+        if (URHO3D_GLES2)
+            target_link_libraries (Urho3D PUBLIC GLESv1_CM GLESv2)
+        elseif (URHO3D_GLES3)
+            target_link_libraries (Urho3D PUBLIC GLESv3)
+        endif ()
     else ()
         target_link_libraries (Urho3D PUBLIC GL)
     endif ()

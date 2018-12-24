@@ -4,6 +4,13 @@
 #  include <sys/time.h>
 #endif
 
+#if defined _MSC_VER || defined __MINGW32__
+#  include <malloc.h>
+#else
+#  include <alloca.h>
+#endif
+
+#include <cctype>
 #include <chrono>
 #include <mutex>
 #include <string.h>
@@ -511,6 +518,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Read( lockmap.srcloc );
             f.Read( lockmap.type );
             f.Read( lockmap.valid );
+            if( fileVer >= FileVersion( 0, 4, 1 ) )
+            {
+                f.Read2( lockmap.timeAnnounce, lockmap.timeTerminate );
+            }
+            else
+            {
+                lockmap.timeAnnounce = lockmap.timeTerminate = 0;
+            }
             f.Read( tsz );
             for( uint64_t i=0; i<tsz; i++ )
             {
@@ -1207,7 +1222,26 @@ const char* Worker::GetZoneName( const GpuEvent& ev, const SourceLocation& srclo
     }
 }
 
-std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query ) const
+static bool strstr_nocase( const char* l, const char* r )
+{
+    const auto lsz = strlen( l );
+    const auto rsz = strlen( r );
+    auto ll = (char*)alloca( lsz + 1 );
+    auto rl = (char*)alloca( lsz + 1 );
+    for( size_t i=0; i<lsz; i++ )
+    {
+        ll[i] = tolower( l[i] );
+    }
+    ll[lsz] = '\0';
+    for( size_t i=0; i<rsz; i++ )
+    {
+        rl[i] = tolower( r[i] );
+    }
+    rl[rsz] = '\0';
+    return strstr( ll, rl ) != nullptr;
+}
+
+std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query, bool ignoreCase ) const
 {
     std::vector<int32_t> match;
 
@@ -1218,7 +1252,16 @@ std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query ) cons
         assert( it != m_data.sourceLocation.end() );
         const auto& srcloc = it->second;
         const auto str = GetString( srcloc.name.active ? srcloc.name : srcloc.function );
-        if( strstr( str, query ) != nullptr )
+        bool found = false;
+        if( ignoreCase )
+        {
+            found = strstr_nocase( str, query );
+        }
+        else
+        {
+            found = strstr( str, query ) != nullptr;
+        }
+        if( found )
         {
             match.push_back( (int32_t)i );
         }
@@ -1227,7 +1270,16 @@ std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query ) cons
     for( auto& srcloc : m_data.sourceLocationPayload )
     {
         const auto str = GetString( srcloc->name.active ? srcloc->name : srcloc->function );
-        if( strstr( str, query ) != nullptr )
+        bool found = false;
+        if( ignoreCase )
+        {
+            found = strstr_nocase( str, query );
+        }
+        else
+        {
+            found = strstr( str, query ) != nullptr;
+        }
+        if( found )
         {
             auto it = m_data.sourceLocationPayloadMap.find( srcloc );
             assert( it != m_data.sourceLocationPayloadMap.end() );
@@ -1951,6 +2003,9 @@ void Worker::Process( const QueueItem& ev )
     case QueueType::LockAnnounce:
         ProcessLockAnnounce( ev.lockAnnounce );
         break;
+    case QueueType::LockTerminate:
+        ProcessLockTerminate( ev.lockTerminate );
+        break;
     case QueueType::LockWait:
         ProcessLockWait( ev.lockWait );
         break;
@@ -2225,6 +2280,8 @@ void Worker::ProcessLockAnnounce( const QueueLockAnnounce& ev )
         LockMap lm;
         lm.srcloc = ShrinkSourceLocation( ev.lckloc );
         lm.type = ev.type;
+        lm.timeAnnounce = TscTime( ev.time );
+        lm.timeTerminate = 0;
         lm.valid = true;
         m_data.lockMap.emplace( ev.id, std::move( lm ) );
     }
@@ -2232,9 +2289,29 @@ void Worker::ProcessLockAnnounce( const QueueLockAnnounce& ev )
     {
         it->second.srcloc = ShrinkSourceLocation( ev.lckloc );
         assert( it->second.type == ev.type );
+        it->second.timeAnnounce = TscTime( ev.time );
         it->second.valid = true;
     }
     CheckSourceLocation( ev.lckloc );
+}
+
+void Worker::ProcessLockTerminate( const QueueLockTerminate& ev )
+{
+    auto it = m_data.lockMap.find( ev.id );
+    if( it == m_data.lockMap.end() )
+    {
+        LockMap lm;
+        lm.type = ev.type;
+        lm.timeAnnounce = 0;
+        lm.timeTerminate = TscTime( ev.time );
+        lm.valid = false;
+        m_data.lockMap.emplace( ev.id, std::move( lm ) );
+    }
+    else
+    {
+        assert( it->second.type == ev.type );
+        it->second.timeTerminate = TscTime( ev.time );
+    }
 }
 
 void Worker::ProcessLockWait( const QueueLockWait& ev )
@@ -2243,6 +2320,8 @@ void Worker::ProcessLockWait( const QueueLockWait& ev )
     if( it == m_data.lockMap.end() )
     {
         LockMap lm;
+        lm.timeAnnounce = 0;
+        lm.timeTerminate = 0;
         lm.valid = false;
         lm.type = ev.type;
         it = m_data.lockMap.emplace( ev.id, std::move( lm ) ).first;
@@ -2596,6 +2675,8 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
 
 bool Worker::ProcessMemFree( const QueueMemFree& ev )
 {
+    if( ev.ptr == 0 ) return false;
+
     auto it = m_data.memory.active.find( ev.ptr );
     if( it == m_data.memory.active.end() )
     {
@@ -3188,6 +3269,8 @@ void Worker::Write( FileWrite& f )
         f.Write( &v.second.srcloc, sizeof( v.second.srcloc ) );
         f.Write( &v.second.type, sizeof( v.second.type ) );
         f.Write( &v.second.valid, sizeof( v.second.valid ) );
+        f.Write( &v.second.timeAnnounce, sizeof( v.second.timeAnnounce ) );
+        f.Write( &v.second.timeTerminate, sizeof( v.second.timeTerminate ) );
         sz = v.second.threadList.size();
         f.Write( &sz, sizeof( sz ) );
         for( auto& t : v.second.threadList )

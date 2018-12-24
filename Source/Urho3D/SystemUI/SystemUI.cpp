@@ -101,6 +101,7 @@ SystemUI::SystemUI(Urho3D::Context* context)
     SubscribeToEvent(E_ENDRENDERING, [this](StringHash, VariantMap&)
     {
         URHO3D_PROFILE("SystemUiRender");
+        SendEvent(E_ENDRENDERINGSYSTEMUI);
         ImGui::Render();
         OnRenderDrawLists(ImGui::GetDrawData());
     });

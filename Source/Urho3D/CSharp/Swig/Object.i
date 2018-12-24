@@ -5,9 +5,7 @@
     %ignore Urho3D::Context::RegisterSubsystem(name*);
 %enddef
 
-IGNORE_SUBSYSTEM(FileSystem)
 IGNORE_SUBSYSTEM(WorkQueue)
-IGNORE_SUBSYSTEM(Network)
 IGNORE_SUBSYSTEM(Tasks)
 
 %typemap(csout, excode=SWIGEXCODE) Urho3D::StringHash GetType {

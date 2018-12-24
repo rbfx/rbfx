@@ -1,7 +1,7 @@
 #ifndef __TRACYCALLSTACK_HPP__
 #define __TRACYCALLSTACK_HPP__
 
-#if defined _MSC_VER || defined __CYGWIN__
+#if defined _WIN32
 #  define TRACY_HAS_CALLSTACK 1
 extern "C"
 {

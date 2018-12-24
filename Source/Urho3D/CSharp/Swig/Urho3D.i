@@ -172,6 +172,8 @@ URHO3D_BINARY_COMPATIBLE_TYPE(Ray);
 %ignore Urho3D::ShaderProgram::OnDeviceLost;
 %ignore Urho3D::ShaderProgram::OnDeviceReset;
 %ignore Urho3D::ShaderProgram::Release;
+%ignore Urho3D::ShaderProgram::vsConstantBuffers_;   // Array
+%ignore Urho3D::ShaderProgram::psConstantBuffers_;   // Array
 
 // --------------------------------------- SDL ---------------------------------------
 namespace SDL
@@ -259,6 +261,8 @@ namespace SDL
 %include "Urho3D/Input/Input.h"
 
 // --------------------------------------- IO ---------------------------------------
+%ignore Urho3D::GetWideNativePath;
+
 %interface_custom("%s", "I%s", Urho3D::Serializer);
 %include "Urho3D/IO/Serializer.h"
 %interface_custom("%s", "I%s", Urho3D::Deserializer);
@@ -271,6 +275,7 @@ namespace SDL
 %include "Urho3D/IO/MemoryBuffer.h"
 %include "Urho3D/IO/PackageFile.h"
 %include "Urho3D/IO/VectorBuffer.h"
+%include "Urho3D/IO/FileSystem.h"
 
 // --------------------------------------- Resource ---------------------------------------
 %ignore Urho3D::XMLFile::GetDocument;
@@ -671,6 +676,7 @@ public:
 %ignore Urho3D::TileMapLayer2D::Initialize;
 %ignore Urho3D::TileMapLayer2D::GetTmxLayer;
 %ignore Urho3D::Drawable2D::sourceBatches_;
+%ignore Urho3D::TileMap2D::GetTmxFile;
 
 %include "Urho3D/Urho2D/Drawable2D.h"
 %include "Urho3D/Urho2D/StaticSprite2D.h"

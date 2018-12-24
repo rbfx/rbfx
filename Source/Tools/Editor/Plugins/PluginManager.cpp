@@ -22,6 +22,7 @@
 
 #if URHO3D_PLUGINS
 
+#define CR_ROLLBACK 0
 #define CR_HOST CR_DISABLE
 
 #include <Urho3D/Core/CoreEvents.h>
@@ -91,7 +92,6 @@ PluginManager::PluginManager(Context* context)
     : Object(context)
 {
 #if URHO3D_PLUGINS
-    CleanUp();
     SubscribeToEvent(E_ENDFRAMEPRIVATE, [this](StringHash, VariantMap&) { OnEndFrame(); });
     SubscribeToEvent(E_SIMULATIONSTART, [this](StringHash, VariantMap&) {
         for (auto& plugin : plugins_)
@@ -132,6 +132,11 @@ Plugin* PluginManager::Load(const String& name)
         if (cr_plugin_load(plugin->nativeContext_, pluginPath.CString()))
         {
             plugin->nativeContext_.userdata = context_;
+
+            String pluginTemp = GetTemporaryPluginPath();
+            GetFileSystem()->CreateDirsRecursive(pluginTemp);
+            cr_set_temporary_path(plugin->nativeContext_, pluginTemp.CString());
+
             plugin->name_ = name;
             plugin->path_ = pluginPath;
             plugin->mtime_ = GetFileSystem()->GetLastModifiedTime(pluginPath);
@@ -274,14 +279,16 @@ void PluginManager::OnEndFrame()
                     GetFileNameAndExtension(plugin->name_).CString());
                 cr_plugin_close(plugin->nativeContext_);
                 plugin->nativeContext_.userdata = nullptr;
+                it = plugins_.Erase(it);
             }
             else if (reloading && plugin->nativeContext_.userdata != nullptr)
             {
                 URHO3D_LOGINFOF("Loaded plugin \"%s\" version %d.", GetFileNameAndExtension(plugin->name_).CString(),
                     plugin->nativeContext_.version);
+                it++;
             }
-
-            it++;
+            else
+                it++;
         }
         else
             it++;
@@ -289,32 +296,6 @@ void PluginManager::OnEndFrame()
 
     if (eventSent)
         SendEvent(E_EDITORUSERCODERELOADEND);
-#endif
-}
-
-void PluginManager::CleanUp(String directory)
-{
-#if URHO3D_PLUGINS
-    if (directory.Empty())
-        directory = GetFileSystem()->GetProgramDir();
-
-    if (!GetFileSystem()->DirExists(directory))
-        return;
-
-    StringVector files;
-    GetFileSystem()->ScanDir(files, directory, "*.*", SCAN_FILES, false);
-
-    for (const String& fileName : files)
-    {
-        String filePath = directory + fileName;
-        String baseName = GetFileName(fileName);
-        if (IsDigit(static_cast<unsigned int>(baseName.Back())) && GetPluginType(context_, filePath) != PLUGIN_INVALID)
-        {
-            GetFileSystem()->Delete(filePath);
-            if (filePath.EndsWith(".dll"))
-                GetFileSystem()->Delete(ReplaceExtension(filePath, ".pdb"));
-        }
-    }
 #endif
 }
 
@@ -352,6 +333,11 @@ String PluginManager::NameToPath(const String& name) const
     return String::EMPTY;
 }
 
+String PluginManager::GetTemporaryPluginPath() const
+{
+    return GetFileSystem()->GetTemporaryDir() + ToString("Urho3D-Editor-Plugins-%d/", GetCurrentProcessID());
+}
+
 String PluginManager::PathToName(const String& path)
 {
 #if !_WIN32
@@ -384,6 +370,8 @@ PluginManager::~PluginManager()
     // Managed plugins can not be unloaded one at a time. Entire plugin AppDomain must be dropped.
     GetSubsystem<Script>()->UnloadRuntime();
 #endif
+
+    GetFileSystem()->RemoveDir(GetTemporaryPluginPath(), true);
 }
 
 const StringVector& PluginManager::GetPluginNames()

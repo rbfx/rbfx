@@ -1,4 +1,4 @@
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
 # ifndef WIN32_LEAN_AND_MEAN
 #  define WIN32_LEAN_AND_MEAN
 # endif
@@ -8,7 +8,7 @@
 #endif
 #ifdef _WIN32
 #  include <windows.h>
-#  include <cinttypes> // Urho3D: Needed for PRIu64
+#  include <cinttypes> // needed for PRIu64
 #else
 #  include <pthread.h>
 #  include <string.h>
@@ -69,7 +69,7 @@ void SetThreadName( std::thread::native_handle_type handle, const char* name )
     };
 #    pragma pack(pop)
 
-    DWORD ThreadId = GetThreadId( reinterpret_cast<HANDLE>( handle ) );
+    DWORD ThreadId = GetThreadId( static_cast<HANDLE>( handle ) );
     THREADNAME_INFO info;
     info.dwType = 0x1000;
     info.szName = name;
@@ -109,7 +109,13 @@ void SetThreadName( std::thread::native_handle_type handle, const char* name )
         buf[sz+1] = '\0';
         auto data = (ThreadNameData*)tracy_malloc( sizeof( ThreadNameData ) );
 #  ifdef _WIN32
-        data->id = GetThreadId( reinterpret_cast<HANDLE>( handle ) );
+#    if defined PTW32_VERSION
+        data->id = pthread_getw32threadid_np( static_cast<pthread_t>( handle ) );
+#    elif defined __WINPTHREADS_VERSION
+        data->id = GetThreadId( pthread_gethandle( static_cast<pthread_t>( handle ) ) );
+#    else
+        data->id = GetThreadId( static_cast<HANDLE>( handle ) );
+#    endif
 #  elif defined __APPLE__
         pthread_threadid_np( handle, &data->id );
 #  else

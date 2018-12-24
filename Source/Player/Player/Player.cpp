@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 #if URHO3D_PLUGINS
+#   define CR_ROLLBACK 0
 #   define CR_HOST CR_DISABLE
 #   include <cr/cr.h>
 #endif
@@ -218,14 +219,14 @@ bool Player::LoadAssembly(const String& path, PluginType assumeType)
 
     if (assumeType == PLUGIN_NATIVE)
     {
-        cr_plugin dummy{};
-        dummy.userdata = reinterpret_cast<void*>(context_);
-        auto sharedLibrary = cr_so_load(dummy, path.CString());
+        auto sharedLibrary = cr_so_load(path.CString());
         if (sharedLibrary != nullptr)
         {
             cr_plugin_main_func pluginMain = cr_so_symbol(sharedLibrary);
             if (pluginMain)
             {
+                cr_plugin dummy{};
+                dummy.userdata = reinterpret_cast<void*>(context_);
                 if (pluginMain(&dummy, CR_LOAD) == 0)
                 {
                     plugins_.Push(SharedPtr<PluginApplication>(reinterpret_cast<PluginApplication*>(dummy.userdata)));

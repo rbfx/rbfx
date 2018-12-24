@@ -27,6 +27,7 @@
 #include <Urho3D/Engine/EngineEvents.h>
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/WorkQueue.h>
+#include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -155,6 +156,8 @@ void Editor::Start()
 
     Inspectable::Material::RegisterObject(context_);
 
+    GetLog()->SetTimeStampFormat("%H:%M:%S");
+
     if (!converterName_.Empty())
         InitializeConverter();
     else
@@ -167,7 +170,6 @@ void Editor::InitializeEditor()
     context_->RegisterSubsystem(new EditorIconCache(context_));
     GetInput()->SetMouseMode(MM_ABSOLUTE);
     GetInput()->SetMouseVisible(true);
-    GetLog()->SetTimeStampFormat("%H:%M:%S");
 
     GetCache()->SetAutoReloadResources(true);
     engine_->SetAutoExit(false);
@@ -318,41 +320,62 @@ void Editor::OnUpdate(VariantMap& args)
     // Dialog for a warning when application is being closed with unsaved resources.
     if (exiting_)
     {
-        if (!hasModified)
-            engine_->Exit();
-        else if (!ui::IsPopupOpen("Save All?"))
-            ui::OpenPopup("Save All?");
-    }
-
-    if (ui::BeginPopupModal("Save All?", &exiting_, ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_Popup))
-    {
-        ui::TextUnformatted("You have unsaved resources. Save them before exiting?");
-
-        if (ui::Button(ICON_FA_SAVE " Save & Close"))
+        if (!GetWorkQueue()->IsCompleted(0))
         {
-            for (auto& tab : tabs_)
+            ui::OpenPopup("Completing Tasks");
+
+            if (ui::BeginPopupModal("Completing Tasks", nullptr, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoResize |
+                                                                 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_Popup))
             {
-                if (tab->IsModified())
-                    tab->SaveResource();
+                ui::TextUnformatted("Some tasks are in progress and are being completed. Please wait.");
+                static float totalIncomplete = GetWorkQueue()->GetNumIncomplete(0);
+                ui::ProgressBar(100.f / totalIncomplete * Min(totalIncomplete - (float)GetWorkQueue()->GetNumIncomplete(0), totalIncomplete));
+                ui::EndPopup();
             }
-            engine_->Exit();
         }
-
-        ui::SameLine();
-
-        if (ui::Button(ICON_FA_EXCLAMATION_TRIANGLE " Close without saving"))
-            engine_->Exit();
-        ui::SetHelpTooltip(ICON_FA_EXCLAMATION_TRIANGLE " All unsaved changes will be lost!", KEY_UNKNOWN);
-
-        ui::SameLine();
-
-        if (ui::Button(ICON_FA_TIMES " Cancel"))
+        else if (hasModified)
         {
-            exiting_ = false;
-            ui::CloseCurrentPopup();
-        }
+            ui::OpenPopup("Save All?");
 
-        ui::EndPopup();
+            if (ui::BeginPopupModal("Save All?", nullptr, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoResize |
+                                                          ImGuiWindowFlags_NoMove | ImGuiWindowFlags_Popup))
+            {
+                ui::TextUnformatted("You have unsaved resources. Save them before exiting?");
+
+                if (ui::Button(ICON_FA_SAVE " Save & Close"))
+                {
+                    for (auto& tab : tabs_)
+                    {
+                        if (tab->IsModified())
+                            tab->SaveResource();
+                    }
+                    ui::CloseCurrentPopup();
+                }
+
+                ui::SameLine();
+
+                if (ui::Button(ICON_FA_EXCLAMATION_TRIANGLE " Close without saving"))
+                {
+                    engine_->Exit();
+                }
+                ui::SetHelpTooltip(ICON_FA_EXCLAMATION_TRIANGLE " All unsaved changes will be lost!", KEY_UNKNOWN);
+
+                ui::SameLine();
+
+                if (ui::Button(ICON_FA_TIMES " Cancel"))
+                {
+                    exiting_ = false;
+                    ui::CloseCurrentPopup();
+                }
+
+                ui::EndPopup();
+            }
+        }
+        else
+        {
+            GetWorkQueue()->Complete(0);
+            engine_->Exit();
+        }
     }
 }
 
@@ -675,11 +698,113 @@ void Editor::RenderProjectMenu()
             "String",
         };
 
+        static const char* predefinedNames[] = {
+            "Select Option Name",
+            "Enter Custom",
+            EP_AUTOLOAD_PATHS.CString(),
+            EP_BORDERLESS.CString(),
+            EP_DUMP_SHADERS.CString(),
+            EP_FLUSH_GPU.CString(),
+            EP_FORCE_GL2.CString(),
+            EP_FRAME_LIMITER.CString(),
+            EP_FULL_SCREEN.CString(),
+            EP_HEADLESS.CString(),
+            EP_HIGH_DPI.CString(),
+            EP_LOG_LEVEL.CString(),
+            EP_LOG_NAME.CString(),
+            EP_LOG_QUIET.CString(),
+            EP_LOW_QUALITY_SHADOWS.CString(),
+            EP_MATERIAL_QUALITY.CString(),
+            EP_MONITOR.CString(),
+            EP_MULTI_SAMPLE.CString(),
+            EP_ORGANIZATION_NAME.CString(),
+            EP_ORIENTATIONS.CString(),
+            EP_PACKAGE_CACHE_DIR.CString(),
+            EP_RENDER_PATH.CString(),
+            EP_REFRESH_RATE.CString(),
+            EP_RESOURCE_PACKAGES.CString(),
+            EP_RESOURCE_PATHS.CString(),
+            EP_RESOURCE_PREFIX_PATHS.CString(),
+            EP_SHADER_CACHE_DIR.CString(),
+            EP_SHADOWS.CString(),
+            EP_SOUND.CString(),
+            EP_SOUND_BUFFER.CString(),
+            EP_SOUND_INTERPOLATION.CString(),
+            EP_SOUND_MIX_RATE.CString(),
+            EP_SOUND_STEREO.CString(),
+            EP_TEXTURE_ANISOTROPY.CString(),
+            EP_TEXTURE_FILTER_MODE.CString(),
+            EP_TEXTURE_QUALITY.CString(),
+            EP_TOUCH_EMULATION.CString(),
+            EP_TRIPLE_BUFFER.CString(),
+            EP_VSYNC.CString(),
+            EP_WINDOW_HEIGHT.CString(),
+            EP_WINDOW_ICON.CString(),
+            EP_WINDOW_POSITION_X.CString(),
+            EP_WINDOW_POSITION_Y.CString(),
+            EP_WINDOW_RESIZABLE.CString(),
+            EP_WINDOW_TITLE.CString(),
+            EP_WINDOW_WIDTH.CString(),
+            EP_WORKER_THREADS.CString(),
+        };
+
+        static VariantType predefinedTypes[] = {
+            VAR_NONE,   // Select Option Name
+            VAR_NONE,   // Enter Custom
+            VAR_STRING, // EP_AUTOLOAD_PATHS
+            VAR_BOOL,   // EP_BORDERLESS
+            VAR_BOOL,   // EP_DUMP_SHADERS       
+            VAR_BOOL,   // EP_FLUSH_GPU
+            VAR_BOOL,   // EP_FORCE_GL2
+            VAR_BOOL,   // EP_FRAME_LIMITER
+            VAR_BOOL,   // EP_FULL_SCREEN
+            VAR_BOOL,   // EP_HEADLESS
+            VAR_BOOL,   // EP_HIGH_DPI
+            VAR_INT,    // EP_LOG_LEVEL
+            VAR_STRING, // EP_LOG_NAME
+            VAR_BOOL,   // EP_LOG_QUIET
+            VAR_BOOL,   // EP_LOW_QUALITY_SHADOWS
+            VAR_INT,    // EP_MATERIAL_QUALITY
+            VAR_INT,    // EP_MONITOR
+            VAR_INT,    // EP_MULTI_SAMPLE
+            VAR_STRING, // EP_ORGANIZATION_NAME
+            VAR_STRING, // EP_ORIENTATIONS
+            VAR_STRING, // EP_PACKAGE_CACHE_DIR
+            VAR_STRING, // EP_RENDER_PATH
+            VAR_INT,    // EP_REFRESH_RATE
+            VAR_STRING, // EP_RESOURCE_PACKAGES
+            VAR_STRING, // EP_RESOURCE_PATHS
+            VAR_STRING, // EP_RESOURCE_PREFIX_PATHS
+            VAR_STRING, // EP_SHADER_CACHE_DIR
+            VAR_BOOL,   // EP_SHADOWS
+            VAR_BOOL,   // EP_SOUND
+            VAR_INT,    // EP_SOUND_BUFFER
+            VAR_BOOL,   // EP_SOUND_INTERPOLATION
+            VAR_INT,    // EP_SOUND_MIX_RATE
+            VAR_BOOL,   // EP_SOUND_STEREO
+            VAR_INT,    // EP_TEXTURE_ANISOTROPY
+            VAR_INT,    // EP_TEXTURE_FILTER_MODE
+            VAR_INT,    // EP_TEXTURE_QUALITY
+            VAR_BOOL,   // EP_TOUCH_EMULATION
+            VAR_BOOL,   // EP_TRIPLE_BUFFER
+            VAR_BOOL,   // EP_VSYNC
+            VAR_INT,    // EP_WINDOW_HEIGHT
+            VAR_STRING, // EP_WINDOW_ICON
+            VAR_INT,    // EP_WINDOW_POSITION_X
+            VAR_INT,    // EP_WINDOW_POSITION_Y
+            VAR_BOOL,   // EP_WINDOW_RESIZABLE
+            VAR_STRING, // EP_WINDOW_TITLE
+            VAR_INT,    // EP_WINDOW_WIDTH
+            VAR_INT,    // EP_WORKER_THREADS
+        };
+
+        static_assert(SDL_arraysize(predefinedNames) == SDL_arraysize(predefinedNames), "Sizes must match.");
+
         struct NewEntryState
         {
-            std::string fieldName;
-            int variantTypeIndex = 0;
-            bool insertingNew = false;
+            std::string customName;
+            int customType = 0;
+            int predefinedItem = 0;
         };
 
         auto* state = ui::GetUIState<NewEntryState>();
@@ -703,23 +828,48 @@ void Editor::RenderProjectMenu()
                 ++it;
         }
 
-        UI_ITEMWIDTH(180_dpx)
-            ui::InputText("###Key", &state->fieldName);
-        ui::SameLine();
-        UI_ITEMWIDTH(100_dpx)
-            ui::Combo("###Type", &state->variantTypeIndex, variantNames, SDL_arraysize(variantTypes));
-        ui::SameLine();
-        if (ui::Button(ICON_FA_CHECK))
-        {
-            if (settings.Find(state->fieldName.c_str()) == settings.End())   // TODO: Show warning about duplicate name
-            {
-                settings.Insert({state->fieldName.c_str(), Variant{variantTypes[state->variantTypeIndex]}});
-                state->fieldName.clear();
-                state->variantTypeIndex = 0;
-                state->insertingNew = false;
-            }
-        }
+        UI_ITEMWIDTH(-30_dpx)
+            ui::Combo("###Selector", &state->predefinedItem, predefinedNames, SDL_arraysize(predefinedNames));
 
+        ui::SameLine();
+
+        const char* cantSubmitHelpText = nullptr;
+        if (state->predefinedItem == 0)
+            cantSubmitHelpText = "Parameter is not selected.";
+        else if (state->predefinedItem == 1)
+        {
+            if (state->customName.empty())
+                cantSubmitHelpText = "Custom name can not be empty.";
+            else if (settings.Find(state->customName.c_str()) != settings.End())
+                cantSubmitHelpText = "Parameter with same name is already added.";
+        }
+        else if (state->predefinedItem > 1 && settings.Find(predefinedNames[state->predefinedItem]) != settings.End())
+            cantSubmitHelpText = "Parameter with same name is already added.";
+
+        ui::PushStyleColor(ImGuiCol_Button, ui::GetStyle().Colors[cantSubmitHelpText == nullptr ? ImGuiCol_Button : ImGuiCol_TextDisabled]);
+        if (ui::Button(ICON_FA_CHECK) && cantSubmitHelpText == nullptr)
+        {
+            if (state->predefinedItem == 1)
+                settings.Insert({state->customName.c_str(), Variant{variantTypes[state->customType]}});
+            else
+                settings.Insert({predefinedNames[state->predefinedItem], Variant{predefinedTypes[state->predefinedItem]}});
+            state->customName.clear();
+            state->customType = 0;
+        }
+        ui::PopStyleColor();
+        if (cantSubmitHelpText)
+            ui::SetHelpTooltip(cantSubmitHelpText, KEY_UNKNOWN);
+
+        if (state->predefinedItem == 1)
+        {
+            UI_ITEMWIDTH(180_dpx)
+                ui::InputText("###Key", &state->customName);
+
+            // Custom entry type selector
+            ui::SameLine();
+            UI_ITEMWIDTH(100_dpx)
+                ui::Combo("###Type", &state->customType, variantNames, SDL_arraysize(variantTypes));
+        }
         ui::EndMenu();
     }
 }
@@ -830,6 +980,26 @@ void Editor::SetupSystemUI()
     colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(0.44f, 0.44f, 0.44f, 0.35f);
 
 
+}
+
+void Editor::UpdateWindowTitle(const String& resourcePath)
+{
+    if (GetEngine()->IsHeadless())
+        return;
+
+    Project* project = GetSubsystem<Project>();
+    String title;
+    if (project == nullptr)
+        title = "Editor";
+    else
+    {
+        String projectName = GetFileName(RemoveTrailingSlash(project->GetProjectPath()));
+        title = ToString("Editor | %s", projectName.CString());
+        if (!resourcePath.Empty())
+            title += ToString(" | %s", GetFileName(resourcePath).CString());
+    }
+
+    GetGraphics()->SetWindowTitle(title);
 }
 
 }

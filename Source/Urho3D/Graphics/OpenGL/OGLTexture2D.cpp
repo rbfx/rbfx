@@ -24,6 +24,7 @@
 
 #include "../../Core/Context.h"
 #include "../../Core/Profiler.h"
+#include "../../Core/Macros.h"
 #include "../../Graphics/Graphics.h"
 #include "../../Graphics/GraphicsEvents.h"
 #include "../../Graphics/GraphicsImpl.h"
@@ -267,7 +268,9 @@ bool Texture2D::SetData(Image* image, bool useAlpha)
             needDecompress = true;
         }
 
-        unsigned mipsToSkip = mipsToSkip_[quality];
+        unsigned mipsToSkip = 0;
+        if (quality < URHO3D_ARRAYSIZE(mipsToSkip_))
+            mipsToSkip = mipsToSkip_[quality];
         if (mipsToSkip >= levels)
             mipsToSkip = levels - 1;
         while (mipsToSkip && (width / (1u << mipsToSkip) < 4 || height / (1u << mipsToSkip) < 4))

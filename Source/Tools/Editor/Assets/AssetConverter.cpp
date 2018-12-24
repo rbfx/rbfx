@@ -170,9 +170,17 @@ Vector<String> AssetConverter::GetCacheAssets(const String& resourceName)
     Vector<String> files;
     String assetCacheDirectory = cachePath_ + resourceName;
     if (GetFileSystem()->DirExists(assetCacheDirectory))
+    {
         GetFileSystem()->ScanDir(files, assetCacheDirectory, "", SCAN_FILES, true);
-    for (auto& fileName : files)
-        fileName = AddTrailingSlash(assetCacheDirectory) + fileName;
+        for (auto& fileName : files)
+            fileName = AddTrailingSlash(assetCacheDirectory) + fileName;
+    }
+    else if (resourceName.EndsWith(".xml"))
+    {
+        String assetCacheFile = cachePath_ + ReplaceExtension(resourceName, ".bin");
+        if (GetFileSystem()->FileExists(assetCacheFile))
+            files.EmplaceBack(std::move(assetCacheFile));
+    }
     return files;
 }
 

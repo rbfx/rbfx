@@ -306,6 +306,18 @@ void WorkQueue::Complete(unsigned priority)
     completing_ = false;
 }
 
+unsigned WorkQueue::GetNumIncomplete(unsigned priority) const
+{
+    unsigned incomplete = 0;
+    for (List<SharedPtr<WorkItem> >::ConstIterator i = workItems_.Begin(); i != workItems_.End(); ++i)
+    {
+        if ((*i)->priority_ >= priority && !(*i)->completed_)
+            ++incomplete;
+    }
+
+    return incomplete;
+}
+
 bool WorkQueue::IsCompleted(unsigned priority) const
 {
     for (List<SharedPtr<WorkItem> >::ConstIterator i = workItems_.Begin(); i != workItems_.End(); ++i)

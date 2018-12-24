@@ -88,7 +88,7 @@ bool ImportAsset::Convert(const String& path)
     }
 
     if (result != 0)
-        URHO3D_LOGERRORF("Failed Subprocess: %s", String::Joined(args, " ").CString());
+        URHO3D_LOGERRORF("Failed Subprocess(%d): %s", result, String::Joined(args, " ").CString());
 
     return result == 0;
 }

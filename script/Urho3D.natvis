@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <!-- Urho3D::PODVector<> -->
+  <Type Name = "Urho3D::PODVector&lt;*&gt;">
+    <DisplayString>{{ size={size_} [POD] }}</DisplayString>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">size_</Item>
+      <Item Name="[capacity]" ExcludeView="simple">capacity_</Item>
+      <ArrayItems>
+        <Size>size_</Size>
+        <ValuePointer>($T1*)buffer_</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- Urho3D::Vector<> -->
+  <Type Name = "Urho3D::Vector&lt;*&gt;">
+    <DisplayString>{{ size={size_} }}</DisplayString>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">size_</Item>
+      <Item Name="[capacity]" ExcludeView="simple">capacity_</Item>
+      <ArrayItems>
+        <Size>size_</Size>
+        <ValuePointer>($T1*)buffer_</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- Urho3D::List<> -->
+  <Type Name="Urho3D::List&lt;*&gt;">
+    <DisplayString>{{ size={size_} }}</DisplayString>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">size_</Item>
+      <LinkedListItems>
+        <Size>size_</Size>
+        <HeadPointer>head_</HeadPointer>
+        <NextPointer>next_</NextPointer>
+        <ValueNode>(*(List&lt;$T1&gt;::Node*)this).value_</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+
+  <!-- Urho3D::RandomAccessIterator<> -->
+  <!-- Urho3D::RandomAccessConstIterator<> -->
+  <Type Name = "Urho3D::RandomAccessIterator&lt;*&gt;">
+    <AlternativeType Name="Urho3D::RandomAccessConstIterator&lt;*&gt;"/>
+    <SmartPointer Usage="Indexable">ptr_,na</SmartPointer>
+    <Expand>
+      <Item Name="[ptr]">ptr_</Item>
+    </Expand>
+  </Type>
+
+  <!-- Urho3D::HashMap<> -->
+  <Type Name="Urho3D::HashMap&lt;*,*&gt;">
+    <DisplayString>{{ size={ptrs_ ? (unsigned)(ptrs_[0]) : 0} }}</DisplayString>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">ptrs_ ? (unsigned)(ptrs_[0]) : 0</Item>
+      <Item Name="[bucket_count]" ExcludeView="simple">ptrs_ ? (unsigned)(ptrs_[1]) : 0</Item>
+      <Item Name="[allocator]" ExcludeView="simple">allocator_</Item>
+      <CustomListItems MaxItemsPerView="5000">
+        <Variable Name="pBucket" InitialValue="head_" />
+
+        <Loop>
+          <Break Condition="pBucket == tail_" />
+          <Item Name="{(*(Urho3D::HashMap&lt;$T1,$T2&gt;::Node*)pBucket).pair_.first_}">
+            (*(Urho3D::HashMap&lt;$T1,$T2&gt;::Node*)pBucket).pair_
+          </Item>
+          <Exec>pBucket = pBucket->next_</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+
+  <!-- Urho3D::HashMap<>::Iterator -->
+  <Type Name="Urho3D::HashMap&lt;*,*&gt;::Iterator">
+    <AlternativeType Name="Urho3D::HashMap&lt;*,*&gt;::ConstIterator"/>
+    <DisplayString>{((Urho3D::HashMap&lt;$T1,$T2&gt;::Node*)(ptr_))->pair_}</DisplayString>
+    <Expand>
+      <ExpandedItem>((Urho3D::HashMap&lt;$T1,$T2&gt;::Node*)(ptr_))->pair_</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <!-- Urho3D::HashMap<>::KeyValue -->
+  <Type Name="Urho3D::HashMap&lt;*,*&gt;::KeyValue">
+    <DisplayString>{second_}</DisplayString>
+    <Expand>
+      <Item Name="[key]">first_</Item>
+      <Item Name="[value]">second_</Item>
+    </Expand>
+  </Type>
+
+  <!-- Urho3D::HashSet<> -->
+  <Type Name="Urho3D::HashSet&lt;*&gt;">
+    <DisplayString>{{ size={ptrs_ ? (unsigned)(ptrs_[0]) : 0} }}</DisplayString>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">ptrs_ ? (unsigned)(ptrs_[0]) : 0</Item>
+      <Item Name="[bucket_count]" ExcludeView="simple">ptrs_ ? (unsigned)(ptrs_[1]) : 0</Item>
+      <Item Name="[allocator]" ExcludeView="simple">allocator_</Item>
+      <CustomListItems MaxItemsPerView="5000" ExcludeView="Test">
+        <Variable Name="pBucket" InitialValue="head_"/>
+        <Variable Name="iIndex" InitialValue="0"/>
+
+        <Loop>
+          <Break Condition="pBucket == tail_" />
+          <Item Name="{iIndex}">
+            (*(Urho3D::HashSet&lt;$T1&gt;::Node*)pBucket).key_
+          </Item>
+          <Exec>pBucket = pBucket->next_</Exec>
+          <Exec>iIndex = iIndex + 1</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+
+  <!-- Urho3D::String -->
+  <Type Name="Urho3D::String">
+    <DisplayString Condition="buffer_">{buffer_,nas8}</DisplayString>
+    <DisplayString>invalid string</DisplayString>
+    <Expand>
+      <Item Name="[length]" ExcludeView="simple">length_</Item>
+      <Item Name="[capacity]" ExcludeView="simple">capacity_</Item>
+      <Item Name="[buffer]">buffer_</Item>
+    </Expand>
+  </Type>
+
+  <!-- Urho3D::StringHash -->
+  <Type Name="Urho3D::StringHash" Priority="Low">
+    <DisplayString>#{value_}</DisplayString>
+  </Type>
+
+  <!-- Urho3D::StringHash with hash reversing -->
+  <Type Name="Urho3D::StringHash">
+    <DisplayString Condition="!Urho3D::hashReverseMap">#{value_}</DisplayString>
+    <Expand>
+      <CustomListItems MaxItemsPerView="1" Condition="Urho3D::hashReverseMap">
+        <Variable Name="pPtrs" InitialValue="Urho3D::hashReverseMap->ptrs_"/>
+        <Variable Name="pNode" InitialValue="(Urho3D::HashMap&lt;Urho3D::StringHash,Urho3D::String&gt;::Node*)0"/>
+        <Variable Name="nBuckets" InitialValue="0"/>
+        <Variable Name="nHash" InitialValue="0"/>
+
+        <If Condition="pPtrs">
+          <Exec>nBuckets = (unsigned)pPtrs[1]</Exec>
+          <Exec>nHash = value_ &amp; (nBuckets - 1)</Exec>
+          <Exec>pNode = (Urho3D::HashMap&lt;Urho3D::StringHash,Urho3D::String&gt;::Node*)pPtrs[nHash + 2]</Exec>
+          <Loop Condition="pNode">
+            <If Condition="(*(Urho3D::HashMap&lt;Urho3D::StringHash,Urho3D::String&gt;::Node*)pNode).pair_.first_.value_ == value_">
+              <Item Name="[string]">(*(Urho3D::HashMap&lt;Urho3D::StringHash,Urho3D::String&gt;::Node*)pNode).pair_.second_</Item>
+              <Break/>
+            </If>
+            <Exec>pNode = (Urho3D::HashMap&lt;Urho3D::StringHash,Urho3D::String&gt;::Node*)(*pNode).down_</Exec>
+          </Loop>
+        </If>
+        <If Condition="!pNode">
+          <Item Name="[value]">value_</Item>
+        </If>
+      </CustomListItems>
+    </Expand>
+  </Type>
+
+  <!-- Urho3D::StringHash with hash reversing (Urho3D_d.dll) -->
+  <Type Name="Urho3D::StringHash" Priority="MediumLow">
+    <DisplayString Condition="!Urho3D_d.dll!Urho3D::hashReverseMap">#{value_}</DisplayString>
+    <Expand>
+      <CustomListItems MaxItemsPerView="1" Condition="Urho3D_d.dll!Urho3D::hashReverseMap">
+        <Variable Name="pPtrs" InitialValue="Urho3D_d.dll!Urho3D::hashReverseMap->ptrs_"/>
+        <Variable Name="pNode" InitialValue="(Urho3D::HashMap&lt;Urho3D::StringHash,Urho3D::String&gt;::Node*)0"/>
+        <Variable Name="nBuckets" InitialValue="0"/>
+        <Variable Name="nHash" InitialValue="0"/>
+
+        <If Condition="pPtrs">
+          <Exec>nBuckets = (unsigned)pPtrs[1]</Exec>
+          <Exec>nHash = value_ &amp; (nBuckets - 1)</Exec>
+          <Exec>pNode = (Urho3D::HashMap&lt;Urho3D::StringHash,Urho3D::String&gt;::Node*)pPtrs[nHash + 2]</Exec>
+          <Loop Condition="pNode">
+            <If Condition="(*(Urho3D::HashMap&lt;Urho3D::StringHash,Urho3D::String&gt;::Node*)pNode).pair_.first_.value_ == value_">
+              <Item Name="[string]">(*(Urho3D::HashMap&lt;Urho3D::StringHash,Urho3D::String&gt;::Node*)pNode).pair_.second_</Item>
+              <Break/>
+            </If>
+            <Exec>pNode = (Urho3D::HashMap&lt;Urho3D::StringHash,Urho3D::String&gt;::Node*)(*pNode).down_</Exec>
+          </Loop>
+        </If>
+        <If Condition="!pNode">
+          <Item Name="[value]">value_</Item>
+        </If>
+      </CustomListItems>
+    </Expand>
+  </Type>
+
+  <!-- Urho3D::StringHash with hash reversing (Urho3D.dll) -->
+  <Type Name="Urho3D::StringHash" Priority="MediumLow">
+    <DisplayString Condition="!Urho3D.dll!Urho3D::hashReverseMap">#{value_}</DisplayString>
+    <Expand>
+      <CustomListItems MaxItemsPerView="1" Condition="Urho3D.dll!Urho3D::hashReverseMap">
+        <Variable Name="pPtrs" InitialValue="Urho3D.dll!Urho3D::hashReverseMap->ptrs_"/>
+        <Variable Name="pNode" InitialValue="(Urho3D::HashMap&lt;Urho3D::StringHash,Urho3D::String&gt;::Node*)0"/>
+        <Variable Name="nBuckets" InitialValue="0"/>
+        <Variable Name="nHash" InitialValue="0"/>
+
+        <If Condition="pPtrs">
+          <Exec>nBuckets = (unsigned)pPtrs[1]</Exec>
+          <Exec>nHash = value_ &amp; (nBuckets - 1)</Exec>
+          <Exec>pNode = (Urho3D::HashMap&lt;Urho3D::StringHash,Urho3D::String&gt;::Node*)pPtrs[nHash + 2]</Exec>
+          <Loop Condition="pNode">
+            <If Condition="(*(Urho3D::HashMap&lt;Urho3D::StringHash,Urho3D::String&gt;::Node*)pNode).pair_.first_.value_ == value_">
+              <Item Name="[string]">(*(Urho3D::HashMap&lt;Urho3D::StringHash,Urho3D::String&gt;::Node*)pNode).pair_.second_</Item>
+              <Break/>
+            </If>
+            <Exec>pNode = (Urho3D::HashMap&lt;Urho3D::StringHash,Urho3D::String&gt;::Node*)(*pNode).down_</Exec>
+          </Loop>
+        </If>
+        <If Condition="!pNode">
+          <Item Name="[value]">value_</Item>
+        </If>
+      </CustomListItems>
+    </Expand>
+  </Type>
+
+  <!-- Urho3D::Variant -->
+  <Type Name="Urho3D::Variant">
+    <DisplayString Condition="type_==Urho3D::VAR_NONE">(none)</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_INT">(int) {value_.int_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_BOOL">(bool) {value_.bool_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_FLOAT">(float) {value_.float_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_VECTOR2">(vec2) {value_.vector2_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_VECTOR3">(vec3) {value_.vector3_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_VECTOR4">(vec4) {value_.vector4_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_QUATERNION">(quat) {value_.quaternion_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_COLOR">(color) {value_.color_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_DOUBLE">(double) {value_.double_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_STRING">(string) {value_.string_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_BUFFER">(string) {value_.buffer_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_VOIDPTR">(void*) {value_.voidPtr_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_RESOURCEREF">(resref) {value_.resourceRef_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_RESOURCEREFLIST">(resref) {value_.resourceRefList_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_VARIANTVECTOR">(vector) {value_.variantVector_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_VARIANTMAP">(map) {value_.variantMap_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_INTRECT">(irect) {value_.intRect_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_INTVECTOR2">(ivec2) {value_.intVector2_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_PTR">(pointer) {value_.weakPtr_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_MATRIX3">(mat3) {*value_.matrix3_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_MATRIX3X4">(mat3x4) {*value_.matrix3x4_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_MATRIX4">(mat4) {*value_.matrix4_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_DOUBLE">(double) {value_.double_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_STRINGVECTOR">(string[]) {value_.stringVector_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_RECT">(rect) {value_.rect_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_INTVECTOR3">(ivec3) {value_.intVector3_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_INT64">(int64) {value_.int64_}</DisplayString>
+    <!-- Add new types here -->
+    <DisplayString Condition="type_==Urho3D::VAR_CUSTOM_HEAP">(custom*) {*value_.customValueHeap_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_CUSTOM_STACK">(custom) {value_.customValueStack_}</DisplayString>
+    <Expand>
+      <Item Name="[value]" Condition="type_==Urho3D::VAR_INT">value_.int_</Item>
+      <Item Name="[value]" Condition="type_==Urho3D::VAR_BOOL">value_.bool_</Item>
+      <Item Name="[value]" Condition="type_==Urho3D::VAR_FLOAT">value_.float_</Item>
+      <ExpandedItem Condition="type_==Urho3D::VAR_VECTOR2">value_.vector2_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_VECTOR3">value_.vector3_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_VECTOR4">value_.vector4_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_QUATERNION">value_.quaternion_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_COLOR">value_.color_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_STRING">value_.string_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_BUFFER">value_.buffer_</ExpandedItem>
+      <Item Name="[value]" Condition="type_==Urho3D::VAR_VOIDPTR">value_.voidPtr_</Item>
+      <ExpandedItem Condition="type_==Urho3D::VAR_RESOURCEREF">value_.resourceRef_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_RESOURCEREFLIST">value_.resourceRefList_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_VARIANTVECTOR">value_.variantVector_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_VARIANTMAP">value_.variantMap_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_INTRECT">value_.intRect_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_INTVECTOR2">value_.intVector2_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_PTR">value_.weakPtr_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_MATRIX3">*value_.matrix3_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_MATRIX3X4">*value_.matrix3x4_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_MATRIX4">*value_.matrix4_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_DOUBLE">value_.double_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_STRINGVECTOR">value_.stringVector_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_RECT">value_.rect_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_INTVECTOR3">value_.intVector3_</ExpandedItem>
+      <Item Name="[value]" Condition="type_==Urho3D::VAR_INT64">value_.int64_</Item>
+      <!-- Add new types here -->
+      <ExpandedItem Condition="type_==Urho3D::VAR_CUSTOM_HEAP">*value_.customValueHeap_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_CUSTOM_STACK">value_.customValueStack_</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <!-- Urho3D::CustomVariantValueImpl<> -->
+  <Type Name = "Urho3D::CustomVariantValueImpl&lt;*&gt;">
+    <DisplayString>{ value_ }</DisplayString>
+    <Expand>
+      <ExpandedItem>value_</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <!-- Urho3D::SharedPtr<> -->
+  <Type Name = "Urho3D::SharedPtr&lt;*&gt;">
+    <DisplayString>{ptr_}</DisplayString>
+    <Expand>
+      <Synthetic Condition="!ptr_" Name="[empty]"/>
+      <Item Condition="ptr_" Name="[strong]">ptr_->refCount_->refs_</Item>
+      <Item Condition="ptr_" Name="[weak]">ptr_->refCount_->weakRefs_</Item>
+      <Item Condition="ptr_" Name="[ptr]">ptr_</Item>
+    </Expand>
+  </Type>
+
+  <!-- Urho3D::ExternalPtr<> -->
+  <Type Name = "Urho3D::ExternalPtr&lt;*&gt;">
+    <DisplayString Condition="!refCount_">(empty)</DisplayString>
+    <DisplayString Condition="refCount_">{ptr_}</DisplayString>
+    <Expand>
+      <Synthetic Condition="!refCount_" Name="[empty]"/>
+      <Item Condition="refCount_" Name="[weak]">refCount_->weakRefs_</Item>
+      <Item Condition="refCount_" Name="[strong]">refCount_->refs_</Item>
+      <Item Condition="refCount_" Name="[ptr]">ptr_</Item>
+    </Expand>
+  </Type>
+
+  <!-- Urho3D::WeakPtr<> -->
+  <Type Name = "Urho3D::WeakPtr&lt;*&gt;">
+    <DisplayString Condition="!refCount_">(empty)</DisplayString>
+    <DisplayString Condition="refCount_ &amp;&amp; (refCount_->refs_ &lt; 0)">(expired)</DisplayString>
+    <DisplayString Condition="refCount_ &amp;&amp; !(refCount_->refs_ &lt; 0)">{ptr_}</DisplayString>
+    <Expand>
+      <Synthetic Condition="!refCount_" Name="[empty]"/>
+      <Synthetic Condition="refCount_ &amp;&amp; refCount_->refs_ &lt; 0" Name="[expired]"/>
+      <Item Condition="refCount_" Name="[weak]">refCount_->weakRefs_</Item>
+      <Item Condition="refCount_" Name="[strong]">refCount_->refs_</Item>
+      <Item Condition="refCount_ &amp;&amp; !(refCount_->refs_ &lt; 0)" Name="[ptr]">ptr_</Item>
+    </Expand>
+  </Type>
+
+  <!-- Urho3D::Node -->
+  <Type Name = "Urho3D::Node">
+    <DisplayString>name_ = {impl_.ptr_->name_}</DisplayString>
+  </Type>
+
+  <!-- Urho3D::Resource -->
+  <Type Name = "Urho3D::Resource">
+    <DisplayString>name_ = {name_}</DisplayString>
+  </Type>
+
+</AutoVisualizer>

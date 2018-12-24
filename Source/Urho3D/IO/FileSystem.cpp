@@ -60,11 +60,14 @@
 #include <utime.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#include <spawn.h>
 #define MAX_PATH 256
 #endif
 
 #if defined(__APPLE__)
 #include <mach-o/dyld.h>
+#include <crt_externs.h>
+#define environ (*_NSGetEnviron())
 #endif
 
 extern "C"
@@ -154,7 +157,7 @@ URHO3D_FLAGSET(SystemRunFlag, SystemRunFlags);
 
 int DoSystemRun(const String& fileName, const Vector<String>& arguments, SystemRunFlags flags, String& output)
 {
-#ifdef TVOS
+#if defined(TVOS) || (defined(__ANDROID__) && __ANDROID_API__ < 28)
     return -1;
 #else
     String fixedFileName = GetNativePath(fileName);
@@ -166,7 +169,7 @@ int DoSystemRun(const String& fileName, const Vector<String>& arguments, SystemR
 
     String commandLine = "\"" + fixedFileName + "\"";
     for (unsigned i = 0; i < arguments.Size(); ++i)
-        commandLine += " " + arguments[i];
+        commandLine += " \"" + arguments[i] + "\"";
 
     STARTUPINFOW startupInfo{};
     PROCESS_INFORMATION processInfo{};
@@ -247,30 +250,26 @@ int DoSystemRun(const String& fileName, const Vector<String>& arguments, SystemR
         fcntl(desc[1], F_SETFL, O_NONBLOCK);
     }
 
-    pid_t pid = fork();
-    if (!pid)
+    PODVector<const char*> argPtrs;
+    argPtrs.Push(fixedFileName.CString());
+    for (unsigned i = 0; i < arguments.Size(); ++i)
+        argPtrs.Push(arguments[i].CString());
+    argPtrs.Push(nullptr);
+
+    pid_t pid = 0;
+    posix_spawn_file_actions_t actions{};
+    posix_spawn_file_actions_init(&actions);
+    if (flags & SR_READ_OUTPUT)
     {
-        if (flags & SR_READ_OUTPUT)
-        {
-            // Replace stdout with pipe fd
-            close(STDOUT_FILENO);
-            dup(desc[1]);
-            close(STDERR_FILENO);
-            dup(desc[1]);
-            close(desc[0]);
-            close(desc[1]);
-        }
-
-        PODVector<const char*> argPtrs;
-        argPtrs.Push(fixedFileName.CString());
-        for (unsigned i = 0; i < arguments.Size(); ++i)
-            argPtrs.Push(arguments[i].CString());
-        argPtrs.Push(nullptr);
-
-        execvp(argPtrs[0], (char**)&argPtrs[0]);
-        return -1; // Return -1 if we could not spawn the process
+        posix_spawn_file_actions_addclose(&actions, STDOUT_FILENO);
+        posix_spawn_file_actions_adddup2(&actions, desc[1], STDOUT_FILENO);
+        posix_spawn_file_actions_addclose(&actions, STDERR_FILENO);
+        posix_spawn_file_actions_adddup2(&actions, desc[1], STDERR_FILENO);
     }
-    else if (pid > 0)
+    posix_spawnp(&pid, fixedFileName.CString(), &actions, 0, (char**)&argPtrs[0], environ);
+    posix_spawn_file_actions_destroy(&actions);
+
+    if (pid > 0)
     {
         int exitCode = 0;
         if (flags & SR_WAIT_FOR_EXIT)

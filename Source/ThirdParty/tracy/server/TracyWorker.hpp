@@ -238,7 +238,7 @@ public:
     tracy_force_inline const Vector<ZoneEvent*>& GetZoneChildren( int32_t idx ) const { return m_data.m_zoneChildren[idx]; }
     tracy_force_inline const Vector<GpuEvent*>& GetGpuChildren( int32_t idx ) const { return m_data.m_gpuChildren[idx]; }
 
-    std::vector<int32_t> GetMatchingSourceLocation( const char* query ) const;
+    std::vector<int32_t> GetMatchingSourceLocation( const char* query, bool ignoreCase ) const;
 
 #ifndef TRACY_NO_STATISTICS
     const SourceLocationZones& GetZonesForSourceLocation( int32_t srcloc ) const;
@@ -284,6 +284,7 @@ private:
     tracy_force_inline void ProcessZoneText( const QueueZoneText& ev );
     tracy_force_inline void ProcessZoneName( const QueueZoneText& ev );
     tracy_force_inline void ProcessLockAnnounce( const QueueLockAnnounce& ev );
+    tracy_force_inline void ProcessLockTerminate( const QueueLockTerminate& ev );
     tracy_force_inline void ProcessLockWait( const QueueLockWait& ev );
     tracy_force_inline void ProcessLockObtain( const QueueLockObtain& ev );
     tracy_force_inline void ProcessLockRelease( const QueueLockRelease& ev );

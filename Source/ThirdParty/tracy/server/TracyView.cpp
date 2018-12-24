@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <assert.h>
 #include <chrono>
-#include <cinttypes> // Urho3D: Needed for PRIi64
+#include <cinttypes> // needed for PRIi64
 #include <limits>
 #include <math.h>
 #include <mutex>
@@ -267,6 +267,21 @@ static void TextFocused( const char* label, const char* value )
     ImGui::Text( "%s", value );
 }
 
+static void SetButtonHighlightColor()
+{
+    ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.35f, 0.6f, 0.6f ) );
+    ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.35f, 0.8f, 0.8f ) );
+    ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.35f, 0.7f, 0.7f ) );
+}
+
+static void ToggleButton( const char* label, bool& toggle )
+{
+    const auto active = toggle;
+    if( active ) SetButtonHighlightColor();
+    if( ImGui::Button( label ) ) toggle = !toggle;
+    if( active ) ImGui::PopStyleColor( 3 );
+}
+
 enum { MinVisSize = 3 };
 enum { MinFrameSize = 5 };
 
@@ -293,6 +308,7 @@ View::View( const char* addr, ImFont* fixedWidth, SetTitleCallback stcb )
     , m_memoryAllocHover( -1 )
     , m_memoryAllocHoverWait( 0 )
     , m_frames( nullptr )
+    , m_lockInfoWindow( InvalidId )
     , m_gpuThread( 0 )
     , m_gpuStart( 0 )
     , m_gpuEnd( 0 )
@@ -309,6 +325,7 @@ View::View( const char* addr, ImFont* fixedWidth, SetTitleCallback stcb )
     , m_statSort( 0 )
     , m_statSelf( false )
     , m_showCallstackFrameAddress( false )
+    , m_showUnknownFrames( true )
     , m_namespace( Namespace::Full )
     , m_textEditorFont( fixedWidth )
     , m_stcb( stcb )
@@ -340,6 +357,7 @@ View::View( FileRead& f, ImFont* fixedWidth, SetTitleCallback stcb )
     , m_memoryAllocHover( -1 )
     , m_memoryAllocHoverWait( 0 )
     , m_frames( m_worker.GetFramesBase() )
+    , m_lockInfoWindow( InvalidId )
     , m_gpuThread( 0 )
     , m_gpuStart( 0 )
     , m_gpuEnd( 0 )
@@ -356,6 +374,7 @@ View::View( FileRead& f, ImFont* fixedWidth, SetTitleCallback stcb )
     , m_statSort( 0 )
     , m_statSelf( false )
     , m_showCallstackFrameAddress( false )
+    , m_showUnknownFrames( true )
     , m_namespace( Namespace::Full )
     , m_textEditorFont( fixedWidth )
     , m_stcb( stcb )
@@ -395,9 +414,10 @@ void View::SetTextEditorFile( const char* fileName, int line )
         fseek( f, 0, SEEK_END );
         const auto sz = ftell( f );
         fseek( f, 0, SEEK_SET );
-        auto data = new char[sz];
+        auto data = new char[sz+1];
         fread( data, 1, sz, f );
         fclose( f );
+        data[sz] = '\0';
         m_textEditor->SetText( data );
         delete[] data;
     }
@@ -506,10 +526,12 @@ bool View::Draw()
 static const char* MainWindowButtons[] = {
 #ifdef TRACY_EXTENDED_FONT
     ICON_FA_PLAY " Resume",
-    ICON_FA_PAUSE " Pause"
+    ICON_FA_PAUSE " Pause",
+    ICON_FA_SQUARE " Stopped"
 #else
     "Resume",
-    "Pause"
+    "Pause",
+    "Stopped"
 #endif
 };
 
@@ -545,7 +567,7 @@ bool View::DrawImpl()
     bool* keepOpenPtr = nullptr;
     if( !m_staticView )
     {
-        DrawConnection();
+        if( !DrawConnection() ) return false;
     }
     else
     {
@@ -584,7 +606,16 @@ bool View::DrawImpl()
     std::lock_guard<TracyMutex> lock( m_worker.GetDataLock() );
     if( !m_worker.IsDataStatic() )
     {
-        if( ImGui::Button( m_pause ? MainWindowButtons[0] : MainWindowButtons[1], ImVec2( bw, 0 ) ) ) m_pause = !m_pause;
+        if( m_worker.IsConnected() )
+        {
+            if( ImGui::Button( m_pause ? MainWindowButtons[0] : MainWindowButtons[1], ImVec2( bw, 0 ) ) ) m_pause = !m_pause;
+        }
+        else
+        {
+            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor( 0.3f, 0.3f, 0.3f, 1.0f ) );
+            ImGui::ButtonEx( MainWindowButtons[2], ImVec2( bw, 0 ), ImGuiButtonFlags_Disabled );
+            ImGui::PopStyleColor( 1 );
+        }
     }
     else
     {
@@ -600,45 +631,45 @@ bool View::DrawImpl()
     }
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_COG " Options" ) ) m_showOptions = true;
+    ToggleButton( ICON_FA_COG " Options", m_showOptions );
 #else
-    if( ImGui::Button( "Options" ) ) m_showOptions = true;
+    ToggleButton( "Options", m_showOptions );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_TAGS " Messages" ) ) m_showMessages = true;
+    ToggleButton( ICON_FA_TAGS " Messages", m_showMessages );
 #else
-    if( ImGui::Button( "Messages" ) ) m_showMessages = true;
+    ToggleButton( "Messages", m_showMessages );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_SEARCH " Find zone" ) ) m_findZone.show = true;
+    ToggleButton( ICON_FA_SEARCH " Find zone", m_findZone.show );
 #else
-    if( ImGui::Button( "Find zone" ) ) m_findZone.show = true;
+    ToggleButton( "Find zone", m_findZone.show );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_SORT_AMOUNT_UP " Statistics" ) ) m_showStatistics = true;
+    ToggleButton( ICON_FA_SORT_AMOUNT_UP " Statistics", m_showStatistics );
 #else
-    if( ImGui::Button( "Statistics" ) ) m_showStatistics = true;
+    ToggleButton( "Statistics", m_showStatistics );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_MEMORY " Memory" ) ) m_memInfo.show = true;
+    ToggleButton( ICON_FA_MEMORY " Memory", m_memInfo.show );
 #else
-    if( ImGui::Button( "Memory" ) ) m_memInfo.show = true;
+    ToggleButton( "Memory", m_memInfo.show );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_BALANCE_SCALE " Compare" ) ) m_compare.show = true;
+    ToggleButton( ICON_FA_BALANCE_SCALE " Compare", m_compare.show );
 #else
-    if( ImGui::Button( "Compare" ) ) m_compare.show = true;
+    ToggleButton( "Compare", m_compare.show );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_FINGERPRINT " Info" ) ) m_showInfo = true;
+    ToggleButton( ICON_FA_FINGERPRINT " Info", m_showInfo );
 #else
-    if( ImGui::Button( "Info" ) ) m_showInfo = true;
+    ToggleButton( "Info", m_showInfo );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
@@ -685,7 +716,7 @@ bool View::DrawImpl()
     }
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    m_goToFrame |= ImGui::Button( ICON_FA_CROSSHAIRS );
+    ToggleButton( ICON_FA_CROSSHAIRS, m_goToFrame );
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
@@ -693,7 +724,7 @@ bool View::DrawImpl()
         ImGui::EndTooltip();
     }
 #else
-    m_goToFrame |= ImGui::Button( "Go to" );
+    ToggleButton( "Go to", m_goToFrame );
 #endif
     ImGui::SameLine();
     ImGui::Spacing();
@@ -738,6 +769,7 @@ bool View::DrawImpl()
     if( m_showInfo ) DrawInfo();
     if( m_textEditorFile ) DrawTextEditor();
     if( m_goToFrame ) DrawGoToFrame();
+    if( m_lockInfoWindow != InvalidId ) DrawLockInfoWindow();
 
     const auto& io = ImGui::GetIO();
     if( m_zoomAnim.active )
@@ -762,11 +794,12 @@ bool View::DrawImpl()
     m_zoneinfoBuzzAnim.Update( io.DeltaTime );
     m_findZoneBuzzAnim.Update( io.DeltaTime );
     m_optionsLockBuzzAnim.Update( io.DeltaTime );
+    m_lockInfoAnim.Update( io.DeltaTime );
 
     return keepOpen;
 }
 
-void View::DrawConnection()
+bool View::DrawConnection()
 {
     const auto ty = ImGui::GetFontSize();
     const auto cs = ty * 0.9f;
@@ -843,7 +876,41 @@ void View::DrawConnection()
         }
     }
 
+    ImGui::SameLine( 0, ty * 4 );
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( ICON_FA_EXCLAMATION_TRIANGLE " Discard" ) )
+#else
+    if( ImGui::Button( "Discard" ) )
+#endif
+    {
+        ImGui::OpenPopup( "Confirm trace discard" );
+    }
+
+    if( ImGui::BeginPopupModal( "Confirm trace discard", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+    {
+#ifdef TRACY_EXTENDED_FONT
+        TextCentered( ICON_FA_EXCLAMATION_TRIANGLE );
+#endif
+        ImGui::Text( "All unsaved profiling data will be lost!" );
+        ImGui::Text( "Are you sure you want to proceed?" );
+        ImGui::Separator();
+        if( ImGui::Button( "Yes" ) )
+        {
+            ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+            ImGui::End();
+            return false;
+        }
+        ImGui::SameLine( 0, ty * 2 );
+        if( ImGui::Button( "No", ImVec2( ty * 8, 0 ) ) )
+        {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
     ImGui::End();
+    return true;
 }
 
 static ImU32 GetFrameColor( uint64_t frameTime )
@@ -2738,6 +2805,15 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 bool itemHovered = hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( pxend, double( w + 10 ) ), offset + ty ) );
                 if( itemHovered )
                 {
+                    if( ImGui::IsMouseClicked( 0 ) )
+                    {
+                        m_lockInfoWindow = v.first;
+                    }
+                    if( ImGui::IsMouseClicked( 2 ) )
+                    {
+                        ZoomToRange( t0, t1 );
+                    }
+
                     if( condensed > 1 )
                     {
                         ImGui::BeginTooltip();
@@ -3021,6 +3097,10 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     const auto coutline = drawState == LockState::HasLock ? 0xFF3BA33B : ( drawState == LockState::HasBlockingLock ? 0xFF3BA3A3 : 0xFF3B3BD6 );
                     draw->AddRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( pxend, double( w + 10 ) ), offset + ty ), coutline );
                 }
+                else if( condensed > 1 )
+                {
+                    DrawZigZag( draw, wpos + ImVec2( 0, offset + round( ty / 2 ) ), px0, pxend, ty / 4, DarkenColor( cfilled ) );
+                }
 
                 const auto rx0 = ( t0 - m_zvStart ) * pxns;
                 if( dsz >= MinVisSize )
@@ -3073,6 +3153,11 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     ImGui::Separator();
                     TextFocused( "Lock events:", RealToString( v.second.timeline.size(), true ) );
                     ImGui::EndTooltip();
+
+                    if( ImGui::IsMouseClicked( 0 ) )
+                    {
+                        m_lockInfoWindow = v.first;
+                    }
                 }
                 cnt++;
             }
@@ -3483,12 +3568,15 @@ void View::DrawInfoWindow()
 }
 
 template<typename T>
-void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, BuzzAnim<const void*>& anim, View& view, std::function<void(T)> showZone )
+void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, BuzzAnim<const void*>& anim, View& view, bool& showUnknownFrames, std::function<void(T)> showZone )
 {
     bool expand = ImGui::TreeNode( "Zone trace" );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( trace.size(), true ) );
     if( !expand ) return;
+
+    ImGui::SameLine();
+    if( ImGui::SmallButton( showUnknownFrames ? "Hide unknown frames" : "Show unknown frames" ) ) showUnknownFrames = !showUnknownFrames;
 
     if( !trace.empty() )
     {
@@ -3499,7 +3587,10 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
             auto curr = trace[i];
             if( prev->callstack == 0 || curr->callstack == 0 )
             {
-                ImGui::TextDisabled( "[unknown frames]" );
+                if( showUnknownFrames )
+                {
+                    ImGui::TextDisabled( "[unknown frames]" );
+                }
             }
             else if( prev->callstack != curr->callstack )
             {
@@ -3570,7 +3661,10 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
     auto last = trace.empty() ? zone : trace.back();
     if( last->callstack == 0 )
     {
-        ImGui::TextDisabled( "[unknown frames]" );
+        if( showUnknownFrames )
+        {
+            ImGui::TextDisabled( "[unknown frames]" );
+        }
     }
     else
     {
@@ -3664,9 +3758,7 @@ void View::DrawZoneInfoWindow()
         bool hilite = m_callstackInfoWindow == ev.callstack;
         if( hilite )
         {
-            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+            SetButtonHighlightColor();
         }
 #ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
@@ -3688,9 +3780,7 @@ void View::DrawZoneInfoWindow()
         bool hilite = m_textEditorFile == fileName;
         if( hilite )
         {
-            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+            SetButtonHighlightColor();
         }
 #ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_FILE_ALT " Source" ) )
@@ -3874,7 +3964,7 @@ void View::DrawZoneInfoWindow()
          parent = GetZoneParent( *parent );
     }
     int idx = 0;
-    DrawZoneTrace<const ZoneEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, [&idx, this] ( const ZoneEvent* v ) {
+    DrawZoneTrace<const ZoneEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, m_showUnknownFrames, [&idx, this] ( const ZoneEvent* v ) {
         const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
         const auto txt = m_worker.GetZoneName( *v, srcloc );
         ImGui::PushID( idx++ );
@@ -4025,9 +4115,7 @@ void View::DrawGpuInfoWindow()
         bool hilite = m_callstackInfoWindow == ev.callstack;
         if( hilite )
         {
-            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+            SetButtonHighlightColor();
         }
 #ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
@@ -4049,9 +4137,7 @@ void View::DrawGpuInfoWindow()
         bool hilite = m_textEditorFile == fileName;
         if( hilite )
         {
-            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+            SetButtonHighlightColor();
         }
 #ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_FILE_ALT " Source" ) )
@@ -4125,7 +4211,7 @@ void View::DrawGpuInfoWindow()
         parent = GetZoneParent( *parent );
     }
     int idx = 0;
-    DrawZoneTrace<const GpuEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, [&idx, this] ( const GpuEvent* v ) {
+    DrawZoneTrace<const GpuEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, m_showUnknownFrames, [&idx, this] ( const GpuEvent* v ) {
         const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
         const auto txt = m_worker.GetZoneName( *v, srcloc );
         ImGui::PushID( idx++ );
@@ -4326,6 +4412,14 @@ void View::DrawOptions()
                     Visible( &l.second ) = false;
                 }
             }
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(?)" );
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::Text( "Right click on lock name to open lock information window." );
+                ImGui::EndTooltip();
+            }
 
             for( const auto& l : m_worker.GetLockMap() )
             {
@@ -4337,6 +4431,10 @@ void View::DrawOptions()
                     char buf[1024];
                     sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second.srcloc ).function ) );
                     ImGui::Checkbox( buf, &Visible( &l.second ) );
+                    if( ImGui::IsItemClicked( 1 ) )
+                    {
+                        m_lockInfoWindow = l.first;
+                    }
                     if( m_optionsLockBuzzAnim.Match( l.second.srcloc ) )
                     {
                         const auto time = m_optionsLockBuzzAnim.Time();
@@ -4623,13 +4721,16 @@ void View::DrawFindZone()
         return;
     }
 
-    ImGui::InputText( "", m_findZone.pattern, 1024 );
-    ImGui::SameLine();
+    bool findClicked = false;
+
+    ImGui::PushItemWidth( -0.01f );
+    findClicked |= ImGui::InputText( "", m_findZone.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
+    ImGui::PopItemWidth();
 
 #ifdef TRACY_EXTENDED_FONT
-    const bool findClicked = ImGui::Button( ICON_FA_SEARCH " Find" );
+    findClicked |= ImGui::Button( ICON_FA_SEARCH " Find" );
 #else
-    const bool findClicked = ImGui::Button( "Find" );
+    findClicked |= ImGui::Button( "Find" );
 #endif
     ImGui::SameLine();
 
@@ -4641,6 +4742,9 @@ void View::DrawFindZone()
     {
         m_findZone.Reset();
     }
+    ImGui::SameLine();
+
+    ImGui::Checkbox( "Ignore case", &m_findZone.ignoreCase );
 
     if( findClicked )
     {
@@ -5622,13 +5726,16 @@ void View::DrawCompare()
         return;
     }
 
-    ImGui::InputText( "", m_compare.pattern, 1024 );
-    ImGui::SameLine();
+    bool findClicked = false;
+
+    ImGui::PushItemWidth( -0.01f );
+    findClicked |= ImGui::InputText( "", m_compare.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
+    ImGui::PopItemWidth();
 
 #ifdef TRACY_EXTENDED_FONT
-    const bool findClicked = ImGui::Button( ICON_FA_SEARCH " Find" );
+    findClicked |= ImGui::Button( ICON_FA_SEARCH " Find" );
 #else
-    const bool findClicked = ImGui::Button( "Find" );
+    findClicked |= ImGui::Button( "Find" );
 #endif
     ImGui::SameLine();
 
@@ -5640,6 +5747,9 @@ void View::DrawCompare()
     {
         m_compare.Reset();
     }
+    ImGui::SameLine();
+
+    ImGui::Checkbox( "Ignore case", &m_compare.ignoreCase );
 
     if( findClicked )
     {
@@ -6956,9 +7066,7 @@ void View::DrawInfo()
             bool hilite = m_callstackInfoWindow == crash.callstack;
             if( hilite )
             {
-                ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
-                ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
-                ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+                SetButtonHighlightColor();
             }
 #ifdef TRACY_EXTENDED_FONT
             if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
@@ -7022,6 +7130,153 @@ void View::DrawGoToFrame()
         ZoomToRange( m_worker.GetFrameBegin( *m_frames, frameNum - frameOffset ), m_worker.GetFrameEnd( *m_frames, frameNum - frameOffset ) );
     }
     ImGui::End();
+}
+
+void View::DrawLockInfoWindow()
+{
+    auto it = m_worker.GetLockMap().find( m_lockInfoWindow );
+    assert( it != m_worker.GetLockMap().end() );
+    const auto& lock = it->second;
+    const auto& srcloc = m_worker.GetSourceLocation( lock.srcloc );
+    auto fileName = m_worker.GetString( srcloc.file );
+
+    int64_t timeAnnounce = lock.timeAnnounce;
+    int64_t timeTerminate = lock.timeTerminate;
+    if( !lock.timeline.empty() )
+    {
+        if( timeAnnounce == 0 )
+        {
+            timeAnnounce = lock.timeline.front()->time;
+        }
+        if( timeTerminate == 0 )
+        {
+            timeTerminate = lock.timeline.back()->time;
+        }
+    }
+
+    bool waitState = false;
+    bool holdState = false;
+    int64_t waitStartTime = 0;
+    int64_t holdStartTime = 0;
+    int64_t waitTotalTime = 0;
+    int64_t holdTotalTime = 0;
+    uint32_t maxWaitingThreads = 0;
+    for( auto& v : lock.timeline )
+    {
+        if( holdState )
+        {
+            if( v->lockCount == 0 )
+            {
+                holdTotalTime += v->time - holdStartTime;
+                holdState = false;
+            }
+        }
+        else
+        {
+            if( v->lockCount != 0 )
+            {
+                holdStartTime = v->time;
+                holdState = true;
+            }
+        }
+        if( waitState )
+        {
+            if( v->waitList == 0 )
+            {
+                waitTotalTime += v->time - waitStartTime;
+                waitState = false;
+            }
+            else
+            {
+                maxWaitingThreads = std::max<uint32_t>( maxWaitingThreads, TracyCountBits( v->waitList ) );
+            }
+        }
+        else
+        {
+            if( v->waitList != 0 )
+            {
+                waitStartTime = v->time;
+                waitState = true;
+                maxWaitingThreads = std::max<uint32_t>( maxWaitingThreads, TracyCountBits( v->waitList ) );
+            }
+        }
+    }
+
+    bool visible = true;
+    ImGui::Begin( "Lock info", &visible, ImGuiWindowFlags_AlwaysAutoResize );
+    ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, m_worker.GetString( srcloc.function ) );
+    ImGui::TextDisabled( "Location:" );
+    if( m_lockInfoAnim.Match( m_lockInfoWindow ) )
+    {
+        const auto time = m_lockInfoAnim.Time();
+        const auto indentVal = sin( time * 60.f ) * 10.f * time;
+        ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
+    }
+    else
+    {
+        ImGui::SameLine();
+    }
+    ImGui::Text( "%s:%i", fileName, srcloc.line );
+    if( ImGui::IsItemClicked( 1 ) )
+    {
+        if( FileExists( fileName ) )
+        {
+            SetTextEditorFile( fileName, srcloc.line );
+        }
+        else
+        {
+            m_lockInfoAnim.Enable( m_lockInfoWindow, 0.5f );
+        }
+    }
+    ImGui::Separator();
+
+    switch( lock.type )
+    {
+    case LockType::Lockable:
+        TextFocused( "Type:", "lockable" );
+        break;
+    case LockType::SharedLockable:
+        TextFocused( "Type:", "shared lockable" );
+        break;
+    default:
+        assert( false );
+        break;
+    }
+    TextFocused( "Lock events:", RealToString( lock.timeline.size(), true ) );
+    ImGui::Separator();
+
+    const auto announce = timeAnnounce - m_worker.GetTimeBegin();
+    const auto terminate = timeTerminate - m_worker.GetTimeBegin();
+    const auto lifetime = timeTerminate - timeAnnounce;
+    TextFocused( "Announce time:", TimeToString( announce ) );
+    TextFocused( "Terminate time:", TimeToString( terminate ) );
+    TextFocused( "Lifetime:", TimeToString( lifetime ) );
+    ImGui::Separator();
+
+    TextFocused( "Lock hold time:", TimeToString( holdTotalTime ) );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%.2f%%)", holdTotalTime / float( lifetime ) * 100.f );
+    TextFocused( "Lock wait time:", TimeToString( waitTotalTime ) );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%.2f%%)", waitTotalTime / float( lifetime ) * 100.f );
+    TextFocused( "Max waiting threads:", RealToString( maxWaitingThreads, true ) );
+    ImGui::Separator();
+
+    const auto threadList = ImGui::TreeNode( "Thread list" );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%zu)", lock.threadList.size() );
+    if( threadList )
+    {
+        for( const auto& t : lock.threadList )
+        {
+            ImGui::Text( "%s", m_worker.GetThreadString( t ) );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(0x%" PRIX64 ")", t );
+        }
+        ImGui::TreePop();
+    }
+    ImGui::End();
+    if( !visible ) m_lockInfoWindow = InvalidId;
 }
 
 template<class T>
@@ -8328,7 +8583,7 @@ const ZoneEvent* View::FindZoneAtTime( uint64_t thread, int64_t time ) const
 #ifndef TRACY_NO_STATISTICS
 void View::FindZones()
 {
-    m_findZone.match = m_worker.GetMatchingSourceLocation( m_findZone.pattern );
+    m_findZone.match = m_worker.GetMatchingSourceLocation( m_findZone.pattern, m_findZone.ignoreCase );
     if( m_findZone.match.empty() ) return;
 
     auto it = m_findZone.match.begin();
@@ -8347,7 +8602,7 @@ void View::FindZones()
 
 void View::FindZonesCompare()
 {
-    m_compare.match[0] = m_worker.GetMatchingSourceLocation( m_compare.pattern );
+    m_compare.match[0] = m_worker.GetMatchingSourceLocation( m_compare.pattern, m_compare.ignoreCase );
     if( !m_compare.match[0].empty() )
     {
         auto it = m_compare.match[0].begin();
@@ -8364,7 +8619,7 @@ void View::FindZonesCompare()
         }
     }
 
-    m_compare.match[1] = m_compare.second->GetMatchingSourceLocation( m_compare.pattern );
+    m_compare.match[1] = m_compare.second->GetMatchingSourceLocation( m_compare.pattern, m_compare.ignoreCase );
     if( !m_compare.match[1].empty() )
     {
         auto it = m_compare.match[1].begin();
@@ -8388,9 +8643,7 @@ void View::SmallCallstackButton( const char* name, uint32_t callstack, int& idx 
     bool hilite = m_callstackInfoWindow == callstack;
     if( hilite )
     {
-        ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
-        ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
-        ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+        SetButtonHighlightColor();
     }
     ImGui::PushID( idx++ );
     if( ImGui::SmallButton( name ) )

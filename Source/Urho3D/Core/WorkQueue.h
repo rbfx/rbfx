@@ -105,6 +105,8 @@ public:
     /// Return number of worker threads.
     unsigned GetNumThreads() const { return threads_.Size(); }
 
+    /// Return number of incomplete tasks with at least the specified priority.
+    unsigned GetNumIncomplete(unsigned priority) const;
     /// Return whether all work with at least the specified priority is finished.
     bool IsCompleted(unsigned priority) const;
     /// Return whether the queue is currently completing work in the main thread.

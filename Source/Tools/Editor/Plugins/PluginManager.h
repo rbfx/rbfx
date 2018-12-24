@@ -26,10 +26,17 @@
 #if URHO3D_PLUGINS
 
 #include <atomic>
-#include <cr/cr.h>
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/IO/FileWatcher.h>
+#include <Urho3D/IO/Log.h>
 #include <Player/Common/PluginUtils.h>
+#if !defined(NDEBUG) && defined(URHO3D_LOGGING)
+#   define CR_DEBUG 1
+#   define CR_ERROR(format, ...) Urho3D::Log::Write(Urho3D::LOG_ERROR, Urho3D::ToString(format, ##__VA_ARGS__))
+#   define CR_LOG(format, ...)   Urho3D::Log::Write(Urho3D::LOG_DEBUG, Urho3D::ToString(format, ##__VA_ARGS__))
+#   define CR_TRACE
+#endif
+#include <cr/cr.h>
 
 namespace Urho3D
 {
@@ -102,10 +109,10 @@ public:
     static String PathToName(const String& path);
 
 protected:
-    /// Delete temporary files from binary directory.
-    void CleanUp(String directory = String::EMPTY);
     /// Converts name to a full plugin file path. Returns empty string on error.
     String NameToPath(const String& name) const;
+    /// Returns path to folder where temporary copies of plugin files are stored.
+    String GetTemporaryPluginPath() const;
 
     struct DynamicLibraryInfo
     {

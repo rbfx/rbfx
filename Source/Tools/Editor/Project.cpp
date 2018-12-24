@@ -89,6 +89,8 @@ Project::~Project()
         for (const auto& path : cachedEngineResourcePaths_)
             GetCache()->AddResourceDir(path);
     }
+
+    GetSubsystem<Editor>()->UpdateWindowTitle();
 }
 
 bool Project::LoadProject(const String& projectPath)
@@ -142,6 +144,7 @@ bool Project::LoadProject(const String& projectPath)
         assetConverter_.SetCachePath(GetCachePath());
         assetConverter_.AddAssetDirectory(GetResourcePath());
         assetConverter_.VerifyCacheAsync();
+        GetSubsystem<Editor>()->UpdateWindowTitle();
     }
 
     // Unregister engine dirs
@@ -262,9 +265,14 @@ bool Project::LoadProject(const String& projectPath)
                 for (const auto& pluginInfoValue : plugins)
                 {
                     const JSONObject& pluginInfo = pluginInfoValue.GetObject();
-                    Plugin* plugin = plugins_.Load(pluginInfo["name"]->GetString());
-                    if (pluginInfo["private"]->GetBool())
-                        plugin->SetFlags(plugin->GetFlags() | PLUGIN_PRIVATE);
+                    const String& pluginName = pluginInfo["name"]->GetString();
+                    if (Plugin* plugin = plugins_.Load(pluginName))
+                    {
+                        if (pluginInfo["private"]->GetBool())
+                            plugin->SetFlags(plugin->GetFlags() | PLUGIN_PRIVATE);
+                    }
+                    else
+                        URHO3D_LOGERRORF("Loading plugin '%s' failed.", pluginName.CString());
                 }
                 // Tick plugins once to ensure plugins are loaded before loading any possibly open scenes. This makes
                 // plugins register themselves with the engine so that loaded scenes can properly load components

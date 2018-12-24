@@ -10,7 +10,7 @@
 namespace tracy
 {
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 
 class Thread
 {
