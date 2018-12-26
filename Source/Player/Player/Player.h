@@ -31,6 +31,17 @@
 namespace Urho3D
 {
 
+/// Routes raw resource names to baked versions.
+class BakedResourceRouter : public ResourceRouter
+{
+    URHO3D_OBJECT(BakedResourceRouter, ResourceRouter);
+public:
+    ///
+    explicit BakedResourceRouter(Context* context) : ResourceRouter(context) { }
+    ///
+    void Route(String& name, ResourceRequest requestType) override;
+};
+
 class Player : public Application
 {
 public:
