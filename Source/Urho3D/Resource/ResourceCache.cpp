@@ -490,13 +490,7 @@ SharedPtr<File> ResourceCache::GetFile(const String& name, bool sendEventOnFailu
     MutexLock lock(resourceMutex_);
 
     String sanitatedName = SanitateResourceName(name);
-    if (!isRouting_)
-    {
-        isRouting_ = true;
-        for (unsigned i = 0; i < resourceRouters_.Size(); ++i)
-            resourceRouters_[i]->Route(sanitatedName, RESOURCE_GETFILE);
-        isRouting_ = false;
-    }
+    RouteResourceName(sanitatedName, RESOURCE_GETFILE);
 
     if (sanitatedName.Length())
     {
@@ -734,13 +728,7 @@ bool ResourceCache::Exists(const String& name) const
     MutexLock lock(resourceMutex_);
 
     String sanitatedName = SanitateResourceName(name);
-    if (!isRouting_)
-    {
-        isRouting_ = true;
-        for (unsigned i = 0; i < resourceRouters_.Size(); ++i)
-            resourceRouters_[i]->Route(sanitatedName, RESOURCE_CHECKEXISTS);
-        isRouting_ = false;
-    }
+    RouteResourceName(sanitatedName, RESOURCE_CHECKEXISTS);
 
     if (sanitatedName.Empty())
         return false;
@@ -1287,6 +1275,18 @@ void ResourceCache::IgnoreResourceReload(const String& name)
 void ResourceCache::IgnoreResourceReload(const Resource* resource)
 {
     IgnoreResourceReload(resource->GetName());
+}
+
+void ResourceCache::RouteResourceName(String& name, ResourceRequest requestType) const
+{
+    name = SanitateResourceName(name);
+    if (!isRouting_)
+    {
+        isRouting_ = true;
+        for (unsigned i = 0; i < resourceRouters_.Size(); ++i)
+            resourceRouters_[i]->Route(name, requestType);
+        isRouting_ = false;
+    }
 }
 
 }

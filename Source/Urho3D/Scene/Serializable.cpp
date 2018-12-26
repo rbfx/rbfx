@@ -616,24 +616,16 @@ bool Serializable::LoadJSON(const String& resourceName)
 bool Serializable::LoadFile(const String& resourceName)
 {
     ResourceCache* cache = GetSubsystem<ResourceCache>();
-    String extension = GetExtension(resourceName);
+    // Router may redirect to different file.
+    String realResourceName = resourceName;
+    cache->RouteResourceName(realResourceName, RESOURCE_CHECKEXISTS);
+    String extension = GetExtension(realResourceName);
 
-    // If resource exists - load it immediately.
-    if (cache->Exists(resourceName))
-    {
-        if (extension == ".xml")
-            return LoadXML(resourceName);
-        if (extension == ".json")
-            return LoadJSON(resourceName);
-        return Load(resourceName);
-    }
-
-    // When requested file does not exist - try binary version.
-    String testResourceName = ReplaceExtension(resourceName, ".bin");
-    if (cache->Exists(resourceName))
-        return Load(testResourceName);
-
-    return false;
+    if (extension == ".xml")
+        return LoadXML(realResourceName);
+    if (extension == ".json")
+        return LoadJSON(realResourceName);
+    return Load(realResourceName);
 }
 
 bool Serializable::SetAttribute(unsigned index, const Variant& value)
