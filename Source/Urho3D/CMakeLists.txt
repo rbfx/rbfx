@@ -51,6 +51,14 @@ macro (define_engine_source_files)
     endforeach ()
 endmacro()
 
+
+
+#check for UNIX and Define _POSIX_VER used by newton dynamics. (on linux this is needed to be defined at this scope to work. - find fix.)
+if (UNIX)
+      add_definitions(-D_POSIX_VER)
+endif(UNIX)
+
+
 define_engine_source_files (Container Core Engine IO Math)
 
 if (NOT MINI_URHO)
@@ -170,6 +178,7 @@ set (THIRD_PARTY_DEPENDENCIES
     dgNewtonAvx
     dgNewtonAvx2
     dgNewtonSse4.2
+    #dgNewtonSse
     dgPhysics
     dNewton
     dMath
