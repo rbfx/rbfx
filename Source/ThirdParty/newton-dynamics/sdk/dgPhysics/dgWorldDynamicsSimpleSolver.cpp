@@ -694,8 +694,9 @@ void dgWorldDynamicUpdate::CalculateClusterReactionForces(const dgBodyCluster* c
 	joindDesc.m_firstPassCoefFlag = dgFloat32(0.0f);
 
 	dgInt32 skeletonCount = 0;
+	dgSkeletonList& skeletonList = *world;
 	dgSkeletonContainer* skeletonArray[DG_MAX_SKELETON_JOINT_COUNT];
-	dgInt32 lru = dgAtomicExchangeAndAdd(&dgSkeletonContainer::m_lruMarker, 1);
+	dgInt32 lru = dgAtomicExchangeAndAdd(&skeletonList.m_lruMarker, 1);
 	for (dgInt32 i = 1; i < bodyCount; i++) {
 		dgDynamicBody* const body = (dgDynamicBody*)bodyArray[i].m_body;
 		dgSkeletonContainer* const container = body->GetSkeleton();

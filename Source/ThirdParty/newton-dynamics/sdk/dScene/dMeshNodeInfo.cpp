@@ -137,8 +137,15 @@ void dMeshNodeInfo::BuildFromVertexListIndexList(const NewtonMeshVertexFormat* c
 	NewtonMeshBuildFromVertexListIndexList (m_mesh, format);
 }
 
+const int* dMeshNodeInfo::GetIndexToVertexMap() const
+{
+	return NewtonMeshGetIndexToVertexMap(m_mesh);
+}
+
 void dMeshNodeInfo::RemoveUnusedVertices(dScene* const world, dScene::dTreeNode* const myNode)
 {
+	dTrace(("fix this shit here\n"));
+/*
 	dAssert (world->GetInfoFromNode(myNode) == this);
 
 	int vertexCount = NewtonMeshGetVertexCount(m_mesh);
@@ -156,10 +163,9 @@ void dMeshNodeInfo::RemoveUnusedVertices(dScene* const world, dScene::dTreeNode*
 			modifier->RemoveUnusedVertices(vertexRemapArray);
 		}
 	}
-
 	delete vertexRemapArray;
+*/
 }
-
 
 void dMeshNodeInfo::Serialize (TiXmlElement* const rootNode) const
 {

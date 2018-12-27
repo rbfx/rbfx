@@ -184,6 +184,8 @@ class dgConstraint
 	ConstraintsForceFeeback GetUpdateFeedbackFunction ();
 	virtual void JointAccelerations(dgJointAccelerationDecriptor* const params) = 0; 
 
+	void SetIndex (dgInt32 index);
+
 	class dgPointParam
 	{
 		public:
@@ -368,6 +370,9 @@ DG_INLINE bool dgConstraint::IsActive() const
 	return m_contactActive ? true : false;
 }
 
-
+DG_INLINE void dgConstraint::SetIndex (dgInt32 index)
+{
+	m_index = index;
+}
 #endif 
 

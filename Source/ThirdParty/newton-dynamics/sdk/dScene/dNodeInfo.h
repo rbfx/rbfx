@@ -44,6 +44,7 @@ class dSceneRender;
 	}																		\
 	exportType static const className& GetSingleton()						\
 	{																		\
+		className dommyRegister;														\
 		return m_singletonClass;											\
 	}																		\
 	static className m_singletonClass;
@@ -113,6 +114,8 @@ class dNodeInfo: public dClassInfo, public dVariableList
 	virtual unsigned GetUniqueID() const {return m_uniqueID;}
 	virtual void SetUniqueID(unsigned id) {m_uniqueID = id;}
 
+	void SetFileIndex(int fileIndex) { m_fileIndex = fileIndex;}
+
 	static dNodeInfo* CreateFromClassName (const char* const className, dScene* const world);
 	static dTree<const dNodeInfo*, dCRCTYPE>& GetSingletonDictionary();
 	static void ReplaceSingletonClass (const char* const className, const dNodeInfo* const singleton);
@@ -122,12 +125,9 @@ class dNodeInfo: public dClassInfo, public dVariableList
 	private:
 	dString m_name;
 	unsigned m_uniqueID;
+	unsigned m_fileIndex;
 	unsigned m_editorFlags;
 	static unsigned m_uniqueIDCounter;
 };
-
-
-
-
 
 #endif

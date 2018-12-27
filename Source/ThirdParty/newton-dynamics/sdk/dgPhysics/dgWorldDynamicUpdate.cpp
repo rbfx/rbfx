@@ -35,7 +35,7 @@
 #define DG_CCD_EXTRA_CONTACT_COUNT			(8 * 3)
 //#define DG_PARALLEL_JOINT_COUNT_CUT_OFF	(256)
 //#define DG_PARALLEL_JOINT_COUNT_CUT_OFF	(128)
-#define DG_PARALLEL_JOINT_COUNT_CUT_OFF	(1)
+#define DG_PARALLEL_JOINT_COUNT_CUT_OFF	(64)
 
 dgVector dgWorldDynamicUpdate::m_velocTol (dgFloat32 (1.0e-8f));
 
@@ -126,6 +126,7 @@ void dgWorldDynamicUpdate::UpdateDynamics(dgFloat32 timestep)
 			count++;
 		}
 		if (count) {
+#if 0
 			dgBodyInfo* const bodyArrayPtr = &world->m_bodiesMemory[0];
 			for (dgInt32 i = count - 1; i >= 0; i --) {
 				const dgBodyCluster* const cluster = &m_clusterData[i];
@@ -139,6 +140,7 @@ void dgWorldDynamicUpdate::UpdateDynamics(dgFloat32 timestep)
 					}
 				}
 			} 
+#endif
 			if (count) {
 				CalculateReactionForcesParallel(&m_clusterData[index], count, timestep);
 				index += count;
@@ -640,7 +642,7 @@ dgInt32 dgWorldDynamicUpdate::GetJacobianDerivatives(dgContraintDescritor& const
 
 	jointInfo->m_pairCount = dof;
 	jointInfo->m_pairStart = rowCount;
-	//jointInfo->m_paddedPairCount = dgInt16(dof);
+
 	for (dgInt32 i = 0; i < dof; i++) {
 		dgAssert(constraintParam.m_forceBounds[i].m_jointForce);
 

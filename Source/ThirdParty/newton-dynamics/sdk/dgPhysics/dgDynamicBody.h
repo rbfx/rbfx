@@ -26,8 +26,8 @@
 #include "dgBody.h"
 
 #define DG_MAX_SPEED_ATT	dgFloat32(0.02f)
-
-#define DG_FREEZE_ACCEL		dgFloat32(0.1f)
+//#define DG_FREEZE_ACCEL	dgFloat32(0.1f)
+#define DG_FREEZE_ACCEL		dgFloat32(1.0f)
 #define DG_FREEZE_SPEED		dgFloat32(0.032f)
 
 #define DG_FREEZE_ACCEL2	(DG_FREEZE_ACCEL * DG_FREEZE_ACCEL)

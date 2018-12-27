@@ -230,7 +230,9 @@ class dgParallelBodySolver
 	private:
 	void InitWeights();
 	void InitBodyArray();
+	void InitSkeletons();
 	void CalculateForces();
+	void UpdateSkeletons();
 	void InitJacobianMatrix();
 	void UpdateForceFeedback();
 	void CalculateJointsForce();
@@ -240,6 +242,8 @@ class dgParallelBodySolver
 	void CalculateBodiesAcceleration();
 	
 	void InitBodyArray(dgInt32 threadID);
+	void InitSkeletons(dgInt32 threadID);
+	void UpdateSkeletons(dgInt32 threadID);
 	void InitJacobianMatrix(dgInt32 threadID);
 	void UpdateForceFeedback(dgInt32 threadID);
 	void TransposeMassMatrix(dgInt32 threadID);
@@ -250,8 +254,9 @@ class dgParallelBodySolver
 	void CalculateJointsAcceleration(dgInt32 threadID);
 	void CalculateBodiesAcceleration(dgInt32 threadID);
 	
-//	static void InitSkeletonsKernel(void* const context, void* const, dgInt32 threadID);
+	static void InitSkeletonsKernel(void* const context, void* const, dgInt32 threadID);
 	static void InitBodyArrayKernel(void* const context, void* const, dgInt32 threadID);
+	static void UpdateSkeletonsKernel(void* const context, void* const, dgInt32 threadID);
 	static void InitJacobianMatrixKernel(void* const context, void* const, dgInt32 threadID);
 	static void UpdateForceFeedbackKernel(void* const context, void* const, dgInt32 threadID);
 	static void TransposeMassMatrixKernel(void* const context, void* const, dgInt32 threadID);
@@ -283,12 +288,14 @@ class dgParallelBodySolver
 	dgFloat32 m_firstPassCoef;
 	dgFloat32 m_accelNorm[DG_MAX_THREADS_HIVE_COUNT];
 	dgInt32 m_hasJointFeeback[DG_MAX_THREADS_HIVE_COUNT];
+	dgArray<dgSkeletonContainer*> m_skeletonArray; 
 
 	dgInt32 m_jointCount;
-	dgInt32 m_jacobianMatrixRowAtomicIndex;
 	dgInt32 m_solverPasses;
 	dgInt32 m_threadCounts;
 	dgInt32 m_soaRowsCount;
+	dgInt32 m_skeletonCount;
+	dgInt32 m_jacobianMatrixRowAtomicIndex;
 	dgInt32* m_soaRowStart;
 	dgInt32* m_bodyRowStart;
 
@@ -309,15 +316,18 @@ DG_INLINE dgParallelBodySolver::dgParallelBodySolver(dgMemoryAllocator* const al
 	,m_timestepRK(dgFloat32(0.0f))
 	,m_invTimestepRK(dgFloat32(0.0f))
 	,m_firstPassCoef(dgFloat32(0.0f))
+	,m_skeletonArray(allocator)
 	,m_jointCount(0)
-	,m_jacobianMatrixRowAtomicIndex(0)
 	,m_solverPasses(0)
 	,m_threadCounts(0)
 	,m_soaRowsCount(0)
+	,m_skeletonCount(0)
+	,m_jacobianMatrixRowAtomicIndex(0)
 	,m_soaRowStart(NULL)
 	,m_bodyRowStart(NULL)
 	,m_massMatrix(allocator)
 {
+	m_skeletonArray[32] = NULL;
 }
 
 #endif

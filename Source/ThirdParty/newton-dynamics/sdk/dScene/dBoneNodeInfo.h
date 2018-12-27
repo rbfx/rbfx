@@ -39,6 +39,9 @@ class dBoneNodeInfo: public dNodeInfo
 	dBoneNodeInfo(dScene* const world) {}
 	virtual ~dBoneNodeInfo(void);
 
+	int GetId() const;
+	void SetId(int length);
+
 	dFloat GetLength() const;
 	void SetLength(dFloat length);
 
@@ -57,6 +60,7 @@ class dBoneNodeInfo: public dNodeInfo
 //	virtual dFloat RayCast (const dVector& p0, const dVector& p1) const;
 
 	protected:
+	int m_boneIndex;
 	dFloat m_lengh;
 	dBoneType m_type;
 //	void DrawOOBBGizmo (dScene* const world, dScene::dTreeNode* myNode) const;

@@ -19,6 +19,7 @@
 
 #include "dSceneStdafx.h"
 #include "dScene.h"
+#include "dBoneNodeInfo.h"
 #include "dMeshNodeInfo.h"
 #include "dSceneNodeInfo.h"
 #include "dGeometryNodeModifierInfo.h"
@@ -135,7 +136,6 @@ void dGeometryNodeSkinModifierInfo::SkinMesh(dScene::dTreeNode* const skinNode, 
 	dMeshNodeInfo* const meshInfo = (dMeshNodeInfo*) scene->GetInfoFromNode (meshNode);
 	NewtonMesh* const mesh = meshInfo->GetMesh();
 
-//	int vertexCount = NewtonMeshGetVertexCount(mesh);
 	m_vertexCount = NewtonMeshGetVertexCount(mesh);
 
 	m_vertexWeights = new dVector[m_vertexCount];
@@ -147,20 +147,21 @@ void dGeometryNodeSkinModifierInfo::SkinMesh(dScene::dTreeNode* const skinNode, 
 	dTree<int,dScene::dTreeNode*> boneMap;
 	for (int i = 0; i < skinDataCount; i ++) {
 		dAssert (skinData[i].m_weight > 0.0f);
-		dScene::dTreeNode* bone = skinData[i].m_boneNode;
-		dTree<int,dScene::dTreeNode*>::dTreeNode* node = boneMap.Find(bone);
-		if (!node){
-			node = boneMap.Insert(skinBoneCount, bone);
-			scene->AddReference(skinNode, bone);
+		dScene::dTreeNode* const boneNode = skinData[i].m_boneNode;
+		dTree<int,dScene::dTreeNode*>::dTreeNode* mapNode = boneMap.Find(boneNode);
+		if (!mapNode){
+			mapNode = boneMap.Insert(skinBoneCount, boneNode);
+			scene->AddReference(skinNode, boneNode);
 			skinBoneCount ++;
 		}
 
+		dBoneNodeInfo* const boneInfo = (dBoneNodeInfo*)scene->GetInfoFromNode(boneNode);
+		dAssert(boneInfo->GetTypeId() == dBoneNodeInfo::GetRttiType());
 		int vertexIndex = skinData[i].m_vertexIndex;
 		for (int j = 0; j < 4; j ++) {
 			if (m_vertexWeights[vertexIndex][j] == 0.0f) {
-				dAssert (node && node->GetInfo() >= 0);
 				m_vertexWeights[vertexIndex][j] = skinData[i].m_weight;
-				m_boneWeightIndex[vertexIndex].m_index[j] = node->GetInfo();
+				m_boneWeightIndex[vertexIndex].m_index[j] = boneInfo->GetId();
 				break;
 			}
 		}
@@ -173,13 +174,14 @@ void dGeometryNodeSkinModifierInfo::SkinMesh(dScene::dTreeNode* const skinNode, 
 	dAssert (parentBone);
 	dSceneNodeInfo* const sceneNode = (dSceneNodeInfo*) scene->GetInfoFromNode(parentBone);
 	m_shapeBindMatrix = meshInfo->m_matrix * sceneNode->GetTransform();
-	int index = 0;
 	for (void* boneLink = scene->GetFirstChildLink(skinNode); boneLink; boneLink = scene->GetNextChildLink(skinNode, boneLink)) {
 		dScene::dTreeNode* const boneNode = scene->GetNodeFromLink(boneLink);
-		dSceneNodeInfo* const sceneInfo = (dSceneNodeInfo*) scene->GetInfoFromNode(boneNode);
+		dScene::dTreeNode* const transformNode = scene->FindParentByType(boneNode, dSceneNodeInfo::GetRttiType());
+		dAssert(transformNode);
+		dBoneNodeInfo* const boneInfo = (dBoneNodeInfo*)scene->GetInfoFromNode(boneNode);
+		dSceneNodeInfo* const sceneInfo = (dSceneNodeInfo*) scene->GetInfoFromNode(transformNode);
 		dMatrix matrix (sceneInfo->GetTransform());
-		m_boneBindingMatrix[index] = matrix.Inverse4x4();
-		index ++;
+		m_boneBindingMatrix[boneInfo->GetId()] = matrix.Inverse4x4();
 	}
 }
 

@@ -452,8 +452,9 @@ void dSceneGraph::Serialize (TiXmlElement* const rootNode) const
 	Iterator iter (*this);
 	for (iter.Begin(); iter; iter ++) {
 		dTreeNode* node = iter.GetNode();
-		//dNodeInfo* info = node->GetInfo().GetNode();
 		enumerator.Insert (index, node);
+		dNodeInfo* const info = node->GetInfo().GetNode();
+		info->SetFileIndex(index);
 		index ++;
 	}
 	nodes->SetAttribute("count", index);

@@ -38,7 +38,7 @@ class dGeometryNodeSkinModifierInfo: public dGeometryNodeModifierInfo
 	};
 
 
-	D_DEFINE_CLASS_NODE(dGeometryNodeSkinModifierInfo,dGeometryNodeModifierInfo,DSCENE_API)
+	D_DEFINE_CLASS_NODE(dGeometryNodeSkinModifierInfo, dGeometryNodeModifierInfo, DSCENE_API)
 
 	DSCENE_API dGeometryNodeSkinModifierInfo();
 	DSCENE_API dGeometryNodeSkinModifierInfo(dScene* const world);

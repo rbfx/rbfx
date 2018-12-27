@@ -28,9 +28,17 @@
 	#define CUSTOM_JOINTS_API
 #else 
 	#ifdef _CUSTOM_JOINTS_BUILD_DLL
-		#define CUSTOM_JOINTS_API __declspec (dllexport)
+        #ifdef WIN32
+            #define CUSTOM_JOINTS_API __declspec (dllexport)
+        #elif defined(__GNUC__)
+            #define CUSTOM_JOINTS_API __attribute__((visibility("default")))
+        #endif
 	#else
-		#define CUSTOM_JOINTS_API __declspec (dllimport)
+        #ifdef WIN32
+            #define CUSTOM_JOINTS_API __declspec (dllimport)
+        #else
+            #define CUSTOM_JOINTS_API
+        #endif
 	#endif
 #endif
 

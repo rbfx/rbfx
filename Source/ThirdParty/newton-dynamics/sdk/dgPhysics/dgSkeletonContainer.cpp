@@ -59,7 +59,7 @@ class dgSkeletonContainer::dgBodyJointMatrixDataPair
 	dgMatriData m_joint;
 } DG_GCC_VECTOR_ALIGMENT;
 
-dgInt32 dgSkeletonContainer::m_lruMarker = 1;
+//dgInt32 dgSkeletonContainer::m_lruMarker = 1;
 
 class dgSkeletonContainer::dgNode
 {

@@ -39,7 +39,7 @@ class dgSkeletonContainer
 
 	DG_CLASS_ALLOCATOR(allocator)
 	dgSkeletonContainer(dgWorld* const world, dgDynamicBody* const rootBody);
-	~dgSkeletonContainer();
+	virtual ~dgSkeletonContainer();
 
 	dgWorld* GetWorld() const; 
 	dgInt32 GetJointCount () const {return m_nodeCount - 1;}
@@ -56,6 +56,12 @@ class dgSkeletonContainer
 
 	void ClearSelfCollision();
 	void AddSelfCollisionJoint(dgContact* const contact);
+
+	dgInt32 GetLru() const { return m_lru; }
+	void SetLru(dgInt32 lru) { m_lru = lru; }
+
+	virtual void CalculateJointForce (dgJointInfo* const jointInfoArray, const dgBodyInfo* const bodyArray, dgJacobian* const internalForces);
+	virtual void InitMassMatrix (const dgJointInfo* const jointInfoArray, const dgLeftHandSide* const matrixRow, dgRightHandSide* const rightHandSide);
 	
 	private:
 	bool SanityCheck(const dgForcePair* const force, const dgForcePair* const accel) const;
@@ -72,9 +78,7 @@ class dgSkeletonContainer
 		
 	void InitLoopMassMatrix (const dgJointInfo* const jointInfoArray);
 	dgInt8* CalculateBufferSizeInBytes (const dgJointInfo* const jointInfoArray);
-	void InitMassMatrix (const dgJointInfo* const jointInfoArray, const dgLeftHandSide* const matrixRow, dgRightHandSide* const rightHandSide);
 	void SolveAuxiliary (const dgJointInfo* const jointInfoArray, dgJacobian* const internalForces, const dgForcePair* const accel, dgForcePair* const force) const;
-	void CalculateJointForce (dgJointInfo* const jointInfoArray, const dgBodyInfo* const bodyArray, dgJacobian* const internalForces);
 	void SolveLcp(dgFloat32* const x, const dgFloat32* const x0, const dgFloat32* const b, const dgFloat32* const low, const dgFloat32* const high, const dgInt32* const normalIndex) const;
 
 	dgWorld* m_world;
@@ -97,7 +101,7 @@ class dgSkeletonContainer
 	dgInt16 m_rowCount;
 	dgInt16 m_loopRowCount;
 	dgInt16 m_auxiliaryRowCount;
-	static dgInt32 m_lruMarker;
+//	static dgInt32 m_lruMarker;
 
 	friend class dgWorld;
 	friend class dgParallelBodySolver;

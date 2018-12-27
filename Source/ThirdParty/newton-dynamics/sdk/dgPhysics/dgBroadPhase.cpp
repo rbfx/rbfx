@@ -1078,18 +1078,11 @@ void dgBroadPhase::CalculatePairContacts (dgPair* const pair, dgInt32 threadID)
 	m_world->CalculateContacts(pair, threadID, false, false);
 
 	if (pair->m_contactCount) {
-//		if (pair->m_contact->m_body0->m_invMass.m_w != dgFloat32 (0.0f)) {
-//			pair->m_contact->m_body0->m_equilibrium = false;
-//		}
-//		if (pair->m_contact->m_body1->m_invMass.m_w != dgFloat32 (0.0f)) {
-//			pair->m_contact->m_body1->m_equilibrium = false;
-//		}
 		dgAssert(pair->m_contactCount <= (DG_CONSTRAINT_MAX_ROWS / 3));
 		m_world->ProcessContacts(pair, threadID);
 		KinematicBodyActivation(pair->m_contact);
 	} else {
 		if (pair->m_cacheIsValid) {
-			//m_world->ProcessCachedContacts (pair->m_contact, timestep, threadID);
 			KinematicBodyActivation(pair->m_contact);
 		} else {
 			pair->m_contact->m_maxDOF = 0;

@@ -68,6 +68,8 @@ class dMeshNodeInfo: public dGeometryNodeInfo
 */
 	virtual void BuildFromVertexListIndexList(const NewtonMeshVertexFormat* const format);
 
+	const int* GetIndexToVertexMap() const;
+
 
 	virtual void CalcutateAABB (dVector& p0, dVector& p1) const;
 	virtual dFloat RayCast (const dVector& p0, const dVector& p1) const;

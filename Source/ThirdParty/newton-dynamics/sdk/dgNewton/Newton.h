@@ -30,11 +30,19 @@
 #ifdef _NEWTON_STATIC_LIB
 	#define NEWTON_API
 #else 
-	#ifdef _NEWTON_BUILD_DLL
-		#define NEWTON_API __declspec (dllexport)
+    #ifdef _NEWTON_BUILD_DLL
+        #ifdef WIN32
+            #define NEWTON_API __declspec (dllexport)
+        #elif defined(__GNUC__)
+            #define NEWTON_API __attribute__((visibility("default")))
+        #endif
 	#else
-		#define NEWTON_API __declspec (dllimport)
-	#endif
+        #ifdef WIN32
+            #define NEWTON_API __declspec (dllimport)
+        #else
+            #define NEWTON_API
+        #endif
+    #endif
 #endif
 
 

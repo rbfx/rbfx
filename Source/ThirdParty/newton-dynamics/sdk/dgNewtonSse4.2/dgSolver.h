@@ -146,6 +146,10 @@ class dgSoaFloat
 		return _mm_cvtss_f32 (tmp2);
 	}
 
+	static DG_INLINE void FlushRegisters()
+	{
+	}
+
 	DG_INLINE float GetMax() const
 	{
 		__m128 tmp0 (_mm_max_ps (m_low, m_high));
@@ -219,7 +223,9 @@ class dgSolver: public dgParallelBodySolver
 	private:
 	void InitWeights();
 	void InitBodyArray();
+	void InitSkeletons();
 	void CalculateForces();
+	void UpdateSkeletons();
 	void InitJacobianMatrix();
 	void UpdateForceFeedback();
 	void CalculateJointsForce();
@@ -229,6 +235,8 @@ class dgSolver: public dgParallelBodySolver
 	void CalculateBodiesAcceleration();
 	
 	void InitBodyArray(dgInt32 threadID);
+	void InitSkeletons(dgInt32 threadID);
+	void UpdateSkeletons(dgInt32 threadID);
 	void InitJacobianMatrix(dgInt32 threadID);
 	void UpdateForceFeedback(dgInt32 threadID);
 	void TransposeMassMatrix(dgInt32 threadID);
@@ -240,6 +248,8 @@ class dgSolver: public dgParallelBodySolver
 	void CalculateBodiesAcceleration(dgInt32 threadID);
 
 	static void InitBodyArrayKernel(void* const context, void* const, dgInt32 threadID);
+	static void InitSkeletonsKernel(void* const context, void* const, dgInt32 threadID);
+	static void UpdateSkeletonsKernel(void* const context, void* const, dgInt32 threadID);
 	static void InitJacobianMatrixKernel(void* const context, void* const, dgInt32 threadID);
 	static void UpdateForceFeedbackKernel(void* const context, void* const, dgInt32 threadID);
 	static void TransposeMassMatrixKernel(void* const context, void* const, dgInt32 threadID);
