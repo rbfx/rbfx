@@ -29,13 +29,13 @@
 namespace tracy
 {
 
-#ifdef _WIN32
+#if defined _MSC_VER || defined __MINGW32__
 typedef SOCKET socket_t;
 #else
 typedef int socket_t;
 #endif
 
-#ifdef _WIN32
+#if defined _MSC_VER || defined __MINGW32__
 struct __wsinit
 {
     __wsinit()
@@ -61,7 +61,7 @@ Socket::Socket()
     , m_bufPtr( nullptr )
     , m_bufLeft( 0 )
 {
-#ifdef _WIN32
+#if defined _MSC_VER || defined __MINGW32__
     InitWinSock();
 #endif
 }
@@ -105,7 +105,7 @@ bool Socket::Connect( const char* addr, const char* port )
 #endif
         if( connect( sock, ptr->ai_addr, ptr->ai_addrlen ) == -1 )
         {
-#ifdef _WIN32
+#if defined _MSC_VER || defined __MINGW32__
             closesocket( sock );
 #else
             close( sock );
@@ -124,7 +124,7 @@ bool Socket::Connect( const char* addr, const char* port )
 void Socket::Close()
 {
     assert( m_sock != -1 );
-#ifdef _WIN32
+#if defined _MSC_VER || defined __MINGW32__
     closesocket( m_sock );
 #else
     close( m_sock );
@@ -262,7 +262,7 @@ bool Socket::HasData()
 ListenSocket::ListenSocket()
     : m_sock( -1 )
 {
-#ifdef _WIN32
+#if defined _MSC_VER || defined __MINGW32__
     InitWinSock();
 #endif
 }
@@ -339,7 +339,7 @@ Socket* ListenSocket::Accept()
 void ListenSocket::Close()
 {
     assert( m_sock != -1 );
-#ifdef _WIN32
+#if defined _MSC_VER || defined __MINGW32__
     closesocket( m_sock );
 #else
     close( m_sock );

@@ -8,7 +8,9 @@
 #endif
 #ifdef _WIN32
 #  include <windows.h>
-#  include <cinttypes> // needed for PRIu64
+#  ifdef __MINGW32__
+#    define __STDC_FORMAT_MACROS
+#  endif
 #else
 #  include <pthread.h>
 #  include <string.h>
@@ -84,7 +86,7 @@ void SetThreadName( std::thread::native_handle_type handle, const char* name )
     {
     }
 #  endif
-#elif defined _GNU_SOURCE && !defined __EMSCRIPTEN__
+#elif defined _GNU_SOURCE && !defined __EMSCRIPTEN__ || defined __MINGW32__
     {
         const auto sz = strlen( name );
         if( sz <= 15 )
@@ -108,14 +110,12 @@ void SetThreadName( std::thread::native_handle_type handle, const char* name )
         memcpy( buf, name, sz );
         buf[sz+1] = '\0';
         auto data = (ThreadNameData*)tracy_malloc( sizeof( ThreadNameData ) );
-#  ifdef _WIN32
-#    if defined PTW32_VERSION
+#  if defined PTW32_VERSION
         data->id = pthread_getw32threadid_np( static_cast<pthread_t>( handle ) );
-#    elif defined __WINPTHREADS_VERSION
+#  elif defined __WINPTHREADS_VERSION
         data->id = GetThreadId( pthread_gethandle( static_cast<pthread_t>( handle ) ) );
-#    else
+#  elif defined _WIN32
         data->id = GetThreadId( static_cast<HANDLE>( handle ) );
-#    endif
 #  elif defined __APPLE__
         pthread_threadid_np( handle, &data->id );
 #  else

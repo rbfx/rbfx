@@ -1,16 +1,28 @@
-![Urho3D logo](https://raw.githubusercontent.com/urho3d/Urho3D/master/bin/Data/Textures/LogoLarge.png)
+# rbfx
 
-# Urho3D (aka rebelfork)
+[![Build Status](https://travis-ci.org/rokups/rbfx.svg?branch=master)](https://travis-ci.org/rokups/rbfx) [![Build status](https://ci.appveyor.com/api/projects/status/9b57do8manc0bfsq/branch/master?svg=true)](https://ci.appveyor.com/project/rokups/rbfx/branch/master)
 
-[![Build Status](https://travis-ci.org/rokups/Urho3D.svg?branch=master)](https://travis-ci.org/rokups/Urho3D) [![Build status](https://ci.appveyor.com/api/projects/status/9b57do8manc0bfsq/branch/master?svg=true)](https://ci.appveyor.com/project/rokups/urho3d/branch/master) [![Join the chat at https://gitter.im/urho3d/Urho3D](https://badges.gitter.im/urho3d/Urho3D.svg)](https://gitter.im/urho3d/Urho3D?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+**rbfx** is a free lightweight, cross-platform 2D and 3D game engine implemented in C++ and released under the MIT license. Greatly inspired by OGRE and Horde3D.
 
-**Urho3D** is a free lightweight, cross-platform 2D and 3D game engine implemented in C++ and released under the MIT license. Greatly inspired by OGRE and Horde3D.
-
-This repository is unofficial/personal fork of [urho3d.github.io](http://urho3d.github.io/).
+This project is a fork of [urho3d.github.io](http://urho3d.github.io/).
 
 ## License
 
 Licensed under the MIT license, see [LICENSE](https://github.com/urho3d/Urho3D/blob/master/LICENSE) for details.
+
+## Features overview
+
+* Audio
+* Graphics (d3d9. d3d11, OpenGL 2.0, OpenGL 3.2, GLES2, GLES3)
+* Input (keyboard/mouse/touch)
+* Inverse Kinematics
+* Navigation
+* Physics (2D/3D)
+* UI (retained mode game UI + ImGui for tools)
+* 2D subsystem
+* Networking
+* C# support
+* WYSIWYG editor with hot code reload (C++ and C#)
 
 ## Screenshots
 
@@ -18,7 +30,7 @@ Licensed under the MIT license, see [LICENSE](https://github.com/urho3d/Urho3D/b
 
 ## Dependencies
 
-Urho3D uses the following third-party libraries:
+rbfx uses the following third-party libraries:
 - Box2D 2.3.2 WIP (http://box2d.org)
 - Bullet 2.86.1 (http://www.bulletphysics.org)
 - Civetweb 1.7 (https://github.com/civetweb/civetweb)
@@ -54,5 +66,5 @@ Urho3D uses the following third-party libraries:
 - fmt 4.1.0 (http://fmtlib.net)
 - spdlog 0.16.3 (https://github.com/gabime/spdlog)
 
-Urho3D optionally uses the following external third-party libraries:
+rbfx optionally uses the following external third-party libraries:
 - Mono (http://www.mono-project.com/download/stable/)
