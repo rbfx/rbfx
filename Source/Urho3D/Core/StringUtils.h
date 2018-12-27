@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../Core/Variant.h"
+#include "../Container/Str.h"
 
 namespace Urho3D
 {
@@ -163,5 +164,31 @@ template <> inline Matrix4 FromString<Matrix4>(const char* source) { return ToMa
 
 /// Parse type from a string.
 template <class T> T FromString(const String& source) { return FromString<T>(source.CString()); }
+
+/// A dummy type used to make String to comform with stl 'Container' concept and used for creating std::back_inserter() to a String.
+struct _StringContainer
+{
+    /// Value type of container.
+    using value_type = char;
+    /// Construct.
+    explicit _StringContainer(String& str) : str_(str) { }
+    /// Insert value to container.
+    void push_back(char c) { str_.Append(c); }
+
+private:
+    /// The real container.
+    String& str_;
+};
+
+/// Return a formatted string.
+template<typename... Args> inline String Format(const char* formatString, const Args&... args)
+{
+    String ret;
+    _StringContainer pret(ret);
+    fmt::format_to(std::back_inserter(pret), formatString, args...);
+    return ret;
+}
+/// Return a formatted string.
+template<typename... Args> inline String Format(const String& formatString, const Args&... args) { return Format(formatString.CString(), args...); }
 
 }
