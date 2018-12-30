@@ -9,10 +9,10 @@ cache:
 env:
   global:
     - MAKEFLAGS=-j4
-    - URHO3D_ENABLE_ALL=ON
-    - URHO3D_DOCS=OFF
     - CMAKE_VERSION=3.4
     - CMAKE_PATCH=3
+    - URHO3D_SAMPLES=ON
+    - URHO3D_PACKAGING=ON
 addons:
   apt:
     sources:
@@ -38,6 +38,7 @@ matrix:
       compiler: gcc
       env:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+        - BUILD_SHARED_LIBS=OFF
       addons:
         apt:
           sources:
@@ -52,6 +53,8 @@ matrix:
     - &Linux-clang
       os: linux
       compiler: clang
+      env:
+        - BUILD_SHARED_LIBS=OFF
       addons:
         apt:
           sources:
@@ -69,6 +72,8 @@ matrix:
       os: osx
       osx_image: xcode8.3
       compiler: clang
+      env:
+        - BUILD_SHARED_LIBS=OFF
     - <<: *MacOS
       env:
         - BUILD_SHARED_LIBS=ON
