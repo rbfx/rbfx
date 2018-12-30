@@ -1064,24 +1064,24 @@ void ResourceCache::HandleBeginFrame(StringHash eventType, VariantMap& eventData
 {
     for (unsigned i = 0; i < fileWatchers_.Size(); ++i)
     {
-        String fileName;
-        while (fileWatchers_[i]->GetNextChange(fileName))
+        FileChange change;
+        while (fileWatchers_[i]->GetNextChange(change))
         {
-            auto it = ignoreResourceAutoReload_.Find(fileName);
+            auto it = ignoreResourceAutoReload_.Find(change.fileName_);
             if (it != ignoreResourceAutoReload_.End())
             {
                 ignoreResourceAutoReload_.Erase(it);
                 continue;
             }
 
-            ReloadResourceWithDependencies(fileName);
+            ReloadResourceWithDependencies(change.fileName_);
 
             // Finally send a general file changed event even if the file was not a tracked resource
             using namespace FileChanged;
 
             VariantMap& eventData = GetEventDataMap();
-            eventData[P_FILENAME] = fileWatchers_[i]->GetPath() + fileName;
-            eventData[P_RESOURCENAME] = fileName;
+            eventData[P_FILENAME] = fileWatchers_[i]->GetPath() + change.fileName_;
+            eventData[P_RESOURCENAME] = change.fileName_;
             SendEvent(E_FILECHANGED, eventData);
         }
     }

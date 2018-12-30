@@ -145,9 +145,12 @@ void AssetConverter::DispatchChangedAssets()
 
     for (auto& watcher : watchers_)
     {
-        String path;
-        while (watcher->GetNextChange(path))
-            ConvertAssetAsync(path);
+        FileChange change;
+        while (watcher->GetNextChange(change))
+        {
+            if (change.kind_ != FILECHANGE_REMOVED)
+                ConvertAssetAsync(change.fileName_);
+        }
     }
 }
 
