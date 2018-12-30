@@ -213,6 +213,17 @@ namespace Urho3D {
         }
     }
     
+    Matrix3x4 RigidBody::GetCenterOfMassTransform(bool scaledPhysicsWorldFrame)
+    {
+        if(newtonBody_)
+        {
+            return Matrix3x4(GetCenterOfMassPosition(scaledPhysicsWorldFrame), GetPhysicsRotation(), 1.0f);
+        }
+        else {
+            return Matrix3x4::IDENTITY;
+        }
+    }
+    
     
     
     
@@ -1091,7 +1102,7 @@ namespace Urho3D {
     void RigidBody::AddWorldForce(const Vector3& worldForce, const Vector3& worldPosition)
     {
         netForce_ += worldForce ; 
-        AddWorldTorque((worldPosition - GetCenterOfMassPosition(false)).CrossProduct(worldForce));
+        AddWorldTorque((worldPosition - GetCenterOfMassPosition()).CrossProduct(worldForce));
     }
 
     void RigidBody::AddWorldTorque(const Vector3& torque)
@@ -1106,7 +1117,7 @@ namespace Urho3D {
 
     void RigidBody::AddLocalForce(const Vector3& localForce, const Vector3& localPosition)
     {
-        AddWorldForce(node_->GetWorldRotation() * localForce, node_->GetWorldRotation() * localPosition);
+        AddWorldForce(node_->GetWorldRotation() * localForce, GetCenterOfMassTransform() * (localPosition));
     }
 
     void RigidBody::AddLocalTorque(const Vector3& torque)
@@ -1220,21 +1231,6 @@ namespace Urho3D {
         }
         else
             return Vector3::ZERO;
-    }
-
-    Vector3 RigidBody::GetCenterOfMassPosition()
-    {
-        dVector dPos;
-        NewtonBodyGetPosition(newtonBody_, &dPos[0]);
-        Vector3 pos = physicsWorld_->PhysicsToScene_Domain(NewtonToUrhoVec3(dPos));
-        return pos;
-    }
-
-    Quaternion RigidBody::GetCenterOfMassRotation()
-    {
-        dQuaternion quat;
-        NewtonBodyGetRotation(newtonBody_, &quat.m_q0);
-        return NewtonToUrhoQuat(quat);
     }
 
     void RigidBody::GetConnectedContraints(PODVector<Constraint*>& contraints)

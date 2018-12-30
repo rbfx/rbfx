@@ -76,7 +76,7 @@ namespace Urho3D
 
         /// returns the position of the bodies center of mass in scene space or physics world space.
         Vector3 GetCenterOfMassPosition(bool scaledPhysicsWorldFrame = false);
-        
+        Matrix3x4 GetCenterOfMassTransform(bool scaledPhysicsWorldFrame = false);
         
         ///Get the mass scale of the rigid body
         float GetMassScale() const { return massScale_; }
@@ -238,12 +238,6 @@ namespace Urho3D
 
         Vector3 GetAcceleration();
 
-
-
-        /// Return the world position of the center of mass.
-        Vector3 GetCenterOfMassPosition();
-        /// Return the world orientation of the center of mass.
-        Quaternion GetCenterOfMassRotation();
 
         /// Get Immediately connected contraints to this rigid body.
         void GetConnectedContraints(PODVector<Constraint*>& contraints);
