@@ -35,16 +35,13 @@ namespace Urho3D {
             gravityForce = physicsWorld->GetGravity() * physicsScale* rigidBodyComp->GetEffectiveMass();
 
 
-            //all 
-            netForce *= physicsScale*physicsScale*physicsScale;
-
-
+    
             netForce += gravityForce;
 
 
 
-
-            NewtonBodySetForce(body, &UrhoToNewton(netForce)[0]);
+            //apply forces and torques scaled with the physics world scale accourdingly.
+            NewtonBodySetForce(body, &UrhoToNewton(netForce*physicsScale*physicsScale*physicsScale)[0]);
             NewtonBodySetTorque(body, &UrhoToNewton(netTorque*physicsScale*physicsScale*physicsScale*physicsScale*physicsScale)[0]);
 
         }

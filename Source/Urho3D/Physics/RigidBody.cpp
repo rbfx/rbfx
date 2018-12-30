@@ -142,24 +142,81 @@ namespace Urho3D {
 
     Urho3D::Matrix3x4 RigidBody::GetPhysicsTransform(bool scaledPhysicsWorldFrame)
     {
-        if(scaledPhysicsWorldFrame)
-            return Matrix3x4(physicsWorld_->SceneToPhysics_Domain(targetNodePos_), targetNodeRotation_, 1.0f);
-        else
-            return Matrix3x4(targetNodePos_, targetNodeRotation_, 1.0f);
+        
+        if(newtonBody_){
+            dMatrix bodyMatrix;
+            NewtonBodyGetMatrix(newtonBody_, &bodyMatrix[0][0]);
+            
+            if(scaledPhysicsWorldFrame)
+                return physicsWorld_->SceneToPhysics_Domain(Matrix3x4(NewtonToUrhoMat4(bodyMatrix)));
+            else
+                return Matrix3x4(NewtonToUrhoMat4(bodyMatrix));
+        
+        }
+        else {
+            if(scaledPhysicsWorldFrame)
+                return Matrix3x4(physicsWorld_->SceneToPhysics_Domain(targetNodePos_), targetNodeRotation_, 1.0f);
+            else
+                return Matrix3x4(targetNodePos_, targetNodeRotation_, 1.0f);
+            
+        }
     }
 
     Urho3D::Vector3 RigidBody::GetPhysicsPosition(bool scaledPhysicsWorldFrame /*= false*/)
     {
-        if (scaledPhysicsWorldFrame)
-            return physicsWorld_->SceneToPhysics_Domain(targetNodePos_);
-        else
-            return targetNodePos_;
+                if(newtonBody_){
+                    dVector bodyPos;
+                    NewtonBodyGetPosition(newtonBody_, &bodyPos[0]);
+                    if (scaledPhysicsWorldFrame)
+                        return physicsWorld_->SceneToPhysics_Domain(NewtonToUrhoVec3(bodyPos));
+                    else
+                        return NewtonToUrhoVec3(bodyPos);
+                }
+                else {
+                    if (scaledPhysicsWorldFrame)
+                        return physicsWorld_->SceneToPhysics_Domain(targetNodePos_);
+                    else
+                        return targetNodePos_;
+                    
+                }
+        
+
     }
-
-
-
-
-
+    
+    Quaternion RigidBody::GetPhysicsRotation() { 
+        if(newtonBody_){
+            dgQuaternion bodyOrientation;
+            NewtonBodyGetRotation(newtonBody_, &bodyOrientation[0]);
+            return NewtonToUrhoQuat(bodyOrientation);
+        }
+        else {
+            return targetNodeRotation_; 
+        }
+    }
+    
+    Vector3 RigidBody::GetCenterOfMassPosition(bool scaledPhysicsWorldFrame)
+    {
+        if(newtonBody_)
+        {
+            dVector comPosition;
+            NewtonBodyGetCentreOfMass(newtonBody_, &comPosition[0]);
+            if(scaledPhysicsWorldFrame)
+            {
+                return physicsWorld_->SceneToPhysics_Domain(NewtonToUrhoVec3(comPosition));
+            }
+            else {
+                return NewtonToUrhoVec3(comPosition);
+            }
+        }
+        else {
+            return Vector3::ZERO;
+        }
+    }
+    
+    
+    
+    
+    
     void RigidBody::SetLinearVelocity(const Vector3& worldVelocity, bool useForces)
     {
         if (newtonBody_)
@@ -814,10 +871,7 @@ namespace Urho3D {
 
 
 
-    void RigidBody::bakeForceAndTorque()
-    {
 
-    }
 
     void RigidBody::updateInterpolatedTransform()
     {
@@ -1034,18 +1088,15 @@ namespace Urho3D {
         AddWorldForce(force, Vector3::ZERO);
     }
 
-    void RigidBody::AddWorldForce(const Vector3& force, const Vector3& localPosition)
+    void RigidBody::AddWorldForce(const Vector3& worldForce, const Vector3& worldPosition)
     {
-        //float physScale = physicsWorld_->GetPhysicsScale();
-        netForce_ += force ; //forceScaled = force*(physScale^3)
-        bakeForceAndTorque();
+        netForce_ += worldForce ; 
+        AddWorldTorque((worldPosition - GetCenterOfMassPosition(false)).CrossProduct(worldForce));
     }
 
     void RigidBody::AddWorldTorque(const Vector3& torque)
     {
-        //float physScale = physicsWorld_->GetPhysicsScale();
-        netTorque_ += torque; //torqueScaled = torque*(physScale^5).
-        bakeForceAndTorque();
+        netTorque_ += torque;
     }
 
     void RigidBody::AddLocalForce(const Vector3& force)
@@ -1053,9 +1104,9 @@ namespace Urho3D {
         AddWorldForce(node_->GetWorldRotation() * force);
     }
 
-    void RigidBody::AddLocalForce(const Vector3& force, const Vector3& localPosition)
+    void RigidBody::AddLocalForce(const Vector3& localForce, const Vector3& localPosition)
     {
-        AddWorldForce(node_->GetWorldRotation() * force, localPosition);
+        AddWorldForce(node_->GetWorldRotation() * localForce, node_->GetWorldRotation() * localPosition);
     }
 
     void RigidBody::AddLocalTorque(const Vector3& torque)
@@ -1067,7 +1118,6 @@ namespace Urho3D {
     {
         netForce_ = Vector3(0, 0, 0);
         netTorque_ = Vector3(0, 0, 0);
-        bakeForceAndTorque();
     }
 
     void RigidBody::AddImpulse(const Vector3& localPosition, const Vector3& targetVelocity)

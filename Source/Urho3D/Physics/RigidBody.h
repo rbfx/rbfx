@@ -69,13 +69,15 @@ namespace Urho3D
 
 
 
-        /// returns the body transform in scene space or physics world space (they will be the same if PhysicsScale is 1.0f)
+        /// returns the body transform (frame center)in scene space or physics world space (they will be the same if PhysicsScale is 1.0f)
         Matrix3x4 GetPhysicsTransform(bool scaledPhysicsWorldFrame = false);
-
         Vector3 GetPhysicsPosition(bool scaledPhysicsWorldFrame = false);
+        Quaternion GetPhysicsRotation();
 
-        Quaternion GetPhysicsRotation() { return targetNodeRotation_; }
-
+        /// returns the position of the bodies center of mass in scene space or physics world space.
+        Vector3 GetCenterOfMassPosition(bool scaledPhysicsWorldFrame = false);
+        
+        
         ///Get the mass scale of the rigid body
         float GetMassScale() const { return massScale_; }
 
@@ -195,8 +197,8 @@ namespace Urho3D
 
         /// Add a force to the body in world cordinates on the body's center of mass.
         void AddWorldForce(const Vector3& force);
-        /// Add a force to the body in world cordinates localPosition from the body's center of mass.
-        void AddWorldForce(const Vector3& force, const Vector3& localPosition);
+        /// Add a force to the body in world cordinates at worldPosition.
+        void AddWorldForce(const Vector3& force, const Vector3& worldPosition);
         /// Add a torque to the body in world space
         void AddWorldTorque(const Vector3& torque);
 
@@ -360,8 +362,6 @@ namespace Urho3D
         /// rebuilds the internal body based on the current status of collision shapes on this node and child nodes. (be sure to update the children first!)
         void reBuildBody();
 
-        ///precomputes force and torque for quick pass to newton callback
-        void bakeForceAndTorque();
 
         virtual void OnNodeSet(Node* node) override;
 
