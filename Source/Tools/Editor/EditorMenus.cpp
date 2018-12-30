@@ -368,7 +368,7 @@ void Editor::RenderProjectMenu()
             ui::SameLine();
             ui::SetCursorPosX(startPos = startPos + 180_dpx + ui::GetStyle().ItemSpacing.x);
             UI_ITEMWIDTH(100_dpx)
-            RenderSingleAttribute(value);
+                RenderSingleAttribute(value);
             ui::SameLine();
             ui::SetCursorPosX(startPos + 100_dpx + ui::GetStyle().ItemSpacing.x);
             if (ui::Button(ICON_FA_TRASH))
@@ -377,8 +377,8 @@ void Editor::RenderProjectMenu()
                 ++it;
         }
 
-        UI_ITEMWIDTH(-30_dpx)
-        ui::Combo("###Selector", &state->predefinedItem, predefinedNames, SDL_arraysize(predefinedNames));
+        UI_ITEMWIDTH(280_dpx)
+            ui::Combo("###Selector", &state->predefinedItem, predefinedNames, URHO3D_ARRAYSIZE(predefinedNames));
 
         ui::SameLine();
 
@@ -412,12 +412,12 @@ void Editor::RenderProjectMenu()
         if (state->predefinedItem == 1)
         {
             UI_ITEMWIDTH(180_dpx)
-            ui::InputText("###Key", &state->customName);
+                ui::InputText("###Key", &state->customName);
 
             // Custom entry type selector
             ui::SameLine();
             UI_ITEMWIDTH(100_dpx)
-            ui::Combo("###Type", &state->customType, variantNames, SDL_arraysize(variantTypes));
+                ui::Combo("###Type", &state->customType, variantNames, SDL_arraysize(variantTypes));
         }
         ui::EndMenu();
     }
