@@ -35,6 +35,7 @@ namespace Urho3D
 class Tab;
 class SceneTab;
 class AssetConverter;
+class SubCommand;
 
 static const unsigned EDITOR_VIEW_LAYER = 1U << 31;
 
@@ -52,9 +53,7 @@ public:
     void Stop() override;
 
     ///
-    void InitializeEditor();
-    ///
-    void InitializeConverter();
+    void ExecuteSubcommand(SubCommand* cmd);
 
     /// Renders UI elements.
     void OnUpdate(VariantMap& args);
@@ -97,6 +96,8 @@ public:
     ImFont* GetMonoSpaceFont() const { return monoFont_; }
     ///
     void UpdateWindowTitle(const String& resourcePath=String::EMPTY);
+    ///
+    VariantMap& GetEngineParameters() { return engineParameters_; }
 
 protected:
     /// Process console commands.
@@ -107,6 +108,8 @@ protected:
     void RenderProjectMenu();
     ///
     void SetupSystemUI();
+    ///
+    template<typename T> void RegisterSubcommand();
 
     /// List of active scene tabs.
     Vector<SharedPtr<Tab>> tabs_;
@@ -129,11 +132,7 @@ protected:
     ///
     String defaultProjectPath_;
     ///
-    String converterName_;
-    ///
-    String converterInput_;
-    ///
-    String converterOutput_;
+    Vector<SharedPtr<SubCommand>> subCommands_;
 };
 
 }

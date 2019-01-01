@@ -23,26 +23,25 @@
 #pragma once
 
 
+#include <Urho3D/Core/CommandLine.h>
 #include <Urho3D/Core/Object.h>
-#include <Toolbox/IO/ContentUtilities.h>
-
 
 namespace Urho3D
 {
 
-class ImportAsset : public Object
+/// A base class for editor sub-commands. They are executed by passing `--cmd ClassName` command line parameters.
+class SubCommand : public Object
 {
-    URHO3D_OBJECT(ImportAsset, Object);
+    URHO3D_OBJECT(SubCommand, Object);
 public:
-    /// Construct.
-    explicit ImportAsset(Context* context);
-
-    /// Returns true if path points to a resource that can be converted by this converter.
-    virtual bool Accepts(const String& path, ContentType type) = 0;
-    /// A conversion function. Default implementation starts editor as subprocess to convert the asset.
-    virtual bool Convert(const String& path);
-    /// A function that does conversion. If it can be executed in a worker thread you may override Convert() and call RunConvert() from it directly.
-    virtual bool RunConverter(const String& path) = 0;
+    ///
+    explicit SubCommand(Context* context);
+    ///
+    static void RegisterObject(Context* context);
+    ///
+    virtual void RegisterCommandLine(CLI::App& cli) = 0;
+    ///
+    virtual void Execute() = 0;
 };
 
 }

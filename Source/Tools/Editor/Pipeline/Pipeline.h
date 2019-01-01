@@ -23,38 +23,44 @@
 #pragma once
 
 
-#include <Toolbox/SystemUI/ResourceBrowser.h>
-#include "Inspector/ResourceInspector.h"
-#include "Tabs/Tab.h"
+#include <Urho3D/IO/FileWatcher.h>
+#include <Urho3D/Resource/XMLFile.h>
+#include <Urho3D/Scene/Serializable.h>
+#include <Toolbox/IO/ContentUtilities.h>
+
+#include "Converter.h"
 
 
 namespace Urho3D
 {
 
-/// Resource browser tab.
-class ResourceTab : public Tab
-{
-    URHO3D_OBJECT(ResourceTab, Tab)
-public:
-    /// Construct.
-    explicit ResourceTab(Context* context);
+class Converter;
 
-    /// Render content of tab window. Returns false if tab was closed.
-    bool RenderWindowContent() override;
+class Pipeline : public Serializable
+{
+    URHO3D_OBJECT(Pipeline, Serializable);
+public:
+    ///
+    explicit Pipeline(Context* context);
+    ///
+    ~Pipeline() override;
+    ///
+    bool LoadJSON(const JSONValue& source) override;
+    /// Watch directory for changed assets and automatically convert them.
+    void EnableWatcher();
+    /// Execute asset converters specified in `converterKinds` in worker threads. Returns immediately.
+    void BuildCache(ConverterKinds converterKinds);
 
 protected:
-    /// Constructs a name for newly created resource based on specified template name.
-    String GetNewResourcePath(const String& name);
-    /// Sends a notification to inspector tab to show inspector of specified resource.
-    template<typename TInspector, typename TResource>
-    void OpenResourceInspector(const String& resourcePath);
+    /// Converts asset. Blocks calling thread.
+    void ConvertAssets(const StringVector& resourceNames, ConverterKinds converterKinds);
+    /// Watches for changed files and requests asset conversion if needed.
+    void DispatchChangedAssets();
 
-    /// Current open resource path.
-    String resourcePath_;
-    /// Current selected resource file name.
-    String resourceSelection_;
-    /// Resource browser flags.
-    ResourceBrowserFlags flags_{RBF_NONE};
+    /// Collection of top level converters defined in pipeline.
+    Vector<SharedPtr<Converter>> converters_;
+    /// List of file watchers responsible for watching game data folders for asset changes.
+    FileWatcher watcher_;
 };
 
 }

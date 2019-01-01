@@ -56,10 +56,11 @@
 #include "Tabs/ConsoleTab.h"
 #include "Tabs/ResourceTab.h"
 #include "Tabs/PreviewTab.h"
-#include "Assets/AssetConverter.h"
-#include "Assets/CookScene.h"
-#include "Assets/ImportAssimp.h"
-#include "Assets/Inspector/MaterialInspector.h"
+#include "Pipeline/Commands/CookScene.h"
+#include "Pipeline/GlobResources.h"
+#include "Pipeline/SubprocessExec.h"
+#include "Pipeline/Commands/BuildAssets.h"
+#include "Inspector/MaterialInspector.h"
 
 using namespace ui::litterals;
 
@@ -119,23 +120,11 @@ void Editor::Setup()
     engineParameters_[EP_RESOURCE_PATHS] = "CoreData;EditorData";
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] = coreResourcePrefixPath_;
 
+    GetLog()->SetTimeStampFormat("%H:%M:%S");
+
     SetRandomSeed(Time::GetTimeSinceEpoch());
+    context_->RegisterSubsystem(this);
 
-    // Define custom command line parameters here
-    auto& commandLine = GetCommandLineParser();
-    CLI::Option* optProject = commandLine.add_option("project", defaultProjectPath_,
-        "Project to open or create on startup.");
-    optProject->set_custom_option("dir");
-
-    CLI::Option* optConvInput = commandLine.add_option("--converter-input", converterInput_,
-        "Input resource resource name.");
-    CLI::Option* optConverter = commandLine.add_option("--converter", converterName_,
-        "Run a specified converter and exit immediately.");
-    optConverter->requires(optProject, optConvInput);
-}
-
-void Editor::Start()
-{
     // Register factories
     context_->RegisterFactory<EditorIconCache>();
     context_->RegisterFactory<SceneTab>();
@@ -145,27 +134,38 @@ void Editor::Start()
     context_->RegisterFactory<InspectorTab>();
     context_->RegisterFactory<ResourceTab>();
     context_->RegisterFactory<PreviewTab>();
-    // Register converter factories
-    context_->RegisterFactory<ImportAssimp>();
-    context_->RegisterFactory<CookScene>();
-    // Register other types
     RegisterToolboxTypes(context_);
     EditorSceneSettings::RegisterObject(context_);
-    // Register subsystems
-    context_->RegisterSubsystem(this);
-
     Inspectable::Material::RegisterObject(context_);
 
-    GetLog()->SetTimeStampFormat("%H:%M:%S");
+    // Pipeline
+    Converter::RegisterObject(context_);
+    GlobResources::RegisterObject(context_);
+    SubprocessExec::RegisterObject(context_);
 
-    if (!converterName_.Empty())
-        InitializeConverter();
-    else
-        InitializeEditor();
+    // Define custom command line parameters here
+    auto& cmd = GetCommandLineParser();
+    cmd.add_option("project", defaultProjectPath_, "Project to open or create on startup.")->set_custom_option("dir");
+
+    // Subcommands
+    RegisterSubcommand<CookScene>();
+    RegisterSubcommand<BuildAssets>();
 }
 
-void Editor::InitializeEditor()
+void Editor::Start()
 {
+    // Execute specified subcommand and exit.
+    for (SharedPtr<SubCommand>& cmd : subCommands_)
+    {
+        if (GetCommandLineParser().got_subcommand(cmd->GetTypeName().CString()))
+        {
+            ExecuteSubcommand(cmd);
+            engine_->Exit();
+            return;
+        }
+    }
+
+    // Continue with normal editor initialization
     context_->RegisterSubsystem(new SceneManager(context_));
     context_->RegisterSubsystem(new EditorIconCache(context_));
     GetInput()->SetMouseMode(MM_ABSOLUTE);
@@ -208,15 +208,19 @@ void Editor::InitializeEditor()
         }
     });
     SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap&) {
-        auto* preview = GetTab<PreviewTab>();
-        if (preview->GetSceneSimulationStatus() == SCENE_SIMULATION_STOPPED)
+        if (auto* preview = GetTab<PreviewTab>())
         {
-            exiting_ = true;
-            if (project_.NotNull())
-                project_->SaveProject();
+            if (preview->GetSceneSimulationStatus() == SCENE_SIMULATION_STOPPED)
+            {
+                exiting_ = true;
+                if (project_.NotNull())
+                    project_->SaveProject();
+            }
+            else
+                preview->Stop();
         }
         else
-            preview->Stop();
+            exiting_ = true;
     });
     if (!defaultProjectPath_.Empty())
     {
@@ -227,31 +231,22 @@ void Editor::InitializeEditor()
         SetupSystemUI();
 }
 
-void Editor::InitializeConverter()
+void Editor::ExecuteSubcommand(SubCommand* cmd)
 {
-    project_ = new Project(context_);
-    context_->RegisterSubsystem(project_);
-    if (!project_->LoadProject(defaultProjectPath_))
+    if (!defaultProjectPath_.Empty())
     {
-        URHO3D_LOGERRORF("Loading project '%s' failed.", pendingOpenProject_.CString());
-        exitCode_ = EXIT_FAILURE;
-        engine_->Exit();
-        return;
+        project_ = new Project(context_);
+        context_->RegisterSubsystem(project_);
+        if (!project_->LoadProject(defaultProjectPath_))
+        {
+            URHO3D_LOGERRORF("Loading project '%s' failed.", pendingOpenProject_.CString());
+            exitCode_ = EXIT_FAILURE;
+            engine_->Exit();
+            return;
+        }
     }
 
-    SharedPtr<ImportAsset> converter = DynamicCast<ImportAsset>(context_->CreateObject(converterName_));
-    if (converter.Null())
-    {
-        URHO3D_LOGERRORF("Converter '%s' does not exist.", converterName_.CString());
-        exitCode_ = EXIT_FAILURE;
-        engine_->Exit();
-        return;
-    }
-
-    if (!converter->RunConverter(converterInput_))
-        exitCode_ = EXIT_FAILURE;
-
-    engine_->Exit();
+    cmd->Execute();
 }
 
 void Editor::Stop()
@@ -595,8 +590,6 @@ void Editor::SetupSystemUI()
     colors[ImGuiCol_NavWindowingHighlight]  = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
     colors[ImGuiCol_NavWindowingDimBg]      = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
     colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(0.44f, 0.44f, 0.44f, 0.35f);
-
-
 }
 
 void Editor::UpdateWindowTitle(const String& resourcePath)
@@ -604,7 +597,7 @@ void Editor::UpdateWindowTitle(const String& resourcePath)
     if (GetEngine()->IsHeadless())
         return;
 
-    Project* project = GetSubsystem<Project>();
+    auto* project = GetSubsystem<Project>();
     String title;
     if (project == nullptr)
         title = "Editor";
@@ -617,6 +610,18 @@ void Editor::UpdateWindowTitle(const String& resourcePath)
     }
 
     GetGraphics()->SetWindowTitle(title);
+}
+
+template<typename T>
+void Editor::RegisterSubcommand()
+{
+    T::RegisterObject(context_);
+    SharedPtr<T> cmd(context_->CreateObject<T>());
+    subCommands_.Push(DynamicCast<SubCommand>(cmd));
+    if (CLI::App* subCommand = GetCommandLineParser().add_subcommand(T::GetTypeNameStatic().CString()))
+        cmd->RegisterCommandLine(*subCommand);
+    else
+        URHO3D_LOGERROR("Sub-command '{}' was not registered due to user error.", T::GetTypeNameStatic());
 }
 
 }

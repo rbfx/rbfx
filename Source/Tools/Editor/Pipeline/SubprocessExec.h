@@ -23,20 +23,28 @@
 #pragma once
 
 
-#include "ImportAsset.h"
+#include "Converter.h"
+
 
 namespace Urho3D
 {
 
-class CookScene : public ImportAsset
+class SubprocessExec : public Converter
 {
-    URHO3D_OBJECT(CookScene, ImportAsset);
+    URHO3D_OBJECT(SubprocessExec, Converter);
 public:
-    explicit CookScene(Context* context);
+    ///
+    explicit SubprocessExec(Context* context);
+    ///
+    static void RegisterObject(Context* context);
+    ///
+    void Execute(const StringVector& input) override;
 
-    bool Accepts(const String& path, ContentType type) override;
-
-    bool RunConverter(const String& path) override;
+protected:
+    ///
+    String executable_;
+    ///
+    StringVector args_;
 };
 
 }

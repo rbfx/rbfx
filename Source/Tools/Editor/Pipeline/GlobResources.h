@@ -23,38 +23,28 @@
 #pragma once
 
 
-#include <Toolbox/SystemUI/ResourceBrowser.h>
-#include "Inspector/ResourceInspector.h"
-#include "Tabs/Tab.h"
+#include <regex>
+#include "Converter.h"
 
 
 namespace Urho3D
 {
 
-/// Resource browser tab.
-class ResourceTab : public Tab
+class GlobResources : public Converter
 {
-    URHO3D_OBJECT(ResourceTab, Tab)
+    URHO3D_OBJECT(GlobResources, Converter);
 public:
-    /// Construct.
-    explicit ResourceTab(Context* context);
+    explicit GlobResources(Context* context);
 
-    /// Render content of tab window. Returns false if tab was closed.
-    bool RenderWindowContent() override;
+    static void RegisterObject(Context* context);
+
+    void Execute(const StringVector& input) override;
 
 protected:
-    /// Constructs a name for newly created resource based on specified template name.
-    String GetNewResourcePath(const String& name);
-    /// Sends a notification to inspector tab to show inspector of specified resource.
-    template<typename TInspector, typename TResource>
-    void OpenResourceInspector(const String& resourcePath);
+    void ConvertGlobToRegex();
 
-    /// Current open resource path.
-    String resourcePath_;
-    /// Current selected resource file name.
-    String resourceSelection_;
-    /// Resource browser flags.
-    ResourceBrowserFlags flags_{RBF_NONE};
+    StringVector glob_;
+    Vector<std::regex> regex_;
 };
 
 }

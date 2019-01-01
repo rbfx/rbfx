@@ -50,7 +50,7 @@
 #include "Tabs/HierarchyTab.h"
 #include "Tabs/InspectorTab.h"
 #include "Tabs/PreviewTab.h"
-#include "Assets/Inspector/MaterialInspector.h"
+#include "Inspector/MaterialInspector.h"
 
 
 namespace Urho3D

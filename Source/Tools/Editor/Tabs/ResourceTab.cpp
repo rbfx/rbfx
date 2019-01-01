@@ -32,8 +32,8 @@
 #include <SDL/SDL_clipboard.h>
 
 #include "EditorEvents.h"
-#include "Assets/Inspector/MaterialInspector.h"
-#include "Assets/Inspector/ModelInspector.h"
+#include "Inspector/MaterialInspector.h"
+#include "Inspector/ModelInspector.h"
 #include "Tabs/Scene/SceneTab.h"
 #include "Tabs/UI/UITab.h"
 #include "Tabs/InspectorTab.h"
