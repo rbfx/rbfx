@@ -497,10 +497,12 @@ class crunch {
       else if (m_params.has_key("out")) {
         out_filename = m_params.get_value_as_string_or_empty("out");
 
+        // Urho3D
+        dynamic_string out_drive, out_dir, out_name, out_ext;
+        file_utils::split_path(out_filename.get_ptr(), &out_drive, &out_dir, &out_name, &out_ext);
+        out_drive += out_dir;
+        file_utils::create_path(out_drive.get_ptr());
         if (files.size() > 1) {
-          dynamic_string out_drive, out_dir, out_name, out_ext;
-          file_utils::split_path(out_filename.get_ptr(), &out_drive, &out_dir, &out_name, &out_ext);
-
           out_name.format("%s_%u", out_name.get_ptr(), file_index);
 
           out_filename.format("%s%s%s%s", out_drive.get_ptr(), out_dir.get_ptr(), out_name.get_ptr(), out_ext.get_ptr());
