@@ -35,6 +35,10 @@ target_include_directories(Bullet
            $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/Bullet>
 )
 
+if (URHO3D_SSE)
+    target_compile_definitions(Bullet PUBLIC -DBT_USE_SSE=1)
+endif ()
+
 if (BUILD_SHARED_LIBS)
     install(TARGETS Bullet EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
 endif ()
