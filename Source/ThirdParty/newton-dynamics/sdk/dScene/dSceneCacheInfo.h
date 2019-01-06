@@ -21,8 +21,6 @@
 
 #include "dNodeInfo.h"
 
-
-
 class dSceneCacheInfo: public dNodeInfo
 {
 	public:

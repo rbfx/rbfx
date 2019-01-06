@@ -156,7 +156,7 @@ void dVehicleVirtualEngine::SetClutch (dFloat clutch)
 	m_gearBox.SetClutchTorque(clutch * m_metricInfo.m_clutchTorque);
 }
 
-int dVehicleVirtualEngine::GetKinematicLoops(dAnimationKinematicLoopJoint** const jointArray)
+int dVehicleVirtualEngine::GetKinematicLoops(dAnimIDRigKinematicLoopJoint** const jointArray)
 {
 	jointArray[0] = &m_crankJoint;
 	jointArray[1] = &m_gearBox;

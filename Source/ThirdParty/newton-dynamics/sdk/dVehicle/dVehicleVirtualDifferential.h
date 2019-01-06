@@ -27,7 +27,7 @@ class dVehicleVirtualDifferential: public dVehicleDifferentialInterface
 	void ApplyExternalForce(dFloat timestep);
 	void Integrate(dFloat timestep);
 	dComplementaritySolver::dBilateralJoint* GetProxyJoint();
-	int GetKinematicLoops(dAnimationKinematicLoopJoint** const jointArray);
+	int GetKinematicLoops(dAnimIDRigKinematicLoopJoint** const jointArray);
 	void Debug(dCustomJoint::dDebugDisplay* const debugContext) const;
 
 	dDifferentialMount m_differential;

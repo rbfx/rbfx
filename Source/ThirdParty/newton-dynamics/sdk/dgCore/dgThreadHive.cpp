@@ -25,7 +25,6 @@
 #include "dgProfiler.h"
 #include "dgThreadHive.h"
 
-
 #ifdef USE_OLD_THREAD_POOL 
 dgThreadHive::dgWorkerThread::dgWorkerThread()
 	:dgThread()
@@ -366,6 +365,8 @@ void dgThreadHive::SynchronizationBarrier()
 {
 	if (m_workerThreadsCount) {
 		DG_TRACKTIME(__FUNCTION__);
+
+		#ifndef DG_USE_THREAD_EMULATION
 		m_syncLock = m_workerThreadsCount;
 		for (dgInt32 i = 0; i < m_workerThreadsCount; i++) {
 			dgInterlockedExchange(&m_workerThreads[i].m_pendingWork, 1);
@@ -373,6 +374,7 @@ void dgThreadHive::SynchronizationBarrier()
 		while (dgInterlockedTest(&m_syncLock, 0)) {
 			dgThreadYield();
 		}
+		#endif
 	}
 	m_jobsCount = 0;
 }

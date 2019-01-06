@@ -20,7 +20,7 @@ class dKinematicLoopJoint;
 class dVehicleTireInterface;
 
 
-class dVehicleNode: public dAnimationAcyclicJoint
+class dVehicleNode: public dAnimAcyclicJoint
 {
 	public:
 	DVEHICLE_API dVehicleNode(dVehicleNode* const parent);

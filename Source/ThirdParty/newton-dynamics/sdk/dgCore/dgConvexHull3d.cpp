@@ -20,8 +20,9 @@
 */
 
 #include "dgStdafx.h"
-#include "dgStack.h"
+#include "dgSort.h"
 #include "dgTree.h"
+#include "dgStack.h"
 #include "dgGoogol.h"
 #include "dgConvexHull3d.h"
 #include "dgSmallDeterminant.h"

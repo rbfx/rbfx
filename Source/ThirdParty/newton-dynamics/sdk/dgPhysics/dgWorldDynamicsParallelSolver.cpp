@@ -577,7 +577,8 @@ void dgParallelBodySolver::InitJacobianMatrix()
 
 #ifdef D_USE_SOA_SOLVER
 	dgJointInfo* const jointArray = m_jointArray;
-	dgSort(jointArray, m_cluster->m_jointCount, CompareJointInfos);
+//	dgSort(jointArray, m_cluster->m_jointCount, CompareJointInfos);
+	dgParallelSort(*m_world, jointArray, m_cluster->m_jointCount, CompareJointInfos);
 
 	const dgInt32 jointCount = m_jointCount * DG_WORK_GROUP_SIZE;
 	for (dgInt32 i = m_cluster->m_jointCount; i < jointCount; i++) {

@@ -61,7 +61,6 @@ class dgArray
 	dgMemoryAllocator* m_allocator;
 };
 
-
 template<class T>
 dgArray<T>::dgArray()
 	:m_array(NULL)
@@ -71,7 +70,6 @@ dgArray<T>::dgArray()
 {
 	m_aligmentInBytes = 1 << dgExp2(m_aligmentInBytes);
 }
-
 
 template<class T>
 dgArray<T>::dgArray (dgMemoryAllocator* const allocator, dgInt32 aligmentInBytes)
@@ -85,8 +83,6 @@ dgArray<T>::dgArray (dgMemoryAllocator* const allocator, dgInt32 aligmentInBytes
 	}
 	m_aligmentInBytes = 1 << dgExp2(m_aligmentInBytes);
 }
-
-
 
 template<class T>
 dgArray<T>::dgArray (const dgArray& source, dgInt32 itemsToCopy)
@@ -128,7 +124,6 @@ dgArray<T>::~dgArray ()
 	}
 }
 
-
 template<class T>
 DG_INLINE const T& dgArray<T>::operator[] (dgInt32 i) const
 { 
@@ -138,7 +133,6 @@ DG_INLINE const T& dgArray<T>::operator[] (dgInt32 i) const
 	}
 	return m_array[i];
 }
-
 
 template<class T>
 DG_INLINE T& dgArray<T>::operator[] (dgInt32 i)

@@ -63,13 +63,13 @@
 #include <dCustomJoint.h>
 #include <dCustomHinge.h>
 #include <dCustomControllerManager.h>
-
+/*
 #define D_DEFINE_ANIMATION_NODE_DEFINE(className,baseClass)	\
 	dAddRtti(baseClass);									
 
 #define D_DEFINE_ANIMATION_NODE_DECLARE(className)	\
 	dInitRtti(className);							\
-
+*/
 
 
 #endif

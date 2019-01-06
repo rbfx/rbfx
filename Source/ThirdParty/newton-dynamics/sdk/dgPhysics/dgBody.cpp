@@ -544,9 +544,8 @@ void dgBody::SetMassMatrix(dgFloat32 mass, const dgMatrix& inertia)
 		}
 	}
 #endif
-	UpdateLumpedMatrix();
+//	UpdateLumpedMatrix();
 }
-
 
 void dgBody::SetMassProperties (dgFloat32 mass, const dgCollisionInstance* const collision)
 {
@@ -568,7 +567,6 @@ void dgBody::SetMassProperties (dgFloat32 mass, const dgCollisionInstance* const
 	SetCentreOfMass(origin);
 	SetMassMatrix(mass, inertia);
 }
-
 
 dgMatrix dgBody::CalculateLocalInertiaMatrix () const
 {

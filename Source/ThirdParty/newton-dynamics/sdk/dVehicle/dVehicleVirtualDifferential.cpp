@@ -61,7 +61,7 @@ void dVehicleVirtualDifferential::Debug(dCustomJoint::dDebugDisplay* const debug
 	dVehicleDifferentialInterface::Debug(debugContext);
 }
 
-int dVehicleVirtualDifferential::GetKinematicLoops(dAnimationKinematicLoopJoint** const jointArray)
+int dVehicleVirtualDifferential::GetKinematicLoops(dAnimIDRigKinematicLoopJoint** const jointArray)
 {
 	jointArray[0] = &m_leftAxle;
 	jointArray[1] = &m_rightAxle;

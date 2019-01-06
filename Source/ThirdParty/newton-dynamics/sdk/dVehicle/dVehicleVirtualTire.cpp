@@ -154,11 +154,11 @@ void dVehicleVirtualTire::ApplyExternalForce(dFloat timestep)
 	dVehicleTireInterface::ApplyExternalForce(timestep);
 }
 
-int dVehicleVirtualTire::GetKinematicLoops(dAnimationKinematicLoopJoint** const jointArray)
+int dVehicleVirtualTire::GetKinematicLoops(dAnimIDRigKinematicLoopJoint** const jointArray)
 {
 	int count = 0;
 	for (int i = 0; i < sizeof (m_contactsJoints) / sizeof (m_contactsJoints[0]); i ++) {
-		dAnimationKinematicLoopJoint* const loop = &m_contactsJoints[i];
+		dAnimIDRigKinematicLoopJoint* const loop = &m_contactsJoints[i];
 		if (loop->IsActive ()) {
 			jointArray[count] = loop;
 			dAssert (!loop->GetOwner0()->IsLoopNode());

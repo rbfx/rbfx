@@ -460,12 +460,22 @@ void dgWorld::InitBody (dgBody* const body, dgCollisionInstance* const collision
 	body->AttachCollision(collision);
 	body->m_bodyGroupId = dgInt32 (m_defualtBodyGroupID);
 
-	dgMatrix inertia (dgGetIdentityMatrix());
-	inertia[0][0] = DG_INFINITE_MASS;
-	inertia[1][1] = DG_INFINITE_MASS;
-	inertia[2][2] = DG_INFINITE_MASS;
-	body->SetMassMatrix (DG_INFINITE_MASS * dgFloat32 (2.0f), inertia);
-	body->SetMatrix (matrix);
+	dgMatrix inertia(dgGetIdentityMatrix());
+	if (!body->GetCollision()->IsType(dgCollision::dgCollisionLumpedMass_RTTI)) {
+		inertia[0][0] = DG_INFINITE_MASS;
+		inertia[1][1] = DG_INFINITE_MASS;
+		inertia[2][2] = DG_INFINITE_MASS;
+		body->SetMassMatrix(DG_INFINITE_MASS * dgFloat32(2.0f), inertia);
+	} else {
+		dgBodyMasterList::RemoveBody(body);
+		body->UpdateLumpedMatrix();
+		dgBodyMasterList::AddBody(body);
+		inertia[0][0] = body->m_mass.m_x;
+		inertia[1][1] = body->m_mass.m_y;
+		inertia[2][2] = body->m_mass.m_z;
+		body->SetMassMatrix(body->m_mass.m_w, inertia);
+	}
+	body->SetMatrix(matrix);
 	if (!body->GetCollision()->IsType (dgCollision::dgCollisionNull_RTTI)) {
 		m_broadPhase->Add (body);
 	}
@@ -1536,13 +1546,15 @@ skelManager.m_skelListIsDirty = true;
 void dgWorld::OnSerializeToFile(void* const fileHandle, const void* const buffer, dgInt32 size)
 {
 	dgAssert((size & 0x03) == 0);
-	fwrite(buffer, size, 1, (FILE*)fileHandle);
+	size_t bytes = fwrite(buffer, size, 1, (FILE*)fileHandle);
+	bytes=0;
 }
 
 void dgWorld::OnDeserializeFromFile(void* const fileHandle, void* const buffer, dgInt32 size)
 {
 	dgAssert((size & 0x03) == 0);
-	fread(buffer, size, 1, (FILE*)fileHandle);
+	size_t bytes = fread(buffer, size, 1, (FILE*)fileHandle);
+	bytes=0;
 }
 
 void dgWorld::OnBodySerializeToFile(dgBody& body, void* const userData, dgSerialize serializeCallback, void* const serializeHandle)

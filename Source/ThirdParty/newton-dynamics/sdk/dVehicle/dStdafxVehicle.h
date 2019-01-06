@@ -76,6 +76,6 @@
 #include <dCustomControllerManager.h>
 
 #include <dAnimationStdAfx.h>
-#include <dAnimationAcyclicJoint.h>
-#include <dAnimationAcyclicSolver.h>
-#include <dAnimationKinematicLoopJoint.h>
+#include <dAnimAcyclicJoint.h>
+#include <dAnimAcyclicSolver.h>
+#include <dAnimIDRigKinematicLoopJoint.h>

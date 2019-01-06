@@ -25,18 +25,21 @@
 #include "dSceneNodeInfo.h"
 #include "dSceneCacheInfo.h"
 #include "dSceneModelInfo.h"
+#include "dAnimationTake.h"
+#include "dAnimationTrack.h"
 #include "dTextureNodeInfo.h"
+#include "dAnimationLayers.h"
 #include "dMaterialNodeInfo.h"
 #include "dRigidbodyNodeInfo.h"
 #include "dCollisionBoxNodeInfo.h"
 #include "dCollisionConeNodeInfo.h"
 #include "dCollisionTreeNodeInfo.h"
 #include "dCollisionSphereNodeInfo.h"
+#include "dGeometryNodeModifierInfo.h"
 #include "dCollisionCapsuleNodeInfo.h"
 #include "dCollisionCylinderNodeInfo.h"
 #include "dCollisionCompoundNodeInfo.h"
 #include "dCollisionConvexHullNodeInfo.h"
-#include "dGeometryNodeSkinModifierInfo.h"
 #include "dCollisionChamferCylinderNodeInfo.h"
 #include <tinyxml.h>
 
@@ -222,9 +225,12 @@ void dScene::RegisterClasses()
 		dMeshNodeInfo::GetSingleton();
 		dLineNodeInfo::GetSingleton();
 		dRootNodeInfo::GetSingleton();
+		dAnimationTake::GetSingleton();
 		dSceneNodeInfo::GetSingleton();
 		dSceneCacheInfo::GetSingleton();
 		dSceneModelInfo::GetSingleton();
+		dAnimationTrack::GetSingleton();
+		dAnimationLayers::GetSingleton();
 		dTextureNodeInfo::GetSingleton();
 		dMaterialNodeInfo::GetSingleton();
 		dGeometryNodeInfo::GetSingleton();
@@ -239,7 +245,6 @@ void dScene::RegisterClasses()
 		dCollisionCompoundNodeInfo::GetSingleton();
 		dCollisionCylinderNodeInfo::GetSingleton();
 		dCollisionConvexHullNodeInfo::GetSingleton();
-		dGeometryNodeSkinModifierInfo::GetSingleton();
 		dCollisionChamferCylinderNodeInfo::GetSingleton();
 	}
 }
@@ -279,7 +284,6 @@ dScene::dTreeNode* dScene::CreateNode (const char* const className, dTreeNode* c
 	}
 	return node;
 }
-
 
 dScene::dTreeNode* dScene::CreateCollisionFromNewtonCollision(dTreeNode* const parent, NewtonCollision* const collision)
 {
@@ -473,7 +477,6 @@ dScene::dTreeNode* dScene::CreateSkinModifierNode(dTreeNode* const parent)
 	return CreateNode ("dGeometryNodeSkinModifierInfo", parent);
 }
 
-
 dScene::dTreeNode* dScene::CreateTextureNode (const char* const pathName)
 {
 	dTreeNode* const root = GetTextureCacheNode();
@@ -498,13 +501,35 @@ dScene::dTreeNode* dScene::CreateTextureNode (const char* const pathName)
 	return node;
 }
 
-
 dScene::dTreeNode* dScene::CreateMaterialNode (int id)
 {
 	dTreeNode* const root = GetMaterialCacheNode();
 	dScene::dTreeNode* const node = CreateNode ("dMaterialNodeInfo", root);
 	dMaterialNodeInfo* const info = (dMaterialNodeInfo*) GetInfoFromNode(node);
 	info->m_id = id;
+	return node;
+}
+
+dScene::dTreeNode* dScene::CreateAnimationTrack(dTreeNode* const take)
+{
+	return CreateNode("dAnimationTrack", take);
+}
+
+dScene::dTreeNode* dScene::CreateAnimationTake()
+{
+	dTreeNode* const root = GetRootNode();
+	dScene::dTreeNode* const node = FindChildByType(root, dAnimationLayers::GetRttiType());
+	dAssert(node);
+	return CreateNode("dAnimationTake", node);
+}
+
+dScene::dTreeNode* dScene::CreateAnimationLayers()
+{
+	dTreeNode* const root = GetRootNode();
+	dScene::dTreeNode* node = FindChildByType(root, dAnimationLayers::GetRttiType());
+	if (!node) {
+		node =  CreateNode("dAnimationLayers", root);
+	}
 	return node;
 }
 
@@ -550,6 +575,11 @@ dScene::dTreeNode* dScene::GetMaterialCacheNode ()
 dScene::dTreeNode* dScene::GetGeometryCacheNode ()
 {
 	return GetCacheNode (D_GEOMETRY_CACHE_NODE_MAME);
+}
+
+dScene::dTreeNode* dScene::FindAnimationLayers() const
+{
+	return FindChildByType(GetRootNode(), dAnimationLayers::GetRttiType());
 }
 
 dScene::dTreeNode* dScene::FindTextureCacheNode () const
@@ -843,7 +873,6 @@ void dScene::FreezeRootRotation ()
 	}
 }
 
-
 void dScene::FreezeGeometryPivot ()
 {
 	dScene::dTreeNode* const geometryCache = FindGetGeometryCacheNode ();
@@ -918,7 +947,6 @@ void dScene::BakeTransform (const dMatrix& matrix)
 		nodeInfo->BakeTransform (matrix);
 	}
 }
-
 
 void dScene::Serialize (const char* const fileName)
 {
@@ -1539,7 +1567,6 @@ void dScene::NewtonWorldToScene (const NewtonWorld* const world, dSceneExportCal
 	}
 }
 
-
 bool dScene::Deserialize (const char* const fileName)
 {
 	// apply last Configuration, using standard localization
@@ -1590,7 +1617,6 @@ bool dScene::Deserialize (const char* const fileName)
 			m_revision = 104;
 			RemoveLocalTransformFromGeometries (this);
 		}
-		
 	}
 
 	// restore locale settings

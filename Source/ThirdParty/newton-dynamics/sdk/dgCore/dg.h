@@ -32,6 +32,7 @@
 #include "dgTree.h"
 #include "dgNode.h"
 #include "dgHeap.h"
+#include "dgSort.h"
 #include "dgArray.h"
 #include "dgStack.h"
 #include "dgDebug.h"

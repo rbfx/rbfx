@@ -44,7 +44,7 @@ class dDifferentialMount: public dComplementaritySolver::dBilateralJoint
 };
 
 
-class dTireContact: public dAnimationKinematicLoopJoint
+class dTireContact: public dAnimIDRigKinematicLoopJoint
 {
 	public:
 	class dTireModel
@@ -103,7 +103,7 @@ class dEngineBlockJoint : public dComplementaritySolver::dBilateralJoint
 	void UpdateSolverForces(const dComplementaritySolver::dJacobianPair* const jacobians) const { dAssert(0); }
 };
 
-class dEngineCrankJoint: public dAnimationKinematicLoopJoint
+class dEngineCrankJoint: public dAnimIDRigKinematicLoopJoint
 {
 	public:
 	dEngineCrankJoint();
@@ -118,7 +118,7 @@ class dEngineCrankJoint: public dAnimationKinematicLoopJoint
 	dFloat m_targetTorque;
 };
 
-class dGearBoxJoint: public dAnimationKinematicLoopJoint
+class dGearBoxJoint: public dAnimIDRigKinematicLoopJoint
 {
 	public:
 	dGearBoxJoint();
@@ -136,7 +136,7 @@ class dGearBoxJoint: public dAnimationKinematicLoopJoint
 	dFloat m_clutchTorque;
 };
 
-class dTireAxleJoint: public dAnimationKinematicLoopJoint
+class dTireAxleJoint: public dAnimIDRigKinematicLoopJoint
 {
 	public:
 	dTireAxleJoint();

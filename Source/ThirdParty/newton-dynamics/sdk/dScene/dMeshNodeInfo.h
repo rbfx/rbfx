@@ -25,15 +25,6 @@
 class dMeshNodeInfo: public dGeometryNodeInfo
 {
 	public:
-	struct neMeshInfoFlatPoint
-	{
-		dFloat m_x, m_y, m_z;
-		dFloat m_nx, m_ny, m_nz;
-		dFloat m_u0, m_v0;
-		dFloat m_u1, m_v1;
-	};
-
-
 	D_DEFINE_CLASS_NODE(dMeshNodeInfo,dGeometryNodeInfo,DSCENE_API)
 
 	dMeshNodeInfo();
@@ -56,24 +47,16 @@ class dMeshNodeInfo: public dGeometryNodeInfo
 
 	virtual void SmoothNormals (dFloat angleInRadiants);
 
-	virtual void BeginBuild ();
-	virtual void AddPolygon (int pointsCount, const neMeshInfoFlatPoint* const points, int materialID);
-	virtual void EndBuild ();
-/*
-	virtual void BuildFromVertexListIndexList(int faceCount, const int* const faceIndexCount, const int* faceMaterialIndex, 
-												const dFloat* const vertex, int vertexStrideInBytes, const int* vertexIndex,
-												const dFloat* const normal, int normalStrideInBytes, const int* normalIndex,
-												const dFloat* const uv0, int uv0StrideInBytes, const int* uv0Index,
-												const dFloat* const uv1, int uv1StrideInBytes, const int* uv1Index);
-*/
-	virtual void BuildFromVertexListIndexList(const NewtonMeshVertexFormat* const format);
+//	virtual void BeginBuild ();
+//	virtual void AddPolygon (int pointsCount, const neMeshInfoFlatPoint* const points, int materialID);
+//	virtual void EndBuild ();
 
+	bool hasSkinWeights() const;
 	const int* GetIndexToVertexMap() const;
-
-
+	virtual void BuildFromVertexListIndexList(const NewtonMeshVertexFormat* const format);
+	
 	virtual void CalcutateAABB (dVector& p0, dVector& p1) const;
 	virtual dFloat RayCast (const dVector& p0, const dVector& p1) const;
-
 	
 	protected:
 	virtual dCRCTYPE CalculateSignature() const;

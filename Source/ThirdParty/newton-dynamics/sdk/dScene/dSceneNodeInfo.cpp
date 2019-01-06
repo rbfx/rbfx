@@ -25,8 +25,6 @@
 #include "dGeometryNodeInfo.h"
 #include <tinyxml.h>
 
-
-
 D_IMPLEMENT_CLASS_NODE(dSceneNodeInfo);
 
 dSceneNodeInfo::dSceneNodeInfo(dScene* const world) 
@@ -71,7 +69,6 @@ void dSceneNodeInfo::SetGeometryTransform (const dMatrix& matrix)
 	m_geometryTransform = matrix;
 }
 
-
 dMatrix dSceneNodeInfo::GetTransform () const
 {
 //	return dMatrix (CalculateOrthoMatrix()), m_scale, m_eigenScaleAxis);
@@ -83,7 +80,6 @@ void dSceneNodeInfo::SetTransform (const dMatrix& matrix)
 	dMatrix transform;
 	matrix.PolarDecomposition(transform, m_scale, m_eigenScaleAxis);
 	m_position = matrix.m_posit;
-	//m_euler = transform.GetEulerAngles ();
     dVector tmp(0.0f);
     transform.GetEulerAngles (m_euler, tmp);
 }
@@ -142,9 +138,6 @@ void dSceneNodeInfo::SetColor (const dVector& color)
 {
 	m_solidColor = color;
 }
-
-
-
 
 void dSceneNodeInfo::BakeTransform (const dMatrix& transform)
 {

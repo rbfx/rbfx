@@ -17,7 +17,7 @@
 
 class dVehicleChassis;
 
-class dVehicleSolver: public dAnimationAcyclicSolver
+class dVehicleSolver: public dAnimAcyclicSolver
 {
 	public:
 	DVEHICLE_API dVehicleSolver() ;

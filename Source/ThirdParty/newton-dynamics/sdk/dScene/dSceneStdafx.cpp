@@ -94,7 +94,7 @@ void dFloatArrayToString (const dFloat* const array, int count, char* const stri
 		char* ptr = string;
 		sprintf (string, " ");
 		for (int i = 0; i < count; i ++) {
-			sprintf (ptr, "%f ", array[i]);
+			sprintf (ptr, "%g ", array[i]);
 			ptr += strlen (ptr);
 			dAssert ((ptr - string) < maxSixeInBytes);
 		}
@@ -171,7 +171,6 @@ static int SortVertexArray (const void *A, const void *B)
 		return 0;
 	}
 }
-
 
 int dPackVertexArray (dFloat* const vertexList, int compareElements, int strideInBytes, int vertexCount, int* const indexListOut)
 {
@@ -395,8 +394,7 @@ void dRayToRayCast (const dVector& ray_p0, const dVector& ray_p1, const dVector&
 			sN = dFloat (0.0f);
 			tN = e;
 			tD = c;
-		}
-		else if (sN > sD) {  // sc > 1 => the s=1 edge is visible
+		} else if (sN > sD) {  // sc > 1 => the s=1 edge is visible
 			sN = sD;
 			tN = e + b;
 			tD = c;
@@ -407,23 +405,22 @@ void dRayToRayCast (const dVector& ray_p0, const dVector& ray_p1, const dVector&
 	if (tN < dFloat (0.0f)) {           // tc < 0 => the t=0 edge is visible
 		tN = dFloat (0.0f);
 		// recompute sc for this edge
-		if (-d < dFloat (0.0f))
-			sN = dFloat (0.0f);
-		else if (-d > a)
+		if (-d < dFloat(0.0f)) {
+			sN = dFloat(0.0f);
+		} else if (-d > a) {
 			sN = sD;
-		else {
+		} else {
 			sN = -d;
 			sD = a;
 		}
-	}
-	else if (tN > tD) {      // tc > 1 => the t=1 edge is visible
+	} else if (tN > tD) {      // tc > 1 => the t=1 edge is visible
 		tN = tD;
 		// recompute sc for this edge
-		if ((-d + b) < dFloat (0.0f))
-			sN = dFloat (0.0f);
-		else if ((-d + b) > a)
+		if ((-d + b) < dFloat(0.0f)) {
+			sN = dFloat(0.0f);
+		} else if ((-d + b) > a) {
 			sN = sD;
-		else {
+		} else {
 			sN = (-d + b);
 			sD = a;
 		}
@@ -456,19 +453,81 @@ void SerializeMesh (const NewtonMesh* const mesh, TiXmlElement* const rootNode)
 	int* const uv1IndexList = new int[bufferCount];
 	
 	// pack the vertex Array
+	if (!NewtonMeshHasVertexWeightChannel(mesh)) 
 	{
 		NewtonMeshGetVertexChannel(mesh, 4 * sizeof(dFloat), points);
 		for (int i = 0; i < pointCount; i++) {
 			points[4 * i + 3] = 0.0f;
-			//vertexIndexList[i] = i;
 		}
 		int count = dPackVertexArray(points, 4, 4 * sizeof(dFloat), pointCount, vertexIndexList);
-		dFloatArrayToString(points, count * 4, buffer, bufferSizeInBytes);
 
+		dFloatArrayToString(points, count * 4, buffer, bufferSizeInBytes);
 		TiXmlElement* const position = new TiXmlElement("position");
 		pointElement->LinkEndChild(position);
 		position->SetAttribute("float4", count);
 		position->SetAttribute("floats", buffer);
+	} else {
+		struct FlatWeightedVertex
+		{
+			dFloat m_point[3];
+			dFloat m_weights[4];
+			dFloat m_weightsBoneIndex[4];
+		};
+	
+		dFloat* const weights = new dFloat[4 * bufferCount];
+		int* const weightsBoneIndex = new int[4 * bufferCount];
+		FlatWeightedVertex* const flatPoint = new FlatWeightedVertex[8 * bufferCount];
+
+		NewtonMeshGetVertexChannel(mesh, sizeof(FlatWeightedVertex), &flatPoint->m_point[0]);
+		NewtonMeshGetWeightBlendsChannel(mesh, sizeof (FlatWeightedVertex), &flatPoint->m_weights[0]);
+		NewtonMeshGetWeightBoneIndexChannel(mesh, 4 * sizeof (int), &weightsBoneIndex[0]);
+		for (int i = 0; i < pointCount; i++) {
+			const int* const src = &weightsBoneIndex[i * 4];
+			flatPoint[i].m_weightsBoneIndex[0] = dFloat(src[0]);
+			flatPoint[i].m_weightsBoneIndex[1] = dFloat(src[1]);
+			flatPoint[i].m_weightsBoneIndex[2] = dFloat(src[2]);
+			flatPoint[i].m_weightsBoneIndex[3] = dFloat(src[3]);
+		}
+		int count = dPackVertexArray(&flatPoint->m_point[0], 11, 11 * sizeof(dFloat), pointCount, vertexIndexList);
+
+		for (int i = 0; i < count; i++) {
+			points[i * 4 + 0] = flatPoint[i].m_point[0];
+			points[i * 4 + 1] = flatPoint[i].m_point[1];
+			points[i * 4 + 2] = flatPoint[i].m_point[2];
+			points[i * 4 + 3] = dFloat (0.0f);
+				
+			weights[i * 4 + 0] = flatPoint[i].m_weights[0];
+			weights[i * 4 + 1] = flatPoint[i].m_weights[1];
+			weights[i * 4 + 2] = flatPoint[i].m_weights[2];
+			weights[i * 4 + 3] = flatPoint[i].m_weights[3];
+
+			weightsBoneIndex[i * 4 + 0] = int (flatPoint[i].m_weightsBoneIndex[0]);
+			weightsBoneIndex[i * 4 + 1] = int (flatPoint[i].m_weightsBoneIndex[1]);
+			weightsBoneIndex[i * 4 + 2] = int (flatPoint[i].m_weightsBoneIndex[2]);
+			weightsBoneIndex[i * 4 + 3] = int (flatPoint[i].m_weightsBoneIndex[3]);
+		}
+
+		dFloatArrayToString(points, count * 4, buffer, bufferSizeInBytes);
+		TiXmlElement* const position = new TiXmlElement("position");
+		pointElement->LinkEndChild(position);
+		position->SetAttribute("float4", count);
+		position->SetAttribute("floats", buffer);
+
+		dFloatArrayToString(weights, count * 4, buffer, bufferSizeInBytes);
+		TiXmlElement* const weightRecord = new TiXmlElement("weightBlend");
+		pointElement->LinkEndChild(weightRecord);
+		weightRecord->SetAttribute("float4", count);
+		weightRecord->SetAttribute("floats", buffer);
+
+		dIntArrayToString(weightsBoneIndex, count * 4, buffer, bufferSizeInBytes);
+		TiXmlElement* const weightBoneRecord = new TiXmlElement("weightBones");
+		pointElement->LinkEndChild(weightBoneRecord);
+		weightBoneRecord->SetAttribute("int4", count);
+		weightBoneRecord->SetAttribute("bones", buffer);
+
+		delete[] weights;
+		delete[] flatPoint;
+		delete[] weightsBoneIndex;
 	}
 
 	// pack the normal array
@@ -547,8 +606,6 @@ void SerializeMesh (const NewtonMesh* const mesh, TiXmlElement* const rootNode)
 	faceMaterial->SetAttribute("index", buffer);
 
 	for (int i = 0; i < indexCount; i ++) {
-//		int index = NewtonMeshGetVertexIndex (mesh, indexArray[i]);
-//		dTrace(("%d ", index));
 		int index = NewtonMeshGetPointIndex(mesh, indexArray[i]);
 		remapedIndexArray[i] = vertexIndexList[index];
 	}
@@ -590,6 +647,7 @@ void SerializeMesh (const NewtonMesh* const mesh, TiXmlElement* const rootNode)
 		uv1Index->SetAttribute("index", buffer);
 	}
 
+	delete[] points;
 	delete[] remapedIndexArray;
 	delete[] faceArray;
 	delete[] indexArray;
@@ -600,7 +658,6 @@ void SerializeMesh (const NewtonMesh* const mesh, TiXmlElement* const rootNode)
 	delete[] vertexIndexList;
 	delete[] buffer;
 }
-
 
 bool DeserializeMesh (const NewtonMesh* const mesh, TiXmlElement* const rootNode) 
 {
@@ -636,6 +693,37 @@ bool DeserializeMesh (const NewtonMesh* const mesh, TiXmlElement* const rootNode
 	positionsElement->Attribute("float4", &positionCount);
 	dFloat64* const positions = new dFloat64[4 * positionCount];
 	dStringToFloatArray (positionsElement->Attribute("floats"), positions, 4 * positionCount);
+
+	TiXmlElement* const weightBlendElement = (TiXmlElement*)pointElement->FirstChild("weightBlend");
+	if (weightBlendElement) {
+		int blendCount;
+		int boneBlendCount;
+		TiXmlElement* const weightBonesElement = (TiXmlElement*)pointElement->FirstChild("weightBones");
+
+		weightBlendElement->Attribute("float4", &blendCount);
+		weightBonesElement->Attribute("int4", &boneBlendCount);
+		dAssert (positionCount == blendCount);
+		dAssert (positionCount == boneBlendCount);
+		
+		int* const weightBones = new int [4 * positionCount];
+		dVector* const weightsFloat = new dVector[positionCount];
+		dStringToIntArray(weightBonesElement->Attribute("bones"), &weightBones[0], 4 * positionCount);
+		dStringToFloatArray(weightBlendElement->Attribute("floats"), &weightsFloat[0][0], 4 * positionCount);
+
+		NewtonMeshVertexWeightData::dgWeights* const meshWeight = new NewtonMeshVertexWeightData::dgWeights[positionCount];
+		for (int i = 0; i < positionCount; i ++) {
+			for (int j = 0; j < 4; j ++) {
+				meshWeight[i].m_weightBlends[j] = weightsFloat[i][j];
+				meshWeight[i].m_controlIndex[j] = weightBones[i * 4 + j];
+			}
+		}
+			
+		vertexFormat.m_weight.m_data = meshWeight;
+		vertexFormat.m_weight.m_strideInBytes = sizeof (NewtonMeshVertexWeightData::dgWeights);
+
+		delete[] weightBones;
+		delete[] weightsFloat;
+	}
 
 	TiXmlElement* const normalsElement = (TiXmlElement*) pointElement->FirstChild ("normal");
 	if (normalsElement) {
@@ -685,7 +773,6 @@ bool DeserializeMesh (const NewtonMesh* const mesh, TiXmlElement* const rootNode
 		vertexFormat.m_uv1.m_strideInBytes = 2 * sizeof (dFloat);
 	}
 
-
 	vertexFormat.m_faceCount = faceCount;
 	vertexFormat.m_faceIndexCount = faceIndexCount;
 	vertexFormat.m_faceMaterial = faceMaterials;
@@ -711,6 +798,9 @@ bool DeserializeMesh (const NewtonMesh* const mesh, TiXmlElement* const rootNode
 		delete[] vertexFormat.m_uv1.m_indexList;
 	}
 
+	if (vertexFormat.m_weight.m_data) {
+		delete[] vertexFormat.m_weight.m_data;
+	}
 
 	delete[] positions;	
 	delete[] positionVertexIndex;

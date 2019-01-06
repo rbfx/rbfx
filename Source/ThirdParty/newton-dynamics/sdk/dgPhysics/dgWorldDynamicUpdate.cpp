@@ -190,12 +190,14 @@ dgInt32 dgWorldDynamicUpdate::CompareKey(dgInt32 highA, dgInt32 lowA, dgInt32 hi
 
 dgInt32 dgWorldDynamicUpdate::CompareJointInfos(const dgJointInfo* const infoA, const dgJointInfo* const infoB, void*)
 {
-	return CompareKey(infoA->m_jointCount, infoA->m_setId, infoB->m_jointCount, infoB->m_setId);
+	dgInt32 ret = CompareKey(infoA->m_jointCount, infoA->m_setId, infoB->m_jointCount, infoB->m_setId);;
+	return ret;
 }
 
 dgInt32 dgWorldDynamicUpdate::CompareClusterInfos(const dgBodyCluster* const clusterA, const dgBodyCluster* const clusterB, void* notUsed)
 {
-	return CompareKey(clusterA->m_jointCount, clusterA->m_bodyStart, clusterB->m_jointCount, clusterB->m_bodyStart);
+	dgInt32 ret = CompareKey(clusterA->m_jointCount, clusterA->m_bodyStart, clusterB->m_jointCount, clusterB->m_bodyStart);;
+	return ret;
 }
 
 void dgWorldDynamicUpdate::BuildClusters(dgFloat32 timestep)
@@ -339,8 +341,10 @@ void dgWorldDynamicUpdate::BuildClusters(dgFloat32 timestep)
 	}
 
 	m_clusterData = &world->m_clusterMemory[0];
-	dgSort(augmentedJointArray, augmentedJointCount, CompareJointInfos);
-	dgSort(m_clusterData, clustersCount, CompareClusterInfos);
+//	dgSort(augmentedJointArray, augmentedJointCount, CompareJointInfos);
+//	dgSort(m_clusterData, clustersCount, CompareClusterInfos);
+	dgParallelSort(*world, augmentedJointArray, augmentedJointCount, CompareJointInfos);
+	dgParallelSort(*world, m_clusterData, clustersCount, CompareClusterInfos);
 
 	dgInt32 rowStart = 0;
 	dgInt32 bodyStart = 0;

@@ -111,7 +111,7 @@ void dVehicleSingleBody::StatesToRigidBody(dFloat timestep)
 	dVehicleInterface::StatesToRigidBody(timestep);
 }
 
-int dVehicleSingleBody::GetKinematicLoops(dAnimationKinematicLoopJoint** const jointArray)
+int dVehicleSingleBody::GetKinematicLoops(dAnimIDRigKinematicLoopJoint** const jointArray)
 {
 	m_groundNode.SetIndex(-1);
 	return dVehicleInterface::GetKinematicLoops(jointArray);

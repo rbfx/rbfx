@@ -20,12 +20,11 @@
 */
 
 #include "dgStdafx.h"
+#include "dgSort.h"
 #include "dgStack.h"
 #include "dgGoogol.h"
 #include "dgSmallDeterminant.h"
 #include "dgDelaunayTetrahedralization.h"
-
-
 
 dgDelaunayTetrahedralization::dgDelaunayTetrahedralization(dgMemoryAllocator* const allocator, const dgFloat64* const vertexCloud, dgInt32 count, dgInt32 strideInByte, dgFloat64 distTol)
 	:dgConvexHull4d(allocator)
@@ -100,8 +99,6 @@ dgDelaunayTetrahedralization::~dgDelaunayTetrahedralization()
 {
 }
 
-
-
 dgInt32 dgDelaunayTetrahedralization::AddVertex (const dgBigVector& vertex)
 {
 	dgSetPrecisionDouble precision;
@@ -113,8 +110,6 @@ dgInt32 dgDelaunayTetrahedralization::AddVertex (const dgBigVector& vertex)
 	return index;
 }
 
-
-
 dgInt32 dgDelaunayTetrahedralization::CompareVertexByIndex(const dgConvexHull4dVector* const  A, const dgConvexHull4dVector* const B, void* const context)
 {
 	if (A->m_index < B ->m_index) {
@@ -124,7 +119,6 @@ dgInt32 dgDelaunayTetrahedralization::CompareVertexByIndex(const dgConvexHull4dV
 	}
 	return 0;
 }
-
 
 void dgDelaunayTetrahedralization::SortVertexArray ()
 {
@@ -143,8 +137,6 @@ void dgDelaunayTetrahedralization::SortVertexArray ()
 	dgSort(points, m_count, CompareVertexByIndex);
 }
 
-
-
 void dgDelaunayTetrahedralization::RemoveUpperHull ()
 {
 	dgSetPrecisionDouble precision;
@@ -161,7 +153,6 @@ void dgDelaunayTetrahedralization::RemoveUpperHull ()
 		}
 	}
 }
-
 
 void dgDelaunayTetrahedralization::DeleteFace (dgListNode* const node)
 {
