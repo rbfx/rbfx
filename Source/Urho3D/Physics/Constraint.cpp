@@ -187,6 +187,16 @@ namespace Urho3D {
         SetOwnWorldRotation(rotation);
         SetOtherWorldRotation(rotation);
     }
+    
+    void Constraint::SetPosition(const Vector3& position)
+    {
+        SetWorldPosition(ownBody_->GetNode()->GetWorldTransform() * position);
+    }
+    
+    void Constraint::SetRotation(const Quaternion& rotation)
+    {
+        SetWorldRotation(ownBody_->GetNode()->GetWorldRotation() * rotation);
+    }
 
     void Constraint::SetOwnPosition(const Vector3& position)
     {

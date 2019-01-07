@@ -56,6 +56,10 @@ namespace Urho3D {
         ///set the world rotation of both frames on both bodies. make sure you set other body before calling this function
         void SetWorldRotation(const Quaternion& rotation);
 
+        /// Set constraint position in local cordinates relative to the own body.  Both frames will be set to the same position.
+        void SetPosition(const Vector3& position);
+        /// Set constraint rotation in local cordinates relative to the own body.  Both frames will be set to the same rotation.
+        void SetRotation(const Quaternion& rotation);
         
         /// Set constraint position in local cordinates to rigidbody.
         void SetOwnPosition(const Vector3& position);
@@ -72,11 +76,12 @@ namespace Urho3D {
         Quaternion GetOwnRotation() const { return rotation_; }
 
 
-
         /// Set constraint position in local cordinates relative to the other body. If connected to the static world, is a world space position.
         virtual void SetOtherPosition(const Vector3& position);
         /// set the rotational frame to use on other body. If connected to the static world, is a world space position.
         virtual void SetOtherRotation(const Quaternion& rotation);
+
+        
 
         /// Set constraint position in local cordinates relative to the other body. If connected to the static world, is a world space position.
         virtual void SetOtherWorldPosition(const Vector3& position);
