@@ -953,10 +953,12 @@ namespace Urho3D {
 
             node->AddListener(this);
 
-
             calculateSceneDepth();
             physicsWorld_->markRigidBodiesNeedSorted();
 
+            SetWorldTransform(node->GetWorldTransform());
+            
+            
             prevNode_ = node;
         }
         else
@@ -1039,6 +1041,8 @@ namespace Urho3D {
 
                 Matrix3x4 transform(nextPosition_, NewtonToUrhoQuat(orientation), 1.0f);
                 NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(transform))[0][0]);
+                
+                nextPositionNeeded_ = false;
             }
         }
 
@@ -1051,8 +1055,10 @@ namespace Urho3D {
 
                 Matrix3x4 transform(NewtonToUrhoVec3(pos), nextOrientation_, 1.0f);
                 NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(transform))[0][0]);
-
+                
+                nextOrientationNeeded_ = false;
             }
+            
         }
 
         if (nextTransformNeeded_)
@@ -1062,8 +1068,10 @@ namespace Urho3D {
             {
                 Matrix3x4 scaleLessTransform(nextTransform_.Translation(), nextTransform_.Rotation(), 1.0f);
                 NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(scaleLessTransform))[0][0]);
+                
+                nextTransformNeeded_ = false;
             }
-
+            
         }
 
         if (nextLinearVelocityNeeded_)
@@ -1081,24 +1089,29 @@ namespace Urho3D {
                 }
                 else
                     NewtonBodySetVelocity(newtonBody_, &UrhoToNewton(nextLinearVelocity_)[0]);
+                
+                nextLinearVelocityNeeded_ = false;
             }
-            nextLinearVelocityNeeded_ = false;
+            
         }
         if (nextAngularVelocityNeeded_)
         {
             if (newtonBody_)
             {
                 NewtonBodySetOmega(newtonBody_, &UrhoToNewton(nextAngularVelocity_)[0]);
+                nextAngularVelocityNeeded_ = false;
             }
-            nextAngularVelocityNeeded_ = false;
+            
         }
         if (nextImpulseNeeded_)
         {
             if (newtonBody_) {
                 NewtonBodyAddImpulse(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(nextImpulseWorldVelocity_))[0],
                     &UrhoToNewton(node_->LocalToWorld(nextImpulseLocalPos_))[0], physicsWorld_->timeStepTarget_);
+                
+                nextImpulseNeeded_ = false;
             }
-            nextImpulseNeeded_ = false;
+
         }
 
 
@@ -1107,8 +1120,8 @@ namespace Urho3D {
             if (newtonBody_)
             {
                 NewtonBodySetSleepState(newtonBody_, nextSleepState_);
+                nextSleepStateNeeded_ = false;
             }
-            nextSleepStateNeeded_ = false;
         }
 
 
