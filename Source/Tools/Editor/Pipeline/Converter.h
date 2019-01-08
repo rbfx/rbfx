@@ -23,22 +23,50 @@
 #pragma once
 
 
-#include "ImportAsset.h"
+#include <Urho3D/Scene/Serializable.h>
 
 namespace Urho3D
 {
 
-class ImportAssimp : public ImportAsset
+enum ConverterKind
 {
-    URHO3D_OBJECT(ImportAssimp, ImportAsset);
+    /// converter will only run when explicitly invoked.
+    CONVERTER_OFFLINE = 1,
+    /// Converter is executed whenever source assets are modified.
+    CONVERTER_ONLINE,
+};
+URHO3D_FLAGSET(ConverterKind, ConverterKinds);
+
+static const char* converterKindNames[] = {
+    "offline",
+    "online",
+    nullptr
+};
+
+class Converter : public Serializable
+{
+    URHO3D_OBJECT(Converter, Serializable);
 public:
-    explicit ImportAssimp(Context* context);
+    ///
+    explicit Converter(Context* context);
+    ///
+    static void RegisterObject(Context* context);
+    ///
+    bool LoadJSON(const JSONValue& source) override;
+    ///
+    virtual void Execute(const StringVector& input);
+    ///
+    static StringHash GetSerializedType(const JSONValue& source);
+    ///
+    ConverterKind GetKind() const { return kind_; }
 
-    bool Accepts(const String& path, ContentType type) override;
-
-    bool Convert(const String& path) override;
-
-    bool RunConverter(const String& path) override;
+protected:
+    ///
+    String comment_{};
+    ///
+    ConverterKind kind_ = CONVERTER_OFFLINE;
+    ///
+    Vector<SharedPtr<Converter>> converters_;
 };
 
 }

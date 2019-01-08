@@ -490,13 +490,7 @@ SharedPtr<File> ResourceCache::GetFile(const String& name, bool sendEventOnFailu
     MutexLock lock(resourceMutex_);
 
     String sanitatedName = SanitateResourceName(name);
-    if (!isRouting_)
-    {
-        isRouting_ = true;
-        for (unsigned i = 0; i < resourceRouters_.Size(); ++i)
-            resourceRouters_[i]->Route(sanitatedName, RESOURCE_GETFILE);
-        isRouting_ = false;
-    }
+    RouteResourceName(sanitatedName, RESOURCE_GETFILE);
 
     if (sanitatedName.Length())
     {
@@ -734,13 +728,7 @@ bool ResourceCache::Exists(const String& name) const
     MutexLock lock(resourceMutex_);
 
     String sanitatedName = SanitateResourceName(name);
-    if (!isRouting_)
-    {
-        isRouting_ = true;
-        for (unsigned i = 0; i < resourceRouters_.Size(); ++i)
-            resourceRouters_[i]->Route(sanitatedName, RESOURCE_CHECKEXISTS);
-        isRouting_ = false;
-    }
+    RouteResourceName(sanitatedName, RESOURCE_CHECKEXISTS);
 
     if (sanitatedName.Empty())
         return false;
@@ -1076,24 +1064,24 @@ void ResourceCache::HandleBeginFrame(StringHash eventType, VariantMap& eventData
 {
     for (unsigned i = 0; i < fileWatchers_.Size(); ++i)
     {
-        String fileName;
-        while (fileWatchers_[i]->GetNextChange(fileName))
+        FileChange change;
+        while (fileWatchers_[i]->GetNextChange(change))
         {
-            auto it = ignoreResourceAutoReload_.Find(fileName);
+            auto it = ignoreResourceAutoReload_.Find(change.fileName_);
             if (it != ignoreResourceAutoReload_.End())
             {
                 ignoreResourceAutoReload_.Erase(it);
                 continue;
             }
 
-            ReloadResourceWithDependencies(fileName);
+            ReloadResourceWithDependencies(change.fileName_);
 
             // Finally send a general file changed event even if the file was not a tracked resource
             using namespace FileChanged;
 
             VariantMap& eventData = GetEventDataMap();
-            eventData[P_FILENAME] = fileWatchers_[i]->GetPath() + fileName;
-            eventData[P_RESOURCENAME] = fileName;
+            eventData[P_FILENAME] = fileWatchers_[i]->GetPath() + change.fileName_;
+            eventData[P_RESOURCENAME] = change.fileName_;
             SendEvent(E_FILECHANGED, eventData);
         }
     }
@@ -1287,6 +1275,18 @@ void ResourceCache::IgnoreResourceReload(const String& name)
 void ResourceCache::IgnoreResourceReload(const Resource* resource)
 {
     IgnoreResourceReload(resource->GetName());
+}
+
+void ResourceCache::RouteResourceName(String& name, ResourceRequest requestType) const
+{
+    name = SanitateResourceName(name);
+    if (!isRouting_)
+    {
+        isRouting_ = true;
+        for (unsigned i = 0; i < resourceRouters_.Size(); ++i)
+            resourceRouters_[i]->Route(name, requestType);
+        isRouting_ = false;
+    }
 }
 
 }

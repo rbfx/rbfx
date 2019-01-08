@@ -194,6 +194,7 @@ set (THIRD_PARTY_DEPENDENCIES
     cr
     nativefiledialog
     CLI11
+    fmt
 )
 
 if (BUILD_SHARED_LIBS AND NOT MSVC AND NOT APPLE)

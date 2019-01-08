@@ -5,8 +5,8 @@ image: Visual Studio 2017
 environment:
   global:
     URHO3D_D3D11: ON
-    URHO3D_ENABLE_ALL: ON
-    URHO3D_DOCS: OFF
+    URHO3D_SAMPLES: ON
+    URHO3D_PACKAGING: ON
   matrix:
     - BUILD_SHARED_LIBS: ON
     - BUILD_SHARED_LIBS: OFF

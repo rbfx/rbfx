@@ -29,6 +29,9 @@
 #include <cctype>
 #include <string>
 
+#include <fmt/ostream.h>
+#include <fmt/format.h>
+
 namespace Urho3D
 {
 
@@ -643,5 +646,11 @@ private:
     /// String buffer, null if not allocated.
     wchar_t* buffer_;
 };
+
+/// Make fmt library aware of String type for inputs.
+inline fmt::string_view to_string_view(const String& s)
+{
+    return {s.CString(), s.Length()};
+}
 
 }

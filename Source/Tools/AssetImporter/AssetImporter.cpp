@@ -479,6 +479,8 @@ void Run(const Vector<String>& arguments)
         outName_ = outFile;
         outPath_ = GetPath(outFile);
 
+        context_->GetFileSystem()->CreateDirsRecursive(outPath_);
+
         if (resourcePath_.Empty())
         {
             resourcePath_ = outPath_;

@@ -225,6 +225,8 @@ public:
     void IgnoreResourceReload(const String& name);
     /// When resource auto-reloading is enabled ignore reloading resource once.
     void IgnoreResourceReload(const Resource* resource);
+    /// Pass name through resource routers and return final resource name.
+    void RouteResourceName(String& name, ResourceRequest requestType) const;
 
 private:
     /// Find a resource.

@@ -21,12 +21,14 @@
 //
 
 #include <Urho3D/Core/ProcessUtils.h>
+#include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <Toolbox/IO/ContentUtilities.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/IO/File.h>
 #include "Tabs/Scene/EditorSceneSettings.h"
+#include "Editor.h"
 #include "Project.h"
 #include "CookScene.h"
 
@@ -35,22 +37,35 @@ namespace Urho3D
 {
 
 CookScene::CookScene(Context* context)
-    : ImportAsset(context)
+    : SubCommand(context)
 {
 }
 
-bool CookScene::Accepts(const String& path, ContentType type)
+void CookScene::RegisterObject(Context* context)
 {
-    if (GetExtension(path) != ".xml")
-        return false;
-    return type == CTYPE_SCENE;
+    context->RegisterFactory<CookScene>();
 }
 
-bool CookScene::RunConverter(const String& path)
+void CookScene::RegisterCommandLine(CLI::App& cli)
 {
+    cli.add_option("--input", input_, "XML scene file.")->required();
+    cli.set_callback([this]() {
+        GetSubsystem<Editor>()->GetEngineParameters()[EP_HEADLESS] = true;
+    });
+}
+
+void CookScene::Execute()
+{
+    auto* project = GetSubsystem<Project>();
+    if (project == nullptr)
+    {
+        GetSubsystem<Editor>()->ErrorExit("CookScene subcommand requires project being loaded.");
+        return;
+    }
+
     Scene scene(context_);
     File file(context_);
-    if (file.Open(path, FILE_READ))
+    if (file.Open(input_, FILE_READ))
     {
         if (scene.LoadXML(file))
         {
@@ -59,30 +74,25 @@ bool CookScene::RunConverter(const String& path)
                 component->Remove();
 
             // Cook scene
-            auto* project = GetSubsystem<Project>();
-            assert(path.StartsWith(project->GetResourcePath()));
-            auto resourceName = path.Substring(project->GetResourcePath().Length());
+            assert(input_.StartsWith(project->GetResourcePath()));
+            auto resourceName = input_.Substring(project->GetResourcePath().Length());
             auto outputFile = project->GetCachePath() + ReplaceExtension(resourceName, ".bin");
             GetFileSystem()->CreateDirsRecursive(GetPath(outputFile));
 
             File output(context_);
             if (output.Open(outputFile, FILE_WRITE))
             {
-                if (scene.Save(output))
-                    return true;
-                else
-                    URHO3D_LOGERRORF("Could not convert '%s' to binary version.", path.CString());
+                if (!scene.Save(output))
+                    GetSubsystem<Editor>()->ErrorExit(Format("Could not convert '%s' to binary version.", input_.CString()));
             }
             else
-                URHO3D_LOGERRORF("Could not open '%s' for writing.", outputFile.CString());
+                GetSubsystem<Editor>()->ErrorExit(Format("Could not open '%s' for writing.", outputFile.CString()));
         }
         else
-            URHO3D_LOGERRORF("Could not open load scene '%s'.", path.CString());
+            GetSubsystem<Editor>()->ErrorExit(Format("Could not open load scene '%s'.", input_.CString()));
     }
     else
-        URHO3D_LOGERRORF("Could not open open '%s' for reading.", path.CString());
-
-    return false;
+        GetSubsystem<Editor>()->ErrorExit(Format("Could not open open '%s' for reading.", input_.CString()));
 }
 
 }

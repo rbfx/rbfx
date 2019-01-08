@@ -78,6 +78,8 @@ int Application::Run()
 
         // Register application command line arguments or set up engine parameters
         Setup();
+        if (exitCode_)
+            return exitCode_;
 
         // Parse command line parameters
         {
@@ -92,14 +94,9 @@ int Application::Run()
                 commandLine_.parse(cliArgs);
             } catch(const CLI::ParseError &e) {
                 exitCode_ = commandLine_.exit(e);
+                return exitCode_;
             }
         }
-
-        if (commandLine_.count("--help") > 0)
-            return 0;
-
-        if (exitCode_)
-            return exitCode_;
 
         if (!engine_->Initialize(engineParameters_))
         {
@@ -108,8 +105,11 @@ int Application::Run()
         }
 
         Start();
-        if (exitCode_)
+        if (exitCode_ || engine_->IsExiting())
+        {
+            Stop();
             return exitCode_;
+        }
 
         SendEvent(E_APPLICATIONSTARTED);
 
@@ -186,7 +186,7 @@ void Application::HandleLogMessage(StringHash eventType, VariantMap& eventData)
     }
 }
 
-CLI::App&Application::GetCommandLineParser()
+CLI::App& Application::GetCommandLineParser()
 {
     return commandLine_;
 }

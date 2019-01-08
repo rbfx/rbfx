@@ -27,7 +27,7 @@
 #if URHO3D_PLUGINS
 #   include "Plugins/PluginManager.h"
 #endif
-#include "Assets/AssetConverter.h"
+#include "Pipeline/Pipeline.h"
 
 
 namespace Urho3D
@@ -46,7 +46,7 @@ public:
     /// Create a new project. Returns true if successful. Overwrites specified path unconditionally.
     bool SaveProject();
     /// Return project directory.
-    String GetProjectPath() const { return projectFileDir_; }
+    const String& GetProjectPath() const { return projectFileDir_; }
     /// Returns path to temporary asset cache.
     String GetCachePath() const;
     /// Returns path to permanent asset cache.
@@ -63,12 +63,14 @@ public:
     void SetDefaultSceneName(const String& defaultScene) { defaultScene_ = defaultScene; }
     /// Returns a map of default engine settings that will be applied on the start of player application.
     HashMap<String, Variant>& GetDefaultEngineSettings() { return engineParameters_; }
+    ///
+    Pipeline& GetPipeline() { return pipeline_; }
 
 protected:
     /// Directory containing project.
     String projectFileDir_;
-    /// Converter responsible for watching resource directories and converting assets to required formats.
-    AssetConverter assetConverter_;
+    ///
+    Pipeline pipeline_;
     /// Copy of engine resource paths that get unregistered when project is loaded.
     StringVector cachedEngineResourcePaths_;
     /// Path to imgui settings ini file.

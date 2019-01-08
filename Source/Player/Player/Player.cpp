@@ -90,6 +90,8 @@ void Player::Start()
         script->LoadRuntime();
 #endif
 
+    GetCache()->AddResourceRouter(new BakedResourceRouter(context_));
+
     context_->RegisterSubsystem(new SceneManager(context_));
 
     SharedPtr<JSONFile> projectFile(GetCache()->GetResource<JSONFile>("Project.json", false));
@@ -251,4 +253,34 @@ bool Player::LoadAssembly(const String& path, PluginType assumeType)
     return false;
 }
 #endif
+
+void BakedResourceRouter::Route(String& name, ResourceRequest requestType)
+{
+    auto useResourceIfExists = [&](const char* expectedExtension) -> bool {
+        String testResourceName = ReplaceExtension(name, ".bin");
+        if (GetCache()->Exists(testResourceName))
+        {
+            name = testResourceName;
+            return true;
+        }
+        return false;
+    };
+
+    String extension = GetExtension(name);
+
+    // Early exit for cooked files
+    if (extension == ".bin" || extension == ".dds")
+        return;
+
+    // XML scenes are serialized to .bin files.
+    if (extension == ".xml" && useResourceIfExists(".bin"))
+        return;
+    // Textures are may be compressed as .dds files.
+    else if (extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".bmp")
+    {
+        if (useResourceIfExists(".dds"))
+            return;
+    }
+}
+
 }

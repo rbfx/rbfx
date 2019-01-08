@@ -48,7 +48,7 @@ namespace Urho3D
 
 Project::Project(Context* context)
     : Object(context)
-    , assetConverter_(context)
+    , pipeline_(context)
 #if URHO3D_PLUGINS
     , plugins_(context)
 #endif
@@ -90,7 +90,8 @@ Project::~Project()
             GetCache()->AddResourceDir(path);
     }
 
-    GetSubsystem<Editor>()->UpdateWindowTitle();
+    if (auto* editor = GetSubsystem<Editor>())
+        editor->UpdateWindowTitle();
 }
 
 bool Project::LoadProject(const String& projectPath)
@@ -134,17 +135,6 @@ bool Project::LoadProject(const String& projectPath)
                 GetFileSystem()->CopyDir(path + name, GetResourcePath() + name);
             }
         }
-    }
-
-    // Register asset dirs
-    GetCache()->AddResourceDir(GetCachePath(), 0);
-    GetCache()->AddResourceDir(GetResourcePath(), 1);
-    if (!GetEngine()->IsHeadless())
-    {
-        assetConverter_.SetCachePath(GetCachePath());
-        assetConverter_.AddAssetDirectory(GetResourcePath());
-        assetConverter_.VerifyCacheAsync();
-        GetSubsystem<Editor>()->UpdateWindowTitle();
     }
 
     // Unregister engine dirs
@@ -214,7 +204,6 @@ bool Project::LoadProject(const String& projectPath)
             buf->appendf("[Project][Window]\n");
             auto* systemUI = ui::GetSystemUI();
             auto* editor = systemUI->GetSubsystem<Editor>();
-            auto* project = systemUI->GetSubsystem<Project>();
             IntVector2
             wSize = systemUI->GetGraphics()->GetSize();
             IntVector2
@@ -247,6 +236,49 @@ bool Project::LoadProject(const String& projectPath)
         }
     }
 #endif
+
+    // Settings.json
+    {
+        String filePath(projectFileDir_ + "Settings.json");
+        if (GetFileSystem()->Exists(filePath))
+        {
+            JSONFile file(context_);
+            if (!file.LoadFile(filePath))
+                return false;
+
+            for (auto& pair : file.GetRoot().GetObject())
+                engineParameters_[pair.first_] = pair.second_.GetVariant();
+        }
+    }
+
+    // Pipeline.json
+    // Register asset dirs
+    GetCache()->AddResourceDir(GetCachePath(), 0);
+    GetCache()->AddResourceDir(GetResourcePath(), 1);
+
+    String filePath(projectFileDir_ + "Pipeline.json");
+    if (GetFileSystem()->Exists(filePath))
+    {
+        JSONFile file(context_);
+        if (!file.LoadFile(filePath))
+        {
+            URHO3D_LOGERROR("Loading 'Pipeline.json' failed likely due to syntax error or insufficient access.");
+            return false;
+        }
+
+        if (!pipeline_.LoadJSON(file.GetRoot()))
+        {
+            URHO3D_LOGERROR("Deserialization of 'Pipeline.json' failed.");
+            return false;
+        }
+    }
+
+    if (!GetEngine()->IsHeadless())
+    {
+        pipeline_.EnableWatcher();
+        pipeline_.BuildCache(CONVERTER_ONLINE);
+        GetSubsystem<Editor>()->UpdateWindowTitle();
+    }
 
     // Project.json
     {
@@ -285,20 +317,6 @@ bool Project::LoadProject(const String& projectPath)
 
             using namespace EditorProjectLoading;
             SendEvent(E_EDITORPROJECTLOADING, P_ROOT, (void*)&root);
-        }
-    }
-
-    // Settings.json
-    {
-        String filePath(projectFileDir_ + "Settings.json");
-        if (GetFileSystem()->Exists(filePath))
-        {
-            JSONFile file(context_);
-            if (!file.LoadFile(filePath))
-                return false;
-
-            for (auto& pair : file.GetRoot().GetObject())
-                engineParameters_[pair.first_] = pair.second_.GetVariant();
         }
     }
 

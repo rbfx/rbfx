@@ -26,8 +26,8 @@
 #if !defined(URHO3D_STATIC) && defined(URHO3D_PLUGINS)
 #   if !defined(NDEBUG) && defined(URHO3D_LOGGING)
 #       define CR_DEBUG 1
-#       define CR_ERROR(format, ...) Urho3D::Log::Write(Urho3D::LOG_ERROR, Urho3D::ToString(format, ##__VA_ARGS__))
-#       define CR_LOG(format, ...)   Urho3D::Log::Write(Urho3D::LOG_DEBUG, Urho3D::ToString(format, ##__VA_ARGS__))
+#       define CR_ERROR(format, ...) Urho3D::Log::Write(Urho3D::LOG_ERROR, Urho3D::ToString(format, ##__VA_ARGS__).Trimmed())
+#       define CR_LOG(format, ...)   Urho3D::Log::Write(Urho3D::LOG_DEBUG, Urho3D::ToString(format, ##__VA_ARGS__).Trimmed())
 #       define CR_TRACE
 #   endif
 #   include <cr/cr.h>
