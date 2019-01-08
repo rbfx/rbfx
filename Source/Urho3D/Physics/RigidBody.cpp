@@ -606,6 +606,12 @@ namespace Urho3D {
             physicsWorld_->addToFreeQueue(effectiveCollision_);
             effectiveCollision_ = nullptr;
         }
+        
+        //mark all contact entries as expired so physicsworld pool is more free.
+        Vector<unsigned int> keys = contactEntries_.Keys();
+        for (int i = 0; i < keys.Size(); i++) {
+            contactEntries_[keys[i]]->expired_ = true;
+        }
     }
 
 
