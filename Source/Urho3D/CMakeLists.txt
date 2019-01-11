@@ -183,8 +183,7 @@ set (THIRD_PARTY_DEPENDENCIES
     dNewton
     dMath
     newton
-    dScene
-    tinyxml
+
     
     ImGui
     LibCpuId
