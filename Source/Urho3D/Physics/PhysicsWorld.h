@@ -171,6 +171,9 @@ namespace Urho3D
         ///return global force acting on all rigid bodies
         Vector3 GetGravity() const;
 
+        void SetTimeScale(float timescale){ timeScale_ = Max<float>(0.0f,timescale);}
+        float GetTimeScale() const { return timeScale_; }
+        
         ///set the physics scale of the world
         void SetPhysicsScale(float scale) { physicsScale_ = scale; }
 
@@ -289,8 +292,11 @@ namespace Urho3D
 
         RigidBody* sceneBody_ = nullptr;
 
+        float timeScale_ = 1.0f;
 
         float physicsScale_ = 1.0f;
+        
+        
 
         ///convex casts
         static const int convexCastRetInfoSize_ = 1000;

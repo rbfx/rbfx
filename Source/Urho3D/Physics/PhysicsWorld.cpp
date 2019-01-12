@@ -94,6 +94,7 @@ namespace Urho3D {
         URHO3D_COPY_BASE_ATTRIBUTES(Component);
         URHO3D_ACCESSOR_ATTRIBUTE("Gravity", GetGravity, SetGravity, Vector3, DEFAULT_GRAVITY, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Physics Scale", GetPhysicsScale, SetPhysicsScale, float, 1.0f, AM_DEFAULT);
+        URHO3D_ACCESSOR_ATTRIBUTE("Time Scale", GetTimeScale, SetTimeScale, float, 1.0f, AM_DEFAULT);
     }
 
 
@@ -688,7 +689,7 @@ namespace Urho3D {
     {
 
         URHO3D_PROFILE_FUNCTION();
-        float timeStep = timestep*GetScene()->GetTimeScale();
+        float timeStep = timestep*GetScene()->GetTimeScale()*timeScale_;
         bool rootRate = isRootUpdate;
 
         if (rootRate) {
