@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -119,7 +119,7 @@ public:
     /// Plane absolute normal.
     Vector3 absNormal_;
     /// Plane constant.
-    float d_;
+    float d_{};
 
     /// Plane at origin with normal pointing up.
     static const Plane UP;

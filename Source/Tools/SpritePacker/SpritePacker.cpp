@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -223,7 +223,7 @@ void Run(Vector<String>& arguments)
             {
                 for (int x = 0; x < imageWidth; ++x)
                 {
-                    bool found = (image.GetPixelInt(x, y) & 0x000000ff) != 0;
+                    bool found = (image.GetPixelInt(x, y) & 0x000000ffu) != 0;
                     if (found) {
                         minX = Min(minX, x);
                         minY = Min(minY, y);
@@ -264,7 +264,7 @@ void Run(Vector<String>& arguments)
         for(unsigned x=2; x<11; ++x)
         {
             for(unsigned y=2; y<11; ++y)
-                tries.Push(IntVector2((1<<x), (1<<y)));
+                tries.Push(IntVector2((1u<<x), (1u<<y)));
         }
 
         // load rectangles
@@ -324,13 +324,12 @@ void Run(Vector<String>& arguments)
             ErrorExit("Could not allocate for all images.  The max sprite sheet texture size is " + String(MAX_TEXTURE_SIZE) + "x" + String(MAX_TEXTURE_SIZE) + ".");
     }
 
-
     // create image for spritesheet
     Image spriteSheetImage(context);
     spriteSheetImage.SetSize(packedWidth, packedHeight, 4);
 
     // zero out image
-    spriteSheetImage.SetData((unsigned char*)calloc(sizeof(unsigned char), (size_t)packedWidth * packedHeight * 4));
+    spriteSheetImage.SetData(nullptr);
 
     XMLFile xml(context);
     XMLElement root = xml.CreateRoot("TextureAtlas");

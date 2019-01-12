@@ -28,21 +28,15 @@ namespace Urho3D
 DebugCameraController::DebugCameraController(Context* context)
     : LogicComponent(context)
 {
-    SetUpdateEventMask(0);
+    SetUpdateEventMask(USE_NO_EVENT);
 }
 
 void DebugCameraController::Start()
 {
-    // Add a head-light so we can view even unlit objects.
-    light_ = GetNode()->CreateComponent<Light>();
-    light_->SetColor(Color::WHITE);
-    light_->SetLightType(LIGHT_DIRECTIONAL);
 }
 
 void DebugCameraController::Stop()
 {
-    light_->Remove();
-    light_ = nullptr;
 }
 
 void DebugCameraController::Update(float timeStep)
@@ -77,7 +71,7 @@ void DebugCameraController::Update(float timeStep)
             input->SetMouseVisible(false);
 
         auto yaw = GetNode()->GetRotation().EulerAngles().x_;
-        if (yaw > -90.f && yaw < 90.f || yaw <= -90.f && delta.y_ > 0 || yaw >= 90.f && delta.y_ < 0)
+        if ((yaw > -90.f && yaw < 90.f) || (yaw <= -90.f && delta.y_ > 0) || (yaw >= 90.f && delta.y_ < 0))
             GetNode()->RotateAround(Vector3::ZERO, Quaternion(mouseSensitivity_ * delta.y_, Vector3::RIGHT), TS_LOCAL);
         GetNode()->RotateAround(GetNode()->GetPosition(), Quaternion(mouseSensitivity_ * delta.x_, Vector3::UP), TS_WORLD);
     }
@@ -89,6 +83,66 @@ void DebugCameraController::Update(float timeStep)
         GetNode()->Translate(Vector3::FORWARD * moveSpeed_ * timeStep);
     if (input->GetKeyDown(KEY_S))
         GetNode()->Translate(Vector3::BACK * moveSpeed_ * timeStep);
+    if (input->GetKeyDown(KEY_A))
+        GetNode()->Translate(Vector3::LEFT * moveSpeed_ * timeStep);
+    if (input->GetKeyDown(KEY_D))
+        GetNode()->Translate(Vector3::RIGHT * moveSpeed_ * timeStep);
+}
+
+DebugCameraController2D::DebugCameraController2D(Context* context)
+    : LogicComponent(context)
+{
+    SetUpdateEventMask(USE_NO_EVENT);
+}
+
+void DebugCameraController2D::Start()
+{
+}
+
+void DebugCameraController2D::Stop()
+{
+}
+
+void DebugCameraController2D::Update(float timeStep)
+{
+    // Do not move if the UI has a focused element
+    if (GetUI()->GetFocusElement())
+        return;
+
+    // Do not move if interacting with UI controls
+    if (GetSystemUI()->IsAnyItemActive())
+        return;
+
+    Input* input = GetInput();
+
+    // Movement speed as world units per second
+    float moveSpeed_ = speed_;
+    if (input->GetKeyDown(KEY_SHIFT))
+    {
+        moveSpeed_ *= 2;
+
+        if (input->GetKeyPress(KEY_KP_PLUS))
+            speed_ += 1.f;
+        else if (input->GetKeyPress(KEY_KP_MINUS))
+            speed_ -= 1.f;
+    }
+
+    if (input->GetMouseButtonDown(MOUSEB_RIGHT))
+    {
+        IntVector2 delta = input->GetMouseMove();
+
+        if (input->IsMouseVisible() && delta != IntVector2::ZERO)
+            input->SetMouseVisible(false);
+        GetNode()->Translate2D(Vector2{(float)delta.x_ * -1.f, (float)delta.y_} * moveSpeed_ * timeStep);
+    }
+    else if (!input->IsMouseVisible())
+        input->SetMouseVisible(true);
+
+    // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
+    if (input->GetKeyDown(KEY_W))
+        GetNode()->Translate(Vector3::UP * moveSpeed_ * timeStep);
+    if (input->GetKeyDown(KEY_S))
+        GetNode()->Translate(Vector3::DOWN * moveSpeed_ * timeStep);
     if (input->GetKeyDown(KEY_A))
         GetNode()->Translate(Vector3::LEFT * moveSpeed_ * timeStep);
     if (input->GetKeyDown(KEY_D))

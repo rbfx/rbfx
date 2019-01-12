@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@
 
 #include "../Core/Context.h"
 #include "../Graphics/Texture2D.h"
+#include "../Graphics/Technique.h"
 #include "../Resource/ResourceCache.h"
 #include "../UI/BorderImage.h"
 
@@ -32,7 +33,6 @@
 namespace Urho3D
 {
 
-extern const char* blendModeNames[];
 extern const char* UI_CATEGORY;
 
 BorderImage::BorderImage(Context* context) :

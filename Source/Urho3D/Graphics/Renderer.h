@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -201,9 +201,9 @@ public:
     /// Set default texture filtering.
     void SetTextureFilterMode(TextureFilterMode mode);
     /// Set texture quality level. See the QUALITY constants in GraphicsDefs.h.
-    void SetTextureQuality(int quality);
+    void SetTextureQuality(MaterialQuality quality);
     /// Set material quality level. See the QUALITY constants in GraphicsDefs.h.
-    void SetMaterialQuality(int quality);
+    void SetMaterialQuality(MaterialQuality quality);
     /// Set shadows on/off.
     void SetDrawShadows(bool enable);
     /// Set shadow map resolution.
@@ -278,10 +278,10 @@ public:
     TextureFilterMode GetTextureFilterMode() const { return textureFilterMode_; }
 
     /// Return texture quality level.
-    int GetTextureQuality() const { return textureQuality_; }
+    MaterialQuality GetTextureQuality() const { return textureQuality_; }
 
     /// Return material quality level.
-    int GetMaterialQuality() const { return materialQuality_; }
+    MaterialQuality GetMaterialQuality() const { return materialQuality_; }
 
     /// Return shadow map resolution.
     int GetShadowMapSize() const { return shadowMapSize_; }
@@ -516,11 +516,9 @@ private:
     /// Function pointer of shadow map filter
     ShadowMapFilter shadowMapFilter_{};
     /// Screen buffers by resolution and format.
-    HashMap<long long, Vector<SharedPtr<Texture> > > screenBuffers_;
+    HashMap<unsigned long long, Vector<SharedPtr<Texture> > > screenBuffers_;
     /// Current screen buffer allocations by resolution and format.
-    HashMap<long long, unsigned> screenBufferAllocations_;
-    /// Saved status of screen buffer allocations for restoring.
-    HashMap<long long, unsigned> savedScreenBufferAllocations_;
+    HashMap<unsigned long long, unsigned> screenBufferAllocations_;
     /// Cache for light scissor queries.
     HashMap<Pair<Light*, Camera*>, Rect> lightScissorCache_;
     /// Backbuffer viewports.
@@ -546,9 +544,9 @@ private:
     /// Texture filtering mode.
     TextureFilterMode textureFilterMode_{FILTER_TRILINEAR};
     /// Texture quality level.
-    int textureQuality_{QUALITY_HIGH};
+    MaterialQuality textureQuality_{QUALITY_HIGH};
     /// Material quality level.
-    int materialQuality_{QUALITY_HIGH};
+    MaterialQuality materialQuality_{QUALITY_HIGH};
     /// Shadow map resolution.
     int shadowMapSize_{1024};
     /// Shadow quality.

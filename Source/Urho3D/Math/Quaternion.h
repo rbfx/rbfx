@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -108,6 +108,12 @@ public:
     Quaternion(float x, float y, float z) noexcept
     {
         FromEulerAngles(x, y, z);
+    }
+
+    /// Construct from Euler angles (in degrees.)
+    explicit Quaternion(Vector3 angles) noexcept
+    {
+        FromEulerAngles(angles.x_, angles.y_, angles.z_);
     }
 
     /// Construct from the rotation difference between two direction vectors.

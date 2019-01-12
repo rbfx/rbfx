@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2008-2019 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -28,18 +28,18 @@ endif ()
 # Define source files
 file (GLOB_RECURSE SOURCE_FILES *.h *.cpp)
 set (SOURCE_FILES ${SOURCE_FILES})
-if (BUILD_SHARED_LIBS)
-    set (LIB_TYPE STATIC)
-else ()
-    set (LIB_TYPE OBJECT)
-endif ()
-add_library (Bullet ${LIB_TYPE} ${SOURCE_FILES})
+add_library (Bullet STATIC ${SOURCE_FILES})
 target_include_directories(Bullet
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Bullet>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-           $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS}/Bullet>
+           $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/Bullet>
 )
-install (DIRECTORY src/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/Bullet FILES_MATCHING PATTERN *.h)
-if (BUILD_SHARED_LIBS)
-    install(TARGETS Bullet EXPORT Urho3D ARCHIVE DESTINATION ${DEST_LIBRARY_DIR})
+
+if (URHO3D_SSE)
+    target_compile_definitions(Bullet PUBLIC -DBT_USE_SSE=1)
 endif ()
+
+if (BUILD_SHARED_LIBS)
+    install(TARGETS Bullet EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+endif ()
+install (DIRECTORY Bullet DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR} FILES_MATCHING PATTERN *.h)

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,8 @@
 
 namespace Urho3D
 {
+
+static const char* DEFAULT_DATE_TIME_FORMAT = "%Y-%m-%d %H:%M:%S";
 
 /// Low-resolution operating system timer.
 class URHO3D_API Timer
@@ -112,7 +114,7 @@ public:
     /// Get system time as seconds since 1.1.1970.
     static unsigned GetTimeSinceEpoch();
     /// Get a date/time stamp as a string.
-    static String GetTimeStamp();
+    static String GetTimeStamp(const String& format=String::EMPTY);
     /// Sleep for a number of milliseconds.
     static void Sleep(unsigned mSec);
 

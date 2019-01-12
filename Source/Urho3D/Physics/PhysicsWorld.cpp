@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -230,7 +230,7 @@ void PhysicsWorld::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
     if (debug)
     {
-        URHO3D_PROFILE(PhysicsDrawDebug);
+        URHO3D_PROFILE("PhysicsDrawDebug");
 
         debugRenderer_ = debug;
         debugDepthTest_ = depthTest;
@@ -255,7 +255,7 @@ void PhysicsWorld::draw3dText(const btVector3& location, const char* textString)
 
 void PhysicsWorld::Update(float timeStep)
 {
-    URHO3D_PROFILE(UpdatePhysics);
+    URHO3D_PROFILE("UpdatePhysics");
 
     float internalTimeStep = 1.0f / fps_;
     int maxSubSteps = (int)(timeStep * fps_) + 1;
@@ -371,7 +371,7 @@ void PhysicsWorld::SetMaxNetworkAngularVelocity(float velocity)
 
 void PhysicsWorld::Raycast(PODVector<PhysicsRaycastResult>& result, const Ray& ray, float maxDistance, unsigned collisionMask)
 {
-    URHO3D_PROFILE(PhysicsRaycast);
+    URHO3D_PROFILE("PhysicsRaycast");
 
     if (maxDistance >= M_INFINITY)
         URHO3D_LOGWARNING("Infinite maxDistance in physics raycast is not supported");
@@ -399,7 +399,7 @@ void PhysicsWorld::Raycast(PODVector<PhysicsRaycastResult>& result, const Ray& r
 
 void PhysicsWorld::RaycastSingle(PhysicsRaycastResult& result, const Ray& ray, float maxDistance, unsigned collisionMask)
 {
-    URHO3D_PROFILE(PhysicsRaycastSingle);
+    URHO3D_PROFILE("PhysicsRaycastSingle");
 
     if (maxDistance >= M_INFINITY)
         URHO3D_LOGWARNING("Infinite maxDistance in physics raycast is not supported");
@@ -429,23 +429,27 @@ void PhysicsWorld::RaycastSingle(PhysicsRaycastResult& result, const Ray& ray, f
     }
 }
 
-void PhysicsWorld::RaycastSingleSegmented(PhysicsRaycastResult& result, const Ray& ray, float maxDistance, float segmentDistance, unsigned collisionMask)
+void PhysicsWorld::RaycastSingleSegmented(PhysicsRaycastResult& result, const Ray& ray, float maxDistance, float segmentDistance, unsigned collisionMask, float overlapDistance)
 {
-    URHO3D_PROFILE(PhysicsRaycastSingleSegmented);
+    URHO3D_PROFILE("PhysicsRaycastSingleSegmented");
+
+    assert(overlapDistance < segmentDistance);
 
     if (maxDistance >= M_INFINITY)
         URHO3D_LOGWARNING("Infinite maxDistance in physics raycast is not supported");
 
+    const btVector3 direction = ToBtVector3(ray.direction_);
+    const auto count = CeilToInt(maxDistance / segmentDistance);
+
     btVector3 start = ToBtVector3(ray.origin_);
-    btVector3 end;
-    btVector3 direction = ToBtVector3(ray.direction_);
+    // overlap a bit with the previous segment for better precision, to avoid missing hits
+    const btVector3 overlap = direction * overlapDistance;
     float remainingDistance = maxDistance;
-    auto count = RoundToInt(maxDistance / segmentDistance);
 
     for (auto i = 0; i < count; ++i)
     {
-        float distance = Min(remainingDistance, segmentDistance);     // The last segment may be shorter
-        end = start + distance * direction;
+        const float distance = Min(remainingDistance, segmentDistance); // The last segment may be shorter
+        const btVector3 end = start + distance * direction;
 
         btCollisionWorld::ClosestRayResultCallback rayCallback(start, end);
         rayCallback.m_collisionFilterGroup = (short)0xffff;
@@ -465,7 +469,7 @@ void PhysicsWorld::RaycastSingleSegmented(PhysicsRaycastResult& result, const Ra
         }
 
         // Use the end position as the new start position
-        start = end;
+        start = end - overlap;
         remainingDistance -= segmentDistance;
     }
 
@@ -479,7 +483,7 @@ void PhysicsWorld::RaycastSingleSegmented(PhysicsRaycastResult& result, const Ra
 
 void PhysicsWorld::SphereCast(PhysicsRaycastResult& result, const Ray& ray, float radius, float maxDistance, unsigned collisionMask)
 {
-    URHO3D_PROFILE(PhysicsSphereCast);
+    URHO3D_PROFILE("PhysicsSphereCast");
 
     if (maxDistance >= M_INFINITY)
         URHO3D_LOGWARNING("Infinite maxDistance in physics sphere cast is not supported");
@@ -579,7 +583,7 @@ void PhysicsWorld::ConvexCast(PhysicsRaycastResult& result, btCollisionShape* sh
         return;
     }
 
-    URHO3D_PROFILE(PhysicsConvexCast);
+    URHO3D_PROFILE("PhysicsConvexCast");
 
     btCollisionWorld::ClosestConvexResultCallback convexCallback(ToBtVector3(startPos), ToBtVector3(endPos));
     convexCallback.m_collisionFilterGroup = (short)0xffff;
@@ -616,7 +620,7 @@ void PhysicsWorld::RemoveCachedGeometry(Model* model)
 
 void PhysicsWorld::GetRigidBodies(PODVector<RigidBody*>& result, const Sphere& sphere, unsigned collisionMask)
 {
-    URHO3D_PROFILE(PhysicsSphereQuery);
+    URHO3D_PROFILE("PhysicsSphereQuery");
 
     result.Clear();
 
@@ -635,7 +639,7 @@ void PhysicsWorld::GetRigidBodies(PODVector<RigidBody*>& result, const Sphere& s
 
 void PhysicsWorld::GetRigidBodies(PODVector<RigidBody*>& result, const BoundingBox& box, unsigned collisionMask)
 {
-    URHO3D_PROFILE(PhysicsBoxQuery);
+    URHO3D_PROFILE("PhysicsBoxQuery");
 
     result.Clear();
 
@@ -653,7 +657,7 @@ void PhysicsWorld::GetRigidBodies(PODVector<RigidBody*>& result, const BoundingB
 
 void PhysicsWorld::GetRigidBodies(PODVector<RigidBody*>& result, const RigidBody* body)
 {
-    URHO3D_PROFILE(PhysicsBodyQuery);
+    URHO3D_PROFILE("PhysicsBodyQuery");
 
     result.Clear();
 
@@ -676,7 +680,7 @@ void PhysicsWorld::GetRigidBodies(PODVector<RigidBody*>& result, const RigidBody
 
 void PhysicsWorld::GetCollidingBodies(PODVector<RigidBody*>& result, const RigidBody* body)
 {
-    URHO3D_PROFILE(GetCollidingBodies);
+    URHO3D_PROFILE("GetCollidingBodies");
 
     result.Clear();
 
@@ -804,12 +808,12 @@ void PhysicsWorld::PreStep(float timeStep)
     SendEvent(E_PHYSICSPRESTEP, eventData);
 
     // Start profiling block for the actual simulation step
-    URHO3D_PROFILE_NONSCOPED("PhysicsStepSimulation");
+    // URHO3D_PROFILE("PhysicsStepSimulation");
 }
 
 void PhysicsWorld::PostStep(float timeStep)
 {
-    URHO3D_PROFILE_END();
+    // URHO3D_PROFILE_END();
 
     SendCollisionEvents();
 
@@ -824,7 +828,7 @@ void PhysicsWorld::PostStep(float timeStep)
 
 void PhysicsWorld::SendCollisionEvents()
 {
-    URHO3D_PROFILE(SendCollisionEvents);
+    URHO3D_PROFILE("SendCollisionEvents");
 
     currentCollisions_.Clear();
     physicsCollisionData_.Clear();

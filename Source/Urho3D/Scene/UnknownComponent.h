@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,6 +31,13 @@ namespace Urho3D
 class URHO3D_API UnknownComponent : public Component
 {
 public:
+    using ClassName = UnknownComponent;
+    using BaseClassName = Component;
+    virtual const Urho3D::TypeInfo* GetTypeInfo() const override { return GetTypeInfoStatic(); }
+    static Urho3D::StringHash GetTypeStatic() { return GetTypeInfoStatic()->GetType(); }
+    static const Urho3D::String& GetTypeNameStatic() { return GetTypeInfoStatic()->GetTypeName(); }
+    static const Urho3D::TypeInfo* GetTypeInfoStatic() { static const Urho3D::TypeInfo typeInfoStatic("UnknownComponent", BaseClassName::GetTypeInfoStatic()); return &typeInfoStatic; }
+
     /// Construct.
     explicit UnknownComponent(Context* context);
 
@@ -72,19 +79,6 @@ public:
 
     /// Return whether was loaded using XML data.
     bool GetUseXML() const { return useXML_; }
-
-    /// Return static type.
-    static Urho3D::StringHash GetTypeStatic()
-    {
-        static const StringHash typeStatic("UnknownComponent");
-        return typeStatic;
-    }
-    /// Return static type name.
-    static const Urho3D::String& GetTypeNameStatic()
-    {
-        static const String typeNameStatic("UnknownComponent");
-        return typeNameStatic;
-    }
 
 private:
     /// Type of stored component.

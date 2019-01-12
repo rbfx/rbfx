@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2008-2019 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +20,10 @@
 # THE SOFTWARE.
 #
 
+if (NOT URHO3D_EXTRAS)
+    return ()
+endif ()
+
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_TOOLS_DIR})
 
 # Urho3D extras
@@ -27,9 +31,4 @@ add_subdirectory (OgreBatchConverter)
 
 install(DIRECTORY OgreMaxscriptExport DESTINATION ${DEST_SHARE_DIR})
 
-file(GLOB tool_dirs RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
-foreach (tool ${tool_dirs})
-    if (TARGET ${tool})
-        set_target_properties(${tool} PROPERTIES FOLDER Extras)
-    endif ()
-endforeach ()
+vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} Tools)

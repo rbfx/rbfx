@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2017-2019 Rokas Kupstys.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,10 +22,11 @@
 
 #pragma once
 
-
+#include "ToolboxAPI.h"
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/Graphics/Drawable.h>
 #include <Urho3D/Math/MathDefs.h>
+#include <Urho3D/IO/VectorBuffer.h>
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/Scene/Scene.h>
@@ -40,36 +41,51 @@ class AttributeInspector;
 class Gizmo;
 class Scene;
 
+/// Notify undo managers that state is about to be undone.
+URHO3D_EVENT(E_UNDO, Undo)
+{
+    URHO3D_PARAM(P_TIME, Time);                       // unsigned.
+    URHO3D_PARAM(P_MANAGER, Manager);                 // Undo::Manager pointer.
+}
+
+/// Notify undo managers that state is about to be redone.
+URHO3D_EVENT(E_REDO, Redo)
+{
+    URHO3D_PARAM(P_TIME, Time);                       // unsigned.
+    URHO3D_PARAM(P_MANAGER, Manager);                 // Undo::Manager pointer.
+}
+
 namespace Undo
 {
 
-class EditAction : public RefCounted
+class URHO3D_TOOLBOX_API EditAction : public RefCounted
 {
 public:
     virtual void Undo() = 0;
     virtual void Redo() = 0;
+
+    /// Time when action was recorded.
+    unsigned time_ = Time::GetSystemTime();
 };
 
-class CreateNodeAction : public EditAction
+class URHO3D_TOOLBOX_API CreateNodeAction : public EditAction
 {
-public:
-    unsigned nodeID;
     unsigned parentID;
-    XMLFile nodeData;
+    VectorBuffer nodeData;
     WeakPtr<Scene> editorScene;
 
+public:
     explicit CreateNodeAction(Node* node)
-        : nodeData(node->GetContext())
-        , editorScene(node->GetScene())
+        : editorScene(node->GetScene())
     {
-        nodeID = node->GetID();
         parentID = node->GetParent()->GetID();
-        XMLElement rootElem = nodeData.CreateRoot("node");
-        node->SaveXML(rootElem);
+        node->Save(nodeData);
     }
 
     void Undo() override
     {
+        nodeData.Seek(0);
+        auto nodeID = nodeData.ReadUInt();
         Node* parent = editorScene->GetNode(parentID);
         Node* node = editorScene->GetNode(nodeID);
         if (parent != nullptr && node != nullptr)
@@ -83,30 +99,31 @@ public:
         Node* parent = editorScene->GetNode(parentID);
         if (parent != nullptr)
         {
-            Node* node = parent->CreateChild("", nodeID < FIRST_LOCAL_ID ? REPLICATED : LOCAL, nodeID);
-            node->LoadXML(nodeData.GetRoot());
+            nodeData.Seek(0);
+            auto nodeID = nodeData.ReadUInt();
+            nodeData.Seek(0);
+
+            Node* node = parent->CreateChild(String::EMPTY, nodeID < FIRST_LOCAL_ID ? REPLICATED : LOCAL, nodeID);
+            node->Load(nodeData);
             // FocusNode(node);
         }
     }
 };
 
-class DeleteNodeAction : public EditAction
+class URHO3D_TOOLBOX_API DeleteNodeAction : public EditAction
 {
-public:
-    unsigned nodeID;
     unsigned parentID;
-    XMLFile nodeData;
+    unsigned parentIndex;
+    VectorBuffer nodeData;
     WeakPtr<Scene> editorScene;
 
+public:
     explicit DeleteNodeAction(Node* node)
-        : nodeData(node->GetContext())
-        , editorScene(node->GetScene())
+        : editorScene(node->GetScene())
     {
-        nodeID = node->GetID();
         parentID = node->GetParent()->GetID();
-        XMLElement rootElem = nodeData.CreateRoot("node");
-        node->SaveXML(rootElem);
-        rootElem.SetUInt("parentIndex", node->GetParent()->GetChildren().IndexOf(SharedPtr<Node>(node)));
+        parentIndex = node->GetParent()->GetChildren().IndexOf(SharedPtr<Node>(node));
+        node->Save(nodeData);
     }
 
     void Undo() override
@@ -114,18 +131,21 @@ public:
         Node* parent = editorScene->GetNode(parentID);
         if (parent != nullptr)
         {
+            nodeData.Seek(0);
+            auto nodeID = nodeData.ReadUInt();
             SharedPtr<Node> node(new Node(parent->GetContext()));
             node->SetID(nodeID);
-            if (node->LoadXML(nodeData.GetRoot()))
-            {
-                // FocusNode(node);
-                parent->AddChild(node, nodeData.GetRoot().GetUInt("parentIndex"));
-            }
+            parent->AddChild(node, parentIndex);
+            nodeData.Seek(0);
+            node->Load(nodeData);
         }
     }
 
     void Redo() override
     {
+        nodeData.Seek(0);
+        auto nodeID = nodeData.ReadUInt();
+
         Node* parent = editorScene->GetNode(parentID);
         Node* node = editorScene->GetNode(nodeID);
         if (parent != nullptr && node != nullptr)
@@ -135,9 +155,8 @@ public:
     }
 };
 
-class ReparentNodeAction : public EditAction
+class URHO3D_TOOLBOX_API ReparentNodeAction : public EditAction
 {
-public:
     unsigned nodeID;
     unsigned oldParentID;
     unsigned newParentID;
@@ -145,6 +164,7 @@ public:
     bool multiple;
     WeakPtr<Scene> editorScene;
 
+public:
     ReparentNodeAction(Node* node, Node* newParent)
         : editorScene(node->GetScene())
     {
@@ -216,26 +236,24 @@ public:
     }
 };
 
-class CreateComponentAction : public EditAction
+class URHO3D_TOOLBOX_API CreateComponentAction : public EditAction
 {
-public:
     unsigned nodeID;
-    unsigned componentID;
-    XMLFile componentData;
+    VectorBuffer componentData;
     WeakPtr<Scene> editorScene;
 
+public:
     explicit CreateComponentAction(Component* component)
         : editorScene(component->GetScene())
-        , componentData(component->GetContext())
     {
-        componentID = component->GetID();
         nodeID = component->GetNode()->GetID();
-        XMLElement rootElem = componentData.CreateRoot("component");
-        component->SaveXML(rootElem);
+        component->Save(componentData);
     }
 
     void Undo() override
     {
+        componentData.Seek(sizeof(StringHash));
+        auto componentID = componentData.ReadUInt();
         Node* node = editorScene->GetNode(nodeID);
         Component* component = editorScene->GetComponent(componentID);
         if (node != nullptr && component != nullptr)
@@ -247,10 +265,13 @@ public:
         Node* node = editorScene->GetNode(nodeID);
         if (node != nullptr)
         {
-            Component* component = node->CreateComponent(
-                componentData.GetRoot().GetAttribute("type"),
+            componentData.Seek(0);
+            auto componentType = componentData.ReadStringHash();
+            auto componentID = componentData.ReadUInt();
+
+            Component* component = node->CreateComponent(componentType,
                 componentID < FIRST_LOCAL_ID ? REPLICATED : LOCAL, componentID);
-            component->LoadXML(componentData.GetRoot());
+            component->Load(componentData);
             component->ApplyAttributes();
             // FocusComponent(component);
         }
@@ -258,22 +279,18 @@ public:
 
 };
 
-class DeleteComponentAction : public EditAction
+class URHO3D_TOOLBOX_API DeleteComponentAction : public EditAction
 {
-public:
     unsigned nodeID;
-    unsigned componentID;
-    XMLFile componentData;
+    VectorBuffer componentData;
     WeakPtr<Scene> editorScene;
 
+public:
     DeleteComponentAction(Component* component)
-        : componentData(component->GetContext())
-        , editorScene(component->GetScene())
+        : editorScene(component->GetScene())
     {
-        componentID = component->GetID();
         nodeID = component->GetNode()->GetID();
-        XMLElement rootElem = componentData.CreateRoot("component");
-        component->SaveXML(rootElem);
+        component->Save(componentData);
     }
 
     void Undo() override
@@ -281,9 +298,12 @@ public:
         Node* node = editorScene->GetNode(nodeID);
         if (node != nullptr)
         {
-            Component* component = node->CreateComponent(
-                componentData.GetRoot().GetAttribute("type"), componentID < FIRST_LOCAL_ID ? REPLICATED : LOCAL, componentID);
-            if (component->LoadXML(componentData.GetRoot()))
+            componentData.Seek(0);
+            auto componentType = componentData.ReadStringHash();
+            unsigned componentID = componentData.ReadUInt();
+            Component* component = node->CreateComponent(componentType, componentID < FIRST_LOCAL_ID ? REPLICATED : LOCAL, componentID);
+
+            if (component->Load(componentData))
             {
                 component->ApplyAttributes();
                 // FocusComponent(component);
@@ -293,6 +313,9 @@ public:
 
     void Redo() override
     {
+        componentData.Seek(sizeof(StringHash));
+        unsigned componentID = componentData.ReadUInt();
+
         Node* node = editorScene->GetNode(nodeID);
         Component* component = editorScene->GetComponent(componentID);
         if (node != nullptr && component != nullptr)
@@ -325,9 +348,8 @@ static unsigned GetID(Serializable* serializable)
     return M_MAX_UNSIGNED;
 };
 
-class EditAttributeAction : public EditAction
+class URHO3D_TOOLBOX_API EditAttributeAction : public EditAction
 {
-public:
     unsigned targetID;
     String attrName;
     Variant undoValue;
@@ -335,29 +357,24 @@ public:
     StringHash targetType;
     WeakPtr<Scene> editorScene;
     WeakPtr<UIElement> root;
+    WeakPtr<Serializable> target;
 
-    EditAttributeAction(Serializable* target, const String& name, const Variant& oldValue)
+public:
+    EditAttributeAction(Serializable* target, const String& name, const Variant& oldValue, const Variant& newValue)
     {
         attrName = name;
         undoValue = oldValue;
-        redoValue = target->GetAttribute(attrName);
+        redoValue = newValue;
         targetID = GetID(target);
+        targetType = target->GetType();
+        this->target = target;
 
         if (auto node = dynamic_cast<Node*>(target))
-        {
             editorScene = node->GetScene();
-            targetType = Node::GetTypeStatic();
-        }
         else if (auto component = dynamic_cast<Component*>(target))
-        {
             editorScene = component->GetScene();
-            targetType = Component::GetTypeStatic();
-        }
         else if (auto element = dynamic_cast<UIElement*>(target))
-        {
             root = element->GetRoot();
-            targetType = UIElement::GetTypeStatic();
-        }
     }
 
     Serializable* GetTarget()
@@ -369,7 +386,7 @@ public:
         else if (targetType == UIElement::GetTypeStatic())
             return root->GetChild("UIElementID", targetID, true);
 
-        return nullptr;
+        return target.Get();
     }
 
     void Undo() override
@@ -393,15 +410,15 @@ public:
     }
 };
 
-class CreateUIElementAction : public EditAction
+class URHO3D_TOOLBOX_API CreateUIElementAction : public EditAction
 {
-public:
     Variant elementID;
     Variant parentID;
     XMLFile elementData;
     SharedPtr<XMLFile> styleFile;
     WeakPtr<UIElement> root;
 
+public:
     explicit CreateUIElementAction(UIElement* element)
         : elementData(element->GetContext())
     {
@@ -430,15 +447,15 @@ public:
     }
 };
 
-class DeleteUIElementAction : public EditAction
+class URHO3D_TOOLBOX_API DeleteUIElementAction : public EditAction
 {
-public:
     Variant elementID;
     Variant parentID;
     XMLFile elementData;
     SharedPtr<XMLFile> styleFile;
     WeakPtr<UIElement> root;
 
+public:
     explicit DeleteUIElementAction(UIElement* element)
         : elementData(element->GetContext())
     {
@@ -467,15 +484,15 @@ public:
     }
 };
 
-class ReparentUIElementAction : public EditAction
+class URHO3D_TOOLBOX_API ReparentUIElementAction : public EditAction
 {
-public:
     Variant elementID;
     Variant oldParentID;
     unsigned oldChildIndex;
     Variant newParentID;
     WeakPtr<UIElement> root;
 
+public:
     ReparentUIElementAction(UIElement* element, UIElement* newParent)
     : root(element->GetRoot())
     {
@@ -502,9 +519,8 @@ public:
     }
 };
 
-class ApplyUIElementStyleAction : public EditAction
+class URHO3D_TOOLBOX_API ApplyUIElementStyleAction : public EditAction
 {
-public:
     Variant elementID;
     Variant parentID;
     XMLFile elementData;
@@ -513,6 +529,7 @@ public:
     String elementNewStyle;
     WeakPtr<UIElement> root;
 
+public:
     ApplyUIElementStyleAction(UIElement* element, const String& newStyle)
         : elementData(element->GetContext())
     {
@@ -551,14 +568,14 @@ public:
     }
 };
 
-class EditUIStyleAction : public EditAction
+class URHO3D_TOOLBOX_API EditUIStyleAction : public EditAction
 {
-public:
     XMLFile oldStyle;
     XMLFile newStyle;
     unsigned elementId;
     WeakPtr<UIElement> root;
 
+public:
     EditUIStyleAction(UIElement* element, XMLElement& styleElement, const Variant& newValue)
         : oldStyle(element->GetContext())
         , newStyle(element->GetContext())
@@ -594,7 +611,7 @@ public:
 
 using StateCollection = Vector<SharedPtr<EditAction>>;
 
-class Manager : public Object
+class URHO3D_TOOLBOX_API Manager : public Object
 {
 URHO3D_OBJECT(Manager, Object);
 public:
@@ -617,12 +634,18 @@ public:
     void Connect(Gizmo* gizmo);
 
     template<typename T, typename... Args>
-    void Track(Args... args) { currentFrameStates_.Push(SharedPtr<T>(new T(args...))); };
+    void Track(Args... args)
+    {
+        if (trackingEnabled_)
+            currentFrameStates_.Push(SharedPtr<T>(new T(args...)));
+    };
 
     /// Enables or disables tracking changes.
     void SetTrackingEnabled(bool enabled) { trackingEnabled_ = enabled; }
     /// Return true if manager is tracking undoable changes.
     bool IsTrackingEnabled() const { return trackingEnabled_; }
+    ///
+    int32_t Index() const { return index_; }
 
 protected:
     /// State stack
@@ -632,10 +655,10 @@ protected:
     /// Flag indicating that state tracking is suspended. For example when undo manager is restoring states.
     bool trackingEnabled_ = true;
     /// All actions performed on current frame. They will be applied together.
-    StateCollection currentFrameStates_;
+    StateCollection currentFrameStates_{};
 };
 
-class SetTrackingScoped
+class URHO3D_TOOLBOX_API SetTrackingScoped
 {
 public:
     /// Set undo manager tracking in this scope. Restore to the old value on scope exit.

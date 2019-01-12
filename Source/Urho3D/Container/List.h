@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../Container/ListBase.h"
+#include "../Core/Macros.h"
 #include <initializer_list>
 
 namespace Urho3D
@@ -168,18 +169,22 @@ public:
     /// Construct empty.
     List()
     {
-        allocator_ = AllocatorInitialize((unsigned)sizeof(Node));
-        head_ = tail_ = ReserveNode();
     }
 
     /// Construct from another list.
     List(const List<T>& list)
     {
         // Reserve the tail node + initial capacity according to the list's size
-        allocator_ = AllocatorInitialize((unsigned)sizeof(Node), list.Size() + 1);
-        head_ = tail_ = ReserveNode();
+        Initialize(list.Size() + 1);
         *this = list;
     }
+
+    /// Move-construct from another list.
+    List(List<T> && list) noexcept
+    {
+        Swap(list);
+    }
+
     /// Aggregate initialization constructor.
     List(const std::initializer_list<T>& list) : List()
     {
@@ -188,12 +193,16 @@ public:
             Push(*it);
         }
     }
+
     /// Destruct.
     ~List()
     {
-        Clear();
-        FreeNode(Tail());
-        AllocatorUninitialize(allocator_);
+        if (allocator_)
+        {
+            Clear();
+            FreeNode(Tail());
+            AllocatorUninitialize(allocator_);
+        }
     }
 
     /// Assign from another list.
@@ -205,6 +214,14 @@ public:
             Clear();
             Insert(End(), rhs);
         }
+        return *this;
+    }
+
+    /// Move-assign from another list.
+    List& operator =(List<T> && rhs) noexcept
+    {
+        assert(&rhs != this);
+        Swap(rhs);
         return *this;
     }
 
@@ -414,6 +431,12 @@ private:
     /// Allocate and insert a node into the list.
     void InsertNode(Node* dest, const T& value)
     {
+        if (URHO3D_UNLIKELY(allocator_ == nullptr))
+        {
+            Initialize();
+            dest = Tail();
+        }
+
         if (!dest)
             return;
 
@@ -476,6 +499,13 @@ private:
     {
         (node)->~Node();
         AllocatorFree(allocator_, node);
+    }
+
+    /// Reserve the tail node.
+    void Initialize(unsigned initialCapacity = 1)
+    {
+        allocator_ = AllocatorInitialize((unsigned)sizeof(Node), initialCapacity);
+        head_ = tail_ = ReserveNode();
     }
 };
 

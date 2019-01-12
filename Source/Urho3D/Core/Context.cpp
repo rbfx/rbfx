@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@
 #include "../Audio/Audio.h"
 #include "../Engine/Engine.h"
 #include "../Core/WorkQueue.h"
+#include "../Core/Thread.h"
 #if URHO3D_TASKS
 #include "../Core/Tasks.h"
 #endif
@@ -182,6 +183,14 @@ void Context::RegisterFactory(ObjectFactory* factory)
     if (!factory)
         return;
 
+    auto it = factories_.Find(factory->GetType());
+    if (it != factories_.End())
+    {
+        URHO3D_LOGERRORF("Failed to register '%s' because type '%s' is already registered with same type hash.",
+            factory->GetTypeName().CString(), it->second_->GetTypeName().CString());
+        assert(false);
+        return;
+    }
     factories_[factory->GetType()] = factory;
 }
 
@@ -507,13 +516,6 @@ void Context::RegisterSubsystem(WorkQueue* subsystem)
     workQueue_ = subsystem;
     RegisterSubsystem((Object*) subsystem);
 }
-#if URHO3D_PROFILING
-void Context::RegisterSubsystem(Profiler* subsystem)
-{
-    profiler_ = subsystem;
-    RegisterSubsystem((Object*) subsystem);
-}
-#endif
 void Context::RegisterSubsystem(FileSystem* subsystem)
 {
     fileSystem_ = subsystem;

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2017-2019 Rokas Kupstys.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,42 +22,73 @@
 
 #include "../Core/Context.h"
 #include "../Engine/PluginApplication.h"
-#include <cr/cr.h>
-
+#include "../IO/Log.h"
+#if !defined(URHO3D_STATIC) && defined(URHO3D_PLUGINS)
+#   if !defined(NDEBUG) && defined(URHO3D_LOGGING)
+#       define CR_DEBUG 1
+#       define CR_ERROR(format, ...) Urho3D::Log::Write(Urho3D::LOG_ERROR, Urho3D::ToString(format, ##__VA_ARGS__).Trimmed())
+#       define CR_LOG(format, ...)   Urho3D::Log::Write(Urho3D::LOG_DEBUG, Urho3D::ToString(format, ##__VA_ARGS__).Trimmed())
+#       define CR_TRACE
+#   endif
+#   include <cr/cr.h>
+#endif
 
 namespace Urho3D
 {
 
-static const StringHash contextKey("PluginApplication");
+PluginApplication::~PluginApplication()
+{
+    for (const auto& pair : registeredTypes_)
+    {
+        if (!pair.second_.Empty())
+            context_->RemoveFactory(pair.first_, pair.second_.CString());
+        else
+            context_->RemoveFactory(pair.first_);
+        context_->RemoveAllAttributes(pair.first_);
+        context_->RemoveSubsystem(pair.first_);
+    }
+}
 
-int PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*),
-    void(*destroyer)(PluginApplication*))
+void PluginApplication::RecordPluginFactory(StringHash type, const char* category)
+{
+    registeredTypes_.Push({type, category});
+}
+
+#if !defined(URHO3D_STATIC) && defined(URHO3D_PLUGINS)
+int PluginApplication::PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*))
 {
     assert(ctx_);
     auto* ctx = static_cast<cr_plugin*>(ctx_);
-    auto context = static_cast<Context*>(ctx->userdata);
-    auto application = dynamic_cast<PluginApplication*>(context->GetGlobalVar(contextKey).GetPtr());
 
     switch (operation)
     {
     case CR_LOAD:
     {
-        application = factory(context);
-        context->SetGlobalVar(contextKey, application);
-        application->OnLoad();
+        auto* context = static_cast<Context*>(ctx->userdata);
+        auto* application = factory(context);
+        application->type_ = PLUGIN_NATIVE;
+        application->Load();
+        ctx->userdata = application;
         return 0;
     }
     case CR_UNLOAD:
     case CR_CLOSE:
     {
-        context->SetGlobalVar(contextKey, Variant::EMPTY);
-        application->OnUnload();
-        destroyer(application);
+        auto* application = static_cast<PluginApplication*>(ctx->userdata);
+        application->Unload();
+        ctx->userdata = application->GetContext();
+        if (application->Refs() != 1)
+        {
+            URHO3D_LOGERRORF("Plugin application '%s' has more than one reference remaining. "
+                             "This may lead to memory leaks or crashes.",
+                             application->GetTypeName().CString());
+            assert(false);
+        }
+        application->ReleaseRef();
         return 0;
     }
     case CR_STEP:
     {
-        application->OnUpdate();
         return 0;
     }
     default:
@@ -66,5 +97,6 @@ int PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Contex
 	assert(false);
 	return -3;
 }
+#endif
 
 }

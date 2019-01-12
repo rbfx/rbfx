@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -118,7 +118,7 @@ void Urho2DPhysicsRope::CreateScene()
         // Set friction
         box->SetFriction(0.2f);
         // Set mask bits.
-        box->SetMaskBits(0xFFFF & ~0x0002);
+        box->SetMaskBits(0xFFFFu & ~0x0002u);
 
         if (i == NUM_OBJECTS - 1)
         {

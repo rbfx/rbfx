@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -205,7 +205,7 @@ private:
     friend class TmxObjectGroup2D;
 
     /// Object type.
-    TileMapObjectType2D objectType_;
+    TileMapObjectType2D objectType_{};
     /// Name.
     String name_;
     /// Type.

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2008-2019 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +21,18 @@
 #
 
 file (GLOB_RECURSE SOURCE_FILES *.c)
-add_library (GLEW OBJECT ${SOURCE_FILES})
-target_compile_definitions(GLEW PUBLIC -DGLEW_STATIC -DGLEW_NO_GLU)
+add_library (GLEW STATIC ${SOURCE_FILES})
+target_compile_definitions(GLEW PUBLIC -DGLEW_NO_GLU)
+if (BUILD_SHARED_LIBS)
+    target_compile_definitions(GLEW PRIVATE -DGLEW_BUILD)
+else ()
+    target_compile_definitions(GLEW PUBLIC  -DGLEW_STATIC)
+endif ()
 target_include_directories(GLEW
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/GLEW>
 )
+
+if (WIN32)
+    target_link_libraries(GLEW opengl32.lib)
+endif ()

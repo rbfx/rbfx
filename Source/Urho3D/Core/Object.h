@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,11 @@
 
 #pragma once
 
+#include "../Container/Allocator.h"
 #include "../Container/LinkedList.h"
+#include "../Core/Mutex.h"
+#include "../Core/Profiler.h"
+#include "../Core/StringHashRegister.h"
 #include "../Core/Variant.h"
 #include <functional>
 #include <utility>
@@ -57,6 +61,9 @@ class Graphics;
 class Renderer;
 #if URHO3D_TASKS
 class Tasks;
+#endif
+#if URHO3D_CSHARP
+class ScriptSubsystem;
 #endif
 
 /// Type info.
@@ -205,10 +212,6 @@ public:
     Time* GetTime() const;
     /// Return work queue subsystem.
     WorkQueue* GetWorkQueue() const;
-#if URHO3D_PROFILING
-    /// Return profiler subsystem.
-    Profiler* GetProfiler() const;
-#endif
     /// Return file system subsystem.
     FileSystem* GetFileSystem() const;
 #if URHO3D_LOGGING
@@ -241,6 +244,7 @@ public:
     /// Return tasks subsystem.
     Tasks* GetTasks() const;
 #endif
+
 protected:
     /// Execution context.
     Context* context_;
@@ -275,6 +279,9 @@ public:
         assert(context_);
     }
 
+    /// Destruct.
+    virtual ~ObjectFactory() = default;
+
     /// Create an object. Implemented in templated subclasses.
     virtual SharedPtr<Object> CreateObject() = 0;
 
@@ -294,7 +301,7 @@ protected:
     /// Execution context.
     Context* context_;
     /// Type info.
-    const TypeInfo* typeInfo_;
+    const TypeInfo* typeInfo_{};
 };
 
 /// Template implementation of the object factory.
@@ -306,10 +313,39 @@ public:
         ObjectFactory(context)
     {
         typeInfo_ = T::GetTypeInfoStatic();
+        allocator_ = AllocatorInitialize(sizeof(T));
+    }
+
+    ~ObjectFactoryImpl() override
+    {
+        MutexLock lock(mutex_);
+        AllocatorUninitialize(allocator_);
+        allocator_ = nullptr;
     }
 
     /// Create an object of the specific type.
-    SharedPtr<Object> CreateObject() override { return SharedPtr<Object>(new T(context_)); }
+    SharedPtr<Object> CreateObject() override
+    {
+        URHO3D_PROFILE("CreateObject");
+        mutex_.Acquire();
+        auto* newObject = static_cast<T*>(AllocatorReserve(allocator_));
+        mutex_.Release();
+
+        new(newObject) T(context_);
+        newObject->SetDeleter([this, newObject](RefCounted* refCounted) {
+            URHO3D_PROFILE("FactoryDeleter");
+            newObject->~T();
+            MutexLock lock(mutex_);
+            AllocatorFree(allocator_, newObject);
+        });
+        return SharedPtr<Object>(newObject);
+    }
+
+private:
+    /// Object allocator.
+    AllocatorBlock* allocator_;
+    /// Allocator mutex.
+    Mutex mutex_;
 };
 
 /// Internal helper class for invoking event handler functions.
@@ -424,19 +460,11 @@ private:
     std::function<void(StringHash, VariantMap&)> function_;
 };
 
-/// Register event names.
-struct URHO3D_API EventNameRegistrar
-{
-    /// Register an event name for hash reverse mapping.
-    static StringHash RegisterEventName(const char* eventName);
-    /// Return Event name or empty string if not found.
-    static const String& GetEventName(StringHash eventID);
-    /// Return Event name map.
-    static HashMap<StringHash, String>& GetEventNameMap();
-};
+/// Get register of event names.
+URHO3D_API StringHashRegister& GetEventNameRegister();
 
 /// Describe an event's hash ID and begin a namespace in which to define its parameters.
-#define URHO3D_EVENT(eventID, eventName) static const Urho3D::StringHash eventID(Urho3D::EventNameRegistrar::RegisterEventName(#eventName)); namespace eventName
+#define URHO3D_EVENT(eventID, eventName) static const Urho3D::StringHash eventID(Urho3D::GetEventNameRegister().RegisterString(#eventName)); namespace eventName
 /// Describe an event's parameter hash ID. Should be used inside an event namespace.
 #define URHO3D_PARAM(paramID, paramName) static const Urho3D::StringHash paramID = #paramName
 /// Convenience macro to construct an EventHandler that points to a receiver object and its member function.
@@ -449,9 +477,6 @@ struct URHO3D_API EventNameRegistrar
 template <> URHO3D_API Engine* Object::GetSubsystem<Engine>() const;
 template <> URHO3D_API Time* Object::GetSubsystem<Time>() const;
 template <> URHO3D_API WorkQueue* Object::GetSubsystem<WorkQueue>() const;
-#if URHO3D_PROFILING
-template <> URHO3D_API Profiler* Object::GetSubsystem<Profiler>() const;
-#endif
 template <> URHO3D_API FileSystem* Object::GetSubsystem<FileSystem>() const;
 #if URHO3D_LOGGING
 template <> URHO3D_API Log* Object::GetSubsystem<Log>() const;

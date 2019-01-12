@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -83,7 +83,7 @@ void Texture3D::Release()
 
 bool Texture3D::SetData(unsigned level, int x, int y, int z, int width, int height, int depth, const void* data)
 {
-    URHO3D_PROFILE(SetTextureData);
+    URHO3D_PROFILE("SetTextureData");
 
     if (!object_.name_ || !graphics_)
     {
@@ -112,8 +112,8 @@ bool Texture3D::SetData(unsigned level, int x, int y, int z, int width, int heig
 
     if (IsCompressed())
     {
-        x &= ~3;
-        y &= ~3;
+        x &= ~3u;
+        y &= ~3u;
     }
 
     int levelWidth = GetLevelWidth(level);
@@ -164,7 +164,7 @@ bool Texture3D::SetData(Image* image, bool useAlpha)
     // Use a shared ptr for managing the temporary mip images created during this function
     SharedPtr<Image> mipImage;
     unsigned memoryUse = sizeof(Texture3D);
-    int quality = QUALITY_HIGH;
+    MaterialQuality quality = QUALITY_HIGH;
     auto* renderer = GetSubsystem<Renderer>();
     if (renderer)
         quality = renderer->GetTextureQuality();
@@ -260,11 +260,11 @@ bool Texture3D::SetData(Image* image, bool useAlpha)
         unsigned mipsToSkip = mipsToSkip_[quality];
         if (mipsToSkip >= levels)
             mipsToSkip = levels - 1;
-        while (mipsToSkip && (width / (1 << mipsToSkip) < 4 || height / (1 << mipsToSkip) < 4 || depth / (1 << mipsToSkip) < 4))
+        while (mipsToSkip && (width / (1u << mipsToSkip) < 4 || height / (1u << mipsToSkip) < 4 || depth / (1u << mipsToSkip) < 4))
             --mipsToSkip;
-        width /= (1 << mipsToSkip);
-        height /= (1 << mipsToSkip);
-        depth /= (1 << mipsToSkip);
+        width /= (1u << mipsToSkip);
+        height /= (1u << mipsToSkip);
+        depth /= (1u << mipsToSkip);
 
         SetNumLevels(Max((levels - mipsToSkip), 1U));
         SetSize(width, height, depth, format);

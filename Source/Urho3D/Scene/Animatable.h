@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,7 @@ class AttributeAnimationInfo;
 class ObjectAnimation;
 
 /// Attribute animation instance.
-class AttributeAnimationInfo : public ValueAnimationInfo
+class URHO3D_API AttributeAnimationInfo : public ValueAnimationInfo
 {
 public:
     /// Construct.

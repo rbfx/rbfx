@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -60,8 +60,6 @@ public:
 protected:
     /// Handle component being added to Node or removed from it.
     void OnNodeSet(Node* node) override;
-    /// Handle resizing of element. Setting size of element will automatically resize texture. UIElement size matches size of texture.
-    void OnElementResized(StringHash eventType, VariantMap& args);
 
     /// Material that is set to the model.
     SharedPtr<Material> material_;
@@ -69,8 +67,12 @@ protected:
     SharedPtr<Texture2D> texture_;
     /// Model created by this component. If node already has StaticModel then this will be null.
     SharedPtr<StaticModel> model_;
+    /// Subsystem that handles UI rendering to the texture.
+    SharedPtr<UI> offScreenUI_;
     /// UIElement to be rendered into texture. It also handles screen to UI coordinate translation.
     SharedPtr<UIElement3D> rootElement_;
+    /// UIElement to be rendered into texture. It also handles screen to UI coordinate translation.
+    SharedPtr<UIElement3D> rootModalElement_;
     /// Viewport index to be set when component is added to a node.
     unsigned viewportIndex_;
 };

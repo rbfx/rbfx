@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Core/Profiler.h"
+#include "../Core/Thread.h"
 #include "../IO/File.h"
 #include "../IO/Log.h"
 #include "../Resource/Resource.h"
@@ -42,10 +43,9 @@ bool Resource::Load(Deserializer& source)
 {
     // Because BeginLoad() / EndLoad() can be called from worker threads, where profiling would be a no-op,
     // create a type name -based profile block here
-#ifdef URHO3D_PROFILING
-    String profileBlockName("Load" + GetTypeName());
-    URHO3D_PROFILE_SCOPED(profileBlockName.CString(), PROFILER_COLOR_RESOURCES);
-#endif
+    URHO3D_PROFILE_C("Load", PROFILER_COLOR_RESOURCES);
+    String eventName = ToString("%s::Load(\"%s\")", GetTypeName().CString(), GetName().CString());
+    URHO3D_PROFILE_ZONENAME(eventName.CString(), eventName.Length());
 
     // If we are loading synchronously in a non-main thread, behave as if async loading (for example use
     // GetTempResource() instead of GetResource() to load resource dependencies)

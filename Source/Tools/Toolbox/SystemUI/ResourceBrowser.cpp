@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2017-2019 Rokas Kupstys.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,12 +21,14 @@
 //
 
 #include "ResourceBrowser.h"
-#include "ImGuiDock.h"
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Resource/ResourceEvents.h>
 #include <Urho3D/IO/FileSystem.h>
-#include <IconFontCppHeaders/IconsFontAwesome.h>
+#include <Urho3D/Input/Input.h>
+#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <Urho3D/IO/Log.h>
 #include "Widgets.h"
 #include "IO/ContentUtilities.h"
 
@@ -34,91 +36,176 @@
 namespace Urho3D
 {
 
-bool ResourceBrowserWindow(String& selected)
+ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, ResourceBrowserFlags flags)
 {
     struct State
     {
-        String path;
-        String selected;
+        bool isEditing = false;
+        bool wasEditing = false;
+        bool deletionPending = false;
+        char editBuffer[250]{};
+        String editStartItem;
     };
 
-    bool result = false;
+    auto result = RBR_NOOP;
     auto systemUI = (SystemUI*)ui::GetIO().UserData;
     auto fs = systemUI->GetFileSystem();
-    if (ui::BeginDock("Resources"))
+    auto& state = *ui::GetUIState<State>();
+
+    if (!selected.Empty() && !ui::IsAnyItemActive() && ui::IsWindowFocused())
     {
-        auto* state = ui::GetUIState<State>();
-
-        Vector<String> mergedDirs;
-        Vector<String> mergedFiles;
-
-        String cacheDir;
-        for (const auto& dir: systemUI->GetCache()->GetResourceDirs())
+        if (fs->GetInput()->GetKeyPress(KEY_F2) || flags & RBF_RENAME_CURRENT)
         {
-            if (dir.EndsWith("/Cache/"))
-            {
-                cacheDir = dir;
-                continue;
-            }
+            state.isEditing = true;
+            state.deletionPending = false;
+            state.editStartItem = selected;
+            strcpy(state.editBuffer, selected.CString());
+        }
+        if (fs->GetInput()->GetKeyPress(KEY_DELETE) || flags & RBF_DELETE_CURRENT)
+        {
+            state.isEditing = false;
+            state.deletionPending = true;
+            state.editStartItem = selected;
+        }
+    }
+    if (fs->GetInput()->GetKeyPress(KEY_ESCAPE) || state.editStartItem != selected)
+    {
+        state.isEditing = false;
+        state.deletionPending = false;
+    }
 
-            Vector<String> items;
-            fs->ScanDir(items, dir + state->path, "", SCAN_FILES, false);
-            for (const auto& item: items)
-            {
-                if (!mergedFiles.Contains(item))
-                    mergedFiles.Push(item);
-            }
+    if (state.deletionPending)
+    {
+        if (ui::Begin("Delete?", &state.deletionPending))
+        {
+            ui::Text("Would you like to delete '%s%s'?", path.CString(), selected.CString());
+            ui::TextUnformatted(ICON_FA_EXCLAMATION_TRIANGLE " This action can not be undone!");
+            ui::NewLine();
 
-            items.Clear();
-            fs->ScanDir(items, dir + state->path, "", SCAN_DIRS, false);
-            items.Remove(".");
-            items.Remove("..");
-            for (const auto& item: items)
+            if (ui::Button("Delete Permanently"))
             {
-                if (!mergedDirs.Contains(item))
-                    mergedDirs.Push(item);
+                using namespace ResourceBrowserDelete;
+                fs->SendEvent(E_RESOURCEBROWSERDELETE, P_NAME, path + selected);
+                state.deletionPending = false;
             }
         }
+        ui::End();
+    }
 
-        switch (ui::DoubleClickSelectable("..", state->selected == ".."))
+    Vector<String> mergedDirs;
+    Vector<String> mergedFiles;
+
+    String cacheDir;
+    for (const auto& dir: systemUI->GetCache()->GetResourceDirs())
+    {
+        if (dir.EndsWith("/EditorData/"))
+            continue;
+
+        if (dir.EndsWith("/Cache/"))
+        {
+            cacheDir = dir;
+            continue;
+        }
+
+        Vector<String> items;
+        fs->ScanDir(items, dir + path, "", SCAN_FILES, false);
+        for (const auto& item: items)
+        {
+            if (!mergedFiles.Contains(item))
+                mergedFiles.Push(item);
+        }
+
+        items.Clear();
+        fs->ScanDir(items, dir + path, "", SCAN_DIRS, false);
+        items.Remove(".");
+        items.Remove("..");
+        for (const auto& item: items)
+        {
+            if (!mergedDirs.Contains(item))
+                mergedDirs.Push(item);
+        }
+    }
+
+    auto moveFileDropTarget = [&](const String& item) {
+        if (ui::BeginDragDropTarget())
+        {
+            auto dropped = ui::AcceptDragDropVariant("path");
+            if (dropped.GetType() == VAR_STRING)
+            {
+                using namespace ResourceBrowserRename;
+                auto newName = AddTrailingSlash(item) + GetFileNameAndExtension(dropped.GetString());
+                if (dropped != newName)
+                    fs->SendEvent(E_RESOURCEBROWSERRENAME, P_FROM, dropped, P_TO, newName);
+            }
+            ui::EndDragDropTarget();
+        }
+    };
+
+    if (!path.Empty())
+    {
+        switch (ui::DoubleClickSelectable("..", selected == ".."))
         {
         case 1:
-            state->selected = "..";
+            selected = "..";
             break;
         case 2:
-            state->path = GetParentPath(state->path);
+            path = GetParentPath(path);
             break;
         default:
             break;
         }
 
-        Sort(mergedDirs.Begin(), mergedDirs.End());
-        for (const auto& item: mergedDirs)
-        {
-            switch (ui::DoubleClickSelectable((ICON_FA_FOLDER " " + item).CString(), state->selected == item))
-            {
-            case 1:
-                state->selected = item;
-                break;
-            case 2:
-                state->path += AddTrailingSlash(item);
-                state->selected.Clear();
-                break;
-            default:
-                break;
-            }
-        }
+        moveFileDropTarget(GetParentPath(path));
+    }
 
-        auto renderAssetEntry = [&](const String& item) {
-            auto title = GetFileIcon(item) + " " + GetFileNameAndExtension(item);
-            switch (ui::DoubleClickSelectable(title.CString(), state->selected == item))
+    auto renameWidget = [&](const String& item, const String& icon) {
+        if (selected == item && state.isEditing)
+        {
+            ui::IdScope idScope("Rename");
+            ui::TextUnformatted(icon.CString());
+            ui::SameLine();
+
+            ui::PushStyleVar(ImGuiStyleVar_FramePadding, {0, 0});
+            ui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0);
+
+            if (ui::InputText("", state.editBuffer, sizeof(state.editBuffer), ImGuiInputTextFlags_EnterReturnsTrue))
+            {
+                using namespace ResourceBrowserRename;
+                auto oldName = path + selected;
+                auto newName = path + state.editBuffer;
+                if (oldName != newName)
+                    fs->SendEvent(E_RESOURCEBROWSERRENAME, P_FROM, oldName, P_TO, newName);
+                state.isEditing = false;
+            }
+
+            if (!state.wasEditing)
+                ui::GetCurrentWindow()->FocusIdxTabRequestNext = ui::GetCurrentContext()->ActiveId;
+
+            ui::PopStyleVar(2);
+
+            return true;
+        }
+        return false;
+    };
+
+    Sort(mergedDirs.Begin(), mergedDirs.End());
+    for (const auto& item: mergedDirs)
+    {
+        if (!renameWidget(item, ICON_FA_FOLDER))
+        {
+            auto isSelected = selected == item;
+
+            if (flags & RBF_SCROLL_TO_CURRENT && isSelected)
+                ui::SetScrollHereY();
+
+            switch (ui::DoubleClickSelectable((ICON_FA_FOLDER " " + item).CString(), isSelected))
             {
             case 1:
-                state->selected = item;
+                selected = item;
                 break;
             case 2:
-                selected = state->path + item;
-                result = true;
+                path += AddTrailingSlash(item);
+                selected.Clear();
                 break;
             default:
                 break;
@@ -128,64 +215,112 @@ bool ResourceBrowserWindow(String& selected)
             {
                 if (ui::BeginDragDropSource())
                 {
-                    String path = state->path + item;
-                    ui::SetDragDropVariant("path", path);
+                    ui::SetDragDropVariant("path", path + item);
 
                     // TODO: show actual preview of a resource.
-                    ui::Text("%s", path.CString());
+                    ui::Text("%s%s", path.CString(), item.CString());
 
                     ui::EndDragDropSource();
                 }
             }
-        };
 
-        Sort(mergedFiles.Begin(), mergedFiles.End());
-        for (const auto& item: mergedFiles)
-        {
-            if (fs->DirExists(cacheDir + state->path + item))
-            {
-                // File is converted asset.
-                std::function<void(const String&)> renderCacheAssetTree = [&](const String& subPath)
-                {
-                    String targetPath = cacheDir + state->path + subPath;
-
-                    if (fs->DirExists(targetPath))
-                    {
-                        ui::TextUnformatted(ICON_FA_FOLDER_OPEN);
-                        ui::SameLine();
-                        if (ui::TreeNode(GetFileNameAndExtension(subPath).CString()))
-                        {
-                            Vector<String> files;
-                            Vector<String> dirs;
-                            fs->ScanDir(files, targetPath, "", SCAN_FILES, false);
-                            fs->ScanDir(dirs, targetPath, "", SCAN_DIRS, false);
-                            dirs.Remove(".");
-                            dirs.Remove("..");
-                            Sort(files.Begin(), files.End());
-                            Sort(dirs.Begin(), dirs.End());
-
-                            for (const auto& dir : dirs)
-                                renderCacheAssetTree(subPath + "/" + dir);
-
-                            for (const auto& file : files)
-                                renderAssetEntry(subPath + "/" + file);
-
-                            ui::TreePop();
-                        }
-                    }
-                    else
-                        renderAssetEntry(subPath);
-                };
-                renderCacheAssetTree(item);
-            }
-            else
-            {
-                // File exists only in data directories.
-                renderAssetEntry(item);
-            }
+            moveFileDropTarget(path + item);
         }
     }
-    ui::EndDock();
+
+    auto renderAssetEntry = [&](const String& item) {
+        auto icon = GetFileIcon(item);
+        if (!renameWidget(item, icon))
+        {
+            if (flags & RBF_SCROLL_TO_CURRENT && selected == item)
+                ui::SetScrollHereY();
+            auto title = icon + " " + GetFileNameAndExtension(item);
+            switch (ui::DoubleClickSelectable(title.CString(), selected == item))
+            {
+            case 1:
+                selected = item;
+                result = RBR_ITEM_SELECTED;
+                break;
+            case 2:
+                result = RBR_ITEM_OPEN;
+                break;
+            default:
+                break;
+            }
+
+            if (ui::IsItemActive())
+            {
+                if (ui::BeginDragDropSource())
+                {
+                    ui::SetDragDropVariant("path", path + item);
+
+                    // TODO: show actual preview of a resource.
+                    ui::Text("%s%s", path.CString(), item.CString());
+
+                    ui::EndDragDropSource();
+                }
+            }
+        }
+    };
+
+    Sort(mergedFiles.Begin(), mergedFiles.End());
+    for (const auto& item: mergedFiles)
+    {
+        if (fs->DirExists(cacheDir + path + item))
+        {
+            // File is converted asset.
+            std::function<void(const String&)> renderCacheAssetTree = [&](const String& subPath)
+            {
+                String targetPath = cacheDir + path + subPath;
+
+                if (fs->DirExists(targetPath))
+                {
+                    ui::TextUnformatted(ICON_FA_FOLDER_OPEN);
+                    ui::SameLine();
+                    if (ui::TreeNode(GetFileNameAndExtension(subPath).CString()))
+                    {
+                        Vector<String> files;
+                        Vector<String> dirs;
+                        fs->ScanDir(files, targetPath, "", SCAN_FILES, false);
+                        fs->ScanDir(dirs, targetPath, "", SCAN_DIRS, false);
+                        dirs.Remove(".");
+                        dirs.Remove("..");
+                        Sort(files.Begin(), files.End());
+                        Sort(dirs.Begin(), dirs.End());
+
+                        for (const auto& dir : dirs)
+                            renderCacheAssetTree(subPath + "/" + dir);
+
+                        for (const auto& file : files)
+                            renderAssetEntry(subPath + "/" + file);
+
+                        ui::TreePop();
+                    }
+                }
+                else
+                    renderAssetEntry(subPath);
+            };
+            renderCacheAssetTree(item);
+        }
+        else
+        {
+            // File exists only in data directories.
+            renderAssetEntry(item);
+        }
+    }
+
+    if (ui::IsWindowHovered())
+    {
+        if (ui::IsMouseClicked(MOUSEB_RIGHT))
+            result = RBR_ITEM_CONTEXT_MENU;
+
+        if ((ui::IsMouseClicked(MOUSEB_LEFT) || ui::IsMouseClicked(MOUSEB_RIGHT)) && !ui::IsAnyItemHovered())
+            // Clicking empty area unselects item.
+            selected.Clear();
+    }
+
+    state.wasEditing = state.isEditing;
+
     return result;
 }
 

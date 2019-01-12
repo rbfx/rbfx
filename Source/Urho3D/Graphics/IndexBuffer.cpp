@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Core/Context.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/IndexBuffer.h"
 #include "../IO/Log.h"
@@ -54,6 +55,13 @@ IndexBuffer::IndexBuffer(Context* context, bool forceHeadless) :
 IndexBuffer::~IndexBuffer()
 {
     Release();
+}
+
+extern const char* GEOMETRY_CATEGORY;
+
+void IndexBuffer::RegisterObject(Context* context)
+{
+    context->RegisterFactory<IndexBuffer>(GEOMETRY_CATEGORY);
 }
 
 void IndexBuffer::SetShadowed(bool enable)

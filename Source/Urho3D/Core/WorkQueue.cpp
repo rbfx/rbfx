@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,8 @@
 #include "../Core/CoreEvents.h"
 #include "../Core/ProcessUtils.h"
 #include "../Core/Profiler.h"
+#include "../Core/Thread.h"
+#include "../Core/Timer.h"
 #include "../Core/WorkQueue.h"
 #include "../IO/Log.h"
 
@@ -45,6 +47,7 @@ public:
     /// Process work items until stopped.
     void ThreadFunction() override
     {
+        URHO3D_PROFILE_THREAD("WorkerThread");
         // Init FPU state first
         InitFPU();
         owner_->ProcessItems(index_);
@@ -303,6 +306,18 @@ void WorkQueue::Complete(unsigned priority)
     completing_ = false;
 }
 
+unsigned WorkQueue::GetNumIncomplete(unsigned priority) const
+{
+    unsigned incomplete = 0;
+    for (List<SharedPtr<WorkItem> >::ConstIterator i = workItems_.Begin(); i != workItems_.End(); ++i)
+    {
+        if ((*i)->priority_ >= priority && !(*i)->completed_)
+            ++incomplete;
+    }
+
+    return incomplete;
+}
+
 bool WorkQueue::IsCompleted(unsigned priority) const
 {
     for (List<SharedPtr<WorkItem> >::ConstIterator i = workItems_.Begin(); i != workItems_.End(); ++i)
@@ -413,7 +428,7 @@ void WorkQueue::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
     // If no worker threads, complete low-priority work here
     if (threads_.Empty() && !queue_.Empty())
     {
-        URHO3D_PROFILE(CompleteWorkNonthreaded);
+        URHO3D_PROFILE("CompleteWorkNonthreaded");
 
         HiresTimer timer;
 

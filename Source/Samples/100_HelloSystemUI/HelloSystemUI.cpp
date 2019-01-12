@@ -109,6 +109,9 @@ void HelloSystemUi::HandleKeyDown(StringHash eventType, VariantMap& eventData)
 
 void HelloSystemUi::CreateScene()
 {
+    ui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_NavEnableKeyboard;
+    ui::GetIO().BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
+
     scene_ = new Scene(context_);
 
     // Create the Octree component to the scene so that drawable objects can be rendered. Use default volume

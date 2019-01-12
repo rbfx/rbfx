@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -84,9 +84,9 @@ BillboardSet::BillboardSet(Context* context) :
     fixedScreenSize_(false),
     faceCameraMode_(FC_ROTATE_XYZ),
     minAngle_(0.0f),
-    geometry_(new Geometry(context)),
-    vertexBuffer_(new VertexBuffer(context_)),
-    indexBuffer_(new IndexBuffer(context_)),
+    geometry_(context->CreateObject<Geometry>()),
+    vertexBuffer_(context_->CreateObject<VertexBuffer>()),
+    indexBuffer_(context_->CreateObject<IndexBuffer>()),
     bufferSizeDirty_(true),
     bufferDirty_(true),
     forceUpdate_(false),

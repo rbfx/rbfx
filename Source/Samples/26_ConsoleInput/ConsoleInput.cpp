@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -162,7 +162,7 @@ void ConsoleInput::Advance()
     if (urhoThreat_ > 0)
         Print(String(urhoThreatLevels[urhoThreat_ - 1]) + ".");
 
-    if ((numTurns_ & 3) == 0 && !eatenLastTurn_)
+    if ((numTurns_ & 3u) == 0 && !eatenLastTurn_)
     {
         ++hunger_;
         if (hunger_ > 5)

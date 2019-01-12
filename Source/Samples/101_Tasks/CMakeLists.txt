@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2017-2019 Rokas Kupstys.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -25,4 +25,4 @@ if (NOT URHO3D_TASKS)
     return ()
 endif ()
 
-add_sample (101_Tasks)
+add_sample (TARGET 101_Tasks)

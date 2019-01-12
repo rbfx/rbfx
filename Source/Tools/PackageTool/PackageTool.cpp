@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -59,8 +59,7 @@ unsigned blockSize_ = COMPRESSED_BLOCK_SIZE;
 
 String ignoreExtensions_[] = {
     ".bak",
-    ".rule",
-    ""
+    ".rule"
 };
 
 int main(int argc, char** argv);
@@ -137,7 +136,7 @@ void Run(const Vector<String>& arguments)
 
         // Get the file list recursively
         Vector<String> fileNames;
-        fileSystem_->ScanDir(fileNames, dirName, "*.*", SCAN_FILES, true);
+        fileSystem_->ScanDir(fileNames, dirName, "*", SCAN_FILES, true);
         if (!fileNames.Size())
             ErrorExit("No files found");
 
@@ -151,6 +150,34 @@ void Run(const Vector<String>& arguments)
                 {
                     fileNames.Erase(fileNames.Begin() + i);
                     break;
+                }
+            }
+        }
+
+        // Ensure entries are sorted
+        Sort(fileNames.Begin(), fileNames.End());
+
+        // Check if up to date
+        if (fileSystem_->Exists(packageName))
+        {
+            unsigned packageTime = fileSystem_->GetLastModifiedTime(packageName);
+            SharedPtr<PackageFile> packageFile(new PackageFile(context_, packageName));
+            if (packageFile->GetNumFiles() == fileNames.Size())
+            {
+                bool filesOutOfDate = false;
+                for (const String& fileName : fileNames)
+                {
+                    if (fileSystem_->GetLastModifiedTime(fileName) > packageTime)
+                    {
+                        filesOutOfDate = true;
+                        break;
+                    }
+                }
+
+                if (!filesOutOfDate)
+                {
+                    PrintLine("Package " + packageName + " is up to date.");
+                    return;
                 }
             }
         }
@@ -209,8 +236,6 @@ void ProcessFile(const String& fileName, const String& rootDir)
     File file(context_);
     if (!file.Open(fullPath))
         ErrorExit("Could not open file " + fileName);
-    if (!file.GetSize())
-        return;
 
     FileEntry newEntry;
     newEntry.name_ = fileName;

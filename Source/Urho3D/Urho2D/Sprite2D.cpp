@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -39,7 +39,7 @@ Sprite2D::Sprite2D(Context* context) :
     Resource(context),
     hotSpot_(0.5f, 0.5f),
     offset_(0, 0),
-    edgeOffset_(0.0f)
+    edgeOffset_(M_LARGE_EPSILON)
 {
 
 }
@@ -61,7 +61,7 @@ bool Sprite2D::BeginLoad(Deserializer& source)
         loadTexture_ = texture_;
     else
     {
-        loadTexture_ = new Texture2D(context_);
+        loadTexture_ = context_->CreateObject<Texture2D>();
         loadTexture_->SetName(GetName());
     }
     // In case we're async loading, only call BeginLoad() for the texture (load image but do not upload to GPU)

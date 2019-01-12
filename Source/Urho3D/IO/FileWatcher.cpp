@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -254,21 +254,35 @@ void FileWatcher::ThreadFunction()
             nullptr))
         {
             unsigned offset = 0;
+            FileChange rename{FILECHANGE_RENAMED, String::EMPTY, String::EMPTY};
 
             while (offset < bytesFilled)
             {
                 FILE_NOTIFY_INFORMATION* record = (FILE_NOTIFY_INFORMATION*)&buffer[offset];
 
-                if (record->Action == FILE_ACTION_MODIFIED || record->Action == FILE_ACTION_RENAMED_NEW_NAME)
-                {
-                    String fileName;
-                    const wchar_t* src = record->FileName;
-                    const wchar_t* end = src + record->FileNameLength / 2;
-                    while (src < end)
-                        fileName.AppendUTF8(String::DecodeUTF16(src));
+                String fileName;
+                const wchar_t* src = record->FileName;
+                const wchar_t* end = src + record->FileNameLength / 2;
+                while (src < end)
+                    fileName.AppendUTF8(String::DecodeUTF16(src));
 
-                    fileName = GetInternalPath(fileName);
-                    AddChange(fileName);
+                fileName = GetInternalPath(fileName);
+
+                if (record->Action == FILE_ACTION_MODIFIED)
+                    AddChange({ FILECHANGE_MODIFIED, fileName, String::EMPTY });
+                else if (record->Action == FILE_ACTION_ADDED)
+                    AddChange({ FILECHANGE_ADDED, fileName, String::EMPTY });
+                else if (record->Action == FILE_ACTION_REMOVED)
+                    AddChange({ FILECHANGE_REMOVED, fileName, String::EMPTY });
+                else if (record->Action == FILE_ACTION_RENAMED_OLD_NAME)
+                    rename.oldFileName_ = fileName;
+                else if (record->Action == FILE_ACTION_RENAMED_NEW_NAME)
+                    rename.oldFileName_ = fileName;
+
+                if (!rename.oldFileName_.Empty() && !rename.fileName_.Empty())
+                {
+                    AddChange(rename);
+                    rename = {};
                 }
 
                 if (!record->NextEntryOffset)
@@ -289,17 +303,34 @@ void FileWatcher::ThreadFunction()
         if (length < 0)
             return;
 
+        HashMap<unsigned, FileChange> renames;
         while (i < length)
         {
             auto* event = (inotify_event*)&buffer[i];
 
             if (event->len > 0)
             {
-                if (event->mask & IN_MODIFY || event->mask & IN_MOVE)
+                String fileName = dirHandle_[event->wd] + event->name;
+
+                if (event->mask == IN_CREATE)
+                    AddChange({FILECHANGE_ADDED, fileName, String::EMPTY});
+                else if (event->mask & IN_DELETE)
+                    AddChange({FILECHANGE_REMOVED, fileName, String::EMPTY});
+                else if (event->mask & IN_MODIFY)
+                    AddChange({FILECHANGE_MODIFIED, fileName, String::EMPTY});
+                else if (event->mask & IN_MOVE)
                 {
-                    String fileName;
-                    fileName = dirHandle_[event->wd] + event->name;
-                    AddChange(fileName);
+                    auto& entry = renames[event->cookie];
+                    if (event->mask & IN_MOVED_FROM)
+                        entry.oldFileName_ = fileName;
+                    else if (event->mask & IN_MOVED_TO)
+                        entry.fileName_ = fileName;
+
+                    if (!entry.oldFileName_.Empty() && !entry.fileName_.Empty())
+                    {
+                        entry.kind_ = FILECHANGE_RENAMED;
+                        AddChange(entry);
+                    }
                 }
             }
 
@@ -314,24 +345,51 @@ void FileWatcher::ThreadFunction()
         String changes = ReadFileWatcher(watcher_);
         if (!changes.Empty())
         {
-            Vector<String> fileNames = changes.Split(1);
-            for (unsigned i = 0; i < fileNames.Size(); ++i)
-                AddChange(fileNames[i]);
+            Vector<String> fileChanges = changes.Split('\n');
+            FileChange change{};
+            for (const String& fileResult : fileChanges)
+            {
+                change.kind_ = (FileChangeKind)fileResult[0];   // First byte is change kind.
+                String fileName = &fileResult.At(1);
+                if (change.kind_ == FILECHANGE_RENAMED)
+                {
+                    if (GetSubsystem<FileSystem>()->FileExists(fileName))
+                        change.fileName_ = std::move(fileName);
+                    else
+                        change.oldFileName_ = std::move(fileName);
+
+                    if (!change.fileName_.Empty() && !change.oldFileName_.Empty())
+                    {
+                        AddChange(change);
+                        change = {};
+                    }
+                }
+                else
+                {
+                    change.fileName_ = std::move(fileName);
+                    AddChange(change);
+                    change = {};
+                }
+            }
         }
     }
 #endif
 #endif
 }
 
-void FileWatcher::AddChange(const String& fileName)
+void FileWatcher::AddChange(const FileChange& change)
 {
     MutexLock lock(changesMutex_);
 
-    // Reset the timer associated with the filename. Will be notified once timer exceeds the delay
-    changes_[fileName].Reset();
+    auto it = changes_.Find(change.fileName_);
+    if (it == changes_.End())
+        changes_[change.fileName_].change_ = change;
+    else
+        // Reset the timer associated with the filename. Will be notified once timer exceeds the delay
+        it->second_.timer_.Reset();
 }
 
-bool FileWatcher::GetNextChange(String& dest)
+bool FileWatcher::GetNextChange(FileChange& dest)
 {
     MutexLock lock(changesMutex_);
 
@@ -341,11 +399,11 @@ bool FileWatcher::GetNextChange(String& dest)
         return false;
     else
     {
-        for (HashMap<String, Timer>::Iterator i = changes_.Begin(); i != changes_.End(); ++i)
+        for (auto i = changes_.Begin(); i != changes_.End(); ++i)
         {
-            if (i->second_.GetMSec(false) >= delayMsec)
+            if (i->second_.timer_.GetMSec(false) >= delayMsec)
             {
-                dest = i->first_;
+                dest = i->second_.change_;
                 changes_.Erase(i);
                 return true;
             }

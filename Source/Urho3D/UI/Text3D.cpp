@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -51,7 +51,7 @@ static const float DEFAULT_EFFECT_DEPTH_BIAS = 0.1f;
 Text3D::Text3D(Context* context) :
     Drawable(context, DRAWABLE_GEOMETRY),
     text_(context),
-    vertexBuffer_(new VertexBuffer(context_)),
+    vertexBuffer_(context_->CreateObject<VertexBuffer>()),
     customWorldTransform_(Matrix3x4::IDENTITY),
     faceCameraMode_(FC_NONE),
     minAngle_(0.0f),
@@ -637,7 +637,7 @@ void Text3D::UpdateTextMaterials(bool forceUpdate)
     {
         if (!geometries_[i])
         {
-            auto* geometry = new Geometry(context_);
+            auto geometry = context_->CreateObject<Geometry>();
             geometry->SetVertexBuffer(0, vertexBuffer_);
             batches_[i].geometry_ = geometries_[i] = geometry;
         }
@@ -647,8 +647,8 @@ void Text3D::UpdateTextMaterials(bool forceUpdate)
             // If material not defined, create a reasonable default from scratch
             if (!material_)
             {
-                auto* material = new Material(context_);
-                auto* tech = new Technique(context_);
+                auto material = context_->CreateObject<Material>();
+                auto tech = context_->CreateObject<Technique>();
                 Pass* pass = tech->CreatePass("alpha");
                 pass->SetVertexShader("Text");
                 pass->SetPixelShader("Text");

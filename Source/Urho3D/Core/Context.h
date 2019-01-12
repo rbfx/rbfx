@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -116,9 +116,13 @@ public:
     /// Copy base class attributes to derived class.
     void CopyBaseAttributes(StringHash baseType, StringHash derivedType);
     /// Template version of registering an object factory.
-    template <class T> void RegisterFactory();
+    template <class T = void, class... Rest> void RegisterFactory();
     /// Template version of registering an object factory with category.
-    template <class T> void RegisterFactory(const char* category);
+    template <class T = void, class... Rest> void RegisterFactory(const char* category);
+    /// Template version of unregistering an object factory.
+    template <class T = void, class... Rest> void RemoveFactory();
+    /// Template version of unregistering an object factory with category.
+    template <class T = void, class... Rest> void RemoveFactory(const char* category);
     /// Template version of registering subsystem.
     template <class T> T* RegisterSubsystem();
     /// Template version of removing a subsystem.
@@ -153,7 +157,7 @@ public:
     const HashMap<StringHash, SharedPtr<ObjectFactory> >& GetObjectFactories() const { return factories_; }
 
     /// Return all object categories.
-    const HashMap<String, Vector<StringHash> >& GetObjectCategories() const { return objectCategories_; }
+    const HashMap<String, PODVector<StringHash> >& GetObjectCategories() const { return objectCategories_; }
 
     /// Return active event sender. Null outside event handling.
     Object* GetEventSender() const;
@@ -213,10 +217,6 @@ public:
     inline Time* GetTime() const { return time_; }
     /// Return work queue subsystem.
     inline WorkQueue* GetWorkQueue() const { return workQueue_; }
-#if URHO3D_PROFILING
-    /// Return profiler subsystem.
-    inline Profiler* GetProfiler() const { return profiler_; }
-#endif
     /// Return file system subsystem.
     inline FileSystem* GetFileSystem() const { return fileSystem_; }
 #if URHO3D_LOGGING
@@ -256,10 +256,6 @@ public:
     void RegisterSubsystem(Time* subsystem);
     /// Register work queue subsystem and cache it's pointer.
     void RegisterSubsystem(WorkQueue* subsystem);
-#if URHO3D_PROFILING
-    /// Register profiler subsystem and cache it's pointer.
-    void RegisterSubsystem(Profiler* subsystem);
-#endif
     /// Register file system subsystem and cache it's pointer.
     void RegisterSubsystem(FileSystem* subsystem);
 #if URHO3D_LOGGING
@@ -327,7 +323,7 @@ private:
     /// Active event handler. Not stored in a stack for performance reasons; is needed only in esoteric cases.
     EventHandler* eventHandler_;
     /// Object categories.
-    HashMap<String, Vector<StringHash> > objectCategories_;
+    HashMap<String, PODVector<StringHash> > objectCategories_;
     /// Variant map for global variables that can persist throughout application execution.
     VariantMap globalVars_;
 
@@ -337,10 +333,6 @@ private:
     WeakPtr<Time> time_;
     /// Cached pointer of work queue susbsystem.
     WeakPtr<WorkQueue> workQueue_;
-    /// Cached pointer of profiler susbsystem.
-#if URHO3D_PROFILING
-    WeakPtr<Profiler> profiler_;
-#endif
     /// Cached pointer of file system susbsystem.
     WeakPtr<FileSystem> fileSystem_;
 #if URHO3D_LOGGING
@@ -376,11 +368,35 @@ private:
     friend class Engine;
 };
 
-template <class T> void Context::RegisterFactory() { RegisterFactory(new ObjectFactoryImpl<T>(this)); }
+// Helper functions that terminate looping of argument list.
+template <> inline void Context::RegisterFactory() { }
+template <> inline void Context::RegisterFactory(const char* category) { }
+template <> inline void Context::RemoveFactory<>() { }
+template <> inline void Context::RemoveFactory<>(const char* category) { }
 
-template <class T> void Context::RegisterFactory(const char* category)
+template <class T, class... Rest> void Context::RegisterFactory()
+{
+    RegisterFactory(new ObjectFactoryImpl<T>(this));
+    RegisterFactory<Rest...>();
+}
+
+template <class T, class... Rest> void Context::RegisterFactory(const char* category)
 {
     RegisterFactory(new ObjectFactoryImpl<T>(this), category);
+    RegisterFactory<Rest...>(category);
+}
+
+
+template <class T, class... Rest> void Context::RemoveFactory()
+{
+    RemoveFactory(T::GetTypeStatic());
+    RemoveFactory<Rest...>();
+}
+
+template <class T, class... Rest> void Context::RemoveFactory(const char* category)
+{
+    RemoveFactory(T::GetTypeStatic(), category);
+    RemoveFactory<Rest...>(category);
 }
 
 template <class T> T* Context::RegisterSubsystem()

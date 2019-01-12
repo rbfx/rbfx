@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2017-2019 Rokas Kupstys.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -44,8 +44,8 @@ SceneView::SceneView(Context* context, const IntRect& rect)
     viewport_->SetRect(IntRect(IntVector2::ZERO, rect_.Size()));
     CreateObjects();
     texture_ = SharedPtr<Texture2D>(new Texture2D(context));
-    // Make sure viewport is not using default renderpath. That would cause issues when renderpath is shared with other
-    // viewports (like in resource inspector).
+    // Make sure viewport is not using default renderpath. That would cause issues when renderpath
+    // is shared with other viewports (like in resource inspector).
     viewport_->SetRenderPath(viewport_->GetRenderPath()->Clone());
     SetSize(rect);
 }
@@ -64,22 +64,29 @@ void SceneView::SetSize(const IntRect& rect)
 
 void SceneView::CreateObjects()
 {
-    camera_ = scene_->CreateChild("EditorCamera", LOCAL, M_MAX_UNSIGNED, true);
-    camera_->CreateComponent<Camera>();
-    camera_->AddTag("__EDITOR_OBJECT__");
-    auto debug = scene_->GetComponent<DebugRenderer>();
-    if (debug == nullptr)
+    Node* parent = scene_->GetChild("EditorObjects");
+    if (parent == nullptr)
     {
-        debug = scene_->CreateComponent<DebugRenderer>(LOCAL, M_MAX_UNSIGNED - 1);
-        debug->SetTemporary(true);
+        parent = scene_->CreateChild("EditorObjects", LOCAL, 0, true);
+        parent->AddTag("__EDITOR_OBJECT__");
     }
+    Node* camera = parent->GetChild("EditorCamera");
+    if (camera == nullptr)
+    {
+        camera = parent->CreateChild("EditorCamera", LOCAL);
+        camera->CreateComponent<Camera>()->SetFarClip(160000);
+        camera->AddTag("__EDITOR_OBJECT__");
+    }
+    auto* debug = scene_->GetOrCreateComponent<DebugRenderer>(LOCAL);
     debug->SetView(GetCamera());
+    debug->SetTemporary(true);
+    debug->SetLineAntiAlias(true);
     viewport_->SetCamera(GetCamera());
 }
 
 Camera* SceneView::GetCamera() const
 {
-    return camera_->GetComponent<Camera>();
+    return scene_->GetChild("EditorObjects")->GetChild("EditorCamera")->GetComponent<Camera>();
 }
 
 }

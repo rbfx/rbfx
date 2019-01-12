@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2017-2019 Rokas Kupstys.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -24,8 +24,12 @@ if (NOT URHO3D_SYSTEMUI)
     return ()
 endif ()
 
+if (NOT URHO3D_WIN32_CONSOLE)
+    set (TARGET_TYPE WIN32)
+endif ()
+
 file (GLOB SOURCE_FILES *.cpp *.h)
-add_executable (AssetViewer WIN32 ${SOURCE_FILES})
+add_executable (AssetViewer ${TARGET_TYPE} ${SOURCE_FILES})
 target_link_libraries(AssetViewer Toolbox Urho3D)
 add_dependencies(AssetViewer AssetImporter)
 install(TARGETS AssetViewer RUNTIME DESTINATION ${DEST_TOOLS_DIR})

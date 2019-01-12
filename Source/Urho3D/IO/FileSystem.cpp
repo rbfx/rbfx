@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -59,11 +59,15 @@
 #include <unistd.h>
 #include <utime.h>
 #include <sys/wait.h>
+#include <fcntl.h>
+#include <spawn.h>
 #define MAX_PATH 256
 #endif
 
 #if defined(__APPLE__)
 #include <mach-o/dyld.h>
+#include <crt_externs.h>
+#define environ (*_NSGetEnviron())
 #endif
 
 extern "C"
@@ -82,6 +86,8 @@ const char* SDL_IOS_GetDocumentsDir();
 
 namespace Urho3D
 {
+
+String specifiedExecutableFile;
 
 int DoSystemCommand(const String& commandLine, bool redirectToLog, Context* context)
 {
@@ -141,9 +147,17 @@ int DoSystemCommand(const String& commandLine, bool redirectToLog, Context* cont
 #endif
 }
 
-int DoSystemRun(const String& fileName, const Vector<String>& arguments)
+enum SystemRunFlag
 {
-#ifdef TVOS
+    SR_DEFAULT,
+    SR_WAIT_FOR_EXIT,
+    SR_READ_OUTPUT = 1 << 1 | SR_WAIT_FOR_EXIT,
+};
+URHO3D_FLAGSET(SystemRunFlag, SystemRunFlags);
+
+int DoSystemRun(const String& fileName, const Vector<String>& arguments, SystemRunFlags flags, String& output)
+{
+#if defined(TVOS) || (defined(__ANDROID__) && __ANDROID_API__ < 28)
     return -1;
 #else
     String fixedFileName = GetNativePath(fileName);
@@ -155,42 +169,128 @@ int DoSystemRun(const String& fileName, const Vector<String>& arguments)
 
     String commandLine = "\"" + fixedFileName + "\"";
     for (unsigned i = 0; i < arguments.Size(); ++i)
-        commandLine += " " + arguments[i];
+        commandLine += " \"" + arguments[i] + "\"";
 
-    STARTUPINFOW startupInfo;
-    PROCESS_INFORMATION processInfo;
-    memset(&startupInfo, 0, sizeof startupInfo);
-    memset(&processInfo, 0, sizeof processInfo);
+    STARTUPINFOW startupInfo{};
+    PROCESS_INFORMATION processInfo{};
+    startupInfo.cb = sizeof(startupInfo);
 
     WString commandLineW(commandLine);
-    if (!CreateProcessW(nullptr, (wchar_t*)commandLineW.CString(), nullptr, nullptr, 0, CREATE_NO_WINDOW, nullptr, nullptr, &startupInfo, &processInfo))
+    DWORD processFlags = 0;
+    if (flags & SR_WAIT_FOR_EXIT)
+        // If we are waiting for process result we are likely reading stdout, in that case we probably do not want to see a console window.
+        processFlags = CREATE_NO_WINDOW;
+
+    HANDLE pipeRead = 0, pipeWrite = 0;
+    if (flags & SR_READ_OUTPUT)
+    {
+        SECURITY_ATTRIBUTES attr;
+        attr.nLength = sizeof(SECURITY_ATTRIBUTES);
+        attr.bInheritHandle = FALSE;
+        attr.lpSecurityDescriptor = NULL;
+        if (!CreatePipe(&pipeRead, &pipeWrite, &attr, 0))
+            return -1;
+
+        if (!SetHandleInformation(pipeRead, HANDLE_FLAG_INHERIT, 0))
+            return -1;
+
+        if (!SetHandleInformation(pipeWrite, HANDLE_FLAG_INHERIT, 1))
+            return -1;
+
+        DWORD mode = PIPE_NOWAIT;
+        if (!SetNamedPipeHandleState(pipeRead, &mode, nullptr, nullptr))
+            return -1;
+
+        startupInfo.hStdOutput = pipeWrite;
+        startupInfo.hStdError = pipeWrite;
+        startupInfo.dwFlags |= STARTF_USESTDHANDLES;
+    }
+
+    if (!CreateProcessW(nullptr, (wchar_t*)commandLineW.CString(), nullptr, nullptr, TRUE, processFlags, nullptr, nullptr, &startupInfo, &processInfo))
         return -1;
 
-    WaitForSingleObject(processInfo.hProcess, INFINITE);
-    DWORD exitCode;
-    GetExitCodeProcess(processInfo.hProcess, &exitCode);
+    DWORD exitCode = 0;
+    if (flags & SR_WAIT_FOR_EXIT)
+    {
+        WaitForSingleObject(processInfo.hProcess, INFINITE);
+        GetExitCodeProcess(processInfo.hProcess, &exitCode);
+    }
+
+    if (flags & SR_READ_OUTPUT)
+    {
+        char buf[1024];
+        for (;;)
+        {
+            DWORD bytesRead = 0;
+            if (!ReadFile(pipeRead, buf, sizeof(buf), &bytesRead, nullptr) || !bytesRead)
+                break;
+            auto err = GetLastError();
+
+            unsigned start = output.Length();
+            output.Resize(start + bytesRead);
+            memcpy(&output[start], buf, bytesRead);
+        }
+
+        CloseHandle(pipeWrite);
+        CloseHandle(pipeRead);
+    }
 
     CloseHandle(processInfo.hProcess);
     CloseHandle(processInfo.hThread);
 
     return exitCode;
 #else
-    pid_t pid = fork();
-    if (!pid)
-    {
-        PODVector<const char*> argPtrs;
-        argPtrs.Push(fixedFileName.CString());
-        for (unsigned i = 0; i < arguments.Size(); ++i)
-            argPtrs.Push(arguments[i].CString());
-        argPtrs.Push(nullptr);
 
-        execvp(argPtrs[0], (char**)&argPtrs[0]);
-        return -1; // Return -1 if we could not spawn the process
-    }
-    else if (pid > 0)
+    int desc[2];
+    if (flags & SR_READ_OUTPUT)
     {
-        int exitCode;
-        wait(&exitCode);
+        if (pipe(desc) == -1)
+            return -1;
+        fcntl(desc[0], F_SETFL, O_NONBLOCK);
+        fcntl(desc[1], F_SETFL, O_NONBLOCK);
+    }
+
+    PODVector<const char*> argPtrs;
+    argPtrs.Push(fixedFileName.CString());
+    for (unsigned i = 0; i < arguments.Size(); ++i)
+        argPtrs.Push(arguments[i].CString());
+    argPtrs.Push(nullptr);
+
+    pid_t pid = 0;
+    posix_spawn_file_actions_t actions{};
+    posix_spawn_file_actions_init(&actions);
+    if (flags & SR_READ_OUTPUT)
+    {
+        posix_spawn_file_actions_addclose(&actions, STDOUT_FILENO);
+        posix_spawn_file_actions_adddup2(&actions, desc[1], STDOUT_FILENO);
+        posix_spawn_file_actions_addclose(&actions, STDERR_FILENO);
+        posix_spawn_file_actions_adddup2(&actions, desc[1], STDERR_FILENO);
+    }
+    posix_spawnp(&pid, fixedFileName.CString(), &actions, 0, (char**)&argPtrs[0], environ);
+    posix_spawn_file_actions_destroy(&actions);
+
+    if (pid > 0)
+    {
+        int exitCode = 0;
+        if (flags & SR_WAIT_FOR_EXIT)
+            waitpid(pid, &exitCode, 0);
+
+        if (flags & SR_READ_OUTPUT)
+        {
+            char buf[1024];
+            for (;;)
+            {
+                ssize_t bytesRead = read(desc[0], buf, sizeof(buf));
+                if (bytesRead <= 0)
+                    break;
+
+                unsigned start = output.Length();
+                output.Resize(start + bytesRead);
+                memcpy(&output[start], buf, bytesRead);
+            }
+            close(desc[0]);
+            close(desc[1]);
+        }
         return exitCode;
     }
     else
@@ -271,7 +371,8 @@ public:
     /// The function to run in the thread.
     void ThreadFunction() override
     {
-        exitCode_ = DoSystemRun(fileName_, arguments_);
+        String output;
+        exitCode_ = DoSystemRun(fileName_, arguments_, SR_WAIT_FOR_EXIT, output);
         completed_ = true;
     }
 
@@ -286,9 +387,6 @@ FileSystem::FileSystem(Context* context) :
     Object(context)
 {
     SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(FileSystem, HandleBeginFrame));
-
-    // Subscribe to console commands
-    SetExecuteConsoleCommands(true);
 }
 
 FileSystem::~FileSystem()
@@ -381,10 +479,28 @@ int FileSystem::SystemCommand(const String& commandLine, bool redirectStdOutToLo
     }
 }
 
-int FileSystem::SystemRun(const String& fileName, const Vector<String>& arguments)
+int FileSystem::SystemRun(const String& fileName, const Vector<String>& arguments, String& output)
 {
     if (allowedPaths_.Empty())
-        return DoSystemRun(fileName, arguments);
+        return DoSystemRun(fileName, arguments, SR_READ_OUTPUT, output);
+    else
+    {
+        URHO3D_LOGERROR("Executing an external command is not allowed");
+        return -1;
+    }
+}
+
+int FileSystem::SystemRun(const String& fileName, const Vector<String>& arguments)
+{
+    String output;
+    return SystemRun(fileName, arguments, output);
+}
+
+int FileSystem::SystemSpawn(const String& fileName, const Vector<String>& arguments)
+{
+    String output;
+    if (allowedPaths_.Empty())
+        return DoSystemRun(fileName, arguments, SR_DEFAULT, output);
     else
     {
         URHO3D_LOGERROR("Executing an external command is not allowed");
@@ -701,29 +817,46 @@ String FileSystem::GetProgramDir() const
     return APK;
 #elif defined(IOS) || defined(TVOS)
     return AddTrailingSlash(SDL_IOS_GetResourceDir());
-#elif defined(_WIN32)
+#elif DESKTOP
+    return GetPath(GetProgramFileName());
+#else
+    return GetCurrentDir();
+#endif
+}
+#if DESKTOP
+String FileSystem::GetProgramFileName() const
+{
+    if (!specifiedExecutableFile.Empty())
+        return specifiedExecutableFile;
+
+    return GetInterpreterFileName();
+}
+
+String FileSystem::GetInterpreterFileName() const
+{
+#if defined(_WIN32)
     wchar_t exeName[MAX_PATH];
     exeName[0] = 0;
     GetModuleFileNameW(nullptr, exeName, MAX_PATH);
-    return GetPath(String(exeName));
+    return String(exeName);
 #elif defined(__APPLE__)
     char exeName[MAX_PATH];
     memset(exeName, 0, MAX_PATH);
     unsigned size = MAX_PATH;
     _NSGetExecutablePath(exeName, &size);
-    return GetPath(String(exeName));
+    return String(exeName);
 #elif defined(__linux__)
     char exeName[MAX_PATH];
     memset(exeName, 0, MAX_PATH);
     pid_t pid = getpid();
     String link = "/proc/" + String(pid) + "/exe";
     readlink(link.CString(), exeName, MAX_PATH);
-    return GetPath(String(exeName));
+    return String(exeName);
 #else
-    return GetCurrentDir();
+    return String();
 #endif
 }
-
+#endif
 String FileSystem::GetUserDocumentsDir() const
 {
 #if defined(__ANDROID__)
@@ -1121,7 +1254,7 @@ bool FileSystem::CreateDirsRecursive(const String& directoryIn)
     if (!paths.Size())
         return false;
 
-    for (int i = (int) (paths.Size() - 1); i >= 0; i--)
+    for (auto i = (int) (paths.Size() - 1); i >= 0; i--)
     {
         const String& pathName = paths[i];
 
@@ -1196,7 +1329,7 @@ bool FileSystem::RemoveDir(const String& directoryIn, bool recursive)
 
 bool FileSystem::CopyDir(const String& directoryIn, const String& directoryOut)
 {
-    if (FileExists(directoryOut) || DirExists(directoryOut))
+    if (FileExists(directoryOut))
         return false;
 
     Vector<String> results;

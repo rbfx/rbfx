@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -33,6 +33,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <limits>
+#include <type_traits>
 
 namespace Urho3D
 {
@@ -99,18 +100,7 @@ inline unsigned FloatToRawIntBits(float value)
 }
 
 /// Check whether a floating point value is NaN.
-/// Use a workaround for GCC, see https://github.com/urho3d/Urho3D/issues/655
-#ifndef __GNUC__
-inline bool IsNaN(float value) { return value != value; }
-#else
-
-inline bool IsNaN(float value)
-{
-    unsigned u = FloatToRawIntBits(value);
-    return (u & 0x7fffffff) > 0x7f800000;
-}
-
-#endif
+template <class T> inline bool IsNaN(T value) { return std::isnan(value); }
 
 /// Clamp a number to a range.
 template <class T>
@@ -162,8 +152,13 @@ template <class T> inline T Ln(T x) { return log(x); }
 /// Return square root of X.
 template <class T> inline T Sqrt(T x) { return sqrt(x); }
 
-/// Return floating-point remainder of X/Y.
-template <class T> inline T Mod(T x, T y) { return fmod(x, y); }
+/// Return remainder of X/Y.
+template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+inline T Mod(T x, T y) { return fmod(x, y); }
+
+/// Return remainder of X/Y.
+template<typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
+inline T Mod(T x, T y) { return x % y; }
 
 /// Return fractional part of passed value in range [0, 1).
 template <class T> inline T Fract(T value) { return value - floor(value); }
@@ -197,12 +192,20 @@ inline unsigned NextPowerOfTwo(unsigned value)
 {
     // http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
     --value;
-    value |= value >> 1;
-    value |= value >> 2;
-    value |= value >> 4;
-    value |= value >> 8;
-    value |= value >> 16;
+    value |= value >> 1u;
+    value |= value >> 2u;
+    value |= value >> 4u;
+    value |= value >> 8u;
+    value |= value >> 16u;
     return ++value;
+}
+
+/// Round up or down to the closest power of two.
+inline unsigned ClosestPowerOfTwo(unsigned value)
+{
+    unsigned next = NextPowerOfTwo(value);
+    unsigned prev = next >> (unsigned)1;
+    return (value - prev) > (next - value) ? next : prev;
 }
 
 /// Return log base two or the MSB position of the given value.
@@ -226,7 +229,7 @@ inline unsigned CountSetBits(unsigned value)
 }
 
 /// Update a hash with the given 8-bit value using the SDBM algorithm.
-inline unsigned SDBMHash(unsigned hash, unsigned char c) { return c + (hash << 6) + (hash << 16) - hash; }
+inline constexpr unsigned SDBMHash(unsigned hash, unsigned char c) { return c + (hash << 6u) + (hash << 16u) - hash; }
 
 /// Return a random float between 0.0 (inclusive) and 1.0 (exclusive.)
 inline float Random() { return Rand() / 32768.0f; }
@@ -250,9 +253,9 @@ inline float RandomNormal(float meanValue, float variance) { return RandStandard
 inline unsigned short FloatToHalf(float value)
 {
     unsigned inu = FloatToRawIntBits(value);
-    unsigned t1 = inu & 0x7fffffff;         // Non-sign bits
-    unsigned t2 = inu & 0x80000000;         // Sign bit
-    unsigned t3 = inu & 0x7f800000;         // Exponent
+    unsigned t1 = inu & 0x7fffffffu;         // Non-sign bits
+    unsigned t2 = inu & 0x80000000u;         // Sign bit
+    unsigned t3 = inu & 0x7f800000u;         // Exponent
 
     t1 >>= 13;                              // Align mantissa on MSB
     t2 >>= 16;                              // Shift sign bit into position
@@ -271,9 +274,9 @@ inline unsigned short FloatToHalf(float value)
 /// Convert half float to float. From https://gist.github.com/martinkallman/5049614
 inline float HalfToFloat(unsigned short value)
 {
-    unsigned t1 = value & 0x7fff;           // Non-sign bits
-    unsigned t2 = value & 0x8000;           // Sign bit
-    unsigned t3 = value & 0x7c00;           // Exponent
+    unsigned t1 = value & 0x7fffu;           // Non-sign bits
+    unsigned t2 = value & 0x8000u;           // Sign bit
+    unsigned t3 = value & 0x7c00u;           // Exponent
 
     t1 <<= 13;                              // Align mantissa on MSB
     t2 <<= 16;                              // Shift sign bit into position
@@ -287,6 +290,13 @@ inline float HalfToFloat(unsigned short value)
     float out;
     *((unsigned*)&out) = t1;
     return out;
+}
+
+/// Wrap a value fitting it in the range defined by [min, max)
+template<typename T> inline T Wrap(T value, T min, T max)
+{
+    T range = max - min;
+    return min + Mod(value, range);
 }
 
 /// Calculate both sine and cosine, with angle in degrees.

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -95,6 +95,9 @@ public:
     explicit OcclusionBuffer(Context* context);
     /// Destruct.
     ~OcclusionBuffer() override;
+
+    /// Register object with the engine.
+    static void RegisterObject(Context* context);
 
     /// Set occlusion buffer size and whether to reserve multiple buffers for threading optimization.
     bool SetSize(int width, int height, bool threaded);

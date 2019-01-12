@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@
 #include "../Container/Pair.h"
 #include "../Container/Sort.h"
 #include "../Container/Vector.h"
+#include "../Core/Macros.h"
 
 #include <cassert>
 #include <initializer_list>
@@ -217,19 +218,21 @@ public:
     /// Construct empty.
     HashMap()
     {
-        // Reserve the tail node
-        allocator_ = AllocatorInitialize((unsigned)sizeof(Node));
-        head_ = tail_ = ReserveNode();
     }
 
     /// Construct from another hash map.
     HashMap(const HashMap<T, U>& map)
     {
-        // Reserve the tail node + initial capacity according to the map's size
-        allocator_ = AllocatorInitialize((unsigned)sizeof(Node), map.Size() + 1);
-        head_ = tail_ = ReserveNode();
+        Initialize(map.Size() + 1);
         *this = map;
     }
+
+    /// Move-construct from another hash map.
+    HashMap(HashMap<T, U> && map) noexcept
+    {
+        Swap(map);
+    }
+
     /// Aggregate initialization constructor.
     HashMap(const std::initializer_list<Pair<T, U>>& list) : HashMap()
     {
@@ -238,13 +241,17 @@ public:
             Insert(*it);
         }
     }
+
     /// Destruct.
     ~HashMap()
     {
-        Clear();
-        FreeNode(Tail());
-        AllocatorUninitialize(allocator_);
-        delete[] ptrs_;
+        if (allocator_)
+        {
+            Clear();
+            FreeNode(Tail());
+            AllocatorUninitialize(allocator_);
+            delete[] ptrs_;
+        }
     }
 
     /// Assign a hash map.
@@ -256,6 +263,14 @@ public:
             Clear();
             Insert(rhs);
         }
+        return *this;
+    }
+
+    /// Move-assign a hash map.
+    HashMap& operator =(HashMap<T, U> && rhs) noexcept
+    {
+        assert(&rhs != this);
+        Swap(rhs);
         return *this;
     }
 
@@ -340,7 +355,7 @@ public:
         return *this;
     };
     /// Populate the map using variadic template.
-    template <typename... Args> HashMap& Populate(const T& key, const U& value, Args... args)
+    template <typename... Args> HashMap& Populate(const T& key, const U& value, const Args&... args)
     {
         this->operator [](key) = value;
         return Populate(args...);
@@ -496,7 +511,7 @@ public:
 
         // Check for being power of two
         unsigned check = numBuckets;
-        while (!(check & 1))
+        while (!(check & 1u))
             check >>= 1;
         if (check != 1)
             return false;
@@ -652,6 +667,9 @@ private:
     /// Insert a key and value and return either the new or existing node.
     Node* InsertNode(const T& key, const U& value, bool findExisting = true)
     {
+        if (URHO3D_UNLIKELY(allocator_ == nullptr))
+            Initialize();
+
         // If no pointers yet, allocate with minimum bucket count
         if (!ptrs_)
         {
@@ -765,6 +783,13 @@ private:
             node->down_ = Ptrs()[hashKey];
             Ptrs()[hashKey] = node;
         }
+    }
+
+    /// Reserve the tail node.
+    void Initialize(unsigned capacity = 1)
+    {
+        allocator_ = AllocatorInitialize((unsigned)sizeof(Node), capacity);
+        head_ = tail_ = ReserveNode();
     }
 
     /// Compare two nodes.

@@ -20,20 +20,29 @@
 # THE SOFTWARE.
 #
 
-# When syncing repository with upstream be sure to delete stb_rectpack.h. This will make imgui use main instance of
+# When syncing repository with upstream be sure to delete stb_rectpack.h. This will make ImGui use main instance of
 # stb_rectpack already included in the engine.
 
 file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
-add_library (imgui OBJECT ${SOURCE_FILES})
-target_link_objects(imgui STB FreeType)
-target_compile_definitions(imgui PUBLIC -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1
+add_library (ImGui STATIC ${SOURCE_FILES})
+target_link_libraries(ImGui PUBLIC STB FreeType)
+target_compile_definitions(ImGui PUBLIC -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1
     PRIVATE -DIMGUI_DISABLE_STB_RECT_PACK_IMPLEMENTATION -DIMGUI_DISABLE_STB_TRUETYPE_IMPLEMENTATION=1
-    PUBLIC  -DIMGUI_DEFINE_MATH_OPERATORS=1)
-target_include_directories(imgui
+    PUBLIC  -DIMGUI_DEFINE_MATH_OPERATORS=1 -DUSE_IMGUI_API=1)
+target_include_directories(ImGui
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ImGui>
+           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ImGuizmo>
 )
+
 if (BUILD_SHARED_LIBS)
-    target_compile_definitions(imgui PRIVATE -D_EXPORTS PUBLIC -D_IMPORTS)
+    target_compile_definitions(ImGui PRIVATE -DIMGUI_EXPORTS)
 endif ()
-install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/ FILES_MATCHING PATTERN *.h)
+
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
+
+if (URHO3D_CSHARP)
+    csharp_bind_target(TARGET ImGui)
+    target_link_libraries(ImGuiCSharp PUBLIC Urho3D)
+    add_dependencies(ImGuiNet Urho3DCSharp)
+endif ()

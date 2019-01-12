@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -62,7 +62,12 @@ void RefCounted::ReleaseRef()
     assert(refCount_->refs_ > 0);
     (refCount_->refs_)--;
     if (!refCount_->refs_)
-        delete this;
+    {
+        if (deleter_ != nullptr)
+            deleter_(this);
+        else
+            delete this;
+    }
 }
 
 int RefCounted::Refs() const
@@ -74,6 +79,11 @@ int RefCounted::WeakRefs() const
 {
     // Subtract one to not return the internally held reference
     return refCount_->weakRefs_ - 1;
+}
+
+void RefCounted::SetDeleter(std::function<void(RefCounted*)> deleter)
+{
+    deleter_ = std::move(deleter);
 }
 
 }

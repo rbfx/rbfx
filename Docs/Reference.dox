@@ -56,6 +56,7 @@ To create an object using a factory, call Context's \ref Context::CreateObject "
 SharedPtr<Object> newComponent = context_->CreateObject(type));
 \endcode
 
+Calls to \ref Context::CreateObject are thread-safe. However factory registration and removal is not thread-safe and user must ensure that no thread calls \ref Context::CreateObject during factory registration or removal.
 
 \page Subsystems Subsystems
 
@@ -2549,13 +2550,14 @@ Each attribute can have a combination of the following flags:
 - `AM_NODEID`: Is a node ID and may need rewriting when instantiating scene content.
 - `AM_COMPONENTID`: Is a component ID and may need rewriting when instantiating scene content.
 
+
 The default flags are `AM_FILE` and `AM_NET`. Note that it is legal to define neither `AM_FILE` or `AM_NET`, meaning the attribute has only run-time significance (perhaps for editing.)
 
 See the existing engine classes e.g. in the %Scene or %Graphics subdirectories for examples on registering attributes using the URHO3D_ATTRIBUTE family of helper macros.
 
 \page Network Networking
 
-The Network subsystem provides reliable and unreliable UDP messaging using kNet. A server can be created that listens for incoming connections, and client connections can be made to the server. After connecting, code running on the server can assign the client into a scene to enable scene replication, provided that when connecting, the client specified a blank scene for receiving the updates.
+The Network subsystem provides reliable and unreliable UDP messaging using SLikeNet. A server can be created that listens for incoming connections, and client connections can be made to the server. After connecting, code running on the server can assign the client into a scene to enable scene replication, provided that when connecting, the client specified a blank scene for receiving the updates.
 
 %Scene replication is one-directional: the server always has authority and sends scene updates to the client at a fixed update rate, by default 30 FPS. The client responds by sending controls updates (buttons, yaw and pitch + possible extra data) also at a fixed rate.
 
@@ -2570,6 +2572,24 @@ Starting the server and connecting to it both happen through the Network subsyst
 Note the scene (to be used for replication) and identity VariantMap supplied as parameters when connecting. The identity data can contain for example the user name or credentials, it is completely application-specified. The identity data is sent right after connecting and causes the E_CLIENTIDENTITY event to be sent on the server when received. By subscribing to this event, server code can examine incoming connections and accept or deny them. The default is to accept all connections.
 
 After connecting successfully, client code can get the Connection object representing the server connection, see \ref Network::GetServerConnection "GetServerConnection()". Likewise, on the server a Connection object will be created for each connected client, and these can be iterated through. This object is used to send network messages or remote events to the remote peer, to assign the client into a scene (on the server only), or to disconnect.
+
+\section Network_NAT_Punchtrough NAT punchtrough
+
+It is possible to use NAT punchtrough functionality with network subsystem. This requires NAT punchtrough master server to be running on a public host. To set it up you first have to tell the networking subsystem the IP address or a domain name to NAT punchtrough master server, to do this, call \ref Network::SetNATServerInfo "SetNATServerInfo()".
+
+Server:
+Server should be started first by calling \ref Network::StartServer "StartServer()" and after that \ref Network::StartNATClient "StartNATClient()". If connection to NAT punchtrough master server succeeds, unique GUID will be generated. Clients should use this generated GUID to connect to this server.
+
+Client:
+When server has been successfully started and connected with NAT punchtrough master server, clients should connect to server by calling \ref Network::AttemptNATPunchtrough "AttemptNATPunchtrough()" and pass in the server generated GUID.
+
+For a demonstration, check example 52_NATPunchtrough.
+
+\section Network_Lan_Discovery Lan Discovery
+
+Network subsystem supports LAN discovery mode to search for running servers. When creating server you can set what data should be sent to the network when someone starts LAN discovery mode, see \ref Network::SetDiscoveryBeacon "SetDiscoveryBeacon()". This data can contain any information about the server. To start LAN discovery mode you should call \ref Network::DiscoverHosts "DiscoverHosts()". When server is found, "NetworkHostDiscovered" event will be sent out.
+
+For a demonstration, check example 53_LANDiscovery.
 
 \section Network_Replication Scene replication
 
@@ -2645,7 +2665,7 @@ The event includes the attribute name, index, new value as a Variant, and the la
 
 \section Network_Messages Raw network messages
 
-All network messages have an integer ID. The first ID you can use for custom messages is 22 (lower ID's are either reserved for kNet's or the %Network subsystem's internal use.) Messages can be sent either unreliably or reliably, in-order or unordered. The data payload is simply raw binary data that can be crafted by using for example VectorBuffer.
+All network messages have an integer ID. The first ID you can use for custom messages is 153 (lower ID's are either reserved for SLikeNet's or the %Network subsystem's internal use.) Messages can be sent either unreliably or reliably, in-order or unordered. The data payload is simply raw binary data that can be crafted by using for example VectorBuffer.
 
 To send a message to a Connection, use its \ref Connection::SendMessage "SendMessage()" function. On the server, messages can also be broadcast to all client connections by calling the \ref Network::BroadcastMessage "BroadcastMessage()" function.
 
@@ -2689,112 +2709,6 @@ The Network subsystem can optionally add delay to sending packets, as well as si
 The Database subsystem is built into the Urho3D library only when one of these two \ref Build_Options "build options" are enabled: URHO3D_DATABASE_ODBC and URHO3D_DATABASE_SQLITE. When both options are enabled then URHO3D_DATABASE_ODBC takes precedence. These build options determine which database API the subsystem will use. The ODBC DB API is more suitable for native application, especially the game server, where it allows the app to establish connection to any ODBC compliant databases like SQLite, MySQL/MariaDB, PostgreSQL, Sybase SQL, Oracle, etc. The SQLite DB API, on the other hand, is suitable for mobile application which embeds the SQLite database and its engine into the app itself. The Database subsystem wraps the underlying DB API using a unified URHO3D API, so no or minimal code changes are required to the library user when switching between these two build options.
 
 Currently the implementation just supports immediate SQL statement execution. Prepared statements and transaction management will be added later when the need arises. The subsystem has a simple database connection pooling capability. This internal database connection pool should not be confused with ODBC connection pool option when ODBC DB API is being used. The internal pooling is enabled by default, except when ODBC DB API is being used and when ODBC driver manager 3.0 or later is being detected in the host system, in which case the ODBC connection pool option should be used instead to manage the database connection pooling.
-
-\section Establish_DbConnection Establishing database connection
-
-A new database connection is established by calling \ref Database::Connect "Connect()" and passing it with a so-called database connection string. The database connection string does not only identify which database to connect to, but also other relevant database connection settings like: database user id, user password, host, and port number, etc. The format of the database connection string is controlled by the underlying DB API. In general the connection string is really the only thing that need to be changed when switching the underlying DB API and when switching the databases to connect to.
-
-When the connection is successfully established, a valid DbConnection object is returned. After done with the database connection, an application should disconnect the database connection by calling the \ref Database::Disconnect "Disconnect()". This is a good practise. When the Urho3D game engine exits, the destructor of the database subsystem automatically disconnects all the still active database connections.
-
-\subsection ODBC_ConnString ODBC connection string
-
-The exact format of the ODBC connection string depends on the ODBC driver for a specific database vendor. Consult the accompanying documentation of the specific ODBC driver on how to construct the database connection string. Both DSN and DSN-less connection string are supported. For the purpose of illustration, this subsection will just explain how to connect to a MySQL/MariaDB database as an example. The MySQL/MariaDB database server is assumed to be running on a localhost on a default port with database name called 'test', and user id & password are "testuser" & "testpassword".
-
-\subsubsection DSN_ConnString DSN connection string
-
-Use the GUI tool provided by host system to define the ODBC data source. It can be user DSN or system DSN. On Linux host system, simply add the new data source entry in the '~/.odbc.ini' or '/etc/odbc.ini', respectively. Create the file if it does not exist yet. The data source entry must at least contains the following information.
-\verbatim
-# These settings assume the host system uses unixODBC as ODBC driver manager
-# Settings for iODBC driver manager would be slightly different
-[testDSN]
-Driver=MariaDB      # This is the name of the ODBC driver installed in the /etc/odbcinst.ini
-Description=MariaDB test database
-Server=localhost
-Port=
-User=testuser
-Password=testpassword
-Database=test
-Option=3
-Socket=
-\endverbatim
-
-To connect to this data source, use the following connection string:
-\verbatim
-DSN=testDSN
-\endverbatim
-
-\subsubsection DSN_less_ConnString DSN-less connection string
-
-To connect to the same database above without pre-configuring it as an ODBC data source, use the connection string like this:
-\verbatim
-Driver=MariaDB;Database=test;User=testuser;Password=testpassword;Option=3
-\endverbatim
-
-\subsection SQLite_ConnString SQLite connection string
-
-The SQLite database is a single disk file. The SQLite connection string is simply a path to the location of that single disk file. Both absolute and relative paths work. When the path is valid but the disk file does not exist yet then SQLite database engine will automatically create the disk file and hence create a new empty database in the process. The drawback with this approach is, there is no way to pass additional database connection settings. In order to do that, SQLite DB API also supports connection string using RFC 3986 URI format. Consult SQLite documentation on [URI format](https://www.sqlite.org/uri.html) for more detail. For illustration purposes, this subsection will assume the SQLite disk file is called 'test.db' located in home directory and current working directory is home directory.
-
-\subsubsection Path_ConnString Path connection string
-
-With the above assumption, the following example connection strings work equally.
-
-Relative path:
-\verbatim
-test.db
-\endverbatim
-
-Or absolute path:
-\verbatim
-/home/testuser/test.db
-\endverbatim
-
-\subsubsection URI_ConnString URI connection string
-
-In this format the additional database connection setting can be passed as query parameters. As an example, to connect to the same database as above but in read-only and shared-cache mode then the connection string can be rewritten as:
-\verbatim
-file:./test.db?mode=ro&cache=shared
-\endverbatim
-
-Or:
-\verbatim
-file:///home/testuser/test.db?mode=ro&cache=shared
-\endverbatim
-
-\section Immediate_Execution Immediate SQL statement execution
-
-Use the \ref DbConnection::Execute() "Execute()" to execute an SQL statement in immediate mode. In immediate mode, the SQL statement is opened, prepared, executed, and finalized in one go. It is a convenient method to perform adhoc query but it may not be good for system performance when a same query is being performed repeatedly. The method returns a DbResult object regardless of whether the query type is DML (Data Manipulation Language) or DDL (Data Definition Language). The %DbResult object only contains the resultset when the SQL statement being executed is a select query. Use the \ref DbResult::GetNumColumns() "GetNumColumns()" and \ref DbResult::GetNumRows() "GetNumRows()" to find out the size of the resultset. Use the \ref DbResult::GetColumns() "GetColumns()" and \ref DbResult::GetRows() "GetRows()" to get the actual column headers data and rows data, respectively. For DML statement, use the \ref DbResult::GetNumAffectedRows() "GetNumAffectedRows()" to find out the number of affected rows.
-
-The number of rows in the %DbResult object may be less than the actual number of rows being fetched from the database. This is because the fetched rows could be instructed to be filtered out by \ref DB_Cursor "E_DBCURSOR" event handler. The whole rows fetching process could also be aborted upon request of E_DBCURSOR event handler.
-
-\section Prepare_Bind_Execution SQL execution using prepared statements and dynamic parameter bindings
-
-Not yet supported at this moment.
-
-\section Transaction_Management Transaction Management
-
-Not yet supported at this moment. Currently all statements are auto-committed unless the database is connected as read-only (in which case DML and DDL statements would cause an error to be logged).
-
-\section DB_Cursor Database cursor event
-
-When executing an SQL statement there is an option to enable the sending of database cursor event. This event is sent on each row in the resultset as it is being fetched. i.e. the events could be sent multiple times before the Execute() method returns. %Application can subscribe to this event to influence how the resultset is being populated in the %DbResult object.
-
-The E_DBCURSOR has input and output parameters.
-
-Output parameters:
-\verbatim
-P_SQL        SQL query string currently being executed (String)
-P_NUMCOLS    Number of columns in the resultset (unsigned)
-P_COLHEADERS Column headers in the resultset (StringVector)
-P_COLVALUES  Row data as it is being fetched (VariantVector)
-\endverbatim
-
-%Input parameters:
-\verbatim
-P_FILTER     Set to true to filter out this row from the DbResult object
-P_ABORT      Set to true to abort further fetching process
-\endverbatim
-
-The P_FILTER could be used for any additional client-side filtering logic that is otherwise difficult to be carried out at the database server-side using WHERE or HAVING clause. The P_ABORT when used does not affect rows that are already populated into %DbResult object.
 
 \page Multithreading Multithreading
 
@@ -2970,6 +2884,36 @@ In your update function, move the controlled node using \ref SplinePath::Move "M
 \code
     path->Move(eventData[P_TIMESTEP].GetFloat());
 \endcode
+
+\page CSharp CSharp Scripting
+
+\section CSharp_About About C# Support
+
+C# support is provided by customized SWIG wrapper interface generator.
+
+* Extensive API coverage estimated at 90%+
+* Support for inheriting native classes and overriding their virtual methods
+* Support for ref parameters
+* Support for native containers (`HashMap<T>`, `Vector<T>`, `PODVector<T>``)
+* Transparently unwrapping `SharedPtr<T>` and `WeakPtr<T>`
+* Serialization and deserialization of managed components
+* Member variable and method renaming to match C# conventions
+* Support for registering C# fields as attributes
+* Managed editor plugins with hot code reload
+
+\subsection CSharp_Requirements Requirements
+
+* .NET framework (4.7.1) (Windows)
+* Mono (latest) (Linux/MacOS/Android/iOS)
+* `-DBUILD_SHARED_LIBS=ON` build parameter.
+* `-DURHO3D_CSHARP=ON` build parameter.
+
+\subsection CSharp_IDE IDE support
+
+On Windows it is advised to use Visual Studio. C# projects will be automatically
+embedded into generated solution. C# code can be edited and debugged, including
+hot-reloadable plugins running in the editor. To debug these plugins set
+`EditorHost` as your startup application and start debugger.
 
 \page Tools Tools
 
@@ -3391,7 +3335,7 @@ When contributing code to the Urho3D project, there are a few things to check so
 
 First of all, the contribution should be wholly your own, so that you hold the copyright. If you are borrowing anything (for example a specific implementation of a math formula), you must be sure that you're allowed to do so, and give credit appropriately. For example borrowing code that is in the public domain would be OK.
 
-Second, you need to agree that code is released under the MIT license with the copyright statement "Copyright (c) 2008-2018 the Urho3D project." Note here that "Urho3D project" is not an actual legal entity, but just shorthand to avoid listing all the contributors. You certainly retain your individual copyright. You should copy-paste the license statement from an existing .cpp or .h file to each new file that you contribute, to avoid having to add it later.
+Second, you need to agree that code is released under the MIT license with the copyright statement "Copyright (c) 2008-2019 the Urho3D project." Note here that "Urho3D project" is not an actual legal entity, but just shorthand to avoid listing all the contributors. You certainly retain your individual copyright. You should copy-paste the license statement from an existing .cpp or .h file to each new file that you contribute, to avoid having to add it later.
 
 Third, there are requirements for new code that come from Urho3D striving to be a cohesive, easy-to-use package where features like events, serialization and script bindings integrate tightly. Check all that apply:
 

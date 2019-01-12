@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -78,6 +78,13 @@ URHO3D_EVENT(E_RESOURCEBACKGROUNDLOADED, ResourceBackgroundLoaded)
 /// Language changed.
 URHO3D_EVENT(E_CHANGELANGUAGE, ChangeLanguage)
 {
+}
+
+/// Resource renamed
+URHO3D_EVENT(E_RESOURCERENAMED, ResourceRenamed)
+{
+    URHO3D_PARAM(P_FROM, From);                            // String
+    URHO3D_PARAM(P_TO, To);                                // String
 }
 
 }

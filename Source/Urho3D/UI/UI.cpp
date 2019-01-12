@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -73,10 +73,13 @@
 
 #include "../DebugNew.h"
 
-#define TOUCHID_MASK(id) (1 << (id))
-
 namespace Urho3D
 {
+
+static MouseButton MakeTouchIDMask(int id)
+{
+    return static_cast<MouseButton>(1u << static_cast<MouseButtonFlags::Integer>(id)); // NOLINT(misc-misplaced-widening-cast)
+}
 
 StringHash VAR_ORIGIN("Origin");
 const StringHash VAR_ORIGINAL_PARENT("OriginalParent");
@@ -93,8 +96,8 @@ const char* UI_CATEGORY = "UI";
 
 UI::UI(Context* context) :
     Object(context),
-    rootElement_(new UIElement(context)),
-    rootModalElement_(new UIElement(context)),
+    rootElement_(context->CreateObject<UIElement>()),
+    rootModalElement_(context->CreateObject<UIElement>()),
     doubleClickInterval_(DEFAULT_DOUBLECLICK_INTERVAL),
     dragBeginInterval_(DEFAULT_DRAGBEGIN_INTERVAL),
     defaultToolTipDelay_(DEFAULT_TOOLTIP_DELAY),
@@ -132,9 +135,6 @@ UI::UI(Context* context) :
     rootElement_->SetTraversalMode(TM_DEPTH_FIRST);
     rootModalElement_->SetTraversalMode(TM_DEPTH_FIRST);
 
-    // Register UI library object factories
-    RegisterUILibrary(context_);
-
     SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(UI, HandleScreenMode));
     SubscribeToEvent(E_MOUSEBUTTONDOWN, URHO3D_HANDLER(UI, HandleMouseButtonDown));
     SubscribeToEvent(E_MOUSEBUTTONUP, URHO3D_HANDLER(UI, HandleMouseButtonUp));
@@ -146,6 +146,7 @@ UI::UI(Context* context) :
     SubscribeToEvent(E_KEYDOWN, URHO3D_HANDLER(UI, HandleKeyDown));
     SubscribeToEvent(E_TEXTINPUT, URHO3D_HANDLER(UI, HandleTextInput));
     SubscribeToEvent(E_DROPFILE, URHO3D_HANDLER(UI, HandleDropFile));
+    SubscribeToEvent(E_FOCUSED, URHO3D_HANDLER(UI, HandleFocused));
 
     // Try to initialize right now, but skip if screen mode is not yet set
     Initialize();
@@ -311,13 +312,18 @@ void UI::Clear()
     rootModalElement_->RemoveAllChildren();
     if (cursor_)
         rootElement_->AddChild(cursor_);
+
+    batches_.Clear();
+    vertexData_.Clear();
+    debugDrawBatches_.Clear();
+    debugVertexData_.Clear();
 }
 
 void UI::Update(float timeStep)
 {
     assert(rootElement_ && rootModalElement_);
 
-    URHO3D_PROFILE(UpdateUI);
+    URHO3D_PROFILE("UpdateUI");
 
     // Expire hovers
     for (HashMap<WeakPtr<UIElement>, bool>::Iterator i = hoveredElements_.Begin(); i != hoveredElements_.End(); ++i)
@@ -370,7 +376,7 @@ void UI::Update(float timeStep)
 
 #ifdef URHO3D_SYSTEMUI
     // System ui is always takes precedence
-    if (!GetSubsystem<SystemUI>()->IsAnyItemHovered())
+    if (!ShouldIgnoreInput())
     {
 #endif
         // Mouse hover
@@ -388,7 +394,7 @@ void UI::Update(float timeStep)
             IntVector2 touchPos = touch->position_;
             touchPos.x_ = (int)(touchPos.x_ / uiScale_);
             touchPos.y_ = (int)(touchPos.y_ / uiScale_);
-            ProcessHover(touchPos, TOUCHID_MASK(touch->touchID_), 0, nullptr);
+            ProcessHover(touchPos, MakeTouchIDMask(touch->touchID_), QUAL_NONE, nullptr);
         }
 #ifdef URHO3D_SYSTEMUI
     }
@@ -422,7 +428,7 @@ void UI::RenderUpdate()
 {
     assert(rootElement_ && rootModalElement_ && graphics_);
 
-    URHO3D_PROFILE(GetUIBatches);
+    URHO3D_PROFILE("GetUIBatches");
 
     uiRendered_ = false;
 
@@ -453,43 +459,19 @@ void UI::RenderUpdate()
         GetBatches(batches_, vertexData_, cursor_, currentScissor);
     }
 
-    // Get batches for UI elements rendered into textures. Each element rendered into texture is treated as root element.
-    for (auto it = renderToTexture_.Begin(); it != renderToTexture_.End();)
+    // UIElement does not have anything to show. Insert dummy batch that will clear the texture.
+    if (batches_.Empty() && texture_.NotNull())
     {
-        RenderToTextureData& data = it->second_;
-        if (data.rootElement_.Expired())
-        {
-            it = renderToTexture_.Erase(it);
-            continue;
-        }
-
-        if (data.rootElement_->IsEnabled())
-        {
-            data.batches_.Clear();
-            data.vertexData_.Clear();
-            UIElement* element = data.rootElement_;
-            const IntVector2& size = element->GetSize();
-            const IntVector2& pos = element->GetPosition();
-            // Note: the scissors operate on unscaled coordinates. Scissor scaling is only performed during render
-            IntRect scissor = IntRect(pos.x_, pos.y_, pos.x_ + size.x_, pos.y_ + size.y_);
-            GetBatches(data.batches_, data.vertexData_, element, scissor);
-
-            // UIElement does not have anything to show. Insert dummy batch that will clear the texture.
-            if (data.batches_.Empty())
-            {
-                UIBatch batch(element, BLEND_REPLACE, scissor, nullptr, &data.vertexData_);
-                batch.SetColor(Color::BLACK);
-                batch.AddQuad(scissor.left_, scissor.top_, scissor.right_, scissor.bottom_, 0, 0);
-                data.batches_.Push(batch);
-            }
-        }
-        ++it;
+        UIBatch batch(rootElement_, BLEND_REPLACE, currentScissor, nullptr, &vertexData_);
+        batch.SetColor(Color::BLACK);
+        batch.AddQuad(currentScissor.left_, currentScissor.top_, currentScissor.right_, currentScissor.bottom_, 0, 0);
+        batches_.Push(batch);
     }
 }
 
-void UI::Render(bool renderUICommand)
+void UI::Render()
 {
-    URHO3D_PROFILE(RenderUI);
+    URHO3D_PROFILE("RenderUI");
 
 #ifdef URHO3D_BGFX
     // Increment the current view and name it for debug
@@ -503,55 +485,19 @@ void UI::Render(bool renderUICommand)
 #endif
 
     // If the OS cursor is visible, apply its shape now if changed
-    if (!renderUICommand)
-    {
-        bool osCursorVisible = GetSubsystem<Input>()->IsMouseVisible();
-        if (cursor_ && osCursorVisible)
-            cursor_->ApplyOSCursorShape();
-    }
+    bool osCursorVisible = GetSubsystem<Input>()->IsMouseVisible();
+    if (cursor_ && osCursorVisible)
+        cursor_->ApplyOSCursorShape();
 
-    // Perform the default backbuffer render only if not rendered yet, or additional renders through RenderUI command
-    if (renderUICommand || !uiRendered_)
-    {
-        SetVertexData(vertexBuffer_, vertexData_);
-        SetVertexData(debugVertexBuffer_, debugVertexData_);
+    SetVertexData(vertexBuffer_, vertexData_);
+    SetVertexData(debugVertexBuffer_, debugVertexData_);
 
-        if (!renderUICommand)
-            graphics_->ResetRenderTargets();
-        // Render non-modal batches
-        Render(vertexBuffer_, batches_, 0, nonModalBatchSize_);
-        // Render debug draw
-        Render(debugVertexBuffer_, debugDrawBatches_, 0, debugDrawBatches_.Size());
-        // Render modal batches
-        Render(vertexBuffer_, batches_, nonModalBatchSize_, batches_.Size());
-    }
-
-    // Render to UIComponent textures. This is skipped when called from the RENDERUI command
-    if (!renderUICommand)
-    {
-        for (auto& item : renderToTexture_)
-        {
-            RenderToTextureData& data = item.second_;
-            if (data.rootElement_->IsEnabled())
-            {
-                SetVertexData(data.vertexBuffer_, data.vertexData_);
-                SetVertexData(data.debugVertexBuffer_, data.debugVertexData_);
-
-                RenderSurface* surface = data.texture_->GetRenderSurface();
-                graphics_->SetRenderTarget(0, surface);
-                graphics_->SetViewport(IntRect(0, 0, surface->GetWidth(), surface->GetHeight()));
-                graphics_->Clear(Urho3D::CLEAR_COLOR);
-
-                Render(data.vertexBuffer_, data.batches_, 0, data.batches_.Size());
-                Render(data.debugVertexBuffer_, data.debugDrawBatches_, 0, data.debugDrawBatches_.Size());
-                data.debugDrawBatches_.Clear();
-                data.debugVertexData_.Clear();
-            }
-        }
-
-        if (renderToTexture_.Size())
-            graphics_->ResetRenderTargets();
-    }
+    // Render non-modal batches
+    Render(vertexBuffer_, batches_, 0, nonModalBatchSize_);
+    // Render debug draw
+    Render(debugVertexBuffer_, debugDrawBatches_, 0, debugDrawBatches_.Size());
+    // Render modal batches
+    Render(vertexBuffer_, batches_, nonModalBatchSize_, batches_.Size());
 
     // Clear the debug draw batches and data
     debugDrawBatches_.Clear();
@@ -570,26 +516,13 @@ void UI::DebugDraw(UIElement* element)
         const IntVector2& rootSize = root->GetSize();
         const IntVector2& rootPos = root->GetPosition();
         IntRect scissor(rootPos.x_, rootPos.y_, rootPos.x_ + rootSize.x_, rootPos.y_ + rootSize.y_);
-        if (root == rootElement_ || root == rootModalElement_)
-            element->GetDebugDrawBatches(debugDrawBatches_, debugVertexData_, scissor);
-        else
-        {
-            for (auto& item : renderToTexture_)
-            {
-                RenderToTextureData& data = item.second_;
-                if (!data.rootElement_.Expired() && data.rootElement_ == root && data.rootElement_->IsEnabled())
-                {
-                    element->GetDebugDrawBatches(data.debugDrawBatches_, data.debugVertexData_, scissor);
-                    break;
-                }
-            }
-        }
+        element->GetDebugDrawBatches(debugDrawBatches_, debugVertexData_, scissor);
     }
 }
 
 SharedPtr<UIElement> UI::LoadLayout(Deserializer& source, XMLFile* styleFile)
 {
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     if (!xml->Load(source))
         return SharedPtr<UIElement>();
     else
@@ -598,7 +531,7 @@ SharedPtr<UIElement> UI::LoadLayout(Deserializer& source, XMLFile* styleFile)
 
 SharedPtr<UIElement> UI::LoadLayout(XMLFile* file, XMLFile* styleFile)
 {
-    URHO3D_PROFILE(LoadUILayout);
+    URHO3D_PROFILE("LoadUILayout");
 
     SharedPtr<UIElement> root;
 
@@ -641,7 +574,7 @@ SharedPtr<UIElement> UI::LoadLayout(XMLFile* file, XMLFile* styleFile)
 
 bool UI::SaveLayout(Serializer& dest, UIElement* element)
 {
-    URHO3D_PROFILE(SaveUILayout);
+    URHO3D_PROFILE("SaveUILayout");
 
     return element && element->SaveXML(dest);
 }
@@ -791,6 +724,7 @@ IntVector2 UI::GetCursorPosition() const
 UIElement* UI::GetElementAt(const IntVector2& position, bool enabledOnly, IntVector2* elementScreenPosition)
 {
     UIElement* result = nullptr;
+    IntVector2 screenPosition;
 
     if (HasModalElement())
         result = GetElementAt(rootModalElement_, position, enabledOnly);
@@ -798,29 +732,7 @@ UIElement* UI::GetElementAt(const IntVector2& position, bool enabledOnly, IntVec
     if (!result)
         result = GetElementAt(rootElement_, position, enabledOnly);
 
-    // Mouse was not hovering UI element. Check elements rendered on 3D objects.
-    if (!result && renderToTexture_.Size())
-    {
-        for (auto& item : renderToTexture_)
-        {
-            RenderToTextureData& data = item.second_;
-            if (data.rootElement_.Expired() || !data.rootElement_->IsEnabled())
-                continue;
-
-            IntVector2 screenPosition = data.rootElement_->ScreenToElement(position);
-            if (data.rootElement_->GetCombinedScreenRect().IsInside(screenPosition) == INSIDE)
-            {
-                result = GetElementAt(data.rootElement_, screenPosition, enabledOnly);
-                if (result)
-                {
-                    if (elementScreenPosition)
-                        *elementScreenPosition = screenPosition;
-                    break;
-                }
-            }
-        }
-    }
-    else if (elementScreenPosition)
+    if (result && elementScreenPosition)
         *elementScreenPosition = position;
 
     return result;
@@ -886,7 +798,7 @@ UIElement* UI::GetFrontElement() const
     return front;
 }
 
-const Vector<UIElement*> UI::GetDragElements()
+const PODVector<UIElement*>& UI::GetDragElements()
 {
     // Do not return the element until drag begin event has actually been posted
     if (!dragElementsConfirmed_.Empty())
@@ -946,7 +858,7 @@ void UI::Initialize()
     if (!graphics || !graphics->IsInitialized())
         return;
 
-    URHO3D_PROFILE(InitUI);
+    URHO3D_PROFILE("InitUI");
 
     graphics_ = graphics;
     UIBatch::posAdjust = Vector3(Graphics::GetPixelUVOffset(), 0.0f);
@@ -954,8 +866,8 @@ void UI::Initialize()
     // Set initial root element size
     ResizeRootElement();
 
-    vertexBuffer_ = new VertexBuffer(context_);
-    debugVertexBuffer_ = new VertexBuffer(context_);
+    vertexBuffer_ = context_->CreateObject<VertexBuffer>();
+    debugVertexBuffer_ = context_->CreateObject<VertexBuffer>();
 
     initialized_ = true;
 
@@ -973,8 +885,11 @@ void UI::Update(float timeStep, UIElement* element)
 
 #ifdef URHO3D_SYSTEMUI
     // Unfocus active element if system ui has focus
-    if (GetFocusElement() == element && GetSubsystem<SystemUI>()->IsAnyItemActive())
-        SetFocusElement(nullptr);
+    if (ShouldIgnoreInput())
+    {
+        if (GetFocusElement() == element && GetSubsystem<SystemUI>()->IsAnyItemActive())
+            SetFocusElement(nullptr);
+    }
 #endif
 
     element->Update(timeStep);
@@ -1295,11 +1210,12 @@ void UI::GetCursorPositionAndVisible(IntVector2& pos, bool& visible)
     else
     {
         auto* input = GetSubsystem<Input>();
-        pos = input->GetMousePosition();
         visible = input->IsMouseVisible();
 
         if (!visible && cursor_)
             pos = cursor_->GetPosition();
+        else
+            pos = rootElement_->ScreenToElement(input->GetMousePosition());
     }
 
     pos.x_ = (int)(pos.x_ / uiScale_);
@@ -1323,7 +1239,7 @@ void UI::ReleaseFontFaces()
         fonts[i]->ReleaseFaces();
 }
 
-void UI::ProcessHover(const IntVector2& windowCursorPos, int buttons, int qualifiers, Cursor* cursor)
+void UI::ProcessHover(const IntVector2& windowCursorPos, MouseButtonFlags buttons, QualifierFlags qualifiers, Cursor* cursor)
 {
     IntVector2 cursorPos;
     WeakPtr<UIElement> element(GetElementAt(windowCursorPos, true, &cursorPos));
@@ -1339,8 +1255,8 @@ void UI::ProcessHover(const IntVector2& windowCursorPos, int buttons, int qualif
             continue;
         }
 
-        bool dragSource = dragElement && (dragElement->GetDragDropMode() & DD_SOURCE) != 0;
-        bool dragTarget = element && (element->GetDragDropMode() & DD_TARGET) != 0;
+        bool dragSource = dragElement && (dragElement->GetDragDropMode() & DD_SOURCE);
+        bool dragTarget = element && (element->GetDragDropMode() & DD_TARGET);
         bool dragDropTest = dragSource && dragTarget && element != dragElement;
         // If drag start event has not been posted yet, do not do drag handling here
         if (dragData->dragBeginPending)
@@ -1412,7 +1328,7 @@ void UI::ProcessHover(const IntVector2& windowCursorPos, int buttons, int qualif
     }
 }
 
-void UI::ProcessClickBegin(const IntVector2& windowCursorPos, int button, int buttons, int qualifiers, Cursor* cursor, bool cursorVisible)
+void UI::ProcessClickBegin(const IntVector2& windowCursorPos, MouseButton button, MouseButtonFlags buttons, QualifierFlags qualifiers, Cursor* cursor, bool cursorVisible)
 {
     if (cursorVisible)
     {
@@ -1421,7 +1337,7 @@ void UI::ProcessClickBegin(const IntVector2& windowCursorPos, int button, int bu
 
         bool newButton;
         if (usingTouchInput_)
-            newButton = (button & buttons) == 0;
+            newButton = (buttons & button) == MOUSEB_NONE;
         else
             newButton = true;
         buttons |= button;
@@ -1494,7 +1410,7 @@ void UI::ProcessClickBegin(const IntVector2& windowCursorPos, int button, int bu
     }
 }
 
-void UI::ProcessClickEnd(const IntVector2& windowCursorPos, int button, int buttons, int qualifiers, Cursor* cursor, bool cursorVisible)
+void UI::ProcessClickEnd(const IntVector2& windowCursorPos, MouseButton button, MouseButtonFlags buttons, QualifierFlags qualifiers, Cursor* cursor, bool cursorVisible)
 {
     WeakPtr<UIElement> element;
     IntVector2 cursorPos = windowCursorPos;
@@ -1528,10 +1444,10 @@ void UI::ProcessClickEnd(const IntVector2& windowCursorPos, int button, int butt
                     cursor);
                 SendDragOrHoverEvent(E_DRAGEND, dragElement, cursorPos, IntVector2::ZERO, dragData);
 
-                bool dragSource = dragElement && (dragElement->GetDragDropMode() & DD_SOURCE) != 0;
+                bool dragSource = dragElement && (dragElement->GetDragDropMode() & DD_SOURCE);
                 if (dragSource)
                 {
-                    bool dragTarget = element && (element->GetDragDropMode() & DD_TARGET) != 0;
+                    bool dragTarget = element && (element->GetDragDropMode() & DD_TARGET);
                     bool dragDropFinish = dragSource && dragTarget && element != dragElement;
 
                     if (dragDropFinish)
@@ -1560,7 +1476,7 @@ void UI::ProcessClickEnd(const IntVector2& windowCursorPos, int button, int butt
     }
 }
 
-void UI::ProcessMove(const IntVector2& windowCursorPos, const IntVector2& cursorDeltaPos, int buttons, int qualifiers, Cursor* cursor,
+void UI::ProcessMove(const IntVector2& windowCursorPos, const IntVector2& cursorDeltaPos, MouseButtonFlags buttons, QualifierFlags qualifiers, Cursor* cursor,
     bool cursorVisible)
 {
     if (cursorVisible && dragElementsCount_ > 0 && buttons)
@@ -1666,23 +1582,23 @@ void UI::SendDragOrHoverEvent(StringHash eventType, UIElement* element, const In
 
     if (dragData)
     {
-        eventData[P_BUTTONS] = dragData->dragButtons;
+        eventData[P_BUTTONS] = (unsigned)dragData->dragButtons;
         eventData[P_NUMBUTTONS] = dragData->numDragButtons;
     }
 
     element->SendEvent(eventType, eventData);
 }
 
-void UI::SendClickEvent(StringHash eventType, UIElement* beginElement, UIElement* endElement, const IntVector2& pos, int button,
-    int buttons, int qualifiers)
+void UI::SendClickEvent(StringHash eventType, UIElement* beginElement, UIElement* endElement, const IntVector2& pos, MouseButton button,
+    MouseButtonFlags buttons, QualifierFlags qualifiers)
 {
     VariantMap& eventData = GetEventDataMap();
     eventData[UIMouseClick::P_ELEMENT] = endElement;
     eventData[UIMouseClick::P_X] = pos.x_;
     eventData[UIMouseClick::P_Y] = pos.y_;
     eventData[UIMouseClick::P_BUTTON] = button;
-    eventData[UIMouseClick::P_BUTTONS] = buttons;
-    eventData[UIMouseClick::P_QUALIFIERS] = qualifiers;
+    eventData[UIMouseClick::P_BUTTONS] = (unsigned)buttons;
+    eventData[UIMouseClick::P_QUALIFIERS] = (unsigned)qualifiers;
 
     // For click end events, send also the element the click began on
     if (eventType == E_UIMOUSECLICKEND)
@@ -1701,8 +1617,8 @@ void UI::SendClickEvent(StringHash eventType, UIElement* beginElement, UIElement
     SendEvent(eventType, eventData);
 }
 
-void UI::SendDoubleClickEvent(UIElement* beginElement, UIElement* endElement, const IntVector2& firstPos, const IntVector2& secondPos, int button,
-    int buttons, int qualifiers)
+void UI::SendDoubleClickEvent(UIElement* beginElement, UIElement* endElement, const IntVector2& firstPos, const IntVector2& secondPos, MouseButton button,
+    MouseButtonFlags buttons, QualifierFlags qualifiers)
 {
     VariantMap& eventData = GetEventDataMap();
     eventData[UIMouseDoubleClick::P_ELEMENT] = endElement;
@@ -1711,8 +1627,8 @@ void UI::SendDoubleClickEvent(UIElement* beginElement, UIElement* endElement, co
     eventData[UIMouseDoubleClick::P_XBEGIN] = firstPos.x_;
     eventData[UIMouseDoubleClick::P_YBEGIN] = firstPos.y_;
     eventData[UIMouseDoubleClick::P_BUTTON] = button;
-    eventData[UIMouseDoubleClick::P_BUTTONS] = buttons;
-    eventData[UIMouseDoubleClick::P_QUALIFIERS] = qualifiers;
+    eventData[UIMouseDoubleClick::P_BUTTONS] = (unsigned)buttons;
+    eventData[UIMouseDoubleClick::P_QUALIFIERS] = (unsigned)qualifiers;
 
 
     if (endElement)
@@ -1740,8 +1656,8 @@ void UI::HandleMouseButtonDown(StringHash eventType, VariantMap& eventData)
 {
     using namespace MouseButtonDown;
 
-    mouseButtons_ = eventData[P_BUTTONS].GetInt();
-    qualifiers_ = eventData[P_QUALIFIERS].GetInt();
+    mouseButtons_ = MouseButtonFlags(eventData[P_BUTTONS].GetUInt());
+    qualifiers_ = QualifierFlags(eventData[P_QUALIFIERS].GetUInt());
     usingTouchInput_ = false;
 
     IntVector2 cursorPos;
@@ -1753,36 +1669,36 @@ void UI::HandleMouseButtonDown(StringHash eventType, VariantMap& eventData)
 
 #ifdef URHO3D_SYSTEMUI
     // SystemUI is rendered on top of game UI
-    if (GetSubsystem<SystemUI>()->IsAnyItemHovered())
+    if (ShouldIgnoreInput())
         return;
 #endif
 
     auto* input = GetSubsystem<Input>();
 
     if (!input->IsMouseGrabbed())
-        ProcessClickBegin(cursorPos, eventData[P_BUTTON].GetInt(), mouseButtons_, qualifiers_, cursor_, cursorVisible);
+        ProcessClickBegin(cursorPos, MouseButton(eventData[P_BUTTON].GetUInt()), mouseButtons_, qualifiers_, cursor_, cursorVisible);
 }
 
 void UI::HandleMouseButtonUp(StringHash eventType, VariantMap& eventData)
 {
     using namespace MouseButtonUp;
 
-    mouseButtons_ = eventData[P_BUTTONS].GetInt();
-    qualifiers_ = eventData[P_QUALIFIERS].GetInt();
+    mouseButtons_ = MouseButtonFlags(eventData[P_BUTTONS].GetUInt());
+    qualifiers_ = QualifierFlags(eventData[P_QUALIFIERS].GetUInt());
 
     IntVector2 cursorPos;
     bool cursorVisible;
     GetCursorPositionAndVisible(cursorPos, cursorVisible);
 
-    ProcessClickEnd(cursorPos, eventData[P_BUTTON].GetInt(), mouseButtons_, qualifiers_, cursor_, cursorVisible);
+    ProcessClickEnd(cursorPos, (MouseButton)eventData[P_BUTTON].GetUInt(), mouseButtons_, qualifiers_, cursor_, cursorVisible);
 }
 
 void UI::HandleMouseMove(StringHash eventType, VariantMap& eventData)
 {
     using namespace MouseMove;
 
-    mouseButtons_ = eventData[P_BUTTONS].GetInt();
-    qualifiers_ = eventData[P_QUALIFIERS].GetInt();
+    mouseButtons_ = MouseButtonFlags(eventData[P_BUTTONS].GetUInt());
+    qualifiers_ = QualifierFlags(eventData[P_QUALIFIERS].GetUInt());
     usingTouchInput_ = false;
 
     auto* input = GetSubsystem<Input>();
@@ -1796,7 +1712,11 @@ void UI::HandleMouseMove(StringHash eventType, VariantMap& eventData)
         if (!input->IsMouseVisible())
         {
             if (!input->IsMouseLocked())
-                cursor_->SetPosition(IntVector2(eventData[P_X].GetInt(), eventData[P_Y].GetInt()));
+            {
+                IntVector2 position{eventData[P_X].GetInt(), eventData[P_Y].GetInt()};
+                position = rootElement_->ScreenToElement(position);
+                cursor_->SetPosition(position);
+            }
             else if (cursor_->IsVisible())
             {
                 // Relative mouse motion: move cursor only when visible
@@ -1811,13 +1731,15 @@ void UI::HandleMouseMove(StringHash eventType, VariantMap& eventData)
         else
         {
             // Absolute mouse motion: move always
-            cursor_->SetPosition(IntVector2(eventData[P_X].GetInt(), eventData[P_Y].GetInt()));
+            IntVector2 position{eventData[P_X].GetInt(), eventData[P_Y].GetInt()};
+            position = rootElement_->ScreenToElement(position);
+            cursor_->SetPosition(position);
         }
     }
 
 #ifdef URHO3D_SYSTEMUI
     // SystemUI is rendered on top of game UI
-    if (GetSubsystem<SystemUI>()->IsAnyItemHovered())
+    if (ShouldIgnoreInput())
         return;
 #endif
 
@@ -1836,14 +1758,14 @@ void UI::HandleMouseWheel(StringHash eventType, VariantMap& eventData)
 
 #ifdef URHO3D_SYSTEMUI
     // SystemUI is rendered on top of game UI
-    if (GetSubsystem<SystemUI>()->IsAnyItemHovered())
+    if (ShouldIgnoreInput())
         return;
 #endif
 
     using namespace MouseWheel;
 
-    mouseButtons_ = eventData[P_BUTTONS].GetInt();
-    qualifiers_ = eventData[P_QUALIFIERS].GetInt();
+    mouseButtons_ = MouseButtonFlags(eventData[P_BUTTONS].GetInt());
+    qualifiers_ = QualifierFlags(eventData[P_QUALIFIERS].GetInt());
     int delta = eventData[P_WHEEL].GetInt();
     usingTouchInput_ = false;
 
@@ -1886,7 +1808,7 @@ void UI::HandleTouchBegin(StringHash eventType, VariantMap& eventData)
 
 #ifdef URHO3D_SYSTEMUI
     // SystemUI is rendered on top of game UI
-    if (GetSubsystem<SystemUI>()->IsAnyItemHovered())
+    if (ShouldIgnoreInput())
         return;
 #endif
 
@@ -1897,16 +1819,16 @@ void UI::HandleTouchBegin(StringHash eventType, VariantMap& eventData)
     pos.y_ = int(pos.y_ / uiScale_);
     usingTouchInput_ = true;
 
-    int touchId = TOUCHID_MASK(eventData[P_TOUCHID].GetInt());
+    const MouseButton touchId = MakeTouchIDMask(eventData[P_TOUCHID].GetInt());
     WeakPtr<UIElement> element(GetElementAt(pos));
 
     if (element)
     {
-        ProcessClickBegin(pos, touchId, touchDragElements_[element], 0, nullptr, true);
+        ProcessClickBegin(pos, touchId, touchDragElements_[element], QUAL_NONE, nullptr, true);
         touchDragElements_[element] |= touchId;
     }
     else
-        ProcessClickBegin(pos, touchId, touchId, 0, nullptr, true);
+        ProcessClickBegin(pos, touchId, touchId, QUAL_NONE, nullptr, true);
 }
 
 void UI::HandleTouchEnd(StringHash eventType, VariantMap& eventData)
@@ -1918,15 +1840,15 @@ void UI::HandleTouchEnd(StringHash eventType, VariantMap& eventData)
     pos.y_ = int(pos.y_ / uiScale_);
 
     // Get the touch index
-    int touchId = TOUCHID_MASK(eventData[P_TOUCHID].GetInt());
+    const MouseButton touchId = MakeTouchIDMask(eventData[P_TOUCHID].GetInt());
 
     // Transmit hover end to the position where the finger was lifted
     WeakPtr<UIElement> element(GetElementAt(pos));
 
     // Clear any drag events that were using the touch id
-    for (HashMap<WeakPtr<UIElement>, int>::Iterator i = touchDragElements_.Begin(); i != touchDragElements_.End();)
+    for (auto i = touchDragElements_.Begin(); i != touchDragElements_.End();)
     {
-        int touches = i->second_;
+        const MouseButtonFlags touches = i->second_;
         if (touches & touchId)
             i = touchDragElements_.Erase(i);
         else
@@ -1936,14 +1858,14 @@ void UI::HandleTouchEnd(StringHash eventType, VariantMap& eventData)
     if (element && element->IsEnabled())
         element->OnHover(element->ScreenToElement(pos), pos, 0, 0, nullptr);
 
-    ProcessClickEnd(pos, touchId, 0, 0, nullptr, true);
+    ProcessClickEnd(pos, touchId, MOUSEB_NONE, QUAL_NONE, nullptr, true);
 }
 
 void UI::HandleTouchMove(StringHash eventType, VariantMap& eventData)
 {
 #ifdef URHO3D_SYSTEMUI
     // SystemUI is rendered on top of game UI
-    if (GetSubsystem<SystemUI>()->IsAnyItemHovered())
+    if (ShouldIgnoreInput())
         return;
 #endif
 
@@ -1957,24 +1879,23 @@ void UI::HandleTouchMove(StringHash eventType, VariantMap& eventData)
     deltaPos.y_ = int(deltaPos.y_ / uiScale_);
     usingTouchInput_ = true;
 
-    int touchId = TOUCHID_MASK(eventData[P_TOUCHID].GetInt());
+    const MouseButton touchId = MakeTouchIDMask(eventData[P_TOUCHID].GetInt());
 
-    ProcessMove(pos, deltaPos, touchId, 0, nullptr, true);
+    ProcessMove(pos, deltaPos, touchId, QUAL_NONE, nullptr, true);
 }
 
 void UI::HandleKeyDown(StringHash eventType, VariantMap& eventData)
 {
 #ifdef URHO3D_SYSTEMUI
-    // SystemUI takes precendence before game UI
-    if (GetSubsystem<SystemUI>()->IsAnyItemActive())
+    if (ShouldIgnoreInput())
         return;
 #endif
 
     using namespace KeyDown;
 
-    mouseButtons_ = eventData[P_BUTTONS].GetInt();
-    qualifiers_ = eventData[P_QUALIFIERS].GetInt();
-    int key = eventData[P_KEY].GetInt();
+    mouseButtons_ = MouseButtonFlags(eventData[P_BUTTONS].GetUInt());
+    qualifiers_ = QualifierFlags(eventData[P_QUALIFIERS].GetUInt());
+    auto key = (Key)eventData[P_KEY].GetUInt();
 
     // Cancel UI dragging
     if (key == KEY_ESCAPE && dragElementsCount_ > 0)
@@ -2046,8 +1967,7 @@ void UI::HandleKeyDown(StringHash eventType, VariantMap& eventData)
 void UI::HandleTextInput(StringHash eventType, VariantMap& eventData)
 {
 #ifdef URHO3D_SYSTEMUI
-    // SystemUI takes precendence before game UI
-    if (GetSubsystem<SystemUI>()->IsAnyItemActive())
+    if (ShouldIgnoreInput())
         return;
 #endif
 
@@ -2110,6 +2030,33 @@ void UI::HandleDropFile(StringHash eventType, VariantMap& eventData)
     }
 }
 
+void UI::HandleFocused(StringHash eventType, VariantMap& eventData)
+{
+    using namespace Focused;
+    if (UIElement* focusedElement = static_cast<UIElement*>(eventData[P_ELEMENT].GetPtr()))
+    {
+        if (focusElement_ != focusedElement)
+            SetFocusElement(nullptr);
+    }
+}
+
+void UI::HandleEndAllViewsRender(StringHash eventType, VariantMap& eventData)
+{
+    if (texture_.NotNull())
+    {
+        if (RenderSurface* surface = texture_->GetRenderSurface())
+        {
+            graphics_->ResetRenderTargets();
+            graphics_->SetDepthStencil(surface->GetLinkedDepthStencil());
+            graphics_->SetRenderTarget(0, surface);
+            graphics_->SetViewport(IntRect(0, 0, surface->GetWidth(), surface->GetHeight()));
+            if (clearColor_.a_ > 0)
+                graphics_->Clear(CLEAR_COLOR, clearColor_);
+            Render();
+        }
+    }
+}
+
 HashMap<WeakPtr<UIElement>, UI::DragData*>::Iterator UI::DragElementErase(HashMap<WeakPtr<UIElement>, UI::DragData*>::Iterator i)
 {
     // If running the engine frame in response to an event (re-entering UI frame logic) the dragElements_ may already be empty
@@ -2161,12 +2108,13 @@ IntVector2 UI::SumTouchPositions(UI::DragData* dragData, const IntVector2& oldSe
     IntVector2 sendPos = oldSendPos;
     if (usingTouchInput_)
     {
-        int buttons = dragData->dragButtons;
+        MouseButtonFlags buttons = dragData->dragButtons;
         dragData->sumPos = IntVector2::ZERO;
         auto* input = GetSubsystem<Input>();
-        for (int i = 0; (1 << i) <= buttons; i++)
+        for (unsigned i = 0; (1u << i) <= (unsigned)buttons; i++)
         {
-            if ((1 << i) & buttons)
+            auto mouseButton = static_cast<MouseButton>(1u << i); // NOLINT(misc-misplaced-widening-cast)
+            if (buttons & mouseButton)
             {
                 TouchState* ts = input->GetTouch((unsigned)i);
                 if (!ts)
@@ -2187,6 +2135,21 @@ void UI::ResizeRootElement()
     IntVector2 effectiveSize = GetEffectiveRootElementSize();
     rootElement_->SetSize(effectiveSize);
     rootModalElement_->SetSize(effectiveSize);
+
+    if (texture_.NotNull())
+    {
+        if (texture_->GetWidth() != effectiveSize.x_ || texture_->GetHeight() != effectiveSize.y_)
+        {
+            unsigned format = texture_->GetFormat();
+            if (format == 0)
+                format = Graphics::GetRGBAFormat();
+            if (texture_->SetSize(effectiveSize.x_, effectiveSize.y_, format, TEXTURE_RENDERTARGET,
+                                  texture_->GetMultiSample(), texture_->GetAutoResolve()))
+                texture_->GetRenderSurface()->SetUpdateMode(SURFACE_MANUALUPDATE);
+            else
+                URHO3D_LOGERROR("Resizing of UI render target texture failed.");
+        }
+    }
 }
 
 IntVector2 UI::GetEffectiveRootElementSize(bool applyScale) const
@@ -2205,31 +2168,49 @@ IntVector2 UI::GetEffectiveRootElementSize(bool applyScale) const
     return size;
 }
 
-void UI::SetElementRenderTexture(UIElement* element, Texture2D* texture)
+void UI::SetRenderTarget(Texture2D* texture, Color clearColor)
 {
-    if (element == nullptr)
+    clearColor_ = clearColor;
+    texture_ = texture;
+    if (texture == nullptr)
+        UnsubscribeFromEvent(E_ENDALLVIEWSRENDER);
+    else
     {
-        URHO3D_LOGERROR("UI::SetElementRenderTexture called with null element.");
-        return;
+        SubscribeToEvent(E_ENDALLVIEWSRENDER, URHO3D_HANDLER(UI, HandleEndAllViewsRender));
+        ResizeRootElement();
     }
+}
 
-    auto it = renderToTexture_.Find(element);
-    if (texture && it == renderToTexture_.End())
-    {
-        RenderToTextureData data;
-        data.texture_ = texture;
-        data.rootElement_ = element;
-        data.vertexBuffer_ = new VertexBuffer(context_);
-        data.debugVertexBuffer_ = new VertexBuffer(context_);
-        renderToTexture_[element] = data;
-    }
-    else if (it != renderToTexture_.End())
-    {
-        if (texture == nullptr)
-            renderToTexture_.Erase(it);
-        else
-            it->second_.texture_ = texture;
-    }
+void UI::SetRoot(UIElement* root)
+{
+    rootElement_ = root;
+    customSize_ = root->GetSize();
+    ResizeRootElement();
+}
+
+void UI::SetRootModalElement(UIElement* rootModal)
+{
+    rootModalElement_ = rootModal;
+    ResizeRootElement();
+}
+
+bool UI::ShouldIgnoreInput() const
+{
+    // In in the editor and game view is not focused.
+    if (GetSubsystem<Input>()->ShouldIgnoreInput())
+        return true;
+#if URHO3D_SYSTEMUI
+    // Any systemUI element is hovered except when rendering into texture. Chances are this texture will be displayed
+    // as ui::Image() and hovering mouse.
+    if (GetSubsystem<SystemUI>()->IsAnyItemHovered())
+        return !partOfSystemUI_;
+
+    // Any interaction with systemUI widgets
+    if (GetSubsystem<SystemUI>()->IsAnyItemActive())
+        return true;
+#endif
+
+    return false;
 }
 
 void RegisterUILibrary(Context* context)
@@ -2237,6 +2218,7 @@ void RegisterUILibrary(Context* context)
     Font::RegisterObject(context);
 
     UIElement::RegisterObject(context);
+    UISelectable::RegisterObject(context);
     BorderImage::RegisterObject(context);
     Sprite::RegisterObject(context);
     Button::RegisterObject(context);

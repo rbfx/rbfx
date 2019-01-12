@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -77,11 +77,18 @@ class HierarchyContainer : public UIElement
 
 public:
     /// Construct.
-    HierarchyContainer(Context* context, ListView* listView, UIElement* overlayContainer) :
+    HierarchyContainer(Context* context) :
         UIElement(context),
-        listView_(listView),
-        overlayContainer_(overlayContainer)
+        listView_(nullptr),
+        overlayContainer_(nullptr)
     {
+    }
+
+    /// Initialize object. Must be called immediately after constructing an object.
+    void Initialize(ListView* listView, UIElement* overlayContainer)
+    {
+        listView_ = listView;
+        overlayContainer_ = overlayContainer;
         SubscribeToEvent(this, E_LAYOUTUPDATED, URHO3D_HANDLER(HierarchyContainer, HandleLayoutUpdated));
         SubscribeToEvent(overlayContainer->GetParent(), E_VIEWCHANGED, URHO3D_HANDLER(HierarchyContainer, HandleViewChanged));
         SubscribeToEvent(E_UIMOUSECLICK, URHO3D_HANDLER(HierarchyContainer, HandleUIMouseClick));
@@ -203,7 +210,7 @@ void ListView::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Select On Click End", GetSelectOnClickEnd, SetSelectOnClickEnd, bool, false, AM_FILE);
 }
 
-void ListView::OnKey(int key, int buttons, int qualifiers)
+void ListView::OnKey(Key key, MouseButtonFlags buttons, QualifierFlags qualifiers)
 {
     // If no selection, can not move with keys
     unsigned numItems = GetNumItems();
@@ -307,8 +314,8 @@ void ListView::OnKey(int key, int buttons, int qualifiers)
     VariantMap& eventData = GetEventDataMap();
     eventData[P_ELEMENT] = this;
     eventData[P_KEY] = key;
-    eventData[P_BUTTONS] = buttons;
-    eventData[P_QUALIFIERS] = qualifiers;
+    eventData[P_BUTTONS] = (unsigned)buttons;
+    eventData[P_QUALIFIERS] = (unsigned)qualifiers;
     SendEvent(E_UNHANDLEDKEY, eventData);
 }
 
@@ -715,17 +722,18 @@ void ListView::SetHierarchyMode(bool enable)
         return;
 
     hierarchyMode_ = enable;
-    UIElement* container;
+    SharedPtr<UIElement> container;
     if (enable)
     {
-        overlayContainer_ = new UIElement(context_);
+        overlayContainer_ = context_->CreateObject<UIElement>();
         overlayContainer_->SetName("LV_OverlayContainer");
         overlayContainer_->SetInternal(true);
         AddChild(overlayContainer_);
         overlayContainer_->SetSortChildren(false);
         overlayContainer_->SetClipChildren(true);
 
-        container = new HierarchyContainer(context_, this, overlayContainer_);
+        container = context_->CreateObject<HierarchyContainer>();
+        container->Cast<HierarchyContainer>()->Initialize(this, overlayContainer_);
     }
     else
     {
@@ -735,7 +743,7 @@ void ListView::SetHierarchyMode(bool enable)
             overlayContainer_.Reset();
         }
 
-        container = new UIElement(context_);
+        container = context_->CreateObject<UIElement>();
     }
 
     container->SetName("LV_ItemContainer");

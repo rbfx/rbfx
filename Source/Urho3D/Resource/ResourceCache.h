@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -218,6 +218,15 @@ public:
     void Scan(Vector<String>& result, const String& pathName, const String& filter, unsigned flags, bool recursive) const;
     /// Returns a formatted string containing the currently loaded resources with optional type name filter.
     String PrintResources(const String& typeName = String::EMPTY) const;
+    /// Renames resource without deleting it from cache. `source` and `destination` may be resource names or absolute
+    /// paths to files in resource directories. If destination is a resource name then source file is renamed within same data directory.
+    bool RenameResource(String source, String destination);
+    /// When resource auto-reloading is enabled ignore reloading resource once.
+    void IgnoreResourceReload(const String& name);
+    /// When resource auto-reloading is enabled ignore reloading resource once.
+    void IgnoreResourceReload(const Resource* resource);
+    /// Pass name through resource routers and return final resource name.
+    void RouteResourceName(String& name, ResourceRequest requestType) const;
 
 private:
     /// Find a resource.
@@ -261,6 +270,8 @@ private:
     mutable bool isRouting_;
     /// How many milliseconds maximum per frame to spend on finishing background loaded resources.
     int finishBackgroundResourcesMs_;
+    /// List of resources that will not be auto-reloaded if reloading event triggers.
+    Vector<String> ignoreResourceAutoReload_;
 };
 
 template <class T> T* ResourceCache::GetExistingResource(const String& name)

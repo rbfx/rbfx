@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -71,6 +71,14 @@ public:
     virtual bool LoadJSON(const JSONValue& source);
     /// Save as JSON data. Return true if successful.
     virtual bool SaveJSON(JSONValue& dest) const;
+    /// Load from binary resource.
+    virtual bool Load(const String& resourceName);
+    /// Load from XML resource.
+    virtual bool LoadXML(const String& resourceName);
+    /// Load from JSON resource.
+    virtual bool LoadJSON(const String& resourceName);
+    /// Load from resource of automatically detected type.
+    virtual bool LoadFile(const String& resourceName);
 
     /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
     virtual void ApplyAttributes() { }

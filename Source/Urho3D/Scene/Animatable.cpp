@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -85,7 +85,7 @@ bool Animatable::LoadXML(const XMLElement& source)
     XMLElement elem = source.GetChild("objectanimation");
     if (elem)
     {
-        SharedPtr<ObjectAnimation> objectAnimation(new ObjectAnimation(context_));
+        SharedPtr<ObjectAnimation> objectAnimation(context_->CreateObject<ObjectAnimation>());
         if (!objectAnimation->LoadXML(elem))
             return false;
 
@@ -96,7 +96,7 @@ bool Animatable::LoadXML(const XMLElement& source)
     while (elem)
     {
         String name = elem.GetAttribute("name");
-        SharedPtr<ValueAnimation> attributeAnimation(new ValueAnimation(context_));
+        SharedPtr<ValueAnimation> attributeAnimation(context_->CreateObject<ValueAnimation>());
         if (!attributeAnimation->LoadXML(elem))
             return false;
 
@@ -131,7 +131,7 @@ bool Animatable::LoadJSON(const JSONValue& source)
     JSONValue value = source.Get("objectanimation");
     if (!value.IsNull())
     {
-        SharedPtr<ObjectAnimation> objectAnimation(new ObjectAnimation(context_));
+        SharedPtr<ObjectAnimation> objectAnimation(context_->CreateObject<ObjectAnimation>());
         if (!objectAnimation->LoadJSON(value))
             return false;
 
@@ -154,7 +154,7 @@ bool Animatable::LoadJSON(const JSONValue& source)
     {
         String name = it->first_;
         JSONValue value = it->second_;
-        SharedPtr<ValueAnimation> attributeAnimation(new ValueAnimation(context_));
+        SharedPtr<ValueAnimation> attributeAnimation(context_->CreateObject<ValueAnimation>());
         if (!attributeAnimation->LoadJSON(it->second_))
             return false;
 

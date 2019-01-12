@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -143,7 +143,7 @@ bool Animation::BeginLoad(Deserializer& source)
     for (unsigned i = 0; i < tracks; ++i)
     {
         AnimationTrack* newTrack = CreateTrack(source.ReadString());
-        newTrack->channelMask_ = source.ReadUByte();
+        newTrack->channelMask_ = AnimationChannelFlags(source.ReadUByte());
 
         unsigned keyFrames = source.ReadUInt();
         newTrack->keyFrames_.Resize(keyFrames);
@@ -259,7 +259,7 @@ bool Animation::Save(Serializer& dest) const
         {
             String xmlName = ReplaceExtension(destFile->GetName(), ".xml");
 
-            SharedPtr<XMLFile> xml(new XMLFile(context_));
+            SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
             XMLElement rootElem = xml->CreateRoot("animation");
 
             for (unsigned i = 0; i < triggers_.Size(); ++i)
@@ -368,7 +368,7 @@ void Animation::SetNumTriggers(unsigned num)
 
 SharedPtr<Animation> Animation::Clone(const String& cloneName) const
 {
-    SharedPtr<Animation> ret(new Animation(context_));
+    SharedPtr<Animation> ret(context_->CreateObject<Animation>());
 
     ret->SetName(cloneName);
     ret->SetAnimationName(animationName_);

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -115,10 +115,10 @@ bool Audio::SetMode(int bufferLengthMSec, int mixRate, bool stereo, bool interpo
     stereo_ = obtained.channels == 2;
     sampleSize_ = (unsigned)(stereo_ ? sizeof(int) : sizeof(short));
     // Guarantee a fragment size that is low enough so that Vorbis decoding buffers do not wrap
-    fragmentSize_ = Min(NextPowerOfTwo((unsigned)(mixRate >> 6)), (unsigned)obtained.samples);
+    fragmentSize_ = Min(NextPowerOfTwo((unsigned)mixRate >> 6u), (unsigned)obtained.samples);
     mixRate_ = obtained.freq;
     interpolation_ = interpolation;
-    clipBuffer_ = new int[stereo ? fragmentSize_ << 1 : fragmentSize_];
+    clipBuffer_ = new int[stereo ? fragmentSize_ << 1u : fragmentSize_];
 
     URHO3D_LOGINFO("Set audio mode " + String(mixRate_) + " Hz " + (stereo_ ? "stereo" : "mono") + " " +
             (interpolation_ ? "interpolated" : ""));
@@ -326,7 +326,7 @@ void Audio::Release()
 
 void Audio::UpdateInternal(float timeStep)
 {
-    URHO3D_PROFILE(UpdateAudio);
+    URHO3D_PROFILE("UpdateAudio");
 
     // Update in reverse order, because sound sources might remove themselves
     for (unsigned i = soundSources_.Size() - 1; i < soundSources_.Size(); --i)

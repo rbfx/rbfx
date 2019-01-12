@@ -139,7 +139,7 @@ void* b2Alloc(int32 size);
 void b2Free(void* mem);
 
 /// Logging function.
-void b2Log(const char* string, ...);
+BOX2D_API void b2Log(const char* string, ...);
 
 /// Version numbering scheme.
 /// See http://en.wikipedia.org/wiki/Software_versioning

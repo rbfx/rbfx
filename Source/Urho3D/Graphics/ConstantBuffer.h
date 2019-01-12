@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -35,11 +35,16 @@ class URHO3D_API ConstantBuffer : public Object, public GPUObject
 {
     URHO3D_OBJECT(ConstantBuffer, Object);
 
+    using GPUObject::GetGraphics;
+
 public:
     /// Construct.
     explicit ConstantBuffer(Context* context);
     /// Destruct.
     ~ConstantBuffer() override;
+
+    /// Register object with the engine.
+    static void RegisterObject(Context* context);
 
     /// Recreate the GPU resource and restore data if applicable.
     void OnDeviceReset() override;

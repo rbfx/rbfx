@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -127,7 +127,7 @@ void Localization::SetLanguage(const String& language)
     SetLanguage(index);
 }
 
-String Localization::Get(const String& id)
+String Localization::Get(const String& id, int index)
 {
     if (id.Empty())
         return String::EMPTY;
@@ -136,7 +136,20 @@ String Localization::Get(const String& id)
         URHO3D_LOGWARNING("Localization::Get(id): no loaded languages");
         return id;
     }
-    String result = strings_[StringHash(GetLanguage())][StringHash(id)];
+
+    if (index >= GetNumLanguages())
+    {
+        URHO3D_LOGWARNING("Localization::Get(id): invalid language index");
+        return id;
+    }
+
+    StringHash language;
+    if (index < 0)
+        language = GetLanguage();
+    else
+        language = languages_[index];
+
+    String result = strings_[language][StringHash(id)];
     if (result.Empty())
     {
         URHO3D_LOGWARNING("Localization::Get(\"" + id + "\") not found translation, language=\"" + GetLanguage() + "\"");
@@ -154,6 +167,7 @@ void Localization::Reset()
 
 void Localization::LoadJSON(const JSONValue& source)
 {
+    String defaultLanguage;
     for (JSONObject::ConstIterator i = source.Begin(); i != source.End(); ++i)
     {
         String id = i->first_;
@@ -185,10 +199,18 @@ void Localization::LoadJSON(const JSONValue& source)
             }
             strings_[StringHash(lang)][StringHash(id)] = string;
             if (!languages_.Contains(lang))
+            {
                 languages_.Push(lang);
+                if (defaultLanguage.Empty())
+                    defaultLanguage = lang;
+            }
             if (languageIndex_ == -1)
                 languageIndex_ = 0;
         }
+
+        // Default language is not translated. Use IDs as strings.
+        if (!strings_[StringHash(defaultLanguage)].Contains(StringHash(id)))
+            strings_[StringHash(defaultLanguage)][StringHash(id)] = id;
     }
 }
 

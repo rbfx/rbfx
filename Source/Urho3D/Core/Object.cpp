@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -307,25 +307,14 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData)
         return;
 
 #if URHO3D_PROFILING
-    ProfilerBlockStatus blockStatus = ProfilerBlockStatus::OFF;
-    String eventName;
-    if (auto profiler = GetSubsystem<Profiler>())
-    {
-        if (profiler->GetEventProfilingEnabled())
-        {
-            blockStatus = ProfilerBlockStatus::ON;
-            eventName = EventNameRegistrar::GetEventName(eventType);
-            if (eventName.Empty())
-                eventName = eventType.ToString();
-        }
-    }
-    URHO3D_PROFILE_SCOPED(eventName.CString(), PROFILER_COLOR_EVENTS, blockStatus);
+    URHO3D_PROFILE_C("SendEvent", PROFILER_COLOR_EVENTS);
+    const auto& eventName = GetEventNameRegister().GetString(eventType);
+    URHO3D_PROFILE_ZONENAME(eventName.CString(), eventName.Length());
 #endif
 
     // Make a weak pointer to self to check for destruction during event handling
     WeakPtr<Object> self(this);
     Context* context = context_;
-    HashSet<Object*> processed;
 
     context->BeginSendEvent(this, eventType);
 
@@ -353,60 +342,36 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData)
                 context->EndSendEvent();
                 return;
             }
-
-            processed.Insert(receiver);
         }
 
         group->EndSendEvent();
     }
 
     // Then the non-specific receivers
-    group = context->GetEventReceivers(eventType);
-    if (group)
+    SharedPtr<EventReceiverGroup> groupNonSpec(context->GetEventReceivers(eventType));
+    if (groupNonSpec)
     {
-        group->BeginSendEvent();
+        groupNonSpec->BeginSendEvent();
 
-        if (processed.Empty())
+        const unsigned numReceivers = groupNonSpec->receivers_.Size();
+        for (unsigned i = 0; i < numReceivers; ++i)
         {
-            const unsigned numReceivers = group->receivers_.Size();
-            for (unsigned i = 0; i < numReceivers; ++i)
-            {
-                Object* receiver = group->receivers_[i];
-                if (!receiver)
-                    continue;
-
-                receiver->OnEvent(this, eventType, eventData);
-
-                if (self.Expired())
-                {
-                    group->EndSendEvent();
-                    context->EndSendEvent();
-                    return;
-                }
-            }
-        }
-        else
-        {
+            Object* receiver = groupNonSpec->receivers_[i];
             // If there were specific receivers, check that the event is not sent doubly to them
-            const unsigned numReceivers = group->receivers_.Size();
-            for (unsigned i = 0; i < numReceivers; ++i)
+            if (!receiver || (group && group->receivers_.Contains(receiver)))
+                continue;
+
+            receiver->OnEvent(this, eventType, eventData);
+
+            if (self.Expired())
             {
-                Object* receiver = group->receivers_[i];
-                if (!receiver || processed.Contains(receiver))
-                    continue;
-
-                receiver->OnEvent(this, eventType, eventData);
-
-                if (self.Expired())
-                {
-                    group->EndSendEvent();
-                    context->EndSendEvent();
-                    return;
-                }
+                groupNonSpec->EndSendEvent();
+                context->EndSendEvent();
+                return;
             }
         }
 
-        group->EndSendEvent();
+        groupNonSpec->EndSendEvent();
     }
 
     context->EndSendEvent();
@@ -462,8 +427,8 @@ bool Object::HasSubscribedToEvent(Object* sender, StringHash eventType) const
 
 const String& Object::GetCategory() const
 {
-    const HashMap<String, Vector<StringHash> >& objectCategories = context_->GetObjectCategories();
-    for (HashMap<String, Vector<StringHash> >::ConstIterator i = objectCategories.Begin(); i != objectCategories.End(); ++i)
+    const HashMap<String, PODVector<StringHash> >& objectCategories = context_->GetObjectCategories();
+    for (HashMap<String, PODVector<StringHash> >::ConstIterator i = objectCategories.Begin(); i != objectCategories.End(); ++i)
     {
         if (i->second_.Contains(GetType()))
             return i->first_;
@@ -547,23 +512,10 @@ void Object::RemoveEventSender(Object* sender)
     }
 }
 
-Urho3D::StringHash EventNameRegistrar::RegisterEventName(const char* eventName)
+StringHashRegister& GetEventNameRegister()
 {
-    StringHash id(eventName);
-    GetEventNameMap()[id] = eventName;
-    return id;
-}
-
-const String& EventNameRegistrar::GetEventName(StringHash eventID)
-{
-    HashMap<StringHash, String>::ConstIterator it = GetEventNameMap().Find(eventID);
-    return  it != GetEventNameMap().End() ? it->second_ : String::EMPTY ;
-}
-
-HashMap<StringHash, String>& EventNameRegistrar::GetEventNameMap()
-{
-    static HashMap<StringHash, String> eventNames_;
-    return eventNames_;
+    static StringHashRegister eventNameRegister(false /*non thread safe*/);
+    return eventNameRegister;
 }
 
 void Object::SendEvent(StringHash eventType, const VariantMap& eventData)
@@ -586,12 +538,6 @@ template <> WorkQueue* Object::GetSubsystem<WorkQueue>() const
 {
     return context_->workQueue_;
 }
-#if URHO3D_PROFILING
-template <> Profiler* Object::GetSubsystem<Profiler>() const
-{
-    return context_->profiler_;
-}
-#endif
 template <> FileSystem* Object::GetSubsystem<FileSystem>() const
 {
     return context_->fileSystem_;
@@ -665,12 +611,6 @@ WorkQueue* Object::GetWorkQueue() const
 {
     return context_->workQueue_;
 }
-#if URHO3D_PROFILING
-Profiler* Object::GetProfiler() const
-{
-    return context_->profiler_;
-}
-#endif
 FileSystem* Object::GetFileSystem() const
 {
     return context_->fileSystem_;

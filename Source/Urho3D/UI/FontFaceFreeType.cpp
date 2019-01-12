@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -198,7 +198,7 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
     int textureHeight = maxTextureSize;
     hasMutableGlyph_ = false;
 
-    SharedPtr<Image> image(new Image(font_->GetContext()));
+    SharedPtr<Image> image(font_->GetContext()->CreateObject<Image>());
     image->SetSize(textureWidth, textureHeight, 1);
     unsigned char* imageData = image->GetData();
     memset(imageData, 0, (size_t)image->GetWidth() * image->GetHeight());
@@ -268,7 +268,7 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
                     deserializer.Seek((unsigned)(deserializer.GetPosition() + 3 * sizeof(unsigned short)));
 
                     // x_scale is a 16.16 fixed-point value that converts font units -> 26.6 pixels (oversampled!)
-                    float xScale = face->size->metrics.x_scale / float(1 << 22) / oversampling_;
+                    auto xScale = (float)face->size->metrics.x_scale / (1u << 22u) / oversampling_;
 
                     for (unsigned j = 0; j < numKerningPairs; ++j)
                     {
@@ -280,7 +280,7 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
                         unsigned rightCharCode = rightIndex < numGlyphs ? charCodes[rightIndex + 1] : 0;
                         if (leftCharCode != 0 && rightCharCode != 0)
                         {
-                            unsigned value = (leftCharCode << 16) + rightCharCode;
+                            unsigned value = (leftCharCode << 16u) + rightCharCode;
                             kerningMapping_[value] = amount;
                         }
                     }
@@ -331,7 +331,7 @@ const FontGlyph* FontFaceFreeType::GetGlyph(unsigned c)
 
 bool FontFaceFreeType::SetupNextTexture(int textureWidth, int textureHeight)
 {
-    SharedPtr<Image> image(new Image(font_->GetContext()));
+    SharedPtr<Image> image(font_->GetContext()->CreateObject<Image>());
     image->SetSize(textureWidth, textureHeight, 1);
     unsigned char* imageData = image->GetData();
     memset(imageData, 0, (size_t)image->GetWidth() * image->GetHeight());
@@ -509,7 +509,7 @@ bool FontFaceFreeType::LoadCharGlyph(unsigned charCode, Image* image)
 
                 // Don't do any oversampling, just unpack the bits directly.
                 for (unsigned x = 0; x < (unsigned)slot->bitmap.width; ++x)
-                    rowDest[x] = (unsigned char)((src[x >> 3] & (0x80 >> (x & 7))) ? 255 : 0);
+                    rowDest[x] = (unsigned char)((src[x >> 3u] & (0x80u >> (x & 7u))) ? 255 : 0);
             }
         }
         else

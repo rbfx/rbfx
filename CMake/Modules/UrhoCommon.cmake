@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2008-2019 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -41,31 +41,37 @@ if (ANDROID)
     # For Android platform, install to a path based on the chosen Android ABI, e.g. libs/armeabi-v7a
     set (LIB_SUFFIX s/${ANDROID_NDK_ABI_NAME})
 endif ()
-set (DEST_INCLUDE_DIR include/Urho3D)
+set (DEST_BASE_INCLUDE_DIR include)
+set (DEST_INCLUDE_DIR ${DEST_BASE_INCLUDE_DIR}/Urho3D)
 set (DEST_BIN_DIR bin)
-if (WIN32 AND BUILD_SHARED_LIBS)
-    # Windows can not find shared libraries in other directories.
-    set (DEST_TOOLS_DIR ${DEST_BIN_DIR})
-    set (DEST_SAMPLES_DIR ${DEST_BIN_DIR})
-else ()
-    set (DEST_TOOLS_DIR ${DEST_BIN_DIR}/tools)
-    set (DEST_SAMPLES_DIR ${DEST_BIN_DIR}/samples)
-endif ()
+set (DEST_BIN_DIR_CONFIG ${DEST_BIN_DIR})
+set (DEST_TOOLS_DIR ${DEST_BIN_DIR})
+set (DEST_SAMPLES_DIR ${DEST_BIN_DIR})
 set (DEST_SHARE_DIR share)
 set (DEST_RESOURCE_DIR ${DEST_BIN_DIR})
 set (DEST_BUNDLE_DIR ${DEST_SHARE_DIR}/Applications)
-set (DEST_LIBRARY_DIR lib${LIB_SUFFIX})
-set (DEST_PKGCONFIG_DIR lib${LIB_SUFFIX}/pkgconfig)
-set (DEST_THIRDPARTY_HEADERS ${DEST_INCLUDE_DIR}/ThirdParty)
+set (DEST_ARCHIVE_DIR lib)
+set (DEST_PKGCONFIG_DIR ${DEST_ARCHIVE_DIR}/pkgconfig)
+set (DEST_THIRDPARTY_HEADERS_DIR ${DEST_INCLUDE_DIR}/ThirdParty)
 if (ANDROID)
-    set (SHARED_LIB_INSTALL_DIR lib${LIB_SUFFIX})
+    set (DEST_LIBRARY_DIR ${DEST_ARCHIVE_DIR})
 else ()
-    set (SHARED_LIB_INSTALL_DIR bin)
+    set (DEST_LIBRARY_DIR bin)
+endif ()
+set (DEST_LIBRARY_DIR_CONFIG ${DEST_LIBRARY_DIR})
+if (MSVC)
+    set (DEST_BIN_DIR_CONFIG ${DEST_BIN_DIR_CONFIG}/$<CONFIG>)
+    set (DEST_LIBRARY_DIR_CONFIG ${DEST_LIBRARY_DIR}/$<CONFIG>)
+    ucm_add_flags(/W1)
+endif ()
+if (WIN32)
+    set (WINVER 0x0601)
+    add_definitions(-DWINVER=${WINVER} -D_WIN32_WINNT=${WINVER} -D_WIN32_WINDOWS=${WINVER})
 endif ()
 
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR})
-set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${SHARED_LIB_INSTALL_DIR})
-set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR})
+set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR})
+set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_ARCHIVE_DIR})
 
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DURHO3D_DEBUG")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DURHO3D_DEBUG")
@@ -93,7 +99,7 @@ if (MINGW)
 endif ()
 
 # Configure for web
-if (EMSCRIPTEN)
+if (WEB)
     # Emscripten-specific setup
     if (EMSCRIPTEN_EMCC_VERSION VERSION_LESS 1.31.3)
         message(FATAL_ERROR "Unsupported compiler version")
@@ -112,6 +118,42 @@ if (EMSCRIPTEN)
     # Preserve LLVM debug information, show line number debug comments, and generate source maps; always disable exception handling codegen
     set (CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -g4 -s DISABLE_EXCEPTION_CATCHING=1")
     set (CMAKE_MODULE_LINKER_FLAGS_DEBUG "${CMAKE_MODULE_LINKER_FLAGS_DEBUG} -g4 -s DISABLE_EXCEPTION_CATCHING=1")
+endif ()
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    set (CLANG ON)
+    set (GNU ON)
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    set (GCC ON)
+    set (GNU ON)
+endif()
+
+if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
+    set (HOST_LINUX 1)
+elseif ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
+    set (HOST_WIN32 1)
+elseif ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Darwin")
+    set (HOST_MACOS 1)
+endif ()
+
+if (URHO3D_SSE)
+    if (DESKTOP)
+        string (TOLOWER "${URHO3D_SSE}" URHO3D_SSE)
+        if (MSVC)
+            list (APPEND VALID_SSE_OPTIONS sse sse2 avx avx2)
+        else ()
+            list (APPEND VALID_SSE_OPTIONS sse sse2 sse3 sse4 sse4a sse4.1 sse4.2 avx avx2)
+        endif ()
+        list (FIND VALID_SSE_OPTIONS "${URHO3D_SSE}" SSE_INDEX)
+        if (SSE_INDEX EQUAL -1)
+            set (URHO3D_SSE sse2)
+        endif ()
+        if (MSVC)
+            string (TOUPPER "${URHO3D_SSE}" URHO3D_SSE)
+        endif ()
+    else ()
+        set (URHO3D_SSE OFF)
+    endif ()
 endif ()
 
 # Macro for setting symbolic link on platform that supports it
@@ -158,61 +200,46 @@ macro (create_symlink SOURCE DESTINATION)
     endif ()
 endmacro ()
 
-macro (add_sample TARGET)
-    file (GLOB SOURCE_FILES *.cpp *.h)
-    if (NOT URHO3D_WIN32_CONSOLE)
-        set (TARGET_TYPE WIN32)
-    endif ()
-    if (ANDROID)
-        add_library(${TARGET} SHARED ${SOURCE_FILES})
+macro (add_sample)
+    cmake_parse_arguments(SAMPLE "" "TARGET;LANG;TYPE" "" ${ARGN})
+    if ("${SAMPLE_LANG}" STREQUAL CSHARP)
+        add_target_csharp(${SAMPLE_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/${SAMPLE_TARGET}.csproj Urho3DNet)
+        if ("${SAMPLE_TYPE}" STREQUAL "SHARED")
+            set (SAMPLE_EXT "dll")
+        else ()
+            set (SAMPLE_EXT "exe")
+        endif ()
+        install (FILES ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/${SAMPLE_TARGET}.${SAMPLE_EXT} DESTINATION ${DEST_BIN_DIR})
     else ()
-        add_executable (${TARGET} ${TARGET_TYPE} ${SOURCE_FILES})
-    endif ()
-    target_link_libraries (${TARGET} Urho3D)
-    target_include_directories(${TARGET} PRIVATE ..)
-    set_target_properties(${TARGET} PROPERTIES FOLDER Samples)
-    if (NOT ANDROID)
-        install(TARGETS ${TARGET} RUNTIME DESTINATION ${DEST_SAMPLES_DIR})
-    endif ()
-
-    if (EMSCRIPTEN)
-        add_dependencies(${TARGET} pkg_resources_web)
-        set_target_properties (${TARGET} PROPERTIES SUFFIX .html)
-        if (EMSCRIPTEN_MEMORY_LIMIT)
-            math(EXPR EMSCRIPTEN_TOTAL_MEMORY "${EMSCRIPTEN_MEMORY_LIMIT} * 1024 * 1024")
-            target_link_libraries(${TARGET} "-s TOTAL_MEMORY=${EMSCRIPTEN_TOTAL_MEMORY}")
+        file (GLOB SOURCE_FILES *.cpp *.h)
+        if (NOT URHO3D_WIN32_CONSOLE)
+            set (TARGET_TYPE WIN32)
         endif ()
-        if (EMSCRIPTEN_MEMORY_GROWTH)
-            target_link_libraries(${TARGET} "-s ALLOW_MEMORY_GROWTH=1")
-        endif ()
-        target_link_libraries(${TARGET} "-s NO_EXIT_RUNTIME=1" "-s WASM=1" "--pre-js ${CMAKE_BINARY_DIR}/Source/pak-loader.js")
-    endif ()
-endmacro ()
-
-# Macro deploys Qt dlls to folder where target executable is located.
-# Macro arguments:
-#  target - name of target which links to Qt.
-macro(deploy_qt_dlls target)
-    if (WIN32)
-        if (TARGET ${target})
-            # Find Qt dir
-            foreach (dir ${CMAKE_PREFIX_PATH})
-                if (EXISTS ${dir}/bin/windeployqt.exe)
-                    set(windeployqt "${dir}/bin/windeployqt.exe")
-                    break()
-                endif ()
-            endforeach ()
-            if (windeployqt)
-                add_custom_command(
-                    TARGET ${target}
-                    POST_BUILD
-                    COMMAND "${windeployqt}" --no-quick-import --no-translations --no-system-d3d-compiler --no-compiler-runtime --no-webkit2 --no-angle --no-opengl-sw $<TARGET_FILE_DIR:${target}>
-                    VERBATIM
-                )
+        if (ANDROID)
+            add_library(${SAMPLE_TARGET} SHARED ${SOURCE_FILES})
+        else ()
+            if ("${SAMPLE_TYPE}" STREQUAL "SHARED")
+                add_library (${SAMPLE_TARGET} SHARED ${SOURCE_FILES})
+            else ()
+                add_executable (${SAMPLE_TARGET} ${TARGET_TYPE} ${SOURCE_FILES})
             endif ()
         endif ()
+        target_link_libraries (${SAMPLE_TARGET} PUBLIC Urho3D)
+        target_include_directories(${SAMPLE_TARGET} PRIVATE ..)
+        if (NOT ANDROID)
+            install(TARGETS ${SAMPLE_TARGET}
+                RUNTIME DESTINATION ${DEST_SAMPLES_DIR}
+                LIBRARY DESTINATION ${DEST_SAMPLES_DIR}
+            )
+        endif ()
+
+        if (WEB)
+            web_executable(${SAMPLE_TARGET})
+            web_link_resources(${SAMPLE_TARGET} Resources.js)
+            target_link_libraries(${SAMPLE_TARGET} PRIVATE "--shell-file ${CMAKE_SOURCE_DIR}/bin/application.html")
+        endif ()
     endif ()
-endmacro()
+endmacro ()
 
 # Groups sources into subfolders.
 macro(group_sources)
@@ -226,68 +253,330 @@ macro(group_sources)
     endforeach ()
 endmacro()
 
-# Macro for object libraries to "link" to other object libraries. Macro does not actually link them, only pulls in
-# interface include directories and defines. Macro operates under assumption that all the object library dependencies
-# will eventually end up in one compiled target.
-macro (target_link_objects TARGET)
-    get_target_property(_MAIN_TARGET_TYPE ${TARGET} TYPE)
-    foreach (link_to ${ARGN})
-        if (TARGET ${link_to})
-            add_dependencies(${TARGET} ${link_to})
-            get_target_property(_TARGET_TYPE ${link_to} TYPE)
-            if(_TARGET_TYPE STREQUAL "OBJECT_LIBRARY")
-                get_target_property(LINK_LIBRARIES ${link_to} OBJECT_LINK_LIBRARIES)
-                if (LINK_LIBRARIES)
-                    target_link_objects(${TARGET} ${LINK_LIBRARIES})
-                endif ()
+macro (initialize_submodule SUBMODULE_DIR)
+    file(GLOB SUBMODULE_FILES ${SUBMODULE_DIR}/*)
+    list(LENGTH SUBMODULE_FILES SUBMODULE_FILES_LEN)
 
-                get_target_property(INCLUDE_DIRECTORIES ${link_to} INTERFACE_INCLUDE_DIRECTORIES)
-                if (INCLUDE_DIRECTORIES)
-                    get_target_property(TARGET_INCLUDE_DIRECTORIES ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)
-                    foreach(dir ${INCLUDE_DIRECTORIES})
-                        list(FIND TARGET_INCLUDE_DIRECTORIES "${dir}" CONTAINS)
-                        if (${CONTAINS} EQUAL -1)
-                            target_include_directories(${TARGET} PUBLIC ${INCLUDE_DIRECTORIES})
-                        endif ()
-                    endforeach()
-                endif ()
-                get_target_property(COMPILE_DEFINITIONS ${link_to} INTERFACE_COMPILE_DEFINITIONS)
-                if (COMPILE_DEFINITIONS)
-                    get_target_property(TARGET_INTERFACE_COMPILE_DEFINITIONS ${TARGET} INTERFACE_COMPILE_DEFINITIONS)
-                    foreach(def ${COMPILE_DEFINITIONS})
-                        list(FIND TARGET_INTERFACE_COMPILE_DEFINITIONS "${def}" CONTAINS)
-                        if (${CONTAINS} EQUAL -1)
-                            target_compile_definitions(${TARGET} PUBLIC ${COMPILE_DEFINITIONS})
-                        endif ()
-                    endforeach()
-                endif ()
-                get_target_property(LINK_LIBRARIES ${TARGET} OBJECT_LINK_LIBRARIES)
-                if (NOT LINK_LIBRARIES)
-                    unset (LINK_LIBRARIES)
-                endif ()
-                list (APPEND LINK_LIBRARIES "${link_to}")
-                list (REMOVE_DUPLICATES LINK_LIBRARIES)
-                set_target_properties(${TARGET} PROPERTIES OBJECT_LINK_LIBRARIES "${LINK_LIBRARIES}")
-            elseif (NOT _MAIN_TARGET_TYPE STREQUAL "OBJECT_LIBRARY")
-                target_link_libraries(${TARGET} ${link_to})
-            endif ()
-        else ()
-            if ("${_MAIN_TARGET_TYPE}" STREQUAL "OBJECT_LIBRARY")
-                get_target_property(LINK_LIBRARIES ${TARGET} OBJECT_LINK_LIBRARIES)
-                if (NOT LINK_LIBRARIES)
-                    unset (LINK_LIBRARIES)
-                endif ()
-                foreach (link ${ARGN})
-                    list (APPEND LINK_LIBRARIES ${link})
-                endforeach()
-                list(REMOVE_DUPLICATES LINK_LIBRARIES)
-                set_target_properties(${TARGET} PROPERTIES OBJECT_LINK_LIBRARIES "${LINK_LIBRARIES}")
-            else ()
-                target_link_libraries(${TARGET} ${link_to})
-            endif ()
+    if (SUBMODULE_FILES_LEN LESS 2)
+        find_program(GIT git)
+        if (NOT GIT)
+            message(FATAL_ERROR "git not found.")
         endif ()
+        execute_process(
+            COMMAND git submodule update --init --remote "${SUBMODULE_DIR}"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            RESULT_VARIABLE SUBMODULE_RESULT
+        )
+        if (NOT SUBMODULE_RESULT EQUAL 0)
+            message(FATAL_ERROR "Failed to initialize submodule ${SUBMODULE_DIR}")
+        endif ()
+    endif ()
+endmacro ()
+
+function(vs_group_subdirectory_targets DIR FOLDER_NAME)
+    get_property(DIRS DIRECTORY ${DIR} PROPERTY SUBDIRECTORIES)
+    foreach(DIR ${DIRS})
+        get_property(TARGETS DIRECTORY ${DIR} PROPERTY BUILDSYSTEM_TARGETS)
+        foreach(TARGET ${TARGETS})
+            get_target_property(TARGET_TYPE ${TARGET} TYPE)
+            if (NOT ${TARGET_TYPE} STREQUAL "INTERFACE_LIBRARY")
+                set_target_properties(${TARGET} PROPERTIES FOLDER ${FOLDER_NAME})
+            endif ()
+        endforeach()
+        vs_group_subdirectory_targets(${DIR} ${FOLDER_NAME})
     endforeach()
+endfunction()
+
+if (URHO3D_CSHARP)
+    if (NOT SWIG_EXECUTABLE)
+        set (SWIG_EXECUTABLE ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/swig${CMAKE_EXECUTABLE_SUFFIX})
+    endif ()
+    if (NOT SWIG_LIB)
+        set (SWIG_DIR ${Urho3D_SOURCE_DIR}/Source/ThirdParty/swig/Lib)
+    endif ()
+    include(UrhoSWIG)
+
+    if (NOT WIN32 OR URHO3D_WITH_MONO)
+        find_package(Mono REQUIRED)
+    endif ()
+    find_program(MSBUILD msbuild PATHS /Library/Frameworks/Mono.framework/Versions/Current/bin ${MONO_PATH}/bin)
+    if (NOT MSBUILD)
+        message(FATAL_ERROR "MSBuild could not be found.")
+    endif ()
+
+    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set (CSHARP_PLATFORM x64)
+    else ()
+        set (CSHARP_PLATFORM x86)
+    endif ()
+    set (MSBUILD_COMMON_PARAMETERS /p:BuildDir="${CMAKE_BINARY_DIR}/" /p:Platform=${CSHARP_PLATFORM}
+                                   /p:Configuration=$<CONFIG> /consoleloggerparameters:ErrorsOnly)
+
+    if (URHO3D_WITH_MONO)
+        list (APPEND MSBUILD_COMMON_PARAMETERS /p:TargetFramework=net471)
+    endif ()
+
+    if (MSVC)
+        set (CSHARP_SOLUTION ${CMAKE_BINARY_DIR}/Urho3D.sln)
+    else ()
+        set (CSHARP_SOLUTION ${Urho3D_SOURCE_DIR}/Urho3D.part.sln)
+    endif ()
+
+    if (NOT MSVC)
+        execute_process(COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${CSHARP_SOLUTION} /t:restore /m /consoleloggerparameters:ErrorsOnly)
+        add_custom_target(NugetRestore COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${CSHARP_SOLUTION} /t:restore /m /consoleloggerparameters:ErrorsOnly)
+        set_property(TARGET NugetRestore PROPERTY EXCLUDE_FROM_ALL ON)
+    endif ()
+
+    # Strong name signatures
+    find_program(SN sn PATHS PATHS /Library/Frameworks/Mono.framework/Versions/Current/bin ${MONO_PATH}/bin)
+    if (NOT SN)
+        message(FATAL_ERROR "sn coild not be found.")
+    endif ()
+    if (NOT EXISTS ${CMAKE_BINARY_DIR}/CSharp.snk)
+        execute_process(COMMAND ${SN} -k ${CMAKE_BINARY_DIR}/CSharp.snk)
+    endif ()
+    if (NOT EXISTS ${CMAKE_BINARY_DIR}/CSharp.snk.pub)
+        execute_process(COMMAND ${SN} -p ${CMAKE_BINARY_DIR}/CSharp.snk ${CMAKE_BINARY_DIR}/CSharp.snk.pub)
+    endif ()
+
+    execute_process(
+        COMMAND ${SN} -tp ${CMAKE_BINARY_DIR}/CSharp.snk.pub
+        OUTPUT_VARIABLE SNK_PUB_KEY
+    )
+    string(REGEX MATCH "Public [Kk]ey(.+)?:[0-9a-f\r\n]+\r?\n\r?\n" SNK_PUB_KEY "${SNK_PUB_KEY}")
+    string(REGEX REPLACE "Public [Kk]ey(.+)?:" "" SNK_PUB_KEY "${SNK_PUB_KEY}")
+    string(REGEX REPLACE "[ \r\n]+" "" SNK_PUB_KEY "${SNK_PUB_KEY}")
+    set(SNK_PUB_KEY "${SNK_PUB_KEY}" CACHE STRING "Public key for .NET assemblies" FORCE)
+endif()
+
+if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
+    # Workaround for some cases where csc has issues when invoked by CMake.
+    set (TERM_WORKAROUND env TERM=xterm)
+endif ()
+
+macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)
+    get_target_property(values ${TARGET} ${PROPERTY})
+    if (values)
+        list (APPEND ${OUTPUT} ${values})
+    endif ()
+    get_target_property(values ${TARGET} INTERFACE_LINK_LIBRARIES)
+    if (values)
+        foreach(lib ${values})
+            if (TARGET ${lib})
+                __TARGET_GET_PROPERTIES_RECURSIVE(${OUTPUT} ${lib} ${PROPERTY})
+            endif ()
+        endforeach()
+    endif()
 endmacro()
+
+macro (add_target_csharp TARGET PROJECT_FILE)
+    if (WIN32 AND NOT URHO3D_WITH_MONO)
+        include_external_msproject(${TARGET} ${PROJECT_FILE} TYPE FAE04EC0-301F-11D3-BF4B-00C04F79EFBC ${ARGN})
+    else ()
+        add_custom_target(${TARGET}
+            COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${PROJECT_FILE} ${MSBUILD_COMMON_PARAMETERS}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            DEPENDS ${ARGN}
+        )
+        set_target_properties(${TARGET} PROPERTIES EXCLUDE_FROM_ALL OFF)
+    endif ()
+endmacro ()
+
+macro (csharp_bind_target)
+    if (NOT URHO3D_CSHARP)
+        return ()
+    endif ()
+
+    cmake_parse_arguments(BIND "" "TARGET;MANAGED_TARGET" "" ${ARGN})
+
+    get_target_property(BIND_SOURCE_DIR ${BIND_TARGET} SOURCE_DIR)
+
+    if (NOT BIND_MANAGED_TARGET)
+        set (BIND_MANAGED_TARGET ${BIND_TARGET}Net)
+    endif ()
+
+    # Parse bindings using same compile definitions as built target
+    __TARGET_GET_PROPERTIES_RECURSIVE(INCLUDES ${BIND_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
+    __TARGET_GET_PROPERTIES_RECURSIVE(DEFINES  ${BIND_TARGET} INTERFACE_COMPILE_DEFINITIONS)
+    __TARGET_GET_PROPERTIES_RECURSIVE(OPTIONS  ${BIND_TARGET} INTERFACE_COMPILE_OPTIONS)
+    if (INCLUDES)
+        list (REMOVE_DUPLICATES INCLUDES)
+    endif ()
+    if (DEFINES)
+        list (REMOVE_DUPLICATES DEFINES)
+    endif ()
+    if (OPTIONS)
+        list (REMOVE_DUPLICATES OPTIONS)
+    endif ()
+    foreach(item ${INCLUDES})
+        if ("${item}" MATCHES "\\$<INSTALL_INTERFACE:.+")
+            continue()
+        endif ()
+        if ("${item}" MATCHES "\\$<BUILD_INTERFACE:.+")
+            string(LENGTH "${item}" len)
+            math(EXPR len "${len} - 19")
+            string(SUBSTRING "${item}" 18 ${len} item)
+        endif ()
+        list(APPEND GENERATOR_OPTIONS -I${item})
+    endforeach()
+    foreach(item ${DEFINES})
+        string(FIND "${item}" "=" EQUALITY_INDEX)
+        if (EQUALITY_INDEX EQUAL -1)
+            set (item "${item}=1")
+        endif ()
+        list(APPEND GENERATOR_OPTIONS -D${item})
+    endforeach()
+
+    # Swig
+    set(CMAKE_SWIG_FLAGS
+        -namespace ${BIND_MANAGED_TARGET}
+        -fastdispatch
+        -I${CMAKE_CURRENT_BINARY_DIR}
+        ${GENERATOR_OPTIONS}
+    )
+
+    foreach(item ${OPTIONS})
+        list(APPEND GENERATOR_OPTIONS -O${item})
+    endforeach()
+
+    #    get_target_property(_TARGET_TYPE ${BIND_TARGET} TYPE)
+    #    if(_TARGET_TYPE STREQUAL "STATIC_LIBRARY")
+    #        list (APPEND GENERATOR_OPTIONS --static)
+    #    endif ()
+    #    if (SNK_PUB_KEY)
+    #        list (APPEND GENERATOR_OPTIONS --signed-with=${SNK_PUB_KEY})
+    #    endif ()
+
+    set (CSHARP_LIBRARY_NAME ${BIND_TARGET}CSharp)
+    set (COMMON_DIR ${CSHARP_SOURCE_DIR}/Common)
+
+    # Finalize option list
+    list (APPEND GENERATOR_OPTIONS ${BIND_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/Swig)
+    set (CSHARP_BINDING_GENERATOR_OPTIONS "${CMAKE_CURRENT_BINARY_DIR}/generator_options.txt")
+    file (WRITE ${CSHARP_BINDING_GENERATOR_OPTIONS} "")
+    foreach (opt ${GENERATOR_OPTIONS})
+        file(APPEND ${CSHARP_BINDING_GENERATOR_OPTIONS} "${opt}\n")
+    endforeach ()
+
+    set (SWIG_SYSTEM_INCLUDE_DIRS "${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES};${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES};${CMAKE_SYSTEM_INCLUDE_PATH};${CMAKE_EXTRA_GENERATOR_CXX_SYSTEM_INCLUDE_DIRS}")
+    string (REPLACE ";" ";-I" SWIG_SYSTEM_INCLUDE_DIRS "${SWIG_SYSTEM_INCLUDE_DIRS}")
+
+    set_source_files_properties(Swig/${BIND_TARGET}.i PROPERTIES
+        CPLUSPLUS ON
+        SWIG_FLAGS "-I${SWIG_SYSTEM_INCLUDE_DIRS}"
+    )
+
+    swig_add_module(${CSHARP_LIBRARY_NAME} csharp Swig/${BIND_TARGET}.i)
+    swig_link_libraries(${CSHARP_LIBRARY_NAME} ${BIND_TARGET})
+    set_target_properties(${CSHARP_LIBRARY_NAME} PROPERTIES PREFIX "${CMAKE_SHARED_LIBRARY_PREFIX}")
+
+    # Etc
+    #    if (CLANG)
+    #        target_compile_options(${CSHARP_LIBRARY_NAME} PRIVATE -Wno-return-type-c-linkage)
+    #    endif ()
+    #
+    #    if (URHO3D_WITH_MONO)
+    #        find_package(Mono REQUIRED)
+    #        target_include_directories(${CSHARP_LIBRARY_NAME} PRIVATE ${MONO_INCLUDE_DIRS})
+    #        target_link_libraries(${CSHARP_LIBRARY_NAME} ${MONO_LIBRARIES})
+    #        target_compile_options(${CSHARP_LIBRARY_NAME} PRIVATE ${MONO_CFLAGS})
+    #    endif ()
+
+    if (MSVC)
+        set (NET_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>)
+    else ()
+        set (NET_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+        # Needed for mono on unixes but not on windows.
+        set (FACADES Facades/)
+    endif ()
+    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${BIND_MANAGED_TARGET}.csproj")
+        add_target_csharp(${BIND_MANAGED_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/${BIND_MANAGED_TARGET}.csproj ${CSHARP_LIBRARY_NAME})
+        install (FILES ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll $<TARGET_FILE:${CSHARP_LIBRARY_NAME}>
+            DESTINATION ${DEST_LIBRARY_DIR}
+        )
+    endif ()
+
+    file (GLOB_RECURSE EXTRA_NATIVE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/Native/*.h ${CMAKE_CURRENT_SOURCE_DIR}/Native/*.cpp)
+    target_sources(${CSHARP_LIBRARY_NAME} PRIVATE ${EXTRA_NATIVE_FILES})
+endmacro ()
+
+function (create_pak PAK_DIR PAK_FILE)
+    cmake_parse_arguments(PARSE_ARGV 2 PAK "NO_COMPRESS" "" "DEPENDS")
+
+    get_filename_component(NAME "${PAK_FILE}" NAME)
+    if (CMAKE_CROSSCOMPILING)
+        set (DEPENDENCY Urho3D-Native)
+    else ()
+        set (DEPENDENCY PackageTool)
+    endif ()
+
+    if (NOT PAK_NO_COMPRESS)
+        list (APPEND PAK_FLAGS -c)
+    endif ()
+
+    add_custom_command(
+        OUTPUT "${PAK_FILE}"
+        COMMAND "${PACKAGE_TOOL}" "${PAK_DIR}" "${PAK_FILE}" -q ${PAK_FLAGS}
+        DEPENDS ${DEPENDENCY} ${PAK_DEPENDS}
+        COMMENT "Packaging ${NAME}"
+    )
+endfunction ()
+
+macro(web_executable TARGET)
+    if (WEB)
+        set_target_properties (${TARGET} PROPERTIES SUFFIX .html)
+        if (EMSCRIPTEN_MEMORY_LIMIT)
+            math(EXPR EMSCRIPTEN_TOTAL_MEMORY "${EMSCRIPTEN_MEMORY_LIMIT} * 1024 * 1024")
+            target_link_libraries(${TARGET} PRIVATE "-s TOTAL_MEMORY=${EMSCRIPTEN_TOTAL_MEMORY}")
+        endif ()
+        if (EMSCRIPTEN_MEMORY_GROWTH)
+            target_link_libraries(${TARGET} PRIVATE "-s ALLOW_MEMORY_GROWTH=1")
+        endif ()
+        target_link_libraries(${TARGET} PRIVATE "-s NO_EXIT_RUNTIME=1" "-s MAIN_MODULE=1" "-s FORCE_FILESYSTEM=1")
+    endif ()
+endmacro()
+
+function (package_resources_web)
+    if (NOT WEB)
+        return ()
+    endif ()
+
+    cmake_parse_arguments(PAK "" "RELATIVE_DIR;OUTPUT" "FILES" ${ARGN})
+    if (NOT "${PAK_RELATIVE_DIR}" MATCHES "/$")
+        set (PAK_RELATIVE_DIR "${PAK_RELATIVE_DIR}/")
+    endif ()
+    string(LENGTH "${PAK_RELATIVE_DIR}" PAK_RELATIVE_DIR_LEN)
+
+    foreach (file ${PAK_FILES})
+        string(SUBSTRING "${file}" ${PAK_RELATIVE_DIR_LEN} 999999 rel_file)
+        set (PRELOAD_FILES ${PRELOAD_FILES} ${file}@${rel_file})
+    endforeach ()
+
+    if (CMAKE_BUILD_TYPE STREQUAL Debug AND EMSCRIPTEN_EMCC_VERSION VERSION_GREATER 1.32.2)
+        set (SEPARATE_METADATA --separate-metadata)
+    endif ()
+    get_filename_component(LOADER_DIR "${PAK_OUTPUT}" DIRECTORY)
+    add_custom_target("${PAK_OUTPUT}"
+        COMMAND ${EMPACKAGER} ${PAK_RELATIVE_DIR}${PAK_OUTPUT}.data --preload ${PRELOAD_FILES} --js-output=${PAK_RELATIVE_DIR}${PAK_OUTPUT} --use-preload-cache ${SEPARATE_METADATA}
+        DEPENDS ${PAK_FILES}
+        COMMENT "Packaging ${PAK_OUTPUT}"
+    )
+    if (CMAKE_CROSSCOMPILING)
+        add_dependencies("${PAK_OUTPUT}" Urho3D-Native)
+    else ()
+        add_dependencies("${PAK_OUTPUT}" PackageTool)
+    endif ()
+endfunction ()
+
+function (web_link_resources TARGET RESOURCES)
+    if (NOT WEB)
+        return ()
+    endif ()
+    file (WRITE "${CMAKE_CURRENT_BINARY_DIR}/${RESOURCES}.load.js" "var Module;if(typeof Module==='undefined')Module=eval('(function(){try{return Module||{}}catch(e){return{}}})()');var s=document.createElement('script');s.src='${RESOURCES}';document.body.appendChild(s);Module['preRun'].push(function(){Module['addRunDependency']('${RESOURCES}.loader')});s.onload=function(){Module['removeRunDependency']('${RESOURCES}.loader')};")
+    target_link_libraries(${SAMPLE_TARGET} PRIVATE "--pre-js ${CMAKE_CURRENT_BINARY_DIR}/${RESOURCES}.load.js")
+    add_dependencies(${SAMPLE_TARGET} ${RESOURCES})
+endfunction ()
 
 # Configure for MingW
 if (CMAKE_CROSSCOMPILING AND MINGW)

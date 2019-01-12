@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -44,6 +44,9 @@ public:
     explicit Geometry(Context* context);
     /// Destruct.
     ~Geometry() override;
+
+    /// Register object with the engine.
+    static void RegisterObject(Context* context);
 
     /// Set number of vertex buffers.
     bool SetNumVertexBuffers(unsigned num);

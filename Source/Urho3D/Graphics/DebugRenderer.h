@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -59,7 +59,7 @@ struct DebugLine
     /// End position.
     Vector3 end_;
     /// Color.
-    unsigned color_;
+    unsigned color_{};
 };
 
 /// Debug render triangle.
@@ -84,7 +84,7 @@ struct DebugTriangle
     /// Vertex c.
     Vector3 v3_;
     /// Color.
-    unsigned color_;
+    unsigned color_{};
 };
 
 /// Debug geometry rendering component. Should be added only to the root scene node.
@@ -108,6 +108,10 @@ public:
     void AddLine(const Vector3& start, const Vector3& end, const Color& color, bool depthTest = true);
     /// Add a line with color already converted to unsigned.
     void AddLine(const Vector3& start, const Vector3& end, unsigned color, bool depthTest = true);
+    /// Add a line in 2D screen space.
+    void AddLine2D(const Vector2& start, const Vector2& end, const Color& color, bool depthTest = true);
+    /// Add a line in 2D screen space with color already converted to unsigned.
+    void AddLine2D(const Vector2& start, const Vector2& end, unsigned color, bool depthTest = true);
     /// Add a solid triangle.
     void AddTriangle(const Vector3& v1, const Vector3& v2, const Vector3& v3, const Color& color, bool depthTest = true);
     /// Add a solid triangle with color already converted to unsigned.
@@ -194,6 +198,8 @@ private:
     SharedPtr<VertexBuffer> vertexBuffer_;
     /// Line antialiasing flag.
     bool lineAntiAlias_;
+    /// Active camera.
+    WeakPtr<Camera> camera_;
 };
 
 }

@@ -1,5 +1,5 @@
 ﻿//
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -300,7 +300,7 @@ void Node::AddReplicationState(NodeReplicationState* state)
 
 bool Node::SaveXML(Serializer& dest, const String& indentation) const
 {
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement rootElem = xml->CreateRoot("node");
     if (!SaveXML(rootElem))
         return false;
@@ -310,7 +310,7 @@ bool Node::SaveXML(Serializer& dest, const String& indentation) const
 
 bool Node::SaveJSON(Serializer& dest, const String& indentation) const
 {
-    SharedPtr<JSONFile> json(new JSONFile(context_));
+    SharedPtr<JSONFile> json(context_->CreateObject<JSONFile>());
     JSONValue& rootElem = json->GetRoot();
 
     if (!SaveJSON(rootElem))
@@ -1100,7 +1100,7 @@ Node* Node::Clone(CreateMode mode)
         return nullptr;
     }
 
-    URHO3D_PROFILE(CloneNode);
+    URHO3D_PROFILE("CloneNode");
 
     SceneResolver resolver;
     Node* clone = CloneRecursive(parent_, resolver, mode);
@@ -1797,7 +1797,7 @@ void Node::MarkReplicationDirty()
 
 Node* Node::CreateChild(unsigned id, CreateMode mode, bool temporary)
 {
-    SharedPtr<Node> newNode(new Node(context_));
+    SharedPtr<Node> newNode(context_->CreateObject<Node>());
     newNode->SetTemporary(temporary);
 
     // If zero ID specified, or the ID is already taken, let the scene assign
@@ -1889,6 +1889,11 @@ void Node::SetTransformSilent(const Vector3& position, const Quaternion& rotatio
     position_ = position;
     rotation_ = rotation;
     scale_ = scale;
+}
+
+void Node::SetTransformSilent(const Matrix3x4& matrix)
+{
+    SetTransformSilent(matrix.Translation(), matrix.Rotation(), matrix.Scale());
 }
 
 void Node::OnAttributeAnimationAdded()
@@ -2066,7 +2071,7 @@ Component* Node::SafeCreateComponent(const String& typeName, StringHash type, Cr
     {
         URHO3D_LOGWARNING("Component type " + type.ToString() + " not known, creating UnknownComponent as placeholder");
         // Else create as UnknownComponent
-        SharedPtr<UnknownComponent> newComponent(new UnknownComponent(context_));
+        SharedPtr<UnknownComponent> newComponent(context_->CreateObject<UnknownComponent>());
         if (typeName.Empty() || typeName.StartsWith("Unknown", false))
             newComponent->SetType(type);
         else

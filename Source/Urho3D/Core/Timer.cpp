@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@
 
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
+#include "../Core/Timer.h"
 
 #include <ctime>
 
@@ -41,6 +42,10 @@
 
 namespace Urho3D
 {
+
+URHO3D_EVENT(E_ENDFRAMEPRIVATE, EndFramePrivate)
+{
+}
 
 bool HiresTimer::supported(false);
 long long HiresTimer::frequency(1000);
@@ -111,7 +116,7 @@ void Time::BeginFrame(float timeStep)
     timeStep_ = timeStep;
 
     {
-        URHO3D_PROFILE(BeginFrame);
+        URHO3D_PROFILE("BeginFrame");
 
         // Frame begin event
         using namespace BeginFrame;
@@ -126,10 +131,13 @@ void Time::BeginFrame(float timeStep)
 void Time::EndFrame()
 {
     {
-        URHO3D_PROFILE(EndFrame);
+        URHO3D_PROFILE("EndFrame");
 
         // Frame end event
         SendEvent(E_ENDFRAME);
+
+        // Internal frame end event used only by the engine/tools
+        SendEvent(E_ENDFRAMEPRIVATE);
     }
 }
 
@@ -161,13 +169,13 @@ unsigned Time::GetTimeSinceEpoch()
     return (unsigned)time(nullptr);
 }
 
-String Time::GetTimeStamp()
+String Time::GetTimeStamp(const String& format)
 {
     char dateTime[20];
     time_t sysTime;
     time(&sysTime);
     tm* timeInfo = localtime(&sysTime);
-    strftime(dateTime, sizeof(dateTime), "%Y-%m-%d %H:%M:%S", timeInfo);
+    strftime(dateTime, sizeof(dateTime), format.Empty() ? DEFAULT_DATE_TIME_FORMAT : format.CString(), timeInfo);
     return dateTime;
 }
 

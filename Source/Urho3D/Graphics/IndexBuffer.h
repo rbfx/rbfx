@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -35,11 +35,16 @@ class URHO3D_API IndexBuffer : public Object, public GPUObject
 {
     URHO3D_OBJECT(IndexBuffer, Object);
 
+    using GPUObject::GetGraphics;
+
 public:
     /// Construct. Optionally force headless (no GPU-side buffer) operation.
     explicit IndexBuffer(Context* context, bool forceHeadless = false);
     /// Destruct.
     ~IndexBuffer() override;
+
+    /// Register object with the engine.
+    static void RegisterObject(Context* context);
 
     /// Mark the buffer destroyed on graphics context destruction. May be a no-op depending on the API.
     void OnDeviceLost() override;

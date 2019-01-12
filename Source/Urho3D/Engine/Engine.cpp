@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
 #include "../Core/ProcessUtils.h"
+#include "../Core/Thread.h"
 #include "../Core/WorkQueue.h"
 #ifdef URHO3D_SYSTEMUI
 #include "../SystemUI/SystemUI.h"
@@ -62,12 +63,16 @@
 #ifdef URHO3D_URHO2D
 #include "../Urho2D/Urho2D.h"
 #endif
+#if URHO3D_TASKS
 #include "../Core/Tasks.h"
+#endif
 #include "../Engine/EngineEvents.h"
 
 #if defined(__EMSCRIPTEN__) && defined(URHO3D_TESTING)
 #include <emscripten/emscripten.h>
 #endif
+
+#include <Urho3D/Core/CommandLine.h>
 
 #include "../DebugNew.h"
 
@@ -123,9 +128,6 @@ Engine::Engine(Context* context) :
     // Create subsystems which do not depend on engine initialization or startup parameters
     context_->RegisterSubsystem(new Time(context_));
     context_->RegisterSubsystem(new WorkQueue(context_));
-#ifdef URHO3D_PROFILING
-    context_->RegisterSubsystem(new Profiler(context_));
-#endif
     context_->RegisterSubsystem(new FileSystem(context_));
 #ifdef URHO3D_LOGGING
     context_->RegisterSubsystem(new Log(context_));
@@ -135,12 +137,14 @@ Engine::Engine(Context* context) :
 #ifdef URHO3D_NETWORK
     context_->RegisterSubsystem(new Network(context_));
 #endif
-    context_->RegisterSubsystem(new Input(context_));
-    context_->RegisterSubsystem(new Audio(context_));
+    // Register UI library object factories before creation of subsystem. This is not done inside subsystem because
+    // there may exist multiple instances of UI.
+    RegisterUILibrary(context_);
     context_->RegisterSubsystem(new UI(context_));
 #if URHO3D_TASKS
     context_->RegisterSubsystem(new Tasks(context_));
 #endif
+
     // Register object factories for libraries which are not automatically registered along with subsystem creation
     RegisterSceneLibrary(context_);
 
@@ -166,22 +170,24 @@ bool Engine::Initialize(const VariantMap& parameters)
     if (initialized_)
         return true;
 
-#ifdef URHO3D_PROFILING
-    if (auto* profiler = GetSubsystem<Profiler>())
-    {
-        profiler->SetEnabled(true);
-        profiler->SetEventProfilingEnabled(GetParameter(parameters, EP_EVENT_PROFILER, true).GetBool());
-        if (GetParameter(parameters, EP_PROFILER_LISTEN, false).GetBool())
-            profiler->StartListen((unsigned short)GetParameter(parameters, EP_PROFILER_PORT, PROFILER_DEFAULT_PORT).GetInt());
-    }
-#endif
+    URHO3D_PROFILE("InitEngine");
 
-    URHO3D_PROFILE(InitEngine);
+    // Start logging
+    auto* log = GetSubsystem<Log>();
+    if (log)
+    {
+        if (HasParameter(parameters, EP_LOG_LEVEL))
+            log->SetLevel(static_cast<LogLevel>(GetParameter(parameters, EP_LOG_LEVEL).GetInt()));
+        log->SetQuiet(GetParameter(parameters, EP_LOG_QUIET, false).GetBool());
+        log->Open(GetParameter(parameters, EP_LOG_NAME, "Urho3D.log").GetString());
+    }
 
     // Set headless mode
     headless_ = GetParameter(parameters, EP_HEADLESS, false).GetBool();
 
     // Register the rest of the subsystems
+    context_->RegisterSubsystem(new Input(context_));
+    context_->RegisterSubsystem(new Audio(context_));
     if (!headless_)
     {
         context_->RegisterSubsystem(new Graphics(context_));
@@ -199,16 +205,6 @@ bool Engine::Initialize(const VariantMap& parameters)
     // 2D graphics library is dependent on 3D graphics library
     RegisterUrho2DLibrary(context_);
 #endif
-
-    // Start logging
-    auto* log = GetSubsystem<Log>();
-    if (log)
-    {
-        if (HasParameter(parameters, EP_LOG_LEVEL))
-            log->SetLevel(GetParameter(parameters, EP_LOG_LEVEL).GetInt());
-        log->SetQuiet(GetParameter(parameters, EP_LOG_QUIET, false).GetBool());
-        log->Open(GetParameter(parameters, EP_LOG_NAME, "Urho3D.log").GetString());
-    }
 
     // Set maximally accurate low res timer
     GetSubsystem<Time>()->SetTimerPeriod(1);
@@ -303,7 +299,8 @@ bool Engine::Initialize(const VariantMap& parameters)
         ))
             return false;
 
-        graphics->SetShaderCacheDir(GetParameter(parameters, EP_SHADER_CACHE_DIR, fileSystem->GetAppPreferencesDir("urho3d", "shadercache")).GetString());
+        graphics->SetShaderCacheDir(GetParameter(parameters, EP_SHADER_CACHE_DIR, fileSystem->GetAppPreferencesDir(
+            GetParameter(parameters, EP_ORGANIZATION_NAME, "urho3d").GetString(), "shadercache")).GetString());
 
         if (HasParameter(parameters, EP_DUMP_SHADERS))
             graphics->BeginDumpShaders(GetParameter(parameters, EP_DUMP_SHADERS, String::EMPTY).GetString());
@@ -313,8 +310,8 @@ bool Engine::Initialize(const VariantMap& parameters)
         renderer->SetDrawShadows(GetParameter(parameters, EP_SHADOWS, true).GetBool());
         if (renderer->GetDrawShadows() && GetParameter(parameters, EP_LOW_QUALITY_SHADOWS, false).GetBool())
             renderer->SetShadowQuality(SHADOWQUALITY_SIMPLE_16BIT);
-        renderer->SetMaterialQuality(GetParameter(parameters, EP_MATERIAL_QUALITY, QUALITY_HIGH).GetInt());
-        renderer->SetTextureQuality(GetParameter(parameters, EP_TEXTURE_QUALITY, QUALITY_HIGH).GetInt());
+        renderer->SetMaterialQuality((MaterialQuality)GetParameter(parameters, EP_MATERIAL_QUALITY, QUALITY_HIGH).GetInt());
+        renderer->SetTextureQuality((MaterialQuality)GetParameter(parameters, EP_TEXTURE_QUALITY, QUALITY_HIGH).GetInt());
         renderer->SetTextureFilterMode((TextureFilterMode)GetParameter(parameters, EP_TEXTURE_FILTER_MODE, FILTER_TRILINEAR).GetInt());
         renderer->SetTextureAnisotropy(GetParameter(parameters, EP_TEXTURE_ANISOTROPY, 4).GetInt());
 
@@ -512,15 +509,17 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
 
 void Engine::RunFrame()
 {
-    URHO3D_PROFILE(RunFrame);
-    assert(initialized_);
+    URHO3D_PROFILE("RunFrame");
+    {
+        assert(initialized_);
 
-    // If not headless, and the graphics subsystem no longer has a window open, assume we should exit
-    if (!headless_ && !GetSubsystem<Graphics>()->IsInitialized())
-        exiting_ = true;
+        // If not headless, and the graphics subsystem no longer has a window open, assume we should exit
+        if (!headless_ && !GetSubsystem<Graphics>()->IsInitialized())
+            exiting_ = true;
 
-    if (exiting_)
-        return;
+        if (exiting_)
+            return;
+    }
 
     // Note: there is a minimal performance cost to looking up subsystems (uses a hashmap); if they would be looked up several
     // times per frame it would be better to cache the pointers
@@ -528,35 +527,38 @@ void Engine::RunFrame()
     auto* input = GetSubsystem<Input>();
     auto* audio = GetSubsystem<Audio>();
 
-    URHO3D_PROFILE(DoFrame);
-    time->BeginFrame(timeStep_);
-
-    // If pause when minimized -mode is in use, stop updates and audio as necessary
-    if (pauseMinimized_ && input->IsMinimized())
     {
-        if (audio->IsPlaying())
+        URHO3D_PROFILE("DoFrame");
+        time->BeginFrame(timeStep_);
+
+        // If pause when minimized -mode is in use, stop updates and audio as necessary
+        if (pauseMinimized_ && input->IsMinimized())
         {
-            audio->Stop();
-            audioPaused_ = true;
+            if (audio->IsPlaying())
+            {
+                audio->Stop();
+                audioPaused_ = true;
+            }
         }
-    }
-    else
-    {
-        // Only unpause when it was paused by the engine
-        if (audioPaused_)
+        else
         {
-            audio->Play();
-            audioPaused_ = false;
+            // Only unpause when it was paused by the engine
+            if (audioPaused_)
+            {
+                audio->Play();
+                audioPaused_ = false;
+            }
+
+            Update();
         }
 
-        Update();
+        Render();
     }
-
-    Render();
-    URHO3D_PROFILE_END();
     ApplyFrameLimit();
 
     time->EndFrame();
+
+    URHO3D_PROFILE_FRAME();
 }
 
 Console* Engine::CreateConsole()
@@ -725,7 +727,7 @@ void Engine::DumpMemory()
 
 void Engine::Update()
 {
-    URHO3D_PROFILE(Update);
+    URHO3D_PROFILE("Update");
 
     // Logic update event
     using namespace Update;
@@ -749,7 +751,7 @@ void Engine::Render()
     if (headless_)
         return;
 
-    URHO3D_PROFILE(Render);
+    URHO3D_PROFILE("Render");
 
     // If device is lost, BeginFrame will fail and we skip rendering
     auto* graphics = GetSubsystem<Graphics>();
@@ -757,7 +759,16 @@ void Engine::Render()
         return;
 
     GetSubsystem<Renderer>()->Render();
-    GetSubsystem<UI>()->Render();
+
+    // Render UI after scene is rendered, but only do so if user has not rendered it manually
+    // anywhere (for example using renderpath or to a texture).
+    graphics->ResetRenderTargets();
+    if (UI* ui = GetSubsystem<UI>())
+    {
+        if (!ui->IsRendered() && ui->GetRenderTarget() == nullptr)
+            ui->Render();
+    }
+
     graphics->EndFrame();
 }
 
@@ -783,7 +794,7 @@ void Engine::ApplyFrameLimit()
     if (maxFps < 60)
 #endif
     {
-        URHO3D_PROFILE(ApplyFrameLimit);
+        URHO3D_PROFILE("ApplyFrameLimit");
 
         long long targetMax = 1000000LL / maxFps;
 
@@ -836,189 +847,160 @@ void Engine::ApplyFrameLimit()
         timeStep_ = lastTimeSteps_.Back();
 }
 
-VariantMap Engine::ParseParameters(const Vector<String>& arguments)
+void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameters)
 {
-    VariantMap ret;
+    auto addFlagInternal = [&](const char* name, const char* description, CLI::callback_t fun) {
+        CLI::Option *opt = commandLine.add_option(name, fun, description, false);
+        if(opt->get_positional())
+            throw CLI::IncorrectConstruction::PositionalFlag(name);
+        opt->set_custom_option("", 0);
+        return opt;
+    };
 
-    // Pre-initialize the parameters with environment variable values when they are set
-    if (const char* paths = getenv("URHO3D_PREFIX_PATH"))
-        ret[EP_RESOURCE_PREFIX_PATHS] = paths;
+    auto addFlag = [&](const char* name, const String& param, bool value, const char* description) {
+        CLI::callback_t fun = [&engineParameters, param, value](CLI::results_t) {
+            engineParameters[param] = value;
+            return true;
+        };
+        return addFlagInternal(name, description, fun);
+    };
 
-    for (unsigned i = 0; i < arguments.Size(); ++i)
-    {
-        if (arguments[i].Length() > 1 && arguments[i][0] == '-')
+    auto addOptionPrependString = [&](const char* name, const String& param, const String& value, const char* description) {
+        CLI::callback_t fun = [&engineParameters, param, value](CLI::results_t) {
+            engineParameters[param] = value + engineParameters[param].GetString();
+            return true;
+        };
+        return addFlagInternal(name, description, fun);
+    };
+
+    auto addOptionSetString = [&](const char* name, const String& param, const String& value, const char* description) {
+        CLI::callback_t fun = [&engineParameters, param, value](CLI::results_t) {
+            engineParameters[param] = value;
+            return true;
+        };
+        return addFlagInternal(name, description, fun);
+    };
+
+    auto addOptionString = [&](const char* name, const String& param, const char* description) {
+        CLI::callback_t fun = [&engineParameters, param](CLI::results_t res) {
+            engineParameters[param] = res[0].c_str();
+            return true;
+        };
+        auto* opt = addFlagInternal(name, description, fun);
+        opt->set_custom_option("string");
+        return opt;
+    };
+
+    auto addOptionInt = [&](const char* name, const String& param, const char* description) {
+        CLI::callback_t fun = [&engineParameters, param](CLI::results_t res) {
+            int value = 0;
+            if (CLI::detail::lexical_cast(res[0], value))
+            {
+                engineParameters[param] = value;
+                return true;
+            }
+            return false;
+        };
+        auto* opt = addFlagInternal(name, description, fun);
+        opt->set_custom_option("int");
+        return opt;
+    };
+
+    auto createOptions = [](const char* format, const char* options[]) {
+        StringVector items;
+        for (unsigned i = 0; options[i]; i++)
+            items.Push(options[i]);
+        return ToString(format, String::Joined(items, "|").ToLower().Replaced('_', '-').CString());
+    };
+
+    addFlag("--headless", EP_HEADLESS, true, "Do not initialize graphics subsystem");
+    addFlag("--nolimit", EP_FRAME_LIMITER, false, "Disable frame limiter");
+    addFlag("--flushgpu", EP_FLUSH_GPU, true, "Enable GPU flushing");
+    addFlag("--gl2", EP_FORCE_GL2, true, "Force OpenGL2");
+    addOptionPrependString("--landscape", EP_ORIENTATIONS, "LandscapeLeft LandscapeRight ", "Force landscape orientation");
+    addOptionPrependString("--portrait", EP_ORIENTATIONS, "Portrait PortraitUpsideDown ", "Force portrait orientation");
+    addFlag("--nosound", EP_SOUND, false, "Disable sound");
+    addFlag("--noip", EP_SOUND_INTERPOLATION, false, "Disable sound interpolation");
+    addFlag("--mono", EP_SOUND_STEREO, false, "Force mono sound output (default is stereo)");
+    auto* optRenderpath = addOptionString("--renderpath", EP_RENDER_PATH, "Use custom renderpath");
+    auto* optPrepass = addOptionSetString("--prepass", EP_RENDER_PATH, "RenderPaths/Prepass.xml", "Use prepass renderpath")->excludes(optRenderpath);
+    auto* optDeferred = addOptionSetString("--deferred", EP_RENDER_PATH, "RenderPaths/Deferred.xml", "Use deferred renderpath")->excludes(optRenderpath);
+    optRenderpath->excludes(optPrepass)->excludes(optDeferred);
+    auto* optNoShadows = addFlag("--noshadows", EP_SHADOWS, false, "Disable shadows");
+    auto optLowQualityShadows = addFlag("--lqshadows", EP_LOW_QUALITY_SHADOWS, true, "Use low quality shadows")->excludes(optNoShadows);
+    optNoShadows->excludes(optLowQualityShadows);
+    addFlag("--nothreads", EP_WORKER_THREADS, false, "Disable multithreading");
+    addFlag("-v,--vsync", EP_VSYNC, true, "Enable vsync");
+    addFlag("-t,--tripple-buffer", EP_TRIPLE_BUFFER, true, "Enable tripple-buffering");
+    addFlag("-w,--windoed", EP_FULL_SCREEN, false, "Windowed mode");
+    addFlag("-f,--full-screen", EP_FULL_SCREEN, true, "Full screen mode");
+    addFlag("--borderless", EP_BORDERLESS, true, "Borderless window mode");
+    addFlag("--lowdpi", EP_HIGH_DPI, false, "Disable high-dpi handling");
+    addFlag("--highdpi", EP_HIGH_DPI, true, "Enable high-dpi handling");
+    addFlag("-s,--resizeable", EP_WINDOW_RESIZABLE, true, "Enable window resizing");
+    addFlag("-q,--quiet", EP_LOG_QUIET, true, "Disable logging");
+    addFlagInternal("-l,--log", "Logging level", [&](CLI::results_t res) {
+        unsigned logLevel = GetStringListIndex(String(res[0].c_str()).ToUpper().CString(), logLevelPrefixes, M_MAX_UNSIGNED);
+        if (logLevel == M_MAX_UNSIGNED)
+            return false;
+        engineParameters[EP_LOG_LEVEL] = logLevel;
+        return true;
+    })->set_custom_option(createOptions("string in {%s}", logLevelPrefixes).CString());
+    addOptionString("--log-file", EP_LOG_NAME, "Log output file");
+    addOptionInt("-x,--height", EP_WINDOW_WIDTH, "Window width");
+    addOptionInt("-y,--width", EP_WINDOW_WIDTH, "Window height");
+    addOptionInt("--monitor", EP_MONITOR, "Create window on the specified monitor");
+    addOptionInt("--hz", EP_REFRESH_RATE, "Use custom refresh rate");
+    addOptionInt("-m,--multisample", EP_MULTI_SAMPLE, "Multisampling samples");
+    addOptionInt("-b,--sound-buffer", EP_SOUND_BUFFER, "Sound buffer size");
+    addOptionInt("-r,--mix-rate", EP_SOUND_MIX_RATE, "Sound mixing rate");
+    addOptionString("--pp,--prefix-paths", EP_RESOURCE_PREFIX_PATHS, "Resource prefix paths")->envname("URHO3D_PREFIX_PATH")->set_custom_option("path1;path2;...");
+    addOptionString("--pr,--resource-paths", EP_RESOURCE_PATHS, "Resource paths")->set_custom_option("path1;path2;...");
+    addOptionString("--pf,--resource-packages", EP_RESOURCE_PACKAGES, "Resource packages")->set_custom_option("path1;path2;...");
+    addOptionString("--ap,--autoload-paths", EP_AUTOLOAD_PATHS, "Resource autoload paths")->set_custom_option("path1;path2;...");
+    addOptionString("--ds,--dump-shaders", EP_DUMP_SHADERS, "Dump shaders")->set_custom_option("filename");
+    addFlagInternal("--mq,--material-quality", "Material quality", [&](CLI::results_t res) {
+        unsigned value = 0;
+        if (CLI::detail::lexical_cast(res[0], value) && value >= QUALITY_LOW && value <= QUALITY_MAX)
         {
-            String argument = arguments[i].Substring(1).ToLower();
-            String value = i + 1 < arguments.Size() ? arguments[i + 1] : String::EMPTY;
-
-            if (argument == "headless")
-                ret[EP_HEADLESS] = true;
-            else if (argument == "nolimit")
-                ret[EP_FRAME_LIMITER] = false;
-            else if (argument == "flushgpu")
-                ret[EP_FLUSH_GPU] = true;
-            else if (argument == "gl2")
-                ret[EP_FORCE_GL2] = true;
-            else if (argument == "landscape")
-                ret[EP_ORIENTATIONS] = "LandscapeLeft LandscapeRight " + ret[EP_ORIENTATIONS].GetString();
-            else if (argument == "portrait")
-                ret[EP_ORIENTATIONS] = "Portrait PortraitUpsideDown " + ret[EP_ORIENTATIONS].GetString();
-            else if (argument == "nosound")
-                ret[EP_SOUND] = false;
-            else if (argument == "noip")
-                ret[EP_SOUND_INTERPOLATION] = false;
-            else if (argument == "mono")
-                ret[EP_SOUND_STEREO] = false;
-            else if (argument == "prepass")
-                ret[EP_RENDER_PATH] = "RenderPaths/Prepass.xml";
-            else if (argument == "deferred")
-                ret[EP_RENDER_PATH] = "RenderPaths/Deferred.xml";
-            else if (argument == "renderpath" && !value.Empty())
-            {
-                ret[EP_RENDER_PATH] = value;
-                ++i;
-            }
-            else if (argument == "noshadows")
-                ret[EP_SHADOWS] = false;
-            else if (argument == "lqshadows")
-                ret[EP_LOW_QUALITY_SHADOWS] = true;
-            else if (argument == "nothreads")
-                ret[EP_WORKER_THREADS] = false;
-            else if (argument == "v")
-                ret[EP_VSYNC] = true;
-            else if (argument == "t")
-                ret[EP_TRIPLE_BUFFER] = true;
-            else if (argument == "w")
-                ret[EP_FULL_SCREEN] = false;
-            else if (argument == "borderless")
-                ret[EP_BORDERLESS] = true;
-            else if (argument == "lowdpi")
-                ret[EP_HIGH_DPI] = false;
-            else if (argument == "s")
-                ret[EP_WINDOW_RESIZABLE] = true;
-            else if (argument == "hd")
-                ret[EP_HIGH_DPI] = true;
-            else if (argument == "q")
-                ret[EP_LOG_QUIET] = true;
-            else if (argument == "log" && !value.Empty())
-            {
-                unsigned logLevel = GetStringListIndex(value.CString(), logLevelPrefixes, M_MAX_UNSIGNED);
-                if (logLevel != M_MAX_UNSIGNED)
-                {
-                    ret[EP_LOG_LEVEL] = logLevel;
-                    ++i;
-                }
-            }
-            else if (argument == "x" && !value.Empty())
-            {
-                ret[EP_WINDOW_WIDTH] = ToInt(value);
-                ++i;
-            }
-            else if (argument == "y" && !value.Empty())
-            {
-                ret[EP_WINDOW_HEIGHT] = ToInt(value);
-                ++i;
-            }
-            else if (argument == "monitor" && !value.Empty()) {
-                ret[EP_MONITOR] = ToInt(value);
-                ++i;
-            }
-            else if (argument == "hz" && !value.Empty()) {
-                ret[EP_REFRESH_RATE] = ToInt(value);
-                ++i;
-            }
-            else if (argument == "m" && !value.Empty())
-            {
-                ret[EP_MULTI_SAMPLE] = ToInt(value);
-                ++i;
-            }
-            else if (argument == "b" && !value.Empty())
-            {
-                ret[EP_SOUND_BUFFER] = ToInt(value);
-                ++i;
-            }
-            else if (argument == "r" && !value.Empty())
-            {
-                ret[EP_SOUND_MIX_RATE] = ToInt(value);
-                ++i;
-            }
-            else if (argument == "pp" && !value.Empty())
-            {
-                ret[EP_RESOURCE_PREFIX_PATHS] = value;
-                ++i;
-            }
-            else if (argument == "p" && !value.Empty())
-            {
-                ret[EP_RESOURCE_PATHS] = value;
-                ++i;
-            }
-            else if (argument == "pf" && !value.Empty())
-            {
-                ret[EP_RESOURCE_PACKAGES] = value;
-                ++i;
-            }
-            else if (argument == "ap" && !value.Empty())
-            {
-                ret[EP_AUTOLOAD_PATHS] = value;
-                ++i;
-            }
-            else if (argument == "ds" && !value.Empty())
-            {
-                ret[EP_DUMP_SHADERS] = value;
-                ++i;
-            }
-            else if (argument == "mq" && !value.Empty())
-            {
-                ret[EP_MATERIAL_QUALITY] = ToInt(value);
-                ++i;
-            }
-            else if (argument == "tq" && !value.Empty())
-            {
-                ret[EP_TEXTURE_QUALITY] = ToInt(value);
-                ++i;
-            }
-            else if (argument == "tf" && !value.Empty())
-            {
-                ret[EP_TEXTURE_FILTER_MODE] = ToInt(value);
-                ++i;
-            }
-            else if (argument == "af" && !value.Empty())
-            {
-                ret[EP_TEXTURE_FILTER_MODE] = FILTER_ANISOTROPIC;
-                ret[EP_TEXTURE_ANISOTROPY] = ToInt(value);
-                ++i;
-            }
-            else if (argument == "touch")
-                ret[EP_TOUCH_EMULATION] = true;
+            engineParameters[EP_MATERIAL_QUALITY] = value;
+            return true;
+        }
+        return false;
+    })->set_custom_option(ToString("int {%d-%d}", QUALITY_LOW, QUALITY_MAX).CString());
+    addFlagInternal("--tq", "Texture quality", [&](CLI::results_t res) {
+        unsigned value = 0;
+        if (CLI::detail::lexical_cast(res[0], value) && value >= QUALITY_LOW && value <= QUALITY_MAX)
+        {
+            engineParameters[EP_TEXTURE_QUALITY] = value;
+            return true;
+        }
+        return false;
+    })->set_custom_option(ToString("int {%d-%d}", QUALITY_LOW, QUALITY_MAX).CString());
+    addFlagInternal("--tf", "Texture filter mode", [&](CLI::results_t res) {
+        unsigned mode = GetStringListIndex(String(res[0].c_str()).ToUpper().Replaced('-', '_').CString(), textureFilterModeNames, M_MAX_UNSIGNED);
+        if (mode == M_MAX_UNSIGNED)
+            return false;
+        engineParameters[EP_TEXTURE_FILTER_MODE] = mode;
+        return true;
+    })->set_custom_option(createOptions("string in {%s}", textureFilterModeNames).CString());
+    addFlagInternal("--af", "Use anisotropic filtering", [&](CLI::results_t res) {
+        int value = 0;
+        if (CLI::detail::lexical_cast(res[0], value) && value >= 1)
+        {
+            engineParameters[EP_TEXTURE_FILTER_MODE] = FILTER_ANISOTROPIC;
+            engineParameters[EP_TEXTURE_ANISOTROPY] = value;
+            return true;
+        }
+        return false;
+    })->set_custom_option("int");
+    addFlag("--touch", EP_TOUCH_EMULATION, true, "Enable touch emulation");
 #ifdef URHO3D_TESTING
-            else if (argument == "timeout" && !value.Empty())
-            {
-                ret[EP_TIME_OUT] = ToInt(value);
-                ++i;
-            }
-#endif
-#ifdef URHO3D_PROFILE
-            else if (argument == "pr")
-                ret[EP_PROFILER_LISTEN] = true;
-            else if (argument == "prp" && !value.Empty())
-            {
-                ret[EP_PROFILER_PORT] = ToInt(value);
-                ++i;
-            }
-            else if (argument == "prnoev")
-                ret[EP_EVENT_PROFILER] = false;
+    addOptionInt("--timeout", EP_TIME_OUT, "Quit application after specified time");
 #endif
 #ifdef URHO3D_BGFX
-            else if (argument == "graphicsapi" && !value.Empty())
-            {
-                ret[EP_GRAPHICS_API] = value;
-                ++i;
-            }
+    addOptionString("--graphicsapi", EP_GRAPHICS_API, "BGFX Graphics API");
 #endif
-        }
-    }
-
-    return ret;
 }
 
 bool Engine::HasParameter(const VariantMap& parameters, const String& parameter)

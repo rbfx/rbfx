@@ -1,57 +1,74 @@
-os: linux
-dist: trusty
-compiler: gcc
+sudo: true
+dist: xenial
 language: cpp
-sudo: false
 cache:
-  apt: true
   directories:
-    - $HOME/cmake-3.4.3-Linux-x86_64/bin
-    - $HOME/cmake-3.4.3-Linux-x86_64/share
-git:
-  submodules: false
+    - /tmp/downloads
 env:
   global:
     - MAKEFLAGS=-j4
-    - URHO3D_ENABLE_ALL=ON
+    - URHO3D_SAMPLES=ON
+    - URHO3D_PACKAGING=ON
+    - URHO3D_SSE=OFF
+addons:
+  apt:
+    sources:
+      - deadsnakes
+    packages:
+      - libasound2-dev
+      - libxrandr-dev
+      - libgl1-mesa-dev
+      - libglu1-mesa-dev
+      - python3.6
 notifications:
   email:
     on_success: never
     on_failure: never
 branches:
   except:
-    - /^(.*[^\w])?appveyor-.+$/
+    - /^(.*[^\w])?(appveyor|no-ci)-.+$/
 matrix:
   fast_finish: true
   include:
-    - &Linux
-      addons:
-        apt:
-          packages: &linux_packages_64bit
-            - libasound2-dev
-            - libxrandr-dev
-            - libgl1-mesa-dev
-            - libglu1-mesa-dev
-    - <<: *Linux
+    - &Linux-gcc
+      os: linux
+      compiler: gcc
+      env:
+        - BUILD_SHARED_LIBS=OFF
+    - <<: *Linux-gcc
+      env:
+        - BUILD_SHARED_LIBS=ON
+        - URHO3D_WITH_MONO=ON
+    - &Linux-clang
+      os: linux
       compiler: clang
-    - <<: *Linux
-      env: BUILD_SHARED_LIBS=ON
-    - <<: *Linux
-      compiler: clang
-      env: BUILD_SHARED_LIBS=ON
+      env:
+        - BUILD_SHARED_LIBS=OFF
+    - <<: *Linux-clang
+      env:
+        - BUILD_SHARED_LIBS=ON
+        - URHO3D_WITH_MONO=ON
     - &MacOS
       os: osx
       osx_image: xcode8.3
       compiler: clang
+      env:
+        - BUILD_SHARED_LIBS=OFF
     - <<: *MacOS
       env:
-        BUILD_SHARED_LIBS=ON
+        - BUILD_SHARED_LIBS=ON
+        - URHO3D_WITH_MONO=ON
+    - <<: *Linux-gcc
+      env:
+        - BUILD_SHARED_LIBS=OFF
+        - EMSCRIPTEN=1
+        - CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/Emscripten.cmake
   exclude:
     - &MingW
       env:
-        CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake
-        CMAKE_SYSTEM_PROCESSOR=x86_64
-        URHO3D_RENDERER=D3D9
+        - CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake
+        - CMAKE_SYSTEM_PROCESSOR=x86_64
+        - URHO3D_RENDERER=D3D9
       addons:
         apt:
           packages:
@@ -60,25 +77,68 @@ matrix:
             - binutils-mingw-w64-x86-64
     - <<: *MingW
       env:
-        BUILD_SHARED_LIBS=ON
-        CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake
-        CMAKE_SYSTEM_PROCESSOR=x86_64
-        URHO3D_RENDERER=D3D9
+        - BUILD_SHARED_LIBS=ON
+        - CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake
+        - CMAKE_SYSTEM_PROCESSOR=x86_64
+        - URHO3D_RENDERER=D3D9
+  allow_failures:
+    - <<: *Linux-gcc
+      env:
+        - BUILD_SHARED_LIBS=OFF
+        - EMSCRIPTEN=1
+        - CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/Emscripten.cmake
 
-script: |
-  # Update CMake to minimum required version
-  cmake --version
+before_install: |
+  eval "${MATRIX_EVAL}"
   if [[ $TRAVIS_OS_NAME == 'linux' ]];
   then
-      if [[ ! -f $HOME/cmake-3.4.3-Linux-x86_64/bin/cmake ]];
-      then
-          wget --no-check-certificate https://cmake.org/files/v3.4/cmake-3.4.3-Linux-x86_64.tar.gz -O $HOME/cmake.tar.gz && \
-          tar xf $HOME/cmake.tar.gz -C $HOME && \
-          rm $HOME/cmake.tar.gz
-      fi
-      export PATH=$HOME/cmake-3.4.3-Linux-x86_64/bin:$PATH
+      sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+      echo "deb http://download.mono-project.com/repo/ubuntu stable-xenial main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
+      sudo apt-get update -qq
+  else
+      brew update
   fi
+
+install: |
+  mkdir -p /tmp/downloads
+  if [[ $TRAVIS_OS_NAME == 'linux' ]];
+  then
+      if [[ "$URHO3D_WITH_MONO" != "" ]];
+      then
+          sudo apt-get install -y --force-yes mono-devel msbuild
+      fi
+  elif [[ "$URHO3D_WITH_MONO" != "" ]];
+  then
+      # mono
+      if [[ ! -f /tmp/downloads/Mono.pkg ]];
+      then
+          wget https://download.mono-project.com/archive/5.10.1/macos-10-universal/MonoFramework-MDK-5.10.1.57.macos10.xamarin.universal.pkg -O /tmp/downloads/Mono.pkg
+      fi
+      sudo installer -pkg /tmp/downloads/Mono.pkg -target /
+  fi
+
+before_script: |
+  if [[ "$EMSCRIPTEN" != "" ]];
+  then
+      if [[ ! $EMSCRIPTEN_WASM ]]; then
+          export BINARYEN=binaryen-master-64bit;
+      fi
+      git clone --depth 1 https://github.com/urho3d/emscripten-sdk.git
+      emscripten-sdk/emsdk activate --build=Release sdk-master-64bit $BINARYEN
+      source emscripten-sdk/emsdk_env.sh
+      for compiler in $EMSCRIPTEN/{emcc,em++};
+      do
+          touch -d "2017-01-01 00:00:00 +0800" $compiler;
+      done
+      export EXTRA_BUILD_FLAGS='--target 11_Physics'
+  fi
+
+script: |
   mkdir build
   cd build
+
+  echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
+
   cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} ..
-  cmake --build .
+
+  cmake --build . $EXTRA_BUILD_FLAGS

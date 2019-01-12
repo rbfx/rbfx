@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2017-2019 Rokas Kupstys.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,7 @@
 #pragma once
 
 
+#include "ToolboxAPI.h"
 #include <Urho3D/Core/Object.h>
 
 
@@ -36,7 +37,7 @@ class Texture2D;
 class Viewport;
 class Node;
 
-class SceneView
+class URHO3D_TOOLBOX_API SceneView
 {
 public:
     /// Construct.
@@ -63,8 +64,6 @@ protected:
     SharedPtr<Texture2D> texture_;
     /// Viewport which defines rendering area.
     SharedPtr<Viewport> viewport_;
-    /// Camera which renders to a texture.
-    WeakPtr<Node> camera_;
 };
 
 }

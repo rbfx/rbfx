@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -232,7 +232,7 @@ private:
     /// The frame number animation LOD distance was last calculated on.
     unsigned animationLodFrameNumber_;
     /// Morph vertex element mask.
-    unsigned morphElementMask_;
+    VertexMaskFlags morphElementMask_;
     /// Animation LOD bias.
     float animationLodBias_;
     /// Animation LOD timer.

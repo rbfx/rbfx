@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -102,7 +102,7 @@ void SpriteSheet2D::DefineSprite(const String& name, const IntRect& rectangle, c
     if (GetSprite(name))
         return;
 
-    SharedPtr<Sprite2D> sprite(new Sprite2D(context_));
+    SharedPtr<Sprite2D> sprite(context_->CreateObject<Sprite2D>());
     sprite->SetName(name);
     sprite->SetTexture(texture_);
     sprite->SetRectangle(rectangle);
@@ -124,7 +124,7 @@ Sprite2D* SpriteSheet2D::GetSprite(const String& name) const
 
 bool SpriteSheet2D::BeginLoadFromPListFile(Deserializer& source)
 {
-    loadPListFile_ = new PListFile(context_);
+    loadPListFile_ = context_->CreateObject<PListFile>();
     if (!loadPListFile_->Load(source))
     {
         URHO3D_LOGERROR("Could not load sprite sheet");
@@ -182,8 +182,8 @@ bool SpriteSheet2D::EndLoadFromPListFile()
             offset.y_ = -sourceColorRect.top_;
 
             IntVector2 sourceSize = frameInfo["sourceSize"]->GetIntVector2();
-            hotSpot.x_ = ((float)offset.x_ + sourceSize.x_ / 2) / rectangle.Width();
-            hotSpot.y_ = 1.0f - ((float)offset.y_ + sourceSize.y_ / 2) / rectangle.Height();
+            hotSpot.x_ = (offset.x_ + sourceSize.x_ / 2.f) / rectangle.Width();
+            hotSpot.y_ = 1.0f - (offset.y_ + sourceSize.y_ / 2.f) / rectangle.Height();
         }
 
         DefineSprite(name, rectangle, hotSpot, offset);
@@ -196,7 +196,7 @@ bool SpriteSheet2D::EndLoadFromPListFile()
 
 bool SpriteSheet2D::BeginLoadFromXMLFile(Deserializer& source)
 {
-    loadXMLFile_ = new XMLFile(context_);
+    loadXMLFile_ = context_->CreateObject<XMLFile>();
     if (!loadXMLFile_->Load(source))
     {
         URHO3D_LOGERROR("Could not load sprite sheet");
@@ -254,8 +254,8 @@ bool SpriteSheet2D::EndLoadFromXMLFile()
             offset.y_ = subTextureElem.GetInt("frameY");
             int frameWidth = subTextureElem.GetInt("frameWidth");
             int frameHeight = subTextureElem.GetInt("frameHeight");
-            hotSpot.x_ = ((float)offset.x_ + frameWidth / 2) / width;
-            hotSpot.y_ = 1.0f - ((float)offset.y_ + frameHeight / 2) / height;
+            hotSpot.x_ = (offset.x_ + frameWidth / 2.f) / width;
+            hotSpot.y_ = 1.0f - (offset.y_ + frameHeight / 2.f) / height;
         }
 
         DefineSprite(name, rectangle, hotSpot, offset);
@@ -270,7 +270,7 @@ bool SpriteSheet2D::EndLoadFromXMLFile()
 
 bool SpriteSheet2D::BeginLoadFromJSONFile(Deserializer& source)
 {
-    loadJSONFile_ = new JSONFile(context_);
+    loadJSONFile_ = context_->CreateObject<JSONFile>();
     if (!loadJSONFile_->Load(source))
     {
         URHO3D_LOGERROR("Could not load sprite sheet");
@@ -333,8 +333,8 @@ bool SpriteSheet2D::EndLoadFromJSONFile()
             offset.y_ = subTextureVal.Get("frameY").GetInt();
             int frameWidth = frameWidthVal.GetInt();
             int frameHeight = frameHeightVal.GetInt();
-            hotSpot.x_ = ((float)offset.x_ + frameWidth / 2) / width;
-            hotSpot.y_ = 1.0f - ((float)offset.y_ + frameHeight / 2) / height;
+            hotSpot.x_ = (offset.x_ + frameWidth / 2.f) / width;
+            hotSpot.y_ = 1.0f - (offset.y_ + frameHeight / 2.f) / height;
         }
 
         DefineSprite(name, rectangle, hotSpot, offset);

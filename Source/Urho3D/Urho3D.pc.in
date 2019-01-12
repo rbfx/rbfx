@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2008-2019 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
 
 prefix=@CMAKE_INSTALL_PREFIX@
 exec_prefix=${prefix}
-libdir=${exec_prefix}/@DEST_LIBRARY_DIR@
+libdir=${exec_prefix}/@DEST_ARCHIVE_DIR@
 includedir=${prefix}/include
 
 # Additional Cflags for various build configurations, which can be accessed as normal pkg-config variable using '--variable' option

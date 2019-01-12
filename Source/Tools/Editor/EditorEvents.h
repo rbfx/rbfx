@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2017-2019 Rokas Kupstys.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,38 +23,62 @@
 #pragma once
 
 
+#include <Urho3D/Core/Object.h>
+#include "EditorEventsPrivate.h"
+
+
 namespace Urho3D
 {
 
 /// Event sent during construction of toolbar buttons. Subscribe to it to add new buttons.
 URHO3D_EVENT(E_EDITORTOOLBARBUTTONS, EditorToolbarButtons)
 {
+    URHO3D_PARAM(P_SCENE, Scene);                     // Scene pointer.
 }
 
 /// Event sent when node selection in scene view changes.
 URHO3D_EVENT(E_EDITORSELECTIONCHANGED, EditorSelectionChanged)
 {
-    URHO3D_PARAM(P_SCENETAB, SceneTab);               // SceneTab pointer.
+    URHO3D_PARAM(P_SCENE, Scene);                     // Scene pointer.
 }
 
-/// Event sent when scene has it's rendering settings modified.
-URHO3D_EVENT(E_EDITORSCENEEFFECTSCHANGED, EditorSceneEffectsChanged)
-{
-    URHO3D_PARAM(P_SCENETAB, SceneTab);               // SceneTab pointer.
-}
-
-/// Event sent when editor successfully saves a resource.
-URHO3D_EVENT(E_EDITORRESOURCESAVED, EditorResourceSaved)
+/// Event sent when rendering top menu bar of editor.
+URHO3D_EVENT(E_EDITORAPPLICATIONMENU, EditorApplicationMenu)
 {
 }
 
-/// Event sent right before reloading user components.
-URHO3D_EVENT(E_EDITORUSERCODERELOADSTART, EditorUserCodeReloadStart)
+/// Event sent when editor is about to save a Project.json file.
+URHO3D_EVENT(E_EDITORPROJECTSAVING, EditorProjectSaving)
+{
+    URHO3D_PARAM(P_ROOT, Root);                      // Raw pointer to JSONValue.
+}
+
+/// Event sent when editor is about to load a Project.json file.
+URHO3D_EVENT(E_EDITORPROJECTLOADING, EditorProjectLoading)
+{
+    URHO3D_PARAM(P_ROOT, Root);                      // Raw pointer to JSONValue.
+}
+
+/// Notify inspector window that this instance would like to render inspector content.
+URHO3D_EVENT(E_EDITORRENDERINSPECTOR, EditorRenderInspector)
+{
+    URHO3D_PARAM(P_CATEGORY, Cagetory);               // unsigned.
+    URHO3D_PARAM(P_INSPECTABLE, Inspectable);         // RefCounted pointer.
+}
+
+/// Notify subsystems about closed editor tab.
+URHO3D_EVENT(E_EDITORTABCLOSED, EditorTabClosed)
+{
+    URHO3D_PARAM(P_TAB, Tab);                         // RefCounted pointer.
+}
+
+/// Sent when scene is played. Not sent when scene is resumed from paused state.
+URHO3D_EVENT(E_SIMULATIONSTART, SimulationStart)
 {
 }
 
-/// Event sent right after reloading user components.
-URHO3D_EVENT(E_EDITORUSERCODERELOADEND, EditorUserCodeReloadEnd)
+/// Sent when scene is stopped. Not sent when scene is paused.
+URHO3D_EVENT(E_SIMULATIONSTOP, SimulationStop)
 {
 }
 

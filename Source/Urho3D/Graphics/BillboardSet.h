@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -37,6 +37,18 @@ class VertexBuffer;
 /// One billboard in the billboard set.
 struct URHO3D_API Billboard
 {
+    /// Instance equality operator.
+    bool operator ==(const Billboard& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const Billboard& rhs) const
+    {
+        return this != &rhs;
+    }
+
     /// Position.
     Vector3 position_;
     /// Two-dimensional size. If BillboardSet has fixed screen size enabled, this is measured in pixels instead of world units.

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,9 +23,6 @@
 #pragma once
 
 #include "../Math/Vector4.h"
-
-// Defined by Windows headers
-#undef TRANSPARENT
 
 namespace Urho3D
 {
@@ -222,8 +219,8 @@ public:
     static const Color MAGENTA;
     /// Opaque yellow color.
     static const Color YELLOW;
-    /// Transparent color (black with no alpha).
-    static const Color TRANSPARENT;
+    /// Transparent black color (black with no alpha).
+    static const Color TRANSPARENT_BLACK;
 
 protected:
     /// Return hue value given greatest and least RGB component, value-wise.

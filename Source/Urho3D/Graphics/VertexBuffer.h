@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -35,11 +35,16 @@ class URHO3D_API VertexBuffer : public Object, public GPUObject
 {
     URHO3D_OBJECT(VertexBuffer, Object);
 
+    using GPUObject::GetGraphics;
+
 public:
     /// Construct. Optionally force headless (no GPU-side buffer) operation.
     explicit VertexBuffer(Context* context, bool forceHeadless = false);
     /// Destruct.
     ~VertexBuffer() override;
+
+    /// Register object with the engine.
+    static void RegisterObject(Context* context);
 
     /// Mark the buffer destroyed on graphics context destruction. May be a no-op depending on the API.
     void OnDeviceLost() override;
@@ -100,7 +105,7 @@ public:
     unsigned GetElementOffset(VertexElementType type, VertexElementSemantic semantic, unsigned char index = 0) const { const VertexElement* element = GetElement(type, semantic, index); return element ? element->offset_ : M_MAX_UNSIGNED; }
 
     /// Return legacy vertex element mask. Note that both semantic and type must match the legacy element for a mask bit to be set.
-    unsigned GetElementMask() const { return elementMask_; }
+    VertexMaskFlags GetElementMask() const { return elementMask_; }
 
     /// Return CPU memory shadow data.
     unsigned char* GetShadowData() const { return shadowData_.Get(); }
@@ -155,7 +160,7 @@ private:
     /// Vertex element hash.
     unsigned long long elementHash_{};
     /// Vertex element legacy bitmask.
-    unsigned elementMask_{};
+    VertexMaskFlags elementMask_{};
     /// Buffer locking state.
     LockState lockState_{LOCK_NONE};
     /// Lock start vertex.

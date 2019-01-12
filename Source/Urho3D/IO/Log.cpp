@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/ProcessUtils.h"
+#include "../Core/Profiler.h"
 #include "../Core/Thread.h"
 #include "../Core/Timer.h"
 #include "../IO/File.h"
@@ -50,7 +51,7 @@ const char* logLevelPrefixes[] =
     "TRACE",
     "DEBUG",
     "INFO",
-    "WARNING",
+    "WARN",
     "ERROR",
     nullptr
 };
@@ -65,7 +66,7 @@ Log::Log(Context* context) :
 #else
     level_(LOG_INFO),
 #endif
-    timeStamp_(true),
+    timeStampFormat_(DEFAULT_DATE_TIME_FORMAT),
     inWrite_(false),
     quiet_(false)
 {
@@ -84,6 +85,10 @@ void Log::Open(const String& fileName)
 #if !defined(__ANDROID__) && !defined(IOS) && !defined(TVOS)
     if (fileName.Empty())
         return;
+
+    if (fileName == NULL_DEVICE)
+        return;
+
     if (logFile_ && logFile_->IsOpen())
     {
         if (logFile_->GetName() == fileName)
@@ -114,7 +119,7 @@ void Log::Close()
 #endif
 }
 
-void Log::SetLevel(int level)
+void Log::SetLevel(LogLevel level)
 {
     if (level < LOG_TRACE || level > LOG_NONE)
     {
@@ -125,17 +130,12 @@ void Log::SetLevel(int level)
     level_ = level;
 }
 
-void Log::SetTimeStamp(bool enable)
-{
-    timeStamp_ = enable;
-}
-
 void Log::SetQuiet(bool quiet)
 {
     quiet_ = quiet;
 }
 
-void Log::Write(int level, const String& message)
+void Log::Write(LogLevel level, const String& message)
 {
     // Special case for LOG_RAW level
     if (level == LOG_RAW)
@@ -166,12 +166,14 @@ void Log::Write(int level, const String& message)
 
     String formattedMessage = logLevelPrefixes[level];
     formattedMessage += ": ";
-    formattedMessage += String(' ', 9 - formattedMessage.Length());
+    formattedMessage += String(' ', 7 - formattedMessage.Length());
     formattedMessage += message;
     logInstance->lastMessage_ = message;
 
-    if (logInstance->timeStamp_)
-        formattedMessage = "[" + Time::GetTimeStamp() + "] " + formattedMessage;
+    if (!logInstance->timeStampFormat_.Empty())
+        formattedMessage = "[" + Time::GetTimeStamp(logInstance->timeStampFormat_) + "] " + formattedMessage;
+
+    URHO3D_PROFILE_MESSAGE(formattedMessage.CString(), formattedMessage.Length());
 
 #if defined(__ANDROID__)
     int androidLevel = ANDROID_LOG_VERBOSE + level;

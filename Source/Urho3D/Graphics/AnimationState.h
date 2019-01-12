@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -48,12 +48,24 @@ enum AnimationBlendMode
 };
 
 /// %Animation instance per-track data.
-struct AnimationStateTrack
+struct URHO3D_API AnimationStateTrack
 {
     /// Construct with defaults.
     AnimationStateTrack();
     /// Destruct
     ~AnimationStateTrack();
+
+    /// Instance equality operator.
+    bool operator ==(const AnimationStateTrack& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const AnimationStateTrack& rhs) const
+    {
+        return this != &rhs;
+    }
 
     /// Animation track.
     const AnimationTrack* track_;

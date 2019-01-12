@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,10 +24,14 @@
 
 #include "../Core/Context.h"
 #include "../IO/Deserializer.h"
+#include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../IO/Serializer.h"
 #include "../Resource/XMLElement.h"
+#include "../Resource/XMLFile.h"
+#include "../Resource/JSONFile.h"
 #include "../Resource/JSONValue.h"
+#include "../Resource/ResourceCache.h"
 #include "../Scene/ReplicationState.h"
 #include "../Scene/SceneEvents.h"
 #include "../Scene/Serializable.h"
@@ -370,7 +374,7 @@ bool Serializable::LoadXML(const XMLElement& source)
                 Variant varValue;
 
                 // If enums specified, do enum lookup and int assignment. Otherwise assign the variant directly
-                if (attr.enumNames_)
+                if (attr.enumNames_ && attr.type_ == VAR_INT)
                 {
                     String value = attrElem.GetAttribute("value");
                     bool enumFound = false;
@@ -458,7 +462,7 @@ bool Serializable::LoadJSON(const JSONValue& source)
                 Variant varValue;
 
                 // If enums specified, do enum lookup ad int assignment. Otherwise assign variant directly
-                if (attr.enumNames_)
+                if (attr.enumNames_ && attr.type_ == VAR_INT)
                 {
                     const String& valueStr = value.GetString();
                     bool enumFound = false;
@@ -534,7 +538,7 @@ bool Serializable::SaveXML(XMLElement& dest) const
         XMLElement attrElem = dest.CreateChild("attribute");
         attrElem.SetAttribute("name", attr.name_);
         // If enums specified, set as an enum string. Otherwise set directly as a Variant
-        if (attr.enumNames_)
+        if (attr.enumNames_ && attr.type_ == VAR_INT)
         {
             int enumValue = value.GetInt();
             attrElem.SetAttribute("value", attr.enumNames_[enumValue]);
@@ -570,7 +574,7 @@ bool Serializable::SaveJSON(JSONValue& dest) const
 
         JSONValue attrVal;
         // If enums specified, set as an enum string. Otherwise set directly as a Variant
-        if (attr.enumNames_)
+        if (attr.enumNames_ && attr.type_ == VAR_INT)
         {
             int enumValue = value.GetInt();
             attrVal = attr.enumNames_[enumValue];
@@ -583,6 +587,45 @@ bool Serializable::SaveJSON(JSONValue& dest) const
     dest.Set("attributes", attributesValue);
 
     return true;
+}
+
+bool Serializable::Load(const String& resourceName)
+{
+    SharedPtr<File> file(GetSubsystem<ResourceCache>()->GetFile(resourceName, false));
+    if (file.NotNull())
+        return Load(*file);
+    return false;
+}
+
+bool Serializable::LoadXML(const String& resourceName)
+{
+    SharedPtr<XMLFile> file(GetSubsystem<ResourceCache>()->GetResource<XMLFile>(resourceName, false));
+    if (file.NotNull())
+        return LoadXML(file->GetRoot());
+    return false;
+}
+
+bool Serializable::LoadJSON(const String& resourceName)
+{
+    SharedPtr<JSONFile> file(GetSubsystem<ResourceCache>()->GetResource<JSONFile>(resourceName, false));
+    if (file.NotNull())
+        return LoadJSON(file->GetRoot());
+    return false;
+}
+
+bool Serializable::LoadFile(const String& resourceName)
+{
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    // Router may redirect to different file.
+    String realResourceName = resourceName;
+    cache->RouteResourceName(realResourceName, RESOURCE_CHECKEXISTS);
+    String extension = GetExtension(realResourceName);
+
+    if (extension == ".xml")
+        return LoadXML(realResourceName);
+    if (extension == ".json")
+        return LoadJSON(realResourceName);
+    return Load(realResourceName);
 }
 
 bool Serializable::SetAttribute(unsigned index, const Variant& value)
@@ -759,7 +802,7 @@ void Serializable::WriteInitialDeltaUpdate(Serializer& dest, unsigned char timeS
 
     // First write the change bitfield, then attribute data for non-default attributes
     dest.WriteUByte(timeStamp);
-    dest.Write(attributeBits.data_, (numAttributes + 7) >> 3);
+    dest.Write(attributeBits.data_, (numAttributes + 7) >> 3u);
 
     for (unsigned i = 0; i < numAttributes; ++i)
     {
@@ -785,7 +828,7 @@ void Serializable::WriteDeltaUpdate(Serializer& dest, const DirtyBits& attribute
     // First write the change bitfield, then attribute data for changed attributes
     // Note: the attribute bits should not contain LATESTDATA attributes
     dest.WriteUByte(timeStamp);
-    dest.Write(attributeBits.data_, (numAttributes + 7) >> 3);
+    dest.Write(attributeBits.data_, (numAttributes + 7) >> 3u);
 
     for (unsigned i = 0; i < numAttributes; ++i)
     {
@@ -829,7 +872,7 @@ bool Serializable::ReadDeltaUpdate(Deserializer& source)
 
     unsigned long long interceptMask = networkState_ ? networkState_->interceptMask_ : 0;
     unsigned char timeStamp = source.ReadUByte();
-    source.Read(attributeBits.data_, (numAttributes + 7) >> 3);
+    source.Read(attributeBits.data_, (numAttributes + 7) >> 3u);
 
     for (unsigned i = 0; i < numAttributes && !source.IsEof(); ++i)
     {

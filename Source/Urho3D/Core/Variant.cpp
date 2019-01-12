@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -133,7 +133,7 @@ Variant& Variant::operator =(const Variant& rhs)
         break;
 
     default:
-        memcpy(&value_, &rhs.value_, sizeof(VariantValue));
+        memcpy(&value_, &rhs.value_, sizeof(VariantValue));     // NOLINT(bugprone-undefined-memory-manipulation)
         break;
     }
 
@@ -250,6 +250,96 @@ bool Variant::operator ==(const VectorBuffer& rhs) const
     return type_ == VAR_BUFFER && buffer.Size() == rhs.GetSize() ?
         strncmp(reinterpret_cast<const char*>(&buffer[0]), reinterpret_cast<const char*>(rhs.GetData()), buffer.Size()) == 0 :
         false;
+}
+
+Variant::Variant(VariantType type)
+{
+    SetType(type);
+    switch (type)
+    {
+    case VAR_INT:
+        *this = 0;
+        break;
+
+    case VAR_INT64:
+        *this = 0LL;
+        break;
+
+    case VAR_BOOL:
+        *this = false;
+        break;
+
+    case VAR_FLOAT:
+        *this = 0.0f;
+        break;
+
+    case VAR_VECTOR2:
+        *this = Vector2::ZERO;
+        break;
+
+    case VAR_VECTOR3:
+        *this = Vector3::ZERO;
+        break;
+
+    case VAR_VECTOR4:
+        *this = Vector4::ZERO;
+        break;
+
+    case VAR_QUATERNION:
+        *this = Quaternion::IDENTITY;
+        break;
+
+    case VAR_COLOR:
+        *this = Color::BLACK;
+        break;
+
+    case VAR_STRING:
+        *this = String::EMPTY;
+        break;
+
+    case VAR_VOIDPTR:
+        *this = (void*)nullptr;
+        break;
+
+    case VAR_INTRECT:
+        *this = IntRect::ZERO;
+        break;
+
+    case VAR_INTVECTOR2:
+        *this = IntVector2::ZERO;
+        break;
+
+    case VAR_INTVECTOR3:
+        *this = IntVector3::ZERO;
+        break;
+
+    case VAR_PTR:
+        *this = (RefCounted*)nullptr;
+        break;
+
+    case VAR_MATRIX3:
+        *this = Matrix3::ZERO;
+        break;
+
+    case VAR_MATRIX3X4:
+        *this = Matrix3x4::ZERO;
+        break;
+
+    case VAR_MATRIX4:
+        *this = Matrix4::ZERO;
+        break;
+
+    case VAR_DOUBLE:
+        *this = 0.0;
+        break;
+
+    case VAR_RECT:
+        *this = Rect::ZERO;
+        break;
+
+    default:
+        SetType(VAR_NONE);
+    }
 }
 
 void Variant::FromString(const String& type, const String& value)

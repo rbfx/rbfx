@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,12 +20,13 @@
 // THE SOFTWARE.
 //
 
-#include "ProgressBar.h"
+#include "../Precompiled.h"
 
 #include "../Core/Context.h"
 #include "../Input/InputEvents.h"
 #include "../IO/Log.h"
-#include "UIEvents.h"
+#include "../UI/ProgressBar.h"
+#include "../UI/UIEvents.h"
 
 namespace Urho3D
 {

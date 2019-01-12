@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
+#include "../Core/Thread.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Material.h"
 #include "../Graphics/Renderer.h"
@@ -49,50 +50,6 @@ namespace Urho3D
 {
 
 extern const char* wrapModeNames[];
-
-static const char* textureUnitNames[] =
-{
-    "diffuse",
-    "normal",
-    "specular",
-    "emissive",
-    "environment",
-#ifdef DESKTOP_GRAPHICS
-    "volume",
-    "custom1",
-    "custom2",
-    "lightramp",
-    "lightshape",
-    "shadowmap",
-    "faceselect",
-    "indirection",
-    "depth",
-    "light",
-    "zone",
-    nullptr
-#else
-    "lightramp",
-    "lightshape",
-    "shadowmap",
-    nullptr
-#endif
-};
-
-const char* cullModeNames[] =
-{
-    "none",
-    "ccw",
-    "cw",
-    nullptr
-};
-
-static const char* fillModeNames[] =
-{
-    "solid",
-    "wireframe",
-    "point",
-    nullptr
-};
 
 TextureUnit ParseTextureUnitName(String name)
 {
@@ -148,7 +105,7 @@ StringHash ParseTextureTypeXml(ResourceCache* cache, const String& filename)
     SharedPtr<File> texXmlFile = cache->GetFile(filename, false);
     if (texXmlFile.NotNull())
     {
-        SharedPtr<XMLFile> texXml(new XMLFile(cache->GetContext()));
+        SharedPtr<XMLFile> texXml(cache->GetContext()->CreateObject<XMLFile>());
         if (texXml->Load(*texXmlFile))
             type = ParseTextureTypeName(texXml->GetRoot().GetName());
     }
@@ -166,12 +123,12 @@ bool CompareTechniqueEntries(const TechniqueEntry& lhs, const TechniqueEntry& rh
 }
 
 TechniqueEntry::TechniqueEntry() noexcept :
-    qualityLevel_(0),
+    qualityLevel_(QUALITY_LOW),
     lodDistance_(0.0f)
 {
 }
 
-TechniqueEntry::TechniqueEntry(Technique* tech, unsigned qualityLevel, float lodDistance) noexcept :
+TechniqueEntry::TechniqueEntry(Technique* tech, MaterialQuality qualityLevel, float lodDistance) noexcept :
     technique_(tech),
     original_(tech),
     qualityLevel_(qualityLevel),
@@ -272,7 +229,7 @@ bool Material::EndLoad()
 bool Material::BeginLoadXML(Deserializer& source)
 {
     ResetToDefaults();
-    loadXMLFile_ = new XMLFile(context_);
+    loadXMLFile_ = context_->CreateObject<XMLFile>();
     if (loadXMLFile_->Load(source))
     {
         // If async loading, scan the XML content beforehand for technique & texture resources
@@ -331,7 +288,7 @@ bool Material::BeginLoadJSON(Deserializer& source)
     loadXMLFile_.Reset();
 
     // Attempt to load from JSON file instead
-    loadJSONFile_ = new JSONFile(context_);
+    loadJSONFile_ = context_->CreateObject<JSONFile>();
     if (loadJSONFile_->Load(source))
     {
         // If async loading, scan the XML content beforehand for technique & texture resources
@@ -387,7 +344,7 @@ bool Material::BeginLoadJSON(Deserializer& source)
 
 bool Material::Save(Serializer& dest) const
 {
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement materialElem = xml->CreateRoot("material");
 
     Save(materialElem);
@@ -424,7 +381,7 @@ bool Material::Load(const XMLElement& source)
             TechniqueEntry newTechnique;
             newTechnique.technique_ = newTechnique.original_ = tech;
             if (techniqueElem.HasAttribute("quality"))
-                newTechnique.qualityLevel_ = techniqueElem.GetInt("quality");
+                newTechnique.qualityLevel_ = (MaterialQuality)techniqueElem.GetInt("quality");
             if (techniqueElem.HasAttribute("loddistance"))
                 newTechnique.lodDistance_ = techniqueElem.GetFloat("loddistance");
             techniques_.Push(newTechnique);
@@ -484,7 +441,7 @@ bool Material::Load(const XMLElement& source)
     while (parameterAnimationElem)
     {
         String name = parameterAnimationElem.GetAttribute("name");
-        SharedPtr<ValueAnimation> animation(new ValueAnimation(context_));
+        SharedPtr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
         if (!animation->LoadXML(parameterAnimationElem))
         {
             URHO3D_LOGERROR("Could not load parameter animation");
@@ -579,7 +536,7 @@ bool Material::Load(const JSONValue& source)
             newTechnique.technique_ = newTechnique.original_ = tech;
             JSONValue qualityVal = techVal.Get("quality");
             if (!qualityVal.IsNull())
-                newTechnique.qualityLevel_ = qualityVal.GetInt();
+                newTechnique.qualityLevel_ = (MaterialQuality)qualityVal.GetInt();
             JSONValue lodDistanceVal = techVal.Get("loddistance");
             if (!lodDistanceVal.IsNull())
                 newTechnique.lodDistance_ = lodDistanceVal.GetFloat();
@@ -647,7 +604,7 @@ bool Material::Load(const JSONValue& source)
         String name = it->first_;
         JSONValue paramAnimVal = it->second_;
 
-        SharedPtr<ValueAnimation> animation(new ValueAnimation(context_));
+        SharedPtr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
         if (!animation->LoadJSON(paramAnimVal))
         {
             URHO3D_LOGERROR("Could not load parameter animation");
@@ -923,7 +880,7 @@ void Material::SetNumTechniques(unsigned num)
     RefreshMemoryUse();
 }
 
-void Material::SetTechnique(unsigned index, Technique* tech, unsigned qualityLevel, float lodDistance)
+void Material::SetTechnique(unsigned index, Technique* tech, MaterialQuality qualityLevel, float lodDistance)
 {
     if (index >= techniques_.Size())
         return;
@@ -1145,7 +1102,7 @@ void Material::ReleaseShaders()
 
 SharedPtr<Material> Material::Clone(const String& cloneName) const
 {
-    SharedPtr<Material> ret(new Material(context_));
+    SharedPtr<Material> ret(context_->CreateObject<Material>());
 
     ret->SetName(cloneName);
     ret->techniques_ = techniques_;

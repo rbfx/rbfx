@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -52,7 +52,7 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
 {
     Context* context = font_->GetContext();
 
-    SharedPtr<XMLFile> xmlReader(new XMLFile(context));
+    SharedPtr<XMLFile> xmlReader(context->CreateObject<XMLFile>());
     MemoryBuffer memoryBuffer(fontData, fontDataSize);
     if (!xmlReader->Load(memoryBuffer))
     {
@@ -101,7 +101,7 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
 
         // Load texture manually to allow controlling the alpha channel mode
         SharedPtr<File> fontFile = resourceCache->GetFile(textureFile);
-        SharedPtr<Image> fontImage(new Image(context));
+        SharedPtr<Image> fontImage(context->CreateObject<Image>());
         if (!fontFile || !fontImage->Load(*fontFile))
         {
             URHO3D_LOGERROR("Failed to load font image file");
@@ -151,9 +151,9 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
         XMLElement kerningElem = kerningsElem.GetChild("kerning");
         while (!kerningElem.IsNull())
         {
-            int first = kerningElem.GetInt("first");
-            int second = kerningElem.GetInt("second");
-            auto value = (unsigned)((first << 16) + second);
+            unsigned first = kerningElem.GetInt("first");
+            unsigned second = kerningElem.GetInt("second");
+            unsigned value = first << 16u | second;
             kerningMapping_[value] = (short)kerningElem.GetInt("amount");
 
             kerningElem = kerningElem.GetNext("kerning");
@@ -223,7 +223,7 @@ bool FontFaceBitmap::Load(FontFace* fontFace, bool usedGlyphs)
     Vector<SharedPtr<Image> > newImages(numPages);
     for (unsigned i = 0; i < numPages; ++i)
     {
-        SharedPtr<Image> image(new Image(font_->GetContext()));
+        SharedPtr<Image> image(font_->GetContext()->CreateObject<Image>());
 
         int width = maxTextureSize;
         int height = maxTextureSize;
@@ -253,8 +253,8 @@ bool FontFaceBitmap::Load(FontFace* fontFace, bool usedGlyphs)
 
     for (HashMap<unsigned, float>::ConstIterator i = fontFace->kerningMapping_.Begin(); i != fontFace->kerningMapping_.End(); ++i)
     {
-        unsigned first = (i->first_) >> 16;
-        unsigned second = (i->first_) & 0xffff;
+        unsigned first = (i->first_) >> 16u;
+        unsigned second = (i->first_) & 0xffffu;
         if (glyphMapping_.Find(first) != glyphMapping_.End() && glyphMapping_.Find(second) != glyphMapping_.End())
             kerningMapping_[i->first_] = i->second_;
     }
@@ -266,7 +266,7 @@ bool FontFaceBitmap::Save(Serializer& dest, int pointSize, const String& indenta
 {
     Context* context = font_->GetContext();
 
-    SharedPtr<XMLFile> xml(new XMLFile(context));
+    SharedPtr<XMLFile> xml(context->CreateObject<XMLFile>());
     XMLElement rootElem = xml->CreateRoot("font");
 
     // Information
@@ -332,8 +332,8 @@ bool FontFaceBitmap::Save(Serializer& dest, int pointSize, const String& indenta
         for (HashMap<unsigned, float>::ConstIterator i = kerningMapping_.Begin(); i != kerningMapping_.End(); ++i)
         {
             XMLElement kerningElem = kerningsElem.CreateChild("kerning");
-            kerningElem.SetInt("first", i->first_ >> 16);
-            kerningElem.SetInt("second", i->first_ & 0xffff);
+            kerningElem.SetInt("first", i->first_ >> 16u);
+            kerningElem.SetInt("second", i->first_ & 0xffffu);
             kerningElem.SetInt("amount", i->second_);
         }
     }
@@ -355,7 +355,7 @@ unsigned FontFaceBitmap::ConvertFormatToNumComponents(unsigned format)
 
 SharedPtr<Image> FontFaceBitmap::SaveFaceTexture(Texture2D* texture)
 {
-    SharedPtr<Image> image(new Image(font_->GetContext()));
+    SharedPtr<Image> image(font_->GetContext()->CreateObject<Image>());
     image->SetSize(texture->GetWidth(), texture->GetHeight(), ConvertFormatToNumComponents(texture->GetFormat()));
     if (!texture->GetData(0, image->GetData()))
     {

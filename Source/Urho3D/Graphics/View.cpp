@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../Core/WorkQueue.h"
 #include "../Graphics/Camera.h"
@@ -51,6 +52,8 @@
 #include "../UI/UI.h"
 
 #include "../DebugNew.h"
+#include "View.h"
+
 
 namespace Urho3D
 {
@@ -60,7 +63,7 @@ class ShadowCasterOctreeQuery : public FrustumOctreeQuery
 {
 public:
     /// Construct with frustum and query parameters.
-    ShadowCasterOctreeQuery(PODVector<Drawable*>& result, const Frustum& frustum, unsigned char drawableFlags = DRAWABLE_ANY,
+    ShadowCasterOctreeQuery(PODVector<Drawable*>& result, const Frustum& frustum, DrawableFlags drawableFlags = DRAWABLE_ANY,
         unsigned viewMask = DEFAULT_VIEWMASK) :
         FrustumOctreeQuery(result, frustum, drawableFlags, viewMask)
     {
@@ -88,7 +91,7 @@ class ZoneOccluderOctreeQuery : public FrustumOctreeQuery
 {
 public:
     /// Construct with frustum and query parameters.
-    ZoneOccluderOctreeQuery(PODVector<Drawable*>& result, const Frustum& frustum, unsigned char drawableFlags = DRAWABLE_ANY,
+    ZoneOccluderOctreeQuery(PODVector<Drawable*>& result, const Frustum& frustum, DrawableFlags drawableFlags = DRAWABLE_ANY,
         unsigned viewMask = DEFAULT_VIEWMASK) :
         FrustumOctreeQuery(result, frustum, drawableFlags, viewMask)
     {
@@ -118,7 +121,7 @@ class OccludedFrustumOctreeQuery : public FrustumOctreeQuery
 public:
     /// Construct with frustum, occlusion buffer and query parameters.
     OccludedFrustumOctreeQuery(PODVector<Drawable*>& result, const Frustum& frustum, OcclusionBuffer* buffer,
-        unsigned char drawableFlags = DRAWABLE_ANY, unsigned viewMask = DEFAULT_VIEWMASK) :
+                               DrawableFlags drawableFlags = DRAWABLE_ANY, unsigned viewMask = DEFAULT_VIEWMASK) :
         FrustumOctreeQuery(result, frustum, drawableFlags, viewMask),
         buffer_(buffer)
     {
@@ -159,6 +162,7 @@ public:
 
 void CheckVisibilityWork(const WorkItem* item, unsigned threadIndex)
 {
+    URHO3D_PROFILE("CheckVisibilityWork");
     auto* view = reinterpret_cast<View*>(item->aux_);
     auto** start = reinterpret_cast<Drawable**>(item->start_);
     auto** end = reinterpret_cast<Drawable**>(item->end_);
@@ -228,6 +232,7 @@ void CheckVisibilityWork(const WorkItem* item, unsigned threadIndex)
 
 void ProcessLightWork(const WorkItem* item, unsigned threadIndex)
 {
+    URHO3D_PROFILE("ProcessLightWork");
     auto* view = reinterpret_cast<View*>(item->aux_);
     auto* query = reinterpret_cast<LightQueryResult*>(item->start_);
 
@@ -236,6 +241,7 @@ void ProcessLightWork(const WorkItem* item, unsigned threadIndex)
 
 void UpdateDrawableGeometriesWork(const WorkItem* item, unsigned threadIndex)
 {
+    URHO3D_PROFILE("UpdateDrawableGeometriesWork");
     const FrameInfo& frame = *(reinterpret_cast<FrameInfo*>(item->aux_));
     auto** start = reinterpret_cast<Drawable**>(item->start_);
     auto** end = reinterpret_cast<Drawable**>(item->end_);
@@ -251,6 +257,7 @@ void UpdateDrawableGeometriesWork(const WorkItem* item, unsigned threadIndex)
 
 void SortBatchQueueFrontToBackWork(const WorkItem* item, unsigned threadIndex)
 {
+    URHO3D_PROFILE("SortBatchQueueFrontToBackWork");
     auto* queue = reinterpret_cast<BatchQueue*>(item->start_);
 
     queue->SortFrontToBack();
@@ -258,6 +265,7 @@ void SortBatchQueueFrontToBackWork(const WorkItem* item, unsigned threadIndex)
 
 void SortBatchQueueBackToFrontWork(const WorkItem* item, unsigned threadIndex)
 {
+    URHO3D_PROFILE("SortBatchQueueBackToFrontWork");
     auto* queue = reinterpret_cast<BatchQueue*>(item->start_);
 
     queue->SortBackToFront();
@@ -265,6 +273,7 @@ void SortBatchQueueBackToFrontWork(const WorkItem* item, unsigned threadIndex)
 
 void SortLightQueueWork(const WorkItem* item, unsigned threadIndex)
 {
+    URHO3D_PROFILE("SortLightQueueWork");
     auto* start = reinterpret_cast<LightBatchQueue*>(item->start_);
     start->litBaseBatches_.SortFrontToBack();
     start->litBatches_.SortFrontToBack();
@@ -272,6 +281,7 @@ void SortLightQueueWork(const WorkItem* item, unsigned threadIndex)
 
 void SortShadowQueueWork(const WorkItem* item, unsigned threadIndex)
 {
+    URHO3D_PROFILE("SortShadowQueueWork");
     auto* start = reinterpret_cast<LightBatchQueue*>(item->start_);
     for (unsigned i = 0; i < start->shadowSplits_.Size(); ++i)
         start->shadowSplits_[i].shadowBatches_.SortFrontToBack();
@@ -288,6 +298,11 @@ View::View(Context* context) :
     unsigned numThreads = GetSubsystem<WorkQueue>()->GetNumThreads() + 1; // Worker threads + main thread
     tempDrawables_.Resize(numThreads);
     sceneResults_.Resize(numThreads);
+}
+
+void View::RegisterObject(Context* context)
+{
+    context->RegisterFactory<View>();
 }
 
 bool View::Define(RenderSurface* renderTarget, Viewport* viewport)
@@ -812,7 +827,7 @@ void View::GetDrawables()
     if (!octree_ || !cullCamera_)
         return;
 
-    URHO3D_PROFILE(GetDrawables);
+    URHO3D_PROFILE("GetDrawables");
 
     auto* queue = GetSubsystem<WorkQueue>();
     PODVector<Drawable*>& tempDrawables = tempDrawables_[0];
@@ -878,7 +893,7 @@ void View::GetDrawables()
         UpdateOccluders(occluders_, cullCamera_);
         if (occluders_.Size())
         {
-            URHO3D_PROFILE(DrawOcclusion);
+            URHO3D_PROFILE("DrawOcclusion");
 
             occlusionBuffer_ = renderer_->GetOcclusionBuffer(cullCamera_);
             DrawOccluders(occlusionBuffer_, occluders_);
@@ -995,7 +1010,7 @@ void View::GetBatches()
 void View::ProcessLights()
 {
     // Process lit geometries and shadow casters for each light
-    URHO3D_PROFILE(ProcessLights);
+    URHO3D_PROFILE("ProcessLights");
 
     auto* queue = GetSubsystem<WorkQueue>();
     lightQueryResults_.Resize(lights_.Size());
@@ -1024,7 +1039,7 @@ void View::GetLightBatches()
 
     // Build light queues and lit batches
     {
-        URHO3D_PROFILE(GetLightBatches);
+        URHO3D_PROFILE("GetLightBatches");
 
         // Preallocate light queues: per-pixel lights which have lit geometries
         unsigned numLightQueues = 0;
@@ -1153,7 +1168,7 @@ void View::GetLightBatches()
 
                 // In deferred modes, store the light volume batch now. Since light mask 8 lowest bits are output to the stencil,
                 // lights that have all zeroes in the low 8 bits can be skipped; they would not affect geometry anyway
-                if (deferred_ && (light->GetLightMask() & 0xff) != 0)
+                if (deferred_ && (light->GetLightMask() & 0xffu) != 0)
                 {
                     Batch volumeBatch;
                     volumeBatch.geometry_ = renderer_->GetLightGeometry(light);
@@ -1187,7 +1202,7 @@ void View::GetLightBatches()
     // Process drawables with limited per-pixel light count
     if (maxLightsDrawables_.Size())
     {
-        URHO3D_PROFILE(GetMaxLightsBatches);
+        URHO3D_PROFILE("GetMaxLightsBatches");
 
         for (HashSet<Drawable*>::Iterator i = maxLightsDrawables_.Begin(); i != maxLightsDrawables_.End(); ++i)
         {
@@ -1209,7 +1224,7 @@ void View::GetLightBatches()
 
 void View::GetBaseBatches()
 {
-    URHO3D_PROFILE(GetBaseBatches);
+    URHO3D_PROFILE("GetBaseBatches");
 
     for (PODVector<Drawable*>::ConstIterator i = geometries_.Begin(); i != geometries_.End(); ++i)
     {
@@ -1286,7 +1301,7 @@ void View::GetBaseBatches()
                     destBatch.lightQueue_ = nullptr;
 
                 bool allowInstancing = info.allowInstancing_;
-                if (allowInstancing && info.markToStencil_ && destBatch.lightMask_ != (destBatch.zone_->GetLightMask() & 0xff))
+                if (allowInstancing && info.markToStencil_ && destBatch.lightMask_ != (destBatch.zone_->GetLightMask() & 0xffu))
                     allowInstancing = false;
 
                 AddBatchToQueue(*info.batchQueue_, destBatch, tech, allowInstancing);
@@ -1304,7 +1319,7 @@ void View::UpdateGeometries()
         return;
     }
 
-    URHO3D_PROFILE(SortAndUpdateGeometry);
+    URHO3D_PROFILE("SortAndUpdateGeometry");
 
     auto* queue = GetSubsystem<WorkQueue>();
 
@@ -1472,7 +1487,7 @@ void View::ExecuteRenderPathCommands()
     // If not reusing shadowmaps, render all of them first
     if (!renderer_->GetReuseShadowMaps() && renderer_->GetDrawShadows() && !actualView->lightQueues_.Empty())
     {
-        URHO3D_PROFILE(RenderShadowMaps);
+        URHO3D_PROFILE("RenderShadowMaps");
 
         for (Vector<LightBatchQueue>::Iterator i = actualView->lightQueues_.Begin(); i != actualView->lightQueues_.End(); ++i)
         {
@@ -1482,7 +1497,7 @@ void View::ExecuteRenderPathCommands()
     }
 
     {
-        URHO3D_PROFILE(ExecuteRenderPath);
+        URHO3D_PROFILE("ExecuteRenderPath");
 
         // Set for safety in case of empty renderpath
         currentRenderTarget_ = substituteRenderTarget_ ? substituteRenderTarget_ : renderTarget_;
@@ -1583,7 +1598,7 @@ void View::ExecuteRenderPathCommands()
             {
             case CMD_CLEAR:
                 {
-                    URHO3D_PROFILE(ClearRenderTarget);
+                    URHO3D_PROFILE("ClearRenderTarget");
 
                     Color clearColor = command.clearColor_;
                     if (command.useFogColor_)
@@ -1599,7 +1614,7 @@ void View::ExecuteRenderPathCommands()
                     BatchQueue& queue = actualView->batchQueues_[command.passIndex_];
                     if (!queue.IsEmpty())
                     {
-                        URHO3D_PROFILE(RenderScenePass);
+                        URHO3D_PROFILE("RenderScenePass");
 
                         SetRenderTargets(command);
                         bool allowDepthWrite = SetTextures(command);
@@ -1623,7 +1638,7 @@ void View::ExecuteRenderPathCommands()
 
             case CMD_QUAD:
                 {
-                    URHO3D_PROFILE(RenderQuad);
+                    URHO3D_PROFILE("RenderQuad");
 
                     SetRenderTargets(command);
                     SetTextures(command);
@@ -1635,7 +1650,7 @@ void View::ExecuteRenderPathCommands()
                 // Render shadow maps + opaque objects' additive lighting
                 if (!actualView->lightQueues_.Empty())
                 {
-                    URHO3D_PROFILE(RenderLights);
+                    URHO3D_PROFILE("RenderLights");
 
                     SetRenderTargets(command);
 
@@ -1688,7 +1703,7 @@ void View::ExecuteRenderPathCommands()
                 // Render shadow maps + light volumes
                 if (!actualView->lightQueues_.Empty())
                 {
-                    URHO3D_PROFILE(RenderLightVolumes);
+                    URHO3D_PROFILE("RenderLightVolumes");
 
                     SetRenderTargets(command);
                     for (Vector<LightBatchQueue>::Iterator i = actualView->lightQueues_.Begin(); i != actualView->lightQueues_.End(); ++i)
@@ -1731,7 +1746,7 @@ void View::ExecuteRenderPathCommands()
             case CMD_RENDERUI:
                 {
                     SetRenderTargets(command);
-                    GetSubsystem<UI>()->Render(true);
+                    GetSubsystem<UI>()->Render();
                 }
                 break;
 
@@ -2188,7 +2203,7 @@ void View::BlitFramebuffer(Texture* source, RenderSurface* destination, bool dep
     if (!source)
         return;
 
-    URHO3D_PROFILE(BlitFramebuffer);
+    URHO3D_PROFILE("BlitFramebuffer");
 
     // If blitting to the destination rendertarget, use the actual viewport. Intermediate textures on the other hand
     // are always viewport-sized
@@ -3063,7 +3078,7 @@ void View::PrepareInstancingBuffer()
         return;
     }
 
-    URHO3D_PROFILE(PrepareInstancingBuffer);
+    URHO3D_PROFILE("PrepareInstancingBuffer");
 
     unsigned totalInstances = 0;
 
@@ -3160,7 +3175,7 @@ bool View::NeedRenderShadowMap(const LightBatchQueue& queue)
 
 void View::RenderShadowMap(const LightBatchQueue& queue)
 {
-    URHO3D_PROFILE(RenderShadowMap);
+    URHO3D_PROFILE("RenderShadowMap");
 
     Texture2D* shadowMap = queue.shadowMap_;
 #ifdef URHO3D_BGFX

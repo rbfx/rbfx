@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2008-2019 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -64,10 +64,19 @@ set (SOURCE_FILES
     src/type42/type42.c
     src/winfonts/winfnt.c)
 
-add_library(FreeType OBJECT ${SOURCE_FILES})
+add_library(FreeType STATIC ${SOURCE_FILES})
 target_include_directories(FreeType PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 target_compile_definitions(FreeType PRIVATE -DFT2_BUILD_LIBRARY)
 # Rename z_verbose and z_error symbols to prevent Clang duplicate symbol linker error (clash with Assimp) on debug build
 if (XCODE OR CMAKE_BUILD_TYPE STREQUAL Debug)
     target_compile_definitions (FreeType PRIVATE -Dz_verbose=ft2_z_verbose -Dz_error=ft2_z_error)
 endif ()
+
+if (BUILD_SHARED_LIBS)
+    install (TARGETS FreeType EXPORT Urho3D
+        LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
+        RUNTIME DESTINATION ${DEST_BIN_DIR}
+        ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
+    )
+endif ()
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)

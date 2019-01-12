@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -54,6 +54,10 @@ public:
         head_(nullptr)
     {
     }
+
+    /// Non-copyable.
+    LinkedList(const LinkedList<T>& list) = delete;
+
     /// Aggregate initialization constructor.
     LinkedList(const std::initializer_list<T>& list) : LinkedList()
     {
@@ -62,6 +66,10 @@ public:
             Insert(*it);
         }
     }
+
+    /// Non-assignable.
+    LinkedList<T>& operator =(const LinkedList<T>& list) = delete;
+
     /// Destruct.
     ~LinkedList()
     {

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2017-2019 Rokas Kupstys.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -19,22 +19,52 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#if URHO3D_PLUGINS
-#   define CR_HOST
+#ifdef WIN32
+#include <windows.h>
 #endif
+
+#include <Urho3D/Engine/EngineDefs.h>
+#include <Urho3D/Engine/EngineEvents.h>
+#include <Urho3D/Core/CoreEvents.h>
+#include <Urho3D/Core/WorkQueue.h>
+#include <Urho3D/Graphics/Graphics.h>
+#include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/SystemUI/SystemUI.h>
+#include <Urho3D/SystemUI/Console.h>
+#include <Urho3D/LibraryInfo.h>
+#include <Urho3D/Core/CommandLine.h>
+
+#include <ImGui/imgui.h>
+#include <ImGui/imgui_stdlib.h>
+#include <Toolbox/IO/ContentUtilities.h>
+#include <Toolbox/SystemUI/ResourceBrowser.h>
+#include <Toolbox/ToolboxAPI.h>
+#include <Toolbox/SystemUI/Widgets.h>
+#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <nativefiledialog/nfd.h>
+
 #include "Editor.h"
 #include "EditorEvents.h"
 #include "EditorIconCache.h"
 #include "Tabs/Scene/SceneTab.h"
-#include "Tabs/Scene/SceneSettings.h"
-#include <Toolbox/IO/ContentUtilities.h>
-#include <Toolbox/SystemUI/ResourceBrowser.h>
-#include <Toolbox/Toolbox.h>
-#include <IconFontCppHeaders/IconsFontAwesome.h>
-#include <nfd.h>
-#include "Assets/AssetConverter.h"
+#include "Tabs/Scene/EditorSceneSettings.h"
+#include "Tabs/UI/UITab.h"
+#include "Tabs/InspectorTab.h"
+#include "Tabs/HierarchyTab.h"
+#include "Tabs/ConsoleTab.h"
+#include "Tabs/ResourceTab.h"
+#include "Tabs/PreviewTab.h"
+#include "Pipeline/Commands/CookScene.h"
+#include "Pipeline/GlobResources.h"
+#include "Pipeline/SubprocessExec.h"
+#include "Pipeline/Commands/BuildAssets.h"
+#include "Inspector/MaterialInspector.h"
 
-URHO3D_DEFINE_APPLICATION_MAIN(Editor);
+using namespace ui::litterals;
+
+URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::Editor);
 
 
 namespace Urho3D
@@ -58,10 +88,26 @@ void Editor::Setup()
     }
 #endif
 
-    engineResourceAutoloadPaths_ = {"Autoload"};
-    engineResourcePrefixPaths_ = {GetFileSystem()->GetProgramDir(), GetParentPath(GetFileSystem()->GetProgramDir()), 
-        GetParentPath(GetParentPath(GetFileSystem()->GetProgramDir())) };
-    engineResourcePaths_ = {"Cache", "CoreData", "EditorData"};
+    // Discover resource prefix path by looking for CoreData and going up.
+    for (coreResourcePrefixPath_ = GetFileSystem()->GetProgramDir();;
+        coreResourcePrefixPath_ = GetParentPath(coreResourcePrefixPath_))
+    {
+        if (GetFileSystem()->DirExists(coreResourcePrefixPath_ + "CoreData"))
+            break;
+        else
+        {
+#if WIN32
+            if (coreResourcePrefixPath_.Length() <= 3)   // Root path of any drive
+#else
+            if (coreResourcePrefixPath_ == "/")          // Filesystem root
+#endif
+            {
+                URHO3D_LOGERROR("Prefix path not found, unable to continue. Prefix path must contain all of your data "
+                                "directories (including CoreData).");
+                engine_->Exit();
+            }
+        }
+    }
 
     engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
     engineParameters_[EP_HEADLESS] = false;
@@ -70,35 +116,65 @@ void Editor::Setup()
     engineParameters_[EP_WINDOW_WIDTH] = 1920;
     engineParameters_[EP_LOG_LEVEL] = LOG_DEBUG;
     engineParameters_[EP_WINDOW_RESIZABLE] = true;
-    engineParameters_[EP_AUTOLOAD_PATHS] = String::Joined(engineResourceAutoloadPaths_, ";");
-    engineParameters_[EP_RESOURCE_PREFIX_PATHS] = String::Joined(engineResourcePrefixPaths_, ";");
-    engineParameters_[EP_RESOURCE_PATHS] = String::Joined(engineResourcePaths_, ";");
+    engineParameters_[EP_AUTOLOAD_PATHS] = "";
+    engineParameters_[EP_RESOURCE_PATHS] = "CoreData;EditorData";
+    engineParameters_[EP_RESOURCE_PREFIX_PATHS] = coreResourcePrefixPath_;
+
+    GetLog()->SetTimeStampFormat("%H:%M:%S");
 
     SetRandomSeed(Time::GetTimeSinceEpoch());
+    context_->RegisterSubsystem(this);
+
+    // Register factories
+    context_->RegisterFactory<EditorIconCache>();
+    context_->RegisterFactory<SceneTab>();
+    context_->RegisterFactory<UITab>();
+    context_->RegisterFactory<ConsoleTab>();
+    context_->RegisterFactory<HierarchyTab>();
+    context_->RegisterFactory<InspectorTab>();
+    context_->RegisterFactory<ResourceTab>();
+    context_->RegisterFactory<PreviewTab>();
+    RegisterToolboxTypes(context_);
+    EditorSceneSettings::RegisterObject(context_);
+    Inspectable::Material::RegisterObject(context_);
+
+    // Pipeline
+    Converter::RegisterObject(context_);
+    GlobResources::RegisterObject(context_);
+    SubprocessExec::RegisterObject(context_);
+
+    // Define custom command line parameters here
+    auto& cmd = GetCommandLineParser();
+    cmd.add_option("project", defaultProjectPath_, "Project to open or create on startup.")->set_custom_option("dir");
+
+    // Subcommands
+    RegisterSubcommand<CookScene>();
+    RegisterSubcommand<BuildAssets>();
 }
 
 void Editor::Start()
 {
-    context_->RegisterFactory<EditorIconCache>();
+    // Execute specified subcommand and exit.
+    for (SharedPtr<SubCommand>& cmd : subCommands_)
+    {
+        if (GetCommandLineParser().got_subcommand(cmd->GetTypeName().CString()))
+        {
+            ExecuteSubcommand(cmd);
+            engine_->Exit();
+            return;
+        }
+    }
+
+    // Continue with normal editor initialization
+    context_->RegisterSubsystem(new SceneManager(context_));
     context_->RegisterSubsystem(new EditorIconCache(context_));
     GetInput()->SetMouseMode(MM_ABSOLUTE);
     GetInput()->SetMouseVisible(true);
-    RegisterToolboxTypes(context_);
-    context_->RegisterFactory<Editor>();
-    context_->RegisterSubsystem(this);
-    SceneSettings::RegisterObject(context_);
-
-    GetSystemUI()->ApplyStyleDefault(true, 1.0f);
-    GetSystemUI()->AddFont("Fonts/DejaVuSansMono.ttf");
-    GetSystemUI()->AddFont("Fonts/fontawesome-webfont.ttf", {ICON_MIN_FA, ICON_MAX_FA, 0}, 0, true);
-    ui::GetStyle().WindowRounding = 3;
-    // Disable imgui saving ui settings on it's own. These should be serialized to project file.
-    ui::GetIO().IniFilename = nullptr;
 
     GetCache()->SetAutoReloadResources(true);
+    engine_->SetAutoExit(false);
 
     SubscribeToEvent(E_UPDATE, std::bind(&Editor::OnUpdate, this, _2));
-    SubscribeToEvent(E_EDITORRESOURCESAVED, std::bind(&Editor::SaveProject, this, ""));
 
     // Creates console but makes sure it's UI is not rendered. Console rendering is done manually in editor.
     auto* console = engine_->CreateConsole();
@@ -107,372 +183,202 @@ void Editor::Start()
     SubscribeToEvent(E_CONSOLECOMMAND, std::bind(&Editor::OnConsoleCommand, this, _2));
     console->RefreshInterpreters();
 
-    assetConverter_ = new AssetConverter(context_);
+    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) {
+        // Opening a new project must be done at the point when SystemUI is not in use. End of the frame is a good
+        // candidate. This subsystem will be recreated.
+        if (!pendingOpenProject_.Empty())
+        {
+            CloseProject();
+            // Reset SystemUI so that imgui loads it's config proper.
+            context_->RemoveSubsystem<SystemUI>();
+            context_->RegisterSubsystem(new SystemUI(context_));
+            SetupSystemUI();
 
-    // Load default project on start
-    LoadProject("Etc/DefaultEditorProject.xml");
-    // Prevent overwriting example scene.
-    DynamicCast<SceneTab>(tabs_.Front())->ClearCachedPaths();
+            project_ = new Project(context_);
+            context_->RegisterSubsystem(project_);
+            bool loaded = project_->LoadProject(pendingOpenProject_);
+            // SystemUI has to be started after loading project, because project sets custom settings file path. Starting
+            // subsystem reads this file and loads settings.
+            GetSystemUI()->Start();
+            if (loaded)
+                loadDefaultLayout_ = project_->IsNewProject();
+            else
+                CloseProject();
+            pendingOpenProject_.Clear();
+        }
+    });
+    SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap&) {
+        if (auto* preview = GetTab<PreviewTab>())
+        {
+            if (preview->GetSceneSimulationStatus() == SCENE_SIMULATION_STOPPED)
+            {
+                exiting_ = true;
+                if (project_.NotNull())
+                    project_->SaveProject();
+            }
+            else
+                preview->Stop();
+        }
+        else
+            exiting_ = true;
+    });
+    if (!defaultProjectPath_.Empty())
+    {
+        ui::GetIO().IniFilename = nullptr;  // Avoid creating imgui.ini in some cases
+        pendingOpenProject_ = defaultProjectPath_.CString();
+    }
+    else
+        SetupSystemUI();
+}
+
+void Editor::ExecuteSubcommand(SubCommand* cmd)
+{
+    if (!defaultProjectPath_.Empty())
+    {
+        project_ = new Project(context_);
+        context_->RegisterSubsystem(project_);
+        if (!project_->LoadProject(defaultProjectPath_))
+        {
+            URHO3D_LOGERRORF("Loading project '%s' failed.", pendingOpenProject_.CString());
+            exitCode_ = EXIT_FAILURE;
+            engine_->Exit();
+            return;
+        }
+    }
+
+    cmd->Execute();
 }
 
 void Editor::Stop()
 {
-    ui::ShutdownDock();
-}
-
-void Editor::SaveProject(String filePath)
-{
-    // Saving project data of tabs may trigger saving resources, which in turn triggers saving editor project. Avoid
-    // that loop.
-    UnsubscribeFromEvent(E_EDITORRESOURCESAVED);
-
-    filePath = GetResourceAbsolutePath(filePath, projectFilePath_, "xml", "Save Project As");
-
-    if (filePath.Empty())
-        return;
-
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
-    XMLElement root = xml->CreateRoot("project");
-    root.SetAttribute("version", "0");
-
-    auto window = root.CreateChild("window");
-    window.SetAttribute("width", ToString("%d", GetGraphics()->GetWidth()));
-    window.SetAttribute("height", ToString("%d", GetGraphics()->GetHeight()));
-    window.SetAttribute("x", ToString("%d", GetGraphics()->GetWindowPosition().x_));
-    window.SetAttribute("y", ToString("%d", GetGraphics()->GetWindowPosition().y_));
-
-    auto resources = root.CreateChild("resources");
-    for (const auto& dir : GetCache()->GetResourceDirs())
-    {
-        if (IsInternalResourcePath(dir))
-            continue;
-
-        // Saving relative paths allows moving projects easily.
-        String relative;
-        GetRelativePath(GetPath(filePath), dir, relative);
-        resources.CreateChild("path").SetValue(relative);
-    }
-
-    if (!userCodeLibPath_.Empty())
-    {
-        auto plugins = root.CreateChild("plugins");
-        auto plugin = plugins.CreateChild("plugin");
-        plugin.SetValue(userCodeLibPath_);
-    }
-
-    auto scenes = root.CreateChild("tabs");
-    for (auto& tab: tabs_)
-    {
-        XMLElement tabXml = scenes.CreateChild("tab");
-        tab->SaveProject(tabXml);
-    }
-
-    ui::SaveDock(root.CreateChild("docks"));
-
-    if (!xml->SaveFile(filePath))
-    {
-        projectFilePath_.Clear();
-        URHO3D_LOGERRORF("Saving project to %s failed", filePath.CString());
-    }
-
-    SubscribeToEvent(E_EDITORRESOURCESAVED, std::bind(&Editor::SaveProject, this, ""));
-}
-
-void Editor::LoadProject(String filePath)
-{
-    if (filePath.Empty())
-        return;
-
-    if (!IsAbsolutePath(filePath))
-        filePath = GetCache()->GetResourceFileName(filePath);
-
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
-    if (!xml->LoadFile(filePath))
-        return;
-
-    auto root = xml->GetRoot();
-    if (root.NotNull())
-    {
-        Vector<String> cacheDirectories = GetCache()->GetResourceDirs();
-        for (const auto& dir : cacheDirectories)
-        {
-            if (IsInternalResourcePath(dir))
-                continue;
-
-            assetConverter_->RemoveAssetDirectory(dir);
-            GetCache()->RemoveResourceDir(dir);
-        }
-
-            idPool_.Clear();
-        auto window = root.GetChild("window");
-        if (window.NotNull())
-        {
-            GetGraphics()->SetMode(ToInt(window.GetAttribute("width")), ToInt(window.GetAttribute("height")));
-            GetGraphics()->SetWindowPosition(ToInt(window.GetAttribute("x")), ToInt(window.GetAttribute("y")));
-        }
-
-        auto resources = root.GetChild("resources");
-        for (auto path = resources.GetChild("path"); path.NotNull(); path = path.GetNext("path"))
-        {
-            String resourceDir = GetAbsolutePath(GetPath(filePath) + path.GetValue());
-            if (GetFileSystem()->DirExists(resourceDir))
-            {
-                GetCache()->AddResourceDir(resourceDir);
-                assetConverter_->AddAssetDirectory(resourceDir);
-            }
-            else
-                URHO3D_LOGWARNINGF("Project tried to load missing resource path \"%s\"", resourceDir.CString());
-        }
-
-        auto plugins = root.GetChild("plugins");
-        for (auto plugin = plugins.GetChild("plugin"); plugin.NotNull(); plugin = plugin.GetNext("plugin"))
-            LoadNativePlugin(plugin.GetValue());
-
-        auto tabs = root.GetChild("tabs");
-        tabs_.Clear();
-        if (tabs.NotNull())
-        {
-            auto tab = tabs.GetChild("tab");
-            while (tab.NotNull())
-            {
-                if (tab.GetAttribute("type") == "scene")
-                    CreateNewTab<SceneTab>(tab);
-                else if (tab.GetAttribute("type") == "ui")
-                    CreateNewTab<UITab>(tab);
-                tab = tab.GetNext();
-            }
-        }
-
-        ui::LoadDock(root.GetChild("docks"));
-    }
-
-    projectFilePath_ = filePath;
-    assetConverter_->VerifyCacheAsync();
+    if (auto* manager = GetSubsystem<SceneManager>())
+        manager->UnloadAll();
+    CloseProject();
+    context_->RemoveSubsystem<WorkQueue>(); // Prevents deadlock when unloading plugin AppDomain in managed host.
 }
 
 void Editor::OnUpdate(VariantMap& args)
 {
-#if URHO3D_PLUGINS
-    if (userCodeContext_.userdata)
-    {
-        bool reloading = cr_plugin_changed(userCodeContext_);
-        if (reloading)
-            SendEvent(E_EDITORUSERCODERELOADSTART);
-
-        if (cr_plugin_update(userCodeContext_) != 0)
-        {
-            URHO3D_LOGERRORF("Processing plugin \"%s\" failed and it was unloaded.", GetFileNameAndExtension(userCodeLibPath_).CString());
-            cr_plugin_close(userCodeContext_);
-            userCodeContext_.userdata = nullptr;
-        }
-
-        if (reloading)
-        {
-            SendEvent(E_EDITORUSERCODERELOADEND);
-            if (userCodeContext_.userdata != nullptr)
-                URHO3D_LOGINFOF("Loaded plugin \"%s\" version %d.", GetFileNameAndExtension(userCodeLibPath_).CString(), userCodeContext_.version);
-        }
-    }
-#endif
-    ui::RootDock({0, 20}, ui::GetIO().DisplaySize - ImVec2(0, 20));
+    ImGuiWindowFlags flags = ImGuiWindowFlags_MenuBar;
+    flags |= ImGuiWindowFlags_NoDocking;
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(viewport->Pos);
+    ImGui::SetNextWindowSize(viewport->Size);
+    ImGui::SetNextWindowViewport(viewport->ID);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+    flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::Begin("DockSpace", nullptr, flags);
+    ImGui::PopStyleVar();
 
     RenderMenuBar();
 
-    ui::SetNextDockPos(nullptr, ui::Slot_Left, ImGuiCond_FirstUseEver);
-    if (ui::BeginDock("Hierarchy"))
-    {
-        if (!activeTab_.Expired())
-            activeTab_->RenderNodeTree();
-    }
-    ui::EndDock();
+    dockspaceId_ = ui::GetID("Root");
+    ui::DockSpace(dockspaceId_);
 
-    bool renderedWasActive = false;
-    for (auto it = tabs_.Begin(); it != tabs_.End();)
+    auto tabsCopy = tabs_;
+    bool hasModified = false;
+    for (auto& tab : tabsCopy)
     {
-        auto& tab = *it;
         if (tab->RenderWindow())
         {
-            if (tab->IsRendered())
+            // Only active window may override another active window
+            if (activeTab_ != tab && tab->IsActive())
             {
-                // Only active window may override another active window
-                if (renderedWasActive && tab->IsActive())
-                    activeTab_ = tab;
-                else if (!renderedWasActive)
-                {
-                    renderedWasActive = tab->IsActive();
-                    activeTab_ = tab;
-                }
+                activeTab_ = tab;
+                tab->OnFocused();
             }
-
-            ++it;
+            hasModified |= tab->IsModified();
         }
-        else
-            it = tabs_.Erase(it);
+        else if (!tab->IsUtility())
+            // Content tabs get closed permanently
+            tabs_.Erase(tabs_.Find(tab));
     }
-
 
     if (!activeTab_.Expired())
     {
         activeTab_->OnActiveUpdate();
-        ui::SetNextDockPos(activeTab_->GetUniqueTitle().CString(), ui::Slot_Right, ImGuiCond_FirstUseEver);
     }
-    if (ui::BeginDock("Inspector"))
+
+    if (loadDefaultLayout_ && project_.NotNull())
     {
-        if (!activeTab_.Expired())
-            activeTab_->RenderInspector();
+        loadDefaultLayout_ = false;
+        LoadDefaultLayout();
     }
-    ui::EndDock();
 
-    if (ui::BeginDock("Console"))
-        GetSubsystem<Console>()->RenderContent();
-    ui::EndDock();
+    HandleHotkeys();
 
-    String selected;
-    if (tabs_.Size())
-        ui::SetNextDockPos(tabs_.Back()->GetUniqueTitle().CString(), ui::Slot_Bottom, ImGuiCond_FirstUseEver);
-    if (ResourceBrowserWindow(selected))
+    ui::End();
+    ImGui::PopStyleVar();
+
+    // Dialog for a warning when application is being closed with unsaved resources.
+    if (exiting_)
     {
-        auto type = GetContentType(selected);
-        if (type == CTYPE_SCENE)
-            CreateNewTab<SceneTab>()->LoadResource(selected);
-        else if (type == CTYPE_UILAYOUT)
-            CreateNewTab<UITab>()->LoadResource(selected);
-    }
-}
-
-void Editor::RenderMenuBar()
-{
-    bool save = false;
-    if (ui::BeginMainMenuBar())
-    {
-        if (ui::BeginMenu("File"))
+        if (!GetWorkQueue()->IsCompleted(0))
         {
-            save = ui::MenuItem("Save Project");
-            if (ui::MenuItem("Save Project As"))
+            ui::OpenPopup("Completing Tasks");
+
+            if (ui::BeginPopupModal("Completing Tasks", nullptr, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoResize |
+                                                                 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_Popup))
             {
-                save = true;
-                projectFilePath_.Clear();
+                ui::TextUnformatted("Some tasks are in progress and are being completed. Please wait.");
+                static float totalIncomplete = GetWorkQueue()->GetNumIncomplete(0);
+                ui::ProgressBar(100.f / totalIncomplete * Min(totalIncomplete - (float)GetWorkQueue()->GetNumIncomplete(0), totalIncomplete));
+                ui::EndPopup();
             }
-
-            if (ui::MenuItem("Open Project"))
-            {
-                nfdchar_t* projectFilePath = nullptr;
-                if (NFD_OpenDialog("xml", ".", &projectFilePath) == NFD_OKAY)
-                {
-                    projectFilePath_ = projectFilePath;
-                    NFD_FreePath(projectFilePath);
-                    LoadProject(projectFilePath_);
-                }
-            }
-
-            ui::Separator();
-
-            if (ui::MenuItem("New Scene"))
-                CreateNewTab<SceneTab>();
-
-            if (ui::MenuItem("New UI Layout"))
-                CreateNewTab<UITab>();
-
-            ui::Separator();
-#if URHO3D_PLUGINS
-            if (ui::MenuItem("Load User Plugin"))
-            {
-#if _WIN32
-                const char* filter = "dll";
-#else
-                const char* filter = "so";
-#endif
-                nfdchar_t* selected = nullptr;
-                if (NFD_OpenDialog(filter, nullptr, &selected) == NFD_OKAY)
-                {
-                    LoadNativePlugin(selected);
-                    NFD_FreePath(selected);
-                }
-            }
-            ui::Separator();
-#endif
-
-            if (ui::MenuItem("Exit"))
-                engine_->Exit();
-
-            ui::EndMenu();
         }
-
-        if (ui::BeginMenu("Settings"))
+        else if (hasModified)
         {
-            Vector<String> cacheDirectories = GetCache()->GetResourceDirs();
-            for (const auto& dir : cacheDirectories)
-            {
-                if (IsInternalResourcePath(dir))
-                    continue;
+            ui::OpenPopup("Save All?");
 
-                if (ui::Button(ICON_FA_TRASH))
+            if (ui::BeginPopupModal("Save All?", nullptr, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoResize |
+                                                          ImGuiWindowFlags_NoMove | ImGuiWindowFlags_Popup))
+            {
+                ui::TextUnformatted("You have unsaved resources. Save them before exiting?");
+
+                if (ui::Button(ICON_FA_SAVE " Save & Close"))
                 {
-                    assetConverter_->RemoveAssetDirectory(dir);
-                    GetCache()->RemoveResourceDir(dir);
+                    for (auto& tab : tabs_)
+                    {
+                        if (tab->IsModified())
+                            tab->SaveResource();
+                    }
+                    ui::CloseCurrentPopup();
                 }
 
                 ui::SameLine();
-                ui::TextUnformatted(dir.CString());
-            }
-            if (ui::Button(ICON_FA_FOLDER_OPEN " Add data directory"))
-            {
-                nfdchar_t* result = nullptr;
-                if (NFD_PickFolder(".", &result) == NFD_OKAY)
+
+                if (ui::Button(ICON_FA_EXCLAMATION_TRIANGLE " Close without saving"))
                 {
-                    GetCache()->AddResourceDir(result);
-                    NFD_FreePath(result);
+                    engine_->Exit();
                 }
+                ui::SetHelpTooltip(ICON_FA_EXCLAMATION_TRIANGLE " All unsaved changes will be lost!", KEY_UNKNOWN);
+
+                ui::SameLine();
+
+                if (ui::Button(ICON_FA_TIMES " Cancel"))
+                {
+                    exiting_ = false;
+                    ui::CloseCurrentPopup();
+                }
+
+                ui::EndPopup();
             }
-            ui::EndMenu();
         }
-
-        if (!activeTab_.Expired())
+        else
         {
-            SendEvent(E_EDITORTOOLBARBUTTONS);
-        }
-
-        ui::EndMainMenuBar();
-    }
-
-    if (save)
-        SaveProject(projectFilePath_);
-}
-
-template<typename T>
-T* Editor::CreateNewTab(XMLElement project)
-{
-    SharedPtr<T> tab;
-    StringHash id;
-
-    if (project.IsNull())
-        id = idPool_.NewID();           // Make new ID only if scene is not being loaded from a project.
-
-    if (tabs_.Empty())
-        tab = new T(context_, id, "Hierarchy", ui::Slot_Right);
-    else
-        tab = new T(context_, id, tabs_.Back()->GetUniqueTitle(), ui::Slot_Tab);
-
-    if (project.NotNull())
-    {
-        tab->LoadProject(project);
-        if (!idPool_.TakeID(tab->GetID()))
-        {
-            URHO3D_LOGERRORF("Scene loading failed because unique id %s is already taken",
-                tab->GetID().ToString().CString());
-            return nullptr;
+            GetWorkQueue()->Complete(0);
+            engine_->Exit();
         }
     }
-
-    // In order to render scene to a texture we must add a dummy node to scene rendered to a screen, which has material
-    // pointing to scene texture. This object must also be visible to main camera.
-    tabs_.Push(DynamicCast<Tab>(tab));
-    return tab;
 }
 
-StringVector Editor::GetObjectCategories() const
+Tab* Editor::CreateTab(StringHash type)
 {
-    return context_->GetObjectCategories().Keys();
+    SharedPtr<Tab> tab(DynamicCast<Tab>(context_->CreateObject(type)));
+    tabs_.Push(tab);
+    return tab.Get();
 }
 
 StringVector Editor::GetObjectsByCategory(const String& category)
@@ -492,82 +398,230 @@ StringVector Editor::GetObjectsByCategory(const String& category)
     return result;
 }
 
-String Editor::GetResourceAbsolutePath(const String& resourceName, const String& defaultResult, const char* patterns,
-    const String& dialogTitle)
-{
-    String resourcePath = resourceName.Empty() ? defaultResult : resourceName;
-    String fullPath;
-    if (!resourcePath.Empty())
-        fullPath = GetCache()->GetResourceFileName(resourcePath);
-
-    if (fullPath.Empty())
-    {
-        nfdchar_t* savePath = nullptr;
-        if (NFD_SaveDialog(patterns, ".", &savePath) == NFD_OKAY)
-        {
-            fullPath = savePath;
-            NFD_FreePath(savePath);
-        }
-    }
-
-    return fullPath;
-}
-
 void Editor::OnConsoleCommand(VariantMap& args)
 {
     using namespace ConsoleCommand;
-    String command = args[P_COMMAND].GetString();
-    if (command == "revision")
+    if (args[P_COMMAND].GetString() == "revision")
         URHO3D_LOGINFOF("Engine revision: %s", GetRevision());
-    else if (command == "cache.sync")
-        assetConverter_->VerifyCacheAsync();
-    else
-        URHO3D_LOGWARNINGF("Unknown command \"%s\".", command.CString());
 }
 
-bool Editor::LoadNativePlugin(const String& path)
+void Editor::CreateDefaultTabs()
 {
-#if URHO3D_PLUGINS
-    if (userCodeContext_.userdata)
-        cr_plugin_close(userCodeContext_);
-
-    if (cr_plugin_load(userCodeContext_, path.CString()))
-    {
-        userCodeLibPath_ = path;
-        userCodeContext_.userdata = context_;
-    }
-    else
-    {
-        userCodeLibPath_.Clear();
-        userCodeContext_.userdata = nullptr;
-        URHO3D_LOGWARNINGF("Failed loading plugin \"%s\".", GetFileNameAndExtension(path).CString());
-    }
-#endif
-
-    return userCodeContext_.userdata != nullptr;
+    tabs_.Clear();
+    tabs_.EmplaceBack(new InspectorTab(context_));
+    tabs_.EmplaceBack(new HierarchyTab(context_));
+    tabs_.EmplaceBack(new ResourceTab(context_));
+    tabs_.EmplaceBack(new ConsoleTab(context_));
+    tabs_.EmplaceBack(new PreviewTab(context_));
+    tabs_.EmplaceBack(new SceneTab(context_));
 }
 
-bool Editor::IsInternalResourcePath(const String& fullPath) const
+void Editor::LoadDefaultLayout()
 {
-    for (const auto& prefix : engineResourcePrefixPaths_)
+    CreateDefaultTabs();
+
+    auto* inspector = GetTab<InspectorTab>();
+    auto* hierarchy = GetTab<HierarchyTab>();
+    auto* resources = GetTab<ResourceTab>();
+    auto* console = GetTab<ConsoleTab>();
+    auto* preview = GetTab<PreviewTab>();
+    auto* scene = GetTab<SceneTab>();
+
+    ImGui::DockBuilderRemoveNode(dockspaceId_);
+    ImGui::DockBuilderAddNode(dockspaceId_, ui::GetMainViewport()->Size);
+
+    ImGuiID dock_main_id = dockspaceId_;
+    ImGuiID dockHierarchy = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.20f, nullptr, &dock_main_id);
+    ImGuiID dockResources = ImGui::DockBuilderSplitNode(dockHierarchy, ImGuiDir_Down, 0.40f, nullptr, &dockHierarchy);
+    ImGuiID dockInspector = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.30f, nullptr, &dock_main_id);
+    ImGuiID dockLog = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.30f, nullptr, &dock_main_id);
+
+    ImGui::DockBuilderDockWindow(hierarchy->GetUniqueTitle().CString(), dockHierarchy);
+    ImGui::DockBuilderDockWindow(resources->GetUniqueTitle().CString(), dockResources);
+    ImGui::DockBuilderDockWindow(console->GetUniqueTitle().CString(), dockLog);
+    ImGui::DockBuilderDockWindow(scene->GetUniqueTitle().CString(), dock_main_id);
+    ImGui::DockBuilderDockWindow(preview->GetUniqueTitle().CString(), dock_main_id);
+    ImGui::DockBuilderDockWindow(inspector->GetUniqueTitle().CString(), dockInspector);
+    ImGui::DockBuilderFinish(dockspaceId_);
+}
+
+void Editor::OpenProject(const String& projectPath)
+{
+    pendingOpenProject_ = projectPath;
+}
+
+void Editor::CloseProject()
+{
+    context_->RemoveSubsystem<Project>();
+    tabs_.Clear();
+    project_.Reset();
+}
+
+void Editor::HandleHotkeys()
+{
+    if (ui::IsAnyItemActive())
+        return;
+
+    auto* input = GetInput();
+    if (input->GetKeyDown(KEY_CTRL))
     {
-        for (const auto& path : engineResourcePaths_)
+        if (input->GetKeyPress(KEY_Y) || (input->GetKeyDown(KEY_SHIFT) && input->GetKeyPress(KEY_Z)))
         {
-            if (fullPath == AddTrailingSlash(prefix + path))
-                return true;
+            VariantMap args;
+            args[Undo::P_TIME] = M_MAX_UNSIGNED;
+            SendEvent(E_REDO, args);
+            Variant manager;
+            if (args.TryGetValue(Undo::P_MANAGER, manager))
+                ((Undo::Manager*)manager.GetPtr())->Redo();
+        }
+        else if (input->GetKeyPress(KEY_Z))
+        {
+            VariantMap args;
+            args[Undo::P_TIME] = 0;
+            SendEvent(E_UNDO, args);
+            Variant manager;
+            if (args.TryGetValue(Undo::P_MANAGER, manager))
+                ((Undo::Manager*)manager.GetPtr())->Undo();
         }
     }
+}
 
-    for (const auto& prefix : engineResourcePrefixPaths_)
+Tab* Editor::GetTabByName(const String& uniqueName)
+{
+    for (auto& tab : tabs_)
     {
-        for (const auto& path : engineResourceAutoloadPaths_)
-        {
-            if (fullPath.StartsWith(AddTrailingSlash(prefix + path)))
-                return true;
-        }
+        if (tab->GetUniqueName() == uniqueName)
+            return tab.Get();
+    }
+    return nullptr;
+}
+
+Tab* Editor::GetTabByResource(const String& resourceName)
+{
+    for (auto& tab : tabs_)
+    {
+        auto resource = DynamicCast<BaseResourceTab>(tab);
+        if (resource.NotNull() && resource->GetResourceName() == resourceName)
+            return resource.Get();
+    }
+    return nullptr;
+}
+
+Tab* Editor::GetTab(StringHash type)
+{
+    for (auto& tab : tabs_)
+    {
+        if (tab->GetType() == type)
+            return tab.Get();
+    }
+    return nullptr;
+}
+
+void Editor::SetupSystemUI()
+{
+    static ImWchar fontAwesomeIconRanges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
+    static ImWchar notoSansRanges[] = {0x20, 0x52f, 0x1ab0, 0x2189, 0x2c60, 0x2e44, 0xa640, 0xab65, 0};
+    static ImWchar notoMonoRanges[] = {0x20, 0x513, 0x1e00, 0x1f4d, 0};
+    GetSystemUI()->ApplyStyleDefault(true, 1.0f);
+    GetSystemUI()->AddFont("Fonts/NotoSans-Regular.ttf", notoSansRanges, 16.f);
+    GetSystemUI()->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 0, true);
+    monoFont_ = GetSystemUI()->AddFont("Fonts/NotoMono-Regular.ttf", notoMonoRanges, 14.f);
+    GetSystemUI()->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 0, true);
+    ui::GetStyle().WindowRounding = 3;
+    // Disable imgui saving ui settings on it's own. These should be serialized to project file.
+    auto& io = ui::GetIO();
+    io.IniFilename = nullptr;
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_NavEnableKeyboard;
+    io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
+    io.ConfigResizeWindowsFromEdges = true;
+
+    // TODO: Make configurable.
+    auto& style = ImGui::GetStyle();
+    style.FrameBorderSize = 0;
+    style.WindowBorderSize = 0;
+    ImVec4* colors = ImGui::GetStyle().Colors;
+    colors[ImGuiCol_Text]                   = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+    colors[ImGuiCol_TextDisabled]           = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+    colors[ImGuiCol_WindowBg]               = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
+    colors[ImGuiCol_ChildBg]                = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
+    colors[ImGuiCol_PopupBg]                = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
+    colors[ImGuiCol_Border]                 = ImVec4(0.24f, 0.24f, 0.24f, 1.00f);
+    colors[ImGuiCol_BorderShadow]           = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    colors[ImGuiCol_FrameBg]                = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
+    colors[ImGuiCol_FrameBgHovered]         = ImVec4(0.32f, 0.32f, 0.32f, 1.00f);
+    colors[ImGuiCol_FrameBgActive]          = ImVec4(0.37f, 0.37f, 0.37f, 1.00f);
+    colors[ImGuiCol_TitleBg]                = ImVec4(0.12f, 0.12f, 0.12f, 1.00f);
+    colors[ImGuiCol_TitleBgActive]          = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
+    colors[ImGuiCol_TitleBgCollapsed]       = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
+    colors[ImGuiCol_MenuBarBg]              = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
+    colors[ImGuiCol_ScrollbarBg]            = ImVec4(0.02f, 0.02f, 0.02f, 0.00f);
+    colors[ImGuiCol_ScrollbarGrab]          = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
+    colors[ImGuiCol_ScrollbarGrabHovered]   = ImVec4(0.41f, 0.41f, 0.41f, 1.00f);
+    colors[ImGuiCol_ScrollbarGrabActive]    = ImVec4(0.51f, 0.51f, 0.51f, 1.00f);
+    colors[ImGuiCol_CheckMark]              = ImVec4(0.51f, 0.51f, 0.51f, 1.00f);
+    colors[ImGuiCol_SliderGrab]             = ImVec4(0.51f, 0.51f, 0.51f, 1.00f);
+    colors[ImGuiCol_SliderGrabActive]       = ImVec4(0.56f, 0.56f, 0.56f, 1.00f);
+    colors[ImGuiCol_Button]                 = ImVec4(0.27f, 0.27f, 0.27f, 1.00f);
+    colors[ImGuiCol_ButtonHovered]          = ImVec4(0.34f, 0.34f, 0.34f, 1.00f);
+    colors[ImGuiCol_ButtonActive]           = ImVec4(0.38f, 0.38f, 0.38f, 1.00f);
+    colors[ImGuiCol_Header]                 = ImVec4(0.35f, 0.35f, 0.35f, 1.00f);
+    colors[ImGuiCol_HeaderHovered]          = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
+    colors[ImGuiCol_HeaderActive]           = ImVec4(0.44f, 0.44f, 0.44f, 1.00f);
+    colors[ImGuiCol_Separator]              = ImVec4(0.24f, 0.24f, 0.24f, 1.00f);
+    colors[ImGuiCol_SeparatorHovered]       = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
+    colors[ImGuiCol_SeparatorActive]        = ImVec4(0.34f, 0.34f, 0.34f, 1.00f);
+    colors[ImGuiCol_ResizeGrip]             = ImVec4(0.24f, 0.24f, 0.24f, 1.00f);
+    colors[ImGuiCol_ResizeGripHovered]      = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
+    colors[ImGuiCol_ResizeGripActive]       = ImVec4(0.37f, 0.37f, 0.37f, 1.00f);
+    colors[ImGuiCol_Tab]                    = ImVec4(0.40f, 0.40f, 0.40f, 0.86f);
+    colors[ImGuiCol_TabHovered]             = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
+    colors[ImGuiCol_TabActive]              = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
+    colors[ImGuiCol_TabUnfocused]           = ImVec4(0.17f, 0.17f, 0.17f, 1.00f);
+    colors[ImGuiCol_TabUnfocusedActive]     = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
+    colors[ImGuiCol_DockingPreview]         = ImVec4(0.55f, 0.55f, 0.55f, 1.00f);
+    colors[ImGuiCol_DockingEmptyBg]         = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+    colors[ImGuiCol_PlotLines]              = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
+    colors[ImGuiCol_PlotLinesHovered]       = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
+    colors[ImGuiCol_PlotHistogram]          = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+    colors[ImGuiCol_PlotHistogramHovered]   = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
+    colors[ImGuiCol_TextSelectedBg]         = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
+    colors[ImGuiCol_DragDropTarget]         = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
+    colors[ImGuiCol_NavHighlight]           = ImVec4(0.78f, 0.88f, 1.00f, 1.00f);
+    colors[ImGuiCol_NavWindowingHighlight]  = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
+    colors[ImGuiCol_NavWindowingDimBg]      = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
+    colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(0.44f, 0.44f, 0.44f, 0.35f);
+}
+
+void Editor::UpdateWindowTitle(const String& resourcePath)
+{
+    if (GetEngine()->IsHeadless())
+        return;
+
+    auto* project = GetSubsystem<Project>();
+    String title;
+    if (project == nullptr)
+        title = "Editor";
+    else
+    {
+        String projectName = GetFileName(RemoveTrailingSlash(project->GetProjectPath()));
+        title = ToString("Editor | %s", projectName.CString());
+        if (!resourcePath.Empty())
+            title += ToString(" | %s", GetFileName(resourcePath).CString());
     }
 
-    return false;
+    GetGraphics()->SetWindowTitle(title);
+}
+
+template<typename T>
+void Editor::RegisterSubcommand()
+{
+    T::RegisterObject(context_);
+    SharedPtr<T> cmd(context_->CreateObject<T>());
+    subCommands_.Push(DynamicCast<SubCommand>(cmd));
+    if (CLI::App* subCommand = GetCommandLineParser().add_subcommand(T::GetTypeNameStatic().CString()))
+        cmd->RegisterCommandLine(*subCommand);
+    else
+        URHO3D_LOGERROR("Sub-command '{}' was not registered due to user error.", T::GetTypeNameStatic());
 }
 
 }

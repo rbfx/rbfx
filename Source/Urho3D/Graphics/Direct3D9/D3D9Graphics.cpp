@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -303,7 +303,7 @@ Graphics::~Graphics()
 bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, bool resizable, bool highDPI, bool vsync,
     bool tripleBuffer, int multiSample, int monitor, int refreshRate)
 {
-    URHO3D_PROFILE(SetScreenMode);
+    URHO3D_PROFILE("SetScreenMode");
 
     highDPI = false;   // SDL does not support High DPI mode on Windows platform yet, so always disable it for now
 
@@ -480,6 +480,11 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
     impl_->device_->Present(nullptr, nullptr, nullptr, nullptr);
 
 #ifdef URHO3D_LOGGING
+    D3DADAPTER_IDENTIFIER9 id = {0};
+    HRESULT hr = impl_->interface_->GetAdapterIdentifier(D3DADAPTER_DEFAULT, 0, &id);
+    if (S_OK == hr)
+      URHO3D_LOGINFOF("Adapter used %s", id.Description);
+
     String msg;
     msg.AppendWithFormat("Set screen mode %dx%d %s monitor %d", width_, height_, (fullscreen_ ? "fullscreen" : "windowed"), monitor_);
     if (borderless_)
@@ -544,7 +549,7 @@ void Graphics::Close()
 
 bool Graphics::TakeScreenShot(Image& destImage)
 {
-    URHO3D_PROFILE(TakeScreenShot);
+    URHO3D_PROFILE("TakeScreenShot");
 
     if (!impl_->device_)
         return false;
@@ -697,7 +702,7 @@ bool Graphics::BeginFrame()
     HRESULT hr = impl_->device_->TestCooperativeLevel();
     if (hr != D3D_OK)
     {
-        URHO3D_PROFILE(DeviceLost);
+        URHO3D_PROFILE("DeviceLost");
 
         impl_->deviceLost_ = true;
 
@@ -738,7 +743,7 @@ void Graphics::EndFrame()
         return;
 
     {
-        URHO3D_PROFILE(Present);
+        URHO3D_PROFILE("Present");
 
         SendEvent(E_ENDRENDERING);
 
@@ -752,7 +757,7 @@ void Graphics::EndFrame()
     {
         if (impl_->queryIssued_)
         {
-            URHO3D_PROFILE(FlushGPU);
+            URHO3D_PROFILE("FlushGPU");
 
             while (impl_->frameQuery_->GetData(nullptr, 0, D3DGETDATA_FLUSH) == S_FALSE)
             {
@@ -772,7 +777,7 @@ void Graphics::EndFrame()
     CleanupScratchBuffers();
 }
 
-void Graphics::Clear(unsigned flags, const Color& color, float depth, unsigned stencil)
+void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, unsigned stencil)
 {
     DWORD d3dFlags = 0;
     if (flags & CLEAR_COLOR)
@@ -790,7 +795,7 @@ bool Graphics::ResolveToTexture(Texture2D* destination, const IntRect& viewport)
     if (!destination || !destination->GetRenderSurface())
         return false;
 
-    URHO3D_PROFILE(ResolveToTexture);
+    URHO3D_PROFILE("ResolveToTexture");
 
     IntRect vpCopy = viewport;
     if (vpCopy.right_ <= vpCopy.left_)
@@ -826,7 +831,7 @@ bool Graphics::ResolveToTexture(Texture2D* texture)
     if (!texture || !texture->GetRenderSurface() || !texture->GetGPUObject() || texture->GetMultiSample() < 2)
         return false;
 
-    URHO3D_PROFILE(ResolveToTexture);
+    URHO3D_PROFILE("ResolveToTexture");
 
     // Clear dirty flag already, because if resolve fails it's no use to retry (e.g. on the same frame)
     RenderSurface* surface = texture->GetRenderSurface();
@@ -866,7 +871,7 @@ bool Graphics::ResolveToTexture(TextureCube* texture)
     if (!texture || !texture->GetRenderSurface(FACE_POSITIVE_X) || !texture->GetGPUObject() || texture->GetMultiSample() < 2)
         return false;
 
-    URHO3D_PROFILE(ResolveToTexture);
+    URHO3D_PROFILE("ResolveToTexture");
 
     texture->SetResolveDirty(false);
 
@@ -1127,7 +1132,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
         {
             if (vs->GetCompilerOutput().Empty())
             {
-                URHO3D_PROFILE(CompileVertexShader);
+                URHO3D_PROFILE("CompileVertexShader");
 
                 bool success = vs->Create();
                 if (!success)
@@ -1157,7 +1162,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
         {
             if (ps->GetCompilerOutput().Empty())
             {
-                URHO3D_PROFILE(CompilePixelShader);
+                URHO3D_PROFILE("CompilePixelShader");
 
                 bool success = ps->Create();
                 if (!success)

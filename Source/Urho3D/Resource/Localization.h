@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -55,8 +55,8 @@ public:
     void SetLanguage(int index);
     /// Set current language.
     void SetLanguage(const String& language);
-    /// Return a string in the current language. Returns String::EMPTY if id is empty. Returns id if translation is not found and logs a warning.
-    String Get(const String& id);
+    /// Return a string in the current language. Returns String::EMPTY if id is empty. Returns id if translation is not found and logs a warning. Optionally specify index of lanuguage.
+    String Get(const String& id, int index=-1);
     /// Clear all loaded strings.
     void Reset();
     /// Load strings from JSONValue.

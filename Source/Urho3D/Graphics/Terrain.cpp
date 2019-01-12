@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -79,7 +79,7 @@ inline void GrowUpdateRegion(IntRect& updateRegion, int x, int y)
 
 Terrain::Terrain(Context* context) :
     Component(context),
-    indexBuffer_(new IndexBuffer(context)),
+    indexBuffer_(context->CreateObject<IndexBuffer>()),
     spacing_(DEFAULT_SPACING),
     lastSpacing_(Vector3::ZERO),
     patchWorldOrigin_(Vector2::ZERO),
@@ -655,7 +655,7 @@ Vector3 Terrain::HeightMapToWorld(const IntVector2& pixelPosition) const
 
 void Terrain::CreatePatchGeometry(TerrainPatch* patch)
 {
-    URHO3D_PROFILE(CreatePatchGeometry);
+    URHO3D_PROFILE("CreatePatchGeometry");
 
     auto row = (unsigned)(patchSize_ + 1);
     VertexBuffer* vertexBuffer = patch->GetVertexBuffer();
@@ -681,12 +681,12 @@ void Terrain::CreatePatchGeometry(TerrainPatch* patch)
     if (vertexData)
     {
         const IntVector2& coords = patch->GetCoordinates();
-        int lodExpand = (1 << (occlusionLevel)) - 1;
-        int halfLodExpand = (1 << (occlusionLevel)) / 2;
+        unsigned lodExpand = (1u << (occlusionLevel)) - 1;
+        unsigned halfLodExpand = (1u << (occlusionLevel)) / 2;
 
-        for (int z = 0; z <= patchSize_; ++z)
+        for (unsigned z = 0; z <= patchSize_; ++z)
         {
-            for (int x = 0; x <= patchSize_; ++x)
+            for (unsigned x = 0; x <= patchSize_; ++x)
             {
                 int xPos = coords.x_ * patchSize_ + x;
                 int zPos = coords.y_ * patchSize_ + z;
@@ -749,7 +749,7 @@ void Terrain::CreatePatchGeometry(TerrainPatch* patch)
 
     if (drawRanges_.Size())
     {
-        unsigned occlusionDrawRange = occlusionLevel << 4;
+        unsigned occlusionDrawRange = occlusionLevel << 4u;
 
         geometry->SetIndexBuffer(indexBuffer_);
         geometry->SetDrawRange(TRIANGLE_LIST, drawRanges_[0].first_, drawRanges_[0].second_, false);
@@ -771,7 +771,7 @@ void Terrain::UpdatePatchLod(TerrainPatch* patch)
 
     // All LOD levels except the coarsest have 16 versions for stitching
     unsigned lodLevel = patch->GetLodLevel();
-    unsigned drawRangeIndex = lodLevel << 4;
+    unsigned drawRangeIndex = lodLevel << 4u;
     if (lodLevel < numLodLevels_ - 1)
     {
         TerrainPatch* north = patch->GetNorthPatch();
@@ -857,7 +857,7 @@ void Terrain::CreateGeometry()
     if (!node_)
         return;
 
-    URHO3D_PROFILE(CreateTerrainGeometry);
+    URHO3D_PROFILE("CreateTerrainGeometry");
 
     unsigned prevNumPatches = patches_.Size();
 
@@ -913,7 +913,7 @@ void Terrain::CreateGeometry()
     // Remove old patch nodes which are not needed
     if (updateAll)
     {
-        URHO3D_PROFILE(RemoveOldPatches);
+        URHO3D_PROFILE("RemoveOldPatches");
 
         PODVector<Node*> oldPatchNodes;
         node_->GetChildrenWithComponent<TerrainPatch>(oldPatchNodes);
@@ -952,7 +952,7 @@ void Terrain::CreateGeometry()
 
         if (imgComps == 1)
         {
-            URHO3D_PROFILE(CopyHeightData);
+            URHO3D_PROFILE("CopyHeightData");
 
             for (int z = 0; z < numVertices_.y_; ++z)
             {
@@ -977,7 +977,7 @@ void Terrain::CreateGeometry()
         }
         else
         {
-            URHO3D_PROFILE(CopyHeightData);
+            URHO3D_PROFILE("CopyHeightData");
 
             // If more than 1 component, use the green channel for more accuracy
             for (int z = 0; z < numVertices_.y_; ++z)
@@ -1006,7 +1006,7 @@ void Terrain::CreateGeometry()
         // If updating a region of the heightmap, check which patches change
         if (!updateAll)
         {
-            int lodExpand = 1 << (numLodLevels_ - 1);
+            int lodExpand = 1u << (numLodLevels_ - 1);
             // Expand the right & bottom 1 pixel more, as patches share vertices at the edge
             updateRegion.left_ -= lodExpand;
             updateRegion.right_ += lodExpand + 1;
@@ -1029,7 +1029,7 @@ void Terrain::CreateGeometry()
         bool enabled = IsEnabledEffective();
 
         {
-            URHO3D_PROFILE(CreatePatches);
+            URHO3D_PROFILE("CreatePatches");
 
             // Create patches and set node transforms
             for (int z = 0; z < numPatches_.y_; ++z)
@@ -1086,7 +1086,7 @@ void Terrain::CreateGeometry()
         // Create vertex data for patches. First update smoothing to ensure normals are calculated correctly across patch borders
         if (smoothing_)
         {
-            URHO3D_PROFILE(UpdateSmoothing);
+            URHO3D_PROFILE("UpdateSmoothing");
 
             for (unsigned i = 0; i < patches_.Size(); ++i)
             {
@@ -1143,7 +1143,7 @@ void Terrain::CreateGeometry()
 
 void Terrain::CreateIndexData()
 {
-    URHO3D_PROFILE(CreateIndexData);
+    URHO3D_PROFILE("CreateIndexData");
 
     PODVector<unsigned short> indices;
     drawRanges_.Clear();
@@ -1163,7 +1163,7 @@ void Terrain::CreateIndexData()
     for (unsigned i = 0; i < numLodLevels_; ++i)
     {
         unsigned combinations = (i < numLodLevels_ - 1) ? 16 : 1;
-        int skip = 1 << i;
+        int skip = 1u << i;
 
         for (unsigned j = 0; j < combinations; ++j)
         {
@@ -1323,10 +1323,9 @@ float Terrain::GetSourceHeight(int x, int z) const
 
 float Terrain::GetLodHeight(int x, int z, unsigned lodLevel) const
 {
-    auto offset = (unsigned)(1 << lodLevel);
-    auto divisor = (float)offset;
-    float xFrac = (float)(x % offset) / divisor;
-    float zFrac = (float)(z % offset) / divisor;
+    unsigned offset = 1u << lodLevel;
+    auto xFrac = (float)(x % offset) / offset;
+    auto zFrac = (float)(z % offset) / offset;
     float h1, h2, h3;
 
     if (xFrac + zFrac >= 1.0f)
@@ -1372,7 +1371,7 @@ Vector3 Terrain::GetRawNormal(int x, int z) const
 
 void Terrain::CalculateLodErrors(TerrainPatch* patch)
 {
-    URHO3D_PROFILE(CalculateLodErrors);
+    URHO3D_PROFILE("CalculateLodErrors");
 
     const IntVector2& coords = patch->GetCoordinates();
     PODVector<float>& lodErrors = patch->GetLodErrors();
@@ -1387,7 +1386,7 @@ void Terrain::CalculateLodErrors(TerrainPatch* patch)
     for (unsigned i = 0; i < numLodLevels_; ++i)
     {
         float maxError = 0.0f;
-        int divisor = 1 << i;
+        int divisor = 1u << i;
 
         if (i > 0)
         {
@@ -1404,7 +1403,7 @@ void Terrain::CalculateLodErrors(TerrainPatch* patch)
             }
 
             // Set error to be at least same as (half vertex spacing x LOD) to prevent horizontal stretches getting too inaccurate
-            maxError = Max(maxError, 0.25f * (spacing_.x_ + spacing_.z_) * (float)(1 << i));
+            maxError = Max(maxError, 0.25f * (spacing_.x_ + spacing_.z_) * (float)(1u << i));
         }
 
         lodErrors.Push(maxError);

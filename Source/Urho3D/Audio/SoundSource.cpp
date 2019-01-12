@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -64,7 +64,7 @@ namespace Urho3D
     } \
 
 #define INC_POS_STEREO_LOOPED() \
-    pos += (intAdd << 1); \
+    pos += ((unsigned)intAdd << 1u); \
     fractPos += fractAdd; \
     if (fractPos > 65535) \
     { \
@@ -75,7 +75,7 @@ namespace Urho3D
         pos -= (end - repeat); \
 
 #define INC_POS_STEREO_ONESHOT() \
-    pos += (intAdd << 1); \
+    pos += ((unsigned)intAdd << 1u); \
     fractPos += fractAdd; \
     if (fractPos > 65535) \
     { \
@@ -556,7 +556,7 @@ void SoundSource::PlayLockless(const SharedPtr<SoundStream>& stream)
         unsigned sampleSize = stream->GetSampleSize();
         unsigned streamBufferSize = sampleSize * stream->GetIntFrequency() * STREAM_BUFFER_LENGTH / 1000;
 
-        streamBuffer_ = new Sound(context_);
+        streamBuffer_ = context_->CreateObject<Sound>();
         streamBuffer_->SetSize(streamBufferSize);
         streamBuffer_->SetFormat(stream->GetIntFrequency(), stream->IsSixteenBit(), stream->IsStereo());
         streamBuffer_->SetLooped(true);
@@ -593,7 +593,7 @@ void SoundSource::SetPlayPositionLockless(signed char* pos)
     signed char* end = sound_->GetEnd();
     if (pos < start)
         pos = start;
-    if (sound_->IsSixteenBit() && (pos - start) & 1)
+    if (sound_->IsSixteenBit() && (pos - start) & 1u)
         ++pos;
     if (pos > end)
         pos = end;

@@ -84,23 +84,16 @@ void DebugHud::SetExtents(const IntVector2& position, IntVector2 size)
 
     auto bottomRight = position + size;
     extents_ = IntRect(position.x_, position.y_, bottomRight.x_, bottomRight.y_);
-    RecalculateWindowPositions();
 }
 
-void DebugHud::RecalculateWindowPositions()
-{
-    posMode_ = WithinExtents({ui::GetStyle().WindowPadding.x, -ui::GetStyle().WindowPadding.y - 10});
-    posStats_ = WithinExtents({ui::GetStyle().WindowPadding.x, ui::GetStyle().WindowPadding.y});
-}
-
-void DebugHud::SetMode(unsigned mode)
+void DebugHud::SetMode(DebugHudModeFlags mode)
 {
     mode_ = mode;
 }
 
 void DebugHud::CycleMode()
 {
-    switch (mode_)
+    switch (mode_.AsInteger())
     {
     case DEBUGHUD_SHOW_NONE:
         SetMode(DEBUGHUD_SHOW_STATS);
@@ -123,7 +116,7 @@ void DebugHud::SetUseRendererStats(bool enable)
     useRendererStats_ = enable;
 }
 
-void DebugHud::Toggle(unsigned mode)
+void DebugHud::Toggle(DebugHudModeFlags mode)
 {
     SetMode(GetMode() ^ mode);
 }
@@ -156,51 +149,18 @@ void DebugHud::ClearAppStats()
     appStats_.Clear();
 }
 
-Vector2 DebugHud::WithinExtents(Vector2 pos)
-{
-    if (pos.x_ < 0)
-        pos.x_ += extents_.right_;
-    else if (pos.x_ > 0)
-        pos.x_ += extents_.left_;
-    else
-        pos.x_ = extents_.left_;
-
-    if (pos.y_ < 0)
-        pos.y_ += extents_.bottom_;
-    else if (pos.y_ > 0)
-        pos.y_ += extents_.top_;
-    else
-        pos.y_ = extents_.top_;
-
-    return pos;
-};
-
 void DebugHud::RenderUi(VariantMap& eventData)
 {
     Renderer* renderer = GetSubsystem<Renderer>();
     Graphics* graphics = GetSubsystem<Graphics>();
 
-    ui::SetNextWindowPos({0, 0});
-    ui::SetNextWindowSize({(float)extents_.Width(), (float)extents_.Height()});
-    ui::PushStyleColor(ImGuiCol_WindowBg, 0);
-    if (ui::Begin("DebugHud mode", nullptr, ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoTitleBar|
-                                            ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoInputs))
-    {
-        if (mode_ & DEBUGHUD_SHOW_MODE)
-        {
-            ui::SetCursorPos({posMode_.x_, posMode_.y_});
-            ui::Text("Tex:%s Mat:%s Spec:%s Shadows:%s Size:%i Quality:%s Occlusion:%s Instancing:%s API:%s",
-                     qualityTexts[renderer->GetTextureQuality()],
-                     qualityTexts[renderer->GetMaterialQuality()],
-                     renderer->GetSpecularLighting() ? "On" : "Off",
-                     renderer->GetDrawShadows() ? "On" : "Off",
-                     renderer->GetShadowMapSize(),
-                     shadowQualityTexts[renderer->GetShadowQuality()],
-                     renderer->GetMaxOccluderTriangles() > 0 ? "On" : "Off",
-                     renderer->GetDynamicInstancing() ? "On" : "Off",
-                     graphics->GetApiName().CString());
-        }
 
+    ui::SetNextWindowPos(ToImGui(Vector2(extents_.Min())));
+    ui::SetNextWindowSize(ToImGui(Vector2(extents_.Size())));
+    ui::PushStyleColor(ImGuiCol_WindowBg, 0);
+    if (ui::Begin("DebugHud", nullptr, ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoMove|
+                                       ImGuiWindowFlags_NoInputs|ImGuiWindowFlags_NoScrollbar))
+    {
         if (mode_ & DEBUGHUD_SHOW_STATS)
         {
             // Update stats regardless of them being shown.
@@ -223,7 +183,6 @@ void DebugHud::RenderUi(VariantMap& eventData)
                 batches = GetRenderer()->GetNumBatches();
             }
 
-            ui::SetCursorPos({posStats_.x_, posStats_.y_});
             ui::Text("FPS %d", fps_);
             ui::Text("Triangles %u", primitives);
             ui::Text("Batches %u", batches);
@@ -234,6 +193,22 @@ void DebugHud::RenderUi(VariantMap& eventData)
 
             for (HashMap<String, String>::ConstIterator i = appStats_.Begin(); i != appStats_.End(); ++i)
                 ui::Text("%s %s", i->first_.CString(), i->second_.CString());
+        }
+
+        if (mode_ & DEBUGHUD_SHOW_MODE)
+        {
+            auto& style = ui::GetStyle();
+            ui::SetCursorPos({style.WindowPadding.x, ui::GetWindowSize().y - ui::GetStyle().WindowPadding.y - 10});
+            ui::Text("Tex:%s | Mat:%s | Spec:%s | Shadows:%s | Size:%i | Quality:%s | Occlusion:%s | Instancing:%s | API:%s",
+                qualityTexts[renderer->GetTextureQuality()],
+                qualityTexts[renderer->GetMaterialQuality()],
+                renderer->GetSpecularLighting() ? "On" : "Off",
+                renderer->GetDrawShadows() ? "On" : "Off",
+                renderer->GetShadowMapSize(),
+                shadowQualityTexts[renderer->GetShadowQuality()],
+                renderer->GetMaxOccluderTriangles() > 0 ? "On" : "Off",
+                renderer->GetDynamicInstancing() ? "On" : "Off",
+                graphics->GetApiName().CString());
         }
     }
     ui::End();

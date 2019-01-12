@@ -47,7 +47,6 @@ SystemMessageBox::SystemMessageBox(Context* context, const String& messageString
 
 SystemMessageBox::~SystemMessageBox()
 {
-    UnsubscribeFromAllEvents();
 }
 
 void SystemMessageBox::RegisterObject(Context* context)
@@ -104,7 +103,6 @@ void SystemMessageBox::RenderFrame(StringHash eventType, VariantMap& eventData)
         if (closeWindow)
         {
             SendEvent(E_MESSAGEACK, P_OK, status);
-            UnsubscribeFromAllEvents();
             isOpen_ = false;
         }
     }

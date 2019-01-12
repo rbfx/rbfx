@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2017-2019 Rokas Kupstys.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -43,7 +43,6 @@ namespace Urho3D
 
 Gizmo::Gizmo(Context* context) : Object(context)
 {
-    SubscribeToEvent(E_POSTRENDERUPDATE, [&](StringHash, VariantMap&) { RenderDebugInfo(); });
 }
 
 Gizmo::~Gizmo()
@@ -68,26 +67,34 @@ bool Gizmo::Manipulate(const Camera* camera, const Vector<WeakPtr<Node>>& nodes)
     if (nodes.Empty())
         return false;
 
+    ImGuizmo::SetOrthographic(camera->IsOrthographic());
+
     if (!IsActive())
     {
-        // Find center point of all nodes
-        // It is not clear what should be rotation and scale of center point for multiselection, therefore we limit
-        // multiselection operations to world space (see above).
-        Vector3 center = Vector3::ZERO;
-        auto count = 0;
-        for (const auto& node: nodes)
+        if (nodes.Size() > 1)
         {
-            if (node.Expired() || node->GetType() == Scene::GetTypeStatic())
-                continue;
-            center += node->GetWorldPosition();
-            count++;
+            // Find center point of all nodes
+            // It is not clear what should be rotation and scale of center point for multiselection, therefore we limit
+            // multiselection operations to world space (see above).
+            Vector3
+            center = Vector3::ZERO;
+            auto count = 0;
+            for (const auto& node: nodes)
+            {
+                if (node.Expired() || node->GetType() == Scene::GetTypeStatic())
+                    continue;
+                center += node->GetWorldPosition();
+                count++;
+            }
+
+            if (count == 0)
+                return false;
+
+            center /= count;
+            currentOrigin_.SetTranslation(center);
         }
-
-        if (count == 0)
-            return false;
-
-        center /= count;
-        currentOrigin_.SetTranslation(center);
+        else if (!nodes.Front().Expired())
+            currentOrigin_ = nodes.Front()->GetTransform().ToMatrix4();
     }
 
     // Enums are compatible.
@@ -198,6 +205,17 @@ bool Gizmo::Manipulate(const Camera* camera, const Vector<WeakPtr<Node>>& nodes)
 
 bool Gizmo::ManipulateSelection(const Camera* camera)
 {
+    ImGuizmo::SetDrawlist();
+
+    // Remove expired selections
+    for (auto it = nodeSelection_.Begin(); it != nodeSelection_.End();)
+    {
+        if (it->Expired())
+            it = nodeSelection_.Erase(it);
+        else
+            ++it;
+    }
+
     return Manipulate(camera, nodeSelection_);
 }
 
@@ -230,7 +248,26 @@ bool Gizmo::Select(Node* node)
     if (nodeSelection_.Contains(weakNode))
         return false;
     nodeSelection_.Push(weakNode);
+    SendEvent(E_GIZMOSELECTIONCHANGED);
     return true;
+}
+
+bool Gizmo::Select(PODVector<Node*> nodes)
+{
+    bool selectedAny = false;
+    for (auto* node : nodes)
+    {
+        WeakPtr<Node> weakNode(node);
+        if (!nodeSelection_.Contains(weakNode))
+        {
+            nodeSelection_.Push(weakNode);
+            selectedAny = true;
+        }
+    }
+    if (selectedAny)
+        SendEvent(E_GIZMOSELECTIONCHANGED);
+
+    return selectedAny;
 }
 
 bool Gizmo::Unselect(Node* node)
@@ -239,118 +276,8 @@ bool Gizmo::Unselect(Node* node)
     if (!nodeSelection_.Contains(weakNode))
         return false;
     nodeSelection_.Remove(weakNode);
+    SendEvent(E_GIZMOSELECTIONCHANGED);
     return true;
-}
-
-void Gizmo::RenderDebugInfo()
-{
-    DebugRenderer* debug = nullptr;
-    for (auto it = nodeSelection_.Begin(); it != nodeSelection_.End();)
-    {
-        WeakPtr<Node> node = *it;
-        if (node.Expired())
-            it = nodeSelection_.Erase(it);
-        else
-        {
-            if (debug == nullptr)
-            {
-                if (auto scene = node->GetScene())
-                    debug = scene->GetComponent<DebugRenderer>();
-            }
-            if (debug != nullptr)
-            {
-                for (auto& component: node->GetComponents())
-                {
-                    if (auto light = dynamic_cast<Light*>(component.Get()))
-                        light->DrawDebugGeometry(debug, true);
-                    else if (auto drawable = dynamic_cast<Drawable*>(component.Get()))
-                        debug->AddBoundingBox(drawable->GetWorldBoundingBox(), Color::WHITE);
-                    else
-                        component->DrawDebugGeometry(debug, true);
-                }
-            }
-            ++it;
-        }
-    }
-}
-
-void Gizmo::HandleAutoSelection()
-{
-    if (autoModeCamera_.Null())
-        return;
-
-    ManipulateSelection(autoModeCamera_);
-
-    // Discard clicks when interacting with UI
-    if (GetUI()->GetFocusElement() != nullptr)
-        return;
-
-    // Discard clicks when interacting with SystemUI
-    if (GetSystemUI()->IsAnyItemActive() || GetSystemUI()->IsAnyItemHovered())
-        return;
-
-    // Discard clicks when gizmo is being manipulated
-    if (IsActive())
-        return;
-
-    if (GetInput()->GetMouseButtonPress(MOUSEB_LEFT))
-    {
-        UI* ui = GetSubsystem<UI>();
-        IntVector2 pos = ui->GetCursorPosition();
-        // Check the cursor is visible and there is no UI element in front of the cursor
-        if (!GetInput()->IsMouseVisible() || ui->GetElementAt(pos, true))
-            return;
-
-        Graphics* graphics = GetSubsystem<Graphics>();
-        Scene* cameraScene = autoModeCamera_->GetScene();
-        Ray cameraRay = autoModeCamera_->GetScreenRay((float)pos.x_ / graphics->GetWidth(), (float)pos.y_ / graphics->GetHeight());
-        // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
-        PODVector<RayQueryResult> results;
-        RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY);
-        cameraScene->GetComponent<Octree>()->RaycastSingle(query);
-        if (results.Size())
-        {
-            WeakPtr<Node> clickNode(results[0].drawable_->GetNode());
-            if (!GetInput()->GetKeyDown(KEY_CTRL))
-                nodeSelection_.Clear();
-
-            ToggleSelection(clickNode);
-        }
-    }
-
-    if (GetInput()->GetKeyDown(KEY_SHIFT) && GetInput()->GetKeyPress(KEY_TAB))
-        operation_ = static_cast<GizmoOperation>(((size_t)operation_ + 1) % GIZMOOP_MAX);
-
-    if (GetInput()->GetKeyDown(KEY_CTRL) && GetInput()->GetKeyPress(KEY_TAB))
-    {
-        if (transformSpace_ == TS_WORLD)
-            transformSpace_ = TS_LOCAL;
-        else if (transformSpace_ == TS_LOCAL)
-            transformSpace_ = TS_WORLD;
-    }
-}
-
-void Gizmo::EnableAutoMode(Camera* camera)
-{
-    if (autoModeCamera_ == camera)
-        return;
-
-    if (camera == nullptr)
-        UnsubscribeFromEvent(E_UPDATE);
-    else
-    {
-        Scene* scene = camera->GetScene();
-        if (scene == nullptr)
-        {
-            URHO3D_LOGERROR("Camera which does not belong to scene can not be used for gizmo auto selection.");
-            return;
-        }
-
-        autoModeCamera_ = camera;
-
-        scene->GetOrCreateComponent<DebugRenderer>();
-        SubscribeToEvent(E_UPDATE, [&](StringHash, VariantMap&) { HandleAutoSelection(); });
-    }
 }
 
 void Gizmo::ToggleSelection(Node* node)
@@ -366,6 +293,7 @@ bool Gizmo::UnselectAll()
     if (nodeSelection_.Empty())
         return false;
     nodeSelection_.Clear();
+    SendEvent(E_GIZMOSELECTIONCHANGED);
     return true;
 }
 

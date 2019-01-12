@@ -145,7 +145,9 @@ void Console::HandleLogMessage(StringHash eventType, VariantMap& eventData)
 void Console::RenderContent()
 {
     auto region = ui::GetContentRegionAvail();
-    ui::BeginChild("ConsoleScrollArea", ImVec2(region.x, region.y - 30), false, ImGuiWindowFlags_HorizontalScrollbar);
+    auto showCommandInput = !interpretersPointers_.Empty();
+    ui::BeginChild("ConsoleScrollArea", ImVec2(region.x, region.y - (showCommandInput ? 30 : 0)), false,
+                   ImGuiWindowFlags_HorizontalScrollbar);
 
     for (const auto& row : history_)
     {
@@ -174,48 +176,52 @@ void Console::RenderContent()
 
     if (scrollToEnd_)
     {
-        ui::SetScrollHere();
+        ui::SetScrollHereY();
         scrollToEnd_ = false;
     }
 
     ui::EndChild();
 
-    ui::PushItemWidth(110);
-    if (ui::Combo("##ConsoleInterpreter", &currentInterpreter_, &interpretersPointers_.Front(), interpretersPointers_.Size()))
+    if (showCommandInput)
     {
-
-    }
-    ui::PopItemWidth();
-    ui::SameLine();
-    ui::PushItemWidth(region.x - 120);
-    if (focusInput_)
-    {
-        ui::SetKeyboardFocusHere();
-        focusInput_ = false;
-    }
-    if (ui::InputText("##ConsoleInput", inputBuffer_, sizeof(inputBuffer_), ImGuiInputTextFlags_EnterReturnsTrue))
-    {
-        focusInput_ = true;
-        String line(inputBuffer_);
-        if (line.Length() && currentInterpreter_ < interpreters_.Size())
+        ui::PushItemWidth(110);
+        if (ui::Combo("##ConsoleInterpreter", &currentInterpreter_, &interpretersPointers_.Front(),
+                      interpretersPointers_.Size()))
         {
-            // Store to history, then clear the lineedit
-            URHO3D_LOGINFOF("> %s", line.CString());
-            if (history_.Size() > historyRows_)
-                history_.Erase(history_.Begin());
-            scrollToEnd_ = true;
-            inputBuffer_[0] = 0;
 
-            // Send the command as an event for script subsystem
-            using namespace ConsoleCommand;
-
-            VariantMap& newEventData = GetEventDataMap();
-            newEventData[P_COMMAND] = line;
-            newEventData[P_ID] = interpreters_[currentInterpreter_];
-            SendEvent(E_CONSOLECOMMAND, newEventData);
         }
+        ui::PopItemWidth();
+        ui::SameLine();
+        ui::PushItemWidth(region.x - 120);
+        if (focusInput_)
+        {
+            ui::SetKeyboardFocusHere();
+            focusInput_ = false;
+        }
+        if (ui::InputText("##ConsoleInput", inputBuffer_, sizeof(inputBuffer_), ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            focusInput_ = true;
+            String line(inputBuffer_);
+            if (line.Length() && currentInterpreter_ < interpreters_.Size())
+            {
+                // Store to history, then clear the lineedit
+                URHO3D_LOGINFOF("> %s", line.CString());
+                if (history_.Size() > historyRows_)
+                    history_.Erase(history_.Begin());
+                scrollToEnd_ = true;
+                inputBuffer_[0] = 0;
+
+                // Send the command as an event for script subsystem
+                using namespace ConsoleCommand;
+
+                VariantMap& newEventData = GetEventDataMap();
+                newEventData[P_COMMAND] = line;
+                newEventData[P_ID] = interpreters_[currentInterpreter_];
+                SendEvent(E_CONSOLECOMMAND, newEventData);
+            }
+        }
+        ui::PopItemWidth();
     }
-    ui::PopItemWidth();
 }
 
 void Console::RenderUi(StringHash eventType, VariantMap& eventData)

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -272,7 +272,7 @@ Graphics::~Graphics()
 bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, bool resizable, bool highDPI, bool vsync, bool tripleBuffer,
     int multiSample, int monitor, int refreshRate)
 {
-    URHO3D_PROFILE(SetScreenMode);
+    URHO3D_PROFILE("SetScreenMode");
 
     highDPI = false;   // SDL does not support High DPI mode on Windows platform yet, so always disable it for now
 
@@ -461,7 +461,7 @@ void Graphics::Close()
 
 bool Graphics::TakeScreenShot(Image& destImage)
 {
-    URHO3D_PROFILE(TakeScreenShot);
+    URHO3D_PROFILE("TakeScreenShot");
 
     if (!impl_->device_)
         return false;
@@ -581,7 +581,7 @@ void Graphics::EndFrame()
         return;
 
     {
-        URHO3D_PROFILE(Present);
+        URHO3D_PROFILE("Present");
 
         SendEvent(E_ENDRENDERING);
         impl_->swapChain_->Present(vsync_ ? 1 : 0, 0);
@@ -591,7 +591,7 @@ void Graphics::EndFrame()
     CleanupScratchBuffers();
 }
 
-void Graphics::Clear(unsigned flags, const Color& color, float depth, unsigned stencil)
+void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, unsigned stencil)
 {
     IntVector2 rtSize = GetRenderTargetDimensions();
 
@@ -632,13 +632,13 @@ void Graphics::Clear(unsigned flags, const Color& color, float depth, unsigned s
         model.m23_ = Clamp(depth, 0.0f, 1.0f);
 
         SetBlendMode(BLEND_REPLACE);
-        SetColorWrite((flags & CLEAR_COLOR) != 0);
+        SetColorWrite(flags & CLEAR_COLOR);
         SetCullMode(CULL_NONE);
         SetDepthTest(CMP_ALWAYS);
-        SetDepthWrite((flags & CLEAR_DEPTH) != 0);
+        SetDepthWrite(flags & CLEAR_DEPTH);
         SetFillMode(FILL_SOLID);
         SetScissorTest(false);
-        SetStencilTest((flags & CLEAR_STENCIL) != 0, CMP_ALWAYS, OP_REF, OP_KEEP, OP_KEEP, stencil);
+        SetStencilTest(flags & CLEAR_STENCIL, CMP_ALWAYS, OP_REF, OP_KEEP, OP_KEEP, stencil);
         SetShaders(GetShader(VS, "ClearFramebuffer"), GetShader(PS, "ClearFramebuffer"));
         SetShaderParameter(VSP_MODEL, model);
         SetShaderParameter(VSP_VIEWPROJ, projection);
@@ -660,7 +660,7 @@ bool Graphics::ResolveToTexture(Texture2D* destination, const IntRect& viewport)
     if (!destination || !destination->GetRenderSurface())
         return false;
 
-    URHO3D_PROFILE(ResolveToTexture);
+    URHO3D_PROFILE("ResolveToTexture");
 
     IntRect vpCopy = viewport;
     if (vpCopy.right_ <= vpCopy.left_)
@@ -990,7 +990,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
         {
             if (vs->GetCompilerOutput().Empty())
             {
-                URHO3D_PROFILE(CompileVertexShader);
+                URHO3D_PROFILE("CompileVertexShader");
 
                 bool success = vs->Create();
                 if (!success)
@@ -1014,7 +1014,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
         {
             if (ps->GetCompilerOutput().Empty())
             {
-                URHO3D_PROFILE(CompilePixelShader);
+                URHO3D_PROFILE("CompilePixelShader");
 
                 bool success = ps->Create();
                 if (!success)
@@ -1277,7 +1277,7 @@ void Graphics::SetTexture(unsigned index, Texture* texture)
             }
         }
 
-        if (texture->GetLevelsDirty())
+        if (texture && texture->GetLevelsDirty())
             texture->RegenerateLevels();
     }
 
@@ -1898,7 +1898,7 @@ ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType type, unsigned in
         return i->second_.Get();
     else
     {
-        SharedPtr<ConstantBuffer> newConstantBuffer(new ConstantBuffer(context_));
+        SharedPtr<ConstantBuffer> newConstantBuffer(context_->CreateObject<ConstantBuffer>());
         newConstantBuffer->SetSize(size);
         impl_->allConstantBuffers_[key] = newConstantBuffer;
         return newConstantBuffer.Get();
@@ -2168,6 +2168,13 @@ bool Graphics::CreateDevice(int width, int height, int multiSample)
     // After creating the swap chain, disable automatic Alt-Enter fullscreen/windowed switching
     // (the application will switch manually if it wants to)
     dxgiFactory->MakeWindowAssociation(GetWindowHandle(window_), DXGI_MWA_NO_ALT_ENTER);
+
+#ifdef URHO3D_LOGGING
+    DXGI_ADAPTER_DESC desc;
+    dxgiAdapter->GetDesc(&desc);
+    String adapterDesc(desc.Description);
+    URHO3D_LOGINFO("Adapter used " + adapterDesc);
+#endif
 
     dxgiFactory->Release();
     dxgiAdapter->Release();
@@ -2459,7 +2466,7 @@ void Graphics::PrepareDraw()
             HashMap<unsigned, ID3D11BlendState*>::Iterator i = impl_->blendStates_.Find(newBlendStateHash);
             if (i == impl_->blendStates_.End())
             {
-                URHO3D_PROFILE(CreateBlendState);
+                URHO3D_PROFILE("CreateBlendState");
 
                 D3D11_BLEND_DESC stateDesc;
                 memset(&stateDesc, 0, sizeof stateDesc);
@@ -2503,7 +2510,7 @@ void Graphics::PrepareDraw()
             HashMap<unsigned, ID3D11DepthStencilState*>::Iterator i = impl_->depthStates_.Find(newDepthStateHash);
             if (i == impl_->depthStates_.End())
             {
-                URHO3D_PROFILE(CreateDepthState);
+                URHO3D_PROFILE("CreateDepthState");
 
                 D3D11_DEPTH_STENCIL_DESC stateDesc;
                 memset(&stateDesc, 0, sizeof stateDesc);
@@ -2556,7 +2563,7 @@ void Graphics::PrepareDraw()
             HashMap<unsigned, ID3D11RasterizerState*>::Iterator i = impl_->rasterizerStates_.Find(newRasterizerStateHash);
             if (i == impl_->rasterizerStates_.End())
             {
-                URHO3D_PROFILE(CreateRasterizerState);
+                URHO3D_PROFILE("CreateRasterizerState");
 
                 D3D11_RASTERIZER_DESC stateDesc;
                 memset(&stateDesc, 0, sizeof stateDesc);

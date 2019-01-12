@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2008-2019 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +20,10 @@
 # THE SOFTWARE.
 #
 
+if (CMAKE_CROSSCOMPILING)
+    return ()
+endif ()
+
 # Urho3D tools
 set (CMAKE_INSTALL_RPATH ".:..")
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_TOOLS_DIR})
@@ -39,9 +43,4 @@ if (URHO3D_TOOLS AND DESKTOP)
     add_subdirectory (Editor)
 endif ()
 
-file(GLOB tool_dirs RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
-foreach (tool ${tool_dirs})
-    if (TARGET ${tool})
-        set_target_properties(${tool} PROPERTIES FOLDER Tools)
-    endif ()
-endforeach ()
+vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} Tools)

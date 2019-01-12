@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -233,7 +233,7 @@ void HugeObjectCount::MoveCamera(float timeStep)
 
 void HugeObjectCount::AnimateObjects(float timeStep)
 {
-    URHO3D_PROFILE(AnimateObjects);
+    URHO3D_PROFILE("AnimateObjects");
 
     const float ROTATE_SPEED = 15.0f;
     // Rotate about the Z axis (roll)

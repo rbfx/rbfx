@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2008-2019 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -30,11 +30,12 @@ endif ()
 file (GLOB_RECURSE SOURCE_FILES *.c *.h)
 list (APPEND SOURCE_FILES ${ASM_FILES})
 
-add_library (LibCpuId OBJECT ${SOURCE_FILES})
+add_library (LibCpuId STATIC ${SOURCE_FILES})
 target_compile_definitions (LibCpuId PRIVATE -DVERSION="0.4.0")
 if (HAVE_STDINT_H)
     target_compile_definitions (LibCpuId PRIVATE -DHAVE_STDINT_H)
 endif ()
+
 target_include_directories(LibCpuId
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/LibCpuId>

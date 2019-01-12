@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Core/Context.h"
 #include "../Graphics/Geometry.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/IndexBuffer.h"
@@ -33,9 +34,13 @@
 #include "../Math/Ray.h"
 
 #include "../DebugNew.h"
+#include "Geometry.h"
+
 
 namespace Urho3D
 {
+
+extern const char* GEOMETRY_CATEGORY;
 
 Geometry::Geometry(Context* context) :
     Object(context),
@@ -52,6 +57,11 @@ Geometry::Geometry(Context* context) :
 }
 
 Geometry::~Geometry() = default;
+
+void Geometry::RegisterObject(Context* context)
+{
+    context->RegisterFactory<Geometry>(GEOMETRY_CATEGORY);
+}
 
 bool Geometry::SetNumVertexBuffers(unsigned num)
 {

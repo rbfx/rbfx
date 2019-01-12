@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -678,7 +678,7 @@ void CrowdManager::OnSceneSet(Scene* scene)
 void CrowdManager::Update(float delta)
 {
     assert(crowd_ && navigationMesh_);
-    URHO3D_PROFILE(UpdateCrowd);
+    URHO3D_PROFILE("UpdateCrowd");
     crowd_->update(delta, nullptr);
 }
 

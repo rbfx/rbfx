@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -47,6 +47,13 @@ public:
         refCount_(rhs.refCount_)
     {
         AddRef();
+    }
+
+    /// Move from another shared array pointer.
+    SharedArrayPtr(SharedArrayPtr<T>&& rhs)
+    {
+        Swap(ptr_, rhs.ptr_);
+        Swap(refCount_, rhs.refCount_);
     }
 
     /// Construct from a raw pointer.
@@ -206,9 +213,9 @@ private:
     }
 
     /// Pointer to the array.
-    T* ptr_;
+    T* ptr_ = nullptr;
     /// Pointer to the RefCount structure.
-    RefCount* refCount_;
+    RefCount* refCount_ = nullptr;
 };
 
 /// Perform a static cast from one shared array pointer type to another.

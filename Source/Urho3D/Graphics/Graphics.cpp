@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,12 +27,15 @@
 #include "../Graphics/Animation.h"
 #include "../Graphics/AnimationController.h"
 #include "../Graphics/Camera.h"
+#include "../Graphics/Geometry.h"
 #include "../Graphics/CustomGeometry.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../Graphics/DecalSet.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsImpl.h"
+#include "../Graphics/IndexBuffer.h"
 #include "../Graphics/Material.h"
+#include "../Graphics/OcclusionBuffer.h"
 #include "../Graphics/Octree.h"
 #include "../Graphics/ParticleEffect.h"
 #include "../Graphics/ParticleEmitter.h"
@@ -50,6 +53,9 @@
 #include "../Graphics/Texture2DArray.h"
 #include "../Graphics/Texture3D.h"
 #include "../Graphics/TextureCube.h"
+#include "../Graphics/VertexBuffer.h"
+#include "../Graphics/View.h"
+#include "../Graphics/Viewport.h"
 #include "../Graphics/Zone.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
@@ -288,7 +294,7 @@ void Graphics::EndDumpShaders()
 
 void Graphics::PrecacheShaders(Deserializer& source)
 {
-    URHO3D_PROFILE(PrecacheShaders);
+    URHO3D_PROFILE("PrecacheShaders");
 
     ShaderPrecache::LoadShaders(this, source);
 }
@@ -341,7 +347,7 @@ void* Graphics::ReserveScratchBuffer(unsigned size)
             i->size_ = size;
             i->reserved_ = true;
 
-            URHO3D_LOGDEBUG("Resized scratch buffer to size " + String(size));
+            URHO3D_LOGTRACE("Resized scratch buffer to size " + String(size));
 
             return i->data_.Get();
         }
@@ -353,9 +359,10 @@ void* Graphics::ReserveScratchBuffer(unsigned size)
     newBuffer.size_ = size;
     newBuffer.reserved_ = true;
     scratchBuffers_.Push(newBuffer);
-    return newBuffer.data_.Get();
 
     URHO3D_LOGDEBUG("Allocated scratch buffer with size " + String(size));
+
+    return newBuffer.data_.Get();
 }
 
 void Graphics::FreeScratchBuffer(void* buffer)
@@ -384,7 +391,7 @@ void Graphics::CleanupScratchBuffers()
             i->data_ = maxScratchBufferRequest_ > 0 ? (new unsigned char[maxScratchBufferRequest_]) : nullptr;
             i->size_ = maxScratchBufferRequest_;
 
-            URHO3D_LOGDEBUG("Resized scratch buffer to size " + String(maxScratchBufferRequest_));
+            URHO3D_LOGTRACE("Resized scratch buffer to size " + String(maxScratchBufferRequest_));
         }
     }
 
@@ -434,6 +441,13 @@ void RegisterGraphicsLibrary(Context* context)
     DebugRenderer::RegisterObject(context);
     Octree::RegisterObject(context);
     Zone::RegisterObject(context);
+    VertexBuffer::RegisterObject(context);
+    IndexBuffer::RegisterObject(context);
+    Geometry::RegisterObject(context);
+    ConstantBuffer::RegisterObject(context);
+    View::RegisterObject(context);
+    Viewport::RegisterObject(context);
+    OcclusionBuffer::RegisterObject(context);
 }
 
 

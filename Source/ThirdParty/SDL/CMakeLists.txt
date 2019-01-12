@@ -22,7 +22,7 @@
 # Modified by Yao Wei Tjong for Urho3D, the modified portion is licensed under below license
 
 #
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2008-2019 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -112,7 +112,7 @@ if (WIN32)
 elseif (HAIKU OR ANDROID OR IOS OR TVOS)   # IOS/TVOS CMake variables are defined in Urho3D when targeting iOS/tvOS platforms, respectively
   # Do nothing here but this should prevent these platforms from entering the more generic case below, i.e.
   # - preventing LINUX variable being set for Android (when using older CMake)
-  # - preventing DARWIN/MACOSX variabe being set for iOS
+  # - preventing DARWIN/MACOSX variable being set for iOS
   # - preventing UNIX_SYS variable being set for Haiku
 elseif (APPLE)
   if (CMAKE_SYSTEM_NAME MATCHES Darwin)
@@ -150,7 +150,7 @@ elseif (UNIX)
 endif()
 
 # Default option knobs
-# Urho3D - commented out OPT_DEF_SSEMATH default variable as the underyling SSEMATH build option is also being commented out by us
+# Urho3D - commented out OPT_DEF_SSEMATH default variable as the underlying SSEMATH build option is also being commented out by us
 if(UNIX OR MINGW OR MSYS)
   set(OPT_DEF_LIBC ON)
 endif()
@@ -1040,9 +1040,9 @@ elseif(UNIX)    # Urho3D - at this point both UNIX and UNIX_SYS should be equiva
     find_path (DBUS_H_INCLUDE_DIRS NAMES dbus/dbus.h PATH_SUFFIXES dbus-1.0)
     # Cater for both multilib and multiarch, native and cross-compiling build
     if (URHO3D_64BIT)
-      set (DBUS_INC_SEARCH_PATH /usr/lib64/dbus-1.0/include)
+      set (DBUS_INC_SEARCH_PATH /usr/lib64/dbus-1.0/include /usr/lib/x86_64-linux-gnu/dbus-1.0/include)
     else ()
-      set (DBUS_INC_SEARCH_PATH /usr/lib/dbus-1.0/include)
+      set (DBUS_INC_SEARCH_PATH /usr/lib/dbus-1.0/include /usr/lib/i386-linux-gnu/dbus-1.0/include)
     endif ()
     find_path (DBUS_ARCH_DEPS_H_INCLUDE_DIRS NAMES dbus/dbus-arch-deps.h PATHS ${DBUS_INC_SEARCH_PATH} /usr/lib/${CMAKE_LIBRARY_ARCHITECTURE}/dbus-1.0/include)
     if (DBUS_H_INCLUDE_DIRS AND DBUS_H_INCLUDE_DIRS AND DBUS_ARCH_DEPS_H_INCLUDE_DIRS)
@@ -1055,9 +1055,9 @@ elseif(UNIX)    # Urho3D - at this point both UNIX and UNIX_SYS should be equiva
     find_path (IBUS_H_INCLUDE_DIRS NAMES ibus.h PATH_SUFFIXES ibus-1.0)
     find_path (GLIB_H_INCLUDE_DIRS NAMES glib.h PATH_SUFFIXES glib-2.0)
     if (URHO3D_64BIT)
-      set (GLIB_INC_SEARCH_PATH /usr/lib64/glib-2.0/include)
+      set (GLIB_INC_SEARCH_PATH /usr/lib64/glib-2.0/include /usr/lib/x86_64-linux-gnu/glib-2.0/include)
     else ()
-      set (GLIB_INC_SEARCH_PATH /usr/lib/glib-2.0/include)
+      set (GLIB_INC_SEARCH_PATH /usr/lib/glib-2.0/include /usr/lib/i386-linux-gnu/glib-2.0/include)
     endif ()
     find_path (GLIB_CONFIG_H_INCLUDE_DIRS NAMES glibconfig.h PATHS ${GLIB_INC_SEARCH_PATH} /usr/lib/${CMAKE_LIBRARY_ARCHITECTURE}/glib-2.0/include)
     if (IBUS_H_INCLUDE_DIRS AND GLIB_H_INCLUDE_DIRS AND GLIB_CONFIG_H_INCLUDE_DIRS)
@@ -1238,9 +1238,6 @@ elseif(WINDOWS)
     set(SOURCE_FILES ${SOURCE_FILES} ${FILESYSTEM_SOURCES})
     set(HAVE_SDL_FILESYSTEM TRUE)
   endif()
-
-  # Libraries for Win32 native and MinGW
-  list(APPEND EXTRA_LIBS user32 gdi32 winmm imm32 ole32 oleaut32 version uuid)
 
   # TODO: in configure.in the check for timers is set on
   # cygwin | mingw32* - does this include mingw32CE?
@@ -1486,7 +1483,7 @@ file (GLOB_RECURSE H_FILES include/*.h)     # Adding the headers into source fil
 list (APPEND SOURCE_FILES ${H_FILES})
 
 # Setup target as STATIC library (as the result we never use EXTRA_LDFLAGS linker flags)
-add_library (SDL OBJECT ${SOURCE_FILES})
+add_library (SDL STATIC ${SOURCE_FILES})
 
 # General includes
 # Urho3D - use 'generated' path suffix for generated config header file, the suffic prevents overwriting the header file with the same name in the source tree in case of non out-of-source build tree is being used
@@ -1496,9 +1493,22 @@ target_include_directories (SDL
            $<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>
 )
 if (BUILD_SHARED_LIBS)
-  target_compile_definitions(SDL PUBLIC -DSDL_EXPORTS)
+  target_compile_definitions(SDL PRIVATE -DSDL_EXPORTS)
+endif ()
+if (WIN32)
+  target_link_libraries (SDL user32 gdi32 imm32 version winmm)
+elseif (ANDROID)
+  target_link_libraries (SDL dl log android)
+elseif (APPLE)
+  target_compile_options(SDL PUBLIC -stdlib=libc++)
+  target_link_libraries (SDL iconv "-framework AudioToolbox" "-framework CoreAudio")
+  if (ARM)
+    target_link_libraries (SDL "-framework AVFoundation" "-framework CoreGraphics" "-framework CoreMotion" "-framework GameController" "-framework OpenGLES" "-framework QuartzCore" "-framework UIKit")
+  else ()
+    target_link_libraries (SDL "-framework Carbon" "-framework Cocoa" "-framework CoreFoundation" "-framework SystemConfiguration" "-framework CoreServices" "-framework CoreVideo" "-framework ForceFeedback" "-framework IOKit" "-framework OpenGL")
+  endif ()
 endif ()
 
 # Install headers for building and using the Urho3D library (install dependency for InputEvents.h)
-install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/ FILES_MATCHING PATTERN *.h)    # Note: the trailing slash is significant
-install (FILES ${SDL2_BINARY_DIR}/include/SDL/generated/SDL_config.h DESTINATION ${DEST_THIRDPARTY_HEADERS}/SDL)
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)    # Note: the trailing slash is significant
+install (FILES ${SDL2_BINARY_DIR}/include/SDL/generated/SDL_config.h DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/SDL)

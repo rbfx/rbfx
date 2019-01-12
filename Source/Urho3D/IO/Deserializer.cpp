@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -360,6 +360,9 @@ Variant Deserializer::ReadVariant(VariantType type)
     case VAR_STRINGVECTOR:
         return Variant(ReadStringVector());
 
+    case VAR_RECT:
+        return Variant(ReadRect());
+
     case VAR_VARIANTMAP:
         return Variant(ReadVariantMap());
 
@@ -431,22 +434,22 @@ unsigned Deserializer::ReadVLE()
     unsigned char byte;
 
     byte = ReadUByte();
-    ret = (unsigned)(byte & 0x7f);
+    ret = (unsigned)(byte & 0x7fu);
     if (byte < 0x80)
         return ret;
 
     byte = ReadUByte();
-    ret |= ((unsigned)(byte & 0x7f)) << 7;
+    ret |= ((unsigned)(byte & 0x7fu)) << 7u;
     if (byte < 0x80)
         return ret;
 
     byte = ReadUByte();
-    ret |= ((unsigned)(byte & 0x7f)) << 14;
+    ret |= ((unsigned)(byte & 0x7fu)) << 14u;
     if (byte < 0x80)
         return ret;
 
     byte = ReadUByte();
-    ret |= ((unsigned)byte) << 21;
+    ret |= ((unsigned)byte) << 21u;
     return ret;
 }
 

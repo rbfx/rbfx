@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -57,8 +57,12 @@ public:
     void SetExecuteConsoleCommands(bool enable);
     /// Run a program using the command interpreter, block until it exits and return the exit code. Will fail if any allowed paths are defined.
     int SystemCommand(const String& commandLine, bool redirectStdOutToLog = false);
+    /// Run a specific program, block until it exits and return the exit code. Will fail if any allowed paths are defined. Returns STDOUT output of subprocess.
+    int SystemRun(const String& fileName, const Vector<String>& arguments, String& output);
     /// Run a specific program, block until it exits and return the exit code. Will fail if any allowed paths are defined.
     int SystemRun(const String& fileName, const Vector<String>& arguments);
+    /// Run a specific program, do not block until it exits. Will fail if any allowed paths are defined.
+    int SystemSpawn(const String& fileName, const Vector<String>& arguments);
     /// Run a program using the command interpreter asynchronously. Return a request ID or M_MAX_UNSIGNED if failed. The exit code will be posted together with the request ID in an AsyncExecFinished event. Will fail if any allowed paths are defined.
     unsigned SystemCommandAsync(const String& commandLine);
     /// Run a specific program asynchronously. Return a request ID or M_MAX_UNSIGNED if failed. The exit code will be posted together with the request ID in an AsyncExecFinished event. Will fail if any allowed paths are defined.
@@ -97,6 +101,13 @@ public:
     void ScanDir(Vector<String>& result, const String& pathName, const String& filter, unsigned flags, bool recursive) const;
     /// Return the program's directory.
     String GetProgramDir() const;
+#if DESKTOP
+    /// Return the program's executable file path.
+    String GetProgramFileName() const;
+    /// Return executable path of interpreter program (for example path to mono executable on unixes for C# application).
+    /// If application is executed directly (no interpreter) this will return same result as GetProgramFileName().
+    String GetInterpreterFileName() const;
+#endif
     /// Return the user documents directory.
     String GetUserDocumentsDir() const;
     /// Return the application preferences directory.

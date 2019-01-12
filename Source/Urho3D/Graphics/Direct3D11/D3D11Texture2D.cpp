@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -71,7 +71,7 @@ void Texture2D::Release()
 
 bool Texture2D::SetData(unsigned level, int x, int y, int width, int height, const void* data)
 {
-    URHO3D_PROFILE(SetTextureData);
+    URHO3D_PROFILE("SetTextureData");
 
     if (!object_.ptr_)
     {
@@ -168,7 +168,7 @@ bool Texture2D::SetData(Image* image, bool useAlpha)
     // Use a shared ptr for managing the temporary mip images created during this function
     SharedPtr<Image> mipImage;
     unsigned memoryUse = sizeof(Texture2D);
-    int quality = QUALITY_HIGH;
+    MaterialQuality quality = QUALITY_HIGH;
     Renderer* renderer = GetSubsystem<Renderer>();
     if (renderer)
         quality = renderer->GetTextureQuality();
@@ -215,7 +215,8 @@ bool Texture2D::SetData(Image* image, bool useAlpha)
         // If image was previously compressed, reset number of requested levels to avoid error if level count is too high for new size
         if (IsCompressed() && requestedLevels_ > 1)
             requestedLevels_ = 0;
-        SetSize(levelWidth, levelHeight, format);
+        if (width_ != levelWidth || height_ != levelHeight || format != format_)
+            SetSize(levelWidth, levelHeight, format, usage_);
 
         for (unsigned i = 0; i < levels_; ++i)
         {
@@ -254,7 +255,8 @@ bool Texture2D::SetData(Image* image, bool useAlpha)
         height /= (1 << mipsToSkip);
 
         SetNumLevels(Max((levels - mipsToSkip), 1U));
-        SetSize(width, height, format);
+        if (width_ != width || height_ != height || format != format_)
+            SetSize(width, height, format, usage_);
 
         for (unsigned i = 0; i < levels_ && i < levels - mipsToSkip; ++i)
         {

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2008-2019 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,10 +21,12 @@
 #
 
 file (GLOB_RECURSE SOURCE_FILES *.h *.cpp)
-add_library(STB OBJECT ${SOURCE_FILES})
+add_library(STB STATIC ${SOURCE_FILES})
 target_compile_definitions(STB PUBLIC -DSTB_VORBIS_HEADER_ONLY=1)
 target_include_directories(STB
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PUBLIC    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/STB>
+              $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/STB>
 )
-install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/ FILES_MATCHING PATTERN *.h)
+
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)

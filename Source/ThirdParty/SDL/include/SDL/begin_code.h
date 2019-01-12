@@ -53,7 +53,7 @@
 
 /* Some compilers use a special export keyword */
 // Urho3D: Only export when it is being requested
-#ifdef SDL_EXPORTS
+#if defined(SDL_EXPORTS) || defined(Urho3D_EXPORTS)
 #ifndef DECLSPEC
 # if defined(__WIN32__) || defined(__WINRT__)
 #  ifdef __BORLANDC__

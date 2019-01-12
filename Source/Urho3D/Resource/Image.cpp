@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -50,6 +50,10 @@
 #define FOURCC_DXT4 (MAKEFOURCC('D','X','T','4'))
 #define FOURCC_DXT5 (MAKEFOURCC('D','X','T','5'))
 #define FOURCC_DX10 (MAKEFOURCC('D','X','1','0'))
+
+#define FOURCC_ETC1 (MAKEFOURCC('E', 'T', 'C', '1'))
+#define FOURCC_ETC2 (MAKEFOURCC('E', 'T', 'C', '2'))
+#define FOURCC_ETC2A (MAKEFOURCC('E', 'T', '2', 'A'))
 
 static const unsigned DDSCAPS_COMPLEX = 0x00000008U;
 static const unsigned DDSCAPS_TEXTURE = 0x00001000U;
@@ -227,6 +231,10 @@ bool CompressedLevel::Decompress(unsigned char* dest)
         DecompressImageETC(dest, data_, width_, height_);
         return true;
 
+    case CF_ETC2_RGB:
+    case CF_ETC2_RGBA:
+        return false;
+
     case CF_PVRTC_RGB_2BPP:
     case CF_PVRTC_RGBA_2BPP:
     case CF_PVRTC_RGB_4BPP:
@@ -323,6 +331,21 @@ bool Image::BeginLoad(Deserializer& source)
             components_ = 4;
             break;
 
+        case FOURCC_ETC1:
+            compressedFormat_ = CF_ETC1;
+            components_ = 3;
+            break;
+
+        case FOURCC_ETC2:
+            compressedFormat_ = CF_ETC2_RGB;
+            components_ = 3;
+            break;
+
+        case FOURCC_ETC2A:
+            compressedFormat_ = CF_ETC2_RGBA;
+            components_ = 4;
+            break;
+
         case 0:
             if (ddsd.ddpfPixelFormat_.dwRGBBitCount_ != 32 && ddsd.ddpfPixelFormat_.dwRGBBitCount_ != 24 &&
                 ddsd.ddpfPixelFormat_.dwRGBBitCount_ != 16)
@@ -410,7 +433,7 @@ bool Image::BeginLoad(Deserializer& source)
             if (faceIndex < imageChainCount - 1)
             {
                 // Build the image chain
-                SharedPtr<Image> nextImage(new Image(context_));
+                SharedPtr<Image> nextImage(context_->CreateObject<Image>());
                 currentImage->nextSibling_ = nextImage;
                 currentImage = nextImage;
             }
@@ -419,7 +442,7 @@ bool Image::BeginLoad(Deserializer& source)
         // If uncompressed DDS, convert the data to 8bit RGBA as the texture classes can not currently use eg. RGB565 format
         if (compressedFormat_ == CF_RGBA)
         {
-            URHO3D_PROFILE(ConvertDDSToRGBA);
+            URHO3D_PROFILE("ConvertDDSToRGBA");
 
             currentImage = this;
 
@@ -576,6 +599,16 @@ bool Image::BeginLoad(Deserializer& source)
             components_ = 3;
             break;
 
+        case 0x9274:
+            compressedFormat_ = CF_ETC2_RGB;
+            components_ = 3;
+            break;
+
+        case 0x9278:
+            compressedFormat_ = CF_ETC2_RGBA;
+            components_ = 4;
+            break;
+
         case 0x8c00:
             compressedFormat_ = CF_PVRTC_RGB_4BPP;
             components_ = 3;
@@ -702,6 +735,16 @@ bool Image::BeginLoad(Deserializer& source)
             components_ = 4;
             break;
 
+        case 22:
+            compressedFormat_ = CF_ETC2_RGB;
+            components_ = 3;
+            break;
+
+        case 23:
+            compressedFormat_ = CF_ETC2_RGBA;
+            components_ = 4;
+            break;
+
         default:
             compressedFormat_ = CF_NONE;
             break;
@@ -815,7 +858,7 @@ bool Image::BeginLoad(Deserializer& source)
 
 bool Image::Save(Serializer& dest) const
 {
-    URHO3D_PROFILE(SaveImage);
+    URHO3D_PROFILE("SaveImage");
 
     if (IsCompressed())
     {
@@ -832,7 +875,7 @@ bool Image::Save(Serializer& dest) const
     int len;
     unsigned char* png = stbi_write_png_to_mem(data_.Get(), 0, width_, height_, components_, &len);
     bool success = dest.Write(png, (unsigned)len) == (unsigned)len;
-    free(png);
+    free(png);      // NOLINT(hicpp-no-malloc)
     return success;
 }
 
@@ -937,7 +980,11 @@ void Image::SetData(const unsigned char* pixelData)
         return;
     }
 
-    memcpy(data_.Get(), pixelData, (size_t)width_ * height_ * depth_ * components_);
+    auto size = (size_t)width_ * height_ * depth_ * components_;
+    if (pixelData)
+        memcpy(data_.Get(), pixelData, size);
+    else
+        memset(data_.Get(), 0, size);
     nextLevel_.Reset();
 }
 
@@ -1121,7 +1168,7 @@ bool Image::FlipVertical()
 
 bool Image::Resize(int width, int height)
 {
-    URHO3D_PROFILE(ResizeImage);
+    URHO3D_PROFILE("ResizeImage");
 
     if (IsCompressed())
     {
@@ -1183,7 +1230,7 @@ void Image::Clear(const Color& color)
 
 void Image::ClearInt(unsigned uintColor)
 {
-    URHO3D_PROFILE(ClearImage);
+    URHO3D_PROFILE("ClearImage");
 
     if (!data_)
         return;
@@ -1212,7 +1259,7 @@ void Image::ClearInt(unsigned uintColor)
 
 bool Image::SaveBMP(const String& fileName) const
 {
-    URHO3D_PROFILE(SaveImageBMP);
+    URHO3D_PROFILE("SaveImageBMP");
 
     auto* fileSystem = GetSubsystem<FileSystem>();
     if (fileSystem && !fileSystem->CheckAccess(GetPath(fileName)))
@@ -1235,7 +1282,7 @@ bool Image::SaveBMP(const String& fileName) const
 
 bool Image::SavePNG(const String& fileName) const
 {
-    URHO3D_PROFILE(SaveImagePNG);
+    URHO3D_PROFILE("SaveImagePNG");
 
     File outFile(context_, fileName, FILE_WRITE);
     if (outFile.IsOpen())
@@ -1246,7 +1293,7 @@ bool Image::SavePNG(const String& fileName) const
 
 bool Image::SaveTGA(const String& fileName) const
 {
-    URHO3D_PROFILE(SaveImageTGA);
+    URHO3D_PROFILE("SaveImageTGA");
 
     auto* fileSystem = GetSubsystem<FileSystem>();
     if (fileSystem && !fileSystem->CheckAccess(GetPath(fileName)))
@@ -1269,7 +1316,7 @@ bool Image::SaveTGA(const String& fileName) const
 
 bool Image::SaveJPG(const String& fileName, int quality) const
 {
-    URHO3D_PROFILE(SaveImageJPG);
+    URHO3D_PROFILE("SaveImageJPG");
 
     auto* fileSystem = GetSubsystem<FileSystem>();
     if (fileSystem && !fileSystem->CheckAccess(GetPath(fileName)))
@@ -1292,7 +1339,7 @@ bool Image::SaveJPG(const String& fileName, int quality) const
 
 bool Image::SaveDDS(const String& fileName) const
 {
-    URHO3D_PROFILE(SaveImageDDS);
+    URHO3D_PROFILE("SaveImageDDS");
 
     File outFile(context_, fileName, FILE_WRITE);
     if (!outFile.IsOpen())
@@ -1345,7 +1392,7 @@ bool Image::SaveDDS(const String& fileName) const
 bool Image::SaveWEBP(const String& fileName, float compression /* = 0.0f */) const
 {
 #ifdef URHO3D_WEBP
-    URHO3D_PROFILE(SaveImageWEBP);
+    URHO3D_PROFILE("SaveImageWEBP");
 
     auto* fileSystem(GetSubsystem<FileSystem>());
     File outFile(context_, fileName, FILE_WRITE);
@@ -1568,7 +1615,7 @@ SharedPtr<Image> Image::GetNextLevel() const
     if (nextLevel_)
         return nextLevel_;
 
-    URHO3D_PROFILE(CalculateImageMipLevel);
+    URHO3D_PROFILE("CalculateImageMipLevel");
 
     int widthOut = width_ / 2;
     int heightOut = height_ / 2;
@@ -1581,7 +1628,7 @@ SharedPtr<Image> Image::GetNextLevel() const
     if (depthOut < 1)
         depthOut = 1;
 
-    SharedPtr<Image> mipImage(new Image(context_));
+    SharedPtr<Image> mipImage(context_->CreateObject<Image>());
 
     if (depth_ > 1)
         mipImage->SetSize(widthOut, heightOut, depthOut, components_);
@@ -1875,7 +1922,7 @@ SharedPtr<Image> Image::ConvertToRGBA() const
     if (components_ == 4)
         return SharedPtr<Image>(const_cast<Image*>(this));
 
-    SharedPtr<Image> ret(new Image(context_));
+    SharedPtr<Image> ret(context_->CreateObject<Image>());
     ret->SetSize(width_, height_, depth_, 4);
 
     const unsigned char* src = data_;
@@ -1983,7 +2030,7 @@ CompressedLevel Image::GetCompressedLevel(unsigned index) const
     }
     else if (compressedFormat_ < CF_PVRTC_RGB_2BPP)
     {
-        level.blockSize_ = (compressedFormat_ == CF_DXT1 || compressedFormat_ == CF_ETC1) ? 8 : 16;
+        level.blockSize_ = (compressedFormat_ == CF_DXT1 || compressedFormat_ == CF_ETC1 || compressedFormat_ == CF_ETC2_RGB) ? 8 : 16;
         unsigned i = 0;
         unsigned offset = 0;
 
@@ -2082,7 +2129,7 @@ Image* Image::GetSubimage(const IntRect& rect) const
         int width = rect.Width();
         int height = rect.Height();
 
-        auto* image = new Image(context_);
+        auto image = context_->CreateObject<Image>();
         image->SetSize(width, height, components_);
 
         unsigned char* dest = image->GetData();
@@ -2151,7 +2198,7 @@ Image* Image::GetSubimage(const IntRect& rect) const
             return nullptr;
         }
 
-        auto* image = new Image(context_);
+        auto image = context_->CreateObject<Image>();
         image->width_ = paddedRect.Width();
         image->height_ = paddedRect.Height();
         image->depth_ = 1;
@@ -2237,7 +2284,7 @@ void Image::PrecalculateLevels()
     if (!data_ || IsCompressed())
         return;
 
-    URHO3D_PROFILE(PrecalculateImageMipLevels);
+    URHO3D_PROFILE("PrecalculateImageMipLevels");
 
     nextLevel_.Reset();
 

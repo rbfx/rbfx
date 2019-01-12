@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2017-2019 Rokas Kupstys.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,58 +20,126 @@
 // THE SOFTWARE.
 //
 
-#include <IconFontCppHeaders/IconsFontAwesome.h>
+#include <Urho3D/Core/CoreEvents.h>
+#include <Urho3D/Graphics/BillboardSet.h>
+#include <Urho3D/Graphics/Camera.h>
+#include <Urho3D/Graphics/DebugRenderer.h>
+#include <Urho3D/Graphics/Graphics.h>
+#include <Urho3D/Graphics/Material.h>
+#include <Urho3D/Graphics/Octree.h>
+#include <Urho3D/Graphics/RenderPath.h>
+#include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Scene/SceneEvents.h>
+#include <Urho3D/Scene/SceneManager.h>
+#include <Urho3D/Scene/SceneMetadata.h>
+#include <Urho3D/SystemUI/DebugHud.h>
 
+#include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <Toolbox/Scene/DebugCameraController.h>
 #include <Toolbox/SystemUI/Widgets.h>
+#include <ImGui/imgui_internal.h>
 #include <ImGuizmo/ImGuizmo.h>
 
 #include "SceneTab.h"
 #include "EditorEvents.h"
 #include "Editor.h"
 #include "Widgets.h"
-#include "SceneSettings.h"
-#include <ImGui/imgui_internal.h>
+#include "EditorSceneSettings.h"
+#include "Tabs/HierarchyTab.h"
+#include "Tabs/InspectorTab.h"
+#include "Tabs/PreviewTab.h"
+#include "Inspector/MaterialInspector.h"
 
 
 namespace Urho3D
 {
 
-SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName, ui::DockSlot_ position)
-    : Tab(context, id, afterDockName, position)
-    , view_(context, {0, 0, 1024, 768})
+using namespace ui::litterals;
+
+static const IntVector2 cameraPreviewSize{320, 200};
+
+SceneTab::SceneTab(Context* context)
+    : BaseClassName(context)
+    , rect_({0, 0, 1024, 768})
     , gizmo_(context)
-    , undo_(context)
-    , sceneState_(context)
+    , clipboard_(context, undo_)
 {
-    SetTitle("New Scene");
+    SetID("be1c7280-08e4-4b9f-b6ec-6d32bd9e3293");
+    SetTitle("Scene");
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
+    isUtility_ = true;
 
-    settings_ = new SceneSettings(context);
-    effectSettings_ = new SceneEffects(this);
+    // Main viewport
+    viewport_ = new Viewport(context_);
+    viewport_->SetRect(rect_);
+    texture_ = new Texture2D(context_);
+    texture_->SetSize(rect_.Width(), rect_.Height(), Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
+    texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
+    texture_->GetRenderSurface()->SetViewport(0, viewport_);
 
+    rootElement_ = new RootUIElement(context_);
+    rootElement_->SetTraversalMode(TM_BREADTH_FIRST);
+    rootElement_->SetEnabled(true);
+
+    offScreenUI_ = new UI(context_);
+    offScreenUI_->SetRoot(rootElement_);
+    offScreenUI_->SetRenderInSystemUI(true);
+    offScreenUI_->SetBlockEvents(true);
+    context_->RegisterSubsystem(offScreenUI_);
+
+    // Camera preview objects
+    cameraPreviewViewport_ = new Viewport(context_);
+    cameraPreviewViewport_->SetRect(IntRect{{0, 0}, cameraPreviewSize});
+    cameraPreviewViewport_->SetDrawDebug(false);
+    cameraPreviewtexture_ = new Texture2D(context_);
+    cameraPreviewtexture_->SetSize(cameraPreviewSize.x_, cameraPreviewSize.y_, Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
+    cameraPreviewtexture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
+    cameraPreviewtexture_->GetRenderSurface()->SetViewport(0, cameraPreviewViewport_);
+
+    // Events
     SubscribeToEvent(this, E_EDITORSELECTIONCHANGED, std::bind(&SceneTab::OnNodeSelectionChanged, this));
-    SubscribeToEvent(effectSettings_, E_EDITORSCENEEFFECTSCHANGED, std::bind(&AttributeInspector::CopyEffectsFrom,
-        &inspector_, view_.GetViewport()));
     SubscribeToEvent(E_UPDATE, std::bind(&SceneTab::OnUpdate, this, _2));
-    // On plugin code reload all scene state is serialized, plugin library is reloaded and scene state is unserialized.
-    // This way scene recreates all plugin-provided components on reload and gets to use new versions of them.
-    SubscribeToEvent(E_EDITORUSERCODERELOADSTART, [&](StringHash, VariantMap&) {
-        Pause();
-        SceneStateSave();
-        for (auto node : GetScene()->GetChildren(true))
+    SubscribeToEvent(E_POSTRENDERUPDATE, [&](StringHash, VariantMap&) { RenderDebugInfo(); });
+    SubscribeToEvent(&inspector_, E_INSPECTORRENDERSTART, [this](StringHash, VariantMap& args) {
+        Serializable* serializable = static_cast<Serializable*>(args[InspectorRenderStart::P_SERIALIZABLE].GetPtr());
+        if (serializable->GetType() == Node::GetTypeStatic())
         {
-            if (!node->HasTag("__EDITOR_OBJECT__"))
-                node->Remove();
+            UI_UPIDSCOPE(1)
+                ui::Columns(2);
+            Node* node = static_cast<Node*>(serializable);
+            ui::TextUnformatted("ID");
+            ui::NextColumn();
+            ui::Text("%u", node->GetID());
+            if (node->IsReplicated())
+            {
+                ui::SameLine();
+                ui::TextUnformatted(ICON_FA_WIFI);
+                ui::SetHelpTooltip("Replicated over the network.", KEY_UNKNOWN);
+            }
+            ui::NextColumn();
         }
     });
-    SubscribeToEvent(E_EDITORUSERCODERELOADEND, [&](StringHash, VariantMap&) {
-        SceneStateRestore(sceneState_);
-    });
-    SubscribeToEvent(GetScene(), E_COMPONENTADDED, std::bind(&SceneTab::OnComponentAdded, this, _2));
-    SubscribeToEvent(GetScene(), E_COMPONENTREMOVED, std::bind(&SceneTab::OnComponentRemoved, this, _2));
+    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { UpdateCameras(); });
+    SubscribeToEvent(E_SCENEACTIVATED, [this](StringHash, VariantMap& args) {
+        using namespace SceneActivated;
+        if (Scene* scene = static_cast<Scene*>(args[P_NEWSCENE].GetPtr()))
+        {
+            SubscribeToEvent(scene, E_COMPONENTADDED, [this](StringHash, VariantMap& args) { OnComponentAdded(args); });
+            SubscribeToEvent(scene, E_COMPONENTREMOVED, [this](StringHash, VariantMap& args) { OnComponentRemoved(args); });
+            SubscribeToEvent(scene, E_TEMPORARYCHANGED, [this](StringHash, VariantMap& args) { OnTemporaryChanged(args); });
 
-    undo_.Connect(GetScene());
+            undo_.Clear();
+            undo_.Connect(scene);
+
+            cameraPreviewViewport_->SetScene(scene);
+            viewport_->SetScene(scene);
+            selectedComponents_.Clear();
+            gizmo_.UnselectAll();
+        }
+    });
+
     undo_.Connect(&inspector_);
     undo_.Connect(&gizmo_);
 
@@ -79,42 +147,57 @@ SceneTab::SceneTab(Context* context, StringHash id, const String& afterDockName,
         undo_.Clear();
     });
 
-    // Scene is updated manually.
-    GetScene()->SetUpdateEnabled(false);
-
-    CreateObjects();
     undo_.Clear();
+
+    UpdateUniqueTitle();
 }
 
-SceneTab::~SceneTab() = default;
+SceneTab::~SceneTab()
+{
+    context_->RegisterSubsystem(new UI(context_));
+}
 
 bool SceneTab::RenderWindowContent()
 {
-    auto& style = ui::GetStyle();
+    if (GetScene() == nullptr)
+        return true;
+
     if (GetInput()->IsMouseVisible())
         lastMousePosition_ = GetInput()->GetMousePosition();
     bool open = true;
 
     // Focus window when appearing
     if (!isRendered_)
-    {
         ui::SetWindowFocus();
-        effectSettings_->Prepare(true);
-    }
-    ImGuizmo::SetDrawlist();
 
     RenderToolbarButtons();
     IntRect tabRect = UpdateViewRect();
-
     ui::SetCursorScreenPos(ToImGui(tabRect.Min()));
-    ui::Image(view_.GetTexture(), ToImGui(tabRect.Size()));
+    ImVec2 contentSize = ToImGui(tabRect.Size());
+    ui::BeginChild("Scene view", contentSize, false, windowFlags_);
+    ui::Image(texture_, contentSize);
+    gizmo_.ManipulateSelection(GetCamera());
+
     if (GetInput()->IsMouseVisible())
         mouseHoversViewport_ = ui::IsItemHovered();
 
     bool isClickedLeft = GetInput()->GetMouseButtonClick(MOUSEB_LEFT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
     bool isClickedRight = GetInput()->GetMouseButtonClick(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
-    gizmo_.ManipulateSelection(view_.GetCamera());
+    // Render camera preview
+    if (cameraPreviewViewport_->GetCamera() != nullptr)
+    {
+        float border = 1;
+        ui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, border);
+        ui::PushStyleColor(ImGuiCol_Border, ui::GetColorU32(ImGuiCol_Border, 255.f));                                   // Make a border opaque, otherwise it is barely visible.
+        ui::SetCursorScreenPos(ToImGui(tabRect.Max() - cameraPreviewSize - IntVector2{10, 10}));
+
+        ui::Image(cameraPreviewtexture_.Get(), ToImGui(cameraPreviewSize));
+        ui::RenderFrameBorder(ui::GetItemRectMin() - ImVec2{border, border}, ui::GetItemRectMax() + ImVec2{border, border});
+
+        ui::PopStyleColor();
+        ui::PopStyleVar();
+    }
 
     // Prevent dragging window when scene view is clicked.
     if (ui::IsWindowHovered())
@@ -128,7 +211,7 @@ bool SceneTab::RenderWindowContent()
         IntVector2 pos = GetInput()->GetMousePosition();
         pos -= tabRect.Min();
 
-        Ray cameraRay = view_.GetCamera()->GetScreenRay((float)pos.x_ / tabRect.Width(), (float)pos.y_ / tabRect.Height());
+        Ray cameraRay = GetCamera()->GetScreenRay((float)pos.x_ / tabRect.Width(), (float)pos.y_ / tabRect.Height());
         // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
         PODVector<RayQueryResult> results;
 
@@ -142,22 +225,50 @@ bool SceneTab::RenderWindowContent()
             GetScene()->GetComponent<Octree>()->RaycastSingle(query2);
         }
 
-        if (results.Size())
+        if (results.Size() && results[0].drawable_->GetNode() != nullptr)
         {
+            StringHash componentType;
             WeakPtr<Node> clickNode(results[0].drawable_->GetNode());
-            // Temporary nodes can not be selected.
+
+            if (clickNode->HasTag("DebugIcon"))
+                componentType = clickNode->GetVar("ComponentType").GetStringHash();
+
             while (!clickNode.Expired() && clickNode->HasTag("__EDITOR_OBJECT__"))
                 clickNode = clickNode->GetParent();
 
-            if (!clickNode.Expired())
+            if (isClickedLeft)
             {
-                bool appendSelection = GetInput()->GetKeyDown(KEY_CTRL);
-                if (!appendSelection)
+                if (!GetInput()->GetKeyDown(KEY_CTRL))
                     UnselectAll();
-                ToggleSelection(clickNode);
 
-                if (isClickedRight)
-                    ui::OpenPopupEx(ui::GetID("Node context menu"), true);
+                if (clickNode == GetScene())
+                {
+                    if (componentType != StringHash::ZERO)
+                        ToggleSelection(clickNode->GetComponent(componentType));
+                }
+                else
+                    ToggleSelection(clickNode);
+            }
+            else if (isClickedRight)
+            {
+                if (clickNode == GetScene())
+                {
+                    if (componentType != StringHash::ZERO)
+                    {
+                        Component* component = clickNode->GetComponent(componentType);
+                        if (!IsSelected(component))
+                        {
+                            UnselectAll();
+                            ToggleSelection(component);
+                        }
+                    }
+                }
+                else if (!IsSelected(clickNode))
+                {
+                    UnselectAll();
+                    ToggleSelection(clickNode);
+                }
+                ui::OpenPopupEx(ui::GetID("Node context menu"));
             }
         }
         else
@@ -166,138 +277,226 @@ bool SceneTab::RenderWindowContent()
 
     RenderNodeContextMenu();
 
-    const auto tabContextMenuTitle = "SceneTab context menu";
-    if (ui::IsDockTabHovered() && GetInput()->GetMouseButtonPress(MOUSEB_RIGHT))
-        ui::OpenPopup(tabContextMenuTitle);
-    if (ui::BeginPopup(tabContextMenuTitle))
-    {
-        if (ui::MenuItem("Save"))
-            Tab::SaveResource();
-
-        ui::Separator();
-
-        if (ui::MenuItem("Close"))
-            open = false;
-
-        ui::EndPopup();
-    }
+    ui::EndChild(); // Scene view
 
     return open;
 }
 
-void SceneTab::LoadResource(const String& resourcePath)
+void SceneTab::OnBeforeBegin()
 {
-    if (resourcePath.Empty())
-        return;
+    // Allow viewport texture to cover entire window
+    windowPadding_ = ui::GetStyle().WindowPadding;
+    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
+}
 
+void SceneTab::OnAfterBegin()
+{
+    // Inner part of window should have a proper padding, context menu and other controls might depend on it.
+    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, windowPadding_);
+    if (ui::BeginPopupContextItem("SceneTab context menu"))
+    {
+        if (ui::MenuItem("Save"))
+            SaveResource();
+
+        ui::Separator();
+
+        if (ui::MenuItem("Close"))
+            open_ = false;
+
+        ui::EndPopup();
+    }
+}
+
+void SceneTab::OnBeforeEnd()
+{
+    BaseClassName::OnBeforeEnd();
+    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
+}
+
+void SceneTab::OnAfterEnd()
+{
+    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
+}
+
+bool SceneTab::LoadResource(const String& resourcePath)
+{
+    Undo::SetTrackingScoped noTrack(undo_, false);
+
+    if (resourcePath == GetResourceName())
+        // Already loaded.
+        return true;
+
+    if (!BaseClassName::LoadResource(resourcePath))
+        return false;
+
+    SceneManager* manager = GetSubsystem<SceneManager>();
+    Scene* scene = manager->GetOrCreateScene(GetFileName(resourcePath));
+    manager->SetActiveScene(scene);
+
+    bool loaded = false;
     if (resourcePath.EndsWith(".xml", false))
     {
         auto* file = GetCache()->GetResource<XMLFile>(resourcePath);
-        if (file && GetScene()->LoadXML(file->GetRoot()))
-        {
-            path_ = resourcePath;
-            CreateObjects();
-        }
-        else
-            URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).CString());
+        loaded = file && scene->LoadXML(file->GetRoot());
     }
     else if (resourcePath.EndsWith(".json", false))
     {
         auto* file = GetCache()->GetResource<JSONFile>(resourcePath);
-        if (file && GetScene()->LoadJSON(file->GetRoot()))
-        {
-            path_ = resourcePath;
-            CreateObjects();
-        }
-        else
-            URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).CString());
+        loaded = file && scene->LoadJSON(file->GetRoot());
     }
     else
+    {
         URHO3D_LOGERRORF("Unknown scene file format %s", GetExtension(resourcePath).CString());
+        manager->UnloadScene(scene);
+        GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
+        return false;
+    }
 
-    SetTitle(GetFileName(path_));
+    if (!loaded)
+    {
+        URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).CString());
+        manager->UnloadScene(scene);
+        GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
+        return false;
+    }
+
+    manager->UnloadAllButActiveScene();
+    scene->SetUpdateEnabled(false);    // Scene is updated manually.
+    scene->GetOrCreateComponent<Octree>();
+    scene->GetOrCreateComponent<SceneMetadata>(LOCAL);
+    scene->GetOrCreateComponent<EditorSceneSettings>(LOCAL);
+
+    undo_.Clear();
+    lastUndoIndex_ = undo_.Index();
+
+    GetSubsystem<Editor>()->UpdateWindowTitle(resourcePath);
+
+    return true;
 }
 
-bool SceneTab::SaveResource(const String& resourcePath)
+bool SceneTab::SaveResource()
 {
-    auto fullPath = GetSubsystem<Editor>()->GetResourceAbsolutePath(resourcePath, path_, "xml", "Save Scene As");
+    if (!BaseClassName::SaveResource())
+        return false;
+
+    GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourceName_, true);
+
+    auto fullPath = GetCache()->GetResourceFileName(resourceName_);
     if (fullPath.Empty())
         return false;
 
     File file(context_, fullPath, FILE_WRITE);
     bool result = false;
 
-    float elapsed = 0;
-    if (!settings_->saveElapsedTime_)
-    {
-        elapsed = GetScene()->GetElapsedTime();
-        GetScene()->SetElapsedTime(0);
-    }
-
+    float elapsed = GetScene()->GetElapsedTime();
+    GetScene()->SetElapsedTime(0);
     GetScene()->SetUpdateEnabled(true);
     if (fullPath.EndsWith(".xml", false))
         result = GetScene()->SaveXML(file);
     else if (fullPath.EndsWith(".json", false))
         result = GetScene()->SaveJSON(file);
     GetScene()->SetUpdateEnabled(false);
-
-    if (!settings_->saveElapsedTime_)
-        GetScene()->SetElapsedTime(elapsed);
-
-    if (result)
-    {
-        if (!resourcePath.Empty())
-        {
-            path_ = resourcePath;
-            SetTitle(GetFileName(path_));
-        }
-    }
-    else
-        URHO3D_LOGERRORF("Saving scene to %s failed.", resourcePath.CString());
+    GetScene()->SetElapsedTime(elapsed);
 
     if (result)
         SendEvent(E_EDITORRESOURCESAVED);
+    else
+        URHO3D_LOGERRORF("Saving scene to %s failed.", resourceName_.CString());
 
     return result;
 }
 
-void SceneTab::CreateObjects()
-{
-    view_.CreateObjects();
-    view_.GetCamera()->GetNode()->CreateComponent<DebugCameraController>();
-}
-
 void SceneTab::Select(Node* node)
 {
+    if (node == nullptr)
+        return;
+
     if (gizmo_.Select(node))
     {
         using namespace EditorSelectionChanged;
-        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENETAB, this);
+        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
+    }
+}
+
+void SceneTab::Select(Component* component)
+{
+    if (component == nullptr)
+        return;
+
+    selectedComponents_.Insert(WeakPtr<Component>(component));
+    using namespace EditorSelectionChanged;
+    SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
+}
+
+void SceneTab::Select(PODVector<Node*> nodes)
+{
+    if (nodes.Empty())
+        return;
+
+    if (gizmo_.Select(nodes))
+    {
+        using namespace EditorSelectionChanged;
+        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
     }
 }
 
 void SceneTab::Unselect(Node* node)
 {
+    if (node == nullptr)
+        return;
+
     if (gizmo_.Unselect(node))
     {
         using namespace EditorSelectionChanged;
-        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENETAB, this);
+        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
+    }
+}
+
+void SceneTab::Unselect(Component* component)
+{
+    if (component == nullptr)
+        return;
+
+    if (selectedComponents_.Erase(WeakPtr<Component>(component)))
+    {
+        using namespace EditorSelectionChanged;
+        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
     }
 }
 
 void SceneTab::ToggleSelection(Node* node)
 {
+    if (node == nullptr)
+        return;
+
     gizmo_.ToggleSelection(node);
     using namespace EditorSelectionChanged;
-    SendEvent(E_EDITORSELECTIONCHANGED, P_SCENETAB, this);
+    SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
+}
+
+void SceneTab::ToggleSelection(Component* component)
+{
+    if (component == nullptr)
+        return;
+
+    WeakPtr<Component> componentPtr(component);
+    if (selectedComponents_.Contains(componentPtr))
+        selectedComponents_.Erase(componentPtr);
+    else
+        selectedComponents_.Insert(componentPtr);
+
+    using namespace EditorSelectionChanged;
+    SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
 }
 
 void SceneTab::UnselectAll()
 {
-    if (gizmo_.UnselectAll())
+    bool hadComponents = !selectedComponents_.Empty();
+    selectedComponents_.Clear();
+    if (gizmo_.UnselectAll() || hadComponents)
     {
         using namespace EditorSelectionChanged;
-        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENETAB, this);
+        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
     }
 }
 
@@ -308,119 +507,173 @@ const Vector<WeakPtr<Node>>& SceneTab::GetSelection() const
 
 void SceneTab::RenderToolbarButtons()
 {
-    auto& style = ui::GetStyle();
-    auto oldRounding = style.FrameRounding;
-    style.FrameRounding = 0;
+    ui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
 
-    if (ui::EditorToolbarButton(ICON_FA_FLOPPY_O, "Save"))
-        Tab::SaveResource();
+    ui::SetCursorPos(ui::GetCursorPos() + ImVec2{4_dpx, 4_dpy});
 
-    ui::SameLine(0, 3.f);
-
-    if (ui::EditorToolbarButton(ICON_FA_UNDO, "Undo"))
-        undo_.Undo();
-    if (ui::EditorToolbarButton(ICON_FA_REPEAT, "Redo"))
-        undo_.Redo();
+    if (ui::EditorToolbarButton(ICON_FA_SAVE, "Save"))
+        SaveResource();
 
     ui::SameLine(0, 3.f);
 
-    if (ui::EditorToolbarButton(ICON_FA_ARROWS, "Translate", gizmo_.GetOperation() == GIZMOOP_TRANSLATE))
+    if (ui::EditorToolbarButton(ICON_FA_ARROWS_ALT "###Translate", "Translate", gizmo_.GetOperation() == GIZMOOP_TRANSLATE))
         gizmo_.SetOperation(GIZMOOP_TRANSLATE);
-    if (ui::EditorToolbarButton(ICON_FA_REPEAT, "Rotate", gizmo_.GetOperation() == GIZMOOP_ROTATE))
+    if (ui::EditorToolbarButton(ICON_FA_SYNC "###Rotate", "Rotate", gizmo_.GetOperation() == GIZMOOP_ROTATE))
         gizmo_.SetOperation(GIZMOOP_ROTATE);
-    if (ui::EditorToolbarButton(ICON_FA_ARROWS_ALT, "Scale", gizmo_.GetOperation() == GIZMOOP_SCALE))
+    if (ui::EditorToolbarButton(ICON_FA_EXPAND_ARROWS_ALT "###Scale", "Scale", gizmo_.GetOperation() == GIZMOOP_SCALE))
         gizmo_.SetOperation(GIZMOOP_SCALE);
 
     ui::SameLine(0, 3.f);
 
-    if (ui::EditorToolbarButton(ICON_FA_ARROWS_ALT, "World", gizmo_.GetTransformSpace() == TS_WORLD))
+    if (ui::EditorToolbarButton(ICON_FA_ARROWS_ALT "###World", "World", gizmo_.GetTransformSpace() == TS_WORLD))
         gizmo_.SetTransformSpace(TS_WORLD);
-    if (ui::EditorToolbarButton(ICON_FA_ARROWS_ALT, "Local", gizmo_.GetTransformSpace() == TS_LOCAL))
+    if (ui::EditorToolbarButton(ICON_FA_EXPAND_ARROWS_ALT "###Local", "Local", gizmo_.GetTransformSpace() == TS_LOCAL))
         gizmo_.SetTransformSpace(TS_LOCAL);
 
     ui::SameLine(0, 3.f);
 
-    if (auto* light = view_.GetCamera()->GetNode()->GetComponent<Light>())
+    if (EditorSceneSettings* settings = GetScene()->GetComponent<EditorSceneSettings>())
     {
-        if (ui::EditorToolbarButton(ICON_FA_LIGHTBULB_O, "Camera Headlight", light->IsEnabled()))
-            light->SetEnabled(!light->IsEnabled());
+        if (ui::EditorToolbarButton("3D", "3D mode in editor viewport.", !settings->GetCamera2D()))
+            settings->SetCamera2D(false);
+        if (ui::EditorToolbarButton("2D", "2D mode in editor viewport.", settings->GetCamera2D()))
+            settings->SetCamera2D(true);
+    }
+    ui::SameLine(0, 3.f);
+
+    if (auto* hud = GetSubsystem<DebugHud>())
+    {
+        if (ui::EditorToolbarButton(ICON_FA_BUG, "Display debug hud.", hud->GetMode() == DEBUGHUD_SHOW_ALL))
+            hud->SetMode(hud->GetMode() == DEBUGHUD_SHOW_ALL ? DEBUGHUD_SHOW_NONE : DEBUGHUD_SHOW_ALL);
     }
 
     ui::SameLine(0, 3.f);
 
-    if (ui::EditorToolbarButton(scenePlaying_ ? ICON_FA_PAUSE : ICON_FA_PLAY, scenePlaying_ ? "Pause" : "Play"))
-    {
-        scenePlaying_ ^= true;
-        if (scenePlaying_)
-            Pause();
-        else
-            Play();
-    }
+    SendEvent(E_EDITORTOOLBARBUTTONS);
 
-    ui::NewLine();
-    style.FrameRounding = oldRounding;
+    ui::SameLine(0, 3.f);
+    ui::SetCursorPosY(ui::GetCursorPosY() + 4_dpx);
+
+    ui::PopStyleVar();
 }
 
 bool SceneTab::IsSelected(Node* node) const
 {
+    if (node == nullptr)
+        return false;
+
     return gizmo_.IsSelected(node);
+}
+
+bool SceneTab::IsSelected(Component* component) const
+{
+    if (component == nullptr)
+        return false;
+
+    return selectedComponents_.Contains(WeakPtr<Component>(component));
 }
 
 void SceneTab::OnNodeSelectionChanged()
 {
     using namespace EditorSelectionChanged;
-    selectedComponent_ = nullptr;
 }
 
-void SceneTab::RenderInspector()
+void SceneTab::RenderInspector(const char* filter)
 {
-    // TODO: inspector for multi-selection.
-    if (GetSelection().Size() == 1)
+    const auto& selection = GetSelection();
+    bool singleNodeMode = selection.Size() == 1 && selectedComponents_.Empty();
+    for (auto& node : GetSelection())
     {
-        auto node = GetSelection().Front();
         if (node.Expired())
-            return;
-
-        PODVector<Serializable*> items;
-        items.Push(node.Get());
-        if (node == GetScene())
+            continue;
+        RenderAttributes(node.Get(), filter, &inspector_);
+        if (singleNodeMode)
         {
-            effectSettings_->Prepare();
-            items.Push(settings_.Get());
-            items.Push(effectSettings_.Get());
+            for (auto& component : node->GetComponents())
+            {
+                if (!component->IsTemporary())
+                    RenderAttributes(component.Get(), filter, &inspector_);
+            }
         }
-        for (Component* component : node->GetComponents())
-            items.Push(component);
-        inspector_.RenderAttributes(items);
+    }
+
+    if (!singleNodeMode)
+    {
+        for (auto& component : selectedComponents_)
+        {
+            if (component.Expired())
+                continue;
+            RenderAttributes(component.Get(), filter, &inspector_);
+        }
     }
 }
 
-void SceneTab::RenderNodeTree()
+void SceneTab::RenderHierarchy()
 {
-    auto oldSpacing = ui::GetStyle().IndentSpacing;
-    ui::GetStyle().IndentSpacing = 10;
+    ui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 10);
     RenderNodeTree(GetScene());
-    ui::GetStyle().IndentSpacing = oldSpacing;
+    ui::PopStyleVar();
 }
 
 void SceneTab::RenderNodeTree(Node* node)
 {
+    if (node == nullptr)
+        return;
+
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
     if (node->GetParent() == nullptr)
         flags |= ImGuiTreeNodeFlags_DefaultOpen;
 
-    if (node->IsTemporary())
+    if (node->IsTemporary() || node->HasTag("__EDITOR_OBJECT__"))
         return;
 
-    String name = ToString("%s (%d)", (node->GetName().Empty() ? node->GetTypeName() : node->GetName()).CString(), node->GetID());
-    bool isSelected = IsSelected(node) && selectedComponent_.Expired();
+    if (node == scrollTo_.Get())
+        ui::SetScrollHereY();
+
+    String name = node->GetName().Empty() ? ToString("%s %d", node->GetTypeName().CString(), node->GetID()) : node->GetName();
+    bool isSelected = IsSelected(node);
 
     if (isSelected)
         flags |= ImGuiTreeNodeFlags_Selected;
 
     ui::Image("Node");
     ui::SameLine();
+    ui::PushID((void*)node);
     auto opened = ui::TreeNodeEx(name.CString(), flags);
+    auto it = openHierarchyNodes_.Find(node);
+    if (it != openHierarchyNodes_.End())
+    {
+        if (!opened)
+        {
+            ui::OpenTreeNode(ui::GetCurrentWindow()->GetID(name.CString()));
+            opened = true;
+        }
+        openHierarchyNodes_.Erase(it);
+    }
+
+    if (ui::BeginDragDropSource())
+    {
+        ui::SetDragDropVariant("ptr", node);
+        ui::Text("%s", name.CString());
+        ui::EndDragDropSource();
+    }
+
+    if (ui::BeginDragDropTarget())
+    {
+        const Variant& payload = ui::AcceptDragDropVariant("ptr");
+        if (!payload.IsEmpty())
+        {
+            SharedPtr<Node> child(dynamic_cast<Node*>(payload.GetPtr()));
+            if (child.NotNull() && child != node)
+            {
+                node->AddChild(child);
+                if (!opened)
+                    openHierarchyNodes_.Push(node);
+            }
+        }
+        ui::EndDragDropTarget();
+    }
+
     if (!opened)
     {
         // If TreeNode above is opened, it pushes it's label as an ID to the stack. However if it is not open then no
@@ -441,11 +694,14 @@ void SceneTab::RenderNodeTree(Node* node)
                 UnselectAll();
             ToggleSelection(node);
         }
-        else if (ui::IsMouseClicked(MOUSEB_RIGHT) && !scenePlaying_)
+        else if (ui::IsMouseClicked(MOUSEB_RIGHT))
         {
-            UnselectAll();
-            ToggleSelection(node);
-            ui::OpenPopupEx(ui::GetID("Node context menu"), true);
+            if (!IsSelected(node))
+            {
+                UnselectAll();
+                ToggleSelection(node);
+            }
+            ui::OpenPopupEx(ui::GetID("Node context menu"));
         }
     }
 
@@ -466,28 +722,30 @@ void SceneTab::RenderNodeTree(Node* node)
                 ui::Image(component->GetTypeName());
                 ui::SameLine();
 
-                bool selected = selectedComponent_ == component;
-                selected = ui::Selectable(component->GetTypeName().CString(), selected);
+                bool selected = selectedComponents_.Contains(component);
+                ui::Selectable(component->GetTypeName().CString(), selected);
 
-                if (ui::IsMouseClicked(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
+                if (ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
                 {
-                    selected = true;
-                    ui::OpenPopupEx(ui::GetID("Component context menu"), true);
+                    if (ui::IsMouseClicked(MOUSEB_LEFT))
+                    {
+                        if (!GetInput()->GetKeyDown(KEY_CTRL))
+                            UnselectAll();
+                        Select(component);
+                    }
+                    else if (ui::IsMouseClicked(MOUSEB_RIGHT))
+                    {
+                        if (!IsSelected(component))
+                        {
+                            UnselectAll();
+                            Select(component);
+                        }
+                        ui::OpenPopupEx(ui::GetID("Node context menu"));
+                    }
                 }
 
-                if (selected)
-                {
-                    UnselectAll();
-                    ToggleSelection(node);
-                    selectedComponent_ = component;
-                }
 
-                if (ui::BeginPopup("Component context menu"))
-                {
-                    if (ui::MenuItem("Remove"))
-                        component->Remove();
-                    ui::EndPopup();
-                }
+                RenderNodeContextMenu();
 
                 ui::PopID();
             }
@@ -495,153 +753,199 @@ void SceneTab::RenderNodeTree(Node* node)
             // Do not use element->GetChildren() because child may be deleted during this loop.
             PODVector<Node*> children;
             node->GetChildren(children);
-            for (Node* child: children)
+            for (Node* child : children) 
+            {
+                // ensure the tree is expanded to the currently selected node if there is one node selected.
+                if (GetSelection().Size() == 1)
+                {
+                    for (auto& selectedNode : GetSelection())
+                    {
+                        if (selectedNode.Expired())
+                            continue;
+
+                        if(selectedNode->IsChildOf(child))
+                            ui::SetNextTreeNodeOpen(true);
+                    }
+                }
+
+                //recursive call.
                 RenderNodeTree(child);
+            }
         }
         ui::TreePop();
     }
     else
         ui::PopID();
-}
-
-void SceneTab::LoadProject(XMLElement& scene)
-{
-    id_ = StringHash(ToUInt(scene.GetAttribute("id"), 16));
-    LoadResource(scene.GetAttribute("path"));
-
-    auto camera = scene.GetChild("camera");
-    if (camera.NotNull())
-    {
-        Node* cameraNode = view_.GetCamera()->GetNode();
-        if (auto position = camera.GetChild("position"))
-            cameraNode->SetPosition(position.GetVariant().GetVector3());
-        if (auto rotation = camera.GetChild("rotation"))
-            cameraNode->SetRotation(rotation.GetVariant().GetQuaternion());
-        if (auto light = camera.GetChild("light"))
-            cameraNode->GetComponent<Light>()->SetEnabled(light.GetVariant().GetBool());
-    }
-
-    settings_->LoadProject(scene);
-    effectSettings_->LoadProject(scene);
-
-    undo_.Clear();
-}
-
-void SceneTab::SaveProject(XMLElement& scene)
-{
-    scene.SetAttribute("type", "scene");
-    scene.SetAttribute("id", id_.ToString().CString());
-    scene.SetAttribute("path", path_);
-
-    auto camera = scene.CreateChild("camera");
-    Node* cameraNode = view_.GetCamera()->GetNode();
-    camera.CreateChild("position").SetVariant(cameraNode->GetPosition());
-    camera.CreateChild("rotation").SetVariant(cameraNode->GetRotation());
-    camera.CreateChild("light").SetVariant(cameraNode->GetComponent<Light>()->IsEnabled());
-
-    settings_->SaveProject(scene);
-    effectSettings_->SaveProject(scene);
-    Tab::SaveResource();
-}
-
-void SceneTab::ClearCachedPaths()
-{
-    path_.Clear();
+    ui::PopID();
 }
 
 void SceneTab::OnActiveUpdate()
 {
-    if (ui::IsAnyItemActive() || scenePlaying_)
-        return;
-
-    Input* input = GetSubsystem<Input>();
-
-    if (input->GetKeyDown(KEY_CTRL))
-    {
-        if (input->GetKeyPress(KEY_Y) || (input->GetKeyDown(KEY_SHIFT) && input->GetKeyPress(KEY_Z)))
-            undo_.Redo();
-        else if (input->GetKeyPress(KEY_Z))
-            undo_.Undo();
-    }
-
-    if (input->GetKeyPress(KEY_DELETE))
-        RemoveSelection();
 }
 
 void SceneTab::RemoveSelection()
 {
-    if (!selectedComponent_.Expired())
-        selectedComponent_->Remove();
+    for (auto& component : selectedComponents_)
+    {
+        if (!component.Expired())
+            component->Remove();
+    }
 
     for (auto& selected : GetSelection())
     {
         if (!selected.Expired())
             selected->Remove();
     }
+
     UnselectAll();
+}
+
+Scene* SceneTab::GetScene()
+{
+    return GetSubsystem<SceneManager>()->GetActiveScene();
 }
 
 IntRect SceneTab::UpdateViewRect()
 {
-    IntRect tabRect = Tab::UpdateViewRect();
-    view_.SetSize(tabRect);
+    IntRect tabRect = BaseClassName::UpdateViewRect();
+    // Correct content rect to not overlap buttons. Ideally this should be in Tab.cpp but for some reason it creates
+    // unused space at the bottom of PreviewTab.
+    tabRect.top_ += static_cast<int>(ui::GetCursorPosY());
+    ResizeMainViewport(tabRect);
     gizmo_.SetScreenRect(tabRect);
+
+    if (auto* hud = GetSubsystem<DebugHud>())
+        hud->SetExtents(tabRect.Min(), tabRect.Size());
+
     return tabRect;
 }
 
 void SceneTab::OnUpdate(VariantMap& args)
 {
+    Scene* scene = GetScene();
+    if (scene == nullptr)
+        return;
+
     float timeStep = args[Update::P_TIMESTEP].GetFloat();
-
-    if (scenePlaying_)
-        GetScene()->Update(timeStep);
-
-    if (auto component = view_.GetCamera()->GetComponent<DebugCameraController>())
+    bool isMode3D_ = !scene->GetComponent<EditorSceneSettings>()->GetCamera2D();
+    StringHash cameraControllerType = isMode3D_ ? DebugCameraController::GetTypeStatic() : DebugCameraController2D::GetTypeStatic();
+    if (Camera* camera = GetCamera())
     {
-        if (mouseHoversViewport_)
-            component->Update(timeStep);
+        LogicComponent* component = static_cast<LogicComponent*>(camera->GetComponent(cameraControllerType));
+        if (component != nullptr)
+        {
+            if (mouseHoversViewport_)
+                component->Update(timeStep);
+        }
+    }
+
+    if (Tab* tab = GetSubsystem<Editor>()->GetActiveTab())
+    {
+        StringHash activeTabType = tab->GetType();
+        if (activeTabType == GetType() || activeTabType == HierarchyTab::GetTypeStatic())
+        {
+            if (!ui::IsAnyItemActive())
+            {
+                // Global view hotkeys
+                if (GetInput()->GetKeyPress(KEY_DELETE))
+                    RemoveSelection();
+                else if (GetInput()->GetKeyDown(KEY_CTRL))
+                {
+                    if (GetInput()->GetKeyPress(KEY_C))
+                        CopySelection();
+                    else if (GetInput()->GetKeyPress(KEY_V))
+                    {
+                        if (GetInput()->GetKeyDown(KEY_SHIFT))
+                            PasteIntoSelection();
+                        else
+                            PasteIntuitive();
+                    }
+                }
+                else if (GetInput()->GetKeyPress(KEY_ESCAPE))
+                    UnselectAll();
+            }
+        }
+    }
+
+    // Render editor camera rotation guide
+    if (isMode3D_)
+    {
+        if (auto* debug = GetScene()->GetComponent<DebugRenderer>())
+        {
+            if (Camera* camera = GetCamera())
+            {
+                Vector3 guideRoot = GetCamera()->ScreenToWorldPoint({0.95, 0.1, 1});
+                debug->AddLine(guideRoot, guideRoot + Vector3::RIGHT * 0.05f, Color::RED, false);
+                debug->AddLine(guideRoot, guideRoot + Vector3::UP * 0.05f, Color::GREEN, false);
+                debug->AddLine(guideRoot, guideRoot + Vector3::FORWARD * 0.05f, Color::BLUE, false);
+            }
+        }
     }
 }
 
-void SceneTab::SceneStateSave()
+void SceneTab::SaveState(SceneState& destination)
 {
     Undo::SetTrackingScoped tracking(undo_, false);
 
+    // Preserve current selection
+    savedNodeSelection_.Clear();
+    savedComponentSelection_.Clear();
     for (auto& node : GetSelection())
     {
         if (node)
-            node->AddTag("__EDITOR_SELECTED__");
+            savedNodeSelection_.Push(node->GetID());
+    }
+    for (auto& component : selectedComponents_)
+    {
+        if (component)
+            savedComponentSelection_.Push(component->GetID());
     }
 
-    sceneState_.GetRoot().Remove();
-    XMLElement root = sceneState_.CreateRoot("scene");
-    GetScene()->SaveXML(root);
+    destination.Save(GetScene(), rootElement_);
 }
 
-void SceneTab::SceneStateRestore(XMLFile& source)
+void SceneTab::RestoreState(SceneState& source)
 {
     Undo::SetTrackingScoped tracking(undo_, false);
 
-    // Migrate editor objects to a newly loaded scene without destroying them.
-    Vector<SharedPtr<Node>> temporaries;
-    for (auto& node : GetScene()->GetChildrenWithTag("__EDITOR_OBJECT__"))
-        temporaries.Push(SharedPtr<Node>(node));
+    VectorBuffer editorObjectsState;
+    if (Node* editorObjects = GetScene()->GetChild("EditorObjects"))
+    {
+        // Preserve state of editor camera.
+        editorObjects->SetTemporary(false);
+        editorObjects->Save(editorObjectsState);
+    }
 
-    GetScene()->LoadXML(source.GetRoot());
+    source.Load(rootElement_);
+    GetSubsystem<SceneManager>()->UnloadAllButActiveScene();
 
-    for (auto& node : temporaries)
-        GetScene()->AddChild(node);
+    if (editorObjectsState.GetSize() > 0)
+    {
+        if (Node* objects = GetScene()->GetChild("EditorObjects"))
+            objects->Remove();
 
-    source.GetRoot().Remove();
+        // Make sure camera is not reset upon stopping scene simulation.
+        editorObjectsState.Seek(0);
+        auto nodeID = editorObjectsState.ReadUInt();
+        Node* editorObjects = GetScene()->CreateChild("EditorObjects", LOCAL, nodeID, true);
+        editorObjectsState.Seek(0);
+        editorObjects->Load(editorObjectsState);
+    }
 
-    gizmo_.UnselectAll();
-    for (auto node : GetScene()->GetChildrenWithTag("__EDITOR_SELECTED__", true))
-        gizmo_.Select(node);
+    // Restore previous selection
+    UnselectAll();
+    for (unsigned id : savedNodeSelection_)
+        Select(GetScene()->GetNode(id));
+
+    for (unsigned id : savedComponentSelection_)
+        Select(GetScene()->GetComponent(id));
+    savedNodeSelection_.Clear();
+    savedComponentSelection_.Clear();
 }
 
 void SceneTab::RenderNodeContextMenu()
 {
-    if (ui::BeginPopup("Node context menu") && !scenePlaying_)
+    if ((!GetSelection().Empty() || !selectedComponents_.Empty()) && ui::BeginPopup("Node context menu"))
     {
         Input* input = GetSubsystem<Input>();
         if (input->GetKeyPress(KEY_ESCAPE) || !input->IsMouseVisible())
@@ -652,85 +956,199 @@ void SceneTab::RenderNodeContextMenu()
             return;
         }
 
-        bool alternative = input->GetKeyDown(KEY_SHIFT);
-
-        if (ui::MenuItem(alternative ? "Create Child (Local)" : "Create Child"))
+        if (!GetSelection().Empty())
         {
-            for (auto& selectedNode : GetSelection())
+            bool alternative = input->GetKeyDown(KEY_SHIFT);
+
+            if (ui::MenuItem(alternative ? "Create Child (Local)" : "Create Child"))
             {
-                if (!selectedNode.Expired())
-                    Select(selectedNode->CreateChild(String::EMPTY, alternative ? LOCAL : REPLICATED));
+                PODVector<Node*> newNodes;
+                for (auto& selectedNode : GetSelection())
+                {
+                    if (!selectedNode.Expired())
+                    {
+                        newNodes.Push(selectedNode->CreateChild(String::EMPTY, alternative ? LOCAL : REPLICATED));
+                        openHierarchyNodes_.Push(selectedNode);
+                        openHierarchyNodes_.Push(newNodes.Back());
+                        scrollTo_ = newNodes.Back();
+                    }
+                }
+
+                UnselectAll();
+                Select(newNodes);
             }
-        }
 
-        if (ui::BeginMenu(alternative ? "Create Component (Local)" : "Create Component"))
-        {
-            auto* editor = GetSubsystem<Editor>();
-            auto categories = editor->GetObjectCategories();
-            categories.Remove("UI");
-
-            for (const String& category : categories)
+            if (ui::BeginMenu(alternative ? "Create Component (Local)" : "Create Component"))
             {
-                if (ui::BeginMenu(category.CString()))
+                auto* editor = GetSubsystem<Editor>();
+                auto categories = context_->GetObjectCategories().Keys();
+                categories.Remove("UI");
+
+                for (const String& category : categories)
                 {
                     auto components = editor->GetObjectsByCategory(category);
-                    Sort(components.Begin(), components.End());
+                    if (components.Empty())
+                        continue;
 
-                    for (const String& component : components)
+                    if (ui::BeginMenu(category.CString()))
                     {
-                        ui::Image(component);
-                        ui::SameLine();
-                        if (ui::MenuItem(component.CString()))
+                        Sort(components.Begin(), components.End());
+
+                        for (const String& component : components)
                         {
-                            for (auto& selectedNode : GetSelection())
+                            ui::Image(component);
+                            ui::SameLine();
+                            if (ui::MenuItem(component.CString()))
                             {
-                                if (!selectedNode.Expired())
-                                    selectedNode->CreateComponent(StringHash(component),
-                                        alternative ? LOCAL : REPLICATED);
+                                for (auto& selectedNode : GetSelection())
+                                {
+                                    if (!selectedNode.Expired())
+                                    {
+                                        if (selectedNode->CreateComponent(StringHash(component),
+                                                                          alternative ? LOCAL : REPLICATED))
+                                            openHierarchyNodes_.Push(selectedNode);
+                                    }
+                                }
                             }
                         }
+                        ui::EndMenu();
                     }
-                    ui::EndMenu();
+                }
+                ui::EndMenu();
+            }
+            ui::Separator();
+        }
+
+        if (ui::MenuItem(ICON_FA_COPY " Copy", "Ctrl+C"))
+            CopySelection();
+
+        if (ui::MenuItem(ICON_FA_PASTE " Paste", "Ctrl+V"))
+            PasteIntuitive();
+
+        if (ui::MenuItem(ICON_FA_PASTE " Paste Into", "Ctrl+Shift+V"))
+            PasteIntoSelection();
+
+        if (ui::MenuItem(ICON_FA_TRASH " Delete", "Del"))
+            RemoveSelection();
+
+        ui::Separator();
+
+        if (ui::BeginMenu("Debug Info"))
+        {
+            enum class DebugInfoMode
+            {
+                AUTOMATIC,
+                ALWAYS,
+                NEVER,
+                MISMATCH,
+                NONE,
+            } debugMode = DebugInfoMode::NONE;
+
+            for (auto& node : GetSelection())
+            {
+                if (node.Null())
+                    continue;
+
+                DebugInfoMode nodeMode;
+                if (node->HasTag("DebugInfoNever"))
+                    nodeMode = DebugInfoMode::NEVER;
+                else if (node->HasTag("DebugInfoAlways"))
+                    nodeMode = DebugInfoMode::ALWAYS;
+                else
+                    nodeMode = DebugInfoMode::AUTOMATIC;
+
+                if (debugMode == DebugInfoMode::NONE)
+                    debugMode = nodeMode;
+                else if (debugMode != nodeMode)
+                {
+                    debugMode = DebugInfoMode::MISMATCH;
+                    break;
+                }
+            }
+
+            bool setDebugMode = false;
+            if (ui::MenuItem("Automatic", nullptr, debugMode == DebugInfoMode::AUTOMATIC))
+            {
+                debugMode = DebugInfoMode::AUTOMATIC;
+                setDebugMode = true;
+            }
+            if (ui::MenuItem("Always", nullptr, debugMode == DebugInfoMode::ALWAYS))
+            {
+                debugMode = DebugInfoMode::ALWAYS;
+                setDebugMode = true;
+            }
+            if (ui::MenuItem("Never", nullptr, debugMode == DebugInfoMode::NEVER))
+            {
+                debugMode = DebugInfoMode::NEVER;
+                setDebugMode = true;
+            }
+
+            if (setDebugMode)
+            {
+                for (auto& node : GetSelection())
+                {
+                    if (node.Null())
+                        continue;
+
+                    if (debugMode == DebugInfoMode::AUTOMATIC)
+                    {
+                        node->RemoveTag("DebugInfoAlways");
+                        node->RemoveTag("DebugInfoNever");
+                    }
+                    if (debugMode == DebugInfoMode::ALWAYS)
+                    {
+                        node->AddTag("DebugInfoAlways");
+                        node->RemoveTag("DebugInfoNever");
+                    }
+                    if (debugMode == DebugInfoMode::NEVER)
+                    {
+                        node->RemoveTag("DebugInfoAlways");
+                        node->AddTag("DebugInfoNever");
+                    }
                 }
             }
             ui::EndMenu();
         }
 
-        ui::Separator();
-
-        if (ui::MenuItem("Remove"))
-            RemoveSelection();
-
         ui::EndPopup();
-    }
-}
-
-void SceneTab::Play()
-{
-    if (!scenePlaying_)
-    {
-        SceneStateRestore(sceneState_);
-        undo_.SetTrackingEnabled(true);
-    }
-}
-
-void SceneTab::Pause()
-{
-    if (scenePlaying_)
-    {
-        undo_.SetTrackingEnabled(false);
-        SceneStateSave();
-        gizmo_.UnselectAll();
     }
 }
 
 void SceneTab::OnComponentAdded(VariantMap& args)
 {
     using namespace ComponentAdded;
-    auto* component = dynamic_cast<Component*>(args[P_COMPONENT].GetPtr());
-    auto* node = dynamic_cast<Node*>(args[P_NODE].GetPtr());
+    auto* component = static_cast<Component*>(args[P_COMPONENT].GetPtr());
+    AddComponentIcon(component);
+}
 
-    if (node->IsTemporary())
+void SceneTab::OnComponentRemoved(VariantMap& args)
+{
+    using namespace ComponentRemoved;
+    auto* component = static_cast<Component*>(args[P_COMPONENT].GetPtr());
+    RemoveComponentIcon(component);
+}
+
+void SceneTab::OnTemporaryChanged(VariantMap& args)
+{
+    using namespace TemporaryChanged;
+    if (Component* component = dynamic_cast<Component*>(args[P_SERIALIZABLE].GetPtr()))
+    {
+        if (component->IsTemporary())
+            RemoveComponentIcon(component);
+        else
+            AddComponentIcon(component);
+    }
+}
+
+void SceneTab::AddComponentIcon(Component* component)
+{
+    if (component == nullptr || component->IsTemporary())
+        return;
+
+    Node* node = component->GetNode();
+
+    if (node->IsTemporary() || node->HasTag("__EDITOR_OBJECT__") ||
+        (node->GetName().StartsWith("__") && node->GetName().EndsWith("__")))
         return;
 
     auto* material = GetCache()->GetResource<Material>("Materials/Editor/DebugIcon" + component->GetTypeName() + ".xml", false);
@@ -739,53 +1157,247 @@ void SceneTab::OnComponentAdded(VariantMap& args)
         if (node->GetChildrenWithTag("DebugIcon" + component->GetTypeName()).Size() > 0)
             return;
 
-        Undo::SetTrackingScoped tracking(undo_, false);
-        int count = node->GetChildrenWithTag("DebugIcon").Size();
-        node = node->CreateChild();
-        node->AddTag("DebugIcon");
-        node->AddTag("DebugIcon" + component->GetTypeName());
-        node->AddTag("__EDITOR_OBJECT__");
-        node->SetTemporary(true);
-
-        auto* billboard = node->CreateComponent<BillboardSet>();
-        billboard->SetFaceCameraMode(FaceCameraMode::FC_LOOKAT_Y);
-        billboard->SetNumBillboards(1);
-        billboard->SetMaterial(material);
-        billboard->SetViewMask(0x80000000);
-        if (auto* bb = billboard->GetBillboard(0))
+        auto iconTag = "DebugIcon" + component->GetTypeName();
+        if (node->GetChildrenWithTag(iconTag).Empty())
         {
-            bb->size_ = Vector2::ONE * 0.2f;
-            bb->enabled_ = true;
-            bb->position_ = {0, count * 0.4f, 0};
+            Undo::SetTrackingScoped tracking(undo_, false);
+            int count = node->GetChildrenWithTag("DebugIcon").Size();
+            node = node->CreateChild();
+            node->AddTag("DebugIcon");
+            node->AddTag("DebugIcon" + component->GetTypeName());
+            node->AddTag("__EDITOR_OBJECT__");
+            node->SetVar("ComponentType", component->GetType());
+            node->SetTemporary(true);
+
+            auto* billboard = node->CreateComponent<BillboardSet>();
+            billboard->SetFaceCameraMode(FaceCameraMode::FC_LOOKAT_XYZ);
+            billboard->SetNumBillboards(1);
+            billboard->SetMaterial(material);
+            billboard->SetViewMask(EDITOR_VIEW_LAYER);
+            if (auto* bb = billboard->GetBillboard(0))
+            {
+                bb->size_ = Vector2::ONE * 0.2f;
+                bb->enabled_ = true;
+                bb->position_ = {0, count * 0.4f, 0};
+            }
+            billboard->Commit();
         }
-        billboard->Commit();
     }
 }
 
-void SceneTab::OnComponentRemoved(VariantMap& args)
+void SceneTab::RemoveComponentIcon(Component* component)
 {
-    using namespace ComponentRemoved;
-    auto* component = dynamic_cast<Component*>(args[P_COMPONENT].GetPtr());
-    auto* node = dynamic_cast<Node*>(args[P_NODE].GetPtr());
+    if (component == nullptr || component->IsTemporary())
+        return;
 
-    if (!node->IsTemporary())
+    Node* node = component->GetNode();
+    if (node->IsTemporary())
+        return;
+
+    Undo::SetTrackingScoped tracking(undo_, false);
+
+    for (auto* icon : node->GetChildrenWithTag("DebugIcon" + component->GetTypeName()))
+        icon->Remove();
+
+    int index = 0;
+    for (auto* icon : node->GetChildrenWithTag("DebugIcon"))
     {
-        Undo::SetTrackingScoped tracking(undo_, false);
-
-        for (auto* icon : node->GetChildrenWithTag("DebugIcon" + component->GetTypeName()))
-            icon->Remove();
-
-        int index = 0;
-        for (auto* icon : node->GetChildrenWithTag("DebugIcon"))
+        if (auto* billboard = icon->GetComponent<BillboardSet>())
         {
-            if (auto* billboard = icon->GetComponent<BillboardSet>())
+            billboard->GetBillboard(0)->position_ = {0, index * 0.4f, 0};
+            billboard->Commit();
+            index++;
+        }
+    }
+}
+
+void SceneTab::OnFocused()
+{
+    if (InspectorTab* inspector = GetSubsystem<Editor>()->GetTab<InspectorTab>())
+    {
+        if (auto* inspectorProvider = dynamic_cast<MaterialInspector*>(inspector->GetInspector(IC_RESOURCE)))
+            inspectorProvider->SetEffectSource(GetViewport()->GetRenderPath());
+    }
+}
+
+void SceneTab::UpdateCameras()
+{
+    cameraPreviewViewport_->SetCamera(nullptr);
+
+    if (GetSelection().Size())
+    {
+        if (Node* node = GetSelection().At(0))
+        {
+            if (Camera* camera = node->GetComponent<Camera>())
             {
-                billboard->GetBillboard(0)->position_ = {0, index * 0.4f, 0};
-                billboard->Commit();
-                index++;
+                camera->SetViewMask(camera->GetViewMask() & ~EDITOR_VIEW_LAYER);
+                cameraPreviewViewport_->SetCamera(camera);
+                cameraPreviewViewport_->SetRenderPath(GetViewport()->GetRenderPath());
             }
         }
     }
+
+    if (Camera* camera = GetCamera())
+    {
+        viewport_->SetCamera(camera);
+        if (auto* debug = GetScene()->GetComponent<DebugRenderer>())
+            debug->SetView(camera);
+    }
+}
+
+void SceneTab::CopySelection()
+{
+    const auto& selection = GetSelection();
+    if (!selection.Empty())
+    {
+        clipboard_.Clear();
+        clipboard_.Copy(GetSelection());
+    }
+    else if (!selectedComponents_.Empty())
+    {
+        clipboard_.Clear();
+        clipboard_.Copy(selectedComponents_);
+    }
+}
+
+void SceneTab::PasteNextToSelection()
+{
+    const auto& selection = GetSelection();
+    PasteResult result;
+    Node* target = nullptr;
+    if (!selection.Empty())
+    {
+        target = nullptr;
+        unsigned i = 0;
+        while (target == nullptr && i < selection.Size())   // Selected node may be null
+            target = selection[i++].Get();
+        if (target != nullptr)
+            target = target->GetParent();
+    }
+
+    if (target == nullptr)
+        target = GetScene();
+
+    result = clipboard_.Paste(target);
+
+    UnselectAll();
+
+    for (Node* node : result.nodes_)
+        Select(node);
+
+    for (Component* component : result.components_)
+        selectedComponents_.Insert(WeakPtr<Component>(component));
+}
+
+void SceneTab::PasteIntoSelection()
+{
+    const auto& selection = GetSelection();
+    PasteResult result;
+    if (selection.Empty())
+        result = clipboard_.Paste(GetScene());
+    else
+        result = clipboard_.Paste(selection);
+
+    UnselectAll();
+
+    for (Node* node : result.nodes_)
+        Select(node);
+
+    for (Component* component : result.components_)
+        selectedComponents_.Insert(WeakPtr<Component>(component));
+}
+
+void SceneTab::PasteIntuitive()
+{
+    if (clipboard_.HasNodes())
+        PasteNextToSelection();
+    else if (clipboard_.HasComponents())
+        PasteIntoSelection();
+}
+
+void SceneTab::ResizeMainViewport(const IntRect& rect)
+{
+    if (rect_ == rect)
+        return;
+
+    rect_ = rect;
+    viewport_->SetRect(IntRect(IntVector2::ZERO, rect.Size()));
+    if (rect.Width() != texture_->GetWidth() || rect.Height() != texture_->GetHeight())
+    {
+        texture_->SetSize(rect.Width(), rect.Height(), Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
+        texture_->GetRenderSurface()->SetViewport(0, viewport_);
+        texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
+    }
+}
+
+Camera* SceneTab::GetCamera()
+{
+    if (Scene* scene = GetScene())
+    {
+        if (Node* node = scene->GetChild("__EditorCamera__", true))
+            return node->GetComponent<Camera>();
+    }
+    return nullptr;
+}
+
+void SceneTab::RenderDebugInfo()
+{
+    Scene* scene = GetScene();
+    if (scene == nullptr)
+        return;
+
+    DebugRenderer* debug = scene->GetComponent<DebugRenderer>();
+    if (debug == nullptr)
+        return;
+
+    auto renderDebugInfo = [debug](Component* component) {
+        if (auto* light = component->Cast<Light>())
+            light->DrawDebugGeometry(debug, true);
+        else if (auto* drawable = component->Cast<Drawable>())
+            debug->AddBoundingBox(drawable->GetWorldBoundingBox(), Color::WHITE);
+        else
+            component->DrawDebugGeometry(debug, true);
+    };
+
+    const auto& selection = GetSelection();
+    for (auto& node : selection)
+    {
+        if (node && !node->HasTag("DebugInfoNever"))
+        {
+            for (auto& component: node->GetComponents())
+                renderDebugInfo(component);
+        }
+    }
+
+    PODVector<Node*> debugNodes;
+    scene->GetNodesWithTag(debugNodes, "DebugInfoAlways");
+    for (Node* node : debugNodes)
+    {
+        if (selection.Contains(WeakPtr<Node>(node)))
+            continue;
+
+        for (auto& component: node->GetComponents())
+            renderDebugInfo(component);
+    }
+
+    for (auto& component : selectedComponents_)
+    {
+        if (component)
+            renderDebugInfo(component);
+    }
+}
+
+void SceneTab::Close()
+{
+    Undo::SetTrackingScoped noTrack(undo_, false);
+
+    BaseClassName::Close();
+
+    SceneManager* manager = GetSubsystem<SceneManager>();
+    manager->SetActiveScene(nullptr);
+    manager->UnloadAllButActiveScene();
+
+    GetSubsystem<Editor>()->UpdateWindowTitle();
 }
 
 }

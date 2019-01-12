@@ -19,34 +19,39 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#include "Urho3D/Input/InputEvents.h"
-#include "Urho3D/Input/Input.h"
-#include "Urho3D/Core/CoreEvents.h"
-#include "Urho3D/Core/Context.h"
-#include "Urho3D/Core/Profiler.h"
-#include "Urho3D/Core/Utils.h"
-#include "Urho3D/Engine/EngineEvents.h"
-#include "Urho3D/Graphics/GraphicsEvents.h"
-#include "Urho3D/Graphics/Graphics.h"
-#include "Urho3D/Resource/ResourceCache.h"
-#include "SystemUI.h"
-#include "Console.h"
+#include "../Core/Context.h"
+#include "../Core/CoreEvents.h"
+#include "../Core/Profiler.h"
+#include "../Core/Utils.h"
+#include "../Engine/EngineEvents.h"
+#include "../Graphics/Graphics.h"
+#include "../Graphics/GraphicsEvents.h"
+#include "../Input/Input.h"
+#include "../Input/InputEvents.h"
+#include "../IO/Log.h"
+#include "../Resource/ResourceCache.h"
+#include "../SystemUI/SystemUI.h"
+#include "../SystemUI/Console.h"
 #include <SDL/SDL.h>
 #include <ImGuizmo/ImGuizmo.h>
 #include <ImGui/imgui_internal.h>
 #include <ImGui/imgui_freetype.h>
-#include <IO/Log.h>
 
 
 using namespace std::placeholders;
 namespace Urho3D
 {
 
+static Vector3 systemUiScale{Vector3::ONE};
+static Vector3 systemUiScalePixelPerfect{Vector3::ONE};
+
 SystemUI::SystemUI(Urho3D::Context* context)
     : Object(context)
     , vertexBuffer_(context)
     , indexBuffer_(context)
 {
+    imContext_ = ImGui::CreateContext();
+
     ImGuiIO& io = ImGui::GetIO();
     io.KeyMap[ImGuiKey_Tab] = SCANCODE_TAB;
     io.KeyMap[ImGuiKey_LeftArrow] = SCANCODE_LEFT;
@@ -65,49 +70,48 @@ SystemUI::SystemUI(Urho3D::Context* context)
     io.KeyMap[ImGuiKey_X] = SCANCODE_X;
     io.KeyMap[ImGuiKey_Y] = SCANCODE_Y;
     io.KeyMap[ImGuiKey_Z] = SCANCODE_Z;
+    io.KeyMap[ImGuiKey_PageUp] = SCANCODE_PAGEUP;
+    io.KeyMap[ImGuiKey_PageDown] = SCANCODE_DOWN;
+    io.KeyMap[ImGuiKey_Space] = SCANCODE_SPACE;
 
-    io.RenderDrawListsFn = [](ImDrawData* data) { ((SystemUI*)ImGui::GetIO().UserData)->OnRenderDrawLists(data); };
     io.SetClipboardTextFn = [](void* userData, const char* text) { SDL_SetClipboardText(text); };
     io.GetClipboardTextFn = [](void* userData) -> const char* { return SDL_GetClipboardText(); };
 
     io.UserData = this;
 
-    SetScale();
+    SetScale(Vector3::ZERO, false);
 
-    SubscribeToEvent(E_APPLICATIONSTARTED, [&](StringHash, VariantMap&) {
-        if (io.Fonts->Fonts.empty())
-        {
-            io.Fonts->AddFontDefault();
-            ReallocateFontTexture();
-        }
-        UpdateProjectionMatrix();
-        // Initializes ImGui. ImGui::Render() can not be called unless imgui is initialized. This call avoids initialization
-        // check on every frame in E_ENDRENDERING.
-        ImGui::NewFrame();
-        ImGui::EndFrame();
+    SubscribeToEvent(E_APPLICATIONSTARTED, [this](StringHash, VariantMap&) {
+        Start();
         UnsubscribeFromEvent(E_APPLICATIONSTARTED);
     });
 
     // Subscribe to events
     SubscribeToEvent(E_SDLRAWINPUT, std::bind(&SystemUI::OnRawEvent, this, _2));
-    SubscribeToEvent(E_SCREENMODE, std::bind(&SystemUI::UpdateProjectionMatrix, this));
-    SubscribeToEvent(E_INPUTEND, [&](StringHash, VariantMap&)
-    {
+    SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap&) {
+        UpdateProjectionMatrix();
+        ReallocateFontTexture();
+    });
+    SubscribeToEvent(E_INPUTEND, [&](StringHash, VariantMap&) {
         float timeStep = GetTime()->GetTimeStep();
         ImGui::GetIO().DeltaTime = timeStep > 0.0f ? timeStep : 1.0f / 60.0f;
         ImGui::NewFrame();
         ImGuizmo::BeginFrame();
     });
-    SubscribeToEvent(E_ENDRENDERING, [&](StringHash, VariantMap&)
+    SubscribeToEvent(E_ENDRENDERING, [this](StringHash, VariantMap&)
     {
-        URHO3D_PROFILE(SystemUiRender);
+        URHO3D_PROFILE("SystemUiRender");
+        SendEvent(E_ENDRENDERINGSYSTEMUI);
         ImGui::Render();
+        OnRenderDrawLists(ImGui::GetDrawData());
     });
 }
 
 SystemUI::~SystemUI()
 {
-    ImGui::Shutdown();
+    ImGui::EndFrame();
+    ImGui::Shutdown(imContext_);
+    ImGui::DestroyContext(imContext_);
 }
 
 void SystemUI::UpdateProjectionMatrix()
@@ -162,12 +166,36 @@ void SystemUI::OnRawEvent(VariantMap& args)
     case SDL_MOUSEBUTTONUP:
     URHO3D_FALLTHROUGH
     case SDL_MOUSEBUTTONDOWN:
-        io.MouseDown[evt->button.button - 1] = evt->type == SDL_MOUSEBUTTONDOWN;
+    {
+        int imguiButton;
+        switch (evt->button.button)
+        {
+        case SDL_BUTTON_LEFT:
+            imguiButton = 0;
+            break;
+        case SDL_BUTTON_MIDDLE:
+            imguiButton = 2;
+            break;
+        case SDL_BUTTON_RIGHT:
+            imguiButton = 1;
+            break;
+        case SDL_BUTTON_X1:
+            imguiButton = 3;
+            break;
+        case SDL_BUTTON_X2:
+            imguiButton = 4;
+            break;
+        default:
+            imguiButton = -1;
+        }
+        if (imguiButton >= 0)
+            io.MouseDown[imguiButton] = evt->type == SDL_MOUSEBUTTONDOWN;
+    }
+    URHO3D_FALLTHROUGH
     case SDL_MOUSEMOTION:
         io.MousePos.x = evt->motion.x / uiZoom_;
         io.MousePos.y = evt->motion.y / uiZoom_;
         break;
-    URHO3D_FALLTHROUGH
     case SDL_FINGERUP:
         io.MouseDown[0] = false;
         io.MousePos.x = -1;
@@ -288,21 +316,11 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
     graphics->SetScissorTest(false);
 }
 
-ImFont* SystemUI::AddFont(const String& fontPath, const unsigned short* ranges, float size, bool merge)
+ImFont* SystemUI::AddFont(const String& fontPath, const ImWchar* ranges, float size, bool merge)
 {
-    auto io = ImGui::GetIO();
-
+    float previousSize = fontSizes_.Empty() ? SYSTEMUI_DEFAULT_FONT_SIZE : fontSizes_.Back();
     fontSizes_.Push(size);
-
-    if (size == 0)
-    {
-        if (io.Fonts->Fonts.empty())
-            size = SYSTEMUI_DEFAULT_FONT_SIZE * fontScale_;
-        else
-            size = io.Fonts->Fonts.back()->FontSize;
-    }
-    else
-        size *= fontScale_;
+    size = (size == 0 ? previousSize : size) * fontScale_;
 
     if (auto fontFile = GetSubsystem<ResourceCache>()->GetFile(fontPath))
     {
@@ -313,19 +331,14 @@ ImFont* SystemUI::AddFont(const String& fontPath, const unsigned short* ranges, 
         cfg.MergeMode = merge;
         cfg.FontDataOwnedByAtlas = false;
         cfg.PixelSnapH = true;
-        if (auto newFont = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(&data.Front(), bytesLen, size, &cfg, ranges))
+        strncpy(cfg.Name, fontPath.CString(), sizeof(cfg.Name));
+        if (auto* newFont = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(&data.Front(), bytesLen, size, &cfg, ranges))
         {
             ReallocateFontTexture();
             return newFont;
         }
     }
     return nullptr;
-}
-
-ImFont* SystemUI::AddFont(const Urho3D::String& fontPath, const std::initializer_list<unsigned short>& ranges,
-    float size, bool merge)
-{
-    return AddFont(fontPath, ranges.size() ? &*ranges.begin() : nullptr, size, merge);
 }
 
 void SystemUI::ReallocateFontTexture()
@@ -336,17 +349,17 @@ void SystemUI::ReallocateFontTexture()
     int width, height;
 
     ImGuiFreeType::BuildFontAtlas(io.Fonts, ImGuiFreeType::ForceAutoHint);
-    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+    io.Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
 
     if (fontTexture_.Null())
     {
-        fontTexture_ = new Texture2D(context_);
+        fontTexture_ = context_->CreateObject<Texture2D>();
         fontTexture_->SetNumLevels(1);
         fontTexture_->SetFilterMode(FILTER_BILINEAR);
     }
 
     if (fontTexture_->GetWidth() != width || fontTexture_->GetHeight() != height)
-        fontTexture_->SetSize(width, height, Graphics::GetRGBAFormat());
+        fontTexture_->SetSize(width, height, Graphics::GetAlphaFormat());
 
     fontTexture_->SetData(0, 0, 0, width, height, pixels);
 
@@ -363,7 +376,7 @@ void SystemUI::SetZoom(float zoom)
     UpdateProjectionMatrix();
 }
 
-void SystemUI::SetScale(Vector3 scale)
+void SystemUI::SetScale(Vector3 scale, bool pixelPerfect)
 {
     auto& io = ui::GetIO();
     auto& style = ui::GetStyle();
@@ -376,6 +389,17 @@ void SystemUI::SetScale(Vector3 scale)
         URHO3D_LOGWARNING("SystemUI failed to set font scaling, DPI unknown.");
         return;
     }
+
+    systemUiScalePixelPerfect = {
+        static_cast<float>(ClosestPowerOfTwo(static_cast<unsigned>(scale.x_))),
+        static_cast<float>(ClosestPowerOfTwo(static_cast<unsigned>(scale.y_))),
+        static_cast<float>(ClosestPowerOfTwo(static_cast<unsigned>(scale.z_)))
+    };
+
+    if (pixelPerfect)
+        scale = systemUiScalePixelPerfect;
+
+    systemUiScale = scale;
 
     io.DisplayFramebufferScale = {scale.x_, scale.y_};
     fontScale_ = scale.z_;
@@ -413,7 +437,22 @@ bool SystemUI::IsAnyItemActive() const
 
 bool SystemUI::IsAnyItemHovered() const
 {
-    return ui::IsAnyItemHovered() || ui::IsAnyWindowHovered();
+    return ui::IsAnyItemHovered() || ui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
+}
+
+void SystemUI::Start()
+{
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.Fonts->Fonts.empty())
+    {
+        io.Fonts->AddFontDefault();
+        ReallocateFontTexture();
+    }
+    UpdateProjectionMatrix();
+    // Initializes ImGui. ImGui::Render() can not be called unless imgui is initialized. This call avoids initialization
+    // check on every frame in E_ENDRENDERING.
+    ImGui::NewFrame();
+    ImGui::EndFrame();
 }
 
 int ToImGui(MouseButton button)
@@ -423,9 +462,9 @@ int ToImGui(MouseButton button)
     case MOUSEB_LEFT:
         return 0;
     case MOUSEB_MIDDLE:
-        return 1;
-    case MOUSEB_RIGHT:
         return 2;
+    case MOUSEB_RIGHT:
+        return 1;
     case MOUSEB_X1:
         return 3;
     case MOUSEB_X2:
@@ -486,4 +525,94 @@ const Urho3D::Variant& ImGui::AcceptDragDropVariant(const char* type, ImGuiDragD
         return systemUI->GetContext()->GetGlobalVar(Urho3D::ToString("SystemUI_Drag&Drop_%s", type));
     }
     return Urho3D::Variant::EMPTY;
+}
+
+float ImGui::dpx(float x)
+{
+    return x * Urho3D::systemUiScale.x_;
+}
+
+float ImGui::dpy(float y)
+{
+    return y * Urho3D::systemUiScale.y_;
+}
+
+float ImGui::dp(float z)
+{
+    return z * Urho3D::systemUiScale.z_;
+}
+
+float ImGui::pdpx(float x)
+{
+    return x * Urho3D::systemUiScalePixelPerfect.x_;
+}
+
+float ImGui::pdpy(float y)
+{
+    return y * Urho3D::systemUiScalePixelPerfect.y_;
+}
+
+float ImGui::pdp(float z)
+{
+    return z * Urho3D::systemUiScalePixelPerfect.z_;
+}
+
+float ImGui::litterals::operator "" _dpx(long double x)
+{
+    return x * Urho3D::systemUiScale.x_;
+}
+
+float ImGui::litterals::operator "" _dpx(unsigned long long x)
+{
+    return x * Urho3D::systemUiScale.x_;
+}
+
+float ImGui::litterals::operator "" _dpy(long double y)
+{
+    return y * Urho3D::systemUiScale.y_;
+}
+
+float ImGui::litterals::operator "" _dpy(unsigned long long y)
+{
+    return y * Urho3D::systemUiScale.y_;
+}
+
+float ImGui::litterals::operator "" _dp(long double z)
+{
+    return z * Urho3D::systemUiScale.z_;
+}
+
+float ImGui::litterals::operator "" _dp(unsigned long long z)
+{
+    return z * Urho3D::systemUiScale.z_;
+}
+
+float ImGui::litterals::operator "" _pdpx(long double x)
+{
+    return x * Urho3D::systemUiScalePixelPerfect.x_;
+}
+
+float ImGui::litterals::operator "" _pdpx(unsigned long long x)
+{
+    return x * Urho3D::systemUiScalePixelPerfect.x_;
+}
+
+float ImGui::litterals::operator "" _pdpy(long double y)
+{
+    return y * Urho3D::systemUiScalePixelPerfect.y_;
+}
+
+float ImGui::litterals::operator "" _pdpy(unsigned long long y)
+{
+    return y * Urho3D::systemUiScalePixelPerfect.y_;
+}
+
+float ImGui::litterals::operator "" _pdp(long double z)
+{
+    return z * Urho3D::systemUiScalePixelPerfect.z_;
+}
+
+float ImGui::litterals::operator "" _pdp(unsigned long long z)
+{
+    return z * Urho3D::systemUiScalePixelPerfect.z_;
 }

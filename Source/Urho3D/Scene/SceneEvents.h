@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -210,6 +210,13 @@ URHO3D_EVENT(E_INTERCEPTNETWORKUPDATE, InterceptNetworkUpdate)
     URHO3D_PARAM(P_INDEX, Index);                  // unsigned
     URHO3D_PARAM(P_NAME, Name);                    // String
     URHO3D_PARAM(P_VALUE, Value);                  // Variant
+}
+
+/// Scene manager has activated a new scene.
+URHO3D_EVENT(E_SCENEACTIVATED, SceneActivated)
+{
+    URHO3D_PARAM(P_OLDSCENE, OldScene);            // Scene pointer
+    URHO3D_PARAM(P_NEWSCENE, NewScene);            // Scene pointer
 }
 
 }

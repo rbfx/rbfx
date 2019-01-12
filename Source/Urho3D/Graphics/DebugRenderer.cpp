@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -54,7 +54,7 @@ DebugRenderer::DebugRenderer(Context* context) :
     Component(context),
     lineAntiAlias_(false)
 {
-    vertexBuffer_ = new VertexBuffer(context_);
+    vertexBuffer_ = context_->CreateObject<VertexBuffer>();
 
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(DebugRenderer, HandleEndFrame));
 }
@@ -85,6 +85,7 @@ void DebugRenderer::SetView(Camera* camera)
     projection_ = camera->GetProjection();
     gpuProjection_ = camera->GetGPUProjection();
     frustum_ = camera->GetFrustum();
+    camera_ = camera;
 }
 
 void DebugRenderer::AddLine(const Vector3& start, const Vector3& end, const Color& color, bool depthTest)
@@ -101,6 +102,20 @@ void DebugRenderer::AddLine(const Vector3& start, const Vector3& end, unsigned c
         lines_.Push(DebugLine(start, end, color));
     else
         noDepthLines_.Push(DebugLine(start, end, color));
+}
+
+void DebugRenderer::AddLine2D(const Vector2& start, const Vector2& end, const Color& color, bool depthTest)
+{
+    AddLine2D(start, end, color.ToUInt(), depthTest);
+}
+
+void DebugRenderer::AddLine2D(const Vector2& start, const Vector2& end, unsigned color, bool depthTest )
+{
+    if (!camera_)
+        return;
+
+    float depth = camera_->GetNearClip() + M_LARGE_EPSILON;
+    AddLine(camera_->ScreenToWorldPoint({start.x_,  start.y_, depth}), camera_->ScreenToWorldPoint({end.x_, end.y_, depth}), color, depthTest);
 }
 
 void DebugRenderer::AddTriangle(const Vector3& v1, const Vector3& v2, const Vector3& v3, const Color& color, bool depthTest)
@@ -515,7 +530,7 @@ void DebugRenderer::Render()
     // Engine does not render when window is closed or device is lost
     assert(graphics && graphics->IsInitialized() && !graphics->IsDeviceLost());
 
-    URHO3D_PROFILE(RenderDebugGeometry);
+    URHO3D_PROFILE("RenderDebugGeometry");
 
 #ifdef URHO3D_BGFX
     // Increment the current view and name it for debug

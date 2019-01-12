@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -39,6 +39,9 @@ public:
     VectorBuffer(const void* data, unsigned size);
     /// Construct from a stream.
     VectorBuffer(Deserializer& source, unsigned size);
+
+    /// Returns name of this object.
+    const String& GetName() const override;
 
     /// Read bytes from the buffer. Return number of bytes actually read.
     unsigned Read(void* dest, unsigned size) override;

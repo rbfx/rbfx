@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -67,7 +67,7 @@ JSONValue& JSONValue::operator =(bool rhs)
 JSONValue& JSONValue::operator =(int rhs)
 {
     SetType(JSON_NUMBER, JSONNT_INT);
-    numberValue_ = rhs;    
+    numberValue_ = rhs;
 
     return *this;
 }
@@ -163,14 +163,51 @@ JSONValue& JSONValue::operator =(const JSONValue& rhs)
     return *this;
 }
 
+bool JSONValue::operator ==(const JSONValue& rhs) const
+{
+    // Value type without number type is checked. JSON does not make a distinction between number types. It is possible
+    // that we serialized number (for example `1`) as unsigned integer. It will not necessarily be unserialized as same
+    // number type. Number value equality check below will make sure numbers match anyway.
+    if (GetValueType() != rhs.GetValueType())
+        return false;
+
+    switch (GetValueType())
+    {
+    case JSON_BOOL:
+        return boolValue_ == rhs.boolValue_;
+
+    case JSON_NUMBER:
+        return numberValue_ == rhs.numberValue_;
+
+    case JSON_STRING:
+        return *stringValue_ == *rhs.stringValue_;
+
+    case JSON_ARRAY:
+        return *arrayValue_ == *rhs.arrayValue_;
+
+    case JSON_OBJECT:
+        return *objectValue_ == *rhs.objectValue_;
+
+    default:
+        break;
+    }
+
+    return false;
+}
+
+bool JSONValue::operator !=(const JSONValue& rhs) const
+{
+    return !operator ==(rhs);
+}
+
 JSONValueType JSONValue::GetValueType() const
 {
-    return (JSONValueType)(type_ >> 16);
+    return (JSONValueType)(type_ >> 16u);
 }
 
 JSONNumberType JSONValue::GetNumberType() const
 {
-    return (JSONNumberType)(type_ & 0xffff);
+    return (JSONNumberType)(type_ & 0xffffu);
 }
 
 String JSONValue::GetValueTypeName() const
@@ -285,6 +322,17 @@ const JSONValue& JSONValue::Get(const String& key) const
     return i->second_;
 }
 
+const JSONValue& JSONValue::Get(int index) const
+{
+    if (GetValueType() != JSON_ARRAY)
+        return EMPTY;
+
+    if (index < 0 || index >= arrayValue_->Size())
+        return EMPTY;
+
+    return arrayValue_->At(index);
+}
+
 bool JSONValue::Erase(const String& key)
 {
     if (GetValueType() != JSON_OBJECT)
@@ -343,7 +391,7 @@ void JSONValue::Clear()
 
 void JSONValue::SetType(JSONValueType valueType, JSONNumberType numberType)
 {
-    int type = (valueType << 16) | numberType;
+    int type = valueType << 16u | numberType;
     if (type == type_)
         return;
 
@@ -415,7 +463,7 @@ void JSONValue::SetVariantValue(const Variant& variant, Context* context)
     case VAR_BOOL:
         *this = variant.GetBool();
         return;
-    
+
     case VAR_INT:
         *this = variant.GetInt();
         return;

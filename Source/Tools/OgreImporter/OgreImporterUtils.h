@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -93,11 +93,6 @@ bool CompareKeyFrames(const AnimationKeyFrame& lhs, const AnimationKeyFrame& rhs
 
 struct ModelVertex
 {
-    ModelVertex() :
-        hasBlendWeights_(false)
-    {
-    }
-
     Vector3 position_;
     Vector3 normal_;
     Color color_;
@@ -106,24 +101,23 @@ struct ModelVertex
     Vector3 cubeTexCoord1_;
     Vector3 cubeTexCoord2_;
     Vector4 tangent_;
-    float blendWeights_[4];
-    unsigned char blendIndices_[4];
-    bool hasBlendWeights_;
-
-    unsigned useCount_;
-    int cachePosition_;
-    float score_;
+    float blendWeights_[4]{};
+    unsigned char blendIndices_[4]{};
+    bool hasBlendWeights_{};
+    unsigned useCount_{};
+    int cachePosition_{};
+    float score_{};
 };
 
 struct ModelVertexBuffer
 {
-    unsigned elementMask_;
+    VertexMaskFlags elementMask_;
     unsigned morphStart_;
     unsigned morphCount_;
     Vector<ModelVertex> vertices_;
 
     ModelVertexBuffer() :
-        elementMask_(0),
+        elementMask_(MASK_NONE),
         morphStart_(0),
         morphCount_(0)
     {
@@ -138,8 +132,8 @@ struct ModelVertexBuffer
         for (unsigned j = 0; j < elements.Size(); ++j)
         {
             unsigned elementDesc = ((unsigned)elements[j].type_) |
-                (((unsigned)elements[j].semantic_) << 8) |
-                (((unsigned)elements[j].index_) << 16);
+                (((unsigned)elements[j].semantic_) << 8u) |
+                (((unsigned)elements[j].index_) << 16u);
             dest.WriteUInt(elementDesc);
         }
 
@@ -237,21 +231,12 @@ struct ModelIndexBuffer
 
 struct ModelSubGeometryLodLevel
 {
-    float distance_;
-    PrimitiveType primitiveType_;
-    unsigned vertexBuffer_;
-    unsigned indexBuffer_;
-    unsigned indexStart_;
-    unsigned indexCount_;
+    float distance_{};
+    PrimitiveType primitiveType_{TRIANGLE_LIST};
+    unsigned vertexBuffer_{};
+    unsigned indexBuffer_{};
+    unsigned indexStart_{};
+    unsigned indexCount_{};
     HashMap<unsigned, PODVector<BoneWeightAssignment> > boneWeights_;
     PODVector<unsigned> boneMapping_;
-
-    ModelSubGeometryLodLevel() :
-        distance_(0.0f),
-        primitiveType_(TRIANGLE_LIST),
-        indexBuffer_(0),
-        indexStart_(0),
-        indexCount_(0)
-    {
-    }
 };

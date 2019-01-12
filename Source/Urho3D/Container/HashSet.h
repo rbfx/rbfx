@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@
 
 #include "../Container/HashBase.h"
 #include "../Container/Sort.h"
+#include "../Core/Macros.h"
 
 #include <cassert>
 #include <initializer_list>
@@ -174,19 +175,22 @@ public:
     /// Construct empty.
     HashSet()
     {
-        // Reserve the tail node
-        allocator_ = AllocatorInitialize((unsigned)sizeof(Node));
-        head_ = tail_ = ReserveNode();
     }
 
     /// Construct from another hash set.
     HashSet(const HashSet<T>& set)
     {
         // Reserve the tail node + initial capacity according to the set's size
-        allocator_ = AllocatorInitialize((unsigned)sizeof(Node), set.Size() + 1);
-        head_ = tail_ = ReserveNode();
+        Initialize(set.Size() + 1);
         *this = set;
     }
+
+    /// Move-construct from another hash set.
+    HashSet(HashSet<T> && set) noexcept
+    {
+        Swap(set);
+    }
+
     /// Aggregate initialization constructor.
     HashSet(const std::initializer_list<T>& list) : HashSet()
     {
@@ -195,13 +199,17 @@ public:
             Insert(*it);
         }
     }
+
     /// Destruct.
     ~HashSet()
     {
-        Clear();
-        FreeNode(Tail());
-        AllocatorUninitialize(allocator_);
-        delete[] ptrs_;
+        if (allocator_)
+        {
+            Clear();
+            FreeNode(Tail());
+            AllocatorUninitialize(allocator_);
+            delete[] ptrs_;
+        }
     }
 
     /// Assign a hash set.
@@ -213,6 +221,14 @@ public:
             Clear();
             Insert(rhs);
         }
+        return *this;
+    }
+
+    /// Move-assign a hash set.
+    HashSet& operator =(HashSet<T> && rhs) noexcept
+    {
+        assert(&rhs != this);
+        Swap(rhs);
         return *this;
     }
 
@@ -267,6 +283,9 @@ public:
     /// Insert a key. Return an iterator to it.
     Iterator Insert(const T& key)
     {
+        if (URHO3D_UNLIKELY(allocator_ == nullptr))
+            Initialize();
+
         // If no pointers yet, allocate with minimum bucket count
         if (!ptrs_)
         {
@@ -430,7 +449,7 @@ public:
 
         // Check for being power of two
         unsigned check = numBuckets;
-        while (!(check & 1))
+        while (!(check & 1u))
             check >>= 1;
         if (check != 1)
             return false;
@@ -613,6 +632,13 @@ private:
             node->down_ = Ptrs()[hashKey];
             Ptrs()[hashKey] = node;
         }
+    }
+
+    /// Reserve the tail node.
+    void Initialize(unsigned initialCapacity = 1)
+    {
+        allocator_ = AllocatorInitialize((unsigned)sizeof(Node), initialCapacity);
+        head_ = tail_ = ReserveNode();
     }
 
     /// Compare two nodes.

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2008-2019 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +21,9 @@
 #
 
 file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
-add_library (DetourTileCache OBJECT ${SOURCE_FILES})
-target_link_objects(DetourTileCache Detour)
+add_library (DetourTileCache STATIC ${SOURCE_FILES})
+target_link_libraries(DetourTileCache Detour)
 target_include_directories(DetourTileCache
-    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/DetourTileCache>
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include>
+    PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include/DetourTileCache>
 )

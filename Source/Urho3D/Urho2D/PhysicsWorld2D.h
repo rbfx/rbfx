@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -37,12 +37,6 @@ class RigidBody2D;
 /// 2D Physics raycast hit.
 struct URHO3D_API PhysicsRaycastResult2D
 {
-    /// Construct with defaults.
-    PhysicsRaycastResult2D() :
-        body_(nullptr)
-    {
-    }
-
     /// Test for inequality, added to prevent GCC from complaining.
     bool operator !=(const PhysicsRaycastResult2D& rhs) const
     {
@@ -54,9 +48,9 @@ struct URHO3D_API PhysicsRaycastResult2D
     /// Hit worldspace normal.
     Vector2 normal_;
     /// Hit distance from ray origin.
-    float distance_;
+    float distance_{};
     /// Rigid body that was hit.
-    RigidBody2D* body_;
+    RigidBody2D* body_{};
 };
 
 /// Delayed world transform assignment for parented 2D rigidbodies.

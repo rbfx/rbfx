@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Core/Context.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/VertexBuffer.h"
 #include "../Math/MathDefs.h"
@@ -32,6 +33,8 @@
 
 namespace Urho3D
 {
+
+extern const char* GEOMETRY_CATEGORY;
 
 VertexBuffer::VertexBuffer(Context* context, bool forceHeadless) :
     Object(context),
@@ -47,6 +50,11 @@ VertexBuffer::VertexBuffer(Context* context, bool forceHeadless) :
 VertexBuffer::~VertexBuffer()
 {
     Release();
+}
+
+void VertexBuffer::RegisterObject(Context* context)
+{
+    context->RegisterFactory<VertexBuffer>(GEOMETRY_CATEGORY);
 }
 
 void VertexBuffer::SetShadowed(bool enable)
@@ -93,7 +101,7 @@ void VertexBuffer::UpdateOffsets()
 {
     unsigned elementOffset = 0;
     elementHash_ = 0;
-    elementMask_ = 0;
+    elementMask_ = MASK_NONE;
 
     for (PODVector<VertexElement>::Iterator i = elements_.Begin(); i != elements_.End(); ++i)
     {
@@ -106,7 +114,7 @@ void VertexBuffer::UpdateOffsets()
         {
             const VertexElement& legacy = LEGACY_VERTEXELEMENTS[j];
             if (i->type_ == legacy.type_ && i->semantic_ == legacy.semantic_ && i->index_ == legacy.index_)
-                elementMask_ |= (1 << j);
+                elementMask_ |= VertexMaskFlags(1u << j);
         }
     }
 
@@ -163,7 +171,7 @@ PODVector<VertexElement> VertexBuffer::GetElements(unsigned elementMask)
 
     for (unsigned i = 0; i < MAX_LEGACY_VERTEX_ELEMENTS; ++i)
     {
-        if (elementMask & (1 << i))
+        if (elementMask & (1u << i))
             ret.Push(LEGACY_VERTEXELEMENTS[i]);
     }
 
@@ -186,7 +194,7 @@ unsigned VertexBuffer::GetVertexSize(unsigned elementMask)
 
     for (unsigned i = 0; i < MAX_LEGACY_VERTEX_ELEMENTS; ++i)
     {
-        if (elementMask & (1 << i))
+        if (elementMask & (1u << i))
             size += ELEMENT_TYPESIZES[LEGACY_VERTEXELEMENTS[i].type_];
     }
 

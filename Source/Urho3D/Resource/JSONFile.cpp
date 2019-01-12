@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -250,6 +250,19 @@ bool JSONFile::ParseJSON(const String& json, JSONValue& value, bool reportError)
     }
     ToJSONValue(value, document);
     return true;
+}
+
+String JSONFile::ToString(const String& indendation) const
+{
+    rapidjson::Document document;
+    ToRapidjsonValue(document, root_, document.GetAllocator());
+
+    StringBuffer buffer;
+    PrettyWriter<StringBuffer> writer(buffer);
+    writer.SetIndent(!indendation.Empty() ? indendation.Front() : '\0', indendation.Length());
+
+    document.Accept(writer);
+    return buffer.GetString();
 }
 
 }

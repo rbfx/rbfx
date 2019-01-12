@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -61,11 +61,11 @@ TrailPoint::TrailPoint(const Vector3& position, const Vector3& forward) :
 
 RibbonTrail::RibbonTrail(Context* context) :
     Drawable(context, DRAWABLE_GEOMETRY),
-    geometry_(new Geometry(context_)),
+    geometry_(context->CreateObject<Geometry>()),
     animationLodBias_(1.0f),
     animationLodTimer_(0.0f),
-    vertexBuffer_(new VertexBuffer(context_)),
-    indexBuffer_(new IndexBuffer(context_)),
+    vertexBuffer_(context->CreateObject<VertexBuffer>()),
+    indexBuffer_(context->CreateObject<IndexBuffer>()),
     transforms_(Matrix3x4::IDENTITY),
     bufferSizeDirty_(false),
     bufferDirty_(true),

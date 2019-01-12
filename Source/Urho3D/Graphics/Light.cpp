@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -41,25 +41,6 @@ namespace Urho3D
 {
 
 extern const char* SCENE_CATEGORY;
-
-static const LightType DEFAULT_LIGHTTYPE = LIGHT_POINT;
-static const float DEFAULT_RANGE = 10.0f;
-static const float DEFAULT_LIGHT_FOV = 30.0f;
-static const float DEFAULT_SPECULARINTENSITY = 1.0f;
-static const float DEFAULT_BRIGHTNESS = 1.0f;
-static const float DEFAULT_CONSTANTBIAS = 0.0002f;
-static const float DEFAULT_SLOPESCALEDBIAS = 0.5f;
-static const float DEFAULT_NORMALOFFSET = 0.0f;
-static const float DEFAULT_BIASAUTOADJUST = 1.0f;
-static const float DEFAULT_SHADOWFADESTART = 0.8f;
-static const float DEFAULT_SHADOWQUANTIZE = 0.5f;
-static const float DEFAULT_SHADOWMINVIEW = 3.0f;
-static const float DEFAULT_SHADOWNEARFARRATIO = 0.002f;
-static const float DEFAULT_SHADOWMAXEXTRUSION = 1000.0f;
-static const float DEFAULT_SHADOWSPLIT = 1000.0f;
-static const float DEFAULT_TEMPERATURE = 6590.0f;
-static const float DEFAULT_RADIUS = 0.0f;
-static const float DEFAULT_LENGTH = 0.0f;
 
 static const char* typeNames[] =
 {

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -37,7 +37,7 @@ class Resource;
 class ResourceCache;
 
 /// Queue item for background loading of a resource.
-struct BackgroundLoadItem
+struct URHO3D_API BackgroundLoadItem
 {
     /// Resource.
     SharedPtr<Resource> resource_;
@@ -50,7 +50,7 @@ struct BackgroundLoadItem
 };
 
 /// Background loader of resources. Owned by the ResourceCache.
-class BackgroundLoader : public RefCounted, public Thread
+class URHO3D_API BackgroundLoader : public RefCounted, public Thread
 {
 public:
     /// Construct.

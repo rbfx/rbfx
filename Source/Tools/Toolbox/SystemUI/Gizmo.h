@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2017-2019 Rokas Kupstys.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,7 @@
 #pragma once
 
 
+#include "ToolboxAPI.h"
 #include <Urho3D/Scene/Node.h>
 #include <ImGui/imgui.h>
 
@@ -41,7 +42,7 @@ enum GizmoOperation
     GIZMOOP_MAX
 };
 
-class Gizmo : public Object
+class URHO3D_TOOLBOX_API Gizmo : public Object
 {
     URHO3D_OBJECT(Gizmo, Object);
 public:
@@ -78,6 +79,8 @@ public:
     void RenderUI();
     /// Add a node to selection.
     bool Select(Node* node);
+    /// Add a node to selection.
+    bool Select(PODVector<Node*> nodes);
     /// Remove a node from selection.
     bool Unselect(Node* node);
     /// Select if node was not selected or unselect if node was selected.
@@ -86,8 +89,6 @@ public:
     bool UnselectAll();
     /// Return true if node is selected by gizmo.
     bool IsSelected(Node* node) const;
-    /// Enable auto-selection and gizmo rendering on scene to which specified camera belongs.
-    void EnableAutoMode(Camera* camera);
     /// Return list of selected nodes.
     const Vector<WeakPtr<Node>>& GetSelection() const { return nodeSelection_; }
     /// Set screen rect to which gizmo rendering will be limited. Use when putting gizmo in a window.
@@ -96,10 +97,6 @@ public:
     void SetScreenRect(const IntRect& rect);
 
 protected:
-    /// Renders debug info of selected nodes if scene has debug renderer component.
-    void RenderDebugInfo();
-    /// Process mouse clicks and auto-select nodes.
-    void HandleAutoSelection();
 
     /// Current gizmo operation. Translation, rotation or scaling.
     GizmoOperation operation_ = GIZMOOP_TRANSLATE;

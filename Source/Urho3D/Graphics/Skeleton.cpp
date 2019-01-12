@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -59,7 +59,7 @@ bool Skeleton::Load(Deserializer& source)
         source.Read(&newBone.offsetMatrix_.m00_, sizeof(Matrix3x4));
 
         // Read bone collision data
-        newBone.collisionMask_ = source.ReadUByte();
+        newBone.collisionMask_ = BoneCollisionShapeFlags(source.ReadUByte());
         if (newBone.collisionMask_ & BONECOLLISION_SPHERE)
             newBone.radius_ = source.ReadFloat();
         if (newBone.collisionMask_ & BONECOLLISION_BOX)

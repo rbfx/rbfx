@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -191,7 +191,7 @@ struct LinearAllocator : public dtTileCacheAlloc
         top = 0;
     }
 
-    void* alloc(const int size) override
+    void* alloc(const size_t size) override
     {
         if (!buffer)
             return nullptr;
@@ -258,7 +258,7 @@ bool DynamicNavigationMesh::Allocate(const BoundingBox& boundingBox, unsigned ma
 
     // Calculate max number of polygons, 22 bits available to identify both tile & polygon within tile
     unsigned tileBits = LogBaseTwo(maxTiles);
-    auto maxPolys = (unsigned)(1 << (22 - tileBits));
+    unsigned maxPolys = 1u << (22 - tileBits);
 
     dtNavMeshParams params;     // NOLINT(hicpp-member-init)
     rcVcopy(params.orig, &boundingBox_.min_.x_);
@@ -336,7 +336,7 @@ bool DynamicNavigationMesh::Allocate(const BoundingBox& boundingBox, unsigned ma
 
 bool DynamicNavigationMesh::Build()
 {
-    URHO3D_PROFILE(BuildNavigationMesh);
+    URHO3D_PROFILE("BuildNavigationMesh");
     // Release existing navigation data and zero the bounding box
     ReleaseNavigationMesh();
 
@@ -361,7 +361,7 @@ bool DynamicNavigationMesh::Build()
     boundingBox_.max_ += padding_;
 
     {
-        URHO3D_PROFILE(BuildNavigationMesh);
+        URHO3D_PROFILE("BuildNavigationMesh");
 
         // Calculate number of tiles
         int gridW = 0, gridH = 0;
@@ -373,7 +373,7 @@ bool DynamicNavigationMesh::Build()
         // Calculate max. number of tiles and polygons, 22 bits available to identify both tile & polygon within tile
         unsigned maxTiles = NextPowerOfTwo((unsigned)(numTilesX_ * numTilesZ_)) * maxLayers_;
         unsigned tileBits = LogBaseTwo(maxTiles);
-        auto maxPolys = (unsigned)(1 << (22 - tileBits));
+        unsigned maxPolys = 1u << (22 - tileBits);
 
         dtNavMeshParams params;     // NOLINT(hicpp-member-init)
         rcVcopy(params.orig, &boundingBox_.min_.x_);
@@ -481,7 +481,7 @@ bool DynamicNavigationMesh::Build()
 
 bool DynamicNavigationMesh::Build(const BoundingBox& boundingBox)
 {
-    URHO3D_PROFILE(BuildPartialNavigationMesh);
+    URHO3D_PROFILE("BuildPartialNavigationMesh");
 
     if (!node_)
         return false;
@@ -515,7 +515,7 @@ bool DynamicNavigationMesh::Build(const BoundingBox& boundingBox)
 
 bool DynamicNavigationMesh::Build(const IntVector2& from, const IntVector2& to)
 {
-    URHO3D_PROFILE(BuildPartialNavigationMesh);
+    URHO3D_PROFILE("BuildPartialNavigationMesh");
 
     if (!node_)
         return false;
@@ -547,7 +547,7 @@ PODVector<unsigned char> DynamicNavigationMesh::GetTileData(const IntVector2& ti
 
 bool DynamicNavigationMesh::IsObstacleInTile(Obstacle* obstacle, const IntVector2& tile) const
 {
-    const BoundingBox tileBoundingBox = GetTileBoudningBox(tile);
+    const BoundingBox tileBoundingBox = GetTileBoundingBox(tile);
     const Vector3 obstaclePosition = obstacle->GetNode()->GetWorldPosition();
     return tileBoundingBox.DistanceToPoint(obstaclePosition) < obstacle->GetRadius();
 }
@@ -819,11 +819,11 @@ bool DynamicNavigationMesh::ReadTiles(Deserializer& source, bool silent)
 
 int DynamicNavigationMesh::BuildTile(Vector<NavigationGeometryInfo>& geometryList, int x, int z, TileCacheData* tiles)
 {
-    URHO3D_PROFILE(BuildNavigationMeshTile);
+    URHO3D_PROFILE("BuildNavigationMeshTile");
 
     tileCache_->removeTile(navMesh_->getTileRefAt(x, z, 0), nullptr, nullptr);
 
-    const BoundingBox tileBoundingBox = GetTileBoudningBox(IntVector2(x, z));
+    const BoundingBox tileBoundingBox = GetTileBoundingBox(IntVector2(x, z));
 
     DynamicNavBuildData build(allocator_.Get());
 

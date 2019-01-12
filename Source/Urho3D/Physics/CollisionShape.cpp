@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -334,8 +334,8 @@ HeightfieldData::HeightfieldData(Terrain* terrain, unsigned lodLevel) :
                 skip *= 2;
                 lodSpacing.x_ *= 2.0f;
                 lodSpacing.z_ *= 2.0f;
-                int rX = lodSize.x_ & 1;
-                int rY = lodSize.y_ & 1;
+                int rX = lodSize.x_ & 1u;
+                int rY = lodSize.y_ & 1u;
                 lodSize.x_ >>= 1;
                 lodSize.y_ >>= 1;
                 lodSize.x_ += rX;
@@ -1000,7 +1000,7 @@ btCompoundShape* CollisionShape::GetParentCompoundShape()
 
 void CollisionShape::UpdateShape()
 {
-    URHO3D_PROFILE(UpdateCollisionShape);
+    URHO3D_PROFILE("UpdateCollisionShape");
 
     ReleaseShape();
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,9 +28,13 @@
 namespace Urho3D
 {
 
-static const unsigned BONECOLLISION_NONE = 0x0;
-static const unsigned BONECOLLISION_SPHERE = 0x1;
-static const unsigned BONECOLLISION_BOX = 0x2;
+enum BoneCollisionShape : unsigned char
+{
+    BONECOLLISION_NONE = 0x0,
+    BONECOLLISION_SPHERE = 0x1,
+    BONECOLLISION_BOX = 0x2,
+};
+URHO3D_FLAGSET(BoneCollisionShape, BoneCollisionShapeFlags);
 
 class Deserializer;
 class ResourceCache;
@@ -46,9 +50,20 @@ struct Bone
         initialRotation_(Quaternion::IDENTITY),
         initialScale_(Vector3::ONE),
         animated_(true),
-        collisionMask_(0),
         radius_(0.0f)
     {
+    }
+
+    /// Instance equality operator.
+    bool operator ==(const Bone& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const Bone& rhs) const
+    {
+        return this != &rhs;
     }
 
     /// Bone name.
@@ -68,7 +83,7 @@ struct Bone
     /// Animation enable flag.
     bool animated_;
     /// Supported collision types.
-    unsigned char collisionMask_;
+    BoneCollisionShapeFlags collisionMask_ = BONECOLLISION_NONE;
     /// Radius.
     float radius_;
     /// Local-space bounding box.

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,20 +30,31 @@
 namespace Urho3D
 {
 
-/// Fictional message level to indicate a stored raw message.
-static const int LOG_RAW = -1;
-/// Trace message level.
-static const int LOG_TRACE = 0;
-/// Debug message level. By default only shown in debug mode.
-static const int LOG_DEBUG = 1;
-/// Informative message level.
-static const int LOG_INFO = 2;
-/// Warning message level.
-static const int LOG_WARNING = 3;
-/// Error message level.
-static const int LOG_ERROR = 4;
-/// Disable all log messages.
-static const int LOG_NONE = 5;
+#if WIN32
+static const char* NULL_DEVICE = "NUL";
+#else
+static const char* NULL_DEVICE = "/dev/null";
+#endif
+
+enum LogLevel
+{
+    /// Fictional message level to indicate a stored raw message.
+    LOG_RAW = -1,
+    /// Trace message level.
+    LOG_TRACE = 0,
+    /// Debug message level. By default only shown in debug mode.
+    LOG_DEBUG = 1,
+    /// Informative message level.
+    LOG_INFO = 2,
+    /// Warning message level.
+    LOG_WARNING = 3,
+    /// Error message level.
+    LOG_ERROR = 4,
+    /// Disable all log messages.
+    LOG_NONE = 5,
+    /// Number of log levels
+    MAX_LOGLEVELS,
+};
 
 class File;
 
@@ -54,7 +65,7 @@ struct StoredLogMessage
     StoredLogMessage() = default;
 
     /// Construct with parameters.
-    StoredLogMessage(const String& message, int level, bool error) :
+    StoredLogMessage(const String& message, LogLevel level, bool error) :
         message_(message),
         level_(level),
         error_(error)
@@ -64,9 +75,9 @@ struct StoredLogMessage
     /// Message text.
     String message_;
     /// Message level. -1 for raw messages.
-    int level_;
+    LogLevel level_{};
     /// Error flag for raw messages.
-    bool error_;
+    bool error_{};
 };
 
 /// Logging subsystem.
@@ -85,17 +96,17 @@ public:
     /// Close the log file.
     void Close();
     /// Set logging level.
-    void SetLevel(int level);
+    void SetLevel(LogLevel level);
     /// Set whether to timestamp log messages.
-    void SetTimeStamp(bool enable);
+    void SetTimeStampFormat(const String& format) { timeStampFormat_ = format; }
     /// Set quiet mode ie. only print error entries to standard error stream (which is normally redirected to console also). Output to log file is not affected by this mode.
     void SetQuiet(bool quiet);
 
     /// Return logging level.
-    int GetLevel() const { return level_; }
+    LogLevel GetLevel() const { return level_; }
 
     /// Return whether log messages are timestamped.
-    bool GetTimeStamp() const { return timeStamp_; }
+    const String& GetTimeStampFormat() const { return timeStampFormat_; }
 
     /// Return last log message.
     String GetLastMessage() const { return lastMessage_; }
@@ -104,7 +115,7 @@ public:
     bool IsQuiet() const { return quiet_; }
 
     /// Write to the log. If logging level is higher than the level of the message, the message is ignored.
-    static void Write(int level, const String& message);
+    static void Write(LogLevel level, const String& message);
     /// Write raw output to the log.
     static void WriteRaw(const String& message, bool error = false);
     /// Return instance of opened log file.
@@ -122,10 +133,10 @@ private:
     SharedPtr<File> logFile_;
     /// Last log message.
     String lastMessage_;
+    /// Format of timestamp that will be prepended to log messages.
+    String timeStampFormat_;
     /// Logging level.
-    int level_;
-    /// Timestamp log messages flag.
-    bool timeStamp_;
+    LogLevel level_;
     /// In write flag to prevent recursion.
     bool inWrite_;
     /// Quiet mode flag.
@@ -133,12 +144,12 @@ private:
 };
 
 #ifdef URHO3D_LOGGING
-#define URHO3D_LOGTRACE(message) Urho3D::Log::Write(Urho3D::LOG_TRACE, message)
-#define URHO3D_LOGDEBUG(message) Urho3D::Log::Write(Urho3D::LOG_DEBUG, message)
-#define URHO3D_LOGINFO(message) Urho3D::Log::Write(Urho3D::LOG_INFO, message)
-#define URHO3D_LOGWARNING(message) Urho3D::Log::Write(Urho3D::LOG_WARNING, message)
-#define URHO3D_LOGERROR(message) Urho3D::Log::Write(Urho3D::LOG_ERROR, message)
-#define URHO3D_LOGRAW(message) Urho3D::Log::WriteRaw(message)
+#define URHO3D_LOGTRACE(message, ...) Urho3D::Log::Write(Urho3D::LOG_TRACE, Urho3D::Format(message, ##__VA_ARGS__))
+#define URHO3D_LOGDEBUG(message, ...) Urho3D::Log::Write(Urho3D::LOG_DEBUG, Urho3D::Format(message, ##__VA_ARGS__))
+#define URHO3D_LOGINFO(message, ...) Urho3D::Log::Write(Urho3D::LOG_INFO, Urho3D::Format(message, ##__VA_ARGS__))
+#define URHO3D_LOGWARNING(message, ...) Urho3D::Log::Write(Urho3D::LOG_WARNING, Urho3D::Format(message, ##__VA_ARGS__))
+#define URHO3D_LOGERROR(message, ...) Urho3D::Log::Write(Urho3D::LOG_ERROR, Urho3D::Format(message, ##__VA_ARGS__))
+#define URHO3D_LOGRAW(message, ...) Urho3D::Log::WriteRaw(Urho3D::Format(message, ##__VA_ARGS__))
 #define URHO3D_LOGTRACEF(format, ...) Urho3D::Log::Write(Urho3D::LOG_TRACE, Urho3D::ToString(format, ##__VA_ARGS__))
 #define URHO3D_LOGDEBUGF(format, ...) Urho3D::Log::Write(Urho3D::LOG_DEBUG, Urho3D::ToString(format, ##__VA_ARGS__))
 #define URHO3D_LOGINFOF(format, ...) Urho3D::Log::Write(Urho3D::LOG_INFO, Urho3D::ToString(format, ##__VA_ARGS__))
@@ -146,12 +157,12 @@ private:
 #define URHO3D_LOGERRORF(format, ...) Urho3D::Log::Write(Urho3D::LOG_ERROR, Urho3D::ToString(format, ##__VA_ARGS__))
 #define URHO3D_LOGRAWF(format, ...) Urho3D::Log::WriteRaw(Urho3D::ToString(format, ##__VA_ARGS__))
 #else
-#define URHO3D_LOGTRACE(message) ((void)0)
-#define URHO3D_LOGDEBUG(message) ((void)0)
-#define URHO3D_LOGINFO(message) ((void)0)
-#define URHO3D_LOGWARNING(message) ((void)0)
-#define URHO3D_LOGERROR(message) ((void)0)
-#define URHO3D_LOGRAW(message) ((void)0)
+#define URHO3D_LOGTRACE(...) ((void)0)
+#define URHO3D_LOGDEBUG(...) ((void)0)
+#define URHO3D_LOGINFO(...) ((void)0)
+#define URHO3D_LOGWARNING(...) ((void)0)
+#define URHO3D_LOGERROR(...) ((void)0)
+#define URHO3D_LOGRAW(...) ((void)0)
 #define URHO3D_LOGTRACEF(...) ((void)0)
 #define URHO3D_LOGDEBUGF(...) ((void)0)
 #define URHO3D_LOGINFOF(...) ((void)0)

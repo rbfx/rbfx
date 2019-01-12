@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2017-2019 Rokas Kupstys.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,13 +23,43 @@
 #pragma once
 
 
+#include "ToolboxAPI.h"
+#include <Urho3D/Container/FlagSet.h>
 #include <Urho3D/Core/Object.h>
 
 
 namespace Urho3D
 {
 
-/// Create docked resource browser window.
-bool ResourceBrowserWindow(String& selected);
+enum ResourceBrowserResult
+{
+    RBR_NOOP,
+    RBR_ITEM_SELECTED,
+    RBR_ITEM_OPEN,
+    RBR_ITEM_CONTEXT_MENU,
+};
+
+enum ResourceBrowserFlag
+{
+    RBF_NONE,
+    RBF_SCROLL_TO_CURRENT = 1,
+    RBF_RENAME_CURRENT = 1 << 1,
+    RBF_DELETE_CURRENT = 1 << 2,
+};
+URHO3D_FLAGSET(ResourceBrowserFlag, ResourceBrowserFlags);
+
+URHO3D_EVENT(E_RESOURCEBROWSERRENAME, ResourceBrowserRename)
+{
+    URHO3D_PARAM(P_FROM, From);                                     // String
+    URHO3D_PARAM(P_TO, To);                                         // String
+}
+
+URHO3D_EVENT(E_RESOURCEBROWSERDELETE, ResourceBrowserDelete)
+{
+    URHO3D_PARAM(P_NAME, Name);                                     // String
+}
+
+/// Create resource browser ui inside another window.
+URHO3D_TOOLBOX_API ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, ResourceBrowserFlags flags=RBF_NONE);
 
 }

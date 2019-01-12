@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
+  <PropertyGroup>
+    <AssemblyName>Urho3DNet</AssemblyName>
+    <OutputType>Library</OutputType>
+    <LangVersion>7.2</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GeneratedCodePath>$(BuildDir)Source/Urho3D/CSharp/</GeneratedCodePath>
+  </PropertyGroup>
+  <ItemGroup>
+    <BindingsSourceCode Include="$(GeneratedCodePath)/*.cs" />
+    <Compile Include="Managed/**/*.cs" />
+    <Compile Include="$(GeneratedCodePath)/Managed/**/*.cs" />
+    <Compile Include="@(BindingsSourceCode)" />
+  </ItemGroup>
+  <Target Name="GatherBuildFiles" BeforeTargets="CoreCompile" Condition="'@(BindingsSourceCode)' == ''">
+    <ItemGroup>
+      <BindingsSourceCode Include="$([System.IO.Directory]::GetFiles(&quot;$(GeneratedCodePath)&quot;, &quot;*.cs&quot;))" />
+      <Compile Include="@(BindingsSourceCode)" />
+    </ItemGroup>
+  </Target>
+  <ItemGroup>
+    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
+  </ItemGroup>
+</Project>

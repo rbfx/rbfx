@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Container/FlagSet.h"
 #include "../Container/Ptr.h"
 #include "../Math/Quaternion.h"
 #include "../Math/Vector3.h"
@@ -29,6 +30,15 @@
 
 namespace Urho3D
 {
+
+enum AnimationChannel : unsigned char
+{
+    CHANNEL_NONE = 0x0,
+    CHANNEL_POSITION = 0x1,
+    CHANNEL_ROTATION = 0x2,
+    CHANNEL_SCALE = 0x4,
+};
+URHO3D_FLAGSET(AnimationChannel, AnimationChannelFlags);
 
 /// Skeletal animation keyframe.
 struct AnimationKeyFrame
@@ -38,6 +48,18 @@ struct AnimationKeyFrame
         time_(0.0f),
         scale_(Vector3::ONE)
     {
+    }
+
+    /// Instance equality operator.
+    bool operator ==(const AnimationKeyFrame& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const AnimationKeyFrame& rhs) const
+    {
+        return this != &rhs;
     }
 
     /// Keyframe time.
@@ -54,8 +76,7 @@ struct AnimationKeyFrame
 struct URHO3D_API AnimationTrack
 {
     /// Construct.
-    AnimationTrack() :
-        channelMask_(0)
+    AnimationTrack()
     {
     }
 
@@ -82,9 +103,21 @@ struct URHO3D_API AnimationTrack
     /// Name hash.
     StringHash nameHash_;
     /// Bitmask of included data (position, rotation, scale.)
-    unsigned char channelMask_;
+    AnimationChannelFlags channelMask_{};
     /// Keyframes.
     Vector<AnimationKeyFrame> keyFrames_;
+
+    /// Instance equality operator.
+    bool operator ==(const AnimationTrack& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const AnimationTrack& rhs) const
+    {
+        return this != &rhs;
+    }
 };
 
 /// %Animation trigger point.
@@ -100,11 +133,19 @@ struct AnimationTriggerPoint
     float time_;
     /// Trigger data.
     Variant data_;
-};
 
-static const unsigned char CHANNEL_POSITION = 0x1;
-static const unsigned char CHANNEL_ROTATION = 0x2;
-static const unsigned char CHANNEL_SCALE = 0x4;
+    /// Instance equality operator.
+    bool operator ==(const AnimationTriggerPoint& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const AnimationTriggerPoint& rhs) const
+    {
+        return this != &rhs;
+    }
+};
 
 /// Skeletal animation resource.
 class URHO3D_API Animation : public ResourceWithMetadata

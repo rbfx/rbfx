@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -102,12 +102,11 @@ static void CallbackFunction(ConstFSEventStreamRef streamRef, void* clientCallBa
     }
 }
 
-- (void)addChange:(NSString*)fileName
+- (void)addChange:(char)kind recursive:(NSString*)fileName
 {
     @synchronized(changes_)
     {
-        // Use character with ASCII code 1 as separator character
-        [changes_ appendFormat:@"%@%c", fileName, 1];
+        [changes_ appendFormat:@"%c%@\n", kind, fileName];
     }
 }
 
@@ -133,11 +132,24 @@ static void CallbackFunction(ConstFSEventStreamRef streamRef, void* clientCallBa
             continue;
 
         FSEventStreamEventFlags flags = eventFlags[index];
-        if (flags & kFSEventStreamEventFlagItemIsFile && (
-            flags & kFSEventStreamEventFlagItemCreated || flags & kFSEventStreamEventFlagItemModified ||
-            flags & kFSEventStreamEventFlagItemRenamed || flags & kFSEventStreamEventFlagItemRemoved))
+        if (flags & kFSEventStreamEventFlagItemIsFile)
         {
-            [watcher addChange:fileName];
+            if (flags & kFSEventStreamEventFlagItemCreated)
+            {
+                [watcher addChange:[0 fileName]];
+            }
+            else if (flags & kFSEventStreamEventFlagItemModified)
+            {
+                [watcher addChange:[3 fileName]];
+            }
+            else if (flags & kFSEventStreamEventFlagItemRenamed)
+            {
+                [watcher addChange:[2 fileName]];
+            }
+            else if (flags & kFSEventStreamEventFlagItemRemoved)
+            {
+                [watcher addChange:[1 fileName]];
+            }
         }
     }
 }

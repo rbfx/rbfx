@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2017-2019 Rokas Kupstys.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +20,20 @@
 # THE SOFTWARE.
 #
 
+add_library(crn_decomp INTERFACE)
+target_include_directories(crn_decomp INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+install (TARGETS crn_decomp EXPORT Urho3D)
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
+
+if (NOT URHO3D_TOOLS)
+    return ()
+endif ()
+
+if (APPLE)
+    message(WARNING "TODO: crunch does not build on MacOS")
+    return ()
+endif ()
+
 file (GLOB CRNLIB_SOURCE_FILES crnlib/*.cpp crnlib/*.h include/crunch/*.h include/crunch/*.hpp)
 foreach (path ${CRNLIB_SOURCE_FILES})
     if (WIN32)
@@ -38,7 +52,7 @@ if (NOT WIN32)
     list (REMOVE_ITEM CRNLIB_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/crnlib/lzma_LzFindMt.cpp)
 endif ()
 
-add_library (crnlib OBJECT ${CRNLIB_SOURCE_FILES})
+add_library (crnlib STATIC ${CRNLIB_SOURCE_FILES})
 target_include_directories(crnlib
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/crunch>
@@ -50,19 +64,17 @@ endif ()
 
 if (NOT WIN32 OR MINGW)
     target_compile_options(crnlib PRIVATE -O3 -fomit-frame-pointer -ffast-math -fno-math-errno -g -fno-strict-aliasing -Wall -Wno-unused-value -Wno-unused -march=core2)
-    target_link_objects(crnlib pthread)
+    target_link_libraries(crnlib pthread)
 endif ()
 
 if (MINGW AND NOT URHO3D_64BIT)
     target_compile_options(crnlib PRIVATE -fpermissive)
 endif ()
 
-if (URHO3D_TOOLS)
-    set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_TOOLS_DIR})
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_TOOLS_DIR})
 
-    file (GLOB CRUNCH_SOURCE_FILES crunch/*.cpp crunch/*.h)
-    add_executable (crunch ${CRUNCH_SOURCE_FILES} $<TARGET_OBJECTS:crnlib>)
-    target_link_objects(crunch crnlib)
-    set_target_properties(crunch PROPERTIES FOLDER Tools)
-    install(TARGETS crunch RUNTIME DESTINATION ${DEST_TOOLS_DIR})
-endif ()
+file (GLOB CRUNCH_SOURCE_FILES crunch/*.cpp crunch/*.h)
+add_executable (crunch ${CRUNCH_SOURCE_FILES})
+target_link_libraries(crunch crnlib)
+set_target_properties(crunch PROPERTIES FOLDER Tools)
+install(TARGETS crunch RUNTIME DESTINATION ${DEST_TOOLS_DIR})

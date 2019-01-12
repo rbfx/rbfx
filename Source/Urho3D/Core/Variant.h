@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -541,6 +541,9 @@ public:
     {
         FromString(type, value);
     }
+
+    /// Construct from type.
+    Variant(VariantType type);
 
     /// Copy-construct from another variant.
     Variant(const Variant& value)
@@ -1359,6 +1362,17 @@ public:
 
     /// Return a pointer to a modifiable custom variant value or null on type mismatch.
     template <class T> T* GetCustomPtr()
+    {
+        if (CustomVariantValue* value = GetCustomVariantValuePtr())
+        {
+            if (value->IsType<T>())
+                return value->GetValuePtr<T>();
+        }
+        return nullptr;
+    }
+
+    /// Return a pointer to a modifiable custom variant value or null on type mismatch.
+    template <class T> const T* GetCustomPtr() const
     {
         if (const CustomVariantValue* value = GetCustomVariantValuePtr())
         {

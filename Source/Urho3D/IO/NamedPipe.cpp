@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -83,7 +83,7 @@ static const char* pipePath = "\\\\.\\pipe\\";
 
 bool NamedPipe::Open(const String& pipeName, bool isServer)
 {
-    URHO3D_PROFILE(OpenNamedPipe);
+    URHO3D_PROFILE("OpenNamedPipe");
 
     Close();
 
@@ -168,7 +168,7 @@ void NamedPipe::Close()
 {
     if (handle_ != INVALID_HANDLE_VALUE)
     {
-        URHO3D_PROFILE(CloseNamedPipe);
+        URHO3D_PROFILE("CloseNamedPipe");
 
         if (isServer_)
         {
@@ -213,7 +213,7 @@ bool NamedPipe::Open(const String& pipeName, bool isServer)
     URHO3D_LOGERROR("Opening a named pipe not supported on Web platform");
     return false;
 #else
-    URHO3D_PROFILE(OpenNamedPipe);
+    URHO3D_PROFILE("OpenNamedPipe");
 
     Close();
 
@@ -324,7 +324,7 @@ void NamedPipe::Close()
 {
     if (readHandle_ != -1 || writeHandle_ != -1)
     {
-        URHO3D_PROFILE(CloseNamedPipe);
+        URHO3D_PROFILE("CloseNamedPipe");
         SAFE_CLOSE(readHandle_);
         SAFE_CLOSE(writeHandle_);
 

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2008-2019 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +20,10 @@
 # THE SOFTWARE.
 #
 
+if (NOT URHO3D_SAMPLES)
+    return ()
+endif ()
+
 # Set project name
 project (Urho3D-Samples)
 
@@ -38,3 +42,5 @@ foreach (DIR ${DIRS})
         add_subdirectory (${DIR})
     endif ()
 endforeach ()
+
+vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} Samples)

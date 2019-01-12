@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,16 +22,18 @@
 
 #include "../Precompiled.h"
 
+#include "../Core/Profiler.h"
 #include "../Engine/Application.h"
+#include "../Engine/EngineDefs.h"
 #include "../Engine/EngineEvents.h"
 #include "../IO/IOEvents.h"
 #include "../IO/Log.h"
-#include "../Core/Profiler.h"
 
 #if defined(IOS) || defined(TVOS)
 #include "../Graphics/Graphics.h"
 #include <SDL/SDL.h>
 #endif
+#include <Urho3D/Core/CommandLine.h>
 
 #include "../DebugNew.h"
 
@@ -49,12 +51,13 @@ void RunFrame(void* data)
 }
 #endif
 
+/// Command line parser.
+static CLI::App commandLine_{};
+
 Application::Application(Context* context) :
     Object(context),
     exitCode_(EXIT_SUCCESS)
 {
-    engineParameters_ = Engine::ParseParameters(GetArguments());
-
     // Create the Engine, but do not initialize it yet. Subsystems except Graphics & Renderer are registered at this point
     engine_ = new Engine(context);
 
@@ -65,14 +68,35 @@ Application::Application(Context* context) :
 int Application::Run()
 {
     // Profiler requires main thread to be named "Main" as fps calculations depend on it.
-    URHO3D_PROFILE_THREAD(Main);
+    URHO3D_PROFILE_THREAD("Main");
 #if !defined(__GNUC__) || __EXCEPTIONS
     try
     {
 #endif
+        // Register engine command line arguments
+        Engine::DefineParameters(commandLine_, engineParameters_);
+
+        // Register application command line arguments or set up engine parameters
         Setup();
         if (exitCode_)
             return exitCode_;
+
+        // Parse command line parameters
+        {
+            const StringVector& rawArguments = GetArguments();
+            std::vector<std::string> cliArgs;
+            cliArgs.reserve(rawArguments.Size());
+            // CLI11 detail - arguments must be in reversed order.
+            for (auto i = static_cast<int>(rawArguments.Size() - 1); i >= 0; i--)
+                cliArgs.emplace_back(rawArguments[static_cast<unsigned>(i)].CString());
+
+            try {
+                commandLine_.parse(cliArgs);
+            } catch(const CLI::ParseError &e) {
+                exitCode_ = commandLine_.exit(e);
+                return exitCode_;
+            }
+        }
 
         if (!engine_->Initialize(engineParameters_))
         {
@@ -81,8 +105,11 @@ int Application::Run()
         }
 
         Start();
-        if (exitCode_)
+        if (exitCode_ || engine_->IsExiting())
+        {
+            Stop();
             return exitCode_;
+        }
 
         SendEvent(E_APPLICATIONSTARTED);
 
@@ -118,13 +145,29 @@ void Application::ErrorExit(const String& message)
     engine_->Exit(); // Close the rendering window
     exitCode_ = EXIT_FAILURE;
 
-    if (!message.Length())
+    std::function<void(const String&)> showError;
+    if (engineParameters_[EP_HEADLESS].GetBool())
     {
-        ErrorDialog(GetTypeName(), startupErrors_.Length() ? startupErrors_ :
-            "Application has been terminated due to unexpected error.");
+        showError = [this](const String& message)
+        {
+            URHO3D_LOGERROR(message.CString());
+        };
     }
     else
-        ErrorDialog(GetTypeName(), message);
+    {
+        showError = [this](const String& message)
+        {
+            ErrorDialog(GetTypeName(), message);
+        };
+    }
+
+    if (!message.Length())
+    {
+        showError(startupErrors_.Length() ?
+            startupErrors_ : String("Application has been terminated due to unexpected error."));
+    }
+    else
+        showError(message);
 }
 
 void Application::HandleLogMessage(StringHash eventType, VariantMap& eventData)
@@ -141,6 +184,11 @@ void Application::HandleLogMessage(StringHash eventType, VariantMap& eventData)
 
         startupErrors_ += error + "\n";
     }
+}
+
+CLI::App& Application::GetCommandLineParser()
+{
+    return commandLine_;
 }
 
 

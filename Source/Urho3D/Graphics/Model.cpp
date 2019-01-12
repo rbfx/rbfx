@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -117,9 +117,9 @@ bool Model::BeginLoad(Deserializer& source)
             for (unsigned j = 0; j < numElements; ++j)
             {
                 unsigned elementDesc = source.ReadUInt();
-                auto type = (VertexElementType)(elementDesc & 0xff);
-                auto semantic = (VertexElementSemantic)((elementDesc >> 8) & 0xff);
-                auto index = (unsigned char)((elementDesc >> 16) & 0xff);
+                auto type = (VertexElementType)(elementDesc & 0xffu);
+                auto semantic = (VertexElementSemantic)((elementDesc >> 8u) & 0xffu);
+                auto index = (unsigned char)((elementDesc >> 16u) & 0xffu);
                 desc.vertexElements_.Push(VertexElement(type, semantic, index));
             }
         }
@@ -127,7 +127,7 @@ bool Model::BeginLoad(Deserializer& source)
         morphRangeStarts_[i] = source.ReadUInt();
         morphRangeCounts_[i] = source.ReadUInt();
 
-        SharedPtr<VertexBuffer> buffer(new VertexBuffer(context_));
+        SharedPtr<VertexBuffer> buffer(context_->CreateObject<VertexBuffer>());
         unsigned vertexSize = VertexBuffer::GetVertexSize(desc.vertexElements_);
         desc.dataSize_ = desc.vertexCount_ * vertexSize;
 
@@ -161,7 +161,7 @@ bool Model::BeginLoad(Deserializer& source)
         unsigned indexCount = source.ReadUInt();
         unsigned indexSize = source.ReadUInt();
 
-        SharedPtr<IndexBuffer> buffer(new IndexBuffer(context_));
+        SharedPtr<IndexBuffer> buffer(context_->CreateObject<IndexBuffer>());
 
         // Prepare index buffer data to be uploaded during EndLoad()
         if (async)
@@ -234,7 +234,7 @@ bool Model::BeginLoad(Deserializer& source)
                 return false;
             }
 
-            SharedPtr<Geometry> geometry(new Geometry(context_));
+            SharedPtr<Geometry> geometry(context_->CreateObject<Geometry>());
             geometry->SetLodDistance(distance);
 
             // Prepare geometry to be defined during EndLoad()
@@ -268,7 +268,7 @@ bool Model::BeginLoad(Deserializer& source)
             VertexBufferMorph newBuffer;
             unsigned bufferIndex = source.ReadUInt();
 
-            newBuffer.elementMask_ = source.ReadUInt();
+            newBuffer.elementMask_ = VertexMaskFlags(source.ReadUInt());
             newBuffer.vertexCount_ = source.ReadUInt();
 
             // Base size: size of each vertex index
@@ -382,8 +382,8 @@ bool Model::Save(Serializer& dest) const
         for (unsigned j = 0; j < elements.Size(); ++j)
         {
             unsigned elementDesc = ((unsigned)elements[j].type_) |
-                (((unsigned)elements[j].semantic_) << 8) |
-                (((unsigned)elements[j].index_) << 16);
+                (((unsigned)elements[j].semantic_) << 8u) |
+                (((unsigned)elements[j].index_) << 16u);
             dest.WriteUInt(elementDesc);
         }
         dest.WriteUInt(morphRangeStarts_[i]);
@@ -469,7 +469,7 @@ bool Model::Save(Serializer& dest) const
         {
             String xmlName = ReplaceExtension(destFile->GetName(), ".xml");
 
-            SharedPtr<XMLFile> xml(new XMLFile(context_));
+            SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
             XMLElement rootElem = xml->CreateRoot("model");
             SaveMetadataToXML(rootElem);
 
@@ -616,7 +616,7 @@ void Model::SetMorphs(const Vector<ModelMorph>& morphs)
 
 SharedPtr<Model> Model::Clone(const String& cloneName) const
 {
-    SharedPtr<Model> ret(new Model(context_));
+    SharedPtr<Model> ret(context_->CreateObject<Model>());
 
     ret->SetName(cloneName);
     ret->boundingBox_ = boundingBox_;
@@ -636,7 +636,7 @@ SharedPtr<Model> Model::Clone(const String& cloneName) const
 
         if (origBuffer)
         {
-            cloneBuffer = new VertexBuffer(context_);
+            cloneBuffer = context_->CreateObject<VertexBuffer>();
             cloneBuffer->SetSize(origBuffer->GetVertexCount(), origBuffer->GetElementMask(), origBuffer->IsDynamic());
             cloneBuffer->SetShadowed(origBuffer->IsShadowed());
             if (origBuffer->IsShadowed())
@@ -663,7 +663,7 @@ SharedPtr<Model> Model::Clone(const String& cloneName) const
 
         if (origBuffer)
         {
-            cloneBuffer = new IndexBuffer(context_);
+            cloneBuffer = context_->CreateObject<IndexBuffer>();
             cloneBuffer->SetSize(origBuffer->GetIndexCount(), origBuffer->GetIndexSize() == sizeof(unsigned),
                 origBuffer->IsDynamic());
             cloneBuffer->SetShadowed(origBuffer->IsShadowed());
@@ -695,7 +695,7 @@ SharedPtr<Model> Model::Clone(const String& cloneName) const
 
             if (origGeometry)
             {
-                cloneGeometry = new Geometry(context_);
+                cloneGeometry = context_->CreateObject<Geometry>();
                 cloneGeometry->SetIndexBuffer(ibMapping[origGeometry->GetIndexBuffer()]);
                 unsigned numVbs = origGeometry->GetNumVertexBuffers();
                 for (unsigned k = 0; k < numVbs; ++k)

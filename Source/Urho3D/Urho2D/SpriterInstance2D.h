@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -45,7 +45,7 @@ class SpriterInstance
 {
 public:
     /// Constructor with spriter data.
-    SpriterInstance(Component* owner, SpriterData* spriteData);
+    SpriterInstance(Component* owner, Spriter::SpriterData* spriteData);
     /// Destructor.
     ~SpriterInstance();
 
@@ -58,20 +58,20 @@ public:
     /// Set current animation.
     bool SetAnimation(const String& animationName, LoopMode loopMode = Default);
     /// Set root spatial info.
-    void setSpatialInfo(const SpatialInfo& spatialInfo);
+    void setSpatialInfo(const Spriter::SpatialInfo& spatialInfo);
     /// Set root spatial info.
     void setSpatialInfo(float x, float y, float angle, float scaleX, float scaleY);
     /// Update animation.
     void Update(float deltaTime);
 
     /// Return current entity.
-    Entity* GetEntity() const { return entity_; }
+    Spriter::Entity* GetEntity() const { return entity_; }
     /// Return current animation.
-    Animation* GetAnimation() const { return animation_; }
+    Spriter::Animation* GetAnimation() const { return animation_; }
     /// Return root spatial info.
-    const SpatialInfo& GetSpatialInfo() const { return spatialInfo_; }
+    const Spriter::SpatialInfo& GetSpatialInfo() const { return spatialInfo_; }
     /// Return animation result timeline keys.
-    const PODVector<SpatialTimelineKey*>& GetTimelineKeys() const { return timelineKeys_; }
+    const PODVector<Spriter::SpatialTimelineKey*>& GetTimelineKeys() const { return timelineKeys_; }
 
 private:
     /// Handle set entity.

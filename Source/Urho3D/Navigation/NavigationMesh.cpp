@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -345,7 +345,7 @@ bool NavigationMesh::Allocate(const BoundingBox& boundingBox, unsigned maxTiles)
 
     // Calculate max number of polygons, 22 bits available to identify both tile & polygon within tile
     unsigned tileBits = LogBaseTwo(maxTiles);
-    auto maxPolys = (unsigned)(1 << (22 - tileBits));
+    unsigned maxPolys = 1u << (22 - tileBits);
 
     dtNavMeshParams params;     // NOLINT(hicpp-member-init)
     rcVcopy(params.orig, &boundingBox_.min_.x_);
@@ -383,7 +383,7 @@ bool NavigationMesh::Allocate(const BoundingBox& boundingBox, unsigned maxTiles)
 
 bool NavigationMesh::Build()
 {
-    URHO3D_PROFILE(BuildNavigationMesh);
+    URHO3D_PROFILE("BuildNavigationMesh");
 
     // Release existing navigation data and zero the bounding box
     ReleaseNavigationMesh();
@@ -409,7 +409,7 @@ bool NavigationMesh::Build()
     boundingBox_.max_ += padding_;
 
     {
-        URHO3D_PROFILE(BuildNavigationMesh);
+        URHO3D_PROFILE("BuildNavigationMesh");
 
         // Calculate number of tiles
         int gridW = 0, gridH = 0;
@@ -421,7 +421,7 @@ bool NavigationMesh::Build()
         // Calculate max. number of tiles and polygons, 22 bits available to identify both tile & polygon within tile
         unsigned maxTiles = NextPowerOfTwo((unsigned)(numTilesX_ * numTilesZ_));
         unsigned tileBits = LogBaseTwo(maxTiles);
-        auto maxPolys = (unsigned)(1 << (22 - tileBits));
+        unsigned maxPolys = 1u << (22 - tileBits);
 
         dtNavMeshParams params;     // NOLINT(hicpp-member-init)
         rcVcopy(params.orig, &boundingBox_.min_.x_);
@@ -464,7 +464,7 @@ bool NavigationMesh::Build()
 
 bool NavigationMesh::Build(const BoundingBox& boundingBox)
 {
-    URHO3D_PROFILE(BuildPartialNavigationMesh);
+    URHO3D_PROFILE("BuildPartialNavigationMesh");
 
     if (!node_)
         return false;
@@ -498,7 +498,7 @@ bool NavigationMesh::Build(const BoundingBox& boundingBox)
 
 bool NavigationMesh::Build(const IntVector2& from, const IntVector2& to)
 {
-    URHO3D_PROFILE(BuildPartialNavigationMesh);
+    URHO3D_PROFILE("BuildPartialNavigationMesh");
 
     if (!node_)
         return false;
@@ -541,7 +541,7 @@ bool NavigationMesh::HasTile(const IntVector2& tile) const
     return false;
 }
 
-BoundingBox NavigationMesh::GetTileBoudningBox(const IntVector2& tile) const
+BoundingBox NavigationMesh::GetTileBoundingBox(const IntVector2& tile) const
 {
     const float tileEdgeLength = (float)tileSize_ * cellSize_;
     return BoundingBox(
@@ -664,7 +664,7 @@ void NavigationMesh::FindPath(PODVector<Vector3>& dest, const Vector3& start, co
 void NavigationMesh::FindPath(PODVector<NavigationPathPoint>& dest, const Vector3& start, const Vector3& end,
     const Vector3& extents, const dtQueryFilter* filter)
 {
-    URHO3D_PROFILE(FindPath);
+    URHO3D_PROFILE("FindPath");
     dest.Clear();
 
     if (!InitializeQuery())
@@ -952,7 +952,7 @@ PODVector<unsigned char> NavigationMesh::GetNavigationDataAttr() const
 
 void NavigationMesh::CollectGeometries(Vector<NavigationGeometryInfo>& geometryList)
 {
-    URHO3D_PROFILE(CollectNavigationGeometry);
+    URHO3D_PROFILE("CollectNavigationGeometry");
 
     // Get Navigable components from child nodes, not from whole scene. This makes it possible to partition
     // the scene into several navigation meshes
@@ -1301,12 +1301,12 @@ bool NavigationMesh::ReadTile(Deserializer& source, bool silent)
 
 bool NavigationMesh::BuildTile(Vector<NavigationGeometryInfo>& geometryList, int x, int z)
 {
-    URHO3D_PROFILE(BuildNavigationMeshTile);
+    URHO3D_PROFILE("BuildNavigationMeshTile");
 
     // Remove previous tile (if any)
     navMesh_->removeTile(navMesh_->getTileRefAt(x, z, 0), nullptr, nullptr);
 
-    const BoundingBox tileBoundingBox = GetTileBoudningBox(IntVector2(x, z));
+    const BoundingBox tileBoundingBox = GetTileBoundingBox(IntVector2(x, z));
 
     SimpleNavBuildData build;
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,11 +30,21 @@
 #include "../../Math/Color.h"
 
 #if defined(IOS) || defined(TVOS)
+#if URHO3D_GLES3
+#include <OpenGLES/ES3/gl.h>
+#include <OpenGLES/ES3/glext.h>
+#else
 #include <OpenGLES/ES2/gl.h>
 #include <OpenGLES/ES2/glext.h>
+#endif
 #elif defined(__ANDROID__) || defined (__arm__) || defined(__aarch64__) || defined (__EMSCRIPTEN__)
+#if URHO3D_GLES3
+#include <GLES3/gl3.h>
+#include <GLES3/gl3ext.h>
+#else
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
+#endif
 #else
 #include <GLEW/glew.h>
 #endif
@@ -50,6 +60,18 @@
 #endif
 #ifndef GL_ETC1_RGB8_OES
 #define GL_ETC1_RGB8_OES 0x8d64
+#endif
+#ifndef GL_ETC2_RGB8_OES
+#define GL_ETC2_RGB8_OES 0x9274
+#endif
+#ifndef GL_ETC2_RGBA8_OES
+#define GL_ETC2_RGBA8_OES 0x9278
+#endif
+#ifndef GL_DEPTH_COMPONENT24_OES
+#define GL_DEPTH_COMPONENT24_OES 0x81A6
+#endif
+#ifndef GL_DEPTH24_STENCIL8_OES
+#define GL_DEPTH24_STENCIL8_OES 0x88F0
 #endif
 #ifndef COMPRESSED_RGB_PVRTC_4BPPV1_IMG
 #define COMPRESSED_RGB_PVRTC_4BPPV1_IMG 0x8c00
@@ -77,26 +99,16 @@ using ShaderProgramMap = HashMap<Pair<ShaderVariation*, ShaderVariation*>, Share
 /// Cached state of a frame buffer object
 struct FrameBufferObject
 {
-    FrameBufferObject() :
-        fbo_(0),
-        depthAttachment_(nullptr),
-        readBuffers_(M_MAX_UNSIGNED),
-        drawBuffers_(M_MAX_UNSIGNED)
-    {
-        for (auto& colorAttachment : colorAttachments_)
-            colorAttachment = nullptr;
-    }
-
     /// Frame buffer handle.
-    unsigned fbo_;
+    unsigned fbo_{};
     /// Bound color attachment textures.
-    RenderSurface* colorAttachments_[MAX_RENDERTARGETS];
+    RenderSurface* colorAttachments_[MAX_RENDERTARGETS]{};
     /// Bound depth/stencil attachment.
-    RenderSurface* depthAttachment_;
+    RenderSurface* depthAttachment_{};
     /// Read buffer bits.
-    unsigned readBuffers_;
+    unsigned readBuffers_{M_MAX_UNSIGNED};
     /// Draw buffer bits.
-    unsigned drawBuffers_;
+    unsigned drawBuffers_{M_MAX_UNSIGNED};
 };
 
 /// %Graphics subsystem implementation. Holds API-specific objects.
@@ -151,7 +163,7 @@ private:
     /// Last used instance data offset.
     unsigned lastInstanceOffset_{};
     /// Map for additional depth textures, to emulate Direct3D9 ability to mix render texture and backbuffer rendering.
-    HashMap<int, SharedPtr<Texture2D> > depthTextures_;
+    HashMap<unsigned, SharedPtr<Texture2D> > depthTextures_;
     /// Shader program in use.
     ShaderProgram* shaderProgram_{};
     /// Linked shader programs.

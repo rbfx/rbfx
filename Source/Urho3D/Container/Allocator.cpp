@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,6 +21,7 @@
 //
 
 #include "../Precompiled.h"
+#include "../Core/Profiler.h"
 
 #include "../DebugNew.h"
 
@@ -29,6 +30,8 @@ namespace Urho3D
 
 AllocatorBlock* AllocatorReserveBlock(AllocatorBlock* allocator, unsigned nodeSize, unsigned capacity)
 {
+    URHO3D_PROFILE("AllocatorReserveBlock");
+
     if (!capacity)
         capacity = 1;
 
@@ -70,12 +73,16 @@ AllocatorBlock* AllocatorReserveBlock(AllocatorBlock* allocator, unsigned nodeSi
 
 AllocatorBlock* AllocatorInitialize(unsigned nodeSize, unsigned initialCapacity)
 {
+    URHO3D_PROFILE("AllocatorInitialize");
+
     AllocatorBlock* block = AllocatorReserveBlock(nullptr, nodeSize, initialCapacity);
     return block;
 }
 
 void AllocatorUninitialize(AllocatorBlock* allocator)
 {
+    URHO3D_PROFILE("AllocatorUninitialize");
+
     while (allocator)
     {
         AllocatorBlock* next = allocator->next_;
@@ -89,10 +96,12 @@ void* AllocatorReserve(AllocatorBlock* allocator)
     if (!allocator)
         return nullptr;
 
+    URHO3D_PROFILE("AllocatorReserve");
+
     if (!allocator->free_)
     {
         // Free nodes have been exhausted. Allocate a new larger block
-        unsigned newCapacity = (allocator->capacity_ + 1) >> 1;
+        unsigned newCapacity = (allocator->capacity_ + 1) >> 1u;
         AllocatorReserveBlock(allocator, allocator->nodeSize_, newCapacity);
         allocator->capacity_ += newCapacity;
     }
@@ -110,6 +119,8 @@ void AllocatorFree(AllocatorBlock* allocator, void* ptr)
 {
     if (!allocator || !ptr)
         return;
+
+    URHO3D_PROFILE("AllocatorFree");
 
     auto* dataPtr = static_cast<unsigned char*>(ptr);
     auto* node = reinterpret_cast<AllocatorNode*>(dataPtr - sizeof(AllocatorNode));

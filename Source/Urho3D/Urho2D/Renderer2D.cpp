@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -46,8 +46,6 @@
 namespace Urho3D
 {
 
-extern const char* blendModeNames[];
-
 static const unsigned MASK_VERTEX2D = MASK_POSITION | MASK_COLOR | MASK_TEXCOORD1;
 
 ViewBatchInfo2D::ViewBatchInfo2D() :
@@ -61,13 +59,13 @@ ViewBatchInfo2D::ViewBatchInfo2D() :
 
 Renderer2D::Renderer2D(Context* context) :
     Drawable(context, DRAWABLE_GEOMETRY),
-    material_(new Material(context)),
-    indexBuffer_(new IndexBuffer(context_)),
+    material_(context->CreateObject<Material>()),
+    indexBuffer_(context_->CreateObject<IndexBuffer>()),
     viewMask_(DEFAULT_VIEWMASK)
 {
     material_->SetName("Urho2D");
 
-    auto* tech = new Technique(context_);
+    auto tech = context_->CreateObject<Technique>();
     Pass* pass = tech->CreatePass("alpha");
     pass->SetVertexShader("Urho2D");
     pass->SetPixelShader("Urho2D");
@@ -287,7 +285,7 @@ SharedPtr<Material> Renderer2D::CreateMaterial(Texture2D* texture, BlendMode ble
     HashMap<int, SharedPtr<Technique> >::Iterator techIt = cachedTechniques_.Find((int)blendMode);
     if (techIt == cachedTechniques_.End())
     {
-        SharedPtr<Technique> tech(new Technique(context_));
+        SharedPtr<Technique> tech(context_->CreateObject<Technique>());
         Pass* pass = tech->CreatePass("alpha");
         pass->SetVertexShader("Urho2D");
         pass->SetPixelShader("Urho2D");
@@ -305,6 +303,7 @@ SharedPtr<Material> Renderer2D::CreateMaterial(Texture2D* texture, BlendMode ble
 
 void CheckDrawableVisibilityWork(const WorkItem* item, unsigned threadIndex)
 {
+    URHO3D_PROFILE("CheckDrawableVisibilityWork");
     auto* renderer = reinterpret_cast<Renderer2D*>(item->aux_);
     auto** start = reinterpret_cast<Drawable2D**>(item->start_);
     auto** end = reinterpret_cast<Drawable2D**>(item->end_);
@@ -327,7 +326,7 @@ void Renderer2D::HandleBeginViewUpdate(StringHash eventType, VariantMap& eventDa
 
     frame_ = static_cast<View*>(eventData[P_VIEW].GetPtr())->GetFrameInfo();
 
-    URHO3D_PROFILE(UpdateRenderer2D);
+    URHO3D_PROFILE("UpdateRenderer2D");
 
     auto* camera = static_cast<Camera*>(eventData[P_CAMERA].GetPtr());
     frustum_ = camera->GetFrustum();
@@ -335,7 +334,7 @@ void Renderer2D::HandleBeginViewUpdate(StringHash eventType, VariantMap& eventDa
 
     // Check visibility
     {
-        URHO3D_PROFILE(CheckDrawableVisibility);
+        URHO3D_PROFILE("CheckDrawableVisibility");
 
         auto* queue = GetSubsystem<WorkQueue>();
         int numWorkItems = queue->GetNumThreads() + 1; // Worker threads + main thread
@@ -367,7 +366,7 @@ void Renderer2D::HandleBeginViewUpdate(StringHash eventType, VariantMap& eventDa
 
     // Create vertex buffer
     if (!viewBatchInfo.vertexBuffer_)
-        viewBatchInfo.vertexBuffer_ = new VertexBuffer(context_);
+        viewBatchInfo.vertexBuffer_ = context_->CreateObject<VertexBuffer>();
 
     UpdateViewBatchInfo(viewBatchInfo, camera);
 
@@ -404,11 +403,11 @@ void Renderer2D::GetDrawables(PODVector<Drawable2D*>& drawables, Node* node)
 
 static inline bool CompareSourceBatch2Ds(const SourceBatch2D* lhs, const SourceBatch2D* rhs)
 {
-    if (lhs->distance_ != rhs->distance_)
-        return lhs->distance_ > rhs->distance_;
-
     if (lhs->drawOrder_ != rhs->drawOrder_)
         return lhs->drawOrder_ < rhs->drawOrder_;
+
+    if (lhs->distance_ != rhs->distance_)
+        return lhs->distance_ > rhs->distance_;
 
     if (lhs->material_ != rhs->material_)
         return lhs->material_->GetNameHash() < rhs->material_->GetNameHash();
@@ -506,7 +505,7 @@ void Renderer2D::AddViewBatch(ViewBatchInfo2D& viewBatchInfo, Material* material
     // Allocate new geometry if necessary
     if (viewBatchInfo.geometries_.Size() <= viewBatchInfo.batchCount_)
     {
-        SharedPtr<Geometry> geometry(new Geometry(context_));
+        SharedPtr<Geometry> geometry(context_->CreateObject<Geometry>());
         geometry->SetIndexBuffer(indexBuffer_);
         geometry->SetVertexBuffer(0, viewBatchInfo.vertexBuffer_);
 

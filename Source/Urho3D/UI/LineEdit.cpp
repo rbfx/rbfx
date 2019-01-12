@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -204,7 +204,7 @@ bool LineEdit::OnDragDropFinish(UIElement* source)
     return false;
 }
 
-void LineEdit::OnKey(int key, int buttons, int qualifiers)
+void LineEdit::OnKey(Key key, MouseButtonFlags buttons, QualifierFlags qualifiers)
 {
     bool changed = false;
     bool cursorMoved = false;
@@ -363,8 +363,8 @@ void LineEdit::OnKey(int key, int buttons, int qualifiers)
             VariantMap& eventData = GetEventDataMap();
             eventData[P_ELEMENT] = this;
             eventData[P_KEY] = key;
-            eventData[P_BUTTONS] = buttons;
-            eventData[P_QUALIFIERS] = qualifiers;
+            eventData[P_BUTTONS] = (unsigned)buttons;
+            eventData[P_QUALIFIERS] = (unsigned)qualifiers;
             SendEvent(E_UNHANDLEDKEY, eventData);
         }
         return;

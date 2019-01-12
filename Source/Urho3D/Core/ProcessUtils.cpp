@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +32,7 @@
 
 #ifdef __APPLE__
 #include "TargetConditionals.h"
+#include <CoreFoundation/CFUUID.h>
 #endif
 
 #if defined(IOS)
@@ -55,14 +56,18 @@ extern "C" unsigned SDL_TVOS_GetActiveProcessorCount();
 #elif defined(__MINGW32__)
 #include <lmcons.h> // For UNLEN. Apparently MSVC defines "<Lmcons.h>" (with an upperscore 'L' but MinGW uses an underscore 'l').
 #include <ntdef.h>
+#include <Rpc.h>
 #endif
-#elif defined(__linux__) && !defined(__ANDROID__)
-#include <pwd.h>
-#include <sys/sysinfo.h>
-#include <sys/utsname.h>
 #elif defined(__APPLE__)
 #include <sys/sysctl.h>
 #include <SystemConfiguration/SystemConfiguration.h> // For the detection functions inside GetLoginName().
+#elif defined(__ANDROID__)
+#include <jni.h>
+#else
+#include <pwd.h>
+#include <sys/sysinfo.h>
+#include <sys/utsname.h>
+#include <uuid/uuid.h>
 #endif
 #ifndef _WIN32
 #include <unistd.h>
@@ -113,6 +118,7 @@ static bool consoleOpened = false;
 static String currentLine;
 static Vector<String> arguments;
 static String miniDumpDir;
+extern String specifiedExecutableFile;
 
 #if defined(IOS)
 static void GetCPUData(host_basic_info_data_t* data)
@@ -265,44 +271,36 @@ const Vector<String>& ParseArguments(const String& cmdLine, bool skipFirstArgume
     arguments.Clear();
 
     unsigned cmdStart = 0, cmdEnd = 0;
-    bool inCmd = false;
     bool inQuote = false;
 
     for (unsigned i = 0; i < cmdLine.Length(); ++i)
     {
-        if (cmdLine[i] == '\"')
+        char c = cmdLine[i];
+        if (cmdLine[i] == '"' && (i == 0 || cmdLine[i - 1] != '\\'))
             inQuote = !inQuote;
-        if (cmdLine[i] == ' ' && !inQuote)
+        else if (!inQuote)
         {
-            if (inCmd)
+            bool atEnd = i == cmdLine.Length() - 1;
+            if (cmdLine[i] == ' ' || atEnd)
             {
-                inCmd = false;
                 cmdEnd = i;
-                // Do not store the first argument (executable name)
-                if (!skipFirstArgument)
-                    arguments.Push(cmdLine.Substring(cmdStart, cmdEnd - cmdStart));
-                skipFirstArgument = false;
+                String argument = cmdLine.Substring(cmdStart, cmdEnd - cmdStart);
+                if (!argument.Empty())  // May be empty when multiple spaces follow one another.
+                    arguments.Push(argument);
+                cmdStart = i + 1;
             }
         }
-        else
-        {
-            if (!inCmd)
-            {
-                inCmd = true;
-                cmdStart = i;
-            }
-        }
-    }
-    if (inCmd)
-    {
-        cmdEnd = cmdLine.Length();
-        if (!skipFirstArgument)
-            arguments.Push(cmdLine.Substring(cmdStart, cmdEnd - cmdStart));
     }
 
     // Strip double quotes from the arguments
     for (unsigned i = 0; i < arguments.Size(); ++i)
         arguments[i].Replace("\"", "");
+
+    specifiedExecutableFile = arguments[0];
+
+    // Do not store the first argument (executable name)
+    if (skipFirstArgument && !arguments.Empty())
+        arguments.Erase(arguments.Begin());
 
     return arguments;
 }
@@ -649,7 +647,29 @@ String GetOSVersion()
         int minor = ToInt(kernel_version[1]);
 
         // https://en.wikipedia.org/wiki/Darwin_(operating_system)
-        if (major == 16) // macOS Sierra
+        if (major == 18) // macOS Mojave
+        {
+            version += "Mojave ";
+            switch(minor)
+            {
+                case 0: version += "10.14.0 "; break;
+            }
+        }
+        else if (major == 17) // macOS High Sierra
+        {
+            version += "High Sierra ";
+            switch(minor)
+            {
+                case 0: version += "10.13.0 "; break;
+                case 2: version += "10.13.1 "; break;
+                case 3: version += "10.13.2 "; break;
+                case 4: version += "10.13.3 "; break;
+                case 5: version += "10.13.4 "; break;
+                case 6: version += "10.13.5 "; break;
+                case 7: version += "10.13.6 "; break;
+            }
+        }
+        else if (major == 16) // macOS Sierra
         {
             version += "Sierra ";
             switch(minor)
@@ -657,6 +677,10 @@ String GetOSVersion()
                 case 0: version += "10.12.0 "; break;
                 case 1: version += "10.12.1 "; break;
                 case 3: version += "10.12.2 "; break;
+                case 4: version += "10.12.3 "; break;
+                case 5: version += "10.12.4 "; break;
+                case 6: version += "10.12.5 "; break;
+                case 7: version += "10.12.6 "; break;
             }
         }
         else if (major == 15) // OS X El Capitan
@@ -664,7 +688,11 @@ String GetOSVersion()
             version += "El Capitan ";
             switch(minor)
             {
-                case 0: version += "10.11.0 "; break;
+                case 0: version += "10.11.0/10.11.1 "; break;
+                case 2: version += "10.11.2 "; break;
+                case 3: version += "10.11.3 "; break;
+                case 4: version += "10.11.4 "; break;
+                case 5: version += "10.11.5 "; break;
                 case 6: version += "10.11.6 "; break;
             }
         }
@@ -715,40 +743,71 @@ String GetOSVersion()
     return "(?)";
 }
 
-Process::Process(const String& command, const Vector<String>& args)
+String GenerateUUID()
 {
-    command_ = "\"" + GetNativePath((IsAbsolutePath(command) ? "" : "./") + command).Replaced("\"", "\\\"") + "\" ";
-    for (const auto& arg: args)
-    {
-        command_ += "\"";
-        command_ += arg.Replaced("\"", "\\\"");
-        command_ += "\" ";
-    }
+#if _WIN32
+    UUID uuid{};
+    RPC_CSTR str = nullptr;
+
+    UuidCreate(&uuid);
+    UuidToStringA(&uuid, &str);
+
+    String result(reinterpret_cast<const char*>(str));
+    RpcStringFreeA(&str);
+    return result;
+#elif ANDROID
+    JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+
+    auto cls = env->FindClass("java/util/UUID");
+    auto randomUUID = env->GetStaticMethodID(cls, "randomUUID", "()Ljava/util/UUID;");
+    auto getMost = env->GetMethodID(cls, "getMostSignificantBits", "()J");
+    auto getLeast = env->GetMethodID(cls, "getLeastSignificantBits", "()J");
+
+    jobject uuid = env->CallStaticObjectMethod(cls, randomUUID);
+    jlong upper = env->CallLongMethod(uuid, getMost);
+    jlong lower = env->CallLongMethod(uuid, getLeast);
+
+    env->DeleteLocalRef(uuid);
+    env->DeleteLocalRef(cls);
+
+    char str[37]{};
+    snprintf(str, sizeof(str), "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
+        (uint8_t)(upper >> 56), (uint8_t)(upper >> 48), (uint8_t)(upper >> 40), (uint8_t)(upper >> 32),
+        (uint8_t)(upper >> 24), (uint8_t)(upper >> 16), (uint8_t)(upper >> 8), (uint8_t)upper,
+        (uint8_t)(lower >> 56), (uint8_t)(lower >> 48), (uint8_t)(lower >> 40), (uint8_t)(lower >> 32),
+        (uint8_t)(lower >> 24), (uint8_t)(lower >> 16), (uint8_t)(lower >> 8), (uint8_t)lower
+    );
+
+    return String(str);
+#elif __APPLE__
+    auto guid = CFUUIDCreate(NULL);
+    auto bytes = CFUUIDGetUUIDBytes(guid);
+    CFRelease(guid);
+
+    char str[37]{};
+    snprintf(str, sizeof(str), "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
+        bytes.byte0, bytes.byte1, bytes.byte2, bytes.byte3, bytes.byte4, bytes.byte5, bytes.byte6, bytes.byte7,
+        bytes.byte8, bytes.byte9, bytes.byte10, bytes.byte11, bytes.byte12, bytes.byte13, bytes.byte14, bytes.byte15
+    );
+
+    return String(str);
+#else
+    uuid_t uuid{};
+    char str[37]{};
+
+    uuid_generate(uuid);
+    uuid_unparse(uuid, str);
+    return String(str);
+#endif
 }
 
-int Process::Run()
+URHO3D_API unsigned GetCurrentProcessID()
 {
-    char buffer[1024];
-    String command;
-    if (!subprocessDir_.Empty())
-    {
-        command = "cd \"";
-        command += GetNativePath(AddTrailingSlash(subprocessDir_)).Replaced("\"", "\\\"");
-        command += "\"";
 #if _WIN32
-        command += "&";
+    return ::GetCurrentProcessId();
 #else
-        command += ";";
+    return getpid();
 #endif
-        command += command_;
-    }
-
-    String output;
-    FILE* stream = popen(command.Empty() ? command_.CString() : command.CString(), "r");
-    while (fgets(buffer, sizeof(buffer), stream) != nullptr)
-        output.Append(buffer);
-
-    return pclose(stream);
 }
 
 }

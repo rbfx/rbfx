@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@
 
 #include "../Core/Context.h"
 #include "../Graphics/Texture2D.h"
+#include "../Graphics/Technique.h"
 #include "../Resource/ResourceCache.h"
 #include "../UI/Sprite.h"
 
@@ -32,7 +33,6 @@
 namespace Urho3D
 {
 
-extern const char* blendModeNames[];
 extern const char* horizontalAlignments[];
 extern const char* verticalAlignments[];
 extern const char* UI_CATEGORY;
@@ -241,7 +241,7 @@ const Matrix3x4& Sprite::GetTransform() const
                 break;
 
             case HA_CENTER:
-                pos.x_ += (float)(parent_->GetSize().x_ / 2);
+                pos.x_ += (float)parent_->GetSize().x_ / 2.f;
                 break;
 
             case HA_RIGHT:
@@ -254,7 +254,7 @@ const Matrix3x4& Sprite::GetTransform() const
                 break;
 
             case VA_CENTER:
-                pos.y_ += (float)(parent_->GetSize().y_ / 2);
+                pos.y_ += (float)parent_->GetSize().y_ / 2.f;
                 break;
 
             case VA_BOTTOM:

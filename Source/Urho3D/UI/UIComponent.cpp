@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -19,6 +19,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
+#include "../Precompiled.h"
+
 #include "../Core/Context.h"
 #include "../Graphics/BillboardSet.h"
 #include "../Graphics/Graphics.h"
@@ -153,20 +156,30 @@ UIComponent::UIComponent(Context* context)
     texture_->SetAddressMode(COORD_U, ADDRESS_CLAMP);
     texture_->SetAddressMode(COORD_V, ADDRESS_CLAMP);
     texture_->SetNumLevels(1);                                        // No mipmaps
+    if (texture_->SetSize(UICOMPONENT_DEFAULT_TEXTURE_SIZE, UICOMPONENT_DEFAULT_TEXTURE_SIZE, Graphics::GetRGBAFormat(),
+        TEXTURE_RENDERTARGET))
+        texture_->GetRenderSurface()->SetUpdateMode(SURFACE_MANUALUPDATE);
+    else
+        URHO3D_LOGERROR("Resizing of UI rendertarget texture failed.");
 
     rootElement_ = context_->CreateObject<UIElement3D>();
     rootElement_->SetTraversalMode(TM_BREADTH_FIRST);
     rootElement_->SetEnabled(true);
+    rootElement_->SetSize(UICOMPONENT_DEFAULT_TEXTURE_SIZE, UICOMPONENT_DEFAULT_TEXTURE_SIZE);
+
+    rootModalElement_ = context_->CreateObject<UIElement3D>();
+    rootModalElement_->SetTraversalMode(TM_BREADTH_FIRST);
+    rootModalElement_->SetEnabled(true);
+    rootModalElement_->SetSize(UICOMPONENT_DEFAULT_TEXTURE_SIZE, UICOMPONENT_DEFAULT_TEXTURE_SIZE);
+
+    offScreenUI_ = new UI(context_);
+    offScreenUI_->SetRoot(rootElement_);
+    offScreenUI_->SetRootModalElement(rootModalElement_);
+    offScreenUI_->SetRenderTarget(texture_);
 
     material_ = context_->CreateObject<Material>();
     material_->SetTechnique(0, GetSubsystem<ResourceCache>()->GetResource<Technique>("Techniques/Diff.xml"));
     material_->SetTexture(TU_DIFFUSE, texture_);
-
-    SubscribeToEvent(rootElement_, E_RESIZED, URHO3D_HANDLER(UIComponent, OnElementResized));
-
-    // Triggers resizing of texture.
-    rootElement_->SetRenderTexture(texture_);
-    rootElement_->SetSize(UICOMPONENT_DEFAULT_TEXTURE_SIZE, UICOMPONENT_DEFAULT_TEXTURE_SIZE);
 }
 
 UIComponent::~UIComponent() = default;
@@ -203,36 +216,15 @@ void UIComponent::OnNodeSet(Node* node)
         if (model == nullptr)
             model_ = model = node->CreateComponent<StaticModel>();
         model->SetMaterial(material_);
-        rootElement_->SetRenderTexture(texture_);
     }
     else
     {
-        rootElement_->SetRenderTexture(nullptr);
         if (model_.NotNull())
         {
             model_->Remove();
             model_ = nullptr;
         }
     }
-}
-
-void UIComponent::OnElementResized(StringHash eventType, VariantMap& args)
-{
-    int width = args[Resized::P_WIDTH].GetInt();
-    int height = args[Resized::P_HEIGHT].GetInt();
-
-    if (width < UICOMPONENT_MIN_TEXTURE_SIZE || width > UICOMPONENT_MAX_TEXTURE_SIZE ||
-        height < UICOMPONENT_MIN_TEXTURE_SIZE || height > UICOMPONENT_MAX_TEXTURE_SIZE)
-    {
-        URHO3D_LOGERRORF("UIComponent: Texture size %dx%d is not valid. Width and height should be between %d and %d.",
-                         width, height, UICOMPONENT_MIN_TEXTURE_SIZE, UICOMPONENT_MAX_TEXTURE_SIZE);
-        return;
-    }
-
-    if (texture_->SetSize(width, height, GetSubsystem<Graphics>()->GetRGBAFormat(), TEXTURE_RENDERTARGET))
-        texture_->GetRenderSurface()->SetUpdateMode(SURFACE_MANUALUPDATE);
-    else
-        URHO3D_LOGERROR("UIComponent: resizing texture failed.");
 }
 
 void UIComponent::SetViewportIndex(unsigned int index)

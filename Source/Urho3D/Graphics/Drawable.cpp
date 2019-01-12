@@ -1,6 +1,6 @@
 //
 
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -56,7 +56,7 @@ SourceBatch::~SourceBatch() = default;
 SourceBatch& SourceBatch::operator =(const SourceBatch& rhs)= default;
 
 
-Drawable::Drawable(Context* context, unsigned char drawableFlags) :
+Drawable::Drawable(Context* context, DrawableFlags drawableFlags) :
     Component(context),
     boundingBox_(0.0f, 0.0f),
     drawableFlags_(drawableFlags),
@@ -85,10 +85,6 @@ Drawable::Drawable(Context* context, unsigned char drawableFlags) :
     maxLights_(0),
     firstLight_(nullptr)
 {
-    if (drawableFlags == DRAWABLE_UNDEFINED || drawableFlags > DRAWABLE_ANY)
-    {
-        URHO3D_LOGERROR("Drawable with undefined drawableFlags");
-    }
 }
 
 Drawable::~Drawable()

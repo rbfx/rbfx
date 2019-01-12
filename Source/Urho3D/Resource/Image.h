@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -41,6 +41,8 @@ enum CompressedFormat
     CF_DXT3,
     CF_DXT5,
     CF_ETC1,
+    CF_ETC2_RGB,
+    CF_ETC2_RGBA,
     CF_PVRTC_RGB_2BPP,
     CF_PVRTC_RGBA_2BPP,
     CF_PVRTC_RGB_4BPP,
@@ -48,7 +50,7 @@ enum CompressedFormat
 };
 
 /// Compressed image mip level.
-struct CompressedLevel
+struct URHO3D_API CompressedLevel
 {
     /// Decompress to RGBA. The destination buffer required is width * height * 4 bytes. Return true if successful.
     bool Decompress(unsigned char* dest);

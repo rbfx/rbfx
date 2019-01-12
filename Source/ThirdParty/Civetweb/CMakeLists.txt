@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2008-2019 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
 #
 
 file (GLOB_RECURSE SOURCE_FILES *.c *.h *.inl)
-add_library (Civetweb OBJECT ${SOURCE_FILES})
+add_library (Civetweb STATIC ${SOURCE_FILES})
 target_include_directories(Civetweb
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/Civetweb>
@@ -41,7 +41,7 @@ if (WIN32)
             target_compile_definitions(Civetweb PRIVATE -D_TIMESPEC_DEFINED)
         endif ()
     endif ()
-    target_link_objects(Civetweb ws2_32.lib)
+    target_link_libraries(Civetweb ws2_32.lib)
 elseif (APPLE AND (NOT IOS OR IPHONEOS_DEPLOYMENT_TARGET STREQUAL "" OR NOT IPHONEOS_DEPLOYMENT_TARGET VERSION_LESS 10.0))    # We cheat a little bit here with a hard-coded check because iOS 10.3 SDK when targeting 9.3 has strong symbol for iPhoneOS archs but weak symbol for iPhoneSimulator archs
     include (CheckLibraryExists)
     check_library_exists (c clock_gettime "" FOUND_CLOCK_GETTIME_IN_C)
@@ -50,7 +50,7 @@ elseif (APPLE AND (NOT IOS OR IPHONEOS_DEPLOYMENT_TARGET STREQUAL "" OR NOT IPHO
     endif ()
 endif ()
 if (BUILD_SHARED_LIBS)
-    target_compile_definitions(Civetweb PRIVATE -DCIVETWEB_DLL_EXPORTS INTERFACE -DCIVETWEB_DLL_IMPORTS)
+    target_compile_definitions(Civetweb PRIVATE -DCIVETWEB_DLL_EXPORTS)
 endif ()
 
-install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS}/ FILES_MATCHING PATTERN *.h)
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)

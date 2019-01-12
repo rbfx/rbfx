@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -45,9 +45,9 @@ View3D::View3D(Context* context) :
     rttFormat_(Graphics::GetRGBFormat()),
     autoUpdate_(true)
 {
-    renderTexture_ = new Texture2D(context_);
-    depthTexture_ = new Texture2D(context_);
-    viewport_ = new Viewport(context_);
+    renderTexture_ = context_->CreateObject<Texture2D>();
+    depthTexture_ = context_->CreateObject<Texture2D>();
+    viewport_ = context_->CreateObject<Viewport>();
 
     // Disable mipmaps since the texel ratio should be 1:1
     renderTexture_->SetNumLevels(1);

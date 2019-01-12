@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,6 +21,9 @@
 //
 
 #pragma once
+
+
+#include <functional>
 
 #ifdef URHO3D_IS_BUILDING
 #include "Urho3D.h"
@@ -64,6 +67,11 @@ public:
     /// Destruct. Mark as expired and also delete the reference count structure if no outside weak references exist.
     virtual ~RefCounted();
 
+    /// Prevent copy construction.
+    RefCounted(const RefCounted& rhs) = delete;
+    /// Prevent assignment.
+    RefCounted& operator =(const RefCounted& rhs) = delete;
+
     /// Increment reference count. Can also be called outside of a SharedPtr for traditional reference counting.
     void AddRef();
     /// Decrement reference count and delete self if no more references. Can also be called outside of a SharedPtr for traditional reference counting.
@@ -76,14 +84,17 @@ public:
     /// Return pointer to the reference count structure.
     RefCount* RefCountPtr() { return refCount_; }
 
-private:
-    /// Prevent copy construction.
-    RefCounted(const RefCounted& rhs);
-    /// Prevent assignment.
-    RefCounted& operator =(const RefCounted& rhs);
+    /// Set a custom deleter function which will be in charge of deallocating object.
+    void SetDeleter(std::function<void(RefCounted*)> deleter);
+    /// Returns custom deleter of this object.
+    std::function<void(RefCounted*)> GetDeleter() const { return deleter_; }
 
+private:
     /// Pointer to the reference count structure.
     RefCount* refCount_;
+
+    /// Custom deleter which will be deallocating native object.
+    std::function<void(RefCounted*)> deleter_{};
 };
 
 }

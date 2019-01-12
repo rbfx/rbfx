@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2017-2019 Rokas Kupstys.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -28,4 +28,3 @@ file(GLOB SOURCE_FILES *.h *.cpp)
 add_library(Utilities2D STATIC ${SOURCE_FILES})
 target_link_libraries(Utilities2D Urho3D)
 target_include_directories(Utilities2D PUBLIC ..)
-set_target_properties(Utilities2D PROPERTIES FOLDER Samples)

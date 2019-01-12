@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,40 @@ namespace Urho3D
 {
 
 class ShaderVariation;
+
+static const char* blendModeNames[] =
+{
+    "replace",
+    "add",
+    "multiply",
+    "alpha",
+    "addalpha",
+    "premulalpha",
+    "invdestalpha",
+    "subtract",
+    "subtractalpha",
+    nullptr
+};
+
+static const char* compareModeNames[] =
+{
+    "always",
+    "equal",
+    "notequal",
+    "less",
+    "lessequal",
+    "greater",
+    "greaterequal",
+    nullptr
+};
+
+static const char* lightingModeNames[] =
+{
+    "unlit",
+    "pervertex",
+    "perpixel",
+    nullptr
+};
 
 /// Lighting mode of a pass.
 enum PassLightingMode

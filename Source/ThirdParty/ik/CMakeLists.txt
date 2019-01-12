@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2008-2019 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -70,6 +70,6 @@ endif ()
 configure_file (include/ik/export.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/generated/ik/export.h)
 configure_file (include/ik/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/generated/ik/config.h)
 
-add_library (ik OBJECT ${SOURCE_FILES})
+add_library (ik STATIC ${SOURCE_FILES})
 target_compile_definitions(ik PUBLIC -DIK_STATIC)
 target_include_directories(ik PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/generated> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)

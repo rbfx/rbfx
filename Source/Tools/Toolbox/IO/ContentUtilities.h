@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2017-2019 Rokas Kupstys.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,7 @@
 #pragma once
 
 
+#include "ToolboxAPI.h"
 #include <Urho3D/Container/Str.h>
 #include <Urho3D/Precompiled.h>
 
@@ -64,11 +65,11 @@ enum ContentType
 };
 
 /// Return file type based on extension of file name.
-FileType GetFileType(const String& fileName);
+URHO3D_TOOLBOX_API FileType GetFileType(const String& fileName);
 /// Return icon from icon font based on extension of file name.
-String GetFileIcon(const String& fileName);
+URHO3D_TOOLBOX_API String GetFileIcon(const String& fileName);
 
 /// Return content type by inspecting file contents.
-ContentType GetContentType(const String& resourcePath);
+URHO3D_TOOLBOX_API ContentType GetContentType(const String& resourcePath);
 
 }

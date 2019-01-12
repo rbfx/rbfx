@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -255,12 +255,22 @@ void Physics::MoveCamera(float timeStep)
     // directory
     if (input->GetKeyPress(KEY_F5))
     {
-        File saveFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/Physics.xml", FILE_WRITE);
+        String filePath = GetSubsystem<FileSystem>()->GetProgramDir();
+#if _MSC_VER
+        filePath += "../";
+#endif
+        filePath += "Data/Scenes/Physics.xml";
+        File saveFile(context_, filePath, FILE_WRITE);
         scene_->SaveXML(saveFile);
     }
     if (input->GetKeyPress(KEY_F7))
     {
-        File loadFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/Physics.xml", FILE_READ);
+        String filePath = GetSubsystem<FileSystem>()->GetProgramDir();
+#if _MSC_VER
+        filePath += "../";
+#endif
+        filePath += "Data/Scenes/Physics.xml";
+        File loadFile(context_, filePath, FILE_READ);
         scene_->LoadXML(loadFile);
     }
 

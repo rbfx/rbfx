@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -60,7 +60,6 @@ static const char* openMode[] =
 #endif
 
 #ifdef __ANDROID__
-const char* APK = "/apk/";
 static const unsigned READ_BUFFER_SIZE = 32768;
 #endif
 static const unsigned SKIP_BUFFER_SIZE = 1024;
@@ -363,7 +362,7 @@ unsigned File::GetChecksum()
 #endif
         return 0;
 
-    URHO3D_PROFILE(CalculateFileChecksum);
+    URHO3D_PROFILE("CalculateFileChecksum");
 
     unsigned oldPos = position_;
     checksum_ = 0;

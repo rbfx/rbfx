@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -42,6 +42,9 @@ static const char* emitterTypeNames[] =
 {
     "Sphere",
     "Box",
+    "SphereVolume",
+    "Cylinder",
+    "Ring",
     nullptr
 };
 
@@ -316,7 +319,7 @@ bool ParticleEffect::Load(const XMLElement& source)
 
 bool ParticleEffect::Save(Serializer& dest) const
 {
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement materialElem = xml->CreateRoot("particleeffect");
 
     Save(materialElem);
@@ -732,7 +735,7 @@ void ParticleEffect::SortTextureFrames()
 
 SharedPtr<ParticleEffect> ParticleEffect::Clone(const String& cloneName) const
 {
-    SharedPtr<ParticleEffect> ret(new ParticleEffect(context_));
+    SharedPtr<ParticleEffect> ret(context_->CreateObject<ParticleEffect>());
 
     ret->SetName(cloneName);
     ret->material_ = material_;

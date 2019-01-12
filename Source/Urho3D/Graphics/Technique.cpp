@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@
 #include "../Core/Profiler.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Technique.h"
+#include "../Graphics/Material.h"
 #include "../Graphics/ShaderVariation.h"
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
@@ -36,42 +37,6 @@
 
 namespace Urho3D
 {
-
-extern const char* cullModeNames[];
-
-const char* blendModeNames[] =
-{
-    "replace",
-    "add",
-    "multiply",
-    "alpha",
-    "addalpha",
-    "premulalpha",
-    "invdestalpha",
-    "subtract",
-    "subtractalpha",
-    nullptr
-};
-
-static const char* compareModeNames[] =
-{
-    "always",
-    "equal",
-    "notequal",
-    "less",
-    "lessequal",
-    "greater",
-    "greaterequal",
-    nullptr
-};
-
-static const char* lightingModeNames[] =
-{
-    "unlit",
-    "pervertex",
-    "perpixel",
-    nullptr
-};
 
 Pass::Pass(const String& name) :
     blendMode_(BLEND_REPLACE),
@@ -262,7 +227,7 @@ bool Technique::BeginLoad(Deserializer& source)
 
     SetMemoryUse(sizeof(Technique));
 
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     if (!xml->Load(source))
         return false;
 
@@ -375,7 +340,7 @@ void Technique::ReleaseShaders()
 
 SharedPtr<Technique> Technique::Clone(const String& cloneName) const
 {
-    SharedPtr<Technique> ret(new Technique(context_));
+    SharedPtr<Technique> ret(context_->CreateObject<Technique>());
     ret->SetIsDesktop(isDesktop_);
     ret->SetName(cloneName);
 

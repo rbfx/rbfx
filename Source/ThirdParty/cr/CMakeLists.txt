@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2017 the Atomic project.
+# Copyright (c) 2017 the Rokas Kupstys.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,9 +20,10 @@
 # THE SOFTWARE.
 #
 
-file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
-add_library(cr OBJECT ${SOURCE_FILES})
+add_library(cr INTERFACE)
 target_include_directories(cr INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 if (WIN32)
-    target_link_objects(cr dbghelp)
+    target_link_libraries(cr INTERFACE dbghelp)
 endif ()
+install (TARGETS cr EXPORT Urho3D)
+install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)

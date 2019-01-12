@@ -12,15 +12,20 @@
 /lib*/
 generated/
 /Source/Urho3D/tolua++-prefix/
+/build
+/build-*
+/captures
 
 # Output files
 /Source/**/*.a
+/Source/ThirdParty/Assimp/revision.h
+/Source/ThirdParty/Assimp/contrib/zlib/zconf.h
+/Source/ThirdParty/Assimp/include/assimp/config.h
 /Source/Urho3D/Precompiled.cpp
 /Source/Urho3D/Urho3D.pc
 /Source/Urho3D/Urho3D.pc.msvc
 /Source/Urho3D/Urho3DAll.h
 /Source/Urho3D/librevision.h
-Android/build
 
 # Compiled shaders
 *.vs?
@@ -63,7 +68,8 @@ Android/build
 /*.workspace
 
 # Android project settings
-/Android/local.properties
+/android/local.properties
+/android/build
 
 # Android output directories
 gradle*
@@ -102,3 +108,7 @@ configure*
 *.bak
 Thumbs.db
 .*
+*.DotSettings
+*.DotSettings.user
+__pycache__
+*.csproj.user

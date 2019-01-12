@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -95,7 +95,7 @@ void PhysicsWorld2D::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
     if (debug)
     {
-        URHO3D_PROFILE(Physics2DDrawDebug);
+        URHO3D_PROFILE("Physics2DDrawDebug");
 
         debugRenderer_ = debug;
         debugDepthTest_ = depthTest;
@@ -278,7 +278,7 @@ void PhysicsWorld2D::DrawTransform(const b2Transform& xf)
 
 void PhysicsWorld2D::Update(float timeStep)
 {
-    URHO3D_PROFILE(UpdatePhysics2D);
+    URHO3D_PROFILE("UpdatePhysics2D");
 
     using namespace PhysicsPreStep;
 

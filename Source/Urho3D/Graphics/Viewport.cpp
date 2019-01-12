@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,11 +22,13 @@
 
 #include "../Precompiled.h"
 
+#include "../Core/Context.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/RenderPath.h"
 #include "../Graphics/View.h"
+#include "../Graphics/Viewport.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
 #include "../Scene/Scene.h"
@@ -66,6 +68,11 @@ Viewport::Viewport(Context* context, Scene* scene, Camera* camera, const IntRect
 
 Viewport::~Viewport() = default;
 
+void Viewport::RegisterObject(Context* context)
+{
+    context->RegisterFactory<Viewport>();
+}
+
 void Viewport::SetScene(Scene* scene)
 {
     scene_ = scene;
@@ -103,11 +110,15 @@ void Viewport::SetRenderPath(RenderPath* renderPath)
     }
 }
 
-void Viewport::SetRenderPath(XMLFile* file)
+bool Viewport::SetRenderPath(XMLFile* file)
 {
     SharedPtr<RenderPath> newRenderPath(new RenderPath());
     if (newRenderPath->Load(file))
+    {
         renderPath_ = newRenderPath;
+        return true;
+    }
+    return false;
 }
 
 Scene* Viewport::GetScene() const
@@ -209,7 +220,7 @@ Vector3 Viewport::ScreenToWorldPoint(int x, int y, float depth) const
 
 void Viewport::AllocateView()
 {
-    view_ = new View(context_);
+    view_ = context_->CreateObject<View>();
 }
 
 }

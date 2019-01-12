@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -303,6 +303,9 @@ bool Serializer::WriteVariantData(const Variant& value)
     case VAR_STRINGVECTOR:
         return WriteStringVector(value.GetStringVector());
 
+    case VAR_RECT:
+        return WriteRect(value.GetRect());
+
     case VAR_VARIANTMAP:
         return WriteVariantMap(value.GetVariantMap());
 
@@ -370,23 +373,23 @@ bool Serializer::WriteVLE(unsigned value)
         return WriteUByte((unsigned char)value);
     else if (value < 0x4000)
     {
-        data[0] = (unsigned char)(value | 0x80);
-        data[1] = (unsigned char)(value >> 7);
+        data[0] = (unsigned char)(value | 0x80u);
+        data[1] = (unsigned char)(value >> 7u);
         return Write(data, 2) == 2;
     }
     else if (value < 0x200000)
     {
-        data[0] = (unsigned char)(value | 0x80);
-        data[1] = (unsigned char)((value >> 7) | 0x80);
-        data[2] = (unsigned char)(value >> 14);
+        data[0] = (unsigned char)(value | 0x80u);
+        data[1] = (unsigned char)(value >> 7u | 0x80u);
+        data[2] = (unsigned char)(value >> 14u);
         return Write(data, 3) == 3;
     }
     else
     {
-        data[0] = (unsigned char)(value | 0x80);
-        data[1] = (unsigned char)((value >> 7) | 0x80);
-        data[2] = (unsigned char)((value >> 14) | 0x80);
-        data[3] = (unsigned char)(value >> 21);
+        data[0] = (unsigned char)(value | 0x80u);
+        data[1] = (unsigned char)(value >> 7u | 0x80u);
+        data[2] = (unsigned char)(value >> 14u | 0x80u);
+        data[3] = (unsigned char)(value >> 21u);
         return Write(data, 4) == 4;
     }
 }

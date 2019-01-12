@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2017-2019 Rokas Kupstys.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,16 +28,16 @@
 #include <Urho3D/SystemUI/SystemUI.h>
 
 using namespace Urho3D;
+using namespace ui::litterals;
 
 namespace ImGui
 {
-
-const unsigned UISTATE_EXPIRATION_MS = 30000;
 
 struct UIStateWrapper
 {
     void Set(void* state, void(*deleter)(void*)=nullptr)
     {
+        lastUse_ = ui::GetCurrentContext()->FrameCount;
         state_ = state;
         deleter_ = deleter;
     }
@@ -50,16 +50,15 @@ struct UIStateWrapper
         deleter_ = nullptr;
     }
 
-    void* Get(bool keepAlive=true)
+    void* Get()
     {
-        if (keepAlive)
-            timer_.Reset();
+        lastUse_ = ui::GetCurrentContext()->FrameCount;
         return state_;
     }
 
     bool IsExpired()
     {
-        return timer_.GetMSec(false) >= UISTATE_EXPIRATION_MS;
+        return (ui::GetCurrentContext()->FrameCount - lastUse_) > 1;
     }
 
 protected:
@@ -67,11 +66,12 @@ protected:
     void* state_ = nullptr;
     /// Function that handles deleting state object when it becomes unused.
     void(*deleter_)(void* state) = nullptr;
-    /// Timer which determines when state expires.
-    Timer timer_;
+    /// Frame when value was last used.
+    int lastUse_ = 0;
 };
 
-HashMap<ImGuiID, UIStateWrapper> uiState_;
+static HashMap<ImGuiID, UIStateWrapper> uiState_;
+static int uiStateLastGcFrame_ = 0;
 
 void SetUIStateP(void* state, void(*deleter)(void*))
 {
@@ -87,12 +87,10 @@ void* GetUIStateP()
     if (it != uiState_.End())
         result = it->second_.Get();
 
-    // Every 30s check all saved states and remove expired ones.
-    static Timer gcTimer;
-    if (gcTimer.GetMSec(false) > UISTATE_EXPIRATION_MS)
+    int currentFrame = ui::GetCurrentContext()->FrameCount;
+    if (uiStateLastGcFrame_ != currentFrame)
     {
-        gcTimer.Reset();
-
+        uiStateLastGcFrame_ = currentFrame;
         for (auto jt = uiState_.Begin(); jt != uiState_.End();)
         {
             if (jt->second_.IsExpired())
@@ -123,10 +121,15 @@ int DoubleClickSelectable(const char* label, bool* p_selected, ImGuiSelectableFl
     bool wasSelected = p_selected && *p_selected;
     if (ui::Selectable(label, p_selected, flags | ImGuiSelectableFlags_AllowDoubleClick, size))
     {
-        if (wasSelected && ui::IsMouseDoubleClicked(0))
+        if (wasSelected && ui::IsMouseDoubleClicked(MOUSEB_LEFT))
             return 2;
         else
             return 1;
+    }
+    if (ui::IsItemHovered() && ui::IsMouseClicked(MOUSEB_RIGHT))
+    {
+        *p_selected = true;
+        return 1;
     }
     return 0;
 }
@@ -150,31 +153,17 @@ bool CollapsingHeaderSimple(const char* label, ImGuiTreeNodeFlags flags)
     return open;
 }
 
-float ScaleX(float x)
-{
-    return x * ui::GetIO().DisplayFramebufferScale.x;
-}
-
-float ScaleY(float y)
-{
-    return y * ui::GetIO().DisplayFramebufferScale.y;
-}
-
-ImVec2 Scale(ImVec2 value)
-{
-    return value * ui::GetIO().DisplayFramebufferScale;
-}
-
 bool ToolbarButton(const char* label)
 {
     auto& g = *ui::GetCurrentContext();
     float dimension = g.FontBaseSize + g.Style.FramePadding.y * 2.0f;
-    return ui::ButtonEx(label, {dimension, dimension}, ImGuiButtonFlags_PressedOnClick);
+    return ui::ButtonEx(label, {0, dimension}, ImGuiButtonFlags_PressedOnClick);
 }
 
-void SetHelpTooltip(const char* text)
+void SetHelpTooltip(const char* text, Key requireKey)
 {
-    if (ui::IsItemHovered() && ui::IsKeyDown(SDL_SCANCODE_LALT))
+    unsigned scancode = requireKey & (~SDLK_SCANCODE_MASK);
+    if (ui::IsItemHovered() && (requireKey == KEY_UNKNOWN || ui::IsKeyDown(scancode)))
         ui::SetTooltip("%s", text);
 }
 
@@ -209,7 +198,7 @@ bool MaskSelector(unsigned int* mask)
             }
 
             ui::PushID(bitMask);
-            if (ui::Button("", ui::Scale({8, 9})))
+            if (ui::Button("", {8_dpx, 9_dpy}))
             {
                 modified = true;
                 *mask ^= bitMask;
@@ -222,7 +211,7 @@ bool MaskSelector(unsigned int* mask)
         }
         ui::NewLine();
         if (row < 1)
-            ui::SetCursorPos({pos.x, pos.y + ui::ScaleY(9)});
+            ui::SetCursorPos({pos.x, pos.y + 9_dpy});
     }
 
     return modified;
@@ -238,8 +227,12 @@ enum TransformResizeType
     RESIZE_MOVE = 15,
 };
 
+}
 /// Flag manipuation operators.
-URHO3D_TO_FLAGS_ENUM(TransformResizeType);
+URHO3D_FLAGSET_EX(ImGui, TransformResizeType, TransformResizeTypeFlags);
+
+namespace ImGui
+{
 /// Hashing function which enables use of enum type as a HashMap key.
 inline unsigned MakeHash(const TransformResizeType& value) { return value; }
 
@@ -254,9 +247,9 @@ bool TransformRect(Urho3D::IntRect& inOut, Urho3D::IntRect& delta, TransformSele
     struct State
     {
         /// A flag indicating type of resize action currently in progress
-        TransformResizeType resizing_ = RESIZE_NONE;
+        TransformResizeTypeFlags resizing_ = RESIZE_NONE;
         /// A cache of system cursors
-        HashMap<TransformResizeType, SDL_Cursor*> cursors_;
+        HashMap<TransformResizeTypeFlags, SDL_Cursor*> cursors_;
         /// Default cursor shape
         SDL_Cursor* cursorArrow_;
         /// Flag indicating that this selector set cursor handle
@@ -313,7 +306,7 @@ bool TransformRect(Urho3D::IntRect& inOut, Urho3D::IntRect& delta, TransformSele
     ui::ItemSize(ToImGui(inOut));
     if (ui::ItemAdd(ToImGui(extendedRect), id))
     {
-        TransformResizeType resizing = RESIZE_NONE;
+        TransformResizeTypeFlags resizing = RESIZE_NONE;
         if (renderHandle(inOut.Min() + size / 2, handleSize))
             resizing = RESIZE_MOVE;
 
@@ -361,7 +354,7 @@ bool TransformRect(Urho3D::IntRect& inOut, Urho3D::IntRect& delta, TransformSele
 
         // Prevent interaction when something else blocks inactive transform.
         if (s->resizing_ != RESIZE_NONE || (ui::IsItemHovered(ImGuiHoveredFlags_RectOnly) &&
-            (!ui::IsAnyWindowHovered() || ui::IsWindowHovered())))
+            (!ui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) || ui::IsWindowHovered())))
         {
             // Set mouse cursor if handle is hovered or if we are resizing
             if (resizing != RESIZE_NONE && !s->ownsCursor_)
@@ -435,20 +428,6 @@ SystemUI* GetSystemUI()
     return static_cast<SystemUI*>(ui::GetIO().UserData);
 }
 
-ImVec2 GetPixelPerfectDPIScale()
-{
-    auto nearestPowerOf2 = [](int num) -> int {
-        int n = 1;
-        while (n < num)
-            n <<= 1;
-        return n;
-    };
-    ImVec2 ppScale = ui::GetIO().DisplayFramebufferScale;   // DPI scale
-    ppScale.x = nearestPowerOf2(RoundToInt(ppScale.x));
-    ppScale.y = nearestPowerOf2(RoundToInt(ppScale.y));
-    return ppScale;
-}
-
 bool EditorToolbarButton(const char* text, const char* tooltip, bool active)
 {
     const auto& style = ui::GetStyle();
@@ -462,6 +441,16 @@ bool EditorToolbarButton(const char* text, const char* tooltip, bool active)
     if (ui::IsItemHovered() && tooltip)
         ui::SetTooltip("%s", tooltip);
     return result;
+}
+
+void OpenTreeNode(ImGuiID id)
+{
+    auto& storage = ui::GetCurrentWindow()->DC.StateStorage;
+    if (!storage->GetInt(id))
+    {
+        storage->SetInt(id, true);
+        ui::TreePushRawID(id);
+    }
 }
 
 }

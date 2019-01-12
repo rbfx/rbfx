@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -908,9 +908,9 @@ void WriteOutput(const String& outputFileName, bool exportAnimations, bool rotat
             dest.Write(offsetMatrix.Data(), sizeof(Matrix3x4));
 
             dest.WriteUByte(bones_[i].collisionMask_);
-            if (bones_[i].collisionMask_ & 1)
+            if (bones_[i].collisionMask_ & 1u)
                 dest.WriteFloat(bones_[i].radius_);
-            if (bones_[i].collisionMask_ & 2)
+            if (bones_[i].collisionMask_ & 2u)
                 dest.WriteBoundingBox(bones_[i].boundingBox_);
         }
 

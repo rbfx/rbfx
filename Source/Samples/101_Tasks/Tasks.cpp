@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2017-2019 Rokas Kupstys.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include <Urho3D/Core/Context.h>
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/Tasks.h>
 #include <Urho3D/Core/WorkQueue.h>
@@ -160,19 +161,19 @@ void MultithreadedTasksWork(const WorkItem* item, unsigned threadIndex)
         URHO3D_LOGINFO("==== Manual task scheduling ====");
         SharedPtr<Task> task1, task2;
 
-        task1 = taskScheduler.Create([&]() {
+        task1 = context->GetTasks()->Create([&]() {
             URHO3D_LOGINFO("Task1 executing");
             // Manually schedule execution of task 2. It stars executing immediately. Bear in mind that manually
             // scheduled tasks should not use SuspendTask(). SuspendTask() yields execution to the main thread and
             // requires task scheduler in order to handle suspending for prolonged period of time.
-            task2->SwitchTo();
+            SuspendTask(nullptr);
             URHO3D_LOGINFO("Task1 terminating");
         });
 
-        task2 = taskScheduler.Create([&]() {
+        task2 = context->GetTasks()->Create([&]() {
             URHO3D_LOGINFO("Task2 executing");
             // Manually resume execution of main thread.
-            taskScheduler.SwitchTo();
+            SuspendTask(nullptr);
             URHO3D_LOGINFO("Task2 terminating");
         });
 

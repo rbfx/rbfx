@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2008-2019 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -24,5 +24,5 @@ if (NOT URHO3D_URHO2D)
     return ()
 endif ()
 
-add_sample (49_Urho2DIsometricDemo)
-target_link_libraries(49_Urho2DIsometricDemo Utilities2D)
+add_sample (TARGET 49_Urho2DIsometricDemo)
+target_link_libraries(49_Urho2DIsometricDemo PRIVATE Utilities2D)

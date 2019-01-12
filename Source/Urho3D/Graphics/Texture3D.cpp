@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -80,7 +80,7 @@ bool Texture3D::BeginLoad(Deserializer& source)
 
     cache->ResetDependencies(this);
 
-    loadParameters_ = new XMLFile(context_);
+    loadParameters_ = context_->CreateObject<XMLFile>();
     if (!loadParameters_->Load(source))
     {
         loadParameters_.Reset();
@@ -119,7 +119,7 @@ bool Texture3D::BeginLoad(Deserializer& source)
             name = texPath + name;
 
         SharedPtr<File> file = GetSubsystem<ResourceCache>()->GetFile(name);
-        loadImage_ = new Image(context_);
+        loadImage_ = context_->CreateObject<Image>();
         if (!loadImage_->LoadColorLUT(*(file.Get())))
         {
             loadParameters_.Reset();

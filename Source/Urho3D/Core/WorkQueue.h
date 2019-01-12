@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -43,32 +43,23 @@ struct WorkItem : public RefCounted
     friend class WorkQueue;
 
 public:
-    // Construct
-    WorkItem() :
-        priority_(0),
-        sendEvent_(false),
-        completed_(false),
-        pooled_(false)
-    {
-    }
-
     /// Work function. Called with the work item and thread index (0 = main thread) as parameters.
-    void(*workFunction_)(const WorkItem*, unsigned);
+    void (* workFunction_)(const WorkItem*, unsigned){};
     /// Data start pointer.
-    void* start_;
+    void* start_{};
     /// Data end pointer.
-    void* end_;
+    void* end_{};
     /// Auxiliary data pointer.
-    void* aux_;
+    void* aux_{};
     /// Priority. Higher value = will be completed first.
-    unsigned priority_;
+    unsigned priority_{};
     /// Whether to send event on completion.
-    bool sendEvent_;
+    bool sendEvent_{};
     /// Completed flag.
-    volatile bool completed_;
+    volatile bool completed_{};
 
 private:
-    bool pooled_;
+    bool pooled_{};
     /// Work function. Called without any parameters.
     std::function<void()> workLambda_;
 };
@@ -114,6 +105,8 @@ public:
     /// Return number of worker threads.
     unsigned GetNumThreads() const { return threads_.Size(); }
 
+    /// Return number of incomplete tasks with at least the specified priority.
+    unsigned GetNumIncomplete(unsigned priority) const;
     /// Return whether all work with at least the specified priority is finished.
     bool IsCompleted(unsigned priority) const;
     /// Return whether the queue is currently completing work in the main thread.

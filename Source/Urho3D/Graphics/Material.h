@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@
 
 #include "../Graphics/GraphicsDefs.h"
 #include "../Graphics/Light.h"
+#include "../Graphics/Technique.h"
 #include "../Math/Vector4.h"
 #include "../Resource/Resource.h"
 #include "../Scene/ValueAnimationInfo.h"
@@ -34,7 +35,6 @@ namespace Urho3D
 class Material;
 class Pass;
 class Scene;
-class Technique;
 class Texture;
 class Texture2D;
 class TextureCube;
@@ -42,6 +42,50 @@ class ValueAnimationInfo;
 class JSONFile;
 
 static const unsigned char DEFAULT_RENDER_ORDER = 128;
+
+static const char* textureUnitNames[] =
+{
+    "diffuse",
+    "normal",
+    "specular",
+    "emissive",
+    "environment",
+#ifdef DESKTOP_GRAPHICS
+    "volume",
+    "custom1",
+    "custom2",
+    "lightramp",
+    "lightshape",
+    "shadowmap",
+    "faceselect",
+    "indirection",
+    "depth",
+    "light",
+    "zone",
+    nullptr
+#else
+    "lightramp",
+    "lightshape",
+    "shadowmap",
+    nullptr
+#endif
+};
+
+static const char* cullModeNames[] =
+{
+    "none",
+    "ccw",
+    "cw",
+    nullptr
+};
+
+static const char* fillModeNames[] =
+{
+    "solid",
+    "wireframe",
+    "point",
+    nullptr
+};
 
 /// %Material's shader parameter definition.
 struct MaterialShaderParameter
@@ -53,27 +97,39 @@ struct MaterialShaderParameter
 };
 
 /// %Material's technique list entry.
-struct TechniqueEntry
+struct URHO3D_API TechniqueEntry
 {
     /// Construct with defaults.
     TechniqueEntry() noexcept;
     /// Construct with parameters.
-    TechniqueEntry(Technique* tech, unsigned qualityLevel, float lodDistance) noexcept;
+    TechniqueEntry(Technique* tech, MaterialQuality qualityLevel, float lodDistance) noexcept;
     /// Destruct.
     ~TechniqueEntry() noexcept = default;
+
+    /// Instance equality operator.
+    bool operator ==(const TechniqueEntry& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const TechniqueEntry& rhs) const
+    {
+        return this != &rhs;
+    }
 
     /// Technique.
     SharedPtr<Technique> technique_;
     /// Original technique, in case the material adds shader compilation defines. The modified clones are requested from it.
     SharedPtr<Technique> original_;
     /// Quality level.
-    int qualityLevel_;
+    MaterialQuality qualityLevel_;
     /// LOD distance.
     float lodDistance_;
 };
 
 /// Material's shader parameter animation instance.
-class ShaderParameterAnimationInfo : public ValueAnimationInfo
+class URHO3D_API ShaderParameterAnimationInfo : public ValueAnimationInfo
 {
 public:
     /// Construct.
@@ -135,7 +191,7 @@ public:
     /// Set number of techniques.
     void SetNumTechniques(unsigned num);
     /// Set technique.
-    void SetTechnique(unsigned index, Technique* tech, unsigned qualityLevel = 0, float lodDistance = 0.0f);
+    void SetTechnique(unsigned index, Technique* tech, MaterialQuality qualityLevel = QUALITY_LOW, float lodDistance = 0.0f);
     /// Set additional vertex shader defines. Separate multiple defines with spaces. Setting defines at the material level causes technique(s) to be cloned as necessary.
     void SetVertexShaderDefines(const String& defines);
     /// Set additional pixel shader defines. Separate multiple defines with spaces. Setting defines at the material level causes technique(s) to be cloned as necessary.

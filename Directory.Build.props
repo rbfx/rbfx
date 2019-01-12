@@ -1,0 +1,43 @@
+<Project ToolsVersion="15.0">
+  <PropertyGroup>
+    <TargetFramework>net471</TargetFramework>
+    <NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' == 'netstandard2.0' ">2.0.0</NetStandardImplicitPackageVersion>
+    <LangVersion>7.2</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+	<EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net471'">
+    <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
+    <RuntimeIdentifiers Condition=" '$(OS)' == 'Unix' ">linux-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition=" '$(OS)' == 'Windows_NT' ">win-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition=" '$(OS)' == 'OSX' ">osx.10.10-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+  <PropertyGroup>
+    <BaseOutputPath>bin/</BaseOutputPath>
+    <BaseIntermediateOutputPath>obj/</BaseIntermediateOutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PlatformTarget Condition=" '$(PlatformTarget)' == '' ">x64</PlatformTarget>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(BuildDir)' == '' ">
+    <BuildDir Condition=" '$(OS)' != 'Unix' ">$(SolutionDir)/</BuildDir>
+    <BuildDir Condition=" '$(OS)' == 'Unix' ">$(SolutionDir)build/</BuildDir>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
+    <BaseOutputPath>$(BaseOutputPath)$(Configuration)/</BaseOutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(BuildDir)' != '' ">
+    <BaseOutputPath>$(BuildDir)$(BaseOutputPath)/</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(BuildDir)$(BaseIntermediateOutputPath)/</BaseIntermediateOutputPath>
+    <OutDir>$(BaseOutputPath)</OutDir>
+    <OutputPath>$(BaseOutputPath)</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(BuildDir)/CSharp.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+</Project>

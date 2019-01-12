@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,12 +29,17 @@
 namespace Urho3D
 {
 
-static const unsigned DRAWABLE_UNDEFINED = 0x0;
-static const unsigned DRAWABLE_GEOMETRY = 0x1;
-static const unsigned DRAWABLE_LIGHT = 0x2;
-static const unsigned DRAWABLE_ZONE = 0x4;
-static const unsigned DRAWABLE_GEOMETRY2D = 0x8;
-static const unsigned DRAWABLE_ANY = 0xff;
+enum DrawableFlag : unsigned char
+{
+    DRAWABLE_UNDEFINED = 0x0,
+    DRAWABLE_GEOMETRY = 0x1,
+    DRAWABLE_LIGHT = 0x2,
+    DRAWABLE_ZONE = 0x4,
+    DRAWABLE_GEOMETRY2D = 0x8,
+    DRAWABLE_ANY = 0xff,
+};
+URHO3D_FLAGSET(DrawableFlag, DrawableFlags);
+
 static const unsigned DEFAULT_VIEWMASK = M_MAX_UNSIGNED;
 static const unsigned DEFAULT_LIGHTMASK = M_MAX_UNSIGNED;
 static const unsigned DEFAULT_SHADOWMASK = M_MAX_UNSIGNED;
@@ -102,6 +107,22 @@ struct URHO3D_API SourceBatch
     void* instancingData_{};
     /// %Geometry type.
     GeometryType geometryType_{GEOM_STATIC};
+
+    /// Equality comparison operator.
+    bool operator==(const SourceBatch& other) const
+    {
+        if (this == &other)
+            return true;
+        return distance_ == other.distance_ && geometry_ == other.geometry_ && material_ == other.material_ &&
+            worldTransform_ == other.worldTransform_ && numWorldTransforms_ == other.numWorldTransforms_ &&
+            instancingData_ == other.instancingData_ && geometryType_ == other.geometryType_;
+    }
+
+    /// Inequality comparison operator.
+    bool operator!=(const SourceBatch& other) const
+    {
+        return !(*this == other);
+    }
 };
 
 /// Base class for visible components.
@@ -115,7 +136,7 @@ class URHO3D_API Drawable : public Component
 
 public:
     /// Construct.
-    Drawable(Context* context, unsigned char drawableFlags);
+    Drawable(Context* context, DrawableFlags drawableFlags=DRAWABLE_UNDEFINED);
     /// Destruct.
     ~Drawable() override;
     /// Register object attributes. Drawable must be registered first.
@@ -178,7 +199,7 @@ public:
     const BoundingBox& GetWorldBoundingBox();
 
     /// Return drawable flags.
-    unsigned char GetDrawableFlags() const { return drawableFlags_; }
+    DrawableFlags GetDrawableFlags() const { return drawableFlags_; }
 
     /// Return draw distance.
     float GetDrawDistance() const { return drawDistance_; }
@@ -243,7 +264,7 @@ public:
     void LimitVertexLights(bool removeConvertedLights);
 
     /// Set base pass flag for a batch.
-    void SetBasePass(unsigned batchIndex) { basePassFlags_ |= (1 << batchIndex); }
+    void SetBasePass(unsigned batchIndex) { basePassFlags_ |= (1u << batchIndex); }
 
     /// Return octree octant.
     Octant* GetOctant() const { return octant_; }
@@ -267,7 +288,7 @@ public:
     bool IsInView(const FrameInfo& frame, bool anyCamera = false) const;
 
     /// Return whether has a base pass.
-    bool HasBasePass(unsigned batchIndex) const { return (basePassFlags_ & (1 << batchIndex)) != 0; }
+    bool HasBasePass(unsigned batchIndex) const { return (basePassFlags_ & (1u << batchIndex)) != 0; }
 
     /// Return per-pixel lights.
     const PODVector<Light*>& GetLights() const { return lights_; }
@@ -330,7 +351,7 @@ protected:
     /// Draw call source data.
     Vector<SourceBatch> batches_;
     /// Drawable flags.
-    unsigned char drawableFlags_;
+    DrawableFlags drawableFlags_;
     /// Bounding box dirty flag.
     bool worldBoundingBoxDirty_;
     /// Shadowcaster flag.

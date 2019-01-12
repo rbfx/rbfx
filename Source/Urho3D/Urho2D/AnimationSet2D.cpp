@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -211,8 +211,8 @@ Sprite2D* AnimationSet2D::GetSprite() const
 
 Sprite2D* AnimationSet2D::GetSpriterFileSprite(int folderId, int fileId) const
 {
-    int key = (folderId << 16) + fileId;
-    HashMap<int, SharedPtr<Sprite2D> >::ConstIterator i = spriterFileSprites_.Find(key);
+    unsigned key = folderId << 16u | fileId;
+    HashMap<unsigned, SharedPtr<Sprite2D> >::ConstIterator i = spriterFileSprites_.Find(key);
     if (i != spriterFileSprites_.End())
         return i->second_;
 
@@ -389,7 +389,7 @@ bool AnimationSet2D::EndLoadSpriter()
                 if (!sprite_)
                     sprite_ = sprite;
 
-                int key = (folder->id_ << 16) + file->id_;
+                unsigned key = folder->id_ << 16u | file->id_;
                 spriterFileSprites_[key] = sprite;
             }
         }
@@ -449,7 +449,7 @@ bool AnimationSet2D::EndLoadSpriter()
                 }
             }
 
-            SharedPtr<Texture2D> texture(new Texture2D(context_));
+            SharedPtr<Texture2D> texture(context_->CreateObject<Texture2D>());
             texture->SetMipsToSkip(QUALITY_LOW, 0);
             texture->SetNumLevels(1);
             texture->SetSize(allocator.GetWidth(), allocator.GetHeight(), Graphics::GetRGBAFormat());
@@ -458,7 +458,7 @@ bool AnimationSet2D::EndLoadSpriter()
             SharedArrayPtr<unsigned char> textureData(new unsigned char[textureDataSize]);
             memset(textureData.Get(), 0, textureDataSize);
 
-            sprite_ = new Sprite2D(context_);
+            sprite_ = context_->CreateObject<Sprite2D>();
             sprite_->SetTexture(texture);
 
             for (unsigned i = 0; i < spriteInfos.Size(); ++i)
@@ -472,12 +472,12 @@ bool AnimationSet2D::EndLoadSpriter()
                         image->GetData() + y * image->GetWidth() * 4, (size_t)image->GetWidth() * 4);
                 }
 
-                SharedPtr<Sprite2D> sprite(new Sprite2D(context_));
+                SharedPtr<Sprite2D> sprite(context_->CreateObject<Sprite2D>());
                 sprite->SetTexture(texture);
                 sprite->SetRectangle(IntRect(info.x, info.y, info.x + image->GetWidth(), info.y + image->GetHeight()));
                 sprite->SetHotSpot(Vector2(info.file_->pivotX_, info.file_->pivotY_));
 
-                int key = (info.file_->folder_->id_ << 16) + info.file_->id_;
+                unsigned key = info.file_->folder_->id_ << 16u | info.file_->id_;
                 spriterFileSprites_[key] = sprite;
             }
 
@@ -485,19 +485,19 @@ bool AnimationSet2D::EndLoadSpriter()
         }
         else
         {
-            SharedPtr<Texture2D> texture(new Texture2D(context_));
+            SharedPtr<Texture2D> texture(context_->CreateObject<Texture2D>());
             texture->SetMipsToSkip(QUALITY_LOW, 0);
             texture->SetNumLevels(1);
 
             SpriteInfo& info = spriteInfos[0];
             texture->SetData(info.image_, true);
 
-            sprite_ = new Sprite2D(context_);
+            sprite_ = context_->CreateObject<Sprite2D>();
             sprite_->SetTexture(texture);
             sprite_->SetRectangle(IntRect(info.x, info.y, info.x + info.image_->GetWidth(), info.y + info.image_->GetHeight()));
             sprite_->SetHotSpot(Vector2(info.file_->pivotX_, info.file_->pivotY_));
 
-            int key = (info.file_->folder_->id_ << 16) + info.file_->id_;
+            unsigned key = info.file_->folder_->id_ << 16u | info.file_->id_;
             spriterFileSprites_[key] = sprite_;
         }
     }

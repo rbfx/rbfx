@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -479,6 +479,8 @@ void Run(const Vector<String>& arguments)
         outName_ = outFile;
         outPath_ = GetPath(outFile);
 
+        context_->GetFileSystem()->CreateDirsRecursive(outPath_);
+
         if (resourcePath_.Empty())
         {
             resourcePath_ = outPath_;
@@ -588,7 +590,7 @@ void Run(const Vector<String>& arguments)
         }
         if (numLodArguments < 4)
             ErrorExit("Must define at least 2 LOD levels");
-        if (!(numLodArguments & 1))
+        if (!(numLodArguments & 1u))
             ErrorExit("No output file defined");
 
         for (unsigned i = 1; i < numLodArguments + 1; ++i)
@@ -597,7 +599,7 @@ void Run(const Vector<String>& arguments)
                 outFile = GetInternalPath(arguments[i]);
             else
             {
-                if (i & 1)
+                if (i & 1u)
                     lodDistances.Push(Max(ToFloat(arguments[i]), 0.0f));
                 else
                     modelNames.Push(GetInternalPath(arguments[i]));
@@ -1376,7 +1378,7 @@ void BuildAndSaveAnimations(OutModel* model)
             AnimationTrack* track = outAnim->CreateTrack(channelName);
 
             // Check which channels are used
-            track->channelMask_ = 0;
+            track->channelMask_ = CHANNEL_NONE;
             if (channel->mNumPositionKeys > 1 || !posEqual)
                 track->channelMask_ |= CHANNEL_POSITION;
             if (channel->mNumRotationKeys > 1 || !rotEqual)

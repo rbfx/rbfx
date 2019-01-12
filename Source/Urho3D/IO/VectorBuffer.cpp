@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,9 +23,13 @@
 #include "../Precompiled.h"
 
 #include "../IO/VectorBuffer.h"
+#include "VectorBuffer.h"
+
 
 namespace Urho3D
 {
+
+static String vectorBufferName{"VectorBuffer"};
 
 VectorBuffer::VectorBuffer() = default;
 
@@ -69,7 +73,7 @@ unsigned VectorBuffer::Read(void* dest, unsigned size)
         srcPtr += sizeof(unsigned short);
         destPtr += sizeof(unsigned short);
     }
-    if (copySize & 1)
+    if (copySize & 1u)
         *destPtr = *srcPtr;
 
     return size;
@@ -113,7 +117,7 @@ unsigned VectorBuffer::Write(const void* data, unsigned size)
         srcPtr += sizeof(unsigned short);
         destPtr += sizeof(unsigned short);
     }
-    if (copySize & 1)
+    if (copySize & 1u)
         *destPtr = *srcPtr;
 
     return size;
@@ -163,6 +167,11 @@ void VectorBuffer::Resize(unsigned size)
     size_ = size;
     if (position_ > size_)
         position_ = size_;
+}
+
+const String& VectorBuffer::GetName() const
+{
+    return vectorBufferName;
 }
 
 }

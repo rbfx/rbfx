@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -84,7 +84,7 @@ struct URHO3D_API NavBuildData
     PODVector<NavAreaStub> navAreas_;
 };
 
-struct SimpleNavBuildData : public NavBuildData
+struct URHO3D_API SimpleNavBuildData : public NavBuildData
 {
     /// Constructor.
     SimpleNavBuildData();
@@ -99,7 +99,7 @@ struct SimpleNavBuildData : public NavBuildData
     rcPolyMeshDetail* polyMeshDetail_;
 };
 
-struct DynamicNavBuildData : public NavBuildData
+struct URHO3D_API DynamicNavBuildData : public NavBuildData
 {
     /// Constructor.
     explicit DynamicNavBuildData(dtTileCacheAlloc* allocator);

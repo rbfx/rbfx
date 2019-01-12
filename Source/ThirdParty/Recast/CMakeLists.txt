@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2008-2019 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +21,9 @@
 #
 
 file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
-add_library (Recast OBJECT ${SOURCE_FILES})
-target_include_directories(Recast PRIVATE include)
+add_library (Recast STATIC ${SOURCE_FILES})
+target_include_directories(Recast PRIVATE Include)
 target_include_directories(Recast
-    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/Recast>
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include>
+    PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include/Recast>
 )

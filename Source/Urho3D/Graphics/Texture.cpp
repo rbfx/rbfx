@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -106,7 +106,7 @@ void Texture::SetBackupTexture(Texture* texture)
     backupTexture_ = texture;
 }
 
-void Texture::SetMipsToSkip(int quality, int toSkip)
+void Texture::SetMipsToSkip(MaterialQuality quality, int toSkip)
 {
     if (quality >= QUALITY_LOW && quality < MAX_TEXTURE_QUALITY_LEVELS)
     {
@@ -121,7 +121,7 @@ void Texture::SetMipsToSkip(int quality, int toSkip)
     }
 }
 
-int Texture::GetMipsToSkip(int quality) const
+int Texture::GetMipsToSkip(MaterialQuality quality) const
 {
     return (quality >= QUALITY_LOW && quality < MAX_TEXTURE_QUALITY_LEVELS) ? mipsToSkip_[quality] : 0;
 }
@@ -150,7 +150,7 @@ int Texture::GetLevelDepth(unsigned level) const
 unsigned Texture::GetDataSize(int width, int height) const
 {
     if (IsCompressed())
-        return GetRowDataSize(width) * ((height + 3) >> 2);
+        return GetRowDataSize(width) * ((height + 3u) >> 2u);
     else
         return GetRowDataSize(width) * height;
 }
@@ -243,8 +243,8 @@ unsigned Texture::CheckMaxLevels(int width, int height, unsigned requestedLevels
     while (width > 1 || height > 1)
     {
         ++maxLevels;
-        width = width > 1 ? (width >> 1) : 1;
-        height = height > 1 ? (height >> 1) : 1;
+        width = width > 1 ? (width >> 1u) : 1;
+        height = height > 1 ? (height >> 1u) : 1;
     }
 
     if (!requestedLevels || maxLevels < requestedLevels)
@@ -259,9 +259,9 @@ unsigned Texture::CheckMaxLevels(int width, int height, int depth, unsigned requ
     while (width > 1 || height > 1 || depth > 1)
     {
         ++maxLevels;
-        width = width > 1 ? (width >> 1) : 1;
-        height = height > 1 ? (height >> 1) : 1;
-        depth = depth > 1 ? (depth >> 1) : 1;
+        width = width > 1 ? (width >> 1u) : 1;
+        height = height > 1 ? (height >> 1u) : 1;
+        depth = depth > 1 ? (depth >> 1u) : 1;
     }
 
     if (!requestedLevels || maxLevels < requestedLevels)

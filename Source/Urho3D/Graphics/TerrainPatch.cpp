@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -47,10 +47,10 @@ extern const char* GEOMETRY_CATEGORY;
 
 TerrainPatch::TerrainPatch(Context* context) :
     Drawable(context, DRAWABLE_GEOMETRY),
-    geometry_(new Geometry(context)),
-    maxLodGeometry_(new Geometry(context)),
-    occlusionGeometry_(new Geometry(context)),
-    vertexBuffer_(new VertexBuffer(context)),
+    geometry_(context->CreateObject<Geometry>()),
+    maxLodGeometry_(context->CreateObject<Geometry>()),
+    occlusionGeometry_(context->CreateObject<Geometry>()),
+    vertexBuffer_(context->CreateObject<VertexBuffer>()),
     coordinates_(IntVector2::ZERO),
     lodLevel_(0)
 {

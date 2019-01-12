@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -32,7 +32,10 @@ namespace Urho3D
 enum EmitterType
 {
     EMITTER_SPHERE = 0,
-    EMITTER_BOX
+    EMITTER_BOX,
+    EMITTER_SPHEREVOLUME,
+    EMITTER_CYLINDER,
+    EMITTER_RING
 };
 
 /// %Color animation frame definition.
@@ -71,6 +74,18 @@ struct ColorFrame
             return next.color_;
     }
 
+    /// Instance equality operator.
+    bool operator ==(const ColorFrame& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const ColorFrame& rhs) const
+    {
+        return this != &rhs;
+    }
+
     /// Color.
     Color color_;
     /// Time.
@@ -85,6 +100,18 @@ struct TextureFrame
         uv_(0.0f, 0.0f, 1.0f, 1.0f),
         time_(0.0f)
     {
+    }
+
+    /// Equality operator.
+    bool operator ==(const TextureFrame& rhs) const
+    {
+        return uv_ == rhs.uv_ && Equals(time_, rhs.time_);
+    }
+
+    /// Inequality operator.
+    bool operator !=(const TextureFrame& rhs) const
+    {
+        return uv_ != rhs.uv_ && Equals(time_, rhs.time_);
     }
 
     /// UV coordinates.

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -34,7 +34,7 @@ class IndexBuffer;
 class VertexBuffer;
 
 /// %Decal vertex.
-struct DecalVertex
+struct URHO3D_API DecalVertex
 {
     /// Construct with defaults.
     DecalVertex() = default;
@@ -58,6 +58,18 @@ struct DecalVertex
         }
     }
 
+    /// Instance equality operator.
+    bool operator ==(const DecalVertex& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const DecalVertex& rhs) const
+    {
+        return this != &rhs;
+    }
+
     /// Position.
     Vector3 position_;
     /// Normal.
@@ -67,13 +79,13 @@ struct DecalVertex
     /// Tangent.
     Vector4 tangent_;
     /// Blend weights.
-    float blendWeights_[4];
+    float blendWeights_[4]{};
     /// Blend indices.
-    unsigned char blendIndices_[4];
+    unsigned char blendIndices_[4]{};
 };
 
 /// One decal in a decal set.
-struct Decal
+struct URHO3D_API Decal
 {
     /// Construct with defaults.
     Decal() :

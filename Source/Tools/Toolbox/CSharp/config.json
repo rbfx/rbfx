@@ -1,0 +1,28 @@
+{
+  "module": "Toolbox",
+  "managed_assembly": "Urho3DNet.Toolbox",
+  "namespace": "Urho3D.Toolbox",
+  "namespaces": {
+    "Urho3D": {
+      "parse": {
+        ".": {
+          "include": [
+            "*.h",
+            "**/*.h",
+          ]
+        },
+      },
+      "symbols": {
+        "include": [
+          "ImGui",
+          "ImGui::*",
+          "Urho3D",
+          "Urho3D::*"
+        ],
+        "exclude": [
+          "Urho3D::Undo::SetTrackingScoped"
+        ]
+      },
+    }
+  }
+}

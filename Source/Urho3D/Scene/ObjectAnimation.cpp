@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -85,7 +85,7 @@ bool ObjectAnimation::LoadXML(const XMLElement& source)
     {
         String name = animElem.GetAttribute("name");
 
-        SharedPtr<ValueAnimation> animation(new ValueAnimation(context_));
+        SharedPtr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
         if (!animation->LoadXML(animElem))
             return false;
 
@@ -144,7 +144,7 @@ bool ObjectAnimation::LoadJSON(const JSONValue& source)
     {
         String name = it->first_;
         JSONValue value = it->second_;
-        SharedPtr<ValueAnimation> animation(new ValueAnimation(context_));
+        SharedPtr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
         if (!animation->LoadJSON(value))
             return false;
 

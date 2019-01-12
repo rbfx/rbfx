@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -46,7 +46,7 @@ extern const char* GEOMETRY_CATEGORY;
 
 CustomGeometry::CustomGeometry(Context* context) :
     Drawable(context, DRAWABLE_GEOMETRY),
-    vertexBuffer_(new VertexBuffer(context)),
+    vertexBuffer_(context->CreateObject<VertexBuffer>()),
     elementMask_(MASK_POSITION),
     geometryIndex_(0),
     materialsAttr_(Material::GetTypeStatic()),
@@ -223,7 +223,7 @@ void CustomGeometry::SetNumGeometries(unsigned num)
     for (unsigned i = 0; i < geometries_.Size(); ++i)
     {
         if (!geometries_[i])
-            geometries_[i] = new Geometry(context_);
+            geometries_[i] = context_->CreateObject<Geometry>();
 
         batches_[i].geometry_ = geometries_[i];
     }
@@ -326,7 +326,7 @@ void CustomGeometry::DefineGeometry(unsigned index, PrimitiveType type, unsigned
 
 void CustomGeometry::Commit()
 {
-    URHO3D_PROFILE(CommitCustomGeometry);
+    URHO3D_PROFILE("CommitCustomGeometry");
 
     unsigned totalVertices = 0;
     boundingBox_.Clear();
@@ -454,7 +454,7 @@ void CustomGeometry::SetGeometryDataAttr(const PODVector<unsigned char>& value)
     MemoryBuffer buffer(value);
 
     SetNumGeometries(buffer.ReadVLE());
-    elementMask_ = buffer.ReadUInt();
+    elementMask_ = VertexMaskFlags(buffer.ReadUInt());
 
     for (unsigned i = 0; i < geometries_.Size(); ++i)
     {

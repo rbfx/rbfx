@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -79,6 +79,14 @@ public:
         type_(0)
     {
     }
+
+    /// Construct a default value with defined type.
+    explicit JSONValue(JSONValueType valueType, JSONNumberType numberType = JSONNT_NAN) :
+        type_(0)
+    {
+        SetType(valueType, numberType);
+    }
+
     /// Construct with a boolean.
     JSONValue(bool value) :         // NOLINT(google-explicit-constructor)
         type_(0)
@@ -165,6 +173,10 @@ public:
     JSONValue& operator =(const JSONObject& rhs);
     /// Assign from another JSON value.
     JSONValue& operator =(const JSONValue& rhs);
+    /// Value equality operator.
+    bool operator ==(const JSONValue& rhs) const;
+    /// Value inequality operator.
+    bool operator !=(const JSONValue& rhs) const;
 
     /// Return value type.
     JSONValueType GetValueType() const;
@@ -234,6 +246,8 @@ public:
     void Set(const String& key, const JSONValue& value);
     /// Return JSON value with key.
     const JSONValue& Get(const String& key) const;
+    /// Return JSON value with index.
+    const JSONValue& Get(int index) const;
     /// Erase a pair by key.
     bool Erase(const String& key);
     /// Return whether contains a pair with key.

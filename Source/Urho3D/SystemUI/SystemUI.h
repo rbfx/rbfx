@@ -39,7 +39,7 @@
 namespace Urho3D
 {
 
-const float SYSTEMUI_DEFAULT_FONT_SIZE = 14.f;
+const float SYSTEMUI_DEFAULT_FONT_SIZE = 14;
 
 class URHO3D_API SystemUI : public Object
 {
@@ -57,23 +57,15 @@ public:
     /// \param zoom of ui.
     void SetZoom(float zoom);
     /// Update DPI scale.
-    /// \param scale is a vector of {hscale, vscale, dscale}. Passing no parameter detects scale as Graphics::GetDisplayDPI() / 96.f.
-    void SetScale(Vector3 scale = Vector3::ZERO);
+    /// \param scale is a vector of {hscale, vscale, dscale}. If `pixelPerfect` is `true` then scale will be rounded to nearest power of two.
+    void SetScale(Vector3 scale, bool pixelPerfect=true);
     /// Add font to imgui subsystem.
     /// \param fontPath a string pointing to TTF font resource.
     /// \param size a font size. If 0 then size of last font is used.
-    /// \param ranges optional ranges of font that should be used. Parameter is array of {start1, stop1, ..., startN, stopN, 0}.
+    /// \param ranges optional ranges of font that should be used. Parameter is ImWchar[] of {start1, stop1, ..., startN, stopN, 0}.
     /// \param merge set to true if new font should be merged to last active font.
     /// \return ImFont instance that may be used for setting current font when drawing GUI.
-    ImFont* AddFont(const String& fontPath, const unsigned short* ranges, float size = 0, bool merge = false);
-    /// Add font to imgui subsystem.
-    /// \param fontPath a string pointing to TTF font resource.
-    /// \param size a font size. If 0 then size of last font is used.
-    /// \param ranges optional ranges of font that should be used. Parameter is std::initializer_list of {start1, stop1, ..., startN, stopN, 0}.
-    /// \param merge set to true if new font should be merged to last active font.
-    /// \return ImFont instance that may be used for setting current font when drawing GUI.
-    ImFont* AddFont(const String& fontPath, const std::initializer_list<unsigned short>& ranges = {}, float size = 0,
-        bool merge = false);
+    ImFont* AddFont(const String& fontPath, const ImWchar* ranges = nullptr, float size = 0, bool merge = false);
     /// Apply built-in system ui style.
     /// \param darkStyle enables dark style, otherwise it is a light style.
     /// \param alpha value between 0.0f - 1.0f
@@ -84,6 +76,8 @@ public:
     bool IsAnyItemHovered() const;
     /// Return font scale.
     float GetFontScale() const { return fontScale_; }
+    /// Prepares font textures, updates projection matrix and does other things that are required to start this subsystem.
+    void Start();
 
 protected:
     float uiZoom_ = 1.f;
@@ -93,6 +87,7 @@ protected:
     IndexBuffer indexBuffer_;
     SharedPtr<Texture2D> fontTexture_;
     PODVector<float> fontSizes_;
+    ImGuiContext* imContext_;
 
     void ReallocateFontTexture();
     void UpdateProjectionMatrix();
@@ -120,12 +115,61 @@ namespace ImGui
 
 URHO3D_API bool IsMouseDown(Urho3D::MouseButton button);
 URHO3D_API bool IsMouseDoubleClicked(Urho3D::MouseButton button);
-URHO3D_API bool IsMouseDragging(Urho3D::MouseButton button, float lock_threshold=-1.f);
+URHO3D_API bool IsMouseDragging(Urho3D::MouseButton button, float lock_threshold=-1.0f);
 URHO3D_API bool IsMouseReleased(Urho3D::MouseButton button);
 URHO3D_API bool IsMouseClicked(Urho3D::MouseButton button, bool repeat=false);
 URHO3D_API bool IsItemClicked(Urho3D::MouseButton button);
 URHO3D_API bool SetDragDropVariant(const char* type, const Urho3D::Variant& variant, ImGuiCond cond = 0);
 URHO3D_API const Urho3D::Variant& AcceptDragDropVariant(const char* type, ImGuiDragDropFlags flags = 0);
+
+namespace litterals
+{
+
+/// Scale a literal value according to x axis DPI.
+URHO3D_API float operator "" _dpx(long double x);
+/// Scale a literal value according to x axis DPI.
+URHO3D_API float operator "" _dpx(unsigned long long x);
+
+/// Scale a literal value according to y axis DPI.
+URHO3D_API float operator "" _dpy(long double y);
+/// Scale a literal value according to y axis DPI.
+URHO3D_API float operator "" _dpy(unsigned long long y);
+
+/// Scale a literal value according to diagonal axis DPI.
+URHO3D_API float operator "" _dp(long double z);
+/// Scale a literal value according to diagonal axis DPI.
+URHO3D_API float operator "" _dp(unsigned long long z);
+
+/// Scale a literal value according to x axis DPI which was rounded to the nearest power of two.
+URHO3D_API float operator "" _pdpx(long double x);
+/// Scale a literal value according to x axis DPI which was rounded to the nearest power of two.
+URHO3D_API float operator "" _pdpx(unsigned long long x);
+
+/// Scale a literal value according to y axis DPI which was rounded to the nearest power of two.
+URHO3D_API float operator "" _pdpy(long double y);
+/// Scale a literal value according to y axis DPI which was rounded to the nearest power of two.
+URHO3D_API float operator "" _pdpy(unsigned long long y);
+
+/// Scale a literal value according to diagonal axis DPI which was rounded to the nearest power of two.
+URHO3D_API float operator "" _pdp(long double z);
+/// Scale a literal value according to diagonal axis DPI which was rounded to the nearest power of two.
+URHO3D_API float operator "" _pdp(unsigned long long z);
+
+}
+
+/// Scale a value according to x axis DPI.
+URHO3D_API float dpx(float x);
+/// Scale a value according to y axis DPI.
+URHO3D_API float dpy(float y);
+/// Scale a value according to diagonal axis DPI.
+URHO3D_API float dp(float z);
+
+/// Scale a literal value according to x axis DPI which was rounded to the nearest power of two.
+URHO3D_API float pdpx(float x);
+/// Scale a literal value according to y axis DPI which was rounded to the nearest power of two.
+URHO3D_API float pdpy(float y);
+/// Scale a literal value according to diagonal axis DPI which was rounded to the nearest power of two.
+URHO3D_API float pdp(float z);
 
 }
 

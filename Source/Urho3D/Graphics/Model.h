@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -41,7 +41,7 @@ class VertexBuffer;
 struct VertexBufferMorph
 {
     /// Vertex elements.
-    unsigned elementMask_;
+    VertexMaskFlags elementMask_;
     /// Number of vertices.
     unsigned vertexCount_;
     /// Morphed vertices data size as bytes.
@@ -53,6 +53,18 @@ struct VertexBufferMorph
 /// Definition of a model's vertex morph.
 struct ModelMorph
 {
+    /// Instance equality operator.
+    bool operator ==(const ModelMorph& rhs) const
+    {
+        return this == &rhs;
+    }
+
+    /// Instance inequality operator.
+    bool operator !=(const ModelMorph& rhs) const
+    {
+        return this != &rhs;
+    }
+
     /// Morph name.
     String name_;
     /// Morph name hash.

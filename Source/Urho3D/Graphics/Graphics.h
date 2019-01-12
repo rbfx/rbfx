@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -127,7 +127,7 @@ public:
     /// End frame rendering and swap buffers.
     void EndFrame();
     /// Clear any or all of rendertarget, depth buffer and stencil buffer.
-    void Clear(unsigned flags, const Color& color = Color::TRANSPARENT, float depth = 1.0f, unsigned stencil = 0);
+    void Clear(ClearTargetFlags flags, const Color& color = Color::TRANSPARENT_BLACK, float depth = 1.0f, unsigned stencil = 0);
     /// Resolve multisampled backbuffer to a texture rendertarget. The texture's size should match the viewport size.
     bool ResolveToTexture(Texture2D* destination, const IntRect& viewport);
     /// Resolve a multisampled texture on itself.
@@ -578,16 +578,6 @@ public:
 
     /// Get the SDL_Window as a void* to avoid having to include the graphics implementation
     void* GetSDLWindow() { return window_; }
-    /// Returns the index of the display containing the center of the window on success or a negative error code on failure.
-    int GetCurrentMonitor();
-    /// Returns number of monitors currently connected.
-    int GetNumMonitors();
-    /// Returns true if window is maximized or runs in full screen mode.
-    bool GetMaximized();
-    /// Returns resolution of monitor. monitorId should be less or equal to result of GetNumMonitors().
-    IntVector2 GetMonitorResolution(int monitorId) const;
-    /// Raises window if it was minimized.
-    void RaiseWindow();
 
 private:
     /// Create the application window.
@@ -697,6 +687,8 @@ private:
     bool dxtTextureSupport_{};
     /// ETC1 format support flag.
     bool etcTextureSupport_{};
+    /// ETC2 format support flag.
+    bool etc2TextureSupport_{};
     /// PVRTC formats support flag.
     bool pvrtcTextureSupport_{};
     /// Hardware shadow map depth compare support flag.

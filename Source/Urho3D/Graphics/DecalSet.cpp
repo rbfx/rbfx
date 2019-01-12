@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2018 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -56,9 +56,9 @@ static const unsigned MIN_INDICES = 6;
 static const unsigned MAX_VERTICES = 65536;
 static const unsigned DEFAULT_MAX_VERTICES = 512;
 static const unsigned DEFAULT_MAX_INDICES = 1024;
-static const unsigned STATIC_ELEMENT_MASK = MASK_POSITION | MASK_NORMAL | MASK_TEXCOORD1 | MASK_TANGENT;
-static const unsigned SKINNED_ELEMENT_MASK = MASK_POSITION | MASK_NORMAL | MASK_TEXCOORD1 | MASK_TANGENT | MASK_BLENDWEIGHTS |
-                                             MASK_BLENDINDICES;
+static const VertexMaskFlags STATIC_ELEMENT_MASK = MASK_POSITION | MASK_NORMAL | MASK_TEXCOORD1 | MASK_TANGENT;
+static const VertexMaskFlags SKINNED_ELEMENT_MASK = MASK_POSITION | MASK_NORMAL | MASK_TEXCOORD1 | MASK_TANGENT |
+    MASK_BLENDWEIGHTS | MASK_BLENDINDICES;
 
 static DecalVertex ClipEdge(const DecalVertex& v0, const DecalVertex& v1, float d0, float d1, bool skinned)
 {
@@ -153,9 +153,9 @@ void Decal::CalculateBoundingBox()
 
 DecalSet::DecalSet(Context* context) :
     Drawable(context, DRAWABLE_GEOMETRY),
-    geometry_(new Geometry(context)),
-    vertexBuffer_(new VertexBuffer(context_)),
-    indexBuffer_(new IndexBuffer(context_)),
+    geometry_(context->CreateObject<Geometry>()),
+    vertexBuffer_(context_->CreateObject<VertexBuffer>()),
+    indexBuffer_(context_->CreateObject<IndexBuffer>()),
     numVertices_(0),
     numIndices_(0),
     maxVertices_(DEFAULT_MAX_VERTICES),
@@ -302,7 +302,7 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
     float aspectRatio, float depth, const Vector2& topLeftUV, const Vector2& bottomRightUV, float timeToLive, float normalCutoff,
     unsigned subGeometry)
 {
-    URHO3D_PROFILE(AddDecal);
+    URHO3D_PROFILE("AddDecal");
 
     // Do not add decals in headless mode
     if (!node_ || !GetSubsystem<Graphics>())
@@ -577,7 +577,7 @@ void DecalSet::SetDecalsAttr(const PODVector<unsigned char>& value)
             Bone& newBone = bones_[i];
 
             newBone.name_ = buffer.ReadString();
-            newBone.collisionMask_ = buffer.ReadUByte();
+            newBone.collisionMask_ = BoneCollisionShapeFlags(buffer.ReadUByte());
             if (newBone.collisionMask_ & BONECOLLISION_SPHERE)
                 newBone.radius_ = buffer.ReadFloat();
             if (newBone.collisionMask_ & BONECOLLISION_BOX)
@@ -1010,7 +1010,7 @@ void DecalSet::CalculateBoundingBox()
 
 void DecalSet::UpdateBuffers()
 {
-    unsigned newElementMask = skinned_ ? SKINNED_ELEMENT_MASK : STATIC_ELEMENT_MASK;
+    const VertexMaskFlags newElementMask = skinned_ ? SKINNED_ELEMENT_MASK : STATIC_ELEMENT_MASK;
     unsigned newVBSize = optimizeBufferSize_ ? numVertices_ : maxVertices_;
     unsigned newIBSize = optimizeBufferSize_ ? numIndices_ : maxIndices_;
 

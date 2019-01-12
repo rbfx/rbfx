@@ -1,0 +1,5 @@
+using System.Reflection;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("Editor, PublicKey=@SNK_PUB_KEY@")]
+[assembly: InternalsVisibleTo("Player, PublicKey=@SNK_PUB_KEY@")]

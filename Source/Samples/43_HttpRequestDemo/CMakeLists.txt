@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2018 the Urho3D project.
+# Copyright (c) 2008-2019 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -24,4 +24,4 @@ if (NOT URHO3D_NETWORK)
     return ()
 endif ()
 
-add_sample (43_HttpRequestDemo)
+add_sample (TARGET 43_HttpRequestDemo)
