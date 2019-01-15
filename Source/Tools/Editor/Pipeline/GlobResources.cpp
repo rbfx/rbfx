@@ -40,7 +40,7 @@ void GlobResources::RegisterObject(Context* context)
 {
     context->RegisterFactory<GlobResources>();
     URHO3D_COPY_BASE_ATTRIBUTES(Converter);
-    URHO3D_ATTRIBUTE_EX("Glob", StringVector, glob_, ConvertGlobToRegex, {}, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("glob", StringVector, glob_, ConvertGlobToRegex, {}, AM_DEFAULT);
 }
 
 void GlobResources::Execute(const StringVector& input)

@@ -44,8 +44,8 @@ void SubprocessExec::RegisterObject(Context* context)
 {
     context->RegisterFactory<SubprocessExec>();
     URHO3D_COPY_BASE_ATTRIBUTES(Converter);
-    URHO3D_ATTRIBUTE("Exec", String, executable_, String::EMPTY, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Args", StringVector, args_, {}, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("exec", String, executable_, String::EMPTY, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("args", StringVector, args_, {}, AM_DEFAULT);
 }
 
 void SubprocessExec::Execute(const StringVector& input)

@@ -33,8 +33,8 @@ Urho3D::Converter::Converter(Urho3D::Context* context)
 
 void Urho3D::Converter::RegisterObject(Context* context)
 {
-    URHO3D_ATTRIBUTE("Comment", String, comment_, String::EMPTY, AM_DEFAULT);
-    URHO3D_ENUM_ATTRIBUTE("Kind", kind_, converterKindNames, CONVERTER_OFFLINE, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("comment", String, comment_, String::EMPTY, AM_DEFAULT);
+    URHO3D_ENUM_ATTRIBUTE("kind", kind_, converterKindNames, CONVERTER_OFFLINE, AM_DEFAULT);
 }
 
 bool Urho3D::Converter::LoadJSON(const Urho3D::JSONValue& source)
@@ -42,7 +42,7 @@ bool Urho3D::Converter::LoadJSON(const Urho3D::JSONValue& source)
     if (!Serializable::LoadJSON(source))
         return false;
 
-    if (source.Contains("Output"))
+    if (source.Contains("output"))
     {
         auto loadConverter = [&](const JSONValue& value) -> bool {
             if (!value.IsObject())
@@ -60,7 +60,7 @@ bool Urho3D::Converter::LoadJSON(const Urho3D::JSONValue& source)
             return true;
         };
 
-        const JSONValue& output = source["Output"];
+        const JSONValue& output = source["output"];
         if (output.IsObject())
         {
             if (!loadConverter(output))
@@ -95,11 +95,11 @@ Urho3D::StringHash Urho3D::Converter::GetSerializedType(const Urho3D::JSONValue&
         return StringHash::ZERO;
     }
 
-    if (!source.Contains("Type"))
+    if (!source.Contains("type"))
     {
         URHO3D_LOGERROR("Source does not contain 'Type' field.");
         return StringHash::ZERO;
     }
 
-    return source["Type"].GetString();
+    return source["type"].GetString();
 }
