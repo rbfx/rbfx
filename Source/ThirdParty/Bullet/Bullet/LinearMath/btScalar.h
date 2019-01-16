@@ -79,12 +79,11 @@ inline int	btGetVersion()
             //Do not turn SSE on for ARM (may want to turn on BT_USE_NEON however)
 
 // Urho3D: allow to disable SSE
-#elif ((!defined(_M_IX86_FP) || _M_IX86_FP) && defined (_WIN32) && (_MSC_VER) && _MSC_VER >= 1400) && (!defined (BT_USE_DOUBLE_PRECISION))
+#elif ((!defined(_M_IX86_FP) || _M_IX86_FP) && defined (_WIN32) && (_MSC_VER) && _MSC_VER >= 1400) && (!defined (BT_USE_DOUBLE_PRECISION)) && defined(BT_USE_SSE)
 			#if _MSC_VER>1400
 				#define BT_USE_SIMD_VECTOR3
 			#endif
 
-			#define BT_USE_SSE
 			#ifdef BT_USE_SSE
 
 #if (_MSC_FULL_VER >= 170050727)//Visual Studio 2012 can compile SSE4/FMA3 (but SSE4/FMA3 is not enabled by default)
