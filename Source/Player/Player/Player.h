@@ -37,9 +37,13 @@ class BakedResourceRouter : public ResourceRouter
     URHO3D_OBJECT(BakedResourceRouter, ResourceRouter);
 public:
     ///
-    explicit BakedResourceRouter(Context* context) : ResourceRouter(context) { }
+    explicit BakedResourceRouter(Context* context);
     ///
     void Route(String& name, ResourceRequest requestType) override;
+
+protected:
+    ///
+    HashMap<String, String> routes_;
 };
 
 class Player : public Application

@@ -35,6 +35,28 @@ namespace Urho3D
 {
 
 class Converter;
+class Pipeline;
+
+struct ResourcePathLock
+{
+    explicit ResourcePathLock(Pipeline* pipeline, const String& resourcePath);
+
+    ~ResourcePathLock();
+
+    operator bool() { return true; }
+
+    ResourcePathLock(ResourcePathLock&& other) noexcept
+    {
+        Swap(pipeline_, other.pipeline_);
+        Swap(resourcePath_, other.resourcePath_);
+    }
+
+protected:
+    ///
+    Pipeline* pipeline_{};
+    ///
+    String resourcePath_{};
+};
 
 class Pipeline : public Serializable
 {
@@ -50,17 +72,49 @@ public:
     void EnableWatcher();
     /// Execute asset converters specified in `converterKinds` in worker threads. Returns immediately.
     void BuildCache(ConverterKinds converterKinds);
+    /// Returns true when assets in the cache are older than source asset.
+    bool IsCacheOutOfDate(const String& resourceName) const;
+    /// Remove any cached assets belonging to specified resource.
+    void ClearCache(const String& resourceName);
+    /// Remove from cache all outdated assets and assets with source asset that no longer exists.
+    void VacuumCache();
+    /// Register converted asset with the pipeline.
+    void AddCacheEntry(const String& resourceName, const String& cacheResourceName);
+    /// Register converted asset with the pipeline.
+    void AddCacheEntry(const String& resourceName, const StringVector& cacheResourceNames);
+    /// Acquire lock on resource path. Returns object whose lifetime is controls lifetime of the lock. Subsequent calls
+    /// when same `resourcePath` is specified will block until result of this function is destroyed.
+    /// This "lock" is used to prevent multiple pipeline converters from writing to same folder at the same time. Reason
+    /// is that converter process can be anything and it likely does not output any information of written files.
+    /// Pipeline needs to track converted files however and this is done by diffing file trees before and after conversion.
+    ResourcePathLock LockResourcePath(const String& resourcePath);
 
 protected:
-    /// Converts asset. Blocks calling thread.
-    void ConvertAssets(const StringVector& resourceNames, ConverterKinds converterKinds);
+    friend class ResourcePathLock;
+
     /// Watches for changed files and requests asset conversion if needed.
     void DispatchChangedAssets();
+    ///
+    void SaveCacheInfo();
+
+    struct CacheEntry
+    {
+        /// Modification time of source file.
+        unsigned mtime_;
+        /// List of files that
+        StringVector files_;
+    };
 
     /// Collection of top level converters defined in pipeline.
     Vector<SharedPtr<Converter>> converters_;
     /// List of file watchers responsible for watching game data folders for asset changes.
     FileWatcher watcher_;
+    ///
+    HashMap<String, CacheEntry> cacheInfo_;
+    ///
+    Mutex lock_{};
+    ///
+    StringVector lockedPaths_{};
 };
 
 }

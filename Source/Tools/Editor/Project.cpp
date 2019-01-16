@@ -275,8 +275,8 @@ bool Project::LoadProject(const String& projectPath)
 
     if (!GetEngine()->IsHeadless())
     {
+        pipeline_.VacuumCache();
         pipeline_.EnableWatcher();
-        pipeline_.BuildCache(CONVERTER_ONLINE);
         GetSubsystem<Editor>()->UpdateWindowTitle();
     }
 

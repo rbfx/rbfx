@@ -30,14 +30,17 @@ namespace Urho3D
 
 enum ConverterKind
 {
+    /// Converter will not be executed.
+    CONVERTER_DISABLED,
     /// converter will only run when explicitly invoked.
-    CONVERTER_OFFLINE = 1,
+    CONVERTER_OFFLINE,
     /// Converter is executed whenever source assets are modified.
     CONVERTER_ONLINE,
 };
 URHO3D_FLAGSET(ConverterKind, ConverterKinds);
 
 static const char* converterKindNames[] = {
+    "disabled",
     "offline",
     "online",
     nullptr

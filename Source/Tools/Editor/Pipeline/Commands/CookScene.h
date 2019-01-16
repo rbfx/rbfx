@@ -44,6 +44,8 @@ public:
 protected:
     ///
     String input_;
+    ///
+    String output_;
 };
 
 }

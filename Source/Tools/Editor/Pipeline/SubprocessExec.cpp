@@ -31,7 +31,7 @@
 namespace Urho3D
 {
 
-static StringVector subprocessLogMsgBlacklist{
+static const char* subprocessLogMsgBlacklist[] = {
     "ERROR: No texture created, can not set data",  // 2D scenes load texture data. This error is benign.
 };
 
@@ -45,14 +45,17 @@ void SubprocessExec::RegisterObject(Context* context)
     context->RegisterFactory<SubprocessExec>();
     URHO3D_COPY_BASE_ATTRIBUTES(Converter);
     URHO3D_ATTRIBUTE("exec", String, executable_, String::EMPTY, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("output", String, output_, String::EMPTY, AM_DEFAULT);
     URHO3D_ATTRIBUTE("args", StringVector, args_, {}, AM_DEFAULT);
 }
 
 void SubprocessExec::Execute(const StringVector& input)
 {
     auto* project = GetSubsystem<Project>();
+    const String& cachePath = project->GetCachePath();
     String editorExecutable = GetFileSystem()->GetProgramFileName();
     String executable = executable_;
+    String output, outputRelative;
 
     auto insertVariables = [&](const String& arg, const String& resourceName=String::EMPTY) {
         return Format(arg,
@@ -61,24 +64,59 @@ void SubprocessExec::Execute(const StringVector& input)
             fmt::arg("resource_path", project->GetResourcePath() + resourceName),
             fmt::arg("project_path", RemoveTrailingSlash(project->GetProjectPath())),
             fmt::arg("cache_path", RemoveTrailingSlash(project->GetCachePath())),
-            fmt::arg("editor", editorExecutable)
+            fmt::arg("editor", editorExecutable),
+            fmt::arg("output", output)
         );
     };
     executable = insertVariables(executable);
+
     if (!IsAbsolutePath(executable))
         executable = GetPath(GetFileSystem()->GetProgramFileName()) + executable;
 
     for (const String& resourceName : input)
     {
+        StringVector outputFiles;
+        output = outputRelative = insertVariables(output_, resourceName);
+        output = cachePath + output;
         StringVector args = args_;
         // Insert variables to args
         for (String& arg : args)
             arg = insertVariables(arg, resourceName);
 
-        String output;
-        int result = GetFileSystem()->SystemRun(executable, args, output);
+        int result = 0;
+        String logOutput;
+        HashMap<String, unsigned> dirListingBefore;
+        if (project->GetPipeline().LockResourcePath(output))
+        {
+            // Scan output path
+            StringVector list;
+            if (GetFileSystem()->DirExists(output))
+            {
+                GetFileSystem()->ScanDir(list, output, "*", SCAN_FILES, true);
+                for (const String& path : list)
+                    dirListingBefore[path] = GetFileSystem()->GetLastModifiedTime(output + path);
+            }
 
-        StringVector lines = output.Split('\n');
+            // Execute converter
+            result = GetFileSystem()->SystemRun(executable, args, logOutput);
+
+            if (GetFileSystem()->DirExists(output))
+            {
+                // Scan output path again
+                GetFileSystem()->ScanDir(list, output, "*", SCAN_FILES, true);
+                for (const String& path : list)
+                {
+                    if (!dirListingBefore.Contains(path) ||
+                        dirListingBefore[path] < GetFileSystem()->GetLastModifiedTime(output + path))
+                        // Record new or changed files
+                        outputFiles.EmplaceBack(outputRelative + path);
+                }
+            }
+            else if (GetFileSystem()->FileExists(output))
+                outputFiles.EmplaceBack(outputRelative);
+        }
+
+        StringVector lines = logOutput.Split('\n');
         for (const String& line : lines)
         {
             if (!line.StartsWith("["))
@@ -86,7 +124,7 @@ void SubprocessExec::Execute(const StringVector& input)
                 continue;
 
             bool blacklisted = false;
-            for (const String& blacklistedMsg : subprocessLogMsgBlacklist)
+            for (const char* blacklistedMsg : subprocessLogMsgBlacklist)
             {
                 if (line.EndsWith(blacklistedMsg))
                 {
@@ -105,10 +143,12 @@ void SubprocessExec::Execute(const StringVector& input)
 
         if (result != 0)
             URHO3D_LOGERROR("Failed SubprocessExec({}): {} {}", result, executable, String::Joined(args, " "));
-    }
 
-    // Outputs of subprocess can not be known.
-    Converter::Execute({ });
+        if (!output_.Empty())
+            project->GetPipeline().AddCacheEntry(resourceName, outputFiles);
+
+        Converter::Execute(outputFiles);
+    }
 }
 
 }

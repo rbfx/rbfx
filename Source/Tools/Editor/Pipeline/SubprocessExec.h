@@ -44,6 +44,8 @@ protected:
     ///
     String executable_;
     ///
+    String output_;
+    ///
     StringVector args_;
 };
 
