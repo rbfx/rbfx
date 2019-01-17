@@ -40,7 +40,6 @@ rbfx uses the following third-party libraries:
 - libcpuid 0.4.0+ (https://github.com/anrieff/libcpuid)
 - LZ4 1.7.5 (https://github.com/lz4/lz4)
 - MojoShader (https://icculus.org/mojoshader)
-- Mustache 1.0 (https://mustache.github.io, https://github.com/kainjow/Mustache)
 - Open Asset Import Library 4.1.0 (http://assimp.sourceforge.net)
 - pugixml 1.7 (http://pugixml.org)
 - rapidjson 1.1.0 (https://github.com/miloyip/rapidjson)

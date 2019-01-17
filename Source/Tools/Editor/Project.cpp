@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2018 Rokas Kupstys
+// Copyright (c) 2017-2019 Rokas Kupstys.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -275,8 +275,8 @@ bool Project::LoadProject(const String& projectPath)
 
     if (!GetEngine()->IsHeadless())
     {
+        pipeline_.VacuumCache();
         pipeline_.EnableWatcher();
-        pipeline_.BuildCache(CONVERTER_ONLINE);
         GetSubsystem<Editor>()->UpdateWindowTitle();
     }
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2018 Rokas Kupstys
+// Copyright (c) 2017-2019 Rokas Kupstys.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -49,6 +49,7 @@ void CookScene::RegisterObject(Context* context)
 void CookScene::RegisterCommandLine(CLI::App& cli)
 {
     cli.add_option("--input", input_, "XML scene file.")->required();
+    cli.add_option("--output", output_, "Resulting binary scene file.");
     cli.set_callback([this]() {
         GetSubsystem<Editor>()->GetEngineParameters()[EP_HEADLESS] = true;
     });
@@ -76,17 +77,16 @@ void CookScene::Execute()
             // Cook scene
             assert(input_.StartsWith(project->GetResourcePath()));
             auto resourceName = input_.Substring(project->GetResourcePath().Length());
-            auto outputFile = project->GetCachePath() + ReplaceExtension(resourceName, ".bin");
-            GetFileSystem()->CreateDirsRecursive(GetPath(outputFile));
+            GetFileSystem()->CreateDirsRecursive(GetPath(output_));
 
             File output(context_);
-            if (output.Open(outputFile, FILE_WRITE))
+            if (output.Open(output_, FILE_WRITE))
             {
                 if (!scene.Save(output))
                     GetSubsystem<Editor>()->ErrorExit(Format("Could not convert '%s' to binary version.", input_.CString()));
             }
             else
-                GetSubsystem<Editor>()->ErrorExit(Format("Could not open '%s' for writing.", outputFile.CString()));
+                GetSubsystem<Editor>()->ErrorExit(Format("Could not open '%s' for writing.", output_.CString()));
         }
         else
             GetSubsystem<Editor>()->ErrorExit(Format("Could not open load scene '%s'.", input_.CString()));

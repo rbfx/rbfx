@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2018 Rokas Kupstys
+// Copyright (c) 2017-2019 Rokas Kupstys.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -37,9 +37,13 @@ class BakedResourceRouter : public ResourceRouter
     URHO3D_OBJECT(BakedResourceRouter, ResourceRouter);
 public:
     ///
-    explicit BakedResourceRouter(Context* context) : ResourceRouter(context) { }
+    explicit BakedResourceRouter(Context* context);
     ///
     void Route(String& name, ResourceRequest requestType) override;
+
+protected:
+    ///
+    HashMap<String, String> routes_;
 };
 
 class Player : public Application

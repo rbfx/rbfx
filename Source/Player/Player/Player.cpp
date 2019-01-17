@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2018 Rokas Kupstys
+// Copyright (c) 2017-2019 Rokas Kupstys.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -254,33 +254,25 @@ bool Player::LoadAssembly(const String& path, PluginType assumeType)
 }
 #endif
 
+BakedResourceRouter::BakedResourceRouter(Context* context)
+    : ResourceRouter(context)
+{
+    SharedPtr<JSONFile> file(GetCache()->GetResource<JSONFile>("CacheInfo.json"));
+    if (file.NotNull())
+    {
+        const auto& info = file->GetRoot().GetObject();
+        for (auto it = info.Begin(); it != info.End(); it++)
+        {
+            const JSONArray& files = it->second_["files"].GetArray();
+            if (files.Size() == 1)
+                routes_[it->first_] = files[0].GetString();
+        }
+    }
+}
+
 void BakedResourceRouter::Route(String& name, ResourceRequest requestType)
 {
-    auto useResourceIfExists = [&](const char* expectedExtension) -> bool {
-        String testResourceName = ReplaceExtension(name, ".bin");
-        if (GetCache()->Exists(testResourceName))
-        {
-            name = testResourceName;
-            return true;
-        }
-        return false;
-    };
-
-    String extension = GetExtension(name);
-
-    // Early exit for cooked files
-    if (extension == ".bin" || extension == ".dds")
-        return;
-
-    // XML scenes are serialized to .bin files.
-    if (extension == ".xml" && useResourceIfExists(".bin"))
-        return;
-    // Textures are may be compressed as .dds files.
-    else if (extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".bmp")
-    {
-        if (useResourceIfExists(".dds"))
-            return;
-    }
+    routes_.TryGetValue(name, name);
 }
 
 }
