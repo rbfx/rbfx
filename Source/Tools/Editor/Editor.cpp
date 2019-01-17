@@ -251,6 +251,7 @@ void Editor::ExecuteSubcommand(SubCommand* cmd)
 
 void Editor::Stop()
 {
+    GetWorkQueue()->Complete(0);
     if (auto* manager = GetSubsystem<SceneManager>())
         manager->UnloadAll();
     CloseProject();

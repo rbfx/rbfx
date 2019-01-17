@@ -31,6 +31,38 @@
 namespace Urho3D
 {
 
+bool MatchesAny(const String& string, const Vector<std::regex>& patterns)
+{
+    for (const std::regex& regex : patterns)
+    {
+        if (std::regex_match(string.CString(), regex))
+            return true;
+    }
+    return false;
+}
+
+std::regex GlobToRegex(const String& expression)
+{
+    String regex = expression;
+    regex.Replace("^", "\\^");
+    regex.Replace("$", "\\$");
+    regex.Replace("{", "\\{");
+    regex.Replace("}", "\\}");
+    regex.Replace("[", "\\[");
+    regex.Replace("]", "\\]");
+    regex.Replace("(", "\\(");
+    regex.Replace(")", "\\)");
+    regex.Replace(".", "\\.");
+    regex.Replace("+", "\\+");
+    regex.Replace("?", "\\?");
+    regex.Replace("<", "\\<");
+    regex.Replace(">", "\\>");
+    regex.Replace("*", "@");
+    regex.Replace("@@", ".*");
+    regex.Replace("@", "[^/]*");
+    return std::regex(regex.CString());
+}
+
 GlobResources::GlobResources(Context* context)
     : Converter(context)
 {
@@ -48,17 +80,7 @@ void GlobResources::Execute(const StringVector& input)
     StringVector results = input;
     for (auto it = results.Begin(); it != results.End();)
     {
-        bool matched = false;
-        for (const std::regex& regex : regex_)
-        {
-            if (std::regex_match(it->CString(), regex))
-            {
-                matched = true;
-                break;
-            }
-        }
-
-        if (matched)
+        if (MatchesAny(*it, regex_))
             ++it;
         else
             it = results.Erase(it);
@@ -69,29 +91,8 @@ void GlobResources::Execute(const StringVector& input)
 
 void GlobResources::ConvertGlobToRegex()
 {
-    auto globToRegex = [](const String& expression) {
-        String regex = expression;
-        regex.Replace("^", "\\^");
-        regex.Replace("$", "\\$");
-        regex.Replace("{", "\\{");
-        regex.Replace("}", "\\}");
-        regex.Replace("[", "\\[");
-        regex.Replace("]", "\\]");
-        regex.Replace("(", "\\(");
-        regex.Replace(")", "\\)");
-        regex.Replace(".", "\\.");
-        regex.Replace("+", "\\+");
-        regex.Replace("?", "\\?");
-        regex.Replace("<", "\\<");
-        regex.Replace(">", "\\>");
-        regex.Replace("*", "@");
-        regex.Replace("@@/", "(.*/)?");
-        regex.Replace("@", "[^/]*");
-        return std::regex(regex.CString());
-    };
-
     for (const String& glob : glob_)
-        regex_.Push(globToRegex(glob));
+        regex_.Push(GlobToRegex(glob));
 }
 
 }

@@ -40,6 +40,10 @@ public:
     void RegisterCommandLine(CLI::App& cli) override;
     ///
     void Execute() override;
+
+protected:
+    ///
+    int full_ = 0;
 };
 
 }

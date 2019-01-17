@@ -34,8 +34,10 @@ enum ConverterKind
     CONVERTER_DISABLED,
     /// converter will only run when explicitly invoked.
     CONVERTER_OFFLINE,
-    /// Converter is executed whenever source assets are modified.
+    /// Converter will run only when user is working in the editor.
     CONVERTER_ONLINE,
+    /// Converter will run only when user is working in the editor.
+    CONVERTER_ALWAYS,
 };
 URHO3D_FLAGSET(ConverterKind, ConverterKinds);
 
@@ -43,6 +45,7 @@ static const char* converterKindNames[] = {
     "disabled",
     "offline",
     "online",
+    "always",
     nullptr
 };
 

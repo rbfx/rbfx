@@ -71,13 +71,11 @@ public:
     /// Watch directory for changed assets and automatically convert them.
     void EnableWatcher();
     /// Execute asset converters specified in `converterKinds` in worker threads. Returns immediately.
-    void BuildCache(ConverterKinds converterKinds);
+    void BuildCache(ConverterKinds converterKinds, const StringVector& files={}, bool complete=false);
     /// Returns true when assets in the cache are older than source asset.
     bool IsCacheOutOfDate(const String& resourceName) const;
     /// Remove any cached assets belonging to specified resource.
     void ClearCache(const String& resourceName);
-    /// Remove from cache all outdated assets and assets with source asset that no longer exists.
-    void VacuumCache();
     /// Register converted asset with the pipeline.
     void AddCacheEntry(const String& resourceName, const String& cacheResourceName);
     /// Register converted asset with the pipeline.
@@ -87,22 +85,32 @@ public:
     /// This "lock" is used to prevent multiple pipeline converters from writing to same folder at the same time. Reason
     /// is that converter process can be anything and it likely does not output any information of written files.
     /// Pipeline needs to track converted files however and this is done by diffing file trees before and after conversion.
+    /// Should be called from workers only.
     ResourcePathLock LockResourcePath(const String& resourcePath);
+    ///
+    void SetSkipUpToDateAssets(bool skip) { skipUpToDateAssets_ = skip; }
+    ///
+    void Reschedule(const String& resourceName);
 
 protected:
     friend class ResourcePathLock;
+    friend class Project;
 
     /// Watches for changed files and requests asset conversion if needed.
     void DispatchChangedAssets();
     ///
     void SaveCacheInfo();
+    ///
+    void StartWorkItems(ConverterKinds converterKinds, const StringVector& resourcePaths);
+    ///
+    void HandleEndFrame(StringHash, VariantMap&);
 
     struct CacheEntry
     {
         /// Modification time of source file.
         unsigned mtime_;
         /// List of files that
-        StringVector files_;
+        HashSet<String> files_;
     };
 
     /// Collection of top level converters defined in pipeline.
@@ -115,6 +123,12 @@ protected:
     Mutex lock_{};
     ///
     StringVector lockedPaths_{};
+    ///
+    std::atomic<bool> cacheInfoOutOfDate_{false};
+    ///
+    bool skipUpToDateAssets_ = false;
+    ///
+    StringVector reschedule_;
 };
 
 }
