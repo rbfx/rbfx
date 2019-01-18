@@ -26,3 +26,7 @@ target_include_directories(Detour
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include/Detour>
 )
+
+if (NOT URHO3D_MERGE_STATIC_LIBS)
+    install(TARGETS Detour EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+endif ()

@@ -28,3 +28,7 @@ elseif (APPLE)
 endif ()
 
 install (DIRECTORY src/include/nativefiledialog DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/nativefiledialog FILES_MATCHING PATTERN *.h)
+
+if (NOT URHO3D_MERGE_STATIC_LIBS)
+    install(TARGETS nativefiledialog EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+endif ()

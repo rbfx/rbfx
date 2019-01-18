@@ -36,3 +36,7 @@ target_include_directories(GLEW
 if (WIN32)
     target_link_libraries(GLEW opengl32.lib)
 endif ()
+
+if (NOT URHO3D_MERGE_STATIC_LIBS)
+    install(TARGETS GLEW EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+endif ()

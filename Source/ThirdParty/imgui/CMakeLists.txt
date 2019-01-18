@@ -46,3 +46,7 @@ if (URHO3D_CSHARP)
     target_link_libraries(ImGuiCSharp PUBLIC Urho3D)
     add_dependencies(ImGuiNet Urho3DCSharp)
 endif ()
+
+if (NOT URHO3D_MERGE_STATIC_LIBS)
+    install(TARGETS ImGui EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+endif ()

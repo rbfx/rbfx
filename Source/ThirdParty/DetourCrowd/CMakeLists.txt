@@ -27,3 +27,7 @@ target_include_directories(DetourCrowd
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include>
     PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include/DetourCrowd>
 )
+
+if (NOT URHO3D_MERGE_STATIC_LIBS)
+    install(TARGETS DetourCrowd EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+endif ()

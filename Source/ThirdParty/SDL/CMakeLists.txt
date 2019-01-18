@@ -1512,3 +1512,7 @@ endif ()
 # Install headers for building and using the Urho3D library (install dependency for InputEvents.h)
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)    # Note: the trailing slash is significant
 install (FILES ${SDL2_BINARY_DIR}/include/SDL/generated/SDL_config.h DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/SDL)
+
+if (NOT URHO3D_MERGE_STATIC_LIBS)
+  install(TARGETS SDL EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+endif ()

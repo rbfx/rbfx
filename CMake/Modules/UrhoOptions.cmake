@@ -96,6 +96,7 @@ cmake_dependent_option(URHO3D_TOOLS              "Tools enabled"                
 option                (URHO3D_SAMPLES            "Build samples"                                         OFF)
 option                (URHO3D_PACKAGING          "Package resources"                                     OFF)
 option                (URHO3D_DOCS               "Build documentation."                                  OFF)
+cmake_dependent_option(URHO3D_MERGE_STATIC_LIBS  "Merge third party dependency libs to Urho3D.a"         OFF "NOT BUILD_SHARED_LIBS"                          OFF)
 
 if (WIN32)
     set(URHO3D_RENDERER D3D11 CACHE STRING "Select renderer: D3D9 | D3D11 | OpenGL")

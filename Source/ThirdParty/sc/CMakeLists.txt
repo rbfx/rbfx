@@ -69,3 +69,7 @@ target_compile_options(sc
 
 target_include_directories(sc
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+
+if (NOT URHO3D_MERGE_STATIC_LIBS)
+    install(TARGETS sc EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+endif ()

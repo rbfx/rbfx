@@ -145,7 +145,6 @@ endif ()
 # Link dependencies
 set (THIRD_PARTY_DEPENDENCIES
     FreeType
-    JO
     LZ4
     PugiXml
     rapidjson
@@ -162,7 +161,6 @@ set (THIRD_PARTY_DEPENDENCIES
     Recast
     Box2D
     WebP
-    Bullet
     ImGui
     LibCpuId
     GLEW
@@ -176,6 +174,13 @@ set (THIRD_PARTY_DEPENDENCIES
 
 if (BUILD_SHARED_LIBS AND NOT MSVC AND NOT APPLE)
     target_link_libraries(Urho3D PRIVATE -Wl,--whole-archive)
+endif ()
+
+if (URHO3D_MERGE_STATIC_LIBS)
+    list (APPEND THIRD_PARTY_DEPENDENCIES Bullet)
+elseif (TARGET Bullet)
+    # This library can not be exported from .dll on windows platforms.
+    target_link_libraries(Urho3D PUBLIC Bullet)
 endif ()
 
 foreach (dep ${THIRD_PARTY_DEPENDENCIES})
@@ -210,7 +215,7 @@ foreach (dep ${THIRD_PARTY_DEPENDENCIES})
                 endif ()
             endforeach ()
         endif ()
-        if (BUILD_SHARED_LIBS)
+        if (BUILD_SHARED_LIBS OR NOT URHO3D_MERGE_STATIC_LIBS)
             target_link_libraries(Urho3D PRIVATE ${dep})
         else ()
             if (${_TARGET_TYPE} STREQUAL "STATIC_LIBRARY")
@@ -341,7 +346,7 @@ if (MINI_URHO)
     return ()
 endif ()
 
-if (NOT BUILD_SHARED_LIBS)
+if (URHO3D_MERGE_STATIC_LIBS)
     # Merge static libraries of third party dependencies to final engine static library
     add_custom_command (TARGET Urho3D PRE_BUILD COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:Urho3D>)
     if (MSVC)
