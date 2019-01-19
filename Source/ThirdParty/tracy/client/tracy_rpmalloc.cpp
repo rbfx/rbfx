@@ -101,9 +101,10 @@
 #    include <pthread.h>
 #  endif
 #  define ALIGNED_STRUCT(name, alignment) struct __attribute__((__aligned__(alignment))) name
-#  ifndef FORCEINLINE
-#    define FORCEINLINE inline __attribute__((__always_inline__))
+#  ifdef FORCEINLINE
+#    undef FORCEINLINE
 #  endif
+#  define FORCEINLINE inline __attribute__((__always_inline__))
 #  ifdef __arm__
 #    define atomic_thread_fence_acquire() __asm volatile("dmb ish" ::: "memory")
 #    define atomic_thread_fence_release() __asm volatile("dmb ishst" ::: "memory")
