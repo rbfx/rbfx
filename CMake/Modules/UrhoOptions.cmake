@@ -20,22 +20,24 @@
 # THE SOFTWARE.
 #
 
-# Source environment
-if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
-    execute_process(COMMAND cmd /c set OUTPUT_VARIABLE ENVIRONMENT)
-else ()
-    execute_process(COMMAND env OUTPUT_VARIABLE ENVIRONMENT)
-endif ()
-string(REGEX REPLACE "=[^\n]*\n?" ";" ENVIRONMENT "${ENVIRONMENT}")
-set(IMPORT_URHO3D_VARIABLES_FROM_ENV BUILD_SHARED_LIBS MINI_URHO SWIG_EXECUTABLE SWIG_DIR)
-foreach(key ${ENVIRONMENT})
-    list (FIND IMPORT_URHO3D_VARIABLES_FROM_ENV ${key} _index)
-    if ("${key}" MATCHES "^(URHO3D_|CMAKE_|ANDROID_).+" OR ${_index} GREATER -1)
-        if (NOT DEFINED ${key})
-            set (${key} $ENV{${key}} CACHE STRING "" FORCE)
-        endif ()
+if (NOT MINI_URHO)
+    # Source environment
+    if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
+        execute_process(COMMAND cmd /c set OUTPUT_VARIABLE ENVIRONMENT)
+    else ()
+        execute_process(COMMAND env OUTPUT_VARIABLE ENVIRONMENT)
     endif ()
-endforeach()
+    string(REGEX REPLACE "=[^\n]*\n?" ";" ENVIRONMENT "${ENVIRONMENT}")
+    set(IMPORT_URHO3D_VARIABLES_FROM_ENV BUILD_SHARED_LIBS MINI_URHO SWIG_EXECUTABLE SWIG_DIR)
+    foreach(key ${ENVIRONMENT})
+        list (FIND IMPORT_URHO3D_VARIABLES_FROM_ENV ${key} _index)
+        if ("${key}" MATCHES "^(URHO3D_|CMAKE_|ANDROID_).+" OR ${_index} GREATER -1)
+            if (NOT DEFINED ${key})
+                set (${key} $ENV{${key}} CACHE STRING "" FORCE)
+            endif ()
+        endif ()
+    endforeach()
+endif ()
 
 # Set platform variables
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
@@ -62,7 +64,7 @@ include(CMakeDependentOption)
 option(BUILD_SHARED_LIBS                        "Build engine as shared library."       ON)
 option(URHO3D_ENABLE_ALL                        "Enable (almost) all engine features."  ON)
 option(URHO3D_STATIC_RUNTIME                    "Link to static runtime"               OFF)
-set    (URHO3D_SSE            SSE2 CACHE STRING "Enable SSE instructions")
+set   (URHO3D_SSE             SSE2 CACHE STRING "Enable SSE instructions")
 
 # Subsystems
 option                (URHO3D_IK                 "Inverse kinematics subsystem enabled"                  ${URHO3D_ENABLE_ALL})
