@@ -1,7 +1,6 @@
 #ifdef __MINGW32__
 #  define __STDC_FORMAT_MACROS
 #endif
-
 #include <algorithm>
 #include <assert.h>
 #include <chrono>
@@ -294,46 +293,10 @@ static View* s_instance = nullptr;
 View::View( const char* addr, ImFont* fixedWidth, SetTitleCallback stcb )
     : m_worker( addr )
     , m_staticView( false )
-    , m_frameScale( 0 )
     , m_pause( false )
-    , m_frameStart( 0 )
-    , m_zvStart( 0 )
-    , m_zvEnd( 0 )
-    , m_zvHeight( 0 )
-    , m_zvScroll( 0 )
-    , m_zoneInfoWindow( nullptr )
-    , m_zoneSrcLocHighlight( 0 )
-    , m_lockHighlight { -1 }
-    , m_msgHighlight( nullptr )
-    , m_msgToFocus( nullptr )
-    , m_gpuInfoWindow( nullptr )
-    , m_callstackInfoWindow( 0 )
-    , m_memoryAllocInfoWindow( -1 )
-    , m_memoryAllocHover( -1 )
-    , m_memoryAllocHoverWait( 0 )
     , m_frames( nullptr )
-    , m_lockInfoWindow( InvalidId )
-    , m_gpuThread( 0 )
-    , m_gpuStart( 0 )
-    , m_gpuEnd( 0 )
-    , m_showOptions( false )
-    , m_showMessages( false )
-    , m_showStatistics( false )
-    , m_showInfo( false )
-    , m_drawGpuZones( true )
-    , m_drawZones( true )
-    , m_drawLocks( true )
-    , m_drawPlots( true )
-    , m_onlyContendedLocks( true )
-    , m_goToFrame( false )
-    , m_statSort( 0 )
-    , m_statSelf( false )
-    , m_showCallstackFrameAddress( false )
-    , m_showUnknownFrames( true )
-    , m_namespace( Namespace::Full )
     , m_textEditorFont( fixedWidth )
     , m_stcb( stcb )
-    , m_titleSet( false )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -344,48 +307,16 @@ View::View( const char* addr, ImFont* fixedWidth, SetTitleCallback stcb )
 View::View( FileRead& f, ImFont* fixedWidth, SetTitleCallback stcb )
     : m_worker( f )
     , m_staticView( true )
-    , m_frameScale( 0 )
     , m_pause( true )
-    , m_frameStart( 0 )
-    , m_zvStart( 0 )
-    , m_zvEnd( 0 )
-    , m_zvHeight( 0 )
-    , m_zvScroll( 0 )
-    , m_zoneInfoWindow( nullptr )
-    , m_zoneSrcLocHighlight( 0 )
-    , m_msgHighlight( nullptr )
-    , m_msgToFocus( nullptr )
-    , m_gpuInfoWindow( nullptr )
-    , m_callstackInfoWindow( 0 )
-    , m_memoryAllocInfoWindow( -1 )
-    , m_memoryAllocHover( -1 )
-    , m_memoryAllocHoverWait( 0 )
     , m_frames( m_worker.GetFramesBase() )
-    , m_lockInfoWindow( InvalidId )
-    , m_gpuThread( 0 )
-    , m_gpuStart( 0 )
-    , m_gpuEnd( 0 )
-    , m_showOptions( false )
-    , m_showMessages( false )
-    , m_showStatistics( false )
-    , m_showInfo( false )
-    , m_drawGpuZones( true )
-    , m_drawZones( true )
-    , m_drawLocks( true )
-    , m_drawPlots( true )
-    , m_onlyContendedLocks( true )
-    , m_goToFrame( false )
-    , m_statSort( 0 )
-    , m_statSelf( false )
-    , m_showCallstackFrameAddress( false )
-    , m_showUnknownFrames( true )
-    , m_namespace( Namespace::Full )
     , m_textEditorFont( fixedWidth )
     , m_stcb( stcb )
-    , m_titleSet( false )
 {
     assert( s_instance == nullptr );
     s_instance = this;
+
+    m_notificationTime = 4;
+    m_notificationText = std::string( "Trace loaded in " ) + TimeToString( m_worker.GetLoadTime() );
 
     InitTextEditor();
     SetViewToLastFrames();
@@ -492,6 +423,12 @@ bool View::Draw()
         ImGui::OpenPopup( "Client not ready" );
     }
 
+    const auto& failure = s_instance->m_worker.GetFailureType();
+    if( failure != Worker::Failure::None )
+    {
+        ImGui::OpenPopup( "Instrumentation failure" );
+    }
+
     if( ImGui::BeginPopupModal( "Protocol mismatch", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
 #ifdef TRACY_EXTENDED_FONT
@@ -520,6 +457,48 @@ bool View::Draw()
             ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
             return false;
+        }
+        ImGui::EndPopup();
+    }
+
+    if( ImGui::BeginPopupModal( "Instrumentation failure", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+    {
+        const auto& data = s_instance->m_worker.GetFailureData();
+
+#ifdef TRACY_EXTENDED_FONT
+        TextCentered( ICON_FA_SKULL );
+#endif
+        ImGui::Text( "Profiling session terminated due to improper instrumentation.\nPlease correct your program and try again." );
+        ImGui::Text( "Reason:" );
+        ImGui::SameLine();
+        ImGui::Text( "%s", Worker::GetFailureString( failure ) );
+        ImGui::Separator();
+        if( data.srcloc != 0 )
+        {
+            const auto& srcloc = s_instance->m_worker.GetSourceLocation( data.srcloc );
+            if( srcloc.name.active )
+            {
+                TextFocused( "Zone name:", s_instance->m_worker.GetString( srcloc.name ) );
+            }
+            TextFocused( "Function:", s_instance->m_worker.GetString( srcloc.function ) );
+            ImGui::TextDisabled( "Location:" );
+            ImGui::SameLine();
+            ImGui::Text( "%s:%i", s_instance->m_worker.GetString( srcloc.file ), srcloc.line );
+        }
+        TextFocused( "Thread:", s_instance->m_worker.GetThreadString( data.thread ) );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(id)" );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::Text( "0x%" PRIX64, data.thread );
+            ImGui::EndTooltip();
+        }
+        ImGui::Separator();
+        if( ImGui::Button( "I understand" ) )
+        {
+            ImGui::CloseCurrentPopup();
+            s_instance->m_worker.ClearFailure();
         }
         ImGui::EndPopup();
     }
@@ -555,6 +534,18 @@ bool View::DrawImpl()
         bool wasCancelled = ImGui::Button( "Cancel" );
         ImGui::End();
         return !wasCancelled;
+    }
+
+    const auto& io = ImGui::GetIO();
+
+    assert( m_shortcut == ShortcutAction::None );
+    if( io.KeyCtrl )
+    {
+        if( ImGui::IsKeyPressed( 'F' ) )
+        {
+            m_findZone.show = true;
+            m_shortcut = ShortcutAction::OpenFind;
+        }
     }
 
     if( !m_frames ) m_frames = m_worker.GetFramesBase();
@@ -752,6 +743,12 @@ bool View::DrawImpl()
 #else
     ImGui::Text( "View span: %-10s Time span: %-10s ", TimeToString( m_zvEnd - m_zvStart ), TimeToString( m_worker.GetLastTime() - m_worker.GetTimeBegin() ) );
 #endif
+    if( m_notificationTime > 0 )
+    {
+        m_notificationTime -= io.DeltaTime;
+        ImGui::SameLine();
+        ImGui::TextDisabled( "%s", m_notificationText.c_str() );
+    }
     DrawFrames();
     DrawZones();
     ImGui::End();
@@ -775,7 +772,6 @@ bool View::DrawImpl()
     if( m_goToFrame ) DrawGoToFrame();
     if( m_lockInfoWindow != InvalidId ) DrawLockInfoWindow();
 
-    const auto& io = ImGui::GetIO();
     if( m_zoomAnim.active )
     {
         m_zoomAnim.progress += io.DeltaTime * m_zoomAnim.lenMod;
@@ -2771,7 +2767,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 auto next = GetNextLockFunc( vbegin, vend, state, threadBit );
 
                 const auto t0 = (*vbegin)->time;
-                int64_t t1 = next == tl.end() ? m_lastTime : (*next)->time;
+                int64_t t1 = next == tl.end() ? m_worker.GetLastTime() : (*next)->time;
                 const auto px0 = std::max( pxend, ( t0 - m_zvStart ) * pxns );
                 auto tx0 = px0;
                 double px1 = ( t1 - m_zvStart ) * pxns;
@@ -2793,7 +2789,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     }
                     drawState = CombineLockState( drawState, state );
                     condensed++;
-                    const auto t2 = n == tl.end() ? m_lastTime : (*n)->time;
+                    const auto t2 = n == tl.end() ? m_worker.GetLastTime() : (*n)->time;
                     const auto px2 = ( t2 - m_zvStart ) * pxns;
                     if( px2 - px1 > MinVisSize ) break;
                     if( drawState != ns && px2 - px0 > MinVisSize && !( ns == LockState::Nothing || ( m_onlyContendedLocks && ns == LockState::HasLock ) ) ) break;
@@ -4540,17 +4536,23 @@ void View::DrawOptions()
             ImGui::PushID( idx++ );
             ImGui::Checkbox( m_worker.GetThreadString( t->id ), &Visible( t ) );
             ImGui::PopID();
-            ImGui::SameLine();
-            ImGui::TextDisabled( "%s top level zones", RealToString( t->timeline.size(), true ) );
             if( crash.thread == t->id )
             {
                 ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
+                ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL );
+                if( ImGui::IsItemHovered() )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::Text( "Crashed" );
+                    ImGui::EndTooltip();
+                }
 #else
                 ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
 #endif
             }
+            ImGui::SameLine();
+            ImGui::TextDisabled( "%s top level zones", RealToString( t->timeline.size(), true ) );
         }
         ImGui::TreePop();
     }
@@ -4713,6 +4715,8 @@ uint64_t View::GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::G
 
 void View::DrawFindZone()
 {
+    if( m_shortcut == ShortcutAction::OpenFind ) ImGui::SetNextWindowFocus();
+
     ImGui::Begin( "Find zone", &m_findZone.show );
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
@@ -4728,6 +4732,11 @@ void View::DrawFindZone()
     bool findClicked = false;
 
     ImGui::PushItemWidth( -0.01f );
+    if( m_shortcut == ShortcutAction::OpenFind )
+    {
+        ImGui::SetKeyboardFocusHere();
+        m_shortcut = ShortcutAction::None;
+    }
     findClicked |= ImGui::InputText( "", m_findZone.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
     ImGui::PopItemWidth();
 
@@ -6762,7 +6771,6 @@ void View::DrawInfo()
             auto& frames = m_frameSortData.data;
             const auto tmin = frames.front();
             const auto tmax = frames.back();
-            const auto timeTotal = m_frameSortData.total;
 
             if( tmin != std::numeric_limits<int64_t>::max() )
             {
@@ -8039,7 +8047,7 @@ void View::DrawAllocList()
 
     ImGui::Begin( "Allocations list", &m_memInfo.showAllocList );
     TextFocused( "Number of allocations:", RealToString( m_memInfo.allocList.size(), true ) );
-    ListMemData<decltype( data.begin() )>( data.begin(), data.end(), [this]( auto& v ) {
+    ListMemData<decltype( data.begin() )>( data.begin(), data.end(), []( auto& v ) {
         ImGui::Text( "0x%" PRIx64, (*v)->ptr );
     }, "##allocations" );
     ImGui::End();

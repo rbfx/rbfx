@@ -179,6 +179,11 @@ int main( int argc, char** argv )
         std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     }
 
+    const auto& failure = worker.GetFailureType();
+    if( failure != tracy::Worker::Failure::None )
+    {
+        printf( "\n\033[31;1mInstrumentation failure: %s\033[0m", tracy::Worker::GetFailureString( failure ) );
+    }
     printf( "\nFrames: %" PRIu64 "\nTime span: %s\nZones: %s\nSaving trace...", worker.GetFrameCount( *worker.GetFramesBase() ), TimeToString( worker.GetLastTime() - worker.GetTimeBegin() ), RealToString( worker.GetZoneCount(), true ) );
     fflush( stdout );
     auto f = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output ) );

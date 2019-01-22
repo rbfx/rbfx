@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <regex>
 
 #include "Converter.h"
 
@@ -47,6 +48,8 @@ protected:
     String output_;
     ///
     StringVector args_;
+    /// A list of glob expressions which will reschedule converted files for consumption through pipeline if matched.
+    StringVector reschedule_;
 };
 
 }

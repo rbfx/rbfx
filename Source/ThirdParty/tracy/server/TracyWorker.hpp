@@ -170,7 +170,25 @@ private:
         };
     };
 
+    struct FailureData
+    {
+        uint64_t thread;
+        int32_t srcloc;
+    };
+
 public:
+    enum class Failure
+    {
+        None,
+        ZoneStack,
+        ZoneEnd,
+        ZoneText,
+        ZoneName,
+        MemFree,
+
+        NUM_FAILURES
+    };
+
     Worker( const char* addr );
     Worker( FileRead& f, EventType::Type eventMask = EventType::All );
     ~Worker();
@@ -267,17 +285,24 @@ public:
     uint8_t GetHandshakeStatus() const { return m_handshake.load( std::memory_order_relaxed ); }
 
     static const LoadProgress& GetLoadProgress() { return s_loadProgress; }
+    int64_t GetLoadTime() const { return m_loadTime; }
+
+    void ClearFailure() { m_failure = Failure::None; }
+    Failure GetFailureType() const { return m_failure; }
+    const FailureData& GetFailureData() const { return m_failureData; }
+    static const char* GetFailureString( Failure failure );
 
 private:
     void Exec();
     void ServerQuery( uint8_t type, uint64_t data );
 
-    tracy_force_inline void DispatchProcess( const QueueItem& ev, char*& ptr );
-    tracy_force_inline void Process( const QueueItem& ev );
+    tracy_force_inline bool DispatchProcess( const QueueItem& ev, char*& ptr );
+    tracy_force_inline bool Process( const QueueItem& ev );
     tracy_force_inline void ProcessZoneBegin( const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneBeginCallstack( const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneEnd( const QueueZoneEnd& ev );
+    tracy_force_inline void ProcessZoneValidation( const QueueZoneValidation& ev );
     tracy_force_inline void ProcessFrameMark( const QueueFrameMark& ev );
     tracy_force_inline void ProcessFrameMarkStart( const QueueFrameMark& ev );
     tracy_force_inline void ProcessFrameMarkEnd( const QueueFrameMark& ev );
@@ -311,6 +336,12 @@ private:
 
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );
     tracy_force_inline void ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev );
+
+    void ZoneStackFailure( uint64_t thread, const ZoneEvent* ev );
+    void ZoneEndFailure( uint64_t thread );
+    void ZoneTextFailure( uint64_t thread );
+    void ZoneNameFailure( uint64_t thread );
+    void MemFreeFailure( uint64_t thread );
 
     tracy_force_inline void CheckSourceLocation( uint64_t ptr );
     void NewSourceLocation( uint64_t ptr );
@@ -352,20 +383,20 @@ private:
     uint16_t CompressThreadReal( uint64_t thread );
     uint16_t CompressThreadNew( uint64_t thread );
 
-    tracy_force_inline void ReadTimeline( FileRead& f, ZoneEvent* zone, uint16_t thread );
-    tracy_force_inline void ReadTimelinePre033( FileRead& f, ZoneEvent* zone, uint16_t thread, int fileVer );
-    tracy_force_inline void ReadTimeline( FileRead& f, GpuEvent* zone );
-    tracy_force_inline void ReadTimelinePre032( FileRead& f, GpuEvent* zone );
+    tracy_force_inline void ReadTimeline( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_t& refTime );
+    tracy_force_inline void ReadTimelinePre042( FileRead& f, ZoneEvent* zone, uint16_t thread, int fileVer );
+    tracy_force_inline void ReadTimeline( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime );
+    tracy_force_inline void ReadTimelinePre042( FileRead& f, GpuEvent* zone, int fileVer );
 
     tracy_force_inline void ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread );
 
-    void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size );
-    void ReadTimelinePre033( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int fileVer );
-    void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size );
-    void ReadTimelinePre032( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size );
+    void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int64_t& refTime );
+    void ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int fileVer );
+    void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime );
+    void ReadTimelinePre042( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int fileVer );
 
-    void WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec );
-    void WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec );
+    void WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec, int64_t& refTime );
+    void WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec, int64_t& refTime, int64_t& refGpuTime );
 
     int64_t TscTime( int64_t tsc ) { return int64_t( tsc * m_timerMul ); }
     int64_t TscTime( uint64_t tsc ) { return int64_t( tsc * m_timerMul ); }
@@ -374,9 +405,9 @@ private:
     std::string m_addr;
 
     std::thread m_thread;
-    std::atomic<bool> m_connected;
+    std::atomic<bool> m_connected = { false };
     std::atomic<bool> m_hasData;
-    std::atomic<bool> m_shutdown;
+    std::atomic<bool> m_shutdown = { false };
 
     std::thread m_threadMemory, m_threadZones;
 
@@ -387,8 +418,8 @@ private:
     std::string m_captureProgram;
     uint64_t m_captureTime;
     std::string m_hostInfo;
-    bool m_terminate;
-    bool m_crashed;
+    bool m_terminate = false;
+    bool m_crashed = false;
     LZ4_streamDecode_t* m_stream;
     char* m_buffer;
     int m_bufferOffset;
@@ -417,9 +448,13 @@ private:
     MbpsBlock m_mbpsData;
 
     int m_traceVersion;
-    std::atomic<uint8_t> m_handshake;
+    std::atomic<uint8_t> m_handshake = { 0 };
 
     static LoadProgress s_loadProgress;
+    int64_t m_loadTime;
+
+    Failure m_failure = Failure::None;
+    FailureData m_failureData;
 };
 
 }

@@ -1,4 +1,4 @@
-#if defined _WIN32
+#if defined _MSC_VER || defined __CYGWIN__ || defined _WIN32
 # ifndef WIN32_LEAN_AND_MEAN
 #  define WIN32_LEAN_AND_MEAN
 # endif
@@ -8,9 +8,6 @@
 #endif
 #ifdef _WIN32
 #  include <windows.h>
-#  ifdef __MINGW32__
-#    define __STDC_FORMAT_MACROS
-#  endif
 #else
 #  include <pthread.h>
 #  include <string.h>
@@ -24,6 +21,9 @@
 #   include <fcntl.h>
 #endif
 
+#ifdef __MINGW32__
+#  define __STDC_FORMAT_MACROS
+#endif
 #include <inttypes.h>
 #include <stdio.h>
 
@@ -54,7 +54,7 @@ void SetThreadName( std::thread& thread, const char* name )
 
 void SetThreadName( std::thread::native_handle_type handle, const char* name )
 {
-#ifdef _MSC_VER
+#if defined _WIN32 && !defined PTW32_VERSION && !defined __WINPTHREADS_VERSION
 #  if defined NTDDI_WIN10_RS2 && NTDDI_VERSION >= NTDDI_WIN10_RS2
     wchar_t buf[256];
     mbstowcs( buf, name, 256 );
@@ -86,7 +86,7 @@ void SetThreadName( std::thread::native_handle_type handle, const char* name )
     {
     }
 #  endif
-#elif defined _GNU_SOURCE && !defined __EMSCRIPTEN__ || defined __MINGW32__
+#elif defined _GNU_SOURCE && !defined __EMSCRIPTEN__
     {
         const auto sz = strlen( name );
         if( sz <= 15 )
@@ -110,12 +110,14 @@ void SetThreadName( std::thread::native_handle_type handle, const char* name )
         memcpy( buf, name, sz );
         buf[sz+1] = '\0';
         auto data = (ThreadNameData*)tracy_malloc( sizeof( ThreadNameData ) );
-#  if defined PTW32_VERSION
+#  ifdef _WIN32
+#    if defined PTW32_VERSION
         data->id = pthread_getw32threadid_np( static_cast<pthread_t>( handle ) );
-#  elif defined __WINPTHREADS_VERSION
+#    elif defined __WINPTHREADS_VERSION
         data->id = GetThreadId( pthread_gethandle( static_cast<pthread_t>( handle ) ) );
-#  elif defined _WIN32
+#    else
         data->id = GetThreadId( static_cast<HANDLE>( handle ) );
+#    endif
 #  elif defined __APPLE__
         pthread_threadid_np( handle, &data->id );
 #  else

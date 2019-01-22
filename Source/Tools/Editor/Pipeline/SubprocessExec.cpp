@@ -21,11 +21,13 @@
 //
 
 #include <Urho3D/Core/Context.h>
+#include <Urho3D/Engine/Engine.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Resource/JSONValue.h>
 #include "Project.h"
 #include "SubprocessExec.h"
+#include "GlobResources.h"
 
 
 namespace Urho3D
@@ -45,8 +47,9 @@ void SubprocessExec::RegisterObject(Context* context)
     context->RegisterFactory<SubprocessExec>();
     URHO3D_COPY_BASE_ATTRIBUTES(Converter);
     URHO3D_ATTRIBUTE("exec", String, executable_, String::EMPTY, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("output", String, output_, String::EMPTY, AM_DEFAULT);
     URHO3D_ATTRIBUTE("args", StringVector, args_, {}, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("output", String, output_, String::EMPTY, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("reschedule", StringVector, reschedule_, {}, AM_DEFAULT);
 }
 
 void SubprocessExec::Execute(const StringVector& input)
@@ -58,10 +61,14 @@ void SubprocessExec::Execute(const StringVector& input)
     String output, outputRelative;
 
     auto insertVariables = [&](const String& arg, const String& resourceName=String::EMPTY) {
+        String resourcePath = project->GetResourcePath() + resourceName;
+        if (!GetFileSystem()->Exists(resourcePath))
+            resourcePath = project->GetCachePath() + resourceName;
+
         return Format(arg,
             fmt::arg("resource_name", resourceName),
-            fmt::arg("resource_name_noext", GetPath(resourceName) + GetFileName(resourceName)),
-            fmt::arg("resource_path", project->GetResourcePath() + resourceName),
+            fmt::arg("resource_name_noext", GetParentPath(resourceName) + GetFileName(resourceName)),
+            fmt::arg("resource_path", resourcePath),
             fmt::arg("project_path", RemoveTrailingSlash(project->GetProjectPath())),
             fmt::arg("cache_path", RemoveTrailingSlash(project->GetCachePath())),
             fmt::arg("editor", editorExecutable),
@@ -119,10 +126,6 @@ void SubprocessExec::Execute(const StringVector& input)
         StringVector lines = logOutput.Split('\n');
         for (const String& line : lines)
         {
-            if (!line.StartsWith("["))
-                // Not a log message.
-                continue;
-
             bool blacklisted = false;
             for (const char* blacklistedMsg : subprocessLogMsgBlacklist)
             {
@@ -135,9 +138,16 @@ void SubprocessExec::Execute(const StringVector& input)
 
             if (!blacklisted)
             {
-                bool error = line.Contains("] ERROR: ") || line.StartsWith("ERROR: ");
-                Log::WriteRaw(line, error);
-                Log::WriteRaw("\n", error);
+                if (line.StartsWith("["))
+                {
+                    bool error = line.Contains("] ERROR: ") || line.StartsWith("ERROR: ");
+                    Log::WriteRaw(line, error);
+                    Log::WriteRaw("\n", error);
+                }
+                else if (GetEngine()->IsHeadless())
+                {
+                    URHO3D_LOGINFO(line);
+                }
             }
         }
 
@@ -146,6 +156,22 @@ void SubprocessExec::Execute(const StringVector& input)
 
         if (!output_.Empty())
             project->GetPipeline().AddCacheEntry(resourceName, outputFiles);
+
+        if (!reschedule_.Empty())
+        {
+            Vector<std::regex> reschedulePatterns;
+            for (const String& glob : reschedule_)
+                reschedulePatterns.Push(GlobToRegex(insertVariables(glob, resourceName)));
+
+            // In some cases processing file may produce extra files that should be once again processed by the pipeline.
+            // For example fbx model may contain embedded textures which get extracted to Cache folder upon conversion.
+            // We want those textures to be compressed to hardware-supported format.
+            for (const String& outputFile : outputFiles)
+            {
+                if (MatchesAny(outputFile, reschedulePatterns))
+                    project->GetPipeline().Reschedule(outputFile);
+            }
+        }
 
         Converter::Execute(outputFiles);
     }

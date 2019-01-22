@@ -22,7 +22,7 @@
 
 namespace tracy
 {
-#if defined(_MSC_VER) || __MINGW32__
+#ifdef _WIN32
 #  define DLL_IMPORT __declspec(dllimport)
 #else
 #  define DLL_IMPORT

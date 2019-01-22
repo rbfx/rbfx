@@ -78,6 +78,8 @@ Project::Project(Context* context)
 
 Project::~Project()
 {
+    pipeline_.SaveCacheInfo();
+
     if (GetSystemUI())
         ui::GetIO().IniFilename = nullptr;
 
@@ -275,7 +277,7 @@ bool Project::LoadProject(const String& projectPath)
 
     if (!GetEngine()->IsHeadless())
     {
-        pipeline_.VacuumCache();
+        pipeline_.BuildCache(CONVERTER_ALWAYS);
         pipeline_.EnableWatcher();
         GetSubsystem<Editor>()->UpdateWindowTitle();
     }

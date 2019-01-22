@@ -23,6 +23,7 @@
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/WorkQueue.h>
+#include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Resource/JSONValue.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/IO/FileSystem.h>
@@ -41,14 +42,12 @@ Pipeline::Pipeline(Context* context)
     : Serializable(context)
     , watcher_(context)
 {
-    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) {
-        DispatchChangedAssets();
-    });
+    if (!GetEngine()->IsHeadless())
+        SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Pipeline, HandleEndFrame));
 }
 
 Pipeline::~Pipeline()
 {
-    GetWorkQueue()->Complete(0);
 }
 
 bool Pipeline::LoadJSON(const JSONValue& source)
@@ -91,8 +90,8 @@ bool Pipeline::LoadJSON(const JSONValue& source)
         if (!file.LoadFile(project->GetCachePath() + "CacheInfo.json"))
         {
             // Empty cache.
-//            GetFileSystem()->RemoveDir(project->GetCachePath(), true);
-//            GetFileSystem()->CreateDir(project->GetCachePath());
+            GetFileSystem()->RemoveDir(project->GetCachePath(), true);
+            GetFileSystem()->CreateDir(project->GetCachePath());
             return true;
         }
 
@@ -108,7 +107,7 @@ bool Pipeline::LoadJSON(const JSONValue& source)
             entry.mtime_ = it->second_["mtime"].GetUInt();
             const auto& files = it->second_["files"];
             for (unsigned i = 0, size = files.Size(); i < size; i++)
-                entry.files_.Push(files[i].GetString());
+                entry.files_.Insert(files[i].GetString());
         }
     }
 
@@ -122,36 +121,69 @@ void Pipeline::EnableWatcher()
     watcher_.StartWatching(project->GetResourcePath(), true);
 }
 
-void Pipeline::BuildCache(ConverterKinds converterKinds)
+void Pipeline::BuildCache(ConverterKinds converterKinds, const StringVector& files, bool complete)
 {
-    GetWorkQueue()->AddWorkItem([this, converterKinds]()
+    auto* project = GetSubsystem<Project>();
+
+    // Schedule asset conversion
+    StringVector resourcePaths{files};
+
+    // If we are not processing explicit list of files - process all resources.
+    if (resourcePaths.Empty())
     {
-        auto* project = GetSubsystem<Project>();
-        for (auto& converter : converters_)
+        // Clean stale cache items
+        StringVector resourceFiles, cacheFiles;
+        GetFileSystem()->ScanDir(resourceFiles, project->GetResourcePath(), "*", SCAN_FILES, true);
+        GetFileSystem()->ScanDir(cacheFiles, project->GetCachePath(), "*", SCAN_FILES, true);
+
+        // Remove cache items that no longer correspond to existing resource
+        for (const String& resourceName : cacheInfo_.Keys())
         {
-            if ((converterKinds& converter->GetKind()) == converter->GetKind())
+            // Source asset may be in resources dir or in cache dir.
+            if (!resourceFiles.Contains(resourceName) && !cacheFiles.Contains(resourceName))
+                ClearCache(resourceName);
+        }
+
+        resourcePaths = resourceFiles;
+    }
+
+    // Remove up to date entries from processing
+    if (skipUpToDateAssets_)
+    {
+        for (auto it = resourcePaths.Begin(); it != resourcePaths.End();)
+        {
+            if (IsCacheOutOfDate(*it))
+                // Pass to converter
+                ++it;
+            else
+                // Ignore
+                it = resourcePaths.Erase(it);
+        }
+    }
+
+    if (resourcePaths.Empty())
+        return;
+
+    cacheInfoOutOfDate_ = true;
+    StartWorkItems(converterKinds, resourcePaths);
+
+    while (complete && !GetWorkQueue()->IsCompleted(0))
+    {
+        Time::Sleep(100);
+        {
+            MutexLock lock(lock_);
+            if (!reschedule_.Empty())
             {
-                StringVector resourcePaths, cachePaths;
-                GetFileSystem()->ScanDir(resourcePaths, project->GetResourcePath(), "*", SCAN_FILES, true);
-                GetFileSystem()->ScanDir(cachePaths, project->GetCachePath(), "*", SCAN_FILES, true);
-                resourcePaths.Push(cachePaths);
-
-                for (auto it = resourcePaths.Begin(); it != resourcePaths.End();)
-                {
-                    if (IsCacheOutOfDate(*it))
-                        // Pass to converter
-                        ++it;
-                    else
-                        // Ignore
-                        it = resourcePaths.Erase(it);
-                }
-
-                if (!resourcePaths.Empty())
-                    converter->Execute(resourcePaths);
+                StartWorkItems(converterKinds, reschedule_);
+                reschedule_.Clear();
             }
         }
-        SaveCacheInfo();
-    });
+        if (GetEngine()->IsHeadless())
+        {
+            // Give a chance to logging system to flush it's logs.
+            SendEvent(E_ENDFRAME);
+        }
+    }
 }
 
 void Pipeline::DispatchChangedAssets()
@@ -167,7 +199,7 @@ void Pipeline::DispatchChangedAssets()
     }
 
     if (modified)
-        VacuumCache();
+        BuildCache(CONVERTER_ALWAYS);
 }
 
 bool Pipeline::IsCacheOutOfDate(const String& resourceName) const
@@ -180,6 +212,12 @@ bool Pipeline::IsCacheOutOfDate(const String& resourceName) const
     unsigned mtime = GetFileSystem()->GetLastModifiedTime(project->GetResourcePath() + resourceName);
     if (mtime == 0)
         mtime = GetFileSystem()->GetLastModifiedTime(project->GetCachePath() + resourceName);
+
+    for (const String& cachedFile : it->second_.files_)
+    {
+        if (!GetFileSystem()->Exists(project->GetCachePath() + cachedFile))
+            return true;
+    }
 
     return it->second_.mtime_ < mtime;
 }
@@ -196,28 +234,23 @@ void Pipeline::ClearCache(const String& resourceName)
     {
         const String& fullPath = project->GetCachePath() + cacheFile;
         GetFileSystem()->Delete(fullPath);
+
+        for (String parentPath = GetParentPath(fullPath);; parentPath = GetParentPath(parentPath))
+        {
+            if (!GetFileSystem()->DirExists(parentPath))
+                continue;
+            StringVector result;
+            GetFileSystem()->ScanDir(result, parentPath, "*", SCAN_FILES|SCAN_DIRS|SCAN_HIDDEN, false);
+            result.Remove(".");
+            result.Remove("..");
+            if (result.Empty())
+                GetFileSystem()->RemoveDir(parentPath, false);
+            else
+                break;
+        }
     }
 
     cacheInfo_.Erase(it);
-}
-
-void Pipeline::VacuumCache()
-{
-    auto* project = GetSubsystem<Project>();
-
-    StringVector resourceFiles, cacheFiles;
-    GetFileSystem()->ScanDir(resourceFiles, project->GetResourcePath(), "*", SCAN_FILES, true);
-    GetFileSystem()->ScanDir(cacheFiles, project->GetCachePath(), "*", SCAN_FILES, true);
-
-    // Remove cache items that no longer correspond to existing resource
-    for (const String& resourceName : cacheInfo_.Keys())
-    {
-        if (!resourceFiles.Contains(resourceName) && !cacheFiles.Contains(resourceName))
-            ClearCache(resourceName);
-    }
-
-    // Rebuild cache
-    BuildCache(CONVERTER_ONLINE);
 }
 
 void Pipeline::AddCacheEntry(const String& resourceName, const String& cacheResourceName)
@@ -227,17 +260,13 @@ void Pipeline::AddCacheEntry(const String& resourceName, const String& cacheReso
     entry.mtime_ = GetFileSystem()->GetLastModifiedTime(project->GetResourcePath() + resourceName);
     if (entry.mtime_ == 0)
         entry.mtime_ = GetFileSystem()->GetLastModifiedTime(project->GetCachePath() + resourceName);
-    entry.files_.Push(cacheResourceName);
+    entry.files_.Insert(cacheResourceName);
 }
 
 void Pipeline::AddCacheEntry(const String& resourceName, const StringVector& cacheResourceNames)
 {
-    auto* project = GetSubsystem<Project>();
-    CacheEntry& entry = cacheInfo_[resourceName];
-    entry.mtime_ = GetFileSystem()->GetLastModifiedTime(project->GetResourcePath() + resourceName);
-    if (entry.mtime_ == 0)
-        entry.mtime_ = GetFileSystem()->GetLastModifiedTime(project->GetCachePath() + resourceName);
-    entry.files_.Push(cacheResourceNames);
+    for (const String& cacheResourceName : cacheResourceNames)
+        AddCacheEntry(resourceName, cacheResourceName);
 }
 
 ResourcePathLock Pipeline::LockResourcePath(const String& resourcePath)
@@ -268,8 +297,42 @@ void Pipeline::SaveCacheInfo()
         root[resourceName] = en;
     }
 
-    auto* project = GetSubsystem<Project>();
-    file.SaveFile(project->GetCachePath() + "CacheInfo.json");
+    file.SaveFile(GetCache()->GetResourceFileName("CacheInfo.json"));
+}
+
+void Pipeline::Reschedule(const String& resourceName)
+{
+    MutexLock lock(lock_);
+    reschedule_.EmplaceBack(resourceName);
+}
+
+void Pipeline::StartWorkItems(ConverterKinds converterKinds, const StringVector& resourcePaths)
+{
+    for (SharedPtr<Converter> converter : converters_)
+    {
+        if (converterKinds & converter->GetKind())
+        {
+            GetWorkQueue()->AddWorkItem([this, converter, resourcePaths]()
+            {
+                converter->Execute(resourcePaths);
+            });
+        }
+    }
+}
+
+void Pipeline::HandleEndFrame(StringHash, VariantMap&)
+{
+    if (cacheInfoOutOfDate_ && GetWorkQueue()->IsCompleted(0))
+    {
+        cacheInfoOutOfDate_ = false;
+        SaveCacheInfo();
+    }
+
+    DispatchChangedAssets();
+
+    MutexLock lock(lock_);
+    StartWorkItems(CONVERTER_ONLINE, reschedule_);
+    reschedule_.Clear();
 }
 
 ResourcePathLock::ResourcePathLock(Pipeline* pipeline, const String& resourcePath)
@@ -277,11 +340,22 @@ ResourcePathLock::ResourcePathLock(Pipeline* pipeline, const String& resourcePat
     , resourcePath_(resourcePath)
 {
     pipeline->lock_.Acquire();
-    while (pipeline->lockedPaths_.Contains(resourcePath))
+
+    bool isLocked = true;
+    while (isLocked)
     {
-        pipeline->lock_.Release();
-        Time::Sleep(100);
-        pipeline->lock_.Acquire();
+        isLocked = false;
+        for (const String& path : pipeline->lockedPaths_)
+        {
+            if (resourcePath.StartsWith(path))
+            {
+                isLocked = true;
+                pipeline->lock_.Release();
+                Time::Sleep(100);
+                pipeline->lock_.Acquire();
+                break;
+            }
+        }
     }
 
     pipeline->lockedPaths_.Push(resourcePath);

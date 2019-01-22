@@ -81,12 +81,6 @@ matrix:
         - CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/MinGW.cmake
         - CMAKE_SYSTEM_PROCESSOR=x86_64
         - URHO3D_RENDERER=D3D9
-  allow_failures:
-    - <<: *Linux-gcc
-      env:
-        - BUILD_SHARED_LIBS=OFF
-        - EMSCRIPTEN=1
-        - CMAKE_TOOLCHAIN_FILE=CMake/Toolchains/Emscripten.cmake
 
 before_install: |
   eval "${MATRIX_EVAL}"
