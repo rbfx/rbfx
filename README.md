@@ -63,7 +63,7 @@ rbfx uses the following third-party libraries:
 - crunch (https://github.com/Unity-Technologies/crunch/)
 - CLI11 v1.5.1 (https://github.com/CLIUtils/CLI11/)
 - fmt 4.1.0 (http://fmtlib.net)
-- spdlog 0.16.3 (https://github.com/gabime/spdlog)
+- spdlog 1.3.1 (https://github.com/gabime/spdlog)
 
 rbfx optionally uses the following external third-party libraries:
 - Mono (http://www.mono-project.com/download/stable/)
