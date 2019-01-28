@@ -31,7 +31,9 @@ namespace Urho3D
 URHO3D_EVENT(E_LOGMESSAGE, LogMessage)
 {
     URHO3D_PARAM(P_MESSAGE, Message);              // String
+    URHO3D_PARAM(P_LOGGER, Logger);                // String
     URHO3D_PARAM(P_LEVEL, Level);                  // int
+    URHO3D_PARAM(P_TIME, Time);                    // unsigned
 }
 
 /// Async system command execution finished.

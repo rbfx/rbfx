@@ -639,19 +639,19 @@ void Engine::DumpResources(bool dumpFileName)
     const HashMap<StringHash, ResourceGroup>& resourceGroups = cache->GetAllResources();
     if (dumpFileName)
     {
-        URHO3D_LOGRAW("Used resources:\n");
+        URHO3D_LOGINFO("Used resources:\n");
         for (HashMap<StringHash, ResourceGroup>::ConstIterator i = resourceGroups.Begin(); i != resourceGroups.End(); ++i)
         {
             const HashMap<StringHash, SharedPtr<Resource> >& resources = i->second_.resources_;
             if (dumpFileName)
             {
                 for (HashMap<StringHash, SharedPtr<Resource> >::ConstIterator j = resources.Begin(); j != resources.End(); ++j)
-                    URHO3D_LOGRAW(j->second_->GetName() + "\n");
+                    URHO3D_LOGINFO(j->second_->GetName() + "\n");
             }
         }
     }
     else
-        URHO3D_LOGRAW(cache->PrintMemoryUsage() + "\n");
+        URHO3D_LOGINFO(cache->PrintMemoryUsage() + "\n");
 #endif
 }
 
@@ -678,9 +678,9 @@ void Engine::DumpMemory()
         if (block->nBlockUse > 0)
         {
             if (block->szFileName)
-                URHO3D_LOGRAW("Block " + String((int)block->lRequest) + ": " + String(block->nDataSize) + " bytes, file " + String(block->szFileName) + " line " + String(block->nLine) + "\n");
+                URHO3D_LOGINFO("Block " + String((int)block->lRequest) + ": " + String(block->nDataSize) + " bytes, file " + String(block->szFileName) + " line " + String(block->nLine) + "\n");
             else
-                URHO3D_LOGRAW("Block " + String((int)block->lRequest) + ": " + String(block->nDataSize) + " bytes\n");
+                URHO3D_LOGINFO("Block " + String((int)block->lRequest) + ": " + String(block->nDataSize) + " bytes\n");
 
             total += block->nDataSize;
             ++blocks;
@@ -688,9 +688,9 @@ void Engine::DumpMemory()
         block = block->pBlockHeaderPrev;
     }
 
-    URHO3D_LOGRAW("Total allocated memory " + String(total) + " bytes in " + String(blocks) + " blocks\n\n");
+    URHO3D_LOGINFO("Total allocated memory " + String(total) + " bytes in " + String(blocks) + " blocks\n\n");
 #else
-    URHO3D_LOGRAW("DumpMemory() supported on MSVC debug mode only\n\n");
+    URHO3D_LOGINFO("DumpMemory() supported on MSVC debug mode only\n\n");
 #endif
 #endif
 }

@@ -32,6 +32,14 @@
 #include "../IO/IOEvents.h"
 #include "../IO/Log.h"
 
+#include <spdlog/spdlog.h>
+#include <spdlog/logger.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/dist_sink.h>
+#include <spdlog/sinks/base_sink.h>
+#include <spdlog/details/null_mutex.h>
+
+#include <mutex>
 #include <cstdio>
 
 #ifdef __ANDROID__
@@ -42,6 +50,8 @@ extern "C" void SDL_IOS_LogMessage(const char* message);
 #endif
 
 #include "../DebugNew.h"
+#include "Log.h"
+
 
 namespace Urho3D
 {
@@ -57,7 +67,159 @@ const char* logLevelPrefixes[] =
 };
 
 static Log* logInstance = nullptr;
-static bool threadErrorDisplayed = false;
+
+#if defined(IOS) || defined(TVOS)
+template<typename Mutex>
+class IOSSink : public spdlog::sinks::base_sink<Mutex>
+{
+protected:
+    void sink_it_(const spdlog::details::log_msg& msg) override
+    {
+        SDL_IOS_LogMessage(std::string(msg.payload.begin(), msg.payload.end()).c_str());
+    }
+
+    void flush_() override { }
+};
+
+using IOSSink_mt = IOSSink<std::mutex>;
+using IOSSink_st = IOSSink<spdlog::details::null_mutex>;
+#endif
+
+static spdlog::level::level_enum ConvertLogLevel(LogLevel level)
+{
+    switch (level)
+    {
+    case LOG_TRACE:
+        return spdlog::level::trace;
+    case LOG_DEBUG:
+        return spdlog::level::debug;
+    case LOG_INFO:
+        return spdlog::level::info;
+    case LOG_WARNING:
+        return spdlog::level::warn;
+    case LOG_ERROR:
+        return spdlog::level::err;
+    case LOG_NONE:
+        return spdlog::level::off;
+    default:
+        assert(false);
+        return spdlog::level::off;
+    }
+}
+
+static LogLevel ConvertLogLevel(spdlog::level::level_enum level)
+{
+    switch (level)
+    {
+    case spdlog::level::trace:
+        return LOG_TRACE;
+    case spdlog::level::debug:
+        return LOG_DEBUG;
+    case spdlog::level::info:
+        return LOG_INFO;
+    case spdlog::level::warn:
+        return LOG_WARNING;
+    case spdlog::level::err:
+        return LOG_ERROR;
+    case spdlog::level::off:
+        return LOG_NONE;
+    default:
+        assert(false);
+        return LOG_NONE;
+    }
+}
+
+template<typename Mutex>
+class MessageForwarderSink : public spdlog::sinks::base_sink<Mutex>
+{
+protected:
+    void sink_it_(const spdlog::details::log_msg& msg) override
+    {
+        time_t time = std::chrono::system_clock::to_time_t(msg.time);
+        logInstance->SendMessageEvent(ConvertLogLevel(msg.level), time,
+            String(msg.logger_name->c_str()), String(msg.payload.data(), static_cast<unsigned int>(msg.payload.size())));
+    }
+
+    void flush_() override { }
+};
+
+using MessageForwarderSink_mt = MessageForwarderSink<std::mutex>;
+using MessageForwarderSink_st = MessageForwarderSink<spdlog::details::null_mutex>;
+
+Logger::Logger(void* logger)
+    : logger_(logger)
+{
+}
+
+void Logger::WriteFormatted(LogLevel level, const String& message)
+{
+    auto* logger = reinterpret_cast<spdlog::logger*>(logger_);
+
+    switch (level)
+    {
+    case LOG_TRACE:
+        logger->trace(message.CString());
+        break;
+    case LOG_DEBUG:
+        logger->debug(message.CString());
+        break;
+    case LOG_INFO:
+        logger->info(message.CString());
+        break;
+    case LOG_WARNING:
+        logger->warn(message.CString());
+        break;
+    case LOG_ERROR:
+        logger->error(message.CString());
+        break;
+    case LOG_NONE:
+    case MAX_LOGLEVELS:
+        logger->warn("(Unknown log level used!) %s", message.CString());
+        break;
+    }
+}
+
+class LogImpl : public Object
+{
+    URHO3D_OBJECT(LogImpl, Object);
+public:
+    explicit LogImpl(Context* context) : Object(context)
+    {
+        sinkProxy_ = std::make_shared<spdlog::sinks::dist_sink_mt>();
+#if defined(__ANDROID__)
+        platformSink_ = spdlog::android_logger("android", "Urho3D");
+#elif defined(IOS) || defined(TVOS)
+        platformSink_ = std::make_shared<IOSSink_mt>();
+#else
+#if _WIN32
+        platformSink_ = std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>();
+#else
+        platformSink_ = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
+#endif
+#endif
+        sinkProxy_->add_sink(platformSink_);
+        sinkProxy_->add_sink(std::make_shared<MessageForwarderSink_mt>());
+    }
+
+#ifdef __ANDROID__
+    /// Android adb logcat sink
+    std::shared_ptr<spdlog::sinks::android_sink_mt> platformSink_;
+#elif defined(IOS) || defined(TVOS)
+    /// IOS sink.
+    std::shared_ptr<IOSSink_mt> platformSink_;
+#else
+    /// File sink. Only for desktops.
+    std::shared_ptr<spdlog::sinks::basic_file_sink_mt> fileSink_;
+    /// STDOUT sink.
+#if _WIN32
+    std::shared_ptr<spdlog::sinks::wincolor_stdout_sink_mt> platformSink_;
+#else
+    std::shared_ptr<spdlog::sinks::ansicolor_stdout_sink_mt> platformSink_;
+#endif
+#endif
+    /// Sink that forwards messages to all other sinks.
+    std::shared_ptr<spdlog::sinks::dist_sink_mt> sinkProxy_;
+};
 
 Log::Log(Context* context) :
     Object(context),
@@ -66,9 +228,8 @@ Log::Log(Context* context) :
 #else
     level_(LOG_INFO),
 #endif
-    timeStampFormat_(DEFAULT_DATE_TIME_FORMAT),
-    inWrite_(false),
-    quiet_(false)
+    quiet_(false),
+    impl_(new LogImpl(context))
 {
     logInstance = this;
 
@@ -89,34 +250,21 @@ void Log::Open(const String& fileName)
     if (fileName == NULL_DEVICE)
         return;
 
-    if (logFile_ && logFile_->IsOpen())
-    {
-        if (logFile_->GetName() == fileName)
-            return;
-        else
-            Close();
-    }
+    Close();
 
-    logFile_ = new File(context_);
-    if (logFile_->Open(fileName, FILE_WRITE))
-        Write(LOG_INFO, "Opened log file " + fileName);
-    else
-    {
-        logFile_.Reset();
-        Write(LOG_ERROR, "Failed to create log file " + fileName);
-    }
+    impl_->fileSink_ = std::make_shared<spdlog::sinks::basic_file_sink_mt>(fileName.CString());
+    impl_->fileSink_->set_pattern(formatPattern_.CString());
+    impl_->sinkProxy_->add_sink(impl_->fileSink_);
 #endif
 }
 
 void Log::Close()
 {
-#if !defined(__ANDROID__) && !defined(IOS) && !defined(TVOS)
-    if (logFile_ && logFile_->IsOpen())
+    if (impl_->fileSink_)
     {
-        logFile_->Close();
-        logFile_.Reset();
+        impl_->sinkProxy_->remove_sink(impl_->fileSink_);
+        impl_->fileSink_ = nullptr;
     }
-#endif
 }
 
 void Log::SetLevel(LogLevel level)
@@ -128,22 +276,44 @@ void Log::SetLevel(LogLevel level)
     }
 
     level_ = level;
+    spdlog::set_level(ConvertLogLevel(level));
 }
 
 void Log::SetQuiet(bool quiet)
 {
     quiet_ = quiet;
+    impl_->platformSink_->set_level(ConvertLogLevel(quiet ? LOG_NONE : level_));
 }
 
-void Log::Write(LogLevel level, const String& message)
+void Log::SetLogFormat(const String& format)
 {
-    // Special case for LOG_RAW level
-    if (level == LOG_RAW)
+    formatPattern_ = format;
+
+    if (impl_->platformSink_)
+        impl_->platformSink_->set_pattern(format.CString());
+
+    // May not be opened yet if patter is set from Application::Setup().
+    if (impl_->fileSink_)
+        impl_->fileSink_->set_pattern(format.CString());
+}
+
+Logger Log::GetLogger(const char* name)
+{
+    if (name == nullptr)
+        name = "main";
+
+    std::shared_ptr<spdlog::logger> logger(spdlog::get(name));
+    if (!logger)
     {
-        WriteRaw(message, false);
-        return;
+        logger = std::make_shared<spdlog::logger>(std::string(name), logInstance->impl_->sinkProxy_);
+        spdlog::register_logger(logger);
     }
 
+    return Logger(reinterpret_cast<void*>(spdlog::get(name).get()));
+}
+
+void Log::SendMessageEvent(LogLevel level, time_t timestamp, const String& logger, const String& message)
+{
     // No-op if illegal level
     if (level < LOG_TRACE || level >= LOG_NONE)
         return;
@@ -153,126 +323,36 @@ void Log::Write(LogLevel level, const String& message)
     {
         if (logInstance)
         {
-            MutexLock lock(logInstance->logMutex_);
-            logInstance->threadMessages_.Push(StoredLogMessage(message, level, false));
+            MutexLock lock(logMutex_);
+            threadMessages_.Push(StoredLogMessage(level, timestamp, logger, message));
         }
 
         return;
     }
 
-    // Do not log if message level excluded or if currently sending a log event
-    if (!logInstance || logInstance->level_ > level || logInstance->inWrite_)
+    if (inWrite_)
         return;
 
-    String formattedMessage = logLevelPrefixes[level];
-    formattedMessage += ": ";
-    formattedMessage += String(' ', 7 - formattedMessage.Length());
-    formattedMessage += message;
-    logInstance->lastMessage_ = message;
-
-    if (!logInstance->timeStampFormat_.Empty())
-        formattedMessage = "[" + Time::GetTimeStamp(logInstance->timeStampFormat_) + "] " + formattedMessage;
-
-    URHO3D_PROFILE_MESSAGE(formattedMessage.CString(), formattedMessage.Length());
-
-#if defined(__ANDROID__)
-    int androidLevel = ANDROID_LOG_VERBOSE + level;
-    __android_log_print(androidLevel, "Urho3D", "%s", message.CString());
-#elif defined(IOS) || defined(TVOS)
-    SDL_IOS_LogMessage(message.CString());
-#else
-    if (logInstance->quiet_)
-    {
-        // If in quiet mode, still print the error message to the standard error stream
-        if (level == LOG_ERROR)
-            PrintUnicodeLine(formattedMessage, true);
-    }
-    else
-        PrintUnicodeLine(formattedMessage, level == LOG_ERROR);
-#endif
-
-    if (logInstance->logFile_)
-    {
-        logInstance->logFile_->WriteLine(formattedMessage);
-        logInstance->logFile_->Flush();
-    }
-
-    logInstance->inWrite_ = true;
+    inWrite_ = true;
 
     using namespace LogMessage;
 
     VariantMap& eventData = logInstance->GetEventDataMap();
-    eventData[P_MESSAGE] = formattedMessage;
     eventData[P_LEVEL] = level;
-    logInstance->SendEvent(E_LOGMESSAGE, eventData);
-
-    logInstance->inWrite_ = false;
-}
-
-void Log::WriteRaw(const String& message, bool error)
-{
-    // If not in the main thread, store message for later processing
-    if (!Thread::IsMainThread())
-    {
-        if (logInstance)
-        {
-            MutexLock lock(logInstance->logMutex_);
-            logInstance->threadMessages_.Push(StoredLogMessage(message, LOG_RAW, error));
-        }
-
-        return;
-    }
-
-    // Prevent recursion during log event
-    if (!logInstance || logInstance->inWrite_)
-        return;
-
-    logInstance->lastMessage_ = message;
-
-#if defined(__ANDROID__)
-    if (logInstance->quiet_)
-    {
-        if (error)
-            __android_log_print(ANDROID_LOG_ERROR, "Urho3D", "%s", message.CString());
-    }
-    else
-        __android_log_print(error ? ANDROID_LOG_ERROR : ANDROID_LOG_INFO, "Urho3D", "%s", message.CString());
-#elif defined(IOS) || defined(TVOS)
-    SDL_IOS_LogMessage(message.CString());
-#else
-    if (logInstance->quiet_)
-    {
-        // If in quiet mode, still print the error message to the standard error stream
-        if (error)
-            PrintUnicode(message, true);
-    }
-    else
-        PrintUnicode(message, error);
-#endif
-
-    if (logInstance->logFile_)
-    {
-        logInstance->logFile_->Write(message.CString(), message.Length());
-        logInstance->logFile_->Flush();
-    }
-
-    logInstance->inWrite_ = true;
-
-    using namespace LogMessage;
-
-    VariantMap& eventData = logInstance->GetEventDataMap();
+    eventData[P_TIME] = (unsigned)timestamp;
+    eventData[P_LOGGER] = logger;
     eventData[P_MESSAGE] = message;
-    eventData[P_LEVEL] = error ? LOG_ERROR : LOG_INFO;
-    logInstance->SendEvent(E_LOGMESSAGE, eventData);
+    SendEvent(E_LOGMESSAGE, eventData);
 
-    logInstance->inWrite_ = false;
+    inWrite_ = false;
 }
 
-void Log::HandleEndFrame(StringHash eventType, VariantMap& eventData)
+void Log::PumpThreadMessages()
 {
     // If the MainThreadID is not valid, processing this loop can potentially be endless
     if (!Thread::IsMainThread())
     {
+        static bool threadErrorDisplayed = false;
         if (!threadErrorDisplayed)
         {
             fprintf(stderr, "Thread::mainThreadID is not setup correctly! Threaded log handling disabled\n");
@@ -287,12 +367,7 @@ void Log::HandleEndFrame(StringHash eventType, VariantMap& eventData)
     while (!threadMessages_.Empty())
     {
         const StoredLogMessage& stored = threadMessages_.Front();
-
-        if (stored.level_ != LOG_RAW)
-            Write(stored.level_, stored.message_);
-        else
-            WriteRaw(stored.message_, stored.error_);
-
+        SendMessageEvent(stored.level_, stored.timestamp_, stored.logger_, stored.message_);
         threadMessages_.PopFront();
     }
 }
