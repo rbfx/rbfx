@@ -28,15 +28,25 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
+#include <Urho3D/IO/PackageFile.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include "Project.h"
 #include "Converter.h"
+#include "Packager.h"
 #include "Pipeline.h"
+#include "GlobResources.h"
+
 
 namespace Urho3D
 {
 
 static const char* AssetDatabaseFile = "AssetDatabase.json";
+
+enum PipelineWorkPriority
+{
+    PWP_ASSET_IMPORT = 90000,
+    PWP_PACKAGE_FILES = 100000,
+};
 
 Pipeline::Pipeline(Context* context)
     : Serializable(context)
@@ -308,14 +318,14 @@ void Pipeline::Reschedule(const String& resourceName)
 
 void Pipeline::StartWorkItems(ConverterKinds converterKinds, const StringVector& resourcePaths)
 {
-    for (SharedPtr<Converter> converter : converters_)
+    for (SharedPtr<Converter>& converter : converters_)
     {
         if (converterKinds & converter->GetKind())
         {
             GetWorkQueue()->AddWorkItem([this, converter, resourcePaths]()
             {
                 converter->Execute(resourcePaths);
-            });
+            }, PWP_ASSET_IMPORT);
         }
     }
 }
@@ -333,6 +343,135 @@ void Pipeline::HandleEndFrame(StringHash, VariantMap&)
     MutexLock lock(lock_);
     StartWorkItems(CONVERTER_ONLINE, reschedule_);
     reschedule_.Clear();
+}
+
+void Pipeline::CreatePaksAsync()
+{
+    // TODO: we need proper task dependency!
+    GetWorkQueue()->Complete(PWP_PACKAGE_FILES);
+    GetWorkQueue()->AddWorkItem([this]() {
+        struct PackagingEntry
+        {
+            String pakName_;
+            Vector<std::regex> patterns_;
+        };
+        Vector<PackagingEntry> rules;
+
+        auto* project = GetSubsystem<Project>();
+        const String& projectPath = GetSubsystem<Project>()->GetProjectPath();
+        auto logger = Log::GetLogger("packager");
+
+        JSONFile file(context_);
+        if (file.LoadFile(projectPath + "Packaging.json"))
+        {
+            JSONValue& root = file.GetRoot();
+            const JSONArray& entries = root.GetArray();
+            for (int i = 0; i < entries.Size(); i++)
+            {
+                const JSONObject& entry = entries[i].GetObject();
+
+                if (!entry.Contains("output"))
+                {
+                    logger.Error("Packaging rule must contain 'output' file name.");
+                    continue;
+                }
+
+                if (!entry.Contains("input"))
+                {
+                    logger.Error("Packaging rule must contain 'input' with a list of glob expressions.");
+                    continue;
+                }
+
+                const JSONArray& patterns = entry["input"]->GetArray();
+
+                PackagingEntry newEntry{};
+                newEntry.pakName_ = entry["output"]->GetString();
+
+                if (newEntry.pakName_.Empty())
+                {
+                    logger.Error("Packaging rule must contain a valid output file name.");
+                    continue;
+                }
+
+                for (int j = 0; j < patterns.Size(); j++)
+                {
+                    const String& pattern = patterns[j].GetString();
+                    if (pattern.Empty())
+                    {
+                        logger.Error("Input glob pattern can not be empty.");
+                        continue;
+                    }
+                    else
+                        newEntry.patterns_.Push(GlobToRegex(pattern));
+                }
+
+                if (patterns.Empty())
+                {
+                    logger.Error("At least one input glob pattern must exist.");
+                    continue;
+                }
+
+                rules.EmplaceBack(std::move(newEntry));
+            }
+        }
+        else
+        {
+            if (GetFileSystem()->FileExists(projectPath + "Pipeline.json"))
+                logger.Error("Parsing of Pipeline.json failed. Using default rules.");
+
+            // Default rule, package everything into single pak.
+            rules.EmplaceBack(PackagingEntry{"Resources.pak", {std::regex(".+")}});
+        }
+
+//        SharedPtr<PackageFile> packageFile(new PackageFile(context_, "Data.pak"));
+
+        StringVector resourceFiles, cacheFiles;
+        GetFileSystem()->ScanDir(resourceFiles, project->GetResourcePath(), "*", SCAN_FILES, true);
+        GetFileSystem()->ScanDir(cacheFiles, project->GetCachePath(), "*", SCAN_FILES, true);
+        GetFileSystem()->CreateDir(projectPath + "/Output");
+
+        for (const PackagingEntry& rule : rules)
+        {
+            lock_.Acquire();
+            assert(lockedPaths_.Empty());
+
+            Packager pkg(context_);
+            pkg.OpenPackage(projectPath + "Output/" + rule.pakName_);
+
+            auto gatherFiles = [&](const String& baseDir, const StringVector& resources)
+            {
+                for (const String& name : resources)
+                {
+                    if (cacheInfo_.Contains(name))
+                        logger.Info("{} not included because it has byproducts.", name);
+                    else
+                    {
+                        bool matched = false;
+                        for (const std::regex& pattern : rule.patterns_)
+                        {
+                            if ((matched = std::regex_match(name.CString(), pattern)))
+                                break;
+                        }
+
+                        if (!matched)
+                            logger.Info("{} not included in {}", name, rule.pakName_);
+                        else
+                            pkg.AddFile(baseDir, name);
+                    }
+                }
+            };
+
+            gatherFiles(project->GetResourcePath(), resourceFiles);
+            gatherFiles(project->GetCachePath(), cacheFiles);
+
+            lock_.Release();
+
+            pkg.Write();
+        }
+
+        logger.Info("Files packaged and saved to {}Output", projectPath);
+
+    }, PWP_PACKAGE_FILES);
 }
 
 ResourcePathLock::ResourcePathLock(Pipeline* pipeline, const String& resourcePath)

@@ -91,6 +91,8 @@ public:
     void SetSkipUpToDateAssets(bool skip) { skipUpToDateAssets_ = skip; }
     ///
     void Reschedule(const String& resourceName);
+    ///
+    void CreatePaksAsync();
 
 protected:
     friend class ResourcePathLock;
