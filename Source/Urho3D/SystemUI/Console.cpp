@@ -189,7 +189,7 @@ void Console::RenderContent()
 
     if (scrollToEnd_)
     {
-        ui::SetScrollHereY();
+        ui::SetScrollHereY(1.f);
         scrollToEnd_ = false;
     }
 
@@ -304,6 +304,7 @@ StringVector Console::GetLoggers() const
 
 void Console::SetLoggerVisible(const String& loggerName, bool visible)
 {
+    scrollToEnd_ = true;
     if (visible)
         loggersHidden_.Erase(loggerName);
     else
@@ -320,6 +321,7 @@ void Console::SetLevelVisible(LogLevel level, bool visible)
     if (level < LOG_TRACE || level >= LOG_NONE)
         return;
 
+    scrollToEnd_ = true;
     levelVisible_[level] = visible;
 }
 

@@ -121,7 +121,17 @@ private:
     /// Set of loggers to be omitted from rendering.
     HashSet<String> loggersHidden_{};
     /// Log level visibility flags.
-    bool levelVisible_[LOG_NONE]{true, true, true, true, true};
+    bool levelVisible_[LOG_NONE]{
+        false,  // LOG_TRACE
+#if URHO3D_DEBUG
+        true,   // LOG_DEBUG
+#else
+        false,  // LOG_DEBUG
+#endif
+        true,   // LOG_INFO
+        true,   // LOG_WARNING
+        true    // LOG_ERROR
+    };
 };
 
 }

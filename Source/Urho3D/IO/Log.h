@@ -54,6 +54,16 @@ enum LogLevel
     MAX_LOGLEVELS,
 };
 
+static const char* logLevelNames[] =
+{
+    "TRACE",
+    "DEBUG",
+    "INFO",
+    "WARN",
+    "ERROR",
+    nullptr
+};
+
 class File;
 
 /// Stored log message from another thread.

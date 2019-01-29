@@ -56,16 +56,6 @@ extern "C" void SDL_IOS_LogMessage(const char* message);
 namespace Urho3D
 {
 
-const char* logLevelPrefixes[] =
-{
-    "TRACE",
-    "DEBUG",
-    "INFO",
-    "WARN",
-    "ERROR",
-    nullptr
-};
-
 static Log* logInstance = nullptr;
 
 #if defined(IOS) || defined(TVOS)

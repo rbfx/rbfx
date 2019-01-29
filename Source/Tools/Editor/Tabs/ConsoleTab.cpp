@@ -21,6 +21,7 @@
 //
 
 #include <Urho3D/SystemUI/Console.h>
+#include <Toolbox/SystemUI/Widgets.h>
 #include "ConsoleTab.h"
 #include "Editor.h"
 
@@ -44,6 +45,73 @@ bool ConsoleTab::RenderWindowContent()
     if (font)
         ui::PopFont();
     return true;
+}
+
+void ConsoleTab::OnBeforeBegin()
+{
+    // Allow viewport texture to cover entire window
+    windowPadding_ = ui::GetStyle().WindowPadding;
+    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
+}
+
+void ConsoleTab::OnAfterBegin()
+{
+    // Inner part of window should have a proper padding, context menu and other controls might depend on it.
+    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, windowPadding_);
+    if (ui::BeginPopupContextItem("ConsoleTab context menu"))
+    {
+        if (ui::BeginMenu("Levels"))
+        {
+            auto* console = GetSubsystem<Console>();
+            for (unsigned i = LOG_TRACE; i < LOG_NONE; i++)
+            {
+                bool visible = console->GetLevelVisible((LogLevel)i);
+                if (ui::MenuItem(logLevelNames[i], nullptr, &visible))
+                    console->SetLevelVisible((LogLevel)i, visible);
+            }
+            ui::EndMenu();
+        }
+
+        if (ui::BeginMenu("Loggers"))
+        {
+            struct State
+            {
+                StringVector loggers_;
+
+                explicit State(Context* context)
+                    : loggers_(context->GetSubsystem<Console>()->GetLoggers())
+                {
+                }
+            };
+            auto* state = ui::GetUIState<State>(context_);
+            auto* console = GetSubsystem<Console>();
+            for (const String& logger : state->loggers_)
+            {
+                bool visible = console->GetLoggerVisible(logger);
+                if (ui::MenuItem(logger.CString(), nullptr, &visible))
+                    console->SetLoggerVisible(logger, visible);
+            }
+            ui::EndMenu();
+        }
+
+        ui::Separator();
+
+        if (ui::MenuItem("Close"))
+            open_ = false;
+
+        ui::EndPopup();
+    }
+}
+
+void ConsoleTab::OnBeforeEnd()
+{
+    BaseClassName::OnBeforeEnd();
+    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
+}
+
+void ConsoleTab::OnAfterEnd()
+{
+    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
 }
 
 }

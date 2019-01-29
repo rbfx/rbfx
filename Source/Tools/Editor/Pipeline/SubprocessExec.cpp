@@ -123,7 +123,7 @@ void SubprocessExec::Execute(const StringVector& input)
                 outputFiles.EmplaceBack(outputRelative);
         }
 
-        auto logger = Log::GetLogger("subprocess");
+        auto logger = Log::GetLogger("pipeline");
 
         StringVector lines = logOutput.Split('\n');
         for (const String& line : lines)

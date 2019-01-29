@@ -97,7 +97,7 @@ typedef struct _CrtMemBlockHeader
 namespace Urho3D
 {
 
-extern const char* logLevelPrefixes[];
+extern const char* logLevelNames[];
 
 Engine::Engine(Context* context) :
     Object(context),
@@ -910,12 +910,12 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
     addFlag("-s,--resizeable", EP_WINDOW_RESIZABLE, true, "Enable window resizing");
     addFlag("-q,--quiet", EP_LOG_QUIET, true, "Disable logging");
     addFlagInternal("-l,--log", "Logging level", [&](CLI::results_t res) {
-        unsigned logLevel = GetStringListIndex(String(res[0].c_str()).ToUpper().CString(), logLevelPrefixes, M_MAX_UNSIGNED);
+        unsigned logLevel = GetStringListIndex(String(res[0].c_str()).ToUpper().CString(), logLevelNames, M_MAX_UNSIGNED);
         if (logLevel == M_MAX_UNSIGNED)
             return false;
         engineParameters[EP_LOG_LEVEL] = logLevel;
         return true;
-    })->set_custom_option(createOptions("string in {%s}", logLevelPrefixes).CString());
+    })->set_custom_option(createOptions("string in {%s}", logLevelNames).CString());
     addOptionString("--log-file", EP_LOG_NAME, "Log output file");
     addOptionInt("-x,--height", EP_WINDOW_WIDTH, "Window width");
     addOptionInt("-y,--width", EP_WINDOW_WIDTH, "Window height");
