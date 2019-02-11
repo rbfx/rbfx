@@ -23,8 +23,9 @@
 
 #pragma once
 
-#include "Urho3D/Core/Object.h"
-#include "Urho3D/Container/Pair.h"
+#include "../Core/Object.h"
+#include "../Container/HashSet.h"
+#include "../IO/Log.h"
 
 namespace Urho3D
 {
@@ -36,42 +37,44 @@ class URHO3D_API Console : public Object
 
 public:
     /// Construct.
-    Console(Context* context);
+    explicit Console(Context* context);
     /// Destruct.
-    ~Console();
+    ~Console() override;
 
     /// Show or hide.
     void SetVisible(bool enable);
     /// Toggle visibility.
     void Toggle();
-
     /// Automatically set console to visible when receiving an error log message.
     void SetAutoVisibleOnError(bool enable) { autoVisibleOnError_ = enable; }
-
     /// Set the command interpreter.
     void SetCommandInterpreter(const String& interpreter);
-
     /// Set command history maximum size, 0 disables history.
     void SetNumHistoryRows(unsigned rows);
-
     /// Return whether is visible.
     bool IsVisible() const;
-
     /// Return true when console is set to automatically visible when receiving an error log message.
     bool IsAutoVisibleOnError() const { return autoVisibleOnError_; }
-
     /// Return the last used command interpreter.
     const String& GetCommandInterpreter() const { return interpreters_[currentInterpreter_]; }
-
     /// Return history maximum size.
     unsigned GetNumHistoryRows() const { return historyRows_; }
-
     /// Remove all rows.
     void Clear();
     /// Render contents of the console window. Useful for embedding console into custom UI.
     void RenderContent();
     /// Populate the command line interpreters that could handle the console command.
     void RefreshInterpreters();
+    /// Returns a set of loggers that exist in console history.
+    StringVector GetLoggers() const;
+    /// Set visibility of certain loggers in the console.
+    void SetLoggerVisible(const String& loggerName, bool visible);
+    /// Get visibility of certain loggers in the console.
+    bool GetLoggerVisible(const String& loggerName) const;
+    /// Set visibility of certain log levels in the console.
+    void SetLevelVisible(LogLevel level, bool visible);
+    /// Get visibility of certain log levels in the console.
+    bool GetLevelVisible(LogLevel level) const;
 
 private:
     /// Update console size on application window changes.
@@ -81,25 +84,54 @@ private:
     /// Render system ui.
     void RenderUi(StringHash eventType, VariantMap& eventData);
 
+    struct LogEntry
+    {
+        /// Log level.
+        LogLevel level_;
+        /// Time when event was logged.
+        time_t timestamp_;
+        /// Name of logger.
+        String logger_;
+        /// Log message.
+        String message_;
+    };
+
     /// Auto visible on error flag.
-    bool autoVisibleOnError_;
+    bool autoVisibleOnError_ = false;
     /// List of command interpreters.
-    Vector<String> interpreters_;
+    Vector<String> interpreters_{};
     /// Pointers to c strings in interpreters_ list for efficient UI rendering.
-    PODVector<const char*> interpretersPointers_;
+    PODVector<const char*> interpretersPointers_{};
     /// Last used command interpreter.
-    int currentInterpreter_;
+    int currentInterpreter_ = 0;
     /// Command history.
-    Vector<Pair<int, String>> history_;
+    Vector<LogEntry> history_{};
     /// Command history maximum rows.
-    unsigned historyRows_;
+    unsigned historyRows_ = 512;
     /// Is console window open.
-    bool isOpen_;
+    bool isOpen_ = false;
     /// Input box buffer.
     char inputBuffer_[0x1000]{};
-    IntVector2 windowSize_;
+    /// Console window size.
+    IntVector2 windowSize_{M_MAX_INT, 200};
+    /// Flag indicating that console should scroll to end of the log on the next frame.
     bool scrollToEnd_ = false;
+    ///Flag indicating that console input should be focused on the next frame.
     bool focusInput_ = false;
+    /// Set of loggers to be omitted from rendering.
+    HashSet<String> loggersHidden_{};
+    /// Log level visibility flags.
+    bool levelVisible_[LOG_NONE]{
+        false,  // LOG_TRACE
+#if URHO3D_DEBUG
+        true,   // LOG_DEBUG
+#else
+        false,  // LOG_DEBUG
+#endif
+        true,   // LOG_INFO
+        true,   // LOG_WARNING
+        true    // LOG_ERROR
+    };
 };
 
 }

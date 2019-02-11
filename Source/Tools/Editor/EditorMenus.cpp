@@ -223,8 +223,6 @@ void Editor::RenderProjectMenu()
         ui::EndMenu();
     }
 
-    ui::Separator();
-
     if (ui::BeginMenu("Settings"))
     {
         static const VariantType variantTypes[] = {
@@ -420,6 +418,13 @@ void Editor::RenderProjectMenu()
                 ui::Combo("###Type", &state->customType, variantNames, SDL_arraysize(variantTypes));
         }
         ui::EndMenu();
+    }
+
+    ui::Separator();
+
+    if (ui::MenuItem(ICON_FA_BOXES " Package files"))
+    {
+        GetSubsystem<Project>()->GetPipeline().CreatePaksAsync();
     }
 }
 

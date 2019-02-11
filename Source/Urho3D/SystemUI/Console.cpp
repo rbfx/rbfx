@@ -39,19 +39,12 @@
 namespace Urho3D
 {
 
-static const int DEFAULT_HISTORY_SIZE = 512;
-
 Console::Console(Context* context) :
-    Object(context),
-    autoVisibleOnError_(false),
-    historyRows_(DEFAULT_HISTORY_SIZE),
-    isOpen_(false),
-    windowSize_(M_MAX_INT, 200),     // Width gets clamped by HandleScreenMode()
-    currentInterpreter_(0)
+    Object(context)
 {
     inputBuffer_[0] = 0;
 
-    SetNumHistoryRows(DEFAULT_HISTORY_SIZE);
+    SetNumHistoryRows(historyRows_);
     VariantMap dummy;
     HandleScreenMode(nullptr, dummy);
     RefreshInterpreters();
@@ -130,12 +123,15 @@ void Console::HandleLogMessage(StringHash eventType, VariantMap& eventData)
 {
     using namespace LogMessage;
 
-    int level = eventData[P_LEVEL].GetInt();
+    auto level = (LogLevel)eventData[P_LEVEL].GetInt();
+    time_t timestamp = eventData[P_TIME].GetUInt();
+    const String& logger = eventData[P_LOGGER].GetString();
+    const String& message = eventData[P_MESSAGE].GetString();
 
     // The message may be multi-line, so split to rows in that case
-    Vector<String> rows = eventData[P_MESSAGE].GetString().Split('\n');
+    Vector<String> rows = message.Split('\n');
     for (const auto& row : rows)
-        history_.Push(Pair<int, String>(level, row));
+        history_.Push(LogEntry{level, timestamp, logger, row});
     scrollToEnd_ = true;
 
     if (autoVisibleOnError_ && level == LOG_ERROR && !IsVisible())
@@ -151,32 +147,49 @@ void Console::RenderContent()
 
     for (const auto& row : history_)
     {
+        if (!levelVisible_[row.level_])
+            continue;
+
+        if (loggersHidden_.Contains(row.logger_))
+            continue;
+
         ImColor color;
-        switch (row.first_)
+        const char* debugLevel;
+        switch (row.level_)
         {
-        case LOG_ERROR:
-            color = ImColor(247, 168, 168);
-            break;
-        case LOG_WARNING:
-            color = ImColor(247, 247, 168);
-            break;
-        case LOG_DEBUG:
-            color = ImColor(200, 200, 200);
-            break;
         case LOG_TRACE:
+            debugLevel = "T";
             color = ImColor(135, 135, 135);
             break;
+        case LOG_DEBUG:
+            debugLevel = "D";
+            color = ImColor(200, 200, 200);
+            break;
         case LOG_INFO:
+            debugLevel = "I";
+            color = IM_COL32_WHITE;
+            break;
+        case LOG_WARNING:
+            debugLevel = "W";
+            color = ImColor(247, 247, 168);
+            break;
+        case LOG_ERROR:
+            debugLevel = "E";
+            color = ImColor(247, 168, 168);
+            break;
         default:
+            debugLevel = "?";
             color = IM_COL32_WHITE;
             break;
         }
-        ui::TextColored(color, "%s", row.second_.CString());
+
+        ui::TextColored(color, "[%s] [%s] [%s] : %s", Time::GetTimeStamp(row.timestamp_, "%H:%M:%S").CString(),
+            debugLevel, row.logger_.CString(), row.message_.CString());
     }
 
     if (scrollToEnd_)
     {
-        ui::SetScrollHereY();
+        ui::SetScrollHereY(1.f);
         scrollToEnd_ = false;
     }
 
@@ -186,9 +199,8 @@ void Console::RenderContent()
     {
         ui::PushItemWidth(110);
         if (ui::Combo("##ConsoleInterpreter", &currentInterpreter_, &interpretersPointers_.Front(),
-                      interpretersPointers_.Size()))
+            interpretersPointers_.Size()))
         {
-
         }
         ui::PopItemWidth();
         ui::SameLine();
@@ -273,6 +285,52 @@ void Console::HandleScreenMode(StringHash eventType, VariantMap& eventData)
     Graphics* graphics = GetSubsystem<Graphics>();
     windowSize_.x_ = Clamp(windowSize_.x_, 0, graphics->GetWidth());
     windowSize_.y_ = Clamp(windowSize_.y_, 0, graphics->GetHeight());
+}
+
+StringVector Console::GetLoggers() const
+{
+    HashSet<String> loggers;
+    StringVector loggersVector;
+
+    for (const auto& row : history_)
+        loggers.Insert(row.logger_);
+
+    for (const String& logger : loggers)
+        loggersVector.EmplaceBack(logger);
+
+    Sort(loggersVector.Begin(), loggersVector.End());
+    return loggersVector;
+}
+
+void Console::SetLoggerVisible(const String& loggerName, bool visible)
+{
+    scrollToEnd_ = true;
+    if (visible)
+        loggersHidden_.Erase(loggerName);
+    else
+        loggersHidden_.Insert(loggerName);
+}
+
+bool Console::GetLoggerVisible(const String& loggerName) const
+{
+    return !loggersHidden_.Contains(loggerName);
+}
+
+void Console::SetLevelVisible(LogLevel level, bool visible)
+{
+    if (level < LOG_TRACE || level >= LOG_NONE)
+        return;
+
+    scrollToEnd_ = true;
+    levelVisible_[level] = visible;
+}
+
+bool Console::GetLevelVisible(LogLevel level) const
+{
+    if (level < LOG_TRACE || level >= LOG_NONE)
+        return false;
+
+    return levelVisible_[level];
 }
 
 }

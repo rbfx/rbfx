@@ -329,7 +329,9 @@ public static class E
         private StringHash _event = new StringHash("LogMessage");
 
         public StringHash Message = new StringHash("Message");
+        public StringHash Logger = new StringHash("Logger");
         public StringHash Level = new StringHash("Level");
+        public StringHash Time = new StringHash("Time");
         public LogMessageEvent() { }
         public static implicit operator StringHash(LogMessageEvent e) { return e._event; }
     }
@@ -1441,6 +1443,14 @@ public static class E
         public static implicit operator StringHash(SceneActivatedEvent e) { return e._event; }
     }
     public static SceneActivatedEvent SceneActivated = new SceneActivatedEvent();
+
+    public class EndRenderingSystemUIEvent {
+        private StringHash _event = new StringHash("EndRenderingSystemUI");
+
+        public EndRenderingSystemUIEvent() { }
+        public static implicit operator StringHash(EndRenderingSystemUIEvent e) { return e._event; }
+    }
+    public static EndRenderingSystemUIEvent EndRenderingSystemUI = new EndRenderingSystemUIEvent();
 
     public class ConsoleClosedEvent {
         private StringHash _event = new StringHash("ConsoleClosed");

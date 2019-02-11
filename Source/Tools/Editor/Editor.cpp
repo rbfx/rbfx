@@ -120,7 +120,7 @@ void Editor::Setup()
     engineParameters_[EP_RESOURCE_PATHS] = "CoreData;EditorData";
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] = coreResourcePrefixPath_;
 
-    GetLog()->SetTimeStampFormat("%H:%M:%S");
+    GetLog()->SetLogFormat("[%H:%M:%S] [%l] [%n] : %v");
 
     SetRandomSeed(Time::GetTimeSinceEpoch());
     context_->RegisterSubsystem(this);
@@ -159,6 +159,7 @@ void Editor::Start()
     {
         if (GetCommandLineParser().got_subcommand(cmd->GetTypeName().CString()))
         {
+            GetLog()->SetLogFormat("%v");
             ExecuteSubcommand(cmd);
             engine_->Exit();
             return;

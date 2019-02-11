@@ -193,6 +193,7 @@ set (THIRD_PARTY_DEPENDENCIES
     nativefiledialog
     CLI11
     fmt
+    spdlog
 )
 
 if (BUILD_SHARED_LIBS AND NOT MSVC AND NOT APPLE)

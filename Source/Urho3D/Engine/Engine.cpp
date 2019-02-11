@@ -96,7 +96,7 @@ typedef struct _CrtMemBlockHeader
 namespace Urho3D
 {
 
-extern const char* logLevelPrefixes[];
+extern const char* logLevelNames[];
 
 Engine::Engine(Context* context) :
     Object(context),
@@ -638,19 +638,19 @@ void Engine::DumpResources(bool dumpFileName)
     const HashMap<StringHash, ResourceGroup>& resourceGroups = cache->GetAllResources();
     if (dumpFileName)
     {
-        URHO3D_LOGRAW("Used resources:\n");
+        URHO3D_LOGINFO("Used resources:\n");
         for (HashMap<StringHash, ResourceGroup>::ConstIterator i = resourceGroups.Begin(); i != resourceGroups.End(); ++i)
         {
             const HashMap<StringHash, SharedPtr<Resource> >& resources = i->second_.resources_;
             if (dumpFileName)
             {
                 for (HashMap<StringHash, SharedPtr<Resource> >::ConstIterator j = resources.Begin(); j != resources.End(); ++j)
-                    URHO3D_LOGRAW(j->second_->GetName() + "\n");
+                    URHO3D_LOGINFO(j->second_->GetName() + "\n");
             }
         }
     }
     else
-        URHO3D_LOGRAW(cache->PrintMemoryUsage() + "\n");
+        URHO3D_LOGINFO(cache->PrintMemoryUsage() + "\n");
 #endif
 }
 
@@ -677,9 +677,9 @@ void Engine::DumpMemory()
         if (block->nBlockUse > 0)
         {
             if (block->szFileName)
-                URHO3D_LOGRAW("Block " + String((int)block->lRequest) + ": " + String(block->nDataSize) + " bytes, file " + String(block->szFileName) + " line " + String(block->nLine) + "\n");
+                URHO3D_LOGINFO("Block " + String((int)block->lRequest) + ": " + String(block->nDataSize) + " bytes, file " + String(block->szFileName) + " line " + String(block->nLine) + "\n");
             else
-                URHO3D_LOGRAW("Block " + String((int)block->lRequest) + ": " + String(block->nDataSize) + " bytes\n");
+                URHO3D_LOGINFO("Block " + String((int)block->lRequest) + ": " + String(block->nDataSize) + " bytes\n");
 
             total += block->nDataSize;
             ++blocks;
@@ -687,9 +687,9 @@ void Engine::DumpMemory()
         block = block->pBlockHeaderPrev;
     }
 
-    URHO3D_LOGRAW("Total allocated memory " + String(total) + " bytes in " + String(blocks) + " blocks\n\n");
+    URHO3D_LOGINFO("Total allocated memory " + String(total) + " bytes in " + String(blocks) + " blocks\n\n");
 #else
-    URHO3D_LOGRAW("DumpMemory() supported on MSVC debug mode only\n\n");
+    URHO3D_LOGINFO("DumpMemory() supported on MSVC debug mode only\n\n");
 #endif
 #endif
 }
@@ -909,12 +909,12 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
     addFlag("-s,--resizeable", EP_WINDOW_RESIZABLE, true, "Enable window resizing");
     addFlag("-q,--quiet", EP_LOG_QUIET, true, "Disable logging");
     addFlagInternal("-l,--log", "Logging level", [&](CLI::results_t res) {
-        unsigned logLevel = GetStringListIndex(String(res[0].c_str()).ToUpper().CString(), logLevelPrefixes, M_MAX_UNSIGNED);
+        unsigned logLevel = GetStringListIndex(String(res[0].c_str()).ToUpper().CString(), logLevelNames, M_MAX_UNSIGNED);
         if (logLevel == M_MAX_UNSIGNED)
             return false;
         engineParameters[EP_LOG_LEVEL] = logLevel;
         return true;
-    })->set_custom_option(createOptions("string in {%s}", logLevelPrefixes).CString());
+    })->set_custom_option(createOptions("string in {%s}", logLevelNames).CString());
     addOptionString("--log-file", EP_LOG_NAME, "Log output file");
     addOptionInt("-x,--height", EP_WINDOW_WIDTH, "Window width");
     addOptionInt("-y,--width", EP_WINDOW_WIDTH, "Window height");

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2019 Rokas Kupstys.
+// Copyright (c) 2019 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,27 +23,58 @@
 #pragma once
 
 
-#include "Tabs/Tab.h"
+#include <Urho3D/Core/Object.h>
+#include <Urho3D/IO/File.h>
 
 
 namespace Urho3D
 {
 
-class ConsoleTab : public Tab
+struct FileEntry
 {
-    URHO3D_OBJECT(ConsoleTab, Tab)
-public:
-    explicit ConsoleTab(Context* context);
+    String root_;
+    String name_;
+    unsigned offset_{};
+    unsigned size_{};
+    unsigned checksum_{};
+};
 
-    bool RenderWindowContent() override;
+class Packager : public Object
+{
+    URHO3D_OBJECT(Packager, Object);
+public:
+    ///
+    explicit Packager(Context* context);
+    ///
+    bool OpenPackage(const String& path);
+    ///
+    void AddFile(const String& root, const String& path);
+    ///
+    void Write();
+    ///
+    void SetCompress(bool compress);
 
 protected:
-    void OnBeforeBegin() override;
-    void OnAfterBegin() override;
-    void OnBeforeEnd() override;
-    void OnAfterEnd() override;
+    ///
+    File output_;
+    ///
+    struct PakHeader
+    {
+        /// UPAK or ULZ4.
+        unsigned id_;
+        /// Number of file entries in the pak.
+        unsigned numEntries_;
+        /// Checksum of entire data section.
+        unsigned checksum_;
+    } header_{};
+    ///
+    Vector<FileEntry> entries_{};
+    ///
+    bool compress_ = false;
 
-    ImVec2 windowPadding_;
+    ///
+    void WriteHeaders();
 };
+
 
 }

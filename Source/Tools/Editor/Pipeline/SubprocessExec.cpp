@@ -123,9 +123,15 @@ void SubprocessExec::Execute(const StringVector& input)
                 outputFiles.EmplaceBack(outputRelative);
         }
 
+        auto logger = Log::GetLogger("pipeline");
+
         StringVector lines = logOutput.Split('\n');
         for (const String& line : lines)
         {
+            // Likely printing a progress. TODO: what of MacOS?
+            if (line.StartsWith("\b") || line.EndsWith("\r"))
+                continue;
+
             bool blacklisted = false;
             for (const char* blacklistedMsg : subprocessLogMsgBlacklist)
             {
@@ -137,22 +143,11 @@ void SubprocessExec::Execute(const StringVector& input)
             }
 
             if (!blacklisted)
-            {
-                if (line.StartsWith("["))
-                {
-                    bool error = line.Contains("] ERROR: ") || line.StartsWith("ERROR: ");
-                    Log::WriteRaw(line, error);
-                    Log::WriteRaw("\n", error);
-                }
-                else if (GetEngine()->IsHeadless())
-                {
-                    URHO3D_LOGINFO(line);
-                }
-            }
+                logger.Info(line);
         }
 
         if (result != 0)
-            URHO3D_LOGERROR("Failed SubprocessExec({}): {} {}", result, executable, String::Joined(args, " "));
+            logger.Error("Failed SubprocessExec({}): {} {}", result, executable, String::Joined(args, " "));
 
         if (!output_.Empty())
             project->GetPipeline().AddCacheEntry(resourceName, outputFiles);

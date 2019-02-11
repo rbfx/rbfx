@@ -138,7 +138,7 @@ int DoSystemCommand(const String& commandLine, bool redirectToLog, Context* cont
         {
             unsigned numRead = errFile->Read(buffer, sizeof(buffer));
             if (numRead)
-                Log::WriteRaw(String(buffer, numRead), true);
+                URHO3D_LOGERROR(String(buffer, numRead));
         }
     }
 
