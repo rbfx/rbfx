@@ -143,7 +143,7 @@ void Physics::CreateScene()
 
 
 
-    //CreateScenery(Vector3(0,0,0));
+    CreateScenery(Vector3(0,0,0));
 
 
     //SpawnMaterialsTest(Vector3(0,-25,100));
@@ -162,7 +162,7 @@ void Physics::CreateScene()
 
     //SpawnVehicle(Vector3(0, 10, 0));
     //for(int i = 0; i < 50; i++)
-    //SpawnTrialBike(Vector3(0, 10, i*4));
+    SpawnTrialBike(Vector3(0, 10, 4));
 
 
     //SpawnCollisionExceptionsTest(Vector3(0, 1, 0));
