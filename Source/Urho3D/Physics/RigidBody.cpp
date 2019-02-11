@@ -956,7 +956,7 @@ namespace Urho3D {
             calculateSceneDepth();
             physicsWorld_->markRigidBodiesNeedSorted();
 
-            SetWorldTransform(node->GetWorldTransform());
+            //SetWorldTransform(node->GetWorldTransform());
             
             
             prevNode_ = node;

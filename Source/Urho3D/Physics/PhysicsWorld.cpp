@@ -649,6 +649,7 @@ namespace Urho3D {
        sceneUpdated_ = true;
 
        float timeStep = eventData[SceneSubsystemUpdate::P_TIMESTEP].GetFloat();
+       timeStepTarget_ = timeStep;
 
        if (timeStep <= 0.0001f) {
            return;
@@ -669,9 +670,9 @@ namespace Urho3D {
        SendEvent(E_PHYSICSPRESTEP, eventData);
 
        //do the update.
-       Update(timeStepTarget_ / float(subSteps_), true);
+       Update(timeStep / float(subSteps_), true);
        for(int i = 0; i < subSteps_-1; i++)
-            Update(timeStepTarget_ / float(subSteps_), false);
+            Update(timeStep / float(subSteps_), false);
 
 
        // Send post-step event
