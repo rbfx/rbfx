@@ -41,7 +41,7 @@ dgFloat32 dgFastRayTest::PolygonIntersect (const dgVector& faceNormal, dgFloat32
 
 	if (faceNormal.DotProduct(m_unitDir).GetScalar() < dgFloat32 (0.0f)) {
 		dgInt32 stride = dgInt32(strideInBytes / sizeof (dgFloat32));
-		dgBigVector v0(&polygon[indexArray[indexCount - 1] * stride]);
+		dgBigVector v0(dgVector(&polygon[indexArray[indexCount - 1] * stride]) & dgVector::m_triplexMask);
 		dgBigVector p0(m_p0);
 		dgBigVector p0v0(v0 - p0);
 
@@ -53,7 +53,7 @@ dgFloat32 dgFastRayTest::PolygonIntersect (const dgVector& faceNormal, dgFloat32
 			dgBigVector unitDir(m_unitDir);
 			for (dgInt32 i = 0; i < indexCount; i++) {
 				dgInt32 i2 = indexArray[i] * stride;
-				dgBigVector v1(&polygon[i2]);
+				dgBigVector v1(dgVector(&polygon[i2]) & dgVector::m_triplexMask);
 
 				dgBigVector edge0(p - v0);
 				dgBigVector edge1(v1 - v0);

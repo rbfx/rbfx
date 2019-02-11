@@ -971,6 +971,7 @@ void dgSkeletonContainer::SolveLcp(dgFloat32* const x, const dgFloat32* const x0
 	const dgFloat32 sor = 1.125f;
 	const dgFloat32 tol2 = 0.25f;
 	const dgInt32 maxIterCount = 64;
+//const dgInt32 maxIterCount = 32;
 	const dgInt32 size = m_auxiliaryRowCount;
 	dgFloat32* const invDiag1 = dgAlloca(dgFloat32, size);
 	dgCheckAligment(invDiag1);
@@ -999,10 +1000,29 @@ void dgSkeletonContainer::SolveLcp(dgFloat32* const x, const dgFloat32* const x0
 #ifdef _DEBUG 
 		passes++;
 #endif
+		dgAssert ((dgUnsigned64 (x) & 0x0f) == 0);
 		for (dgInt32 j = 0; j < size; j++) {
 
 			const dgFloat32* const row = &matrix[base];
-			dgFloat32 r(b[j] - dgDotProduct(size, row, x));
+#if 1
+			dgFloat32 r = b[j] - dgDotProduct(size, row, x);
+#else
+			dgVector acc (dgVector::m_zero);
+			if (size >= 8) {
+				const dgInt32 size1 = size - 8;
+				for (dgInt32 k = 0; k < size1; k += 8) {
+					dgVector tmp0 (&row[k]);
+					dgVector tmp1 (&row[k + 4]);
+					acc += tmp0 * (dgVector&)x[k];
+					acc += tmp1 * (dgVector&)x[k + 4];
+				}
+			}
+			dgFloat32 r = b[j] - acc.AddHorizontal().GetScalar();
+			for (dgInt32 k = size & (-8); k < size; k ++) {
+				r -= row[k] * x[k];
+			}
+#endif
+			
 			dgFloat32 f = (r + row[j] * x[j]) * invDiag[j];
 			f = x[j] + (f - x[j]) * sor + x0[j];
 
@@ -1023,8 +1043,10 @@ void dgSkeletonContainer::SolveLcp(dgFloat32* const x, const dgFloat32* const x0
 		}
 	}
 
-//if (passes > 20)
-//dgTrace(("%d %d\n", size, passes));
+//if (passes >= maxIterCount){
+//dgTrace(("%d %d %f\n", size, passes, dgSqrt (tolerance)));
+//}
+
 }
 
 void dgSkeletonContainer::SolveAuxiliary(const dgJointInfo* const jointInfoArray, dgJacobian* const internalForces, const dgForcePair* const accel, dgForcePair* const force) const

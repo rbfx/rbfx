@@ -50,7 +50,6 @@ dCustomCorkScrew::dCustomCorkScrew(const dMatrix& pinAndPivotFrameChild, const d
 {
 }
 
-
 dCustomCorkScrew::~dCustomCorkScrew()
 {
 }
@@ -84,6 +83,11 @@ void dCustomCorkScrew::Serialize (NewtonSerializeCallback callback, void* const 
 void dCustomCorkScrew::EnableAngularLimits(bool state)
 {
 	m_options.m_option2 = state;
+}
+
+void dCustomCorkScrew::SetAngularFriction(dFloat friction)
+{
+	m_angularFriction = dAbs(friction);
 }
 
 void dCustomCorkScrew::SetAngularSpringDamper(bool state, dFloat springDamperRelaxation, dFloat spring, dFloat damper)

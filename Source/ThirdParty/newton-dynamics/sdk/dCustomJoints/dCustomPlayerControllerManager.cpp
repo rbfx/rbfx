@@ -226,7 +226,7 @@ dVector dCustomPlayerController::CalculateDesiredOmega (dFloat headingAngle, dFl
 {
 	dQuaternion playerRotation;
 	dQuaternion targetRotation (m_upVector, headingAngle);
-	NewtonBodyGetRotation(m_body, &playerRotation.m_q0);
+	NewtonBodyGetRotation(m_body, &playerRotation.m_x);
 	return playerRotation.CalcAverageOmega (targetRotation, 0.5f / timestep);
 }
 
@@ -355,7 +355,7 @@ void dCustomPlayerController::PostUpdate(dFloat timestep, int threadIndex)
 	NewtonBodyGetOmega(m_body, &omega[0]);
 
 	// integrate body angular velocity
-	NewtonBodyGetRotation (m_body, &bodyRotation.m_q0); 
+	NewtonBodyGetRotation (m_body, &bodyRotation.m_x); 
 	bodyRotation = bodyRotation.IntegrateOmega(omega, timestep);
 	matrix = dMatrix (bodyRotation, matrix.m_posit);
 

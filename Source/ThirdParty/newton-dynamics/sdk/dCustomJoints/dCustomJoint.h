@@ -125,7 +125,9 @@ class dCustomJoint: public dCustomAlloc
 		void SetScale(dFloat scale) {m_debugScale = scale;}
 
 		const dMatrix& GetCameraMatrix() const {return m_cameraMatrix;}
-		CUSTOM_JOINTS_API void DrawFrame(const dMatrix& matrix);
+		void DrawFrame(const dMatrix& matrix) {DrawFrame (matrix, m_debugScale);}
+
+		CUSTOM_JOINTS_API void DrawFrame(const dMatrix& matrix, dFloat scale);
 
 		dMatrix m_cameraMatrix;
 		dFloat m_debugScale;
@@ -142,14 +144,67 @@ class dCustomJoint: public dCustomAlloc
 		CUSTOM_JOINTS_API virtual bool IsType (dCRCTYPE type) const {return false;}
 	};
 
-	class dSerializeMetaDataDictionary: public dTree<dSerializeMetaData*, dCRCTYPE>
+	class dSerializeMetaDataDictionary
 	{
 		public:
+		class dTreeNode
+		{
+			public:
+			dCRCTYPE m_key;
+			dSerializeMetaData* m_data;
+
+			dSerializeMetaData* GetInfo() const
+			{
+				return m_data;
+			}
+		};
+
 		dSerializeMetaDataDictionary()
-			:dTree<dSerializeMetaData*, dCRCTYPE>()
+			:m_count(0)
 		{
 		}
+
+		dTreeNode* Find(dCRCTYPE key) const
+		{
+			int i0 = 0;
+			int i2 = m_count - 1;
+			while ((i2 - i0) > 4) {
+				int i1 = (i0 + i2) >> 1;
+				if (m_buffer[i1].m_key < key) {
+					i2 = i1;
+				} else {
+					i0 = i1;
+				}
+			}
+
+			for (int i = i0; (i < m_count) && (m_buffer[i].m_key <= key); i++) {
+				if (m_buffer[i].m_key == key) {
+					return (dTreeNode*)&m_buffer[i];
+				}
+			}
+			dAssert(0);
+			return NULL;
+		}
+
+		void Insert(dSerializeMetaData* const data, dCRCTYPE key)
+		{
+			dAssert(m_count < sizeof(m_buffer) / sizeof(m_buffer[0]));
+			m_buffer[m_count].m_key = key;
+			m_buffer[m_count].m_data = data;
+			m_count++;
+
+			dTreeNode node(m_buffer[m_count - 1]);
+			int index = m_count - 1;
+			for (index = m_count - 2; index >= 0 && m_buffer[index].m_key < node.m_key ; index--) {
+				m_buffer[index + 1] = m_buffer[index];
+			}
+			m_buffer[index + 1] = node;
+		}
+
+		dTreeNode m_buffer[128];
+		int m_count;
 	};
+
 
 	class dAngularIntegration
 	{

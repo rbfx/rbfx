@@ -39,7 +39,6 @@ dSceneCacheInfo::dSceneCacheInfo()
 	SetName ("cacheNode");
 }
 
-
 dSceneCacheInfo::~dSceneCacheInfo(void)
 {
 }

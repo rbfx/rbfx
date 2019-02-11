@@ -73,24 +73,6 @@ void dMeshNodeInfo::ReplaceMesh (NewtonMesh* const mesh)
 	SetMesh (mesh);
 }
 
-/*
-void dMeshNodeInfo::BeginBuild ()
-{
-	NewtonMeshBeginBuild(m_mesh);
-}
-
-void dMeshNodeInfo::AddPolygon (int pointsCount, const neMeshInfoFlatPoint* const points, int materialID)
-{
-	dAssert (0);
-//	NewtonMeshAddFace(m_mesh, pointsCount, &points[0].m_x, sizeof (neMeshInfoFlatPoint), materialID);
-}
-
-void dMeshNodeInfo::EndBuild ()
-{
-	NewtonMeshEndBuild(m_mesh);
-}
-*/
-
 void dMeshNodeInfo::ConvertToTriangles()
 {
 	NewtonMeshTriangulate (m_mesh);
@@ -105,11 +87,6 @@ void dMeshNodeInfo::RepairTJoints ()
 	NewtonMeshFixTJoints (m_mesh);
 }
 
-bool dMeshNodeInfo::hasSkinWeights() const
-{
-	return NewtonMeshHasVertexWeightChannel(m_mesh) ? true : false;
-}
-
 void dMeshNodeInfo::SmoothNormals (dFloat angleInRadiants)
 {
 	NewtonMeshCalculateVertexNormals(m_mesh, angleInRadiants);
@@ -117,22 +94,10 @@ void dMeshNodeInfo::SmoothNormals (dFloat angleInRadiants)
 
 void dMeshNodeInfo::BakeTransform (const dMatrix& transform)
 {
-	dVector scale; 
-	dMatrix stretchMatrix;
-
-	dMatrix matrix (transform.Inverse4x4() * m_matrix * transform);
-	matrix.PolarDecomposition (m_matrix, scale, stretchMatrix);
-	matrix = transform * dMatrix (dGetIdentityMatrix(), scale, stretchMatrix);
-
-	NewtonMeshApplyTransform (m_mesh, &matrix[0][0]);
+	dGeometryNodeInfo::BakeTransform(transform);
+	NewtonMeshApplyTransform(m_mesh, &transform[0][0]);
 }
-/*
-void dMeshNodeInfo::BuildFromVertexListIndexList(int faceCount, const int* const faceIndexCount, const int* faceMaterialIndex, 
-	const dFloat* const vertex, int vertexStrideInBytes, const int* vertexIndex,
-	const dFloat* const normal, int normalStrideInBytes, const int* normalIndex,
-	const dFloat* const uv0, int uv0StrideInBytes, const int* uv0Index,
-	const dFloat* const uv1, int uv1StrideInBytes, const int* uv1Index)
-*/
+
 void dMeshNodeInfo::BuildFromVertexListIndexList(const NewtonMeshVertexFormat* const format)
 {
 	NewtonMeshBuildFromVertexListIndexList (m_mesh, format);
@@ -168,19 +133,6 @@ void dMeshNodeInfo::RemoveUnusedVertices(dScene* const world, dScene::dTreeNode*
 */
 }
 
-void dMeshNodeInfo::Serialize (TiXmlElement* const rootNode) const
-{
- 	SerialiseBase(dGeometryNodeInfo, rootNode);
-	SerializeMesh (m_mesh, rootNode);
-}
-
-bool dMeshNodeInfo::Deserialize (const dScene* const scene, TiXmlElement* const rootNode) 
-{
-	DeserialiseBase(scene, dGeometryNodeInfo, rootNode);
-	DeserializeMesh (m_mesh, rootNode); 
-	return true;
-}
-
 void dMeshNodeInfo::CalcutateAABB (dVector& p0, dVector& p1) const
 {
 //	int strideInBytes = NewtonMeshGetVertexStrideInByte(m_mesh);
@@ -204,7 +156,8 @@ void dMeshNodeInfo::CalcutateAABB (dVector& p0, dVector& p1) const
 		dFloat x = dFloat (vertexList[index * stride + 0]);
 		dFloat y = dFloat (vertexList[index * stride + 1]);
 		dFloat z = dFloat (vertexList[index * stride + 2]);
-		dVector v (m_matrix.TransformVector(dVector (x, y, z, 0.0f)));
+		//dVector v (m_matrix.TransformVector(dVector (x, y, z, 0.0f)));
+		dVector v(x, y, z, 0.0f);
 
 		p0[0] = dMin(v[0], p0[0]);
 		p0[1] = dMin(v[1], p0[1]);
@@ -216,7 +169,6 @@ void dMeshNodeInfo::CalcutateAABB (dVector& p0, dVector& p1) const
 	}
 }
 
-
 dFloat dMeshNodeInfo::RayCast (const dVector& q0, const dVector& q1) const
 {
 	//	int vertexCount = NewtonMeshGetVertexCount(m_mesh);
@@ -224,8 +176,10 @@ dFloat dMeshNodeInfo::RayCast (const dVector& q0, const dVector& q1) const
 	const dFloat64* const vertexList = NewtonMeshGetVertexArray(m_mesh);
 	dFloat t = 1.2f;
 
-	dVector p0 = m_matrix.UntransformVector(q0);
-	dVector p1 = m_matrix.UntransformVector(q1);
+	//dVector p0 = m_matrix.UntransformVector(q0);
+	//dVector p1 = m_matrix.UntransformVector(q1);
+	dVector p0 = q0;
+	dVector p1 = q1;
 	for (void* face = NewtonMeshGetFirstFace (m_mesh); face; face = NewtonMeshGetNextFace (m_mesh, face)) {
 		if (!NewtonMeshIsFaceOpen (m_mesh, face)) {
 
@@ -318,14 +272,13 @@ dCRCTYPE dMeshNodeInfo::CalculateSignature() const
 
 void dMeshNodeInfo::DrawWireFrame(dSceneRender* const render, dScene* const scene, dScene::dTreeNode* const myNode) const
 {
-	dAssert (myNode == scene->Find(GetUniqueID()));
+	dAssert (myNode == scene->Find(GetNodeID()));
 	dAssert (scene->GetInfoFromNode(myNode) == this);
-
 
 	int displayList = render->GetCachedWireframeDisplayList(m_mesh);
 	dAssert (displayList > 0);
 	
-	render->PushMatrix(&m_matrix[0][0]);
+	//render->PushMatrix(&m_matrix[0][0]);
 	if (GetEditorFlags() & m_selected) {
 		dVector color (render->GetColor());
 		render->SetColor(dVector (1.0f, 1.0f, 0.0f, 0.0f));
@@ -334,19 +287,31 @@ void dMeshNodeInfo::DrawWireFrame(dSceneRender* const render, dScene* const scen
 	} else {
 		render->DrawDisplayList(displayList);
 	}
-	render->PopMatrix();
+	//render->PopMatrix();
 }
 
 void dMeshNodeInfo::DrawFlatShaded(dSceneRender* const render, dScene* const scene, dScene::dTreeNode* const myNode) const
 {
-	dAssert (myNode == scene->Find(GetUniqueID()));
+	dAssert (myNode == scene->Find(GetNodeID()));
 	dAssert (scene->GetInfoFromNode(myNode) == this);
 
 	int displayList = render->GetCachedFlatShadedDisplayList(m_mesh);
 	dAssert (displayList > 0);
 
-	render->PushMatrix(&m_matrix[0][0]);
-//render->SetColor(dVector(0, 0, 0, 0));
+	//render->PushMatrix(&m_matrix[0][0]);
 	render->DrawDisplayList(displayList);
-	render->PopMatrix();
+	//render->PopMatrix();
+}
+
+void dMeshNodeInfo::Serialize(TiXmlElement* const rootNode) const
+{
+	SerialiseBase(dGeometryNodeInfo, rootNode);
+	SerializeMesh(m_mesh, rootNode);
+}
+
+bool dMeshNodeInfo::Deserialize(const dScene* const scene, TiXmlElement* const rootNode)
+{
+	DeserialiseBase(scene, dGeometryNodeInfo, rootNode);
+	DeserializeMesh(m_mesh, rootNode);
+	return true;
 }

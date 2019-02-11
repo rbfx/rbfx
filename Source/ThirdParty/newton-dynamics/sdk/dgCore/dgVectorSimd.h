@@ -61,12 +61,11 @@ class dgVector
 	DG_INLINE dgVector (const dgFloat32* const ptr)
 		:m_type(_mm_loadu_ps (ptr))
 	{
-		m_type = _mm_and_ps (m_type, m_triplexMask.m_type);
 	}
 
 #ifndef	_NEWTON_USE_DOUBLE
 	DG_INLINE dgVector(const dgFloat64* const ptr)
-		:m_type(_mm_set_ps(dgFloat32(0.0f), dgFloat32(ptr[2]), dgFloat32(ptr[1]), dgFloat32(ptr[0])))
+		:m_type(_mm_set_ps(dgFloat32(ptr[3]), dgFloat32(ptr[2]), dgFloat32(ptr[1]), dgFloat32(ptr[0])))
 	{
 	}
 #endif
@@ -487,7 +486,8 @@ class dgBigVector
 #ifdef _NEWTON_USE_DOUBLE
 	DG_INLINE dgBigVector (const dgFloat32* const ptr)
 		:m_typeLow(_mm_loadu_pd(ptr))
-		,m_typeHigh(_mm_set_pd(dgFloat64(0.0f), ptr[2]))
+//		,m_typeHigh(_mm_set_pd(ptr[3], ptr[2]))
+		,m_typeHigh(_mm_loadu_pd(&ptr[2]))
 	{
 		dgAssert (dgCheckVector ((*this)));
 	}
@@ -502,7 +502,8 @@ class dgBigVector
 
 	DG_INLINE dgBigVector(const dgFloat64* const ptr)
 		:m_typeLow(_mm_loadu_pd(ptr))
-		,m_typeHigh(_mm_set_pd(dgFloat64(0.0f), ptr[2]))
+		//,m_typeHigh(_mm_set_pd(dgFloat64(0.0f), ptr[2]))
+		,m_typeHigh(_mm_loadu_pd(&ptr[2]))
 	{
 	}
 #endif

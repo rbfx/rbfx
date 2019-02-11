@@ -32,6 +32,35 @@ class dAnimationTrack: public dNodeInfo
 		dFloat m_z;
 		dFloat m_time;
 	};
+
+	class dCurve: public dList <dCurveValue>
+	{
+		public:
+		dCurve()
+			:dList <dCurveValue>()
+		{
+		}
+
+		dCurveValue Evaluate(dFloat t)
+		{
+			for (dListNode* ptr = GetFirst(); ptr->GetNext(); ptr = ptr->GetNext()) {
+				dCurveValue& info1 = ptr->GetNext()->GetInfo();
+				if (info1.m_time >= t) {
+					dCurveValue& info0 = ptr->GetInfo();
+					dCurveValue val;
+					dFloat param = (t - info0.m_time) / (info1.m_time - info0.m_time);
+					val.m_x = info0.m_x + (info1.m_x - info0.m_x) * param;
+					val.m_y = info0.m_y + (info1.m_y - info0.m_y) * param;
+					val.m_z = info0.m_z + (info1.m_z - info0.m_z) * param;
+					val.m_time = info0.m_time + (info1.m_time - info0.m_time) * param;
+					return val;
+				}
+			}
+			dAssert(0);
+			return dCurveValue();
+		}
+	};
+
 	D_DEFINE_CLASS_NODE(dAnimationTrack,dNodeInfo,DSCENE_API)
 
 	dAnimationTrack();
@@ -41,18 +70,27 @@ class dAnimationTrack: public dNodeInfo
 	const dList<dCurveValue>& GetPositions() const;
 	const dList<dCurveValue>& GetRotations() const;
 
+	void AddScale(dFloat time, dFloat x, dFloat y, dFloat z);
 	void AddPosition(dFloat time, dFloat x, dFloat y, dFloat z);
 	void AddRotation(dFloat time, dFloat x, dFloat y, dFloat z);
+	void AddKeyframe(dFloat time, const dMatrix& matrix);
+
 	void OptimizeCurves();
+	virtual void FreezeScale(const dMatrix& matrix);
 
 	protected:
+	void ResampleAnimation();
 	void OptimizeCurve(dList<dCurveValue>& curve);
+	dFloat FixAngleAlias(dFloat angle0, dFloat angle1) const;
+	dFloat Interpolate(dFloat x0, dFloat t0, dFloat x1, dFloat t1, dFloat t) const;
+	
 	virtual void BakeTransform(const dMatrix& matrix);
 	virtual void Serialize (TiXmlElement* const rootNode) const; 
 	virtual bool Deserialize (const dScene* const scene, TiXmlElement* const rootNode);
 
-	dList<dCurveValue> m_position;
-	dList<dCurveValue> m_rotation;
+	dCurve m_scale;
+	dCurve m_position;
+	dCurve m_rotation;
 };
 
 #endif

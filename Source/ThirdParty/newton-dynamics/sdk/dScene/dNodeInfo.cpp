@@ -23,9 +23,6 @@
 
 dInitRtti(dNodeInfo);
 
-
-unsigned dNodeInfo::m_uniqueIDCounter = 0;
-
 dTree<const dNodeInfo*, dCRCTYPE>& dNodeInfo::GetSingletonDictionary()
 {
 	static dTree<const dNodeInfo*, dCRCTYPE> dictionary;
@@ -43,29 +40,23 @@ dNodeInfo::dNodeInfo()
 	:dClassInfo()
 	,dVariableList() 
 	,m_name()
-	,m_uniqueID(m_uniqueIDCounter)
-	,m_fileIndex(0)
+	,m_uniqueID(-1)
 	,m_editorFlags(0)
 {
-	m_uniqueIDCounter ++;
 }
-
 
 dNodeInfo::dNodeInfo(const dNodeInfo& me)
 	:dClassInfo()
 	,dVariableList(me) 
 	,m_name(me.m_name)
-	,m_uniqueID (m_uniqueIDCounter)
-	,m_fileIndex(me.m_fileIndex)
+	,m_uniqueID(me.m_uniqueID)
 	,m_editorFlags(me.m_editorFlags)
 {
-	m_uniqueIDCounter ++;
 }
 
 dNodeInfo::~dNodeInfo(void)
 {
 }
-
 
 dNodeInfo* dNodeInfo::MakeCopy () const
 {
@@ -98,11 +89,11 @@ dNodeInfo* dNodeInfo::CreateFromClassName (const char* const className, dScene* 
 		const dNodeInfo* const singleton = node->GetInfo();
 		return singleton->MetaFunction(world);
 	} else {
-		m_uniqueIDCounter ++;
+		dAssert (0);
+		//m_uniqueIDCounter ++;
 	}
 	return NULL;
 }
-
 
 const char* dNodeInfo::GetName () const
 {
@@ -155,7 +146,7 @@ void dNodeInfo::SetEditorFlags(unsigned flags)
 void dNodeInfo::Serialize (TiXmlElement* const rootNode) const
 {
 	rootNode->SetAttribute("name", m_name.GetStr());
-	rootNode->SetAttribute("fileIndex", m_fileIndex);
+	rootNode->SetAttribute("nodeID", m_uniqueID);
 	rootNode->SetAttribute("editorFlags", m_editorFlags);
 	dVariableList::Serialize(rootNode);
 }
@@ -163,7 +154,7 @@ void dNodeInfo::Serialize (TiXmlElement* const rootNode) const
 bool dNodeInfo::Deserialize (const dScene* const scene, TiXmlElement* const rootNode) 
 {
 	SetName (rootNode->Attribute("name"));
-	rootNode->Attribute("fileIndex", (int*)&m_fileIndex);
+	rootNode->Attribute("nodeID", (int*)&m_uniqueID);
 	rootNode->Attribute("editorFlags", (int*)&m_editorFlags);
 
 	dVariableList::Deserialize(scene, rootNode);

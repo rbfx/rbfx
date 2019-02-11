@@ -1123,9 +1123,10 @@ xxxx.EndBuild(dgFloat64(1.0e-8f), false);
 	return delaunayPartition;
 }
 
-
 void dgMeshEffect::CreateTetrahedraLinearBlendSkinWeightsChannel (const dgMeshEffect* const tetrahedraMesh)
 {
+dgAssert(0);
+/*
 	dgRayTrataAABBAccelerator accelerator (tetrahedraMesh);
 	m_points.m_weights.Clear();
 	m_points.m_weights.Reserve(m_points.m_vertex.m_count);
@@ -1214,7 +1215,7 @@ void dgMeshEffect::CreateTetrahedraLinearBlendSkinWeightsChannel (const dgMeshEf
 			dgTrace (("%d %f %f %f\n", i, p.m_x, p.m_y, p.m_z));
 		}
 
-
 		overlapNodes.RemoveAll();
 	}
+*/
 }

@@ -36,6 +36,19 @@ dAnimIDController::~dAnimIDController ()
 	}
 }
 
+void* dAnimIDController::GetUserData() const
+{
+	return dCustomControllerBase::GetUserData();
+}
+
+void dAnimIDController::SetUserData(void* const userData)
+{
+	dAssert(0);
+	dAnimIDRigJoint::SetUserData(userData);
+	dCustomControllerBase::SetUserData(userData);
+}
+
+
 dAnimIDBlendNodeRoot* dAnimIDController::GetAnimationTree() const
 {
 	return m_animationTree;

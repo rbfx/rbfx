@@ -145,6 +145,9 @@ void dCustomBallAndSocket::Debug(dDebugDisplay* const debugDisplay) const
 
 	CalculateGlobalMatrix(matrix0, matrix1);
 
+	debugDisplay->DrawFrame(matrix0);
+	debugDisplay->DrawFrame(matrix1);
+
 	const dVector& coneDir0 = matrix0.m_front;
 	const dVector& coneDir1 = matrix1.m_front;
 	dFloat cosAngleCos = coneDir0.DotProduct3(coneDir1);
@@ -211,7 +214,6 @@ void dCustomBallAndSocket::Debug(dDebugDisplay* const debugDisplay) const
 		}
 	}
 }
-
 
 void dCustomBallAndSocket::SubmitConstraintTwistLimits(const dMatrix& matrix0, const dMatrix& matrix1, const dVector& relOmega, dFloat timestep)
 {

@@ -412,9 +412,6 @@ dgConstraint* dgBody::GetNextContact(dgConstraint* const joint) const
 	return NULL;
 }
 
-
-
-
 void dgBody::SetFreeze (bool state)
 {
 	if (state){

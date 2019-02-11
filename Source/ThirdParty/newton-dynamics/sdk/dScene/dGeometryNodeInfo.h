@@ -31,9 +31,9 @@ class dGeometryNodeInfo: public dNodeInfo
 	dGeometryNodeInfo(const dGeometryNodeInfo& me);
 	virtual ~dGeometryNodeInfo(void);
 
-	virtual const dMatrix& GetPivotMatrix () const;
-	virtual void SetPivotMatrix (const dMatrix& matrix);
-	virtual void BakeTransform (const dMatrix& matrix);
+//	virtual const dMatrix& GetPivotMatrix () const;
+//	virtual void SetPivotMatrix (const dMatrix& matrix);
+//	virtual void BakeTransform(const dMatrix& matrix) {};
 	virtual void CalcutateAABB (dVector& p0, dVector& p1) const;
 	virtual dFloat RayCast (const dVector& p0, const dVector& p1) const {return 1.0f;}
 
@@ -42,7 +42,7 @@ class dGeometryNodeInfo: public dNodeInfo
 	virtual void Serialize (TiXmlElement* const rootNode) const;
 	virtual bool Deserialize (const dScene* const scene, TiXmlElement* const rootNode);
 
-	dMatrix m_matrix;
+//	dMatrix m_matrix;
 };
 
 

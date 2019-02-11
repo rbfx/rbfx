@@ -44,7 +44,7 @@ class dSceneRender;
 	}																		\
 	exportType static const className& GetSingleton()						\
 	{																		\
-		className dommyRegister;														\
+		className dommyRegister;											\
 		return m_singletonClass;											\
 	}																		\
 	static className m_singletonClass;
@@ -92,6 +92,9 @@ class dNodeInfo: public dClassInfo, public dVariableList
 	dNodeInfo();
 	dNodeInfo(const dNodeInfo& me);
 	virtual ~dNodeInfo(void);
+
+	const int GetNodeID() const {return m_uniqueID;}
+
 	virtual dNodeInfo* MakeCopy () const;
 	virtual const char* GetClassName () const;		
 	virtual const char* GetBaseClassName ()	const;
@@ -111,11 +114,7 @@ class dNodeInfo: public dClassInfo, public dVariableList
 	virtual void DrawFlatShaded(dSceneRender* const render, dScene* const scene, dScene::dTreeNode* const myNode) const{dAssert (0);}
 
 	virtual void BakeTransform (const dMatrix& transform){};
-	virtual unsigned GetUniqueID() const {return m_uniqueID;}
-	virtual void SetUniqueID(unsigned id) {m_uniqueID = id;}
-
-	void SetFileIndex(int fileIndex) { m_fileIndex = fileIndex;}
-
+	
 	static dNodeInfo* CreateFromClassName (const char* const className, dScene* const world);
 	static dTree<const dNodeInfo*, dCRCTYPE>& GetSingletonDictionary();
 	static void ReplaceSingletonClass (const char* const className, const dNodeInfo* const singleton);
@@ -124,10 +123,11 @@ class dNodeInfo: public dClassInfo, public dVariableList
 
 	private:
 	dString m_name;
-	unsigned m_uniqueID;
-	unsigned m_fileIndex;
+	int m_uniqueID;
 	unsigned m_editorFlags;
-	static unsigned m_uniqueIDCounter;
+
+	friend class dScene;
+	friend class dSceneGraph;
 };
 
 #endif

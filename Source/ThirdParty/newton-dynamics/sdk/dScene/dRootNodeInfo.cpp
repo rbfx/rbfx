@@ -38,7 +38,6 @@ dRootNodeInfo::~dRootNodeInfo(void)
 }
 
 
-
 void dRootNodeInfo::Serialize (TiXmlElement* const rootNode) const
 {
 	SerialiseBase(dNodeInfo, rootNode);

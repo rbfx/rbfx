@@ -57,6 +57,7 @@ void dCustomPlane::SubmitConstraints (dFloat timestep, int threadIndex)
 	CalculateGlobalMatrix (matrix0, matrix1);
 
 	// Restrict the movement on the pivot point along all two orthonormal axis direction perpendicular to the motion
+dAssert(0);
 	SubmitLinearRows(0x01, matrix0, matrix1);
 
 	// construct an orthogonal coordinate system with these two vectors

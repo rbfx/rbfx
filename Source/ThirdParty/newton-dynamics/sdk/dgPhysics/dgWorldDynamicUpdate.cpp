@@ -126,21 +126,6 @@ void dgWorldDynamicUpdate::UpdateDynamics(dgFloat32 timestep)
 			count++;
 		}
 		if (count) {
-#if 0
-			dgBodyInfo* const bodyArrayPtr = &world->m_bodiesMemory[0];
-			for (dgInt32 i = count - 1; i >= 0; i --) {
-				const dgBodyCluster* const cluster = &m_clusterData[i];
-				for (dgInt32 j = 1; j < cluster->m_bodyCount; j ++) {
-					const dgBodyInfo* const bodyInfo = &bodyArrayPtr[cluster->m_bodyStart + j];
-					dgSkeletonContainer* const skeleton = bodyInfo->m_body->GetSkeleton();
-					if (skeleton) {
-						dgSwap(m_clusterData[count - 1], m_clusterData[i]);
-						count --;
-						break;
-					}
-				}
-			} 
-#endif
 			if (count) {
 				CalculateReactionForcesParallel(&m_clusterData[index], count, timestep);
 				index += count;
@@ -190,14 +175,12 @@ dgInt32 dgWorldDynamicUpdate::CompareKey(dgInt32 highA, dgInt32 lowA, dgInt32 hi
 
 dgInt32 dgWorldDynamicUpdate::CompareJointInfos(const dgJointInfo* const infoA, const dgJointInfo* const infoB, void*)
 {
-	dgInt32 ret = CompareKey(infoA->m_jointCount, infoA->m_setId, infoB->m_jointCount, infoB->m_setId);;
-	return ret;
+	return CompareKey(infoA->m_jointCount, infoA->m_setId, infoB->m_jointCount, infoB->m_setId);
 }
 
 dgInt32 dgWorldDynamicUpdate::CompareClusterInfos(const dgBodyCluster* const clusterA, const dgBodyCluster* const clusterB, void* notUsed)
 {
-	dgInt32 ret = CompareKey(clusterA->m_jointCount, clusterA->m_bodyStart, clusterB->m_jointCount, clusterB->m_bodyStart);;
-	return ret;
+	return CompareKey(clusterA->m_jointCount, clusterA->m_bodyStart, clusterB->m_jointCount, clusterB->m_bodyStart);
 }
 
 void dgWorldDynamicUpdate::BuildClusters(dgFloat32 timestep)
@@ -821,6 +804,9 @@ void dgWorldDynamicUpdate::BuildJacobianMatrix(dgBodyCluster* const cluster, dgI
 				dgAssert(body->m_invMass.m_w > dgFloat32(0.0f));
 				body->AddDampingAcceleration(timestep);
 				body->CalcInvInertiaMatrix();
+				if (body->m_gyroTorqueOn) {
+					body->m_gyroTorque = body->m_omega.CrossProduct(body->CalculateAngularMomentum());
+				}
 			}
 
 			// re use these variables for temp storage 
@@ -830,7 +816,6 @@ void dgWorldDynamicUpdate::BuildJacobianMatrix(dgBodyCluster* const cluster, dgI
 			internalForces[i].m_linear = dgVector::m_zero;
 			internalForces[i].m_angular = dgVector::m_zero;
 		}
-
 	} else {
 		for (dgInt32 i = 1; i < bodyCount; i++) {
 			dgBody* const body = bodyArray[i].m_body;

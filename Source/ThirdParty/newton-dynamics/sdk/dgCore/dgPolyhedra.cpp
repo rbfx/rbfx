@@ -413,8 +413,6 @@ void dgPolyhedra::DeleteFace(dgEdge* const face)
 	}
 }
 
-
-
 dgBigVector dgPolyhedra::FaceNormal (const dgEdge* const face, const dgFloat64* const pool, dgInt32 strideInBytes) const
 {
 	dgInt32 stride = dgInt32 (strideInBytes / sizeof (dgFloat64));

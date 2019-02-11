@@ -135,7 +135,7 @@ namespace Urho3D {
 
 
             dgQuaternion orientation;
-            NewtonBodyGetRotation(newtonBody_, &orientation[0]);
+            NewtonBodyGetRotation(newtonBody_, &orientation.m_x);
 
             Matrix3x4 transform(position, NewtonToUrhoQuat(orientation), 1.0f);
             NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(transform))[0][0]);
@@ -214,7 +214,7 @@ namespace Urho3D {
     Quaternion RigidBody::GetPhysicsRotation() { 
         if(newtonBody_){
             dgQuaternion bodyOrientation;
-            NewtonBodyGetRotation(newtonBody_, &bodyOrientation[0]);
+            NewtonBodyGetRotation(newtonBody_, &bodyOrientation.m_x);
             return NewtonToUrhoQuat(bodyOrientation);
         }
         else {
@@ -1037,7 +1037,7 @@ namespace Urho3D {
             if (newtonBody_)
             {
                 dgQuaternion orientation;
-                NewtonBodyGetRotation(newtonBody_, &orientation[0]);
+                NewtonBodyGetRotation(newtonBody_, &orientation.m_x);
 
                 Matrix3x4 transform(nextPosition_, NewtonToUrhoQuat(orientation), 1.0f);
                 NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(transform))[0][0]);
@@ -1306,7 +1306,7 @@ namespace Urho3D {
         dVector pos;
         dQuaternion quat;
         NewtonBodyGetPosition(newtonBody_, &pos[0]);
-        NewtonBodyGetRotation(newtonBody_, &quat.m_q0);
+        NewtonBodyGetRotation(newtonBody_, &quat.m_x);
 
 
 

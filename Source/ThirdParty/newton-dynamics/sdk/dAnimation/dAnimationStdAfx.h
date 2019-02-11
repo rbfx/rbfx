@@ -55,6 +55,7 @@
 #include <dList.h>
 #include <dTree.h>
 #include <dRtti.h>
+#include <dArray.h>
 
 #include <dClassInfo.h>
 #include <dRefCounter.h>

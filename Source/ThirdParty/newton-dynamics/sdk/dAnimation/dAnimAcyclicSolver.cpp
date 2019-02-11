@@ -1186,7 +1186,7 @@ void dAnimAcyclicSolver::DebugMassMatrix()
 
 void dAnimAcyclicSolver::Update(dFloat timestep)
 {
-	if (!m_rootNode->m_children.GetCount()) {
+	if (!(m_rootNode && m_rootNode->m_children.GetCount())) {
 		return;
 	}
 

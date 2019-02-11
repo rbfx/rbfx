@@ -522,7 +522,6 @@ class dMap
 		}
 
 		private:
-		//dTrackerRedBlackTree* m_ptr;
 		dTreeNode* m_ptr;
 		const dMap* m_tree;
 	};
@@ -871,7 +870,7 @@ typename dMap<OBJECT, KEY>::dTreeNode* dMap<OBJECT, KEY>::Insert (typename dMap<
 			parent->m_right = ptr;
 		}
 	}
-	ptr->InsertFixup ((dTrackerRedBlackTree**)&m_head);
+	ptr->InsertFixup ((dTreeNode**)&m_head);
 	return ptr;
 }
 
@@ -905,7 +904,7 @@ typename dMap<OBJECT, KEY>::dTreeNode* dMap<OBJECT, KEY>::Replace (OBJECT &eleme
 			parent->m_right = ptr;
 		}
 	}
-	ptr->InsertFixup ((dTrackerRedBlackTree**)&m_head);
+	ptr->InsertFixup ((dTreeNode**)&m_head);
 	return ptr;
 }
 
@@ -930,9 +929,8 @@ template<class OBJECT, class KEY>
 void dMap<OBJECT, KEY>::Unlink (typename dMap<OBJECT, KEY>::dTreeNode* const node)
 {
 	m_count	--;
-	node->Unlink((dTrackerRedBlackTree** )&m_head);
+	node->Unlink((dTreeNode** )&m_head);
 }
-
 
 template<class OBJECT, class KEY>
 void dMap<OBJECT, KEY>::Remove (typename dMap<OBJECT, KEY>::dTreeNode* const node)

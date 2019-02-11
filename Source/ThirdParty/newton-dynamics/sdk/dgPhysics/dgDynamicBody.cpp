@@ -194,7 +194,6 @@ void dgDynamicBody::SetMatrixNoSleep(const dgMatrix& matrix)
 	CalcInvInertiaMatrix();
 }
 
-
 void dgDynamicBody::AttachCollision (dgCollisionInstance* const collision)
 {
 	dgBody::AttachCollision(collision);
@@ -254,8 +253,9 @@ void dgDynamicBody::ApplyExtenalForces (dgFloat32 timestep, dgInt32 threadIndex)
 		m_applyExtForces(*this, timestep, threadIndex);
 	}
 
+	
 	m_gyroRotation = m_rotation;
-	m_gyroTorque = m_omega.CrossProduct(CalculateAngularMomentum());
+	m_gyroTorque = dgVector::m_zero;
 
 	m_externalForce += m_impulseForce;
 	m_externalTorque += m_impulseTorque;

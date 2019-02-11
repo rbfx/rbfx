@@ -205,6 +205,7 @@ void dgBilateralConstraint::SetJacobianDerivative (dgInt32 index, dgContraintDes
 	dgJacobian &jacobian0 = desc.m_jacobian[index].m_jacobianM0; 
 	dgJacobian &jacobian1 = desc.m_jacobian[index].m_jacobianM1; 
 
+	m_r0[index] = dgVector::m_zero;
 	jacobian0.m_linear[0] = jacobianA[0];
 	jacobian0.m_linear[1] = jacobianA[1];
 	jacobian0.m_linear[2] = jacobianA[2];
@@ -214,6 +215,7 @@ void dgBilateralConstraint::SetJacobianDerivative (dgInt32 index, dgContraintDes
 	jacobian0.m_angular[2] = jacobianA[5];
 	jacobian0.m_angular[3] = dgFloat32 (0.0f);
 
+	m_r1[index] = dgVector::m_zero;
 	jacobian1.m_linear[0] = jacobianB[0];
 	jacobian1.m_linear[1] = jacobianB[1];
 	jacobian1.m_linear[2] = jacobianB[2];
@@ -284,6 +286,7 @@ void dgBilateralConstraint::CalculateAngularDerivative (dgInt32 index, dgContrai
 	dgAssert (dir.m_w == dgFloat32 (0.0f));
 
 	dgJacobian &jacobian0 = desc.m_jacobian[index].m_jacobianM0; 
+	m_r0[index] = dgVector::m_zero;
 	jacobian0.m_linear = dgVector::m_zero;
 	jacobian0.m_angular[0] = dir.m_x;
 	jacobian0.m_angular[1] = dir.m_y;
@@ -292,6 +295,7 @@ void dgBilateralConstraint::CalculateAngularDerivative (dgInt32 index, dgContrai
 
 	dgJacobian &jacobian1 = desc.m_jacobian[index].m_jacobianM1; 
 	dgAssert (m_body1);
+	m_r1[index] = dgVector::m_zero;
 	jacobian1.m_linear = dgVector::m_zero;
 	jacobian1.m_angular[0] = -dir.m_x;
 	jacobian1.m_angular[1] = -dir.m_y;
@@ -348,6 +352,7 @@ void dgBilateralConstraint::CalculatePointDerivative (dgInt32 index, dgContraint
 
 	dgJacobian &jacobian0 = desc.m_jacobian[index].m_jacobianM0; 
 	dgVector r0CrossDir (param.m_r0.CrossProduct(dir));
+	m_r0[index] = param.m_r0;
 	jacobian0.m_linear[0] = dir.m_x;
 	jacobian0.m_linear[1] = dir.m_y;
 	jacobian0.m_linear[2] = dir.m_z;
@@ -359,6 +364,7 @@ void dgBilateralConstraint::CalculatePointDerivative (dgInt32 index, dgContraint
 
 	dgJacobian &jacobian1 = desc.m_jacobian[index].m_jacobianM1; 
 	dgVector r1CrossDir (dir.CrossProduct(param.m_r1));
+	m_r1[index] = param.m_r1;
 	jacobian1.m_linear[0] = -dir.m_x;
 	jacobian1.m_linear[1] = -dir.m_y;
 	jacobian1.m_linear[2] = -dir.m_z;
@@ -378,17 +384,18 @@ void dgBilateralConstraint::CalculatePointDerivative (dgInt32 index, dgContraint
 		dgVector positError (param.m_posit1 - param.m_posit0);
 		dgFloat32 relPosit = positError.DotProduct(dir).GetScalar();
 
-		//dgVector centrError (param.m_centripetal1 - param.m_centripetal0);
-		//dgFloat32 relCentr = centrError.DotProduct(dir).GetScalar(); 
-		//relCentr = dgClamp (relCentr, dgFloat32(-100000.0f), dgFloat32(100000.0f));
-
-		const dgVector& bodyVeloc0 = m_body0->m_veloc;
+		//const dgVector& bodyVeloc0 = m_body0->m_veloc;
 		const dgVector& bodyOmega0 = m_body0->m_omega;
-		const dgVector& bodyVeloc1 = m_body1->m_veloc;
+		//const dgVector& bodyVeloc1 = m_body1->m_veloc;
 		const dgVector& bodyOmega1 = m_body1->m_omega;
-		dgVector accel(bodyVeloc0 * bodyOmega0.CrossProduct(jacobian0.m_linear) + bodyOmega0 * bodyOmega0.CrossProduct(jacobian0.m_angular) +
-					   bodyVeloc1 * bodyOmega1.CrossProduct(jacobian1.m_linear) + bodyOmega1 * bodyOmega1.CrossProduct(jacobian1.m_angular));
-		dgFloat32 relCentr = -accel.AddHorizontal().GetScalar();
+		//dgVector accel(bodyVeloc0 * bodyOmega0.CrossProduct(jacobian0.m_linear) + bodyOmega0 * bodyOmega0.CrossProduct(jacobian0.m_angular) +
+		//			   bodyVeloc1 * bodyOmega1.CrossProduct(jacobian1.m_linear) + bodyOmega1 * bodyOmega1.CrossProduct(jacobian1.m_angular));
+		//dgFloat32 relCentr = -(accel + centripetalAccel).AddHorizontal().GetScalar();
+
+		const dgVector& centripetal0 (bodyOmega0.CrossProduct(bodyOmega0.CrossProduct(m_r0[index])));
+		const dgVector& centripetal1 (bodyOmega1.CrossProduct(bodyOmega1.CrossProduct(m_r1[index])));
+		const dgVector centripetalAccel (jacobian0.m_linear * centripetal0 + jacobian1.m_linear * centripetal1);
+		dgFloat32 relCentr = -centripetalAccel.AddHorizontal().GetScalar();
 
 		//desc.m_zeroRowAcceleration[index] = (relPosit * desc.m_invTimestep + relVeloc) * desc.m_invTimestep;
 		desc.m_zeroRowAcceleration[index] = relVeloc * desc.m_invTimestep;
@@ -444,11 +451,17 @@ void dgBilateralConstraint::JointAccelerations(dgJointAccelerationDecriptor* con
 				const dgJacobianPair& Jt = row[k].m_Jt;
 
 				#if 1
-				dgFloat32 aRel = params->m_firstPassCoefFlag ? rhs[k].m_deltaAccel : rhs[k].m_coordenateAccel;
+				//calculate internal centripetal each sub step 
+				const dgVector& centripetal0(bodyOmega0.CrossProduct(bodyOmega0.CrossProduct(m_r0[k])));
+				const dgVector& centripetal1(bodyOmega1.CrossProduct(bodyOmega1.CrossProduct(m_r1[k])));
+				const dgVector centripetalAccel(Jt.m_jacobianM0.m_linear * centripetal0 + Jt.m_jacobianM1.m_linear * centripetal1);
+				dgFloat32 relCentr = -centripetalAccel.AddHorizontal().GetScalar();
 				#else			
-				dgVector accel(bodyVeloc0 * bodyOmega0.CrossProduct(Jt.m_jacobianM0.m_linear) + bodyOmega0 * bodyOmega0.CrossProduct(Jt.m_jacobianM0.m_angular) +
-							   bodyVeloc1 * bodyOmega1.CrossProduct(Jt.m_jacobianM1.m_linear) + bodyOmega1 * bodyOmega1.CrossProduct(Jt.m_jacobianM1.m_angular));
-				dgFloat32 aRel = rhs[k].m_deltaAccel - accel.AddHorizontal().GetScalar(); 
+				//interpolate internal centripetal each sub step 
+				dgFloat32 relCentr = params->m_firstPassCoefFlag ? rhs[k].m_deltaAccel : rhs[k].m_coordenateAccel;
+				//dgVector accel(bodyVeloc0 * bodyOmega0.CrossProduct(Jt.m_jacobianM0.m_linear) + bodyOmega0 * bodyOmega0.CrossProduct(Jt.m_jacobianM0.m_angular) +
+				//			   bodyVeloc1 * bodyOmega1.CrossProduct(Jt.m_jacobianM1.m_linear) + bodyOmega1 * bodyOmega1.CrossProduct(Jt.m_jacobianM1.m_angular));
+				//dgFloat32 relCentr = rhs[k].m_deltaAccel - accel.AddHorizontal().GetScalar(); 
 				#endif
 
 				dgVector relVeloc (Jt.m_jacobianM0.m_linear * bodyVeloc0 + Jt.m_jacobianM0.m_angular * bodyOmega0 +
@@ -473,7 +486,7 @@ void dgBilateralConstraint::JointAccelerations(dgJointAccelerationDecriptor* con
 				dgFloat32 num = ks * relPosit - kd * vRel - ksd * vRel;
 				dgFloat32 den = dgFloat32(1.0f) + dt * kd + dt * ksd;
 				dgFloat32 aRelErr = num / den;
-				rhs[k].m_coordenateAccel = aRelErr + aRel;
+				rhs[k].m_coordenateAccel = aRelErr + relCentr;
 			}
 		}
 	} else {

@@ -1058,7 +1058,7 @@ bool dgBroadPhase::ValidateContactCache(dgContact* const contact, dgFloat32 time
 			rotationStep = ((rotationStep.DotProduct(rotationStep)) > m_velocTol) & rotationStep;
 			contact->m_rotationAcc = contact->m_rotationAcc * dgQuaternion(dgFloat32(1.0f), rotationStep.m_x, rotationStep.m_y, rotationStep.m_z);
 
-			dgVector angle(contact->m_rotationAcc.m_q1, contact->m_rotationAcc.m_q2, contact->m_rotationAcc.m_q3, dgFloat32(0.0f));
+			dgVector angle(contact->m_rotationAcc.m_x, contact->m_rotationAcc.m_y, contact->m_rotationAcc.m_z, dgFloat32(0.0f));
 			dgVector rotatError2(angle.DotProduct(angle));
 			if ((rotatError2 < m_angularContactError2).GetSignMask()) {
 				return true;

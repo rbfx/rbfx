@@ -321,6 +321,12 @@ void dVehicleVirtualTire::Debug(dCustomJoint::dDebugDisplay* const debugContext)
 
 	dVehicleSingleBody* const chassis = (dVehicleSingleBody*)((dVehicleNode*)m_parent)->GetAsVehicle();
 	dAssert (chassis);
+
+	// render tire matrix
+	dMatrix hubTireMatrix(GetHardpointMatrix(m_position * m_invSuspensionLength) * chassis->GetMatrix());
+	debugContext->DrawFrame(hubTireMatrix, 1.0f);
+	//debugContext->DrawFrame(tireMatrix, 1.0f);
+
 	dVector weight (chassis->m_gravity.Scale(chassis->GetProxyBody()->GetMass()));
 	dFloat scale (1.0f / dSqrt (weight.DotProduct3(weight)));
 

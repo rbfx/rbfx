@@ -508,8 +508,11 @@ void dgPolyhedraMassProperties::AddInertiaAndCrossFace (dgInt32 indexCount, cons
 
 	dgVector p0 (&faceVertex[0]);
 	dgVector p1 (&faceVertex[3]);
+	p0 = p0 & dgVector::m_triplexMask;
+	p1 = p1 & dgVector::m_triplexMask;
 	for (dgInt32 i = 2; i < indexCount; i++) {
 		dgVector p2 (&faceVertex[i * 3]);
+		p2 = p2 & dgVector::m_triplexMask;
 
 		dgVector e01 (p1 - p0);
 		dgVector e02 (p2 - p0);

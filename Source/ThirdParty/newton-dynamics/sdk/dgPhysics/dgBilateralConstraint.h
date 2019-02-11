@@ -77,6 +77,8 @@ class dgBilateralConstraint: public dgConstraint
 
 	void AppendToJointList();
 	
+	dgVector m_r0[DG_BILATERAL_CONTRAINT_DOF];
+	dgVector m_r1[DG_BILATERAL_CONTRAINT_DOF];
 	dgForceImpactPair m_jointForce[DG_BILATERAL_CONTRAINT_DOF];
 	dgFloat32 m_motorAcceleration[DG_BILATERAL_CONTRAINT_DOF];
 	dgFloat32 m_inverseDynamicsAcceleration[DG_BILATERAL_CONTRAINT_DOF];

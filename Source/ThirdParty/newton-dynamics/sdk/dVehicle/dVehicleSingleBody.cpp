@@ -18,7 +18,7 @@
 
 dVehicleSingleBody::dVehicleSingleBody(dVehicleChassis* const chassis)
 	:dVehicleInterface(chassis)
-	,m_gravity(0.0f)
+	,m_gravity(0.0f, -10.0f, 0.0f, 0.0f)
 	,m_groundNode(NULL)
 	,m_chassis(chassis)
 {

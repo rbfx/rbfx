@@ -213,8 +213,8 @@ void dCustomRagdollMotor_2dof::SubmitConstraints(dFloat timestep, int threadInde
 	// factor rotation about x axis between quat0 and quat1. 
 	// Code is an optimization of this: qt = q0.Inversed() * q1; 
 	// halfTwistAngle = atan (qt.x / qt.w);
-	dFloat* const q0 = &quat0.m_q0;
-	dFloat* const q1 = &quat1.m_q0;
+	dFloat* const q0 = &quat0.m_w;
+	dFloat* const q1 = &quat1.m_w;
 	dFloat num = (q0[0] * q1[1]) + (-q0[1] * q1[0]) + (-q0[2] * q1[3]) - (-q0[3] * q1[2]);
 	dFloat den = (q0[0] * q1[0]) - (-q0[1] * q1[1]) - (-q0[2] * q1[2]) - (-q0[3] * q1[3]);
 	dFloat twistAngle = 2.0f * dAtan2(num, den);
@@ -664,9 +664,9 @@ void dCustomInverseDynamicsEffector::SubmitConstraints(dFloat timestep, int thre
 
 	if (m_isSixdof) {
 		dQuaternion rotation(matrix0.Inverse() * m_targetMatrix);
-		if (dAbs(rotation.m_q0) < 0.99998f) {
-			dMatrix rot(dGrammSchmidt(dVector(rotation.m_q1, rotation.m_q2, rotation.m_q3)));
-			dFloat angle = 2.0f * dAcos(dClamp(rotation.m_q0, dFloat(-1.0f), dFloat(1.0f)));
+		if (dAbs(rotation.m_w) < 0.99998f) {
+			dMatrix rot(dGrammSchmidt(dVector(rotation.m_x, rotation.m_y, rotation.m_z)));
+			dFloat angle = 2.0f * dAcos(dClamp(rotation.m_w, dFloat(-1.0f), dFloat(1.0f)));
 			NewtonUserJointAddAngularRow(m_joint, angle, &rot.m_front[0]);
 			dFloat alpha = NewtonUserJointGetRowAcceleration (m_joint);
 			if (dAbs (alpha) > m_angularSpeed * invTimestep) {
@@ -723,7 +723,7 @@ void dEffectorTreeRoot::Evaluate(dEffectorPose& output, dFloat timestep)
 
 	dVector rootPosition;
 	dQuaternion rootRotation;
-	NewtonBodyGetRotation(m_rootBody, &rootRotation.m_q0);
+	NewtonBodyGetRotation(m_rootBody, &rootRotation.m_x);
 	NewtonBodyGetPosition(m_rootBody, &rootPosition.m_x);
 	rootPosition.m_w = 1.0f;
 

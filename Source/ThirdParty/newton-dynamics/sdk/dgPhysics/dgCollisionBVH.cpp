@@ -201,6 +201,7 @@ dgFloat32 dgCollisionBVH::RayHit (void* const context, const dgFloat32* const po
 {
 	dgBVHRay& me = *((dgBVHRay*) context);
 	dgVector normal (&polygon[indexArray[indexCount + 1] * (strideInBytes / sizeof (dgFloat32))]);
+	normal = normal & dgVector::m_triplexMask;
 	dgFloat32 t = me.PolygonIntersect (normal, me.m_t, polygon, strideInBytes, indexArray, indexCount);
 	if (t <= (me.m_t * dgFloat32 (1.0001f))) {
 //		if ((t * dgFloat32 (1.0001f)) >= me.m_t) {
@@ -224,14 +225,13 @@ dgFloat32 dgCollisionBVH::RayHit (void* const context, const dgFloat32* const po
 	return t;
 }
 
-
-
 dgFloat32 dgCollisionBVH::RayHitUser (void* const context, const dgFloat32* const polygon, dgInt32 strideInBytes, const dgInt32* const indexArray, dgInt32 indexCount)
 {
 	dgAssert (0);
 	dgFloat32 t = dgFloat32 (1.2f);
 	dgBVHRay& me = *((dgBVHRay*) context);
 	dgVector normal (&polygon[indexArray[indexCount + 1] * (strideInBytes / sizeof (dgFloat32))]);
+	normal = normal & dgVector::m_triplexMask;
 dgAssert (0);
 	t = me.PolygonIntersect (normal, me.m_t, polygon, strideInBytes, indexArray, indexCount);
 	if (t < dgFloat32 (1.0f)) {
@@ -305,7 +305,7 @@ dgIntersectStatus dgCollisionBVH::GetPolygon (void* const context, const dgFloat
 		const dgVector scale = data.m_polySoupInstance->GetScale();
 		dgMatrix matrix (data.m_polySoupInstance->GetLocalMatrix() * data.m_polySoupBody->GetMatrix());
 		for (dgInt32 i = 0; i < indexCount; i ++ ) {
-			dgVector p (matrix.TransformVector(scale * dgVector(&polygon[indexArray[i] * stride]))); 
+			dgVector p (matrix.TransformVector(scale * (dgVector(&polygon[indexArray[i] * stride]) & dgVector::m_triplexMask))); 
 			triplex[i].m_x = p.m_x;
 			triplex[i].m_y = p.m_y;
 			triplex[i].m_z = p.m_z;
@@ -335,8 +335,6 @@ dgIntersectStatus dgCollisionBVH::GetPolygon (void* const context, const dgFloat
 	
 	return t_ContinueSearh;
 }
-
-
 
 void dgCollisionBVH::GetCollidingFaces (dgPolygonMeshDesc* const data) const
 {
@@ -393,6 +391,7 @@ dgIntersectStatus dgCollisionBVH::ShowDebugPolygon (void* const context, const d
 	dgCollisionBVHShowPolyContext& data = *(dgCollisionBVHShowPolyContext*) context;
 	for (dgInt32 i = 0; i < indexCount; i ++ ) {
 		dgVector p (&polygon[indexArray[i] * stride]);
+		p = p & dgVector::m_triplexMask;
 		p = data.m_matrix.TransformVector(p);
 		triplex[i].m_x = p.m_x;
 		triplex[i].m_y = p.m_y;

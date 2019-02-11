@@ -3023,6 +3023,8 @@ void NewtonConvexCollisionCalculateBuoyancyAcceleration (const NewtonCollision* 
 	
 	dgVector origin (shapeOrigin);
 	dgVector gravity (gravityVector);
+	origin = origin & dgVector::m_triplexMask;
+	gravity = gravity & dgVector::m_triplexMask;
 	dgVector plane (fluidPlane[0], fluidPlane[1], fluidPlane[2], fluidPlane[3]);
 
 	dgVector force;
@@ -3129,6 +3131,11 @@ int NewtonUserMeshCollisionContinuousOverlapTest (const NewtonUserMeshCollisionC
 
 	dgVector q0 (collideDescData->m_boxP0);
 	dgVector q1 (collideDescData->m_boxP1);
+
+	p0 = p0 & dgVector::m_triplexMask;
+	p1 = p1 & dgVector::m_triplexMask;
+	q0 = q0 & dgVector::m_triplexMask;
+	q1 = q1 & dgVector::m_triplexMask;
 
 	dgVector box0 (p0 - q1);
 	dgVector box1 (p1 - q0);
@@ -4954,10 +4961,10 @@ void NewtonBodyGetRotation(const NewtonBody* const bodyPtr, dFloat* const rotPtr
 	TRACE_FUNCTION(__FUNCTION__);
 	dgBody* const body = (dgBody *)bodyPtr;
 	dgQuaternion rot = body->GetRotation();
-	rotPtr[0] = rot.m_q0;
-	rotPtr[1] = rot.m_q1;
-	rotPtr[2] = rot.m_q2;
-	rotPtr[3] = rot.m_q3;
+	rotPtr[0] = rot.m_x;
+	rotPtr[1] = rot.m_y;
+	rotPtr[2] = rot.m_z;
+	rotPtr[3] = rot.m_w;
 }
 
 
@@ -5827,6 +5834,20 @@ void NewtonBodySetFreezeState(const NewtonBody* const bodyPtr, int state)
 	TRACE_FUNCTION(__FUNCTION__);
 	dgBody* const body = (dgBody *)bodyPtr;
 	body->SetFreeze(state ? true : false);
+}
+
+int NewtonBodyGetGyroscopicTorque(const NewtonBody* const bodyPtr)
+{
+	TRACE_FUNCTION(__FUNCTION__);
+	dgBody* const body = (dgBody *)bodyPtr;
+	return body->GetGyroMode() ? 1 : 0;
+}
+
+void NewtonBodySetGyroscopicTorque(const NewtonBody* const bodyPtr, int state)
+{
+	TRACE_FUNCTION(__FUNCTION__);
+	dgBody* const body = (dgBody *)bodyPtr;
+	body->SetGyroMode(state ? true : false);
 }
 
 /*!
@@ -7780,6 +7801,7 @@ NewtonMesh* NewtonMeshCreateTetrahedraIsoSurface(const NewtonMesh* const closeMa
 
 void NewtonCreateTetrahedraLinearBlendSkinWeightsChannel(const NewtonMesh* const tetrahedraMesh, NewtonMesh* const skinMesh)
 {
+	dgAssert(0);
 	TRACE_FUNCTION(__FUNCTION__);
 	dgMeshEffect* const meshEffect = (dgMeshEffect*)skinMesh;
 	meshEffect->CreateTetrahedraLinearBlendSkinWeightsChannel((const dgMeshEffect*)tetrahedraMesh);
@@ -8064,21 +8086,6 @@ void NewtonMeshAddVertexColor(const NewtonMesh* const mesh, dFloat32 r, dFloat32
 	meshEffect->AddVertexColor(r, g, b, a);
 }
 
-void NewtonMeshAddVertexWeight(const NewtonMesh* const mesh, int matrixIndex[4], dFloat32 weights[4])
-{
-	TRACE_FUNCTION(__FUNCTION__);
-
-	dgMeshEffect* const meshEffect = (dgMeshEffect*)mesh;
-
-	dgMeshEffect::dgWeights weightSet;
-	for (int i = 0; i < 4; i ++) {
-		weightSet.m_weightBlends[i] = weights[i];
-		weightSet.m_controlIndex[i] = matrixIndex[i];
-	}
-
-	meshEffect->AddWeights (weightSet);
-}
-
 void NewtonMeshEndBuild(const NewtonMesh* const mesh)
 {
 	TRACE_FUNCTION(__FUNCTION__);
@@ -8122,14 +8129,25 @@ void NewtonMeshOptimize(const NewtonMesh* const mesh)
 	NewtonMeshOptimizeVertex(mesh);
 }
 
-
 int NewtonMeshGetVertexCount(const NewtonMesh* const mesh)
 {
 	TRACE_FUNCTION(__FUNCTION__);	
 	dgMeshEffect* const meshEffect = (dgMeshEffect*) mesh;
-
-//	return meshEffect->GetPropertiesCount();
 	return meshEffect->GetVertexCount();
+}
+
+int NewtonMeshGetVertexBaseCount(const NewtonMesh* const mesh)
+{
+	TRACE_FUNCTION(__FUNCTION__);
+	dgMeshEffect* const meshEffect = (dgMeshEffect*)mesh;
+	return meshEffect->GetVertexBaseCount();
+}
+
+void NewtonMeshSetVertexBaseCount(const NewtonMesh* const mesh, int baseCount)
+{
+	TRACE_FUNCTION(__FUNCTION__);
+	dgMeshEffect* const meshEffect = (dgMeshEffect*)mesh;
+	meshEffect->SetVertexBaseCount(baseCount);
 }
 
 int NewtonMeshGetVertexStrideInByte(const NewtonMesh* const mesh)
@@ -8148,7 +8166,6 @@ const dFloat64* NewtonMeshGetVertexArray (const NewtonMesh* const mesh)
 	return meshEffect->GetVertexPool (); 
 }
 
-
 int NewtonMeshGetPointCount (const NewtonMesh* const mesh)
 {
 	TRACE_FUNCTION(__FUNCTION__);
@@ -8161,21 +8178,6 @@ const int* NewtonMeshGetIndexToVertexMap(const NewtonMesh* const mesh)
 	TRACE_FUNCTION(__FUNCTION__);
 	dgMeshEffect* const meshEffect = (dgMeshEffect*)mesh;
 	return meshEffect->GetIndexToVertexMap();
-}
-/*
-int NewtonMeshGetVertexWeights(const NewtonMesh* const mesh, int vertexIndex, int* const weightIndices, dFloat* const weightFactors)
-{
-	TRACE_FUNCTION(__FUNCTION__);
-	dgMeshEffect* const meshEffect = (dgMeshEffect*)mesh;
-	return meshEffect->GetVertexWeights (vertexIndex, weightIndices, weightFactors);
-}
-*/
-
-int NewtonMeshHasVertexWeightChannel(const NewtonMesh* const mesh)
-{
-	TRACE_FUNCTION(__FUNCTION__);
-	dgMeshEffect* const meshEffect = (dgMeshEffect*)mesh;
-	return meshEffect->HasWeightChannel() ? 1 : 0;
 }
 
 int NewtonMeshHasNormalChannel(const NewtonMesh* const mesh)
@@ -8225,20 +8227,6 @@ void NewtonMeshGetVertexChannel (const NewtonMesh* const mesh, int vertexStrideI
 	TRACE_FUNCTION(__FUNCTION__);
 	dgMeshEffect* const meshEffect = (dgMeshEffect*)mesh;
 	meshEffect->GetVertexChannel(vertexStrideInByte, (dgFloat32*)outBuffer);
-}
-
-void NewtonMeshGetWeightBlendsChannel(const NewtonMesh* const mesh, int vertexStrideInByte, dFloat* const outBuffer)
-{
-	TRACE_FUNCTION(__FUNCTION__);
-	dgMeshEffect* const meshEffect = (dgMeshEffect*)mesh;
-	meshEffect->GetWeightBlendChannel(vertexStrideInByte, (dgFloat32*)outBuffer);
-}
-
-void NewtonMeshGetWeightBoneIndexChannel(const NewtonMesh* const mesh, int vertexStrideInByte, int* const outBuffer)
-{
-	TRACE_FUNCTION(__FUNCTION__);
-	dgMeshEffect* const meshEffect = (dgMeshEffect*)mesh;
-	meshEffect->GetWeightIndexChannel(vertexStrideInByte, (dgInt32*)outBuffer);
 }
 
 void NewtonMeshGetNormalChannel(const NewtonMesh* const mesh, int vertexStrideInByte, dFloat* const outBuffer)

@@ -46,9 +46,11 @@ class dgTemplateVector
 	}
 	
 	DG_INLINE dgTemplateVector (const T* const ptr)
-		:m_x(ptr[0]), m_y(ptr[1]), m_z(ptr[2]), m_w (T(0.0f))
+//		:m_x(ptr[0]), m_y(ptr[1]), m_z(ptr[2]), m_w (T(0.0f))
+		:m_x(ptr[0]), m_y(ptr[1]), m_z(ptr[2]), m_w (ptr[3])
 	{
-		//	dgAssert (dgCheckVector ((*this)));
+		dgAssert (0);
+		//dgAssert (dgCheckVector ((*this)));
 	}
 
 	DG_INLINE dgTemplateVector (const dgTemplateVector<T>& copy)
@@ -183,7 +185,6 @@ class dgTemplateVector
 
 		return normal;
 	}
-
 
 	// return dot 4d dot product
 	DG_INLINE dgTemplateVector<T> DotProduct (const dgTemplateVector &A) const

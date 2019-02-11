@@ -88,21 +88,21 @@ const dgMatrix& dgGetZeroMatrix ()
 
 dgMatrix::dgMatrix (const dgQuaternion &rotation, const dgVector &position)
 {
-	dgFloat32 x2 = dgFloat32 (2.0f) * rotation.m_q1 * rotation.m_q1;
-	dgFloat32 y2 = dgFloat32 (2.0f) * rotation.m_q2 * rotation.m_q2;
-	dgFloat32 z2 = dgFloat32 (2.0f) * rotation.m_q3 * rotation.m_q3;
+	dgFloat32 x2 = dgFloat32 (2.0f) * rotation.m_x * rotation.m_x;
+	dgFloat32 y2 = dgFloat32 (2.0f) * rotation.m_y * rotation.m_y;
+	dgFloat32 z2 = dgFloat32 (2.0f) * rotation.m_z * rotation.m_z;
 
 #ifdef _DEBUG
-	dgFloat32 w2 = dgFloat32 (2.0f) * rotation.m_q0 * rotation.m_q0;
+	dgFloat32 w2 = dgFloat32 (2.0f) * rotation.m_w * rotation.m_w;
 	dgAssert (dgAbs (w2 + x2 + y2 + z2 - dgFloat32(2.0f)) <dgFloat32 (1.0e-3f));
 #endif
 
-	dgFloat32 xy = dgFloat32 (2.0f) * rotation.m_q1 * rotation.m_q2;
-	dgFloat32 xz = dgFloat32 (2.0f) * rotation.m_q1 * rotation.m_q3;
-	dgFloat32 xw = dgFloat32 (2.0f) * rotation.m_q1 * rotation.m_q0;
-	dgFloat32 yz = dgFloat32 (2.0f) * rotation.m_q2 * rotation.m_q3;
-	dgFloat32 yw = dgFloat32 (2.0f) * rotation.m_q2 * rotation.m_q0;
-	dgFloat32 zw = dgFloat32 (2.0f) * rotation.m_q3 * rotation.m_q0;
+	dgFloat32 xy = dgFloat32 (2.0f) * rotation.m_x * rotation.m_y;
+	dgFloat32 xz = dgFloat32 (2.0f) * rotation.m_x * rotation.m_z;
+	dgFloat32 xw = dgFloat32 (2.0f) * rotation.m_x * rotation.m_w;
+	dgFloat32 yz = dgFloat32 (2.0f) * rotation.m_y * rotation.m_z;
+	dgFloat32 yw = dgFloat32 (2.0f) * rotation.m_y * rotation.m_w;
+	dgFloat32 zw = dgFloat32 (2.0f) * rotation.m_z * rotation.m_w;
 
 	m_front = dgVector (dgFloat32(1.0f) - y2 - z2, xy + zw,                   xz - yw				    , dgFloat32(0.0f));
 	m_up    = dgVector (xy - zw,                   dgFloat32(1.0f) - x2 - z2, yz + xw					, dgFloat32(0.0f));
@@ -221,42 +221,47 @@ void dgMatrix::TransformBBox (const dgVector& p0local, const dgVector& p1local, 
 
 dgMatrix dgMatrix::Inverse4x4 () const
 {
-	const dgFloat32 tol = dgFloat32(1.0e-6f);
 	dgMatrix tmp (*this);
 	dgMatrix inv (dgGetIdentityMatrix());
-	for (dgInt32 i = 0; i < 4; i ++) {
-		dgFloat32 diag = tmp[i][i];
-		if (dgAbs (diag) < tol) {
-			dgInt32 j = 0;
-			for (j = i + 1; j < 4; j ++) {
-				dgFloat32 val = tmp[j][i];
-				if (dgAbs (val) > tol) {
-					break;
-				}
+	for (dgInt32 i = 0; i < 4; i++) {
+		dgInt32 permute = i;
+		dgFloat32 pivot = dgAbs(tmp[i][i]);
+		for (dgInt32 j = i + 1; j < 4; j++) {
+			dgFloat32 pivot1 = dgAbs(tmp[j][i]);
+			if (pivot1 > pivot) {
+				permute = j;
+				pivot = pivot1;
 			}
-			dgAssert (j < 4);
-			for (dgInt32 k = 0; k < 4; k ++) {
-				tmp[i][k] += tmp[j][k];
-				inv[i][k] += inv[j][k];
+		}
+		dgAssert(pivot > dgFloat32 (1.0e-6f));
+		if (permute != i) {
+			for (dgInt32 j = 0; j < 4; j++) {
+				dgSwap(inv[i][j], inv[permute][j]);
+				dgSwap(tmp[i][j], tmp[permute][j]);
 			}
-			diag = tmp[i][i];
 		}
-		dgFloat32 invDiag = dgFloat32 (1.0f) / diag;
-		for (dgInt32 j = 0; j < 4; j ++) {
-			tmp[i][j] *= invDiag;
-			inv[i][j] *= invDiag;
-		}
-		tmp[i][i] = dgFloat32 (1.0f);
 
-		for (dgInt32 j = 0; j < 4; j ++) {
-			if (j != i) {
-				dgFloat32 pivot = tmp[j][i];
-				for (dgInt32 k = 0; k < 4; k ++) {
-					tmp[j][k] -= pivot * tmp[i][k];
-					inv[j][k] -= pivot * inv[i][k];
-				}
-				tmp[j][i] = dgFloat32 (0.0f);
+		for (dgInt32 j = i + 1; j < 4; j++) {
+			dgFloat32 scale = tmp[j][i] / tmp[i][i];
+			for (dgInt32 k = 0; k < 4; k++) {
+				tmp[j][k] -= scale * tmp[i][k];
+				inv[j][k] -= scale * inv[i][k];
 			}
+			tmp[j][i] = 0.0f;
+		}
+	}
+
+	for (dgInt32 i = 3; i >= 0; i--) {
+		dgVector acc(dgVector::m_zero);
+		for (dgInt32 j = i + 1; j < 4; j++) {
+			dgFloat32 pivot = tmp[i][j];
+			for (dgInt32 k = 0; k < 4; k++) {
+				acc[k] += pivot * inv[j][k];
+			}
+		}
+		dgFloat32 den = 1.0f / tmp[i][i];
+		for (dgInt32 k = 0; k < 4; k++) {
+			inv[i][k] = den * (inv[i][k] - acc[k]);
 		}
 	}
 	return inv;

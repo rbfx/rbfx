@@ -105,6 +105,8 @@ class dgAABBPolygonSoup: public dgPolygonSoupDatabase
 		{
 			dgVector minBox (&vertexArray[m_indexBox0].m_x);
 			dgVector maxBox (&vertexArray[m_indexBox1].m_x);
+			minBox = minBox & dgVector::m_triplexMask;
+			maxBox = maxBox & dgVector::m_triplexMask;
 			return ray.BoxIntersect(minBox, maxBox);
 		}
 
@@ -112,6 +114,8 @@ class dgAABBPolygonSoup: public dgPolygonSoupDatabase
 		{
 			dgVector p0 (&vertexArray[m_indexBox0].m_x);
 			dgVector p1 (&vertexArray[m_indexBox1].m_x);
+			p0 = p0 & dgVector::m_triplexMask;
+			p1 = p1 & dgVector::m_triplexMask;
 			dgVector minBox (p0 - obb.m_p1);
 			dgVector maxBox (p1 - obb.m_p0);
 			dgAssert(maxBox.m_x >= minBox.m_x);
@@ -153,6 +157,9 @@ class dgAABBPolygonSoup: public dgPolygonSoupDatabase
 		{
 			dgVector p0 (&vertexArray[m_indexBox0].m_x);
 			dgVector p1 (&vertexArray[m_indexBox1].m_x);
+			p0 = p0 & dgVector::m_triplexMask;
+			p1 = p1 & dgVector::m_triplexMask;
+
 			dgVector minBox (p0 - obb.m_p1);
 			dgVector maxBox (p1 - obb.m_p0);
 			dgFloat32 dist = ray.BoxIntersect(minBox, maxBox);
@@ -218,6 +225,8 @@ class dgAABBPolygonSoup: public dgPolygonSoupDatabase
 		const dgNode* const node = (dgNode*)root;
 		p0 = dgVector (&((dgTriplex*)m_localVertex)[node->m_indexBox0].m_x);
 		p1 = dgVector (&((dgTriplex*)m_localVertex)[node->m_indexBox1].m_x);
+		p0 = p0 & dgVector::m_triplexMask;
+		p1 = p1 & dgVector::m_triplexMask;
 	}
 	virtual dgVector ForAllSectorsSupportVectex (const dgVector& dir) const;
 

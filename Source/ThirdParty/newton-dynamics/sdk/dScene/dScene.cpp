@@ -28,18 +28,18 @@
 #include "dAnimationTake.h"
 #include "dAnimationTrack.h"
 #include "dTextureNodeInfo.h"
-#include "dAnimationLayers.h"
 #include "dMaterialNodeInfo.h"
 #include "dRigidbodyNodeInfo.h"
 #include "dCollisionBoxNodeInfo.h"
 #include "dCollisionConeNodeInfo.h"
 #include "dCollisionTreeNodeInfo.h"
 #include "dCollisionSphereNodeInfo.h"
-#include "dGeometryNodeModifierInfo.h"
 #include "dCollisionCapsuleNodeInfo.h"
+#include "dGeometryNodeModifierInfo.h"
 #include "dCollisionCylinderNodeInfo.h"
 #include "dCollisionCompoundNodeInfo.h"
 #include "dCollisionConvexHullNodeInfo.h"
+#include "dGeometryNodeSkinClusterInfo.h"
 #include "dCollisionChamferCylinderNodeInfo.h"
 #include <tinyxml.h>
 
@@ -173,6 +173,7 @@ static void AddTextureCacheMaterianCacheMeshCache (dScene* const scene)
 	scene->DeleteDuplicateGeometries();
 }
 
+/*
 static void RemoveLocalTransformFromGeometries (dScene* const scene)
 {
 	dScene::dTreeNode* const cacheNode = scene->FindGetGeometryCacheNode();
@@ -191,7 +192,7 @@ static void RemoveLocalTransformFromGeometries (dScene* const scene)
 	}
 	scene->FreezeScale();
 }
-
+*/
 
 // this constructor is for the editor only
 dScene::dScene(NewtonWorld* const newton)
@@ -230,7 +231,6 @@ void dScene::RegisterClasses()
 		dSceneCacheInfo::GetSingleton();
 		dSceneModelInfo::GetSingleton();
 		dAnimationTrack::GetSingleton();
-		dAnimationLayers::GetSingleton();
 		dTextureNodeInfo::GetSingleton();
 		dMaterialNodeInfo::GetSingleton();
 		dGeometryNodeInfo::GetSingleton();
@@ -245,6 +245,7 @@ void dScene::RegisterClasses()
 		dCollisionCompoundNodeInfo::GetSingleton();
 		dCollisionCylinderNodeInfo::GetSingleton();
 		dCollisionConvexHullNodeInfo::GetSingleton();
+		dGeometryNodeSkinClusterInfo::GetSingleton();
 		dCollisionChamferCylinderNodeInfo::GetSingleton();
 	}
 }
@@ -381,6 +382,10 @@ dScene::dTreeNode* dScene::CreateCollisionFromNewtonCollision(dTreeNode* const p
 
 dScene::dTreeNode* dScene::AddNode(dNodeInfo* const sceneInfo, dTreeNode* const parent)
 {
+	if (sceneInfo->GetNodeID() == -1) {
+		sceneInfo->m_uniqueID = GetCount();
+	}
+
 	dTreeNode* const node = dSceneGraph::AddNode (sceneInfo, parent);
 	return node;
 }
@@ -474,7 +479,7 @@ dScene::dTreeNode* dScene::CreateLineNode(dTreeNode* const parent)
 
 dScene::dTreeNode* dScene::CreateSkinModifierNode(dTreeNode* const parent)
 {
-	return CreateNode ("dGeometryNodeSkinModifierInfo", parent);
+	return CreateNode ("dGeometryNodeSkinClusterInfo", parent);
 }
 
 dScene::dTreeNode* dScene::CreateTextureNode (const char* const pathName)
@@ -518,19 +523,7 @@ dScene::dTreeNode* dScene::CreateAnimationTrack(dTreeNode* const take)
 dScene::dTreeNode* dScene::CreateAnimationTake()
 {
 	dTreeNode* const root = GetRootNode();
-	dScene::dTreeNode* const node = FindChildByType(root, dAnimationLayers::GetRttiType());
-	dAssert(node);
-	return CreateNode("dAnimationTake", node);
-}
-
-dScene::dTreeNode* dScene::CreateAnimationLayers()
-{
-	dTreeNode* const root = GetRootNode();
-	dScene::dTreeNode* node = FindChildByType(root, dAnimationLayers::GetRttiType());
-	if (!node) {
-		node =  CreateNode("dAnimationLayers", root);
-	}
-	return node;
+	return CreateNode("dAnimationTake", root);
 }
 
 dScene::dTreeNode* dScene::GetCacheNode (const char* const cacheName)
@@ -577,11 +570,6 @@ dScene::dTreeNode* dScene::GetGeometryCacheNode ()
 	return GetCacheNode (D_GEOMETRY_CACHE_NODE_MAME);
 }
 
-dScene::dTreeNode* dScene::FindAnimationLayers() const
-{
-	return FindChildByType(GetRootNode(), dAnimationLayers::GetRttiType());
-}
-
 dScene::dTreeNode* dScene::FindTextureCacheNode () const
 {
 	return FindChildByName(GetRootNode(), D_TEXTURE_CACHE_NODE_MAME);
@@ -608,7 +596,9 @@ dScene::dTreeNode* dScene::GetFirstNode () const
 
 dScene::dTreeNode* dScene::FindNode (dNodeInfo* const info) const
 {
-	return Find (info->GetUniqueID());
+	dAssert (0);
+//	return Find (info->GetUniqueID());
+	return NULL;
 }
 
 dScene::dTreeNode* dScene::GetNextNode (dTreeNode* const node) const
@@ -661,11 +651,9 @@ dNodeInfo* dScene::CloneNodeInfo(dTreeNode* const node) const
 {
 	dNodeInfo* const info = node->GetInfo().GetNode();
 	dNodeInfo* const clone = info->MakeCopy();
-	dAssert (clone->GetUniqueID() != info->GetUniqueID());
 	dAssert (clone->GetTypeId() == info->GetTypeId()) ;
 	return clone;
 }
-
 
 dScene::dTreeNode* dScene::FindTextureByTextId(dTreeNode* const parentNode, dCRCTYPE textId) const
 {
@@ -768,6 +756,7 @@ void dScene::FreezeScale ()
 {
 	dList<dTreeNode*> nodeStack;
 	dList<dMatrix> parentMatrixStack;
+	dList<dMatrix> parentSkinMatrixStack;
 
 	dTreeNode* const rootNode0 = GetRootNode();
 	for (void* link0 = GetFirstChildLink(rootNode0); link0; link0 = GetNextChildLink(rootNode0, link0)) {
@@ -776,6 +765,7 @@ void dScene::FreezeScale ()
 		if (nodeInfo0->IsType(dSceneNodeInfo::GetRttiType())) {
 			nodeStack.Append(node0);
 			parentMatrixStack.Append(dGetIdentityMatrix());
+			parentSkinMatrixStack.Append(dGetIdentityMatrix());
 		}
 	}
 
@@ -783,9 +773,11 @@ void dScene::FreezeScale ()
 	while (nodeStack.GetCount()) {
 		dTreeNode* const rootNode = nodeStack.GetLast()->GetInfo();
 		dMatrix parentMatrix (parentMatrixStack.GetLast()->GetInfo());
+		dMatrix parentSkinMatrix(parentSkinMatrixStack.GetLast()->GetInfo());
 		
 		nodeStack.Remove(nodeStack.GetLast());
 		parentMatrixStack.Remove(parentMatrixStack.GetLast());
+		parentSkinMatrixStack.Remove(parentSkinMatrixStack.GetLast());
 
 		dSceneNodeInfo* const sceneNodeInfo = (dSceneNodeInfo*)GetInfoFromNode(rootNode);
 		dAssert (sceneNodeInfo->IsType(dSceneNodeInfo::GetRttiType()));
@@ -797,15 +789,43 @@ void dScene::FreezeScale ()
 		transform.PolarDecomposition (matrix, scale, stretchAxis);
 		sceneNodeInfo->SetTransform (matrix);
 
+		for (void* link = GetFirstChildLink(rootNode); link; link = GetNextChildLink(rootNode, link)) {
+			dTreeNode* const node = GetNodeFromLink(link);
+			dNodeInfo* const nodeInfo = GetInfoFromNode(node);
+			if (nodeInfo->IsType(dAnimationTrack::GetRttiType())) {
+				((dAnimationTrack*)nodeInfo)->FreezeScale(parentMatrix);
+			}
+		}
+
 		dMatrix scaleMatrix (dGetIdentityMatrix(), scale, stretchAxis);
 		sceneNodeInfo->SetGeometryTransform (sceneNodeInfo->GetGeometryTransform() * scaleMatrix);
+
+		dMatrix skinTransform(sceneNodeInfo->GetTransform() * parentSkinMatrix);
+
+		dMatrix scaleSkinMatrix(dGetIdentityMatrix(), scale, stretchAxis);
+		for (void* link = GetFirstChildLink(rootNode); link; link = GetNextChildLink(rootNode, link)) {
+			dTreeNode* const node = GetNodeFromLink(link);
+			dNodeInfo* const nodeInfo = GetInfoFromNode(node);
+			if (nodeInfo->IsType(dGeometryNodeSkinClusterInfo::GetRttiType())) {
+				dMatrix skinMatrix;
+				dMatrix skinStretchAxis;
+				dVector skinScale(0.0f);
+				dGeometryNodeSkinClusterInfo* const skinCluster = (dGeometryNodeSkinClusterInfo*)nodeInfo;
+				skinTransform = skinCluster->m_basePoseMatrix * parentSkinMatrix;
+				skinTransform.PolarDecomposition(skinMatrix, skinScale, skinStretchAxis);
+				skinCluster->m_basePoseMatrix = skinMatrix;
+				break;
+			}
+		}
 
 		for (void* link = GetFirstChildLink(rootNode); link; link = GetNextChildLink(rootNode, link)) {
 			dTreeNode* const node = GetNodeFromLink(link);
 			dNodeInfo* const nodeInfo = GetInfoFromNode(node);
+
 			if (nodeInfo->IsType(dSceneNodeInfo::GetRttiType())) {
 				nodeStack.Append(node);
 				parentMatrixStack.Append(scaleMatrix);
+				parentSkinMatrixStack.Append(scaleSkinMatrix);
 			}
 		}
 	}
@@ -928,11 +948,11 @@ void dScene::FreezeGeometryPivot ()
 				dMatrix geoScaleMatrix(sceneInfo->GetGeometryTransform());
 				sceneInfo->SetGeometryTransform(dGetIdentityMatrix());
 
-				dMatrix meshPivotMatrix(meshInfo->GetPivotMatrix());
-				meshInfo->SetPivotMatrix(dGetIdentityMatrix());
-
-				dMatrix marix(meshPivotMatrix * geoScaleMatrix);
-				meshInfo->BakeTransform(marix);
+				//dMatrix meshPivotMatrix(meshInfo->GetPivotMatrix());
+				//meshInfo->SetPivotMatrix(dGetIdentityMatrix());
+				//dMatrix matrix(meshPivotMatrix * geoScaleMatrix);
+				//meshInfo->BakeTransform(matrix);
+				meshInfo->BakeTransform(geoScaleMatrix);
 			}
 		}
 	}
@@ -985,6 +1005,8 @@ void dScene::Serialize (const char* const fileName)
 
 void dScene::MergeScene (dScene* const scene)
 {
+	dAssert (0);
+/*
 	dTree<dTreeNode*,dTreeNode*> map;
 	Iterator iter (*scene);
 
@@ -1038,6 +1060,7 @@ void dScene::MergeScene (dScene* const scene)
 			}
 		}
 	}
+*/
 }
 
 void dScene::UnmergeScene (dScene* const scene)
@@ -1507,9 +1530,10 @@ void dScene::NewtonWorldToScene (const NewtonWorld* const world, dSceneExportCal
 			NewtonCollisionGetInfo(collision, &collsionRecord);
 
 			// extract the offset matrix form the collision
-			dMatrix& offsetMatrix = *((dMatrix*)&collsionRecord.m_offsetMatrix[0][0]);
-			info->BakeTransform (offsetMatrix.Inverse());
-			info->SetPivotMatrix(offsetMatrix * info->GetPivotMatrix());
+			dAssert(0);
+			//dMatrix& offsetMatrix = *((dMatrix*)&collsionRecord.m_offsetMatrix[0][0]);
+			//info->BakeTransform (offsetMatrix.Inverse());
+			//info->SetPivotMatrix(offsetMatrix * info->GetPivotMatrix());
 
 			dScene::dTreeNode* const collisionNode = CreateCollisionFromNewtonCollision(GetRootNode(), collision);
 
@@ -1612,10 +1636,14 @@ bool dScene::Deserialize (const char* const fileName)
 			AddTextureCacheMaterianCacheMeshCache (this);
 		}
 
-		// update the revision to latest 
+		// adding the geometry transform node info 
 		if (GetRevision() < 104) {
 			m_revision = 104;
-			RemoveLocalTransformFromGeometries (this);
+		}
+
+		// adding node ID as part of the file
+		if (GetRevision() < 105) {
+			m_revision = 105;
 		}
 	}
 

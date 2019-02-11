@@ -434,7 +434,6 @@ void dRayToRayCast (const dVector& ray_p0, const dVector& ray_p1, const dVector&
 	qOut = ray_q0 + v.Scale (tc);
 }
 
-
 void SerializeMesh (const NewtonMesh* const mesh, TiXmlElement* const rootNode)
 {
 	TiXmlElement* pointElement = new TiXmlElement ("points");
@@ -442,6 +441,9 @@ void SerializeMesh (const NewtonMesh* const mesh, TiXmlElement* const rootNode)
 
 	int pointCount = NewtonMeshGetPointCount(mesh);
 	int vertexCount = NewtonMeshGetVertexCount(mesh);
+
+	int pointBaseCount = NewtonMeshGetVertexBaseCount(mesh);
+	pointElement->SetAttribute("controlPointBaseCount", pointBaseCount);
 
 	int bufferCount = dMax (vertexCount, pointCount);
 	int bufferSizeInBytes = bufferCount * sizeof (dFloat) * 4 * 12;
@@ -453,82 +455,27 @@ void SerializeMesh (const NewtonMesh* const mesh, TiXmlElement* const rootNode)
 	int* const uv1IndexList = new int[bufferCount];
 	
 	// pack the vertex Array
-	if (!NewtonMeshHasVertexWeightChannel(mesh)) 
-	{
-		NewtonMeshGetVertexChannel(mesh, 4 * sizeof(dFloat), points);
-		for (int i = 0; i < pointCount; i++) {
-			points[4 * i + 3] = 0.0f;
-		}
-		int count = dPackVertexArray(points, 4, 4 * sizeof(dFloat), pointCount, vertexIndexList);
-
-		dFloatArrayToString(points, count * 4, buffer, bufferSizeInBytes);
-		TiXmlElement* const position = new TiXmlElement("position");
-		pointElement->LinkEndChild(position);
-		position->SetAttribute("float4", count);
-		position->SetAttribute("floats", buffer);
-	} else {
-		struct FlatWeightedVertex
-		{
-			dFloat m_point[3];
-			dFloat m_weights[4];
-			dFloat m_weightsBoneIndex[4];
-		};
-	
-		dFloat* const weights = new dFloat[4 * bufferCount];
-		int* const weightsBoneIndex = new int[4 * bufferCount];
-		FlatWeightedVertex* const flatPoint = new FlatWeightedVertex[8 * bufferCount];
-
-		NewtonMeshGetVertexChannel(mesh, sizeof(FlatWeightedVertex), &flatPoint->m_point[0]);
-		NewtonMeshGetWeightBlendsChannel(mesh, sizeof (FlatWeightedVertex), &flatPoint->m_weights[0]);
-		NewtonMeshGetWeightBoneIndexChannel(mesh, 4 * sizeof (int), &weightsBoneIndex[0]);
-		for (int i = 0; i < pointCount; i++) {
-			const int* const src = &weightsBoneIndex[i * 4];
-			flatPoint[i].m_weightsBoneIndex[0] = dFloat(src[0]);
-			flatPoint[i].m_weightsBoneIndex[1] = dFloat(src[1]);
-			flatPoint[i].m_weightsBoneIndex[2] = dFloat(src[2]);
-			flatPoint[i].m_weightsBoneIndex[3] = dFloat(src[3]);
-		}
-		int count = dPackVertexArray(&flatPoint->m_point[0], 11, 11 * sizeof(dFloat), pointCount, vertexIndexList);
-
-		for (int i = 0; i < count; i++) {
-			points[i * 4 + 0] = flatPoint[i].m_point[0];
-			points[i * 4 + 1] = flatPoint[i].m_point[1];
-			points[i * 4 + 2] = flatPoint[i].m_point[2];
-			points[i * 4 + 3] = dFloat (0.0f);
-				
-			weights[i * 4 + 0] = flatPoint[i].m_weights[0];
-			weights[i * 4 + 1] = flatPoint[i].m_weights[1];
-			weights[i * 4 + 2] = flatPoint[i].m_weights[2];
-			weights[i * 4 + 3] = flatPoint[i].m_weights[3];
-
-			weightsBoneIndex[i * 4 + 0] = int (flatPoint[i].m_weightsBoneIndex[0]);
-			weightsBoneIndex[i * 4 + 1] = int (flatPoint[i].m_weightsBoneIndex[1]);
-			weightsBoneIndex[i * 4 + 2] = int (flatPoint[i].m_weightsBoneIndex[2]);
-			weightsBoneIndex[i * 4 + 3] = int (flatPoint[i].m_weightsBoneIndex[3]);
-		}
-
-		dFloatArrayToString(points, count * 4, buffer, bufferSizeInBytes);
-		TiXmlElement* const position = new TiXmlElement("position");
-		pointElement->LinkEndChild(position);
-		position->SetAttribute("float4", count);
-		position->SetAttribute("floats", buffer);
-
-		dFloatArrayToString(weights, count * 4, buffer, bufferSizeInBytes);
-		TiXmlElement* const weightRecord = new TiXmlElement("weightBlend");
-		pointElement->LinkEndChild(weightRecord);
-		weightRecord->SetAttribute("float4", count);
-		weightRecord->SetAttribute("floats", buffer);
-
-		dIntArrayToString(weightsBoneIndex, count * 4, buffer, bufferSizeInBytes);
-		TiXmlElement* const weightBoneRecord = new TiXmlElement("weightBones");
-		pointElement->LinkEndChild(weightBoneRecord);
-		weightBoneRecord->SetAttribute("int4", count);
-		weightBoneRecord->SetAttribute("bones", buffer);
-
-		delete[] weights;
-		delete[] flatPoint;
-		delete[] weightsBoneIndex;
+//	NewtonMeshGetVertexChannel(mesh, 4 * sizeof(dFloat), points);
+//	for (int i = 0; i < pointCount; i++) {
+//		points[4 * i + 3] = 0.0f;
+//		dTrace(("%d %f %f %f\n", i, points[4 * i + 1], points[4 * i + 2], points[4 * i + 3]));
+//	}
+//	int controlPointCount = dPackVertexArray(points, 4, 4 * sizeof(dFloat), pointCount, vertexIndexList);
+	int controlPointCount = NewtonMeshGetVertexCount(mesh);
+	int controlPointCountStride = NewtonMeshGetVertexStrideInByte(mesh) / sizeof(dFloat64);
+	const dFloat64* const controlPoints = NewtonMeshGetVertexArray(mesh);
+	for (int i = 0; i < controlPointCount; i++) {
+		points[4 * i + 0] = dFloat(controlPoints[controlPointCountStride * i + 0]);
+		points[4 * i + 1] = dFloat(controlPoints[controlPointCountStride * i + 1]);
+		points[4 * i + 2] = dFloat(controlPoints[controlPointCountStride * i + 2]);
+		points[4 * i + 3] = 0.0f;
+		//dTrace(("%d %f %f %f\n", i, points[4 * i + 0], points[4 * i + 1], points[4 * i + 2]));
 	}
+	dFloatArrayToString(points, controlPointCount * 4, buffer, bufferSizeInBytes);
+	TiXmlElement* const position = new TiXmlElement("position");
+	pointElement->LinkEndChild(position);
+	position->SetAttribute("float4", controlPointCount);
+	position->SetAttribute("floats", buffer);
 
 	// pack the normal array
 	if (NewtonMeshHasNormalChannel(mesh)) {
@@ -606,8 +553,10 @@ void SerializeMesh (const NewtonMesh* const mesh, TiXmlElement* const rootNode)
 	faceMaterial->SetAttribute("index", buffer);
 
 	for (int i = 0; i < indexCount; i ++) {
-		int index = NewtonMeshGetPointIndex(mesh, indexArray[i]);
-		remapedIndexArray[i] = vertexIndexList[index];
+		//int index = NewtonMeshGetPointIndex(mesh, indexArray[i]);
+		//remapedIndexArray[i] = vertexIndexList[index];
+		int index = NewtonMeshGetVertexIndexFromPoint(mesh, indexArray[i]);
+		remapedIndexArray[i] = index;
 	}
 	dIntArrayToString (remapedIndexArray, indexCount, buffer, bufferSizeInBytes);
 	TiXmlElement* const positionIndex = new TiXmlElement ("position");
@@ -670,6 +619,9 @@ bool DeserializeMesh (const NewtonMesh* const mesh, TiXmlElement* const rootNode
 	NewtonMeshVertexFormat vertexFormat;
 	NewtonMeshClearVertexFormat(&vertexFormat);
 
+	int pointBaseCount;
+	pointElement->Attribute("controlPointBaseCount", &pointBaseCount);
+
 	int faceCount;
 	polygonsElement->Attribute("count", &faceCount);
 	int* const faceIndexCount = new int[faceCount];
@@ -693,37 +645,6 @@ bool DeserializeMesh (const NewtonMesh* const mesh, TiXmlElement* const rootNode
 	positionsElement->Attribute("float4", &positionCount);
 	dFloat64* const positions = new dFloat64[4 * positionCount];
 	dStringToFloatArray (positionsElement->Attribute("floats"), positions, 4 * positionCount);
-
-	TiXmlElement* const weightBlendElement = (TiXmlElement*)pointElement->FirstChild("weightBlend");
-	if (weightBlendElement) {
-		int blendCount;
-		int boneBlendCount;
-		TiXmlElement* const weightBonesElement = (TiXmlElement*)pointElement->FirstChild("weightBones");
-
-		weightBlendElement->Attribute("float4", &blendCount);
-		weightBonesElement->Attribute("int4", &boneBlendCount);
-		dAssert (positionCount == blendCount);
-		dAssert (positionCount == boneBlendCount);
-		
-		int* const weightBones = new int [4 * positionCount];
-		dVector* const weightsFloat = new dVector[positionCount];
-		dStringToIntArray(weightBonesElement->Attribute("bones"), &weightBones[0], 4 * positionCount);
-		dStringToFloatArray(weightBlendElement->Attribute("floats"), &weightsFloat[0][0], 4 * positionCount);
-
-		NewtonMeshVertexWeightData::dgWeights* const meshWeight = new NewtonMeshVertexWeightData::dgWeights[positionCount];
-		for (int i = 0; i < positionCount; i ++) {
-			for (int j = 0; j < 4; j ++) {
-				meshWeight[i].m_weightBlends[j] = weightsFloat[i][j];
-				meshWeight[i].m_controlIndex[j] = weightBones[i * 4 + j];
-			}
-		}
-			
-		vertexFormat.m_weight.m_data = meshWeight;
-		vertexFormat.m_weight.m_strideInBytes = sizeof (NewtonMeshVertexWeightData::dgWeights);
-
-		delete[] weightBones;
-		delete[] weightsFloat;
-	}
 
 	TiXmlElement* const normalsElement = (TiXmlElement*) pointElement->FirstChild ("normal");
 	if (normalsElement) {
@@ -782,7 +703,12 @@ bool DeserializeMesh (const NewtonMesh* const mesh, TiXmlElement* const rootNode
 	vertexFormat.m_vertex.m_strideInBytes = 4 * sizeof (dFloat64);
 
 	NewtonMeshBuildFromVertexListIndexList (mesh, &vertexFormat);
+	NewtonMeshSetVertexBaseCount(mesh, pointBaseCount);
 
+//const dFloat64* xxx = NewtonMeshGetVertexArray(mesh);
+//for (int i = 0; i < pointBaseCount; i++) {
+//	dTrace(("%d %f %f %f\n", i, xxx[4 * i + 0], xxx[4 * i + 1], xxx[4 * i + 2]));
+//}
 	if (vertexFormat.m_normal.m_data) {
 		delete[] vertexFormat.m_normal.m_data;
 		delete[] vertexFormat.m_normal.m_indexList;
@@ -796,10 +722,6 @@ bool DeserializeMesh (const NewtonMesh* const mesh, TiXmlElement* const rootNode
 	if (vertexFormat.m_uv1.m_data) {
 		delete[] vertexFormat.m_uv1.m_data;
 		delete[] vertexFormat.m_uv1.m_indexList;
-	}
-
-	if (vertexFormat.m_weight.m_data) {
-		delete[] vertexFormat.m_weight.m_data;
 	}
 
 	delete[] positions;	

@@ -30,7 +30,11 @@ class dAnimationTake: public dNodeInfo
 	dAnimationTake(dScene* const world);
 	virtual ~dAnimationTake(void);
 
+	dFloat GetPeriod() const { return m_period;}
+	void SetPeriod(dFloat period) { m_period = period; }
+
 	protected:
+	dFloat m_period;
 	virtual void Serialize (TiXmlElement* const rootNode) const; 
 	virtual bool Deserialize (const dScene* const scene, TiXmlElement* const rootNode);
 };

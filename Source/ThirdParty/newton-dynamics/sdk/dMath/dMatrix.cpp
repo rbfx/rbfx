@@ -18,7 +18,6 @@
 // calculate an orthonormal matrix with the front vector pointing on the 
 // dir direction, and the up and right are determined by using the GramSchidth procedure
 
-
 dMatrix dGetIdentityMatrix()
 {
 	return dMatrix (dVector (1.0f, 0.0f, 0.0f, 0.0f),
@@ -34,8 +33,6 @@ dMatrix dGetZeroMatrix ()
 					dVector (0.0f, 0.0f, 0.0f, 0.0f),
 					dVector (0.0f, 0.0f, 0.0f, 0.0f));
 }
-
-
 
 dMatrix dGrammSchmidt(const dVector& dir)
 {
@@ -57,7 +54,6 @@ dMatrix dGrammSchmidt(const dVector& dir)
 	right.m_w = 0.0f;
 	return dMatrix (front, up, right, dVector (0.0f, 0.0f, 0.0f, 1.0f));
 }
-
 
 dMatrix dPitchMatrix(dFloat ang)
 {
@@ -96,28 +92,26 @@ dMatrix dRollMatrix(dFloat ang)
 					dVector (   0.0f,   0.0f, 0.0f, 1.0f)); 
 }																		 
 
-
-
 dMatrix::dMatrix (const dQuaternion &rotation, const dVector &position)
 	:m_front(0.0f)
 	,m_up(0.0f)
 	,m_right(0.0f)
 	,m_posit(0.0f)
 {
-	dFloat x2 = dFloat (2.0f) * rotation.m_q1 * rotation.m_q1;
-	dFloat y2 = dFloat (2.0f) * rotation.m_q2 * rotation.m_q2;
-	dFloat z2 = dFloat (2.0f) * rotation.m_q3 * rotation.m_q3;
+	dFloat x2 = dFloat (2.0f) * rotation.m_x * rotation.m_x;
+	dFloat y2 = dFloat (2.0f) * rotation.m_y * rotation.m_y;
+	dFloat z2 = dFloat (2.0f) * rotation.m_z * rotation.m_z;
 #ifdef _DEBUG
-	dFloat w2 = dFloat (2.0f) * rotation.m_q0 * rotation.m_q0;
+	dFloat w2 = dFloat (2.0f) * rotation.m_w * rotation.m_w;
 	dAssert (dAbs (w2 + x2 + y2 + z2 - dFloat(2.0f)) < dFloat (1.e-2f));
 #endif
 
-	dFloat xy = dFloat (2.0f) * rotation.m_q1 * rotation.m_q2;
-	dFloat xz = dFloat (2.0f) * rotation.m_q1 * rotation.m_q3;
-	dFloat xw = dFloat (2.0f) * rotation.m_q1 * rotation.m_q0;
-	dFloat yz = dFloat (2.0f) * rotation.m_q2 * rotation.m_q3;
-	dFloat yw = dFloat (2.0f) * rotation.m_q2 * rotation.m_q0;
-	dFloat zw = dFloat (2.0f) * rotation.m_q3 * rotation.m_q0;
+	dFloat xy = dFloat (2.0f) * rotation.m_x * rotation.m_y;
+	dFloat xz = dFloat (2.0f) * rotation.m_x * rotation.m_z;
+	dFloat xw = dFloat (2.0f) * rotation.m_x * rotation.m_w;
+	dFloat yz = dFloat (2.0f) * rotation.m_y * rotation.m_z;
+	dFloat yw = dFloat (2.0f) * rotation.m_y * rotation.m_w;
+	dFloat zw = dFloat (2.0f) * rotation.m_z * rotation.m_w;
 
 	m_front = dVector (dFloat(1.0f) - y2 - z2, xy + zw				 , xz - yw				  , dFloat(0.0f));
 	m_up    = dVector (xy - zw				 , dFloat(1.0f) - x2 - z2, yz + xw				  , dFloat(0.0f));
@@ -137,7 +131,6 @@ dMatrix::dMatrix (dFloat pitch, dFloat yaw, dFloat roll, const dVector& location
 	me.m_posit.m_w = 1.0f;
 }
 
-
 bool dMatrix::TestIdentity() const 
 {
 	const dMatrix& matrix = *this;
@@ -152,7 +145,6 @@ bool dMatrix::TestIdentity() const
 	}
 	return isIdentity;
 }
-
 
 bool dMatrix::TestOrthogonal() const
 {
@@ -171,7 +163,6 @@ bool dMatrix::TestOrthogonal() const
 		(dAbs(c - dFloat (1.0f)) < dFloat (1.0e-4f)) &
 		(dAbs(d - dFloat (1.0f)) < dFloat (1.0e-4f)); 
 }
-
 
 void dMatrix::GetEulerAngles(dVector& euler0, dVector& euler1, dEulerAngleOrder order) const
 {
@@ -525,52 +516,54 @@ bool dMatrix::SanityCheck() const
 	return true;
 }
 
-
 dMatrix dMatrix::Inverse4x4 () const
 {
-	const dFloat tol = dFloat (1.0e-6f);
 	dMatrix tmp (*this);
 	dMatrix inv (dGetIdentityMatrix());
 	for (int i = 0; i < 4; i ++) {
-		dFloat diag = tmp[i][i];
-		if (dAbs (diag) < tol) {
-			int j = 0;
-			for (j = i + 1; j < 4; j ++) {
-				dFloat val = tmp[j][i];
-				if (dAbs (val) > tol) {
-					break;
-				}
+		int permute = i;
+		dFloat pivot = dAbs(tmp[i][i]);
+		for (int j = i + 1; j < 4; j++) {
+			dFloat pivot1 = dAbs(tmp[j][i]);
+			if (pivot1 > pivot) {
+				permute = j;
+				pivot = pivot1;
 			}
-			dAssert (j < 4);
-			for (int k = 0; k < 4; k ++) {
-				tmp[i][k] += tmp[j][k];
-				inv[i][k] += inv[j][k];
+		}
+		dAssert(pivot > 1.0e-6f);
+		if (permute != i) {
+			for (int j = 0; j < 4; j++) {
+				dSwap(inv[i][j], inv[permute][j]);
+				dSwap(tmp[i][j], tmp[permute][j]);
 			}
-			diag = tmp[i][i];
 		}
-		dFloat invDiag = 1.0f / diag;
-		for (int j = 0; j < 4; j ++) {
-			tmp[i][j] *= invDiag;
-			inv[i][j] *= invDiag;
-		}
-		tmp[i][i] = 1.0f;
-
 		
-		for (int j = 0; j < 4; j ++) {
-			if (j != i) {
-				dFloat pivot = tmp[j][i];
-				for (int k = 0; k < 4; k ++) {
-					tmp[j][k] -= pivot * tmp[i][k];
-					inv[j][k] -= pivot * inv[i][k];
-				}
-				tmp[j][i] = 0.0f;
+		for (int j = i + 1; j < 4; j++) {
+			dFloat scale = tmp[j][i] / tmp[i][i];
+			for (int k = 0; k < 4; k++) {
+				tmp[j][k] -= scale * tmp[i][k];
+				inv[j][k] -= scale * inv[i][k];
 			}
+			tmp[j][i] = 0.0f;
+		}
+	}
+
+	dVector zero(0.0f);
+	for (int i = 3; i >= 0; i--) {
+		dVector acc (zero);
+		for (int j = i + 1; j < 4; j++) {
+			dFloat pivot = tmp[i][j];
+			for (int k = 0; k < 4; k++) {
+				acc[k] += pivot * inv[j][k];
+			}
+		}
+		dFloat den = 1.0f / tmp[i][i];
+		for (int k = 0; k < 4; k++) {
+			inv[i][k] = den * (inv[i][k] - acc[k]);
 		}
 	}
 	return inv;
 }
-
-
 
 
 #if 0

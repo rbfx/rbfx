@@ -56,7 +56,6 @@ dLineNodeInfo::~dLineNodeInfo(void)
 {
 }
 
-
 const dBezierSpline& dLineNodeInfo::GetCurve() const
 {
 	return m_curve;
@@ -64,6 +63,7 @@ const dBezierSpline& dLineNodeInfo::GetCurve() const
 
 void dLineNodeInfo::BakeTransform (const dMatrix& transform)
 {
+/*
 	dVector scale; 
 	dMatrix stretchMatrix;
 
@@ -72,11 +72,13 @@ void dLineNodeInfo::BakeTransform (const dMatrix& transform)
 	matrix = transform * dMatrix (dGetIdentityMatrix(), scale, stretchMatrix);
 
 	matrix.TransformTriplex (&m_curve.GetControlPointArray()[0].m_x, sizeof (dBigVector), &m_curve.GetControlPointArray()[0].m_x, sizeof (dBigVector), m_curve.GetControlPointCount());
+*/
+	transform.TransformTriplex(&m_curve.GetControlPointArray()[0].m_x, sizeof(dBigVector), &m_curve.GetControlPointArray()[0].m_x, sizeof(dBigVector), m_curve.GetControlPointCount());
 }
 
 void dLineNodeInfo::DrawWireFrame(dSceneRender* const render, dScene* const scene, dScene::dTreeNode* const myNode) const
 {
-	dAssert (myNode == scene->Find(GetUniqueID()));
+	dAssert (myNode == scene->Find(GetNodeID()));
 	dAssert (scene->GetInfoFromNode(myNode) == this);
 
 	//	int displayList = render->GetCachedFlatShadedDisplayList(m_mesh);
@@ -85,7 +87,7 @@ void dLineNodeInfo::DrawWireFrame(dSceneRender* const render, dScene* const scen
 
 		dVector savedColor (render->GetColor());
 
-		render->PushMatrix(&m_matrix[0][0]);
+		//render->PushMatrix(&m_matrix[0][0]);
 		//render->DrawDisplayList(displayList);
 
 		render->BeginLine();
@@ -100,7 +102,7 @@ void dLineNodeInfo::DrawWireFrame(dSceneRender* const render, dScene* const scen
 			p0 = p1;
 		}
 		render->End();
-		render->PopMatrix();
+		//render->PopMatrix();
 
 		render->SetColor(savedColor);
 	}

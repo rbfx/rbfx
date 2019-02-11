@@ -54,7 +54,7 @@ class dgVector
 	}
 
 	DG_INLINE dgVector (const dgFloat32* const ptr)
-		:m_x(ptr[0]), m_y(ptr[1]), m_z(ptr[2]), m_w (dgFloat32 (0.0f))
+		:m_x(ptr[0]), m_y(ptr[1]), m_z(ptr[2]), m_w (ptr[3]))
 	{
 		dgAssert (dgCheckVector ((*this)));
 	}
@@ -64,7 +64,7 @@ class dgVector
 		:m_x(dgFloat32(ptr[0]))
 		,m_y(dgFloat32(ptr[1]))
 		,m_z(dgFloat32(ptr[2]))
-		,m_w(dgFloat32(0.0f))
+		,m_w(dgFloat32(ptr[3]))
 	{
 	}
 #endif
@@ -498,7 +498,7 @@ class dgBigVector
 #endif
 
 	DG_INLINE dgBigVector (const dgFloat64* const ptr)
-		:m_x(ptr[0]), m_y(ptr[1]), m_z(ptr[2]), m_w (dgFloat32 (0.0f))
+		:m_x(ptr[0]), m_y(ptr[1]), m_z(ptr[2]), m_w (ptr[3])
 	{
 		dgAssert (dgCheckVector ((*this)));
 	}

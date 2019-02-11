@@ -25,6 +25,9 @@ class dAnimIDController: public dCustomControllerBase, public dAnimIDRigJoint
 	public:
 	dAnimIDController ();
 	~dAnimIDController ();
+
+	void* GetUserData() const;
+	void SetUserData(void* const userData);
 	
 	NewtonBody* GetNewtonBody() const;
 	virtual void Finalize();

@@ -331,9 +331,11 @@ class dgFastAABBInfo: public dgObb
 	DG_INLINE void MakeBox1 (dgInt32 indexCount, const dgInt32* const indexArray, dgInt32 stride, const dgFloat32* const vertexArray, dgVector& minBox, dgVector& maxBox) const
 	{
 		dgVector faceBoxP0 (&vertexArray[indexArray[0] * stride]);
+		faceBoxP0 = faceBoxP0 & dgVector::m_triplexMask;
 		dgVector faceBoxP1 (faceBoxP0);
 		for (dgInt32 i = 1; i < indexCount; i ++) {
 			dgVector p (&vertexArray[indexArray[i] * stride]);
+			p = p & dgVector::m_triplexMask;
 			faceBoxP0 = faceBoxP0.GetMin(p); 
 			faceBoxP1 = faceBoxP1.GetMax(p); 
 		}
@@ -344,10 +346,10 @@ class dgFastAABBInfo: public dgObb
 
 	DG_INLINE void MakeBox2 (const dgMatrix& faceMatrix, dgInt32 indexCount, const dgInt32* const indexArray, dgInt32 stride, const dgFloat32* const vertexArray, dgVector& minBox, dgVector& maxBox) const
 	{
-		dgVector faceBoxP0 (faceMatrix.TransformVector (dgVector (&vertexArray[indexArray[0] * stride])));
+		dgVector faceBoxP0 (faceMatrix.TransformVector (dgVector (&vertexArray[indexArray[0] * stride]) & dgVector::m_triplexMask));
 		dgVector faceBoxP1 (faceBoxP0);
 		for (dgInt32 i = 1; i < indexCount; i ++) {
-			dgVector p (faceMatrix.TransformVector (dgVector (&vertexArray[indexArray[i] * stride])));
+			dgVector p (faceMatrix.TransformVector (dgVector (&vertexArray[indexArray[i] * stride]) & dgVector::m_triplexMask));
 			faceBoxP0 = faceBoxP0.GetMin(p); 
 			faceBoxP1 = faceBoxP1.GetMax(p); 
 		}
@@ -368,10 +370,12 @@ class dgFastAABBInfo: public dgObb
 	{
 		dgMatrix faceMatrix;
 		dgVector origin (&vertexArray[indexArray[0] * stride]);
+		dgVector pin (&vertexArray[indexArray[0] * stride]);
+		pin = pin & dgVector::m_triplexMask;
+		origin = origin & dgVector::m_triplexMask;
 
 		faceMatrix[0] = faceNormal;
 		faceMatrix[1] = dgVector (&vertexArray[indexArray[1] * stride]) - origin;
-		//faceMatrix[1] = faceMatrix[1] * (faceMatrix[1].DotProduct(faceMatrix[1]).InvSqrt());
 		faceMatrix[1] = faceMatrix[1].Normalize();
 		faceMatrix[2] = faceMatrix[0].CrossProduct(faceMatrix[1]);
 		faceMatrix[3] = origin | dgVector::m_wOne; 

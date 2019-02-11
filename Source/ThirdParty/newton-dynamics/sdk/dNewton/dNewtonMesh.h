@@ -68,7 +68,6 @@ class dNewtonMesh: public dNewtonAlloc
 			CNEWTON_API void AddUV0 (dFloat32 u, dFloat32 v);
 			CNEWTON_API void AddUV1 (dFloat32 u, dFloat32 v);
 			CNEWTON_API void AddVertexColor (dFloat32 r, dFloat32 g, dFloat32 b, dFloat32 a);
-			CNEWTON_API void AddVertexWeight (int matrixIndex[4], dFloat32 weights[4]);
 		CNEWTON_API void EndPolygon();
 	CNEWTON_API void EndBuild();
 

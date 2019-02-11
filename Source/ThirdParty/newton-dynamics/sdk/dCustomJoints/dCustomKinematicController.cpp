@@ -181,9 +181,9 @@ void dCustomKinematicController::SubmitConstraints (dFloat timestep, int threadI
 
 	if (m_isSixdof) {
 		dQuaternion rotation (matrix0.Inverse() * m_targetMatrix);
-		if (dAbs (rotation.m_q0) < 0.99998f) {
-			dMatrix rot (dGrammSchmidt(dVector (rotation.m_q1, rotation.m_q2, rotation.m_q3)));
-			dFloat angle = 2.0f * dAcos(dClamp(rotation.m_q0, dFloat(-1.0f), dFloat(1.0f)));
+		if (dAbs (rotation.m_w) < 0.99998f) {
+			dMatrix rot (dGrammSchmidt(dVector (rotation.m_x, rotation.m_y, rotation.m_z)));
+			dFloat angle = 2.0f * dAcos(dClamp(rotation.m_w, dFloat(-1.0f), dFloat(1.0f)));
 
 			NewtonUserJointAddAngularRow (m_joint, angle, &rot.m_front[0]);
 			NewtonUserJointSetRowMinimumFriction (m_joint, -m_maxAngularFriction);

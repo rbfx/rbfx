@@ -27,14 +27,16 @@ D_IMPLEMENT_CLASS_NODE(dAnimationTake);
 
 dAnimationTake::dAnimationTake(dScene* const world) 
 	:dNodeInfo () 
+	,m_period(0.0f)
 {
-	SetName ("animationLayers");
+	SetName ("animationTake");
 }
 
 dAnimationTake::dAnimationTake()
 	:dNodeInfo () 
+	,m_period(0.0f)
 {
-	SetName ("animationLayers");
+	SetName ("animationTake");
 }
 
 dAnimationTake::~dAnimationTake(void)
@@ -44,10 +46,12 @@ dAnimationTake::~dAnimationTake(void)
 void dAnimationTake::Serialize (TiXmlElement* const rootNode) const
 {
 	SerialiseBase(dNodeInfo, rootNode);
+	rootNode->SetDoubleAttribute("period", m_period);
 }
 
 bool dAnimationTake::Deserialize (const dScene* const scene, TiXmlElement* const rootNode) 
 {
 	DeserialiseBase(scene, dNodeInfo, rootNode);
+	dStringToFloatArray(rootNode->Attribute("period"), &m_period, 1);
 	return true;
 }

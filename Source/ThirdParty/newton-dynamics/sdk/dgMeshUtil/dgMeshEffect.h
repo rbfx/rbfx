@@ -49,15 +49,7 @@ class dgMeshEffect: public dgPolyhedra, public dgRefCounter
 		m_color,
 		m_material,
 		m_layer,
-		m_weight,
 		m_point,
-	};
-
-	class dgWeights
-	{
-		public:
-		dgFloat32 m_weightBlends[4];
-		dgInt32 m_controlIndex[4];
 	};
 
 	class dgMeshVertexFormat
@@ -68,13 +60,6 @@ class dgMeshEffect: public dgPolyhedra, public dgRefCounter
 			public:
 			const dgFloat64* m_data;
 			const dgInt32* m_indexList;
-			dgInt32 m_strideInBytes;
-		};
-
-		class dgWeightData
-		{
-			public:
-			dgWeights* m_data;
 			dgInt32 m_strideInBytes;
 		};
 
@@ -100,7 +85,6 @@ class dgMeshEffect: public dgPolyhedra, public dgRefCounter
 		const dgInt32* m_faceIndexCount;
 		const dgInt32* m_faceMaterial;
 		dgDoubleData m_vertex;
-		dgWeightData m_vertexWeights;
 		dgFloatData m_normal;
 		dgFloatData m_binormal;
 		dgFloatData m_uv0;
@@ -210,7 +194,6 @@ class dgMeshEffect: public dgPolyhedra, public dgRefCounter
 		void CompressData(dgInt32* const indexList);
 
 		dgChannel<dgInt32, m_layer> m_layers;
-		dgChannel<dgWeights, m_weight> m_weights;
 		dgChannel <dgBigVector, m_point> m_vertex;
 	};
 
@@ -368,7 +351,6 @@ class dgMeshEffect: public dgPolyhedra, public dgRefCounter
 		void BeginBuildFace ();
 			void AddPoint (dgFloat64 x, dgFloat64 y, dgFloat64 z);
 			void AddLayer (dgInt32 layer);
-			void AddWeights (const dgWeights& weight);
 			void AddMaterial (dgInt32 materialIndex);
 			void AddNormal (dgFloat32 x, dgFloat32 y, dgFloat32 z);
 			void AddBinormal (dgFloat32 x, dgFloat32 y, dgFloat32 z);
@@ -381,6 +363,9 @@ class dgMeshEffect: public dgPolyhedra, public dgRefCounter
 	dgInt32 GetVertexCount() const;
 	dgInt32 GetVertexStrideInByte() const;
 	const dgFloat64* GetVertexPool () const;
+
+	dgInt32 GetVertexBaseCount() const;
+	void SetVertexBaseCount(dgInt32 count);
 	
 	dgEdge* SpliteFace (dgInt32 v0, dgInt32 v1);
 
@@ -403,7 +388,6 @@ class dgMeshEffect: public dgPolyhedra, public dgRefCounter
 	const dgInt32* GetIndexToVertexMap() const;
 
 	bool HasLayersChannel() const;
-	bool HasWeightChannel() const;
 	bool HasNormalChannel() const;
 	bool HasBinormalChannel() const;
 	bool HasUV0Channel() const;
@@ -417,8 +401,8 @@ class dgMeshEffect: public dgPolyhedra, public dgRefCounter
 	void GetUV0Channel(dgInt32 strideInByte, dgFloat32* const bufferOut) const;
 	void GetUV1Channel(dgInt32 strideInByte, dgFloat32* const bufferOut) const;
 	void GetVertexColorChannel(dgInt32 strideInByte, dgFloat32* const bufferOut) const;
-	void GetWeightBlendChannel(dgInt32 strideInByte, dgFloat32* const bufferOut) const;
-	void GetWeightIndexChannel(dgInt32 strideInByte, dgInt32* const bufferOut) const;
+//	void GetWeightBlendChannel(dgInt32 strideInByte, dgFloat32* const bufferOut) const;
+//	void GetWeightIndexChannel(dgInt32 strideInByte, dgInt32* const bufferOut) const;
 
 	dgIndexArray* MaterialGeometryBegin();
 	void MaterialGeomteryEnd(dgIndexArray* const handle);
@@ -445,10 +429,8 @@ class dgMeshEffect: public dgPolyhedra, public dgRefCounter
 	void LoadTetraMesh (const char* const filename);
 	void Serialize (dgSerialize callback, void* const userData) const;
 
-
 	dgBigVector GetVertex (dgInt32 index) const;
 	dgInt32 GetVertexLayer (dgInt32 index) const;
-	void GetVertexWeights(dgInt32 index, dgInt32* const weightIndices, dgFloat32* const weightFactors) const;
 
 	void TransformMesh (const dgMatrix& matrix);
 
@@ -509,6 +491,7 @@ class dgMeshEffect: public dgPolyhedra, public dgRefCounter
 
 	dgPointFormat m_points;
 	dgAttibutFormat m_attrib;
+	dgInt32 m_vertexBaseCount;
 	dgInt32 m_constructionIndex;
 	
 	friend class dgConvexHull3d;
@@ -524,6 +507,17 @@ DG_INLINE dgInt32 dgMeshEffect::GetVertexCount() const
 {
 	return m_points.m_vertex.m_count;
 }
+
+DG_INLINE dgInt32 dgMeshEffect::GetVertexBaseCount() const
+{
+	return m_vertexBaseCount;
+}
+
+DG_INLINE void dgMeshEffect::SetVertexBaseCount(dgInt32 count)
+{
+	m_vertexBaseCount = count;
+}
+
 
 DG_INLINE dgInt32 dgMeshEffect::GetPropertiesCount() const
 {

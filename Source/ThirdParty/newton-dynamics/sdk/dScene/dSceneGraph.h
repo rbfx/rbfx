@@ -59,7 +59,6 @@ class dSceneGraph: public dTree<dGraphNode, unsigned>
 	friend class dGraphNode;
 };
 
-
 class dGraphNode: public dContainersAlloc
 {
 	class dLink: public dList<dSceneGraph::dTreeNode*>

@@ -28,7 +28,7 @@ class dCustomCorkScrew: public dCustomSlider
 
 	CUSTOM_JOINTS_API void EnableAngularLimits(bool state);
 	CUSTOM_JOINTS_API void SetAngularLimits(dFloat minAngle, dFloat maxAngle);
-
+	CUSTOM_JOINTS_API void SetAngularFriction(dFloat friction);
 	CUSTOM_JOINTS_API void SetAngularSpringDamper(bool state, dFloat springDamperRelaxation, dFloat spring, dFloat damper);
 
 	CUSTOM_JOINTS_API virtual void Debug(dDebugDisplay* const debugDisplay) const;

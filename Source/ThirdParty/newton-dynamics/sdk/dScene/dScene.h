@@ -43,7 +43,10 @@ class dTextureNodeInfo;
 //#define D_SCENE_REVISION_NUMBER 103
 
 // adding the geometry transform node info 
-#define D_SCENE_REVISION_NUMBER 104
+//#define D_SCENE_REVISION_NUMBER 104
+
+// adding node ID as part of the file
+#define D_SCENE_REVISION_NUMBER 105
 
 
 #define D_TEXTURE_CACHE_NODE_MAME	"dTextureCache"
@@ -73,7 +76,6 @@ class dScene: public dSceneGraph, public dRefCounter
 	DSCENE_API virtual dTreeNode* GetRootNode() const;
 
 	DSCENE_API virtual dTreeNode* CreateAnimationTake();
-	DSCENE_API virtual dTreeNode* CreateAnimationLayers();
 	DSCENE_API virtual dTreeNode* CreateAnimationTrack(dTreeNode* const take);
 	DSCENE_API virtual dTreeNode* CreateModelNode(dTreeNode* const parent);
 	DSCENE_API virtual dTreeNode* CreateSceneNode(dTreeNode* const parent);
@@ -100,7 +102,6 @@ class dScene: public dSceneGraph, public dRefCounter
 	DSCENE_API virtual dTreeNode* GetMaterialCacheNode ();
 	DSCENE_API virtual dTreeNode* GetGeometryCacheNode ();
 	
-	DSCENE_API virtual dTreeNode* FindAnimationLayers() const;
 	DSCENE_API virtual dTreeNode* FindTextureCacheNode () const;
 	DSCENE_API virtual dTreeNode* FindGetMaterialCacheNode () const;
 	DSCENE_API virtual dTreeNode* FindGetGeometryCacheNode () const;

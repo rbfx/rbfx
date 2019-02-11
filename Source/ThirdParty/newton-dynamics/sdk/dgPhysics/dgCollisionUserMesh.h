@@ -58,6 +58,9 @@ class dgCollisionUserMesh: public dgCollisionMesh
 	virtual void GetCollidingFaces (dgPolygonMeshDesc* const data) const;
 	virtual void DebugCollision (const dgMatrix& matrixPtr, dgCollision::OnDebugCollisionMeshCallback callback, void* const userData) const;
 
+	void GetCollidingFacesContinue(dgPolygonMeshDesc* const data) const;
+	void GetCollidingFacesDescrete(dgPolygonMeshDesc* const data) const;
+
 	void* m_userData;
 	OnUserMeshSerialize m_serializeCallback;
 	OnUserMeshCollisionInfo m_getInfoCallback;

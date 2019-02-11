@@ -25,7 +25,7 @@
 #include "dgProfiler.h"
 #include "dgThreadHive.h"
 
-#ifdef USE_OLD_THREAD_POOL 
+#ifdef USE_UNIX_THREAD_POOL 
 dgThreadHive::dgWorkerThread::dgWorkerThread()
 	:dgThread()
 	,m_hive(NULL)
@@ -254,9 +254,7 @@ void dgThreadHive::dgWorkerThread::Execute(dgInt32 threadId)
 	m_hive->OnBeginWorkerThread(threadId);
 
 	while (!m_terminate) {
-//		dgInterlockedExchange(&m_isBusy, 0);
 		SuspendExecution(m_workerSemaphore);
-//		dgInterlockedExchange(&m_isBusy, 1);
 		if (!m_terminate) {
 			m_concurrentWork = 1;
 			m_hive->m_beginSectionSemaphores[threadId].Release();
@@ -265,7 +263,6 @@ void dgThreadHive::dgWorkerThread::Execute(dgInt32 threadId)
 		}
 	}
 
-//	dgInterlockedExchange(&m_isBusy, 0);
 	m_hive->OnEndWorkerThread(threadId);
 }
 
@@ -327,16 +324,16 @@ void dgThreadHive::QueueJob(dgWorkerThreadTaskCallback callback, void* const con
 		callback(context0, context1, 0);
 	} else {
 		dgInt32 workerTreadEntry = m_jobsCount % m_workerThreadsCount;
-#ifdef DG_USE_THREAD_EMULATION
-		DG_TRACKTIME(functionName);
-		callback(context0, context1, workerTreadEntry);
-#else 
-		dgInt32 index = m_workerThreads[workerTreadEntry].PushJob(dgThreadJob(context0, context1, callback, functionName));
-		if (index >= DG_THREAD_POOL_JOB_SIZE) {
-			dgAssert(0);
-			SynchronizationBarrier();
-		}
-#endif
+		#ifdef DG_USE_THREAD_EMULATION
+			DG_TRACKTIME(functionName);
+			callback(context0, context1, workerTreadEntry);
+		#else 
+			dgInt32 index = m_workerThreads[workerTreadEntry].PushJob(dgThreadJob(context0, context1, callback, functionName));
+			if (index >= DG_THREAD_POOL_JOB_SIZE) {
+				dgAssert(0);
+				SynchronizationBarrier();
+			}
+		#endif
 	}
 	m_jobsCount++;
 }

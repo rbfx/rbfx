@@ -212,7 +212,6 @@ void dCustomJoint::Destructor (const NewtonJoint* me)
 	delete joint;
 }
 
-
 void dCustomJoint::SubmitConstraints (const NewtonJoint* const me, dFloat timestep, int threadIndex)
 {
 	// get the pointer to the joint class
@@ -228,7 +227,6 @@ void dCustomJoint::SubmitConstraints (const NewtonJoint* const me, dFloat timest
 		}
 	}
 }
-
 
 void dCustomJoint::Serialize (const NewtonJoint* const me, NewtonSerializeCallback callback, void* const userData)
 {
@@ -375,40 +373,35 @@ void dCustomJoint::Deserialize (NewtonSerializeCallback callback, void* const us
 	dAssert (0);
 }
 
-void dCustomJoint::dDebugDisplay::DrawFrame(const dMatrix& matrix)
+void dCustomJoint::dDebugDisplay::DrawFrame(const dMatrix& matrix, dFloat scale)
 {
 	dVector o0(matrix.m_posit);
 
-	dFloat size = m_debugScale;
-	dVector x(matrix.m_posit + matrix.RotateVector(dVector(size, 0.0f, 0.0f, 0.0f)));
+	dVector x(matrix.m_posit + matrix.RotateVector(dVector(scale, 0.0f, 0.0f, 0.0f)));
 	SetColor(dVector (1.0f, 0.0f, 0.0f));
 	DrawLine (matrix.m_posit, x);
 
-	dVector y(matrix.m_posit + matrix.RotateVector(dVector(0.0f, size, 0.0f, 0.0f)));
+	dVector y(matrix.m_posit + matrix.RotateVector(dVector(0.0f, scale, 0.0f, 0.0f)));
 	SetColor(dVector (0.0f, 1.0f, 0.0f));
 	DrawLine (matrix.m_posit, y);
 
-	dVector z(matrix.m_posit + matrix.RotateVector(dVector(0.0f, 0.0f, size, 0.0f)));
+	dVector z(matrix.m_posit + matrix.RotateVector(dVector(0.0f, 0.0f, scale, 0.0f)));
 	SetColor(dVector (0.0f, 0.0f, 1.0f));
 	DrawLine (matrix.m_posit, z);
 }
-
 
 void dCustomJoint::SubmitLinearRows(int activeRows, const dMatrix& matrix0, const dMatrix& matrix1) const
 {
 	const dVector& p0 = matrix0.m_posit;
 	const dVector& p1 = matrix1.m_posit;
-	const dVector dp(p0 - p1);
 	for (int i = 0; i < 3; i++) {
 		if (activeRows & (1 << i)) {
 			const dVector& dir = matrix1[i];
-			dVector prejectPoint(p0 - dir.Scale(dir.DotProduct3(dp)));
-			NewtonUserJointAddLinearRow(m_joint, &p0[0], &prejectPoint[0], &dir[0]);
+			NewtonUserJointAddLinearRow(m_joint, &p0[0], &p1[0], &dir[0]);
 			NewtonUserJointSetRowStiffness(m_joint, m_stiffness);
 		}
 	}
 }
-
 
 void dCustomJoint::SetJointForceCalculation(bool mode)
 {
@@ -433,7 +426,6 @@ const dVector& dCustomJoint::GetTorque1() const
 { 
 	return m_torque1;
 }
-
 
 void dCustomJoint::CalculateJointForce()
 {

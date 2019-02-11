@@ -722,8 +722,6 @@ dgFloat32 dgCollisionCompound::RayCast (const dgVector& localP0, const dgVector&
 	return maxT;
 }
 
-
-
 dgFloat32 dgCollisionCompound::GetVolume () const
 {
 	dgFloat32 volume = dgFloat32 (0.0f);

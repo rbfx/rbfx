@@ -142,8 +142,12 @@ void dSceneNodeInfo::SetColor (const dVector& color)
 void dSceneNodeInfo::BakeTransform (const dMatrix& transform)
 {
 	dMatrix invert (transform.Inverse4x4());
-	SetTransform (invert * GetTransform() * transform);
-	SetGeometryTransform(invert * GetGeometryTransform() * transform);
+
+	dMatrix nodeMatrix(invert * GetTransform() * transform);
+	SetTransform (nodeMatrix);
+
+	dMatrix geoMatrix(invert * GetGeometryTransform() * transform);
+	SetGeometryTransform(geoMatrix);
 }
 
 void dSceneNodeInfo::UpdateOOBB (dScene* const scene, dScene::dTreeNode* const myNode)

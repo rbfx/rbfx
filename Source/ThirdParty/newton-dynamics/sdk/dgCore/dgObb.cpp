@@ -118,14 +118,17 @@ namespace InternalSphere
 		for (dgInt32 i = 0; i < indexCount; i += 3) {
 			dgInt32 index = faceIndex[i] * stride;
 			dgVector p0 (&ptr[index]);
+			p0 = p0 & dgVector::m_triplexMask;
 			p0 = p0 * scaleVector;
 
 			index = faceIndex[i + 1] * stride;;
 			dgVector p1 (&ptr[index]);
+			p1 = p1 & dgVector::m_triplexMask;
 			p1 = p1 * scaleVector;
 
 			index = faceIndex[i + 2] * stride;;
 			dgVector p2 (&ptr[index]);
+			p2 = p2 & dgVector::m_triplexMask;
 			p2 = p2 * scaleVector;
 
 			dgVector normal ((p1 - p0).CrossProduct(p2 - p0));

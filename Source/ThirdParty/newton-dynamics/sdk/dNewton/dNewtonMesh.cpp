@@ -127,11 +127,6 @@ void dNewtonMesh::AddVertexColor(dFloat32 r, dFloat32 g, dFloat32 b, dFloat32 a)
 	NewtonMeshAddVertexColor(m_mesh, r, g, b, a);
 }
 
-void dNewtonMesh::AddVertexWeight(int matrixIndex[4], dFloat32 weights[4])
-{
-	NewtonMeshAddVertexWeight(m_mesh, matrixIndex, weights);
-}
-
 void dNewtonMesh::EndPolygon()
 {
 	NewtonMeshEndFace(m_mesh);

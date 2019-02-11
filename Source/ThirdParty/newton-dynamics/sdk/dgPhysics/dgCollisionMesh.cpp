@@ -315,10 +315,12 @@ dgInt32 dgCollisionMesh::CalculatePlaneIntersection (const dgFloat32* const vert
 	dgInt32 count = 0;
 	dgInt32 j = index[indexCount - 1] * stride;
 	dgVector p0 (&vertex[j]);
+	p0 = p0 & dgVector::m_triplexMask;
 	dgFloat32 side0 = localPlane.Evalue (p0);
 	for (dgInt32 i = 0; i < indexCount; i ++) {
 		j = index[i] * stride;
 		dgVector p1 (&vertex[j]);
+		p1 = p1 & dgVector::m_triplexMask;
 		dgFloat32 side1 = localPlane.Evalue (p1);
 
 		if (side0 < dgFloat32 (0.0f)) {

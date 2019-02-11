@@ -46,9 +46,9 @@ class dCustomSlider: public dCustomJoint
 	protected:
 	CUSTOM_JOINTS_API virtual void SubmitAngularRow(const dMatrix& matrix0, const dMatrix& matrix1, dFloat timestep);
 
-	void SubmitConstraintLimits(const dMatrix& matrix0, const dMatrix& matrix1, dFloat timestep);
-	void SubmitConstraintSpringDamper(const dMatrix& matrix0, const dMatrix& matrix1, dFloat timestep);
-	void SubmitConstraintLimitSpringDamper(const dMatrix& matrix0, const dMatrix& matrix1, dFloat timestep);
+	void SubmitConstraintLimits(const dMatrix& matrix0, const dMatrix& matrix1, const dVector& p0, const dVector& p1, dFloat timestep);
+	void SubmitConstraintSpringDamper(const dMatrix& matrix0, const dMatrix& matrix1, const dVector& p0, const dVector& p1, dFloat timestep);
+	void SubmitConstraintLimitSpringDamper(const dMatrix& matrix0, const dMatrix& matrix1, const dVector& p0, const dVector& p1, dFloat timestep);
 
 	dFloat m_speed;
 	dFloat m_posit;

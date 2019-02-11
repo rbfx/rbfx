@@ -67,11 +67,11 @@ namespace Urho3D {
 
     Quaternion NewtonToUrhoQuat(const dQuaternion& quat)
     {
-        return Quaternion(quat.m_q0, quat.m_q1, quat.m_q2, quat.m_q3);
+        return Quaternion(quat.m_x, quat.m_y, quat.m_z, quat.m_w);
     }
     Quaternion NewtonToUrhoQuat(const dgQuaternion& quat)
     {
-        return Quaternion(quat.m_q0, quat.m_q1, quat.m_q2, quat.m_q3);
+        return  Quaternion(quat.m_x, quat.m_y, quat.m_z, quat.m_w);
     }
 
 

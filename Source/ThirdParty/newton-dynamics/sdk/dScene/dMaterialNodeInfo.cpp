@@ -23,7 +23,6 @@
 
 D_IMPLEMENT_CLASS_NODE(dMaterialNodeInfo);
 
-
 dMaterialNodeInfo::dMaterialNodeInfo()
 	:dNodeInfo (), 
 	m_ambientColor (0.8f, 0.8f, 0.8f, 1.0f), 
@@ -57,8 +56,6 @@ dMaterialNodeInfo::dMaterialNodeInfo(dScene* const world)
 {
 	SetName ("material");
 }
-
-
 
 dMaterialNodeInfo::dMaterialNodeInfo(int id)
 	:dNodeInfo (), 
