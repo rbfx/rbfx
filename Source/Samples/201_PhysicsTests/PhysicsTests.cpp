@@ -44,11 +44,10 @@
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
-#include "Physics.h"
+#include "PhysicsTests.h"
 #include "PhysicsSamplesUtils.h"
 
 #include <Urho3D/DebugNew.h>
-//#include "Urho3D/Graphics/VisualDebugger.h"
 #include "Urho3D/Physics/FixedDistanceConstraint.h"
 #include "Urho3D/Physics/BallAndSocketConstraint.h"
 #include "Urho3D/Physics/NewtonKinematicsJoint.h"
@@ -62,18 +61,15 @@
 
 
 
-URHO3D_DEFINE_APPLICATION_MAIN(Physics)
+URHO3D_DEFINE_APPLICATION_MAIN(PhysicsTests)
 
-Physics::Physics(Context* context) :
+PhysicsTests::PhysicsTests(Context* context) :
     Sample(context)
 {
 }
 
-void Physics::Start()
+void PhysicsTests::Start()
 {
-
-   // context_->RegisterSubsystem<VisualDebugger>();
-
 
     // Execute base class startup
     Sample::Start();
@@ -94,7 +90,7 @@ void Physics::Start()
     Sample::InitMouseMode(MM_RELATIVE);
 }
 
-void Physics::CreateScene()
+void PhysicsTests::CreateScene()
 {
     auto* cache = GetSubsystem<ResourceCache>();
 
@@ -146,39 +142,37 @@ void Physics::CreateScene()
     CreateScenery(Vector3(0,0,0));
 
 
-    //SpawnMaterialsTest(Vector3(0,-25,100));
+    SpawnMaterialsTest(Vector3(0,-25,100));
 
 
-    //SpawnCompoundedRectTest2(Vector3(100, 100, 0));
+    SpawnCompoundedRectTest2(Vector3(100, 100, 0));
 
-    //SpawnBallSocketTest(Vector3(50, 10, 0));
-    //SpawnHingeActuatorTest(Vector3(52, 10, 0));
+    SpawnBallSocketTest(Vector3(50, 10, 0));
+    SpawnHingeActuatorTest(Vector3(52, 10, 0));
 
-    //CreatePyramids(Vector3(0,0,0));
+    CreatePyramids(Vector3(0,0,0));
 
 
     SpawnCompound(Vector3(-2, 10 , 10));
-    //SpawnConvexHull(Vector3(-2, 3, 10));
+    SpawnConvexHull(Vector3(-2, 3, 10));
 
-    //SpawnVehicle(Vector3(0, 10, 0));
-    //for(int i = 0; i < 50; i++)
     SpawnTrialBike(Vector3(0, 10, 4));
 
 
-    //SpawnCollisionExceptionsTest(Vector3(0, 1, 0));
-    //SpawnSliderTest(Vector3(0, 10, 0));
-    //SpawnLinearJointedObject(1.0f, Vector3(10 , 2, 10));
+    SpawnCollisionExceptionsTest(Vector3(0, 1,15));
 
-    //////
-    //SpawnNSquaredJointedObject(Vector3(-20, 10, 10));
+    SpawnSliderTest(Vector3(0, 10, 10));
+    SpawnLinearJointedObject(1.0f, Vector3(10 , 2, 10));
 
-    //SpawnCompoundedRectTest(Vector3(20, 10, 10));
+    SpawnNSquaredJointedObject(Vector3(-20, 10, 10));
+
+    SpawnCompoundedRectTest(Vector3(20, 10, 10));
 
     ////////create scale test
-    //SpawnSceneCompoundTest(Vector3(-20, 10, 20), true);
-    //SpawnSceneCompoundTest(Vector3(-20, 10, 30), false);
+    SpawnSceneCompoundTest(Vector3(-20, 10, 20), true);
+    SpawnSceneCompoundTest(Vector3(-20, 10, 30), false);
 
-    //CreateTowerOfLiar(Vector3(40, 0, 20));
+    CreateTowerOfLiar(Vector3(40, 0, 20));
 
 
     // Create the camera. Set far clip to match the fog. Note: now we actually create the camera node outside the scene, because
@@ -190,7 +184,7 @@ void Physics::CreateScene()
     // Set an initial position for the camera scene node above the floor
     cameraNode_->SetPosition(Vector3(0.0f, 5.0f, -15.0));
 }
-void Physics::CreateInstructions()
+void PhysicsTests::CreateInstructions()
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* ui = GetSubsystem<UI>();
@@ -213,7 +207,7 @@ void Physics::CreateInstructions()
     instructionText->SetPosition(0, ui->GetRoot()->GetHeight() / 4);
 }
 
-void Physics::SetupViewport()
+void PhysicsTests::SetupViewport()
 {
     auto* renderer = GetSubsystem<Renderer>();
 
@@ -222,26 +216,26 @@ void Physics::SetupViewport()
     renderer->SetViewport(0, viewport);
 }
 
-void Physics::SubscribeToEvents()
+void PhysicsTests::SubscribeToEvents()
 {
     // Subscribe HandleUpdate() function for processing update events
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Physics, HandleUpdate));
+    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(PhysicsTests, HandleUpdate));
 
     // Subscribe HandlePostRenderUpdate() function for processing the post-render update event, during which we request
     // debug geometry
-    SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(Physics, HandlePostRenderUpdate));
+    SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(PhysicsTests, HandlePostRenderUpdate));
 
-    SubscribeToEvent(E_MOUSEBUTTONUP, URHO3D_HANDLER(Physics, HandleMouseButtonUp));
+    SubscribeToEvent(E_MOUSEBUTTONUP, URHO3D_HANDLER(PhysicsTests, HandleMouseButtonUp));
 
-    SubscribeToEvent(E_MOUSEBUTTONDOWN, URHO3D_HANDLER(Physics, HandleMouseButtonDown));
+    SubscribeToEvent(E_MOUSEBUTTONDOWN, URHO3D_HANDLER(PhysicsTests, HandleMouseButtonDown));
 
 
-    SubscribeToEvent(E_PHYSICSCOLLISIONSTART, URHO3D_HANDLER(Physics, HandleCollisionStart));
+    SubscribeToEvent(E_PHYSICSCOLLISIONSTART, URHO3D_HANDLER(PhysicsTests, HandleCollisionStart));
 
 
 }
 
-void Physics::MoveCamera(float timeStep)
+void PhysicsTests::MoveCamera(float timeStep)
 {
     // Do not move if the UI has a focused element (the console)
     if (GetSubsystem<UI>()->GetFocusElement())
@@ -317,7 +311,7 @@ void Physics::MoveCamera(float timeStep)
 
     if (input->GetMouseButtonPress(MOUSEB_MIDDLE))
     {
-        FireSmallBall();
+        SpawnRandomObjects();
     }
 
     if (input->GetKeyPress(KEY_T))
@@ -429,7 +423,7 @@ void Physics::MoveCamera(float timeStep)
 
 
 
-void Physics::SpawnSceneCompoundTest(const Vector3& worldPos, bool oneBody)
+void PhysicsTests::SpawnSceneCompoundTest(const Vector3& worldPos, bool oneBody)
 {
     Node* root = scene_->CreateChild();
     root->SetPosition(worldPos);
@@ -469,7 +463,7 @@ void Physics::SpawnSceneCompoundTest(const Vector3& worldPos, bool oneBody)
 
 
 
-void Physics::SpawnObject()
+void PhysicsTests::SpawnObject()
 {
     auto* cache = GetSubsystem<ResourceCache>();
     Node* firstNode = nullptr;
@@ -521,7 +515,7 @@ void Physics::SpawnObject()
 }
 
 
-void Physics::CreatePyramids(Vector3 position)
+void PhysicsTests::CreatePyramids(Vector3 position)
 {
     int size = 8;
     float horizontalSeperation = 2.0f;
@@ -541,7 +535,7 @@ void Physics::CreatePyramids(Vector3 position)
 }
 
 
-void Physics::CreateTowerOfLiar(Vector3 position)
+void PhysicsTests::CreateTowerOfLiar(Vector3 position)
 {
     float length = 10.0f;
     float width = 5.0f;
@@ -571,7 +565,7 @@ void Physics::CreateTowerOfLiar(Vector3 position)
 
 
 
-void Physics::SpawnConvexHull(const Vector3& worldPos)
+void PhysicsTests::SpawnConvexHull(const Vector3& worldPos)
 {
     auto* cache = GetSubsystem<ResourceCache>();
 
@@ -598,7 +592,7 @@ void Physics::SpawnConvexHull(const Vector3& worldPos)
 
 
 
-void Physics::SpawnCompound(const Vector3& worldPos)
+void PhysicsTests::SpawnCompound(const Vector3& worldPos)
 {
     auto* cache = GetSubsystem<ResourceCache>();
 
@@ -625,7 +619,7 @@ void Physics::SpawnCompound(const Vector3& worldPos)
 
 
 
-void Physics::SpawnDecompCompound(const Vector3& worldPos)
+void PhysicsTests::SpawnDecompCompound(const Vector3& worldPos)
 {
     auto* cache = GetSubsystem<ResourceCache>();
 
@@ -648,7 +642,7 @@ void Physics::SpawnDecompCompound(const Vector3& worldPos)
     auto* shape = boxNode->CreateComponent<CollisionShape_ConvexDecompositionCompound>();
 }
 
-void Physics::SpawnNSquaredJointedObject(Vector3 worldPosition)
+void PhysicsTests::SpawnNSquaredJointedObject(Vector3 worldPosition)
 {
     //lets joint spheres together with a distance limiting joint.
     const float dist = 5.0f;
@@ -683,7 +677,7 @@ void Physics::SpawnNSquaredJointedObject(Vector3 worldPosition)
     }
 }
 
-void Physics::SpawnGlueJointedObject(Vector3 worldPosition)
+void PhysicsTests::SpawnGlueJointedObject(Vector3 worldPosition)
 {
     //lets joint spheres together with a distance limiting joint.
     const float dist = 10.0f;
@@ -716,7 +710,7 @@ void Physics::SpawnGlueJointedObject(Vector3 worldPosition)
 
 
 
-void Physics::SpawnLinearJointedObject(float size, Vector3 worldPosition)
+void PhysicsTests::SpawnLinearJointedObject(float size, Vector3 worldPosition)
 {
     //lets joint spheres together with a distance limiting joint.
     const float dist = size;
@@ -743,7 +737,7 @@ void Physics::SpawnLinearJointedObject(float size, Vector3 worldPosition)
 
 
 
-void Physics::SpawnMaterialsTest(Vector3 worldPosition)
+void PhysicsTests::SpawnMaterialsTest(Vector3 worldPosition)
 {
 
     Node* ramp = SpawnSamplePhysicsBox(scene_, worldPosition, Vector3(100, 1, 100));
@@ -770,7 +764,7 @@ void Physics::SpawnMaterialsTest(Vector3 worldPosition)
 
 
 
-void Physics::SpawnBallSocketTest(Vector3 worldPosition)
+void PhysicsTests::SpawnBallSocketTest(Vector3 worldPosition)
 {
     //lets joint spheres together with a distance limiting joint.
 
@@ -788,7 +782,7 @@ void Physics::SpawnBallSocketTest(Vector3 worldPosition)
 
 
 }
-void Physics::SpawnHingeActuatorTest(Vector3 worldPosition)
+void PhysicsTests::SpawnHingeActuatorTest(Vector3 worldPosition)
 {
     //lets joint spheres together with a distance limiting joint.
 
@@ -821,7 +815,7 @@ void Physics::SpawnHingeActuatorTest(Vector3 worldPosition)
 
 
 
-void Physics::SpawnCollisionExceptionsTest(Vector3 worldPosition)
+void PhysicsTests::SpawnCollisionExceptionsTest(Vector3 worldPosition)
 {
 
     Node* a = SpawnSamplePhysicsBox(scene_, worldPosition, Vector3(1, 1, 1));
@@ -851,7 +845,7 @@ void Physics::SpawnCollisionExceptionsTest(Vector3 worldPosition)
 
 }
 
-void Physics::SpawnSliderTest(Vector3 worldPosition)
+void PhysicsTests::SpawnSliderTest(Vector3 worldPosition)
 {
     Node* a = SpawnSamplePhysicsBox(scene_, worldPosition, Vector3::ONE);
     Node* b = SpawnSamplePhysicsBox(scene_, worldPosition+Vector3(1,0,0), Vector3::ONE);
@@ -875,11 +869,9 @@ void Physics::SpawnSliderTest(Vector3 worldPosition)
 
 }
 
-void Physics::FireSmallBall()
+void PhysicsTests::SpawnRandomObjects()
 {
     float range = 10.0f;
-
-
 
     for (int i = 0; i < 100; i++) {
 
@@ -904,23 +896,11 @@ void Physics::FireSmallBall()
 
     }
 
-    //if (Random(2) == 0)
-    //{
-    //    sphere->AddTag("bulletball_linearDamp");
-    //    sphere->GetComponent<RigidBody>()->SetLinearDamping(0.5);
-    //}
-    //else
-    //{
-    //    sphere->AddTag("bulletball_customDamp");
-    //    sphere->GetComponent<RigidBody>()->SetLinearDamping(0);
-
-    //}
 }
 
-void Physics::SpawnCompoundedRectTest(Vector3 worldPosition)
+void PhysicsTests::SpawnCompoundedRectTest(Vector3 worldPosition)
 {
     //make 2 1x1x1 physics rectangles. 1 with just one shape and 1 with 2 smaller compounds.
-
     Node* regularRect = SpawnSamplePhysicsBox(scene_, worldPosition + Vector3(-2, 0, 0), Vector3(1, 1, 2));
 
     Node* compoundRootRect = scene_->CreateChild();
@@ -951,7 +931,7 @@ void Physics::SpawnCompoundedRectTest(Vector3 worldPosition)
 
 }
 
-void Physics::SpawnCompoundedRectTest2(Vector3 worldPosition)
+void PhysicsTests::SpawnCompoundedRectTest2(Vector3 worldPosition)
 {
     //make 2 1x1x1 physics rectangles. 1 with just one shape and 1 with 2 smaller compounds.
 
@@ -965,14 +945,10 @@ void Physics::SpawnCompoundedRectTest2(Vector3 worldPosition)
 
     for (int i = 0; i < 2; i++)
     {
-
-
         Node* subNode = compoundRootRect->CreateChild();
         CollisionShape_Box* box = subNode->CreateComponent<CollisionShape_Box>();
 
         //box->SetDensity(0.1f);
-
-        
         subNode->SetPosition(Vector3(5.0f*i,0,0));
 
         Text3D* text = subNode->CreateComponent<Text3D>();
@@ -992,8 +968,6 @@ void Physics::SpawnCompoundedRectTest2(Vector3 worldPosition)
         sphere1StMdl->SetCastShadows(true);
         sphere1StMdl->SetModel(sphereMdl);
         sphere1StMdl->SetMaterial(sphereMat);
-
-
     }
 
 
@@ -1063,7 +1037,7 @@ void Physics::SpawnCompoundedRectTest2(Vector3 worldPosition)
 
 
 
-void Physics::SpawnTrialBike(Vector3 worldPosition)
+void PhysicsTests::SpawnTrialBike(Vector3 worldPosition)
 {
     Node* root = scene_->CreateChild("TrialBike");
 
@@ -1165,7 +1139,7 @@ void Physics::SpawnTrialBike(Vector3 worldPosition)
 
 }
 
-void Physics::HandleUpdate(StringHash eventType, VariantMap& eventData)
+void PhysicsTests::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
     using namespace Update;
 
@@ -1186,15 +1160,13 @@ void Physics::HandleUpdate(StringHash eventType, VariantMap& eventData)
     if (hingeActuatorTest) {
         float angle = Sin(timeAccum*10.0f)*45.0f;
 
-        //ui::Value("Angle: ", angle);
-        URHO3D_LOGINFO(String(angle));
         hingeActuatorTest->SetActuatorTargetAngle(angle);
 
         timeAccum += timeStep;
     }
 }
 
-void Physics::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData)
+void PhysicsTests::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData)
 {
     // If draw debug mode is enabled, draw physics debug geometry. Use depth test to make the result easier to interpret
     if (drawDebug_) {
@@ -1203,7 +1175,7 @@ void Physics::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData
     }
 }
 
-void Physics::DecomposePhysicsTree()
+void PhysicsTests::DecomposePhysicsTree()
 {
     PODVector<RayQueryResult> res;
     Ray ray(cameraNode_->GetWorldPosition(), cameraNode_->GetWorldDirection());
@@ -1229,7 +1201,7 @@ void Physics::DecomposePhysicsTree()
     }
 }
 
-void Physics::RecomposePhysicsTree()
+void PhysicsTests::RecomposePhysicsTree()
 {
 
     PODVector<Node*> nodes = scene_->GetChildrenWithTag("scaleTestCube", true);
@@ -1241,7 +1213,7 @@ void Physics::RecomposePhysicsTree()
 }
 
 
-void Physics::TransportNode()
+void PhysicsTests::TransportNode()
 {
     RayQueryResult res = GetCameraPickNode();
 
@@ -1255,18 +1227,18 @@ void Physics::TransportNode()
     }
 }
 
-void Physics::HandleMouseButtonUp(StringHash eventType, VariantMap& eventData)
+void PhysicsTests::HandleMouseButtonUp(StringHash eventType, VariantMap& eventData)
 {
     ReleasePickTargetOnPhysics();
 }
 
-void Physics::HandleMouseButtonDown(StringHash eventType, VariantMap& eventData)
+void PhysicsTests::HandleMouseButtonDown(StringHash eventType, VariantMap& eventData)
 {
 
 }
 
 
-void Physics::HandleCollisionStart(StringHash eventType, VariantMap& eventData)
+void PhysicsTests::HandleCollisionStart(StringHash eventType, VariantMap& eventData)
 {
     RigidBody* bodyA = static_cast<RigidBody*>(eventData[PhysicsCollisionStart::P_BODYA].GetPtr());
     RigidBody* bodyB = static_cast<RigidBody*>(eventData[PhysicsCollisionStart::P_BODYB].GetPtr());
@@ -1280,7 +1252,7 @@ void Physics::HandleCollisionStart(StringHash eventType, VariantMap& eventData)
 
 }
 
-RayQueryResult Physics::GetCameraPickNode()
+RayQueryResult PhysicsTests::GetCameraPickNode()
 {
     PODVector<RayQueryResult> res;
     Ray ray(cameraNode_->GetWorldPosition(), cameraNode_->GetWorldDirection());
@@ -1295,11 +1267,11 @@ RayQueryResult Physics::GetCameraPickNode()
 
 
 
-void Physics::CreateScenery(Vector3 worldPosition)
+void PhysicsTests::CreateScenery(Vector3 worldPosition)
 {
     ResourceCache* cache = GetSubsystem<ResourceCache>();
 
-    if (0) {
+    if (1) {
         // Create a floor object, 1000 x 1000 world units. Adjust position so that the ground is at zero Y
         Node* floorNode = scene_->CreateChild("Floor");
         floorNode->SetPosition(worldPosition - Vector3(0, 0.5f, 0));
@@ -1313,8 +1285,7 @@ void Physics::CreateScenery(Vector3 worldPosition)
         auto* shape = floorNode->CreateComponent<CollisionShape_Box>();
 
     }
-
-    if (1) {
+    else {
         //Create heightmap terrain with collision
         Node* terrainNode = scene_->CreateChild("Terrain");
         terrainNode->SetPosition(worldPosition);
@@ -1390,7 +1361,7 @@ void Physics::CreateScenery(Vector3 worldPosition)
 
 
 
-    ////finally create a moving node for testing scene collision rebuilding.
+    //// create a moving node for testing scene collision rebuilding.
     //Node* movingSceneNode = scene_->CreateChild("MovingSceneNode");
     //auto* stmdl = movingSceneNode->CreateComponent<StaticModel>();
     //stmdl->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
@@ -1400,16 +1371,13 @@ void Physics::CreateScenery(Vector3 worldPosition)
 
 
 
-    //create rotation test.
-
-
 
 
 
 
 }
 
-void Physics::RemovePickNode(bool removeRigidBodyOnly /*= false*/)
+void PhysicsTests::RemovePickNode(bool removeRigidBodyOnly /*= false*/)
 {
     RayQueryResult res = GetCameraPickNode();
     if (res.node_) {
@@ -1419,11 +1387,6 @@ void Physics::RemovePickNode(bool removeRigidBodyOnly /*= false*/)
             GetRootRigidBodies(bodies, res.node_, false);
             if(bodies.Size())
                 bodies.Back()->GetNode()->Remove();
-
-
-            //RigidBody* rigBody = res.node_->GetComponent<RigidBody>();
-            //if (rigBody)
-            //    rigBody->Remove();
         }
         else
         {
@@ -1432,7 +1395,7 @@ void Physics::RemovePickNode(bool removeRigidBodyOnly /*= false*/)
     }
 }
 
-void Physics::CreatePickTargetNodeOnPhysics()
+void PhysicsTests::CreatePickTargetNodeOnPhysics()
 {
     RayQueryResult res = GetCameraPickNode();
     if (res.node_) {
@@ -1479,7 +1442,7 @@ void Physics::CreatePickTargetNodeOnPhysics()
 
 
 
-void Physics::ReleasePickTargetOnPhysics()
+void PhysicsTests::ReleasePickTargetOnPhysics()
 {
     if (pickPullNode)
     {
@@ -1495,7 +1458,7 @@ void Physics::ReleasePickTargetOnPhysics()
 
     cameraNode_->RemoveChild(cameraNode_->GetChild("CameraPullPoint"));
 }
-void Physics::UpdatePickPull()
+void PhysicsTests::UpdatePickPull()
 {
     Node* pickTarget = cameraNode_->GetChild("CameraPullPoint");
 

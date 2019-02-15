@@ -33,19 +33,15 @@ class HingeConstraint;
 
 }
 
-/// Physics example.
-/// This sample demonstrates:
-///     - Creating both static and moving physics objects to a scene
-///     - Displaying physics debug geometry
-///     - Using the Skybox component for setting up an unmoving sky
-///     - Saving a scene to a file and loading it to restore a previous state
-class Physics : public Sample
+/// PhysicsTests example.
+/// This sample demonstrates different types of physics configurations and provides a testing ground for physics functionality.
+class PhysicsTests : public Sample
 {
-    URHO3D_OBJECT(Physics, Sample);
+    URHO3D_OBJECT(PhysicsTests, Sample);
 
 public:
     /// Construct.
-    explicit Physics(Context* context);
+    explicit PhysicsTests(Context* context);
 
     /// Setup after engine initialization and before running the main loop.
     void Start() override;
@@ -113,7 +109,7 @@ private:
     void SpawnHingeActuatorTest(Vector3 worldPosition);
     void SpawnCollisionExceptionsTest(Vector3 worldPosition);
     void SpawnSliderTest(Vector3 worldPosition);
-    void FireSmallBall();
+    void SpawnRandomObjects();
     void SpawnCompoundedRectTest(Vector3 worldPosition);
     void SpawnCompoundedRectTest2(Vector3 worldPosition);
     void SpawnTrialBike(Vector3 worldPosition);
