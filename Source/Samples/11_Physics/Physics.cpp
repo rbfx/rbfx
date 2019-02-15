@@ -47,6 +47,7 @@
 #include "Physics.h"
 
 #include <Urho3D/DebugNew.h>
+#include "Urho3D/Physics/CollisionShapesDerived.h"
 
 URHO3D_DEFINE_APPLICATION_MAIN(Physics)
 
@@ -131,11 +132,14 @@ void Physics::CreateScene()
         // Make the floor physical by adding RigidBody and CollisionShape components. The RigidBody's default
         // parameters make the object static (zero mass.) Note that a CollisionShape by itself will not participate
         // in the physics simulation
-        /*RigidBody* body = */floorNode->CreateComponent<RigidBody>();
-        auto* shape = floorNode->CreateComponent<CollisionShape>();
+        RigidBody* body = floorNode->CreateComponent<RigidBody>();
+        body->SetMassScale(0.0f);
+
         // Set a box shape of size 1 x 1 x 1 for collision. The shape will be scaled with the scene node scale, so the
         // rendering and physics representation sizes should match (the box model is also 1 x 1 x 1.)
-        shape->SetBox(Vector3::ONE);
+        auto* shape = floorNode->CreateComponent<CollisionShape_Box>();
+        
+ 
     }
 
     {
@@ -155,10 +159,9 @@ void Physics::CreateScene()
                 // and also adjust friction. The actual mass is not important; only the mass ratios between colliding
                 // objects are significant
                 auto* body = boxNode->CreateComponent<RigidBody>();
-                body->SetMass(1.0f);
-                body->SetFriction(0.75f);
-                auto* shape = boxNode->CreateComponent<CollisionShape>();
-                shape->SetBox(Vector3::ONE);
+
+                auto* shape = boxNode->CreateComponent<CollisionShape_Box>();
+                shape->SetFriction(0.75f);
             }
         }
     }
@@ -295,10 +298,11 @@ void Physics::SpawnObject()
 
     // Create physics components, use a smaller mass also
     auto* body = boxNode->CreateComponent<RigidBody>();
-    body->SetMass(0.25f);
-    body->SetFriction(0.75f);
-    auto* shape = boxNode->CreateComponent<CollisionShape>();
-    shape->SetBox(Vector3::ONE);
+    body->SetMassScale(0.25f);
+   
+    auto* shape = boxNode->CreateComponent<CollisionShape_Box>();
+    shape->SetFriction(0.75f);
+
 
     const float OBJECT_VELOCITY = 10.0f;
 
@@ -322,5 +326,5 @@ void Physics::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData
 {
     // If draw debug mode is enabled, draw physics debug geometry. Use depth test to make the result easier to interpret
     if (drawDebug_)
-        scene_->GetComponent<PhysicsWorld>()->DrawDebugGeometry(true);
+        scene_->GetComponent<PhysicsWorld>()->DrawDebugGeometry(scene_->GetComponent<DebugRenderer>(), true);
 }
