@@ -521,8 +521,18 @@ namespace Urho3D {
         {
 
             int size = terrainComponent->GetHeightMap()->GetHeight();
-
+#ifndef _NEWTON_USE_DOUBLE
             SharedArrayPtr<float> heightData = terrainComponent->GetHeightData();
+#else
+            SharedArrayPtr<float> heightDataFloat = terrainComponent->GetHeightData();
+
+            dFloat* heightData = new dFloat[size*size];
+            for (int i = 0; i < size*size; i++) {
+                heightData[i] = heightDataFloat[i];
+            }
+
+#endif
+
 
 
             char* const attibutes = new char[size * size];

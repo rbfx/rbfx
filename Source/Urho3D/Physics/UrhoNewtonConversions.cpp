@@ -18,14 +18,42 @@ namespace Urho3D {
 
     dMatrix UrhoToNewton(const Matrix4& mat4)
     {
+#ifndef _NEWTON_USE_DOUBLE
         //#todo might be faster to just map values and copy..
         return dMatrix(mat4.Transpose().Data());
+#else
+
+        //#todo speedup
+        Matrix4 tranposed = mat4.Transpose();
+        const float* dataPtr = tranposed.Data();
+        dFloat data[16];
+
+        for (int i = 0; i < 16; i++)
+            data[i] = dataPtr[i];
+
+
+        return dMatrix(data);
+
+#endif
     }
     dMatrix UrhoToNewton(const Matrix3x4& mat3x4)
     {
+#ifndef _NEWTON_USE_DOUBLE
         //#todo might be faster to just map values and copy..
         Matrix4 asMat4 = mat3x4.ToMatrix4();
         return dMatrix(asMat4.Transpose().Data());
+#else
+        //#todo speedup
+        Matrix4 tranposed = mat3x4.ToMatrix4().Transpose();
+        const float* dataPtr = tranposed.Data();
+        dFloat data[16];
+
+        for (int i = 0; i < 16; i++)
+            data[i] = dataPtr[i];
+
+
+        return dMatrix(data);
+#endif
     }
 
     dVector UrhoToNewton(const Vector4& vec4)
@@ -62,7 +90,20 @@ namespace Urho3D {
 
     Matrix4 NewtonToUrhoMat4(const dMatrix& mat)
     {
+#ifndef _NEWTON_USE_DOUBLE
         return Matrix4(&mat[0][0]).Transpose();
+#else
+        float data[16];
+        for (int r = 0; r < 4; r ++) {
+            for (int c = 0; c < 4; c++) {
+                data[r*c] = mat[r][c];//#todo check
+            }
+        }
+
+        return Matrix4(data).Transpose();
+
+
+#endif
     }
 
     Quaternion NewtonToUrhoQuat(const dQuaternion& quat)

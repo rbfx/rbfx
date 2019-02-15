@@ -301,7 +301,7 @@ namespace Urho3D
         ///convex casts
         static const int convexCastRetInfoSize_ = 1000;
         NewtonWorldConvexCastReturnInfo convexCastRetInfoArray[convexCastRetInfoSize_];
-        int DoNewtonCollideTest(const float* const matrix, const NewtonCollision* shape);
+        int DoNewtonCollideTest(const dFloat* const matrix, const NewtonCollision* shape);
         void GetBodiesInConvexCast(PODVector<RigidBody*>& result, int numContacts);
 
         ///newton mesh caching

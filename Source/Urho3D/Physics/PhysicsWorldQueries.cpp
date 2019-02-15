@@ -71,9 +71,9 @@ namespace Urho3D {
         GetBodiesInConvexCast(result, numContacts);
     }
 
-    int PhysicsWorld::DoNewtonCollideTest(const float* const matrix, const NewtonCollision* shape)
+    int PhysicsWorld::DoNewtonCollideTest(const dFloat* const matrix, const NewtonCollision* shape)
     {
-        URHO3D_LOGINFO("dlskfjsldf");
+        URHO3D_LOGINFO("DoNewtonCollideTest needs more testing.");
         return  NewtonWorldCollide(newtonWorld_,
             matrix, shape, nullptr,
             Newton_WorldRayPrefilterCallback, convexCastRetInfoArray,
