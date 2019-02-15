@@ -20,7 +20,7 @@ set(NEWTON_STATIC_RUNTIME_LIBRARIES OFF CACHE BOOL "use windows system static li
 option("NEWTON_BUILD_SANDBOX_DEMOS" "generates demos projects" ON)
 option("NEWTON_BUILD_PROFILER" "build profiler" OFF)
 option("NEWTON_BUILD_SINGLE_THREADED" "multi threaded" OFF)
-option("NEWTON_DOUBLE_PRECISION" "Generate double precision" OFF)
+option("NEWTON_DOUBLE_PRECISION" "Generate double precision" ON)
 option("NEWTON_STATIC_RUNTIME_LIBRARIES" "use windows static libraries" ON)
 option("NEWTON_WITH_SSE_PLUGIN" "adding asse parallel solver" OFF)
 option("NEWTON_WITH_SSE4_PLUGIN" "adding avx parallel solver" OFF)

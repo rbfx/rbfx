@@ -144,6 +144,13 @@ foreach(def LINUX ANDROID IOS APPLE MACOS MOBILE DESKTOP)
     endif ()
 endforeach()
 
+# Set double precision flag for Newton if defined in newton project
+if (NEWTON_DOUBLE_PRECISION)
+    target_compile_definitions(Urho3D PUBLIC -D_NEWTON_USE_DOUBLE)
+endif ()
+
+
+
 # Define generated source files
 if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/librevision.h)
     execute_process (COMMAND ${CMAKE_COMMAND} -DFILENAME=${CMAKE_CURRENT_BINARY_DIR}/librevision.h -P ${Urho3D_SOURCE_DIR}/CMake/Modules/GetUrhoRevision.cmake
