@@ -12,21 +12,21 @@ cmake_minimum_required(VERSION 3.10.0)
 
 
 #Urho3D Overrides
-set(NEWTON_GENERATE_DLL ON CACHE BOOL "build dll libraries")
-set(NEWTON_STATIC_RUNTIME_LIBRARIES OFF CACHE BOOL "use windows system static libraries")
+set(NEWTON_GENERATE_DLL OFF CACHE BOOL "build dll libraries")
+set(NEWTON_STATIC_RUNTIME_LIBRARIES ON CACHE BOOL "use windows system static libraries")
 
 
 
 option("NEWTON_BUILD_SANDBOX_DEMOS" "generates demos projects" ON)
 option("NEWTON_BUILD_PROFILER" "build profiler" OFF)
 option("NEWTON_BUILD_SINGLE_THREADED" "multi threaded" OFF)
-option("NEWTON_DOUBLE_PRECISION" "Generate double precision" ON)
+option("NEWTON_DOUBLE_PRECISION" "Generate double precision" OFF)
 option("NEWTON_STATIC_RUNTIME_LIBRARIES" "use windows static libraries" ON)
-option("NEWTON_WITH_SSE_PLUGIN" "adding asse parallel solver" OFF)
+#option("NEWTON_WITH_SSE_PLUGIN" "adding asse parallel solver" OFF)
 option("NEWTON_WITH_SSE4_PLUGIN" "adding avx parallel solver" OFF)
-option("NEWTON_WITH_AVX_PLUGIN" "adding avx parallel solver" OFF)
+option("NEWTON_WITH_AVX_PLUGIN" "adding avx parallel solver" ON)
 option("NEWTON_WITH_AVX2_PLUGIN" "adding avx parallel solver" OFF)
-option("NEWTON_WITH_DX12_PLUGIN" "adding direct compute 12 parallel solver" OFF)
+#option("NEWTON_WITH_DX12_PLUGIN" "adding direct compute 12 parallel solver" OFF)
 option("NEWTON_BUILD_SHARED_LIBS" "Build shared library" OFF)
 
 message("NEWTON_STATIC_RUNTIME_LIBRARIES: " ${NEWTON_STATIC_RUNTIME_LIBRARIES} )

@@ -103,11 +103,6 @@ void dMeshNodeInfo::BuildFromVertexListIndexList(const NewtonMeshVertexFormat* c
 	NewtonMeshBuildFromVertexListIndexList (m_mesh, format);
 }
 
-const int* dMeshNodeInfo::GetIndexToVertexMap() const
-{
-	return NewtonMeshGetIndexToVertexMap(m_mesh);
-}
-
 void dMeshNodeInfo::RemoveUnusedVertices(dScene* const world, dScene::dTreeNode* const myNode)
 {
 	dTrace(("fix this shit here\n"));

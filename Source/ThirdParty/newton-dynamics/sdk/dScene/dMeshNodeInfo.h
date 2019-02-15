@@ -64,8 +64,9 @@ class dMeshNodeInfo: public dGeometryNodeInfo
 	NewtonMesh* m_mesh;
 };
 
-
-
-
+inline const int* dMeshNodeInfo::GetIndexToVertexMap() const
+{
+	return NewtonMeshGetIndexToVertexMap(m_mesh);
+}
 
 #endif

@@ -67,6 +67,7 @@ class dAnimationTrack: public dNodeInfo
 	dAnimationTrack(dScene* const world);
 	virtual ~dAnimationTrack(void);
 
+	const dList<dCurveValue>& GetScales() const;
 	const dList<dCurveValue>& GetPositions() const;
 	const dList<dCurveValue>& GetRotations() const;
 
@@ -92,5 +93,21 @@ class dAnimationTrack: public dNodeInfo
 	dCurve m_position;
 	dCurve m_rotation;
 };
+
+inline const dList<dAnimationTrack::dCurveValue>& dAnimationTrack::GetScales() const
+{
+	return m_scale;
+}
+
+inline const dList<dAnimationTrack::dCurveValue>& dAnimationTrack::GetPositions() const
+{
+	return m_position;
+}
+
+inline const dList<dAnimationTrack::dCurveValue>& dAnimationTrack::GetRotations() const
+{
+	return m_rotation;
+}
+
 
 #endif

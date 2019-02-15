@@ -227,16 +227,6 @@ void dAnimationTrack::BakeTransform(const dMatrix& transform)
 	OptimizeCurves();
 }
 
-const dList<dAnimationTrack::dCurveValue>& dAnimationTrack::GetPositions() const
-{
-	return m_position;
-}
-
-const dList<dAnimationTrack::dCurveValue>& dAnimationTrack::GetRotations() const
-{
-	return m_rotation;
-}
-
 dFloat dAnimationTrack::Interpolate(dFloat x0, dFloat t0, dFloat x1, dFloat t1, dFloat t) const
 {
 	return x0 + (x1 - x0) * (t - t0) / (t1 - t0);
