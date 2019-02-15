@@ -228,9 +228,8 @@ class dgAABBPolygonSoup: public dgPolygonSoupDatabase
 		p0 = p0 & dgVector::m_triplexMask;
 		p1 = p1 & dgVector::m_triplexMask;
 	}
-	virtual dgVector ForAllSectorsSupportVectex (const dgVector& dir) const;
 
-	
+	virtual dgVector ForAllSectorsSupportVectex (const dgVector& dir) const;
 
 	private:
 	dgNodeBuilder* BuildTopDown (dgNodeBuilder* const leafArray, dgInt32 firstBox, dgInt32 lastBox, dgNodeBuilder** const allocator) const;

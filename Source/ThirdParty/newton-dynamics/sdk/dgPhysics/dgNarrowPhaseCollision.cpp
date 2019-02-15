@@ -884,7 +884,7 @@ void dgWorld::PopulateContacts (dgBroadPhase::dgPair* const pair, dgInt32 thread
 		contactMaterial->m_dynamicFriction0 = material->m_dynamicFriction0;
 		contactMaterial->m_dynamicFriction1 = material->m_dynamicFriction1;
 
-		dgAssert (dgAbs(contactMaterial->m_normal.DotProduct(contactMaterial->m_normal).GetScalar() - dgFloat32 (1.0f)) < dgFloat32 (1.0e-4f));
+		dgAssert (dgAbs(contactMaterial->m_normal.DotProduct(contactMaterial->m_normal).GetScalar() - dgFloat32 (1.0f)) < dgFloat32 (1.0e-1f));
 
 		//contactMaterial.m_collisionEnable = true;
 		//contactMaterial.m_friction0Enable = material->m_friction0Enable;

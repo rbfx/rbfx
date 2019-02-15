@@ -51,10 +51,12 @@ add_custom_command(
 	COMMAND ${CMAKE_COMMAND}
 	ARGS -E copy $(TargetPath) ${CMAKE_INSTALL_BINDIR}/newtonPlugins/${CMAKE_CFG_INTDIR}/$(TargetFileName))
 
-
 if (NEWTON_BUILD_SANDBOX_DEMOS)
-	add_custom_command(
-		TARGET ${projectName} POST_BUILD
-		COMMAND ${CMAKE_COMMAND}
-		ARGS -E copy $(TargetPath) ${PROJECT_BINARY_DIR}/applications/demosSandbox/${CMAKE_CFG_INTDIR}/newtonPlugins/${CMAKE_CFG_INTDIR}/$(TargetFileName))
+	if (NEWTON_DOUBLE_PRECISION)
+		add_custom_command(TARGET ${projectName} POST_BUILD COMMAND ${CMAKE_COMMAND}
+						   ARGS -E copy $(TargetPath) ${PROJECT_BINARY_DIR}/applications/demosSandbox/${CMAKE_CFG_INTDIR}/newtonPlugins/${CMAKE_CFG_INTDIR}_double/$(TargetFileName))
+	else ()
+		add_custom_command(TARGET ${projectName} POST_BUILD COMMAND ${CMAKE_COMMAND}
+						   ARGS -E copy $(TargetPath) ${PROJECT_BINARY_DIR}/applications/demosSandbox/${CMAKE_CFG_INTDIR}/newtonPlugins/${CMAKE_CFG_INTDIR}/$(TargetFileName))
+	endif()
 endif ()

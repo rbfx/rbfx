@@ -85,7 +85,8 @@ DG_INLINE void dgMovingAABB (dgVector& p0, dgVector& p1, const dgVector& veloc, 
 	dgVector linearStep (veloc.Scale (timestep));
 
 	// estimate the maximum effect of the angular velocity and enlarge that box by that value (use 45 degrees as max angle not 90)
-	dgFloat32 maxAngle = dgMin (dgSqrt (omega.DotProduct3(omega) * timestep * timestep), dgFloat32 (45.0f * dgDEG2RAD));
+	dgAssert (omega.m_w == dgFloat32 (0.0f));
+	dgFloat32 maxAngle = dgMin (dgSqrt (omega.DotProduct(omega).GetScalar() * timestep * timestep), dgFloat32 (45.0f * dgDEG2RAD));
 
 	dgFloat32 angularTravel = (maxRadius - minRadius) * maxAngle;
 	dgVector angularStep (angularTravel, angularTravel, angularTravel, dgFloat32 (0.0f));
@@ -374,8 +375,11 @@ class dgFastAABBInfo: public dgObb
 		pin = pin & dgVector::m_triplexMask;
 		origin = origin & dgVector::m_triplexMask;
 
+		dgVector pin1 (&vertexArray[indexArray[1] * stride]);
+		pin1 = pin1 & dgVector::m_triplexMask;
+
 		faceMatrix[0] = faceNormal;
-		faceMatrix[1] = dgVector (&vertexArray[indexArray[1] * stride]) - origin;
+		faceMatrix[1] = pin1 - origin;
 		faceMatrix[1] = faceMatrix[1].Normalize();
 		faceMatrix[2] = faceMatrix[0].CrossProduct(faceMatrix[1]);
 		faceMatrix[3] = origin | dgVector::m_wOne; 

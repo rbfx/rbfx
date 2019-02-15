@@ -47,15 +47,16 @@ install (TARGETS ${projectName} EXPORT Urho3D
     ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
 )
 
-add_custom_command(
-	TARGET ${projectName} POST_BUILD
-	COMMAND ${CMAKE_COMMAND}
-	ARGS -E copy $(TargetPath) ${CMAKE_INSTALL_BINDIR}/newtonPlugins/${CMAKE_CFG_INTDIR}/$(TargetFileName))
-
-
-if (NEWTON_BUILD_SANDBOX_DEMOS)
+if (NOT NEWTON_DOUBLE_PRECISION)
 	add_custom_command(
 		TARGET ${projectName} POST_BUILD
 		COMMAND ${CMAKE_COMMAND}
-		ARGS -E copy $(TargetPath) ${PROJECT_BINARY_DIR}/applications/demosSandbox/${CMAKE_CFG_INTDIR}/newtonPlugins/${CMAKE_CFG_INTDIR}/$(TargetFileName))
+		ARGS -E copy $(TargetPath) ${CMAKE_INSTALL_BINDIR}/newtonPlugins/${CMAKE_CFG_INTDIR}/$(TargetFileName))
+
+	if (NEWTON_BUILD_SANDBOX_DEMOS)
+		add_custom_command(
+			TARGET ${projectName} POST_BUILD
+			COMMAND ${CMAKE_COMMAND}
+			ARGS -E copy $(TargetPath) ${PROJECT_BINARY_DIR}/applications/demosSandbox/${CMAKE_CFG_INTDIR}/newtonPlugins/${CMAKE_CFG_INTDIR}/$(TargetFileName))
+	endif ()
 endif ()

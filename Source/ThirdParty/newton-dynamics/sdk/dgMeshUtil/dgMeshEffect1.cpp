@@ -494,7 +494,8 @@ void dgMeshEffect::dgMeshBVH::dgMeshBVHNode::SetBox (const dgVector& p0, const d
 	m_p1 = p1 & dgVector::m_triplexMask;
 	dgVector size (dgVector::m_half * (m_p1 - m_p0));
 	dgVector size1(size.ShiftTripleLeft());
-	m_area = size.DotProduct3(size1);
+	dgAssert (size1.m_w == dgFloat32 (0.0f));
+	m_area = size.DotProduct(size1).GetScalar();
 }
 
 dgMeshEffect::dgMeshBVH::dgMeshBVH (const dgMeshEffect* const mesh)
@@ -601,9 +602,9 @@ dgFloat32 dgMeshEffect::dgMeshBVH::CalculateSurfaceArea (dgMeshBVHNode* const no
 	minBox = dgVector (dgMin (node0->m_p0.m_x, node1->m_p0.m_x), dgMin (node0->m_p0.m_y, node1->m_p0.m_y), dgMin (node0->m_p0.m_z, node1->m_p0.m_z), dgFloat32 (0.0f));
 	maxBox = dgVector (dgMax (node0->m_p1.m_x, node1->m_p1.m_x), dgMax (node0->m_p1.m_y, node1->m_p1.m_y), dgMax (node0->m_p1.m_z, node1->m_p1.m_z), dgFloat32 (0.0f));		
 	dgVector side0 ((maxBox - minBox) * dgVector::m_half);
-	//dgVector side1 (side0.m_y, side0.m_z, side0.m_x, dgFloat32 (0.0f));
 	dgVector side1 (side0.ShiftTripleLeft());
-	return side0.DotProduct3(side1);
+	dgAssert (side1.m_w == dgFloat32 (0.0f));
+	return side0.DotProduct(side1).GetScalar();
 }
 
 void dgMeshEffect::dgMeshBVH::ImproveNodeFitness (dgMeshBVHNode* const node)

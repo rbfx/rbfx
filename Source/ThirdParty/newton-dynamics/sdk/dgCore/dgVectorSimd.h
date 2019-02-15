@@ -171,19 +171,19 @@ class dgVector
 		return (*this = _mm_mul_ps(m_type, A.m_type));
 	}
 
-	// return dot product
-	DG_INLINE dgFloat32 DotProduct3 (const dgVector& A) const
-	{
-		dgVector tmp (A & m_triplexMask);
-		dgAssert ((m_w * tmp.m_w) == dgFloat32 (0.0f));
-		return (*this * tmp).AddHorizontal().GetScalar();
-	}
-
 	// return cross product
 	DG_INLINE dgVector CrossProduct (const dgVector& B) const
 	{
 		return _mm_sub_ps (_mm_mul_ps (_mm_shuffle_ps (m_type, m_type, PERMUTE_MASK(3, 0, 2, 1)), _mm_shuffle_ps (B.m_type, B.m_type, PERMUTE_MASK(3, 1, 0, 2))),
 			   _mm_mul_ps (_mm_shuffle_ps (m_type, m_type, PERMUTE_MASK(3, 1, 0, 2)), _mm_shuffle_ps (B.m_type, B.m_type, PERMUTE_MASK(3, 0, 2, 1))));
+	}
+
+	// return dot product
+	DG_INLINE dgFloat32 DotProduct3(const dgVector& A) const
+	{
+		dgVector tmp(A & m_triplexMask);
+		dgAssert((m_w * tmp.m_w) == dgFloat32(0.0f));
+		return (*this * tmp).AddHorizontal().GetScalar();
 	}
 
 	DG_INLINE dgVector DotProduct(const dgVector& A) const
@@ -489,7 +489,6 @@ class dgBigVector
 //		,m_typeHigh(_mm_set_pd(ptr[3], ptr[2]))
 		,m_typeHigh(_mm_loadu_pd(&ptr[2]))
 	{
-		dgAssert (dgCheckVector ((*this)));
 	}
 #else
 
@@ -519,6 +518,12 @@ class dgBigVector
 		:m_ix(dgInt64(ix)), m_iy(dgInt64(iy)), m_iz(dgInt64(iz)), m_iw(dgInt64(iw))
 	{
 	}
+
+	DG_INLINE dgBigVector(dgInt64 ix, dgInt64 iy, dgInt64 iz, dgInt64 iw)
+		:m_ix(ix), m_iy(iy), m_iz(iz), m_iw(iw)
+	{
+	}
+
 
 	DG_INLINE dgFloat64& operator[] (dgInt32 i)
 	{
@@ -583,19 +588,6 @@ class dgBigVector
 	DG_INLINE dgBigVector MulSub(const dgBigVector& A, const dgBigVector& B) const
 	{
 		return *this - A * B;
-	}
-
-	DG_INLINE dgFloat64 DotProduct3(const dgBigVector& A) const
-	{
-		//dgFloat64 ret;
-		//__m128d tmp0(_mm_mul_pd(m_typeLow, A.m_typeLow));
-		//__m128d tmp1(_mm_and_pd(m_typeHigh, dgBigVector::m_triplexMask.m_typeHigh));
-		//__m128d tmp2(_mm_mul_pd(tmp1, A.m_typeHigh));
-		//__m128d tmp3(_mm_add_pd(tmp0, tmp2));
-		//__m128d dot(_mm_hadd_pd(tmp3, tmp3));
-		//_mm_store_sd(&ret, dot);
-		//return ret;
-		return m_x * A.m_x + m_y * A.m_y + m_z * A.m_z;
 	}
 
 	// return cross product
@@ -692,7 +684,8 @@ class dgBigVector
 		dgInt64 y = _mm_cvtsd_si32(_mm_shuffle_pd(temp.m_typeLow, temp.m_typeLow, PERMUT_MASK_DOUBLE(1, 1)));
 		dgInt64 z = _mm_cvtsd_si32(temp.m_typeHigh);
 		dgInt64 w = _mm_cvtsd_si32(_mm_shuffle_pd(temp.m_typeHigh, temp.m_typeHigh, PERMUT_MASK_DOUBLE(1, 1)));
-		return dgBigVector(_mm_set_pd(*(dgFloat32*)&y, *(dgFloat32*)&x), _mm_set_pd(*(dgFloat32*)&w, *(dgFloat32*)&z));
+//		return dgBigVector(_mm_set_pd(*(dgFloat32*)&y, *(dgFloat32*)&x), _mm_set_pd(*(dgFloat32*)&w, *(dgFloat32*)&z));
+		return dgBigVector(y, x, w, z);
 	}
 
 	// relational operators
@@ -787,11 +780,15 @@ class dgBigVector
 		dst3 = dgBigVector(tmp0.m_w, tmp1.m_w, tmp2.m_w, tmp3.m_w);
 	}
 
+	DG_INLINE dgFloat64 DotProduct3(const dgBigVector& A) const
+	{
+		return m_x * A.m_x + m_y * A.m_y + m_z * A.m_z;
+	}
+
 	// return dot 4d dot product
 	DG_INLINE dgBigVector DotProduct(const dgBigVector &A) const
 	{
-		dgFloat64 val(m_x * A.m_x + m_y * A.m_y + m_z * A.m_z + m_w * A.m_w);
-		return dgBigVector(val, val, val, val);
+		return (*this * A).AddHorizontal();
 	}
 
 	DG_INLINE dgBigVector CrossProduct(const dgBigVector& A, const dgBigVector& B) const

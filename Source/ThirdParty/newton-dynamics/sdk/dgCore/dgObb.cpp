@@ -132,8 +132,8 @@ namespace InternalSphere
 			p2 = p2 * scaleVector;
 
 			dgVector normal ((p1 - p0).CrossProduct(p2 - p0));
-
-			dgFloat64 area = dgFloat32 (0.5f) * sqrt (normal.DotProduct3(normal));
+			dgAssert(normal.m_w == dgFloat32(0.0f));
+			dgFloat64 area = dgFloat32 (0.5f) * sqrt (normal.DotProduct(normal).GetScalar());
 
 			centre = p0 + p1 + p2;
 			centre = centre.Scale (dgFloat32  (1.0f / 3.0f));

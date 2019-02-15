@@ -85,11 +85,9 @@ void dgWorldPluginList::LoadVisualStudioPlugins(const char* const plugInPath)
 
 void dgWorldPluginList::LoadPlugins(const char* const path)
 {
-#ifndef _NEWTON_USE_DOUBLE
-	#ifdef _MSC_VER
-		UnloadPlugins();
-		LoadVisualStudioPlugins(path);
-	#endif
+#ifdef _MSC_VER
+	UnloadPlugins();
+	LoadVisualStudioPlugins(path);
 #endif
 }
 

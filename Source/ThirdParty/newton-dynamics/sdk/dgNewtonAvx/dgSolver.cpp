@@ -461,7 +461,7 @@ DG_INLINE void dgSolver::BuildJacobianMatrix(dgJointInfo* const jointInfo, dgLef
 		const dgSoaFloat& JtM0 = (dgSoaFloat&)row->m_Jt.m_jacobianM0;
 		const dgSoaFloat& JtM1 = (dgSoaFloat&)row->m_Jt.m_jacobianM1;
 		const dgSoaFloat tmpDiag((weight0 * JMinvM0 * JtM0).MulAdd(weight1, JMinvM1 * JtM1));
-
+			
 		dgFloat32 diag = tmpDiag.AddHorizontal();
 		dgAssert(diag > dgFloat32(0.0f));
 		rhs->m_diagDamp = diag * rhs->m_stiffness;

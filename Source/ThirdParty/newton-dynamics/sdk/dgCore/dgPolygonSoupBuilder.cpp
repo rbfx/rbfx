@@ -194,7 +194,6 @@ void dgPolygonSoupDatabaseBuilder::AddMesh (const dgFloat32* const vertex, dgInt
 	dgInt32 faces[256];
 	dgInt32 pool[2048];
 
-
 	m_vertexPoints[m_vertexCount + vertexCount].m_x = dgFloat64 (0.0f);
 	dgBigVector* const vertexPool = &m_vertexPoints[m_vertexCount];
 
@@ -224,10 +223,12 @@ void dgPolygonSoupDatabaseBuilder::AddMesh (const dgFloat32* const vertex, dgInt
 		if (count == 3) {
 			convexFaces = 1;
 			dgBigVector p0 (m_vertexPoints[pool[2]]);
+			p0 = p0 & dgBigVector::m_triplexMask;
 			for (dgInt32 j = 0; j < 3; j ++) {
 				dgBigVector p1 (m_vertexPoints[pool[j]]);
+				p1 = p1 & dgBigVector::m_triplexMask;
 				dgBigVector edge (p1 - p0);
-				dgFloat64 mag2 = edge.DotProduct3(edge);
+				dgFloat64 mag2 = edge.DotProduct(edge).GetScalar();
 				if (mag2 < dgFloat32 (1.0e-6f)) {
 					convexFaces = 0;
 				}
@@ -237,8 +238,10 @@ void dgPolygonSoupDatabaseBuilder::AddMesh (const dgFloat32* const vertex, dgInt
 			if (convexFaces) {
 				dgBigVector edge0 (m_vertexPoints[pool[2]] - m_vertexPoints[pool[0]]);
 				dgBigVector edge1 (m_vertexPoints[pool[1]] - m_vertexPoints[pool[0]]);
+				dgAssert (edge0.m_w == dgFloat32 (0.0f));
+				dgAssert (edge1.m_w == dgFloat32 (0.0f));
 				dgBigVector normal (edge0.CrossProduct(edge1));
-				dgFloat64 mag2 = normal.DotProduct3(normal);
+				dgFloat64 mag2 = normal.DotProduct(normal).GetScalar();
 				if (mag2 < dgFloat32 (1.0e-8f)) {
 					convexFaces = 0;
 				}
@@ -684,10 +687,12 @@ dgInt32 dgPolygonSoupDatabaseBuilder::FilterFace (dgInt32 count, dgInt32* const 
 {
 	if (count == 3) {
 		dgBigVector p0 (m_vertexPoints[pool[2]]);
+		p0 = p0 & dgBigVector::m_triplexMask;
 		for (dgInt32 i = 0; i < 3; i ++) {
 			dgBigVector p1 (m_vertexPoints[pool[i]]);
+			p1 = p1 & dgBigVector::m_triplexMask;
 			dgBigVector edge (p1 - p0);
-			dgFloat64 mag2 = edge.DotProduct3(edge);
+			dgFloat64 mag2 = edge.DotProduct(edge).GetScalar();
 			if (mag2 < dgFloat32 (1.0e-6f)) {
 				count = 0;
 			}
@@ -698,7 +703,11 @@ dgInt32 dgPolygonSoupDatabaseBuilder::FilterFace (dgInt32 count, dgInt32* const 
 			dgBigVector edge0 (m_vertexPoints[pool[2]] - m_vertexPoints[pool[0]]);
 			dgBigVector edge1 (m_vertexPoints[pool[1]] - m_vertexPoints[pool[0]]);
 			dgBigVector normal (edge0.CrossProduct(edge1));
-			dgFloat64 mag2 = normal.DotProduct3(normal);
+
+			dgAssert(edge0.m_w == dgFloat32(0.0f));
+			dgAssert(edge1.m_w == dgFloat32(0.0f));
+			dgAssert (normal.m_w == dgFloat32 (0.0f));
+			dgFloat64 mag2 = normal.DotProduct(normal).GetScalar();
 			if (mag2 < dgFloat32 (1.0e-8f)) {
 				count = 0;
 			}
@@ -723,10 +732,12 @@ dgInt32 dgPolygonSoupDatabaseBuilder::FilterFace (dgInt32 count, dgInt32* const 
 				dgEdge* ptr = edge;
 
 				dgBigVector p0 (&m_vertexPoints[ptr->m_incidentVertex].m_x);
+				p0 = p0 & dgBigVector::m_triplexMask;
 				do {
 					dgBigVector p1 (&m_vertexPoints[ptr->m_next->m_incidentVertex].m_x);
+					p1 = p1 & dgBigVector::m_triplexMask;
 					dgBigVector e0 (p1 - p0);
-					dgFloat64 mag2 = e0.DotProduct3(e0);
+					dgFloat64 mag2 = e0.DotProduct(e0).GetScalar();
 					if (mag2 < dgFloat32 (1.0e-6f)) {
 						count --;
 						flag = true;
@@ -745,9 +756,10 @@ dgInt32 dgPolygonSoupDatabaseBuilder::FilterFace (dgInt32 count, dgInt32* const 
 		if (count >= 3) {
 			flag = true;
 			dgBigVector normal (polyhedra.FaceNormal (edge, &m_vertexPoints[0].m_x, sizeof (dgBigVector)));
+			dgAssert (normal.m_w == dgFloat32 (0.0f));
 
-			dgAssert (normal.DotProduct3(normal) > dgFloat32 (1.0e-10f)); 
-			normal = normal.Scale (dgFloat64 (1.0f) / sqrt (normal.DotProduct3(normal) + dgFloat32 (1.0e-24f)));
+			dgAssert (normal.DotProduct(normal).GetScalar() > dgFloat32 (1.0e-10f)); 
+			normal = normal.Scale (dgFloat64 (1.0f) / sqrt (normal.DotProduct(normal).GetScalar() + dgFloat32 (1.0e-24f)));
 
 			while (flag) {
 				flag = false;
@@ -756,14 +768,18 @@ dgInt32 dgPolygonSoupDatabaseBuilder::FilterFace (dgInt32 count, dgInt32* const 
 
 					dgBigVector p0 (&m_vertexPoints[ptr->m_prev->m_incidentVertex].m_x);
 					dgBigVector p1 (&m_vertexPoints[ptr->m_incidentVertex].m_x);
+
+					p0 = p0 & dgBigVector::m_triplexMask;
+					p1 = p1 & dgBigVector::m_triplexMask;
 					dgBigVector e0 (p1 - p0);
-					e0 = e0.Scale (dgFloat64 (1.0f) / sqrt (e0.DotProduct3(e0) + dgFloat32(1.0e-24f)));
+					e0 = e0.Scale (dgFloat64 (1.0f) / sqrt (e0.DotProduct(e0).GetScalar() + dgFloat32(1.0e-24f)));
 					do {
 						dgBigVector p2 (&m_vertexPoints[ptr->m_next->m_incidentVertex].m_x);
+						p2 = p2 & dgBigVector::m_triplexMask;
 						dgBigVector e1 (p2 - p1);
 
-						e1 = e1.Scale (dgFloat64 (1.0f) / sqrt (e1.DotProduct3(e1) + dgFloat32(1.0e-24f)));
-						dgFloat64 mag2 = e1.DotProduct3(e0);
+						e1 = e1.Scale (dgFloat64 (1.0f) / sqrt (e1.DotProduct(e1).GetScalar() + dgFloat32(1.0e-24f)));
+						dgFloat64 mag2 = e1.DotProduct(e0).GetScalar();
 						if (mag2 > dgFloat32 (0.9999f)) {
 							count --;
 							flag = true;
@@ -776,7 +792,8 @@ dgInt32 dgPolygonSoupDatabaseBuilder::FilterFace (dgInt32 count, dgInt32* const 
 						}
 
 						dgBigVector n (e0.CrossProduct(e1));
-						mag2 = n.DotProduct3(normal);
+						dgAssert (n.m_w == dgFloat32 (0.0f));
+						mag2 = n.DotProduct(normal).GetScalar();
 						if (mag2 < dgFloat32 (1.0e-5f)) {
 							count --;
 							flag = true;
@@ -803,14 +820,17 @@ dgInt32 dgPolygonSoupDatabaseBuilder::FilterFace (dgInt32 count, dgInt32* const 
 
 			dgBigVector p0 (&m_vertexPoints[ptr->m_incidentVertex].m_x);
 			dgBigVector p1 (&m_vertexPoints[ptr->m_next->m_incidentVertex].m_x);
+			p0 = p0 & dgBigVector::m_triplexMask;
+			p1 = p1 & dgBigVector::m_triplexMask;
 			dgBigVector e0 (p1 - p0);
-			e0 = e0.Scale (dgFloat64 (1.0f) / sqrt (e0.DotProduct3(e0) + dgFloat32(1.0e-24f)));
+			e0 = e0.Scale (dgFloat64 (1.0f) / sqrt (e0.DotProduct(e0).GetScalar() + dgFloat32(1.0e-24f)));
 			do {
 				dgBigVector p2 (&m_vertexPoints[ptr->m_next->m_next->m_incidentVertex].m_x);
+				p2 = p2 & dgBigVector::m_triplexMask;
 				dgBigVector e1 (p2 - p1);
 
-				e1 = e1.Scale (dgFloat64 (1.0f) / sqrt (e1.DotProduct3(e1) + dgFloat32(1.0e-24f)));
-				dgFloat64 mag2 = fabs (e1.DotProduct3(e0));
+				e1 = e1.Scale (dgFloat64 (1.0f) / sqrt (e1.DotProduct(e1).GetScalar() + dgFloat32(1.0e-24f)));
+				dgFloat64 mag2 = fabs (e1.DotProduct(e0).GetScalar());
 				if (mag2 < best) {
 					best = mag2;
 					first = ptr;
@@ -835,15 +855,20 @@ dgInt32 dgPolygonSoupDatabaseBuilder::FilterFace (dgInt32 count, dgInt32* const 
 			dgInt32 j0 = count - 2;  
 			dgInt32 j1 = count - 1;  
 			dgBigVector normal (polyhedra.FaceNormal (edge, &m_vertexPoints[0].m_x, sizeof (dgBigVector)));
+			dgAssert (normal.m_w == dgFloat32 (0.0f));
 			for (dgInt32 j2 = 0; j2 < count; j2 ++) { 
 				dgBigVector p0 (&m_vertexPoints[pool[j0]].m_x);
 				dgBigVector p1 (&m_vertexPoints[pool[j1]].m_x);
 				dgBigVector p2 (&m_vertexPoints[pool[j2]].m_x);
+				p0 = p0 & dgBigVector::m_triplexMask;
+				p1 = p1 & dgBigVector::m_triplexMask;
+				p2 = p2 & dgBigVector::m_triplexMask;
+
 				dgBigVector e0 ((p0 - p1));
 				dgBigVector e1 ((p2 - p1));
 
 				dgBigVector n (e1.CrossProduct(e0));
-				dgAssert (n.DotProduct3(normal) > dgFloat32 (0.0f));
+				dgAssert (n.DotProduct(normal).GetScalar() > dgFloat32 (0.0f));
 				j0 = j1;
 				j1 = j2;
 			}

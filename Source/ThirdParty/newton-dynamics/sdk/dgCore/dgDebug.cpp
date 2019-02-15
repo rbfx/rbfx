@@ -22,21 +22,5 @@
 #include "dgStdafx.h"
 #include "dgDebug.h"
 
-	void dgApi dgExpandTraceMessage (const char *fmt, ...)
-	{
-		va_list v_args;
-		char text[4096];
-
-		text[0] = 0;
-		va_start (v_args, fmt);     
-		vsprintf(text, fmt, v_args);
-		va_end (v_args);            
-
-		#ifdef _WIN32 
-			OutputDebugStringA (text);
-		#else 
-			printf ("%s\n", text);
-		#endif
-	}
 
 

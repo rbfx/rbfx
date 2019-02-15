@@ -28,6 +28,138 @@
 
 #define DG_SOA_WORD_GROUP_SIZE	8 
 
+#ifdef _NEWTON_USE_DOUBLE
+DG_MSC_AVX_ALIGMENT
+class dgSoaFloat
+{
+	public:
+	DG_INLINE dgSoaFloat()
+	{
+	}
+
+	DG_INLINE dgSoaFloat(const dgFloat32 val)
+		:m_low(_mm256_set1_pd (val))
+		,m_high(_mm256_set1_pd(val))
+	{
+	}
+
+	DG_INLINE dgSoaFloat(const __m256d low, const __m256d high)
+		:m_low(low)
+		,m_high(high)
+	{
+	}
+
+	DG_INLINE dgSoaFloat(const dgSoaFloat& copy)
+		:m_low(copy.m_low)
+		,m_high(copy.m_high)
+	{
+	}
+
+	DG_INLINE dgSoaFloat(const dgVector& low, const dgVector& high)
+		:m_low(_mm256_loadu2_m128d(&low.m_z, &low.m_x))
+		,m_high(_mm256_loadu2_m128d(&high.m_z, &high.m_x))
+	{
+	}
+
+	DG_INLINE dgFloat32& operator[] (dgInt32 i)
+	{
+		dgAssert(i < DG_SOA_WORD_GROUP_SIZE);
+		dgAssert(i >= 0);
+		return m_f[i];
+	}
+
+	DG_INLINE const dgFloat32& operator[] (dgInt32 i) const
+	{
+		dgAssert(i < DG_SOA_WORD_GROUP_SIZE);
+		dgAssert(i >= 0);
+		return m_f[i];
+	}
+
+	DG_INLINE dgSoaFloat operator+ (const dgSoaFloat& A) const
+	{
+		return dgSoaFloat (_mm256_add_pd(m_low, A.m_low), _mm256_add_pd(m_high, A.m_high));
+	}
+
+	DG_INLINE dgSoaFloat operator- (const dgSoaFloat& A) const
+	{
+		return dgSoaFloat(_mm256_sub_pd(m_low, A.m_low), _mm256_sub_pd(m_high, A.m_high));
+	}
+
+	DG_INLINE dgSoaFloat operator* (const dgSoaFloat& A) const
+	{
+		return dgSoaFloat(_mm256_mul_pd(m_low, A.m_low), _mm256_mul_pd(m_high, A.m_high));
+	}
+
+	DG_INLINE dgSoaFloat MulAdd(const dgSoaFloat& A, const dgSoaFloat& B) const
+	{
+		return *this + A * B;
+	}
+
+	DG_INLINE dgSoaFloat MulSub(const dgSoaFloat& A, const dgSoaFloat& B) const
+	{
+		return *this - A * B;
+	}
+
+	DG_INLINE dgSoaFloat operator> (const dgSoaFloat& A) const
+	{
+		return dgSoaFloat (_mm256_cmp_pd (m_low, A.m_low, _CMP_GT_OQ), _mm256_cmp_pd(m_high, A.m_high, _CMP_GT_OQ));
+	}
+
+	DG_INLINE dgSoaFloat operator< (const dgSoaFloat& A) const
+	{
+		//return _mm256_cmp_ps (m_type, A.m_type, _CMP_LT_OQ);
+		return dgSoaFloat(_mm256_cmp_pd(m_low, A.m_low, _CMP_LT_OQ), _mm256_cmp_pd(m_high, A.m_high, _CMP_LT_OQ));
+	}
+
+	DG_INLINE dgSoaFloat operator| (const dgSoaFloat& A) const
+	{
+		return dgSoaFloat(_mm256_or_pd(m_low, A.m_low), _mm256_or_pd(m_high, A.m_high));
+	}
+
+	DG_INLINE dgSoaFloat AndNot (const dgSoaFloat& A) const
+	{
+		return dgSoaFloat(_mm256_andnot_pd(A.m_low, m_low), _mm256_andnot_pd(A.m_high, m_high));
+	}
+
+	DG_INLINE dgSoaFloat GetMin(const dgSoaFloat& A) const
+	{
+		return dgSoaFloat(_mm256_min_pd(m_low, A.m_low), _mm256_min_pd(m_high, A.m_high));
+	}
+
+	DG_INLINE dgSoaFloat GetMax(const dgSoaFloat& A) const
+	{
+		return dgSoaFloat(_mm256_max_pd(m_low, A.m_low), _mm256_max_pd(m_high, A.m_high));
+	}
+
+	DG_INLINE dgFloat32 AddHorizontal() const
+	{
+		__m256d tmp0(_mm256_add_pd(m_low, m_high));
+		__m256d tmp1(_mm256_hadd_pd(tmp0, tmp0));
+		__m256d tmp2(_mm256_add_pd(tmp1, _mm256_permute2f128_pd(tmp1, tmp1, 1)));
+		dgFloat32 ret[4];
+		_mm256_storeu_pd (ret, tmp2);
+		return ret[0];
+	}
+
+	static DG_INLINE void FlushRegisters()
+	{
+		_mm256_zeroall ();
+	}
+
+	union
+	{
+		//__m256d m_type;
+		struct
+		{
+			__m256d m_low;
+			__m256d m_high;
+		};
+		dgInt64 m_i[DG_SOA_WORD_GROUP_SIZE];
+		dgFloat32 m_f[DG_SOA_WORD_GROUP_SIZE];
+	};
+} DG_GCC_AVX_ALIGMENT;
+
+#else 
 
 DG_MSC_AVX_ALIGMENT
 class dgSoaFloat
@@ -37,34 +169,34 @@ class dgSoaFloat
 	{
 	}
 
-	DG_INLINE dgSoaFloat(const float val)
-		:m_type(_mm256_set1_ps (val))
+	DG_INLINE dgSoaFloat(const dgFloat32 val)
+		:m_type(_mm256_set1_ps(val))
 	{
 	}
 
 	DG_INLINE dgSoaFloat(const __m256 type)
-		:m_type(type)
+		: m_type(type)
 	{
 	}
 
 	DG_INLINE dgSoaFloat(const dgSoaFloat& copy)
-		:m_type(copy.m_type)
+		: m_type(copy.m_type)
 	{
 	}
 
 	DG_INLINE dgSoaFloat(const dgVector& low, const dgVector& high)
-		:m_type(_mm256_loadu2_m128(&high.m_x, &low.m_x))
+		: m_type(_mm256_loadu2_m128(&high.m_x, &low.m_x))
 	{
 	}
 
-	DG_INLINE float& operator[] (dgInt32 i)
+	DG_INLINE dgFloat32& operator[] (dgInt32 i)
 	{
 		dgAssert(i < DG_SOA_WORD_GROUP_SIZE);
 		dgAssert(i >= 0);
 		return m_f[i];
 	}
 
-	DG_INLINE const float& operator[] (dgInt32 i) const
+	DG_INLINE const dgFloat32& operator[] (dgInt32 i) const
 	{
 		dgAssert(i < DG_SOA_WORD_GROUP_SIZE);
 		dgAssert(i >= 0);
@@ -98,35 +230,35 @@ class dgSoaFloat
 
 	DG_INLINE dgSoaFloat operator> (const dgSoaFloat& A) const
 	{
-		return _mm256_cmp_ps (m_type, A.m_type, _CMP_GT_OQ);
+		return _mm256_cmp_ps(m_type, A.m_type, _CMP_GT_OQ);
 	}
 
 	DG_INLINE dgSoaFloat operator< (const dgSoaFloat& A) const
 	{
-		return _mm256_cmp_ps (m_type, A.m_type, _CMP_LT_OQ);
+		return _mm256_cmp_ps(m_type, A.m_type, _CMP_LT_OQ);
 	}
 
 	DG_INLINE dgSoaFloat operator| (const dgSoaFloat& A) const
 	{
-		return _mm256_or_ps (m_type, A.m_type);
+		return _mm256_or_ps(m_type, A.m_type);
 	}
 
-	DG_INLINE dgSoaFloat AndNot (const dgSoaFloat& A) const
+	DG_INLINE dgSoaFloat AndNot(const dgSoaFloat& A) const
 	{
-		return  _mm256_andnot_ps (A.m_type, m_type);
+		return  _mm256_andnot_ps(A.m_type, m_type);
 	}
 
 	DG_INLINE dgSoaFloat GetMin(const dgSoaFloat& A) const
 	{
-		return _mm256_min_ps (m_type, A.m_type);
+		return _mm256_min_ps(m_type, A.m_type);
 	}
 
 	DG_INLINE dgSoaFloat GetMax(const dgSoaFloat& A) const
 	{
-		return _mm256_max_ps (m_type, A.m_type);
+		return _mm256_max_ps(m_type, A.m_type);
 	}
 
-	DG_INLINE float AddHorizontal() const
+	DG_INLINE dgFloat32 AddHorizontal() const
 	{
 		__m256 tmp0(_mm256_add_ps(m_type, _mm256_permute2f128_ps(m_type, m_type, 1)));
 		__m256 tmp1(_mm256_hadd_ps(tmp0, tmp0));
@@ -136,24 +268,17 @@ class dgSoaFloat
 
 	static DG_INLINE void FlushRegisters()
 	{
-		_mm256_zeroall ();
+		_mm256_zeroall();
 	}
-/*
-	DG_INLINE float GetMax() const
-	{
-		__m256 tmp0 (_mm256_add_ps(m_type, _mm256_permute2f128_ps (m_type, m_type, 1)));
-		__m256 tmp1 (_mm256_hadd_ps (tmp0, tmp0));
-		dgSoaFloat sum (_mm256_hadd_ps (tmp1, tmp1));
-		return  sum[0];
-	}
-*/
+
 	union
 	{
 		__m256 m_type;
-		int m_i[DG_SOA_WORD_GROUP_SIZE];
-		float m_f[DG_SOA_WORD_GROUP_SIZE];
+		dgInt32 m_i[DG_SOA_WORD_GROUP_SIZE];
+		dgFloat32 m_f[DG_SOA_WORD_GROUP_SIZE];
 	};
 } DG_GCC_AVX_ALIGMENT;
+#endif
 
 DG_MSC_AVX_ALIGMENT
 class dgSoaVector3
@@ -203,7 +328,7 @@ class dgSolver: public dgParallelBodySolver
 	public:
 	dgSolver(dgWorld* const world, dgMemoryAllocator* const allocator);
 	~dgSolver();
-	void CalculateJointForces(const dgBodyCluster& cluster, dgBodyInfo* const bodyArray, dgJointInfo* const jointArray, float timestep);
+	void CalculateJointForces(const dgBodyCluster& cluster, dgBodyInfo* const bodyArray, dgJointInfo* const jointArray, dgFloat32 timestep);
 
 	private:
 	void InitWeights();
@@ -250,7 +375,7 @@ class dgSolver: public dgParallelBodySolver
 
 	DG_INLINE void SortWorkGroup(dgInt32 base) const;
 	DG_INLINE void TransposeRow (dgSoaMatrixElement* const row, const dgJointInfo* const jointInfoArray, dgInt32 index);
-	DG_INLINE float CalculateJointForce(const dgJointInfo* const jointInfo, dgSoaMatrixElement* const massMatrix, const dgSoaFloat* const internalForces) const;
+	DG_INLINE dgFloat32 CalculateJointForce(const dgJointInfo* const jointInfo, dgSoaMatrixElement* const massMatrix, const dgSoaFloat* const internalForces) const;
 	DG_INLINE void BuildJacobianMatrix(dgJointInfo* const jointInfo, dgLeftHandSide* const leftHandSide, dgRightHandSide* const righHandSide, dgJacobian* const internalForces);
 
 	dgSoaFloat m_soaOne;

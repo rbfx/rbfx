@@ -135,7 +135,7 @@ DG_INLINE dgBigPlane::dgBigPlane (const dgBigVector &normal, dgFloat64 distance)
 DG_INLINE dgBigPlane::dgBigPlane (const dgBigVector &P0, const dgBigVector &P1, const dgBigVector &P2)
 	:dgBigVector ((P1 - P0).CrossProduct(P2 - P0)) 
 {
-	m_w = - DotProduct3(P0);
+	m_w = - DotProduct(P0 & dgBigVector::m_triplexMask).GetScalar();
 }
 
 DG_INLINE dgBigPlane dgBigPlane::Scale (dgFloat64 s) const
