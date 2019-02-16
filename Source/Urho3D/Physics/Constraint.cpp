@@ -31,6 +31,7 @@
 #include "Newton.h"
 #include "NewtonDebugDrawing.h"
 #include "IO/Log.h"
+#include "UrhoNewtonConversions.h"
 namespace Urho3D {
 
 
@@ -60,13 +61,9 @@ namespace Urho3D {
 
         URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Solver Iterations", GetSolveMode, SetSolveMode, CONSTRAINT_SOLVE_MODE, solveModeNames, SOLVE_MODE_JOINT_DEFAULT, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Stiffness", GetStiffness, SetStiffness, float, 0.7f, AM_DEFAULT);
+        URHO3D_ACCESSOR_ATTRIBUTE("ForceCalculationsEnabled", GetEnableForceCalculation, SetEnableForceCalculation, bool, false, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Other Body ID", GetOtherBodyId, SetOtherBodyById, unsigned, 0, AM_DEFAULT | AM_COMPONENTID);
 
-
-        //URHO3D_ACCESSOR_ATTRIBUTE("Other Body Frame Position", GetOtherPosition, SetOtherPosition, Vector3, Vector3::ZERO, AM_DEFAULT);
-        //URHO3D_ACCESSOR_ATTRIBUTE("Other Body Frame Rotation", GetOtherRotation, SetOtherRotation, Quaternion, Quaternion::IDENTITY, AM_DEFAULT);
-        //URHO3D_ACCESSOR_ATTRIBUTE("Body Frame Position", GetOwnPosition, SetOwnPosition, Vector3, Vector3::ZERO, AM_DEFAULT);
-        //URHO3D_ACCESSOR_ATTRIBUTE("Body Frame Rotation", GetOwnRotation, SetOwnRotation, Quaternion, Quaternion::IDENTITY, AM_DEFAULT);
 
         URHO3D_ATTRIBUTE("Other Body Frame Position", Vector3, otherPosition_, Vector3::ZERO, AM_DEFAULT);
         URHO3D_ATTRIBUTE("Other Body Frame Rotation", Quaternion, otherRotation_, Quaternion::IDENTITY, AM_DEFAULT);
@@ -89,7 +86,6 @@ namespace Urho3D {
 
         //draw the frames.
         const float axisLengths = 0.5f;
-
 
         float hueOffset = 0.05f;
 
@@ -293,6 +289,55 @@ namespace Urho3D {
         MarkDirty();
     }
 
+    void Constraint::SetSolveMode(CONSTRAINT_SOLVE_MODE mode)
+    {
+        if (solveMode_ != mode) {
+            solveMode_ = mode;
+            applyAllJointParams();
+        }
+    }
+
+    void Constraint::SetStiffness(float stiffness)
+    {
+        if (stiffness_ != stiffness) {
+            stiffness_ = stiffness;
+            applyAllJointParams();
+        }
+    }
+
+    void Constraint::SetEnableForceCalculation(bool enabled)
+    {
+        if (enabled != enableForceCalculations_) {
+            enableForceCalculations_ = enabled;
+            applyAllJointParams();
+        }
+    }
+
+    bool Constraint::GetEnableForceCalculation() const
+    {
+        return enableForceCalculations_;
+    }
+
+    Vector3 Constraint::GetOwnForce()
+    {
+        return NewtonToUrhoVec3(newtonJoint_->GetForce0());
+    }
+
+    Vector3 Constraint::GetOtherForce()
+    {
+        return NewtonToUrhoVec3(newtonJoint_->GetForce1());
+    }
+
+    Vector3 Constraint::GetOwnTorque()
+    {
+        return NewtonToUrhoVec3(newtonJoint_->GetTorque0());
+    }
+
+    Vector3 Constraint::GetOtherTorque()
+    {
+        return NewtonToUrhoVec3(newtonJoint_->GetTorque1());
+    }
+
     NewtonBody* Constraint::GetOwnNewtonBody() const
     {
         return ownBody_->GetNewtonBody();
@@ -306,19 +351,19 @@ namespace Urho3D {
             return nullptr;
     }
 
-    Urho3D::Vector3 Constraint::GetOtherPosition() const
+    Vector3 Constraint::GetOtherPosition() const
     {
 
        return otherPosition_;
 
     }
 
-    Urho3D::Quaternion Constraint::GetOtherRotation() const
+    Quaternion Constraint::GetOtherRotation() const
     {
         return otherRotation_;
     }
 
-    Urho3D::Matrix3x4 Constraint::GetOwnWorldFrame() const
+    Matrix3x4 Constraint::GetOwnWorldFrame() const
     {
 
         //return a frame with no scale at the position and rotation in node space
@@ -332,7 +377,7 @@ namespace Urho3D {
 
     }
 
-    Urho3D::Matrix3x4 Constraint::GetOtherWorldFrame() const
+    Matrix3x4 Constraint::GetOtherWorldFrame() const
     {
         if (otherBody_) {
 
@@ -424,6 +469,7 @@ namespace Urho3D {
         /// extend in derived classes.
         NewtonJointSetCollisionState((NewtonJoint*)newtonJoint_, enableBodyCollision_);
         newtonJoint_->SetStiffness(stiffness_);
+        newtonJoint_->SetJointForceCalculation(enableForceCalculations_);
 
         if(solveMode_ != SOLVE_MODE_JOINT_DEFAULT)
             newtonJoint_->SetSolverModel(solveMode_);

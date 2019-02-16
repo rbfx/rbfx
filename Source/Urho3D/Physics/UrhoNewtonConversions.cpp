@@ -19,11 +19,9 @@ namespace Urho3D {
     dMatrix UrhoToNewton(const Matrix4& mat4)
     {
 #ifndef _NEWTON_USE_DOUBLE
-        //#todo might be faster to just map values and copy..
         return dMatrix(mat4.Transpose().Data());
 #else
 
-        //#todo speedup
         Matrix4 tranposed = mat4.Transpose();
         const float* dataPtr = tranposed.Data();
         dFloat data[16];
@@ -39,11 +37,9 @@ namespace Urho3D {
     dMatrix UrhoToNewton(const Matrix3x4& mat3x4)
     {
 #ifndef _NEWTON_USE_DOUBLE
-        //#todo might be faster to just map values and copy..
         Matrix4 asMat4 = mat3x4.ToMatrix4();
         return dMatrix(asMat4.Transpose().Data());
 #else
-        //#todo speedup
         Matrix4 tranposed = mat3x4.ToMatrix4().Transpose();
         const float* dataPtr = tranposed.Data();
         dFloat data[16];

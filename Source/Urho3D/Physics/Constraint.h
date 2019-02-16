@@ -111,12 +111,7 @@ namespace Urho3D {
         virtual void SetOtherWorldRotation(const Quaternion& rotation);
 
 
-        void SetSolveMode(CONSTRAINT_SOLVE_MODE mode) {
-            if (solveMode_ != mode) {
-                solveMode_ = mode;
-                applyAllJointParams();
-            }
-        }
+        void SetSolveMode(CONSTRAINT_SOLVE_MODE mode);
         void SetSolveMode(int mode) {
             SetSolveMode(CONSTRAINT_SOLVE_MODE(mode));
         }
@@ -124,13 +119,23 @@ namespace Urho3D {
         CONSTRAINT_SOLVE_MODE GetSolveMode() const { return solveMode_; }
 
 
-        void SetStiffness(float stiffness) {
-            if (stiffness_ != stiffness) {
-                stiffness_ = stiffness;
-                applyAllJointParams();
-            }
-        }
+        void SetStiffness(float stiffness);
         float GetStiffness() const { return stiffness_; }
+
+        /// Enable force calculations on the joint.  Enable to use functions like GetOwnForce() etc..
+        void SetEnableForceCalculation(bool enabled);
+
+        bool GetEnableForceCalculation() const;
+
+        ///return the force exerted on rigid body. Generally equal and opposite to GetOtherForce().  Only functional if ForceCalculation is enabled.
+        Vector3 GetOwnForce();
+        ///return the force exerted on other rigid body. Generally equal and opposite to GetOwnForce(). Only functional if ForceCalculation is enabled.
+        Vector3 GetOtherForce();
+
+        ///return the torque exerted on rigid body. Only functional if ForceCalculation is enabled.
+        Vector3 GetOwnTorque();
+        ///return the torque exerted on other rigid body. Only functional if ForceCalculation is enabled.
+        Vector3 GetOtherTorque();
 
 
         /// Return physics world.
@@ -196,11 +201,7 @@ namespace Urho3D {
 
         bool otherFrameWorldExplicitlySet = false;
 
-        bool reEvalOtherBodyFrame_ = false;
-        Vector3 pendingOtherBodyFramePos_;
-
-
-
+        bool enableForceCalculations_ = false;
 
         /// Upper level re-evaulation.
         void reEvalConstraint();
@@ -215,6 +216,7 @@ namespace Urho3D {
         void freeInternal();
 
         void AddJointReferenceToBody(RigidBody* rigBody);
+
         void RemoveJointReferenceFromBody(RigidBody* rigBody);
 
 

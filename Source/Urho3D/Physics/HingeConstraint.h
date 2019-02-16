@@ -100,7 +100,7 @@ namespace Urho3D {
         float minAngle_ = -45.0f;
         float maxAngle_ = 45.0f;
 
-        float enableSpringDamper_ = false;
+        bool enableSpringDamper_ = false;
         float springRelaxation_ = HINGE_CONSTRAINT_DEF_RELAX;
         float springSpringCoef_ = HINGE_CONSTRAINT_DEF_SPRING_COEF;
         float springDamperCoef_ = HINGE_CONSTRAINT_DEF_DAMPER_COEF;
