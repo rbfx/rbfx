@@ -151,6 +151,9 @@ private:
     PODVector<float> worldPosHistory_;
     PODVector<float> worldPosHistory2_;
 
+
+    PODVector<Constraint*> forceCalculationConstraints_;
+
     void CreateScenery(Vector3 worldPosition);
     void RemovePickNode(bool removeRigidBodyOnly = false);
 };

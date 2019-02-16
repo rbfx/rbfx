@@ -673,6 +673,9 @@ void PhysicsTests::SpawnNSquaredJointedObject(Vector3 worldPosition)
             //constraint->SetOtherRotation(Quaternion(45, 0, 0));
             constraint->SetOtherBody(node2->GetComponent<RigidBody>());
             constraint->SetOtherPosition(Vector3(0.0, 0, 0));
+            constraint->SetEnableForceCalculation(true);
+
+            forceCalculationConstraints_ += constraint;
         }
     }
 }
@@ -1164,6 +1167,16 @@ void PhysicsTests::HandleUpdate(StringHash eventType, VariantMap& eventData)
 
         timeAccum += timeStep;
     }
+
+
+    //print forces on force calculation contraints
+    for (Constraint* constraint : forceCalculationConstraints_) {
+        URHO3D_LOGINFO(String(constraint->GetOwnForce()));
+
+    }
+
+
+
 }
 
 void PhysicsTests::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData)

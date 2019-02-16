@@ -320,22 +320,34 @@ namespace Urho3D {
 
     Vector3 Constraint::GetOwnForce()
     {
-        return NewtonToUrhoVec3(newtonJoint_->GetForce0());
+        if(newtonJoint_&& enableForceCalculations_)
+            return NewtonToUrhoVec3(newtonJoint_->GetForce0());
+
+        return Vector3();
     }
 
     Vector3 Constraint::GetOtherForce()
     {
-        return NewtonToUrhoVec3(newtonJoint_->GetForce1());
+        if (newtonJoint_ && enableForceCalculations_)
+            return NewtonToUrhoVec3(newtonJoint_->GetForce1());
+
+        return Vector3();
     }
 
     Vector3 Constraint::GetOwnTorque()
     {
-        return NewtonToUrhoVec3(newtonJoint_->GetTorque0());
+        if (newtonJoint_ && enableForceCalculations_)
+            return NewtonToUrhoVec3(newtonJoint_->GetTorque0());
+
+        return Vector3();
     }
 
     Vector3 Constraint::GetOtherTorque()
     {
-        return NewtonToUrhoVec3(newtonJoint_->GetTorque1());
+        if (newtonJoint_ && enableForceCalculations_)
+            return NewtonToUrhoVec3(newtonJoint_->GetTorque1());
+
+        return Vector3();
     }
 
     NewtonBody* Constraint::GetOwnNewtonBody() const
