@@ -44,6 +44,10 @@ if (NEWTON_BUILD_PROFILER)
     target_link_libraries (${projectName} dTimeTracker)
 endif()
 
+if(NEWTON_DOUBLE_PRECISION)
+    target_compile_definitions(${projectName} PUBLIC -D_NEWTON_USE_DOUBLE)
+endif()
+
 if (MSVC)
 	set_target_properties(${projectName} PROPERTIES COMPILE_FLAGS "/YuNewtonStdAfx.h")
 	set_source_files_properties(NewtonClass.cpp PROPERTIES COMPILE_FLAGS "/YcNewtonStdAfx.h")

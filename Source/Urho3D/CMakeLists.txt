@@ -144,11 +144,6 @@ foreach(def LINUX ANDROID IOS APPLE MACOS MOBILE DESKTOP)
     endif ()
 endforeach()
 
-# Set double precision flag for Newton if defined in newton project
-if (NEWTON_DOUBLE_PRECISION)
-    target_compile_definitions(Urho3D PUBLIC -D_NEWTON_USE_DOUBLE)
-endif ()
-
 
 
 # Define generated source files
