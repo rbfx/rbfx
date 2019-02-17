@@ -40,6 +40,21 @@ endif(MSVC)
 #install(TARGETS ${projectName} RUNTIME DESTINATION ${dllPath})
 #install(TARGETS ${projectName} ARCHIVE DESTINATION ${libraryPath})
 
+
+target_include_directories(${projectName} PUBLIC 
+$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+$<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/sdk> 
+)
+
+if (NOT URHO3D_MERGE_STATIC_LIBS)
+install (TARGETS ${projectName} EXPORT Urho3D
+    LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
+    RUNTIME DESTINATION ${DEST_BIN_DIR}
+    ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
+)
+endif()
+
+
 add_custom_command(
 	TARGET ${projectName} POST_BUILD
 	COMMAND ${CMAKE_COMMAND}

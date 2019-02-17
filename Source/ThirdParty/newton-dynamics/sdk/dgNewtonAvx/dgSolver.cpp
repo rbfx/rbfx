@@ -148,7 +148,7 @@ void dgSolver::InitBodyArray(dgInt32 threadID)
 DG_INLINE void dgSolver::SortWorkGroup(dgInt32 base) const
 {
 	dgJointInfo* const jointArray = m_jointArray;
-	for (dgInt32 i = 1; i < DG_WORK_GROUP_SIZE; i++) {
+	for (dgInt32 i = 1; i < DG_SOA_WORD_GROUP_SIZE; i++) {
 		dgInt32 index = base + i;
 		const dgJointInfo tmp(jointArray[index]);
 		for (; (index > base) && (jointArray[index - 1].m_pairCount < tmp.m_pairCount); index--) {
@@ -180,8 +180,8 @@ void dgSolver::InitJacobianMatrix()
 	}
 
 	dgInt32 size = 0;
-	for (dgInt32 i = 0; i < jointCount; i += DG_WORK_GROUP_SIZE) {
-		const dgConstraint* const joint1 = jointArray[i + DG_WORK_GROUP_SIZE - 1].m_joint;
+	for (dgInt32 i = 0; i < jointCount; i += DG_SOA_WORD_GROUP_SIZE) {
+		const dgConstraint* const joint1 = jointArray[i + DG_SOA_WORD_GROUP_SIZE - 1].m_joint;
 		if (joint1) {
 			if (!(joint1->GetBody0()->m_resting & joint1->GetBody1()->m_resting)) {
 				const dgConstraint* const joint0 = jointArray[i].m_joint;
@@ -189,13 +189,13 @@ void dgSolver::InitJacobianMatrix()
 					SortWorkGroup(i);
 				}
 			}
-			for (dgInt32 j = 0; j < DG_WORK_GROUP_SIZE; j++) {
+			for (dgInt32 j = 0; j < DG_SOA_WORD_GROUP_SIZE; j++) {
 				dgConstraint* const joint = jointArray[i + j].m_joint;
 				joint->SetIndex (i + j);
 			}
 		} else {
 			SortWorkGroup(i);
-			for (dgInt32 j = 0; j < DG_WORK_GROUP_SIZE; j++) {
+			for (dgInt32 j = 0; j < DG_SOA_WORD_GROUP_SIZE; j++) {
 				dgConstraint* const joint = jointArray[i + j].m_joint;
 				if (joint) {
 					joint->SetIndex (i + j);
@@ -813,7 +813,7 @@ void dgSolver::CalculateJointsForce(dgInt32 threadID)
 
 		bool isSleeping = true;
 		dgFloat32 accel2 = dgFloat32(0.0f);
-		for (dgInt32 j = 0; (j < DG_WORK_GROUP_SIZE) && isSleeping; j++) {
+		for (dgInt32 j = 0; (j < DG_SOA_WORD_GROUP_SIZE) && isSleeping; j++) {
 			const dgInt32 m0 = jointInfo[j].m_m0;
 			const dgInt32 m1 = jointInfo[j].m_m1;
 			const dgBody* const body0 = bodyArray[m0].m_body;
@@ -877,7 +877,7 @@ void dgSolver::CalculateJointsForce(dgInt32 threadID)
 
 		dgBodyProxy* const bodyProxyArray = m_bodyProxyArray;
 		dgJacobian* const tempInternalForces = &m_world->GetSolverMemory().m_internalForcesBuffer[m_cluster->m_bodyCount];
-		for (dgInt32 j = 0; j < DG_WORK_GROUP_SIZE; j++) {
+		for (dgInt32 j = 0; j < DG_SOA_WORD_GROUP_SIZE; j++) {
 			const dgJointInfo* const joint = &jointInfo[j];
 			if (joint->m_joint) {
 				dgJacobian m_body0Force;

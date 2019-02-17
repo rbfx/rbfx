@@ -11,10 +11,6 @@
 cmake_minimum_required(VERSION 3.10.0)
 
 
-#Urho3D Overrides
-set(NEWTON_GENERATE_DLL OFF CACHE BOOL "build dll libraries")
-set(NEWTON_STATIC_RUNTIME_LIBRARIES ON CACHE BOOL "use windows system static libraries")
-
 
 
 option("NEWTON_BUILD_SANDBOX_DEMOS" "generates demos projects" ON)
@@ -122,10 +118,10 @@ if (MSVC)
 	endif()
 
 	if(CMAKE_CL_64)
-		message ("build 64 bit")
+		#message ("build 64 bit")
 		add_definitions(-D_WIN_64_VER)
 	else()
-		message ("build 32 bit")
+		#message ("build 32 bit")
 		add_definitions(-D_WIN_32_VER)
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /arch:SSE2")
 	endif()

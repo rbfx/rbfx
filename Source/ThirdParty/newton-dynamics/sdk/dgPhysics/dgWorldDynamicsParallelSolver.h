@@ -29,7 +29,7 @@ class dgJointInfo;
 class dgBodyCluster;
 class dgSkeletonContainer;
 
-#define DG_WORK_GROUP_SIZE		8 
+#define DG_WORK_GROUP_SIZE	8 
 
 DG_MSC_VECTOR_ALIGMENT
 class dgWorkGroupFloat
