@@ -110,6 +110,11 @@ namespace Urho3D {
     }
    
 
+    void RigidBody::SetWorldTransformToNode()
+    {
+        SetWorldTransform(node_->GetWorldTransform());
+    }
+
     void RigidBody::SetWorldTransform(const Matrix3x4& transform)
     {
         if (newtonBody_)
@@ -1028,20 +1033,13 @@ namespace Urho3D {
 
     void RigidBody::applyDefferedActions()
     {
-        //wake the body so it responds.
-        Activate();
 
 
         if (nextPositionNeeded_ && !nextTransformNeeded_)
         {
             if (newtonBody_)
             {
-                dgQuaternion orientation;
-                NewtonBodyGetRotation(newtonBody_, &orientation.m_x);
-
-                Matrix3x4 transform(nextPosition_, NewtonToUrhoQuat(orientation), 1.0f);
-                NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(transform))[0][0]);
-                
+                SetWorldPosition(nextPosition_);
                 nextPositionNeeded_ = false;
             }
         }
@@ -1050,12 +1048,7 @@ namespace Urho3D {
         {
             if (newtonBody_)
             {
-                dVector pos;
-                NewtonBodyGetPosition(newtonBody_, &pos[0]);
-
-                Matrix3x4 transform(NewtonToUrhoVec3(pos), nextOrientation_, 1.0f);
-                NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(transform))[0][0]);
-                
+                SetWorldRotation(nextOrientation_);
                 nextOrientationNeeded_ = false;
             }
             
@@ -1066,9 +1059,8 @@ namespace Urho3D {
 
             if (newtonBody_)
             {
-                Matrix3x4 scaleLessTransform(nextTransform_.Translation(), nextTransform_.Rotation(), 1.0f);
-                NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(scaleLessTransform))[0][0]);
-                
+                SetWorldTransform(nextTransform_);
+
                 nextTransformNeeded_ = false;
             }
             
@@ -1078,18 +1070,7 @@ namespace Urho3D {
         {
             if (newtonBody_)
             {
-                if (nextLinearVelocityUseForces_) {
-                    dVector curWorldVel;
-                    NewtonBodyGetVelocity(newtonBody_, &curWorldVel[0]);
-
-                    dVector worldVel = UrhoToNewton(nextLinearVelocity_) - curWorldVel;
-                    dVector bodyWorldPos;
-                    NewtonBodyGetPosition(newtonBody_, &bodyWorldPos[0]);
-                    NewtonBodyAddImpulse(newtonBody_, &worldVel[0], &bodyWorldPos[0], physicsWorld_->timeStepTarget_);
-                }
-                else
-                    NewtonBodySetVelocity(newtonBody_, &UrhoToNewton(nextLinearVelocity_)[0]);
-                
+                SetLinearVelocity(nextLinearVelocity_, nextLinearVelocityUseForces_);
                 nextLinearVelocityNeeded_ = false;
             }
             
@@ -1098,7 +1079,7 @@ namespace Urho3D {
         {
             if (newtonBody_)
             {
-                NewtonBodySetOmega(newtonBody_, &UrhoToNewton(nextAngularVelocity_)[0]);
+                SetAngularVelocity(nextAngularVelocity_);
                 nextAngularVelocityNeeded_ = false;
             }
             
@@ -1106,9 +1087,7 @@ namespace Urho3D {
         if (nextImpulseNeeded_)
         {
             if (newtonBody_) {
-                NewtonBodyAddImpulse(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(nextImpulseWorldVelocity_))[0],
-                    &UrhoToNewton(node_->LocalToWorld(nextImpulseLocalPos_))[0], physicsWorld_->timeStepTarget_);
-                
+                AddImpulse(nextImpulseLocalPos_, nextImpulseWorldVelocity_);
                 nextImpulseNeeded_ = false;
             }
 

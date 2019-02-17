@@ -90,20 +90,21 @@ namespace Urho3D
     };
 
     struct PhysicsRayCastIntersection {
-        NewtonBody* body = nullptr;
-        float rayIntersectParameter = -1.0f;
+        NewtonBody* body_ = nullptr;
+        float rayIntersectParameter_ = -1.0f;
 
-        RigidBody* rigBody = nullptr;
-        Vector3 rayIntersectWorldPosition;
-        Vector3 rayIntersectWorldNormal;
-        float rayDistance = -1.0f;
-        Vector3 rayOriginWorld;
+        RigidBody* rigBody_ = nullptr;
+        Vector3 rayIntersectWorldPosition_;
+        Vector3 rayIntersectWorldNormal_;
+        float rayDistance_ = -1.0f;
+        Vector3 rayOriginWorld_;
     };
     inline bool PhysicsRayCastIntersectionCompare(PhysicsRayCastIntersection& intersect1, PhysicsRayCastIntersection& intersect2) {
-        return (intersect1.rayIntersectParameter < intersect2.rayIntersectParameter);
+        return (intersect1.rayIntersectParameter_ < intersect2.rayIntersectParameter_);
     }
     struct PhysicsRayCastUserData {
         PODVector<PhysicsRayCastIntersection> intersections;
+        bool singleIntersection_ = false;
     };
 
 
@@ -151,6 +152,9 @@ namespace Urho3D
             const Vector3& pointOrigin, const Vector3& pointDestination,
             unsigned maxIntersections = M_MAX_UNSIGNED,
             unsigned collisionMask = M_MAX_UNSIGNED);
+
+        void RayCastSingle(PhysicsRayCastIntersection& intersection, const Vector3& pointOrigin, const Vector3& pointDestination, unsigned collisionMask = M_MAX_UNSIGNED);
+        void RayCastSingle(PhysicsRayCastIntersection& intersection, const Ray& ray, float maxDistance=M_LARGE_VALUE, unsigned collisionMask = M_MAX_UNSIGNED);
 
 
         /// Return rigid bodies by a sphere query.

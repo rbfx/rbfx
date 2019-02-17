@@ -3,6 +3,9 @@
     <AssemblyName>ImGuiNet</AssemblyName>
     <OutputType>Library</OutputType>
     <LangVersion>7.2</LangVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkProfile />
+    <ProjectGuid>{30C5908F-27BC-3950-9524-C16DFCA3D579}</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup>
     <GeneratedCodePath>$(BuildDir)Source/ThirdParty/imgui</GeneratedCodePath>

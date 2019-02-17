@@ -46,6 +46,7 @@
 #include "InverseKinematics.h"
 
 #include <Urho3D/DebugNew.h>
+#include "Urho3D/Physics/CollisionShapesDerived.h"
 
 URHO3D_DEFINE_APPLICATION_MAIN(InverseKinematics)
 
@@ -96,9 +97,10 @@ void InverseKinematics::CreateScene()
     planeObject->SetMaterial(cache->GetResource<Material>("Materials/StoneTiled.xml"));
 
     // Set up collision, we need to raycast to determine foot height
-    floorNode_->CreateComponent<RigidBody>();
-    auto* col = floorNode_->CreateComponent<CollisionShape>();
-    col->SetBox(Vector3(1, 0, 1));
+    floorNode_->CreateComponent<RigidBody>()->SetMassScale(0.0f);
+    auto* col = floorNode_->CreateComponent<CollisionShape_Box>();
+    col->SetScaleFactor(Vector3(1, 1, 1));
+    
 
     // Create a directional light to the world.
     Node* lightNode = scene_->CreateChild("DirectionalLight");
@@ -236,6 +238,7 @@ void InverseKinematics::UpdateCameraAndFloor(float /*timeStep*/)
     // Construct new orientation for the camera scene node from yaw and pitch. Roll is fixed to zero
     cameraRotateNode_->SetRotation(Quaternion(pitch_, yaw_, 0.0f));
     floorNode_->SetRotation(Quaternion(floorPitch_, 0, floorRoll_));
+    floorNode_->GetComponent<RigidBody>()->SetWorldTransformToNode();
 }
 
 void InverseKinematics::SubscribeToEvents()
@@ -270,28 +273,28 @@ void InverseKinematics::HandleSceneDrawableUpdateFinished(StringHash /*eventType
     Vector3 rightFootPosition = rightFoot_->GetWorldPosition();
 
     // Cast ray down to get the normal of the underlying surface
-    PhysicsRaycastResult result;
-    phyWorld->RaycastSingle(result, Ray(leftFootPosition + Vector3(0, 1, 0), Vector3(0, -1, 0)), 2);
-    if (result.body_)
+    PODVector<PhysicsRayCastIntersection> results;
+    phyWorld->RayCast(results, Ray(leftFootPosition + Vector3(0, 1, 0), Vector3(0, -1, 0)), 2, 1);
+    if (results.Size() && results[0].body_)
     {
         // Cast again, but this time along the normal. Set the target position
         // to the ray intersection
-        phyWorld->RaycastSingle(result, Ray(leftFootPosition + result.normal_, -result.normal_), 2);
+        phyWorld->RayCast(results, Ray(leftFootPosition + results[0].rayIntersectWorldNormal_, -results[0].rayIntersectWorldNormal_), 2, 1);
         // The foot node has an offset relative to the root node
         float footOffset = leftFoot_->GetWorldPosition().y_ - jackNode_->GetWorldPosition().y_;
-        leftEffector_->SetTargetPosition(result.position_ + result.normal_ * footOffset);
+        leftEffector_->SetTargetPosition(results[0].rayIntersectWorldPosition_ + results[0].rayIntersectWorldNormal_ * footOffset);
         // Rotate foot according to normal
-        leftFoot_->Rotate(Quaternion(Vector3(0, 1, 0), result.normal_), TS_WORLD);
+        leftFoot_->Rotate(Quaternion(Vector3(0, 1, 0), results[0].rayIntersectWorldNormal_), TS_WORLD);
     }
 
     // Same deal with the right foot
-    phyWorld->RaycastSingle(result, Ray(rightFootPosition + Vector3(0, 1, 0), Vector3(0, -1, 0)), 2);
-    if (result.body_)
+    phyWorld->RayCast(results, Ray(rightFootPosition + Vector3(0, 1, 0), Vector3(0, -1, 0)), 2, 1);
+    if (results.Size() && results[0].body_)
     {
-        phyWorld->RaycastSingle(result, Ray(rightFootPosition + result.normal_, -result.normal_), 2);
+        phyWorld->RayCast(results, Ray(rightFootPosition + results[0].rayIntersectWorldNormal_, -results[0].rayIntersectWorldNormal_), 2, 1);
         float footOffset = rightFoot_->GetWorldPosition().y_ - jackNode_->GetWorldPosition().y_;
-        rightEffector_->SetTargetPosition(result.position_ + result.normal_ * footOffset);
-        rightFoot_->Rotate(Quaternion(Vector3(0, 1, 0), result.normal_), TS_WORLD);
+        rightEffector_->SetTargetPosition(results[0].rayIntersectWorldPosition_ + results[0].rayIntersectWorldNormal_ * footOffset);
+        rightFoot_->Rotate(Quaternion(Vector3(0, 1, 0), results[0].rayIntersectWorldNormal_), TS_WORLD);
     }
 
     solver_->Solve();

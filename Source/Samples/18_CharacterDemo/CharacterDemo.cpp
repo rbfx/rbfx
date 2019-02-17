@@ -209,8 +209,6 @@ void CharacterDemo::CreateCharacter()
     body->SetMassScale(1.0f);
     body->SetAutoSleep(false);
 
-    // disable response to node transform changes. we need this because we will be constantly rotating the object node to face camera direction and do not want the rigid body to rotate as well.
-    body->SetRespondToNodeTransformChanges(false);
 
     // Set zero angular factor so that physics doesn't turn the character on its own.
     // Instead we will control the character yaw manually
@@ -226,7 +224,7 @@ void CharacterDemo::CreateCharacter()
     shape->SetElasticity(0.0f);
 
     //create 6dof constraint to limit angles
-    SixDof_Constraint* constraint = objectNode->CreateComponent<SixDof_Constraint>();
+    SixDofConstraint* constraint = objectNode->CreateComponent<SixDofConstraint>();
     constraint->SetPitchLimits(0, 0);
     constraint->SetYawLimits(0, 0);
     constraint->SetRollLimits(0, 0);

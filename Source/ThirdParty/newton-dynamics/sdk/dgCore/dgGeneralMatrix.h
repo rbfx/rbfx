@@ -55,7 +55,7 @@ class dgSymmetricBiconjugateGradientSolve
 template<dgInt32 maxRows>
 class dgOldSolverNetwon_1_5
 {
-public:
+	public:
 	dgOldSolverNetwon_1_5()
 	{
 	}

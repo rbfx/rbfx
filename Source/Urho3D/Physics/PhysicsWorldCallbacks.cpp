@@ -68,16 +68,19 @@ namespace Urho3D {
         PhysicsRayCastUserData*  data = (PhysicsRayCastUserData*)userData;
 
         PhysicsRayCastIntersection intersection;
-        intersection.body = (NewtonBody*)body;
-        intersection.rayIntersectParameter = intersetParam;
-        intersection.rayIntersectWorldPosition = NewtonToUrhoVec3(dVector(contact));
-        intersection.rayIntersectWorldNormal = NewtonToUrhoVec3(dVector(normal));
-        intersection.rigBody = (RigidBody*)NewtonBodyGetUserData(body);
+        intersection.body_ = (NewtonBody*)body;
+        intersection.rayIntersectParameter_ = intersetParam;
+        intersection.rayIntersectWorldPosition_ = NewtonToUrhoVec3(dVector(contact));
+        intersection.rayIntersectWorldNormal_ = NewtonToUrhoVec3(dVector(normal));
+        intersection.rigBody_ = (RigidBody*)NewtonBodyGetUserData(body);
         data->intersections += intersection;
 
-
-        //continue
-        return 1.0f;
+        if (!data->singleIntersection_) {
+            //continue
+            return 1.0f;
+        }
+        else
+            return 0.0f;
     }
 
 

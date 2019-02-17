@@ -3,6 +3,9 @@
     <AssemblyName>104_CSharpPlugin</AssemblyName>
     <RootNamespace>CSharpPlugin</RootNamespace>
     <LangVersion>7.2</LangVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkProfile />
+    <ProjectGuid>{07C213D5-183E-3A65-83C4-02B6B04A6D51}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="**/*.cs" />

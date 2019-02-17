@@ -124,6 +124,7 @@ namespace Urho3D {
 
     void PhysicsWorld::RayCast(PODVector<PhysicsRayCastIntersection>& intersections, const Vector3& pointOrigin, const Vector3& pointDestination, unsigned maxIntersections /*= M_MAX_UNSIGNED*/, unsigned collisionMask /*= M_MAX_UNSIGNED*/)
     {
+        intersections.Clear();
         PhysicsRayCastUserData data;
 
         Vector3 origin = SceneToPhysics_Domain(pointOrigin);
@@ -140,25 +141,23 @@ namespace Urho3D {
         for (PhysicsRayCastIntersection& intersection : data.intersections)
         {
 
-            unsigned collisionLayerAsBit = CollisionLayerAsBit(intersection.rigBody->GetCollisionLayer());
+            unsigned collisionLayerAsBit = CollisionLayerAsBit(intersection.rigBody_->GetCollisionLayer());
 
 
             if ((intersectCount <= maxIntersections)
                 && (collisionLayerAsBit & collisionMask)) {
 
 
-                intersection.rayIntersectWorldPosition = PhysicsToScene_Domain(intersection.rayIntersectWorldPosition);
-                intersection.rayOriginWorld = pointOrigin;
-                intersection.rayDistance = (intersection.rayIntersectWorldPosition - pointOrigin).Length();
+                intersection.rayIntersectWorldPosition_ = PhysicsToScene_Domain(intersection.rayIntersectWorldPosition_);
+                intersection.rayOriginWorld_ = pointOrigin;
+                intersection.rayDistance_ = (intersection.rayIntersectWorldPosition_ - pointOrigin).Length();
 
                 intersections += intersection;
                 intersectCount++;
 
             }
         }
-
     }
-
 
     void PhysicsWorld::SetGravity(const Vector3& force)
     {
