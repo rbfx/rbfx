@@ -415,7 +415,7 @@ void CharacterDemo::HandlePostUpdate(StringHash eventType, VariantMap& eventData
 
         if(intersections.Size())
 
-        rayDistance = Min(rayDistance, intersections[0].rayDistance);
+        rayDistance = Min(rayDistance, intersections[0].rayDistance_);
         rayDistance = Clamp(rayDistance, CAMERA_MIN_DIST, CAMERA_MAX_DIST);
 
         cameraNode_->SetPosition(aimPoint + rayDir * rayDistance);
