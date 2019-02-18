@@ -215,6 +215,7 @@ namespace Urho3D {
         URHO3D_PROFILE_FUNCTION();
         if (debug)
         {
+            
             //draw debug geometry on constraints.
             for (Constraint* constraint : constraintList)
             {
@@ -479,7 +480,7 @@ namespace Urho3D {
                     contactEntry->shapes1[contactIdx] = colShape1;
 
                     //#todo debugging
-                    //GSS<VisualDebugger>()->AddCross(contactEntry->contactPositions[contactIdx], 0.1f, Color::BLUE, true);
+                    //GetSubsystem<VisualDebugger>()->AddCross(contactEntry->contactPositions[contactIdx], 0.1f, Color::BLUE, true);
 
                     contactIdx++;
                 }
@@ -1040,7 +1041,7 @@ namespace Urho3D {
     void RigidBodyContactEntry::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
     {
         //draw contact points
-        if (wakeFlag_)
+        if (!expired_)
         {
             for (int i = 0; i < numContacts; i++)
             {

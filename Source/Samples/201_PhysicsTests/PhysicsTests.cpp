@@ -174,6 +174,7 @@ void PhysicsTests::CreateScene()
 
     CreateTowerOfLiar(Vector3(40, 0, 20));
 
+    
 
     // Create the camera. Set far clip to match the fog. Note: now we actually create the camera node outside the scene, because
     // we want it to be unaffected by scene load / save
@@ -231,6 +232,7 @@ void PhysicsTests::SubscribeToEvents()
 
 
     SubscribeToEvent(E_PHYSICSCOLLISIONSTART, URHO3D_HANDLER(PhysicsTests, HandleCollisionStart));
+    SubscribeToEvent(E_PHYSICSCOLLISIONEND, URHO3D_HANDLER(PhysicsTests, HandleCollisionEnd));
 
 
 }
@@ -1259,10 +1261,22 @@ void PhysicsTests::HandleCollisionStart(StringHash eventType, VariantMap& eventD
     RigidBodyContactEntry* contactData = static_cast<RigidBodyContactEntry*>(eventData[PhysicsCollisionStart::P_CONTACT_DATA].GetPtr());
     for (int i = 0; i < contactData->numContacts; i++) {
         //GetSubsystem<VisualDebugger>()->AddCross(contactData->contactPositions[i], 0.2f, Color::RED, true);
-
+        //URHO3D_LOGINFO("Collision Start " + String(contactData->contactPositions[i]));
     }
 
 
+}
+
+void PhysicsTests::HandleCollisionEnd(StringHash eventType, VariantMap& eventData)
+{
+    RigidBody* bodyA = static_cast<RigidBody*>(eventData[PhysicsCollisionStart::P_BODYA].GetPtr());
+    RigidBody* bodyB = static_cast<RigidBody*>(eventData[PhysicsCollisionStart::P_BODYB].GetPtr());
+
+    RigidBodyContactEntry* contactData = static_cast<RigidBodyContactEntry*>(eventData[PhysicsCollisionStart::P_CONTACT_DATA].GetPtr());
+    for (int i = 0; i < contactData->numContacts; i++) {
+        //GetSubsystem<VisualDebugger>()->AddCross(contactData->contactPositions[i], 0.2f, Color::RED, true);
+        //URHO3D_LOGINFO("Collision End " + String(contactData->contactPositions[i]));
+    }
 }
 
 RayQueryResult PhysicsTests::GetCameraPickNode()

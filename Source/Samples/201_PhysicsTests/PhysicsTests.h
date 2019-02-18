@@ -132,7 +132,7 @@ private:
 
 
     void HandleCollisionStart(StringHash eventType, VariantMap& eventData);
-
+    void HandleCollisionEnd(StringHash eventType, VariantMap& eventData);
 
 
     Node* pickPullNode = nullptr;
