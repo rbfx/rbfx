@@ -568,62 +568,10 @@ namespace Urho3D {
         }
     }
 
-    Urho3D::RigidBodyContactEntry* RigidBody::GetCreateContactEntry(RigidBody* otherBody)
-    {
-        //look through existing
-        RigidBodyContactEntry* entry = contactEntries_[otherBody->GetID()];
-
-        if (!entry)
-        {
+    
 
 
-            //find a good one to grab from the physics world pool - if none available - grow the pool.
-            int startingIdx = physicsWorld_->contactEntryPoolCurIdx_;
-            while (!physicsWorld_->contactEntryPool_[physicsWorld_->contactEntryPoolCurIdx_]->expired_) {
 
-                physicsWorld_->contactEntryPoolCurIdx_++;
-
-                if (physicsWorld_->contactEntryPoolCurIdx_ > physicsWorld_->contactEntryPool_.Size() - 1) {
-                    physicsWorld_->contactEntryPoolCurIdx_ = 0;
-                }
-                if (physicsWorld_->contactEntryPoolCurIdx_ == startingIdx)
-                {
-
-                    //grow the pool
-                    int prevSize = physicsWorld_->contactEntryPool_.Size();
-                    for (int i = 0; i < physicsWorld_->contactEntryPoolSize_; i++) {
-                        physicsWorld_->contactEntryPool_.Insert(physicsWorld_->contactEntryPool_.Size(), context_->CreateObject<RigidBodyContactEntry>());
-                    }
-                    URHO3D_LOGINFO("PhysicsWorld Contact Entry Pool Grow To: " + String(physicsWorld_->contactEntryPool_.Size()));
-
-                    physicsWorld_->contactEntryPoolCurIdx_ = prevSize;
-
-                }
-
-               
-                
-            }
-            entry = physicsWorld_->contactEntryPool_[physicsWorld_->contactEntryPoolCurIdx_];
-
-
-            //contactEntries_.InsertNew(otherBody->GetID(), newEntry);
-            contactEntries_.Insert(Pair<unsigned int, RigidBodyContactEntry*>(otherBody->GetID(), entry));
-
-        }
-
-        return entry;
-    }
-
-
-    void RigidBody::CleanContactEntries()
-    {
-        Vector<unsigned int> keys = contactEntries_.Keys();
-        for (int i = 0; i < keys.Size(); i++) {
-
-            if (contactEntries_[keys[i]]->expired_)
-                contactEntries_.Erase(keys[i]);
-        }
-    }
 
     void RigidBody::calculateSceneDepth()
     {
@@ -650,12 +598,6 @@ namespace Urho3D {
         {
             physicsWorld_->addToFreeQueue(effectiveCollision_);
             effectiveCollision_ = nullptr;
-        }
-        
-        //mark all contact entries as expired so physicsworld pool is more free.
-        Vector<unsigned int> keys = contactEntries_.Keys();
-        for (int i = 0; i < keys.Size(); i++) {
-            contactEntries_[keys[i]]->expired_ = true;
         }
     }
 

@@ -220,6 +220,21 @@ namespace Urho3D
 
         virtual void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
+
+        RigidBodyContactEntry* GetCreateContactEntry(RigidBody* body0);
+
+
+        HashMap<unsigned int, RigidBodyContactEntry*> contactEntries_;
+
+        void CleanContactEntries()
+        {
+            Vector<unsigned int> keys = contactEntries_.Keys();
+            for (int i = 0; i < keys.Size(); i++) {
+
+                if (contactEntries_[keys[i]]->expired_)
+                    contactEntries_.Erase(keys[i]);
+            }
+        }
     protected:
 
 

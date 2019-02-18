@@ -298,9 +298,6 @@ namespace Urho3D
 
 
 
-        RigidBodyContactEntry* GetCreateContactEntry(RigidBody* otherBody);
-
-
 
     protected:
 
@@ -314,10 +311,6 @@ namespace Urho3D
         /// all currently used collision shape components.
         PODVector<CollisionShape*> collisionShapes_;
 
-
-        HashMap<unsigned int, RigidBodyContactEntry*> contactEntries_;
-        
-        void CleanContactEntries();
 
 
         bool sceneRootBodyMode_ = false;

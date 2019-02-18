@@ -119,11 +119,10 @@ namespace Urho3D {
         if (physicsWorld == nullptr)
             return;//scene is being destroyed.
 
-        SharedPtr<RigidBodyContactEntry> contactEntry = nullptr;
+        RigidBodyContactEntry* contactEntry = nullptr;
 
         NewtonWorldCriticalSectionLock(physicsWorld->GetNewtonWorld(), threadIndex);
-         
-            contactEntry = rigBody0->GetCreateContactEntry(rigBody1);
+            contactEntry = physicsWorld->GetCreateContactEntry(rigBody0);
         NewtonWorldCriticalSectionUnlock(physicsWorld->GetNewtonWorld());
 
 
