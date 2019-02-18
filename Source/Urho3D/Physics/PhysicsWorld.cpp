@@ -171,6 +171,11 @@ namespace Urho3D {
     }
 
 
+    void PhysicsWorld::WaitForUpdateFinished()
+    {
+        NewtonWaitForUpdateToFinish(newtonWorld_);
+    }
+
     void PhysicsWorld::SetIterationCount(int numIterations /*= 8*/)
     {
         iterationCount_ = numIterations;

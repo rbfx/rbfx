@@ -383,8 +383,8 @@ dgConstraint* dgBody::GetFirstContact() const
 	if (m_masterNode) {
 		for (dgBodyMasterListRow::dgListNode* node = m_masterNode->GetInfo().GetFirst(); node; node = node->GetNext()) {
 			dgConstraint* const joint = node->GetInfo().m_joint;
-			//if ((joint->GetId() == dgConstraint::m_contactConstraint) && (joint->GetMaxDOF() != 0)) {
-			if (joint->GetId() == dgConstraint::m_contactConstraint) {
+			dgAssert (joint);
+			if (joint && (joint->GetId() == dgConstraint::m_contactConstraint)) {
 				return joint;
 			}
 		}
@@ -402,8 +402,8 @@ dgConstraint* dgBody::GetNextContact(dgConstraint* const joint) const
 	if (node->GetInfo().m_joint == joint) {
 		for (node = node->GetNext(); node; node = node->GetNext()) {
 			dgConstraint* const joint1 = node->GetInfo().m_joint;
-			//if ((joint->GetId() == dgConstraint::m_contactConstraint) && (joint->GetMaxDOF() != 0)) {
-			if (joint1->GetId() == dgConstraint::m_contactConstraint) {
+			dgAssert (joint1);
+			if (joint1 && (joint1->GetId() == dgConstraint::m_contactConstraint)) {
 				return joint1;
 			}
 		}

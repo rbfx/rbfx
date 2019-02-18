@@ -119,6 +119,8 @@ namespace Urho3D {
     {
         if (newtonBody_)
         {
+            physicsWorld_->WaitForUpdateFinished();
+            
             Activate();
 
             Matrix3x4 scaleLessTransform(transform.Translation(), transform.Rotation(), 1.0f);
@@ -136,8 +138,9 @@ namespace Urho3D {
     {
         if (newtonBody_)
         {
-            Activate();
+            physicsWorld_->WaitForUpdateFinished();
 
+            Activate();
 
             dgQuaternion orientation;
             NewtonBodyGetRotation(newtonBody_, &orientation.m_x);
@@ -157,6 +160,8 @@ namespace Urho3D {
     {
         if (newtonBody_)
         {
+            physicsWorld_->WaitForUpdateFinished();
+
             Activate();
 
             dVector pos;
@@ -265,6 +270,8 @@ namespace Urho3D {
     {
         if (newtonBody_)
         {
+            physicsWorld_->WaitForUpdateFinished();
+
             Activate();
             if (useForces)
             {
@@ -297,7 +304,9 @@ namespace Urho3D {
     {
         if (newtonBody_)
         {
+            physicsWorld_->WaitForUpdateFinished();
             Activate();
+
             NewtonBodySetOmega(newtonBody_, &UrhoToNewton(nextAngularVelocity_)[0]);
         }
         else
@@ -332,6 +341,7 @@ namespace Urho3D {
 
             if (newtonBody_)
             {
+                physicsWorld_->WaitForUpdateFinished();
                 NewtonBodySetLinearDamping(newtonBody_, linearDampeningInternal_);
             }
             else
@@ -346,6 +356,8 @@ namespace Urho3D {
         angularDampeningInternal_ = Vector3(angularDamping, angularDamping, angularDamping);
         if (newtonBody_)
         {
+            physicsWorld_->WaitForUpdateFinished();
+
             NewtonBodySetAngularDamping(newtonBody_, &UrhoToNewton(angularDampeningInternal_)[0]);
         }
         else

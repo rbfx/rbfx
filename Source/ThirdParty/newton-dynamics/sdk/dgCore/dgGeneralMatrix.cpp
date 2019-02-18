@@ -33,7 +33,6 @@ dgSymmetricBiconjugateGradientSolve::~dgSymmetricBiconjugateGradientSolve ()
 {
 }
 
-
 void dgSymmetricBiconjugateGradientSolve::ScaleAdd (dgInt32 size, dgFloat64* const a, const dgFloat64* const b, dgFloat64 scale, const dgFloat64* const c) const
 {
 	for (dgInt32 i = 0; i < size; i ++) {
@@ -116,18 +115,16 @@ dgFloat64 dgSymmetricBiconjugateGradientSolve::Solve (dgInt32 size, dgFloat64 to
 	return num;
 }
 
-
-
 DG_INLINE bool dgCholeskyFactorizationAddRow(dgInt32 size, dgInt32 n, dgFloat32* const matrix, dgInt32 rowStride)
 {
 	dgFloat32* const rowN = &matrix[rowStride * n];
-	dgCheckAligment(rowN);
+	dgCheckAligment16(rowN);
 
 	dgInt32 stride = 0;
 	for (dgInt32 j = 0; j <= n; j++) {
 		dgFloat32 s = dgFloat32(0.0f);
 		dgFloat32* const rowJ = &matrix[stride];
-		dgCheckAligment(rowJ);
+		dgCheckAligment16(rowJ);
 		for (dgInt32 k = 0; k < j; k++) {
 			s += rowN[k] * rowJ[k];
 		}

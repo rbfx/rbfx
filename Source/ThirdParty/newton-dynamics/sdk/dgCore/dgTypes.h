@@ -318,9 +318,8 @@ typedef bool (dgApi *dgReportProgress) (dgFloat32 progressNormalzedPercent, void
 
 // assume this function returns memory aligned to 16 bytes
 #define dgAlloca(type, count) (type*) alloca (sizeof (type) * (count))
-
-//#define dgCheckAligment(x) dgAssert (!(dgUnsigned64 (x) & 0xf))
-#define dgCheckAligment(x) 
+#define dgCheckAligment16(x) dgAssert (!(dgUnsigned64 (x) & 0xf))
+//#define dgCheckAligment16(x) 
 
 DG_INLINE dgInt32 dgExp2 (dgInt32 x)
 {

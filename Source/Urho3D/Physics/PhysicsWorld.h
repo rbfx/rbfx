@@ -202,8 +202,8 @@ namespace Urho3D
         float PhysicsToScene_Domain_Torque(float torque);
 
 
-
-
+        ///waits until the asynchronous update has finished.
+        void WaitForUpdateFinished();
 
         /// set how many iterations newton will run.
         void SetIterationCount(int numIterations);

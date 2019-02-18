@@ -100,6 +100,8 @@ void InverseKinematics::CreateScene()
     floorNode_->CreateComponent<RigidBody>()->SetMassScale(0.0f);
     auto* col = floorNode_->CreateComponent<CollisionShape_Box>();
     col->SetScaleFactor(Vector3(1, 1, 1));
+    col->SetPositionOffset(Vector3(0, -0.5, 0));
+   // col->SetInheritNodeScale(true);
     
 
     // Create a directional light to the world.
@@ -262,8 +264,10 @@ void InverseKinematics::HandleUpdate(StringHash /*eventType*/, VariantMap& event
 
 void InverseKinematics::HandlePostRenderUpdate(StringHash /*eventType*/, VariantMap& eventData)
 {
-    if (drawDebug_)
+    if (drawDebug_) {
         solver_->DrawDebugGeometry(false);
+        scene_->GetComponent<PhysicsWorld>()->DrawDebugGeometry(scene_->GetComponent<DebugRenderer>(), false);
+    }
 }
 
 void InverseKinematics::HandleSceneDrawableUpdateFinished(StringHash /*eventType*/, VariantMap& eventData)

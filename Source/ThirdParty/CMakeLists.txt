@@ -73,9 +73,6 @@ else ()
     if (URHO3D_PHYSICS)
 
 
-        #Override Newton Options 
-        set(NEWTON_GENERATE_DLL OFF CACHE BOOL "build dll libraries" FORCE)
-
         if (URHO3D_STATIC_RUNTIME)
             set(NEWTON_STATIC_RUNTIME_LIBRARIES ON CACHE BOOL "use windows system static libraries" FORCE)
         else()

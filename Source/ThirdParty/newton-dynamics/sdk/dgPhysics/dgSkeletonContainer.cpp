@@ -966,20 +966,18 @@ DG_INLINE void dgSkeletonContainer::CalculateJointAccel(dgJointInfo* const joint
 	accel[m_nodeCount - 1].m_joint = zero;
 }
 
-void dgSkeletonContainer::SolveLcp(dgFloat32* const x, const dgFloat32* const x0, const dgFloat32* const b, const dgFloat32* const low, const dgFloat32* const high, const dgInt32* const normalIndex) const
+void dgSkeletonContainer::SolveLcp(dgInt32 size, const dgFloat32* const matrix, const dgFloat32* const x0, dgFloat32* const x, const dgFloat32* const b, const dgFloat32* const low, const dgFloat32* const high, const dgInt32* const normalIndex) const
 {
+static int xxxx;
 	const dgFloat32 sor = dgFloat32(1.125f);
 	const dgFloat32 tol2 = dgFloat32(0.25f);
 	const dgInt32 maxIterCount = 64;
-//const dgInt32 maxIterCount = 0;
-//	const dgInt32 size = m_auxiliaryRowCount;
-	dgInt32 size = m_auxiliaryRowCount;
+//const dgInt32 maxIterCount = 8;
 
 	dgFloat32* const invDiag1 = dgAlloca(dgFloat32, size);
-	dgCheckAligment(invDiag1);
+	dgCheckAligment16(invDiag1);
 
 	dgInt32 stride = 0;
-	const dgFloat32* const matrix = m_massMatrix11; 
 	for (dgInt32 i = 0; i < size; i++) {
 		const int index = normalIndex[i];
 		const dgFloat32 coefficient = index ? (x[i + index] + x0[i + index]): 1.0f;
@@ -992,149 +990,171 @@ void dgSkeletonContainer::SolveLcp(dgFloat32* const x, const dgFloat32* const x0
 
 	dgFloat32 tolerance(tol2 * dgFloat32(2.0f));
 	const dgFloat32* const invDiag = invDiag1;
-
 #ifdef _DEBUG 
 	dgInt32 passes = 0;
 #endif
 
 	const dgInt32 size1 = size - 8;
-	for (dgInt32 i = 0; (i < maxIterCount) && (tolerance > tol2); i++) {
+	for (dgInt32 k = 0; (k < maxIterCount) && (tolerance > tol2); k++) {
 #ifdef _DEBUG 
 		passes++;
 #endif
 		dgInt32 base = 0;
 		tolerance = dgFloat32(0.0f);
-		dgAssert ((dgUnsigned64 (x) & 0x0f) == 0);
-		for (dgInt32 j = 0; j < size; j++) {
+		for (dgInt32 i = 0; i < size; i++) {
 			const dgFloat32* const row = &matrix[base];
 			dgVector acc (dgVector::m_zero);
-			for (dgInt32 k = 0; k <= size1; k += 8) {
-				dgVector tmp0 (&row[k]);
-				dgVector tmp1 (&row[k + 4]);
-				acc = acc + tmp0 * (dgVector&)x[k] + tmp1 * (dgVector&)x[k + 4];
+			for (dgInt32 j = 0; j <= size1; j += 8) {
+				dgVector tmp0 (&row[j]);
+				dgVector tmp1 (&row[j + 4]);
+				const dgVector& x00 = (dgVector&)x[j];
+				const dgVector& x01 = (dgVector&)x[j + 4];
+				acc = acc + tmp0 * x00 + tmp1 * x01;
 			}
-			dgFloat32 r = b[j] - acc.AddHorizontal().GetScalar();
-			for (dgInt32 k = size & (-8); k < size; k ++) {
-				r -= row[k] * x[k];
+			dgFloat32 r = b[i] - acc.AddHorizontal().GetScalar();
+			for (dgInt32 j = size & (-8); j < size; j ++) {
+				r -= row[j] * x[j];
 			}
 			
-			dgFloat32 f = (r + row[j] * x[j]) * invDiag[j];
-			f = x[j] + (f - x[j]) * sor + x0[j];
+			dgFloat32 f = (r + row[i] * x[i]) * invDiag[i];
+			f = x[i] + (f - x[i]) * sor + x0[i];
 
-			const int index = normalIndex[j];
-			const dgFloat32 coefficient = index ? (x[j + index] + x0[j + index]): 1.0f;
-			const dgFloat32 l = low[j] * coefficient;
-			const dgFloat32 h = high[j] * coefficient;
+			const int index = normalIndex[i];
+			const dgFloat32 coefficient = index ? (x[i + index] + x0[i + index]): 1.0f;
+			const dgFloat32 l = low[i] * coefficient;
+			const dgFloat32 h = high[i] * coefficient;
 
 			if (f > h) {
-				x[j] = h - x0[j];
+				x[i] = h;
 			} else if (f < l) {
-				x[j] = l - x0[j];
+				x[i] = l;
 			} else {
-				x[j] = f - x0[j];
+				x[i] = f;
 				tolerance += r * r;
 			}
+			x[i] -= x0[i];
 			base += size;
 		}
 	}
 
 #ifdef _DEBUG 
-	if (passes >= maxIterCount){
-		dgTrace(("%d %d %f\n", size, passes, dgSqrt (tolerance)));
-	}
+//	if (passes >= maxIterCount){
+//		dgTrace(("%d %d %f\n", size, passes, dgSqrt (tolerance)));
+//	}
 #endif
-
+tolerance = 0;
 	if (tolerance > tol2) {
-/*
 		dgFloat32* const r0 = dgAlloca(dgFloat32, size);
 		dgFloat32* const z0 = dgAlloca(dgFloat32, size);
 		dgFloat32* const p0 = dgAlloca(dgFloat32, size);
 		dgFloat32* const q0 = dgAlloca(dgFloat32, size);
 		dgFloat32* const mask = dgAlloca(dgFloat32, size);
+		dgCheckAligment16(r0);
+		dgCheckAligment16(z0);
+		dgCheckAligment16(p0);
+		dgCheckAligment16(q0);
+		dgCheckAligment16(mask);
 
-		for (dgInt32 j = 0; j < size; j++) {
-			const dgFloat32 f = x[j];
-			const int index = normalIndex[j];
-			const dgFloat32 coefficient = index ? x[j + index] : 1.0f;
-			const dgFloat32 l = low[j] * coefficient;
-			const dgFloat32 h = high[j] * coefficient;
-			mask[j] = (f > h) ? 0.0f : ((f < l) ? dgFloat32 (0.0f) : dgFloat32 (1.0f));
+		for (dgInt32 i = 0; i < size; i++) {
+			const dgFloat32 f = x[i];
+			const int index = normalIndex[i];
+			const dgFloat32 coefficient = index ? x[i + index] : 1.0f;
+			const dgFloat32 l = low[i] * coefficient;
+			const dgFloat32 h = high[i] * coefficient;
+			mask[i] = (f > h) ? 0.0f : ((f < l) ? dgFloat32 (0.0f) : dgFloat32 (1.0f));
 		}
 
 		dgInt32 base = 0;
-		for (dgInt32 j = 0; j < size; j++) {
-			dgFloat32 acc = b[j];
+		dgFloat32 numScalar = dgFloat32(0.0f);
+		for (dgInt32 i = 0; i < size; i++) {
+			dgFloat32 acc = b[i];
 			const dgFloat32* const row = &matrix[base];
-			for (dgInt32 i = 0; i < size; i ++) {
-				acc -= row[i] * x[i] * mask[i];
+			for (dgInt32 j = 0; j < size; j ++) {
+				acc -= row[j] * x[j] * mask[j];
 			}
-			r0[j] = acc;
-			z0[j] = invDiag[j] * acc * mask[j];
-			p0[j] = z0[j];
+			r0[i] = acc;
+			z0[i] = invDiag[i] * acc * mask[i];
+			p0[i] = z0[i];
+			numScalar += r0[i] * z0[i];
 			base += size;
 		}
+		dgAssert(numScalar >= dgFloat32(0.0f));
 
-		tolerance = dgFloat32 (10.0f);
-		for (dgInt32 m = 0; (m < 32) && (tolerance > tol2); m++) {
+		for (dgInt32 k = 0; (k < 32) && (numScalar > tol2); k++) {
 			base = 0;
-			tolerance = dgFloat32(0.0f);
-			for (dgInt32 j = 0; j < size; j++) {
+			for (dgInt32 i = 0; i < size; i++) {
 				dgVector acc(dgVector::m_zero);
 				const dgFloat32* const row = &matrix[base];
-				for (dgInt32 k = 0; k <= size1; k += 8) {
-					dgVector tmp0(&row[k]);
-					dgVector tmp1(&row[k + 4]);
-					const dgVector& p00 = (dgVector&)p0[k];
-					const dgVector& p01 = (dgVector&)p0[k + 4];
+				for (dgInt32 j = 0; j <= size1; j += 8) {
+					dgVector tmp0(&row[j]);
+					dgVector tmp1(&row[j + 4]);
+					const dgVector& p00 = (dgVector&)p0[j];
+					const dgVector& p01 = (dgVector&)p0[j + 4];
 					acc = acc + tmp0 * p00 + tmp1 * p01;
 				}
 				dgFloat32 accScalar = acc.AddHorizontal().GetScalar();
-				for (dgInt32 k = size & (-8); k < size; k++) {
-					accScalar = accScalar + p0[k] * row[k];
+				for (dgInt32 j = size & (-8); j < size; j++) {
+					accScalar = accScalar + p0[j] * row[j];
 				}
-				q0[j] = accScalar;
+				q0[i] = accScalar;
 				base += size;
 			}
 
-			dgVector num(dgVector::m_zero);
 			dgVector den(dgVector::m_zero);
-			for (dgInt32 k = 0; k <= size1; k += 8) {
-				const dgVector& r00 = (dgVector&)r0[k];
-				const dgVector& r01 = (dgVector&)r0[k + 4];
-				const dgVector& z00 = (dgVector&)z0[k];
-				const dgVector& z01 = (dgVector&)z0[k + 4];
-				num = num + r00 * z00 + r01 * z01;
-
-				const dgVector& p00 = (dgVector&)p0[k];
-				const dgVector& p01 = (dgVector&)p0[k + 4];
-				const dgVector& q00 = (dgVector&)q0[k];
-				const dgVector& q01 = (dgVector&)q0[k + 4];
+			for (dgInt32 j = 0; j <= size1; j += 8) {
+				const dgVector& p00 = (dgVector&)p0[j];
+				const dgVector& p01 = (dgVector&)p0[j + 4];
+				const dgVector& q00 = (dgVector&)q0[j];
+				const dgVector& q01 = (dgVector&)q0[j + 4];
 				den = den + p00 * q00 + p01 * q01;
 			}
-			dgFloat32 numScalar = num.AddHorizontal().GetScalar();
 			dgFloat32 denScalar = den.AddHorizontal().GetScalar();
-			for (dgInt32 k = size & (-8); k < size; k++) {
-				denScalar = denScalar + p0[k] * q0[k];
-				numScalar = numScalar + r0[k] * z0[k];
+			for (dgInt32 j = size & (-8); j < size; j++) {
+				denScalar = denScalar + p0[j] * q0[j];
 			}
 			dgAssert(denScalar > dgFloat32(0.0f));
 			dgFloat32 alpha = numScalar / denScalar;
 
-			for (dgInt32 j = 0; j < size; j++) {
-				if (mask[j]) {
-					dgFloat32 f = x[j] + alpha * p0[j];
+			for (dgInt32 i = 0; i < size; i++) {
+				if (mask[i]) {
+					dgFloat32 f = x[i] + alpha * p0[i];
 				}
 			}
 
-			for (dgInt32 j = 0; j < size; j++) {
-				x[j] = x[j] + alpha * p0[j];
-				r0[j] = r0[j] - alpha * q0[j];
-				z0[j] = invDiag[j] * r0[j] * mask[j];
-				tolerance += r0[j] * r0[j] * mask[j];
+			dgFloat32 num1Scalar = dgFloat32(0.0f);
+			for (dgInt32 i = 0; i < size; i++) {
+				x[i] = x[i] + alpha * p0[i];
+				r0[i] = r0[i] - alpha * q0[i];
+				z0[i] = invDiag[i] * r0[i] * mask[i];
+				num1Scalar += r0[i] * z0[i];
 			}
+			
+			if (num1Scalar > tol2) {
+				dgAssert(numScalar >= dgFloat32(0.0f));
+				dgVector beta(num1Scalar / numScalar);
+				for (dgInt32 i = 0; i <= size1; i += 8) {
+					dgVector& p00 = (dgVector&)p0[i];
+					dgVector& p01 = (dgVector&)p0[i + 4];
+					const dgVector& z00 = (dgVector&)z0[i];
+					const dgVector& z01 = (dgVector&)z0[i + 4];
+					p00 = z00 + p00 * beta;
+					p01 = z01 + p01 * beta;
+				}
+				for (dgInt32 i = size & (-8); i < size; i++) {
+					p0[i] = z0[i] + p0[i] * beta.GetScalar();
+				}
+			}
+			numScalar = num1Scalar;
 		}
-*/
 	}
+/*
+dgTrace(("%d ", xxxx));
+for (dgInt32 i = 0; i < size; i++) {
+dgTrace(("%f ", x[i]));
+}
+dgTrace(("\n"));
+*/
+xxxx++;
 }
 
 void dgSkeletonContainer::SolveAuxiliary(const dgJointInfo* const jointInfoArray, dgJacobian* const internalForces, const dgForcePair* const accel, dgForcePair* const force) const
@@ -1246,7 +1266,7 @@ void dgSkeletonContainer::SolveAuxiliary(const dgJointInfo* const jointInfoArray
 		}
 		b[i] -= r;
 	}
-	SolveLcp(u, u0, b, low, high, normalIndex);
+	SolveLcp(m_auxiliaryRowCount, m_massMatrix11, u0, u, b, low, high, normalIndex);
 
 	for (dgInt32 i = 0; i < m_auxiliaryRowCount; i++) {
 		const dgFloat32 s = u[i];
