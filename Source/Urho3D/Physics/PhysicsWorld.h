@@ -288,6 +288,7 @@ namespace Urho3D
         void rebuildDirtyPhysicsComponents();
         bool sceneUpdated_ = false;
         bool simulationStarted_ = false;
+
         /// Internal newton world
         NewtonWorld* newtonWorld_ = nullptr;
 

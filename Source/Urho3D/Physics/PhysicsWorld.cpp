@@ -675,16 +675,7 @@ namespace Urho3D {
        SendEvent(E_PHYSICSPRESTEP, eventData);
 
        //do the update.
-       Update(timeStep / float(subSteps_), true);
-       for(int i = 0; i < subSteps_-1; i++)
-            Update(timeStep / float(subSteps_), false);
-
-
-       // Send post-step event
-       eventData = GetEventDataMap();
-       eventData[PhysicsPostStep::P_WORLD] = this;
-       eventData[PhysicsPostStep::P_TIMESTEP] = timeStep;
-       SendEvent(E_PHYSICSPOSTSTEP, eventData);
+       Update(timeStep, true);
     }
 
 
@@ -694,15 +685,12 @@ namespace Urho3D {
 
         URHO3D_PROFILE_FUNCTION();
         float timeStep = timestep*GetScene()->GetTimeScale()*timeScale_;
-        bool rootRate = isRootUpdate;
 
-        if (rootRate) {
-
-            if (!sceneBody_) {
-                sceneBody_ = GetScene()->GetOrCreateComponent<RigidBody>();
-                sceneBody_->SetIsSceneRootBody(true);
-            }
+        if (!sceneBody_) {
+            sceneBody_ = GetScene()->GetOrCreateComponent<RigidBody>();
+            sceneBody_->SetIsSceneRootBody(true);
         }
+        
 
 
 
@@ -710,63 +698,61 @@ namespace Urho3D {
             URHO3D_PROFILE("Wait For ASync Update To finish.");
             
             NewtonWaitForUpdateToFinish(newtonWorld_);
+
+            // Send post-step event
+            VariantMap& eventData = GetEventDataMap();
+            eventData[PhysicsPostStep::P_WORLD] = this;
+            eventData[PhysicsPostStep::P_TIMESTEP] = timeStep;
+            SendEvent(E_PHYSICSPOSTSTEP, eventData);
+
         }
         
-        if (rootRate) {
 
-            if (simulationStarted_) {
+        if (simulationStarted_) {
+
+            {
+                URHO3D_PROFILE("Apply Node Transforms");
 
                 {
-                    URHO3D_PROFILE("Apply Node Transforms");
-
-                    {
-                        URHO3D_PROFILE("Rigid Body Order Pre Sort");
-                        //sort the rigidBodyComponentList by scene depth.
-                        if (rigidBodyListNeedsSorted) {
-                            Sort(rigidBodyComponentList.Begin(), rigidBodyComponentList.End(), RigidBodySceneDepthCompare);
-                            rigidBodyListNeedsSorted = false;
-                        }
+                    URHO3D_PROFILE("Rigid Body Order Pre Sort");
+                    //sort the rigidBodyComponentList by scene depth.
+                    if (rigidBodyListNeedsSorted) {
+                        Sort(rigidBodyComponentList.Begin(), rigidBodyComponentList.End(), RigidBodySceneDepthCompare);
+                        rigidBodyListNeedsSorted = false;
                     }
-
-                    //apply the transform of all rigid body components to their respective nodes.
-                    for (RigidBody* rigBody : rigidBodyComponentList)
-                    {
-                        if (rigBody->GetInternalTransformDirty()) {
-                            rigBody->ApplyTransform(timeStep);
-
-
-                            if (rigBody->InterpolationWithinRestTolerance())
-                                rigBody->MarkInternalTransformDirty(false);
-                        }
-                    }
-
                 }
+
+                //apply the transform of all rigid body components to their respective nodes.
+                for (RigidBody* rigBody : rigidBodyComponentList)
+                {
+                    if (rigBody->GetInternalTransformDirty()) {
+                        rigBody->ApplyTransform(timeStep);
+
+
+                        if (rigBody->InterpolationWithinRestTolerance())
+                            rigBody->MarkInternalTransformDirty(false);
+                    }
+                }
+
             }
-
-
-
-
-
-
         }
 
-        formContacts(rootRate);
+
+
+        formContacts(true);
         
-        if (rootRate) {
 
-            freePhysicsInternals();
+        freePhysicsInternals();
 
-            //rebuild stuff.
-            rebuildDirtyPhysicsComponents();
+        //rebuild stuff.
+        rebuildDirtyPhysicsComponents();
 
-            ParseContacts();
+        ParseContacts();
 
-        }
+    
 
         {
-            URHO3D_PROFILE("NewtonUpdate");
             //use target time step to give newton constant time steps. 
-
 
             NewtonUpdateAsync(newtonWorld_, timeStep);
             simulationStarted_ = true;
