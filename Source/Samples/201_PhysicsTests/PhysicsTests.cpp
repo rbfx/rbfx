@@ -339,7 +339,7 @@ void PhysicsTests::MoveCamera(float timeStep)
         scene_->GetComponent<PhysicsWorld>()->RayCast(intersections, ray);
 
         for (PhysicsRayCastIntersection& intersections : intersections) {
-            URHO3D_LOGINFO(String(intersections.rigBody->GetNode()->GetID()) + " " + String(intersections.rayIntersectWorldPosition));
+            URHO3D_LOGINFO(String(intersections.rigBody_->GetNode()->GetID()) + " " + String(intersections.rayIntersectWorldPosition_));
             //GSS<VisualDebugger>()->AddCross(intersections.rayIntersectWorldPosition, 0.5f, Color::RED, false)->SetLifeTimeMs(100000);
         }
     }
