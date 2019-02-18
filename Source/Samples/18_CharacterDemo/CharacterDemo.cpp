@@ -414,8 +414,8 @@ void CharacterDemo::HandlePostUpdate(StringHash eventType, VariantMap& eventData
         scene_->GetComponent<PhysicsWorld>()->RayCast(intersections, Ray(aimPoint, rayDir), rayDistance, 1, 2);
 
         if(intersections.Size())
+            rayDistance = Min(rayDistance, intersections[0].rayDistance_);
 
-        rayDistance = Min(rayDistance, intersections[0].rayDistance_);
         rayDistance = Clamp(rayDistance, CAMERA_MIN_DIST, CAMERA_MAX_DIST);
 
         cameraNode_->SetPosition(aimPoint + rayDir * rayDistance);
