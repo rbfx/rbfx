@@ -368,7 +368,6 @@ namespace Urho3D
         /// flag indicating the newton body has changed transforms and needs to update the node.
         bool transformDirty_ = true;
 
-        Matrix3x4 lastTransform_;
 
         /// how many node levels deep the node is on. 0 would mean the node is the scene.
         int sceneDepth_ = 1;
@@ -428,6 +427,9 @@ namespace Urho3D
         /// Setting this to true will make the rigid body act as a root scene body with Inifite mass.
         void SetIsSceneRootBody(bool enable);
         bool GetIsSceneRootBody() const { return sceneRootBodyMode_; }
+
+        virtual void OnMarkedDirty(Node* node) override;
+
     };
 
 

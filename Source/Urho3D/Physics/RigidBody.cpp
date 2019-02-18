@@ -128,7 +128,7 @@ namespace Urho3D {
         else
         {
             nextTransformNeeded_ = true;
-            nextTransform_ = transform;
+            nextTransform_ = Matrix3x4(transform.Translation(), transform.Rotation(), 1.0f);
         }
 
     }
@@ -137,8 +137,6 @@ namespace Urho3D {
     {
         if (newtonBody_ && !physicsWorld_->isUpdating_)
         {
-
-
             Activate();
 
             dgQuaternion orientation;
@@ -196,7 +194,7 @@ namespace Urho3D {
             {
                 return nextTransform_;
             }
-            Matrix3x4 transform = lastTransform_;
+            Matrix3x4 transform = node_->GetWorldTransform();
             if (nextPositionNeeded_)
             {
                 transform.SetTranslation(nextPosition_);
@@ -233,7 +231,7 @@ namespace Urho3D {
                 return nextPosition_;
             }
            
-            return lastTransform_.Translation();
+            return node_->GetWorldTransform().Translation();
         }
     }
     
@@ -256,7 +254,7 @@ namespace Urho3D {
                 return nextOrientation_;
             }
 
-            return lastTransform_.Rotation();
+            return node_->GetWorldTransform().Rotation();
         }
     }
     
@@ -455,6 +453,11 @@ namespace Urho3D {
             sceneRootBodyMode_ = enable;
             MarkDirty(true);
         }
+    }
+
+    void RigidBody::OnMarkedDirty(Node* node)
+    {
+
     }
 
     void RigidBody::DrawDebugGeometry(DebugRenderer* debug, bool depthTest, bool showAABB /*= true*/, bool showCollisionMesh /*= true*/, bool showCenterOfMass /*= true*/, bool showContactForces /*= true*/)
@@ -820,18 +823,20 @@ namespace Urho3D {
 
 
                 //create the body at node transform (with physics world scale applied)
-                Matrix3x4 worldTransform;
+                Matrix3x4 physicsTransform;
 
-                worldTransform.SetTranslation(physicsWorld_->SceneToPhysics_Domain(node_->GetWorldPosition()));
-                worldTransform.SetRotation((node_->GetWorldRotation()).RotationMatrix());
+                physicsTransform.SetTranslation(physicsWorld_->SceneToPhysics_Domain(node_->GetWorldPosition()));
+                physicsTransform.SetRotation((node_->GetWorldRotation()).RotationMatrix());
 
                 
                 //NewtonBody* body = NewtonCreateDynamicBody(physicsWorld_->GetNewtonWorld(), resolvedCollision, &UrhoToNewton(worldTransform)[0][0]);
 
                 NewtonBodySetCollision(newtonBody_, resolvedCollision);
-                NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(worldTransform)[0][0]);
+                NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsTransform)[0][0]);
 
 
+                ApplyTransform(0.0);
+                //lastTransformScene_ = physicsWorld_->PhysicsToScene_Domain(physicsTransform);
                 //targetNodeRotation_ = node_->GetWorldRotation();
                 //targetNodePos_ = node_->GetWorldPosition();
                 //SnapInterpolation();
@@ -852,12 +857,6 @@ namespace Urho3D {
                     
                     NewtonBodyGetCentreOfMass(newtonBody_, &finalCenterOfMass[0]);
                 }
-
-
-                
-
-               
-
             }
         }
 
@@ -939,7 +938,6 @@ namespace Urho3D {
             physicsWorld_->markRigidBodiesNeedSorted();
 
             //SetWorldTransform(node->GetWorldTransform());
-            
             
             prevNode_ = node;
         }
@@ -1258,8 +1256,6 @@ namespace Urho3D {
         NewtonBodyGetPosition(newtonBody_, &pos[0]);
         NewtonBodyGetRotation(newtonBody_, &quat.m_x);
 
-
-        lastTransform_ = Matrix3x4(NewtonToUrhoVec3(pos), NewtonToUrhoQuat(quat), 1.0f);
 
         //updateInterpolatedTransform();
 

@@ -105,7 +105,7 @@ void PhysicsTests::CreateScene()
     scene_->CreateComponent<Octree>();
     PhysicsWorld* newtonWorld = scene_->CreateComponent<PhysicsWorld>();
     newtonWorld->SetGravity(Vector3(0, -9.81f, 0));
-    newtonWorld->SetPhysicsScale(1.0f);
+    newtonWorld->SetPhysicsScale(0.5f);
     //scene_->CreateComponent<NewtonCollisionShape_SceneCollision>();
     scene_->CreateComponent<DebugRenderer>();
 
@@ -142,39 +142,39 @@ void PhysicsTests::CreateScene()
     CreateScenery(Vector3(0,0,0));
 
 
-    SpawnMaterialsTest(Vector3(0,-25,100));
+    //SpawnMaterialsTest(Vector3(0,-25,100));
 
 
-    SpawnCompoundedRectTest2(Vector3(100, 100, 0));
+    //SpawnCompoundedRectTest2(Vector3(100, 100, 0));
 
-    SpawnBallSocketTest(Vector3(50, 10, 0));
-    SpawnHingeActuatorTest(Vector3(52, 10, 0));
+    //SpawnBallSocketTest(Vector3(50, 10, 0));
+    //SpawnHingeActuatorTest(Vector3(52, 10, 0));
 
-    CreatePyramids(Vector3(0,0,0));
-
-
-    SpawnCompound(Vector3(-2, 10 , 10));
-    SpawnConvexHull(Vector3(-2, 3, 10));
-
-    SpawnTrialBike(Vector3(0, 10, 4));
+    //CreatePyramids(Vector3(0,0,0));
 
 
-    SpawnCollisionExceptionsTest(Vector3(0, 1, 15));
+    //SpawnCompound(Vector3(-2, 10 , 10));
+    //SpawnConvexHull(Vector3(-2, 3, 10));
 
-    SpawnSliderTest(Vector3(0, 10, 10));
+    //SpawnTrialBike(Vector3(0, 10, 4));
+
+
+    //SpawnCollisionExceptionsTest(Vector3(0, 1, 15));
+
+    //SpawnSliderTest(Vector3(0, 10, 10));
     SpawnLinearJointedObject(1.0f, Vector3(10 , 2, 10));
 
-    SpawnNSquaredJointedObject(Vector3(-20, 10, 10));
+    //SpawnNSquaredJointedObject(Vector3(-20, 10, 10));
 
-    SpawnCompoundedRectTest(Vector3(20, 10, 10));
+    //SpawnCompoundedRectTest(Vector3(20, 10, 10));
 
-    ////////create scale test
-    SpawnSceneCompoundTest(Vector3(-20, 10, 20), true);
-    SpawnSceneCompoundTest(Vector3(-20, 10, 30), false);
+    //////////create scale test
+    //SpawnSceneCompoundTest(Vector3(-20, 10, 20), true);
+    //SpawnSceneCompoundTest(Vector3(-20, 10, 30), false);
 
-    CreateTowerOfLiar(Vector3(40, 0, 20));
+    //CreateTowerOfLiar(Vector3(40, 0, 20));
 
-    
+    //
 
     // Create the camera. Set far clip to match the fog. Note: now we actually create the camera node outside the scene, because
     // we want it to be unaffected by scene load / save
@@ -720,7 +720,7 @@ void PhysicsTests::SpawnLinearJointedObject(float size, Vector3 worldPosition)
     //lets joint spheres together with a distance limiting joint.
     const float dist = size;
 
-    const int numSpheres = 20;
+    const int numSpheres = 2;
 
     PODVector<Node*> nodes;
     //make lots of spheres

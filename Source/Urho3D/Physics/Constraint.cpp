@@ -232,13 +232,13 @@ namespace Urho3D {
     void Constraint::SetOwnWorldPosition(const Vector3& worldPosition)
     {
        // Matrix3x4 worldTransform(ownBody_->GetNode()->GetWorldPosition(), ownBody_->GetNode()->GetWorldRotation(), 1.0f);
-        position_ = ownBody_->GetNode()->GetWorldTransform().Inverse() *  worldPosition;
+        position_ = ownBody_->GetWorldTransform().Inverse() *  worldPosition;
         MarkDirty();
     }
 
     void Constraint::SetOwnWorldRotation(const Quaternion& worldRotation)
     {
-        Quaternion worldRot = ownBody_->GetNode()->GetWorldRotation();
+        Quaternion worldRot = ownBody_->GetWorldRotation();
         rotation_ = worldRot.Inverse() * worldRotation;
         MarkDirty();
     } 
@@ -266,7 +266,7 @@ namespace Urho3D {
 
         if (otherBody_)
         {
-            otherPosition_ = otherBody_->GetNode()->GetWorldTransform().Inverse() * position;
+            otherPosition_ = otherBody_->GetWorldTransform().Inverse() * position;
         }
         else
             otherPosition_ = position;
@@ -279,7 +279,7 @@ namespace Urho3D {
     {
         if (otherBody_)
         {
-              Quaternion worldRot = otherBody_->GetNode()->GetWorldRotation();
+              Quaternion worldRot = otherBody_->GetWorldRotation();
               otherRotation_ = worldRot.Inverse() * rotation;
         }
         else
@@ -379,7 +379,7 @@ namespace Urho3D {
     {
 
         //return a frame with no scale at the position and rotation in node space
-        Matrix3x4 worldFrame = ownBody_->GetNode()->GetWorldTransform() * Matrix3x4(position_, rotation_, 1.0f);
+        Matrix3x4 worldFrame = ownBody_->GetWorldTransform() * Matrix3x4(position_, rotation_, 1.0f);
 
         //the frame could have uniform scale - reconstruct with no scale
         Matrix3x4 worldFrameNoScale = Matrix3x4(worldFrame.Translation(), worldFrame.Rotation(), 1.0f);
@@ -394,7 +394,7 @@ namespace Urho3D {
         if (otherBody_) {
 
             //return a frame with no scale at the position and rotation in node space.
-            Matrix3x4 worldFrame = otherBody_->GetNode()->GetWorldTransform() * Matrix3x4(otherPosition_, otherRotation_, 1.0f);
+            Matrix3x4 worldFrame = otherBody_->GetWorldTransform() * Matrix3x4(otherPosition_, otherRotation_, 1.0f);
 
             //the frame could have uniform scale - reconstruct with no scale
             Matrix3x4 worldFrameNoScale = Matrix3x4(worldFrame.Translation(), worldFrame.Rotation(), 1.0f);
@@ -422,7 +422,7 @@ namespace Urho3D {
         if (!IsEnabledEffective()) {
             freeInternal();
         }
-        else if (ownBody_ && ownBody_->GetNode() && ownBody_->GetNewtonBody()) {
+        else if (ownBody_ && ownBody_->GetNewtonBody()) {
             freeInternal();
 
             bool goodToBuild = true;
@@ -560,7 +560,7 @@ namespace Urho3D {
 
     Urho3D::Matrix3x4 Constraint::GetOwnNewtonWorldFrame()
     {
-        Matrix3x4 newtonWorldFrame = physicsWorld_->GetPhysicsWorldFrame()*GetOwnWorldFrame();
+        Matrix3x4 newtonWorldFrame = physicsWorld_->SceneToPhysics_Domain(GetOwnWorldFrame());
 
         //newtonWorldFrame has scaling from the the physics world frame transformation. - reconstruct without scale because joints expect frame with no scaling.
         return Matrix3x4(newtonWorldFrame.Translation(), newtonWorldFrame.Rotation(), 1.0f);
@@ -568,7 +568,7 @@ namespace Urho3D {
 
     Urho3D::Matrix3x4 Constraint::GetOtherNewtonWorldFrame()
     {
-        Matrix3x4 newtonWorldFrame = physicsWorld_->GetPhysicsWorldFrame()*GetOtherWorldFrame();
+        Matrix3x4 newtonWorldFrame = physicsWorld_->SceneToPhysics_Domain(GetOtherWorldFrame());
 
         //newtonWorldFrame has scaling from the the physics world frame transformation. - reconstruct without scale because joints expect frame with no scaling.
         return Matrix3x4(newtonWorldFrame.Translation(), newtonWorldFrame.Rotation(), 1.0f);
