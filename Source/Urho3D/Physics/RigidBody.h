@@ -296,6 +296,12 @@ namespace Urho3D
 
         virtual void OnSetEnabled() override;
 
+
+
+        RigidBodyContactEntry* GetCreateContactEntry(RigidBody* otherBody);
+
+
+
     protected:
 
 
@@ -310,7 +316,7 @@ namespace Urho3D
 
 
         HashMap<unsigned int, RigidBodyContactEntry*> contactEntries_;
-        RigidBodyContactEntry* GetCreateContactEntry(RigidBody* otherBody);
+        
         void CleanContactEntries();
 
 

@@ -83,7 +83,7 @@ namespace Urho3D
         Vector3 contactTangent0[DEF_PHYSICS_MAX_CONTACT_POINTS];  //tangent force in the 1st dimention.
         Vector3 contactTangent1[DEF_PHYSICS_MAX_CONTACT_POINTS];  //tangent force in the 2nd dimention.
 
-    protected:
+
         bool wakeFlag_ = false;
         bool wakeFlagPrev_ = false;
 
@@ -271,14 +271,13 @@ namespace Urho3D
         void applyNewtonWorldSettings();
 
 
+
         Vector<SharedPtr<RigidBodyContactEntry>> contactEntryPool_;
         int contactEntryPoolCurIdx_ = 0;
         const int contactEntryPoolSize_ = 100;
 
 
 
-
-        void formContacts(bool rootrate);
         void ParseContacts();
         bool contactMapLocked_ = false;
 

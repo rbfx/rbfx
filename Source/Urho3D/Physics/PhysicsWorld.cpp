@@ -369,136 +369,18 @@ namespace Urho3D {
     void PhysicsWorld::applyNewtonWorldSettings()
     {
         NewtonSetSolverIterations(newtonWorld_, iterationCount_);
-        NewtonSetNumberOfSubsteps(newtonWorld_, 1);
+        NewtonSetNumberOfSubsteps(newtonWorld_, subSteps_);
         NewtonSetThreadsCount(newtonWorld_, newtonThreadCount_);
         NewtonSelectBroadphaseAlgorithm(newtonWorld_, 1);//persistent broadphase.
 
         
     }
 
-    void PhysicsWorld::formContacts(bool rootrate)
-{
-        URHO3D_PROFILE_FUNCTION();
-
-        for (RigidBody* rigBody : rigidBodyComponentList)
-        {
-            if (!rigBody->generateContacts_)
-                continue;
-
-            NewtonBody* newtonBody = rigBody->GetNewtonBody();
-            if(!newtonBody)
-                continue;
-
-
-            NewtonJoint* curJoint = NewtonBodyGetFirstContactJoint(newtonBody);
-            while (curJoint) {
-
-
-                NewtonBody* body0 = NewtonJointGetBody0(curJoint);
-                NewtonBody* body1 = NewtonJointGetBody1(curJoint);
-
-                RigidBody* rigBody0 = (RigidBody*)NewtonBodyGetUserData(body0);
-                RigidBody* rigBody1 = (RigidBody*)NewtonBodyGetUserData(body1);
-
-                if (!rigBody0 || !rigBody1)
-                {
-                    curJoint = NewtonBodyGetNextContactJoint(newtonBody, curJoint);
-                    continue;
-                }
-
-                if (!rigBody0->generateContacts_ || !rigBody1->generateContacts_) {
-                    curJoint = NewtonBodyGetNextContactJoint(newtonBody, curJoint);
-                    continue;
-                }
-
-
-
-                SharedPtr<RigidBodyContactEntry> contactEntry = nullptr;
-                contactEntry = rigBody0->GetCreateContactEntry(rigBody1);
-                
-
-
-                if (contactEntry->expired_) {
-                    contactEntry->body0 = rigBody0;
-                    contactEntry->body1 = rigBody1;
-
-                    contactEntry->expired_ = false;
-                    contactEntry->numContacts = 0;
-                }
-
-                if(NewtonJointIsActive(curJoint))
-                    contactEntry->wakeFlag_ = NewtonJointIsActive(curJoint);
-
-                if(NewtonContactJointGetContactCount(curJoint) > contactEntry->numContacts)
-                    contactEntry->numContacts = NewtonContactJointGetContactCount(curJoint);
-
-
-
-
-                //rigBody0->CleanContactEntries();
-
-
-
-
-                if (contactEntry->numContacts > DEF_PHYSICS_MAX_CONTACT_POINTS)
-                {
-                    URHO3D_LOGWARNING("Contact Entry Contact Count Greater Than DEF_PHYSICS_MAX_CONTACT_POINTS, consider increasing the limit.");
-                }
-
-
-                int contactIdx = 0;
-                for (void* contact = NewtonContactJointGetFirstContact(curJoint); contact; contact = NewtonContactJointGetNextContact(curJoint, contact))
-                {
-                    
-                    NewtonMaterial* const material = NewtonContactGetMaterial(contact);
-
-                    NewtonCollision* shape0 = NewtonMaterialGetBodyCollidingShape(material, body0);
-                    NewtonCollision* shape1 = NewtonMaterialGetBodyCollidingShape(material, body1);
-
-
-                    CollisionShape* colShape0 = static_cast<CollisionShape*>(NewtonCollisionGetUserData(shape0));
-                    CollisionShape* colShape1 = static_cast<CollisionShape*>(NewtonCollisionGetUserData(shape1));
-
-
-
-
-                    //get contact geometric info for the contact struct
-                    dVector pos, force, norm, tan0, tan1;
-                    NewtonMaterialGetContactPositionAndNormal(material, body0, &pos[0], &norm[0]);
-                    NewtonMaterialGetContactTangentDirections(material, body0, &tan0[0], &tan1[0]);
-                    NewtonMaterialGetContactForce(material, body0, &force[0]);
-
-
-                    contactEntry->contactNormals[contactIdx] = PhysicsToScene_Domain(NewtonToUrhoVec3(norm));
-                    contactEntry->contactPositions[contactIdx] = PhysicsToScene_Domain(NewtonToUrhoVec3(pos));
-                    contactEntry->contactTangent0[contactIdx] = PhysicsToScene_Domain(NewtonToUrhoVec3(tan0));
-                    contactEntry->contactTangent1[contactIdx] = PhysicsToScene_Domain(NewtonToUrhoVec3(tan1));
-                    contactEntry->contactForces[contactIdx] = PhysicsToScene_Domain(NewtonToUrhoVec3(force));
-
-
-                    contactEntry->shapes0[contactIdx] = colShape0;
-                    contactEntry->shapes1[contactIdx] = colShape1;
-
-                    //#todo debugging
-                    //GetSubsystem<VisualDebugger>()->AddCross(contactEntry->contactPositions[contactIdx], 0.1f, Color::BLUE, true);
-
-                    contactIdx++;
-                }
-                
-                curJoint = NewtonBodyGetNextContactJoint(newtonBody, curJoint);
-            }
-
-        }
 
 
 
 
 
-
-
-
-
-    }
 
     void PhysicsWorld::ParseContacts()
     {
@@ -740,7 +622,7 @@ namespace Urho3D {
 
 
 
-        formContacts(true);
+        //formContacts();
         
 
         freePhysicsInternals();

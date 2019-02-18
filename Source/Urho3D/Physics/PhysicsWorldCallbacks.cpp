@@ -119,11 +119,39 @@ namespace Urho3D {
         if (physicsWorld == nullptr)
             return;//scene is being destroyed.
 
+        SharedPtr<RigidBodyContactEntry> contactEntry = nullptr;
 
+        NewtonWorldCriticalSectionLock(physicsWorld->GetNewtonWorld(), threadIndex);
+         
+            contactEntry = rigBody0->GetCreateContactEntry(rigBody1);
+        NewtonWorldCriticalSectionUnlock(physicsWorld->GetNewtonWorld());
+
+
+        if (contactEntry->expired_) {
+            contactEntry->body0 = rigBody0;
+            contactEntry->body1 = rigBody1;
+
+            contactEntry->expired_ = false;
+            contactEntry->numContacts = 0;
+        }
+
+        if (NewtonJointIsActive(contactJoint))
+            contactEntry->wakeFlag_ = NewtonJointIsActive(contactJoint);
+
+        if (NewtonContactJointGetContactCount(contactJoint) > contactEntry->numContacts)
+            contactEntry->numContacts = NewtonContactJointGetContactCount(contactJoint);
+
+
+
+        if (contactEntry->numContacts > DEF_PHYSICS_MAX_CONTACT_POINTS)
+        {
+            URHO3D_LOGWARNING("Contact Entry Contact Count Greater Than DEF_PHYSICS_MAX_CONTACT_POINTS, consider increasing the limit.");
+        }
+
+
+        int contactIdx = 0;
 
         for (void* contact = NewtonContactJointGetFirstContact(contactJoint); contact; contact = NewtonContactJointGetNextContact(contactJoint, contact)) {
-
-
 
 
             NewtonMaterial* const material = NewtonContactGetMaterial(contact);
@@ -135,6 +163,32 @@ namespace Urho3D {
             CollisionShape* colShape0 = static_cast<CollisionShape*>(NewtonCollisionGetUserData(shape0));
             CollisionShape* colShape1 = static_cast<CollisionShape*>(NewtonCollisionGetUserData(shape1));
 
+
+
+
+            {
+                //get contact geometric info for the contact struct
+                dVector pos, force, norm, tan0, tan1;
+                NewtonMaterialGetContactPositionAndNormal(material, body0, &pos[0], &norm[0]);
+                NewtonMaterialGetContactTangentDirections(material, body0, &tan0[0], &tan1[0]);
+                NewtonMaterialGetContactForce(material, body0, &force[0]);
+
+
+                contactEntry->contactNormals[contactIdx] = physicsWorld->PhysicsToScene_Domain(NewtonToUrhoVec3(norm));
+                contactEntry->contactPositions[contactIdx] = physicsWorld->PhysicsToScene_Domain(NewtonToUrhoVec3(pos));
+                contactEntry->contactTangent0[contactIdx] = physicsWorld->PhysicsToScene_Domain(NewtonToUrhoVec3(tan0));
+                contactEntry->contactTangent1[contactIdx] = physicsWorld->PhysicsToScene_Domain(NewtonToUrhoVec3(tan1));
+                contactEntry->contactForces[contactIdx] = physicsWorld->PhysicsToScene_Domain(NewtonToUrhoVec3(force));
+
+
+                contactEntry->shapes0[contactIdx] = colShape0;
+                contactEntry->shapes1[contactIdx] = colShape1;
+
+                //#todo debugging
+                //GetSubsystem<VisualDebugger>()->AddCross(contactEntry->contactPositions[contactIdx], 0.1f, Color::BLUE, true);
+
+                contactIdx++;
+            }
 
 
             float staticFriction0 = colShape0->GetStaticFriction();
@@ -163,10 +217,6 @@ namespace Urho3D {
                 continue;
             }
         }
-
-
-
-
 
 
     }
