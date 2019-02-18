@@ -83,7 +83,7 @@ namespace Urho3D {
         URHO3D_ACCESSOR_ATTRIBUTE("Continuous Collision", GetContinuousCollision, SetContinuousCollision, bool, false, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Linear Damping", GetLinearDamping, SetLinearDamping, float, 0.0f, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Angular Damping", GetAngularDamping, SetAngularDamping, float, 0.0f, AM_DEFAULT);
-        URHO3D_ACCESSOR_ATTRIBUTE("Interpolation Factor", GetInterpolationFactor, SetInterpolationFactor, float, 1.0f, AM_DEFAULT);
+        //URHO3D_ACCESSOR_ATTRIBUTE("Interpolation Factor", GetInterpolationFactor, SetInterpolationFactor, float, 1.0f, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Trigger Mode", GetTriggerMode, SetTriggerMode, bool, false, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Collision Layer", GetCollisionLayer, SetCollisionLayer, unsigned, DEFAULT_COLLISION_LAYER, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Collision Mask", GetCollisionLayerMask, SetCollisionLayerMask, unsigned, DEFAULT_COLLISION_MASK, AM_DEFAULT);
@@ -117,28 +117,27 @@ namespace Urho3D {
 
     void RigidBody::SetWorldTransform(const Matrix3x4& transform)
     {
-        if (newtonBody_)
+        if (newtonBody_ && !physicsWorld_->isUpdating_)
         {
-            physicsWorld_->WaitForUpdateFinished();
-            
             Activate();
 
             Matrix3x4 scaleLessTransform(transform.Translation(), transform.Rotation(), 1.0f);
             NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(scaleLessTransform))[0][0]);
+
         }
         else
         {
-
             nextTransformNeeded_ = true;
             nextTransform_ = transform;
         }
+
     }
 
     void RigidBody::SetWorldPosition(const Vector3& position)
     {
-        if (newtonBody_)
+        if (newtonBody_ && !physicsWorld_->isUpdating_)
         {
-            physicsWorld_->WaitForUpdateFinished();
+
 
             Activate();
 
@@ -154,13 +153,15 @@ namespace Urho3D {
             nextPositionNeeded_ = true;
             nextPosition_ = position;
         }
+
+
     }
 
     void RigidBody::SetWorldRotation(const Quaternion& quaternion)
     {
-        if (newtonBody_)
+        if (newtonBody_ && !physicsWorld_->isUpdating_)
         {
-            physicsWorld_->WaitForUpdateFinished();
+
 
             Activate();
 
@@ -178,57 +179,84 @@ namespace Urho3D {
         }
     }
 
-    Urho3D::Matrix3x4 RigidBody::GetPhysicsTransform(bool scaledPhysicsWorldFrame)
+    Urho3D::Matrix3x4 RigidBody::GetWorldTransform()
     {
         
-        if(newtonBody_){
+        if(newtonBody_ && !physicsWorld_->isUpdating_){
             dMatrix bodyMatrix;
             NewtonBodyGetMatrix(newtonBody_, &bodyMatrix[0][0]);
             
-            if(scaledPhysicsWorldFrame)
-                return physicsWorld_->SceneToPhysics_Domain(Matrix3x4(NewtonToUrhoMat4(bodyMatrix)));
-            else
-                return Matrix3x4(NewtonToUrhoMat4(bodyMatrix));
-        
+            return physicsWorld_->PhysicsToScene_Domain(Matrix3x4(NewtonToUrhoMat4(bodyMatrix)));
         }
         else {
-            if(scaledPhysicsWorldFrame)
-                return Matrix3x4(physicsWorld_->SceneToPhysics_Domain(targetNodePos_), targetNodeRotation_, 1.0f);
-            else
-                return Matrix3x4(targetNodePos_, targetNodeRotation_, 1.0f);
+
+            //return the last transform altered by any recent calls to set transform etc..
+
+            if (nextTransformNeeded_)
+            {
+                return nextTransform_;
+            }
+            Matrix3x4 transform = lastTransform_;
+            if (nextPositionNeeded_)
+            {
+                transform.SetTranslation(nextPosition_);
+            }
+            if (nextOrientationNeeded_)
+            {
+                transform.SetRotation(nextOrientation_.RotationMatrix());
+            }
+
+            return transform;
             
         }
     }
 
-    Urho3D::Vector3 RigidBody::GetPhysicsPosition(bool scaledPhysicsWorldFrame /*= false*/)
-    {
-                if(newtonBody_){
-                    dVector bodyPos;
-                    NewtonBodyGetPosition(newtonBody_, &bodyPos[0]);
-                    if (scaledPhysicsWorldFrame)
-                        return physicsWorld_->SceneToPhysics_Domain(NewtonToUrhoVec3(bodyPos));
-                    else
-                        return NewtonToUrhoVec3(bodyPos);
-                }
-                else {
-                    if (scaledPhysicsWorldFrame)
-                        return physicsWorld_->SceneToPhysics_Domain(targetNodePos_);
-                    else
-                        return targetNodePos_;
-                    
-                }
-        
+    Urho3D::Vector3 RigidBody::GetWorldPosition()
+{
+        if (newtonBody_ && !physicsWorld_->isUpdating_) {
+            dVector bodyPos;
+            NewtonBodyGetPosition(newtonBody_, &bodyPos[0]);
 
+            return physicsWorld_->PhysicsToScene_Domain(NewtonToUrhoVec3(bodyPos));
+
+        }
+        else {
+
+            //return the last transform altered by any recent calls to set transform etc..
+
+            if (nextTransformNeeded_)
+            {
+                return nextTransform_.Translation();
+            }
+            if (nextPositionNeeded_)
+            {
+                return nextPosition_;
+            }
+           
+            return lastTransform_.Translation();
+        }
     }
     
-    Quaternion RigidBody::GetPhysicsRotation() { 
-        if(newtonBody_){
+    Urho3D::Quaternion RigidBody::GetWorldRotation()
+{ 
+        if(newtonBody_ && !physicsWorld_->isUpdating_){
             dgQuaternion bodyOrientation;
             NewtonBodyGetRotation(newtonBody_, &bodyOrientation.m_x);
             return NewtonToUrhoQuat(bodyOrientation);
         }
         else {
-            return targetNodeRotation_; 
+            //return the last transform altered by any recent calls to set transform etc..
+
+            if (nextTransformNeeded_)
+            {
+                return nextTransform_.Rotation();
+            }
+            if (nextOrientationNeeded_)
+            {
+                return nextOrientation_;
+            }
+
+            return lastTransform_.Rotation();
         }
     }
     
@@ -255,7 +283,7 @@ namespace Urho3D {
     {
         if(newtonBody_)
         {
-            return Matrix3x4(GetCenterOfMassPosition(scaledPhysicsWorldFrame), GetPhysicsRotation(), 1.0f);
+            return Matrix3x4(GetCenterOfMassPosition(scaledPhysicsWorldFrame), GetWorldRotation(), 1.0f);
         }
         else {
             return Matrix3x4::IDENTITY;
@@ -268,10 +296,8 @@ namespace Urho3D {
     
     void RigidBody::SetLinearVelocity(const Vector3& worldVelocity, bool useForces)
     {
-        if (newtonBody_)
+        if (newtonBody_ && !physicsWorld_->isUpdating_)
         {
-            physicsWorld_->WaitForUpdateFinished();
-
             Activate();
             if (useForces)
             {
@@ -302,7 +328,7 @@ namespace Urho3D {
 
     void RigidBody::SetAngularVelocity(const Vector3& angularVelocity)
     {
-        if (newtonBody_)
+        if (newtonBody_ && !physicsWorld_->isUpdating_)
         {
             physicsWorld_->WaitForUpdateFinished();
             Activate();
@@ -322,6 +348,7 @@ namespace Urho3D {
 
         if (linearDampening_ != dampingFactor) {
             linearDampening_ = dampingFactor;
+
         }
     }
 
@@ -339,9 +366,8 @@ namespace Urho3D {
         if (linearDampeningInternal_ != damping) {
             linearDampeningInternal_ = damping;
 
-            if (newtonBody_)
+            if (newtonBody_ && !physicsWorld_->isUpdating_)
             {
-                physicsWorld_->WaitForUpdateFinished();
                 NewtonBodySetLinearDamping(newtonBody_, linearDampeningInternal_);
             }
             else
@@ -354,10 +380,8 @@ namespace Urho3D {
     void RigidBody::SetInternalAngularDamping(float angularDamping)
     {
         angularDampeningInternal_ = Vector3(angularDamping, angularDamping, angularDamping);
-        if (newtonBody_)
+        if (newtonBody_ && !physicsWorld_->isUpdating_)
         {
-            physicsWorld_->WaitForUpdateFinished();
-
             NewtonBodySetAngularDamping(newtonBody_, &UrhoToNewton(angularDampeningInternal_)[0]);
         }
         else
@@ -369,10 +393,10 @@ namespace Urho3D {
 
 
 
-    void RigidBody::SetInterpolationFactor(float factor /*= 0.0f*/)
-    {
-        interpolationFactor_ = Clamp(factor, M_EPSILON, 1.0f);
-    }
+    //void RigidBody::SetInterpolationFactor(float factor /*= 0.0f*/)
+    //{
+    //    interpolationFactor_ = Clamp(factor, M_EPSILON, 1.0f);
+    //}
 
 
 
@@ -808,9 +832,9 @@ namespace Urho3D {
                 NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(worldTransform)[0][0]);
 
 
-                targetNodeRotation_ = node_->GetWorldRotation();
-                targetNodePos_ = node_->GetWorldPosition();
-                SnapInterpolation();
+                //targetNodeRotation_ = node_->GetWorldRotation();
+                //targetNodePos_ = node_->GetWorldPosition();
+                //SnapInterpolation();
 
 
 
@@ -877,28 +901,27 @@ namespace Urho3D {
 
 
 
-    void RigidBody::updateInterpolatedTransform()
-    {
-        
-        interpolatedNodePos_ += (targetNodePos_ - interpolatedNodePos_)*interpolationFactor_;
-        interpolatedNodeRotation_ = interpolatedNodeRotation_.Nlerp(targetNodeRotation_, interpolationFactor_, true);
-    }
+    //void RigidBody::updateInterpolatedTransform()
+    //{
+    //    interpolatedNodePos_ += (targetNodePos_ - interpolatedNodePos_)*interpolationFactor_;
+    //    interpolatedNodeRotation_ = interpolatedNodeRotation_.Nlerp(targetNodeRotation_, interpolationFactor_, true);
+    //}
 
 
-    bool RigidBody::InterpolationWithinRestTolerance()
-    {
-        bool inTolerance = true;
-        inTolerance &= ( (targetNodePos_ - interpolatedNodePos_).Length() < M_EPSILON );
-        inTolerance &= ( (targetNodeRotation_ - interpolatedNodeRotation_).Angle() < M_EPSILON);
+    //bool RigidBody::InterpolationWithinRestTolerance()
+    //{
+    //    bool inTolerance = true;
+    //    inTolerance &= ( (targetNodePos_ - interpolatedNodePos_).Length() < M_EPSILON );
+    //    inTolerance &= ( (targetNodeRotation_ - interpolatedNodeRotation_).Angle() < M_EPSILON);
 
-        return inTolerance;
-    }
+    //    return inTolerance;
+    //}
 
-    void RigidBody::SnapInterpolation()
-    {
-        interpolatedNodePos_ = targetNodePos_;
-        interpolatedNodeRotation_ = targetNodeRotation_;
-    }
+    //void RigidBody::SnapInterpolation()
+    //{
+    //    interpolatedNodePos_ = targetNodePos_;
+    //    interpolatedNodeRotation_ = targetNodeRotation_;
+    //}
 
     void RigidBody::OnNodeSet(Node* node)
     {
@@ -979,16 +1002,10 @@ namespace Urho3D {
     }
 
 
-   
-
-
-
 
 
     void RigidBody::applyDefferedActions()
     {
-
-
         if (nextPositionNeeded_ && !nextTransformNeeded_)
         {
             if (newtonBody_)
@@ -1242,15 +1259,12 @@ namespace Urho3D {
         NewtonBodyGetRotation(newtonBody_, &quat.m_x);
 
 
+        lastTransform_ = Matrix3x4(NewtonToUrhoVec3(pos), NewtonToUrhoQuat(quat), 1.0f);
 
+        //updateInterpolatedTransform();
 
-        targetNodePos_ = physicsWorld_->PhysicsToScene_Domain(NewtonToUrhoVec3(pos));
-        targetNodeRotation_ = NewtonToUrhoQuat(quat);
-
-
-        updateInterpolatedTransform();
-
-        node_->SetWorldTransform(interpolatedNodePos_, interpolatedNodeRotation_);
+        node_->SetWorldPosition(NewtonToUrhoVec3(pos));
+        node_->SetRotation(NewtonToUrhoQuat(quat));
     }
 
 

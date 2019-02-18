@@ -101,8 +101,7 @@ void InverseKinematics::CreateScene()
     auto* col = floorNode_->CreateComponent<CollisionShape_Box>();
     col->SetScaleFactor(Vector3(1, 1, 1));
     col->SetPositionOffset(Vector3(0, -0.5, 0));
-   // col->SetInheritNodeScale(true);
-    
+
 
     // Create a directional light to the world.
     Node* lightNode = scene_->CreateChild("DirectionalLight");

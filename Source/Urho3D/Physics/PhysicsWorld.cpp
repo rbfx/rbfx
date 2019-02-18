@@ -287,6 +287,16 @@ namespace Urho3D {
         return entry;
     }
 
+    void PhysicsWorld::CleanContactEntries()
+    {
+        Vector<unsigned int> keys = contactEntries_.Keys();
+        for (int i = 0; i < keys.Size(); i++) {
+
+            if (contactEntries_[keys[i]]->expired_)
+                contactEntries_.Erase(keys[i]);
+        }
+    }
+
     void PhysicsWorld::OnSceneSet(Scene* scene)
     {
         if (scene) {
@@ -299,9 +309,7 @@ namespace Urho3D {
 
                 NewtonMaterialSetCollisionCallback(newtonWorld_, 0, 0, Newton_AABBOverlapCallback, Newton_ProcessContactsCallback);
                 //NewtonMaterialSetCompoundCollisionCallback(newtonWorld_, 0, 0, Newton_AABBCompoundOverlapCallback);
-
-
-
+                NewtonSetPostUpdateCallback(newtonWorld_, Newton_PostUpdateCallback);
 
 
             }
@@ -617,7 +625,7 @@ namespace Urho3D {
             URHO3D_PROFILE("Wait For ASync Update To finish.");
             
             NewtonWaitForUpdateToFinish(newtonWorld_);
-
+            isUpdating_ = false;
             // Send post-step event
             VariantMap& eventData = GetEventDataMap();
             eventData[PhysicsPostStep::P_WORLD] = this;
@@ -648,8 +656,8 @@ namespace Urho3D {
                         rigBody->ApplyTransform(timeStep);
 
 
-                        if (rigBody->InterpolationWithinRestTolerance())
-                            rigBody->MarkInternalTransformDirty(false);
+                        //if (rigBody->InterpolationWithinRestTolerance())
+                        rigBody->MarkInternalTransformDirty(false);
                     }
                 }
 
@@ -674,6 +682,7 @@ namespace Urho3D {
             //use target time step to give newton constant time steps. 
 
             NewtonUpdateAsync(newtonWorld_, timeStep);
+            isUpdating_ = true;
             simulationStarted_ = true;
         }
     }
@@ -789,6 +798,12 @@ namespace Urho3D {
     }
 
     
+    //called when the newton update finished.
+    void Newton_PostUpdateCallback(const NewtonWorld* const world, dFloat timestep)
+    {
+        PhysicsWorld* physicsWorld = (PhysicsWorld*)NewtonWorldGetUserData(world);
+        physicsWorld->isUpdating_ = false;
+    }
 
     //add rigid bodies to the list as the function recurses from node to root. the last rigidbody in rigidBodies is the most root. optionally include the scene as root.
     void GetRootRigidBodies(PODVector<RigidBody*>& rigidBodies, Node* node, bool includeScene)

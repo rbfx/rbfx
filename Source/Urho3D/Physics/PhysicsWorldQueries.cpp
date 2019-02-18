@@ -25,7 +25,7 @@ namespace Urho3D {
         int res = NewtonCollisionPointDistance(newtonWorld_,
             &UrhoToNewton(worldPoint)[0],
             rigidBody->GetEffectiveNewtonCollision(),
-            &UrhoToNewton(rigidBody->GetPhysicsTransform(true) * Matrix3x4(NewtonToUrhoMat4(collisionMatrix)))[0][0], &contact[0], &normal[0], 0);
+            &UrhoToNewton(SceneToPhysics_Domain(rigidBody->GetWorldTransform()) * Matrix3x4(NewtonToUrhoMat4(collisionMatrix)))[0][0], &contact[0], &normal[0], 0);
 
 
         return !res;

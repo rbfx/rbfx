@@ -91,13 +91,10 @@ namespace Urho3D
         void SetWorldRotation(const Quaternion& quaternion);
 
         
-
-
-
-        /// returns the body transform (frame center)in scene space or physics world space (they will be the same if PhysicsScale is 1.0f)
-        Matrix3x4 GetPhysicsTransform(bool scaledPhysicsWorldFrame = false);
-        Vector3 GetPhysicsPosition(bool scaledPhysicsWorldFrame = false);
-        Quaternion GetPhysicsRotation();
+        /// returns the body transform 
+        Matrix3x4 GetWorldTransform();
+        Vector3 GetWorldPosition();
+        Quaternion GetWorldRotation();
 
         /// returns the position of the bodies center of mass in scene space or physics world space.
         Vector3 GetCenterOfMassPosition(bool scaledPhysicsWorldFrame = false);
@@ -193,15 +190,15 @@ namespace Urho3D
         void SetInternalAngularDamping(float angularDamping);
 
         /// Set the interpolation duration for applying transform to the scene node. 1.0f is no interpolation, 0.0f is inifinitely slow interpolation.
-        void SetInterpolationFactor(float factor = 0.0f);
+       // void SetInterpolationFactor(float factor = 0.0f);
 
-        float GetInterpolationFactor() const { return interpolationFactor_; }
+        //float GetInterpolationFactor() const { return interpolationFactor_; }
 
         /// returns true if the interpolation is within tolerance of target rigidbody value.
-        bool InterpolationWithinRestTolerance();
+        //bool InterpolationWithinRestTolerance();
 
         /// snap current interpolated values directly to target values.
-        void SnapInterpolation();
+        //void SnapInterpolation();
 
 
 
@@ -367,8 +364,11 @@ namespace Urho3D
 
         ///dirty flag
         bool needsRebuilt_ = true;
+
         /// flag indicating the newton body has changed transforms and needs to update the node.
         bool transformDirty_ = true;
+
+        Matrix3x4 lastTransform_;
 
         /// how many node levels deep the node is on. 0 would mean the node is the scene.
         int sceneDepth_ = 1;
@@ -415,12 +415,12 @@ namespace Urho3D
 
 
         //interpolation
-        void updateInterpolatedTransform();
-        Vector3 targetNodePos_;
-        Quaternion targetNodeRotation_;
-        Vector3 interpolatedNodePos_;
-        Quaternion interpolatedNodeRotation_;
-        float interpolationFactor_ = 1.0f;
+        //void updateInterpolatedTransform();
+        //Vector3 targetNodePos_;
+        //Quaternion targetNodeRotation_;
+        //Vector3 interpolatedNodePos_;
+        //Quaternion interpolatedNodeRotation_;
+        //float interpolationFactor_ = 1.0f;
 
 
         virtual void OnNodeSetEnabled(Node* node) override;

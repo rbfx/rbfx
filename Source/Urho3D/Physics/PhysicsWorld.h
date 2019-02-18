@@ -218,6 +218,8 @@ namespace Urho3D
 
         int GetThreadCount() const;
 
+        void Update(float timestep, bool isRootUpdate);
+
         virtual void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
 
@@ -226,15 +228,11 @@ namespace Urho3D
 
         HashMap<unsigned int, RigidBodyContactEntry*> contactEntries_;
 
-        void CleanContactEntries()
-        {
-            Vector<unsigned int> keys = contactEntries_.Keys();
-            for (int i = 0; i < keys.Size(); i++) {
+        void CleanContactEntries();
 
-                if (contactEntries_[keys[i]]->expired_)
-                    contactEntries_.Erase(keys[i]);
-            }
-        }
+
+        bool isUpdating_ = false;
+
     protected:
 
 
@@ -298,7 +296,7 @@ namespace Urho3D
 
         /// Step the simulation forward.
         void HandleSceneUpdate(StringHash eventType, VariantMap& eventData);
-        void Update(float timestep, bool isRootUpdate);
+
         void rebuildDirtyPhysicsComponents();
         bool sceneUpdated_ = false;
         bool simulationStarted_ = false;
@@ -338,6 +336,10 @@ namespace Urho3D
 
 
     String NewtonThreadProfilerString(int threadIndex);
+
+
+    void Newton_PostUpdateCallback(const NewtonWorld* const world, dFloat timestep);
+
 
     /// netwon body callbacks
     void Newton_ApplyForceAndTorqueCallback(const NewtonBody* body, dFloat timestep, int threadIndex);
