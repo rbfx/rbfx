@@ -268,7 +268,7 @@ namespace Urho3D
         PODVector<CollisionShape*> GetCollisionShapes() const { return collisionShapes_; }
 
         ///Apply the current newton body transform to the node.
-        void ApplyTransform(float timestep);
+        void ApplyTransformToNode(float timestep);
 
         ///Return the net force and torque for newton.
         void GetForceAndTorque(Vector3& force, Vector3& torque);
@@ -369,8 +369,7 @@ namespace Urho3D
         bool transformDirty_ = true;
 
         /// last set node transform in ApplyTransform.
-        Vector3 lastSetNodeWorldPosition_;
-        Quaternion lastSetNodeWorldOrientation_;
+        Matrix3x4 lastSetNodeWorldTransform_;
 
         /// how many node levels deep the node is on. 0 would mean the node is the scene.
         int sceneDepth_ = 1;

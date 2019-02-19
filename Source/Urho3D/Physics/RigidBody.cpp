@@ -834,7 +834,6 @@ namespace Urho3D {
                 NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsTransform)[0][0]);
 
 
-                ApplyTransform(0.0);
                 //lastTransformScene_ = physicsWorld_->PhysicsToScene_Domain(physicsTransform);
                 //targetNodeRotation_ = node_->GetWorldRotation();
                 //targetNodePos_ = node_->GetWorldPosition();
@@ -865,7 +864,7 @@ namespace Urho3D {
         //test if the inertia matrix is symetric.
         //URHO3D_LOGINFO("Final Mass: " + String(mass_));
 
-
+        
 
         NewtonBodySetFullMassMatrix(newtonBody_, mass_, &finalInertia[0][0]);
         NewtonBodySetCentreOfMass(newtonBody_, &finalCenterOfMass[0]);
@@ -889,6 +888,8 @@ namespace Urho3D {
         NewtonBodySetForceAndTorqueCallback(newtonBody_, Newton_ApplyForceAndTorqueCallback);
         NewtonBodySetTransformCallback(newtonBody_, Newton_SetTransformCallback);
         NewtonBodySetDestructorCallback(newtonBody_, Newton_DestroyBodyCallback);
+
+
     }
 
 
@@ -1241,7 +1242,7 @@ namespace Urho3D {
 
 
 
-    void RigidBody::ApplyTransform(float timestep)
+    void RigidBody::ApplyTransformToNode(float timestep)
 {
         if (!newtonBody_)
             return;
@@ -1255,10 +1256,10 @@ namespace Urho3D {
         //updateInterpolatedTransform();
 
         node_->SetWorldPosition(NewtonToUrhoVec3(pos));
-        node_->SetRotation(NewtonToUrhoQuat(quat));
+        node_->SetWorldRotation(NewtonToUrhoQuat(quat));
 
-        lastSetNodeWorldPosition_ = NewtonToUrhoVec3(pos);
-        lastSetNodeWorldOrientation_ = NewtonToUrhoQuat(quat);
+        lastSetNodeWorldTransform_ = node_->GetWorldTransform();
+        
     }
 
 

@@ -151,16 +151,10 @@ namespace Urho3D {
                 AddJointReferenceToBody(body);
                 body->GetNode()->AddListener(this);
 
-                //convert previously set world transform to local.
-                if (otherFrameWorldExplicitlySet) {
-                    SetOtherWorldPosition(otherPosition_);
-                    SetOtherWorldRotation(otherRotation_);
-                }
-                else
-                {
-                    SetOtherWorldPosition(GetOwnWorldFrame().Translation());
-                    SetOtherWorldRotation(GetOwnWorldFrame().Rotation());
-                }
+
+                SetOtherWorldPosition(GetOwnWorldFrame().Translation());
+                SetOtherWorldRotation(GetOwnWorldFrame().Rotation());
+                
             }
 
             if (body == nullptr)
@@ -177,8 +171,13 @@ namespace Urho3D {
     void Constraint::SetOtherBodyById(unsigned bodyId)
     {
         otherBodyId_ = bodyId;
-        //resolve to body later.
-        MarkDirty();
+        Component* component = GetScene()->GetComponent(bodyId);
+        if(component && component->GetType() == RigidBody::GetTypeStatic())
+            SetOtherBody((RigidBody*)GetScene()->GetComponent(bodyId));
+        else
+        {
+            //URHO3D_LOGWARNING("Constraint:: Unable To Find Body With Component Id: " + String(bodyId));
+        }
     }
 
     void Constraint::WakeBodies()
@@ -256,37 +255,27 @@ namespace Urho3D {
     {
         otherRotation_ = rotation;
 
-
         MarkDirty();
     }
 
 
     void Constraint::SetOtherWorldPosition(const Vector3& position)
     {
-
-        if (otherBody_)
-        {
+        if (otherBody_) {
             otherPosition_ = otherBody_->GetWorldTransform().Inverse() * position;
-        }
-        else
-            otherPosition_ = position;
 
-        otherFrameWorldExplicitlySet = true;
-        MarkDirty();
+            MarkDirty();
+        }
     }
 
     void Constraint::SetOtherWorldRotation(const Quaternion& rotation)
     {
-        if (otherBody_)
-        {
-              Quaternion worldRot = otherBody_->GetWorldRotation();
-              otherRotation_ = worldRot.Inverse() * rotation;
-        }
-        else
-            otherRotation_ = rotation;
+        if (otherBody_) {
+            Quaternion worldRot = otherBody_->GetWorldRotation();
+            otherRotation_ = worldRot.Inverse() * rotation;
 
-        otherFrameWorldExplicitlySet = true;
-        MarkDirty();
+            MarkDirty();
+        }
     }
 
     void Constraint::SetSolveMode(CONSTRAINT_SOLVE_MODE mode)
@@ -415,10 +404,6 @@ namespace Urho3D {
 
     void Constraint::reEvalConstraint()
     {
-        //resolve other body id to component
-        otherBody_ = static_cast<RigidBody*>(GetScene()->GetComponent(otherBodyId_));
-
-
         if (!IsEnabledEffective()) {
             freeInternal();
         }
@@ -426,6 +411,12 @@ namespace Urho3D {
             freeInternal();
 
             bool goodToBuild = true;
+
+            if (otherBodyId_ > 0 && !otherBody_)
+            {
+                SetOtherBodyById(otherBodyId_);
+            }
+
             if (otherBody_)
             {
                 if (otherBody_->GetEffectiveMass() <= 0.0f && ownBody_->GetEffectiveMass() <= 0.0f)
@@ -543,7 +534,7 @@ namespace Urho3D {
                 RemoveJointReferenceFromBody(ownBody_);
 
             ownBody_ = nullptr;
-            if (physicsWorld_)
+            if (!physicsWorld_.Expired())
                 physicsWorld_->removeConstraint(this);
 
             freeInternal();

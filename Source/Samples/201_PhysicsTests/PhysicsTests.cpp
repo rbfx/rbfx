@@ -58,6 +58,7 @@
 #include "Urho3D/UI/Text3D.h"
 
 #include "Urho3D/Graphics/Terrain.h"
+#include "Urho3D/Graphics/VisualDebugger.h"
 
 
 
@@ -70,6 +71,8 @@ PhysicsTests::PhysicsTests(Context* context) :
 
 void PhysicsTests::Start()
 {
+
+    context_->RegisterSubsystem<VisualDebugger>();
 
     // Execute base class startup
     Sample::Start();
@@ -145,7 +148,7 @@ void PhysicsTests::CreateScene()
     //SpawnMaterialsTest(Vector3(0,-25,100));
 
 
-    //SpawnCompoundedRectTest2(Vector3(100, 100, 0));
+    SpawnCompoundedRectTest2(Vector3(0, 2, 0));
 
     //SpawnBallSocketTest(Vector3(50, 10, 0));
     //SpawnHingeActuatorTest(Vector3(52, 10, 0));
@@ -154,9 +157,9 @@ void PhysicsTests::CreateScene()
 
 
     //SpawnCompound(Vector3(-2, 10 , 10));
-    SpawnConvexHull(Vector3(-2, 3, 10));
+    //SpawnConvexHull(Vector3(-2, 3, 10));
 
-    //SpawnTrialBike(Vector3(0, 10, 4));
+    SpawnTrialBike(Vector3(0, 10, 4), Quaternion(45, Vector3(0,1,0)));
 
 
     //SpawnCollisionExceptionsTest(Vector3(0, 1, 15));
@@ -168,9 +171,9 @@ void PhysicsTests::CreateScene()
 
     //SpawnCompoundedRectTest(Vector3(20, 10, 10));
 
-    //////////create scale test
+    ////////create scale test
     //SpawnSceneCompoundTest(Vector3(-20, 10, 20), true);
-    //SpawnSceneCompoundTest(Vector3(-20, 10, 30), false);
+    //SpawnSceneCompoundTest(Vector3(-20, 10, 30), false); //this was gives newton a non-orthogonal matrix.
 
     //CreateTowerOfLiar(Vector3(40, 0, 20));
 
@@ -590,6 +593,8 @@ void PhysicsTests::SpawnConvexHull(const Vector3& worldPos)
     auto* shape = boxNode->CreateComponent<CollisionShape_ConvexHull>();
 
 
+    boxNode->Rotate(Quaternion(90, Vector3(1, 1, 0)));
+
 }
 
 
@@ -616,6 +621,8 @@ void PhysicsTests::SpawnCompound(const Vector3& worldPos)
 
     auto* shape = boxNode->CreateComponent<CollisionShape_ConvexHullCompound>();
 
+
+    boxNode->Rotate(Quaternion(90, Vector3(1, 1, 0)));
 }
 
 
@@ -941,48 +948,48 @@ void PhysicsTests::SpawnCompoundedRectTest2(Vector3 worldPosition)
     //make 2 1x1x1 physics rectangles. 1 with just one shape and 1 with 2 smaller compounds.
 
    // Node* regularRect = SpawnSamplePhysicsBox(scene_, worldPosition + Vector3(-2, 0, 0), Vector3(1, 1, 2));
-
-    Node* compoundRootRect = scene_->CreateChild();
-    compoundRootRect->SetWorldPosition(worldPosition + Vector3(2, 0, 0));
-    compoundRootRect->CreateComponent<RigidBody>();
-    
-
-
-    for (int i = 0; i < 2; i++)
-    {
-        Node* subNode = compoundRootRect->CreateChild();
-        CollisionShape_Box* box = subNode->CreateComponent<CollisionShape_Box>();
-
-        //box->SetDensity(0.1f);
-        subNode->SetPosition(Vector3(5.0f*i,0,0));
-
-        Text3D* text = subNode->CreateComponent<Text3D>();
-        text->SetText(String("Density: " + String(box->GetDensity()) + "\n\n\n\n\n\n\n\n\n"));
-        text->SetFont(GetSubsystem<ResourceCache>()->GetResource<Font>("Fonts/Anonymous Pro.ttf"));
-        text->SetFaceCameraMode(FC_LOOKAT_XYZ);
-        text->SetVerticalAlignment(VA_BOTTOM);
-        
-
-
-        Model* sphereMdl = GetSubsystem<ResourceCache>()->GetResource<Model>("Models/Box.mdl");
-        Material* sphereMat = GetSubsystem<ResourceCache>()->GetResource<Material>("Materials/Stone.xml");
+    if(0){
+        Node* compoundRootRect = scene_->CreateChild();
+        compoundRootRect->SetWorldPosition(worldPosition + Vector3(2, 0, 0));
+        compoundRootRect->CreateComponent<RigidBody>();
 
 
 
-        StaticModel* sphere1StMdl = subNode->CreateComponent<StaticModel>();
-        sphere1StMdl->SetCastShadows(true);
-        sphere1StMdl->SetModel(sphereMdl);
-        sphere1StMdl->SetMaterial(sphereMat);
+        for (int i = 0; i < 2; i++)
+        {
+            Node* subNode = compoundRootRect->CreateChild();
+            CollisionShape_Box* box = subNode->CreateComponent<CollisionShape_Box>();
+
+            //box->SetDensity(0.1f);
+            subNode->SetPosition(Vector3(5.0f*i, 0, 0));
+
+            Text3D* text = subNode->CreateComponent<Text3D>();
+            text->SetText(String("Density: " + String(box->GetDensity()) + "\n\n\n\n\n\n\n\n\n"));
+            text->SetFont(GetSubsystem<ResourceCache>()->GetResource<Font>("Fonts/Anonymous Pro.ttf"));
+            text->SetFaceCameraMode(FC_LOOKAT_XYZ);
+            text->SetVerticalAlignment(VA_BOTTOM);
+
+
+
+            Model* sphereMdl = GetSubsystem<ResourceCache>()->GetResource<Model>("Models/Box.mdl");
+            Material* sphereMat = GetSubsystem<ResourceCache>()->GetResource<Material>("Materials/Stone.xml");
+
+
+
+            StaticModel* sphere1StMdl = subNode->CreateComponent<StaticModel>();
+            sphere1StMdl->SetCastShadows(true);
+            sphere1StMdl->SetModel(sphereMdl);
+            sphere1StMdl->SetMaterial(sphereMat);
+        }
+
+
+        compoundRootRect->Rotate(Quaternion(90, Vector3(1, 1, 0)));
     }
 
 
 
-
-
-
-
-
-
+    Node* outerNode = scene_->CreateChild();
+    outerNode->SetWorldPosition(worldPosition);
 
     Node* first = nullptr;
     Node* second = nullptr;
@@ -991,10 +998,9 @@ void PhysicsTests::SpawnCompoundedRectTest2(Vector3 worldPosition)
     {
 
 
-        Node* subNode = scene_->CreateChild();
+        Node* subNode = outerNode->CreateChild();
         CollisionShape_Box* box = subNode->CreateComponent<CollisionShape_Box>();
         RigidBody* rigBody = subNode->CreateComponent<RigidBody>();
-        //box->SetDensity(0.1f);
 
 
         if (i == 0)
@@ -1003,7 +1009,7 @@ void PhysicsTests::SpawnCompoundedRectTest2(Vector3 worldPosition)
             second = subNode;
 
 
-        subNode->SetPosition(Vector3(5.0f*i, 0, 0) + worldPosition + Vector3(0,0,5));
+        subNode->SetPosition(Vector3(5.0f*i, 0, 0) +  Vector3(0,0,5));
 
         Text3D* text = subNode->CreateComponent<Text3D>();
         text->SetText(String("Density: " + String(box->GetDensity()) + "\n\n\n\n\n\n\n\n\n"));
@@ -1026,34 +1032,27 @@ void PhysicsTests::SpawnCompoundedRectTest2(Vector3 worldPosition)
 
     }
 
-
     FullyFixedConstraint* fixedConstriant = first->CreateComponent<FullyFixedConstraint>();
     fixedConstriant->SetOtherBody(second->GetComponent<RigidBody>());
 
-
-
-
-
-
-
-
-
+    outerNode->Rotate(Quaternion(45, Vector3(0, 1, 0)));
+    outerNode->Translate(Vector3(10, 0, 0));
 }
 
 
 
-void PhysicsTests::SpawnTrialBike(Vector3 worldPosition)
+void PhysicsTests::SpawnTrialBike(Vector3 worldPosition, Quaternion orientation)
 {
     Node* root = scene_->CreateChild("TrialBike");
 
     //A (Engine Body)
-    Node* A = SpawnSamplePhysicsBox(root, worldPosition, Vector3(1, 1, 0.5f));
+    Node* A = SpawnSamplePhysicsBox(root, Vector3::ZERO, Vector3(1, 1, 0.5f));
 
-    Node* B = SpawnSamplePhysicsBox(A, worldPosition + Vector3(-1,0.7,0), Vector3(2, 0.3, 0.5));
+    Node* B = SpawnSamplePhysicsBox(A, Vector3::ZERO + Vector3(-1,0.7,0), Vector3(2, 0.3, 0.5));
     B->RemoveComponent<RigidBody>();
     B->SetWorldRotation(Quaternion(0, 0, -30));
 
-    Node* C = SpawnSamplePhysicsBox(root, worldPosition + Vector3(-1, -0.5, 0), Vector3(2, 0.3, 0.5));
+    Node* C = SpawnSamplePhysicsBox(root, Vector3::ZERO + Vector3(-1, -0.5, 0), Vector3(2, 0.3, 0.5));
     C->SetWorldRotation(Quaternion(0, 0, 0));
 
     C->GetComponent<RigidBody>()->SetCollisionOverride(A->GetComponent<RigidBody>(), false);
@@ -1068,23 +1067,23 @@ void PhysicsTests::SpawnTrialBike(Vector3 worldPosition)
 
 
 
-    Node* D = SpawnSamplePhysicsBox(A, worldPosition + Vector3(0.7,0.5,0), Vector3(1,0.5,0.5));
+    Node* D = SpawnSamplePhysicsBox(A, Vector3::ZERO + Vector3(0.7,0.5,0), Vector3(1,0.5,0.5));
     D->RemoveComponent<RigidBody>();
     D->SetWorldRotation(Quaternion(0, 0, 45));
 
 
-    Node* E = SpawnSamplePhysicsBox(root, worldPosition + Vector3(1.5, 0, 0), Vector3(0.2, 2.5, 0.5));
+    Node* E = SpawnSamplePhysicsBox(root, Vector3::ZERO + Vector3(1.5, 0, 0), Vector3(0.2, 2.5, 0.5));
     E->GetComponent<RigidBody>()->SetCollisionOverride(A->GetComponent<RigidBody>(), false);
     E->SetWorldRotation(Quaternion(0, 0, 20));
 
 
     HingeConstraint* hinge = E->CreateComponent<HingeConstraint>();
     hinge->SetOtherBody(A->GetComponent<RigidBody>());
-    hinge->SetWorldPosition(worldPosition + Vector3(1.2, 0.8, 0));
+    hinge->SetWorldPosition(Vector3::ZERO + Vector3(1.2, 0.8, 0));
     hinge->SetWorldRotation(Quaternion(0,0,-90 + 20));
 
 
-    Node* F = SpawnSamplePhysicsBox(root, worldPosition + Vector3(1.5, 0, 0), Vector3(0.2, 2.5, 0.5));
+    Node* F = SpawnSamplePhysicsBox(root, Vector3::ZERO + Vector3(1.5, 0, 0), Vector3(0.2, 2.5, 0.5));
     F->SetWorldRotation(Quaternion(0, 0, 20));
     F->GetComponent<RigidBody>()->SetCollisionOverride(E->GetComponent<RigidBody>(), false);
     F->GetComponent<RigidBody>()->SetCollisionOverride(A->GetComponent<RigidBody>(), false);
@@ -1106,7 +1105,7 @@ void PhysicsTests::SpawnTrialBike(Vector3 worldPosition)
 
     //backwheel
     Vector3 backWheelOffset = Vector3(-2.0, -0.5, 0);
-    Node* backWheel = SpawnSamplePhysicsChamferCylinder(root, worldPosition + backWheelOffset, 0.8f,0.2f);
+    Node* backWheel = SpawnSamplePhysicsChamferCylinder(root, Vector3::ZERO + backWheelOffset, 0.8f,0.2f);
     backWheel->SetWorldRotation(Quaternion(90,0,0));
     backWheel->GetComponent<RigidBody>()->SetCollisionOverride(C->GetComponent<RigidBody>(), false);
     backWheel->GetDerivedComponent<CollisionShape>()->SetFriction(wheelFriction);
@@ -1115,7 +1114,7 @@ void PhysicsTests::SpawnTrialBike(Vector3 worldPosition)
     HingeConstraint* motor = backWheel->CreateComponent<HingeConstraint>();
     motor->SetPowerMode(HingeConstraint::MOTOR);
     motor->SetOtherBody(C->GetComponent<RigidBody>());
-    motor->SetWorldPosition(worldPosition + backWheelOffset);
+    motor->SetWorldPosition(Vector3::ZERO + backWheelOffset);
     motor->SetWorldRotation(Quaternion(0, 90, 0));
     motor->SetMotorTargetAngularRate(30);
     motor->SetMaxTorque(motor->GetMaxTorque()*0.00125f);
@@ -1125,7 +1124,7 @@ void PhysicsTests::SpawnTrialBike(Vector3 worldPosition)
 
 
     Vector3 frontWheelOffset = Vector3(1.8, -1, 0);
-    Node* frontWheel = SpawnSamplePhysicsChamferCylinder(root, worldPosition + frontWheelOffset, 0.8f, 0.2f);
+    Node* frontWheel = SpawnSamplePhysicsChamferCylinder(root, Vector3::ZERO + frontWheelOffset, 0.8f, 0.2f);
     frontWheel->SetWorldRotation(Quaternion(90, 0, 0));
     frontWheel->GetComponent<RigidBody>()->SetCollisionOverride(E->GetComponent<RigidBody>(), false);
     frontWheel->GetComponent<RigidBody>()->SetCollisionOverride(F->GetComponent<RigidBody>(), false);
@@ -1135,12 +1134,13 @@ void PhysicsTests::SpawnTrialBike(Vector3 worldPosition)
     HingeConstraint* frontAxle = frontWheel->CreateComponent<HingeConstraint>();
     //frontAxle->SetPowerMode(HingeConstraint::MOTOR);
     frontAxle->SetOtherBody(F->GetComponent<RigidBody>());
-    frontAxle->SetWorldPosition(worldPosition + frontWheelOffset);
+    frontAxle->SetWorldPosition(Vector3::ZERO + frontWheelOffset);
     frontAxle->SetWorldRotation(Quaternion(0, 90, 0));
     frontAxle->SetEnableLimits(false);
     //frontAxle->SetMotorTargetAngularRate(10);
 
-
+    root->SetWorldPosition(worldPosition);
+    root->SetWorldRotation(orientation);
 
 }
 
@@ -1186,7 +1186,7 @@ void PhysicsTests::HandlePostRenderUpdate(StringHash eventType, VariantMap& even
     // If draw debug mode is enabled, draw physics debug geometry. Use depth test to make the result easier to interpret
     if (drawDebug_) {
         scene_->GetComponent<PhysicsWorld>()->DrawDebugGeometry(scene_->GetComponent<DebugRenderer>(), false);
-        //GetSubsystem<VisualDebugger>()->DrawDebugGeometry(scene_->GetComponent<DebugRenderer>());
+        GetSubsystem<VisualDebugger>()->DrawDebugGeometry(scene_->GetComponent<DebugRenderer>());
     }
 }
 
@@ -1204,7 +1204,7 @@ void PhysicsTests::DecomposePhysicsTree()
         PODVector<Node*> children;
         res[1].node_->GetChildren(children, true);
 
-        //GSS<VisualDebugger>()->AddOrb(res[1].node_->GetWorldPosition(), 1.0f, Color::RED);
+        GetSubsystem<VisualDebugger>()->AddOrb(res[1].node_->GetWorldPosition(), 1.0f, Color::RED);
 
         //for (auto* child : children) {
         //    GSS<VisualDebugger>()->AddOrb(child->GetWorldPosition(), 1.0f, Color(Random(), Random(), Random()));

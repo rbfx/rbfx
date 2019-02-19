@@ -653,27 +653,22 @@ namespace Urho3D {
                 for (RigidBody* rigBody : rigidBodyComponentList)
                 {
                     //if the node transform has been changed since last update - move the body.
-                    if (rigBody->node_->GetWorldPosition() != rigBody->lastSetNodeWorldPosition_ || rigBody->node_->GetWorldRotation() != rigBody->lastSetNodeWorldOrientation_) {
+                    if (rigBody->node_->GetWorldTransform() != rigBody->lastSetNodeWorldTransform_) {
                         rigBody->SetWorldTransformToNode();
                         rigBody->MarkInternalTransformDirty(true);
                     }
 
                     if (rigBody->GetInternalTransformDirty()) {
-                        rigBody->ApplyTransform(timeStep);
+                        rigBody->ApplyTransformToNode(timeStep);
 
 
                         //if (rigBody->InterpolationWithinRestTolerance())
                         rigBody->MarkInternalTransformDirty(false);
                     }
                 }
-
             }
         }
 
-
-
-        //formContacts();
-        
 
         freePhysicsInternals();
 
@@ -682,7 +677,6 @@ namespace Urho3D {
 
         ParseContacts();
 
-    
 
         {
             //use target time step to give newton constant time steps. 
@@ -718,6 +712,8 @@ namespace Urho3D {
 
 
             rigBody->reBuildBody();
+
+            rigBody->ApplyTransformToNode(0.0f);
             rigBody->MarkDirty(false);
         }
 

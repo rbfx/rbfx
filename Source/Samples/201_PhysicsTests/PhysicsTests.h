@@ -112,7 +112,7 @@ private:
     void SpawnRandomObjects();
     void SpawnCompoundedRectTest(Vector3 worldPosition);
     void SpawnCompoundedRectTest2(Vector3 worldPosition);
-    void SpawnTrialBike(Vector3 worldPosition);
+    void SpawnTrialBike(Vector3 worldPosition, Quaternion orientation);
 
     /// Handle the logic update event.
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
@@ -141,6 +141,9 @@ private:
     Vector3 pickPullEndPositionWorld;
     HingeConstraint* hingeActuatorTest = nullptr;
     float timeAccum = 0.0f;
+
+
+
 
     void CreatePickTargetNodeOnPhysics();
     void ReleasePickTargetOnPhysics();

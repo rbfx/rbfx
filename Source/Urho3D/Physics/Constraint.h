@@ -199,7 +199,7 @@ namespace Urho3D {
         ///dirty flag.
         bool needsRebuilt_ = true;
 
-        bool otherFrameWorldExplicitlySet = false;
+        //bool otherFrameWorldExplicitlySet = false;
 
         bool enableForceCalculations_ = false;
 

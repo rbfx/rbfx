@@ -8,6 +8,7 @@
 #include "dCustomFixDistance.h"
 #include "Scene/Component.h"
 #include "Scene/Scene.h"
+#include "Graphics/VisualDebugger.h"
 
 
 namespace Urho3D {
@@ -35,6 +36,9 @@ namespace Urho3D {
 
         Matrix3x4 ownFrame = GetOwnNewtonWorldFrame();
         Matrix3x4 otherFrame = GetOtherNewtonWorldFrame();
+
+        GetSubsystem<VisualDebugger>()->AddFrame(ownFrame, 1.0f, false)->SetLifeTimeMs(100000);
+        GetSubsystem<VisualDebugger>()->AddFrame(otherFrame, 1.0f, false)->SetLifeTimeMs(100000);
 
         newtonJoint_ = new dCustom6dof(UrhoToNewton(ownFrame), UrhoToNewton(otherFrame), GetOwnNewtonBody(), GetOtherNewtonBody());
 
