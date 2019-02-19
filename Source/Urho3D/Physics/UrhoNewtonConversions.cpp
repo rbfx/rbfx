@@ -90,9 +90,9 @@ namespace Urho3D {
         return Matrix4(&mat[0][0]).Transpose();
 #else
         float data[16];
-        for (int r = 0; r < 4; r ++) {
+        for (int r = 0; r < 4; r++) {
             for (int c = 0; c < 4; c++) {
-                data[r*c] = mat[r][c];//#todo check
+                data[r + 4*c] = mat[c][r];
             }
         }
 

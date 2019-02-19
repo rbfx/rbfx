@@ -368,6 +368,9 @@ namespace Urho3D
         /// flag indicating the newton body has changed transforms and needs to update the node.
         bool transformDirty_ = true;
 
+        /// last set node transform in ApplyTransform.
+        Vector3 lastSetNodeWorldPosition_;
+        Quaternion lastSetNodeWorldOrientation_;
 
         /// how many node levels deep the node is on. 0 would mean the node is the scene.
         int sceneDepth_ = 1;

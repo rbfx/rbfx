@@ -652,6 +652,12 @@ namespace Urho3D {
                 //apply the transform of all rigid body components to their respective nodes.
                 for (RigidBody* rigBody : rigidBodyComponentList)
                 {
+                    //if the node transform has been changed since last update - move the body.
+                    if (rigBody->node_->GetWorldPosition() != rigBody->lastSetNodeWorldPosition_ || rigBody->node_->GetWorldRotation() != rigBody->lastSetNodeWorldOrientation_) {
+                        rigBody->SetWorldTransformToNode();
+                        rigBody->MarkInternalTransformDirty(true);
+                    }
+
                     if (rigBody->GetInternalTransformDirty()) {
                         rigBody->ApplyTransform(timeStep);
 

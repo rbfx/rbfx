@@ -856,7 +856,7 @@ namespace Urho3D {
             }
         }
 
-
+        
         Matrix4 inertiaMatrixUrho = NewtonToUrhoMat4(finalInertia);
        // URHO3D_LOGINFO("Inertia Matrix:");
         //URHO3D_LOGINFO(String(inertiaMatrixUrho));
@@ -1256,6 +1256,9 @@ namespace Urho3D {
 
         node_->SetWorldPosition(NewtonToUrhoVec3(pos));
         node_->SetRotation(NewtonToUrhoQuat(quat));
+
+        lastSetNodeWorldPosition_ = NewtonToUrhoVec3(pos);
+        lastSetNodeWorldOrientation_ = NewtonToUrhoQuat(quat);
     }
 
 
