@@ -105,7 +105,7 @@ void PhysicsTests::CreateScene()
     scene_->CreateComponent<Octree>();
     PhysicsWorld* newtonWorld = scene_->CreateComponent<PhysicsWorld>();
     newtonWorld->SetGravity(Vector3(0, -9.81f, 0));
-    newtonWorld->SetPhysicsScale(0.5f);
+    newtonWorld->SetPhysicsScale(1.0);
     //scene_->CreateComponent<NewtonCollisionShape_SceneCollision>();
     scene_->CreateComponent<DebugRenderer>();
 
@@ -154,7 +154,7 @@ void PhysicsTests::CreateScene()
 
 
     //SpawnCompound(Vector3(-2, 10 , 10));
-    //SpawnConvexHull(Vector3(-2, 3, 10));
+    SpawnConvexHull(Vector3(-2, 3, 10));
 
     //SpawnTrialBike(Vector3(0, 10, 4));
 
@@ -162,7 +162,7 @@ void PhysicsTests::CreateScene()
     //SpawnCollisionExceptionsTest(Vector3(0, 1, 15));
 
     //SpawnSliderTest(Vector3(0, 10, 10));
-    SpawnLinearJointedObject(1.0f, Vector3(10 , 2, 10));
+    //SpawnLinearJointedObject(1.0f, Vector3(10 , 2, 10));
 
     //SpawnNSquaredJointedObject(Vector3(-20, 10, 10));
 

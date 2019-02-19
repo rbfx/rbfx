@@ -244,7 +244,6 @@ namespace Urho3D {
         }
         else {
             //return the last transform altered by any recent calls to set transform etc..
-
             if (nextTransformNeeded_)
             {
                 return nextTransform_.Rotation();
@@ -841,9 +840,6 @@ namespace Urho3D {
                 //targetNodePos_ = node_->GetWorldPosition();
                 //SnapInterpolation();
 
-
-
-
                 mass_ = accumMass * massScale_;
                 if (sceneRootBodyMode_)
                     mass_ = 0;
@@ -937,8 +933,7 @@ namespace Urho3D {
             calculateSceneDepth();
             physicsWorld_->markRigidBodiesNeedSorted();
 
-            //SetWorldTransform(node->GetWorldTransform());
-            
+
             prevNode_ = node;
         }
         else

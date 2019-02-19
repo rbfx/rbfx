@@ -153,9 +153,6 @@ namespace Urho3D
             unsigned maxIntersections = M_MAX_UNSIGNED,
             unsigned collisionMask = M_MAX_UNSIGNED);
 
-        void RayCastSingle(PhysicsRayCastIntersection& intersection, const Vector3& pointOrigin, const Vector3& pointDestination, unsigned collisionMask = M_MAX_UNSIGNED);
-        void RayCastSingle(PhysicsRayCastIntersection& intersection, const Ray& ray, float maxDistance=M_LARGE_VALUE, unsigned collisionMask = M_MAX_UNSIGNED);
-
 
         /// Return rigid bodies by a sphere query.
         void GetRigidBodies(PODVector<RigidBody*>& result, const Sphere& sphere, unsigned collisionMask = M_MAX_UNSIGNED);
@@ -165,7 +162,7 @@ namespace Urho3D
         void GetRigidBodies(PODVector<RigidBody*>& result, const RigidBody* body);
 
 
-        /// Force the physics world to rebuild - usefull if you want to update the build if the scene is not being updated.
+        /// Force the physics world to rebuild
         void ForceRebuild() { freePhysicsInternals(); rebuildDirtyPhysicsComponents(); }
 
 
