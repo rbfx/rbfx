@@ -944,10 +944,10 @@ namespace Urho3D {
                 physicsWorld_->removeRigidBody(this);
 
             //#todo ?
-            ////remove any connected constraints.
-            //for (Constraint* constraint : connectedConstraints_) {
-            //    constraint->Remove();
-            //}
+            //remove any connected constraints.
+            for (Constraint* constraint : connectedConstraints_) {
+                constraint->Remove();
+            }
 
 
 

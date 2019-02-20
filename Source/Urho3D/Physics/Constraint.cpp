@@ -530,7 +530,7 @@ namespace Urho3D {
         }
         else
         {
-            if(!ownBody_.Expired())
+            if (!ownBody_.Expired())
                 RemoveJointReferenceFromBody(ownBody_);
 
             ownBody_ = nullptr;

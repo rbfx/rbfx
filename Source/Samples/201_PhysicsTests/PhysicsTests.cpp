@@ -71,7 +71,7 @@ PhysicsTests::PhysicsTests(Context* context) :
 
 void PhysicsTests::Start()
 {
-
+    VisualDebugger::RegisterObject(context_);
     context_->RegisterSubsystem<VisualDebugger>();
 
     // Execute base class startup
@@ -159,8 +159,8 @@ void PhysicsTests::CreateScene()
     //SpawnCompound(Vector3(-2, 10 , 10));
     //SpawnConvexHull(Vector3(-2, 3, 10));
 
-    SpawnTrialBike(Vector3(0, 10, 4), Quaternion(45, Vector3(0,1,0)));
-
+    SpawnTrialBike(Vector3(0, 10, 4), Quaternion(90, Vector3(0,1,0)));
+    SpawnTrialBike(Vector3(10, 10, 6), Quaternion(0, Vector3(0, 1, 0)));
 
     //SpawnCollisionExceptionsTest(Vector3(0, 1, 15));
 
@@ -1139,9 +1139,12 @@ void PhysicsTests::SpawnTrialBike(Vector3 worldPosition, Quaternion orientation)
     frontAxle->SetEnableLimits(false);
     //frontAxle->SetMotorTargetAngularRate(10);
 
+
+
+
+
     root->SetWorldPosition(worldPosition);
     root->SetWorldRotation(orientation);
-
 }
 
 void PhysicsTests::HandleUpdate(StringHash eventType, VariantMap& eventData)
