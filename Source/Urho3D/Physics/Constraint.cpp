@@ -521,8 +521,9 @@ namespace Urho3D {
                 ownBodyId_ = ownBody_->GetID();
             }
            
-            if(physicsWorld_)
-                physicsWorld_->addConstraint(this);
+            SetOtherBody(physicsWorld_->sceneBody_);
+
+            physicsWorld_->addConstraint(this);
 
             AddJointReferenceToBody(ownBody_);
 

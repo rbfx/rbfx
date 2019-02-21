@@ -142,13 +142,13 @@ void PhysicsTests::CreateScene()
 
 
 
-    CreateScenery(Vector3(0,0,0));
+    //CreateScenery(Vector3(0,0,0));
 
 
     //SpawnMaterialsTest(Vector3(0,-25,100));
 
 
-    SpawnCompoundedRectTest2(Vector3(0, 2, 0));
+    //SpawnCompoundedRectTest2(Vector3(0, 2, 0));
 
     //SpawnBallSocketTest(Vector3(50, 10, 0));
     //SpawnHingeActuatorTest(Vector3(52, 10, 0));
@@ -159,8 +159,11 @@ void PhysicsTests::CreateScene()
     //SpawnCompound(Vector3(-2, 10 , 10));
     //SpawnConvexHull(Vector3(-2, 3, 10));
 
-    SpawnTrialBike(Vector3(0, 10, 4), Quaternion(90, Vector3(0,1,0)));
-    SpawnTrialBike(Vector3(10, 10, 6), Quaternion(0, Vector3(0, 1, 0)));
+    //SpawnTrialBike(Vector3(0, 10, 4), Quaternion(90, Vector3(0,1,0)));
+    //SpawnTrialBike(Vector3(10, 10, 6), Quaternion(0, Vector3(0, 1, 0)));
+
+    SpawnHingeSpringTest(Vector3(0,10,0), Quaternion::IDENTITY);
+    SpawnHingeSpringTest(Vector3(-2, 10, 0), Quaternion(-90, Vector3(0,1,0)));
 
     //SpawnCollisionExceptionsTest(Vector3(0, 1, 15));
 
@@ -1039,6 +1042,25 @@ void PhysicsTests::SpawnCompoundedRectTest2(Vector3 worldPosition)
     outerNode->Translate(Vector3(10, 0, 0));
 }
 
+void PhysicsTests::SpawnHingeSpringTest(const Vector3 worldPosition, const Quaternion worldOrientation)
+{
+
+    Node* baseNode = SpawnSamplePhysicsBox(scene_, Vector3::ZERO, Vector3(10,1,1));
+    HingeConstraint* constraint = baseNode->CreateComponent<HingeConstraint>();
+    constraint->SetOwnWorldPosition(Vector3(-5,0,0));
+    constraint->SetOtherWorldPosition(worldPosition);
+    
+    constraint->SetOwnWorldRotation(Quaternion(90, Vector3(0, 1, 0)));
+    constraint->SetOtherWorldRotation(worldOrientation * Quaternion(90, Vector3(0, 1, 0)));
+
+    constraint->SetNoPowerSpringDamper(true);
+
+    // constraint->
+
+    baseNode->SetWorldPosition(worldPosition);
+    baseNode->SetWorldRotation(worldOrientation);
+
+}
 
 
 void PhysicsTests::SpawnTrialBike(Vector3 worldPosition, Quaternion orientation)
@@ -1240,7 +1262,12 @@ void PhysicsTests::TransportNode()
         if (res.node_->GetName() == "Floor")
             return;
 
-        res.node_->SetWorldPosition(res.node_->GetWorldPosition() + Vector3(Random(), Random()+1.0f, Random())*1.0f);
+        Node* resolvedNode = res.node_;
+        if (!resolvedNode->HasComponent<RigidBody>())
+            resolvedNode = res.node_->GetParent();
+
+        if(resolvedNode != scene_)
+            resolvedNode->SetWorldPosition(resolvedNode->GetWorldPosition() + Vector3(Random(), Random()+1.0f, Random())*1.0f);
         //res[1].node_->SetWorldRotation(Quaternion(Random()*360.0f, Random()*360.0f, Random()*360.0f));
     }
 }
@@ -1424,6 +1451,7 @@ void PhysicsTests::RemovePickNode(bool removeRigidBodyOnly /*= false*/)
         }
     }
 }
+
 
 void PhysicsTests::CreatePickTargetNodeOnPhysics()
 {

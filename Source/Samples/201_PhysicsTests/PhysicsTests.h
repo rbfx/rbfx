@@ -113,6 +113,7 @@ private:
     void SpawnCompoundedRectTest(Vector3 worldPosition);
     void SpawnCompoundedRectTest2(Vector3 worldPosition);
     void SpawnTrialBike(Vector3 worldPosition, Quaternion orientation);
+    void SpawnHingeSpringTest(const Vector3 ZERO, const Quaternion IDENTITY);
 
     /// Handle the logic update event.
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
@@ -159,4 +160,5 @@ private:
 
     void CreateScenery(Vector3 worldPosition);
     void RemovePickNode(bool removeRigidBodyOnly = false);
+   
 };
