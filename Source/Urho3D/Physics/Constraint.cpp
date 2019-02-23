@@ -370,6 +370,7 @@ namespace Urho3D {
         //return a frame with no scale at the position and rotation in node space
         Matrix3x4 worldFrame = ownBody_->GetWorldTransform() * Matrix3x4(position_, rotation_, 1.0f);
 
+
         //the frame could have uniform scale - reconstruct with no scale
         Matrix3x4 worldFrameNoScale = Matrix3x4(worldFrame.Translation(), worldFrame.Rotation(), 1.0f);
 

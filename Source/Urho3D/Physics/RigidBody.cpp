@@ -180,10 +180,10 @@ namespace Urho3D {
     Urho3D::Matrix3x4 RigidBody::GetWorldTransform()
     {
         
-        if(newtonBody_ && !physicsWorld_->isUpdating_){
+        if (newtonBody_ && !physicsWorld_->isUpdating_) {
             dMatrix bodyMatrix;
             NewtonBodyGetMatrix(newtonBody_, &bodyMatrix[0][0]);
-            
+
             return physicsWorld_->PhysicsToScene_Domain(Matrix3x4(NewtonToUrhoMat4(bodyMatrix)));
         }
         else {

@@ -375,25 +375,28 @@ void PhysicsTests::MoveCamera(float timeStep)
     }
 
     // Check for loading/saving the scene. Save the scene to the file Data/Scenes/Physics.xml relative to the executable
-    // directory
+        // directory
     if (input->GetKeyPress(KEY_F5))
     {
-        String filePath = GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/PhysicsStressTest.xml";
+        String filePath = GetSubsystem<FileSystem>()->GetProgramDir();
+#if _MSC_VER
+        filePath += "../";
+#endif
+        filePath += "Data/Scenes/PhysicsTests.xml";
         File saveFile(context_, filePath, FILE_WRITE);
         scene_->SaveXML(saveFile);
-
-
-        scene_->GetComponent<PhysicsWorld>()->SerializeNewtonWorld("newtonWorldFile.ngd");
-
-
     }
     if (input->GetKeyPress(KEY_F7))
     {
-        String filePath = GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/PhysicsStressTest.xml";
+        String filePath = GetSubsystem<FileSystem>()->GetProgramDir();
+#if _MSC_VER
+        filePath += "../";
+#endif
+        filePath += "Data/Scenes/PhysicsTests.xml";
         File loadFile(context_, filePath, FILE_READ);
         scene_->LoadXML(loadFile);
-        scene_->GetComponent<DebugRenderer>()->SetView(cameraNode_->GetComponent<Camera>());
     }
+
 
     // Toggle physics debug geometry with space
     if (input->GetKeyPress(KEY_SPACE))

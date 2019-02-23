@@ -50,7 +50,7 @@ namespace Urho3D {
 
 
     ///Printing Helpers
-    void PrintNewton(dMatrix mat);
+    void PrintNewtonMatrix(dMatrix mat);
 
 
 
