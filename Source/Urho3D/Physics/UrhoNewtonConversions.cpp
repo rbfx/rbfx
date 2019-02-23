@@ -162,10 +162,30 @@ namespace Urho3D {
 
 
 
-    void PrintNewton(dMatrix mat)
+    void PrintNewtonMatrix(dMatrix mat)
     {
-        for (int x = 0; x < 4; x++)
-            URHO3D_LOGINFO(String(mat[x][0]) + " , " + String(mat[x][1]) + " , " + String(mat[x][2]) + " , " + String(mat[x][3]));
+        const int paddingSize = 10;
+        for (int row = 0; row < 4; row++) {
+
+            Vector<String> rowStrings;
+
+            for (int col = 0; col < 4; col++) {
+                String colSubString = String(mat[row][col]);
+
+                while (colSubString.Length() < paddingSize)
+                    colSubString.Append(' ');
+
+                if (colSubString.Length() > paddingSize)
+                    colSubString.Resize(paddingSize);
+
+                rowStrings += colSubString;
+
+            }
+
+
+            URHO3D_LOGINFO(String(rowStrings[0]) + " , " + String(rowStrings[1]) + " , " + String(rowStrings[2]) + " , " + String(rowStrings[3]));
+        }
+
 
         URHO3D_LOGINFO("");
 

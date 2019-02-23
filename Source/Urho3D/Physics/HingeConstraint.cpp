@@ -26,17 +26,17 @@ namespace Urho3D {
     };
 
 
-    Urho3D::HingeConstraint::HingeConstraint(Context* context) : Constraint(context)
+    HingeConstraint::HingeConstraint(Context* context) : Constraint(context)
     {
 
     }
 
-    Urho3D::HingeConstraint::~HingeConstraint()
+    HingeConstraint::~HingeConstraint()
     {
 
     }
 
-    void Urho3D::HingeConstraint::RegisterObject(Context* context)
+    void HingeConstraint::RegisterObject(Context* context)
     {
         context->RegisterFactory<HingeConstraint>(DEF_PHYSICS_CATEGORY.CString());
 
@@ -61,7 +61,7 @@ namespace Urho3D {
 
     }
 
-    void Urho3D::HingeConstraint::SetMinAngle(float minAngle)
+    void HingeConstraint::SetMinAngle(float minAngle)
     {
         if (minAngle_ != minAngle) {
             minAngle_ = minAngle;
@@ -80,7 +80,7 @@ namespace Urho3D {
         }
     }
 
-    void Urho3D::HingeConstraint::SetMaxAngle(float maxAngle)
+    void HingeConstraint::SetMaxAngle(float maxAngle)
     {
         if (maxAngle_ != maxAngle) {
             maxAngle_ = maxAngle;
@@ -96,7 +96,7 @@ namespace Urho3D {
         }
     }
 
-    void Urho3D::HingeConstraint::SetEnableLimits(bool enable)
+    void HingeConstraint::SetEnableLimits(bool enable)
     {
         if (enableLimits_ != enable) {
             enableLimits_ = enable;
@@ -112,7 +112,7 @@ namespace Urho3D {
         }
     }
 
-    void Urho3D::HingeConstraint::SetFriction(float friction)
+    void HingeConstraint::SetFriction(float friction)
     {
 
         if (frictionTorque_ != friction) {
@@ -127,7 +127,7 @@ namespace Urho3D {
         }
     }
 
-    void Urho3D::HingeConstraint::SetMaxTorque(float torque)
+    void HingeConstraint::SetMaxTorque(float torque)
     {
         if (maxTorque_ != torque)
         {
@@ -145,7 +145,7 @@ namespace Urho3D {
         }
     }
 
-    void Urho3D::HingeConstraint::SetPowerMode(PoweredMode mode)
+    void HingeConstraint::SetPowerMode(PoweredMode mode)
     {
         if (powerMode_ != mode) {
             powerMode_ = mode;
@@ -157,7 +157,7 @@ namespace Urho3D {
 
 
 
-    void Urho3D::HingeConstraint::SetActuatorMaxAngularRate(float rate)
+    void HingeConstraint::SetActuatorMaxAngularRate(float rate)
     {
         if (maxAngularRate_ != rate)
         {
@@ -173,7 +173,7 @@ namespace Urho3D {
         }
     }
 
-    void Urho3D::HingeConstraint::SetActuatorTargetAngle(float angle)
+    void HingeConstraint::SetActuatorTargetAngle(float angle)
     {
         if (targetAngle_ != angle)
         {
@@ -190,7 +190,7 @@ namespace Urho3D {
     }
 
 
-    void Urho3D::HingeConstraint::SetMotorTargetAngularRate(float rate)
+    void HingeConstraint::SetMotorTargetAngularRate(float rate)
     {
         if (maxAngularRate_ != rate)
         {
@@ -268,7 +268,7 @@ namespace Urho3D {
     void HingeConstraint::SetNoPowerSpringDamperRelaxation(float relaxation)
     {
         if (springRelaxation_ != relaxation)
-        {
+        {
             springRelaxation_ = relaxation;
 
             if (newtonJoint_)
@@ -280,7 +280,7 @@ namespace Urho3D {
             }
             else
                 MarkDirty();
-
+
         }
     }
 
@@ -302,12 +302,12 @@ namespace Urho3D {
         return 0.0f;
     }
 
-    void Urho3D::HingeConstraint::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
+    void HingeConstraint::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
     {
         Constraint::DrawDebugGeometry(debug, depthTest);
     }
 
-    void Urho3D::HingeConstraint::buildConstraint()
+    void HingeConstraint::buildConstraint()
     {
         // Create a dCustomHinge
 
@@ -327,7 +327,7 @@ namespace Urho3D {
 
     }
 
-    bool Urho3D::HingeConstraint::applyAllJointParams()
+    bool HingeConstraint::applyAllJointParams()
     {
         if (!Constraint::applyAllJointParams())
             return false;

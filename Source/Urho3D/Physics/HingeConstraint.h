@@ -1,7 +1,6 @@
 #pragma once
 
 
-
 #include "Constraint.h"
 
 
