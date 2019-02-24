@@ -1053,7 +1053,7 @@ void PhysicsTests::SpawnHingeSpringTest(const Vector3 worldPosition, const Quate
     constraint->SetOwnWorldPosition(worldPosition);
     constraint->SetOtherWorldPosition(worldPosition);
     
-    //constraint->SetOwnWorldRotation(Quaternion(90, Vector3(0, 1, 0)));
+    constraint->SetOwnRotation(Quaternion(90, Vector3(0, 1, 0)));
     //constraint->SetOtherWorldRotation(worldOrientation * Quaternion(90, Vector3(0, 1, 0)));
 
     constraint->SetNoPowerSpringDamper(true);

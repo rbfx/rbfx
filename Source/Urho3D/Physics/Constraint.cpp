@@ -75,7 +75,7 @@ namespace Urho3D {
 
     void Constraint::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
     {
-        //draw 2 part line from one frame to the other. Black touching own body and graw touching other body.
+        //draw 2 part line from one frame to the other. Black touching own body and gray touching other body.
         if (ownBody_) {
            
                 Vector3 midPoint = (GetOtherWorldFrame().Translation() + GetOwnWorldFrame().Translation())*0.5f;
