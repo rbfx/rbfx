@@ -336,6 +336,23 @@ namespace Urho3D {
             
 
             newtonJoint_ = new dCustomHinge(UrhoToNewton(GetOwnNewtonWorldFrame()), UrhoToNewton(GetOtherNewtonWorldFrame()), GetOwnNewtonBody(), GetOtherNewtonBody());
+            URHO3D_LOGINFO("Joint Internal Local Matrix 0");
+            PrintNewtonMatrix(newtonJoint_->GetMatrix0());
+            URHO3D_LOGINFO("Joint Internal Local Matrix 1");
+            PrintNewtonMatrix(newtonJoint_->GetMatrix1());
+
+            URHO3D_LOGINFO("Joint Pin Axis:");
+            URHO3D_LOGINFO(String(NewtonToUrhoVec3(((dCustomHinge*)newtonJoint_)->GetPinAxis())));
+
+
+
+            dMatrix mat0, mat1;
+            newtonJoint_->CalculateGlobalMatrix(mat0, mat1);
+            URHO3D_LOGINFO("Newton Global Matrix 0");
+            PrintNewtonMatrix(mat0);
+            URHO3D_LOGINFO("Newton Global Matrix 1");
+            PrintNewtonMatrix(mat1);
+
         }
 
 
