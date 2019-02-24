@@ -292,6 +292,13 @@ Logger Log::GetLogger(const char* name)
     if (name == nullptr)
         name = "main";
 
+    // Logger may be used during deinitialization.
+    bool locked = logInstance != nullptr;
+    if (locked)
+        logInstance->logMutex_.Acquire();
+    else
+        assert(Thread::IsMainThread());
+
     std::shared_ptr<spdlog::logger> logger(spdlog::get(name));
     if (!logger)
     {
@@ -299,7 +306,11 @@ Logger Log::GetLogger(const char* name)
         spdlog::register_logger(logger);
     }
 
-    return Logger(reinterpret_cast<void*>(spdlog::get(name).get()));
+    Logger result(reinterpret_cast<void*>(spdlog::get(name).get()));
+    if (locked)
+        logInstance->logMutex_.Release();
+
+    return result;
 }
 
 void Log::SendMessageEvent(LogLevel level, time_t timestamp, const String& logger, const String& message)
