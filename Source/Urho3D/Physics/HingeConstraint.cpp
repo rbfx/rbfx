@@ -321,6 +321,16 @@ namespace Urho3D {
         }
         else
         {
+            URHO3D_LOGINFO("Own World Frame:");
+            PrintNewtonMatrix(UrhoToNewton(GetOwnNewtonWorldFrame()));
+            URHO3D_LOGINFO("Body Matrix: ");
+            PrintNewtonMatrix(UrhoToNewton(ownBody_->GetWorldTransform()));
+
+            URHO3D_LOGINFO("Other World Frame:");
+            PrintNewtonMatrix(UrhoToNewton(GetOtherNewtonWorldFrame()));
+            URHO3D_LOGINFO("Own World Frame:");
+            PrintNewtonMatrix(UrhoToNewton(otherBody_->GetWorldTransform()));
+
             newtonJoint_ = new dCustomHinge(UrhoToNewton(GetOwnNewtonWorldFrame()), UrhoToNewton(GetOtherNewtonWorldFrame()), GetOwnNewtonBody(), GetOtherNewtonBody());
         }
 

@@ -175,8 +175,7 @@ namespace Urho3D {
                 while (colSubString.Length() < paddingSize)
                     colSubString.Append(' ');
 
-                if (colSubString.Length() > paddingSize)
-                    colSubString.Resize(paddingSize);
+
 
                 rowStrings += colSubString;
 

@@ -163,7 +163,7 @@ void PhysicsTests::CreateScene()
     //SpawnTrialBike(Vector3(10, 10, 6), Quaternion(0, Vector3(0, 1, 0)));
 
     SpawnHingeSpringTest(Vector3(0,10,0), Quaternion::IDENTITY);
-    SpawnHingeSpringTest(Vector3(-2, 10, 0), Quaternion(-90, Vector3(0,1,0)));
+    //SpawnHingeSpringTest(Vector3(-2, 10, 0), Quaternion(-90, Vector3(0,1,0)));
 
     //SpawnCollisionExceptionsTest(Vector3(0, 1, 15));
 
@@ -1048,20 +1048,20 @@ void PhysicsTests::SpawnCompoundedRectTest2(Vector3 worldPosition)
 void PhysicsTests::SpawnHingeSpringTest(const Vector3 worldPosition, const Quaternion worldOrientation)
 {
 
-    Node* baseNode = SpawnSamplePhysicsBox(scene_, Vector3::ZERO, Vector3(10,1,1));
+    Node* baseNode = SpawnSamplePhysicsBox(scene_, worldPosition, Vector3(10,1,1));
     HingeConstraint* constraint = baseNode->CreateComponent<HingeConstraint>();
-    constraint->SetOwnWorldPosition(Vector3(-5,0,0));
+    constraint->SetOwnWorldPosition(worldPosition);
     constraint->SetOtherWorldPosition(worldPosition);
     
-    constraint->SetOwnWorldRotation(Quaternion(90, Vector3(0, 1, 0)));
-    constraint->SetOtherWorldRotation(worldOrientation * Quaternion(90, Vector3(0, 1, 0)));
+    //constraint->SetOwnWorldRotation(Quaternion(90, Vector3(0, 1, 0)));
+    //constraint->SetOtherWorldRotation(worldOrientation * Quaternion(90, Vector3(0, 1, 0)));
 
     constraint->SetNoPowerSpringDamper(true);
 
     // constraint->
 
     baseNode->SetWorldPosition(worldPosition);
-    baseNode->SetWorldRotation(worldOrientation);
+    //baseNode->SetWorldRotation(worldOrientation);
 
 }
 

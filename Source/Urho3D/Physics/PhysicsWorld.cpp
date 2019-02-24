@@ -307,13 +307,13 @@ namespace Urho3D {
                 applyNewtonWorldSettings();
 
 
-                //create a root scene body.
+
+                //resolve root scene body.
                 if (!sceneBody_) {
                     sceneBody_ = GetScene()->GetOrCreateComponent<RigidBody>();
                     sceneBody_->SetIsSceneRootBody(true);
+                    sceneBody_->SetTemporary(true);
                 }
-
-
 
 
                 NewtonMaterialSetCollisionCallback(newtonWorld_, 0, 0, Newton_AABBOverlapCallback, Newton_ProcessContactsCallback);
@@ -623,7 +623,6 @@ namespace Urho3D {
         float timeStep = timestep*GetScene()->GetTimeScale()*timeScale_;
 
  
-        
 
 
 
