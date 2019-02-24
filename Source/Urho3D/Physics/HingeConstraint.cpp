@@ -55,7 +55,7 @@ namespace Urho3D {
 
         URHO3D_ACCESSOR_ATTRIBUTE("Spring Damper Enable", GetNoPowerSpringDamper, SetNoPowerSpringDamper, bool, false, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Spring Coefficient", GetNoPowerSpringCoefficient, SetNoPowerSpringCoefficient, float, HINGE_CONSTRAINT_DEF_SPRING_COEF, AM_DEFAULT);
-        URHO3D_ACCESSOR_ATTRIBUTE("Spring Damper Coefficient", GetNoPowerSpringDamper, SetNoPowerSpringDamper, float, HINGE_CONSTRAINT_DEF_DAMPER_COEF, AM_DEFAULT);
+        URHO3D_ACCESSOR_ATTRIBUTE("Spring Damper Coefficient", GetNoPowerDamperCoefficient, SetNoPowerDamperCoefficient, float, HINGE_CONSTRAINT_DEF_DAMPER_COEF, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Spring Damper Relaxation", GetNoPowerSpringDamperRelaxation, SetNoPowerSpringDamperRelaxation, float, HINGE_CONSTRAINT_DEF_RELAX, AM_DEFAULT);
 
 
