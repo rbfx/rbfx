@@ -176,7 +176,7 @@ namespace Urho3D {
             SetOtherBody((RigidBody*)GetScene()->GetComponent(bodyId));
         else
         {
-            //URHO3D_LOGWARNING("Constraint:: Unable To Find Body With Component Id: " + String(bodyId));
+           // URHO3D_LOGWARNING("Constraint:: Unable To Find Body With Component Id: " + String(bodyId));
         }
     }
 
@@ -350,6 +350,14 @@ namespace Urho3D {
             return otherBody_->GetNewtonBody();
         else
             return nullptr;
+    }
+
+    unsigned Constraint::GetOtherBodyId() const
+    {
+        if (otherBody_ == physicsWorld_->sceneBody_)
+            return 0;
+        else
+            return otherBodyId_;
     }
 
     Vector3 Constraint::GetOtherPosition() const

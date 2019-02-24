@@ -151,7 +151,7 @@ namespace Urho3D {
 
         NewtonBody* GetOtherNewtonBody() const;
 
-        unsigned GetOtherBodyId() const { return otherBodyId_; }
+        unsigned GetOtherBodyId() const;
 
 
         Vector3 GetOtherPosition() const;
