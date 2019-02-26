@@ -142,7 +142,7 @@ void PhysicsTests::CreateScene()
 
 
 
-    //CreateScenery(Vector3(0,0,0));
+    CreateScenery(Vector3(0,0,0));
 
 
     //SpawnMaterialsTest(Vector3(0,-25,100));
@@ -150,17 +150,17 @@ void PhysicsTests::CreateScene()
 
     //SpawnCompoundedRectTest2(Vector3(0, 2, 0));
 
-    //SpawnBallSocketTest(Vector3(50, 10, 0));
-    //SpawnHingeActuatorTest(Vector3(52, 10, 0));
+    SpawnBallSocketTest(Vector3(50, 10, 0));
+    SpawnHingeActuatorTest(Vector3(52, 10, 0));
 
     //CreatePyramids(Vector3(0,0,0));
 
 
-    //SpawnCompound(Vector3(-2, 10 , 10));
-    //SpawnConvexHull(Vector3(-2, 3, 10));
+    SpawnCompound(Vector3(-2, 10 , 10));
+    SpawnConvexHull(Vector3(-2, 3, 10));
 
-    //SpawnTrialBike(Vector3(0, 10, 4), Quaternion(90, Vector3(0,1,0)));
-    //SpawnTrialBike(Vector3(10, 10, 6), Quaternion(0, Vector3(0, 1, 0)));
+    SpawnTrialBike(Vector3(0, 10, 4), Quaternion(90, Vector3(0,1,0)));
+    SpawnTrialBike(Vector3(10, 10, 6), Quaternion(0, Vector3(0, 1, 0)));
 
     SpawnHingeSpringTest(Vector3(0,10,0), Quaternion::IDENTITY);
     //SpawnHingeSpringTest(Vector3(-2, 10, 0), Quaternion(-90, Vector3(0,1,0)));
@@ -1497,6 +1497,7 @@ void PhysicsTests::CreatePickTargetNodeOnPhysics()
         constraint->SetWorldPosition(pickPullNode->GetChild("PickPullSurfaceNode")->GetWorldPosition());
         constraint->SetWorldRotation(cameraNode_->GetWorldRotation());
         constraint->SetConstrainRotation(false);
+        constraint->SetTemporary(true);
     }
 }
 

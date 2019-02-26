@@ -62,7 +62,7 @@ namespace Urho3D {
         URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Solver Iterations", GetSolveMode, SetSolveMode, CONSTRAINT_SOLVE_MODE, solveModeNames, SOLVE_MODE_JOINT_DEFAULT, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Stiffness", GetStiffness, SetStiffness, float, 0.7f, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("ForceCalculationsEnabled", GetEnableForceCalculation, SetEnableForceCalculation, bool, false, AM_DEFAULT);
-        URHO3D_ACCESSOR_ATTRIBUTE("Other Body ID", GetOtherBodyId, SetOtherBodyById, unsigned, 0, AM_DEFAULT | AM_COMPONENTID);
+        URHO3D_ACCESSOR_ATTRIBUTE("Other Body ID", GetOtherBodyId, SetOtherBodyId, unsigned, 0, AM_DEFAULT | AM_COMPONENTID);
 
 
         URHO3D_ATTRIBUTE("Other Body Frame Position", Vector3, otherPosition_, Vector3::ZERO, AM_DEFAULT);
@@ -140,44 +140,32 @@ namespace Urho3D {
 
     void Constraint::SetOtherBody(RigidBody* body)
     {
-        if (otherBody_ != body && body != ownBody_) {
 
             if (otherBody_ != nullptr)
                 RemoveJointReferenceFromBody(otherBody_);//remove reference from old body
 
 
             otherBody_ = body;
-            if (body != nullptr) {
-                AddJointReferenceToBody(body);
-                body->GetNode()->AddListener(this);
+
+            AddJointReferenceToBody(body);
+            body->GetNode()->AddListener(this);
 
 
-                SetOtherWorldPosition(GetOwnWorldFrame().Translation());
-                SetOtherWorldRotation(GetOwnWorldFrame().Rotation());
-                
-            }
+            SetOtherWorldPosition(GetOwnWorldFrame().Translation());
+            SetOtherWorldRotation(GetOwnWorldFrame().Rotation());
 
-            if (body == nullptr)
-                otherBodyId_ = 0;
-            else
-                otherBodyId_ = body->GetID();
 
+            otherBodyId_ = body->GetID();
 
             MarkDirty();
-        }
+        
     }
 
 
-    void Constraint::SetOtherBodyById(unsigned bodyId)
+    void Constraint::SetOtherBodyId(unsigned bodyId)
     {
         otherBodyId_ = bodyId;
-        Component* component = GetScene()->GetComponent(bodyId);
-        if(component && component->GetType() == RigidBody::GetTypeStatic())
-            SetOtherBody((RigidBody*)GetScene()->GetComponent(bodyId));
-        else
-        {
-           // URHO3D_LOGWARNING("Constraint:: Unable To Find Body With Component Id: " + String(bodyId));
-        }
+        MarkDirty();
     }
 
     void Constraint::WakeBodies()
@@ -421,36 +409,32 @@ namespace Urho3D {
 
             bool goodToBuild = true;
 
-            if (otherBodyId_ > 0 && !otherBody_)
+
+            if (!otherBody_)
             {
-                SetOtherBodyById(otherBodyId_);
+                if (otherBodyId_ > 0)
+                    SetOtherBody(GetScene()->GetComponent<RigidBody>(otherBodyId_));
+                else
+                    SetOtherBody(physicsWorld_->sceneBody_);//fallback
             }
 
-            if (otherBody_)
-            {
-                if (otherBody_->GetEffectiveMass() <= 0.0f && ownBody_->GetEffectiveMass() <= 0.0f)
-                    goodToBuild = false;
 
+
+            if (otherBody_->GetEffectiveMass() <= 0.0f && ownBody_->GetEffectiveMass() <= 0.0f) {
+                goodToBuild = false;
+                URHO3D_LOGWARNING("Contraint must connect to at least 1 Rigid Body with mass greater than 0.");
             }
-            else
-            {
-                if (ownBody_->GetEffectiveMass() <= 0.0f)
-                    goodToBuild = false;
-            }
+
+
 
             if (goodToBuild) {
+
+
                 buildConstraint();
                 applyAllJointParams();
 
             }
-            else
-            {
-                URHO3D_LOGWARNING("Contraint must connect to at least 1 Rigid Body with mass greater than 0.");
-            }
 
-            if (newtonJoint_ != nullptr) {
-
-            }
         }
         else//we dont have own body so free the joint..
         {

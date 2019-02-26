@@ -68,7 +68,12 @@ namespace Urho3D {
         /// Set other body to connect to. Set to null to connect to the static world.
         virtual void SetOtherBody(RigidBody* body);
 
-        void SetOtherBodyById(unsigned bodyId);
+
+
+        void SetOtherBodyId(unsigned bodyId);
+        unsigned GetOtherBodyId() const;
+
+
 
         /// force wake the connected bodies
         void WakeBodies();
@@ -151,7 +156,7 @@ namespace Urho3D {
 
         NewtonBody* GetOtherNewtonBody() const;
 
-        unsigned GetOtherBodyId() const;
+
 
 
         Vector3 GetOtherPosition() const;

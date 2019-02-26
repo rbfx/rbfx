@@ -34,10 +34,6 @@ namespace Urho3D {
         void SetLimitRotationalVelocity(bool enable);
 
 
-
-        virtual void SetOtherBody(RigidBody* body) override;
-
-
         virtual void SetOtherPosition(const Vector3& position) override;
 
 

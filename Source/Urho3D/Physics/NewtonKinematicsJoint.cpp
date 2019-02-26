@@ -75,13 +75,6 @@ namespace Urho3D {
     }
 
 
-
-    void KinematicsControllerConstraint::SetOtherBody(RigidBody* body)
-    {
-        URHO3D_LOGWARNING("KinematicsControllerConstraint Does not support an other body.");
-        return;
-    }
-
     void KinematicsControllerConstraint::SetOtherPosition(const Vector3& position)
     {
         
@@ -113,8 +106,6 @@ namespace Urho3D {
     void KinematicsControllerConstraint::updateTarget()
     {
         if (newtonJoint_) {
-
-
             //GSS<VisualDebugger>()->AddCross(GetOtherWorldFrame().Translation(), 1.0f, Color::MAGENTA, false);
             //GSS<VisualDebugger>()->AddCross(GetOtherNewtonWorldFrame().Translation(), 2.0, Color::MAGENTA, false);
             static_cast<dCustomKinematicController*>(newtonJoint_)->SetTargetMatrix(UrhoToNewton(GetOtherNewtonWorldFrame()));
