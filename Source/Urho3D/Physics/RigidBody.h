@@ -80,10 +80,10 @@ namespace Urho3D
 
         PhysicsWorld* GetPhysicsWorld() const { return physicsWorld_; }
 
-        /// Instantly Set the world transform of the body to the transform of the node.
+        ///  Set the world transform of the body to the transform of the node.
         void SetWorldTransformToNode();
 
-        /// Instantly Set the world transform of the body in scene space
+        ///  Set the world transform of the body in scene space
         void SetWorldTransform(const Matrix3x4& transform);
 
         void SetWorldPosition(const Vector3& position);
