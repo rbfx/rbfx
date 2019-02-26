@@ -691,9 +691,9 @@ namespace Urho3D {
                         //    }
                         //}
 
-                        rigBody->SetWorldTransformToNode();
+                        //rigBody->SetWorldTransformToNode();
 
-                        rigBody->MarkInternalTransformDirty(true);
+                        //rigBody->MarkInternalTransformDirty(true);
 
 
 

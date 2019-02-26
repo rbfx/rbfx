@@ -169,7 +169,7 @@ void CreateRagdoll::CreateRagdollBone(const String& boneName, StringHash collisi
     // Set damping parameters to smooth out the motion
     body->SetLinearDamping(1.0f);
     body->SetAngularDamping(.85f);
-    body->SetInterpolationFactor(0.3f);
+    //body->SetInterpolationFactor(0.3f);
     
 
     CollisionShape* shape = nullptr;
