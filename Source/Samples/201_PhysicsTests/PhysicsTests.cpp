@@ -145,40 +145,42 @@ void PhysicsTests::CreateScene()
     CreateScenery(Vector3(0,0,0));
 
 
-    SpawnMaterialsTest(Vector3(0,-25,100));
+    //SpawnMaterialsTest(Vector3(0,-25,100));
 
 
-    SpawnCompoundedRectTest2(Vector3(0, 2, 0));
+    //SpawnCompoundedRectTest2(Vector3(0, 2, 0));
 
-    SpawnBallSocketTest(Vector3(50, 10, 0));
-    SpawnHingeActuatorTest(Vector3(52, 10, 0));
+    //SpawnBallSocketTest(Vector3(50, 10, 0));
+    //SpawnHingeActuatorTest(Vector3(52, 10, 0));
 
-    //CreatePyramids(Vector3(0,0,0));
+    ////CreatePyramids(Vector3(0,0,0));
 
 
-    SpawnCompound(Vector3(-2, 10 , 10));
-    SpawnConvexHull(Vector3(-2, 3, 10));
+    //SpawnCompound(Vector3(-2, 10 , 10));
+    //SpawnConvexHull(Vector3(-2, 3, 10));
 
-    SpawnTrialBike(Vector3(0, 10, 4), Quaternion(90, Vector3(0, 1, 0)));
-    SpawnTrialBike(Vector3(10, 10, 6), Quaternion(0, Vector3(0, 1, 0)));
+    Quaternion tilt = Quaternion(Random(-1.0f, 1.0f), Vector3(1, 0, 0));
+
+    SpawnTrialBike(Vector3(5, 5, 0),  Quaternion(0, Vector3(0, 1, 0)) * tilt, true);
+    SpawnTrialBike(Vector3(-5, 5, 0), Quaternion(180, Vector3(0, 1, 0)) * tilt, false);
 
     //SpawnHingeSpringTest(Vector3(0,10,0), Quaternion::IDENTITY);
     //SpawnHingeSpringTest(Vector3(-2, 10, 0), Quaternion(-90, Vector3(0,1,0)));
 
-    SpawnCollisionExceptionsTest(Vector3(0, 1, 15));
+    //SpawnCollisionExceptionsTest(Vector3(0, 1, 15));
 
-    SpawnSliderTest(Vector3(0, 10, 10));
-    SpawnLinearJointedObject(1.0f, Vector3(10 , 2, 10));
+    //SpawnSliderTest(Vector3(0, 10, 10));
+    //SpawnLinearJointedObject(1.0f, Vector3(10 , 2, 10));
 
-    SpawnNSquaredJointedObject(Vector3(-20, 10, 10));
+    //SpawnNSquaredJointedObject(Vector3(-20, 10, 10));
 
-    SpawnCompoundedRectTest(Vector3(20, 10, 10));
+    //SpawnCompoundedRectTest(Vector3(20, 10, 10));
 
-    //////create scale test
-    SpawnSceneCompoundTest(Vector3(-20, 10, 20), true);
-    SpawnSceneCompoundTest(Vector3(-20, 10, 30), false); //this was gives newton a non-orthogonal matrix.
+    ////////create scale test
+    //SpawnSceneCompoundTest(Vector3(-20, 10, 20), true);
+    //SpawnSceneCompoundTest(Vector3(-20, 10, 30), false); //this was gives newton a non-orthogonal matrix.
 
-    CreateTowerOfLiar(Vector3(40, 0, 20));
+    //CreateTowerOfLiar(Vector3(40, 0, 20));
 
     //
 
@@ -1068,7 +1070,7 @@ void PhysicsTests::SpawnHingeSpringTest(const Vector3 worldPosition, const Quate
 }
 
 
-void PhysicsTests::SpawnTrialBike(Vector3 worldPosition, Quaternion orientation)
+void PhysicsTests::SpawnTrialBike(Vector3 worldPosition, Quaternion orientation, bool enableGyroOnWheels)
 {
     Node* root = scene_->CreateChild("TrialBike");
 
@@ -1135,6 +1137,7 @@ void PhysicsTests::SpawnTrialBike(Vector3 worldPosition, Quaternion orientation)
     Node* backWheel = SpawnSamplePhysicsChamferCylinder(root, Vector3::ZERO + backWheelOffset, 0.8f,0.2f);
     backWheel->SetWorldRotation(Quaternion(90,0,0));
     backWheel->GetComponent<RigidBody>()->SetCollisionOverride(C->GetComponent<RigidBody>(), false);
+    backWheel->GetComponent<RigidBody>()->SetUseGyroscopicTorque(enableGyroOnWheels);
     backWheel->GetDerivedComponent<CollisionShape>()->SetFriction(wheelFriction);
 
 
@@ -1143,7 +1146,7 @@ void PhysicsTests::SpawnTrialBike(Vector3 worldPosition, Quaternion orientation)
     motor->SetOtherBody(C->GetComponent<RigidBody>());
     motor->SetWorldPosition(Vector3::ZERO + backWheelOffset);
     motor->SetWorldRotation(Quaternion(0, 90, 0));
-    motor->SetMotorTargetAngularRate(100);
+    motor->SetMotorTargetAngularRate(10);
     motor->SetMaxTorque(motor->GetMaxTorque()*0.00125f);
 
 
@@ -1155,6 +1158,7 @@ void PhysicsTests::SpawnTrialBike(Vector3 worldPosition, Quaternion orientation)
     frontWheel->SetWorldRotation(Quaternion(90, 0, 0));
     frontWheel->GetComponent<RigidBody>()->SetCollisionOverride(E->GetComponent<RigidBody>(), false);
     frontWheel->GetComponent<RigidBody>()->SetCollisionOverride(F->GetComponent<RigidBody>(), false);
+    frontWheel->GetComponent<RigidBody>()->SetUseGyroscopicTorque(enableGyroOnWheels);
     frontWheel->GetDerivedComponent<CollisionShape>()->SetFriction(wheelFriction);
 
 

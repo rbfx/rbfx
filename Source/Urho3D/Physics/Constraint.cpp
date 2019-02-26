@@ -326,10 +326,7 @@ namespace Urho3D {
 
     unsigned Constraint::GetOtherBodyId() const
     {
-        if (otherBody_ == physicsWorld_->sceneBody_)
-            return 0;
-        else
-            return otherBodyId_;
+        return otherBodyId_;
     }
 
     Vector3 Constraint::GetOtherPosition() const
@@ -370,7 +367,6 @@ namespace Urho3D {
 
 
         return worldFrameNoScale;
-      
     }
 
     void Constraint::OnSetEnabled()
