@@ -233,12 +233,12 @@ namespace Urho3D {
 
     void Constraint::SetOwnWorldPosition(const Vector3& worldPosition)
     {
-        SetOtherPosition(ownBody_->GetWorldTransform().Inverse() *  worldPosition);
+        SetOwnPosition(ownBody_->GetWorldTransform().Inverse() *  worldPosition);
     }
 
     void Constraint::SetOwnWorldRotation(const Quaternion& worldRotation)
     {
-        SetOtherRotation(ownBody_->GetWorldRotation().Inverse() * worldRotation);
+        SetOwnRotation(ownBody_->GetWorldRotation().Inverse() * worldRotation);
     } 
 
     void Constraint::SetOtherWorldPosition(const Vector3& position)
