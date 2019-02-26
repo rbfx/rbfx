@@ -83,37 +83,43 @@ namespace Urho3D {
         ///set the world rotation of both frames on both bodies. 
         void SetWorldRotation(const Quaternion& rotation);
 
-        /// Set constraint position in local cordinates relative to the own body.  Both frames will be set to the same position.
-        void SetPosition(const Vector3& position);
-        /// Set constraint rotation in local cordinates relative to the own body.  Both frames will be set to the same rotation.
-        void SetRotation(const Quaternion& rotation);
-        
         /// Set constraint position in local cordinates to rigidbody.
         void SetOwnPosition(const Vector3& position);
         /// set the rotational frame to use on own rigidbody 
         void SetOwnRotation(const Quaternion& rotation);
 
-        void SetOwnWorldPosition(const Vector3& worldPosition);
-
-        void SetOwnWorldRotation(const Quaternion& worldRotation);
-
-
         Vector3 GetOwnPosition() const { return position_; }
 
         Quaternion GetOwnRotation() const { return rotation_; }
-
 
         /// Set constraint position in local cordinates relative to the other body. If connected to the static world, is a world space position.
         virtual void SetOtherPosition(const Vector3& position);
         /// set the rotational frame to use on other body. If connected to the static world, is a world space position.
         virtual void SetOtherRotation(const Quaternion& rotation);
 
-        
+       
+        void SetOwnWorldPosition(const Vector3& worldPosition);
+
+        void SetOwnWorldRotation(const Quaternion& worldRotation);
+
 
         /// Set constraint position in local cordinates relative to the other body. If connected to the static world, is a world space position.
         virtual void SetOtherWorldPosition(const Vector3& position);
         /// set the rotational frame to use on other body. If connected to the static world, is a world space position.
         virtual void SetOtherWorldRotation(const Quaternion& rotation);
+
+
+        Vector3 GetOtherPosition() const;
+
+        Quaternion GetOtherRotation() const;
+
+        Matrix3x4 GetOwnWorldFrame() const;
+
+        Matrix3x4 GetOtherWorldFrame() const;
+
+
+
+
 
 
         void SetSolveMode(CONSTRAINT_SOLVE_MODE mode);
@@ -159,15 +165,6 @@ namespace Urho3D {
 
 
 
-        Vector3 GetOtherPosition() const;
-
-        Quaternion GetOtherRotation() const;
-
-
-        Matrix3x4 GetOwnWorldFrame() const;
-
-
-        Matrix3x4 GetOtherWorldFrame() const;
 
         dCustomJoint* GetNewtonJoint() const {
             return  newtonJoint_;

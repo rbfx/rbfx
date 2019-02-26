@@ -197,19 +197,12 @@ namespace Urho3D {
         SetOtherWorldRotation(rotation);
     }
     
-    void Constraint::SetPosition(const Vector3& position)
-    {
-        SetWorldPosition(ownBody_->GetNode()->GetWorldTransform() * position);
-    }
-    
-    void Constraint::SetRotation(const Quaternion& rotation)
-    {
-        SetWorldRotation(ownBody_->GetNode()->GetWorldRotation() * rotation);
-    }
 
     void Constraint::SetOwnPosition(const Vector3& position)
     {
         position_ = position;
+
+        hasBeenBuilt_ = false;
         MarkDirty();
     }
 
@@ -217,26 +210,15 @@ namespace Urho3D {
     void Constraint::SetOwnRotation(const Quaternion& rotation)
     {
         rotation_ = rotation;
+        hasBeenBuilt_ = false;
         MarkDirty();
     }
 
-
-    void Constraint::SetOwnWorldPosition(const Vector3& worldPosition)
-    {
-       // Matrix3x4 worldTransform(ownBody_->GetNode()->GetWorldPosition(), ownBody_->GetNode()->GetWorldRotation(), 1.0f);
-        position_ = ownBody_->GetWorldTransform().Inverse() *  worldPosition;
-        MarkDirty();
-    }
-
-    void Constraint::SetOwnWorldRotation(const Quaternion& worldRotation)
-    {
-        rotation_ = ownBody_->GetWorldRotation().Inverse() * worldRotation;
-        MarkDirty();
-    } 
 
     void Constraint::SetOtherPosition(const Vector3& position)
     {
         otherPosition_ = position;
+        hasBeenBuilt_ = false;
         MarkDirty();
     }
 
@@ -244,25 +226,29 @@ namespace Urho3D {
     void Constraint::SetOtherRotation(const Quaternion& rotation)
     {
         otherRotation_ = rotation;
-
+        hasBeenBuilt_ = false;
         MarkDirty();
     }
 
 
+    void Constraint::SetOwnWorldPosition(const Vector3& worldPosition)
+    {
+        SetOtherPosition(ownBody_->GetWorldTransform().Inverse() *  worldPosition);
+    }
+
+    void Constraint::SetOwnWorldRotation(const Quaternion& worldRotation)
+    {
+        SetOtherRotation(ownBody_->GetWorldRotation().Inverse() * worldRotation);
+    } 
+
     void Constraint::SetOtherWorldPosition(const Vector3& position)
     {
-        otherPosition_ = otherBody_->GetWorldTransform().Inverse() * position;
-
-        MarkDirty();
+        SetOtherPosition(otherBody_->GetWorldTransform().Inverse() * position);
     }
 
     void Constraint::SetOtherWorldRotation(const Quaternion& rotation)
     {
-        Quaternion worldRot = otherBody_->GetWorldRotation();
-        otherRotation_ = worldRot.Inverse() * rotation;
-
-        MarkDirty();
-      
+        SetOtherRotation(otherBody_->GetWorldRotation().Inverse() * rotation);
     }
 
     void Constraint::SetSolveMode(CONSTRAINT_SOLVE_MODE mode)
@@ -404,10 +390,14 @@ namespace Urho3D {
 
 
             if (otherBodyId_ > 0) {
-                URHO3D_LOGINFO("resolving by id!");
-                SetOtherBody((RigidBody*)GetScene()->GetComponent(otherBodyId_));
+                RigidBody* body = (RigidBody*)GetScene()->GetComponent(otherBodyId_);
+                if(body)
+                    SetOtherBody(body);
+                else {
+                    URHO3D_LOGWARNING("Contraint Could Not Resolve Other Body, Setting to Scene Body..");
+                    SetOtherBody(physicsWorld_->sceneBody_);
+                }
             }
-
 
 
             if (otherBody_->GetEffectiveMass() <= 0.0f && ownBody_->GetEffectiveMass() <= 0.0f) {
@@ -442,7 +432,6 @@ namespace Urho3D {
 
                 }
 
-                URHO3D_LOGINFO("Building");
                 buildConstraint();
                 
 
