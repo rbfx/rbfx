@@ -345,7 +345,6 @@ namespace Urho3D {
 
         if (linearDampening_ != dampingFactor) {
             linearDampening_ = dampingFactor;
-
         }
     }
 
@@ -367,10 +366,6 @@ namespace Urho3D {
             {
                 NewtonBodySetLinearDamping(newtonBody_, linearDampeningInternal_);
             }
-            else
-            {
-                MarkDirty();
-            }
         }
     }
 
@@ -381,14 +376,24 @@ namespace Urho3D {
         {
             NewtonBodySetAngularDamping(newtonBody_, &UrhoToNewton(angularDampeningInternal_)[0]);
         }
-        else
-        {
-            MarkDirty();
-        }
     }
 
 
 
+    void RigidBody::SetUseGyroscopicTorque(bool enable)
+    {
+        if (enableGyroTorque_ != enable)
+        {
+            enableGyroTorque_ = enable;
+
+            if (newtonBody_ && !physicsWorld_->isUpdating_)
+            {
+                NewtonBodySetGyroscopicTorque(newtonBody_, enableGyroTorque_);
+            }
+        }
+
+
+    }
 
     //void RigidBody::SetInterpolationFactor(float factor /*= 0.0f*/)
     //{
@@ -859,6 +864,8 @@ namespace Urho3D {
 
         NewtonBodySetContinuousCollisionMode(newtonBody_, continuousCollision_);
 
+        NewtonBodySetGyroscopicTorque(newtonBody_, enableGyroTorque_);
+
         //ensure newton damping is 0 because we apply our own as a force.
         NewtonBodySetLinearDamping(newtonBody_, linearDampeningInternal_);
         NewtonBodySetAngularDamping(newtonBody_, &UrhoToNewton(angularDampeningInternal_)[0]);
@@ -1054,6 +1061,23 @@ namespace Urho3D {
         }
 
 
+    }
+
+    void RigidBody::applyDefferedProperties()
+    {
+
+        if (NewtonBodyGetLinearDamping(newtonBody_) != linearDampeningInternal_)
+            NewtonBodySetLinearDamping(newtonBody_, linearDampeningInternal_);
+
+
+        dVector angularDamping;
+        NewtonBodyGetAngularDamping(newtonBody_, &angularDamping[0]);
+        if (NewtonToUrhoVec3(angularDamping) != angularDampeningInternal_)
+            NewtonBodySetAngularDamping(newtonBody_, &UrhoToNewton(angularDampeningInternal_)[0]);
+
+
+        if (NewtonBodyGetGyroscopicTorque(newtonBody_) != enableGyroTorque_)
+            NewtonBodySetGyroscopicTorque(newtonBody_, enableGyroTorque_);
     }
 
     void RigidBody::OnNodeSetEnabled(Node* node)

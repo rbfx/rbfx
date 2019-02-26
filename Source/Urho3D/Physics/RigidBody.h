@@ -202,6 +202,9 @@ namespace Urho3D
 
 
 
+        void SetUseGyroscopicTorque(bool enable);
+        bool GetUseGyroscopicTorque() const { return enableGyroTorque_; }
+
         /// Set continuous collision so that the body will not pass through walls.
         void SetContinuousCollision(bool sweptCollision);
 
@@ -313,8 +316,12 @@ namespace Urho3D
         bool sceneRootBodyMode_ = false;
         ///Continuous Collision
         bool continuousCollision_ = false;
+
+        ///Gyro Forces
+        bool enableGyroTorque_ = false;
+
         /// flag indicating debug geometry for the collision should be shown in the debug renderer
-        bool drawPhysicsDebugCollisionGeometry_ = true;
+        bool drawPhysicsDebugCollisionGeometry_ = false;
 
 
         RigidBodyCollisionEventMode collisionEventMode_ = COLLISION_ALWAYS;
@@ -393,6 +400,9 @@ namespace Urho3D
 
         //variables for deferered singular actions on the newtonbody in case it has not been created yet.
         void applyDefferedActions();
+
+        //apply properties that have not had a chance to apply to body yet.
+        void applyDefferedProperties();
 
         bool nextTransformNeeded_ = false;
         Matrix3x4 nextTransform_;

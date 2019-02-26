@@ -239,6 +239,7 @@ void InverseKinematics::UpdateCameraAndFloor(float /*timeStep*/)
     // Construct new orientation for the camera scene node from yaw and pitch. Roll is fixed to zero
     cameraRotateNode_->SetRotation(Quaternion(pitch_, yaw_, 0.0f));
     floorNode_->SetRotation(Quaternion(floorPitch_, 0, floorRoll_));
+    floorNode_->GetComponent<RigidBody>()->SetWorldTransformToNode();
 }
 
 void InverseKinematics::SubscribeToEvents()

@@ -768,9 +768,14 @@ namespace Urho3D {
                 constraint->reEvalConstraint();
         }
 
-        //apply deferred actions (like impulses/velocity sets etc.) that were waiting for a real body to be built.
+
+        
         for (RigidBody* rigBody : rigidBodyComponentList)
         {
+            //apply properties
+            rigBody->applyDefferedProperties();
+
+            //apply deferred actions (like impulses/velocity sets etc.) that were waiting for a real body to be built.
             rigBody->applyDefferedActions();
         }
 

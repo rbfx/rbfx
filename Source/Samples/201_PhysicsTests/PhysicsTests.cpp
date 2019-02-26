@@ -145,10 +145,10 @@ void PhysicsTests::CreateScene()
     CreateScenery(Vector3(0,0,0));
 
 
-    //SpawnMaterialsTest(Vector3(0,-25,100));
+    SpawnMaterialsTest(Vector3(0,-25,100));
 
 
-    //SpawnCompoundedRectTest2(Vector3(0, 2, 0));
+    SpawnCompoundedRectTest2(Vector3(0, 2, 0));
 
     SpawnBallSocketTest(Vector3(50, 10, 0));
     SpawnHingeActuatorTest(Vector3(52, 10, 0));
@@ -159,26 +159,26 @@ void PhysicsTests::CreateScene()
     SpawnCompound(Vector3(-2, 10 , 10));
     SpawnConvexHull(Vector3(-2, 3, 10));
 
-    SpawnTrialBike(Vector3(0, 10, 4), Quaternion(90, Vector3(0,1,0)));
+    SpawnTrialBike(Vector3(0, 10, 4), Quaternion(90, Vector3(0, 1, 0)));
     SpawnTrialBike(Vector3(10, 10, 6), Quaternion(0, Vector3(0, 1, 0)));
 
-    SpawnHingeSpringTest(Vector3(0,10,0), Quaternion::IDENTITY);
+    //SpawnHingeSpringTest(Vector3(0,10,0), Quaternion::IDENTITY);
     //SpawnHingeSpringTest(Vector3(-2, 10, 0), Quaternion(-90, Vector3(0,1,0)));
 
-    //SpawnCollisionExceptionsTest(Vector3(0, 1, 15));
+    SpawnCollisionExceptionsTest(Vector3(0, 1, 15));
 
-    //SpawnSliderTest(Vector3(0, 10, 10));
-    //SpawnLinearJointedObject(1.0f, Vector3(10 , 2, 10));
+    SpawnSliderTest(Vector3(0, 10, 10));
+    SpawnLinearJointedObject(1.0f, Vector3(10 , 2, 10));
 
-    //SpawnNSquaredJointedObject(Vector3(-20, 10, 10));
+    SpawnNSquaredJointedObject(Vector3(-20, 10, 10));
 
-    //SpawnCompoundedRectTest(Vector3(20, 10, 10));
+    SpawnCompoundedRectTest(Vector3(20, 10, 10));
 
-    ////////create scale test
-    //SpawnSceneCompoundTest(Vector3(-20, 10, 20), true);
-    //SpawnSceneCompoundTest(Vector3(-20, 10, 30), false); //this was gives newton a non-orthogonal matrix.
+    //////create scale test
+    SpawnSceneCompoundTest(Vector3(-20, 10, 20), true);
+    SpawnSceneCompoundTest(Vector3(-20, 10, 30), false); //this was gives newton a non-orthogonal matrix.
 
-    //CreateTowerOfLiar(Vector3(40, 0, 20));
+    CreateTowerOfLiar(Vector3(40, 0, 20));
 
     //
 
@@ -266,9 +266,11 @@ void PhysicsTests::MoveCamera(float timeStep)
     cameraNode_->SetRotation(Quaternion(pitch_, yaw_, 0.0f));
 
     float speedFactor = 1.0f;
-    if (input->GetKeyDown(KEY_SHIFT))
+    if (input->GetKeyDown(KEY_SHIFT) && !input->GetKeyDown(KEY_CTRL))
         speedFactor *= 0.25f;
 
+    if (!input->GetKeyDown(KEY_SHIFT) && input->GetKeyDown(KEY_CTRL))
+        speedFactor *= 10.0f;
 
     // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
     if (input->GetKeyDown(KEY_W))
@@ -1141,7 +1143,7 @@ void PhysicsTests::SpawnTrialBike(Vector3 worldPosition, Quaternion orientation)
     motor->SetOtherBody(C->GetComponent<RigidBody>());
     motor->SetWorldPosition(Vector3::ZERO + backWheelOffset);
     motor->SetWorldRotation(Quaternion(0, 90, 0));
-    motor->SetMotorTargetAngularRate(30);
+    motor->SetMotorTargetAngularRate(100);
     motor->SetMaxTorque(motor->GetMaxTorque()*0.00125f);
 
 
@@ -1201,7 +1203,7 @@ void PhysicsTests::HandleUpdate(StringHash eventType, VariantMap& eventData)
 
     //print forces on force calculation contraints
     for (Constraint* constraint : forceCalculationConstraints_) {
-        URHO3D_LOGINFO(String(constraint->GetOwnForce()));
+        //URHO3D_LOGINFO(String(constraint->GetOwnForce()));
 
     }
 
@@ -1294,7 +1296,7 @@ void PhysicsTests::HandleCollisionStart(StringHash eventType, VariantMap& eventD
     RigidBodyContactEntry* contactData = static_cast<RigidBodyContactEntry*>(eventData[PhysicsCollisionStart::P_CONTACT_DATA].GetPtr());
     for (int i = 0; i < contactData->numContacts; i++) {
         //GetSubsystem<VisualDebugger>()->AddCross(contactData->contactPositions[i], 0.2f, Color::RED, true);
-        URHO3D_LOGINFO("Collision Start " + String(contactData->contactPositions[i]));
+        //URHO3D_LOGINFO("Collision Start " + String(contactData->contactPositions[i]));
     }
 
 
@@ -1308,7 +1310,7 @@ void PhysicsTests::HandleCollisionEnd(StringHash eventType, VariantMap& eventDat
     RigidBodyContactEntry* contactData = static_cast<RigidBodyContactEntry*>(eventData[PhysicsCollisionStart::P_CONTACT_DATA].GetPtr());
     for (int i = 0; i < contactData->numContacts; i++) {
         //GetSubsystem<VisualDebugger>()->AddCross(contactData->contactPositions[i], 0.2f, Color::RED, true);
-        URHO3D_LOGINFO("Collision End " + String(contactData->contactPositions[i]));
+        //URHO3D_LOGINFO("Collision End " + String(contactData->contactPositions[i]));
     }
 }
 
