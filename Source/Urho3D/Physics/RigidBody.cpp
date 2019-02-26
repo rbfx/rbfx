@@ -821,23 +821,12 @@ namespace Urho3D {
                 effectiveCollision_ = resolvedCollision;
 
 
-                //create the body at node transform (with physics world scale applied)
-                Matrix3x4 physicsTransform;
 
-                physicsTransform.SetTranslation(physicsWorld_->SceneToPhysics_Domain(node_->GetWorldPosition()));
-                physicsTransform.SetRotation((node_->GetWorldRotation()).RotationMatrix());
-
-                
-                //NewtonBody* body = NewtonCreateDynamicBody(physicsWorld_->GetNewtonWorld(), resolvedCollision, &UrhoToNewton(worldTransform)[0][0]);
-
+               
                 NewtonBodySetCollision(newtonBody_, resolvedCollision);
-                NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsTransform)[0][0]);
 
 
-                //lastTransformScene_ = physicsWorld_->PhysicsToScene_Domain(physicsTransform);
-                //targetNodeRotation_ = node_->GetWorldRotation();
-                //targetNodePos_ = node_->GetWorldPosition();
-                //SnapInterpolation();
+
 
                 mass_ = accumMass * massScale_;
                 if (sceneRootBodyMode_)
@@ -847,7 +836,6 @@ namespace Urho3D {
                     NewtonBodySetMassProperties(newtonBody_, mass_, resolvedCollision);
 
                     //save the inertia matrix for 2nd pass.
-                
                     NewtonBodyGetInertiaMatrix(newtonBody_, &finalInertia[0][0]);
                     
                     NewtonBodyGetCentreOfMass(newtonBody_, &finalCenterOfMass[0]);
@@ -857,12 +845,7 @@ namespace Urho3D {
 
         
         Matrix4 inertiaMatrixUrho = NewtonToUrhoMat4(finalInertia);
-       // URHO3D_LOGINFO("Inertia Matrix:");
-        //URHO3D_LOGINFO(String(inertiaMatrixUrho));
 
-
-        //test if the inertia matrix is symetric.
-        //URHO3D_LOGINFO("Final Mass: " + String(mass_));
 
         
 
@@ -889,6 +872,8 @@ namespace Urho3D {
         NewtonBodySetTransformCallback(newtonBody_, Newton_SetTransformCallback);
         NewtonBodySetDestructorCallback(newtonBody_, Newton_DestroyBodyCallback);
 
+        //finally move the body.
+        SetWorldTransformToNode();
 
     }
 
