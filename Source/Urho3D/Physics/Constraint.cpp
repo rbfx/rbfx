@@ -64,6 +64,14 @@ namespace Urho3D {
         URHO3D_ACCESSOR_ATTRIBUTE("ForceCalculationsEnabled", GetEnableForceCalculation, SetEnableForceCalculation, bool, false, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Other Body ID", GetOtherBodyId, SetOtherBodyId, unsigned, 0, AM_DEFAULT | AM_COMPONENTID);
 
+        URHO3D_ATTRIBUTE("Prev Built Own Transform", Matrix3x4, prevBuiltOwnTransform_, Matrix3x4::IDENTITY, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("Prev Built Other Transform", Matrix3x4, prevBuiltOtherTransform_, Matrix3x4::IDENTITY, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("Prev Built Own Body Transform", Matrix3x4, prevBuiltOwnBodyTransform_, Matrix3x4::IDENTITY, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("Prev Built Other Body Transform", Matrix3x4, prevBuiltOtherBodyTransform_, Matrix3x4::IDENTITY, AM_DEFAULT);
+        URHO3D_ATTRIBUTE("Has Been Built", bool, hasBeenBuilt_, Matrix3x4::IDENTITY, AM_DEFAULT);
+
+
+
 
         URHO3D_ATTRIBUTE("Other Body Frame Position", Vector3, otherPosition_, Vector3::ZERO, AM_DEFAULT);
         URHO3D_ATTRIBUTE("Other Body Frame Rotation", Quaternion, otherRotation_, Quaternion::IDENTITY, AM_DEFAULT);
@@ -76,12 +84,10 @@ namespace Urho3D {
     void Constraint::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
     {
         //draw 2 part line from one frame to the other. Black touching own body and gray touching other body.
-        if (ownBody_) {
-           
-                Vector3 midPoint = (GetOtherWorldFrame().Translation() + GetOwnWorldFrame().Translation())*0.5f;
-                debug->AddLine(GetOwnWorldFrame().Translation(), midPoint, Color::BLACK, depthTest);
-                debug->AddLine(midPoint, GetOtherWorldFrame().Translation(), Color::GRAY, depthTest);
-        }
+        Vector3 midPoint = (GetOtherWorldFrame().Translation() + GetOwnWorldFrame().Translation())*0.5f;
+        debug->AddLine(GetOwnWorldFrame().Translation(), midPoint, Color::BLACK, depthTest);
+        debug->AddLine(midPoint, GetOtherWorldFrame().Translation(), Color::GRAY, depthTest);
+
 
 
         //draw the frames.
@@ -132,6 +138,11 @@ namespace Urho3D {
 
     }
 
+    void Constraint::MarkDirty(bool dirty /*= true*/)
+    {
+        needsRebuilt_ = dirty;
+    }
+
     void Constraint::SetDisableCollision(bool disable)
     {
         enableBodyCollision_ = !disable;
@@ -170,14 +181,8 @@ namespace Urho3D {
 
     void Constraint::WakeBodies()
     {
-        if (ownBody_)
-        {
-            ownBody_->Activate();
-        }
-        if (otherBody_)
-        {
-            otherBody_->Activate();
-        }
+        ownBody_->Activate();
+        otherBody_->Activate(); 
     }
 
     void Constraint::SetWorldPosition(const Vector3& position)
@@ -225,16 +230,13 @@ namespace Urho3D {
 
     void Constraint::SetOwnWorldRotation(const Quaternion& worldRotation)
     {
-        Quaternion worldRot = ownBody_->GetWorldRotation();
-        rotation_ = worldRot.Inverse() * worldRotation;
+        rotation_ = ownBody_->GetWorldRotation().Inverse() * worldRotation;
         MarkDirty();
     } 
 
     void Constraint::SetOtherPosition(const Vector3& position)
     {
         otherPosition_ = position;
-
-
         MarkDirty();
     }
 
@@ -249,21 +251,18 @@ namespace Urho3D {
 
     void Constraint::SetOtherWorldPosition(const Vector3& position)
     {
-        if (otherBody_) {
-            otherPosition_ = otherBody_->GetWorldTransform().Inverse() * position;
+        otherPosition_ = otherBody_->GetWorldTransform().Inverse() * position;
 
-            MarkDirty();
-        }
+        MarkDirty();
     }
 
     void Constraint::SetOtherWorldRotation(const Quaternion& rotation)
     {
-        if (otherBody_) {
-            Quaternion worldRot = otherBody_->GetWorldRotation();
-            otherRotation_ = worldRot.Inverse() * rotation;
+        Quaternion worldRot = otherBody_->GetWorldRotation();
+        otherRotation_ = worldRot.Inverse() * rotation;
 
-            MarkDirty();
-        }
+        MarkDirty();
+      
     }
 
     void Constraint::SetSolveMode(CONSTRAINT_SOLVE_MODE mode)
@@ -334,10 +333,9 @@ namespace Urho3D {
 
     NewtonBody* Constraint::GetOtherNewtonBody() const
     {
-        if (otherBody_)
-            return otherBody_->GetNewtonBody();
-        else
-            return nullptr;
+
+        return otherBody_->GetNewtonBody();
+
     }
 
     unsigned Constraint::GetOtherBodyId() const
@@ -377,21 +375,16 @@ namespace Urho3D {
 
     Matrix3x4 Constraint::GetOtherWorldFrame() const
     {
-        if (otherBody_) {
 
-            //return a frame with no scale at the position and rotation in node space.
-            Matrix3x4 worldFrame = otherBody_->GetWorldTransform() * Matrix3x4(otherPosition_, otherRotation_, 1.0f);
+        //return a frame with no scale at the position and rotation in node space.
+        Matrix3x4 worldFrame = otherBody_->GetWorldTransform() * Matrix3x4(otherPosition_, otherRotation_, 1.0f);
 
-            //the frame could have uniform scale - reconstruct with no scale
-            Matrix3x4 worldFrameNoScale = Matrix3x4(worldFrame.Translation(), worldFrame.Rotation(), 1.0f);
+        //the frame could have uniform scale - reconstruct with no scale
+        Matrix3x4 worldFrameNoScale = Matrix3x4(worldFrame.Translation(), worldFrame.Rotation(), 1.0f);
 
 
-            return worldFrameNoScale;
-        }
-        else
-        {
-            return Matrix3x4(otherPosition_, otherRotation_, 1.0f);
-        }
+        return worldFrameNoScale;
+      
     }
 
     void Constraint::OnSetEnabled()
@@ -410,12 +403,9 @@ namespace Urho3D {
             bool goodToBuild = true;
 
 
-            if (!otherBody_)
-            {
-                if (otherBodyId_ > 0)
-                    SetOtherBody(GetScene()->GetComponent<RigidBody>(otherBodyId_));
-                else
-                    SetOtherBody(physicsWorld_->sceneBody_);//fallback
+            if (otherBodyId_ > 0) {
+                URHO3D_LOGINFO("resolving by id!");
+                SetOtherBody((RigidBody*)GetScene()->GetComponent(otherBodyId_));
             }
 
 
@@ -428,11 +418,60 @@ namespace Urho3D {
 
 
             if (goodToBuild) {
+                Matrix3x4 ownBodyLoadedTransform;
+                Matrix3x4 otherBodyLoadedTransform;
+                Vector3 ownBodyAngularVelocity;
+                Vector3 otherBodyAngularVelocity;
+                Vector3 ownBodyLinearVelocity;
+                Vector3 otherBodyLinearVelocity;
+                if (hasBeenBuilt_) {
+
+                    //save loaded node state.
+                    ownBodyLoadedTransform = ownBody_->GetWorldTransform();
+                    ownBodyAngularVelocity = ownBody_->GetAngularVelocity();
+                    ownBodyLinearVelocity = ownBody_->GetLinearVelocity();
+
+                    otherBodyLoadedTransform = otherBody_->GetWorldTransform();
+                    otherBodyAngularVelocity = otherBody_->GetAngularVelocity();
+                    otherBodyLinearVelocity = otherBody_->GetLinearVelocity();
+
+                    //set body to prebBuilt Transform
+                    otherBody_->SetWorldTransform(prevBuiltOtherBodyTransform_);
+                    ownBody_->SetWorldTransform(prevBuiltOwnBodyTransform_);
 
 
+                }
+
+                URHO3D_LOGINFO("Building");
                 buildConstraint();
+                
+
+                if (!hasBeenBuilt_) {
+                    //save the state of bodies and pins after the first build.
+                    prevBuiltOwnTransform_ = GetOwnNewtonBuildWorldFrame();
+                    prevBuiltOwnBodyTransform_ = ownBody_->GetWorldTransform();
+
+                    prevBuiltOtherTransform_ = GetOtherNewtonBuildWorldFrame();
+                    prevBuiltOtherBodyTransform_ = otherBody_->GetWorldTransform();
+
+                }
+                else
+                {
+                    //restore node state
+                    ownBody_->SetWorldTransform(ownBodyLoadedTransform);
+                    ownBody_->SetLinearVelocity(ownBodyLinearVelocity, false);
+                    ownBody_->SetAngularVelocity(ownBodyAngularVelocity);
+
+                    otherBody_->SetWorldTransform(otherBodyLoadedTransform);
+                    otherBody_->SetLinearVelocity(otherBodyLinearVelocity, false);
+                    otherBody_->SetAngularVelocity(otherBodyAngularVelocity);
+
+                }
+
+
                 applyAllJointParams();
 
+                hasBeenBuilt_ = true;
             }
 
         }
@@ -543,32 +582,38 @@ namespace Urho3D {
 
 
 
-    Urho3D::Matrix3x4 Constraint::GetOwnNewtonWorldFrame()
+    Urho3D::Matrix3x4 Constraint::GetOwnBuildWorldFrame()
     {
-        Matrix3x4 newtonWorldFrame = physicsWorld_->SceneToPhysics_Domain(GetOwnWorldFrame());
+        if (hasBeenBuilt_)
+            return Matrix3x4(prevBuiltOwnTransform_.Translation(), prevBuiltOwnTransform_.Rotation(), 1.0f);
+        else
+            return GetOwnWorldFrame();
+    }
+
+    Urho3D::Matrix3x4 Constraint::GetOtherBuildWorldFrame()
+    {
+        if (hasBeenBuilt_)
+            return Matrix3x4(prevBuiltOtherTransform_.Translation(), prevBuiltOtherTransform_.Rotation(), 1.0f);
+        else
+            return GetOtherWorldFrame();
+    }
+
+    Urho3D::Matrix3x4 Constraint::GetOwnNewtonBuildWorldFrame()
+    {
+        Matrix3x4 newtonWorldFrame = physicsWorld_->SceneToPhysics_Domain(GetOwnBuildWorldFrame());
 
         //newtonWorldFrame has scaling from the the physics world frame transformation. - reconstruct without scale because joints expect frame with no scaling.
         return Matrix3x4(newtonWorldFrame.Translation(), newtonWorldFrame.Rotation(), 1.0f);
     }
 
-    Urho3D::Matrix3x4 Constraint::GetOtherNewtonWorldFrame()
+    Urho3D::Matrix3x4 Constraint::GetOtherNewtonBuildWorldFrame()
     {
-        Matrix3x4 newtonWorldFrame = physicsWorld_->SceneToPhysics_Domain(GetOtherWorldFrame());
+        Matrix3x4 newtonWorldFrame = physicsWorld_->SceneToPhysics_Domain(GetOtherBuildWorldFrame());
 
         //newtonWorldFrame has scaling from the the physics world frame transformation. - reconstruct without scale because joints expect frame with no scaling.
         return Matrix3x4(newtonWorldFrame.Translation(), newtonWorldFrame.Rotation(), 1.0f);
     }
 
-    Urho3D::Vector3 Constraint::GetOwnNewtonWorldPin()
-    {
-        Matrix3x4 newtonWorldFrame = GetOwnNewtonWorldFrame();
-        return newtonWorldFrame * Vector3::RIGHT;
-    }
 
-    Urho3D::Vector3 Constraint::GetOtherNewtonWorldPin()
-    {
-        Matrix3x4 newtonWorldFrame = GetOtherNewtonWorldFrame();
-        return newtonWorldFrame * Vector3::RIGHT;
-    }
 
 }

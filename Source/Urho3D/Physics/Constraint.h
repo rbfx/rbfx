@@ -60,7 +60,7 @@ namespace Urho3D {
         /// Visualize the component as debug geometry.
         virtual void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
-        void MarkDirty(bool dirty = true) { needsRebuilt_ = dirty; }
+        void MarkDirty(bool dirty = true);
 
         /// Set whether to disable collisions between connected bodies.
         void SetDisableCollision(bool disable);
@@ -78,9 +78,9 @@ namespace Urho3D {
         /// force wake the connected bodies
         void WakeBodies();
 
-        ///set the world position of both frames on both bodies. make sure you set other body before calling this function
+        ///set the world position of both frames on both bodies.
         void SetWorldPosition(const Vector3& position);
-        ///set the world rotation of both frames on both bodies. make sure you set other body before calling this function
+        ///set the world rotation of both frames on both bodies. 
         void SetWorldRotation(const Quaternion& rotation);
 
         /// Set constraint position in local cordinates relative to the own body.  Both frames will be set to the same position.
@@ -188,18 +188,34 @@ namespace Urho3D {
         dCustomJoint* newtonJoint_ = nullptr;
         /// Flag indicating the two bodies should collide with each other.
         bool enableBodyCollision_ = false;
+
+
         /// Constraint other body position.
         Vector3 otherPosition_;
         Quaternion otherRotation_;
+        /// Constraint position.
+        Vector3 position_;
+        Quaternion rotation_;
 
 
         float stiffness_ = 0.7f;
 
         CONSTRAINT_SOLVE_MODE solveMode_ = SOLVE_MODE_JOINT_DEFAULT;
 
-        /// Constraint position.
-        Vector3 position_;
-        Quaternion rotation_;
+
+
+
+
+        Matrix3x4 prevBuiltOwnBodyTransform_;
+        Matrix3x4 prevBuiltOtherBodyTransform_;
+        Matrix3x4 prevBuiltOwnTransform_;
+        Matrix3x4 prevBuiltOtherTransform_;
+        bool hasBeenBuilt_ = false;
+
+
+
+
+
 
         ///dirty flag.
         bool needsRebuilt_ = true;
@@ -229,14 +245,10 @@ namespace Urho3D {
         virtual void OnNodeSet(Node* node) override;
         virtual void OnNodeSetEnabled(Node* node) override;
 
-        ///return the world frame on own body in newton world cordinates. (  use in buildConstraint method  )
-        Matrix3x4 GetOwnNewtonWorldFrame();
-        ///return the world frame on other body in newton world cordinates.(  use in buildConstraint method  )
-        Matrix3x4 GetOtherNewtonWorldFrame();
-        ///return the world pin direction for own body frame in newton world cordinates. (use in buildConstraint method)
-        Vector3 GetOwnNewtonWorldPin();
-        ///return the world pin direction for other body frame in newton world cordinates. (use in buildConstraint method)
-        Vector3 GetOtherNewtonWorldPin();
+        Matrix3x4 GetOwnBuildWorldFrame();
+        Matrix3x4 GetOtherBuildWorldFrame();
+        Matrix3x4 GetOwnNewtonBuildWorldFrame();
+        Matrix3x4 GetOtherNewtonBuildWorldFrame();
     };
 }
 

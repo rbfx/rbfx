@@ -77,24 +77,27 @@ namespace Urho3D {
 
     void KinematicsControllerConstraint::SetOtherPosition(const Vector3& position)
     {
-        
+        bool curDirty = needsRebuilt_;
         Constraint::SetOtherPosition(position);
         updateTarget();
         //dont dirty because otherPosition_ is used for target frame
+        MarkDirty(curDirty);
     }
 
     void KinematicsControllerConstraint::SetOtherRotation(const Quaternion& rotation)
     {
+        bool curDirty = needsRebuilt_;
         Constraint::SetOtherRotation(rotation);
         updateTarget();
         //dont dirty because otherRotation_ is used for target frame
+        MarkDirty(curDirty);
     }
 
   
 
     void KinematicsControllerConstraint::buildConstraint()
     {
-        newtonJoint_ = new dCustomKinematicController(GetOwnNewtonBody(), UrhoToNewton(GetOwnNewtonWorldFrame()));
+        newtonJoint_ = new dCustomKinematicController(GetOwnNewtonBody(), UrhoToNewton(GetOwnNewtonBuildWorldFrame()));
         static_cast<dCustomKinematicController*>(newtonJoint_)->SetPickMode(constrainRotation_);
         updateFrictions();
         static_cast<dCustomKinematicController*>(newtonJoint_)->SetLimitRotationVelocity(limitRotationalVelocity_);
@@ -107,8 +110,8 @@ namespace Urho3D {
     {
         if (newtonJoint_) {
             //GSS<VisualDebugger>()->AddCross(GetOtherWorldFrame().Translation(), 1.0f, Color::MAGENTA, false);
-            //GSS<VisualDebugger>()->AddCross(GetOtherNewtonWorldFrame().Translation(), 2.0, Color::MAGENTA, false);
-            static_cast<dCustomKinematicController*>(newtonJoint_)->SetTargetMatrix(UrhoToNewton(GetOtherNewtonWorldFrame()));
+            //GSS<VisualDebugger>()->AddCross(GetOtherNewtonBuildWorldFrame().Translation(), 2.0, Color::MAGENTA, false);
+            static_cast<dCustomKinematicController*>(newtonJoint_)->SetTargetMatrix(UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(GetOtherWorldFrame())));
         }
     }
 

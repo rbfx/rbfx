@@ -681,7 +681,7 @@ namespace Urho3D {
                         //    {
 
                         //        Node* tmpNode = rigBody->node_->CreateChild();
-                        //        tmpNode->SetWorldTransform(constraint->GetOtherWorldFrame().Translation(), constraint->GetOtherNewtonWorldFrame().Rotation());
+                        //        tmpNode->SetWorldTransform(constraint->GetOtherWorldFrame().Translation(), constraint->GetOtherNewtonBuildWorldFrame().Rotation());
 
 
                         //        Matrix3x4 otherWorldTransfom = constraint->GetOtherWorldFrame();

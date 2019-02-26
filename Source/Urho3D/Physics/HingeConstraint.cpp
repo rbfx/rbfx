@@ -313,46 +313,15 @@ namespace Urho3D {
 
         if (powerMode_ == ACTUATOR)
         {
-            newtonJoint_ = new dCustomHingeActuator(UrhoToNewton(GetOwnNewtonWorldFrame()), maxAngularRate_, minAngle_ * dDegreeToRad, maxAngle_ * dDegreeToRad, GetOwnNewtonBody(), GetOtherNewtonBody());
+            newtonJoint_ = new dCustomHingeActuator(UrhoToNewton(GetOwnNewtonBuildWorldFrame()), maxAngularRate_, minAngle_ * dDegreeToRad, maxAngle_ * dDegreeToRad, GetOwnNewtonBody(), GetOtherNewtonBody());
         }
         else if (powerMode_ == MOTOR)
         {
-            newtonJoint_ = new dCustomHinge(UrhoToNewton(GetOwnNewtonWorldFrame()), UrhoToNewton(GetOtherNewtonWorldFrame()), GetOwnNewtonBody(), GetOtherNewtonBody());
+            newtonJoint_ = new dCustomHinge(UrhoToNewton(GetOwnNewtonBuildWorldFrame()), UrhoToNewton(GetOtherNewtonBuildWorldFrame()), GetOwnNewtonBody(), GetOtherNewtonBody());
         }
         else
         {
-            URHO3D_LOGINFO("Own World Frame:");
-            PrintNewtonMatrix(UrhoToNewton(GetOwnNewtonWorldFrame()));
-            URHO3D_LOGINFO("Own Body Matrix: ");
-            dMatrix mat;
-            NewtonBodyGetMatrix(ownBody_->GetNewtonBody(), &mat[0][0]);
-            PrintNewtonMatrix(mat);
-
-            URHO3D_LOGINFO("Other World Frame:");
-            PrintNewtonMatrix(UrhoToNewton(GetOtherNewtonWorldFrame()));
-            URHO3D_LOGINFO("Other Body Matrix:");
-            NewtonBodyGetMatrix(otherBody_->GetNewtonBody(), &mat[0][0]);
-            PrintNewtonMatrix(mat);
-            
-
-            newtonJoint_ = new dCustomHinge(UrhoToNewton(GetOwnNewtonWorldFrame()), UrhoToNewton(GetOtherNewtonWorldFrame()), GetOwnNewtonBody(), GetOtherNewtonBody());
-            URHO3D_LOGINFO("Joint Internal Local Matrix 0");
-            PrintNewtonMatrix(newtonJoint_->GetMatrix0());
-            URHO3D_LOGINFO("Joint Internal Local Matrix 1");
-            PrintNewtonMatrix(newtonJoint_->GetMatrix1());
-
-            URHO3D_LOGINFO("Joint Pin Axis:");
-            URHO3D_LOGINFO(String(NewtonToUrhoVec3(((dCustomHinge*)newtonJoint_)->GetPinAxis())));
-
-
-
-            dMatrix mat0, mat1;
-            newtonJoint_->CalculateGlobalMatrix(mat0, mat1);
-            URHO3D_LOGINFO("Newton Global Matrix 0");
-            PrintNewtonMatrix(mat0);
-            URHO3D_LOGINFO("Newton Global Matrix 1");
-            PrintNewtonMatrix(mat1);
-
+            newtonJoint_ = new dCustomHinge(UrhoToNewton(GetOwnNewtonBuildWorldFrame()), UrhoToNewton(GetOtherNewtonBuildWorldFrame()), GetOwnNewtonBody(), GetOtherNewtonBody());
         }
 
 

@@ -314,7 +314,7 @@ namespace Urho3D
 
     void Urho3D::SliderConstraint::buildConstraint()
     {
-        newtonJoint_ = new dCustomCorkScrew(UrhoToNewton(GetOwnNewtonWorldFrame()), UrhoToNewton(GetOtherNewtonWorldFrame()), GetOwnNewtonBody(), GetOtherNewtonBody());
+        newtonJoint_ = new dCustomCorkScrew(UrhoToNewton(GetOwnNewtonBuildWorldFrame()), UrhoToNewton(GetOtherNewtonBuildWorldFrame()), GetOwnNewtonBody(), GetOtherNewtonBody());
 
 
 
