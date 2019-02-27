@@ -86,9 +86,6 @@ namespace Urho3D {
 
     PhysicsWorld::~PhysicsWorld()
     {
-        //wait for update to finish if in async mode so we can safely clean up.
-        if(newtonWorld_)
-            NewtonWaitForUpdateToFinish(newtonWorld_);
 
         freeWorld();
     }
@@ -371,6 +368,10 @@ namespace Urho3D {
 
     void PhysicsWorld::freeWorld()
     {
+        //wait for update to finish if in async mode so we can safely clean up.
+        if (newtonWorld_)
+            NewtonWaitForUpdateToFinish(newtonWorld_);
+
 
         //free any joints
         for (Constraint* constraint : constraintList)
