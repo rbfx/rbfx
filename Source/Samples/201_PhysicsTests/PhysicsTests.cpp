@@ -401,6 +401,14 @@ void PhysicsTests::MoveCamera(float timeStep)
         scene_->LoadXML(loadFile);
     }
 
+    if (input->GetKeyPress(KEY_R))
+    {
+        scene_->Clear();
+        Stop();
+        Start();
+    }
+
+
 
     // Toggle physics debug geometry with space
     if (input->GetKeyPress(KEY_SPACE))
