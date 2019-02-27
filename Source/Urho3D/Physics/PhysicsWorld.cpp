@@ -126,6 +126,8 @@ namespace Urho3D {
 
     void PhysicsWorld::RayCast(PODVector<PhysicsRayCastIntersection>& intersections, const Vector3& pointOrigin, const Vector3& pointDestination, unsigned maxIntersections /*= M_MAX_UNSIGNED*/, unsigned collisionMask /*= M_MAX_UNSIGNED*/)
     {
+        WaitForUpdateFinished();
+
         intersections.Clear();
         PhysicsRayCastUserData data;
 
