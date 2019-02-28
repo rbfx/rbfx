@@ -66,3 +66,5 @@ install (TARGETS ${projectName} EXPORT Urho3D
     ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
 )
 endif()
+
+install (DIRECTORY . DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/newton-dynamics/sdk/${projectName} FILES_MATCHING PATTERN *.h)

@@ -35,12 +35,10 @@ if (MSVC)
 endif(MSVC)
 
 
-#install(TARGETS ${projectName} RUNTIME DESTINATION ${dllPath})
-#install(TARGETS ${projectName} ARCHIVE DESTINATION ${libraryPath})
 
 target_include_directories(${projectName} PUBLIC 
 $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-$<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/sdk> 
+$<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/newton-dynamics/sdk/${projectName}> 
 )
 
 if (NOT URHO3D_MERGE_STATIC_LIBS)
@@ -50,6 +48,8 @@ install (TARGETS ${projectName} EXPORT Urho3D
     ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
 )
 endif()
+
+install (DIRECTORY . DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/newton-dynamics/sdk/${projectName} FILES_MATCHING PATTERN *.h)
 
 
 
