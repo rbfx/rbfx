@@ -123,7 +123,7 @@ extern "C" {
 		void* m_userData;
 		int m_userId;
 		int m_userFlags;
-		dFloat m_userParam[4];
+		dFloat m_userParam[8];
 	} NewtonCollisionMaterial;
 
 	typedef struct NewtonBoxParam

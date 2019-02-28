@@ -90,7 +90,7 @@ class dgCollisionInfo
 		void* m_userData;
 		dgInt32 m_userId;
 		dgInt32 m_userFlags;
-		dgFloat32 m_userParam[4];
+		dgFloat32 m_userParam[8];
 	};
 
 	struct dgBoxData

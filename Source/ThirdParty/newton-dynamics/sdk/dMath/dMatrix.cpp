@@ -172,7 +172,13 @@ void dMatrix::GetEulerAngles(dVector& euler0, dVector& euler1, dEulerAngleOrder 
 		{
 			const dMatrix& matrix = *this;
 			// Assuming the angles are in radians.
-			if (matrix[0][2] > 0.99995f) {
+			#ifdef _NEWTON_USE_DOUBLE
+			const dFloat tol = 0.99999995f; 
+			#else 
+			const dFloat tol = 0.99995f; 
+			#endif
+
+			if (matrix[0][2] > tol) {
 				dFloat picth0 = 0.0f;
 				dFloat yaw0 = -dPi * 0.5f;
 				dFloat roll0 = -dAtan2(matrix[2][1], matrix[1][1]);
@@ -184,7 +190,7 @@ void dMatrix::GetEulerAngles(dVector& euler0, dVector& euler1, dEulerAngleOrder 
 				euler1[1] = yaw0;
 				euler1[2] = roll0;
 
-			} else if (matrix[0][2] < -0.99995f) {
+			} else if (matrix[0][2] < -tol) {
 				dFloat picth0 = 0.0f;
 				dFloat yaw0 = dPi * 0.5f;
 				dFloat roll0 = dAtan2(matrix[2][1], matrix[1][1]);

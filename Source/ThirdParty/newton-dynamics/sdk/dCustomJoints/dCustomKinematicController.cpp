@@ -85,7 +85,7 @@ void dCustomKinematicController::Init (NewtonBody* const body, const dMatrix& ma
 
 void dCustomKinematicController::SetPickMode (int mode)
 {
-	m_isSixdof = mode ? true : false;
+	m_pickingMode = char (dClamp (mode, 0, 2));
 }
 
 void dCustomKinematicController::SetLimitRotationVelocity(dFloat omegaCap)
@@ -179,13 +179,17 @@ void dCustomKinematicController::SubmitConstraints (dFloat timestep, int threadI
 		NewtonUserJointSetRowMaximumFriction(m_joint, m_maxLinearFriction);
 	}	
 
-	if (m_isSixdof) {
+	if (m_pickingMode == 1) {
 		dQuaternion rotation (matrix0.Inverse() * m_targetMatrix);
 		if (dAbs (rotation.m_w) < 0.99998f) {
-			dMatrix rot (dGrammSchmidt(dVector (rotation.m_x, rotation.m_y, rotation.m_z)));
+			dMatrix rot (dGrammSchmidt(dVector (rotation.m_x, rotation.m_y, rotation.m_z, dFloat32 (0.0f))));
 			dFloat angle = 2.0f * dAcos(dClamp(rotation.m_w, dFloat(-1.0f), dFloat(1.0f)));
 
+			dFloat speed = omega.DotProduct3(rot[0]);
+			dFloat relSpeed = angle * invTimestep - speed;
+			dFloat relAccel = relSpeed * invTimestep;
 			NewtonUserJointAddAngularRow (m_joint, angle, &rot.m_front[0]);
+			NewtonUserJointSetRowAcceleration(m_joint, relAccel);
 			NewtonUserJointSetRowMinimumFriction (m_joint, -m_maxAngularFriction);
 			NewtonUserJointSetRowMaximumFriction (m_joint,  m_maxAngularFriction);
 
@@ -209,6 +213,16 @@ void dCustomKinematicController::SubmitConstraints (dFloat timestep, int threadI
 			NewtonUserJointAddAngularRow (m_joint, 0.0f, &matrix0.m_right[0]);
 			NewtonUserJointSetRowMinimumFriction (m_joint, -m_maxAngularFriction);
 			NewtonUserJointSetRowMaximumFriction (m_joint,  m_maxAngularFriction);
+		}
+
+	} else {
+		for (int i = 0; i < 3; i ++) {
+			dFloat relSpeed = -omega.DotProduct3(matrix0[i]);
+			dFloat relAccel = relSpeed * invTimestep;
+			NewtonUserJointAddAngularRow(m_joint, 0.0f, &matrix0[i][0]);
+			NewtonUserJointSetRowAcceleration(m_joint, relAccel);
+			NewtonUserJointSetRowMinimumFriction(m_joint, -m_maxAngularFriction);
+			NewtonUserJointSetRowMaximumFriction(m_joint, m_maxAngularFriction);
 		}
 	}
 }

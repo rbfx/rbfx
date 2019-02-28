@@ -915,41 +915,41 @@ void dgSolveDantzigLcpLow(dgInt32 size, T* const symmetricMatrixPSD, T* const x,
 				dgAssert(dgAbs(delta_x[index]) == T(1.0f));
 				delta_r[index] = (delta_r[index] == T(0.0f)) ? T(1.0e-12f) : delta_r[index];
 
-				T s = -r0[index] / delta_r[index];
-				dgAssert(dgAbs(s) >= T(0.0f));
+				T scale = -r0[index] / delta_r[index];
+				dgAssert(dgAbs(scale) >= T(0.0f));
 
 				for (dgInt32 i = 0; i <= index; i++) {
-					T x1 = x0[i] + s * delta_x[i];
+					T x1 = x0[i] + scale * delta_x[i];
 					if (x1 > high[i]) {
 						swapIndex = i;
 						clamp_x = high[i];
-						s = (high[i] - x0[i]) / delta_x[i];
+						scale = (high[i] - x0[i]) / delta_x[i];
 					} else if (x1 < low[i]) {
 						swapIndex = i;
 						clamp_x = low[i];
-						s = (low[i] - x0[i]) / delta_x[i];
+						scale = (low[i] - x0[i]) / delta_x[i];
 					}
 				}
-				dgAssert(dgAbs(s) >= T(0.0f));
+				dgAssert(dgAbs(scale) >= T(0.0f));
 
-				for (dgInt32 i = clampedIndex; (i < size) && (s > T(1.0e-12f)); i++) {
-					T r1 = r0[i] + s * delta_r[i];
+				for (dgInt32 i = clampedIndex; (i < size) && (scale > T(1.0e-12f)); i++) {
+					T r1 = r0[i] + scale * delta_r[i];
 					if ((r1 * r0[i]) < T(0.0f)) {
 						dgAssert(dgAbs(delta_r[i]) > T(0.0f));
 						T s1 = -r0[i] / delta_r[i];
 						dgAssert(dgAbs(s1) >= T(0.0f));
-						dgAssert(dgAbs(s1) <= dgAbs(s));
-						if (dgAbs(s1) < dgAbs(s)) {
-							s = s1;
+						dgAssert(dgAbs(s1) <= dgAbs(scale));
+						if (dgAbs(s1) < dgAbs(scale)) {
+							scale = s1;
 							swapIndex = i;
 						}
 					}
 				}
 
-				if (dgAbs(s) > T(1.0e-12f)) {
+				if (dgAbs(scale) > T(1.0e-12f)) {
 					for (dgInt32 i = 0; i < size; i++) {
-						x0[i] += s * delta_x[i];
-						r0[i] += s * delta_r[i];
+						x0[i] += scale * delta_x[i];
+						r0[i] += scale * delta_r[i];
 					}
 				}
 			}

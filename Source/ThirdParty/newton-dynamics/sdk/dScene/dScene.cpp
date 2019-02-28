@@ -1401,9 +1401,6 @@ int dScene::GetNodeLRU (dTreeNode* const node) const
 	return node->GetInfo().GetLRU();
 }
 
-
-
-//dScene::dTreeNode* dScene::RayCast (const dVector& p0, const dVector& p1) const
 dFloat dScene::RayCast (const dVector& globalP0, const dVector& globalP1, dList<dTreeNode*>& traceToRoot) const
 {
 	dFloat t = 1.2f;
@@ -1481,8 +1478,7 @@ dFloat dScene::RayCast (const dVector& globalP0, const dVector& globalP1, dList<
 	return t;
 }
 
-
-void dScene::SceneToNewtonWorld (NewtonWorld* world, dList<NewtonBody*>& loadedBodies)
+void dScene::SceneToNewtonWorld (NewtonWorld* const world, dList<NewtonBody*>& loadedBodies)
 {
 	// Load the Physics scene
 	for (dTreeNode* node = GetFirstNode (); node; node = GetNextNode (node)) {
@@ -1495,7 +1491,6 @@ void dScene::SceneToNewtonWorld (NewtonWorld* world, dList<NewtonBody*>& loadedB
 		}
 	}
 }
-
 
 struct dSceneNodeCollisionPair
 {

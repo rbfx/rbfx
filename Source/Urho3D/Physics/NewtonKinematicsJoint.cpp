@@ -98,7 +98,7 @@ namespace Urho3D {
     void KinematicsControllerConstraint::buildConstraint()
     {
         newtonJoint_ = new dCustomKinematicController(GetOwnNewtonBody(), UrhoToNewton(GetOwnNewtonBuildWorldFrame()));
-        static_cast<dCustomKinematicController*>(newtonJoint_)->SetPickMode(constrainRotation_);
+        static_cast<dCustomKinematicController*>(newtonJoint_)->SetPickMode(constrainRotation_);//#todo support all pick modes
         updateFrictions();
         static_cast<dCustomKinematicController*>(newtonJoint_)->SetLimitRotationVelocity(limitRotationalVelocity_);
 
