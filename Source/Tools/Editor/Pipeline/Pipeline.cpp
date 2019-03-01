@@ -131,7 +131,7 @@ void Pipeline::EnableWatcher()
     watcher_.StartWatching(project->GetResourcePath(), true);
 }
 
-void Pipeline::BuildCache(ConverterKinds converterKinds, const StringVector& files, bool complete)
+void Pipeline::BuildCache(ConverterKinds converterKinds, const StringVector& files)
 {
     auto* project = GetSubsystem<Project>();
 
@@ -176,22 +176,20 @@ void Pipeline::BuildCache(ConverterKinds converterKinds, const StringVector& fil
 
     cacheInfoOutOfDate_ = true;
     StartWorkItems(converterKinds, resourcePaths);
+}
 
-    while (complete && !GetWorkQueue()->IsCompleted(0))
+void Pipeline::WaitForCompletion()
+{
+    while (!GetWorkQueue()->IsCompleted(0))
     {
         Time::Sleep(100);
         {
             MutexLock lock(lock_);
             if (!reschedule_.Empty())
             {
-                StartWorkItems(converterKinds, reschedule_);
+                StartWorkItems(reschedule_);
                 reschedule_.Clear();
             }
-        }
-        if (GetEngine()->IsHeadless())
-        {
-            // Give a chance to logging system to flush it's logs.
-            SendEvent(E_ENDFRAME);
         }
     }
 }
@@ -316,8 +314,14 @@ void Pipeline::Reschedule(const String& resourceName)
     reschedule_.EmplaceBack(resourceName);
 }
 
+void Pipeline::StartWorkItems(const StringVector& resourcePaths)
+{
+    StartWorkItems(executingConverterKinds_, resourcePaths);
+}
+
 void Pipeline::StartWorkItems(ConverterKinds converterKinds, const StringVector& resourcePaths)
 {
+    executingConverterKinds_ = converterKinds;
     for (SharedPtr<Converter>& converter : converters_)
     {
         if (converterKinds & converter->GetKind())

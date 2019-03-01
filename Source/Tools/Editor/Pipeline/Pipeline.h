@@ -70,8 +70,10 @@ public:
     bool LoadJSON(const JSONValue& source) override;
     /// Watch directory for changed assets and automatically convert them.
     void EnableWatcher();
-    /// Execute asset converters specified in `converterKinds` in worker threads. Returns immediately.
-    void BuildCache(ConverterKinds converterKinds, const StringVector& files={}, bool complete=false);
+    /// Execute asset converters specified in `converterKinds` in worker threads. When `files` are specified only those files will be converted. Returns immediately.
+    void BuildCache(ConverterKinds converterKinds, const StringVector& files={});
+    /// Waits until all scheduled work items are complete.
+    void WaitForCompletion();
     /// Returns true when assets in the cache are older than source asset.
     bool IsCacheOutOfDate(const String& resourceName) const;
     /// Remove any cached assets belonging to specified resource.
@@ -102,6 +104,8 @@ protected:
     void DispatchChangedAssets();
     ///
     void SaveCacheInfo();
+    ///
+    void StartWorkItems(const StringVector& resourcePaths);
     ///
     void StartWorkItems(ConverterKinds converterKinds, const StringVector& resourcePaths);
     ///
