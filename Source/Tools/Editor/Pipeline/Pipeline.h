@@ -116,11 +116,11 @@ protected:
     };
 
     /// Collection of top level converters defined in pipeline.
-    Vector<SharedPtr<Converter>> converters_;
+    Vector<SharedPtr<Converter>> converters_{};
     /// List of file watchers responsible for watching game data folders for asset changes.
     FileWatcher watcher_;
     ///
-    HashMap<String, CacheEntry> cacheInfo_;
+    HashMap<String, CacheEntry> cacheInfo_{};
     ///
     Mutex lock_{};
     ///
@@ -128,9 +128,11 @@ protected:
     ///
     std::atomic<bool> cacheInfoOutOfDate_{false};
     ///
-    bool skipUpToDateAssets_ = false;
+    bool skipUpToDateAssets_ = true;
     ///
-    StringVector reschedule_;
+    StringVector reschedule_{};
+    ///
+    ConverterKinds executingConverterKinds_{};
 };
 
 }
