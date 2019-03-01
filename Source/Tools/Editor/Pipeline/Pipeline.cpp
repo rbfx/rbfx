@@ -30,6 +30,7 @@
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/IO/PackageFile.h>
 #include <Urho3D/Resource/JSONFile.h>
+#include "EditorEvents.h"
 #include "Project.h"
 #include "Converter.h"
 #include "Packager.h"
@@ -54,10 +55,10 @@ Pipeline::Pipeline(Context* context)
 {
     if (!GetEngine()->IsHeadless())
         SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Pipeline, HandleEndFrame));
-}
 
-Pipeline::~Pipeline()
-{
+    SubscribeToEvent(E_EDITORPROJECTCLOSING, [this](StringHash, VariantMap&) {
+        SaveCacheInfo();
+    });
 }
 
 bool Pipeline::LoadJSON(const JSONValue& source)
@@ -305,7 +306,7 @@ void Pipeline::SaveCacheInfo()
         root[resourceName] = en;
     }
 
-    file.SaveFile(GetCache()->GetResourceFileName("CacheInfo.json"));
+    file.SaveFile(GetSubsystem<Project>()->GetCachePath() + "CacheInfo.json");
 }
 
 void Pipeline::Reschedule(const String& resourceName)

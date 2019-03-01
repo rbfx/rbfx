@@ -454,6 +454,7 @@ void Editor::OpenProject(const String& projectPath)
 
 void Editor::CloseProject()
 {
+    SendEvent(E_EDITORPROJECTCLOSING);
     context_->RemoveSubsystem<Project>();
     tabs_.Clear();
     project_.Reset();

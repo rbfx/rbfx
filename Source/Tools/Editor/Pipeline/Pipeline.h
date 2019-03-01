@@ -65,8 +65,6 @@ public:
     ///
     explicit Pipeline(Context* context);
     ///
-    ~Pipeline() override;
-    ///
     bool LoadJSON(const JSONValue& source) override;
     /// Watch directory for changed assets and automatically convert them.
     void EnableWatcher();
