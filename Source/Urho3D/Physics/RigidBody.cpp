@@ -947,9 +947,10 @@ namespace Urho3D {
         else
         {
 
-            if (physicsWorld_)
+            if (physicsWorld_) {
+                physicsWorld_->WaitForUpdateFinished();
                 physicsWorld_->removeRigidBody(this);
-
+            }
             //#todo ?
             //remove any connected constraints.
             for (Constraint* constraint : connectedConstraints_) {

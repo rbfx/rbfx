@@ -127,6 +127,7 @@ namespace Urho3D {
     void CollisionShape::freeInternalCollision()
     {
         if (newtonCollision_) {
+           
             physicsWorld_->addToFreeQueue(newtonCollision_);
             newtonCollision_ = nullptr;
         }
@@ -361,9 +362,12 @@ namespace Urho3D {
         }
         else
         {
-            freeInternalCollision();
-            if (physicsWorld_)
+            if (physicsWorld_) {
+                physicsWorld_->WaitForUpdateFinished();
                 physicsWorld_->removeCollisionShape(this);
+                freeInternalCollision();
+
+            }
 
         }
 

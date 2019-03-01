@@ -108,9 +108,6 @@ namespace Urho3D {
         RigidBody* rigBody0 = static_cast<RigidBody*>(NewtonBodyGetUserData(body0));
         RigidBody* rigBody1 = static_cast<RigidBody*>(NewtonBodyGetUserData(body1));
 
-        if (!rigBody0 || !rigBody1)
-            return;
-
 
         unsigned int key = IntVector2(rigBody0->GetID(), rigBody1->GetID()).ToHash();
 
@@ -237,19 +234,9 @@ namespace Urho3D {
         RigidBody* rigBody0 = static_cast<RigidBody*>(NewtonBodyGetUserData(body0));
         RigidBody* rigBody1 = static_cast<RigidBody*>(NewtonBodyGetUserData(body1));
 
-        if (!rigBody0 || !rigBody1)
-            return 1;
 
         PhysicsWorld* physicsWorld = rigBody0->GetPhysicsWorld();
 
-        if (physicsWorld == nullptr)
-            return 1;//scene is being destroyed.
-
-        //#todo why is this happening.
-        if (!rigBody0->RefCountPtr() || !rigBody1->RefCountPtr())
-        {
-            return 1;
-        }
 
 
         bool res;
