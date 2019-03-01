@@ -330,11 +330,13 @@ namespace Urho3D {
         {
             Activate();
 
-            NewtonBodySetOmega(newtonBody_, &UrhoToNewton(angularVelocity)[0]);
+            Vector3 angularVelocityRadians = angularVelocity * M_DEGTORAD;
+
+            NewtonBodySetOmega(newtonBody_, &UrhoToNewton(angularVelocityRadians)[0]);
         }
         else
         {
-            nextAngularVelocity_ = physicsWorld_->SceneToPhysics_Domain(angularVelocity);
+            nextAngularVelocity_ = angularVelocity;
             nextAngularVelocityNeeded_ = true;
         }
     }
@@ -870,6 +872,7 @@ namespace Urho3D {
         NewtonBodySetAutoSleep(newtonBody_, autoSleep_);
 
 
+
         //assign callbacks
         NewtonBodySetForceAndTorqueCallback(newtonBody_, Newton_ApplyForceAndTorqueCallback);
         NewtonBodySetTransformCallback(newtonBody_, Newton_SetTransformCallback);
@@ -877,7 +880,7 @@ namespace Urho3D {
 
         //finally move the body.
         SetWorldTransformToNode();
-
+        lastSetNodeWorldTransform_ = node_->GetWorldTransform();
     }
 
 

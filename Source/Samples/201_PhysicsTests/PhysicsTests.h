@@ -120,6 +120,11 @@ private:
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
     /// Handle the post-render update event.
     void HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData);
+    /// Handle physics pre-step
+    void HandlePhysicsPreStep(StringHash eventType, VariantMap& eventData);
+
+    /// Handle physics post-step
+    void HandlePhysicsPostStep(StringHash eventType, VariantMap& eventData);
 
     /// Flag for drawing debug geometry.
     bool drawDebug_ = false;

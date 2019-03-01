@@ -271,4 +271,17 @@ namespace Urho3D {
         return 1;
     }
 
+
+
+    int Newton_WakeBodiesInAABBCallback(const NewtonBody* const body, void* const userData)
+    {
+        URHO3D_PROFILE_FUNCTION();
+        //NewtonBodySetAutoSleep(body, 0);
+        //NewtonBodySetSleepState(body, 0);//wake the body.
+        NewtonBodySetFreezeState(body, 0);
+        return 1;
+    }
+
+
+
 }

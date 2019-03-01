@@ -612,11 +612,6 @@ namespace Urho3D {
 
 
 
-       // Send pre-step event
-       eventData = GetEventDataMap();
-       eventData[PhysicsPreStep::P_WORLD] = this;
-       eventData[PhysicsPreStep::P_TIMESTEP] = timeStep;
-       SendEvent(E_PHYSICSPRESTEP, eventData);
 
        //do the update.
        Update(timeStep, true);
@@ -628,7 +623,7 @@ namespace Urho3D {
     {
 
         URHO3D_PROFILE_FUNCTION();
-        float timeStep = timestep*GetScene()->GetTimeScale()*timeScale_;
+        float physicsTimeStep = timestep*GetScene()->GetTimeScale()*timeScale_;
 
  
 
@@ -642,7 +637,7 @@ namespace Urho3D {
             // Send post-step event
             VariantMap& eventData = GetEventDataMap();
             eventData[PhysicsPostStep::P_WORLD] = this;
-            eventData[PhysicsPostStep::P_TIMESTEP] = timeStep;
+            eventData[PhysicsPostStep::P_TIMESTEP] = physicsTimeStep;
             SendEvent(E_PHYSICSPOSTSTEP, eventData);
 
         }
@@ -661,57 +656,6 @@ namespace Urho3D {
                         rigidBodyListNeedsSorted = false;
                     }
                 }
-
-                //apply the transform of all rigid body components to their respective nodes.
-                for (RigidBody* rigBody : rigidBodyComponentList)
-                {
-                    if (rigBody == sceneBody_)
-                        continue;
-
-
-
-                    //if the node transform has been changed since last update - move the body.
-                    if (rigBody->node_->GetWorldTransform() != rigBody->lastSetNodeWorldTransform_) {
-
-
-                        ////check if any connected contraints are connected to world body, if so - move the world body frame of constraint by the delta
-                        //Matrix3x4 deltaTransform = rigBody->lastSetNodeWorldTransform_.Inverse() * rigBody->node_->GetWorldTransform();
-
-                        //for (Constraint* constraint : rigBody->connectedConstraints_)
-                        //{
-                        //    
-                        //    if (constraint->GetOtherBody() == sceneBody_)
-                        //    {
-
-                        //        Node* tmpNode = rigBody->node_->CreateChild();
-                        //        tmpNode->SetWorldTransform(constraint->GetOtherWorldFrame().Translation(), constraint->GetOtherNewtonBuildWorldFrame().Rotation());
-
-
-                        //        Matrix3x4 otherWorldTransfom = constraint->GetOtherWorldFrame();
-                        //        Matrix3x4 newWorldTransform = otherWorldTransfom * deltaTransform;
-                        //        constraint->SetOtherWorldPosition(newWorldTransform.Translation());
-                        //        constraint->SetOtherWorldRotation(newWorldTransform.Rotation());
-                        //    }
-                        //}
-
-                        //rigBody->SetWorldTransformToNode();
-
-                        //rigBody->MarkInternalTransformDirty(true);
-
-
-
-
-
-                    }
-
-                    if (rigBody->GetInternalTransformDirty()) {
-                        rigBody->ApplyTransformToNode(timeStep);
-
-
-                        //if (rigBody->InterpolationWithinRestTolerance())
-                        rigBody->MarkInternalTransformDirty(false);
-                    }
-                }
             }
         }
 
@@ -724,10 +668,70 @@ namespace Urho3D {
         ParseContacts();
 
 
-        {
-            //use target time step to give newton constant time steps. 
 
-            NewtonUpdateAsync(newtonWorld_, timeStep);
+        
+        for (RigidBody* rigBody : rigidBodyComponentList)
+        {
+            if (rigBody == sceneBody_)
+                continue;
+
+
+
+            //if the node local transform has been changed since last update - move the body.
+            //this is done so that a change to the scene graph will have a resulting change in the rigid body's transformation.
+            //if contraints are connected dont do this.
+            if (rigBody->node_->GetWorldTransform() != rigBody->lastSetNodeWorldTransform_ && (rigBody->connectedConstraints_.Size() == 0)) {
+
+                if (rigBody->isKinematic_) {
+                    //get translational matrix and apply it as velocity to the kinematic body.  this can be overridden if velocities of body are set in the physics pre-step event.
+                    Matrix3x4 deltaTransform = rigBody->node_->GetWorldTransform().Inverse() * rigBody->lastSetNodeWorldTransform_;
+
+                    Quaternion rotationalDelta = deltaTransform.Rotation();
+                    Vector3 translationalDelta = deltaTransform.Translation();
+
+                    rigBody->SetAngularVelocity(-rotationalDelta.EulerAngles()/physicsTimeStep);
+                    rigBody->SetLinearVelocityHard(translationalDelta);
+                }
+
+
+
+                rigBody->SetWorldTransformToNode();
+                rigBody->MarkInternalTransformDirty(true);
+            }
+
+
+            //wake bodies around kinematic bodies..
+            if (rigBody->isKinematic_) {
+
+                dVector p0, p1;
+                NewtonBodyGetAABB(rigBody->newtonBody_, &p0[0], &p1[0]);
+                NewtonWorldForEachBodyInAABBDo(newtonWorld_, &p0[0],  &p1[0], Newton_WakeBodiesInAABBCallback, nullptr);
+
+            }
+
+
+            //apply the transform of all rigid body components to their respective nodes.
+            if (rigBody->GetInternalTransformDirty()) {
+                rigBody->ApplyTransformToNode(physicsTimeStep);
+
+                //if (rigBody->InterpolationWithinRestTolerance())
+                rigBody->MarkInternalTransformDirty(false);
+            }
+        }
+
+
+
+
+        {
+            // Send pre-step event
+            VariantMap& eventData = GetEventDataMap();
+            eventData[PhysicsPreStep::P_WORLD] = this;
+            eventData[PhysicsPreStep::P_TIMESTEP] = physicsTimeStep;
+            SendEvent(E_PHYSICSPRESTEP, eventData);
+
+
+            //use target time step to give newton constant time steps. 
+            NewtonUpdateAsync(newtonWorld_, physicsTimeStep);
             isUpdating_ = true;
             simulationStarted_ = true;
         }
@@ -871,6 +875,8 @@ namespace Urho3D {
         if(node->GetParent() && ((node->GetScene() != node->GetParent()) || includeScene))
             GetRootRigidBodies(rigidBodies, node->GetParent(), includeScene);
     }
+
+
 
 
     URHO3D_API RigidBody*  GetRigidBody(Node* node, bool includeScene)

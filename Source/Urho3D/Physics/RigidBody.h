@@ -179,7 +179,7 @@ namespace Urho3D
         void SetLinearVelocityHard(const Vector3& worldVelocity);
 
 
-        /// Set the Angular velocity in world cordinates
+        /// Set the Angular velocity in world cordinates (degrees/sec)
         void SetAngularVelocity(const Vector3& angularVelocity);
 
 

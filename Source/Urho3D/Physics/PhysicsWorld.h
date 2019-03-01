@@ -347,12 +347,16 @@ namespace Urho3D
 
 
 
-
-
     /// newton material callbacks
     void Newton_ProcessContactsCallback(const NewtonJoint* contactJoint, dFloat timestep, int threadIndex);
     int Newton_AABBOverlapCallback(const NewtonJoint* const contactJoint, dFloat timestep, int threadIndex);
     int Newton_AABBCompoundOverlapCallback(const NewtonJoint* const contact, dFloat timestep, const NewtonBody* const body0, const void* const collisionNode0, const NewtonBody* const body1, const void* const collisionNode1, int threadIndex);
+
+    int Newton_WakeBodiesInAABBCallback(const NewtonBody* const body, void* const userData);
+
+
+
+
 
 
     URHO3D_API RigidBody* GetRigidBody(Node* node, bool includeScene);
