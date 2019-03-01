@@ -161,8 +161,11 @@ void PhysicsTests::CreateScene()
 
     Quaternion tilt = Quaternion(Random(-1.0f, 1.0f), Vector3(1, 0, 0));
 
-    SpawnTrialBike(Vector3(5, 5, 0),  Quaternion(0, Vector3(0, 1, 0)) * tilt, true);
-    SpawnTrialBike(Vector3(-5, 5, 0), Quaternion(180, Vector3(0, 1, 0)) * tilt, false);
+    //SpawnTrialBike(Vector3(5, 5, 0),  Quaternion(0, Vector3(0, 1, 0)) * tilt, true);
+    //SpawnTrialBike(Vector3(-5, 5, 0), Quaternion(180, Vector3(0, 1, 0)) * tilt, false);
+
+    SpawnKinematicBodyTest(Vector3(0, 0, 0), Quaternion::IDENTITY);
+
 
     //SpawnHingeSpringTest(Vector3(0,10,0), Quaternion::IDENTITY);
     //SpawnHingeSpringTest(Vector3(-2, 10, 0), Quaternion(-90, Vector3(0,1,0)));
@@ -1219,6 +1222,11 @@ void PhysicsTests::HandleUpdate(StringHash eventType, VariantMap& eventData)
 
     }
 
+    //rotate the kinamatic body
+    kinematicNode_->Rotate(Quaternion(0.1, Vector3(0, 1, 0)));
+    kinematicNode_->GetComponent<RigidBody>()->SetAngularVelocity(Vector3(0, 0.1, 0));
+    kinematicNode_->GetComponent<RigidBody>()->SetWorldTransformToNode();
+   
 
 
 }
@@ -1469,6 +1477,16 @@ void PhysicsTests::RemovePickNode(bool removeRigidBodyOnly /*= false*/)
     }
 }
 
+
+void PhysicsTests::SpawnKinematicBodyTest(Vector3 worldPosition, Quaternion worldRotation)
+{
+    Node* box = SpawnSamplePhysicsBox(scene_, worldPosition, Vector3(10, 1, 10));
+    box->GetComponent<RigidBody>()->SetIsKinematic(true);
+
+    kinematicNode_ = box;
+
+
+}
 
 void PhysicsTests::CreatePickTargetNodeOnPhysics()
 {

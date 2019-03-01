@@ -910,7 +910,7 @@ namespace Urho3D {
 
     }
 
-    //recurses up the scene tree starting a node and continuing up every branch adding collision shapes to the array until a rigid body is encountered in which case the algorithm stops traversing that branch.
+    //recurses up the scene tree starting at the starting node,  continuing up every branch adding collision shapes to the array until a rigid body is encountered in which case the algorithm stops traversing that branch.
     void GetAloneCollisionShapes(PODVector<CollisionShape*>& colShapes, Node* startingNode, bool includeStartingNodeShapes)
     {
 
@@ -931,7 +931,6 @@ namespace Urho3D {
             {
                 child->GetDerivedComponents<CollisionShape>(colShapes, false, false);
                 GetAloneCollisionShapes(colShapes, child, false);
-
             }
 
         }

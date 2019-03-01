@@ -151,6 +151,18 @@ namespace Urho3D
         bool GetTriggerMode() const { return triggerMode_; }
 
 
+        void SetIsKinematic(bool enable) {
+            if (isKinematic_ != enable)
+            {
+                isKinematic_ = enable;
+                MarkDirty();
+            }
+           
+        }
+        bool GetIsKinematic() const { return isKinematic_; }
+
+
+
         void SetGenerateContacts(bool enable)
         {
             generateContacts_ = enable;
@@ -369,6 +381,8 @@ namespace Urho3D
 
         bool generateContacts_ = true;
 
+        bool isKinematic_ = false;
+
         ///dirty flag
         bool needsRebuilt_ = true;
 
@@ -387,6 +401,11 @@ namespace Urho3D
 
         /// rebuilds the internal body based on the current status of collision shapes on this node and child nodes. (be sure to update the children first!)
         void reBuildBody();
+
+        void updateChildCollisionShapes(PODVector<CollisionShape*>& enabledCollisionShapes);
+
+
+
 
 
         virtual void OnNodeSet(Node* node) override;
@@ -441,7 +460,7 @@ namespace Urho3D
         bool GetIsSceneRootBody() const { return sceneRootBodyMode_; }
 
         virtual void OnMarkedDirty(Node* node) override;
-
+    
     };
 
 

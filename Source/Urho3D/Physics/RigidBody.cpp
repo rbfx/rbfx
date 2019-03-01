@@ -85,6 +85,7 @@ namespace Urho3D {
         URHO3D_ACCESSOR_ATTRIBUTE("Angular Damping", GetAngularDamping, SetAngularDamping, float, 0.0f, AM_DEFAULT);
         //URHO3D_ACCESSOR_ATTRIBUTE("Interpolation Factor", GetInterpolationFactor, SetInterpolationFactor, float, 1.0f, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Trigger Mode", GetTriggerMode, SetTriggerMode, bool, false, AM_DEFAULT);
+        URHO3D_ACCESSOR_ATTRIBUTE("Is Kinematic", GetIsKinematic, SetIsKinematic, bool, false, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Collision Layer", GetCollisionLayer, SetCollisionLayer, unsigned, DEFAULT_COLLISION_LAYER, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Collision Mask", GetCollisionLayerMask, SetCollisionLayerMask, unsigned, DEFAULT_COLLISION_MASK, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("No Collide Override", GetNoCollideOverride, SetNoCollideOverride, bool, false, AM_DEFAULT);
@@ -307,7 +308,7 @@ namespace Urho3D {
                 NewtonBodyAddImpulse(newtonBody_, &worldVel[0], &bodyWorldPos[0], physicsWorld_->timeStepTarget_*GetScene()->GetTimeScale());
             }
             else
-                NewtonBodySetVelocity(newtonBody_, &UrhoToNewton(nextLinearVelocity_)[0]);
+                NewtonBodySetVelocity(newtonBody_, &UrhoToNewton(worldVelocity)[0]);
         }
         else
         {
@@ -327,10 +328,9 @@ namespace Urho3D {
     {
         if (newtonBody_ && !physicsWorld_->isUpdating_)
         {
-            physicsWorld_->WaitForUpdateFinished();
             Activate();
 
-            NewtonBodySetOmega(newtonBody_, &UrhoToNewton(nextAngularVelocity_)[0]);
+            NewtonBodySetOmega(newtonBody_, &UrhoToNewton(angularVelocity)[0]);
         }
         else
         {
@@ -638,44 +638,55 @@ namespace Urho3D {
     {
         URHO3D_PROFILE_FUNCTION();
 
+
+
         freeBody();
         dMatrix finalInertia;
         dVector finalCenterOfMass;
         dMatrix identity = dGetIdentityMatrix();
-        newtonBody_ = NewtonCreateDynamicBody(physicsWorld_->GetNewtonWorld(), nullptr, &identity[0][0]);
+
+
+        if (!IsEnabledEffective())
+            return;
+
+
+        PODVector<CollisionShape*> enabledCollisionShapes;
+        updateChildCollisionShapes(enabledCollisionShapes);
+
+
+        ///determine early on if a compound is going to be needed.
+        bool compoundNeeded = false;
+        float smallestDensity = M_LARGE_VALUE;
+        for (CollisionShape* col : enabledCollisionShapes)
+        {
+            if (col->IsCompound())
+                compoundNeeded = true;
+
+
+            if (col->GetDensity() < smallestDensity)
+                smallestDensity = col->GetDensity();
+        }
+        compoundNeeded |= (enabledCollisionShapes.Size() > 1);
+
+
+
+
+        if (!isKinematic_) {
+
+            if(enabledCollisionShapes.Size() > 1)
+                newtonBody_ = NewtonCreateAsymetricDynamicBody(physicsWorld_->GetNewtonWorld(), nullptr, &identity[0][0]);
+            else
+                newtonBody_ = NewtonCreateDynamicBody(physicsWorld_->GetNewtonWorld(), nullptr, &identity[0][0]);
+        }
+        else
+            newtonBody_ = NewtonCreateKinematicBody(physicsWorld_->GetNewtonWorld(), nullptr, &identity[0][0]);
+
 
         for (int densityPass = 1; densityPass >= 0; densityPass--)
         {
 
-            if (!IsEnabledEffective())
-                return;
-
-
-            //evaluate child nodes (+this node) and see if there are more collision shapes - if so create a compound collision.
-            PODVector<CollisionShape*> childCollisionShapes;
-
-            GetAloneCollisionShapes(childCollisionShapes, node_, true);
-
-
-            PODVector<CollisionShape*> filteredList;
-
-            //update member list of shapes.
-            collisionShapes_ = childCollisionShapes;
-
-
-            //filter out shapes that are not enabled.
-            for (CollisionShape* col : childCollisionShapes)
+            if (enabledCollisionShapes.Size())
             {
-                if (col->IsEnabledEffective() && col->GetNewtonCollision())
-                    filteredList += col;
-            }
-            childCollisionShapes = filteredList;
-
-
-            if (childCollisionShapes.Size())
-            {
-
-
 
                 NewtonCollision* resolvedCollision = nullptr;
 
@@ -683,21 +694,6 @@ namespace Urho3D {
                     NewtonDestroyCollision(effectiveCollision_);
                     effectiveCollision_ = nullptr;
                 }
-
-
-                ///determine early on if a compound is going to be needed.
-                bool compoundNeeded = false;
-                float smallestDensity = M_LARGE_VALUE;
-                for (CollisionShape* col : childCollisionShapes)
-                {
-                    if (col->IsCompound())
-                        compoundNeeded = true;
-
-
-                    if (col->GetDensity() < smallestDensity)
-                        smallestDensity = col->GetDensity();
-                }
-                compoundNeeded |= (childCollisionShapes.Size() > 1);
 
 
 
@@ -713,7 +709,7 @@ namespace Urho3D {
                 float accumMass = 0.0f;
 
                 CollisionShape* firstCollisionShape = nullptr;
-                for (CollisionShape* colComp : childCollisionShapes)
+                for (CollisionShape* colComp : enabledCollisionShapes)
                 {
                     if (firstCollisionShape == nullptr)
                         firstCollisionShape = colComp;
@@ -888,6 +884,22 @@ namespace Urho3D {
 
 
 
+
+    void RigidBody::updateChildCollisionShapes(PODVector<CollisionShape*>& enabledCollisionShapes)
+    {
+        //evaluate child nodes (+this node) and see if there are more collision shapes
+        GetAloneCollisionShapes(collisionShapes_, node_, true);
+
+
+        //filter out shapes that are not enabled.
+        PODVector<CollisionShape*> filteredList;
+        for (CollisionShape* col : collisionShapes_)
+        {
+            if (col->IsEnabledEffective() && col->GetNewtonCollision())
+                filteredList += col;
+        }
+        enabledCollisionShapes = filteredList;
+    }
 
     //void RigidBody::updateInterpolatedTransform()
     //{

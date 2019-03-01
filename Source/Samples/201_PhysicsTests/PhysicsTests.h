@@ -114,6 +114,7 @@ private:
     void SpawnCompoundedRectTest2(Vector3 worldPosition);
     void SpawnTrialBike(Vector3 worldPosition, Quaternion orientation, bool enableGyroOnWheels);
     void SpawnHingeSpringTest(const Vector3 ZERO, const Quaternion IDENTITY);
+    void SpawnKinematicBodyTest(Vector3 worldPosition, Quaternion worldRotation);
 
     /// Handle the logic update event.
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
@@ -158,7 +159,10 @@ private:
 
     PODVector<Constraint*> forceCalculationConstraints_;
 
+    WeakPtr<Node> kinematicNode_;
+
     void CreateScenery(Vector3 worldPosition);
     void RemovePickNode(bool removeRigidBodyOnly = false);
+   
    
 };
