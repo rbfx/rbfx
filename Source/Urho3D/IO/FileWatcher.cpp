@@ -86,6 +86,8 @@ bool FileWatcher::StartWatching(const String& pathName, bool watchSubDirs)
     // Stop any previous watching
     StopWatching();
 
+    SetName("Watcher for " + pathName);
+
 #if defined(URHO3D_FILEWATCHER) && defined(URHO3D_THREADING)
 #ifdef _WIN32
     String nativePath = GetNativePath(RemoveTrailingSlash(pathName));
