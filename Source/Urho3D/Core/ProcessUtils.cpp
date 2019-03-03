@@ -283,7 +283,11 @@ const Vector<String>& ParseArguments(const String& cmdLine, bool skipFirstArgume
             bool atEnd = i == cmdLine.Length() - 1;
             if (cmdLine[i] == ' ' || atEnd)
             {
-                cmdEnd = i;
+                if (!atEnd)
+                    cmdEnd = i;
+                else
+                    cmdEnd = i + 1;
+
                 String argument = cmdLine.Substring(cmdStart, cmdEnd - cmdStart);
                 if (!argument.Empty())  // May be empty when multiple spaces follow one another.
                     arguments.Push(argument);
