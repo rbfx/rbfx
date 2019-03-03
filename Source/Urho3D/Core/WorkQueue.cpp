@@ -100,6 +100,7 @@ void WorkQueue::CreateThreads(unsigned numThreads)
     for (unsigned i = 0; i < numThreads; ++i)
     {
         SharedPtr<WorkerThread> thread(new WorkerThread(this, i + 1));
+        thread->SetName(Format("Worker {}", i + 1));
         thread->Run();
         threads_.Push(thread);
     }

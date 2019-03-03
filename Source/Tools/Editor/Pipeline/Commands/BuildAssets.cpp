@@ -59,7 +59,8 @@ void BuildAssets::Execute()
     }
 
     project->GetPipeline().SetSkipUpToDateAssets(full_ == 0);
-    project->GetPipeline().BuildCache(CONVERTER_ALWAYS, {}, true);
+    project->GetPipeline().BuildCache(CONVERTER_ALWAYS);
+    project->GetPipeline().WaitForCompletion();
 }
 
 }

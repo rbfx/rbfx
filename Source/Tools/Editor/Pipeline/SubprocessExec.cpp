@@ -55,14 +55,15 @@ void SubprocessExec::RegisterObject(Context* context)
 void SubprocessExec::Execute(const StringVector& input)
 {
     auto* project = GetSubsystem<Project>();
+    auto* fs = GetFileSystem();
     const String& cachePath = project->GetCachePath();
-    String editorExecutable = GetFileSystem()->GetProgramFileName();
+    String editorExecutable = fs->GetProgramFileName();
     String executable = executable_;
     String output, outputRelative;
 
     auto insertVariables = [&](const String& arg, const String& resourceName=String::EMPTY) {
         String resourcePath = project->GetResourcePath() + resourceName;
-        if (!GetFileSystem()->Exists(resourcePath))
+        if (!fs->Exists(resourcePath))
             resourcePath = project->GetCachePath() + resourceName;
 
         return Format(arg,
@@ -78,7 +79,7 @@ void SubprocessExec::Execute(const StringVector& input)
     executable = insertVariables(executable);
 
     if (!IsAbsolutePath(executable))
-        executable = GetPath(GetFileSystem()->GetProgramFileName()) + executable;
+        executable = GetPath(fs->GetProgramFileName()) + executable;
 
     for (const String& resourceName : input)
     {
@@ -97,29 +98,40 @@ void SubprocessExec::Execute(const StringVector& input)
         {
             // Scan output path
             StringVector list;
-            if (GetFileSystem()->DirExists(output))
+            if (output.EndsWith("/"))
             {
-                GetFileSystem()->ScanDir(list, output, "*", SCAN_FILES, true);
-                for (const String& path : list)
-                    dirListingBefore[path] = GetFileSystem()->GetLastModifiedTime(output + path);
+                if (fs->DirExists(output))
+                {
+                    fs->ScanDir(list, output, "*", SCAN_FILES, true);
+                    for (const String& path : list)
+                        dirListingBefore[path] = fs->GetLastModifiedTime(output + path);
+                }
+                else
+                    fs->CreateDirsRecursive(output);
+            }
+            else
+            {
+                String outputDir = GetParentPath(output);
+                if (!fs->DirExists(outputDir))
+                    fs->CreateDirsRecursive(outputDir);
             }
 
             // Execute converter
-            result = GetFileSystem()->SystemRun(executable, args, logOutput);
+            result = fs->SystemRun(executable, args, logOutput);
 
-            if (GetFileSystem()->DirExists(output))
+            if (fs->DirExists(output))
             {
                 // Scan output path again
-                GetFileSystem()->ScanDir(list, output, "*", SCAN_FILES, true);
+                fs->ScanDir(list, output, "*", SCAN_FILES, true);
                 for (const String& path : list)
                 {
                     if (!dirListingBefore.Contains(path) ||
-                        dirListingBefore[path] < GetFileSystem()->GetLastModifiedTime(output + path))
+                        dirListingBefore[path] < fs->GetLastModifiedTime(output + path))
                         // Record new or changed files
                         outputFiles.EmplaceBack(outputRelative + path);
                 }
             }
-            else if (GetFileSystem()->FileExists(output))
+            else if (fs->FileExists(output))
                 outputFiles.EmplaceBack(outputRelative);
         }
 

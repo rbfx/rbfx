@@ -55,14 +55,16 @@ public:
     void SetLanguage(int index);
     /// Set current language.
     void SetLanguage(const String& language);
-    /// Return a string in the current language. Returns String::EMPTY if id is empty. Returns id if translation is not found and logs a warning. Optionally specify index of lanuguage.
+    /// Return a string in the current language. Returns String::EMPTY if id is empty. Returns id if translation is not found and logs a warning.
     String Get(const String& id, int index=-1);
     /// Clear all loaded strings.
     void Reset();
-    /// Load strings from JSONValue.
-    void LoadJSON(const JSONValue& source);
     /// Load strings from JSONFile. The file should be UTF8 without BOM.
-    void LoadJSONFile(const String& name);
+    void LoadJSONFile(const String& name, const String language = String::EMPTY);
+    /// Load strings from JSONValue.
+    void LoadMultipleLanguageJSON(const JSONValue& source);
+    /// Load strings from JSONValue for specific language.
+    void LoadSingleLanguageJSON(const JSONValue& source, const String& language = String::EMPTY);
 
 private:
     /// Language names.

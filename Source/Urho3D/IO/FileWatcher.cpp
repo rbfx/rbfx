@@ -31,6 +31,7 @@
 #include <windows.h>
 #elif __linux__
 #include <sys/inotify.h>
+#include <sys/ioctl.h>
 extern "C"
 {
 // Need read/close for inotify
@@ -84,6 +85,8 @@ bool FileWatcher::StartWatching(const String& pathName, bool watchSubDirs)
 
     // Stop any previous watching
     StopWatching();
+
+    SetName("Watcher for " + pathName);
 
 #if defined(URHO3D_FILEWATCHER) && defined(URHO3D_THREADING)
 #ifdef _WIN32
@@ -297,8 +300,17 @@ void FileWatcher::ThreadFunction()
 
     while (shouldRun_)
     {
+        unsigned available = 0;
+        ioctl(watchHandle_, FIONREAD, &available);
+
+        if (available == 0)
+        {
+            Time::Sleep(100);
+            continue;
+        }
+
         int i = 0;
-        auto length = (int)read(watchHandle_, buffer, sizeof(buffer));
+        auto length = (int)read(watchHandle_, buffer, Min(available, sizeof(buffer)));
 
         if (length < 0)
             return;

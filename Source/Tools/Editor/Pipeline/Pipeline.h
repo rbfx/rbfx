@@ -65,13 +65,13 @@ public:
     ///
     explicit Pipeline(Context* context);
     ///
-    ~Pipeline() override;
-    ///
     bool LoadJSON(const JSONValue& source) override;
     /// Watch directory for changed assets and automatically convert them.
     void EnableWatcher();
-    /// Execute asset converters specified in `converterKinds` in worker threads. Returns immediately.
-    void BuildCache(ConverterKinds converterKinds, const StringVector& files={}, bool complete=false);
+    /// Execute asset converters specified in `converterKinds` in worker threads. When `files` are specified only those files will be converted. Returns immediately.
+    void BuildCache(ConverterKinds converterKinds, const StringVector& files={});
+    /// Waits until all scheduled work items are complete.
+    void WaitForCompletion();
     /// Returns true when assets in the cache are older than source asset.
     bool IsCacheOutOfDate(const String& resourceName) const;
     /// Remove any cached assets belonging to specified resource.
@@ -103,6 +103,8 @@ protected:
     ///
     void SaveCacheInfo();
     ///
+    void StartWorkItems(const StringVector& resourcePaths);
+    ///
     void StartWorkItems(ConverterKinds converterKinds, const StringVector& resourcePaths);
     ///
     void HandleEndFrame(StringHash, VariantMap&);
@@ -116,11 +118,11 @@ protected:
     };
 
     /// Collection of top level converters defined in pipeline.
-    Vector<SharedPtr<Converter>> converters_;
+    Vector<SharedPtr<Converter>> converters_{};
     /// List of file watchers responsible for watching game data folders for asset changes.
     FileWatcher watcher_;
     ///
-    HashMap<String, CacheEntry> cacheInfo_;
+    HashMap<String, CacheEntry> cacheInfo_{};
     ///
     Mutex lock_{};
     ///
@@ -128,9 +130,11 @@ protected:
     ///
     std::atomic<bool> cacheInfoOutOfDate_{false};
     ///
-    bool skipUpToDateAssets_ = false;
+    bool skipUpToDateAssets_ = true;
     ///
-    StringVector reschedule_;
+    StringVector reschedule_{};
+    ///
+    ConverterKinds executingConverterKinds_{};
 };
 
 }

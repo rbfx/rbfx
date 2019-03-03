@@ -143,6 +143,9 @@ Logger::Logger(void* logger)
 
 void Logger::WriteFormatted(LogLevel level, const String& message)
 {
+    if (logger_ == nullptr)
+        return;
+
     auto* logger = reinterpret_cast<spdlog::logger*>(logger_);
 
     switch (level)
@@ -213,12 +216,6 @@ public:
 
 Log::Log(Context* context) :
     Object(context),
-#ifdef _DEBUG
-    level_(LOG_DEBUG),
-#else
-    level_(LOG_INFO),
-#endif
-    quiet_(false),
     impl_(new LogImpl(context))
 {
     logInstance = this;
@@ -292,14 +289,21 @@ Logger Log::GetLogger(const char* name)
     if (name == nullptr)
         name = "main";
 
-    std::shared_ptr<spdlog::logger> logger(spdlog::get(name));
-    if (!logger)
+    if (logInstance != nullptr)
     {
-        logger = std::make_shared<spdlog::logger>(std::string(name), logInstance->impl_->sinkProxy_);
-        spdlog::register_logger(logger);
-    }
+        MutexLock lock(logInstance->logMutex_);
+        std::shared_ptr<spdlog::logger> logger(spdlog::get(name));
 
-    return Logger(reinterpret_cast<void*>(spdlog::get(name).get()));
+        if (!logger)
+        {
+            logger = std::make_shared<spdlog::logger>(std::string(name), logInstance->impl_->sinkProxy_);
+            spdlog::register_logger(logger);
+        }
+
+        return Logger(reinterpret_cast<void*>(spdlog::get(name).get()));
+    }
+    else
+        return Logger(reinterpret_cast<void*>(spdlog::get(name).get()));
 }
 
 void Log::SendMessageEvent(LogLevel level, time_t timestamp, const String& logger, const String& message)

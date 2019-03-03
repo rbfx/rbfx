@@ -78,8 +78,6 @@ Project::Project(Context* context)
 
 Project::~Project()
 {
-    pipeline_.SaveCacheInfo();
-
     if (GetSystemUI())
         ui::GetIO().IniFilename = nullptr;
 

@@ -167,17 +167,21 @@ private:
     /// Implementation hiding spdlog class types from public headers.
     SharedPtr<LogImpl> impl_;
     /// Log format pattern.
-    String formatPattern_;
+    String formatPattern_{};
     /// Mutex for threaded operation.
-    Mutex logMutex_;
+    Mutex logMutex_{};
     /// Log messages from other threads.
-    List<StoredLogMessage> threadMessages_;
+    List<StoredLogMessage> threadMessages_{};
     /// Logging level.
-    LogLevel level_;
+#ifdef _DEBUG
+    LogLevel level_ = LOG_DEBUG;
+#else
+    LogLevel level_ = LOG_INFO;
+#endif
     /// In write flag to prevent recursion.
-    bool inWrite_;
+    bool inWrite_ = false;
     /// Quiet mode flag.
-    bool quiet_;
+    bool quiet_ = false;
 };
 
 #ifdef URHO3D_LOGGING

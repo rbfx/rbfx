@@ -59,6 +59,11 @@ URHO3D_EVENT(E_EDITORPROJECTLOADING, EditorProjectLoading)
     URHO3D_PARAM(P_ROOT, Root);                      // Raw pointer to JSONValue.
 }
 
+/// Event sent when editor is about to load a Project.json file.
+URHO3D_EVENT(E_EDITORPROJECTCLOSING, EditorProjectClosing)
+{
+}
+
 /// Notify inspector window that this instance would like to render inspector content.
 URHO3D_EVENT(E_EDITORRENDERINSPECTOR, EditorRenderInspector)
 {
