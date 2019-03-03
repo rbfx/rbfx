@@ -682,6 +682,13 @@ namespace Urho3D {
             //if contraints are connected dont do this.
             if (rigBody->node_->GetWorldTransform() != rigBody->lastSetNodeWorldTransform_ && (rigBody->connectedConstraints_.Size() == 0)) {
 
+
+
+
+
+                rigBody->SetWorldTransformToNode();
+                rigBody->MarkInternalTransformDirty(true);
+
                 if (rigBody->isKinematic_) {
                     //get translational matrix and apply it as velocity to the kinematic body.  this can be overridden if velocities of body are set in the physics pre-step event.
                     Matrix3x4 deltaTransform = rigBody->node_->GetWorldTransform().Inverse() * rigBody->lastSetNodeWorldTransform_;
@@ -692,11 +699,6 @@ namespace Urho3D {
                     rigBody->SetAngularVelocity(-rotationalDelta.EulerAngles()/physicsTimeStep);
                     rigBody->SetLinearVelocityHard(translationalDelta);
                 }
-
-
-
-                rigBody->SetWorldTransformToNode();
-                rigBody->MarkInternalTransformDirty(true);
             }
 
 

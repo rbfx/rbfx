@@ -640,6 +640,10 @@ namespace Urho3D {
     {
         URHO3D_PROFILE_FUNCTION();
 
+        //save existing velocities for restoration after the rebuild
+        Vector3 oldLinearVelocity = GetLinearVelocity();
+        Vector3 oldAngularVelocity = GetAngularVelocity();
+
 
 
         freeBody();
@@ -774,8 +778,9 @@ namespace Urho3D {
                         if (densityPass)
                             densityScaleFactor = colComp->GetDensity()/smallestDensity;
 
-                        NewtonCollisionSetScale(curCollisionInstance, densityScaleFactor*scale.x_*existingLocalScale.m_x, densityScaleFactor*scale.y_*existingLocalScale.m_y, densityScaleFactor*scale.z_*existingLocalScale.m_z);
-
+                        NewtonCollisionSetScale(curCollisionInstance, densityScaleFactor*scale.x_*existingLocalScale.m_x,
+                            densityScaleFactor*scale.y_*existingLocalScale.m_y,
+                            densityScaleFactor*scale.z_*existingLocalScale.m_z);
 
 
 
@@ -881,6 +886,10 @@ namespace Urho3D {
         //finally move the body.
         SetWorldTransformToNode();
         lastSetNodeWorldTransform_ = node_->GetWorldTransform();
+
+        //Restore velocities
+        SetLinearVelocityHard(oldLinearVelocity);
+        SetAngularVelocity(oldAngularVelocity);
     }
 
 
