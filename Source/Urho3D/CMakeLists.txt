@@ -272,7 +272,7 @@ endif ()
 
 # Disable very annoying warning
 if (GNU OR Clang)
-    target_compile_options(Urho3D PUBLIC -Wno-invalid-offsetof)
+    target_compile_options(Urho3D PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
 endif ()
 
 if (URHO3D_PROFILING)
