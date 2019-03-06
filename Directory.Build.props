@@ -1,11 +1,12 @@
 <Project ToolsVersion="15.0">
   <PropertyGroup>
     <TargetFramework>net471</TargetFramework>
-    <NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' == 'netstandard2.0' ">2.0.0</NetStandardImplicitPackageVersion>
+    <NETStandardImplicitPackageVersion>2.0.0</NETStandardImplicitPackageVersion>
     <LangVersion>7.2</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
 	<EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetFramework)' == 'net471'">
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
@@ -15,28 +16,26 @@
     <RuntimeIdentifiers Condition=" '$(OS)' == 'OSX' ">osx.10.10-x64</RuntimeIdentifiers>
   </PropertyGroup>
   <PropertyGroup>
-    <BaseOutputPath>bin/</BaseOutputPath>
-    <BaseIntermediateOutputPath>obj/</BaseIntermediateOutputPath>
-  </PropertyGroup>
-  <PropertyGroup>
     <PlatformTarget Condition=" '$(PlatformTarget)' == '' ">x64</PlatformTarget>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+  </PropertyGroup>
+  <PropertyGroup>
+    <BaseOutputPath>bin/</BaseOutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
+    <BaseOutputPath>$(BaseOutputPath)$(Configuration)/</BaseOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(BuildDir)' == '' ">
     <BuildDir Condition=" '$(OS)' != 'Unix' ">$(SolutionDir)/</BuildDir>
     <BuildDir Condition=" '$(OS)' == 'Unix' ">$(SolutionDir)build/</BuildDir>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
-    <BaseOutputPath>$(BaseOutputPath)$(Configuration)/</BaseOutputPath>
-  </PropertyGroup>
   <PropertyGroup Condition=" '$(BuildDir)' != '' ">
     <BaseOutputPath>$(BuildDir)$(BaseOutputPath)/</BaseOutputPath>
-    <BaseIntermediateOutputPath>$(BuildDir)$(BaseIntermediateOutputPath)/</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(BuildDir)obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
     <OutDir>$(BaseOutputPath)</OutDir>
     <OutputPath>$(BaseOutputPath)</OutputPath>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
-  <PropertyGroup>
+  <PropertyGroup Condition=" '$(BuildDir)' != '' ">
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(BuildDir)/CSharp.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
