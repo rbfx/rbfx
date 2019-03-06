@@ -102,6 +102,7 @@ cmake_dependent_option(URHO3D_MERGE_STATIC_LIBS  "Merge third party dependency l
 
 if (WIN32)
     set(URHO3D_RENDERER D3D11 CACHE STRING "Select renderer: D3D9 | D3D11 | OpenGL")
+    option(URHO3D_WIN32_CONSOLE "Show log messages in win32 console"                                     OFF                                                     )
 elseif (IOS OR ANDROID)
     set(URHO3D_RENDERER GLES2 CACHE STRING "Select renderer: GLES2 | GLES3")
 else ()
