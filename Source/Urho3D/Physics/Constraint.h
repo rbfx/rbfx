@@ -83,6 +83,13 @@ namespace Urho3D {
         ///set the world rotation of both frames on both bodies. 
         void SetWorldRotation(const Quaternion& rotation);
 
+        /// set the position in local cordinates to own body and set the same world position on other body.
+        void SetPosition(const Vector3& position);
+        /// set the rotation in local cordinates to own body and set the same world rotation on other body.
+        void SetRotation(const Quaternion& rotation);
+
+
+
         /// Set constraint position in local cordinates to rigidbody.
         void SetOwnPosition(const Vector3& position);
         /// set the rotational frame to use on own rigidbody 

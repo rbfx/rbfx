@@ -198,6 +198,18 @@ namespace Urho3D {
     }
     
 
+    void Constraint::SetPosition(const Vector3& position)
+    {
+        SetOwnPosition(position);
+        SetOtherWorldPosition(GetOwnWorldFrame().Translation());
+    }
+
+    void Constraint::SetRotation(const Quaternion& rotation)
+    {
+        SetOwnRotation(rotation);
+        SetOtherWorldRotation(GetOwnWorldFrame().Rotation());
+    }
+
     void Constraint::SetOwnPosition(const Vector3& position)
     {
         position_ = position;
