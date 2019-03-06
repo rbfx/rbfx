@@ -9,8 +9,6 @@
 * freely
 */
 
-
-
 // dCustomDoubleHinge.cpp: implementation of the dCustomDoubleHinge class.
 //
 //////////////////////////////////////////////////////////////////////
@@ -34,9 +32,7 @@ dCustomDoubleHinge::dCustomDoubleHinge(const dMatrix& pinAndPivotFrame, NewtonBo
 	,m_damper1(0.0f)
 	,m_springDamperRelaxation1(0.9f)
 {
-	m_options.m_option5 = -1;
 }
-
 
 dCustomDoubleHinge::dCustomDoubleHinge(const dMatrix& pinAndPivotFrameChild, const dMatrix& pinAndPivotFrameParent, NewtonBody* const child, NewtonBody* const parent)
 	:dCustomHinge(pinAndPivotFrameChild, pinAndPivotFrameParent, child, parent)
@@ -49,7 +45,6 @@ dCustomDoubleHinge::dCustomDoubleHinge(const dMatrix& pinAndPivotFrameChild, con
 	,m_damper1(0.0f)
 	,m_springDamperRelaxation1(0.9f)
 {
-	m_options.m_option5 = -1;
 }
 
 dCustomDoubleHinge::~dCustomDoubleHinge()
@@ -79,12 +74,6 @@ void dCustomDoubleHinge::Serialize(NewtonSerializeCallback callback, void* const
 	callback(userData, &m_spring1, sizeof(dFloat));
 	callback(userData, &m_damper1, sizeof(dFloat));
 	callback(userData, &m_springDamperRelaxation1, sizeof(dFloat));
-}
-
-
-void dCustomDoubleHinge::SetHardMiddleAxis(bool state)
-{
-	m_options.m_option5 = state;
 }
 
 void dCustomDoubleHinge::EnableLimits1(bool state)
@@ -261,11 +250,9 @@ void dCustomDoubleHinge::SubmitAngularRow(const dMatrix& matrix0, const dMatrix&
 	dMatrix rollMatrix(dYawMatrix(eulers[1]) * matrix1);
 	NewtonUserJointAddAngularRow(m_joint, -eulers[2], &rollMatrix.m_right[0]);
 	NewtonUserJointSetRowStiffness(m_joint, m_stiffness);
-	if (m_options.m_option5) {
-		dFloat rollOmega = relOmega.DotProduct3(rollMatrix.m_right);
-		dFloat alphaRollError = -(eulers[2] + rollOmega * timestep) / (timestep * timestep);
-		NewtonUserJointSetRowAcceleration(m_joint, alphaRollError);
-	}
+	dFloat rollOmega = relOmega.DotProduct3(rollMatrix.m_right);
+	dFloat alphaRollError = -(eulers[2] + rollOmega * timestep) / (timestep * timestep);
+	NewtonUserJointSetRowAcceleration(m_joint, alphaRollError);
 
 	if (m_options.m_option3) {
 		if (m_options.m_option4) {

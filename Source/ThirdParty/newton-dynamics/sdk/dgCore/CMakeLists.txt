@@ -33,9 +33,12 @@ if (UNIX)
 endif(UNIX)
 
 if (MSVC)
-        add_library(${projectName} STATIC ${CPP_SOURCE})
-       set_target_properties(${projectName} PROPERTIES COMPILE_FLAGS "/YudgStdAfx.h")
-       set_source_files_properties(dgTypes.cpp PROPERTIES COMPILE_FLAGS "/YcdgStdAfx.h")
+      add_library(${projectName} STATIC ${CPP_SOURCE})
+
+      if(CMAKE_VS_MSBUILD_COMMAND OR CMAKE_VS_DEVENV_COMMAND)
+         set_target_properties(${projectName} PROPERTIES COMPILE_FLAGS "/YudgStdAfx.h")
+         set_source_files_properties(dgTypes.cpp PROPERTIES COMPILE_FLAGS "/YcdgStdAfx.h")
+      endif()
 endif(MSVC)
 
 target_include_directories(${projectName} PUBLIC

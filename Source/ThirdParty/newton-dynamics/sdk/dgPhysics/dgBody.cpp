@@ -385,7 +385,10 @@ dgConstraint* dgBody::GetFirstContact() const
 			dgConstraint* const joint = node->GetInfo().m_joint;
 			dgAssert (joint);
 			if (joint && (joint->GetId() == dgConstraint::m_contactConstraint)) {
-				return joint;
+				dgContact* const contactJoint = (dgContact*) joint;
+				if (contactJoint->m_contactActive) {
+					return joint;
+				}
 			}
 		}
 	}
@@ -404,7 +407,10 @@ dgConstraint* dgBody::GetNextContact(dgConstraint* const joint) const
 			dgConstraint* const joint1 = node->GetInfo().m_joint;
 			dgAssert (joint1);
 			if (joint1 && (joint1->GetId() == dgConstraint::m_contactConstraint)) {
-				return joint1;
+				dgContact* const contactJoint = (dgContact*) joint1;
+				if (contactJoint->m_contactActive) {
+					return joint1;
+				}
 			}
 		}
 	}

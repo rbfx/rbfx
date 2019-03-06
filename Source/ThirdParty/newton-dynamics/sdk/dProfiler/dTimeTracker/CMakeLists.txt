@@ -22,8 +22,11 @@ add_library(${projectName} SHARED ${CPP_SOURCE})
 
 if (MSVC)
 	target_link_libraries (${projectName} ws2_32.lib)
-	set_target_properties(${projectName} PROPERTIES COMPILE_FLAGS "/Yustdafx.h")
-	set_source_files_properties(stdafx.cpp PROPERTIES COMPILE_FLAGS "/Ycstdafx.h")
+
+	if(CMAKE_VS_MSBUILD_COMMAND OR CMAKE_VS_DEVENV_COMMAND)
+		set_target_properties(${projectName} PROPERTIES COMPILE_FLAGS "/Yustdafx.h")
+		set_source_files_properties(stdafx.cpp PROPERTIES COMPILE_FLAGS "/Ycstdafx.h")
+	endif()
 endif(MSVC)
 
 target_include_directories(${projectName} PUBLIC 

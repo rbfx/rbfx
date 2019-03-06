@@ -54,13 +54,16 @@ if (NEWTON_BUILD_PROFILER)
 endif()
 
 if (MSVC)
-	set_target_properties(${projectName} PROPERTIES COMPILE_FLAGS "/YudStdAfxNewton.h")
-	set_source_files_properties(dStdAfxNewton.cpp PROPERTIES COMPILE_FLAGS "/YcdStdAfxNewton.h")
+    if(CMAKE_VS_MSBUILD_COMMAND OR CMAKE_VS_DEVENV_COMMAND)
+	    set_target_properties(${projectName} PROPERTIES COMPILE_FLAGS "/YudStdAfxNewton.h")
+        set_source_files_properties(dStdAfxNewton.cpp PROPERTIES COMPILE_FLAGS "/YcdStdAfxNewton.h")
+    endif()
+
 	if (NEWTON_BUILD_SANDBOX_DEMOS)
 		add_custom_command(
 			TARGET ${projectName} POST_BUILD
 			COMMAND ${CMAKE_COMMAND}
-			ARGS -E copy $(TargetPath) ${PROJECT_BINARY_DIR}/applications/demosSandbox/${CMAKE_CFG_INTDIR}/$(TargetFileName))
+			ARGS -E copy $<TARGET_FILE:${projectName}> ${PROJECT_BINARY_DIR}/applications/demosSandbox/${CMAKE_CFG_INTDIR}/$<TARGET_FILE_NAME:${projectName}>)
 	endif ()
 endif(MSVC)
 

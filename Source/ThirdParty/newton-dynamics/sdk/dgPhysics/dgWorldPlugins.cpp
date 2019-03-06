@@ -23,7 +23,10 @@
 #include "dgWorld.h"
 #include "dgWorldPlugins.h"
 
-
+#if __linux__
+#include <dlfcn.h>
+#include <dirent.h>
+#endif
 	
 
 dgWorldPluginList::dgWorldPluginList(dgMemoryAllocator* const allocator)
@@ -36,7 +39,6 @@ dgWorldPluginList::dgWorldPluginList(dgMemoryAllocator* const allocator)
 dgWorldPluginList::~dgWorldPluginList()
 {
 }
-
 
 void dgWorldPluginList::LoadVisualStudioPlugins(const char* const plugInPath)
 {
@@ -83,11 +85,58 @@ void dgWorldPluginList::LoadVisualStudioPlugins(const char* const plugInPath)
 #endif	
 }
 
+
+void dgWorldPluginList::LoadLinuxPlugins(const char* const plugInPath)
+{
+#if __linux__
+	char rootPathInPath[2048];
+	DIR* directory;
+	dirent* dirEntry;
+	directory = opendir(plugInPath);
+
+	dgInt32 score = 0;
+	dgWorld* const world = (dgWorld*) this;
+	
+	if(directory != NULL) {
+		while((dirEntry = readdir(directory)) != NULL) {
+			const char* const ext = strrchr(dirEntry->d_name, '.');
+			if(!strcmp(ext, ".so")) {
+				sprintf(rootPathInPath, "%s/%s", plugInPath, dirEntry->d_name);
+				void* module = dlopen(rootPathInPath, RTLD_LAZY);
+				auto err = dlerror();
+ 				if(module) {
+					InitPlugin initModule = (InitPlugin)dlsym(module, "GetPlugin");
+					if(initModule) {
+						dgWorldPlugin* const plugin = initModule(world, GetAllocator ());
+						if (plugin) {
+							dgWorldPluginModulePair entry(plugin, module);
+							dgListNode* const node = Append(entry);
+							dgInt32 pluginValue = plugin->GetScore();
+							if (pluginValue > score) {
+								score = pluginValue;
+								m_preferedPlugin = node; 
+							}
+						} else {
+							dlclose(module);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	closedir(directory);
+#endif
+}
+
+
 void dgWorldPluginList::LoadPlugins(const char* const path)
 {
-#ifdef _MSC_VER
 	UnloadPlugins();
+#ifdef _MSC_VER
 	LoadVisualStudioPlugins(path);
+#elif __linux__
+	LoadLinuxPlugins(path);
 #endif
 }
 
@@ -98,6 +147,12 @@ void dgWorldPluginList::UnloadPlugins()
 	for (dgWorldPluginList::dgListNode* node = pluginsList.GetFirst(); node; node = node->GetNext()) {
 		HMODULE module = (HMODULE)node->GetInfo().m_module;
 		FreeLibrary(module);
+	}
+#elif __linux__
+	dgWorldPluginList& pluginsList = *this;
+	for (dgWorldPluginList::dgListNode* node = pluginsList.GetFirst(); node; node = node->GetNext()) {
+		void* module = node->GetInfo().m_module;
+		dlclose(module);
 	}
 #endif
 	m_currentPlugin = NULL;

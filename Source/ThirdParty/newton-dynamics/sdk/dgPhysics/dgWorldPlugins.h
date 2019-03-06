@@ -82,6 +82,7 @@ class dgWorldPluginList: public dgList<dgWorldPluginModulePair>
 
 	private:
 	void LoadVisualStudioPlugins(const char* const path);
+	void LoadLinuxPlugins(const char* const path);
 
 	dgListNode* m_currentPlugin;
 	dgListNode* m_preferedPlugin;

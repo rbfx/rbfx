@@ -26,6 +26,7 @@
 // This is an example of an exported function.
 dgWorldPlugin* GetPlugin(dgWorld* const world, dgMemoryAllocator* const allocator)
 {
+#ifdef _WIN32
 	union cpuInfo
 	{
 		int m_data[4];
@@ -57,6 +58,15 @@ dgWorldPlugin* GetPlugin(dgWorld* const world, dgMemoryAllocator* const allocato
 	m_reg[2] = info.m_ecx;
 	module.m_score = _stricmp(m_vendor, "GenuineIntel") ? 4 : 2;
 	return &module;
+#elif __linux__
+		if(__builtin_cpu_supports("sse4.2")) {
+		static dgWorldBase module(world, allocator);
+		module.m_score = 2;
+		return &module;
+	} else {
+		return NULL;
+	}
+#endif
 }
 
 dgWorldBase::dgWorldBase(dgWorld* const world, dgMemoryAllocator* const allocator)

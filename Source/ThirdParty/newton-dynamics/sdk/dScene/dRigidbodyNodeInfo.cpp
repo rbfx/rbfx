@@ -53,7 +53,6 @@ dRigidbodyNodeInfo::~dRigidbodyNodeInfo(void)
 {
 }
 
-
 void dRigidbodyNodeInfo::BakeTransform (const dMatrix& transform)
 {
 //	SetTransform (transform.Inverse4x4() * GetTransform() * transform);
@@ -153,28 +152,27 @@ void dRigidbodyNodeInfo::Serialize (TiXmlElement* const rootNode) const
 
 	char tmp[1024];
 
-	TiXmlElement* dataNode = new TiXmlElement ("transform");
-	rootNode->LinkEndChild(dataNode);
-
-	dataNode = new TiXmlElement ("centerOfMass");
-	rootNode->LinkEndChild(dataNode);
-	dFloatArrayToString (&m_centerOfMass[0], 4, tmp, sizeof (tmp));
-	dataNode->SetAttribute("float4", tmp);
+	TiXmlElement* dataNode;
 
 	dataNode = new TiXmlElement ("massMatrix");
 	rootNode->LinkEndChild(dataNode);
 	dFloatArrayToString (&m_massMatrix[0], 4, tmp, sizeof (tmp));
 	dataNode->SetAttribute("float4", tmp);
 
+	dataNode = new TiXmlElement("centerOfMass");
+	rootNode->LinkEndChild(dataNode);
+	dFloatArrayToString(&m_centerOfMass[0], 3, tmp, sizeof (tmp));
+	dataNode->SetAttribute("float3", tmp);
+
 	dataNode = new TiXmlElement ("velocity");
 	rootNode->LinkEndChild(dataNode);
-	dFloatArrayToString (&m_velocity[0], 4, tmp, sizeof (tmp));
-	dataNode->SetAttribute("float4", tmp);
+	dFloatArrayToString (&m_velocity[0], 3, tmp, sizeof (tmp));
+	dataNode->SetAttribute("float3", tmp);
 
 	dataNode = new TiXmlElement ("omega");
 	rootNode->LinkEndChild(dataNode);
-	dFloatArrayToString (&m_omega[0], 4, tmp, sizeof (tmp));
-	dataNode->SetAttribute("float4", tmp);
+	dFloatArrayToString (&m_omega[0], 3, tmp, sizeof (tmp));
+	dataNode->SetAttribute("float3", tmp);
 
 	dataNode = new TiXmlElement ("internalDamp");
 	rootNode->LinkEndChild(dataNode);
@@ -186,17 +184,19 @@ bool dRigidbodyNodeInfo::Deserialize (const dScene* const scene, TiXmlElement* c
 {
 	DeserialiseBase(scene, dNodeInfo, rootNode);
 
-	TiXmlElement* dataNode = (TiXmlElement*) rootNode->FirstChild ("centerOfMass");
-	dStringToFloatArray (dataNode->Attribute("float4"), &m_centerOfMass[0], 4);
+	TiXmlElement* dataNode;
 
 	dataNode = (TiXmlElement*) rootNode->FirstChild ("massMatrix");
 	dStringToFloatArray (dataNode->Attribute("float4"), &m_massMatrix[0], 4);
 
+	dataNode = (TiXmlElement*)rootNode->FirstChild("centerOfMass");
+	dStringToFloatArray(dataNode->Attribute("float3"), &m_centerOfMass[0], 3);
+
 	dataNode = (TiXmlElement*) rootNode->FirstChild ("velocity");
-	dStringToFloatArray (dataNode->Attribute("float4"), &m_velocity[0], 4);
+	dStringToFloatArray (dataNode->Attribute("float3"), &m_velocity[0], 3);
 
 	dataNode = (TiXmlElement*) rootNode->FirstChild ("omega");
-	dStringToFloatArray (dataNode->Attribute("float4"), &m_omega[0], 4);
+	dStringToFloatArray (dataNode->Attribute("float3"), &m_omega[0], 3);
 
 	dataNode = (TiXmlElement*) rootNode->FirstChild ("internalDamp");
 	dStringToFloatArray (dataNode->Attribute("float4"), &m_internalDamp[0], 4);

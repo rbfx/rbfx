@@ -1259,8 +1259,8 @@ void PhysicsTests::HandlePhysicsPostStep(StringHash eventType, VariantMap& event
     if (kinematicNode_) {
 
         //it is important that the node is rotated by an amount that is scaled by the physics timestep as to match the rigid bodies angular velocity.
-        kinematicNode_->Rotate(Quaternion(0.1, Vector3(0, 1, 0)));
-        //kinematicNode_->Translate(Vector3(0, 0.01, 0));
+        kinematicNode_->Rotate(Quaternion(0.5, Vector3(0, 1, 0)));
+        kinematicNode_->Translate(Vector3(0, 0.01, 0));
         //kinematicNode_->SetWorldTransform(cameraNode_->GetWorldTransform().Translation() + Vector3(0,-5,10), cameraNode_->GetWorldTransform().Rotation(), 1.0f);
         //kinematicNode_->GetComponent<RigidBody>()->SetAngularVelocity(Vector3(0, 10, 0));
     }
@@ -1508,12 +1508,12 @@ void PhysicsTests::SpawnKinematicBodyTest(Vector3 worldPosition, Quaternion worl
 {
     Node* box = SpawnSamplePhysicsBox(scene_, worldPosition, Vector3(10, 1, 10));
 
-    //Node* box2 = SpawnSamplePhysicsBox(scene_, worldPosition + Vector3(0, 5,0), Vector3(5, 1, 5));
+    Node* box2 = SpawnSamplePhysicsBox(scene_, worldPosition + Vector3(0, 5,0), Vector3(5, 1, 5));
 
-    //box2->SetParent(box);
+    box2->SetParent(box);
 
     box->GetComponent<RigidBody>()->SetIsKinematic(true);
-    //box2->GetComponent<RigidBody>()->SetIsKinematic(true);
+    box2->GetComponent<RigidBody>()->SetIsKinematic(true);
 
     kinematicNode_ = box;
 

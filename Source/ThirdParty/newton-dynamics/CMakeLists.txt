@@ -19,9 +19,9 @@ option("NEWTON_BUILD_SINGLE_THREADED" "multi threaded" OFF)
 option("NEWTON_DOUBLE_PRECISION" "Generate double precision" OFF)
 option("NEWTON_STATIC_RUNTIME_LIBRARIES" "use windows static libraries" ON)
 #option("NEWTON_WITH_SSE_PLUGIN" "adding asse parallel solver" OFF)
-option("NEWTON_WITH_SSE4_PLUGIN" "adding avx parallel solver" OFF)
-option("NEWTON_WITH_AVX_PLUGIN" "adding avx parallel solver" ON)
-option("NEWTON_WITH_AVX2_PLUGIN" "adding avx parallel solver" OFF)
+option("NEWTON_WITH_SSE4_PLUGIN" "adding avx parallel solver (forces shared libs)" OFF)
+option("NEWTON_WITH_AVX_PLUGIN" "adding avx parallel solver (forces shared libs)" ON)
+option("NEWTON_WITH_AVX2_PLUGIN" "adding avx parallel solver (forces shared libs)" OFF)
 #option("NEWTON_WITH_DX12_PLUGIN" "adding direct compute 12 parallel solver" OFF)
 option("NEWTON_BUILD_SHARED_LIBS" "Build shared library" OFF)
 
@@ -91,7 +91,6 @@ if (UNIX)
 
     set(NEWTON_GENERATE_DLL OFF CACHE BOOL "" FORCE)
     set(NEWTON_STATIC_RUNTIME_LIBRARIES OFF CACHE BOOL "" FORCE)
-    set(NEWTON_WITH_AVX_PLUGIN OFF CACHE BOOL "" FORCE)
     set(NEWTON_BUILD_PROFILER OFF CACHE BOOL "" FORCE)
 
 else (UNIX)
@@ -131,6 +130,11 @@ if (MSVC)
 
 	message("CMAKE_CXX_FLAGS_DEBUG is ${CMAKE_CXX_FLAGS_DEBUG}")
 	message("CMAKE_CXX_FLAGS_RELEASE is ${CMAKE_CXX_FLAGS_RELEASE}")
+endif()
+
+if(NEWTON_WITH_SSE4_PLUGIN OR NEWTON_WITH_AVX_PLUGIN OR NEWTON_WITH_AVX2_PLUGIN)
+  # If building any of the plugins, then switch to shared libraries.
+  set(NEWTON_BUILD_SHARED_LIBS ON)
 endif()
 
 add_subdirectory(sdk)

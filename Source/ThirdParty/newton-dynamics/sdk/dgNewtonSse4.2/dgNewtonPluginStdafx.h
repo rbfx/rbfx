@@ -22,17 +22,27 @@
 #ifndef _DG_NEWTON_PLUGIN_STDADX_
 #define _DG_NEWTON_PLUGIN_STDADX_
 
-// Exclude rarely-used stuff from Windows headers
-#define WIN32_LEAN_AND_MEAN             
-#include <windows.h>
+#ifdef _WIN32
+	// Exclude rarely-used stuff from Windows headers
+	#define WIN32_LEAN_AND_MEAN             
+	#include <windows.h>
+#endif
 
 #include <dg.h>
 #include <dgPhysics.h>
 
 #ifdef NEWTONCPU_EXPORTS
-	#define NEWTONCPU_API __declspec(dllexport)
+	#ifdef _WIN32
+		#define NEWTONCPU_API __declspec (dllexport)
+	#else
+		#define NEWTONCPU_API __attribute__ ((visibility("default")))
+	#endif
 #else
-	#define NEWTONCPU_API __declspec(dllimport)
+	#ifdef _WIN32
+		#define NEWTONCPU_API __declspec (dllimport)
+	#else
+		#define NEWTONCPU_API
+	#endif
 #endif
 
 #pragma warning (disable: 4100) //unreferenced formal parameter

@@ -44,11 +44,7 @@ class dRigidbodyNodeInfo: public dNodeInfo
 	virtual const dVector& GetCenterOfMass () const;
 	virtual const dVector& GetOmega () const;
 	virtual const dVector& GetVelocity () const;
-
-
-
 //	virtual dFloat RayCast (const dVector& p0, const dVector& p1) const;
-
 
 	virtual NewtonBody* CreateNewtonBody (NewtonWorld* const world, dScene* const scene, dScene::dTreeNode* const myNode) const;
 	protected:

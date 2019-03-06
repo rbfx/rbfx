@@ -32,9 +32,12 @@ if (UNIX)
 endif (UNIX)
 
 if (MSVC)
-    add_library(${projectName} STATIC ${CPP_SOURCE})
-	set_target_properties(${projectName} PROPERTIES COMPILE_FLAGS "/YudStdAfxMath.h")
-	set_source_files_properties(dStdAfxMath.cpp PROPERTIES COMPILE_FLAGS "/YcdStdAfxMath.h")
+   add_library(${projectName} STATIC ${CPP_SOURCE})
+
+   if(CMAKE_VS_MSBUILD_COMMAND OR CMAKE_VS_DEVENV_COMMAND)
+      set_target_properties(${projectName} PROPERTIES COMPILE_FLAGS "/YudStdAfxMath.h")
+      set_source_files_properties(dStdAfxMath.cpp PROPERTIES COMPILE_FLAGS "/YcdStdAfxMath.h")
+   endif()
 endif(MSVC)
 
 

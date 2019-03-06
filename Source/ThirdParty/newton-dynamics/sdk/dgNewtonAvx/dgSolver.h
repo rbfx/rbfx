@@ -25,6 +25,9 @@
 
 #include "dgPhysicsStdafx.h"
 
+#ifdef __linux__
+#include <immintrin.h>
+#endif
 
 #define DG_SOA_WORD_GROUP_SIZE	8 
 

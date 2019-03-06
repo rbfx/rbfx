@@ -21,7 +21,7 @@
 
 #include "dgNewtonPluginStdafx.h"
 
-
+#ifdef _WIN32
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
@@ -52,4 +52,4 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 	__cpuid(info.m_data, 1);
 	return ((info.m_ecx & (1 << 12)) && (info.m_ecx & (1 << 20))) ? TRUE : FALSE;
 }
-
+#endif

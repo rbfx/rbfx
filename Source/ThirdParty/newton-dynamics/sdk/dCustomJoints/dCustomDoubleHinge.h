@@ -35,8 +35,6 @@ class dCustomDoubleHinge: public dCustomHinge
 	CUSTOM_JOINTS_API void SetFriction1(dFloat frictionTorque);
 	CUSTOM_JOINTS_API void SetAsSpringDamper1(bool state, dFloat springDamperRelaxation, dFloat spring, dFloat damper);
 
-	CUSTOM_JOINTS_API void SetHardMiddleAxis(bool state);
-
 	CUSTOM_JOINTS_API virtual void Debug(dDebugDisplay* const debugDisplay) const;
 	protected:
 

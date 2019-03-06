@@ -646,7 +646,6 @@ dgWorld::OnListenerBodyDestroyCallback dgWorld::GetListenerBodyDestroyCallback (
 	return listener.m_onBodyDestroy;
 }
 
-
 void dgWorld::ListenersDebug(void* const debugContext)
 {
 	for (dgListenerList::dgListNode* node = m_listeners.GetFirst(); node; node = node->GetNext()) {

@@ -18,62 +18,89 @@
 #define D_CUSTOM_TRIGGER_MANAGER_H_
 
 #include "dCustomJointLibraryStdAfx.h"
-#include "dCustomControllerManager.h"
+#include "dCustomListener.h"
 
 
 #define TRIGGER_PLUGIN_NAME				"__triggerManager__"
-
-// a trigger is volume of space that is there to send a message to other objects when and object enter of leave the trigger region  
+// a trigger is volume of space that is there to send a message 
+// to other objects when and object enter of leave the trigger region  
 // they are not visible and do not collide with bodies, but the generate contacts
-class dCustomTriggerController: public dCustomControllerBase
+
+
+class dCustomTriggerManager;
+
+class dCustomTriggerController
 {
 	public:
-	CUSTOM_JOINTS_API dCustomTriggerController();
-	CUSTOM_JOINTS_API ~dCustomTriggerController();
+	dCustomTriggerController()
+		:m_manifest()
+		,m_userData(NULL)
+		,m_kinematicBody(NULL)
+		,m_manager(NULL)
+	{
+	}
 
-	CUSTOM_JOINTS_API void Init (NewtonCollision* const convexShape, const dMatrix& matrix, void* const userData);
+	~dCustomTriggerController()
+	{
+		NewtonDestroyBody(m_kinematicBody);
+	}
+	
+	void* GetUserData() const {return m_userData;}
+	void SetUserData(void* const data) {m_userData = data;}
+
+	NewtonBody* GetBody() const {return m_kinematicBody; }
+
 	CUSTOM_JOINTS_API virtual void PreUpdate(dFloat timestep, int threadIndex);
 	CUSTOM_JOINTS_API virtual void PostUpdate(dFloat timestep, int threadIndex);
 
 	CUSTOM_JOINTS_API virtual void Debug(dCustomJoint::dDebugDisplay* const debugContext) const;
-	
+
 	private:
-	dTree<NewtonBody*,NewtonBody*> m_manifest;
+	dTree<unsigned, NewtonBody*> m_manifest;
+	void* m_userData;
+	NewtonBody* m_kinematicBody;
+	dCustomTriggerManager* m_manager;
+
 	friend class dCustomTriggerManager;
 };
 
-class dCustomTriggerManager: public dCustomControllerManager<dCustomTriggerController> 
+class dCustomTriggerManager: public dCustomListener
 {
 	public:
 	enum dTriggerEventType
 	{
 		m_inTrigger,
-		m_enterTrigger,
 		m_exitTrigger,
+		m_enterTrigger,
 	};
 
 	CUSTOM_JOINTS_API dCustomTriggerManager (NewtonWorld* const world);
 	CUSTOM_JOINTS_API virtual ~dCustomTriggerManager();
+	
+	CUSTOM_JOINTS_API virtual dCustomTriggerController* CreateTrigger (const dMatrix& matrix, NewtonCollision* const convexShape, void* const userData);
+	CUSTOM_JOINTS_API virtual void DestroyTrigger (dCustomTriggerController* const trigger);
+	CUSTOM_JOINTS_API virtual void EventCallback (const dCustomTriggerController* const me, dTriggerEventType eventType, NewtonBody* const guess) const = 0;
 
+	protected:
+	virtual void Debug () const {};
+	CUSTOM_JOINTS_API virtual void OnDestroyBody (NewtonBody* const body); 
 	CUSTOM_JOINTS_API virtual void PreUpdate(dFloat timestep);
+
+	CUSTOM_JOINTS_API virtual void OnDestroy();
+
 	virtual void PostUpdate(dFloat timestep)
 	{
 		// bypass the entire Post Update call by not calling the base class
 	}
 
-	CUSTOM_JOINTS_API virtual void OnDestroyBody (NewtonBody* const body); 
-
-	virtual void Debug () const {};
-	CUSTOM_JOINTS_API virtual dCustomTriggerController* CreateTrigger (const dMatrix& matrix, NewtonCollision* const convexShape, void* const userData);
-
-	CUSTOM_JOINTS_API virtual void EventCallback (const dCustomTriggerController* const me, dTriggerEventType eventType, NewtonBody* const guess) const = 0;
-
 	private:
 	void UpdateTrigger (dCustomTriggerController* const controller);
 	static void UpdateTrigger (NewtonWorld* const world, void* const context, int threadIndex);
 
+	dList<dCustomTriggerController> m_triggerList;
+	dFloat m_timestep;
 	unsigned m_lock;
-	friend class dCustomTriggerController;
+	unsigned m_lru;
 };
 
 

@@ -37,21 +37,27 @@ dNewtonTriggerManager::~dNewtonTriggerManager ()
 
 dNewtonTriggerManager::dNewtonTrigger* dNewtonTriggerManager::GetFirstTrigger() const
 {
+	dAssert(0);
+/*
 	dListNode* const node = GetFirst();
 	if (node) {
 		return (dNewtonTriggerManager::dNewtonTrigger*) NewtonBodyGetUserData (node->GetInfo().GetBody());
 	}
+*/
 	return NULL;
 }
 
 dNewtonTriggerManager::dNewtonTrigger* dNewtonTriggerManager::GetNextTrigger(const dNewtonTrigger* const trigger) const
 {
+	dAssert(0);
+/*
 	dAssert (trigger);
 	dAssert (GetNodeFromInfo(*trigger->m_controller));
 	dListNode* const node = GetNodeFromInfo(*trigger->m_controller)->GetNext();
 	if (node) {
 		return (dNewtonTriggerManager::dNewtonTrigger*) NewtonBodyGetUserData (node->GetInfo().GetBody());
 	}
+*/
 	return NULL;
 }
 
@@ -68,17 +74,21 @@ dNewtonTriggerManager::dNewtonTrigger::dNewtonTrigger (dNewtonTriggerManager* co
 
 dNewtonTriggerManager::dNewtonTrigger::~dNewtonTrigger ()
 {
+	dAssert(0);
+/*
 	NewtonBody* const body = m_controller->GetBody();	
 	if (NewtonBodyGetDestructorCallback(body)) {
 		SetBody(NULL);
 		dNewtonTriggerManager* const manager = (dNewtonTriggerManager*)m_controller->GetManager();
 		manager->DestroyController (m_controller);
 	}
+*/
 }
-
 
 void dNewtonTriggerManager::EventCallback (const dCustomTriggerController* const trigger, dTriggerEventType event, NewtonBody* const guess) const
 {
+	dAssert(0);
+/*
 	dNewtonTrigger* const callback = (dNewtonTrigger*) trigger->GetUserData();
 	dNewtonBody* const guessBody = (dNewtonBody*) NewtonBodyGetUserData(guess);
 	switch (event) 
@@ -101,4 +111,5 @@ void dNewtonTriggerManager::EventCallback (const dCustomTriggerController* const
 			break;
 		}
 	}
+*/
 }

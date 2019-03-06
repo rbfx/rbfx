@@ -369,6 +369,7 @@ dScene::dTreeNode* dScene::CreateCollisionFromNewtonCollision(dTreeNode* const p
 
 //	dTreeNode* const node = AddNode(info, parent);
 	if (info) {
+		info->m_uniqueID = tmp->m_uniqueID;
 		SetNodeInfo(info, node);
 		info->Release();
 	} else {
@@ -1525,7 +1526,6 @@ void dScene::NewtonWorldToScene (const NewtonWorld* const world, dSceneExportCal
 			NewtonCollisionGetInfo(collision, &collsionRecord);
 
 			// extract the offset matrix form the collision
-			dAssert(0);
 			//dMatrix& offsetMatrix = *((dMatrix*)&collsionRecord.m_offsetMatrix[0][0]);
 			//info->BakeTransform (offsetMatrix.Inverse());
 			//info->SetPivotMatrix(offsetMatrix * info->GetPivotMatrix());

@@ -56,16 +56,7 @@ class dgKinematicBody: public dgBody
 	virtual bool IsInEquilibrium  () const {return true;}
 	virtual void SetCollidable (bool state) {m_collidable = state;}
 	virtual void Serialize (const dgTree<dgInt32, const dgCollision*>& collisionRemapId, dgSerialize serializeCallback, void* const userData);
-
 	virtual void AddDampingAcceleration(dgFloat32 timestep) {}
-
-/*
-	virtual dgConstraint* GetFirstJoint() const;
-	virtual dgConstraint* GetNextJoint(dgConstraint* const joint) const;
-	virtual dgConstraint* GetFirstContact() const;
-	virtual dgConstraint* GetNextContact(dgConstraint* const joint) const;
-	virtual dgVector CalculateInverseDynamicForce (const dgVector& desiredVeloc, dgFloat32 timestep) const;
-*/
 
 	static dgVector m_dummy;
 

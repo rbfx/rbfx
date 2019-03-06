@@ -25,6 +25,9 @@
 
 #include "dgPhysicsStdafx.h"
 
+#ifdef __linux__
+#include <immintrin.h>
+#endif
 
 #define DG_SOA_WORD_GROUP_SIZE	8 
 
@@ -228,6 +231,11 @@ class dgSoaFloat
 		return _mm256_fnmadd_ps(A.m_type, B.m_type, m_type);
 	}
 
+	DG_INLINE dgSoaFloat LoadIndirect(const dgSoaFloat* const baseAddr, const dgSoaFloat& index, const dgSoaFloat& mask) const
+	{
+		return _mm256_mask_i32gather_ps(m_type, &baseAddr->m_f[0], index.m_typeInt, mask.m_type, 4);
+	}
+
 	DG_INLINE dgSoaFloat operator> (const dgSoaFloat& A) const
 	{
 		return _mm256_cmp_ps (m_type, A.m_type, _CMP_GT_OQ);
@@ -274,6 +282,7 @@ class dgSoaFloat
 	union
 	{
 		__m256 m_type;
+		__m256i m_typeInt;
 		dgInt32 m_i[DG_SOA_WORD_GROUP_SIZE];
 		dgFloat32 m_f[DG_SOA_WORD_GROUP_SIZE];
 	};

@@ -4735,7 +4735,6 @@ void NewtonBodySetMassMatrix(const NewtonBody* const bodyPtr, dFloat mass, dFloa
 	NewtonBodySetFullMassMatrix(bodyPtr, mass, &inertia[0][0]);
 }
 
-
 void  NewtonBodySetMassProperties (const NewtonBody* const bodyPtr, dFloat mass, const NewtonCollision* const collisionPtr)
 {
 	TRACE_FUNCTION(__FUNCTION__);
@@ -4743,8 +4742,6 @@ void  NewtonBodySetMassProperties (const NewtonBody* const bodyPtr, dFloat mass,
 	dgCollisionInstance* const collision = (dgCollisionInstance*) collisionPtr;
 	body->SetMassProperties (mass, collision);
 }
-
-
 
 /*!
   Get the mass matrix of a rigid body.
@@ -6268,7 +6265,7 @@ void NewtonBodyIntegrateVelocity (const NewtonBody* const bodyPtr, dFloat timest
 	TRACE_FUNCTION(__FUNCTION__);
 	dgBody* const body = (dgBody *)bodyPtr;
 
-	if (body->GetInvMass().m_w > dgFloat32 (0.0f)) {
+	if (body->IsRTTIType(dgBody::m_kinematicBody) || (body->GetInvMass().m_w > dgFloat32 (0.0f))) {
 		body->IntegrateVelocity(timestep);
 	}
 }
