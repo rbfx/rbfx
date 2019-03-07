@@ -5,6 +5,7 @@
     <RootNamespace>Player</RootNamespace>
     <EnableDefaultCompileItems>False</EnableDefaultCompileItems>
     <LangVersion>7.2</LangVersion>
+    <ProjectGuid>{20EFA664-4363-3F89-A021-34D1ADB22F6C}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.cs" />

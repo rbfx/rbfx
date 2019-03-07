@@ -3,6 +3,14 @@
     <AssemblyName>Urho3DNet</AssemblyName>
     <OutputType>Library</OutputType>
     <LangVersion>7.2</LangVersion>
+    <ProjectGuid>{3AFB9939-96CE-36A9-9740-54DCD7B2DE94}</ProjectGuid>
+    <PackageId>rbfx.Urho3DNet</PackageId>
+    <Version>0.0.1.0-alpha</Version>
+    <Authors>Rokas Kupstys</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/rokups/rbfx</RepositoryUrl>
+    <Description>rbfx game engine package for C#</Description>
+    <PackageTags>rbfx Urho3D gamedev csharp dotnet gameengine</PackageTags>
   </PropertyGroup>
   <PropertyGroup>
     <GeneratedCodePath>$(BuildDir)Source/Urho3D/CSharp/</GeneratedCodePath>
@@ -22,4 +30,34 @@
   <ItemGroup>
     <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="../../../LICENSE">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <PackagePath>.</PackagePath>
+    </Content>
+    <Content Include="build/**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <PackagePath>build/%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
+    </Content>
+    <Content Include="$(BuildDir)bin/CoreData/**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <PackagePath>content/CoreData/%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
+    </Content>
+    <Content Include="$(BuildDir)bin/$(Configuration)/Urho3D.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <PackagePath>runtimes/win-x64/native/</PackagePath>
+    </Content>
+    <Content Include="$(BuildDir)bin/$(Configuration)/Urho3D.pdb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <PackagePath>runtimes/win-x64/native/</PackagePath>
+    </Content>
+    <Content Include="$(BuildDir)bin/$(Configuration)/Urho3DCSharp.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <PackagePath>runtimes/win-x64/native/</PackagePath>
+    </Content>
+    <Content Include="$(BuildDir)bin/$(Configuration)/Urho3DCSharp.pdb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <PackagePath>runtimes/win-x64/native/</PackagePath>
+    </Content>
+ </ItemGroup>  
 </Project>
