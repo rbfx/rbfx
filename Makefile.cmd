@@ -7,12 +7,12 @@ setlocal enabledelayedexpansion
 
 set "CMAKE_ARGS=%*"
 
-IF NOT EXIST build (
-    mkdir build
+IF NOT EXIST cmake-build (
+    mkdir cmake-build
 )
 
-if EXIST build\environment.cmd (
-    call build\environment.cmd
+if EXIST cmake-build\environment.cmd (
+    call cmake-build\environment.cmd
     goto process
 )
 
@@ -22,10 +22,10 @@ if "!PROCESSOR_ARCHITECTURE!" == "AMD64" (
 ) else (
     set "PLATFORM=x86"
 )
-echo set "PLATFORM=!PLATFORM!" > build\environment.cmd
+echo set "PLATFORM=!PLATFORM!" > cmake-build\environment.cmd
 
 set /P "VS=Visual Studio (2015/_2017_): " || set "VS=2017"
-echo set "VS=!VS!" >> build\environment.cmd
+echo set "VS=!VS!" >> cmake-build\environment.cmd
 
 :process
 
@@ -52,7 +52,7 @@ if "!PLATFORM!" == "x64" (
 echo Using !CMAKE_GENRATOR! on !PLATFORM!
 
 :build
-pushd build
+pushd cmake-build
 echo cmake.exe -G "!CMAKE_GENRATOR!" !CMAKE_ARGS! ..
 cmake.exe -G "!CMAKE_GENRATOR!" !CMAKE_ARGS! ..
 msbuild Urho3D.sln /t:restore

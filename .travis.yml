@@ -128,8 +128,8 @@ before_script: |
   fi
 
 script: |
-  mkdir build
-  cd build
+  mkdir cmake-build
+  cd cmake-build
 
   echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
 

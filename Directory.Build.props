@@ -26,8 +26,8 @@
     <BaseOutputPath>$(BaseOutputPath)$(Configuration)/</BaseOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(BuildDir)' == '' ">
-    <BuildDir Condition=" '$(OS)' != 'Unix' ">$(SolutionDir)/</BuildDir>
-    <BuildDir Condition=" '$(OS)' == 'Unix' ">$(SolutionDir)build/</BuildDir>
+    <BuildDir Condition=" '$(OS)' != 'Unix' ">$(SolutionDir)</BuildDir>
+    <BuildDir Condition=" '$(OS)' == 'Unix' ">$(SolutionDir)cmake-build/</BuildDir>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(BuildDir)' != '' ">
     <BaseOutputPath>$(BuildDir)$(BaseOutputPath)/</BaseOutputPath>
