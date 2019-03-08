@@ -7,6 +7,7 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
 	<EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <Configurations>Debug;Release;RelWithDebInfo;MinSizeRel</Configurations>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetFramework)' == 'net471'">
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
@@ -26,8 +27,8 @@
     <BaseOutputPath>$(BaseOutputPath)$(Configuration)/</BaseOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(BuildDir)' == '' ">
-    <BuildDir Condition=" '$(OS)' != 'Unix' ">$(SolutionDir)</BuildDir>
-    <BuildDir Condition=" '$(OS)' == 'Unix' ">$(SolutionDir)cmake-build/</BuildDir>
+    <BuildDir Condition=" '$(OS)' == 'Windows_NT' ">$(SolutionDir)</BuildDir>
+    <BuildDir Condition=" '$(OS)' != 'Windows_NT' ">$(SolutionDir)cmake-build/</BuildDir>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(BuildDir)' != '' ">
     <BaseOutputPath>$(BuildDir)$(BaseOutputPath)/</BaseOutputPath>
