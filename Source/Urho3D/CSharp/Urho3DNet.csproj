@@ -32,22 +32,19 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
     <Content Include="../../../LICENSE">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <PackagePath>.</PackagePath>
     </Content>
     <Content Include="build/**">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <PackagePath>build/%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
     </Content>
     <Content Include="$(BuildDir)bin/CoreData/**">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <PackagePath>content/CoreData/%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
     </Content>
     <Content Include="$(BuildDir)bin/$(Configuration)/Urho3D.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <PackagePath>runtimes/win-x64/native/</PackagePath>
     </Content>
-    <Content Include="$(BuildDir)bin/$(Configuration)/Urho3D.pdb">
+    <Content Include="$(BuildDir)bin/$(Configuration)/Urho3D.pdb" Condition=" '$(HasDebugInfo)' == 'true' ">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <PackagePath>runtimes/win-x64/native/</PackagePath>
     </Content>
@@ -55,7 +52,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <PackagePath>runtimes/win-x64/native/</PackagePath>
     </Content>
-    <Content Include="$(BuildDir)bin/$(Configuration)/Urho3DCSharp.pdb">
+    <Content Include="$(BuildDir)bin/$(Configuration)/Urho3DCSharp.pdb" Condition=" '$(HasDebugInfo)' == 'true' ">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <PackagePath>runtimes/win-x64/native/</PackagePath>
     </Content>

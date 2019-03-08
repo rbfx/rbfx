@@ -8,6 +8,7 @@
 	<EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <Configurations>Debug;Release;RelWithDebInfo;MinSizeRel</Configurations>
+    <HasDebugInfo Condition=" '$(Configuration)' == 'Debug' Or '$(Configuration)' == 'RelWithDebInfo'">true</HasDebugInfo>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetFramework)' == 'net471'">
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
