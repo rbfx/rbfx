@@ -247,10 +247,11 @@ namespace Urho3D {
         }
     }
 
-    Urho3D::RigidBodyContactEntry* PhysicsWorld::GetCreateContactEntry(RigidBody* body0)
+    Urho3D::RigidBodyContactEntry* PhysicsWorld::GetCreateContactEntry(RigidBody* body0, RigidBody* body1)
     {
+        IntVector2 key(body0->GetID(), body1->GetID());
         //look through existing
-        RigidBodyContactEntry* entry = contactEntries_[body0->GetID()];
+        RigidBodyContactEntry* entry = contactEntries_[key.ToHash()];
 
         if (!entry)
         {
@@ -283,7 +284,12 @@ namespace Urho3D {
 
 
             //contactEntries_.InsertNew(otherBody->GetID(), newEntry);
-            contactEntries_.Insert(Pair<unsigned int, RigidBodyContactEntry*>(body0->GetID(), entry));
+
+            //form key based on both bodies ids.
+
+  
+
+            contactEntries_.Insert(Pair<unsigned int, RigidBodyContactEntry*>(key.ToHash(), entry));
 
         }
 
@@ -553,12 +559,12 @@ namespace Urho3D {
             }
             else if (entry->wakeFlag_ && entry->wakeFlagPrev_)//continued contact
             {
-                if (entry->body0->collisionEventMode_ == COLLISION_ALL || entry->body1->collisionEventMode_ == COLLISION_ALL) {
+                if (entry->body0->collisionEventMode_ == RigidBody::COLLISION_ALL || entry->body1->collisionEventMode_ == RigidBody::COLLISION_ALL) {
                     SendEvent(E_PHYSICSCOLLISION, eventData);
                 }
 
 
-                if (entry->body0->collisionEventMode_ == COLLISION_ALL) {
+                if (entry->body0->collisionEventMode_ == RigidBody::COLLISION_ALL) {
                     if (!entry->body0.Refs() || !entry->body1.Refs()) break;
 
                     eventData[NodeCollisionStart::P_OTHERNODE] = entry->body1->GetNode();
@@ -566,7 +572,7 @@ namespace Urho3D {
                     entry->body0->GetNode()->SendEvent(E_NODECOLLISION, eventData);
                 }
 
-                if (entry->body1->collisionEventMode_ == COLLISION_ALL) {
+                if (entry->body1->collisionEventMode_ == RigidBody::COLLISION_ALL) {
 
                     if (!entry->body0.Refs() || !entry->body1.Refs()) break;
 

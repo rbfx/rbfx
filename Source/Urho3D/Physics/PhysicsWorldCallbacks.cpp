@@ -114,7 +114,7 @@ namespace Urho3D {
         RigidBodyContactEntry* contactEntry = nullptr;
         PhysicsWorld* physicsWorld = rigBody0->GetPhysicsWorld();
         NewtonWorldCriticalSectionLock(physicsWorld->GetNewtonWorld(), threadIndex);
-            contactEntry = physicsWorld->GetCreateContactEntry(rigBody0);
+            contactEntry = physicsWorld->GetCreateContactEntry(rigBody0, rigBody1);
         NewtonWorldCriticalSectionUnlock(physicsWorld->GetNewtonWorld());
 
         //If it is an "expired" entry - re-initialize it.

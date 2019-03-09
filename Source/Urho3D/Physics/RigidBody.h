@@ -38,19 +38,12 @@ namespace Urho3D
     class CollisionShape;
     class RigidBodyContactEntry;
 
-    /// Rigid body collision event signaling mode.
-    enum RigidBodyCollisionEventMode
-    {
-        COLLISION_NEVER = 0,    //dont generate any collision events
-        COLLISION_ALL = 1,          //generate all collision events start, during, and end.
-        COLLISION_START_END = 2,    //only generate start of collision and end of collision.
-    };
+
     static const char* RigidBodyCollisionEventModeNames[] =
     {
-        "SOLVE_MODE_JOINT_DEFAULT",
-        "SOLVE_MODE_EXACT",
-        "SOLVE_MODE_ITERATIVE",
-        "SOLVE_MODE_KINEMATIC_LOOP",
+        "COLLISION_NEVER",
+        "COLLISION_ALL",
+        "COLLISION_START_END",
         nullptr
     };
 
@@ -70,6 +63,15 @@ namespace Urho3D
     {
         URHO3D_OBJECT(RigidBody, Component);
     public:
+
+        /// Rigid body collision event signaling mode.
+        enum RigidBodyCollisionEventMode
+        {
+            COLLISION_NEVER = 0,    //dont generate any collision events
+            COLLISION_ALL = 1,          //generate all collision events start, during, and end.
+            COLLISION_START_END = 2,    //only generate start of collision and end of collision.
+        };
+
 
         friend class CollisionShape;
         friend class Constraint;

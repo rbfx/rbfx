@@ -221,7 +221,7 @@ namespace Urho3D
         virtual void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
 
-        RigidBodyContactEntry* GetCreateContactEntry(RigidBody* body0);
+        RigidBodyContactEntry* GetCreateContactEntry(RigidBody* body0, RigidBody* body1);
 
 
         HashMap<unsigned int, RigidBodyContactEntry*> contactEntries_;
