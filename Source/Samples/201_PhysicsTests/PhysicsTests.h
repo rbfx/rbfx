@@ -139,6 +139,7 @@ private:
 
 
     void HandleCollisionStart(StringHash eventType, VariantMap& eventData);
+    void HandleCollision(StringHash eventType, VariantMap& eventData);
     void HandleCollisionEnd(StringHash eventType, VariantMap& eventData);
 
 

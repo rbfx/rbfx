@@ -274,7 +274,6 @@ namespace Urho3D {
                     URHO3D_LOGINFO("PhysicsWorld Contact Entry Pool Grow To: " + String(contactEntryPool_.Size()));
 
                     contactEntryPoolCurIdx_ = prevSize;
-
                 }
 
 
@@ -287,6 +286,11 @@ namespace Urho3D {
             contactEntries_.Insert(Pair<unsigned int, RigidBodyContactEntry*>(body0->GetID(), entry));
 
         }
+
+
+
+
+
 
         return entry;
     }
@@ -528,10 +532,9 @@ namespace Urho3D {
             }
             else if (!entry->wakeFlag_ && entry->wakeFlagPrev_)//end contact
             {
-                if (entry->body0->collisionEventMode_ &&entry->body1->collisionEventMode_) {
+                if (entry->body0->collisionEventMode_ && entry->body1->collisionEventMode_) {
                     SendEvent(E_PHYSICSCOLLISIONEND, eventData);
                 }
-
 
                 if (entry->body0->collisionEventMode_) {
 
@@ -550,13 +553,12 @@ namespace Urho3D {
             }
             else if (entry->wakeFlag_ && entry->wakeFlagPrev_)//continued contact
             {
-                if (entry->body0->collisionEventMode_ &&entry->body1->collisionEventMode_) {
+                if (entry->body0->collisionEventMode_ == COLLISION_ALL || entry->body1->collisionEventMode_ == COLLISION_ALL) {
                     SendEvent(E_PHYSICSCOLLISION, eventData);
                 }
 
 
-
-                if (entry->body0->collisionEventMode_) {
+                if (entry->body0->collisionEventMode_ == COLLISION_ALL) {
                     if (!entry->body0.Refs() || !entry->body1.Refs()) break;
 
                     eventData[NodeCollisionStart::P_OTHERNODE] = entry->body1->GetNode();
@@ -564,7 +566,7 @@ namespace Urho3D {
                     entry->body0->GetNode()->SendEvent(E_NODECOLLISION, eventData);
                 }
 
-                if (entry->body1->collisionEventMode_) {
+                if (entry->body1->collisionEventMode_ == COLLISION_ALL) {
 
                     if (!entry->body0.Refs() || !entry->body1.Refs()) break;
 
@@ -580,7 +582,8 @@ namespace Urho3D {
 
             //move on..
             entry->wakeFlagPrev_ = entry->wakeFlag_;
-            entry->wakeFlag_ = false;
+            entry->wakeFlag_ = NewtonJointIsActive(entry->newtonJoint_);
+            
         }
 
         if(contactEntries_.Size() > 10)
@@ -662,10 +665,12 @@ namespace Urho3D {
 
         freePhysicsInternals();
 
+        ParseContacts();
+
         //rebuild stuff.
         rebuildDirtyPhysicsComponents();
 
-        ParseContacts();
+
 
 
 
@@ -701,15 +706,6 @@ namespace Urho3D {
                 }
             }
 
-
-            //wake bodies around kinematic bodies..
-            if (rigBody->isKinematic_) {
-
-                dVector p0, p1;
-                NewtonBodyGetAABB(rigBody->newtonBody_, &p0[0], &p1[0]);
-                NewtonWorldForEachBodyInAABBDo(newtonWorld_, &p0[0],  &p1[0], Newton_WakeBodiesInAABBCallback, nullptr);
-
-            }
 
 
             //apply the transform of all rigid body components to their respective nodes.

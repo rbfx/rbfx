@@ -157,14 +157,14 @@ void PhysicsTests::CreateScene()
 
 
     //SpawnCompound(Vector3(-2, 10 , 10));
-    //SpawnConvexHull(Vector3(-2, 3, 10));
+    SpawnConvexHull(Vector3(-2, 3, 10));
 
-    Quaternion tilt = Quaternion(Random(-1.0f, 1.0f), Vector3(1, 0, 0));
+    //Quaternion tilt = Quaternion(Random(-1.0f, 1.0f), Vector3(1, 0, 0));
 
     //SpawnTrialBike(Vector3(5, 5, 0),  Quaternion(0, Vector3(0, 1, 0)) * tilt, true);
     //SpawnTrialBike(Vector3(-5, 5, 0), Quaternion(180, Vector3(0, 1, 0)) * tilt, false);
 
-    SpawnKinematicBodyTest(Vector3(0, 0, 0), Quaternion::IDENTITY);
+    //SpawnKinematicBodyTest(Vector3(0, 0, 0), Quaternion::IDENTITY);
 
 
     //SpawnHingeSpringTest(Vector3(0,10,0), Quaternion::IDENTITY);
@@ -243,6 +243,7 @@ void PhysicsTests::SubscribeToEvents()
 
 
     SubscribeToEvent(E_PHYSICSCOLLISIONSTART, URHO3D_HANDLER(PhysicsTests, HandleCollisionStart));
+    SubscribeToEvent(E_PHYSICSCOLLISION, URHO3D_HANDLER(PhysicsTests, HandleCollision));
     SubscribeToEvent(E_PHYSICSCOLLISIONEND, URHO3D_HANDLER(PhysicsTests, HandleCollisionEnd));
 
 
@@ -1340,12 +1341,27 @@ void PhysicsTests::HandleCollisionStart(StringHash eventType, VariantMap& eventD
     RigidBody* bodyB = static_cast<RigidBody*>(eventData[PhysicsCollisionStart::P_BODYB].GetPtr());
 
     RigidBodyContactEntry* contactData = static_cast<RigidBodyContactEntry*>(eventData[PhysicsCollisionStart::P_CONTACT_DATA].GetPtr());
+    URHO3D_LOGINFO("Collision Start");
     for (int i = 0; i < contactData->numContacts; i++) {
-        //GetSubsystem<VisualDebugger>()->AddCross(contactData->contactPositions[i], 0.2f, Color::RED, true);
-        //URHO3D_LOGINFO("Collision Start " + String(contactData->contactPositions[i]));
+        GetSubsystem<VisualDebugger>()->AddCross(contactData->contactPositions[i], 0.2f, Color::RED, true);
+        
     }
 
 
+}
+
+void PhysicsTests::HandleCollision(StringHash eventType, VariantMap& eventData)
+{
+    RigidBody* bodyA = static_cast<RigidBody*>(eventData[PhysicsCollisionStart::P_BODYA].GetPtr());
+    RigidBody* bodyB = static_cast<RigidBody*>(eventData[PhysicsCollisionStart::P_BODYB].GetPtr());
+
+    RigidBodyContactEntry* contactData = static_cast<RigidBodyContactEntry*>(eventData[PhysicsCollisionStart::P_CONTACT_DATA].GetPtr());
+    URHO3D_LOGINFO("Collision");
+    for (int i = 0; i < contactData->numContacts; i++) {
+        GetSubsystem<VisualDebugger>()->AddCross(contactData->contactPositions[i], 0.2f, Color::GREEN, true);
+        
+    }
+    
 }
 
 void PhysicsTests::HandleCollisionEnd(StringHash eventType, VariantMap& eventData)
@@ -1354,9 +1370,10 @@ void PhysicsTests::HandleCollisionEnd(StringHash eventType, VariantMap& eventDat
     RigidBody* bodyB = static_cast<RigidBody*>(eventData[PhysicsCollisionStart::P_BODYB].GetPtr());
 
     RigidBodyContactEntry* contactData = static_cast<RigidBodyContactEntry*>(eventData[PhysicsCollisionStart::P_CONTACT_DATA].GetPtr());
+    URHO3D_LOGINFO("Collision End\n");
     for (int i = 0; i < contactData->numContacts; i++) {
-        //GetSubsystem<VisualDebugger>()->AddCross(contactData->contactPositions[i], 0.2f, Color::RED, true);
-        //URHO3D_LOGINFO("Collision End " + String(contactData->contactPositions[i]));
+        GetSubsystem<VisualDebugger>()->AddCross(contactData->contactPositions[i], 0.2f, Color::BLUE, true);
+        
     }
 }
 

@@ -41,10 +41,19 @@ namespace Urho3D
     /// Rigid body collision event signaling mode.
     enum RigidBodyCollisionEventMode
     {
-        COLLISION_NEVER = 0,
-        //COLLISION_ACTIVE,
-        COLLISION_ALWAYS
+        COLLISION_NEVER = 0,    //dont generate any collision events
+        COLLISION_ALL = 1,          //generate all collision events start, during, and end.
+        COLLISION_START_END = 2,    //only generate start of collision and end of collision.
     };
+    static const char* RigidBodyCollisionEventModeNames[] =
+    {
+        "SOLVE_MODE_JOINT_DEFAULT",
+        "SOLVE_MODE_EXACT",
+        "SOLVE_MODE_ITERATIVE",
+        "SOLVE_MODE_KINEMATIC_LOOP",
+        nullptr
+    };
+
     static const unsigned DEFAULT_COLLISION_LAYER = 0;
     static const unsigned DEFAULT_COLLISION_MASK = M_MAX_UNSIGNED;//default collide with all layers.
 
@@ -226,6 +235,8 @@ namespace Urho3D
 
         bool GetAutoSleep() const { return autoSleep_; }
 
+        bool GetAwake() const;
+
         /// force the body to be awake
         void Activate();
         /// force the body to sleep
@@ -336,7 +347,7 @@ namespace Urho3D
         bool drawPhysicsDebugCollisionGeometry_ = false;
 
 
-        RigidBodyCollisionEventMode collisionEventMode_ = COLLISION_ALWAYS;
+        RigidBodyCollisionEventMode collisionEventMode_ = COLLISION_START_END;
 
 
         Node* prevNode_ = nullptr;

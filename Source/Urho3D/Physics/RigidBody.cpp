@@ -91,6 +91,7 @@ namespace Urho3D {
         URHO3D_ACCESSOR_ATTRIBUTE("No Collide Override", GetNoCollideOverride, SetNoCollideOverride, bool, false, AM_DEFAULT);
         URHO3D_ATTRIBUTE("Collision Body Exceptions", VariantMap, collisionExceptions_, VariantMap(), AM_DEFAULT | AM_NOEDIT);
         URHO3D_ATTRIBUTE("Generate Contacts", bool, generateContacts_, true, AM_DEFAULT);
+        URHO3D_ENUM_ATTRIBUTE("Collision Event Mode", collisionEventMode_, RigidBodyCollisionEventModeNames, COLLISION_START_END, AM_DEFAULT);
 
 
         URHO3D_ATTRIBUTE("Net Force", Vector3, netForce_, Vector3::ZERO, AM_DEFAULT | AM_NOEDIT);
@@ -425,6 +426,14 @@ namespace Urho3D {
                 NewtonBodySetAutoSleep(newtonBody_, autoSleep_);
             }
         }
+    }
+
+    bool RigidBody::GetAwake() const
+    {
+        if (newtonBody_)
+            return !NewtonBodyGetSleepState(newtonBody_);
+        else
+            return false;
     }
 
     void RigidBody::Activate()

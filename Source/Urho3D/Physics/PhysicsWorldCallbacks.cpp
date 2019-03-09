@@ -100,29 +100,24 @@ namespace Urho3D {
         URHO3D_PROFILE_THREAD(NewtonThreadProfilerString(threadIndex).CString());
         URHO3D_PROFILE_FUNCTION();
 
-
+        //Get handles To NewtonBodies and RigidBody Components.
         const NewtonBody* const body0 = NewtonJointGetBody0(contactJoint);
         const NewtonBody* const body1 = NewtonJointGetBody1(contactJoint);
 
-        
         RigidBody* rigBody0 = static_cast<RigidBody*>(NewtonBodyGetUserData(body0));
         RigidBody* rigBody1 = static_cast<RigidBody*>(NewtonBodyGetUserData(body1));
 
 
-        unsigned int key = IntVector2(rigBody0->GetID(), rigBody1->GetID()).ToHash();
+        
 
-        PhysicsWorld* physicsWorld = rigBody0->GetPhysicsWorld();
-
-        if (physicsWorld == nullptr)
-            return;//scene is being destroyed.
-
+        // Get a handle to a contact entry.
         RigidBodyContactEntry* contactEntry = nullptr;
-
+        PhysicsWorld* physicsWorld = rigBody0->GetPhysicsWorld();
         NewtonWorldCriticalSectionLock(physicsWorld->GetNewtonWorld(), threadIndex);
             contactEntry = physicsWorld->GetCreateContactEntry(rigBody0);
         NewtonWorldCriticalSectionUnlock(physicsWorld->GetNewtonWorld());
 
-
+        //If it is an "expired" entry - re-initialize it.
         if (contactEntry->expired_) {
             contactEntry->body0 = rigBody0;
             contactEntry->body1 = rigBody1;
@@ -131,8 +126,8 @@ namespace Urho3D {
             contactEntry->numContacts = 0;
         }
 
-        if (NewtonJointIsActive(contactJoint))
-            contactEntry->wakeFlag_ = NewtonJointIsActive(contactJoint);
+        contactEntry->newtonJoint_ = (NewtonJoint*)contactJoint;
+        contactEntry->wakeFlag_ = NewtonJointIsActive(contactJoint);
 
         if (NewtonContactJointGetContactCount(contactJoint) > contactEntry->numContacts)
             contactEntry->numContacts = NewtonContactJointGetContactCount(contactJoint);

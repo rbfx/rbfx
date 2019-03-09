@@ -66,7 +66,7 @@ namespace Urho3D
 
         virtual void DrawDebugGeometry(DebugRenderer* debug, bool depthTest);
 
-
+        //flag indicating if the entry is in use or not. used for pooling.
         bool expired_ = true;
 
         WeakPtr<RigidBody> body0 = nullptr;
@@ -83,6 +83,7 @@ namespace Urho3D
         Vector3 contactTangent0[DEF_PHYSICS_MAX_CONTACT_POINTS];  //tangent force in the 1st dimention.
         Vector3 contactTangent1[DEF_PHYSICS_MAX_CONTACT_POINTS];  //tangent force in the 2nd dimention.
 
+        NewtonJoint* newtonJoint_ = nullptr;
 
         bool wakeFlag_ = false;
         bool wakeFlagPrev_ = false;
