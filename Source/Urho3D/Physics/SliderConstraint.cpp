@@ -315,9 +315,6 @@ namespace Urho3D
     void Urho3D::SliderConstraint::buildConstraint()
     {
         newtonJoint_ = new dCustomCorkScrew(UrhoToNewton(GetOwnNewtonBuildWorldFrame()), UrhoToNewton(GetOtherNewtonBuildWorldFrame()), GetOwnNewtonBody(), GetOtherNewtonBody());
-
-
-
     }
 
     bool Urho3D::SliderConstraint::applyAllJointParams()
@@ -326,9 +323,7 @@ namespace Urho3D
             return false;
 
 
-        static_cast<dCustomSlider*>(newtonJoint_)->EnableLimits(enableLowerSliderLimit_ || enableUpperSliderLimit_);
 
-        applySliderLimits();
 
 
 
@@ -338,18 +333,18 @@ namespace Urho3D
 
 
 
-
-        
-
-
-        
-
-
         static_cast<dCustomCorkScrew*>(newtonJoint_)->EnableAngularLimits(enableLowerTwistLimit_ || enableUpperTwistLimit_);
         applyTwistLimits();
 
         //#todo - this springdamper doesnt seem to work.
         static_cast<dCustomCorkScrew*>(newtonJoint_)->SetAngularSpringDamper(enableTwistSpringDamper_, twistRelaxation_, twistSpringCoef_, twistDamperCoef_);
+
+
+        static_cast<dCustomSlider*>(newtonJoint_)->EnableLimits(enableLowerSliderLimit_ || enableUpperSliderLimit_);
+
+        applySliderLimits();
+
+
 
         return true;
     }

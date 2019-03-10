@@ -669,13 +669,13 @@ namespace Urho3D {
         }
 
 
-        freePhysicsInternals();
 
         ParseContacts();
 
         //rebuild stuff.
         rebuildDirtyPhysicsComponents();
 
+        freePhysicsInternals();
 
 
 
@@ -712,7 +712,16 @@ namespace Urho3D {
                 }
             }
 
+            //wake bodies around kinematic bodies
+            if (rigBody->isKinematic_) {
+                dVector p0, p1;
+                NewtonBodyGetAABB(rigBody->newtonBody_, &p0[0], &p1[0]);
 
+                //p0 = p0 - dVector(5, 5, 5);
+                //p1 = p1 + dVector(5, 5, 5);
+
+                NewtonWorldForEachBodyInAABBDo(newtonWorld_, &p0[0], &p1[0], Newton_WakeBodiesInAABBCallback, nullptr);
+            }
 
             //apply the transform of all rigid body components to their respective nodes.
             if (rigBody->GetInternalTransformDirty()) {
@@ -763,7 +772,10 @@ namespace Urho3D {
             if (!rigBody->GetDirty())
                 continue;
 
-
+            //mark all connected constraints as needing rebuilt.
+            for (Constraint* constraint : rigBody->connectedConstraints_) {
+                constraint->MarkDirty(true);
+            }
 
             rigBody->reBuildBody();
 

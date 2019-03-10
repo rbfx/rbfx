@@ -655,6 +655,7 @@ namespace Urho3D {
 
 
 
+
         freeBody();
         dMatrix finalInertia;
         dVector finalCenterOfMass;

@@ -107,6 +107,8 @@ namespace Urho3D {
         RigidBody* rigBody0 = static_cast<RigidBody*>(NewtonBodyGetUserData(body0));
         RigidBody* rigBody1 = static_cast<RigidBody*>(NewtonBodyGetUserData(body1));
 
+        if (!rigBody0->GetGenerateContacts() || !rigBody1->GetGenerateContacts())
+            return;
 
         
 
@@ -259,7 +261,7 @@ namespace Urho3D {
     {
         URHO3D_PROFILE_FUNCTION();
         //NewtonBodySetAutoSleep(body, 0);
-        //NewtonBodySetSleepState(body, 0);//wake the body.
+        NewtonBodySetSleepState(body, 0);//wake the body.
         NewtonBodySetFreezeState(body, 0);
         return 1;
     }
