@@ -563,6 +563,10 @@ namespace Urho3D {
             if (!ownBody_.Expired())
                 RemoveJointReferenceFromBody(ownBody_);
 
+            if (!otherBody_.Expired())
+                RemoveJointReferenceFromBody(otherBody_);
+
+
             ownBody_ = nullptr;
             if (!physicsWorld_.Expired())
                 physicsWorld_->removeConstraint(this);

@@ -108,7 +108,7 @@ void PhysicsTests::CreateScene()
     scene_->CreateComponent<Octree>();
     PhysicsWorld* newtonWorld = scene_->CreateComponent<PhysicsWorld>();
     newtonWorld->SetGravity(Vector3(0, -9.81f, 0));
-    newtonWorld->SetPhysicsScale(1.0);
+    newtonWorld->SetPhysicsScale(0.5);
     //scene_->CreateComponent<NewtonCollisionShape_SceneCollision>();
     scene_->CreateComponent<DebugRenderer>();
 
@@ -434,6 +434,7 @@ void PhysicsTests::MoveCamera(float timeStep)
     {
         //test collision point on convex hull
         Node* convexHull = scene_->GetChild("convexhull", true);
+        
         if (convexHull)
         {
 
@@ -610,7 +611,7 @@ void PhysicsTests::SpawnConvexHull(const Vector3& worldPos)
     boxObject->SetCastShadows(true);
 
 
-    // Create physics components, use a smaller mass also
+    // Create physics components
     auto* body = boxNode->CreateComponent<RigidBody>();
     body->SetMassScale(1.0f);
 
@@ -618,7 +619,7 @@ void PhysicsTests::SpawnConvexHull(const Vector3& worldPos)
 
 
     boxNode->Rotate(Quaternion(90, Vector3(1, 1, 0)));
-
+    URHO3D_LOGINFO("Initial Position: " + String(boxNode->GetWorldPosition()));
 }
 
 
@@ -647,6 +648,9 @@ void PhysicsTests::SpawnCompound(const Vector3& worldPos)
 
 
     boxNode->Rotate(Quaternion(90, Vector3(1, 1, 0)));
+
+
+
 }
 
 
@@ -926,8 +930,8 @@ void PhysicsTests::SpawnRandomObjects()
 
         node->GetComponent<RigidBody>()->SetLinearVelocity(cameraNode_->GetWorldDirection() * 10.0f);
         node->GetComponent<RigidBody>()->SetContinuousCollision(false);
-        node->GetComponent<RigidBody>()->SetLinearDamping(0.01f);
-        node->GetComponent<RigidBody>()->SetMassScale(Random(1.0f, 10.0f));
+        //node->GetComponent<RigidBody>()->SetLinearDamping(0.01f);
+        //node->GetComponent<RigidBody>()->SetMassScale(Random(1.0f, 10.0f));
         node->GetComponent<RigidBody>()->SetGenerateContacts(false);
 
     }

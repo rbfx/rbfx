@@ -123,8 +123,8 @@ namespace Urho3D {
         {
             Activate();
 
-            Matrix3x4 scaleLessTransform(transform.Translation(), transform.Rotation(), 1.0f);
-            NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(scaleLessTransform))[0][0]);
+            Matrix3x4 scaleLessTransform(physicsWorld_->SceneToPhysics_Domain(transform.Translation()), transform.Rotation(), 1.0f);
+            NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(scaleLessTransform)[0][0]);
 
         }
         else
@@ -132,7 +132,6 @@ namespace Urho3D {
             nextTransformNeeded_ = true;
             nextTransform_ = Matrix3x4(transform.Translation(), transform.Rotation(), 1.0f);
         }
-
     }
 
     void RigidBody::SetWorldPosition(const Vector3& position)
@@ -144,12 +143,11 @@ namespace Urho3D {
             dgQuaternion orientation;
             NewtonBodyGetRotation(newtonBody_, &orientation.m_x);
 
-            Matrix3x4 transform(position, NewtonToUrhoQuat(orientation), 1.0f);
-            NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(transform))[0][0]);
+            Matrix3x4 transform(physicsWorld_->SceneToPhysics_Domain(position), NewtonToUrhoQuat(orientation), 1.0f);
+            NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(transform)[0][0]);
         }
         else
         {
-
             nextPositionNeeded_ = true;
             nextPosition_ = position;
         }
@@ -161,15 +159,13 @@ namespace Urho3D {
     {
         if (newtonBody_ && !physicsWorld_->isUpdating_)
         {
-
-
             Activate();
 
             dVector pos;
             NewtonBodyGetPosition(newtonBody_, &pos[0]);
 
             Matrix3x4 transform(NewtonToUrhoVec3(pos), quaternion, 1.0f);
-            NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(transform))[0][0]);
+            NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(transform)[0][0]);
         }
         else
         {
@@ -1296,14 +1292,17 @@ namespace Urho3D {
         NewtonBodyGetPosition(newtonBody_, &pos[0]);
         NewtonBodyGetRotation(newtonBody_, &quat.m_x);
 
-
         //updateInterpolatedTransform();
-
-        node_->SetWorldPosition(NewtonToUrhoVec3(pos));
-        node_->SetWorldRotation(NewtonToUrhoQuat(quat));
+        //node_->SetScale(1.0f);
+        //node_->SetWorldTransform(Matrix3x4::IDENTITY.Translation(), Quaternion::IDENTITY, 1.0f);
+        Vector3 scenePos = physicsWorld_->PhysicsToScene_Domain(NewtonToUrhoVec3(pos));
+        node_->SetWorldPosition(scenePos);
+        
+        node_->SetWorldRotation((NewtonToUrhoQuat(quat)).Normalized());
 
         lastSetNodeWorldTransform_ = node_->GetWorldTransform();
-        
+
+
     }
 
 
