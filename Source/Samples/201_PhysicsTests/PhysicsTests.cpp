@@ -108,7 +108,7 @@ void PhysicsTests::CreateScene()
     scene_->CreateComponent<Octree>();
     PhysicsWorld* newtonWorld = scene_->CreateComponent<PhysicsWorld>();
     newtonWorld->SetGravity(Vector3(0, -9.81f, 0));
-    newtonWorld->SetPhysicsScale(0.5);
+    newtonWorld->SetPhysicsScale(2.0f);
     //scene_->CreateComponent<NewtonCollisionShape_SceneCollision>();
     scene_->CreateComponent<DebugRenderer>();
 
@@ -156,24 +156,24 @@ void PhysicsTests::CreateScene()
     ////CreatePyramids(Vector3(0,0,0));
 
 
-    //SpawnCompound(Vector3(-2, 10 , 10));
+    SpawnCompound(Vector3(-2, 10 , 10));
     SpawnConvexHull(Vector3(-2, 3, 10));
 
-    //Quaternion tilt = Quaternion(Random(-1.0f, 1.0f), Vector3(1, 0, 0));
+    Quaternion tilt = Quaternion(Random(-1.0f, 1.0f), Vector3(1, 0, 0));
 
-    //SpawnTrialBike(Vector3(5, 5, 0),  Quaternion(0, Vector3(0, 1, 0)) * tilt, true);
+    SpawnTrialBike(Vector3(5, 5, 0),  Quaternion(0, Vector3(0, 1, 0)) * tilt, true);
     //SpawnTrialBike(Vector3(-5, 5, 0), Quaternion(180, Vector3(0, 1, 0)) * tilt, false);
 
     //SpawnKinematicBodyTest(Vector3(0, 0, 0), Quaternion::IDENTITY);
 
 
-    //SpawnHingeSpringTest(Vector3(0,10,0), Quaternion::IDENTITY);
+    SpawnHingeSpringTest(Vector3(0,10,0), Quaternion::IDENTITY);
     //SpawnHingeSpringTest(Vector3(-2, 10, 0), Quaternion(-90, Vector3(0,1,0)));
 
     //SpawnCollisionExceptionsTest(Vector3(0, 1, 15));
 
     SpawnSliderTest(Vector3(0, 10, 10));
-    //SpawnLinearJointedObject(1.0f, Vector3(10 , 2, 10));
+    SpawnLinearJointedObject(1.0f, Vector3(10 , 2, 10));
 
     //SpawnNSquaredJointedObject(Vector3(-20, 10, 10));
 

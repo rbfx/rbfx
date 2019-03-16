@@ -179,7 +179,7 @@ namespace Urho3D
         ///set the physics scale of the world
         void SetPhysicsScale(float scale) { physicsScale_ = scale; }
 
-        Matrix3x4 GetPhysicsWorldFrame() const { return Matrix3x4(Vector3::ZERO, Quaternion::IDENTITY, physicsScale_); }
+        Matrix3x4 GetPhysicsWorldFrame() const { return Matrix3x4(Vector3::ZERO, Quaternion::IDENTITY, 1.0f/physicsScale_); }
 
         float GetPhysicsScale() const {
             return physicsScale_;

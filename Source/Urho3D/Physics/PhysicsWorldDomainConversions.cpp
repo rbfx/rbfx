@@ -19,7 +19,7 @@ namespace Urho3D
 
     Urho3D::Matrix3x4 PhysicsWorld::SceneToPhysics_Domain(Matrix3x4 sceneFrame)
     {
-        return Matrix3x4(SceneToPhysics_Domain(sceneFrame.Translation()), sceneFrame.Rotation(), 1.0f);
+        return  GetPhysicsWorldFrame().Inverse() * sceneFrame;
     }
 
 
