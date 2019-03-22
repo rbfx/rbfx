@@ -588,14 +588,16 @@ namespace Urho3D {
 
             //move on..
             entry->wakeFlagPrev_ = entry->wakeFlag_;
-            entry->wakeFlag_ = NewtonJointIsActive(entry->newtonJoint_);
+
+            if (entry->newtonJoint_)
+                entry->wakeFlag_ = NewtonJointIsActive(entry->newtonJoint_);
+            else
+                entry->wakeFlag_ = false;
             
         }
 
         if(contactEntries_.Size() > 10)
             CleanContactEntries();
-        
-
 
     }
 

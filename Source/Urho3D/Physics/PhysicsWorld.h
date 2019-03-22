@@ -346,6 +346,9 @@ namespace Urho3D
     unsigned Newton_WorldRayPrefilterCallback(const NewtonBody* const body, const NewtonCollision* const collision, void* const userData);
     dFloat Newton_WorldRayCastFilterCallback(const NewtonBody* const body, const NewtonCollision* const collisionHit, const dFloat* const contact, const dFloat* const normal, dLong collisionID, void* const userData, dFloat intersetParam);
 
+    ///newton joint callbacks
+    void Newton_JointDestructorCallback(const NewtonJoint* const joint);
+
 
 
     /// newton material callbacks

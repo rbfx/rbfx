@@ -95,6 +95,25 @@ namespace Urho3D {
 
 
 
+
+    void Newton_JointDestructorCallback(const NewtonJoint* const joint)
+    {
+
+        static_cast<RigidBodyContactEntry*>(NewtonJointGetUserData(joint))->newtonJoint_ = nullptr;
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
     void Newton_ProcessContactsCallback(const NewtonJoint* contactJoint, dFloat timestep, int threadIndex)
     {
         URHO3D_PROFILE_THREAD(NewtonThreadProfilerString(threadIndex).CString());
@@ -129,6 +148,8 @@ namespace Urho3D {
         }
 
         contactEntry->newtonJoint_ = (NewtonJoint*)contactJoint;
+        NewtonJointSetUserData(contactJoint, (void*)contactEntry);
+        NewtonJointSetDestructor(contactJoint, Newton_JointDestructorCallback);
         contactEntry->wakeFlag_ = NewtonJointIsActive(contactJoint);
 
         if (NewtonContactJointGetContactCount(contactJoint) > contactEntry->numContacts)

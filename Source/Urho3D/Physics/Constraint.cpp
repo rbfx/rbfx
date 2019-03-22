@@ -468,6 +468,7 @@ namespace Urho3D {
 
                 applyAllJointParams();
 
+
                 hasBeenBuilt_ = true;
             }
 

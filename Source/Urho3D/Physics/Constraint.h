@@ -194,10 +194,10 @@ namespace Urho3D {
         bool enableBodyCollision_ = false;
 
 
-        /// Constraint other body position.
+        /// Constraint position local to other body
         Vector3 otherPosition_;
         Quaternion otherRotation_;
-        /// Constraint position.
+        /// Constraint position local to body
         Vector3 position_;
         Quaternion rotation_;
 
@@ -219,12 +219,8 @@ namespace Urho3D {
 
 
 
-
-
         ///dirty flag.
         bool needsRebuilt_ = true;
-
-        //bool otherFrameWorldExplicitlySet = false;
 
         bool enableForceCalculations_ = false;
 
