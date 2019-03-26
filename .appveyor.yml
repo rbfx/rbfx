@@ -12,12 +12,12 @@ environment:
     - BUILD_SHARED_LIBS: OFF
 before_build:
   - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
-  - mkdir "%APPVEYOR_BUILD_FOLDER%\Build"
-  - cd "%APPVEYOR_BUILD_FOLDER%\Build"
+  - mkdir "%APPVEYOR_BUILD_FOLDER%\cmake-build"
+  - cd "%APPVEYOR_BUILD_FOLDER%\cmake-build"
   - cmake -G "Visual Studio 15 2017 Win64" -DCMAKE_INSTALL_PREFIX="%APPVEYOR_BUILD_FOLDER%\Urho3D-SDK" ..
 build_script:
-  - cd "%APPVEYOR_BUILD_FOLDER%\Build"
-  - cmake --build . --target install -- /r /p:Configuration=Release  /p:BuildDir=%APPVEYOR_BUILD_FOLDER%\Build\
+  - cd "%APPVEYOR_BUILD_FOLDER%\cmake-build"
+  - cmake --build . --target install -- /r /p:Configuration=Release  /p:BuildDir=%APPVEYOR_BUILD_FOLDER%\cmake-build\
 after_build:
   - cd "%APPVEYOR_BUILD_FOLDER%"
   - 7z a Urho3D-SDK.7z "%APPVEYOR_BUILD_FOLDER%\Urho3D-SDK"
