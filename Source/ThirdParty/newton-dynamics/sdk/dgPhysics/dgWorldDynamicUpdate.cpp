@@ -33,7 +33,7 @@
 #include "dgCollisionDeformableMesh.h"
 
 #define DG_CCD_EXTRA_CONTACT_COUNT		(8 * 3)
-#define DG_PARALLEL_JOINT_COUNT_CUT_OFF	(64)
+#define DG_PARALLEL_JOINT_COUNT_CUT_OFF		(64)
 //#define DG_PARALLEL_JOINT_COUNT_CUT_OFF	(2)
 
 dgVector dgWorldDynamicUpdate::m_velocTol (dgFloat32 (1.0e-8f));
@@ -208,9 +208,11 @@ void dgWorldDynamicUpdate::BuildClusters(dgFloat32 timestep)
 
 	// add bilateral joints to the joint array
 	for (dgBilateralConstraintList::dgListNode* node = jointList.GetFirst(); node; node = node->GetNext()) {
-		dgConstraint* const contact = node->GetInfo();
-		baseJointArray[jointCount].m_joint = contact;
+		dgConstraint* const joint = node->GetInfo();
+		if (joint->GetBody0()->m_invMass.m_w || joint->GetBody1()->m_invMass.m_w) {
+			baseJointArray[jointCount].m_joint = joint;
 		jointCount++;
+	}
 	}
 
 	// form all disjoints sets
@@ -620,6 +622,18 @@ dgInt32 dgWorldDynamicUpdate::GetJacobianDerivatives(dgContraintDescritor& const
 			} else if (skeleton1 && !skeleton0) {
 				contactJoint->m_isInSkeletonLoop = true;
 				skeleton1->AddSelfCollisionJoint(contactJoint);
+			}
+		}
+	} else if (constraint->IsBilateral() && !constraint->m_isInSkeleton && (constraint->m_solverModel == 3)) {
+		dgSkeletonContainer* const skeleton0 = body0->GetSkeleton();
+		dgSkeletonContainer* const skeleton1 = body1->GetSkeleton();
+		if (skeleton0 || skeleton1) {
+			if (skeleton0 && !skeleton1) {
+				constraint->m_isInSkeletonLoop = true;
+				skeleton0->AddSelfCollisionJoint(constraint);
+			} else if (skeleton1 && !skeleton0) {
+				constraint->m_isInSkeletonLoop = true;
+				skeleton1->AddSelfCollisionJoint(constraint);
 			}
 		}
 	}

@@ -632,7 +632,6 @@ bool dgCollisionConvexHull::Create (dgInt32 count, dgInt32 strideInBytes, const 
 					i0 = box.m_vertexCount / 2;
 				}
 
-
 				{
 					// insert right branch AABB
 					dgVector rightBoxP0 ( dgFloat32 (1.0e15f)); 
@@ -701,11 +700,9 @@ bool dgCollisionConvexHull::Create (dgInt32 count, dgInt32 strideInBytes, const 
 		m_vertexToEdgeMapping[edge->m_vertex] = edge;
 	}
 
-
 	SetVolumeAndCG ();
 	return true;
 }
-
 
 dgInt32 dgCollisionConvexHull::CalculateSignature (dgInt32 vertexCount, const dgFloat32* const vertexArray, dgInt32 strideInBytes)
 {

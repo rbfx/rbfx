@@ -111,7 +111,7 @@ namespace Urho3D {
         if (newtonJoint_) {
             //GSS<VisualDebugger>()->AddCross(GetOtherWorldFrame().Translation(), 1.0f, Color::MAGENTA, false);
             //GSS<VisualDebugger>()->AddCross(GetOtherNewtonBuildWorldFrame().Translation(), 2.0, Color::MAGENTA, false);
-            static_cast<dCustomKinematicController*>(newtonJoint_)->SetTargetMatrix(UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(GetOtherWorldFrame())));
+            static_cast<dCustomKinematicController*>(newtonJoint_)->SetTargetMatrix(UrhoToNewton(GetOtherWorldFrame()));
         }
     }
 

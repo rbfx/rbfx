@@ -247,12 +247,25 @@ void dCustomDoubleHinge::SubmitAngularRow(const dMatrix& matrix0, const dMatrix&
 	m_curJointAngle1.Update(eulers.m_y);
 	m_jointOmega1 = relOmega.DotProduct3(matrix1.m_up);
 
+//dTrace(("%f %f %f\n", eulers.m_x * dRadToDegree, eulers.m_y * dRadToDegree, eulers.m_z * dRadToDegree));
+
+#if 1
+	// not happy wit this method becaus eit is a penalty system, 
+	// but is hard to the the right axis angular derivative.
 	dMatrix rollMatrix(dYawMatrix(eulers[1]) * matrix1);
 	NewtonUserJointAddAngularRow(m_joint, -eulers[2], &rollMatrix.m_right[0]);
 	NewtonUserJointSetRowStiffness(m_joint, m_stiffness);
 	dFloat rollOmega = relOmega.DotProduct3(rollMatrix.m_right);
 	dFloat alphaRollError = -(eulers[2] + rollOmega * timestep) / (timestep * timestep);
 	NewtonUserJointSetRowAcceleration(m_joint, alphaRollError);
+#else
+//	dMatrix rollMatrix(dYawMatrix(eulers[1]) * matrix1);
+	NewtonUserJointAddAngularRow(m_joint, -eulers[2], &matrix1.m_right[0]);
+	NewtonUserJointSetRowStiffness(m_joint, m_stiffness);
+//	dFloat rollOmega = relOmega.DotProduct3(matrix1.m_right);
+//	dFloat alphaRollError = -(eulers[2] + rollOmega * timestep) / (timestep * timestep);
+//	NewtonUserJointSetRowAcceleration(m_joint, alphaRollError);
+#endif
 
 	if (m_options.m_option3) {
 		if (m_options.m_option4) {

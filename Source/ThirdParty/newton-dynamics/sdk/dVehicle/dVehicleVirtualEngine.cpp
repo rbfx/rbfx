@@ -73,6 +73,8 @@ dVehicleVirtualEngine::dVehicleVirtualEngine(dVehicleNode* const parent, const d
 	,m_gearBox()
 	,m_omega(0.0f)
 {
+	dAssert(0);
+/*
 	SetWorld(parent->GetWorld());
 
 	dFloat inertia = 0.7f * m_info.m_mass * m_info.m_armatureRadius * m_info.m_armatureRadius;
@@ -91,6 +93,7 @@ dVehicleVirtualEngine::dVehicleVirtualEngine(dVehicleNode* const parent, const d
 	m_crankJoint.SetOwners(this, &chassis->m_groundNode);
 
 	SetInfo(info);
+*/
 }
 
 dVehicleVirtualEngine::~dVehicleVirtualEngine()
@@ -123,7 +126,8 @@ dComplementaritySolver::dBilateralJoint* dVehicleVirtualEngine::GetProxyJoint()
 
 void dVehicleVirtualEngine::Debug(dCustomJoint::dDebugDisplay* const debugContext) const
 {
-	dVehicleEngineInterface::Debug(debugContext);
+	dAssert(0);
+//	dVehicleEngineInterface::Debug(debugContext);
 }
 
 dFloat dVehicleVirtualEngine::GetRpm() const
@@ -158,15 +162,21 @@ void dVehicleVirtualEngine::SetClutch (dFloat clutch)
 
 int dVehicleVirtualEngine::GetKinematicLoops(dAnimIDRigKinematicLoopJoint** const jointArray)
 {
+	dAssert(0);
+	return 0;
+/*
 	jointArray[0] = &m_crankJoint;
 	jointArray[1] = &m_gearBox;
 
 	int count = 2;
 	return dVehicleEngineInterface::GetKinematicLoops(&jointArray[count]) + count;
+*/
 }
 
 void dVehicleVirtualEngine::ApplyExternalForce(dFloat timestep)
 {
+	dAssert(0);
+/*
 	dVehicleSingleBody* const chassisNode = (dVehicleSingleBody*)m_parent;
 	dComplementaritySolver::dBodyState* const chassisBody = chassisNode->GetProxyBody();
 
@@ -180,10 +190,13 @@ void dVehicleVirtualEngine::ApplyExternalForce(dFloat timestep)
 	m_proxyBody.SetForce(chassisNode->m_gravity.Scale(m_proxyBody.GetMass()));
 
 	dVehicleEngineInterface::ApplyExternalForce(timestep);
+*/
 }
 
 void dVehicleVirtualEngine::Integrate(dFloat timestep)
 {
+	dAssert(0);
+/*
 	dVehicleEngineInterface::Integrate(timestep);
 
 	dVehicleSingleBody* const chassis = (dVehicleSingleBody*)m_parent;
@@ -197,4 +210,5 @@ void dVehicleVirtualEngine::Integrate(dFloat timestep)
 	m_omega = chassisMatrix.m_right.DotProduct3(localOmega);
 
 //dTrace (("eng(%f)\n", m_omega));
+*/
 }

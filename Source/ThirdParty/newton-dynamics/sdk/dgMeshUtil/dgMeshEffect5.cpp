@@ -937,14 +937,6 @@ class dgBooleanMeshClipper: public dgMeshEffect::dgMeshBVH
 
 	static bool IsPointInFace (const dgHugeVector& point, const dgMeshEffect* const mesh, dgEdge* const face, const dgHugeVector& normal)
 	{
-dgEdge* ptr = face;
-dgTrace (("p (%f %f %f)\n", dgFloat64 (point.m_x), dgFloat64 (point.m_y), dgFloat64 (point.m_z)));
-do {
-	dgBigVector p1(mesh->GetVertex(ptr->m_incidentVertex));
-	dgTrace (("f (%f %f %f)\n", dgFloat64 (p1.m_x), dgFloat64 (p1.m_y), dgFloat64 (p1.m_z)));
-	ptr = ptr->m_next;
-} while (ptr != face);
-
 		dgEdge* edge = face;
 		dgHugeVector p0(mesh->GetVertex(face->m_incidentVertex));
 		do {

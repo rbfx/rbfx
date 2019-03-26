@@ -154,7 +154,7 @@ class dgConstraint
 	dgBody* GetBody0 ()	const;
 	dgBody* GetBody1 ()	const;
 
-	void SetBodies (dgBody* const body0, dgBody* const body1);
+//	void SetBodies (dgBody* const body0, dgBody* const body1);
 
 	dgBodyMasterListRow::dgListNode* GetLink0()	const;
 	dgBodyMasterListRow::dgListNode* GetLink1()	const;
@@ -318,12 +318,11 @@ DG_INLINE dgBody* dgConstraint::GetBody1 () const
 	return m_body1;
 }
 
-DG_INLINE void dgConstraint::SetBodies (dgBody* const body0, dgBody* const body1)
-{
-	m_body0 = body0;
-	m_body1 = body1;
-}
-
+//DG_INLINE void dgConstraint::SetBodies (dgBody* const body0, dgBody* const body1)
+//{
+//	m_body0 = body0;
+//	m_body1 = body1;
+//}
 
 DG_INLINE dgBodyMasterListRow::dgListNode* dgConstraint::GetLink0()	const
 {

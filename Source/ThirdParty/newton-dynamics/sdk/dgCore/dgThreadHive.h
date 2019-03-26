@@ -55,8 +55,8 @@ typedef void (*dgWorkerThreadTaskCallback) (void* const context0, void* const co
 
 			void* m_context0;
 			void* m_context1;
-			const char* m_jobName;
 			dgWorkerThreadTaskCallback m_callback;
+			const char* m_jobName;
 		};
 
 		class dgWorkerThread: public dgThread

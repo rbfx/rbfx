@@ -101,7 +101,7 @@ dVector dQuaternion::CalcAverageOmega (const dQuaternion &q1, dFloat invdt) cons
 
 	dFloat dirMag2 = omegaDir.DotProduct3(omegaDir);
 	if (dirMag2	< dFloat(dFloat (1.0e-5f) * dFloat (1.0e-5f))) {
-		return dVector (dFloat(0.0f), dFloat(0.0f), dFloat(0.0f), dFloat(0.0f));
+		return dVector (dFloat(0.0f));
 	}
 
 	dFloat dirMagInv = dFloat (1.0f) / dSqrt (dirMag2);

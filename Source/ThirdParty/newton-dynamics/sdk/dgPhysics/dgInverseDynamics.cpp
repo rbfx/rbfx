@@ -183,7 +183,8 @@ class dgInverseDynamics::dgNode
 		m_ordinals = m_ordinalInit;
 		if (m_joint) {
 			dgAssert (m_parent);
-			const dgJointInfo* const jointInfo = &jointInfoArray[m_index];
+			dgAssert(m_index < 127);
+			const dgJointInfo* const jointInfo = &jointInfoArray[dgInt32(m_index)];
 			dgAssert(jointInfo->m_joint == m_joint);
 
 			m_dof = 0;
@@ -369,7 +370,7 @@ class dgInverseDynamics::dgNode
 		dgInt32 rowCount = 0;
 		if (m_joint) {
 			dgAssert(m_parent);
-			const dgJointInfo* const jointInfo = &jointInfoArray[m_index];
+			const dgJointInfo* const jointInfo = &jointInfoArray[dgInt32(m_index)];
 			dgAssert(jointInfo->m_joint == m_joint);
 			dgInt32 count = jointInfo->m_pairCount;
 			const dgInt32 first = jointInfo->m_pairStart;
@@ -895,14 +896,14 @@ DG_INLINE void dgInverseDynamics::CalculateOpenLoopForce (dgForcePair* const for
 		for (dgNode* child = node->m_child; child; child = child->m_sibling) {
 			dgAssert(child->m_joint);
 			dgAssert(child->m_parent->m_index == i);
-			child->BodyJacobianTimeMassForward(force[child->m_index], f);
+			child->BodyJacobianTimeMassForward(force[dgInt32 (child->m_index)], f);
 		}
 		node->JointJacobianTimeMassForward(f);
 	}
 
 	force[m_nodeCount - 1] = accel[m_nodeCount - 1];
 	for (dgNode* child = m_nodesOrder[m_nodeCount - 1]->m_child; child; child = child->m_sibling) {
-		child->BodyJacobianTimeMassForward(force[child->m_index], force[child->m_parent->m_index]);
+		child->BodyJacobianTimeMassForward(force[dgInt32(child->m_index)], force[dgInt32(child->m_parent->m_index)]);
 	}
 
 	m_nodesOrder[m_nodeCount - 1]->BodyDiagInvTimeSolution(force[m_nodeCount - 1]);
@@ -911,7 +912,7 @@ DG_INLINE void dgInverseDynamics::CalculateOpenLoopForce (dgForcePair* const for
 		dgAssert(node->m_index == i);
 		dgForcePair& f = force[i];
 		node->JointDiagInvTimeSolution(f);
-		node->JointJacobianTimeSolutionBackward(f, force[node->m_parent->m_index]);
+		node->JointJacobianTimeSolutionBackward(f, force[dgInt32(node->m_parent->m_index)]);
 		node->BodyDiagInvTimeSolution(f);
 		node->BodyJacobianTimeSolutionBackward(f);
 	}
@@ -924,7 +925,7 @@ dgInt32 dgInverseDynamics::GetMemoryBufferSizeInBytes (const dgJointInfo* const 
 	if (m_nodesOrder) {
 		for (dgInt32 i = 0; i < m_nodeCount - 1; i++) {
 			dgNode* const node = m_nodesOrder[i];
-			rowCount += jointInfoArray[node->m_index].m_pairCount;
+			rowCount += jointInfoArray[dgInt32(node->m_index)].m_pairCount;
 			auxiliaryRowCount += node->GetAuxiliaryRows(jointInfoArray, rightHandSide);
 		}
 	}
@@ -963,7 +964,7 @@ DG_INLINE void dgInverseDynamics::CalculateJointAccel(dgJointInfo* const jointIn
 		a.m_joint = zero;
 
 		dgAssert(node->m_joint);
-		const dgJointInfo* const jointInfo = &jointInfoArray[node->m_index];
+		const dgJointInfo* const jointInfo = &jointInfoArray[dgInt32(node->m_index)];
 		dgAssert(jointInfo->m_joint == node->m_joint);
 
 		const dgInt32 first = jointInfo->m_pairStart;
@@ -1044,7 +1045,7 @@ void dgInverseDynamics::CalculateCloseLoopsForces(dgJacobian* const externalForc
 
 	for (dgInt32 i = 0; i < m_nodeCount - 1; i++) {
 		const dgNode* const node = m_nodesOrder[i];
-		const dgJointInfo* const jointInfo = &jointInfoArray[node->m_index];
+		const dgJointInfo* const jointInfo = &jointInfoArray[dgInt32(node->m_index)];
 		dgAssert(jointInfo->m_joint == node->m_joint);
 
 		const dgInt32 first = jointInfo->m_pairStart;

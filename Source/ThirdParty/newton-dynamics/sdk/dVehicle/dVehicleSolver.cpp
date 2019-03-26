@@ -17,8 +17,9 @@
 #include "dVehicleVirtualJoints.h"
 
 dVehicleSolver::dVehicleSolver()
-	:dAnimAcyclicSolver()
+//	:dAnimAcyclicSolver()
 {
+	dAssert(0);
 }
 
 dVehicleSolver::~dVehicleSolver()
@@ -27,6 +28,9 @@ dVehicleSolver::~dVehicleSolver()
 
 void dVehicleSolver::Finalize(dVehicleChassis* const vehicle)
 {
+	dAssert(0);
+/*
 	dAnimAcyclicJoint* const root = vehicle->GetVehicle();
 	dAnimAcyclicSolver::Finalize(root);
+*/
 }

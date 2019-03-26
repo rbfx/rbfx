@@ -14,13 +14,14 @@
 #define __D_ANIMATION_CHARACTER_RIG_MANAGER_H__
 
 #include "dAnimationStdAfx.h"
-#include "dAnimIDRigJoint.h"
-#include "dAnimIKController.h"
-#include "dAnimAcyclicSolver.h"
+//#include "dAnimIDRigJoint.h"
+//#include "dAnimIKController.h"
+//#include "dAnimAcyclicSolver.h"
 
 
 #define D_ANIM_IK_MANAGER	"__dAnimIKManager__"
 
+/*
 class dAnimIKManager: public dCustomControllerManager<dAnimIKController>
 {
 	public:
@@ -37,5 +38,7 @@ class dAnimIKManager: public dCustomControllerManager<dAnimIKController>
 
 	friend class dAnimIKController;
 };
+*/
+
 #endif 
 

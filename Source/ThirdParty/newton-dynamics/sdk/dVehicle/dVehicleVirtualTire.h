@@ -17,6 +17,7 @@
 #include "dVehicleInterface.h"
 #include "dVehicleVirtualJoints.h"
 
+class dAnimIDRigKinematicLoopJoint;
 class dVehicleVirtualTire: public dVehicleTireInterface
 {
 	public:

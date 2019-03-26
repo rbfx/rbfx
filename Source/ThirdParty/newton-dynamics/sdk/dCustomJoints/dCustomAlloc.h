@@ -42,7 +42,6 @@
 	#endif
 #endif
 
-
 class dCustomScopeLock
 {
 	public:
@@ -60,7 +59,6 @@ class dCustomScopeLock
 
 	unsigned* m_atomicLock;
 };
-
 
 class dCustomAlloc  
 {

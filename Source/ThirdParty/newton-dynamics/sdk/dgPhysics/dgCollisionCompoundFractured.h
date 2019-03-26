@@ -189,7 +189,7 @@ class dgCollisionCompoundFractured: public dgCollisionCompound
 
 	virtual void BeginAddRemove ();
 	virtual void RemoveCollision (dgTreeArray::dgTreeNode* const node);
-	virtual void EndAddRemove ();
+	virtual void EndAddRemove (bool flushCache = true);
 	bool IsNodeSaseToDetach (dgTreeArray::dgTreeNode* const node) const;
 
 	int GetFirstNiegborghArray (dgTreeArray::dgTreeNode* const node, dgTreeArray::dgTreeNode** const nodesArray, int maxCount) const;

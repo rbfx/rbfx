@@ -283,6 +283,7 @@ void dCustomHinge::SubmitConstraints(dFloat timestep, int threadIndex)
 	dVector euler0;
 	dVector euler1;
 	localMatrix.GetEulerAngles(euler0, euler1, m_pitchRollYaw);
+//	localMatrix.GetEulerAngles(euler0, euler1, m_pitchYawRoll);
 
 	// the joint angle can be determined by getting the angle between any two non parallel vectors
 	m_curJointAngle.Update(euler0.m_x);

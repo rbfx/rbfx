@@ -135,7 +135,7 @@ namespace Urho3D {
             coneFriction_ = frictionTorque;
             if (newtonJoint_)
             {
-                static_cast<dCustomBallAndSocket*>(newtonJoint_)->SetConeFriction(physicsWorld_->SceneToPhysics_Domain(coneFriction_));
+                static_cast<dCustomBallAndSocket*>(newtonJoint_)->SetConeFriction((coneFriction_));
             }
             else
                 MarkDirty();
@@ -153,7 +153,7 @@ namespace Urho3D {
             twistFriction_ = frictionTorque;
             if (newtonJoint_)
             {
-                static_cast<dCustomBallAndSocket*>(newtonJoint_)->SetTwistFriction(physicsWorld_->SceneToPhysics_Domain(twistFriction_));
+                static_cast<dCustomBallAndSocket*>(newtonJoint_)->SetTwistFriction((twistFriction_));
             }
             else
                 MarkDirty();
@@ -210,8 +210,8 @@ namespace Urho3D {
         static_cast<dCustomBallAndSocket*>(newtonJoint_)->EnableCone(coneEnabled_);
         static_cast<dCustomBallAndSocket*>(newtonJoint_)->EnableTwist(twistLimitsEnabled_);
         static_cast<dCustomBallAndSocket*>(newtonJoint_)->SetTwistLimits(twistMinAngle_* dDegreeToRad, twistMaxAngle_ * dDegreeToRad);
-        static_cast<dCustomBallAndSocket*>(newtonJoint_)->SetConeFriction(physicsWorld_->SceneToPhysics_Domain(coneFriction_));
-        static_cast<dCustomBallAndSocket*>(newtonJoint_)->SetTwistFriction(physicsWorld_->SceneToPhysics_Domain(twistFriction_));
+        static_cast<dCustomBallAndSocket*>(newtonJoint_)->SetConeFriction((coneFriction_));
+        static_cast<dCustomBallAndSocket*>(newtonJoint_)->SetTwistFriction((twistFriction_));
 
 
         return true;

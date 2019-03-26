@@ -64,6 +64,13 @@ class dgSoaFloat
 	{
 	}
 
+	DG_INLINE dgSoaFloat(const dgSoaFloat* const baseAddr, const dgSoaFloat& index)
+	{
+		for (dgInt32 i = 0; i < DG_SOA_WORD_GROUP_SIZE; i++) {
+			m_f[i] = baseAddr->m_f[index.m_i[i]];
+		}
+	}
+
 	DG_INLINE dgFloat32& operator[] (dgInt32 i)
 	{
 		dgAssert(i < DG_SOA_WORD_GROUP_SIZE);
@@ -110,7 +117,6 @@ class dgSoaFloat
 
 	DG_INLINE dgSoaFloat operator< (const dgSoaFloat& A) const
 	{
-		//return _mm256_cmp_ps (m_type, A.m_type, _CMP_LT_OQ);
 		return dgSoaFloat(_mm256_cmp_pd(m_low, A.m_low, _CMP_LT_OQ), _mm256_cmp_pd(m_high, A.m_high, _CMP_LT_OQ));
 	}
 
@@ -136,12 +142,12 @@ class dgSoaFloat
 
 	DG_INLINE dgFloat32 AddHorizontal() const
 	{
+		dgSoaFloat ret;
 		__m256d tmp0(_mm256_add_pd(m_low, m_high));
 		__m256d tmp1(_mm256_hadd_pd(tmp0, tmp0));
 		__m256d tmp2(_mm256_add_pd(tmp1, _mm256_permute2f128_pd(tmp1, tmp1, 1)));
-		dgFloat32 ret[4];
-		_mm256_storeu_pd (ret, tmp2);
-		return ret[0];
+		_mm256_storeu_pd(ret.m_f, tmp2);
+		return ret.m_f[0];
 	}
 
 	static DG_INLINE void FlushRegisters()
@@ -190,6 +196,13 @@ class dgSoaFloat
 	DG_INLINE dgSoaFloat(const dgVector& low, const dgVector& high)
 		: m_type(_mm256_loadu2_m128(&high.m_x, &low.m_x))
 	{
+	}
+
+	DG_INLINE dgSoaFloat (const dgSoaFloat* const baseAddr, const dgSoaFloat& index)
+	{
+		for (dgInt32 i = 0; i < DG_SOA_WORD_GROUP_SIZE; i++) {
+			m_f[i] = baseAddr->m_f[index.m_i[i]];
+		}
 	}
 
 	DG_INLINE dgFloat32& operator[] (dgInt32 i)
@@ -263,10 +276,12 @@ class dgSoaFloat
 
 	DG_INLINE dgFloat32 AddHorizontal() const
 	{
+		dgSoaFloat ret;
 		__m256 tmp0(_mm256_add_ps(m_type, _mm256_permute2f128_ps(m_type, m_type, 1)));
 		__m256 tmp1(_mm256_hadd_ps(tmp0, tmp0));
-		dgSoaFloat sum(_mm256_hadd_ps(tmp1, tmp1));
-		return  sum[0];
+		__m256 tmp2(_mm256_hadd_ps(tmp1, tmp1));
+		_mm256_store_ps(ret.m_f, tmp2);
+		return ret.m_f[0];
 	}
 
 	static DG_INLINE void FlushRegisters()
@@ -277,6 +292,7 @@ class dgSoaFloat
 	union
 	{
 		__m256 m_type;
+		__m256i m_typeInt;
 		dgInt32 m_i[DG_SOA_WORD_GROUP_SIZE];
 		dgFloat32 m_f[DG_SOA_WORD_GROUP_SIZE];
 	};

@@ -250,7 +250,6 @@ dgWorld::dgWorld(dgMemoryAllocator* const allocator)
 
 	m_savetimestep = dgFloat32 (0.0f);
 	m_allocator = allocator;
-	m_clusterUpdate = NULL;
 
 	m_onCollisionInstanceDestruction = NULL;
 	m_onCollisionInstanceCopyConstrutor = NULL;
@@ -278,6 +277,9 @@ dgWorld::dgWorld(dgMemoryAllocator* const allocator)
 
 	m_userData = NULL;
 	m_clusterUpdate = NULL;
+	m_createContact = NULL;
+	m_destroyContact = NULL;
+
 
 	m_freezeAccel2 = DG_FREEZE_ACCEL2;
 	m_freezeAlpha2 = DG_FREEZE_ACCEL2;
@@ -341,7 +343,6 @@ dgWorld::~dgWorld()
 	delete m_broadPhase;
 }
 
-
 void dgWorld::DestroyAllBodies()
 {
 	dgBodyMasterList& me = *this;
@@ -353,7 +354,6 @@ void dgWorld::DestroyAllBodies()
 		delete ptr->GetInfo();
 	}
 	ikList.RemoveAll();
-
 
 	dgSkeletonList& skelList = *this;
 	dgSkeletonList::Iterator iter(skelList);
@@ -585,12 +585,16 @@ void* dgWorld::GetUserData() const
 	return m_userData;
 }
 
-
 void dgWorld::SetIslandUpdateCallback (OnClusterUpdate callback)
 {
 	m_clusterUpdate = callback;
 }
 
+void dgWorld::SetCreateDestroyContactCallback(OnCreateContact createContactCallback, OnDestroyContact destroyContactCallback)
+{
+	m_createContact = createContactCallback;
+	m_destroyContact = destroyContactCallback;
+}
 
 void* dgWorld::AddListener (const char* const nameid, void* const userData)
 {
@@ -1355,7 +1359,9 @@ void dgWorld::UpdateSkeletons()
 										loopCount++;
 									}
 
-								} else if ((constraint1->m_solverModel != 2) && loopCount < (sizeof (loopJoints) / sizeof(loopJoints[0]))) {
+								//} else if ((constraint1->m_solverModel != 2) && loopCount < (sizeof (loopJoints) / sizeof(loopJoints[0]))) {
+								  } else if ((constraint1->m_solverModel == 1) && (loopCount < (sizeof (loopJoints) / sizeof(loopJoints[0])))) {
+									dgAssert (constraint1->m_solverModel != 0);
 									loopJoints[loopCount] = (dgBilateralConstraint*)constraint1;
 									loopCount++;
 								}

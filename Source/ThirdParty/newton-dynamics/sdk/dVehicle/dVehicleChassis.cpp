@@ -17,7 +17,7 @@
 
 dVehicleChassis::dVehicleChassis ()
 	:m_localFrame(dGetIdentityMatrix())
-	,m_solver()
+//	,m_solver()
 	,m_gravity(0.0f)
 	,m_obbSize(0.0f)
 	,m_obbOrigin(0.0f)
@@ -27,6 +27,7 @@ dVehicleChassis::dVehicleChassis ()
 	,m_handBrakeControl(NULL)
 	,m_steeringControl(NULL)
 {
+	dAssert(0);
 }
 
 void dVehicleChassis::Init(NewtonCollision* const chassisShape, dFloat mass, const dMatrix& localFrame, NewtonApplyForceAndTorque forceAndTorque, dFloat gravityMag)
@@ -143,11 +144,14 @@ dVehicleEngineInterface* dVehicleChassis::AddEngine(const dVehicleEngineInterfac
 
 void dVehicleChassis::Debug(dCustomJoint::dDebugDisplay* const debugContext) const
 {
-	m_vehicle->Debug(debugContext);
+	dAssert(0);
+//	m_vehicle->Debug(debugContext);
 }
 
 void dVehicleChassis::Finalize()
 {
+	dAssert(0);
+/*
 	dVector minP;
 	dVector maxP;
 	m_vehicle->CalculateNodeAABB(dGetIdentityMatrix(), minP, maxP);
@@ -173,6 +177,7 @@ void dVehicleChassis::Finalize()
 
 	m_vehicle->RigidBodyToStates();
 	m_solver.Finalize(this);
+*/
 }
 
 void dVehicleChassis::ApplyExternalForces(dFloat timestep)
@@ -207,6 +212,8 @@ int dVehicleChassis::OnAABBOverlap(const NewtonBody * const body, void* const co
 
 void dVehicleChassis::CalculateTireContacts(dFloat timestep)
 {
+	dAssert(0);
+/*
 	dComplementaritySolver::dBodyState* const chassisBody = m_vehicle->GetProxyBody();
 	const dMatrix& matrix = chassisBody->GetMatrix();
 	dVector origin(matrix.TransformVector(m_obbOrigin));
@@ -227,6 +234,7 @@ void dVehicleChassis::CalculateTireContacts(dFloat timestep)
 			tire->CalculateContacts(bodyList, timestep);
 		}
 	}
+*/
 }
 
 void dVehicleChassis::PostUpdate(dFloat timestep, int threadIndex)
@@ -236,6 +244,8 @@ void dVehicleChassis::PostUpdate(dFloat timestep, int threadIndex)
 
 void dVehicleChassis::PreUpdate(dFloat timestep, int threadIndex)
 {
+	dAssert(0);
+	/*
 	dVehicleManager* const manager = (dVehicleManager*)GetManager();
 	manager->UpdateDriverInput(this, timestep);
 
@@ -259,6 +269,7 @@ void dVehicleChassis::PreUpdate(dFloat timestep, int threadIndex)
 	m_solver.Update(timestep);
 	m_vehicle->Integrate(timestep);
 	m_vehicle->StatesToRigidBody(timestep);
+*/
 }
 
 void dVehicleChassis::ApplyDriverInputs(const dDriverInput& driveInputs, dFloat timestep)
@@ -457,6 +468,8 @@ m_engineControl->SetGear(dVehicleEngineInterface::m_firstGear);
 
 void dVehicleChassis::CalculateSuspensionForces(dFloat timestep)
 {
+	dAssert(0);
+#if 0
 	const int maxSize = 64;
 	dComplementaritySolver::dJacobianPair m_jt[maxSize];
 	dComplementaritySolver::dJacobianPair m_jInvMass[maxSize];
@@ -551,4 +564,5 @@ void dVehicleChassis::CalculateSuspensionForces(dFloat timestep)
 	}
 	chassisBody->SetForce(chassisBody->GetForce() + chassisForce);
 	chassisBody->SetTorque(chassisBody->GetTorque() + chassisTorque);
+#endif
 }

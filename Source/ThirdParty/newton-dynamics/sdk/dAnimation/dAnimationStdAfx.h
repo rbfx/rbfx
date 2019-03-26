@@ -57,20 +57,15 @@
 #include <dRtti.h>
 #include <dArray.h>
 
-#include <dClassInfo.h>
-#include <dRefCounter.h>
-#include <dBaseHierarchy.h>
+//#include <dClassInfo.h>
+//#include <dRefCounter.h>
+//#include <dBaseHierarchy.h>
 
 #include <dCustomJoint.h>
-#include <dCustomHinge.h>
-#include <dCustomControllerManager.h>
-/*
-#define D_DEFINE_ANIMATION_NODE_DEFINE(className,baseClass)	\
-	dAddRtti(baseClass);									
-
-#define D_DEFINE_ANIMATION_NODE_DECLARE(className)	\
-	dInitRtti(className);							\
-*/
+#include <dCustomListener.h>
+//#include <dCustomHinge.h>
+#include <dCustomBallAndSocket.h>
+//#include <dCustomControllerManager.h>
 
 
 #endif

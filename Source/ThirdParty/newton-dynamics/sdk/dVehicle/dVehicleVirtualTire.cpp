@@ -26,6 +26,8 @@ dVehicleVirtualTire::dVehicleVirtualTire(dVehicleNode* const parent, const dMatr
 	,m_steeringAngle(0.0f)
 	,m_invSuspensionLength(m_info.m_suspensionLength > 0.0f ? 1.0f/m_info.m_suspensionLength : 0.0f)
 {
+	dAssert(0);
+/*
 	SetWorld(parent->GetWorld());
 	m_dynamicContactBodyNode.SetLoopNode(true);
 	m_dynamicContactBodyNode.SetWorld(m_world);
@@ -72,6 +74,7 @@ dVehicleVirtualTire::dVehicleVirtualTire(dVehicleNode* const parent, const dMatr
 
 //m_brakeTorque = 100.0f;
 //m_omega = -20.0f;
+*/
 }
 
 dVehicleVirtualTire::~dVehicleVirtualTire()
@@ -109,11 +112,15 @@ dMatrix dVehicleVirtualTire::GetLocalMatrix () const
 
 dMatrix dVehicleVirtualTire::GetGlobalMatrix () const
 {
+	dAssert(0);
+	return dGetIdentityMatrix();
+/*
 	dMatrix newtonBodyMatrix;
 
 	dVehicleSingleBody* const chassisNode = (dVehicleSingleBody*)((dVehicleNode*)m_parent)->GetAsVehicle();
 	dAssert (chassisNode);
 	return GetLocalMatrix() * chassisNode->GetProxyBody()->GetMatrix();
+*/
 }
 
 
@@ -139,6 +146,8 @@ void dVehicleVirtualTire::SetBrakeTorque(dFloat brakeTorque)
 
 void dVehicleVirtualTire::ApplyExternalForce(dFloat timestep)
 {
+	dAssert(0);
+/*
 	dVehicleSingleBody* const chassisNode = (dVehicleSingleBody*)m_parent;
 	dComplementaritySolver::dBodyState* const chassisBody = chassisNode->GetProxyBody();
 
@@ -152,10 +161,14 @@ void dVehicleVirtualTire::ApplyExternalForce(dFloat timestep)
 	m_proxyBody.SetForce(chassisNode->m_gravity.Scale (m_proxyBody.GetMass()));
 
 	dVehicleTireInterface::ApplyExternalForce(timestep);
+*/
 }
 
 int dVehicleVirtualTire::GetKinematicLoops(dAnimIDRigKinematicLoopJoint** const jointArray)
 {
+	dAssert(0);
+	return 0;
+/*
 	int count = 0;
 	for (int i = 0; i < sizeof (m_contactsJoints) / sizeof (m_contactsJoints[0]); i ++) {
 		dAnimIDRigKinematicLoopJoint* const loop = &m_contactsJoints[i];
@@ -169,10 +182,13 @@ int dVehicleVirtualTire::GetKinematicLoops(dAnimIDRigKinematicLoopJoint** const 
 		}
 	}
 	return dVehicleTireInterface::GetKinematicLoops(&jointArray[count]) + count;
+*/
 }
 
 void dVehicleVirtualTire::Integrate(dFloat timestep)
 {
+	dAssert(0);
+/*
 	dVehicleTireInterface::Integrate(timestep);
 
 	dVehicleSingleBody* const chassis = (dVehicleSingleBody*)m_parent;
@@ -213,10 +229,13 @@ void dVehicleVirtualTire::Integrate(dFloat timestep)
 		m_speed = 0.0f;
 		m_position = m_info.m_suspensionLength;
 	}
+*/
 }
 
 void dVehicleVirtualTire::CalculateContacts(const dVehicleChassis::dCollectCollidingBodies& bodyArray, dFloat timestep)
 {
+	dAssert(0);
+/*
 	for (int i = 0; i < sizeof(m_contactsJoints) / sizeof(m_contactsJoints[0]); i++) {
 		m_contactsJoints[i].ResetContact();
 	}
@@ -296,6 +315,7 @@ void dVehicleVirtualTire::CalculateContacts(const dVehicleChassis::dCollectColli
 			}
 		}
 	}
+*/
 }
 
 void dVehicleVirtualTire::RenderDebugTire(void* userData, int vertexCount, const dFloat* const faceVertec, int id)
@@ -313,6 +333,8 @@ void dVehicleVirtualTire::RenderDebugTire(void* userData, int vertexCount, const
 
 void dVehicleVirtualTire::Debug(dCustomJoint::dDebugDisplay* const debugContext) const
 {
+	dAssert(0);
+/*
 	dVehicleTireInterface::Debug(debugContext);
 
 	debugContext->SetColor(dVector(0.0f, 0.4f, 0.7f, 1.0f));
@@ -336,4 +358,5 @@ void dVehicleVirtualTire::Debug(dCustomJoint::dDebugDisplay* const debugContext)
 			contact->Debug(debugContext, scale);
 		}
 	}
+*/
 }

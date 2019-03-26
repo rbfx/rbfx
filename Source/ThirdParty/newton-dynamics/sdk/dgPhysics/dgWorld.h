@@ -175,6 +175,8 @@ class dgWorld
 	,public dgWorldPluginList
 {
 	public:
+	typedef void (dgApi *OnCreateContact) (const dgWorld* const world, const dgContact* const contact);
+	typedef void (dgApi *OnDestroyContact) (const dgWorld* const world, const dgContact* const contact);
 	typedef dgUnsigned32 (dgApi *OnClusterUpdate) (const dgWorld* const world, void* island, dgInt32 bodyCount);
 	typedef void (dgApi *OnListenerBodyDestroyCallback) (const dgWorld* const world, void* const listener, dgBody* const body);
 	typedef void (dgApi *OnListenerUpdateCallback) (const dgWorld* const world, void* const listener, dgFloat32 timestep);
@@ -301,6 +303,7 @@ class dgWorld
 	OnListenerBodyDestroyCallback GetListenerBodyDestroyCallback (void* const listener) const;
 
 	void SetIslandUpdateCallback (OnClusterUpdate callback); 
+	void SetCreateDestroyContactCallback(OnCreateContact createContactCallback, OnDestroyContact destroyContactCallback);
 
 	void InitBody (dgBody* const body, dgCollisionInstance* const collision, const dgMatrix& matrix);
 	dgDynamicBody* CreateDynamicBody (dgCollisionInstance* const collision, const dgMatrix& matrix);
@@ -512,6 +515,9 @@ class dgWorld
 
 	dgSemaphore m_mutex;
 	OnClusterUpdate m_clusterUpdate;
+	OnCreateContact m_createContact;
+	OnDestroyContact m_destroyContact;
+
 	OnCollisionInstanceDestroy	m_onCollisionInstanceDestruction;
 	OnCollisionInstanceDuplicate m_onCollisionInstanceCopyConstrutor;
 	OnJointSerializationCallback m_serializedJointCallback;	

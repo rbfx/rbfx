@@ -123,7 +123,7 @@ namespace Urho3D {
         {
             Activate();
 
-            Matrix3x4 scaleLessTransform(physicsWorld_->SceneToPhysics_Domain(transform.Translation()), transform.Rotation(), 1.0f);
+            Matrix3x4 scaleLessTransform((transform.Translation()), transform.Rotation(), 1.0f);
             NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(scaleLessTransform)[0][0]);
 
         }
@@ -143,7 +143,7 @@ namespace Urho3D {
             dgQuaternion orientation;
             NewtonBodyGetRotation(newtonBody_, &orientation.m_x);
 
-            Matrix3x4 transform(physicsWorld_->SceneToPhysics_Domain(position), NewtonToUrhoQuat(orientation), 1.0f);
+            Matrix3x4 transform((position), NewtonToUrhoQuat(orientation), 1.0f);
             NewtonBodySetMatrix(newtonBody_, &UrhoToNewton(transform)[0][0]);
         }
         else
@@ -182,7 +182,7 @@ namespace Urho3D {
             dMatrix bodyMatrix;
             NewtonBodyGetMatrix(newtonBody_, &bodyMatrix[0][0]);
 
-            return physicsWorld_->PhysicsToScene_Domain(Matrix3x4(NewtonToUrhoMat4(bodyMatrix)));
+            return (Matrix3x4(NewtonToUrhoMat4(bodyMatrix)));
         }
         else {
 
@@ -213,7 +213,7 @@ namespace Urho3D {
             dVector bodyPos;
             NewtonBodyGetPosition(newtonBody_, &bodyPos[0]);
 
-            return physicsWorld_->PhysicsToScene_Domain(NewtonToUrhoVec3(bodyPos));
+            return (NewtonToUrhoVec3(bodyPos));
 
         }
         else {
@@ -263,7 +263,7 @@ namespace Urho3D {
             NewtonBodyGetCentreOfMass(newtonBody_, &comPosition[0]);
             if(scaledPhysicsWorldFrame)
             {
-                return physicsWorld_->SceneToPhysics_Domain(NewtonToUrhoVec3(comPosition));
+                return (NewtonToUrhoVec3(comPosition));
             }
             else {
                 return NewtonToUrhoVec3(comPosition);
@@ -299,7 +299,7 @@ namespace Urho3D {
                 dVector curWorldVel;
                 NewtonBodyGetVelocity(newtonBody_, &curWorldVel[0]);
 
-                dVector worldVel = UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(worldVelocity)) - curWorldVel;
+                dVector worldVel = UrhoToNewton((worldVelocity)) - curWorldVel;
                 dVector bodyWorldPos;
                 NewtonBodyGetPosition(newtonBody_, &bodyWorldPos[0]);
                 NewtonBodyAddImpulse(newtonBody_, &worldVel[0], &bodyWorldPos[0], physicsWorld_->timeStepTarget_*GetScene()->GetTimeScale());
@@ -309,7 +309,7 @@ namespace Urho3D {
         }
         else
         {
-            nextLinearVelocity_ = physicsWorld_->SceneToPhysics_Domain(worldVelocity);
+            nextLinearVelocity_ = (worldVelocity);
             nextLinearVelocityUseForces_ = useForces;
             nextLinearVelocityNeeded_ = true;
         }
@@ -485,8 +485,8 @@ namespace Urho3D {
                     NewtonCollisionCalculateAABB(GetEffectiveNewtonCollision(), &matrix[0][0], &p0[0], &p1[0]);
 
 
-                    Vector3 min = physicsWorld_->PhysicsToScene_Domain(NewtonToUrhoVec3(p0));
-                    Vector3 max = physicsWorld_->PhysicsToScene_Domain(NewtonToUrhoVec3(p1));
+                    Vector3 min = (NewtonToUrhoVec3(p0));
+                    Vector3 max = (NewtonToUrhoVec3(p1));
                     BoundingBox box(min, max);
                     debug->AddBoundingBox(box, Color::YELLOW, depthTest, false);
 
@@ -512,15 +512,15 @@ namespace Urho3D {
                 dVector o(matrix.TransformVector(com));
 
                 dVector x(o + matrix.RotateVector(dVector(1.0f, 0.0f, 0.0f, 0.0f))*aabbSize);
-                debug->AddLine(physicsWorld_->PhysicsToScene_Domain(Vector3((o.m_x), (o.m_y), (o.m_z))), physicsWorld_->PhysicsToScene_Domain(Vector3((x.m_x), (x.m_y), (x.m_z))), Color::RED, depthTest);
+                debug->AddLine((Vector3((o.m_x), (o.m_y), (o.m_z))), (Vector3((x.m_x), (x.m_y), (x.m_z))), Color::RED, depthTest);
 
 
                 dVector y(o + matrix.RotateVector(dVector(0.0f, 1.0f, 0.0f, 0.0f))*aabbSize);
-                debug->AddLine(physicsWorld_->PhysicsToScene_Domain(Vector3((o.m_x), (o.m_y), (o.m_z))), physicsWorld_->PhysicsToScene_Domain(Vector3((y.m_x), (y.m_y), (y.m_z))), Color::GREEN, depthTest);
+                debug->AddLine((Vector3((o.m_x), (o.m_y), (o.m_z))), (Vector3((y.m_x), (y.m_y), (y.m_z))), Color::GREEN, depthTest);
 
 
                 dVector z(o + matrix.RotateVector(dVector(0.0f, 0.0f, 1.0f, 0.0f))*aabbSize);
-                debug->AddLine(physicsWorld_->PhysicsToScene_Domain(Vector3((o.m_x), (o.m_y), (o.m_z))), physicsWorld_->PhysicsToScene_Domain(Vector3((z.m_x), (z.m_y), (z.m_z))), Color::BLUE, depthTest);
+                debug->AddLine((Vector3((o.m_x), (o.m_y), (o.m_z))), (Vector3((z.m_x), (z.m_y), (z.m_z))), Color::BLUE, depthTest);
 
 
 
@@ -554,7 +554,7 @@ namespace Urho3D {
                                 dVector p0(point);
                                 dVector p1(point + normalforce.Scale(scaleFactor));
 
-                                debug->AddLine(physicsWorld_->PhysicsToScene_Domain(Vector3((p0.m_x), (p0.m_y), (p0.m_z))), physicsWorld_->PhysicsToScene_Domain(Vector3((p1.m_x), (p1.m_y), (p1.m_z))), Color::GRAY, depthTest);
+                                debug->AddLine((Vector3((p0.m_x), (p0.m_y), (p0.m_z))), (Vector3((p1.m_x), (p1.m_y), (p1.m_z))), Color::GRAY, depthTest);
 
 
 
@@ -564,11 +564,11 @@ namespace Urho3D {
                                 dVector tangentForce2(tangentDir1.Scale((contactForce.DotProduct3(tangentDir1)) * scaleFactor));
 
                                 p1 = point + tangentForce1.Scale(scaleFactor);
-                                debug->AddLine(physicsWorld_->PhysicsToScene_Domain(Vector3((p0.m_x), (p0.m_y), (p0.m_z))), physicsWorld_->PhysicsToScene_Domain(Vector3((p1.m_x), (p1.m_y), (p1.m_z))), Color::GRAY, depthTest);
+                                debug->AddLine((Vector3((p0.m_x), (p0.m_y), (p0.m_z))), (Vector3((p1.m_x), (p1.m_y), (p1.m_z))), Color::GRAY, depthTest);
 
 
                                 p1 = point + tangentForce2.Scale(scaleFactor);
-                                debug->AddLine(physicsWorld_->PhysicsToScene_Domain(Vector3((p0.m_x), (p0.m_y), (p0.m_z))), physicsWorld_->PhysicsToScene_Domain(Vector3((p1.m_x), (p1.m_y), (p1.m_z))), Color::GRAY, depthTest);
+                                debug->AddLine((Vector3((p0.m_x), (p0.m_y), (p0.m_z))), (Vector3((p1.m_x), (p1.m_y), (p1.m_z))), Color::GRAY, depthTest);
                             }
                         }
                     }
@@ -760,7 +760,7 @@ namespace Urho3D {
 
                         Matrix3x4 finalLocal = nodeWorldNoScale.Inverse() * colWorldNoScale;
 
-                        dMatrix localTransform = UrhoToNewton(Matrix3x4(physicsWorld_->SceneToPhysics_Domain(finalLocal.Translation()), colRotLocalToThisNode, 1.0f));
+                        dMatrix localTransform = UrhoToNewton(Matrix3x4((finalLocal.Translation()), colRotLocalToThisNode, 1.0f));
 
 
                         //now determine scale to apply around the center of each sub shape.
@@ -772,7 +772,6 @@ namespace Urho3D {
                         Vector3 shapeScale = colComp->GetScaleFactor();
 
                         scale = scale * shapeScale;
-                        scale = physicsWorld_->SceneToPhysics_Domain(scale);
 
                         dVector existingLocalScale;
                         NewtonCollisionGetScale(curCollisionInstance, &existingLocalScale.m_x, &existingLocalScale.m_y, &existingLocalScale.m_z);
@@ -1168,7 +1167,7 @@ namespace Urho3D {
 
         if (newtonBody_) {
             Activate();
-            NewtonBodyAddImpulse(newtonBody_, &UrhoToNewton(physicsWorld_->SceneToPhysics_Domain(targetVelocity))[0],
+            NewtonBodyAddImpulse(newtonBody_, &UrhoToNewton((targetVelocity))[0],
                 &UrhoToNewton(node_->LocalToWorld(localPosition))[0], physicsWorld_->timeStepTarget_);
         }
         else
@@ -1183,13 +1182,13 @@ namespace Urho3D {
 
     Vector3 RigidBody::GetNetForce()
     {
-        return physicsWorld_->PhysicsToScene_Domain(netForce_);
+        return (netForce_);
     }
 
 
     Urho3D::Vector3 RigidBody::GetNetTorque()
     {
-        return physicsWorld_->PhysicsToScene_Domain(netTorque_);
+        return (netTorque_);
     }
 
     NewtonCollision* RigidBody::GetEffectiveNewtonCollision() const
@@ -1206,7 +1205,7 @@ namespace Urho3D {
 
             dVector dVel;
             NewtonBodyGetVelocity(newtonBody_, &dVel[0]);
-            Vector3 vel = physicsWorld_->PhysicsToScene_Domain(NewtonToUrhoVec3(dVel));
+            Vector3 vel = (NewtonToUrhoVec3(dVel));
 
             if (space == TS_WORLD)
             {
@@ -1232,7 +1231,7 @@ namespace Urho3D {
         if (newtonBody_) {
             dVector dAngularVel;
             NewtonBodyGetOmega(newtonBody_, &dAngularVel[0]);
-            Vector3 angularVel = physicsWorld_->PhysicsToScene_Domain(NewtonToUrhoVec3(dAngularVel));
+            Vector3 angularVel = (NewtonToUrhoVec3(dAngularVel));
             if (space == TS_WORLD)
             {
                 return angularVel;
@@ -1257,7 +1256,7 @@ namespace Urho3D {
         if (newtonBody_) {
             dVector dAcc;
             NewtonBodyGetAcceleration(newtonBody_, &dAcc[0]);
-            Vector3 acc = physicsWorld_->PhysicsToScene_Domain(NewtonToUrhoVec3(dAcc));
+            Vector3 acc = (NewtonToUrhoVec3(dAcc));
             return acc;
         }
         else
@@ -1295,7 +1294,7 @@ namespace Urho3D {
         //updateInterpolatedTransform();
         //node_->SetScale(1.0f);
         //node_->SetWorldTransform(Matrix3x4::IDENTITY.Translation(), Quaternion::IDENTITY, 1.0f);
-        Vector3 scenePos = physicsWorld_->PhysicsToScene_Domain(NewtonToUrhoVec3(pos));
+        Vector3 scenePos = (NewtonToUrhoVec3(pos));
         node_->SetWorldPosition(scenePos);
         
         node_->SetWorldRotation((NewtonToUrhoQuat(quat)).Normalized());

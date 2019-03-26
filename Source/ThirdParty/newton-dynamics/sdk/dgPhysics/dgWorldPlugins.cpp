@@ -85,7 +85,6 @@ void dgWorldPluginList::LoadVisualStudioPlugins(const char* const plugInPath)
 #endif	
 }
 
-
 void dgWorldPluginList::LoadLinuxPlugins(const char* const plugInPath)
 {
 #if __linux__
@@ -128,7 +127,6 @@ void dgWorldPluginList::LoadLinuxPlugins(const char* const plugInPath)
 	closedir(directory);
 #endif
 }
-
 
 void dgWorldPluginList::LoadPlugins(const char* const path)
 {

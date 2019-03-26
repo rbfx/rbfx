@@ -388,7 +388,7 @@ dgSkeletonContainer::dgSkeletonContainer(dgWorld* const world, dgDynamicBody* co
 	,m_lru(0)
 	,m_nodeCount(1)
 	,m_loopCount(0)
-	,m_selfContactCount(0)
+	,m_dynamicsLoopCount(0)
 	,m_rowCount(0)
 	,m_loopRowCount(0)
 	,m_auxiliaryRowCount(0)
@@ -454,14 +454,14 @@ dgWorld* dgSkeletonContainer::GetWorld() const
 
 void dgSkeletonContainer::ClearSelfCollision()
 {
-	m_selfContactCount = 0;
+	m_dynamicsLoopCount = 0;
 }
 
-void dgSkeletonContainer::AddSelfCollisionJoint(dgContact* const contact)
+void dgSkeletonContainer::AddSelfCollisionJoint(dgConstraint* const joint)
 {
 	m_world->GlobalLock();
-	m_loopingJoints[m_loopCount + m_selfContactCount] = contact;
-	m_selfContactCount++;
+	m_loopingJoints[m_loopCount + m_dynamicsLoopCount] = joint;
+	m_dynamicsLoopCount++;
 	m_world->GlobalUnlock();
 }
 
@@ -525,7 +525,6 @@ void dgSkeletonContainer::RemoveLoopJoint(dgBilateralConstraint* const joint)
 	}
 }
 
-
 void dgSkeletonContainer::Finalize(dgInt32 loopJointsCount, dgBilateralConstraint** const loopJointArray)
 {
 	dgAssert(m_nodeCount >= 1);
@@ -541,7 +540,6 @@ void dgSkeletonContainer::Finalize(dgInt32 loopJointsCount, dgBilateralConstrain
 	dgAssert(index == m_nodeCount);
 
 	if (loopJointsCount) {
-		//dgTree<dgInt32, dgDynamicBody*> filter (allocator);
 		for (dgInt32 i = 0; i < loopJointsCount; i++) {
 			dgBilateralConstraint* const joint = loopJointArray[i];
 			dgAssert(joint->GetBody0()->IsRTTIType(dgBody::m_dynamicBodyRTTI));
@@ -549,36 +547,9 @@ void dgSkeletonContainer::Finalize(dgInt32 loopJointsCount, dgBilateralConstrain
 			dgAssert((FindNode((dgDynamicBody*)joint->GetBody0()) || FindNode((dgDynamicBody*)joint->GetBody1())));
 			joint->m_isInSkeleton = true;
 
-			//dgDynamicBody* const body0 = (dgDynamicBody*)joint->GetBody0();
-			//dgDynamicBody* const body1 = (dgDynamicBody*)joint->GetBody1();
-			//dgNode* const node0 = FindNode(body0);
-			//dgNode* const node1 = FindNode(body1);
-			//if (node0) {
-			//	filter.Insert(node0->m_index, node0->m_body);
-			//}
-			//if (node1) {
-			//	filter.Insert(node1->m_index, node1->m_body);
-			//}
-			//dgTree<dgInt32, dgDynamicBody*>::dgTreeNode* index0 = filter.Find(body0);
-			//if (!index0) {
-			//	index0 = filter.Insert(-1, body0);
-			//}
-			//dgTree<dgInt32, dgDynamicBody*>::dgTreeNode* index1 = filter.Find(body1);
-			//if (!index1) {
-			//	index1 = filter.Insert(-1, body1);
-			//}
 			m_loopingJoints[m_loopCount] = joint;
 			m_loopCount++;
 		}
-
-		//for (dgInt32 i = 0; i < m_nodeCount; i++) {
-		//	filter.Remove(m_nodesOrder[i]->m_body);
-		//}
-		//dgTree<dgDynamicBody*, dgInt32> bodyOrder (allocator);
-		//dgTree<dgInt32, dgDynamicBody*>::Iterator iter(filter);
-		//for (iter.Begin(); iter; iter ++) {
-		//	bodyOrder.Insert (iter.GetKey(), iter.GetNode()->GetInfo());
-		//}
 	}
 }
 
@@ -719,7 +690,7 @@ void dgSkeletonContainer::InitLoopMassMatrix(const dgJointInfo* const jointInfoA
 	}
 	dgAssert (m_loopRowCount == (m_auxiliaryRowCount - auxiliaryIndex));
 	
-	const dgInt32 loopCount = m_loopCount + m_selfContactCount;
+	const dgInt32 loopCount = m_loopCount + m_dynamicsLoopCount;
 	for (dgInt32 j = 0; j < loopCount; j ++) {
 		const dgConstraint* const joint = m_loopingJoints[j];
 		const dgJointInfo* const jointInfo = &jointInfoArray[joint->m_index];
@@ -1323,7 +1294,7 @@ void dgSkeletonContainer::SolveAuxiliary(const dgJointInfo* const jointInfoArray
 		}
 	}
 
-	for (dgInt32 j = 0; j < m_selfContactCount; j++) {
+	for (dgInt32 j = 0; j < m_dynamicsLoopCount; j++) {
 		const dgConstraint* const joint = m_loopingJoints[m_loopCount + j];
 		const dgJointInfo* const jointInfo = &jointInfoArray[joint->m_index];
 
@@ -1404,7 +1375,7 @@ dgInt8* dgSkeletonContainer::CalculateBufferSizeInBytes (const dgJointInfo* cons
 	}
 
 	dgInt32 extraAuxiliaryRows = 0;
-	const dgInt32 loopCount = m_loopCount + m_selfContactCount;
+	const dgInt32 loopCount = m_loopCount + m_dynamicsLoopCount;
 	for (dgInt32 j = 0; j < loopCount; j++) {
 		const dgConstraint* const joint = m_loopingJoints[j];
 		extraAuxiliaryRows += jointInfoArray[joint->m_index].m_pairCount;
@@ -1449,7 +1420,7 @@ void dgSkeletonContainer::InitMassMatrix(const dgJointInfo* const jointInfoArray
 	m_auxiliaryRowCount = dgInt16 (auxiliaryCount);
 
 	dgInt32 loopRowCount = 0;
-	const dgInt32 loopCount = m_loopCount + m_selfContactCount;
+	const dgInt32 loopCount = m_loopCount + m_dynamicsLoopCount;
 	for (dgInt32 j = 0; j < loopCount; j++) {
 		const dgConstraint* const joint = m_loopingJoints[j];
 		loopRowCount += jointInfoArray[joint->m_index].m_pairCount;

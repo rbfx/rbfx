@@ -25,6 +25,8 @@ dVehicleVirtualDifferential::dVehicleVirtualDifferential(dVehicleNode* const par
 	,m_diffOmega(0.0f)
 	,m_shaftOmega(0.0f)
 {
+	dAssert(0);
+/*
 	SetWorld(parent->GetWorld());
 
 	dFloat mass = 0.75f * 0.5f * (m_leftTire->GetInfo().m_mass + m_rightTire->GetInfo().m_mass);
@@ -45,6 +47,7 @@ dVehicleVirtualDifferential::dVehicleVirtualDifferential(dVehicleNode* const par
 
 	m_leftAxle.m_diffSign = -1.0f;
 	m_rightAxle.m_diffSign = 1.0f;
+*/
 }
 
 dVehicleVirtualDifferential::~dVehicleVirtualDifferential()
@@ -58,19 +61,25 @@ dComplementaritySolver::dBilateralJoint* dVehicleVirtualDifferential::GetProxyJo
 
 void dVehicleVirtualDifferential::Debug(dCustomJoint::dDebugDisplay* const debugContext) const
 {
-	dVehicleDifferentialInterface::Debug(debugContext);
+	dAssert(0);
+//	dVehicleDifferentialInterface::Debug(debugContext);
 }
 
 int dVehicleVirtualDifferential::GetKinematicLoops(dAnimIDRigKinematicLoopJoint** const jointArray)
 {
+	dAssert(0);
+	return 0;
+/*
 	jointArray[0] = &m_leftAxle;
 	jointArray[1] = &m_rightAxle;
 	return dVehicleDifferentialInterface::GetKinematicLoops(&jointArray[2]) + 2;
-//return dVehicleDifferentialInterface::GetKinematicLoops(jointArray);
+*/
 }
 
 void dVehicleVirtualDifferential::ApplyExternalForce(dFloat timestep)
 {
+	dAssert(0);
+/*
 	dVehicleSingleBody* const chassisNode = (dVehicleSingleBody*)m_parent;
 	dComplementaritySolver::dBodyState* const chassisBody = chassisNode->GetProxyBody();
 
@@ -84,10 +93,13 @@ void dVehicleVirtualDifferential::ApplyExternalForce(dFloat timestep)
 	m_proxyBody.SetForce(chassisNode->m_gravity.Scale(m_proxyBody.GetMass()));
 
 	dVehicleDifferentialInterface::ApplyExternalForce(timestep);
+*/
 }
 
 void dVehicleVirtualDifferential::Integrate(dFloat timestep)
 {
+	dAssert(0);
+/*
 	dVehicleDifferentialInterface::Integrate(timestep);
 
 	dVehicleSingleBody* const chassis = (dVehicleSingleBody*)m_parent;
@@ -100,4 +112,5 @@ void dVehicleVirtualDifferential::Integrate(dFloat timestep)
 	dVector localOmega(omega - chassisOmega);
 	m_diffOmega = chassisMatrix.m_up.DotProduct3(localOmega);
 	m_shaftOmega = chassisMatrix.m_right.DotProduct3(localOmega);
+*/
 }

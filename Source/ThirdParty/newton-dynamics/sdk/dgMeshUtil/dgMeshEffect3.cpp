@@ -576,6 +576,8 @@ class dgHACDClusterGraph: public dgGraph<dgHACDCluster, dgHACDEdge>
 
 		void CastBackFace (dgListNode* const clusterNodeA, const dgBigVector& p0, const dgBigVector& p1, const dgBigVector& p2, dgFloat32 distanceThreshold)
 		{
+			dgAssert(0);
+			/*
 			dgBigVector origin ((p0 + p1 + p2).Scale (dgFloat32 (1.0f/3.0f)));
 
 			dgFloat32 rayDistance = distanceThreshold * dgFloat32 (2.0f);
@@ -585,8 +587,6 @@ class dgHACDClusterGraph: public dgGraph<dgHACDCluster, dgHACDEdge>
 			dgHACDClusterFace& faceA = m_clusterA->GetFirst()->GetInfo();
 			dgBigVector end (origin - faceA.m_normal.Scale (rayDistance));
 
-			dgAssert (0);
-/*
 			dgFloat64 paramOut;
 			//dgMeshBVHNode* const node = FaceRayCast (origin, end, paramOut, false);
 

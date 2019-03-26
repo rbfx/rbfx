@@ -746,6 +746,7 @@ void NewtonSetIslandUpdateEvent(const NewtonWorld* const newtonWorld, NewtonIsla
 
 
 
+
 /*!
   Get the first body in the body in the world body list.
 
@@ -981,6 +982,12 @@ NewtonWorldDestructorCallback NewtonWorldGetDestructorCallback(const NewtonWorld
 	return world->m_destructor;
 }
 
+void NewtonWorldSetCreateDestroyContactCallback(const NewtonWorld* const newtonWorld, NewtonCreateContactCallback createContact, NewtonDestroyContactCallback destroyContact)
+{
+	TRACE_FUNCTION(__FUNCTION__);
+	Newton* const world = (Newton *)newtonWorld;
+	world->SetCreateDestroyContactCallback((dgWorld::OnCreateContact) createContact, (dgWorld::OnDestroyContact) destroyContact);
+}
 
 void NewtonWorldSetCollisionConstructorDestructorCallback (const NewtonWorld* const newtonWorld, NewtonCollisionCopyConstructionCallback constructor, NewtonCollisionDestructorCallback destructor)
 {
@@ -988,7 +995,6 @@ void NewtonWorldSetCollisionConstructorDestructorCallback (const NewtonWorld* co
 	Newton* const world = (Newton *) newtonWorld;
 	world->SetCollisionInstanceConstructorDestructor((dgWorld::OnCollisionInstanceDuplicate) constructor, (dgWorld::OnCollisionInstanceDestroy)destructor);
 }
-
 
 void* NewtonWorldGetListenerUserData (const NewtonWorld* const newtonWorld, void* const listener)
 {
@@ -2994,13 +3000,8 @@ void NewtonConvexCollisionCalculateInertialMatrix(const NewtonCollision* convexC
 
   @param convexCollision fixme
   @param matrix fixme
-  @param shapeOrigin fixme
-  @param *gravityVector pointer to an array of floats containing the gravity vector.
   @param fluidPlane fixme
-  @param fluidDensity fluid density.
-  @param fluidViscosity fluid linear viscosity (resistance to linear translation).
-  @param accel fixme
-  @param alpha fixme
+  @param centerOfBuoyancy fixme
 
   @return Nothing.
 
@@ -3015,32 +3016,19 @@ void NewtonConvexCollisionCalculateInertialMatrix(const NewtonCollision* convexC
 
   See also: ::NewtonConvexCollisionCalculateVolume
 */
-void NewtonConvexCollisionCalculateBuoyancyAcceleration (const NewtonCollision* const convexCollision, const dFloat* const matrix, const dFloat* const shapeOrigin, const dFloat* const gravityVector, const dFloat* const fluidPlane, dFloat fluidDensity, dFloat fluidViscosity, dFloat* const accel, dFloat* const alpha)
+//void NewtonConvexCollisionCalculateBuoyancyAcceleration (const NewtonCollision* const convexCollision, const dFloat* const matrix, const dFloat* const shapeOrigin, const dFloat* const gravityVector, const dFloat* const fluidPlane, dFloat fluidDensity, dFloat* const accel, dFloat* const alpha)
+dFloat NewtonConvexCollisionCalculateBuoyancyVolume (const NewtonCollision* const convexCollision, const dFloat* const matrix, const dFloat* const fluidPlane, dFloat* const centerOfBuoyancy)
 {
 	TRACE_FUNCTION(__FUNCTION__);
-
 	dgCollisionInstance* const instance = (dgCollisionInstance*)convexCollision;
-	
-	dgVector origin (shapeOrigin);
-	dgVector gravity (gravityVector);
-	origin = origin & dgVector::m_triplexMask;
-	gravity = gravity & dgVector::m_triplexMask;
 	dgVector plane (fluidPlane[0], fluidPlane[1], fluidPlane[2], fluidPlane[3]);
 
-	dgVector force;
-	dgVector torque;
-	instance->CalculateBuoyancyAcceleration (dgMatrix (matrix), origin, gravity, plane, fluidDensity, fluidViscosity, force, torque);
-
-	accel[0] = force.m_x;
-	accel[1] = force.m_y;
-	accel[2] = force.m_z;
-
-	alpha[0] = torque.m_x;
-	alpha[1] = torque.m_y;
-	alpha[2] = torque.m_z;
+	dgVector com (instance->CalculateBuoyancyVolume (dgMatrix (matrix), plane));
+	centerOfBuoyancy[0] = com[0];
+	centerOfBuoyancy[1] = com[1];
+	centerOfBuoyancy[2] = com[2];
+	return com.m_w;
 }
-
-
 
 const void* NewtonCollisionDataPointer (const NewtonCollision* const convexCollision)
 {
@@ -4928,7 +4916,7 @@ void NewtonBodyGetPosition(const NewtonBody* const bodyPtr, dFloat* const posPtr
 {
 	TRACE_FUNCTION(__FUNCTION__);
 	dgBody* const body = (dgBody *)bodyPtr;
-	const dgVector & rot = body->GetPosition();
+	const dgVector& rot = body->GetPosition();
 	posPtr[0] = rot.m_x;
 	posPtr[1] = rot.m_y;
 	posPtr[2] = rot.m_z;
@@ -4957,7 +4945,7 @@ void NewtonBodyGetRotation(const NewtonBody* const bodyPtr, dFloat* const rotPtr
 {
 	TRACE_FUNCTION(__FUNCTION__);
 	dgBody* const body = (dgBody *)bodyPtr;
-	dgQuaternion rot = body->GetRotation();
+	const dgQuaternion& rot = body->GetRotation();
 	rotPtr[0] = rot.m_x;
 	rotPtr[1] = rot.m_y;
 	rotPtr[2] = rot.m_z;
@@ -5005,9 +4993,6 @@ void  NewtonBodyAddForce(const NewtonBody* const bodyPtr, const dFloat* const ve
 
 	body->AddForce (vector);
 }
-
-
-
 
 /*!
   Get the net force applied to a rigid body after the last NewtonUpdate.
@@ -5599,6 +5584,7 @@ void NewtonBodySetCollision(const NewtonBody* const bodyPtr, const NewtonCollisi
 	dgBody* const body = (dgBody *)bodyPtr;
 	dgCollisionInstance* const collision = (dgCollisionInstance*) collisionPtr;
 	body->AttachCollision (collision);
+	body->UpdateCollisionMatrix(dgFloat32(0.0f), 0);
 }
 
 void NewtonBodySetCollisionScale (const NewtonBody* const bodyPtr, dFloat scaleX, dFloat scaleY, dFloat scaleZ)
@@ -6006,8 +5992,6 @@ void NewtonBodySetOmega(const NewtonBody* const bodyPtr, const dFloat* const ome
 	body->SetOmega (vector);
 }
 
-
-
 void NewtonBodySetOmegaNoSleep(const NewtonBody* const bodyPtr, const dFloat* const omega)
 {
 	TRACE_FUNCTION(__FUNCTION__);
@@ -6016,7 +6000,6 @@ void NewtonBodySetOmegaNoSleep(const NewtonBody* const bodyPtr, const dFloat* co
 	dgVector vector(omega[0], omega[1], omega[2], dgFloat32(0.0f));
 	body->SetOmegaNoSleep(vector);
 }
-
 
 /*!
   Get the global angular velocity of the body.
@@ -7911,7 +7894,7 @@ void NewtonMeshApplyBoxMapping(const NewtonMesh* const mesh, int front, int side
 	TRACE_FUNCTION(__FUNCTION__);
 	dgMatrix matrix(aligmentMatrix);
 	dgMeshEffect* const meshEffect = (dgMeshEffect*) mesh;
-	meshEffect->BoxMapping (front, side, top);
+	meshEffect->BoxMapping (front, side, top, matrix);
 }
 
 void NewtonMeshApplyCylindricalMapping(const NewtonMesh* const mesh, int cylinderMaterial, int capMaterial, const dFloat* const aligmentMatrix)

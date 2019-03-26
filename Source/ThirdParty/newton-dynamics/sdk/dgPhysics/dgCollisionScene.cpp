@@ -64,9 +64,9 @@ dgFloat32 dgCollisionScene::GetBoxMaxRadius () const
 
 void dgCollisionScene::MassProperties ()
 {
-	m_inertia = dgVector (dgFloat32 (0.0f));
-	m_centerOfMass = dgVector (dgFloat32 (0.0f));
-	m_crossInertia = dgVector (dgFloat32 (0.0f));
+	m_inertia = dgVector::m_zero;
+	m_centerOfMass = dgVector::m_zero;
+	m_crossInertia = dgVector::m_zero;
 }
 
 void dgCollisionScene::CollidePair (dgBroadPhase::dgPair* const pair, dgCollisionParamProxy& proxy) const

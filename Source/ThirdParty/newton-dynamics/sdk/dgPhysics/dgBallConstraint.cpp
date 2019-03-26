@@ -226,9 +226,6 @@ void dgBallConstraint::SetLimits (
 
 }
 
-
-
-
 dgUnsigned32 dgBallConstraint::JacobianDerivative (dgContraintDescritor& params)
 {
 	dgMatrix matrix0;

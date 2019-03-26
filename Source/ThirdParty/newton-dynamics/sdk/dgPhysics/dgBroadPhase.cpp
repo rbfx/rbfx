@@ -348,15 +348,16 @@ void dgBroadPhase::SleepingState(dgBroadphaseSyncDescriptor* const descriptor, d
 				dgAssert(body->IsRTTIType(dgBody::m_kinematicBodyRTTI));
 
 				// kinematic bodies are always sleeping (skip collision with kinematic bodies)
+				bool isResting = (body->m_omega.DotProduct(body->m_omega).GetScalar() < dgFloat32 (1.0e-6f)) && (body->m_veloc.DotProduct(body->m_veloc).GetScalar() < dgFloat32(1.0e-4f));
 				if (body->IsCollidable()) {
 					body->m_sleeping = false;
 					body->m_autoSleep = false;
 				} else {
-					body->m_sleeping = true;
 					body->m_autoSleep = true;
+					body->m_sleeping = isResting;
+					descriptor->m_fullScan = !isResting;
 				}
-				//body->m_equilibrium = true;
-				body->m_equilibrium = (body->m_omega.DotProduct(body->m_omega).GetScalar() < dgFloat32 (1.0e-6f)) && (body->m_veloc.DotProduct(body->m_veloc).GetScalar() < dgFloat32(1.0e-4f));
+				body->m_equilibrium = isResting;
 
 				// update collision matrix by calling the transform callback for all kinematic bodies
 				if (body->GetBroadPhase()) {
@@ -1192,7 +1193,6 @@ bool dgBroadPhase::TestOverlaping(const dgBody* const body0, const dgBody* const
 	return ret;
 }
 
-
 void dgBroadPhase::AddPair (dgBody* const body0, dgBody* const body1, const dgFloat32 timestep, dgInt32 threadID)
 {
 	dgAssert(body0);
@@ -1238,15 +1238,8 @@ void dgBroadPhase::AddPair (dgBody* const body0, dgBody* const body1, const dgFl
 							m_pendingSoftBodyPairsCount++;
 						} else {
 							dgScopeSpinPause lock(&m_contacJointLock);
-							contact = new (m_world->m_allocator) dgContact(m_world, material);
+							contact = new (m_world->m_allocator) dgContact(m_world, material, body0, body1);
 							dgAssert(contact);
-							if (body0->m_invMass.m_w > dgFloat32(0.0f)) {
-								contact->m_body0 = body0;
-								contact->m_body1 = body1;
-							} else {
-								contact->m_body0 = body1;
-								contact->m_body1 = body0;
-							}
 							contact->AppendToContactList();
 							contact->m_contactActive = 0;
 							contact->m_positAcc = dgVector(dgFloat32(10.0f));
@@ -1315,10 +1308,12 @@ void dgBroadPhase::SubmitPairs(dgBroadPhaseNode* const leafNode, dgBroadPhaseNod
 
 	dgAssert (leafNode->IsLeafNode());
 	dgBody* const body0 = leafNode->GetBody();
+
 	const dgVector boxP0 (body0 ? body0->m_minAABB : leafNode->m_minBox);
 	const dgVector boxP1 (body0 ? body0->m_maxAABB : leafNode->m_maxBox);
 
 	const bool test0 = body0 ? (body0->GetInvMass().m_w != dgFloat32(0.0f)) : true;
+
 	while (stack) {
 		stack--;
 		dgBroadPhaseNode* const rootNode = pool[stack];

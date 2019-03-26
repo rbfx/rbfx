@@ -29,8 +29,6 @@
 //////////////////////////////////////////////////////////////////////
 
 
-
-
 dgCollisionNull::dgCollisionNull(dgMemoryAllocator* const allocator, dgUnsigned32 signature)
 	:dgCollisionConvex(allocator, signature, m_nullCollision) 
 {
@@ -58,11 +56,9 @@ void dgCollisionNull::SetCollisionBBox (const dgVector& p0, const dgVector& p1)
 	dgAssert (0);
 }
 
-
 void dgCollisionNull::DebugCollision (const dgMatrix& matrixPtr, dgCollision::OnDebugCollisionMeshCallback callback, void* const userData) const
 {
 }
-
 
 dgInt32 dgCollisionNull::CalculateSignature () const
 {
@@ -75,22 +71,21 @@ void dgCollisionNull::CalcAABB (const dgMatrix& matrix, dgVector &p0, dgVector &
 	p1 = matrix[3] & dgVector::m_triplexMask;
 }
 
-
 dgVector dgCollisionNull::SupportVertex (const dgVector& dir, dgInt32* const vertexIndex) const
 {
 	dgAssert (0);
-	return dgVector (dgFloat32 (0.0f));
+	return dgVector::m_zero;
 }
 
-dgVector dgCollisionNull::SupportVertexSpecial (const dgVector& dir, dgInt32* const vertexIndex) const
+dgVector dgCollisionNull::SupportVertexSpecial (const dgVector& dir, dgFloat32 skinThickness, dgInt32* const vertexIndex) const
 {
 	dgAssert(0);
-	return dgVector(dgFloat32(0.0f));
+	return dgVector::m_zero;
 }
 
 dgFloat32 dgCollisionNull::GetVolume () const
 {
-	return 0.0f;
+	return dgFloat32 (0.0f);
 }
 
 dgFloat32 dgCollisionNull::RayCast (const dgVector& localP0, const dgVector& localP1, dgFloat32 maxT, dgContactPoint& contactOut, const dgBody* const body, void* const userData, OnRayPrecastAction preFilter) const
@@ -102,6 +97,6 @@ dgFloat32 dgCollisionNull::RayCast (const dgVector& localP0, const dgVector& loc
 dgVector dgCollisionNull::CalculateVolumeIntegral (const dgMatrix& globalMatrix, const dgVector& plane, const dgCollisionInstance& parentScale) const
 {
 	dgAssert (0);
-	return dgVector (dgFloat32 (0.0f));
+	return dgVector::m_zero;
 }
 

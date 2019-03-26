@@ -12,6 +12,7 @@
 #include "dAnimationStdAfx.h"
 #include "dAnimIKManager.h"
 
+#if 0
 dAnimIKManager::dAnimIKManager(NewtonWorld* const world)
 	:dCustomControllerManager<dAnimIKController>(world, D_ANIM_IK_MANAGER)
 {
@@ -53,4 +54,4 @@ void dAnimIKManager::OnDebug(dCustomJoint::dDebugDisplay* const debugContext)
 		rig->Debug(debugContext);
 	}
 }
-
+#endif

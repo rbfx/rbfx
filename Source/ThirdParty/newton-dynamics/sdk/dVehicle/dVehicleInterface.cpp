@@ -30,13 +30,15 @@ dVehicleTireInterface::dVehicleTireInterface(dVehicleNode* const parent, const d
 	:dVehicleNode(parent)
 	,m_info(info)
 {
-	SetWorld(parent->GetWorld());
+	dAssert(0);
+//	SetWorld(parent->GetWorld());
 }
 
 
 dVehicleInterface::dVehicleInterface(dVehicleChassis* const chassis)
 	:dVehicleNode(NULL)
 {
-	SetWorld(NewtonBodyGetWorld(chassis->GetBody()));
+	dAssert(0);
+//	SetWorld(NewtonBodyGetWorld(chassis->GetBody()));
 }
 

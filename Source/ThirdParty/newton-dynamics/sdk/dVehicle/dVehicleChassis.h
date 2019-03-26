@@ -194,7 +194,7 @@ class dVehicleChassis: public dCustomControllerBase
 	static int OnAABBOverlap(const NewtonBody * const body, void* const me);
 	
 	dMatrix m_localFrame;
-	dVehicleSolver m_solver;
+//	dVehicleSolver m_solver;
 	dVector m_gravity;
 	dVector m_obbSize;
 	dVector m_obbOrigin;

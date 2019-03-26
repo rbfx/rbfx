@@ -493,9 +493,6 @@ dgInt32 dgDeserializeMarker(dgDeserialize serializeCallback, void* const userDat
 	return revision;
 }
 
-
-
-
 dgSetPrecisionDouble::dgSetPrecisionDouble()
 {
 	#if (defined (_MSC_VER) && defined (_WIN_32_VER))
@@ -515,7 +512,6 @@ dgSetPrecisionDouble::~dgSetPrecisionDouble()
 
 
 dgFloatExceptions::dgFloatExceptions(dgUnsigned32 mask)
-	:m_mask (0)
 {
 	#if (defined (_MSC_VER) && defined (_WIN_32_VER))
 		dgClearFP();

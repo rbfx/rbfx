@@ -104,8 +104,8 @@ void dDifferentialMount::JacobianDerivative(dComplementaritySolver::dParamInfo* 
 // tire contacts
 // *******************************************************************
 dTireContact::dTireContact()
-	:dAnimIDRigKinematicLoopJoint()
-	,m_point(0.0f)
+//	:dAnimIDRigKinematicLoopJoint()
+	:m_point(0.0f)
 	,m_normal(0.0f)
 	,m_lateralDir(0.0f)
 	,m_longitudinalDir(0.0f)
@@ -115,15 +115,20 @@ dTireContact::dTireContact()
 	,m_load(0.0f)
 	,m_tireModel()
 {
+	dAssert(0);
+/*
 	m_jointFeebackForce[0] = 0.0f;
 	m_jointFeebackForce[1] = 0.0f;
 	m_jointFeebackForce[2] = 0.0f;
 	memset(m_normalFilter, 0, sizeof(m_normalFilter));
 	memset(m_isActiveFilter, 0, sizeof(m_isActiveFilter));
+*/
 }
 
 void dTireContact::ResetContact ()
 {
+	dAssert(0);
+/*
 	if (m_isActive == false) {
 		m_jointFeebackForce[0] = 0.0f;
 		m_jointFeebackForce[1] = 0.0f;
@@ -137,10 +142,13 @@ void dTireContact::ResetContact ()
 		m_normalFilter[i] = m_normalFilter[i - 1];
 		m_isActiveFilter[i] = m_isActiveFilter[i - 1];
 	}
+*/
 }
 
 void dTireContact::SetContact(const dVector& posit, const dVector& normal, const dVector& longitudinalDir, dFloat penetration, dFloat staticFriction, dFloat kineticFriction)
 {
+	dAssert(0);
+/*
 	m_point = posit;
 	m_normal = normal;
 	m_longitudinalDir = longitudinalDir;
@@ -159,10 +167,13 @@ void dTireContact::SetContact(const dVector& posit, const dVector& normal, const
 	m_staticFriction = staticFriction;
 	m_kineticFriction = kineticFriction;
 	m_penetration = dClamp (penetration, dFloat(-D_TIRE_MAX_ELASTIC_DEFORMATION), dFloat(D_TIRE_MAX_ELASTIC_DEFORMATION));
+*/
 }
 
 void dTireContact::TireForces(dFloat longitudinalSlip, dFloat lateralSlip, dFloat frictionCoef)
 {
+	dAssert(0);
+/*
 	dVehicleTireInterface* const tire = ((dVehicleNode*)GetOwner0())->GetAsTire();
 	dAssert (tire);
 
@@ -190,6 +201,7 @@ void dTireContact::TireForces(dFloat longitudinalSlip, dFloat lateralSlip, dFloa
 	m_tireModel.m_longitunalForce = x * r;
 	dAssert(m_tireModel.m_lateralForce >= 0.0f);
 	dAssert(m_tireModel.m_longitunalForce >= 0.0f);
+*/
 }
 
 void dTireContact::JacobianDerivative(dComplementaritySolver::dParamInfo* const constraintParams)
@@ -207,6 +219,9 @@ for (int i = 0; i < 100; i++) {
 fclose(file_xxx);
 */
 
+
+	dAssert(0);
+/*
 	dVector omega(0.0f);
 
 	// normal constraint
@@ -309,10 +324,13 @@ fclose(file_xxx);
 	m_dof = n;
 	m_count = n;
 	constraintParams->m_count = n;
+*/
 }
 
 void dTireContact::Debug(dCustomJoint::dDebugDisplay* const debugContext, dFloat scale) const
 {
+	dAssert(0);
+/*
 	dVehicleVirtualTire* const tire = (dVehicleVirtualTire*)((dVehicleNode*)GetOwner0())->GetAsTire();
 	dVehicleSingleBody* const chassis = (dVehicleSingleBody*)((dVehicleNode*)GetOwner0()->GetParent())->GetAsVehicle();
 
@@ -348,8 +366,8 @@ void dTireContact::Debug(dCustomJoint::dDebugDisplay* const debugContext, dFloat
 	dVector p3(origin + m_lateralDir.Scale(scale * m_jointFeebackForce[2]));
 
 	debugContext->DrawLine(origin, p3);
+*/
 }
-
 
 // *******************************************************************
 // engine block 
@@ -381,11 +399,12 @@ void dEngineBlockJoint::JacobianDerivative(dComplementaritySolver::dParamInfo* c
 // engine crank
 // *******************************************************************
 dEngineCrankJoint::dEngineCrankJoint()
-	:dAnimIDRigKinematicLoopJoint()
-	,m_targetRpm(0.0f)
+//	:dAnimIDRigKinematicLoopJoint()
+	:m_targetRpm(0.0f)
 	,m_targetTorque(D_VEHICLE_STOP_TORQUE)
 {
-	m_isActive = true;
+	dAssert(0);
+//	m_isActive = true;
 }
 
 void dEngineCrankJoint::SetTorqueAndRpm(dFloat torque, dFloat rpm)
@@ -396,6 +415,8 @@ void dEngineCrankJoint::SetTorqueAndRpm(dFloat torque, dFloat rpm)
 
 void dEngineCrankJoint::JacobianDerivative(dComplementaritySolver::dParamInfo* const constraintParams)
 {
+	dAssert(0);
+/*
 	dComplementaritySolver::dBodyState* const engine = m_state0;
 	dComplementaritySolver::dBodyState* const chassis = GetOwner0()->GetProxyBody();
 
@@ -420,18 +441,20 @@ void dEngineCrankJoint::JacobianDerivative(dComplementaritySolver::dParamInfo* c
 	m_dof = 1;
 	m_count = 1;
 	constraintParams->m_count = 1;
+*/
 }
 
 // *******************************************************************
 // engine crank
 // *******************************************************************
 dGearBoxJoint::dGearBoxJoint()
-	:dAnimIDRigKinematicLoopJoint()
-	,m_gearRatio(0.0f)
+//	:dAnimIDRigKinematicLoopJoint()
+	:m_gearRatio(0.0f)
 	,m_crowndGear(1.0f)
 	,m_clutchTorque(1000.0f)
 {
-	m_isActive = true;
+	dAssert(0);
+//	m_isActive = true;
 }
 
 void dGearBoxJoint::SetGearRatio(dFloat ratio)
@@ -446,6 +469,8 @@ void dGearBoxJoint::SetClutchTorque(dFloat clutchTorque)
 
 void dGearBoxJoint::JacobianDerivative(dComplementaritySolver::dParamInfo* const constraintParams)
 {
+	dAssert(0);
+/*
 	m_dof = 0;
 	m_count = 0;
 	constraintParams->m_count = 0;
@@ -482,20 +507,24 @@ void dGearBoxJoint::JacobianDerivative(dComplementaritySolver::dParamInfo* const
 		m_count = 1;
 		constraintParams->m_count = 1;
 	}
+*/
 }
 
 // *******************************************************************
 // tire axle
 // *******************************************************************
 dTireAxleJoint::dTireAxleJoint()
-	:dAnimIDRigKinematicLoopJoint()
-	,m_diffSign(1.0f)
+//	:dAnimIDRigKinematicLoopJoint()
+	:m_diffSign(1.0f)
 {
-	m_isActive = true;
+	dAssert(0);
+//	m_isActive = true;
 }
 
 void dTireAxleJoint::JacobianDerivative(dComplementaritySolver::dParamInfo* const constraintParams)
 {
+	dAssert(0);
+/*
 	dVehicleVirtualEngine* const engineNode = (dVehicleVirtualEngine*)GetOwner0();
 	dComplementaritySolver::dBodyState* const chassis = engineNode->GetProxyBody();
 
@@ -520,4 +549,5 @@ void dTireAxleJoint::JacobianDerivative(dComplementaritySolver::dParamInfo* cons
 	m_dof = 1;
 	m_count = 1;
 	constraintParams->m_count = 1;
+*/
 }

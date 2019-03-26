@@ -198,7 +198,7 @@ class dgContact: public dgConstraint, public dgList<dgContactMaterial>
 
 	protected:
 	dgContact(dgContact* const clone);
-	dgContact(dgWorld* const world, const dgContactMaterial* const material);
+	dgContact(dgWorld* const world, const dgContactMaterial* const material, dgBody* const body0, dgBody* const body1);
 	virtual ~dgContact();
 
 	DG_CLASS_ALLOCATOR(allocator)

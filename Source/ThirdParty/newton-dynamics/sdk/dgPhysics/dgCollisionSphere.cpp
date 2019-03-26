@@ -260,7 +260,6 @@ dgFloat32 dgCollisionPoint::GetVolume () const
 	return dgFloat32 (0.0f); 
 }
 
-
 dgVector dgCollisionPoint::SupportVertex (const dgVector& dir, dgInt32* const vertexIndex) const
 {
 	return dgVector (dgFloat32 (0.0f)); 
@@ -286,16 +285,13 @@ dgFloat32 dgCollisionSphere::RayCast (const dgVector& p0, const dgVector& p1, dg
 
 void dgCollisionSphere::MassProperties () 
 {
-	m_centerOfMass = dgVector (dgFloat32 (0.0f));
-	m_crossInertia = dgVector (dgFloat32 (0.0f));
+	m_centerOfMass = dgVector::m_zero;
+	m_crossInertia = dgVector::m_zero;
 	dgFloat32 volume = dgFloat32 (4.0f * dgPI / 3.0f) * m_radius *  m_radius * m_radius;
 	dgFloat32 II = dgFloat32 (2.0f / 5.0f) * m_radius *  m_radius;
-
-//dgCollisionConvex::MassProperties ();
 	m_inertia = dgVector  (II, II, II, dgFloat32 (0.0f));
 	m_centerOfMass.m_w = volume;
 }
-
 
 void dgCollisionSphere::GetCollisionInfo(dgCollisionInfo* const info) const
 {
@@ -308,7 +304,6 @@ void dgCollisionSphere::Serialize(dgSerialize callback, void* const userData) co
 	SerializeLow(callback, userData);
 	callback (userData, &m_radius, sizeof (m_radius));
 }
-
 
 dgVector dgCollisionSphere::SupportVertexSpecial (const dgVector& dir, dgFloat32 skinThickness, dgInt32* const vertexIndex) const 
 {

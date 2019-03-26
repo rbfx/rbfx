@@ -15,6 +15,7 @@
 #include "dStdafxVehicle.h"
 #include "dVehicleInterface.h"
 
+class dAnimIDRigKinematicLoopJoint;
 class dVehicleSingleBody: public dVehicleInterface
 {
 	public:

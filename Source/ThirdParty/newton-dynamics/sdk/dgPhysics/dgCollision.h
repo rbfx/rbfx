@@ -302,7 +302,7 @@ class dgCollision
 
 	dgVector m_inertia;	
 	dgVector m_crossInertia;	
-	dgVector m_centerOfMass;	
+	dgVector m_centerOfMass;
 	dgVector m_boxSize;
 	dgVector m_boxOrigin;
 	dgInt32 m_rtti;

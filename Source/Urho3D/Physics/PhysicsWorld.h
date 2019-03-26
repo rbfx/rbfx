@@ -176,28 +176,6 @@ namespace Urho3D
         void SetTimeScale(float timescale){ timeScale_ = Max<float>(0.0f,timescale);}
         float GetTimeScale() const { return timeScale_; }
         
-        ///set the physics scale of the world
-        void SetPhysicsScale(float scale) { physicsScale_ = scale; }
-
-        Matrix3x4 GetPhysicsWorldFrame() const { return Matrix3x4(Vector3::ZERO, Quaternion::IDENTITY, 1.0f/physicsScale_); }
-
-        float GetPhysicsScale() const {
-            return physicsScale_;
-        }
-
-        ///Conversions From Scene space to physics space.
-        float SceneToPhysics_Domain(float x);
-        Vector3 SceneToPhysics_Domain(Vector3 v);
-        Matrix3x4 SceneToPhysics_Domain(Matrix3x4 sceneFrame);
-        Vector3 SceneToPhysics_Domain_Torque(Vector3 torque);
-        float SceneToPhysics_Domain_Torque(float torque);
-
-        ///Conversions From physics space to scene space.
-        float PhysicsToScene_Domain(float x);
-        Vector3 PhysicsToScene_Domain(Vector3 v);
-        Matrix3x4 PhysicsToScene_Domain(Matrix3x4 newtonFrame);
-        Vector3 PhysicsToScene_Domain_Torque(Vector3 torque);
-        float PhysicsToScene_Domain_Torque(float torque);
 
 
         ///waits until the asynchronous update has finished.
@@ -288,7 +266,6 @@ namespace Urho3D
         const int contactEntryPoolSize_ = 100;
 
 
-
         void ParseContacts();
         bool contactMapLocked_ = false;
 
@@ -309,9 +286,8 @@ namespace Urho3D
 
         float timeScale_ = 1.0f;
 
-        float physicsScale_ = 1.0f;
         
-        
+ 
 
         ///convex casts
         static const int convexCastRetInfoSize_ = 1000;

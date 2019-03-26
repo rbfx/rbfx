@@ -122,7 +122,7 @@ class dgCollisionInstance
 	dgInt32 GetConvexVertexCount() const; 
 
 	void Serialize(dgSerialize callback, void* const userData, bool saveShape = true) const;
-	void CalculateBuoyancyAcceleration (const dgMatrix& matrix, const dgVector& origin, const dgVector& gravity, const dgVector& fluidPlane, dgFloat32 fluidDensity, dgFloat32 fluidViscosity, dgVector& accel, dgVector& alpha);
+	dgVector CalculateBuoyancyVolume (const dgMatrix& matrix, const dgVector& fluidPlane) const;
 	
 	dgVector SupportVertexSpecial (const dgVector& dir, dgInt32* const vertexIndex) const;
 	dgVector SupportVertexSpecialProjectPoint (const dgVector& point, const dgVector& dir) const;
@@ -592,6 +592,10 @@ DG_INLINE void dgCollisionInstance::SetSkinThickness(dgFloat32 thickness)
 	m_skinThickness = dgAbs (thickness);
 }
 
+DG_INLINE dgVector dgCollisionInstance::CalculateBuoyancyVolume(const dgMatrix& matrix, const dgVector& fluidPlane) const
+{
+	return m_childShape->CalculateVolumeIntegral(m_localMatrix * matrix, fluidPlane, *this);
+}
 
 #endif 
 

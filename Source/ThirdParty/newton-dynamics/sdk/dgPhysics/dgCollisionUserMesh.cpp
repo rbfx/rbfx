@@ -125,16 +125,16 @@ dgFloat32 dgCollisionUserMesh::RayCast (const dgVector& localP0, const dgVector&
 }
 
 
-dgVector dgCollisionUserMesh::SupportVertex (const dgVector& dir) const
+dgVector dgCollisionUserMesh::SupportVertex (const dgVector& dir, dgInt32* const vertexIndex) const
 {
 	dgAssert (0);
-	return dgVector (0, 0, 0, 0);
+	return dgVector::m_zero;
 }
 
 dgVector dgCollisionUserMesh::SupportVertexSpecial (const dgVector& dir, dgFloat32 skinThickness, dgInt32* const vertexIndex) const
 {
 	dgAssert(0);
-	return dgVector(0, 0, 0, 0);
+	return dgVector::m_zero;
 }
 
 void dgCollisionUserMesh::GetCollidingFacesContinue(dgPolygonMeshDesc* const data) const

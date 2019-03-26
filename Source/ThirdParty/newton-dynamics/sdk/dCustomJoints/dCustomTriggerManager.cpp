@@ -107,8 +107,6 @@ void dCustomTriggerManager::UpdateTrigger (dCustomTriggerController* const contr
 		if (!node) {
 			dCustomScopeLock lock(&m_lock);
 			node = manifest.Insert(m_lru, cargoBody);
-//			DemoEntity* const entity = (DemoEntity*)NewtonBodyGetUserData(cargoBody);
-//			entity->SetMesh(m_redBox, entity->GetMeshMatrix());
 			EventCallback (controller, m_enterTrigger, cargoBody);
 		} else {
 			EventCallback (controller, m_inTrigger, cargoBody);
@@ -126,9 +124,6 @@ void dCustomTriggerManager::UpdateTrigger (dCustomTriggerController* const contr
 
 			dCustomScopeLock lock(&m_lock);
 			manifest.Remove(cargoBody);
-//			DemoEntity* const entity = (DemoEntity*)NewtonBodyGetUserData(cargoBody);
-//			entity->SetMesh(m_whiteBox, entity->GetMeshMatrix());
-//			entry.m_cargo.Remove(node);
 		}
 	}
 }

@@ -147,7 +147,6 @@ dgCollisionInstance* dgWorld::CreateSphere(dgFloat32 radii, dgInt32 shapeID, con
 	return CreateInstance (node->GetInfo(), shapeID, offsetMatrix);
 }
 
-
 dgCollisionInstance* dgWorld::CreateBox(dgFloat32 dx, dgFloat32 dy, dgFloat32 dz, dgInt32 shapeID, const dgMatrix& offsetMatrix)
 {
 	dgUnsigned32 crc = dgCollisionBox::CalculateSignature(dx, dy, dz);
@@ -158,7 +157,6 @@ dgCollisionInstance* dgWorld::CreateBox(dgFloat32 dx, dgFloat32 dy, dgFloat32 dz
 	}
 	return CreateInstance (node->GetInfo(), shapeID, offsetMatrix);
 }
-
 
 dgCollisionInstance* dgWorld::CreateCapsule (dgFloat32 radio0, dgFloat32 radio1, dgFloat32 height, dgInt32 shapeID, const dgMatrix& offsetMatrix)
 {
@@ -172,7 +170,6 @@ dgCollisionInstance* dgWorld::CreateCapsule (dgFloat32 radio0, dgFloat32 radio1,
 	return CreateInstance (node->GetInfo(), shapeID, offsetMatrix);
 }
 
-
 dgCollisionInstance* dgWorld::CreateCylinder (dgFloat32 radio0, dgFloat32 radio1, dgFloat32 height, dgInt32 shapeID, const dgMatrix& offsetMatrix)
 {
 	dgUnsigned32 crc = dgCollisionCylinder::CalculateSignature(dgAbs (radio0), dgAbs (radio1), dgAbs (height) * dgFloat32 (0.5f));
@@ -184,7 +181,6 @@ dgCollisionInstance* dgWorld::CreateCylinder (dgFloat32 radio0, dgFloat32 radio1
 	}
 	return CreateInstance (node->GetInfo(), shapeID, offsetMatrix);
 }
-
 
 dgCollisionInstance* dgWorld::CreateChamferCylinder (dgFloat32 radius, dgFloat32 height, dgInt32 shapeID, const dgMatrix& offsetMatrix)
 {
@@ -209,7 +205,6 @@ dgCollisionInstance* dgWorld::CreateCone (dgFloat32 radius, dgFloat32 height, dg
 	return CreateInstance (node->GetInfo(), shapeID, offsetMatrix);
 }
 
-
 dgCollisionInstance* dgWorld::CreateConvexHull (dgInt32 count, const dgFloat32* const vertexArray, dgInt32 strideInBytes, dgFloat32 tolerance, dgInt32 shapeID, const dgMatrix& offsetMatrix)
 {
 	dgUnsigned32 crc = dgCollisionConvexHull::CalculateSignature (count, vertexArray, strideInBytes);
@@ -229,7 +224,6 @@ dgCollisionInstance* dgWorld::CreateConvexHull (dgInt32 count, const dgFloat32* 
 			return NULL;
 		}
 	}
-
 
 	// add reference to the shape and return the collision pointer
 	return CreateInstance (node->GetInfo(), shapeID, offsetMatrix);
@@ -265,7 +259,6 @@ dgCollisionInstance* dgWorld::CreateFracturedCompound (dgMeshEffect* const solid
 	collision->Release();
 	return instance;
 }
-
 
 dgCollisionInstance* dgWorld::CreateMassSpringDamperSystem (dgInt32 shapeID, dgInt32 pointCount, const dgFloat32* const points, dgInt32 strideInBytes, const dgFloat32* const pointsMass, dgInt32 linksCount, const dgInt32* const links, const dgFloat32* const linksSpring, const dgFloat32* const LinksDamper)
 {
@@ -343,7 +336,6 @@ dgCollisionInstance* dgWorld::CreateCollisionFromSerialization (dgDeserialize de
 	return instance;
 }
 
-
 dgContactMaterial* dgWorld::GetMaterial (dgUnsigned32 bodyGroupId0, dgUnsigned32 bodyGroupId1)	const
 {
 	if (bodyGroupId0 > bodyGroupId1) {
@@ -375,8 +367,6 @@ dgContactMaterial* dgWorld::GetNextMaterial (dgContactMaterial* material) const
 	return NULL;
 }
 
-
-
 dgUnsigned32 dgWorld::GetDefualtBodyGroupID() const
 {
 	return m_defualtBodyGroupID;
@@ -401,7 +391,6 @@ dgUnsigned32 dgWorld::CreateBodyGroupID()
 	return newId;
 }
 
-
 void dgWorld::ReleaseCollision(const dgCollision* const collision)
 {
 	dgInt32 ref = collision->Release();
@@ -414,7 +403,6 @@ void dgWorld::ReleaseCollision(const dgCollision* const collision)
 		}
 	}
 }
-
 
 // ********************************************************************************
 //
@@ -456,8 +444,8 @@ dgInt32 dgWorld::ClosestPoint(const dgCollisionInstance* const collisionSrcA, co
 	dgContactMaterial material;
 	material.m_penetration = dgFloat32 (0.0f);
 
-	dgContact contactJoint (this, &material);
-	contactJoint.SetBodies (&collideBodyA, &collideBodyB);
+	dgContact contactJoint (this, &material, &collideBodyB, &collideBodyA);
+//	contactJoint.SetBodies (&collideBodyA, &collideBodyB);
 
 	dgCollisionParamProxy proxy(&contactJoint, contacts, threadIndex, false, false);
 
@@ -522,8 +510,8 @@ bool dgWorld::IntersectionTest (const dgCollisionInstance* const collisionSrcA, 
 	dgContactMaterial material; 
 	material.m_penetration = dgFloat32 (0.0f);
 
-	dgContact contactJoint (this, &material);
-	contactJoint.SetBodies (&collideBodyA, &collideBodyB);
+	dgContact contactJoint (this, &material, &collideBodyB, &collideBodyA);
+//	contactJoint.SetBodies (&collideBodyA, &collideBodyB);
 
 	dgBroadPhase::dgPair pair;
 	pair.m_contactCount = 0;
@@ -1244,8 +1232,8 @@ dgInt32 dgWorld::CollideContinue (
 	dgContactMaterial material;
 	material.m_penetration = dgFloat32 (0.0f);
 
-	dgContact contactJoint (this, &material);
-	contactJoint.SetBodies (&collideBodyA, &collideBodyB);
+	dgContact contactJoint (this, &material, &collideBodyB, &collideBodyA);
+//	contactJoint.SetBodies (&collideBodyA, &collideBodyB);
 
 	dgBroadPhase::dgPair pair;
 	pair.m_contact = &contactJoint;
@@ -1329,8 +1317,8 @@ dgInt32 dgWorld::Collide (
 	dgContactMaterial material; 
 	material.m_penetration = dgFloat32 (0.0f);
 
-	dgContact contactJoint (this, &material);
-	contactJoint.SetBodies (&collideBodyA, &collideBodyB);
+	dgContact contactJoint (this, &material, &collideBodyB, &collideBodyA);
+//	contactJoint.SetBodies (&collideBodyA, &collideBodyB);
 
 	dgBroadPhase::dgPair pair;
 	pair.m_contactCount = 0;
@@ -1520,6 +1508,7 @@ dgInt32 dgWorld::CalculateConvexToConvexContacts(dgCollisionParamProxy& proxy) c
 					}
 					break;
 				}
+				default:;
 			}
 		}
 		if (contactJoint->m_isNewContact) {

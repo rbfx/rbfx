@@ -57,36 +57,19 @@ class dgWorkGroupFloat
 	{
 	}
 
-	DG_INLINE dgInt32 GetInt(dgInt32 i) const
+	DG_INLINE dgWorkGroupFloat(const dgWorkGroupFloat* const baseAddr, const dgWorkGroupFloat& index)
 	{
-		dgAssert (i >= 0);
-		dgAssert(i < DG_WORK_GROUP_SIZE);
-		#ifdef _NEWTON_USE_DOUBLE
-		const dgInt64* const ptr = &m_low.m_i[0];
-		#else
-		const dgInt32* const ptr = &m_low.m_i[0];
-		#endif
-		return dgInt32 (ptr[i]);
-	}
-
-	DG_INLINE void SetInt(dgInt32 i, dgInt32 value)
-	{
-		dgAssert(i >= 0);
-		dgAssert(i < DG_WORK_GROUP_SIZE);
-
-		#ifdef _NEWTON_USE_DOUBLE
-		dgInt64* const ptr = &m_low.m_i[0];
-		#else
-		dgInt32* const ptr = &m_low.m_i[0];
-		#endif
-		ptr[i] = value;
+		const dgFloat32* const ptr = baseAddr->m_f;
+		for (dgInt32 i = 0; i < DG_WORK_GROUP_SIZE; i++) {
+			m_f[i] = ptr[index.m_i[i]];
+		}
 	}
 
 	DG_INLINE dgFloat32& operator[] (dgInt32 i)
 	{
 		dgAssert(i >= 0);
 		dgAssert(i < DG_WORK_GROUP_SIZE);
-		dgFloat32* const ptr = &m_low[0];
+		dgFloat32* const ptr = &m_f[0];
 		return ptr[i];
 	}
 
@@ -94,7 +77,7 @@ class dgWorkGroupFloat
 	{
 		dgAssert(i >= 0);
 		dgAssert(i < DG_WORK_GROUP_SIZE);
-		const dgFloat32* const ptr = &m_low[0];
+		const dgFloat32* const ptr = &m_f[0];
 		return ptr[i];
 	}
 
@@ -163,8 +146,14 @@ class dgWorkGroupFloat
 		return (m_low.GetMax(m_high)).GetMax();
 	}
 
-	dgVector m_low;
-	dgVector m_high;
+	union {
+		dgFloat32 m_f[DG_WORK_GROUP_SIZE];
+		dgInt32 m_i[DG_WORK_GROUP_SIZE];
+		struct {
+			dgVector m_low;
+			dgVector m_high;
+		};
+	};
 	static dgWorkGroupFloat m_one;
 	static dgWorkGroupFloat m_zero;
 } DG_GCC_VECTOR_ALIGMENT;
@@ -269,9 +258,9 @@ class dgParallelBodySolver
 
 	static dgInt32 CompareJointInfos(const dgJointInfo* const infoA, const dgJointInfo* const infoB, void* notUsed);
 
+	dgFloat32 CalculateJointForce(const dgJointInfo* const jointInfo, dgSolverSoaElement* const massMatrix, const dgJacobian* const internalForces) const;
 	DG_INLINE void SortWorkGroup (dgInt32 base) const; 
 	DG_INLINE void TransposeRow (dgSolverSoaElement* const row, const dgJointInfo* const jointInfoArray, dgInt32 index);
-	DG_INLINE dgFloat32 CalculateJointForce(const dgJointInfo* const jointInfo, dgSolverSoaElement* const massMatrix, const dgJacobian* const internalForces) const;
 	DG_INLINE void BuildJacobianMatrix(dgJointInfo* const jointInfo, dgLeftHandSide* const leftHandSide, dgRightHandSide* const righHandSide, dgJacobian* const internalForces);
 
 	protected:

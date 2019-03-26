@@ -1296,11 +1296,11 @@ dgMeshEffect::dgMeshEffect(dgCollisionInstance* const collision)
 	{
 		public:
 		dgMeshEffectBuilder (dgMemoryAllocator* const allocator)
-			:m_brush(0)
+			:m_vertex(allocator)
+			,m_faceIndexCount(allocator)
+			,m_brush(0)
 			,m_faceCount(0)
 			,m_vertexCount(0)
-			,m_vertex(allocator)
-			,m_faceIndexCount(allocator)
 		{
 		}
 

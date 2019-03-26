@@ -287,14 +287,12 @@ dgFloat32 dgCollisionBox::RayCast (const dgVector& localP0, const dgVector& loca
 		tmin = dgFloat32 (1.2f);
 	}
 	return tmin;
-
 }
-
 
 void dgCollisionBox::MassProperties ()
 {
-	m_centerOfMass = dgVector (dgFloat32 (0.0f));
-	m_crossInertia = dgVector (dgFloat32 (0.0f));
+	m_centerOfMass = dgVector::m_zero;
+	m_crossInertia = dgVector::m_zero;
 	dgFloat32 volume = dgFloat32 (8.0f) * m_size[0].m_x * m_size[0].m_y * m_size[0].m_z; 
 	m_inertia = dgVector (dgFloat32 (1.0f / 3.0f) * (m_size[0].m_y * m_size[0].m_y + m_size[0].m_z * m_size[0].m_z),
 						  dgFloat32 (1.0f / 3.0f) * (m_size[0].m_x * m_size[0].m_x + m_size[0].m_z * m_size[0].m_z),
@@ -302,8 +300,6 @@ void dgCollisionBox::MassProperties ()
 						  dgFloat32 (0.0f));
 	m_centerOfMass.m_w = volume;
 }
-
-
 
 void dgCollisionBox::GetCollisionInfo(dgCollisionInfo* const info) const
 {

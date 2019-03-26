@@ -95,7 +95,6 @@ namespace Urho3D {
         context->RegisterFactory<PhysicsWorld>(DEF_PHYSICS_CATEGORY.CString());
         URHO3D_COPY_BASE_ATTRIBUTES(Component);
         URHO3D_ACCESSOR_ATTRIBUTE("Gravity", GetGravity, SetGravity, Vector3, DEFAULT_GRAVITY, AM_DEFAULT);
-        URHO3D_ACCESSOR_ATTRIBUTE("Physics Scale", GetPhysicsScale, SetPhysicsScale, float, 1.0f, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Time Scale", GetTimeScale, SetTimeScale, float, 1.0f, AM_DEFAULT);
     }
 
@@ -131,8 +130,8 @@ namespace Urho3D {
         intersections.Clear();
         PhysicsRayCastUserData data;
 
-        Vector3 origin = SceneToPhysics_Domain(pointOrigin);
-        Vector3 destination = SceneToPhysics_Domain(pointDestination);
+        Vector3 origin = (pointOrigin);
+        Vector3 destination = (pointDestination);
 
         NewtonWorldRayCast(newtonWorld_, &UrhoToNewton(origin)[0], &UrhoToNewton(destination)[0], Newton_WorldRayCastFilterCallback, &data, NULL, 0);
 
@@ -152,7 +151,7 @@ namespace Urho3D {
                 && (collisionLayerAsBit & collisionMask)) {
 
 
-                intersection.rayIntersectWorldPosition_ = PhysicsToScene_Domain(intersection.rayIntersectWorldPosition_);
+                intersection.rayIntersectWorldPosition_ = (intersection.rayIntersectWorldPosition_);
                 intersection.rayOriginWorld_ = pointOrigin;
                 intersection.rayDistance_ = (intersection.rayIntersectWorldPosition_ - pointOrigin).Length();
 

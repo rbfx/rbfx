@@ -80,7 +80,7 @@ void dCustomKinematicController::Init (NewtonBody* const body, const dMatrix& ma
 	SetMaxAngularFriction(1.0f);
 
 	// set as soft joint
-	SetSolverModel(2);
+	SetSolverModel(3);
 }
 
 void dCustomKinematicController::SetPickMode (int mode)

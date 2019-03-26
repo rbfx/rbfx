@@ -368,7 +368,7 @@ void dCustomJoint::Serialize (NewtonSerializeCallback callback, void* const user
 	callback(userData, &solverModel, sizeof(solverModel));
 }
 
-void dCustomJoint::Deserialize (NewtonSerializeCallback callback, void* const userData) const
+void dCustomJoint::Deserialize (NewtonDeserializeCallback callback, void* const userData)
 {
 	dAssert (0);
 }

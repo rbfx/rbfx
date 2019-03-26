@@ -747,7 +747,7 @@ dgFloat32 dgCollisionCompound::GetBoxMaxRadius () const
 
 dgVector dgCollisionCompound::CalculateVolumeIntegral (const dgMatrix& globalMatrix, const dgVector& plane, const dgCollisionInstance& parentScale) const
 {
-	dgVector totalVolume (dgFloat32 (0.0f), dgFloat32 (0.0f), dgFloat32 (0.0f), dgFloat32 (0.0f));
+	dgVector totalVolume (dgVector::m_zero);
 	dgTreeArray::Iterator iter (m_array);
 	for (iter.Begin(); iter; iter ++) {
 		const dgCollisionInstance* const childInstance = iter.GetNode()->GetInfo()->GetShape();

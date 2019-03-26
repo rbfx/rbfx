@@ -120,7 +120,7 @@ namespace Urho3D {
             WakeBodies();
             if (newtonJoint_) {
                 if (powerMode_ == NO_POWER)
-                    dynamic_cast<dCustomHinge*>(newtonJoint_)->SetFriction(physicsWorld_->SceneToPhysics_Domain_Torque(frictionTorque_));
+                    dynamic_cast<dCustomHinge*>(newtonJoint_)->SetFriction((frictionTorque_));
             }
             else
                 MarkDirty();
@@ -136,9 +136,9 @@ namespace Urho3D {
             if (newtonJoint_)
             {
                 if (powerMode_ == ACTUATOR)
-                    static_cast<dCustomHingeActuator*>(newtonJoint_)->SetMaxTorque(physicsWorld_->SceneToPhysics_Domain_Torque(maxTorque_));
+                    static_cast<dCustomHingeActuator*>(newtonJoint_)->SetMaxTorque((maxTorque_));
                 else if (powerMode_ == MOTOR)
-                    static_cast<dCustomHinge*>(newtonJoint_)->SetFriction(physicsWorld_->SceneToPhysics_Domain_Torque(maxTorque_));
+                    static_cast<dCustomHinge*>(newtonJoint_)->SetFriction((maxTorque_));
             }
             else
                 MarkDirty();
@@ -337,19 +337,19 @@ namespace Urho3D {
             //static_cast<dCustomHingeActuator*>(newtonJoint_)->EnableLimits(enableLimits_); this breaks.
             static_cast<dCustomHingeActuator*>(newtonJoint_)->SetLimits(minAngle_ * dDegreeToRad, maxAngle_ * dDegreeToRad);
             static_cast<dCustomHingeActuator*>(newtonJoint_)->SetTargetAngle(targetAngle_* dDegreeToRad);
-            static_cast<dCustomHingeActuator*>(newtonJoint_)->SetMaxTorque(physicsWorld_->SceneToPhysics_Domain_Torque(maxTorque_));
+            static_cast<dCustomHingeActuator*>(newtonJoint_)->SetMaxTorque((maxTorque_));
             static_cast<dCustomHingeActuator*>(newtonJoint_)->SetAngularRate(maxAngularRate_);
         }
         else if (powerMode_ == MOTOR)
         {
-            static_cast<dCustomHinge*>(newtonJoint_)->SetFriction(physicsWorld_->SceneToPhysics_Domain_Torque(maxTorque_));
+            static_cast<dCustomHinge*>(newtonJoint_)->SetFriction((maxTorque_));
             static_cast<dCustomHinge*>(newtonJoint_)->EnableMotor(true, maxAngularRate_);
         }
         else if(powerMode_ == NO_POWER)
         {
             static_cast<dCustomHinge*>(newtonJoint_)->EnableLimits(enableLimits_);
             static_cast<dCustomHinge*>(newtonJoint_)->SetLimits(minAngle_ * dDegreeToRad, maxAngle_ * dDegreeToRad);
-            static_cast<dCustomHinge*>(newtonJoint_)->SetFriction(physicsWorld_->SceneToPhysics_Domain_Torque(frictionTorque_));
+            static_cast<dCustomHinge*>(newtonJoint_)->SetFriction((frictionTorque_));
             static_cast<dCustomHinge*>(newtonJoint_)->SetAsSpringDamper(enableSpringDamper_, springRelaxation_, springSpringCoef_, springDamperCoef_);
         }
 

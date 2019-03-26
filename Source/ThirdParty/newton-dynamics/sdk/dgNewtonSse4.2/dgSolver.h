@@ -65,11 +65,11 @@
 		{
 		}
 
-		DG_INLINE dgSoaFloat(const dgVector& low, const dgVector& high)
-//			: m_low(_mm_set_ps(dgFloat32(low[3]), dgFloat32(low[2]), dgFloat32(low[1]), dgFloat32(low[0])))
-//			, m_high(_mm_set_ps(dgFloat32(high[3]), dgFloat32(high[2]), dgFloat32(high[1]), dgFloat32(high[0])))
+		DG_INLINE dgSoaFloat(const dgSoaFloat* const baseAddr, const dgSoaFloat& index)
 		{
-			dgAssert(0);
+			for (dgInt32 i = 0; i < DG_SOA_WORD_GROUP_SIZE; i++) {
+				m_f[i] = baseAddr->m_f[index.m_i[i]];
+			}
 		}
 
 		DG_INLINE dgFloat32& operator[] (dgInt32 i)
@@ -143,9 +143,6 @@
 
 		DG_INLINE dgFloat32 AddHorizontal() const
 		{
-			//__m128 tmp0(_mm_add_pd(m_low, m_high));
-			//__m128 tmp1(_mm_hadd_ps(tmp0, tmp0));
-			//__m128 tmp2(_mm_hadd_ps(tmp1, tmp1));
 			__m128d tmp0(_mm_add_pd(m_low, m_high));
 			__m128d tmp1(_mm_hadd_pd(tmp0, tmp0));
 			return _mm_cvtsd_f64(tmp1);
@@ -157,10 +154,6 @@
 
 		DG_INLINE dgFloat32 GetMax() const
 		{
-			//__m128d tmp0(_mm_max_pd(m_low, m_high));
-			//__m128 tmp1(_mm_max_ps(tmp0, _mm_shuffle_p2(tmp0, tmp0, PERMUTE_MASK(1, 0, 3, 2))));
-			//__m128 tmp2(_mm_max_ps(tmp1, _mm_shuffle_ps(tmp1, tmp1, PERMUTE_MASK(2, 3, 0, 1))));
-			//return _mm_cvtss_f32(tmp2);
 			__m128d tmp(_mm_max_pd(m_low, m_high));
 			return _mm_cvtsd_f64 (_mm_max_pd(tmp, _mm_shuffle_pd(tmp, tmp, PERMUT_MASK_DOUBLE(0, 1))));
 		}
@@ -217,6 +210,13 @@
 			:m_low(_mm_set_ps(dgFloat32(low[3]), dgFloat32(low[2]), dgFloat32(low[1]), dgFloat32(low[0])))
 			,m_high(_mm_set_ps(dgFloat32(high[3]), dgFloat32(high[2]), dgFloat32(high[1]), dgFloat32(high[0])))
 		{
+		}
+
+		DG_INLINE dgSoaFloat(const dgSoaFloat* const baseAddr, const dgSoaFloat& index)
+		{
+			for (dgInt32 i = 0; i < DG_SOA_WORD_GROUP_SIZE; i++) {
+				m_f[i] = baseAddr->m_f[index.m_i[i]];
+			}
 		}
 
 		DG_INLINE dgFloat32& operator[] (dgInt32 i)

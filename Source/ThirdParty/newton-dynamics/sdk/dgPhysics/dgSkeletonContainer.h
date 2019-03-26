@@ -55,7 +55,7 @@ class dgSkeletonContainer
 	dgNode* GetNextSiblingChild (dgNode* const sibling) const;
 
 	void ClearSelfCollision();
-	void AddSelfCollisionJoint(dgContact* const contact);
+	void AddSelfCollisionJoint(dgConstraint* const joint);
 
 	dgInt32 GetLru() const { return m_lru; }
 	void SetLru(dgInt32 lru) { m_lru = lru; }
@@ -98,11 +98,10 @@ class dgSkeletonContainer
 	dgInt32 m_lru;
 	dgInt16 m_nodeCount;
 	dgInt16 m_loopCount;
-	dgInt16 m_selfContactCount;
+	dgInt16 m_dynamicsLoopCount;
 	dgInt16 m_rowCount;
 	dgInt16 m_loopRowCount;
 	dgInt16 m_auxiliaryRowCount;
-//	static dgInt32 m_lruMarker;
 
 	friend class dgWorld;
 	friend class dgParallelBodySolver;

@@ -1324,12 +1324,11 @@ void dgCollisionCompoundFractured::BeginAddRemove ()
 	dgCollisionCompound::BeginAddRemove ();
 }
 
-void dgCollisionCompoundFractured::EndAddRemove ()
+void dgCollisionCompoundFractured::EndAddRemove (bool flushCache)
 {
-	dgCollisionCompound::EndAddRemove ();
+	dgCollisionCompound::EndAddRemove (flushCache);
 	BuildMainMeshSubMehes();
 }
-
 
 void dgCollisionCompoundFractured::RemoveCollision (dgTreeArray::dgTreeNode* const node)
 {

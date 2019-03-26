@@ -89,9 +89,8 @@ dgInt32 dgBilateralConstraint::GetSolverModel() const
 
 void dgBilateralConstraint::SetSolverModel(dgInt32 model)
 {
-	m_solverModel = dgClamp(model, 0, 2);
+	m_solverModel = dgClamp(model, 0, 3);
 }
-
 
 dgFloat32 dgBilateralConstraint::GetStiffness() const
 {

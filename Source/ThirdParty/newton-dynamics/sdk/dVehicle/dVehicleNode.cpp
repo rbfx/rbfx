@@ -14,8 +14,9 @@
 #include "dVehicleNode.h"
 
 dVehicleNode::dVehicleNode(dVehicleNode* const parent)
-	:dAnimAcyclicJoint(parent)
+//	:dAnimAcyclicJoint(parent)
 {
+	dAssert(0);
 }
 
 dVehicleNode::~dVehicleNode()
@@ -50,25 +51,34 @@ void dVehicleNode::CalculateNodeAABB(const dMatrix& matrix, dVector& minP, dVect
 
 void dVehicleNode::RigidBodyToStates()
 {
+	dAssert(0);
+/*
 	for (dList<dAnimAcyclicJoint*>::dListNode* child = m_children.GetFirst(); child; child = child->GetNext()) {
 		dVehicleNode* const node = (dVehicleNode*)child->GetInfo();
 		node->RigidBodyToStates();
 	}
+*/
 }
 
 void dVehicleNode::StatesToRigidBody(dFloat timestep)
 {
+	dAssert(0);
+/*
 	for (dList<dAnimAcyclicJoint*>::dListNode* child = m_children.GetFirst(); child; child = child->GetNext()) {
 		dVehicleNode* const node = (dVehicleNode*)child->GetInfo();
 		node->StatesToRigidBody(timestep);
 	}
+*/
 }
 
 void dVehicleNode::Integrate(dFloat timestep)
 {
+	dAssert(0);
+/*
 	m_proxyBody.IntegrateForce(timestep, m_proxyBody.GetForce(), m_proxyBody.GetTorque());
 	for (dList<dAnimAcyclicJoint*>::dListNode* child = m_children.GetFirst(); child; child = child->GetNext()) {
 		dVehicleNode* const node = (dVehicleNode*)child->GetInfo();
 		node->Integrate(timestep);
 	}
+*/
 }

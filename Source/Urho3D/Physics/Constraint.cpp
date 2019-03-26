@@ -130,7 +130,7 @@ namespace Urho3D {
 
         //draw the special joint stuff given to us by newton
         UrhoNewtonDebugDisplay debugDisplay(debug, depthTest);
-        debugDisplay.SetDrawScale(1.0f/physicsWorld_->GetPhysicsScale());
+        debugDisplay.SetDrawScale(1.0f);
         if (newtonJoint_)
         {
             newtonJoint_->Debug(&debugDisplay);//#todo this sometimes covers up the 2 frames above - maybe alter inside newton instead?
@@ -602,7 +602,7 @@ namespace Urho3D {
 
     Urho3D::Matrix3x4 Constraint::GetOwnNewtonBuildWorldFrame()
     {
-        Matrix3x4 newtonWorldFrame = physicsWorld_->SceneToPhysics_Domain(GetOwnBuildWorldFrame());
+        Matrix3x4 newtonWorldFrame = (GetOwnBuildWorldFrame());
 
         //newtonWorldFrame has scaling from the the physics world frame transformation. - reconstruct without scale because joints expect frame with no scaling.
         return Matrix3x4(newtonWorldFrame.Translation(), newtonWorldFrame.Rotation(), 1.0f);
@@ -610,7 +610,7 @@ namespace Urho3D {
 
     Urho3D::Matrix3x4 Constraint::GetOtherNewtonBuildWorldFrame()
     {
-        Matrix3x4 newtonWorldFrame = physicsWorld_->SceneToPhysics_Domain(GetOtherBuildWorldFrame());
+        Matrix3x4 newtonWorldFrame = (GetOtherBuildWorldFrame());
 
         //newtonWorldFrame has scaling from the the physics world frame transformation. - reconstruct without scale because joints expect frame with no scaling.
         return Matrix3x4(newtonWorldFrame.Translation(), newtonWorldFrame.Rotation(), 1.0f);

@@ -20,7 +20,6 @@
 #include "dCustomJointLibraryStdAfx.h"
 #include "dCustomListener.h"
 
-
 #define TRIGGER_PLUGIN_NAME				"__triggerManager__"
 // a trigger is volume of space that is there to send a message 
 // to other objects when and object enter of leave the trigger region  

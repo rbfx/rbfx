@@ -10,6 +10,8 @@
 */
 
 #include "dAnimationStdAfx.h"
+
+#if 0
 #include "dAnimIKManager.h"
 #include "dAnimIKController.h"
 #include "dAnimIKBlendNodeRoot.h"
@@ -126,3 +128,5 @@ void dAnimIKController::PostUpdate(dFloat timestep, int threadIndex)
 //	dAnimationInverseDynamicsManager* const manager = (dAnimationInverseDynamicsManager*)GetManager();
 //	UpdateLocalTransforms(manager);
 }
+
+#endif

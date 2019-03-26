@@ -65,7 +65,7 @@ dgContactMaterial::dgContactMaterial()
 	m_flags = m_collisionEnable | m_friction0Enable | m_friction1Enable;
 }
 
-dgContact::dgContact(dgWorld* const world, const dgContactMaterial* const material)
+dgContact::dgContact(dgWorld* const world, const dgContactMaterial* const material, dgBody* const body0, dgBody* const body1)
 	:dgConstraint(), dgList<dgContactMaterial>(world->GetAllocator())
 	,m_positAcc (dgFloat32(0.0f))
 	,m_rotationAcc (dgFloat32(1.0f), dgFloat32(0.0f), dgFloat32(0.0f), dgFloat32(0.0f))
@@ -77,13 +77,25 @@ dgContact::dgContact(dgWorld* const world, const dgContactMaterial* const materi
 	,m_contactPruningTolereance(world->GetContactMergeTolerance())
 	,m_broadphaseLru(0)
 	,m_isNewContact(1)
-	,m_skeletonSelftCollision(1)
 	,m_skeletonIntraCollision(1)
+	,m_skeletonSelftCollision(1)
 {
 	dgAssert ((((dgUnsigned64) this) & 15) == 0);
 	m_maxDOF = 0;
 	m_enableCollision = true;
 	m_constId = m_contactConstraint;
+
+	if (body0->m_invMass.m_w > dgFloat32(0.0f)) {
+		m_body0 = body0;
+		m_body1 = body1;
+	} else {
+		m_body0 = body1;
+		m_body1 = body0;
+	}
+
+	if (world->m_createContact) {
+		world->m_createContact(world, this);
+	}
 }
 
 dgContact::dgContact(dgContact* const clone)
@@ -99,8 +111,8 @@ dgContact::dgContact(dgContact* const clone)
 	,m_contactPruningTolereance(clone->m_contactPruningTolereance)
 	,m_broadphaseLru(clone->m_broadphaseLru)
 	,m_isNewContact(clone->m_isNewContact)
-	,m_skeletonSelftCollision(clone->m_skeletonSelftCollision)
 	,m_skeletonIntraCollision(clone->m_skeletonIntraCollision)
+	,m_skeletonSelftCollision(clone->m_skeletonSelftCollision)
 {
 	dgAssert((((dgUnsigned64) this) & 15) == 0);
 	m_body0 = clone->m_body0;
@@ -110,12 +122,21 @@ dgContact::dgContact(dgContact* const clone)
 	m_contactActive = clone->m_contactActive;
 	m_enableCollision = clone->m_enableCollision;
 	Merge (*clone);
+
+	if (m_body0->m_world->m_createContact) {
+		dgAssert(clone->m_body0);
+		m_body0->m_world->m_createContact(clone->m_body0->m_world, this);
+	}
 }
 
 dgContact::~dgContact()
 {
-	dgList<dgContactMaterial>::RemoveAll();
+	dgAssert(m_body0);
+	if (m_body0->m_world->m_destroyContact) {
+		m_body0->m_world->m_destroyContact(m_body0->m_world, this);
+	}
 
+	dgList<dgContactMaterial>::RemoveAll();
 	if (m_contactNode) {
 		dgAssert (m_body0);
 		dgContactList* const contactList = m_body0->m_world;

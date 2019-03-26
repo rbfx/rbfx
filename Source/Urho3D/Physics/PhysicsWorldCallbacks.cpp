@@ -31,8 +31,7 @@ namespace Urho3D {
         if (rigidBodyComp->GetScene())//on scene destruction sometimes this is null so check...
         {
             PhysicsWorld* physicsWorld = rigidBodyComp->GetScene()->GetComponent<PhysicsWorld>();
-            float physicsScale = physicsWorld->GetPhysicsScale();
-            gravityForce = physicsWorld->GetGravity() * physicsScale* rigidBodyComp->GetEffectiveMass();
+            gravityForce = physicsWorld->GetGravity() * rigidBodyComp->GetEffectiveMass();
 
 
     
@@ -41,8 +40,8 @@ namespace Urho3D {
 
 
             //apply forces and torques scaled with the physics world scale accourdingly.
-            NewtonBodySetForce(body, &UrhoToNewton(netForce*physicsScale*physicsScale*physicsScale)[0]);
-            NewtonBodySetTorque(body, &UrhoToNewton(netTorque*physicsScale*physicsScale*physicsScale*physicsScale*physicsScale)[0]);
+            NewtonBodySetForce(body, &UrhoToNewton(netForce)[0]);
+            NewtonBodySetTorque(body, &UrhoToNewton(netTorque)[0]);
 
         }
     }
@@ -98,7 +97,7 @@ namespace Urho3D {
 
     void Newton_JointDestructorCallback(const NewtonJoint* const joint)
     {
-
+        URHO3D_LOGINFO("Joint Destructor");
         static_cast<RigidBodyContactEntry*>(NewtonJointGetUserData(joint))->newtonJoint_ = nullptr;
 
 
@@ -188,11 +187,11 @@ namespace Urho3D {
                 NewtonMaterialGetContactForce(material, body0, &force[0]);
 
 
-                contactEntry->contactNormals[contactIdx] = physicsWorld->PhysicsToScene_Domain(NewtonToUrhoVec3(norm));
-                contactEntry->contactPositions[contactIdx] = physicsWorld->PhysicsToScene_Domain(NewtonToUrhoVec3(pos));
-                contactEntry->contactTangent0[contactIdx] = physicsWorld->PhysicsToScene_Domain(NewtonToUrhoVec3(tan0));
-                contactEntry->contactTangent1[contactIdx] = physicsWorld->PhysicsToScene_Domain(NewtonToUrhoVec3(tan1));
-                contactEntry->contactForces[contactIdx] = physicsWorld->PhysicsToScene_Domain(NewtonToUrhoVec3(force));
+                contactEntry->contactNormals[contactIdx] = (NewtonToUrhoVec3(norm));
+                contactEntry->contactPositions[contactIdx] = (NewtonToUrhoVec3(pos));
+                contactEntry->contactTangent0[contactIdx] =(NewtonToUrhoVec3(tan0));
+                contactEntry->contactTangent1[contactIdx] = (NewtonToUrhoVec3(tan1));
+                contactEntry->contactForces[contactIdx] = (NewtonToUrhoVec3(force));
 
 
                 contactEntry->shapes0[contactIdx] = colShape0;

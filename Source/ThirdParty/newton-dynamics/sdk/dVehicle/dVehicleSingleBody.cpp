@@ -22,6 +22,8 @@ dVehicleSingleBody::dVehicleSingleBody(dVehicleChassis* const chassis)
 	,m_groundNode(NULL)
 	,m_chassis(chassis)
 {
+	dAssert(0);
+/*
 	dVector tmp;
 	dComplementaritySolver::dBodyState* const chassisBody = GetProxyBody();
 	m_groundNode.SetWorld(m_world);
@@ -37,6 +39,7 @@ dVehicleSingleBody::dVehicleSingleBody(dVehicleChassis* const chassis)
 	NewtonBodyGetCentreOfMass(newtonBody, &matrix.m_posit[0]);
 	matrix.m_posit.m_w = 1.0f;
 	chassisBody->SetLocalMatrix(matrix);
+*/
 }
 
 dVehicleSingleBody::~dVehicleSingleBody()
@@ -60,7 +63,9 @@ dVehicleEngineInterface* dVehicleSingleBody::AddEngine(const dVehicleEngineInter
 
 dMatrix dVehicleSingleBody::GetMatrix () const
 {
-	return m_proxyBody.GetMatrix();
+	dAssert(0);
+	return dGetIdentityMatrix();
+//	return m_proxyBody.GetMatrix();
 }
 
 void dVehicleSingleBody::CalculateNodeAABB(const dMatrix& matrix, dVector& minP, dVector& maxP) const
@@ -72,6 +77,8 @@ void dVehicleSingleBody::CalculateNodeAABB(const dMatrix& matrix, dVector& minP,
 
 void dVehicleSingleBody::RigidBodyToStates()
 {
+	dAssert(0);
+/*
 	dVector vector;
 	dMatrix matrix;
 	dComplementaritySolver::dBodyState* const chassisBody = GetProxyBody();
@@ -96,10 +103,13 @@ void dVehicleSingleBody::RigidBodyToStates()
 	chassisBody->UpdateInertia();
 	
 	dVehicleInterface::RigidBodyToStates();
+*/
 }
 
 void dVehicleSingleBody::StatesToRigidBody(dFloat timestep)
 {
+	dAssert(0);
+/*
 	dComplementaritySolver::dBodyState* const chassisBody = GetProxyBody();
 
 	dVector force(chassisBody->GetForce());
@@ -109,16 +119,23 @@ void dVehicleSingleBody::StatesToRigidBody(dFloat timestep)
 	NewtonBodySetTorque(newtonBody, &torque[0]);
 
 	dVehicleInterface::StatesToRigidBody(timestep);
+*/
 }
 
 int dVehicleSingleBody::GetKinematicLoops(dAnimIDRigKinematicLoopJoint** const jointArray)
 {
+	dAssert(0);
+	return 0;
+/*
 	m_groundNode.SetIndex(-1);
 	return dVehicleInterface::GetKinematicLoops(jointArray);
+*/
 }
 
 void dVehicleSingleBody::ApplyExternalForce(dFloat timestep)
 {
+	dAssert(0);
+/*
 	dVector force(0.0f);
 	dVector torque(0.0f);
 	
@@ -139,10 +156,13 @@ void dVehicleSingleBody::ApplyExternalForce(dFloat timestep)
 	dVehicleInterface::ApplyExternalForce(timestep);
 
 	m_chassis->ApplyExternalForces(timestep);
+*/
 }
 
 void dVehicleSingleBody::Debug(dCustomJoint::dDebugDisplay* const debugContext) const
 {
+	dAssert(0);
+/*
 	dVehicleInterface::Debug(debugContext);
 
 	const dMatrix& matrix = m_proxyBody.GetMatrix();
@@ -170,4 +190,5 @@ void dVehicleSingleBody::Debug(dCustomJoint::dDebugDisplay* const debugContext) 
 		dVector p3(p0 - gravity.Scale (2.0f));
 		debugContext->DrawLine(p0, p3);
 	}
+*/
 }

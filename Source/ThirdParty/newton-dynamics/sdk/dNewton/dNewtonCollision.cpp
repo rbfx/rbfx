@@ -124,13 +124,13 @@ void dNewtonCollision::CalculateAABB (const dFloat* const matrix, dFloat* const 
 	NewtonCollisionCalculateAABB (m_shape, matrix, p0, p1);
 }
 
-void dNewtonCollision::CalculateBuoyancyAcceleration (const dFloat* const matrix, const dFloat* const shapeOrigin, const dFloat* const gravityVector, const dFloat* const fluidPlane, dFloat fluidDensity, dFloat fluidViscosity, dFloat* const accel, dFloat* const alpha)
+//void dNewtonCollision::CalculateBuoyancyAcceleration (const dFloat* const matrix, const dFloat* const shapeOrigin, const dFloat* const gravityVector, const dFloat* const fluidPlane, dFloat fluidDensity, dFloat fluidViscosity, dFloat* const accel, dFloat* const alpha)
+dFloat dNewtonCollision::CalculateBuoyancyVolume (const dFloat* const matrix, const dFloat* const shapeOrigin, const dFloat* const gravityVector, const dFloat* const fluidPlane, dFloat* const alpha)
 {
-	NewtonConvexCollisionCalculateBuoyancyAcceleration (m_shape, matrix, shapeOrigin, gravityVector, fluidPlane, fluidDensity, fluidViscosity, accel, alpha);
+	dAssert (0);
+//	NewtonConvexCollisionCalculateBuoyancyAcceleration(m_shape, matrix, shapeOrigin, gravityVector, fluidPlane, fluidDensity, accel, alpha);
+	return 0.0f;
 }
-
-
-
 
 dNewtonCollisionMesh::dNewtonCollisionMesh(dNewton* const world, dLong collisionMask)
 	:dNewtonCollision(m_mesh, collisionMask)
