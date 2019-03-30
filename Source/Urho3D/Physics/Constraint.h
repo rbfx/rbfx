@@ -220,7 +220,7 @@ namespace Urho3D {
 
 
         ///dirty flag.
-        bool needsRebuilt_ = true;
+        bool dirty_ = true;
 
         bool enableForceCalculations_ = false;
 

@@ -7,6 +7,7 @@
 #include "UrhoNewtonConversions.h"
 #include "Graphics/DebugRenderer.h"
 #include "IO/Log.h"
+#include "PhysicsEvents.h"
 
 
 
@@ -17,6 +18,7 @@ namespace Urho3D {
 
     KinematicsControllerConstraint::KinematicsControllerConstraint(Context* context) : Constraint(context)
     {
+        SubscribeToEvent(E_PHYSICSPOSTSTEP, URHO3D_HANDLER(KinematicsControllerConstraint, HandlePhysicsPreStep));
     }
 
     KinematicsControllerConstraint::~KinematicsControllerConstraint()
@@ -77,19 +79,18 @@ namespace Urho3D {
 
     void KinematicsControllerConstraint::SetOtherPosition(const Vector3& position)
     {
-        bool curDirty = needsRebuilt_;
+        bool curDirty = dirty_;
         Constraint::SetOtherPosition(position);
-        updateTarget();
-        //dont dirty because otherPosition_ is used for target frame
+        //resume dirty flag because otherPosition_ is used for target frame and not for rebuilding
         MarkDirty(curDirty);
+
     }
 
     void KinematicsControllerConstraint::SetOtherRotation(const Quaternion& rotation)
     {
-        bool curDirty = needsRebuilt_;
+        bool curDirty = dirty_;
         Constraint::SetOtherRotation(rotation);
-        updateTarget();
-        //dont dirty because otherRotation_ is used for target frame
+        //resume dirty because otherRotation_ is used for target frame and not for rebuilding
         MarkDirty(curDirty);
     }
 
@@ -101,16 +102,11 @@ namespace Urho3D {
         static_cast<dCustomKinematicController*>(newtonJoint_)->SetPickMode(constrainRotation_);//#todo support all pick modes
         updateFrictions();
         static_cast<dCustomKinematicController*>(newtonJoint_)->SetLimitRotationVelocity(limitRotationalVelocity_);
-
-
-        updateTarget();
     }
 
     void KinematicsControllerConstraint::updateTarget()
     {
         if (newtonJoint_) {
-            //GSS<VisualDebugger>()->AddCross(GetOtherWorldFrame().Translation(), 1.0f, Color::MAGENTA, false);
-            //GSS<VisualDebugger>()->AddCross(GetOtherNewtonBuildWorldFrame().Translation(), 2.0, Color::MAGENTA, false);
             static_cast<dCustomKinematicController*>(newtonJoint_)->SetTargetMatrix(UrhoToNewton(GetOtherWorldFrame()));
         }
     }
@@ -130,6 +126,11 @@ namespace Urho3D {
 
         static_cast<dCustomKinematicController*>(newtonJoint_)->SetMaxLinearFriction(mass * linearFrictionalAcceleration);
         static_cast<dCustomKinematicController*>(newtonJoint_)->SetMaxAngularFriction(inertia * angularFrictionalAcceleration);
+    }
+
+    void KinematicsControllerConstraint::HandlePhysicsPreStep(StringHash event, VariantMap& eventData)
+    {
+        updateTarget();
     }
 
 }

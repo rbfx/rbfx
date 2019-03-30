@@ -177,6 +177,7 @@ namespace Urho3D {
     void PhysicsWorld::WaitForUpdateFinished()
     {
         NewtonWaitForUpdateToFinish(newtonWorld_);
+        isUpdating_ = false;
     }
 
     void PhysicsWorld::SetIterationCount(int numIterations /*= 8*/)
@@ -788,7 +789,7 @@ namespace Urho3D {
         //rebuild contraints if they need rebuilt (dirty)
         for (Constraint* constraint : constraintList)
         {
-            if (constraint->needsRebuilt_)
+            if (constraint->dirty_)
                 constraint->reEvalConstraint();
         }
 

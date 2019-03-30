@@ -140,7 +140,7 @@ namespace Urho3D {
 
     void Constraint::MarkDirty(bool dirty /*= true*/)
     {
-        needsRebuilt_ = dirty;
+        dirty_ = dirty;
     }
 
     void Constraint::SetDisableCollision(bool disable)
@@ -441,7 +441,7 @@ namespace Urho3D {
                 }
 
                 buildConstraint();
-                
+
 
                 if (!hasBeenBuilt_) {
                     //save the state of bodies and pins after the first build.

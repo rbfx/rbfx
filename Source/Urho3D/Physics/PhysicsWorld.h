@@ -181,6 +181,8 @@ namespace Urho3D
         ///waits until the asynchronous update has finished.
         void WaitForUpdateFinished();
 
+        bool GetIsUpdating() { return isUpdating_; }
+
         /// set how many iterations newton will run.
         void SetIterationCount(int numIterations);
 
