@@ -427,7 +427,7 @@ namespace Urho3D {
     bool RigidBody::GetAwake() const
     {
         if (newtonBody_)
-            return !NewtonBodyGetSleepState(newtonBody_);
+            return NewtonBodyGetSleepState(newtonBody_);
         else
             return false;
     }
@@ -598,11 +598,25 @@ namespace Urho3D {
     void RigidBody::OnSetEnabled()
     {
         if (IsEnabledEffective()) {
-            MarkDirty(true);//rebuild
+            MarkDirty(true);//rebuild.
+
+            //rebuild constriants
+            for (Constraint* constraint : connectedConstraints_)
+            {
+                constraint->MarkDirty(true);
+            }
         }
         else
         {
             freeBody();
+
+            //free constriants
+            for (Constraint* constraint : connectedConstraints_)
+            {
+                constraint->freeInternal();
+            }
+
+
         }
     }
 
@@ -640,7 +654,6 @@ namespace Urho3D {
     }
 
 
-    //this function looks scary - But it covers alot of ground.
     void RigidBody::reBuildBody()
     {
         URHO3D_PROFILE_FUNCTION();
@@ -1004,11 +1017,9 @@ namespace Urho3D {
         {
             Node* oldParent = static_cast<Node*>(eventData[NodeRemoved::P_PARENT].GetPtr());
 
-
-
             if (oldParent)
             {
-                RebuildPhysicsNodeTree(oldParent);
+                //RebuildPhysicsNodeTree(oldParent);
             }
             else
             {
@@ -1095,6 +1106,8 @@ namespace Urho3D {
 
     void RigidBody::applyDefferedProperties()
     {
+        if (!newtonBody_)
+            return;
 
         if (NewtonBodyGetLinearDamping(newtonBody_) != linearDampeningInternal_)
             NewtonBodySetLinearDamping(newtonBody_, linearDampeningInternal_);

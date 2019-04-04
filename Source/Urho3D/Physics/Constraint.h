@@ -170,7 +170,8 @@ namespace Urho3D {
         NewtonBody* GetOtherNewtonBody() const;
 
 
-
+        /// Build the constraint immediatly (once the physics loop has ended)
+        void BuildNow();
 
 
         dCustomJoint* GetNewtonJoint() const {

@@ -336,6 +336,12 @@ namespace Urho3D {
 
     }
 
+    void Constraint::BuildNow()
+    {
+        physicsWorld_->WaitForUpdateFinished();
+        reEvalConstraint();
+    }
+
     unsigned Constraint::GetOtherBodyId() const
     {
         return otherBodyId_;
@@ -399,11 +405,13 @@ namespace Urho3D {
 
             if (otherBodyId_ > 0) {
                 RigidBody* body = (RigidBody*)GetScene()->GetComponent(otherBodyId_);
-                if(body)
-                    SetOtherBody(body);
-                else {
-                    URHO3D_LOGWARNING("Contraint Could Not Resolve Other Body, Setting to Scene Body..");
-                    SetOtherBody(physicsWorld_->sceneBody_);
+                if (body != otherBody_) {
+                    if (body)
+                        SetOtherBody(body);
+                    else {
+                        URHO3D_LOGWARNING("Contraint Could Not Resolve Other Body, Setting to Scene Body..");
+                        SetOtherBody(physicsWorld_->sceneBody_);
+                    }
                 }
             }
 
@@ -433,11 +441,9 @@ namespace Urho3D {
                     otherBodyAngularVelocity = otherBody_->GetAngularVelocity();
                     otherBodyLinearVelocity = otherBody_->GetLinearVelocity();
 
-                    //set body to prebBuilt Transform
+                    //set body to pre-Built Transform
                     otherBody_->SetWorldTransform(prevBuiltOtherBodyTransform_);
                     ownBody_->SetWorldTransform(prevBuiltOwnBodyTransform_);
-
-
                 }
 
                 buildConstraint();
@@ -450,7 +456,6 @@ namespace Urho3D {
 
                     prevBuiltOtherTransform_ = GetOtherNewtonBuildWorldFrame();
                     prevBuiltOtherBodyTransform_ = otherBody_->GetWorldTransform();
-
                 }
                 else
                 {

@@ -333,6 +333,7 @@ namespace Urho3D {
                 NewtonMaterialSetCollisionCallback(newtonWorld_, 0, 0, Newton_AABBOverlapCallback, Newton_ProcessContactsCallback);
                 //NewtonMaterialSetCompoundCollisionCallback(newtonWorld_, 0, 0, Newton_AABBCompoundOverlapCallback);
                 NewtonSetPostUpdateCallback(newtonWorld_, Newton_PostUpdateCallback);
+                NewtonWorldSetCreateDestroyContactCallback(newtonWorld_, nullptr, Newton_DestroyContactCallback);
 
 
             }
@@ -803,8 +804,6 @@ namespace Urho3D {
             //apply deferred actions (like impulses/velocity sets etc.) that were waiting for a real body to be built.
             rigBody->applyDefferedActions();
         }
-
-
     }
 
 
@@ -949,14 +948,13 @@ namespace Urho3D {
         startingNode->GetChildren(immediateChildren, false);
 
         for (Node* child : immediateChildren) {
-            if (child->HasComponent<RigidBody>())
+            if (child->HasComponent<RigidBody>() && child->GetComponent<RigidBody>()->IsEnabled())
                 continue;
             else
             {
                 child->GetDerivedComponents<CollisionShape>(colShapes, false, false);
                 GetAloneCollisionShapes(colShapes, child, false);
             }
-
         }
     }
 

@@ -108,7 +108,6 @@ void PhysicsTests::CreateScene()
     scene_->CreateComponent<Octree>();
     PhysicsWorld* newtonWorld = scene_->CreateComponent<PhysicsWorld>();
     newtonWorld->SetGravity(Vector3(0, -9.81f, 0));
-    newtonWorld->SetPhysicsScale(2.0f);
     //scene_->CreateComponent<NewtonCollisionShape_SceneCollision>();
     scene_->CreateComponent<DebugRenderer>();
 
@@ -162,7 +161,7 @@ void PhysicsTests::CreateScene()
     Quaternion tilt = Quaternion(Random(-1.0f, 1.0f), Vector3(1, 0, 0));
 
     SpawnTrialBike(Vector3(5, 5, 0),  Quaternion(0, Vector3(0, 1, 0)) * tilt, true);
-    //SpawnTrialBike(Vector3(-5, 5, 0), Quaternion(180, Vector3(0, 1, 0)) * tilt, false);
+    SpawnTrialBike(Vector3(-5, 5, 0), Quaternion(90, Vector3(0, 1, 0)) * tilt, false);
 
     //SpawnKinematicBodyTest(Vector3(0, 0, 0), Quaternion::IDENTITY);
 
@@ -430,7 +429,7 @@ void PhysicsTests::MoveCamera(float timeStep)
             URHO3D_LOGINFO(String(bodies.Size()));
     }
 
-    if (1)
+    if (0)
     {
         //test collision point on convex hull
         Node* convexHull = scene_->GetChild("convexhull", true);

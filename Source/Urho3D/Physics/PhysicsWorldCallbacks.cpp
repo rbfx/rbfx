@@ -95,11 +95,12 @@ namespace Urho3D {
 
 
 
-    void Newton_JointDestructorCallback(const NewtonJoint* const joint)
+    void Newton_DestroyContactCallback(const NewtonWorld* const newtonWorld, NewtonJoint* const contact)
     {
-        URHO3D_LOGINFO("Joint Destructor");
-        static_cast<RigidBodyContactEntry*>(NewtonJointGetUserData(joint))->newtonJoint_ = nullptr;
-
+        if (NewtonJointGetUserData(contact)) {
+            //URHO3D_LOGINFO("Contact Joint Destructor");
+            static_cast<RigidBodyContactEntry*>(NewtonJointGetUserData(contact))->newtonJoint_ = nullptr;
+        }
 
     }
 
@@ -148,7 +149,6 @@ namespace Urho3D {
 
         contactEntry->newtonJoint_ = (NewtonJoint*)contactJoint;
         NewtonJointSetUserData(contactJoint, (void*)contactEntry);
-        NewtonJointSetDestructor(contactJoint, Newton_JointDestructorCallback);
         contactEntry->wakeFlag_ = NewtonJointIsActive(contactJoint);
 
         if (NewtonContactJointGetContactCount(contactJoint) > contactEntry->numContacts)
