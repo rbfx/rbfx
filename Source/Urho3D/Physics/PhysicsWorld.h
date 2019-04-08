@@ -92,9 +92,11 @@ namespace Urho3D
 
     struct PhysicsRayCastIntersection {
         NewtonBody* body_ = nullptr;
+        NewtonCollision* collision_ = nullptr;
         float rayIntersectParameter_ = -1.0f;
 
         RigidBody* rigBody_ = nullptr;
+        CollisionShape* collisionShape_ = nullptr;
         Vector3 rayIntersectWorldPosition_;
         Vector3 rayIntersectWorldNormal_;
         float rayDistance_ = -1.0f;

@@ -133,6 +133,7 @@ namespace Urho3D {
         Vector3 origin = (pointOrigin);
         Vector3 destination = (pointDestination);
 
+
         NewtonWorldRayCast(newtonWorld_, &UrhoToNewton(origin)[0], &UrhoToNewton(destination)[0], Newton_WorldRayCastFilterCallback, &data, NULL, 0);
 
         //sort the intersections by distance. we do this because the order that you get is based off bounding box intersection and that is not nessecarily the same of surface intersection order.
