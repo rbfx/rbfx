@@ -170,6 +170,9 @@ class dScene: public dSceneGraph, public dRefCounter
 	DSCENE_API virtual void DeleteDuplicateGeometries();
 	
 	protected:
+	DSCENE_API virtual void Serialize(TiXmlElement* const parentNode);
+	DSCENE_API virtual bool Deserialize(TiXmlElement* const parentNode);
+
 	DSCENE_API void RegisterClasses();
 	DSCENE_API virtual dTreeNode* GetCacheNode (const char* const cacheName);
 

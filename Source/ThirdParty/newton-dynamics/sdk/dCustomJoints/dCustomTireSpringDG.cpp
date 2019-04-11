@@ -79,33 +79,34 @@ dCustomVehicleControllerManagerDG::~dCustomVehicleControllerManagerDG()
 
 dCustomTireSpringDG::dCustomTireSpringDG(const dMatrix& pinAndPivotFrame, NewtonBody* const child, NewtonBody* const parent)
 	:dCustomJoint(6, child, parent),
-	mUseBreak(false),
-	mUseSteer(false),
 	mUseTorque(false),
+	mUseBreak(false),
 	mUseHardBreak(false),
-    mIxx(0.0f),
-    mIyy(0.0f),
-    mIzz(0.0f),
+	mUseSteer(false),
 	mRealOmega(0.0f),
 	mTireOmegaCorrection(0.975f),
 	mFpsRequest(120.0f),
+	mDistance(0.0f),
+	mAttachMass(0.0f),
+    mIxx(0.0f),
+    mIyy(0.0f),
+    mIzz(0.0f),
 	mTireTorque(0.0f),
 	mBrakeTorque(0.0f),
 	mSteerAngle(0.0f),
 	mAttachmentLength(10.0f),
-	mDistance(0.0f),
 	mMinSuspenssion(-0.25f),
 	mMaxSuspenssion(0.0f),
-    mSpringK(150.0f),
-    mSpringD(5.0f),
+	mRefFrameLocalMatrix(dGetIdentityMatrix()),
 	mAccel(0.0f),
-	mAttachMass(0.0f),
+	mSpringK(150.0f),
+    mSpringD(5.0f),
     mCenterInTire(dVector(0.0f,0.0f,0.0f)),
     mCenterInChassis(dVector(0.0f, 0.0f, 0.0f)),
     mChassisPivotMatrix(dGetIdentityMatrix()),
-    mTirePivotMatrix(dGetIdentityMatrix()),
-    mRefFrameLocalMatrix(dGetIdentityMatrix())
+    mTirePivotMatrix(dGetIdentityMatrix())
 {
+
 	// calculate the two local matrix of the pivot point
 	CalculateLocalMatrix(pinAndPivotFrame, m_localMatrix0, m_localMatrix1);
 	//
@@ -115,32 +116,32 @@ dCustomTireSpringDG::dCustomTireSpringDG(const dMatrix& pinAndPivotFrame, Newton
 
 dCustomTireSpringDG::dCustomTireSpringDG(const dMatrix& pinAndPivotFrameChild, const dMatrix& pinAndPivotFrameParent, NewtonBody* const child, NewtonBody* const parent)
 	:dCustomJoint(6, child, parent),
+    mUseTorque(false),
 	mUseBreak(false),
+    mUseHardBreak(false),
 	mUseSteer(false),
-	mUseTorque(false),
-	mUseHardBreak(false),
-	mIxx(0.0f),
-	mIyy(0.0f),
-	mIzz(0.0f),
 	mRealOmega(0.0f),
 	mTireOmegaCorrection(0.975f),
 	mFpsRequest(120.0f),
+    mDistance(0.0f),
+    mAttachMass(0.0f),
+    mIxx(0.0f),
+    mIyy(0.0f),
+    mIzz(0.0f),
 	mTireTorque(0.0f),
 	mBrakeTorque(0.0f),
 	mSteerAngle(0.0f),
 	mAttachmentLength(10.0f),
-	mDistance(0.0f),
 	mMinSuspenssion(-0.25f),
 	mMaxSuspenssion(0.0f),
-	mSpringK(150.0f),
+    mRefFrameLocalMatrix(dGetIdentityMatrix()),
+    mAccel(0.0f),
+    mSpringK(150.0f),
 	mSpringD(5.0f),
-	mAccel(0.0f),
-	mAttachMass(0.0f),
-	mCenterInTire(dVector(0.0f, 0.0f, 0.0f)),
-	mCenterInChassis(dVector(0.0f, 0.0f, 0.0f)),
+	mCenterInTire(0.0f),
+	mCenterInChassis(0.0f),
 	mChassisPivotMatrix(dGetIdentityMatrix()),
-	mTirePivotMatrix(dGetIdentityMatrix()),
-	mRefFrameLocalMatrix(dGetIdentityMatrix())
+	mTirePivotMatrix(dGetIdentityMatrix())
 {
 	dMatrix	dummy;
 	CalculateLocalMatrix(pinAndPivotFrameChild, m_localMatrix0, dummy);

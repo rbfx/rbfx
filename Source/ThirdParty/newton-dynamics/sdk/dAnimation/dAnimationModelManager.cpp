@@ -15,6 +15,8 @@
 
 dAnimationModelManager::dAnimationModelManager(NewtonWorld* const world, const char* const name)
 	:dCustomListener(world, name)
+	,m_controllerList()
+	,m_timestep(0.0f)
 {
 }
 
@@ -22,45 +24,85 @@ dAnimationModelManager::~dAnimationModelManager()
 {
 }
 
-dAnimationJointRoot* dAnimationModelManager::CreateModel(NewtonBody* const bone, const dMatrix& bindMatrix)
+void dAnimationModelManager::AddModel(dAnimationJointRoot* const model)
 {
-	dAnimationJointRoot* const root = new dAnimationJointRoot(bone, bindMatrix);
-	m_controllerList.Append(root);
-	return root;
+	dAssert(!model->m_managerNode);
+	model->m_manager = this;
+	model->m_managerNode = m_controllerList.Append(model);
 }
 
-void dAnimationModelManager::DestroyModel(dAnimationJointRoot* const model)
+void dAnimationModelManager::RemoveModel(dAnimationJointRoot* const model)
 {
-	for (dList<dAnimationJointRoot*>::dListNode* node = m_controllerList.GetFirst(); node;) {
-		if (node->GetInfo() == model) {
-			delete node->GetInfo();
-			m_controllerList.Remove(node);
-			break;
-		}
-	}
+	dAssert(model->m_managerNode);
+	dAssert(model->m_manager == this);
+	dAssert(model->m_managerNode->GetInfo() == model);
+	m_controllerList.Remove(model->m_managerNode);
+	model->m_manager = NULL;
+	model->m_managerNode = NULL;
 }
 
 void dAnimationModelManager::OnDestroy()
 {
-	for (dList<dAnimationJointRoot*>::dListNode* node = m_controllerList.GetFirst(); node;) {
-		dAnimationJointRoot* const controller = node->GetInfo();
-		node = node->GetNext();
-		DestroyModel(controller);
+	while (m_controllerList.GetFirst()) {
+		dAnimationJointRoot* const model = m_controllerList.GetFirst()->GetInfo();
+		dAssert(model->m_managerNode == m_controllerList.GetFirst());
+		delete model;
 	}
+}
+
+void dAnimationModelManager::OnPreUpdate(dAnimationJointRoot* const model, dFloat timestep)
+{
+	D_TRACKTIME();
+	model->PreUpdate(timestep);
+}
+
+void dAnimationModelManager::PreUpdate(NewtonWorld* const world, void* const context, int threadIndex)
+{
+	D_TRACKTIME();
+	dAnimationJointRoot* const model = (dAnimationJointRoot*)context;
+	dAnimationModelManager* const me = model->m_manager;
+	me->OnPreUpdate(model, me->m_timestep);
+}
+
+void dAnimationModelManager::PostUpdate(NewtonWorld* const world, void* const context, int threadIndex)
+{
+	D_TRACKTIME();
+	dAnimationJointRoot* const model = (dAnimationJointRoot*)context;
+	dAnimationModelManager* const me = model->m_manager;
+	me->OnPostUpdate(model, me->m_timestep);
+	model->UpdateTransforms(me->m_timestep);
 }
 
 void dAnimationModelManager::PreUpdate(dFloat timestep)
 {
+	D_TRACKTIME();
+//	for (dList<dAnimationJointRoot*>::dListNode* node = m_controllerList.GetFirst(); node; node = node->GetNext()) {
+//		dAnimationJointRoot* const model = node->GetInfo();
+//		model->PreUpdate(this, timestep);
+//	}
+
+	m_timestep = timestep;
+	NewtonWorld* const world = GetWorld();
+
 	for (dList<dAnimationJointRoot*>::dListNode* node = m_controllerList.GetFirst(); node; node = node->GetNext()) {
-		dAnimationJointRoot* const controller = node->GetInfo();
-		OnPreUpdate(controller, timestep, 0);
+		NewtonDispachThreadJob(world, PreUpdate, node->GetInfo(), "dAnimationModelManager");
 	}
+	NewtonSyncThreadJobs(world);
 }
 
 void dAnimationModelManager::PostUpdate(dFloat timestep)
 {
+	D_TRACKTIME();
+//	for (dList<dAnimationJointRoot*>::dListNode* node = m_controllerList.GetFirst(); node; node = node->GetNext()) {
+//		dAnimationJointRoot* const model = node->GetInfo();
+//		model->PostUpdate(this, timestep);
+//	}
+
+	m_timestep = timestep;
+	NewtonWorld* const world = GetWorld();
+
 	for (dList<dAnimationJointRoot*>::dListNode* node = m_controllerList.GetFirst(); node; node = node->GetNext()) {
-		dAnimationJointRoot* const controller = node->GetInfo();
-		controller->PostUpdate(this, timestep);
+		NewtonDispachThreadJob(world, PostUpdate, node->GetInfo(), "dAnimationModelManager");
 	}
+	NewtonSyncThreadJobs(world);
 }

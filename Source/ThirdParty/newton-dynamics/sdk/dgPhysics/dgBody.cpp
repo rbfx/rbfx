@@ -444,8 +444,6 @@ void dgBody::Freeze ()
 void dgBody::Unfreeze ()
 {
 	if (GetInvMass().m_w > dgFloat32 (0.0f)) {
-// note this is in observation (to prevent bodies from not going to sleep  inside triggers	               
-//		m_equilibrium = false;			
 		if (m_freeze) {
 			m_freeze = false;
 			for (dgBodyMasterListRow::dgListNode* node = m_masterNode->GetInfo().GetFirst(); node; node = node->GetNext()) {
@@ -632,7 +630,6 @@ dgMatrix dgBody::CalculateInvInertiaMatrix () const
 #endif
 }
 
-
 void dgBody::InvalidateCache ()
 {
 	m_sleeping = false;
@@ -641,7 +638,6 @@ void dgBody::InvalidateCache ()
 	dgMatrix matrix (m_matrix);
 	SetMatrixOriginAndRotation(matrix);
 }
-
 
 void dgBody::AddImpulse (const dgVector& pointDeltaVeloc, const dgVector& pointPosit, dgFloat32 timestep)
 {
@@ -686,32 +682,38 @@ void dgBody::AddImpulse (const dgVector& pointDeltaVeloc, const dgVector& pointP
 	// change of momentum
 	dgVector changeOfMomentum (contactMatrix.RotateVector (pointDeltaVeloc));
 
-	m_impulseForce += changeOfMomentum.Scale(1.0f / timestep);
-	m_impulseTorque += globalContact.CrossProduct(m_impulseForce);
+	if (changeOfMomentum.DotProduct(changeOfMomentum).GetScalar() > dgFloat32(1.0e-6f)) {
+		m_impulseForce += changeOfMomentum.Scale(1.0f / timestep);
+		m_impulseTorque += globalContact.CrossProduct(m_impulseForce);
 
-	m_sleeping	= false;
-	m_equilibrium = false;
-	Unfreeze ();
+		m_sleeping = false;
+		m_equilibrium = false;
+		Unfreeze();
+	}
 }
 
 void dgBody::ApplyImpulsePair (const dgVector& linearImpulseIn, const dgVector& angularImpulseIn, dgFloat32 timestep)
 {
-	m_impulseForce += linearImpulseIn.Scale(1.0f / timestep);
-	m_impulseTorque += angularImpulseIn.Scale(1.0f / timestep);
+	dgAssert(linearImpulseIn.m_w == dgFloat32(0.0f));
+	dgAssert(angularImpulseIn.m_w == dgFloat32(0.0f));
+	if ((linearImpulseIn.DotProduct(linearImpulseIn).GetScalar() > dgFloat32(1.0e-6f)) &&
+		(angularImpulseIn.DotProduct(angularImpulseIn).GetScalar() > dgFloat32(1.0e-6f))) {
 
-	m_sleeping	= false;
-	m_equilibrium = false;
-	Unfreeze ();
+		m_impulseForce += linearImpulseIn.Scale(1.0f / timestep);
+		m_impulseTorque += angularImpulseIn.Scale(1.0f / timestep);
+
+		m_sleeping = false;
+		m_equilibrium = false;
+		Unfreeze();
+	}
 }
 
 void dgBody::ApplyImpulsesAtPoint (dgInt32 count, dgInt32 strideInBytes, const dgFloat32* const impulseArray, const dgFloat32* const pointArray, dgFloat32 timestep)
 {
 	dgInt32 stride = strideInBytes / sizeof (dgFloat32);
 
-	//dgMatrix inertia (CalculateInertiaMatrix());
-
-	dgVector impulse (dgFloat32 (0.0f));
-	dgVector angularImpulse (dgFloat32 (0.0f));
+	dgVector impulse (dgVector::m_zero);
+	dgVector angularImpulse (dgVector::m_zero);
 
 	dgVector com (m_globalCentreOfMass);
 	for (dgInt32 i = 0; i < count; i ++) {
@@ -724,11 +726,29 @@ void dgBody::ApplyImpulsesAtPoint (dgInt32 count, dgInt32 strideInBytes, const d
 		angularImpulse += Q;
 	}
 
-	m_impulseForce += impulse.Scale(1.0f / timestep);
-	m_impulseTorque += angularImpulse.Scale(1.0f / timestep);
+	if ((impulse.DotProduct(impulse).GetScalar() > dgFloat32(1.0e-6f)) &&
+		(angularImpulse.DotProduct(angularImpulse).GetScalar() > dgFloat32(1.0e-6f))) {
+		m_impulseForce += impulse.Scale(1.0f / timestep);
+		m_impulseTorque += angularImpulse.Scale(1.0f / timestep);
 
-	m_sleeping	= false;
-	m_equilibrium = false;
-	Unfreeze ();
+		m_sleeping = false;
+		m_equilibrium = false;
+		Unfreeze();
+	}
 }
 
+
+void dgBody::SetSleepState(bool state)
+{
+	m_sleeping = state;
+	m_equilibrium = state;
+	if ((m_invMass.m_w > dgFloat32 (0.0f)) && (m_veloc.DotProduct(m_veloc).GetScalar() < dgFloat32(1.0e-10f)) && (m_omega.DotProduct(m_omega).GetScalar() < dgFloat32(1.0e-10f))) {
+		m_equilibrium = state;
+		for (dgConstraint* contact = GetFirstContact(); contact; contact = GetNextContact(contact)) {
+			dgAssert(contact->GetId() == dgConstraint::m_contactConstraint);
+			dgContact* const contactJoint = (dgContact*)contact;
+			dgAssert(contactJoint->m_contactActive);
+			contactJoint->m_positAcc = dgVector(dgFloat32(10.0f));
+		}
+	}
+}

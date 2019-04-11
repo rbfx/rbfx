@@ -911,7 +911,7 @@ void dgWorld::StepDynamics (dgFloat32 timestep)
 
 	m_inUpdate ++;
 
-	DG_TRACKTIME(__FUNCTION__);
+	D_TRACKTIME();
 	UpdateSkeletons();
 	UpdateBroadphase(timestep);
 	UpdateDynamics (timestep);
@@ -976,18 +976,7 @@ void dgWorld::UpdateTransforms(void* const context, void* const nodePtr, dgInt32
 
 void dgWorld::RunStep ()
 {
-/*
-	static int zzzz;
-	if (zzzz == 500) {
-		DG_START_RECORDING("../../../../sdk/dProfiler/xxxx.tt");
-	}
-	if (zzzz == 800) {
-		DG_STOP_RECORDING();
-	}
-	zzzz++;
-*/
-
-	DG_TRACKTIME(__FUNCTION__);
+	D_TRACKTIME();
 	
 	BeginSection();
 	dgUnsigned64 timeAcc = dgGetTimeInMicrosenconds();
@@ -1257,7 +1246,7 @@ dgInt32 dgWorld::CompareJointByInvMass(const dgBilateralConstraint* const jointA
 
 void dgWorld::UpdateSkeletons()
 {
-	DG_TRACKTIME(__FUNCTION__);
+	D_TRACKTIME();
 	dgSkeletonList& skelManager = *this;
 
 	if (skelManager.m_skelListIsDirty) {
@@ -1435,7 +1424,7 @@ dgInt32 dgWorld::CompareJointByInvMass(const dgBilateralConstraint* const jointA
 
 void dgWorld::UpdateSkeletons()
 {
-	DG_TRACKTIME(__FUNCTION__);
+	D_TRACKTIME();
 	dgSkeletonList& skelManager = *this;
 skelManager.m_skelListIsDirty = true;
 

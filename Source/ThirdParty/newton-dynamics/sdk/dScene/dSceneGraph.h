@@ -47,7 +47,7 @@ class dSceneGraph: public dTree<dGraphNode, unsigned>
 	DSCENE_API virtual void UnlinkEdge (dTreeNode* const node1, dTreeNode* const node2);
 	DSCENE_API virtual bool HasLinkToRoot (dTreeNode* const node); 
 
-	DSCENE_API virtual void Serialize (TiXmlElement* const parentNode) const;
+	DSCENE_API virtual void Serialize (TiXmlElement* const parentNode);
 	DSCENE_API virtual bool Deserialize (TiXmlElement* const parentNode);
 
 	DSCENE_API virtual int GetLRU();

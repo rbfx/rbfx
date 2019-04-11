@@ -41,7 +41,7 @@ dSceneModelInfo::~dSceneModelInfo(void)
 {
 }
 
-void dSceneModelInfo::Serialize (TiXmlElement* const rootNode) const
+void dSceneModelInfo::Serialize (TiXmlElement* const rootNode) 
 {
 	SerialiseBase(dNodeInfo, rootNode);
 /*

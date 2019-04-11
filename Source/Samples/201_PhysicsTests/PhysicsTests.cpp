@@ -155,31 +155,31 @@ void PhysicsTests::CreateScene()
     ////CreatePyramids(Vector3(0,0,0));
 
 
-    SpawnCompound(Vector3(-2, 10 , 10));
-    SpawnConvexHull(Vector3(-2, 3, 10));
+    //SpawnCompound(Vector3(-2, 10 , 10));
+    //SpawnConvexHull(Vector3(-2, 3, 10));
 
     Quaternion tilt = Quaternion(Random(-1.0f, 1.0f), Vector3(1, 0, 0));
 
-    SpawnTrialBike(Vector3(5, 5, 0),  Quaternion(0, Vector3(0, 1, 0)) * tilt, true);
-    SpawnTrialBike(Vector3(-5, 5, 0), Quaternion(90, Vector3(0, 1, 0)) * tilt, false);
+    //SpawnTrialBike(Vector3(5, 5, 0),  Quaternion(0, Vector3(0, 1, 0)) * tilt, true);
+    //SpawnTrialBike(Vector3(-5, 5, 0), Quaternion(90, Vector3(0, 1, 0)) * tilt, false);
 
     //SpawnKinematicBodyTest(Vector3(0, 0, 0), Quaternion::IDENTITY);
 
 
-    SpawnHingeSpringTest(Vector3(0,10,0), Quaternion::IDENTITY);
+    //SpawnHingeSpringTest(Vector3(0,10,0), Quaternion::IDENTITY);
     //SpawnHingeSpringTest(Vector3(-2, 10, 0), Quaternion(-90, Vector3(0,1,0)));
 
     //SpawnCollisionExceptionsTest(Vector3(0, 1, 15));
 
-    SpawnSliderTest(Vector3(0, 10, 10));
-    SpawnLinearJointedObject(1.0f, Vector3(10 , 2, 10));
+    //SpawnSliderTest(Vector3(0, 10, 10));
+    //SpawnLinearJointedObject(1.0f, Vector3(10 , 2, 10));
 
     //SpawnNSquaredJointedObject(Vector3(-20, 10, 10));
 
     //SpawnCompoundedRectTest(Vector3(20, 10, 10));
 
     ////////create scale test
-    //SpawnSceneCompoundTest(Vector3(-20, 10, 20), true);
+    SpawnSceneCompoundTest(Vector3(-20, 10, 20), true);
     //SpawnSceneCompoundTest(Vector3(-20, 10, 30), false); //this was gives newton a non-orthogonal matrix.
 
     //CreateTowerOfLiar(Vector3(40, 0, 20));
@@ -299,19 +299,12 @@ void PhysicsTests::MoveCamera(float timeStep)
 
     if (input->GetKeyPress(KEY_R)) {
 
-        //print stuff about the rigid body
-        RayQueryResult res = GetCameraPickNode();
-        if (res.node_)
-        {
-            RigidBody* rigBody = res.node_->GetComponent<RigidBody>();
-            if (rigBody)
-            {
-                float mass = rigBody->GetEffectiveMass();
-                URHO3D_LOGINFO("mass: " + String(mass));
+        //Perform a physics RayCast in camera direction
 
-            }
 
-        }
+
+
+       
     }
 
     if (input->GetKeyPress(KEY_TAB))
@@ -352,12 +345,17 @@ void PhysicsTests::MoveCamera(float timeStep)
 
         Ray ray = Ray(cameraNode_->GetWorldPosition(), cameraNode_->GetWorldDirection());
         //GSS<VisualDebugger>()->AddLine(ray.origin_, ray.origin_ + ray.direction_ * length, Color::RED)->SetLifeTimeMs(100000);
-        PODVector<PhysicsRayCastIntersection> intersections;
+        Vector<PhysicsRayCastIntersection> intersections;
         scene_->GetComponent<PhysicsWorld>()->RayCast(intersections, ray);
 
-        for (PhysicsRayCastIntersection& intersections : intersections) {
-            URHO3D_LOGINFO(String(intersections.rigBody_->GetNode()->GetID()) + " " + String(intersections.rayIntersectWorldPosition_));
-            //GSS<VisualDebugger>()->AddCross(intersections.rayIntersectWorldPosition, 0.5f, Color::RED, false)->SetLifeTimeMs(100000);
+        for (PhysicsRayCastIntersection& intersection : intersections) {
+           // PrintPhysicsRayCastIntersection(intersection);
+
+            GetSubsystem<VisualDebugger>()->AddCross(intersection.rayIntersectWorldPosition_, 0.125f, Color::RED, false)->SetLifeTimeMs(100000);
+            GetSubsystem<VisualDebugger>()->AddLine(intersection.rayIntersectWorldPosition_, intersection.rayIntersectWorldPosition_ + intersection.rayIntersectWorldNormal_, Color::RED, false)->SetLifeTimeMs(100000);
+
+
+
         }
     }
 
@@ -406,7 +404,7 @@ void PhysicsTests::MoveCamera(float timeStep)
         scene_->LoadXML(loadFile);
     }
 
-    if (input->GetKeyPress(KEY_R))
+    if (input->GetKeyPress(KEY_R) && input->GetKeyDown(KEY_SHIFT))
     {
         scene_->Clear();
         Stop();

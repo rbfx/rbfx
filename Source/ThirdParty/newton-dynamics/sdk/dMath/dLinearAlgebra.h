@@ -158,10 +158,13 @@ class dComplementaritySolver
 		dBilateralJoint()
 			:m_state0(NULL)
 			,m_state1(NULL)
+			,m_ordinals(0x050403020100ll)
 			,m_start(0)
 			,m_count(0)
+			,m_dof(0)
 		{
 		}
+
 		virtual ~dBilateralJoint(){}
 
 		virtual void Init (dBodyState* const state0, dBodyState* const state1);
@@ -190,8 +193,6 @@ class dComplementaritySolver
 		int m_start;
 		int m_count;
 		int m_dof;
-
-		int xxxxx;
 
 		friend class dBodyState;
 		friend class dComplementaritySolver;

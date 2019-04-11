@@ -16,7 +16,9 @@
 #include "dAnimationStdAfx.h"
 
 class dAnimationJoint;
-//class dAnimIDRigKinematicLoopJoint;
+class dAnimationJointRoot;
+class dAnimationLoopJoint;
+class dAnimationContraint;
 
 class dAnimationJointSolver: public dCustomAlloc
 {
@@ -28,7 +30,7 @@ class dAnimationJointSolver: public dCustomAlloc
 	public:
 	dAnimationJointSolver();
 	virtual ~dAnimationJointSolver();
-	void Finalize(dAnimationJoint* const rootNode);
+	void Finalize(dAnimationJointRoot* const rootNode);
 
 	void Update(dFloat timestep);
 
@@ -42,7 +44,7 @@ class dAnimationJointSolver: public dCustomAlloc
 	int BuildJacobianMatrix(dFloat timestep);
 	void GetJacobians(dAnimationJoint* const node);
 	void CalculateLoopMassMatrixCoefficients();
-	int BuildJacobianMatrix(dFloat timestep, dComplementaritySolver::dBilateralJoint* const joint);
+	int BuildJacobianMatrix(dFloat timestep, dAnimationContraint* const joint);
 
 	void CalculateJointDiagonal(dAnimationJoint* const node);
 	void CalculateJacobianBlock(dAnimationJoint* const node);
@@ -66,8 +68,9 @@ class dAnimationJointSolver: public dCustomAlloc
 
 	void DebugMassMatrix();
 
-	dAnimationJoint* m_rootNode;
+	dAnimationJointRoot* m_rootNode;
 	dAnimationJoint** m_nodesOrder;
+//	dAnimationContraint** m_nodesOrder;
 
 	// cache temporary variables
 	int* m_matrixRowsIndex;
@@ -76,7 +79,7 @@ class dAnimationJointSolver: public dCustomAlloc
 	dFloat* m_massMatrix10;
 	dFloat* m_massMatrix11;
 	dBodyJointMatrixDataPair* m_data;
-//	dAnimIDRigKinematicLoopJoint** m_loopJoints;
+	dAnimationLoopJoint** m_loopJoints;
 	
 	dComplementaritySolver::dJacobianPair* m_leftHandSide;
 	dComplementaritySolver::dJacobianColum* m_rightHandSide;
@@ -85,7 +88,7 @@ class dAnimationJointSolver: public dCustomAlloc
 	int m_nodeCount;
 	int m_maxNodeCount;
 	int m_loopRowCount;
-	int m_loopNodeCount;
+//	int m_loopNodeCount;
 	int m_loopJointCount;
 	int m_auxiliaryRowCount;
 };

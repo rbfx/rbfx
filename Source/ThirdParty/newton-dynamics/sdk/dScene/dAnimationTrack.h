@@ -86,7 +86,7 @@ class dAnimationTrack: public dNodeInfo
 	dFloat Interpolate(dFloat x0, dFloat t0, dFloat x1, dFloat t1, dFloat t) const;
 	
 	virtual void BakeTransform(const dMatrix& matrix);
-	virtual void Serialize (TiXmlElement* const rootNode) const; 
+	virtual void Serialize (TiXmlElement* const rootNode); 
 	virtual bool Deserialize (const dScene* const scene, TiXmlElement* const rootNode);
 
 	dCurve m_scale;

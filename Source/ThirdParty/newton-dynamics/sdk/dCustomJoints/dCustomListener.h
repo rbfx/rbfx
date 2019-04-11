@@ -36,4 +36,23 @@ class dCustomListener: public dCustomAlloc
 	NewtonWorld* m_world;
 };
 
+
+class dCustomParallelListener: public dCustomListener
+{
+	public:
+	CUSTOM_JOINTS_API dCustomParallelListener(NewtonWorld* const world, const char* const listenerName);
+	CUSTOM_JOINTS_API virtual ~dCustomParallelListener();
+
+	virtual void PreUpdate(dFloat timestep, int threadID) {};
+	virtual void PostUpdate(dFloat timestep, int threadID) {};
+
+	private:
+	static void ParallerListenPreUpdateCallback (NewtonWorld* const world, void* const userData, int threadIndex);
+	static void ParallerListenPostUpdateCallback(NewtonWorld* const world, void* const userData, int threadIndex);
+
+	virtual void PreUpdate(dFloat timestep);
+	virtual void PostUpdate(dFloat timestep);
+	dFloat m_timestep;
+};
+
 #endif

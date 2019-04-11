@@ -99,14 +99,11 @@ int CreateCylinder (dVector* const points, dVector* const normals, int segments,
 	return count;
 }
 
-
-
-
-
+/*
 static void SetMaterial (const dVector& color)
 {
 	dAssert (0);
-/*
+
 	SetDefaultLight ();
 	dVector ambient(0.0f);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, &color.m_x);
@@ -120,11 +117,8 @@ static void SetMaterial (const dVector& color)
 	glCullFace (GL_BACK);
 	glFrontFace (GL_CCW);
 	glShadeModel (GL_SMOOTH);
-*/
 }
-
-
-
+*/
 
 void Draw3DArrow (const dMatrix& location, int segments, dFloat radius, dFloat height, const dVector& color)
 {

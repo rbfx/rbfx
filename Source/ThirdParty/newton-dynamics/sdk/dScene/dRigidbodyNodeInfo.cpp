@@ -146,7 +146,7 @@ NewtonBody* dRigidbodyNodeInfo::CreateNewtonBody (NewtonWorld* const world, dSce
 }
 
 
-void dRigidbodyNodeInfo::Serialize (TiXmlElement* const rootNode) const
+void dRigidbodyNodeInfo::Serialize (TiXmlElement* const rootNode) 
 {
 	SerialiseBase(dNodeInfo, rootNode);
 

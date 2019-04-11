@@ -314,7 +314,7 @@ void dCustomBallAndSocket::SubmitConstraints(dFloat timestep, int threadIndex)
 
 	// do twist cone angle calculations
 	if (m_options.m_option2) {
-		if ((m_maxConeAngle == 0.0f)) {
+		if (m_maxConeAngle == 0.0f) {
 			dMatrix localMatrix(matrix0 * matrix1.Inverse());
 			dVector euler0;
 			dVector euler1;

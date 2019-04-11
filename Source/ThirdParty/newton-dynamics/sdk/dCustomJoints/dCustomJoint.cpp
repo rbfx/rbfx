@@ -375,7 +375,7 @@ void dCustomJoint::Deserialize (NewtonDeserializeCallback callback, void* const 
 
 void dCustomJoint::dDebugDisplay::DrawFrame(const dMatrix& matrix, dFloat scale)
 {
-	dVector o0(matrix.m_posit);
+	//dVector o0(matrix.m_posit);
 
 	dVector x(matrix.m_posit + matrix.RotateVector(dVector(scale, 0.0f, 0.0f, 0.0f)));
 	SetColor(dVector (1.0f, 0.0f, 0.0f));

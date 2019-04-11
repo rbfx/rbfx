@@ -3833,8 +3833,11 @@ dFloat NewtonCollisionRayCast(const NewtonCollision* const collisionPtr, const d
 	dgVector q0 (matrix.UntransformVector (dgVector (p0[0], p0[1], p0[2], dgFloat32 (0.0f)))); 
 	dgVector q1 (matrix.UntransformVector (dgVector (p1[0], p1[1], p1[2], dgFloat32 (0.0f)))); 
 	dgContactPoint contact;
+	dgKinematicBody dommyBody;
+	dommyBody.SetCollision (collision);
+	dFloat t = collision->RayCast (q0, q1, dgFloat32 (1.0f), contact, NULL, &dommyBody, NULL);
+	dommyBody.SetCollision (NULL);
 
-	dFloat t = collision->RayCast (q0, q1, dgFloat32 (1.0f), contact, NULL, NULL, NULL);
 	if (t >= dFloat (0.0f) && t <= dFloat (dgFloat32(1.0f))) {
 		attribute[0] = (dLong) contact.m_shapeId0;
 
@@ -5881,7 +5884,7 @@ int NewtonBodyGetAutoSleep(const NewtonBody* const bodyPtr)
 
   @param *bodyPtr is the pointer to the body.
 
-  @return Sleep state: 1 = active. 0 = sleeping.
+  @return Sleep state: 0 = active. 1 = sleeping.
 
   See also: ::NewtonBodySetAutoSleep
 */

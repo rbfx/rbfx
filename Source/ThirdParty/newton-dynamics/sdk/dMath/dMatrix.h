@@ -153,6 +153,8 @@ class dSpatialMatrix
 		return m_rows[i];
 	}
 
+	dSpatialMatrix Inverse(int rows) const;
+
 	inline dSpatialVector VectorTimeMatrix(const dSpatialVector& jacobian) const
 	{
 		dSpatialVector tmp(m_rows[0].Scale(jacobian[0]));
@@ -169,38 +171,6 @@ class dSpatialMatrix
 			tmp = tmp + m_rows[i].Scale(jacobian[i]);
 		}
 		return tmp;
-	}
-
-	inline dSpatialMatrix Inverse(int rows) const
-	{
-		dSpatialMatrix copy(*this);
-		dSpatialMatrix inverse(0.0f);
-		for (int i = 0; i < rows; i++) {
-			inverse[i][i] = dFloat(1.0f);
-		}
-
-		for (int i = 0; i < rows; i++) {
-			dFloat val = copy[i][i];
-			dAssert(dAbs(val) > 1.0e-12f);
-			dFloat den = 1.0f / val;
-
-			copy[i] = copy[i].Scale(den);
-			copy[i][i] = 1.0f;
-			inverse[i] = inverse[i].Scale(den);
-
-			for (int j = 0; j < i; j++) {
-				dFloat pivot = -copy[j][i];
-				copy[j] = copy[j] + copy[i].Scale(pivot);
-				inverse[j] = inverse[j] + inverse[i].Scale(pivot);
-			}
-
-			for (int j = i + 1; j < rows; j++) {
-				dFloat pivot = -copy[j][i];
-				copy[j] = copy[j] + copy[i].Scale(pivot);
-				inverse[j] = inverse[j] + inverse[i].Scale(pivot);
-			}
-		}
-		return inverse;
 	}
 
 	dSpatialVector m_rows[6];

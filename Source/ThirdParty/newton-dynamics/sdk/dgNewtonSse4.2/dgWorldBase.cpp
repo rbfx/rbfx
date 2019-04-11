@@ -59,13 +59,15 @@ dgWorldPlugin* GetPlugin(dgWorld* const world, dgMemoryAllocator* const allocato
 	module.m_score = _stricmp(m_vendor, "GenuineIntel") ? 4 : 2;
 	return &module;
 #elif __linux__
-		if(__builtin_cpu_supports("sse4.2")) {
+	if(__builtin_cpu_supports("sse4.2")) {
 		static dgWorldBase module(world, allocator);
 		module.m_score = 2;
 		return &module;
 	} else {
 		return NULL;
 	}
+#elif defined (_MACOSX_VER)
+	return NULL;
 #endif
 }
 
@@ -93,9 +95,7 @@ dgInt32 dgWorldBase::GetScore() const
 	return m_score;
 }
 
-
 void dgWorldBase::CalculateJointForces(const dgBodyCluster& cluster, dgBodyInfo* const bodyArray, dgJointInfo* const jointArray, dgFloat32 timestep)
 {
-	DG_TRACKTIME_NAMED(GetId());
 	dgSolver::CalculateJointForces(cluster, bodyArray, jointArray, timestep);
 }

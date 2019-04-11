@@ -23,7 +23,6 @@
 #define __dgRef__
 
 #include "dgStdafx.h"
-#include "dgCRC.h"
 #include "dgRtti.h"
 #include "dgDebug.h"
 #include "dgMemory.h"
@@ -76,7 +75,7 @@ class dgRef: public dgRefFlags
 	const char* GetName () const;
 	dgUnsigned32 GetNameID () const;
 	inline void SetNameID (dgUnsigned32 newID);
-	virtual inline void SetName (const char *name);
+	virtual void SetName (const char *name);
 
 	void AttachRef (dgRef **oldRef, dgRef *newRef);
 
@@ -93,157 +92,6 @@ class dgRef: public dgRefFlags
 };
 
 
-
-inline dgRefFlags::dgRefFlags ()
-{
-	*this = 0;
-	m_alive = true;
-	m_ref = 1;
-}
-
-inline dgInt32 dgRefFlags::operator = (dgInt32 val)
-{
-	dgInt32* ptr;
-	ptr = &(*(dgInt32*)this);
-	*ptr = val;
-	return val;
-}
-
-
-
-inline dgRef::dgRef ()
-{
-	m_id = 0;
-}
-
-inline dgRef::dgRef (const char *name)
-{
-	SetName (name);
-}
-
-inline dgRef::dgRef (dgUnsigned32 idArg)
-{
-	SetNameID (idArg);
-}
-
-inline dgRef::dgRef(const dgRef &Clone)
-{
-	m_id = Clone.m_id;
-}
-
-inline dgRef::~dgRef () 
-{
-}
-
-inline dgRef *dgRef::AddRef () 
-{
-	m_ref ++;
-	dgAssert (m_ref < ((1<<24) - 1));
-	return this;
-}
-
-inline dgInt32 dgRef::Release ()
-{
-	m_ref --;
-	if (m_ref) {
-		return dgInt32 (m_ref);
-	}
-	delete this;
-	return 0;
-}
-
-inline dgRef *dgRef::CreateClone () const
-{
-	dgAssert (0);
-	return NULL;
-}
-
-
-inline dgUnsigned32 dgRef::GetTypeId () const
-{
-	return m_rtti.GetTypeId ();
-}
-
-inline bool dgRef::IsType (dgUnsigned32 typeId) const
-{
-	return m_rtti.IsTypeID (typeId);
-}
-
-inline dgUnsigned32 dgRef::GetRttiType()
-{
-	return m_rtti.GetTypeId();
-}
-
-inline bool dgRef::IsTypeByName (const char *typeName) const
-{
-	return IsType (dgCRC (typeName,  (dgInt32) strlen (typeName)));
-}
-
-
-inline bool dgRef::GetUserFlag0 () const
-{
-	return m_userFlag0 ? true : false;
-}
-
-inline bool dgRef::GetUserFlag1 () const
-{
-	return m_userFlag1 ? true : false;
-}
-
-
-inline void dgRef::SetUserFlag0 (bool flags)
-{
-	m_userFlag0 = dgUnsigned8 (flags);
-}
-
-inline void dgRef::SetUserFlag1 (bool flags)
-{
-	m_userFlag1 = dgUnsigned8 (flags);
-}
-
-
-inline bool dgRef::IsAlive() const
-{
-	return m_alive ? true : false;
-}
-
-inline void dgRef::Kill() 
-{
-	m_alive = false;
-}
-
-inline void dgRef::Unkill() 
-{
-	m_alive = true;
-}
-
-inline void dgRef::SetNameID (dgUnsigned32 newID)
-{
-	m_id = newID;
-}
-
-inline dgUnsigned32 dgRef::GetNameID () const
-{
-	return m_id;
-}
-
-inline void dgRef::SetName (const char *name)
-{
-	SetNameID (0);
-	if (name) {
-		SetNameID (dgCRC (name));
-	}
-}
-
-inline const char* dgRef::GetName () const
-{
-	return dgInverseCRC (GetNameID ());
-}
-
-inline dgInt32 dgRef::GetRefCount() const
-{
-	return dgInt32 (m_ref);
-}
 
 #endif
 

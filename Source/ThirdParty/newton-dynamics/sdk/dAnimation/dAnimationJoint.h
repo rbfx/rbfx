@@ -21,6 +21,27 @@ class dAnimationJointChildren: public dList<dAnimationJoint*>
 {
 };
 
+class dAnimationBody: public dComplementaritySolver::dBodyState
+{
+	public:
+	dAnimationBody ()
+		:dComplementaritySolver::dBodyState()
+		,m_owner(NULL)
+	{
+	}
+
+	dAnimationJoint* m_owner;
+};
+
+class dAnimationContraint: public dComplementaritySolver::dBilateralJoint
+{
+	public:
+	dAnimationContraint()
+		:dComplementaritySolver::dBilateralJoint()
+	{
+	}
+};
+
 class dAnimationJoint: public dCustomAlloc
 {
 	public:
@@ -33,26 +54,45 @@ class dAnimationJoint: public dCustomAlloc
 	void* GetUserData() const;
 	void SetUserData(void* const data);
 	
-	dAnimationJointChildren& GetChidren();
-	const dAnimationJointChildren& GetChidren() const;
+	dAnimationJointChildren& GetChildren();
+	const dAnimationJointChildren& GetChildren() const;
 
 	NewtonBody* GetBody() const;
 	dCustomJoint* GetJoint() const;
-	dComplementaritySolver::dBodyState* GetProxyBody(); 
+	dAnimationBody* GetProxyBody();
+	dAnimationContraint* GetProxyJoint();
 
+	void CopyRigidBodyMassToStates();
 	protected:
-	void PostUpdate(dAnimationModelManager* const manager, dFloat timestep) const;
+	int GetIndex() const;
+	void SetIndex(int index);
+	void CopyRigidBodyMassToStatesLow();
+	virtual void RigidBodyToStates();
+	virtual void ApplyExternalForce(dFloat timestep);
 
-	dComplementaritySolver::dBodyState m_proxyBody;
+	dAnimationBody m_proxyBody;
 	dMatrix m_bindMatrix;
 	void* m_userData;
 	NewtonBody* m_body;
 	dCustomJoint* m_joint;
 	dAnimationJoint* m_parent;
-	dComplementaritySolver::dBilateralJoint* m_proxyJoint;
+	dAnimationContraint* m_proxyJoint;
 	dAnimationJointChildren m_children;
+	int m_index;
+
+	friend class dAnimationJointSolver;
 };
 
+
+inline int dAnimationJoint::GetIndex() const
+{
+	return m_index;
+}
+
+inline void dAnimationJoint::SetIndex(int index)
+{
+	m_index = index;
+}
 
 inline dAnimationJoint* dAnimationJoint::GetParent() const
 {
@@ -84,19 +124,27 @@ inline dCustomJoint* dAnimationJoint::GetJoint() const
 	return NULL;
 }
 
-inline dComplementaritySolver::dBodyState* dAnimationJoint::GetProxyBody()
+inline dAnimationBody* dAnimationJoint::GetProxyBody()
 {
 	return &m_proxyBody;
 }
 
-inline const dAnimationJointChildren& dAnimationJoint::GetChidren() const
+inline dAnimationContraint* dAnimationJoint::GetProxyJoint()
+{
+	return m_proxyJoint;
+}
+
+inline const dAnimationJointChildren& dAnimationJoint::GetChildren() const
 { 
 	return m_children; 
 }
 
-inline dAnimationJointChildren& dAnimationJoint::GetChidren()
+inline dAnimationJointChildren& dAnimationJoint::GetChildren()
 {
 	return m_children; 
 }
+
+
+
 #endif
 

@@ -54,7 +54,7 @@ dCRCTYPE dSceneCacheInfo::GetID() const
 }
 
 
-void dSceneCacheInfo::Serialize (TiXmlElement* const rootNode) const
+void dSceneCacheInfo::Serialize (TiXmlElement* const rootNode) 
 {
 	SerialiseBase(dNodeInfo, rootNode);
 

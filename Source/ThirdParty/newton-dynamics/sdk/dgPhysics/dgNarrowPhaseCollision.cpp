@@ -979,8 +979,8 @@ void dgWorld::ProcessContacts (dgBroadPhase::dgPair* const pair, dgInt32 threadI
 	dgAssert (pair->m_contact->m_body1);
 	dgAssert (pair->m_contact->m_body0 != pair->m_contact->m_body1);
 
-	pair->m_contact->m_positAcc = dgVector (dgFloat32 (0.0f));
-	pair->m_contact->m_rotationAcc = dgVector (dgFloat32 (1.0f), dgFloat32 (0.0f), dgFloat32 (0.0f), dgFloat32 (0.0f));
+	pair->m_contact->m_positAcc = dgVector::m_zero;
+	pair->m_contact->m_rotationAcc = dgQuaternion();
 	PopulateContacts (pair, threadIndex);
 }
 

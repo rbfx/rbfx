@@ -72,7 +72,7 @@ void dGeometryNodeSkinClusterInfo::RemoveUnusedVertices(const int* const vertexM
 	dAssert(0);
 }
 
-void dGeometryNodeSkinClusterInfo::Serialize (TiXmlElement* const rootNode) const
+void dGeometryNodeSkinClusterInfo::Serialize (TiXmlElement* const rootNode) 
 {
 	SerialiseBase(dNodeInfo, rootNode);
 

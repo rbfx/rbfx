@@ -74,7 +74,7 @@ class dVariableList: public dTree<dVariable, dCRCTYPE>
 	virtual dVariable* FindVariable(dCRCTYPE crc) const;
 	virtual dVariable* FindVariable(const char* const name) const;
 
-	virtual void Serialize(TiXmlElement* const rootNode) const;
+	virtual void Serialize(TiXmlElement* const rootNode);
 	virtual bool Deserialize(const dScene* const scene, TiXmlElement* const rootNode);
 };
 

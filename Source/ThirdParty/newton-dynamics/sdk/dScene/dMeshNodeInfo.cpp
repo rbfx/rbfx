@@ -298,7 +298,7 @@ void dMeshNodeInfo::DrawFlatShaded(dSceneRender* const render, dScene* const sce
 	//render->PopMatrix();
 }
 
-void dMeshNodeInfo::Serialize(TiXmlElement* const rootNode) const
+void dMeshNodeInfo::Serialize(TiXmlElement* const rootNode)
 {
 	SerialiseBase(dGeometryNodeInfo, rootNode);
 	SerializeMesh(m_mesh, rootNode);

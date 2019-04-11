@@ -122,8 +122,6 @@ namespace Urho3D
         /// return world transform of collision shape in scene world space
         Matrix3x4 GetWorldTransform();
 
-        /// return physics world transform in physics world space (physics scale applied)
-        Matrix3x4 GetPhysicsWorldTransform();
 
         /// Mark the shape as dirty causing it to be rebuilt by the physics world.
         void MarkDirty(bool dirty = true);

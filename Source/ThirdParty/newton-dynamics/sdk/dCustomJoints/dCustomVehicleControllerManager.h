@@ -98,7 +98,11 @@ class dTireFrictionModel
 		:m_controller(controller)
 	{
 	}
-
+    
+    virtual ~dTireFrictionModel()
+    {
+    }
+    
 	virtual dFloat GetFrictionCoefficient(const NewtonMaterial* const material, const NewtonBody* const tireBody, const NewtonBody* const otherBody) const
 	{
 		// the vehicle model is realistic, please do not use fake larger than one fiction coefficient, or you vehicle will simply role over

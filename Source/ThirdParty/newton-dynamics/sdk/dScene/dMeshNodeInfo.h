@@ -55,7 +55,7 @@ class dMeshNodeInfo: public dGeometryNodeInfo
 	
 	protected:
 	virtual dCRCTYPE CalculateSignature() const;
-	virtual void Serialize (TiXmlElement* const rootNode) const; 
+	virtual void Serialize (TiXmlElement* const rootNode); 
 	virtual bool Deserialize (const dScene* const scene, TiXmlElement* const rootNode);
 
 	virtual void DrawWireFrame(dSceneRender* const render, dScene* const scene, dScene::dTreeNode* const myNode) const;

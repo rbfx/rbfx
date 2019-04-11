@@ -308,10 +308,6 @@ void dComplementaritySolver::dBodyState::ApplyNetForceAndTorque (dFloat invTimes
 
 void dComplementaritySolver::dBilateralJoint::Init(dBodyState* const state0, dBodyState* const state1)
 {
-	static int xxxxxxx;
-	xxxxx = xxxxxxx;
-	xxxxxxx++;
-
 	m_start = 0;
 	m_count = 0;
 	memset (m_rowIsMotor, 0, sizeof (m_rowIsMotor));

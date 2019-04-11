@@ -969,6 +969,16 @@ void dScene::BakeTransform (const dMatrix& matrix)
 	}
 }
 
+void dScene::Serialize(TiXmlElement* const parentNode)
+{
+	dSceneGraph::Serialize(parentNode);
+}
+
+bool dScene::Deserialize(TiXmlElement* const parentNode)
+{
+	return dSceneGraph::Deserialize(parentNode);
+}
+
 void dScene::Serialize (const char* const fileName)
 {
 	// save the file, using standard localization

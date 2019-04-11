@@ -37,7 +37,7 @@ class dGeometryNodeModifierInfo: public dNodeInfo
 //	virtual void SetPivotMatrix (const dMatrix& matrix);
 //	virtual void BakeTransform (const dMatrix& matrix);
 //	virtual dFloat RayCast (const dVector& p0, const dVector& p1) const {return 1.0f;}
-	DSCENE_API virtual void Serialize (TiXmlElement* const rootNode) const;
+	DSCENE_API virtual void Serialize (TiXmlElement* const rootNode);
 	DSCENE_API virtual bool Deserialize (const dScene* const scene, TiXmlElement* const rootNode);
 
 //	dMatrix m_matrix;

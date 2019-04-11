@@ -371,5 +371,11 @@ DG_INLINE void dgConstraint::SetIndex (dgInt32 index)
 {
 	m_index = index;
 }
+
+DG_INLINE void dgConstraint::GetInfo(dgConstraintInfo* const info) const
+{
+	dgAssert(0);
+}
+
 #endif 
 

@@ -243,6 +243,8 @@ class dgBody
 
 	void InitJointSet ();
 
+	void SetCollision(dgCollisionInstance* const collision);
+
 	protected:
 	void UpdateWorlCollisionMatrix() const;
 	void UpdateLumpedMatrix();
@@ -552,12 +554,6 @@ DG_INLINE bool dgBody::GetSleepState () const
 	return m_sleeping;
 }
 
-DG_INLINE void dgBody::SetSleepState (bool state)
-{
-	m_sleeping = state;
-	m_equilibrium = state;
-}
-
 DG_INLINE bool dgBody::GetGyroMode() const
 {
 	return m_gyroTorqueOn;
@@ -647,6 +643,11 @@ DG_INLINE void dgBody::InitJointSet ()
 	m_index = -1;
 	m_jointSet = 1;
 	m_disjointInfo.Init (this);
+}
+
+DG_INLINE void dgBody::SetCollision(dgCollisionInstance* const collision)
+{
+	m_collision = collision;
 }
 
 #endif 

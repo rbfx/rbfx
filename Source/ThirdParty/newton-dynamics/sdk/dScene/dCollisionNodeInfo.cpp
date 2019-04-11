@@ -140,7 +140,7 @@ bool dCollisionNodeInfo::Deserialize (const dScene* const scene, TiXmlElement* c
 
 
 
-void dCollisionNodeInfo::Serialize (TiXmlElement* const rootNode) const
+void dCollisionNodeInfo::Serialize (TiXmlElement* const rootNode) 
 {
 	SerialiseBase(dNodeInfo, rootNode);
 

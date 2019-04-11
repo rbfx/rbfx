@@ -50,7 +50,7 @@ if(UNIX)
 endif(UNIX)
 
 if (NEWTON_BUILD_PROFILER)
-    target_link_libraries (${projectName} dTimeTracker)
+    target_link_libraries (${projectName} dProfiler)
 endif()
 
 if (MSVC)

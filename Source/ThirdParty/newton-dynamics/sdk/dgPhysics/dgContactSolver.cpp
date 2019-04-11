@@ -328,7 +328,9 @@ DG_INLINE dgMinkFace* dgContactSolver::NewFace()
 	} else {
 		face = &m_facePool[m_faceIndex];
 		m_faceIndex++;
-		dgAssert(m_faceIndex < DG_CONVEX_MINK_MAX_FACES);
+		if (m_faceIndex >= DG_CONVEX_MINK_MAX_FACES) {
+			return NULL;
+		}
 	}
 
 #ifdef _DEBUG
@@ -650,16 +652,26 @@ dgInt32 dgContactSolver::CalculateIntersectingPlane(dgInt32 count)
 					for (dgInt32 j1 = 0; j1 < 3; j1++) {
 						dgMinkFace* const twinFace = face->m_twin[j0];
 						if (twinFace && !twinFace->m_mark) {
-							dgMinkFace* const newFace = AddFace(m_vertexIndex, face->m_vertex[j0], face->m_vertex[j1]);
-							PushFace(newFace);
+							//dgMinkFace* const newFace = AddFace(m_vertexIndex, face->m_vertex[j0], face->m_vertex[j1]);
+							dgMinkFace* const newFace = NewFace();
+							if (newFace) {
+								newFace->m_mark = 0;
+								newFace->m_vertex[0] = dgInt16(m_vertexIndex);
+								newFace->m_vertex[1] = dgInt16(face->m_vertex[j0]);
+								newFace->m_vertex[2] = dgInt16(face->m_vertex[j1]);
+								PushFace(newFace);
 
-							newFace->m_twin[1] = twinFace;
-							dgInt32 index = (twinFace->m_twin[0] == face) ? 0 : ((twinFace->m_twin[1] == face) ? 1 : 2);
-							twinFace->m_twin[index] = newFace;
+								newFace->m_twin[1] = twinFace;
+								dgInt32 index = (twinFace->m_twin[0] == face) ? 0 : ((twinFace->m_twin[1] == face) ? 1 : 2);
+								twinFace->m_twin[index] = newFace;
 
-							m_coneFaceList[newCount] = newFace;
-							newCount++;
-							dgAssert(newCount < sizeof (m_coneFaceList) / sizeof (m_coneFaceList[0]));
+								m_coneFaceList[newCount] = newFace;
+								newCount++;
+								dgAssert(newCount < sizeof(m_coneFaceList) / sizeof(m_coneFaceList[0]));
+							} else {
+								// this is very rare but is does happend with some degenerated faces.
+								return -1;
+							}
 						}
 						j0 = j1;
 					}
@@ -1340,7 +1352,7 @@ dgInt32 dgContactSolver::CalculateConvexCastContacts()
 
 					m_normal = m_normal.Scale (dgFloat32 (-1.0f));
 					m_proxy->m_contactJoint->m_contactActive = 1;
-					dgVector contactPoint((m_closestPoint0 + m_closestPoint1).Scale(dgFloat32(0.5f)));
+					//dgVector contactPoint((m_closestPoint0 + m_closestPoint1).Scale(dgFloat32(0.5f)));
 					count = CalculateContacts(m_closestPoint0, m_closestPoint1, m_normal);
 					if (count) {
 						count = dgMin(m_proxy->m_maxContacts, count);

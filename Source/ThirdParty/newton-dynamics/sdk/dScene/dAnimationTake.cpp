@@ -43,7 +43,7 @@ dAnimationTake::~dAnimationTake(void)
 {
 }
 
-void dAnimationTake::Serialize (TiXmlElement* const rootNode) const
+void dAnimationTake::Serialize (TiXmlElement* const rootNode) 
 {
 	SerialiseBase(dNodeInfo, rootNode);
 	rootNode->SetDoubleAttribute("period", m_period);

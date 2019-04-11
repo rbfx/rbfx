@@ -135,7 +135,7 @@ class dGearBoxJoint
 	void UpdateSolverForces(const dComplementaritySolver::dJacobianPair* const jacobians) const { dAssert(0); }
 
 	dFloat m_gearRatio;
-	dFloat m_crowndGear;
+	//dFloat m_crowndGear;
 	dFloat m_clutchTorque;
 };
 

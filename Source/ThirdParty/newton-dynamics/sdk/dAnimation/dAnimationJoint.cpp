@@ -15,6 +15,7 @@
 
 dAnimationJoint::dAnimationJoint(NewtonBody* const body, const dMatrix& bindMarix, dAnimationJoint* const parent)
 	:dCustomAlloc()
+	,m_proxyBody()
 	,m_bindMatrix(bindMarix)
 	,m_userData(NULL)
 	,m_body(body)
@@ -22,10 +23,14 @@ dAnimationJoint::dAnimationJoint(NewtonBody* const body, const dMatrix& bindMari
 	,m_parent(parent)
 	,m_proxyJoint(NULL)
 	,m_children()
+	,m_index(-1)
 {
 	if (m_parent) {
 		m_parent->m_children.Append(this);
 	}
+	m_proxyBody.m_owner = this;
+
+	CopyRigidBodyMassToStatesLow();
 }
 
 dAnimationJoint::~dAnimationJoint()
@@ -35,30 +40,72 @@ dAnimationJoint::~dAnimationJoint()
 	}
 }
 
-void dAnimationJoint::PostUpdate(dAnimationModelManager* const manager, dFloat timestep) const
+void dAnimationJoint::CopyRigidBodyMassToStatesLow()
 {
-	dMatrix parentMatrixPool[128];
-	const dAnimationJoint* stackPool[128];
+	if (m_body) {
 
-	int stack = 1;
-	stackPool[0] = this;
-	parentMatrixPool[0] = dGetIdentityMatrix();
+		dMatrix matrix(dGetIdentityMatrix());
+		NewtonBodyGetCentreOfMass(m_body, &matrix.m_posit[0]);
+		matrix.m_posit.m_w = 1.0f;
+		m_proxyBody.SetLocalMatrix(matrix);
 
-	while (stack) {
+		// get data from engine rigid body and copied to the vehicle chassis body
+		NewtonBodyGetMatrix(m_body, &matrix[0][0]);
+		m_proxyBody.SetMatrix(matrix);
+
+		dFloat mass;
+		dFloat Ixx;
+		dFloat Iyy;
+		dFloat Izz;
+		NewtonBodyGetMass(m_body, &mass, &Ixx, &Iyy, &Izz);
+		m_proxyBody.SetMass(mass);
+		m_proxyBody.SetInertia(Ixx, Iyy, Izz);
+		m_proxyBody.UpdateInertia();
+	}
+}
+
+void dAnimationJoint::CopyRigidBodyMassToStates()
+{
+	CopyRigidBodyMassToStatesLow();
+	for (dAnimationJointChildren::dListNode* node = m_children.GetFirst(); node; node = node->GetNext()) {
+		node->GetInfo()->CopyRigidBodyMassToStates();
+	}
+}
+
+void dAnimationJoint::RigidBodyToStates()
+{
+	if (m_body) {
+		dVector vector;
 		dMatrix matrix;
-		stack--;
 
-		dMatrix parentMatrix(parentMatrixPool[stack]);
-		const dAnimationJoint* const bone = stackPool[stack];
+		// get data from engine rigid body and copied to the vehicle chassis body
+		//NewtonBody* const newtonBody = m_chassis->GetBody();
+		NewtonBodyGetMatrix(m_body, &matrix[0][0]);
+		m_proxyBody.SetMatrix(matrix);
 
-		NewtonBodyGetMatrix(bone->GetBody(), &matrix[0][0]);
-		manager->OnUpdateTransform(bone, matrix * parentMatrix * bone->GetBindMatrix());
+		NewtonBodyGetVelocity(m_body, &vector[0]);
+		m_proxyBody.SetVeloc(vector);
 
-		parentMatrix = matrix.Inverse();
-		for (dAnimationJointChildren::dListNode* ptrNode = bone->m_children.GetFirst(); ptrNode; ptrNode = ptrNode->GetNext()) {
-			parentMatrixPool[stack] = parentMatrix;
-			stackPool[stack] = ptrNode->GetInfo();
-			stack++;
-		}
+		NewtonBodyGetOmega(m_body, &vector[0]);
+		m_proxyBody.SetOmega(vector);
+
+		NewtonBodyGetForce(m_body, &vector[0]);
+		m_proxyBody.SetForce(vector);
+
+		NewtonBodyGetTorque(m_body, &vector[0]);
+		m_proxyBody.SetTorque(vector);
+
+		m_proxyBody.UpdateInertia();
+	}
+
+	for (dAnimationJointChildren::dListNode* node = m_children.GetFirst(); node; node = node->GetNext()) {
+		node->GetInfo()->RigidBodyToStates();
+	}
+}
+
+void dAnimationJoint::ApplyExternalForce(dFloat timestep)
+{
+	for (dAnimationJointChildren::dListNode* node = m_children.GetFirst(); node; node = node->GetNext()) {
+		node->GetInfo()->ApplyExternalForce(timestep);
 	}
 }

@@ -48,7 +48,7 @@ class dRigidbodyNodeInfo: public dNodeInfo
 
 	virtual NewtonBody* CreateNewtonBody (NewtonWorld* const world, dScene* const scene, dScene::dTreeNode* const myNode) const;
 	protected:
-	virtual void Serialize (TiXmlElement* const rootNode) const; 
+	virtual void Serialize (TiXmlElement* const rootNode); 
 	virtual bool Deserialize (const dScene* const scene, TiXmlElement* const rootNode);
 	
 	dVector m_centerOfMass;

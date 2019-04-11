@@ -71,6 +71,12 @@ dgWorldPlugin* GetPlugin(dgWorld* const world, dgMemoryAllocator* const allocato
 	} else {
 		return NULL;
 	}
+#elif defined (_MACOSX_VER)
+	// must macs support avx2 bu for now let use do avx only
+	//static dgWorldBase module(world, allocator);
+	//module.m_score = 4;
+	//return &module;
+	return NULL;
 #endif
 }
 
@@ -100,6 +106,5 @@ dgInt32 dgWorldBase::GetScore() const
 
 void dgWorldBase::CalculateJointForces(const dgBodyCluster& cluster, dgBodyInfo* const bodyArray, dgJointInfo* const jointArray, dgFloat32 timestep)
 {
-	DG_TRACKTIME_NAMED(GetId());
 	dgSolver::CalculateJointForces(cluster, bodyArray, jointArray, timestep);
 }

@@ -25,9 +25,9 @@
 
 #include "dgPhysicsStdafx.h"
 
-#ifdef __linux__
+//#ifdef __linux__
 #include <immintrin.h>
-#endif
+//#endif
 
 #define DG_SOA_WORD_GROUP_SIZE	8 
 
@@ -59,8 +59,10 @@ class dgSoaFloat
 	}
 
 	DG_INLINE dgSoaFloat(const dgVector& low, const dgVector& high)
-		:m_low(_mm256_loadu2_m128d(&low.m_z, &low.m_x))
-		,m_high(_mm256_loadu2_m128d(&high.m_z, &high.m_x))
+//		:m_low(_mm256_loadu2_m128d(&low.m_z, &low.m_x))
+//		,m_high(_mm256_loadu2_m128d(&high.m_z, &high.m_x))
+		:m_low(_mm256_set_m128d(low.m_typeHigh, low.m_typeLow))
+		,m_high(_mm256_set_m128d(high.m_typeHigh, high.m_typeLow))
 	{
 	}
 
@@ -194,7 +196,8 @@ class dgSoaFloat
 	}
 
 	DG_INLINE dgSoaFloat(const dgVector& low, const dgVector& high)
-		: m_type(_mm256_loadu2_m128(&high.m_x, &low.m_x))
+//		:m_type(_mm256_loadu2_m128(&high.m_x, &low.m_x))
+		:m_type(_mm256_set_m128 (high.m_type, low.m_type))
 	{
 	}
 

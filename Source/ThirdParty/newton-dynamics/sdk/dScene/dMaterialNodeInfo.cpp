@@ -110,7 +110,7 @@ dCRCTYPE dMaterialNodeInfo::CalculateSignature() const
 	return signature;
 }
 
-void dMaterialNodeInfo::Serialize (TiXmlElement* const rootNode) const
+void dMaterialNodeInfo::Serialize (TiXmlElement* const rootNode) 
 {
 	SerialiseBase(dNodeInfo, rootNode);
 

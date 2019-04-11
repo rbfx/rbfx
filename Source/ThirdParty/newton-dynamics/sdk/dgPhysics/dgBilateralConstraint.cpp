@@ -473,7 +473,7 @@ void dgBilateralConstraint::JointAccelerations(dgJointAccelerationDecriptor* con
 				dgFloat32 num = ks * relPosit - kd * vRel - ksd * vRel;
 				dgFloat32 den = dgFloat32(1.0f) + dt * kd + dt * ksd;
 				dgFloat32 aRelErr = num / den;
-				rhs[k].m_coordenateAccel = aRelErr + relCentr;
+				rhs[k].m_coordenateAccel = rhs[k].m_deltaAccel + aRelErr + relCentr;
 			}
 		}
 	} else {

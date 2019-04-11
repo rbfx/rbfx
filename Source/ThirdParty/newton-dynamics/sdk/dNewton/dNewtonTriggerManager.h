@@ -42,7 +42,7 @@ class dNewtonTriggerManager: public dCustomTriggerManager
 		virtual void OnExit (dNewtonBody* const visitor) = 0;
 
 		private:
-		dCustomTriggerController* m_controller;
+		//dCustomTriggerController* m_controller;
 
 		friend class dNewtonTriggerManager;
 	};

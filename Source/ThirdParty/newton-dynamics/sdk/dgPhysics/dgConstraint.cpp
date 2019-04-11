@@ -79,7 +79,3 @@ void dgConstraint::InitInfo (dgConstraintInfo* const info) const
 }
 
 
-void dgConstraint::GetInfo (dgConstraintInfo* const info) const
-{
-	dgAssert (0);
-}

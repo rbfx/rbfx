@@ -69,7 +69,7 @@ void dGeometryNodeModifierInfo::BakeTransform (const dMatrix& transform)
 */
 
 
-void dGeometryNodeModifierInfo::Serialize (TiXmlElement* const rootNode) const
+void dGeometryNodeModifierInfo::Serialize (TiXmlElement* const rootNode) 
 {
 	SerialiseBase(dNodeInfo, rootNode);
 }

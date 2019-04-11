@@ -191,7 +191,7 @@ dCRCTYPE dLineNodeInfo::CalculateSignature() const
 }
 
 
-void dLineNodeInfo::Serialize (TiXmlElement* const rootNode) const
+void dLineNodeInfo::Serialize (TiXmlElement* const rootNode) 
 {
 	SerialiseBase(dGeometryNodeInfo, rootNode);
 

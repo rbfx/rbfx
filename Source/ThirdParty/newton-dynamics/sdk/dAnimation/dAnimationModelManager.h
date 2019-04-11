@@ -10,8 +10,8 @@
 */
 
 
-#ifndef __D_ANIM_ID_MANAGER_H__
-#define __D_ANIMATION_MODEL_ANAGER_H__
+#ifndef __D_ANIMATION_MODEL_MANAGER_H__
+#define __D_ANIMATION_MODEL_MANAGER_H__
 
 #include "dAnimationStdAfx.h"
 //#include "dAnimationJoint.h"
@@ -26,20 +26,30 @@ class dAnimationModelManager: public dCustomListener
 	dAnimationModelManager(NewtonWorld* const world, const char* const name = D_ANIMATION_MODEL_MANAGER);
 	virtual ~dAnimationModelManager();
 
-	virtual dAnimationJointRoot* CreateModel(NewtonBody* const bone, const dMatrix& bindMatrix);
-	virtual void DestroyModel(dAnimationJointRoot* const model);
+	//dAnimationJointRoot* CreateModel(NewtonBody* const bone, const dMatrix& bindMatrix);
+	void AddModel(dAnimationJointRoot* const model);
+	void RemoveModel(dAnimationJointRoot* const model);
 
 	//virtual void OnDebug(dCustomJoint::dDebugDisplay* const debugContext) = 0;
-	virtual void OnPreUpdate(dAnimationJointRoot* const controller, dFloat timestep, int threadIndex) const = 0;
 	virtual void OnUpdateTransform(const dAnimationJoint* const bone, const dMatrix& localMatrix) const = 0;
 
 	protected:
 	virtual void OnDestroy();
+	virtual void OnPreUpdate(dAnimationJointRoot* const model, dFloat timestep);
+	virtual void OnPostUpdate(dAnimationJointRoot* const model, dFloat timestep) {}
+
+	private:
 	virtual void PreUpdate(dFloat timestep);
 	virtual void PostUpdate(dFloat timestep);
 
+	static void PreUpdate(NewtonWorld* const world, void* const context, int threadIndex);
+	static void PostUpdate(NewtonWorld* const world, void* const context, int threadIndex);
+
 	private:
 	dList<dAnimationJointRoot*> m_controllerList;
+	dFloat m_timestep;
+	//unsigned m_lock;
+
 };
 
 

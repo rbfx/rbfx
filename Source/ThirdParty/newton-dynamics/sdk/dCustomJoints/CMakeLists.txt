@@ -45,7 +45,7 @@ target_link_libraries (${projectName} newton dContainers dMath)
 
 
 if (NEWTON_BUILD_PROFILER)
-    target_link_libraries (${projectName} dTimeTracker)
+    target_link_libraries (${projectName} dProfiler)
 endif()
 
 if (MSVC)

@@ -143,7 +143,7 @@ void dNodeInfo::SetEditorFlags(unsigned flags)
 	m_editorFlags = flags;
 }
 
-void dNodeInfo::Serialize (TiXmlElement* const rootNode) const
+void dNodeInfo::Serialize (TiXmlElement* const rootNode) 
 {
 	rootNode->SetAttribute("name", m_name.GetStr());
 	rootNode->SetAttribute("nodeID", m_uniqueID);

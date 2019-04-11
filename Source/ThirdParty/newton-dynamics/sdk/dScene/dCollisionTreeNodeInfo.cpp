@@ -80,7 +80,7 @@ void dCollisionTreeNodeInfo::CalculateInertiaGeometry (dScene* const world, dVec
 }
 
 
-void dCollisionTreeNodeInfo::Serialize (TiXmlElement* const rootNode) const
+void dCollisionTreeNodeInfo::Serialize (TiXmlElement* const rootNode) 
 {
 	SerialiseBase(dCollisionNodeInfo, rootNode);
 	SerializeMesh (m_mesh, rootNode);;

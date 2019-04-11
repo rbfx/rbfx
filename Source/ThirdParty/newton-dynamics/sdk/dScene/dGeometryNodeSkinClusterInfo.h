@@ -34,7 +34,7 @@ class dGeometryNodeSkinClusterInfo: public dNodeInfo
 	DSCENE_API virtual void RemoveUnusedVertices(const int* const verteMap);
 	DSCENE_API virtual void BakeTransform (const dMatrix& matrix);
 
-	DSCENE_API virtual void Serialize (TiXmlElement* const rootNode) const;
+	DSCENE_API virtual void Serialize (TiXmlElement* const rootNode);
 	DSCENE_API virtual bool Deserialize (const dScene* const scene, TiXmlElement* const rootNode);
 
 	dMatrix m_basePoseMatrix;

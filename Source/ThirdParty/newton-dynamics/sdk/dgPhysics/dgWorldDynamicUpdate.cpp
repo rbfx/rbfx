@@ -88,7 +88,7 @@ dgWorldDynamicUpdate::dgWorldDynamicUpdate(dgMemoryAllocator* const allocator)
 
 void dgWorldDynamicUpdate::UpdateDynamics(dgFloat32 timestep)
 {
-	DG_TRACKTIME(__FUNCTION__);
+	D_TRACKTIME();
 
 	m_bodies = 0;
 	m_joints = 0;
@@ -182,7 +182,7 @@ dgInt32 dgWorldDynamicUpdate::CompareClusterInfos(const dgBodyCluster* const clu
 
 void dgWorldDynamicUpdate::BuildClusters(dgFloat32 timestep)
 {
-	DG_TRACKTIME(__FUNCTION__);
+	DG_TRACKTIME();
 	dgWorld* const world = (dgWorld*) this;
 	dgContactList& contactList = *world;
 	dgBodyMasterList& masterList = *world;
@@ -414,7 +414,7 @@ dgInt32 dgWorldDynamicUpdate::CompareBodyJacobianPair(const dgBodyJacobianPair* 
 
 dgInt32 dgWorldDynamicUpdate::SortClusters(const dgBodyCluster* const cluster, dgFloat32 timestep, dgInt32 threadID) const
 {
-	DG_TRACKTIME(__FUNCTION__);
+	DG_TRACKTIME();
 	dgWorld* const world = (dgWorld*) this;
 	dgBodyInfo* const bodyArray = &world->m_bodiesMemory[cluster->m_bodyStart];
 	dgJointInfo* const constraintArray = &world->m_jointsMemory[cluster->m_jointStart];
@@ -888,8 +888,7 @@ void dgWorldDynamicUpdate::IntegrateVelocity(const dgBodyCluster* const cluster,
 
 	dgInt32 count = cluster->m_bodyCount - 1;
 	if (count <= 2) {
-		//bool autosleep = bodyArray[0].m_body->m_autoSleep;
-		bool equilibrium = bodyArray[0].m_body->m_equilibrium;
+		dgInt32 equilibrium = bodyArray[0].m_body->m_equilibrium;
 		if (count == 2) {
 			equilibrium &= bodyArray[1].m_body->m_equilibrium;
 		}
@@ -908,7 +907,6 @@ void dgWorldDynamicUpdate::IntegrateVelocity(const dgBodyCluster* const cluster,
 	dgVector velocDragVect(velocityDragCoeff, velocityDragCoeff, velocityDragCoeff, dgFloat32(0.0f));
 
 	bool stackSleeping = true;
-	//bool isClusterResting = true;
 	dgInt32 sleepCounter = 10000;
 	for (dgInt32 i = 0; i < count; i++) {
 		dgBody* const body = bodyArray[i].m_body;
@@ -944,9 +942,7 @@ void dgWorldDynamicUpdate::IntegrateVelocity(const dgBodyCluster* const cluster,
 			}
 
 			body->m_equilibrium = equilibrium ? 1 : 0;
-			//body->m_equilibrium &= body->m_autoSleep;
 			stackSleeping &= equilibrium;
-			//isClusterResting &= (body->m_autoSleep & equilibrium);
 			if (body->IsRTTIType(dgBody::m_dynamicBodyRTTI)) {
 				dgDynamicBody* const dynBody = (dgDynamicBody*)body;
 				sleepCounter = dgMin(sleepCounter, dynBody->m_sleepingCounter);
@@ -957,7 +953,6 @@ void dgWorldDynamicUpdate::IntegrateVelocity(const dgBodyCluster* const cluster,
 		}
 	}
 
-//	if (isClusterResting && cluster->m_jointCount) {
 	if (cluster->m_jointCount) {
 		if (stackSleeping) {
 			for (dgInt32 i = 0; i < count; i++) {
@@ -968,6 +963,8 @@ void dgWorldDynamicUpdate::IntegrateVelocity(const dgBodyCluster* const cluster,
 				body->m_veloc = dgVector::m_zero;
 				body->m_omega = dgVector::m_zero;
 				body->m_sleeping = body->m_autoSleep;
+				// force entire island to equilibrium
+				body->m_equilibrium = 1;
 			}
 		} else {
 			bool state = (maxAccel > world->m_sleepTable[DG_SLEEP_ENTRIES - 1].m_maxAccel) ||
@@ -1006,6 +1003,8 @@ void dgWorldDynamicUpdate::IntegrateVelocity(const dgBodyCluster* const cluster,
 						body->m_veloc = dgVector::m_zero;
 						body->m_omega = dgVector::m_zero;
 						body->m_sleeping = body->m_autoSleep;
+						// force entire island to equilibrium
+						body->m_equilibrium = 1;
 						if (body->IsRTTIType(dgBody::m_dynamicBodyRTTI)) {
 							dgDynamicBody* const dynBody = (dgDynamicBody*)body;
 							dynBody->m_sleepingCounter = 0;

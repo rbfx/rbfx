@@ -93,6 +93,7 @@ namespace Urho3D
     struct PhysicsRayCastIntersection {
         NewtonBody* body_ = nullptr;
         NewtonCollision* collision_ = nullptr;
+        NewtonCollision* subCollision_ = nullptr;
         float rayIntersectParameter_ = -1.0f;
 
         RigidBody* rigBody_ = nullptr;
@@ -102,12 +103,15 @@ namespace Urho3D
         float rayDistance_ = -1.0f;
         Vector3 rayOriginWorld_;
     };
+
+    URHO3D_API void PrintPhysicsRayCastIntersection(PhysicsRayCastIntersection& intersection);
+
     inline bool PhysicsRayCastIntersectionCompare(PhysicsRayCastIntersection& intersect1, PhysicsRayCastIntersection& intersect2) {
         return (intersect1.rayIntersectParameter_ < intersect2.rayIntersectParameter_);
     }
     struct PhysicsRayCastUserData {
-        PODVector<PhysicsRayCastIntersection> intersections;
-        bool singleIntersection_ = false;
+        Vector<PhysicsRayCastIntersection> intersections;
+        unsigned bodyIntersectionCounter_ = M_MAX_UNSIGNED;
     };
 
 
@@ -145,15 +149,15 @@ namespace Urho3D
         bool RigidBodyContainsPoint(RigidBody* rigidBody, const Vector3&worldPoint);
         /// Return rigid bodies by a ray query. bodies are returned in order from closest to farthest along the ray.
         void RayCast(
-            PODVector<PhysicsRayCastIntersection>& intersections,
+            Vector<PhysicsRayCastIntersection>& intersections,
             const Ray& ray, float maxDistance = M_LARGE_VALUE,
-            unsigned maxIntersections = M_MAX_UNSIGNED,
+            unsigned maxBodyIntersections = M_MAX_UNSIGNED,
             unsigned collisionMask = M_MAX_UNSIGNED);
         /// Return rigid bodies by a ray query.
         void RayCast(
-            PODVector<PhysicsRayCastIntersection>& intersections,
+            Vector<PhysicsRayCastIntersection>& intersections,
             const Vector3& pointOrigin, const Vector3& pointDestination,
-            unsigned maxIntersections = M_MAX_UNSIGNED,
+            unsigned maxBodyIntersections = M_MAX_UNSIGNED,
             unsigned collisionMask = M_MAX_UNSIGNED);
 
 
@@ -201,6 +205,8 @@ namespace Urho3D
         void Update(float timestep, bool isRootUpdate);
 
         virtual void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
+
+        void DrawDebugGeometry(DebugRenderer* debug, bool drawConstraints, bool drawContacts, bool drawRigidBodies, bool depthTest);
 
 
         RigidBodyContactEntry* GetCreateContactEntry(RigidBody* body0, RigidBody* body1);

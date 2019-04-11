@@ -54,3 +54,56 @@ void dCustomListener::OnDestroyBody (const NewtonWorld* const world, void* const
 	dAssert (me->m_world == world);
 	me->OnDestroyBody(body);
 }
+
+
+
+dCustomParallelListener::dCustomParallelListener(NewtonWorld* const world, const char* const listenerName)
+	:dCustomListener(world, listenerName)
+	,m_timestep(0.0f)
+{
+}
+
+dCustomParallelListener::~dCustomParallelListener()
+{
+}
+
+void dCustomParallelListener::ParallerListenPreUpdateCallback(NewtonWorld* const world, void* const context, int threadIndex)
+{
+	D_TRACKTIME();
+	dCustomParallelListener* const manager = (dCustomParallelListener*)context;
+	manager->PreUpdate(manager->m_timestep, threadIndex);
+}
+
+void dCustomParallelListener::ParallerListenPostUpdateCallback(NewtonWorld* const world, void* const context, int threadIndex)
+{
+	D_TRACKTIME();
+	dCustomParallelListener* const manager = (dCustomParallelListener*)context;
+	manager->PostUpdate(manager->m_timestep, threadIndex);
+}
+
+void dCustomParallelListener::PreUpdate(dFloat timestep)
+{
+	D_TRACKTIME();
+	m_timestep = timestep;
+	NewtonWorld* const world = GetWorld();
+
+	int threadCount = NewtonGetThreadsCount(world);
+	for (int i = 0; i < threadCount; i ++) {
+		NewtonDispachThreadJob(world, ParallerListenPreUpdateCallback, this, "dCustomParallelListener");
+	}
+	NewtonSyncThreadJobs(world);
+}
+
+void dCustomParallelListener::PostUpdate(dFloat timestep)
+{
+	D_TRACKTIME();
+	m_timestep = timestep;
+	NewtonWorld* const world = GetWorld();
+
+	int threadCount = NewtonGetThreadsCount(world);
+	for (int i = 0; i < threadCount; i++) {
+		NewtonDispachThreadJob(world, ParallerListenPostUpdateCallback, this, "dCustomParallelListener");
+	}
+	NewtonSyncThreadJobs(world);
+}
+

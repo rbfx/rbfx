@@ -66,6 +66,10 @@ dgWorldPlugin* GetPlugin(dgWorld* const world, dgMemoryAllocator* const allocato
 	} else {
 		return NULL;
 	}
+#elif defined (_MACOSX_VER)
+	static dgWorldBase module(world, allocator);
+	module.m_score = 3;
+	return &module;
 #endif
 }
 
@@ -95,6 +99,5 @@ dgInt32 dgWorldBase::GetScore() const
 
 void dgWorldBase::CalculateJointForces(const dgBodyCluster& cluster, dgBodyInfo* const bodyArray, dgJointInfo* const jointArray, dgFloat32 timestep)
 {
-	DG_TRACKTIME_NAMED(GetId());
 	dgSolver::CalculateJointForces(cluster, bodyArray, jointArray, timestep);
 }

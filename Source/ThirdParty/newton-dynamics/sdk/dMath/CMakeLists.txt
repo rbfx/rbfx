@@ -41,6 +41,9 @@ if (MSVC)
 endif(MSVC)
 
 
+if (NEWTON_BUILD_PROFILER)
+    target_link_libraries (${projectName} dProfiler)
+endif()
 target_include_directories(${projectName} PUBLIC 
 $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/newton-dynamics/sdk/${projectName}> 

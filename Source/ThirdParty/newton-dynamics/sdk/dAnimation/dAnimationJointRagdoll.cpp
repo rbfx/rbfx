@@ -135,7 +135,7 @@ class dAnimationJointRagdoll::dRagDollMotor: public dCustomBallAndSocket
 		dVector relOmega(omega0 - omega1);
 
 		// do twist angle calculations
-		dMatrix twistMatrix(matrix0 * (matrix1 * coneRotation).Inverse());
+//		dMatrix twistMatrix(matrix0 * (matrix1 * coneRotation).Inverse());
 //		dFloat twistAngle = m_twistAngle.Update(dAtan2(twistMatrix[1][2], twistMatrix[1][1]));
 		if (m_options.m_option0) {
 			dAssert(0);
@@ -231,11 +231,17 @@ class dAnimationJointRagdoll::dRagDollMotor: public dCustomBallAndSocket
 		}
 	}
 
+	int GetStructuralDOF() const
+	{
+		return 3;
+	}
+
 	dAnimationJointRagdoll* m_owner;
 };
 
 dAnimationJointRagdoll::dAnimationJointRagdoll(const dMatrix& pinAndPivotInGlobalSpace, NewtonBody* const body, const dMatrix& bindMarix, dAnimationJoint* const parent)
 	:dAnimationJoint(body, bindMarix, parent)
+	,dAnimationContraint()
 {
 //	dJointDefinition::dJointLimit jointLimits(definition.m_jointLimits);
 	dMatrix parentRollMatrix(dGetIdentityMatrix() * pinAndPivotInGlobalSpace);
@@ -250,9 +256,59 @@ dAnimationJointRagdoll::dAnimationJointRagdoll(const dMatrix& pinAndPivotInGloba
 	//joint->EnableTwist(true);
 	//joint->SetTwistFriction(friction);
 	//joint->SetTwistLimits(jointLimits.m_minTwistAngle * dDegreeToRad, jointLimits.m_maxTwistAngle * dDegreeToRad);
+
+	m_proxyJoint = this;
+	Init(GetProxyBody(), parent->GetProxyBody());
 }
 
 dAnimationJointRagdoll::~dAnimationJointRagdoll()
 {
+}
 
+void dAnimationJointRagdoll::RigidBodyToStates()
+{
+	dAnimationJoint::RigidBodyToStates();
+	m_proxyBody.SetForce(dVector(0.0f));
+	m_proxyBody.SetTorque(dVector(0.0f));
+}
+
+void dAnimationJointRagdoll::JacobianDerivative(dComplementaritySolver::dParamInfo* const constraintParams)
+{
+	m_rowAccel = dVector (0.0f);
+	NewtonImmediateModeConstraint descriptor;
+
+	dRagDollMotor* const ragDollJoint = (dRagDollMotor*) m_joint;
+	NewtonJoint* const newtonJoint = ragDollJoint->GetJoint();
+	const int rows = NewtonUserJointSubmitImmediateModeConstraint(newtonJoint, &descriptor, constraintParams->m_timestep);
+	const int fixdof = ragDollJoint->GetStructuralDOF();
+	dAssert (rows >= fixdof);
+
+	for (int i = 0; i < fixdof; i++) {
+		constraintParams->m_jacobians[i].m_jacobian_J01.m_linear = dVector(descriptor.m_jacobian01[i][0], descriptor.m_jacobian01[i][1], descriptor.m_jacobian01[i][2], dFloat(0.0f));
+		constraintParams->m_jacobians[i].m_jacobian_J01.m_angular = dVector(descriptor.m_jacobian01[i][3], descriptor.m_jacobian01[i][4], descriptor.m_jacobian01[i][5], dFloat(0.0f));
+		constraintParams->m_jacobians[i].m_jacobian_J10.m_linear = dVector(descriptor.m_jacobian10[i][0], descriptor.m_jacobian10[i][1], descriptor.m_jacobian10[i][2], dFloat(0.0f));
+		constraintParams->m_jacobians[i].m_jacobian_J10.m_angular = dVector(descriptor.m_jacobian10[i][3], descriptor.m_jacobian10[i][4], descriptor.m_jacobian10[i][5], dFloat(0.0f));
+		constraintParams->m_jointAccel[i] = descriptor.m_jointAccel[i];
+		constraintParams->m_jointLowFrictionCoef[i] = descriptor.m_minFriction[i];
+		constraintParams->m_jointHighFrictionCoef[i] = descriptor.m_maxFriction[i];
+		constraintParams->m_normalIndex[i] = 0;
+	}
+
+	for (int i = fixdof; i < rows; i++) {
+		const int j = i - fixdof;
+		m_jacobial01[j].m_linear = dVector(descriptor.m_jacobian01[i][0], descriptor.m_jacobian01[i][1], descriptor.m_jacobian01[i][2], dFloat(0.0f));
+		m_jacobial01[j].m_angular = dVector(descriptor.m_jacobian01[i][3], descriptor.m_jacobian01[i][4], descriptor.m_jacobian01[i][5], dFloat(0.0f));
+	
+		m_jacobial10[j].m_linear = dVector(descriptor.m_jacobian10[i][0], descriptor.m_jacobian10[i][1], descriptor.m_jacobian10[i][2], dFloat(0.0f));
+		m_jacobial10[j].m_angular = dVector(descriptor.m_jacobian10[i][3], descriptor.m_jacobian10[i][4], descriptor.m_jacobian10[i][5], dFloat(0.0f));
+	}
+
+	m_dof = fixdof;
+	m_count = fixdof;
+	constraintParams->m_count = fixdof;
+}
+
+void dAnimationJointRagdoll::UpdateSolverForces(const dComplementaritySolver::dJacobianPair* const jacobians) const
+{
+	dAssert (0);
 }

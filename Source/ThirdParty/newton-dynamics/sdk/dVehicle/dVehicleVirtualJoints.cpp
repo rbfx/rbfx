@@ -450,7 +450,7 @@ void dEngineCrankJoint::JacobianDerivative(dComplementaritySolver::dParamInfo* c
 dGearBoxJoint::dGearBoxJoint()
 //	:dAnimIDRigKinematicLoopJoint()
 	:m_gearRatio(0.0f)
-	,m_crowndGear(1.0f)
+//	,m_crowndGear(1.0f)
 	,m_clutchTorque(1000.0f)
 {
 	dAssert(0);

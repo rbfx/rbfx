@@ -62,7 +62,9 @@ namespace Urho3D {
 
 
 
-    dFloat Newton_WorldRayCastFilterCallback(const NewtonBody* const body, const NewtonCollision* const collisionHit, const dFloat* const contact, const dFloat* const normal, dLong collisionID, void* const userData, dFloat intersetParam)
+    dFloat Newton_WorldRayCastFilterCallback(const NewtonBody* const body,
+        const NewtonCollision* const collisionHit, const dFloat* const contact,
+        const dFloat* const normal, dLong collisionID, void* const userData, dFloat intersetParam)
     {
         PhysicsRayCastUserData*  data = (PhysicsRayCastUserData*)userData;
 
@@ -75,10 +77,11 @@ namespace Urho3D {
         intersection.rigBody_ = (RigidBody*)NewtonBodyGetUserData(body);
         intersection.collisionShape_ = (CollisionShape*)NewtonCollisionGetUserData(collisionHit);
         data->intersections += intersection;
+        data->bodyIntersectionCounter_--;
 
         URHO3D_LOGINFO("RayIntersection: " + String((int)(void*)collisionHit) + ", " + String(collisionID));
 
-        if (!data->singleIntersection_) {
+        if (data->bodyIntersectionCounter_ > 0) {
             //continue
             return 1.0f;
         }

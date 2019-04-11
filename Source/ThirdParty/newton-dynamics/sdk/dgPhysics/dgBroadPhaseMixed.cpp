@@ -341,7 +341,7 @@ void dgBroadPhaseMixed::DestroyAggregate(dgBroadPhaseAggregate* const aggregate)
 
 void dgBroadPhaseMixed::FindCollidingPairs(dgBroadphaseSyncDescriptor* const descriptor, dgList<dgBroadPhaseNode*>::dgListNode* const nodePtr, dgInt32 threadID)
 {
-	DG_TRACKTIME(__FUNCTION__);
+	DG_TRACKTIME();
 	const dgFloat32 timestep = descriptor->m_timestep;
 
 	dgList<dgBroadPhaseNode*>::dgListNode* node = nodePtr;

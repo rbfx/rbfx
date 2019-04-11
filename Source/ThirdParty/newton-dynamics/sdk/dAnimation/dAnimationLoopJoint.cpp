@@ -15,18 +15,10 @@
 //#include "dAnimationJoint.h"
 //#include "dAnimationLoopJoint.h"
 
-dAnimationLoopJoint::dAnimationLoopJoint()
+dAnimationLoopJoint::dAnimationLoopJoint(dAnimationBody* const owner0, dAnimationBody* const owner1)
 	:dCustomAlloc()
-	,dComplementaritySolver::dBilateralJoint()
-	,m_owner0(NULL)
-	,m_owner1(NULL)
-	,m_isActive(false)
+	,dAnimationContraint()
+	,m_isActive(true)
 {
-}
-
-void dAnimationLoopJoint::SetOwners(dAnimationJoint* const owner0, dAnimationJoint* const owner1)
-{
-	m_owner0 = owner0;
-	m_owner1 = owner1;
-	Init(m_owner0->GetProxyBody(), m_owner1->GetProxyBody());
+	Init (owner0, owner1);
 }

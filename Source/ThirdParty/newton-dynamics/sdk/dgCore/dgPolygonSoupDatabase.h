@@ -50,8 +50,7 @@ class dgPolygonSoupDatabase
 
 	virtual void Serialize (dgSerialize callback, void* const userData) const = 0;
 	virtual void Deserialize (dgDeserialize callback, void* const userData, dgInt32 revisionNumber) = 0;
-
-	
+		
 	protected:
 	dgPolygonSoupDatabase(const char* const name = NULL);
 	virtual ~dgPolygonSoupDatabase ();
@@ -61,52 +60,6 @@ class dgPolygonSoupDatabase
 	dgFloat32* m_localVertex;
 };
 
-
-inline dgPolygonSoupDatabase::dgPolygonSoupDatabase(const char* const name)
-{
-	m_vertexCount = 0;
-	m_strideInBytes = 0;
-	m_localVertex = NULL;
-}
-
-inline dgPolygonSoupDatabase::~dgPolygonSoupDatabase ()
-{
-	if (m_localVertex) {
-		dgFreeStack (m_localVertex);
-	}
-}
-
-
-inline dgUnsigned32 dgPolygonSoupDatabase::GetTagId(const dgInt32* const face, dgInt32 indexCount) const
-{
-	return dgUnsigned32 (face[indexCount]);
-}
-
-inline void dgPolygonSoupDatabase::SetTagId(const dgInt32* const facePtr, dgInt32 indexCount, dgUnsigned32 newID) const
-{
-	dgUnsigned32* const face = (dgUnsigned32*) facePtr;
-	face[indexCount] = newID;
-}
-
-inline dgInt32 dgPolygonSoupDatabase::GetVertexCount()	const
-{
-	return m_vertexCount;
-}
-
-inline dgFloat32* dgPolygonSoupDatabase::GetLocalVertexPool() const
-{
-	return m_localVertex;
-}
-
-inline dgInt32 dgPolygonSoupDatabase::GetStrideInBytes() const
-{
-	return m_strideInBytes;
-}
-
-inline dgFloat32 dgPolygonSoupDatabase::GetRadius() const
-{
-	return 0.0f;
-}
 
 
 #endif

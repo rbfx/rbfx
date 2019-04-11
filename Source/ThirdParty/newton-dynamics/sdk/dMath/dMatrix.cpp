@@ -166,18 +166,18 @@ bool dMatrix::TestOrthogonal() const
 
 void dMatrix::GetEulerAngles(dVector& euler0, dVector& euler1, dEulerAngleOrder order) const
 {
+	// Assuming the angles are in radians.
+#ifdef _NEWTON_USE_DOUBLE
+	const dFloat tol = 0.99999995f;
+#else 
+	const dFloat tol = 0.99995f;
+#endif
+
 	switch (order)
 	{
 		case m_pitchYawRoll:
 		{
 			const dMatrix& matrix = *this;
-			// Assuming the angles are in radians.
-			#ifdef _NEWTON_USE_DOUBLE
-			const dFloat tol = 0.99999995f; 
-			#else 
-			const dFloat tol = 0.99995f; 
-			#endif
-
 			if (matrix[0][2] > tol) {
 				dFloat picth0 = 0.0f;
 				dFloat yaw0 = -dPi * 0.5f;
@@ -243,7 +243,7 @@ void dMatrix::GetEulerAngles(dVector& euler0, dVector& euler1, dEulerAngleOrder 
 		{
 			const dMatrix& matrix = *this;
 			//dMatrix matrix(dPitchMatrix(30.0f * dDegreeToRad) * dRollMatrix(-90.0f * dDegreeToRad) * dYawMatrix(50.0f * dDegreeToRad));
-			if (matrix[0][1] > 0.99995f) {
+			if (matrix[0][1] > tol) {
 
 				dFloat picth0 = 0.0f;
 				dFloat roll0 = dFloat (dPi * 0.5f);
@@ -257,7 +257,7 @@ void dMatrix::GetEulerAngles(dVector& euler0, dVector& euler1, dEulerAngleOrder 
 				euler1[1] = yaw0;
 				euler1[2] = roll0;
 
-			} else if (matrix[0][1] < -0.99995f) {
+			} else if (matrix[0][1] < -tol) {
 
 				dFloat picth0 = 0.0f;
 				dFloat roll0 = dFloat(-dPi * 0.5f);
@@ -317,7 +317,7 @@ void dMatrix::GetEulerAngles(dVector& euler0, dVector& euler1, dEulerAngleOrder 
 			const dMatrix& matrix = *this;
 
 			// Assuming the angles are in radians.
-			if (matrix[a0][a2] > 0.99995f) {
+			if (matrix[a0][a2] > tol) {
 				dFloat picth0 = 0.0f;
 				dFloat yaw0 = -3.141592f * 0.5f;
 				dFloat roll0 = -dAtan2(matrix[a2][a1], matrix[a1][a1]);
@@ -329,7 +329,7 @@ void dMatrix::GetEulerAngles(dVector& euler0, dVector& euler1, dEulerAngleOrder 
 				euler1[a1] = yaw0;
 				euler1[a2] = roll0;
 
-			} else if (matrix[a0][a2] < -0.99995f) {
+			} else if (matrix[a0][a2] < -tol) {
 				dFloat picth0 = 0.0f;
 				dFloat yaw0 = 3.141592f * 0.5f;
 				dFloat roll0 = dAtan2(matrix[a2][a1], matrix[a1][a1]);
@@ -568,6 +568,18 @@ dMatrix dMatrix::Inverse4x4 () const
 			inv[i][k] = den * (inv[i][k] - acc[k]);
 		}
 	}
+
+#ifdef _DEBUG
+	tmp = *this * inv;
+	for (int i = 0; i < 4; i++) {
+		dAssert(dAbs(tmp[i][i] - dFloat(1.0f)) < dFloat(1.0e-6f));
+		for (int j = i + 1; j < 4; j++) {
+			dAssert(dAbs(tmp[i][j]) < dFloat(1.0e-6f));
+			dAssert(dAbs(tmp[j][i]) < dFloat(1.0e-6f));
+		}
+	}
+#endif
+
 	return inv;
 }
 
@@ -857,3 +869,106 @@ dMatrix::dMatrix (const dMatrix& transformMatrix, const dVector& scale, const dM
 
 	*this = stretchAxis.Transpose() * scaledAxis * transformMatrix;
 }
+
+
+dSpatialMatrix dSpatialMatrix::Inverse(int rows) const
+{
+	dSpatialMatrix tmp(*this);
+	dSpatialMatrix inv(0.0f);
+	for (int i = 0; i < rows; i++) {
+		inv[i][i] = dFloat(1.0f);
+	}
+
+#if 0
+	for (int i = 0; i < rows; i++) {
+		dFloat val = tmp[i][i];
+		dAssert(dAbs(val) > 1.0e-12f);
+		dFloat den = 1.0f / val;
+
+		tmp[i] = tmp[i].Scale(den);
+		tmp[i][i] = 1.0f;
+		inv[i] = inv[i].Scale(den);
+
+		for (int j = 0; j < i; j++) {
+			dFloat pivot = -tmp[j][i];
+			tmp[j] = tmp[j] + tmp[i].Scale(pivot);
+			inv[j] = inv[j] + inv[i].Scale(pivot);
+		}
+
+		for (int j = i + 1; j < rows; j++) {
+			dFloat pivot = -tmp[j][i];
+			tmp[j] = tmp[j] + tmp[i].Scale(pivot);
+			inv[j] = inv[j] + inv[i].Scale(pivot);
+		}
+	}
+
+#else
+
+	for (int i = 0; i < rows; i++) {
+		dFloat pivot = dAbs(tmp[i][i]);
+		dAssert(pivot >= 0.01f);
+		if (pivot <= 0.01f) {
+			int permute = i;
+			for (int j = i + 1; j < rows; j++) {
+				dFloat pivot1 = dAbs(tmp[j][i]);
+				if (pivot1 > pivot) {
+					permute = j;
+					pivot = pivot1;
+				}
+			}
+			dAssert(pivot > dFloat(1.0e-6f));
+			if (permute != i) {
+				for (int j = 0; j < rows; j++) {
+					dSwap(tmp[i][j], tmp[permute][j]);
+					dSwap(tmp[i][j], tmp[permute][j]);
+				}
+			}
+		}
+
+		for (int j = i + 1; j < rows; j++) {
+			dFloat scale = tmp[j][i] / tmp[i][i];
+			tmp[j][i] = 0.0f;
+			for (int k = i + 1; k < rows; k++) {
+				tmp[j][k] -= scale * tmp[i][k];
+			}
+			for (int k = 0; k <= i; k++) {
+				inv[j][k] -= scale * inv[i][k];
+			}
+		}
+	}
+
+	for (int i = rows - 1; i >= 0; i--) {
+		dSpatialVector acc(0.0f);
+		for (int j = i + 1; j < rows; j++) {
+			dFloat pivot = tmp[i][j];
+			for (int k = 0; k < rows; k++) {
+				acc[k] += pivot * inv[j][k];
+			}
+		}
+		dFloat den = 1.0f / tmp[i][i];
+		for (int k = 0; k < rows; k++) {
+			inv[i][k] = den * (inv[i][k] - acc[k]);
+		}
+	}
+#endif
+
+#ifdef _DEBUG
+	for (int i = 0; i < rows; i++) {
+		for (int j = 0; j < rows; j++) {
+			tmp[i][j] = m_rows[j][i];
+		}
+	}
+	for (int i = 0; i < rows; i++) {
+		dSpatialVector v(inv.VectorTimeMatrix (tmp[i], rows));
+		dAssert (dAbs (v[i] - dFloat (1.0f)) < dFloat(1.0e-6f));
+		for (int j = 0; j < rows; j++) {
+			if (j != i) {
+				dAssert (dAbs (v[j]) < dFloat(1.0e-6f));
+			}
+		}
+	}
+#endif
+
+	return inv;
+}
+

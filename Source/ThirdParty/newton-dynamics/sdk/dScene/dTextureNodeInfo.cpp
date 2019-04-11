@@ -62,7 +62,7 @@ void dTextureNodeInfo::SetPathName (const char* const path)
 }
 
 
-void dTextureNodeInfo::Serialize (TiXmlElement* const rootNode) const
+void dTextureNodeInfo::Serialize (TiXmlElement* const rootNode) 
 {
 	SerialiseBase(dNodeInfo, rootNode);
 	rootNode->SetAttribute("path", m_path.GetStr());

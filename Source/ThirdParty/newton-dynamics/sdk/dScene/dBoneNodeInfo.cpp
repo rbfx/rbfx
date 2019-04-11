@@ -66,7 +66,7 @@ dBoneNodeInfo::dBoneType dBoneNodeInfo::GetType() const
 	return m_type;
 }
 
-void dBoneNodeInfo::Serialize (TiXmlElement* const rootNode) const
+void dBoneNodeInfo::Serialize (TiXmlElement* const rootNode) 
 {
 	SerialiseBase(dNodeInfo, rootNode);
 

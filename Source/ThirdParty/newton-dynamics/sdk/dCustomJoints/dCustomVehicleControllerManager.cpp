@@ -1201,8 +1201,8 @@ class dCustomVehicleController::dTireFilter: public dCustomControllerConvexCastP
 	public:
 	dTireFilter(const dWheelJoint* const tire, const dCustomVehicleController* const controller)
 		:dCustomControllerConvexCastPreFilter(tire->GetTireBody())
-		, m_controller(controller)
-		, m_tire(tire)
+        ,m_tire(tire)
+        ,m_controller(controller)
 	{
 	}
 
@@ -2153,7 +2153,7 @@ void dCustomVehicleController::Debug(dCustomJoint::dDebugDisplay* const debugCon
 		tireMatrix.m_posit += matrix.m_right.Scale (sign * 0.25f);
 
 		// draw the tire load 
-		dVector normalLoad (GetTireNormalForce(jointJont));
+		//dVector normalLoad (GetTireNormalForce(jointJont));
 		//dVector p0 (tireMatrix.m_posit);
 		//dVector p1 (p0 + normalLoad.Scale (scale));
 
@@ -2735,7 +2735,7 @@ dTrace(("(x:%f z:%f)] ", longitudinalAccel, lateralAccel));
 
 void dCustomVehicleController::CalculateTireForces(dFloat timestep, int threadID)
 {
-	dMatrix axisMatrix(GetBasisMatrix());
+	//dMatrix axisMatrix(GetBasisMatrix());
 	dVector veloc(0.0f);
 	dVector omega(0.0f);
 	dVector force(0.0f);

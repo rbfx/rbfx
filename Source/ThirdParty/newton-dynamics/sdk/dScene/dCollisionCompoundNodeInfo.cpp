@@ -78,7 +78,7 @@ void dCollisionCompoundNodeInfo::CalculateInertiaGeometry (dScene* const world, 
 }
 
 
-void dCollisionCompoundNodeInfo::Serialize (TiXmlElement* const rootNode) const
+void dCollisionCompoundNodeInfo::Serialize (TiXmlElement* const rootNode) 
 {
 	SerialiseBase(dCollisionNodeInfo, rootNode);
 	

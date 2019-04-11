@@ -169,10 +169,6 @@ namespace Urho3D {
     }
 
 
-    Urho3D::Matrix3x4 CollisionShape::GetPhysicsWorldTransform()
-    {
-        return node_->GetWorldTransform() * GetOffsetMatrix();
-    }
 
     void CollisionShape::SetStaticFriction(float staticFriction)
     {

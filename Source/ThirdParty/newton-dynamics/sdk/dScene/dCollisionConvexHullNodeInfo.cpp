@@ -124,7 +124,7 @@ void dCollisionConvexHullNodeInfo::CalculateInertiaGeometry (dScene* const world
 }
 
 
-void dCollisionConvexHullNodeInfo::Serialize (TiXmlElement* const rootNode) const
+void dCollisionConvexHullNodeInfo::Serialize (TiXmlElement* const rootNode) 
 {
 	SerialiseBase(dCollisionNodeInfo, rootNode);
 

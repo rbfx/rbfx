@@ -22,77 +22,25 @@
 #ifndef __DG_PROFILER_H__
 #define __DG_PROFILER_H__
 
-// uncomment out _DG_USE_PROFILER to enable profiler frame capture profiler traces
+// uncomment out _DG_USE_PROFILER to enable detail profile captures
 // alternatively the end application can use a command line option to enable this define
 //#define _DG_USE_PROFILER
 
-#ifdef _DG_USE_PROFILER
+#ifdef D_PROFILER
+	#include <dProfiler.h>
 
-void ttDeleteTrack();
-void ttStopRecording();
-void ttCloseRecord(int recordIndex);
-int ttOpenRecord(const char* const name);
-void ttSetTrackName(const char* const threadName);
-void ttStartRecording(const char* const fileName);
-
-inline void dProfilerSetTrackName(const char* const name)
-{
-	ttSetTrackName(name);
-}
-
-inline void dProfilerDeleteTrack()
-{
-	ttDeleteTrack();
-}
-
-inline void dProfilerStartRecording(const char* const fileName)
-{
-	ttStartRecording(fileName);
-}
-
-inline void dProfilerStopRecording()
-{
-	ttStopRecording();
-}
-
-
-class dgProfile
-{
-	public:
-	dgProfile(const char* const functionName)
-		:m_entry(ttOpenRecord(functionName))
-		,m_name(functionName)
-	{
-	}
-
-	~dgProfile()
-	{
-		ttCloseRecord(m_entry);
-	}
-
-	private:
-	dgInt32 m_entry;
-	const char* m_name;
-};
-
-#define DG_START_RECORDING(fileName) dProfilerStartRecording(fileName)
-#define DG_STOP_RECORDING() dProfilerStopRecording()
-
-#define DG_DELETE_TRACK() dProfilerDeleteTrack()
-#define DG_SET_TRACK_NAME(trackName) dProfilerSetTrackName(trackName)
-
-#define DG_TRACKTIME(name) dgProfile _profile##name(name);
-#define DG_TRACKTIME_NAMED(name) dgProfile _profile(name);
-
+	#define D_TRACKTIME() dProfilerZoneScoped(__FUNCTION__)
+	#define D_SET_TRACK_NAME(trackName) dProfilerSetTrackName(trackName)
 #else
+	#define D_TRACKTIME() 
+	#define D_SET_TRACK_NAME(trackName)
+#endif
 
-#define DG_START_RECORDING(fileName);
-#define DG_STOP_RECORDING();
-#define DG_TRACKTIME(name);
-#define DG_TRACKTIME_NAMED(name);
-#define DG_SET_TRACK_NAME(trackName);
-#define DG_DELETE_TRACK();
-
+	
+#ifdef _DG_USE_PROFILER
+	#define DG_TRACKTIME() D_TRACKTIME()
+#else
+	#define DG_TRACKTIME()
 #endif
 
 #endif

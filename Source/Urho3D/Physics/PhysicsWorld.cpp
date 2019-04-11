@@ -117,52 +117,6 @@ namespace Urho3D {
 
 
 
-    
-    void PhysicsWorld::RayCast(PODVector<PhysicsRayCastIntersection>& intersections, const Ray& ray, float maxDistance, unsigned maxIntersections, unsigned collisionMask /*= M_MAX_UNSIGNED*/)
-    {
-        RayCast( intersections, ray.origin_, ray.origin_ + ray.direction_*maxDistance, maxIntersections, collisionMask);
-    }
-
-    void PhysicsWorld::RayCast(PODVector<PhysicsRayCastIntersection>& intersections, const Vector3& pointOrigin, const Vector3& pointDestination, unsigned maxIntersections /*= M_MAX_UNSIGNED*/, unsigned collisionMask /*= M_MAX_UNSIGNED*/)
-    {
-        WaitForUpdateFinished();
-
-        intersections.Clear();
-        PhysicsRayCastUserData data;
-
-        Vector3 origin = (pointOrigin);
-        Vector3 destination = (pointDestination);
-
-
-        NewtonWorldRayCast(newtonWorld_, &UrhoToNewton(origin)[0], &UrhoToNewton(destination)[0], Newton_WorldRayCastFilterCallback, &data, NULL, 0);
-
-        //sort the intersections by distance. we do this because the order that you get is based off bounding box intersection and that is not nessecarily the same of surface intersection order.
-        if (data.intersections.Size() > 1)
-            Sort(data.intersections.Begin(), data.intersections.End(), PhysicsRayCastIntersectionCompare);
-
-
-        int intersectCount = 0;
-        for (PhysicsRayCastIntersection& intersection : data.intersections)
-        {
-
-            unsigned collisionLayerAsBit = CollisionLayerAsBit(intersection.rigBody_->GetCollisionLayer());
-
-
-            if ((intersectCount <= maxIntersections)
-                && (collisionLayerAsBit & collisionMask)) {
-
-
-                intersection.rayIntersectWorldPosition_ = (intersection.rayIntersectWorldPosition_);
-                intersection.rayOriginWorld_ = pointOrigin;
-                intersection.rayDistance_ = (intersection.rayIntersectWorldPosition_ - pointOrigin).Length();
-
-                intersections += intersection;
-                intersectCount++;
-
-            }
-        }
-    }
-
     void PhysicsWorld::SetGravity(const Vector3& force)
     {
         gravity_ = force;
@@ -217,34 +171,44 @@ namespace Urho3D {
 
     void PhysicsWorld::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
     {
+        DrawDebugGeometry(debug, true, true, true, depthTest);
+    }
+
+    void PhysicsWorld::DrawDebugGeometry(DebugRenderer* debug, bool drawConstraints, bool drawContacts, bool drawRigidBodies, bool depthTest)
+    {
         URHO3D_PROFILE_FUNCTION();
         if (debug)
         {
             WaitForUpdateFinished();
-            //draw debug geometry on constraints.
-            for (Constraint* constraint : constraintList)
+
+            if (drawConstraints) {
+                //draw debug geometry on constraints.
+                for (Constraint* constraint : constraintList)
+                {
+                    constraint->DrawDebugGeometry(debug, depthTest);
+                }
+            }
+
+            if (drawContacts) {
+                //draw debug geometry for contacts
+                for (int i = 0; i < contactEntryPool_.Size(); i++)
+                {
+                    if (!contactEntryPool_[i]->expired_)
+                        contactEntryPool_[i]->DrawDebugGeometry(debug, depthTest);
+                }
+            }
+
+            if (drawRigidBodies)
             {
-                constraint->DrawDebugGeometry(debug, depthTest);
+                //draw debug geometry on rigid bodies.
+                for (RigidBody* body : rigidBodyComponentList) {
+                    body->DrawDebugGeometry(debug, depthTest);
+                }
+
+                //draw debug geometry on static scene.
+                if (sceneBody_)
+                    sceneBody_->DrawDebugGeometry(debug, depthTest);
             }
-
-            //draw debug geometry for contacts
-            for (int i = 0; i < contactEntryPool_.Size(); i++)
-            {
-               if(!contactEntryPool_[i]->expired_)
-                   contactEntryPool_[i]->DrawDebugGeometry(debug, depthTest);
-            }
-
-
-            //draw debug geometry on rigid bodies.
-            for (RigidBody* body : rigidBodyComponentList) {
-                body->DrawDebugGeometry(debug, depthTest);
-            }
-
-            //draw debug geometry on static scene.
-            if (sceneBody_)
-                sceneBody_->DrawDebugGeometry(debug, depthTest);
-
-
         }
     }
 
@@ -866,6 +830,20 @@ namespace Urho3D {
 
     }
  
+
+    void PrintPhysicsRayCastIntersection(PhysicsRayCastIntersection& intersection)
+    {
+        URHO3D_LOGINFO("body_: " + String((int)(void*)intersection.body_));
+        URHO3D_LOGINFO("collision_: " + String((int)(void*)intersection.collision_));
+        URHO3D_LOGINFO("subCollision_: " + String((int)(void*)intersection.subCollision_));
+        URHO3D_LOGINFO("rayIntersectParameter_: " + String(intersection.rayIntersectParameter_));
+        URHO3D_LOGINFO("rigBody_: " + String((int)(void*)intersection.rigBody_));
+        URHO3D_LOGINFO("collisionShape_: " + String((int)(void*)intersection.collisionShape_));
+        URHO3D_LOGINFO("rayIntersectWorldPosition_: " + String(intersection.rayIntersectWorldPosition_));
+        URHO3D_LOGINFO("rayIntersectWorldNormal_: " + String(intersection.rayIntersectWorldNormal_));
+        URHO3D_LOGINFO("rayDistance_: " + String(intersection.rayDistance_));
+        URHO3D_LOGINFO("rayOriginWorld_: " + String(intersection.rayOriginWorld_));
+    }
 
     String NewtonThreadProfilerString(int threadIndex)
     {

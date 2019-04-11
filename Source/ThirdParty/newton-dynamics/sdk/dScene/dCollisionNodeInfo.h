@@ -55,7 +55,7 @@ class dCollisionNodeInfo: public dNodeInfo
 	protected:
 	virtual void CalculateGeometryProperies (NewtonCollision* shape, dVector& inertia, dVector& centerOfMass) const;
 
-	virtual void Serialize (TiXmlElement* const rootNode) const; 
+	virtual void Serialize (TiXmlElement* const rootNode); 
 	virtual bool Deserialize (const dScene* const scene, TiXmlElement* const rootNode);
 
 	dMatrix m_matrix;

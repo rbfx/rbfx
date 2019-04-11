@@ -137,6 +137,11 @@ if(NEWTON_WITH_SSE4_PLUGIN OR NEWTON_WITH_AVX_PLUGIN OR NEWTON_WITH_AVX2_PLUGIN)
   set(NEWTON_BUILD_SHARED_LIBS ON)
 endif()
 
+if(NEWTON_BUILD_PROFILER)
+	#add_definitions(-D_DG_USE_PROFILER)
+	add_definitions(-DD_PROFILER)
+endif()
+
 add_subdirectory(sdk)
 
 

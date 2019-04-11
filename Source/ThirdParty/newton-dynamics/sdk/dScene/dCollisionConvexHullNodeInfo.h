@@ -45,7 +45,7 @@ class dCollisionConvexHullNodeInfo: public dCollisionNodeInfo
 	// draw scene in wire frame mode
 
 	protected:
-	virtual void Serialize (TiXmlElement* const rootNode) const; 
+	virtual void Serialize (TiXmlElement* const rootNode) ; 
 	virtual bool Deserialize (const dScene* const scene, TiXmlElement* const rootNode);
 	NewtonCollision* CreateNewtonCollision (NewtonWorld* const world, dScene* const scene, dScene::dTreeNode* const myNode) const;
 	

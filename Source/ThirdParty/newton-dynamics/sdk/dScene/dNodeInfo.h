@@ -106,7 +106,7 @@ class dNodeInfo: public dClassInfo, public dVariableList
 	virtual unsigned GetEditorFlags() const;
 	virtual void SetEditorFlags(unsigned flags);
 	
-	virtual void Serialize (TiXmlElement* const rootNode) const; 
+	virtual void Serialize (TiXmlElement* const rootNode); 
 	virtual bool Deserialize (const dScene* const scene, TiXmlElement* const rootNode);
 
 	// draw scene in wire frame mode

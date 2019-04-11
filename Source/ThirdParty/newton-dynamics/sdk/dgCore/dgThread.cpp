@@ -165,12 +165,11 @@ void* dgThread::dgThreadSystemCallback(void* threadData)
 
 	dgThread* const me = (dgThread*) threadData;
 
-	DG_SET_TRACK_NAME(me->m_name);
+	D_SET_TRACK_NAME(me->m_name);
 
 	me->Execute(me->m_id);
 	dgInterlockedExchange(&me->m_threadRunning, 0);
 
-	DG_DELETE_TRACK();
 	return 0;
 }
 

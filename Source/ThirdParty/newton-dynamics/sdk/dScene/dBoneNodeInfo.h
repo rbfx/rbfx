@@ -65,7 +65,7 @@ class dBoneNodeInfo: public dNodeInfo
 	dBoneType m_type;
 //	void DrawOOBBGizmo (dScene* const world, dScene::dTreeNode* myNode) const;
 	
-	virtual void Serialize (TiXmlElement* const rootNode) const; 
+	virtual void Serialize (TiXmlElement* const rootNode); 
 	virtual bool Deserialize (const dScene* const scene, TiXmlElement* const rootNode);
 
 };

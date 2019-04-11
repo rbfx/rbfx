@@ -54,7 +54,7 @@ class dgVector
 	}
 
 	DG_INLINE dgVector (const dgFloat32* const ptr)
-		:m_x(ptr[0]), m_y(ptr[1]), m_z(ptr[2]), m_w (ptr[3]))
+		:m_x(ptr[0]), m_y(ptr[1]), m_z(ptr[2]), m_w (ptr[3])
 	{
 		dgAssert (dgCheckVector ((*this)));
 	}

@@ -58,7 +58,7 @@ class dSceneNodeInfo: public dNodeInfo
 	virtual dFloat RayCast (const dVector& p0, const dVector& p1) const;
 
 	protected:
-	virtual void Serialize (TiXmlElement* const rootNode) const; 
+	virtual void Serialize (TiXmlElement* const rootNode); 
 	virtual bool Deserialize (const dScene* const scene, TiXmlElement* const rootNode);
 
 	// the transformation of a node supports rotation, non uniform scaling and stretch

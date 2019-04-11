@@ -13,24 +13,25 @@
 #define __D_ANIMATION_LOOP_JOINT_H__
 
 #include "dAnimationStdAfx.h"
+#include "dAnimationJoint.h"
 
-class dAnimationJoint;
+//class dAnimationJoint;
 
-class dAnimationLoopJoint: public dCustomAlloc, public dComplementaritySolver::dBilateralJoint
+//class dAnimationLoopJoint: public dCustomAlloc, public dComplementaritySolver::dBilateralJoint
+class dAnimationLoopJoint: public dCustomAlloc, public dAnimationContraint
 {
 	public:
-	dAnimationLoopJoint();
+	dAnimationLoopJoint(dAnimationBody* const owner0, dAnimationBody* const owner1);
 	virtual ~dAnimationLoopJoint() {}
 	bool IsActive() const { return m_isActive; }
-	dAnimationJoint* GetOwner0() const { return m_owner0; }
-	dAnimationJoint* GetOwner1() const { return m_owner1; }
-	void SetOwners(dAnimationJoint* const owner0, dAnimationJoint* const owner1);
+	dAnimationBody* GetOwner0() const { return (dAnimationBody*)m_state0;}
+	dAnimationBody* GetOwner1() const { return (dAnimationBody*)m_state1;}
 
 	virtual void Debug(dCustomJoint::dDebugDisplay* const debugDisplay) const {}
 	virtual int GetMaxDof() const = 0;
 
-	dAnimationJoint* m_owner0;
-	dAnimationJoint* m_owner1;
+//	dAnimationBody* m_owner0;
+//	dAnimationBody* m_owner1;
 	bool m_isActive;
 };
 

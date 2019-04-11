@@ -58,6 +58,8 @@
 #include <new>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+
 #include <Newton.h>
 #include <dCustomJoint.h>
 #include <dCustom6dof.h>

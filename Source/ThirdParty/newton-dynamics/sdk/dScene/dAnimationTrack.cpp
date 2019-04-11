@@ -293,7 +293,7 @@ void dAnimationTrack::OptimizeCurves()
 	}
 }
 
-void dAnimationTrack::Serialize (TiXmlElement* const rootNode) const
+void dAnimationTrack::Serialize (TiXmlElement* const rootNode) 
 {
 	SerialiseBase(dNodeInfo, rootNode);
 	dAssert(m_scale.GetCount() >= 2);

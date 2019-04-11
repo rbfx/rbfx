@@ -182,7 +182,7 @@ dFloat dSceneNodeInfo::RayCast (const dVector& localP0, const dVector& localP1) 
 }
 
 
-void dSceneNodeInfo::Serialize (TiXmlElement* const rootNode) const
+void dSceneNodeInfo::Serialize (TiXmlElement* const rootNode) 
 {
 	SerialiseBase(dNodeInfo, rootNode);
 

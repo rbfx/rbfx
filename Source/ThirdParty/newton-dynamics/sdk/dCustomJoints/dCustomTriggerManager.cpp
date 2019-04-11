@@ -65,6 +65,7 @@ void dCustomTriggerManager::DestroyTrigger (dCustomTriggerController* const trig
 
 void dCustomTriggerManager::PreUpdate(dFloat timestep)
 {
+	D_TRACKTIME();
 	m_timestep = timestep;
 	NewtonWorld* const world = GetWorld();
 	
@@ -130,6 +131,7 @@ void dCustomTriggerManager::UpdateTrigger (dCustomTriggerController* const contr
 
 void dCustomTriggerManager::UpdateTrigger (NewtonWorld* const world, void* const context, int threadIndex)
 {
+	D_TRACKTIME();
 	dCustomTriggerController* const controller = (dCustomTriggerController*)context;
 	dCustomTriggerManager* const me = controller->m_manager;
 	me->UpdateTrigger(controller);

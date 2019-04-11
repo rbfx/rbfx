@@ -447,7 +447,7 @@ void dSceneGraph::DeleteRootNode()
 	m_rootNode = NULL;
 }
 
-void dSceneGraph::Serialize (TiXmlElement* const rootNode) const
+void dSceneGraph::Serialize (TiXmlElement* const rootNode)
 {
 	// save scenes nodes
 	TiXmlElement* const nodes = new TiXmlElement ("nodes");

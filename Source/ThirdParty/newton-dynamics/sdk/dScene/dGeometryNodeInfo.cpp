@@ -72,7 +72,7 @@ void dGeometryNodeInfo::CalcutateAABB (dVector& p0, dVector& p1) const
 	p1 = dVector (-1.0e10f, -1.0e10f, -1.0e10f, 0.0f);
 }
 
-void dGeometryNodeInfo::Serialize (TiXmlElement* const rootNode) const 
+void dGeometryNodeInfo::Serialize (TiXmlElement* const rootNode)  
 {
 	SerialiseBase(dNodeInfo, rootNode);
 
