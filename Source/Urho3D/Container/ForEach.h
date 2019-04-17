@@ -23,7 +23,6 @@
 #pragma once
 
 #include "../Container/Vector.h"
-#include "../Container/List.h"
 #include "../Container/HashSet.h"
 #include "../Container/HashMap.h"
 

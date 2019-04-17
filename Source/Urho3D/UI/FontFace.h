@@ -24,7 +24,6 @@
 
 #include "../Container/ArrayPtr.h"
 #include "../Container/HashMap.h"
-#include "../Container/List.h"
 #include "../Container/Ptr.h"
 #include "../Math/AreaAllocator.h"
 

@@ -22,8 +22,9 @@
 
 #pragma once
 
+#include <EASTL/list.h>
+
 #include "../Container/HashSet.h"
-#include "../Container/List.h"
 #include "../Core/Object.h"
 
 namespace Urho3D
@@ -137,7 +138,7 @@ private:
     /// Allowed directories.
     HashSet<String> allowedPaths_;
     /// Async execution queue.
-    List<AsyncExecRequest*> asyncExecQueue_;
+    stl::list<AsyncExecRequest*> asyncExecQueue_;
     /// Next async execution ID.
     unsigned nextAsyncExecID_{1};
     /// Flag for executing engine console commands as OS-specific system command. Default to true.

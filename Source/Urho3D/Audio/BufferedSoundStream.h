@@ -22,9 +22,10 @@
 
 #pragma once
 
+#include <EASTL/list.h>
+
 #include "../Audio/SoundStream.h"
 #include "../Container/ArrayPtr.h"
-#include "../Container/List.h"
 #include "../Core/Mutex.h"
 #include "../Container/Pair.h"
 
@@ -59,7 +60,7 @@ public:
 
 private:
     /// Buffers and their sizes.
-    List<Pair<SharedArrayPtr<signed char>, unsigned> > buffers_;
+    stl::list<Pair<SharedArrayPtr<signed char>, unsigned> > buffers_;
     /// Byte position in the front most buffer.
     unsigned position_;
     /// Mutex for buffer data.

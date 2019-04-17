@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include "../Container/List.h"
 #include "../Core/Mutex.h"
 #include "../Graphics/Drawable.h"
 #include "../Graphics/OctreeQuery.h"

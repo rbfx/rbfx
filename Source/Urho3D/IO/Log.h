@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Container/List.h"
+#include <EASTL/list.h>
+
 #include "../Core/Mutex.h"
 #include "../Core/Object.h"
 #include "../Core/StringUtils.h"
@@ -171,7 +172,7 @@ private:
     /// Mutex for threaded operation.
     Mutex logMutex_{};
     /// Log messages from other threads.
-    List<StoredLogMessage> threadMessages_{};
+    stl::list<StoredLogMessage> threadMessages_{};
     /// Logging level.
 #ifdef _DEBUG
     LogLevel level_ = LOG_DEBUG;

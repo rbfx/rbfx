@@ -27,7 +27,6 @@
 #include "../Core/Object.h"
 #include "../Core/Timer.h"
 #include "../Core/Thread.h"
-#include "../Container/List.h"
 
 
 #if URHO3D_TASKS

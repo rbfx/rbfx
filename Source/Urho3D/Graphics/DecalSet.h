@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Container/List.h"
+#include <EASTL/list.h>
+
 #include "../Graphics/Drawable.h"
 #include "../Graphics/Skeleton.h"
 #include "../Math/Frustum.h"
@@ -158,7 +159,7 @@ public:
     Material* GetMaterial() const;
 
     /// Return number of decals.
-    unsigned GetNumDecals() const { return decals_.Size(); }
+    unsigned GetNumDecals() const { return decals_.size(); }
 
     /// Retur number of vertices in the decals.
     unsigned GetNumVertices() const { return numVertices_; }
@@ -209,7 +210,7 @@ private:
     /// Transform decal's vertices from the target geometry to the decal set local space.
     void TransformVertices(Decal& decal, const Matrix3x4& transform);
     /// Remove a decal by iterator and return iterator to the next decal.
-    List<Decal>::Iterator RemoveDecal(List<Decal>::Iterator i);
+    stl::list<Decal>::iterator RemoveDecal(stl::list<Decal>::iterator i);
     /// Mark decals and the bounding box dirty.
     void MarkDecalsDirty();
     /// Recalculate the local-space bounding box.
@@ -234,7 +235,7 @@ private:
     /// Index buffer.
     SharedPtr<IndexBuffer> indexBuffer_;
     /// Decals.
-    List<Decal> decals_;
+    stl::list<Decal> decals_;
     /// Bones used for skinned decals.
     Vector<Bone> bones_;
     /// Skinning matrices.

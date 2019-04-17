@@ -42,10 +42,10 @@ unsigned BufferedSoundStream::GetData(signed char* dest, unsigned numBytes)
 
     unsigned outBytes = 0;
 
-    while (numBytes && buffers_.Size())
+    while (numBytes && buffers_.size())
     {
         // Copy as much from the front buffer as possible, then discard it and move to the next
-        List<Pair<SharedArrayPtr<signed char>, unsigned> >::Iterator front = buffers_.Begin();
+        auto front = buffers_.begin();
 
         unsigned copySize = front->second_ - position_;
         if (copySize > numBytes)
@@ -55,7 +55,7 @@ unsigned BufferedSoundStream::GetData(signed char* dest, unsigned numBytes)
         position_ += copySize;
         if (position_ >= front->second_)
         {
-            buffers_.PopFront();
+            buffers_.pop_front();
             position_ = 0;
         }
 
@@ -75,7 +75,7 @@ void BufferedSoundStream::AddData(void* data, unsigned numBytes)
 
         SharedArrayPtr<signed char> newBuffer(new signed char[numBytes]);
         memcpy(newBuffer.Get(), data, numBytes);
-        buffers_.Push(MakePair(newBuffer, numBytes));
+        buffers_.push_back(MakePair(newBuffer, numBytes));
     }
 }
 
@@ -85,7 +85,7 @@ void BufferedSoundStream::AddData(const SharedArrayPtr<signed char>& data, unsig
     {
         MutexLock lock(bufferMutex_);
 
-        buffers_.Push(MakePair(data, numBytes));
+        buffers_.push_back(MakePair(data, numBytes));
     }
 }
 
@@ -95,7 +95,7 @@ void BufferedSoundStream::AddData(const SharedArrayPtr<signed short>& data, unsi
     {
         MutexLock lock(bufferMutex_);
 
-        buffers_.Push(MakePair(ReinterpretCast<signed char>(data), numBytes));
+        buffers_.push_back(MakePair(ReinterpretCast<signed char>(data), numBytes));
     }
 }
 
@@ -103,7 +103,7 @@ void BufferedSoundStream::Clear()
 {
     MutexLock lock(bufferMutex_);
 
-    buffers_.Clear();
+    buffers_.clear();
     position_ = 0;
 }
 
@@ -112,8 +112,8 @@ unsigned BufferedSoundStream::GetBufferNumBytes() const
     MutexLock lock(bufferMutex_);
 
     unsigned ret = 0;
-    for (List<Pair<SharedArrayPtr<signed char>, unsigned> >::ConstIterator i = buffers_.Begin(); i != buffers_.End(); ++i)
-        ret += i->second_;
+    for (const auto& buffer : buffers_)
+        ret += buffer.second_;
     // Subtract amount of sound data played from the front buffer
     ret -= position_;
 

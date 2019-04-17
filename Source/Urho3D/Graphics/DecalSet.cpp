@@ -262,7 +262,7 @@ void DecalSet::SetMaxVertices(unsigned num)
             bufferDirty_ = true;
         maxVertices_ = num;
 
-        while (decals_.Size() && numVertices_ > maxVertices_)
+        while (decals_.size() && numVertices_ > maxVertices_)
             RemoveDecals(1);
 
         MarkNetworkUpdate();
@@ -280,7 +280,7 @@ void DecalSet::SetMaxIndices(unsigned num)
             bufferDirty_ = true;
         maxIndices_ = num;
 
-        while (decals_.Size() && numIndices_ > maxIndices_)
+        while (decals_.size() && numIndices_ > maxIndices_)
             RemoveDecals(1);
 
         MarkNetworkUpdate();
@@ -379,8 +379,8 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
 
     Vector3 decalNormal = (targetTransform * Vector4(worldRotation * Vector3::BACK, 0.0f)).Normalized();
 
-    decals_.Resize(decals_.Size() + 1);
-    Decal& newDecal = decals_.Back();
+    decals_.resize(decals_.size() + 1);
+    Decal& newDecal = decals_.back();
     newDecal.timeToLive_ = timeToLive;
 
     Vector<PODVector<DecalVertex> > faces;
@@ -429,7 +429,7 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
     // Check if resulted in no triangles
     if (newDecal.vertices_.Empty())
     {
-        decals_.Pop();
+        decals_.pop_back();
         return true;
     }
 
@@ -437,14 +437,14 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
     {
         URHO3D_LOGWARNING("Can not add decal, vertex count " + String(newDecal.vertices_.Size()) + " exceeds maximum " +
                    String(maxVertices_));
-        decals_.Pop();
+        decals_.pop_back();
         return false;
     }
     if (newDecal.indices_.Size() > maxIndices_)
     {
         URHO3D_LOGWARNING("Can not add decal, index count " + String(newDecal.indices_.Size()) + " exceeds maximum " +
                    String(maxIndices_));
-        decals_.Pop();
+        decals_.pop_back();
         return false;
     }
 
@@ -469,7 +469,7 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
     numIndices_ += newDecal.indices_.Size();
 
     // Remove oldest decals if total vertices exceeded
-    while (decals_.Size() && (numVertices_ > maxVertices_ || numIndices_ > maxIndices_))
+    while (decals_.size() && (numVertices_ > maxVertices_ || numIndices_ > maxIndices_))
         RemoveDecals(1);
 
     URHO3D_LOGDEBUG("Added decal with " + String(newDecal.vertices_.Size()) + " vertices");
@@ -484,15 +484,15 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
 
 void DecalSet::RemoveDecals(unsigned num)
 {
-    while (num-- && decals_.Size())
-        RemoveDecal(decals_.Begin());
+    while (num-- && decals_.size())
+        RemoveDecal(decals_.begin());
 }
 
 void DecalSet::RemoveAllDecals()
 {
-    if (!decals_.Empty())
+    if (!decals_.empty())
     {
-        decals_.Clear();
+        decals_.clear();
         numVertices_ = 0;
         numIndices_ = 0;
         MarkDecalsDirty();
@@ -535,8 +535,8 @@ void DecalSet::SetDecalsAttr(const PODVector<unsigned char>& value)
 
     while (numDecals--)
     {
-        decals_.Resize(decals_.Size() + 1);
-        Decal& newDecal = decals_.Back();
+        decals_.resize(decals_.size() + 1);
+        Decal& newDecal = decals_.back();
 
         newDecal.timer_ = buffer.ReadFloat();
         newDecal.timeToLive_ = buffer.ReadFloat();
@@ -604,9 +604,9 @@ PODVector<unsigned char> DecalSet::GetDecalsAttr() const
     VectorBuffer ret;
 
     ret.WriteBool(skinned_);
-    ret.WriteVLE(decals_.Size());
+    ret.WriteVLE(decals_.size());
 
-    for (List<Decal>::ConstIterator i = decals_.Begin(); i != decals_.End(); ++i)
+    for (auto i = decals_.begin(); i != decals_.end(); ++i)
     {
         ret.WriteFloat(i->timer_);
         ret.WriteFloat(i->timeToLive_);
@@ -981,12 +981,12 @@ void DecalSet::TransformVertices(Decal& decal, const Matrix3x4& transform)
     }
 }
 
-List<Decal>::Iterator DecalSet::RemoveDecal(List<Decal>::Iterator i)
+stl::list<Decal>::iterator DecalSet::RemoveDecal(stl::list<Decal>::iterator i)
 {
     numVertices_ -= i->vertices_.Size();
     numIndices_ -= i->indices_.Size();
     MarkDecalsDirty();
-    return decals_.Erase(i);
+    return decals_.erase(i);
 }
 
 void DecalSet::MarkDecalsDirty()
@@ -1002,7 +1002,7 @@ void DecalSet::MarkDecalsDirty()
 void DecalSet::CalculateBoundingBox()
 {
     boundingBox_.Clear();
-    for (List<Decal>::ConstIterator i = decals_.Begin(); i != decals_.End(); ++i)
+    for (auto i = decals_.begin(); i != decals_.end(); ++i)
         boundingBox_.Merge(i->boundingBox_);
 
     boundingBoxDirty_ = false;
@@ -1028,7 +1028,7 @@ void DecalSet::UpdateBuffers()
     {
         unsigned short indexStart = 0;
 
-        for (List<Decal>::ConstIterator i = decals_.Begin(); i != decals_.End(); ++i)
+        for (auto i = decals_.begin(); i != decals_.end(); ++i)
         {
             for (unsigned j = 0; j < i->vertices_.Size(); ++j)
             {
@@ -1131,7 +1131,7 @@ void DecalSet::UpdateEventSubscription(bool checkAllDecals)
     {
         bool hasTimeLimitedDecals = false;
 
-        for (List<Decal>::ConstIterator i = decals_.Begin(); i != decals_.End(); ++i)
+        for (auto i = decals_.begin(); i != decals_.end(); ++i)
         {
             if (i->timeToLive_ > 0.0f)
             {
@@ -1162,7 +1162,7 @@ void DecalSet::HandleScenePostUpdate(StringHash eventType, VariantMap& eventData
 
     float timeStep = eventData[P_TIMESTEP].GetFloat();
 
-    for (List<Decal>::Iterator i = decals_.Begin(); i != decals_.End();)
+    for (auto i = decals_.begin(); i != decals_.end();)
     {
         i->timer_ += timeStep;
 

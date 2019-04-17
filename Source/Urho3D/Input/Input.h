@@ -22,11 +22,12 @@
 
 #pragma once
 
+#include <EASTL/list.h>
+
 #include "../Container/FlagSet.h"
 #include "../Container/HashSet.h"
 #include "../Core/Mutex.h"
 #include "../Core/Object.h"
-#include "../Container/List.h"
 #include "../Input/InputEvents.h"
 #include "../UI/Cursor.h"
 
@@ -378,7 +379,7 @@ private:
     /// Active finger touches.
     HashMap<int, TouchState> touches_;
     /// List that maps between event touch IDs and normalised touch IDs
-    List<int> availableTouchIDs_;
+    stl::list<int> availableTouchIDs_;
     /// Mapping of touch indices
     HashMap<int, int> touchIDMap_;
     /// String for text input.

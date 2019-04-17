@@ -384,7 +384,7 @@ Input::Input(Context* context) :
     context_->RequireSDL(SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER);
 
     for (int i = 0; i < TOUCHID_MAX; i++)
-        availableTouchIDs_.Push(i);
+        availableTouchIDs_.push_back(i);
 
     SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(Input, HandleScreenMode));
 
@@ -1679,9 +1679,9 @@ void Input::ResetTouches()
 
     touches_.Clear();
     touchIDMap_.Clear();
-    availableTouchIDs_.Clear();
+    availableTouchIDs_.clear();
     for (int i = 0; i < TOUCHID_MAX; i++)
-        availableTouchIDs_.Push(i);
+        availableTouchIDs_.push_back(i);
 
 }
 
@@ -1700,11 +1700,11 @@ unsigned Input::GetTouchIndexFromID(int touchID)
 
 unsigned Input::PopTouchIndex()
 {
-    if (availableTouchIDs_.Empty())
+    if (availableTouchIDs_.empty())
         return 0;
 
-    auto index = (unsigned)availableTouchIDs_.Front();
-    availableTouchIDs_.PopFront();
+    auto index = (unsigned)availableTouchIDs_.front();
+    availableTouchIDs_.pop_front();
     return index;
 }
 
@@ -1719,7 +1719,7 @@ void Input::PushTouchIndex(int touchID)
 
     // Sorted insertion
     bool inserted = false;
-    for (List<int>::Iterator i = availableTouchIDs_.Begin(); i != availableTouchIDs_.End(); ++i)
+    for (auto i = availableTouchIDs_.begin(); i != availableTouchIDs_.end(); ++i)
     {
         if (*i == index)
         {
@@ -1730,7 +1730,7 @@ void Input::PushTouchIndex(int touchID)
 
         if (*i > index)
         {
-            availableTouchIDs_.Insert(i, index);
+            availableTouchIDs_.insert(i, index);
             inserted = true;
             break;
         }
@@ -1738,7 +1738,7 @@ void Input::PushTouchIndex(int touchID)
 
     // If empty, or the lowest value then insert at end.
     if (!inserted)
-        availableTouchIDs_.Push(index);
+        availableTouchIDs_.push_back(index);
 }
 
 void Input::SendInputFocusEvent()

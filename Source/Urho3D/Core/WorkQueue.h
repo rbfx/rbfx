@@ -22,10 +22,9 @@
 
 #pragma once
 
-
+#include <EASTL/list.h>
 #include <atomic>
 
-#include "../Container/List.h"
 #include "../Core/Mutex.h"
 #include "../Core/Object.h"
 
@@ -136,11 +135,11 @@ private:
     /// Worker threads.
     Vector<SharedPtr<WorkerThread> > threads_;
     /// Work item pool for reuse to cut down on allocation. The bool is a flag for item pooling and whether it is available or not.
-    List<SharedPtr<WorkItem> > poolItems_;
+    stl::list<SharedPtr<WorkItem> > poolItems_;
     /// Work item collection. Accessed only by the main thread.
-    List<SharedPtr<WorkItem> > workItems_;
+    stl::list<SharedPtr<WorkItem> > workItems_;
     /// Work item prioritized queue for worker threads. Pointers are guaranteed to be valid (point to workItems.)
-    List<WorkItem*> queue_;
+    stl::list<WorkItem*> queue_;
     /// Worker queue mutex.
     Mutex queueMutex_;
     /// Shutting down flag.

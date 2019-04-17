@@ -318,7 +318,7 @@ void Log::SendMessageEvent(LogLevel level, time_t timestamp, const String& logge
         if (logInstance)
         {
             MutexLock lock(logMutex_);
-            threadMessages_.Push(StoredLogMessage(level, timestamp, logger, message));
+            threadMessages_.push_back(StoredLogMessage(level, timestamp, logger, message));
         }
 
         return;
@@ -358,11 +358,11 @@ void Log::PumpThreadMessages()
     MutexLock lock(logMutex_);
 
     // Process messages accumulated from other threads (if any)
-    while (!threadMessages_.Empty())
+    while (!threadMessages_.empty())
     {
-        const StoredLogMessage& stored = threadMessages_.Front();
+        const StoredLogMessage& stored = threadMessages_.front();
         SendMessageEvent(stored.level_, stored.timestamp_, stored.logger_, stored.message_);
-        threadMessages_.PopFront();
+        threadMessages_.pop_front();
     }
 }
 

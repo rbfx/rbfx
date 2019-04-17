@@ -392,12 +392,12 @@ FileSystem::FileSystem(Context* context) :
 FileSystem::~FileSystem()
 {
     // If any async exec items pending, delete them
-    if (asyncExecQueue_.Size())
+    if (asyncExecQueue_.size())
     {
-        for (List<AsyncExecRequest*>::Iterator i = asyncExecQueue_.Begin(); i != asyncExecQueue_.End(); ++i)
+        for (auto i = asyncExecQueue_.begin(); i != asyncExecQueue_.end(); ++i)
             delete(*i);
 
-        asyncExecQueue_.Clear();
+        asyncExecQueue_.clear();
     }
 }
 
@@ -515,7 +515,7 @@ unsigned FileSystem::SystemCommandAsync(const String& commandLine)
     {
         unsigned requestID = nextAsyncExecID_;
         auto* cmd = new AsyncSystemCommand(nextAsyncExecID_, commandLine);
-        asyncExecQueue_.Push(cmd);
+        asyncExecQueue_.push_back(cmd);
         return requestID;
     }
     else
@@ -536,7 +536,7 @@ unsigned FileSystem::SystemRunAsync(const String& fileName, const Vector<String>
     {
         unsigned requestID = nextAsyncExecID_;
         auto* cmd = new AsyncSystemRun(nextAsyncExecID_, fileName, arguments);
-        asyncExecQueue_.Push(cmd);
+        asyncExecQueue_.push_back(cmd);
         return requestID;
     }
     else
@@ -1041,7 +1041,7 @@ void FileSystem::ScanDirInternal(Vector<String>& result, String path, const Stri
 void FileSystem::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
 {
     /// Go through the execution queue and post + remove completed requests
-    for (List<AsyncExecRequest*>::Iterator i = asyncExecQueue_.Begin(); i != asyncExecQueue_.End();)
+    for (auto i = asyncExecQueue_.begin(); i != asyncExecQueue_.end();)
     {
         AsyncExecRequest* request = *i;
         if (request->IsCompleted())
@@ -1054,7 +1054,7 @@ void FileSystem::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
             SendEvent(E_ASYNCEXECFINISHED, newEventData);
 
             delete request;
-            i = asyncExecQueue_.Erase(i);
+            i = asyncExecQueue_.erase(i);
         }
         else
             ++i;
