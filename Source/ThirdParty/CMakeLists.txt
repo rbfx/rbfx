@@ -20,6 +20,7 @@
 # THE SOFTWARE.
 #
 
+add_subdirectory(EASTL)
 add_subdirectory(LZ4)
 add_subdirectory(PugiXml)
 add_subdirectory(rapidjson)

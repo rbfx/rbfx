@@ -64,6 +64,7 @@ rbfx uses the following third-party libraries:
 - CLI11 v1.5.1 (https://github.com/CLIUtils/CLI11/)
 - fmt 4.1.0 (http://fmtlib.net)
 - spdlog 1.3.1 (https://github.com/gabime/spdlog)
+- EASTL 3.13.04 (https://github.com/electronicarts/EASTL/)
 
 rbfx optionally uses the following external third-party libraries:
 - Mono (http://www.mono-project.com/download/stable/)
