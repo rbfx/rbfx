@@ -152,6 +152,7 @@ namespace Urho3D
             }
         }
 
+        
 
         ///trigger mode will not collide with anything but will still generate contacts and send collision events.
         void SetTriggerMode(bool enable) {
@@ -172,6 +173,12 @@ namespace Urho3D
         }
         bool GetIsKinematic() const { return isKinematic_; }
 
+        //set Ix, Iy, and Iz to all be equal to max(Ix, Iy, Iz).
+        void SetUseInertiaHack(bool useInertiaHack)
+        {
+            useInertiaHack_ = useInertiaHack;
+        }
+        bool GetUseInertiaHack() const { return useInertiaHack_; }
 
 
         void SetGenerateContacts(bool enable)
@@ -395,6 +402,8 @@ namespace Urho3D
         bool generateContacts_ = true;
 
         bool isKinematic_ = false;
+
+        bool useInertiaHack_ = false;
 
         ///dirty flag
         bool needsRebuilt_ = true;

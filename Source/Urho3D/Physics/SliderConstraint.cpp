@@ -34,6 +34,8 @@ namespace Urho3D
         URHO3D_ACCESSOR_ATTRIBUTE("Slider Spring Damper Coefficient", GetSliderDamperCoefficient, SetSliderDamperCoefficient, float, SLIDER_CONSTRAINT_DEF_DAMPER_COEF, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Slider Spring Damper Relaxation", GetSliderSpringDamperRelaxation, SetSliderSpringDamperRelaxation, float, SLIDER_CONSTRAINT_DEF_RELAX, AM_DEFAULT);
 
+        URHO3D_ACCESSOR_ATTRIBUTE("Slider Friction", GetSliderFriction, SetSliderFriction, float, 0.0f, AM_DEFAULT);
+
 
         URHO3D_ACCESSOR_ATTRIBUTE("Twist Upper Limit Enable", GetTwistUpperLimitEnabled, SetTwistUpperLimitEnable, bool, false, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Twist Lower Limit Enable", GetTwistLowerLimitEnabled, SetTwistLowerLimitEnable, bool, false, AM_DEFAULT);
@@ -117,6 +119,20 @@ namespace Urho3D
             if (newtonJoint_)
             {
                 applySliderLimits();
+            }
+            else
+                MarkDirty();
+        }
+    }
+
+    void SliderConstraint::SetSliderFriction(float friction)
+    {
+        if (sliderFriction_ != friction) {
+            sliderFriction_ = friction;
+
+            if (newtonJoint_)
+            {
+                static_cast<dCustomSlider*>(newtonJoint_)->SetFriction(sliderFriction_);
             }
             else
                 MarkDirty();
@@ -341,7 +357,7 @@ namespace Urho3D
 
 
         static_cast<dCustomSlider*>(newtonJoint_)->EnableLimits(enableLowerSliderLimit_ || enableUpperSliderLimit_);
-
+        static_cast<dCustomSlider*>(newtonJoint_)->SetFriction(sliderFriction_);
         applySliderLimits();
 
 

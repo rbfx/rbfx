@@ -36,14 +36,16 @@ namespace Urho3D {
         void SetSliderLowerLimitEnable(bool enable);
         bool GetSliderLowerLimitEnabled() const { return enableLowerSliderLimit_; }
 
-        ///Set the distance limits the bodies with be able to slide
+        ///Set the distance limits the bodies with be able to slide. lower limit should be negative
         void SetSliderLimits(float lowerLimit, float upperLimit);
         void SetSliderUpperLimit(float upperLimit);
         float GetSliderUpperLimit() const { return sliderLimits_.y_; }
         void SetSliderLowerLimit(float lowerLimit);
         float GetSliderLowerLimit() const { return sliderLimits_.x_; }
 
-
+        ///Set the friction for sliding.
+        void SetSliderFriction(float friction);
+        float GetSliderFriction() const { return sliderFriction_; }
 
         /// enable/disable spring damper on the linear (slide) motion of the constraint.
         void SetEnableSliderSpringDamper(bool enable);
@@ -108,7 +110,7 @@ namespace Urho3D {
         float sliderSpringCoef_ = SLIDER_CONSTRAINT_DEF_SPRING_COEF;
         float sliderDamperCoef_ = SLIDER_CONSTRAINT_DEF_DAMPER_COEF;
 
-
+        float sliderFriction_ = 0.0f;
 
 
 

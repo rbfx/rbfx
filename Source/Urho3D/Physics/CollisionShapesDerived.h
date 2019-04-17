@@ -215,7 +215,7 @@ namespace Urho3D {
         unsigned modelGeomIndx_ = 0;
 
         /// Hulling tolerance
-        unsigned hullTolerance_ = 0.0f;
+        float hullTolerance_ = 0.0f;
 
         virtual bool buildNewtonCollision() override;
 

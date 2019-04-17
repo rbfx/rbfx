@@ -44,6 +44,7 @@ dCustomSlider::dCustomSlider (const dMatrix& pinAndPivotFrameChild, const dMatri
 	,m_posit(0.0f)
 	,m_minDist(-1.0f)
 	,m_maxDist(1.0f)
+    ,m_friction(0.0f)
 	,m_spring(0.0f)
 	,m_damper(0.0f)
 	,m_springDamperRelaxation(0.9f)

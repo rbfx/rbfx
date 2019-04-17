@@ -107,7 +107,7 @@ void PhysicsTests::CreateScene()
     // Finally, create a DebugRenderer component so that we can draw physics debug geometry
     scene_->CreateComponent<Octree>();
     PhysicsWorld* newtonWorld = scene_->CreateComponent<PhysicsWorld>();
-    newtonWorld->SetGravity(Vector3(0, -9.81f, 0));
+    newtonWorld->SetGravity(Vector3(0, 0, 0));
     //scene_->CreateComponent<NewtonCollisionShape_SceneCollision>();
     scene_->CreateComponent<DebugRenderer>();
 
@@ -141,7 +141,10 @@ void PhysicsTests::CreateScene()
 
 
 
-    CreateScenery(Vector3(0,0,0));
+    //CreateScenery(Vector3(0,0,0));
+
+    //SpawnSamplePhysicsCylinder(scene_, Vector3(-5, 2, 0));
+    //SpawnSamplePhysicsCylinder(scene_, Vector3(5, 2, 0), 0.25f,4);
 
 
     //SpawnMaterialsTest(Vector3(0,-25,100));
@@ -171,7 +174,7 @@ void PhysicsTests::CreateScene()
 
     //SpawnCollisionExceptionsTest(Vector3(0, 1, 15));
 
-    //SpawnSliderTest(Vector3(0, 10, 10));
+    SpawnSliderTest(Vector3(0, 10, 10));
     //SpawnLinearJointedObject(1.0f, Vector3(10 , 2, 10));
 
     //SpawnNSquaredJointedObject(Vector3(-20, 10, 10));
@@ -179,7 +182,7 @@ void PhysicsTests::CreateScene()
     //SpawnCompoundedRectTest(Vector3(20, 10, 10));
 
     ////////create scale test
-    SpawnSceneCompoundTest(Vector3(-20, 10, 20), true);
+    //SpawnSceneCompoundTest(Vector3(-20, 10, 20), true);
     //SpawnSceneCompoundTest(Vector3(-20, 10, 30), false); //this was gives newton a non-orthogonal matrix.
 
     //CreateTowerOfLiar(Vector3(40, 0, 20));

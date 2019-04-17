@@ -86,6 +86,7 @@ namespace Urho3D {
         //URHO3D_ACCESSOR_ATTRIBUTE("Interpolation Factor", GetInterpolationFactor, SetInterpolationFactor, float, 1.0f, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Trigger Mode", GetTriggerMode, SetTriggerMode, bool, false, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Is Kinematic", GetIsKinematic, SetIsKinematic, bool, false, AM_DEFAULT);
+        URHO3D_ACCESSOR_ATTRIBUTE("Use Inertia Hack", GetUseInertiaHack, SetUseInertiaHack, bool, false, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Collision Layer", GetCollisionLayer, SetCollisionLayer, unsigned, DEFAULT_COLLISION_LAYER, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("Collision Mask", GetCollisionLayerMask, SetCollisionLayerMask, unsigned, DEFAULT_COLLISION_MASK, AM_DEFAULT);
         URHO3D_ACCESSOR_ATTRIBUTE("No Collide Override", GetNoCollideOverride, SetNoCollideOverride, bool, false, AM_DEFAULT);
@@ -663,8 +664,6 @@ namespace Urho3D {
         Vector3 oldAngularVelocity = GetAngularVelocity();
 
 
-
-
         freeBody();
         dMatrix finalInertia;
         dVector finalCenterOfMass;
@@ -781,13 +780,19 @@ namespace Urho3D {
                         if (colComp->GetInheritNodeScale())
                         {
                             scale = colComp->GetRotationOffset().Inverse() * colComp->GetNode()->GetWorldScale();
+                            scale = Vector3(Abs(scale.x_), Abs(scale.y_), Abs(scale.z_));
                         }
                         Vector3 shapeScale = colComp->GetScaleFactor();
 
                         scale = scale * shapeScale;
 
+                        //URHO3D_LOGINFO("Shape Scale: " + String(shapeScale));
+                       // URHO3D_LOGINFO("Scale: " + String(scale));
+
                         dVector existingLocalScale;
                         NewtonCollisionGetScale(curCollisionInstance, &existingLocalScale.m_x, &existingLocalScale.m_y, &existingLocalScale.m_z);
+
+                        //URHO3D_LOGINFO("existingLocalScale from collision shape: " + String(NewtonToUrhoVec3(existingLocalScale)));
 
 
                         float densityScaleFactor = 1.0f;
@@ -796,9 +801,16 @@ namespace Urho3D {
                         if (densityPass)
                             densityScaleFactor = colComp->GetDensity()/smallestDensity;
 
-                        NewtonCollisionSetScale(curCollisionInstance, densityScaleFactor*scale.x_*existingLocalScale.m_x,
+                        //URHO3D_LOGINFO("densityScaleFactor: " + String(densityScaleFactor));
+
+                        Vector3 finalCollisionScale = Vector3(densityScaleFactor * scale.x_*existingLocalScale.m_x,
                             densityScaleFactor*scale.y_*existingLocalScale.m_y,
                             densityScaleFactor*scale.z_*existingLocalScale.m_z);
+
+                        //URHO3D_LOGINFO("finalCollisionScale: " + String(finalCollisionScale));
+
+
+                        NewtonCollisionSetScale(curCollisionInstance, finalCollisionScale.x_, finalCollisionScale.y_, finalCollisionScale.z_);
 
 
 
@@ -813,11 +825,12 @@ namespace Urho3D {
 
 
                         localTransform = existingLocalMatrix * localTransform;
-                        NewtonCollisionSetMatrix(curCollisionInstance, &localTransform[0][0]);//set the collision matrix with translation and rotation data only.
+                        NewtonCollisionSetMatrix(curCollisionInstance, &localTransform[0][0]);//set the collision matrix
 
 
                         //calculate volume
                         float vol = NewtonConvexCollisionCalculateVolume(curCollisionInstance);
+
                         accumMass += vol * colComp->GetDensity();
 
 
@@ -859,11 +872,43 @@ namespace Urho3D {
                     mass_ = 0;
 
                 if (densityPass) {
+
+                    float vol = NewtonConvexCollisionCalculateVolume(resolvedCollision);
+
+
                     NewtonBodySetMassProperties(newtonBody_, mass_, resolvedCollision);
 
                     //save the inertia matrix for 2nd pass.
                     NewtonBodyGetInertiaMatrix(newtonBody_, &finalInertia[0][0]);
-                    
+
+
+                    if (useInertiaHack_) {
+                        //URHO3D_LOGINFO("Final Inertia Matrix (PreHack): " + String(NewtonToUrhoMat4(finalInertia)) + " Mass: " + String(mass_) + " Volume: " + String(vol));
+
+                        //hack the inertia so that small values cant be too small.
+                        float maxI = -M_LARGE_VALUE;
+                        float minI = M_LARGE_VALUE;
+                        float minFactorDiff = 10.0f;
+                        for (int r = 0; r < 3; r++) {
+                            if (finalInertia[r][r] > maxI)
+                                maxI = finalInertia[r][r];
+
+                            if (finalInertia[r][r] < minI && finalInertia[r][r] > 0.0f)
+                                minI = finalInertia[r][r];
+
+                        }
+                        float midI = (minI + maxI)*0.5f;
+                        for (int r = 0; r < 3; r++) {
+
+                            if (finalInertia[r][r] > midI)
+                                finalInertia[r][r] = maxI;
+                            else
+                                finalInertia[r][r] = maxI / minFactorDiff;
+                        }
+
+
+                       // URHO3D_LOGINFO("Final Inertia Matrix: " + String(NewtonToUrhoMat4(finalInertia)) + " Mass: " + String(mass_) + " Volume: " + String(vol));
+                    }
                     NewtonBodyGetCentreOfMass(newtonBody_, &finalCenterOfMass[0]);
                 }
             }
@@ -872,8 +917,7 @@ namespace Urho3D {
         
         Matrix4 inertiaMatrixUrho = NewtonToUrhoMat4(finalInertia);
 
-
-        
+        //URHO3D_LOGINFO("Final Inertia Matrix: " + String(inertiaMatrixUrho) + " Mass: " + String(mass_));
 
         NewtonBodySetFullMassMatrix(newtonBody_, mass_, &finalInertia[0][0]);
         NewtonBodySetCentreOfMass(newtonBody_, &finalCenterOfMass[0]);
@@ -1119,7 +1163,7 @@ namespace Urho3D {
             NewtonBodySetAngularDamping(newtonBody_, &UrhoToNewton(angularDampeningInternal_)[0]);
 
 
-        if (NewtonBodyGetGyroscopicTorque(newtonBody_) != enableGyroTorque_)
+        if (NewtonBodyGetGyroscopicTorque(newtonBody_) != int(enableGyroTorque_))
             NewtonBodySetGyroscopicTorque(newtonBody_, enableGyroTorque_);
     }
 
