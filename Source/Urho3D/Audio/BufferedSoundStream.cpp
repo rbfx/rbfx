@@ -51,7 +51,7 @@ unsigned BufferedSoundStream::GetData(signed char* dest, unsigned numBytes)
         if (copySize > numBytes)
             copySize = numBytes;
 
-        memcpy(dest, front->first_.Get() + position_, copySize);
+        memcpy(dest, front->first_.get() + position_, copySize);
         position_ += copySize;
         if (position_ >= front->second_)
         {
@@ -73,13 +73,13 @@ void BufferedSoundStream::AddData(void* data, unsigned numBytes)
     {
         MutexLock lock(bufferMutex_);
 
-        SharedArrayPtr<signed char> newBuffer(new signed char[numBytes]);
-        memcpy(newBuffer.Get(), data, numBytes);
+        stl::shared_array<signed char> newBuffer(new signed char[numBytes]);
+        memcpy(newBuffer.get(), data, numBytes);
         buffers_.push_back(MakePair(newBuffer, numBytes));
     }
 }
 
-void BufferedSoundStream::AddData(const SharedArrayPtr<signed char>& data, unsigned numBytes)
+void BufferedSoundStream::AddData(const stl::shared_array<signed char>& data, unsigned numBytes)
 {
     if (data && numBytes)
     {
@@ -89,13 +89,13 @@ void BufferedSoundStream::AddData(const SharedArrayPtr<signed char>& data, unsig
     }
 }
 
-void BufferedSoundStream::AddData(const SharedArrayPtr<signed short>& data, unsigned numBytes)
+void BufferedSoundStream::AddData(const stl::shared_array<signed short>& data, unsigned numBytes)
 {
     if (data && numBytes)
     {
         MutexLock lock(bufferMutex_);
 
-        buffers_.push_back(MakePair(ReinterpretCast<signed char>(data), numBytes));
+        buffers_.push_back(MakePair(stl::do_reinterpret_cast<signed char>(data), numBytes));
     }
 }
 

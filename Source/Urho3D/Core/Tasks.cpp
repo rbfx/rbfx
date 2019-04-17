@@ -63,8 +63,8 @@ bool Task::Initialize(const std::function<void()>& taskFunction, unsigned int st
 
     function_ = taskFunction;
     stackSize_ = stackSize;
-    stackOwner_ = new unsigned char[stackSize];
-    stack_ = stackOwner_.Get();
+    stackOwner_.reset(new unsigned char[stackSize]);
+    stack_ = stackOwner_.get();
     stackId_ = VALGRIND_STACK_REGISTER((uint8_t*)stack_ + stackSize, (uint8_t*)stack_);
     context_ = sc_context_create(stack_, stackSize_, &ExecuteTaskWrapper);
     sc_switch((sc_context_t)context_, (void*)this);

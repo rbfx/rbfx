@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include <EASTL/unique_ptr.h>
+
 #include <Urho3D/IO/Log.h>
 #include <LZ4/lz4.h>
 #include <LZ4/lz4hc.h>
@@ -100,7 +102,7 @@ void Packager::Write()
         }
         else
         {
-            SharedArrayPtr<unsigned char> compressBuffer(new unsigned char[LZ4_compressBound(blockSize_)]);
+            stl::unique_ptr<unsigned char[]> compressBuffer(new unsigned char[LZ4_compressBound(blockSize_)]);
 
             unsigned pos = 0;
 
@@ -110,13 +112,13 @@ void Packager::Write()
                 if (pos + unpackedSize > dataSize)
                     unpackedSize = dataSize - pos;
 
-                auto packedSize = (unsigned)LZ4_compress_HC((const char*)&buffer[pos], (char*)compressBuffer.Get(), unpackedSize, LZ4_compressBound(unpackedSize), 0);
+                auto packedSize = (unsigned)LZ4_compress_HC((const char*)&buffer[pos], (char*)compressBuffer.get(), unpackedSize, LZ4_compressBound(unpackedSize), 0);
                 if (!packedSize)
                     logger.Error("LZ4 compression failed for file {} at offset {}.", entry.name_, pos);
 
                 output_.WriteUShort((unsigned short)unpackedSize);
                 output_.WriteUShort((unsigned short)packedSize);
-                output_.Write(compressBuffer.Get(), packedSize);
+                output_.Write(compressBuffer.get(), packedSize);
 
                 pos += unpackedSize;
             }

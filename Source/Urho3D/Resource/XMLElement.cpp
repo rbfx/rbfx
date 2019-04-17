@@ -1070,7 +1070,7 @@ XPathQuery::~XPathQuery() = default;
 void XPathQuery::Bind()
 {
     // Delete previous query object and create a new one binding it with variable set
-    query_ = new pugi::xpath_query(queryString_.CString(), variables_.Get());
+    query_ = new pugi::xpath_query(queryString_.CString(), variables_.get());
 }
 
 bool XPathQuery::SetVariable(const String& name, bool value)
@@ -1155,8 +1155,8 @@ void XPathQuery::Clear()
 {
     queryString_.Clear();
 
-    variables_.Reset();
-    query_.Reset();
+    variables_.reset();
+    query_.reset();
 }
 
 bool XPathQuery::EvaluateToBool(const XMLElement& element) const

@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Container/ArrayPtr.h"
+#include <EASTL/shared_array.h>
+
 #include "../Resource/Resource.h"
 
 namespace Urho3D
@@ -96,7 +97,7 @@ private:
     /// Created faces.
     HashMap<int, SharedPtr<FontFace> > faces_;
     /// Font data.
-    SharedArrayPtr<unsigned char> fontData_;
+    stl::shared_array<unsigned char> fontData_;
     /// Size of font data.
     unsigned fontDataSize_;
     /// Absolute position adjustment for glyphs.

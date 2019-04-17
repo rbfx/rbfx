@@ -101,8 +101,8 @@ public:
                 continue;
             }
 
-            SharedArrayPtr<unsigned char> vertexData;
-            SharedArrayPtr<unsigned char> indexData;
+            stl::shared_array<unsigned char> vertexData;
+            stl::shared_array<unsigned char> indexData;
             unsigned vertexSize;
             unsigned indexSize;
             const PODVector<VertexElement>* elements;
@@ -126,7 +126,7 @@ public:
             meshIndex.m_triangleIndexBase = &indexData[indexStart * indexSize];
             meshIndex.m_triangleIndexStride = 3 * indexSize;
             meshIndex.m_numVertices = 0;
-            meshIndex.m_vertexBase = vertexData;
+            meshIndex.m_vertexBase = vertexData.get();
             meshIndex.m_vertexStride = vertexSize;
             meshIndex.m_indexType = (indexSize == sizeof(unsigned short)) ? PHY_SHORT : PHY_INTEGER;
             meshIndex.m_vertexType = PHY_FLOAT;
@@ -153,8 +153,8 @@ public:
         if (totalVertexCount)
         {
             // CustomGeometry vertex data is unindexed, so build index data here
-            SharedArrayPtr<unsigned char> vertexData(new unsigned char[totalVertexCount * sizeof(Vector3)]);
-            SharedArrayPtr<unsigned char> indexData(new unsigned char[totalVertexCount * sizeof(unsigned)]);
+            stl::shared_array<unsigned char> vertexData(new unsigned char[totalVertexCount * sizeof(Vector3)]);
+            stl::shared_array<unsigned char> indexData(new unsigned char[totalVertexCount * sizeof(unsigned)]);
             dataArrays_.Push(vertexData);
             dataArrays_.Push(indexData);
 
@@ -173,10 +173,10 @@ public:
 
             btIndexedMesh meshIndex;
             meshIndex.m_numTriangles = totalVertexCount / 3;
-            meshIndex.m_triangleIndexBase = indexData;
+            meshIndex.m_triangleIndexBase = indexData.get();
             meshIndex.m_triangleIndexStride = 3 * sizeof(unsigned);
             meshIndex.m_numVertices = totalVertexCount;
-            meshIndex.m_vertexBase = vertexData;
+            meshIndex.m_vertexBase = vertexData.get();
             meshIndex.m_vertexStride = sizeof(Vector3);
             meshIndex.m_indexType = PHY_INTEGER;
             meshIndex.m_vertexType = PHY_FLOAT;
@@ -193,25 +193,25 @@ public:
 
 private:
     /// Shared vertex/index data used in the collision
-    Vector<SharedArrayPtr<unsigned char> > dataArrays_;
+    Vector<stl::shared_array<unsigned char> > dataArrays_;
 };
 
 TriangleMeshData::TriangleMeshData(Model* model, unsigned lodLevel)
 {
     meshInterface_ = new TriangleMeshInterface(model, lodLevel);
-    shape_ = new btBvhTriangleMeshShape(meshInterface_.Get(), meshInterface_->useQuantize_, true);
+    shape_ = new btBvhTriangleMeshShape(meshInterface_.get(), meshInterface_->useQuantize_, true);
 
     infoMap_ = new btTriangleInfoMap();
-    btGenerateInternalEdgeInfo(shape_.Get(), infoMap_.Get());
+    btGenerateInternalEdgeInfo(shape_.get(), infoMap_.get());
 }
 
 TriangleMeshData::TriangleMeshData(CustomGeometry* custom)
 {
     meshInterface_ = new TriangleMeshInterface(custom);
-    shape_ = new btBvhTriangleMeshShape(meshInterface_.Get(), meshInterface_->useQuantize_, true);
+    shape_ = new btBvhTriangleMeshShape(meshInterface_.get(), meshInterface_->useQuantize_, true);
 
     infoMap_ = new btTriangleInfoMap();
-    btGenerateInternalEdgeInfo(shape_.Get(), infoMap_.Get());
+    btGenerateInternalEdgeInfo(shape_.get(), infoMap_.get());
 }
 
 GImpactMeshData::GImpactMeshData(Model* model, unsigned lodLevel)
@@ -302,8 +302,8 @@ void ConvexData::BuildHull(const PODVector<Vector3>& vertices)
         indexData_ = new unsigned[indexCount_];
 
         // Copy vertex data & index data
-        memcpy(vertexData_.Get(), result.mOutputVertices, vertexCount_ * sizeof(Vector3));
-        memcpy(indexData_.Get(), result.mIndices, indexCount_ * sizeof(unsigned));
+        memcpy(vertexData_.get(), result.mOutputVertices, vertexCount_ * sizeof(Vector3));
+        memcpy(indexData_.get(), result.mIndices, indexCount_ * sizeof(unsigned));
 
         lib.ReleaseResult(result);
     }
@@ -344,7 +344,7 @@ HeightfieldData::HeightfieldData(Terrain* terrain, unsigned lodLevel) :
                     break;
             }
 
-            SharedArrayPtr<float> lodHeightData(new float[lodSize.x_ * lodSize.y_]);
+            stl::shared_array<float> lodHeightData(new float[lodSize.x_ * lodSize.y_]);
             for (int y = 0, dY = 0; y < size_.y_ && dY < lodSize.y_; y += skip, ++dY)
             {
                 for (int x = 0, dX = 0; x < size_.x_ && dX < lodSize.x_; x += skip, ++dX)
@@ -357,7 +357,7 @@ HeightfieldData::HeightfieldData(Terrain* terrain, unsigned lodLevel) :
         }
 
         auto points = (unsigned)(size_.x_ * size_.y_);
-        float* data = heightData_.Get();
+        float* data = heightData_.get();
 
         minHeight_ = maxHeight_ = data[0];
         for (unsigned i = 1; i < points; ++i)
@@ -431,19 +431,19 @@ btCollisionShape* CreateCollisionGeometryDataShape(ShapeType shapeType, Collisio
     case SHAPE_TRIANGLEMESH:
         {
             auto* triMesh = static_cast<TriangleMeshData*>(geometry);
-            return new btScaledBvhTriangleMeshShape(triMesh->shape_.Get(), ToBtVector3(scale));
+            return new btScaledBvhTriangleMeshShape(triMesh->shape_.get(), ToBtVector3(scale));
         }
     case SHAPE_CONVEXHULL:
         {
             auto* convex = static_cast<ConvexData*>(geometry);
-            auto* shape = new btConvexHullShape((btScalar*)convex->vertexData_.Get(), convex->vertexCount_, sizeof(Vector3));
+            auto* shape = new btConvexHullShape((btScalar*)convex->vertexData_.get(), convex->vertexCount_, sizeof(Vector3));
             shape->setLocalScaling(ToBtVector3(scale));
             return shape;
         }
     case SHAPE_GIMPACTMESH:
         {
             auto* gimpactMesh = static_cast<GImpactMeshData*>(geometry);
-            auto* shape = new btGImpactMeshShape(gimpactMesh->meshInterface_.Get());
+            auto* shape = new btGImpactMeshShape(gimpactMesh->meshInterface_.get());
             shape->setLocalScaling(ToBtVector3(scale));
             shape->updateBound();
             return shape;
@@ -559,7 +559,7 @@ void CollisionShape::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
             Quaternion worldRotation(worldTransform.Rotation() * rotation_);
 
             btDiscreteDynamicsWorld* world = physicsWorld_->GetWorld();
-            world->debugDrawObject(btTransform(ToBtQuaternion(worldRotation), ToBtVector3(worldPosition)), shape_.Get(), bodyActive ?
+            world->debugDrawObject(btTransform(ToBtQuaternion(worldRotation), ToBtVector3(worldPosition)), shape_.get(), bodyActive ?
                 WHITE : GREEN);
 
             physicsWorld_->SetDebugRenderer(nullptr);
@@ -848,7 +848,7 @@ void CollisionShape::NotifyRigidBody(bool updateMass)
     if (node_ && shape_ && compound)
     {
         // Remove the shape first to ensure it is not added twice
-        compound->removeChildShape(shape_.Get());
+        compound->removeChildShape(shape_.get());
 
         if (IsEnabledEffective())
         {
@@ -864,7 +864,7 @@ void CollisionShape::NotifyRigidBody(bool updateMass)
             btTransform offset;
             offset.setOrigin(ToBtVector3(node_->GetWorldScale() * position));
             offset.setRotation(ToBtQuaternion(rotation_));
-            compound->addChildShape(offset, shape_.Get());
+            compound->addChildShape(offset, shape_.get());
         }
 
         // Finally tell the rigid body to update its mass
@@ -891,11 +891,11 @@ void CollisionShape::ReleaseShape()
     btCompoundShape* compound = GetParentCompoundShape();
     if (shape_ && compound)
     {
-        compound->removeChildShape(shape_.Get());
+        compound->removeChildShape(shape_.get());
         rigidBody_->UpdateMass();
     }
 
-    shape_.Reset();
+    shape_.reset();
 
     geometry_.Reset();
 
@@ -1068,7 +1068,7 @@ void CollisionShape::UpdateShape()
                     auto* heightfield = static_cast<HeightfieldData*>(geometry_.Get());
 
                     shape_ =
-                        new btHeightfieldTerrainShape(heightfield->size_.x_, heightfield->size_.y_, heightfield->heightData_.Get(),
+                        new btHeightfieldTerrainShape(heightfield->size_.x_, heightfield->size_.y_, heightfield->heightData_.get(),
                             1.0f, heightfield->minHeight_, heightfield->maxHeight_, 1, PHY_FLOAT, false);
                     shape_->setLocalScaling(
                         ToBtVector3(Vector3(heightfield->spacing_.x_, 1.0f, heightfield->spacing_.z_) * cachedWorldScale_ * size_));

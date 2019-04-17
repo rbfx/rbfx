@@ -68,7 +68,7 @@ void VertexBuffer::SetShadowed(bool enable)
         if (enable && vertexSize_ && vertexCount_)
             shadowData_ = new unsigned char[vertexCount_ * vertexSize_];
         else
-            shadowData_.Reset();
+            shadowData_.reset();
 
         shadowed_ = enable;
     }
@@ -92,7 +92,7 @@ bool VertexBuffer::SetSize(unsigned vertexCount, const PODVector<VertexElement>&
     if (shadowed_ && vertexCount_ && vertexSize_)
         shadowData_ = new unsigned char[vertexCount_ * vertexSize_];
     else
-        shadowData_.Reset();
+        shadowData_.reset();
 
     return Create();
 }

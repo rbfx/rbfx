@@ -94,7 +94,7 @@ bool OcclusionBuffer::SetSize(int width, int height, bool threaded)
         // Reserve extra memory in case 3D clipping is not exact
         OcclusionBufferData& buffer = buffers_[i];
         buffer.dataWithSafety_ = new int[width * (height + 2) + 2];
-        buffer.data_ = buffer.dataWithSafety_.Get() + width + 1;
+        buffer.data_ = buffer.dataWithSafety_.get() + width + 1;
         buffer.used_ = false;
     }
 
@@ -106,7 +106,7 @@ bool OcclusionBuffer::SetSize(int width, int height, bool threaded)
         width = (width + 1) / 2;
         height = (height + 1) / 2;
 
-        mipBuffers_.Push(SharedArrayPtr<DepthValue>(new DepthValue[width * height]));
+        mipBuffers_.Push(stl::shared_array<DepthValue>(new DepthValue[width * height]));
 
         if (width <= OCCLUSION_MIN_SIZE && height <= OCCLUSION_MIN_SIZE)
             break;
@@ -253,7 +253,7 @@ void OcclusionBuffer::BuildDepthHierarchy()
         for (int y = 0; y < height; ++y)
         {
             int* src = buffers_[0].data_ + (y * 2) * width_;
-            DepthValue* dest = mipBuffers_[0].Get() + y * width;
+            DepthValue* dest = mipBuffers_[0].get() + y * width;
             DepthValue* end = dest + width;
 
             if (y * 2 + 1 < height_)
@@ -297,8 +297,8 @@ void OcclusionBuffer::BuildDepthHierarchy()
 
         for (int y = 0; y < height; ++y)
         {
-            DepthValue* src = mipBuffers_[i - 1].Get() + (y * 2) * prevWidth;
-            DepthValue* dest = mipBuffers_[i].Get() + y * width;
+            DepthValue* src = mipBuffers_[i - 1].get() + (y * 2) * prevWidth;
+            DepthValue* dest = mipBuffers_[i].get() + y * width;
             DepthValue* end = dest + width;
 
             if (y * 2 + 1 < prevHeight)
@@ -418,7 +418,7 @@ bool OcclusionBuffer::IsVisible(const BoundingBox& worldSpaceBox) const
             int left = rect.left_ >> shift;
             int right = rect.right_ >> shift;
 
-            DepthValue* buffer = mipBuffers_[i].Get();
+            DepthValue* buffer = mipBuffers_[i].get();
             DepthValue* row = buffer + (rect.top_ >> shift) * width;
             DepthValue* endRow = buffer + (rect.bottom_ >> shift) * width;
             bool allOccluded = true;

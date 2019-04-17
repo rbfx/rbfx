@@ -147,7 +147,7 @@ void HttpRequest::ThreadFunction()
     while (shouldRun_)
     {
         // Read less than full buffer to be able to distinguish between full and empty ring buffer. Reading may block
-        int bytesRead = mg_read(connection, httpReadBuffer_.Get(), READ_BUFFER_SIZE / 4);
+        int bytesRead = mg_read(connection, httpReadBuffer_.get(), READ_BUFFER_SIZE / 4);
         if (bytesRead <= 0)
             break;
 
@@ -172,14 +172,14 @@ void HttpRequest::ThreadFunction()
         }
 
         if (writePosition_ + bytesRead <= READ_BUFFER_SIZE)
-            memcpy(readBuffer_.Get() + writePosition_, httpReadBuffer_.Get(), (size_t)bytesRead);
+            memcpy(readBuffer_.get() + writePosition_, httpReadBuffer_.get(), (size_t)bytesRead);
         else
         {
             // Handle ring buffer wrap
             unsigned part1 = READ_BUFFER_SIZE - writePosition_;
             unsigned part2 = bytesRead - part1;
-            memcpy(readBuffer_.Get() + writePosition_, httpReadBuffer_.Get(), part1);
-            memcpy(readBuffer_.Get(), httpReadBuffer_.Get() + part1, part2);
+            memcpy(readBuffer_.get() + writePosition_, httpReadBuffer_.get(), part1);
+            memcpy(readBuffer_.get(), httpReadBuffer_.get() + part1, part2);
         }
 
         writePosition_ += bytesRead;
@@ -229,14 +229,14 @@ unsigned HttpRequest::Read(void* dest, unsigned size)
                 bytesAvailable = sizeLeft;
 
             if (readPosition_ + bytesAvailable <= READ_BUFFER_SIZE)
-                memcpy(destPtr, readBuffer_.Get() + readPosition_, bytesAvailable);
+                memcpy(destPtr, readBuffer_.get() + readPosition_, bytesAvailable);
             else
             {
                 // Handle ring buffer wrap
                 unsigned part1 = READ_BUFFER_SIZE - readPosition_;
                 unsigned part2 = bytesAvailable - part1;
-                memcpy(destPtr, readBuffer_.Get() + readPosition_, part1);
-                memcpy(destPtr + part1, readBuffer_.Get(), part2);
+                memcpy(destPtr, readBuffer_.get() + readPosition_, part1);
+                memcpy(destPtr + part1, readBuffer_.get(), part2);
             }
 
             readPosition_ += bytesAvailable;

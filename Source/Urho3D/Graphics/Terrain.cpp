@@ -666,12 +666,12 @@ void Terrain::CreatePatchGeometry(TerrainPatch* patch)
     if (vertexBuffer->GetVertexCount() != row * row)
         vertexBuffer->SetSize(row * row, MASK_POSITION | MASK_NORMAL | MASK_TEXCOORD1 | MASK_TANGENT);
 
-    SharedArrayPtr<unsigned char> cpuVertexData(new unsigned char[row * row * sizeof(Vector3)]);
-    SharedArrayPtr<unsigned char> occlusionCpuVertexData(new unsigned char[row * row * sizeof(Vector3)]);
+    stl::shared_array<unsigned char> cpuVertexData(new unsigned char[row * row * sizeof(Vector3)]);
+    stl::shared_array<unsigned char> occlusionCpuVertexData(new unsigned char[row * row * sizeof(Vector3)]);
 
     auto* vertexData = (float*)vertexBuffer->Lock(0, vertexBuffer->GetVertexCount());
-    auto* positionData = (float*)cpuVertexData.Get();
-    auto* occlusionData = (float*)occlusionCpuVertexData.Get();
+    auto* positionData = (float*)cpuVertexData.get();
+    auto* occlusionData = (float*)occlusionCpuVertexData.get();
     BoundingBox box;
 
     unsigned occlusionLevel = occlusionLodLevel_;
@@ -895,15 +895,15 @@ void Terrain::CreateGeometry()
             updateAll = true;
         }
         else if (!smoothing_)
-            sourceHeightData_.Reset();
+            sourceHeightData_.reset();
     }
     else
     {
         numPatches_ = IntVector2::ZERO;
         numVertices_ = IntVector2::ZERO;
         patchWorldOrigin_ = Vector2::ZERO;
-        heightData_.Reset();
-        sourceHeightData_.Reset();
+        heightData_.reset();
+        sourceHeightData_.reset();
     }
 
     lastNumVertices_ = numVertices_;
@@ -945,7 +945,7 @@ void Terrain::CreateGeometry()
     {
         // Copy heightmap data
         const unsigned char* src = heightMap_->GetData();
-        float* dest = smoothing_ ? sourceHeightData_ : heightData_;
+        float* dest = smoothing_ ? sourceHeightData_.get() : heightData_.get();
         unsigned imgComps = heightMap_->GetComponents();
         unsigned imgRow = heightMap_->GetWidth() * imgComps;
         IntRect updateRegion(-1, -1, -1, -1);

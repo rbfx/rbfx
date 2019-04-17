@@ -89,8 +89,8 @@ bool VertexBuffer::SetData(const void* data)
         return false;
     }
 
-    if (shadowData_ && data != shadowData_.Get())
-        memcpy(shadowData_.Get(), data, vertexCount_ * (size_t)vertexSize_);
+    if (shadowData_ && data != shadowData_.get())
+        memcpy(shadowData_.get(), data, vertexCount_ * (size_t)vertexSize_);
 
     if (object_.name_)
     {
@@ -136,8 +136,8 @@ bool VertexBuffer::SetDataRange(const void* data, unsigned start, unsigned count
     if (!count)
         return true;
 
-    if (shadowData_ && shadowData_.Get() + start * vertexSize_ != data)
-        memcpy(shadowData_.Get() + start * vertexSize_, data, count * (size_t)vertexSize_);
+    if (shadowData_ && shadowData_.get() + start * vertexSize_ != data)
+        memcpy(shadowData_.get() + start * vertexSize_, data, count * (size_t)vertexSize_);
 
     if (object_.name_)
     {
@@ -189,7 +189,7 @@ void* VertexBuffer::Lock(unsigned start, unsigned count, bool discard)
     if (shadowData_)
     {
         lockState_ = LOCK_SHADOW;
-        return shadowData_.Get() + start * vertexSize_;
+        return shadowData_.get() + start * vertexSize_;
     }
     else if (graphics_)
     {
@@ -206,7 +206,7 @@ void VertexBuffer::Unlock()
     switch (lockState_)
     {
     case LOCK_SHADOW:
-        SetDataRange(shadowData_.Get() + lockStart_ * vertexSize_, lockStart_, lockCount_, discardLock_);
+        SetDataRange(shadowData_.get() + lockStart_ * vertexSize_, lockStart_, lockCount_, discardLock_);
         lockState_ = LOCK_NONE;
         break;
 
@@ -257,7 +257,7 @@ bool VertexBuffer::Create()
 bool VertexBuffer::UpdateToGPU()
 {
     if (object_.name_ && shadowData_)
-        return SetData(shadowData_.Get());
+        return SetData(shadowData_.get());
     else
         return false;
 }

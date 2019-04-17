@@ -699,7 +699,7 @@ private:
     /// Node listeners.
     Vector<WeakPtr<Component> > listeners_;
     /// Pointer to implementation.
-    UniquePtr<NodeImpl> impl_;
+    stl::unique_ptr<NodeImpl> impl_;
 
 protected:
     /// User variables.

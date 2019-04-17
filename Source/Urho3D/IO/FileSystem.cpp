@@ -22,7 +22,6 @@
 
 #include "../Precompiled.h"
 
-#include "../Container/ArrayPtr.h"
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/Thread.h"
@@ -610,10 +609,10 @@ bool FileSystem::Copy(const String& srcFileName, const String& destFileName)
         return false;
 
     unsigned fileSize = srcFile->GetSize();
-    SharedArrayPtr<unsigned char> buffer(new unsigned char[fileSize]);
+    stl::shared_array<unsigned char> buffer(new unsigned char[fileSize]);
 
-    unsigned bytesRead = srcFile->Read(buffer.Get(), fileSize);
-    unsigned bytesWritten = destFile->Write(buffer.Get(), fileSize);
+    unsigned bytesRead = srcFile->Read(buffer.get(), fileSize);
+    unsigned bytesWritten = destFile->Write(buffer.get(), fileSize);
     return bytesRead == fileSize && bytesWritten == fileSize;
 }
 

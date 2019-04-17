@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include "../Container/ArrayPtr.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../Resource/Resource.h"
 

@@ -22,8 +22,8 @@
 
 #pragma once
 
+#include <EASTL/unique_ptr.h>
 
-#include "../Container/ArrayPtr.h"
 #include "../Core/Object.h"
 #include "../Core/Timer.h"
 #include "../Core/Thread.h"
@@ -112,7 +112,7 @@ protected:
     /// Thread id on which task was created.
     ThreadID threadID_ = Thread::GetCurrentThreadID();
     /// Object that owns allocated stack memory.
-    SharedArrayPtr<unsigned char> stackOwner_;
+    stl::unique_ptr<unsigned char[]> stackOwner_;
 
     friend class TaskScheduler;
     friend class Tasks;

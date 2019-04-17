@@ -359,8 +359,8 @@ public:
 %typemap(cstype) int *dest "ref int[]"
 %typemap(imtype) int *dest "global::System.IntPtr"
 %csmethodmodifiers Urho3D::SoundSource::Mix "public unsafe";
-%ignore Urho3D::BufferedSoundStream::AddData(const SharedArrayPtr<signed char>& data, unsigned numBytes);
-%ignore Urho3D::BufferedSoundStream::AddData(const SharedArrayPtr<signed short>& data, unsigned numBytes);
+%ignore Urho3D::BufferedSoundStream::AddData(const stl::shared_array<signed char>& data, unsigned numBytes);
+%ignore Urho3D::BufferedSoundStream::AddData(const stl::shared_array<signed short>& data, unsigned numBytes);
 %ignore Urho3D::Sound::GetData;
 
 %include "Urho3D/Audio/AudioDefs.h"
@@ -404,7 +404,7 @@ public:
 %ignore Urho3D::IndexBufferDesc;
 %ignore Urho3D::VertexBufferDesc;
 %ignore Urho3D::GPUObject::GetGraphics;
-%ignore Urho3D::Terrain::GetHeightData; // SharedArrayPtr<float>
+%ignore Urho3D::Terrain::GetHeightData; // stl::shared_array<float>
 %ignore Urho3D::Geometry::GetRawData;
 %ignore Urho3D::Geometry::SetRawVertexData;
 %ignore Urho3D::Geometry::SetRawIndexData;

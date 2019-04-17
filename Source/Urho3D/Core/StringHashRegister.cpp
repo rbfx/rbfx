@@ -36,7 +36,7 @@ namespace Urho3D
 StringHashRegister::StringHashRegister(bool threadSafe)
 {
     if (threadSafe)
-        mutex_ = MakeUnique<Mutex>();
+        mutex_ = new Mutex();
 }
 
 

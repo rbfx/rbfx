@@ -24,7 +24,6 @@
 
 #include "../Container/HashMap.h"
 #include "../Container/RefCounted.h"
-#include "../Container/ArrayPtr.h"
 #include "../Graphics/GPUObject.h"
 #include "../Graphics/GraphicsDefs.h"
 

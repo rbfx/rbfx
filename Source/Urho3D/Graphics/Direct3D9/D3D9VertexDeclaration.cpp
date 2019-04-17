@@ -199,7 +199,7 @@ VertexDeclaration::~VertexDeclaration()
 
 void VertexDeclaration::Create(Graphics* graphics, const PODVector<VertexDeclarationElement>& elements)
 {
-    SharedArrayPtr<D3DVERTEXELEMENT9> elementArray(new D3DVERTEXELEMENT9[elements.Size() + 1]);
+    stl::shared_array<D3DVERTEXELEMENT9> elementArray(new D3DVERTEXELEMENT9[elements.Size() + 1]);
 
     D3DVERTEXELEMENT9* dest = elementArray;
     for (Vector<VertexDeclarationElement>::ConstIterator i = elements.Begin(); i != elements.End(); ++i)

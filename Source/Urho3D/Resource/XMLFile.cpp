@@ -22,7 +22,6 @@
 
 #include "../Precompiled.h"
 
-#include "../Container/ArrayPtr.h"
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../IO/Deserializer.h"
@@ -85,11 +84,11 @@ bool XMLFile::BeginLoad(Deserializer& source)
         return false;
     }
 
-    SharedArrayPtr<char> buffer(new char[dataSize]);
-    if (source.Read(buffer.Get(), dataSize) != dataSize)
+    stl::shared_array<char> buffer(new char[dataSize]);
+    if (source.Read(buffer.get(), dataSize) != dataSize)
         return false;
 
-    if (!document_->load_buffer(buffer.Get(), dataSize))
+    if (!document_->load_buffer(buffer.get(), dataSize))
     {
         URHO3D_LOGERROR("Could not parse XML data from " + source.GetName());
         document_->reset();
@@ -112,7 +111,7 @@ bool XMLFile::BeginLoad(Deserializer& source)
         }
 
         // Patch this XMLFile and leave the original inherited XMLFile as it is
-        UniquePtr<pugi::xml_document> patchDocument(document_.Detach());
+        stl::unique_ptr<pugi::xml_document> patchDocument(document_.detach());
         document_ = new pugi::xml_document();
         document_->reset(*inheritedXMLFile->document_);
         Patch(rootElem);

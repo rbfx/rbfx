@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Container/ArrayPtr.h"
+#include <EASTL/shared_array.h>
+
 #include "../Core/Object.h"
 #include "../Graphics/GraphicsDefs.h"
 
@@ -62,11 +63,11 @@ public:
     /// Set the LOD distance.
     void SetLodDistance(float distance);
     /// Override raw vertex data to be returned for CPU-side operations.
-    void SetRawVertexData(const SharedArrayPtr<unsigned char>& data, const PODVector<VertexElement>& elements);
+    void SetRawVertexData(const stl::shared_array<unsigned char>& data, const PODVector<VertexElement>& elements);
     /// Override raw vertex data to be returned for CPU-side operations using a legacy vertex bitmask.
-    void SetRawVertexData(const SharedArrayPtr<unsigned char>& data, unsigned elementMask);
+    void SetRawVertexData(const stl::shared_array<unsigned char>& data, unsigned elementMask);
     /// Override raw index data to be returned for CPU-side operations.
-    void SetRawIndexData(const SharedArrayPtr<unsigned char>& data, unsigned indexSize);
+    void SetRawIndexData(const stl::shared_array<unsigned char>& data, unsigned indexSize);
     /// Draw.
     void Draw(Graphics* graphics);
 
@@ -105,7 +106,7 @@ public:
     /// Return raw vertex and index data for CPU operations, or null pointers if not available. Will return data of the first vertex buffer if override data not set.
     void GetRawData(const unsigned char*& vertexData, unsigned& vertexSize, const unsigned char*& indexData, unsigned& indexSize, const PODVector<VertexElement>*& elements) const;
     /// Return raw vertex and index data for CPU operations, or null pointers if not available. Will return data of the first vertex buffer if override data not set.
-    void GetRawDataShared(SharedArrayPtr<unsigned char>& vertexData, unsigned& vertexSize, SharedArrayPtr<unsigned char>& indexData,
+    void GetRawDataShared(stl::shared_array<unsigned char>& vertexData, unsigned& vertexSize, stl::shared_array<unsigned char>& indexData,
         unsigned& indexSize, const PODVector<VertexElement>*& elements) const;
     /// Return ray hit distance or infinity if no hit. Requires raw data to be set. Optionally return hit normal and hit uv coordinates at intersect point.
     float GetHitDistance(const Ray& ray, Vector3* outNormal = nullptr, Vector2* outUV = nullptr) const;
@@ -135,9 +136,9 @@ private:
     /// Raw vertex data elements.
     PODVector<VertexElement> rawElements_;
     /// Raw vertex data override.
-    SharedArrayPtr<unsigned char> rawVertexData_;
+    stl::shared_array<unsigned char> rawVertexData_;
     /// Raw index data override.
-    SharedArrayPtr<unsigned char> rawIndexData_;
+    stl::shared_array<unsigned char> rawIndexData_;
     /// Raw vertex data override size.
     unsigned rawVertexSize_;
     /// Raw index data override size.

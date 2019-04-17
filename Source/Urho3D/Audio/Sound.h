@@ -22,7 +22,9 @@
 
 #pragma once
 
-#include "../Container/ArrayPtr.h"
+
+#include <EASTL/shared_array.h>
+
 #include "../Resource/Resource.h"
 
 namespace Urho3D
@@ -67,10 +69,10 @@ public:
     SharedPtr<SoundStream> GetDecoderStream() const;
 
     /// Return shared sound data.
-    SharedArrayPtr<signed char> GetData() const { return data_; }
+    stl::shared_array<signed char> GetData() const { return data_; }
 
     /// Return sound data start.
-    signed char* GetStart() const { return data_.Get(); }
+    signed char* GetStart() const { return data_.get(); }
 
     /// Return loop start.
     signed char* GetRepeat() const { return repeat_; }
@@ -113,7 +115,7 @@ private:
     void LoadParameters();
 
     /// Sound data.
-    SharedArrayPtr<signed char> data_;
+    stl::shared_array<signed char> data_;
     /// Loop start.
     signed char* repeat_;
     /// Sound data end.

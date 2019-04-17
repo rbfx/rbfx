@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Container/ArrayPtr.h"
+#include <EASTL/shared_array.h>
+
 #include "../Core/Mutex.h"
 #include "../Container/RefCounted.h"
 #include "../Core/Thread.h"
@@ -94,9 +95,9 @@ private:
     /// Mutex for synchronizing the worker and the main thread.
     mutable Mutex mutex_;
     /// Read buffer for the worker thread.
-    SharedArrayPtr<unsigned char> httpReadBuffer_;
+    stl::shared_array<unsigned char> httpReadBuffer_;
     /// Read buffer for the main thread.
-    SharedArrayPtr<unsigned char> readBuffer_;
+    stl::shared_array<unsigned char> readBuffer_;
     /// Read buffer read cursor.
     unsigned readPosition_;
     /// Read buffer write cursor.

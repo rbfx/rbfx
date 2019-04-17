@@ -22,8 +22,9 @@
 
 #pragma once
 
+#include <EASTL/shared_array.h>
+
 #include "../Core/Object.h"
-#include "../Container/ArrayPtr.h"
 #include "../Graphics/GPUObject.h"
 #include "../Graphics/GraphicsDefs.h"
 
@@ -85,10 +86,10 @@ public:
     bool GetUsedVertexRange(unsigned start, unsigned count, unsigned& minVertex, unsigned& vertexCount);
 
     /// Return CPU memory shadow data.
-    unsigned char* GetShadowData() const { return shadowData_.Get(); }
+    unsigned char* GetShadowData() const { return shadowData_.get(); }
 
     /// Return shared array pointer to the CPU memory shadow data.
-    SharedArrayPtr<unsigned char> GetShadowDataShared() const { return shadowData_; }
+    stl::shared_array<unsigned char> GetShadowDataShared() const { return shadowData_; }
 
 private:
     /// Create buffer.
@@ -101,7 +102,7 @@ private:
     void UnmapBuffer();
 
     /// Shadow data.
-    SharedArrayPtr<unsigned char> shadowData_;
+    stl::shared_array<unsigned char> shadowData_;
     /// Number of indices.
     unsigned indexCount_;
     /// Index size.

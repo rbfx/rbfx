@@ -143,7 +143,7 @@ protected:
 #endif
 
     /// Spriter instance.
-    UniquePtr<Spriter::SpriterInstance> spriterInstance_;
+    stl::unique_ptr<Spriter::SpriterInstance> spriterInstance_;
 };
 
 }

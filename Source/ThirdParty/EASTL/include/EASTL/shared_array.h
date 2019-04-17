@@ -361,6 +361,36 @@ namespace eastl
 			mAllocator = allocator;
 		}
 
+		// Urho3D:
+
+		/// Get pointer to reference count integer. It may be shared between multiple instances of shared_array<>.
+		int* get_refcount_pointer() const
+		{
+			return mpRefCount;
+		}
+
+		/// Perform a static cast from a shared array pointer of another type.
+		template <class U> void do_static_cast(const shared_array<U>& rhs)
+		{
+			this_type().swap(*this);
+			mpArray = static_cast<T*>(rhs.get());
+			mAllocator = rhs.get_allocator();
+			mpRefCount = rhs.get_refcount_pointer();
+			if (mpRefCount != nullptr)
+				++*mpRefCount;
+		}
+
+		/// Perform a reinterpret cast from a shared array pointer of another type.
+		template <class U> void do_reinterpret_cast(const shared_array<U>& rhs)
+		{
+			this_type().swap(*this);
+			mpArray = reinterpret_cast<T*>(rhs.get());
+			mAllocator = rhs.get_allocator();
+			mpRefCount = rhs.get_refcount_pointer();
+			if (mpRefCount != nullptr)
+				++*mpRefCount;
+		}
+
 	}; // class shared_array
 
 
@@ -419,6 +449,23 @@ namespace eastl
 		return (sharedArray1.get() < sharedArray2.get()); // Alternatively use: std::less<T*>(a.get(), b.get());
 	}
 
+	// Urho3D:
+
+	/// Perform a static cast from one shared array pointer type to another.
+	template <class T, class U> stl::shared_array<T> do_static_cast(const stl::shared_array<U>& ptr)
+	{
+		stl::shared_array<T> ret;
+		ret.StaticCast(ptr);
+		return ret;
+	}
+
+	/// Perform a reinterpret cast from one shared array pointer type to another.
+	template <class T, class U> stl::shared_array<T> do_reinterpret_cast(const stl::shared_array<U>& ptr)
+	{
+		stl::shared_array<T> ret;
+		ret.do_reinterpret_cast(ptr);
+		return ret;
+	}
 
 } // namespace eastl
 

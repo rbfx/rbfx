@@ -163,21 +163,21 @@ void Geometry::SetLodDistance(float distance)
     lodDistance_ = distance;
 }
 
-void Geometry::SetRawVertexData(const SharedArrayPtr<unsigned char>& data, const PODVector<VertexElement>& elements)
+void Geometry::SetRawVertexData(const stl::shared_array<unsigned char>& data, const PODVector<VertexElement>& elements)
 {
     rawVertexData_ = data;
     rawVertexSize_ = VertexBuffer::GetVertexSize(elements);
     rawElements_ = elements;
 }
 
-void Geometry::SetRawVertexData(const SharedArrayPtr<unsigned char>& data, unsigned elementMask)
+void Geometry::SetRawVertexData(const stl::shared_array<unsigned char>& data, unsigned elementMask)
 {
     rawVertexData_ = data;
     rawVertexSize_ = VertexBuffer::GetVertexSize(elementMask);
     rawElements_ = VertexBuffer::GetElements(elementMask);
 }
 
-void Geometry::SetRawIndexData(const SharedArrayPtr<unsigned char>& data, unsigned indexSize)
+void Geometry::SetRawIndexData(const stl::shared_array<unsigned char>& data, unsigned indexSize)
 {
     rawIndexData_ = data;
     rawIndexSize_ = indexSize;
@@ -224,7 +224,7 @@ void Geometry::GetRawData(const unsigned char*& vertexData, unsigned& vertexSize
 {
     if (rawVertexData_)
     {
-        vertexData = rawVertexData_;
+        vertexData = rawVertexData_.get();
         vertexSize = rawVertexSize_;
         elements = &rawElements_;
     }
@@ -243,7 +243,7 @@ void Geometry::GetRawData(const unsigned char*& vertexData, unsigned& vertexSize
 
     if (rawIndexData_)
     {
-        indexData = rawIndexData_;
+        indexData = rawIndexData_.get();
         indexSize = rawIndexSize_;
     }
     else
@@ -264,8 +264,8 @@ void Geometry::GetRawData(const unsigned char*& vertexData, unsigned& vertexSize
     }
 }
 
-void Geometry::GetRawDataShared(SharedArrayPtr<unsigned char>& vertexData, unsigned& vertexSize,
-    SharedArrayPtr<unsigned char>& indexData, unsigned& indexSize, const PODVector<VertexElement>*& elements) const
+void Geometry::GetRawDataShared(stl::shared_array<unsigned char>& vertexData, unsigned& vertexSize,
+    stl::shared_array<unsigned char>& indexData, unsigned& indexSize, const PODVector<VertexElement>*& elements) const
 {
     if (rawVertexData_)
     {

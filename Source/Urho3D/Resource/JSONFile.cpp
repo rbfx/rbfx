@@ -22,7 +22,6 @@
 
 #include "../Precompiled.h"
 
-#include "../Container/ArrayPtr.h"
 #include "../Core/Profiler.h"
 #include "../Core/Context.h"
 #include "../IO/Deserializer.h"
@@ -120,13 +119,13 @@ bool JSONFile::BeginLoad(Deserializer& source)
         return false;
     }
 
-    SharedArrayPtr<char> buffer(new char[dataSize + 1]);
-    if (source.Read(buffer.Get(), dataSize) != dataSize)
+    stl::shared_array<char> buffer(new char[dataSize + 1]);
+    if (source.Read(buffer.get(), dataSize) != dataSize)
         return false;
     buffer[dataSize] = '\0';
 
     rapidjson::Document document;
-    if (document.Parse<kParseCommentsFlag | kParseTrailingCommasFlag>(buffer).HasParseError())
+    if (document.Parse<kParseCommentsFlag | kParseTrailingCommasFlag>(buffer.get()).HasParseError())
     {
         URHO3D_LOGERROR("Could not parse JSON data from " + source.GetName());
         return false;

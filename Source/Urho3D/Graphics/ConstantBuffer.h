@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Container/ArrayPtr.h"
+#include <EASTL/unique_ptr.h>
+
 #include "../Core/Object.h"
 #include "../Graphics/GPUObject.h"
 #include "../Graphics/GraphicsDefs.h"
@@ -68,7 +69,7 @@ public:
 
 private:
     /// Shadow data.
-    SharedArrayPtr<unsigned char> shadowData_;
+    stl::unique_ptr<unsigned char[]> shadowData_;
     /// Buffer byte size.
     unsigned size_{};
     /// Dirty flag.

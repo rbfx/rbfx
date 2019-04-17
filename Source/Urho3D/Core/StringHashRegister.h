@@ -22,8 +22,9 @@
 
 #pragma once
 
+#include <EASTL/unique_ptr.h>
+
 #include "../Container/HashMap.h"
-#include "../Container/Ptr.h"
 #include "../Container/Str.h"
 
 namespace Urho3D
@@ -59,7 +60,7 @@ private:
     /// Hash to string map.
     StringMap map_;
     /// Mutex.
-    UniquePtr<Mutex> mutex_;
+    stl::unique_ptr<Mutex> mutex_;
 };
 
 }

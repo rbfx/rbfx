@@ -22,8 +22,9 @@
 
 #pragma once
 
+#include <EASTL/unique_ptr.h>
+
 #include "../Audio/AudioDefs.h"
-#include "../Container/ArrayPtr.h"
 #include "../Container/HashSet.h"
 #include "../Core/Mutex.h"
 #include "../Core/Object.h"
@@ -124,7 +125,7 @@ private:
     void UpdateInternal(float timeStep);
 
     /// Clipping buffer for mixing.
-    SharedArrayPtr<int> clipBuffer_;
+    stl::unique_ptr<int[]> clipBuffer_;
     /// Audio thread mutex.
     Mutex audioMutex_;
     /// SDL audio device ID.

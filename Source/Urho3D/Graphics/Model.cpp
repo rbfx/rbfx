@@ -135,12 +135,12 @@ bool Model::BeginLoad(Deserializer& source)
         if (async)
         {
             desc.data_ = new unsigned char[desc.dataSize_];
-            source.Read(desc.data_.Get(), desc.dataSize_);
+            source.Read(desc.data_.get(), desc.dataSize_);
         }
         else
         {
             // If not async loading, use locking to avoid extra allocation & copy
-            desc.data_.Reset(); // Make sure no previous data
+            desc.data_.reset(); // Make sure no previous data
             buffer->SetShadowed(true);
             buffer->SetSize(desc.vertexCount_, desc.vertexElements_);
             void* dest = buffer->Lock(0, desc.vertexCount_);
@@ -170,12 +170,12 @@ bool Model::BeginLoad(Deserializer& source)
             loadIBData_[i].indexSize_ = indexSize;
             loadIBData_[i].dataSize_ = indexCount * indexSize;
             loadIBData_[i].data_ = new unsigned char[loadIBData_[i].dataSize_];
-            source.Read(loadIBData_[i].data_.Get(), loadIBData_[i].dataSize_);
+            source.Read(loadIBData_[i].data_.get(), loadIBData_[i].dataSize_);
         }
         else
         {
             // If not async loading, use locking to avoid extra allocation & copy
-            loadIBData_[i].data_.Reset(); // Make sure no previous data
+            loadIBData_[i].data_.reset(); // Make sure no previous data
             buffer->SetShadowed(true);
             buffer->SetSize(indexCount, indexSize > sizeof(unsigned short));
             void* dest = buffer->Lock(0, indexCount);
@@ -329,7 +329,7 @@ bool Model::EndLoad()
         {
             buffer->SetShadowed(true);
             buffer->SetSize(desc.vertexCount_, desc.vertexElements_);
-            buffer->SetData(desc.data_.Get());
+            buffer->SetData(desc.data_.get());
         }
     }
 
@@ -342,7 +342,7 @@ bool Model::EndLoad()
         {
             buffer->SetShadowed(true);
             buffer->SetSize(desc.indexCount_, desc.indexSize_ > sizeof(unsigned short));
-            buffer->SetData(desc.data_.Get());
+            buffer->SetData(desc.data_.get());
         }
     }
 
@@ -447,7 +447,7 @@ bool Model::Save(Serializer& dest) const
             if (j->second_.elementMask_ & MASK_TANGENT)
                 vertexSize += sizeof(Vector3);
 
-            dest.Write(j->second_.morphData_.Get(), vertexSize * j->second_.vertexCount_);
+            dest.Write(j->second_.morphData_.get(), vertexSize * j->second_.vertexCount_);
         }
     }
 
@@ -721,8 +721,8 @@ SharedPtr<Model> Model::Clone(const String& cloneName) const
             VertexBufferMorph& vbMorph = j->second_;
             if (vbMorph.dataSize_)
             {
-                SharedArrayPtr<unsigned char> cloneData(new unsigned char[vbMorph.dataSize_]);
-                memcpy(cloneData.Get(), vbMorph.morphData_.Get(), vbMorph.dataSize_);
+                stl::shared_array<unsigned char> cloneData(new unsigned char[vbMorph.dataSize_]);
+                memcpy(cloneData.get(), vbMorph.morphData_.get(), vbMorph.dataSize_);
                 vbMorph.morphData_ = cloneData;
             }
         }

@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Container/ArrayPtr.h"
+#include <EASTL/shared_array.h>
+
 #include "../Core/Object.h"
 #include "../Graphics/GPUObject.h"
 #include "../Graphics/GraphicsDefs.h"
@@ -108,10 +109,10 @@ public:
     VertexMaskFlags GetElementMask() const { return elementMask_; }
 
     /// Return CPU memory shadow data.
-    unsigned char* GetShadowData() const { return shadowData_.Get(); }
+    unsigned char* GetShadowData() const { return shadowData_.get(); }
 
     /// Return shared array pointer to the CPU memory shadow data.
-    SharedArrayPtr<unsigned char> GetShadowDataShared() const { return shadowData_; }
+    stl::shared_array<unsigned char> GetShadowDataShared() const { return shadowData_; }
 
     /// Return buffer hash for building vertex declarations. Used internally.
     unsigned long long GetBufferHash(unsigned streamIndex) { return elementHash_ << (streamIndex * 16); }
@@ -150,7 +151,7 @@ private:
     void UnmapBuffer();
 
     /// Shadow data.
-    SharedArrayPtr<unsigned char> shadowData_;
+    stl::shared_array<unsigned char> shadowData_;
     /// Number of vertices.
     unsigned vertexCount_{};
     /// Vertex size.

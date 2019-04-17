@@ -22,7 +22,6 @@
 
 #include "../Precompiled.h"
 
-#include "../Container/ArrayPtr.h"
 #include "../Core/Context.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Texture2D.h"
@@ -289,12 +288,12 @@ bool AnimationSet2D::BeginLoadSpriter(Deserializer& source)
         return false;
     }
 
-    SharedArrayPtr<char> buffer(new char[dataSize]);
-    if (source.Read(buffer.Get(), dataSize) != dataSize)
+    stl::shared_array<char> buffer(new char[dataSize]);
+    if (source.Read(buffer.get(), dataSize) != dataSize)
         return false;
 
     spriterData_ = new Spriter::SpriterData();
-    if (!spriterData_->Load(buffer.Get(), dataSize))
+    if (!spriterData_->Load(buffer.get(), dataSize))
     {
         URHO3D_LOGERROR("Could not spriter data from " + source.GetName());
         return false;
@@ -455,8 +454,8 @@ bool AnimationSet2D::EndLoadSpriter()
             texture->SetSize(allocator.GetWidth(), allocator.GetHeight(), Graphics::GetRGBAFormat());
 
             auto textureDataSize = (unsigned)allocator.GetWidth() * allocator.GetHeight() * 4;
-            SharedArrayPtr<unsigned char> textureData(new unsigned char[textureDataSize]);
-            memset(textureData.Get(), 0, textureDataSize);
+            stl::shared_array<unsigned char> textureData(new unsigned char[textureDataSize]);
+            memset(textureData.get(), 0, textureDataSize);
 
             sprite_ = context_->CreateObject<Sprite2D>();
             sprite_->SetTexture(texture);
@@ -468,7 +467,7 @@ bool AnimationSet2D::EndLoadSpriter()
 
                 for (int y = 0; y < image->GetHeight(); ++y)
                 {
-                    memcpy(textureData.Get() + ((info.y + y) * allocator.GetWidth() + info.x) * 4,
+                    memcpy(textureData.get() + ((info.y + y) * allocator.GetWidth() + info.x) * 4,
                         image->GetData() + y * image->GetWidth() * 4, (size_t)image->GetWidth() * 4);
                 }
 
@@ -481,7 +480,7 @@ bool AnimationSet2D::EndLoadSpriter()
                 spriterFileSprites_[key] = sprite;
             }
 
-            texture->SetData(0, 0, 0, allocator.GetWidth(), allocator.GetHeight(), textureData.Get());
+            texture->SetData(0, 0, 0, allocator.GetWidth(), allocator.GetHeight(), textureData.get());
         }
         else
         {
@@ -521,7 +520,7 @@ void AnimationSet2D::Dispose()
     }
 #endif
 
-    spriterData_.Reset();
+    spriterData_.reset();
 
     sprite_.Reset();
     spriteSheet_.Reset();

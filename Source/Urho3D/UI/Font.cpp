@@ -65,7 +65,7 @@ Font::~Font()
 {
     // To ensure FreeType deallocates properly, first clear all faces, then release the raw font data
     ReleaseFaces();
-    fontData_.Reset();
+    fontData_.reset();
 }
 
 void Font::RegisterObject(Context* context)
@@ -92,7 +92,7 @@ bool Font::BeginLoad(Deserializer& source)
     }
     else
     {
-        fontData_.Reset();
+        fontData_.reset();
         return false;
     }
 

@@ -231,15 +231,15 @@ unsigned File::Read(void* dest, unsigned size)
                 }
 
                 /// \todo Handle errors
-                ReadInternal(inputBuffer_.Get(), packedSize);
-                LZ4_decompress_fast((const char*)inputBuffer_.Get(), (char*)readBuffer_.Get(), unpackedSize);
+                ReadInternal(inputBuffer_.get(), packedSize);
+                LZ4_decompress_fast((const char*)inputBuffer_.get(), (char*)readBuffer_.get(), unpackedSize);
 
                 readBufferSize_ = unpackedSize;
                 readBufferOffset_ = 0;
             }
 
             unsigned copySize = Min((readBufferSize_ - readBufferOffset_), sizeLeft);
-            memcpy(destPtr, readBuffer_.Get() + readBufferOffset_, copySize);
+            memcpy(destPtr, readBuffer_.get() + readBufferOffset_, copySize);
             destPtr += copySize;
             sizeLeft -= copySize;
             readBufferOffset_ += copySize;
@@ -390,8 +390,8 @@ void File::Close()
     }
 #endif
 
-    readBuffer_.Reset();
-    inputBuffer_.Reset();
+    readBuffer_.reset();
+    inputBuffer_.reset();
 
     if (handle_)
     {
@@ -570,10 +570,10 @@ bool File::Copy(File* srcFile)
         return false;
 
     unsigned fileSize = srcFile->GetSize();
-    SharedArrayPtr<unsigned char> buffer(new unsigned char[fileSize]);
+    stl::shared_array<unsigned char> buffer(new unsigned char[fileSize]);
 
-    unsigned bytesRead = srcFile->Read(buffer.Get(), fileSize);
-    unsigned bytesWritten = Write(buffer.Get(), fileSize);
+    unsigned bytesRead = srcFile->Read(buffer.get(), fileSize);
+    unsigned bytesWritten = Write(buffer.get(), fileSize);
     return bytesRead == fileSize && bytesWritten == fileSize;
 
 }

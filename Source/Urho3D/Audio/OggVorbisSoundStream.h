@@ -22,8 +22,9 @@
 
 #pragma once
 
+#include <EASTL/shared_array.h>
+
 #include "../Audio/SoundStream.h"
-#include "../Container/ArrayPtr.h"
 
 namespace Urho3D
 {
@@ -49,7 +50,7 @@ protected:
     /// Decoder state.
     void* decoder_;
     /// Compressed sound data.
-    SharedArrayPtr<signed char> data_;
+    stl::shared_array<signed char> data_;
     /// Compressed sound data size in bytes.
     unsigned dataSize_;
 };

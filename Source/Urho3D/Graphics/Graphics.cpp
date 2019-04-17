@@ -327,7 +327,7 @@ void* Graphics::ReserveScratchBuffer(unsigned size)
         if (!i->reserved_ && i->size_ >= size)
         {
             i->reserved_ = true;
-            return i->data_.Get();
+            return i->data_.get();
         }
     }
 
@@ -336,26 +336,26 @@ void* Graphics::ReserveScratchBuffer(unsigned size)
     {
         if (!i->reserved_)
         {
-            i->data_ = new unsigned char[size];
+            i->data_.reset(new unsigned char[size]);
             i->size_ = size;
             i->reserved_ = true;
 
             URHO3D_LOGTRACE("Resized scratch buffer to size " + String(size));
 
-            return i->data_.Get();
+            return i->data_.get();
         }
     }
 
     // Finally allocate a new buffer
     ScratchBuffer newBuffer;
-    newBuffer.data_ = new unsigned char[size];
+    newBuffer.data_.reset(new unsigned char[size]);
     newBuffer.size_ = size;
     newBuffer.reserved_ = true;
     scratchBuffers_.Push(newBuffer);
 
     URHO3D_LOGDEBUG("Allocated scratch buffer with size " + String(size));
 
-    return newBuffer.data_.Get();
+    return newBuffer.data_.get();
 }
 
 void Graphics::FreeScratchBuffer(void* buffer)
@@ -365,7 +365,7 @@ void Graphics::FreeScratchBuffer(void* buffer)
 
     for (Vector<ScratchBuffer>::Iterator i = scratchBuffers_.Begin(); i != scratchBuffers_.End(); ++i)
     {
-        if (i->reserved_ && i->data_.Get() == buffer)
+        if (i->reserved_ && i->data_.get() == buffer)
         {
             i->reserved_ = false;
             return;
@@ -381,7 +381,7 @@ void Graphics::CleanupScratchBuffers()
     {
         if (!i->reserved_ && i->size_ > maxScratchBufferRequest_ * 2 && i->size_ >= 1024 * 1024)
         {
-            i->data_ = maxScratchBufferRequest_ > 0 ? (new unsigned char[maxScratchBufferRequest_]) : nullptr;
+            i->data_.reset(maxScratchBufferRequest_ > 0 ? (new unsigned char[maxScratchBufferRequest_]) : nullptr);
             i->size_ = maxScratchBufferRequest_;
 
             URHO3D_LOGTRACE("Resized scratch buffer to size " + String(maxScratchBufferRequest_));

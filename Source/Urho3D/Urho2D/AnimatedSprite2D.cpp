@@ -526,7 +526,7 @@ void AnimatedSprite2D::Dispose()
         skeleton_ = 0;
     }
 #endif
-    spriterInstance_.Reset();
+    spriterInstance_.reset();
 }
 
 }

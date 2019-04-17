@@ -22,7 +22,8 @@
 
 #include "../Precompiled.h"
 
-#include "../Container/ArrayPtr.h"
+#include <EASTL/shared_array.h>
+
 #include "../IO/Compression.h"
 #include "../IO/Deserializer.h"
 #include "../IO/Serializer.h"
@@ -67,17 +68,17 @@ bool CompressStream(Serializer& dest, Deserializer& src)
     }
 
     auto maxDestSize = (unsigned)LZ4_compressBound(srcSize);
-    SharedArrayPtr<unsigned char> srcBuffer(new unsigned char[srcSize]);
-    SharedArrayPtr<unsigned char> destBuffer(new unsigned char[maxDestSize]);
+    stl::shared_array<unsigned char> srcBuffer(new unsigned char[srcSize]);
+    stl::shared_array<unsigned char> destBuffer(new unsigned char[maxDestSize]);
 
-    if (src.Read(srcBuffer, srcSize) != srcSize)
+    if (src.Read(srcBuffer.get(), srcSize) != srcSize)
         return false;
 
-    auto destSize = (unsigned)LZ4_compress_HC((const char*)srcBuffer.Get(), (char*)destBuffer.Get(), srcSize, LZ4_compressBound(srcSize), 0);
+    auto destSize = (unsigned)LZ4_compress_HC((const char*)srcBuffer.get(), (char*)destBuffer.get(), srcSize, LZ4_compressBound(srcSize), 0);
     bool success = true;
     success &= dest.WriteUInt(srcSize);
     success &= dest.WriteUInt(destSize);
-    success &= dest.Write(destBuffer, destSize) == destSize;
+    success &= dest.Write(destBuffer.get(), destSize) == destSize;
     return success;
 }
 
@@ -94,14 +95,14 @@ bool DecompressStream(Serializer& dest, Deserializer& src)
     if (srcSize > src.GetSize())
         return false; // Illegal source (packed data) size reported, possibly not valid data
 
-    SharedArrayPtr<unsigned char> srcBuffer(new unsigned char[srcSize]);
-    SharedArrayPtr<unsigned char> destBuffer(new unsigned char[destSize]);
+    stl::shared_array<unsigned char> srcBuffer(new unsigned char[srcSize]);
+    stl::shared_array<unsigned char> destBuffer(new unsigned char[destSize]);
 
-    if (src.Read(srcBuffer, srcSize) != srcSize)
+    if (src.Read(srcBuffer.get(), srcSize) != srcSize)
         return false;
 
-    LZ4_decompress_fast((const char*)srcBuffer.Get(), (char*)destBuffer.Get(), destSize);
-    return dest.Write(destBuffer, destSize) == destSize;
+    LZ4_decompress_fast((const char*)srcBuffer.get(), (char*)destBuffer.get(), destSize);
+    return dest.Write(destBuffer.get(), destSize) == destSize;
 }
 
 VectorBuffer CompressVectorBuffer(VectorBuffer& src)

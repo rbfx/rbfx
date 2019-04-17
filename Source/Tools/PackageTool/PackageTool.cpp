@@ -21,7 +21,6 @@
 //
 
 #include <Urho3D/Core/Context.h>
-#include <Urho3D/Container/ArrayPtr.h>
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
@@ -31,6 +30,7 @@
 #include <windows.h>
 #endif
 
+#include <EASTL/unique_ptr.h>
 #include <LZ4/lz4.h>
 #include <LZ4/lz4hc.h>
 
@@ -281,7 +281,7 @@ void WritePackageFile(const String& fileName, const String& rootDir)
 
         unsigned dataSize = entries_[i].size_;
         totalDataSize += dataSize;
-        SharedArrayPtr<unsigned char> buffer(new unsigned char[dataSize]);
+        stl::unique_ptr<unsigned char[]> buffer(new unsigned char[dataSize]);
 
         if (srcFile.Read(&buffer[0], dataSize) != dataSize)
             ErrorExit("Could not read file " + fileFullPath);
@@ -301,7 +301,7 @@ void WritePackageFile(const String& fileName, const String& rootDir)
         }
         else
         {
-            SharedArrayPtr<unsigned char> compressBuffer(new unsigned char[LZ4_compressBound(blockSize_)]);
+            stl::unique_ptr<unsigned char[]> compressBuffer(new unsigned char[LZ4_compressBound(blockSize_)]);
 
             unsigned pos = 0;
 
@@ -311,13 +311,13 @@ void WritePackageFile(const String& fileName, const String& rootDir)
                 if (pos + unpackedSize > dataSize)
                     unpackedSize = dataSize - pos;
 
-                auto packedSize = (unsigned)LZ4_compress_HC((const char*)&buffer[pos], (char*)compressBuffer.Get(), unpackedSize, LZ4_compressBound(unpackedSize), 0);
+                auto packedSize = (unsigned)LZ4_compress_HC((const char*)&buffer[pos], (char*)compressBuffer.get(), unpackedSize, LZ4_compressBound(unpackedSize), 0);
                 if (!packedSize)
                     ErrorExit("LZ4 compression failed for file " + entries_[i].name_ + " at offset " + String(pos));
 
                 dest.WriteUShort((unsigned short)unpackedSize);
                 dest.WriteUShort((unsigned short)packedSize);
-                dest.Write(compressBuffer.Get(), packedSize);
+                dest.Write(compressBuffer.get(), packedSize);
 
                 pos += unpackedSize;
             }

@@ -99,7 +99,7 @@ public:
     PhysicsWorld* GetPhysicsWorld() const { return physicsWorld_; }
 
     /// Return Bullet constraint.
-    btTypedConstraint* GetConstraint() const { return constraint_.Get(); }
+    btTypedConstraint* GetConstraint() const { return constraint_.get(); }
 
     /// Return constraint type.
     ConstraintType GetConstraintType() const { return constraintType_; }
@@ -172,7 +172,7 @@ private:
     /// Other rigid body.
     WeakPtr<RigidBody> otherBody_;
     /// Bullet constraint.
-    UniquePtr<btTypedConstraint> constraint_;
+    stl::unique_ptr<btTypedConstraint> constraint_;
     /// Constraint type.
     ConstraintType constraintType_;
     /// Constraint position.

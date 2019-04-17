@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include "../Container/ArrayPtr.h"
 #include "../Container/HashSet.h"
 #include "../Math/BoundingBox.h"
 #include "../Math/Matrix3x4.h"
@@ -303,9 +302,9 @@ protected:
     /// Detour navigation mesh query.
     dtNavMeshQuery* navMeshQuery_;
     /// Detour navigation mesh query filter.
-    UniquePtr<dtQueryFilter> queryFilter_;
+    stl::unique_ptr<dtQueryFilter> queryFilter_;
     /// Temporary data for finding a path.
-    UniquePtr<FindPathData> pathData_;
+    stl::unique_ptr<FindPathData> pathData_;
     /// Tile size.
     int tileSize_;
     /// Cell size.

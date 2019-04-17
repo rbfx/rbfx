@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <EASTL/unique_ptr.h>
+
 #include "../Navigation/NavigationMesh.h"
 
 class dtTileCache;
@@ -133,11 +135,11 @@ private:
     /// Detour tile cache instance that works with the nav mesh.
     dtTileCache* tileCache_{};
     /// Used by dtTileCache to allocate blocks of memory.
-    UniquePtr<dtTileCacheAlloc> allocator_;
+    stl::unique_ptr<dtTileCacheAlloc> allocator_;
     /// Used by dtTileCache to compress the original tiles to use when reconstructing for changes.
-    UniquePtr<dtTileCacheCompressor> compressor_;
+    stl::unique_ptr<dtTileCacheCompressor> compressor_;
     /// Mesh processor used by Detour, in this case a 'pass-through' processor.
-    UniquePtr<dtTileCacheMeshProcess> meshProcessor_;
+    stl::unique_ptr<dtTileCacheMeshProcess> meshProcessor_;
     /// Maximum number of obstacle objects allowed.
     unsigned maxObstacles_{1024};
     /// Maximum number of layers that are allowed to be constructed.

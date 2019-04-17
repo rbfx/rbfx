@@ -136,11 +136,11 @@ public:
     bool GetInterceptNetworkUpdate(const String& attributeName) const;
 
     /// Return the network attribute state, if allocated.
-    NetworkState* GetNetworkState() const { return networkState_.Get(); }
+    NetworkState* GetNetworkState() const { return networkState_.get(); }
 
 protected:
     /// Network attribute state.
-    UniquePtr<NetworkState> networkState_;
+    stl::unique_ptr<NetworkState> networkState_;
 
 private:
     /// Set instance-level default value. Allocate the internal data structure as necessary.
@@ -149,7 +149,7 @@ private:
     Variant GetInstanceDefault(const String& name) const;
 
     /// Attribute default value at each instance level.
-    UniquePtr<VariantMap> instanceDefaultValues_;
+    stl::unique_ptr<VariantMap> instanceDefaultValues_;
     /// When true, store the attribute value as instance's default value (internal use only).
     bool setInstanceDefault_;
     /// Temporary flag.

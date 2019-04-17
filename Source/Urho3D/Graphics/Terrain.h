@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include "../Container/ArrayPtr.h"
 #include "../Scene/Component.h"
 
 namespace Urho3D
@@ -158,7 +157,7 @@ public:
     Terrain* GetEastNeighbor() const { return east_; }
 
     /// Return raw height data.
-    SharedArrayPtr<float> GetHeightData() const { return heightData_; }
+    stl::shared_array<float> GetHeightData() const { return heightData_; }
 
     /// Return draw distance.
     float GetDrawDistance() const { return drawDistance_; }
@@ -250,9 +249,9 @@ private:
     /// Heightmap image.
     SharedPtr<Image> heightMap_;
     /// Height data.
-    SharedArrayPtr<float> heightData_;
+    stl::shared_array<float> heightData_;
     /// Source height data for smoothing.
-    SharedArrayPtr<float> sourceHeightData_;
+    stl::shared_array<float> sourceHeightData_;
     /// Material.
     SharedPtr<Material> material_;
     /// Terrain patches.

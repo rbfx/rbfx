@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Container/ArrayPtr.h"
+#include <EASTL/unique_ptr.h>
+
 #include "../Container/HashSet.h"
 #include "../Core/Mutex.h"
 #include "../Core/Object.h"
@@ -70,7 +71,7 @@ struct ScratchBuffer
     }
 
     /// Buffer data.
-    SharedArrayPtr<unsigned char> data_;
+    stl::shared_array<unsigned char> data_;
     /// Data size.
     unsigned size_;
     /// Reserved flag.

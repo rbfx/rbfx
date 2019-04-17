@@ -22,9 +22,10 @@
 
 #pragma once
 
+#include <EASTL/shared_array.h>
+
 #include "../Core/Object.h"
 #include "../Core/Timer.h"
-#include "../Container/ArrayPtr.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../Math/Frustum.h"
 
@@ -52,7 +53,7 @@ struct DepthValue
 struct OcclusionBufferData
 {
     /// Full buffer data with safety padding.
-    SharedArrayPtr<int> dataWithSafety_;
+    stl::shared_array<int> dataWithSafety_;
     /// Buffer data.
     int* data_;
     /// Use flag.
@@ -183,7 +184,7 @@ private:
     /// Highest-level buffer data per thread.
     Vector<OcclusionBufferData> buffers_;
     /// Reduced size depth buffers.
-    Vector<SharedArrayPtr<DepthValue> > mipBuffers_;
+    Vector<stl::shared_array<DepthValue> > mipBuffers_;
     /// Submitted render jobs.
     PODVector<OcclusionBatch> batches_;
     /// Buffer width.

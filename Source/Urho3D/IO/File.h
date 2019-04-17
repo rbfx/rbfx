@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Container/ArrayPtr.h"
+#include <EASTL/shared_array.h>
+
 #include "../Core/Object.h"
 #include "../IO/AbstractFile.h"
 
@@ -137,9 +138,9 @@ private:
     SDL_RWops* assetHandle_;
 #endif
     /// Read buffer for Android asset or compressed file loading.
-    SharedArrayPtr<unsigned char> readBuffer_;
+    stl::shared_array<unsigned char> readBuffer_;
     /// Decompression input buffer for compressed file loading.
-    SharedArrayPtr<unsigned char> inputBuffer_;
+    stl::shared_array<unsigned char> inputBuffer_;
     /// Read buffer position.
     unsigned readBufferOffset_;
     /// Bytes in the current read buffer.

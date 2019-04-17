@@ -44,7 +44,7 @@ OggVorbisSoundStream::OggVorbisSoundStream(const Sound* sound)
     data_ = sound->GetData();
     dataSize_ = sound->GetDataSize();
     int error;
-    decoder_ = stb_vorbis_open_memory((unsigned char*)data_.Get(), dataSize_, &error, nullptr);
+    decoder_ = stb_vorbis_open_memory((unsigned char*)data_.get(), dataSize_, &error, nullptr);
 }
 
 OggVorbisSoundStream::~OggVorbisSoundStream()

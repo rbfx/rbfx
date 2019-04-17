@@ -443,7 +443,7 @@ private:
 
 #ifdef __EMSCRIPTEN__
     /// Emscripten Input glue instance.
-    UniquePtr<EmscriptenInput> emscriptenInput_;
+    stl::unique_ptr<EmscriptenInput> emscriptenInput_;
     /// Flag used to detect mouse jump when exiting pointer-lock.
     bool emscriptenExitingPointerLock_;
     /// Flag used to detect mouse jump on initial mouse click when entering pointer-lock.

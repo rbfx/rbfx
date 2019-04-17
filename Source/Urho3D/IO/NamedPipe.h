@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include "../Container/ArrayPtr.h"
 #include "../Core/Object.h"
 #include "../IO/AbstractFile.h"
 

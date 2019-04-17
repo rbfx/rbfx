@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Container/ArrayPtr.h"
+#include <EASTL/shared_array.h>
+
 #include "../Container/Ptr.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../Graphics/Skeleton.h"
@@ -47,7 +48,7 @@ struct VertexBufferMorph
     /// Morphed vertices data size as bytes.
     unsigned dataSize_;
     /// Morphed vertices. Stored packed as <index, data> pairs.
-    SharedArrayPtr<unsigned char> morphData_;
+    stl::shared_array<unsigned char> morphData_;
 };
 
 /// Definition of a model's vertex morph.
@@ -85,7 +86,7 @@ struct VertexBufferDesc
     /// Vertex data size.
     unsigned dataSize_;
     /// Vertex data.
-    SharedArrayPtr<unsigned char> data_;
+    stl::shared_array<unsigned char> data_;
 };
 
 /// Description of index buffer data for asynchronous loading.
@@ -98,7 +99,7 @@ struct IndexBufferDesc
     /// Index data size.
     unsigned dataSize_;
     /// Index data.
-    SharedArrayPtr<unsigned char> data_;
+    stl::shared_array<unsigned char> data_;
 };
 
 /// Description of a geometry for asynchronous loading.
