@@ -22,8 +22,9 @@
 
 #pragma once
 
+#include <EASTL/intrusive_list.h>
+
 #include "../Container/Allocator.h"
-#include "../Container/LinkedList.h"
 #include "../Core/Mutex.h"
 #include "../Core/Profiler.h"
 #include "../Core/StringHashRegister.h"
@@ -192,7 +193,7 @@ public:
     bool HasSubscribedToEvent(Object* sender, StringHash eventType) const;
 
     /// Return whether has subscribed to any event.
-    bool HasEventHandlers() const { return !eventHandlers_.Empty(); }
+    bool HasEventHandlers() const { return !eventHandlers_.empty(); }
 
     /// Template version of returning a subsystem.
     template <class T> T* GetSubsystem() const;
@@ -251,16 +252,22 @@ protected:
 
 private:
     /// Find the first event handler with no specific sender.
-    EventHandler* FindEventHandler(StringHash eventType, EventHandler** previous = nullptr) const;
+    stl::intrusive_list<EventHandler>::iterator FindEventHandler(StringHash eventType);
+    /// Find the first event handler with no specific sender.
+    stl::intrusive_list<EventHandler>::iterator FindEventHandler(StringHash eventType) const { return const_cast<Object*>(this)->FindEventHandler(eventType); }
     /// Find the first event handler with specific sender.
-    EventHandler* FindSpecificEventHandler(Object* sender, EventHandler** previous = nullptr) const;
+    stl::intrusive_list<EventHandler>::iterator FindSpecificEventHandler(Object* sender);
+    /// Find the first event handler with specific sender.
+    stl::intrusive_list<EventHandler>::iterator FindSpecificEventHandler(Object* sender) const { return const_cast<Object*>(this)->FindSpecificEventHandler(sender); }
     /// Find the first event handler with specific sender and event type.
-    EventHandler* FindSpecificEventHandler(Object* sender, StringHash eventType, EventHandler** previous = nullptr) const;
+    stl::intrusive_list<EventHandler>::iterator FindSpecificEventHandler(Object* sender, StringHash eventType);
+    /// Find the first event handler with specific sender and event type.
+    stl::intrusive_list<EventHandler>::iterator FindSpecificEventHandler(Object* sender, StringHash eventType) const { return const_cast<Object*>(this)->FindSpecificEventHandler(sender, eventType); }
     /// Remove event handlers related to a specific sender.
     void RemoveEventSender(Object* sender);
 
     /// Event handlers. Sender is null for non-specific handlers.
-    LinkedList<EventHandler> eventHandlers_;
+    stl::intrusive_list<EventHandler> eventHandlers_;
 
     /// Block object from sending and receiving any events.
     bool blockEvents_;
@@ -349,7 +356,7 @@ private:
 };
 
 /// Internal helper class for invoking event handler functions.
-class URHO3D_API EventHandler : public LinkedListNode
+class URHO3D_API EventHandler : public stl::intrusive_list_node
 {
 public:
     /// Construct with specified receiver and userdata.

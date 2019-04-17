@@ -26,7 +26,6 @@ namespace Urho3D
 {
 
 class HashBase;
-class ListBase;
 class String;
 class VectorBase;
 
@@ -40,7 +39,6 @@ template <class T> inline void Swap(T& first, T& second)
 
 template <> URHO3D_API void Swap<String>(String& first, String& second);
 template <> URHO3D_API void Swap<VectorBase>(VectorBase& first, VectorBase& second);
-template <> URHO3D_API void Swap<ListBase>(ListBase& first, ListBase& second);
 template <> URHO3D_API void Swap<HashBase>(HashBase& first, HashBase& second);
 
 }
