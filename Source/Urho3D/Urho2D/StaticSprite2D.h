@@ -141,7 +141,7 @@ protected:
     void UpdateDrawRect();
 
     /// Sprite.
-    SharedPtr<Sprite2D> sprite_;
+    stl::shared_ptr<Sprite2D> sprite_;
     /// Blend mode.
     BlendMode blendMode_;
     /// Flip X.
@@ -165,7 +165,7 @@ protected:
     /// Texture rectangle.
     Rect textureRect_;
     /// Custom material.
-    SharedPtr<Material> customMaterial_;
+    stl::shared_ptr<Material> customMaterial_;
 };
 
 }

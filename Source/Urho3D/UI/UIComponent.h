@@ -62,17 +62,17 @@ protected:
     void OnNodeSet(Node* node) override;
 
     /// Material that is set to the model.
-    SharedPtr<Material> material_;
+    stl::shared_ptr<Material> material_;
     /// Texture that UIElement will be rendered into.
-    SharedPtr<Texture2D> texture_;
+    stl::shared_ptr<Texture2D> texture_;
     /// Model created by this component. If node already has StaticModel then this will be null.
-    SharedPtr<StaticModel> model_;
+    stl::shared_ptr<StaticModel> model_;
     /// Subsystem that handles UI rendering to the texture.
-    SharedPtr<UI> offScreenUI_;
+    stl::shared_ptr<UI> offScreenUI_;
     /// UIElement to be rendered into texture. It also handles screen to UI coordinate translation.
-    SharedPtr<UIElement3D> rootElement_;
+    stl::shared_ptr<UIElement3D> rootElement_;
     /// UIElement to be rendered into texture. It also handles screen to UI coordinate translation.
-    SharedPtr<UIElement3D> rootModalElement_;
+    stl::shared_ptr<UIElement3D> rootModalElement_;
     /// Viewport index to be set when component is added to a node.
     unsigned viewportIndex_;
 };

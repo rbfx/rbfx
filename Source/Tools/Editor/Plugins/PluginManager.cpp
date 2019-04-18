@@ -124,7 +124,7 @@ Plugin* PluginManager::Load(const String& name)
     if (pluginPath.Empty())
         return nullptr;
 
-    SharedPtr<Plugin> plugin(new Plugin(context_));
+    stl::shared_ptr<Plugin> plugin(new Plugin(context_));
     plugin->type_ = GetPluginType(context_, pluginPath);
 
     if (plugin->type_ == PLUGIN_NATIVE)
@@ -141,7 +141,7 @@ Plugin* PluginManager::Load(const String& name)
             plugin->path_ = pluginPath;
             plugin->mtime_ = GetFileSystem()->GetLastModifiedTime(pluginPath);
             plugins_.Push(plugin);
-            return plugin.Get();
+            return plugin.get();
         }
         else
             URHO3D_LOGWARNINGF("Failed loading native plugin \"%s\".", name.CString());
@@ -168,7 +168,7 @@ void PluginManager::Unload(Plugin* plugin)
     if (plugin == nullptr)
         return;
 
-    auto it = plugins_.Find(SharedPtr<Plugin>(plugin));
+    auto it = plugins_.Find(stl::shared_ptr<Plugin>(plugin));
     if (it == plugins_.End())
     {
         URHO3D_LOGERRORF("Plugin %s was never loaded.", plugin->name_.CString());
@@ -226,7 +226,7 @@ void PluginManager::OnEndFrame()
 
     for (auto it = plugins_.Begin(); it != plugins_.End();)
     {
-        Plugin* plugin = it->Get();
+        Plugin* plugin = it->get();
 
         if (plugin->unloading_)
         {
@@ -303,8 +303,8 @@ Plugin* PluginManager::GetPlugin(const String& name)
 {
     for (auto it = plugins_.Begin(); it != plugins_.End(); it++)
     {
-        if (it->Get()->name_ == name)
-            return it->Get();
+        if (it->get()->name_ == name)
+            return it->get();
     }
     return nullptr;
 }

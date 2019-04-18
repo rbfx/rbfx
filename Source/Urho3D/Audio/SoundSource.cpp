@@ -233,19 +233,19 @@ void SoundSource::Play(SoundStream* stream)
     if (frequency_ == 0.0f && stream)
         SetFrequency(stream->GetFrequency());
 
-    SharedPtr<SoundStream> streamPtr(stream);
+    stl::shared_ptr<SoundStream> streamPtr(stream);
 
     // If sound source is currently playing, have to lock the audio mutex. When stream playback is explicitly
     // requested, clear the existing sound if any
     if (position_)
     {
         MutexLock lock(audio_->GetMutex());
-        sound_.Reset();
+        sound_.reset();
         PlayLockless(streamPtr);
     }
     else
     {
-        sound_.Reset();
+        sound_.reset();
         PlayLockless(streamPtr);
     }
 
@@ -346,7 +346,7 @@ void SoundSource::Update(float timeStep)
         sendFinishedEvent_ = false;
 
         // Make a weak pointer to self to check for destruction during event handling
-        WeakPtr<SoundSource> self(this);
+        stl::weak_ptr<SoundSource> self(this);
 
         using namespace SoundFinished;
 
@@ -356,7 +356,7 @@ void SoundSource::Update(float timeStep)
         eventData[P_SOUND] = sound_;
         node_->SendEvent(E_SOUNDFINISHED, eventData);
 
-        if (self.Expired())
+        if (self.expired())
             return;
 
         DoAutoRemove(autoRemove_);
@@ -472,8 +472,8 @@ void SoundSource::SetSoundAttr(const ResourceRef& value)
     else
     {
         // When changing the sound and not playing, free previous sound stream and stream buffer (if any)
-        soundStream_.Reset();
-        streamBuffer_.Reset();
+        soundStream_.reset();
+        streamBuffer_.reset();
         sound_ = newSound;
     }
 }
@@ -483,7 +483,7 @@ void SoundSource::SetPlayingAttr(bool value)
     if (value)
     {
         if (!IsPlaying())
-            Play(sound_);
+            Play(sound_.get());
     }
     else
         Stop();
@@ -522,8 +522,8 @@ void SoundSource::PlayLockless(Sound* sound)
             if (start)
             {
                 // Free existing stream & stream buffer if any
-                soundStream_.Reset();
-                streamBuffer_.Reset();
+                soundStream_.reset();
+                streamBuffer_.reset();
                 sound_ = sound;
                 position_ = start;
                 fractPosition_ = 0;
@@ -542,10 +542,10 @@ void SoundSource::PlayLockless(Sound* sound)
 
     // If sound pointer is null or if sound has no data, stop playback
     StopLockless();
-    sound_.Reset();
+    sound_.reset();
 }
 
-void SoundSource::PlayLockless(const SharedPtr<SoundStream>& stream)
+void SoundSource::PlayLockless(const stl::shared_ptr<SoundStream>& stream)
 {
     // Reset the time position in any case
     timePosition_ = 0.0f;
@@ -579,8 +579,8 @@ void SoundSource::StopLockless()
     timePosition_ = 0.0f;
 
     // Free the sound stream and decode buffer if a stream was playing
-    soundStream_.Reset();
-    streamBuffer_.Reset();
+    soundStream_.reset();
+    streamBuffer_.reset();
 }
 
 void SoundSource::SetPlayPositionLockless(signed char* pos)

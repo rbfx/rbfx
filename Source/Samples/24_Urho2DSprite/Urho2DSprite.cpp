@@ -101,7 +101,7 @@ void Urho2DSprite::CreateScene()
 
     for (unsigned i = 0; i < NUM_SPRITES; ++i)
     {
-        SharedPtr<Node> spriteNode(scene_->CreateChild("StaticSprite2D"));
+        stl::shared_ptr<Node> spriteNode(scene_->CreateChild("StaticSprite2D"));
         spriteNode->SetPosition(Vector3(Random(-halfWidth, halfWidth), Random(-halfHeight, halfHeight), 0.0f));
 
         auto* staticSprite = spriteNode->CreateComponent<StaticSprite2D>();
@@ -126,7 +126,7 @@ void Urho2DSprite::CreateScene()
     if (!animationSet)
         return;
 
-    SharedPtr<Node> spriteNode(scene_->CreateChild("AnimatedSprite2D"));
+    stl::shared_ptr<Node> spriteNode(scene_->CreateChild("AnimatedSprite2D"));
     spriteNode->SetPosition(Vector3(0.0f, 0.0f, -1.0f));
 
     auto* animatedSprite = spriteNode->CreateComponent<AnimatedSprite2D>();
@@ -156,7 +156,7 @@ void Urho2DSprite::SetupViewport()
     auto* renderer = GetSubsystem<Renderer>();
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
-    SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 }
 
@@ -219,7 +219,7 @@ void Urho2DSprite::HandleUpdate(StringHash eventType, VariantMap& eventData)
 
     for (unsigned i = 0; i < spriteNodes_.Size(); ++i)
     {
-        SharedPtr<Node> node = spriteNodes_[i];
+        stl::shared_ptr<Node> node = spriteNodes_[i];
 
         Vector3 position = node->GetPosition();
         Vector3 moveSpeed = node->GetVar(VAR_MOVESPEED).GetVector3();

@@ -71,7 +71,7 @@ void SceneAndUILoad::CreateScene()
 
     // Load scene content prepared in the editor (XML format). GetFile() returns an open file from the resource system
     // which scene.LoadXML() will read
-    SharedPtr<File> file = cache->GetFile("Scenes/SceneLoadExample.xml");
+    stl::shared_ptr<File> file = cache->GetFile("Scenes/SceneLoadExample.xml");
     scene_->LoadXML(*file);
 
     // Create the camera (not included in the scene file)
@@ -93,7 +93,7 @@ void SceneAndUILoad::CreateUI()
 
     // Create a Cursor UI element because we want to be able to hide and show it at will. When hidden, the mouse cursor will
     // control the camera, and when visible, it will interact with the UI
-    SharedPtr<Cursor> cursor(new Cursor(context_));
+    stl::shared_ptr<Cursor> cursor(new Cursor(context_));
     cursor->SetStyleAuto();
     ui->SetCursor(cursor);
     // Set starting position of the cursor at the rendering window center
@@ -101,7 +101,7 @@ void SceneAndUILoad::CreateUI()
     cursor->SetPosition(graphics->GetWidth() / 2, graphics->GetHeight() / 2);
 
     // Load UI content prepared in the editor and add to the UI hierarchy
-    SharedPtr<UIElement> layoutRoot = ui->LoadLayout(cache->GetResource<XMLFile>("UI/UILoadExample.xml"));
+    stl::shared_ptr<UIElement> layoutRoot = ui->LoadLayout(cache->GetResource<XMLFile>("UI/UILoadExample.xml"));
     ui->GetRoot()->AddChild(layoutRoot);
 
     // Subscribe to button actions (toggle scene lights when pressed then released)
@@ -118,7 +118,7 @@ void SceneAndUILoad::SetupViewport()
     auto* renderer = GetSubsystem<Renderer>();
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
-    SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 }
 

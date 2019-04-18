@@ -75,7 +75,7 @@ private:
     /// Mark end point dirty.
     void MarkEndPointDirty() { endPointDirty_ = true; }
     /// Endpoint node.
-    WeakPtr<Node> endPoint_;
+    stl::weak_ptr<Node> endPoint_;
     /// Endpoint node ID.
     unsigned endPointID_;
     /// Radius.

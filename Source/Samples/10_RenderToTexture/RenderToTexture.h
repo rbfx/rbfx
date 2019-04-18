@@ -62,7 +62,7 @@ private:
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Scene that is rendered to a texture.
-    SharedPtr<Scene> rttScene_;
+    stl::shared_ptr<Scene> rttScene_;
     /// Camera scene node in the render-to-texture scene.
-    SharedPtr<Node> rttCameraNode_;
+    stl::shared_ptr<Node> rttCameraNode_;
 };

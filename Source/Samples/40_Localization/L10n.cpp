@@ -189,7 +189,7 @@ void L10n::CreateScene()
     text3DNode->SetScale(15);
 
     auto* renderer = GetSubsystem<Renderer>();
-    SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 
     SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(L10n, HandleUpdate));

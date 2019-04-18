@@ -63,7 +63,7 @@ public:
     Sprite2D* GetSprite(const String& name) const;
 
     /// Return sprite mapping.
-    const HashMap<String, SharedPtr<Sprite2D> >& GetSpriteMapping() const { return spriteMapping_; }
+    const HashMap<String, stl::shared_ptr<Sprite2D> >& GetSpriteMapping() const { return spriteMapping_; }
 
 private:
     /// Begin load from PList file.
@@ -81,15 +81,15 @@ private:
     bool EndLoadFromJSONFile();
 
     /// Texture.
-    SharedPtr<Texture2D> texture_;
+    stl::shared_ptr<Texture2D> texture_;
     /// Sprite mapping.
-    HashMap<String, SharedPtr<Sprite2D> > spriteMapping_;
+    HashMap<String, stl::shared_ptr<Sprite2D> > spriteMapping_;
     /// PList file used while loading.
-    SharedPtr<PListFile> loadPListFile_;
+    stl::shared_ptr<PListFile> loadPListFile_;
     /// XML file used while loading.
-    SharedPtr<XMLFile> loadXMLFile_;
+    stl::shared_ptr<XMLFile> loadXMLFile_;
     /// JSON file used while loading.
-    SharedPtr<JSONFile> loadJSONFile_;
+    stl::shared_ptr<JSONFile> loadJSONFile_;
     /// Texture name used while loading.
     String loadTextureName_;
 };

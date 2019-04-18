@@ -118,9 +118,9 @@ private:
     void HandlePostUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Touch utility object.
-    SharedPtr<Touch> touch_;
+    stl::shared_ptr<Touch> touch_;
     /// The controllable character component.
-    WeakPtr<Character> character_;
+    stl::weak_ptr<Character> character_;
     /// First person camera flag.
     bool firstPerson_;
 };

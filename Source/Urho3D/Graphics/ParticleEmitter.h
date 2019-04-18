@@ -131,7 +131,7 @@ private:
     void HandleEffectReloadFinished(StringHash eventType, VariantMap& eventData);
 
     /// Particle effect.
-    SharedPtr<ParticleEffect> effect_;
+    stl::shared_ptr<ParticleEffect> effect_;
     /// Particles.
     PODVector<Particle> particles_;
     /// Active/inactive period timer.

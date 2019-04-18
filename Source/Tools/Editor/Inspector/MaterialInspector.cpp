@@ -177,7 +177,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
                     for (auto j = i + 1; j < material->GetNumTechniques(); j++)
                     {
                         const auto& entry = material->GetTechniqueEntry(j);
-                        material->SetTechnique(j - 1, entry.original_.Get(), entry.qualityLevel_, entry.lodDistance_);
+                        material->SetTechnique(j - 1, entry.original_.get(), entry.qualityLevel_, entry.lodDistance_);
                     }
                     material->SetNumTechniques(material->GetNumTechniques() - 1);
                     modified = true;
@@ -219,7 +219,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
                 undo_.Track<Undo::TechniqueChangedAction>(material, i, &modification->GetInitialValue(), &tech);
 
             if (modifiedField)
-                material->SetTechnique(i, tech.original_.Get(), tech.qualityLevel_, tech.lodDistance_);
+                material->SetTechnique(i, tech.original_.get(), tech.qualityLevel_, tech.lodDistance_);
 
             modified |= modifiedField;
         }

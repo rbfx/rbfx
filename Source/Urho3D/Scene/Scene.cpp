@@ -223,7 +223,7 @@ bool Scene::LoadXML(Deserializer& source)
 
     StopAsyncLoading();
 
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
     if (!xml->Load(source))
         return false;
 
@@ -246,7 +246,7 @@ bool Scene::LoadJSON(Deserializer& source)
 
     StopAsyncLoading();
 
-    SharedPtr<JSONFile> json(context_->CreateObject<JSONFile>());
+    stl::shared_ptr<JSONFile> json(context_->CreateObject<JSONFile>());
     if (!json->Load(source))
         return false;
 
@@ -267,7 +267,7 @@ bool Scene::SaveXML(Serializer& dest, const String& indentation) const
 {
     URHO3D_PROFILE("SaveSceneXML");
 
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement rootElem = xml->CreateRoot("scene");
     if (!SaveXML(rootElem))
         return false;
@@ -289,7 +289,7 @@ bool Scene::SaveJSON(Serializer& dest, const String& indentation) const
 {
     URHO3D_PROFILE("SaveSceneJSON");
 
-    SharedPtr<JSONFile> json(context_->CreateObject<JSONFile>());
+    stl::shared_ptr<JSONFile> json(context_->CreateObject<JSONFile>());
     JSONValue rootVal;
     if (!SaveJSON(rootVal))
         return false;
@@ -392,7 +392,7 @@ bool Scene::LoadAsyncXML(File* file, LoadMode mode)
 
     StopAsyncLoading();
 
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
     if (!xml->Load(*file))
         return false;
 
@@ -461,7 +461,7 @@ bool Scene::LoadAsyncJSON(File* file, LoadMode mode)
 
     StopAsyncLoading();
 
-    SharedPtr<JSONFile> json(context_->CreateObject<JSONFile>());
+    stl::shared_ptr<JSONFile> json(context_->CreateObject<JSONFile>());
     if (!json->Load(*file))
         return false;
 
@@ -519,9 +519,9 @@ bool Scene::LoadAsyncJSON(File* file, LoadMode mode)
 void Scene::StopAsyncLoading()
 {
     asyncLoading_ = false;
-    asyncProgress_.file_.Reset();
-    asyncProgress_.xmlFile_.Reset();
-    asyncProgress_.jsonFile_.Reset();
+    asyncProgress_.file_.reset();
+    asyncProgress_.xmlFile_.reset();
+    asyncProgress_.jsonFile_.reset();
     asyncProgress_.xmlElement_ = XMLElement::EMPTY;
     asyncProgress_.jsonIndex_ = 0;
     asyncProgress_.resources_.Clear();
@@ -599,7 +599,7 @@ Node* Scene::InstantiateJSON(const JSONValue& source, const Vector3& position, c
 
 Node* Scene::InstantiateXML(Deserializer& source, const Vector3& position, const Quaternion& rotation, CreateMode mode)
 {
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
     if (!xml->Load(source))
         return nullptr;
 
@@ -608,7 +608,7 @@ Node* Scene::InstantiateXML(Deserializer& source, const Vector3& position, const
 
 Node* Scene::InstantiateJSON(Deserializer& source, const Vector3& position, const Quaternion& rotation, CreateMode mode)
 {
-    SharedPtr<JSONFile> json(context_->CreateObject<JSONFile>());
+    stl::shared_ptr<JSONFile> json(context_->CreateObject<JSONFile>());
     if (!json->Load(source))
         return nullptr;
 
@@ -683,7 +683,7 @@ void Scene::AddRequiredPackageFile(PackageFile* package)
     if (!package || !package->GetNumFiles())
         return;
 
-    requiredPackageFiles_.Push(SharedPtr<PackageFile>(package));
+    requiredPackageFiles_.Push(stl::shared_ptr<PackageFile>(package));
 }
 
 void Scene::ClearRequiredPackageFiles()
@@ -961,11 +961,11 @@ void Scene::NodeAdded(Node* node)
     }
 
     // Add already created components and child nodes now
-    const Vector<SharedPtr<Component> >& components = node->GetComponents();
-    for (Vector<SharedPtr<Component> >::ConstIterator i = components.Begin(); i != components.End(); ++i)
+    const Vector<stl::shared_ptr<Component> >& components = node->GetComponents();
+    for (Vector<stl::shared_ptr<Component> >::ConstIterator i = components.Begin(); i != components.End(); ++i)
         ComponentAdded(*i);
-    const Vector<SharedPtr<Node> >& children = node->GetChildren();
-    for (Vector<SharedPtr<Node> >::ConstIterator i = children.Begin(); i != children.End(); ++i)
+    const Vector<stl::shared_ptr<Node> >& children = node->GetChildren();
+    for (Vector<stl::shared_ptr<Node> >::ConstIterator i = children.Begin(); i != children.End(); ++i)
         NodeAdded(*i);
 }
 
@@ -1004,11 +1004,11 @@ void Scene::NodeRemoved(Node* node)
     }
 
     // Remove components and child nodes as well
-    const Vector<SharedPtr<Component> >& components = node->GetComponents();
-    for (Vector<SharedPtr<Component> >::ConstIterator i = components.Begin(); i != components.End(); ++i)
+    const Vector<stl::shared_ptr<Component> >& components = node->GetComponents();
+    for (Vector<stl::shared_ptr<Component> >::ConstIterator i = components.Begin(); i != components.End(); ++i)
         ComponentRemoved(*i);
-    const Vector<SharedPtr<Node> >& children = node->GetChildren();
-    for (Vector<SharedPtr<Node> >::ConstIterator i = children.Begin(); i != children.End(); ++i)
+    const Vector<stl::shared_ptr<Node> >& children = node->GetChildren();
+    for (Vector<stl::shared_ptr<Node> >::ConstIterator i = children.Begin(); i != children.End(); ++i)
         NodeRemoved(*i);
 }
 

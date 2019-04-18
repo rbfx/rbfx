@@ -116,9 +116,9 @@ protected:
     /// Extra per-geometry data.
     PODVector<StaticModelGeometryData> geometryData_;
     /// All geometries.
-    Vector<Vector<SharedPtr<Geometry> > > geometries_;
+    Vector<Vector<stl::shared_ptr<Geometry> > > geometries_;
     /// Model.
-    SharedPtr<Model> model_;
+    stl::shared_ptr<Model> model_;
     /// Occlusion LOD level.
     unsigned occlusionLodLevel_;
     /// Material list attribute.

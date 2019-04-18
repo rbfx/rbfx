@@ -91,9 +91,9 @@ protected:
     void UpdateProgressBar();
 
     /// ProgressBar knob.
-    SharedPtr <BorderImage> knob_;
+    stl::shared_ptr <BorderImage> knob_;
     /// ProgressBar text
-    SharedPtr <Text> loadingText_;
+    stl::shared_ptr <Text> loadingText_;
     /// Orientation.
     Orientation orientation_;
     /// ProgressBar text style

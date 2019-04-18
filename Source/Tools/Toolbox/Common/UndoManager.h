@@ -72,7 +72,7 @@ class URHO3D_TOOLBOX_API CreateNodeAction : public EditAction
 {
     unsigned parentID;
     VectorBuffer nodeData;
-    WeakPtr<Scene> editorScene;
+    stl::weak_ptr<Scene> editorScene;
 
 public:
     explicit CreateNodeAction(Node* node)
@@ -115,14 +115,14 @@ class URHO3D_TOOLBOX_API DeleteNodeAction : public EditAction
     unsigned parentID;
     unsigned parentIndex;
     VectorBuffer nodeData;
-    WeakPtr<Scene> editorScene;
+    stl::weak_ptr<Scene> editorScene;
 
 public:
     explicit DeleteNodeAction(Node* node)
         : editorScene(node->GetScene())
     {
         parentID = node->GetParent()->GetID();
-        parentIndex = node->GetParent()->GetChildren().IndexOf(SharedPtr<Node>(node));
+        parentIndex = node->GetParent()->GetChildren().IndexOf(stl::shared_ptr<Node>(node));
         node->Save(nodeData);
     }
 
@@ -133,7 +133,7 @@ public:
         {
             nodeData.Seek(0);
             auto nodeID = nodeData.ReadUInt();
-            SharedPtr<Node> node(new Node(parent->GetContext()));
+            stl::shared_ptr<Node> node(new Node(parent->GetContext()));
             node->SetID(nodeID);
             parent->AddChild(node, parentIndex);
             nodeData.Seek(0);
@@ -162,7 +162,7 @@ class URHO3D_TOOLBOX_API ReparentNodeAction : public EditAction
     unsigned newParentID;
     PODVector<unsigned> nodeList; // 2 uints get inserted per node (node, node->GetParent())
     bool multiple;
-    WeakPtr<Scene> editorScene;
+    stl::weak_ptr<Scene> editorScene;
 
 public:
     ReparentNodeAction(Node* node, Node* newParent)
@@ -240,7 +240,7 @@ class URHO3D_TOOLBOX_API CreateComponentAction : public EditAction
 {
     unsigned nodeID;
     VectorBuffer componentData;
-    WeakPtr<Scene> editorScene;
+    stl::weak_ptr<Scene> editorScene;
 
 public:
     explicit CreateComponentAction(Component* component)
@@ -283,7 +283,7 @@ class URHO3D_TOOLBOX_API DeleteComponentAction : public EditAction
 {
     unsigned nodeID;
     VectorBuffer componentData;
-    WeakPtr<Scene> editorScene;
+    stl::weak_ptr<Scene> editorScene;
 
 public:
     DeleteComponentAction(Component* component)
@@ -355,9 +355,9 @@ class URHO3D_TOOLBOX_API EditAttributeAction : public EditAction
     Variant undoValue;
     Variant redoValue;
     StringHash targetType;
-    WeakPtr<Scene> editorScene;
-    WeakPtr<UIElement> root;
-    WeakPtr<Serializable> target;
+    stl::weak_ptr<Scene> editorScene;
+    stl::weak_ptr<UIElement> root;
+    stl::weak_ptr<Serializable> target;
 
 public:
     EditAttributeAction(Serializable* target, const String& name, const Variant& oldValue, const Variant& newValue)
@@ -386,7 +386,7 @@ public:
         else if (targetType == UIElement::GetTypeStatic())
             return root->GetChild("UIElementID", targetID, true);
 
-        return target.Get();
+        return target.get();
     }
 
     void Undo() override
@@ -415,8 +415,8 @@ class URHO3D_TOOLBOX_API CreateUIElementAction : public EditAction
     Variant elementID;
     Variant parentID;
     XMLFile elementData;
-    SharedPtr<XMLFile> styleFile;
-    WeakPtr<UIElement> root;
+    stl::shared_ptr<XMLFile> styleFile;
+    stl::weak_ptr<UIElement> root;
 
 public:
     explicit CreateUIElementAction(UIElement* element)
@@ -452,8 +452,8 @@ class URHO3D_TOOLBOX_API DeleteUIElementAction : public EditAction
     Variant elementID;
     Variant parentID;
     XMLFile elementData;
-    SharedPtr<XMLFile> styleFile;
-    WeakPtr<UIElement> root;
+    stl::shared_ptr<XMLFile> styleFile;
+    stl::weak_ptr<UIElement> root;
 
 public:
     explicit DeleteUIElementAction(UIElement* element)
@@ -465,7 +465,7 @@ public:
         XMLElement rootElem = elementData.CreateRoot("element");
         element->SaveXML(rootElem);
         rootElem.SetUInt("index", element->GetParent()->FindChild(element));
-        styleFile = SharedPtr<XMLFile>(element->GetDefaultStyle());
+        styleFile = stl::shared_ptr<XMLFile>(element->GetDefaultStyle());
     }
 
     void Undo() override
@@ -490,7 +490,7 @@ class URHO3D_TOOLBOX_API ReparentUIElementAction : public EditAction
     Variant oldParentID;
     unsigned oldChildIndex;
     Variant newParentID;
-    WeakPtr<UIElement> root;
+    stl::weak_ptr<UIElement> root;
 
 public:
     ReparentUIElementAction(UIElement* element, UIElement* newParent)
@@ -527,7 +527,7 @@ class URHO3D_TOOLBOX_API ApplyUIElementStyleAction : public EditAction
     XMLFile* styleFile;
     String elementOldStyle;
     String elementNewStyle;
-    WeakPtr<UIElement> root;
+    stl::weak_ptr<UIElement> root;
 
 public:
     ApplyUIElementStyleAction(UIElement* element, const String& newStyle)
@@ -573,7 +573,7 @@ class URHO3D_TOOLBOX_API EditUIStyleAction : public EditAction
     XMLFile oldStyle;
     XMLFile newStyle;
     unsigned elementId;
-    WeakPtr<UIElement> root;
+    stl::weak_ptr<UIElement> root;
 
 public:
     EditUIStyleAction(UIElement* element, XMLElement& styleElement, const Variant& newValue)
@@ -609,7 +609,7 @@ public:
     }
 };
 
-using StateCollection = Vector<SharedPtr<EditAction>>;
+using StateCollection = Vector<stl::shared_ptr<EditAction>>;
 
 class URHO3D_TOOLBOX_API Manager : public Object
 {
@@ -637,7 +637,7 @@ public:
     void Track(Args... args)
     {
         if (trackingEnabled_)
-            currentFrameStates_.Push(SharedPtr<T>(new T(args...)));
+            currentFrameStates_.Push(stl::shared_ptr<T>(new T(args...)));
     };
 
     /// Enables or disables tracking changes.

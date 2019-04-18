@@ -75,11 +75,11 @@ public:
     /// Return active scene tab.
     Tab* GetActiveTab() { return activeTab_; }
     /// Return currently open scene tabs.
-    const Vector<SharedPtr<Tab>>& GetSceneViews() const { return tabs_; }
+    const Vector<stl::shared_ptr<Tab>>& GetSceneViews() const { return tabs_; }
     /// Return a map of names and type hashes from specified category.
     StringVector GetObjectsByCategory(const String& category);
     /// Returns a list of open content tabs/docks/windows. This list does not include utility docks/tabs/windows.
-    const Vector<SharedPtr<Tab>>& GetContentTabs() const { return tabs_; }
+    const Vector<stl::shared_ptr<Tab>>& GetContentTabs() const { return tabs_; }
     /// Opens project or creates new one.
     void OpenProject(const String& projectPath);
     /// Close current project.
@@ -112,13 +112,13 @@ protected:
     template<typename T> void RegisterSubcommand();
 
     /// List of active scene tabs.
-    Vector<SharedPtr<Tab>> tabs_;
+    Vector<stl::shared_ptr<Tab>> tabs_;
     /// Last focused scene tab.
-    WeakPtr<Tab> activeTab_;
+    stl::weak_ptr<Tab> activeTab_;
     /// Prefix path of CoreData and EditorData.
     String coreResourcePrefixPath_;
     /// Currently loaded project.
-    SharedPtr<Project> project_;
+    stl::shared_ptr<Project> project_;
     /// ID of dockspace root.
     ImGuiID dockspaceId_;
     /// Path to a project that editor should open on the end of the frame.
@@ -132,7 +132,7 @@ protected:
     ///
     String defaultProjectPath_;
     ///
-    Vector<SharedPtr<SubCommand>> subCommands_;
+    Vector<stl::shared_ptr<SubCommand>> subCommands_;
 };
 
 }

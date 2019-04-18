@@ -72,12 +72,12 @@ private:
     void HandlePlayButton(StringHash eventType, VariantMap& eventData);
 
     /// The controllable character component.
-    WeakPtr<Character2D> character2D_;
+    stl::weak_ptr<Character2D> character2D_;
     /// Camera's zoom (used to scale movement speed based on camera zoom).
     float zoom_;
     /// Flag for drawing debug geometry.
     bool drawDebug_;
 
     /// Sample2D utility object.
-    SharedPtr<Sample2D> sample2D_;
+    stl::shared_ptr<Sample2D> sample2D_;
 };

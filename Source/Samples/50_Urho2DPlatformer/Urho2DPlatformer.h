@@ -74,12 +74,12 @@ private:
     void HandlePlayButton(StringHash eventType, VariantMap& eventData);
 
     /// The controllable character component.
-    WeakPtr<Character2D> character2D_;
+    stl::weak_ptr<Character2D> character2D_;
     /// Flag for drawing debug geometry.
     bool drawDebug_{};
     /// Scaling factor based on tiles' aspect ratio.
     float moveSpeedScale_{};
 
     /// Sample2D utility object.
-    SharedPtr<Sample2D> sample2D_;
+    stl::shared_ptr<Sample2D> sample2D_;
 };

@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../Container/Ptr.h"
+#include <EASTL/shared_ptr.h>
 #include "../Core/Variant.h"
 #include "../Math/BoundingBox.h"
 #include "../Math/Rect.h"
@@ -304,7 +304,7 @@ public:
 
 private:
     /// XML file.
-    WeakPtr<XMLFile> file_;
+    stl::weak_ptr<XMLFile> file_;
     /// Pugixml node.
     pugi::xml_node_struct* node_;
     /// XPath query result set.
@@ -345,7 +345,7 @@ public:
 
 private:
     /// XML file.
-    WeakPtr<XMLFile> file_;
+    stl::weak_ptr<XMLFile> file_;
     /// Pugixml xpath_node_set.
     pugi::xpath_node_set* resultSet_;
 };

@@ -520,7 +520,7 @@ void CrowdAgent::OnCrowdUpdate(dtCrowdAgent* ag, float dt)
     if (node_)
     {
         // Use pointer to self to check for destruction after sending events
-        WeakPtr<CrowdAgent> self(this);
+        stl::weak_ptr<CrowdAgent> self(this);
 
         Vector3 newPos(ag->npos);
         Vector3 newVel(ag->vel);
@@ -547,10 +547,10 @@ void CrowdAgent::OnCrowdUpdate(dtCrowdAgent* ag, float dt)
             map[P_ARRIVED] = HasArrived();
             map[P_TIMESTEP] = dt;
             crowdManager_->SendEvent(E_CROWD_AGENT_REPOSITION, map);
-            if (self.Expired())
+            if (self.expired())
                 return;
             node_->SendEvent(E_CROWD_AGENT_NODE_REPOSITION, map);
-            if (self.Expired())
+            if (self.expired())
                 return;
         }
 
@@ -569,10 +569,10 @@ void CrowdAgent::OnCrowdUpdate(dtCrowdAgent* ag, float dt)
             map[P_POSITION] = newPos;
             map[P_VELOCITY] = newVel;
             crowdManager_->SendEvent(E_CROWD_AGENT_STATE_CHANGED, map);
-            if (self.Expired())
+            if (self.expired())
                 return;
             node_->SendEvent(E_CROWD_AGENT_NODE_STATE_CHANGED, map);
-            if (self.Expired())
+            if (self.expired())
                 return;
 
             // Send a failure event if either state is a failed status
@@ -586,10 +586,10 @@ void CrowdAgent::OnCrowdUpdate(dtCrowdAgent* ag, float dt)
                 map[P_POSITION] = newPos;
                 map[P_VELOCITY] = newVel;
                 crowdManager_->SendEvent(E_CROWD_AGENT_FAILURE, map);
-                if (self.Expired())
+                if (self.expired())
                     return;
                 node_->SendEvent(E_CROWD_AGENT_NODE_FAILURE, map);
-                if (self.Expired())
+                if (self.expired())
                     return;
             }
 

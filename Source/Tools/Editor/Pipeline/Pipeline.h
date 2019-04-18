@@ -118,7 +118,7 @@ protected:
     };
 
     /// Collection of top level converters defined in pipeline.
-    Vector<SharedPtr<Converter>> converters_{};
+    Vector<stl::shared_ptr<Converter>> converters_{};
     /// List of file watchers responsible for watching game data folders for asset changes.
     FileWatcher watcher_;
     ///

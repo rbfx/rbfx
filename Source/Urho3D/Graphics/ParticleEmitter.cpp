@@ -593,7 +593,7 @@ void ParticleEmitter::HandleScenePostUpdate(StringHash eventType, VariantMap& ev
         sendFinishedEvent_ = false;
 
         // Make a weak pointer to self to check for destruction during event handling
-        WeakPtr<ParticleEmitter> self(this);
+        stl::weak_ptr<ParticleEmitter> self(this);
 
         using namespace ParticleEffectFinished;
 
@@ -603,7 +603,7 @@ void ParticleEmitter::HandleScenePostUpdate(StringHash eventType, VariantMap& ev
 
         node_->SendEvent(E_PARTICLEEFFECTFINISHED, eventData);
 
-        if (self.Expired())
+        if (self.expired())
             return;
 
         DoAutoRemove(autoRemove_);

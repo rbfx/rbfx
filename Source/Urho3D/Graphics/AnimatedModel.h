@@ -103,7 +103,7 @@ public:
     Skeleton& GetSkeleton() { return skeleton_; }
 
     /// Return all animation states.
-    const Vector<SharedPtr<AnimationState> >& GetAnimationStates() const { return animationStates_; }
+    const Vector<stl::shared_ptr<AnimationState> >& GetAnimationStates() const { return animationStates_; }
 
     /// Return number of animation states.
     unsigned GetNumAnimationStates() const { return animationStates_.Size(); }
@@ -127,7 +127,7 @@ public:
     const Vector<ModelMorph>& GetMorphs() const { return morphs_; }
 
     /// Return all morph vertex buffers.
-    const Vector<SharedPtr<VertexBuffer> >& GetMorphVertexBuffers() const { return morphVertexBuffers_; }
+    const Vector<stl::shared_ptr<VertexBuffer> >& GetMorphVertexBuffers() const { return morphVertexBuffers_; }
 
     /// Return number of vertex morphs.
     unsigned GetNumMorphs() const { return morphs_.Size(); }
@@ -212,11 +212,11 @@ private:
     /// Skeleton.
     Skeleton skeleton_;
     /// Morph vertex buffers.
-    Vector<SharedPtr<VertexBuffer> > morphVertexBuffers_;
+    Vector<stl::shared_ptr<VertexBuffer> > morphVertexBuffers_;
     /// Vertex morphs.
     Vector<ModelMorph> morphs_;
     /// Animation states.
-    Vector<SharedPtr<AnimationState> > animationStates_;
+    Vector<stl::shared_ptr<AnimationState> > animationStates_;
     /// Skinning matrices.
     PODVector<Matrix3x4> skinMatrices_;
     /// Mapping of subgeometry bone indices, used if more bones than skinning shader can manage.

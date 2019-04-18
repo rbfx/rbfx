@@ -146,35 +146,35 @@ private:
     void HandleCancelPressed(StringHash eventType, VariantMap& eventData);
 
     /// Fileselector window.
-    SharedPtr<Window> window_;
+    stl::shared_ptr<Window> window_;
     /// Title layout.
-    UIElement* titleLayout;
+    stl::shared_ptr<UIElement> titleLayout;
     /// Window title text.
-    Text* titleText_;
+    stl::shared_ptr<Text> titleText_;
     /// File list.
-    ListView* fileList_;
+    stl::shared_ptr<ListView> fileList_;
     /// Path editor.
-    LineEdit* pathEdit_;
+    stl::shared_ptr<LineEdit> pathEdit_;
     /// Filename editor.
-    LineEdit* fileNameEdit_;
+    stl::shared_ptr<LineEdit> fileNameEdit_;
     /// Filter dropdown.
-    DropDownList* filterList_;
+    stl::shared_ptr<DropDownList> filterList_;
     /// OK button.
-    Button* okButton_;
+    stl::shared_ptr<Button> okButton_;
     /// OK button text.
-    Text* okButtonText_;
+    stl::shared_ptr<Text> okButtonText_;
     /// Cancel button.
-    Button* cancelButton_;
+    stl::shared_ptr<Button> cancelButton_;
     /// Cancel button text.
-    Text* cancelButtonText_;
+    stl::shared_ptr<Text> cancelButtonText_;
     /// Close button.
-    Button* closeButton_;
+    stl::shared_ptr<Button> closeButton_;
     /// Filename and filter layout.
-    UIElement* fileNameLayout_;
+    stl::shared_ptr<UIElement> fileNameLayout_;
     /// Separator layout.
-    UIElement* separatorLayout_;
+    stl::shared_ptr<UIElement> separatorLayout_;
     /// Button layout.
-    UIElement* buttonLayout_;
+    stl::shared_ptr<UIElement> buttonLayout_;
     /// Current directory.
     String path_;
     /// Filters.

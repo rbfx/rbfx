@@ -23,7 +23,7 @@
 #pragma once
 
 #include "../Container/HashMap.h"
-#include "../Container/Ptr.h"
+#include <EASTL/shared_ptr.h>
 
 namespace Urho3D
 {
@@ -51,9 +51,9 @@ public:
 
 private:
     /// Nodes.
-    HashMap<unsigned, WeakPtr<Node> > nodes_;
+    HashMap<unsigned, stl::weak_ptr<Node> > nodes_;
     /// Components.
-    HashMap<unsigned, WeakPtr<Component> > components_;
+    HashMap<unsigned, stl::weak_ptr<Component> > components_;
 };
 
 }

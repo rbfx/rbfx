@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../Container/Ptr.h"
+#include <EASTL/shared_ptr.h>
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Texture.h"
 #include "../Resource/Image.h"
@@ -70,9 +70,9 @@ protected:
 
 private:
     /// Image file acquired during BeginLoad.
-    SharedPtr<Image> loadImage_;
+    stl::shared_ptr<Image> loadImage_;
     /// Parameter file acquired during BeginLoad.
-    SharedPtr<XMLFile> loadParameters_;
+    stl::shared_ptr<XMLFile> loadParameters_;
 };
 
 }

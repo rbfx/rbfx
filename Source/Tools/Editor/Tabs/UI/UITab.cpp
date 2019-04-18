@@ -83,7 +83,7 @@ void UITab::RenderHierarchy()
 
 void UITab::RenderNodeTree(UIElement* element)
 {
-    SharedPtr<UIElement> elementRef(element);
+    stl::shared_ptr<UIElement> elementRef(element);
     String name = element->GetName();
     String type = element->GetTypeName();
     String tooltip = "Type: " + type;
@@ -120,8 +120,8 @@ void UITab::RenderNodeTree(UIElement* element)
         const Variant& payload = ui::AcceptDragDropVariant("ptr");
         if (!payload.IsEmpty())
         {
-            SharedPtr<UIElement> child((UIElement*)payload.GetVoidPtr());
-            if (child.NotNull() && child != element)
+            stl::shared_ptr<UIElement> child((UIElement*)payload.GetVoidPtr());
+            if (child && child != element)
             {
                 child->Remove();    // Needed for reordering under the same parent.
                 element->InsertChild(0, child);
@@ -148,7 +148,7 @@ void UITab::RenderNodeTree(UIElement* element)
         RenderElementContextMenu();
 
         // Context menu may delete this element
-        bool wasDeleted = (flags & ImGuiTreeNodeFlags_Selected) && selectedElement_.Null();
+        bool wasDeleted = (flags & ImGuiTreeNodeFlags_Selected) && !selectedElement_;
         if (!wasDeleted)
         {
             // Do not use element->GetChildren() because child may be deleted during this loop.
@@ -170,8 +170,8 @@ void UITab::RenderNodeTree(UIElement* element)
         const Variant& payload = ui::AcceptDragDropVariant("ptr");
         if (!payload.IsEmpty())
         {
-            SharedPtr<UIElement> child((UIElement*)payload.GetVoidPtr());
-            if (child.NotNull() && child != element)
+            stl::shared_ptr<UIElement> child((UIElement*)payload.GetVoidPtr());
+            if (child && child != element)
             {
                 child->Remove();    // Needed for reordering under the same parent.
                 auto index = element->GetParent()->FindChild(element) + 1;
@@ -342,8 +342,8 @@ bool UITab::LoadResource(const String& resourcePath)
     UIElement* layoutElement = nullptr;
     if (resourcePath.EndsWith(".xml"))
     {
-        SharedPtr<XMLFile> file(cache->GetResource<XMLFile>(resourcePath));
-        if (file.NotNull())
+        stl::shared_ptr<XMLFile> file(cache->GetResource<XMLFile>(resourcePath));
+        if (file)
         {
             String type = file->GetRoot().GetAttribute("type");
             if (type.Empty())

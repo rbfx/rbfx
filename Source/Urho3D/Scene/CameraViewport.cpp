@@ -217,10 +217,10 @@ void CameraViewport::RebuildAttributes()
 
 RenderPath* CameraViewport::RebuildRenderPath()
 {
-    if (viewport_.Null())
+    if (!viewport_)
         return nullptr;
 
-    SharedPtr<RenderPath> oldRenderPath(viewport_->GetRenderPath());
+    stl::shared_ptr<RenderPath> oldRenderPath(viewport_->GetRenderPath());
 
     if (XMLFile* renderPathFile = GetCache()->GetResource<XMLFile>(renderPath_.name_))
     {
@@ -245,7 +245,7 @@ RenderPath* CameraViewport::RebuildRenderPath()
 
 void CameraViewport::SetRenderPath(const ResourceRef& renderPathResource)
 {
-    if (viewport_.Null() || !GetGraphics())
+    if (!viewport_ || !GetGraphics())
         return;
 
     if (!renderPathResource.name_.Empty() && renderPathResource.type_ != XMLFile::GetTypeStatic())
@@ -254,7 +254,7 @@ void CameraViewport::SetRenderPath(const ResourceRef& renderPathResource)
         return;
     }
 
-    SharedPtr<RenderPath> oldRenderPath(viewport_->GetRenderPath());
+    stl::shared_ptr<RenderPath> oldRenderPath(viewport_->GetRenderPath());
 
     const String& renderPathFileName = renderPathResource.name_.Empty() ? defaultRenderPath.name_ : renderPathResource.name_;
     if (XMLFile* renderPathFile = GetCache()->GetResource<XMLFile>(renderPathFileName))

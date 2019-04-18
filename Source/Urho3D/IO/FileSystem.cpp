@@ -132,7 +132,7 @@ int DoSystemCommand(const String& commandLine, bool redirectToLog, Context* cont
     // Capture the standard error stream
     if (!stderrFilename.Empty())
     {
-        SharedPtr<File> errFile(new File(context, stderrFilename, FILE_READ));
+        stl::shared_ptr<File> errFile(new File(context, stderrFilename, FILE_READ));
         while (!errFile->IsEof())
         {
             unsigned numRead = errFile->Read(buffer, sizeof(buffer));
@@ -601,10 +601,10 @@ bool FileSystem::Copy(const String& srcFileName, const String& destFileName)
         return false;
     }
 
-    SharedPtr<File> srcFile(new File(context_, srcFileName, FILE_READ));
+    stl::shared_ptr<File> srcFile(new File(context_, srcFileName, FILE_READ));
     if (!srcFile->IsOpen())
         return false;
-    SharedPtr<File> destFile(new File(context_, destFileName, FILE_WRITE));
+    stl::shared_ptr<File> destFile(new File(context_, destFileName, FILE_WRITE));
     if (!destFile->IsOpen())
         return false;
 

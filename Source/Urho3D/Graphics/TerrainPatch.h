@@ -115,23 +115,23 @@ private:
     unsigned GetCorrectedLodLevel(unsigned lodLevel);
 
     /// Geometry.
-    SharedPtr<Geometry> geometry_;
+    stl::shared_ptr<Geometry> geometry_;
     /// Geometry that is locked to the max LOD level. Used for decals.
-    SharedPtr<Geometry> maxLodGeometry_;
+    stl::shared_ptr<Geometry> maxLodGeometry_;
     /// Geometry that is used for occlusion.
-    SharedPtr<Geometry> occlusionGeometry_;
+    stl::shared_ptr<Geometry> occlusionGeometry_;
     /// Vertex buffer.
-    SharedPtr<VertexBuffer> vertexBuffer_;
+    stl::shared_ptr<VertexBuffer> vertexBuffer_;
     /// Parent terrain.
-    WeakPtr<Terrain> owner_;
+    stl::weak_ptr<Terrain> owner_;
     /// North neighbor patch.
-    WeakPtr<TerrainPatch> north_;
+    stl::weak_ptr<TerrainPatch> north_;
     /// South neighbor patch.
-    WeakPtr<TerrainPatch> south_;
+    stl::weak_ptr<TerrainPatch> south_;
     /// West neighbor patch.
-    WeakPtr<TerrainPatch> west_;
+    stl::weak_ptr<TerrainPatch> west_;
     /// East neighbor patch.
-    WeakPtr<TerrainPatch> east_;
+    stl::weak_ptr<TerrainPatch> east_;
     /// Geometrical error per LOD level.
     PODVector<float> lodErrors_;
     /// Patch coordinates in the terrain. (0,0) is the northwest corner.

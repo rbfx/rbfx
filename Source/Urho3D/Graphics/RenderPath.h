@@ -24,7 +24,7 @@
 
 
 #include "../Core/Variant.h"
-#include "../Container/Ptr.h"
+#include <EASTL/shared_ptr.h>
 #include "../Container/RefCounted.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../Math/Color.h"
@@ -220,7 +220,7 @@ public:
     ~RenderPath() override;
 
     /// Clone the rendering path.
-    SharedPtr<RenderPath> Clone();
+    stl::shared_ptr<RenderPath> Clone();
     /// Clear existing data and load from an XML file. Return true if successful.
     bool Load(XMLFile* file);
     /// Append data from an XML file. Return true if successful.

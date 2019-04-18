@@ -83,7 +83,7 @@ private:
     void UpdateNodeIDs() const;
 
     /// Instance nodes.
-    Vector<WeakPtr<Node> > instanceNodes_;
+    Vector<stl::weak_ptr<Node> > instanceNodes_;
     /// World transforms of valid (existing and visible) instances.
     PODVector<Matrix3x4> worldTransforms_;
     /// IDs of instance nodes for serialization.

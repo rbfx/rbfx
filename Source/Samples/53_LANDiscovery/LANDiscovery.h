@@ -83,11 +83,11 @@ private:
 	/// Start network discovery
 	void HandleDoNetworkDiscovery(StringHash eventType, VariantMap& eventData);
     /// Start server
-    SharedPtr<Button> startServer_;
+    stl::shared_ptr<Button> startServer_;
     /// Stop server
-    SharedPtr<Button> stopServer_;
+    stl::shared_ptr<Button> stopServer_;
     /// Redo LAN discovery
-    SharedPtr<Button> refreshServerList_;
+    stl::shared_ptr<Button> refreshServerList_;
     /// Found server list
-	SharedPtr<Text> serverList_;
+	stl::shared_ptr<Text> serverList_;
 };

@@ -189,11 +189,11 @@ protected:
     /// Internally used text element.
     Text text_;
     /// Geometries.
-    Vector<SharedPtr<Geometry> > geometries_;
+    Vector<stl::shared_ptr<Geometry> > geometries_;
     /// Vertex buffer.
-    SharedPtr<VertexBuffer> vertexBuffer_;
+    stl::shared_ptr<VertexBuffer> vertexBuffer_;
     /// Material to use as a base for the text material(s).
-    SharedPtr<Material> material_;
+    stl::shared_ptr<Material> material_;
     /// Text UI batches.
     PODVector<UIBatch> uiBatches_;
     /// Text vertex data.

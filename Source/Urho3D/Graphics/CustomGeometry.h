@@ -144,9 +144,9 @@ private:
     /// Source vertices per geometry.
     Vector<PODVector<CustomGeometryVertex> > vertices_;
     /// All geometries.
-    Vector<SharedPtr<Geometry> > geometries_;
+    Vector<stl::shared_ptr<Geometry> > geometries_;
     /// Vertex buffer.
-    SharedPtr<VertexBuffer> vertexBuffer_;
+    stl::shared_ptr<VertexBuffer> vertexBuffer_;
     /// Element mask used so far.
     VertexMaskFlags elementMask_;
     /// Current geometry being updated.

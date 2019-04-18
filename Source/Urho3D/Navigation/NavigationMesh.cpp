@@ -715,7 +715,7 @@ void NavigationMesh::FindPath(PODVector<NavigationPathPoint>& dest, const Vector
         float nearestDistance = M_LARGE_VALUE;
         for (unsigned j = 0; j < areas_.Size(); j++)
         {
-            NavArea* area = areas_[j].Get();
+            NavArea* area = areas_[j];
             if (area && area->IsEnabledEffective())
             {
                 BoundingBox bb = area->GetWorldBoundingBox();
@@ -999,7 +999,7 @@ void NavigationMesh::CollectGeometries(Vector<NavigationGeometryInfo>& geometryL
             info.component_ = area;
             info.boundingBox_ = area->GetWorldBoundingBox();
             geometryList.Push(info);
-            areas_.Push(WeakPtr<NavArea>(area));
+            areas_.Push(stl::weak_ptr<NavArea>(area));
         }
     }
 }
@@ -1076,7 +1076,7 @@ void NavigationMesh::CollectGeometries(Vector<NavigationGeometryInfo>& geometryL
 
     if (recursive)
     {
-        const Vector<SharedPtr<Node> >& children = node->GetChildren();
+        const Vector<stl::shared_ptr<Node> >& children = node->GetChildren();
         for (unsigned i = 0; i < children.Size(); ++i)
             CollectGeometries(geometryList, children[i], processedNodes, recursive);
     }

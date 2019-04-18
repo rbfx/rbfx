@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../Container/Ptr.h"
+#include <EASTL/shared_ptr.h>
 #include "../Core/Variant.h"
 #include "../Container/Vector.h"
 #include "../Core/Spline.h"
@@ -135,9 +135,9 @@ private:
     /// Whether the Control Point IDs are dirty.
     bool dirty_;
     /// Node to be moved along the SplinePath.
-    WeakPtr<Node> controlledNode_;
+    stl::weak_ptr<Node> controlledNode_;
     /// Control Points for the SplinePath.
-    Vector<WeakPtr<Node> > controlPoints_;
+    Vector<stl::weak_ptr<Node> > controlPoints_;
     /// Control Point ID's for the SplinePath.
     mutable VariantVector controlPointIdsAttr_;
     /// Controlled ID for the SplinePath.

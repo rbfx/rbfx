@@ -73,8 +73,8 @@ bool Pipeline::LoadJSON(const JSONValue& source)
         if (type == StringHash::ZERO)
             return false;
 
-        SharedPtr<Converter> converter = DynamicCast<Converter>(context_->CreateObject(type));
-        if (converter.Null() || !converter->LoadJSON(converterData))
+        stl::shared_ptr<Converter> converter = DynamicCast<Converter>(context_->CreateObject(type));
+        if (!converter || !converter->LoadJSON(converterData))
             return false;
 
         converters_.Push(converter);
@@ -323,7 +323,7 @@ void Pipeline::StartWorkItems(const StringVector& resourcePaths)
 void Pipeline::StartWorkItems(ConverterKinds converterKinds, const StringVector& resourcePaths)
 {
     executingConverterKinds_ = converterKinds;
-    for (SharedPtr<Converter>& converter : converters_)
+    for (stl::shared_ptr<Converter>& converter : converters_)
     {
         if (converterKinds & converter->GetKind())
         {
@@ -428,7 +428,7 @@ void Pipeline::CreatePaksAsync()
             rules.EmplaceBack(PackagingEntry{"Resources.pak", {std::regex(".+")}});
         }
 
-//        SharedPtr<PackageFile> packageFile(new PackageFile(context_, "Data.pak"));
+//        stl::shared_ptr<PackageFile> packageFile(new PackageFile(context_, "Data.pak"));
 
         StringVector resourceFiles, cacheFiles;
         GetFileSystem()->ScanDir(resourceFiles, project->GetResourcePath(), "*", SCAN_FILES, true);

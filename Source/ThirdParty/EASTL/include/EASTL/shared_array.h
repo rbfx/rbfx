@@ -369,6 +369,7 @@ namespace eastl
 			return mpRefCount;
 		}
 
+#if EASTL_URHO3D_EXTENSIONS
 		/// Perform a static cast from a shared array pointer of another type.
 		template <class U> void do_static_cast(const shared_array<U>& rhs)
 		{
@@ -390,7 +391,7 @@ namespace eastl
 			if (mpRefCount != nullptr)
 				++*mpRefCount;
 		}
-
+#endif
 	}; // class shared_array
 
 

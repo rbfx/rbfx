@@ -48,17 +48,17 @@ public:
 
 protected:
     /// Trail that emitted from sword.
-    SharedPtr<RibbonTrail> swordTrail_;
+    stl::shared_ptr<RibbonTrail> swordTrail_;
     /// Animation controller of the ninja.
-    SharedPtr<AnimationController> ninjaAnimCtrl_;
+    stl::shared_ptr<AnimationController> ninjaAnimCtrl_;
     /// The time sword start emitting trail.
     float swordTrailStartTime_;
     /// The time sword stop emitting trail.
     float swordTrailEndTime_;
     /// Box node 1.
-    SharedPtr<Node> boxNode1_;
+    stl::shared_ptr<Node> boxNode1_;
     /// Box node 2.
-    SharedPtr<Node> boxNode2_;
+    stl::shared_ptr<Node> boxNode2_;
     /// Sum of timestep.
     float timeStepSum_;
 

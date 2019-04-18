@@ -94,7 +94,7 @@ public:
 
 private:
     /// Texture.
-    SharedPtr<Texture2D> texture_;
+    stl::shared_ptr<Texture2D> texture_;
     /// Rectangle.
     IntRect rectangle_;
     /// Hot spot.
@@ -102,9 +102,9 @@ private:
     /// Offset (for trimmed sprite).
     IntVector2 offset_;
     /// Sprite sheet.
-    WeakPtr<SpriteSheet2D> spriteSheet_;
+    stl::weak_ptr<SpriteSheet2D> spriteSheet_;
     /// Texture used while loading.
-    SharedPtr<Texture2D> loadTexture_;
+    stl::shared_ptr<Texture2D> loadTexture_;
     /// Offset to fix texture edge bleeding.
     float edgeOffset_;
 };

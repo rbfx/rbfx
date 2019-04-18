@@ -123,8 +123,10 @@ public:
     void SetResolveDirty(bool enable) { resolveDirty_ = enable; }
 
 private:
+    /// Graphics subsystem.
+    stl::weak_ptr<Graphics> graphics_;
     /// Parent texture.
-    WeakPtr<Texture> parentTexture_;
+    stl::weak_ptr<Texture> parentTexture_;
 
     union
     {
@@ -145,11 +147,11 @@ private:
     };
 
     /// Viewports.
-    Vector<SharedPtr<Viewport> > viewports_;
+    Vector<stl::shared_ptr<Viewport> > viewports_;
     /// Linked color buffer.
-    WeakPtr<RenderSurface> linkedRenderTarget_;
+    stl::weak_ptr<RenderSurface> linkedRenderTarget_;
     /// Linked depth buffer.
-    WeakPtr<RenderSurface> linkedDepthStencil_;
+    stl::weak_ptr<RenderSurface> linkedDepthStencil_;
     /// Update mode for viewports.
     RenderSurfaceUpdateMode updateMode_{SURFACE_UPDATEVISIBLE};
     /// Update queued flag.

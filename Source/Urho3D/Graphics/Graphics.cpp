@@ -282,7 +282,7 @@ void Graphics::BeginDumpShaders(const String& fileName)
 
 void Graphics::EndDumpShaders()
 {
-    shaderPrecache_.Reset();
+    shaderPrecache_.reset();
 }
 
 void Graphics::PrecacheShaders(Deserializer& source)

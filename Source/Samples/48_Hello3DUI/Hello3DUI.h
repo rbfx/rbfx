@@ -79,17 +79,17 @@ private:
     void Init3DUI();
 
     /// The Scene.
-    SharedPtr<Scene> scene_;
+    stl::shared_ptr<Scene> scene_;
     /// The Window.
-    SharedPtr<Window> window_;
+    stl::shared_ptr<Window> window_;
     /// The UI's root UIElement.
-    SharedPtr<UIElement> uiRoot_;
+    stl::shared_ptr<UIElement> uiRoot_;
     /// Remembered drag begin position.
     IntVector2 dragBeginPosition_;
     /// Root UI element of texture.
-    SharedPtr<UIElement> textureRoot_;
+    stl::shared_ptr<UIElement> textureRoot_;
     /// UI element with instructions.
-    SharedPtr<Text> instructions_;
+    stl::shared_ptr<Text> instructions_;
     /// Enable or disable cube rotation.
     bool animateCube_;
     /// Enable or disable rendering to texture.
@@ -97,7 +97,7 @@ private:
     /// Draw debug information of last clicked element.
     bool drawDebug_;
     /// Last clicked UI element.
-    WeakPtr<UIElement> current_;
+    stl::weak_ptr<UIElement> current_;
 };
 
 

@@ -157,7 +157,7 @@ void UI::SetCursor(Cursor* cursor)
     if (cursor_)
     {
         rootElement_->RemoveChild(cursor_);
-        cursor_.Reset();
+        cursor_.reset();
     }
     if (cursor)
     {
@@ -205,7 +205,7 @@ void UI::SetFocusElement(UIElement* element, bool byKey)
     if (focusElement_)
     {
         UIElement* oldFocusElement = focusElement_;
-        focusElement_.Reset();
+        focusElement_.reset();
 
         VariantMap& focusEventData = GetEventDataMap();
         focusEventData[Defocused::P_ELEMENT] = oldFocusElement;
@@ -323,7 +323,7 @@ void UI::Update(float timeStep)
     URHO3D_PROFILE("UpdateUI");
 
     // Expire hovers
-    for (HashMap<WeakPtr<UIElement>, bool>::Iterator i = hoveredElements_.Begin(); i != hoveredElements_.End(); ++i)
+    for (HashMap<stl::weak_ptr<UIElement>, bool>::Iterator i = hoveredElements_.Begin(); i != hoveredElements_.End(); ++i)
         i->second_ = false;
 
     auto* input = GetSubsystem<Input>();
@@ -336,9 +336,9 @@ void UI::Update(float timeStep)
     // Drag begin based on time
     if (dragElementsCount_ > 0 && !mouseGrabbed)
     {
-        for (HashMap<WeakPtr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
+        for (HashMap<stl::weak_ptr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
         {
-            WeakPtr<UIElement> dragElement = i->first_;
+            stl::weak_ptr<UIElement> dragElement = i->first_;
             UI::DragData* dragData = i->second_;
 
             if (!dragElement)
@@ -398,9 +398,9 @@ void UI::Update(float timeStep)
 #endif
 
     // End hovers that expired without refreshing
-    for (HashMap<WeakPtr<UIElement>, bool>::Iterator i = hoveredElements_.Begin(); i != hoveredElements_.End();)
+    for (HashMap<stl::weak_ptr<UIElement>, bool>::Iterator i = hoveredElements_.Begin(); i != hoveredElements_.End();)
     {
-        if (i->first_.Expired() || !i->second_)
+        if (i->first_.expired() || !i->second_)
         {
             UIElement* element = i->first_;
             if (element)
@@ -457,7 +457,7 @@ void UI::RenderUpdate()
     }
 
     // UIElement does not have anything to show. Insert dummy batch that will clear the texture.
-    if (batches_.Empty() && texture_.NotNull())
+    if (batches_.Empty() && texture_)
     {
         UIBatch batch(rootElement_, BLEND_REPLACE, currentScissor, nullptr, &vertexData_);
         batch.SetColor(Color::BLACK);
@@ -506,20 +506,20 @@ void UI::DebugDraw(UIElement* element)
     }
 }
 
-SharedPtr<UIElement> UI::LoadLayout(Deserializer& source, XMLFile* styleFile)
+stl::shared_ptr<UIElement> UI::LoadLayout(Deserializer& source, XMLFile* styleFile)
 {
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
     if (!xml->Load(source))
-        return SharedPtr<UIElement>();
+        return stl::shared_ptr<UIElement>();
     else
         return LoadLayout(xml, styleFile);
 }
 
-SharedPtr<UIElement> UI::LoadLayout(XMLFile* file, XMLFile* styleFile)
+stl::shared_ptr<UIElement> UI::LoadLayout(XMLFile* file, XMLFile* styleFile)
 {
     URHO3D_PROFILE("LoadUILayout");
 
-    SharedPtr<UIElement> root;
+    stl::shared_ptr<UIElement> root;
 
     if (!file)
     {
@@ -763,7 +763,7 @@ UIElement* UI::GetElementAt(int x, int y, bool enabledOnly)
 
 UIElement* UI::GetFrontElement() const
 {
-    const Vector<SharedPtr<UIElement> >& rootChildren = rootElement_->GetChildren();
+    const Vector<stl::shared_ptr<UIElement> >& rootChildren = rootElement_->GetChildren();
     int maxPriority = M_MIN_INT;
     UIElement* front = nullptr;
 
@@ -790,9 +790,9 @@ const PODVector<UIElement*>& UI::GetDragElements()
     if (!dragElementsConfirmed_.Empty())
         return dragElementsConfirmed_;
 
-    for (HashMap<WeakPtr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
+    for (HashMap<stl::weak_ptr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
     {
-        WeakPtr<UIElement> dragElement = i->first_;
+        stl::weak_ptr<UIElement> dragElement = i->first_;
         UI::DragData* dragData = i->second_;
 
         if (!dragElement)
@@ -867,7 +867,7 @@ void UI::Initialize()
 void UI::Update(float timeStep, UIElement* element)
 {
     // Keep a weak pointer to the element in case it destroys itself on update
-    WeakPtr<UIElement> elementWeak(element);
+    stl::weak_ptr<UIElement> elementWeak(element);
 
 #ifdef URHO3D_SYSTEMUI
     // Unfocus active element if system ui has focus
@@ -879,10 +879,10 @@ void UI::Update(float timeStep, UIElement* element)
 #endif
 
     element->Update(timeStep);
-    if (elementWeak.Expired())
+    if (elementWeak.expired())
         return;
 
-    const Vector<SharedPtr<UIElement> >& children = element->GetChildren();
+    const Vector<stl::shared_ptr<UIElement> >& children = element->GetChildren();
     // Update of an element may modify its child vector. Use just index-based iteration to be safe
     for (unsigned i = 0; i < children.Size(); ++i)
         Update(timeStep, children[i]);
@@ -1031,16 +1031,16 @@ void UI::GetBatches(PODVector<UIBatch>& batches, PODVector<float>& vertexData, U
         return;
 
     element->SortChildren();
-    const Vector<SharedPtr<UIElement> >& children = element->GetChildren();
+    const Vector<stl::shared_ptr<UIElement> >& children = element->GetChildren();
     if (children.Empty())
         return;
 
     // For non-root elements draw all children of same priority before recursing into their children: assumption is that they have
     // same renderstate
-    Vector<SharedPtr<UIElement> >::ConstIterator i = children.Begin();
+    Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children.Begin();
     if (element->GetTraversalMode() == TM_BREADTH_FIRST)
     {
-        Vector<SharedPtr<UIElement> >::ConstIterator j = i;
+        Vector<stl::shared_ptr<UIElement> >::ConstIterator j = i;
         while (i != children.End())
         {
             int currentPriority = (*i)->GetPriority();
@@ -1082,7 +1082,7 @@ void UI::GetElementAt(UIElement*& result, UIElement* current, const IntVector2& 
         return;
 
     current->SortChildren();
-    const Vector<SharedPtr<UIElement> >& children = current->GetChildren();
+    const Vector<stl::shared_ptr<UIElement> >& children = current->GetChildren();
     LayoutMode parentLayoutMode = current->GetLayoutMode();
 
     for (unsigned i = 0; i < children.Size(); ++i)
@@ -1090,7 +1090,7 @@ void UI::GetElementAt(UIElement*& result, UIElement* current, const IntVector2& 
         UIElement* element = children[i];
         bool hasChildren = element->GetNumChildren() > 0;
 
-        if (element != cursor_.Get() && element->IsVisible())
+        if (element != cursor_ && element->IsVisible())
         {
             if (element->IsInside(position, true))
             {
@@ -1205,11 +1205,11 @@ void UI::ReleaseFontFaces()
 void UI::ProcessHover(const IntVector2& windowCursorPos, MouseButtonFlags buttons, QualifierFlags qualifiers, Cursor* cursor)
 {
     IntVector2 cursorPos;
-    WeakPtr<UIElement> element(GetElementAt(windowCursorPos, true, &cursorPos));
+    stl::weak_ptr<UIElement> element(GetElementAt(windowCursorPos, true, &cursorPos));
 
-    for (HashMap<WeakPtr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
+    for (HashMap<stl::weak_ptr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
     {
-        WeakPtr<UIElement> dragElement = i->first_;
+        stl::weak_ptr<UIElement> dragElement = i->first_;
         UI::DragData* dragData = i->second_;
 
         if (!dragElement)
@@ -1254,8 +1254,8 @@ void UI::ProcessHover(const IntVector2& windowCursorPos, MouseButtonFlags button
                 using namespace DragDropTest;
 
                 VariantMap& eventData = GetEventDataMap();
-                eventData[P_SOURCE] = dragElement.Get();
-                eventData[P_TARGET] = element.Get();
+                eventData[P_SOURCE] = dragElement;
+                eventData[P_TARGET] = element;
                 eventData[P_ACCEPT] = accept;
                 SendEvent(E_DRAGDROPTEST, eventData);
                 accept = eventData[P_ACCEPT].GetBool();
@@ -1296,7 +1296,7 @@ void UI::ProcessClickBegin(const IntVector2& windowCursorPos, MouseButton button
     if (cursorVisible)
     {
         IntVector2 cursorPos;
-        WeakPtr<UIElement> element(GetElementAt(windowCursorPos, true, &cursorPos));
+        stl::weak_ptr<UIElement> element(GetElementAt(windowCursorPos, true, &cursorPos));
 
         bool newButton;
         if (usingTouchInput_)
@@ -1323,7 +1323,7 @@ void UI::ProcessClickBegin(const IntVector2& windowCursorPos, MouseButton button
                 (clickTimer_.GetMSec(true) < (unsigned)(doubleClickInterval_ * 1000)) && lastMouseButtons_ == buttons && (windowCursorPos - doubleClickFirstPos_).Length() < maxDoubleClickDist_)
             {
                 element->OnDoubleClick(element->ScreenToElement(cursorPos), cursorPos, button, buttons, qualifiers, cursor);
-                doubleClickElement_.Reset();
+                doubleClickElement_.reset();
                 SendDoubleClickEvent(nullptr, element, doubleClickFirstPos_, cursorPos, button, buttons, qualifiers);
             }
             else
@@ -1375,15 +1375,15 @@ void UI::ProcessClickBegin(const IntVector2& windowCursorPos, MouseButton button
 
 void UI::ProcessClickEnd(const IntVector2& windowCursorPos, MouseButton button, MouseButtonFlags buttons, QualifierFlags qualifiers, Cursor* cursor, bool cursorVisible)
 {
-    WeakPtr<UIElement> element;
+    stl::weak_ptr<UIElement> element;
     IntVector2 cursorPos = windowCursorPos;
     if (cursorVisible)
         element = GetElementAt(cursorPos, true, &cursorPos);
 
     // Handle end of drag
-    for (HashMap<WeakPtr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
+    for (HashMap<stl::weak_ptr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
     {
-        WeakPtr<UIElement> dragElement = i->first_;
+        stl::weak_ptr<UIElement> dragElement = i->first_;
         UI::DragData* dragData = i->second_;
 
         if (!dragElement || !cursorVisible)
@@ -1423,8 +1423,8 @@ void UI::ProcessClickEnd(const IntVector2& windowCursorPos, MouseButton button, 
                             using namespace DragDropFinish;
 
                             VariantMap& eventData = GetEventDataMap();
-                            eventData[P_SOURCE] = dragElement.Get();
-                            eventData[P_TARGET] = element.Get();
+                            eventData[P_SOURCE] = dragElement;
+                            eventData[P_TARGET] = element;
                             eventData[P_ACCEPT] = accept;
                             SendEvent(E_DRAGDROPFINISH, eventData);
                         }
@@ -1449,9 +1449,9 @@ void UI::ProcessMove(const IntVector2& windowCursorPos, const IntVector2& cursor
 
         auto* input = GetSubsystem<Input>();
         bool mouseGrabbed = input->IsMouseGrabbed();
-        for (HashMap<WeakPtr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
+        for (HashMap<stl::weak_ptr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
         {
-            WeakPtr<UIElement> dragElement = i->first_;
+            stl::weak_ptr<UIElement> dragElement = i->first_;
             UI::DragData* dragData = i->second_;
 
             if (!dragElement)
@@ -1512,7 +1512,7 @@ void UI::ProcessMove(const IntVector2& windowCursorPos, const IntVector2& cursor
             {
                 dragElement->OnDragEnd(dragElement->ScreenToElement(sendPos), sendPos, dragData->dragButtons, buttons, cursor);
                 SendDragOrHoverEvent(E_DRAGEND, dragElement, sendPos, IntVector2::ZERO, dragData);
-                dragElement.Reset();
+                dragElement.reset();
             }
 
             ++i;
@@ -1783,7 +1783,7 @@ void UI::HandleTouchBegin(StringHash eventType, VariantMap& eventData)
     usingTouchInput_ = true;
 
     const MouseButton touchId = MakeTouchIDMask(eventData[P_TOUCHID].GetInt());
-    WeakPtr<UIElement> element(GetElementAt(pos));
+    stl::weak_ptr<UIElement> element(GetElementAt(pos));
 
     if (element)
     {
@@ -1806,7 +1806,7 @@ void UI::HandleTouchEnd(StringHash eventType, VariantMap& eventData)
     const MouseButton touchId = MakeTouchIDMask(eventData[P_TOUCHID].GetInt());
 
     // Transmit hover end to the position where the finger was lifted
-    WeakPtr<UIElement> element(GetElementAt(pos));
+    stl::weak_ptr<UIElement> element(GetElementAt(pos));
 
     // Clear any drag events that were using the touch id
     for (auto i = touchDragElements_.Begin(); i != touchDragElements_.End();)
@@ -2005,7 +2005,7 @@ void UI::HandleFocused(StringHash eventType, VariantMap& eventData)
 
 void UI::HandleEndAllViewsRender(StringHash eventType, VariantMap& eventData)
 {
-    if (texture_.NotNull())
+    if (texture_)
     {
         if (RenderSurface* surface = texture_->GetRenderSurface())
         {
@@ -2020,7 +2020,7 @@ void UI::HandleEndAllViewsRender(StringHash eventType, VariantMap& eventData)
     }
 }
 
-HashMap<WeakPtr<UIElement>, UI::DragData*>::Iterator UI::DragElementErase(HashMap<WeakPtr<UIElement>, UI::DragData*>::Iterator i)
+HashMap<stl::weak_ptr<UIElement>, UI::DragData*>::Iterator UI::DragElementErase(HashMap<stl::weak_ptr<UIElement>, UI::DragData*>::Iterator i)
 {
     // If running the engine frame in response to an event (re-entering UI frame logic) the dragElements_ may already be empty
     if (dragElements_.Empty())
@@ -2049,9 +2049,9 @@ void UI::ProcessDragCancel()
     bool cursorVisible;
     GetCursorPositionAndVisible(cursorPos, cursorVisible);
 
-    for (HashMap<WeakPtr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
+    for (HashMap<stl::weak_ptr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
     {
-        WeakPtr<UIElement> dragElement = i->first_;
+        stl::weak_ptr<UIElement> dragElement = i->first_;
         UI::DragData* dragData = i->second_;
 
         if (dragElement && dragElement->IsEnabled() && dragElement->IsVisible() && !dragData->dragBeginPending)
@@ -2099,7 +2099,7 @@ void UI::ResizeRootElement()
     rootElement_->SetSize(effectiveSize);
     rootModalElement_->SetSize(effectiveSize);
 
-    if (texture_.NotNull())
+    if (texture_)
     {
         if (texture_->GetWidth() != effectiveSize.x_ || texture_->GetHeight() != effectiveSize.y_)
         {

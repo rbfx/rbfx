@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../Container/Ptr.h"
+#include <EASTL/shared_ptr.h>
 #include "../Scene/Component.h"
 
 namespace Urho3D
@@ -88,7 +88,7 @@ private:
     /// Id received from tile cache.
     unsigned obstacleId_;
     /// Pointer to the navigation mesh we belong to.
-    WeakPtr<DynamicNavigationMesh> ownerMesh_;
+    stl::weak_ptr<DynamicNavigationMesh> ownerMesh_;
 };
 
 }

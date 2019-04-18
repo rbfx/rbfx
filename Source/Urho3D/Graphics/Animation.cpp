@@ -167,7 +167,7 @@ bool Animation::BeginLoad(Deserializer& source)
     auto* cache = GetSubsystem<ResourceCache>();
     String xmlName = ReplaceExtension(GetName(), ".xml");
 
-    SharedPtr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
+    stl::shared_ptr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
     if (file)
     {
         XMLElement rootElem = file->GetRoot();
@@ -189,7 +189,7 @@ bool Animation::BeginLoad(Deserializer& source)
     // Optionally read triggers from a JSON file
     String jsonName = ReplaceExtension(GetName(), ".json");
 
-    SharedPtr<JSONFile> jsonFile(cache->GetTempResource<JSONFile>(jsonName, false));
+    stl::shared_ptr<JSONFile> jsonFile(cache->GetTempResource<JSONFile>(jsonName, false));
     if (jsonFile)
     {
         const JSONValue& rootVal = jsonFile->GetRoot();
@@ -259,7 +259,7 @@ bool Animation::Save(Serializer& dest) const
         {
             String xmlName = ReplaceExtension(destFile->GetName(), ".xml");
 
-            SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+            stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
             XMLElement rootElem = xml->CreateRoot("animation");
 
             for (unsigned i = 0; i < triggers_.Size(); ++i)
@@ -366,9 +366,9 @@ void Animation::SetNumTriggers(unsigned num)
     triggers_.Resize(num);
 }
 
-SharedPtr<Animation> Animation::Clone(const String& cloneName) const
+stl::shared_ptr<Animation> Animation::Clone(const String& cloneName) const
 {
-    SharedPtr<Animation> ret(context_->CreateObject<Animation>());
+    stl::shared_ptr<Animation> ret(context_->CreateObject<Animation>());
 
     ret->SetName(cloneName);
     ret->SetAnimationName(animationName_);

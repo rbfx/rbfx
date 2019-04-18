@@ -30,60 +30,46 @@ namespace Urho3D
 {
 
 RefCounted::RefCounted() :
-    refCount_(new RefCount())
+    stl::enable_shared_from_this<RefCounted>()
 {
-    // Hold a weak ref to self to avoid possible double delete of the refcount
-    (refCount_->weakRefs_)++;
+    {
+        // Creates refcount object early so assigning this object in subclass constructor to smart pointers works.
+        stl::shared_ptr<RefCounted> ptr(this);
+        // Ensure that shared pointer destructor does not free this object
+        stl::Internal::atomic_increment(&mWeakPtr.get_refcount_pointer()->mRefCount);
+    }
+    // Restore proper refcount. Object may have 0 references and yet be alive when it is not managed by smart pointer.
+    stl::Internal::atomic_decrement(&mWeakPtr.get_refcount_pointer()->mRefCount);
 }
 
 RefCounted::~RefCounted()
 {
-    assert(refCount_);
-    assert(refCount_->refs_ == 0);
-    assert(refCount_->weakRefs_ > 0);
-
-    // Mark object as expired, release the self weak ref and delete the refcount if no other weak refs exist
-    refCount_->refs_ = -1;
-    (refCount_->weakRefs_)--;
-    if (!refCount_->weakRefs_)
-        delete refCount_;
-
-    refCount_ = nullptr;
 }
 
 void RefCounted::AddRef()
 {
-    assert(refCount_->refs_ >= 0);
-    (refCount_->refs_)++;
+    assert(!mWeakPtr.expired());
+    mWeakPtr.get_refcount_pointer()->addref();
 }
 
 void RefCounted::ReleaseRef()
 {
-    assert(refCount_->refs_ > 0);
-    (refCount_->refs_)--;
-    if (!refCount_->refs_)
-    {
-        if (deleter_ != nullptr)
-            deleter_(this);
-        else
-            delete this;
-    }
+    assert(!mWeakPtr.expired());
+    mWeakPtr.get_refcount_pointer()->release();
 }
 
 int RefCounted::Refs() const
 {
-    return refCount_->refs_;
+    if (auto* refCount = mWeakPtr.get_refcount_pointer())
+        return refCount->mRefCount;
+    return 0;
 }
 
 int RefCounted::WeakRefs() const
 {
-    // Subtract one to not return the internally held reference
-    return refCount_->weakRefs_ - 1;
-}
-
-void RefCounted::SetDeleter(std::function<void(RefCounted*)> deleter)
-{
-    deleter_ = std::move(deleter);
+    if (auto* refCount = mWeakPtr.get_refcount_pointer())
+        return refCount->mWeakRefCount;
+    return 0;
 }
 
 }

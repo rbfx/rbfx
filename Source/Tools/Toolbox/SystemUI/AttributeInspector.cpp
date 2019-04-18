@@ -115,7 +115,7 @@ static const float buttonWidth()
 
 bool RenderResourceRef(Object* eventNamespace, StringHash type, const String& name, String& result)
 {
-    SharedPtr<Resource> resource;
+    stl::shared_ptr<Resource> resource;
     auto returnValue = false;
 
     UI_ITEMWIDTH((eventNamespace != nullptr ? 2 : 1) * (-buttonWidth()))
@@ -130,7 +130,7 @@ bool RenderResourceRef(Object* eventNamespace, StringHash type, const String& na
             if (!payload.IsEmpty())
             {
                 resource = eventNamespace->GetCache()->GetResource(type, payload.GetString());
-                dropped = resource.NotNull();
+                dropped = resource != nullptr;
             }
             ui::EndDragDropTarget();
         }

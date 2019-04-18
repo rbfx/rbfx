@@ -117,7 +117,7 @@ protected:
     /// Rotation angle.
     float rotation_;
     /// Texture.
-    SharedPtr<Texture> texture_;
+    stl::shared_ptr<Texture> texture_;
     /// Image rectangle.
     IntRect imageRect_;
     /// Blend mode flag.

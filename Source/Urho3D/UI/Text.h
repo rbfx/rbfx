@@ -214,9 +214,9 @@ protected:
             float depthBias = 0.0f);
 
     /// Font.
-    SharedPtr<Font> font_;
+    stl::shared_ptr<Font> font_;
     /// Current face.
-    WeakPtr<FontFace> fontFace_;
+    stl::weak_ptr<FontFace> fontFace_;
     /// Font size.
     float fontSize_;
     /// UTF-8 encoded text.

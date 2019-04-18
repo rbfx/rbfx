@@ -94,7 +94,7 @@ void SplinePath::ApplyAttributes()
             Node* node = scene->GetNode(controlPointIdsAttr_[i].GetUInt());
             if (node)
             {
-                WeakPtr<Node> controlPoint(node);
+                stl::weak_ptr<Node> controlPoint(node);
                 node->AddListener(this);
                 controlPoints_.Push(controlPoint);
                 spline_.AddKnot(node->GetWorldPosition());
@@ -104,7 +104,7 @@ void SplinePath::ApplyAttributes()
         Node* node = scene->GetNode(controlledIdAttr_);
         if (node)
         {
-            WeakPtr<Node> controlled(node);
+            stl::weak_ptr<Node> controlled(node);
             controlledNode_ = controlled;
         }
     }
@@ -128,11 +128,11 @@ void SplinePath::DrawDebugGeometry(DebugRenderer* debug, bool /*depthTest*/)
             }
         }
 
-        for (Vector<WeakPtr<Node> >::ConstIterator i = controlPoints_.Begin(); i != controlPoints_.End(); ++i)
-            debug->AddNode(*i);
+        for (Vector<stl::weak_ptr<Node> >::ConstIterator i = controlPoints_.Begin(); i != controlPoints_.End(); ++i)
+            debug->AddNode(i->get());
 
         if (controlledNode_)
-            debug->AddNode(controlledNode_);
+            debug->AddNode(controlledNode_.get());
     }
 }
 
@@ -141,7 +141,7 @@ void SplinePath::AddControlPoint(Node* point, unsigned index)
     if (!point)
         return;
 
-    WeakPtr<Node> controlPoint(point);
+    stl::weak_ptr<Node> controlPoint(point);
 
     point->AddListener(this);
     controlPoints_.Insert(index, controlPoint);
@@ -156,13 +156,13 @@ void SplinePath::RemoveControlPoint(Node* point)
     if (!point)
         return;
 
-    WeakPtr<Node> controlPoint(point);
+    stl::weak_ptr<Node> controlPoint(point);
 
     point->RemoveListener(this);
 
     for (unsigned i = 0; i < controlPoints_.Size(); ++i)
     {
-        if (controlPoints_[i] == controlPoint)
+        if (controlPoints_[i] == controlPoint.get())
         {
             controlPoints_.Erase(i);
             spline_.RemoveKnot(i);
@@ -193,7 +193,7 @@ void SplinePath::ClearControlPoints()
 void SplinePath::SetControlledNode(Node* controlled)
 {
     if (controlled)
-        controlledNode_ = WeakPtr<Node>(controlled);
+        controlledNode_ = stl::weak_ptr<Node>(controlled);
 }
 
 void SplinePath::SetInterpolationMode(InterpolationMode interpolationMode)
@@ -221,7 +221,7 @@ Vector3 SplinePath::GetPoint(float factor) const
 
 void SplinePath::Move(float timeStep)
 {
-    if (traveled_ >= 1.0f || length_ <= 0.0f || controlledNode_.Null())
+    if (traveled_ >= 1.0f || length_ <= 0.0f || !controlledNode_)
         return;
 
     elapsedTime_ += timeStep;
@@ -287,11 +287,11 @@ void SplinePath::OnMarkedDirty(Node* point)
     if (!point)
         return;
 
-    WeakPtr<Node> controlPoint(point);
+    stl::weak_ptr<Node> controlPoint(point);
 
     for (unsigned i = 0; i < controlPoints_.Size(); ++i)
     {
-        if (controlPoints_[i] == controlPoint)
+        if (controlPoints_[i] == controlPoint.get())
         {
             spline_.SetKnot(point->GetWorldPosition(), i);
             break;
@@ -306,11 +306,11 @@ void SplinePath::OnNodeSetEnabled(Node* point)
     if (!point)
         return;
 
-    WeakPtr<Node> controlPoint(point);
+    stl::weak_ptr<Node> controlPoint(point);
 
     for (unsigned i = 0; i < controlPoints_.Size(); ++i)
     {
-        if (controlPoints_[i] == controlPoint)
+        if (controlPoints_[i] == controlPoint.get())
         {
             if (point->IsEnabled())
                 spline_.AddKnot(point->GetWorldPosition(), i);

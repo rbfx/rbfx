@@ -23,7 +23,7 @@
 #pragma once
 
 #include "../Container/HashMap.h"
-#include "../Container/Ptr.h"
+#include "../Container/RefCounted.h"
 #include "../Math/Color.h"
 #include "../Math/Matrix3.h"
 #include "../Math/Matrix3x4.h"
@@ -285,7 +285,7 @@ union VariantValue
     double double_;
     long long int64_;
     void* voidPtr_;
-    WeakPtr<RefCounted> weakPtr_;
+    stl::weak_ptr<RefCounted> weakPtr_;
     Vector2 vector2_;
     Vector3 vector3_;
     Vector4 vector4_;
@@ -487,7 +487,7 @@ public:
         *this = value;
     }
 
-    /// Construct from a RefCounted pointer. The object will be stored internally in a WeakPtr so that its expiration can be detected safely.
+    /// Construct from a RefCounted pointer. The object will be stored internally in a stl::weak_ptr so that its expiration can be detected safely.
     Variant(RefCounted* value)          // NOLINT(google-explicit-constructor)
     {
         *this = value;
@@ -777,7 +777,7 @@ public:
         return *this;
     }
 
-    /// Assign from a RefCounted pointer. The object will be stored internally in a WeakPtr so that its expiration can be detected safely.
+    /// Assign from a RefCounted pointer. The object will be stored internally in a stl::weak_ptr so that its expiration can be detected safely.
     Variant& operator =(RefCounted* rhs)
     {
         SetType(VAR_PTR);
@@ -888,7 +888,7 @@ public:
         if (type_ == VAR_VOIDPTR)
             return value_.voidPtr_ == rhs;
         else if (type_ == VAR_PTR)
-            return value_.weakPtr_ == rhs;
+            return (void*)value_.weakPtr_.get() == rhs;
         else
             return false;
     }
@@ -954,7 +954,7 @@ public:
     bool operator ==(RefCounted* rhs) const
     {
         if (type_ == VAR_PTR)
-            return value_.weakPtr_ == rhs;
+            return value_.weakPtr_.get() == rhs;
         else if (type_ == VAR_VOIDPTR)
             return value_.voidPtr_ == rhs;
         else
@@ -1268,7 +1268,7 @@ public:
     /// Return a RefCounted pointer or null on type mismatch. Will return null if holding a void pointer, as it can not be safely verified that the object is a RefCounted.
     RefCounted* GetPtr() const
     {
-        return type_ == VAR_PTR ? value_.weakPtr_ : nullptr;
+        return type_ == VAR_PTR ? value_.weakPtr_.get() : nullptr;
     }
 
     /// Return a Matrix3 or identity on type mismatch.

@@ -215,7 +215,7 @@ void Hello3DUI::InitScene()
 
     // Set up a viewport so 3D scene can be visible.
     auto* renderer = GetSubsystem<Renderer>();
-    SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 
     // Subscribe to update event and animate cube and handle input.
@@ -320,7 +320,7 @@ void Hello3DUI::HandleUpdate(StringHash, VariantMap& eventData)
     auto* input = GetSubsystem<Input>();
     Node* node = scene_->GetChild("Box");
 
-    if (current_.NotNull() && drawDebug_)
+    if (current_ && drawDebug_)
         GetSubsystem<UI>()->DebugDraw(current_);
 
     if (input->GetMouseButtonPress(MOUSEB_LEFT))

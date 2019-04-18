@@ -50,7 +50,7 @@ private:
     /// Convert graphics format to number of components.
     unsigned ConvertFormatToNumComponents(unsigned format);
     /// Save font face texture as image resource.
-    SharedPtr<Image> SaveFaceTexture(Texture2D* texture);
+    stl::shared_ptr<Image> SaveFaceTexture(Texture2D* texture);
     /// Save font face texture as image file.
     bool SaveFaceTexture(Texture2D* texture, const String& fileName);
     /// Blit.

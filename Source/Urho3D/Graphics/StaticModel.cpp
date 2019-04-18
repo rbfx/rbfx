@@ -250,7 +250,7 @@ void StaticModel::SetModel(Model* model)
 
         // Copy the subgeometry & LOD level structure
         SetNumGeometries(model->GetNumGeometries());
-        const Vector<Vector<SharedPtr<Geometry> > >& geometries = model->GetGeometries();
+        const Vector<Vector<stl::shared_ptr<Geometry> > >& geometries = model->GetGeometries();
         const PODVector<Vector3>& geometryCenters = model->GetGeometryCenters();
         const Matrix3x4* worldTransform = node_ ? &node_->GetWorldTransform() : nullptr;
         for (unsigned i = 0; i < geometries.Size(); ++i)
@@ -306,7 +306,7 @@ void StaticModel::ApplyMaterialList(const String& fileName)
         useFileName = ReplaceExtension(model_->GetName(), ".txt");
 
     auto* cache = GetSubsystem<ResourceCache>();
-    SharedPtr<File> file = cache->GetFile(useFileName, false);
+    stl::shared_ptr<File> file = cache->GetFile(useFileName, false);
     if (!file)
         return;
 
@@ -421,7 +421,7 @@ void StaticModel::CalculateLodLevels()
 {
     for (unsigned i = 0; i < batches_.Size(); ++i)
     {
-        const Vector<SharedPtr<Geometry> >& batchGeometries = geometries_[i];
+        const Vector<stl::shared_ptr<Geometry> >& batchGeometries = geometries_[i];
         // If only one LOD geometry, no reason to go through the LOD calculation
         if (batchGeometries.Size() <= 1)
             continue;
@@ -446,7 +446,7 @@ void StaticModel::CalculateLodLevels()
 void StaticModel::HandleModelReloadFinished(StringHash eventType, VariantMap& eventData)
 {
     Model* currentModel = model_;
-    model_.Reset(); // Set null to allow to be re-set
+    model_.reset(); // Set null to allow to be re-set
     SetModel(currentModel);
 }
 

@@ -99,11 +99,11 @@ protected:
     bool FilterButtonImplicitAttributes(XMLElement& dest, const String& name) const;
 
     /// Back button.
-    SharedPtr<Button> backButton_;
+    stl::shared_ptr<Button> backButton_;
     /// Forward button.
-    SharedPtr<Button> forwardButton_;
+    stl::shared_ptr<Button> forwardButton_;
     /// Slider.
-    SharedPtr<Slider> slider_;
+    stl::shared_ptr<Slider> slider_;
     /// Scroll step.
     float scrollStep_;
     /// Step factor.

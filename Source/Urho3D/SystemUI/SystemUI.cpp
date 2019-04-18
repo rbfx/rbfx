@@ -351,7 +351,7 @@ void SystemUI::ReallocateFontTexture()
     ImGuiFreeType::BuildFontAtlas(io.Fonts, ImGuiFreeType::ForceAutoHint);
     io.Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
 
-    if (fontTexture_.Null())
+    if (!fontTexture_)
     {
         fontTexture_ = context_->CreateObject<Texture2D>();
         fontTexture_->SetNumLevels(1);
@@ -364,7 +364,7 @@ void SystemUI::ReallocateFontTexture()
     fontTexture_->SetData(0, 0, 0, width, height, pixels);
 
     // Store our identifier
-    io.Fonts->TexID = (void*)fontTexture_.Get();
+    io.Fonts->TexID = (void*)fontTexture_;
     io.Fonts->ClearTexData();
 }
 

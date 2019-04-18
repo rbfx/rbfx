@@ -270,9 +270,9 @@ private:
     /// Compound collision shape with center of mass offset applied.
     stl::unique_ptr<btCompoundShape> shiftedCompoundShape_;
     /// Physics world.
-    WeakPtr<PhysicsWorld> physicsWorld_;
+    stl::weak_ptr<PhysicsWorld> physicsWorld_;
     /// Smoothed transform, if has one.
-    WeakPtr<SmoothedTransform> smoothedTransform_;
+    stl::weak_ptr<SmoothedTransform> smoothedTransform_;
     /// Constraints that refer to this rigid body.
     PODVector<Constraint*> constraints_;
     /// Gravity override vector.

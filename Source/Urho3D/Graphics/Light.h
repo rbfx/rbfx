@@ -379,9 +379,9 @@ private:
     /// Custom world transform for the light volume.
     Matrix3x4 volumeTransform_;
     /// Range attenuation texture.
-    SharedPtr<Texture> rampTexture_;
+    stl::shared_ptr<Texture> rampTexture_;
     /// Spotlight attenuation texture.
-    SharedPtr<Texture> shapeTexture_;
+    stl::shared_ptr<Texture> shapeTexture_;
     /// Light queue.
     LightBatchQueue* lightQueue_;
     /// Specular intensity.

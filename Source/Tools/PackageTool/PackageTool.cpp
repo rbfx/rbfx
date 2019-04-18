@@ -48,8 +48,8 @@ struct FileEntry
     unsigned checksum_{};
 };
 
-SharedPtr<Context> context_(new Context());
-SharedPtr<FileSystem> fileSystem_(new FileSystem(context_));
+stl::shared_ptr<Context> context_(new Context());
+stl::shared_ptr<FileSystem> fileSystem_(new FileSystem(context_));
 String basePath_;
 Vector<FileEntry> entries_;
 unsigned checksum_ = 0;
@@ -161,7 +161,7 @@ void Run(const Vector<String>& arguments)
         if (fileSystem_->Exists(packageName))
         {
             unsigned packageTime = fileSystem_->GetLastModifiedTime(packageName);
-            SharedPtr<PackageFile> packageFile(new PackageFile(context_, packageName));
+            stl::shared_ptr<PackageFile> packageFile(new PackageFile(context_, packageName));
             if (packageFile->GetNumFiles() == fileNames.Size())
             {
                 bool filesOutOfDate = false;
@@ -189,7 +189,7 @@ void Run(const Vector<String>& arguments)
     }
     else
     {
-        SharedPtr<PackageFile> packageFile(new PackageFile(context_, packageName));
+        stl::shared_ptr<PackageFile> packageFile(new PackageFile(context_, packageName));
         bool outputCompressionRatio = false;
         switch (arguments[0][1])
         {

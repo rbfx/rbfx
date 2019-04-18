@@ -73,9 +73,9 @@ struct URHO3D_API CursorShapeInfo
     }
 
     /// Image.
-    SharedPtr<Image> image_;
+    stl::shared_ptr<Image> image_;
     /// Texture.
-    SharedPtr<Texture> texture_;
+    stl::shared_ptr<Texture> texture_;
     /// Image rectangle.
     IntRect imageRect_;
     /// Hotspot coordinates.

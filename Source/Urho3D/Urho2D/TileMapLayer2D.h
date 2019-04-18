@@ -110,7 +110,7 @@ private:
     void SetImageLayer(const TmxImageLayer2D* imageLayer);
 
     /// Tile map.
-    WeakPtr<TileMap2D> tileMap_;
+    stl::weak_ptr<TileMap2D> tileMap_;
     /// Tmx layer.
     const TmxLayer2D* tmxLayer_{};
     /// Tile layer.
@@ -124,7 +124,7 @@ private:
     /// Visible.
     bool visible_{true};
     /// Tile node or image nodes.
-    Vector<SharedPtr<Node> > nodes_;
+    Vector<stl::shared_ptr<Node> > nodes_;
 };
 
 }

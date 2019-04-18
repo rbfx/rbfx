@@ -181,7 +181,7 @@ bool ShaderVariation::LoadByteCode(const String& binaryShaderName)
     if (sourceTimeStamp && fileSystem->GetLastModifiedTime(cache->GetResourceFileName(binaryShaderName)) < sourceTimeStamp)
         return false;
 
-    SharedPtr<File> file = cache->GetFile(binaryShaderName);
+    stl::shared_ptr<File> file = cache->GetFile(binaryShaderName);
     if (!file || file->ReadFileID() != "USHD")
     {
         URHO3D_LOGERROR(binaryShaderName + " is not a valid shader bytecode file");
@@ -376,7 +376,7 @@ void ShaderVariation::SaveByteCode(const String& binaryShaderName)
     if (!fileSystem->DirExists(path))
         fileSystem->CreateDir(path);
 
-    SharedPtr<File> file(new File(owner_->GetContext(), fullName, FILE_WRITE));
+    stl::shared_ptr<File> file(new File(owner_->GetContext(), fullName, FILE_WRITE));
     if (!file->IsOpen())
         return;
 

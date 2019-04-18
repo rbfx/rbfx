@@ -105,7 +105,7 @@ void PBRMaterials::CreateScene()
 
     // Load scene content prepared in the editor (XML format). GetFile() returns an open file from the resource system
     // which scene.LoadXML() will read
-    SharedPtr<File> file = cache->GetFile("Scenes/PBRExample.xml");
+    stl::shared_ptr<File> file = cache->GetFile("Scenes/PBRExample.xml");
     scene_->LoadXML(*file);
 
     Node* sphereWithDynamicMatNode = scene_->GetChild("SphereWithDynamicMat");
@@ -136,7 +136,7 @@ void PBRMaterials::CreateUI()
 
     // Create a Cursor UI element because we want to be able to hide and show it at will. When hidden, the mouse cursor will
     // control the camera, and when visible, it will interact with the UI
-    SharedPtr<Cursor> cursor(new Cursor(context_));
+    stl::shared_ptr<Cursor> cursor(new Cursor(context_));
     cursor->SetStyleAuto();
     ui->SetCursor(cursor);
     // Set starting position of the cursor at the rendering window center
@@ -213,11 +213,11 @@ void PBRMaterials::SetupViewport()
     renderer->SetHDRRendering(true);
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
-    SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 
     // Add post-processing effects appropriate with the example scene
-    SharedPtr<RenderPath> effectRenderPath = viewport->GetRenderPath()->Clone();
+    stl::shared_ptr<RenderPath> effectRenderPath = viewport->GetRenderPath()->Clone();
     effectRenderPath->Append(cache->GetResource<XMLFile>("PostProcess/FXAA2.xml"));
     effectRenderPath->Append(cache->GetResource<XMLFile>("PostProcess/GammaCorrection.xml"));
     effectRenderPath->Append(cache->GetResource<XMLFile>("PostProcess/Tonemap.xml"));

@@ -129,7 +129,7 @@ public:
     ~TaskScheduler() override;
 
     /// Create a task and schedule it for execution in specified event.
-    SharedPtr<Task> Create(const std::function<void()>& taskFunction, unsigned stackSize = DEFAULT_TASK_SIZE);
+    stl::shared_ptr<Task> Create(const std::function<void()>& taskFunction, unsigned stackSize = DEFAULT_TASK_SIZE);
     /// Schedule task for execution.
     void Add(Task* task);
     /// Return number of active tasks.
@@ -141,7 +141,7 @@ public:
 
 private:
     /// List of tasks for every event tasks are executed on.
-    Vector<SharedPtr<Task>> tasks_;
+    Vector<stl::shared_ptr<Task>> tasks_;
 
     friend class Task;
 };
@@ -161,9 +161,9 @@ public:
     /// Construct.
     explicit Tasks(Context* context);
     /// Create a task and schedule it for execution.
-    SharedPtr<Task> Create(const std::function<void()>& taskFunction, unsigned stackSize = DEFAULT_TASK_SIZE);
+    stl::shared_ptr<Task> Create(const std::function<void()>& taskFunction, unsigned stackSize = DEFAULT_TASK_SIZE);
     /// Create a task and schedule it for execution in specified event.
-    SharedPtr<Task> Create(StringHash eventType, const std::function<void()>& taskFunction, unsigned stackSize = DEFAULT_TASK_SIZE);
+    stl::shared_ptr<Task> Create(StringHash eventType, const std::function<void()>& taskFunction, unsigned stackSize = DEFAULT_TASK_SIZE);
     /// Scheduled task for execution in specified event.
     void Add(StringHash eventType, Task* task);
     /// Return number of active tasks.
@@ -174,7 +174,7 @@ private:
     void ExecuteTasks(StringHash eventType);
 
     /// Task schedulers for each scene event.
-    HashMap<StringHash, SharedPtr<TaskScheduler> > taskSchedulers_;
+    HashMap<StringHash, stl::shared_ptr<TaskScheduler> > taskSchedulers_;
 };
 
 void RegisterTasksLibrary(Context* context);

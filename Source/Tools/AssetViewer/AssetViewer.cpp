@@ -53,14 +53,14 @@ class AssetViewer
 {
     URHO3D_OBJECT(AssetViewer, Application);
 public:
-    SharedPtr<Scene> scene_;
-    SharedPtr<Viewport> viewport_;
-    SharedPtr<Light> light_;
-    WeakPtr<Camera> camera_;
-    WeakPtr<Node> node_;
-    WeakPtr<Node> parentNode_;
-    WeakPtr<AnimatedModel> model_;
-    WeakPtr<AnimationController> animator_;
+    stl::shared_ptr<Scene> scene_;
+    stl::shared_ptr<Viewport> viewport_;
+    stl::shared_ptr<Light> light_;
+    stl::weak_ptr<Camera> camera_;
+    stl::weak_ptr<Node> node_;
+    stl::weak_ptr<Node> parentNode_;
+    stl::weak_ptr<AnimatedModel> model_;
+    stl::weak_ptr<AnimationController> animator_;
     float lookSensitivity_ = 1.0f;
     Gizmo gizmo_;
     bool showHelp_ = false;
@@ -120,7 +120,7 @@ public:
 
     void OnUpdate(VariantMap& args)
     {
-        if (node_.Null())
+        if (!node_)
             return;
 
         if (!GetSystemUI()->IsAnyItemActive() && !GetSystemUI()->IsAnyItemHovered())
@@ -207,7 +207,7 @@ public:
 
     void LoadModel(const String& file_path, const Vector<String>& materials = { })
     {
-        if (node_.NotNull())
+        if (node_)
             node_->Remove();
 
         node_ = parentNode_->CreateChild("Node");
@@ -225,7 +225,7 @@ public:
 
     void ResetNode()
     {
-        if (node_.NotNull())
+        if (node_)
         {
             parentNode_->SetScale(1.f);
             parentNode_->SetPosition(Vector3::ZERO);

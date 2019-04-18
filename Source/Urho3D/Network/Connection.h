@@ -69,7 +69,7 @@ struct PackageDownload
     PackageDownload();
 
     /// Destination file.
-    SharedPtr<File> file_;
+    stl::shared_ptr<File> file_;
     /// Already received fragments.
     HashSet<unsigned> receivedFragments_;
     /// Package name.
@@ -89,7 +89,7 @@ struct PackageUpload
     PackageUpload();
 
     /// Source file.
-    SharedPtr<File> file_;
+    stl::shared_ptr<File> file_;
     /// Current fragment index.
     unsigned fragment_;
     /// Total number of fragments
@@ -282,7 +282,7 @@ private:
     void OnPackagesReady();
 
     /// Scene.
-    WeakPtr<Scene> scene_;
+    stl::weak_ptr<Scene> scene_;
     /// Network replication state of the scene.
     SceneReplicationState sceneState_;
     /// Waiting or ongoing package file receive transfers.

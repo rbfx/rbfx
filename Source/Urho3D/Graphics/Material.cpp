@@ -102,10 +102,10 @@ StringHash ParseTextureTypeXml(ResourceCache* cache, const String& filename)
     if (!cache)
         return type;
 
-    SharedPtr<File> texXmlFile = cache->GetFile(filename, false);
-    if (texXmlFile.NotNull())
+    stl::shared_ptr<File> texXmlFile = cache->GetFile(filename, false);
+    if (texXmlFile)
     {
-        SharedPtr<XMLFile> texXml(cache->GetContext()->CreateObject<XMLFile>());
+        stl::shared_ptr<XMLFile> texXml(cache->GetContext()->CreateObject<XMLFile>());
         if (texXml->Load(*texXmlFile))
             type = ParseTextureTypeName(texXml->GetRoot().GetName());
     }
@@ -149,7 +149,7 @@ ShaderParameterAnimationInfo::~ShaderParameterAnimationInfo() = default;
 
 void ShaderParameterAnimationInfo::ApplyValue(const Variant& newValue)
 {
-    static_cast<Material*>(target_.Get())->SetShaderParameter(name_, newValue);
+    static_cast<Material*>(target_.get())->SetShaderParameter(name_, newValue);
 }
 
 Material::Material(Context* context) :
@@ -196,7 +196,7 @@ bool Material::BeginLoad(Deserializer& source)
 
     // All loading failed
     ResetToDefaults();
-    loadJSONFile_.Reset();
+    loadJSONFile_.reset();
     return false;
 }
 
@@ -221,8 +221,8 @@ bool Material::EndLoad()
         success = Load(rootVal);
     }
 
-    loadXMLFile_.Reset();
-    loadJSONFile_.Reset();
+    loadXMLFile_.reset();
+    loadJSONFile_.reset();
     return success;
 }
 
@@ -285,7 +285,7 @@ bool Material::BeginLoadJSON(Deserializer& source)
 {
     // Attempt to load a JSON file
     ResetToDefaults();
-    loadXMLFile_.Reset();
+    loadXMLFile_.reset();
 
     // Attempt to load from JSON file instead
     loadJSONFile_ = context_->CreateObject<JSONFile>();
@@ -344,7 +344,7 @@ bool Material::BeginLoadJSON(Deserializer& source)
 
 bool Material::Save(Serializer& dest) const
 {
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement materialElem = xml->CreateRoot("material");
 
     Save(materialElem);
@@ -441,7 +441,7 @@ bool Material::Load(const XMLElement& source)
     while (parameterAnimationElem)
     {
         String name = parameterAnimationElem.GetAttribute("name");
-        SharedPtr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
+        stl::shared_ptr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
         if (!animation->LoadXML(parameterAnimationElem))
         {
             URHO3D_LOGERROR("Could not load parameter animation");
@@ -604,7 +604,7 @@ bool Material::Load(const JSONValue& source)
         String name = it->first_;
         JSONValue paramAnimVal = it->second_;
 
-        SharedPtr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
+        stl::shared_ptr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
         if (!animation->LoadJSON(paramAnimVal))
         {
             URHO3D_LOGERROR("Could not load parameter animation");
@@ -722,7 +722,7 @@ bool Material::Save(XMLElement& dest) const
     }
 
     // Write shader parameter animations
-    for (HashMap<StringHash, SharedPtr<ShaderParameterAnimationInfo> >::ConstIterator j = shaderParameterAnimationInfos_.Begin();
+    for (HashMap<StringHash, stl::shared_ptr<ShaderParameterAnimationInfo> >::ConstIterator j = shaderParameterAnimationInfos_.Begin();
          j != shaderParameterAnimationInfos_.End(); ++j)
     {
         ShaderParameterAnimationInfo* info = j->second_;
@@ -829,7 +829,7 @@ bool Material::Save(JSONValue& dest) const
 
     // Write shader parameter animations
     JSONValue shaderParamAnimationsVal;
-    for (HashMap<StringHash, SharedPtr<ShaderParameterAnimationInfo> >::ConstIterator j = shaderParameterAnimationInfos_.Begin();
+    for (HashMap<StringHash, stl::shared_ptr<ShaderParameterAnimationInfo> >::ConstIterator j = shaderParameterAnimationInfos_.Begin();
          j != shaderParameterAnimationInfos_.End(); ++j)
     {
         ShaderParameterAnimationInfo* info = j->second_;
@@ -1100,9 +1100,9 @@ void Material::ReleaseShaders()
     }
 }
 
-SharedPtr<Material> Material::Clone(const String& cloneName) const
+stl::shared_ptr<Material> Material::Clone(const String& cloneName) const
 {
-    SharedPtr<Material> ret(context_->CreateObject<Material>());
+    stl::shared_ptr<Material> ret(context_->CreateObject<Material>());
 
     ret->SetName(cloneName);
     ret->techniques_ = techniques_;
@@ -1153,8 +1153,8 @@ Pass* Material::GetPass(unsigned index, const String& passName) const
 
 Texture* Material::GetTexture(TextureUnit unit) const
 {
-    HashMap<TextureUnit, SharedPtr<Texture> >::ConstIterator i = textures_.Find(unit);
-    return i != textures_.End() ? i->second_.Get() : nullptr;
+    HashMap<TextureUnit, stl::shared_ptr<Texture> >::ConstIterator i = textures_.Find(unit);
+    return i != textures_.End() ? i->second_ : nullptr;
 }
 
 const Variant& Material::GetShaderParameter(const String& name) const
@@ -1261,7 +1261,7 @@ void Material::RefreshMemoryUse()
     unsigned memoryUse = sizeof(Material);
 
     memoryUse += techniques_.Size() * sizeof(TechniqueEntry);
-    memoryUse += MAX_TEXTURE_UNITS * sizeof(SharedPtr<Texture>);
+    memoryUse += MAX_TEXTURE_UNITS * sizeof(stl::shared_ptr<Texture>);
     memoryUse += shaderParameters_.Size() * sizeof(MaterialShaderParameter);
 
     SetMemoryUse(memoryUse);
@@ -1270,7 +1270,7 @@ void Material::RefreshMemoryUse()
 ShaderParameterAnimationInfo* Material::GetShaderParameterAnimationInfo(const String& name) const
 {
     StringHash nameHash(name);
-    HashMap<StringHash, SharedPtr<ShaderParameterAnimationInfo> >::ConstIterator i = shaderParameterAnimationInfos_.Find(nameHash);
+    HashMap<StringHash, stl::shared_ptr<ShaderParameterAnimationInfo> >::ConstIterator i = shaderParameterAnimationInfos_.Find(nameHash);
     if (i == shaderParameterAnimationInfos_.End())
         return nullptr;
     return i->second_;
@@ -1300,15 +1300,15 @@ void Material::HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& 
     float timeStep = eventData[Update::P_TIMESTEP].GetFloat();
 
     // Keep weak pointer to self to check for destruction caused by event handling
-    WeakPtr<Object> self(this);
+    stl::weak_ptr<Object> self(this);
 
     Vector<String> finishedNames;
-    for (HashMap<StringHash, SharedPtr<ShaderParameterAnimationInfo> >::ConstIterator i = shaderParameterAnimationInfos_.Begin();
+    for (HashMap<StringHash, stl::shared_ptr<ShaderParameterAnimationInfo> >::ConstIterator i = shaderParameterAnimationInfos_.Begin();
          i != shaderParameterAnimationInfos_.End(); ++i)
     {
         bool finished = i->second_->Update(timeStep);
         // If self deleted as a result of an event sent during animation playback, nothing more to do
-        if (self.Expired())
+        if (self.expired())
             return;
 
         if (finished)

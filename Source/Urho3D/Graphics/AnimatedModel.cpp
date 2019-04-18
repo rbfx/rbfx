@@ -60,7 +60,7 @@ static const StringVector animationStatesStructureElementNames =
     "   Layer"
 };
 
-static bool CompareAnimationOrder(const SharedPtr<AnimationState>& lhs, const SharedPtr<AnimationState>& rhs)
+static bool CompareAnimationOrder(const stl::shared_ptr<AnimationState>& lhs, const stl::shared_ptr<AnimationState>& rhs)
 {
     return lhs->GetLayer() < rhs->GetLayer();
 }
@@ -352,7 +352,7 @@ void AnimatedModel::SetModel(Model* model, bool createBones)
 
         // Copy the subgeometry & LOD level structure
         SetNumGeometries(model->GetNumGeometries());
-        const Vector<Vector<SharedPtr<Geometry> > >& geometries = model->GetGeometries();
+        const Vector<Vector<stl::shared_ptr<Geometry> > >& geometries = model->GetGeometries();
         const PODVector<Vector3>& geometryCenters = model->GetGeometryCenters();
         for (unsigned i = 0; i < geometries.Size(); ++i)
         {
@@ -456,7 +456,7 @@ AnimationState* AnimatedModel::AddAnimationState(Animation* animation)
     if (existing)
         return existing;
 
-    SharedPtr<AnimationState> newState(new AnimationState(this, animation));
+    stl::shared_ptr<AnimationState> newState(new AnimationState(this, animation));
     animationStates_.Push(newState);
     MarkAnimationOrderDirty();
     return newState;
@@ -468,7 +468,7 @@ void AnimatedModel::RemoveAnimationState(Animation* animation)
         RemoveAnimationState(animation->GetNameHash());
     else
     {
-        for (Vector<SharedPtr<AnimationState> >::Iterator i = animationStates_.Begin(); i != animationStates_.End(); ++i)
+        for (Vector<stl::shared_ptr<AnimationState> >::Iterator i = animationStates_.Begin(); i != animationStates_.End(); ++i)
         {
             AnimationState* state = *i;
             if (!state->GetAnimation())
@@ -488,7 +488,7 @@ void AnimatedModel::RemoveAnimationState(const String& animationName)
 
 void AnimatedModel::RemoveAnimationState(StringHash animationNameHash)
 {
-    for (Vector<SharedPtr<AnimationState> >::Iterator i = animationStates_.Begin(); i != animationStates_.End(); ++i)
+    for (Vector<stl::shared_ptr<AnimationState> >::Iterator i = animationStates_.Begin(); i != animationStates_.End(); ++i)
     {
         AnimationState* state = *i;
         Animation* animation = state->GetAnimation();
@@ -507,7 +507,7 @@ void AnimatedModel::RemoveAnimationState(StringHash animationNameHash)
 
 void AnimatedModel::RemoveAnimationState(AnimationState* state)
 {
-    for (Vector<SharedPtr<AnimationState> >::Iterator i = animationStates_.Begin(); i != animationStates_.End(); ++i)
+    for (Vector<stl::shared_ptr<AnimationState> >::Iterator i = animationStates_.Begin(); i != animationStates_.End(); ++i)
     {
         if (*i == state)
         {
@@ -656,7 +656,7 @@ float AnimatedModel::GetMorphWeight(StringHash nameHash) const
 
 AnimationState* AnimatedModel::GetAnimationState(Animation* animation) const
 {
-    for (Vector<SharedPtr<AnimationState> >::ConstIterator i = animationStates_.Begin(); i != animationStates_.End(); ++i)
+    for (Vector<stl::shared_ptr<AnimationState> >::ConstIterator i = animationStates_.Begin(); i != animationStates_.End(); ++i)
     {
         if ((*i)->GetAnimation() == animation)
             return *i;
@@ -672,7 +672,7 @@ AnimationState* AnimatedModel::GetAnimationState(const String& animationName) co
 
 AnimationState* AnimatedModel::GetAnimationState(StringHash animationNameHash) const
 {
-    for (Vector<SharedPtr<AnimationState> >::ConstIterator i = animationStates_.Begin(); i != animationStates_.End(); ++i)
+    for (Vector<stl::shared_ptr<AnimationState> >::ConstIterator i = animationStates_.Begin(); i != animationStates_.End(); ++i)
     {
         Animation* animation = (*i)->GetAnimation();
         if (animation)
@@ -688,7 +688,7 @@ AnimationState* AnimatedModel::GetAnimationState(StringHash animationNameHash) c
 
 AnimationState* AnimatedModel::GetAnimationState(unsigned index) const
 {
-    return index < animationStates_.Size() ? animationStates_[index].Get() : nullptr;
+    return index < animationStates_.Size() ? animationStates_[index] : nullptr;
 }
 
 void AnimatedModel::SetSkeleton(const Skeleton& skeleton, bool createBones)
@@ -829,7 +829,7 @@ void AnimatedModel::SetAnimationStatesAttr(const VariantVector& value)
         {
             // Note: null animation is allowed here for editing
             const ResourceRef& animRef = value[index++].GetResourceRef();
-            SharedPtr<AnimationState> newState(new AnimationState(this, cache->GetResource<Animation>(animRef.name_)));
+            stl::shared_ptr<AnimationState> newState(new AnimationState(this, cache->GetResource<Animation>(animRef.name_)));
             animationStates_.Push(newState);
 
             newState->SetStartBone(skeleton_.GetBone(value[index++].GetString()));
@@ -841,7 +841,7 @@ void AnimatedModel::SetAnimationStatesAttr(const VariantVector& value)
         else
         {
             // If not enough data, just add an empty animation state
-            SharedPtr<AnimationState> newState(new AnimationState(this, nullptr));
+            stl::shared_ptr<AnimationState> newState(new AnimationState(this, nullptr));
             animationStates_.Push(newState);
         }
     }
@@ -879,7 +879,7 @@ VariantVector AnimatedModel::GetAnimationStatesAttr() const
     VariantVector ret;
     ret.Reserve(animationStates_.Size() * 6 + 1);
     ret.Push(animationStates_.Size());
-    for (Vector<SharedPtr<AnimationState> >::ConstIterator i = animationStates_.Begin(); i != animationStates_.End(); ++i)
+    for (Vector<stl::shared_ptr<AnimationState> >::ConstIterator i = animationStates_.Begin(); i != animationStates_.End(); ++i)
     {
         AnimationState* state = *i;
         Animation* animation = state->GetAnimation();
@@ -1003,7 +1003,7 @@ void AnimatedModel::AssignBoneNodes()
         SetSkeleton(model_->GetSkeleton(), true);
 
     // Re-assign the same start bone to animations to get the proper bone node this time
-    for (Vector<SharedPtr<AnimationState> >::Iterator i = animationStates_.Begin(); i != animationStates_.End(); ++i)
+    for (Vector<stl::shared_ptr<AnimationState> >::Iterator i = animationStates_.Begin(); i != animationStates_.End(); ++i)
     {
         AnimationState* state = *i;
         state->SetStartBone(state->GetStartBone());
@@ -1104,8 +1104,8 @@ void AnimatedModel::MarkMorphsDirty()
 
 void AnimatedModel::CloneGeometries()
 {
-    const Vector<SharedPtr<VertexBuffer> >& originalVertexBuffers = model_->GetVertexBuffers();
-    HashMap<VertexBuffer*, SharedPtr<VertexBuffer> > clonedVertexBuffers;
+    const Vector<stl::shared_ptr<VertexBuffer> >& originalVertexBuffers = model_->GetVertexBuffers();
+    HashMap<VertexBuffer*, stl::shared_ptr<VertexBuffer> > clonedVertexBuffers;
     morphVertexBuffers_.Resize(originalVertexBuffers.Size());
 
     for (unsigned i = 0; i < originalVertexBuffers.Size(); ++i)
@@ -1113,7 +1113,7 @@ void AnimatedModel::CloneGeometries()
         VertexBuffer* original = originalVertexBuffers[i];
         if (model_->GetMorphRangeCount(i))
         {
-            SharedPtr<VertexBuffer> clone(context_->CreateObject<VertexBuffer>());
+            stl::shared_ptr<VertexBuffer> clone(context_->CreateObject<VertexBuffer>());
             clone->SetShadowed(true);
             clone->SetSize(original->GetVertexCount(), morphElementMask_ & original->GetElementMask(), true);
             void* dest = clone->Lock(0, original->GetVertexCount());
@@ -1126,7 +1126,7 @@ void AnimatedModel::CloneGeometries()
             morphVertexBuffers_[i] = clone;
         }
         else
-            morphVertexBuffers_[i].Reset();
+            morphVertexBuffers_[i].reset();
     }
 
     // Geometries will always be cloned fully. They contain only references to buffer, so they are relatively light
@@ -1134,12 +1134,12 @@ void AnimatedModel::CloneGeometries()
     {
         for (unsigned j = 0; j < geometries_[i].Size(); ++j)
         {
-            SharedPtr<Geometry> original = geometries_[i][j];
-            SharedPtr<Geometry> clone(context_->CreateObject<Geometry>());
+            stl::shared_ptr<Geometry> original = geometries_[i][j];
+            stl::shared_ptr<Geometry> clone(context_->CreateObject<Geometry>());
 
             // Add an additional vertex stream into the clone, which supplies only the morphable vertex data, while the static
             // data comes from the original vertex buffer(s)
-            const Vector<SharedPtr<VertexBuffer> >& originalBuffers = original->GetVertexBuffers();
+            const Vector<stl::shared_ptr<VertexBuffer> >& originalBuffers = original->GetVertexBuffers();
             unsigned totalBuf = originalBuffers.Size();
             for (unsigned k = 0; k < originalBuffers.Size(); ++k)
             {
@@ -1287,7 +1287,7 @@ void AnimatedModel::ApplyAnimation()
     if (isMaster_)
     {
         skeleton_.ResetSilent();
-        for (Vector<SharedPtr<AnimationState> >::Iterator i = animationStates_.Begin(); i != animationStates_.End(); ++i)
+        for (Vector<stl::shared_ptr<AnimationState> >::Iterator i = animationStates_.Begin(); i != animationStates_.End(); ++i)
             (*i)->Apply();
 
         // Skeleton reset and animations apply the node transforms "silently" to avoid repeated marking dirty. Mark dirty now
@@ -1433,7 +1433,7 @@ void AnimatedModel::ApplyMorph(VertexBuffer* buffer, void* destVertexData, unsig
 void AnimatedModel::HandleModelReloadFinished(StringHash eventType, VariantMap& eventData)
 {
     Model* currentModel = model_;
-    model_.Reset(); // Set null to allow to be re-set
+    model_.reset(); // Set null to allow to be re-set
     SetModel(currentModel);
 }
 

@@ -71,34 +71,34 @@ public:
 
 private:
     /// Initialize a wheel and remember its scene node and ID.
-    void InitWheel(const String& name, const Vector3& offset, WeakPtr<Node>& wheelNode, unsigned& wheelNodeID);
+    void InitWheel(const String& name, const Vector3& offset, stl::weak_ptr<Node>& wheelNode, unsigned& wheelNodeID);
     /// Acquire wheel components from wheel scene nodes.
     void GetWheelComponents();
 
     /// Wheel scene front-left node.
-    WeakPtr<Node> frontLeft_;
+    stl::weak_ptr<Node> frontLeft_;
     /// Wheel scene front-right node.
-    WeakPtr<Node> frontRight_;
+    stl::weak_ptr<Node> frontRight_;
     /// Wheel scene rear-left node.
-    WeakPtr<Node> rearLeft_;
+    stl::weak_ptr<Node> rearLeft_;
     /// Wheel scene rear-right node.
-    WeakPtr<Node> rearRight_;
+    stl::weak_ptr<Node> rearRight_;
 
     /// Steering front-left axle constraint.
-    WeakPtr<Constraint> frontLeftAxis_;
+    stl::weak_ptr<Constraint> frontLeftAxis_;
     /// Steering front-right axle constraint.
-    WeakPtr<Constraint> frontRightAxis_;
+    stl::weak_ptr<Constraint> frontRightAxis_;
 
     /// Hull and wheel hull rigid bodies.
-    WeakPtr<RigidBody> hullBody_;
+    stl::weak_ptr<RigidBody> hullBody_;
     /// Hull and wheel front-left rigid bodies.
-    WeakPtr<RigidBody> frontLeftBody_;
+    stl::weak_ptr<RigidBody> frontLeftBody_;
     /// Hull and wheel front-right rigid bodies.
-    WeakPtr<RigidBody> frontRightBody_;
+    stl::weak_ptr<RigidBody> frontRightBody_;
     /// Hull and wheel rear-left rigid bodies.
-    WeakPtr<RigidBody> rearLeftBody_;
+    stl::weak_ptr<RigidBody> rearLeftBody_;
     /// Hull and wheel rear-right rigid bodies.
-    WeakPtr<RigidBody> rearRightBody_;
+    stl::weak_ptr<RigidBody> rearRightBody_;
 
     /// ID of the front-left wheel scene node for serialization.
     unsigned frontLeftID_{};

@@ -127,9 +127,9 @@ protected:
     unsigned GetCharIndex(const IntVector2& position);
 
     /// Text element.
-    SharedPtr<Text> text_;
+    stl::shared_ptr<Text> text_;
     /// Cursor element.
-    SharedPtr<BorderImage> cursor_;
+    stl::shared_ptr<BorderImage> cursor_;
     /// Text line.
     String line_;
     /// Last used text font.

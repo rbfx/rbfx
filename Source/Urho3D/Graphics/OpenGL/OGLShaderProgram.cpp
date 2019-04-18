@@ -106,7 +106,7 @@ void ShaderProgram::Release()
         for (bool& useTextureUnit : useTextureUnits_)
             useTextureUnit = false;
         for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
-            constantBuffers_[i].Reset();
+            constantBuffers_[i].reset();
     }
 }
 
@@ -353,8 +353,8 @@ bool ShaderProgram::NeedParameterUpdate(ShaderParameterGroup group, const void* 
 
     // The shader program may use a mixture of constant buffers and individual uniforms even in the same group
 #ifndef GL_ES_VERSION_2_0
-    bool useBuffer = constantBuffers_[group].Get() || constantBuffers_[group + MAX_SHADER_PARAMETER_GROUPS].Get();
-    bool useIndividual = !constantBuffers_[group].Get() || !constantBuffers_[group + MAX_SHADER_PARAMETER_GROUPS].Get();
+    bool useBuffer = constantBuffers_[group] || constantBuffers_[group + MAX_SHADER_PARAMETER_GROUPS];
+    bool useIndividual = !constantBuffers_[group] || !constantBuffers_[group + MAX_SHADER_PARAMETER_GROUPS];
     bool needUpdate = false;
 
     if (useBuffer && globalParameterSources[group] != source)
@@ -385,8 +385,8 @@ void ShaderProgram::ClearParameterSource(ShaderParameterGroup group)
 {
     // The shader program may use a mixture of constant buffers and individual uniforms even in the same group
 #ifndef GL_ES_VERSION_2_0
-    bool useBuffer = constantBuffers_[group].Get() || constantBuffers_[group + MAX_SHADER_PARAMETER_GROUPS].Get();
-    bool useIndividual = !constantBuffers_[group].Get() || !constantBuffers_[group + MAX_SHADER_PARAMETER_GROUPS].Get();
+    bool useBuffer = constantBuffers_[group] || constantBuffers_[group + MAX_SHADER_PARAMETER_GROUPS];
+    bool useIndividual = !constantBuffers_[group] || !constantBuffers_[group + MAX_SHADER_PARAMETER_GROUPS];
 
     if (useBuffer)
         globalParameterSources[group] = (const void*)(uintptr_t)M_MAX_UNSIGNED;

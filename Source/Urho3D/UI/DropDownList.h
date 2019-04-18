@@ -103,9 +103,9 @@ protected:
     bool FilterPopupImplicitAttributes(XMLElement& dest) const override;
 
     /// Listview element.
-    SharedPtr<ListView> listView_;
+    stl::shared_ptr<ListView> listView_;
     /// Selected item placeholder element.
-    SharedPtr<UIElement> placeholder_;
+    stl::shared_ptr<UIElement> placeholder_;
     /// Resize popup flag.
     bool resizePopup_;
 

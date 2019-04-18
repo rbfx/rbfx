@@ -69,7 +69,7 @@ struct CollisionGeometryData : public RefCounted
 
 /// Cache of collision geometry data.
 /// \todo Remove duplicate declaration
-using CollisionGeometryDataCache = HashMap<Pair<Model*, unsigned>, SharedPtr<CollisionGeometryData> >;
+using CollisionGeometryDataCache = HashMap<Pair<Model*, unsigned>, stl::shared_ptr<CollisionGeometryData> >;
 
 /// Triangle mesh geometry data.
 struct TriangleMeshData : public CollisionGeometryData
@@ -286,13 +286,13 @@ private:
     void MarkShapeDirty() { recreateShape_ = true; }
 
     /// Physics world.
-    WeakPtr<PhysicsWorld> physicsWorld_;
+    stl::weak_ptr<PhysicsWorld> physicsWorld_;
     /// Rigid body.
-    WeakPtr<RigidBody> rigidBody_;
+    stl::weak_ptr<RigidBody> rigidBody_;
     /// Model.
-    SharedPtr<Model> model_;
+    stl::shared_ptr<Model> model_;
     /// Shared geometry data.
-    SharedPtr<CollisionGeometryData> geometry_;
+    stl::shared_ptr<CollisionGeometryData> geometry_;
     /// Bullet collision shape.
     stl::unique_ptr<btCollisionShape> shape_;
     /// Collision shape type.

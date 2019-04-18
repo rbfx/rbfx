@@ -63,9 +63,9 @@ private:
     /// Box2D joint def.
     b2GearJointDef jointDef_;
     /// Owner body constraint.
-    WeakPtr<Constraint2D> ownerConstraint_;
+    stl::weak_ptr<Constraint2D> ownerConstraint_;
     /// Other body constraint.
-    WeakPtr<Constraint2D> otherConstraint_;
+    stl::weak_ptr<Constraint2D> otherConstraint_;
 };
 
 }

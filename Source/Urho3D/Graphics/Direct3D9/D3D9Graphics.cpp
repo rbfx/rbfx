@@ -1054,7 +1054,7 @@ bool Graphics::SetVertexBuffers(const PODVector<VertexBuffer*>& buffers, unsigne
         VertexDeclarationMap::Iterator i = impl_->vertexDeclarations_.Find(hash);
         if (i == impl_->vertexDeclarations_.End())
         {
-            SharedPtr<VertexDeclaration> newDeclaration(new VertexDeclaration(this, buffers));
+            stl::shared_ptr<VertexDeclaration> newDeclaration(new VertexDeclaration(this, buffers));
             if (!newDeclaration->GetDeclaration())
                 return false;
 
@@ -1099,7 +1099,7 @@ bool Graphics::SetVertexBuffers(const PODVector<VertexBuffer*>& buffers, unsigne
     return true;
 }
 
-bool Graphics::SetVertexBuffers(const Vector<SharedPtr<VertexBuffer> >& buffers, unsigned instanceOffset)
+bool Graphics::SetVertexBuffers(const Vector<stl::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset)
 {
     return SetVertexBuffers(reinterpret_cast<const PODVector<VertexBuffer*>&>(buffers), instanceOffset);
 }

@@ -69,11 +69,11 @@ protected:
     void UpdateViewports();
 
     /// Current loaded scenes.
-    Vector<SharedPtr<Scene>> scenes_;
+    Vector<stl::shared_ptr<Scene>> scenes_;
     /// Current active scene.
-    WeakPtr<Scene> activeScene_;
+    stl::weak_ptr<Scene> activeScene_;
     /// Surface for rendering active scene into.
-    WeakPtr<RenderSurface> renderSurface_;
+    stl::weak_ptr<RenderSurface> renderSurface_;
     ///
     bool missingMetadataWarned_ = false;
 };

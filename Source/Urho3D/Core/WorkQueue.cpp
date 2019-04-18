@@ -99,7 +99,7 @@ void WorkQueue::CreateThreads(unsigned numThreads)
 
     for (unsigned i = 0; i < numThreads; ++i)
     {
-        SharedPtr<WorkerThread> thread(new WorkerThread(this, i + 1));
+        stl::shared_ptr<WorkerThread> thread(new WorkerThread(this, i + 1));
         thread->SetName(Format("Worker {}", i + 1));
         thread->Run();
         threads_.Push(thread);
@@ -109,24 +109,24 @@ void WorkQueue::CreateThreads(unsigned numThreads)
 #endif
 }
 
-SharedPtr<WorkItem> WorkQueue::GetFreeItem()
+stl::shared_ptr<WorkItem> WorkQueue::GetFreeItem()
 {
     if (!poolItems_.empty())
     {
-        SharedPtr<WorkItem> item = poolItems_.front();
+        stl::shared_ptr<WorkItem> item = poolItems_.front();
         poolItems_.pop_front();
         return item;
     }
     else
     {
         // No usable items found, create a new one set it as pooled and return it.
-        SharedPtr<WorkItem> item(new WorkItem());
+        stl::shared_ptr<WorkItem> item(new WorkItem());
         item->pooled_ = true;
         return item;
     }
 }
 
-void WorkQueue::AddWorkItem(const SharedPtr<WorkItem>& item)
+void WorkQueue::AddWorkItem(const stl::shared_ptr<WorkItem>& item)
 {
     if (!item)
     {
@@ -148,7 +148,7 @@ void WorkQueue::AddWorkItem(const SharedPtr<WorkItem>& item)
 
     // Find position for new item
     if (queue_.empty())
-        queue_.push_back(item);
+        queue_.push_back(item.get());
     else
     {
         bool inserted = false;
@@ -157,14 +157,14 @@ void WorkQueue::AddWorkItem(const SharedPtr<WorkItem>& item)
         {
             if ((*i)->priority_ <= item->priority_)
             {
-                queue_.insert(i, item);
+                queue_.insert(i, item.get());
                 inserted = true;
                 break;
             }
         }
 
         if (!inserted)
-            queue_.push_back(item);
+            queue_.push_back(item.get());
     }
 
     if (threads_.Size())
@@ -184,7 +184,7 @@ WorkItem* WorkQueue::AddWorkItem(std::function<void()> workFunction, unsigned pr
     return item;
 }
 
-bool WorkQueue::RemoveWorkItem(SharedPtr<WorkItem> item)
+bool WorkQueue::RemoveWorkItem(stl::shared_ptr<WorkItem> item)
 {
     if (!item)
         return false;
@@ -192,7 +192,7 @@ bool WorkQueue::RemoveWorkItem(SharedPtr<WorkItem> item)
     MutexLock lock(queueMutex_);
 
     // Can only remove successfully if the item was not yet taken by threads for execution
-    auto i = stl::find(queue_.begin(), queue_.end(), item.Get());
+    auto i = stl::find(queue_.begin(), queue_.end(), item.get());
     if (i != queue_.end())
     {
         auto j = stl::find(workItems_.begin(), workItems_.end(), item);
@@ -208,14 +208,14 @@ bool WorkQueue::RemoveWorkItem(SharedPtr<WorkItem> item)
     return false;
 }
 
-unsigned WorkQueue::RemoveWorkItems(const Vector<SharedPtr<WorkItem> >& items)
+unsigned WorkQueue::RemoveWorkItems(const Vector<stl::shared_ptr<WorkItem> >& items)
 {
     MutexLock lock(queueMutex_);
     unsigned removed = 0;
 
-    for (Vector<SharedPtr<WorkItem> >::ConstIterator i = items.Begin(); i != items.End(); ++i)
+    for (Vector<stl::shared_ptr<WorkItem> >::ConstIterator i = items.Begin(); i != items.End(); ++i)
     {
-        auto j = stl::find(queue_.begin(), queue_.end(), i->Get());
+        auto j = stl::find(queue_.begin(), queue_.end(), i->get());
         if (j != queue_.end())
         {
             auto k = stl::find(workItems_.begin(), workItems_.end(), *i);
@@ -379,7 +379,7 @@ void WorkQueue::PurgeCompleted(unsigned priority)
                 using namespace WorkItemCompleted;
 
                 VariantMap& eventData = GetEventDataMap();
-                eventData[P_ITEM] = i->Get();
+                eventData[P_ITEM] = i->get();
                 SendEvent(E_WORKITEMCOMPLETED, eventData);
             }
 
@@ -403,7 +403,7 @@ void WorkQueue::PurgePool()
     lastSize_ = currentSize;
 }
 
-void WorkQueue::ReturnToPool(SharedPtr<WorkItem>& item)
+void WorkQueue::ReturnToPool(stl::shared_ptr<WorkItem>& item)
 {
     // Check if this was a pooled item and set it to usable
     if (item->pooled_)

@@ -23,7 +23,7 @@
 #pragma once
 
 #include "../Container/FlagSet.h"
-#include "../Container/Ptr.h"
+#include <EASTL/shared_ptr.h>
 #include "../Core/Variant.h"
 
 namespace Urho3D
@@ -75,7 +75,7 @@ struct AttributeInfo
     AttributeInfo() = default;
 #ifndef SWIG
     /// Construct attribute.
-    AttributeInfo(VariantType type, const char* name, const SharedPtr<AttributeAccessor>& accessor, const char** enumNames, const Variant& defaultValue, AttributeModeFlags mode) :
+    AttributeInfo(VariantType type, const char* name, const stl::shared_ptr<AttributeAccessor>& accessor, const char** enumNames, const Variant& defaultValue, AttributeModeFlags mode) :
         type_(type),
         name_(name),
         enumNames_(enumNames),
@@ -86,7 +86,7 @@ struct AttributeInfo
     }
 #endif
     /// Construct attribute.
-    AttributeInfo(VariantType type, const char* name, const SharedPtr<AttributeAccessor>& accessor, const Vector<String>& enumNames, const Variant& defaultValue, AttributeModeFlags mode) :
+    AttributeInfo(VariantType type, const char* name, const stl::shared_ptr<AttributeAccessor>& accessor, const Vector<String>& enumNames, const Variant& defaultValue, AttributeModeFlags mode) :
         type_(type),
         name_(name),
         enumNames_(nullptr),
@@ -147,7 +147,7 @@ struct AttributeInfo
     /// Enum names.
     const char** enumNames_ = nullptr;
     /// Helper object for accessor mode.
-    SharedPtr<AttributeAccessor> accessor_;
+    stl::shared_ptr<AttributeAccessor> accessor_;
     /// Default value for network replication.
     Variant defaultValue_;
     /// Attribute mode: whether to use for serialization, network replication, or both.

@@ -95,9 +95,9 @@ bool FontFace::IsDataLost() const
 }
 
 
-SharedPtr<Texture2D> FontFace::CreateFaceTexture()
+stl::shared_ptr<Texture2D> FontFace::CreateFaceTexture()
 {
-    SharedPtr<Texture2D> texture(font_->GetContext()->CreateObject<Texture2D>());
+    stl::shared_ptr<Texture2D> texture(font_->GetContext()->CreateObject<Texture2D>());
     texture->SetMipsToSkip(QUALITY_LOW, 0); // No quality reduction
     texture->SetNumLevels(1); // No mipmaps
     texture->SetAddressMode(COORD_U, ADDRESS_BORDER);
@@ -106,13 +106,13 @@ SharedPtr<Texture2D> FontFace::CreateFaceTexture()
     return texture;
 }
 
-SharedPtr<Texture2D> FontFace::LoadFaceTexture(const SharedPtr<Image>& image)
+stl::shared_ptr<Texture2D> FontFace::LoadFaceTexture(const stl::shared_ptr<Image>& image)
 {
-    SharedPtr<Texture2D> texture = CreateFaceTexture();
+    stl::shared_ptr<Texture2D> texture = CreateFaceTexture();
     if (!texture->SetData(image, true))
     {
         URHO3D_LOGERROR("Could not load texture from image resource");
-        return SharedPtr<Texture2D>();
+        return stl::shared_ptr<Texture2D>();
     }
     return texture;
 }

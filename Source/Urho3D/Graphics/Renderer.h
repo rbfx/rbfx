@@ -374,7 +374,7 @@ public:
     TextureCube* GetIndirectionCubeMap() const { return indirectionCubeMap_; }
 
     /// Return the instancing vertex buffer
-    VertexBuffer* GetInstancingBuffer() const { return dynamicInstancing_ ? instancingBuffer_.Get() : nullptr; }
+    VertexBuffer* GetInstancingBuffer() const { return dynamicInstancing_ ? instancingBuffer_ : nullptr; }
 
     /// Return the frame update parameters.
     const FrameInfo& GetFrameInfo() const { return frame_; }
@@ -434,7 +434,7 @@ private:
     /// Reload shaders.
     void LoadShaders();
     /// Reload shaders for a material pass. The related batch queue is provided in case it has extra shader compilation defines.
-    void LoadPassShaders(Pass* pass, Vector<SharedPtr<ShaderVariation> >& vertexShaders, Vector<SharedPtr<ShaderVariation> >& pixelShaders, const BatchQueue& queue);
+    void LoadPassShaders(Pass* pass, Vector<stl::shared_ptr<ShaderVariation> >& vertexShaders, Vector<stl::shared_ptr<ShaderVariation> >& pixelShaders, const BatchQueue& queue);
     /// Release shaders used in materials.
     void ReleaseMaterialShaders();
     /// Reload textures.
@@ -469,39 +469,39 @@ private:
     void BlurShadowMap(View* view, Texture2D* shadowMap, float blurScale);
 
     /// Graphics subsystem.
-    WeakPtr<Graphics> graphics_;
+    stl::weak_ptr<Graphics> graphics_;
     /// Default renderpath.
-    SharedPtr<RenderPath> defaultRenderPath_;
+    stl::shared_ptr<RenderPath> defaultRenderPath_;
     /// Default non-textured material technique.
-    SharedPtr<Technique> defaultTechnique_;
+    stl::shared_ptr<Technique> defaultTechnique_;
     /// Default zone.
-    SharedPtr<Zone> defaultZone_;
+    stl::shared_ptr<Zone> defaultZone_;
     /// Directional light quad geometry.
-    SharedPtr<Geometry> dirLightGeometry_;
+    stl::shared_ptr<Geometry> dirLightGeometry_;
     /// Spot light volume geometry.
-    SharedPtr<Geometry> spotLightGeometry_;
+    stl::shared_ptr<Geometry> spotLightGeometry_;
     /// Point light volume geometry.
-    SharedPtr<Geometry> pointLightGeometry_;
+    stl::shared_ptr<Geometry> pointLightGeometry_;
     /// Instance stream vertex buffer.
-    SharedPtr<VertexBuffer> instancingBuffer_;
+    stl::shared_ptr<VertexBuffer> instancingBuffer_;
     /// Default material.
-    SharedPtr<Material> defaultMaterial_;
+    stl::shared_ptr<Material> defaultMaterial_;
     /// Default range attenuation texture.
-    SharedPtr<Texture2D> defaultLightRamp_;
+    stl::shared_ptr<Texture2D> defaultLightRamp_;
     /// Default spotlight attenuation texture.
-    SharedPtr<Texture2D> defaultLightSpot_;
+    stl::shared_ptr<Texture2D> defaultLightSpot_;
     /// Face selection cube map for shadowed pointlights.
-    SharedPtr<TextureCube> faceSelectCubeMap_;
+    stl::shared_ptr<TextureCube> faceSelectCubeMap_;
     /// Indirection cube map for shadowed pointlights.
-    SharedPtr<TextureCube> indirectionCubeMap_;
+    stl::shared_ptr<TextureCube> indirectionCubeMap_;
     /// Reusable scene nodes with shadow camera components.
-    Vector<SharedPtr<Node> > shadowCameraNodes_;
+    Vector<stl::shared_ptr<Node> > shadowCameraNodes_;
     /// Reusable occlusion buffers.
-    Vector<SharedPtr<OcclusionBuffer> > occlusionBuffers_;
+    Vector<stl::shared_ptr<OcclusionBuffer> > occlusionBuffers_;
     /// Shadow maps by resolution.
-    HashMap<int, Vector<SharedPtr<Texture2D> > > shadowMaps_;
+    HashMap<int, Vector<stl::shared_ptr<Texture2D> > > shadowMaps_;
     /// Shadow map dummy color buffers by resolution.
-    HashMap<int, SharedPtr<Texture2D> > colorShadowMaps_;
+    HashMap<int, stl::shared_ptr<Texture2D> > colorShadowMaps_;
     /// Shadow map allocations by resolution.
     HashMap<int, PODVector<Light*> > shadowMapAllocations_;
     /// Instance of shadow map filter
@@ -509,19 +509,19 @@ private:
     /// Function pointer of shadow map filter
     ShadowMapFilter shadowMapFilter_{};
     /// Screen buffers by resolution and format.
-    HashMap<unsigned long long, Vector<SharedPtr<Texture> > > screenBuffers_;
+    HashMap<unsigned long long, Vector<stl::shared_ptr<Texture> > > screenBuffers_;
     /// Current screen buffer allocations by resolution and format.
     HashMap<unsigned long long, unsigned> screenBufferAllocations_;
     /// Cache for light scissor queries.
     HashMap<Pair<Light*, Camera*>, Rect> lightScissorCache_;
     /// Backbuffer viewports.
-    Vector<SharedPtr<Viewport> > viewports_;
+    Vector<stl::shared_ptr<Viewport> > viewports_;
     /// Render surface viewports queued for update.
-    Vector<Pair<WeakPtr<RenderSurface>, WeakPtr<Viewport> > > queuedViewports_;
+    Vector<Pair<stl::weak_ptr<RenderSurface>, stl::weak_ptr<Viewport> > > queuedViewports_;
     /// Views that have been processed this frame.
-    Vector<WeakPtr<View> > views_;
+    Vector<stl::weak_ptr<View> > views_;
     /// Prepared views by culling camera.
-    HashMap<Camera*, WeakPtr<View> > preparedViews_;
+    HashMap<Camera*, stl::weak_ptr<View> > preparedViews_;
     /// Octrees that have been updated during the frame.
     HashSet<Octree*> updatedOctrees_;
     /// Techniques for which missing shader error has been displayed.

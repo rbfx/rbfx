@@ -86,7 +86,7 @@ private:
     void HandleMouseButtonDown(StringHash eventType, VariantMap& eventData);
 
     /// Spriter nodes.
-    SharedPtr<Node> spriterNode_;
+    stl::shared_ptr<Node> spriterNode_;
     /// Spriter animation index.
     int spriterAnimationIndex_;
 };

@@ -60,7 +60,7 @@ void ToolTip::Update(float timeStep)
         target_ = parent_;
 
     // If target is removed while we are displaying, we have no choice but to destroy ourself
-    if (target_.Expired())
+    if (target_.expired())
     {
         Remove();
         return;
@@ -75,7 +75,7 @@ void ToolTip::Update(float timeStep)
             parentHovered_ = true;
             displayAt_.Reset();
         }
-        else if (displayAt_.GetMSec(false) >= (unsigned)(effectiveDelay * 1000.0f) && parent_ == target_)
+        else if (displayAt_.GetMSec(false) >= (unsigned)(effectiveDelay * 1000.0f) && parent_ == target_.get())
         {
             originalPosition_ = GetPosition();
             IntVector2 screenPosition = GetScreenPosition();
@@ -91,7 +91,7 @@ void ToolTip::Update(float timeStep)
     {
         if (IsVisible() && parent_ == root)
         {
-            SetParent(target_);
+            SetParent(target_.get());
             SetPosition(originalPosition_);
             SetVisible(false);
         }

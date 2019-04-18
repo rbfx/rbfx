@@ -72,7 +72,7 @@ public:
     void Draw(Graphics* graphics);
 
     /// Return all vertex buffers.
-    const Vector<SharedPtr<VertexBuffer> >& GetVertexBuffers() const { return vertexBuffers_; }
+    const Vector<stl::shared_ptr<VertexBuffer> >& GetVertexBuffers() const { return vertexBuffers_; }
 
     /// Return number of vertex buffers.
     unsigned GetNumVertexBuffers() const { return vertexBuffers_.Size(); }
@@ -118,9 +118,9 @@ public:
 
 private:
     /// Vertex buffers.
-    Vector<SharedPtr<VertexBuffer> > vertexBuffers_;
+    Vector<stl::shared_ptr<VertexBuffer> > vertexBuffers_;
     /// Index buffer.
-    SharedPtr<IndexBuffer> indexBuffer_;
+    stl::shared_ptr<IndexBuffer> indexBuffer_;
     /// Primitive type.
     PrimitiveType primitiveType_;
     /// Start index.

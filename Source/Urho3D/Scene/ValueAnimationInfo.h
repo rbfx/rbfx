@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../Container/Ptr.h"
+#include <EASTL/shared_ptr.h>
 #include "../Container/RefCounted.h"
 #include "../Container/Vector.h"
 #include "../Scene/AnimationDefs.h"
@@ -83,9 +83,9 @@ protected:
     void GetEventFrames(float beginTime, float endTime, PODVector<const VAnimEventFrame*>& eventFrames);
 
     /// Target object.
-    WeakPtr<Object> target_;
+    stl::weak_ptr<Object> target_;
     /// Attribute animation.
-    SharedPtr<ValueAnimation> animation_;
+    stl::shared_ptr<ValueAnimation> animation_;
     /// Wrap mode.
     WrapMode wrapMode_;
     /// Animation speed.

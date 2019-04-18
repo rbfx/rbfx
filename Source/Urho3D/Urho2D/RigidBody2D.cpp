@@ -401,7 +401,7 @@ void RigidBody2D::ReleaseBody()
         return;
 
     // Make a copy for iteration
-    Vector<WeakPtr<Constraint2D> > constraints = constraints_;
+    Vector<stl::weak_ptr<Constraint2D> > constraints = constraints_;
     for (unsigned i = 0; i < constraints.Size(); ++i)
     {
         if (constraints[i])
@@ -470,7 +470,7 @@ void RigidBody2D::AddCollisionShape2D(CollisionShape2D* collisionShape)
     if (!collisionShape)
         return;
 
-    WeakPtr<CollisionShape2D> collisionShapePtr(collisionShape);
+    stl::weak_ptr<CollisionShape2D> collisionShapePtr(collisionShape);
     if (collisionShapes_.Contains(collisionShapePtr))
         return;
 
@@ -482,7 +482,7 @@ void RigidBody2D::RemoveCollisionShape2D(CollisionShape2D* collisionShape)
     if (!collisionShape)
         return;
 
-    WeakPtr<CollisionShape2D> collisionShapePtr(collisionShape);
+    stl::weak_ptr<CollisionShape2D> collisionShapePtr(collisionShape);
     collisionShapes_.Remove(collisionShapePtr);
 }
 
@@ -491,7 +491,7 @@ void RigidBody2D::AddConstraint2D(Constraint2D* constraint)
     if (!constraint)
         return;
 
-    WeakPtr<Constraint2D> constraintPtr(constraint);
+    stl::weak_ptr<Constraint2D> constraintPtr(constraint);
     if (constraints_.Contains(constraintPtr))
         return;
     constraints_.Push(constraintPtr);
@@ -502,7 +502,7 @@ void RigidBody2D::RemoveConstraint2D(Constraint2D* constraint)
     if (!constraint)
         return;
 
-    WeakPtr<Constraint2D> constraintPtr(constraint);
+    stl::weak_ptr<Constraint2D> constraintPtr(constraint);
     constraints_.Remove(constraintPtr);
 }
 
@@ -579,7 +579,7 @@ void RigidBody2D::OnSceneSet(Scene* scene)
         {
             ReleaseBody();
             physicsWorld_->RemoveRigidBody(this);
-            physicsWorld_.Reset();
+            physicsWorld_.reset();
         }
     }
 }

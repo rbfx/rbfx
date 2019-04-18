@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Container/Ptr.h"
 #include "../Container/HashSet.h"
 #include "../Core/Attribute.h"
 #include "../Core/Object.h"
@@ -74,12 +75,12 @@ public:
     ~Context() override;
 
     /// Create an object by type. Return pointer to it or null if no factory found.
-    template <class T> inline SharedPtr<T> CreateObject()
+    template <class T> inline stl::shared_ptr<T> CreateObject()
     {
         return StaticCast<T>(CreateObject(T::GetTypeStatic()));
     }
     /// Create an object by type hash. Return pointer to it or null if no factory found.
-    SharedPtr<Object> CreateObject(StringHash objectType);
+    stl::shared_ptr<Object> CreateObject(StringHash objectType);
     /// Register a factory for an object type.
     void RegisterFactory(ObjectFactory* factory);
     /// Register a factory for an object type and specify the object category.
@@ -151,10 +152,10 @@ public:
     void SetGlobalVar(StringHash key, const Variant& value);
 
     /// Return all subsystems.
-    const HashMap<StringHash, SharedPtr<Object> >& GetSubsystems() const { return subsystems_; }
+    const HashMap<StringHash, stl::shared_ptr<Object> >& GetSubsystems() const { return subsystems_; }
 
     /// Return all object factories.
-    const HashMap<StringHash, SharedPtr<ObjectFactory> >& GetObjectFactories() const { return factories_; }
+    const HashMap<StringHash, stl::shared_ptr<ObjectFactory> >& GetObjectFactories() const { return factories_; }
 
     /// Return all object categories.
     const HashMap<String, PODVector<StringHash> >& GetObjectCategories() const { return objectCategories_; }
@@ -194,10 +195,10 @@ public:
     /// Return event receivers for a sender and event type, or null if they do not exist.
     EventReceiverGroup* GetEventReceivers(Object* sender, StringHash eventType)
     {
-        HashMap<Object*, HashMap<StringHash, SharedPtr<EventReceiverGroup> > >::Iterator i = specificEventReceivers_.Find(sender);
+        HashMap<Object*, HashMap<StringHash, stl::shared_ptr<EventReceiverGroup> > >::Iterator i = specificEventReceivers_.Find(sender);
         if (i != specificEventReceivers_.End())
         {
-            HashMap<StringHash, SharedPtr<EventReceiverGroup> >::Iterator j = i->second_.Find(eventType);
+            HashMap<StringHash, stl::shared_ptr<EventReceiverGroup> >::Iterator j = i->second_.Find(eventType);
             return j != i->second_.End() ? j->second_ : nullptr;
         }
         else
@@ -207,7 +208,7 @@ public:
     /// Return event receivers for an event type, or null if they do not exist.
     EventReceiverGroup* GetEventReceivers(StringHash eventType)
     {
-        HashMap<StringHash, SharedPtr<EventReceiverGroup> >::Iterator i = eventReceivers_.Find(eventType);
+        HashMap<StringHash, stl::shared_ptr<EventReceiverGroup> >::Iterator i = eventReceivers_.Find(eventType);
         return i != eventReceivers_.End() ? i->second_ : nullptr;
     }
 
@@ -305,17 +306,17 @@ private:
     void SetEventHandler(EventHandler* handler) { eventHandler_ = handler; }
 
     /// Object factories.
-    HashMap<StringHash, SharedPtr<ObjectFactory> > factories_;
+    HashMap<StringHash, stl::shared_ptr<ObjectFactory> > factories_;
     /// Subsystems.
-    HashMap<StringHash, SharedPtr<Object> > subsystems_;
+    HashMap<StringHash, stl::shared_ptr<Object> > subsystems_;
     /// Attribute descriptions per object type.
     HashMap<StringHash, Vector<AttributeInfo> > attributes_;
     /// Network replication attribute descriptions per object type.
     HashMap<StringHash, Vector<AttributeInfo> > networkAttributes_;
     /// Event receivers for non-specific events.
-    HashMap<StringHash, SharedPtr<EventReceiverGroup> > eventReceivers_;
+    HashMap<StringHash, stl::shared_ptr<EventReceiverGroup> > eventReceivers_;
     /// Event receivers for specific senders' events.
-    HashMap<Object*, HashMap<StringHash, SharedPtr<EventReceiverGroup> > > specificEventReceivers_;
+    HashMap<Object*, HashMap<StringHash, stl::shared_ptr<EventReceiverGroup> > > specificEventReceivers_;
     /// Event sender stack.
     PODVector<Object*> eventSenders_;
     /// Event data stack.
@@ -328,42 +329,42 @@ private:
     VariantMap globalVars_;
 
     /// Cached pointer of engine susbsystem.
-    WeakPtr<Engine> engine_;
+    stl::weak_ptr<Engine> engine_;
     /// Cached pointer of time susbsystem.
-    WeakPtr<Time> time_;
+    stl::weak_ptr<Time> time_;
     /// Cached pointer of work queue susbsystem.
-    WeakPtr<WorkQueue> workQueue_;
+    stl::weak_ptr<WorkQueue> workQueue_;
     /// Cached pointer of file system susbsystem.
-    WeakPtr<FileSystem> fileSystem_;
+    stl::weak_ptr<FileSystem> fileSystem_;
 #if URHO3D_LOGGING
     /// Cached pointer of logging susbsystem.
-    WeakPtr<Log> log_;
+    stl::weak_ptr<Log> log_;
 #endif
     /// Cached pointer of resource cache susbsystem.
-    WeakPtr<ResourceCache> cache_;
+    stl::weak_ptr<ResourceCache> cache_;
     /// Cached pointer of internationalization susbsystem.
-    WeakPtr<Localization> l18n_;
+    stl::weak_ptr<Localization> l18n_;
 #if URHO3D_NETWORK
     /// Cached pointer of network susbsystem.
-    WeakPtr<Network> network_;
+    stl::weak_ptr<Network> network_;
 #endif
     /// Cached pointer of input susbsystem.
-    WeakPtr<Input> input_;
+    stl::weak_ptr<Input> input_;
     /// Cached pointer of audio susbsystem.
-    WeakPtr<Audio> audio_;
+    stl::weak_ptr<Audio> audio_;
     /// Cached pointer of UI susbsystem.
-    WeakPtr<UI> ui_;
+    stl::weak_ptr<UI> ui_;
 #if URHO3D_SYSTEMUI
     /// Cached pointer of system UI susbsystem.
-    WeakPtr<SystemUI> systemUi_;
+    stl::weak_ptr<SystemUI> systemUi_;
 #endif
     /// Cached pointer of graphics susbsystem.
-    WeakPtr<Graphics> graphics_;
+    stl::weak_ptr<Graphics> graphics_;
     /// Cached pointer of renderer susbsystem.
-    WeakPtr<Renderer> renderer_;
+    stl::weak_ptr<Renderer> renderer_;
 #if URHO3D_TASKS
     /// Cached pointer to tasks subsystem.
-    WeakPtr<Tasks> tasks_;
+    stl::weak_ptr<Tasks> tasks_;
 #endif
     friend class Engine;
 };

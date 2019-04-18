@@ -74,7 +74,7 @@ void HelloSystemUi::RenderUi(StringHash eventType, VariantMap& eventData)
     ui::SetNextWindowPos(ImVec2(200, 300), ImGuiCond_FirstUseEver);
     if (ui::Begin("Sample SystemUI", 0, ImGuiWindowFlags_NoSavedSettings))
     {
-        if (messageBox_.NotNull())
+        if (messageBox_)
         {
             if (ui::Button("Close message box"))
                 messageBox_ = nullptr;

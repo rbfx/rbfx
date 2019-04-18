@@ -43,6 +43,7 @@ namespace Urho3D
 {
 
 RenderSurface::RenderSurface(Texture* parentTexture) :      // NOLINT(hicpp-member-init)
+    graphics_(parentTexture->GetGraphics()),
     parentTexture_(parentTexture),
     target_(GL_TEXTURE_2D),
     renderBuffer_(0)
@@ -87,7 +88,7 @@ bool RenderSurface::CreateRenderBuffer(unsigned width, unsigned height, unsigned
 
 void RenderSurface::OnDeviceLost()
 {
-    Graphics* graphics = parentTexture_->GetGraphics();
+    Graphics* graphics = graphics_;
     if (!graphics)
         return;
 
@@ -108,7 +109,7 @@ void RenderSurface::OnDeviceLost()
 
 void RenderSurface::Release()
 {
-    Graphics* graphics = parentTexture_->GetGraphics();
+    Graphics* graphics = graphics_;
     if (!graphics)
         return;
 

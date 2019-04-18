@@ -80,7 +80,7 @@ char* _spUtil_readFile(const char* path, int* length)
         return 0;
 
     ResourceCache* cache = currentAnimationSet->GetSubsystem<ResourceCache>();
-    SharedPtr<File> file = cache->GetFile(path);
+    stl::shared_ptr<File> file = cache->GetFile(path);
     if (!file)
         return 0;
 
@@ -211,7 +211,7 @@ Sprite2D* AnimationSet2D::GetSprite() const
 Sprite2D* AnimationSet2D::GetSpriterFileSprite(int folderId, int fileId) const
 {
     unsigned key = folderId << 16u | fileId;
-    HashMap<unsigned, SharedPtr<Sprite2D> >::ConstIterator i = spriterFileSprites_.Find(key);
+    HashMap<unsigned, stl::shared_ptr<Sprite2D> >::ConstIterator i = spriterFileSprites_.Find(key);
     if (i != spriterFileSprites_.End())
         return i->second_;
 
@@ -341,7 +341,7 @@ struct SpriteInfo
     int x{};
     int y{};
     Spriter::File* file_{};
-    SharedPtr<Image> image_;
+    stl::shared_ptr<Image> image_;
 };
 
 bool AnimationSet2D::EndLoadSpriter()
@@ -362,7 +362,7 @@ bool AnimationSet2D::EndLoadSpriter()
             for (unsigned j = 0; j < folder->files_.Size(); ++j)
             {
                 Spriter::File* file = folder->files_[j];
-                SharedPtr<Sprite2D> sprite(spriteSheet_->GetSprite(GetFileName(file->name_)));
+                stl::shared_ptr<Sprite2D> sprite(spriteSheet_->GetSprite(GetFileName(file->name_)));
                 if (!sprite)
                 {
                     URHO3D_LOGERROR("Could not load sprite " + file->name_);
@@ -405,7 +405,7 @@ bool AnimationSet2D::EndLoadSpriter()
             {
                 Spriter::File* file = folder->files_[j];
                 String imagePath = parentPath + file->name_;
-                SharedPtr<Image> image(cache->GetResource<Image>(imagePath));
+                stl::shared_ptr<Image> image(cache->GetResource<Image>(imagePath));
                 if (!image)
                 {
                     URHO3D_LOGERROR("Could not load image");
@@ -448,7 +448,7 @@ bool AnimationSet2D::EndLoadSpriter()
                 }
             }
 
-            SharedPtr<Texture2D> texture(context_->CreateObject<Texture2D>());
+            stl::shared_ptr<Texture2D> texture(context_->CreateObject<Texture2D>());
             texture->SetMipsToSkip(QUALITY_LOW, 0);
             texture->SetNumLevels(1);
             texture->SetSize(allocator.GetWidth(), allocator.GetHeight(), Graphics::GetRGBAFormat());
@@ -471,7 +471,7 @@ bool AnimationSet2D::EndLoadSpriter()
                         image->GetData() + y * image->GetWidth() * 4, (size_t)image->GetWidth() * 4);
                 }
 
-                SharedPtr<Sprite2D> sprite(context_->CreateObject<Sprite2D>());
+                stl::shared_ptr<Sprite2D> sprite(context_->CreateObject<Sprite2D>());
                 sprite->SetTexture(texture);
                 sprite->SetRectangle(IntRect(info.x, info.y, info.x + image->GetWidth(), info.y + image->GetHeight()));
                 sprite->SetHotSpot(Vector2(info.file_->pivotX_, info.file_->pivotY_));
@@ -484,7 +484,7 @@ bool AnimationSet2D::EndLoadSpriter()
         }
         else
         {
-            SharedPtr<Texture2D> texture(context_->CreateObject<Texture2D>());
+            stl::shared_ptr<Texture2D> texture(context_->CreateObject<Texture2D>());
             texture->SetMipsToSkip(QUALITY_LOW, 0);
             texture->SetNumLevels(1);
 
@@ -522,8 +522,8 @@ void AnimationSet2D::Dispose()
 
     spriterData_.reset();
 
-    sprite_.Reset();
-    spriteSheet_.Reset();
+    sprite_.reset();
+    spriteSheet_.reset();
     spriterFileSprites_.Clear();
 }
 

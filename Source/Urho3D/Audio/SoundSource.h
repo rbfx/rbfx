@@ -127,7 +127,7 @@ public:
 
 protected:
     /// Audio subsystem.
-    WeakPtr<Audio> audio_;
+    stl::weak_ptr<Audio> audio_;
     /// SoundSource type, determines the master gain group.
     String soundType_;
     /// SoundSource type hash.
@@ -151,7 +151,7 @@ private:
     /// Play a sound without locking the audio mutex. Called internally.
     void PlayLockless(Sound* sound);
     /// Play a sound stream without locking the audio mutex. Called internally.
-    void PlayLockless(const SharedPtr<SoundStream>& stream);
+    void PlayLockless(const stl::shared_ptr<SoundStream>& stream);
     /// Stop sound without locking the audio mutex. Called internally.
     void StopLockless();
     /// Set new playback position without locking the audio mutex. Called internally.
@@ -178,9 +178,9 @@ private:
     void MixNull(float timeStep);
 
     /// Sound that is being played.
-    SharedPtr<Sound> sound_;
+    stl::shared_ptr<Sound> sound_;
     /// Sound stream that is being played.
-    SharedPtr<SoundStream> soundStream_;
+    stl::shared_ptr<SoundStream> soundStream_;
     /// Playback position.
     volatile signed char* position_;
     /// Playback fractional position.
@@ -188,7 +188,7 @@ private:
     /// Playback time position.
     volatile float timePosition_;
     /// Decode buffer.
-    SharedPtr<Sound> streamBuffer_;
+    stl::shared_ptr<Sound> streamBuffer_;
     /// Unused stream bytes from previous frame.
     int unusedStreamSize_;
 };

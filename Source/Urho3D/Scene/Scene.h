@@ -55,11 +55,11 @@ enum LoadMode
 struct AsyncProgress
 {
     /// File for binary mode.
-    SharedPtr<File> file_;
+    stl::shared_ptr<File> file_;
     /// XML file for XML mode.
-    SharedPtr<XMLFile> xmlFile_;
+    stl::shared_ptr<XMLFile> xmlFile_;
     /// JSON file for JSON mode
-    SharedPtr<JSONFile> jsonFile_;
+    stl::shared_ptr<JSONFile> jsonFile_;
 
     /// Current XML element for XML mode.
     XMLElement xmlElement_;
@@ -206,7 +206,7 @@ public:
     int GetAsyncLoadingMs() const { return asyncLoadingMs_; }
 
     /// Return required package files.
-    const Vector<SharedPtr<PackageFile> >& GetRequiredPackageFiles() const { return requiredPackageFiles_; }
+    const Vector<stl::shared_ptr<PackageFile> >& GetRequiredPackageFiles() const { return requiredPackageFiles_; }
 
     /// Return a node user variable name, or empty if not registered.
     const String& GetVarName(StringHash hash) const;
@@ -295,7 +295,7 @@ private:
     /// Source file name.
     mutable String fileName_;
     /// Required package files for networking.
-    Vector<SharedPtr<PackageFile> > requiredPackageFiles_;
+    Vector<stl::shared_ptr<PackageFile> > requiredPackageFiles_;
     /// Registered node user variable reverse mappings.
     HashMap<StringHash, String> varNames_;
     /// Nodes to check for attribute changes on the next network update.

@@ -59,11 +59,11 @@ protected:
     /// Rectangle dimensions that are rendered by this view.
     IntRect rect_;
     /// Scene which is rendered by this view.
-    SharedPtr<Scene> scene_;
+    stl::shared_ptr<Scene> scene_;
     /// Texture to which scene is rendered.
-    SharedPtr<Texture2D> texture_;
+    stl::shared_ptr<Texture2D> texture_;
     /// Viewport which defines rendering area.
-    SharedPtr<Viewport> viewport_;
+    stl::shared_ptr<Viewport> viewport_;
 };
 
 }

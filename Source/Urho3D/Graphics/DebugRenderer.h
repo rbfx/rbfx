@@ -195,11 +195,11 @@ private:
     /// View frustum.
     Frustum frustum_;
     /// Vertex buffer.
-    SharedPtr<VertexBuffer> vertexBuffer_;
+    stl::shared_ptr<VertexBuffer> vertexBuffer_;
     /// Line antialiasing flag.
     bool lineAntiAlias_;
     /// Active camera.
-    WeakPtr<Camera> camera_;
+    stl::weak_ptr<Camera> camera_;
 };
 
 }

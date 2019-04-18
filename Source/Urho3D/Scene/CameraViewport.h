@@ -58,7 +58,7 @@ public:
     /// Returns last renderpath that was set to this component. If viewport is modified directly - modification will not be reflected by return value of this method.
     const ResourceRef& GetLastRenderPath() const { return renderPath_; }
     /// Returns a viewport used for rendering.
-    Viewport* GetViewport() { return viewport_.Get(); }
+    Viewport* GetViewport() { return viewport_; }
     /// Builds new renderpath using specified attributes and sets it to the viewport. Returns new renderpath.
     RenderPath* RebuildRenderPath();
 
@@ -90,7 +90,7 @@ protected:
     ///
     IntRect screenRect_;
     /// Viewport used for rendering.
-    SharedPtr<Viewport> viewport_;
+    stl::shared_ptr<Viewport> viewport_;
     /// Current selected renderpath.
     ResourceRef renderPath_;
 

@@ -162,7 +162,7 @@ private:
     /// Path end position.
     Vector3 endPos_;
     /// Jack scene node.
-    SharedPtr<Node> jackNode_;
+    stl::shared_ptr<Node> jackNode_;
     /// Flag for drawing debug geometry.
     bool drawDebug_;
     /// Flag for using navigation mesh streaming.

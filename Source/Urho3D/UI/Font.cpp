@@ -119,7 +119,7 @@ bool Font::SaveXML(Serializer& dest, int pointSize, bool usedGlyphs, const Strin
 
     URHO3D_PROFILE("FontSaveXML");
 
-    SharedPtr<FontFaceBitmap> packedFontFace(new FontFaceBitmap(this));
+    stl::shared_ptr<FontFaceBitmap> packedFontFace(new FontFaceBitmap(this));
     if (!packedFontFace->Load(fontFace, usedGlyphs))
         return false;
 
@@ -151,7 +151,7 @@ FontFace* Font::GetFace(float pointSize)
 
     // For outline fonts, we return the nearest size in 1/64th increments, as that's what FreeType supports.
     int key = FloatToFixed(pointSize);
-    HashMap<int, SharedPtr<FontFace> >::Iterator i = faces_.Find(key);
+    HashMap<int, stl::shared_ptr<FontFace> >::Iterator i = faces_.Find(key);
     if (i != faces_.End())
     {
         if (!i->second_->IsDataLost())
@@ -193,7 +193,7 @@ void Font::LoadParameters()
 {
     auto* cache = GetSubsystem<ResourceCache>();
     String xmlName = ReplaceExtension(GetName(), ".xml");
-    SharedPtr<XMLFile> xml = cache->GetTempResource<XMLFile>(xmlName, false);
+    stl::shared_ptr<XMLFile> xml = cache->GetTempResource<XMLFile>(xmlName, false);
     if (!xml)
         return;
 
@@ -222,7 +222,7 @@ void Font::LoadParameters()
 
 FontFace* Font::GetFaceFreeType(float pointSize)
 {
-    SharedPtr<FontFace> newFace(new FontFaceFreeType(this));
+    stl::shared_ptr<FontFace> newFace(new FontFaceFreeType(this));
     if (!newFace->Load(&fontData_[0], fontDataSize_, pointSize))
         return nullptr;
 
@@ -233,7 +233,7 @@ FontFace* Font::GetFaceFreeType(float pointSize)
 
 FontFace* Font::GetFaceBitmap(float pointSize)
 {
-    SharedPtr<FontFace> newFace(new FontFaceBitmap(this));
+    stl::shared_ptr<FontFace> newFace(new FontFaceBitmap(this));
     if (!newFace->Load(&fontData_[0], fontDataSize_, pointSize))
         return nullptr;
 

@@ -58,7 +58,7 @@ public:
     /// Construct with vertex buffers to base declaration on. Higher index buffers will override semantics on lower indices.
     VertexDeclaration(Graphics* graphics, const PODVector<VertexBuffer*>& buffers);
     /// Construct with vertex buffers (shared pointer vector) to base declaration on. Higher index buffers will override semantics on lower indices.
-    VertexDeclaration(Graphics* graphics, const Vector<SharedPtr<VertexBuffer> >& buffers);
+    VertexDeclaration(Graphics* graphics, const Vector<stl::shared_ptr<VertexBuffer> >& buffers);
     /// Destruct.
     ~VertexDeclaration();
 

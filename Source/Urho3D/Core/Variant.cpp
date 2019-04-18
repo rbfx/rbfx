@@ -684,7 +684,7 @@ bool Variant::IsZero() const
         return value_.intVector3_ == IntVector3::ZERO;
 
     case VAR_PTR:
-        return value_.weakPtr_ == (RefCounted*)nullptr;
+        return value_.weakPtr_ == nullptr;
 
     case VAR_MATRIX3:
         return *value_.matrix3_ == Matrix3::IDENTITY;
@@ -746,7 +746,7 @@ void Variant::SetType(VariantType newType)
         break;
 
     case VAR_PTR:
-        value_.weakPtr_.~WeakPtr<RefCounted>();
+        value_.weakPtr_.~weak_ptr<RefCounted>();
         break;
 
     case VAR_MATRIX3:
@@ -806,7 +806,7 @@ void Variant::SetType(VariantType newType)
         break;
 
     case VAR_PTR:
-        new(&value_.weakPtr_) WeakPtr<RefCounted>();
+        new(&value_.weakPtr_) stl::weak_ptr<RefCounted>();
         break;
 
     case VAR_MATRIX3:

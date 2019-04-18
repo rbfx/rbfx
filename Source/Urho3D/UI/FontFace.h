@@ -23,7 +23,7 @@
 #pragma once
 
 #include "../Container/HashMap.h"
-#include "../Container/Ptr.h"
+#include <EASTL/shared_ptr.h>
 #include "../Math/AreaAllocator.h"
 
 namespace Urho3D
@@ -91,14 +91,14 @@ public:
     float GetRowHeight() const { return rowHeight_; }
 
     /// Return textures.
-    const Vector<SharedPtr<Texture2D> >& GetTextures() const { return textures_; }
+    const Vector<stl::shared_ptr<Texture2D> >& GetTextures() const { return textures_; }
 
 protected:
     friend class FontFaceBitmap;
     /// Create a texture for font rendering.
-    SharedPtr<Texture2D> CreateFaceTexture();
+    stl::shared_ptr<Texture2D> CreateFaceTexture();
     /// Load font face texture from image resource.
-    SharedPtr<Texture2D> LoadFaceTexture(const SharedPtr<Image>& image);
+    stl::shared_ptr<Texture2D> LoadFaceTexture(const stl::shared_ptr<Image>& image);
 
     /// Parent font.
     Font* font_{};
@@ -107,7 +107,7 @@ protected:
     /// Kerning mapping.
     HashMap<unsigned, float> kerningMapping_;
     /// Glyph texture pages.
-    Vector<SharedPtr<Texture2D> > textures_;
+    Vector<stl::shared_ptr<Texture2D> > textures_;
     /// Point size.
     float pointSize_{};
     /// Row height.

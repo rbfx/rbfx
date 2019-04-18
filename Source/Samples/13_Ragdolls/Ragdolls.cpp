@@ -76,7 +76,7 @@ void Ragdolls::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_ABSOLUTE);
+    Sample::InitMouseMode(MM_FREE);
 }
 
 void Ragdolls::CreateScene()
@@ -202,7 +202,7 @@ void Ragdolls::SetupViewport()
     auto* renderer = GetSubsystem<Renderer>();
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
-    SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 }
 

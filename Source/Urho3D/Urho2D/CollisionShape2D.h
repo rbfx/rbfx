@@ -107,7 +107,7 @@ protected:
     virtual void ApplyNodeWorldScale() = 0;
 
     /// Rigid body.
-    WeakPtr<RigidBody2D> rigidBody_;
+    stl::weak_ptr<RigidBody2D> rigidBody_;
     /// Fixture def.
     b2FixtureDef fixtureDef_;
     /// Box2D fixture.

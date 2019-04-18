@@ -156,6 +156,8 @@ Context::~Context()
     /// \todo Context should not need to know about subsystems
     RemoveSubsystem("Audio");
     RemoveSubsystem("UI");
+    RemoveSubsystem("SystemUI");
+    RemoveSubsystem("ResourceCache");
     RemoveSubsystem("Input");
     RemoveSubsystem("Renderer");
     RemoveSubsystem("Graphics");
@@ -169,13 +171,13 @@ Context::~Context()
     eventDataMaps_.Clear();
 }
 
-SharedPtr<Object> Context::CreateObject(StringHash objectType)
+stl::shared_ptr<Object> Context::CreateObject(StringHash objectType)
 {
-    HashMap<StringHash, SharedPtr<ObjectFactory> >::ConstIterator i = factories_.Find(objectType);
+    HashMap<StringHash, stl::shared_ptr<ObjectFactory> >::ConstIterator i = factories_.Find(objectType);
     if (i != factories_.End())
         return i->second_->CreateObject();
     else
-        return SharedPtr<Object>();
+        return stl::shared_ptr<Object>();
 }
 
 void Context::RegisterFactory(ObjectFactory* factory)
@@ -226,7 +228,7 @@ void Context::RegisterSubsystem(Object* object)
 
 void Context::RemoveSubsystem(StringHash objectType)
 {
-    HashMap<StringHash, SharedPtr<Object> >::Iterator i = subsystems_.Find(objectType);
+    HashMap<StringHash, stl::shared_ptr<Object> >::Iterator i = subsystems_.Find(objectType);
     if (i != subsystems_.End())
         subsystems_.Erase(i);
 }
@@ -391,7 +393,7 @@ void Context::CopyBaseAttributes(StringHash baseType, StringHash derivedType)
 
 Object* Context::GetSubsystem(StringHash type) const
 {
-    HashMap<StringHash, SharedPtr<Object> >::ConstIterator i = subsystems_.Find(type);
+    HashMap<StringHash, stl::shared_ptr<Object> >::ConstIterator i = subsystems_.Find(type);
     if (i != subsystems_.End())
         return i->second_;
     else
@@ -420,7 +422,7 @@ Object* Context::GetEventSender() const
 const String& Context::GetTypeName(StringHash objectType) const
 {
     // Search factories to find the hash-to-name mapping
-    HashMap<StringHash, SharedPtr<ObjectFactory> >::ConstIterator i = factories_.Find(objectType);
+    HashMap<StringHash, stl::shared_ptr<ObjectFactory> >::ConstIterator i = factories_.Find(objectType);
     return i != factories_.End() ? i->second_->GetTypeName() : String::EMPTY;
 }
 
@@ -443,7 +445,7 @@ AttributeInfo* Context::GetAttribute(StringHash objectType, const char* name)
 
 void Context::AddEventReceiver(Object* receiver, StringHash eventType)
 {
-    SharedPtr<EventReceiverGroup>& group = eventReceivers_[eventType];
+    stl::shared_ptr<EventReceiverGroup>& group = eventReceivers_[eventType];
     if (!group)
         group = new EventReceiverGroup();
     group->Add(receiver);
@@ -451,7 +453,7 @@ void Context::AddEventReceiver(Object* receiver, StringHash eventType)
 
 void Context::AddEventReceiver(Object* receiver, Object* sender, StringHash eventType)
 {
-    SharedPtr<EventReceiverGroup>& group = specificEventReceivers_[sender][eventType];
+    stl::shared_ptr<EventReceiverGroup>& group = specificEventReceivers_[sender][eventType];
     if (!group)
         group = new EventReceiverGroup();
     group->Add(receiver);
@@ -459,10 +461,10 @@ void Context::AddEventReceiver(Object* receiver, Object* sender, StringHash even
 
 void Context::RemoveEventSender(Object* sender)
 {
-    HashMap<Object*, HashMap<StringHash, SharedPtr<EventReceiverGroup> > >::Iterator i = specificEventReceivers_.Find(sender);
+    HashMap<Object*, HashMap<StringHash, stl::shared_ptr<EventReceiverGroup> > >::Iterator i = specificEventReceivers_.Find(sender);
     if (i != specificEventReceivers_.End())
     {
-        for (HashMap<StringHash, SharedPtr<EventReceiverGroup> >::Iterator j = i->second_.Begin(); j != i->second_.End(); ++j)
+        for (HashMap<StringHash, stl::shared_ptr<EventReceiverGroup> >::Iterator j = i->second_.Begin(); j != i->second_.End(); ++j)
         {
             for (PODVector<Object*>::Iterator k = j->second_->receivers_.Begin(); k != j->second_->receivers_.End(); ++k)
             {

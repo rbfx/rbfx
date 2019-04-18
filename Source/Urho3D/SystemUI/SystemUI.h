@@ -85,7 +85,7 @@ protected:
     Matrix4 projection_;
     VertexBuffer vertexBuffer_;
     IndexBuffer indexBuffer_;
-    SharedPtr<Texture2D> fontTexture_;
+    stl::shared_ptr<Texture2D> fontTexture_;
     PODVector<float> fontSizes_;
     ImGuiContext* imContext_;
 

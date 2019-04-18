@@ -136,7 +136,7 @@ const char *transformSuffix[TransformationComp_MAXIMUM] =
 
 static const unsigned MAX_CHANNELS = 4;
 
-SharedPtr<Context> context_(new Context());
+stl::shared_ptr<Context> context_(new Context());
 const aiScene* scene_ = nullptr;
 aiNode* rootNode_ = nullptr;
 String inputName_;
@@ -1001,7 +1001,7 @@ void BuildAndSaveModel(OutModel& model)
 
     PrintLine("Writing model " + rootNodeName);
 
-    SharedPtr<Model> outModel(new Model(context_));
+    stl::shared_ptr<Model> outModel(new Model(context_));
     Vector<PODVector<unsigned> > allBoneMappings;
     BoundingBox box;
 
@@ -1036,10 +1036,10 @@ void BuildAndSaveModel(OutModel& model)
             combineBuffers = false;
     }
 
-    SharedPtr<IndexBuffer> ib;
-    SharedPtr<VertexBuffer> vb;
-    Vector<SharedPtr<VertexBuffer> > vbVector;
-    Vector<SharedPtr<IndexBuffer> > ibVector;
+    stl::shared_ptr<IndexBuffer> ib;
+    stl::shared_ptr<VertexBuffer> vb;
+    Vector<stl::shared_ptr<VertexBuffer> > vbVector;
+    Vector<stl::shared_ptr<IndexBuffer> > ibVector;
     unsigned startVertexOffset = 0;
     unsigned startIndexOffset = 0;
     unsigned destGeomIndex = 0;
@@ -1093,7 +1093,7 @@ void BuildAndSaveModel(OutModel& model)
         vertexTransform = Matrix3x4(pos, rot, scale);
         normalTransform = rot.RotationMatrix();
 
-        SharedPtr<Geometry> geom(new Geometry(context_));
+        stl::shared_ptr<Geometry> geom(new Geometry(context_));
 
         PrintLine("Writing geometry " + String(i) + " with " + String(mesh->mNumVertices) + " vertices " +
             String(validFaces * 3) + " indices");
@@ -1301,7 +1301,7 @@ void BuildAndSaveAnimations(OutModel* model)
             thisImportStartTime = startTime;
         duration = thisImportEndTime - thisImportStartTime;
 
-        SharedPtr<Animation> outAnim(new Animation(context_));
+        stl::shared_ptr<Animation> outAnim(new Animation(context_));
         outAnim->SetAnimationName(animName);
         outAnim->SetLength(duration * tickConversion);
 
@@ -1641,7 +1641,7 @@ void BuildAndSaveScene(OutScene& scene, bool asPrefab)
     else
         PrintLine("Writing node hierarchy");
 
-    SharedPtr<Scene> outScene(new Scene(context_));
+    stl::shared_ptr<Scene> outScene(new Scene(context_));
 
     if (!asPrefab)
     {
@@ -2061,13 +2061,13 @@ void CopyTextures(const HashSet<String>& usedTextures, const String& sourcePath)
 void CombineLods(const PODVector<float>& lodDistances, const Vector<String>& modelNames, const String& outName)
 {
     // Load models
-    Vector<SharedPtr<Model> > srcModels;
+    Vector<stl::shared_ptr<Model> > srcModels;
     for (unsigned i = 0; i < modelNames.Size(); ++i)
     {
         PrintLine("Reading LOD level " + String(i) + ": model " + modelNames[i] + " distance " + String(lodDistances[i]));
         File srcFile(context_);
         srcFile.Open(modelNames[i]);
-        SharedPtr<Model> srcModel(new Model(context_));
+        stl::shared_ptr<Model> srcModel(new Model(context_));
         if (!srcModel->Load(srcFile))
             ErrorExit("Could not load input model " + modelNames[i]);
         srcModels.Push(srcModel);
@@ -2104,12 +2104,12 @@ void CombineLods(const PODVector<float>& lodDistances, const Vector<String>& mod
             ErrorExit(modelNames[i] + " has different per-geometry bone mappings than " + modelNames[0]);
     }
 
-    Vector<SharedPtr<VertexBuffer> > vbVector;
-    Vector<SharedPtr<IndexBuffer> > ibVector;
+    Vector<stl::shared_ptr<VertexBuffer> > vbVector;
+    Vector<stl::shared_ptr<IndexBuffer> > ibVector;
     PODVector<unsigned> emptyMorphRange;
 
     // Create the final model
-    SharedPtr<Model> outModel(new Model(context_));
+    stl::shared_ptr<Model> outModel(new Model(context_));
     outModel->SetNumGeometries(srcModels[0]->GetNumGeometries());
     for (unsigned i = 0; i < srcModels[0]->GetNumGeometries(); ++i)
     {
@@ -2122,12 +2122,12 @@ void CombineLods(const PODVector<float>& lodDistances, const Vector<String>& mod
 
             for (unsigned k = 0; k < geometry->GetNumVertexBuffers(); ++k)
             {
-                SharedPtr<VertexBuffer> vb(geometry->GetVertexBuffer(k));
+                stl::shared_ptr<VertexBuffer> vb(geometry->GetVertexBuffer(k));
                 if (!vbVector.Contains(vb))
                     vbVector.Push(vb);
             }
 
-            SharedPtr<IndexBuffer> ib(geometry->GetIndexBuffer());
+            stl::shared_ptr<IndexBuffer> ib(geometry->GetIndexBuffer());
             if (!ibVector.Contains(ib))
                 ibVector.Push(ib);
         }

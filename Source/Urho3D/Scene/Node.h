@@ -505,7 +505,7 @@ public:
     unsigned GetNumChildren(bool recursive = false) const;
 
     /// Return immediate child scene nodes.
-    const Vector<SharedPtr<Node> >& GetChildren() const { return children_; }
+    const Vector<stl::shared_ptr<Node> >& GetChildren() const { return children_; }
 
     /// Return child scene nodes, optionally recursive.
     void GetChildren(PODVector<Node*>& dest, bool recursive = false) const;
@@ -536,7 +536,7 @@ public:
     unsigned GetNumNetworkComponents() const;
 
     /// Return all components.
-    const Vector<SharedPtr<Component> >& GetComponents() const { return components_; }
+    const Vector<stl::shared_ptr<Component> >& GetComponents() const { return components_; }
 
     /// Return all components of type. Optionally recursive.
     void GetComponents(PODVector<Component*>& dest, StringHash type, bool recursive = false) const;
@@ -547,7 +547,7 @@ public:
     /// Return whether has a specific component.
     bool HasComponent(StringHash type) const;
     /// Return listener components.
-    const Vector<WeakPtr<Component> > GetListeners() const { return listeners_; }
+    const Vector<stl::weak_ptr<Component> > GetListeners() const { return listeners_; }
 
     /// Return a user variable.
     const Variant& GetVar(StringHash key) const;
@@ -648,7 +648,7 @@ private:
     /// Recalculate the world transform.
     void UpdateWorldTransform() const;
     /// Remove child node by iterator.
-    void RemoveChild(Vector<SharedPtr<Node> >::Iterator i);
+    void RemoveChild(Vector<stl::shared_ptr<Node> >::Iterator i);
     /// Return child nodes recursively.
     void GetChildrenRecursive(PODVector<Node*>& dest) const;
     /// Return child nodes with a specific component recursively.
@@ -660,7 +660,7 @@ private:
     /// Clone node recursively.
     Node* CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mode);
     /// Remove a component from this node with the specified iterator.
-    void RemoveComponent(Vector<SharedPtr<Component> >::Iterator i);
+    void RemoveComponent(Vector<stl::shared_ptr<Component> >::Iterator i);
     /// Handle attribute animation update event.
     void HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& eventData);
 
@@ -693,11 +693,11 @@ private:
     /// World-space rotation.
     mutable Quaternion worldRotation_;
     /// Components.
-    Vector<SharedPtr<Component> > components_;
+    Vector<stl::shared_ptr<Component> > components_;
     /// Child scene nodes.
-    Vector<SharedPtr<Node> > children_;
+    Vector<stl::shared_ptr<Node> > children_;
     /// Node listeners.
-    Vector<WeakPtr<Component> > listeners_;
+    Vector<stl::weak_ptr<Component> > listeners_;
     /// Pointer to implementation.
     stl::unique_ptr<NodeImpl> impl_;
 
@@ -738,16 +738,16 @@ template <class T> bool Node::HasComponent() const { return HasComponent(T::GetT
 
 template <class T> T* Node::GetDerivedComponent(bool recursive) const
 {
-    for (Vector<SharedPtr<Component> >::ConstIterator i = components_.Begin(); i != components_.End(); ++i)
+    for (Vector<stl::shared_ptr<Component> >::ConstIterator i = components_.Begin(); i != components_.End(); ++i)
     {
-        auto* component = dynamic_cast<T*>(i->Get());
+        auto* component = dynamic_cast<T*>(i->get());
         if (component)
             return component;
     }
 
     if (recursive)
     {
-        for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+        for (Vector<stl::shared_ptr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
         {
             T* component = (*i)->GetDerivedComponent<T>(true);
             if (component)
@@ -780,16 +780,16 @@ template <class T> void Node::GetDerivedComponents(PODVector<T*>& dest, bool rec
     if (clearVector)
         dest.Clear();
 
-    for (Vector<SharedPtr<Component> >::ConstIterator i = components_.Begin(); i != components_.End(); ++i)
+    for (Vector<stl::shared_ptr<Component> >::ConstIterator i = components_.Begin(); i != components_.End(); ++i)
     {
-        auto* component = dynamic_cast<T*>(i->Get());
+        auto* component = dynamic_cast<T*>(i->get());
         if (component)
             dest.Push(component);
     }
 
     if (recursive)
     {
-        for (Vector<SharedPtr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+        for (Vector<stl::shared_ptr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
             (*i)->GetDerivedComponents<T>(dest, true, false);
     }
 }

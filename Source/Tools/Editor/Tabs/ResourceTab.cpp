@@ -190,7 +190,7 @@ bool ResourceTab::RenderWindowContent()
                 auto path = GetNewResourcePath(resourcePath_ + "New Scene.xml");
                 GetFileSystem()->CreateDirsRecursive(GetPath(path));
 
-                SharedPtr<Scene> scene(new Scene(context_));
+                stl::shared_ptr<Scene> scene(new Scene(context_));
                 scene->CreateComponent<Octree>();
                 File file(context_, path, FILE_WRITE);
                 if (file.IsOpen())
@@ -208,7 +208,7 @@ bool ResourceTab::RenderWindowContent()
                 auto path = GetNewResourcePath(resourcePath_ + "New Material.xml");
                 GetFileSystem()->CreateDirsRecursive(GetPath(path));
 
-                SharedPtr<Material> material(new Material(context_));
+                stl::shared_ptr<Material> material(new Material(context_));
                 File file(context_, path, FILE_WRITE);
                 if (file.IsOpen())
                 {
@@ -225,7 +225,7 @@ bool ResourceTab::RenderWindowContent()
                 auto path = GetNewResourcePath(resourcePath_ + "New UI Layout.xml");
                 GetFileSystem()->CreateDirsRecursive(GetPath(path));
 
-                SharedPtr<UIElement> scene(new UIElement(context_));
+                stl::shared_ptr<UIElement> scene(new UIElement(context_));
                 XMLFile layout(context_);
                 auto root = layout.GetOrCreateRoot("element");
                 if (scene->SaveXML(root) && layout.SaveFile(path))

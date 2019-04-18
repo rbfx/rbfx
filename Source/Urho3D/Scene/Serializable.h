@@ -192,9 +192,9 @@ private:
 /// \tparam TGetFunction Functional object with call signature `void getFunction(const TClassType& self, Variant& value)`
 /// \tparam TSetFunction Functional object with call signature `void setFunction(TClassType& self, const Variant& value)`
 template <class TClassType, class TGetFunction, class TSetFunction>
-SharedPtr<AttributeAccessor> MakeVariantAttributeAccessor(TGetFunction getFunction, TSetFunction setFunction)
+stl::shared_ptr<AttributeAccessor> MakeVariantAttributeAccessor(TGetFunction getFunction, TSetFunction setFunction)
 {
-    return SharedPtr<AttributeAccessor>(new VariantAttributeAccessorImpl<TClassType, TGetFunction, TSetFunction>(getFunction, setFunction));
+    return stl::shared_ptr<AttributeAccessor>(new VariantAttributeAccessorImpl<TClassType, TGetFunction, TSetFunction>(getFunction, setFunction));
 }
 
 /// Make member attribute accessor.

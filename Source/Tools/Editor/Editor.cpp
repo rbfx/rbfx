@@ -155,7 +155,7 @@ void Editor::Setup()
 void Editor::Start()
 {
     // Execute specified subcommand and exit.
-    for (SharedPtr<SubCommand>& cmd : subCommands_)
+    for (stl::shared_ptr<SubCommand>& cmd : subCommands_)
     {
         if (GetCommandLineParser().got_subcommand(cmd->GetTypeName().CString()))
         {
@@ -214,7 +214,7 @@ void Editor::Start()
             if (preview->GetSceneSimulationStatus() == SCENE_SIMULATION_STOPPED)
             {
                 exiting_ = true;
-                if (project_.NotNull())
+                if (project_)
                     project_->SaveProject();
             }
             else
@@ -298,12 +298,12 @@ void Editor::OnUpdate(VariantMap& args)
             tabs_.Erase(tabs_.Find(tab));
     }
 
-    if (!activeTab_.Expired())
+    if (!activeTab_.expired())
     {
         activeTab_->OnActiveUpdate();
     }
 
-    if (loadDefaultLayout_ && project_.NotNull())
+    if (loadDefaultLayout_ && project_)
     {
         loadDefaultLayout_ = false;
         LoadDefaultLayout();
@@ -378,9 +378,9 @@ void Editor::OnUpdate(VariantMap& args)
 
 Tab* Editor::CreateTab(StringHash type)
 {
-    SharedPtr<Tab> tab(DynamicCast<Tab>(context_->CreateObject(type)));
+    stl::shared_ptr<Tab> tab(DynamicCast<Tab>(context_->CreateObject(type)));
     tabs_.Push(tab);
-    return tab.Get();
+    return tab.get();
 }
 
 StringVector Editor::GetObjectsByCategory(const String& category)
@@ -457,7 +457,7 @@ void Editor::CloseProject()
     SendEvent(E_EDITORPROJECTCLOSING);
     context_->RemoveSubsystem<Project>();
     tabs_.Clear();
-    project_.Reset();
+    project_.reset();
 }
 
 void Editor::HandleHotkeys()
@@ -494,7 +494,7 @@ Tab* Editor::GetTabByName(const String& uniqueName)
     for (auto& tab : tabs_)
     {
         if (tab->GetUniqueName() == uniqueName)
-            return tab.Get();
+            return tab.get();
     }
     return nullptr;
 }
@@ -504,8 +504,8 @@ Tab* Editor::GetTabByResource(const String& resourceName)
     for (auto& tab : tabs_)
     {
         auto resource = DynamicCast<BaseResourceTab>(tab);
-        if (resource.NotNull() && resource->GetResourceName() == resourceName)
-            return resource.Get();
+        if (resource && resource->GetResourceName() == resourceName)
+            return resource.get();
     }
     return nullptr;
 }
@@ -515,7 +515,7 @@ Tab* Editor::GetTab(StringHash type)
     for (auto& tab : tabs_)
     {
         if (tab->GetType() == type)
-            return tab.Get();
+            return tab.get();
     }
     return nullptr;
 }
@@ -619,7 +619,7 @@ template<typename T>
 void Editor::RegisterSubcommand()
 {
     T::RegisterObject(context_);
-    SharedPtr<T> cmd(context_->CreateObject<T>());
+    stl::shared_ptr<T> cmd(context_->CreateObject<T>());
     subCommands_.Push(DynamicCast<SubCommand>(cmd));
     if (CLI::App* subCommand = GetCommandLineParser().add_subcommand(T::GetTypeNameStatic().CString()))
         cmd->RegisterCommandLine(*subCommand);

@@ -231,7 +231,7 @@ void RigidBody::SetPosition(const Vector3& position)
         // When not inside the simulation loop, this may lead to erratic movement of parented rigidbodies
         // so skip in that case. Exception made before first simulation tick so that interpolation position
         // of e.g. instantiated prefabs will be correct from the start
-        if (!hasSimulated_ || physicsWorld_->IsSimulating())
+        if (!hasSimulated_ || (physicsWorld_ && physicsWorld_->IsSimulating()))
         {
             btTransform interpTrans = body_->getInterpolationWorldTransform();
             interpTrans.setOrigin(worldTrans.getOrigin());
@@ -253,7 +253,7 @@ void RigidBody::SetRotation(const Quaternion& rotation)
         if (!centerOfMass_.Equals(Vector3::ZERO))
             worldTrans.setOrigin(ToBtVector3(oldPosition + rotation * centerOfMass_));
 
-        if (!hasSimulated_ || physicsWorld_->IsSimulating())
+        if (!hasSimulated_ || (physicsWorld_ && physicsWorld_->IsSimulating()))
         {
             btTransform interpTrans = body_->getInterpolationWorldTransform();
             interpTrans.setRotation(worldTrans.getRotation());
@@ -277,7 +277,7 @@ void RigidBody::SetTransform(const Vector3& position, const Quaternion& rotation
         worldTrans.setRotation(ToBtQuaternion(rotation));
         worldTrans.setOrigin(ToBtVector3(position + rotation * centerOfMass_));
 
-        if (!hasSimulated_ || physicsWorld_->IsSimulating())
+        if (!hasSimulated_ || (physicsWorld_ && physicsWorld_->IsSimulating()))
         {
             btTransform interpTrans = body_->getInterpolationWorldTransform();
             interpTrans.setOrigin(worldTrans.getOrigin());

@@ -87,7 +87,7 @@ bool Texture2DArray::BeginLoad(Deserializer& source)
     loadParameters_ = (context_->CreateObject<XMLFile>());
     if (!loadParameters_->Load(source))
     {
-        loadParameters_.Reset();
+        loadParameters_.reset();
         return false;
     }
 
@@ -138,7 +138,7 @@ bool Texture2DArray::EndLoad()
         SetData(i, loadImages_[i]);
 
     loadImages_.Clear();
-    loadParameters_.Reset();
+    loadParameters_.reset();
 
     return true;
 }
@@ -164,7 +164,7 @@ bool Texture2DArray::SetSize(unsigned layers, int width, int height, unsigned fo
     }
 
     // Delete the old rendersurface if any
-    renderSurface_.Reset();
+    renderSurface_.reset();
 
     usage_ = usage;
 

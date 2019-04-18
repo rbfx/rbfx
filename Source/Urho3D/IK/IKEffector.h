@@ -186,8 +186,8 @@ public:
     void SetINHERIT_PARENT_ROTATION(bool enable);
 
 private:
-    WeakPtr<Node> targetNode_;
-    WeakPtr<IKSolver> solver_;
+    stl::weak_ptr<Node> targetNode_;
+    stl::weak_ptr<IKSolver> solver_;
     ik_node_t* ikEffectorNode_;
 
     String targetName_;

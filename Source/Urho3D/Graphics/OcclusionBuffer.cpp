@@ -221,7 +221,7 @@ void OcclusionBuffer::DrawTriangles()
 
         for (Vector<OcclusionBatch>::Iterator i = batches_.Begin(); i != batches_.End(); ++i)
         {
-            SharedPtr<WorkItem> item = queue->GetFreeItem();
+            stl::shared_ptr<WorkItem> item = queue->GetFreeItem();
             item->priority_ = M_MAX_UNSIGNED;
             item->workFunction_ = DrawOcclusionBatchWork;
             item->aux_ = this;

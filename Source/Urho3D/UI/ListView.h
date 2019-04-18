@@ -175,7 +175,7 @@ protected:
     /// Base indent, used in hierarchy mode only.
     int baseIndent_;
     /// Overlay container, used in hierarchy mode only.
-    SharedPtr<UIElement> overlayContainer_;
+    stl::shared_ptr<UIElement> overlayContainer_;
     /// Clear selection on defocus flag.
     bool clearSelectionOnDefocus_;
     /// React to click end instead of click start flag.

@@ -132,7 +132,7 @@ bool ParticleEffect::EndLoad()
 bool ParticleEffect::Load(const XMLElement& source)
 {
     // Reset to defaults first so that missing parameters in case of a live reload behave as expected
-    material_.Reset();
+    material_.reset();
     numParticles_ = DEFAULT_NUM_PARTICLES;
     updateInvisible_ = false;
     relative_ = true;
@@ -319,7 +319,7 @@ bool ParticleEffect::Load(const XMLElement& source)
 
 bool ParticleEffect::Save(Serializer& dest) const
 {
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement materialElem = xml->CreateRoot("particleeffect");
 
     Save(materialElem);
@@ -733,9 +733,9 @@ void ParticleEffect::SortTextureFrames()
         AddTextureFrame(tf[i]);
 }
 
-SharedPtr<ParticleEffect> ParticleEffect::Clone(const String& cloneName) const
+stl::shared_ptr<ParticleEffect> ParticleEffect::Clone(const String& cloneName) const
 {
-    SharedPtr<ParticleEffect> ret(context_->CreateObject<ParticleEffect>());
+    stl::shared_ptr<ParticleEffect> ret(context_->CreateObject<ParticleEffect>());
 
     ret->SetName(cloneName);
     ret->material_ = material_;

@@ -60,7 +60,7 @@ protected:
     /// Preview scene.
     SceneView view_;
     /// Node holding figure to which material is applied.
-    WeakPtr<Node> node_;
+    stl::weak_ptr<Node> node_;
     /// Flag indicating if this widget grabbed mouse for rotating material node.
     bool mouseGrabbed_ = false;
     /// Distance from camera to figure.

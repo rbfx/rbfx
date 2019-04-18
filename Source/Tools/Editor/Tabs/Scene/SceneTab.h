@@ -64,13 +64,13 @@ struct SceneState
     }
 
     ///
-    WeakPtr<Scene> startScene_;
+    stl::weak_ptr<Scene> startScene_;
     ///
     VectorBuffer sceneState_;
     ///
     VectorBuffer uiState_;
     ///
-    SharedPtr<XMLFile> defaultStyle_;
+    stl::shared_ptr<XMLFile> defaultStyle_;
 };
 
 class SceneTab : public BaseResourceTab, public IHierarchyProvider, public IInspectorProvider
@@ -119,7 +119,7 @@ public:
     /// Return true if component is selected.
     bool IsSelected(Component* component) const;
     /// Return list of selected nodes.
-    const Vector<WeakPtr<Node>>& GetSelection() const;
+    const Vector<stl::weak_ptr<Node>>& GetSelection() const;
     /// Removes component if it was selected in inspector, otherwise removes selected scene nodes.
     void RemoveSelection();
     /// Return scene displayed in the tab viewport.
@@ -186,23 +186,23 @@ protected:
     /// Rectangle dimensions that are rendered by this view.
     IntRect rect_;
     /// Texture to which scene is rendered.
-    SharedPtr<Texture2D> texture_;
+    stl::shared_ptr<Texture2D> texture_;
     /// Viewport which defines rendering area.
-    SharedPtr<Viewport> viewport_;
+    stl::shared_ptr<Viewport> viewport_;
     /// Gizmo used for manipulating scene elements.
     Gizmo gizmo_;
     /// Current selected component displayed in inspector.
-    HashSet<WeakPtr<Component>> selectedComponents_;
+    HashSet<stl::weak_ptr<Component>> selectedComponents_;
     /// Flag indicating that mouse is hovering scene viewport.
     bool mouseHoversViewport_ = false;
     /// Nodes whose entries in hierarchy tree should be opened on next frame.
     PODVector<Node*> openHierarchyNodes_;
     /// Node to scroll to on next frame.
-    WeakPtr<Node> scrollTo_;
+    stl::weak_ptr<Node> scrollTo_;
     /// Selected camera preview texture.
-    SharedPtr<Texture2D> cameraPreviewtexture_;
+    stl::shared_ptr<Texture2D> cameraPreviewtexture_;
     /// Selected camera preview viewport.
-    SharedPtr<Viewport> cameraPreviewViewport_;
+    stl::shared_ptr<Viewport> cameraPreviewViewport_;
     /// Utility for copying and pasting scene nodes.
     SceneClipboard clipboard_;
     /// Original window padding that was overwritten before creating window. This padding will be restored right after window started.
@@ -212,11 +212,11 @@ protected:
     /// List of component IDs that are saved when scene state is saved. Component selection will be restored using these.
     PODVector<unsigned> savedComponentSelection_;
     ///
-    SharedPtr<UI> offScreenUI_;
+    stl::shared_ptr<UI> offScreenUI_;
     /// Root element which contains edited UI.
-    SharedPtr<RootUIElement> rootElement_;
+    stl::shared_ptr<RootUIElement> rootElement_;
     ///
-    SharedPtr<XMLFile> defaultStyle_;
+    stl::shared_ptr<XMLFile> defaultStyle_;
 };
 
 };

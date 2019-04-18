@@ -53,7 +53,7 @@ PackageFile::~PackageFile() = default;
 
 bool PackageFile::Open(const String& fileName, unsigned startOffset)
 {
-    SharedPtr<File> file(new File(context_, fileName));
+    stl::shared_ptr<File> file(new File(context_, fileName));
     if (!file->IsOpen())
         return false;
 

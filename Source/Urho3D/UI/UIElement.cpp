@@ -102,9 +102,9 @@ UIElement::UIElement(Context* context) :
 UIElement::~UIElement()
 {
     // If child elements have outside references, detach them
-    for (Vector<SharedPtr<UIElement> >::Iterator i = children_.Begin(); i < children_.End(); ++i)
+    for (Vector<stl::shared_ptr<UIElement> >::Iterator i = children_.Begin(); i < children_.End(); ++i)
     {
-        if (i->Refs() > 1)
+        if (i->use_count() > 1)
             (*i)->Detach();
     }
 }
@@ -180,15 +180,15 @@ bool UIElement::LoadXML(const XMLElement& source, XMLFile* styleFile)
     if (!defaultStyleFileName.Empty())
         defaultStyleFileName_ = defaultStyleFileName;
 
-    SharedPtr<XMLFile> savedStyleFile(context_->CreateObject<XMLFile>());
+    stl::shared_ptr<XMLFile> savedStyleFile(context_->CreateObject<XMLFile>());
     if (styleFile == nullptr)
     {
         if (!defaultStyleFileName.Empty())
         {
             auto cacheFile = GetSubsystem<ResourceCache>()->GetFile(defaultStyleFileName);
-            if (cacheFile.NotNull() && savedStyleFile->Load(*cacheFile))
+            if (cacheFile && savedStyleFile->Load(*cacheFile))
             {
-                styleFile = savedStyleFile.Get();
+                styleFile = savedStyleFile;
                 URHO3D_LOGDEBUGF("Style file %s loaded automatically.", defaultStyleFileName.CString());
             }
             else
@@ -496,13 +496,13 @@ IntVector2 UIElement::ElementToScreen(const IntVector2& position)
 
 bool UIElement::LoadXML(Deserializer& source)
 {
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
     return xml->Load(source) && LoadXML(xml->GetRoot());
 }
 
 bool UIElement::SaveXML(Serializer& dest, const String& indentation) const
 {
-    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement rootElem = xml->CreateRoot("element");
     return SaveXML(rootElem) && xml->Save(dest, indentation);
 }
@@ -919,7 +919,7 @@ void UIElement::SetDeepEnabled(bool enable)
 {
     enabled_ = enable;
 
-    for (Vector<SharedPtr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
         (*i)->SetDeepEnabled(enable);
 }
 
@@ -927,7 +927,7 @@ void UIElement::ResetDeepEnabled()
 {
     enabled_ = enabledPrev_;
 
-    for (Vector<SharedPtr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
         (*i)->ResetDeepEnabled();
 }
 
@@ -936,7 +936,7 @@ void UIElement::SetEnabledRecursive(bool enable)
     enabled_ = enable;
     enabledPrev_ = enable;
 
-    for (Vector<SharedPtr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
         (*i)->SetEnabledRecursive(enable);
 }
 
@@ -1259,8 +1259,8 @@ void UIElement::BringToFront()
     HashSet<int> usedPriorities;
 
     int maxPriority = M_MIN_INT;
-    const Vector<SharedPtr<UIElement> >& rootChildren = root->GetChildren();
-    for (Vector<SharedPtr<UIElement> >::ConstIterator i = rootChildren.Begin(); i != rootChildren.End(); ++i)
+    const Vector<stl::shared_ptr<UIElement> >& rootChildren = root->GetChildren();
+    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = rootChildren.Begin(); i != rootChildren.End(); ++i)
     {
         UIElement* other = *i;
         if (other->IsEnabled() && other->bringToBack_ && other != ptr)
@@ -1282,7 +1282,7 @@ void UIElement::BringToFront()
         while (usedPriorities.Contains(minPriority))
             --minPriority;
 
-        for (Vector<SharedPtr<UIElement> >::ConstIterator i = rootChildren.Begin(); i != rootChildren.End(); ++i)
+        for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = rootChildren.Begin(); i != rootChildren.End(); ++i)
         {
             UIElement* other = *i;
             int priority = other->GetPriority();
@@ -1296,7 +1296,7 @@ void UIElement::BringToFront()
 UIElement* UIElement::CreateChild(StringHash type, const String& name, unsigned index)
 {
     // Check that creation succeeds and that the object in fact is a UI element
-    SharedPtr<UIElement> newElement = DynamicCast<UIElement>(context_->CreateObject(type));
+    stl::shared_ptr<UIElement> newElement = DynamicCast<UIElement>(context_->CreateObject(type));
     if (!newElement)
     {
         URHO3D_LOGERROR("Could not create unknown UI element type " + type.ToString());
@@ -1331,9 +1331,9 @@ void UIElement::InsertChild(unsigned index, UIElement* element)
 
     // Add first, then remove from old parent, to ensure the element does not get deleted
     if (index >= children_.Size())
-        children_.Push(SharedPtr<UIElement>(element));
+        children_.Push(stl::shared_ptr<UIElement>(element));
     else
-        children_.Insert(children_.Begin() + index, SharedPtr<UIElement>(element));
+        children_.Insert(children_.Begin() + index, stl::shared_ptr<UIElement>(element));
 
     element->Remove();
 
@@ -1422,7 +1422,7 @@ void UIElement::RemoveAllChildren()
     UIElement* root = GetRoot();
     UIElement* sender = Refs() > 0 ? GetElementEventSender() : nullptr;
 
-    for (Vector<SharedPtr<UIElement> >::Iterator i = children_.Begin(); i < children_.End();)
+    for (Vector<stl::shared_ptr<UIElement> >::Iterator i = children_.Begin(); i < children_.End();)
     {
         // Send change event if not already being destroyed
         if (sender)
@@ -1432,7 +1432,7 @@ void UIElement::RemoveAllChildren()
             VariantMap& eventData = GetEventDataMap();
             eventData[P_ROOT] = root;
             eventData[P_PARENT] = this;
-            eventData[P_ELEMENT] = (*i).Get();
+            eventData[P_ELEMENT] = (*i);
 
             sender->SendEvent(E_ELEMENTREMOVED, eventData);
         }
@@ -1451,7 +1451,7 @@ void UIElement::Remove()
 
 unsigned UIElement::FindChild(UIElement* element) const
 {
-    Vector<SharedPtr<UIElement> >::ConstIterator i = children_.Find(SharedPtr<UIElement>(element));
+    Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Find(stl::shared_ptr<UIElement>(element));
     return i != children_.End() ? (unsigned)(i - children_.Begin()) : M_MAX_UNSIGNED;
 }
 
@@ -1625,7 +1625,7 @@ void UIElement::GetChildren(PODVector<UIElement*>& dest, bool recursive) const
     if (!recursive)
     {
         dest.Reserve(children_.Size());
-        for (Vector<SharedPtr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+        for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
             dest.Push(*i);
     }
     else
@@ -1639,7 +1639,7 @@ unsigned UIElement::GetNumChildren(bool recursive) const
     else
     {
         unsigned allChildren = children_.Size();
-        for (Vector<SharedPtr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+        for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
             allChildren += (*i)->GetNumChildren(true);
 
         return allChildren;
@@ -1653,7 +1653,7 @@ UIElement* UIElement::GetChild(unsigned index) const
 
 UIElement* UIElement::GetChild(const String& name, bool recursive) const
 {
-    for (Vector<SharedPtr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
     {
         if ((*i)->name_ == name)
             return *i;
@@ -1671,7 +1671,7 @@ UIElement* UIElement::GetChild(const String& name, bool recursive) const
 
 UIElement* UIElement::GetChild(const StringHash& key, const Variant& value, bool recursive) const
 {
-    for (Vector<SharedPtr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
     {
         const Variant& varValue = (*i)->GetVar(key);
         if (value != Variant::EMPTY ? varValue == value : varValue != Variant::EMPTY)
@@ -1727,7 +1727,7 @@ void UIElement::GetChildrenWithTag(PODVector<UIElement*>& dest, const String& ta
 
     if (!recursive)
     {
-        for (Vector<SharedPtr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+        for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
         {
             UIElement* element = *i;
             if (element->HasTag(tag))
@@ -1747,7 +1747,7 @@ PODVector<UIElement*> UIElement::GetChildrenWithTag(const String& tag, bool recu
 
 void UIElement::GetChildrenWithTagRecursive(PODVector<UIElement*>& dest, const String& tag) const
 {
-    for (Vector<SharedPtr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
     {
         UIElement* element = *i;
         if (element->HasTag(tag))
@@ -1785,7 +1785,7 @@ IntRect UIElement::GetCombinedScreenRect()
 
     if (!clipChildren_)
     {
-        for (Vector<SharedPtr<UIElement> >::Iterator i = children_.Begin(); i != children_.End(); ++i)
+        for (Vector<stl::shared_ptr<UIElement> >::Iterator i = children_.Begin(); i != children_.End(); ++i)
         {
             IntRect childCombined((*i)->GetCombinedScreenRect());
 
@@ -1820,7 +1820,7 @@ void UIElement::SetChildOffset(const IntVector2& offset)
     if (offset != childOffset_)
     {
         childOffset_ = offset;
-        for (Vector<SharedPtr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+        for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
             (*i)->MarkDirty();
     }
 }
@@ -1861,7 +1861,7 @@ void UIElement::GetBatchesWithOffset(IntVector2& offset, PODVector<UIBatch>& bat
     }
 
     AdjustScissor(currentScissor);
-    for (Vector<SharedPtr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
     {
         if ((*i)->IsVisible())
             (*i)->GetBatchesWithOffset(offset, batches, vertexData, currentScissor);
@@ -1956,7 +1956,7 @@ void UIElement::MarkDirty()
     opacityDirty_ = true;
     derivedColorDirty_ = true;
 
-    for (Vector<SharedPtr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
         (*i)->MarkDirty();
 }
 
@@ -2072,7 +2072,7 @@ void UIElement::UpdateAnchoring()
 
 void UIElement::GetChildrenRecursive(PODVector<UIElement*>& dest) const
 {
-    for (Vector<SharedPtr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
     {
         UIElement* element = *i;
         dest.Push(element);
@@ -2084,10 +2084,10 @@ void UIElement::GetChildrenRecursive(PODVector<UIElement*>& dest) const
 void UIElement::ApplyStyleRecursive(UIElement* element)
 {
     // If child element style file changes as result of being (re)parented and it has a defined style, apply it now
-    if (!element->appliedStyle_.Empty() && element->appliedStyleFile_.Get() != element->GetDefaultStyle())
+    if (!element->appliedStyle_.Empty() && element->appliedStyleFile_ != element->GetDefaultStyle())
     {
         element->SetStyle(element->appliedStyle_);
-        for (Vector<SharedPtr<UIElement> >::ConstIterator i = element->children_.Begin(); i != element->children_.End(); ++i)
+        for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = element->children_.Begin(); i != element->children_.End(); ++i)
             element->ApplyStyleRecursive(*i);
     }
 }
@@ -2245,7 +2245,7 @@ void UIElement::Detach()
 
 void UIElement::VerifyChildAlignment()
 {
-    for (Vector<SharedPtr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
     {
         // Reapply child alignments. If they are illegal compared to layout, they will be set left/top as neded
         (*i)->SetHorizontalAlignment((*i)->GetHorizontalAlignment());

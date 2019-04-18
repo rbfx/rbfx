@@ -72,7 +72,7 @@ protected:
     ///
     ConverterKind kind_ = CONVERTER_OFFLINE;
     ///
-    Vector<SharedPtr<Converter>> converters_;
+    Vector<stl::shared_ptr<Converter>> converters_;
 };
 
 }

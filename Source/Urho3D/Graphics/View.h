@@ -306,9 +306,9 @@ private:
     }
 
     /// Graphics subsystem.
-    WeakPtr<Graphics> graphics_;
+    stl::weak_ptr<Graphics> graphics_;
     /// Renderer subsystem.
-    WeakPtr<Renderer> renderer_;
+    stl::weak_ptr<Renderer> renderer_;
     /// Scene to use.
     Scene* scene_{};
     /// Octree to use.
@@ -318,7 +318,7 @@ private:
     /// Culling camera. Usually same as the viewport camera.
     Camera* cullCamera_{};
     /// Shared source view. Null if this view is using its own culling.
-    WeakPtr<View> sourceView_;
+    stl::weak_ptr<View> sourceView_;
     /// Zone the camera is inside, or default zone if not assigned.
     Zone* cameraZone_{};
     /// Zone at far clip plane.

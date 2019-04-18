@@ -59,15 +59,15 @@ struct CachedInterfacePtr
 
     operator bool() const
     {
-        return !interfaceInstance_.Expired() && interface_ != nullptr;
+        return !interfaceInstance_.expired() && interface_ != nullptr;
     }
 
     T* operator ->() { return interface_; }
     T* operator &() { return interface_; }
 
 protected:
-    WeakPtr<RefCounted> lastInstance_;
-    WeakPtr<RefCounted> interfaceInstance_;
+    stl::weak_ptr<RefCounted> lastInstance_;
+    stl::weak_ptr<RefCounted> interfaceInstance_;
     T* interface_;
 };
 

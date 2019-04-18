@@ -94,8 +94,8 @@ void Player::Start()
 
     context_->RegisterSubsystem(new SceneManager(context_));
 
-    SharedPtr<JSONFile> projectFile(GetCache()->GetResource<JSONFile>("Project.json", false));
-    if (projectFile.Null())
+    stl::shared_ptr<JSONFile> projectFile(GetCache()->GetResource<JSONFile>("Project.json", false));
+    if (!projectFile)
     {
         projectFile = new JSONFile(context_);
         if (!projectFile->LoadFile(ToString("%s%s", APK, "Project.json")))
@@ -231,7 +231,7 @@ bool Player::LoadAssembly(const String& path, PluginType assumeType)
                 dummy.userdata = reinterpret_cast<void*>(context_);
                 if (pluginMain(&dummy, CR_LOAD) == 0)
                 {
-                    plugins_.Push(SharedPtr<PluginApplication>(reinterpret_cast<PluginApplication*>(dummy.userdata)));
+                    plugins_.Push(stl::shared_ptr<PluginApplication>(reinterpret_cast<PluginApplication*>(dummy.userdata)));
                     return true;
                 }
             }
@@ -244,7 +244,7 @@ bool Player::LoadAssembly(const String& path, PluginType assumeType)
         {
             if (PluginApplication* plugin = script->LoadAssembly(path))
             {
-                plugins_.Push(SharedPtr<PluginApplication>(plugin));
+                plugins_.Push(stl::shared_ptr<PluginApplication>(plugin));
                 return true;
             }
         }
@@ -257,8 +257,8 @@ bool Player::LoadAssembly(const String& path, PluginType assumeType)
 BakedResourceRouter::BakedResourceRouter(Context* context)
     : ResourceRouter(context)
 {
-    SharedPtr<JSONFile> file(GetCache()->GetResource<JSONFile>("CacheInfo.json"));
-    if (file.NotNull())
+    stl::shared_ptr<JSONFile> file(GetCache()->GetResource<JSONFile>("CacheInfo.json"));
+    if (file)
     {
         const auto& info = file->GetRoot().GetObject();
         for (auto it = info.Begin(); it != info.End(); it++)

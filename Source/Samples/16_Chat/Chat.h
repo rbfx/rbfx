@@ -90,17 +90,17 @@ private:
     /// Strings printed so far.
     Vector<String> chatHistory_;
     /// Chat text element.
-    SharedPtr<Text> chatHistoryText_;
+    stl::shared_ptr<Text> chatHistoryText_;
     /// Button container element.
-    SharedPtr<UIElement> buttonContainer_;
+    stl::shared_ptr<UIElement> buttonContainer_;
     /// Server address / chat message line editor element.
-    SharedPtr<LineEdit> textEdit_;
+    stl::shared_ptr<LineEdit> textEdit_;
     /// Send button.
-    SharedPtr<Button> sendButton_;
+    stl::shared_ptr<Button> sendButton_;
     /// Connect button.
-    SharedPtr<Button> connectButton_;
+    stl::shared_ptr<Button> connectButton_;
     /// Disconnect button.
-    SharedPtr<Button> disconnectButton_;
+    stl::shared_ptr<Button> disconnectButton_;
     /// Start server button.
-    SharedPtr<Button> startServerButton_;
+    stl::shared_ptr<Button> startServerButton_;
 };

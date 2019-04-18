@@ -49,7 +49,7 @@ struct ViewBatchInfo2D
     /// Vertex count.
     unsigned vertexCount_;
     /// Vertex buffer.
-    SharedPtr<VertexBuffer> vertexBuffer_;
+    stl::shared_ptr<VertexBuffer> vertexBuffer_;
     /// Batch updated frame number.
     unsigned batchUpdatedFrameNumber_;
     /// Source batches.
@@ -59,9 +59,9 @@ struct ViewBatchInfo2D
     /// Distances.
     PODVector<float> distances_;
     /// Materials.
-    Vector<SharedPtr<Material> > materials_;
+    Vector<stl::shared_ptr<Material> > materials_;
     /// Geometries.
-    Vector<SharedPtr<Geometry> > geometries_;
+    Vector<stl::shared_ptr<Geometry> > geometries_;
 };
 
 /// 2D renderer component.
@@ -102,7 +102,7 @@ private:
     /// Recalculate the world-space bounding box.
     void OnWorldBoundingBoxUpdate() override;
     /// Create material by texture and blend mode.
-    SharedPtr<Material> CreateMaterial(Texture2D* texture, BlendMode blendMode);
+    stl::shared_ptr<Material> CreateMaterial(Texture2D* texture, BlendMode blendMode);
     /// Handle view update begin event. Determine Drawable2D's and their batches here.
     void HandleBeginViewUpdate(StringHash eventType, VariantMap& eventData);
     /// Get all drawables in node.
@@ -114,9 +114,9 @@ private:
         unsigned indexStart, unsigned indexCount, unsigned vertexStart, unsigned vertexCount, float distance);
 
     /// Index buffer.
-    SharedPtr<IndexBuffer> indexBuffer_;
+    stl::shared_ptr<IndexBuffer> indexBuffer_;
     /// Material.
-    SharedPtr<Material> material_;
+    stl::shared_ptr<Material> material_;
     /// Drawables.
     PODVector<Drawable2D*> drawables_;
     /// View frame info for current frame.
@@ -128,9 +128,9 @@ private:
     /// View mask of current camera for visibility checking.
     unsigned viewMask_;
     /// Cached materials.
-    HashMap<Texture2D*, HashMap<int, SharedPtr<Material> > > cachedMaterials_;
+    HashMap<Texture2D*, HashMap<int, stl::shared_ptr<Material> > > cachedMaterials_;
     /// Cached techniques per blend mode.
-    HashMap<int, SharedPtr<Technique> > cachedTechniques_;
+    HashMap<int, stl::shared_ptr<Technique> > cachedTechniques_;
 };
 
 }

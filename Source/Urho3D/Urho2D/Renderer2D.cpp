@@ -243,20 +243,20 @@ Material* Renderer2D::GetMaterial(Texture2D* texture, BlendMode blendMode)
     if (!texture)
         return material_;
 
-    HashMap<Texture2D*, HashMap<int, SharedPtr<Material> > >::Iterator t = cachedMaterials_.Find(texture);
+    HashMap<Texture2D*, HashMap<int, stl::shared_ptr<Material> > >::Iterator t = cachedMaterials_.Find(texture);
     if (t == cachedMaterials_.End())
     {
-        SharedPtr<Material> newMaterial = CreateMaterial(texture, blendMode);
+        stl::shared_ptr<Material> newMaterial = CreateMaterial(texture, blendMode);
         cachedMaterials_[texture][blendMode] = newMaterial;
         return newMaterial;
     }
 
-    HashMap<int, SharedPtr<Material> >& materials = t->second_;
-    HashMap<int, SharedPtr<Material> >::Iterator b = materials.Find(blendMode);
+    HashMap<int, stl::shared_ptr<Material> >& materials = t->second_;
+    HashMap<int, stl::shared_ptr<Material> >::Iterator b = materials.Find(blendMode);
     if (b != materials.End())
         return b->second_;
 
-    SharedPtr<Material> newMaterial = CreateMaterial(texture, blendMode);
+    stl::shared_ptr<Material> newMaterial = CreateMaterial(texture, blendMode);
     materials[blendMode] = newMaterial;
 
     return newMaterial;
@@ -278,14 +278,14 @@ void Renderer2D::OnWorldBoundingBoxUpdate()
     worldBoundingBox_ = boundingBox_;
 }
 
-SharedPtr<Material> Renderer2D::CreateMaterial(Texture2D* texture, BlendMode blendMode)
+stl::shared_ptr<Material> Renderer2D::CreateMaterial(Texture2D* texture, BlendMode blendMode)
 {
-    SharedPtr<Material> newMaterial = material_->Clone();
+    stl::shared_ptr<Material> newMaterial = material_->Clone();
 
-    HashMap<int, SharedPtr<Technique> >::Iterator techIt = cachedTechniques_.Find((int)blendMode);
+    HashMap<int, stl::shared_ptr<Technique> >::Iterator techIt = cachedTechniques_.Find((int)blendMode);
     if (techIt == cachedTechniques_.End())
     {
-        SharedPtr<Technique> tech(context_->CreateObject<Technique>());
+        stl::shared_ptr<Technique> tech(context_->CreateObject<Technique>());
         Pass* pass = tech->CreatePass("alpha");
         pass->SetVertexShader("Urho2D");
         pass->SetPixelShader("Urho2D");
@@ -294,7 +294,7 @@ SharedPtr<Material> Renderer2D::CreateMaterial(Texture2D* texture, BlendMode ble
         techIt = cachedTechniques_.Insert(MakePair((int)blendMode, tech));
     }
 
-    newMaterial->SetTechnique(0, techIt->second_.Get());
+    newMaterial->SetTechnique(0, techIt->second_.get());
     newMaterial->SetName(texture->GetName() + "_" + blendModeNames[blendMode]);
     newMaterial->SetTexture(TU_DIFFUSE, texture);
 
@@ -343,7 +343,7 @@ void Renderer2D::HandleBeginViewUpdate(StringHash eventType, VariantMap& eventDa
         PODVector<Drawable2D*>::Iterator start = drawables_.Begin();
         for (int i = 0; i < numWorkItems; ++i)
         {
-            SharedPtr<WorkItem> item = queue->GetFreeItem();
+            stl::shared_ptr<WorkItem> item = queue->GetFreeItem();
             item->priority_ = M_MAX_UNSIGNED;
             item->workFunction_ = CheckDrawableVisibilityWork;
             item->aux_ = this;
@@ -388,17 +388,17 @@ void Renderer2D::GetDrawables(PODVector<Drawable2D*>& drawables, Node* node)
     if (!node || !node->IsEnabled())
         return;
 
-    const Vector<SharedPtr<Component> >& components = node->GetComponents();
-    for (Vector<SharedPtr<Component> >::ConstIterator i = components.Begin(); i != components.End(); ++i)
+    const Vector<stl::shared_ptr<Component> >& components = node->GetComponents();
+    for (Vector<stl::shared_ptr<Component> >::ConstIterator i = components.Begin(); i != components.End(); ++i)
     {
-        auto* drawable = dynamic_cast<Drawable2D*>(i->Get());
+        auto* drawable = dynamic_cast<Drawable2D*>(i->get());
         if (drawable && drawable->IsEnabled())
             drawables.Push(drawable);
     }
 
-    const Vector<SharedPtr<Node> >& children = node->GetChildren();
-    for (Vector<SharedPtr<Node> >::ConstIterator i = children.Begin(); i != children.End(); ++i)
-        GetDrawables(drawables, i->Get());
+    const Vector<stl::shared_ptr<Node> >& children = node->GetChildren();
+    for (Vector<stl::shared_ptr<Node> >::ConstIterator i = children.Begin(); i != children.End(); ++i)
+        GetDrawables(drawables, i->get());
 }
 
 static inline bool CompareSourceBatch2Ds(const SourceBatch2D* lhs, const SourceBatch2D* rhs)
@@ -439,8 +439,11 @@ void Renderer2D::UpdateViewBatchInfo(ViewBatchInfo2D& viewBatchInfo, Camera* cam
     for (unsigned i = 0; i < sourceBatches.Size(); ++i)
     {
         const SourceBatch2D* sourceBatch = sourceBatches[i];
-        Vector3 worldPos = sourceBatch->owner_->GetNode()->GetWorldPosition();
-        sourceBatch->distance_ = camera->GetDistance(worldPos);
+        // if (sourceBatch->owner_)
+        {
+            Vector3 worldPos = sourceBatch->owner_->GetNode()->GetWorldPosition();
+            sourceBatch->distance_ = camera->GetDistance(worldPos);
+        }
     }
 
     Sort(sourceBatches.Begin(), sourceBatches.End(), CompareSourceBatch2Ds);
@@ -505,7 +508,7 @@ void Renderer2D::AddViewBatch(ViewBatchInfo2D& viewBatchInfo, Material* material
     // Allocate new geometry if necessary
     if (viewBatchInfo.geometries_.Size() <= viewBatchInfo.batchCount_)
     {
-        SharedPtr<Geometry> geometry(context_->CreateObject<Geometry>());
+        stl::shared_ptr<Geometry> geometry(context_->CreateObject<Geometry>());
         geometry->SetIndexBuffer(indexBuffer_);
         geometry->SetVertexBuffer(0, viewBatchInfo.vertexBuffer_);
 

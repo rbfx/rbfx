@@ -59,52 +59,53 @@ FileSelector::FileSelector(Context* context) :
 
     titleLayout = context_->CreateObject<UIElement>();
     titleLayout->SetLayout(LM_HORIZONTAL);
-    window_->AddChild(titleLayout);
+    window_->AddChild(titleLayout.get());
 
     titleText_ = context_->CreateObject<Text>();
-    titleLayout->AddChild(titleText_);
+    titleLayout->AddChild(titleText_.get());
 
     closeButton_ = context_->CreateObject<Button>();
-    titleLayout->AddChild(closeButton_);
+    titleLayout->AddChild(closeButton_.get());
 
     pathEdit_ = context_->CreateObject<LineEdit>();
-    window_->AddChild(pathEdit_);
+    window_->AddChild(pathEdit_.get());
 
     fileList_ = context_->CreateObject<ListView>();
-    window_->AddChild(fileList_);
+    window_->AddChild(fileList_.get());
 
     fileNameLayout_ = context_->CreateObject<UIElement>();
     fileNameLayout_->SetLayout(LM_HORIZONTAL);
 
     fileNameEdit_ = context_->CreateObject<LineEdit>();
-    fileNameLayout_->AddChild(fileNameEdit_);
+    fileNameLayout_->AddChild(fileNameEdit_.get());
 
     filterList_ = context_->CreateObject<DropDownList>();
-    fileNameLayout_->AddChild(filterList_);
+    fileNameLayout_->AddChild(filterList_.get());
 
-    window_->AddChild(fileNameLayout_);
+    window_->AddChild(fileNameLayout_.get());
 
     separatorLayout_ = context_->CreateObject<UIElement>();
-    window_->AddChild(separatorLayout_);
+    window_->AddChild(separatorLayout_.get());
 
     buttonLayout_ = context_->CreateObject<UIElement>();
     buttonLayout_->SetLayout(LM_HORIZONTAL);
 
-    buttonLayout_->AddChild(context_->CreateObject<UIElement>()); // Add spacer
+    auto spacer = context_->CreateObject<UIElement>();
+    buttonLayout_->AddChild(spacer.get()); // Add spacer
 
     cancelButton_ = context_->CreateObject<Button>();
     cancelButtonText_ = context_->CreateObject<Text>();
     cancelButtonText_->SetAlignment(HA_CENTER, VA_CENTER);
-    cancelButton_->AddChild(cancelButtonText_);
-    buttonLayout_->AddChild(cancelButton_);
+    cancelButton_->AddChild(cancelButtonText_.get());
+    buttonLayout_->AddChild(cancelButton_.get());
 
     okButton_ = context_->CreateObject<Button>();
     okButtonText_ = context_->CreateObject<Text>();
     okButtonText_->SetAlignment(HA_CENTER, VA_CENTER);
-    okButton_->AddChild(okButtonText_);
-    buttonLayout_->AddChild(okButton_);
+    okButton_->AddChild(okButtonText_.get());
+    buttonLayout_->AddChild(okButton_.get());
 
-    window_->AddChild(buttonLayout_);
+    window_->AddChild(buttonLayout_.get());
 
     Vector<String> defaultFilters;
     defaultFilters.Push("*.*");
@@ -114,8 +115,8 @@ FileSelector::FileSelector(Context* context) :
 
     // Focus the fileselector's filelist initially when created, and bring to front
     auto* ui = GetSubsystem<UI>();
-    ui->GetRoot()->AddChild(window_);
-    ui->SetFocusElement(fileList_);
+    ui->GetRoot()->AddChild(window_.get());
+    ui->SetFocusElement(fileList_.get());
     window_->SetModal(true);
 
     SubscribeToEvent(filterList_, E_ITEMSELECTED, URHO3D_HANDLER(FileSelector, HandleFilterChanged));
@@ -168,11 +169,11 @@ void FileSelector::SetDefaultStyle(XMLFile* style)
     okButton_->SetStyle("FileSelectorButton");
     cancelButton_->SetStyle("FileSelectorButton");
 
-    const Vector<SharedPtr<UIElement> >& filterTexts = filterList_->GetListView()->GetContentElement()->GetChildren();
+    const Vector<stl::shared_ptr<UIElement> >& filterTexts = filterList_->GetListView()->GetContentElement()->GetChildren();
     for (unsigned i = 0; i < filterTexts.Size(); ++i)
         filterTexts[i]->SetStyle("FileSelectorFilterText");
 
-    const Vector<SharedPtr<UIElement> >& listTexts = fileList_->GetContentElement()->GetChildren();
+    const Vector<stl::shared_ptr<UIElement> >& listTexts = fileList_->GetContentElement()->GetChildren();
     for (unsigned i = 0; i < listTexts.Size(); ++i)
         listTexts[i]->SetStyle("FileSelectorListText");
 

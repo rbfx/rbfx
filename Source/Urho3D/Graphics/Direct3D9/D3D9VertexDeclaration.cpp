@@ -138,7 +138,7 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, const PODVector<VertexB
     Create(graphics, elements);
 }
 
-VertexDeclaration::VertexDeclaration(Graphics* graphics, const Vector<SharedPtr<VertexBuffer> >& buffers) :
+VertexDeclaration::VertexDeclaration(Graphics* graphics, const Vector<stl::shared_ptr<VertexBuffer> >& buffers) :
     declaration_(nullptr)
 {
     PODVector<VertexDeclarationElement> elements;

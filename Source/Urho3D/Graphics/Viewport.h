@@ -23,7 +23,7 @@
 #pragma once
 
 #include "../Core/Object.h"
-#include "../Container/Ptr.h"
+#include <EASTL/shared_ptr.h>
 #include "../Math/Ray.h"
 #include "../Math/Rect.h"
 #include "../Math/Vector2.h"
@@ -101,17 +101,17 @@ public:
 
 private:
     /// Scene pointer.
-    WeakPtr<Scene> scene_;
+    stl::weak_ptr<Scene> scene_;
     /// Camera pointer.
-    WeakPtr<Camera> camera_;
+    stl::weak_ptr<Camera> camera_;
     /// Culling camera pointer.
-    WeakPtr<Camera> cullCamera_;
+    stl::weak_ptr<Camera> cullCamera_;
     /// Viewport rectangle.
     IntRect rect_;
     /// Rendering path.
-    SharedPtr<RenderPath> renderPath_;
+    stl::shared_ptr<RenderPath> renderPath_;
     /// Internal rendering structure.
-    SharedPtr<View> view_;
+    stl::shared_ptr<View> view_;
     /// Debug draw flag.
     bool drawDebug_;
 };

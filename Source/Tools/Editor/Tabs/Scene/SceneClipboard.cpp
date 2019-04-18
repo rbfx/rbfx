@@ -76,7 +76,7 @@ PasteResult SceneClipboard::Paste(Node* node)
     {
         nodeData.Seek(0);
         auto nodeID = nodeData.ReadUInt();
-        SharedPtr<Node> newNode(node->CreateChild(String::EMPTY, nodeID < FIRST_LOCAL_ID ? REPLICATED : LOCAL));
+        stl::shared_ptr<Node> newNode(node->CreateChild(String::EMPTY, nodeID < FIRST_LOCAL_ID ? REPLICATED : LOCAL));
         nodeData.Seek(0);
         if (newNode->Load(nodeData))
         {
@@ -102,7 +102,7 @@ PasteResult SceneClipboard::Paste(const PODVector<Node*>& nodes)
     return result;
 }
 
-PasteResult SceneClipboard::Paste(const Vector<WeakPtr<Node>>& nodes)
+PasteResult SceneClipboard::Paste(const Vector<stl::weak_ptr<Node>>& nodes)
 {
     PasteResult result;
 
@@ -124,13 +124,13 @@ void SceneClipboard::Copy(const PODVector<Component*>& components)
         Copy(node);
 }
 
-void SceneClipboard::Copy(const Vector<WeakPtr<Node>>& nodes)
+void SceneClipboard::Copy(const Vector<stl::weak_ptr<Node>>& nodes)
 {
     for (auto& node : nodes)
         Copy(node);
 }
 
-void SceneClipboard::Copy(const HashSet<WeakPtr<Component>>& components)
+void SceneClipboard::Copy(const HashSet<stl::weak_ptr<Component>>& components)
 {
     for (auto& node : components)
         Copy(node);

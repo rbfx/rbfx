@@ -98,7 +98,7 @@ protected:
         (PODVector<UIBatch>& batches, PODVector<float>& vertexData, const IntRect& currentScissor, const IntVector2& offset);
 
     /// Texture.
-    SharedPtr<Texture> texture_;
+    stl::shared_ptr<Texture> texture_;
     /// Image rectangle.
     IntRect imageRect_;
     /// Border dimensions on screen.

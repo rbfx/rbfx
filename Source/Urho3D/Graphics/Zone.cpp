@@ -339,15 +339,15 @@ void Zone::ClearDrawablesZone()
             else if (drawableFlags & DRAWABLE_ZONE)
             {
                 auto* zone = static_cast<Zone*>(drawable);
-                zone->lastAmbientStartZone_.Reset();
-                zone->lastAmbientEndZone_.Reset();
+                zone->lastAmbientStartZone_.reset();
+                zone->lastAmbientEndZone_.reset();
             }
         }
     }
 
     lastWorldBoundingBox_ = GetWorldBoundingBox();
-    lastAmbientStartZone_.Reset();
-    lastAmbientEndZone_.Reset();
+    lastAmbientStartZone_.reset();
+    lastAmbientEndZone_.reset();
 }
 
 }

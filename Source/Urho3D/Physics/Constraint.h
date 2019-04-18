@@ -166,11 +166,11 @@ private:
     void MarkFramesDirty() { framesDirty_ = true; }
 
     /// Physics world.
-    WeakPtr<PhysicsWorld> physicsWorld_;
+    stl::weak_ptr<PhysicsWorld> physicsWorld_;
     /// Own rigid body.
-    WeakPtr<RigidBody> ownBody_;
+    stl::weak_ptr<RigidBody> ownBody_;
     /// Other rigid body.
-    WeakPtr<RigidBody> otherBody_;
+    stl::weak_ptr<RigidBody> otherBody_;
     /// Bullet constraint.
     stl::unique_ptr<btTypedConstraint> constraint_;
     /// Constraint type.

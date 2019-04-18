@@ -100,7 +100,7 @@ public:
     /// Returns a loaded plugin with specified name.
     Plugin* GetPlugin(const String& name);
     /// Returns a vector containing all loaded plugins.
-    const Vector<SharedPtr<Plugin>>& GetPlugins() const { return plugins_; }
+    const Vector<stl::shared_ptr<Plugin>>& GetPlugins() const { return plugins_; }
     /// Tick native plugins.
     void OnEndFrame();
     /// Returns list of sorted plugin names that exist in editor directory.
@@ -123,7 +123,7 @@ protected:
     };
 
     /// Loaded plugins.
-    Vector<SharedPtr<Plugin>> plugins_;
+    Vector<stl::shared_ptr<Plugin>> plugins_;
     /// Plugin update check timer.
     Timer updateCheckTimer_;
     /// Cached plugin information.

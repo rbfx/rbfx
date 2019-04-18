@@ -89,7 +89,7 @@ void StaticModelGroup::ApplyAttributes()
             Node* node = scene->GetNode(nodeIDsAttr_[i].GetUInt());
             if (node)
             {
-                WeakPtr<Node> instanceWeak(node);
+                stl::weak_ptr<Node> instanceWeak(node);
                 node->AddListener(this);
                 instanceNodes_.Push(instanceWeak);
             }
@@ -275,7 +275,7 @@ void StaticModelGroup::AddInstanceNode(Node* node)
     if (!node)
         return;
 
-    WeakPtr<Node> instanceWeak(node);
+    stl::weak_ptr<Node> instanceWeak(node);
     if (instanceNodes_.Contains(instanceWeak))
         return;
 
@@ -290,8 +290,8 @@ void StaticModelGroup::RemoveInstanceNode(Node* node)
     if (!node)
         return;
 
-    WeakPtr<Node> instanceWeak(node);
-    Vector<WeakPtr<Node> >::Iterator i = instanceNodes_.Find(instanceWeak);
+    stl::weak_ptr<Node> instanceWeak(node);
+    Vector<stl::weak_ptr<Node> >::Iterator i = instanceNodes_.Find(instanceWeak);
     if (i == instanceNodes_.End())
         return;
 
@@ -315,7 +315,7 @@ void StaticModelGroup::RemoveAllInstanceNodes()
 
 Node* StaticModelGroup::GetInstanceNode(unsigned index) const
 {
-    return index < instanceNodes_.Size() ? instanceNodes_[index] : nullptr;
+    return index < instanceNodes_.Size() ? instanceNodes_[index].get() : nullptr;
 }
 
 void StaticModelGroup::SetNodeIDsAttr(const VariantVector& value)

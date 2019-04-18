@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../Container/Ptr.h"
+#include <EASTL/shared_ptr.h>
 #include "../Graphics/Drawable.h"
 #include "../Graphics/Material.h"
 #include "../Math/MathDefs.h"
@@ -58,7 +58,7 @@ struct Batch
         renderOrder_(rhs.material_ ? rhs.material_->GetRenderOrder() : DEFAULT_RENDER_ORDER),
         isBase_(false),
         geometry_(rhs.geometry_),
-        material_(rhs.material_),
+        material_(rhs.material_.get()),
         worldTransform_(rhs.worldTransform_),
         numWorldTransforms_(rhs.numWorldTransforms_),
         instancingData_(rhs.instancingData_),

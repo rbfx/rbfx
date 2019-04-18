@@ -25,7 +25,7 @@
 #include "../Core/Attribute.h"
 #include "../Container/HashMap.h"
 #include "../Container/HashSet.h"
-#include "../Container/Ptr.h"
+#include <EASTL/shared_ptr.h>
 #include "../Math/StringHash.h"
 
 #include <cstring>
@@ -147,7 +147,7 @@ struct URHO3D_API ComponentReplicationState : public ReplicationState
     /// Parent node replication state.
     NodeReplicationState* nodeState_{};
     /// Link to the actual component.
-    WeakPtr<Component> component_;
+    stl::weak_ptr<Component> component_;
     /// Dirty attribute bits.
     DirtyBits dirtyAttributes_;
 };
@@ -158,7 +158,7 @@ struct URHO3D_API NodeReplicationState : public ReplicationState
     /// Parent scene replication state.
     SceneReplicationState* sceneState_;
     /// Link to the actual node.
-    WeakPtr<Node> node_;
+    stl::weak_ptr<Node> node_;
     /// Dirty attribute bits.
     DirtyBits dirtyAttributes_;
     /// Dirty user vars.

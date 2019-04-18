@@ -23,7 +23,7 @@
 #pragma once
 
 #include "../Container/FlagSet.h"
-#include "../Container/Ptr.h"
+#include <EASTL/shared_ptr.h>
 #include "../Math/Quaternion.h"
 #include "../Math/Vector3.h"
 #include "../Resource/Resource.h"
@@ -188,7 +188,7 @@ public:
     /// Resize trigger point vector.
     void SetNumTriggers(unsigned num);
     /// Clone the animation.
-    SharedPtr<Animation> Clone(const String& cloneName = String::EMPTY) const;
+    stl::shared_ptr<Animation> Clone(const String& cloneName = String::EMPTY) const;
 
     /// Return animation name.
     const String& GetAnimationName() const { return animationName_; }

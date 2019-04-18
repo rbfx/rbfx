@@ -229,11 +229,11 @@ private:
     void HandleScenePostUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Geometry.
-    SharedPtr<Geometry> geometry_;
+    stl::shared_ptr<Geometry> geometry_;
     /// Vertex buffer.
-    SharedPtr<VertexBuffer> vertexBuffer_;
+    stl::shared_ptr<VertexBuffer> vertexBuffer_;
     /// Index buffer.
-    SharedPtr<IndexBuffer> indexBuffer_;
+    stl::shared_ptr<IndexBuffer> indexBuffer_;
     /// Decals.
     stl::list<Decal> decals_;
     /// Bones used for skinned decals.

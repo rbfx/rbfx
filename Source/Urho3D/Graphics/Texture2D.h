@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../Container/Ptr.h"
+#include <EASTL/shared_ptr.h>
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Texture.h"
 
@@ -71,7 +71,7 @@ public:
     /// Get image data from zero mip level. Only RGB and RGBA textures are supported.
     bool GetImage(Image& image) const;
     /// Get image data from zero mip level. Only RGB and RGBA textures are supported.
-    SharedPtr<Image> GetImage() const;
+    stl::shared_ptr<Image> GetImage() const;
 
     /// Return render surface.
     RenderSurface* GetRenderSurface() const { return renderSurface_; }
@@ -85,11 +85,11 @@ private:
     void HandleRenderSurfaceUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Render surface.
-    SharedPtr<RenderSurface> renderSurface_;
+    stl::shared_ptr<RenderSurface> renderSurface_;
     /// Image file acquired during BeginLoad.
-    SharedPtr<Image> loadImage_;
+    stl::shared_ptr<Image> loadImage_;
     /// Parameter file acquired during BeginLoad.
-    SharedPtr<XMLFile> loadParameters_;
+    stl::shared_ptr<XMLFile> loadParameters_;
 };
 
 }

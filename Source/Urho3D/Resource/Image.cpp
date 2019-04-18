@@ -433,7 +433,7 @@ bool Image::BeginLoad(Deserializer& source)
             if (faceIndex < imageChainCount - 1)
             {
                 // Build the image chain
-                SharedPtr<Image> nextImage(context_->CreateObject<Image>());
+                stl::shared_ptr<Image> nextImage(context_->CreateObject<Image>());
                 currentImage->nextSibling_ = nextImage;
                 currentImage = nextImage;
             }
@@ -923,7 +923,7 @@ bool Image::SetSize(int width, int height, int depth, unsigned components)
     components_ = components;
     compressedFormat_ = CF_NONE;
     numCompressedLevels_ = 0;
-    nextLevel_.Reset();
+    nextLevel_.reset();
 
     SetMemoryUse(width * height * depth * components);
     return true;
@@ -985,7 +985,7 @@ void Image::SetData(const unsigned char* pixelData)
         memcpy(data_.get(), pixelData, size);
     else
         memset(data_.get(), 0, size);
-    nextLevel_.Reset();
+    nextLevel_.reset();
 }
 
 bool Image::LoadColorLUT(Deserializer& source)
@@ -1599,17 +1599,17 @@ Color Image::GetPixelTrilinear(float x, float y, float z) const
     return colorNear.Lerp(colorFar, zF);
 }
 
-SharedPtr<Image> Image::GetNextLevel() const
+stl::shared_ptr<Image> Image::GetNextLevel() const
 {
     if (IsCompressed())
     {
         URHO3D_LOGERROR("Can not generate mip level from compressed data");
-        return SharedPtr<Image>();
+        return stl::shared_ptr<Image>();
     }
     if (components_ < 1 || components_ > 4)
     {
         URHO3D_LOGERROR("Illegal number of image components for mip level generation");
-        return SharedPtr<Image>();
+        return stl::shared_ptr<Image>();
     }
 
     if (nextLevel_)
@@ -1628,7 +1628,7 @@ SharedPtr<Image> Image::GetNextLevel() const
     if (depthOut < 1)
         depthOut = 1;
 
-    SharedPtr<Image> mipImage(context_->CreateObject<Image>());
+    stl::shared_ptr<Image> mipImage(context_->CreateObject<Image>());
 
     if (depth_ > 1)
         mipImage->SetSize(widthOut, heightOut, depthOut, components_);
@@ -1900,29 +1900,29 @@ SharedPtr<Image> Image::GetNextLevel() const
     return mipImage;
 }
 
-SharedPtr<Image> Image::ConvertToRGBA() const
+stl::shared_ptr<Image> Image::ConvertToRGBA() const
 {
     if (IsCompressed())
     {
         URHO3D_LOGERROR("Can not convert compressed image to RGBA");
-        return SharedPtr<Image>();
+        return stl::shared_ptr<Image>();
     }
     if (components_ < 1 || components_ > 4)
     {
         URHO3D_LOGERROR("Illegal number of image components for conversion to RGBA");
-        return SharedPtr<Image>();
+        return stl::shared_ptr<Image>();
     }
     if (!data_)
     {
         URHO3D_LOGERROR("Can not convert image without data to RGBA");
-        return SharedPtr<Image>();
+        return stl::shared_ptr<Image>();
     }
 
     // Already RGBA?
     if (components_ == 4)
-        return SharedPtr<Image>(const_cast<Image*>(this));
+        return stl::shared_ptr<Image>(const_cast<Image*>(this));
 
-    SharedPtr<Image> ret(context_->CreateObject<Image>());
+    stl::shared_ptr<Image> ret(context_->CreateObject<Image>());
     ret->SetSize(width_, height_, depth_, 4);
 
     const unsigned char* src = data_.get();
@@ -2105,7 +2105,7 @@ CompressedLevel Image::GetCompressedLevel(unsigned index) const
     }
 }
 
-Image* Image::GetSubimage(const IntRect& rect) const
+stl::shared_ptr<Image> Image::GetSubimage(const IntRect& rect) const
 {
     if (!data_)
         return nullptr;
@@ -2286,11 +2286,11 @@ void Image::PrecalculateLevels()
 
     URHO3D_PROFILE("PrecalculateImageMipLevels");
 
-    nextLevel_.Reset();
+    nextLevel_.reset();
 
     if (width_ > 1 || height_ > 1)
     {
-        SharedPtr<Image> current = GetNextLevel();
+        stl::shared_ptr<Image> current = GetNextLevel();
         nextLevel_ = current;
         while (current && (current->width_ > 1 || current->height_ > 1))
         {
@@ -2302,7 +2302,7 @@ void Image::PrecalculateLevels()
 
 void Image::CleanupLevels()
 {
-    nextLevel_.Reset();
+    nextLevel_.reset();
 }
 
 void Image::GetLevels(PODVector<Image*>& levels)

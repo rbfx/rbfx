@@ -148,11 +148,11 @@ protected:
     /// Animation enabled.
     bool animationEnabled_;
     /// Animation.
-    SharedPtr<ObjectAnimation> objectAnimation_;
+    stl::shared_ptr<ObjectAnimation> objectAnimation_;
     /// Animated network attribute set.
     HashSet<const AttributeInfo*> animatedNetworkAttributes_;
     /// Attribute animation infos.
-    HashMap<String, SharedPtr<AttributeAnimationInfo> > attributeAnimationInfos_;
+    HashMap<String, stl::shared_ptr<AttributeAnimationInfo> > attributeAnimationInfos_;
 };
 
 }

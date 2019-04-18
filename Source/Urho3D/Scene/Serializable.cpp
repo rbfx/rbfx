@@ -50,7 +50,7 @@ static unsigned RemapAttributeIndex(const Vector<AttributeInfo>* attributes, con
     {
         const AttributeInfo& attr = attributes->At(i);
         // Compare accessor to avoid name string compare
-        if (attr.accessor_.Get() && attr.accessor_.Get() == netAttr.accessor_.Get())
+        if (attr.accessor_ && attr.accessor_ == netAttr.accessor_.get())
             return i;
     }
 
@@ -591,24 +591,24 @@ bool Serializable::SaveJSON(JSONValue& dest) const
 
 bool Serializable::Load(const String& resourceName)
 {
-    SharedPtr<File> file(GetSubsystem<ResourceCache>()->GetFile(resourceName, false));
-    if (file.NotNull())
+    stl::shared_ptr<File> file(GetSubsystem<ResourceCache>()->GetFile(resourceName, false));
+    if (file)
         return Load(*file);
     return false;
 }
 
 bool Serializable::LoadXML(const String& resourceName)
 {
-    SharedPtr<XMLFile> file(GetSubsystem<ResourceCache>()->GetResource<XMLFile>(resourceName, false));
-    if (file.NotNull())
+    stl::shared_ptr<XMLFile> file(GetSubsystem<ResourceCache>()->GetResource<XMLFile>(resourceName, false));
+    if (file)
         return LoadXML(file->GetRoot());
     return false;
 }
 
 bool Serializable::LoadJSON(const String& resourceName)
 {
-    SharedPtr<JSONFile> file(GetSubsystem<ResourceCache>()->GetResource<JSONFile>(resourceName, false));
-    if (file.NotNull())
+    stl::shared_ptr<JSONFile> file(GetSubsystem<ResourceCache>()->GetResource<JSONFile>(resourceName, false));
+    if (file)
         return LoadJSON(file->GetRoot());
     return false;
 }

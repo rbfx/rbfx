@@ -72,7 +72,7 @@ protected:
     void LoadPropertySet(const XMLElement& element);
 
     /// Tmx file.
-    WeakPtr<TmxFile2D> tmxFile_;
+    stl::weak_ptr<TmxFile2D> tmxFile_;
     /// Layer type.
     TileMapLayerType2D type_;
     /// Name.
@@ -84,7 +84,7 @@ protected:
     /// Visible.
     bool visible_{};
     /// Property set.
-    SharedPtr<PropertySet2D> propertySet_;
+    stl::shared_ptr<PropertySet2D> propertySet_;
 };
 
 /// Tmx tile layer.
@@ -100,7 +100,7 @@ public:
 
 protected:
     /// Tiles.
-    Vector<SharedPtr<Tile2D> > tiles_;
+    Vector<stl::shared_ptr<Tile2D> > tiles_;
 };
 
 /// Tmx objects layer.
@@ -113,7 +113,7 @@ public:
     bool Load(const XMLElement& element, const TileMapInfo2D& info);
 
     /// Store object.
-    void StoreObject(const XMLElement& objectElem, const SharedPtr<TileMapObject2D>& object, const TileMapInfo2D& info, bool isTile = false);
+    void StoreObject(const XMLElement& objectElem, const stl::shared_ptr<TileMapObject2D>& object, const TileMapInfo2D& info, bool isTile = false);
 
     /// Return number of objects.
     unsigned GetNumObjects() const { return objects_.Size(); }
@@ -123,7 +123,7 @@ public:
 
 private:
     /// Objects.
-    Vector<SharedPtr<TileMapObject2D> > objects_;
+    Vector<stl::shared_ptr<TileMapObject2D> > objects_;
 };
 
 /// Tmx image layer.
@@ -150,7 +150,7 @@ private:
     /// Source.
     String source_;
     /// Sprite.
-    SharedPtr<Sprite2D> sprite_;
+    stl::shared_ptr<Sprite2D> sprite_;
 };
 
 /// Tile map file.
@@ -187,7 +187,7 @@ public:
     Sprite2D* GetTileSprite(unsigned gid) const;
 
     /// Return tile collision shapes for a given gid.
-    Vector<SharedPtr<TileMapObject2D> > GetTileCollisionShapes(unsigned gid) const;
+    Vector<stl::shared_ptr<TileMapObject2D> > GetTileCollisionShapes(unsigned gid) const;
 
     /// Return tile property set by gid, if not exist return 0.
     PropertySet2D* GetTilePropertySet(unsigned gid) const;
@@ -206,22 +206,22 @@ public:
 
 private:
     /// Load TSX file.
-    SharedPtr<XMLFile> LoadTSXFile(const String& source);
+    stl::shared_ptr<XMLFile> LoadTSXFile(const String& source);
     /// Load tile set.
     bool LoadTileSet(const XMLElement& element);
 
     /// XML file used during loading.
-    SharedPtr<XMLFile> loadXMLFile_;
+    stl::shared_ptr<XMLFile> loadXMLFile_;
     /// TSX name to XML file mapping.
-    HashMap<String, SharedPtr<XMLFile> > tsxXMLFiles_;
+    HashMap<String, stl::shared_ptr<XMLFile> > tsxXMLFiles_;
     /// Tile map information.
     TileMapInfo2D info_{};
     /// Gid to tile sprite mapping.
-    HashMap<unsigned, SharedPtr<Sprite2D> > gidToSpriteMapping_;
+    HashMap<unsigned, stl::shared_ptr<Sprite2D> > gidToSpriteMapping_;
     /// Gid to tile property set mapping.
-    HashMap<unsigned, SharedPtr<PropertySet2D> > gidToPropertySetMapping_;
+    HashMap<unsigned, stl::shared_ptr<PropertySet2D> > gidToPropertySetMapping_;
     /// Gid to tile collision shape mapping.
-    HashMap<unsigned, Vector<SharedPtr<TileMapObject2D> > > gidToCollisionShapeMapping_;
+    HashMap<unsigned, Vector<stl::shared_ptr<TileMapObject2D> > > gidToCollisionShapeMapping_;
     /// Layers.
     Vector<TmxLayer2D*> layers_;
     /// Texture edge offset.

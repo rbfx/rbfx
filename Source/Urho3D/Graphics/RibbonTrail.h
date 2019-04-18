@@ -198,11 +198,11 @@ private:
     /// Update/Rebuild tail mesh only if position changed (called by UpdateBatches())
     void UpdateTail(float timeStep);
     /// Geometry.
-    SharedPtr<Geometry> geometry_;
+    stl::shared_ptr<Geometry> geometry_;
     /// Vertex buffer.
-    SharedPtr<VertexBuffer> vertexBuffer_;
+    stl::shared_ptr<VertexBuffer> vertexBuffer_;
     /// Index buffer.
-    SharedPtr<IndexBuffer> indexBuffer_;
+    stl::shared_ptr<IndexBuffer> indexBuffer_;
     /// Transform matrices for position and orientation.
     Matrix3x4 transforms_;
     /// Buffers need resize flag.

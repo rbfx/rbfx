@@ -66,15 +66,15 @@ public:
     ///
     void Copy(const PODVector<Component*>& components);
     ///
-    void Copy(const Vector<WeakPtr<Node>>& nodes);
+    void Copy(const Vector<stl::weak_ptr<Node>>& nodes);
     ///
-    void Copy(const HashSet<WeakPtr<Component>>& components);
+    void Copy(const HashSet<stl::weak_ptr<Component>>& components);
     ///
     PasteResult Paste(Node* node);
     ///
     PasteResult Paste(const PODVector<Node*>& nodes);
     ///
-    PasteResult Paste(const Vector<WeakPtr<Node>>& nodes);
+    PasteResult Paste(const Vector<stl::weak_ptr<Node>>& nodes);
     ///
     bool HasNodes() const { return !nodes_.Empty(); }
     ///

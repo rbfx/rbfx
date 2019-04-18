@@ -949,7 +949,7 @@ bool Graphics::SetVertexBuffers(const PODVector<VertexBuffer*>& buffers, unsigne
     return true;
 }
 
-bool Graphics::SetVertexBuffers(const Vector<SharedPtr<VertexBuffer> >& buffers, unsigned instanceOffset)
+bool Graphics::SetVertexBuffers(const Vector<stl::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset)
 {
     return SetVertexBuffers(reinterpret_cast<const PODVector<VertexBuffer*>&>(buffers), instanceOffset);
 }
@@ -1897,7 +1897,7 @@ ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType type, unsigned in
         return i->second_.Get();
     else
     {
-        SharedPtr<ConstantBuffer> newConstantBuffer(context_->CreateObject<ConstantBuffer>());
+        stl::shared_ptr<ConstantBuffer> newConstantBuffer(context_->CreateObject<ConstantBuffer>());
         newConstantBuffer->SetSize(size);
         impl_->allConstantBuffers_[key] = newConstantBuffer;
         return newConstantBuffer.Get();
@@ -2446,7 +2446,7 @@ void Graphics::PrepareDraw()
                     impl_->vertexDeclarations_.Find(newVertexDeclarationHash);
                 if (i == impl_->vertexDeclarations_.End())
                 {
-                    SharedPtr<VertexDeclaration> newVertexDeclaration(new VertexDeclaration(this, vertexShader_, vertexBuffers_));
+                    stl::shared_ptr<VertexDeclaration> newVertexDeclaration(new VertexDeclaration(this, vertexShader_, vertexBuffers_));
                     i = impl_->vertexDeclarations_.Insert(MakePair(newVertexDeclarationHash, newVertexDeclaration));
                 }
                 impl_->deviceContext_->IASetInputLayout((ID3D11InputLayout*)i->second_->GetInputLayout());

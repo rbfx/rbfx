@@ -167,7 +167,7 @@ bool PreviewTab::RenderWindowContent()
         return true;
 
     IntRect rect = UpdateViewRect();
-    ui::Image(view_.Get(), ImVec2{static_cast<float>(rect.Width()), static_cast<float>(rect.Height())});
+    ui::Image(view_.get(), ImVec2{static_cast<float>(rect.Width()), static_cast<float>(rect.Height())});
     if (!inputGrabbed_ && simulationStatus_ == SCENE_SIMULATION_RUNNING && ui::IsItemHovered() &&
         ui::IsAnyMouseDown() && GetInput()->IsMouseVisible())
         GrabInput();

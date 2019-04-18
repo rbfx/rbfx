@@ -66,7 +66,7 @@ public:
     void SetLoop(unsigned repeatOffset, unsigned endOffset);
 
     /// Return a new instance of a decoder sound stream. Used by compressed sounds.
-    SharedPtr<SoundStream> GetDecoderStream() const;
+    stl::shared_ptr<SoundStream> GetDecoderStream() const;
 
     /// Return shared sound data.
     stl::shared_array<signed char> GetData() const { return data_; }

@@ -80,9 +80,9 @@ public:
     /// Combined parameters from the vertex and pixel shader.
     HashMap<StringHash, ShaderParameter> parameters_;
     /// Vertex shader constant buffers.
-    SharedPtr<ConstantBuffer> vsConstantBuffers_[MAX_SHADER_PARAMETER_GROUPS];
+    stl::shared_ptr<ConstantBuffer> vsConstantBuffers_[MAX_SHADER_PARAMETER_GROUPS];
     /// Pixel shader constant buffers.
-    SharedPtr<ConstantBuffer> psConstantBuffers_[MAX_SHADER_PARAMETER_GROUPS];
+    stl::shared_ptr<ConstantBuffer> psConstantBuffers_[MAX_SHADER_PARAMETER_GROUPS];
 };
 
 }

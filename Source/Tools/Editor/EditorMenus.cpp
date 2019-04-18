@@ -46,7 +46,7 @@ void Editor::RenderMenuBar()
     {
         if (ui::BeginMenu("File"))
         {
-            if (project_.NotNull())
+            if (project_)
             {
                 if (ui::MenuItem("Save Project"))
                 {
@@ -68,7 +68,7 @@ void Editor::RenderMenuBar()
 
             ui::Separator();
 
-            if (project_.NotNull())
+            if (project_)
             {
                 if (ui::MenuItem("Close Project"))
                 {
@@ -81,7 +81,7 @@ void Editor::RenderMenuBar()
 
             ui::EndMenu();
         }
-        if (project_.NotNull())
+        if (project_)
         {
             if (ui::BeginMenu("View"))
             {
@@ -123,7 +123,7 @@ void Editor::RenderMenuBar()
         SendEvent(E_EDITORAPPLICATIONMENU);
 
         // Scene simulation buttons.
-        if (project_.NotNull())
+        if (project_)
         {
             // Copied from ToolbarButton()
             auto& g = *ui::GetCurrentContext();

@@ -336,11 +336,11 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
     if (removeOld)
     {
         Vector<String> resourceDirs = cache->GetResourceDirs();
-        Vector<SharedPtr<PackageFile> > packageFiles = cache->GetPackageFiles();
+        Vector<stl::shared_ptr<PackageFile> > packageFiles = cache->GetPackageFiles();
         for (unsigned i = 0; i < resourceDirs.Size(); ++i)
             cache->RemoveResourceDir(resourceDirs[i]);
         for (unsigned i = 0; i < packageFiles.Size(); ++i)
-            cache->RemovePackageFile(packageFiles[i]);
+            cache->RemovePackageFile(packageFiles[i].get());
     }
 
     // Add resource paths
@@ -642,10 +642,10 @@ void Engine::DumpResources(bool dumpFileName)
         URHO3D_LOGINFO("Used resources:");
         for (HashMap<StringHash, ResourceGroup>::ConstIterator i = resourceGroups.Begin(); i != resourceGroups.End(); ++i)
         {
-            const HashMap<StringHash, SharedPtr<Resource> >& resources = i->second_.resources_;
+            const HashMap<StringHash, stl::shared_ptr<Resource> >& resources = i->second_.resources_;
             if (dumpFileName)
             {
-                for (HashMap<StringHash, SharedPtr<Resource> >::ConstIterator j = resources.Begin(); j != resources.End(); ++j)
+                for (HashMap<StringHash, stl::shared_ptr<Resource> >::ConstIterator j = resources.Begin(); j != resources.End(); ++j)
                     URHO3D_LOGINFO(j->second_->GetName());
             }
         }

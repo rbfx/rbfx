@@ -61,7 +61,7 @@ protected:
     CLI::App& GetCommandLineParser();
 
     /// Urho3D engine.
-    SharedPtr<Engine> engine_;
+    stl::shared_ptr<Engine> engine_;
     /// Engine parameters map.
     VariantMap engineParameters_;
     /// Collected startup error log messages.
@@ -75,13 +75,13 @@ protected:
 #define URHO3D_DEFINE_APPLICATION_MAIN(className) \
 int RunApplication() \
 { \
-    Urho3D::SharedPtr<Urho3D::Context> context(new Urho3D::Context()); \
-    Urho3D::SharedPtr<className> application(new className(context)); \
+    stl::shared_ptr<Urho3D::Context> context(new Urho3D::Context()); \
+    stl::shared_ptr<className> application(new className(context)); \
     return application->Run(); \
 } \
 URHO3D_DEFINE_MAIN(RunApplication());
 #else
-// On iOS/tvOS we will let this function exit, so do not hold the context and application in SharedPtr's
+// On iOS/tvOS we will let this function exit, so do not hold the context and application in stl::shared_ptr's
 #define URHO3D_DEFINE_APPLICATION_MAIN(className) \
 int RunApplication() \
 { \

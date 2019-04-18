@@ -97,7 +97,7 @@ private:
     };
 
     /// Filesystem.
-    SharedPtr<FileSystem> fileSystem_;
+    stl::shared_ptr<FileSystem> fileSystem_;
     /// The path being watched.
     String path_;
     /// Pending changes. These will be returned and removed from the list when their timer has exceeded the delay.

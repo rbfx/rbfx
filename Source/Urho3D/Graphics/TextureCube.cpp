@@ -52,9 +52,9 @@ static const char* cubeMapLayoutNames[] = {
     nullptr
 };
 
-static SharedPtr<Image> GetTileImage(Image* src, int tileX, int tileY, int tileWidth, int tileHeight)
+static stl::shared_ptr<Image> GetTileImage(Image* src, int tileX, int tileY, int tileWidth, int tileHeight)
 {
-    return SharedPtr<Image>(
+    return stl::shared_ptr<Image>(
         src->GetSubimage(IntRect(tileX * tileWidth, tileY * tileHeight, (tileX + 1) * tileWidth, (tileY + 1) * tileHeight)));
 }
 
@@ -105,7 +105,7 @@ bool TextureCube::BeginLoad(Deserializer& source)
     loadParameters_ = (context_->CreateObject<XMLFile>());
     if (!loadParameters_->Load(source))
     {
-        loadParameters_.Reset();
+        loadParameters_.reset();
         return false;
     }
 
@@ -121,7 +121,7 @@ bool TextureCube::BeginLoad(Deserializer& source)
         if (GetPath(name).Empty())
             name = texPath + name;
 
-        SharedPtr<Image> image = cache->GetTempResource<Image>(name);
+        stl::shared_ptr<Image> image = cache->GetTempResource<Image>(name);
         if (!image)
             return false;
 
@@ -250,7 +250,7 @@ bool TextureCube::EndLoad()
         SetData((CubeMapFace)i, loadImages_[i]);
 
     loadImages_.Clear();
-    loadParameters_.Reset();
+    loadParameters_.reset();
 
     return true;
 }
@@ -278,7 +278,7 @@ bool TextureCube::SetSize(int size, unsigned format, TextureUsage usage, int mul
     // Delete the old rendersurfaces if any
     for (unsigned i = 0; i < MAX_CUBEMAP_FACES; ++i)
     {
-        renderSurfaces_[i].Reset();
+        renderSurfaces_[i].reset();
         faceMemoryUse_[i] = 0;
     }
 
@@ -313,12 +313,12 @@ bool TextureCube::SetSize(int size, unsigned format, TextureUsage usage, int mul
     return Create();
 }
 
-SharedPtr<Image> TextureCube::GetImage(CubeMapFace face) const
+stl::shared_ptr<Image> TextureCube::GetImage(CubeMapFace face) const
 {
     if (format_ != Graphics::GetRGBAFormat() && format_ != Graphics::GetRGBFormat())
     {
         URHO3D_LOGERROR("Unsupported texture format, can not convert to Image");
-        return SharedPtr<Image>();
+        return stl::shared_ptr<Image>();
     }
 
     auto rawImage = context_->CreateObject<Image>();
@@ -330,7 +330,7 @@ SharedPtr<Image> TextureCube::GetImage(CubeMapFace face) const
         assert(false);
 
     GetData(face, 0, rawImage->GetData());
-    return SharedPtr<Image>(rawImage);
+    return stl::shared_ptr<Image>(rawImage);
 }
 
 void TextureCube::HandleRenderSurfaceUpdate(StringHash eventType, VariantMap& eventData)

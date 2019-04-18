@@ -69,9 +69,9 @@ bool Sprite2D::BeginLoad(Deserializer& source)
     {
         // Reload failed
         if (loadTexture_ == texture_)
-            texture_.Reset();
+            texture_.reset();
 
-        loadTexture_.Reset();
+        loadTexture_.reset();
         return false;
     }
 
@@ -94,10 +94,10 @@ bool Sprite2D::EndLoad()
     {
         // Reload failed
         if (loadTexture_ == texture_)
-            texture_.Reset();
+            texture_.reset();
     }
 
-    loadTexture_.Reset();
+    loadTexture_.reset();
     return success;
 }
 

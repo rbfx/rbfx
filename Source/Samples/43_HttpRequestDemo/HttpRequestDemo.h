@@ -63,6 +63,6 @@ private:
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
     String message_;
-    SharedPtr<Text> text_;
-    SharedPtr<HttpRequest> httpRequest_;
+    stl::shared_ptr<Text> text_;
+    stl::shared_ptr<HttpRequest> httpRequest_;
 };

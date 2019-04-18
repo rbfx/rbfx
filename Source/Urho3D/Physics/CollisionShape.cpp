@@ -551,7 +551,7 @@ void CollisionShape::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
             // For terrains, undo the height centering performed automatically by Bullet
             if (shapeType_ == SHAPE_TERRAIN && geometry_)
             {
-                auto* heightfield = static_cast<HeightfieldData*>(geometry_.Get());
+                auto* heightfield = static_cast<HeightfieldData*>(geometry_.get());
                 position.y_ += (heightfield->minHeight_ + heightfield->maxHeight_) * 0.5f;
             }
 
@@ -576,7 +576,7 @@ void CollisionShape::SetBox(const Vector3& size, const Vector3& position, const 
     size_ = size;
     position_ = position;
     rotation_ = rotation;
-    model_.Reset();
+    model_.reset();
     customGeometryID_ = 0;
 
     UpdateShape();
@@ -593,7 +593,7 @@ void CollisionShape::SetSphere(float diameter, const Vector3& position, const Qu
     size_ = Vector3(diameter, diameter, diameter);
     position_ = position;
     rotation_ = rotation;
-    model_.Reset();
+    model_.reset();
     customGeometryID_ = 0;
 
     UpdateShape();
@@ -609,7 +609,7 @@ void CollisionShape::SetStaticPlane(const Vector3& position, const Quaternion& r
     shapeType_ = SHAPE_STATICPLANE;
     position_ = position;
     rotation_ = rotation;
-    model_.Reset();
+    model_.reset();
     customGeometryID_ = 0;
 
     UpdateShape();
@@ -626,7 +626,7 @@ void CollisionShape::SetCylinder(float diameter, float height, const Vector3& po
     size_ = Vector3(diameter, height, diameter);
     position_ = position;
     rotation_ = rotation;
-    model_.Reset();
+    model_.reset();
     customGeometryID_ = 0;
 
     UpdateShape();
@@ -643,7 +643,7 @@ void CollisionShape::SetCapsule(float diameter, float height, const Vector3& pos
     size_ = Vector3(diameter, height, diameter);
     position_ = position;
     rotation_ = rotation;
-    model_.Reset();
+    model_.reset();
     customGeometryID_ = 0;
 
     UpdateShape();
@@ -660,7 +660,7 @@ void CollisionShape::SetCone(float diameter, float height, const Vector3& positi
     size_ = Vector3(diameter, height, diameter);
     position_ = position;
     rotation_ = rotation;
-    model_.Reset();
+    model_.reset();
     customGeometryID_ = 0;
 
     UpdateShape();
@@ -857,7 +857,7 @@ void CollisionShape::NotifyRigidBody(bool updateMass)
             // For terrains, undo the height centering performed automatically by Bullet
             if (shapeType_ == SHAPE_TERRAIN && geometry_)
             {
-                auto* heightfield = static_cast<HeightfieldData*>(geometry_.Get());
+                auto* heightfield = static_cast<HeightfieldData*>(geometry_.get());
                 position.y_ += (heightfield->minHeight_ + heightfield->maxHeight_) * 0.5f;
             }
 
@@ -897,7 +897,7 @@ void CollisionShape::ReleaseShape()
 
     shape_.reset();
 
-    geometry_.Reset();
+    geometry_.reset();
 
     if (physicsWorld_)
         physicsWorld_->CleanupGeometryCache();
@@ -974,7 +974,7 @@ void CollisionShape::OnMarkedDirty(Node* node)
 
         case SHAPE_TERRAIN:
             {
-                auto* heightfield = static_cast<HeightfieldData*>(geometry_.Get());
+                auto* heightfield = static_cast<HeightfieldData*>(geometry_.get());
                 shape_->setLocalScaling(ToBtVector3(Vector3(heightfield->spacing_.x_, 1.0f, heightfield->spacing_.z_) *
                                                     newWorldScale * size_));
             }
@@ -1065,7 +1065,7 @@ void CollisionShape::UpdateShape()
                 if (terrain && terrain->GetHeightData())
                 {
                     geometry_ = new HeightfieldData(terrain, lodLevel_);
-                    auto* heightfield = static_cast<HeightfieldData*>(geometry_.Get());
+                    auto* heightfield = static_cast<HeightfieldData*>(geometry_.get());
 
                     shape_ =
                         new btHeightfieldTerrainShape(heightfield->size_.x_, heightfield->size_.y_, heightfield->heightData_.get(),
@@ -1106,7 +1106,7 @@ void CollisionShape::UpdateCachedGeometryShape(CollisionGeometryDataCache& cache
         {
             geometry_ = CreateCollisionGeometryData(shapeType_, custom);
             assert(geometry_);
-            shape_ = CreateCollisionGeometryDataShape(shapeType_, geometry_.Get(), cachedWorldScale_ * size_);
+            shape_ = CreateCollisionGeometryDataShape(shapeType_, geometry_, cachedWorldScale_ * size_);
             assert(shape_);
         }
         else
@@ -1116,7 +1116,7 @@ void CollisionShape::UpdateCachedGeometryShape(CollisionGeometryDataCache& cache
     else if (model_ && model_->GetNumGeometries())
     {
         // Check the geometry cache
-        Pair<Model*, unsigned> id = MakePair(model_.Get(), lodLevel_);
+        Pair<Model*, unsigned> id = MakePair(model_.get(), lodLevel_);
         auto cachedGeometry = cache.Find(id);
         if (cachedGeometry != cache.End())
             geometry_ = cachedGeometry->second_;
@@ -1129,7 +1129,7 @@ void CollisionShape::UpdateCachedGeometryShape(CollisionGeometryDataCache& cache
                 cache[id] = geometry_;
         }
 
-        shape_ = CreateCollisionGeometryDataShape(shapeType_, geometry_.Get(), cachedWorldScale_ * size_);
+        shape_ = CreateCollisionGeometryDataShape(shapeType_, geometry_, cachedWorldScale_ * size_);
         assert(shape_);
         // Watch for live reloads of the collision model to reload the geometry if necessary
         SubscribeToEvent(model_, E_RELOADFINISHED, URHO3D_HANDLER(CollisionShape, HandleModelReloadFinished));
@@ -1179,7 +1179,7 @@ void CollisionShape::SetCustomShape(ShapeType shapeType, CustomGeometry* custom,
         UnsubscribeFromEvent(model_, E_RELOADFINISHED);
 
     shapeType_ = shapeType;
-    model_.Reset();
+    model_.reset();
     lodLevel_ = 0;
     size_ = scale;
     position_ = position;

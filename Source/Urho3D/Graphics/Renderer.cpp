@@ -299,7 +299,7 @@ void Renderer::SetDefaultRenderPath(RenderPath* renderPath)
 
 void Renderer::SetDefaultRenderPath(XMLFile* xmlFile)
 {
-    SharedPtr<RenderPath> newRenderPath(new RenderPath());
+    stl::shared_ptr<RenderPath> newRenderPath(new RenderPath());
     if (newRenderPath->Load(xmlFile))
         defaultRenderPath_ = newRenderPath;
 }
@@ -450,7 +450,7 @@ void Renderer::SetMaxShadowMaps(int shadowMaps)
         return;
 
     maxShadowMaps_ = shadowMaps;
-    for (HashMap<int, Vector<SharedPtr<Texture2D> > >::Iterator i = shadowMaps_.Begin(); i != shadowMaps_.End(); ++i)
+    for (HashMap<int, Vector<stl::shared_ptr<Texture2D> > >::Iterator i = shadowMaps_.Begin(); i != shadowMaps_.End(); ++i)
     {
         if ((int)i->second_.Size() > maxShadowMaps_)
             i->second_.Resize((unsigned)maxShadowMaps_);
@@ -566,7 +566,7 @@ Technique* Renderer::GetDefaultTechnique() const
 {
     // Assign default when first asked if not assigned yet
     if (!defaultTechnique_)
-        const_cast<SharedPtr<Technique>& >(defaultTechnique_) = GetSubsystem<ResourceCache>()->GetResource<Technique>("Techniques/NoTexture.xml");
+        const_cast<stl::shared_ptr<Technique>& >(defaultTechnique_) = GetSubsystem<ResourceCache>()->GetResource<Technique>("Techniques/NoTexture.xml");
 
     return defaultTechnique_;
 }
@@ -808,8 +808,8 @@ void Renderer::QueueViewport(RenderSurface* renderTarget, Viewport* viewport)
 {
     if (viewport)
     {
-        Pair<WeakPtr<RenderSurface>, WeakPtr<Viewport> > newView =
-            MakePair(WeakPtr<RenderSurface>(renderTarget), WeakPtr<Viewport>(viewport));
+        Pair<stl::weak_ptr<RenderSurface>, stl::weak_ptr<Viewport> > newView =
+            MakePair(stl::weak_ptr<RenderSurface>(renderTarget), stl::weak_ptr<Viewport>(viewport));
 
         // Prevent double add of the same rendertarget/viewport combination
         if (!queuedViewports_.Contains(newView))
@@ -941,7 +941,7 @@ Texture2D* Renderer::GetShadowMap(Light* light, Camera* camera, unsigned viewWid
     if (!shadowMapFormat)
         return nullptr;
 
-    SharedPtr<Texture2D> newShadowMap(context_->CreateObject<Texture2D>());
+    stl::shared_ptr<Texture2D> newShadowMap(context_->CreateObject<Texture2D>());
     int retries = 3;
     unsigned dummyColorFormat = graphics_->GetDummyColorFormat();
 
@@ -988,7 +988,7 @@ Texture2D* Renderer::GetShadowMap(Light* light, Camera* camera, unsigned viewWid
 
     // If failed to set size, store a null pointer so that we will not retry
     if (!retries)
-        newShadowMap.Reset();
+        newShadowMap.reset();
 
     shadowMaps_[searchKey].Push(newShadowMap);
     if (!reuseShadowMaps_)
@@ -1040,11 +1040,11 @@ Texture* Renderer::GetScreenBuffer(int width, int height, unsigned format, int m
 
     if (allocations >= screenBuffers_[searchKey].Size())
     {
-        SharedPtr<Texture> newBuffer;
+        stl::shared_ptr<Texture> newBuffer;
 
         if (!cubemap)
         {
-            SharedPtr<Texture2D> newTex2D(context_->CreateObject<Texture2D>());
+            stl::shared_ptr<Texture2D> newTex2D(context_->CreateObject<Texture2D>());
             /// \todo Mipmaps disabled for now. Allow to request mipmapped buffer?
             newTex2D->SetNumLevels(1);
             newTex2D->SetSize(width, height, format, depthStencil ? TEXTURE_DEPTHSTENCIL : TEXTURE_RENDERTARGET, multiSample, autoResolve);
@@ -1067,7 +1067,7 @@ Texture* Renderer::GetScreenBuffer(int width, int height, unsigned format, int m
         }
         else
         {
-            SharedPtr<TextureCube> newTexCube(context_->CreateObject<TextureCube>());
+            stl::shared_ptr<TextureCube> newTexCube(context_->CreateObject<TextureCube>());
             newTexCube->SetNumLevels(1);
             newTexCube->SetSize(width, format, TEXTURE_RENDERTARGET, multiSample);
 
@@ -1109,7 +1109,7 @@ OcclusionBuffer* Renderer::GetOcclusionBuffer(Camera* camera)
     assert(numOcclusionBuffers_ <= occlusionBuffers_.Size());
     if (numOcclusionBuffers_ == occlusionBuffers_.Size())
     {
-        SharedPtr<OcclusionBuffer> newBuffer(context_->CreateObject<OcclusionBuffer>());
+        stl::shared_ptr<OcclusionBuffer> newBuffer(context_->CreateObject<OcclusionBuffer>());
         occlusionBuffers_.Push(newBuffer);
     }
 
@@ -1131,7 +1131,7 @@ Camera* Renderer::GetShadowCamera()
     assert(numShadowCameras_ <= shadowCameraNodes_.Size());
     if (numShadowCameras_ == shadowCameraNodes_.Size())
     {
-        SharedPtr<Node> newNode(context_->CreateObject<Node>());
+        stl::shared_ptr<Node> newNode(context_->CreateObject<Node>());
         newNode->CreateComponent<Camera>();
         shadowCameraNodes_.Push(newNode);
     }
@@ -1151,8 +1151,8 @@ void Renderer::StorePreparedView(View* view, Camera* camera)
 
 View* Renderer::GetPreparedView(Camera* camera)
 {
-    HashMap<Camera*, WeakPtr<View> >::Iterator i = preparedViews_.Find(camera);
-    return i != preparedViews_.End() ? i->second_ : nullptr;
+    HashMap<Camera*, stl::weak_ptr<View> >::Iterator i = preparedViews_.Find(camera);
+    return i != preparedViews_.End() ? i->second_.get() : nullptr;
 }
 
 View* Renderer::GetActualView(View* view)
@@ -1171,8 +1171,8 @@ void Renderer::SetBatchShaders(Batch& batch, Technique* tech, bool allowShadows,
     if (pass->GetShadersLoadedFrameNumber() != shadersChangedFrameNumber_)
         pass->ReleaseShaders();
 
-    Vector<SharedPtr<ShaderVariation> >& vertexShaders = queue.hasExtraDefines_ ? pass->GetVertexShaders(queue.vsExtraDefinesHash_) : pass->GetVertexShaders();
-    Vector<SharedPtr<ShaderVariation> >& pixelShaders = queue.hasExtraDefines_ ? pass->GetPixelShaders(queue.psExtraDefinesHash_) : pass->GetPixelShaders();
+    Vector<stl::shared_ptr<ShaderVariation> >& vertexShaders = queue.hasExtraDefines_ ? pass->GetVertexShaders(queue.vsExtraDefinesHash_) : pass->GetVertexShaders();
+    Vector<stl::shared_ptr<ShaderVariation> >& pixelShaders = queue.hasExtraDefines_ ? pass->GetPixelShaders(queue.psExtraDefinesHash_) : pass->GetPixelShaders();
 
     // Load shaders now if necessary
     if (!vertexShaders.Size() || !pixelShaders.Size())
@@ -1478,11 +1478,11 @@ const Rect& Renderer::GetLightScissor(Light* light, Camera* camera)
 
 void Renderer::UpdateQueuedViewport(unsigned index)
 {
-    WeakPtr<RenderSurface>& renderTarget = queuedViewports_[index].first_;
-    WeakPtr<Viewport>& viewport = queuedViewports_[index].second_;
+    stl::weak_ptr<RenderSurface>& renderTarget = queuedViewports_[index].first_;
+    stl::weak_ptr<Viewport>& viewport = queuedViewports_[index].second_;
 
     // Null pointer means backbuffer view. Differentiate between that and an expired rendersurface
-    if ((renderTarget.NotNull() && renderTarget.Expired()) || viewport.Expired())
+    if ((renderTarget && renderTarget.expired()) || viewport.expired())
         return;
 
     // (Re)allocate the view structure if necessary
@@ -1495,7 +1495,7 @@ void Renderer::UpdateQueuedViewport(unsigned index)
     if (!view->Define(renderTarget, viewport))
         return;
 
-    views_.Push(WeakPtr<View>(view));
+    views_.Push(stl::weak_ptr<View>(view));
 
     const IntRect& viewRect = viewport->GetRect();
     Scene* scene = viewport->GetScene();
@@ -1545,10 +1545,10 @@ void Renderer::RemoveUnusedBuffers()
         }
     }
 
-    for (HashMap<unsigned long long, Vector<SharedPtr<Texture> > >::Iterator i = screenBuffers_.Begin(); i != screenBuffers_.End();)
+    for (HashMap<unsigned long long, Vector<stl::shared_ptr<Texture> > >::Iterator i = screenBuffers_.Begin(); i != screenBuffers_.End();)
     {
-        HashMap<unsigned long long, Vector<SharedPtr<Texture> > >::Iterator current = i++;
-        Vector<SharedPtr<Texture> >& buffers = current->second_;
+        HashMap<unsigned long long, Vector<stl::shared_ptr<Texture> > >::Iterator current = i++;
+        Vector<stl::shared_ptr<Texture> >& buffers = current->second_;
         for (unsigned j = buffers.Size() - 1; j < buffers.Size(); --j)
         {
             Texture* buffer = buffers[j];
@@ -1640,7 +1640,7 @@ void Renderer::LoadShaders()
     shadersDirty_ = false;
 }
 
-void Renderer::LoadPassShaders(Pass* pass, Vector<SharedPtr<ShaderVariation> >& vertexShaders, Vector<SharedPtr<ShaderVariation> >& pixelShaders, const BatchQueue& queue)
+void Renderer::LoadPassShaders(Pass* pass, Vector<stl::shared_ptr<ShaderVariation> >& vertexShaders, Vector<stl::shared_ptr<ShaderVariation> >& pixelShaders, const BatchQueue& queue)
 {
     URHO3D_PROFILE("LoadPassShaders");
 
@@ -1769,12 +1769,12 @@ void Renderer::ReloadTextures()
 
 void Renderer::CreateGeometries()
 {
-    SharedPtr<VertexBuffer> dlvb(context_->CreateObject<VertexBuffer>());
+    stl::shared_ptr<VertexBuffer> dlvb(context_->CreateObject<VertexBuffer>());
     dlvb->SetShadowed(true);
     dlvb->SetSize(4, MASK_POSITION);
     dlvb->SetData(dirLightVertexData);
 
-    SharedPtr<IndexBuffer> dlib(context_->CreateObject<IndexBuffer>());
+    stl::shared_ptr<IndexBuffer> dlib(context_->CreateObject<IndexBuffer>());
     dlib->SetShadowed(true);
     dlib->SetSize(6, false);
     dlib->SetData(dirLightIndexData);
@@ -1784,12 +1784,12 @@ void Renderer::CreateGeometries()
     dirLightGeometry_->SetIndexBuffer(dlib);
     dirLightGeometry_->SetDrawRange(TRIANGLE_LIST, 0, dlib->GetIndexCount());
 
-    SharedPtr<VertexBuffer> slvb(context_->CreateObject<VertexBuffer>());
+    stl::shared_ptr<VertexBuffer> slvb(context_->CreateObject<VertexBuffer>());
     slvb->SetShadowed(true);
     slvb->SetSize(8, MASK_POSITION);
     slvb->SetData(spotLightVertexData);
 
-    SharedPtr<IndexBuffer> slib(context_->CreateObject<IndexBuffer>());
+    stl::shared_ptr<IndexBuffer> slib(context_->CreateObject<IndexBuffer>());
     slib->SetShadowed(true);
     slib->SetSize(36, false);
     slib->SetData(spotLightIndexData);
@@ -1799,12 +1799,12 @@ void Renderer::CreateGeometries()
     spotLightGeometry_->SetIndexBuffer(slib);
     spotLightGeometry_->SetDrawRange(TRIANGLE_LIST, 0, slib->GetIndexCount());
 
-    SharedPtr<VertexBuffer> plvb(context_->CreateObject<VertexBuffer>());
+    stl::shared_ptr<VertexBuffer> plvb(context_->CreateObject<VertexBuffer>());
     plvb->SetShadowed(true);
     plvb->SetSize(24, MASK_POSITION);
     plvb->SetData(pointLightVertexData);
 
-    SharedPtr<IndexBuffer> plib(context_->CreateObject<IndexBuffer>());
+    stl::shared_ptr<IndexBuffer> plib(context_->CreateObject<IndexBuffer>());
     plib->SetShadowed(true);
     plib->SetSize(132, false);
     plib->SetData(pointLightIndexData);
@@ -1885,7 +1885,7 @@ void Renderer::CreateInstancingBuffer()
     // Do not create buffer if instancing not supported
     if (!graphics_->GetInstancingSupport())
     {
-        instancingBuffer_.Reset();
+        instancingBuffer_.reset();
         dynamicInstancing_ = false;
         return;
     }
@@ -1894,7 +1894,7 @@ void Renderer::CreateInstancingBuffer()
     const PODVector<VertexElement> instancingBufferElements = CreateInstancingBufferElements(numExtraInstancingBufferElements_);
     if (!instancingBuffer_->SetSize(INSTANCING_BUFFER_DEFAULT_SIZE, instancingBufferElements, true))
     {
-        instancingBuffer_.Reset();
+        instancingBuffer_.reset();
         dynamicInstancing_ = false;
     }
 }

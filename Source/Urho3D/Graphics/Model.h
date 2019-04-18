@@ -24,7 +24,7 @@
 
 #include <EASTL/shared_array.h>
 
-#include "../Container/Ptr.h"
+#include <EASTL/shared_ptr.h>
 #include "../Graphics/GraphicsDefs.h"
 #include "../Graphics/Skeleton.h"
 #include "../Math/BoundingBox.h"
@@ -140,10 +140,10 @@ public:
     /// Set local-space bounding box.
     void SetBoundingBox(const BoundingBox& box);
     /// Set vertex buffers and their morph ranges.
-    bool SetVertexBuffers(const Vector<SharedPtr<VertexBuffer> >& buffers, const PODVector<unsigned>& morphRangeStarts,
+    bool SetVertexBuffers(const Vector<stl::shared_ptr<VertexBuffer> >& buffers, const PODVector<unsigned>& morphRangeStarts,
         const PODVector<unsigned>& morphRangeCounts);
     /// Set index buffers.
-    bool SetIndexBuffers(const Vector<SharedPtr<IndexBuffer> >& buffers);
+    bool SetIndexBuffers(const Vector<stl::shared_ptr<IndexBuffer> >& buffers);
     /// Set number of geometries.
     void SetNumGeometries(unsigned num);
     /// Set number of LOD levels in a geometry.
@@ -159,7 +159,7 @@ public:
     /// Set vertex morphs.
     void SetMorphs(const Vector<ModelMorph>& morphs);
     /// Clone the model. The geometry data is deep-copied and can be modified in the clone without affecting the original.
-    SharedPtr<Model> Clone(const String& cloneName = String::EMPTY) const;
+    stl::shared_ptr<Model> Clone(const String& cloneName = String::EMPTY) const;
 
     /// Return bounding box.
     const BoundingBox& GetBoundingBox() const { return boundingBox_; }
@@ -168,10 +168,10 @@ public:
     Skeleton& GetSkeleton() { return skeleton_; }
 
     /// Return vertex buffers.
-    const Vector<SharedPtr<VertexBuffer> >& GetVertexBuffers() const { return vertexBuffers_; }
+    const Vector<stl::shared_ptr<VertexBuffer> >& GetVertexBuffers() const { return vertexBuffers_; }
 
     /// Return index buffers.
-    const Vector<SharedPtr<IndexBuffer> >& GetIndexBuffers() const { return indexBuffers_; }
+    const Vector<stl::shared_ptr<IndexBuffer> >& GetIndexBuffers() const { return indexBuffers_; }
 
     /// Return number of geometries.
     unsigned GetNumGeometries() const { return geometries_.Size(); }
@@ -180,7 +180,7 @@ public:
     unsigned GetNumGeometryLodLevels(unsigned index) const;
 
     /// Return geometry pointers.
-    const Vector<Vector<SharedPtr<Geometry> > >& GetGeometries() const { return geometries_; }
+    const Vector<Vector<stl::shared_ptr<Geometry> > >& GetGeometries() const { return geometries_; }
 
     /// Return geometry center points.
     const PODVector<Vector3>& GetGeometryCenters() const { return geometryCenters_; }
@@ -220,11 +220,11 @@ private:
     /// Skeleton.
     Skeleton skeleton_;
     /// Vertex buffers.
-    Vector<SharedPtr<VertexBuffer> > vertexBuffers_;
+    Vector<stl::shared_ptr<VertexBuffer> > vertexBuffers_;
     /// Index buffers.
-    Vector<SharedPtr<IndexBuffer> > indexBuffers_;
+    Vector<stl::shared_ptr<IndexBuffer> > indexBuffers_;
     /// Geometries.
-    Vector<Vector<SharedPtr<Geometry> > > geometries_;
+    Vector<Vector<stl::shared_ptr<Geometry> > > geometries_;
     /// Geometry bone mappings.
     Vector<PODVector<unsigned> > geometryBoneMappings_;
     /// Geometry centers.

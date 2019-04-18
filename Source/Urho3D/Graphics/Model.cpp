@@ -40,7 +40,7 @@
 namespace Urho3D
 {
 
-unsigned LookupVertexBuffer(VertexBuffer* buffer, const Vector<SharedPtr<VertexBuffer> >& buffers)
+unsigned LookupVertexBuffer(VertexBuffer* buffer, const Vector<stl::shared_ptr<VertexBuffer> >& buffers)
 {
     for (unsigned i = 0; i < buffers.Size(); ++i)
     {
@@ -50,7 +50,7 @@ unsigned LookupVertexBuffer(VertexBuffer* buffer, const Vector<SharedPtr<VertexB
     return 0;
 }
 
-unsigned LookupIndexBuffer(IndexBuffer* buffer, const Vector<SharedPtr<IndexBuffer> >& buffers)
+unsigned LookupIndexBuffer(IndexBuffer* buffer, const Vector<stl::shared_ptr<IndexBuffer> >& buffers)
 {
     for (unsigned i = 0; i < buffers.Size(); ++i)
     {
@@ -127,7 +127,7 @@ bool Model::BeginLoad(Deserializer& source)
         morphRangeStarts_[i] = source.ReadUInt();
         morphRangeCounts_[i] = source.ReadUInt();
 
-        SharedPtr<VertexBuffer> buffer(context_->CreateObject<VertexBuffer>());
+        stl::shared_ptr<VertexBuffer> buffer(context_->CreateObject<VertexBuffer>());
         unsigned vertexSize = VertexBuffer::GetVertexSize(desc.vertexElements_);
         desc.dataSize_ = desc.vertexCount_ * vertexSize;
 
@@ -161,7 +161,7 @@ bool Model::BeginLoad(Deserializer& source)
         unsigned indexCount = source.ReadUInt();
         unsigned indexSize = source.ReadUInt();
 
-        SharedPtr<IndexBuffer> buffer(context_->CreateObject<IndexBuffer>());
+        stl::shared_ptr<IndexBuffer> buffer(context_->CreateObject<IndexBuffer>());
 
         // Prepare index buffer data to be uploaded during EndLoad()
         if (async)
@@ -203,7 +203,7 @@ bool Model::BeginLoad(Deserializer& source)
         geometryBoneMappings_.Push(boneMapping);
 
         unsigned numLodLevels = source.ReadUInt();
-        Vector<SharedPtr<Geometry> > geometryLodLevels;
+        Vector<stl::shared_ptr<Geometry> > geometryLodLevels;
         geometryLodLevels.Reserve(numLodLevels);
         loadGeometries_[i].Resize(numLodLevels);
 
@@ -234,7 +234,7 @@ bool Model::BeginLoad(Deserializer& source)
                 return false;
             }
 
-            SharedPtr<Geometry> geometry(context_->CreateObject<Geometry>());
+            stl::shared_ptr<Geometry> geometry(context_->CreateObject<Geometry>());
             geometry->SetLodDistance(distance);
 
             // Prepare geometry to be defined during EndLoad()
@@ -310,7 +310,7 @@ bool Model::BeginLoad(Deserializer& source)
     // Read metadata
     auto* cache = GetSubsystem<ResourceCache>();
     String xmlName = ReplaceExtension(GetName(), ".xml");
-    SharedPtr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
+    stl::shared_ptr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
     if (file)
         LoadMetadataFromXML(file->GetRoot());
 
@@ -469,7 +469,7 @@ bool Model::Save(Serializer& dest) const
         {
             String xmlName = ReplaceExtension(destFile->GetName(), ".xml");
 
-            SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
+            stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
             XMLElement rootElem = xml->CreateRoot("model");
             SaveMetadataToXML(rootElem);
 
@@ -488,7 +488,7 @@ void Model::SetBoundingBox(const BoundingBox& box)
     boundingBox_ = box;
 }
 
-bool Model::SetVertexBuffers(const Vector<SharedPtr<VertexBuffer> >& buffers, const PODVector<unsigned>& morphRangeStarts,
+bool Model::SetVertexBuffers(const Vector<stl::shared_ptr<VertexBuffer> >& buffers, const PODVector<unsigned>& morphRangeStarts,
     const PODVector<unsigned>& morphRangeCounts)
 {
     for (unsigned i = 0; i < buffers.Size(); ++i)
@@ -519,7 +519,7 @@ bool Model::SetVertexBuffers(const Vector<SharedPtr<VertexBuffer> >& buffers, co
     return true;
 }
 
-bool Model::SetIndexBuffers(const Vector<SharedPtr<IndexBuffer> >& buffers)
+bool Model::SetIndexBuffers(const Vector<stl::shared_ptr<IndexBuffer> >& buffers)
 {
     for (unsigned i = 0; i < buffers.Size(); ++i)
     {
@@ -614,9 +614,9 @@ void Model::SetMorphs(const Vector<ModelMorph>& morphs)
     morphs_ = morphs;
 }
 
-SharedPtr<Model> Model::Clone(const String& cloneName) const
+stl::shared_ptr<Model> Model::Clone(const String& cloneName) const
 {
-    SharedPtr<Model> ret(context_->CreateObject<Model>());
+    stl::shared_ptr<Model> ret(context_->CreateObject<Model>());
 
     ret->SetName(cloneName);
     ret->boundingBox_ = boundingBox_;
@@ -629,10 +629,10 @@ SharedPtr<Model> Model::Clone(const String& cloneName) const
 
     // Deep copy vertex/index buffers
     HashMap<VertexBuffer*, VertexBuffer*> vbMapping;
-    for (Vector<SharedPtr<VertexBuffer> >::ConstIterator i = vertexBuffers_.Begin(); i != vertexBuffers_.End(); ++i)
+    for (Vector<stl::shared_ptr<VertexBuffer> >::ConstIterator i = vertexBuffers_.Begin(); i != vertexBuffers_.End(); ++i)
     {
         VertexBuffer* origBuffer = *i;
-        SharedPtr<VertexBuffer> cloneBuffer;
+        stl::shared_ptr<VertexBuffer> cloneBuffer;
 
         if (origBuffer)
         {
@@ -656,10 +656,10 @@ SharedPtr<Model> Model::Clone(const String& cloneName) const
     }
 
     HashMap<IndexBuffer*, IndexBuffer*> ibMapping;
-    for (Vector<SharedPtr<IndexBuffer> >::ConstIterator i = indexBuffers_.Begin(); i != indexBuffers_.End(); ++i)
+    for (Vector<stl::shared_ptr<IndexBuffer> >::ConstIterator i = indexBuffers_.Begin(); i != indexBuffers_.End(); ++i)
     {
         IndexBuffer* origBuffer = *i;
-        SharedPtr<IndexBuffer> cloneBuffer;
+        stl::shared_ptr<IndexBuffer> cloneBuffer;
 
         if (origBuffer)
         {
@@ -690,7 +690,7 @@ SharedPtr<Model> Model::Clone(const String& cloneName) const
         ret->geometries_[i].Resize(geometries_[i].Size());
         for (unsigned j = 0; j < geometries_[i].Size(); ++j)
         {
-            SharedPtr<Geometry> cloneGeometry;
+            stl::shared_ptr<Geometry> cloneGeometry;
             Geometry* origGeometry = geometries_[i][j];
 
             if (origGeometry)

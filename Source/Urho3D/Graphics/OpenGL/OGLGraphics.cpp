@@ -1028,9 +1028,13 @@ bool Graphics::SetVertexBuffers(const PODVector<VertexBuffer*>& buffers, unsigne
     return true;
 }
 
-bool Graphics::SetVertexBuffers(const Vector<SharedPtr<VertexBuffer> >& buffers, unsigned instanceOffset)
+bool Graphics::SetVertexBuffers(const Vector<stl::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset)
 {
-    return SetVertexBuffers(reinterpret_cast<const PODVector<VertexBuffer*>&>(buffers), instanceOffset);
+    PODVector<VertexBuffer*> bufferPointers;
+    bufferPointers.Reserve(buffers.Size());
+    for (auto& buffer : buffers)
+        bufferPointers.Push(buffer.get());
+    return SetVertexBuffers(bufferPointers, instanceOffset);
 }
 
 void Graphics::SetIndexBuffer(IndexBuffer* buffer)
@@ -1120,7 +1124,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
             // Link a new combination
             URHO3D_PROFILE("LinkShaders");
 
-            SharedPtr<ShaderProgram> newProgram(new ShaderProgram(this, vs, ps));
+            stl::shared_ptr<ShaderProgram> newProgram(new ShaderProgram(this, vs, ps));
             if (newProgram->Link())
             {
                 URHO3D_LOGDEBUG("Linked vertex shader " + vs->GetFullName() + " and pixel shader " + ps->GetFullName());
@@ -1144,10 +1148,10 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 #ifndef GL_ES_VERSION_2_0
     if (gl3Support && impl_->shaderProgram_)
     {
-        const SharedPtr<ConstantBuffer>* constantBuffers = impl_->shaderProgram_->GetConstantBuffers();
+        const stl::shared_ptr<ConstantBuffer>* constantBuffers = impl_->shaderProgram_->GetConstantBuffers();
         for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS * 2; ++i)
         {
-            ConstantBuffer* buffer = constantBuffers[i].Get();
+            ConstantBuffer* buffer = constantBuffers[i];
             if (buffer != impl_->constantBuffers_[i])
             {
                 unsigned object = buffer ? buffer->GetGPUObjectName() : 0;
@@ -1722,12 +1726,12 @@ void Graphics::SetDepthStencil(RenderSurface* depthStencil)
         if (width <= width_ && height <= height_)
         {
             unsigned searchKey = (width << 16u) | height;
-            HashMap<unsigned, SharedPtr<Texture2D> >::Iterator i = impl_->depthTextures_.Find(searchKey);
+            HashMap<unsigned, stl::shared_ptr<Texture2D> >::Iterator i = impl_->depthTextures_.Find(searchKey);
             if (i != impl_->depthTextures_.End())
                 depthStencil = i->second_->GetRenderSurface();
             else
             {
-                SharedPtr<Texture2D> newDepthTexture(context_->CreateObject<Texture2D>());
+                stl::shared_ptr<Texture2D> newDepthTexture(context_->CreateObject<Texture2D>());
                 newDepthTexture->SetSize(width, height, GetDepthStencilFormat(), TEXTURE_DEPTHSTENCIL);
                 impl_->depthTextures_[searchKey] = newDepthTexture;
                 depthStencil = newDepthTexture->GetRenderSurface();
@@ -2366,13 +2370,13 @@ ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType /*type*/,  unsign
     // for PS constant buffers
 
     unsigned key = (index << 16u) | size;
-    HashMap<unsigned, SharedPtr<ConstantBuffer> >::Iterator i = impl_->allConstantBuffers_.Find(key);
+    HashMap<unsigned, stl::shared_ptr<ConstantBuffer> >::Iterator i = impl_->allConstantBuffers_.Find(key);
     if (i == impl_->allConstantBuffers_.End())
     {
-        i = impl_->allConstantBuffers_.Insert(MakePair(key, SharedPtr<ConstantBuffer>(context_->CreateObject<ConstantBuffer>())));
+        i = impl_->allConstantBuffers_.Insert(MakePair(key, stl::shared_ptr<ConstantBuffer>(context_->CreateObject<ConstantBuffer>())));
         i->second_->SetSize(size);
     }
-    return i->second_.Get();
+    return i->second_;
 }
 
 void Graphics::Release(bool clearGPUObjects, bool closeWindow)

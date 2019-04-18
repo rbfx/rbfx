@@ -25,7 +25,7 @@
 #include "../Container/HashMap.h"
 #include "../Container/HashSet.h"
 #include "../Core/Mutex.h"
-#include "../Container/Ptr.h"
+#include <EASTL/shared_ptr.h>
 #include "../Container/RefCounted.h"
 #include "../Core/Thread.h"
 #include "../Math/StringHash.h"
@@ -40,7 +40,7 @@ class ResourceCache;
 struct URHO3D_API BackgroundLoadItem
 {
     /// Resource.
-    SharedPtr<Resource> resource_;
+    stl::shared_ptr<Resource> resource_;
     /// Resources depended on for loading.
     HashSet<Pair<StringHash, StringHash> > dependencies_;
     /// Resources that depend on this resource's loading.

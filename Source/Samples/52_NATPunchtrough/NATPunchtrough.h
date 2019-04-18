@@ -103,21 +103,21 @@ private:
     void HandleClientDisconnected(StringHash eventType, VariantMap& eventData);
 
     /// NAT master server address
-    SharedPtr<LineEdit> natServerAddress_;
+    stl::shared_ptr<LineEdit> natServerAddress_;
     /// NAT master server port
-    SharedPtr<LineEdit> natServerPort_;
+    stl::shared_ptr<LineEdit> natServerPort_;
     /// Save NAT settings button
-    SharedPtr<Button> saveNatSettingsButton_;
+    stl::shared_ptr<Button> saveNatSettingsButton_;
     /// Start server button
-    SharedPtr<Button> startServerButton_;
+    stl::shared_ptr<Button> startServerButton_;
     /// Remote server GUID input field
-    SharedPtr<LineEdit> serverGuid_;
+    stl::shared_ptr<LineEdit> serverGuid_;
     /// Connect button
-    SharedPtr<Button> connectButton_;
+    stl::shared_ptr<Button> connectButton_;
     /// Log history text element
-    SharedPtr<Text> logHistoryText_;
+    stl::shared_ptr<Text> logHistoryText_;
     /// Log messages
     Vector<String> logHistory_;
     /// Created server GUID field
-    SharedPtr<LineEdit> guid_;
+    stl::shared_ptr<LineEdit> guid_;
 };

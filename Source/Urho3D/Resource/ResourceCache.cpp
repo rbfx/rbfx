@@ -65,7 +65,7 @@ static const char* checkDirs[] =
     nullptr
 };
 
-static const SharedPtr<Resource> noResource;
+static const stl::shared_ptr<Resource> noResource;
 
 ResourceCache::ResourceCache(Context* context) :
     Object(context),
@@ -91,7 +91,7 @@ ResourceCache::~ResourceCache()
 {
 #ifdef URHO3D_THREADING
     // Shut down the background loader first
-    backgroundLoader_.Reset();
+    backgroundLoader_.reset();
 #endif
 }
 
@@ -124,7 +124,7 @@ bool ResourceCache::AddResourceDir(const String& pathName, unsigned priority)
     // If resource auto-reloading active, create a file watcher for the directory
     if (autoReloadResources_)
     {
-        SharedPtr<FileWatcher> watcher(new FileWatcher(context_));
+        stl::shared_ptr<FileWatcher> watcher(new FileWatcher(context_));
         watcher->StartWatching(fixedPath, true);
         fileWatchers_.Push(watcher);
     }
@@ -145,9 +145,9 @@ bool ResourceCache::AddPackageFile(PackageFile* package, unsigned priority)
     }
 
     if (priority < packages_.Size())
-        packages_.Insert(priority, SharedPtr<PackageFile>(package));
+        packages_.Insert(priority, stl::shared_ptr<PackageFile>(package));
     else
-        packages_.Push(SharedPtr<PackageFile>(package));
+        packages_.Push(stl::shared_ptr<PackageFile>(package));
 
     URHO3D_LOGINFO("Added resource package " + package->GetName());
     return true;
@@ -155,7 +155,7 @@ bool ResourceCache::AddPackageFile(PackageFile* package, unsigned priority)
 
 bool ResourceCache::AddPackageFile(const String& fileName, unsigned priority)
 {
-    SharedPtr<PackageFile> package(new PackageFile(context_));
+    stl::shared_ptr<PackageFile> package(new PackageFile(context_));
     return package->Open(fileName) && AddPackageFile(package, priority);
 }
 
@@ -210,12 +210,12 @@ void ResourceCache::RemovePackageFile(PackageFile* package, bool releaseResource
 {
     MutexLock lock(resourceMutex_);
 
-    for (Vector<SharedPtr<PackageFile> >::Iterator i = packages_.Begin(); i != packages_.End(); ++i)
+    for (Vector<stl::shared_ptr<PackageFile> >::Iterator i = packages_.Begin(); i != packages_.End(); ++i)
     {
-        if (*i == package)
+        if (i->get() == package)
         {
             if (releaseResources)
-                ReleasePackageResources(*i, forceRelease);
+                ReleasePackageResources(i->get(), forceRelease);
             URHO3D_LOGINFO("Removed resource package " + (*i)->GetName());
             packages_.Erase(i);
             return;
@@ -230,12 +230,12 @@ void ResourceCache::RemovePackageFile(const String& fileName, bool releaseResour
     // Compare the name and extension only, not the path
     String fileNameNoPath = GetFileNameAndExtension(fileName);
 
-    for (Vector<SharedPtr<PackageFile> >::Iterator i = packages_.Begin(); i != packages_.End(); ++i)
+    for (Vector<stl::shared_ptr<PackageFile> >::Iterator i = packages_.Begin(); i != packages_.End(); ++i)
     {
         if (!GetFileNameAndExtension((*i)->GetName()).Compare(fileNameNoPath, false))
         {
             if (releaseResources)
-                ReleasePackageResources(*i, forceRelease);
+                ReleasePackageResources(i->get(), forceRelease);
             URHO3D_LOGINFO("Removed resource package " + (*i)->GetName());
             packages_.Erase(i);
             return;
@@ -246,12 +246,12 @@ void ResourceCache::RemovePackageFile(const String& fileName, bool releaseResour
 void ResourceCache::ReleaseResource(StringHash type, const String& name, bool force)
 {
     StringHash nameHash(name);
-    const SharedPtr<Resource>& existingRes = FindResource(type, nameHash);
+    const stl::shared_ptr<Resource>& existingRes = FindResource(type, nameHash);
     if (!existingRes)
         return;
 
     // If other references exist, do not release, unless forced
-    if ((existingRes.Refs() == 1 && existingRes.WeakRefs() == 0) || force)
+    if ((existingRes.use_count() == 1 && existingRes.weak_use_count() == 0) || force)
     {
         resourceGroups_[type].resources_.Erase(nameHash);
         UpdateResourceGroup(type);
@@ -265,12 +265,12 @@ void ResourceCache::ReleaseResources(StringHash type, bool force)
     HashMap<StringHash, ResourceGroup>::Iterator i = resourceGroups_.Find(type);
     if (i != resourceGroups_.End())
     {
-        for (HashMap<StringHash, SharedPtr<Resource> >::Iterator j = i->second_.resources_.Begin();
+        for (HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator j = i->second_.resources_.Begin();
              j != i->second_.resources_.End();)
         {
-            HashMap<StringHash, SharedPtr<Resource> >::Iterator current = j++;
+            HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator current = j++;
             // If other references exist, do not release, unless forced
-            if ((current->second_.Refs() == 1 && current->second_.WeakRefs() == 0) || force)
+            if ((current->second_.use_count() == 1 && current->second_.weak_use_count() == 0) || force)
             {
                 i->second_.resources_.Erase(current);
                 released = true;
@@ -289,14 +289,14 @@ void ResourceCache::ReleaseResources(StringHash type, const String& partialName,
     HashMap<StringHash, ResourceGroup>::Iterator i = resourceGroups_.Find(type);
     if (i != resourceGroups_.End())
     {
-        for (HashMap<StringHash, SharedPtr<Resource> >::Iterator j = i->second_.resources_.Begin();
+        for (HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator j = i->second_.resources_.Begin();
              j != i->second_.resources_.End();)
         {
-            HashMap<StringHash, SharedPtr<Resource> >::Iterator current = j++;
+            HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator current = j++;
             if (current->second_->GetName().Contains(partialName))
             {
                 // If other references exist, do not release, unless forced
-                if ((current->second_.Refs() == 1 && current->second_.WeakRefs() == 0) || force)
+                if ((current->second_.use_count() == 1 && current->second_.weak_use_count() == 0) || force)
                 {
                     i->second_.resources_.Erase(current);
                     released = true;
@@ -320,14 +320,14 @@ void ResourceCache::ReleaseResources(const String& partialName, bool force)
 
         for (HashMap<StringHash, ResourceGroup>::Iterator i = resourceGroups_.Begin(); i != resourceGroups_.End(); ++i)
         {
-            for (HashMap<StringHash, SharedPtr<Resource> >::Iterator j = i->second_.resources_.Begin();
+            for (HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator j = i->second_.resources_.Begin();
                  j != i->second_.resources_.End();)
             {
-                HashMap<StringHash, SharedPtr<Resource> >::Iterator current = j++;
+                HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator current = j++;
                 if (current->second_->GetName().Contains(partialName))
                 {
                     // If other references exist, do not release, unless forced
-                    if ((current->second_.Refs() == 1 && current->second_.WeakRefs() == 0) || force)
+                    if ((current->second_.use_count() == 1 && current->second_.weak_use_count() == 0) || force)
                     {
                         i->second_.resources_.Erase(current);
                         released = true;
@@ -351,12 +351,12 @@ void ResourceCache::ReleaseAllResources(bool force)
         for (HashMap<StringHash, ResourceGroup>::Iterator i = resourceGroups_.Begin();
              i != resourceGroups_.End(); ++i)
         {
-            for (HashMap<StringHash, SharedPtr<Resource> >::Iterator j = i->second_.resources_.Begin();
+            for (HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator j = i->second_.resources_.Begin();
                  j != i->second_.resources_.End();)
             {
-                HashMap<StringHash, SharedPtr<Resource> >::Iterator current = j++;
+                HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator current = j++;
                 // If other references exist, do not release, unless forced
-                if ((current->second_.Refs() == 1 && current->second_.WeakRefs() == 0) || force)
+                if ((current->second_.use_count() == 1 && current->second_.weak_use_count() == 0) || force)
                 {
                     i->second_.resources_.Erase(current);
                     released = true;
@@ -377,9 +377,9 @@ bool ResourceCache::ReloadResource(Resource* resource)
     resource->SendEvent(E_RELOADSTARTED);
 
     bool success = false;
-    SharedPtr<File> file = GetFile(resource->GetName());
+    stl::shared_ptr<File> file = GetFile(resource->GetName());
     if (file)
-        success = resource->Load(*(file.Get()));
+        success = resource->Load(*(file.get()));
 
     if (success)
     {
@@ -399,11 +399,11 @@ void ResourceCache::ReloadResourceWithDependencies(const String& fileName)
 {
     StringHash fileNameHash(fileName);
     // If the filename is a resource we keep track of, reload it
-    const SharedPtr<Resource>& resource = FindResource(fileNameHash);
+    const stl::shared_ptr<Resource>& resource = FindResource(fileNameHash);
     if (resource)
     {
         URHO3D_LOGDEBUG("Reloading changed resource " + fileName);
-        ReloadResource(resource);
+        ReloadResource(resource.get());
     }
     // Always perform dependency resource check for resource loaded from XML file as it could be used in inheritance
     if (!resource || GetExtension(resource->GetName()) == ".xml")
@@ -414,12 +414,12 @@ void ResourceCache::ReloadResourceWithDependencies(const String& fileName)
         {
             // Reloading a resource may modify the dependency tracking structure. Therefore collect the
             // resources we need to reload first
-            Vector<SharedPtr<Resource> > dependents;
+            Vector<stl::shared_ptr<Resource> > dependents;
             dependents.Reserve(j->second_.Size());
 
             for (HashSet<StringHash>::ConstIterator k = j->second_.Begin(); k != j->second_.End(); ++k)
             {
-                const SharedPtr<Resource>& dependent = FindResource(*k);
+                const stl::shared_ptr<Resource>& dependent = FindResource(*k);
                 if (dependent)
                     dependents.Push(dependent);
             }
@@ -427,7 +427,7 @@ void ResourceCache::ReloadResourceWithDependencies(const String& fileName)
             for (unsigned k = 0; k < dependents.Size(); ++k)
             {
                 URHO3D_LOGDEBUG("Reloading resource " + dependents[k]->GetName() + " depending on " + fileName);
-                ReloadResource(dependents[k]);
+                ReloadResource(dependents[k].get());
             }
         }
     }
@@ -446,7 +446,7 @@ void ResourceCache::SetAutoReloadResources(bool enable)
         {
             for (unsigned i = 0; i < resourceDirs_.Size(); ++i)
             {
-                SharedPtr<FileWatcher> watcher(new FileWatcher(context_));
+                stl::shared_ptr<FileWatcher> watcher(new FileWatcher(context_));
                 watcher->StartWatching(resourceDirs_[i], true);
                 fileWatchers_.Push(watcher);
             }
@@ -468,9 +468,9 @@ void ResourceCache::AddResourceRouter(ResourceRouter* router, bool addAsFirst)
     }
 
     if (addAsFirst)
-        resourceRouters_.Insert(0, SharedPtr<ResourceRouter>(router));
+        resourceRouters_.Insert(0, stl::shared_ptr<ResourceRouter>(router));
     else
-        resourceRouters_.Push(SharedPtr<ResourceRouter>(router));
+        resourceRouters_.Push(stl::shared_ptr<ResourceRouter>(router));
 }
 
 void ResourceCache::RemoveResourceRouter(ResourceRouter* router)
@@ -485,7 +485,7 @@ void ResourceCache::RemoveResourceRouter(ResourceRouter* router)
     }
 }
 
-SharedPtr<File> ResourceCache::GetFile(const String& name, bool sendEventOnFailure)
+stl::shared_ptr<File> ResourceCache::GetFile(const String& name, bool sendEventOnFailure)
 {
     MutexLock lock(resourceMutex_);
 
@@ -510,7 +510,7 @@ SharedPtr<File> ResourceCache::GetFile(const String& name, bool sendEventOnFailu
         }
 
         if (file)
-            return SharedPtr<File>(file);
+            return stl::shared_ptr<File>(file);
     }
 
     if (sendEventOnFailure)
@@ -530,7 +530,7 @@ SharedPtr<File> ResourceCache::GetFile(const String& name, bool sendEventOnFailu
         }
     }
 
-    return SharedPtr<File>();
+    return stl::shared_ptr<File>();
 }
 
 Resource* ResourceCache::GetExistingResource(StringHash type, const String& name)
@@ -549,7 +549,7 @@ Resource* ResourceCache::GetExistingResource(StringHash type, const String& name
 
     StringHash nameHash(sanitatedName);
 
-    const SharedPtr<Resource>& existing = FindResource(type, nameHash);
+    const stl::shared_ptr<Resource>& existing = FindResource(type, nameHash);
     return existing;
 }
 
@@ -574,11 +574,11 @@ Resource* ResourceCache::GetResource(StringHash type, const String& name, bool s
     backgroundLoader_->WaitForResource(type, nameHash);
 #endif
 
-    const SharedPtr<Resource>& existing = FindResource(type, nameHash);
+    const stl::shared_ptr<Resource>& existing = FindResource(type, nameHash);
     if (existing)
         return existing;
 
-    SharedPtr<Resource> resource;
+    stl::shared_ptr<Resource> resource;
     // Make sure the pointer is non-null and is a Resource subclass
     resource = DynamicCast<Resource>(context_->CreateObject(type));
     if (!resource)
@@ -598,14 +598,14 @@ Resource* ResourceCache::GetResource(StringHash type, const String& name, bool s
     }
 
     // Attempt to load the resource
-    SharedPtr<File> file = GetFile(sanitatedName, sendEventOnFailure);
+    stl::shared_ptr<File> file = GetFile(sanitatedName, sendEventOnFailure);
     if (!file)
         return nullptr;   // Error is already logged
 
     URHO3D_LOGDEBUG("Loading resource " + sanitatedName);
     resource->SetName(sanitatedName);
 
-    if (!resource->Load(*(file.Get())))
+    if (!resource->Load(*(file.get())))
     {
         // Error should already been logged by corresponding resource descendant class
         if (sendEventOnFailure)
@@ -649,15 +649,15 @@ bool ResourceCache::BackgroundLoadResource(StringHash type, const String& name, 
 #endif
 }
 
-SharedPtr<Resource> ResourceCache::GetTempResource(StringHash type, const String& name, bool sendEventOnFailure)
+stl::shared_ptr<Resource> ResourceCache::GetTempResource(StringHash type, const String& name, bool sendEventOnFailure)
 {
     String sanitatedName = SanitateResourceName(name);
 
     // If empty name, return null pointer immediately
     if (sanitatedName.Empty())
-        return SharedPtr<Resource>();
+        return stl::shared_ptr<Resource>();
 
-    SharedPtr<Resource> resource;
+    stl::shared_ptr<Resource> resource;
     // Make sure the pointer is non-null and is a Resource subclass
     resource = DynamicCast<Resource>(context_->CreateObject(type));
     if (!resource)
@@ -673,18 +673,18 @@ SharedPtr<Resource> ResourceCache::GetTempResource(StringHash type, const String
             SendEvent(E_UNKNOWNRESOURCETYPE, eventData);
         }
 
-        return SharedPtr<Resource>();
+        return stl::shared_ptr<Resource>();
     }
 
     // Attempt to load the resource
-    SharedPtr<File> file = GetFile(sanitatedName, sendEventOnFailure);
+    stl::shared_ptr<File> file = GetFile(sanitatedName, sendEventOnFailure);
     if (!file)
-        return SharedPtr<Resource>();  // Error is already logged
+        return stl::shared_ptr<Resource>();  // Error is already logged
 
     URHO3D_LOGDEBUG("Loading temporary resource " + sanitatedName);
     resource->SetName(file->GetName());
 
-    if (!resource->Load(*(file.Get())))
+    if (!resource->Load(*(file.get())))
     {
         // Error should already been logged by corresponding resource descendant class
         if (sendEventOnFailure)
@@ -696,7 +696,7 @@ SharedPtr<Resource> ResourceCache::GetTempResource(StringHash type, const String
             SendEvent(E_LOADFAILED, eventData);
         }
 
-        return SharedPtr<Resource>();
+        return stl::shared_ptr<Resource>();
     }
 
     return resource;
@@ -717,9 +717,9 @@ void ResourceCache::GetResources(PODVector<Resource*>& result, StringHash type) 
     HashMap<StringHash, ResourceGroup>::ConstIterator i = resourceGroups_.Find(type);
     if (i != resourceGroups_.End())
     {
-        for (HashMap<StringHash, SharedPtr<Resource> >::ConstIterator j = i->second_.resources_.Begin();
+        for (HashMap<StringHash, stl::shared_ptr<Resource> >::ConstIterator j = i->second_.resources_.Begin();
              j != i->second_.resources_.End(); ++j)
-            result.Push(j->second_);
+            result.Push(j->second_.get());
     }
 }
 
@@ -922,7 +922,7 @@ String ResourceCache::PrintMemoryUsage() const
         else
             average = 0;
         unsigned long long largest = 0;
-        for (HashMap<StringHash, SharedPtr<Resource> >::ConstIterator resIt = cit->second_.resources_.Begin(); resIt != cit->second_.resources_.End(); ++resIt)
+        for (HashMap<StringHash, stl::shared_ptr<Resource> >::ConstIterator resIt = cit->second_.resources_.Begin(); resIt != cit->second_.resources_.End(); ++resIt)
         {
             if (resIt->second_->GetMemoryUse() > largest)
                 largest = resIt->second_->GetMemoryUse();
@@ -962,27 +962,27 @@ String ResourceCache::PrintMemoryUsage() const
     return output;
 }
 
-const SharedPtr<Resource>& ResourceCache::FindResource(StringHash type, StringHash nameHash)
+const stl::shared_ptr<Resource>& ResourceCache::FindResource(StringHash type, StringHash nameHash)
 {
     MutexLock lock(resourceMutex_);
 
     HashMap<StringHash, ResourceGroup>::Iterator i = resourceGroups_.Find(type);
     if (i == resourceGroups_.End())
         return noResource;
-    HashMap<StringHash, SharedPtr<Resource> >::Iterator j = i->second_.resources_.Find(nameHash);
+    HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator j = i->second_.resources_.Find(nameHash);
     if (j == i->second_.resources_.End())
         return noResource;
 
     return j->second_;
 }
 
-const SharedPtr<Resource>& ResourceCache::FindResource(StringHash nameHash)
+const stl::shared_ptr<Resource>& ResourceCache::FindResource(StringHash nameHash)
 {
     MutexLock lock(resourceMutex_);
 
     for (HashMap<StringHash, ResourceGroup>::Iterator i = resourceGroups_.Begin(); i != resourceGroups_.End(); ++i)
     {
-        HashMap<StringHash, SharedPtr<Resource> >::Iterator j = i->second_.resources_.Find(nameHash);
+        HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator j = i->second_.resources_.Find(nameHash);
         if (j != i->second_.resources_.End())
             return j->second_;
     }
@@ -1002,11 +1002,11 @@ void ResourceCache::ReleasePackageResources(PackageFile* package, bool force)
         // We do not know the actual resource type, so search all type containers
         for (HashMap<StringHash, ResourceGroup>::Iterator j = resourceGroups_.Begin(); j != resourceGroups_.End(); ++j)
         {
-            HashMap<StringHash, SharedPtr<Resource> >::Iterator k = j->second_.resources_.Find(nameHash);
+            HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator k = j->second_.resources_.Find(nameHash);
             if (k != j->second_.resources_.End())
             {
                 // If other references exist, do not release, unless forced
-                if ((k->second_.Refs() == 1 && k->second_.WeakRefs() == 0) || force)
+                if ((k->second_.use_count() == 1 && k->second_.weak_use_count() == 0) || force)
                 {
                     j->second_.resources_.Erase(k);
                     affectedGroups.Insert(j->first_);
@@ -1030,9 +1030,9 @@ void ResourceCache::UpdateResourceGroup(StringHash type)
     {
         unsigned totalSize = 0;
         unsigned oldestTimer = 0;
-        HashMap<StringHash, SharedPtr<Resource> >::Iterator oldestResource = i->second_.resources_.End();
+        HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator oldestResource = i->second_.resources_.End();
 
-        for (HashMap<StringHash, SharedPtr<Resource> >::Iterator j = i->second_.resources_.Begin();
+        for (HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator j = i->second_.resources_.Begin();
              j != i->second_.resources_.End(); ++j)
         {
             totalSize += j->second_->GetMemoryUse();
@@ -1163,7 +1163,7 @@ String ResourceCache::PrintResources(const String& typeName) const
 
     for (HashMap<StringHash, ResourceGroup>::ConstIterator cit = resourceGroups_.Begin(); cit != resourceGroups_.End(); ++cit)
     {
-        for (HashMap<StringHash, SharedPtr<Resource> >::ConstIterator resIt = cit->second_.resources_.Begin(); resIt != cit->second_.resources_.End(); ++resIt)
+        for (HashMap<StringHash, stl::shared_ptr<Resource> >::ConstIterator resIt = cit->second_.resources_.Begin(); resIt != cit->second_.resources_.End(); ++resIt)
         {
             Resource* resource = resIt->second_;
 
@@ -1242,7 +1242,7 @@ bool ResourceCache::RenameResource(String source, String destination)
         auto resourcesCopy = groupPair.second_.resources_;
         for (auto& resourcePair : resourcesCopy)
         {
-            SharedPtr<Resource> resource = resourcePair.second_;
+            stl::shared_ptr<Resource> resource = resourcePair.second_;
             if (resource->GetName().StartsWith(resourceName))
             {
                 if (autoReloadResources_)

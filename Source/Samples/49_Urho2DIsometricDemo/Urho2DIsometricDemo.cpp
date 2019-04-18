@@ -118,7 +118,7 @@ void Urho2DIsometricDemo::CreateScene()
     camera->SetZoom(2.0f * Min((float)graphics->GetWidth() / 1280.0f, (float)graphics->GetHeight() / 800.0f)); // Set zoom according to user's resolution to ensure full visibility (initial zoom (2.0) is set for full visibility at 1280x800 resolution)
 
     // Setup the viewport for displaying the scene
-    SharedPtr<Viewport> viewport(new Viewport(context_, scene_, camera));
+    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, camera));
     auto* renderer = GetSubsystem<Renderer>();
     renderer->SetViewport(0, viewport);
 
@@ -126,7 +126,7 @@ void Urho2DIsometricDemo::CreateScene()
 
     // Create tile map from tmx file
     auto* tmxFile = cache->GetResource<TmxFile2D>("Urho2D/Tilesets/atrium.tmx");
-    SharedPtr<Node> tileMapNode(scene_->CreateChild("TileMap"));
+    stl::shared_ptr<Node> tileMapNode(scene_->CreateChild("TileMap"));
     auto* tileMap = tileMapNode->CreateComponent<TileMap2D>();
     tileMap->SetTmxFile(tmxFile);
     const TileMapInfo2D& info = tileMap->GetInfo();

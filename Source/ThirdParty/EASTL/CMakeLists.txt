@@ -69,7 +69,7 @@ target_include_directories(EASTL
 #-------------------------------------------------------------------------------------------
 # Libraries
 #-------------------------------------------------------------------------------------------
-target_compile_definitions(EASTL PUBLIC -Deastl=stl)
+target_compile_definitions(EASTL PUBLIC -Deastl=stl -DEASTL_RTTI_ENABLED=0 -DEASTL_URHO3D_EXTENSIONS=1 -DEASTL_DEBUG=1 -DEASTL_DEBUGPARAMS_LEVEL=2)
 
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(EASTL PUBLIC -DEASTL_DLL)

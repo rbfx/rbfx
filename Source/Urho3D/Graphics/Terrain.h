@@ -245,27 +245,27 @@ private:
     void MarkTerrainDirty() { recreateTerrain_ = true; }
 
     /// Shared index buffer.
-    SharedPtr<IndexBuffer> indexBuffer_;
+    stl::shared_ptr<IndexBuffer> indexBuffer_;
     /// Heightmap image.
-    SharedPtr<Image> heightMap_;
+    stl::shared_ptr<Image> heightMap_;
     /// Height data.
     stl::shared_array<float> heightData_;
     /// Source height data for smoothing.
     stl::shared_array<float> sourceHeightData_;
     /// Material.
-    SharedPtr<Material> material_;
+    stl::shared_ptr<Material> material_;
     /// Terrain patches.
-    Vector<WeakPtr<TerrainPatch> > patches_;
+    Vector<stl::weak_ptr<TerrainPatch> > patches_;
     /// Draw ranges for different LODs and stitching combinations.
     PODVector<Pair<unsigned, unsigned> > drawRanges_;
     /// North neighbor terrain.
-    WeakPtr<Terrain> north_;
+    stl::weak_ptr<Terrain> north_;
     /// South neighbor terrain.
-    WeakPtr<Terrain> south_;
+    stl::weak_ptr<Terrain> south_;
     /// West neighbor terrain.
-    WeakPtr<Terrain> west_;
+    stl::weak_ptr<Terrain> west_;
     /// East neighbor terrain.
-    WeakPtr<Terrain> east_;
+    stl::weak_ptr<Terrain> east_;
     /// Vertex and height spacing.
     Vector3 spacing_;
     /// Vertex and height sacing at the time of last update.

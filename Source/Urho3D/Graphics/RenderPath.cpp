@@ -309,9 +309,9 @@ RenderPath::RenderPath() = default;
 
 RenderPath::~RenderPath() = default;
 
-SharedPtr<RenderPath> RenderPath::Clone()
+stl::shared_ptr<RenderPath> RenderPath::Clone()
 {
-    SharedPtr<RenderPath> newRenderPath(new RenderPath());
+    stl::shared_ptr<RenderPath> newRenderPath(new RenderPath());
     newRenderPath->renderTargets_ = renderTargets_;
     newRenderPath->commands_ = commands_;
     return newRenderPath;

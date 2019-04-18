@@ -119,9 +119,9 @@ struct URHO3D_API TechniqueEntry
     }
 
     /// Technique.
-    SharedPtr<Technique> technique_;
+    stl::shared_ptr<Technique> technique_;
     /// Original technique, in case the material adds shader compilation defines. The modified clones are requested from it.
-    SharedPtr<Technique> original_;
+    stl::shared_ptr<Technique> original_;
     /// Quality level.
     MaterialQuality qualityLevel_;
     /// LOD distance.
@@ -234,7 +234,7 @@ public:
     /// Reset all shader pointers.
     void ReleaseShaders();
     /// Clone the material.
-    SharedPtr<Material> Clone(const String& cloneName = String::EMPTY) const;
+    stl::shared_ptr<Material> Clone(const String& cloneName = String::EMPTY) const;
     /// Ensure that material techniques are listed in correct order.
     void SortTechniques();
     /// Mark material for auxiliary view rendering.
@@ -256,7 +256,7 @@ public:
     Texture* GetTexture(TextureUnit unit) const;
 
     /// Return all textures.
-    const HashMap<TextureUnit, SharedPtr<Texture> >& GetTextures() const { return textures_; }
+    const HashMap<TextureUnit, stl::shared_ptr<Texture> >& GetTextures() const { return textures_; }
 
     /// Return additional vertex shader defines.
     const String& GetVertexShaderDefines() const { return vertexShaderDefines_; }
@@ -340,11 +340,11 @@ private:
     /// Techniques.
     Vector<TechniqueEntry> techniques_;
     /// Textures.
-    HashMap<TextureUnit, SharedPtr<Texture> > textures_;
+    HashMap<TextureUnit, stl::shared_ptr<Texture> > textures_;
     /// %Shader parameters.
     HashMap<StringHash, MaterialShaderParameter> shaderParameters_;
     /// %Shader parameters animation infos.
-    HashMap<StringHash, SharedPtr<ShaderParameterAnimationInfo> > shaderParameterAnimationInfos_;
+    HashMap<StringHash, stl::shared_ptr<ShaderParameterAnimationInfo> > shaderParameterAnimationInfos_;
     /// Vertex shader defines.
     String vertexShaderDefines_;
     /// Pixel shader defines.
@@ -376,11 +376,11 @@ private:
     /// Flag to suppress parameter hash and memory use recalculation when setting multiple shader parameters (loading or resetting the material.)
     bool batchedParameterUpdate_{};
     /// XML file used while loading.
-    SharedPtr<XMLFile> loadXMLFile_;
+    stl::shared_ptr<XMLFile> loadXMLFile_;
     /// JSON file used while loading.
-    SharedPtr<JSONFile> loadJSONFile_;
+    stl::shared_ptr<JSONFile> loadJSONFile_;
     /// Associated scene for shader parameter animation updates.
-    WeakPtr<Scene> scene_;
+    stl::weak_ptr<Scene> scene_;
 };
 
 }

@@ -96,7 +96,7 @@ private:
     void Dispose();
 
     /// Spine sprite.
-    SharedPtr<Sprite2D> sprite_;
+    stl::shared_ptr<Sprite2D> sprite_;
 
 #ifdef URHO3D_SPINE
     /// Spine json data.
@@ -114,9 +114,9 @@ private:
     /// Sprite sheet file path.
     String spriteSheetFilePath_;
     /// Sprite sheet.
-    SharedPtr<SpriteSheet2D> spriteSheet_;
+    stl::shared_ptr<SpriteSheet2D> spriteSheet_;
     /// Spriter sprites.
-    HashMap<unsigned, SharedPtr<Sprite2D> > spriterFileSprites_;
+    HashMap<unsigned, stl::shared_ptr<Sprite2D> > spriterFileSprites_;
 };
 
 }

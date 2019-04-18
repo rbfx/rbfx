@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../Container/Ptr.h"
+#include <EASTL/shared_ptr.h>
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Texture.h"
 
@@ -85,13 +85,13 @@ private:
     /// Texture array layers number.
     unsigned layers_{};
     /// Render surface.
-    SharedPtr<RenderSurface> renderSurface_;
+    stl::shared_ptr<RenderSurface> renderSurface_;
     /// Memory use per layer.
     PODVector<unsigned> layerMemoryUse_;
     /// Layer image files acquired during BeginLoad.
-    Vector<SharedPtr<Image> > loadImages_;
+    Vector<stl::shared_ptr<Image> > loadImages_;
     /// Parameter file acquired during BeginLoad.
-    SharedPtr<XMLFile> loadParameters_;
+    stl::shared_ptr<XMLFile> loadParameters_;
 };
 
 }

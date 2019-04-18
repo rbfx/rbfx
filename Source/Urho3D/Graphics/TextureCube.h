@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../Container/Ptr.h"
+#include <EASTL/shared_ptr.h>
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Texture.h"
 
@@ -68,7 +68,7 @@ public:
     /// Get data from a face's mip level. The destination buffer must be big enough. Return true if successful.
     bool GetData(CubeMapFace face, unsigned level, void* dest) const;
     /// Get image data from a face's zero mip level. Only RGB and RGBA textures are supported.
-    SharedPtr<Image> GetImage(CubeMapFace face) const;
+    stl::shared_ptr<Image> GetImage(CubeMapFace face) const;
 
     /// Return render surface for one face.
     RenderSurface* GetRenderSurface(CubeMapFace face) const { return renderSurfaces_[face]; }
@@ -82,13 +82,13 @@ private:
     void HandleRenderSurfaceUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Render surfaces.
-    SharedPtr<RenderSurface> renderSurfaces_[MAX_CUBEMAP_FACES];
+    stl::shared_ptr<RenderSurface> renderSurfaces_[MAX_CUBEMAP_FACES];
     /// Memory use per face.
     unsigned faceMemoryUse_[MAX_CUBEMAP_FACES]{};
     /// Face image files acquired during BeginLoad.
-    Vector<SharedPtr<Image> > loadImages_;
+    Vector<stl::shared_ptr<Image> > loadImages_;
     /// Parameter file acquired during BeginLoad.
-    SharedPtr<XMLFile> loadParameters_;
+    stl::shared_ptr<XMLFile> loadParameters_;
 };
 
 }

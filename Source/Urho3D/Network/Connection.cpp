@@ -195,7 +195,7 @@ void Connection::SetScene(Scene* newScene)
         sceneState_.Clear();
 
         // When scene is assigned on the server, instruct the client to load it. This may require downloading packages
-        const Vector<SharedPtr<PackageFile> >& packages = scene_->GetRequiredPackageFiles();
+        const Vector<stl::shared_ptr<PackageFile> >& packages = scene_->GetRequiredPackageFiles();
         unsigned numPackages = packages.Size();
         msg_.Clear();
         msg_.WriteString(scene_->GetFileName());
@@ -509,7 +509,7 @@ void Connection::ProcessLoadScene(int msgID, MemoryBuffer& msg)
     auto* cache = GetSubsystem<ResourceCache>();
     const String& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
 
-    Vector<SharedPtr<PackageFile> > packages = cache->GetPackageFiles();
+    Vector<stl::shared_ptr<PackageFile> > packages = cache->GetPackageFiles();
     for (unsigned i = 0; i < packages.Size(); ++i)
     {
         PackageFile* package = packages[i];
@@ -771,7 +771,7 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
             }
 
             // The package must be one of those required by the scene
-            const Vector<SharedPtr<PackageFile> >& packages = scene_->GetRequiredPackageFiles();
+            const Vector<stl::shared_ptr<PackageFile> >& packages = scene_->GetRequiredPackageFiles();
             for (unsigned i = 0; i < packages.Size(); ++i)
             {
                 PackageFile* package = packages[i];
@@ -788,7 +788,7 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
                     }
 
                     // Try to open the file now
-                    SharedPtr<File> file(new File(context_, packageFullName));
+                    stl::shared_ptr<File> file(new File(context_, packageFullName));
                     if (!file->IsOpen())
                     {
                         URHO3D_LOGERROR("Failed to transmit package file " + name);
@@ -1222,7 +1222,7 @@ void Connection::ProcessNewNode(Node* node)
 
     // Write node's components
     msg_.WriteVLE(node->GetNumNetworkComponents());
-    const Vector<SharedPtr<Component> >& components = node->GetComponents();
+    const Vector<stl::shared_ptr<Component> >& components = node->GetComponents();
     for (unsigned i = 0; i < components.Size(); ++i)
     {
         Component* component = components[i];
@@ -1390,7 +1390,7 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
     // Check for new components
     if (nodeState.componentStates_.Size() != node->GetNumNetworkComponents())
     {
-        const Vector<SharedPtr<Component> >& components = node->GetComponents();
+        const Vector<stl::shared_ptr<Component> >& components = node->GetComponents();
         for (unsigned i = 0; i < components.Size(); ++i)
         {
             Component* component = components[i];
@@ -1428,7 +1428,7 @@ bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
     auto* cache = GetSubsystem<ResourceCache>();
     const String& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
 
-    Vector<SharedPtr<PackageFile> > packages = cache->GetPackageFiles();
+    Vector<stl::shared_ptr<PackageFile> > packages = cache->GetPackageFiles();
     Vector<String> downloadedPackages;
     bool packagesScanned = false;
 
@@ -1475,7 +1475,7 @@ bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
             if (!fileName.Find(checksumString) && !fileName.Substring(9).Compare(name, false))
             {
                 // Name matches. Check file size and actual checksum to be sure
-                SharedPtr<PackageFile> newPackage(new PackageFile(context_, packageCacheDir + fileName));
+                stl::shared_ptr<PackageFile> newPackage(new PackageFile(context_, packageCacheDir + fileName));
                 if (newPackage->GetTotalSize() == fileSize && newPackage->GetChecksum() == checksum)
                 {
                     // Add the package to the resource system now, as we will need it to load the scene
@@ -1566,7 +1566,7 @@ void Connection::OnPackagesReady()
     {
         // Otherwise start the async loading process
         String extension = GetExtension(sceneFileName_);
-        SharedPtr<File> file = GetSubsystem<ResourceCache>()->GetFile(sceneFileName_);
+        stl::shared_ptr<File> file = GetSubsystem<ResourceCache>()->GetFile(sceneFileName_);
         bool success;
 
         if (extension == ".xml")

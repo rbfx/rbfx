@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../Container/Ptr.h"
+#include <EASTL/shared_ptr.h>
 
 namespace Urho3D
 {
@@ -70,7 +70,7 @@ public:
 
 protected:
     /// Graphics subsystem.
-    WeakPtr<Graphics> graphics_;
+    stl::weak_ptr<Graphics> graphics_;
     /// Object pointer or name.
     GPUObjectHandle object_{};
     /// Data lost flag.

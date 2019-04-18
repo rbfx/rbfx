@@ -84,7 +84,7 @@ void HttpRequestDemo::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
     auto* network = GetSubsystem<Network>();
 
-    if (httpRequest_.Null())
+    if (httpRequest_ == nullptr)
         httpRequest_ = network->MakeHttpRequest("http://httpbin.org/ip");
     else
     {
@@ -106,7 +106,7 @@ void HttpRequestDemo::HandleUpdate(StringHash eventType, VariantMap& eventData)
             {
                 text_->SetText("Processing...");
 
-                SharedPtr<JSONFile> json(new JSONFile(context_));
+                stl::shared_ptr<JSONFile> json(new JSONFile(context_));
                 json->FromString(message_);
 
                 JSONValue val = json->GetRoot().Get("origin");

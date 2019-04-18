@@ -221,7 +221,7 @@ void AnimationState::SetBoneWeight(unsigned index, float weight, bool recursive)
         Node* boneNode = stateTracks_[index].node_;
         if (boneNode)
         {
-            const Vector<SharedPtr<Node> >& children = boneNode->GetChildren();
+            const Vector<stl::shared_ptr<Node> >& children = boneNode->GetChildren();
             for (unsigned i = 0; i < children.Size(); ++i)
             {
                 unsigned childTrackIndex = GetTrackIndex(children[i]);
@@ -292,8 +292,8 @@ void AnimationState::AddTime(float delta)
     {
         using namespace AnimationFinished;
 
-        WeakPtr<AnimationState> self(this);
-        WeakPtr<Node> senderNode(model_ ? model_->GetNode() : node_);
+        stl::weak_ptr<AnimationState> self(this);
+        stl::weak_ptr<Node> senderNode(model_ ? model_->GetNode() : node_.get());
 
         VariantMap& eventData = senderNode->GetEventDataMap();
         eventData[P_NODE] = senderNode;
@@ -303,7 +303,7 @@ void AnimationState::AddTime(float delta)
 
         // Note: this may cause arbitrary deletion of animation states, including the one we are currently processing
         senderNode->SendEvent(E_ANIMATIONFINISHED, eventData);
-        if (senderNode.Expired() || self.Expired())
+        if (senderNode.expired() || self.expired())
             return;
     }
 
@@ -342,8 +342,8 @@ void AnimationState::AddTime(float delta)
             {
                 using namespace AnimationTrigger;
 
-                WeakPtr<AnimationState> self(this);
-                WeakPtr<Node> senderNode(model_ ? model_->GetNode() : node_);
+                stl::weak_ptr<AnimationState> self(this);
+                stl::weak_ptr<Node> senderNode(model_ ? model_->GetNode() : node_.get());
 
                 VariantMap& eventData = senderNode->GetEventDataMap();
                 eventData[P_NODE] = senderNode;
@@ -354,7 +354,7 @@ void AnimationState::AddTime(float delta)
 
                 // Note: this may cause arbitrary deletion of animation states, including the one we are currently processing
                 senderNode->SendEvent(E_ANIMATIONTRIGGER, eventData);
-                if (senderNode.Expired() || self.Expired())
+                if (senderNode.expired() || self.expired())
                     return;
             }
         }

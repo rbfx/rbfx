@@ -110,7 +110,7 @@ void CleanupGeometryCacheImpl(CollisionGeometryDataCache& cache)
     for (auto i = cache.Begin(); i != cache.End();)
     {
         auto current = i++;
-        if (current->second_.Refs() == 1)
+        if (current->second_.use_count() == 1)
             cache.Erase(current);
     }
 }
@@ -684,7 +684,7 @@ void PhysicsWorld::GetCollidingBodies(PODVector<RigidBody*>& result, const Rigid
 
     result.Clear();
 
-    for (HashMap<Pair<WeakPtr<RigidBody>, WeakPtr<RigidBody> >, ManifoldPair>::Iterator i = currentCollisions_.Begin();
+    for (HashMap<Pair<stl::weak_ptr<RigidBody>, stl::weak_ptr<RigidBody> >, ManifoldPair>::Iterator i = currentCollisions_.Begin();
          i != currentCollisions_.End(); ++i)
     {
         if (i->first_.first_ == body)
@@ -865,12 +865,12 @@ void PhysicsWorld::SendCollisionEvents()
                 !bodyA->IsActive() && !bodyB->IsActive())
                 continue;
 
-            WeakPtr<RigidBody> bodyWeakA(bodyA);
-            WeakPtr<RigidBody> bodyWeakB(bodyB);
+            stl::weak_ptr<RigidBody> bodyWeakA(bodyA);
+            stl::weak_ptr<RigidBody> bodyWeakB(bodyB);
 
             // First only store the collision pair as weak pointers and the manifold pointer, so user code can safely destroy
             // objects during collision event handling
-            Pair<WeakPtr<RigidBody>, WeakPtr<RigidBody> > bodyPair;
+            Pair<stl::weak_ptr<RigidBody>, stl::weak_ptr<RigidBody> > bodyPair;
             if (bodyA < bodyB)
             {
                 bodyPair = MakePair(bodyWeakA, bodyWeakB);
@@ -883,7 +883,7 @@ void PhysicsWorld::SendCollisionEvents()
             }
         }
 
-        for (HashMap<Pair<WeakPtr<RigidBody>, WeakPtr<RigidBody> >, ManifoldPair>::Iterator i = currentCollisions_.Begin();
+        for (HashMap<Pair<stl::weak_ptr<RigidBody>, stl::weak_ptr<RigidBody> >, ManifoldPair>::Iterator i = currentCollisions_.Begin();
              i != currentCollisions_.End(); ++i)
         {
             RigidBody* bodyA = i->first_.first_;
@@ -893,8 +893,8 @@ void PhysicsWorld::SendCollisionEvents()
 
             Node* nodeA = bodyA->GetNode();
             Node* nodeB = bodyB->GetNode();
-            WeakPtr<Node> nodeWeakA(nodeA);
-            WeakPtr<Node> nodeWeakB(nodeB);
+            stl::weak_ptr<Node> nodeWeakA(nodeA);
+            stl::weak_ptr<Node> nodeWeakB(nodeB);
 
             bool trigger = bodyA->IsTrigger() || bodyB->IsTrigger();
             bool newCollision = !previousCollisions_.Contains(i->first_);
@@ -1014,7 +1014,7 @@ void PhysicsWorld::SendCollisionEvents()
     {
         physicsCollisionData_[PhysicsCollisionEnd::P_WORLD] = this;
 
-        for (HashMap<Pair<WeakPtr<RigidBody>, WeakPtr<RigidBody> >, ManifoldPair>::Iterator
+        for (HashMap<Pair<stl::weak_ptr<RigidBody>, stl::weak_ptr<RigidBody> >, ManifoldPair>::Iterator
                  i = previousCollisions_.Begin(); i != previousCollisions_.End(); ++i)
         {
             if (!currentCollisions_.Contains(i->first_))
@@ -1037,8 +1037,8 @@ void PhysicsWorld::SendCollisionEvents()
 
                 Node* nodeA = bodyA->GetNode();
                 Node* nodeB = bodyB->GetNode();
-                WeakPtr<Node> nodeWeakA(nodeA);
-                WeakPtr<Node> nodeWeakB(nodeB);
+                stl::weak_ptr<Node> nodeWeakA(nodeA);
+                stl::weak_ptr<Node> nodeWeakB(nodeB);
 
                 physicsCollisionData_[PhysicsCollisionEnd::P_BODYA] = bodyA;
                 physicsCollisionData_[PhysicsCollisionEnd::P_BODYB] = bodyB;

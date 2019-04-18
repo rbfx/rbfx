@@ -138,7 +138,7 @@ void Typography::Start()
 
 void Typography::CreateText()
 {
-    SharedPtr<UIElement> container(new UIElement(context_));
+    stl::shared_ptr<UIElement> container(new UIElement(context_));
     container->SetAlignment(HA_LEFT, VA_TOP);
     container->SetLayout(LM_VERTICAL);
     uielement_->AddChild(container);
@@ -149,7 +149,7 @@ void Typography::CreateText()
     for (auto size2x = 2; size2x <= 36; ++size2x)
     {
         auto size = size2x / 2.f;
-        SharedPtr<Text> text(new Text(context_));
+        stl::shared_ptr<Text> text(new Text(context_));
         text->SetText(String("The quick brown fox jumps over the lazy dog (") + String(size) + String("pt)"));
         text->SetFont(font, size);
         text->AddTag(TEXT_TAG);
@@ -157,18 +157,18 @@ void Typography::CreateText()
     }
 }
 
-SharedPtr<CheckBox> Typography::CreateCheckbox(const String& label, EventHandler* handler)
+stl::shared_ptr<CheckBox> Typography::CreateCheckbox(const String& label, EventHandler* handler)
 {
-    SharedPtr<UIElement> container(new UIElement(context_));
+    stl::shared_ptr<UIElement> container(new UIElement(context_));
     container->SetAlignment(HA_LEFT, VA_TOP);
     container->SetLayout(LM_HORIZONTAL, 8);
     uielement_->AddChild(container);
 
-    SharedPtr<CheckBox> box(new CheckBox(context_));
+    stl::shared_ptr<CheckBox> box(new CheckBox(context_));
     container->AddChild(box);
     box->SetStyleAuto();
 
-    SharedPtr<Text> text(new Text(context_));
+    stl::shared_ptr<Text> text(new Text(context_));
     container->AddChild(text);
     text->SetText(label);
     text->SetStyleAuto();
@@ -178,26 +178,26 @@ SharedPtr<CheckBox> Typography::CreateCheckbox(const String& label, EventHandler
     return box;
 }
 
-SharedPtr<DropDownList> Typography::CreateMenu(const String& label, const char** items, EventHandler* handler)
+stl::shared_ptr<DropDownList> Typography::CreateMenu(const String& label, const char** items, EventHandler* handler)
 {
-    SharedPtr<UIElement> container(new UIElement(context_));
+    stl::shared_ptr<UIElement> container(new UIElement(context_));
     container->SetAlignment(HA_LEFT, VA_TOP);
     container->SetLayout(LM_HORIZONTAL, 8);
     uielement_->AddChild(container);
 
-    SharedPtr<Text> text(new Text(context_));
+    stl::shared_ptr<Text> text(new Text(context_));
     container->AddChild(text);
     text->SetText(label);
     text->SetStyleAuto();
     text->AddTag(TEXT_TAG);
 
-    SharedPtr<DropDownList> list(new DropDownList(context_));
+    stl::shared_ptr<DropDownList> list(new DropDownList(context_));
     container->AddChild(list);
     list->SetStyleAuto();
 
     for (int i = 0; items[i]; ++i)
     {
-        SharedPtr<Text> item(new Text(context_));
+        stl::shared_ptr<Text> item(new Text(context_));
         list->AddItem(item);
         item->SetText(items[i]);
         item->SetStyleAuto();

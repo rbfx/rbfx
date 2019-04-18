@@ -98,7 +98,7 @@ struct URHO3D_API SourceBatch
     /// Geometry.
     Geometry* geometry_{};
     /// Material.
-    SharedPtr<Material> material_;
+    stl::shared_ptr<Material> material_;
     /// World transform(s). For a skinned model, these are the bone transforms.
     const Matrix3x4* worldTransform_{&Matrix3x4::IDENTITY};
     /// Number of world transforms.

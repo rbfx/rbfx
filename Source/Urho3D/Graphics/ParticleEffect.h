@@ -243,7 +243,7 @@ public:
     /// Sort the list of texture frames based on time.
     void SortTextureFrames();
     /// Clone the particle effect.
-    SharedPtr<ParticleEffect> Clone(const String& cloneName = String::EMPTY) const;
+    stl::shared_ptr<ParticleEffect> Clone(const String& cloneName = String::EMPTY) const;
 
     /// Return material.
     Material* GetMaterial() const { return material_; }
@@ -378,7 +378,7 @@ private:
     void GetVector3MinMax(const XMLElement& element, Vector3& minValue, Vector3& maxValue);
 
     /// Material.
-    SharedPtr<Material> material_;
+    stl::shared_ptr<Material> material_;
     /// Number of particles.
     unsigned numParticles_;
     /// Update when invisible flag.

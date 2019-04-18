@@ -59,7 +59,7 @@ private:
     void CreateScene();
 
     /// Reference holding message box.
-    SharedPtr<SystemMessageBox> messageBox_;
+    stl::shared_ptr<SystemMessageBox> messageBox_;
     /// Flag controlling display of imgui demo window.
     bool demoOpen_ = false;
 };

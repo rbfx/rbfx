@@ -565,7 +565,7 @@ public:
     UIElement* GetChild(const StringHash& key, const Variant& value = Variant::EMPTY, bool recursive = false) const;
 
     /// Return immediate child elements.
-    const Vector<SharedPtr<UIElement> >& GetChildren() const { return children_; }
+    const Vector<stl::shared_ptr<UIElement> >& GetChildren() const { return children_; }
 
     /// Return child elements either recursively or non-recursively.
     void GetChildren(PODVector<UIElement*>& dest, bool recursive = false) const;
@@ -669,7 +669,7 @@ protected:
     /// Name.
     String name_;
     /// Child elements.
-    Vector<SharedPtr<UIElement> > children_;
+    Vector<stl::shared_ptr<UIElement> > children_;
     /// Parent element.
     UIElement* parent_{};
     /// Child element clipping border.
@@ -800,9 +800,9 @@ private:
     /// Has color gradient flag.
     bool colorGradient_{};
     /// Default style file.
-    SharedPtr<XMLFile> defaultStyle_;
+    stl::shared_ptr<XMLFile> defaultStyle_;
     /// Last applied style file.
-    WeakPtr<XMLFile> appliedStyleFile_;
+    stl::weak_ptr<XMLFile> appliedStyleFile_;
     /// Style resource name which is loaded by default.
     String defaultStyleFileName_;
     /// Traversal mode for rendering.

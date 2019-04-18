@@ -188,7 +188,7 @@ void Water::SetupViewport()
     auto* cache = GetSubsystem<ResourceCache>();
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
-    SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 
     // Create a mathematical plane to represent the water in calculations
@@ -217,11 +217,11 @@ void Water::SetupViewport()
     // Create a texture and setup viewport for water reflection. Assign the reflection texture to the diffuse
     // texture unit of the water material
     int texSize = 1024;
-    SharedPtr<Texture2D> renderTexture(new Texture2D(context_));
+    stl::shared_ptr<Texture2D> renderTexture(new Texture2D(context_));
     renderTexture->SetSize(texSize, texSize, Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
     renderTexture->SetFilterMode(FILTER_BILINEAR);
     RenderSurface* surface = renderTexture->GetRenderSurface();
-    SharedPtr<Viewport> rttViewport(new Viewport(context_, scene_, reflectionCamera));
+    stl::shared_ptr<Viewport> rttViewport(new Viewport(context_, scene_, reflectionCamera));
     surface->SetViewport(0, rttViewport);
     auto* waterMat = cache->GetResource<Material>("Materials/Water.xml");
     waterMat->SetTexture(TU_DIFFUSE, renderTexture);

@@ -102,7 +102,7 @@ void SpriteSheet2D::DefineSprite(const String& name, const IntRect& rectangle, c
     if (GetSprite(name))
         return;
 
-    SharedPtr<Sprite2D> sprite(context_->CreateObject<Sprite2D>());
+    stl::shared_ptr<Sprite2D> sprite(context_->CreateObject<Sprite2D>());
     sprite->SetName(name);
     sprite->SetTexture(texture_);
     sprite->SetRectangle(rectangle);
@@ -115,7 +115,7 @@ void SpriteSheet2D::DefineSprite(const String& name, const IntRect& rectangle, c
 
 Sprite2D* SpriteSheet2D::GetSprite(const String& name) const
 {
-    HashMap<String, SharedPtr<Sprite2D> >::ConstIterator i = spriteMapping_.Find(name);
+    HashMap<String, stl::shared_ptr<Sprite2D> >::ConstIterator i = spriteMapping_.Find(name);
     if (i == spriteMapping_.End())
         return nullptr;
 
@@ -128,7 +128,7 @@ bool SpriteSheet2D::BeginLoadFromPListFile(Deserializer& source)
     if (!loadPListFile_->Load(source))
     {
         URHO3D_LOGERROR("Could not load sprite sheet");
-        loadPListFile_.Reset();
+        loadPListFile_.reset();
         return false;
     }
 
@@ -153,7 +153,7 @@ bool SpriteSheet2D::EndLoadFromPListFile()
     if (!texture_)
     {
         URHO3D_LOGERROR("Could not load texture " + loadTextureName_);
-        loadPListFile_.Reset();
+        loadPListFile_.reset();
         loadTextureName_.Clear();
         return false;
     }
@@ -189,7 +189,7 @@ bool SpriteSheet2D::EndLoadFromPListFile()
         DefineSprite(name, rectangle, hotSpot, offset);
     }
 
-    loadPListFile_.Reset();
+    loadPListFile_.reset();
     loadTextureName_.Clear();
     return true;
 }
@@ -200,7 +200,7 @@ bool SpriteSheet2D::BeginLoadFromXMLFile(Deserializer& source)
     if (!loadXMLFile_->Load(source))
     {
         URHO3D_LOGERROR("Could not load sprite sheet");
-        loadXMLFile_.Reset();
+        loadXMLFile_.reset();
         return false;
     }
 
@@ -210,7 +210,7 @@ bool SpriteSheet2D::BeginLoadFromXMLFile(Deserializer& source)
     if (!rootElem)
     {
         URHO3D_LOGERROR("Invalid sprite sheet");
-        loadXMLFile_.Reset();
+        loadXMLFile_.reset();
         return false;
     }
 
@@ -229,7 +229,7 @@ bool SpriteSheet2D::EndLoadFromXMLFile()
     if (!texture_)
     {
         URHO3D_LOGERROR("Could not load texture " + loadTextureName_);
-        loadXMLFile_.Reset();
+        loadXMLFile_.reset();
         loadTextureName_.Clear();
         return false;
     }
@@ -263,7 +263,7 @@ bool SpriteSheet2D::EndLoadFromXMLFile()
         subTextureElem = subTextureElem.GetNext("SubTexture");
     }
 
-    loadXMLFile_.Reset();
+    loadXMLFile_.reset();
     loadTextureName_.Clear();
     return true;
 }
@@ -274,7 +274,7 @@ bool SpriteSheet2D::BeginLoadFromJSONFile(Deserializer& source)
     if (!loadJSONFile_->Load(source))
     {
         URHO3D_LOGERROR("Could not load sprite sheet");
-        loadJSONFile_.Reset();
+        loadJSONFile_.reset();
         return false;
     }
 
@@ -284,7 +284,7 @@ bool SpriteSheet2D::BeginLoadFromJSONFile(Deserializer& source)
     if (rootElem.IsNull())
     {
         URHO3D_LOGERROR("Invalid sprite sheet");
-        loadJSONFile_.Reset();
+        loadJSONFile_.reset();
         return false;
     }
 
@@ -303,7 +303,7 @@ bool SpriteSheet2D::EndLoadFromJSONFile()
     if (!texture_)
     {
         URHO3D_LOGERROR("Could not load texture " + loadTextureName_);
-        loadJSONFile_.Reset();
+        loadJSONFile_.reset();
         loadTextureName_.Clear();
         return false;
     }
@@ -341,7 +341,7 @@ bool SpriteSheet2D::EndLoadFromJSONFile()
 
     }
 
-    loadJSONFile_.Reset();
+    loadJSONFile_.reset();
     loadTextureName_.Clear();
     return true;
 }

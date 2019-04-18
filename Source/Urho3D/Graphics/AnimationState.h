@@ -23,7 +23,7 @@
 #pragma once
 
 #include "../Container/HashMap.h"
-#include "../Container/Ptr.h"
+#include <EASTL/shared_ptr.h>
 #include "../Math/StringHash.h"
 
 namespace Urho3D
@@ -72,7 +72,7 @@ struct URHO3D_API AnimationStateTrack
     /// Bone pointer.
     Bone* bone_;
     /// Scene node pointer.
-    WeakPtr<Node> node_;
+    stl::weak_ptr<Node> node_;
     /// Blending weight.
     float weight_;
     /// Last key frame.
@@ -168,11 +168,11 @@ private:
     void ApplyTrack(AnimationStateTrack& stateTrack, float weight, bool silent);
 
     /// Animated model (model mode.)
-    WeakPtr<AnimatedModel> model_;
+    stl::weak_ptr<AnimatedModel> model_;
     /// Root scene node (node hierarchy mode.)
-    WeakPtr<Node> node_;
+    stl::weak_ptr<Node> node_;
     /// Animation.
-    SharedPtr<Animation> animation_;
+    stl::shared_ptr<Animation> animation_;
     /// Start bone.
     Bone* startBone_;
     /// Per-track data.

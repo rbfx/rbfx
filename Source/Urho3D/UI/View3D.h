@@ -82,15 +82,15 @@ private:
     void HandleRenderSurfaceUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Renderable texture.
-    SharedPtr<Texture2D> renderTexture_;
+    stl::shared_ptr<Texture2D> renderTexture_;
     /// Depth stencil texture.
-    SharedPtr<Texture2D> depthTexture_;
+    stl::shared_ptr<Texture2D> depthTexture_;
     /// Viewport.
-    SharedPtr<Viewport> viewport_;
+    stl::shared_ptr<Viewport> viewport_;
     /// Scene.
-    SharedPtr<Scene> scene_;
+    stl::shared_ptr<Scene> scene_;
     /// Camera scene node.
-    SharedPtr<Node> cameraNode_;
+    stl::shared_ptr<Node> cameraNode_;
     /// Own scene.
     bool ownScene_;
     /// Render texture format.

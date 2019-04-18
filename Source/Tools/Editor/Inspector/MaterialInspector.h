@@ -42,16 +42,16 @@ public:
     /// Construct.
     explicit Material(Urho3D::Material* material);
     /// Returns attached material.
-    Urho3D::Material* GetMaterial() const { return material_.Get(); }
+    Urho3D::Material* GetMaterial() const { return material_.get(); }
     /// Returns attached material.
-    Urho3D::Material* GetMaterial() { return material_.Get(); }
+    Urho3D::Material* GetMaterial() { return material_.get(); }
 
     /// Registers object with the engine.
     static void RegisterObject(Context* context);
 
 protected:
     /// Attached material.
-    SharedPtr<Urho3D::Material> material_;
+    stl::shared_ptr<Urho3D::Material> material_;
 };
 
 }
@@ -77,7 +77,7 @@ protected:
     void RenderCustomWidgets(VariantMap& args);
 
     /// Material which is being previewed.
-    SharedPtr<Inspectable::Material> inspectable_;
+    stl::shared_ptr<Inspectable::Material> inspectable_;
     /// Material attribute inspector namespace.
     AttributeInspector attributeInspector_;
     /// Index of current figure displaying material.

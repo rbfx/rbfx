@@ -55,7 +55,7 @@ void TechniqueChangedAction::RemoveTechnique()
         for (auto i = index_ + 1; i < material->GetNumTechniques(); i++)
         {
             const auto& entry = material->GetTechniqueEntry(i);
-            material->SetTechnique(i - 1, entry.original_.Get(), entry.qualityLevel_, entry.lodDistance_);
+            material->SetTechnique(i - 1, entry.original_.get(), entry.qualityLevel_, entry.lodDistance_);
         }
         // Remove last one
         material->SetNumTechniques(material->GetNumTechniques() - 1);
@@ -75,7 +75,7 @@ void TechniqueChangedAction::AddTechnique(const TechniqueChangedAction::Techniqu
             for (auto i = index_ + 1; i < material->GetNumTechniques(); i++)
             {
                 const auto& entry = material->GetTechniqueEntry(i - 1);
-                material->SetTechnique(i, entry.original_.Get(), entry.qualityLevel_, entry.lodDistance_);
+                material->SetTechnique(i, entry.original_.get(), entry.qualityLevel_, entry.lodDistance_);
             }
             // Insert new technique
             material->SetTechnique(index_, technique, info.qualityLevel_, info.lodDistance_);

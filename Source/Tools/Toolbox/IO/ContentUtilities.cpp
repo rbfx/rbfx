@@ -95,8 +95,8 @@ ContentType GetContentType(const String& resourcePath)
     if (extension == ".xml")
     {
         auto systemUI = (SystemUI*)ui::GetIO().UserData;
-        SharedPtr<XMLFile> xml(systemUI->GetCache()->GetResource<XMLFile>(resourcePath));
-        if (xml.Null())
+        stl::shared_ptr<XMLFile> xml(systemUI->GetCache()->GetResource<XMLFile>(resourcePath));
+        if (!xml)
             return CTYPE_UNKNOWN;
 
         auto rootElementName = xml->GetRoot().GetName();

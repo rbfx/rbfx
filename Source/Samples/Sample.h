@@ -76,11 +76,11 @@ protected:
     void SetLogoVisible(bool enable);
 
     /// Logo sprite.
-    SharedPtr<Sprite> logoSprite_;
+    stl::shared_ptr<Sprite> logoSprite_;
     /// Scene.
-    SharedPtr<Scene> scene_;
+    stl::shared_ptr<Scene> scene_;
     /// Camera scene node.
-    SharedPtr<Node> cameraNode_;
+    stl::shared_ptr<Node> cameraNode_;
     /// Camera yaw angle.
     float yaw_;
     /// Camera pitch angle.

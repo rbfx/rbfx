@@ -898,7 +898,7 @@ void View::GetDrawables()
         // Create a work item for each thread
         for (int i = 0; i < numWorkItems; ++i)
         {
-            SharedPtr<WorkItem> item = queue->GetFreeItem();
+            stl::shared_ptr<WorkItem> item = queue->GetFreeItem();
             item->priority_ = M_MAX_UNSIGNED;
             item->workFunction_ = CheckVisibilityWork;
             item->aux_ = this;
@@ -981,7 +981,7 @@ void View::ProcessLights()
 
     for (unsigned i = 0; i < lightQueryResults_.Size(); ++i)
     {
-        SharedPtr<WorkItem> item = queue->GetFreeItem();
+        stl::shared_ptr<WorkItem> item = queue->GetFreeItem();
         item->priority_ = M_MAX_UNSIGNED;
         item->workFunction_ = ProcessLightWork;
         item->aux_ = this;
@@ -1297,7 +1297,7 @@ void View::UpdateGeometries()
 
             if (command.type_ == CMD_SCENEPASS)
             {
-                SharedPtr<WorkItem> item = queue->GetFreeItem();
+                stl::shared_ptr<WorkItem> item = queue->GetFreeItem();
                 item->priority_ = M_MAX_UNSIGNED;
                 item->workFunction_ =
                     command.sortMode_ == SORT_FRONTTOBACK ? SortBatchQueueFrontToBackWork : SortBatchQueueBackToFrontWork;
@@ -1308,7 +1308,7 @@ void View::UpdateGeometries()
 
         for (Vector<LightBatchQueue>::Iterator i = lightQueues_.Begin(); i != lightQueues_.End(); ++i)
         {
-            SharedPtr<WorkItem> lightItem = queue->GetFreeItem();
+            stl::shared_ptr<WorkItem> lightItem = queue->GetFreeItem();
             lightItem->priority_ = M_MAX_UNSIGNED;
             lightItem->workFunction_ = SortLightQueueWork;
             lightItem->start_ = &(*i);
@@ -1316,7 +1316,7 @@ void View::UpdateGeometries()
 
             if (i->shadowSplits_.Size())
             {
-                SharedPtr<WorkItem> shadowItem = queue->GetFreeItem();
+                stl::shared_ptr<WorkItem> shadowItem = queue->GetFreeItem();
                 shadowItem->priority_ = M_MAX_UNSIGNED;
                 shadowItem->workFunction_ = SortShadowQueueWork;
                 shadowItem->start_ = &(*i);
@@ -1351,7 +1351,7 @@ void View::UpdateGeometries()
                 if (i < numWorkItems - 1 && end - start > drawablesPerItem)
                     end = start + drawablesPerItem;
 
-                SharedPtr<WorkItem> item = queue->GetFreeItem();
+                stl::shared_ptr<WorkItem> item = queue->GetFreeItem();
                 item->priority_ = M_MAX_UNSIGNED;
                 item->workFunction_ = UpdateDrawableGeometriesWork;
                 item->aux_ = const_cast<FrameInfo*>(&frame_);
@@ -1446,7 +1446,7 @@ void View::GetLitBatches(Drawable* drawable, LightBatchQueue& lightQueue, BatchQ
 
 void View::ExecuteRenderPathCommands()
 {
-    View* actualView = sourceView_ ? sourceView_ : this;
+    View* actualView = sourceView_ ? sourceView_.get() : this;
 
     // If not reusing shadowmaps, render all of them first
     if (!renderer_->GetReuseShadowMaps() && renderer_->GetDrawShadows() && !actualView->lightQueues_.Empty())
@@ -1948,7 +1948,7 @@ bool View::CheckPingpong(unsigned index)
 
 void View::AllocateScreenBuffers()
 {
-    View* actualView = sourceView_ ? sourceView_ : this;
+    View* actualView = sourceView_ ? sourceView_.get() : this;
 
     bool hasScenePassToRTs = false;
     bool hasCustomDepth = false;
@@ -2843,11 +2843,11 @@ Technique* View::GetTechnique(Drawable* drawable, Material* material)
 
 void View::CheckMaterialForAuxView(Material* material)
 {
-    const HashMap<TextureUnit, SharedPtr<Texture> >& textures = material->GetTextures();
+    const HashMap<TextureUnit, stl::shared_ptr<Texture> >& textures = material->GetTextures();
 
-    for (HashMap<TextureUnit, SharedPtr<Texture> >::ConstIterator i = textures.Begin(); i != textures.End(); ++i)
+    for (HashMap<TextureUnit, stl::shared_ptr<Texture> >::ConstIterator i = textures.Begin(); i != textures.End(); ++i)
     {
-        Texture* texture = i->second_.Get();
+        Texture* texture = i->second_;
         if (texture && texture->GetUsage() == TEXTURE_RENDERTARGET)
         {
             // Have to check cube & 2D textures separately

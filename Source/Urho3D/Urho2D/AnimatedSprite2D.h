@@ -127,7 +127,7 @@ protected:
     /// Entity name.
     String entity_;
     /// Animation set.
-    SharedPtr<AnimationSet2D> animationSet_;
+    stl::shared_ptr<AnimationSet2D> animationSet_;
     /// Animation name.
     String animationName_;
     /// Loop mode.

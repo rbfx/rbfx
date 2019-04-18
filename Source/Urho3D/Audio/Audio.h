@@ -149,7 +149,7 @@ private:
     /// Sound sources.
     PODVector<SoundSource*> soundSources_;
     /// Sound listener.
-    WeakPtr<SoundListener> listener_;
+    stl::weak_ptr<SoundListener> listener_;
 };
 
 /// Register Audio library objects.

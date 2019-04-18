@@ -29,7 +29,7 @@
 #endif
 
 #include <cstddef>
-#include <utility>
+#include <EASTL/utility.h>
 
 
 namespace Urho3D

@@ -110,7 +110,7 @@ void Run(Vector<String>& arguments)
     if (arguments.Size() < 2)
         Help();
 
-    SharedPtr<Context> context(new Context());
+    stl::shared_ptr<Context> context(new Context());
     context->RegisterSubsystem(new FileSystem(context));
     context->RegisterSubsystem(new Log(context));
     auto* fileSystem = context->GetSubsystem<FileSystem>();
@@ -189,7 +189,7 @@ void Run(Vector<String>& arguments)
     offsetX = Min((int)offsetX, (int)padX);
     offsetY = Min((int)offsetY, (int)padY);
 
-    Vector<SharedPtr<PackerInfo > > packerInfos;
+    Vector<stl::shared_ptr<PackerInfo > > packerInfos;
 
     for (unsigned i = 0; i < inputFiles.Size(); ++i)
     {
@@ -204,7 +204,7 @@ void Run(Vector<String>& arguments)
         if (image.IsCompressed())
             ErrorExit(path + " is compressed. Compressed images are not allowed.");
 
-        SharedPtr<PackerInfo> packerInfo(new PackerInfo(path, name));
+        stl::shared_ptr<PackerInfo> packerInfo(new PackerInfo(path, name));
         int imageWidth = image.GetWidth();
         int imageHeight = image.GetHeight();
         int trimOffsetX = 0;
@@ -337,7 +337,7 @@ void Run(Vector<String>& arguments)
 
     for (unsigned i = 0; i < packerInfos.Size(); ++i)
     {
-        SharedPtr<PackerInfo> packerInfo = packerInfos[i];
+        stl::shared_ptr<PackerInfo> packerInfo = packerInfos[i];
         XMLElement subTexture = root.CreateChild("SubTexture");
         subTexture.SetString("name", packerInfo->name);
         subTexture.SetInt("x", packerInfo->x + offsetX);
@@ -380,7 +380,7 @@ void Run(Vector<String>& arguments)
         URHO3D_LOGINFO("Drawing debug information.");
         for (unsigned i = 0; i < packerInfos.Size(); ++i)
         {
-            SharedPtr<PackerInfo> packerInfo = packerInfos[i];
+            stl::shared_ptr<PackerInfo> packerInfo = packerInfos[i];
 
             // Draw outer bounds
             for (int x = 0; x < packerInfo->frameWidth; ++x)

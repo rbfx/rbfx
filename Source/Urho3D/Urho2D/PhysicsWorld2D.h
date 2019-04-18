@@ -226,7 +226,7 @@ protected:
     int positionIterations_{};
 
     /// Extra weak pointer to scene to allow for cleanup in case the world is destroyed before other components.
-    WeakPtr<Scene> scene_;
+    stl::weak_ptr<Scene> scene_;
     /// Debug renderer.
     DebugRenderer* debugRenderer_{};
     /// Debug draw depth test mode.
@@ -239,7 +239,7 @@ protected:
     /// Applying transforms.
     bool applyingTransforms_{};
     /// Rigid bodies.
-    Vector<WeakPtr<RigidBody2D> > rigidBodies_;
+    Vector<stl::weak_ptr<RigidBody2D> > rigidBodies_;
     /// Delayed (parented) world transform assignments.
     HashMap<RigidBody2D*, DelayedWorldTransform2D> delayedWorldTransforms_;
 
@@ -254,17 +254,17 @@ protected:
         const PODVector<unsigned char>& Serialize(VectorBuffer& buffer) const;
 
         /// Rigid body A.
-        SharedPtr<RigidBody2D> bodyA_;
+        stl::shared_ptr<RigidBody2D> bodyA_;
         /// Rigid body B.
-        SharedPtr<RigidBody2D> bodyB_;
+        stl::shared_ptr<RigidBody2D> bodyB_;
         /// Node A.
-        SharedPtr<Node> nodeA_;
+        stl::shared_ptr<Node> nodeA_;
         /// Node B.
-        SharedPtr<Node> nodeB_;
+        stl::shared_ptr<Node> nodeB_;
         /// Shape A.
-        SharedPtr<CollisionShape2D> shapeA_;
+        stl::shared_ptr<CollisionShape2D> shapeA_;
         /// Shape B.
-        SharedPtr<CollisionShape2D> shapeB_;
+        stl::shared_ptr<CollisionShape2D> shapeB_;
         /// Number of contact points.
         int numPoints_{};
         /// Contact normal in world space.

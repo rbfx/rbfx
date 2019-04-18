@@ -150,7 +150,7 @@ public:
     /// Set multiple vertex buffers.
     bool SetVertexBuffers(const PODVector<VertexBuffer*>& buffers, unsigned instanceOffset = 0);
     /// Set multiple vertex buffers.
-    bool SetVertexBuffers(const Vector<SharedPtr<VertexBuffer> >& buffers, unsigned instanceOffset = 0);
+    bool SetVertexBuffers(const Vector<stl::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset = 0);
     /// Set index buffer.
     void SetIndexBuffer(IndexBuffer* buffer);
     /// Set shaders.
@@ -640,7 +640,7 @@ private:
     /// Window title.
     String windowTitle_;
     /// Window icon image.
-    WeakPtr<Image> windowIcon_;
+    stl::weak_ptr<Image> windowIcon_;
     /// External window, null if not in use (default.)
     void* externalWindow_{};
     /// Window width in pixels.
@@ -790,11 +790,11 @@ private:
     /// File extension for shaders.
     String shaderExtension_;
     /// Last used shader in shader variation query.
-    mutable WeakPtr<Shader> lastShader_;
+    mutable stl::weak_ptr<Shader> lastShader_;
     /// Last used shader name in shader variation query.
     mutable String lastShaderName_;
     /// Shader precache utility.
-    SharedPtr<ShaderPrecache> shaderPrecache_;
+    stl::shared_ptr<ShaderPrecache> shaderPrecache_;
     /// Allowed screen orientations.
     String orientations_;
     /// Graphics API name.

@@ -95,7 +95,7 @@ private:
     FontFace* GetFaceBitmap(float pointSize);
 
     /// Created faces.
-    HashMap<int, SharedPtr<FontFace> > faces_;
+    HashMap<int, stl::shared_ptr<FontFace> > faces_;
     /// Font data.
     stl::shared_array<unsigned char> fontData_;
     /// Size of font data.

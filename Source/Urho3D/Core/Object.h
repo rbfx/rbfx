@@ -290,7 +290,7 @@ public:
     virtual ~ObjectFactory() = default;
 
     /// Create an object. Implemented in templated subclasses.
-    virtual SharedPtr<Object> CreateObject() = 0;
+    virtual stl::shared_ptr<Object> CreateObject() = 0;
 
     /// Return execution context.
     Context* GetContext() const { return context_; }
@@ -320,39 +320,10 @@ public:
         ObjectFactory(context)
     {
         typeInfo_ = T::GetTypeInfoStatic();
-        allocator_ = AllocatorInitialize(sizeof(T));
-    }
-
-    ~ObjectFactoryImpl() override
-    {
-        MutexLock lock(mutex_);
-        AllocatorUninitialize(allocator_);
-        allocator_ = nullptr;
     }
 
     /// Create an object of the specific type.
-    SharedPtr<Object> CreateObject() override
-    {
-        URHO3D_PROFILE("CreateObject");
-        mutex_.Acquire();
-        auto* newObject = static_cast<T*>(AllocatorReserve(allocator_));
-        mutex_.Release();
-
-        new(newObject) T(context_);
-        newObject->SetDeleter([this, newObject](RefCounted* refCounted) {
-            URHO3D_PROFILE("FactoryDeleter");
-            newObject->~T();
-            MutexLock lock(mutex_);
-            AllocatorFree(allocator_, newObject);
-        });
-        return SharedPtr<Object>(newObject);
-    }
-
-private:
-    /// Object allocator.
-    AllocatorBlock* allocator_;
-    /// Allocator mutex.
-    Mutex mutex_;
+    stl::shared_ptr<Object> CreateObject() override { return stl::shared_ptr<Object>(new T(context_)); }
 };
 
 /// Internal helper class for invoking event handler functions.

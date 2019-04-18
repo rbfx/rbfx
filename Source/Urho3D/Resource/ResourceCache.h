@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../Container/HashSet.h"
+#include "../Container/Ptr.h"
 #include "../Core/Mutex.h"
 #include "../IO/File.h"
 #include "../Resource/Resource.h"
@@ -52,7 +53,7 @@ struct ResourceGroup
     /// Current memory use.
     unsigned long long memoryUse_;
     /// Resources.
-    HashMap<StringHash, SharedPtr<Resource> > resources_;
+    HashMap<StringHash, stl::shared_ptr<Resource> > resources_;
 };
 
 /// Resource request types.
@@ -134,11 +135,11 @@ public:
     void RemoveResourceRouter(ResourceRouter* router);
 
     /// Open and return a file from the resource load paths or from inside a package file. If not found, use a fallback search with absolute path. Return null if fails. Can be called from outside the main thread.
-    SharedPtr<File> GetFile(const String& name, bool sendEventOnFailure = true);
+    stl::shared_ptr<File> GetFile(const String& name, bool sendEventOnFailure = true);
     /// Return a resource by type and name. Load if not loaded yet. Return null if not found or if fails, unless SetReturnFailedResources(true) has been called. Can be called only from the main thread.
     Resource* GetResource(StringHash type, const String& name, bool sendEventOnFailure = true);
     /// Load a resource without storing it in the resource cache. Return null if not found or if fails. Can be called from outside the main thread if the resource itself is safe to load completely (it does not possess for example GPU data.)
-    SharedPtr<Resource> GetTempResource(StringHash type, const String& name, bool sendEventOnFailure = true);
+    stl::shared_ptr<Resource> GetTempResource(StringHash type, const String& name, bool sendEventOnFailure = true);
     /// Background load a resource. An event will be sent when complete. Return true if successfully stored to the load queue, false if eg. already exists. Can be called from outside the main thread.
     bool BackgroundLoadResource(StringHash type, const String& name, bool sendEventOnFailure = true, Resource* caller = nullptr);
     /// Return number of pending background-loaded resources.
@@ -155,14 +156,14 @@ public:
     const Vector<String>& GetResourceDirs() const { return resourceDirs_; }
 
     /// Return added package files.
-    const Vector<SharedPtr<PackageFile> >& GetPackageFiles() const { return packages_; }
+    const Vector<stl::shared_ptr<PackageFile> >& GetPackageFiles() const { return packages_; }
 
     /// Template version of returning a resource by name.
     template <class T> T* GetResource(const String& name, bool sendEventOnFailure = true);
     /// Template version of returning an existing resource by name.
     template <class T> T* GetExistingResource(const String& name);
     /// Template version of loading a resource without storing it to the cache.
-    template <class T> SharedPtr<T> GetTempResource(const String& name, bool sendEventOnFailure = true);
+    template <class T> stl::shared_ptr<T> GetTempResource(const String& name, bool sendEventOnFailure = true);
     /// Template version of releasing a resource by name.
     template <class T> void ReleaseResource(const String& name, bool force = false);
     /// Template version of queueing a resource background load.
@@ -229,9 +230,9 @@ public:
 
 private:
     /// Find a resource.
-    const SharedPtr<Resource>& FindResource(StringHash type, StringHash nameHash);
+    const stl::shared_ptr<Resource>& FindResource(StringHash type, StringHash nameHash);
     /// Find a resource by name only. Searches all type groups.
-    const SharedPtr<Resource>& FindResource(StringHash nameHash);
+    const stl::shared_ptr<Resource>& FindResource(StringHash nameHash);
     /// Release resources loaded from a package file.
     void ReleasePackageResources(PackageFile* package, bool force = false);
     /// Update a resource group. Recalculate memory use and release resources if over memory budget.
@@ -250,15 +251,15 @@ private:
     /// Resource load directories.
     Vector<String> resourceDirs_;
     /// File watchers for resource directories, if automatic reloading enabled.
-    Vector<SharedPtr<FileWatcher> > fileWatchers_;
+    Vector<stl::shared_ptr<FileWatcher> > fileWatchers_;
     /// Package files.
-    Vector<SharedPtr<PackageFile> > packages_;
+    Vector<stl::shared_ptr<PackageFile> > packages_;
     /// Dependent resources. Only used with automatic reload to eg. trigger reload of a cube texture when any of its faces change.
     HashMap<StringHash, HashSet<StringHash> > dependentResources_;
     /// Resource background loader.
-    SharedPtr<BackgroundLoader> backgroundLoader_;
+    stl::shared_ptr<BackgroundLoader> backgroundLoader_;
     /// Resource routers.
-    Vector<SharedPtr<ResourceRouter> > resourceRouters_;
+    Vector<stl::shared_ptr<ResourceRouter> > resourceRouters_;
     /// Automatic resource reloading flag.
     bool autoReloadResources_;
     /// Return failed resources flag.
@@ -291,7 +292,7 @@ template <class T> void ResourceCache::ReleaseResource(const String& name, bool 
     ReleaseResource(type, name, force);
 }
 
-template <class T> SharedPtr<T> ResourceCache::GetTempResource(const String& name, bool sendEventOnFailure)
+template <class T> stl::shared_ptr<T> ResourceCache::GetTempResource(const String& name, bool sendEventOnFailure)
 {
     StringHash type = T::GetTypeStatic();
     return StaticCast<T>(GetTempResource(type, name, sendEventOnFailure));

@@ -179,15 +179,15 @@ public:
     unsigned GetNumCompressedLevels() const { return numCompressedLevels_; }
 
     /// Return next mip level by bilinear filtering. Note that if the image is already 1x1x1, will keep returning an image of that size.
-    SharedPtr<Image> GetNextLevel() const;
+    stl::shared_ptr<Image> GetNextLevel() const;
     /// Return the next sibling image of an array or cubemap.
-    SharedPtr<Image> GetNextSibling() const { return nextSibling_;  }
+    stl::shared_ptr<Image> GetNextSibling() const { return nextSibling_;  }
     /// Return image converted to 4-component (RGBA) to circumvent modern rendering API's not supporting e.g. the luminance-alpha format.
-    SharedPtr<Image> ConvertToRGBA() const;
+    stl::shared_ptr<Image> ConvertToRGBA() const;
     /// Return a compressed mip level.
     CompressedLevel GetCompressedLevel(unsigned index) const;
     /// Return subimage from the image by the defined rect or null if failed. 3D images are not supported. You must free the subimage yourself.
-    Image* GetSubimage(const IntRect& rect) const;
+    stl::shared_ptr<Image> GetSubimage(const IntRect& rect) const;
     /// Return an SDL surface from the image, or null if failed. Only RGB images are supported. Specify rect to only return partial image. You must free the surface yourself.
     SDL_Surface* GetSDLSurface(const IntRect& rect = IntRect::ZERO) const;
     /// Precalculate the mip levels. Used by asynchronous texture loading.
@@ -230,9 +230,9 @@ private:
     /// Pixel data.
     stl::shared_array<unsigned char> data_;
     /// Precalculated mip level image.
-    SharedPtr<Image> nextLevel_;
+    stl::shared_ptr<Image> nextLevel_;
     /// Next texture array or cube map image.
-    SharedPtr<Image> nextSibling_;
+    stl::shared_ptr<Image> nextSibling_;
 };
 
 }

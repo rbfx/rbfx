@@ -73,7 +73,7 @@ public:
     {
         IntVector2 result(-1, -1);
 
-        if (node_.Expired())
+        if (node_.expired())
             return result;
 
         Scene* scene = node_->GetScene();
@@ -90,7 +90,7 @@ public:
         if (viewport_ == nullptr)
             viewport_ = renderer->GetViewportForScene(scene, 0);
 
-        if (viewport_.Expired() || octree == nullptr)
+        if (viewport_.expired() || octree == nullptr)
             return result;
 
         if (viewport_->GetScene() != scene)
@@ -142,9 +142,9 @@ public:
 
 protected:
     /// A UIComponent which owns this element.
-    WeakPtr<Node> node_;
+    stl::weak_ptr<Node> node_;
     /// Viewport which renders this element.
-    WeakPtr<Viewport> viewport_;
+    stl::weak_ptr<Viewport> viewport_;
 };
 
 UIComponent::UIComponent(Context* context)
@@ -219,7 +219,7 @@ void UIComponent::OnNodeSet(Node* node)
     }
     else
     {
-        if (model_.NotNull())
+        if (model_)
         {
             model_->Remove();
             model_ = nullptr;

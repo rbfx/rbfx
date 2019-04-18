@@ -26,10 +26,10 @@
 
 #include <cassert>
 #include <cstring>
-#include <algorithm>
-#include <initializer_list>
 #include <new>
-#include <utility>
+#include <EASTL/algorithm.h>
+#include <EASTL/initializer_list.h>
+#include <EASTL/utility.h>
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -220,12 +220,12 @@ public:
         {
             // Optimize common case
             ++size_;
-            new (&Back()) T(std::forward<Args>(args)...);
+            new (&Back()) T(stl::forward<Args>(args)...);
         }
         else
         {
-            T value(std::forward<Args>(args)...);
-            Push(std::move(value));
+            T value(stl::forward<Args>(args)...);
+            Push(stl::move(value));
         }
         return Back();
     }
@@ -251,7 +251,7 @@ public:
         {
             // Optimize common case
             ++size_;
-            new (&Back()) T(std::move(value));
+            new (&Back()) T(stl::move(value));
         }
         else
             DoInsertElements(size_, &value, &value + 1, MoveTag{});
@@ -358,7 +358,7 @@ public:
         {
             // Swap elements from the end of the array into the empty space
             T* buffer = Buffer();
-            std::move(buffer + newSize, buffer + size_, buffer + pos);
+            stl::move(buffer + newSize, buffer + size_, buffer + pos);
             Resize(newSize);
         }
     }
@@ -557,7 +557,7 @@ private:
     {
         const unsigned count = end - start;
         for (unsigned i = 0; i < count; ++i)
-            new(dest + i) T(std::move(*(start + i)));
+            new(dest + i) T(stl::move(*(start + i)));
     }
 
     /// Calculate new vector capacity.
@@ -644,7 +644,7 @@ private:
             // Rotate buffer
             if (pos < size_)
             {
-                std::rotate(buffer + pos, buffer + size_, buffer + size_ + numElements);
+                stl::rotate(buffer + pos, buffer + size_, buffer + size_ + numElements);
             }
 
             // Update size
@@ -660,7 +660,7 @@ private:
         assert(count > 0);
         assert(pos + count <= size_);
         T* buffer = Buffer();
-        std::move(buffer + pos + count, buffer + size_, buffer + pos);
+        stl::move(buffer + pos + count, buffer + size_, buffer + pos);
         Resize(size_ - count);
         return Begin() + pos;
     }

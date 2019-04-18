@@ -65,13 +65,13 @@ struct SourceBatch2D
     SourceBatch2D();
 
     /// Owner.
-    WeakPtr<Drawable2D> owner_;
+    stl::weak_ptr<Drawable2D> owner_;
     /// Distance to camera.
     mutable float distance_;
     /// Draw order.
     int drawOrder_;
     /// Material.
-    SharedPtr<Material> material_;
+    stl::shared_ptr<Material> material_;
     /// Vertices.
     Vector<Vertex2D> vertices_;
 
@@ -146,7 +146,7 @@ protected:
     /// Source batches dirty flag.
     bool sourceBatchesDirty_;
     /// Renderer2D.
-    WeakPtr<Renderer2D> renderer_;
+    stl::weak_ptr<Renderer2D> renderer_;
 };
 
 }

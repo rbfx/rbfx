@@ -110,7 +110,7 @@ void Sample::InitTouchInput()
     if (!patchString.Empty())
     {
         // Patch the screen joystick layout further on demand
-        SharedPtr<XMLFile> patchFile(new XMLFile(context_));
+        stl::shared_ptr<XMLFile> patchFile(new XMLFile(context_));
         if (patchFile->FromString(patchString))
             layout->Patch(patchFile);
     }
