@@ -21,6 +21,7 @@
 // THE SOFTWARE.
 //
 
+#include "Urho3D/Container/Utilities.h"
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/Core/CoreEvents.h"
 #include "Urho3D/Engine/EngineEvents.h"
@@ -150,7 +151,7 @@ void Console::RenderContent()
         if (!levelVisible_[row.level_])
             continue;
 
-        if (loggersHidden_.Contains(row.logger_))
+        if (stl::contains(loggersHidden_, row.logger_))
             continue;
 
         ImColor color;
@@ -289,11 +290,11 @@ void Console::HandleScreenMode(StringHash eventType, VariantMap& eventData)
 
 StringVector Console::GetLoggers() const
 {
-    HashSet<String> loggers;
+    stl::hash_set<String> loggers;
     StringVector loggersVector;
 
     for (const auto& row : history_)
-        loggers.Insert(row.logger_);
+        loggers.insert(row.logger_);
 
     for (const String& logger : loggers)
         loggersVector.EmplaceBack(logger);
@@ -306,14 +307,14 @@ void Console::SetLoggerVisible(const String& loggerName, bool visible)
 {
     scrollToEnd_ = true;
     if (visible)
-        loggersHidden_.Erase(loggerName);
+        loggersHidden_.erase(loggerName);
     else
-        loggersHidden_.Insert(loggerName);
+        loggersHidden_.insert(loggerName);
 }
 
 bool Console::GetLoggerVisible(const String& loggerName) const
 {
-    return !loggersHidden_.Contains(loggerName);
+    return !stl::contains(loggersHidden_, loggerName);
 }
 
 void Console::SetLevelVisible(LogLevel level, bool visible)

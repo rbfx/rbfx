@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Container/Utilities.h"
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../Graphics/DebugRenderer.h"
@@ -959,7 +960,7 @@ void NavigationMesh::CollectGeometries(Vector<NavigationGeometryInfo>& geometryL
     PODVector<Navigable*> navigables;
     node_->GetComponents<Navigable>(navigables, true);
 
-    HashSet<Node*> processedNodes;
+    stl::hash_set<Node*> processedNodes;
     for (unsigned i = 0; i < navigables.Size(); ++i)
     {
         if (navigables[i]->IsEnabledEffective())
@@ -1004,16 +1005,16 @@ void NavigationMesh::CollectGeometries(Vector<NavigationGeometryInfo>& geometryL
     }
 }
 
-void NavigationMesh::CollectGeometries(Vector<NavigationGeometryInfo>& geometryList, Node* node, HashSet<Node*>& processedNodes,
+void NavigationMesh::CollectGeometries(Vector<NavigationGeometryInfo>& geometryList, Node* node, stl::hash_set<Node*>& processedNodes,
     bool recursive)
 {
     // Make sure nodes are not included twice
-    if (processedNodes.Contains(node))
+    if (stl::contains(processedNodes, node))
         return;
     // Exclude obstacles and crowd agents from consideration
     if (node->HasComponent<Obstacle>() || node->HasComponent<CrowdAgent>())
         return;
-    processedNodes.Insert(node);
+    processedNodes.insert(node);
 
     Matrix3x4 inverse = node_->GetWorldTransform().Inverse();
 

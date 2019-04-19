@@ -112,13 +112,13 @@ bool Pipeline::LoadJSON(const JSONValue& source)
             if (!it->second_.Contains("mtime") || !it->second_.Contains("files"))
                 continue;
 
-            cacheInfo_[it->first_] = {};
+            cacheInfo_[it->first_] = CacheEntry();
             auto& entry = cacheInfo_[it->first_];
 
             entry.mtime_ = it->second_["mtime"].GetUInt();
             const auto& files = it->second_["files"];
             for (unsigned i = 0, size = files.Size(); i < size; i++)
-                entry.files_.Insert(files[i].GetString());
+                entry.files_.insert(files[i].GetString());
         }
     }
 
@@ -269,7 +269,7 @@ void Pipeline::AddCacheEntry(const String& resourceName, const String& cacheReso
     entry.mtime_ = GetFileSystem()->GetLastModifiedTime(project->GetResourcePath() + resourceName);
     if (entry.mtime_ == 0)
         entry.mtime_ = GetFileSystem()->GetLastModifiedTime(project->GetCachePath() + resourceName);
-    entry.files_.Insert(cacheResourceName);
+    entry.files_.insert(cacheResourceName);
 }
 
 void Pipeline::AddCacheEntry(const String& resourceName, const StringVector& cacheResourceNames)

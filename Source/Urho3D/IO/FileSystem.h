@@ -23,8 +23,8 @@
 #pragma once
 
 #include <EASTL/list.h>
+#include <EASTL/hash_set.h>
 
-#include "../Container/HashSet.h"
 #include "../Core/Object.h"
 
 namespace Urho3D
@@ -88,7 +88,7 @@ public:
     bool GetExecuteConsoleCommands() const { return executeConsoleCommands_; }
 
     /// Return whether paths have been registered.
-    bool HasRegisteredPaths() const { return allowedPaths_.Size() > 0; }
+    bool HasRegisteredPaths() const { return allowedPaths_.size() > 0; }
 
     /// Check if a path is allowed to be accessed. If no paths are registered, all are allowed.
     bool CheckAccess(const String& pathName) const;
@@ -136,7 +136,7 @@ private:
     void HandleConsoleCommand(StringHash eventType, VariantMap& eventData);
 
     /// Allowed directories.
-    HashSet<String> allowedPaths_;
+    stl::hash_set<String> allowedPaths_;
     /// Async execution queue.
     stl::list<AsyncExecRequest*> asyncExecQueue_;
     /// Next async execution ID.

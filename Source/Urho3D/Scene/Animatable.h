@@ -22,7 +22,9 @@
 
 #pragma once
 
-#include "../Container/HashSet.h"
+#include <EASTL/unique_ptr.h>
+#include <EASTL/hash_set.h>
+
 #include "../Scene/Serializable.h"
 #include "../Scene/ValueAnimationInfo.h"
 
@@ -150,7 +152,7 @@ protected:
     /// Animation.
     stl::shared_ptr<ObjectAnimation> objectAnimation_;
     /// Animated network attribute set.
-    HashSet<const AttributeInfo*> animatedNetworkAttributes_;
+    stl::hash_set<const AttributeInfo*> animatedNetworkAttributes_;
     /// Attribute animation infos.
     HashMap<String, stl::shared_ptr<AttributeAnimationInfo> > attributeAnimationInfos_;
 };

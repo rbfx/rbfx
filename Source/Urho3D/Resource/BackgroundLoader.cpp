@@ -90,17 +90,16 @@ void BackgroundLoader::ThreadFunction()
             // Need to lock the queue again when manipulating other entries
             Pair<StringHash, StringHash> key = MakePair(resource->GetType(), resource->GetNameHash());
             backgroundLoadMutex_.Acquire();
-            if (item.dependents_.Size())
+            if (item.dependents_.size())
             {
-                for (HashSet<Pair<StringHash, StringHash> >::Iterator i = item.dependents_.Begin();
-                     i != item.dependents_.End(); ++i)
+                for (auto i = item.dependents_.begin(); i != item.dependents_.end(); ++i)
                 {
                     HashMap<Pair<StringHash, StringHash>, BackgroundLoadItem>::Iterator j = backgroundLoadQueue_.Find(*i);
                     if (j != backgroundLoadQueue_.End())
-                        j->second_.dependencies_.Erase(key);
+                        j->second_.dependencies_.erase(key);
                 }
 
-                item.dependents_.Clear();
+                item.dependents_.clear();
             }
 
             resource->SetAsyncLoadState(success ? ASYNC_SUCCESS : ASYNC_FAIL);
@@ -155,8 +154,8 @@ bool BackgroundLoader::QueueResource(StringHash type, const String& name, bool s
         if (j != backgroundLoadQueue_.End())
         {
             BackgroundLoadItem& callerItem = j->second_;
-            item.dependents_.Insert(callerKey);
-            callerItem.dependencies_.Insert(key);
+            item.dependents_.insert(callerKey);
+            callerItem.dependencies_.insert(key);
         }
         else
             URHO3D_LOGWARNING("Resource " + caller->GetName() +
@@ -188,7 +187,7 @@ void BackgroundLoader::WaitForResource(StringHash type, StringHash nameHash)
 
             for (;;)
             {
-                unsigned numDeps = i->second_.dependencies_.Size();
+                unsigned numDeps = i->second_.dependencies_.size();
                 AsyncLoadState state = resource->GetAsyncLoadState();
                 if (numDeps > 0 || state == ASYNC_QUEUED || state == ASYNC_LOADING)
                 {
@@ -227,7 +226,7 @@ void BackgroundLoader::FinishResources(int maxMs)
              i != backgroundLoadQueue_.End();)
         {
             Resource* resource = i->second_.resource_;
-            unsigned numDeps = i->second_.dependencies_.Size();
+            unsigned numDeps = i->second_.dependencies_.size();
             AsyncLoadState state = resource->GetAsyncLoadState();
             if (numDeps > 0 || state == ASYNC_QUEUED || state == ASYNC_LOADING)
                 ++i;

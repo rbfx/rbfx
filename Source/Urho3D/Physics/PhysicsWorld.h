@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Container/HashSet.h"
+#include <EASTL/unique_ptr.h>
+
 #include "../IO/VectorBuffer.h"
 #include "../Math/BoundingBox.h"
 #include "../Math/Sphere.h"

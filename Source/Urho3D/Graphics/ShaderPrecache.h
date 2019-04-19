@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Container/HashSet.h"
+#include <EASTL/unique_ptr.h>
+
 #include "../Core/Object.h"
 #include "../Resource/XMLFile.h"
 
@@ -55,9 +56,9 @@ private:
     /// XML file.
     XMLFile xmlFile_;
     /// Already encountered shader combinations, pointer version for fast queries.
-    HashSet<Pair<ShaderVariation*, ShaderVariation*> > usedPtrCombinations_;
+    stl::hash_set<Pair<ShaderVariation*, ShaderVariation*> > usedPtrCombinations_;
     /// Already encountered shader combinations.
-    HashSet<String> usedCombinations_;
+    stl::hash_set<String> usedCombinations_;
 };
 
 }

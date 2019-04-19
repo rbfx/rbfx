@@ -23,9 +23,9 @@
 #pragma once
 
 #include <EASTL/unique_ptr.h>
+#include <EASTL/hash_set.h>
 
 #include "../Audio/AudioDefs.h"
-#include "../Container/HashSet.h"
 #include "../Core/Mutex.h"
 #include "../Core/Object.h"
 
@@ -145,7 +145,7 @@ private:
     /// Master gain by sound source type.
     HashMap<StringHash, Variant> masterGain_;
     /// Paused sound types.
-    HashSet<StringHash> pausedSoundTypes_;
+    stl::hash_set<StringHash> pausedSoundTypes_;
     /// Sound sources.
     PODVector<SoundSource*> soundSources_;
     /// Sound listener.

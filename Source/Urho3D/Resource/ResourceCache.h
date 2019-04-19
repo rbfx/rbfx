@@ -22,7 +22,9 @@
 
 #pragma once
 
-#include "../Container/HashSet.h"
+#include <EASTL/unique_ptr.h>
+#include <EASTL/hash_set.h>
+
 #include "../Container/Ptr.h"
 #include "../Core/Mutex.h"
 #include "../IO/File.h"
@@ -255,7 +257,7 @@ private:
     /// Package files.
     Vector<stl::shared_ptr<PackageFile> > packages_;
     /// Dependent resources. Only used with automatic reload to eg. trigger reload of a cube texture when any of its faces change.
-    HashMap<StringHash, HashSet<StringHash> > dependentResources_;
+    HashMap<StringHash, stl::hash_set<StringHash> > dependentResources_;
     /// Resource background loader.
     stl::shared_ptr<BackgroundLoader> backgroundLoader_;
     /// Resource routers.

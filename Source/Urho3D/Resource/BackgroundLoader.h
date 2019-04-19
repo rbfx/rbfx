@@ -22,8 +22,9 @@
 
 #pragma once
 
+#include <EASTL/unique_ptr.h>
+
 #include "../Container/HashMap.h"
-#include "../Container/HashSet.h"
 #include "../Core/Mutex.h"
 #include <EASTL/shared_ptr.h>
 #include "../Container/RefCounted.h"
@@ -42,9 +43,9 @@ struct URHO3D_API BackgroundLoadItem
     /// Resource.
     stl::shared_ptr<Resource> resource_;
     /// Resources depended on for loading.
-    HashSet<Pair<StringHash, StringHash> > dependencies_;
+    stl::hash_set<Pair<StringHash, StringHash> > dependencies_;
     /// Resources that depend on this resource's loading.
-    HashSet<Pair<StringHash, StringHash> > dependents_;
+    stl::hash_set<Pair<StringHash, StringHash> > dependents_;
     /// Whether to send failure event.
     bool sendEventOnFailure_;
 };

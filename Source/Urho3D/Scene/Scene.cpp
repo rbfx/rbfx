@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Container/Utilities.h"
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
@@ -214,7 +215,7 @@ void Scene::AddReplicationState(NodeReplicationState* state)
 
     // This is the first update for a new connection. Mark all replicated nodes dirty
     for (HashMap<unsigned, Node*>::ConstIterator i = replicatedNodes_.Begin(); i != replicatedNodes_.End(); ++i)
-        state->sceneState_->dirtyNodes_.Insert(i->first_);
+        state->sceneState_->dirtyNodes_.insert(i->first_);
 }
 
 bool Scene::LoadXML(Deserializer& source)
@@ -343,7 +344,7 @@ bool Scene::LoadAsync(File* file, LoadMode mode)
     asyncProgress_.file_ = file;
     asyncProgress_.mode_ = mode;
     asyncProgress_.loadedNodes_ = asyncProgress_.totalNodes_ = asyncProgress_.loadedResources_ = asyncProgress_.totalResources_ = 0;
-    asyncProgress_.resources_.Clear();
+    asyncProgress_.resources_.clear();
 
     if (mode > LOAD_RESOURCES_ONLY)
     {
@@ -407,7 +408,7 @@ bool Scene::LoadAsyncXML(File* file, LoadMode mode)
     asyncProgress_.file_ = file;
     asyncProgress_.mode_ = mode;
     asyncProgress_.loadedNodes_ = asyncProgress_.totalNodes_ = asyncProgress_.loadedResources_ = asyncProgress_.totalResources_ = 0;
-    asyncProgress_.resources_.Clear();
+    asyncProgress_.resources_.clear();
 
     if (mode > LOAD_RESOURCES_ONLY)
     {
@@ -476,7 +477,7 @@ bool Scene::LoadAsyncJSON(File* file, LoadMode mode)
     asyncProgress_.file_ = file;
     asyncProgress_.mode_ = mode;
     asyncProgress_.loadedNodes_ = asyncProgress_.totalNodes_ = asyncProgress_.loadedResources_ = asyncProgress_.totalResources_ = 0;
-    asyncProgress_.resources_.Clear();
+    asyncProgress_.resources_.clear();
 
     if (mode > LOAD_RESOURCES_ONLY)
     {
@@ -524,7 +525,7 @@ void Scene::StopAsyncLoading()
     asyncProgress_.jsonFile_.reset();
     asyncProgress_.xmlElement_ = XMLElement::EMPTY;
     asyncProgress_.jsonIndex_ = 0;
-    asyncProgress_.resources_.Clear();
+    asyncProgress_.resources_.clear();
     resolver_.Reset();
 }
 
@@ -1093,22 +1094,22 @@ String Scene::GetVarNamesAttr() const
 
 void Scene::PrepareNetworkUpdate()
 {
-    for (HashSet<unsigned>::Iterator i = networkUpdateNodes_.Begin(); i != networkUpdateNodes_.End(); ++i)
+    for (auto i = networkUpdateNodes_.begin(); i != networkUpdateNodes_.end(); ++i)
     {
         Node* node = GetNode(*i);
         if (node)
             node->PrepareNetworkUpdate();
     }
 
-    for (HashSet<unsigned>::Iterator i = networkUpdateComponents_.Begin(); i != networkUpdateComponents_.End(); ++i)
+    for (auto i = networkUpdateComponents_.begin(); i != networkUpdateComponents_.end(); ++i)
     {
         Component* component = GetComponent(*i);
         if (component)
             component->PrepareNetworkUpdate();
     }
 
-    networkUpdateNodes_.Clear();
-    networkUpdateComponents_.Clear();
+    networkUpdateNodes_.clear();
+    networkUpdateComponents_.clear();
 }
 
 void Scene::CleanupConnection(Connection* connection)
@@ -1127,11 +1128,11 @@ void Scene::MarkNetworkUpdate(Node* node)
     if (node)
     {
         if (!threadedUpdate_)
-            networkUpdateNodes_.Insert(node->GetID());
+            networkUpdateNodes_.insert(node->GetID());
         else
         {
             MutexLock lock(sceneMutex_);
-            networkUpdateNodes_.Insert(node->GetID());
+            networkUpdateNodes_.insert(node->GetID());
         }
     }
 }
@@ -1141,11 +1142,11 @@ void Scene::MarkNetworkUpdate(Component* component)
     if (component)
     {
         if (!threadedUpdate_)
-            networkUpdateComponents_.Insert(component->GetID());
+            networkUpdateComponents_.insert(component->GetID());
         else
         {
             MutexLock lock(sceneMutex_);
-            networkUpdateComponents_.Insert(component->GetID());
+            networkUpdateComponents_.insert(component->GetID());
         }
     }
 }
@@ -1159,7 +1160,7 @@ void Scene::MarkReplicationDirty(Node* node)
              i != networkState_->replicationStates_.End(); ++i)
         {
             auto* nodeState = static_cast<NodeReplicationState*>(*i);
-            nodeState->sceneState_->dirtyNodes_.Insert(id);
+            nodeState->sceneState_->dirtyNodes_.insert(id);
         }
     }
 }
@@ -1180,9 +1181,9 @@ void Scene::HandleResourceBackgroundLoaded(StringHash eventType, VariantMap& eve
     if (asyncLoading_)
     {
         auto* resource = static_cast<Resource*>(eventData[P_RESOURCE].GetPtr());
-        if (asyncProgress_.resources_.Contains(resource->GetNameHash()))
+        if (stl::contains(asyncProgress_.resources_, resource->GetNameHash()))
         {
-            asyncProgress_.resources_.Erase(resource->GetNameHash());
+            asyncProgress_.resources_.erase(resource->GetNameHash());
             ++asyncProgress_.loadedResources_;
         }
     }
@@ -1339,7 +1340,7 @@ void Scene::PreloadResources(File* file, bool isSceneFile)
                     if (success)
                     {
                         ++asyncProgress_.totalResources_;
-                        asyncProgress_.resources_.Insert(StringHash(name));
+                        asyncProgress_.resources_.insert(StringHash(name));
                     }
                 }
                 else if (attr.type_ == VAR_RESOURCEREFLIST)
@@ -1352,7 +1353,7 @@ void Scene::PreloadResources(File* file, bool isSceneFile)
                         if (success)
                         {
                             ++asyncProgress_.totalResources_;
-                            asyncProgress_.resources_.Insert(StringHash(name));
+                            asyncProgress_.resources_.insert(StringHash(name));
                         }
                     }
                 }
@@ -1403,7 +1404,7 @@ void Scene::PreloadResourcesXML(const XMLElement& element)
                             if (success)
                             {
                                 ++asyncProgress_.totalResources_;
-                                asyncProgress_.resources_.Insert(StringHash(name));
+                                asyncProgress_.resources_.insert(StringHash(name));
                             }
                         }
                         else if (attr.type_ == VAR_RESOURCEREFLIST)
@@ -1416,7 +1417,7 @@ void Scene::PreloadResourcesXML(const XMLElement& element)
                                 if (success)
                                 {
                                     ++asyncProgress_.totalResources_;
-                                    asyncProgress_.resources_.Insert(StringHash(name));
+                                    asyncProgress_.resources_.insert(StringHash(name));
                                 }
                             }
                         }
@@ -1488,7 +1489,7 @@ void Scene::PreloadResourcesJSON(const JSONValue& value)
                             if (success)
                             {
                                 ++asyncProgress_.totalResources_;
-                                asyncProgress_.resources_.Insert(StringHash(name));
+                                asyncProgress_.resources_.insert(StringHash(name));
                             }
                         }
                         else if (attr.type_ == VAR_RESOURCEREFLIST)
@@ -1501,7 +1502,7 @@ void Scene::PreloadResourcesJSON(const JSONValue& value)
                                 if (success)
                                 {
                                     ++asyncProgress_.totalResources_;
-                                    asyncProgress_.resources_.Insert(StringHash(name));
+                                    asyncProgress_.resources_.insert(StringHash(name));
                                 }
                             }
                         }

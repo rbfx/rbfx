@@ -24,7 +24,8 @@
 
 
 #include <limits>
-#include "../Container/HashSet.h"
+#include <EASTL/unique_ptr.h>
+
 #include "../Container/Vector.h"
 #include "../Core/Mutex.h"
 #include "../Core/Object.h"

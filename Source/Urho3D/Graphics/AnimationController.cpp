@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Container/Utilities.h"
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../Graphics/AnimatedModel.h"
@@ -616,14 +617,14 @@ void AnimationController::SetNetAnimationsAttr(const PODVector<unsigned char>& v
     auto* model = GetComponent<AnimatedModel>();
 
     // Check which animations we need to remove
-    HashSet<StringHash> processedAnimations;
+    stl::hash_set<StringHash> processedAnimations;
 
     unsigned numAnimations = buf.ReadVLE();
     while (numAnimations--)
     {
         String animName = buf.ReadString();
         StringHash animHash(animName);
-        processedAnimations.Insert(animHash);
+        processedAnimations.insert(animHash);
 
         // Check if the animation state exists. If not, add new
         AnimationState* state = GetAnimationState(animHash);
@@ -701,7 +702,7 @@ void AnimationController::SetNetAnimationsAttr(const PODVector<unsigned char>& v
     // Set any extra animations to fade out
     for (Vector<AnimationControl>::Iterator i = animations_.Begin(); i != animations_.End(); ++i)
     {
-        if (!processedAnimations.Contains(i->hash_))
+        if (!stl::contains(processedAnimations, i->hash_))
         {
             i->targetWeight_ = 0.0f;
             i->fadeTime_ = EXTRA_ANIM_FADEOUT_TIME;

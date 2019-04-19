@@ -23,8 +23,10 @@
 
 #pragma once
 
+#include <EASTL/unique_ptr.h>
+#include <EASTL/hash_set.h>
+
 #include "../Core/Object.h"
-#include "../Container/HashSet.h"
 #include "../IO/Log.h"
 
 namespace Urho3D
@@ -119,7 +121,7 @@ private:
     ///Flag indicating that console input should be focused on the next frame.
     bool focusInput_ = false;
     /// Set of loggers to be omitted from rendering.
-    HashSet<String> loggersHidden_{};
+    stl::hash_set<String> loggersHidden_{};
     /// Log level visibility flags.
     bool levelVisible_[LOG_NONE]{
         false,  // LOG_TRACE

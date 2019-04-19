@@ -22,9 +22,10 @@
 
 #pragma once
 
+#include <EASTL/unique_ptr.h>
+
 #include "../Core/Attribute.h"
 #include "../Container/HashMap.h"
-#include "../Container/HashSet.h"
 #include <EASTL/shared_ptr.h>
 #include "../Math/StringHash.h"
 
@@ -162,7 +163,7 @@ struct URHO3D_API NodeReplicationState : public ReplicationState
     /// Dirty attribute bits.
     DirtyBits dirtyAttributes_;
     /// Dirty user vars.
-    HashSet<StringHash> dirtyVars_;
+    stl::hash_set<StringHash> dirtyVars_;
     /// Components by ID.
     HashMap<unsigned, ComponentReplicationState> componentStates_;
     /// Interest management priority accumulator.
@@ -177,12 +178,12 @@ struct URHO3D_API SceneReplicationState : public ReplicationState
     /// Nodes by ID.
     HashMap<unsigned, NodeReplicationState> nodeStates_;
     /// Dirty node IDs.
-    HashSet<unsigned> dirtyNodes_;
+    stl::hash_set<unsigned> dirtyNodes_;
 
     void Clear()
     {
         nodeStates_.Clear();
-        dirtyNodes_.Clear();
+        dirtyNodes_.clear();
     }
 };
 

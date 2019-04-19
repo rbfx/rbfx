@@ -22,8 +22,9 @@
 
 #pragma once
 
+#include <EASTL/unique_ptr.h>
+
 #include "../Container/Ptr.h"
-#include "../Container/HashSet.h"
 #include "../Core/Attribute.h"
 #include "../Core/Object.h"
 

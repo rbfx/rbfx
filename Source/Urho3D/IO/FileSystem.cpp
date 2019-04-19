@@ -469,7 +469,7 @@ void FileSystem::SetExecuteConsoleCommands(bool enable)
 
 int FileSystem::SystemCommand(const String& commandLine, bool redirectStdOutToLog)
 {
-    if (allowedPaths_.Empty())
+    if (allowedPaths_.empty())
         return DoSystemCommand(commandLine, redirectStdOutToLog, context_);
     else
     {
@@ -480,7 +480,7 @@ int FileSystem::SystemCommand(const String& commandLine, bool redirectStdOutToLo
 
 int FileSystem::SystemRun(const String& fileName, const Vector<String>& arguments, String& output)
 {
-    if (allowedPaths_.Empty())
+    if (allowedPaths_.empty())
         return DoSystemRun(fileName, arguments, SR_READ_OUTPUT, output);
     else
     {
@@ -498,7 +498,7 @@ int FileSystem::SystemRun(const String& fileName, const Vector<String>& argument
 int FileSystem::SystemSpawn(const String& fileName, const Vector<String>& arguments)
 {
     String output;
-    if (allowedPaths_.Empty())
+    if (allowedPaths_.empty())
         return DoSystemRun(fileName, arguments, SR_DEFAULT, output);
     else
     {
@@ -510,7 +510,7 @@ int FileSystem::SystemSpawn(const String& fileName, const Vector<String>& argume
 unsigned FileSystem::SystemCommandAsync(const String& commandLine)
 {
 #ifdef URHO3D_THREADING
-    if (allowedPaths_.Empty())
+    if (allowedPaths_.empty())
     {
         unsigned requestID = nextAsyncExecID_;
         auto* cmd = new AsyncSystemCommand(nextAsyncExecID_, commandLine);
@@ -531,7 +531,7 @@ unsigned FileSystem::SystemCommandAsync(const String& commandLine)
 unsigned FileSystem::SystemRunAsync(const String& fileName, const Vector<String>& arguments)
 {
 #ifdef URHO3D_THREADING
-    if (allowedPaths_.Empty())
+    if (allowedPaths_.empty())
     {
         unsigned requestID = nextAsyncExecID_;
         auto* cmd = new AsyncSystemRun(nextAsyncExecID_, fileName, arguments);
@@ -551,7 +551,7 @@ unsigned FileSystem::SystemRunAsync(const String& fileName, const Vector<String>
 
 bool FileSystem::SystemOpen(const String& fileName, const String& mode)
 {
-    if (allowedPaths_.Empty())
+    if (allowedPaths_.empty())
     {
         // allow opening of http and file urls
         if (!fileName.StartsWith("http://") && !fileName.StartsWith("https://") && !fileName.StartsWith("file://"))
@@ -671,7 +671,7 @@ bool FileSystem::CheckAccess(const String& pathName) const
     String fixedPath = AddTrailingSlash(pathName);
 
     // If no allowed directories defined, succeed always
-    if (allowedPaths_.Empty())
+    if (allowedPaths_.empty())
         return true;
 
     // If there is any attempt to go to a parent directory, disallow
@@ -679,7 +679,7 @@ bool FileSystem::CheckAccess(const String& pathName) const
         return false;
 
     // Check if the path is a partial match of any of the allowed directories
-    for (HashSet<String>::ConstIterator i = allowedPaths_.Begin(); i != allowedPaths_.End(); ++i)
+    for (auto i = allowedPaths_.begin(); i != allowedPaths_.end(); ++i)
     {
         if (fixedPath.Find(*i) == 0)
             return true;
@@ -897,7 +897,7 @@ void FileSystem::RegisterPath(const String& pathName)
     if (pathName.Empty())
         return;
 
-    allowedPaths_.Insert(AddTrailingSlash(pathName));
+    allowedPaths_.insert(AddTrailingSlash(pathName));
 }
 
 bool FileSystem::SetLastModifiedTime(const String& fileName, unsigned newTime)

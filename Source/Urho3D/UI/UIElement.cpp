@@ -22,9 +22,9 @@
 
 #include "../Precompiled.h"
 
+#include "../Container/Utilities.h"
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
-#include "../Container/HashSet.h"
 #include "../Container/Sort.h"
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
@@ -1256,7 +1256,7 @@ void UIElement::BringToFront()
     // Get the highest priority used by all other top level elements, assign that to the new front element
     // and decrease others' priority where necessary. However, take into account only input-enabled
     // elements and those which have the BringToBack flag set
-    HashSet<int> usedPriorities;
+    stl::hash_set<int> usedPriorities;
 
     int maxPriority = M_MIN_INT;
     const Vector<stl::shared_ptr<UIElement> >& rootChildren = root->GetChildren();
@@ -1269,7 +1269,7 @@ void UIElement::BringToFront()
             // M_MAX_INT is used by popups and tooltips. Disregard these to avoid an "arms race" with the priorities
             if (priority == M_MAX_INT)
                 continue;
-            usedPriorities.Insert(priority);
+            usedPriorities.insert(priority);
             maxPriority = Max(priority, maxPriority);
         }
     }
@@ -1279,7 +1279,7 @@ void UIElement::BringToFront()
         ptr->SetPriority(maxPriority);
 
         int minPriority = maxPriority;
-        while (usedPriorities.Contains(minPriority))
+        while (stl::contains(usedPriorities, minPriority))
             --minPriority;
 
         for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = rootChildren.Begin(); i != rootChildren.End(); ++i)

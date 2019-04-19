@@ -192,7 +192,7 @@ protected:
     /// Gizmo used for manipulating scene elements.
     Gizmo gizmo_;
     /// Current selected component displayed in inspector.
-    HashSet<stl::weak_ptr<Component>> selectedComponents_;
+    stl::hash_set<stl::weak_ptr<Component>> selectedComponents_;
     /// Flag indicating that mouse is hovering scene viewport.
     bool mouseHoversViewport_ = false;
     /// Nodes whose entries in hierarchy tree should be opened on next frame.

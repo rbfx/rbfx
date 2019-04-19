@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include <Urho3D/Container/Utilities.h>
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Graphics/BillboardSet.h>
 #include <Urho3D/Graphics/Camera.h>
@@ -135,7 +136,7 @@ SceneTab::SceneTab(Context* context)
 
             cameraPreviewViewport_->SetScene(scene);
             viewport_->SetScene(scene);
-            selectedComponents_.Clear();
+            selectedComponents_.clear();
             gizmo_.UnselectAll();
         }
     });
@@ -423,7 +424,7 @@ void SceneTab::Select(Component* component)
     if (component == nullptr)
         return;
 
-    selectedComponents_.Insert(stl::weak_ptr<Component>(component));
+    selectedComponents_.insert(stl::weak_ptr<Component>(component));
     using namespace EditorSelectionChanged;
     SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
 }
@@ -457,7 +458,7 @@ void SceneTab::Unselect(Component* component)
     if (component == nullptr)
         return;
 
-    if (selectedComponents_.Erase(stl::weak_ptr<Component>(component)))
+    if (selectedComponents_.erase(stl::weak_ptr<Component>(component)))
     {
         using namespace EditorSelectionChanged;
         SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
@@ -480,10 +481,10 @@ void SceneTab::ToggleSelection(Component* component)
         return;
 
     stl::weak_ptr<Component> componentPtr(component);
-    if (selectedComponents_.Contains(componentPtr))
-        selectedComponents_.Erase(componentPtr);
+    if (stl::contains(selectedComponents_, componentPtr))
+        selectedComponents_.erase(componentPtr);
     else
-        selectedComponents_.Insert(componentPtr);
+        selectedComponents_.insert(componentPtr);
 
     using namespace EditorSelectionChanged;
     SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
@@ -491,8 +492,8 @@ void SceneTab::ToggleSelection(Component* component)
 
 void SceneTab::UnselectAll()
 {
-    bool hadComponents = !selectedComponents_.Empty();
-    selectedComponents_.Clear();
+    bool hadComponents = !selectedComponents_.empty();
+    selectedComponents_.clear();
     if (gizmo_.UnselectAll() || hadComponents)
     {
         using namespace EditorSelectionChanged;
@@ -570,7 +571,7 @@ bool SceneTab::IsSelected(Component* component) const
     if (component == nullptr)
         return false;
 
-    return selectedComponents_.Contains(stl::weak_ptr<Component>(component));
+    return stl::contains(selectedComponents_, stl::weak_ptr<Component>(component));
 }
 
 void SceneTab::OnNodeSelectionChanged()
@@ -581,7 +582,7 @@ void SceneTab::OnNodeSelectionChanged()
 void SceneTab::RenderInspector(const char* filter)
 {
     const auto& selection = GetSelection();
-    bool singleNodeMode = selection.Size() == 1 && selectedComponents_.Empty();
+    bool singleNodeMode = selection.Size() == 1 && selectedComponents_.empty();
     for (auto& node : GetSelection())
     {
         if (node.expired())
@@ -722,7 +723,7 @@ void SceneTab::RenderNodeTree(Node* node)
                 ui::Image(component->GetTypeName());
                 ui::SameLine();
 
-                bool selected = selectedComponents_.Contains(component);
+                bool selected = stl::contains(selectedComponents_, component);
                 ui::Selectable(component->GetTypeName().CString(), selected);
 
                 if (ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
@@ -945,7 +946,7 @@ void SceneTab::RestoreState(SceneState& source)
 
 void SceneTab::RenderNodeContextMenu()
 {
-    if ((!GetSelection().Empty() || !selectedComponents_.Empty()) && ui::BeginPopup("Node context menu"))
+    if ((!GetSelection().Empty() || !selectedComponents_.empty()) && ui::BeginPopup("Node context menu"))
     {
         Input* input = GetSubsystem<Input>();
         if (input->GetKeyPress(KEY_ESCAPE) || !input->IsMouseVisible())
@@ -1253,7 +1254,7 @@ void SceneTab::CopySelection()
         clipboard_.Clear();
         clipboard_.Copy(GetSelection());
     }
-    else if (!selectedComponents_.Empty())
+    else if (!selectedComponents_.empty())
     {
         clipboard_.Clear();
         clipboard_.Copy(selectedComponents_);
@@ -1286,7 +1287,7 @@ void SceneTab::PasteNextToSelection()
         Select(node);
 
     for (Component* component : result.components_)
-        selectedComponents_.Insert(stl::weak_ptr<Component>(component));
+        selectedComponents_.insert(stl::weak_ptr<Component>(component));
 }
 
 void SceneTab::PasteIntoSelection()
@@ -1304,7 +1305,7 @@ void SceneTab::PasteIntoSelection()
         Select(node);
 
     for (Component* component : result.components_)
-        selectedComponents_.Insert(stl::weak_ptr<Component>(component));
+        selectedComponents_.insert(stl::weak_ptr<Component>(component));
 }
 
 void SceneTab::PasteIntuitive()

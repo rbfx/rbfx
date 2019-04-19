@@ -654,3 +654,11 @@ inline fmt::string_view to_string_view(const String& s)
 }
 
 }
+
+namespace stl
+{
+
+template <class T> struct hash;
+template <> struct hash<Urho3D::String> { size_t operator()(const Urho3D::String& s) const { return s.ToHash(); } };
+
+}

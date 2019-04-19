@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Container/Utilities.h"
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../IO/File.h"
@@ -264,16 +265,16 @@ void Connection::SendServerUpdate()
     // Always check the root node (scene) first so that the scene-wide components get sent first,
     // and all other replicated nodes get added to the dirty set for sending the initial state
     unsigned sceneID = scene_->GetID();
-    nodesToProcess_.Insert(sceneID);
+    nodesToProcess_.insert(sceneID);
     ProcessNode(sceneID);
 
     // Then go through all dirtied nodes
-    nodesToProcess_.Insert(sceneState_.dirtyNodes_);
-    nodesToProcess_.Erase(sceneID); // Do not process the root node twice
+    nodesToProcess_.insert(sceneState_.dirtyNodes_.begin(), sceneState_.dirtyNodes_.end());
+    nodesToProcess_.erase(sceneID); // Do not process the root node twice
 
-    while (nodesToProcess_.Size())
+    while (nodesToProcess_.size())
     {
-        unsigned nodeID = nodesToProcess_.Front();
+        unsigned nodeID = *nodesToProcess_.begin();
         ProcessNode(nodeID);
     }
 }
@@ -858,10 +859,10 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
             msg.Read(buffer, fragmentSize);
             download.file_->Seek(index * PACKAGE_FRAGMENT_SIZE);
             download.file_->Write(buffer, fragmentSize);
-            download.receivedFragments_.Insert(index);
+            download.receivedFragments_.insert(index);
 
             // Check if all fragments received
-            if (download.receivedFragments_.Size() == download.totalFragments_)
+            if (download.receivedFragments_.size() == download.totalFragments_)
             {
                 URHO3D_LOGINFO("Package " + download.name_ + " downloaded successfully");
 
@@ -1100,7 +1101,7 @@ float Connection::GetDownloadProgress() const
     for (HashMap<StringHash, PackageDownload>::ConstIterator i = downloads_.Begin(); i != downloads_.End(); ++i)
     {
         if (i->second_.initiated_)
-            return (float)i->second_.receivedFragments_.Size() / (float)i->second_.totalFragments_;
+            return (float)i->second_.receivedFragments_.size() / (float)i->second_.totalFragments_;
     }
     return 1.0f;
 }
@@ -1151,7 +1152,7 @@ void Connection::HandleAsyncLoadFinished(StringHash eventType, VariantMap& event
 void Connection::ProcessNode(unsigned nodeID)
 {
     // Check that we have not already processed this due to dependency recursion
-    if (!nodesToProcess_.Erase(nodeID))
+    if (!nodesToProcess_.erase(nodeID))
         return;
 
     // Find replication state for the node
@@ -1183,7 +1184,7 @@ void Connection::ProcessNode(unsigned nodeID)
         else
         {
             // Did not find the new node (may have been created, then removed immediately): erase from dirty set.
-            sceneState_.dirtyNodes_.Erase(nodeID);
+            sceneState_.dirtyNodes_.erase(nodeID);
         }
     }
 }
@@ -1195,7 +1196,7 @@ void Connection::ProcessNewNode(Node* node)
     for (PODVector<Node*>::ConstIterator i = dependencyNodes.Begin(); i != dependencyNodes.End(); ++i)
     {
         unsigned nodeID = (*i)->GetID();
-        if (sceneState_.dirtyNodes_.Contains(nodeID))
+        if (stl::contains(sceneState_.dirtyNodes_, nodeID))
             ProcessNode(nodeID);
     }
 
@@ -1244,7 +1245,7 @@ void Connection::ProcessNewNode(Node* node)
     SendMessage(MSG_CREATENODE, true, true, msg_);
 
     nodeState.markedDirty_ = false;
-    sceneState_.dirtyNodes_.Erase(node->GetID());
+    sceneState_.dirtyNodes_.erase(node->GetID());
 }
 
 void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState)
@@ -1254,7 +1255,7 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
     for (PODVector<Node*>::ConstIterator i = dependencyNodes.Begin(); i != dependencyNodes.End(); ++i)
     {
         unsigned nodeID = (*i)->GetID();
-        if (sceneState_.dirtyNodes_.Contains(nodeID))
+        if (stl::contains(sceneState_.dirtyNodes_, nodeID))
             ProcessNode(nodeID);
     }
 
@@ -1269,7 +1270,7 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
     }
 
     // Check if attributes have changed
-    if (nodeState.dirtyAttributes_.Count() || nodeState.dirtyVars_.Size())
+    if (nodeState.dirtyAttributes_.Count() || nodeState.dirtyVars_.size())
     {
         const Vector<AttributeInfo>* attributes = node->GetNetworkAttributes();
         unsigned numAttributes = attributes->Size();
@@ -1295,16 +1296,16 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
         }
 
         // Send deltaupdate if remaining dirty bits, or vars have changed
-        if (nodeState.dirtyAttributes_.Count() || nodeState.dirtyVars_.Size())
+        if (nodeState.dirtyAttributes_.Count() || nodeState.dirtyVars_.size())
         {
             msg_.Clear();
             msg_.WriteNetID(node->GetID());
             node->WriteDeltaUpdate(msg_, nodeState.dirtyAttributes_, timeStamp_);
 
             // Write changed variables
-            msg_.WriteVLE(nodeState.dirtyVars_.Size());
+            msg_.WriteVLE(nodeState.dirtyVars_.size());
             const VariantMap& vars = node->GetVars();
-            for (HashSet<StringHash>::ConstIterator i = nodeState.dirtyVars_.Begin(); i != nodeState.dirtyVars_.End(); ++i)
+            for (auto i = nodeState.dirtyVars_.begin(); i != nodeState.dirtyVars_.end(); ++i)
             {
                 VariantMap::ConstIterator j = vars.Find(*i);
                 if (j != vars.End())
@@ -1324,7 +1325,7 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
             SendMessage(MSG_NODEDELTAUPDATE, true, true, msg_);
 
             nodeState.dirtyAttributes_.ClearAll();
-            nodeState.dirtyVars_.Clear();
+            nodeState.dirtyVars_.clear();
         }
     }
 
@@ -1420,7 +1421,7 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
     }
 
     nodeState.markedDirty_ = false;
-    sceneState_.dirtyNodes_.Erase(node->GetID());
+    sceneState_.dirtyNodes_.erase(node->GetID());
 }
 
 bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)

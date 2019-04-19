@@ -412,3 +412,18 @@ inline float StableRandom(const Vector2& seed) { return Fract(Sin(seed.DotProduc
 inline float StableRandom(float seed) { return StableRandom(Vector2(seed, seed)); }
 
 }
+
+namespace stl
+{
+
+template <class T> struct hash;
+
+template <> struct hash<Urho3D::IntVector2>
+{
+    size_t operator()(const Urho3D::IntVector2& value) const
+    {
+        return value.ToHash();
+    }
+};
+
+}

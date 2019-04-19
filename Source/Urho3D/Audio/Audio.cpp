@@ -26,6 +26,7 @@
 #include "../Audio/Sound.h"
 #include "../Audio/SoundListener.h"
 #include "../Audio/SoundSource3D.h"
+#include "../Container/Utilities.h"
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/ProcessUtils.h"
@@ -170,13 +171,13 @@ void Audio::SetMasterGain(const String& type, float gain)
 void Audio::PauseSoundType(const String& type)
 {
     MutexLock lock(audioMutex_);
-    pausedSoundTypes_.Insert(type);
+    pausedSoundTypes_.insert(type);
 }
 
 void Audio::ResumeSoundType(const String& type)
 {
     MutexLock lock(audioMutex_);
-    pausedSoundTypes_.Erase(type);
+    pausedSoundTypes_.erase(type);
     // Update sound sources before resuming playback to make sure 3D positions are up to date
     // Done under mutex to ensure no mixing happens before we are ready
     UpdateInternal(0.0f);
@@ -185,7 +186,7 @@ void Audio::ResumeSoundType(const String& type)
 void Audio::ResumeAll()
 {
     MutexLock lock(audioMutex_);
-    pausedSoundTypes_.Clear();
+    pausedSoundTypes_.clear();
     UpdateInternal(0.0f);
 }
 
@@ -215,7 +216,7 @@ float Audio::GetMasterGain(const String& type) const
 
 bool Audio::IsSoundTypePaused(const String& type) const
 {
-    return pausedSoundTypes_.Contains(type);
+    return stl::contains(pausedSoundTypes_, type);
 }
 
 SoundListener* Audio::GetListener() const
@@ -289,9 +290,9 @@ void Audio::MixOutput(void* dest, unsigned samples)
             SoundSource* source = *i;
 
             // Check for pause if necessary
-            if (!pausedSoundTypes_.Empty())
+            if (!pausedSoundTypes_.empty())
             {
-                if (pausedSoundTypes_.Contains(source->GetSoundType()))
+                if (stl::contains(pausedSoundTypes_, source->GetSoundType()))
                     continue;
             }
 
@@ -335,9 +336,9 @@ void Audio::UpdateInternal(float timeStep)
         SoundSource* source = soundSources_[i];
 
         // Check for pause if necessary; do not update paused sound sources
-        if (!pausedSoundTypes_.Empty())
+        if (!pausedSoundTypes_.empty())
         {
-            if (pausedSoundTypes_.Contains(source->GetSoundType()))
+            if (stl::contains(pausedSoundTypes_, source->GetSoundType()))
                 continue;
         }
 

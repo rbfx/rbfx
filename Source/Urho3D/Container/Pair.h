@@ -91,3 +91,13 @@ template <class T> T begin(const Urho3D::Pair<T, T>& range) { return range.first
 template <class T> T end(const Urho3D::Pair<T, T>& range) { return range.second_; }
 
 }
+
+namespace stl
+{
+
+template <class T> struct hash;
+
+template<class T, class U>
+struct hash<Urho3D::Pair<T, U>> { size_t operator()(const Urho3D::Pair<T, U>& s) const { return s.ToHash(); } };
+
+}

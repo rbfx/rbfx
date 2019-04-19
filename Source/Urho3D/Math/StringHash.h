@@ -139,3 +139,11 @@ private:
 static_assert(sizeof(StringHash) == sizeof(unsigned), "Unexpected StringHash size.");
 
 }
+
+namespace stl
+{
+
+template <class T> struct hash;
+template <> struct hash<Urho3D::StringHash> { size_t operator()(const Urho3D::StringHash& s) const { return s.ToHash(); } };
+
+}

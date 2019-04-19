@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Container/Utilities.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
@@ -663,7 +664,7 @@ void Renderer::Update(float timeStep)
     frame_.camera_ = nullptr;
     numShadowCameras_ = 0;
     numOcclusionBuffers_ = 0;
-    updatedOctrees_.Clear();
+    updatedOctrees_.clear();
 
     // Reload shaders now if needed
     if (shadersDirty_)
@@ -755,8 +756,8 @@ void Renderer::DrawDebugGeometry(bool depthTest)
     URHO3D_PROFILE("RendererDrawDebug");
 
     /// \todo Because debug geometry is per-scene, if two cameras show views of the same area, occlusion is not shown correctly
-    HashSet<Drawable*> processedGeometries;
-    HashSet<Light*> processedLights;
+    stl::hash_set<Drawable*> processedGeometries;
+    stl::hash_set<Light*> processedLights;
 
     for (unsigned i = 0; i < views_.Size(); ++i)
     {
@@ -776,18 +777,18 @@ void Renderer::DrawDebugGeometry(bool depthTest)
 
         for (unsigned i = 0; i < geometries.Size(); ++i)
         {
-            if (!processedGeometries.Contains(geometries[i]))
+            if (!stl::contains(processedGeometries, geometries[i]))
             {
                 geometries[i]->DrawDebugGeometry(debug, depthTest);
-                processedGeometries.Insert(geometries[i]);
+                processedGeometries.insert(geometries[i]);
             }
         }
         for (unsigned i = 0; i < lights.Size(); ++i)
         {
-            if (!processedLights.Contains(lights[i]))
+            if (!stl::contains(processedLights, lights[i]))
             {
                 lights[i]->DrawDebugGeometry(debug, depthTest);
-                processedLights.Insert(lights[i]);
+                processedLights.insert(lights[i]);
             }
         }
     }
@@ -1270,9 +1271,9 @@ void Renderer::SetBatchShaders(Batch& batch, Technique* tech, bool allowShadows,
     // Log error if shaders could not be assigned, but only once per technique
     if (!batch.vertexShader_ || !batch.pixelShader_)
     {
-        if (!shaderErrorDisplayed_.Contains(tech))
+        if (!stl::contains(shaderErrorDisplayed_, tech))
         {
-            shaderErrorDisplayed_.Insert(tech);
+            shaderErrorDisplayed_.insert(tech);
             URHO3D_LOGERROR("Technique " + tech->GetName() + " has missing shaders");
         }
     }
@@ -1506,14 +1507,14 @@ void Renderer::UpdateQueuedViewport(unsigned index)
 
     // Update octree (perform early update for drawables which need that, and reinsert moved drawables.)
     // However, if the same scene is viewed from multiple cameras, update the octree only once
-    if (!updatedOctrees_.Contains(octree))
+    if (!stl::contains(updatedOctrees_, octree))
     {
         frame_.camera_ = viewport->GetCamera();
         frame_.viewSize_ = viewRect.Size();
         if (frame_.viewSize_ == IntVector2::ZERO)
             frame_.viewSize_ = IntVector2(graphics_->GetWidth(), graphics_->GetHeight());
         octree->Update(frame_);
-        updatedOctrees_.Insert(octree);
+        updatedOctrees_.insert(octree);
 
         // Set also the view for the debug renderer already here, so that it can use culling
         /// \todo May result in incorrect debug geometry culling if the same scene is drawn from multiple viewports

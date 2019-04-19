@@ -76,7 +76,7 @@ void Ragdolls::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    Sample::InitMouseMode(MM_ABSOLUTE);
 }
 
 void Ragdolls::CreateScene()

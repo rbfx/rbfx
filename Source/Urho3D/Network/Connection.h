@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Container/HashSet.h"
+#include <EASTL/unique_ptr.h>
+
 #include "../Core/Object.h"
 #include "../Core/Timer.h"
 #include "../Input/Controls.h"
@@ -71,7 +72,7 @@ struct PackageDownload
     /// Destination file.
     stl::shared_ptr<File> file_;
     /// Already received fragments.
-    HashSet<unsigned> receivedFragments_;
+    stl::hash_set<unsigned> receivedFragments_;
     /// Package name.
     String name_;
     /// Total number of fragments.
@@ -294,7 +295,7 @@ private:
     /// Pending latest data for not yet received components.
     HashMap<unsigned, PODVector<unsigned char> > componentLatestData_;
     /// Node ID's to process during a replication update.
-    HashSet<unsigned> nodesToProcess_;
+    stl::hash_set<unsigned> nodesToProcess_;
     /// Reusable message buffer.
     VectorBuffer msg_;
     /// Queued remote events.

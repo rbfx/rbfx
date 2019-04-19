@@ -23,9 +23,9 @@
 #pragma once
 
 #include <EASTL/list.h>
+#include <EASTL/unique_ptr.h>
 
 #include "../Container/FlagSet.h"
-#include "../Container/HashSet.h"
 #include "../Core/Mutex.h"
 #include "../Core/Object.h"
 #include "../Input/InputEvents.h"
@@ -369,13 +369,13 @@ private:
     /// Graphics subsystem.
     stl::weak_ptr<Graphics> graphics_;
     /// Key down state.
-    HashSet<int> keyDown_;
+    stl::hash_set<int> keyDown_;
     /// Key pressed state.
-    HashSet<int> keyPress_;
+    stl::hash_set<int> keyPress_;
     /// Key down state by scancode.
-    HashSet<int> scancodeDown_;
+    stl::hash_set<int> scancodeDown_;
     /// Key pressed state by scancode.
-    HashSet<int> scancodePress_;
+    stl::hash_set<int> scancodePress_;
     /// Active finger touches.
     HashMap<int, TouchState> touches_;
     /// List that maps between event touch IDs and normalised touch IDs

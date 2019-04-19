@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2019 the Urho3D project.
+// Copyright (c) 2017-2019 the Rokas Kupstys project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,19 +20,27 @@
 // THE SOFTWARE.
 //
 
-#ifdef __cplusplus
+#pragma once
 
-#ifndef URHO3D_PCH_INCLUDED
-#define URHO3D_PCH_INCLUDED
+#include <cstddef>
 
-#include <EASTL/hash_set.h>
-#include <EASTL/unique_ptr.h>
-#include <EASTL/shared_ptr.h>
+namespace stl
+{
 
-#include "Container/HashMap.h"
-#include "Container/Sort.h"
-#include "Container/Str.h"
+template<typename T, typename U>
+inline bool contains(const T& container, const U& value)
+{
+    return container.find(value) != container.end();
+}
 
-#endif
+template <class T> struct hash;
 
-#endif
+template <class T> struct hash<const T&>
+{
+    size_t operator()(const T& s) const
+    {
+        return s.ToHash();
+    }
+};
+
+}

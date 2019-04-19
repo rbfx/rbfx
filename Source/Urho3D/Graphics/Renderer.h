@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Container/HashSet.h"
+#include <EASTL/unique_ptr.h>
+
 #include "../Core/Mutex.h"
 #include "../Graphics/Batch.h"
 #include "../Graphics/Drawable.h"
@@ -523,9 +524,9 @@ private:
     /// Prepared views by culling camera.
     HashMap<Camera*, stl::weak_ptr<View> > preparedViews_;
     /// Octrees that have been updated during the frame.
-    HashSet<Octree*> updatedOctrees_;
+    stl::hash_set<Octree*> updatedOctrees_;
     /// Techniques for which missing shader error has been displayed.
-    HashSet<Technique*> shaderErrorDisplayed_;
+    stl::hash_set<Technique*> shaderErrorDisplayed_;
     /// Mutex for shadow camera allocation.
     Mutex rendererMutex_;
     /// Current variation names for deferred light volume shaders.

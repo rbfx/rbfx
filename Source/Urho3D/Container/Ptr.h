@@ -45,3 +45,19 @@ template <class T, class U> stl::shared_ptr<T> DynamicCast(const stl::shared_ptr
 }
 
 }
+
+namespace stl
+{
+
+template <class T> struct hash;
+
+template <class U>
+struct hash<weak_ptr<U>>
+{
+    size_t operator()(const weak_ptr<U>& value) const
+    {
+        return (size_t)(void*)value.get();
+    }
+};
+
+}

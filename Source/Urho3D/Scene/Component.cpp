@@ -202,7 +202,7 @@ void Component::PrepareNetworkUpdate()
                 if (!nodeState->markedDirty_)
                 {
                     nodeState->markedDirty_ = true;
-                    nodeState->sceneState_->dirtyNodes_.Insert(node_->GetID());
+                    nodeState->sceneState_->dirtyNodes_.insert(node_->GetID());
                 }
             }
         }

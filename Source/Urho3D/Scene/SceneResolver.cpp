@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Container/Utilities.h"
 #include "../IO/Log.h"
 #include "../Scene/Component.h"
 #include "../Scene/SceneResolver.h"
@@ -57,18 +58,18 @@ void SceneResolver::AddComponent(unsigned oldID, Component* component)
 void SceneResolver::Resolve()
 {
     // Nodes do not have component or node ID attributes, so only have to go through components
-    HashSet<StringHash> noIDAttributes;
+    stl::hash_set<StringHash> noIDAttributes;
     for (HashMap<unsigned, stl::weak_ptr<Component> >::ConstIterator i = components_.Begin(); i != components_.End(); ++i)
     {
         Component* component = i->second_;
-        if (!component || noIDAttributes.Contains(component->GetType()))
+        if (!component || stl::contains(noIDAttributes, component->GetType()))
             continue;
 
         bool hasIDAttributes = false;
         const Vector<AttributeInfo>* attributes = component->GetAttributes();
         if (!attributes)
         {
-            noIDAttributes.Insert(component->GetType());
+            noIDAttributes.insert(component->GetType());
             continue;
         }
 
@@ -146,7 +147,7 @@ void SceneResolver::Resolve()
 
         // If component type had no ID attributes, cache this fact for optimization
         if (!hasIDAttributes)
-            noIDAttributes.Insert(component->GetType());
+            noIDAttributes.insert(component->GetType());
     }
 
     // Attributes have been resolved, so no need to remember the nodes after this

@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Container/Utilities.h"
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/Mutex.h"
@@ -1333,22 +1334,22 @@ String Input::GetScancodeName(Scancode scancode) const
 
 bool Input::GetKeyDown(Key key) const
 {
-    return keyDown_.Contains(SDL_tolower(key));
+    return stl::contains(keyDown_, SDL_tolower(key));
 }
 
 bool Input::GetKeyPress(Key key) const
 {
-    return keyPress_.Contains(SDL_tolower(key));
+    return stl::contains(keyPress_, SDL_tolower(key));
 }
 
 bool Input::GetScancodeDown(Scancode scancode) const
 {
-    return scancodeDown_.Contains(scancode);
+    return stl::contains(scancodeDown_, scancode);
 }
 
 bool Input::GetScancodePress(Scancode scancode) const
 {
-    return scancodePress_.Contains(scancode);
+    return stl::contains(scancodePress_, scancode);
 }
 
 bool Input::GetMouseButtonDown(MouseButtonFlags button) const
@@ -1573,8 +1574,8 @@ void Input::ResetJoysticks()
 void Input::ResetInputAccumulation()
 {
     // Reset input accumulation for this frame
-    keyPress_.Clear();
-    scancodePress_.Clear();
+    keyPress_.clear();
+    scancodePress_.clear();
     mouseButtonPress_ = MOUSEB_NONE;
     mouseButtonClick_ = MOUSEB_NONE;
     mouseMove_ = IntVector2::ZERO;
@@ -1640,10 +1641,10 @@ void Input::LoseFocus()
 
 void Input::ResetState()
 {
-    keyDown_.Clear();
-    keyPress_.Clear();
-    scancodeDown_.Clear();
-    scancodePress_.Clear();
+    keyDown_.clear();
+    keyPress_.clear();
+    scancodeDown_.clear();
+    scancodePress_.clear();
 
     /// \todo Check if resetting joystick state on input focus loss is even necessary
     for (HashMap<SDL_JoystickID, JoystickState>::Iterator i = joysticks_.Begin(); i != joysticks_.End(); ++i)
@@ -1788,22 +1789,22 @@ void Input::SetKey(Key key, Scancode scancode, bool newState)
 
     if (newState)
     {
-        scancodeDown_.Insert(scancode);
-        scancodePress_.Insert(scancode);
+        scancodeDown_.insert(scancode);
+        scancodePress_.insert(scancode);
 
-        if (!keyDown_.Contains(key))
+        if (!stl::contains(keyDown_, key))
         {
-            keyDown_.Insert(key);
-            keyPress_.Insert(key);
+            keyDown_.insert(key);
+            keyPress_.insert(key);
         }
         else
             repeat = true;
     }
     else
     {
-        scancodeDown_.Erase(scancode);
+        scancodeDown_.erase(scancode);
 
-        if (!keyDown_.Erase(key))
+        if (!keyDown_.erase(key))
             return;
     }
 

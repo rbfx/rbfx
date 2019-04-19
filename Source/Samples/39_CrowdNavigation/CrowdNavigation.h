@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <EASTL/hash_set.h>
 #include "Sample.h"
 
 namespace Urho3D
@@ -176,7 +177,7 @@ private:
     /// Tile data.
     HashMap<IntVector2, PODVector<unsigned char> > tileData_;
     /// Added tiles.
-    HashSet<IntVector2> addedTiles_;
+    stl::hash_set<IntVector2> addedTiles_;
     /// Flag for drawing debug geometry.
     bool drawDebug_{};
     /// Instruction text UI-element.

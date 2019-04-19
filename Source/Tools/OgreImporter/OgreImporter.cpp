@@ -701,7 +701,7 @@ void LoadMesh(const String& inputFileName, bool generateTangents, bool splitSubM
                 {
                     String name = anim.GetAttribute("name");
                     float length = anim.GetFloat("length");
-                    HashSet<unsigned> usedPoses;
+                    stl::hash_set<unsigned> usedPoses;
                     XMLElement tracks = anim.GetChild("tracks");
                     if (tracks)
                     {
@@ -718,7 +718,7 @@ void LoadMesh(const String& inputFileName, bool generateTangents, bool splitSubM
                                     XMLElement poseref = keyframe.GetChild("poseref");
                                     // Get only the end pose
                                     if (poseref && time == length)
-                                        usedPoses.Insert(poseref.GetInt("poseindex"));
+                                        usedPoses.insert(poseref.GetInt("poseindex"));
 
                                     keyframe = keyframe.GetNext("keyframe");
                                 }
@@ -727,7 +727,7 @@ void LoadMesh(const String& inputFileName, bool generateTangents, bool splitSubM
                         }
                     }
 
-                    if (usedPoses.Size())
+                    if (usedPoses.size())
                     {
                         ModelMorph newMorph;
                         newMorph.name_ = name;
@@ -735,11 +735,11 @@ void LoadMesh(const String& inputFileName, bool generateTangents, bool splitSubM
                         if (useOneBuffer_)
                             newMorph.buffers_.Resize(1);
                         else
-                            newMorph.buffers_.Resize(usedPoses.Size());
+                            newMorph.buffers_.Resize(usedPoses.size());
 
                         unsigned bufIndex = 0;
 
-                        for (HashSet<unsigned>::Iterator i = usedPoses.Begin(); i != usedPoses.End(); ++i)
+                        for (auto i = usedPoses.begin(); i != usedPoses.end(); ++i)
                         {
                             XMLElement pose = poses[*i];
                             unsigned targetSubMesh = pose.GetInt("index");
@@ -790,7 +790,7 @@ void LoadMesh(const String& inputFileName, bool generateTangents, bool splitSubM
                                 ++bufIndex;
                         }
                         morphs_.Push(newMorph);
-                        PrintLine("Processed morph " + name + " with " + String(usedPoses.Size()) + " sub-poses");
+                        PrintLine("Processed morph " + name + " with " + String(usedPoses.size()) + " sub-poses");
                     }
 
                     anim = anim.GetNext("animation");

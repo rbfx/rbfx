@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Container/Utilities.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/ShaderPrecache.h"
@@ -51,7 +52,7 @@ ShaderPrecache::ShaderPrecache(Context* context, const String& fileName) :
         {
             String oldCombination = shader.GetAttribute("vs") + " " + shader.GetAttribute("vsdefines") + " " +
                                     shader.GetAttribute("ps") + " " + shader.GetAttribute("psdefines");
-            usedCombinations_.Insert(oldCombination);
+            usedCombinations_.insert(oldCombination);
 
             shader = shader.GetNext("shader");
         }
@@ -68,7 +69,7 @@ ShaderPrecache::~ShaderPrecache()
 {
     URHO3D_LOGINFO("End dumping shaders");
 
-    if (usedCombinations_.Empty())
+    if (usedCombinations_.empty())
         return;
 
     File dest(context_, fileName_, FILE_WRITE);
@@ -82,9 +83,9 @@ void ShaderPrecache::StoreShaders(ShaderVariation* vs, ShaderVariation* ps)
 
     // Check for duplicate using pointers first (fast)
     Pair<ShaderVariation*, ShaderVariation*> shaderPair = MakePair(vs, ps);
-    if (usedPtrCombinations_.Contains(shaderPair))
+    if (stl::contains(usedPtrCombinations_, shaderPair))
         return;
-    usedPtrCombinations_.Insert(shaderPair);
+    usedPtrCombinations_.insert(shaderPair);
 
     String vsName = vs->GetName();
     String psName = ps->GetName();
@@ -93,9 +94,9 @@ void ShaderPrecache::StoreShaders(ShaderVariation* vs, ShaderVariation* ps)
 
     // Check for duplicate using strings (needed for combinations loaded from existing file)
     String newCombination = vsName + " " + vsDefines + " " + psName + " " + psDefines;
-    if (usedCombinations_.Contains(newCombination))
+    if (stl::contains(usedCombinations_, newCombination))
         return;
-    usedCombinations_.Insert(newCombination);
+    usedCombinations_.insert(newCombination);
 
     XMLElement shaderElem = xmlFile_.GetRoot().CreateChild("shader");
     shaderElem.SetAttribute("vs", vsName);

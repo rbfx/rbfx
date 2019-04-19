@@ -130,7 +130,7 @@ void SceneClipboard::Copy(const Vector<stl::weak_ptr<Node>>& nodes)
         Copy(node);
 }
 
-void SceneClipboard::Copy(const HashSet<stl::weak_ptr<Component>>& components)
+void SceneClipboard::Copy(const stl::hash_set<stl::weak_ptr<Component>>& components)
 {
     for (auto& node : components)
         Copy(node);

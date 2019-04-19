@@ -507,7 +507,7 @@ void CrowdNavigation::UpdateStreaming()
     const IntVector2 endTile = VectorMin(jackTile + IntVector2::ONE * streamingDistance_, numTiles - IntVector2::ONE);
 
     // Remove tiles
-    for (HashSet<IntVector2>::Iterator i = addedTiles_.Begin(); i != addedTiles_.End();)
+    for (auto i = addedTiles_.begin(); i != addedTiles_.end();)
     {
         const IntVector2 tileIdx = *i;
         if (beginTile.x_ <= tileIdx.x_ && tileIdx.x_ <= endTile.x_ && beginTile.y_ <= tileIdx.y_ && tileIdx.y_ <= endTile.y_)
@@ -515,7 +515,7 @@ void CrowdNavigation::UpdateStreaming()
         else
         {
             navMesh->RemoveTile(tileIdx);
-            i = addedTiles_.Erase(i);
+            i = addedTiles_.erase(i);
         }
     }
 
@@ -526,7 +526,7 @@ void CrowdNavigation::UpdateStreaming()
             const IntVector2 tileIdx(x, z);
             if (!navMesh->HasTile(tileIdx) && tileData_.Contains(tileIdx))
             {
-                addedTiles_.Insert(tileIdx);
+                addedTiles_.insert(tileIdx);
                 navMesh->AddTile(tileData_[tileIdx]);
             }
         }
@@ -536,7 +536,7 @@ void CrowdNavigation::SaveNavigationData()
 {
     auto* navMesh = scene_->GetComponent<DynamicNavigationMesh>();
     tileData_.Clear();
-    addedTiles_.Clear();
+    addedTiles_.clear();
     const IntVector2 numTiles = navMesh->GetNumTiles();
     for (int z = 0; z < numTiles.y_; ++z)
         for (int x = 0; x <= numTiles.x_; ++x)

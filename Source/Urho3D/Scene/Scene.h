@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Container/HashSet.h"
+#include <EASTL/unique_ptr.h>
+
 #include "../Core/Mutex.h"
 #include "../Resource/XMLElement.h"
 #include "../Resource/JSONFile.h"
@@ -70,7 +71,7 @@ struct AsyncProgress
     /// Current load mode.
     LoadMode mode_;
     /// Resource name hashes left to load.
-    HashSet<StringHash> resources_;
+    stl::hash_set<StringHash> resources_;
     /// Loaded resources.
     unsigned loadedResources_;
     /// Total resources.
@@ -299,9 +300,9 @@ private:
     /// Registered node user variable reverse mappings.
     HashMap<StringHash, String> varNames_;
     /// Nodes to check for attribute changes on the next network update.
-    HashSet<unsigned> networkUpdateNodes_;
+    stl::hash_set<unsigned> networkUpdateNodes_;
     /// Components to check for attribute changes on the next network update.
-    HashSet<unsigned> networkUpdateComponents_;
+    stl::hash_set<unsigned> networkUpdateComponents_;
     /// Delayed dirty notification queue for components.
     PODVector<Component*> delayedDirtyComponents_;
     /// Mutex for the delayed dirty notification queue.

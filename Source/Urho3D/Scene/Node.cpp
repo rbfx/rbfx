@@ -1730,7 +1730,7 @@ void Node::PrepareNetworkUpdate()
                 if (!nodeState->markedDirty_)
                 {
                     nodeState->markedDirty_ = true;
-                    nodeState->sceneState_->dirtyNodes_.Insert(id_);
+                    nodeState->sceneState_->dirtyNodes_.insert(id_);
                 }
             }
         }
@@ -1749,12 +1749,12 @@ void Node::PrepareNetworkUpdate()
                  j != networkState_->replicationStates_.End(); ++j)
             {
                 auto* nodeState = static_cast<NodeReplicationState*>(*j);
-                nodeState->dirtyVars_.Insert(i->first_);
+                nodeState->dirtyVars_.insert(i->first_);
 
                 if (!nodeState->markedDirty_)
                 {
                     nodeState->markedDirty_ = true;
-                    nodeState->sceneState_->dirtyNodes_.Insert(id_);
+                    nodeState->sceneState_->dirtyNodes_.insert(id_);
                 }
             }
         }
@@ -1789,7 +1789,7 @@ void Node::MarkReplicationDirty()
             if (!nodeState->markedDirty_)
             {
                 nodeState->markedDirty_ = true;
-                nodeState->sceneState_->dirtyNodes_.Insert(id_);
+                nodeState->sceneState_->dirtyNodes_.insert(id_);
             }
         }
     }

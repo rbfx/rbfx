@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Container/HashSet.h"
+#include <EASTL/unique_ptr.h>
+
 #include "../Core/Object.h"
 #include "../Graphics/Batch.h"
 #include "../Graphics/Light.h"
@@ -401,7 +402,7 @@ private:
     unsigned activeOccluders_{};
 
     /// Drawables that limit their maximum light count.
-    HashSet<Drawable*> maxLightsDrawables_;
+    stl::hash_set<Drawable*> maxLightsDrawables_;
     /// Rendertargets defined by the renderpath.
     HashMap<StringHash, Texture*> renderTargets_;
     /// Intermediate light processing results.

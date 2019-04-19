@@ -23,7 +23,7 @@
 #pragma once
 
 
-#include <Urho3D/Container/HashSet.h>
+#include <EASTL/hash_set.h>
 #include <Urho3D/Core/Object.h>
 #include <Toolbox/Common/UndoManager.h>
 
@@ -68,7 +68,7 @@ public:
     ///
     void Copy(const Vector<stl::weak_ptr<Node>>& nodes);
     ///
-    void Copy(const HashSet<stl::weak_ptr<Component>>& components);
+    void Copy(const stl::hash_set<stl::weak_ptr<Component>>& components);
     ///
     PasteResult Paste(Node* node);
     ///

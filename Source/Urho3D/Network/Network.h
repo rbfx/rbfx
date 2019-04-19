@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Container/HashSet.h"
+#include <EASTL/unique_ptr.h>
+
 #include "../Core/Object.h"
 #include "../IO/VectorBuffer.h"
 #include "../Network/Connection.h"
@@ -155,11 +156,11 @@ private:
     /// Server's client connections.
     HashMap<SLNet::AddressOrGUID, stl::shared_ptr<Connection> > clientConnections_;
     /// Allowed remote events.
-    HashSet<StringHash> allowedRemoteEvents_;
+    stl::hash_set<StringHash> allowedRemoteEvents_;
     /// Remote event fixed blacklist.
-    HashSet<StringHash> blacklistedRemoteEvents_;
+    stl::hash_set<StringHash> blacklistedRemoteEvents_;
     /// Networked scenes.
-    HashSet<Scene*> networkScenes_;
+    stl::hash_set<Scene*> networkScenes_;
     /// Update FPS.
     int updateFps_;
     /// Simulated latency (send delay) in milliseconds.

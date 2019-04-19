@@ -172,5 +172,5 @@ private:
     /// Tile data.
     HashMap<IntVector2, PODVector<unsigned char> > tileData_;
     /// Added tiles.
-    HashSet<IntVector2> addedTiles_;
+    stl::hash_set<IntVector2> addedTiles_;
 };

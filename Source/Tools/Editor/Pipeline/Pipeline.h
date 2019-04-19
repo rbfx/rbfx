@@ -114,7 +114,7 @@ protected:
         /// Modification time of source file.
         unsigned mtime_;
         /// List of files that
-        HashSet<String> files_;
+        stl::hash_set<String> files_;
     };
 
     /// Collection of top level converters defined in pipeline.

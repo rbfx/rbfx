@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../Container/Utilities.h"
 #include "../Core/Context.h"
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
@@ -256,17 +257,17 @@ void Animatable::SetAnimationEnabled(bool enable)
     if (objectAnimation_)
     {
         // In object animation there may be targets in hierarchy. Set same enable/disable state in all
-        HashSet<Animatable*> targets;
+        stl::hash_set<Animatable*> targets;
         const HashMap<String, stl::shared_ptr<ValueAnimationInfo> >& infos = objectAnimation_->GetAttributeAnimationInfos();
         for (HashMap<String, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = infos.Begin(); i != infos.End(); ++i)
         {
             String outName;
             Animatable* target = FindAttributeAnimationTarget(i->first_, outName);
             if (target && target != this)
-                targets.Insert(target);
+                targets.insert(target);
         }
 
-        for (HashSet<Animatable*>::Iterator i = targets.Begin(); i != targets.End(); ++i)
+        for (auto i = targets.begin(); i != targets.end(); ++i)
             (*i)->animationEnabled_ = enable;
     }
 
@@ -368,7 +369,7 @@ void Animatable::SetAttributeAnimation(const String& name, ValueAnimation* attri
 
         // Add network attribute to set
         if (attributeInfo->mode_ & AM_NET)
-            animatedNetworkAttributes_.Insert(attributeInfo);
+            animatedNetworkAttributes_.insert(attributeInfo);
 
         attributeAnimationInfos_[name] = new AttributeAnimationInfo(this, *attributeInfo, attributeAnimation, wrapMode, speed);
 
@@ -382,7 +383,7 @@ void Animatable::SetAttributeAnimation(const String& name, ValueAnimation* attri
 
         // Remove network attribute from set
         if (info->GetAttributeInfo().mode_ & AM_NET)
-            animatedNetworkAttributes_.Erase(&info->GetAttributeInfo());
+            animatedNetworkAttributes_.erase(&info->GetAttributeInfo());
 
         attributeAnimationInfos_.Erase(name);
         OnAttributeAnimationRemoved();
@@ -532,7 +533,7 @@ void Animatable::UpdateAttributeAnimations(float timeStep)
 
 bool Animatable::IsAnimatedNetworkAttribute(const AttributeInfo& attrInfo) const
 {
-    return animatedNetworkAttributes_.Find(&attrInfo) != animatedNetworkAttributes_.End();
+    return stl::contains(animatedNetworkAttributes_, &attrInfo);
 }
 
 AttributeAnimationInfo* Animatable::GetAttributeAnimationInfo(const String& name) const

@@ -409,15 +409,15 @@ void ResourceCache::ReloadResourceWithDependencies(const String& fileName)
     if (!resource || GetExtension(resource->GetName()) == ".xml")
     {
         // Check if this is a dependency resource, reload dependents
-        HashMap<StringHash, HashSet<StringHash> >::ConstIterator j = dependentResources_.Find(fileNameHash);
+        HashMap<StringHash, stl::hash_set<StringHash> >::ConstIterator j = dependentResources_.Find(fileNameHash);
         if (j != dependentResources_.End())
         {
             // Reloading a resource may modify the dependency tracking structure. Therefore collect the
             // resources we need to reload first
             Vector<stl::shared_ptr<Resource> > dependents;
-            dependents.Reserve(j->second_.Size());
+            dependents.Reserve(j->second_.size());
 
-            for (HashSet<StringHash>::ConstIterator k = j->second_.Begin(); k != j->second_.End(); ++k)
+            for (auto k = j->second_.begin(); k != j->second_.end(); ++k)
             {
                 const stl::shared_ptr<Resource>& dependent = FindResource(*k);
                 if (dependent)
@@ -879,8 +879,8 @@ void ResourceCache::StoreResourceDependency(Resource* resource, const String& de
     MutexLock lock(resourceMutex_);
 
     StringHash nameHash(resource->GetName());
-    HashSet<StringHash>& dependents = dependentResources_[dependency];
-    dependents.Insert(nameHash);
+    stl::hash_set<StringHash>& dependents = dependentResources_[dependency];
+    dependents.insert(nameHash);
 }
 
 void ResourceCache::ResetDependencies(Resource* resource)
@@ -892,11 +892,11 @@ void ResourceCache::ResetDependencies(Resource* resource)
 
     StringHash nameHash(resource->GetName());
 
-    for (HashMap<StringHash, HashSet<StringHash> >::Iterator i = dependentResources_.Begin(); i != dependentResources_.End();)
+    for (HashMap<StringHash, stl::hash_set<StringHash> >::Iterator i = dependentResources_.Begin(); i != dependentResources_.End();)
     {
-        HashSet<StringHash>& dependents = i->second_;
-        dependents.Erase(nameHash);
-        if (dependents.Empty())
+        stl::hash_set<StringHash>& dependents = i->second_;
+        dependents.erase(nameHash);
+        if (dependents.empty())
             i = dependentResources_.Erase(i);
         else
             ++i;
@@ -992,7 +992,7 @@ const stl::shared_ptr<Resource>& ResourceCache::FindResource(StringHash nameHash
 
 void ResourceCache::ReleasePackageResources(PackageFile* package, bool force)
 {
-    HashSet<StringHash> affectedGroups;
+    stl::hash_set<StringHash> affectedGroups;
 
     const HashMap<String, PackageEntry>& entries = package->GetEntries();
     for (HashMap<String, PackageEntry>::ConstIterator i = entries.Begin(); i != entries.End(); ++i)
@@ -1009,14 +1009,14 @@ void ResourceCache::ReleasePackageResources(PackageFile* package, bool force)
                 if ((k->second_.use_count() == 1 && k->second_.weak_use_count() == 0) || force)
                 {
                     j->second_.resources_.Erase(k);
-                    affectedGroups.Insert(j->first_);
+                    affectedGroups.insert(j->first_);
                 }
                 break;
             }
         }
     }
 
-    for (HashSet<StringHash>::Iterator i = affectedGroups.Begin(); i != affectedGroups.End(); ++i)
+    for (auto i = affectedGroups.begin(); i != affectedGroups.end(); ++i)
         UpdateResourceGroup(*i);
 }
 

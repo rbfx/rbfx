@@ -23,8 +23,8 @@
 #pragma once
 
 #include <EASTL/unique_ptr.h>
+#include <EASTL/unique_ptr.h>
 
-#include "../Container/HashSet.h"
 #include "../Core/Mutex.h"
 #include "../Core/Object.h"
 #include "../Graphics/GraphicsDefs.h"

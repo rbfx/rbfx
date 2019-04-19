@@ -1015,7 +1015,7 @@ void View::GetLightBatches()
         }
 
         lightQueues_.Resize(numLightQueues);
-        maxLightsDrawables_.Clear();
+        maxLightsDrawables_.clear();
         auto maxSortedInstances = (unsigned)renderer_->GetMaxSortedInstances();
 
         for (Vector<LightQueryResult>::Iterator i = lightQueryResults_.Begin(); i != lightQueryResults_.End(); ++i)
@@ -1127,7 +1127,7 @@ void View::GetLightBatches()
                     if (!drawable->GetMaxLights())
                         GetLitBatches(drawable, lightQueue, alphaQueue);
                     else
-                        maxLightsDrawables_.Insert(drawable);
+                        maxLightsDrawables_.insert(drawable);
                 }
 
                 // In deferred modes, store the light volume batch now. Since light mask 8 lowest bits are output to the stencil,
@@ -1164,11 +1164,11 @@ void View::GetLightBatches()
     }
 
     // Process drawables with limited per-pixel light count
-    if (maxLightsDrawables_.Size())
+    if (maxLightsDrawables_.size())
     {
         URHO3D_PROFILE("GetMaxLightsBatches");
 
-        for (HashSet<Drawable*>::Iterator i = maxLightsDrawables_.Begin(); i != maxLightsDrawables_.End(); ++i)
+        for (auto i = maxLightsDrawables_.begin(); i != maxLightsDrawables_.end(); ++i)
         {
             Drawable* drawable = *i;
             drawable->LimitLights();
