@@ -293,7 +293,7 @@ stl::shared_ptr<Material> Renderer2D::CreateMaterial(Texture2D* texture, BlendMo
         pass->SetPixelShader("Urho2D");
         pass->SetDepthWrite(false);
         pass->SetBlendMode(blendMode);
-        techIt = cachedTechniques_.Insert(MakePair((int)blendMode, tech));
+        techIt = cachedTechniques_.Insert(stl::make_pair((int)blendMode, tech));
     }
 
     newMaterial->SetTechnique(0, techIt->second_.get());

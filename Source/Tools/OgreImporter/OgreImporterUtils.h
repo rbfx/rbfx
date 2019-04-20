@@ -170,7 +170,7 @@ struct ModelMorphBuffer
 {
     unsigned vertexBuffer_;
     unsigned elementMask_;
-    stl::vector<Pair<unsigned, ModelVertex> > vertices_;
+    stl::vector<stl::pair<unsigned, ModelVertex> > vertices_;
 };
 
 struct ModelMorph
@@ -192,13 +192,13 @@ struct ModelMorph
             for (auto j = buffers_[i].vertices_.begin();
                 j != buffers_[i].vertices_.end(); ++j)
             {
-                dest.WriteUInt(j->first_);
+                dest.WriteUInt(j->first);
                 if (elementMask & MASK_POSITION)
-                    dest.WriteVector3(j->second_.position_);
+                    dest.WriteVector3(j->second.position_);
                 if (elementMask & MASK_NORMAL)
-                    dest.WriteVector3(j->second_.normal_);
+                    dest.WriteVector3(j->second.normal_);
                 if (elementMask & MASK_TANGENT)
-                    dest.WriteVector3(Vector3(j->second_.tangent_.x_, j->second_.tangent_.y_, j->second_.tangent_.z_));
+                    dest.WriteVector3(Vector3(j->second.tangent_.x_, j->second.tangent_.y_, j->second.tangent_.z_));
             }
         }
     }

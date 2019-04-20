@@ -208,12 +208,12 @@ unsigned HttpRequest::Read(void* dest, unsigned size)
 
     for (;;)
     {
-        Pair<unsigned, bool> status{};
+        stl::pair<unsigned, bool> status{};
 
         for (;;)
         {
             status = CheckAvailableSizeAndEof();
-            if (status.first_ || status.second_)
+            if (status.first || status.second)
                 break;
             // While no bytes and connection is still open, block until has some data
             mutex_.Release();
@@ -221,7 +221,7 @@ unsigned HttpRequest::Read(void* dest, unsigned size)
             mutex_.Acquire();
         }
 
-        unsigned bytesAvailable = status.first_;
+        unsigned bytesAvailable = status.first;
 
         if (bytesAvailable)
         {
@@ -266,7 +266,7 @@ unsigned HttpRequest::Seek(unsigned position)
 bool HttpRequest::IsEof() const
 {
     MutexLock lock(mutex_);
-    return CheckAvailableSizeAndEof().second_;
+    return CheckAvailableSizeAndEof().second;
 }
 
 String HttpRequest::GetError() const
@@ -284,10 +284,10 @@ HttpRequestState HttpRequest::GetState() const
 unsigned HttpRequest::GetAvailableSize() const
 {
     MutexLock lock(mutex_);
-    return CheckAvailableSizeAndEof().first_;
+    return CheckAvailableSizeAndEof().first;
 }
 
-Pair<unsigned, bool> HttpRequest::CheckAvailableSizeAndEof() const
+stl::pair<unsigned, bool> HttpRequest::CheckAvailableSizeAndEof() const
 {
     unsigned size = (writePosition_ - readPosition_) & (READ_BUFFER_SIZE - 1);
     return {size, (state_ == HTTP_ERROR || (state_ == HTTP_CLOSED && !size))};

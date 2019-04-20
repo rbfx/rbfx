@@ -55,7 +55,7 @@ void BackgroundLoader::ThreadFunction()
         backgroundLoadMutex_.Acquire();
 
         // Search for a queued resource that has not been loaded yet
-        HashMap<Pair<StringHash, StringHash>, BackgroundLoadItem>::Iterator i = backgroundLoadQueue_.Begin();
+        HashMap<stl::pair<StringHash, StringHash>, BackgroundLoadItem>::Iterator i = backgroundLoadQueue_.Begin();
         while (i != backgroundLoadQueue_.End())
         {
             if (i->second_.resource_->GetAsyncLoadState() == ASYNC_QUEUED)
@@ -88,13 +88,13 @@ void BackgroundLoader::ThreadFunction()
 
             // Process dependencies now
             // Need to lock the queue again when manipulating other entries
-            Pair<StringHash, StringHash> key = MakePair(resource->GetType(), resource->GetNameHash());
+            stl::pair<StringHash, StringHash> key = stl::make_pair(resource->GetType(), resource->GetNameHash());
             backgroundLoadMutex_.Acquire();
             if (item.dependents_.size())
             {
                 for (auto i = item.dependents_.begin(); i != item.dependents_.end(); ++i)
                 {
-                    HashMap<Pair<StringHash, StringHash>, BackgroundLoadItem>::Iterator j = backgroundLoadQueue_.Find(*i);
+                    HashMap<stl::pair<StringHash, StringHash>, BackgroundLoadItem>::Iterator j = backgroundLoadQueue_.Find(*i);
                     if (j != backgroundLoadQueue_.End())
                         j->second_.dependencies_.erase(key);
                 }
@@ -111,7 +111,7 @@ void BackgroundLoader::ThreadFunction()
 bool BackgroundLoader::QueueResource(StringHash type, const String& name, bool sendEventOnFailure, Resource* caller)
 {
     StringHash nameHash(name);
-    Pair<StringHash, StringHash> key = MakePair(type, nameHash);
+    stl::pair<StringHash, StringHash> key = stl::make_pair(type, nameHash);
 
     MutexLock lock(backgroundLoadMutex_);
 
@@ -149,8 +149,8 @@ bool BackgroundLoader::QueueResource(StringHash type, const String& name, bool s
     // If this is a resource calling for the background load of more resources, mark the dependency as necessary
     if (caller)
     {
-        Pair<StringHash, StringHash> callerKey = MakePair(caller->GetType(), caller->GetNameHash());
-        HashMap<Pair<StringHash, StringHash>, BackgroundLoadItem>::Iterator j = backgroundLoadQueue_.Find(callerKey);
+        stl::pair<StringHash, StringHash> callerKey = stl::make_pair(caller->GetType(), caller->GetNameHash());
+        HashMap<stl::pair<StringHash, StringHash>, BackgroundLoadItem>::Iterator j = backgroundLoadQueue_.Find(callerKey);
         if (j != backgroundLoadQueue_.End())
         {
             BackgroundLoadItem& callerItem = j->second_;
@@ -174,8 +174,8 @@ void BackgroundLoader::WaitForResource(StringHash type, StringHash nameHash)
     backgroundLoadMutex_.Acquire();
 
     // Check if the resource in question is being background loaded
-    Pair<StringHash, StringHash> key = MakePair(type, nameHash);
-    HashMap<Pair<StringHash, StringHash>, BackgroundLoadItem>::Iterator i = backgroundLoadQueue_.Find(key);
+    stl::pair<StringHash, StringHash> key = stl::make_pair(type, nameHash);
+    HashMap<stl::pair<StringHash, StringHash>, BackgroundLoadItem>::Iterator i = backgroundLoadQueue_.Find(key);
     if (i != backgroundLoadQueue_.End())
     {
         backgroundLoadMutex_.Release();
@@ -222,7 +222,7 @@ void BackgroundLoader::FinishResources(int maxMs)
 
         backgroundLoadMutex_.Acquire();
 
-        for (HashMap<Pair<StringHash, StringHash>, BackgroundLoadItem>::Iterator i = backgroundLoadQueue_.Begin();
+        for (HashMap<stl::pair<StringHash, StringHash>, BackgroundLoadItem>::Iterator i = backgroundLoadQueue_.Begin();
              i != backgroundLoadQueue_.End();)
         {
             Resource* resource = i->second_.resource_;

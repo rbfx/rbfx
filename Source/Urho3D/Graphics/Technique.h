@@ -313,7 +313,7 @@ private:
     /// Passes.
     stl::vector<stl::shared_ptr<Pass> > passes_;
     /// Cached clones with added shader compilation defines.
-    HashMap<Pair<StringHash, StringHash>, stl::shared_ptr<Technique> > cloneTechniques_;
+    HashMap<stl::pair<StringHash, StringHash>, stl::shared_ptr<Technique> > cloneTechniques_;
 
     /// Pass index assignments.
     static HashMap<String, unsigned> passIndices;

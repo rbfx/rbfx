@@ -464,16 +464,16 @@ stl::shared_ptr<Technique> Technique::CloneWithDefines(const String& vsDefines, 
     if (vsDefines.Empty() && psDefines.Empty())
         return stl::shared_ptr<Technique>(this);
 
-    Pair<StringHash, StringHash> key = MakePair(StringHash(vsDefines), StringHash(psDefines));
+    stl::pair<StringHash, StringHash> key = stl::make_pair(StringHash(vsDefines), StringHash(psDefines));
 
     // Return existing if possible
-    HashMap<Pair<StringHash, StringHash>, stl::shared_ptr<Technique> >::Iterator i = cloneTechniques_.Find(key);
+    HashMap<stl::pair<StringHash, StringHash>, stl::shared_ptr<Technique> >::Iterator i = cloneTechniques_.Find(key);
     if (i != cloneTechniques_.End())
         return i->second_;
 
     // Set same name as the original for the clones to ensure proper serialization of the material. This should not be a problem
     // since the clones are never stored to the resource cache
-    i = cloneTechniques_.Insert(MakePair(key, Clone(GetName())));
+    i = cloneTechniques_.Insert(stl::make_pair(key, Clone(GetName())));
 
     for (auto j = i->second_->passes_.begin(); j != i->second_->passes_.end(); ++j)
     {

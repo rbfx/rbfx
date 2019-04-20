@@ -752,13 +752,13 @@ void Terrain::CreatePatchGeometry(TerrainPatch* patch)
         unsigned occlusionDrawRange = occlusionLevel << 4u;
 
         geometry->SetIndexBuffer(indexBuffer_);
-        geometry->SetDrawRange(TRIANGLE_LIST, drawRanges_[0].first_, drawRanges_[0].second_, false);
+        geometry->SetDrawRange(TRIANGLE_LIST, drawRanges_[0].first, drawRanges_[0].second, false);
         geometry->SetRawVertexData(cpuVertexData, MASK_POSITION);
         maxLodGeometry->SetIndexBuffer(indexBuffer_);
-        maxLodGeometry->SetDrawRange(TRIANGLE_LIST, drawRanges_[0].first_, drawRanges_[0].second_, false);
+        maxLodGeometry->SetDrawRange(TRIANGLE_LIST, drawRanges_[0].first, drawRanges_[0].second, false);
         maxLodGeometry->SetRawVertexData(cpuVertexData, MASK_POSITION);
         occlusionGeometry->SetIndexBuffer(indexBuffer_);
-        occlusionGeometry->SetDrawRange(TRIANGLE_LIST, drawRanges_[occlusionDrawRange].first_, drawRanges_[occlusionDrawRange].second_, false);
+        occlusionGeometry->SetDrawRange(TRIANGLE_LIST, drawRanges_[occlusionDrawRange].first, drawRanges_[occlusionDrawRange].second, false);
         occlusionGeometry->SetRawVertexData(occlusionCpuVertexData, MASK_POSITION);
     }
 
@@ -790,7 +790,7 @@ void Terrain::UpdatePatchLod(TerrainPatch* patch)
     }
 
     if (drawRangeIndex < drawRanges_.size())
-        geometry->SetDrawRange(TRIANGLE_LIST, drawRanges_[drawRangeIndex].first_, drawRanges_[drawRangeIndex].second_, false);
+        geometry->SetDrawRange(TRIANGLE_LIST, drawRanges_[drawRangeIndex].first, drawRanges_[drawRangeIndex].second, false);
 }
 
 void Terrain::SetMaterialAttr(const ResourceRef& value)
@@ -1293,7 +1293,7 @@ void Terrain::CreateIndexData()
                 }
             }
 
-            drawRanges_.push_back(MakePair(indexStart, (unsigned)indices.size() - indexStart));
+            drawRanges_.push_back(stl::make_pair(indexStart, (unsigned)indices.size() - indexStart));
         }
     }
 

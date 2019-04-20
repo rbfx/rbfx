@@ -78,7 +78,7 @@ public:
 
 private:
     /// Check for available read data in buffer and whether end has been reached. Must only be called when the mutex is held by the main thread.
-    Pair<unsigned, bool> CheckAvailableSizeAndEof() const;
+    stl::pair<unsigned, bool> CheckAvailableSizeAndEof() const;
 
     /// URL.
     String url_;

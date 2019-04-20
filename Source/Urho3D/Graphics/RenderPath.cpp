@@ -182,11 +182,11 @@ void RenderPathCommand::Load(const XMLElement& element)
 
     // By default use 1 output, which is the viewport
     outputs_.resize(1);
-    outputs_[0] = MakePair(String("viewport"), FACE_POSITIVE_X);
+    outputs_[0] = stl::make_pair(String("viewport"), FACE_POSITIVE_X);
     if (element.HasAttribute("output"))
-        outputs_[0].first_ = element.GetAttribute("output");
+        outputs_[0].first = element.GetAttribute("output");
     if (element.HasAttribute("face"))
-        outputs_[0].second_ = (CubeMapFace)element.GetInt("face");
+        outputs_[0].second = (CubeMapFace)element.GetInt("face");
     if (element.HasAttribute("depthstencil"))
         depthStencilName_ = element.GetAttribute("depthstencil");
     // Check for defining multiple outputs
@@ -198,8 +198,8 @@ void RenderPathCommand::Load(const XMLElement& element)
         {
             if (index >= outputs_.size())
                 outputs_.resize(index + 1);
-            outputs_[index].first_ = outputElem.GetAttribute("name");
-            outputs_[index].second_ = outputElem.HasAttribute("face") ? (CubeMapFace)outputElem.GetInt("face") : FACE_POSITIVE_X;
+            outputs_[index].first = outputElem.GetAttribute("name");
+            outputs_[index].second = outputElem.HasAttribute("face") ? (CubeMapFace)outputElem.GetInt("face") : FACE_POSITIVE_X;
         }
         outputElem = outputElem.GetNext("output");
     }
@@ -257,25 +257,25 @@ void RenderPathCommand::SetNumOutputs(unsigned num)
 void RenderPathCommand::SetOutput(unsigned index, const String& name, CubeMapFace face)
 {
     if (index < outputs_.size())
-        outputs_[index] = MakePair(name, face);
+        outputs_[index] = stl::make_pair(name, face);
     else if (index == outputs_.size() && index < MAX_RENDERTARGETS)
-        outputs_.push_back(MakePair(name, face));
+        outputs_.push_back(stl::make_pair(name, face));
 }
 
 void RenderPathCommand::SetOutputName(unsigned index, const String& name)
 {
     if (index < outputs_.size())
-        outputs_[index].first_ = name;
+        outputs_[index].first = name;
     else if (index == outputs_.size() && index < MAX_RENDERTARGETS)
-        outputs_.push_back(MakePair(name, FACE_POSITIVE_X));
+        outputs_.push_back(stl::make_pair(name, FACE_POSITIVE_X));
 }
 
 void RenderPathCommand::SetOutputFace(unsigned index, CubeMapFace face)
 {
     if (index < outputs_.size())
-        outputs_[index].second_ = face;
+        outputs_[index].second = face;
     else if (index == outputs_.size() && index < MAX_RENDERTARGETS)
-        outputs_.push_back(MakePair(String::EMPTY, face));
+        outputs_.push_back(stl::make_pair(String::EMPTY, face));
 }
 
 
@@ -297,12 +297,12 @@ const Variant& RenderPathCommand::GetShaderParameter(const String& name) const
 
 const String& RenderPathCommand::GetOutputName(unsigned index) const
 {
-    return index < outputs_.size() ? outputs_[index].first_ : String::EMPTY;
+    return index < outputs_.size() ? outputs_[index].first : String::EMPTY;
 }
 
 CubeMapFace RenderPathCommand::GetOutputFace(unsigned index) const
 {
-    return index < outputs_.size() ? outputs_[index].second_ : FACE_POSITIVE_X;
+    return index < outputs_.size() ? outputs_[index].second : FACE_POSITIVE_X;
 }
 
 RenderPath::RenderPath() = default;

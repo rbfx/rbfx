@@ -40,12 +40,12 @@ PluginApplication::~PluginApplication()
 {
     for (const auto& pair : registeredTypes_)
     {
-        if (!pair.second_.Empty())
-            context_->RemoveFactory(pair.first_, pair.second_.CString());
+        if (!pair.second.Empty())
+            context_->RemoveFactory(pair.first, pair.second.CString());
         else
-            context_->RemoveFactory(pair.first_);
-        context_->RemoveAllAttributes(pair.first_);
-        context_->RemoveSubsystem(pair.first_);
+            context_->RemoveFactory(pair.first);
+        context_->RemoveAllAttributes(pair.first);
+        context_->RemoveSubsystem(pair.first);
     }
 }
 

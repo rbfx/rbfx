@@ -450,7 +450,7 @@ bool View::Define(RenderSurface* renderTarget, Viewport* viewport)
 
             HashMap<unsigned, BatchQueue>::Iterator j = batchQueues_.Find(info.passIndex_);
             if (j == batchQueues_.End())
-                j = batchQueues_.Insert(Pair<unsigned, BatchQueue>(info.passIndex_, BatchQueue()));
+                j = batchQueues_.Insert(stl::pair<unsigned, BatchQueue>(info.passIndex_, BatchQueue()));
             info.batchQueue_ = &j->second_;
             SetQueueShaderDefines(*info.batchQueue_, command);
 
@@ -1257,7 +1257,7 @@ void View::GetBaseBatches()
                         HashMap<unsigned long long, LightBatchQueue>::Iterator i = vertexLightQueues_.Find(hash);
                         if (i == vertexLightQueues_.End())
                         {
-                            i = vertexLightQueues_.Insert(MakePair(hash, LightBatchQueue()));
+                            i = vertexLightQueues_.Insert(stl::make_pair(hash, LightBatchQueue()));
                             i->second_.light_ = nullptr;
                             i->second_.shadowMap_ = nullptr;
                             i->second_.vertexLights_ = drawableVertexLights;
@@ -1742,14 +1742,14 @@ void View::SetRenderTargets(RenderPathCommand& command)
 
     while (index < command.outputs_.size())
     {
-        if (!command.outputs_[index].first_.Compare("viewport", false))
+        if (!command.outputs_[index].first.Compare("viewport", false))
         {
             graphics_->SetRenderTarget(index, currentRenderTarget_);
             useViewportOutput = true;
         }
         else
         {
-            Texture* texture = FindNamedTexture(command.outputs_[index].first_, true, false);
+            Texture* texture = FindNamedTexture(command.outputs_[index].first, true, false);
 
             // Check for depth only rendering (by specifying a depth texture as the sole output)
             if (!index && command.outputs_.size() == 1 && texture && (texture->GetFormat() == Graphics::GetReadableDepthFormat() ||
@@ -1769,7 +1769,7 @@ void View::SetRenderTargets(RenderPathCommand& command)
                 graphics_->SetDepthStencil(GetRenderSurfaceFromTexture(texture));
             }
             else
-                graphics_->SetRenderTarget(index, GetRenderSurfaceFromTexture(texture, command.outputs_[index].second_));
+                graphics_->SetRenderTarget(index, GetRenderSurfaceFromTexture(texture, command.outputs_[index].second));
         }
 
         ++index;
@@ -1924,7 +1924,7 @@ bool View::CheckViewportWrite(const RenderPathCommand& command)
 {
     for (unsigned i = 0; i < command.outputs_.size(); ++i)
     {
-        if (!command.outputs_[i].first_.Compare("viewport", false))
+        if (!command.outputs_[i].first.Compare("viewport", false))
             return true;
     }
 
@@ -1986,7 +1986,7 @@ void View::AllocateScreenBuffers()
         {
             for (unsigned j = 0; j < command.outputs_.size(); ++j)
             {
-                if (command.outputs_[j].first_.Compare("viewport", false))
+                if (command.outputs_[j].first.Compare("viewport", false))
                 {
                     hasScenePassToRTs = true;
                     break;
@@ -2923,7 +2923,7 @@ void View::AddBatchToQueue(BatchQueue& queue, Batch& batch, Technique* tech, boo
             newGroup.geometryType_ = GEOM_STATIC;
             renderer_->SetBatchShaders(newGroup, tech, allowShadows, queue);
             newGroup.CalculateSortKey();
-            i = queue.batchGroups_.Insert(MakePair(key, newGroup));
+            i = queue.batchGroups_.Insert(stl::make_pair(key, newGroup));
         }
 
         int oldSize = i->second_.instances_.size();

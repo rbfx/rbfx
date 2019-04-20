@@ -514,11 +514,11 @@ private:
     /// Current screen buffer allocations by resolution and format.
     HashMap<unsigned long long, unsigned> screenBufferAllocations_;
     /// Cache for light scissor queries.
-    HashMap<Pair<Light*, Camera*>, Rect> lightScissorCache_;
+    HashMap<stl::pair<Light*, Camera*>, Rect> lightScissorCache_;
     /// Backbuffer viewports.
     stl::vector<stl::shared_ptr<Viewport> > viewports_;
     /// Render surface viewports queued for update.
-    stl::vector<Pair<stl::weak_ptr<RenderSurface>, stl::weak_ptr<Viewport> > > queuedViewports_;
+    stl::vector<stl::pair<stl::weak_ptr<RenderSurface>, stl::weak_ptr<Viewport> > > queuedViewports_;
     /// Views that have been processed this frame.
     stl::vector<stl::weak_ptr<View> > views_;
     /// Prepared views by culling camera.

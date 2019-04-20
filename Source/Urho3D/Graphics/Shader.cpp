@@ -141,13 +141,13 @@ ShaderVariation* Shader::GetVariation(ShaderType type, const char* defines)
 
         i = variations.Find(normalizedHash);
         if (i != variations.End())
-            variations.Insert(MakePair(definesHash, i->second_));
+            variations.Insert(stl::make_pair(definesHash, i->second_));
         else
         {
             // No shader variation found. Create new
-            i = variations.Insert(MakePair(normalizedHash, stl::shared_ptr<ShaderVariation>(new ShaderVariation(this, type))));
+            i = variations.Insert(stl::make_pair(normalizedHash, stl::shared_ptr<ShaderVariation>(new ShaderVariation(this, type))));
             if (definesHash != normalizedHash)
-                variations.Insert(MakePair(definesHash, i->second_));
+                variations.Insert(stl::make_pair(definesHash, i->second_));
 
             i->second_->SetName(GetFileName(GetName()));
             i->second_->SetDefines(normalizedDefines);

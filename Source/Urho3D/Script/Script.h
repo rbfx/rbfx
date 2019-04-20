@@ -38,7 +38,7 @@ namespace Urho3D
 /// Script runtime command handler callback type.
 typedef std::uintptr_t(*ScriptRuntimeCommandHandler)(int command, void** args);
 ///
-using ScriptCommandRange = Pair<int, int>;
+using ScriptCommandRange = stl::pair<int, int>;
 /// Value indicating failure.
 static const std::uintptr_t ScriptCommandFailed = ~0U;
 /// Value indicating success.
@@ -83,9 +83,9 @@ protected:
         std::uintptr_t result = ScriptCommandFailed;
         for (auto handler : commandHandlers_)
         {
-            if (!IsInRange(handler.first_, command))
+            if (!IsInRange(handler.first, command))
                 continue;
-            result = handler.second_(command, runtimeArgs.data());
+            result = handler.second(command, runtimeArgs.data());
             break;
         }
         return result;
@@ -104,10 +104,10 @@ protected:
     ///
     bool IsInRange(const ScriptCommandRange& range, unsigned command) const
     {
-        return range.first_ <= command && command <= range.second_;
+        return range.first <= command && command <= range.second;
     }
     ///
-    stl::vector<Pair<ScriptCommandRange, ScriptRuntimeCommandHandler>> commandHandlers_;
+    stl::vector<stl::pair<ScriptCommandRange, ScriptRuntimeCommandHandler>> commandHandlers_;
     ///
     Mutex destructionQueueLock_;
     ///

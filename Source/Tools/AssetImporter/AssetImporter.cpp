@@ -204,7 +204,7 @@ void CopyTextures(const stl::hash_set<String>& usedTextures, const String& sourc
 
 void CombineLods(const stl::vector<float>& lodDistances, const stl::vector<String>& modelNames, const String& outName);
 
-void GetMeshesUnderNode(stl::vector<Pair<aiNode*, aiMesh*> >& dest, aiNode* node);
+void GetMeshesUnderNode(stl::vector<stl::pair<aiNode*, aiMesh*> >& dest, aiNode* node);
 unsigned GetMeshIndex(aiMesh* mesh);
 unsigned GetBoneIndex(OutModel& model, const String& boneName);
 aiBone* GetMeshBone(OutModel& model, const String& boneName);
@@ -1525,7 +1525,7 @@ void ExportScene(const String& outName, bool asPrefab)
 
 void CollectSceneModels(OutScene& scene, aiNode* node)
 {
-    stl::vector<Pair<aiNode*, aiMesh*> > meshes;
+    stl::vector<stl::pair<aiNode*, aiMesh*> > meshes;
     GetMeshesUnderNode(meshes, node);
 
     if (meshes.size())
@@ -1535,11 +1535,11 @@ void CollectSceneModels(OutScene& scene, aiNode* node)
         model.outName_ = resourcePath_ + (useSubdirs_ ? "Models/" : "") + SanitateAssetName(FromAIString(node->mName)) + ".mdl";
         for (unsigned i = 0; i < meshes.size(); ++i)
         {
-            aiMesh* mesh = meshes[i].second_;
+            aiMesh* mesh = meshes[i].second;
             unsigned meshIndex = GetMeshIndex(mesh);
             model.meshIndices_.insert(meshIndex);
             model.meshes_.push_back(mesh);
-            model.meshNodes_.push_back(meshes[i].first_);
+            model.meshNodes_.push_back(meshes[i].first);
             model.totalVertices_ += mesh->mNumVertices;
             model.totalIndices_ += GetNumValidFaces(mesh) * 3;
         }
@@ -2149,10 +2149,10 @@ void CombineLods(const stl::vector<float>& lodDistances, const stl::vector<Strin
     outModel->Save(outFile);
 }
 
-void GetMeshesUnderNode(stl::vector<Pair<aiNode*, aiMesh*> >& dest, aiNode* node)
+void GetMeshesUnderNode(stl::vector<stl::pair<aiNode*, aiMesh*> >& dest, aiNode* node)
 {
     for (unsigned i = 0; i < node->mNumMeshes; ++i)
-        dest.push_back(MakePair(node, scene_->mMeshes[node->mMeshes[i]]));
+        dest.push_back(stl::make_pair(node, scene_->mMeshes[node->mMeshes[i]]));
 }
 
 unsigned GetMeshIndex(aiMesh* mesh)

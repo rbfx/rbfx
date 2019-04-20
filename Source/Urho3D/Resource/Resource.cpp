@@ -124,7 +124,7 @@ unsigned Resource::GetUseTimer()
 void ResourceWithMetadata::AddMetadata(const String& name, const Variant& value)
 {
     bool exists;
-    metadata_.Insert(MakePair(StringHash(name), value), exists);
+    metadata_.Insert(stl::make_pair(StringHash(name), value), exists);
     if (!exists)
         metadataKeys_.push_back(name);
 }

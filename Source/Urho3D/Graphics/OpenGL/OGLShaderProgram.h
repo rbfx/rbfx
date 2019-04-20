@@ -68,7 +68,7 @@ public:
     const String& GetLinkerOutput() const { return linkerOutput_; }
 
     /// Return semantic to vertex attributes location mappings used by the shader.
-    const HashMap<Pair<unsigned char, unsigned char>, unsigned>& GetVertexAttributes() const { return vertexAttributes_; }
+    const HashMap<stl::pair<unsigned char, unsigned char>, unsigned>& GetVertexAttributes() const { return vertexAttributes_; }
 
     /// Return attribute location use bitmask.
     unsigned GetUsedVertexAttributes() const { return usedVertexAttributes_; }
@@ -96,7 +96,7 @@ private:
     /// Texture unit use.
     bool useTextureUnits_[MAX_TEXTURE_UNITS]{};
     /// Vertex attributes.
-    HashMap<Pair<unsigned char, unsigned char>, unsigned> vertexAttributes_;
+    HashMap<stl::pair<unsigned char, unsigned char>, unsigned> vertexAttributes_;
     /// Used vertex attribute location bitmask.
     unsigned usedVertexAttributes_{};
     /// Constant buffers by binding index.

@@ -1037,7 +1037,7 @@ bool Graphics::SetVertexBuffers(const auto i = impl_->vertexDeclarations_.Find(h
             if (!newDeclaration->GetDeclaration())
                 return false;
 
-            i = impl_->vertexDeclarations_.Insert(MakePair(hash, newDeclaration));
+            i = impl_->vertexDeclarations_.Insert(stl::make_pair(hash, newDeclaration));
         }
 
         VertexDeclaration* declaration = i->second_;
@@ -1167,7 +1167,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
     // Update current available shader parameters
     if (vertexShader_ && pixelShader_)
     {
-        Pair<ShaderVariation*, ShaderVariation*> key = MakePair(vertexShader_, pixelShader_);
+        stl::pair<ShaderVariation*, ShaderVariation*> key = stl::make_pair(vertexShader_, pixelShader_);
         ShaderProgramMap::Iterator i = impl_->shaderPrograms_.Find(key);
         if (i != impl_->shaderPrograms_.End())
             impl_->shaderProgram_ = i->second_.Get();

@@ -103,7 +103,7 @@ void RemoveCachedGeometryImpl(CollisionGeometryDataCache& cache, Model* model)
     for (auto i = cache.Begin(); i != cache.End();)
     {
         auto current = i++;
-        if (current->first_.first_ == model)
+        if (current->first_.first == model)
             cache.Erase(current);
     }
 }
@@ -687,18 +687,18 @@ void PhysicsWorld::GetCollidingBodies(stl::vector<RigidBody*>& result, const Rig
 
     result.clear();
 
-    for (HashMap<Pair<stl::weak_ptr<RigidBody>, stl::weak_ptr<RigidBody> >, ManifoldPair>::Iterator i = currentCollisions_.Begin();
+    for (HashMap<stl::pair<stl::weak_ptr<RigidBody>, stl::weak_ptr<RigidBody> >, ManifoldPair>::Iterator i = currentCollisions_.Begin();
          i != currentCollisions_.End(); ++i)
     {
-        if (i->first_.first_ == body)
+        if (i->first_.first == body)
         {
-            if (i->first_.second_)
-                result.push_back(i->first_.second_);
+            if (i->first_.second)
+                result.push_back(i->first_.second);
         }
-        else if (i->first_.second_ == body)
+        else if (i->first_.second == body)
         {
-            if (i->first_.first_)
-                result.push_back(i->first_.first_);
+            if (i->first_.first)
+                result.push_back(i->first_.first);
         }
     }
 }
@@ -873,24 +873,24 @@ void PhysicsWorld::SendCollisionEvents()
 
             // First only store the collision pair as weak pointers and the manifold pointer, so user code can safely destroy
             // objects during collision event handling
-            Pair<stl::weak_ptr<RigidBody>, stl::weak_ptr<RigidBody> > bodyPair;
+            stl::pair<stl::weak_ptr<RigidBody>, stl::weak_ptr<RigidBody> > bodyPair;
             if (bodyA < bodyB)
             {
-                bodyPair = MakePair(bodyWeakA, bodyWeakB);
+                bodyPair = stl::make_pair(bodyWeakA, bodyWeakB);
                 currentCollisions_[bodyPair].manifold_ = contactManifold;
             }
             else
             {
-                bodyPair = MakePair(bodyWeakB, bodyWeakA);
+                bodyPair = stl::make_pair(bodyWeakB, bodyWeakA);
                 currentCollisions_[bodyPair].flippedManifold_ = contactManifold;
             }
         }
 
-        for (HashMap<Pair<stl::weak_ptr<RigidBody>, stl::weak_ptr<RigidBody> >, ManifoldPair>::Iterator i = currentCollisions_.Begin();
+        for (HashMap<stl::pair<stl::weak_ptr<RigidBody>, stl::weak_ptr<RigidBody> >, ManifoldPair>::Iterator i = currentCollisions_.Begin();
              i != currentCollisions_.End(); ++i)
         {
-            RigidBody* bodyA = i->first_.first_;
-            RigidBody* bodyB = i->first_.second_;
+            RigidBody* bodyA = i->first_.first;
+            RigidBody* bodyB = i->first_.second;
             if (!bodyA || !bodyB)
                 continue;
 
@@ -944,13 +944,13 @@ void PhysicsWorld::SendCollisionEvents()
             {
                 SendEvent(E_PHYSICSCOLLISIONSTART, physicsCollisionData_);
                 // Skip rest of processing if either of the nodes or bodies is removed as a response to the event
-                if (!nodeWeakA || !nodeWeakB || !i->first_.first_ || !i->first_.second_)
+                if (!nodeWeakA || !nodeWeakB || !i->first_.first || !i->first_.second)
                     continue;
             }
 
             // Then send the ongoing collision event
             SendEvent(E_PHYSICSCOLLISION, physicsCollisionData_);
-            if (!nodeWeakA || !nodeWeakB || !i->first_.first_ || !i->first_.second_)
+            if (!nodeWeakA || !nodeWeakB || !i->first_.first || !i->first_.second)
                 continue;
 
             nodeCollisionData_[NodeCollision::P_BODY] = bodyA;
@@ -962,12 +962,12 @@ void PhysicsWorld::SendCollisionEvents()
             if (newCollision)
             {
                 nodeA->SendEvent(E_NODECOLLISIONSTART, nodeCollisionData_);
-                if (!nodeWeakA || !nodeWeakB || !i->first_.first_ || !i->first_.second_)
+                if (!nodeWeakA || !nodeWeakB || !i->first_.first || !i->first_.second)
                     continue;
             }
 
             nodeA->SendEvent(E_NODECOLLISION, nodeCollisionData_);
-            if (!nodeWeakA || !nodeWeakB || !i->first_.first_ || !i->first_.second_)
+            if (!nodeWeakA || !nodeWeakB || !i->first_.first || !i->first_.second)
                 continue;
 
             // Flip perspective to body B
@@ -1005,7 +1005,7 @@ void PhysicsWorld::SendCollisionEvents()
             if (newCollision)
             {
                 nodeB->SendEvent(E_NODECOLLISIONSTART, nodeCollisionData_);
-                if (!nodeWeakA || !nodeWeakB || !i->first_.first_ || !i->first_.second_)
+                if (!nodeWeakA || !nodeWeakB || !i->first_.first || !i->first_.second)
                     continue;
             }
 
@@ -1017,13 +1017,13 @@ void PhysicsWorld::SendCollisionEvents()
     {
         physicsCollisionData_[PhysicsCollisionEnd::P_WORLD] = this;
 
-        for (HashMap<Pair<stl::weak_ptr<RigidBody>, stl::weak_ptr<RigidBody> >, ManifoldPair>::Iterator
+        for (HashMap<stl::pair<stl::weak_ptr<RigidBody>, stl::weak_ptr<RigidBody> >, ManifoldPair>::Iterator
                  i = previousCollisions_.Begin(); i != previousCollisions_.End(); ++i)
         {
             if (!currentCollisions_.Contains(i->first_))
             {
-                RigidBody* bodyA = i->first_.first_;
-                RigidBody* bodyB = i->first_.second_;
+                RigidBody* bodyA = i->first_.first;
+                RigidBody* bodyB = i->first_.second;
                 if (!bodyA || !bodyB)
                     continue;
 
@@ -1051,7 +1051,7 @@ void PhysicsWorld::SendCollisionEvents()
 
                 SendEvent(E_PHYSICSCOLLISIONEND, physicsCollisionData_);
                 // Skip rest of processing if either of the nodes or bodies is removed as a response to the event
-                if (!nodeWeakA || !nodeWeakB || !i->first_.first_ || !i->first_.second_)
+                if (!nodeWeakA || !nodeWeakB || !i->first_.first || !i->first_.second)
                     continue;
 
                 nodeCollisionData_[NodeCollisionEnd::P_BODY] = bodyA;
@@ -1060,7 +1060,7 @@ void PhysicsWorld::SendCollisionEvents()
                 nodeCollisionData_[NodeCollisionEnd::P_TRIGGER] = trigger;
 
                 nodeA->SendEvent(E_NODECOLLISIONEND, nodeCollisionData_);
-                if (!nodeWeakA || !nodeWeakB || !i->first_.first_ || !i->first_.second_)
+                if (!nodeWeakA || !nodeWeakB || !i->first_.first || !i->first_.second)
                     continue;
 
                 nodeCollisionData_[NodeCollisionEnd::P_BODY] = bodyB;

@@ -234,7 +234,7 @@ public:
     }
 
     /// Aggregate initialization constructor.
-    HashMap(const std::initializer_list<Pair<T, U>>& list) : HashMap()
+    HashMap(const std::initializer_list<stl::pair<T, U>>& list) : HashMap()
     {
         for (auto it = list.begin(); it != list.end(); it++)
         {
@@ -275,7 +275,7 @@ public:
     }
 
     /// Add-assign a pair.
-    HashMap& operator +=(const Pair<T, U>& rhs)
+    HashMap& operator +=(const stl::pair<T, U>& rhs)
     {
         Insert(rhs);
         return *this;
@@ -362,16 +362,16 @@ public:
     };
 
     /// Insert a pair. Return an iterator to it.
-    Iterator Insert(const Pair<T, U>& pair)
+    Iterator Insert(const stl::pair<T, U>& pair)
     {
-        return Iterator(InsertNode(pair.first_, pair.second_));
+        return Iterator(InsertNode(pair.first, pair.second));
     }
 
     /// Insert a pair. Return iterator and set exists flag according to whether the key already existed.
-    Iterator Insert(const Pair<T, U>& pair, bool& exists)
+    Iterator Insert(const stl::pair<T, U>& pair, bool& exists)
     {
         unsigned oldSize = Size();
-        Iterator ret(InsertNode(pair.first_, pair.second_));
+        Iterator ret(InsertNode(pair.first, pair.second));
         exists = (Size() == oldSize);
         return ret;
     }

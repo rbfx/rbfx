@@ -43,9 +43,9 @@ struct URHO3D_API BackgroundLoadItem
     /// Resource.
     stl::shared_ptr<Resource> resource_;
     /// Resources depended on for loading.
-    stl::hash_set<Pair<StringHash, StringHash> > dependencies_;
+    stl::hash_set<stl::pair<StringHash, StringHash> > dependencies_;
     /// Resources that depend on this resource's loading.
-    stl::hash_set<Pair<StringHash, StringHash> > dependents_;
+    stl::hash_set<stl::pair<StringHash, StringHash> > dependents_;
     /// Whether to send failure event.
     bool sendEventOnFailure_;
 };
@@ -82,7 +82,7 @@ private:
     /// Mutex for thread-safe access to the background load queue.
     mutable Mutex backgroundLoadMutex_;
     /// Resources that are queued for background loading.
-    HashMap<Pair<StringHash, StringHash>, BackgroundLoadItem> backgroundLoadQueue_;
+    HashMap<stl::pair<StringHash, StringHash>, BackgroundLoadItem> backgroundLoadQueue_;
 };
 
 }

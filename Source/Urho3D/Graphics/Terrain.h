@@ -257,7 +257,7 @@ private:
     /// Terrain patches.
     stl::vector<stl::weak_ptr<TerrainPatch> > patches_;
     /// Draw ranges for different LODs and stitching combinations.
-    stl::vector<Pair<unsigned, unsigned> > drawRanges_;
+    stl::vector<stl::pair<unsigned, unsigned> > drawRanges_;
     /// North neighbor terrain.
     stl::weak_ptr<Terrain> north_;
     /// South neighbor terrain.

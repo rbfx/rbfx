@@ -60,7 +60,7 @@ public:
 
 private:
     /// Buffers and their sizes.
-    stl::list<Pair<stl::shared_array<signed char>, unsigned> > buffers_;
+    stl::list<stl::pair<stl::shared_array<signed char>, unsigned> > buffers_;
     /// Byte position in the front most buffer.
     unsigned position_;
     /// Mutex for buffer data.

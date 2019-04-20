@@ -809,8 +809,8 @@ void Renderer::QueueViewport(RenderSurface* renderTarget, Viewport* viewport)
 {
     if (viewport)
     {
-        Pair<stl::weak_ptr<RenderSurface>, stl::weak_ptr<Viewport> > newView =
-            MakePair(stl::weak_ptr<RenderSurface>(renderTarget), stl::weak_ptr<Viewport>(viewport));
+        stl::pair<stl::weak_ptr<RenderSurface>, stl::weak_ptr<Viewport> > newView =
+            stl::make_pair(stl::weak_ptr<RenderSurface>(renderTarget), stl::weak_ptr<Viewport>(viewport));
 
         // Prevent double add of the same rendertarget/viewport combination
         if (!queuedViewports_.contains(newView))
@@ -1455,9 +1455,9 @@ void Renderer::OptimizeLightByStencil(Light* light, Camera* camera)
 
 const Rect& Renderer::GetLightScissor(Light* light, Camera* camera)
 {
-    Pair<Light*, Camera*> combination(light, camera);
+    stl::pair<Light*, Camera*> combination(light, camera);
 
-    HashMap<Pair<Light*, Camera*>, Rect>::Iterator i = lightScissorCache_.Find(combination);
+    HashMap<stl::pair<Light*, Camera*>, Rect>::Iterator i = lightScissorCache_.Find(combination);
     if (i != lightScissorCache_.End())
         return i->second_;
 
@@ -1479,8 +1479,8 @@ const Rect& Renderer::GetLightScissor(Light* light, Camera* camera)
 
 void Renderer::UpdateQueuedViewport(unsigned index)
 {
-    stl::weak_ptr<RenderSurface>& renderTarget = queuedViewports_[index].first_;
-    stl::weak_ptr<Viewport>& viewport = queuedViewports_[index].second_;
+    stl::weak_ptr<RenderSurface>& renderTarget = queuedViewports_[index].first;
+    stl::weak_ptr<Viewport>& viewport = queuedViewports_[index].second;
 
     // Null pointer means backbuffer view. Differentiate between that and an expired rendersurface
     if ((renderTarget && renderTarget.expired()) || viewport.expired())

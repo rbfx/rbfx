@@ -783,7 +783,7 @@ void LoadMesh(const String& inputFileName, bool generateTangents, bool splitSubM
 
                                 ModelVertex newVertex;
                                 newVertex.position_ = vec;
-                                newMorph.buffers_[bufIndex].vertices_.push_back(MakePair(vertexIndex, newVertex));
+                                newMorph.buffers_[bufIndex].vertices_.push_back(stl::make_pair(vertexIndex, newVertex));
                                 poseOffset = poseOffset.GetNext("poseoffset");
                             }
 

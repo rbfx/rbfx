@@ -183,7 +183,7 @@ bool ShaderProgram::Link()
         }
 
         int location = glGetAttribLocation(object_.name_, name.CString());
-        vertexAttributes_[MakePair((unsigned char)semantic, semanticIndex)] = location;
+        vertexAttributes_[stl::make_pair((unsigned char)semantic, semanticIndex)] = location;
         usedVertexAttributes_ |= (1u << location);
     }
 

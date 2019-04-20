@@ -56,7 +56,7 @@ private:
     /// XML file.
     XMLFile xmlFile_;
     /// Already encountered shader combinations, pointer version for fast queries.
-    stl::hash_set<Pair<ShaderVariation*, ShaderVariation*> > usedPtrCombinations_;
+    stl::hash_set<stl::pair<ShaderVariation*, ShaderVariation*> > usedPtrCombinations_;
     /// Already encountered shader combinations.
     stl::hash_set<String> usedCombinations_;
 };

@@ -123,7 +123,7 @@ static const int DEFAULT_FPS = 60;
 static const float DEFAULT_MAX_NETWORK_ANGULAR_VELOCITY = 100.0f;
 
 /// Cache of collision geometry data.
-using CollisionGeometryDataCache = HashMap<Pair<Model*, unsigned>, stl::shared_ptr<CollisionGeometryData> >;
+using CollisionGeometryDataCache = HashMap<stl::pair<Model*, unsigned>, stl::shared_ptr<CollisionGeometryData> >;
 
 /// Physics simulation world component. Should be added only to the root scene node.
 class URHO3D_API PhysicsWorld : public Component, public btIDebugDraw
@@ -320,9 +320,9 @@ private:
     /// Constraints in the world.
     stl::vector<Constraint*> constraints_;
     /// Collision pairs on this frame.
-    HashMap<Pair<stl::weak_ptr<RigidBody>, stl::weak_ptr<RigidBody> >, ManifoldPair> currentCollisions_;
+    HashMap<stl::pair<stl::weak_ptr<RigidBody>, stl::weak_ptr<RigidBody> >, ManifoldPair> currentCollisions_;
     /// Collision pairs on the previous frame. Used to check if a collision is "new." Manifolds are not guaranteed to exist anymore.
-    HashMap<Pair<stl::weak_ptr<RigidBody>, stl::weak_ptr<RigidBody> >, ManifoldPair> previousCollisions_;
+    HashMap<stl::pair<stl::weak_ptr<RigidBody>, stl::weak_ptr<RigidBody> >, ManifoldPair> previousCollisions_;
     /// Delayed (parented) world transform assignments.
     HashMap<RigidBody*, DelayedWorldTransform> delayedWorldTransforms_;
     /// Cache for trimesh geometry data by model and LOD level.

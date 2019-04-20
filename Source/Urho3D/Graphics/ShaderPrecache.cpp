@@ -82,7 +82,7 @@ void ShaderPrecache::StoreShaders(ShaderVariation* vs, ShaderVariation* ps)
         return;
 
     // Check for duplicate using pointers first (fast)
-    Pair<ShaderVariation*, ShaderVariation*> shaderPair = MakePair(vs, ps);
+    stl::pair<ShaderVariation*, ShaderVariation*> shaderPair = stl::make_pair(vs, ps);
     if (stl::contains(usedPtrCombinations_, shaderPair))
         return;
     usedPtrCombinations_.insert(shaderPair);

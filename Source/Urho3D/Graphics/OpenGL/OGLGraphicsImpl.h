@@ -94,7 +94,7 @@ namespace Urho3D
 class Context;
 
 using ConstantBufferMap = HashMap<unsigned, stl::shared_ptr<ConstantBuffer> >;
-using ShaderProgramMap = HashMap<Pair<ShaderVariation*, ShaderVariation*>, stl::shared_ptr<ShaderProgram> >;
+using ShaderProgramMap = HashMap<stl::pair<ShaderVariation*, ShaderVariation*>, stl::shared_ptr<ShaderProgram> >;
 
 /// Cached state of a frame buffer object
 struct FrameBufferObject
@@ -137,7 +137,7 @@ private:
     /// Vertex attribute instancing bitmask for keeping track of divisors.
     unsigned instancingVertexAttributes_{};
     /// Current mapping of vertex attribute locations by semantic. The map is owned by the shader program, so care must be taken to switch a null shader program when it's destroyed.
-    const HashMap<Pair<unsigned char, unsigned char>, unsigned>* vertexAttributes_{};
+    const HashMap<stl::pair<unsigned char, unsigned char>, unsigned>* vertexAttributes_{};
     /// Currently bound frame buffer object.
     unsigned boundFBO_{};
     /// Currently bound vertex buffer object.

@@ -69,7 +69,7 @@ struct CollisionGeometryData : public RefCounted
 
 /// Cache of collision geometry data.
 /// \todo Remove duplicate declaration
-using CollisionGeometryDataCache = HashMap<Pair<Model*, unsigned>, stl::shared_ptr<CollisionGeometryData> >;
+using CollisionGeometryDataCache = HashMap<stl::pair<Model*, unsigned>, stl::shared_ptr<CollisionGeometryData> >;
 
 /// Triangle mesh geometry data.
 struct TriangleMeshData : public CollisionGeometryData

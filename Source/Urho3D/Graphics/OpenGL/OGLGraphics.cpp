@@ -1102,7 +1102,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
         vertexShader_ = vs;
         pixelShader_ = ps;
 
-        Pair<ShaderVariation*, ShaderVariation*> combination(vs, ps);
+        stl::pair<ShaderVariation*, ShaderVariation*> combination(vs, ps);
         ShaderProgramMap::Iterator i = impl_->shaderPrograms_.Find(combination);
 
         if (i != impl_->shaderPrograms_.End())
@@ -2373,7 +2373,7 @@ ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType /*type*/,  unsign
     HashMap<unsigned, stl::shared_ptr<ConstantBuffer> >::Iterator i = impl_->allConstantBuffers_.Find(key);
     if (i == impl_->allConstantBuffers_.End())
     {
-        i = impl_->allConstantBuffers_.Insert(MakePair(key, stl::shared_ptr<ConstantBuffer>(context_->CreateObject<ConstantBuffer>())));
+        i = impl_->allConstantBuffers_.Insert(stl::make_pair(key, stl::shared_ptr<ConstantBuffer>(context_->CreateObject<ConstantBuffer>())));
         i->second_->SetSize(size);
     }
     return i->second_;
@@ -2967,7 +2967,7 @@ void Graphics::PrepareDraw()
         {
             FrameBufferObject newFbo;
             newFbo.fbo_ = CreateFramebuffer();
-            i = impl_->frameBuffers_.Insert(MakePair(fboKey, newFbo));
+            i = impl_->frameBuffers_.Insert(stl::make_pair(fboKey, newFbo));
         }
 
         if (impl_->boundFBO_ != i->second_.fbo_)
@@ -3145,8 +3145,8 @@ void Graphics::PrepareDraw()
             for (auto j = elements.begin(); j != elements.end(); ++j)
             {
                 const VertexElement& element = *j;
-                HashMap<Pair<unsigned char, unsigned char>, unsigned>::ConstIterator k =
-                    impl_->vertexAttributes_->Find(MakePair((unsigned char)element.semantic_, element.index_));
+                HashMap<stl::pair<unsigned char, unsigned char>, unsigned>::ConstIterator k =
+                    impl_->vertexAttributes_->Find(stl::make_pair((unsigned char)element.semantic_, element.index_));
 
                 if (k != impl_->vertexAttributes_->End())
                 {

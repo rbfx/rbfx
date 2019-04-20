@@ -47,13 +47,13 @@ unsigned BufferedSoundStream::GetData(signed char* dest, unsigned numBytes)
         // Copy as much from the front buffer as possible, then discard it and move to the next
         auto front = buffers_.begin();
 
-        unsigned copySize = front->second_ - position_;
+        unsigned copySize = front->second - position_;
         if (copySize > numBytes)
             copySize = numBytes;
 
-        memcpy(dest, front->first_.get() + position_, copySize);
+        memcpy(dest, front->first.get() + position_, copySize);
         position_ += copySize;
-        if (position_ >= front->second_)
+        if (position_ >= front->second)
         {
             buffers_.pop_front();
             position_ = 0;
@@ -75,7 +75,7 @@ void BufferedSoundStream::AddData(void* data, unsigned numBytes)
 
         stl::shared_array<signed char> newBuffer(new signed char[numBytes]);
         memcpy(newBuffer.get(), data, numBytes);
-        buffers_.push_back(MakePair(newBuffer, numBytes));
+        buffers_.push_back(stl::make_pair(newBuffer, numBytes));
     }
 }
 
@@ -85,7 +85,7 @@ void BufferedSoundStream::AddData(const stl::shared_array<signed char>& data, un
     {
         MutexLock lock(bufferMutex_);
 
-        buffers_.push_back(MakePair(data, numBytes));
+        buffers_.push_back(stl::make_pair(data, numBytes));
     }
 }
 
@@ -95,7 +95,7 @@ void BufferedSoundStream::AddData(const stl::shared_array<signed short>& data, u
     {
         MutexLock lock(bufferMutex_);
 
-        buffers_.push_back(MakePair(stl::do_reinterpret_cast<signed char>(data), numBytes));
+        buffers_.push_back(stl::make_pair(stl::do_reinterpret_cast<signed char>(data), numBytes));
     }
 }
 
@@ -113,7 +113,7 @@ unsigned BufferedSoundStream::GetBufferNumBytes() const
 
     unsigned ret = 0;
     for (const auto& buffer : buffers_)
-        ret += buffer.second_;
+        ret += buffer.second;
     // Subtract amount of sound data played from the front buffer
     ret -= position_;
 

@@ -935,38 +935,38 @@ static void PopulateKeyBindingMap(HashMap<String, int>& keyBindingMap)
 {
     if (keyBindingMap.Empty())
     {
-        keyBindingMap.Insert(MakePair<String, int>("SPACE", KEY_SPACE));
-        keyBindingMap.Insert(MakePair<String, int>("LCTRL", KEY_LCTRL));
-        keyBindingMap.Insert(MakePair<String, int>("RCTRL", KEY_RCTRL));
-        keyBindingMap.Insert(MakePair<String, int>("LSHIFT", KEY_LSHIFT));
-        keyBindingMap.Insert(MakePair<String, int>("RSHIFT", KEY_RSHIFT));
-        keyBindingMap.Insert(MakePair<String, int>("LALT", KEY_LALT));
-        keyBindingMap.Insert(MakePair<String, int>("RALT", KEY_RALT));
-        keyBindingMap.Insert(MakePair<String, int>("LGUI", KEY_LGUI));
-        keyBindingMap.Insert(MakePair<String, int>("RGUI", KEY_RGUI));
-        keyBindingMap.Insert(MakePair<String, int>("TAB", KEY_TAB));
-        keyBindingMap.Insert(MakePair<String, int>("RETURN", KEY_RETURN));
-        keyBindingMap.Insert(MakePair<String, int>("RETURN2", KEY_RETURN2));
-        keyBindingMap.Insert(MakePair<String, int>("ENTER", KEY_KP_ENTER));
-        keyBindingMap.Insert(MakePair<String, int>("SELECT", KEY_SELECT));
-        keyBindingMap.Insert(MakePair<String, int>("LEFT", KEY_LEFT));
-        keyBindingMap.Insert(MakePair<String, int>("RIGHT", KEY_RIGHT));
-        keyBindingMap.Insert(MakePair<String, int>("UP", KEY_UP));
-        keyBindingMap.Insert(MakePair<String, int>("DOWN", KEY_DOWN));
-        keyBindingMap.Insert(MakePair<String, int>("PAGEUP", KEY_PAGEUP));
-        keyBindingMap.Insert(MakePair<String, int>("PAGEDOWN", KEY_PAGEDOWN));
-        keyBindingMap.Insert(MakePair<String, int>("F1", KEY_F1));
-        keyBindingMap.Insert(MakePair<String, int>("F2", KEY_F2));
-        keyBindingMap.Insert(MakePair<String, int>("F3", KEY_F3));
-        keyBindingMap.Insert(MakePair<String, int>("F4", KEY_F4));
-        keyBindingMap.Insert(MakePair<String, int>("F5", KEY_F5));
-        keyBindingMap.Insert(MakePair<String, int>("F6", KEY_F6));
-        keyBindingMap.Insert(MakePair<String, int>("F7", KEY_F7));
-        keyBindingMap.Insert(MakePair<String, int>("F8", KEY_F8));
-        keyBindingMap.Insert(MakePair<String, int>("F9", KEY_F9));
-        keyBindingMap.Insert(MakePair<String, int>("F10", KEY_F10));
-        keyBindingMap.Insert(MakePair<String, int>("F11", KEY_F11));
-        keyBindingMap.Insert(MakePair<String, int>("F12", KEY_F12));
+        keyBindingMap.Insert(stl::make_pair<String, int>("SPACE", KEY_SPACE));
+        keyBindingMap.Insert(stl::make_pair<String, int>("LCTRL", KEY_LCTRL));
+        keyBindingMap.Insert(stl::make_pair<String, int>("RCTRL", KEY_RCTRL));
+        keyBindingMap.Insert(stl::make_pair<String, int>("LSHIFT", KEY_LSHIFT));
+        keyBindingMap.Insert(stl::make_pair<String, int>("RSHIFT", KEY_RSHIFT));
+        keyBindingMap.Insert(stl::make_pair<String, int>("LALT", KEY_LALT));
+        keyBindingMap.Insert(stl::make_pair<String, int>("RALT", KEY_RALT));
+        keyBindingMap.Insert(stl::make_pair<String, int>("LGUI", KEY_LGUI));
+        keyBindingMap.Insert(stl::make_pair<String, int>("RGUI", KEY_RGUI));
+        keyBindingMap.Insert(stl::make_pair<String, int>("TAB", KEY_TAB));
+        keyBindingMap.Insert(stl::make_pair<String, int>("RETURN", KEY_RETURN));
+        keyBindingMap.Insert(stl::make_pair<String, int>("RETURN2", KEY_RETURN2));
+        keyBindingMap.Insert(stl::make_pair<String, int>("ENTER", KEY_KP_ENTER));
+        keyBindingMap.Insert(stl::make_pair<String, int>("SELECT", KEY_SELECT));
+        keyBindingMap.Insert(stl::make_pair<String, int>("LEFT", KEY_LEFT));
+        keyBindingMap.Insert(stl::make_pair<String, int>("RIGHT", KEY_RIGHT));
+        keyBindingMap.Insert(stl::make_pair<String, int>("UP", KEY_UP));
+        keyBindingMap.Insert(stl::make_pair<String, int>("DOWN", KEY_DOWN));
+        keyBindingMap.Insert(stl::make_pair<String, int>("PAGEUP", KEY_PAGEUP));
+        keyBindingMap.Insert(stl::make_pair<String, int>("PAGEDOWN", KEY_PAGEDOWN));
+        keyBindingMap.Insert(stl::make_pair<String, int>("F1", KEY_F1));
+        keyBindingMap.Insert(stl::make_pair<String, int>("F2", KEY_F2));
+        keyBindingMap.Insert(stl::make_pair<String, int>("F3", KEY_F3));
+        keyBindingMap.Insert(stl::make_pair<String, int>("F4", KEY_F4));
+        keyBindingMap.Insert(stl::make_pair<String, int>("F5", KEY_F5));
+        keyBindingMap.Insert(stl::make_pair<String, int>("F6", KEY_F6));
+        keyBindingMap.Insert(stl::make_pair<String, int>("F7", KEY_F7));
+        keyBindingMap.Insert(stl::make_pair<String, int>("F8", KEY_F8));
+        keyBindingMap.Insert(stl::make_pair<String, int>("F9", KEY_F9));
+        keyBindingMap.Insert(stl::make_pair<String, int>("F10", KEY_F10));
+        keyBindingMap.Insert(stl::make_pair<String, int>("F11", KEY_F11));
+        keyBindingMap.Insert(stl::make_pair<String, int>("F12", KEY_F12));
     }
 }
 
@@ -974,11 +974,11 @@ static void PopulateMouseButtonBindingMap(HashMap<String, int>& mouseButtonBindi
 {
     if (mouseButtonBindingMap.Empty())
     {
-        mouseButtonBindingMap.Insert(MakePair<String, int>("LEFT", SDL_BUTTON_LEFT));
-        mouseButtonBindingMap.Insert(MakePair<String, int>("MIDDLE", SDL_BUTTON_MIDDLE));
-        mouseButtonBindingMap.Insert(MakePair<String, int>("RIGHT", SDL_BUTTON_RIGHT));
-        mouseButtonBindingMap.Insert(MakePair<String, int>("X1", SDL_BUTTON_X1));
-        mouseButtonBindingMap.Insert(MakePair<String, int>("X2", SDL_BUTTON_X2));
+        mouseButtonBindingMap.Insert(stl::make_pair<String, int>("LEFT", SDL_BUTTON_LEFT));
+        mouseButtonBindingMap.Insert(stl::make_pair<String, int>("MIDDLE", SDL_BUTTON_MIDDLE));
+        mouseButtonBindingMap.Insert(stl::make_pair<String, int>("RIGHT", SDL_BUTTON_RIGHT));
+        mouseButtonBindingMap.Insert(stl::make_pair<String, int>("X1", SDL_BUTTON_X1));
+        mouseButtonBindingMap.Insert(stl::make_pair<String, int>("X2", SDL_BUTTON_X2));
     }
 }
 

@@ -1033,7 +1033,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
     // Update current shader parameters & constant buffers
     if (vertexShader_ && pixelShader_)
     {
-        Pair<ShaderVariation*, ShaderVariation*> key = MakePair(vertexShader_, pixelShader_);
+        stl::pair<ShaderVariation*, ShaderVariation*> key = stl::make_pair(vertexShader_, pixelShader_);
         ShaderProgramMap::Iterator i = impl_->shaderPrograms_.Find(key);
         if (i != impl_->shaderPrograms_.End())
             impl_->shaderProgram_ = i->second_.Get();
@@ -2447,7 +2447,7 @@ void Graphics::PrepareDraw()
                 if (i == impl_->vertexDeclarations_.End())
                 {
                     stl::shared_ptr<VertexDeclaration> newVertexDeclaration(new VertexDeclaration(this, vertexShader_, vertexBuffers_));
-                    i = impl_->vertexDeclarations_.Insert(MakePair(newVertexDeclarationHash, newVertexDeclaration));
+                    i = impl_->vertexDeclarations_.Insert(stl::make_pair(newVertexDeclarationHash, newVertexDeclaration));
                 }
                 impl_->deviceContext_->IASetInputLayout((ID3D11InputLayout*)i->second_->GetInputLayout());
                 vertexDeclarationHash_ = newVertexDeclarationHash;
@@ -2488,7 +2488,7 @@ void Graphics::PrepareDraw()
                     URHO3D_LOGD3DERROR("Failed to create blend state", hr);
                 }
 
-                i = impl_->blendStates_.Insert(MakePair(newBlendStateHash, newBlendState));
+                i = impl_->blendStates_.Insert(stl::make_pair(newBlendStateHash, newBlendState));
             }
 
             impl_->deviceContext_->OMSetBlendState(i->second_, nullptr, M_MAX_UNSIGNED);
@@ -2536,7 +2536,7 @@ void Graphics::PrepareDraw()
                     URHO3D_LOGD3DERROR("Failed to create depth state", hr);
                 }
 
-                i = impl_->depthStates_.Insert(MakePair(newDepthStateHash, newDepthState));
+                i = impl_->depthStates_.Insert(stl::make_pair(newDepthStateHash, newDepthState));
             }
 
             impl_->deviceContext_->OMSetDepthStencilState(i->second_, stencilRef_);
@@ -2585,7 +2585,7 @@ void Graphics::PrepareDraw()
                     URHO3D_LOGD3DERROR("Failed to create rasterizer state", hr);
                 }
 
-                i = impl_->rasterizerStates_.Insert(MakePair(newRasterizerStateHash, newRasterizerState));
+                i = impl_->rasterizerStates_.Insert(stl::make_pair(newRasterizerStateHash, newRasterizerState));
             }
 
             impl_->deviceContext_->RSSetState(i->second_);

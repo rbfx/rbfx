@@ -1116,7 +1116,7 @@ void CollisionShape::UpdateCachedGeometryShape(CollisionGeometryDataCache& cache
     else if (model_ && model_->GetNumGeometries())
     {
         // Check the geometry cache
-        Pair<Model*, unsigned> id = MakePair(model_.get(), lodLevel_);
+        stl::pair<Model*, unsigned> id = stl::make_pair(model_.get(), lodLevel_);
         auto cachedGeometry = cache.Find(id);
         if (cachedGeometry != cache.End())
             geometry_ = cachedGeometry->second_;
